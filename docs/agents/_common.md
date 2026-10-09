@@ -18,3 +18,18 @@ Use only the fixed-point API in include/agc/agc_interp.h and agc_word.h for
 flight arithmetic. The implementation may be in progress by another agent;
 compile your files with -c against the headers and never stub core
 functions in your own files.
+
+## Naming convention for not-yet-existing shared symbols
+
+Several lanes run in parallel, so code against these names even if the
+header is not there yet, and list each one you used in your note:
+
+* Flags: `AGC_FLAG_<AGCNAME>` where AGCNAME is the AGC flag name upper-cased
+  with `/`, `-`, `.` replaced by `_` (e.g. MOONFLAG -> AGC_FLAG_MOONFLAG,
+  D6OR9FLG -> AGC_FLAG_D6OR9FLG, R22CAFLG -> AGC_FLAG_R22CAFLG). Include
+  "agc/agc_flags_common.h" for shared flags, "agc/agc_flags_csm.h" or
+  "agc/agc_flags_lm.h" for vehicle-specific ones.
+* Channel bits: `AGC_CH<octal chan>_<NAME>` (e.g. AGC_CH030_IMUOPER).
+* Shared erasable accessors: `agc_erase_<agcname>()` / `agc_erase_set_<agcname>()`
+  with the same upper-to-lower name mapping (e.g. agc_erase_refsmmat()).
+* Jobs/tasks: `AGC_JOB_<LABEL>` / `AGC_TASK_<LABEL>` using the AGC entry label.
