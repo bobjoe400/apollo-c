@@ -62,3 +62,18 @@ erasable inputs, runs the emulator to a label, and dumps erasable outputs
 as JSON. `tests/oracle_*.c` compare the C translation's outputs with those
 dumps (differential tests). Each module agent lists in its note the entry
 labels, input erasables and output erasables an oracle test needs.
+
+## Model tiering (user direction, 2026-10-09)
+
+Subagents must not default to the lead's model. Assign per task:
+
+| Tier        | Model  | Use for                                                        |
+|-------------|--------|----------------------------------------------------------------|
+| Lead        | Fable  | plan, API contract, integration decisions, numeric review       |
+| Translation | Opus   | wave 2 module translation (reads large assembly, keeps scaling) |
+| Mechanical  | Sonnet | table transcription, flag enums, rule-checker fixes, test scaffolds, doc tidy |
+| Trivial     | Haiku  | status-board edits, formatting                                  |
+
+Wave 1 ran on Fable (launched before this rule). Not restarted: sunk cost.
+Where a wave-2 scope is mostly tables (noun tables, restart tables, channel
+bits), split that part off to a Sonnet agent.

@@ -15,3 +15,7 @@
   in flight code. Interpreter is a library, not an emulator.
 - No function pointers: job/task dispatch by enum + switch (rule 9).
 - Oracle: Virtual AGC yaAGC runs the real ropes; differential tests compare.
+2026-10-09  exec-sched agent hit an API safeguard false positive on launch;
+            relaunched with reworded prompt. User directed model tiering
+            (Opus for translation, Sonnet for mechanical work); recorded in
+            PLAN.md; applies from wave 2.
