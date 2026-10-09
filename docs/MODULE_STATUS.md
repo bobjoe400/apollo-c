@@ -14,7 +14,7 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | io-nouns     | TODO | | |
 | imu          | TODO | | |
 | guid-powered | TODO | | |
-| guid-landing | TODO | | |
+| guid-landing | IN-PROGRESS | src/lm/ | translating |
 | guid-entry   | TODO | | |
 | dap-lm       | TODO | | |
 | dap-csm      | TODO | | |

@@ -1,0 +1,59 @@
+# prog-align -- IMU alignment programs, optics marking, geometry, S-band, R63, R47
+
+## Scope
+
+| AGC file (vehicle) | pages | C target |
+|---|---|---|
+| P51-P53.agc (CM, LM; diffed) | CM 737-784, LM 926-983 | src/programs/align_*.c (shared math), src/csm/p51_p53_csm.c, src/lm/p51_p53_lm.c, src/lm/p57.c |
+| SXTMARK.agc (CM) | 222-235 | src/csm/sxtmark.c |
+| AOTMARK.agc (LM) | 244-261 | src/lm/aotmark.c |
+| R63.agc (LM) | 338-341 | src/lm/r63.c |
+| CSM_GEOMETRY.agc (CM) | 285-296 | src/csm/csm_geometry.c |
+| LEM_GEOMETRY.agc (LM) | 320-325 | src/lm/lem_geometry.c |
+| S-BAND_ANTENNA_FOR_CM.agc / _FOR_LM.agc | CM 934-935, LM 486-489 | src/csm/sband_cm.c, src/lm/sband_lm.c |
+| LUNAR_LANDMARK_SELECTION_FOR_CM.agc | 936 | empty in Comanche 055 (only a page header); nothing to translate |
+| AGS_INITIALIZATION.agc (LM, R47) | 206-210 | src/lm/ags_init.c |
+
+Public header: include/agc/agc_align.h. Interfaces assumed from other lanes
+(not yet present when written) are declared in one place,
+src/programs/align_pending.h, so integration only has to edit that file.
+
+## Design (written before coding)
+
+Scales: half-unit vectors are DP vectors of magnitude 0.5 (AGC "UNIT"
+output, B-1). Angles: "revs" = DP fraction of one revolution (B0);
+"CDU" = SP 2's-complement half-revolutions (one count = 360/32768 deg).
+
+| AGC label (file, page) | inputs (scale) | outputs (scale) | C function |
+|---|---|---|---|
+| CDULOGIC / 1STO2S (RTB, used here) | CDU SP half-revs | DP revs / SP half-revs | agc_align_cdulogic, agc_align_1sto2s |
+| CDUTRIG equivalent (sin/cos of CDUs) | CDUX,Y,Z | SINCDU,COSCDU (sin/2) | agc_align_cdutrig |
+| CALCSMSC (P51-P53 CM p.763) | SINCDU,COSCDU | XNB,YNB,ZNB half-unit wrt SM | agc_align_calcsmsc |
+| MATMOVE (p.762/948) | matrix | matrix | struct assignment (inline) |
+| S52.2 (p.774/953) | XSMD..(half-unit, ref), REFSMMAT, CDUs | XSM.., THETAD (CDU) | agc_align_s52_2 |
+| S52.3 (p.780/954) CM: Z=-R; LM: X=R | TALIGN cs B28 | XSMD.. | agc_align_s52_3 |
+| P52LS (CM p.742) / P52LS+N89DISP+LSORIENT (LM p.932-933, 983) | RLS, time | XSMD.. | agc_align_p52ls_csm/_lm, agc_align_lsorient |
+| CAL53A/CALOOP (p.761/947) | THETAD, CDUs | coarse needed? | agc_align_cal53a_need_coarse |
+| GYCRS / GYCOARS (p.741/944) | XSMD, REFSMMAT | XDC, OGC.. | agc_align_gyro_coarse_dc |
+| S50/LOCSAM + OCCOS (p.748-751 / 934-936; diff) | time | VEARTH VSUN VMOON CEARTH CSUN CMOON (cos/4) VEL/C(CM) | agc_align_locsam |
+| PICAPAR/R56 + OCCULT (p.752-755 / 937-940; diff) | CDUs, REFSMMAT, LOCSAM | BESTI,BESTJ (star*6), VFLAG | agc_align_picapar |
+| PLANET (p.782-784 / 961-962; diff) | star code, time | half-unit LOS ref (CM: + aberration VEL/C) | agc_align_planet |
+| CHKSDATA/R54 math (p.759-761 / 945-947) | STARAD,+6, 6D,12D | NORMTEM1 = abs angle diff revs | agc_align_chksdata_angle |
+| R51 math (p.756-758 / 941-943) | cat stars (ref), obs stars (SM), REFSMMAT | XDC (via AXISGEN) | agc_align_r51_solve |
+| R55 / CHKSDATA / CAL53A / flows | | | job functions agc_job_<label> |
+| SXTNB (CSM_GEOMETRY p.285) | SA,TA CDU | STARM half-unit NB | agc_csm_sxtnb |
+| SXTLOGIC (p.285) | TA CDU | TA revs (19.775 deg offset, /4) | agc_csm_sxtlogic |
+| CALCSXA / SXTANG / SXTANG1 (p.286-288) | STAR (SM or any), XNB.. | SAC,PAC (CDU), CULTFLAG | agc_csm_calcsxa, agc_csm_sxtang |
+| SVDWN1/SVDWN2 (both GEOMETRY files; names swapped LM) | RCV,VCV,TDELTAV,TNUV,TET, X2 | RN,VN,PIPTIME or R/V-OTHER | agc_align_svdwn_this / _other |
+| LOG (p.291) | x | -ln(x) | agc_csm_log |
+| EARROT1/EARROT2/OVERADAY (p.293-295) | RTINIT, UNITW, DTEAROT | RT, RTEAST, RTNORM | agc_csm_earrot1/2 |
+| RRANGLES (LEM_GEOMETRY p.322-323) | NB LOS half-unit, RADMODES | MODEA, MODEB (T,S CDU) | agc_lm_rrangles |
+| RRNB / RRNBMPAC (p.324) | T,S CDU | NB LOS half-unit | agc_lm_rrnb |
+| SBANDANT (CM R05 p.934) | CDUs, CSM state, LUNPOS | RHOSB (pitch), GAMMASB (yaw) revs | agc_sband_cm_angles (pure) + job |
+| SBANDANT (LM R05 p.486) | idem, LM | PITCHANG, YAWANG revs | agc_sband_lm_angles (pure) + job |
+| V89CALL (R63 p.338-341) | states, OPTION1+1 axis | CPHI.. FDAI angles | agc_r63_los + jobs |
+| AGSINIT/SCALEVEC (R47 p.206-210) | LM/CSM states, AGSK | AGSBUFF (14 words) | agc_ags_scalevec + jobs |
+| SXTMARK, MKRELEAS, MARKRUPT, MARKCONT, MARK2/VACSTOR, MKREJECT, MKVB51/50, MARKIT, MARKDIF, DIFCHK (SXTMARK.agc) | | | src/csm/sxtmark.c |
+| AOTMARK, MKRELEAS, GETDAT, DODAT, OPTAXIS, OANB, SURFSTAR, GETMKS, MARKCHEX, AVESTAR, AVEIT, MARKRUPT, MKREJ, MARKTYPE, VACSTOR, REMARK, CHANGEVB, DSPV6N79 (AOTMARK.agc) | | | src/lm/aotmark.c |
+| R52 (CM AOP), SR52.1, ADVTRACK, ROTA, ADVORB, TERM52, R53, CHKSCODE, R56 (CM alt LOS), SXTSM | | | src/csm/r52_r53_csm.c |
+| R52 (LM), R59, P57, GVDETER, GRAVEL, LUNG, GYROTRIM, 2STARS, SURFLINE, COATRIM, MFREF, REFMF, IMUCHK | | | src/lm/p57.c, src/lm/r59_r52_lm.c |

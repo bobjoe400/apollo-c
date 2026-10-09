@@ -69,3 +69,20 @@ Do not use the Agent tool. The lead keeps the tree one level deep so that
 cost, file ownership and reporting stay visible. If your scope is too large,
 finish the highest-value routines fully, stub the rest per step 6, and say
 so in your report; the lead will split the remainder into a sibling agent.
+
+## Checkpoint as you go (resumability)
+
+Your session can be stopped at any time. Keep `docs/modules/<agent-id>.md`
+current so a fresh agent can resume without re-reading everything:
+
+* Create the note with the design table BEFORE writing code.
+* Keep a `## Progress` section: one line per AGC routine or table,
+  `DONE <C function> <file>` / `PARTIAL <what is left>` / `TODO`. Update it
+  every time you finish a routine or a file, not at the end.
+* Keep "Requested core additions" and "Requested jobs-tasks" current as you
+  discover them, not at the end.
+* Do not use git; the lead commits.
+
+Resuming: if your note already exists when you start, read it and continue
+from the Progress section. Do not restart from scratch and do not rewrite
+files marked DONE unless they fail to compile.
