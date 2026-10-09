@@ -25,3 +25,9 @@
             io-pinball on Opus; state-flags and new io-nouns (noun tables split
             out of pinball) on Sonnet. oracle (Fable) left running: ropes
             already assembled.
+2026-10-09  Wave 2 launched early (user: no reason to hold at 8). Pinned the
+            naming convention for not-yet-existing flags/channels/accessors in
+            docs/agents/_common.md so lanes can code ahead of state-flags.
+            Running now: 17 agents (8 wave 1 + 9 wave 2: imu, guid-powered,
+            guid-landing, guid-entry, dap-lm, dap-csm, prog-rendz, prog-align,
+            sys-misc; all Opus). Wave 3 (integrate) after these report.
