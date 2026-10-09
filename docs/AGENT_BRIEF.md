@@ -62,3 +62,10 @@ inside your lane and put your findings in files, not in your final report.
 * Update your row in `docs/MODULE_STATUS.md` (one line).
 * Final chat report to the lead: at most 15 lines -- what is done, what is
   stubbed, blocking issues. Nothing else.
+
+## Do not spawn subagents
+
+Do not use the Agent tool. The lead keeps the tree one level deep so that
+cost, file ownership and reporting stay visible. If your scope is too large,
+finish the highest-value routines fully, stub the rest per step 6, and say
+so in your report; the lead will split the remainder into a sibling agent.
