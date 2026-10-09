@@ -12,7 +12,7 @@ CC       ?= gcc
 YAAGC_SRC ?= yaAGC-src
 BUILD    := build
 ENGINE_SRCS := agc_engine.c agc_engine_init.c agc_utilities.c agc_symtab.c \
-               rfopen.c NullAPI.c Backtrace.c
+               rfopen.c NullAPI.c
 ENGINE_OBJS := $(ENGINE_SRCS:%.c=$(BUILD)/%.o)
 ENGINE_CFLAGS := -O2 -w -DNVER='""' -DINSTALLDIR='""'
 

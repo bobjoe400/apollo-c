@@ -21,5 +21,5 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | prog-rendz   | TODO | | |
 | prog-align   | TODO | | |
 | sys-misc     | TODO | | |
-| oracle       | TODO | | |
+| oracle       | DONE (0 stubs) | tools/oracle/{agc_probe.c,Makefile,README.md,BUILD.md,bin,ropes,cases,yaAGC-src}, docs/modules/oracle.md | yaYUL+yaAGC built; ropes from virtualagc copies (Apollo-11 repo sources do not assemble); SPSIN and interpretive SQRT/SIN/COS cases proven |
 | integrate    | TODO | | |

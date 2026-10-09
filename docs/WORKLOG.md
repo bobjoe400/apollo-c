@@ -31,3 +31,9 @@
             Running now: 17 agents (8 wave 1 + 9 wave 2: imu, guid-powered,
             guid-landing, guid-entry, dap-lm, dap-csm, prog-rendz, prog-align,
             sys-misc; all Opus). Wave 3 (integrate) after these report.
+2026-10-09  oracle DONE. yaYUL/yaAGC built (tools/oracle/BUILD.md). The
+            Apollo-11 repo sources do NOT assemble with current yaYUL; ropes
+            built from virtualagc's Comanche055/Luminary099 copies, verified
+            0 mismatches vs official binsource. agc_probe proven on SPSIN and
+            interpretive SQRT/SIN via the VAC-snippet technique. Binaries and
+            11.8 MB symtabs are gitignored (rebuild per BUILD.md).

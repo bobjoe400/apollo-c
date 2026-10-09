@@ -1,0 +1,5 @@
+build/
+tools/oracle/bin/
+tools/oracle/ropes/*.symtab
+tools/oracle/agc_probe
+*.o

@@ -12,6 +12,7 @@
  */
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +23,13 @@
 extern Symbol_t *SymbolTable;
 extern int SymbolTableSize;
 extern int InhibitAlarms;
+
+/* The engine calls this debugger hook; the probe keeps no backtrace. */
+void BacktraceAdd(agc_t *State, int Cause) { (void)State; (void)Cause; }
+/* Source-listing hooks used by agc_symtab.c; the probe never lists source. */
+void nbclear_files(void) {}
+void nbadd_source_file(const char *file) { (void)file; }
+char *NormalizeSourceName(char *Directory, char *Filename) { (void)Directory; return Filename; }
 
 #define MAX_LINES   4096
 #define MAX_STOPS   16
@@ -203,6 +211,21 @@ static int parse_value(const char *text)
     if (v < 0 || v > 077777) die("value '%s' out of range", text);
     if (neg) v = (~v) & 077777;
     return (int)v;
+}
+
+/* Signed decimal fraction in (-1,1) -> ones'-complement words, canonical
+ * form (both words carry the sign).  width 1 = SP (2^14), 2 = DP (2^28). */
+static void fraction_words(const char *text, int width, int *words)
+{
+    double x = strtod(text, NULL);
+    int neg = x < 0;
+    unsigned long long mag, limit = (width == 1) ? 16383ULL : 268435455ULL;
+    if (neg) x = -x;
+    mag = (unsigned long long)(x * (width == 1 ? 16384.0 : 268435456.0) + 0.5);
+    if (mag > limit) die("fraction %s out of range", text);
+    if (width == 1) words[0] = (int)mag;
+    else { words[0] = (int)(mag >> 14); words[1] = (int)(mag & 037777); }
+    if (neg) { words[0] = (~words[0]) & 077777; if (width == 2) words[1] = (~words[1]) & 077777; }
 }
 
 /* ---------------------------------------------------------------- memory */
@@ -474,6 +497,18 @@ static void process_line(char *line)
             st->words[st->nwords++] = parse_value(tok);
         }
         if (!st->nwords) die("set: no value");
+        nsets++;
+    }
+    else if (!strcmp(kw, "setsp") || !strcmp(kw, "setdp")) {
+        char *eq = strchr(arg, '=');
+        set_t *st;
+        if (!eq) die("%s needs NAME=fraction", kw);
+        *eq++ = 0;
+        if (nsets >= MAX_SETS) die("too many sets");
+        st = &sets[nsets];
+        parse_loc(arg, &st->loc);
+        st->nwords = (kw[3] == 'd') ? 2 : 1;
+        fraction_words(trim(eq), st->nwords, st->words);
         nsets++;
     }
     else if (!strcmp(kw, "get")) {
