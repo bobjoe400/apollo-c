@@ -20,4 +20,5 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | prog-rendz   | TODO | | |
 | prog-align   | TODO | | |
 | sys-misc     | TODO | | |
+| oracle       | TODO | | |
 | integrate    | TODO | | |

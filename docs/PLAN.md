@@ -51,3 +51,14 @@ alignment, pinball, etc.). We translate:
 * Do not edit include/agc/*.h. Request additions in your note under
   "Requested core additions".
 * Final report back to lead: <= 15 lines. Everything else goes in the note.
+
+## Test oracle: Virtual AGC (added by user request)
+
+https://github.com/virtualagc/virtualagc provides yaYUL (assembler) and yaAGC
+(cycle-accurate emulator). Agent `oracle` (wave 1) builds both from the clone
+at SRC/virtualagc, assembles Comanche055 and Luminary099 from the Apollo-11
+repo, and produces `tools/oracle/`: a driver that loads a rope, pokes
+erasable inputs, runs the emulator to a label, and dumps erasable outputs
+as JSON. `tests/oracle_*.c` compare the C translation's outputs with those
+dumps (differential tests). Each module agent lists in its note the entry
+labels, input erasables and output erasables an oracle test needs.
