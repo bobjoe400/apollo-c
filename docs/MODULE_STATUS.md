@@ -11,6 +11,7 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | nav-integ    | TODO | | |
 | nav-aux      | TODO | | |
 | io-pinball   | TODO | | |
+| io-nouns     | TODO | | |
 | imu          | TODO | | |
 | guid-powered | TODO | | |
 | guid-landing | TODO | | |

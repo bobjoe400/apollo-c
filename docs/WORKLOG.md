@@ -19,3 +19,9 @@
             relaunched with reworded prompt. User directed model tiering
             (Opus for translation, Sonnet for mechanical work); recorded in
             PLAN.md; applies from wave 2.
+2026-10-09  Stopped the 7 Fable translation agents (~5 min in, still reading;
+            negligible loss). Moved assignments to docs/agents/*.md; relaunched
+            on tiers: core-numeric, exec-sched, nav-conic, nav-integ, nav-aux,
+            io-pinball on Opus; state-flags and new io-nouns (noun tables split
+            out of pinball) on Sonnet. oracle (Fable) left running: ropes
+            already assembled.
