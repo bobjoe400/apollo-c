@@ -75,10 +75,10 @@ static bool is_lm(void)
 
     if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
     {
-        return false;
+        return (false);
     }
 
-    return agc_state_vehicle() == AGC_VEHICLE_LM;
+    return (agc_state_vehicle() == AGC_VEHICLE_LM);
 }
 
 static void chan_write(int chan, uint16_t v)
@@ -469,14 +469,14 @@ static bool lightset(void)
 
     if (!AGC_ASSERT(nav <= AGC_CHAN_MASK))
     {
-        return false;
+        return (false);
     }
 
     uint16_t mark_reject = is_lm() ? FS_BIT5 : FS_BIT7;
 
     if ((nav & mark_reject) == 0U)
     {
-        return false; /* NONAVKEY: TC Q       */
+        return (false); /* NONAVKEY: TC Q       */
     }
 
     bool elr = !is_lm() && (nav & FS_KEYCODE) == FS_ELR; /* nav DSKY  */
@@ -488,7 +488,7 @@ static bool lightset(void)
 
     if (!elr)
     {
-        return false;
+        return (false);
     }
 
     startsub();
@@ -496,10 +496,10 @@ static bool lightset(void)
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
     {
-        return false;
+        return (false);
     }
 
-    return true;
+    return (true);
 }
 
 /* PCLOOP .. PTBAD (C p.188 / L p.218): every group's -PHASEn must be
@@ -529,10 +529,10 @@ static bool phase_tables_ok(void)
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
-        return false;
+        return (false);
     }
 
-    return ok;
+    return (ok);
 }
 
 /* GOPROG3 (C pp.188-189 / L pp.218-219).                              */
@@ -540,14 +540,14 @@ static agc_status_t goprog3(void)
 {
     if (!phase_tables_ok())
     {
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     agc_status_t st = fresh_mmdsplay(); /* TC MMDSPLAY          */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (is_lm())
@@ -562,7 +562,7 @@ static agc_status_t goprog3(void)
 
         if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
     else
@@ -582,7 +582,7 @@ static agc_status_t goprog3(void)
         }
     }
 
-    return st; /* ENDRSTRT             */
+    return (st); /* ENDRSTRT             */
 }
 
 /* ELRSKIP .. NOCOARSE (C pp.187-188): the CSM hardware-restart part. */
@@ -669,7 +669,7 @@ agc_status_t agc_restart_goprog(void)
 {
     if (!AGC_ASSERT(redoctr < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     redoctr = (uint16_t) (redoctr + 1U); /* INCR REDOCTR         */
@@ -690,7 +690,7 @@ agc_status_t agc_restart_goprog(void)
             dofstart();
             agc_relint();
 
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
     }
     else if ((agc_erase_dsptab(FS_LAMPWORD) & FS_BIT4) != 0U)
@@ -725,10 +725,10 @@ agc_status_t agc_restart_goprog(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ENEMA / GOPROG2 (C p.188 / L p.217): software restart.              */
@@ -745,21 +745,21 @@ agc_status_t fresh_enema(void)
         { /* GOPROG2A             */
             agc_relint();
 
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
 
         flagword_init(10, (uint16_t) ~FS_INTMASK & 077777u, 0u); /* RSFLGBTS */
         st = goprog3();
         agc_relint();
 
-        return st;
+        return (st);
     }
 
     if (lightset())
     {
         agc_relint();
 
-        return st;
+        return (st);
     }
 
     startsb2();
@@ -771,7 +771,7 @@ agc_status_t fresh_enema(void)
 
         if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
@@ -780,10 +780,10 @@ agc_status_t fresh_enema(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* SLAP1 (C p.183 / L p.211): fresh start requested by V36.            */
@@ -806,7 +806,7 @@ agc_status_t agc_fresh_start_slap1(void)
         {
             agc_relint();
 
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
@@ -816,10 +816,10 @@ agc_status_t agc_fresh_start_slap1(void)
 
     if (!AGC_ASSERT(ercount == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DOFSTART entry (machine-initiated fresh start).                     */
@@ -827,7 +827,7 @@ agc_status_t agc_fresh_dofstart(void)
 {
     if (!AGC_ASSERT(redoctr < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -836,25 +836,25 @@ agc_status_t agc_fresh_dofstart(void)
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_restart_redoctr(void)
 {
     if (!AGC_ASSERT(restreg <= 037))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(ercount < UINT16_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return redoctr;
+    return (redoctr);
 }
 
 /* GOTOPOOH (C p.194 / L p.223): protect the P00 request by restart
@@ -866,7 +866,7 @@ agc_status_t agc_exec_gotopooh(void)
 {
     if (!AGC_ASSERT(agc_erase_modreg() >= EXEC_MODREG_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st;
@@ -894,23 +894,23 @@ agc_status_t agc_exec_gotopooh(void)
 
     if (!AGC_ASSERT(phase_group_agrees(4)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GOTOPOOH))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }

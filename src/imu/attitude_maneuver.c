@@ -63,24 +63,24 @@ static bool vec_ok(agc_vec_t v)
         ok = ok && v.c[i] >= AGC_DP_MIN && v.c[i] <= AGC_DP_MAX;
     }
 
-    return ok;
+    return (ok);
 }
 
 agc_status_t agc_imu_set_scaxis(agc_vec_t v)
 {
     if (!AGC_ASSERT(vec_ok(v)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     scaxis = v;
 
     if (!AGC_ASSERT(vec_ok(scaxis)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 void agc_imu_set_pointvsm(agc_vec_t v)
@@ -102,15 +102,15 @@ uint16_t agc_erase_fdai(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(fdai[axis] <= CDU_MASK))
     {
-        return 0;
+        return (0);
     }
 
-    return fdai[axis];
+    return (fdai[axis]);
 }
 
 /* ======================================================================= */
@@ -132,10 +132,10 @@ static agc_status_t findgimb(agc_interp_t *ip, const agc_mat_t *m,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* COMPMATX .. FINDGIMB: MFS = MIS DEL(COF, AM); if that is within 59 deg
@@ -149,7 +149,7 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t mfs = agc_mat_mul(ip, mis, &del); /* MXM3     */
@@ -157,7 +157,7 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
     if (agc_dp_sub(ip, agc_dp_abs(mfs.row[1].c[0]), SINGIMLC) < 0 ||
         agc_dp_sub(ip, agc_dp_abs(scaxis.c[0]), SINVEC1) >= 0)
     {
-        return findgimb(ip, &mfs, gimbal); /* no lock, or thrust axis */
+        return (findgimb(ip, &mfs, gimbal)); /* no lock, or thrust axis */
     }
 
     agc_vec_t ig = mfs.row[1]; /* IG axis in final S/C    */
@@ -179,12 +179,12 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t m2 = agc_mat_mul(ip, &mfs, &del);
 
-    return findgimb(ip, &m2, gimbal);
+    return (findgimb(ip, &m2, gimbal));
 }
 
 /* PICKAXIS / ROT180 / PICKX: VF x VI is (nearly) zero.  Parallel: keep
@@ -201,7 +201,7 @@ static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis,
             gimbal[i] = cdu0[i]; /* CDU desired = present   */
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const agc_vec_t hiunitx = agc_vec_make(AGC_DP_HALF, 0, 0);
@@ -216,7 +216,7 @@ static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis,
         c = hiunitx; /* PICKX    */
     }
 
-    return compmatx(ip, mis, c, AGC_DP_HALF, gimbal); /* XROT     */
+    return (compmatx(ip, mis, c, AGC_DP_HALF, gimbal)); /* XROT     */
 }
 
 /* VECPOINT body from initial CDU angles cdu0 (VECLEAR / STORANG).        */
@@ -229,7 +229,7 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t vf =
@@ -239,14 +239,14 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
 
     if (agc_interp_test_ovf(ip) || agc_dp_sub(ip, mag, DPB14) < 0)
     {
-        return pickaxis(ip, &mis, vf, cdu0, gimbal);
+        return (pickaxis(ip, &mis, vf, cdu0, gimbal));
     }
 
     agc_vec_t cofv = agc_vec_neg(c); /* VCOMP    */
     agc_dp_t  am   =
         agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, scaxis, vf), 1));
 
-    return compmatx(ip, &mis, cofv, am, gimbal);
+    return (compmatx(ip, &mis, cofv, am, gimbal));
 }
 
 /* VECPOINT: point S/C axis scaxis_in along pointvsm_in from the present
@@ -256,14 +256,14 @@ agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in,
 {
     if (!AGC_ASSERT(ip != NULL && gimbal != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_imu_set_pointvsm(pointvsm_in);
 
     if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -272,7 +272,7 @@ agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in,
 
     agc_relint();
 
-    return vecpoint_from(ip, cdu0, gimbal);
+    return (vecpoint_from(ip, cdu0, gimbal));
 }
 
 /* VECPNT1 (LM): as VECPOINT but from the desired CDUs given in cdu0.     */
@@ -282,17 +282,17 @@ agc_status_t agc_imu_vecpnt1(agc_interp_t *ip, const uint16_t cdu0[3],
 {
     if (!AGC_ASSERT(ip != NULL && cdu0 != NULL && gimbal != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_imu_set_pointvsm(pointvsm_in);
 
     if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return vecpoint_from(ip, cdu0, gimbal);
+    return (vecpoint_from(ip, cdu0, gimbal));
 }
 
 /* ======================================================================= */
@@ -307,7 +307,7 @@ agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
 {
     if (!AGC_ASSERT(ip != NULL && gimbal != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const uint16_t yzx[3] = {gimbal[1], gimbal[2], gimbal[0]}; /* CDUSPOT */
@@ -338,7 +338,7 @@ agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
         fdai[i] = out[i];
     }
 
-    return st;
+    return (st);
 }
 
 /* ISITAUTO: channel 31 bit 14; positive = not in auto, +0 = auto.       */
@@ -348,10 +348,10 @@ agc_sp_t agc_imu_isitauto(void)
 
     if (!AGC_ASSERT(v == 0u || v == 020000u))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) v;
+    return ((agc_sp_t) v);
 }
 
 /* G+N,AUTO: channel 30 bit 10 (not in G+N: positive), then ISITAUTO.    */
@@ -361,10 +361,10 @@ agc_sp_t agc_imu_gn_auto(void)
 
     if (!AGC_ASSERT(v == 0u || v == 01000u))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (v != 0u) ? (agc_sp_t) (v - 1u) : agc_imu_isitauto(); /* CCS A */
+    return ((v != 0u) ? (agc_sp_t) (v - 1u) : agc_imu_isitauto()); /* CCS A */
 }
 
 /* ======================================================================= */
@@ -377,7 +377,7 @@ static agc_status_t final_angles(void)
 {
     if (agc_flag_test(AGC_FLAG_3AXISFLG))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_interp_t ip;
@@ -393,10 +393,10 @@ static agc_status_t final_angles(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* LM: BALLANGS of CPHI, CTHETA, CPSI for noun 18.                        */
@@ -461,12 +461,12 @@ static agc_status_t toballa(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     chklinus(false);
 
-    return AGC_STATUS_OK; /* ENDOFJOB      */
+    return (AGC_STATUS_OK); /* ENDOFJOB      */
 }
 
 /* AUTOMANV / STARTMNV: static V06N18 during the maneuver, then GOMANUR;
@@ -478,12 +478,12 @@ static agc_status_t automanv(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     chklinus(true);
 
-    return agc_imu_gomanur(ctx, AGC_JOB_ENDMANUV);
+    return (agc_imu_gomanur(ctx, AGC_JOB_ENDMANUV));
 }
 
 /* Auto-mode test before the maneuver: CM "mode auto and control GNC"
@@ -492,7 +492,7 @@ static bool in_auto(void)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return agc_imu_gn_auto() == 0;
+        return (agc_imu_gn_auto() == 0);
     }
 
     uint16_t v =
@@ -500,10 +500,10 @@ static bool in_auto(void)
 
     if (!AGC_ASSERT(v <= 070000u))
     {
-        return false;
+        return (false);
     }
 
-    return v == 0u; /* BZF +2        */
+    return (v == 0u); /* BZF +2        */
 }
 
 /* R60CSM / R60LEM: attitude maneuver to the VECPOINT (or loaded CPHI..)
@@ -513,7 +513,7 @@ agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && ret_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     attitude_maneuver_return = ret_job; /* MAKECADR      */
@@ -521,12 +521,12 @@ agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     lm_ballangs();                      /* TOBALL (LM)   */
 
-    return toballa(ctx);
+    return (toballa(ctx));
 }
 
 /* REDOMANC (PROCEED): recompute, then maneuver if in auto, else ask again. */
@@ -534,24 +534,24 @@ agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = final_angles();
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     lm_ballangs(); /* TOBALLC (LM)  */
 
     if (!in_auto())
     {
-        return toballa(ctx); /* not auto      */
+        return (toballa(ctx)); /* not auto      */
     }
 
-    return automanv(ctx);
+    return (automanv(ctx));
 }
 
 /* ENDMANUV: maneuver finished; ask for the next one (TOBALL / TOBALLA).  */
@@ -559,15 +559,15 @@ agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(!agc_kalc_active()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return toballa(ctx);
+    return (toballa(ctx));
 }
 
 /* ENDMANU1: reset the 3-axis flag and return to the user (BANKJUMP).    */
@@ -577,29 +577,29 @@ static agc_status_t endmanu1(const agc_job_ctx_t *ctx)
 
     if (attitude_maneuver_return == AGC_JOB_NONE)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_job_ctx_t next = *ctx; /* same job      */
 
     next.id = attitude_maneuver_return;
 
-    return agc_dispatch_job(&next);
+    return (agc_dispatch_job(&next));
 }
 
 agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return endmanu1(ctx); /* ENTER         */
+    return (endmanu1(ctx)); /* ENTER         */
 }
 
 /* R61TEST (V34): in P00 (V49/V89) return to the user, who does ENDEXT;
@@ -608,20 +608,20 @@ agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_erase_modreg() == 0)
     {
-        return endmanu1(ctx);
+        return (endmanu1(ctx));
     }
 
     if (!agc_flag_test(AGC_FLAG_PDSPFLAG))
     {
-        return agc_exec_gotopooh();
+        return (agc_exec_gotopooh());
     }
 
-    return agc_rendz_goto_terminate_tracking();
+    return (agc_rendz_goto_terminate_tracking());
 }
 
 /* RELINUS (restart 1.7 CM / 2.13 LM): resume a priority R60 display.    */
@@ -629,7 +629,7 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
@@ -654,7 +654,7 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
             agc_phase_change(2, 040112);
         }
 
-        return AGC_STATUS_OK; /* ENDOFJOB      */
+        return (AGC_STATUS_OK); /* ENDOFJOB      */
     }
 
     agc_flag_set(AGC_FLAG_PDSPFLAG);
@@ -666,7 +666,7 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
         agc_exec_prio_change(PRIO14);
     }
 
-    return relinus_static ? automanv(ctx) : toballa(ctx); /* TC TBASE    */
+    return (relinus_static ? automanv(ctx) : toballa(ctx)); /* TC TBASE    */
 }
 
 /* ======================================================================= */
@@ -679,7 +679,7 @@ agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dsky_cont_t cont = {AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE,
@@ -690,10 +690,10 @@ agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* GOMOVE: set the 3-axis flag and do R60; ENDEXT afterwards.             */
@@ -701,26 +701,26 @@ agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_set(AGC_FLAG_3AXISFLG);
 
-    return agc_imu_attitude_maneuver(ctx,
-                                     AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE);
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE));
 }
 
 agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_endmark(); /* ENDEXT        */
+    return (agc_dsky_endmark()); /* ENDEXT        */
 }

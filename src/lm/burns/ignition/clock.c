@@ -27,7 +27,7 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
 
     if (!AGC_ASSERT(dt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int32_t hi  = (int32_t) agc_dp_high(dt) & LOW5; /* MASK LOW5              */
@@ -42,7 +42,7 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
     {
         agc_relint();
 
-        return sw;
+        return (sw);
     }
 
     agc_phase_var_t v = {AGC_RESTART_JOB, restart_job, AGC_TASK_NONE,
@@ -53,10 +53,10 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
 
     if (!AGC_ASSERT(rem >= 0 && rem < ONE_SEC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* STCLOK2 (p.743): DISPDEX = dispdex, STCLOK3, return to ret_job.         */
@@ -65,7 +65,7 @@ agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(dispdex <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_state()->lm.dispdex = dispdex;
@@ -73,10 +73,10 @@ agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_exec_job_yield(ret_job); /* CA TBASE4 / BANKJUMP   */
+    return (agc_exec_job_yield(ret_job)); /* CA TBASE4 / BANKJUMP   */
 }
 
 /* STCLOK1 (p.743): DISPDEX = 0 (clock running, nothing displayed), then
@@ -89,10 +89,10 @@ agc_status_t agc_lm_stclok1(void)
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ign_start_clock(AGC_JOB_COMFAIL);
+    return (ign_start_clock(AGC_JOB_COMFAIL));
 }
 
 /* CLOKTASK (p.744): TBASE6 for the 6.3 restart; DISPDEX positive kills the
@@ -106,22 +106,22 @@ agc_status_t agc_task_cloktask_lm(void)
     {
         agc_phase_kill(6);
 
-        return AGC_STATUS_OK; /* KILLCLOK               */
+        return (AGC_STATUS_OK); /* KILLCLOK               */
     }
 
     agc_status_t st = agc_exec_novac(AGC_PRIO27, AGC_JOB_CLOCKJOB);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_waitlist_fixdelay(ONE_SEC, AGC_TASK_CLOKTASK);
+    return (agc_waitlist_fixdelay(ONE_SEC, AGC_TASK_CLOKTASK));
 }
 
 /* -13 (p.745): V99Nxx "PLEASE ENABLE ENGINE", flashing (V99 pasted by
@@ -137,11 +137,11 @@ static agc_status_t engine_enable_display(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ign_table()->noun != 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
-                            agc_dsky_vn(99, ign_table()->noun), &c99);
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
+                             agc_dsky_vn(99, ign_table()->noun), &c99));
 }
 
 /* -35 (p.745): V97Nxx engine fail (NVWORD1 = -0 pastes V97).
@@ -154,8 +154,8 @@ static agc_status_t engine_fail_display(const agc_job_ctx_t *ctx)
 
     agc_dsky_set_nvword1((uint16_t) 077777U); /* CS ZERO                */
 
-    return agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
-                            agc_dsky_vn(97, ign_table()->noun), &c97);
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
+                             agc_dsky_vn(97, ign_table()->noun), &c97));
 }
 
 /* -25 (p.745): V06N61 by ASTNCLOK, used by the crew in P63 to set the
@@ -169,10 +169,10 @@ static agc_status_t event_timer_display(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == -IGN_ASTNDEX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61), &c61);
+    return (agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61), &c61));
 }
 
 /* CLOKJOB (p.744-746): TTOGO = TIME - TIG; DISPDEX >= 0: no display (a
@@ -182,7 +182,7 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_ttogo((agc_dp_t) agc_time_now_cs() - agc_erase_tig());
@@ -194,24 +194,24 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
     switch (-dispdex)
     {
         case IGN_VB97DEX:
-            return engine_fail_display(ctx);
+            return (engine_fail_display(ctx));
         case IGN_ASTNDEX:
-            return event_timer_display(ctx);
+            return (event_timer_display(ctx));
         case IGN_CNTDNDEX: /* ONE-SECOND COUNTDOWN   */
-            return agc_dsky_display(ctx, AGC_DSKY_REGODSP,
-                                    agc_dsky_vn(6, ign_table()->noun), NULL);
+            return (agc_dsky_display(ctx, AGC_DSKY_REGODSP,
+                                     agc_dsky_vn(6, ign_table()->noun), NULL));
         case IGN_VB99DEX:
-            return engine_enable_display(ctx);
+            return (engine_enable_display(ctx));
         case IGN_BLANKDEX: /* AVERAGE G IS STARTING  */
-            return agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0U, NULL);
+            return (agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0U, NULL));
         default:
 
             if (!AGC_ASSERT(dispdex >= 0)) /* DISPNOT / ENDOFJOB     */
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
     }
 }
 
@@ -239,13 +239,13 @@ agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_nullclok();
     agc_relint(); /* GOTOPOOH RELINTS       */
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }
 
 /* ASTNRETN (p.746): V06N61 PROCEED: 4.2 type C here, stop displaying but
@@ -254,7 +254,7 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED,
@@ -264,7 +264,7 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
     agc_phase_change_var((uint16_t) 004024, &v);
     agc_guid_state()->lm.dispdex = 0;
 
-    return agc_exec_findvac(AGC_PRIO13, AGC_JOB_ASTNRET);
+    return (agc_exec_findvac(AGC_PRIO13, AGC_JOB_ASTNRET));
 }
 
 /* *PROCEED / IGNITE (p.746-747): ASTNFLAG set; if TIG-0 has come
@@ -274,7 +274,7 @@ agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_set(AGC_FLAG_ASTNFLAG);
@@ -288,7 +288,7 @@ agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
         {
             agc_relint();
 
-            return st;
+            return (st);
         }
 
         agc_phase_newphase(4, (uint16_t) 023, false);
@@ -299,10 +299,10 @@ agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_ASTNFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GOPOST (p.746-747): POSTBURN at PRIO12 (below CLOKJOB), DAP set up for
@@ -313,7 +313,7 @@ static agc_status_t go_postburn(void)
 
     if (sw != AGC_STATUS_OK)
     {
-        return sw;
+        return (sw);
     }
 
     agc_inhint();
@@ -323,7 +323,7 @@ static agc_status_t go_postburn(void)
     {
         agc_relint();
 
-        return sj;
+        return (sj);
     }
 
     agc_lm_nullclok();
@@ -332,10 +332,10 @@ static agc_status_t go_postburn(void)
 
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GOCUTOFF (p.747): CUTOFF at PRIO17, guidance displays allowed, coasting
@@ -346,7 +346,7 @@ static agc_status_t go_cutoff(void)
 
     if (sw != AGC_STATUS_OK)
     {
-        return sw;
+        return (sw);
     }
 
     agc_flag_clear(AGC_FLAG_FLUNDISP);
@@ -357,7 +357,7 @@ static agc_status_t go_cutoff(void)
     {
         agc_relint();
 
-        return sj;
+        return (sj);
     }
 
     agc_lm_nullclok();
@@ -369,10 +369,10 @@ static agc_status_t go_cutoff(void)
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_FLUNDISP)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* *ENTER (p.746): V99 answered ENTER: entry (3) -- GOPOST (P40, P42),
@@ -381,19 +381,19 @@ agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     switch (ign_table()->enter)
     {
         case IGN_ENTER_GOPOST:
-            return go_postburn();
+            return (go_postburn());
         case IGN_ENTER_GOCUTOFF:
-            return go_cutoff();
+            return (go_cutoff());
         case IGN_ENTER_RECYCLE:
-            return engine_enable_display(ctx);
+            return (engine_enable_display(ctx));
         default:
-            return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
+            return (AGC_STATUS_BAD_ARG); /* unreachable: cannot happen */
     }
 }
 
@@ -404,7 +404,7 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t *g = agc_guid_state();
@@ -419,7 +419,7 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
@@ -427,12 +427,12 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(g->lm.dispdex < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change(4, (uint16_t) 000004);
 
-    return AGC_STATUS_OK; /* TURN OFF GROUP 4       */
+    return (AGC_STATUS_OK); /* TURN OFF GROUP 4       */
 }
 
 /* COMFAIL1 (p.742): V97 PROCEED (keep going without thrust): entry (2) --
@@ -442,7 +442,7 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
@@ -454,10 +454,10 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(lm->dispdex != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* COMFAIL2 (p.742-743): V97 ENTER (shut down and try again): ZOOM restart
@@ -470,7 +470,7 @@ agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change(3, (uint16_t) 000003);
@@ -495,10 +495,10 @@ agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* REP40ALM (p.748), (14): flash V05N09 (alarm 1706, program not consistent
@@ -507,7 +507,7 @@ agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_STAGE_ALARM_PROCEED,
@@ -515,10 +515,10 @@ agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(5, 9), &c);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(5, 9), &c));
 }
 
 /* REP40ALM PROCEED (p.748): entry (14): P42 may go on with the LM unstaged
@@ -527,17 +527,17 @@ agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_job_id_t next = ign_table()->alarm_proceed;
 
     if (!AGC_ASSERT(next != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_job_yield(next);
+    return (agc_exec_job_yield(next));
 }
 
 /* P40A/P (p.748): +0 from G+N,AUTO = PGNCS control and auto
@@ -557,7 +557,7 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx,
 
     if (ok)
     {
-        return agc_exec_job_yield(ret_job); /* GOBACK                 */
+        return (agc_exec_job_yield(ret_job)); /* GOBACK                 */
     }
 
     const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE,
@@ -565,10 +565,10 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx,
 
     if (!AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOPERF1, 00203U, &c); /* TURNITON */
+    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, 00203U, &c)); /* TURNITON */
 }
 
 /* P40AUTO (p.748): save the return (TEMPR60), then P40A/P.                */
@@ -577,12 +577,12 @@ agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_state()->lm.auto_control_recycle = ret_job;
 
-    return auto_control_check(ctx, ret_job);
+    return (auto_control_check(ctx, ret_job));
 }
 
 /* P40A/P recycle (PROCEED on V50N25): check again, same return.           */
@@ -590,8 +590,8 @@ agc_status_t agc_job_auto_control_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return auto_control_check(ctx, agc_guid_state()->lm.auto_control_recycle);
+    return (auto_control_check(ctx, agc_guid_state()->lm.auto_control_recycle));
 }

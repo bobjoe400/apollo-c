@@ -34,7 +34,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -55,7 +55,7 @@ static const double DEG = 1.0 / 360.0; /* revs per degree          */
 
 static double vnorm(const double v[3])
 {
-    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    return (sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
 }
 
 /* Flight path angle (deg, + above horizon) of the conic r1, v at radius r
@@ -69,7 +69,7 @@ static double fpa_at_radius(const double r1[3], const double v[3], double r)
     double vr = sqrt(2.0 * (en + MU / r));
     double c  = vnorm(h) / (r * vr);
 
-    return -acos(c > 1.0 ? 1.0 : c) * 180.0 / 3.14159265358979;
+    return (-acos(c > 1.0 ? 1.0 : c) * 180.0 / 3.14159265358979);
 }
 
 static void set_vec(agc_vec_t *out, const double v[3], int scale)
@@ -224,5 +224,5 @@ int main(void)
         "test_return_to_earth: %d checks, %d failures, %d assert reports\n",
         g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

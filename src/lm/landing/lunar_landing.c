@@ -69,15 +69,15 @@ static agc_status_t ll_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(proceed != AGC_JOB_NONE && enter != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, kind, vn, &cont);
+    return (agc_dsky_display(ctx, kind, vn, &cont));
 }
 
 /* ======================================================================
@@ -101,7 +101,7 @@ static agc_status_t ll_ignalg_start(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t r = agc_vec_zero();
@@ -110,7 +110,7 @@ static agc_status_t ll_ignalg_start(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     l->tpip = p->tland; /* TPIP for first guidance pass  */
@@ -121,10 +121,10 @@ static agc_status_t ll_ignalg_start(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return ll_ignalg_prec(ctx, &ip);
+    return (ll_ignalg_prec(ctx, &ip));
 }
 
 /* IGNALOOP (pp. 786-788) with DDUMCALC; on convergence DDUMGOOD/R60INIT
@@ -140,12 +140,12 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* asleep; resumes as IGNALGP    */
+        return (AGC_STATUS_OK); /* asleep; resumes as IGNALGP    */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     l->nignloop = LL_NIGNLOOP;
@@ -154,7 +154,7 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
     l->unfc_2   = agc_vec_zero();          /* trim velocity correction term */
     l->ttf_8    = 0;
 
-    return ll_ignaloop(ctx, false);
+    return (ll_ignaloop(ctx, false));
 }
 
 /* DDUMCALC (pp. 786-787): the ignition time correction
@@ -183,10 +183,10 @@ static agc_dp_t ll_ddum(agc_interp_t *ip)
 
     if (!AGC_ASSERT(den != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return q;
+    return (q);
 }
 
 /* DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
@@ -240,7 +240,7 @@ static agc_status_t ll_ign_guidance(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (l->nignloop > 0)
@@ -252,7 +252,7 @@ static agc_status_t ll_ign_guidance(agc_job_ctx_t *ctx, agc_interp_t *ip)
         agc_alarm(AGC_ALARM_01412); /* DEVIATION: NIGNLOOP stays 0 */
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
@@ -271,7 +271,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 
             if (st != AGC_STATUS_OK)
             {
-                return st;
+                return (st);
             }
 
             agc_dp_t ddum = ll_ddum(&ip);
@@ -282,7 +282,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
             {
                 ll_ddumgood(&ip, ic->tdec1);
 
-                return agc_lm_job_ignalgrt(ctx);
+                return (agc_lm_job_ignalgrt(ctx));
             }
         }
 
@@ -291,7 +291,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 
         if (st == AGC_STATUS_BUSY)
         {
-            return AGC_STATUS_OK; /* asleep; resumes IGNALOOP  */
+            return (AGC_STATUS_OK); /* asleep; resumes IGNALOOP  */
         }
 
         agc_flag_set(AGC_FLAG_INTYPFLG);
@@ -303,11 +303,11 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
-            return st;
+            return (st);
         }
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* DEVIATION: loop bound      */
+    return (AGC_STATUS_NO_CONVERGE); /* DEVIATION: loop bound      */
 }
 
 /* P63LM and FLAGORGY (p. 785): "Dionysian flag waving", then IGNALG. */
@@ -315,14 +315,14 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ll_restart_here(AGC_JOB_BRAKING_PHASE);
 
     if (agc_imu_status_check() != AGC_STATUS_OK)
     {
-        return AGC_STATUS_OK; /* R02 alarmed and went to P00 */
+        return (AGC_STATUS_OK); /* R02 alarmed and went to P00 */
     }
 
     agc_guid_lm_t *g = &agc_guid_state()->lm;
@@ -341,7 +341,7 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE); /* terminate P25 if running   */
     agc_flag_clear(AGC_FLAG_RNDVZFLG); /* terminate P20 if running   */
 
-    return ll_ignalg_start(ctx);
+    return (ll_ignalg_start(ctx));
 }
 
 /* LEMPREC was busy: try again (same job, resumed by INTWAKE). */
@@ -349,7 +349,7 @@ agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -358,10 +358,10 @@ agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchphase == AGC_LM_PHASE_IGNALG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_ignalg_prec(ctx, &ip);
+    return (ll_ignalg_prec(ctx, &ip));
 }
 
 /* INTSTALL was busy in IGNALOOP: continue with the integration. */
@@ -369,15 +369,15 @@ agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchphase == AGC_LM_PHASE_IGNALG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_ignaloop(ctx, true);
+    return (ll_ignaloop(ctx, true));
 }
 
 /* IGNALGRT / ASTNCLOK (p. 788): prevent repeating IGNALG; start the clock
@@ -386,7 +386,7 @@ agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ll_restart_here(AGC_JOB_IGNALGRT);
@@ -395,10 +395,10 @@ agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB    */
+    return (AGC_STATUS_OK); /* ENDOFJOB    */
 }
 
 /* ASTNRET (p. 788): pick up the display at the end of R51; PROCEED does a
@@ -407,7 +407,7 @@ agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram()->qmaj =
@@ -416,10 +416,10 @@ agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(
             agc_align_ram()->qmaj == AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_job_lm_fine_align_recheck(ctx); /* RTB R51P63  */
+    return (agc_job_lm_fine_align_recheck(ctx)); /* RTB R51P63  */
 }
 
 /* P63SPOT2 (pp. 788-789): KALCMANU set for the burn attitude (+X along
@@ -428,7 +428,7 @@ agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -440,7 +440,7 @@ agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -450,12 +450,13 @@ agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx)
     {
         agc_relint();
 
-        return sw;
+        return (sw);
     }
 
     agc_relint();
 
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK);
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK));
 }
 
 /* P63SPOT3 (p. 789): is the LR antenna in position 1 yet? If not, ask the
@@ -464,7 +465,7 @@ agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ll_restart_here(
@@ -472,13 +473,13 @@ agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx)
 
     if (agc_lm_chan_bit_present(AGC_CHAN_CHAN33, AGC_CH033_LRPOS1))
     {
-        return agc_lm_job_braking_phase_radar_init(ctx);
+        return (agc_lm_job_braking_phase_radar_init(ctx));
     }
 
-    return ll_display(
-        ctx, AGC_DSKY_GOPERF1, LL_CODE500,
-        AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK, /* PROCEED: see if he's lying */
-        AGC_JOB_BRAKING_PHASE_RADAR_INIT);   /* ENTER                      */
+    return (ll_display(
+                ctx, AGC_DSKY_GOPERF1, LL_CODE500,
+                AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK, /* PROCEED: see if he's lying */
+                AGC_JOB_BRAKING_PHASE_RADAR_INIT)); /* ENTER                      */
 }
 
 /* P63SPOT4 (p. 789): initialize the landing radar, off to see the wizard. */
@@ -486,17 +487,17 @@ agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_lm_setpos1();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_burnbaby(ctx);
+    return (agc_lm_burnbaby(ctx));
 }
 
 /* ======================================================================
@@ -600,7 +601,7 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
 {
     if (!AGC_ASSERT(ctx != NULL && entry != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_ldg_t *l = agc_lm_ldg();
@@ -611,21 +612,21 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
     {
         ll_start_manual_landing(); /* un-auto-throttle present  */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (agc_phase_checkmm(67))
     { /* P67NOW?                   */
         ll_start_rate_of_descent_landing();
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
     {
         *entry = AGC_LM_ENTRY_GUILDRET; /* STABL?: all's well        */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (agc_erase_modreg() == 66)
@@ -636,19 +637,19 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
             ll_vrtstart(0);
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (l->rodcount == 0)
     {
         *entry = AGC_LM_ENTRY_GUILDRET; /* ROD switch not clicked    */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     ll_start_rate_of_descent_landing(); /* switch into the ROD mode  */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ======================================================================
@@ -669,10 +670,10 @@ static agc_vec_t ll_redes1(agc_interp_t *ip, agc_vec_t w)
 
     if (!AGC_ASSERT(w.c[0] != 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return agc_vec_shl(ip, agc_vec_scale(ip, n, l->land_mag), 1);
+    return (agc_vec_shl(ip, agc_vec_scale(ip, n, l->land_mag), 1));
 }
 
 /* REDESIG (pp. 804-805): with REDFLAG set and TREDES not zero, move the
@@ -682,14 +683,14 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_ldg_t *l = agc_lm_ldg();
 
     if (!agc_flag_test(AGC_FLAG_REDFLAG) || l->tredes == 0)
     {
-        return agc_lm_rgvgcalc(ip); /* skip redesignation logic  */
+        return (agc_lm_rgvgcalc(ip)); /* skip redesignation logic  */
     }
 
     agc_inhint();
@@ -720,10 +721,10 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
 
     if (!AGC_ASSERT(sh >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_rgvgcalc(ip);
+    return (agc_lm_rgvgcalc(ip));
 }
 
 /* ======================================================================
@@ -745,10 +746,10 @@ static agc_status_t ll_vhorcomp(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (!AGC_ASSERT(agc_lm_ldg()->vhoriz >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_dispexit(ctx, false); /* avoid the PHASCHNG        */
+    return (agc_lm_dispexit(ctx, false)); /* avoid the PHASCHNG        */
 }
 
 /* RODCOMP first part (pp. 816-817): ROD clicks into VDGVERT, PIPA
@@ -791,10 +792,10 @@ static agc_vec_t ll_rod_pipas(void)
 
     if (!AGC_ASSERT(clicks >= -AGC_SP_MAX))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return m;
+    return (m);
 }
 
 /* RODCOMP velocity and altitude (pp. 817-818): V propagated to THISTPIP,
@@ -821,10 +822,10 @@ static agc_vec_t ll_rod_state(agc_interp_t *ip, agc_vec_t pip, agc_dp_t *dt)
 
     if (!AGC_ASSERT(*dt >= 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* RODCOMP acceleration command (pp. 818-819):
@@ -846,7 +847,7 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t xur = agc_vec_dot(ip, x, ur); /* 22D  */
@@ -872,10 +873,10 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
 
     if (!AGC_ASSERT(xur != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return meas;
+    return (meas);
 }
 
 /* RODCOMP (pp. 816-819): P66 rate-of-descent guidance, every second
@@ -894,15 +895,15 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(dt >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_vhorcomp(ctx, &ip, v);
+    return (ll_vhorcomp(ctx, &ip, v));
 }
 
 /* P66VERTA (p. 816): terminate group 3, RODTASK in one second, RODCOMP. */
@@ -910,7 +911,7 @@ agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change(3, 00003);
@@ -918,10 +919,10 @@ agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_rodcomp(ctx);
+    return (ll_rodcomp(ctx));
 }
 
 /* RODTASK (p. 816): FINDVAC RODCOMP at priority 22. */
@@ -931,15 +932,15 @@ agc_status_t agc_lm_task_rodtask(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchphase == AGC_LM_PHASE_VERTICAL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* TASKOVER     */
+    return (AGC_STATUS_OK); /* TASKOVER     */
 }
 
 /* RODCOMP as a job (from RODTASK). */
@@ -947,15 +948,15 @@ agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchvert == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_rodcomp(ctx);
+    return (ll_rodcomp(ctx));
 }
 
 /* P67VERT (p. 816): terminate group 3; VHORIZ from SERVICER's V. */
@@ -964,12 +965,12 @@ agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change(3, 00003);
 
-    return ll_vhorcomp(ctx, ip, agc_guid_state()->lm.v);
+    return (ll_vhorcomp(ctx, ip, agc_guid_state()->lm.v));
 }
 
 /* ======================================================================
@@ -983,12 +984,12 @@ static uint16_t ll_lpd_bits(void)
 
     if (!AGC_ASSERT((c & ~(unsigned) LL_ALL4BITS) == 0u))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     _Static_assert(LL_ALL4BITS == 063, "AGC constant");
 
-    return c;
+    return (c);
 }
 
 /* PITFALL (p. 820): RUPT10 from the hand controller. Only in P64: note
@@ -997,7 +998,7 @@ agc_status_t agc_lm_pitfall(void)
 {
     if (!agc_phase_checkmm(64))
     {
-        return AGC_STATUS_OK; /* RESUME       */
+        return (AGC_STATUS_OK); /* RESUME       */
     }
 
     agc_lm_ldg_t *l = agc_lm_ldg();
@@ -1008,15 +1009,15 @@ agc_status_t agc_lm_pitfall(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(l->elvira >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RESETRPT (p. 821): re-enable RUPT10 and end the monitor. */
@@ -1025,7 +1026,7 @@ static agc_status_t ll_resetrpt(void)
     agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A);
     _Static_assert(AGC_CH013_RSTTRAP31A == 04000, "AGC constant");
 
-    return AGC_STATUS_OK; /* TASKOVER     */
+    return (AGC_STATUS_OK); /* TASKOVER     */
 }
 
 /* COUNT'EM (p. 821): each released LPD click moves AZINCR1 by 2 degrees
@@ -1036,7 +1037,7 @@ static agc_status_t ll_countem(uint16_t bits)
 
     if (agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
     {
-        return ll_resetrpt();
+        return (ll_resetrpt());
     }
 
     if ((bits & LL_MINUSAZBIT) != 0u)
@@ -1061,10 +1062,10 @@ static agc_status_t ll_countem(uint16_t bits)
 
     if (!AGC_ASSERT(bits <= LL_ALL4BITS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_resetrpt();
+    return (ll_resetrpt());
 }
 
 /* REDESMON (pp. 820-821): every 70 ms while bits are present; count them
@@ -1078,27 +1079,27 @@ agc_status_t agc_lm_task_redesmon(void)
 
     if (l->elvira != 0)
     {
-        return agc_waitlist_call(7, AGC_TASK_REDESMON); /* PREMON2       */
+        return (agc_waitlist_call(7, AGC_TASK_REDESMON)); /* PREMON2       */
     }
 
     if (last != 0u)
     {
-        return ll_countem(last);
+        return (ll_countem(last));
     }
 
     if (l->zerlina > 0)
     {
         l->zerlina = (agc_sp_t) (l->zerlina - 1); /* PREMON1      */
 
-        return agc_waitlist_call(7, AGC_TASK_REDESMON);
+        return (agc_waitlist_call(7, AGC_TASK_REDESMON));
     }
 
     if (!AGC_ASSERT(l->zerlina == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_resetrpt();
+    return (ll_resetrpt());
 }
 
 /* DESCBITS (p. 822): from the MARKRUPT coding with channel 16 bit 7
@@ -1114,10 +1115,10 @@ agc_status_t agc_lm_descbits(void)
 
     if (!AGC_ASSERT((c16 & (AGC_CH016_DESCENTDN | AGC_CH016_DESCENTUP)) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* RESUME       */
+    return (AGC_STATUS_OK); /* RESUME       */
 }
 
 /* ======================================================================
@@ -1136,7 +1137,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     {
         agc_relint();
 
-        return sw;
+        return (sw);
     }
 
     agc_relint();
@@ -1149,7 +1150,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t         rn  = agc_erase_rn(); /* ALPHAV       */
@@ -1170,12 +1171,12 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_rls(rls);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* LANDJUNK job (P68). */
@@ -1183,7 +1184,7 @@ agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ll_restart_here(AGC_JOB_LANDJUNK);
@@ -1194,10 +1195,10 @@ agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_lm_job_landing_confirmation_flash(ctx);
+    return (agc_lm_job_landing_confirmation_flash(ctx));
 }
 
 /* V06N43 flash: "astronaut: now look where you ended up". */
@@ -1205,16 +1206,16 @@ agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_SURFFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ll_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 43),
-                      AGC_JOB_LANDJNK2, AGC_JOB_LANDJNKF);
+    return (ll_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 43),
+                       AGC_JOB_LANDJNK2, AGC_JOB_LANDJNKF));
 }
 
 /* After PROCEED (p. 792): GSAV and (using REFMF) YNBSAV, ZNBSAV and
@@ -1223,7 +1224,7 @@ agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -1234,8 +1235,8 @@ agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }

@@ -52,10 +52,10 @@ static agc_status_t tvcx_rollprep(void)
 
     if (!AGC_ASSERT(t->oganow <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP);
+    return (agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP));
 }
 
 /* VARGAINS, GAINCHNG (pp. 947-948): mass and gain updates while the
@@ -70,7 +70,7 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
     {
         t->tvcexphs = 2;
 
-        return TVCX_1SHOTCHK;
+        return (TVCX_1SHOTCHK);
     }
 
     if (t->vcntr > 0)
@@ -91,10 +91,10 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
 
     if (!AGC_ASSERT(t->vcntrtmp >= 0))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
-    return TVCX_EXECCOPY1;
+    return (TVCX_EXECCOPY1);
 }
 
 /* EXECCOPY +1 (p. 948): the copycycle of mass and gain counter.         */
@@ -104,7 +104,7 @@ static tvcx_step_t tvcx_execcopy(void)
 
     if (!AGC_ASSERT(t->tvcexphs == 1))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
     agc_erase_set_csmmass(t->masstmp);
@@ -115,10 +115,10 @@ static tvcx_step_t tvcx_execcopy(void)
 
     if (!AGC_ASSERT(t->vcntr >= 0))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
-    return TVCX_1SHOTCHK;
+    return (TVCX_1SHOTCHK);
 }
 
 /* 1SHOTCHK (p. 948): time for the one-shot or the repetitive correction. */
@@ -128,7 +128,7 @@ static tvcx_step_t tvcx_1shotchk(void)
 
     if (!AGC_ASSERT(t->cntr >= AGC_SP_MIN))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
     if (t->cntr > 0)
@@ -136,15 +136,15 @@ static tvcx_step_t tvcx_1shotchk(void)
         t->cntrtmp  = (agc_sp_t) (t->cntr - 1);
         t->tvcexphs = 6; /* entry at CNTRCOPY    */
 
-        return TVCX_CNTRCOPY;
+        return (TVCX_CNTRCOPY);
     }
 
     if (t->cntr < 0)
     {
-        return TVCX_REPCHEK; /* one-shot over        */
+        return (TVCX_REPCHEK); /* one-shot over        */
     }
 
-    return TVCX_1SHOTOK; /* now                  */
+    return (TVCX_1SHOTOK); /* now                  */
 }
 
 /* REPCHEK (p. 948): repetitive updates if REPFRAC is positive.           */
@@ -154,7 +154,7 @@ static tvcx_step_t tvcx_repchek(void)
 
     if (t->repfrac <= 0)
     {
-        return TVCX_FIN; /* over and out         */
+        return (TVCX_FIN); /* over and out         */
     }
 
     t->tempdap[1] = t->repfrac; /* correction fraction  */
@@ -162,10 +162,10 @@ static tvcx_step_t tvcx_repchek(void)
 
     if (!AGC_ASSERT(t->tempdap[1] > 0))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
-    return TVCX_CORSETUP;
+    return (TVCX_CORSETUP);
 }
 
 /* CORSETUP (p. 949): the correction fraction TEMPDAP is doubled for the
@@ -199,15 +199,15 @@ static agc_dp_t tvcx_cgcorr(agc_dp_t deloff, agc_dp_t delbar, agc_sp_t frac)
 
     if (!AGC_ASSERT(frac >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return csm_dap_das(deloff, agc_sp_mul(agc_dp_high(d), frac));
+    return (csm_dap_das(deloff, agc_sp_mul(agc_dp_high(d), frac)));
 }
 
 /* CORCOPY +1 (p. 950): trim estimates and trims, restart-protected.     */
@@ -285,10 +285,10 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
 
     if (!AGC_ASSERT((next >= TVCX_EXECCOPY1) && (next <= TVCX_FIN)))
     {
-        return TVCX_FIN;
+        return (TVCX_FIN);
     }
 
-    return next;
+    return (next);
 }
 
 /* Run the sequence from a restart point to TVCEXFIN (reset TVCEXPHS).    */
@@ -304,12 +304,12 @@ static agc_status_t tvcx_run(tvcx_step_t from)
 
     if (!AGC_ASSERT(s == TVCX_FIN))
     {
-        return AGC_STATUS_NO_CONVERGE;
+        return (AGC_STATUS_NO_CONVERGE);
     }
 
     t->tvcexphs = 0;      /* TVCEXFIN             */
 
-    return AGC_STATUS_OK; /* TASKOVER             */
+    return (AGC_STATUS_OK); /* TASKOVER             */
 }
 
 /* EXRSTRT targets (TVCRESTARTS p. 960): INDEX TVCEXPHS into TVCEXADR.    */
@@ -317,17 +317,17 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
 {
     if (!AGC_ASSERT((tvcexphs >= 1) && (tvcexphs <= 6)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = tvcx_run((tvcx_step_t) tvcexphs);
 
     if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* TVCEXEC (p. 946): waitlist task every 1/2 s, called by TVCINIT4 and by
@@ -336,7 +336,7 @@ agc_status_t agc_task_tvcexec(void)
 {
     if (!csm_tvc_dap_is_tvc())
     {
-        return tvcx_run(TVCX_FIN); /* TVCEXFIN: terminate  */
+        return (tvcx_run(TVCX_FIN)); /* TVCEXFIN: terminate  */
     }
 
     agc_status_t st   = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC);
@@ -348,13 +348,13 @@ agc_status_t agc_task_tvcexec(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((s2 != AGC_STATUS_OK) || (s3 != AGC_STATUS_OK))
     {
-        return (s2 != AGC_STATUS_OK) ? s2 : s3;
+        return ((s2 != AGC_STATUS_OK) ? s2 : s3);
     }
 
-    return (s4 != AGC_STATUS_OK) ? s4 : s5;
+    return ((s4 != AGC_STATUS_OK) ? s4 : s5);
 }

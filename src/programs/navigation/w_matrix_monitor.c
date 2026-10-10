@@ -44,10 +44,10 @@ static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b,
 
     if (!AGC_ASSERT(b >= 0 && b < AGC_INCORP_BLKS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return s;
+    return (s);
 }
 
 /* V67WW: under INTSTALL, the RMS values; an overflow anywhere makes them
@@ -58,7 +58,7 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_clear_ovf(ip); /* BOV +1   */
@@ -85,7 +85,7 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
         rz->range = WM_FT99999;
     }
 
-    return agc_integ_intwake();
+    return (agc_integ_intwake());
 }
 
 /* V67CALL: compute, (LM) keep the values, V06N99 (GOXDSPF): TERMINATE
@@ -94,7 +94,7 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rendz_t *rz = rz_state();
@@ -111,26 +111,27 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     wm_saved[0] = rz->range;
     wm_saved[1] = rz->rrate;
     wm_saved[2] = rz->rtheta;
 
-    return agc_job_w_matrix_monitor_display(ctx);
+    return (agc_job_w_matrix_monitor_display(ctx));
 }
 
 agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(
-        ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT, /* GOXDSPF */
-        AGC_JOB_W_MATRIX_MONITOR_PROCEED, AGC_JOB_W_MATRIX_MONITOR_DISPLAY);
+    return (rz_flash(
+                ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT, /* GOXDSPF */
+                AGC_JOB_W_MATRIX_MONITOR_PROCEED,
+                AGC_JOB_W_MATRIX_MONITOR_DISPLAY));
 }
 
 /* CM V06N9933 / V6N99INP: option 0 changes nothing; else the pad pair
@@ -191,7 +192,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rendz_t         *rz = rz_state();
@@ -204,7 +205,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
     {
         if (agc_dp_high(rz->rtheta) == 0)
         { /* BHIZ     */
-            return rz_endext();
+            return (rz_endext());
         }
 
         wm_load_csm(rz, p);
@@ -219,7 +220,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 
         if (!agc_flag_test(AGC_FLAG_W_MATRIX_OVERWRITE))
         {
-            return rz_endext();
+            return (rz_endext());
         }
 
         wm_load_lm(&ip, rz, p);
@@ -227,5 +228,5 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
 
-    return rz_endext();
+    return (rz_endext());
 }

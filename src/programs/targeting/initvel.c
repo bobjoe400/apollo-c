@@ -120,10 +120,10 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz,
 
     if (!AGC_ASSERT(x1 >= -8 && x1 <= 8))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_high(g);
+    return (agc_dp_high(g));
 }
 
 /* LAMBERT (CM) / SETITCTR (LM), p.489. "Arrived at solution is good
@@ -150,7 +150,7 @@ static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz,
     w->viprime    = w->lout.vvec;
     w->vtarget    = w->lout.vtarget;
 
-    return st;
+    return (st);
 }
 
 /* INITVEL5 (pp.489-490): precision integration of RINIT, VIPRIME over
@@ -176,7 +176,7 @@ static agc_status_t iv_integrate(agc_interp_t *ip, const agc_rendz_t *rz,
         *rend      = o.ratt1;
     }
 
-    return st;
+    return (st);
 }
 
 /* INITVEL7 .. INITVELX (pp.490-491): DELVEET3, VTPRIME, earth scale, LM
@@ -249,7 +249,7 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         w.itctr++; /* INCR ITCTR   */
@@ -268,7 +268,7 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit,
         iv_finish(ip, rz, &w);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- INITVEL (pp.487-491): SET GUESSW (no COGA guess available) ---------- */
@@ -278,10 +278,10 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return iv_run(ip, rz, numit, e4, true, resume);
+    return (iv_run(ip, rz, numit, e4, true, resume));
 }
 
 /* ---- HAVEGUES (p.487): INITVEL using the COGA of the previous Lambert
@@ -293,8 +293,8 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return iv_run(ip, rz, numit, e4, false, resume);
+    return (iv_run(ip, rz, numit, e4, false, resume));
 }

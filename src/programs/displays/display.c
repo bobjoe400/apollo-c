@@ -46,10 +46,10 @@ bool rz_active_vehicle_program(void)
 
     if (!AGC_ASSERT(mm >= 0))
     {
-        return false;
+        return (false);
     }
 
-    return mm < RZ_HIGH9_MODES;
+    return (mm < RZ_HIGH9_MODES);
 }
 
 /* Continue the running job at another entry (the AGC falls back into the
@@ -58,17 +58,17 @@ agc_status_t rz_continue(agc_job_id_t next)
 {
     if (!AGC_ASSERT(next != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_exec_job_yield(next);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- VNPOOH (p.484): CAF VNxxxx, TC VNPOOH ----------------------------
@@ -79,15 +79,15 @@ agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(next != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     vnpooh_slot.verb = verb; /* TS VERBNOUN  */
     vnpooh_slot.noun = noun;
     vnpooh_slot.next = next;
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_GOTOPOOH, next,
-                    AGC_JOB_RENDZ_VNPOOH);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_GOTOPOOH, next,
+                     AGC_JOB_RENDZ_VNPOOH));
 }
 
 /* VNPOOH "TC -5": ENTER on a VNPOOH display shows it again. */
@@ -95,15 +95,16 @@ agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vnpooh_slot.next != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_vnpooh(ctx, vnpooh_slot.verb, vnpooh_slot.noun, vnpooh_slot.next);
+    return (rz_vnpooh(ctx, vnpooh_slot.verb, vnpooh_slot.noun,
+                      vnpooh_slot.next));
 }
 
 /* ---- DISPLAYE (p.483): V06N55 (NN/ELEV/CENTANG), return = next -------- */
@@ -111,15 +112,15 @@ agc_status_t rz_displaye(const agc_job_ctx_t *ctx, agc_job_id_t next)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(next != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_vnpooh(ctx, 6U, 55U, next);
+    return (rz_vnpooh(ctx, 6U, 55U, next));
 }
 
 /* ---- TC ALARM / OCT code, CAF V05N09, GOFLASH (P32 ALMXIT, P33 and P34
@@ -130,18 +131,18 @@ agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = rz_alarm(code);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, proceed,
-                    recycle);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, proceed,
+                     recycle));
 }
 
 /* ---- VN1645 (p.481) -----------------------------------------------------
@@ -154,7 +155,7 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
         !AGC_ASSERT(resume_as != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->plus_mga = RZ_DP_MINUS_01; /* MGA = -.01 */
@@ -171,7 +172,7 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
             if (!AGC_ASSERT(st == AGC_STATUS_OK))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
         }
     }
@@ -181,13 +182,13 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->qsaved = resume_as; /* TS QSAVED      */
 
-    return rz_delayjob(RZ_1SEC_CS,
-                       AGC_JOB_RENDZ_TTOGO_DISPLAY); /* DELAYJOB 1SEC  */
+    return (rz_delayjob(RZ_1SEC_CS,
+                        AGC_JOB_RENDZ_TTOGO_DISPLAY)); /* DELAYJOB 1SEC  */
 }
 
 /* VN1645 after DELAYJOB: V16N45 (TRKMKCNT, TTOGO, +MGA) flashing. */
@@ -195,16 +196,16 @@ agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rz_state()->qsaved != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_RENDZ_KILCLOCK,
-                    AGC_JOB_RENDZ_TTOGO_PROCEED, AGC_JOB_RENDZ_CLUPDATE);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_RENDZ_KILCLOCK,
+                     AGC_JOB_RENDZ_TTOGO_PROCEED, AGC_JOB_RENDZ_CLUPDATE));
 }
 
 /* KILCLOCK (p.481): DISPDEX = 0 (stop the clock display), GOTOPOOH. */
@@ -212,7 +213,7 @@ agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_dispdex_zero();
@@ -220,10 +221,10 @@ agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CLUPDATE (p.482): DISPDEX = 0, PHASCHNG 04024, CLEAR UPDATFLG, return
@@ -232,14 +233,14 @@ agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_dispdex_zero();
     agc_phase_change(4, RZ_PHASE_04024);
     agc_flag_clear(AGC_FLAG_UPDATFLG);
 
-    return rz_continue(rz_state()->qsaved);
+    return (rz_continue(rz_state()->qsaved));
 }
 
 /* N45PROC (p.482): FINALFLG already set -> KILCLOCK (await a new
@@ -248,18 +249,18 @@ agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_FINALFLG))
     {
-        return agc_job_rendz_kilclock(ctx);
+        return (agc_job_rendz_kilclock(ctx));
     }
 
     agc_phase_change(4, RZ_PHASE_04024);
     agc_flag_set(AGC_FLAG_FINALFLG); /* UPFLAG     */
 
-    return agc_job_rendz_clupdate(ctx);
+    return (agc_job_rendz_clupdate(ctx));
 }
 
 /* ---- DISDVLVC (P32-P33 p.662) -------------------------------------------
@@ -272,7 +273,7 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
         !AGC_ASSERT(noun == 81U || noun == 82U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->delvlvc = dv; /* STORE      */
@@ -281,12 +282,12 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->delvlvc = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delvlvc), 1);
 
-    return rz_vnpooh(ctx, 6U, noun, next);
+    return (rz_vnpooh(ctx, 6U, noun, next));
 }
 
 /* ---- S34/35.5 (p.480) ---------------------------------------------------
@@ -299,7 +300,7 @@ agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
         !AGC_ASSERT(resume_as != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->normex = resume_as; /* STQ SUBEXIT  */
@@ -308,7 +309,7 @@ agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     {
         agc_flag_set(AGC_FLAG_UPDATFLG);
 
-        return rz_tpi_flagoff(ctx, ip, rz);
+        return (rz_tpi_flagoff(ctx, ip, rz));
     }
 
     if (rz_is_csm())
@@ -321,7 +322,7 @@ agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         rz->gdt_2 = rz->delvlvc;
     }
 
-    return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_RENDZ_FINAL_DV_CHECKED);
+    return (rz_vnpooh(ctx, 6U, 81U, AGC_JOB_RENDZ_FINAL_DV_CHECKED));
 }
 
 /* LM NTARGCHK: add the differences of the six words of DELVLVC and its
@@ -342,10 +343,10 @@ static bool rz_ntargchk(const agc_rendz_t *rz)
 
     if (!AGC_ASSERT(sum >= -(6 * 2 * 0x4000) && sum <= 6 * 2 * 0x4000))
     {
-        return false;
+        return (false);
     }
 
-    return sum != 0;
+    return (sum != 0);
 }
 
 /* S34/35.5 after PROCEED on V06N81: test for a crew overwrite of the
@@ -356,7 +357,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -387,14 +388,14 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return st; /* INTSTALL sleep: redo step */
+            return (st); /* INTSTALL sleep: redo step */
         }
     }
 
     agc_flag_clear(AGC_FLAG_XDELVFLG); /* NOCHG     */
     rz->delvsin = rz->delveet3;
 
-    return rz_tpi_flagoff(ctx, &ip, rz);
+    return (rz_tpi_flagoff(ctx, &ip, rz));
 }
 
 /* FLAGOFF: S34/35.4 (DVLOS from DELVEET3), V06N59, return to SUBEXIT. */
@@ -403,17 +404,17 @@ agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_rendz_tpi_los_delta_v(ip, rz);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_vnpooh(ctx, 6U, 59U, rz->normex);
+    return (rz_vnpooh(ctx, 6U, 59U, rz->normex));
 }
 
 /* VN1645 as a public entry (return to earth, guid-entry): the same as
@@ -424,8 +425,8 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_ttogo_display(ctx, ip, rz_state(), resume_as);
+    return (rz_ttogo_display(ctx, ip, rz_state(), resume_as));
 }

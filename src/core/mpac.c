@@ -14,7 +14,7 @@
 bool agc_w_ok(int32_t w)
 {
     /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return (w > -AGC_W_ONE) && (w < AGC_W_ONE);
+    return ((w > -AGC_W_ONE) && (w < AGC_W_ONE));
 }
 
 /* Split a DP value into the sign-agreeing word pair the AGC would hold.     */
@@ -32,25 +32,25 @@ agc_w2_t agc_w_split(agc_dp_t v)
 
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return p;
+    return (p);
 }
 
 agc_dp_t agc_w_join(agc_w2_t p)
 {
     if (!AGC_ASSERT(agc_w_ok(p.hi)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(p.lo)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) (p.hi * AGC_W_ONE + p.lo);
+    return ((agc_dp_t) (p.hi * AGC_W_ONE + p.lo));
 }
 
 agc_w3_t agc_w3_from_tp(agc_tp_t v)
@@ -68,25 +68,25 @@ agc_w3_t agc_w3_from_tp(agc_tp_t v)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return m;
+    return (m);
 }
 
 agc_tp_t agc_w3_value(agc_w3_t m)
 {
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(m.m2)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ((agc_tp_t) m.m0 * AGC_W_ONE + m.m1) * AGC_W_ONE + m.m2;
+    return (((agc_tp_t) m.m0 * AGC_W_ONE + m.m1) * AGC_W_ONE + m.m2);
 }
 
 agc_w2_t agc_w3_top(agc_w3_t m)
@@ -95,18 +95,18 @@ agc_w2_t agc_w3_top(agc_w3_t m)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(m.m1)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     p.hi = m.m0;
     p.lo = m.m1;
 
-    return p;
+    return (p);
 }
 
 /* ---- single instructions ------------------------------------------------ */
@@ -118,7 +118,7 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
 
     if (!AGC_ASSERT(agc_w_ok(a)) || !AGC_ASSERT(agc_w_ok(b)))
     {
-        return r;
+        return (r);
     }
 
     r.hi = (a * b) / AGC_W_ONE;
@@ -126,15 +126,15 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
-        return r;
+        return (r);
     }
 
     if (!AGC_ASSERT(agc_w_ok(r.lo)))
     {
-        return r;
+        return (r);
     }
 
-    return r;
+    return (r);
 }
 
 /* TS (or any store to erasable): overflow-correct a 16-bit accumulator
@@ -145,7 +145,7 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
 
     if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (a16 >= AGC_W_ONE)
@@ -164,7 +164,7 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
         *ovf = o;
     }
 
-    return a16;
+    return (a16);
 }
 
 /* DOUBLE; TS L: only the overflow indication TS leaves in A (+1/0/-1),
@@ -173,20 +173,20 @@ int agc_w_ovf(int32_t a16)
 {
     if (!AGC_ASSERT(a16 > -2 * AGC_W_ONE))
     {
-        return 0; /* below the 16-bit accumulator: no carry */
+        return (0); /* below the 16-bit accumulator: no carry */
     }
 
     if (!AGC_ASSERT(a16 < 2 * AGC_W_ONE))
     {
-        return 0; /* above the 16-bit accumulator: no carry */
+        return (0); /* above the 16-bit accumulator: no carry */
     }
 
     if (a16 >= AGC_W_ONE)
     {
-        return 1;
+        return (1);
     }
 
-    return (a16 <= -AGC_W_ONE) ? -1 : 0;
+    return ((a16 <= -AGC_W_ONE) ? -1 : 0);
 }
 
 /* DAS: (x.hi,x.lo) + (y.hi,y.lo); the minor sum carries into the major
@@ -200,7 +200,7 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
 
     if (!AGC_ASSERT(agc_w_ok(x.lo) && agc_w_ok(y.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
@@ -208,10 +208,10 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* DV: divide the DP accumulator (A,L) by k. The AGC first forces sign
@@ -224,7 +224,7 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
 
     if (!AGC_ASSERT(k != 0) || !AGC_ASSERT(agc_w_ok(l)))
     {
-        return r;
+        return (r);
     }
 
     r.hi = dividend / k;
@@ -232,10 +232,10 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
-        return r;
+        return (r);
     }
 
-    return r;
+    return (r);
 }
 
 agc_w2_t agc_w_dcs(agc_w2_t p)
@@ -244,18 +244,18 @@ agc_w2_t agc_w_dcs(agc_w2_t p)
 
     if (!AGC_ASSERT(agc_w_ok(p.hi)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(p.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     r.hi = -p.hi;
     r.lo = -p.lo;
 
-    return r;
+    return (r);
 }
 
 /* ---- interpreter subroutines -------------------------------------------- */
@@ -271,7 +271,7 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT((a == 1) || (a == -1)) || !AGC_ASSERT(ovfind != 0))
     {
-        return m;
+        return (m);
     }
 
     buf  = (a > 0) ? AGC_W_POSMAX : -AGC_W_POSMAX; /* CS LIMITS      */
@@ -285,10 +285,10 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(m.hi)))
     {
-        return m;
+        return (m);
     }
 
-    return m;
+    return (m);
 }
 
 /* DAD tail (ENDVXV): DAS MPAC, then OVERFLOW if A is non-zero.            */
@@ -299,7 +299,7 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(ovfind != 0))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (o != 0)
@@ -309,10 +309,10 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* DMPSUB (p.1136): MPAC x C(ADDRWD) -> TP. The minor x minor partial
@@ -325,12 +325,12 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
 
     if (!AGC_ASSERT(agc_w_ok(mpac.hi) && agc_w_ok(mpac.lo)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(x.lo)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     acc.hi = 0;                                           /* MPAC+1 := 0    */
@@ -345,7 +345,7 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
     m.m0   = acc.hi;
     m.m1   = acc.lo;
 
-    return m;
+    return (m);
 }
 
 /* ROUNDSUB / VROUND (p.1137): round MPAC+2 into MPAC,+1 (half away from
@@ -356,7 +356,7 @@ agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(m.m2)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     o    = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
@@ -364,7 +364,7 @@ agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
 
     if (o == 0)
     {
-        return m;
+        return (m);
     }
 
     m.m1 = agc_w_ts(m.m1 + o, &o);
@@ -379,7 +379,7 @@ agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
         }
     }
 
-    return m;
+    return (m);
 }
 
 /* DSQSUB (p.1183): square of the DP MPAC as a TP.                          */
@@ -392,7 +392,7 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
 
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     acc.hi    = 0;
@@ -411,10 +411,10 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
 
     if (!AGC_ASSERT(o == 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return m;
+    return (m);
 }
 
 /* Accumulate a second TP partial result into BUF (DOTSUB p.1138 middle):
@@ -428,7 +428,7 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     lo2    = agc_w_das(lo2, add, &o);
@@ -441,7 +441,7 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
         *ovfind = (agc_ovf_t) o;
     }
 
-    return buf;
+    return (buf);
 }
 
 /* ENDDOT (p.1138): final accumulation; overflow goes through OVERFLOW.    */
@@ -454,7 +454,7 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(ovfind != 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     lo2  = agc_w_das(lo2, add, &o);
@@ -471,10 +471,10 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return t;
+    return (t);
 }
 
 /* DOTSUB (p.1138): u . v as a TP, u in MPAC and v at ADDRWD.              */
@@ -485,7 +485,7 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(ovfind != 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
@@ -496,10 +496,10 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return t;
+    return (t);
 }
 
 /* VSQSUB (p.1183): v . v using DSQSUB for each component.                 */
@@ -510,7 +510,7 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(ovfind != 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     buf = agc_w_dsqsub(agc_w_split(v.c[0]));
@@ -521,10 +521,10 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return t;
+    return (t);
 }
 
 /* One TP shift left (TSSL p.1154, SQRTNORM p.1186, TSLCLOOP p.1157):
@@ -536,7 +536,7 @@ agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     lo2  = agc_w_das(lo2, lo2, &carry);
@@ -546,10 +546,10 @@ agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return m;
+    return (m);
 }
 
 /* POLY (p.1139-1140): Horner evaluation A(N) x^N + ... + A(0), x a DP pair
@@ -564,7 +564,7 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
 
     if (!AGC_ASSERT(coef != 0) || !AGC_ASSERT((degree >= 1) && (degree <= 15)))
     {
-        return m;
+        return (m);
     }
 
     top = agc_w_split(coef[degree]);
@@ -579,13 +579,13 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
 
     if (!AGC_ASSERT(k == -1))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m2)))
     {
-        return m;
+        return (m);
     }
 
-    return m;
+    return (m);
 }

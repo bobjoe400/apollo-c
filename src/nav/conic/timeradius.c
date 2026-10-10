@@ -20,12 +20,12 @@ static agc_vec_t timerad_ecc_vector(agc_interp_t *ip,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(ecc != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     agc_tp_t m =
@@ -43,7 +43,7 @@ static agc_vec_t timerad_ecc_vector(agc_interp_t *ip,
 
     e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4);         /* VSU VSL4   */
 
-    return agc_vec_unit(ip, e, ecc, NULL);                 /* UNIT       */
+    return (agc_vec_unit(ip, e, ecc, NULL));                 /* UNIT       */
 }
 
 /* TIMERAD from PDDL RDESIRED to CLEAR APSESW (p. 1301), with BADR2:
@@ -55,12 +55,12 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL && in != NULL))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(cosf != NULL && sinf != NULL))
     {
-        return false;
+        return (false);
     }
 
     int            n   = 0;
@@ -85,14 +85,14 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
             agc_conic_msign_(agc_conic_mload_(AGC_CONIC_LODPHALF), *cosf));
         *sinf = AGC_CONIC_KEPZERO;
 
-        return true;
+        return (true);
     }
 
     m = agc_conic_msign_sp_(agc_conic_msqrt_(ip, m),
                             in->sgnrdot);     /* SQRT SIGN */
     *sinf = agc_conic_mstore_(m);
 
-    return false;
+    return (false);
 }
 
 /* TERMNVEC (p. 1302): terminal unit vector, CSTH and SNTH of the transfer
@@ -135,14 +135,14 @@ static agc_status_t timerad_circular(agc_conic_ctx_t      *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, true);
     agc_conic_time_out_fill_(ctx, out);
     out->solnsw = true;
 
-    return agc_conic_abtconic_();
+    return (agc_conic_abtconic_());
 }
 
 /*
@@ -154,12 +154,12 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL && in->sgnrdot != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_conic_time_out_clear_(out);
@@ -168,7 +168,7 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
@@ -179,12 +179,12 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_interp_test_ovf(ip))
     { /* BOV COGAOVFL   */
-        return agc_conic_cogaovfl_(&ctx, out);
+        return (agc_conic_cogaovfl_(&ctx, out));
     }
 
     agc_dp_t        ecc  = 0;
@@ -192,7 +192,7 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 
     if (agc_interp_test_ovf(ip))
     { /* BOV CIRCULAR   */
-        return timerad_circular(&ctx, out);
+        return (timerad_circular(&ctx, out));
     }
 
     agc_dp_t   cosf   = 0;
@@ -206,7 +206,7 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* CLRGO SOLNSW */
@@ -214,5 +214,5 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     out->apsesw = apsesw;
     out->solnsw = false;
 
-    return st;
+    return (st);
 }

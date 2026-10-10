@@ -42,10 +42,10 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
 
     if ((w & CDU_SIGN_BIT) != 0U)
     {
-        return (agc_sp_t) ((int) w - 077777);
+        return ((agc_sp_t) ((int) w - 077777));
     }
 
-    return (agc_sp_t) w;
+    return ((agc_sp_t) w);
 }
 
 /* DMP / DMPSUB in basic code: TP product, high two words kept.          */
@@ -53,15 +53,15 @@ static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(a >= AGC_DP_MIN && a <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(b >= AGC_DP_MIN && b <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_tp_to_dp(agc_dp_mul_tp(a, b));
+    return (agc_tp_to_dp(agc_dp_mul_tp(a, b)));
 }
 
 /* DDOUBL: double a DP value (overflow saturates; the AGC's callers keep
@@ -73,10 +73,10 @@ static agc_dp_t ddoubl(agc_dp_t a)
 
     if (!AGC_ASSERT(ovf == 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 static agc_dp_t das(agc_dp_t a, agc_dp_t b)
@@ -86,10 +86,10 @@ static agc_dp_t das(agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT(ovf == 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -107,7 +107,7 @@ agc_dp_t agc_guid_cdulogic(uint16_t cdu)
         w -= CDU_FULL_SCALE; /* 2's complement negative angle */
     }
 
-    return (agc_dp_t) (w * 8192L); /* w / 2^15 rev at scale 2^0    */
+    return ((agc_dp_t) (w * 8192L)); /* w / 2^15 rev at scale 2^0    */
 }
 
 /* CD*TR*GS (POWERED_FLIGHT_SUBROUTINES, CM p.1366, LM p.1260): for the
@@ -293,13 +293,13 @@ agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_cdutrig(t);
     agc_guid_nbsm(t, v);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TRG*SMNB (CM p.1368, LM p.1262): CD*TR*GS on caller's angles (Y Z X),
@@ -325,13 +325,13 @@ agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_nbsm(t, v);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SMCDURES (Comanche p.1372): CDU increments from SM increments.
@@ -346,7 +346,7 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(t != NULL) ||
         !AGC_ASSERT(dcdu != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
@@ -364,7 +364,7 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
     a          = agc_dp_add(ip, agc_dp_mul(ip, dthetasm.c[2], cy), pd0);
     dcdu->c[2] = agc_dp_shl(ip, a, 1); /* STORE DCDU +4  */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).          */

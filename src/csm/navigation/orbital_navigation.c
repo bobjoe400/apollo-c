@@ -52,7 +52,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_flag_put(AGC_FLAG_RNDVZFLG, false);
@@ -60,7 +60,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_interp_t ip;
@@ -73,7 +73,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     agc_mat_t refsmmat = agc_erase_refsmmat();
@@ -84,7 +84,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
     rz_state()->plus_mga = agc_dp_acos(&ip, agc_dp_shl(&ip, c, 1));
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
 
-    return agc_job_orbital_navigation_orbit_display(ctx);
+    return (agc_job_orbital_navigation_orbit_display(ctx));
 }
 
 /* V06N45 (GOFLASHR, R1 R2 blanked): PROCEED: PROG22A.                    */
@@ -92,7 +92,7 @@ agc_status_t agc_job_orbital_navigation_orbit_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st =
@@ -102,10 +102,10 @@ agc_status_t agc_job_orbital_navigation_orbit_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_dsky_blanket(ON_BLANK_R1R2);
+    return (agc_dsky_blanket(ON_BLANK_R1R2));
 }
 
 /* PROG22A (point A): offset digit cleared; ERADFLAG; in the moon's sphere
@@ -115,7 +115,7 @@ agc_status_t agc_job_orbital_navigation_landmark(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t lm = agc_erase_landmark();
@@ -131,13 +131,13 @@ agc_status_t agc_job_orbital_navigation_landmark(agc_job_ctx_t *ctx)
         rz_flag_put(AGC_FLAG_LUNAFLAG, true);
         on.noun = 70U; /* S22N7071 */
 
-        return agc_job_orbital_navigation_code(ctx);
+        return (agc_job_orbital_navigation_code(ctx));
     }
 
     rz_flag_put(AGC_FLAG_LUNAFLAG, false); /* PROG22B  */
     rz_flag_put(AGC_FLAG_KNOWNFLG, true);
 
-    return agc_job_orbital_navigation_landing_site(ctx); /* P22SUBRB */
+    return (agc_job_orbital_navigation_landing_site(ctx)); /* P22SUBRB */
 }
 
 /* S22DSPPA: V05N70 or V05N71 (GOFLASHR, R1 R3 blanked); PROCEED checks
@@ -146,7 +146,7 @@ agc_status_t agc_job_orbital_navigation_code(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = rz_flash(
@@ -155,10 +155,10 @@ agc_status_t agc_job_orbital_navigation_code(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_dsky_blanket(ON_BLANK_R1R3);
+    return (agc_dsky_blanket(ON_BLANK_R1R3));
 }
 
 /* S22DSPP: operator error light and the code display again.             */
@@ -166,7 +166,7 @@ static agc_status_t on_code_error(agc_job_ctx_t *ctx)
 {
     agc_dsky_falton();
 
-    return agc_job_orbital_navigation_code(ctx);
+    return (agc_job_orbital_navigation_code(ctx));
 }
 
 /* S22LSITE: the landing site RLS (moon fixed) in reference axes now
@@ -195,7 +195,7 @@ static agc_status_t on_site_from_rls(void)
         st = agc_latlong_from_r(&ip, &pad, opt, agc_vec_shr(r, 2), t, &ll);
     }
 
-    return (st == AGC_STATUS_OK) ? agc_navaux_set_latlong(&ll) : st;
+    return ((st == AGC_STATUS_OK) ? agc_navaux_set_latlong(&ll) : st);
 }
 
 /* S22ABDE: unknown landmark: done; known: DE = 00 coordinates from noun
@@ -204,17 +204,17 @@ static agc_status_t on_abde(agc_job_ctx_t *ctx, uint16_t de)
 {
     if (!agc_flag_test(AGC_FLAG_KNOWNFLG))
     {
-        return rz_continue(on.ret);
+        return (rz_continue(on.ret));
     }
 
     if (de == 0U)
     {
-        return agc_job_orbital_navigation_landing_site(ctx); /* OBTAINLL */
+        return (agc_job_orbital_navigation_landing_site(ctx)); /* OBTAINLL */
     }
 
     agc_status_t st = on_site_from_rls();
 
-    return (st != AGC_STATUS_OK) ? st : rz_continue(on.ret);
+    return ((st != AGC_STATUS_OK) ? st : rz_continue(on.ret));
 }
 
 /* PROCEED on the code (p.568): B (offset) 0-5; A = 1 known (DE 00 or 01,
@@ -224,7 +224,7 @@ agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t lm    = rz_word_of(agc_erase_landmark());
@@ -234,7 +234,7 @@ agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
 
     if (cxoff > ON_PRIO5)
     {
-        return on_code_error(ctx);
+        return (on_code_error(ctx));
     }
 
     rz_flag_put(AGC_FLAG_KNOWNFLG, false);
@@ -242,12 +242,12 @@ agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
 
     if (a == ON_A_UNKNOWN)
     {
-        return on_abde(ctx, 0U);
+        return (on_abde(ctx, 0U));
     }
 
     if (a != ON_A_KNOWN)
     {
-        return on_code_error(ctx); /* A = 0, 3 .. 7    */
+        return (on_code_error(ctx)); /* A = 0, 3 .. 7    */
     }
 
     rz_flag_put(AGC_FLAG_KNOWNFLG, true);
@@ -255,15 +255,15 @@ agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
 
     if (de <= 1U)
     {
-        return on_abde(ctx, de);
+        return (on_abde(ctx, de));
     }
 
     if (on.noun != 70U || (de & ON_D_MASK) != ON_D_ADV_ORBIT)
     {
-        return on_code_error(ctx);
+        return (on_code_error(ctx));
     }
 
-    return agc_job_orbital_navigation_advanced_optics(ctx); /* DE-GR-50 */
+    return (agc_job_orbital_navigation_advanced_optics(ctx)); /* DE-GR-50 */
 }
 
 /* P22SUBRB: V06N89 for the landmark coordinates (LAT, LONG/2, ALT).     */
@@ -271,12 +271,12 @@ agc_status_t agc_job_orbital_navigation_landing_site(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 89U, AGC_JOB_GOTOPOOH,
-                    AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK,
-                    AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 89U, AGC_JOB_GOTOPOOH,
+                     AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK,
+                     AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE));
 }
 
 /* PROCEED on V06N89: LAT or LONG/2 beyond 90 degrees is an operator
@@ -285,7 +285,7 @@ agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_align_ram_t *a = agc_align_ram();
@@ -296,14 +296,14 @@ agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx)
         agc_dsky_falton();
         agc_status_t st = AGC_STATUS_OK;
 
-        return (st != AGC_STATUS_OK) ?
-               st :
-               agc_job_orbital_navigation_landing_site(ctx);
+        return ((st != AGC_STATUS_OK) ?
+                st :
+                agc_job_orbital_navigation_landing_site(ctx));
     }
 
     agc_status_t st = agc_rendz_llasrda();
 
-    return (st != AGC_STATUS_OK) ? st : rz_continue(on.ret);
+    return ((st != AGC_STATUS_OK) ? st : rz_continue(on.ret));
 }
 
 /* CALLR52 / DE-GR-50: restart at priority 13; five marks wanted; the
@@ -320,32 +320,32 @@ static agc_status_t on_optics(const agc_job_ctx_t *ctx, bool advanced)
 
     if (advanced)
     {
-        return agc_csm_auto_optics_advanced_orbit(
-            ctx, AGC_JOB_ORBITAL_NAVIGATION_MARKED);
+        return (agc_csm_auto_optics_advanced_orbit(
+                    ctx, AGC_JOB_ORBITAL_NAVIGATION_MARKED));
     }
 
-    return agc_csm_auto_optics_positioning(ctx,
-                                           AGC_JOB_ORBITAL_NAVIGATION_MARKED);
+    return (agc_csm_auto_optics_positioning(ctx,
+                                            AGC_JOB_ORBITAL_NAVIGATION_MARKED));
 }
 
 agc_status_t agc_job_orbital_navigation_optics(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return on_optics(ctx, false);
+    return (on_optics(ctx, false));
 }
 
 agc_status_t agc_job_orbital_navigation_advanced_optics(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return on_optics(ctx, true);
+    return (on_optics(ctx, true));
 }
 
 /* DOV5N71: the landmark code again on noun 71, then PROG22C.            */
@@ -353,13 +353,13 @@ agc_status_t agc_job_orbital_navigation_marked(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     on.noun = 71U;
     on.ret  = AGC_JOB_ORBITAL_NAVIGATION_PROCESS;
 
-    return agc_job_orbital_navigation_code(ctx);
+    return (agc_job_orbital_navigation_code(ctx));
 }
 
 /* PROG22C: 8NN = the marks taken; S22.1, then P22OVER.                  */
@@ -367,11 +367,11 @@ agc_status_t agc_job_orbital_navigation_process(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_landmark_marks_start(agc_sxtmark_marks_made(),
-                                   AGC_JOB_ORBITAL_NAVIGATION_OVER);
+    return (rz_landmark_marks_start(agc_sxtmark_marks_made(),
+                                    AGC_JOB_ORBITAL_NAVIGATION_OVER));
 }
 
 /* P22OVER: back to point A.                                              */
@@ -379,12 +379,12 @@ agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_phase(2, 04022);
 
-    return agc_job_orbital_navigation_landmark(ctx);
+    return (agc_job_orbital_navigation_landmark(ctx));
 }
 
 /* P22SUBRB for other programs (P23): noun 89, the caller continues as
@@ -393,10 +393,10 @@ agc_status_t rz_landing_site_display(agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     on.ret = ret;
 
-    return agc_job_orbital_navigation_landing_site(ctx);
+    return (agc_job_orbital_navigation_landing_site(ctx));
 }

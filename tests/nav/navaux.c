@@ -27,7 +27,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c)              check((c), __LINE__, #c)
@@ -65,14 +65,14 @@ static const double TFF_RTMU = 0.5005750271e-5;
 
 static agc_vec_t vec_m(double x, double y, double z, int scale)
 {
-    return agc_vec_make(agc_dp_from_double(x, scale),
-                        agc_dp_from_double(y, scale),
-                        agc_dp_from_double(z, scale));
+    return (agc_vec_make(agc_dp_from_double(x, scale),
+                         agc_dp_from_double(y, scale),
+                         agc_dp_from_double(z, scale)));
 }
 
 static double vec_comp(agc_vec_t v, int i, int scale)
 {
-    return agc_dp_to_double(v.c[i], scale);
+    return (agc_dp_to_double(v.c[i], scale));
 }
 
 static double rev_wrap(double x)
@@ -88,7 +88,7 @@ static double rev_wrap(double x)
         r += 1.0;
     }
 
-    return r;
+    return (r);
 }
 
 static agc_navaux_padload_t zero_pad(void)
@@ -99,7 +99,7 @@ static agc_navaux_padload_t zero_pad(void)
     pad.lm504  = agc_vec_zero();
     pad.rls    = agc_vec_zero();
 
-    return pad;
+    return (pad);
 }
 
 /* Equatorial point, inertial +Y at 6 h after the epoch, pad radius ERAD. */
@@ -200,7 +200,7 @@ static agc_tff_t tff_state(double r, double v)
     tff.vone = vec_m(0.0, v, 0.0, 7);
     tff.rtmu = agc_dp_from_double(TFF_RTMU, -17);
 
-    return tff;
+    return (tff);
 }
 
 /* Circular orbit: RP = RA = r; no conic reaches a lower RTERM (MAXTFF1). */
@@ -426,5 +426,5 @@ int main(void)
     (void) printf("test_navaux: %d checks, %d failures\n", g_checks,
                   g_failures);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

@@ -33,37 +33,38 @@ static agc_sp_t spsstart(const lm_dap_t *d)
 
     if (!AGC_ASSERT(d->dkdb >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (outer > 0)
     {
-        return (agc_sp_t) -SR_HALF; /* NEGTHRST           */
+        return ((agc_sp_t) -SR_HALF); /* NEGTHRST           */
     }
 
     if (outer < 0)
     {
-        return SR_HALF; /* POSTHRST           */
+        return (SR_HALF); /* POSTHRST           */
     }
 
     agc_sp_t ez = lm_dap_mphi(lm_dap_wrap((int32_t) d->edot + d->e), d->dkdb);
 
     if (ez == 0)
     {
-        return 0; /* TJZERO: coast zone */
+        return (0); /* TJZERO: coast zone */
     }
 
     if (ez > 0)
     {
-        return ((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF;
+        return (((int32_t) d->edot + SR_RATELIM2 <=
+                 0) ? 0 : (agc_sp_t) -SR_HALF);
     }
 
     if (!AGC_ASSERT(ez < 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0;
+    return (((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0);
 }
 
 /* POSTHRST +3 .. ZAPTJ (pp.1508-1509): compare the new command with the old
@@ -111,7 +112,7 @@ agc_status_t lm_dap_spsrcs(void)
 
     if (!AGC_ASSERT(d->axisctr >= -1 && d->axisctr <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int      i           = d->axisctr + 1;
@@ -136,8 +137,8 @@ agc_status_t lm_dap_spsrcs(void)
 
     if (!AGC_ASSERT(d->tj[i] >= -SR_HALF && d->tj[i] <= SR_HALF))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

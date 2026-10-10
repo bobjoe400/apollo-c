@@ -23,12 +23,12 @@ agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_tracking_flags_on();
 
-    return rz_vnpooh(ctx, 6U, 33U, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE);
+    return (rz_vnpooh(ctx, 6U, 33U, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE));
 }
 
 /* HPER, HAPO of the post-burn state (RTIG, VIPRIME): PERIAPO1, SHIFTR1,
@@ -41,7 +41,7 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_burn_t *b = &agc_guid_state()->burn;
@@ -51,10 +51,10 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 
     if (!AGC_ASSERT(b->hper <= RZ_MAXNM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* After V06N33 (pp.652-653): CLEAR UPDATFLG; LM state to TIG (LEMPREC):
@@ -66,7 +66,7 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -82,7 +82,7 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rtig   = o.ratt;
@@ -100,7 +100,7 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->delvsin                   = rz->delveet3;
@@ -116,10 +116,10 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_LAMBERT_AIMPOINT_APSIDES);
+    return (rz_vnpooh(ctx, 6U, 81U, AGC_JOB_LAMBERT_AIMPOINT_APSIDES));
 }
 
 /* After V06N81: V06N42 (HAPO, HPER, VGDISP). */
@@ -127,10 +127,10 @@ agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_vnpooh(ctx, 6U, 42U, AGC_JOB_LAMBERT_AIMPOINT_TTOGO);
+    return (rz_vnpooh(ctx, 6U, 42U, AGC_JOB_LAMBERT_AIMPOINT_TTOGO));
 }
 
 /* REVN1645 (p.653): SET FINALFLG, VN1645 (TRKMKCNT, TTOGO, +MGA), and
@@ -139,7 +139,7 @@ agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -147,6 +147,6 @@ agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_flag_set(AGC_FLAG_FINALFLG);
 
-    return rz_ttogo_display(ctx, &ip, rz_state(),
-                            AGC_JOB_LAMBERT_AIMPOINT_TTOGO);
+    return (rz_ttogo_display(ctx, &ip, rz_state(),
+                             AGC_JOB_LAMBERT_AIMPOINT_TTOGO));
 }

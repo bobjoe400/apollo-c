@@ -68,19 +68,19 @@ agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r,
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
         !AGC_ASSERT((ic != NULL) && (resume != AGC_JOB_NONE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(tdec1 != tet)) /* a real step   */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_integ_install(0, resume); /* INTSTALL      */
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (conic)
@@ -100,7 +100,7 @@ agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rs->r_t2v = ic->out.ratt; /* R(T2)/        */
@@ -112,7 +112,7 @@ agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r,
         rs->conic_t = ic->sv.tc; /* T (30D)       */
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* PREC120 (p. 908): DT21PR = POSMAX, NN2 = -15, next integration RTENCK3. */
@@ -138,7 +138,7 @@ agc_status_t rte_precision_start(rte_erasable_t *rs)
 {
     if (!AGC_ASSERT(rs != NULL) || !AGC_ASSERT(rs->rcon > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->nn1a       = RTE_PREC_OUTER; /* 10RTE         */
@@ -146,7 +146,7 @@ agc_status_t rte_precision_start(rte_erasable_t *rs)
     rs->prec_steps = 0;
     prec_restart_inner(rs);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* PREC140 .. PREC162 (p. 909): BETA4 (B1), the ratio of the new radius to
@@ -161,24 +161,24 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(rs != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (rs->nn1a == 0)
     { /* PREC162       */
         agc_dp_t rn = agc_dp_norm(rs->rpre, &n1);
 
-        return agc_dp_shl(ip, agc_dp_div(ip, rs->rd, rn), n1 - 1);
+        return (agc_dp_shl(ip, agc_dp_div(ip, rs->rd, rn), n1 - 1));
     }
 
     if (!AGC_ASSERT(rs->beta1 > 0)) /* 1 + X(T2)^2   */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_tp_t t     = agc_dp_mul_tp(agc_dp_shl(ip, rs->p_rpre, 2), rs->beta1);
@@ -192,7 +192,7 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
     { /* PREC160       */
         agc_dp_t rn = agc_dp_norm(rs->r_apre, &n1);
 
-        return agc_dp_shl(ip, agc_dp_div(ip, ONE_B1, rn), n1 - 6);
+        return (agc_dp_shl(ip, agc_dp_div(ip, ONE_B1, rn), n1 - 6));
     }
 
     agc_dp_t s   = agc_dp_sqrt(ip, agc_dp_shl(ip, beta3, 2)); /* PREC155 B1    */
@@ -200,7 +200,7 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
 
     den = agc_dp_norm(den, &n1); /* NORM X1       */
 
-    return agc_dp_shl(ip, agc_dp_div(ip, agc_dp_shr(beta2, 1), den), n1 - 1);
+    return (agc_dp_shl(ip, agc_dp_div(ip, agc_dp_shr(beta2, 1), den), n1 - 1));
 }
 
 /* PREC170 .. PREC174 (pp. 910-911): time DT21 from R(T2)/ to the new
@@ -215,7 +215,7 @@ static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rf > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->nn2 += 1; /* PREC170       */
@@ -231,14 +231,14 @@ static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rs->conic_t = out.t;
 
     if (!AGC_ASSERT(rs->dt21pr != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t dt21   = agc_dp_sign(out.t, rs->beta12); /* PHI4 DT21     */
@@ -256,7 +256,7 @@ static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
     rs->dt21pr    = dt21;
     rs->prec_step = RTE_PREC_TIME_STEP; /* RTENCK2       */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* PREC130 .. PREC168 (pp. 909-910): the desired reentry angle was not
@@ -265,14 +265,14 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->rpre > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rs->nn2 >= 0)
     { /* PREC132       */
         rs->alarm_code = RTE_ALARM_ITERATIONS;
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     agc_dp_t beta4 = prec_radius_ratio(ip, rs);             /* PREC140       */
@@ -286,13 +286,13 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (agc_dp_sub(ip, agc_dp_abs(rs->beta12), EPC6RTE) < 0)
     { /* PREC168       */
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     agc_tp_t rf =
         agc_tp_shift(ip, agc_dp_mul_tp(beta4, rs->rpre), 1); /* RF B29 */
 
-    return prec_time_step(ip, rs, agc_tp_to_dp(rf));
+    return (prec_time_step(ip, rs, agc_tp_to_dp(rf)));
 }
 
 /* PREC205 .. PREC207 (pp. 911-912): new RCON. First pass RD^2/RPRE; then
@@ -350,7 +350,7 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->rd > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t rerr = agc_dp_sub(ip, rs->rpre, rs->rd); /* RERR          */
@@ -361,24 +361,24 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
 
         if (agc_dp_sub(ip, e, EPC8RTE) < 0)
         {
-            return AGC_STATUS_NOT_FOUND; /* PREC225       */
+            return (AGC_STATUS_NOT_FOUND); /* PREC225       */
         }
 
         rs->alarm_code = RTE_ALARM_ENTRY_ANGLE; /* OCT613        */
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     if (rs->nn1a == 0)
     { /* PREC132       */
         rs->alarm_code = RTE_ALARM_ITERATIONS;
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     if (!AGC_ASSERT(rs->nn1a <= RTE_PREC_OUTER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     prec_new_rcon(ip, rs, rerr);
@@ -391,7 +391,7 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
         prec_restart_inner(rs); /* BHIZ PREC120  */
     }
 
-    return st;
+    return (st);
 }
 
 /* PREC125 (p. 908) after each integration: PARAM on R(T2)/, V(T2)/ ->
@@ -402,7 +402,7 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st =
@@ -410,12 +410,12 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!AGC_ASSERT(po.r1 > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->p_rpre  = po.p;
@@ -432,11 +432,11 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 
         if (st != AGC_STATUS_NOT_FOUND)
         {
-            return st;
+            return (st);
         }
     }
 
-    return prec_radius_check(ip, rs); /* PREC175       */
+    return (prec_radius_check(ip, rs)); /* PREC175       */
 }
 
 /* PREC120 .. PRECX (pp. 908-913): run the precision iteration from the
@@ -449,7 +449,7 @@ agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     while (rs->prec_steps < RTE_PREC_MAX_STEPS)
@@ -471,7 +471,7 @@ agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (st != AGC_STATUS_OK)
         {
-            return st; /* BUSY: sleep   */
+            return (st); /* BUSY: sleep   */
         }
 
         rs->prec_steps += 1;
@@ -479,12 +479,12 @@ agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (st != AGC_STATUS_OK)
         {
-            return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+            return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
         }
     }
 
     rs->alarm_code =
         RTE_ALARM_ITERATIONS; /* cannot happen: NN1A, NN2 bound it */
 
-    return AGC_STATUS_ALARM;
+    return (AGC_STATUS_ALARM);
 }

@@ -51,7 +51,7 @@ static bool vec_ok(agc_vec_t v)
         ok = ok && v.c[i] >= AGC_DP_MIN && v.c[i] <= AGC_DP_MAX;
     }
 
-    return ok;
+    return (ok);
 }
 
 /* BOVB SIGNMPAC: on overflow replace MPAC by DPPOSMAX with its sign.     */
@@ -59,7 +59,7 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (agc_interp_test_ovf(ip))
@@ -69,10 +69,10 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
 
     if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* CDUTODCM (ANGLFIND p.405-407): S/C to SM direction cosines from the CDU
@@ -82,7 +82,7 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
 {
     if (!AGC_ASSERT(ip != NULL && cdu != NULL && m != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t s[3];
@@ -92,7 +92,7 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
     { /* LOOPSIN: X, Y, Z    */
         if (!AGC_ASSERT(cdu[i] <= CDU_MASK))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         agc_dp_t a = agc_rtb_cdulogic(cdu[i]);
@@ -125,7 +125,7 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
     m->row[2].c[2] =
         agc_dp_shl(ip, agc_dp_sub(ip, agc_dp_mul(ip, cth, cph), t), 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Quadrant correction of DCMTOCDU: when the cosine term is negative the
@@ -134,12 +134,12 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (costerm >= 0)
     {
-        return ang; /* OKTHETA / OKPHI    */
+        return (ang); /* OKTHETA / OKPHI    */
     }
 
     agc_dp_t n = agc_dp_neg(ang);
@@ -148,10 +148,10 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
 
     if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* DCMTOCDU (ANGLFIND p.409-410): CDU angles (revolutions) from an S/C to
@@ -162,12 +162,12 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
     if (!AGC_ASSERT(ip != NULL && m != NULL && angles != NULL &&
                     cos_mga != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vec_ok(m->row[1]) && vec_ok(m->row[2])))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);  /* C3       */
@@ -183,7 +183,7 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
     *angles  = agc_vec_make(phi, theta, psi);       /* VECOFANG */
     *cos_mga = cpsi;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* One diagonal element of DEL: u u (1 - cos A) + cos A, scale 1.         */
@@ -194,7 +194,7 @@ static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2,
 
     d = agc_dp_shl(ip, agc_dp_add(ip, d, cos8), 3); /* SL3      */
 
-    return bovb_signmpac(ip, d);
+    return (bovb_signmpac(ip, d));
 }
 
 /* A pair of off-diagonal elements: (ui uj (1-cos A) +- uk sin A), scale 1. */
@@ -222,12 +222,12 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a,
 {
     if (!AGC_ASSERT(ip != NULL && del != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vec_ok(u) && a >= AGC_DP_MIN && a <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t sin2 = agc_dp_sin(ip, a); /* PD0 $2   */
@@ -251,7 +251,7 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a,
     del->row[2].c[1] = pr[0]; /* DEL +14D */
     del->row[1].c[2] = pr[1]; /* DEL +10D */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ALTCALC (p.400-401): for AM > 170 deg the axis comes from the
@@ -280,10 +280,10 @@ static agc_vec_t altcalc(agc_interp_t *ip, const agc_kalc_setup_t *k,
 
     if (!AGC_ASSERT(pd2 >= 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return agc_vec_unit(ip, agc_vec_make(cof[0], cof[1], cof[2]), NULL, NULL);
+    return (agc_vec_unit(ip, agc_vec_make(cof[0], cof[1], cof[2]), NULL, NULL));
 }
 
 /* COFMAXGO / METHOD1-3 (p.401-403): fix the signs of the ALTCALC axis
@@ -304,7 +304,7 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
 
     if (!AGC_ASSERT(mx >= 0 && mx < 3))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (skew.c[mx] < 0)
@@ -325,10 +325,10 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
 
     if (!AGC_ASSERT(vec_ok(cof)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return cof;
+    return (cof);
 }
 
 /* SLOAD of a CDU word: the AGC reads it as a ones'-complement SP.        */
@@ -336,17 +336,17 @@ static agc_dp_t sload_cdu(uint16_t p)
 {
     if (!AGC_ASSERT(p <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     long v = (p & 040000u) ? -(long) (~p & 037777u) : (long) p;
 
     if (!AGC_ASSERT(v >= -16383L && v <= 16383L))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) (v * 16384L);
+    return ((agc_dp_t) (v * 16384L));
 }
 
 /* MFI, its transpose, COFSKEW and CAM (SECAD, p.399-400).                */
@@ -380,7 +380,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
 {
     if (!AGC_ASSERT(ip != NULL && bcdu != NULL && cphi != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     out->kcase = AGC_KALC_NORMAL;
@@ -391,7 +391,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
     {
         out->kcase = AGC_KALC_TOOBAD; /* TOOBADF  */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_status_t st = agc_kalc_cdutodcm(ip, bcdu, &out->mis); /* MIS    */
@@ -403,7 +403,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     secad(ip, out);
@@ -413,14 +413,14 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
     {
         out->kcase = AGC_KALC_SMALL; /* less than 0.25 deg       */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (agc_dp_sub(ip, out->am, lm ? MAXANG_LM : MAXANG_CM) < 0)
     { /* CHECKMAX */
         out->cof = agc_vec_unit(ip, out->cofskew, NULL, NULL);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     out->kcase = AGC_KALC_LARGE; /* ALTCALC  */
@@ -429,5 +429,5 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
 
     out->cof = cofmaxgo(cof, out->cofskew, &sym);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

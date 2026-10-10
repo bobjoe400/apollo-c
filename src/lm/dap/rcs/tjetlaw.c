@@ -64,15 +64,15 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
 
     if (!AGC_ASSERT(i >= 0 && i < LM_BLOCK_N))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(d->block[i] >= LM_NEGMAX))
     {
-        return 0;
+        return (0);
     }
 
-    return d->block[i];
+    return (d->block[i]);
 }
 
 /* CHKMINTJ (p.1467): computed times under 20 ms become zero.             */
@@ -80,22 +80,22 @@ static agc_sp_t chkmintj(int32_t a)
 {
     if (!AGC_ASSERT(a >= -4 * LM_POSMAX && a <= 4 * LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (a - TJ_TJMIN <= 0)
     {
-        return 0; /* COASTTJ        */
+        return (0); /* COASTTJ        */
     }
 
     agc_sp_t r = lm_dap_sat(a);
 
     if (!AGC_ASSERT(r > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* Z123COMP (p.1465): reverse ROTSENSE, time to axis at 4 s. True if it
@@ -107,15 +107,15 @@ static bool z123comp(const lm_dap_t *d, tjl_t *w)
 
     if (!AGC_ASSERT(w->rotsense != 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(w->ttoaxis >= LM_NEGMAX))
     {
-        return false;
+        return (false);
     }
 
-    return (int32_t) w->ttoaxis + TJ_MTJMAX > 0;
+    return ((int32_t) w->ttoaxis + TJ_MTJMAX > 0);
 }
 
 /* ZONE2,3 (p.1466): fire to the axis, or a minimum impulse when close.   */
@@ -123,20 +123,20 @@ static agc_sp_t zone23(const lm_dap_t *d, const tjl_t *w)
 {
     if (!AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(d->edot >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((int32_t) w->ttoaxis - d->block[TJ_ZONE3LIM] > 0)
     {
-        return w->ttoaxis; /* ZONE2          */
+        return (w->ttoaxis); /* ZONE2          */
     }
 
-    return (d->edot > 0) ? (agc_sp_t) TJ_MINIMP : 0; /* ZONE3          */
+    return ((d->edot > 0) ? (agc_sp_t) TJ_MINIMP : 0); /* ZONE3          */
 }
 
 /* ZONE1 (pp.1466-1467): beyond the switch curve. H = 4 (FIREFCT -
@@ -152,29 +152,29 @@ static agc_sp_t zone1(const lm_dap_t *d, tjl_t *w)
 
     if ((int32_t) lm_dap_mphi(t, t) - w->hh.hi <= 0)
     {
-        return TJ_FULLTIME;
+        return (TJ_FULLTIME);
     }
 
     if (!AGC_ASSERT(w->hh.hi >= LM_NEGMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((int32_t) w->hh.hi - 2 <= 0)
     { /* FORMULA3       */
         agc_sp_t q3 = lm_dap_dv(w->hh, TJ_025AT2);
 
-        return chkmintj((int32_t) q3 + w->ttoaxis);
+        return (chkmintj((int32_t) q3 + w->ttoaxis));
     }
 
     agc_sp_t q = lm_dap_dv(w->hh, TJ_1AT2);
 
     if (!AGC_ASSERT(q >= LM_NEGMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return lm_dap_sat((int32_t) q + w->ttoaxis + TJ_0375AT4);
+    return (lm_dap_sat((int32_t) q + w->ttoaxis + TJ_0375AT4));
 }
 
 /* ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
@@ -183,7 +183,7 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 {
     if (!AGC_ASSERT(w->rotsense != 0))
     { /* CCSHOLE        */
-        return 0;
+        return (0);
     }
 
     if (w->rotsense < 0)
@@ -201,7 +201,7 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
         agc_sp_t q1 =
             lm_dap_dv(w->hh, lm_dap_sat((int32_t) w->ttoaxis + TJ_025AT4));
 
-        return chkmintj(lm_dap_mphi(q1, TJ_BIT14));
+        return (chkmintj(lm_dap_mphi(q1, TJ_BIT14)));
     }
 
     int32_t t2 =
@@ -209,7 +209,7 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 
     if (t2 > 0)
     {
-        return TJ_FULLTIME;
+        return (TJ_FULLTIME);
     }
 
     lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
@@ -219,10 +219,10 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 
     if (!AGC_ASSERT(q2 >= LM_NEGMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return lm_dap_mphi(q2, TJ_BIT14);
+    return (lm_dap_mphi(q2, TJ_BIT14));
 }
 
 /* ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
@@ -234,12 +234,12 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
 
     if (lm_dap_mphi((agc_sp_t) -tj, w->rotsense) <= 0)
     {
-        return 0; /* COASTTJ        */
+        return (0); /* COASTTJ        */
     }
 
     if (!AGC_ASSERT(d->block[TJ_FLAT] >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (d->block[TJ_FLAT] > 0)
@@ -248,23 +248,23 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
 
         if (s > 0)
         {
-            return 0;
+            return (0);
         }
 
-        return z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone23(d, w);
+        return (z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone23(d, w));
     }
 
     if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(w->rotsense != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone1(d, w);
+    return (z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone1(d, w));
 }
 
 /* FINELAW (pp.1462-1466): EDOTSQ, max-jet decision, FIREFCT and zones.   */
@@ -294,22 +294,22 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (d->firefct <= 0)
     { /* ZON1,2,3       */
         if (z123comp(d, w))
         {
-            return TJ_FULLTIME;
+            return (TJ_FULLTIME);
         }
 
         if ((int32_t) d->firefct + d->block[TJ_FLAT] <= 0)
         {
-            return zone1(d, w);
+            return (zone1(d, w));
         }
 
-        return zone23(d, w);
+        return (zone23(d, w));
     }
 
     int32_t g =
@@ -318,10 +318,10 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     if (!AGC_ASSERT(g >= -3 * LM_POSMAX && g <= 3 * LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (g <= 0) ? zone5(d, w, lm_dap_sat(g)) : zone4(d, w);
+    return ((g <= 0) ? zone5(d, w, lm_dap_sat(g)) : zone4(d, w));
 }
 
 /* RUFSETUP (p.1469): optionally reverse ROTSENSE; require max jets.      */
@@ -355,17 +355,17 @@ static agc_sp_t ruflaw12(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 
     if (x >= 0)
     {
-        return TJ_FULLTIME;
+        return (TJ_FULLTIME);
     }
 
     int32_t t = (x + TJ_BIT12) * 8; /* DAS A x 3      */
 
     if (!AGC_ASSERT(t >= 0 && t <= LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return chkmintj(t);
+    return (chkmintj(t));
 }
 
 /* RUFLAW1 / SMALRATE / RUFLAW2 (p.1468): |E| >= pi/16. Fire to (or
@@ -377,8 +377,8 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
         rufsetup(d, w, true);
         int32_t v = (int32_t) TJ_RUFRATE + d->edot;
 
-        return lm_dap_ovf(v) ? (agc_sp_t) TJ_FULLTIME :
-               ruflaw12(d, w, (agc_sp_t) v);
+        return (lm_dap_ovf(v) ? (agc_sp_t) TJ_FULLTIME :
+                ruflaw12(d, w, (agc_sp_t) v));
     }
 
     d->edot = lm_dap_wrap((int32_t) d->edot - TJ_RUFRATE); /* RUFLAW1: ADS   */
@@ -387,7 +387,7 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
     {
         rufsetup(d, w, true);
 
-        return ruflaw12(d, w, d->edot);
+        return (ruflaw12(d, w, d->edot));
     }
 
     rufsetup(d, w, false); /* SMALRATE       */
@@ -397,10 +397,10 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
 
     if (!AGC_ASSERT(d->edot <= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ruflaw12(d, w, (agc_sp_t) -d->edot);
+    return (ruflaw12(d, w, (agc_sp_t) -d->edot));
 }
 
 /* RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
@@ -418,10 +418,10 @@ static agc_sp_t ruflaw3(lm_dap_t *d, tjl_t *w)
 
     if (!AGC_ASSERT(s >= -2 * LM_POSMAX && s <= 2 * LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME;
+    return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME);
 }
 
 /* RETURNTJ (pp.1464-1465): apply ROTSENSE (sign, 4 s -> 10.24 s); call
@@ -458,7 +458,7 @@ agc_status_t lm_dap_tjetlaw(void)
 
     if (!AGC_ASSERT(d->axisctr >= -1 && d->axisctr <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     tjl_t w = {axisdiff[d->axisctr + 1], 0, TJ_SENSOR, 0, 0, {0, 0}};
@@ -497,5 +497,5 @@ agc_status_t lm_dap_tjetlaw(void)
 
     returntj(d, &w, a);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

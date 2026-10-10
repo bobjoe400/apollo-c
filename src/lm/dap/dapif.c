@@ -21,15 +21,15 @@ agc_status_t lm_dap_callaccs(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(lm_dap_state()->db >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* TC ALARM in a DAP pass: the alarm is stored and the PROG light lit, and
@@ -42,10 +42,10 @@ agc_status_t lm_dap_alarm(agc_alarm_code_t code)
 
     if (!AGC_ASSERT(code >= AGC_ALARM_02000 && code <= AGC_ALARM_02004))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+    return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st);
 }
 
 /* DXCH T5ADR: choose the program of the next T5RUPT (DAPIDLER or PAXIS). */
@@ -53,7 +53,7 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {
     if (!AGC_ASSERT(a == LM_T5_DAPIDLER || a == LM_T5_PAXIS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dap_state()->t5adr = a;
@@ -62,10 +62,10 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 
     if (!AGC_ASSERT(lm_dap_state()->t5adr == a))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SETMAXDB (p.1407): deadband 5.0 degrees, then CALLACCS.                 */
@@ -77,10 +77,10 @@ agc_status_t agc_lm_dap_setmaxdb(void)
 
     if (!AGC_ASSERT(d->db > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_callaccs();
+    return (lm_dap_callaccs());
 }
 
 /* SETMINDB (p.1407): deadband 0.3 degree, then CALLACCS.                  */
@@ -92,10 +92,10 @@ agc_status_t agc_lm_dap_setmindb(void)
 
     if (!AGC_ASSERT(d->db > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_callaccs();
+    return (lm_dap_callaccs());
 }
 
 /* RESTORDB (p.1407): the crew-selected deadband (DBSELECT of DAPBOOLS:
@@ -106,10 +106,10 @@ agc_status_t agc_lm_dap_restordb(void)
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DBSELFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return wide ? agc_lm_dap_setmaxdb() : agc_lm_dap_setmindb();
+    return (wide ? agc_lm_dap_setmaxdb() : agc_lm_dap_setmindb());
 }
 
 /* PFLITEDB (p.1407): zero the attitude errors and commanded rates
@@ -123,10 +123,10 @@ agc_status_t agc_lm_dap_pflitedb(void)
 
     if (!AGC_ASSERT(d->db == DB_POWER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_callaccs();
+    return (lm_dap_callaccs());
 }
 
 /* ZATTEROR (p.1408): desired CDUs = present CDUs, then STOPRATE.          */
@@ -196,7 +196,7 @@ agc_status_t agc_lm_dap_allcoast(void)
     d->aosrterm = 0;
     agc_flag_set(AGC_FLAG_DRIFTDFL); /* DRIFTBIT       */
 
-    return agc_lm_dap_restordb(); /* TC RESTORDB +1                 */
+    return (agc_lm_dap_restordb()); /* TC RESTORDB +1                 */
 }
 
 /* Needles initialisation (NEEDLER calling sequence, p.1417): set bit 3 of
@@ -209,13 +209,13 @@ agc_status_t agc_lm_dap_needles_init(void)
 
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->rcsflags <= 077777u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

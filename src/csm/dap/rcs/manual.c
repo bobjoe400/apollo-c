@@ -70,7 +70,7 @@ agc_status_t csm_rcs_manual(void)
 
     if (cmd == 0u)
     {
-        return csm_rcs_ahfnorot(); /* no manual commands                */
+        return (csm_rcs_ahfnorot()); /* no manual commands                */
     }
 
     r->holdflag = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
@@ -84,17 +84,17 @@ agc_status_t csm_rcs_manual(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return rcs_freefunc();
+        return (rcs_freefunc());
     }
 
     if (csm_rcs_rate_init_pending())
     {
-        return csm_rcs_reinit(); /* ..... TILT, recycle the filter    */
+        return (csm_rcs_reinit()); /* ..... TILT, recycle the filter    */
     }
 
     if (r->ratindx - 5 > 0)
@@ -102,7 +102,7 @@ agc_status_t csm_rcs_manual(void)
         r->attkalmn = -1; /* manual maneuver at high rate      */
     }
 
-    return rcs_setwbody();
+    return (rcs_setwbody());
 }
 
 /* SETWBODY .. SPNDXCHK (pp. 1018-1019), auto-hold manual rotation.       */
@@ -126,7 +126,7 @@ static agc_status_t rcs_setwbody(void)
 
             if (!AGC_ASSERT((q >= 0) && (q < MANTAB_N)))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             r->wbody[i] = agc_sp_mul(mantable[q], BIT9); /* WBODY       */
@@ -149,10 +149,10 @@ static agc_status_t rcs_setwbody(void)
 
     if (!AGC_ASSERT(r->ratindx >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csm_rcs_jets();
+    return (csm_rcs_jets());
 }
 
 /* FREEFUNC (pp. 1019-1020): acceleration commands in free mode.          */
@@ -166,7 +166,7 @@ static agc_status_t rcs_freefunc(void)
 
         if (!AGC_ASSERT((m >= 0) && (m <= 3)))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         r->tau[i] = freetau[m]; /* TAU, TAU1, TAU2                   */
@@ -174,10 +174,10 @@ static agc_status_t rcs_freefunc(void)
 
     if (!AGC_ASSERT(r->tau[0] >= -480))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csm_rcs_t6progm();
+    return (csm_rcs_t6progm());
 }
 
 /* STICKCHK (p. 1021): RMANNDX, PMANNDX, YMANNDX = 0, 1, 2 (or 3) for no,
@@ -189,7 +189,7 @@ agc_status_t csm_rcs_stickchk(uint16_t bits)
 
     if (!AGC_ASSERT(bits <= MANROT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     r->manndx[1] = (agc_sp_t) (bits & 3u); /* PMANNDX: bits 1,2   */
@@ -200,10 +200,10 @@ agc_status_t csm_rcs_stickchk(uint16_t bits)
 
     if (!AGC_ASSERT(r->manndx[0] <= 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* STICKCHK (p. 1021) for other lanes (SATSTICK): see csm_rcs_stickchk. */
@@ -211,15 +211,15 @@ agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits)
 {
     if (!AGC_ASSERT(ch31_bits <= 077u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = csm_rcs_stickchk(ch31_bits);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }

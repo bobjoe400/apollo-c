@@ -33,7 +33,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -56,37 +56,37 @@ static const double PI = 3.14159265358979323846;
 
 static agc_vec_t pos(double x, double y, double z)
 {
-    return agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
-                        agc_dp_from_double(z, 29));
+    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
+                         agc_dp_from_double(z, 29)));
 }
 
 static agc_vec_t vel(double x, double y, double z)
 {
-    return agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
-                        agc_dp_from_double(z, 7));
+    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
+                         agc_dp_from_double(z, 7)));
 }
 
 static double comp(agc_vec_t v, int i, int scale)
 {
-    return agc_dp_to_double(v.c[i], scale);
+    return (agc_dp_to_double(v.c[i], scale));
 }
 
 static bool near_vec(agc_vec_t v, int scale, double x, double y, double z,
                      double tol)
 {
-    return fabs(comp(v, 0, scale) - x) < tol &&
-           fabs(comp(v, 1, scale) - y) < tol &&
-           fabs(comp(v, 2, scale) - z) < tol;
+    return (fabs(comp(v, 0, scale) - x) < tol &&
+            fabs(comp(v, 1, scale) - y) < tol &&
+            fabs(comp(v, 2, scale) - z) < tol);
 }
 
 static double circ_speed(void)
 {
-    return sqrt(MU / R0);
+    return (sqrt(MU / R0));
 } /* m/cs */
 
 static double circ_period(void)
 {
-    return 2.0 * PI * sqrt(R0 * R0 * R0 / MU);
+    return (2.0 * PI * sqrt(R0 * R0 * R0 / MU));
 } /* cs */
 
 /* KEPPREP + KEPLER from the circular state at (R0,0,0) by tau cs. */
@@ -106,7 +106,7 @@ static agc_status_t run_kepler(agc_interp_t *ip, double tau,
 
     CHECK(st == AGC_STATUS_OK);
 
-    return agc_conic_kepler(ip, &in, out);
+    return (agc_conic_kepler(ip, &in, out));
 }
 
 static void test_kepler(void)
@@ -266,5 +266,5 @@ int main(void)
     (void) printf("test_conic: %d checks, %d failures, %d assert reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

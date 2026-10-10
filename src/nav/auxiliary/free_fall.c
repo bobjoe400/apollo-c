@@ -53,12 +53,12 @@ agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(x)))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t  acc = TFF_POLY[TFF_POLY_N - 1];
@@ -71,7 +71,7 @@ agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x)
         acc = agc_dp_add_raw(prod, TFF_POLY[i], &ovf);
     }
 
-    return acc;
+    return (acc);
 }
 
 /*
@@ -83,13 +83,13 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(tff->rone) &&
                     agc_navaux_vec_ok(tff->vone)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t  mag = 0;
@@ -117,7 +117,7 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
 
     tff->tff1_alf = (a == 0) ? 0 : agc_dp_div(ip, AGC_DP_QUARTER, a);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -129,13 +129,13 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((tff->nr >= 0) && (tff->nr <= AGC_DP_BITS) &&
                     (tff->na >= 0) && (tff->na <= AGC_DP_BITS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t ap = agc_dp_mul(ip, tff->tffalfa, tff->tffnp); /* (-12+NR) */
@@ -164,7 +164,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
         }
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ENDTFF: TFF = (TFF sqrt(MU)) / sqrt(MU), cs 2^28; NEARONE on overflow. */
@@ -173,14 +173,14 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t t = agc_dp_mul(ip, tff_rtmu, tff->rtmu); /* DMP TFF/RTMU      */
 
     *t_cs = agc_interp_test_ovf(ip) ? AGC_TFF_NEARONE : t; /* BOV MAXTFF  */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -194,7 +194,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int na = tff->na;
@@ -223,7 +223,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     s = agc_navaux_dp_shift(ip, agc_dp_mul(ip, s, tff->tff1_alf), na - 3);
     s = agc_navaux_dp_shift(ip, s, na - 4); /* TFF sqrt(MU) 2^45   */
 
-    return tff_end(ip, tff, s, t_cs);
+    return (tff_end(ip, tff, s, t_cs));
 }
 
 /* Orbital-period correction for a negative TFF on an ellipse:
@@ -233,12 +233,12 @@ static agc_dp_t tff_add_period(agc_interp_t *ip, const agc_tff_t *tff,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
     {
-        return tsm;
+        return (tsm);
     }
 
     if (!AGC_ASSERT(tff->tffrtalf != 0))
     {
-        return tsm;
+        return (tsm);
     }
 
     agc_dp_t per =
@@ -248,7 +248,7 @@ static agc_dp_t tff_add_period(agc_interp_t *ip, const agc_tff_t *tff,
     per = agc_navaux_dp_shift(ip, per, tff->na - 4);
     per = agc_navaux_dp_shift(ip, per, tff->na);
 
-    return agc_dp_add(ip, per, tsm);
+    return (agc_dp_add(ip, per, tsm));
 }
 
 /* General conic (TFFXTEST continuation, p. 1383-1384), alfa Z Z < 1:
@@ -258,7 +258,7 @@ static agc_status_t tff_general(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t z   = agc_dp_div(ip, num, den); /* Z (-13)  */
@@ -283,7 +283,7 @@ static agc_status_t tff_general(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
         } /* else NEGTFF  */
     }
 
-    return tff_end(ip, tff, tsm, t_cs);
+    return (tff_end(ip, tff, tsm, t_cs));
 }
 
 /* SAVEDEN .. TFFXTEST (p. 1383): indeterminacy test, choice of equation. */
@@ -292,12 +292,12 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(num) && agc_navaux_dp_ok(den)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     tff->tffx = num;
@@ -310,12 +310,12 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     { /* DEN = 0: Z indeterminate   */
         if (tff->tffalfa > 0)
         {
-            return tff_el1(ip, tff, 0, q2, t_cs); /* assume 90 deg, D/N = 0 */
+            return (tff_el1(ip, tff, 0, q2, t_cs)); /* assume 90 deg, D/N = 0 */
         }
 
         *t_cs = 0; /* DUMPTFF1: perigee of parab/hyp   */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_dp_t zra = agc_dp_mul(ip, num, tff->tffrtalf);        /* TFFXTEST */
@@ -327,10 +327,10 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     { /* BOV TFFELL                       */
         agc_dp_t dn = agc_dp_div(ip, den, agc_dp_shl(ip, num, 2)); /* D/N   */
 
-        return tff_el1(ip, tff, dn, q2, t_cs);
+        return (tff_el1(ip, tff, dn, q2, t_cs));
     }
 
-    return tff_general(ip, tff, num, den, t_cs);
+    return (tff_general(ip, tff, num, den, t_cs));
 }
 
 /*
@@ -345,13 +345,13 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(rterm) && (tff->nr >= 0) &&
                     (tff->nr <= AGC_DP_BITS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int nr = tff->nr;
@@ -375,7 +375,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
     {
         *t_cs = AGC_TFF_NEARONE; /* MAXTFF1: no conic */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_dp_t q2 = agc_dp_neg(agc_dp_sqrt(ip, q2sq)); /* Q2 (-16), inbound */
@@ -386,14 +386,14 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 
     if (tff->tffq1 < 0)
     { /* INBOUND           */
-        return tff_z(ip, tff, agc_dp_sub(ip, rterm, tff->rmag1),
-                     agc_dp_add(ip, q2, tff->tffq1), q2, t_cs);
+        return (tff_z(ip, tff, agc_dp_sub(ip, rterm, tff->rmag1),
+                      agc_dp_add(ip, q2, tff->tffq1), q2, t_cs));
     }
 
     agc_dp_t den =
         agc_dp_sub(ip, two_m, agc_dp_mul(ip, tff->tffalfa, tff->nrmag));
 
-    return tff_z(ip, tff, agc_dp_sub(ip, q2, tff->tffq1), den, q2, t_cs);
+    return (tff_z(ip, tff, agc_dp_sub(ip, q2, tff->tffq1), den, q2, t_cs));
 }
 
 /* CALCTFF (p. 1382): time of free fall to radius RTERM (inbound side). */
@@ -402,15 +402,15 @@ agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rterm >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return tff_calc(ip, tff, rterm, false, t_cs); /* CLEAR TFFSW     */
+    return (tff_calc(ip, tff, rterm, false, t_cs)); /* CLEAR TFFSW     */
 }
 
 /* CALCTPER (p. 1382): time to perigee, RPER from TFFRP/RA. */
@@ -419,13 +419,13 @@ agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper,
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rper >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return tff_calc(ip, tff, rper, true, t_cs); /* SET TFFSW       */
+    return (tff_calc(ip, tff, rper, true, t_cs)); /* SET TFFSW       */
 }

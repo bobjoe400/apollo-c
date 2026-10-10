@@ -67,12 +67,12 @@ static agc_interp_t   rte_interp;
 
 rte_erasable_t *rte_state(void)
 {
-    return &rte_mem;
+    return (&rte_mem);
 }
 
 agc_interp_t *rte_ip(void)
 {
-    return &rte_interp;
+    return (&rte_interp);
 }
 
 /* VSL* / VSR* with a computed count: n > 0 left (wraps, OVFIND), n < 0
@@ -81,15 +81,15 @@ static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT((n > -64) && (n < 64)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return (n >= 0) ? agc_vec_shl(ip, v, n) : agc_vec_shr(v, -n);
+    return ((n >= 0) ? agc_vec_shl(ip, v, n) : agc_vec_shr(v, -n));
 }
 
 /* XT1LIM / XT1LIM2 / XT1LIM3 / XT1LIM5 (P37_P70.agc p. 930): bound on the
@@ -106,7 +106,7 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
         !AGC_ASSERT((pl != NULL) && (xt1lim != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t den =
@@ -114,7 +114,7 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
 
     if (!AGC_ASSERT(den != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     den = agc_dp_norm(den, &n2);                       /* NORM X2      */
@@ -138,17 +138,17 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
     {
         *xt1lim = 0; /* XT1LIM5      */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     *xt1lim = agc_dp_sqrt(ip, beta10); /* XT1LIM3, B5  */
 
     if (!AGC_ASSERT(*xt1lim >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Public form kept from guid-entry (agc/csm/entry.h): BETA5 at B9, i.e. the
@@ -163,7 +163,7 @@ agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
 
     if (!AGC_ASSERT(xt1lim != NULL) || !AGC_ASSERT(rcon > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_init(&ip);
@@ -172,7 +172,7 @@ agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
     pl.beta5 = beta5;
     pl.x1    = -7;
 
-    return rte_xt1lim(&ip, &rs, ma, &pl, xt1lim);
+    return (rte_xt1lim(&ip, &rs, ma, &pl, xt1lim));
 }
 
 /* DVCALC (P37_P70.agc pp. 928-929): for the current X(T1) (B5)
@@ -192,7 +192,7 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_tp_t t =
@@ -212,7 +212,7 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
     {
         rs->alarm_code = RTE_POODOO_SQRT;
 
-        return agc_poodoo(RTE_POODOO_SQRT);
+        return (agc_poodoo(RTE_POODOO_SQRT));
     }
 
     agc_dp_t k =
@@ -230,10 +230,10 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT(rs->dv >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GAMDV10 .. GAMDV20 (p. 925): first DVCALC, and if the bounds are closer
@@ -244,14 +244,14 @@ static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = rte_dv_calc(ip, rs, pl);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t beta8 =
@@ -259,12 +259,12 @@ static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (agc_interp_test_ovf(ip))
     {
-        return AGC_STATUS_OK; /* BOV GAMDV20   */
+        return (AGC_STATUS_OK); /* BOV GAMDV20   */
     }
 
     if (agc_dp_sub(ip, beta8, EPC9RTE) < 0)
     {
-        return AGC_STATUS_NOT_FOUND; /* GAMDVX        */
+        return (AGC_STATUS_NOT_FOUND); /* GAMDVX        */
     }
 
     if (agc_dp_sub(ip, beta8, pl->dx_t1max) < 0)
@@ -272,7 +272,7 @@ static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs,
         pl->dx_t1 = agc_dp_shr(agc_dp_sign(beta8, pl->dx_t1), 1);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GAMDV35 .. GAMDV47 (pp. 926-927), time critical mode: secant step
@@ -287,14 +287,14 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t dverr = agc_dp_sub(ip, rs->rtedvd, rs->dv); /* DVD-DV=DVERR  */
 
     if (agc_dp_sub(ip, agc_dp_abs(dverr), EPC10RTE) < 0)
     {
-        return AGC_STATUS_NOT_FOUND; /* GAMDVX        */
+        return (AGC_STATUS_NOT_FOUND); /* GAMDVX        */
     }
 
     ip->ovfind = 0; /* BOVB TCDANZIG */
@@ -314,13 +314,13 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (agc_dp_sub(ip, agc_dp_abs(pl->dx_t1), pl->dx_t1max) < 0)
         {
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
     }
 
     pl->dx_t1 = agc_dp_sign(pl->dx_t1max, pl->dx_t1); /* GAMDV47       */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GAMDV50 .. GAMDV65 (p. 927): keep X(T1) + 1.1 DX(T1) inside the bounds
@@ -330,7 +330,7 @@ static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_tp_t t =
@@ -349,10 +349,10 @@ static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (agc_dp_sub(ip, agc_dp_abs(pl->dx_t1), EPC9RTE) < 0)
     { /* GAMDV65       */
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GAMDV10 .. GAMDVX (P37_P70.agc pp. 924-927): "COMPUTES A POST IMPULSE
@@ -364,14 +364,14 @@ static agc_status_t rte_min_dv_search(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = gamdv_start(ip, rs, pl); /* GAMDV10       */
 
     if (st != AGC_STATUS_OK)
     {
-        return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
     }
 
     for (rs->nn2 = 1 - RTE_GAMDV_PASSES; rs->nn2 < 0; rs->nn2++)
@@ -400,13 +400,13 @@ static agc_status_t rte_min_dv_search(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (st != AGC_STATUS_OK)
         {
-            return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+            return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
         }
     }
 
     rs->alarm_code = RTE_ALARM_ITERATIONS; /* OCT605        */
 
-    return AGC_STATUS_ALARM;
+    return (AGC_STATUS_ALARM);
 }
 
 /* V2T101 (pp. 918-919): LAMBDA, BETA1, BETA5 and the THETAs on the push list.
@@ -422,7 +422,7 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->f2rte = false;                      /* CLEAR F2RTE   */
@@ -460,7 +460,7 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs,
                         &pl->x_t1max); /* X(T1)MAX      */
     }
 
-    return st;
+    return (st);
 }
 
 /* V2T110 .. V2T135 (pp. 920-921): during a precision iteration constrain
@@ -473,7 +473,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
         !AGC_ASSERT((pl != NULL) && (start_high != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t a = agc_dp_sub(ip, agc_dp_shl(ip, TWO_B1, pl->x1),
@@ -495,7 +495,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
 
         *start_high = (rs->x_t1 > 0); /* V2T125        */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_dp_t lim = agc_tp_sqrt(ip, agc_tp_shift(ip, t, 7)); /* SL 7 SQRT B5  */
@@ -517,7 +517,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
         *start_high = false;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* V2T175 .. V2T179 (p. 922): time critical: F2RTE set; X(T1) becomes the
@@ -527,7 +527,7 @@ static agc_status_t v2t_time_critical(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->f2rte = true;
@@ -543,7 +543,7 @@ static agc_status_t v2t_time_critical(agc_interp_t *ip, rte_erasable_t *rs,
         pl->dx_t1   = agc_dp_neg(pl->dx_t1max);
     }
 
-    return rte_min_dv_search(ip, rs, pl); /* V2T179        */
+    return (rte_min_dv_search(ip, rs, pl)); /* V2T179        */
 }
 
 /* V2T185 .. V2T205 (pp. 922-923): "PREVENT A LARGE CHANGE IN INDEPENDENT
@@ -553,14 +553,14 @@ static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t beta7 = agc_dp_abs(agc_dp_sub(ip, rs->x_t1, pl->x_t1pp));
 
     if (agc_dp_sub(ip, beta7, agc_dp_shl(ip, pl->dx_t1max, 1)) < 0)
     {
-        return AGC_STATUS_OK; /* V2T300        */
+        return (AGC_STATUS_OK); /* V2T300        */
     }
 
     rs->x_t1 = pl->x_t1pp; /* X(T1) = X,,   */
@@ -574,7 +574,7 @@ static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs,
         rs->x_t1 = pl->x_t1min; /* V2T200        */
     }
 
-    return rte_dv_calc(ip, rs, pl); /* V2T205        */
+    return (rte_dv_calc(ip, rs, pl)); /* V2T205        */
 }
 
 /* V2T150 .. V2T300 (pp. 921-923) after the first iterator pass, when a DV
@@ -584,7 +584,7 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -593,12 +593,12 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
     { /* V2T155        */
         if (rs->nn1a >= 0)
         {
-            return v2t_limit_change(ip, rs, pl); /* V2T185        */
+            return (v2t_limit_change(ip, rs, pl)); /* V2T185        */
         }
 
         if ((rs->x_t1 > 0) || (rs->cfpa <= 0))
         {                         /* V2T160/165    */
-            return AGC_STATUS_OK; /* V2T300        */
+            return (AGC_STATUS_OK); /* V2T300        */
         }
 
         rs->x_t1  = pl->x_t1max;
@@ -607,7 +607,7 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
 
         if ((st != AGC_STATUS_OK) || (agc_dp_sub(ip, rs->rtedvd, rs->dv) < 0))
         {
-            return st;
+            return (st);
         }
     }
 
@@ -615,10 +615,10 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
 
     if ((st != AGC_STATUS_OK) || (rs->nn1a < 0))
     {
-        return st;
+        return (st);
     }
 
-    return v2t_limit_change(ip, rs, pl); /* V2T185        */
+    return (v2t_limit_change(ip, rs, pl)); /* V2T185        */
 }
 
 /* V2T100 (P37_P70.agc pp. 917-923). NN1A negative: conic; otherwise a
@@ -632,14 +632,14 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((rs->rcon < 0) || (agc_dp_sub(ip, rs->rcon, rs->r_t1) >= 0))
     {
         rs->alarm_code = RTE_POODOO_NO_SOLUTION; /* V2TERROR      */
 
-        return agc_poodoo(RTE_POODOO_NO_SOLUTION);
+        return (agc_poodoo(RTE_POODOO_NO_SOLUTION));
     }
 
     agc_status_t st = v2t_setup(ip, rs, &pl);
@@ -655,7 +655,7 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rs->x_t1 = start_high ? pl.x_t1max : pl.x_t1min; /* V2T145/140    */
@@ -664,8 +664,8 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
 
     if ((st != AGC_STATUS_OK) || (rs->rtedvd == 0))
     {
-        return st; /* minimum fuel  */
+        return (st); /* minimum fuel  */
     }
 
-    return v2t_desired_dv(ip, rs, &pl);
+    return (v2t_desired_dv(ip, rs, &pl));
 }

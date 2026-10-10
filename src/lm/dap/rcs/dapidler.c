@@ -27,10 +27,10 @@ static agc_status_t settime5(void)
 
     if (!AGC_ASSERT(agc_rupt_time(5) == LM_MS100))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SHUTDOWN (p.1413): T5ADR = DAPIDLER, kill jet requests, jets off, trim
@@ -48,7 +48,7 @@ agc_status_t lm_dap_shutdown(void)
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
     agc_status_t t5 = settime5();
 
-    return (st != AGC_STATUS_OK) ? st : t5;
+    return ((st != AGC_STATUS_OK) ? st : t5);
 }
 
 /* MOREIDLE (p.1413): keep computing the attitude errors for the displays,
@@ -60,15 +60,15 @@ agc_status_t lm_dap_moreidle(void)
 
     if (!AGC_ASSERT(sq == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(sp == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_shutdown();
+    return (lm_dap_shutdown());
 }
 
 /* CHEKBITS / CHEKMORE (p.1410). *on = true ("RETURN") when the DAP is to
@@ -81,7 +81,7 @@ agc_status_t lm_dap_chekbits(bool *on)
 
     if (!AGC_ASSERT(on != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *on = false;
@@ -89,7 +89,7 @@ agc_status_t lm_dap_chekbits(bool *on)
 
     if (((uint16_t) ~ch31 & CH31_MODE_OFF) == 0u)
     { /* mode switch OFF     */
-        return lm_dap_moreidle();
+        return (lm_dap_moreidle());
     }
 
     if ((agc_erase_imodes33() & IMODES33_NOIMU) != 0u)
@@ -97,29 +97,29 @@ agc_status_t lm_dap_chekbits(bool *on)
         d->rcsflags =
             (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* IMU not usable */
 
-        return lm_dap_shutdown();
+        return (lm_dap_shutdown());
     }
 
     agc_status_t st = lm_dap_altdsply(); /* JUMPDSP             */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     if ((agc_chan_read(030) & CH30_NOPGNCS) != 0u)
     { /* CHEKMORE            */
-        return lm_dap_moreidle();
+        return (lm_dap_moreidle());
     }
 
     if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *on = true;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* STARTDAP (pp.1411-1412), first half: zero attitude error, rates, offset
@@ -201,10 +201,10 @@ agc_status_t lm_dap_startdap(void)
 
     if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return settime5();
+    return (settime5());
 }
 
 /* DAPIDLER (p.1411): T5RUPT entry while the DAP is idling.               */
@@ -214,7 +214,7 @@ agc_status_t agc_task_dapidler(void)
 
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u)
@@ -224,7 +224,7 @@ agc_status_t agc_task_dapidler(void)
 
         if (sj != AGC_STATUS_OK)
         {
-            return sj; /* NOVAC's own BAILOUT 1202 */
+            return (sj); /* NOVAC's own BAILOUT 1202 */
         }
     }
 
@@ -233,15 +233,15 @@ agc_status_t agc_task_dapidler(void)
 
     if (sc != AGC_STATUS_OK || !on)
     {
-        return sc;
+        return (sc);
     }
 
     if (!agc_flag_test(AGC_FLAG_ACCOKFLG))
     { /* 1/ACCS not done: idle   */
-        return lm_dap_moreidle();
+        return (lm_dap_moreidle());
     }
 
-    return lm_dap_startdap();
+    return (lm_dap_startdap());
 }
 
 /* T5RUPT through T5ADR (INTERRUPT_LEAD_INS: DXCH ARUPT, DTCB T5ADR).     */
@@ -251,8 +251,8 @@ agc_status_t agc_lm_dap_t5rupt(void)
 
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (d->t5adr == LM_T5_PAXIS) ? agc_task_paxis() : agc_task_dapidler();
+    return ((d->t5adr == LM_T5_PAXIS) ? agc_task_paxis() : agc_task_dapidler());
 }

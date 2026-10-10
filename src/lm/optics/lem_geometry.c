@@ -33,7 +33,7 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
     if (!AGC_ASSERT((ip != NULL) && (modea != NULL)) ||
         !AGC_ASSERT((modeb != NULL) && (along_y != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t t1 = agc_dp_asin(ip, agc_dp_neg(los_nb.c[1])); /* PD0 */
@@ -46,7 +46,7 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
 
     if (*along_y)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const agc_dp_t sinth = agc_dp_shr(p.c[0], 1); /* SR1 -> SINTH    */
@@ -64,7 +64,7 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
         modeb[k] = rr_mode2 ? a[k] : b[k];
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -78,7 +78,7 @@ agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(los_nb != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t t     = agc_align_cdulogic(trunnion_cdu);
@@ -92,5 +92,5 @@ agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu,
 
     *los_nb = agc_vec_make(x, y, z);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

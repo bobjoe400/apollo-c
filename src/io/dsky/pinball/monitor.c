@@ -41,14 +41,14 @@ agc_status_t pin_monitor(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t m1 = (uint16_t) (s->nouncadr & ~(PIN_BIT15 | PIN_BIT14));
@@ -83,7 +83,7 @@ agc_status_t pin_monitor(void)
     s->monsave1 = m1;
     agc_relint();
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st; /* TC ENTRET   */
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* TC ENTRET   */
 }
 
 /* MONREQ: called by waitlist every second while the monitor lives. */
@@ -91,7 +91,7 @@ agc_status_t agc_task_monreq(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -103,7 +103,7 @@ agc_status_t agc_task_monreq(void)
         s->monsave  = 0;
         s->monsave1 = 0; /* turn off kill and external bits */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, PIN_TASK_MONREQ);
@@ -111,10 +111,10 @@ agc_status_t agc_task_monreq(void)
 
     if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_OK) ? st2 : st;
+    return ((st == AGC_STATUS_OK) ? st2 : st);
 }
 
 /* MONDO: called by exec. Change the monitor verb to the display verb
@@ -126,19 +126,19 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((s->monsave1 & PIN_BIT15) != 0u)
     {
-        return AGC_STATUS_OK; /* terminate came since last MONREQ */
+        return (AGC_STATUS_OK); /* terminate came since last MONREQ */
     }
 
     if (s->dsplock)
     { /* MONBUSY: NVSUB is busy        */
         pin_reldspon();
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_status_t st    = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
@@ -146,7 +146,7 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK || !AGC_ASSERT(dverb >= 1 && dverb <= 7))
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     s->verbreg = (uint8_t) dverb;
@@ -154,7 +154,7 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
     s->mpac2   = (uint16_t) (s->monsave1 & ~(PIN_BIT15 | PIN_BIT14));
     st         = pin_testnn();
 
-    return (st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK;
+    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK);
 }
 
 /* PASTEVB: put the monitor verb (or the NVMONOPT please verb) back into
@@ -169,7 +169,7 @@ agc_status_t pin_pastevb(void)
 
     if (!AGC_ASSERT(verb <= 99u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_updatvb((uint8_t) verb);
@@ -185,10 +185,10 @@ agc_status_t pin_pastevb(void)
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* ENDOFJOB                       */
+    return (st); /* ENDOFJOB                       */
 }
 
 /* ---- V27 (p. 358) ----------------------------------------------------- */
@@ -201,15 +201,15 @@ agc_status_t pin_dspfmem(void)
 
     if (!AGC_ASSERT(s->verbreg == 27u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }
 
 /* ---- V30 / V31 (pp. 365-366) ------------------------------------------ */
@@ -230,7 +230,7 @@ agc_status_t pin_vbrqexec(void)
     if (!AGC_ASSERT(prio >= 1u && prio <= 037u) ||
         !AGC_ASSERT(job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -244,7 +244,7 @@ agc_status_t pin_vbrqexec(void)
 
     agc_relint();
 
-    return st; /* ENDOFJOB    */
+    return (st); /* ENDOFJOB    */
 }
 
 /* VBRQWAIT: request waitlist, DSPTEM1 = time delay (cs), +1 the task.
@@ -258,7 +258,7 @@ agc_status_t pin_vbrqwait(void)
 
     if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -270,7 +270,7 @@ agc_status_t pin_vbrqwait(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* ---- V32 / V33 / V34 (pp. 366-367) ------------------------------------ */
@@ -282,14 +282,14 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     s->loadstat = ls;
@@ -298,7 +298,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 
     pin_flashoff();
 
-    return (st == AGC_STATUS_OK) ? pin_recaltst() : st;
+    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st);
 }
 
 /* ---- V37 (p. 365) ----------------------------------------------------- */
@@ -309,7 +309,7 @@ agc_status_t pin_reqmm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -325,10 +325,10 @@ agc_status_t pin_reqmm(void)
 
     if (!AGC_ASSERT(s->dspcount == PIN_ND1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st;
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
 }
 
 /* MMCHANG +1: demand that 2 numerical characters were punched in
@@ -337,14 +337,14 @@ agc_status_t pin_mmchang_resume(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!s->dspcount_neg || s->dspcount != PIN_ND2)
     {
-        return pin_almcycle(); /* DSPCOUNT not = -ND2           */
+        return (pin_almcycle()); /* DSPCOUNT not = -ND2           */
     }
 
     uint8_t mm = s->nounreg;
@@ -357,10 +357,10 @@ agc_status_t pin_mmchang_resume(void)
 
     if (!AGC_ASSERT(mm <= 99u) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
-    return agc_change_program(mm);
+    return (agc_change_program(mm));
 }
 
 /* ---- V35 test lights (pp. 385-387) ------------------------------------ */
@@ -372,7 +372,7 @@ agc_status_t pin_vbtstlts(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s   = pin_st();
@@ -382,7 +382,7 @@ agc_status_t pin_vbtstlts(void)
     {                 /* CHKPOOH (CM only)   */
         pin_falton(); /* ALM/END             */
 
-        return pin_pinbrnch();
+        return (pin_pinbrnch());
     }
 
     agc_inhint();
@@ -417,7 +417,7 @@ agc_status_t pin_vbtstlts(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* TSTLTS2: called by waitlist. */
@@ -425,17 +425,17 @@ agc_status_t agc_task_tstlts2(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_TSTLTS3);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* TSTLTS3, lamp part: turn off uplink activity, temp, operator error and
@@ -445,7 +445,7 @@ static agc_status_t pin_tstlts3_lamps(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -476,10 +476,10 @@ static agc_status_t pin_tstlts3_lamps(void)
 
     if (!AGC_ASSERT(c >= PIN_BIT15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash
@@ -489,12 +489,12 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_tstlts3_lamps();
@@ -508,5 +508,5 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
     pin_flashoff();
     agc_status_t st4 = pin_tstlts4();
 
-    return (st == AGC_STATUS_OK) ? st4 : st;
+    return ((st == AGC_STATUS_OK) ? st4 : st);
 }

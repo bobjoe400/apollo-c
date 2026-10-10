@@ -62,7 +62,7 @@ static agc_status_t preread1(agc_avg_g_t *a)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     a->pipage = 1;                           /* for REREADAC           */
@@ -73,10 +73,10 @@ static agc_status_t preread1(agc_avg_g_t *a)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_AVEGFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* PREREAD / REDO5.31 (p.822-823): task. The caller protects it. LASTBIAS
@@ -89,33 +89,33 @@ agc_status_t agc_task_preread_csm(void)
 
     if (sw != AGC_STATUS_OK)
     {
-        return sw;
+        return (sw);
     }
 
     agc_status_t st = preread1(&g->avg);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_NORMLIZE); /* NORMLIZE job    */
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = agc_waitlist_call(TWO_SECS, AGC_TASK_READACCS);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_phase_newphase(GRP5, 2, true);
 
-    return AGC_STATUS_OK; /* CS TWO NEWPHASE 5 */
+    return (AGC_STATUS_OK); /* CS TWO NEWPHASE 5 */
 }
 
 /* Entry-DAP part of REDO5.5 (p.824-825): during entry (CM/DSTBY set) the
@@ -128,7 +128,7 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
 
     if (!AGC_ASSERT(e != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* DEVIATION: CS PIPTIME1 +1 / TS TBASE6 bases group 6 on the PIPA time;
@@ -147,7 +147,7 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
 
         if (sw != AGC_STATUS_OK)
         {
-            return sw;
+            return (sw);
         }
 
         agc_vec_t delv = agc_erase_delv();
@@ -164,19 +164,19 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_phase_newphase(GRP1, 3, true); /* 1.3SPOT FOR SETJTAG    */
 
     if (!AGC_ASSERT(a->pipctr == 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_newphase(GRP5, 037, false);
 
-    return AGC_STATUS_OK; /* 5.37 = CHEKAVEG        */
+    return (AGC_STATUS_OK); /* 5.37 = CHEKAVEG        */
 }
 
 /* CHEKAVEG / MAKESERV / AVEGOUT (p.825-826): recall READACCS while AVEGFLAG
@@ -193,7 +193,7 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
@@ -202,13 +202,13 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_phase_newphase(GRP5, 4, true); /* CS FOUR NEWPHASE 5     */
     agc_chan_or(011, (uint16_t) AGC_CH011_TESTCONN);
 
-    return AGC_STATUS_OK; /* TEST CONNECTOR ON */
+    return (AGC_STATUS_OK); /* TEST CONNECTOR ON */
 }
 
 /* PIPSDONE / REDO5.5 (p.824): mark the reading done and continue.          */
@@ -224,11 +224,11 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
-    return chekaveg(a);
+    return (chekaveg(a));
 }
 
 /* READACCS (p.824): waitlist task every 2 s.                               */
@@ -239,15 +239,15 @@ agc_status_t agc_task_readaccs_csm(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!AGC_ASSERT(g->avg.pipage == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pipsdone(&g->avg);
+    return (pipsdone(&g->avg));
 }
 
 /* REREADAC (p.833): restart task for group 5. Does nothing on the last
@@ -259,7 +259,7 @@ agc_status_t agc_task_rereadac_csm(void)
 
     if (agc_phase_get(GRP5) == 0U)
     {                         /* LAST PASS CHECK        */
-        return AGC_STATUS_OK; /* TASKOVER               */
+        return (AGC_STATUS_OK); /* TASKOVER               */
     }
 
     agc_imu_set_pipa_interval(ONEPIPADT_2S); /* PRIO31 = 2.0 SEC B+8CS */
@@ -267,15 +267,15 @@ agc_status_t agc_task_rereadac_csm(void)
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
-        return agc_task_readaccs_csm(); /* NOT STARTED: BEGINNING */
+        return (agc_task_readaccs_csm()); /* NOT STARTED: BEGINNING */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
-    return pipsdone(&g->avg);
+    return (pipsdone(&g->avg));
 }
 
 /* QUIKREAD / CHKCTR (p.827): copy the PIPA counters (not zeroed) into
@@ -297,15 +297,15 @@ agc_status_t agc_task_quikread(void)
     {                    /* CCS PIPCTR             */
         g->avg.pipctr--; /* ONMNITOR: TS PIPCTR    */
 
-        return agc_waitlist_fixdelay(HALF_SEC, AGC_TASK_ONMNITOR);
+        return (agc_waitlist_fixdelay(HALF_SEC, AGC_TASK_ONMNITOR));
     }
 
     if (!AGC_ASSERT(g->avg.pipctr == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* TASKOVER               */
+    return (AGC_STATUS_OK); /* TASKOVER               */
 }
 
 /* ONMNITOR (p.827): the FIXDELAY return point of the 0.5 s loop.          */
@@ -313,10 +313,10 @@ agc_status_t agc_task_onmnitor(void)
 {
     if (!AGC_ASSERT(agc_guid_state()->avg.pipctr >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_task_quikread();
+    return (agc_task_quikread());
 }
 
 /* NORMLIZE (p.831): copy RN1, VN1, PIPTIME1 into RN, VN, PIPTIME and
@@ -325,12 +325,12 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t *g = agc_guid_state();
@@ -346,13 +346,13 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     g->avg.gdt_2  = g->avg.gdt1_2;  /* STOVL GDT/2            */
     g->avg.gobl_2 = g->avg.gobl1_2; /* STORE GOBL/2           */
 
-    return AGC_STATUS_OK;           /* ENDOFJOB               */
+    return (AGC_STATUS_OK);           /* ENDOFJOB               */
 }
 
 /* PIPCHECK (p.828): PIPA saturation test before compensation. CCS gives
@@ -375,7 +375,7 @@ static bool pipas_saturated(agc_vec_t delv)
 
     _Static_assert(MAXDELV == 6398, "AGC constant");
 
-    return bad;
+    return (bad);
 }
 
 /* SERVICER (p.828): the 2-second job. A saturated PIPA skips compensation
@@ -384,12 +384,12 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -401,7 +401,7 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
     {
         agc_alarm(AGC_ALARM_00205); /* SATURATED-PIPA ALARM   */
 
-        return agc_job_serv_averageg_csm(ctx);
+        return (agc_job_serv_averageg_csm(ctx));
     }
 
     serv_phase(PH_5_3_BJOB, AGC_JOB_SERV_DVTOTUP); /* RESTART REREADAC+SERVICER */
@@ -410,12 +410,12 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_delv(delv);
 
-    return agc_job_serv_dvtotup_csm(ctx);
+    return (agc_job_serv_dvtotup_csm(ctx));
 }
 
 /* DVTOTUP (p.828): DVTOTAL += |DELV| * KPIP1 (m/cs 2^7), then AVERAGEG.    */
@@ -423,7 +423,7 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t  *g = agc_guid_state();
@@ -438,10 +438,10 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ovf == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_job_serv_averageg_csm(ctx);
+    return (agc_job_serv_averageg_csm(ctx));
 }
 
 /* AVERAGEG (p.828-829): CALCRVG, then the restart-protected copy.          */
@@ -449,12 +449,12 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t *g = agc_guid_state();
@@ -465,7 +465,7 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t    refsmmat = agc_erase_refsmmat();
@@ -478,10 +478,10 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_serv_copy_csm(ctx);
+    return (agc_job_serv_copy_csm(ctx));
 }
 
 /* AVERAGEG copy (p.829): GENTRAN of 26 words RN1..GOBL1/2 under INHINT,
@@ -490,19 +490,19 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     serv_phase(PH_5_3_B, AGC_JOB_SERV_COPY);
     agc_guid_copycycle(AGC_VEHICLE_CSM, AGC_COPY_RVTG);
     serv_phase(PH_5_3_B, AGC_JOB_SERV_EXIT);
 
-    return agc_csm_avgexit(ctx);
+    return (agc_csm_avgexit(ctx));
 }
 
 /* DCA AVGEXIT / DXCH Z (p.829): continue this job at the routine named in
@@ -511,17 +511,17 @@ agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit;
 
     if (!AGC_ASSERT(exit_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_job_yield(exit_job);
+    return (agc_exec_job_yield(exit_job));
 }
 
 /* AVGEND (p.829-830): the final pass. Free-fall gyro compensation, DRIFT
@@ -531,12 +531,12 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
@@ -548,7 +548,7 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
 
     agc_phase_change2(000005, 005022, &v); /* 5 OFF, 2.2 AVETOMID    */
 
-    return agc_job_avetomid_csm(ctx);
+    return (agc_job_avetomid_csm(ctx));
 }
 
 /* AVGEND after the 2.2 restart point (p.829-830).                          */
@@ -556,12 +556,12 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -572,7 +572,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_vhfcnt(0); /* ZERO MARK COUNTERS     */
@@ -588,7 +588,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
         agc_phase_change2(000111, 000132, NULL); /* 1.11SPOT, 2.13SPOT     */
     }
 
-    return agc_exec_change_program_continue(ctx); /* POSTJUMP CANV37        */
+    return (agc_exec_change_program_continue(ctx)); /* POSTJUMP CANV37        */
 }
 
 /* SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection
@@ -597,15 +597,15 @@ agc_status_t agc_job_servexit(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_guid_state()->avg.avgexit != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change(GRP5, PH_5_3_A);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

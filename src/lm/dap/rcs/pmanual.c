@@ -38,7 +38,7 @@ agc_status_t lm_dap_zeroenbl(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dap_t *d = lm_dap_state();
@@ -52,10 +52,10 @@ agc_status_t lm_dap_zeroenbl(void)
 
     if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Minimum impulse mode, P axis (p.1431): one 14 ms pulse per deflection of
@@ -71,14 +71,14 @@ agc_status_t lm_dap_pminimp(void)
 
     if (!AGC_ASSERT(d->oldpmin >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (d->oldpmin > 0)
     { /* CHECKP         */
         d->oldpmin = (agc_sp_t) ((uint16_t) ~ch31 & PM_OCT14);
 
-        return lm_dap_jetsoff();
+        return (lm_dap_jetsoff());
     }
 
     if ((ch31 & PM_CH31_PLUSX) == 0u)
@@ -91,17 +91,17 @@ agc_status_t lm_dap_pminimp(void)
     }
     else
     {
-        return lm_dap_jetsoff();
+        return (lm_dap_jetsoff());
     }
 
     d->oldpmin = 1;
 
     if (!AGC_ASSERT(d->tj[0] != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_pjetslec_pair();
+    return (lm_dap_pjetslec_pair());
 }
 
 /* STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
@@ -113,30 +113,30 @@ agc_status_t lm_dap_pstate(void)
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_PULSEFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_XOVINFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!atthold)
     {
         if (agc_flag_test(AGC_FLAG_XOVINFLG))
         {
-            return lm_dap_purgency(); /* attitude steer */
+            return (lm_dap_purgency()); /* attitude steer */
         }
 
-        return lm_dap_detentck();
+        return (lm_dap_detentck());
     }
 
     if (agc_flag_test(AGC_FLAG_PULSEFLG))
     { /* MANMODE        */
-        return lm_dap_pminimp();
+        return (lm_dap_pminimp());
     }
 
-    return lm_dap_detentck();
+    return (lm_dap_detentck());
 }
 
 /* JUSTOUT -1 / JUSTOUT (pp.1433-1434): first manual pass. Rate command on
@@ -163,15 +163,15 @@ static agc_status_t justout(lm_dap_t *d)
 
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_PBIT) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_jetsoff();
+    return (lm_dap_jetsoff());
 }
 
 /* RATEDONE (p.1433): manual command and damping finished in all axes.
@@ -181,7 +181,7 @@ static agc_status_t ratedone(lm_dap_t *d)
 {
     if (!AGC_ASSERT(d != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -200,10 +200,10 @@ static agc_status_t ratedone(lm_dap_t *d)
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_purgency();
+    return (lm_dap_purgency());
 }
 
 /* PEGI tail (pp.1435-1436): direct-rate jet time. TJP = 25/32 x 2 x
@@ -219,22 +219,22 @@ static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
 
     if (!AGC_ASSERT(d->neg_2jetlim <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(absedotp >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((int32_t) absedotp + d->neg_2jetlim > 0)
     {
-        return lm_dap_pjetslec(6); /* four jets      */
+        return (lm_dap_pjetslec(6)); /* four jets      */
     }
 
     d->tj[0] = lm_dap_wrap(2 * (int32_t) d->tj[0]); /* ADS TJP        */
 
-    return lm_dap_pjetslec_pair();
+    return (lm_dap_pjetslec_pair());
 }
 
 /* PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
@@ -261,15 +261,15 @@ static agc_status_t pegi(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->neg_ratedb <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->tcp >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pegi_fire(d, absedotp);
+    return (pegi_fire(d, absedotp));
 }
 
 /* RATERROR (pp.1434-1435): linear/quadratic stick scaling of P-RHCCTR to
@@ -284,7 +284,7 @@ static agc_status_t raterror(lm_dap_t *d)
 
     if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t k =
@@ -300,25 +300,25 @@ static agc_status_t raterror(lm_dap_t *d)
 
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (change != 0 && (int32_t) lm_dap_ccs_dim(change) + d->neg_ratedb > 0)
     {
         d->tcp = PM_40CYC;
 
-        return pegi(d);
+        return (pegi(d));
     }
 
     if ((d->rcsflags & LM_RCS_PBIT) != 0u)
     {
-        return pegi(d);
+        return (pegi(d));
     }
 
     d->e      = d->dxerror; /* pseudo-auto    */
     d->perror = d->dxerror;
 
-    return lm_dap_purgency_law();
+    return (lm_dap_purgency_law());
 }
 
 /* DETENTCK / RUTH / RATEDAMP / RHCMOVED (pp.1432-1434): the rate-command
@@ -332,12 +332,12 @@ agc_status_t lm_dap_detentck(void)
 
     if ((d->ch31temp & PM_CH31_DETENT) == 0u)
     { /* RHCMOVED       */
-        return ourrc ? raterror(d) : justout(d);
+        return (ourrc ? raterror(d) : justout(d));
     }
 
     if (!ourrc)
     {
-        return lm_dap_purgency();
+        return (lm_dap_purgency());
     }
 
     if ((d->rcsflags & LM_RCS_JUSTIN) != 0u)
@@ -349,20 +349,20 @@ agc_status_t lm_dap_detentck(void)
     }
     else if ((d->rcsflags & (LM_RCS_PBIT | LM_RCS_QRBIT)) == 0u)
     { /* RUTH */
-        return ratedone(d);
+        return (ratedone(d));
     }
 
     agc_erase_set_p_rhcctr(0); /* RATEDAMP       */
 
     if (!AGC_ASSERT(d->ch31temp <= 077777u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return raterror(d);
+    return (raterror(d));
 }

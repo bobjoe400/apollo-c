@@ -52,7 +52,7 @@ static agc_sp_t tvcd_rlimtest(agc_sp_t d)
 {
     if (!AGC_ASSERT(d >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t q = csm_dap_mp_hi(d, RECIP_RTLIM);
@@ -60,10 +60,10 @@ static agc_sp_t tvcd_rlimtest(agc_sp_t d)
 
     if (!AGC_ASSERT((r == 0) || (r == d)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* PCDUDOTS (p. 964): minus CDU rates for pitch and yaw, scaled at
@@ -110,15 +110,15 @@ static agc_dp_t tvcd_body_rate(tvcd_axis_t ax)
 
     if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return w;
+    return (w);
 }
 
 /* ERRORLIM (p. 970): limit the upper word of ERRBTMP to +-45 deg.        */
@@ -186,7 +186,7 @@ static agc_dp_t tvcd_cascade_out(agc_dp_t in, agc_sp_t n, int k)
 
     if (!AGC_ASSERT((k == 0) || (k == 2) || (k == 4)))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t out = csm_dap_das(csm_dap_smallmp(in, n), t->tmp[k]);
@@ -195,10 +195,10 @@ static agc_dp_t tvcd_cascade_out(agc_dp_t in, agc_sp_t n, int k)
 
     if (!AGC_ASSERT(t->tmp[k] == 0))
     {
-        return 0;
+        return (0);
     }
 
-    return out;
+    return (out);
 }
 
 /* FWDFLTR, OPTVARK (pp. 970-972): the filter's present output and the
@@ -317,7 +317,7 @@ agc_status_t csm_tvc_pcopy(bool restart)
 
     if (!AGC_ASSERT(t->tvcphase == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < 6; i++)
@@ -333,10 +333,10 @@ agc_status_t csm_tvc_pcopy(bool restart)
 
     if (!AGC_ASSERT(t->pcmd == agc_dp_high(t->cmdtmp)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* YCOPY (p. 969): yaw copycycle (YCOPY +1 from restarts). TVCPHASE 3 .. 0. */
@@ -351,7 +351,7 @@ agc_status_t csm_tvc_ycopy(bool restart)
 
     if (!AGC_ASSERT(t->tvcphase == 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < 6; i++)
@@ -367,10 +367,10 @@ agc_status_t csm_tvc_ycopy(bool restart)
 
     if (!AGC_ASSERT(t->ycmd == agc_dp_high(t->cmdtmp)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* The common body of PITCHDAP / YAWDAP after the T5 set-up and stroke
@@ -384,7 +384,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
 
     if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* xINTEGRL: body-axis rate error integral, B-1 rev                   */
@@ -404,7 +404,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
 
     if (!AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT)) /* limited     */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* xOUT: incremental command to the error counter and count release */
@@ -433,7 +433,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     tvcd_delbar(p ? t->delpbar : t->delybar);
     agc_status_t s2 = p ? csm_tvc_pcopy(false) : csm_tvc_ycopy(false);
 
-    return (st != AGC_STATUS_OK) ? st : s2; /* xDAPEND: RESUME      */
+    return ((st != AGC_STATUS_OK) ? st : s2); /* xDAPEND: RESUME      */
 }
 
 /* PITCHDAP / YAWDAP entry (pp. 963, 967): T5 call of the other axis in
@@ -446,7 +446,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 
     if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt);
@@ -463,7 +463,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 
     agc_status_t s2 = tvcd_dap(ax);
 
-    return (st != AGC_STATUS_OK) ? st : s2;
+    return ((st != AGC_STATUS_OK) ? st : s2);
 }
 
 /* PITCHDAP (p. 963): T5 entry, normal or via DAPINIT.                    */
@@ -471,17 +471,17 @@ agc_status_t agc_task_pitchdap(void)
 {
     if (!AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = tvcd_entry(TVCD_PITCH);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* YAWDAP (p. 967): T5 entry.                                             */
@@ -489,17 +489,17 @@ agc_status_t agc_task_yawdap(void)
 {
     if (!AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = tvcd_entry(TVCD_YAW);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* DAPINIT (pp. 969-970): T5 entry from TVCINIT4. PITCHDAP in TVCDT
@@ -513,7 +513,7 @@ agc_status_t agc_task_dapinit(void)
 
     if (!AGC_ASSERT((w > 0) && (w <= AGC_SP_MAX)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w);
@@ -523,8 +523,8 @@ agc_status_t agc_task_dapinit(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* NOQRSM               */
+    return (st); /* NOQRSM               */
 }

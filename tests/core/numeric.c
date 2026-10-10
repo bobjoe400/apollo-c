@@ -52,7 +52,7 @@ static agc_dp_t oct2(int hi, int lo) /* AGC words -> DP value     */
     int h = (hi < 040000) ? hi : -(077777 - hi);
     int l = (lo < 040000) ? lo : -(077777 - lo);
 
-    return agc_dp_pack((agc_sp_t) h, (agc_sp_t) l);
+    return (agc_dp_pack((agc_sp_t) h, (agc_sp_t) l));
 }
 
 static void test_words(void)
@@ -351,10 +351,10 @@ int main(void)
     {
         printf("test_core_numeric: %d failures\n", failures);
 
-        return 1;
+        return (1);
     }
 
     printf("test_core_numeric: all passed\n");
 
-    return 0;
+    return (0);
 }

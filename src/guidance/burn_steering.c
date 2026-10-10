@@ -57,15 +57,15 @@ static agc_status_t vg_to_lvc(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg)
     {
         agc_flag_set(AGC_FLAG_AVFLAG);
 
-        return agc_guid_midgim(ip, vg);
+        return (agc_guid_midgim(ip, vg));
     }
 
     if (!AGC_ASSERT(rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_rendz_get_lvc(ip, rz->rinit, rz->vinit, vg, &rz->delvlvc);
+    return (agc_rendz_get_lvc(ip, rz->rinit, rz->vinit, vg, &rz->delvlvc));
 }
 
 /* CALCTHET (CM p.709-710, LM p.765-766): the impulsive DELVSIN is spread
@@ -107,10 +107,10 @@ static agc_status_t calcthet(agc_interp_t *ip, agc_vehicle_t veh)
 
     if (!AGC_ASSERT(b->f > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return vg_to_lvc(ip, veh, vg);
+    return (vg_to_lvc(ip, veh, vg));
 }
 
 /* CALCUT (Comanche p.712-713): thrust direction for aimpoint steering.
@@ -121,7 +121,7 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t  *g  = agc_guid_state();
@@ -131,7 +131,7 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t gv =
@@ -155,10 +155,10 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
 
     if (!AGC_ASSERT(rad >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* S40.1B Comanche (p.710-711): VIPRIME at TIG - 2 s (kept in UT), then
@@ -173,7 +173,7 @@ static agc_status_t initial_vg_lambert_csm(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_guid_state()->burn.ut = rz->viprime; /* STODL UT    */
@@ -182,13 +182,13 @@ static agc_status_t initial_vg_lambert_csm(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_vgtig(rz->delveet3);
     st = vg_to_lvc(ip, AGC_VEHICLE_CSM, rz->delveet3);
 
-    return (st != AGC_STATUS_OK) ? st : agc_guid_calcut(ip);
+    return ((st != AGC_STATUS_OK) ? st : agc_guid_calcut(ip));
 }
 
 /* S40.1B Luminary (p.766-767): LEMPREC to TIG, INITVEL (NUMIT 0, EPSILON4
@@ -206,7 +206,7 @@ static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rtig      = rz->rinit = p.ratt;
@@ -221,13 +221,13 @@ static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_vgtig(rz->delveet3); /* VR - VN     */
     g->burn.ut = agc_vec_unit(ip, rz->delveet3, &g->burn.vgdisp, NULL);
 
-    return vg_to_lvc(ip, AGC_VEHICLE_LM, rz->delveet3);
+    return (vg_to_lvc(ip, AGC_VEHICLE_LM, rz->delveet3));
 }
 
 /* S40.1 (CM p.709, LM p.764): initial thrust direction UT and VGTIG.
@@ -239,7 +239,7 @@ agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip,
     if (!AGC_ASSERT(ip != NULL) ||
         !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t  *g  = agc_guid_state();
@@ -256,8 +256,8 @@ agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip,
 
     if (!agc_flag_test(AGC_FLAG_XDELVFLG))
     {
-        return (veh == AGC_VEHICLE_CSM) ? initial_vg_lambert_csm(ip) :
-               initial_vg_lambert_lm(ip);
+        return ((veh == AGC_VEHICLE_CSM) ? initial_vg_lambert_csm(ip) :
+                initial_vg_lambert_lm(ip));
     }
 
     if (veh == AGC_VEHICLE_CSM)
@@ -265,7 +265,7 @@ agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip,
         rz->delvsab = agc_vec_abval(ip, rz->delvsin); /* P30/P40 I/F */
     }
 
-    return calcthet(ip, veh);
+    return (calcthet(ip, veh));
 }
 
 /* TSTRXUT / BADVCTOR (Comanche p.716): if UT x R was null (36D = 0) use
@@ -276,7 +276,7 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
 
     if (mag != 0)
     {
-        return y;
+        return (y);
     }
 
     agc_vec_t s =
@@ -285,12 +285,12 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
 
     if (!AGC_ASSERT(mag == 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return agc_vec_neg(agc_vec_unit(
-                           ip, agc_vec_cross(ip, s, agc_guid_state()->burn.ut),
-                           NULL, NULL));
+    return (agc_vec_neg(agc_vec_unit(
+                            ip, agc_vec_cross(ip, s, agc_guid_state()->burn.ut),
+                            NULL, NULL)));
 }
 
 /* The SPS bell axes of S40.2,3 (Comanche p.715): pitch p = PACTOFF*TRIMSCAL
@@ -337,7 +337,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_burn_t  *b        = &agc_guid_state()->burn;
@@ -374,7 +374,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
 
     agc_imu_set_pointvsm(b->pointvsm); /* FOR R60     */
 
-    return agc_imu_set_scaxis(b->scaxis);
+    return (agc_imu_set_scaxis(b->scaxis));
 }
 
 /* S40.2,3 Luminary (p.768-769): POINTVSM, SCAXIS = +X (DPS, APS and RCS
@@ -384,7 +384,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_burn_t  *b        = &agc_guid_state()->burn;
@@ -410,7 +410,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip)
     agc_flag_set(AGC_FLAG_PFRATFLG);
     agc_imu_set_pointvsm(b->pointvsm);
 
-    return agc_imu_set_scaxis(b->scaxis);
+    return (agc_imu_set_scaxis(b->scaxis));
 }
 
 /* S41.1 (CM p.717-718, LM p.783-784): VG (reference, m/cs 2^7) to the
@@ -457,7 +457,7 @@ agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(tgo != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t  dmag = 0;
@@ -466,7 +466,7 @@ agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
 
     if (d >= 0)
     {
-        return AGC_STATUS_ALARM; /* INCRSVG     */
+        return (AGC_STATUS_ALARM); /* INCRSVG     */
     }
 
     agc_dp_t m =
@@ -480,7 +480,7 @@ agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
 
     if (!AGC_ASSERT(den != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t t =
@@ -489,7 +489,7 @@ agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
     *tgo =
         agc_dp_sub(ip, agc_dp_mul(ip, t, MFOURDT), in->tailoff); /* BDSU     */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TGDCALC (Luminary S40.8 p.771): with d = UNIT(-DELVREF) . VG < 0,
@@ -499,7 +499,7 @@ agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(tgo != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t  dmag = 0;
@@ -508,7 +508,7 @@ agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
 
     if (d >= 0)
     {
-        return AGC_STATUS_ALARM; /* ALARMIT     */
+        return (AGC_STATUS_ALARM); /* ALARMIT     */
     }
 
     agc_dp_t m = agc_dp_mul(
@@ -516,14 +516,14 @@ agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
 
     if (!AGC_ASSERT(dmag != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t t = agc_dp_div(ip, agc_dp_shr(m, 10), dmag); /* SR DDV 36D  */
 
     *tgo = agc_dp_add(ip, agc_dp_mul(ip, t, MFOURDT), in->tailoff);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* XPRODUCT (Comanche S40.8 p.720): cross-product steering,
@@ -539,7 +539,7 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
     if (!AGC_ASSERT(ip != NULL && in != NULL) ||
         !AGC_ASSERT(refsmmat != NULL && trig != NULL && omegac != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t a =
@@ -551,7 +551,7 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
     agc_guid_smnb(trig, &x);
     *omegac = agc_vec_scale(ip, x, in->kprimedt); /* OMEGACLC    */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* The short-burn time of S40.13 (Comanche p.727): v is |VGTIG| (less the
@@ -567,8 +567,8 @@ static agc_dp_t timeburn_csm(agc_interp_t *ip, agc_dp_t v, agc_dp_t m,
 
     if (temp1 < 0)
     { /* S40.131     */
-        return agc_dp_div(ip, agc_dp_add(ip, agc_dp_mul(ip, m, v), c->ek2val),
-                          c->ek3val);
+        return (agc_dp_div(ip, agc_dp_add(ip, agc_dp_mul(ip, m, v), c->ek2val),
+                           c->ek3val));
     }
 
     agc_dp_t mass =
@@ -579,16 +579,17 @@ static agc_dp_t timeburn_csm(agc_interp_t *ip, agc_dp_t v, agc_dp_t m,
 
     if (agc_dp_sub(ip, temp1, temp2) >= 0)
     {
-        return -1; /* S40.133     */
+        return (-1); /* S40.133     */
     }
 
     if (!AGC_ASSERT(temp2 > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_add(ip, agc_dp_mul(ip, agc_dp_div(ip, temp1, temp2), SEC5_14),
-                      SEC1_2D);
+    return (agc_dp_add(ip,
+                       agc_dp_mul(ip, agc_dp_div(ip, temp1, temp2), SEC5_14),
+                       SEC1_2D));
 }
 
 /* S40.13 TIMEBURN (Comanche p.726-728): IMPULSW stays set (attitude hold,
@@ -601,7 +602,7 @@ agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(emdot >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_burn_t *b = &agc_guid_state()->burn;
@@ -627,10 +628,10 @@ agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage,
     {
         agc_flag_clear(AGC_FLAG_IMPULSW);
 
-        return AGC_STATUS_OK; /* WILL STEER  */
+        return (AGC_STATUS_OK); /* WILL STEER  */
     }
 
     agc_erase_set_tgo((agc_dp_t) agc_dp_high(t14)); /* TGO AT +28  */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

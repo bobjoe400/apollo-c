@@ -21,14 +21,14 @@ agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* FLAGWRD6 bit 15 = 0, bit 14 = 1 for the RCS autopilot; otherwise
      * exit, to protect the TVC DAP on switch-over.                        */
     if (agc_flag_test(AGC_FLAG_DAPBIT1) || !agc_flag_test(AGC_FLAG_DAPBIT2))
     {
-        return AGC_STATUS_OK; /* ENDOFJOB             */
+        return (AGC_STATUS_OK); /* ENDOFJOB             */
     }
 
     agc_sp_t psi = csm_dap_word_sp(agc_erase_cduz()); /* CA CDUZ (raw word) */
@@ -45,8 +45,8 @@ agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(r->capsi >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB             */
+    return (AGC_STATUS_OK); /* ENDOFJOB             */
 }

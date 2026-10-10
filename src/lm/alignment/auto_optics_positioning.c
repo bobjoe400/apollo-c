@@ -35,10 +35,10 @@ static agc_sp_t detent_code(void)
 
     if (!AGC_ASSERT((d >= 0) && (d <= DETENT_COAS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return d;
+    return (d);
 }
 
 /*
@@ -50,7 +50,7 @@ agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -60,14 +60,14 @@ agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx,
 
     if (!AGC_ASSERT(star6 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->starcode = (agc_sp_t) ((star6 / STAR_WORDS) + DETENT_2);
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_LM_AUTO_OPTICS_ORIENT,
-                       AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_LM_AUTO_OPTICS_ORIENT,
+                        AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY));
 }
 
 /* R52A: flash V01N70; V33 R52B, ENTER (new star code) R52A. */
@@ -75,17 +75,17 @@ agc_status_t agc_job_lm_auto_optics_star_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_LM_AUTO_OPTICS_ORIENT,
-                       AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_LM_AUTO_OPTICS_ORIENT,
+                        AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY));
 }
 
 /*
@@ -104,11 +104,11 @@ static agc_status_t orient_to_star(const agc_job_ctx_t *ctx, uint16_t az,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return align_planet(ctx, align_loadtime(),
-                        AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED);
+    return (align_planet(ctx, align_loadtime(),
+                         AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED));
 }
 
 /*
@@ -119,7 +119,7 @@ agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_3AXISFLG);
@@ -127,10 +127,10 @@ agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx)
 
     if ((d <= 0) || (d == DETENT_COAS))
     {
-        return agc_job_lm_auto_optics_az_el_display(ctx); /* GETAZEL  */
+        return (agc_job_lm_auto_optics_az_el_display(ctx)); /* GETAZEL  */
     }
 
-    return orient_to_star(ctx, agc_erase_aotaz((int) d), ELEVATION_45);
+    return (orient_to_star(ctx, agc_erase_aotaz((int) d), ELEVATION_45));
 }
 
 /* GETAZEL: flash V06N87 (AZ, EL of the sighting device). */
@@ -138,17 +138,17 @@ agc_status_t agc_job_lm_auto_optics_az_el_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_AZ_EL, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED,
-                       AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_AZ_EL, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED,
+                        AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY));
 }
 
 /* GETAZEL V33: DCA AZ (AZ, EL in SP 2's complement), AZEL. */
@@ -156,12 +156,12 @@ agc_status_t agc_job_lm_auto_optics_az_el_loaded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_align_ram_t *ram = agc_align_ram();
 
-    return orient_to_star(ctx, ram->az, ram->el);
+    return (orient_to_star(ctx, ram->az, ram->el));
 }
 
 /* After PLANET: POINTVSM; the attitude maneuver R60LEM. */
@@ -169,7 +169,7 @@ agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -187,10 +187,10 @@ agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_LM_AUTO_OPTICS_MANEUVERED);
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_LM_AUTO_OPTICS_MANEUVERED));
 }
 
 /* Back from R60LEM: COAS calibration (detent 0) recycles to R52A;
@@ -199,13 +199,13 @@ agc_status_t agc_job_lm_auto_optics_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((agc_align_ram()->starcode & DETENT_BITS) == 0)
     {
-        return agc_job_lm_auto_optics_star_display(ctx);
+        return (agc_job_lm_auto_optics_star_display(ctx));
     }
 
-    return align_goto(agc_align_ram()->auto_optics_return);
+    return (align_goto(agc_align_ram()->auto_optics_return));
 }

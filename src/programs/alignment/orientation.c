@@ -37,7 +37,7 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
         !AGC_ASSERT((cdu != NULL) && (xsm != NULL) && (xnb != NULL) &&
                     (thetad != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_cdutrig_t trig;
@@ -50,7 +50,7 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     /* S52.2A: X1 = 18, 12, 6 selects XNB, YNB, ZNB in turn (TIX,1 by 6). */
@@ -62,7 +62,7 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
 
     *xsm = *smd;                                 /* S52.2.1 MATMOVE        */
 
-    return agc_imu_calcga(ip, xnb, xsm, thetad); /* CALCGA -> THETAD       */
+    return (agc_imu_calcga(ip, xnb, xsm, thetad)); /* CALCGA -> THETAD       */
 }
 
 /*
@@ -76,7 +76,7 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
@@ -94,7 +94,7 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
             ip, agc_vec_cross(ip, smd->row[0], smd->row[1]), NULL, NULL);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -108,7 +108,7 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_out_t    o;
@@ -118,10 +118,10 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd);
+    return (agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd));
 }
 
 /*
@@ -135,7 +135,7 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_vec_t h = agc_vec_cross(ip, rcsm, vcsm);
@@ -145,7 +145,7 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
     smd->row[1] =
         agc_vec_unit(ip, agc_vec_cross(ip, smd->row[2], xsmd), NULL, NULL);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* A CDU word read as the 1's complement SP the interpreter DLOAD sees. */
@@ -155,20 +155,20 @@ static int32_t ones_value(uint16_t w)
 
     if (!AGC_ASSERT(w <= CDU_WORD_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((m & CDU_SIGN_BIT) != 0u)
     {
-        return (int32_t) m - CDU_ONES_NEG;
+        return ((int32_t) m - CDU_ONES_NEG);
     }
 
     if (!AGC_ASSERT(m < CDU_SIGN_BIT))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (int32_t) m;
+    return ((int32_t) m);
 }
 
 /*
@@ -182,7 +182,7 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
 {
     if (!AGC_ASSERT(thetad != NULL) || !AGC_ASSERT(cdu != NULL))
     {
-        return true;
+        return (true);
     }
 
     bool coarse = false;
@@ -202,7 +202,7 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
         }
     }
 
-    return coarse;
+    return (coarse);
 }
 
 /*
@@ -216,7 +216,7 @@ agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
     if (!AGC_ASSERT((ip != NULL) && (smd != NULL)) ||
         !AGC_ASSERT((refsmmat != NULL) && (xdc != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < AGC_VEC_N; i++)
@@ -225,5 +225,5 @@ agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
                                    NULL, NULL);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

@@ -41,7 +41,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -71,7 +71,7 @@ static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
     in.acorbd  = 1; /* BD roll                              */
     in.xtrans  = 0;
 
-    return in;
+    return (in);
 }
 
 static void test_jet_select(void)
@@ -182,7 +182,7 @@ static int stroke_bursts(int count, int pos)
         CHECK((pos >= -50) && (pos <= 50)); /* 10 x ESTROKER   */
     }
 
-    return pos;
+    return (pos);
 }
 
 static void test_stroke(void)
@@ -261,5 +261,5 @@ int main(void)
         "test_csm_dap: %d checks, %d failures, %d assertion reports\n",
         g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

@@ -52,15 +52,15 @@ static agc_dp_t dp_shift(agc_interp_t *ip, agc_dp_t v, int n)
 {
     if (!AGC_ASSERT(n > -64 && n < 64))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (n >= 0)
     {
-        return agc_dp_shl(ip, v, n);
+        return (agc_dp_shl(ip, v, n));
     }
 
-    return agc_dp_shr(v, -n);
+    return (agc_dp_shr(v, -n));
 }
 
 /* RASTEER1 .. SS (p.776-777): RMAG, IC, 30D, R1C with its normalization
@@ -72,7 +72,7 @@ static agc_status_t rs_geometry(agc_interp_t *ip, rs_work_t *w)
 
     if (!AGC_ASSERT(rtx2 == 0 || rtx2 == 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t rn = agc_erase_rn();
@@ -99,10 +99,10 @@ static agc_status_t rs_geometry(agc_interp_t *ip, rs_work_t *w)
 
     if (!AGC_ASSERT(w->r1c != 0 && w->ss > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* One velocity component (p.777-778): with L = SS - 30D (for A) or SS
@@ -119,7 +119,7 @@ static agc_dp_t rs_speed(agc_interp_t *ip, const rs_work_t *w, agc_dp_t len,
 
     if (!AGC_ASSERT(d > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     d = agc_dp_shr(d, 1);                     /* SR1            */
@@ -128,7 +128,7 @@ static agc_dp_t rs_speed(agc_interp_t *ip, const rs_work_t *w, agc_dp_t len,
 
     p = agc_tp_shift(ip, p, 1 - (int) w->muscale - k); /* XSU,2 SL* 1,2  */
 
-    return agc_tp_sqrt(ip, p);
+    return (agc_tp_sqrt(ip, p));
 }
 
 /* The minimum-energy transfer time less the time to go to the aimpoint
@@ -156,12 +156,13 @@ static agc_dp_t rs_time_error(agc_interp_t *ip, const rs_work_t *w)
 
     if (!AGC_ASSERT(den > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t tm = agc_dp_div(ip, num, den); /* BDDV           */
 
-    return agc_dp_add(ip, agc_dp_sub(ip, tm, rz->tpass4), agc_erase_piptime());
+    return (agc_dp_add(ip, agc_dp_sub(ip, tm, rz->tpass4),
+                       agc_erase_piptime()));
 }
 
 /* UNIT(sign(GEOMSGN) (v x UN)) for 180MESS / NEGPROD.                      */
@@ -176,10 +177,10 @@ static agc_vec_t rs_normal(agc_interp_t *ip, agc_vec_t v, agc_sp_t geomsgn)
 
     if (!AGC_ASSERT(geomsgn != 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return agc_vec_unit(ip, n, NULL, NULL);
+    return (agc_vec_unit(ip, n, NULL, NULL));
 }
 
 /* VR (p.778-779): the main formula, or 180MESS (IC.IR >= 0: replace
@@ -221,7 +222,7 @@ static agc_vec_t rs_vr(agc_interp_t *ip, const rs_work_t *w, agc_dp_t a,
 
     int n = (int) agc_rendz_erasable()->body.rtx2 - 1; /* VSR* 0 -1,2    */
 
-    return (n < 0) ? agc_vec_shl(ip, vr, -n) : agc_vec_shr(vr, n);
+    return ((n < 0) ? agc_vec_shl(ip, vr, -n) : agc_vec_shr(vr, n));
 }
 
 /* ASTREND .. NOGOBL (p.779-780): DELVEET3 = VR - VN1, plus in the earth
@@ -233,7 +234,7 @@ static agc_vec_t rs_vg(agc_interp_t *ip, agc_vec_t vr)
 
     if (agc_rendz_erasable()->body.rtx2 != 0)
     {
-        return vg; /* NOGOBL         */
+        return (vg); /* NOGOBL         */
     }
 
     /* UNIT RN leaves |RN|^2 at 34D (LVSQUARE, the VSQ of RN).          */
@@ -241,14 +242,14 @@ static agc_vec_t rs_vg(agc_interp_t *ip, agc_vec_t vr)
 
     if (!AGC_ASSERT(rsq > 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     agc_dp_t dt = agc_dp_sub(ip, agc_erase_piptime(), g->lm.gobltime);
     agc_dp_t k  =
         agc_dp_div(ip, agc_dp_mul_trunc(dt, EARTHMU), rsq); /* 2^6     */
 
-    return agc_vec_add(ip, agc_vec_scale(ip, g->avg.gobl1_2, k), vg);
+    return (agc_vec_add(ip, agc_vec_scale(ip, g->avg.gobl1_2, k), vg));
 }
 
 /* RASTEER1 (Luminary p.776-780): VIPRIME and DELVEET3 for S40.8, which
@@ -257,7 +258,7 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rendz_t   *rz = agc_rendz_erasable();
@@ -271,14 +272,14 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
 
     if (!AGC_ASSERT(w.muasteer > 0 && w.geomsgn != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = rs_geometry(ip, &w);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t a = rs_speed(ip, &w, agc_dp_sub(ip, w.ss, w.c), w.rmag);
@@ -295,5 +296,5 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
     rz->viprime  = rs_vr(ip, &w, a, b);    /* STORE VIPRIME  */
     rz->delveet3 = rs_vg(ip, rz->viprime); /* STORE DELVEET3 */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

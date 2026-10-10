@@ -31,7 +31,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -53,19 +53,19 @@ static const double R0   = 6678137.0;   /* 300 km circular orbit, m   */
 
 static agc_vec_t pos(double x, double y, double z)
 {
-    return agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
-                        agc_dp_from_double(z, 29));
+    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
+                         agc_dp_from_double(z, 29)));
 }
 
 static agc_vec_t vel(double x, double y, double z)
 {
-    return agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
-                        agc_dp_from_double(z, 7));
+    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
+                         agc_dp_from_double(z, 7)));
 }
 
 static agc_dp_t dp_absdiff(agc_dp_t a, agc_dp_t b)
 {
-    return (a > b) ? a - b : b - a;
+    return ((a > b) ? a - b : b - a);
 }
 
 /* 1. SR30.1 on a circular orbit. */
@@ -142,7 +142,7 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
                   (double) rz->delvcsi / 2147483648.0 * 128.0 * 100.0 / 0.3048);
     *delvcsi = rz->delvcsi;
 
-    return st;
+    return (st);
 }
 
 /* Small lead: without a burn the active vehicle would pass the passive
@@ -190,5 +190,5 @@ int main(void)
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,
                   g_failures);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

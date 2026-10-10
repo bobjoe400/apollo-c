@@ -38,14 +38,14 @@ agc_status_t csm_dap_needler(void)
         /* in coarse align do not use the IMU error counters             */
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     uint16_t f = (uint16_t) (c->rcsflags & FLAGS_23); /* NEEDLER1    */
 
     if (f == 0u)
     {
-        return needles3();
+        return (needles3());
     }
 
     if ((f & AGC_CSM_RCSF_NEEDLE1) != 0u)
@@ -56,7 +56,7 @@ agc_status_t csm_dap_needler(void)
             AGC_CHAN_CHAN12,
             (uint16_t) (077777u & ~(unsigned) AGC_CH012_ENBIMUERR));
 
-        return needle11();
+        return (needle11());
     }
 
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
@@ -65,10 +65,10 @@ agc_status_t csm_dap_needler(void)
 
     if (!AGC_ASSERT((c->rcsflags & FLAGS_23) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* wait at least 4 ms for relay closure               */
+    return (AGC_STATUS_OK); /* wait at least 4 ms for relay closure               */
 }
 
 /* NEEDLE11: zero the inputs, the display registers and the out counters
@@ -92,10 +92,10 @@ static agc_status_t needle11(void)
 
     if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_NEEDLE2) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* end pass 1             */
+    return (st); /* end pass 1             */
 }
 
 /* NEEDLES3: if the IMU error counter is not enabled, recycle (NEEDLER +5). */
@@ -106,17 +106,17 @@ static agc_status_t needles3(void)
 
     if (!AGC_ASSERT(ch12 <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((ch12 & (uint16_t) AGC_CH012_ENBIMUERR) == 0u)
     {
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
-    return needles();
+    return (needles());
 }
 
 /* NEEDLES, DACLOOP (p. 1012): EDRIVE = -AK/4 limited to +-384 pulses;
@@ -156,10 +156,10 @@ static agc_status_t needles(void)
 
     if (!AGC_ASSERT(c->edrive[0] <= DACLIMIT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_OK) ? s2 : st;
+    return ((st == AGC_STATUS_OK) ? s2 : st);
 }
 
 /* NEEDLER for other lanes (entry DAP, R60): AK..AK2 stored first; init
@@ -173,7 +173,7 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
     if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) &&
                     (ak2 >= AGC_SP_MIN)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (init)
@@ -189,5 +189,5 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
 
     agc_relint();
 
-    return st;
+    return (st);
 }

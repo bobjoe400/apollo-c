@@ -30,7 +30,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     g_asserts++;
     (void) printf("assert %s:%d: %s\n", file, line, expr);
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -60,7 +60,7 @@ static agc_dsky_state_t state(void)
 
     CHECK(agc_dsky_get_state(&s) == AGC_STATUS_OK);
 
-    return s;
+    return (s);
 }
 
 /* Register r (0..2) shows the 5 digits of n (decimal digits, sign sgn). */
@@ -72,13 +72,13 @@ static bool reg_is(const agc_dsky_state_t *s, int r, long n, int sgn)
     {
         if (s->r[r][d] != (int8_t) (v % 10))
         {
-            return false;
+            return (false);
         }
 
         v /= 10;
     }
 
-    return s->r_sign[r] == sgn;
+    return (s->r_sign[r] == sgn);
 }
 
 static bool reg_blank(const agc_dsky_state_t *s, int r)
@@ -87,11 +87,11 @@ static bool reg_blank(const agc_dsky_state_t *s, int r)
     {
         if (s->r[r][d] != AGC_DSKY_BLANK)
         {
-            return false;
+            return (false);
         }
     }
 
-    return true;
+    return (true);
 }
 
 /* "V06N36E": verb 06 noun 36 shows the AGC clock (HMS) in R1-R3. */
@@ -349,5 +349,5 @@ int main(void)
     (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_asserts);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

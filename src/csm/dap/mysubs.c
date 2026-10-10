@@ -24,15 +24,15 @@ agc_sp_t csm_dap_word_sp(uint16_t w)
 
     if (!AGC_ASSERT(v <= CSM_DAP_NEG0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((v & CSM_DAP_BIT15) != 0u)
     {
-        return (agc_sp_t) (-(int) ((~(unsigned) v) & 037777u));
+        return ((agc_sp_t) (-(int) ((~(unsigned) v) & 037777u)));
     }
 
-    return (agc_sp_t) v;
+    return ((agc_sp_t) v);
 }
 
 /* Value -> ones' complement 15-bit word (0 -> +0).                       */
@@ -40,20 +40,20 @@ uint16_t csm_dap_sp_word(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(v <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (v < 0)
     {
-        return (uint16_t) (077777 + (int) v);
+        return ((uint16_t) (077777 + (int) v));
     }
 
-    return (uint16_t) v;
+    return ((uint16_t) v);
 }
 
 /* MSU (modular subtract): the two's complement difference of two 15-bit
@@ -62,12 +62,12 @@ agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
 {
     if (!AGC_ASSERT(a <= CSM_DAP_NEG0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(b <= CSM_DAP_NEG0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     unsigned d = ((unsigned) a - (unsigned) b) & 077777u;
@@ -77,7 +77,7 @@ agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
         d -= 1u; /* two's -> ones' complement          */
     }
 
-    return csm_dap_word_sp((uint16_t) d);
+    return (csm_dap_word_sp((uint16_t) d));
 }
 
 /* AD / ADS: on overflow the stored word is the sum -+ 1.0.               */
@@ -87,7 +87,7 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (s > AGC_SP_MAX)
@@ -105,10 +105,10 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) s;
+    return ((agc_sp_t) s);
 }
 
 /* AD; TS X; TCF +3; INDEX A; CS LIMITS: overflow limits to +-POSMAX.     */
@@ -118,7 +118,7 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (s > AGC_SP_MAX)
@@ -136,10 +136,10 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) s;
+    return ((agc_sp_t) s);
 }
 
 /* DAS: double precision add, overflow-corrected like the AGC.            */
@@ -149,12 +149,12 @@ agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (s > AGC_DP_MAX)
@@ -170,7 +170,7 @@ agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
         /* no overflow */
     }
 
-    return (agc_dp_t) s;
+    return ((agc_dp_t) s);
 }
 
 /* DDOUBL: A,L doubled (overflow-corrected).                             */
@@ -178,40 +178,40 @@ agc_dp_t csm_dap_ddoubl(agc_dp_t a)
 {
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return csm_dap_das(a, a);
+    return (csm_dap_das(a, a));
 }
 
 agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b)
 {
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_high(agc_sp_mul(a, b));
+    return (agc_dp_high(agc_sp_mul(a, b)));
 }
 
 agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
 {
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_low(agc_sp_mul(a, b));
+    return (agc_dp_low(agc_sp_mul(a, b)));
 }
 
 /* DV: DP dividend (A,L) by an SP divisor, SP quotient truncated toward
@@ -221,12 +221,12 @@ agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
 {
     if (!AGC_ASSERT((num >= AGC_DP_MIN) && (num <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     bool    neg = ((num < 0) != (den < 0)) && (num != 0);
@@ -235,12 +235,12 @@ agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
 
     if ((ad == 0) || (an >= ad * W_ONE))
     {
-        return neg ? AGC_SP_MIN : AGC_SP_MAX;
+        return (neg ? AGC_SP_MIN : AGC_SP_MAX);
     }
 
     int64_t q = an / ad;
 
-    return (agc_sp_t) (neg ? -q : q);
+    return ((agc_sp_t) (neg ? -q : q));
 }
 
 /* SMALLMP (MYSUBS p. 999): KMPAC = A (KMPAC, KMPAC+1), the low product
@@ -249,18 +249,18 @@ agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
 {
     if (!AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac)); /* AY (KMPAC +1) */
     agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));   /* AX            */
 
-    return csm_dap_das(ax, (agc_dp_t) ay);             /* AX + AY       */
+    return (csm_dap_das(ax, (agc_dp_t) ay));             /* AX + AY       */
 }
 
 /* DPADD (MYSUBS pp. 999-1000): add the DP angle A,L (scaled 180 deg) to
@@ -271,12 +271,12 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
 {
     if (!AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int64_t s = (int64_t) kmpac + (int64_t) al;
@@ -294,7 +294,7 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
         /* no overflow */
     }
 
-    return (agc_dp_t) s;
+    return ((agc_dp_t) s);
 }
 
 /* CDUX (axis 0), CDUY (1), CDUZ (2): raw counter words.                  */
@@ -302,20 +302,20 @@ uint16_t csm_dap_cdu(int axis)
 {
     if (!AGC_ASSERT((axis >= 0) && (axis < AGC_CSM_AXES)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (axis == 1)
     {
-        return agc_erase_cduy();
+        return (agc_erase_cduy());
     }
 
     if (axis == 2)
     {
-        return agc_erase_cduz();
+        return (agc_erase_cduz());
     }
 
-    return agc_erase_cdux();
+    return (agc_erase_cdux());
 }
 
 /* EXTEND; DCA xxxLOC; DXCH T5LOC; CAF delay; TS TIME5.                   */
@@ -324,25 +324,25 @@ agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
     if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
         !AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rupt_set_t5_task(task);
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t csm_dap_set_time5(uint16_t time5_word)
 {
     if (!AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CAF BIT13; EXTEND; RAND DSALMOUT: SPS engine-on output bit 11.13.      */
@@ -352,10 +352,10 @@ bool csm_dap_engine_on(void)
 
     if (!AGC_ASSERT(ch11 <= CSM_DAP_NEG0))
     {
-        return false;
+        return (false);
     }
 
-    return (ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u;
+    return ((ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u);
 }
 
 /* FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2) = 1,0: T5 belongs to the TVC DAP. */
@@ -366,8 +366,8 @@ bool csm_tvc_dap_is_tvc(void)
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1)))
     {
-        return false;
+        return (false);
     }
 
-    return b1 && !b2;
+    return (b1 && !b2);
 }

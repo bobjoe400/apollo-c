@@ -49,7 +49,7 @@ static uint16_t          pfd_cdu[5]; /* MPAC +2..+6: CDUT CDUS CDUY CDUZ CDUX */
 
 const agc_rr_downlink_t *agc_rendz_rr_downlink(void)
 {
-    return &pfd_down;
+    return (&pfd_down);
 }
 
 /* Waitlist delay of the R29 tasks: 4 cs when PIPCTR is positive (the
@@ -61,10 +61,10 @@ static uint16_t pfd_offset(void)
 
     if (!AGC_ASSERT(dt == 4 || dt == PFD_1SEC))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (uint16_t) dt;
+    return ((uint16_t) dt);
 }
 
 /* R29 first pass (p.596): designate on, tracker off, LOSCMFLG and
@@ -94,7 +94,7 @@ static agc_status_t pfd_start(void)
 
     agc_relint(); /* NOR29NOW */
 
-    return st;
+    return (st);
 }
 
 /* R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
@@ -120,7 +120,7 @@ static agc_status_t pfd_los(void)
     { /* BOFSET: loop on  */
         agc_relint();
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     rz_flag_put(AGC_FLAG_LOSCMFLG, true);
@@ -133,7 +133,7 @@ static agc_status_t pfd_los(void)
 
     if (agc_flag_test(AGC_FLAG_OLDESFLG))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_inhint();
@@ -143,7 +143,7 @@ static agc_status_t pfd_los(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* R29 (p.596), called by SERVICER.                                      */
@@ -151,15 +151,15 @@ agc_status_t agc_radar_powered_flight_designate(void)
 {
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!rr_radmodes_test(RR_DESIGBIT))
     {
-        return pfd_start();
+        return (pfd_start());
     }
 
-    return pfd_los();
+    return (pfd_los());
 }
 
 /* R29REM0J: REMODE as a task, wait for its end in RADSTALL.            */
@@ -167,19 +167,19 @@ agc_status_t agc_job_powered_flight_remode(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_REMODE);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
 
-    return agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_ENDOFJOB, &res);
+    return (agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_ENDOFJOB, &res));
 }
 
 /* PREPOS29: trunnion to -180 degrees, then repositioning off.           */
@@ -187,10 +187,10 @@ agc_status_t agc_task_powered_flight_preposition(void)
 {
     if (!AGC_ASSERT(rr_radmodes_test(RR_REPOSBIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_axis_start(RR_AXIS_PREPOSITION_R29, 0, 0, 040000U);
+    return (rr_axis_start(RR_AXIS_PREPOSITION_R29, 0, 0, 040000U));
 }
 
 /* BEGDES29: the designate job, again in .5 s.                           */
@@ -201,11 +201,11 @@ agc_status_t agc_task_powered_flight_designate(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_waitlist_vardelay(PFD_HALFSEC,
-                                 AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP);
+    return (agc_waitlist_vardelay(PFD_HALFSEC,
+                                  AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
 }
 
 /* R29DLOOP after .5 s: stop when the designate is called off; wait a
@@ -215,18 +215,18 @@ agc_status_t agc_task_powered_flight_designate_loop(void)
 {
     if (!rr_radmodes_test(RR_DESIGBIT))
     {
-        return AGC_STATUS_OK; /* TASKOVER */
+        return (AGC_STATUS_OK); /* TASKOVER */
     }
 
     if (agc_flag_test(AGC_FLAG_LOSCMFLG))
     {
-        return agc_waitlist_vardelay(1U,
-                                     AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP);
+        return (agc_waitlist_vardelay(1U,
+                                      AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
     }
 
     rz_flag_put(AGC_FLAG_LOSCMFLG, true);
 
-    return agc_task_powered_flight_designate();
+    return (agc_task_powered_flight_designate());
 }
 
 /* ---- R29DODES (pp.600-604) -------------------------------------------- */
@@ -251,7 +251,7 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
         u[i] = agc_dp_high(v.c[i]);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* MP chains: high word of a*b, then times c as a DP.                    */
@@ -261,10 +261,10 @@ static agc_dp_t pfd_mp3(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 
     if (!AGC_ASSERT(ab >= AGC_DP_MIN && ab <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_sp_mul(agc_dp_high(ab), c);
+    return (agc_sp_mul(agc_dp_high(ab), c));
 }
 
 /* First pass: RR CDUs, QUICTRIG of the IMU CDUs, and the self-track
@@ -287,7 +287,7 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_sp_t tv = (agc_sp_t) rr_ones(cdut);
@@ -306,7 +306,7 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
         rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* R29DPAS2: commands to null half the error in .5 s:
@@ -359,7 +359,7 @@ static agc_status_t pfd_lock_check(void)
     rz_flag_put(AGC_FLAG_LOSCMFLG, false); /* END29DOD */
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* R29DODES: the LOS now (first pass) and LOSSM advanced .5 s, projected
@@ -368,7 +368,7 @@ agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t  *s = rr_state();
@@ -381,7 +381,7 @@ agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     s->rrtarget = agc_vec_add(&ip, s->rrtarget, s->losvel); /* DAS LOSSM */
@@ -391,12 +391,12 @@ agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     pfd_commands(&t, u);
 
-    return pfd_lock_check();
+    return (pfd_lock_check());
 }
 
 /* ---- R29READ / R29RDJOB (pp.605-607) ---------------------------------- */
@@ -407,20 +407,21 @@ agc_status_t agc_task_powered_flight_read(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_waitlist_vardelay(PFD_2SECS, AGC_TASK_POWERED_FLIGHT_READ_LOOP);
+    return (agc_waitlist_vardelay(PFD_2SECS,
+                                  AGC_TASK_POWERED_FLIGHT_READ_LOOP));
 }
 
 agc_status_t agc_task_powered_flight_read_loop(void)
 {
     if (!agc_flag_test(AGC_FLAG_READRFLG))
     {
-        return AGC_STATUS_OK; /* wait for a redesignate     */
+        return (AGC_STATUS_OK); /* wait for a redesignate     */
     }
 
-    return agc_task_powered_flight_read();
+    return (agc_task_powered_flight_read());
 }
 
 /* ENDRRD29: leave the reading mode, discredit the downlink.            */
@@ -432,10 +433,10 @@ static agc_status_t pfd_read_end(void)
 
     if (!AGC_ASSERT(agc_erase_trkmkcnt() == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB */
+    return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
 /* RADSTALL for this job: it sleeps until the reading ends, or, when the
@@ -448,15 +449,15 @@ static agc_status_t pfd_stall(agc_job_id_t wake_as)
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
-        return st;
+        return (st);
     }
 
-    return rz_continue(wake_as);
+    return (rz_continue(wake_as));
 }
 
 static bool pfd_read_good(void)
 {
-    return agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_GOOD;
+    return (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_GOOD);
 }
 
 /* R29RDJOB: stop at once when R29 is over or the RR left auto mode;
@@ -465,23 +466,23 @@ agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) ||
         rr_radmodes_test(RR_AUTOMBIT))
     {
-        return pfd_read_end();
+        return (pfd_read_end());
     }
 
     agc_status_t st = agc_radar_rrrdot();
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_RANGE);
+    return (pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_RANGE));
 }
 
 /* After the range-rate read: a bad read redesignates; else keep the time
@@ -490,12 +491,12 @@ agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!pfd_read_good())
     {
-        return pfd_read_end();
+        return (pfd_read_end());
     }
 
     pfd_mktime = rr_timehold();
@@ -510,10 +511,10 @@ agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE);
+    return (pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE));
 }
 
 /* After the range read: a scale change (RNGSCFLG) reads range again, a
@@ -523,22 +524,22 @@ agc_status_t agc_job_powered_flight_read_done(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!pfd_read_good())
     { /* R29RRR?  */
         if (!agc_flag_test(AGC_FLAG_RNGSCFLG))
         {
-            return pfd_read_end();
+            return (pfd_read_end());
         }
 
         rz_flag_put(AGC_FLAG_RNGSCFLG, false);
         agc_status_t st = agc_radar_rrrange(); /* R29RANGE */
 
-        return (st != AGC_STATUS_OK) ?
-               st :
-               pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE);
+        return ((st != AGC_STATUS_OK) ?
+                st :
+                pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE));
     }
 
     agc_inhint();
@@ -553,5 +554,5 @@ agc_status_t agc_job_powered_flight_read_done(agc_job_ctx_t *ctx)
     agc_erase_set_trkmkcnt(1);
     agc_relint();
 
-    return AGC_STATUS_OK; /* ENDOFJOB */
+    return (AGC_STATUS_OK); /* ENDOFJOB */
 }

@@ -63,15 +63,15 @@ static agc_status_t rateloop_axis(lm_dap_t *d, int i)
 
     if (!AGC_ASSERT(slot >= 0 && slot < 6))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(t32 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RATELOOP + ROTORQUE (pp.1470-1471): JETRATEQ, JETRATER from the U,V
@@ -86,7 +86,7 @@ agc_status_t lm_dap_rateloop(void)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
-            return st;
+            return (st);
         }
     }
 
@@ -98,10 +98,10 @@ agc_status_t lm_dap_rateloop(void)
 
     if (!AGC_ASSERT(d->jetrate[1] >= LM_NEGMAX && d->jetrate[2] >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SUBDIVDE +3 (p.1422): measured angle increment (DP at pi, also left in
@@ -111,17 +111,17 @@ static agc_sp_t subdivde3(lm_dp_pair_t om)
 {
     if (om.hi != 0 && (int32_t) lm_dap_ccs_dim(om.hi) - RT_OCT630 > 0)
     {
-        return (om.hi > 0) ? LM_POSMAX : LM_NEGMAX;
+        return ((om.hi > 0) ? LM_POSMAX : LM_NEGMAX);
     }
 
     agc_sp_t q = lm_dap_dv(om, RT_1_40); /* DIVIDER        */
 
     if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return q;
+    return (q);
 }
 
 /* One axis of the rate derivation (pp.1423-1425): TRAPED += measured -
@@ -223,15 +223,15 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega,
 
     if (!AGC_ASSERT(*ntraps != 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(*omega >= LM_NEGMAX && *omega <= LM_POSMAX))
     {
-        return false;
+        return (false);
     }
 
-    return big;
+    return (big);
 }
 
 /* Offset update from a trap correction (p.1426): AOS += 5 corr / (N+KAOS).*/
@@ -242,17 +242,17 @@ static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn,
 
     if (!AGC_ASSERT(div > 0))
     {
-        return aos;
+        return (aos);
     }
 
     agc_sp_t q = lm_dap_dv(lm_dap_mp(corr, RT_FIVE), div);
 
     if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
     {
-        return aos;
+        return (aos);
     }
 
-    return lm_dap_wrap((int32_t) aos + q); /* ADS AOSQ          */
+    return (lm_dap_wrap((int32_t) aos + q)); /* ADS AOSQ          */
 }
 
 /* BACKP (pp.1423-1427): the whole rate derivation.                        */
@@ -273,7 +273,7 @@ agc_status_t lm_dap_backp(void)
 
     if (!AGC_ASSERT(!ptrap || d->trapedp == 0)) /* no P offset   */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     d->omegap = lm_dap_sat((int32_t) d->omegap + d->jetrate[0]); /* P-RATE */
@@ -296,15 +296,15 @@ agc_status_t lm_dap_backp(void)
 
     if (!AGC_ASSERT(d->omegap >= LM_NEGMAX && d->omegaq >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->omegar >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Offset estimator (p.1427). Drifting flight: zero the offsets (major
@@ -323,7 +323,7 @@ agc_status_t lm_dap_offset_est(void)
         d->aosq     = 0;
         d->aosr     = 0;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     lm_dp_pair_t q = {d->aosq, d->aosq_lo}; /* WORKTIME */
@@ -343,13 +343,13 @@ agc_status_t lm_dap_offset_est(void)
 
     if (!AGC_ASSERT(d->aosqterm >= LM_NEGMAX && d->aosrterm >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->alphaq == d->aosq))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

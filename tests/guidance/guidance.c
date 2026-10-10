@@ -36,7 +36,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d: %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -61,7 +61,7 @@ static agc_mat_t identity_half(void)
     m.row[1] = agc_vec_make(0, AGC_DP_HALF, 0);
     m.row[2] = agc_vec_make(0, 0, AGC_DP_HALF);
 
-    return m;
+    return (m);
 }
 
 /* ---- 1. average-G with zero delta-V ----------------------------------- */
@@ -136,7 +136,7 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
 
     CHECK(st == AGC_STATUS_OK);
 
-    return omegac;
+    return (omegac);
 }
 
 static void test_cross_product_steering(void)
@@ -175,5 +175,5 @@ int main(void)
         "test_guidance: %d checks, %d failures, %d assertion reports\n",
         g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

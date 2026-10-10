@@ -72,20 +72,20 @@ agc_dp_t agc_radar_samplsum(void)
 {
     if (!AGC_ASSERT(rd.samplim >= -1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return rd.samplsum;
+    return (rd.samplsum);
 }
 
 agc_dp_t rr_timehold(void)
 {
     if (!AGC_ASSERT(rd.timehold >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return rd.timehold;
+    return (rd.timehold);
 }
 
 /* DNRRANGE .. (downlink): index 0..6 = select code 1..7.                 */
@@ -93,10 +93,10 @@ uint16_t agc_erase_dnrrange(int index)
 {
     if (!AGC_ASSERT(index >= 0 && index < 7))
     {
-        return 0U;
+        return (0U);
     }
 
-    return rd.dnradar[index];
+    return (rd.dnradar[index]);
 }
 
 /* ---- INITREAD (p.554) ------------------------------------------------
@@ -130,14 +130,14 @@ agc_status_t agc_radar_rrrange(void)
 {
     rd_initread(RD_RRRANGE, 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_radar_rrrdot(void)
 {
     rd_initread(RD_RRRDOT, 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 void agc_radar_lralt(void)
@@ -268,7 +268,7 @@ static agc_status_t rd_badrad(void)
 {
     rd.samplim = -1;
 
-    return rr_badend();
+    return (rr_badend());
 }
 
 /* NOMORE: the tries ran out. Alarm 521 unless R12 is on (LRBYPASS
@@ -282,11 +282,11 @@ static agc_status_t rd_nomore(void)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
-    return rd_badrad();
+    return (rd_badrad());
 }
 
 /* RESAMPLE: another try if any are left (activity bit on again), else
@@ -298,14 +298,14 @@ static agc_status_t rd_resample(void)
     {
         rr_chan_or(AGC_CHAN_CHAN13, RD_ACTIVITY);
 
-        return AGC_STATUS_OK; /* RESUME   */
+        return (AGC_STATUS_OK); /* RESUME   */
     }
 
     rr_radmodes_set(rd.itemp1); /* DATAFAIL */
     rd.samplsum = rd.sample;
     rr_radlites(rd.itemp1);
 
-    return rd_nomore();
+    return (rd_nomore());
 }
 
 /* GOODRAD: enough good data; data-fail flag off, lamps, good end.       */
@@ -315,7 +315,7 @@ static agc_status_t rd_goodrad(void)
     rr_radmodes_clear(rd.itemp1);
     rr_radlites(rd.itemp1);
 
-    return rr_goodend();
+    return (rr_goodend());
 }
 
 /* DGCHECK: the data-good bit must be present (0 in chan 33) before and
@@ -329,7 +329,7 @@ static bool rd_dgcheck(void)
 
     if ((before | now) != 0U)
     {
-        return false;
+        return (false);
     }
 
     agc_interp_t ip;
@@ -337,7 +337,7 @@ static bool rd_dgcheck(void)
     agc_interp_init(&ip);
     rd.samplsum = agc_dp_add(&ip, rd.samplsum, rd.sample); /* DAS      */
 
-    return true;
+    return (true);
 }
 
 /* RNRAD as the DP count (ITEMP3, ITEMP4): bit 15 in the upper word
@@ -350,10 +350,10 @@ static agc_dp_t rd_count(int bias)
 
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo);
+    return (agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo));
 }
 
 /* LRSCK (p.559): LR altitude on high scale: SCALBAD when the reading is
@@ -394,7 +394,7 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
                 (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
             rz_flag_put(AGC_FLAG_RNGSCFLG, true);
 
-            return rd_badrad();
+            return (rd_badrad());
         }
     }
 
@@ -422,7 +422,7 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
         }
     }
 
-    return rd_dgcheck() ? rd_goodrad() : rd_resample(); /* DGCHECK2 */
+    return (rd_dgcheck() ? rd_goodrad() : rd_resample()); /* DGCHECK2 */
 }
 
 /* Landing radar sample (LRPOSCHK, VELCHK, LRHEIGHT pp.556-557). R77
@@ -436,7 +436,7 @@ static agc_status_t rd_landing_radar(void)
         m = (uint16_t) (m | (agc_chan_read(AGC_CHAN_CHAN33) & RD_BITS5_8));
         agc_erase_set_radmodes((uint16_t) (m & RR_WORD_MASK));
 
-        return rr_goodend();
+        return (rr_goodend());
     }
 
     if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) &
@@ -446,17 +446,17 @@ static agc_status_t rd_landing_radar(void)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
-        return rd_badrad();
+        return (rd_badrad());
     }
 
     if (((agc_chan_read(AGC_CHAN_CHAN13) ^ 3U) & 3U) == 0U)
     {
         rd.itemp1 = RR_LRALTBIT; /* LRHEIGHT */
 
-        return rd_scaled(RR_ALTSCBIT, true);
+        return (rd_scaled(RR_ALTSCBIT, true));
     }
 
     rd.sample = rd_count(RD_LVELBIAS); /* VELCHK   */
@@ -464,17 +464,17 @@ static agc_status_t rd_landing_radar(void)
 
     if (!rd_dgcheck())
     {
-        return rd_resample();
+        return (rd_resample());
     }
 
     if (rd.nsamp > 0)
     { /* NOEND    */
         rd.nsamp--;
 
-        return rd_resample();
+        return (rd_resample());
     }
 
-    return rd_goodrad();
+    return (rd_goodrad());
 }
 
 /* Rendezvous radar sample (RENDRAD p.557): rejected during a reposition
@@ -483,13 +483,13 @@ static agc_status_t rd_rendezvous_radar(void)
 {
     if (rr_radmodes_test(RR_REPOSBIT) || !rr_radmodes_test(RR_RCDUFBIT))
     {
-        return rd_badrad();
+        return (rd_badrad());
     }
 
     rd.itemp1 = RR_RRDATABT;
     bool range = (agc_chan_read(AGC_CHAN_CHAN13) & 1U) != 0U;
 
-    return rd_scaled(range ? RR_RRRSBIT : 0U, false);
+    return (rd_scaled(range ? RR_RRRSBIT : 0U, false));
 }
 
 /* RADAREAD: the RADAR RUPT handler. The raw reading is kept for the
@@ -508,22 +508,22 @@ agc_status_t agc_rendz_radar_read(void)
     { /* TRYCOUNT */
         agc_status_t st = rz_alarm(RD_ALARM_UNEXPECTED);
 
-        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st; /* RESUME  */
+        return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st); /* RESUME  */
     }
 
     if (rd.samplim == 0)
     {
-        return rd_nomore();
+        return (rd_nomore());
     }
 
     rd.samplim--; /* PLENTY   */
 
     if ((agc_chan_read(AGC_CHAN_CHAN13) & RD_LR_SELECT) == 0U)
     {
-        return rd_rendezvous_radar();
+        return (rd_rendezvous_radar());
     }
 
-    return rd_landing_radar();
+    return (rd_landing_radar());
 }
 
 /* ---- LRPOS2 (pp.561-562): command the landing radar to position 2 and
@@ -547,7 +547,7 @@ agc_status_t agc_radar_lrpos2(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* LRPOSCAN: set up for 15 samples.                                      */
@@ -559,10 +559,10 @@ agc_status_t agc_task_lr_position_scan(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* LRPOSNXT after the 1 s FIXDELAY.                                      */
@@ -583,15 +583,15 @@ agc_status_t agc_task_lr_position_check(void)
     {
         rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_LRPOS2); /* time up  */
 
-        return rr_badend();
+        return (rr_badend());
     }
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* LASTLRDT after the 2 s wait: remove the command, good end.           */
@@ -601,8 +601,8 @@ agc_status_t agc_task_lr_position_settled(void)
 
     if (!AGC_ASSERT(rr_radmodes_test(RR_LRPOSBIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_goodend();
+    return (rr_goodend());
 }

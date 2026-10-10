@@ -82,15 +82,15 @@ static bool group_ok(int group)
 {
     if (!AGC_ASSERT(phase_w[0] == 0U))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(nphase_w[0] == PH_NEG0))
     {
-        return false;
+        return (false);
     }
 
-    return group >= 1 && group <= AGC_RESTART_GROUPS;
+    return (group >= 1 && group <= AGC_RESTART_GROUPS);
 }
 
 /* DXCH -PHASEn with (-phase, phase): both words of the pair at once. */
@@ -166,7 +166,7 @@ static bool decode(uint16_t code, ph_code_t *out)
 {
     if (!AGC_ASSERT(out != 0) || !AGC_ASSERT(code <= PH_WORD15))
     {
-        return false;
+        return (false);
     }
 
     out->group = (int) (code & PH_GROUP);
@@ -190,7 +190,7 @@ static bool decode(uint16_t code, ph_code_t *out)
         out->dbit = false;
     }
 
-    return AGC_ASSERT(group_ok(out->group));
+    return (AGC_ASSERT(group_ok(out->group)));
 }
 
 /* The restart kind a type C phase names by its CJW bits, as RESTARTS
@@ -215,10 +215,10 @@ static agc_restart_kind_t cjw_kind(uint16_t tempp)
 
     if (!AGC_ASSERT(cjw >= -2 && cjw <= 5))
     {
-        return AGC_RESTART_NONE;
+        return (AGC_RESTART_NONE);
     }
 
-    return k;
+    return (k);
 }
 
 /* GETPRIO / OLDPRIO / GETNEWNM / CON2 (C pp.1410-1412 / L pp.1299-1301):
@@ -403,7 +403,7 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(job != AGC_JOB_NONE) ||
         !AGC_ASSERT(prio >= 1 && prio <= 037))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
@@ -411,32 +411,32 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
 
     agc_phase_change_var((uint16_t) (07020U | (uint16_t) group), &v);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_phase_get(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(phase_w[group] <= PH_WORD15))
     {
-        return 0;
+        return (0);
     }
 
-    return phase_w[group];
+    return (phase_w[group]);
 }
 
 uint16_t phase_word(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_phase_get(group);
+    return (agc_phase_get(group));
 }
 
 /* PCLOOP test (FRESH_START C p.188 / L p.218): -PHASEn RXOR PHASEn must
@@ -445,57 +445,57 @@ bool phase_group_agrees(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(nphase_w[group] <= PH_WORD15))
     {
-        return false;
+        return (false);
     }
 
-    return (uint16_t) (nphase_w[group] ^ phase_w[group]) == PH_NEG0;
+    return ((uint16_t) (nphase_w[group] ^ phase_w[group]) == PH_NEG0);
 }
 
 agc_status_t phase_var_get(int group, phase_var_store_t *out)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = var[group];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t phase_tbase(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(tbase[group] <= PH_TIME1))
     {
-        return 0;
+        return (0);
     }
 
-    return tbase[group];
+    return (tbase[group]);
 }
 
 uint32_t phase_longbase(void)
 {
     if (!AGC_ASSERT(longbase < AGC_TIME_MODULUS_CS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(phase_w[0] == 0U))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return longbase;
+    return (longbase);
 }
 
 /* Test hook: corrupt -PHASEn (as a restart between the two stores of a
@@ -528,10 +528,10 @@ agc_status_t agc_phase_change_program_klean(void)
 
     if (!AGC_ASSERT(phase_w[3] == 0U && phase_w[5] == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* P00KLEAN: kill group 4 (Comanche also group 1), then V37KLEAN.       */
@@ -549,10 +549,10 @@ agc_status_t agc_phase_idle_klean(void)
 
     if (!AGC_ASSERT(phase_w[4] == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_phase_change_program_klean();
+    return (agc_phase_change_program_klean());
 }
 
 /* MR.KLEAN: kill group 2, then P00KLEAN -- every group is inactive.    */
@@ -565,10 +565,10 @@ agc_status_t agc_phase_mr_klean(void)
 
     if (!AGC_ASSERT(phase_w[1] == 0U && phase_w[6] == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* MMDSPLAY -> SETUPDSP (C p.1404 / L p.1294): NOVAC PRIO30 DSPMMJOB to
@@ -582,10 +582,10 @@ agc_status_t fresh_mmdsplay(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* NEWMODEX / NEWMODEA (C p.1404 / L p.1294): store the major mode in
@@ -594,12 +594,12 @@ agc_status_t agc_phase_newmode(agc_sp_t mode)
 {
     if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_modreg(mode); /* TS MODREG         */
 
-    return fresh_mmdsplay();
+    return (fresh_mmdsplay());
 }
 
 /* CHECKMM (C p.1404 / L p.1294): does MODREG equal `mode`?             */
@@ -607,15 +607,15 @@ bool agc_phase_checkmm(agc_sp_t mode)
 {
     if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
     {
-        return false;
+        return (false);
     }
 
     agc_sp_t mm = agc_erase_modreg();
 
     if (!AGC_ASSERT(mm >= EXEC_MODREG_NEG0))
     {
-        return false;
+        return (false);
     }
 
-    return mm == mode;
+    return (mm == mode);
 }

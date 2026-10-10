@@ -29,7 +29,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -48,7 +48,7 @@ static void check(bool ok, int line, const char *text)
 /* AGC decimal flag number nnnD = 15 * flagword + (15 - bit). */
 static int agc_dnum(agc_flag_id_t f)
 {
-    return (15 * agc_flag_word(f)) + (15 - agc_flag_bit(f));
+    return ((15 * agc_flag_word(f)) + (15 - agc_flag_bit(f)));
 }
 
 static void test_flag_ids(void)
@@ -243,12 +243,12 @@ static agc_vec_t vec3(agc_dp_t a, agc_dp_t b, agc_dp_t c)
     v.c[1] = b;
     v.c[2] = c;
 
-    return v;
+    return (v);
 }
 
 static bool vec_eq(agc_vec_t a, agc_vec_t b)
 {
-    return (a.c[0] == b.c[0]) && (a.c[1] == b.c[1]) && (a.c[2] == b.c[2]);
+    return ((a.c[0] == b.c[0]) && (a.c[1] == b.c[1]) && (a.c[2] == b.c[2]));
 }
 
 static void test_state_vectors(void)
@@ -359,5 +359,5 @@ int main(void)
     test_erasables();
     (void) printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

@@ -39,14 +39,14 @@ uint16_t agc_svc_upflag(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
-        return 0;
+        return (0);
     }
 
     agc_inhint();
     agc_flag_set(f);
     agc_relint();
 
-    return agc_flagword_get(agc_flag_word(f));
+    return (agc_flagword_get(agc_flag_word(f)));
 }
 
 /* DOWNFLAG (p.1486): clear a named flag; returns the new flagword.       */
@@ -54,14 +54,14 @@ uint16_t agc_svc_downflag(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
-        return 0;
+        return (0);
     }
 
     agc_inhint();
     agc_flag_clear(f);
     agc_relint();
 
-    return agc_flagword_get(agc_flag_word(f));
+    return (agc_flagword_get(agc_flag_word(f)));
 }
 
 /* Split the UPENT2/DOWNENT2 argument: CSM flagword in bits 1-3, LM 4.    */
@@ -69,7 +69,7 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
 {
     if (!AGC_ASSERT(bits != NULL))
     {
-        return -1;
+        return (-1);
     }
 
     *bits = (uint16_t) (arg & OCT77770);
@@ -78,10 +78,10 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
 
     if (!AGC_ASSERT(word >= 0 && word < AGC_FLAGWORDS))
     {
-        return -1;
+        return (-1);
     }
 
-    return word;
+    return (word);
 }
 
 /* UPENT2 (C p.1485 / L p.1374): OR bits into a flagword (display
@@ -93,14 +93,14 @@ agc_status_t agc_svc_upent2(uint16_t arg)
 
     if (!AGC_ASSERT(word >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
     agc_flagword_set(word, (uint16_t) (agc_flagword_get(word) | bits));
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DOWNENT2 (C p.1485 / L p.1374): clear bits of a flagword.              */
@@ -111,7 +111,7 @@ agc_status_t agc_svc_downent2(uint16_t arg)
 
     if (!AGC_ASSERT(word >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -119,7 +119,7 @@ agc_status_t agc_svc_downent2(uint16_t arg)
         word, (uint16_t) (agc_flagword_get(word) & ~(uint32_t) bits & WORD15));
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DELAYJOB (p.1488): put the calling job to sleep for delay_cs and wake
@@ -131,7 +131,7 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     if (!AGC_ASSERT(wake_as != AGC_JOB_NONE) ||
         !AGC_ASSERT(delay_cs > 0u && delay_cs <= AGC_WAITLIST_MAX_DELAY))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -153,10 +153,10 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
 
         if (!AGC_ASSERT(bst == AGC_STATUS_BAILOUT))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
-        return bst;
+        return (bst);
     }
 
     delayloc[slot] = wake_as;
@@ -170,12 +170,12 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     {
         delayloc[slot] = AGC_JOB_NONE;
 
-        return st;
+        return (st);
     }
 
     agc_exec_job_sleep(wake_as);
 
-    return AGC_STATUS_OK; /* TC JOBSLEEP            */
+    return (AGC_STATUS_OK); /* TC JOBSLEEP            */
 }
 
 /* Lateness of a DELAYLOC's due time, as a signed count (2^28 wrap).    */
@@ -183,7 +183,7 @@ static int32_t delay_lateness(int i, uint32_t now)
 {
     if (!AGC_ASSERT(i >= 0 && i < DELAYNUM))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint32_t d    = (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);
@@ -193,10 +193,10 @@ static int32_t delay_lateness(int i, uint32_t now)
 
     if (!AGC_ASSERT(late > -(int32_t) AGC_TIME_MODULUS_CS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return late;
+    return (late);
 }
 
 /* WAKER (p.1488): free a DELAYLOC and JOBWAKE its job.  slot -1 (the task
@@ -206,7 +206,7 @@ agc_status_t agc_svc_delay_wake(int slot)
 {
     if (!AGC_ASSERT(slot >= -1 && slot < DELAYNUM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint32_t now = agc_time_now_cs();
@@ -237,14 +237,14 @@ agc_status_t agc_svc_delay_wake(int slot)
 
     if (slot < 0 || delayloc[slot] == AGC_JOB_NONE)
     {
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     agc_job_id_t job = delayloc[slot];
 
     delayloc[slot] = AGC_JOB_NONE; /* make DELAYLOC available */
 
-    return agc_exec_job_wake(job);
+    return (agc_exec_job_wake(job));
 }
 
 /* STARTSB2 (FRESH_START): DELAYLOC +0..+3 = 0.                           */
@@ -258,10 +258,10 @@ agc_status_t agc_svc_startsub_reset(void)
 
     if (!AGC_ASSERT(delayloc[0] == AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GENTRAN (p.1490): block transfer of n words, from the top down.        */
@@ -270,7 +270,7 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
     if (!AGC_ASSERT(from != NULL && to != NULL) ||
         !AGC_ASSERT(n >= 1 && n <= 0400))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint(); /* no RELINT (MOD 2)      */
@@ -280,7 +280,7 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
         to[i] = from[i];
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* B5OFF (p.1491): clear EXTVBACT bit 5 (set by TESTXACT); the caller then
@@ -291,12 +291,12 @@ agc_status_t agc_svc_b5off(void)
 
     if (!AGC_ASSERT(x <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TRFAILOF (C p.1492): TRACKER lamp off (DSPTAB +11D bit 8) and re-arm
@@ -305,7 +305,7 @@ agc_status_t agc_svc_trfailof(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -316,7 +316,7 @@ agc_status_t agc_svc_trfailof(void)
     agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | BIT7));
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TRFAILON (C p.1492): TRACKER lamp on.                                   */
@@ -324,7 +324,7 @@ agc_status_t agc_svc_trfailon(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -333,5 +333,5 @@ agc_status_t agc_svc_trfailon(void)
     agc_erase_set_dsptab(LAMPWORD, (uint16_t) (w | OCT40200));
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

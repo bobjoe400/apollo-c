@@ -49,7 +49,7 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
 {
     if (!AGC_ASSERT(block != NULL) || !AGC_ASSERT(n >= 1 && n <= ZEROING_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < n; i++)
@@ -57,7 +57,7 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
         block[i] = 0;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* FINETIME (p.380): LOSCALAR read twice so a carry between the reads is
@@ -68,7 +68,7 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
 {
     if (!AGC_ASSERT(t != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -91,12 +91,12 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *t = agc_dp_pack((agc_sp_t) (hi & POSMAX), (agc_sp_t) (lo & POSMAX));
 
-    return (lo == POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK;
+    return ((lo == POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK);
 }
 
 /* OVERFFIX (p.378): DAD DPPOSMAX, DAD ONEDPP -- add 2^28 to a time
@@ -105,7 +105,7 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return a;
+        return (a);
     }
 
     agc_dp_t s = agc_dp_add(ip, a, AGC_DP_MAX);
@@ -114,10 +114,10 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
 
     if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
     {
-        return a;
+        return (a);
     }
 
-    return s;
+    return (s);
 }
 
 /* REDO (V92, LM p.373 / Comanche SYSTEM_TEST_STANDARD_LEAD_INS): NEWMODEX
@@ -127,25 +127,25 @@ agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_phase_newmode((agc_sp_t) SYSTEMS_TEST_MODE);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        return agc_csm_prelaunch_imutest(ctx); /* FALL INTO IMUTEST       */
+        return (agc_csm_prelaunch_imutest(ctx)); /* FALL INTO IMUTEST       */
     }
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }

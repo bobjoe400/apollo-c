@@ -24,10 +24,10 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 
     if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont);
+    return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
 /* COMPTGO (CM p.636): start CLOKTASK (TTOGO), group 6.3 and group 4 type C
@@ -40,7 +40,7 @@ agc_status_t agc_csm_comptgo(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_MARKS_TFI_MGA_DISPLAY,
@@ -49,12 +49,12 @@ agc_status_t agc_csm_comptgo(void)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_TIMRFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_phase_change2((uint16_t) 040036, (uint16_t) 005024, &v);
 
-    return AGC_STATUS_OK; /* 6.3, 4 C */
+    return (AGC_STATUS_OK); /* 6.3, 4 C */
 }
 
 /* REFTEST (CM p.638): +MGA from DELVSIN if REFSMMAT is valid, else
@@ -63,12 +63,12 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rendz_t *rz = agc_rendz_erasable();
@@ -84,7 +84,7 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
     else
@@ -96,10 +96,10 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_marks_tfi_mga_display(ctx);
+    return (agc_job_marks_tfi_mga_display(ctx));
 }
 
 /* DISP45 (CM p.636): flash V16N45 (marks, TFI, +MGA) -- PROCEED: END45,
@@ -108,12 +108,12 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st =
@@ -122,12 +122,12 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_phase_change(GRP4, (uint16_t) 000014);
 
-    return AGC_STATUS_OK; /* P30PHSI               */
+    return (AGC_STATUS_OK); /* P30PHSI               */
 }
 
 /* END45 (CM p.636) and the tails of P30 and P31 (p.637): TIMRFLAG off,
@@ -137,12 +137,12 @@ agc_status_t agc_job_marks_tfi_mga_done(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_TIMRFLAG);
@@ -156,5 +156,5 @@ agc_status_t agc_job_marks_tfi_mga_done(agc_job_ctx_t *ctx)
         agc_flag_set(AGC_FLAG_XDELVFLG);
     }
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }

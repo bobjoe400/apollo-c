@@ -113,10 +113,10 @@ static uint16_t w15(uint32_t v)
 {
     if (!AGC_ASSERT(v <= 0xFFFFFFu))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (uint16_t) (v & WORD15);
+    return ((uint16_t) (v & WORD15));
 }
 
 static void chan_or(int chan, uint16_t mask)
@@ -202,10 +202,10 @@ bool agc_t4_lamptest(void)
 
     if (!AGC_ASSERT(m <= WORD15))
     {
-        return false;
+        return (false);
     }
 
-    return (m & BIT1) != 0u;
+    return ((m & BIT1) != 0u);
 }
 
 /* ---- DSPTAB +11D lamp relay word, CDRVE (p.134) ------------------------ */
@@ -217,12 +217,12 @@ static bool t4_cdrve(void)
 
     if (!AGC_ASSERT(w <= WORD15))
     {
-        return false;
+        return (false);
     }
 
     if ((w & BIT15) == 0u)
     {
-        return false; /* CCS: + -> TC DSPOUT          */
+        return (false); /* CCS: + -> TC DSPOUT          */
     }
 
     uint16_t lamps = (uint16_t) (w & LOW11);
@@ -230,7 +230,7 @@ static bool t4_cdrve(void)
     set_lampword(lamps); /* replace positively           */
     agc_chan_write((int) AGC_CHAN_OUT0, (uint16_t) (lamps + RELTAB11));
 
-    return true;
+    return (true);
 }
 
 /* HANG20 (p.135): five quick passes follow, TIME4 = 20 ms.               */
@@ -241,10 +241,10 @@ static uint16_t t4_hang20(void)
 
     if (!AGC_ASSERT(t4_phase >= 0 && t4_phase < T4_PHASES))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return T4_20MS_CS;
+    return (T4_20MS_CS);
 }
 
 /* CDRVE / DSPOUT / NODSPOUT (pp.134-137): returns the TIME4 delay.        */
@@ -252,7 +252,7 @@ static uint16_t t4_display_pass(void)
 {
     if (t4_cdrve())
     {
-        return t4_hang20();
+        return (t4_hang20());
     }
 
     uint16_t     relay = 0;
@@ -260,17 +260,17 @@ static uint16_t t4_display_pass(void)
 
     if (st == AGC_STATUS_OK)
     {
-        return t4_hang20();
+        return (t4_hang20());
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_NOT_FOUND))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_chan_write((int) AGC_CHAN_OUT0, 0); /* NODSPOUT: relays off     */
 
-    return T4_120MS_CS;
+    return (T4_120MS_CS);
 }
 
 /* QUIKDSP / QUIKOFF / NODSPY / SYNCT4 (pp.137-138).                      */
@@ -278,7 +278,7 @@ static uint16_t t4_quikdsp(void)
 {
     if (!AGC_ASSERT(t4_quick_left > 0 && t4_quick_left <= T4_FLUSH_PASSES))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (t4_quick_wrote)
@@ -287,7 +287,7 @@ static uint16_t t4_quikdsp(void)
         t4_quick_wrote = false;
         t4_quick_left--;
 
-        return T4_20MS_CS;
+        return (T4_20MS_CS);
     }
 
     uint16_t     relay = 0;
@@ -298,7 +298,7 @@ static uint16_t t4_quikdsp(void)
         t4_quick_wrote = true;
         t4_quick_left--;
 
-        return T4_20MS_CS;
+        return (T4_20MS_CS);
     }
 
     agc_chan_write((int) AGC_CHAN_OUT0, 0); /* NODSPY                  */
@@ -306,7 +306,7 @@ static uint16_t t4_quikdsp(void)
 
     t4_quick_left = 0;
 
-    return dt;
+    return (dt);
 }
 
 /* PROCEEDE (p.136): the PRO key, channel 32 bit 14 compared with IMODES33
@@ -345,32 +345,32 @@ static agc_status_t t4_jump(int phase)
 {
     if (!AGC_ASSERT(phase >= 0 && phase < T4_PHASES))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int slot = phase & 3; /* table repeats after 4   */
 
     if (slot == 2)
     {
-        return agc_t4_imumon();
+        return (agc_t4_imumon());
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         if (slot == 0)
         {
-            return agc_t4_optics_drive(); /* OPTTEST -> OPTDRIVE     */
+            return (agc_t4_optics_drive()); /* OPTTEST -> OPTDRIVE     */
         }
 
-        return (slot == 1) ? agc_t4_optics_monitor() : AGC_STATUS_OK;
+        return ((slot == 1) ? agc_t4_optics_monitor() : AGC_STATUS_OK);
     }
 
     if (slot == 0)
     {
-        return agc_lm_dap_rcsmon(); /* RCSMONIT (dap-lm)       */
+        return (agc_lm_dap_rcsmon()); /* RCSMONIT (dap-lm)       */
     }
 
-    return (slot == 1) ? agc_t4_rr_monitor() : agc_t4_gimbal_matrix();
+    return ((slot == 1) ? agc_t4_rr_monitor() : agc_t4_gimbal_matrix());
 }
 
 /* T4RUPT / NORMT4 (p.133): one interrupt.  *next_cs = TIME4 delay.       */
@@ -378,14 +378,14 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
 {
     if (!AGC_ASSERT(next_cs != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (t4_quick_left > 0)
     {
         *next_cs = t4_quikdsp();
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     t4_phase = (t4_phase > 0) ? (t4_phase - 1) : (T4_PHASES - 1); /* CCS  */
@@ -394,10 +394,10 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
 
     if (!AGC_ASSERT(*next_cs >= T4_20MS_CS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return t4_jump(t4_phase);
+    return (t4_jump(t4_phase));
 }
 
 /* Interrupt-vector entry for exec's agc_dispatch_rupt(AGC_RUPT_T4): runs
@@ -409,12 +409,12 @@ agc_status_t agc_t4rupt_rupt(void)
 
     if (!AGC_ASSERT(dt > 0u && dt < T4_TIME4_OVF))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rupt_set_time(4, (uint16_t) (T4_TIME4_OVF - dt));
 
-    return st;
+    return (st);
 }
 
 /* STARTSUB (FRESH_START C p.191): TS DSRUPTSW with +0.                   */
@@ -426,10 +426,10 @@ agc_status_t agc_t4_startsub_reset(void)
 
     if (!AGC_ASSERT(t4_quick_left == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SLAP1 (FRESH_START C p.183): CS PRIO12 / TS DSRUPTSW -- twenty quick
@@ -443,10 +443,10 @@ agc_status_t agc_t4_fresh_start_flush(void)
 
     if (!AGC_ASSERT(t4_quick_left == T4_FLUSH_PASSES))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ======================================================================
@@ -463,7 +463,7 @@ agc_status_t agc_t4_setissw(void)
 
     if (!AGC_ASSERT(im30 <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t inhib = (uint16_t) ((im30 & OCT15) << 9); /* MP BIT10        */
@@ -476,7 +476,7 @@ agc_status_t agc_t4_setissw(void)
 
         chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT1);
 
-        return st;
+        return (st);
     }
 
     if (!agc_t4_lamptest())
@@ -484,7 +484,7 @@ agc_status_t agc_t4_setissw(void)
         chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT1);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CAGESUB2 (p.158): flags for caging / turn-on; inhibit ISS warnings and
@@ -496,10 +496,10 @@ agc_status_t agc_t4_cagesub2(void)
 
     if (!AGC_ASSERT((agc_erase_imodes30() & OCT75) == OCT75))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CAGESUB1 (p.158): NO ATT lamp on (DSPTAB +11D bit 4, bit 15 = send).    */
@@ -507,7 +507,7 @@ static agc_status_t t4_cagesub1(void)
 {
     set_lampword((uint16_t) (agc_erase_dsptab(LAMPWORD) | OC40010));
 
-    return agc_t4_cagesub2();
+    return (agc_t4_cagesub2());
 }
 
 /* CAGESUB (p.158): outbits for turn-on or cage: error counter disabled,
@@ -520,10 +520,10 @@ agc_status_t agc_t4_cagesub(void)
     if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BITS4_5) ==
                     BITS4_5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return t4_cagesub1();
+    return (t4_cagesub1());
 }
 
 /* TLIM (p.149): temp caution lamp (channel 11 bit 4) follows channel 30
@@ -629,7 +629,7 @@ static bool t4_imucage(uint16_t newbit)
     { /* button released: ISSZERO       */
         t4_isszero();
 
-        return true;
+        return (true);
     }
 
     chan_clear((int) AGC_CHAN_CHAN14, (uint16_t) OCT77000); /* pulse trains */
@@ -639,7 +639,7 @@ static bool t4_imucage(uint16_t newbit)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return false;
+        return (false);
     }
 
     agc_imu_rndrefdr(); /* track, REFSMMAT, drift flags    */
@@ -647,12 +647,12 @@ static bool t4_imucage(uint16_t newbit)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return false;
+        return (false);
     }
 
     chan_clear((int) AGC_CHAN_CHAN14, (uint16_t) OCT740); /* deselect gyros */
 
-    return false;
+    return (false);
 }
 
 /* IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.                  */
@@ -687,7 +687,7 @@ static bool t4_ifailjmp(int bit, uint16_t newbit)
 {
     if (!AGC_ASSERT(bit >= 9 && bit <= 14))
     {
-        return true;
+        return (true);
     }
 
     switch (bit)
@@ -695,7 +695,7 @@ static bool t4_ifailjmp(int bit, uint16_t newbit)
         case 14:
             t4_iturnon();
 
-            return false;
+            return (false);
         case 13: /* IMUFAIL  EQUALS SETISSW         */
         case 12: /* ICDUFAIL EQUALS SETISSW         */
         {
@@ -703,19 +703,19 @@ static bool t4_ifailjmp(int bit, uint16_t newbit)
 
             if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
             {
-                return true;
+                return (true);
             }
         }
 
-            return false;
+            return (false);
         case 11:
-            return t4_imucage(newbit);
+            return (t4_imucage(newbit));
         case 9:
             t4_imuop(newbit);
 
-            return false;
+            return (false);
         default: /* bit 10 is not sampled here      */
-            return false;
+            return (false);
     }
 }
 
@@ -729,7 +729,7 @@ agc_status_t agc_t4_imumon(void)
 
     if (!AGC_ASSERT(im30 <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (changes != 0u)
@@ -756,11 +756,11 @@ agc_status_t agc_t4_imumon(void)
 
         if (stop)
         {
-            return agc_t4_c33test();
+            return (agc_t4_c33test());
         }
     }
 
-    return agc_t4_tnontest();
+    return (agc_t4_tnontest());
 }
 
 /* PROCTNON (p.142): act on the turn-on request one sample after it came. */
@@ -813,7 +813,7 @@ agc_status_t agc_t4_tnontest(void)
 
     if (!AGC_ASSERT(im30 <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((im30 & BIT7) != 0u)
@@ -828,7 +828,7 @@ agc_status_t agc_t4_tnontest(void)
         }
     }
 
-    return agc_t4_c33test();
+    return (agc_t4_c33test());
 }
 
 /* C33JMP: PIPFAIL (p.155), DNTMFAST / UPTMFAST (p.156).                   */
@@ -882,7 +882,7 @@ agc_status_t agc_t4_c33test(void)
 
     if (!AGC_ASSERT(im33 <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (changes != 0u)
@@ -900,7 +900,7 @@ agc_status_t agc_t4_c33test(void)
         }
     }
 
-    return agc_t4_glockmon();
+    return (agc_t4_glockmon());
 }
 
 /* Magnitude of a CDU counter word as CCS sees it (ones' complement).     */
@@ -908,17 +908,17 @@ static int cdu_ones_magnitude(uint16_t cdu)
 {
     if (!AGC_ASSERT(cdu <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int v = ((cdu & CDU_SIGN) != 0u) ? (int) (WORD15 - cdu) : (int) cdu;
 
     if (!AGC_ASSERT(v >= 0 && v <= 037777))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* SETGLOCK / GLINVERT / GLAMPTST (p.148): make the gimbal lock lamp
@@ -974,10 +974,10 @@ agc_status_t agc_t4_glockmon(void)
 
     if (!AGC_ASSERT(mag >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- the T4RUPT waitlist tasks ---------------------------------------- */
@@ -992,10 +992,10 @@ static agc_status_t t4_unz2(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ENDTNON (p.142): end of the 90 s ISS turn-on delay.                     */
@@ -1010,21 +1010,21 @@ static agc_status_t t4_endtnon(void)
         chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT15); /* delay complete  */
         agc_imu_noattoff();
 
-        return t4_unz2();
+        return (t4_unz2());
     }
 
     if ((old & BIT14) == 0u)
     { /* RETNON           */
-        return agc_waitlist_vardelay((uint16_t) NINETY_SECS_CS,
-                                     AGC_TASK_ENDTNON);
+        return (agc_waitlist_vardelay((uint16_t) NINETY_SECS_CS,
+                                      AGC_TASK_ENDTNON));
     }
 
     if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE))
     {
-        return AGC_STATUS_OK; /* TASKOVER         */
+        return (AGC_STATUS_OK); /* TASKOVER         */
     }
 
-    return agc_imu_imubad(); /* failed turn-on   */
+    return (agc_imu_imubad()); /* failed turn-on   */
 }
 
 /* ISSUP (p.143): caging and fail inhibits removed, DAP enabled; LM also
@@ -1045,13 +1045,13 @@ static agc_status_t t4_issup(void)
 
     if (!AGC_ASSERT(sst != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT15);
     call_wait((uint16_t) FOUR_SECS_CS, AGC_TASK_PFAILOK);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Task dispatch for the T4RUPT tasks (called from exec dispatch.c).      */
@@ -1059,33 +1059,33 @@ agc_status_t agc_t4_task(agc_task_id_t task)
 {
     if (!AGC_ASSERT(task != AGC_TASK_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (task == AGC_TASK_ENDTNON)
     {
-        return t4_endtnon();
+        return (t4_endtnon());
     }
 
     if (task == AGC_TASK_UNZ2)
     {
-        return t4_unz2();
+        return (t4_unz2());
     }
 
     if (task == AGC_TASK_ISSUP)
     {
-        return t4_issup();
+        return (t4_issup());
     }
 
     if (task == AGC_TASK_ENDZOPT || task == AGC_TASK_ENDZOPT2)
     {
         if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
-        return agc_t4_optics_task(task);
+        return (agc_t4_optics_task(task));
     }
 
-    return AGC_STATUS_NOT_FOUND;
+    return (AGC_STATUS_NOT_FOUND);
 }

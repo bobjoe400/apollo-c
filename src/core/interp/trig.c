@@ -52,24 +52,24 @@ static agc_w2_t sqrt_words(agc_w3_t m, bool *abort)
 
     if (!AGC_ASSERT(abort != 0))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT((shift >= 0) && (shift <= 42)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (shift == 0)
     {
-        return r;
+        return (r);
     }
 
     t.m0 = r.hi;
     t.m1 = r.lo;
     t.m2 = 0; /* CAF ZERO; TS +2  */
 
-    return agc_w3_top(agc_w_genscr(t, shift, false));
+    return (agc_w3_top(agc_w_genscr(t, shift, false)));
 }
 
 agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
@@ -79,19 +79,19 @@ agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     r = sqrt_words(agc_w3_from_tp(agc_tp_from_dp(a)), &abort);
 
     if (!AGC_ASSERT(r.hi >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = agc_w_join(r);
 
-    return abort ? AGC_STATUS_POODOO : AGC_STATUS_OK;
+    return (abort ? AGC_STATUS_POODOO : AGC_STATUS_OK);
 }
 
 agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
@@ -100,22 +100,22 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (agc_dp_sqrt_chk(ip, a, &r) != AGC_STATUS_OK)
     {
         /* ABORT 01302 (a < -2^-14): core cannot raise it (layering); a
          * caller that must abort uses agc_dp_sqrt_chk. Result 0.         */
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(r >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
@@ -125,17 +125,17 @@ agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((a >= AGC_TP_MIN) && (a <= AGC_TP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     r = sqrt_words(agc_w3_from_tp(a), &abort);
 
-    return abort ? 0 : agc_w_join(r);
+    return (abort ? 0 : agc_w_join(r));
 }
 
 /* ---- SIN / COS ----------------------------------------------------------- */
@@ -154,15 +154,15 @@ static agc_w2_t sn1_words(agc_w2_t x)
 
     if (!AGC_ASSERT(o == 0))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(r.m0)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return agc_w3_top(r);
+    return (agc_w3_top(r));
 }
 
 /* SINE (p.1187): double the argument (now scaled at pi), reflect it into
@@ -177,7 +177,7 @@ static agc_w2_t sine_words(agc_w2_t m)
 
     if (!AGC_ASSERT(agc_w_ok(m.hi) && agc_w_ok(m.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if ((a16 >= AGC_W_ONE) || (a16 <= -AGC_W_ONE))
@@ -198,10 +198,10 @@ static agc_w2_t sine_words(agc_w2_t m)
 
     if (!AGC_ASSERT(agc_w_ok(x.hi)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return sn1_words(x);
+    return (sn1_words(x));
 }
 
 /* SIN: (1/2) sin(2 pi a), a in revolutions.                                 */
@@ -209,15 +209,15 @@ agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
 {
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w_join(sine_words(agc_w_split(a)));
+    return (agc_w_join(sine_words(agc_w_split(a))));
 }
 
 /* COSINE (p.1187): cos(x) = sin(pi/2 - |x|); BRANCH, DCS if positive,
@@ -228,12 +228,12 @@ agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (a > 0)
@@ -243,7 +243,7 @@ agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
 
     m.hi += AGC_W_QUARTER; /* PRESINE          */
 
-    return agc_w_join(sine_words(m));
+    return (agc_w_join(sine_words(m)));
 }
 
 /* ---- ASIN / ACOS --------------------------------------------------------- */
@@ -261,19 +261,19 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 
     if (!AGC_ASSERT((m.hi >= 0) && (m.lo >= 0)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (m.hi > AGC_W_HALF)
     {                                      /* ACOSOVF          */
         *alarm = (m.hi != AGC_W_HALF + 1); /* ACOSABRT 01301   */
 
-        return zero;                       /* ACOS=0           */
+        return (zero);                       /* ACOS=0           */
     }
 
     if ((m.hi == AGC_W_HALF) && (m.lo >= 0))
     { /* -0: CCS MPAC +1  */
-        return zero;
+        return (zero);
     }
 
     s.hi = AGC_W_HALF - m.hi; /* ACOSST2: DCS; AD */
@@ -286,7 +286,7 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 
     if (!AGC_ASSERT(!abort && (shift <= 14)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (shift > 0)
@@ -296,7 +296,7 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 
     p = agc_w_poly(m, acos_coef, ACOS_DEGREE); /* ACOS3: POLY      */
 
-    return agc_w3_top(agc_w_dmpsub(agc_w3_top(p), root));
+    return (agc_w3_top(agc_w_dmpsub(agc_w3_top(p), root)));
 }
 
 /* ARCCOS / ARCSIN entry, BRANCH, ESCAPE/ESCAPE2 epilogues (p.1189-1190).    */
@@ -307,7 +307,7 @@ static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
 
     if (!AGC_ASSERT(alarm != 0))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (a == 0)
@@ -334,10 +334,10 @@ static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
@@ -346,17 +346,17 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = agc_w_join(arc_words(a, false, &alarm));
 
     if (!AGC_ASSERT((*out >= 0) && (*out <= AGC_DP_HALF)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK;
+    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK);
 }
 
 agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
@@ -365,17 +365,17 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = agc_w_join(arc_words(a, true, &alarm));
 
     if (!AGC_ASSERT((*out >= -AGC_DP_QUARTER) && (*out <= AGC_DP_QUARTER)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK;
+    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK);
 }
 
 /* ACOS: alarm 01301 (if any) is reported by agc_dp_acos_chk.                */
@@ -385,22 +385,22 @@ agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (agc_dp_acos_chk(ip, a, &r) != AGC_STATUS_OK)
     {
         /* ALARM 01301 (|a| > 1/2): core cannot raise it (layering); a
          * caller that alarms uses agc_dp_acos_chk. r is the limit value. */
-        return r;
+        return (r);
     }
 
     if (!AGC_ASSERT(r >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
@@ -409,20 +409,20 @@ agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (agc_dp_asin_chk(ip, a, &r) != AGC_STATUS_OK)
     {
         /* ALARM 01301 (|a| > 1/2): core cannot raise it (layering); a
          * caller that alarms uses agc_dp_asin_chk. r is the limit value. */
-        return r;
+        return (r);
     }
 
     if (!AGC_ASSERT((r >= -AGC_DP_QUARTER) && (r <= AGC_DP_QUARTER)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }

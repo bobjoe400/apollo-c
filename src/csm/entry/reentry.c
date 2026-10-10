@@ -98,7 +98,7 @@ agc_interp_t *entry_ip(void)
         entry_interp_ready = true;
     }
 
-    return &entry_interp;
+    return (&entry_interp);
 }
 
 /* SIGNMPAC (RT8_OP_CODES.agc p. 1386): MPAC = +DPOSMAX if the high word of
@@ -108,15 +108,15 @@ agc_dp_t entry_signmpac(agc_dp_t x)
 {
     if (!AGC_ASSERT(x >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(x <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (x >= 0) ? AGC_ENTRY_DPOSMAX : (agc_dp_t) (-AGC_ENTRY_DPOSMAX);
+    return ((x >= 0) ? AGC_ENTRY_DPOSMAX : (agc_dp_t) (-AGC_ENTRY_DPOSMAX));
 }
 
 /* LOG (CSM_GEOMETRY.agc p. 291): returns -ln(x)/32 for 0 < x < 1.
@@ -131,14 +131,14 @@ agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
 
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(x > 0))
     {
-        return 0;
+        return (0);
     }
 
     xn = agc_dp_norm(x, &shift);
 
     if (!AGC_ASSERT(shift >= 0 && shift <= AGC_DP_BITS))
     {
-        return 0;
+        return (0);
     }
 
     y = agc_dp_sub(ip, AGC_ENTRY_NEARONE, xn); /* BDSU NEARLY1      */
@@ -147,7 +147,7 @@ agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
     p = agc_dp_mul(ip, agc_dp_add(ip, p, AGC_ENTRY_LOG_C1), y); /* a0 = 0 */
 
     /* + shift count x CLOG2/32 (SHORTMP of a small positive integer)      */
-    return agc_dp_add(ip, p, (agc_dp_t) (AGC_ENTRY_CLOG2_32 * shift));
+    return (agc_dp_add(ip, p, (agc_dp_t) (AGC_ENTRY_CLOG2_32 * shift)));
 }
 
 /* EARROT1 / EARROT2 (CSM_GEOMETRY.agc pp. 293-294): rotate RTINIT about
@@ -209,7 +209,7 @@ static agc_status_t targ_velocity(agc_interp_t *ip, agc_entry_state_t *es,
 
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(sv != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_RELVELSW))
@@ -235,10 +235,10 @@ static agc_status_t targ_velocity(agc_interp_t *ip, agc_entry_state_t *es,
 
     if (!AGC_ASSERT(es->v >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GETETA / SUBETA / SUBETA2 (p. 851): D predicted half a cycle ahead,
@@ -251,12 +251,12 @@ static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(es->v > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     t = agc_dp_div(ip, es->rdot, AGC_ENTRY_MINUS_HSCALED); /* -RDOT/HS */
@@ -267,7 +267,7 @@ static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (!agc_flag_test(AGC_FLAG_EGSW))
     {
-        return agc_dp_mul(ip, es->thetah, AGC_ENTRY_KTETA); /* THETAH KTETA */
+        return (agc_dp_mul(ip, es->thetah, AGC_ENTRY_KTETA)); /* THETAH KTETA */
     }
 
     if (agc_dp_sub(ip, es->v, AGC_ENTRY_FOURTH) < 0)
@@ -275,7 +275,7 @@ static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es)
         agc_flag_set(AGC_FLAG_RELVELSW); /* SET RELVELSW */
     }
 
-    return agc_dp_div(ip, agc_dp_mul(ip, es->thetah, AGC_ENTRY_KT1), es->v);
+    return (agc_dp_div(ip, agc_dp_mul(ip, es->thetah, AGC_ENTRY_KT1), es->v));
 }
 
 /* GETANGLE / TINYTHET / THETDONE (pp. 849, 852): THETAH = ARCCOS(RT.UNITR)
@@ -356,14 +356,14 @@ agc_status_t agc_entry_targeting(void)
     if (!AGC_ASSERT(es != NULL) ||
         agc_sv_get(AGC_SV_THIS, &sv) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     st = targ_velocity(ip, es, &sv);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!agc_flag_test(AGC_FLAG_RELVELSW))
@@ -388,13 +388,13 @@ agc_status_t agc_entry_targeting(void)
     {
         agc_flag_clear(AGC_FLAG__05GSW); /* NO.05G (for the DAP)   */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_flag_set(AGC_FLAG__05GSW);
     targ_ldcalc(ip, es);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ======================================================================
@@ -415,7 +415,7 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(es != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     st = agc_sv_get(AGC_SV_THIS, &sv);
@@ -427,7 +427,7 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_flag_clear(AGC_FLAG_ERADFLAG); /* use pad radius        */
@@ -439,7 +439,7 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     es->rtinit  = agc_vec_unit(ip, r, NULL, NULL); /* .5 unit target  */
@@ -449,7 +449,7 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
         ip, agc_dp_shl(ip, agc_vec_dot(ip, es->rt, agc_guid_state()->avg.unitr),
                        1));
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* STARTENT entry-switch initialisation (p. 844): clear ENTMASK = 011774
@@ -501,7 +501,7 @@ agc_status_t agc_entry_startent(void)
     if (!AGC_ASSERT(es != NULL) ||
         agc_sv_get(AGC_SV_THIS, &sv) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     entry_init_switches();
@@ -517,7 +517,7 @@ agc_status_t agc_entry_startent(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     m = agc_vec_dot(
@@ -532,7 +532,7 @@ agc_status_t agc_entry_startent(void)
     es->gotoaddr = AGC_ENTRY_GOTO_INITROLL;
     es->posexit  = AGC_ENTRY_POSEXIT_SCALEPOP;
 
-    return AGC_STATUS_OK; /* RTB SERVNOUT */
+    return (AGC_STATUS_OK); /* RTB SERVNOUT */
 }
 
 /* ======================================================================
@@ -549,17 +549,17 @@ static entry_step_t step_initroll(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_flag_test(AGC_FLAG_INRLSW))
     {
-        return ST_INITRL1;
+        return (ST_INITRL1);
     }
 
     if (!agc_flag_test(AGC_FLAG__05GSW))
     {
-        return ST_LIMITLD; /* D < .05 g             */
+        return (ST_LIMITLD); /* D < .05 g             */
     }
 
     kat = agc_dp_mul(ip, agc_dp_sq(ip, es->leq), es->leq);
@@ -570,7 +570,7 @@ static entry_step_t step_initroll(entry_pass_t *p)
     { /* RTB P64: MM 64, N74   */
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->kat =
@@ -578,7 +578,7 @@ static entry_step_t step_initroll(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->kat <= AGC_ENTRY_KALIM))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     /* CLEAR GONEPAST: ROLLC follows HEADSUP only until P64.               */
@@ -586,12 +586,12 @@ static entry_step_t step_initroll(entry_pass_t *p)
 
     if (agc_dp_sub(ip, es->v, AGC_ENTRY_VFINAL1) >= 0)
     {
-        return ST_D0EQ;
+        return (ST_D0EQ);
     }
 
     es->gotoaddr = AGC_ENTRY_GOTO_KEP2; /* idle until D > .2 g   */
 
-    return ST_INROLOUT;
+    return (ST_INROLOUT);
 }
 
 /* D0EQ (pp. 853-854): constant drag level D0 = KA3 LEQ + KA4,
@@ -606,7 +606,7 @@ static entry_step_t step_d0eq(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->v > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->d0 =
@@ -614,7 +614,7 @@ static entry_step_t step_d0eq(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->d0 > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->c_d0 = agc_dp_div(ip, AGC_ENTRY_C001, es->d0); /* BDDV       */
@@ -628,12 +628,12 @@ static entry_step_t step_d0eq(entry_pass_t *p)
 
     if (agc_interp_test_ovf(ip) || x < 0)
     {
-        return ST_INROLOUT;
+        return (ST_INROLOUT);
     }
 
     es->l_d = agc_dp_neg(es->lad);
 
-    return ST_INROLOUT;
+    return (ST_INROLOUT);
 }
 
 /* INROLOUT (p. 854): BOFSET INRLSW -> LIMITL/D (set at the end for
@@ -644,12 +644,12 @@ static entry_step_t step_inrolout(entry_pass_t *p)
 
     if (!AGC_ASSERT(p != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_flag_set(AGC_FLAG_INRLSW);
 
-    return was_set ? ST_KATEST : ST_LIMITLD;
+    return (was_set ? ST_KATEST : ST_LIMITLD);
 }
 
 /* KATEST (p. 854): if KAT - D >= 0 keep the roll (LIMITL/D), else CONSTD.  */
@@ -657,16 +657,16 @@ static entry_step_t step_katest(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(p->es->kat >= 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return (agc_dp_sub(p->ip, p->es->kat, p->es->d) >= 0) ? ST_LIMITLD :
-           ST_CONSTD;
+    return ((agc_dp_sub(p->ip, p->es->kat, p->es->d) >= 0) ? ST_LIMITLD :
+            ST_CONSTD);
 }
 
 /* FOREHUNT (p. 863): initialise HUNTEST.                                  */
@@ -694,12 +694,12 @@ static entry_step_t step_initrl1(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_dp_add(p->ip, es->rdot, AGC_ENTRY_VRCONT) < 0)
     {
-        return ST_KATEST;
+        return (ST_KATEST);
     }
 
     entry_forehunt(es);
@@ -707,10 +707,10 @@ static entry_step_t step_initrl1(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->gotoaddr == AGC_ENTRY_GOTO_HUNTEST))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_HUNTEST;
+    return (ST_HUNTEST);
 }
 
 /* ======================================================================
@@ -725,19 +725,19 @@ static agc_dp_t entry_dhookyq7(agc_interp_t *ip, const agc_entry_state_t *es,
 
     if (!AGC_ASSERT(es->fact1 != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(es->fact2 != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     m = agc_dp_div(ip, agc_dp_shr(x, 1), es->fact1);           /* SR1 DDV    */
     m = agc_dp_shl(ip, agc_dp_sub(ip, AGC_ENTRY_HALVE, m), 1); /* BDSU SL1 */
     m = agc_dp_sub(ip, agc_dp_sq(ip, m), es->alp);
 
-    return agc_dp_div(ip, m, es->fact2);
+    return (agc_dp_div(ip, m, es->fact2));
 }
 
 /* HUNTEST .. V1LEAD (p. 855): A1 = D, TEM1B, V1 = V + RDOT/TEM1B,
@@ -819,12 +819,12 @@ static agc_dp_t hunt_negama(agc_interp_t *ip, agc_entry_state_t *es,
 
     if (!AGC_ASSERT(gammal < 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(es->dhook != 0 && es->vl != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     num = agc_dp_mul(ip, agc_dp_mul(ip, gammal,
@@ -838,7 +838,7 @@ static agc_dp_t hunt_negama(agc_interp_t *ip, agc_entry_state_t *es,
     es->q7    = entry_dhookyq7(ip, es, es->vl);
     es->vbars = agc_dp_sq(ip, es->vl);
 
-    return 0; /* 3ZEROS       */
+    return (0); /* 3ZEROS       */
 }
 
 /* GETDHOOK .. HUNTEST3 (pp. 857-858): DHOOK, AHOOKDV, GAMMAL, and the
@@ -850,12 +850,12 @@ static agc_dp_t hunt_getdhook(agc_interp_t *ip, agc_entry_state_t *es)
 
     if (!AGC_ASSERT(es->q7 != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(es->vbars != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     es->dhook   = entry_dhookyq7(ip, es, es->vs1);
@@ -878,7 +878,7 @@ static agc_dp_t hunt_getdhook(agc_interp_t *ip, agc_entry_state_t *es)
         agc_dp_mul(ip, agc_dp_sub(ip, g, es->gammal1), AGC_ENTRY_HALVE);
     es->gammal1 = agc_dp_add(ip, m, es->gammal1);
 
-    return g;
+    return (g);
 }
 
 /* HUNTEST (pp. 855-858) without the sequencing: runs from the present
@@ -892,7 +892,7 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
 
     if (agc_dp_sub(ip, es->vl, AGC_ENTRY_VLMIN) < 0)
     {
-        return AGC_ENTRY_HUNT_PREFINAL; /* VL < VLMIN  */
+        return (AGC_ENTRY_HUNT_PREFINAL); /* VL < VLMIN  */
     }
 
     es->vbars = agc_dp_sq(ip, es->vl);
@@ -900,7 +900,7 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
 
     if (es->dvl < 0)
     {
-        return AGC_ENTRY_HUNT_CONSTD; /* BECONSTD    */
+        return (AGC_ENTRY_HUNT_CONSTD); /* BECONSTD    */
     }
 
     es->vs1 = AGC_ENTRY_HALVE; /* VS1 = VSAT  */
@@ -913,7 +913,7 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
 
     *gammal = hunt_getdhook(ip, es);
 
-    return AGC_ENTRY_HUNT_RANGER;
+    return (AGC_ENTRY_HUNT_RANGER);
 }
 
 /* RANGER (pp. 859-860): range components (revs) for GAMMAL; returns DIFF =
@@ -927,12 +927,12 @@ static agc_dp_t entry_ranger_core(agc_interp_t *ip, agc_entry_state_t *es,
 
     if (!AGC_ASSERT(es->a0 != 0 && es->lad != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(es->gammal1 != 0 && es->vbars != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     es->cosg_2 =
@@ -964,7 +964,7 @@ static agc_dp_t entry_ranger_core(agc_interp_t *ip, agc_entry_state_t *es,
     sum = agc_dp_sub(ip, sum, es->thetah);
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG */
 
-    return sum;
+    return (sum);
 }
 
 /* HUNTEST step (p. 855): HUNTEST core, then RANGER, PREFINAL or BECONSTD. */
@@ -975,7 +975,7 @@ static entry_step_t step_huntest(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     r = entry_huntest_core(p->ip, p->es, &g);
@@ -983,22 +983,22 @@ static entry_step_t step_huntest(entry_pass_t *p)
     if (!AGC_ASSERT(r == AGC_ENTRY_HUNT_RANGER ||
                     r == AGC_ENTRY_HUNT_PREFINAL || r == AGC_ENTRY_HUNT_CONSTD))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (r == AGC_ENTRY_HUNT_PREFINAL)
     {
-        return ST_PREFINAL;
+        return (ST_PREFINAL);
     }
 
     if (r == AGC_ENTRY_HUNT_CONSTD)
     {
-        return ST_BECONSTD;
+        return (ST_BECONSTD);
     }
 
     p->mpac = g;
 
-    return ST_RANGER;
+    return (ST_RANGER);
 }
 
 /* RANGER step (p. 860): DIFF, then UPSY (|DIFF| < 25 NM), GETDLEWD (HIND
@@ -1009,27 +1009,27 @@ static entry_step_t step_ranger(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->diff = entry_ranger_core(p->ip, es, p->mpac);
 
     if (agc_dp_sub(p->ip, agc_dp_abs(es->diff), AGC_ENTRY_TOL_25NM) < 0)
     {
-        return ST_GOTOUPSY;
+        return (ST_GOTOUPSY);
     }
 
     if (agc_flag_test(AGC_FLAG_HIND))
     {
-        return ST_GETDLEWD; /* AGC "GETLEWD": GETDLEWD    */
+        return (ST_GETDLEWD); /* AGC "GETLEWD": GETDLEWD    */
     }
 
     if (!AGC_ASSERT(es->diff != 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return (es->diff >= 0) ? ST_DCONSTD : ST_GETDLEWD;
+    return ((es->diff >= 0) ? ST_DCONSTD : ST_GETDLEWD);
 }
 
 /* GETDLEWD / LWDSTORE / LEWDPTR / LEWDOVFL (pp. 860-861): secant step on
@@ -1042,7 +1042,7 @@ static entry_step_t step_getdlewd(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->dlewd = agc_dp_div(ip, agc_dp_mul(ip, es->dlewd, es->diff),
@@ -1059,17 +1059,17 @@ static entry_step_t step_getdlewd(entry_pass_t *p)
     { /* LEWDOVFL           */
         es->lewd = AGC_ENTRY_NEARONE;
 
-        return ST_DCONSTD;
+        return (ST_DCONSTD);
     }
 
     es->lewd = lewd;
 
     if (!AGC_ASSERT(es->lewd >= 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_SIDETRAK;
+    return (ST_SIDETRAK);
 }
 
 /* SIDETRAK (p. 861): the iteration continues below SERVICER priority while
@@ -1084,7 +1084,7 @@ static entry_step_t step_sidetrak(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->hunt_iter >= 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     /* CA PRIO16 / TS PHSPRDT5: group 5 restart priority one below group 4
@@ -1101,10 +1101,10 @@ static entry_step_t step_sidetrak(entry_pass_t *p)
     {
         es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
 
-        return ST_ENDEXIT;
+        return (ST_ENDEXIT);
     }
 
-    return ST_HUNTEST;
+    return (ST_HUNTEST);
 }
 
 /* PRE-HUNT (p. 863): restart point of group 4 after SIDETRAK.            */
@@ -1114,14 +1114,14 @@ agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_HIND);
     entry_forehunt(es);
     es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
 
-    return AGC_STATUS_OK; /* next SERVICER pass continues at HUNTEST */
+    return (AGC_STATUS_OK); /* next SERVICER pass continues at HUNTEST */
 }
 
 /* ======================================================================
@@ -1134,22 +1134,22 @@ static entry_step_t step_gotoupsy(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (entry_upcontrol(p->es) != AGC_STATUS_OK)
     {
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_UPCONTRL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_UPCONTRL;
+    return (ST_UPCONTRL);
 }
 
 /* UPCONTRL / VLTEST (p. 864).                                             */
@@ -1161,7 +1161,7 @@ static entry_step_t step_upcontrl(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL && es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_dp_sub(ip, es->d, AGC_ENTRY_C21) >= 0)
@@ -1171,27 +1171,27 @@ static entry_step_t step_upcontrl(entry_pass_t *p)
 
     if (agc_dp_sub(ip, es->v, es->v1) >= 0)
     {
-        return ST_DOWNCNTL;
+        return (ST_DOWNCNTL);
     }
 
     if (agc_dp_sub(ip, es->d, es->q7) < 0)
     {
-        return ST_KEP;
+        return (ST_KEP);
     }
 
     if (es->rdot >= 0)
     {
-        return ST_CONT1;
+        return (ST_CONT1);
     }
 
     m = agc_dp_sub(ip, agc_dp_sub(ip, es->v, es->vl), AGC_ENTRY_C18);
 
     if (!AGC_ASSERT(es->vl > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return (m < 0) ? ST_PREFINAL : ST_CONT1; /* VLTEST            */
+    return ((m < 0) ? ST_PREFINAL : ST_CONT1); /* VLTEST            */
 }
 
 /* CONT1 (p. 864): L/D = LAD while D >= A0.                                */
@@ -1199,22 +1199,22 @@ static entry_step_t step_cont1(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(p->es->a0 > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_dp_sub(p->ip, p->es->d, p->es->a0) < 0)
     {
-        return ST_CONT3;
+        return (ST_CONT3);
     }
 
     p->es->l_d = p->es->lad; /* STOREL/D          */
 
-    return ST_LIMITLD;
+    return (ST_LIMITLD);
 }
 
 /* CONT3 (pp. 864-865): VREF = FACT1 (1 - SQRT(FACT2 D + ALP)),
@@ -1229,7 +1229,7 @@ static entry_step_t step_cont3(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->dhook != 0 && es->dvl != 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m           = agc_dp_add(ip, agc_dp_mul(ip, es->d, es->fact2), es->alp);
@@ -1240,12 +1240,12 @@ static entry_step_t step_cont3(entry_pass_t *p)
 
     if (dv < 0)
     {
-        return ST_CONTINU2;
+        return (ST_CONTINU2);
     }
 
     if (!AGC_ASSERT(es->vref > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m = agc_dp_div(ip, agc_dp_mul(ip, dv, es->ahookdv), es->dvl);
@@ -1255,7 +1255,7 @@ static entry_step_t step_cont3(entry_pass_t *p)
     m           = agc_dp_div(ip, agc_dp_div(ip, m, es->dhook), es->vref);
     es->rdotref = agc_dp_sub(ip, es->rdotref, m); /* - RDHOOK          */
 
-    return ST_CONTINU2;
+    return (ST_CONTINU2);
 }
 
 /* CONTINU2 (p. 865): FACTOR = (D - Q7)/(A1 - Q7) when D >= Q7MIN.        */
@@ -1267,25 +1267,25 @@ static entry_step_t step_continu2(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG     */
 
     if (m < 0)
     {
-        return ST_UPCNTRL3;
+        return (ST_UPCNTRL3);
     }
 
     if (!AGC_ASSERT(es->a1 != es->q7))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->factor = agc_dp_div(ip, agc_dp_sub(ip, es->d, es->q7),
                             agc_dp_sub(ip, es->a1, es->q7));
 
-    return ST_UPCNTRL3;
+    return (ST_UPCNTRL3);
 }
 
 /* UPCNTRL3 / NEXT1 (p. 866): delta L/D =
@@ -1300,7 +1300,7 @@ static entry_step_t step_upcntrl3(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL && es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m   = agc_dp_mul(ip, agc_dp_sub(ip, es->rdot, es->rdotref), es->factor);
@@ -1312,7 +1312,7 @@ static entry_step_t step_upcntrl3(entry_pass_t *p)
     {
         p->mpac = dld;
 
-        return ST_GOMAXLD;
+        return (ST_GOMAXLD);
     }
 
     m = agc_dp_sub(ip, agc_dp_abs(dld), AGC_ENTRY_PT1_16);
@@ -1326,7 +1326,7 @@ static entry_step_t step_upcntrl3(entry_pass_t *p)
 
     p->mpac = agc_dp_add(ip, agc_dp_shl(ip, dld, 4), es->lewd); /* NEXT1 */
 
-    return ST_NEGTESTS;
+    return (ST_NEGTESTS);
 }
 
 /* NEGTESTS (p. 866): L/D store; above C20 (175 fpss) LATSW is cleared
@@ -1338,19 +1338,19 @@ static entry_step_t step_negtests(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL && es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_interp_test_ovf(ip))
     {
-        return ST_GOMAXLD; /* MPAC = overflowed L/D */
+        return (ST_GOMAXLD); /* MPAC = overflowed L/D */
     }
 
     es->l_d = p->mpac;
 
     if (agc_dp_sub(ip, es->d, AGC_ENTRY_C20) < 0)
     {
-        return ST_LIMITLD;
+        return (ST_LIMITLD);
     }
 
     agc_flag_clear(AGC_FLAG_LATSW);
@@ -1360,7 +1360,7 @@ static entry_step_t step_negtests(entry_pass_t *p)
         es->l_d = 0;
     }
 
-    return ST_LIMITLD;
+    return (ST_LIMITLD);
 }
 
 /* ======================================================================
@@ -1372,7 +1372,7 @@ static entry_step_t step_dconstd(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->diffold = p->es->diff;
@@ -1380,10 +1380,10 @@ static entry_step_t step_dconstd(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->es->q7 > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_BECONSTD;
+    return (ST_BECONSTD);
 }
 
 /* BECONSTD (p. 867): GOTOADDR = HUNTEST, RTB KILLGRP4.                   */
@@ -1391,7 +1391,7 @@ static entry_step_t step_beconstd(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
@@ -1400,15 +1400,15 @@ static entry_step_t step_beconstd(entry_pass_t *p)
     {
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_HUNTEST))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_CONSTD;
+    return (ST_CONSTD);
 }
 
 /* CONSTD (p. 867): RDOTREF = -2 HS D0/V,
@@ -1421,7 +1421,7 @@ static entry_step_t step_constd(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->v > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG    */
@@ -1433,10 +1433,10 @@ static entry_step_t step_constd(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->d0 > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_CONSTD1;
+    return (ST_CONSTD1);
 }
 
 /* CONSTD1 (p. 867): L/D = (K1D (D - DREF) + push) SL 8, then NEGTESTS.   */
@@ -1447,19 +1447,19 @@ static entry_step_t step_constd1(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m       = agc_dp_sub(ip, p->es->d, p->mpac); /* BDSU D           */
     m       = agc_dp_add(ip, agc_dp_mul(ip, m, AGC_ENTRY_K1D), p->pd_ld);
     p->mpac = agc_dp_shl(ip, m, 8);
 
-    return ST_NEGTESTS;
+    return (ST_NEGTESTS);
 }
 
 /* DOWNCNTL (pp. 867-868): initial part of up control (V > V1):
@@ -1474,7 +1474,7 @@ static entry_step_t step_downcntl(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->v1 != 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG    */
@@ -1490,10 +1490,10 @@ static entry_step_t step_downcntl(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->vsquare > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_CONSTD1;
+    return (ST_CONSTD1);
 }
 
 /* ======================================================================
@@ -1505,24 +1505,24 @@ static entry_step_t step_kep(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (entry_ballistic(p->es) != AGC_STATUS_OK)
     {
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->gotoaddr = AGC_ENTRY_GOTO_KEP2;
 
     if (!AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_KEP2))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_KEP2;
+    return (ST_KEP2);
 }
 
 /* KEP2 (p. 869): final phase once D > Q7F + KDMIN; otherwise keep (or,
@@ -1534,12 +1534,12 @@ static entry_step_t step_kep2(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_dp_sub(p->ip, AGC_ENTRY_Q7FKDMIN, es->d) < 0)
     {
-        return ST_PREFINAL;
+        return (ST_PREFINAL);
     }
 
     if (!agc_flag_test(AGC_FLAG__05GSW))
@@ -1552,15 +1552,15 @@ static entry_step_t step_kep2(entry_pass_t *p)
     {
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(es->gotoaddr == AGC_ENTRY_GOTO_KEP2))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_ENDEXIT; /* QPRET = ENDEXIT            */
+    return (ST_ENDEXIT); /* QPRET = ENDEXIT            */
 }
 
 /* ======================================================================
@@ -1572,7 +1572,7 @@ static entry_step_t step_prefinal(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->gotoaddr = AGC_ENTRY_GOTO_PREFINAL; /* restart protection */
@@ -1581,7 +1581,7 @@ static entry_step_t step_prefinal(entry_pass_t *p)
     {
         p->status = AGC_STATUS_BAD_ARG;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_flag_set(AGC_FLAG_EGSW);
@@ -1589,10 +1589,10 @@ static entry_step_t step_prefinal(entry_pass_t *p)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_EGSW)))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_PREDICT3;
+    return (ST_PREDICT3);
 }
 
 /* BACK (p. 870): search VREFER for VREF < V from the top (JJ = 12) and
@@ -1604,7 +1604,7 @@ static agc_sp_t predict_find_jj(agc_entry_state_t *es, agc_sp_t v_sp)
 
     if (!AGC_ASSERT(es != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     for (i = 0; i < 2 * AGC_ENTRY_VREFER_N; i++)
@@ -1615,7 +1615,7 @@ static agc_sp_t predict_find_jj(agc_entry_state_t *es, agc_sp_t v_sp)
         {
             es->jj = jj;
 
-            return (agc_sp_t) (-d); /* TEM1B      */
+            return ((agc_sp_t) (-d)); /* TEM1B      */
         }
 
         if (d == 0 || jj == 0)
@@ -1625,7 +1625,7 @@ static agc_sp_t predict_find_jj(agc_entry_state_t *es, agc_sp_t v_sp)
             {
                 es->jj = 0;
 
-                return 1;
+                return (1);
             }
 
             jj = 0;
@@ -1638,7 +1638,7 @@ static agc_sp_t predict_find_jj(agc_entry_state_t *es, agc_sp_t v_sp)
 
     es->jj = 0;
 
-    return 1; /* unreachable: the table always brackets V */
+    return (1); /* unreachable: the table always brackets V */
 }
 
 /* BACK2 (pp. 870-871): GRAD and the six interpolated functions
@@ -1686,7 +1686,7 @@ static agc_dp_t predict_predang(agc_entry_state_t *es)
 
     if (!AGC_ASSERT(es != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     a           = (agc_sp_t) (es->fx[1] + agc_dp_high(es->d)); /* D - DREF     */
@@ -1701,10 +1701,10 @@ static agc_dp_t predict_predang(agc_entry_state_t *es)
 
     if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return mpac;
+    return (mpac);
 }
 
 /* PREDICT3 (pp. 870-871): stop steering below VQUIT, else range error
@@ -1717,12 +1717,12 @@ static entry_step_t step_predict3(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_dp_sub(ip, es->v, AGC_ENTRY_VQUIT) < 0)
     {
-        return ST_STEEROFF;
+        return (ST_STEEROFF);
     }
 
     predict_interp(es, predict_find_jj(es, agc_dp_high(es->v)));
@@ -1731,14 +1731,14 @@ static entry_step_t step_predict3(entry_pass_t *p)
 
     if (agc_flag_test(AGC_FLAG_GONEPAST))
     {
-        return ST_GONEGLAD;
+        return (ST_GONEGLAD);
     }
 
     if (!agc_flag_test(AGC_FLAG_GONEBY))
     {
         p->mpac = m;
 
-        return ST_HAVDNRNG;
+        return (ST_HAVDNRNG);
     }
 
     es->dnrngerr = AGC_ENTRY_MAXRNG; /* 9999.9 NM   */
@@ -1746,10 +1746,10 @@ static entry_step_t step_predict3(entry_pass_t *p)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_GONEPAST)))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_GONEGLAD;
+    return (ST_GONEGLAD);
 }
 
 /* HAVDNRNG (pp. 871-872): L/D = LOD + (THETAH - PREDANG)/(DR/D L/D) 2^5. */
@@ -1761,7 +1761,7 @@ static entry_step_t step_havdnrng(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->dnrngerr = p->mpac;
@@ -1770,7 +1770,7 @@ static entry_step_t step_havdnrng(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->fx[0] != 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m = agc_dp_div(ip, m, agc_dp_pack(es->fx[0], es->fx[1])); /* DDV FX    */
@@ -1785,12 +1785,12 @@ static entry_step_t step_havdnrng(entry_pass_t *p)
     {
         p->mpac = m;
 
-        return ST_GOMAXLD;
+        return (ST_GOMAXLD);
     }
 
     es->l_d = m;
 
-    return ST_GLIMITER;
+    return (ST_GLIMITER);
 }
 
 /* GONEGLAD (p. 872): L/D = -LAD ("DLOAD GONEGLAD" loads any negative). */
@@ -1798,17 +1798,17 @@ static entry_step_t step_gonegladd(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->mpac = -1;
 
     if (!AGC_ASSERT(p->mpac < 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_GOMAXLD;
+    return (ST_GOMAXLD);
 }
 
 /* GOMAXL/D (p. 872): L/D = LAD SIGN(MPAC), then GLIMITER.                */
@@ -1816,17 +1816,17 @@ static entry_step_t step_gomaxld(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->l_d = agc_dp_mul(p->ip, entry_signmpac(p->mpac), p->es->lad);
 
     if (!AGC_ASSERT(agc_dp_abs(p->es->l_d) <= p->es->lad))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_GLIMITER;
+    return (ST_GLIMITER);
 }
 
 /* GLIMITER (p. 872): above GMAX/2 limit the downlift so that
@@ -1840,21 +1840,21 @@ static entry_step_t step_glimiter(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->vsquare > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m = agc_dp_sub(ip, AGC_ENTRY_GMAX_HALF, es->d);
 
     if (m >= 0)
     {
-        return ST_LIMITLD;
+        return (ST_LIMITLD);
     }
 
     m = agc_dp_add(ip, m, AGC_ENTRY_GMAX_HALF); /* GMAX - D     */
 
     if (m < 0)
     {
-        return ST_GOPOSLAD;
+        return (ST_GOPOSLAD);
     }
 
     m = agc_dp_mul(ip, m, AGC_ENTRY_TWO_HS);
@@ -1865,10 +1865,10 @@ static entry_step_t step_glimiter(entry_pass_t *p)
 
     if (!AGC_ASSERT(m >= 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return (agc_dp_add(ip, m, es->rdot) >= 0) ? ST_LIMITLD : ST_GOPOSLAD;
+    return ((agc_dp_add(ip, m, es->rdot) >= 0) ? ST_LIMITLD : ST_GOPOSLAD);
 }
 
 /* GOPOSLAD (p. 872): L/D = LAD.                                          */
@@ -1876,17 +1876,17 @@ static entry_step_t step_goposlad(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->l_d = p->es->lad;
 
     if (!AGC_ASSERT(p->es->l_d >= 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_LIMITLD;
+    return (ST_LIMITLD);
 }
 
 /* ======================================================================
@@ -1902,14 +1902,14 @@ static entry_step_t step_limitld(entry_pass_t *p)
 
     if (!AGC_ASSERT(ip != NULL && es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     es->l_d1 = es->l_d;
 
     if (agc_flag_test(AGC_FLAG_GONEPAST))
     {
-        return ST_L355; /* no lateral past target     */
+        return (ST_L355); /* no lateral past target     */
     }
 
     p->pd_y = agc_dp_add(ip, agc_dp_mul(ip, es->vsquare, es->klat),
@@ -1917,17 +1917,17 @@ static entry_step_t step_limitld(entry_pass_t *p)
 
     if (agc_dp_sub(ip, agc_dp_abs(es->l_d), es->l_dcminr) < 0)
     {
-        return ST_L353;
+        return (ST_L353);
     }
 
     if (agc_dp_sign(es->latang, es->k2roll) < 0)
     {
-        return ST_L357;
+        return (ST_L357);
     }
 
     p->pd_y = agc_dp_shr(p->pd_y, 1); /* Y = Y/2                    */
 
-    return ST_L353;
+    return (ST_L353);
 }
 
 /* L353 (p. 873): switch K2ROLL when LATANG SIGN(K2ROLL) - Y >= 0, unless
@@ -1939,31 +1939,31 @@ static entry_step_t step_l353(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->ip != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     m = agc_dp_sub(p->ip, agc_dp_sign(es->latang, es->k2roll), p->pd_y);
 
     if (m < 0)
     {
-        return ST_L355;
+        return (ST_L355);
     }
 
     if (agc_flag_test(AGC_FLAG_NOSWITCH))
     {
         agc_flag_clear(AGC_FLAG_NOSWITCH);
 
-        return ST_L355;
+        return (ST_L355);
     }
 
     es->k2roll = agc_dp_neg(es->k2roll); /* K2ROLL = -K2ROLL           */
 
     if (!AGC_ASSERT(es->k2roll != 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_L355;
+    return (ST_L355);
 }
 
 /* L355 (p. 873): ROLLC = SIGN(K2ROLL) ACOS(L/D1 / LAD); clear NOSWITCH. */
@@ -1975,7 +1975,7 @@ static entry_step_t step_l355(entry_pass_t *p)
 
     if (!AGC_ASSERT(es->lad > 0))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     /* MPAC set to +-1 if overflow; the AGC has no BOV here, so OVFIND is
@@ -1987,10 +1987,10 @@ static entry_step_t step_l355(entry_pass_t *p)
 
     if (!AGC_ASSERT(agc_dp_abs(es->rollc) <= AGC_DP_HALF))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_ENDEXIT;
+    return (ST_ENDEXIT);
 }
 
 /* L357 (p. 875): L/D1 = L/DCMINR SIGN(L/D).                              */
@@ -1998,17 +1998,17 @@ static entry_step_t step_l357(entry_pass_t *p)
 {
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     p->es->l_d1 = agc_dp_sign(p->es->l_dcminr, p->es->l_d);
 
     if (!AGC_ASSERT(agc_dp_abs(p->es->l_d1) == p->es->l_dcminr))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_L355;
+    return (ST_L355);
 }
 
 /* STEEROFF (p. 875): V < VQUIT. Start P67.1 (N67 flashing), restart 4.41
@@ -2021,7 +2021,7 @@ static entry_step_t step_steeroff(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY) !=
@@ -2029,7 +2029,7 @@ static entry_step_t step_steeroff(entry_pass_t *p)
     {
         p->status = AGC_STATUS_FULL;
 
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     agc_phase_change2(000414, 010035, &v); /* 4.41 P67.1, SERVICER 5.3 */
@@ -2037,10 +2037,10 @@ static entry_step_t step_steeroff(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_FINAL_PHASE_LATLONG))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_FINAL_PHASE_LATLONG;
+    return (ST_FINAL_PHASE_LATLONG);
 }
 
 /* P67.2 (P61-P67.agc p. 802): present LAT, LONG, ALT (pad radius, earth),
@@ -2051,10 +2051,10 @@ static entry_step_t step_final_phase_latlong(entry_pass_t *p)
 
     if (!AGC_ASSERT(p->es != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return (p->status == AGC_STATUS_OK) ? ST_SERVNOUT : ST_ERROR;
+    return ((p->status == AGC_STATUS_OK) ? ST_SERVNOUT : ST_ERROR);
 }
 
 /* ======================================================================
@@ -2070,52 +2070,52 @@ static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
     switch ((int) s)
     {
         case ST_INITROLL:
-            return step_initroll(p);
+            return (step_initroll(p));
         case ST_D0EQ:
-            return step_d0eq(p);
+            return (step_d0eq(p));
         case ST_INROLOUT:
-            return step_inrolout(p);
+            return (step_inrolout(p));
         case ST_KATEST:
-            return step_katest(p);
+            return (step_katest(p));
         case ST_INITRL1:
-            return step_initrl1(p);
+            return (step_initrl1(p));
         case ST_HUNTEST:
-            return step_huntest(p);
+            return (step_huntest(p));
         case ST_RANGER:
-            return step_ranger(p);
+            return (step_ranger(p));
         case ST_GETDLEWD:
-            return step_getdlewd(p);
+            return (step_getdlewd(p));
         case ST_SIDETRAK:
-            return step_sidetrak(p);
+            return (step_sidetrak(p));
         case ST_GOTOUPSY:
-            return step_gotoupsy(p);
+            return (step_gotoupsy(p));
         case ST_UPCONTRL:
-            return step_upcontrl(p);
+            return (step_upcontrl(p));
         case ST_CONT1:
-            return step_cont1(p);
+            return (step_cont1(p));
         case ST_CONT3:
-            return step_cont3(p);
+            return (step_cont3(p));
         case ST_CONTINU2:
-            return step_continu2(p);
+            return (step_continu2(p));
         case ST_UPCNTRL3:
-            return step_upcntrl3(p);
+            return (step_upcntrl3(p));
         case ST_NEGTESTS:
-            return step_negtests(p);
+            return (step_negtests(p));
         case ST_DCONSTD:
-            return step_dconstd(p);
+            return (step_dconstd(p));
         case ST_BECONSTD:
-            return step_beconstd(p);
+            return (step_beconstd(p));
         case ST_CONSTD:
-            return step_constd(p);
+            return (step_constd(p));
         case ST_CONSTD1:
-            return step_constd1(p);
+            return (step_constd1(p));
         case ST_DOWNCNTL:
-            return step_downcntl(p);
+            return (step_downcntl(p));
         default:
             break;
     }
 
-    return ST_ERROR; /* not a step of this half: the caller's error */
+    return (ST_ERROR); /* not a step of this half: the caller's error */
 }
 
 static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
@@ -2123,35 +2123,35 @@ static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
     switch (s)
     {
         case ST_KEP:
-            return step_kep(p);
+            return (step_kep(p));
         case ST_KEP2:
-            return step_kep2(p);
+            return (step_kep2(p));
         case ST_PREFINAL:
-            return step_prefinal(p);
+            return (step_prefinal(p));
         case ST_PREDICT3:
-            return step_predict3(p);
+            return (step_predict3(p));
         case ST_HAVDNRNG:
-            return step_havdnrng(p);
+            return (step_havdnrng(p));
         case ST_GONEGLAD:
-            return step_gonegladd(p);
+            return (step_gonegladd(p));
         case ST_GOMAXLD:
-            return step_gomaxld(p);
+            return (step_gomaxld(p));
         case ST_GLIMITER:
-            return step_glimiter(p);
+            return (step_glimiter(p));
         case ST_GOPOSLAD:
-            return step_goposlad(p);
+            return (step_goposlad(p));
         case ST_LIMITLD:
-            return step_limitld(p);
+            return (step_limitld(p));
         case ST_L353:
-            return step_l353(p);
+            return (step_l353(p));
         case ST_L355:
-            return step_l355(p);
+            return (step_l355(p));
         case ST_L357:
-            return step_l357(p);
+            return (step_l357(p));
         case ST_STEEROFF:
-            return step_steeroff(p);
+            return (step_steeroff(p));
         case ST_FINAL_PHASE_LATLONG:
-            return step_final_phase_latlong(p);
+            return (step_final_phase_latlong(p));
         case ST_INITROLL:
         case ST_D0EQ:
         case ST_INROLOUT:
@@ -2182,10 +2182,10 @@ static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
 
     if (!AGC_ASSERT(s < ST_KEP))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return ST_ERROR;
+    return (ST_ERROR);
 }
 
 /* GOTO GOTOADDR (p. 847): first step of the pass.                        */
@@ -2198,15 +2198,15 @@ static entry_step_t entry_first_step(agc_entry_goto_t g)
 
     if (!AGC_ASSERT(g >= AGC_ENTRY_GOTO_INITROLL && g < AGC_ENTRY_GOTO_COUNT))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     if (!AGC_ASSERT(map[g] <= ST_ERROR))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
-    return map[g];
+    return (map[g]);
 }
 
 /* Run the chain of sections from `s` to a terminal step (bounded).       */
@@ -2216,20 +2216,20 @@ static entry_step_t entry_sequencer(entry_pass_t *p, entry_step_t s)
 
     if (!AGC_ASSERT(p != NULL))
     {
-        return ST_ERROR;
+        return (ST_ERROR);
     }
 
     for (n = 0; n < AGC_ENTRY_SEQ_MAX_STEPS; n++)
     {
         if (s == ST_ENDEXIT || s == ST_SERVNOUT || s == ST_ERROR)
         {
-            return s;
+            return (s);
         }
 
         s = (s < ST_KEP) ? entry_step_a(p, s) : entry_step_b(p, s);
     }
 
-    return ST_ERROR; /* unreachable: step bound exhausted */
+    return (ST_ERROR); /* unreachable: step bound exhausted */
 }
 
 /* ENDEXIT / OVERNOUT / NODISKY (pp. 873-874): the entry display ENTRYVN
@@ -2238,12 +2238,12 @@ agc_status_t entry_endexit(agc_job_ctx_t *ctx, agc_entry_state_t *es)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!agc_flag_test(AGC_FLAG_ENTRYDSP))
     {
-        return AGC_STATUS_OK; /* NODISKY          */
+        return (AGC_STATUS_OK); /* NODISKY          */
     }
 
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_REGODSPR,
@@ -2252,10 +2252,10 @@ agc_status_t entry_endexit(agc_job_ctx_t *ctx, agc_entry_state_t *es)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return AGC_STATUS_OK; /* REGODSPR: never aborts here    */
+    return (AGC_STATUS_OK); /* REGODSPR: never aborts here    */
 }
 
 /* REFAZE10 (p. 847): restart 5.3, then the steering phase named by
@@ -2272,7 +2272,7 @@ agc_status_t agc_entry_refaze10(bool *display)
 
     if (!AGC_ASSERT(display != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *display = false;
@@ -2289,18 +2289,18 @@ agc_status_t agc_entry_refaze10(bool *display)
 
     if (last == ST_ERROR)
     {
-        return (pass.status != AGC_STATUS_OK) ? pass.status :
-               AGC_STATUS_BAD_ARG;
+        return ((pass.status != AGC_STATUS_OK) ? pass.status :
+                AGC_STATUS_BAD_ARG);
     }
 
     *display = (last == ST_ENDEXIT);
 
     if (!AGC_ASSERT(last == ST_ENDEXIT || last == ST_SERVNOUT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SCALEPOP (p. 847): TARGETNG, then REFAZE10.                            */
@@ -2310,7 +2310,7 @@ agc_status_t agc_entry_scalepop(bool *display)
 
     if (!AGC_ASSERT(display != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *display = false;
@@ -2318,15 +2318,15 @@ agc_status_t agc_entry_scalepop(bool *display)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!AGC_ASSERT(agc_entry_state() != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_entry_refaze10(display);
+    return (agc_entry_refaze10(display));
 }
 
 /* agc_entry_huntest_predict -- HUNTEST without sequencing (tests).       */
@@ -2337,19 +2337,19 @@ agc_status_t agc_entry_huntest_predict(agc_entry_hunt_result_t *result,
 
     if (!AGC_ASSERT(result != NULL) || !AGC_ASSERT(gammal != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(es->v > 0 && es->vsquare > 0 && es->lewd > 0 &&
                     es->lad > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *gammal = 0;
     *result = entry_huntest_core(entry_ip(), es, gammal);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* agc_entry_range_predict -- RANGER on the state left by HUNTEST (tests). */
@@ -2359,16 +2359,16 @@ agc_status_t agc_entry_range_predict(agc_dp_t gammal, agc_dp_t *diff)
 
     if (!AGC_ASSERT(diff != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(es->a0 > 0 && es->gammal1 != 0 && es->vbars > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *diff    = entry_ranger_core(entry_ip(), es, gammal);
     es->diff = *diff;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

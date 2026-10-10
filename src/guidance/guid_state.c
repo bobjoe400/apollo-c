@@ -17,7 +17,7 @@ static agc_guid_t g_guid;
 /* The one guidance erasable block.                                        */
 agc_guid_t *agc_guid_state(void)
 {
-    return &g_guid;
+    return (&g_guid);
 }
 
 /* Zero a vector (no interpreter needed).                                  */
@@ -56,7 +56,7 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
 {
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_guid_t zero = {0};
@@ -80,8 +80,8 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
 
     if (!AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

@@ -47,7 +47,7 @@ static const agc_sp_t entry_vrefer_table[AGC_ENTRY_VREFER_TABLES *
 /* agc_entry_state -- the single entry erasable set (one level pointer).  */
 agc_entry_state_t *agc_entry_state(void)
 {
-    return &entry_state;
+    return (&entry_state);
 }
 
 /* agc_entry_lexicon_reset -- fresh-start contents (all erasable zero),
@@ -79,14 +79,14 @@ agc_sp_t agc_entry_vrefer(int table, int k)
 
     if (!AGC_ASSERT(table >= 0 && table < AGC_ENTRY_VREFER_TABLES))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(flat >= 0 &&
                     flat < (AGC_ENTRY_VREFER_TABLES * AGC_ENTRY_VREFER_N)))
     {
-        return 0;
+        return (0);
     }
 
-    return entry_vrefer_table[flat];
+    return (entry_vrefer_table[flat]);
 }

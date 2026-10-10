@@ -85,7 +85,7 @@ static rr_zero_return_t rr_zero_ret = RR_ZERO_FOR_TURNON;
 
 rr_state_t *rr_state(void)
 {
-    return &rr_designate_state;
+    return (&rr_designate_state);
 }
 
 /* ---- word helpers ----------------------------------------------------- */
@@ -96,20 +96,20 @@ int rr_ones(uint16_t w)
 
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 uint16_t rr_word(int v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
-        return 0U;
+        return (0U);
     }
 
-    return (v >= 0) ? (uint16_t) v : (uint16_t) ((int) RR_WORD_MASK + v);
+    return ((v >= 0) ? (uint16_t) v : (uint16_t) ((int) RR_WORD_MASK + v));
 }
 
 /* MAGSUB (p.521): |a| + k <= 0 returns to L+3 (within), else L+2.     */
@@ -117,12 +117,12 @@ bool rr_magsub(int a, int k)
 {
     if (!AGC_ASSERT(k < 0))
     {
-        return false;
+        return (false);
     }
 
     int m = (a < 0) ? -a : a;
 
-    return (m + k) <= 0;
+    return ((m + k) <= 0);
 }
 
 /* MSU (p.534): two's complement difference of the words a - k, as a
@@ -139,10 +139,10 @@ static int rr_msu(uint16_t a, uint16_t k)
 
     if (!AGC_ASSERT(d >= -16384 && d <= 16383))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
+    return ((d < AGC_SP_MIN) ? AGC_SP_MIN : d);
 }
 
 /* EXTEND MP: upper word of the SP product.                              */
@@ -150,15 +150,15 @@ static int rr_mp(int a, int b)
 {
     if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b));
+    return (agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b)));
 }
 
 void rr_chan_or(int chan, uint16_t bits)
@@ -206,15 +206,15 @@ bool rr_radmodes_test(uint16_t bits)
 {
     if (!AGC_ASSERT(bits != 0U && bits <= RR_WORD_MASK))
     {
-        return false;
+        return (false);
     }
 
-    return (agc_erase_radmodes() & bits) != 0U;
+    return ((agc_erase_radmodes() & bits) != 0U);
 }
 
 bool rr_mode2(void)
 {
-    return rr_radmodes_test(RR_ANTENBIT);
+    return (rr_radmodes_test(RR_ANTENBIT));
 }
 
 /* RMODINV (p.532): invert the antenna mode bit.                         */
@@ -240,16 +240,16 @@ bool rr_limits_ok(uint16_t t, uint16_t s)
 
     if (!rr_mode2())
     {
-        return rr_magsub(tv, RR_LIM_T1) &&
-               rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1);
+        return (rr_magsub(tv, RR_LIM_T1) &&
+                rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1));
     }
 
     if (!rr_magsub(sv + RR_82DEGS, RR_LIM_S2))
     {
-        return false;
+        return (false);
     }
 
-    return !rr_magsub(tv, RR_LIM_T2);
+    return (!rr_magsub(tv, RR_LIM_T2));
 }
 
 /* RRLIMCHK as called by the T4RUPT gimbal monitor (sys-misc) on CDUT,
@@ -258,10 +258,10 @@ bool agc_rr_limchk(uint16_t cdut, uint16_t cdus)
 {
     if (!AGC_ASSERT(cdut <= RR_WORD_MASK && cdus <= RR_WORD_MASK))
     {
-        return false;
+        return (false);
     }
 
-    return rr_limits_ok(cdut, cdus);
+    return (rr_limits_ok(cdut, cdus));
 }
 
 /* ---- lamps (SETTRKF, TRKFLON, FLIP pp.524-525) ------------------------ */
@@ -310,17 +310,17 @@ agc_status_t agc_rr_settrkf(void)
 {
     if ((agc_erase_imodes33() & 1U) != 0U)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     rr_trkf();
 
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- end of a radar operation (ENDRADAR p.563) ------------------------
@@ -332,10 +332,10 @@ agc_status_t rr_goodend(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
 }
 
 agc_status_t rr_badend(void)
@@ -344,22 +344,22 @@ agc_status_t rr_badend(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
 }
 
 /* ENDRADAR: good end unless the RR CDU failed.                         */
 agc_status_t rr_endradar(void)
 {
-    return rr_radmodes_test(RR_RCDUFBIT) ? rr_goodend() : rr_badend();
+    return (rr_radmodes_test(RR_RCDUFBIT) ? rr_goodend() : rr_badend());
 }
 
 /* RGOODEND as a waitlist task (RADNOOP's 1 cs call).                    */
 agc_status_t agc_task_rr_goodend(void)
 {
-    return rr_goodend();
+    return (rr_goodend());
 }
 
 /* RADNOOP (p.561): no further action requested; good end in 10 ms.     */
@@ -369,10 +369,10 @@ agc_status_t rr_radnoop(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CLRADMOD (p.516): clear designate and continuous designate, disable
@@ -445,10 +445,10 @@ static agc_status_t rr_zero_begin(rr_zero_return_t ret)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* RRZEROSB after 20 ms: zero the counters, remove the zero discrete.    */
@@ -462,10 +462,10 @@ agc_status_t agc_task_rr_zero_counters(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* RRZEROSB after 10 s: mode, tracker lamp, return to RRRET.             */
@@ -486,12 +486,12 @@ agc_status_t agc_task_rr_zero_settled(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rr_zero_ret == RR_ZERO_FOR_RRZERO)
     {
-        return rr_endradar(); /* RRZ2    */
+        return (rr_endradar()); /* RRZ2    */
     }
 
     /* RRTURNON: wait 1 s before removing the turn-on flag, so that a
@@ -500,10 +500,10 @@ agc_status_t agc_task_rr_zero_settled(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* RRTURNON (p.526): waitlist task from RRAUTCHK (T4RUPT) when the RR
@@ -512,10 +512,10 @@ agc_status_t agc_task_rrturnon(void)
 {
     if (!AGC_ASSERT(rr_radmodes_test(RR_TURNONBT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_zero_begin(RR_ZERO_FOR_TURNON);
+    return (rr_zero_begin(RR_ZERO_FOR_TURNON));
 }
 
 agc_status_t agc_task_rr_turnon_done(void)
@@ -524,10 +524,10 @@ agc_status_t agc_task_rr_turnon_done(void)
 
     if (!AGC_ASSERT(!rr_radmodes_test(RR_TURNONBT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* TASKOVER */
+    return (AGC_STATUS_OK); /* TASKOVER */
 }
 
 /* RRZ2 (p.537): RRZEROSB, then ENDRADAR.                                */
@@ -535,10 +535,10 @@ agc_status_t agc_task_rr_zero(void)
 {
     if (!AGC_ASSERT(rr_radmodes_test(RR_RCDU0BIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_zero_begin(RR_ZERO_FOR_RRZERO);
+    return (rr_zero_begin(RR_ZERO_FOR_RRZERO));
 }
 
 /* RRZERO (p.537): zero the RR CDUs and find the antenna mode; the caller
@@ -548,7 +548,7 @@ agc_status_t agc_rr_zero(void)
 {
     if (rr_radmodes_test(RR_BIT11_1))
     {
-        return rr_radnoop();
+        return (rr_radnoop());
     }
 
     agc_inhint();
@@ -563,7 +563,7 @@ agc_status_t agc_rr_zero(void)
 
     agc_relint(); /* ROADBACK */
 
-    return st;
+    return (st);
 }
 
 /* ---- single-axis drives (RRTONLY, RRSONLY, RR1AXIS pp.533-534) -------- */
@@ -584,12 +584,12 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
             *rdes    =
                 (step == 0) ? (m2 ? RR_W_180 : 0U) : (m2 ? RR_W_M90 : 0U);
 
-            return step <= 1;
+            return (step <= 1);
         case RR_AXIS_REMODE: /* REMODE pp.531-532                    */
 
             if (step < 0 || step > 4)
             {
-                return false;
+                return (false);
             }
 
             *rrindex = remode_axis[step];
@@ -603,14 +603,14 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
                        :
                        (m2 ? 0U : RR_W_M90);               /* S -90 (0)  */
 
-            return true;
+            return (true);
         case RR_AXIS_PREPOSITION_R29: /* PREPOS29: T to -180 (NEGMAX)          */
             *rdes = RR_W_180;
 
-            return step == 0;
+            return (step == 0);
         case RR_AXIS_CLIENT_COUNT:
         default:
-            return false; /* unreachable: cannot happen */
+            return (false); /* unreachable: cannot happen */
     }
 }
 
@@ -631,7 +631,7 @@ static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
 
     if ((~m & (RR_REMODBIT | RR_REPOSBIT)) == 0U)
     {
-        return RR_AXIS_ABANDON;
+        return (RR_AXIS_ABANDON);
     }
 
     uint16_t cdu = (rr_axis.rrindex == 0) ? agc_erase_cdut() : agc_erase_cdus();
@@ -640,7 +640,7 @@ static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
 
     if (rr_magsub(err, RR_1DEG) || (m & RR_AUTOMBIT) != 0U)
     {
-        return RR_AXIS_DONE;
+        return (RR_AXIS_DONE);
     }
 
     rr_designate_state.tang[0] = (agc_sp_t) ((rr_axis.rrindex == 0) ? cmd : 0);
@@ -648,7 +648,7 @@ static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
     rr_rrout();
     *st = agc_waitlist_fixdelay(RR_DT_HALFSEC, AGC_TASK_RR_ONE_AXIS);
 
-    return RR_AXIS_WAITING;
+    return (RR_AXIS_WAITING);
 }
 
 /* REPOSRPT (p.530): reposition over; designate if someone is waiting
@@ -663,20 +663,20 @@ static bool rr_reposrpt(agc_status_t *st)
     {
         rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
 
-        return false; /* TASKOVER */
+        return (false); /* TASKOVER */
     }
 
     if (!rr_radmodes_test(RR_REMODBIT))
     {
         *st = rr_stdesig(); /* BEGDES   */
 
-        return false;
+        return (false);
     }
 
     rr_axis.client = RR_AXIS_REMODE; /* REMODE   */
     rr_axis.step   = 0;
 
-    return rr_axis_target(RR_AXIS_REMODE, 0, &rr_axis.rrindex, &rr_axis.rdes);
+    return (rr_axis_target(RR_AXIS_REMODE, 0, &rr_axis.rrindex, &rr_axis.rdes));
 }
 
 /* End of REMODE (p.532): new mode, remode flag off; back to the
@@ -688,10 +688,10 @@ static agc_status_t rr_remode_done(void)
 
     if (rr_radmodes_test(RR_DESIGBIT))
     {
-        return rr_stdesig();
+        return (rr_stdesig());
     }
 
-    return rr_goodend();
+    return (rr_goodend());
 }
 
 /* A client's single-axis drive is done: next target, or the client's
@@ -704,24 +704,24 @@ static bool rr_axis_advance(agc_status_t *st)
     if (rr_axis_target(rr_axis.client, rr_axis.step, &rr_axis.rrindex,
                        &rr_axis.rdes))
     {
-        return true;
+        return (true);
     }
 
     switch (rr_axis.client)
     {
         case RR_AXIS_REPOSITION:
-            return rr_reposrpt(st);
+            return (rr_reposrpt(st));
         case RR_AXIS_REMODE:
             *st = rr_remode_done();
 
-            return false;
+            return (false);
         case RR_AXIS_PREPOSITION_R29: /* PREPOS29: repositioning off */
             rr_radmodes_clear(RR_REPOSBIT);
 
-            return false;
+            return (false);
         case RR_AXIS_CLIENT_COUNT:
         default:
-            return false; /* unreachable: cannot happen */
+            return (false); /* unreachable: cannot happen */
     }
 }
 
@@ -738,7 +738,7 @@ static agc_status_t rr_axis_run(void)
 
         if (o == RR_AXIS_WAITING)
         {
-            return st;
+            return (st);
         }
 
         if (o == RR_AXIS_ABANDON)
@@ -752,11 +752,11 @@ static agc_status_t rr_axis_run(void)
 
         if (!more)
         {
-            return st;
+            return (st);
         }
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
+    return (AGC_STATUS_NO_CONVERGE); /* step bound exhausted */
 }
 
 agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
@@ -765,7 +765,7 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
     if (!AGC_ASSERT((int) client >= 0 && client < RR_AXIS_CLIENT_COUNT) ||
         !AGC_ASSERT(rrindex == 0 || rrindex == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_axis.client  = client;
@@ -773,7 +773,7 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
     rr_axis.rrindex = rrindex;
     rr_axis.rdes    = (uint16_t) (rdes & RR_WORD_MASK);
 
-    return rr_axis_run();
+    return (rr_axis_run());
 }
 
 /* NXTRR1AX: the next .5 s pass of the single-axis drive.               */
@@ -781,10 +781,10 @@ agc_status_t agc_task_rr_one_axis(void)
 {
     if (!AGC_ASSERT(rr_axis.client < RR_AXIS_CLIENT_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_axis_run();
+    return (rr_axis_run());
 }
 
 /* ---- DORREPOS (pp.529-530) -------------------------------------------
@@ -798,10 +798,10 @@ agc_status_t agc_task_dorrepos(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_task_rr_reposition_drive(void)
@@ -812,10 +812,10 @@ agc_status_t agc_task_rr_reposition_drive(void)
 
     if (!AGC_ASSERT(ok))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_axis_start(RR_AXIS_REPOSITION, 0, idx, rdes);
+    return (rr_axis_start(RR_AXIS_REPOSITION, 0, idx, rdes));
 }
 
 /* ---- REMODE (pp.531-532): T to 0 (180), S to -45, T to -130 (-50), T to
@@ -828,10 +828,10 @@ agc_status_t rr_remode_start(void)
 
     if (!AGC_ASSERT(ok))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_axis_start(RR_AXIS_REMODE, 0, idx, rdes);
+    return (rr_axis_start(RR_AXIS_REMODE, 0, idx, rdes));
 }
 
 /* REMODE as a waitlist task (R29REM0J: "remode must run as a task").    */
@@ -839,8 +839,8 @@ agc_status_t agc_task_rr_remode(void)
 {
     if (!AGC_ASSERT(rr_radmodes_test(RR_REMODBIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_remode_start();
+    return (rr_remode_start());
 }

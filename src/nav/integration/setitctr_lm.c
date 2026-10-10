@@ -17,7 +17,7 @@ agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(in != NULL) ||
         !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lambert_in_t li = *in;
@@ -27,5 +27,5 @@ agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
                  :
                  (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR;              /* SSP 20D */
 
-    return agc_conic_lambert(ip, &li, out);
+    return (agc_conic_lambert(ip, &li, out));
 }

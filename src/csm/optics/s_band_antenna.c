@@ -27,30 +27,30 @@ agc_dp_t agc_sband_rhosb(void)
 {
     if (!AGC_ASSERT(rhosb >= -AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(rhosb <= AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return rhosb;
+    return (rhosb);
 }
 
 agc_dp_t agc_sband_gammasb(void)
 {
     if (!AGC_ASSERT(gammasb >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(gammasb <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return gammasb;
+    return (gammasb);
 }
 
 /*
@@ -66,7 +66,7 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
     if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) ||
         !AGC_ASSERT(yaw != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_mat_t hiunit = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
@@ -97,7 +97,7 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 
     *pitch = agc_dp_sub(ip, agc_dp_acos(ip, uz), HIDP1_4); /* DSU HIDP1/4 */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* The CSM-to-earth vector in SM: -RATT (earth sphere) or -(REM + RATT). */
@@ -106,12 +106,12 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
 {
     if (!AGC_ASSERT(o != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(r_sm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t r = agc_vec_neg(o->ratt); /* EISOI: -RCM  */
@@ -135,7 +135,7 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         r = agc_vec_neg(agc_vec_add(ip, rem, o->ratt)); /* VAD VCOMP    */
@@ -145,7 +145,7 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
 
     *r_sm = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, r), 1); /* MXV VSL1 */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
@@ -153,12 +153,12 @@ static agc_status_t display_angles(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
-        return agc_dsky_endext(); /* BZF ENDEXT   */
+        return (agc_dsky_endext()); /* BZF ENDEXT   */
     }
 
     agc_status_t st =
@@ -167,17 +167,17 @@ static agc_status_t display_angles(const agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = agc_dsky_blanket(BLANK_R3); /* immediate ret*/
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE);
+    return (agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE));
 }
 
 /*
@@ -188,7 +188,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -223,10 +223,10 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
     }
 
-    return display_angles(ctx);
+    return (display_angles(ctx));
 }
 
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */
@@ -234,17 +234,17 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_imu_status_check(); /* R02BOTH      */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))
     {
-        return AGC_STATUS_OK; /* alarm + P00  */
+        return (AGC_STATUS_OK); /* alarm + P00  */
     }
 
-    return agc_job_sbandant_cm_recycle(ctx);
+    return (agc_job_sbandant_cm_recycle(ctx));
 }
 
 /* TC B5OFF (terminate / proceed of the N51 display), both vehicles. */
@@ -252,15 +252,15 @@ agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_svc_b5off();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }

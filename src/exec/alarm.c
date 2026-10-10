@@ -230,30 +230,30 @@ agc_status_t agc_exec_enema(void)
 
     if (!AGC_ASSERT(agc_exec_restart_pending()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 bool agc_exec_restart_pending(void)
 {
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(agc_erase_failreg(2) <= 077777u))
     {
-        return false;
+        return (false);
     }
 
-    return enema_wanted;
+    return (enema_wanted);
 }
 
 /* Service point: run the requested ENEMA once. A BAILOUT raised while
@@ -263,12 +263,12 @@ agc_status_t agc_exec_service_restart(void)
 {
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!enema_wanted)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     enema_wanted = false;
@@ -279,10 +279,10 @@ agc_status_t agc_exec_service_restart(void)
                     st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND ||
                     st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* BAILOUT / BAILOUT1 (C p.1495 / L p.1383): record the alarm and do a
@@ -291,7 +291,7 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -302,15 +302,15 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
 
     if (!AGC_ASSERT(enema_wanted))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_BAILOUT;
+    return (AGC_STATUS_BAILOUT);
 }
 
 /* FLAGS (L p.1385) / the three DOWNFLAGs of Comanche POODOO (C p.1495):
@@ -333,7 +333,7 @@ static agc_status_t gopoodoo(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -348,17 +348,17 @@ static agc_status_t gopoodoo(void)
 
         if (!AGC_ASSERT(s1 == AGC_STATUS_OK || s1 == AGC_STATUS_UNIMPLEMENTED))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         agc_status_t s2 = agc_exec_gotopooh();
 
         if (!AGC_ASSERT(s2 == AGC_STATUS_OK || s2 == AGC_STATUS_BAILOUT))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
-        return st;
+        return (st);
     }
 
     agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
@@ -366,13 +366,13 @@ static agc_status_t gopoodoo(void)
 
     if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     exec_request_enema(); /* TCF WHIMPER       */
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* Comanche POODOO after BORTENT (C p.1495).                            */
@@ -380,14 +380,14 @@ static agc_status_t poodoo_csm(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {                         /* average G on      */
         exec_request_enema(); /* TC WHIMPER -1     */
 
-        return AGC_STATUS_BAILOUT;
+        return (AGC_STATUS_BAILOUT);
     }
 
     poodoo_flags();
@@ -395,17 +395,17 @@ static agc_status_t poodoo_csm(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     exec_request_enema(); /* TC WHIMPER        */
 
     if (!AGC_ASSERT(phase_word(4) == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_POODOO;
+    return (AGC_STATUS_POODOO);
 }
 
 /* POODOO / POODOO1 / ABORT2 (C p.1495 / L p.1383): record the alarm and
@@ -414,7 +414,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -424,7 +424,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        return poodoo_csm();
+        return (poodoo_csm());
     }
 
     agc_inhint();
@@ -433,10 +433,10 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 
     if (!AGC_ASSERT(phase_group_agrees(4)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return gopoodoo();
+    return (gopoodoo());
 }
 
 /* GOPOODOO as the 4.35 restart job (L RESTART_TABLES p.242).          */
@@ -445,10 +445,10 @@ agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != 0) ||
         !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return gopoodoo();
+    return (gopoodoo());
 }
 
 /* CCSHOLE (C p.1496 / L p.1383): POODOO 1103, an "impossible" branch. */
@@ -456,12 +456,12 @@ agc_status_t agc_ccshole(void)
 {
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     _Static_assert(AGC_ALARM_01103 <= AL_POSMAX, "AGC constant");
 
-    return agc_poodoo(AGC_ALARM_01103);
+    return (agc_poodoo(AGC_ALARM_01103));
 }
 
 /* ABORT (C p.1496: EQUALS BAILOUT; L p.1384: EQUALS WHIMPER).
@@ -471,7 +471,7 @@ agc_status_t agc_abort_restart(void)
 {
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -480,8 +480,8 @@ agc_status_t agc_abort_restart(void)
 
     if (!AGC_ASSERT(enema_wanted))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_BAILOUT;
+    return (AGC_STATUS_BAILOUT);
 }

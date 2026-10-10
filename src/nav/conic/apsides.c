@@ -42,7 +42,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_conic_ctx_t ctx;
@@ -50,7 +50,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
@@ -60,7 +60,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_interp_clear_ovf(ip);       /* BOV GETECC     */
@@ -96,5 +96,5 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 
     apsides_debris(&ctx, out);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

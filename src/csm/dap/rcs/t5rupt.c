@@ -42,7 +42,7 @@ agc_status_t agc_task_redorcs(void)
 
     if (!AGC_ASSERT(r->t5phase <= AGC_CSM_T5P_INIT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (r->t5phase != AGC_CSM_T5P_INIT)
@@ -52,7 +52,7 @@ agc_status_t agc_task_redorcs(void)
 
     agc_rupt_set_t5_task(AGC_TASK_RCSATT); /* RCSLOC  */
 
-    return agc_task_rcsatt(); /* TCF RCSATT +1          */
+    return (agc_task_rcsatt()); /* TCF RCSATT +1          */
 }
 
 /* RCSATT (pp. 1002-1003): check that the G/C autopilot is fully enabled
@@ -65,12 +65,12 @@ agc_status_t agc_task_rcsatt(void)
 
     if (!AGC_ASSERT(ch31 <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((ch31 & (uint16_t) AGC_CH031_CMCCONTROL) == 0u)
     {
-        return rcs_sett5();
+        return (rcs_sett5());
     }
 
     c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NORATE); /* NORATE */
@@ -83,7 +83,7 @@ agc_status_t agc_task_rcsatt(void)
 
     if ((ch31 & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return rcs_sett5(); /* free mode              */
+        return (rcs_sett5()); /* free mode              */
     }
 
     r->t5phase = AGC_CSM_T5P_INIT;            /* TS T5PHASE (BIT14 > 0) */
@@ -97,10 +97,10 @@ agc_status_t agc_task_rcsatt(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return csm_rcs_kmatrix();
+    return (csm_rcs_kmatrix());
 }
 
 /* SETT5 (p. 1003): CCS T5PHASE.                                          */
@@ -127,7 +127,7 @@ static agc_status_t rcs_sett5(void)
             break; /* unreachable: cannot happen */
     }
 
-    return st;
+    return (st);
 }
 
 /* SETT5 -0 branch and IMU STATUS CHECK (pp. 1003-1004): phase 1.         */
@@ -142,17 +142,17 @@ agc_status_t csm_rcs_phase1(void)
 
     if (!AGC_ASSERT(r->t5time >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((agc_erase_imodes33() & CSM_DAP_BIT6) != 0u)
     {
-        return rcs_freechk(); /* BIT6 = 1: no IMU       */
+        return (rcs_freechk()); /* BIT6 = 1: no IMU       */
     }
 
     if (!csm_rcs_rate_init_pending())
@@ -162,10 +162,10 @@ agc_status_t csm_rcs_phase1(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return csm_rcs_kmatrix();
+    return (csm_rcs_kmatrix());
 }
 
 /* FREECHK (p. 1004): no attitude reference.                              */
@@ -180,15 +180,15 @@ static agc_status_t rcs_freechk(void)
 
     if (!AGC_ASSERT(r->holdflag > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((ch31 & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return AGC_STATUS_OK; /* KRESUME1: free control */
+        return (AGC_STATUS_OK); /* KRESUME1: free control */
     }
 
-    return csm_rcs_reinit(); /* ..... TILT ............ */
+    return (csm_rcs_reinit()); /* ..... TILT ............ */
 }
 
 /* RCSFLAGS BIT14: the rate filter has not been initialised.              */
@@ -198,10 +198,10 @@ bool csm_rcs_rate_init_pending(void)
 
     if (!AGC_ASSERT(c->rcsflags <= CSM_DAP_NEG0))
     {
-        return false;
+        return (false);
     }
 
-    return (c->rcsflags & AGC_CSM_RCSF_NORATE) != 0u;
+    return ((c->rcsflags & AGC_CSM_RCSF_NORATE) != 0u);
 }
 
 /* REINIT (p. 1012): ........ TILT LOGIC: reinitialise DAP in 200 ms.     */
@@ -214,10 +214,10 @@ agc_status_t csm_rcs_reinit(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* FRESHDAP / REDAP (p. 1014): FRESHDAP resets HOLDFLAG to stop automatic
@@ -246,10 +246,10 @@ agc_status_t csm_rcs_freshdap(bool fresh)
 
     if (!AGC_ASSERT(r->holdflag != 0 || !fresh))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ZEROT5 .. RCSSWIT (pp. 1014-1015).                                     */
@@ -298,7 +298,7 @@ static agc_status_t rcs_zerot5(void)
 
         if (sw != AGC_STATUS_OK)
         {
-            return sw;
+            return (sw);
         }
     }
 
@@ -307,10 +307,10 @@ static agc_status_t rcs_zerot5(void)
 
     if (!AGC_ASSERT(r->attkalmn >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st2;
+    return (st2);
 }
 
 /* ZEROJET (pp. 1015-1016): zero BLAST2, BLAST1, BLAST, YWORD2 .. RWORD1,
@@ -359,7 +359,7 @@ agc_status_t csm_rcs_t5phase2(void)
 
         r->t5phase = AGC_CSM_T5P_PHASE1; /* KRESUME2               */
 
-        return csm_dap_set_time5(w);
+        return (csm_dap_set_time5(w));
     }
 
     uint16_t     old = agc_rupt_time(CSM_DAP_TIME5); /* CA DELTATT2; XCH TIME5 */
@@ -370,13 +370,13 @@ agc_status_t csm_rcs_t5phase2(void)
 
     if (!AGC_ASSERT(r->attkalmn <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return csm_rcs_manual();
+    return (csm_rcs_manual());
 }

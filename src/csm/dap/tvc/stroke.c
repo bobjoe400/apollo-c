@@ -39,15 +39,15 @@ agc_status_t csm_tvc_tstinit(void)
 
     if (!AGC_ASSERT(t->caddy < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(t->card < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* TC Q                 */
+    return (AGC_STATUS_OK); /* TC Q                 */
 }
 
 /* STRKTSTI, STRKCHK (p. 982): job set up by V68. Start the test on the
@@ -56,7 +56,7 @@ agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = csm_tvc_tstinit();
@@ -72,10 +72,10 @@ agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* ENDOFJOB             */
+    return (st); /* ENDOFJOB             */
 }
 
 /* End of a stroke set (CCS REVS negative): the next set, or STROKILL.    */
@@ -120,7 +120,7 @@ static agc_status_t stroke_burst(void)
 
     if (!AGC_ASSERT((t->caddy < 0) || (t->stroker == 0))) /* +0: STROKILL */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker));
@@ -129,7 +129,7 @@ static agc_status_t stroke_burst(void)
 
     if (t->caddy < 0)
     {
-        return AGC_STATUS_OK; /* exit, on a slope     */
+        return (AGC_STATUS_OK); /* exit, on a slope     */
     }
 
     if (t->revs > 0)
@@ -146,17 +146,17 @@ static agc_status_t stroke_burst(void)
     {
         stroke_next_set(); /* exit, end of set     */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     t->stroker = (agc_sp_t) -t->stroker; /* change sign of slope */
 
     if (!AGC_ASSERT(t->caddy <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* exit at a reversal   */
+    return (AGC_STATUS_OK); /* exit at a reversal   */
 }
 
 /* HACK (p. 982): entry in the T5 interrupt from the TVC DAPs (BUNKER =
@@ -167,7 +167,7 @@ agc_status_t csm_tvc_hack(void)
 
     if (!AGC_ASSERT(t->stroker != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     t->bunker_task = false; /* QXCH BUNKER          */
@@ -176,10 +176,10 @@ agc_status_t csm_tvc_hack(void)
 
     if (!AGC_ASSERT(!t->bunker_task))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st != AGC_STATUS_OK) ? st : s2;
+    return ((st != AGC_STATUS_OK) ? st : s2);
 }
 
 /* HACKWLST (p. 982): entry from the waitlist; BUNKER = TC TASKOVER.     */
@@ -192,13 +192,13 @@ agc_status_t agc_task_hackwlst(void)
 
     if (!AGC_ASSERT(t->bunker_task))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((t->card >= -FCARD) && (t->card <= 0)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* TASKOVER             */
+    return (st); /* TASKOVER             */
 }

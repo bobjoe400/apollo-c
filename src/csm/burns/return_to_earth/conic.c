@@ -119,7 +119,7 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
         !AGC_ASSERT((x2 == 0) || (x2 == 2)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->r_t1v = ratt;
@@ -131,7 +131,7 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,
     {
         rs->alarm_code = RTE_ALARM_MOON_SPHERE; /* INVC107: 612  */
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     rs->ur1  = agc_vec_unit(ip, rs->r_t1v, &rs->r_t1, NULL); /* UR1/, 36D     */
@@ -160,10 +160,10 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT(rs->r_t1 > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTE299 after INVC100 (p. 892): CLEAR SLOWFLG; a negative RTEDVD asks for
@@ -173,7 +173,7 @@ agc_status_t rte_conic_setup(agc_interp_t *ip, rte_erasable_t *rs)
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->r_t1 > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->mamax1 = C4RTE; /* STCALL MAMAX1 */
@@ -189,7 +189,7 @@ agc_status_t rte_conic_setup(agc_interp_t *ip, rte_erasable_t *rs)
         }
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TMRAD100 (p. 901): TIMERAD from RVEC, VVEC to RDESIRED on the descending
@@ -203,7 +203,7 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rdesired > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_RVSW);
@@ -217,7 +217,7 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rs->v_t2v   = out.vnew; /* V(T2)/        */
@@ -225,7 +225,7 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs,
     rs->t12     = out.t;    /* T12           */
     rs->conic_t = out.t;    /* T (30D)       */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTE317 .. RTE350 (pp. 892-893): MAMAX2 from R(T1), NN1A = -9, RCON = K2,
@@ -235,7 +235,7 @@ static agc_status_t conic_start(agc_interp_t *ip, rte_erasable_t *rs)
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->r_t1 > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rs->mamax2 = agc_dp_shl(ip, agc_dp_poly(rs->r_t1, MAMAX2_POLY, 3), 1);
@@ -258,7 +258,7 @@ static agc_status_t conic_start(agc_interp_t *ip, rte_erasable_t *rs)
         rs->x_t2 = K4RTE;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTE373 .. RTE390 (pp. 893-895): one correction of RCON and X(T2).
@@ -271,7 +271,7 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t  xerr  = agc_dp_sub(ip, xd, rs->x_t2);          /* X(T2)ERR 00D  */
@@ -282,14 +282,14 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs,
          0) &&
         (agc_dp_sub(ip, agc_dp_abs(xerr), EPC3RTE) < 0))
     {
-        return AGC_STATUS_NOT_FOUND; /* RTE374: P37E  */
+        return (AGC_STATUS_NOT_FOUND); /* RTE374: P37E  */
     }
 
     if (rs->nn1a + 1 >= 0)
     { /* RTE375        */
         rs->alarm_code = RTE_ALARM_ITERATIONS;
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     rs->nn1a += 1; /* RTE380        */
@@ -312,14 +312,14 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (agc_interp_test_ovf(ip))
     {
-        return AGC_STATUS_OK; /* BOV RTE360    */
+        return (AGC_STATUS_OK); /* BOV RTE360    */
     }
 
     rs->drcon     = xerr;     /* X(T2)ERR,     */
     rs->rpre_prev = rs->x_t2; /* X(T2)PRI      */
     rs->x_t2      = agc_dp_add(ip, dx, rs->x_t2);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTE317 .. RTE390 (pp. 892-895): the conic iteration. Each pass: V2T100,
@@ -331,7 +331,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(rs != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = conic_start(ip, rs); /* RTE317        */
@@ -348,7 +348,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         rs->t2 = agc_dp_add(ip, rs->t12, rs->t1);
@@ -367,7 +367,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
-        return AGC_STATUS_OK; /* P37E          */
+        return (AGC_STATUS_OK); /* P37E          */
     }
 
     if (st == AGC_STATUS_OK)
@@ -377,7 +377,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
         st = AGC_STATUS_ALARM;
     }
 
-    return st;
+    return (st);
 }
 
 /* RTE505 .. RTE515 (p. 895): RCON > PCON BETA1 -> entry near apogee
@@ -386,7 +386,7 @@ agc_status_t rte_entry_side(agc_interp_t *ip, rte_erasable_t *rs)
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->rcon > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t d =
@@ -394,7 +394,7 @@ agc_status_t rte_entry_side(agc_interp_t *ip, rte_erasable_t *rs)
 
     rs->phi2 = (d > 0) ? ONE_B2 : agc_dp_neg(ONE_B2);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* AUGEKUGL (P30-P37.agc pp. 644-647, local copy): from the speed V (m/cs B7)
@@ -414,7 +414,7 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma,
     if (!AGC_ASSERT((ip != NULL) && (phie != NULL) && (te != NULL)) ||
         !AGC_ASSERT(v > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t d21  = agc_dp_sub(ip, v, V21K);   /* DSU V(21K)    */
@@ -465,7 +465,7 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma,
         *te = agc_dp_mul_trunc(agc_dp_div(ip, TLESS26, v), *phie);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
@@ -476,7 +476,7 @@ static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t uv2 =
@@ -503,7 +503,7 @@ static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs,
 
     out->vgdisp = agc_vec_abval(ip, out->delvlvc); /* RTD18         */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RTEDISP landing site (pp. 903-904): TMRAD100 down to 300,000 ft (R3, V3,
@@ -521,7 +521,7 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t     rdes = agc_dp_sub(ip, agc_vec_abval(ip, rs->r_t2v), M30480);
@@ -529,7 +529,7 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t ur3    = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);
@@ -541,7 +541,7 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t tls =
@@ -579,7 +579,7 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
         out->lng_spl = ll.lon;
     }
 
-    return st;
+    return (st);
 }
 
 /* RTEDISP (P37_P70.agc pp. 902-904): "OUTPUT FOR DISPLAY IS CONVERTED TO
@@ -591,15 +591,15 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs,
 {
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = display_entry(ip, rs, tig, out);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return display_landing_site(ip, rs, range_override, out);
+    return (display_landing_site(ip, rs, range_override, out));
 }

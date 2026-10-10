@@ -370,17 +370,17 @@ agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_LM_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = dntable[code];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DNPTR target: sublist SUB.                                              */
@@ -388,15 +388,15 @@ agc_status_t agc_dnlist_lm_sublist(int sub, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(sub >= 0 && sub < LM_SUB_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = sublists[sub];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

@@ -28,15 +28,15 @@ bool agc_integ_csm_amoonflg(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_AMOONFLG)))
     {
-        return false;
+        return (false);
     }
 
-    return agc_flag_test(AGC_FLAG_AMOONFLG);
+    return (agc_flag_test(AGC_FLAG_AMOONFLG));
 }
 
 void agc_integ_csm_set_amoonflg(bool on)

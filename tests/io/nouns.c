@@ -21,7 +21,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -39,7 +39,7 @@ static void check(bool ok, int line, const char *text)
 
 static bool is_spare(const agc_noun_t *n)
 {
-    return n->ncomp == 0;
+    return (n->ncomp == 0);
 }
 
 /* Every noun 00-99 present, in order, internally consistent. */
@@ -250,5 +250,5 @@ int main(void)
     test_data();
     (void) printf("test_nouns: %d checks, %d failures\n", g_checks, g_failures);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

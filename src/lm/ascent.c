@@ -67,7 +67,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_navaux_padload_t nav;
@@ -75,7 +75,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t pole = agc_vec_zero();
@@ -85,7 +85,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t     m = agc_erase_refsmmat();
@@ -94,7 +94,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
     l->wm       = agc_vec_scale(ip, agc_mat_vec(ip, &m, pole), AS_MOONRATE);
     l->land_mag = agc_dp_shl(ip, agc_vec_abval(ip, agc_erase_rls()), 3);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* COMMINIT (p. 841): targets for P12, P70 and P71 not following P70:
@@ -158,7 +158,7 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
     agc_lm_asc_t *a = agc_lm_asc();
@@ -169,10 +169,10 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
 
     if (!AGC_ASSERT(a->rco >= 0))
     {
-        return 0;
+        return (0);
     }
 
-    return a->y;
+    return (a->y);
 }
 
 /* LOGSUB (p. 856): -LOG(X) for 0 < X < 1, result scaled 2^5:
@@ -181,7 +181,7 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(x > 0))
     {
-        return 0;
+        return (0);
     }
 
     int      n   = 0;
@@ -192,10 +192,10 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 
     if (!AGC_ASSERT(n >= 0 && n < 28))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_dp_neg(sum); /* DCOMP        */
+    return (agc_dp_neg(sum)); /* DCOMP        */
 }
 
 /* ======================================================================
@@ -236,7 +236,7 @@ static agc_dp_t as_vgvect(agc_interp_t *ip)
         agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
     a->vgbody = agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a->vgvect), 1);
 
-    return agc_vec_abval(ip, a->vgvect);
+    return (agc_vec_abval(ip, a->vgvect));
 }
 
 /* MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO. */
@@ -401,7 +401,7 @@ static agc_status_t as_ascterm1(const agc_job_ctx_t *ctx)
 {
     if (agc_flag_test(AGC_FLAG_FLRCS) || agc_flag_test(AGC_FLAG_FLUNDISP))
     {
-        return AGC_STATUS_OK; /* ASCTERM3     */
+        return (AGC_STATUS_OK); /* ASCTERM3     */
     }
 
     const agc_dsky_cont_t cont = {AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB,
@@ -409,10 +409,10 @@ static agc_status_t as_ascterm1(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 63), &cont);
+    return (agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 63), &cont));
 }
 
 /* ASCTERM (p. 850): FINDCDUW unless trimming with RCS, then displays. */
@@ -420,17 +420,17 @@ static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_status_t st = agc_lm_findcduw_m2(ip);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_ascterm1(ctx);
+    return (as_ascterm1(ctx));
 }
 
 /* KEEPVR1 (p. 852): stay vertical, UNFC/2 = UNIT/R/. */
@@ -440,10 +440,10 @@ static agc_status_t as_keepvr1(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_ascterm(ctx, ip);
+    return (as_ascterm(ctx, ip));
 }
 
 /* MAINLINE .. ANG1CHEK .. CLRXFLAG (pp. 850-851): window toward -UNIT/R/;
@@ -457,7 +457,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_dp_sub(ip, a->txo, agc_erase_piptime()) >= 0)
     {
-        return as_ascterm(ctx, ip);
+        return (as_ascterm(ctx, ip));
     }
 
     if (agc_flag_test(AGC_FLAG_ROTFLAG))
@@ -469,7 +469,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             agc_dp_sub(ip, agc_vec_dot(ip, xnb, g->avg.unitr),
                        agc_lm_pad()->costhet2) < 0)
         {
-            return as_keepvr1(ctx, ip);
+            return (as_keepvr1(ctx, ip));
         }
 
         agc_flag_clear(AGC_FLAG_ROTFLAG); /* OFFROT */
@@ -478,7 +478,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     agc_flag_clear(AGC_FLAG_NO_POWERED_DESIGNATE);       /* start R29 in ascent    */
     agc_flag_clear(AGC_FLAG_XOVINFLG); /* allow X-axis override  */
 
-    return as_ascterm(ctx, ip);
+    return (as_ascterm(ctx, ip));
 }
 
 /* EXITVR (p. 851): end of the vertical rise; with ROTFLAG clear the
@@ -494,10 +494,10 @@ static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_FLVR)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_mainline(ctx, ip);
+    return (as_mainline(ctx, ip));
 }
 
 /* CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
@@ -512,7 +512,7 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (h >= 0)
     {
-        return as_exitvr(ctx, ip);
+        return (as_exitvr(ctx, ip));
     }
 
     agc_flag_set(AGC_FLAG_XOVINFLG); /* prohibit X override    */
@@ -527,12 +527,12 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
 
-        return as_exitvr(ctx, ip);
+        return (as_exitvr(ctx, ip));
     }
 
     agc_lm_ldg()->unwc_2 = los; /* KEEPVR */
 
-    return as_keepvr1(ctx, ip);
+    return (as_keepvr1(ctx, ip));
 }
 
 /* ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
@@ -571,7 +571,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_asc_t *a     = agc_lm_asc();
@@ -581,7 +581,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         a->tgo = agc_dp_div(ip, vgmag, AS_ATRCS); /* TGO = VG/AT   */
 
-        return AGC_STATUS_OK;                     /* ASCTERM2      */
+        return (AGC_STATUS_OK);                     /* ASCTERM2      */
     }
 
     as_maineng(ip, vgmag);
@@ -597,15 +597,15 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_FLPI))
     {
-        return agc_lm_powered_ascent_return(ctx, ip);
+        return (agc_lm_powered_ascent_return(ctx, ip));
     }
 
     if (agc_flag_test(AGC_FLAG_FLVR))
     {
-        return as_checkalt(ctx, ip);
+        return (as_checkalt(ctx, ip));
     }
 
-    return as_mainline(ctx, ip);
+    return (as_mainline(ctx, ip));
 }
 
 /* ATMAG (pp. 843-844), SERVICER's exit during ascent: the inverse
@@ -615,7 +615,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -633,7 +633,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
             agc_lm_dap_zatteror(); /* ASCTERM4      */
             agc_relint();
 
-            return as_ascterm1(ctx);
+            return (as_ascterm1(ctx));
         }
 
         agc_flag_clear(AGC_FLAG_SURFFLAG);
@@ -655,7 +655,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
         a->at = agc_dp_div(&ip, agc_dp_shr(a->ve, 1), a->tbup);
     }
 
-    return agc_lm_ascent(ctx, &ip);
+    return (agc_lm_ascent(ctx, &ip));
 }
 
 /* ======================================================================
@@ -669,14 +669,14 @@ agc_status_t agc_lm_task_engoff1(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     st = agc_exec_findvac(AS_PRIO17, AGC_JOB_CUTOFF);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE,
@@ -684,7 +684,7 @@ agc_status_t agc_lm_task_engoff1(void)
 
     agc_phase_change_var(07024, &v);
 
-    return AGC_STATUS_OK; /* TASKOVER      */
+    return (AGC_STATUS_OK); /* TASKOVER      */
 }
 
 /* Flash with terminate -> TERMASC. */
@@ -696,16 +696,16 @@ static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb,
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(verb == 16))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(verb, noun),
-                            &cont);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(verb, noun),
+                             &cont));
 }
 
 /* CUTOFF (p. 853): RCS trim mode; V16N63 until PROCEED (CUTOFF1). */
@@ -713,12 +713,12 @@ agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_set(AGC_FLAG_FLRCS);
 
-    return agc_lm_job_cutoff5(ctx);
+    return (agc_lm_job_cutoff5(ctx));
 }
 
 /* CUTOFF -5: the V16N63 flash itself (ENTER repeats it). */
@@ -726,15 +726,15 @@ agc_status_t agc_lm_job_cutoff5(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLRCS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_flash(ctx, 16, 63, AGC_JOB_CUTOFF1, AGC_JOB_CUTOFF5);
+    return (as_flash(ctx, 16, 63, AGC_JOB_CUTOFF1, AGC_JOB_CUTOFF5));
 }
 
 /* CUTOFF1 (p. 853): zero attitude errors before reducing the deadband. */
@@ -742,7 +742,7 @@ agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -753,12 +753,12 @@ agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx)
     {
         agc_relint();
 
-        return st;
+        return (st);
     }
 
     agc_relint();
 
-    return agc_lm_job_cutoff2(ctx);
+    return (agc_lm_job_cutoff2(ctx));
 }
 
 /* CUTOFF2 (p. 854): V16N85 (VGBODY) until PROCEED or terminate. */
@@ -766,7 +766,7 @@ agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_phase_var_t v = {
@@ -775,7 +775,7 @@ agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx)
 
     agc_phase_change_var(04024, &v);
 
-    return as_flash(ctx, 16, 85, AGC_JOB_TERMASC, AGC_JOB_CUTOFF2);
+    return (as_flash(ctx, 16, 85, AGC_JOB_TERMASC, AGC_JOB_CUTOFF2));
 }
 
 /* TERMASC (p. 854): restore the astronaut's deadband, disallow aborts,
@@ -784,7 +784,7 @@ agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_phase_var_t v = {
@@ -799,13 +799,13 @@ agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
     {
         agc_relint();
 
-        return st;
+        return (st);
     }
 
     agc_relint();
     agc_flag_clear(AGC_FLAG_LETABORT);
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }
 
 /* ======================================================================
@@ -834,15 +834,16 @@ static agc_status_t as_flash00(const agc_job_ctx_t *ctx, uint8_t noun,
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(noun == 33 || noun == 76))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, noun), &cont);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, noun),
+                             &cont));
 }
 
 /* P12LM (p. 838): IMU check, flags, DVMON; flash TIG (V06N33). */
@@ -850,14 +851,14 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     as_restart_here(AGC_JOB_POWERED_ASCENT);
 
     if (agc_imu_status_check() != AGC_STATUS_OK)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_flag_set(AGC_FLAG_MUNFLAG);
@@ -871,7 +872,7 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
     g->dvcntr   = 4;
     agc_erase_set_trkmkcnt(0); /* R29 downlink not ready      */
 
-    return agc_lm_job_powered_ascent_flash(ctx);
+    return (agc_lm_job_powered_ascent_flash(ctx));
 }
 
 /* V06N33 flash (ENTER repeats it). */
@@ -879,16 +880,16 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_MUNFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED,
-                      AGC_JOB_POWERED_ASCENT_FLASH);
+    return (as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED,
+                       AGC_JOB_POWERED_ASCENT_FLASH));
 }
 
 /* After PROCEED (pp. 838-839): WM, /LAND/, engine data, TGO, and the LM
@@ -897,7 +898,7 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     as_restart_here(AGC_JOB_POWERED_ASCENT_PROCEED);
@@ -908,14 +909,14 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_flag_set(AGC_FLAG_FLPI);
     agc_lm_powered_ascent_init(&ip);
     agc_lm_asc()->tgo = AS_TGOA; /* initial nominal TGO         */
 
-    return agc_lm_job_powered_ascent_at_ignition(ctx);
+    return (agc_lm_job_powered_ascent_at_ignition(ctx));
 }
 
 /* P12LMB (p. 839): V1S, R, gravity and UNIT/R/ at TIG; XRANGE for N76
@@ -924,7 +925,7 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -936,12 +937,12 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* asleep        */
+        return (AGC_STATUS_OK); /* asleep        */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_guid_t   *g = agc_guid_state();
@@ -957,7 +958,7 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
     a->rdotd      = AS_RDOTDNOM;
     as_restart_here(AGC_JOB_NEWLOAD);
 
-    return agc_lm_job_newload(ctx);
+    return (agc_lm_job_newload(ctx));
 }
 
 /* NEWLOAD (p. 839): flash cross range and apolune values (V06N76). */
@@ -965,15 +966,15 @@ agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLPI)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return as_flash00(ctx, 76, AGC_JOB_NEWLOAD2, AGC_JOB_NEWLOAD);
+    return (as_flash00(ctx, 76, AGC_JOB_NEWLOAD2, AGC_JOB_NEWLOAD));
 }
 
 /* After PROCEED on N76 (pp. 839-840): YCO, the velocity at tip-over
@@ -982,7 +983,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -1002,7 +1003,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
     a->zaxis1 = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
     agc_flag_set(AGC_FLAG_FLVR);
 
-    return agc_lm_ascent(ctx, &ip);
+    return (agc_lm_ascent(ctx, &ip));
 }
 
 /* P12RET (p. 840): yaw and pitch of the thrust command for display,
@@ -1012,7 +1013,7 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_asc_t *a = agc_lm_asc();
@@ -1037,7 +1038,7 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
     as_restart_here(AGC_JOB_POWERED_ASCENT_BURN);
     agc_job_ctx_t c2 = *ctx;
 
-    return agc_lm_job_powered_ascent_burn(&c2);
+    return (agc_lm_job_powered_ascent_burn(&c2));
 }
 
 /* P12RET after its phase change: FLPI off, deadband, BURNBABY. */
@@ -1045,7 +1046,7 @@ agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_FLPI);
@@ -1056,15 +1057,15 @@ agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
     {
         agc_relint();
 
-        return st;
+        return (st);
     }
 
     agc_relint();
 
     if (!AGC_ASSERT(agc_guid_state()->lm.which == AGC_LM_WHICH_POWERED_ASCENT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_burnbaby(ctx);
+    return (agc_lm_burnbaby(ctx));
 }

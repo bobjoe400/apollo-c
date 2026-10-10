@@ -34,7 +34,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -52,12 +52,12 @@ static void check(bool ok, int line, const char *text)
 
 static bool near(double a, double b, double tol)
 {
-    return fabs(a - b) <= tol;
+    return (fabs(a - b) <= tol);
 }
 
 static double rev(agc_dp_t v)
 {
-    return agc_dp_to_double(v, 0);
+    return (agc_dp_to_double(v, 0));
 }
 
 /* CDU pattern (2^15 per revolution) for an angle in degrees.             */
@@ -65,14 +65,14 @@ static uint16_t cdu_deg(double deg)
 {
     long v = lround(deg / 360.0 * 32768.0);
 
-    return (uint16_t) ((unsigned long) v & 077777u);
+    return ((uint16_t) ((unsigned long) v & 077777u));
 }
 
 static double cdu_to_deg(uint16_t p)
 {
     int v = (p & 040000u) ? (int) p - 0100000 : (int) p;
 
-    return (double) v * 360.0 / 32768.0;
+    return ((double) v * 360.0 / 32768.0);
 }
 
 static void test_arctrig(void)
@@ -122,7 +122,7 @@ static agc_mat_t nb_about_z(double deg)
                             agc_dp_from_double(cos(r) / 2, 0), 0);
     m.row[2] = agc_vec_make(0, 0, AGC_DP_HALF);
 
-    return m;
+    return (m);
 }
 
 static void test_calcga_gimbal_lock(void)
@@ -292,5 +292,5 @@ int main(void)
     (void) printf("test_imu: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

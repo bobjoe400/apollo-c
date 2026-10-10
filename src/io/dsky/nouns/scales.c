@@ -556,15 +556,15 @@ static int32_t sf_word_value(uint16_t w)
 {
     if (!AGC_ASSERT(w <= 077777u))
     {
-        return 0;
+        return (0);
     }
 
     if (w >= 040000u)
     {
-        return -(int32_t) (077777u - w);
+        return (-(int32_t) (077777u - w));
     }
 
-    return (int32_t) w;
+    return ((int32_t) w);
 }
 
 /* A DP pair as the agc_dp_t fraction value (high * 2^14 + low). */
@@ -572,10 +572,10 @@ static agc_dp_t sf_pair_value(const sf_pair_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
     {
-        return 0;
+        return (0);
     }
 
-    return (agc_dp_t) (sf_word_value(p->hi) * 16384 + sf_word_value(p->lo));
+    return ((agc_dp_t) (sf_word_value(p->hi) * 16384 + sf_word_value(p->lo)));
 }
 
 /* GTSFIN / GTSFOUT (PINBALL_NOUN_TABLES.agc p. 271 / 305): table fetch. */
@@ -584,32 +584,32 @@ agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code,
 {
     if (!AGC_ASSERT(sf_in != NULL) || !AGC_ASSERT(sf_out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (veh == AGC_VEHICLE_CSM)
     {
         if (!AGC_ASSERT(sf_code < SF_COUNT_CSM))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         *sf_in  = sf_pair_value(&sfintab_csm[sf_code]);
         *sf_out = sf_pair_value(&sfoutab_csm[sf_code]);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (!AGC_ASSERT(veh == AGC_VEHICLE_LM) ||
         !AGC_ASSERT(sf_code < SF_COUNT_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *sf_in  = sf_pair_value(&sfintab_lm[sf_code]);
     *sf_out = sf_pair_value(&sfoutab_lm[sf_code]);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SF routine / constant codes and constants for a scale type, per vehicle. */
@@ -619,12 +619,12 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(scale > AGC_SCALE_NONE) ||
         !AGC_ASSERT(scale < AGC_SCALE_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const scale_def_t *def     = &scale_defs[scale];
@@ -634,7 +634,7 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
 
     if (routine < 0)
     {
-        return AGC_STATUS_NOT_FOUND; /* not defined in this program */
+        return (AGC_STATUS_NOT_FOUND); /* not defined in this program */
     }
 
     agc_status_t st =
@@ -642,7 +642,7 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     out->scale   = scale;
@@ -651,7 +651,7 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
     out->is_dp   = def->is_dp;
     out->is_raw  = def->is_raw;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Same, for the vehicle selected by agc_state_init(). */
@@ -659,8 +659,8 @@ agc_status_t agc_scale_info(agc_scale_t scale, agc_scale_info_t *out)
 {
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(scale < AGC_SCALE_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_scale_info_vehicle(agc_state_vehicle(), scale, out);
+    return (agc_scale_info_vehicle(agc_state_vehicle(), scale, out));
 }

@@ -13,15 +13,15 @@ agc_vec_t agc_k_unitx(void)
 
     if (!AGC_ASSERT(v.c[0] == AGC_DP_HALF))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT((v.c[1] == 0) && (v.c[2] == 0)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* UNITY = YUNIT: (0, .5, 0).                                               */
@@ -31,15 +31,15 @@ agc_vec_t agc_k_unity(void)
 
     if (!AGC_ASSERT(v.c[1] == AGC_DP_HALF))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT((v.c[0] == 0) && (v.c[2] == 0)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* UNITZ = ZUNIT: (0, 0, .5).                                               */
@@ -49,15 +49,15 @@ agc_vec_t agc_k_unitz(void)
 
     if (!AGC_ASSERT(v.c[2] == AGC_DP_HALF))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT((v.c[0] == 0) && (v.c[1] == 0)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* ZEROVECS = ZEROVEC = ZERODP: (0, 0, 0).                                  */
@@ -67,13 +67,13 @@ agc_vec_t agc_k_zerovec(void)
 
     if (!AGC_ASSERT(v.c[0] == 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT((v.c[1] == 0) && (v.c[2] == 0)))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }

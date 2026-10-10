@@ -30,7 +30,7 @@ static lm_dap_t g_dap;
 
 lm_dap_t *lm_dap_state(void)
 {
-    return &g_dap;
+    return (&g_dap);
 }
 
 /* STARTSB1 DAP part (p.220-221): done on every fresh start and restart.  */
@@ -47,7 +47,7 @@ agc_status_t agc_lm_dap_restart(void)
     agc_flag_clear(AGC_FLAG_ACCOKFLG); /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);
 
-    return ts;
+    return (ts);
 }
 
 /* DOFSTRT1 DAP part (pp.211-213), then STARTSB1.                          */
@@ -75,23 +75,23 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->dkomegan   = FS_DKOMEGAN;
     d->dkdb       = FS_DKDB;
 
-    return agc_lm_dap_restart();
+    return (agc_lm_dap_restart());
 }
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
 uint16_t agc_erase_cduxd(void)
 {
-    return lm_dap_state()->cduxd;
+    return (lm_dap_state()->cduxd);
 }
 
 uint16_t agc_erase_cduyd(void)
 {
-    return lm_dap_state()->cduyd;
+    return (lm_dap_state()->cduyd);
 }
 
 uint16_t agc_erase_cduzd(void)
 {
-    return lm_dap_state()->cduzd;
+    return (lm_dap_state()->cduzd);
 }
 
 void agc_erase_set_cduxd(uint16_t v)
@@ -120,17 +120,17 @@ void agc_erase_set_cduzd(uint16_t v)
 
 agc_sp_t agc_erase_delcdux(void)
 {
-    return lm_dap_state()->delcdux;
+    return (lm_dap_state()->delcdux);
 }
 
 agc_sp_t agc_erase_delcduy(void)
 {
-    return lm_dap_state()->delcduy;
+    return (lm_dap_state()->delcduy);
 }
 
 agc_sp_t agc_erase_delcduz(void)
 {
-    return lm_dap_state()->delcduz;
+    return (lm_dap_state()->delcduz);
 }
 
 void agc_erase_set_delcdux(agc_sp_t v)
@@ -159,17 +159,17 @@ void agc_erase_set_delcduz(agc_sp_t v)
 
 agc_sp_t agc_erase_omegapd(void)
 {
-    return lm_dap_state()->omegapd;
+    return (lm_dap_state()->omegapd);
 }
 
 agc_sp_t agc_erase_omegaqd(void)
 {
-    return lm_dap_state()->omegaqd;
+    return (lm_dap_state()->omegaqd);
 }
 
 agc_sp_t agc_erase_omegard(void)
 {
-    return lm_dap_state()->omegard;
+    return (lm_dap_state()->omegard);
 }
 
 void agc_erase_set_omegapd(agc_sp_t v)
@@ -198,17 +198,17 @@ void agc_erase_set_omegard(agc_sp_t v)
 
 agc_sp_t agc_erase_delperor(void)
 {
-    return lm_dap_state()->delperor;
+    return (lm_dap_state()->delperor);
 }
 
 agc_sp_t agc_erase_delqeror(void)
 {
-    return lm_dap_state()->delqeror;
+    return (lm_dap_state()->delqeror);
 }
 
 agc_sp_t agc_erase_delreror(void)
 {
-    return lm_dap_state()->delreror;
+    return (lm_dap_state()->delreror);
 }
 
 void agc_erase_set_delperor(agc_sp_t v)
@@ -237,17 +237,17 @@ void agc_erase_set_delreror(agc_sp_t v)
 
 agc_sp_t agc_erase_omegap(void)
 {
-    return lm_dap_state()->omegap;
+    return (lm_dap_state()->omegap);
 }
 
 agc_sp_t agc_erase_omegaq(void)
 {
-    return lm_dap_state()->omegaq;
+    return (lm_dap_state()->omegaq);
 }
 
 agc_sp_t agc_erase_omegar(void)
 {
-    return lm_dap_state()->omegar;
+    return (lm_dap_state()->omegar);
 }
 
 /* AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in
@@ -257,7 +257,7 @@ agc_dp_t agc_erase_aosq(void)
     const lm_dap_t *d = lm_dap_state();
     lm_dp_pair_t    p = {d->aosq, d->aosq_lo};
 
-    return (agc_dp_t) lm_dap_dpval(p);
+    return ((agc_dp_t) lm_dap_dpval(p));
 }
 
 agc_dp_t agc_erase_aosr(void)
@@ -265,7 +265,7 @@ agc_dp_t agc_erase_aosr(void)
     const lm_dap_t *d = lm_dap_state();
     lm_dp_pair_t    p = {d->aosr, d->aosr_lo};
 
-    return (agc_dp_t) lm_dap_dpval(p);
+    return ((agc_dp_t) lm_dap_dpval(p));
 }
 
 void agc_erase_set_aosq(agc_dp_t v)
@@ -292,52 +292,52 @@ void agc_erase_set_aosr(agc_dp_t v)
 
 agc_sp_t agc_erase_alphaq(void)
 {
-    return lm_dap_state()->alphaq;
+    return (lm_dap_state()->alphaq);
 }
 
 agc_sp_t agc_erase_alphar(void)
 {
-    return lm_dap_state()->alphar;
+    return (lm_dap_state()->alphar);
 }
 
 agc_sp_t agc_erase_perror(void)
 {
-    return lm_dap_state()->perror;
+    return (lm_dap_state()->perror);
 }
 
 agc_sp_t agc_erase_qerror(void)
 {
-    return lm_dap_state()->qerror;
+    return (lm_dap_state()->qerror);
 }
 
 agc_sp_t agc_erase_rerror(void)
 {
-    return lm_dap_state()->rerror;
+    return (lm_dap_state()->rerror);
 }
 
 agc_sp_t agc_erase_1jacc(void)
 {
-    return lm_dap_state()->jacc[0];
+    return (lm_dap_state()->jacc[0]);
 }
 
 agc_sp_t agc_erase_1jaccq(void)
 {
-    return lm_dap_state()->jacc[1];
+    return (lm_dap_state()->jacc[1]);
 }
 
 agc_sp_t agc_erase_1jaccr(void)
 {
-    return lm_dap_state()->jacc[2];
+    return (lm_dap_state()->jacc[2]);
 }
 
 agc_sp_t agc_erase_kq(void)
 {
-    return lm_dap_state()->kq;
+    return (lm_dap_state()->kq);
 }
 
 agc_sp_t agc_erase_db(void)
 {
-    return lm_dap_state()->db;
+    return (lm_dap_state()->db);
 }
 
 void agc_erase_set_db(agc_sp_t v)
@@ -350,7 +350,7 @@ void agc_erase_set_db(agc_sp_t v)
 
 agc_sp_t agc_erase_stiksens(void)
 {
-    return lm_dap_state()->stiksens;
+    return (lm_dap_state()->stiksens);
 }
 
 void agc_erase_set_stiksens(agc_sp_t v)
@@ -363,7 +363,7 @@ void agc_erase_set_stiksens(agc_sp_t v)
 
 agc_sp_t agc_erase_neg_ratedb(void)
 {
-    return lm_dap_state()->neg_ratedb;
+    return (lm_dap_state()->neg_ratedb);
 }
 
 void agc_erase_set_neg_ratedb(agc_sp_t v)
@@ -376,7 +376,7 @@ void agc_erase_set_neg_ratedb(agc_sp_t v)
 
 agc_sp_t agc_erase_hiascent(void)
 {
-    return lm_dap_state()->hiascent;
+    return (lm_dap_state()->hiascent);
 }
 
 void agc_erase_set_hiascent(agc_sp_t v)
@@ -389,12 +389,12 @@ void agc_erase_set_hiascent(agc_sp_t v)
 
 uint16_t agc_erase_ch5mask(void)
 {
-    return lm_dap_state()->ch5mask;
+    return (lm_dap_state()->ch5mask);
 }
 
 uint16_t agc_erase_ch6mask(void)
 {
-    return lm_dap_state()->ch6mask;
+    return (lm_dap_state()->ch6mask);
 }
 
 bool agc_lm_dap_running(void)
@@ -403,8 +403,8 @@ bool agc_lm_dap_running(void)
 
     if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
     {
-        return false;
+        return (false);
     }
 
-    return d->t5adr == LM_T5_PAXIS;
+    return (d->t5adr == LM_T5_PAXIS);
 }

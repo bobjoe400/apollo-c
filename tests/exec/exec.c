@@ -35,7 +35,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -115,7 +115,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
         /* plain test job: ENDOFJOB */
     }
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_dispatch_task(agc_task_id_t task)
@@ -123,17 +123,17 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
     switch (task)
     {
         case AGC_TASK_ENDTASK:
-            return agc_task_endtask();
+            return (agc_task_endtask());
         case AGC_TASK_SVCT3:
-            return agc_task_svct3();
+            return (agc_task_svct3());
         case AGC_TASK_LONGCYCL:
-            return agc_task_longcycl();
+            return (agc_task_longcycl());
         case AGC_TASK_GETCADR:
-            return agc_task_getcadr();
+            return (agc_task_getcadr());
         case AGC_TASK_TASKOVER:
-            return agc_task_taskover();
+            return (agc_task_taskover());
         case AGC_TASK_T5IDLOC:
-            return agc_task_t5idloc();
+            return (agc_task_t5idloc());
         case AGC_TASK_NONE:
         case AGC_TASK_COUNT_PLACEHOLDER:
         default:
@@ -145,14 +145,14 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
         task_log[task_n++] = task;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
     (void) rupt;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 static int up_calls;
@@ -161,21 +161,21 @@ agc_status_t exec_up_stoprate(void)
 {
     up_calls++;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t exec_up_servidle(void)
 {
     up_calls++;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t exec_up_setcoars(void)
 {
     up_calls++;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- helpers ----------------------------------------------------------- */
@@ -206,7 +206,7 @@ static bool only_dspmm_waiting(void)
         }
     }
 
-    return active == 1 && dspmm; /* GOPROG3 MMDSPLAY: DSPMMJOB only */
+    return (active == 1 && dspmm); /* GOPROG3 MMDSPLAY: DSPMMJOB only */
 }
 
 static void reset(agc_vehicle_t v)
@@ -238,7 +238,7 @@ static int run_all(void)
         n++;
     }
 
-    return n;
+    return (n);
 }
 
 static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
@@ -252,11 +252,11 @@ static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
         if (ci.state != AGC_CORE_FREE && ci.loc == loc && ci.prio == prio &&
             ((vac < 0) == (ci.vac_index < 0)))
         {
-            return true;
+            return (true);
         }
     }
 
-    return false;
+    return (false);
 }
 
 static bool task_entry(int i, agc_task_id_t task, int16_t lst1)
@@ -266,7 +266,7 @@ static bool task_entry(int i, agc_task_id_t task, int16_t lst1)
 
     (void) agc_waitlist_entry(i, &d, &t);
 
-    return t == task && d == lst1;
+    return (t == task && d == lst1);
 }
 
 static bool task_queued(agc_task_id_t task)
@@ -280,11 +280,11 @@ static bool task_queued(agc_task_id_t task)
 
         if (t == task)
         {
-            return true;
+            return (true);
         }
     }
 
-    return false;
+    return (false);
 }
 
 /* ---- executive --------------------------------------------------------- */
@@ -648,5 +648,5 @@ int main(void)
     (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return g_failures == 0 ? 0 : 1;
+    return (g_failures == 0 ? 0 : 1);
 }

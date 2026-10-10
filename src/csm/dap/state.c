@@ -16,15 +16,15 @@ static agc_csm_dapcom_t dapcom; /* RCS/TVC common storage and pad loads  */
 
 agc_csm_rcs_t *agc_csm_dap_rcs(void)
 {
-    return &rcs;
+    return (&rcs);
 }
 
 agc_csm_tvc_t *agc_csm_dap_tvc(void)
 {
-    return &tvc;
+    return (&tvc);
 }
 
 agc_csm_dapcom_t *agc_csm_dap_com(void)
 {
-    return &dapcom;
+    return (&dapcom);
 }

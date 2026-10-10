@@ -66,14 +66,14 @@ static agc_status_t time_cogaovfl(agc_conic_ctx_t      *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ctx->cogaflag = true;
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, true);
     time_out_fill(ctx, out);
 
-    return agc_conic_abtconic_();
+    return (agc_conic_abtconic_());
 }
 
 /*
@@ -86,19 +86,19 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (ctx->infinflg)
     { /* BON INFINFLG ABTCONIC */
         time_out_fill(ctx, out);
 
-        return agc_conic_abtconic_();
+        return (agc_conic_abtconic_());
     }
 
     ctx->cogaflag = false; /* CLEAR COGAFLAG */
@@ -107,7 +107,7 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (!rvsw)
@@ -116,13 +116,13 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
     time_out_fill(ctx, out);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -134,12 +134,12 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     time_out_clear(out);
@@ -148,7 +148,7 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
@@ -160,12 +160,12 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_interp_test_ovf(ip))
     { /* BOV COGAOVFL   */
-        return time_cogaovfl(&ctx, out);
+        return (time_cogaovfl(&ctx, out));
     }
 
     ctx.snth = in->snth;
@@ -174,10 +174,10 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_conic_commnout_(ip, &ctx, in->rvsw, out);
+    return (agc_conic_commnout_(ip, &ctx, in->rvsw, out));
 }
 
 /* COGAOVFL entry for TIMERAD (timeradius.c). */
@@ -186,15 +186,15 @@ agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return time_cogaovfl(ctx, out);
+    return (time_cogaovfl(ctx, out));
 }
 
 /* Debris fill for TIMERAD (timeradius.c). */

@@ -30,30 +30,30 @@ agc_dp_t agc_sband_pitchang(void)
 {
     if (!AGC_ASSERT(pitchang >= -AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(pitchang <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return pitchang;
+    return (pitchang);
 }
 
 agc_dp_t agc_sband_yawang(void)
 {
     if (!AGC_ASSERT(yawang >= -AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(yawang <= AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return yawang;
+    return (yawang);
 }
 
 /* ABVAL SIGN ASIN: ASIN(SGN(s) |v|). */
@@ -61,17 +61,17 @@ static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     const agc_dp_t m = agc_vec_abval(ip, v);
 
     if (!AGC_ASSERT(m >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_asin(ip, agc_dp_sign(m, s));
+    return (agc_dp_asin(ip, agc_dp_sign(m, s)));
 }
 
 /*
@@ -84,7 +84,7 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
     if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) ||
         !AGC_ASSERT(yaw != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_mat_t u = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
@@ -105,7 +105,7 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 
     if (agc_interp_test_ovf(ip))
     {
-        return AGC_STATUS_OK; /* BOV SBANDEX  */
+        return (AGC_STATUS_OK); /* BOV SBANDEX  */
     }
 
     const agc_vec_t x =
@@ -125,7 +125,7 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 
     *yaw = signed_asin(ip, z, yz);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* UE = -UNIT(RATT) (earth sphere) or -UNIT(REMDIST VMOON SL1 + RATT). */
@@ -134,12 +134,12 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
 {
     if (!AGC_ASSERT(o != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ue != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t r = o->ratt; /* CONV4        */
@@ -152,7 +152,7 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         r = agc_vec_add(
@@ -161,7 +161,7 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
 
     *ue = agc_vec_neg(agc_vec_unit(ip, r, NULL, NULL)); /* CONV5        */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SBANDEX: display VN_ANTENNA_ANGLES at PRIO5 while EXTVBACT bit 5 is on. */
@@ -169,12 +169,12 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
-        return agc_dsky_endext();
+        return (agc_dsky_endext());
     }
 
     agc_exec_prio_change(PRIO5); /* PRIOCHNG       */
@@ -184,14 +184,14 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = agc_dsky_blanket(BLANK_R3);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_exec_prio_change(PRIO4);
@@ -199,10 +199,10 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return align_goto(AGC_JOB_SBANDANT_LM_RECYCLE); /* CHANG1       */
+        return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* CHANG1       */
     }
 
-    return align_goto(AGC_JOB_SBANDANT_LM_RECYCLE); /* TC SBANDANT+2 */
+    return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* TC SBANDANT+2 */
 }
 
 /* SBANDANT +2 (p. 486-488): LEMCONIC to now, UE, CDUTRIG, SM, *SMNB*. */
@@ -210,7 +210,7 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -249,10 +249,10 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
     }
 
-    return sbandex(ctx);
+    return (sbandex(ctx));
 }
 
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */
@@ -260,15 +260,15 @@ agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_imu_status_check();
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
-    return agc_job_sbandant_lm_recycle(ctx);
+    return (agc_job_sbandant_lm_recycle(ctx));
 }

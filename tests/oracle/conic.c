@@ -30,7 +30,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
 
-    return false;
+    return (false);
 }
 
 typedef struct oracle_row
@@ -324,7 +324,7 @@ static void cmp_flag(const char *tag, const char *name, bool got, bool want)
 
 static agc_vec_t vec3(const agc_dp_t *a)
 {
-    return agc_vec_make(a[0], a[1], a[2]);
+    return (agc_vec_make(a[0], a[1], a[2]));
 }
 
 static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
@@ -357,7 +357,7 @@ static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
 
     memcpy(got, v, sizeof (v));
 
-    return prep ? 10 : 9;
+    return (prep ? 10 : 9);
 }
 
 static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
@@ -524,5 +524,5 @@ int main(void)
     (void) printf("oracle_conic: %d checks, %d failures\n", g_checks,
                   g_failures);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

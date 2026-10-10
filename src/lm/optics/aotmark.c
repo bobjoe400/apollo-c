@@ -76,7 +76,7 @@ typedef struct aot_sample
 
 static uint16_t markstat(void)
 {
-    return agc_erase_markstat();
+    return (agc_erase_markstat());
 }
 
 static void set_markstat(uint16_t v)
@@ -91,7 +91,7 @@ static void set_markstat(uint16_t v)
 
 static bool surface_marks(void) /* MARKTYPE         */
 {
-    return agc_flag_test(AGC_FLAG_SURFFLAG);
+    return (agc_flag_test(AGC_FLAG_SURFFLAG));
 }
 
 /*
@@ -105,7 +105,7 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el,
     if (!AGC_ASSERT((ip != NULL) && (oa != NULL)) ||
         !AGC_ASSERT((uxp != NULL) && (uyp != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t elr = agc_align_cdulogic(el);
@@ -120,7 +120,7 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el,
     *uyp = agc_vec_make(0, ca, agc_dp_neg(sa));
     *uxp = agc_vec_unit(ip, agc_vec_cross(ip, *uyp, *oa), NULL, NULL);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -135,7 +135,7 @@ agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp,
     if (!AGC_ASSERT(ip != NULL) ||
         !AGC_ASSERT((xpnb != NULL) && (ypnb != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t r =
@@ -148,7 +148,7 @@ agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp,
     *xpnb =
         agc_vec_add(ip, agc_vec_scale(ip, uxp, c), agc_vec_scale(ip, uyp, s));
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -162,7 +162,7 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
     if (!AGC_ASSERT((ip != NULL) && (m != NULL)) ||
         !AGC_ASSERT(star_sm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_cdutrig_t t;
@@ -180,7 +180,7 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
         *star_sm = agc_vec_unit(ip, agc_vec_cross(ip, xp, yp), NULL, NULL);
     }
 
-    return st;
+    return (st);
 }
 
 /* JUSTZY of SURFSTAR: UNIT(UPP x OA), with UPP = the reticle line at
@@ -192,7 +192,7 @@ static agc_vec_t surface_upp_x_oa(agc_interp_t *ip, agc_dp_t yrot, agc_vec_t oa,
     const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(ip, yrot));
     const agc_vec_t upp = agc_vec_unit(ip, agc_vec_sub(ip, c, s), NULL, NULL);
 
-    return agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL);
+    return (agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL));
 }
 
 /*
@@ -208,7 +208,7 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m,
     if (!AGC_ASSERT((ip != NULL) && (m != NULL)) ||
         !AGC_ASSERT(star_sm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t yrot = agc_align_cdulogic(m->ycdu[0]); /* CURSOR   */
@@ -239,7 +239,7 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m,
         *star_sm = v;
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -252,7 +252,7 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star,
     if (!AGC_ASSERT((ip != NULL) && (ave != NULL)) ||
         !AGC_ASSERT((n >= 1) && (n <= AGC_ALIGN_AOT_PAIRS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t  n8   = (agc_dp_t) n * DP_ONE_EIGHTH; /* MKDEX    */
@@ -262,7 +262,7 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star,
 
     *ave = agc_vec_add(ip, agc_vec_scale(ip, *ave, keep), part);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -280,7 +280,7 @@ agc_status_t agc_aotmark(void)
         agc_relint();
         const agc_status_t pd = agc_poodoo(ALM_BUSY);
 
-        return (pd == AGC_STATUS_OK) ? AGC_STATUS_POODOO : pd;
+        return ((pd == AGC_STATUS_OK) ? AGC_STATUS_POODOO : pd);
     }
 
     if ((agc_erase_extvbact() & EXTVB_BUSY) != 0u)
@@ -288,7 +288,7 @@ agc_status_t agc_aotmark(void)
         agc_relint();
         const agc_status_t bo = agc_bailout(ALM_EXTVB); /* MKABORT  */
 
-        return (bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo;
+        return ((bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo);
     }
 
     agc_erase_set_extvbact((uint16_t) (agc_erase_extvbact() | EXTVB_MARKING));
@@ -299,12 +299,12 @@ agc_status_t agc_aotmark(void)
         agc_relint();
         const agc_status_t bo = agc_bailout(ALM_NO_VAC);
 
-        return (bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo;
+        return ((bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo);
     }
 
     if (!AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram()->mkvac_index = vac;
@@ -314,7 +314,7 @@ agc_status_t agc_aotmark(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* MKRELEAS task: MARKSTAT = 0, the VAC area freed; GOODEND (optics). */
@@ -334,10 +334,10 @@ agc_status_t agc_task_aot_mark_release(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_imu_goodend(AGC_IMU_DEV_OPTICS);
+    return (agc_imu_goodend(AGC_IMU_DEV_OPTICS));
 }
 
 /* KILLAOT (V34 on a mark display): EXTVBACT = 0, GOTOPOOH. */
@@ -345,17 +345,17 @@ agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_extvbact(0);
 
     if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_gotopooh();
+    return (agc_exec_gotopooh());
 }
 
 /* GETDAT: MARKSTAT bit 12 (no marks now); GOMARKF V01N71 (star code and
@@ -364,14 +364,14 @@ agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     set_markstat((uint16_t) (markstat() | MS_NOT_WANTED));
 
-    return align_flash(ctx, AGC_DSKY_GOMARKF, VN_STAR_CODE,
-                       AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_DETENT,
-                       AGC_JOB_AOT_MARK_STAR_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_STAR_CODE,
+                        AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_DETENT,
+                        AGC_JOB_AOT_MARK_STAR_DISPLAY));
 }
 
 /* PASTIT: GOMARK4 with a mark verb; V33 MARKCHEX, ENTER GETDAT. */
@@ -379,17 +379,17 @@ static agc_status_t request_marks(const agc_job_ctx_t *ctx, uint16_t vn)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(
             (vn == VN_MARK_XY) || (vn == VN_MARK_Y) || (vn == VN_MARK_X)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_AOT_MARK_KILL,
-                       AGC_JOB_AOT_MARK_CHECK, AGC_JOB_AOT_MARK_STAR_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_AOT_MARK_KILL,
+                        AGC_JOB_AOT_MARK_CHECK, AGC_JOB_AOT_MARK_STAR_DISPLAY));
 }
 
 /* GETMKS +3: MARKSTAT keeps only its VAC area; V54N71. */
@@ -397,7 +397,7 @@ static agc_status_t request_more_marks(const agc_job_ctx_t *ctx)
 {
     set_markstat((uint16_t) (markstat() & MS_VAC));
 
-    return request_marks(ctx, VN_MARK_XY);
+    return (request_marks(ctx, VN_MARK_XY));
 }
 
 /*
@@ -423,7 +423,7 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ram->rotang    = rot;
@@ -431,7 +431,7 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az,
     ram->xymark    = 0;              /* GETMKS   */
     ram->markcntr  = 0;
 
-    return request_more_marks(ctx);
+    return (request_more_marks(ctx));
 }
 
 /* MSU: the 1's complement difference of two CDU words. */
@@ -454,10 +454,10 @@ static uint16_t cdu_msu(uint16_t a, uint16_t b)
 
     if (!AGC_ASSERT((d >= -CDU_HALF) && (d < CDU_HALF)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return align_sp_to_word((agc_sp_t) ((d < 0) ? (d + 1) : d));
+    return (align_sp_to_word((agc_sp_t) ((d < 0) ? (d + 1) : d)));
 }
 
 /*
@@ -470,7 +470,7 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -481,18 +481,18 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
 
     if (d <= 0)
     {
-        return agc_job_aot_mark_star_display(ctx);
+        return (agc_job_aot_mark_star_display(ctx));
     }
 
     if (d == DETENT_COAS)
     {
-        return agc_job_aot_mark_coas_display(ctx);
+        return (agc_job_aot_mark_coas_display(ctx));
     }
 
     const uint16_t az = agc_erase_aotaz((int) d);
     const uint16_t el = agc_erase_aotel((int) d);
 
-    return optic_axis(ctx, az, el, cdu_msu(agc_erase_aotaz(2), az));
+    return (optic_axis(ctx, az, el, cdu_msu(agc_erase_aotaz(2), az)));
 }
 
 /* CODE7: GOMARKF V06N87 (AZ, EL of the COAS). */
@@ -500,17 +500,17 @@ agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->xymark == DETENT_COAS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOMARKF, VN_AZ_EL, AGC_JOB_AOT_MARK_KILL,
-                       AGC_JOB_AOT_MARK_COAS_LOADED,
-                       AGC_JOB_AOT_MARK_COAS_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_AZ_EL, AGC_JOB_AOT_MARK_KILL,
+                        AGC_JOB_AOT_MARK_COAS_LOADED,
+                        AGC_JOB_AOT_MARK_COAS_DISPLAY));
 }
 
 /* CODE7 V33: AZ, EL as loaded; COASCODE: no apparent rotation. */
@@ -518,12 +518,12 @@ agc_status_t agc_job_aot_mark_coas_loaded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_align_ram_t *ram = agc_align_ram();
 
-    return optic_axis(ctx, ram->az, ram->el, 0);
+    return (optic_axis(ctx, ram->az, ram->el, 0));
 }
 
 /* AVESTAR loop: each pair from MARKCNTR down to 0 into the average. */
@@ -558,7 +558,7 @@ static agc_status_t average_marks(agc_interp_t *ip)
         ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -571,7 +571,7 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -588,13 +588,13 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 
             if (alm != AGC_STATUS_OK)
             {
-                return alm;
+                return (alm);
             }
 
             ram->xymark   = 0;
             ram->markcntr = 0;
 
-            return request_more_marks(ctx); /* GETMKS   */
+            return (request_more_marks(ctx)); /* GETMKS   */
         }
 
         ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
@@ -607,7 +607,7 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_inhint();
@@ -618,10 +618,10 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
     {
         const agc_status_t bo = agc_bailout(AGC_ALARM_01203);
 
-        return (bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo;
+        return ((bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo);
     }
 
-    return agc_dsky_endmark(); /* ENDMARK  */
+    return (agc_dsky_endmark()); /* ENDMARK  */
 }
 
 /* CHANGEVB: surface -> V06N79; flight -> V54/V53/V52 N71 by MKDEX. */
@@ -629,25 +629,25 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (surface_marks())
     {
-        return agc_job_aot_mark_surface_display(ctx);
+        return (agc_job_aot_mark_surface_display(ctx));
     }
 
     const agc_sp_t k = agc_align_ram()->mkdex;
 
     if (!AGC_ASSERT((k >= 0) && (k <= 3)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const uint16_t vn =
         (k == 1) ? VN_MARK_Y : ((k == 2) ? VN_MARK_X : VN_MARK_XY);
 
-    return request_marks(ctx, vn);
+    return (request_marks(ctx, vn));
 }
 
 /* DSPV6N79: GOMARKF V06N79 (CURSOR, SPIRAL, POSCODE). */
@@ -655,17 +655,17 @@ agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(surface_marks()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOMARKF, VN_CURSOR, AGC_JOB_AOT_MARK_KILL,
-                       AGC_JOB_AOT_MARK_SURFACE_END,
-                       AGC_JOB_AOT_MARK_SURFACE_ANSWER);
+    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_CURSOR, AGC_JOB_AOT_MARK_KILL,
+                        AGC_JOB_AOT_MARK_SURFACE_END,
+                        AGC_JOB_AOT_MARK_SURFACE_ANSWER));
 }
 
 /*
@@ -680,7 +680,7 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT((pair >= 0) && (pair < AGC_ALIGN_AOT_PAIRS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->aot[pair].ycdu[0] = ram->cursor;
@@ -688,7 +688,7 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
 
     if ((markstat() & MS_PAIR) != 0u)
     {
-        return agc_job_aot_mark_check(ctx);
+        return (agc_job_aot_mark_check(ctx));
     }
 
     if ((ram->markcntr + 1) >= AGC_ALIGN_AOT_PAIRS)
@@ -698,15 +698,15 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
-        return agc_job_aot_mark_surface_display(ctx);
+        return (agc_job_aot_mark_surface_display(ctx));
     }
 
     ram->markcntr = (agc_sp_t) (ram->markcntr + 1);
 
-    return request_more_marks(ctx); /* GETMKS +3 */
+    return (request_more_marks(ctx)); /* GETMKS +3 */
 }
 
 /* DSPV6N79 V33 (SURFEND): bit 14 (end of marking), then SURFAGAN. */
@@ -714,12 +714,12 @@ agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     set_markstat((uint16_t) (markstat() | MS_PAIR));
 
-    return surface_again(ctx);
+    return (surface_again(ctx));
 }
 
 /* DSPV6N79 V32 -> SURFAGAN (another mark); a data ENTER shows it again. */
@@ -727,15 +727,15 @@ agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (align_resp_recycle())
     {
-        return surface_again(ctx);
+        return (surface_again(ctx));
     }
 
-    return agc_job_aot_mark_surface_display(ctx);
+    return (agc_job_aot_mark_surface_display(ctx));
 }
 
 /*
@@ -752,7 +752,7 @@ static agc_status_t vacstor(const aot_sample_t *s, bool y_mark,
     if (!AGC_ASSERT((ram->markcntr >= 0) &&
                     (ram->markcntr < AGC_ALIGN_AOT_PAIRS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->tsight = s->t;
@@ -789,8 +789,8 @@ static agc_status_t vacstor(const aot_sample_t *s, bool y_mark,
         ram->mkdex = (agc_sp_t) ((ms & MS_XY) >> 9); /* REMARK   */
     }
 
-    return agc_exec_novac(ALIGN_PRIO15,
-                          AGC_JOB_AOT_MARK_NEXT_ACTION); /* SURFJOB */
+    return (agc_exec_novac(ALIGN_PRIO15,
+                           AGC_JOB_AOT_MARK_NEXT_ACTION)); /* SURFJOB */
 }
 
 /*
@@ -810,7 +810,7 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
     { /* SURFSTOR */
         set_markstat((uint16_t) (markstat() | MS_XY));
 
-        return vacstor(s, false, bit);
+        return (vacstor(s, false, bit));
     }
 
     if ((markstat() & MS_PAIR) != 0u)
@@ -819,7 +819,7 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
         {
             agc_alarm(ALM_FIVE);
 
-            return AGC_STATUS_ALARM; /* 5MKALARM */
+            return (AGC_STATUS_ALARM); /* 5MKALARM */
         }
 
         ram->markcntr = (agc_sp_t) (ram->markcntr + 1);
@@ -830,10 +830,10 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
     { /* VERIFYMK */
         agc_alarm(ALM_UNWANTED);
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
-    return vacstor(s, y_mark, bit);
+    return (vacstor(s, y_mark, bit));
 }
 
 /*
@@ -852,12 +852,12 @@ static agc_status_t mark_reject(void)
         {
             agc_alarm(ALM_NO_REJECT);
 
-            return AGC_STATUS_ALARM;
+            return (AGC_STATUS_ALARM);
         }
 
         ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const uint16_t old = markstat();
@@ -866,7 +866,7 @@ static agc_status_t mark_reject(void)
     {
         agc_alarm(ALM_NO_REJECT);
 
-        return AGC_STATUS_ALARM; /* REJALM   */
+        return (AGC_STATUS_ALARM); /* REJALM   */
     }
 
     uint16_t       ms   = (uint16_t) ((old & ~MS_REJECT_CLR) + MS_REJECTED);
@@ -877,7 +877,7 @@ static agc_status_t mark_reject(void)
     set_markstat(ms);
     ram->mkdex = (agc_sp_t) ((ms & MS_XY) >> 9); /* REMARK   */
 
-    return agc_exec_novac(ALIGN_PRIO15, AGC_JOB_AOT_MARK_NEXT_ACTION);
+    return (agc_exec_novac(ALIGN_PRIO15, AGC_JOB_AOT_MARK_NEXT_ACTION));
 }
 
 /* SOMEKEY: the rate-of-descent switch (DESCBITS), else alarm 113. */
@@ -885,12 +885,12 @@ static agc_status_t other_key(uint16_t in)
 {
     if ((in & DESCENT_KEYS) != 0u)
     {
-        return agc_lm_descbits(); /* POSTJUMP */
+        return (agc_lm_descbits()); /* POSTJUMP */
     }
 
     agc_alarm(ALM_NO_INBITS);
 
-    return AGC_STATUS_ALARM;
+    return (AGC_STATUS_ALARM);
 }
 
 /*
@@ -911,32 +911,32 @@ agc_status_t agc_aotmark_markrupt(void)
 
     if ((in & MARK_KEYS) == 0u)
     {
-        return other_key(in);
+        return (other_key(in));
     }
 
     const uint16_t ms = markstat();
 
     if ((ms & MS_NOT_WANTED) != 0u)
     {
-        return AGC_STATUS_OK; /* RESUME   */
+        return (AGC_STATUS_OK); /* RESUME   */
     }
 
     if (ms == 0u)
     {
         agc_alarm(ALM_NOT_TAKEN);
 
-        return AGC_STATUS_ALARM;
+        return (AGC_STATUS_ALARM);
     }
 
     if ((in & AGC_CH016_AOTREJECT) != 0u)
     {
-        return mark_reject();
+        return (mark_reject());
     }
 
     if ((in & AGC_CH016_YAXISMARK) != 0u)
     {
-        return mark_button(&s, true);
+        return (mark_button(&s, true));
     }
 
-    return mark_button(&s, false); /* XMKRUPT  */
+    return (mark_button(&s, false)); /* XMKRUPT  */
 }

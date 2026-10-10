@@ -24,7 +24,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_NOT_FOUND;
@@ -62,7 +62,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 
             if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             st = AGC_STATUS_BAD_ARG;
@@ -72,7 +72,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
             break;
     }
 
-    return st;
+    return (st);
 }
 
 /* The task at the head of LST2 (or T5LOC / T6LOC) is called.          */
@@ -80,7 +80,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_NOT_FOUND;
@@ -110,7 +110,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
 
             if (!AGC_ASSERT(task != AGC_TASK_NONE))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             st = AGC_STATUS_BAD_ARG;
@@ -120,7 +120,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
             break;
     }
 
-    return st;
+    return (st);
 }
 
 /* Interrupt handlers owned by other lanes (INTERRUPT_LEAD_INS).        */
@@ -131,7 +131,7 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     switch (rupt)
@@ -165,8 +165,8 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 
     if (!AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }

@@ -26,22 +26,22 @@ static agc_lm_asc_t lm_asc; /* ascent guidance erasables, EBANK 7      */
 
 agc_lm_pad_t *agc_lm_pad(void)
 {
-    return &lm_pad;
+    return (&lm_pad);
 }
 
 agc_lm_ldg_t *agc_lm_ldg(void)
 {
-    return &lm_ldg;
+    return (&lm_ldg);
 }
 
 agc_lm_thr_t *agc_lm_thr(void)
 {
-    return &lm_thr;
+    return (&lm_thr);
 }
 
 agc_lm_asc_t *agc_lm_asc(void)
 {
-    return &lm_asc;
+    return (&lm_asc);
 }
 
 /* Fresh start of the lane's erasables (the AGC leaves them as they were;
@@ -92,10 +92,10 @@ agc_sp_t agc_lm_time1(void)
 
     if (!AGC_ASSERT(t1 >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return t1;
+    return (t1);
 }
 
 /* DV: divide the DP fraction (A,L) by the SP fraction in K. With
@@ -106,7 +106,7 @@ agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
 {
     if (!AGC_ASSERT(divisor != 0))
     {
-        return (dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN;
+        return ((dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN);
     }
 
     int32_t q = dividend / (int32_t) divisor;
@@ -116,7 +116,7 @@ agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
         q = (q > 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
 
-    return (agc_sp_t) q;
+    return ((agc_sp_t) q);
 }
 
 /* MP, keeping the high word (what most basic-language callers use). */
@@ -127,10 +127,10 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) hi;
+    return ((agc_sp_t) hi);
 }
 
 /* AD with the overflow saturated (the callers in this lane never overflow
@@ -144,7 +144,7 @@ agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
         s = (s > 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
 
-    return (agc_sp_t) s;
+    return ((agc_sp_t) s);
 }
 
 /* Channels 30-33 are inverted: a signal is present when its bit is 0.    */
@@ -152,13 +152,13 @@ bool agc_lm_chan_bit_present(int chan, uint16_t bit)
 {
     if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30 && chan <= AGC_CHAN_CHAN33))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(bit != 0u))
     {
-        return false;
+        return (false);
     }
 
-    return (agc_chan_read(chan) & bit) == 0u;
+    return ((agc_chan_read(chan) & bit) == 0u);
 }

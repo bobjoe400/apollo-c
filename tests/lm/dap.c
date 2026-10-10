@@ -45,7 +45,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -74,7 +74,7 @@ static agc_status_t setup_descent(int32_t kg)
     agc_guid_state()->lm.mass   = (agc_dp_t) (KG(kg) * 16384);
     agc_guid_state()->lm.abdelv = 0;
 
-    return agc_lm_dap_jet_accel_update();
+    return (agc_lm_dap_jet_accel_update());
 }
 
 static void test_accs(void)
@@ -242,5 +242,5 @@ int main(void)
     (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

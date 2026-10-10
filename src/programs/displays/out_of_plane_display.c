@@ -38,7 +38,7 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* UNP36 = UNIT(V x UNIT(R)) of the passive vehicle (the AGC's
@@ -66,10 +66,10 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (!AGC_ASSERT(rz->rtheta >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* R36 (CM, p.502): OPTIONX = 2, OPTIONX+1 = 1; V04N12 (TERMINATE ->
@@ -78,12 +78,12 @@ agc_status_t agc_job_out_of_plane_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!rz_is_csm())
     {
-        return agc_job_out_of_plane_start(ctx);
+        return (agc_job_out_of_plane_start(ctx));
     }
 
     agc_status_t st = rz_set_option(1, 2U);
@@ -95,10 +95,10 @@ agc_status_t agc_job_out_of_plane_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_out_of_plane_vehicle(ctx);
+    return (agc_job_out_of_plane_vehicle(ctx));
 }
 
 /* V04N12 GOXDSPF (CM). */
@@ -106,11 +106,11 @@ agc_status_t agc_job_out_of_plane_vehicle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOMARKF, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
-                    AGC_JOB_OUT_OF_PLANE_START, AGC_JOB_OUT_OF_PLANE_VEHICLE);
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
+                     AGC_JOB_OUT_OF_PLANE_START, AGC_JOB_OUT_OF_PLANE_VEHICLE));
 }
 
 /* R36A (p.502): OPTIONY = OPTIONX+1 (CM), DSPTEMX = 0 (time of event 0
@@ -119,7 +119,7 @@ agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rz_is_csm())
@@ -131,10 +131,10 @@ agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_out_of_plane_time(ctx);
+    return (agc_job_out_of_plane_time(ctx));
 }
 
 /* R36P3: V06N16 GOMARKF (time of event); TERMINATE -> ENDEXT, PROCEED ->
@@ -143,11 +143,11 @@ agc_status_t agc_job_out_of_plane_time(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 16U, AGC_JOB_RENDZ_ENDEXT,
-                    AGC_JOB_OUT_OF_PLANE_COMPUTE, AGC_JOB_OUT_OF_PLANE_TIME);
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 16U, AGC_JOB_RENDZ_ENDEXT,
+                     AGC_JOB_OUT_OF_PLANE_COMPUTE, AGC_JOB_OUT_OF_PLANE_TIME));
 }
 
 /* Passive (first) or active (second) vehicle integration: CM option 1
@@ -158,7 +158,7 @@ static rz_integ_kind_t oop_kind(bool passive)
     bool reverse = rz_is_csm() && ((oop_work.optiony >> 1) != 0U);
     bool other   = (passive != reverse);
 
-    return other ? RZ_OTHPREC : RZ_THISPREC;
+    return (other ? RZ_OTHPREC : RZ_THISPREC);
 }
 
 /* PROCEED on V06N16 (pp.502-504): time = DSPTEMX, or now when zero;
@@ -170,7 +170,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -190,7 +190,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     oop_work.rpass36 = o.ratt;
@@ -201,7 +201,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = agc_rendz_out_of_plane_compute(&ip, rz, oop_work.rpass36, vp, o.ratt,
@@ -214,9 +214,9 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 90U, AGC_JOB_RENDZ_ENDEXT,
-                    AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_TIME);
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 90U, AGC_JOB_RENDZ_ENDEXT,
+                     AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_TIME));
 }

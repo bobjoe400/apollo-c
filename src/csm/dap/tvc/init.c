@@ -121,7 +121,7 @@ agc_status_t csm_tvc_gains(bool full)
 
     if (!AGC_ASSERT(c->ixx >= 0) || !AGC_ASSERT(c->iavg_tlx >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (full)
@@ -137,7 +137,7 @@ agc_status_t csm_tvc_gains(bool full)
     v       = csm_dap_ddoubl(csm_dap_ddoubl(v));
     t->vark = agc_dp_high(v); /* TS VARK              */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* MRCLEAN .. ENDMRC (pp. 937-938): zero the 52 TVC words OMEGAYC .. TTMP1
@@ -180,10 +180,10 @@ agc_status_t csm_tvc_mrclean(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* ENDMRC: RESUME       */
+    return (st); /* ENDMRC: RESUME       */
 }
 
 /* TVCDAPON (p. 937): T5 entry from DOTVCON (P40).                        */
@@ -191,17 +191,17 @@ agc_status_t agc_task_tvcdapon(void)
 {
     if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcphase == -1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = csm_tvc_mrclean();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* TVCINIT2 (pp. 938-939): filter period, steering gain, trim-loop
@@ -214,7 +214,7 @@ static agc_status_t tvc_init2(int lem)
 
     if (!AGC_ASSERT((lem == 0) || (lem == 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* TVCDT/2 in cs, scale B+14 cs: BIT2 (20 ms, CSM 40 ms filter) or
@@ -238,10 +238,10 @@ static agc_status_t tvc_init2(int lem)
 
     if (!AGC_ASSERT(t->t5tvcdt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* TVCINIT3 (p. 939): trim values to the trim trackers, output trackers,
@@ -339,13 +339,13 @@ agc_status_t agc_task_tvcinit1(void)
     if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK) ||
         (s3 != AGC_STATUS_OK) || (s4 != AGC_STATUS_OK))
     {
-        return (st != AGC_STATUS_OK) ?
-               st :
-               ((s2 != AGC_STATUS_OK) ? s2 :
-                ((s3 != AGC_STATUS_OK) ? s3 : s4));
+        return ((st != AGC_STATUS_OK) ?
+                st :
+                ((s2 != AGC_STATUS_OK) ? s2 :
+                 ((s3 != AGC_STATUS_OK) ? s3 : s4)));
     }
 
-    return csm_tvc_init4();
+    return (csm_tvc_init4());
 }
 
 /* TVCINIT4 .. ENDTVCIN (pp. 940-941): TVCPHASE = 0 (initialisation done;
@@ -374,10 +374,10 @@ agc_status_t csm_tvc_init4(void)
 
     if (!AGC_ASSERT(t->t5tvcdt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* ENDTVCIN: RESUME     */
+    return (st); /* ENDTVCIN: RESUME     */
 }
 
 /* SWICHOVR +5 .. TC RTRNLOC (pp. 941-942): restart entry point with
@@ -411,10 +411,10 @@ agc_status_t csm_tvc_swichovr_body(void)
 
     if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return s2;
+    return (s2);
 }
 
 /* PRESWTCH, SWICHOVR (p. 941): entry from V46 (CSM/LM switch-over to the
@@ -433,8 +433,8 @@ agc_status_t agc_csm_tvc_preswtch(void)
 
     if (!AGC_ASSERT(t->tvcphase != -2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }

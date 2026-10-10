@@ -78,7 +78,7 @@ static int td_shiftndx(void)
         agc_flag_test(agc_flag_test(AGC_FLAG_VEHUPFLG) ? AGC_FLAG_CMOONFLG :
                       AGC_FLAG_LMOONFLG);
 
-    return moon ? -2 : 0;
+    return (moon ? -2 : 0);
 }
 
 /* Position = conic + deviation (VSR* 7,2), body scale.                  */
@@ -89,7 +89,7 @@ static agc_status_t td_pos(agc_interp_t *ip, agc_vehicle_t v, agc_vec_t *pos)
 
     *pos = agc_vec_add(ip, rz_vshift(ip, sv.deltav, -(7 - td.x2)), sv.rcv);
 
-    return st;
+    return (st);
 }
 
 /* INITIALW (p.588): W = 0 in the 6x6 part, diagonal position and
@@ -142,7 +142,7 @@ static agc_status_t td_getum(agc_interp_t *ip, agc_vec_t *um)
 
     *um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
 
-    return st;
+    return (st);
 }
 
 /* ---- BVECTORS (p.576): rz_bvectors on the R22 state.                  */
@@ -199,7 +199,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
 
         if (agc_interp_test_ovf(ip))
         {
-            return false; /* REND3    */
+            return (false); /* REND3    */
         }
     }
 
@@ -220,7 +220,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
 
     td_variance(ip, base);
 
-    return true;
+    return (true);
 }
 
 /* REND14: the VHF range: B0 = UNIT(RCLP) (complemented if the CSM is
@@ -253,7 +253,7 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_INCORFLG))
     {
-        return false;
+        return (false);
     }
 
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad();
@@ -265,10 +265,10 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
     if (agc_dp_sub(ip, agc_dp_shr(agc_dp_from_sp(p->rmax), 10), td.n49disp[0]) <
         0)
     {
-        return true;
+        return (true);
     }
 
-    return agc_dp_sub(ip, agc_dp_from_sp(p->vmax), td.n49disp[1]) < 0;
+    return (agc_dp_sub(ip, agc_dp_from_sp(p->vmax), td.n49disp[1]) < 0);
 }
 
 /* ---- the R22 job --------------------------------------------------------- */
@@ -277,7 +277,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_exec_prio_change(TD_PRIO26);
@@ -285,14 +285,14 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_mrkbuf2(0, TD_NEG3);
     td.vhftime = rz_loadtime();
     rz_phase(2, 04022); /* REND1    */
 
-    return rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK);
+    return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
 
 /* REND1 / REND3 as a job: GRP2PC, WAITONE, then look for a mark (REND1)
@@ -301,14 +301,14 @@ static agc_status_t td_rend1(void)
 {
     rz_phase(2, 04022);
 
-    return rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK);
+    return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
 
 static agc_status_t td_rend3(void)
 {
     rz_phase(2, 04022);
 
-    return rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF);
+    return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF));
 }
 
 /* REND1A / REND2: a mark in MRKBUF2 (first word not negative) is taken
@@ -317,12 +317,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_erase_mrkbuf2(0) < 0)
     {
-        return td_rend3(); /* REND3A   */
+        return (td_rend3()); /* REND3A   */
     }
 
     agc_inhint();
@@ -338,7 +338,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_SOURCFLG, false); /* optics   */
     rz_phase(2, 04022);
 
-    return agc_job_rendezvous_tracking_data_csm_incorporate(ctx); /* REND4 */
+    return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
 }
 
 /* REND3 after WAITONE: with VHF ranging on (VHFRFLAG) and a minute since
@@ -348,7 +348,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -359,7 +359,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 
     if (!agc_flag_test(AGC_FLAG_VHFRFLAG) || d < 0)
     {
-        return agc_job_rendezvous_tracking_data_csm_mark(ctx); /* REND1A */
+        return (agc_job_rendezvous_tracking_data_csm_mark(ctx)); /* REND1A */
     }
 
     agc_inhint();
@@ -378,10 +378,10 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
-        return st;
+        return (st);
     }
 
-    return rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE);
+    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE));
 }
 
 /* RANGERD after RADSTALL: bad: LIGHTON (tracker lamp when the reading was
@@ -391,7 +391,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st;
@@ -401,21 +401,21 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
         st         = (td.vhfrange != 0) ? agc_svc_trfailon() : AGC_STATUS_OK;
         td.vhftime = rz_marktime(); /* LIGHTON  */
 
-        return (st != AGC_STATUS_OK) ? st : td_rend1();
+        return ((st != AGC_STATUS_OK) ? st : td_rend1());
     }
 
     st = agc_svc_trfailof();
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (td.rm == 0U)
     {
         td.vhftime = rz_marktime(); /* LIGHTON +4 */
 
-        return td_rend1();
+        return (td_rend1());
     }
 
     agc_interp_t ip;
@@ -433,7 +433,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_SOURCFLG, true);
     td.vhftime = rz_marktime();
 
-    return agc_job_rendezvous_tracking_data_csm_incorporate(ctx); /* REND4 */
+    return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
 }
 
 /* VHFREAD (p.587): the radar RUPT of the CSM. Nothing when SKIPVHF is set
@@ -444,7 +444,7 @@ agc_status_t agc_rendz_vhf_read(void)
 {
     if (agc_flag_test(AGC_FLAG_SKIPVHF))
     {
-        return AGC_STATUS_OK; /* TASKOVER */
+        return (AGC_STATUS_OK); /* TASKOVER */
     }
 
     agc_imu_device_t dev = AGC_IMU_DEV_RADAR;
@@ -453,7 +453,7 @@ agc_status_t agc_rendz_vhf_read(void)
     {
         td.vhfrange = 0; /* BYPASS1  */
 
-        return agc_imu_badend(dev);
+        return (agc_imu_badend(dev));
     }
 
     td.rm = (uint16_t) (agc_erase_rnrad() & 077777u);
@@ -462,12 +462,12 @@ agc_status_t agc_rendz_vhf_read(void)
 
     if (dg == 0U)
     {
-        return agc_imu_goodend(dev); /* VHFGOOD  */
+        return (agc_imu_goodend(dev)); /* VHFGOOD  */
     }
 
     td.vhfrange = (agc_dp_t) dg; /* BYPASS   */
 
-    return agc_imu_badend(dev);
+    return (agc_imu_badend(dev));
 }
 
 /* REND4 / CSMUPP / REND5: both vehicles to MARKTIME, the vehicle being
@@ -482,7 +482,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_VINTFLAG, !csm); /* the other vehicle   */
@@ -496,7 +496,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_VINTFLAG, csm);
@@ -517,7 +517,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
         st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos); /* LMPOS    */
     }
 
-    return st;
+    return (st);
 }
 
 /* The incorporation passes from REND7 (or, after a noun 49 PROCEED, from
@@ -538,19 +538,19 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
             }
             else if (!td_optics_mark(ip, &st))
             {
-                return (st != AGC_STATUS_OK) ? st : td_rend3();
+                return ((st != AGC_STATUS_OK) ? st : td_rend3());
             }
 
             bool big = (st == AGC_STATUS_OK) && td_incorp1(ip, &st);
 
             if (st != AGC_STATUS_OK)
             {
-                return st;
+                return (st);
             }
 
             if (big)
             {
-                return agc_job_rendezvous_tracking_data_csm_display(ctx);
+                return (agc_job_rendezvous_tracking_data_csm_display(ctx));
             }
         }
 
@@ -560,21 +560,21 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         if (agc_flag_test(AGC_FLAG_SOURCFLG))
         { /* REND16   */
             agc_erase_set_vhfcnt((agc_sp_t) (agc_erase_vhfcnt() + 1));
 
-            return td_rend1();
+            return (td_rend1());
         }
 
         if (!agc_flag_test(AGC_FLAG_INCORFLG))
         { /* REND17   */
             agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
-            return td_rend3();
+            return (td_rend3());
         }
 
         td.x2 = td_shiftndx();
@@ -588,11 +588,11 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
+    return (AGC_STATUS_NO_CONVERGE); /* step bound exhausted */
 }
 
 /* REND4 .. REND6, then the passes.                                       */
@@ -601,7 +601,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -611,7 +611,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     rz_flag_put(AGC_FLAG_ORBWFLAG, false);
@@ -628,7 +628,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(
     rz_flag_put(AGC_FLAG_RENDWFLG, true); /* REND6    */
     td.rclp = agc_vec_sub(&ip, td.lempos, td.csmpos);
 
-    return td_passes(ctx, &ip, false);
+    return (td_passes(ctx, &ip, false));
 }
 
 /* ---- RENDISP (pp.584-585): noun 49 (|dR|, |dV|, source 1 optics / 2
@@ -637,7 +637,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     td.n49disp[2] = agc_flag_test(AGC_FLAG_SOURCFLG) ? 2 : 1;
@@ -648,10 +648,10 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT);
+    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT));
 }
 
 /* RENDISP2: V06N49 (PRIODSP): TERMINATE exits P20 (V56), PROCEED
@@ -660,13 +660,13 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
-                    AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_PROCEED,
-                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_RECYCLE);
+    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
+                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_PROCEED,
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_RECYCLE));
 }
 
 agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(
@@ -674,12 +674,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     td.tempor1 = -1;
 
-    return AGC_STATUS_OK; /* ENDOFJOB */
+    return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
 agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(
@@ -687,12 +687,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     td.tempor1 = 1;
 
-    return AGC_STATUS_OK; /* ENDOFJOB */
+    return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
 /* RENDISP7: wait for the answer; PROCEED: REND12; RECYCLE (RENDISP3): a
@@ -702,12 +702,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (td.tempor1 == 0)
     {
-        return rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT);
+        return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT));
     }
 
     if (td.tempor1 < 0)
@@ -716,12 +716,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
 
         agc_interp_init(&ip);
 
-        return td_passes(ctx, &ip, true);
+        return (td_passes(ctx, &ip, true));
     }
 
     if (agc_flag_test(AGC_FLAG_SOURCFLG))
     {
-        return td_rend1();
+        return (td_rend1());
     }
 
     agc_inhint();
@@ -729,7 +729,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
     agc_erase_set_mrkbuf(2, 0, TD_EMPTY);
     agc_relint();
 
-    return td_rend3(); /* RENDISP4 */
+    return (td_rend3()); /* RENDISP4 */
 }
 
 /* N49DISP +index (index 0 |dR|, 1 |dV|, 2 source code) for noun 49.     */
@@ -737,10 +737,10 @@ agc_dp_t rz_csm_n49disp(int index)
 {
     if (!AGC_ASSERT(index >= 0 && index < 3))
     {
-        return 0;
+        return (0);
     }
 
-    return td.n49disp[index];
+    return (td.n49disp[index]);
 }
 
 void rz_set_csm_n49disp(int index, agc_dp_t v)

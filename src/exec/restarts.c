@@ -38,7 +38,7 @@ static uint16_t findtime(int group, int32_t dt)
 {
     if (!AGC_ASSERT(dt >= 0 && dt <= (int32_t) RS_TIME1))
     {
-        return RS_SOON_CS;
+        return (RS_SOON_CS);
     }
 
     uint32_t now     = agc_time_now_cs() & RS_TIME1;
@@ -52,10 +52,10 @@ static uint16_t findtime(int group, int32_t dt)
 
     if (!AGC_ASSERT(left <= (int32_t) RS_TIME1))
     {
-        return RS_SOON_CS;
+        return (RS_SOON_CS);
     }
 
-    return (uint16_t) left;
+    return ((uint16_t) left);
 }
 
 /* ITSAJOB / CHKNOVAC / ITSNOVAC (C p.1416): positive priority FINDVAC,
@@ -64,15 +64,15 @@ static agc_status_t start_job(int16_t prdt, agc_job_id_t job)
 {
     if (!AGC_ASSERT(prdt != 0) || !AGC_ASSERT(job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (prdt > 0)
     {
-        return agc_exec_findvac((agc_prio_t) prdt, job);
+        return (agc_exec_findvac((agc_prio_t) prdt, job));
     }
 
-    return agc_exec_novac((agc_prio_t) (-prdt), job);
+    return (agc_exec_novac((agc_prio_t) (-prdt), job));
 }
 
 /* ITSLGCL2 / LONGCLCL (C pp.1417-1418): LONGTIME = dt - (TIME2,TIME1 -
@@ -83,7 +83,7 @@ static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
     if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
         !AGC_ASSERT(dt_cs < AGC_TIME_MODULUS_CS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint32_t elapsed =
@@ -92,10 +92,10 @@ static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
 
     if (left > 0)
     {
-        return agc_waitlist_longcall((uint32_t) left, task);
+        return (agc_waitlist_longcall((uint32_t) left, task));
     }
 
-    return agc_waitlist_call(RS_SOON_CS, task); /* IMEDIATE -3      */
+    return (agc_waitlist_call(RS_SOON_CS, task)); /* IMEDIATE -3      */
 }
 
 /* TIMETEST / ITSINDIR / ITSWTLST (C pp.1415, 1418): a table task.     */
@@ -103,7 +103,7 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
 {
     if (!AGC_ASSERT(e != 0) || !AGC_ASSERT(e->task != AGC_TASK_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t delay = RS_SOON_CS; /* -0: IMEDIATE      */
@@ -119,7 +119,7 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         delay = findtime(group, dt);
@@ -128,11 +128,11 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
     {
         if (!AGC_ASSERT(e->dtsrc == RST_DT_IMMEDIATE))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
-    return agc_waitlist_call(delay, e->task);
+    return (agc_waitlist_call(delay, e->task));
 }
 
 /* CONTBL2 (C p.1417): restart one table entry.                        */
@@ -140,7 +140,7 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
 {
     if (!AGC_ASSERT(e != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_NOT_FOUND;
@@ -170,13 +170,13 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
              * address 0. Nothing is restarted.                             */
             if (!AGC_ASSERT(e->kind != AGC_RESTART_NONE))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             break;
     }
 
-    return st;
+    return (st);
 }
 
 /* GETPART2 / ITSATBL / ITSEVEN / PHSPART2 (C pp.1414-1419): the fixed
@@ -186,12 +186,12 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
 {
     if (!AGC_ASSERT(phase >= 1 && phase <= (int) RS_LOW7))
     {
-        return AGC_STATUS_BAD_ARG; /* phase 0: CCS hole */
+        return (AGC_STATUS_BAD_ARG); /* phase 0: CCS hole */
     }
 
     if (phase == 1)
     { /* X.1: last display */
-        return agc_exec_findvac(RS_PRIO14, AGC_JOB_INITDSP);
+        return (agc_exec_findvac(RS_PRIO14, AGC_JOB_INITDSP));
     }
 
     rst_entry_t  e;
@@ -214,7 +214,7 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
         st = (st == AGC_STATUS_OK) ? st2 : st;
     }
 
-    return st;
+    return (st);
 }
 
 /* ITSAVAR (C p.1414): type C -- job, task or LONGCALL from PHSNAMEn.   */
@@ -223,19 +223,19 @@ static agc_status_t restart_type_c(int group, uint16_t tempphs,
 {
     if (!AGC_ASSERT(s != 0) || !AGC_ASSERT((tempphs & RS_TYPEB) == 0U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int cjw = (int) (tempphs & 07U) - 2; /* AD MINUS2 / CCS   */
 
     if (cjw > 0)
     { /* ITSLNGCL          */
-        return start_long(s->long_dt_cs, s->task);
+        return (start_long(s->long_dt_cs, s->task));
     }
 
     if (cjw == 0)
     { /* ITSAJOB           */
-        return start_job(s->prdt, s->job);
+        return (start_job(s->prdt, s->job));
     }
 
     uint16_t delay = RS_SOON_CS; /* ITSAWAIT          */
@@ -245,7 +245,7 @@ static agc_status_t restart_type_c(int group, uint16_t tempphs,
         delay = findtime(group, s->prdt);
     }
 
-    return agc_waitlist_call(delay, s->task);
+    return (agc_waitlist_call(delay, s->task));
 }
 
 /* RESTARTS (C p.1414 / L p.1303): restart group `group` from its phase. */
@@ -253,19 +253,19 @@ agc_status_t agc_restart_group(int group)
 {
     if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t tempphs = phase_word(group);
 
     if (tempphs == 0U)
     {
-        return AGC_STATUS_NOT_FOUND; /* group inactive    */
+        return (AGC_STATUS_NOT_FOUND); /* group inactive    */
     }
 
     if ((tempphs & RS_VARBITS) == 0U)
     {
-        return restart_table(group, (int) tempphs, false);
+        return (restart_table(group, (int) tempphs, false));
     }
 
     phase_var_store_t s;
@@ -273,18 +273,18 @@ agc_status_t agc_restart_group(int group)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((tempphs & RS_TYPEB) == 0U)
     {
-        return restart_type_c(group, tempphs, &s);
+        return (restart_type_c(group, tempphs, &s));
     }
 
     st = start_job(s.prdt, s.job); /* ITSLIKEB          */
     agc_status_t st2 = restart_table(group, (int) (tempphs & RS_LOW7), true);
 
-    return (st == AGC_STATUS_OK) ? st2 : st;
+    return ((st == AGC_STATUS_OK) ? st2 : st);
 }
 
 /* NXTRST / PACTIVE / PINACT (FRESH_START C p.189 / L p.218): restart
@@ -311,8 +311,8 @@ agc_status_t agc_phase_restart_all(void)
 
     if (!AGC_ASSERT(result != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return any ? result : AGC_STATUS_NOT_FOUND;
+    return (any ? result : AGC_STATUS_NOT_FOUND);
 }

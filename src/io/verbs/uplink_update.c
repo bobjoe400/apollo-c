@@ -90,10 +90,10 @@ uint16_t agc_uplink_update_dnword(int idx)
 {
     if (!AGC_ASSERT(idx >= 0 && idx < UP_BLOCK))
     {
-        return 0;
+        return (0);
     }
 
-    return up[idx];
+    return (up[idx]);
 }
 
 /* Target of an ECADR load/write into COMPNUMB..UPBUFF +19D (0..23) or
@@ -103,7 +103,7 @@ agc_status_t agc_uplink_update_write(int idx, uint16_t word)
     if (!AGC_ASSERT(idx >= 0 && idx <= UP_UPTEMP) ||
         !AGC_ASSERT(word <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (idx == UP_UPTEMP)
@@ -115,27 +115,27 @@ agc_status_t agc_uplink_update_write(int idx, uint16_t word)
         up[idx] = word;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 int agc_uplink_update_target(void)
 {
     if (!AGC_ASSERT(load_target >= UP_UPBUFF && load_target <= UP_UPTEMP))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return load_target;
+    return (load_target);
 }
 
 agc_sp_t agc_erase_upsvflag(void)
 {
     if (!AGC_ASSERT(upsvflag >= -2 && upsvflag <= 2))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return upsvflag;
+    return (upsvflag);
 }
 
 void agc_erase_set_upsvflag(agc_sp_t v)
@@ -154,10 +154,10 @@ agc_status_t agc_uplink_update_fresh_start(void)
 
     if (!AGC_ASSERT(upsvflag == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Signed value of a 15-bit ones'-complement word.                        */
@@ -165,10 +165,10 @@ static int32_t ones_value(uint16_t w)
 {
     if (!AGC_ASSERT(w <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w;
+    return (((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w);
 }
 
 /* DP value (cs, 2^28) of UPBUFF +k, +k+1.                                 */
@@ -176,11 +176,11 @@ static int32_t upbuff_dp(int k)
 {
     if (!AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ones_value(up[UP_UPBUFF + k]) * 040000 +
-           ones_value(up[UP_UPBUFF + k + 1]);
+    return (ones_value(up[UP_UPBUFF + k]) * 040000 +
+            ones_value(up[UP_UPBUFF + k + 1]));
 }
 
 /* Store a DP value into UPBUFF +k, +k+1 (both words take its sign).      */
@@ -206,7 +206,7 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dsky_cont_t cont = {AGC_JOB_UPLINK_UPDATE_TERMINATE,
@@ -214,8 +214,8 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
                             AGC_JOB_UPLINK_UPDATE_LOAD};
     uint8_t         noun = (stage == UP_VERIFY) ? 2u : 1u; /* UPVRFYNV / UPLOADNV */
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun),
-                            &cont);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun),
+                             &cont));
 }
 
 /* OHWELL2: request component UPCOUNT (UPBUFF +UPCOUNT-1).                 */
@@ -223,13 +223,13 @@ static agc_status_t request_component(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(up[UP_UPCOUNT] >= 1u && up[UP_UPCOUNT] <= UP_MAX_COMP))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     stage       = UP_DATA;
     load_target = UP_UPBUFF + (int) up[UP_UPCOUNT] - 1;
 
-    return up_display(ctx);
+    return (up_display(ctx));
 }
 
 /* UPVERIFY: flash V21N02 for a correction index or V33.                  */
@@ -240,10 +240,10 @@ static agc_status_t request_verify(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(up[UP_COMPNUMB] >= 2u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return up_display(ctx);
+    return (up_display(ctx));
 }
 
 /* UPACTOFF: uplink activity light off (channel 11 bit 3).                 */
@@ -259,7 +259,7 @@ static agc_status_t up_error_exit(void)
     agc_dsky_falton();
     upactoff();
 
-    return agc_dsky_endext();
+    return (agc_dsky_endext());
 }
 
 /* ---- entry --------------------------------------------------------------- */
@@ -271,21 +271,21 @@ static bool update_allowed(void)
 
     if (mm == 0 || mm == MODREG_NEG0)
     {
-        return true; /* P00 or fresh start   */
+        return (true); /* P00 or fresh start   */
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return false; /* UPERROR              */
+        return (false); /* UPERROR              */
     }
 
     if (!AGC_ASSERT(mm > 0))
     {
-        return false;
+        return (false);
     }
 
     /* CS FLAGWRD5, MASK BIT8: COMPUTER flag (set: the computer is the CMC). */
-    return (agc_flagword_get(5) & BIT8) != 0u && mm == 2;
+    return ((agc_flagword_get(5) & BIT8) != 0u && mm == 2);
 }
 
 /* UPPART2: protect group 6 (a restart restores the old mode and exits),
@@ -304,7 +304,7 @@ static agc_status_t uppart2(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (up[UP_UPVERB] == 1u || up[UP_UPVERB] == 2u)
@@ -312,12 +312,12 @@ static agc_status_t uppart2(agc_job_ctx_t *ctx)
         stage       = UP_COUNT;
         load_target = UP_UPBUFF;
 
-        return up_display(ctx);
+        return (up_display(ctx));
     }
 
     up[UP_COMPNUMB] = 2; /* V70, V73            */
 
-    return request_component(ctx);
+    return (request_component(ctx));
 }
 
 /* V70UPDAT .. V73UPDAT (C p.1491): UPVERB = verb - 70.                    */
@@ -325,7 +325,7 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 70 && verb <= 73))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     upverbsv = (uint16_t) (verb - 70);
@@ -334,12 +334,12 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 
     if (!ok)
     {
-        return st;
+        return (st);
     }
 
     if (!update_allowed())
     {
-        return up_error_exit();
+        return (up_error_exit());
     }
 
     agc_sp_t mm = agc_erase_modreg();
@@ -349,7 +349,7 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
     up[UP_UPVERB]  = upverbsv;
     up[UP_UPCOUNT] = 1;
 
-    return uppart2(ctx);
+    return (uppart2(ctx));
 }
 
 /* ---- operator responses ------------------------------------------------- */
@@ -360,12 +360,12 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (stage != UP_VERIFY)
     {
-        return up_display(ctx);
+        return (up_display(ctx));
     }
 
     agc_inhint(); /* UPSTORE             */
@@ -379,11 +379,11 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 
     if (up[UP_UPVERB] == 3u)
     { /* UPEND73             */
-        return agc_job_timedidr(ctx);
+        return (agc_job_timedidr(ctx));
     }
 
-    return agc_extverb_schedule(UP_PRIO, AGC_JOB_UPLINK_UPDATE_EXECUTE,
-                                true); /* UPFNDVAC */
+    return (agc_extverb_schedule(UP_PRIO, AGC_JOB_UPLINK_UPDATE_EXECUTE,
+                                 true)); /* UPFNDVAC */
 }
 
 /* Data on the V21N01 (count): 3 <= II <= 20D, else ask again.            */
@@ -393,13 +393,13 @@ static agc_status_t got_count(agc_job_ctx_t *ctx)
 
     if (ii < UP_MIN_COMP || ii > UP_MAX_COMP)
     {
-        return up_display(ctx); /* OHWELL1 +2          */
+        return (up_display(ctx)); /* OHWELL1 +2          */
     }
 
     up[UP_COMPNUMB] = (uint16_t) ii;
     up[UP_UPCOUNT]++; /* INCR UPCOUNT        */
 
-    return request_component(ctx);
+    return (request_component(ctx));
 }
 
 /* Data on the V21N02: a legal component index -> reload that component. */
@@ -409,13 +409,13 @@ static agc_status_t got_index(agc_job_ctx_t *ctx)
 
     if (k <= 0 || k > (int32_t) up[UP_COMPNUMB])
     {
-        return request_verify(ctx);
+        return (request_verify(ctx));
     }
 
     stage       = UP_DATA;
     load_target = UP_UPBUFF + (int) k - 1; /* OHWELL2 +2          */
 
-    return up_display(ctx);
+    return (up_display(ctx));
 }
 
 /* Data or V32 on a load (CK4V32 and the branch after it).                */
@@ -427,32 +427,32 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
-        return up_error_exit();
+        return (up_error_exit());
     }
 
     if (verb == RECYCLE_VERB)
     { /* V32: ask again      */
-        return up_display(ctx);
+        return (up_display(ctx));
     }
 
     if (stage == UP_COUNT)
     {
-        return got_count(ctx);
+        return (got_count(ctx));
     }
 
     if (stage == UP_VERIFY)
     {
-        return got_index(ctx);
+        return (got_index(ctx));
     }
 
     if ((int32_t) up[UP_COMPNUMB] - (int32_t) up[UP_UPCOUNT] <= 0)
     { /* all received        */
-        return request_verify(ctx);
+        return (request_verify(ctx));
     }
 
     up[UP_UPCOUNT]++;
 
-    return request_component(ctx);
+    return (request_component(ctx));
 }
 
 /* ---- the update ------------------------------------------------------- */
@@ -463,7 +463,7 @@ agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 :
@@ -472,14 +472,14 @@ agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_telem_select_list(0);
     upactoff();
     agc_phase_kill(UP_GROUP); /* -PHASE6 = -0        */
 
-    return agc_dsky_endext();
+    return (agc_dsky_endext());
 }
 
 /* UPOUT: release INTSTALL (INTWAKEU, which also finishes a state vector
@@ -494,10 +494,10 @@ static agc_status_t upout(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_job_uplink_update_terminate(ctx);
+    return (agc_job_uplink_update_terminate(ctx));
 }
 
 /* UPERROUT: operator error, then UPOUT.                                    */
@@ -505,7 +505,7 @@ static agc_status_t up_error_out(agc_job_ctx_t *ctx)
 {
     agc_dsky_falton();
 
-    return upout(ctx);
+    return (upout(ctx));
 }
 
 /* TIMEDIDR: add the incrementer in UPBUFF +8D (zeroed so a restart does
@@ -529,7 +529,7 @@ static bool timedidr(void)
     agc_relint();
     agc_phase_change(UP_GROUP, UP_PHASE_STORE);
 
-    return ok;
+    return (ok);
 }
 
 /* TIMEDIDL: old clock into UPBUFF +18D (kept for the restart), quick
@@ -539,7 +539,7 @@ static bool timedidl(void)
     set_upbuff_dp(18, (int32_t) agc_time_now_cs() & (int32_t) 037777777);
     agc_phase_newphase(UP_GROUP, UP_PHASE_CLOCK, false);
 
-    return timedidr();
+    return (timedidr());
 }
 
 /* V70 after the clock: TETCSM, TETLEM -= delta; TEPHEM += delta.         */
@@ -551,7 +551,7 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_tetcsm((agc_dp_t) (tc - delta)); /* DAS TETCSM          */
@@ -560,7 +560,7 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
     set_upbuff_dp(0, 0);
     agc_phase_change(UP_GROUP, UP_PHASE_STORE);
 
-    return upout(ctx);
+    return (upout(ctx));
 }
 
 /* Restart 6.5 (TIMEDIDR): finish the clock change, then the rest of the
@@ -570,7 +570,7 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(up[UP_UPVERB] == 0u || up[UP_UPVERB] == 3u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool ok = (up[UP_UPVERB] == 3u) ? timedidl() : timedidr();
@@ -582,10 +582,10 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
             agc_dsky_falton();
         }
 
-        return agc_job_uplink_update_terminate(ctx);
+        return (agc_job_uplink_update_terminate(ctx));
     }
 
-    return ok ? v70_tail(ctx) : up_error_out(ctx);
+    return (ok ? v70_tail(ctx) : up_error_out(ctx));
 }
 
 /* UPEND71: II-2 words from UPBUFF +2 into consecutive registers from the
@@ -597,12 +597,12 @@ static agc_status_t upend71(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(n >= 1 && n <= UP_MAX_COMP - 2))
     {
-        return up_error_out(ctx);
+        return (up_error_out(ctx));
     }
 
     if ((((ecadr & LOW8) + (uint16_t) (n - 1)) & BIT9) != 0u)
     {
-        return up_error_out(ctx); /* next EBANK          */
+        return (up_error_out(ctx)); /* next EBANK          */
     }
 
     for (int i = n - 1; i >= 0; i--)
@@ -612,11 +612,11 @@ static agc_status_t upend71(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return up_error_out(ctx);
+            return (up_error_out(ctx));
         }
     }
 
-    return upout(ctx);
+    return (upout(ctx));
 }
 
 /* UPEND72: (II-1)/2 pairs ECADR, word from UPBUFF +1; II must be odd.     */
@@ -624,14 +624,14 @@ static agc_status_t upend72(agc_job_ctx_t *ctx)
 {
     if ((up[UP_COMPNUMB] & BIT1) == 0u)
     {
-        return up_error_out(ctx);
+        return (up_error_out(ctx));
     }
 
     int pairs = ((int) up[UP_COMPNUMB] - 1) / 2;
 
     if (!AGC_ASSERT(pairs >= 1 && pairs <= UP_MAX_COMP / 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int j = pairs - 1; j >= 0; j--)
@@ -641,11 +641,11 @@ static agc_status_t upend72(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return up_error_out(ctx);
+            return (up_error_out(ctx));
         }
     }
 
-    return upout(ctx);
+    return (upout(ctx));
 }
 
 /* UPJOB / UPWAKE / UPPART3: hold INTSTALL (a state vector may change),
@@ -654,12 +654,12 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(up[UP_UPVERB] <= 3u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (up[UP_UPVERB] == 3u)
     { /* restart in UPEND73  */
-        return agc_job_timedidr(ctx);
+        return (agc_job_timedidr(ctx));
     }
 
     agc_status_t st =
@@ -667,7 +667,7 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* sleeps in INTSTALL  */
+        return (AGC_STATUS_OK); /* sleeps in INTSTALL  */
     }
 
     agc_phase_change(UP_GROUP, UP_PHASE_STORE);
@@ -677,8 +677,8 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
     { /* UPEND70             */
         set_upbuff_dp(8, -upbuff_dp(0));
 
-        return timedidl() ? v70_tail(ctx) : up_error_out(ctx);
+        return (timedidl() ? v70_tail(ctx) : up_error_out(ctx));
     }
 
-    return (up[UP_UPVERB] == 1u) ? upend71(ctx) : upend72(ctx);
+    return ((up[UP_UPVERB] == 1u) ? upend71(ctx) : upend72(ctx));
 }

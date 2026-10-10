@@ -53,12 +53,12 @@ agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->xsq_n1 >= 0 && ctx->xsq_n1 <= AGC_TP_BITS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const int n1 = ctx->xsq_n1;
@@ -96,7 +96,7 @@ agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     m      = agc_conic_mdmpr_(ip, m, ctx->inv_root_mu); /* DMPR 1/ROOTMU        */
     ctx->t = agc_conic_mstore_(m);                 /* T 2^28               */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* First half of NEWSTATE / KEPCONVG (p. 1281, 1287): terminal position
@@ -105,12 +105,12 @@ static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     agc_tp_t m = agc_conic_mload_(ctx->r1); /* DLOAD R1, SR4R       */
@@ -136,7 +136,7 @@ static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
     r2 = agc_vec_shl(ip, r2, 1); /* VSL1, VAD            */
     r2 = agc_vec_add(ip, r2, fpart);
 
-    return agc_vec_shl(ip, r2, 4); /* VSL4                 */
+    return (agc_vec_shl(ip, r2, 4)); /* VSL4                 */
 }
 
 /* Second half of NEWSTATE (LAMENTER) / KEPCONVG: terminal velocity from the
@@ -148,12 +148,12 @@ static agc_vec_t lamenter_velocity(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(n >= 0 && n <= AGC_TP_BITS))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     agc_tp_t m = agc_conic_mload_(ctx->xi);
@@ -177,7 +177,7 @@ static agc_vec_t lamenter_velocity(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 
     v2 = agc_vec_add(ip, v2, fdot); /* VAD, VSL8           */
 
-    return agc_vec_shl(ip, v2, 8);
+    return (agc_vec_shl(ip, v2, 8));
 }
 
 /*
@@ -190,12 +190,12 @@ agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(v2vec != NULL && r2mag >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int      n = 0;
@@ -204,7 +204,7 @@ agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ctx->magvec2 = agc_conic_mstore_(m);                          /* STODL R2 */
     *v2vec       = lamenter_velocity(ip, ctx, ctx->magvec2, n, false);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -217,17 +217,17 @@ agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(r2vec != NULL && v2vec != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *r2vec = newstate_position(ip, ctx); /* VSL4 PUSH, ABVAL     */
 
-    return agc_conic_lamenter_(ip, ctx, agc_vec_abval(ip, *r2vec), v2vec);
+    return (agc_conic_lamenter_(ip, ctx, agc_vec_abval(ip, *r2vec), v2vec));
 }
 
 /*
@@ -240,12 +240,12 @@ agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rcv != NULL && vcv != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *rcv = newstate_position(ip, ctx); /* STORE RCV            */
@@ -256,5 +256,5 @@ agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     *vcv = lamenter_velocity(ip, ctx, rcnorm, n2, true);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

@@ -50,10 +50,10 @@ uint16_t agc_erase_radmodes(void)
 {
     if (!AGC_ASSERT(radmodes <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return radmodes;
+    return (radmodes);
 }
 
 void agc_erase_set_radmodes(uint16_t v)
@@ -66,32 +66,32 @@ void agc_erase_set_radmodes(uint16_t v)
 
 agc_sp_t agc_erase_m11(void)
 {
-    return m11;
+    return (m11);
 }
 
 agc_sp_t agc_erase_m21(void)
 {
-    return m21;
+    return (m21);
 }
 
 agc_sp_t agc_erase_m22(void)
 {
-    return m22;
+    return (m22);
 }
 
 agc_sp_t agc_erase_m31(void)
 {
-    return m31;
+    return (m31);
 }
 
 agc_sp_t agc_erase_m32(void)
 {
-    return m32;
+    return (m32);
 }
 
 agc_sp_t agc_erase_cosmg(void)
 {
-    return cosmg;
+    return (cosmg);
 }
 
 /* A CDU counter word as CAE reads it: ones' complement SP, scaled at pi
@@ -100,17 +100,17 @@ static agc_sp_t cdu_sp(uint16_t cdu)
 {
     if (!AGC_ASSERT(cdu <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu;
 
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) v;
+    return ((agc_sp_t) v);
 }
 
 /* EXTEND / MP: upper word of the SP x SP product.                         */
@@ -120,10 +120,10 @@ static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT(p >= AGC_DP_MIN && p <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_high(p);
+    return (agc_dp_high(p));
 }
 
 /* GPMATRIX / DAPT4S (p.188): the SP matrix elements for the LM DAP.      */
@@ -141,10 +141,10 @@ agc_status_t agc_t4_gimbal_matrix(void)
 
     if (!AGC_ASSERT(m11 >= AGC_SP_MIN && m21 >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDDAPT4 = RESUME             */
+    return (AGC_STATUS_OK); /* ENDDAPT4 = RESUME             */
 }
 
 static void ch_clear(int chan, uint16_t bits)
@@ -200,12 +200,12 @@ static bool t4_rrcduchk(void)
 
     if (chg == 0u)
     {
-        return true; /* on to RRGIMON         */
+        return (true); /* on to RRGIMON         */
     }
 
     if ((radmodes & BIT2) != 0u)
     {
-        return false; /* not in auto mode      */
+        return (false); /* not in auto mode      */
     }
 
     radmodes = (uint16_t) (radmodes ^ BIT7);
@@ -220,10 +220,10 @@ static bool t4_rrcduchk(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return false;
+        return (false);
     }
 
-    return true;
+    return (true);
 }
 
 /* RRAUTCHK (p.182): RR power-on-auto (channel 33 bit 2), then RRCDUCHK,
@@ -245,10 +245,10 @@ agc_status_t agc_t4_rr_monitor(void)
 
             if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
-            return agc_t4_gimbal_matrix();
+            return (agc_t4_gimbal_matrix());
         }
 
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT2); /* RRCDUCHK -3    */
@@ -259,5 +259,5 @@ agc_status_t agc_t4_rr_monitor(void)
         t4_rrgimon();
     }
 
-    return agc_t4_gimbal_matrix();
+    return (agc_t4_gimbal_matrix());
 }

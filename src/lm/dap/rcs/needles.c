@@ -28,12 +28,12 @@ agc_status_t lm_dap_altdsply(void)
 
     if ((d->rcsflags & LM_RCS_DSPLYALT) != 0u)
     {
-        return lm_dap_needler();
+        return (lm_dap_needler());
     }
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     { /* total attitude error   */
-        return lm_dap_dsplytot();
+        return (lm_dap_dsplytot());
     }
 
     d->ak[1] = (agc_sp_t) -d->qerror; /* error complements      */
@@ -42,15 +42,15 @@ agc_status_t lm_dap_altdsply(void)
 
     if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
@@ -74,15 +74,15 @@ agc_status_t lm_dap_dsplytot(void)
 
     if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
@@ -104,15 +104,15 @@ static agc_status_t needle11(lm_dap_t *d)
 
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* NEEDLES / DACLOOP (p.1419): meter the change of each display into the
@@ -121,12 +121,12 @@ static agc_status_t needles(lm_dap_t *d)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -158,10 +158,10 @@ static agc_status_t needles(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.            */
@@ -169,7 +169,7 @@ agc_status_t lm_dap_needler(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dap_t *d    = lm_dap_state();
@@ -181,21 +181,21 @@ agc_status_t lm_dap_needler(void)
         { /* first pass         */
             agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
 
-            return needle11(d);
+            return (needle11(d));
         }
 
         agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */
         d->rcsflags = (uint16_t) (d->rcsflags & ~NDL_PASSBITS);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if ((agc_chan_read(012) & NDL_IMUERR) == 0u)
     { /* NEEDLES3           */
         d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* re-init  */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
-    return needles(d);
+    return (needles(d));
 }

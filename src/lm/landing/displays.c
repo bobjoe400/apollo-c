@@ -80,10 +80,10 @@ static agc_sp_t ld_sat(int32_t x)
 
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) r;
+    return ((agc_sp_t) r);
 }
 
 /* MP then DDOUBL (n times): high word of 2^n a b. */
@@ -91,12 +91,12 @@ static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
 {
     if (!AGC_ASSERT(n >= 0 && n <= 2))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int32_t p = (int32_t) a * (int32_t) b * (1 << n);
 
-    return ld_sat(p / 16384);
+    return (ld_sat(p / 16384));
 }
 
 /* DCA x, DDOUBL, DDOUBL: the high word of 4x (DP doubling carries the
@@ -109,17 +109,17 @@ static agc_sp_t ld_ddoubl2(agc_dp_t x)
 
     if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t hi = agc_dp_high(d);
 
     if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return hi;
+    return (hi);
 }
 
 /* DISPRSET / ABORTON (p. 907): remove the inertial data display (and in
@@ -142,7 +142,7 @@ static agc_status_t ld_disprset(void)
     agc_flag_clear(AGC_FLAG_DIDFLAG);
     ld_altpath = LD_NONE;
 
-    return AGC_STATUS_OK; /* TASKOVER       */
+    return (AGC_STATUS_OK); /* TASKOVER       */
 }
 
 /* DATAOUT (p. 899): the word to the ALTM counter; drive the meter. */
@@ -153,12 +153,12 @@ static agc_status_t ld_dataout(uint16_t word)
 
     if (!AGC_ASSERT(word <= 077777u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ld_altpath = LD_NONE;
 
-    return AGC_STATUS_OK; /* TASKOVER       */
+    return (AGC_STATUS_OK); /* TASKOVER       */
 }
 
 /* ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
@@ -185,10 +185,10 @@ static agc_status_t ld_altrout(void)
 
     if (!AGC_ASSERT(w != 0u || ld_altrate < 0)) /* never +0       */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ld_dataout(w);
+    return (ld_dataout(w));
 }
 
 /* OLDDATA .. NEWDATA (pp. 899-900): extrapolate ALTSAVE with ALTRATE by
@@ -210,17 +210,17 @@ static agc_status_t ld_extrapolate(agc_sp_t factor)
 
     if (!AGC_ASSERT(hi >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t w = (uint16_t) (((hi > 0) ? LD_BIT15W : 0u) + (uint16_t) lo);
 
     if (!AGC_ASSERT(lo >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ld_dataout(w);
+    return (ld_dataout(w));
 }
 
 /* ALTOUT +1 (p. 899): altitude. New data from SERVICER (ALTBITS not
@@ -235,20 +235,20 @@ static agc_status_t ld_altout(void)
 
     if (agc_dp_high(g->altbits) < 0)
     {
-        return ld_extrapolate(LD_ARTOA); /* OLDDATA        */
+        return (ld_extrapolate(LD_ARTOA)); /* OLDDATA        */
     }
 
     ld_altsave = g->altbits; /* new data       */
 
     if (!AGC_ASSERT(ld_altsave >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     g->altbits = agc_dp_from_sp(-1); /* -1: extrapolate next pass     */
     agc_sp_t dt9 = agc_lm_dv((agc_dp_t) ld_dt * 16384, 512); /* DV BIT10 */
 
-    return ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2));
+    return (ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2)));
 }
 
 /* Continue at LADQSAVE: ALTROUT +1 or ALTOUT +1. */
@@ -256,20 +256,20 @@ static agc_status_t ld_continue(void)
 {
     if (ld_altpath == LD_ALTROUT)
     {
-        return ld_altrout();
+        return (ld_altrout());
     }
 
     if (ld_altpath == LD_ALTOUT)
     {
-        return ld_altout();
+        return (ld_altout());
     }
 
     if (!AGC_ASSERT(ld_altpath == LD_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SPEEDRUN (pp. 901-902): VVECT = V + G (T - TN) + DELV now, m/cs 2^5;
@@ -299,15 +299,15 @@ static agc_status_t ld_speedrun(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ld_dt >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* DISINDAT (p. 900): does the astronaut wish the analog displays (mode
@@ -317,12 +317,12 @@ static agc_status_t ld_disindat(void)
 {
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_DISPINERT))
     {
-        return ld_disprset(); /* no inertial data requested */
+        return (ld_disprset()); /* no inertial data requested */
     }
 
     if (agc_flag_test(AGC_FLAG_DIDFLAG))
     {
-        return ld_speedrun();
+        return (ld_speedrun());
     }
 
     agc_flag_set(AGC_FLAG_DIDFLAG);
@@ -331,7 +331,7 @@ static agc_status_t ld_disindat(void)
 
     if (agc_flag_test(AGC_FLAG_ALTITUDE_METERS_ONLY))
     {
-        return AGC_STATUS_OK; /* not in the descent         */
+        return (AGC_STATUS_OK); /* not in the descent         */
     }
 
     agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_DISPINERT);
@@ -342,7 +342,7 @@ static agc_status_t ld_disindat(void)
         ld_metr[i] = 0;
     }
 
-    return agc_waitlist_call(8, AGC_TASK_INTLZE);
+    return (agc_waitlist_call(8, AGC_TASK_INTLZE));
 }
 
 /* LANDISP (p. 898): R10 proper. */
@@ -354,7 +354,7 @@ agc_status_t agc_lm_landisp(void)
 
     if (!agc_flag_test(AGC_FLAG_SWANDISP))
     {
-        return ld_disprset();
+        return (ld_disprset());
     }
 
     ld_altpath =
@@ -363,15 +363,15 @@ agc_status_t agc_lm_landisp(void)
 
     if (st != AGC_STATUS_OK || ld_altpath == LD_NONE)
     {
-        return st;
+        return (st);
     }
 
     if (!AGC_ASSERT(ld_altpath != LD_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* resumes at SPEEDRN2        */
+    return (AGC_STATUS_OK); /* resumes at SPEEDRN2        */
 }
 
 /* INTLZE (pp. 900-901): enable the RR error counter; inertial data flag. */
@@ -383,10 +383,10 @@ agc_status_t agc_lm_task_intlze(void)
 
     if (!AGC_ASSERT((w & LD_BIT8) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* VMONITOR (pp. 904-906) for one meter: the increment to send. A
@@ -404,45 +404,46 @@ static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak,
     { /* CHKLASTY      */
         if ((metr > 0 && vel <= 0) || (trak > 0 && vel <= 0))
         {
-            return (agc_sp_t) -mx; /* LASTPOSY +5   */
+            return ((agc_sp_t) -mx); /* LASTPOSY +5   */
         }
 
         if ((metr < 0 && vel >= 0) || (trak < 0 && vel > 0))
         {
-            return (agc_sp_t) mx; /* LASTNEGY +4   */
+            return ((agc_sp_t) mx); /* LASTNEGY +4   */
         }
 
         *trak_new = (vel <= 0) ? -1 : 1; /* NEG/POSVMAXY  */
 
-        return (vel <= 0) ? (agc_sp_t) (-(metr + mx)) : (agc_sp_t) (mx - metr);
+        return ((vel <=
+                 0) ? (agc_sp_t) (-(metr + mx)) : (agc_sp_t) (mx - metr));
     }
 
     if (trak > 0)
     { /* LATVPOS       */
-        return (vel >= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr;
+        return ((vel >= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr);
     }
 
     if (trak < 0)
     { /* LATVNEG       */
-        return (vel <= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr;
+        return ((vel <= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr);
     }
 
     if (metr >= 0)
     {
         if (vel >= 0 || metr - vel - mx <= 0)
         {
-            return (agc_sp_t) (vel - metr); /* LVMINLM       */
+            return ((agc_sp_t) (vel - metr)); /* LVMINLM       */
         }
 
-        return (agc_sp_t) -mx;
+        return ((agc_sp_t) -mx);
     }
 
     if (vel <= 0 || vel - mx - metr <= 0)
     { /* NEGLMLV       */
-        return (agc_sp_t) (vel - metr);
+        return ((agc_sp_t) (vel - metr));
     }
 
-    return (agc_sp_t) mx;
+    return ((agc_sp_t) mx);
 }
 
 /* VMONITOR loop (pp. 904-907): forward, then lateral; ZEROLSTY sends the
@@ -466,10 +467,10 @@ agc_status_t agc_lm_vmonitor(void)
 
     if (!AGC_ASSERT(ld_trak[0] >= -1 && ld_trak[0] <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SPEEDRUN after the pause (pp. 902-904): in the descent, VHY and VHZ
@@ -479,14 +480,14 @@ agc_status_t agc_lm_task_speedrun2(void)
 {
     if (agc_flag_test(AGC_FLAG_ALTITUDE_METERS_ONLY))
     {
-        return ld_continue(); /* not in the descent         */
+        return (ld_continue()); /* not in the descent         */
     }
 
     const agc_guid_lm_t *g = &agc_guid_state()->lm;
 
     if (!AGC_ASSERT(ld_altpath != LD_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int32_t hy = 0;
@@ -514,8 +515,8 @@ agc_status_t agc_lm_task_speedrun2(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ld_continue();
+    return (ld_continue());
 }

@@ -40,7 +40,7 @@ agc_status_t agc_rendezvous_parameter_display_compdisp(
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(refsmmat != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t los = agc_vec_sub(ip, ratt, rone); /* 0D        */
@@ -78,10 +78,10 @@ agc_status_t agc_rendezvous_parameter_display_compdisp(
 
     if (!AGC_ASSERT(rz->range >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* The vehicle axis in stable-member axes (CDUTRIG, *NBSM*): CM +X (R31)
@@ -101,7 +101,7 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
             if (st != AGC_STATUS_OK)
             {
-                return st;
+                return (st);
             }
         }
     }
@@ -111,7 +111,7 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
     *axis_sm = a;
 
-    return st;
+    return (st);
 }
 
 /* COMPDISP and its tail: EXTVBACT bit 5 clear -> ENDEXT; else set bit 12
@@ -124,7 +124,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t refsmmat = agc_erase_refsmmat();
@@ -134,19 +134,19 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     uint16_t x = agc_erase_extvbact();
 
     if ((x & RPD_EXTVBACT_BIT5) == 0U)
     {
-        return rz_endext(); /* YES, DIE  */
+        return (rz_endext()); /* YES, DIE  */
     }
 
     agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
 
-    return rz_continue(AGC_JOB_RENDEZVOUS_PARAMS_UPDATE);
+    return (rz_continue(AGC_JOB_RENDEZVOUS_PARAMS_UPDATE));
 }
 
 /* INTSTALL + INTEGRVS of a base vector to tdec1 (MOONFLAG = MOONTHIS). */
@@ -163,7 +163,7 @@ static agc_status_t rpd_from_base(agc_interp_t *ip, const agc_rendz_t *rz,
     in.moon  = rz_moonthis();
     in.conic = conic;
 
-    return rz_integrvs(ip, &in, AGC_JOB_RENDEZVOUS_PARAMS_UPDATE, o);
+    return (rz_integrvs(ip, &in, AGC_JOB_RENDEZVOUS_PARAMS_UPDATE, o));
 }
 
 /* GETRVN: RONE = RN, VONE = VN; returns PIPTIME. */
@@ -175,10 +175,10 @@ static agc_dp_t rpd_getrvn(agc_rendz_t *rz)
 
     if (!AGC_ASSERT(t >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return t;
+    return (t);
 }
 
 /* ---- CM: HAVEBASE (pp.508-510), every pass ------------------------------
@@ -206,7 +206,7 @@ static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         rz->rone = o.ratt;
@@ -225,10 +225,10 @@ static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rpd_compdisp(ip, rz, o.ratt, o.vatt);
+    return (rpd_compdisp(ip, rz, o.ratt, o.vatt));
 }
 
 /* ---- CM: STATEXTP (p.508), the first pass ------------------------------
@@ -247,7 +247,7 @@ static agc_status_t rpd_csm_statextp(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->baseotp = o.ratt1; /* LM base       */
@@ -255,20 +255,20 @@ static agc_status_t rpd_csm_statextp(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (aveg)
     {
-        return rpd_compdisp(ip, rz, o.ratt, o.vatt);
+        return (rpd_compdisp(ip, rz, o.ratt, o.vatt));
     }
 
     st = rz_integ(ip, RZ_CSMPREC, o.tat, AGC_JOB_RENDEZVOUS_PARAMS_START, &o);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->basethp = o.ratt1; /* CM base       */
     rz->basethv = o.vatt1;
 
-    return rpd_csm_havebase(ip, rz);
+    return (rpd_csm_havebase(ip, rz));
 }
 
 /* ---- LM: GETRVN (p.706) -------------------------------------------------
@@ -290,7 +290,7 @@ static agc_status_t rpd_lm_getrvn(agc_interp_t *ip, agc_rendz_t *rz)
         agc_vec_t            v = agc_vec_shl(ip, agc_vec_mat(ip, g->v_csm,
                                                              &m), 1);
 
-        return rpd_compdisp(ip, rz, r, v);
+        return (rpd_compdisp(ip, rz, r, v));
     }
 
     agc_integ_out_t o;
@@ -298,10 +298,10 @@ static agc_status_t rpd_lm_getrvn(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rpd_compdisp(ip, rz, o.ratt, o.vatt);
+    return (rpd_compdisp(ip, rz, o.ratt, o.vatt));
 }
 
 /* ---- LM: REV83 (pp.704-705), every pass ---------------------------------
@@ -312,7 +312,7 @@ static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (rz_vflag_test(RZ_VF_AVEGFLAG))
     {
-        return rpd_lm_getrvn(ip, rz);
+        return (rpd_lm_getrvn(ip, rz));
     }
 
     agc_integ_out_t o;
@@ -330,7 +330,7 @@ static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rone = o.ratt; /* OTHCONIC      */
@@ -339,10 +339,10 @@ static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rpd_compdisp(ip, rz, o.ratt, o.vatt);
+    return (rpd_compdisp(ip, rz, o.ratt, o.vatt));
 }
 
 /* ---- LM: V83CALL (pp.703-704), the first pass ---------------------------
@@ -356,7 +356,7 @@ static agc_status_t rpd_lm_v83call(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (aveg && rz_vflag_test(RZ_VF_MUNFLAG))
     { /* MUNG?         */
-        return rpd_lm_getrvn(ip, rz);
+        return (rpd_lm_getrvn(ip, rz));
     }
 
     agc_integ_out_t o;
@@ -369,7 +369,7 @@ static agc_status_t rpd_lm_v83call(agc_interp_t *ip, agc_rendz_t *rz)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         rz->basethp = o.ratt1; /* LM base       */
@@ -383,13 +383,13 @@ static agc_status_t rpd_lm_v83call(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->baseotp = o.ratt1; /* CM base       */
     rz->baseotv = o.vatt1;
 
-    return rpd_lm_rev83(ip, rz);
+    return (rpd_lm_rev83(ip, rz));
 }
 
 /* ============================ jobs and task ============================== */
@@ -400,7 +400,7 @@ agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st =
@@ -408,15 +408,15 @@ agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (rz_is_csm())
     {
-        return rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT);
+        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
     }
 
-    return agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT);
+    return (agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT));
 }
 
 /* CM DSPDELAY: bit 12 clear -> DELAYJOB 1 s again; else DISPN5X. */
@@ -424,15 +424,15 @@ agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((agc_erase_extvbact() & RPD_EXTVBACT_BIT12) == 0U)
     {
-        return rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT);
+        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
     }
 
-    return agc_job_rendezvous_params_monitor(ctx);
+    return (agc_job_rendezvous_params_monitor(ctx));
 }
 
 /* LM DSPDELAY task: bit 12 clear -> FIXDELAY 100 again; else NOVAC PRIO5
@@ -441,10 +441,10 @@ agc_status_t agc_task_rendezvous_params_wait(void)
 {
     if ((agc_erase_extvbact() & RPD_EXTVBACT_BIT12) == 0U)
     {
-        return agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT);
+        return (agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT));
     }
 
-    return agc_exec_novac(RPD_PRIO5, AGC_JOB_RENDEZVOUS_PARAMS_MONITOR);
+    return (agc_exec_novac(RPD_PRIO5, AGC_JOB_RENDEZVOUS_PARAMS_MONITOR));
 }
 
 /* DISPN5X: V16N54 (CM R34: V16N53) GOMARKF; TERMINATE, PROCEED -> B5OFF,
@@ -453,7 +453,7 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint8_t noun = 54U;
@@ -463,9 +463,11 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
         noun = 53U; /* R34           */
     }
 
-    return rz_flash(
-        ctx, AGC_DSKY_GOMARKF, 16U, noun, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-        AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_RENDEZVOUS_PARAMS_MONITOR);
+    return (rz_flash(
+                ctx, AGC_DSKY_GOMARKF, 16U, noun,
+                AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                AGC_JOB_RENDEZVOUS_PARAMS_MONITOR));
 }
 
 /* V83CALL: the first pass (CM STATEXTP, LM V83CALL). */
@@ -473,7 +475,7 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -481,7 +483,7 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
 
-    return rz_is_csm() ? rpd_csm_statextp(&ip, rz) : rpd_lm_v83call(&ip, rz);
+    return (rz_is_csm() ? rpd_csm_statextp(&ip, rz) : rpd_lm_v83call(&ip, rz));
 }
 
 /* V83 / REV83: every later pass (CM HAVEBASE, LM REV83). */
@@ -489,7 +491,7 @@ agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -497,5 +499,5 @@ agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
 
-    return rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_rev83(&ip, rz);
+    return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_rev83(&ip, rz));
 }

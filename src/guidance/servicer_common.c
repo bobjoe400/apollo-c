@@ -66,7 +66,7 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 {
     if (!AGC_ASSERT(a != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -91,10 +91,10 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 
     if (!AGC_ASSERT(a->piptime1 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* REREADAC decision (CM p.833, LM p.871): CCS PIPAGE. Positive: the PIPAs
@@ -105,15 +105,15 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
 {
     if (!AGC_ASSERT(a != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(a->pipage >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK;
+    return ((a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
 }
 
 /* The oblateness term of CALCGRAV (CM p.835, LM p.880), entered with
@@ -167,10 +167,10 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
 
     if (!AGC_ASSERT(a->rmagsq > 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return agc_vec_add(ip, t2, t1); /* VAD (pop)      */
+    return (agc_vec_add(ip, t2, t1)); /* VAD (pop)      */
 }
 
 /* CALCGRAV (CM pp.835-836, LM p.880): unit vector, magnitude and gravity.
@@ -185,12 +185,12 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(a != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     a->unitr = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH      */
@@ -207,7 +207,7 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
 
     if (!AGC_ASSERT(x != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t k = agc_dp_div(ip, moon ? MUDT_M : MUDT_E, x); /* BDDV* -MUDT,1  */
@@ -215,7 +215,7 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     k         = agc_dp_shl_round(ip, k, n - 21);           /* SLR* 0-21D,2   */
     a->gdt1_2 = agc_vec_scale(ip, dir, k);                 /* VXSC STORE     */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CALCRVG (CM p.836, LM pp.880-881). Comanche scales DELV by KPIP1 before
@@ -229,7 +229,7 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) ||
         !AGC_ASSERT(sv != NULL && a != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t dt22;
@@ -261,7 +261,7 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t v1 = agc_vec_add(ip, a->gdt1_2, sv->v); /* VAD VN      */
@@ -269,7 +269,7 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     v1     = agc_vec_add(ip, v1, avg_acc);      /* VAD (pop)   */
     a->vn1 = agc_vec_add(ip, v1, half_dv);      /* VAD (pop)   */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GENTRAN (CM AVERAGEG p.829, NORMLIZE p.831) / COPYCYC (LM p.867): copy

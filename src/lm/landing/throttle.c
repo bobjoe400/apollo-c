@@ -34,15 +34,15 @@ static agc_dp_t thr_pack(int32_t hi, int32_t lo)
 {
     if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) (hi * 16384 + lo);
+    return ((agc_dp_t) (hi * 16384 + lo));
 }
 
 static agc_sp_t thr_hi(agc_dp_t v)
@@ -51,10 +51,10 @@ static agc_sp_t thr_hi(agc_dp_t v)
 
     if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) hi;
+    return ((agc_sp_t) hi);
 }
 
 static agc_sp_t thr_lo(agc_dp_t v)
@@ -63,10 +63,10 @@ static agc_sp_t thr_lo(agc_dp_t v)
 
     if (!AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) lo;
+    return ((agc_sp_t) lo);
 }
 
 /* MASSMULT (p. 796): scale an acceleration arriving in A,L in units of
@@ -80,12 +80,12 @@ agc_dp_t agc_lm_massmult(agc_dp_t accel)
 
     if (!AGC_ASSERT(mass >= 0))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(accel <= AGC_DP_MAX && accel >= AGC_DP_MIN))
     {
-        return 0;
+        return (0);
     }
 
     /* First DMP leaves a TP in MPAC; the second DMP uses only MPAC,+1.   */
@@ -95,10 +95,10 @@ agc_dp_t agc_lm_massmult(agc_dp_t accel)
 
     if (top != 0)
     {
-        return thr_pack(AGC_SP_MAX, 0);
+        return (thr_pack(AGC_SP_MAX, 0));
     }
 
-    return (agc_dp_t) f; /* (MPAC+1,MPAC+2): /2^14 = pulses */
+    return ((agc_dp_t) f); /* (MPAC+1,MPAC+2): /2^14 = pulses */
 }
 
 /* WHERETO .. FLATOUT2 (pp. 793-794): choose between the throttleable
@@ -112,7 +112,7 @@ static agc_sp_t thr_region(agc_lm_thr_t *t, const agc_lm_pad_t *pad)
 
     if (!AGC_ASSERT(lowcrit >= 0 && highcrit >= 0))
     {
-        return 0;
+        return (0);
     }
 
     /* PIFPSET = -0 initially; DEVIATION: modelled as +0.                 */
@@ -121,25 +121,25 @@ static agc_sp_t thr_region(agc_lm_thr_t *t, const agc_lm_pad_t *pad)
         if (fc <= lowcrit)
         {
             /* FCOMPSET, note 2: returning below 55%: PIFPSET = FP-FMAXODD */
-            return agc_lm_ad(thr_hi(t->fp), (agc_sp_t) -AGC_LM_FMAXODD);
+            return (agc_lm_ad(thr_hi(t->fp), (agc_sp_t) -AGC_LM_FMAXODD));
         }
 
         /* Note 1: stay at full throttle; FC = FP so PIF is zero.
          * DEVIATION: the AGC's low word is whatever L held; we use 0.    */
         t->fcodd = thr_pack(thr_hi(t->fp), 0);
 
-        return (agc_sp_t) AGC_LM_FEXTRA; /* FLATOUT1   */
+        return ((agc_sp_t) AGC_LM_FEXTRA); /* FLATOUT1   */
     }
 
     if (fc <= highcrit)
     {
-        return 0; /* to DOPIF   */
+        return (0); /* to DOPIF   */
     }
 
     /* LOWFCOLD: throttle-up into the fixed region.                       */
     t->fcodd = thr_pack(AGC_LM_FMAXPOS, 0);
 
-    return (agc_sp_t) AGC_LM_FEXTRA;
+    return ((agc_sp_t) AGC_LM_FEXTRA);
 }
 
 /* DOIT (p. 795): send PIF + PIFPSET to the THRUST counter, enable the
@@ -149,7 +149,7 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
     if (!AGC_ASSERT(t->pifpset >= -AGC_LM_FEXTRA &&
                     t->pifpset <= AGC_LM_FEXTRA))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t cmd = agc_lm_ad(thr_hi(t->pif), t->pifpset);
@@ -159,7 +159,7 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
     t->tthrot = agc_lm_time1();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* FWEIGHT computation (pp. 795-796):
@@ -218,12 +218,12 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
 
     if (!AGC_ASSERT(accel >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->afc >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     t->fp = agc_lm_massmult(accel); /* FP present thrust   */
@@ -251,12 +251,12 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     thr_fweight(t); /* for use next pass   */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* THROTTLE (p. 793): present acceleration from ABDELV, saving SERVICER
@@ -267,17 +267,17 @@ agc_status_t agc_lm_throttle(void)
 
     if (!AGC_ASSERT(abdelv >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t accel = agc_sp_mul(abdelv, THR_AF_CNST); /* MP /AF/CNST   */
 
     if (!AGC_ASSERT(accel >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_throttle_measured(accel);
+    return (agc_lm_throttle_measured(accel));
 }
 
 /* WHATOUT (p. 796): command a fixed pulse count through PIFPSET so that
@@ -289,7 +289,7 @@ agc_status_t agc_lm_throttle_whatout(agc_sp_t pulses)
 
     if (!AGC_ASSERT(pulses >= -AGC_LM_FEXTRA && pulses <= AGC_LM_FEXTRA))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     t->pifpset = pulses;
@@ -299,12 +299,12 @@ agc_status_t agc_lm_throttle_whatout(agc_sp_t pulses)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     thr_fweight(t);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* FLATOUT (p. 796): throttle the descent engine up to full. */
@@ -314,13 +314,13 @@ agc_status_t agc_lm_throttle_flatout(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_lm_thr()->pifpset == AGC_LM_FEXTRA))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }

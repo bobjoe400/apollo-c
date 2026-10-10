@@ -65,7 +65,7 @@ typedef enum ta_result
 
 agc_sp_t agc_erase_r61cntr(void)
 {
-    return ta.r61cntr;
+    return (ta.r61cntr);
 }
 
 void agc_erase_set_r61cntr(agc_sp_t v)
@@ -89,7 +89,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ta.savepos = o.ratt; /* HOLDATT  */
@@ -98,7 +98,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ta.vlem    = o.vatt;
@@ -131,7 +131,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
         st = AGC_STATUS_OK;
     }
 
-    return st;
+    return (st);
 }
 
 /* STEP2CK: any CDU more than 10 degrees from its desired value. (The AGC
@@ -153,13 +153,13 @@ static bool ta_gross(void)
 
         if (m - TA_DEGREE10 >= 0)
         {
-            return true;
+            return (true);
         }
     }
 
     _Static_assert(TA_DEGREE10 > 0, "AGC constant");
 
-    return false;
+    return (false);
 }
 
 /* CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
@@ -208,7 +208,7 @@ static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu,
 
     *wbody = rz_vshift(ip, w, -14 - x1); /* VSL* 0-14D,1 */
 
-    return st;
+    return (st);
 }
 
 /* CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.                 */
@@ -245,7 +245,7 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_chan_and(AGC_CHAN_DSALMOUT,
@@ -258,19 +258,19 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
         {
             *res = TA_MANEUVER; /* MANUEXIT */
 
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
 
         agc_chan_or(AGC_CHAN_DSALMOUT, TA_UPACTY);
 
-        return AGC_STATUS_OK; /* ASET     */
+        return (AGC_STATUS_OK); /* ASET     */
     }
 
     uint16_t c31 = agc_chan_read(AGC_CHAN_CHAN31);
 
     if (((c31 ^ TA_CH31_AUTO) & TA_FURST3) != 0U || stick)
     {                         /* AUTOCK   */
-        return AGC_STATUS_OK; /* ASET     */
+        return (AGC_STATUS_OK); /* ASET     */
     }
 
     agc_vec_t delcdu;
@@ -283,7 +283,7 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
         ta_feed_dap(delcdu, wbody); /* CRS61.2A */
     }
 
-    return st;
+    return (st);
 }
 
 /* R61CSM (pp.574-575): R61CNTR > 0: skip this pass (count down); < 0:
@@ -295,7 +295,7 @@ agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ta.genret = ret_job;
@@ -304,15 +304,15 @@ agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx,
     {
         ta.r61cntr--; /* DECRM61  */
 
-        return rz_continue(ret_job);
+        return (rz_continue(ret_job));
     }
 
     if (ta.r61cntr < 0)
     {
-        return rz_continue(ret_job); /* DECRM61+1 */
+        return (rz_continue(ret_job)); /* DECRM61+1 */
     }
 
-    return rz_continue(AGC_JOB_TRACKING_ATTITUDE_CSM);
+    return (rz_continue(AGC_JOB_TRACKING_ATTITUDE_CSM));
 }
 
 /* R61CSM after the counter test (also the INTSTALL resume point).       */
@@ -320,7 +320,7 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -331,22 +331,22 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     if (res == TA_FED_DAP)
     {
         ta.r61cntr = 3; /* R61END   */
 
-        return rz_continue(ta.genret);
+        return (rz_continue(ta.genret));
     }
 
     rz_flag_put(AGC_FLAG_3AXISFLG, false); /* R61C1    */
     ta.r61cntr = -1;
     rz_flag_put(AGC_FLAG_PDSPFLAG, true);
 
-    return agc_imu_attitude_maneuver(ctx,
-                                     AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED);
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED));
 }
 
 /* After R60CSM: priority displays off, PHASCHNG 00111, R61CNTR = 0.     */
@@ -354,14 +354,14 @@ agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
     rz_phase(1, 00111);
     ta.r61cntr = 0;
 
-    return rz_continue(ta.genret);
+    return (rz_continue(ta.genret));
 }
 
 /* CPHIX (noun 96) and PRAXIS (noun 95) for the displays.                */
@@ -369,10 +369,10 @@ uint16_t agc_rendz_tracking_angles(bool preferred, int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0U;
+        return (0U);
     }
 
-    return preferred ? ta.praxis[axis] : ta.cphix[axis];
+    return (preferred ? ta.praxis[axis] : ta.cphix[axis]);
 }
 
 /* ---- V89CALL (R63, CSM, pp.616-618) -------------------------------------
@@ -386,7 +386,7 @@ agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
@@ -403,10 +403,10 @@ agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_rendezvous_final_attitude_csm_option(ctx);
+    return (agc_job_rendezvous_final_attitude_csm_option(ctx));
 }
 
 /* V04N06 flashing: TERMINATE ends the verb, PROCEED takes the axis.     */
@@ -414,12 +414,12 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U, AGC_JOB_RENDZ_ENDEXT,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U, AGC_JOB_RENDZ_ENDEXT,
+                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN,
+                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION));
 }
 
 /* SETPAF / RSTPAF: the preferred attitude flag from R2; V89RECL.        */
@@ -427,12 +427,12 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_flag_put(AGC_FLAG_PRFTRKAT, rz_option(2) == 1U);
 
-    return agc_job_rendezvous_final_attitude_csm_compute(ctx);
+    return (agc_job_rendezvous_final_attitude_csm_compute(ctx));
 }
 
 /* V89RECL: R63COMP one minute from now; V06N18 (desired gimbal angles):
@@ -441,7 +441,7 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -452,12 +452,12 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 18U, AGC_JOB_RENDZ_ENDEXT,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 18U, AGC_JOB_RENDZ_ENDEXT,
+                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER,
+                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE));
 }
 
 /* PROCEED on V06N18: 3-axis flag off, R60CSM, then ENDEXT.              */
@@ -465,10 +465,10 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_maneuver(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
 
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_RENDZ_ENDEXT);
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_RENDZ_ENDEXT));
 }

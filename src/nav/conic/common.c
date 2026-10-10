@@ -32,12 +32,12 @@ agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int             base = (body == AGC_CONIC_EARTH) ? 1 : 5; /* MUTABLE+2 / +10 words */
@@ -53,7 +53,7 @@ agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
     ctx->u2          = agc_vec_zero();
     ctx->un          = agc_vec_zero();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* MUEARTH,2 / MUM (ORBITAL_INTEGRATION.agc p. 1354) as used by KEPPREP via
@@ -62,15 +62,15 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
 {
     if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
     {
-        return mutable_tab[0];
+        return (mutable_tab[0]);
     }
 
     if (!AGC_ASSERT(mutable_tab[0] > mutable_tab[4])) /* MUE > MUM */
     {
-        return mutable_tab[0];
+        return (mutable_tab[0]);
     }
 
-    return (body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4];
+    return ((body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4]);
 }
 
 /* ---- interpretive MPAC as a TP accumulator (see internal.h) ------- */
@@ -82,15 +82,15 @@ static agc_tp_t mpac_low(agc_tp_t m)
 
     if (!AGC_ASSERT(lo > -((agc_tp_t) 1 << AGC_SP_BITS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(lo < ((agc_tp_t) 1 << AGC_SP_BITS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return lo;
+    return (lo);
 }
 
 /* DLOAD X: MPAC,+1 = X, MPAC+2 = 0 (INTERPRETER.agc p. 1107). */
@@ -98,15 +98,15 @@ agc_tp_t agc_conic_mload_(agc_dp_t d)
 {
     if (!AGC_ASSERT(d >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(d <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_tp_from_dp(d);
+    return (agc_tp_from_dp(d));
 }
 
 /* STORE X / PUSH in DP mode: MPAC,+1 only. */
@@ -114,15 +114,15 @@ agc_dp_t agc_conic_mstore_(agc_tp_t m)
 {
     if (!AGC_ASSERT(m >= AGC_TP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_tp_to_dp(m);
+    return (agc_tp_to_dp(m));
 }
 
 /* DAD X (p. 1131): DAS into MPAC,+1 (overflow-corrected result, OVFIND);
@@ -131,15 +131,15 @@ agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_add(ip, agc_tp_to_dp(m), d)) + mpac_low(m);
+    return (agc_tp_from_dp(agc_dp_add(ip, agc_tp_to_dp(m), d)) + mpac_low(m));
 }
 
 /* DSU X (p. 1133): as DAD with the complement of X. */
@@ -147,15 +147,15 @@ agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_sub(ip, agc_tp_to_dp(m), d)) + mpac_low(m);
+    return (agc_tp_from_dp(agc_dp_sub(ip, agc_tp_to_dp(m), d)) + mpac_low(m));
 }
 
 /* BDSU X (p. 1134): MPAC,+1 = X - MPAC,+1. MPAC+2 is NOT complemented by
@@ -165,15 +165,15 @@ agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_sub(ip, d, agc_tp_to_dp(m))) + mpac_low(m);
+    return (agc_tp_from_dp(agc_dp_sub(ip, d, agc_tp_to_dp(m))) + mpac_low(m));
 }
 
 /* TAD X (p. 1135): triple precision add. */
@@ -181,15 +181,15 @@ agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(t >= AGC_TP_MIN && t <= AGC_TP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_add(ip, m, t);
+    return (agc_tp_add(ip, m, t));
 }
 
 /* DMP X (DMPSUB p. 1136): MPAC,+1 times X, TP product in MPAC,+1,+2. */
@@ -197,15 +197,15 @@ agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_mul_tp(agc_tp_to_dp(m), d);
+    return (agc_dp_mul_tp(agc_tp_to_dp(m), d));
 }
 
 /* DMPR X (p. 1149): DMP then ROUNDSUB. */
@@ -213,15 +213,15 @@ agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_mul(ip, agc_tp_to_dp(m), d));
+    return (agc_tp_from_dp(agc_dp_mul(ip, agc_tp_to_dp(m), d)));
 }
 
 /* DSQ (DSQSUB p. 1180): square of MPAC,+1, TP result. */
@@ -231,15 +231,15 @@ agc_tp_t agc_conic_mdsq_(agc_tp_t m)
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_sq_tp(d);
+    return (agc_dp_sq_tp(d));
 }
 
 /* DDV X (p. 1162): MPAC,+1 / X; quotient DP, OVFIND and limit on overflow. */
@@ -247,15 +247,15 @@ agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_div(ip, agc_tp_to_dp(m), d));
+    return (agc_tp_from_dp(agc_dp_div(ip, agc_tp_to_dp(m), d)));
 }
 
 /* BDDV X (p. 1149): X / MPAC,+1. */
@@ -263,15 +263,15 @@ agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_dp_div(ip, d, agc_tp_to_dp(m)));
+    return (agc_tp_from_dp(agc_dp_div(ip, d, agc_tp_to_dp(m))));
 }
 
 /* SQRT (SQRTSUB p. 1181): square root of the TP MPAC (MPAC+2 takes part
@@ -283,15 +283,15 @@ agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(m > -((agc_tp_t) 1 << (AGC_TP_BITS - AGC_SP_BITS))))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_tp_sqrt(ip, m));
+    return (agc_tp_from_dp(agc_tp_sqrt(ip, m)));
 }
 
 /* SL n (n > 0) / SR -n (n < 0) on the TP MPAC (GENSHIFT p. 1158, TSSL
@@ -302,15 +302,15 @@ agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(n > -128 && n < 128))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_shift(ip, m, n);
+    return (agc_tp_shift(ip, m, n));
 }
 
 /* SLR n / SRR -n: shift, then ROUNDSUB on the result (p. 1160-1161). */
@@ -318,15 +318,15 @@ agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(n > -128 && n < 128))
     {
-        return m;
+        return (m);
     }
 
-    return agc_conic_mround_(ip, agc_conic_mshift_(ip, m, n));
+    return (agc_conic_mround_(ip, agc_conic_mshift_(ip, m, n)));
 }
 
 /* ROUND (ROUNDSUB p. 1137): round MPAC+2 into MPAC,+1 and clear it;
@@ -335,15 +335,15 @@ agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
-        return m;
+        return (m);
     }
 
-    return agc_tp_from_dp(agc_tp_round(ip, m));
+    return (agc_tp_from_dp(agc_tp_round(ip, m)));
 }
 
 /* NORM X (TSLC p. 1157): left-justify the TP MPAC until |MPAC| >= 1/2;
@@ -353,17 +353,17 @@ agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift)
 {
     if (!AGC_ASSERT(nshift != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
         *nshift = 0;
 
-        return m;
+        return (m);
     }
 
-    return agc_tp_norm(m, nshift);
+    return (agc_tp_norm(m, nshift));
 }
 
 /* ABS (p. 1183). */
@@ -371,15 +371,15 @@ agc_tp_t agc_conic_mabs_(agc_tp_t m)
 {
     if (!AGC_ASSERT(m >= AGC_TP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (m < 0) ? -m : m;
+    return ((m < 0) ? -m : m);
 }
 
 /* DCOMP (p. 1151): complement all three words. */
@@ -387,15 +387,15 @@ agc_tp_t agc_conic_mneg_(agc_tp_t m)
 {
     if (!AGC_ASSERT(m >= AGC_TP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return -m;
+    return (-m);
 }
 
 /* SIGN X (p. 1151) with a DP word at X: complement if X is negative. */
@@ -403,15 +403,15 @@ agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s)
 {
     if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (s < 0) ? -m : m;
+    return ((s < 0) ? -m : m);
 }
 
 /* SIGN X with an SP tag at X (GEOMSGN, SGNRDOT +-.5): the AGC tests the
@@ -420,15 +420,15 @@ agc_tp_t agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s)
 {
     if (!AGC_ASSERT(s != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (s < 0) ? -m : m;
+    return ((s < 0) ? -m : m);
 }
 
 /* BMN: branch if MPAC,+1 is negative (non-zero). */
@@ -436,15 +436,15 @@ bool agc_conic_mbmn_(agc_tp_t m)
 {
     if (!AGC_ASSERT(m >= AGC_TP_MIN))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(m <= AGC_TP_MAX))
     {
-        return false;
+        return (false);
     }
 
-    return agc_tp_to_dp(m) < 0;
+    return (agc_tp_to_dp(m) < 0);
 }
 
 /* BZE: branch if MPAC,+1 is zero. */
@@ -452,15 +452,15 @@ bool agc_conic_mbze_(agc_tp_t m)
 {
     if (!AGC_ASSERT(m >= AGC_TP_MIN))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(m <= AGC_TP_MAX))
     {
-        return false;
+        return (false);
     }
 
-    return agc_tp_to_dp(m) == 0;
+    return (agc_tp_to_dp(m) == 0);
 }
 
 /* POLY (INTERPRETER.agc p. 1139, called through EXIT / TC POLY / DEC N):
@@ -470,15 +470,15 @@ agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef)
 {
     if (!AGC_ASSERT(coef != NULL))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(ncoef >= 2 && ncoef <= 16))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_dp_poly(x, coef, ncoef - 1);
+    return (agc_dp_poly(x, coef, ncoef - 1));
 }
 
 /* SIGN with vector MPAC: complement the vector if the SP tag is negative. */
@@ -486,15 +486,15 @@ agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s)
 {
     if (!AGC_ASSERT(s != 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return (s < 0) ? agc_vec_neg(v) : v;
+    return ((s < 0) ? agc_vec_neg(v) : v);
 }
 
 /* Mirror an output switch into its flagword (the AGC keeps it only there). */
@@ -542,8 +542,8 @@ agc_status_t agc_conic_abtconic_(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_POODOO;
+    return (AGC_STATUS_POODOO);
 }

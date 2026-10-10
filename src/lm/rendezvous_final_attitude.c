@@ -36,14 +36,14 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
     if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) ||
         !AGC_ASSERT(pointvsm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_vec_t los = agc_vec_sub(ip, rcsm, rlem);
 
     *pointvsm = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, los), NULL, NULL);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -55,18 +55,18 @@ agc_status_t agc_job_rendezvous_final_attitude(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_imu_status_check() != AGC_STATUS_OK)
     {
-        return AGC_STATUS_OK; /* alarm 220/210, ended  */
+        return (AGC_STATUS_OK); /* alarm 220/210, ended  */
     }
 
     agc_erase_set_optionx(0, OPTION_CODE);
     agc_erase_set_optionx(1, AXIS_Z);
 
-    return agc_job_rendezvous_final_attitude_option(ctx);
+    return (agc_job_rendezvous_final_attitude_option(ctx));
 }
 
 /* V04N12: V34 ENDEXT, V33 V89RECL, data in (OPTIONX +1) flashes again. */
@@ -74,18 +74,18 @@ agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_optionx(0) == OPTION_CODE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION));
 }
 
 /*
@@ -129,13 +129,13 @@ static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER,
-                       AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER,
+                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE));
 }
 
 /* LEMCONIC to TSTART82; POINTVSM from RONE - RATT. */
@@ -151,7 +151,7 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* INTSTALL */
+        return (AGC_STATUS_OK); /* INTSTALL */
     }
 
     agc_vec_t       pointvsm = agc_vec_zero();
@@ -165,10 +165,10 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return final_attitude_angles(ctx, pointvsm);
+    return (final_attitude_angles(ctx, pointvsm));
 }
 
 /* CSMCONIC to TSTART82; RONE = RATT; then the LM. */
@@ -184,17 +184,17 @@ static agc_status_t final_attitude_csm(const agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* INTSTALL */
+        return (AGC_STATUS_OK); /* INTSTALL */
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rone = o.ratt;
 
-    return final_attitude_lm(ctx);
+    return (final_attitude_lm(ctx));
 }
 
 /* V89RECL: TSTART82 = now + 1 minute; the two states. */
@@ -202,7 +202,7 @@ agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -212,10 +212,10 @@ agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(tstart82 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return final_attitude_csm(ctx);
+    return (final_attitude_csm(ctx));
 }
 
 /* CSMCONIC resumed after its wait. */
@@ -223,15 +223,15 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_state(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(tstart82 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return final_attitude_csm(ctx);
+    return (final_attitude_csm(ctx));
 }
 
 /* LEMCONIC resumed after its wait. */
@@ -239,15 +239,15 @@ agc_status_t agc_job_rendezvous_final_attitude_lm_state(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(tstart82 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return final_attitude_lm(ctx);
+    return (final_attitude_lm(ctx));
 }
 
 /* V06N18 PROCEED: CLEAR 3AXISFLG; R60LEM; then ENDEXT. */
@@ -255,18 +255,18 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_3AXISFLG);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_3AXISFLG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_imu_attitude_maneuver(ctx,
-                                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END);
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END));
 }
 
 /* ENDEXT: the extended verb is over. */
@@ -274,13 +274,13 @@ agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_endext();
+    return (agc_dsky_endext());
 }

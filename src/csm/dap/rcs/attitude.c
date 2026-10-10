@@ -73,30 +73,30 @@ agc_status_t csm_rcs_ahfnorot(void)
 
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return rcs_freecont();
+        return (rcs_freecont());
     }
 
     if (csm_rcs_rate_init_pending())
     {
-        return csm_rcs_reinit(); /* recycle to initialise the filter  */
+        return (csm_rcs_reinit()); /* recycle to initialise the filter  */
     }
 
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_ATTHOLD) == 0u)
     {
-        return rcs_holdfunc();
+        return (rcs_holdfunc());
     }
 
     if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, -     */
-        return rcs_atthold();
+        return (rcs_atthold());
     }
 
-    return rcs_grabang();
+    return (rcs_grabang());
 }
 
 /* FREECONT (pp. 1025-1026): minimum impulse control from channel 32,
@@ -114,7 +114,7 @@ static agc_status_t rcs_freecont(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
@@ -123,13 +123,13 @@ static agc_status_t rcs_freecont(void)
 
         if (!AGC_ASSERT((m >= 0) && (m <= 3)))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         r->tau[i] = mintau[m]; /* TAU, TAU1, TAU2                   */
     }
 
-    return csm_rcs_t6progm();
+    return (csm_rcs_t6progm());
 }
 
 /* HOLDFUNC (p. 1028): +0 holds; anything else grabs new references.      */
@@ -139,15 +139,15 @@ static agc_status_t rcs_holdfunc(void)
 
     if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (r->holdflag == 0)
     {
-        return rcs_atthold();
+        return (rcs_atthold());
     }
 
-    return rcs_grabang();
+    return (rcs_grabang());
 }
 
 /* GRABANG, ENDDAMP (p. 1028): zero WBODYs and biases; after rate damping
@@ -170,7 +170,7 @@ static agc_status_t rcs_grabang(void)
             r->error[i] = 0;
         }
 
-        return csm_rcs_jets();
+        return (csm_rcs_jets());
     }
 
     r->holdflag = 0; /* ENDDAMP                 */
@@ -182,10 +182,10 @@ static agc_status_t rcs_grabang(void)
 
     if (!AGC_ASSERT(r->holdflag == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rcs_atthold();
+    return (rcs_atthold());
 }
 
 /* ATTHOLD (pp. 1027-1028): ERROR = AMGB (CDU - THETAD) [+ BIAS].         */
@@ -212,10 +212,10 @@ static agc_status_t rcs_atthold(void)
 
     if (!AGC_ASSERT(r->error[0] >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csm_rcs_jets();
+    return (csm_rcs_jets());
 }
 
 /* JETS, JLOOP (p. 1030): for each axis locate (rate error, attitude
@@ -252,10 +252,10 @@ agc_status_t csm_rcs_jets(void)
 
     if (!AGC_ASSERT(p.adbaf > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rcs_t6prog();
+    return (rcs_t6prog());
 }
 
 /* J6. .. NJ23 (pp. 1030-1032): which region of FIG. 1 the point is in.  */
@@ -268,19 +268,19 @@ static pp_region_t rcs_region(const pp_point_t *p)
     { /* J6.        */
         if ((int) p->aerrvel - (int) p->adbaf > 0)
         { /* J7         */
-            return ((-WLMH_SLP - (int) p->adbaf + (int) p->aerrvel) <= 0) ?
-                   PP_J20 :
-                   PP_J21;
+            return (((-WLMH_SLP - (int) p->adbaf + (int) p->aerrvel) <= 0) ?
+                    PP_J20 :
+                    PP_J21);
         }
 
         int q = (int) csm_dap_dv(-p->edotvel, r->slope);
 
-        return ((q - (int) p->aerrvel + adb) <= 0) ? PP_J18 : PP_J23;
+        return (((q - (int) p->aerrvel + adb) <= 0) ? PP_J18 : PP_J23);
     }
 
     if (csm_dap_das(-WLH, p->edotvel) >= 0)
     { /* J8         */
-        return PP_J22;
+        return (PP_J22);
     }
 
     int a = (int) csm_dap_dv(p->edotvel, r->slope) + (int) p->adbaf +
@@ -288,17 +288,17 @@ static pp_region_t rcs_region(const pp_point_t *p)
 
     if (a >= 0)
     { /* NJ22       */
-        return PP_J23;
+        return (PP_J23);
     }
 
     if (csm_dap_das(-WLMH, p->edotvel) >= 0)
     {
-        return PP_J23;
+        return (PP_J23);
     }
 
     a = (int) p->aerrvel + (int) p->adbaf + WLMH_SLP; /* NJ23       */
 
-    return (a >= 0) ? PP_J24 : PP_J22;
+    return ((a >= 0) ? PP_J24 : PP_J22);
 }
 
 /* J18, J20, J21 (JP/JN), J22, J23, J24 (pp. 1032-1034): the desired change
@@ -347,10 +347,10 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
 
     if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
     {
-        return false;
+        return (false);
     }
 
-    return fire;
+    return (fire);
 }
 
 /* JTIME, TAUNORM, DOJET (p. 1035): TAU = J/M (DELTA W) for one jet; an
@@ -362,7 +362,7 @@ static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 
     if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t k = csm_dap_smallmp(kmpac, r->jm[i]); /* J/M, J/M1, J/M2     */
@@ -372,15 +372,15 @@ static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 
     if (hi > 0)
     {
-        return AGC_SP_MAX;
+        return (AGC_SP_MAX);
     }
 
     if (hi < 0)
     {
-        return AGC_SP_MIN;
+        return (AGC_SP_MIN);
     }
 
-    return agc_dp_low(k); /* TAUNORM            */
+    return (agc_dp_low(k)); /* TAUNORM            */
 }
 
 /* T6PROGM (p. 1020): zero the errors for manual rotations; T6PROG.       */
@@ -395,10 +395,10 @@ agc_status_t csm_rcs_t6progm(void)
 
     if (!AGC_ASSERT(r->error[2] == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rcs_t6prog();
+    return (rcs_t6prog());
 }
 
 /* T6PROG (p. 1036): when the rotation commands (TAUs) have been
@@ -407,5 +407,5 @@ static agc_status_t rcs_t6prog(void)
 {
     agc_rupt_set_t5_task(AGC_TASK_JETSLECT);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

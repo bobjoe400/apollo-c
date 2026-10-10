@@ -18,18 +18,18 @@
 
 bool agc_navaux_dp_ok(agc_dp_t a)
 {
-    return (a <= AGC_DP_MAX) && (a >= AGC_DP_MIN);
+    return ((a <= AGC_DP_MAX) && (a >= AGC_DP_MIN));
 }
 
 bool agc_navaux_vec_ok(agc_vec_t v)
 {
-    return agc_navaux_dp_ok(v.c[0]) && agc_navaux_dp_ok(v.c[1]) &&
-           agc_navaux_dp_ok(v.c[2]);
+    return (agc_navaux_dp_ok(v.c[0]) && agc_navaux_dp_ok(v.c[1]) &&
+            agc_navaux_dp_ok(v.c[2]));
 }
 
 bool agc_navaux_tp_ok(agc_tp_t a)
 {
-    return (a <= AGC_TP_MAX) && (a >= AGC_TP_MIN);
+    return ((a <= AGC_TP_MAX) && (a >= AGC_TP_MIN));
 }
 
 /* SL* / SR* X,n with an indexed (signed) shift count. */
@@ -37,12 +37,12 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT((n <= NAVAUX_MAX_SHIFT) && (n >= -NAVAUX_MAX_SHIFT)))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t r = a;
@@ -58,10 +58,10 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(r))) /* post: in range         */
     {
-        return 0;
+        return (0);
     }
 
-    return r;
+    return (r);
 }
 
 /* VSL* / VSR* with an indexed (signed) shift count. */
@@ -69,12 +69,12 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero();
+        return (agc_vec_zero());
     }
 
     if (!AGC_ASSERT((n <= NAVAUX_MAX_SHIFT) && (n >= -NAVAUX_MAX_SHIFT)))
     {
-        return agc_vec_zero();
+        return (agc_vec_zero());
     }
 
     agc_vec_t r = v;
@@ -90,10 +90,10 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(r))) /* post: in range         */
     {
-        return agc_vec_zero();
+        return (agc_vec_zero());
     }
 
-    return r;
+    return (r);
 }
 
 /* SR 14 of a DP time (cs, 2^28) into TP mode (cs, 2^42).  With both scales
@@ -102,17 +102,17 @@ agc_tp_t agc_navaux_tp_from_cs(agc_dp_t t_cs)
 {
     if (!AGC_ASSERT(agc_navaux_dp_ok(t_cs)))
     {
-        return 0;
+        return (0);
     }
 
     agc_tp_t t = (agc_tp_t) t_cs;
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(t)))
     {
-        return 0;
+        return (0);
     }
 
-    return t;
+    return (t);
 }
 
 /* Inverse of agc_navaux_tp_from_cs (SL 14 of a TP time into DP). */
@@ -120,22 +120,22 @@ agc_dp_t agc_navaux_cs_from_tp(agc_tp_t t_tp)
 {
     if (!AGC_ASSERT(agc_navaux_tp_ok(t_tp)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT((t_tp <= AGC_DP_MAX) && (t_tp >= AGC_DP_MIN)))
     {
-        return (t_tp > 0) ? AGC_DP_MAX : AGC_DP_MIN;
+        return ((t_tp > 0) ? AGC_DP_MAX : AGC_DP_MIN);
     }
 
     agc_dp_t t = (agc_dp_t) t_tp;
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(t)))
     {
-        return 0;
+        return (0);
     }
 
-    return t;
+    return (t);
 }
 
 /* DLOAD X+1 of a TP X: the two low-order words as a DP fraction (the TP
@@ -144,7 +144,7 @@ agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
 {
     if (!AGC_ASSERT(agc_navaux_tp_ok(v)))
     {
-        return 0;
+        return (0);
     }
 
     int64_t mag = (v < 0) ? -v : v;
@@ -152,10 +152,10 @@ agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
 
     if (!AGC_ASSERT(low < NAVAUX_DP_ONE))
     {
-        return 0;
+        return (0);
     }
 
-    return (agc_dp_t) ((v < 0) ? -low : low);
+    return ((agc_dp_t) ((v < 0) ? -low : low));
 }
 
 /* NORM (TSLC) in TP mode: shift left until |v| >= 1/2. */
@@ -163,14 +163,14 @@ agc_tp_t agc_navaux_tp_norm(agc_tp_t v, int *shift)
 {
     if (!AGC_ASSERT(shift != NULL))
     {
-        return v;
+        return (v);
     }
 
     *shift = 0;
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(v)) || (v == 0))
     {
-        return v; /* zero: shift count zero, as TSLC      */
+        return (v); /* zero: shift count zero, as TSLC      */
     }
 
     int64_t mag = (v < 0) ? -v : v;
@@ -183,10 +183,10 @@ agc_tp_t agc_navaux_tp_norm(agc_tp_t v, int *shift)
 
     if (!AGC_ASSERT(mag >= NAVAUX_TP_HALF)) /* post: normalized      */
     {
-        return v;
+        return (v);
     }
 
-    return (v < 0) ? -mag : mag;
+    return ((v < 0) ? -mag : mag);
 }
 
 /* SL2 of a TP; on overflow *ovf is set and v is returned unchanged (the
@@ -195,14 +195,14 @@ agc_tp_t agc_navaux_tp_shl2(agc_tp_t v, bool *ovf)
 {
     if (!AGC_ASSERT(ovf != NULL))
     {
-        return v;
+        return (v);
     }
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(v)))
     {
         *ovf = true;
 
-        return v;
+        return (v);
     }
 
     int64_t mag = (v < 0) ? -v : v;
@@ -211,10 +211,10 @@ agc_tp_t agc_navaux_tp_shl2(agc_tp_t v, bool *ovf)
 
     if (!AGC_ASSERT(*ovf || agc_navaux_tp_ok(v * 4)))
     {
-        return v;
+        return (v);
     }
 
-    return *ovf ? v : v * 4;
+    return (*ovf ? v : v * 4);
 }
 
 /* SL n of a TP angle in revolutions followed by rounding to DP, with the
@@ -224,12 +224,12 @@ agc_dp_t agc_navaux_rev_tp_shl(agc_tp_t v, int n)
 {
     if (!AGC_ASSERT(agc_navaux_tp_ok(v)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT((n >= 0) && (n <= 16)))
     {
-        return 0;
+        return (0);
     }
 
     int64_t mag = (v < 0) ? -v : v;
@@ -238,10 +238,10 @@ agc_dp_t agc_navaux_rev_tp_shl(agc_tp_t v, int n)
 
     if (!AGC_ASSERT(mag < NAVAUX_TP_ONE))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_tp_round_dp((v < 0) ? -mag : mag);
+    return (agc_tp_round_dp((v < 0) ? -mag : mag));
 }
 
 /* DAD of two angles in revolutions with overflow correction (wrap by one
@@ -250,7 +250,7 @@ agc_dp_t agc_navaux_rev_add(agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(agc_navaux_dp_ok(a) && agc_navaux_dp_ok(b)))
     {
-        return 0;
+        return (0);
     }
 
     int64_t s = (int64_t) a + (int64_t) b;
@@ -266,8 +266,8 @@ agc_dp_t agc_navaux_rev_add(agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT((s < NAVAUX_DP_ONE) && (s > -NAVAUX_DP_ONE)))
     {
-        return 0;
+        return (0);
     }
 
-    return (agc_dp_t) s;
+    return ((agc_dp_t) s);
 }

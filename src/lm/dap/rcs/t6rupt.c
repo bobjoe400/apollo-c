@@ -32,34 +32,34 @@ agc_sp_t lm_dap_time6_value(void)
 
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (raw <= LM_T6_POSMAX)
     {
-        return (agc_sp_t) raw;
+        return ((agc_sp_t) raw);
     }
 
     agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO);
 
     if (!AGC_ASSERT(v <= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 static agc_status_t set_time6(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= 0 && v <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rupt_set_time(6, (uint16_t) v);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* WRITEP / WRITEU / WRITEV (pp.1404-1405): P jets to channel 6; U or V
@@ -68,14 +68,14 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
 {
     if (!AGC_ASSERT(jets <= 0377u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (index == T6_IDX_P)
     {
         agc_chan_write(006, jets);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     uint16_t keep;
@@ -90,12 +90,12 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     }
     else
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_chan_write(005, (uint16_t) (keep + jets));
 
-    return AGC_STATUS_OK; /* AD L            */
+    return (AGC_STATUS_OK); /* AD L            */
 }
 
 /* WRITEx -1: write the jets queued for after the firing (NEXTP/U/V).     */
@@ -106,14 +106,14 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
     if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U ||
                     index == T6_IDX_V))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t jets = (index == T6_IDX_P) ?
                     d->nextp :
                     ((index == T6_IDX_U) ? d->nextu : d->nextv);
 
-    return lm_dap_write(index, jets);
+    return (lm_dap_write(index, jets));
 }
 
 /* JTLST (pp.1456-1457): insert (T6FURTHA, T6FURTHA +1) -- a time from now
@@ -127,7 +127,7 @@ agc_status_t lm_dap_jtlst(void)
 
     if (!AGC_ASSERT(t > 0 && t <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((int32_t) time6 - t > 0)
@@ -141,7 +141,7 @@ agc_status_t lm_dap_jtlst(void)
 
         agc_chan_or(013, T6_ENABLE); /* TURNON         */
 
-        return st;
+        return (st);
     }
 
     int32_t mid = (int32_t) time6 - t + d->t6next[0]; /* MIDORLST       */
@@ -153,17 +153,17 @@ agc_status_t lm_dap_jtlst(void)
         d->t6next[0]   = (agc_sp_t) (t - time6);
         d->t6next[1]   = idx;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     d->t6furtha[0] = lm_dap_sat(-mid); /* LASTCHG        */
 
     if (!AGC_ASSERT(d->t6furtha[0] >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
@@ -199,10 +199,10 @@ static agc_status_t t6job(lm_dap_t *d)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_write_next(done); /* GOCH56         */
+    return (lm_dap_write_next(done)); /* GOCH56         */
 }
 
 /* T6JOBCHK (p.1404): CCS TIME6. Counting: return. -0: a T6RUPT is due,
@@ -214,20 +214,20 @@ agc_status_t agc_lm_dap_t6jobchk(void)
 
     if (raw > 0u && raw <= LM_T6_POSMAX)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (raw == 0u)
     {
-        return agc_ccshole(); /* CCSHOLE: POODOO 01103 */
+        return (agc_ccshole()); /* CCSHOLE: POODOO 01103 */
     }
 
     if (!AGC_ASSERT(raw == LM_T6_NEGZERO))
     {
-        return AGC_STATUS_BAD_ARG; /* DEVIATION: AGC hangs here */
+        return (AGC_STATUS_BAD_ARG); /* DEVIATION: AGC hangs here */
     }
 
-    return t6job(lm_dap_state());
+    return (t6job(lm_dap_state()));
 }
 
 /* DOT6RUPT (p.1405): the T6RUPT handler is T6JOBCHK, then RESUME.        */
@@ -237,15 +237,15 @@ agc_status_t agc_lm_dap_t6rupt(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* Sim harness: apply `counts` DINC pulses to TIME6 while channel 13 bit
@@ -278,8 +278,8 @@ bool agc_lm_dap_t6_pending(void)
 
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {
-        return false;
+        return (false);
     }
 
-    return raw == LM_T6_NEGZERO;
+    return (raw == LM_T6_NEGZERO);
 }

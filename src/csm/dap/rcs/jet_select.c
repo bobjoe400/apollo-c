@@ -79,20 +79,20 @@ static int rot_index(agc_sp_t tau) /* CCS TAU: 0, +1, +2                  */
 {
     if (!AGC_ASSERT(tau >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (tau > 0) ? 1 : ((tau < 0) ? 2 : 0);
+    return ((tau > 0) ? 1 : ((tau < 0) ? 2 : 0));
 }
 
 static int fail_base(agc_sp_t fail, int pos, int neg) /* CCS xxFAIL       */
 {
     if (!AGC_ASSERT(pos >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (fail > 0) ? pos : ((fail < 0) ? neg : 0);
+    return ((fail > 0) ? pos : ((fail < 0) ? neg : 0));
 }
 
 static int nj(int n) /* NJET/DFTMAX table index             */
@@ -102,7 +102,7 @@ static int nj(int n) /* NJET/DFTMAX table index             */
         n = (n < 0) ? -NJ_BIAS : NJ_BIAS;
     }
 
-    return n + NJ_BIAS;
+    return (n + NJ_BIAS);
 }
 
 /* JETSLECT .. NOXLNCMD (pp. 1039-1040): translation command indices.     */
@@ -436,13 +436,13 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in,
 {
     if (!AGC_ASSERT((in != NULL) && (out != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((in->racfail >= -1) && (in->racfail <= 1) &&
                     (in->rbdfail >= -1) && (in->rbdfail <= 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     js_work_t w;
@@ -460,7 +460,7 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in,
     js_times(in, &w, out);
     js_sort(out->blast);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* JETSLECT (p. 1039) and ENDJETS (p. 1059): T5 program phase 3.          */
@@ -503,7 +503,7 @@ agc_status_t agc_task_jetslect(void)
 
     if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK))
     {
-        return (st != AGC_STATUS_OK) ? st : s2;
+        return ((st != AGC_STATUS_OK) ? st : s2);
     }
 
     if (out.attkalmn_xln != NO_ATTK)
@@ -529,7 +529,7 @@ agc_status_t agc_task_jetslect(void)
     r->t5phase  = AGC_CSM_T5P_PHASE1;             /* reset for phase 1     */
     agc_rupt_set_t5_task(AGC_TASK_RCSATT);
 
-    return AGC_STATUS_OK; /* RCS2CADR             */
+    return (AGC_STATUS_OK); /* RCS2CADR             */
 }
 
 /* REPLACER / REPLACEP / REPLACEY (p. 1062): the second word of an axis
@@ -558,7 +558,7 @@ static agc_status_t t6_replace(agc_csm_jet_axis_t axis)
             break; /* unreachable: cannot happen */
     }
 
-    return st;
+    return (st);
 }
 
 /* T6START, T6RUPTOR, T6L1, T6L2, REPLACE*, ZBLAST*, ENABT6 (pp. 1061-1062). */
@@ -570,7 +570,7 @@ agc_status_t agc_task_t6start(void)
 
     if ((t6 != 0u) && (t6 != CSM_DAP_NEG0))
     {
-        return AGC_STATUS_OK; /* TIME6 reset after T6RUPT (in T5RUPT): wait */
+        return (AGC_STATUS_OK); /* TIME6 reset after T6RUPT (in T5RUPT): wait */
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -597,7 +597,7 @@ agc_status_t agc_task_t6start(void)
             agc_chan_or(AGC_CHAN_CHAN13,
                         (uint16_t) AGC_CH013_ENBT6RUPT);
 
-            return AGC_STATUS_OK; /* ENABT6: RESUME    */
+            return (AGC_STATUS_OK); /* ENABT6: RESUME    */
         }
 
         if (b == 0)
@@ -607,5 +607,5 @@ agc_status_t agc_task_t6start(void)
         }
     }
 
-    return st;
+    return (st);
 }

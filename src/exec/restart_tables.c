@@ -270,7 +270,7 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
         !AGC_ASSERT(phase >= 2 && phase <= 0177) || !AGC_ASSERT(out != 0) ||
         !AGC_ASSERT(part == 0 || (part == 1 && (phase % 2) == 0)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ?
@@ -295,12 +295,12 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 
     if (!AGC_ASSERT(idx >= 0 && idx < n))
     {
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     *out = base[idx];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Low word of a DP held in agc_dp_t (sign + 28 bits, value/2^28): the
@@ -311,10 +311,10 @@ static int16_t dp_low_word(agc_dp_t v)
 
     if (!AGC_ASSERT(lo > -RST_SP_SCALE && lo < RST_SP_SCALE))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (int16_t) lo;
+    return ((int16_t) lo);
 }
 
 /* ITSINDIR (C p.1415): NDX A / CA 1 -- the single word at GENADR.
@@ -324,7 +324,7 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 {
     if (!AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -349,14 +349,14 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 
             if (!AGC_ASSERT(src == RST_E_NONE))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             st = AGC_STATUS_BAD_ARG;
             break;
     }
 
-    return st;
+    return (st);
 }
 
 /* ITSLGCL1 (C p.1417): EXTEND / NDX A / DCA 0 -- the DP delta time of a
@@ -365,7 +365,7 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
 {
     if (!AGC_ASSERT(out != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -388,12 +388,12 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
 
             if (!AGC_ASSERT(src == RST_E_NONE)) /* not a DP delta time  */
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
             st = AGC_STATUS_BAD_ARG;
             break;
     }
 
-    return st;
+    return (st);
 }

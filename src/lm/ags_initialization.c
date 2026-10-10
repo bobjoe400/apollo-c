@@ -38,34 +38,34 @@ const uint16_t *agc_ags_buffer(void)
 {
     _Static_assert(AGC_ALIGN_AGSBUFF_WORDS == 14, "AGC constant");
 
-    return agsbuff;
+    return (agsbuff);
 }
 
 agc_dp_t agc_ags_agsk(void)
 {
     if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(agsk <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agsk;
+    return (agsk);
 }
 
 agc_status_t agc_ags_set_agsk(agc_dp_t t)
 {
     if (!AGC_ASSERT((t >= AGC_DP_MIN) && (t <= AGC_DP_MAX)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agsk = t;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* VECSGNAG and the high words: v + half an LSB, the high word of each
@@ -100,7 +100,7 @@ agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1,
     if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) ||
         !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_vec_t v = agc_vec_shl(
@@ -119,7 +119,7 @@ agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1,
         out[(2 * i) + 1] = vw[i];
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* AGSBUFF +12D: (TAT - AGSK) / TSCALE, seconds B18. */
@@ -128,12 +128,12 @@ agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t k,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = agc_dp_div(ip, agc_dp_sub(ip, tat, k), TSCALE);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* REDSPTEM / AGSDISPK: DSPTEMX = AGSK; GOMARKF V06N16. */
@@ -141,10 +141,10 @@ static agc_status_t show_agsk(agc_job_ctx_t *ctx)
 {
     agc_erase_set_dsptemx(agsk);
 
-    return align_flash(ctx, AGC_DSKY_GOMARKF, VN_AGS_TIME,
-                       AGC_JOB_AGS_INITIALIZATION_END,
-                       AGC_JOB_AGS_INITIALIZATION_COMPUTE,
-                       AGC_JOB_AGS_INITIALIZATION_NEW_ZERO);
+    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_AGS_TIME,
+                        AGC_JOB_AGS_INITIALIZATION_END,
+                        AGC_JOB_AGS_INITIALIZATION_COMPUTE,
+                        AGC_JOB_AGS_INITIALIZATION_NEW_ZERO));
 }
 
 /* AGSINIT: alarm 220 and ENDEXT without a REFSMMAT; else REDSPTEM. */
@@ -153,7 +153,7 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
@@ -161,10 +161,10 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
         agc_alarm(ALM_NO_REFSMMAT);
         const agc_status_t alm = AGC_STATUS_ALARM;
 
-        return (alm == AGC_STATUS_OK) ? agc_dsky_endext() : alm;
+        return ((alm == AGC_STATUS_OK) ? agc_dsky_endext() : alm);
     }
 
-    return show_agsk(ctx);
+    return (show_agsk(ctx));
 }
 
 /*
@@ -176,17 +176,17 @@ agc_status_t agc_job_ags_initialization_new_zero(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agsk = align_resp_recycle() ? agc_erase_samptime() : agc_erase_dsptemx();
 
     if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return show_agsk(ctx);
+    return (show_agsk(ctx));
 }
 
 /* AGSVCALC: SET NODOFLAG (no V37), XDSPFLAG; EXDSPRET V06N16. */
@@ -194,16 +194,16 @@ agc_status_t agc_job_ags_initialization_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_set(AGC_FLAG_NODOFLAG);
     agc_flag_set(AGC_FLAG_XDSPFLAG);
 
-    return align_flash(ctx, AGC_DSKY_EXDSPRET, VN_AGS_TIME,
-                       AGC_JOB_AGS_INITIALIZATION_LM_STATE,
-                       AGC_JOB_AGS_INITIALIZATION_LM_STATE,
-                       AGC_JOB_AGS_INITIALIZATION_LM_STATE);
+    return (align_flash(ctx, AGC_DSKY_EXDSPRET, VN_AGS_TIME,
+                        AGC_JOB_AGS_INITIALIZATION_LM_STATE,
+                        AGC_JOB_AGS_INITIALIZATION_LM_STATE,
+                        AGC_JOB_AGS_INITIALIZATION_LM_STATE));
 }
 
 /* LEMPREC to now; SCALEVEC -> AGSBUFF; TAT kept for the CSM. */
@@ -213,7 +213,7 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -225,7 +225,7 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* INTSTALL */
+        return (AGC_STATUS_OK); /* INTSTALL */
     }
 
     const agc_mat_t refsmmat = agc_erase_refsmmat();
@@ -237,12 +237,12 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ags_tat = o.tat;
 
-    return agc_job_ags_initialization_csm_state(ctx);
+    return (agc_job_ags_initialization_csm_state(ctx));
 }
 
 /*
@@ -253,7 +253,7 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -265,7 +265,7 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const agc_mat_t refsmmat = agc_erase_refsmmat();
@@ -291,10 +291,10 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_svc_delayjob(DT_DOWNLIST, AGC_JOB_AGS_INITIALIZATION_SENT);
+    return (agc_svc_delayjob(DT_DOWNLIST, AGC_JOB_AGS_INITIALIZATION_SENT));
 }
 
 /* AGSEND: DOWNFLAG NODOFLAG; GOMARK3 V50N16; every answer ENDEXT. */
@@ -302,9 +302,11 @@ static agc_status_t ags_end(const agc_job_ctx_t *ctx)
 {
     agc_flag_clear(AGC_FLAG_NODOFLAG);
 
-    return align_flash(
-        ctx, AGC_DSKY_GOMARK3, VN_AGS_DONE, AGC_JOB_AGS_INITIALIZATION_END,
-        AGC_JOB_AGS_INITIALIZATION_END, AGC_JOB_AGS_INITIALIZATION_END);
+    return (align_flash(
+                ctx, AGC_DSKY_GOMARK3, VN_AGS_DONE,
+                AGC_JOB_AGS_INITIALIZATION_END,
+                AGC_JOB_AGS_INITIALIZATION_END,
+                AGC_JOB_AGS_INITIALIZATION_END));
 }
 
 /*
@@ -316,19 +318,20 @@ agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_erase_imucadr() != 0)
     {
-        return agc_svc_delayjob(DT_RETRY, AGC_JOB_AGS_INITIALIZATION_ZERO_IMU);
+        return (agc_svc_delayjob(DT_RETRY,
+                                 AGC_JOB_AGS_INITIALIZATION_ZERO_IMU));
     }
 
     agc_status_t st = agc_imu_zero(); /* IMUZERO  */
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_imu_stall_result_t r = AGC_IMU_STALL_BAD;
@@ -338,10 +341,10 @@ agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 
     if ((st != AGC_STATUS_OK) || (r == AGC_IMU_STALL_SLEEPING))
     {
-        return st;
+        return (st);
     }
 
-    return ags_end(ctx);
+    return (ags_end(ctx));
 }
 
 /* After the 20 s: the old downlist (AGSWORD); IMUSE set -> AGSEND. */
@@ -349,17 +352,17 @@ agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_telem_select_list((int) agc_erase_agsword());
 
     if (agc_flag_test(AGC_FLAG_IMUSE))
     {
-        return ags_end(ctx);
+        return (ags_end(ctx));
     }
 
-    return agc_job_ags_initialization_zero_imu(ctx);
+    return (agc_job_ags_initialization_zero_imu(ctx));
 }
 
 /* IMUSTALL woken (good or bad end): AGSEND. */
@@ -367,16 +370,16 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) !=
                     AGC_IMU_STALL_SLEEPING))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return ags_end(ctx);
+    return (ags_end(ctx));
 }
 
 /* ENDEXT (= ENDMARK): the extended verb is over.  NODOFLAG is left as it
@@ -386,13 +389,13 @@ agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_endext();
+    return (agc_dsky_endext());
 }

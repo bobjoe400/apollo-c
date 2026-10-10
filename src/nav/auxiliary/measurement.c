@@ -49,12 +49,12 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
 
     if (!AGC_ASSERT(w != NULL))
     {
-        return m;
+        return (m);
     }
 
     if (!AGC_ASSERT((b >= 0) && (b < AGC_INCORP_BLKS) && (a >= 0) && (a < 3)))
     {
-        return m;
+        return (m);
     }
 
     for (int r = 0; r < 3; r++)
@@ -62,7 +62,7 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
         m.row[r] = w->blk[b][(3 * a) + r];
     }
 
-    return m;
+    return (m);
 }
 
 /* Z123 / INCOR1 (p. 1253): ZI[a] = sum_b MXV(W part (b,a), BVECTOR[b]);
@@ -107,12 +107,12 @@ static agc_tp_t incorp_vsq_tp(agc_interp_t *ip, agc_vec_t v)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(v)))
     {
-        return 0;
+        return (0);
     }
 
     agc_tp_t s = 0;
@@ -122,7 +122,7 @@ static agc_tp_t incorp_vsq_tp(agc_interp_t *ip, agc_vec_t v)
         s = agc_tp_add(ip, s, agc_dp_mul_tp(v.c[i], v.c[i]));
     }
 
-    return s;
+    return (s);
 }
 
 /* INCOR1A (p. 1253): TRIPA = Z1^2 + Z2^2 + Z3^2 + VARIANCE (TP).         */
@@ -130,12 +130,12 @@ static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0)))
     {
-        return 0;
+        return (0);
     }
 
     agc_tp_t a = incorp_vsq_tp(ip, inc->zi[0]);
@@ -143,7 +143,7 @@ static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
     a = agc_tp_add(ip, a, incorp_vsq_tp(ip, inc->zi[1]));
     a = agc_tp_add(ip, a, incorp_vsq_tp(ip, inc->zi[2]));
 
-    return agc_tp_add(ip, a, inc->variance); /* TAD VARIANCE */
+    return (agc_tp_add(ip, a, inc->variance)); /* TAD VARIANCE */
 }
 
 /*
@@ -201,14 +201,14 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc,
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (x1 != NULL)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(inc->deltaq) && (tripa > 0)))
     {
         *x1 = 0;
 
-        return 0;
+        return (0);
     }
 
     int      m = 0;
@@ -219,7 +219,7 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc,
 
     *x1 = -m + q;                        /* XSU,1 S1 */
 
-    return agc_dp_div(ip, agc_dp_shr(dq, 1), a); /* SR1 DDV  */
+    return (agc_dp_div(ip, agc_dp_shr(dq, 1), a)); /* SR1 DDV  */
 }
 
 /*
@@ -232,13 +232,13 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT((x1_dq <= NAVAUX_MAX_SHIFT) &&
                     (x1_dq >= -NAVAUX_MAX_SHIFT)))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t normzi = agc_vec_abval(ip, inc->zi[0]);
@@ -263,7 +263,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
 
     inc->normgam = inc->normgam + (2 * shift); /* XSU,1 twice     */
 
-    return shift + x1_dq;                      /* LXC,1 XAD,1     */
+    return (shift + x1_dq);                      /* LXC,1 XAD,1     */
 }
 
 /* INCOR2 (p. 1254): OMEGA[b] = sum_a VXM(ZI[a], W part (b,a));
@@ -338,13 +338,13 @@ agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
 {
     if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0) &&
                     agc_navaux_dp_ok(inc->deltaq)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     incorp_z(ip, w, inc);
@@ -352,7 +352,7 @@ agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
 
     if (!AGC_ASSERT(tripa > 0))
     { /* A = 0: no information at all */
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     incorp_gamma(ip, inc, tripa);
@@ -363,7 +363,7 @@ agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
     incorp_omega(ip, w, inc);
     incorp_deltax(ip, inc, dqa, x1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* One element of FAZA1 (p. 1256): blk[b][m] - ZI_m OMEGAM_b, with the
@@ -374,13 +374,13 @@ static agc_vec_t incorp_wrow(agc_interp_t *ip, agc_vec_t wrow, agc_dp_t zim,
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return wrow;
+        return (wrow);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(zim) && (normgam <= NAVAUX_MAX_SHIFT) &&
                     (normgam >= -NAVAUX_MAX_SHIFT)))
     {
-        return wrow;
+        return (wrow);
     }
 
     int       s  = 0;
@@ -399,7 +399,7 @@ static agc_vec_t incorp_wrow(agc_interp_t *ip, agc_vec_t wrow, agc_dp_t zim,
 
     d = agc_navaux_vec_shift(ip, d, sh); /* VSL* 0,2       */
 
-    return agc_vec_add(ip, d, wrow);     /* VAD* W         */
+    return (agc_vec_add(ip, d, wrow));     /* VAD* W         */
 }
 
 /*
@@ -414,13 +414,13 @@ agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (w != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((inc->normgam <= NAVAUX_MAX_SHIFT) &&
                     (inc->normgam >= -NAVAUX_MAX_SHIFT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t omegam[AGC_INCORP_BLKS];
@@ -444,7 +444,7 @@ agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
         }
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -461,13 +461,13 @@ agc_status_t agc_incorp2_state(agc_interp_t *ip, const agc_incorp_t *inc,
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (sv != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(sv->tdeltav) &&
                     agc_navaux_vec_ok(sv->tnuv)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t tx789 = agc_vec_add(ip, sv->x789, inc->deltax[2]); /* TX789 */
@@ -511,5 +511,5 @@ agc_status_t agc_incorp2_state(agc_interp_t *ip, const agc_incorp_t *inc,
         sv->x789 = tx789;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

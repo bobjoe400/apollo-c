@@ -41,10 +41,10 @@ agc_status_t agc_csm_dap_setmindb(void)
 
     if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SETMAXDB (p. 687): maximum deadband. Under interrupt inhibit.          */
@@ -57,15 +57,15 @@ agc_status_t agc_csm_dap_setmaxdb(void)
 
     if (!AGC_ASSERT(r->adb == MAXDB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* S41.2 (pp. 731-732), part 1: rates, docked flag, deadband, quad
@@ -94,10 +94,10 @@ static agc_status_t s41_2_datr1(void)
 
     if (!AGC_ASSERT((r->adb == MINDB) || (r->adb == MAXDB)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* S41.2 (pp. 732-733), part 2: AC/BD roll and the quad failure flags.   */
@@ -131,15 +131,15 @@ static agc_status_t s41_2_datr2(void)
 
     if (!AGC_ASSERT((r->racfail >= -1) && (r->racfail <= 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((r->rbdfail >= -1) && (r->rbdfail <= 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* S41.2 (pp. 731-733): decode DAPDATR1, DAPDATR2. Called by DONOUN46
@@ -151,15 +151,15 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st2 == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st != AGC_STATUS_OK) ? st : st2;
+    return ((st != AGC_STATUS_OK) ? st : st2);
 }
 
 /* S40.14 (p. 735): RCS gains from IXX, IAVG (2^20 kg m^2):
@@ -172,7 +172,7 @@ agc_status_t agc_csm_dap_rcs_gains(void)
 
     if (!AGC_ASSERT(c->ixx >= 0) || !AGC_ASSERT(c->iavg >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     r->jm[0]  = csm_dap_mp_hi(c->ixx, CONTONE);
@@ -182,7 +182,7 @@ agc_status_t agc_csm_dap_rcs_gains(void)
     r->kmj[1] = csm_dap_dv(CONTTWO, c->iavg);
     r->kmj[2] = r->kmj[1];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RCSDAPON +1 (p. 736): entry from R00TOP00 with the TIME5 word in A.
@@ -194,7 +194,7 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
 
     if (!AGC_ASSERT((time5_word > 0u) && (time5_word <= 037777u)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     r->t5phase = AGC_CSM_T5P_INIT; /* TS T5PHASE (+)        */
@@ -217,7 +217,7 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
         st = AGC_STATUS_OK;
     }
 
-    return st;
+    return (st);
 }
 
 /* RCSDAPON (p. 736): 0.6 s allows TVCEXEC/ROLLDAP to die.                */
@@ -225,17 +225,17 @@ agc_status_t agc_csm_dap_rcsdapon(void)
 {
     if (!AGC_ASSERT(T5_06SEC <= 037777u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_csm_dap_rcsdapon_t5(T5_06SEC);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* RCSUP (p. 736): T5 task (RCSCADR) that activates the RCS DAP.          */
@@ -245,13 +245,13 @@ agc_status_t agc_task_rcsup(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_RCSATT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* RESUME                */
+    return (st); /* RESUME                */
 }

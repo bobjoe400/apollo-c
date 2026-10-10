@@ -41,7 +41,7 @@ static agc_dp_t tpi_elcalc(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_vec_t h    = agc_vec_cross(ip, rz->unrm, rz->ract3); /* 0D       */
@@ -60,10 +60,10 @@ static agc_dp_t tpi_elcalc(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!AGC_ASSERT(ea >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ea;
+    return (ea);
 }
 
 /* FIGTIME angle part (pp.470-471): the central angle the active vehicle
@@ -98,10 +98,10 @@ static agc_dp_t tpi_figtime_angle(agc_interp_t *ip, const agc_rendz_t *rz,
 
     if (!AGC_ASSERT(a1 >= AGC_DP_MIN && a2 >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_add(ip, a2, a1); /* ALPHA PI  */
+    return (agc_dp_add(ip, a2, a1)); /* ALPHA PI  */
 }
 
 /* FIGTIME rate part (pp.470-471): WA - WP, both angular rates times
@@ -120,10 +120,10 @@ static agc_dp_t tpi_figtime_rate(agc_interp_t *ip, const agc_rendz_t *rz,
 
     if (!AGC_ASSERT(x1 != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return rz_norm(agc_dp_sub(ip, wa, wp), x1); /* NORM X1   */
+    return (rz_norm(agc_dp_sub(ip, wa, wp), x1)); /* NORM X1   */
 }
 
 /* FIGTIME .. OKMAX (pp.470-471): time step dt = angle 2pi / (WA - WP),
@@ -137,7 +137,7 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 
     if (!AGC_ASSERT(urp.c[0] >= AGC_DP_MIN && ura.c[0] >= AGC_DP_MIN))
     {
-        return false;
+        return (false);
     }
 
     bool     fail = false;
@@ -145,7 +145,7 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 
     if (fail)
     {
-        return false;
+        return (false);
     }
 
     int      x1 = 0;
@@ -162,7 +162,7 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 
     *dt = t;
 
-    return true;
+    return (true);
 }
 
 /* OKMAX .. ADTIME (pp.471-472): choose the step from the history of the
@@ -223,7 +223,7 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
             rz->elev = ea;
         }
 
-        return AGC_STATUS_OK; /* TIMEX     */
+        return (AGC_STATUS_OK); /* TIMEX     */
     }
 
     rz->delelo = rz->delel; /* TESTY     */
@@ -231,14 +231,14 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (agc_dp_sub(ip, agc_dp_abs(rz->delel), TPI_ELEPS) < 0)
     {
-        return AGC_STATUS_OK; /* TIMEX     */
+        return (AGC_STATUS_OK); /* TIMEX     */
     }
 
     agc_dp_t titer = agc_dp_shr(agc_dp_from_sp(rz->titer), 1); /* SR1    */
 
     if (agc_dp_high(titer) == 0)
     {
-        return AGC_STATUS_OK; /* too many iterations: MPAC 0 */
+        return (AGC_STATUS_OK); /* too many iterations: MPAC 0 */
     }
 
     rz->titer = agc_dp_high(titer);
@@ -246,13 +246,13 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (!tpi_figtime(ip, rz, &dt))
     {
-        return AGC_STATUS_ALARM; /* BMN NORMEX     */
+        return (AGC_STATUS_ALARM); /* BMN NORMEX     */
     }
 
     tpi_step(ip, rz, dt);
     *done = false;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GOINT x 2 (p.472, 479): both saved states advanced by NOMTPI (conic
@@ -267,7 +267,7 @@ static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_store_active(rz, r, v);
@@ -279,7 +279,7 @@ static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz,
         rz_store_passive(rz, r, v);
     }
 
-    return st;
+    return (st);
 }
 
 static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
@@ -293,7 +293,7 @@ static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
 
             if (st != AGC_STATUS_OK)
             {
-                return st;
+                return (st);
             }
         }
 
@@ -302,11 +302,11 @@ static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
 
         if (done || st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* not reached: TITER bounds the loop */
+    return (AGC_STATUS_NO_CONVERGE); /* not reached: TITER bounds the loop */
 }
 
 /* ---- S33/34.1 (pp.469-473) ----------------------------------------------- */
@@ -316,7 +316,7 @@ agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->titer  = TPI_TITER0; /* SSP TITER     */
@@ -326,7 +326,7 @@ agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz,
     rz->rpprec = rz->rpass3;
     rz->vpprec = rz->vpass3;
 
-    return tpi_search_loop(ip, rz, false, resume);
+    return (tpi_search_loop(ip, rz, false, resume));
 }
 
 agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
@@ -335,10 +335,10 @@ agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return tpi_search_loop(ip, rz, true, resume);
+    return (tpi_search_loop(ip, rz, true, resume));
 }
 
 /* ---- S34/35.2 (pp.475-476) -------------------------------------------------
@@ -350,7 +350,7 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t    r, v;
@@ -359,10 +359,10 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_rendz_intercept_velocity(ip, rz, r, v, resume);
+    return (agc_rendz_intercept_velocity(ip, rz, r, v, resume));
 }
 
 /* ---- S3435.25 (p.475-476), also the P38/P39 MAINRTNE entry ------------------
@@ -379,7 +379,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->rtarg  = rtarg;    /* S3435.25     */
@@ -403,7 +403,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t m;
@@ -411,7 +411,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     st          = agc_rendz_lomat(ip, rz, &m);
     rz->delvlvc = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delveet3), 1);
 
-    return st;
+    return (st);
 }
 
 /* ---- S34/35.3 (p.477): the crew changed DELVLVC on V06N81 -----------------
@@ -425,7 +425,7 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_mat_t    m;
@@ -443,13 +443,13 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rtarg = r;
     rz->dvlos = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delveet3), 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- S34/35.4 / NOVRWRT (pp.477-478): DVLOS = delta V in the frame
@@ -458,7 +458,7 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_mat_t m;
@@ -473,10 +473,10 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!AGC_ASSERT(rz->dvlos.c[0] != AGC_DP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- P34/P74E (pp.464-465) -------------------------------------------------
@@ -489,7 +489,7 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
     if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
         !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t             csth = agc_dp_cos(ip, rz->centang);
@@ -500,7 +500,7 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t ttpi = agc_erase_ttpi();
@@ -511,7 +511,7 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->delvtpi = rz_abval(ip, rz->delveet3);
@@ -522,5 +522,5 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
     rz->posttpi = agc_rendz_shiftr1(rz, pa.hperi);
     agc_erase_set_tig(ttpi);
 
-    return st;
+    return (st);
 }

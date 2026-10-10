@@ -69,17 +69,17 @@ agc_status_t exec_up_stoprate(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_interrupts_inhibited() || mmnumber <= 99U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_kalc_stoprate();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SERVIDLE (SERVICER, guid-powered): not yet published.               */
@@ -87,15 +87,15 @@ agc_status_t exec_up_servidle(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }
 
 /* SETCOARS (IMU mode switching, imu): not yet published.              */
@@ -103,15 +103,15 @@ agc_status_t exec_up_setcoars(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }
 
 /* INITSUB / RAKE (C p.203): STOPRATE, restore the deadband, clear the
@@ -155,17 +155,17 @@ static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
-                            agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM,
-                                        (uint8_t) VP_GO_IDLE_NOUN),
-                            &cont);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
+                             agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM,
+                                         (uint8_t) VP_GO_IDLE_NOUN),
+                             &cont));
 
     if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 }
 
@@ -176,12 +176,12 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
@@ -197,22 +197,22 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
 
     agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
 
-    return flash_program_request(ctx);
+    return (flash_program_request(ctx));
 }
 
 agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return flash_program_request(ctx);
+    return (flash_program_request(ctx));
 }
 
 /* CHECKTAB / AGAINMM (C p.198 / L p.228): is `mm` a selectable mode?  */
@@ -232,15 +232,15 @@ static bool premm_has(uint8_t mm)
 
     if (!AGC_ASSERT(n > 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(mm <= 99U))
     {
-        return false;
+        return (false);
     }
 
-    return found;
+    return (found);
 }
 
 /* CANTR00 / V37BAD (C p.198 / L p.228): alarm 1520, release the DSKY.
@@ -260,17 +260,17 @@ static agc_status_t change_program_refuse(bool alarm_1520)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     st = agc_dsky_pinbrnch(); /* CADR PINBRNCH     */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return result;
+    return (result);
 }
 
 /* V37 (C p.197 / L p.227): request to change to major mode new_mm.
@@ -281,12 +281,12 @@ agc_status_t agc_change_program(uint8_t new_mm)
 {
     if (!AGC_ASSERT(new_mm <= 99u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(new_mm <= 99U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     mmnumber = new_mm; /* TS MMNUMBER       */
@@ -294,30 +294,30 @@ agc_status_t agc_change_program(uint8_t new_mm)
 
     if ((agc_erase_imodes30() & VP_BIT6) != 0U)
     { /* IMU initialising  */
-        return change_program_refuse(true);
+        return (change_program_refuse(true));
     }
 
     if (lm && (mmnumber == VP_DPS_ABORT || mmnumber == VP_APS_ABORT))
     {
-        return AGC_STATUS_UNIMPLEMENTED; /* SETUP70 / SETUP71 */
+        return (AGC_STATUS_UNIMPLEMENTED); /* SETUP70 / SETUP71 */
     }
 
     if (!lm && ((agc_chan_read(AGC_CHAN_DSALMOUT) & VP_BIT13) != 0U ||
                 (agc_flagword_get(6) & VP_F6_DAPBITS) == VP_F6_TVC))
     {
-        return AGC_STATUS_UNIMPLEMENTED; /* R00TOP00          */
+        return (AGC_STATUS_UNIMPLEMENTED); /* R00TOP00          */
     }
 
     if (mmnumber != 0U)
     {
         if (agc_flag_test(AGC_FLAG_NODOFLAG))
         {
-            return change_program_refuse(true); /* CANTR00           */
+            return (change_program_refuse(true)); /* CANTR00           */
         }
 
         if (!premm_has(mmnumber))
         {
-            return change_program_refuse(false); /* V37NONO           */
+            return (change_program_refuse(false)); /* V37NONO           */
         }
     }
 
@@ -325,10 +325,10 @@ agc_status_t agc_change_program(uint8_t new_mm)
     { /* ISSERVON          */
         /* DOWNFLAG AVEGFLAG (vehicle-specific bit, owned by SERVICER):
          * delegated; SERVICER returns to CANV37 when it has stopped.   */
-        return AGC_STATUS_BUSY;
+        return (AGC_STATUS_BUSY);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED; /* CANV37            */
+    return (AGC_STATUS_UNIMPLEMENTED); /* CANV37            */
 }
 
 /* CANV37 (C p.199 / L p.229): STUB. Waits for integration (INTSTALL),
@@ -338,13 +338,13 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }

@@ -49,18 +49,18 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
     {
-        return false;
+        return (false);
     }
 
     set        = (ip->ovfind != 0);
     ip->ovfind = 0;
 
-    return set;
+    return (set);
 }
 
 /* BOV used only to reset OVFIND (the AGC idiom "BOV +1" or a BOV whose
@@ -87,15 +87,15 @@ agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(ip != 0))
     {
-        return a;
+        return (a);
     }
 
     if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
     {
-        return a;
+        return (a);
     }
 
-    return agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(b), &ip->ovfind));
+    return (agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(b), &ip->ovfind)));
 }
 
 /* DAD then BOV, the sum never read (MPAC is reloaded next): only the
@@ -120,15 +120,16 @@ agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(ip != 0))
     {
-        return a;
+        return (a);
     }
 
     if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
     {
-        return a;
+        return (a);
     }
 
-    return agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(-b), &ip->ovfind));
+    return (agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(-b),
+                                 &ip->ovfind)));
 }
 
 /* TAD (p.1135): minor parts by DAS, then AD AD TS on MPAC; SETOVF ->
@@ -144,7 +145,7 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return a;
+        return (a);
     }
 
     lo2  = agc_w_das(lo2, add, &o); /* DCA 1; DAS +1    */
@@ -161,10 +162,10 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return a;
+        return (a);
     }
 
-    return agc_w3_value(m);
+    return (agc_w3_value(m));
 }
 
 /* ---- multiply (p.1136-1137, 1141-1142, 1149, 1183) ----------------------- */
@@ -176,7 +177,7 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0;
+        return (0);
     }
 
     m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
@@ -184,10 +185,10 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT(m.m2 == 0))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_w_join(agc_w3_top(m));
+    return (agc_w_join(agc_w3_top(m)));
 }
 
 /* DMP (DMP1 p.1149) used as a DP: MPAC,+1 of the DMPSUB product.           */
@@ -197,15 +198,15 @@ agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(m.m1)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w_join(agc_w3_top(m));
+    return (agc_w_join(agc_w3_top(m)));
 }
 
 /* DSQ (p.1180): DSQSUB leaves the TP square; as a DP, MPAC,+1.             */
@@ -213,15 +214,15 @@ agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
 {
     if (!AGC_ASSERT(ip != 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a))));
+    return (agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a)))));
 }
 
 agc_tp_t agc_dp_sq_tp(agc_dp_t a)
@@ -230,15 +231,15 @@ agc_tp_t agc_dp_sq_tp(agc_dp_t a)
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m.m0 >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w3_value(m);
+    return (agc_w3_value(m));
 }
 
 /* SHORTMP / SHORTMP2 / DMPSUB2 (p.1141, 1136): TP x SP -> TP.              */
@@ -250,7 +251,7 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
 
     if (!AGC_ASSERT((k >= AGC_SP_MIN) && (k <= AGC_SP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     acc.hi = 0;                                     /* XCH MPAC +1      */
@@ -266,10 +267,10 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
 
     if (!AGC_ASSERT(o == 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w3_value(m);
+    return (agc_w3_value(m));
 }
 
 /* DMPNSUB (p.1142): MPAC = (major(n m1) + minor(n m0), minor(n m1)).        */
@@ -282,17 +283,17 @@ agc_dp_t agc_dp_mul_int(agc_dp_t v, agc_sp_t n)
 
     if (!AGC_ASSERT(hi.hi == 0)) /* customer's duty  */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     lo.hi = agc_w_ts(lo.hi + hi.lo, &o); /* CA L; ADS MPAC   */
 
     if (!AGC_ASSERT(o == 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_w_join(lo);
+    return (agc_w_join(lo));
 }
 
 /* POLY / POWRSERS (p.1139-1140). x keeps only MPAC,+1.                      */
@@ -300,15 +301,15 @@ agc_dp_t agc_dp_poly(agc_dp_t x, const agc_dp_t *coef, int degree)
 {
     if (!AGC_ASSERT(coef != 0))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT((degree >= 1) && (degree <= POLY_MAX_DEGREE)))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_w_join(agc_w3_top(agc_w_poly(agc_w_split(x), coef, degree)));
+    return (agc_w_join(agc_w3_top(agc_w_poly(agc_w_split(x), coef, degree))));
 }
 
 /* ---- divide (p.1149, 1162-1170) ------------------------------------------ */
@@ -321,14 +322,14 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return AGC_DP_MAX;
+        return (AGC_DP_MAX);
     }
 
     q = agc_w_ddv(a, b, &o);
 
     if (!AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN)))
     {
-        return AGC_DP_MAX;
+        return (AGC_DP_MAX);
     }
 
     if (o != 0)
@@ -336,7 +337,7 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         ip->ovfind = 1; /* CAF ONE; TS OVFIND */
     }
 
-    return q;
+    return (q);
 }
 
 /* DDV then BOV, the quotient never read: only the overflow indicator
@@ -365,20 +366,20 @@ agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return a;
+        return (a);
     }
 
     if (n < 0)
     {
-        return agc_dp_shr(a, -n);
+        return (agc_dp_shr(a, -n));
     }
 
     if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
     {
-        return a;
+        return (a);
     }
 
-    return agc_w_join(agc_w3_top(agc_w_tssl(m, n, &ip->ovfind)));
+    return (agc_w_join(agc_w3_top(agc_w_tssl(m, n, &ip->ovfind))));
 }
 
 /* SLR n: TSSL then ROUNDSUB. For a DP MPAC (MPAC+2 = 0 after DLOAD) the
@@ -389,23 +390,23 @@ agc_dp_t agc_dp_shl_round(agc_interp_t *ip, agc_dp_t a, int n)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return a;
+        return (a);
     }
 
     if (n < 0)
     {
-        return agc_dp_shr_round(a, -n);
+        return (agc_dp_shr_round(a, -n));
     }
 
     if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
     {
-        return a;
+        return (a);
     }
 
     m = agc_w_tssl(m, n, &ip->ovfind);
     m = agc_w_roundsub(m, &ip->ovfind);
 
-    return agc_w_join(agc_w3_top(m));
+    return (agc_w_join(agc_w3_top(m)));
 }
 
 /* SL n / SR -n on the TP MPAC (TSSL, GENSCR/MPACSHR).                       */
@@ -415,7 +416,7 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
 
     if (!AGC_ASSERT(ip != 0) || (n == 0))
     {
-        return v;
+        return (v);
     }
 
     if (n > 0)
@@ -429,10 +430,10 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
-        return v;
+        return (v);
     }
 
-    return agc_w3_value(m);
+    return (agc_w3_value(m));
 }
 
 /* NORM (TSLC p.1157) on the TP MPAC.                                       */
@@ -443,7 +444,7 @@ agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
 
     if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (AGC_ASSERT(nshift != 0))
@@ -451,7 +452,7 @@ agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
         *nshift = count;
     }
 
-    return agc_w3_value(m);
+    return (agc_w3_value(m));
 }
 
 /* ROUND (unary op 07 -> ROUND: TC ROUNDSUB, p.1154/1137).                   */
@@ -461,15 +462,15 @@ agc_dp_t agc_tp_round(agc_interp_t *ip, agc_tp_t a)
 
     if (!AGC_ASSERT(ip != 0))
     {
-        return agc_tp_round_dp(a);
+        return (agc_tp_round_dp(a));
     }
 
     m = agc_w_roundsub(m, &ip->ovfind);
 
     if (!AGC_ASSERT(m.m2 == 0))
     {
-        return agc_tp_round_dp(a);
+        return (agc_tp_round_dp(a));
     }
 
-    return agc_w_join(agc_w3_top(m));
+    return (agc_w_join(agc_w3_top(m)));
 }

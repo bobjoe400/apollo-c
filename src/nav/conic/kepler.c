@@ -207,12 +207,12 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(ks != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int      n1 = 0;
@@ -237,10 +237,11 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         { /* PDXCHNGE */
             m = agc_conic_mdsu_(ip, agc_conic_mload_(ks->xmax), ctx->x);
 
-            return agc_conic_mstore_(agc_conic_mdmpr_(ip, m, AGC_CONIC_DP9_10));
+            return (agc_conic_mstore_(agc_conic_mdmpr_(ip, m,
+                                                       AGC_CONIC_DP9_10)));
         }
 
-        return trial;
+        return (trial);
     }
 
     ks->xmax = ctx->x; /* move max in    */
@@ -251,10 +252,10 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     { /* NDXCHNGE */
         m = agc_conic_mdsu_(ip, agc_conic_mload_(ks->xmin), ctx->x);
 
-        return agc_conic_mstore_(agc_conic_mdmpr_(ip, m, AGC_CONIC_DP9_10));
+        return (agc_conic_mstore_(agc_conic_mdmpr_(ip, m, AGC_CONIC_DP9_10)));
     }
 
-    return trial;
+    return (trial);
 }
 
 /* TIMEOVFL / NEGTOVFL / CMNTOVFL (p. 1281): T overflowed, X was too big:
@@ -264,12 +265,12 @@ static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     if (!AGC_ASSERT(ks != NULL))
     {
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     if (ctx->x < 0)
@@ -286,14 +287,14 @@ static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (ks->delx == 0)
     { /* BZE KEPRTN     */
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     ctx->x = agc_conic_mstore_(
         agc_conic_mbdsu_(ip, agc_conic_mload_(ks->delx), ctx->x));
     ctx->t = ks->tc; /* DLOAD TC STORE T */
 
-    return KEPLER_CONTINUE;
+    return (KEPLER_CONTINUE);
 }
 
 /* One pass of KEPLOOP (pp. 1279-1280) up to BRNCHCTR. */
@@ -302,12 +303,12 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     if (!AGC_ASSERT(ks != NULL))
     {
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     int      n1 = 0; /* DSQ NORM X1    */
@@ -323,12 +324,12 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return KEPLER_KEPRTN;
+        return (KEPLER_KEPRTN);
     }
 
     if (agc_interp_test_ovf(ip))
     { /* BOV TIMEOVFL   */
-        return kepler_timeovfl(ip, ctx, ks);
+        return (kepler_timeovfl(ip, ctx, ks));
     }
 
     m        = agc_conic_mbdsu_(ip, agc_conic_mload_(ctx->t), ks->tau); /* BDSU TAU. */
@@ -337,21 +338,21 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (!agc_conic_mbmn_(m))
     { /* BPL KEPCONVG   */
-        return KEPLER_CONVERGED;
+        return (KEPLER_CONVERGED);
     }
 
     ks->delx = kepler_newdelx(ip, ctx, ks); /* NEWDELX        */
 
     if (ks->delx == 0)
     { /* BZE KEPCONVG   */
-        return KEPLER_CONVERGED;
+        return (KEPLER_CONVERGED);
     }
 
     ctx->x = agc_conic_mstore_(
         agc_conic_mdad_(ip, agc_conic_mload_(ks->delx), ctx->x));
     ks->tc = ctx->t; /* STODL X / T; STORE TC */
 
-    return KEPLER_CONTINUE;
+    return (KEPLER_CONTINUE);
 }
 
 /* Copy the KEPLER results and debris to *out. */
@@ -387,12 +388,12 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_conic_ctx_t ctx;
@@ -401,7 +402,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
@@ -429,7 +430,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
         out->tc    = ks.tc;
         out->xprev = in->xprev;
 
-        return AGC_STATUS_OVERFLOW;
+        return (AGC_STATUS_OVERFLOW);
     }
 
     st         = agc_conic_kepconvg_(ip, &ctx, &out->rcv, &out->vcv); /* KEPCONVG */
@@ -438,10 +439,11 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return (step == KEPLER_CONVERGED) ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE;
+    return ((step ==
+             KEPLER_CONVERGED) ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE);
 }
 
 /* KEPPREP second-order term (ORBITAL_INTEGRATION.agc p. 1334, from
@@ -453,12 +455,12 @@ static agc_tp_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(cell != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
@@ -486,7 +488,7 @@ static agc_tp_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in,
     m = agc_conic_mdmp_(agc_conic_mdmp_(m, cell[0]), cell[3]); /* DMP 0D, 4D */
     m = agc_conic_mshift_(ip, m, 8 + n1 - n2); /* SL* 8D,1       */
 
-    return agc_conic_mshift_(ip, m, n1 - n2);  /* SL* 0,1        */
+    return (agc_conic_mshift_(ip, m, n1 - n2));  /* SL* 0,1        */
 }
 
 /*
@@ -502,17 +504,17 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(xkepnew != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(in->body == AGC_CONIC_EARTH || in->body == AGC_CONIC_MOON))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t cell[6];                  /* see kepprep_series */
@@ -543,7 +545,7 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
     agc_interp_clear_ovf(ip);            /* BOVB TCDANZIG  */
     *xkepnew = agc_conic_mstore_(agc_conic_mdad_(ip, m, sum)); /* XKEPNEW */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -560,12 +562,12 @@ agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
 {
     if (!AGC_ASSERT(ip != NULL && sv != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_kepler_in_t kin;
@@ -581,7 +583,7 @@ agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_kepler_out_t ko;
@@ -590,7 +592,7 @@ agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
 
     if (st == AGC_STATUS_BAD_ARG)
     {
-        return st;
+        return (st);
     }
 
     out->r    = ko.rcv; /* RECTOUT: RRECT = RCV */
@@ -603,7 +605,7 @@ agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
         *kout = ko;
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -616,7 +618,7 @@ agc_status_t agc_conic_csmconic(agc_interp_t *ip, agc_dp_t tdec1,
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_state_vector_t sv; /* PTOACSM        */
@@ -628,10 +630,10 @@ agc_status_t agc_conic_csmconic(agc_interp_t *ip, agc_dp_t tdec1,
 
     if (!AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_conic_rvcon(ip, &sv, tdec1, out, NULL);
+    return (agc_conic_rvcon(ip, &sv, tdec1, out, NULL));
 }
 
 /*
@@ -645,12 +647,12 @@ agc_status_t agc_conic_lemconic(agc_interp_t *ip, agc_dp_t tdec1,
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* BON SURFFLAG USEPIOS */
-        return AGC_STATUS_UNIMPLEMENTED;
+        return (AGC_STATUS_UNIMPLEMENTED);
     }
 
     agc_state_vector_t sv; /* PTOALEM        */
@@ -662,8 +664,8 @@ agc_status_t agc_conic_lemconic(agc_interp_t *ip, agc_dp_t tdec1,
 
     if (!AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_conic_rvcon(ip, &sv, tdec1, out, NULL);
+    return (agc_conic_rvcon(ip, &sv, tdec1, out, NULL));
 }

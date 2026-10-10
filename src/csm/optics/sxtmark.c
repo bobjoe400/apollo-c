@@ -86,19 +86,19 @@ static agc_status_t markok(void)
     {
         const agc_status_t bo = agc_bailout(ALM_NO_VAC);
 
-        return (bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo;
+        return ((bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo);
     }
 
     if (!AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->mkvac_index = vac;
     agc_erase_set_markstat((uint16_t) (vac + 1));
     ram->qpret = 0; /* next mark slot       */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -116,7 +116,7 @@ static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
         agc_relint();
         const agc_status_t bo = agc_bailout(ALM_BUSY);
 
-        return (bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo;
+        return ((bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo);
     }
 
     agc_erase_set_extvbact((uint16_t) (agc_erase_extvbact() | EXTVB_MARKING));
@@ -132,17 +132,17 @@ static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_sxtmark(agc_sp_t nmarks)
 {
     if (!AGC_ASSERT((nmarks >= 0) && (nmarks <= MS_WANTED_MAX)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return sxtmark_common(nmarks, true);
+    return (sxtmark_common(nmarks, true));
 }
 
 /* SXTMARK +2 (R56): only reserve the mark VAC area. */
@@ -150,17 +150,17 @@ agc_status_t agc_sxtmark_reserve(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = sxtmark_common(0, false);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -181,7 +181,7 @@ agc_status_t agc_sxtmark_free_vac(void)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
@@ -189,10 +189,10 @@ agc_status_t agc_sxtmark_free_vac(void)
 
     if (!AGC_ASSERT(agc_erase_markstat() == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -206,7 +206,7 @@ agc_status_t agc_sxtmark_mkreleas(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint(); /* MKRLEES  */
@@ -217,7 +217,7 @@ agc_status_t agc_sxtmark_mkreleas(void)
     st = AGC_STATUS_OK;
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -247,17 +247,17 @@ agc_status_t agc_sxtmark_markrupt(void)
             dt = (uint16_t) chk;
         }
 
-        return agc_waitlist_call(dt, AGC_TASK_MARKDIF);
+        return (agc_waitlist_call(dt, AGC_TASK_MARKDIF));
     }
 
     if ((in & AGC_CH016_MARKREJECT) != 0u)
     {
-        return agc_sxtmark_mkreject();
+        return (agc_sxtmark_mkreject());
     }
 
     if ((in & AGC_CH016_NAVKEY_MASK) != 0u)
     {
-        return agc_dsky_keyrupt2(); /* KEYCOM   */
+        return (agc_dsky_keyrupt2()); /* KEYCOM   */
     }
 
     agc_alarm(ALM_NO_INBITS);
@@ -265,10 +265,10 @@ agc_status_t agc_sxtmark_markrupt(void)
 
     if (alm != AGC_STATUS_OK)
     {
-        return alm;
+        return (alm);
     }
 
-    return AGC_STATUS_OK; /* RESUME   */
+    return (AGC_STATUS_OK); /* RESUME   */
 }
 
 /* DIFCHK: |mark CDU - present CDU| <= 3 counts (MSU, modular). */
@@ -292,10 +292,10 @@ static bool difchk(uint16_t mark_cdu, uint16_t now_cdu)
 
     if (!AGC_ASSERT((d >= -(CDU_MOD / 2)) && (d < CDU_MOD / 2)))
     {
-        return false;
+        return (false);
     }
 
-    return (d <= DIFCHK_MAX) && (d >= -DIFCHK_MAX);
+    return ((d <= DIFCHK_MAX) && (d >= -DIFCHK_MAX));
 }
 
 /*
@@ -318,19 +318,19 @@ agc_status_t agc_task_markdif(void)
 
             if (alm != AGC_STATUS_OK)
             {
-                return alm;
+                return (alm);
             }
 
-            return AGC_STATUS_OK; /* TASKOVER */
+            return (AGC_STATUS_OK); /* TASKOVER */
         }
     }
 
     if (!AGC_ASSERT(mk.cdux <= CDU_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_sxtmark_markcont();
+    return (agc_sxtmark_markcont());
 }
 
 /* GENTRAN of the mark into MRKBUF1 (and MRKBUF1 into MRKBUF2 first). */
@@ -363,12 +363,12 @@ agc_status_t agc_sxtmark_markcont(void)
     {
         to_mrkbuf1(true); /* MARKIT1  */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (agc_erase_markstat() != 0u)
     { /* CCS      */
-        return agc_sxtmark_mark2();
+        return (agc_sxtmark_mark2());
     }
 
     if (((agc_erase_extvbact() & EXTVB_MARKING) == 0u) ||
@@ -379,10 +379,10 @@ agc_status_t agc_sxtmark_markcont(void)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_MARKDISP);
@@ -397,7 +397,7 @@ agc_status_t agc_sxtmark_markcont(void)
 
     to_mrkbuf1(false);
 
-    return st;
+    return (st);
 }
 
 /*
@@ -417,10 +417,10 @@ agc_status_t agc_sxtmark_mark2(void)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     ms = (uint16_t) ((ms - MS_WANTED_ONE) | MS_REJECT_OK);
@@ -428,7 +428,7 @@ agc_status_t agc_sxtmark_mark2(void)
 
     if (!AGC_ASSERT((ram->qpret >= 0) && (ram->qpret < AGC_ALIGN_SXT_MARKS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->sxt[ram->qpret] = mk; /* VACSTOR  */
@@ -436,10 +436,10 @@ agc_status_t agc_sxtmark_mark2(void)
 
     if ((ms & MS_WANTED_MASK) != 0u)
     {
-        return AGC_STATUS_OK; /* TASKOVER */
+        return (AGC_STATUS_OK); /* TASKOVER */
     }
 
-    return agc_exec_novac(ALIGN_PRIO32, AGC_JOB_MARK_COMPLETE_DISPLAY);
+    return (agc_exec_novac(ALIGN_PRIO32, AGC_JOB_MARK_COMPLETE_DISPLAY));
 }
 
 /*
@@ -456,7 +456,7 @@ agc_status_t agc_sxtmark_mkreject(void)
     {
         agc_erase_set_mrkbuf(1, 0, align_sp_to_word(-1));
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     const uint16_t ms = agc_erase_markstat();
@@ -468,10 +468,10 @@ agc_status_t agc_sxtmark_mkreject(void)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_erase_set_markstat((uint16_t) (ms & ~MS_REJECT_OK));
@@ -483,15 +483,15 @@ agc_status_t agc_sxtmark_mkreject(void)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (!AGC_ASSERT(ram->qpret > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ram->qpret--; /* REJECT3  */
@@ -499,10 +499,10 @@ agc_status_t agc_sxtmark_mkreject(void)
 
     if ((ms & MS_WANTED_MASK) != 0u)
     {
-        return AGC_STATUS_OK; /* RESUME   */
+        return (AGC_STATUS_OK); /* RESUME   */
     }
 
-    return agc_exec_novac(ALIGN_PRIO32, AGC_JOB_MARK_REQUEST_DISPLAY);
+    return (agc_exec_novac(ALIGN_PRIO32, AGC_JOB_MARK_REQUEST_DISPLAY));
 }
 
 /* MKVB51 (p. 227): KLEENEX (clear extended verbs), then the V51 flash. */
@@ -510,16 +510,17 @@ agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_markstat() != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_MARK_REQUEST_FLASH,
-                       AGC_JOB_MARK_REQUEST_FLASH, AGC_JOB_MARK_REQUEST_FLASH);
+    return (align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_MARK_REQUEST_FLASH,
+                        AGC_JOB_MARK_REQUEST_FLASH,
+                        AGC_JOB_MARK_REQUEST_FLASH));
 }
 
 /* GOMARK4 with VB51 or V50N25: V34 TERMSXT, V33 ENTANSWR, ENTER MKVB5X. */
@@ -527,16 +528,16 @@ static agc_status_t mark_flash(const agc_job_ctx_t *ctx, uint16_t vn)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((vn == VN_PLEASE_MARK) || (vn == VN_MARKS_DONE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_TERMSXT,
-                       AGC_JOB_ENTANSWR, AGC_JOB_MARK_REDISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_TERMSXT,
+                        AGC_JOB_ENTANSWR, AGC_JOB_MARK_REDISPLAY));
 }
 
 /* MKVB51 +2: please mark (V51). */
@@ -544,10 +545,10 @@ agc_status_t agc_job_mark_request_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return mark_flash(ctx, VN_PLEASE_MARK);
+    return (mark_flash(ctx, VN_PLEASE_MARK));
 }
 
 /* MKVB50: R1 = 00016, V50N25 (all marks in), without KLEENEX. */
@@ -555,17 +556,17 @@ agc_status_t agc_job_mark_complete_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_dsky_set_dsptem(0, CHK_MARKS_DONE);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return mark_flash(ctx, VN_MARKS_DONE);
+    return (mark_flash(ctx, VN_MARKS_DONE));
 }
 
 /* MKVB5X (ENTER): V51 again if marks are still wanted, else V50N25. */
@@ -573,15 +574,15 @@ agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((agc_erase_markstat() & MS_WANTED_MASK) != 0u)
     {
-        return agc_job_mark_request_display(ctx);
+        return (agc_job_mark_request_display(ctx));
     }
 
-    return agc_job_mark_complete_display(ctx);
+    return (agc_job_mark_complete_display(ctx));
 }
 
 /*
@@ -592,19 +593,19 @@ agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dsky_clearmrk();
 
     if (!agc_phase_checkmm(3))
     {
-        return agc_job_auto_optics_positioning_terminate(ctx); /* TERM52   */
+        return (agc_job_auto_optics_positioning_terminate(ctx)); /* TERM52   */
     }
 
     agc_flag_set(AGC_FLAG_TRM03FLG); /* TERMP03  */
 
-    return agc_job_entanswr(ctx);
+    return (agc_job_entanswr(ctx));
 }
 
 /*
@@ -616,14 +617,14 @@ agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_erase_set_markstat((uint16_t) (agc_erase_markstat() & MS_VAC_MASK));
 
     if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -633,12 +634,12 @@ agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     st = agc_dsky_endmark(); /* ENDMARK  */
 
-    return st;
+    return (st);
 }
 
 /* ENDMARKS task: GOODEND for the optics (OPTSTALL). */
@@ -646,17 +647,17 @@ agc_status_t agc_task_endmarks(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_OPTICS);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* QPRET after ENTANSWR: number of marks made. */
@@ -666,10 +667,10 @@ agc_sp_t agc_sxtmark_marks_made(void)
 
     if (!AGC_ASSERT((n >= 0) && (n <= AGC_ALIGN_SXT_MARKS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return n;
+    return (n);
 }
 
 /* One stored mark (slot 0 = the first). */
@@ -678,10 +679,10 @@ agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
     if (!AGC_ASSERT(out != NULL) ||
         !AGC_ASSERT((mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = agc_align_ram()->sxt[mark];
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

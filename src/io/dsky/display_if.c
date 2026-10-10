@@ -133,7 +133,7 @@ static struct
 
 static uint16_t f4(void)
 {
-    return agc_flagword_get(DIF_F4);
+    return (agc_flagword_get(DIF_F4));
 }
 
 /* UPENT2 / DOWNENT2 on FLAGWRD4 (UPFLAG / DOWNFLAG for one bit). */
@@ -163,8 +163,8 @@ static void f4_down(uint16_t bits)
 
 static bool dif_cont_valid(const agc_dsky_cont_t *c)
 {
-    return c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE &&
-           c->enter != AGC_JOB_NONE;
+    return (c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE &&
+            c->enter != AGC_JOB_NONE);
 }
 
 /* PRIOBORT: abort 01502, display conflict. */
@@ -172,10 +172,10 @@ static agc_status_t dif_priobort(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_poodoo(PIN_ALARM_PRIOBORT);
+    return (agc_poodoo(PIN_ALARM_PRIOBORT));
 }
 
 /* WITCHONE: turn off key release light and empty CADRSTOR (or DSPLIST if
@@ -185,7 +185,7 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_chan_and((int) AGC_CHAN_DSALMOUT,
@@ -205,10 +205,10 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
 
     if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* COPIES / COPIES2: copy the request into class c. */
@@ -239,12 +239,12 @@ static agc_status_t dif_endit(agc_prio_t userprio, agc_job_id_t cont)
     if (!AGC_ASSERT(cont != AGC_JOB_NONE) ||
         !AGC_ASSERT(userprio >= 1u && userprio <= 037u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_exec_prio_change(userprio); /* BUSY only means: yield, done next */
 
-    return agc_exec_job_yield(cont);
+    return (agc_exec_job_yield(cont));
 }
 
 static agc_status_t dif_nvdsp(int c, agc_prio_t userprio);
@@ -256,15 +256,15 @@ static agc_job_id_t dif_wakecadr(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_JOB_NONE;
+        return (AGC_JOB_NONE);
     }
 
     if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
     {
-        return AGC_JOB_NONE;
+        return (AGC_JOB_NONE);
     }
 
-    return (c == DIF_MARKC) ? PIN_JOB_MARKPLAY : PIN_JOB_PLAYJUM1;
+    return ((c == DIF_MARKC) ? PIN_JOB_MARKPLAY : PIN_JOB_PLAYJUM1);
 }
 
 /* XCHSLEEP: a newer display of the class replaces any older one asleep at
@@ -273,7 +273,7 @@ static agc_status_t dif_xchsleep(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_job_id_t wake = dif_wakecadr(c);
@@ -285,12 +285,12 @@ static agc_status_t dif_xchsleep(int c)
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
-        return st;
+        return (st);
     }
 
     agc_exec_job_sleep(wake);
 
-    return AGC_STATUS_OK; /* JOBSLEEP   */
+    return (AGC_STATUS_OK); /* JOBSLEEP   */
 }
 
 /* GOSLEEPS: set the class's waiting bit, then XCHSLEEP. */
@@ -298,47 +298,47 @@ static agc_status_t dif_gosleeps(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     f4_up((uint16_t) (k_genmask[c] & DIF_WAITMASK));
 
-    return dif_xchsleep(c);
+    return (dif_xchsleep(c));
 }
 
 agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_xchsleep(DIF_MARKC);
+    return (dif_xchsleep(DIF_MARKC));
 }
 
 agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_xchsleep(DIF_NORMC);
+    return (dif_xchsleep(DIF_NORMC));
 }
 
 /* ---- the three display classes (MAKEPRIO, MAKEMARK, IFLEGAL) ---------- */
@@ -348,12 +348,12 @@ static agc_status_t dif_redoprio(agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     g_priotime = (uint16_t) agc_erase_time1(); /* save time PRIODSP sent out */
 
-    return dif_nvdsp(DIF_PRIOC, userprio);
+    return (dif_nvdsp(DIF_PRIOC, userprio));
 }
 
 /* OKTOCOPY: copy into the priority class, end whatever display job sits
@@ -362,7 +362,7 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rq != NULL)
@@ -372,7 +372,8 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
 
     agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
 
-    return (st == AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st;
+    return ((st ==
+             AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st);
 }
 
 /* MARKPLAY: reset mark over norm, set mark (XDSPFLAG); for a mark perform
@@ -381,7 +382,7 @@ static agc_status_t dif_markplay(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -395,10 +396,10 @@ static agc_status_t dif_markplay(void)
 
     if (!AGC_ASSERT((f4() & DIF_XDSPFLAG) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_nvdsp(DIF_MARKC, g_cls[DIF_MARKC].userprio); /* MARKCOP */
+    return (dif_nvdsp(DIF_MARKC, g_cls[DIF_MARKC].userprio)); /* MARKCOP */
 }
 
 /* JOBXCHS: a priority (or mark) display interrupts the active mark (face
@@ -409,12 +410,12 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(face == 0 || face == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st =
@@ -425,15 +426,15 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((f4() & DIF_MKOVFLAG) != 0u)
     {                          /* mark over norm         */
-        return dif_markplay(); /* GENMARK                */
+        return (dif_markplay()); /* GENMARK                */
     }
 
-    return dif_oktocopy(rq, userprio);
+    return (dif_oktocopy(rq, userprio));
 }
 
 /* LINUSCHR: a request with bit 14 replaces the active display directly
@@ -473,7 +474,7 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool linus = false;
@@ -483,25 +484,25 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
 
     if (end)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (!linus && (f4() & DIF_OCT20100) != 0u)
     { /* prio in ENDIDLE or busy */
-        return dif_priobort();
+        return (dif_priobort());
     }
 
     if ((f4() & DIF_OCT40400) != 0u)
     {                                        /* HIPRIO: mark active    */
-        return dif_jobxchs(0, rq, userprio); /* SETMARK                */
+        return (dif_jobxchs(0, rq, userprio)); /* SETMARK                */
     }
 
     if ((f4() & DIF_OCT10200) != 0u)
     {                                        /* normal active          */
-        return dif_jobxchs(1, rq, userprio); /* SETNORM                */
+        return (dif_jobxchs(1, rq, userprio)); /* SETNORM                */
     }
 
-    return dif_oktocopy(rq, userprio);
+    return (dif_oktocopy(rq, userprio));
 }
 
 /* MAKEMARK / CHKPRIO / MARSLEEP. */
@@ -509,7 +510,7 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     dif_copies(DIF_MARKC, rq, userprio);
@@ -519,25 +520,25 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
     { /* norm or prio busy/waiting? */
         if ((f & DIF_MRKNVFLG) != 0u)
         {
-            return AGC_STATUS_OK; /* mark asleep, astro busy */
+            return (AGC_STATUS_OK); /* mark asleep, astro busy */
         }
 
-        return dif_markplay();
+        return (dif_markplay());
     }
 
     if ((f & DIF_OCT24100) != 0u)
     { /* mark attempt during prio */
         if ((f & DIF_BITS5_11) != 0u)
         {
-            return AGC_STATUS_OK; /* mark already on        */
+            return (AGC_STATUS_OK); /* mark already on        */
         }
 
-        return dif_gosleeps(DIF_MARKC);
+        return (dif_gosleeps(DIF_MARKC));
     }
 
     f4_up(DIF_MKOVFLAG);                   /* set mark over norm     */
 
-    return dif_jobxchs(1, NULL, userprio); /* SETNORM                */
+    return (dif_jobxchs(1, NULL, userprio)); /* SETNORM                */
 }
 
 /* IFLEGAL / OKTOPLAY: a normal display. A new one while the previous
@@ -546,7 +547,7 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool linus = false;
@@ -556,13 +557,13 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 
     if (end)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (!linus && (g_cls[DIF_NORMC].flags & DIF_FLASH) != 0u &&
         (f4() & DIF_NBUSMASK) != 0u)
     {
-        return dif_priobort(); /* were norms asleep      */
+        return (dif_priobort()); /* were norms asleep      */
     }
 
     dif_copies(DIF_NORMC, rq, userprio); /* OKTOPLAY: COPIES2      */
@@ -570,13 +571,13 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 
     if ((f4() & DIF_PMMASK) != 0u)
     { /* prio or mark going     */
-        return dif_gosleeps(DIF_NORMC);
+        return (dif_gosleeps(DIF_NORMC));
     }
 
     agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
 
-    return (st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
-           st;                         /* PLAYJUM1 */
+    return ((st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
+            st);                       /* PLAYJUM1 */
 }
 
 /* MAKEPLAY: is it mark or prio or norm. The priority is raised to 33 for
@@ -586,22 +587,22 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
     if (!AGC_ASSERT(rq != NULL) ||
         !AGC_ASSERT(userprio >= 1u && userprio <= 037u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_exec_prio_change(PIN_PRIO33); /* raising: never pre-empted */
 
     if ((rq->flags & DIF_MARK) != 0u)
     {
-        return dif_makemark(rq, userprio);
+        return (dif_makemark(rq, userprio));
     }
 
     if ((rq->flags & DIF_PRIO) != 0u)
     {
-        return dif_makeprio(rq, userprio);
+        return (dif_makeprio(rq, userprio));
     }
 
-    return dif_makenorm(rq, userprio);
+    return (dif_makenorm(rq, userprio));
 }
 
 /* ---- NVDSP / PERFCHEK / FLASHSUB (pp. 1472-1477) ---------------------- */
@@ -612,17 +613,17 @@ static agc_status_t dif_cleanend(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_exec_findvac(PIN_PRIO32, PIN_JOB_JAMTERM);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* FLASHSUB: flash on (unless +1), set the class's ENDIDLE bit and wait in
@@ -632,12 +633,12 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (flash)
@@ -651,14 +652,14 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
      * modelled: R1SAVE is only ever zeroed (fresh start) in both programs. */
     if (pin_cadrstor_full())
     {
-        return ((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() :
-               AGC_STATUS_OK;                                 /* ISITPRIO */
+        return (((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() :
+                AGC_STATUS_OK);                               /* ISITPRIO */
     }
 
     g_idle.copmpac  = c; /* COPMPAC                */
     g_idle.userprio = userprio;
 
-    return pin_endidle(PIN_JOB_TERMATE, PIN_JOB_PROCEED, PIN_JOB_IDLERET3);
+    return (pin_endidle(PIN_JOB_TERMATE, PIN_JOB_PROCEED, PIN_JOB_IDLERET3));
 }
 
 /* REST: the display system is busy. If someone is in ENDIDLE the display
@@ -668,7 +669,7 @@ static agc_status_t dif_rest(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     static const agc_job_id_t nvcadr[3] = {PIN_JOB_REDOPRIO, PIN_JOB_MARKPLAY,
@@ -676,18 +677,18 @@ static agc_status_t dif_rest(int c)
 
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (pin_cadrstor_full())
     {
-        return AGC_STATUS_OK; /* ENDOFJOB               */
+        return (AGC_STATUS_OK); /* ENDOFJOB               */
     }
 
     f4_up((uint16_t) (k_genmask[c] & DIF_ASTROMSK));
     agc_status_t st = pin_nvsubusy(nvcadr[c]); /* busy or abort if illegal */
 
-    return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
 }
 
 /* GOANIDLE: flash -> FLASHSUB; GODSPRET -> back to the user's CADR; a
@@ -696,30 +697,30 @@ static agc_status_t dif_goanidle(const dif_job_t *j)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((j->tempor2 & DIF_FLASH) != 0u)
     {
-        return dif_flashsub(j->c, j->userprio, true);
+        return (dif_flashsub(j->c, j->userprio, true));
     }
 
     if ((j->tempor2 & DIF_GODSPRET) != 0u)
     {
-        return dif_endit(j->userprio, g_cls[j->c].cadr.terminate); /* ENDIT */
+        return (dif_endit(j->userprio, g_cls[j->c].cadr.terminate)); /* ENDIT */
     }
 
     if ((g_cls[j->c].nvword & PIN_LOW7) == 0u)
     { /* ISITN00: is this a paste */
-        return dif_flashsub(j->c, j->userprio, true);
+        return (dif_flashsub(j->c, j->userprio, true));
     }
 
     if (!AGC_ASSERT(j->c >= DIF_PRIOC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* not flash, not GOPERF: exit      */
+    return (AGC_STATUS_OK); /* not flash, not GOPERF: exit      */
 }
 
 /* 1STOR2ND: the VN of the second part of a please perform: the mark's
@@ -728,12 +729,12 @@ static uint16_t dif_second_vn(const dif_job_t *j)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((j->tempor2 & DIF_MARK) != 0u)
     {
-        return (uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7); /* MARKPERF  */
+        return ((uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7)); /* MARKPERF  */
     }
 
     if ((j->tempor2 & DIF_CLOCK) != 0u)
@@ -742,13 +743,13 @@ static uint16_t dif_second_vn(const dif_job_t *j)
 
         if (!AGC_ASSERT(vn > 0 && vn <= (int) PIN_POSMAX))
         {
-            return 0; /* no valid result */
+            return (0); /* no valid result */
         }
 
-        return (uint16_t) vn;
+        return ((uint16_t) vn);
     }
 
-    return agc_dsky_vn(50, 0); /* V50PASTE  */
+    return (agc_dsky_vn(50, 0)); /* V50PASTE  */
 }
 
 /* First VN of NVDSP for class c; 0 for CLEANEND. A negative MARKNV is
@@ -757,22 +758,22 @@ static uint16_t dif_first_vn(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t nv = g_cls[c].nvword;
 
     if (!pin_ones_negative(nv))
     {
-        return nv;
+        return (nv);
     }
 
     g_cls[c].nvword =
         pin_ones_neg(nv); /* in case MARKPLAY awakened after sleeping */
     uint16_t dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u;
 
-    return (uint16_t) ((g_cls[c].nvword & PIN_LOW7) +
-                       agc_dsky_vn((uint8_t) (5u + dec), 0));
+    return ((uint16_t) ((g_cls[c].nvword & PIN_LOW7) +
+                        agc_dsky_vn((uint8_t) (5u + dec), 0)));
 }
 
 /* NVDSP (GOPLAY): send the display of class c through NVMONOPT, then the
@@ -781,7 +782,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     dif_job_t j    = {c, g_cls[c].flags, userprio, 0}; /* COPYPACS */
@@ -795,8 +796,8 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
     {
         agc_status_t st = dif_cleanend();
 
-        return (st == AGC_STATUS_OK) ? dif_flashsub(c, userprio, false) :
-               st;                         /* FLASHSUB +1 */
+        return ((st == AGC_STATUS_OK) ? dif_flashsub(c, userprio, false) :
+                st);                       /* FLASHSUB +1 */
     }
 
     for (int part = 0; part < 2; part++)
@@ -805,12 +806,12 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 
         if (st == AGC_STATUS_BUSY)
         {
-            return dif_rest(c);
+            return (dif_rest(c));
         }
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         pin_flashoff();             /* in case of extended verb non flash */
@@ -821,7 +822,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 
         if (!AGC_ASSERT(st != AGC_STATUS_BUSY))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         if ((j.tempor2 & DIF_PERFORM) == 0u || (j.tempor2 & DIF_SECOND) != 0u)
@@ -834,7 +835,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         opts           = 0; /* ZL                            */
     }
 
-    return dif_goanidle(&j);
+    return (dif_goanidle(&j));
 }
 
 /* ---- ENDIDLE returns (pp. 1477-1481) ---------------------------------- */
@@ -847,13 +848,13 @@ static agc_status_t dif_endret(int outhere)
 
     if (outhere < 0)
     {
-        return AGC_STATUS_OK; /* ENDOFJOB (MARKOVER)    */
+        return (AGC_STATUS_OK); /* ENDOFJOB (MARKOVER)    */
     }
 
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) ||
         !AGC_ASSERT(outhere <= 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dsky_cont_t *k    = &g_cls[c].cadr;
@@ -866,10 +867,10 @@ static agc_status_t dif_endret(int outhere)
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
-        return st;
+        return (st);
     }
 
-    return dif_endit(g_idle.userprio, cont);
+    return (dif_endit(g_idle.userprio, cont));
 }
 
 /* NORMRET: wake a mark or normal display that is asleep (interrupted or
@@ -878,7 +879,7 @@ static agc_status_t dif_normret(int outhere)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t     f  = f4();
@@ -904,15 +905,15 @@ static agc_status_t dif_normret(int outhere)
 
     if (!AGC_ASSERT(outhere >= -1 && outhere <= 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
-        return st;
+        return (st);
     }
 
-    return dif_endret(outhere);
+    return (dif_endret(outhere));
 }
 
 /* ENDOUT: check nature of ENDIDLE return. A priority display answered
@@ -921,7 +922,7 @@ static agc_status_t dif_endout(int outhere)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t m = (uint16_t) (f4() & DIF_OCT60000);
@@ -930,7 +931,7 @@ static agc_status_t dif_endout(int outhere)
     { /* MARKRET        */
         f4_down(06u);
 
-        return dif_endret(outhere);
+        return (dif_endret(outhere));
     }
 
     if (m != 0u)
@@ -941,16 +942,16 @@ static agc_status_t dif_endout(int outhere)
 
         if (elapsed <= DIF_2SEC)
         {
-            return dif_redoprio(g_cls[DIF_PRIOC].userprio); /* KEEPPRIO */
+            return (dif_redoprio(g_cls[DIF_PRIOC].userprio)); /* KEEPPRIO */
         }
     }
 
     if (!AGC_ASSERT(outhere >= 0 && outhere <= 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_normret(outhere);
+    return (dif_normret(outhere));
 }
 
 /* TERMATE: astronaut terminate (V34) returns to call CADR +1. */
@@ -958,15 +959,15 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_endout(0);
+    return (dif_endout(0));
 }
 
 /* PROCEED: astronaut proceed (V33) returns to call CADR +2. */
@@ -974,15 +975,15 @@ agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_endout(1);
+    return (dif_endout(1));
 }
 
 /* IDLERET1 +2: enter or recycle. A V21-V23 load of a noun other than the
@@ -996,7 +997,7 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         agc_dsky_response(&verb, &noun) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int d = (int) verb - PIN_LOWLOAD;
@@ -1007,16 +1008,16 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
 
         if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         if ((g_cls[c].nvword & PIN_LOW7) != noun)
         {
-            return pin_pinbrnch();
+            return (pin_pinbrnch());
         }
     }
 
-    return dif_endout(2); /* OKTOENT         */
+    return (dif_endout(2)); /* OKTOENT         */
 }
 
 /* ---- PINBRNCH, MARKOVER (pp. 1468-1470, 1480) ------------------------- */
@@ -1027,17 +1028,17 @@ static agc_status_t dif_normbnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     f4_up(DIF_PINBRFLG);
 
     if ((f4() & DIF_PRIODFLG) != 0u)
     {
-        return dif_redoprio(g_cls[DIF_PRIOC].userprio); /* KEEPPRIO   */
+        return (dif_redoprio(g_cls[DIF_PRIOC].userprio)); /* KEEPPRIO   */
     }
 
-    return dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio); /* PLAYJUM1   */
+    return (dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio)); /* PLAYJUM1   */
 }
 
 /* PINBRNCH (GOAGIN): re-establish the display in ENDIDLE after the
@@ -1046,19 +1047,19 @@ agc_status_t pin_pinbrnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t m = (uint16_t) (f4() & DIF_PINMASK);
 
     if ((m & DIF_MRKIDFLG) != 0u)
     {
-        return dif_markplay();
+        return (dif_markplay());
     }
 
     if (m != 0u)
     {
-        return dif_normbnch();
+        return (dif_normbnch());
     }
 
     agc_status_t st = agc_dsky_nvsub_blank(-3); /* ERASER         */
@@ -1066,22 +1067,22 @@ agc_status_t pin_pinbrnch(void)
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY ||
                     st == AGC_STATUS_POODOO))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
 }
 
 agc_status_t agc_dsky_pinbrnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_relint(); /* RELINT         */
 
-    return pin_pinbrnch();
+    return (pin_pinbrnch());
 }
 
 /* CLEARMRK: release the mark / extended verb display system. */
@@ -1107,17 +1108,17 @@ agc_status_t agc_dsky_endmark(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dsky_clearmrk();
 
     if ((f4() & DIF_PRIO30) != 0u)
     { /* normal or prio in ENDIDLE */
-        return dif_normbnch();
+        return (dif_normbnch());
     }
 
-    return dif_normret(-1);
+    return (dif_normret(-1));
 }
 
 /* ENDEXT EQUALS ENDMARK (end of an extended verb). */
@@ -1125,10 +1126,10 @@ agc_status_t agc_dsky_endext(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_dsky_endmark();
+    return (agc_dsky_endmark());
 }
 
 /* ---- jobs ------------------------------------------------------------- */
@@ -1139,7 +1140,7 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(ctx->arg >= 1 && ctx->arg <= DIF_RQ_LEN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     dif_req_t rq = g_rq[ctx->arg - 1];
@@ -1148,10 +1149,10 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(rq.used))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_makeplay(&rq, ctx->prio);
+    return (dif_makeplay(&rq, ctx->prio));
 }
 
 /* PLAYJUM1: (re)display the normal class (wake point of a normal display). */
@@ -1159,45 +1160,45 @@ agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio);
+    return (dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio));
 }
 
 agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_markplay();
+    return (dif_markplay());
 }
 
 agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_redoprio(g_cls[DIF_PRIOC].userprio);
+    return (dif_redoprio(g_cls[DIF_PRIOC].userprio));
 }
 
 /* ---- entries (pp. 1465-1467) ------------------------------------------ */
@@ -1258,7 +1259,7 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 
     if (!AGC_ASSERT(slot >= 0) || !AGC_ASSERT(prio >= 1u && prio <= 037u))
     {
-        return AGC_STATUS_FULL;
+        return (AGC_STATUS_FULL);
     }
 
     agc_inhint();
@@ -1276,7 +1277,7 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
@@ -1285,7 +1286,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(kind >= AGC_DSKY_GODSP && kind < AGC_DSKY_DISP_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const dif_kind_t *k  = &k_kinds[kind];
@@ -1308,7 +1309,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
         ((k->flags & DIF_GODSPRET) != 0u &&
          !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (k->src == 1u)
@@ -1324,7 +1325,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
     else if (k->src == 3u)
@@ -1336,10 +1337,10 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 
     if (k->r)
     {
-        return dif_start_makeplay(&rq, ctx->prio);
+        return (dif_start_makeplay(&rq, ctx->prio));
     }
 
-    return dif_makeplay(&rq, ctx->prio); /* GOFLASH2: SAVELOCS, MAKEPLAY */
+    return (dif_makeplay(&rq, ctx->prio)); /* GOFLASH2: SAVELOCS, MAKEPLAY */
 }
 
 /* BLANKET (LINUS): OR flag bits into the PLAYTEM4 of the MAKEPLAY job the
@@ -1349,17 +1350,17 @@ agc_status_t agc_dsky_blanket(uint16_t bits)
     if (!AGC_ASSERT(g_rq_last >= 0 && g_rq_last < DIF_RQ_LEN) ||
         !AGC_ASSERT(bits <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!g_rq[g_rq_last].used)
     {
-        return AGC_STATUS_NOT_FOUND; /* already started */
+        return (AGC_STATUS_NOT_FOUND); /* already started */
     }
 
     g_rq[g_rq_last].flags = (uint16_t) (g_rq[g_rq_last].flags | bits);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* INITDSP: restore the most recent normal user's priority and redo his
@@ -1371,7 +1372,7 @@ agc_status_t agc_dsky_initdsp(void)
 {
     if (!AGC_ASSERT(g_restreg >= 1u && g_restreg <= 037u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_exec_prio_change(g_restreg);
@@ -1382,10 +1383,10 @@ agc_status_t agc_dsky_initdsp(void)
 
     if (!AGC_ASSERT((rq.flags & (DIF_MARK | DIF_PRIO)) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return dif_makeplay(&rq, g_restreg);
+    return (dif_makeplay(&rq, g_restreg));
 }
 
 void agc_dsky_set_nvword1(uint16_t word)

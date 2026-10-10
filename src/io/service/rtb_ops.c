@@ -51,7 +51,7 @@ static int32_t cdu_pattern_value(uint16_t pattern)
 
     if (!AGC_ASSERT((pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((p & CDU_SIGN) != 0u)
@@ -61,10 +61,10 @@ static int32_t cdu_pattern_value(uint16_t pattern)
 
     if (!AGC_ASSERT(v >= -(int32_t) SP_RANGE && v < (int32_t) SP_RANGE))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* Reduce a signed count of 2^-14 half-revolutions to the 15-bit two's-
@@ -76,7 +76,7 @@ static uint16_t cdu_value_pattern(int32_t v)
     if (!AGC_ASSERT(v > -4 * (int32_t) CDU_MODULUS &&
                     v < 4 * (int32_t) CDU_MODULUS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (m < 0)
@@ -86,10 +86,10 @@ static uint16_t cdu_value_pattern(int32_t v)
 
     if (!AGC_ASSERT(m >= 0 && m < (int32_t) CDU_MODULUS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (uint16_t) m;
+    return ((uint16_t) m);
 }
 
 /* LOADTIME (RTB_OP_CODES.agc p.1397): load TIME2,TIME1 into MPAC.
@@ -100,17 +100,17 @@ agc_dp_t agc_rtb_loadtime(void)
 
     if (!AGC_ASSERT(t <= (uint32_t) DP_TIME_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     t &= (uint32_t) DP_TIME_MASK;
 
     if (!AGC_ASSERT((agc_dp_t) t <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) t;
+    return ((agc_dp_t) t);
 }
 
 /* CDULOGIC (RTB_OP_CODES.agc p.1397): convert the SP two's-complement CDU
@@ -128,15 +128,15 @@ agc_dp_t agc_rtb_cdulogic(uint16_t cdu_pattern)
 
     if (!AGC_ASSERT(r >= -AGC_DP_HALF && r < AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT((cdu_pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r; /* revolutions, scale 2^0 */
+    return (r); /* revolutions, scale 2^0 */
 }
 
 /* SGNAGREE / TPAGREE (RTB_OP_CODES.agc p.1397, INTERPRETER.agc TPAGREE):
@@ -149,14 +149,14 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
 {
     if (!AGC_ASSERT(mpac != NULL))
     {
-        return 0;
+        return (0);
     }
 
     for (int i = 0; i < 3; i++)
     {
         if (!AGC_ASSERT(mpac->w[i] >= AGC_SP_MIN && mpac->w[i] <= AGC_SP_MAX))
         {
-            return 0;
+            return (0);
         }
     }
 
@@ -180,7 +180,7 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
     mpac->w[1] = (agc_sp_t) (sign * mid);
     mpac->w[2] = (agc_sp_t) (sign * lo);
 
-    return sign;
+    return (sign);
 }
 
 /* SGNAGREE on a DP pair (MPAC, MPAC+1 with MPAC+2 = 0), returning the DP in
@@ -191,12 +191,12 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 
     if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     m.w[0] = hi;
@@ -206,11 +206,11 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 
     if (!AGC_ASSERT(sg >= -1 && sg <= 1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE +
-                       (int32_t) m.w[1]);
+    return ((agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE +
+                        (int32_t) m.w[1]));
 }
 
 /* 1TO2SUB (RTB_OP_CODES.agc p.1398): double the DP angle (revolutions ->
@@ -225,16 +225,16 @@ static uint16_t one_to_two(agc_dp_t angle_rev)
 
     if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN && angle_rev <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(hi > -2 * (int64_t) SP_RANGE &&
                     hi < 2 * (int64_t) SP_RANGE))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return cdu_value_pattern((int32_t) hi);
+    return (cdu_value_pattern((int32_t) hi));
 }
 
 /* 1STO2S (RTB_OP_CODES.agc p.1397): DP ones'-complement angle in revolutions
@@ -245,15 +245,15 @@ uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
 
     if (!AGC_ASSERT(p <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return p;
+    return (p);
 }
 
 /* V1STO2S (RTB_OP_CODES.agc pp.1397-1398): 1STO2S on each component of a
@@ -262,7 +262,7 @@ agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
 {
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < AGC_VEC_N; i++)
@@ -273,10 +273,10 @@ agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
     if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK &&
                     out[2] <= CDU_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* 2V1STO2S (RTB_OP_CODES.agc p.1398): two-component version used by the RR;
@@ -285,7 +285,7 @@ agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
 {
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     out[0] = one_to_two(a_rev);
@@ -293,10 +293,10 @@ agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
 
     if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CDUINC (RTB_OP_CODES.agc pp.1398-1399): increment a two's-complement CDU
@@ -310,17 +310,17 @@ uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
 
     if (!AGC_ASSERT(inc >= AGC_SP_MIN && inc <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t r = cdu_value_pattern(a + (int32_t) inc);
 
     if (!AGC_ASSERT(r <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* INCRCDUS (RT8_OP_CODES.agc, Comanche only): increment THETAD, +1, +2 by
@@ -331,7 +331,7 @@ agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr)
 {
     if (!AGC_ASSERT(thetad != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < AGC_VEC_N; i++)
@@ -340,13 +340,13 @@ agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr)
 
         if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         thetad[i] = agc_rtb_cduinc(thetad[i], (agc_sp_t) hi);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* READPIPS (RT8_OP_CODES.agc, Comanche only): read PIPAX, PIPAY, PIPAZ
@@ -363,12 +363,12 @@ agc_vec_t agc_rtb_readpips(void)
 
     if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(y >= AGC_SP_MIN && z >= AGC_SP_MIN))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     agc_vec_t v;
@@ -377,7 +377,7 @@ agc_vec_t agc_rtb_readpips(void)
     v.c[1] = (agc_dp_t) y * (agc_dp_t) SP_RANGE;
     v.c[2] = (agc_dp_t) z * (agc_dp_t) SP_RANGE;
 
-    return v;
+    return (v);
 }
 
 /* PULSEIMU (RTB_OP_CODES.agc p.1400): torque the gyros with the commands
@@ -389,7 +389,7 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
         if (!AGC_ASSERT(gyro_cmds.c[i] >= AGC_DP_MIN &&
                         gyro_cmds.c[i] <= AGC_DP_MAX))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
@@ -397,10 +397,10 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* TRANSP1 / TRANSP2 (RT8_OP_CODES.agc, Comanche only): transpose the 3x3
@@ -409,7 +409,7 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
 {
     if (!AGC_ASSERT(m != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     static const int swap_r[3] = {0, 0, 1};
@@ -422,7 +422,7 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
 
         if (!AGC_ASSERT(r < c && c < AGC_VEC_N))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         agc_dp_t t = m->row[r].c[c];
@@ -431,7 +431,7 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
         m->row[c].c[r] = t;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SIGNMPAC (RTB_OP_CODES.agc p.1401): set MPAC to DPOSMAX or -DPOSMAX by the
@@ -444,15 +444,15 @@ agc_dp_t agc_rtb_signmpac(agc_dp_t mpac)
 
     if (!AGC_ASSERT(mpac >= AGC_DP_MIN && mpac <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(r == AGC_DP_MAX || r == -AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* NORMUNIT / NORMUNX1 (RTB_OP_CODES.agc pp.1401-1402): like UNIT, but when
@@ -473,12 +473,12 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(shift != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     bool all_small = true;
@@ -506,7 +506,7 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
         *shift = n;
     }
 
-    return agc_vec_unit(ip, w, abval, vsq); /* UNIT +1               */
+    return (agc_vec_unit(ip, w, abval, vsq)); /* UNIT +1               */
 }
 
 /* VECSGNAG (RTB_OP_CODES.agc p.1402): force sign agreement in each component
@@ -516,15 +516,15 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
 {
     if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(v.c[1] >= AGC_DP_MIN && v.c[2] >= AGC_DP_MIN))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* QUALITY2 (RT8_OP_CODES.agc, Comanche only, SETLOC MODCHG2; entered from
@@ -540,12 +540,12 @@ agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(e3j22r2m >= AGC_SP_MIN && e3j22r2m <= AGC_SP_MAX))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     static const agc_dp_t five_eighths = 0x0A000000;     /* 5/8: 2DEC 5 B-3 */
@@ -560,7 +560,7 @@ agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
     v.c[0] = agc_dp_add(ip, agc_dp_shr(urpv.c[0], 1), v.c[0]); /* SR1 DAD  */
     v.c[1] = agc_dp_sub(ip, v.c[1], agc_dp_shr(urpv.c[1], 1)); /* SR1 BDSU */
 
-    return agc_vec_scale(ip, v, agc_dp_from_sp(e3j22r2m));     /* VXSC B61 */
+    return (agc_vec_scale(ip, v, agc_dp_from_sp(e3j22r2m)));     /* VXSC B61 */
 }
 
 /* QUALITY1 (RT8_OP_CODES.agc, SETLOC MODCHG3): only when MOONFLAG is set is
@@ -571,15 +571,15 @@ agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!moonflag)
     {
-        return AGC_STATUS_NOT_FOUND; /* BOF -> NBRANCH  */
+        return (AGC_STATUS_NOT_FOUND); /* BOF -> NBRANCH  */
     }
 
     *out = agc_rtb_quality2(ip, urpv, e3j22r2m);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

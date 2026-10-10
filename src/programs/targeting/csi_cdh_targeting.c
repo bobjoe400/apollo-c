@@ -27,7 +27,7 @@ static agc_rendz_t *csi_begin(agc_interp_t *ip)
     agc_interp_init(ip);
     agc_rendz_t *rz = rz_state();
 
-    return rz;
+    return (rz);
 }
 
 /* STORE X; DSU 60MIN; BPL (repeat): X modulo one hour (P32/P72E). */
@@ -49,10 +49,10 @@ static agc_dp_t csi_mod_hour(agc_interp_t *ip, agc_dp_t x)
 
     if (!AGC_ASSERT(v < RZ_60MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 /* SELECTMU (p.494) then its GOTO VN1645, which returns to the caller. */
@@ -63,12 +63,12 @@ static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_FINALFLG);
 
-    return rz_ttogo_display(ctx, ip, rz, next);
+    return (rz_ttogo_display(ctx, ip, rz, next));
 }
 
 /* ======================= P32 / P72 (pp.652-654) ========================== */
@@ -79,7 +79,7 @@ static agc_status_t csi_start(agc_job_ctx_t *ctx, bool this_active)
     rz_avflag(this_active);
     rz_state()->centang = 0;
 
-    return agc_job_csi_input(ctx);
+    return (agc_job_csi_input(ctx));
 }
 
 /* P32 CSI TARGETING (P32-P33_P72-P73.agc p.652, label P32) */
@@ -87,10 +87,10 @@ agc_status_t agc_job_csi_targeting(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csi_start(ctx, true);
+    return (csi_start(ctx, true));
 }
 
 /* P72 CSI TARGETING, OTHER VEHICLE ACTIVE (p.652, label P72) */
@@ -98,10 +98,10 @@ agc_status_t agc_job_csi_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csi_start(ctx, false);
+    return (csi_start(ctx, false));
 }
 
 /* P32/P72A (p.652): P20FLGON; NN = 0 (CM) / NN+1 = TCSI = 0 (LM);
@@ -110,7 +110,7 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rendz_t *rz = rz_state();
@@ -126,7 +126,7 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
         rz->tcsi = 0; /* TS NN +1: the low word of NN is not modelled */
     }
 
-    return rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI);
+    return (rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI));
 }
 
 /* LM VN0611 (p.~): TCSI <= 0 -> TCSI = time of the next apocenter of the
@@ -139,7 +139,7 @@ static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_timerad_in_t in;
@@ -157,12 +157,12 @@ static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->tcsi = agc_dp_add(ip, o.t, rz->tdec2);
 
-    return rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI);
+    return (rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI));
 }
 
 /* After V06N11: (LM: automatic TCSI) V06N55 NN, ELEV. */
@@ -173,10 +173,10 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
 
     if (!rz_is_csm() && agc_dp_neg(rz->tcsi) >= 0)
     {
-        return csi_lm_auto_tcsi(ctx, &ip, rz);
+        return (csi_lm_auto_tcsi(ctx, &ip, rz));
     }
 
-    return rz_vnpooh(ctx, 6U, 55U, AGC_JOB_CSI_AFTER_NN_ELEV);
+    return (rz_vnpooh(ctx, 6U, 55U, AGC_JOB_CSI_AFTER_NN_ELEV));
 }
 
 /* After V06N55: V06N37 TTPI. */
@@ -184,15 +184,15 @@ agc_status_t agc_job_csi_after_nn_elev(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rz_state()->nn >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_vnpooh(ctx, 6U, 37U, AGC_JOB_CSI_AFTER_TTPI);
+    return (rz_vnpooh(ctx, 6U, 37U, AGC_JOB_CSI_AFTER_TTPI));
 }
 
 /* After V06N37: TIG = TCSI, SELECTMU (V16N45), then P32/P72B. */
@@ -203,7 +203,7 @@ agc_status_t agc_job_csi_after_ttpi(agc_job_ctx_t *ctx)
 
     agc_erase_set_tig(rz->tcsi);
 
-    return csi_selectmu(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE);
+    return (csi_selectmu(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE));
 }
 
 /* ALMXIT (p.652): VARALARM 00600 + CSIALRM - 1, V05N09: PROCEED shows it
@@ -215,21 +215,21 @@ static agc_status_t csi_almxit(agc_job_ctx_t *ctx, agc_sp_t code)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_job_csi_alarm_display(ctx);
+    return (agc_job_csi_alarm_display(ctx));
 }
 
 agc_status_t agc_job_csi_alarm_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH,
-                    AGC_JOB_CSI_ALARM_DISPLAY, AGC_JOB_CSI_INPUT);
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH,
+                     AGC_JOB_CSI_ALARM_DISPLAY, AGC_JOB_CSI_INPUT));
 }
 
 /* P32/P72C .. P32/P72F (pp.653-654): UPDATFLG unless final, the times
@@ -245,7 +245,7 @@ static agc_status_t csi_results(agc_job_ctx_t *ctx, agc_interp_t *ip,
     rz->t1tot2 = csi_mod_hour(ip, rz->t1tot2); /* P32/P72E  */
     rz->t2tot3 = csi_mod_hour(ip, rz->t2tot3); /* P32/P72F  */
 
-    return rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CSI_AFTER_RESULTS);
+    return (rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CSI_AFTER_RESULTS));
 }
 
 /* P32/P72B (p.653): ADVANCE; passive TCSI -> TTPI (conic) as PASSIVE;
@@ -265,7 +265,7 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_store_passive(rz, r, v);
@@ -275,15 +275,15 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_ALARM)
     {
-        return csi_almxit(ctx, alarm);
+        return (csi_almxit(ctx, alarm));
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return csi_results(ctx, &ip, rz);
+    return (csi_results(ctx, &ip, rz));
 }
 
 /* After V06N75: S32/33.1 with DELVEET1 -> DISDVLVC V06N81. */
@@ -292,8 +292,8 @@ agc_status_t agc_job_csi_after_results(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_rendz_t *rz = csi_begin(&ip);
 
-    return rz_disdvlvc(ctx, &ip, rz, rz->delveet1, 81U,
-                       AGC_JOB_CSI_AFTER_DV_LV);
+    return (rz_disdvlvc(ctx, &ip, rz, rz->delveet1, 81U,
+                        AGC_JOB_CSI_AFTER_DV_LV));
 }
 
 /* After V06N81: S32/33.1 tail (DELVEET1 = DELVSIN), RACT1 = RACT2,
@@ -307,14 +307,14 @@ agc_status_t agc_job_csi_after_dv_lv(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->delveet1 = dv;
     rz->ract1    = rz->ract2;
 
-    return rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 82U,
-                       AGC_JOB_CSI_AFTER_CDH_DV);
+    return (rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 82U,
+                        AGC_JOB_CSI_AFTER_CDH_DV));
 }
 
 /* After V06N82: TTPIO = TTPI, VN1645, back to P32/P72B. */
@@ -325,7 +325,7 @@ agc_status_t agc_job_csi_after_cdh_dv(agc_job_ctx_t *ctx)
 
     rz->ttpio = agc_erase_ttpi();
 
-    return rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE);
+    return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE));
 }
 
 /* ======================= P33 / P73 (pp.658-660) ========================== */
@@ -333,7 +333,7 @@ static agc_status_t cdh_start(agc_job_ctx_t *ctx, bool this_active)
 {
     rz_avflag(this_active);
 
-    return agc_job_cdh_input(ctx);
+    return (agc_job_cdh_input(ctx));
 }
 
 /* P33 CDH TARGETING (P32-P33_P72-P73.agc p.658, label P33) */
@@ -341,10 +341,10 @@ agc_status_t agc_job_cdh_targeting(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return cdh_start(ctx, true);
+    return (cdh_start(ctx, true));
 }
 
 /* P73 CDH TARGETING, OTHER VEHICLE ACTIVE (p.658, label P73) */
@@ -352,10 +352,10 @@ agc_status_t agc_job_cdh_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return cdh_start(ctx, false);
+    return (cdh_start(ctx, false));
 }
 
 /* P33/P73A: P20FLGON, V06N13 TCDH. */
@@ -363,12 +363,12 @@ agc_status_t agc_job_cdh_input(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_tracking_flags_on();
 
-    return rz_vnpooh(ctx, 6U, 13U, AGC_JOB_CDH_AFTER_TCDH);
+    return (rz_vnpooh(ctx, 6U, 13U, AGC_JOB_CDH_AFTER_TCDH));
 }
 
 /* After V06N13: TTPI = TTPIO, TIG = TCDH, SELECTMU, then P33/P73B. */
@@ -380,7 +380,7 @@ agc_status_t agc_job_cdh_after_tcdh(agc_job_ctx_t *ctx)
     agc_erase_set_ttpi(rz->ttpio);
     agc_erase_set_tig(rz->tcdh);
 
-    return csi_selectmu(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE);
+    return (csi_selectmu(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE));
 }
 
 /* P33/P73C .. P33/P73F (p.659): UPDATFLG unless final; TTPI += NOMTPI;
@@ -409,7 +409,7 @@ static agc_status_t cdh_results(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     rz->t2tot3 = agc_dp_sign(csi_mod_hour(ip, agc_dp_abs(y)), y);
 
-    return rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CDH_AFTER_RESULTS);
+    return (rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CDH_AFTER_RESULTS));
 }
 
 /* S33/34.1 result: OK -> P33/P73C; no solution -> ALARM 611, V05N09. */
@@ -418,16 +418,16 @@ static agc_status_t cdh_after_search(agc_job_ctx_t *ctx, agc_interp_t *ip,
 {
     if (st == AGC_STATUS_ALARM)
     {
-        return rz_alarm_flash(ctx, (agc_alarm_code_t) AGC_ALARM_00611,
-                              AGC_JOB_CDH_ALARM_PROCEED, AGC_JOB_CDH_INPUT);
+        return (rz_alarm_flash(ctx, (agc_alarm_code_t) AGC_ALARM_00611,
+                               AGC_JOB_CDH_ALARM_PROCEED, AGC_JOB_CDH_INPUT));
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return cdh_results(ctx, ip, rz);
+    return (cdh_results(ctx, ip, rz));
 }
 
 /* P33/P73B (p.658): ADVANCE, CDHMVR, active and passive TCDH -> TTPI
@@ -453,7 +453,7 @@ agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_store_active(rz, r, v);
@@ -462,7 +462,7 @@ agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_store_passive(rz, r, v);
@@ -470,7 +470,7 @@ agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
     rz_vflag_set(RZ_VF_ITSWICH, true);
     st = agc_rendz_tpi_time_search(&ip, rz, AGC_JOB_CDH_TIME_SEARCH);
 
-    return cdh_after_search(ctx, &ip, rz, st);
+    return (cdh_after_search(ctx, &ip, rz, st));
 }
 
 /* S33/34.1 resumed after an INTSTALL sleep. */
@@ -481,7 +481,7 @@ agc_status_t agc_job_cdh_time_search(agc_job_ctx_t *ctx)
     agc_status_t st =
         agc_rendz_tpi_time_search_cont(&ip, rz, AGC_JOB_CDH_TIME_SEARCH);
 
-    return cdh_after_search(ctx, &ip, rz, st);
+    return (cdh_after_search(ctx, &ip, rz, st));
 }
 
 /* 611 PROCEED (p.659): NOMTPI = 0, P33/P73C. */
@@ -492,7 +492,7 @@ agc_status_t agc_job_cdh_alarm_proceed(agc_job_ctx_t *ctx)
 
     rz->nomtpi = 0;
 
-    return cdh_results(ctx, &ip, rz);
+    return (cdh_results(ctx, &ip, rz));
 }
 
 /* After V06N75: S32/33.1 with DELVEET2 -> DISDVLVC V06N81. */
@@ -501,8 +501,8 @@ agc_status_t agc_job_cdh_after_results(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_rendz_t *rz = csi_begin(&ip);
 
-    return rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 81U,
-                       AGC_JOB_CDH_AFTER_DV_LV);
+    return (rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 81U,
+                        AGC_JOB_CDH_AFTER_DV_LV));
 }
 
 /* After V06N81: DELVEET2 = DELVSIN, VN1645, back to P33/P73B. */
@@ -515,10 +515,10 @@ agc_status_t agc_job_cdh_after_dv_lv(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz->delveet2 = dv;
 
-    return rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE);
+    return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE));
 }

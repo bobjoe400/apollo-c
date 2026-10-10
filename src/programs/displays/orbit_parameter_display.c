@@ -47,24 +47,24 @@ agc_dp_t agc_orbit_params_maxchk(agc_interp_t *ip, agc_dp_t h)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t d = agc_dp_sub(ip, h, RZ_MAXNM); /* DSU MAXNM     */
 
     if (d >= 0)
     { /* BPL +3        */
-        return RZ_MAXNM;
+        return (RZ_MAXNM);
     }
 
     agc_dp_t r = agc_dp_add(ip, d, RZ_MAXNM); /* DAD MAXNM     */
 
     if (!AGC_ASSERT(r < RZ_MAXNM))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* ---- MOONGON / EARTHGON / MOONPAD / EARTHPAD (pp.517, 519) -------------
@@ -76,7 +76,7 @@ agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
 {
     if (!AGC_ASSERT(in != NULL) || !AGC_ASSERT(rls_mag_or_rpad >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     in->moon     = moon;
@@ -85,7 +85,7 @@ agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
     in->rpadtem  = rls_mag_or_rpad;
     rz_vflag_set(RZ_VF_ORBIT_DISPLAY_MOON, moon);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SR2R if moon centred (2^27 -> 2^29 for display), then MAXCHK. */
@@ -93,7 +93,7 @@ static agc_dp_t opd_display_height(agc_interp_t *ip, agc_dp_t h, bool moon)
 {
     agc_dp_t x = moon ? agc_dp_shr_round(h, 2) : h;
 
-    return agc_orbit_params_maxchk(ip, x);
+    return (agc_orbit_params_maxchk(ip, x));
 }
 
 /* ---- SR30.1 (pp.522-523) ----------------------------------------------- */
@@ -103,7 +103,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_tff_t tff;
@@ -120,7 +120,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     out->rapo  = tff.rapo;
@@ -146,7 +146,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
 
     out->tff = agc_dp_neg(t); /* DCOMP, TFF    */
 
-    return (st != AGC_STATUS_OK) ? st : st2;
+    return ((st != AGC_STATUS_OK) ? st : st2);
 }
 
 /* SR30.1 on the rendezvous erasables (RONE VONE TFF/RTMU HPERMIN RPADTEM
@@ -167,10 +167,10 @@ static agc_status_t opd_sr30_1(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (!AGC_ASSERT(o.neg_tper <= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* Inputs of SR30.1 for a state about the moon (moon) or the earth. */
@@ -181,7 +181,7 @@ static agc_status_t opd_input(agc_interp_t *ip, agc_rendz_t *rz, bool moon,
     in->vone = rz->vone;
     agc_dp_t pad = moon ? rz_abval(ip, rz_rls()) : RZ_RPAD_B29;
 
-    return agc_orbit_params_select_body(moon, pad, in);
+    return (agc_orbit_params_select_body(moon, pad, in));
 }
 
 /* ======================== verb 82 jobs and task ========================== */
@@ -190,7 +190,7 @@ static agc_rendz_t *opd_begin(agc_interp_t *ip)
 {
     agc_interp_init(ip);
 
-    return rz_state();
+    return (rz_state());
 }
 
 /* GOXDSPF (= GOMARKF) with the extended-verb returns. */
@@ -198,13 +198,13 @@ static agc_status_t opd_flash(const agc_job_ctx_t *ctx, uint8_t verb,
                               uint8_t noun, agc_job_id_t term,
                               agc_job_id_t proceed, agc_job_id_t enter)
 {
-    return rz_flash(ctx, AGC_DSKY_GOMARKF, verb, noun, term, proceed, enter);
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, verb, noun, term, proceed, enter));
 }
 
 /* EXTVBACT bit 5 clear: the crew has ended the verb 82 display. */
 static bool opd_terminated(void)
 {
-    return (agc_erase_extvbact() & OPD_EXTVBACT_BIT5) == 0U;
+    return ((agc_erase_extvbact() & OPD_EXTVBACT_BIT5) == 0U);
 }
 
 /* V82CALL (p.515): average G on -> V82GON, off -> V82GOFF. */
@@ -212,7 +212,7 @@ agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rz_vflag_test(RZ_VF_AVEGFLAG))
@@ -222,10 +222,10 @@ agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return st; /* FINDVAC: no VAC area (alarm) */
+            return (st); /* FINDVAC: no VAC area (alarm) */
         }
 
-        return rz_continue(AGC_JOB_ORBIT_DISPLAY_MONITOR); /* CHANG1     */
+        return (rz_continue(AGC_JOB_ORBIT_DISPLAY_MONITOR)); /* CHANG1     */
     }
 
     agc_status_t st = rz_set_option(1, 2U); /* OPTIONX = 2   */
@@ -237,10 +237,10 @@ agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_orbit_display_vehicle_select(ctx);
+    return (agc_job_orbit_display_vehicle_select(ctx));
 }
 
 /* V82GOFF (p.515): V04N12 flashing; TERMINATE -> ENDEXT, PROCEED ->
@@ -249,17 +249,17 @@ agc_status_t agc_job_orbit_display_vehicle_select(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(rz_option(1) == 2U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return opd_flash(ctx, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED,
-                     AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT);
+    return (opd_flash(ctx, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
+                      AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED,
+                      AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT));
 }
 
 /* PROCEED on V04N12: WAITLIST 80 ms TICKTEST, then V82GOFLP. */
@@ -267,17 +267,17 @@ agc_status_t agc_job_orbit_display_vehicle_selected(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_call(OPD_BIT4_CS, AGC_TASK_TICKTEST);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_orbit_display_recycle(ctx);
+    return (agc_job_orbit_display_recycle(ctx));
 }
 
 /* V82GOFLP (p.515), the major recycle loop: V82FLAGS = 0 (TICKTEST does
@@ -286,7 +286,7 @@ agc_status_t agc_job_orbit_display_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_state()->orbit_display_flags = 0;
@@ -294,10 +294,10 @@ agc_status_t agc_job_orbit_display_recycle(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_orbit_display_stall(ctx);
+    return (agc_job_orbit_display_stall(ctx));
 }
 
 /* V82STALL / FLAGGON (p.516): hold V16N44 until V82GOFF1 sets a tick bit
@@ -307,17 +307,17 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((rz_state()->orbit_display_flags & OPD_TICK_MASK) == 0)
     {
-        return rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL);
+        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL));
     }
 
-    return opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                     AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                     AGC_JOB_ORBIT_DISPLAY_RECYCLE);
+    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                      AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                      AGC_JOB_ORBIT_DISPLAY_RECYCLE));
 }
 
 /* SPLRET1 .. TICKTFF (pp.517-518): the parameters were computed at
@@ -342,10 +342,10 @@ static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!AGC_ASSERT(rz->tstart_orbit >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* V82GOFF1 / BOTHSHIP (pp.516-517): TDEC1 = TSTART82 = now; THISPREC
@@ -366,7 +366,7 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rone = o.ratt; /* BOTHSHIP      */
@@ -377,22 +377,22 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = opd_sr30_1(&ip, rz, &in);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rz_is_csm() && agc_erase_modreg() == 0)
     { /* CANDEL        */
-        return agc_job_orbit_display_splash(ctx);
+        return (agc_job_orbit_display_splash(ctx));
     }
 
-    return opd_start_ticking(&ip, rz);
+    return (opd_start_ticking(&ip, rz));
 }
 
 /* V82GON1 (p.519), average G on: RONE VONE = RN VN; moon (CM AMOONFLG,
@@ -412,23 +412,23 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = opd_sr30_1(&ip, rz, &in);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rz_is_csm() &&
         agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
     {
-        return agc_job_orbit_display_splash(ctx);
+        return (agc_job_orbit_display_splash(ctx));
     }
 
-    return agc_job_orbit_display_repeat(ctx);
+    return (agc_job_orbit_display_repeat(ctx));
 }
 
 /* V82GON3 (p.520): EXTVBACT bit 5 clear -> ENDEXT; else DELAYJOB 1 s,
@@ -437,15 +437,15 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (opd_terminated())
     {
-        return rz_endext();
+        return (rz_endext());
     }
 
-    return rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G);
+    return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G));
 }
 
 /* CANDEL / SPLRET (CM p.520): INTSTALL, DELRSPL with TFF (it does the
@@ -460,7 +460,7 @@ agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* asleep        */
+        return (st); /* asleep        */
     }
 
     st = agc_guid_delrspl(&ip, rz->tff);
@@ -471,16 +471,16 @@ agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
     if (agc_erase_modreg() == 0)
     {
-        return opd_start_ticking(&ip, rz); /* SPLRET1       */
+        return (opd_start_ticking(&ip, rz)); /* SPLRET1       */
     }
 
-    return agc_job_orbit_display_repeat(ctx);
+    return (agc_job_orbit_display_repeat(ctx));
 }
 
 /* V82REDSP (p.519): V16N44 monitor; TERM, PROCEED -> B5OFF (V82GON1
@@ -489,12 +489,12 @@ agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                     AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                     AGC_JOB_ORBIT_DISPLAY_MONITOR);
+    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                      AGC_JOB_RENDZ_DISPLAY_TERMINATE,
+                      AGC_JOB_ORBIT_DISPLAY_MONITOR));
 }
 
 /* TICKTEST (p.518), waitlist task once a second while EXTVBACT bit 5 is
@@ -504,7 +504,7 @@ agc_status_t agc_task_ticktest(void)
 {
     if (opd_terminated())
     {
-        return agc_exec_novac(OPD_PRIO25, AGC_JOB_RENDZ_ENDEXT);
+        return (agc_exec_novac(OPD_PRIO25, AGC_JOB_RENDZ_ENDEXT));
     }
 
     agc_status_t st   = agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_TICKTEST);
@@ -513,7 +513,7 @@ agc_status_t agc_task_ticktest(void)
 
     if (!AGC_ASSERT(bits != OPD_TICK_MASK)) /* never both (INDEX A)   */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (bits == OPD_TICK_TPER)
@@ -525,7 +525,7 @@ agc_status_t agc_task_ticktest(void)
         rz->tff += (agc_dp_t) RZ_1SEC_CS;
     }
 
-    return st;
+    return (st);
 }
 
 /* B5OFF (SERVICE_ROUTINES): clear EXTVBACT bit 5, ENDOFJOB. The verb 82
@@ -534,10 +534,10 @@ agc_status_t agc_job_rendz_display_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_svc_b5off();
+    return (agc_svc_b5off());
 }
 
 /* ENDEXT as a job (TICKTEST's NOVAC; V82GOFF TERMINATE). */
@@ -545,8 +545,8 @@ agc_status_t agc_job_rendz_endext(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rz_endext();
+    return (rz_endext());
 }

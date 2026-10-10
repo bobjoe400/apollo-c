@@ -18,10 +18,10 @@ static int32_t shift_bit(int n) /* BIT14 indexed by n-1: 2^(14-n)          */
 {
     if (!AGC_ASSERT((n >= 1) && (n <= 14)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (int32_t) 1 << (14 - n);
+    return ((int32_t) 1 << (14 - n));
 }
 
 /* MPACSHR (p.1152-1153) or MPACSRND/VSHR2 (p.1153) for 1 <= n <= 14.        */
@@ -32,7 +32,7 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 
     if (!AGC_ASSERT(t > 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     agc_w2_t p;
@@ -40,7 +40,7 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     if (!round)
@@ -52,7 +52,7 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
         m.m1   = lo2.hi;
         m.m2   = lo2.lo;
 
-        return m;
+        return (m);
     }
 
     /* MPACSRND: residual = major(m2 t) + minor(m1 t); DOUBLE; TS MPAC +2.  */
@@ -65,7 +65,7 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
     m.m1  = p.lo;
     m.m2  = 0;
 
-    return m;
+    return (m);
 }
 
 /* VSHRRND (p.1153): DP vector component, shift right n and round.           */
@@ -75,19 +75,19 @@ agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n)
 
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT((n >= 1) && (n <= 14)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     m.m0 = p.hi;
     m.m1 = p.lo;
     m.m2 = 0; /* not referenced   */
 
-    return agc_w3_top(agc_w_mpacshr(m, n, true));
+    return (agc_w3_top(agc_w_mpacshr(m, n, true)));
 }
 
 /* GENSCR (p.1160) + DOSSHFT: scalar SR/SRR by any count n >= 1.             */
@@ -99,14 +99,14 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 
     if (!AGC_ASSERT(n >= 1))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     for (pass = 0; pass < SHIFT_MAX_WORDS; pass++)
     {
         if (left <= 13)
         { /* BZMF DOSSHFT     */
-            return agc_w_mpacshr(m, left, round);
+            return (agc_w_mpacshr(m, left, round));
         }
 
         m.m2  = m.m1; /* XCH x4: right 14 */
@@ -116,19 +116,19 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 
         if (left == 0)
         { /* MPTEMP = -0      */
-            return round ? agc_w_roundsub(m, &unused) : m;
+            return (round ? agc_w_roundsub(m, &unused) : m);
         }
     }
 
     if (!AGC_ASSERT(m.m0 == 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     m.m1 = 0;
     m.m2 = 0;
 
-    return m;
+    return (m);
 }
 
 /* RIGHT/VRIGHT2 (p.1159) + VSSR: one vector component, VSR n (rounds).      */
@@ -141,19 +141,19 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
 
     if (!AGC_ASSERT(n >= 1))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
-        return (agc_w2_t){0}; /* no valid result */
+        return ((agc_w2_t){0}); /* no valid result */
     }
 
     for (pass = 0; pass < SHIFT_MAX_WORDS; pass++)
     {
         if (left <= 13)
         { /* BZMF VSSR        */
-            return agc_w_vshrrnd(p, left);
+            return (agc_w_vshrrnd(p, left));
         }
 
         o      = agc_w_ovf(2 * p.lo); /* SETROUND         */
@@ -165,14 +165,14 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
 
         if (left == 0)
         { /* MPTEMP = -0      */
-            return p;
+            return (p);
         }
     }
 
     p.hi = 0;
     p.lo = 0;
 
-    return p;
+    return (p);
 }
 
 /* TSSL (p.1154): shift the TP MPAC left n places one at a time; OVFIND is
@@ -185,12 +185,12 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
 
     if (!AGC_ASSERT(ovfind != 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     if (!AGC_ASSERT(n >= 0))
     {
-        return (agc_w3_t){0}; /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     for (k = 0; (k < n) && (k < SHIFT_MAX_LEFT); k++)
@@ -210,7 +210,7 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
         m.m2 = 0;
     }
 
-    return m;
+    return (m);
 }
 
 /* TSLC / NORM (p.1157): shift left until the major word is >= .5 in
@@ -223,14 +223,14 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 
     if (!AGC_ASSERT(count != 0))
     {
-        return m;
+        return (m);
     }
 
     *count = 0;
 
     if ((m.m0 == 0) && (m.m1 == 0) && (m.m2 == 0))
     { /* BRANCH: zero     */
-        return m;
+        return (m);
     }
 
     for (k = 0; k < SHIFT_MAX_LEFT; k++)
@@ -246,8 +246,8 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 
     if (!AGC_ASSERT(o == 0))
     {
-        return m;
+        return (m);
     }
 
-    return m;
+    return (m);
 }

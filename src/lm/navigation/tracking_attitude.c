@@ -37,13 +37,13 @@ agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lmnav_state()->genret = ret_job;
     rz_flag_put(AGC_FLAG_USE_TRACKING_ATTITUDE, r61); /* R61FLAG  */
 
-    return rz_continue(AGC_JOB_TRACKING_ATTITUDE_COMPUTE);
+    return (rz_continue(AGC_JOB_TRACKING_ATTITUDE_COMPUTE));
 }
 
 /* R61C+L06: R61 returns now; R65 waits 6 s and goes round again while
@@ -54,12 +54,12 @@ static agc_status_t ta_next(void)
 
     if (agc_flag_test(AGC_FLAG_USE_TRACKING_ATTITUDE) || n->r65cntr <= 0)
     {
-        return rz_continue(n->genret); /* R61C+L4  */
+        return (rz_continue(n->genret)); /* R61C+L4  */
     }
 
     n->r65cntr--;
 
-    return agc_waitlist_call(TA_06SEC, AGC_TASK_TRACKING_ATTITUDE_WAIT);
+    return (agc_waitlist_call(TA_06SEC, AGC_TASK_TRACKING_ATTITUDE_WAIT));
 }
 
 /* VECPNT1 from the desired CDUs (READCDUD): CPHI, CTHETA, CPSI.         */
@@ -92,7 +92,7 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
         st = AGC_STATUS_OK;
     }
 
-    return st;
+    return (st);
 }
 
 /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
@@ -113,7 +113,7 @@ static agc_status_t ta_auto(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         agc_erase_set_cduzd(gimbal[2]);
         agc_relint();
 
-        return ta_next();
+        return (ta_next());
     }
 
     agc_inhint(); /* R61C+L05 */
@@ -125,13 +125,14 @@ static agc_status_t ta_auto(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
     rz_flag_put(AGC_FLAG_PDSPFLAG, true);
 
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_TRACKING_ATTITUDE_MANEUVERED);
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
 }
 
 /* R61C+L01 .. R61LEM1 (p.518): LOS 3 s ahead (LPS20.1), final angles,
@@ -140,12 +141,12 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
-        return lmnav_wait(TA_250DEC); /* R65WAIT  */
+        return (lmnav_wait(TA_250DEC)); /* R65WAIT  */
     }
 
     agc_interp_t ip;
@@ -158,12 +159,12 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     if (too_far)
     {
-        return rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM);
+        return (rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM));
     }
 
     uint16_t gimbal[3] = {0U, 0U, 0U};
@@ -172,14 +173,14 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_phase(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
-        return lmnav_wait(TA_250DEC);
+        return (lmnav_wait(TA_250DEC));
     }
 
     if (agc_imu_gn_auto() != 0)
@@ -188,10 +189,10 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
         st = agc_imu_ballangs(&ip, gimbal, fdai);
 
-        return (st != AGC_STATUS_OK) ? st : ta_next();
+        return ((st != AGC_STATUS_OK) ? st : ta_next());
     }
 
-    return ta_auto(ctx, &ip, gimbal);
+    return (ta_auto(ctx, &ip, gimbal));
 }
 
 /* After R60LEM: deadband back to the astronaut's value, priority display
@@ -200,7 +201,7 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -210,13 +211,13 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_phase(2, 04022);
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
 
-    return ta_next();
+    return (ta_next());
 }
 
 /* R61C+L2 (task): R61C+L01 as a PRIO26 job.                             */
@@ -224,8 +225,8 @@ agc_status_t agc_task_tracking_attitude_wait(void)
 {
     if (!AGC_ASSERT(lmnav_state()->genret != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_exec_findvac(TA_PRIO26, AGC_JOB_TRACKING_ATTITUDE_COMPUTE);
+    return (agc_exec_findvac(TA_PRIO26, AGC_JOB_TRACKING_ATTITUDE_COMPUTE));
 }

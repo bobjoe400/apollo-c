@@ -40,10 +40,10 @@ static agc_status_t tvcr_enabl1(void)
     if (!AGC_ASSERT((agc_chan_read(
                          AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* RESUME               */
+    return (st); /* RESUME               */
 }
 
 /* REDOTVC, EXECPHS, TVCDAPHS, FINCOPY, TRIM/CMD (pp. 957-958).           */
@@ -83,13 +83,13 @@ agc_status_t agc_task_redotvc(void)
         if (!AGC_ASSERT((t->tvcphase == 0) || (t->tvcphase == 2) ||
                         (t->tvcphase == -2)))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
     agc_status_t s3 = tvcr_enabl1();
 
-    return (st != AGC_STATUS_OK) ? st : s3;
+    return ((st != AGC_STATUS_OK) ? st : s3);
 }
 
 /* ENABL2 (p. 958): optics error counter enable, 20 ms (4 ms minimum)
@@ -103,15 +103,15 @@ agc_status_t agc_task_enabl2(void)
 
     if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st; /* NOQRSM               */
+    return (st); /* NOQRSM               */
 }
 
 /* CHKSTRK, TSTINITJ (p. 959): kill a stroke test in progress (STROKER =
@@ -129,15 +129,15 @@ static agc_status_t tvcr_chkstrk(void)
 
     if (!AGC_ASSERT(t->stroker == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(t->tvcphase == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CMDSOUT, PHSCHK2 (pp. 958-959): the most recent actuator commands to
@@ -157,7 +157,7 @@ agc_status_t agc_task_cmdsout(void)
 
     if (t->tvcphase == -1)
     {
-        return csm_tvc_mrclean(); /* repeat initialisation */
+        return (csm_tvc_mrclean()); /* repeat initialisation */
     }
 
     if (t->tvcphase == -2)
@@ -169,10 +169,10 @@ agc_status_t agc_task_cmdsout(void)
 
     if (!AGC_ASSERT(t->tvcphase >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st != AGC_STATUS_OK) ? st : s2;
+    return ((st != AGC_STATUS_OK) ? st : s2);
 }
 
 /* EXRSTRT (p. 959): waitlist task, TVC executive restart at the point
@@ -183,8 +183,8 @@ agc_status_t agc_task_exrstrt(void)
 
     if (!AGC_ASSERT((phs >= 1) && (phs <= 6)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return csm_tvc_exec_restart(phs);
+    return (csm_tvc_exec_restart(phs));
 }

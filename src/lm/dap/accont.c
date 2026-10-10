@@ -73,17 +73,17 @@ static agc_sp_t invert(agc_sp_t x)
 
     if (!AGC_ASSERT(x > AA_BIT9 || x < -AA_BIT9))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t r = lm_dap_dv(one, x);
 
     if (!AGC_ASSERT(r >= LM_NEGMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* DO1/NET+ / DOACCFUN (p.1504): with ANET in w->anet and the ratio term
@@ -98,15 +98,15 @@ static agc_sp_t do1net_plus(acc_work_t *w, agc_sp_t a)
 
     if (!AGC_ASSERT(funtem > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(w->inv >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, w->inv), funtem);
+    return (lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, w->inv), funtem));
 }
 
 /* 1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.          */
@@ -116,10 +116,10 @@ static agc_sp_t net_min(acc_work_t *w)
 
     if (!AGC_ASSERT(w->ns == 0 || w->ns == -1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return do1net_plus(w, a);
+    return (do1net_plus(w, a));
 }
 
 /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
@@ -136,10 +136,10 @@ static agc_sp_t anet_minus(acc_work_t *w, agc_sp_t a)
 
     if (!AGC_ASSERT(w->anet >= AA_BIT9))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return net_min(w);
+    return (net_min(w));
 }
 
 /* DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.         */
@@ -251,15 +251,15 @@ static agc_sp_t max_rescaled(acc_work_t *w, agc_sp_t jaccu)
 
     if (!AGC_ASSERT(w->anet > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(anet_pi > 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT8, w->inv), w->anet);
+    return (lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT8, w->inv), w->anet));
 }
 
 /* BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,
@@ -531,13 +531,13 @@ agc_status_t lm_dap_switch_curves(void)
 
     if (!AGC_ASSERT(d->db >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

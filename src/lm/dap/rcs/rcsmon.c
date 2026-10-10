@@ -44,15 +44,15 @@ static int highest_change(uint16_t change)
 
     if (!AGC_ASSERT(change != 0u && change <= RM_LOW8))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(idx >= 0 && idx < RM_NBITS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return idx;
+    return (idx);
 }
 
 /* RCSMON (pp.191-192). Called from T4RUPT (RCSMONIT), exits by RESUME.   */
@@ -64,14 +64,14 @@ agc_status_t agc_lm_dap_rcsmon(void)
 
     if (change == 0u)
     {
-        return AGC_STATUS_OK; /* no action required */
+        return (AGC_STATUS_OK); /* no action required */
     }
 
     int l = highest_change(change);
 
     if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t bit = (uint16_t) (0200u >> l);
@@ -91,8 +91,8 @@ agc_status_t agc_lm_dap_rcsmon(void)
 
     if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_accfix(); /* 1/ACCFIX           */
+    return (lm_dap_accfix()); /* 1/ACCFIX           */
 }

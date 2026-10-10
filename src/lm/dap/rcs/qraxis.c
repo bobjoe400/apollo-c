@@ -36,15 +36,15 @@ agc_status_t lm_dap_qerrcalc(void)
 
     if (!AGC_ASSERT(d->qerror >= LM_NEGMAX && d->qerror <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->rerror >= LM_NEGMAX && d->rerror <= LM_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* STILLRCS = ATTSTEER (p.1452): U,V attitude errors, then the TJLAW body
@@ -57,15 +57,15 @@ agc_status_t lm_dap_stillrcs(void)
 
     if (!AGC_ASSERT(d->uerror >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->verror >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_uvloop(LM_UV_TJLAW, 1);
+    return (lm_dap_uvloop(LM_UV_TJLAW, 1));
 }
 
 /* SENSEGET (pp.1442-1444): X translation from the THC (bits 7,8 of
@@ -88,7 +88,7 @@ static agc_status_t senseget(lm_dap_t *d)
         d->sensetyp =
             (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     d->rotindex = plus ? 5 : 4; /* +X0RULGE/-XTRANS */
@@ -107,7 +107,7 @@ static agc_status_t senseget(lm_dap_t *d)
 
     if (!AGC_ASSERT(found)) /* FAILOOP returns 0 before running out */
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -122,7 +122,7 @@ static agc_status_t senseget(lm_dap_t *d)
     d->nextv =
         (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
 
-    return st;
+    return (st);
 }
 
 /* RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V
@@ -138,25 +138,25 @@ agc_status_t lm_dap_rcs(void)
 
     if (!AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if ((agc_chan_read(031) & QR_CH31_AUTO) != 0u)
     { /* QRCONTRL       */
-        return lm_dap_stillrcs();
+        return (lm_dap_stillrcs());
     }
 
     if (agc_flag_test(AGC_FLAG_PULSEFLG))
     {
-        return lm_dap_qrminimp();
+        return (lm_dap_qrminimp());
     }
 
-    return lm_dap_chekstik();
+    return (lm_dap_chekstik());
 }
 
 /* TRYGTS / CHKINGTS (pp.1449-1450): use the trim gimbal unless jets are
@@ -166,12 +166,12 @@ static agc_status_t trygts(lm_dap_t *d)
 {
     if (agc_flag_test(AGC_FLAG_USEQRFLG) || d->allowgts == 0)
     {
-        return lm_dap_rcs();
+        return (lm_dap_rcs());
     }
 
     if (agc_chan_read(005) == 0u)
     {
-        return lm_dap_gts(); /* GOTOGTS        */
+        return (lm_dap_gts()); /* GOTOGTS        */
     }
 
     if (d->ingts != 0)
@@ -184,16 +184,16 @@ static agc_status_t trygts(lm_dap_t *d)
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
     if (!AGC_ASSERT(d->ingts == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_rcs();
+    return (lm_dap_rcs());
 }
 
 /* QRAXIS / CALLQERR / Q,RORGTS (pp.1441-1442): Q,R rate errors; attitude
@@ -213,19 +213,19 @@ agc_status_t lm_dap_qraxis(void)
 
         if (!AGC_ASSERT(sq == AGC_STATUS_OK))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
     if (!AGC_ASSERT(d->edotq >= LM_NEGMAX && d->edotr >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (d->cotroler > 0)
     {
-        return lm_dap_gts();
+        return (lm_dap_gts());
     }
 
-    return (d->cotroler == 0) ? trygts(d) : lm_dap_rcs();
+    return ((d->cotroler == 0) ? trygts(d) : lm_dap_rcs());
 }

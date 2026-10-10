@@ -74,15 +74,15 @@ static agc_dp_t das(agc_dp_t acc, agc_dp_t x)
 
     if (!AGC_ASSERT(acc >= AGC_DP_MIN && acc <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* "MP X; TS L; CAF ZERO; DAS acc": add the high half of a*b into the low
@@ -93,32 +93,32 @@ static agc_dp_t das_low_of_mp(agc_dp_t acc, agc_sp_t a, agc_sp_t b)
 
     if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return das(acc, agc_dp_pack(0, hi));
+    return (das(acc, agc_dp_pack(0, hi)));
 }
 
 static agc_sp_t sp_neg(agc_sp_t a)
 {
     if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t r = (agc_sp_t) (-a);
 
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 static bool params_in_range(const agc_imu_comp_params_t *p)
@@ -134,10 +134,10 @@ static bool params_in_range(const agc_imu_comp_params_t *p)
 
     if (!AGC_ASSERT(ok))
     {
-        return false;
+        return (false);
     }
 
-    return ok;
+    return (ok);
 }
 
 /* ---- parameter access --------------------------------------------------- */
@@ -146,44 +146,44 @@ agc_status_t agc_imu_comp_load(const agc_imu_comp_params_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(params_in_range(p)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     comp = *p;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_imu_comp_get(agc_imu_comp_params_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *p = comp;
 
     if (!AGC_ASSERT(params_in_range(p)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_sp_t agc_imu_gcompsw(void)
 {
     if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return gcompsw;
+    return (gcompsw);
 }
 
 void agc_imu_set_gcompsw(agc_sp_t v)
@@ -198,10 +198,10 @@ agc_sp_t agc_imu_pipa_interval(void)
 {
     if (!AGC_ASSERT(one_pipadt >= AGC_SP_MIN && one_pipadt <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return one_pipadt;
+    return (one_pipadt);
 }
 
 void agc_imu_set_pipa_interval(agc_sp_t v)
@@ -220,15 +220,15 @@ static agc_status_t gcomp_read(agc_dp_t g[3])
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(g != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 static void gcomp_write(const agc_dp_t g[3])
@@ -247,17 +247,17 @@ static bool gcomp_bypassed(void)
 {
     if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
     {
-        return false;
+        return (false);
     }
 
     bool bypass = (gcompsw < 0);
 
     if (!AGC_ASSERT(bypass || gcompsw >= 0))
     {
-        return false;
+        return (false);
     }
 
-    return bypass;
+    return (bypass);
 }
 
 /* ---- 1/PIPA ------------------------------------------------------------- */
@@ -268,7 +268,7 @@ static agc_dp_t pipa_axis(agc_dp_t delv, int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t pulses = agc_dp_high(delv);
@@ -286,10 +286,10 @@ static agc_dp_t pipa_axis(agc_dp_t delv, int axis)
 
     if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return d;
+    return (d);
 }
 
 /* 1/PIPA (ICP p.326, label 1/PIPA): compensate the PIPA counts in DELV for
@@ -299,12 +299,12 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
 {
     if (!AGC_ASSERT(delv != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (gcomp_bypassed())
     {
-        return AGC_STATUS_OK; /* TCF IRIG1      */
+        return (AGC_STATUS_OK); /* TCF IRIG1      */
     }
 
     bool cm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
@@ -328,10 +328,10 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- gyro compensation terms ------------------------------------------- */
@@ -344,7 +344,7 @@ static agc_dp_t gcompsub(agc_dp_t g, agc_dp_t mpac, agc_sp_t coef)
 {
     if (!AGC_ASSERT(coef >= AGC_SP_MIN && coef <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t vbuf = agc_sp_mul(coef, agc_dp_high(mpac)); /* gyro pls x 2^8 */
@@ -357,10 +357,10 @@ static agc_dp_t gcompsub(agc_dp_t g, agc_dp_t mpac, agc_sp_t coef)
 
     if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return g;
+    return (g);
 }
 
 /* DRFTSUB2 magnitude test (ICP p.332): set GCOMPSW positive when the high
@@ -400,7 +400,7 @@ static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
 {
     if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t p = agc_sp_mul(nbd, one_pipadt);     /* gyro pulses x 2^3       */
@@ -411,10 +411,10 @@ static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
 
     if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return g;
+    return (g);
 }
 
 /* IRIGX / IRIGY / IRIGZ (ICP p.329-330): acceleration-sensitive drift
@@ -423,7 +423,7 @@ static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_dp_t nx = agc_dp_neg(delv.c[0]);
@@ -448,10 +448,10 @@ static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
 
     if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return g;
+    return (g);
 }
 
 /* Bias-drift sign per axis in IRIGCOMP and NBDONLY: -NBDX, -NBDY, +NBDZ. */
@@ -459,7 +459,7 @@ static agc_sp_t nbd_signed(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t n = comp.nbd[axis];
@@ -467,10 +467,10 @@ static agc_sp_t nbd_signed(int axis)
 
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* IRIGCOMP (ICP p.328): GCOMPSW = 0; for X, Y, Z: acceleration terms then
@@ -481,7 +481,7 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     gcompsw = 0; /* indicate commands 2 pulses or less */
@@ -496,17 +496,17 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
 
     if (gcompsw <= 0)
     {
-        return AGC_STATUS_OK; /* TCF IRIG1      */
+        return (AGC_STATUS_OK); /* TCF IRIG1      */
     }
 
     agc_status_t st = agc_exec_novac(PRIO21, AGC_JOB_GYRO_COMMAND_PULSE);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* GCOMPZER (ICP p.337): zero GCOMP and GCOMPSW before the first 1/PIPA.  */
@@ -519,10 +519,10 @@ agc_status_t agc_imu_gcompzer(void)
 
     if (!AGC_ASSERT(gcompsw == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- 1/GYRO and GCOMP1 --------------------------------------------------- */
@@ -538,15 +538,15 @@ static agc_dp_t gyro_rescale(agc_dp_t g)
 
     if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* Common tail of 1/GYRO: IMUPULSE on GCOMP, then IMUSTALL.               */
@@ -560,10 +560,10 @@ static agc_status_t one_gyro_pulse(void)
         /* BUSY: sleeping until the gyros free up; ALARM: IMU caged.      */
         if (!AGC_ASSERT(st == AGC_STATUS_BUSY || st == AGC_STATUS_ALARM))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
-        return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
     }
 
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
@@ -572,12 +572,12 @@ static agc_status_t one_gyro_pulse(void)
 
     if (st != AGC_STATUS_OK || res != AGC_IMU_STALL_GOOD)
     {
-        return st; /* bad return: ENDOFJOB; or sleeping   */
+        return (st); /* bad return: ENDOFJOB; or sleeping   */
     }
 
     agc_job_ctx_t self = {AGC_JOB_GCOMP1, PRIO21, false, -1, 0};
 
-    return agc_job_gcomp1(&self);
+    return (agc_job_gcomp1(&self));
 }
 
 /* 1/GYRO (ICP p.333): job started by IRIGCOMP or NBDONLY.                */
@@ -585,14 +585,14 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t g[3];
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int axis = 2; axis >= 0; axis--)
@@ -602,7 +602,7 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
 
     gcomp_write(g);
 
-    return one_gyro_pulse();
+    return (one_gyro_pulse());
 }
 
 /* Continuation of 1/GYRO after GYROBUSY sleep: retry IMUPULSE.           */
@@ -610,15 +610,15 @@ agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GYRO_COMMAND_RETRY))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return one_gyro_pulse();
+    return (one_gyro_pulse());
 }
 
 /* GCOMP1 (ICP p.333): good return from IMUSTALL.  Rescale the fraction
@@ -627,19 +627,19 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_GOOD)
     {
-        return AGC_STATUS_OK; /* L+2: TCF ENDOFJOB      */
+        return (AGC_STATUS_OK); /* L+2: TCF ENDOFJOB      */
     }
 
     agc_dp_t g[3];
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int axis = 2; axis >= 0; axis--)
@@ -652,7 +652,7 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
 
     gcomp_write(g);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- NBDONLY / FBIASSUB / LASTBIAS -------------------------------------- */
@@ -663,7 +663,7 @@ static agc_sp_t elapsed_cs(int now, int prev)
 {
     if (!AGC_ASSERT(now >= -TIME1_MODULUS && now < TIME1_MODULUS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int dt = (now - prev) % TIME1_MODULUS;
@@ -675,10 +675,10 @@ static agc_sp_t elapsed_cs(int now, int prev)
 
     if (!AGC_ASSERT(dt >= 0 && dt < TIME1_MODULUS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) (dt & AGC_SP_MAX);
+    return ((agc_sp_t) (dt & AGC_SP_MAX));
 }
 
 /* FBIASSUB (ICP p.336): GCOMP[axis] += NBD * DELTAT, DELTAT in cs x 2^19. */
@@ -686,7 +686,7 @@ static agc_dp_t fbiassub(agc_dp_t g, agc_sp_t nbd, agc_dp_t deltat)
 {
     if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     g = das(g, agc_sp_mul(nbd, agc_dp_high(deltat))); /* HI(NBD)(DELTAT) */
@@ -695,10 +695,10 @@ static agc_dp_t fbiassub(agc_dp_t g, agc_sp_t nbd, agc_dp_t deltat)
 
     if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return g;
+    return (g);
 }
 
 /* NBD3 onward (ICP p.334-335): bias drift over dt cs (and, LM on the
@@ -707,7 +707,7 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(dt >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (shift right 5) */
@@ -715,7 +715,7 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t delv = agc_erase_delv();
@@ -738,15 +738,15 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
 
     if (gcompsw > 0)
     {
-        return agc_job_gyro_command_pulse(ctx); /* TCF 1/GYRO              */
+        return (agc_job_gyro_command_pulse(ctx)); /* TCF 1/GYRO              */
     }
 
     if (!AGC_ASSERT(gcompsw == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB                */
+    return (AGC_STATUS_OK); /* ENDOFJOB                */
 }
 
 /* NBDONLY (ICP p.334): bias-drift-only compensation when the PIPAs are not
@@ -755,7 +755,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || gcomp_bypassed())
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_inhint();
@@ -764,7 +764,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
     { /* CCS FLAGWRD2: bit 15     */
         agc_relint();
 
-        return AGC_STATUS_OK; /* preread T3RUPT coincides */
+        return (AGC_STATUS_OK); /* preread T3RUPT coincides */
     }
 
     bool surface = (agc_state_vehicle() == AGC_VEHICLE_LM) &&
@@ -781,7 +781,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
     one_pipadt = (agc_sp_t) now; /* XCH 1/PIPADT             */
     agc_relint();
 
-    return nbd3(elapsed_cs(now, prev), surface, ctx);
+    return (nbd3(elapsed_cs(now, prev), surface, ctx));
 }
 
 /* LASTBIAS (ICP p.336-337): final bias compensation when the PIPAs come
@@ -790,14 +790,14 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_imu_pipuse1(); /* BANKCALL PIPUSE1         */
 
     if (gcomp_bypassed())
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     bool surface = (agc_state_vehicle() == AGC_VEHICLE_LM) &&
@@ -810,8 +810,8 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(now >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return nbd3(elapsed_cs(now, prev), surface, ctx);
+    return (nbd3(elapsed_cs(now, prev), surface, ctx));
 }

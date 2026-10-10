@@ -33,17 +33,17 @@ static agc_status_t chksdata_flash(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->qmin != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_ANGLE_DIFF,
-                       AGC_JOB_GOTOPOOH, AGC_JOB_CHKSDATA_PROCEED,
-                       AGC_JOB_CHKSDATA_ENTER);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_ANGLE_DIFF,
+                        AGC_JOB_GOTOPOOH, AGC_JOB_CHKSDATA_PROCEED,
+                        AGC_JOB_CHKSDATA_ENTER));
 }
 
 /* R55.1 flash. */
@@ -51,17 +51,17 @@ static agc_status_t gyro_angles_flash(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->qmin != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GYRO_TORQUE_ANGLES,
-                       AGC_JOB_GOTOPOOH, AGC_JOB_GYRO_TORQUING_PULSE,
-                       AGC_JOB_GYRO_TORQUING_RETURN);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GYRO_TORQUE_ANGLES,
+                        AGC_JOB_GOTOPOOH, AGC_JOB_GYRO_TORQUING_PULSE,
+                        AGC_JOB_GYRO_TORQUING_RETURN));
 }
 
 /* After the IMUSTALL of R55.2: PHASCHNG 05024 (CM) / 04024 (LM), then
@@ -78,7 +78,7 @@ static agc_status_t gyro_torquing_done(void)
         agc_phase_change(4, ALIGN_PH_04024);
     }
 
-    return align_goto(agc_align_ram()->qmin); /* R55RET     */
+    return (align_goto(agc_align_ram()->qmin)); /* R55RET     */
 }
 
 /*
@@ -94,7 +94,7 @@ agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -118,17 +118,17 @@ agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         /* CAF ZERO, CLEANDSP: the job continues at the VN_STAR_ANGLE_DIFF flash.     */
-        return align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_CHKSDATA_FLASH,
-                           AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH);
+        return (align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_CHKSDATA_FLASH,
+                            AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH));
     }
 
-    return chksdata_flash(ctx);
+    return (chksdata_flash(ctx));
 }
 
 /* CHKSDATA: the VN_STAR_ANGLE_DIFF flash (after CLEANDSP in the CSM). */
@@ -136,10 +136,10 @@ agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return chksdata_flash(ctx);
+    return (chksdata_flash(ctx));
 }
 
 /* CHKSDA (PROCEED): GOTO QMIN with FREEFLAG still set. */
@@ -147,17 +147,17 @@ agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_job_id_t ret = agc_align_ram()->qmin;
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FREEFLAG)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_goto(ret);
+    return (align_goto(ret));
 }
 
 /* ENTER / V32 after VN_STAR_ANGLE_DIFF: CLEAR FREEFLAG, GOTO QMIN. */
@@ -165,12 +165,12 @@ agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_clear(AGC_FLAG_FREEFLAG);
 
-    return align_goto(agc_align_ram()->qmin);
+    return (align_goto(agc_align_ram()->qmin));
 }
 
 /*
@@ -183,7 +183,7 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -194,7 +194,7 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx,
     agc_interp_init(&ip);
     agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA */
 
-    return gyro_angles_flash(ctx);
+    return (gyro_angles_flash(ctx));
 }
 
 /* R55.1: VN_GYRO_TORQUE_ANGLES -- PROCEED torques (R55.2), ENTER skips it (R55RET). */
@@ -202,10 +202,10 @@ agc_status_t agc_job_gyro_torquing_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return gyro_angles_flash(ctx);
+    return (gyro_angles_flash(ctx));
 }
 
 /*
@@ -216,7 +216,7 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
@@ -227,12 +227,12 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* asleep until the gyros free  */
+        return (AGC_STATUS_OK); /* asleep until the gyros free  */
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     bool done = false;
@@ -242,10 +242,10 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 
     if ((st != AGC_STATUS_OK) || !done)
     {
-        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st);
     }
 
-    return gyro_torquing_done();
+    return (gyro_torquing_done());
 }
 
 /* After the IMUSTALL of R55.2: the restart phase, then R55RET. */
@@ -253,15 +253,15 @@ agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_OK; /* CURTAINS done    */
+        return (AGC_STATUS_OK); /* CURTAINS done    */
     }
 
-    return gyro_torquing_done();
+    return (gyro_torquing_done());
 }
 
 /* R55RET (ENTER on VN_GYRO_TORQUE_ANGLES: no torquing): GOTO QMIN. */
@@ -269,15 +269,15 @@ agc_status_t agc_job_gyro_torquing_return(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_job_id_t ret = agc_align_ram()->qmin;
 
     if (!AGC_ASSERT(ret != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_goto(ret);
+    return (align_goto(ret));
 }

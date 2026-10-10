@@ -27,7 +27,7 @@ agc_status_t pin_noun_load(void)
 
     if (!AGC_ASSERT(s->nounreg <= 99))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun);
@@ -37,12 +37,12 @@ agc_status_t pin_noun_load(void)
         s->nntype   = PIN_NNTYPE_SPARE;
         s->nouncadr = 0;
 
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     switch (s->noun.data_id[0])
@@ -62,7 +62,7 @@ agc_status_t pin_noun_load(void)
             break;
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- alarm exits (p. 364) --------------------------------------------- */
@@ -72,12 +72,12 @@ agc_status_t pin_charalrm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_falton();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DSPALARM: an illegal verb/noun. From an internal NVSUB this is abort
@@ -86,19 +86,19 @@ agc_status_t pin_dspalarm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->entret == PIN_ENT_NVSUBEND)
     {
-        return agc_poodoo(PIN_ALARM_DSPALARM); /* TC POODOO, OCT 01501  */
+        return (agc_poodoo(PIN_ALARM_DSPALARM)); /* TC POODOO, OCT 01501  */
     }
 
     if (s->entret == PIN_ENT_PASTEVB)
@@ -106,10 +106,10 @@ agc_status_t pin_dspalarm(void)
         pin_kilmonon();
         pin_falton();
 
-        return pin_pastevb(); /* put monitor verb back  */
+        return (pin_pastevb()); /* put monitor verb back  */
     }
 
-    return pin_charalrm();
+    return (pin_charalrm());
 }
 
 /* PREDSPAL: alarm if decimal display with an octal-only noun. */
@@ -117,17 +117,17 @@ agc_status_t pin_predspal(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_block_dspcount(PIN_VD1);
 
     if (!AGC_ASSERT(pin_st()->dspcount_neg))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_dspalarm();
+    return (pin_dspalarm());
 }
 
 /* ALMCYCLE: turn on check fail light, put the original verb that was
@@ -137,14 +137,14 @@ agc_status_t pin_almcycle(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->verbsave <= 99))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_falton();
@@ -152,7 +152,7 @@ agc_status_t pin_almcycle(void)
     s->reqret_neg = false;
     agc_status_t st = pin_updatvb(s->verbsave);
 
-    return (st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st;
+    return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st);
 }
 
 /* TC ENTEXIT: the exit chosen by ENTRET. */
@@ -160,22 +160,22 @@ agc_status_t pin_entexit(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->entret == PIN_ENT_PASTEVB)
     {
-        return pin_pastevb();
+        return (pin_pastevb());
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB / NVSUBEND    */
+    return (AGC_STATUS_OK); /* ENDOFJOB / NVSUBEND    */
 }
 
 /* ---- component tests (pp. 331-332) ------------------------------------ */
@@ -189,10 +189,10 @@ bool pin_comptest(int verb_comp)
     if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) ||
         !AGC_ASSERT(s->noun.ncomp >= 1u))
     {
-        return false;
+        return (false);
     }
 
-    return (int) s->noun.ncomp - 1 >= verb_comp;
+    return ((int) s->noun.ncomp - 1 >= verb_comp);
 }
 
 /* DECTEST / DCTSTCYC: the decimal-only bit (bit 4 of the comp code) is 0;
@@ -203,15 +203,15 @@ bool pin_dectest(void)
 
     if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(s->noun.ncomp <= 3u))
     {
-        return false;
+        return (false);
     }
 
-    return !s->noun.dec_only;
+    return (!s->noun.dec_only);
 }
 
 /* NOUNTEST: the noun can be loaded (no-load bit, bit 5 of the comp code). */
@@ -221,15 +221,15 @@ bool pin_nountest(void)
 
     if (!AGC_ASSERT(s->noun.ncomp >= 1u))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
     {
-        return false;
+        return (false);
     }
 
-    return !s->noun.no_load;
+    return (!s->noun.no_load);
 }
 
 /* ---- octal display verbs V01-V05 (pp. 330-332) ------------------------ */
@@ -241,14 +241,14 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
 
     if (!AGC_ASSERT(verb >= 1u && verb <= 5u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int first =
@@ -258,7 +258,7 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
 
     if (!pin_comptest(need) || !pin_dectest())
     {
-        return pin_dspalarm();
+        return (pin_dspalarm());
     }
 
     agc_status_t st     = AGC_STATUS_OK;
@@ -275,7 +275,7 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
         st = pin_dspoctwo(buf[i]);
     }
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st;
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
 }
 
 /* ---- noun test and machine address (pp. 324-325) --------------------- */
@@ -287,7 +287,7 @@ agc_status_t pin_usead(uint16_t ecadr)
 
     if (!AGC_ASSERT(ecadr <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t     keep = ecadr;
@@ -297,10 +297,10 @@ agc_status_t pin_usead(uint16_t ecadr)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
-    return pin_verbfan();
+    return (pin_verbfan());
 }
 
 /* INTMCTBS: internal machine address to be specified, left in MPAC+2 by
@@ -310,7 +310,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -322,7 +322,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
 
     if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->verbreg != 5u)
@@ -332,11 +332,11 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
-    return pin_verbfan();
+    return (pin_verbfan());
 }
 
 /* REQADD: machine address (or channel) to be specified. External (keyed)
@@ -345,7 +345,7 @@ static agc_status_t pin_reqadd(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -355,15 +355,15 @@ static agc_status_t pin_reqadd(void)
     if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS ||
                     s->nntype == PIN_NNTYPE_CHAN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->entret != PIN_ENT_ENDOFJOB)
     {
-        return pin_intmctbs(true);
+        return (pin_intmctbs(true));
     }
 
-    return pin_reqdat(PIN_INREL_Z, PIN_REQ_MCTBS); /* REQDATZ   */
+    return (pin_reqdat(PIN_INREL_Z, PIN_REQ_MCTBS)); /* REQDATZ   */
 }
 
 /* REQADD continued after the operator's ENTER: alarm and recycle if
@@ -373,14 +373,14 @@ agc_status_t pin_reqadd_resume(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (s->decbrnch != 0u)
     {
-        return pin_almcycle();
+        return (pin_almcycle());
     }
 
     pin_block_dspcount(PIN_VD1); /* block num char in      */
@@ -392,10 +392,10 @@ agc_status_t pin_reqadd_resume(void)
 
     if (!AGC_ASSERT(s->dspcount_neg))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_usead(s->xyz_oct[2]); /* XCH ZREG               */
+    return (pin_usead(s->xyz_oct[2])); /* XCH ZREG               */
 }
 
 /* TESTNN: noun test for verbs below LOWVERB. */
@@ -403,7 +403,7 @@ agc_status_t pin_testnn(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s  = pin_st();
@@ -411,30 +411,30 @@ agc_status_t pin_testnn(void)
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
-        return st;
+        return (st);
     }
 
     switch (s->nntype)
     {
         case PIN_NNTYPE_NORMAL:
-            return pin_verbfan();
+            return (pin_verbfan());
         case PIN_NNTYPE_MCTBS:
         case PIN_NNTYPE_CHAN:
-            return pin_reqadd(); /* specify machine CADR if - */
+            return (pin_reqadd()); /* specify machine CADR if - */
         case PIN_NNTYPE_AUGMENT:
             s->nouncadr =
                 (uint16_t) ((s->nouncadr + 1u) & PIN_WORD); /* INCR NOUNCADR */
 
-            return pin_intmctbs(false);
+            return (pin_intmctbs(false));
         case PIN_NNTYPE_SPARE:
         default:
 
             if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_SPARE))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
-            return pin_dspalarm(); /* not in use if +0       */
+            return (pin_dspalarm()); /* not in use if +0       */
     }
 }
 
@@ -445,7 +445,7 @@ agc_status_t pin_entpas0(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -455,17 +455,17 @@ agc_status_t pin_entpas0(void)
 
     if (!AGC_ASSERT(s->verbreg <= 99))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     s->verbsave = s->verbreg; /* save verb for possible recycle */
 
     if (s->verbreg >= PIN_LOWVERB)
     {
-        return pin_verbfan();
+        return (pin_verbfan());
     }
 
-    return pin_testnn();
+    return (pin_testnn());
 }
 
 /* ---- VERBFAN / VBFANDIR (pp. 325-326) --------------------------------- */
@@ -475,7 +475,7 @@ static agc_status_t pin_vbfandir_hi(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     switch (verb)
@@ -485,27 +485,27 @@ static agc_status_t pin_vbfandir_hi(uint8_t verb)
         case 23:
         case 24:
         case 25:
-            return pin_load_verb(verb); /* ALOAD..ABCLOAD         */
+            return (pin_load_verb(verb)); /* ALOAD..ABCLOAD         */
         case 27:
-            return pin_dspfmem(); /* fixed memory display   */
+            return (pin_dspfmem()); /* fixed memory display   */
         case 30:
-            return pin_vbrqexec(); /* request executive      */
+            return (pin_vbrqexec()); /* request executive      */
         case 31:
-            return pin_vbrqwait(); /* request waitlist       */
+            return (pin_vbrqwait()); /* request waitlist       */
         case 32:
-            return pin_vbproc_common(PIN_LS_DATAIN); /* VBRESEQ        */
+            return (pin_vbproc_common(PIN_LS_DATAIN)); /* VBRESEQ        */
         case 33:
-            return pin_vbproc_common(PIN_LS_PROCEED); /* VBPROC         */
+            return (pin_vbproc_common(PIN_LS_PROCEED)); /* VBPROC         */
         case 34:
-            return pin_vbproc_common(PIN_LS_TERMINATE); /* VBTERM         */
+            return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM         */
         case 35:
-            return pin_vbtstlts(); /* test lights            */
+            return (pin_vbtstlts()); /* test lights            */
         case 36:
-            return agc_fresh_start_slap1(); /* SLAP1 fresh start      */
+            return (agc_fresh_start_slap1()); /* SLAP1 fresh start      */
         case 37:
-            return pin_reqmm(); /* MMCHANG: TC REQMM      */
+            return (pin_reqmm()); /* MMCHANG: TC REQMM      */
         default:
-            return pin_dspalarm(); /* spare                  */
+            return (pin_dspalarm()); /* spare                  */
     }
 }
 
@@ -514,12 +514,12 @@ static agc_status_t pin_vbfandir(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(verb < PIN_LST2CON))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     switch (verb)
@@ -529,11 +529,11 @@ static agc_status_t pin_vbfandir(uint8_t verb)
         case 3:
         case 4:
         case 5:
-            return pin_dsp_octal(verb); /* DSPA..DSPABC           */
+            return (pin_dsp_octal(verb)); /* DSPA..DSPABC           */
         case 6:
-            return pin_decdsp(); /* decimal display        */
+            return (pin_decdsp()); /* decimal display        */
         case 7:
-            return pin_dspdpdec(); /* DP decimal display     */
+            return (pin_dspdpdec()); /* DP decimal display     */
         case 11:
         case 12:
         case 13:
@@ -541,17 +541,17 @@ static agc_status_t pin_vbfandir(uint8_t verb)
         case 15:
         case 16:
         case 17:
-            return pin_monitor();
+            return (pin_monitor());
         default:
             break;
     }
 
     if (verb >= 21u)
     {
-        return pin_vbfandir_hi(verb);
+        return (pin_vbfandir_hi(verb));
     }
 
-    return pin_dspalarm(); /* VB00 illegal, spares   */
+    return (pin_dspalarm()); /* VB00 illegal, spares   */
 }
 
 /* VERBFAN: verbs 40 and up are extended verbs: release the display
@@ -560,24 +560,24 @@ agc_status_t pin_verbfan(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->verbreg <= 99))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->verbreg >= PIN_LST2CON)
     {
         agc_status_t st = pin_reldsp(); /* release display syst   */
 
-        return (st == AGC_STATUS_OK) ?
-               agc_extverb((int) s->verbreg, (int) s->nounreg) :
-               st;
+        return ((st == AGC_STATUS_OK) ?
+                agc_extverb((int) s->verbreg, (int) s->nounreg) :
+                st);
     }
 
-    return pin_vbfandir(s->verbreg);
+    return (pin_vbfandir(s->verbreg));
 }

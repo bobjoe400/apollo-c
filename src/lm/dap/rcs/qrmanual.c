@@ -37,7 +37,7 @@ agc_status_t lm_dap_qrminimp(void)
     { /* CHECKIN        */
         d->oldqrmin = (agc_sp_t) ((uint16_t) ~t31 & QM_OCT63);
 
-        return lm_dap_xtrans();
+        return (lm_dap_xtrans());
     }
 
     agc_sp_t u;
@@ -65,7 +65,7 @@ agc_status_t lm_dap_qrminimp(void)
     }
     else
     {
-        return lm_dap_xtrans();
+        return (lm_dap_xtrans());
     }
 
     d->tj[1]    = u; /* MINQR          */
@@ -74,10 +74,10 @@ agc_status_t lm_dap_qrminimp(void)
 
     if (!AGC_ASSERT(d->oldqrmin == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_uvloop(LM_UV_MINRTN, 1);
+    return (lm_dap_uvloop(LM_UV_MINRTN, 1));
 }
 
 /* Stick scaling (RHCACTIV, p.1446): commanded rate at 45 deg/s from
@@ -86,7 +86,7 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 {
     if (!AGC_ASSERT(c >= LM_NEGMAX && c <= LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT);
@@ -95,10 +95,10 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 
     if (!AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* Breakout test (ENTERQR): |change| - 1 + (-RATEDB) > 0.               */
@@ -106,15 +106,15 @@ static bool beyond(agc_sp_t x, agc_sp_t negdb)
 {
     if (!AGC_ASSERT(negdb <= 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(x >= LM_NEGMAX && x <= LM_POSMAX))
     {
-        return false;
+        return (false);
     }
 
-    return (int32_t) lm_dap_ccs_dim(x) + negdb > 0;
+    return ((int32_t) lm_dap_ccs_dim(x) + negdb > 0);
 }
 
 /* ENTERUV / VDB / QRTIME / TOPSEUDO (pp.1448-1449): direct rate. Zero the
@@ -162,7 +162,7 @@ static agc_status_t enteruv(lm_dap_t *d)
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_QRBIT);
     }
 
-    return lm_dap_uvloop(LM_UV_BACKHAND, 1);
+    return (lm_dap_uvloop(LM_UV_BACKHAND, 1));
 }
 
 /* RHCACTIV / ENTERQR (pp.1446-1447): commanded Q,R rates from SAVEHAND,
@@ -189,15 +189,15 @@ static agc_status_t rhcactiv(lm_dap_t *d)
     {
         d->tcqr = QM_40CYCL;
 
-        return enteruv(d);
+        return (enteruv(d));
     }
 
     if ((d->rcsflags & LM_RCS_QRBIT) != 0u)
     {
-        return enteruv(d);
+        return (enteruv(d));
     }
 
-    return lm_dap_stillrcs();
+    return (lm_dap_stillrcs());
 }
 
 /* CHEKSTIK / DAMPING (p.1446): rate command. Not in GTS while in
@@ -212,12 +212,12 @@ agc_status_t lm_dap_chekstik(void)
 
     if ((d->ch31temp & QM_DETENT) == 0u)
     { /* out of detent  */
-        return rhcactiv(d);
+        return (rhcactiv(d));
     }
 
     if (!agc_flag_test(AGC_FLAG_OURRCFLG))
     {
-        return lm_dap_stillrcs();
+        return (lm_dap_stillrcs());
     }
 
     d->rcsflags    = (uint16_t) (d->rcsflags & ~LM_RCS_JUSTIN);
@@ -226,8 +226,8 @@ agc_status_t lm_dap_chekstik(void)
 
     if (!AGC_ASSERT(d->cotroler < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rhcactiv(d);
+    return (rhcactiv(d));
 }

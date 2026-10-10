@@ -59,30 +59,30 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
 {
     if (!AGC_ASSERT(pad != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_tp_ok(pad->tephem) &&
                     agc_navaux_vec_ok(pad->lm504)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     padload = *pad;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
 {
     if (!AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *out = padload;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -101,12 +101,12 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
 {
     if (!AGC_ASSERT((ip != NULL) && (x != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((xdot_shift >= 0) && (xdot_shift <= 5)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* DLOAD SR 6D 14D / TAD TIMSUBO: T+T0, cs scale 2^42 (TIMSUBM).       */
@@ -114,7 +114,7 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
 
     if (!AGC_ASSERT(tsum >= 0))
     {
-        return AGC_STATUS_BAD_ARG; /* times before the epoch: not used */
+        return (AGC_STATUS_BAD_ARG); /* times before the epoch: not used */
     }
 
     /* DLOAD TIMSUBM +1, DMP XDOT, SL* 5,1, DAD X0.                        */
@@ -132,7 +132,7 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
     *x = agc_navaux_rev_add(part2, part);
     agc_interp_clear_ovf(ip); /* BOV +1: leave OVFIND clear      */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -147,7 +147,7 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip,
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (m != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t     az = 0; /* 504AZ revs 2^0                  */
@@ -156,7 +156,7 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t c = agc_dp_cos(ip, az); /* cos AZ, scale 2^1               */
@@ -166,7 +166,7 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip,
     m->row[1] = agc_vec_make(agc_dp_neg(s), c, 0);
     m->row[2] = agc_vec_make(0, 0, AGC_DP_HALF); /* HIDPHALF        */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -177,18 +177,18 @@ agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
 {
     if (!AGC_ASSERT((pad != NULL) && (l != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_dp_ok(pad->axo) &&
                     agc_navaux_dp_ok(pad->neg_ayo)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *l = agc_vec_make(agc_dp_neg(pad->axo), pad->neg_ayo, 0); /* 504LPL  */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Moon angles B, F, NODI (MOONMX first half, p. 1246). */
@@ -205,7 +205,7 @@ static agc_status_t moonmx_angles(agc_interp_t *ip, agc_tp_t tsubo,
 {
     if (!AGC_ASSERT((ip != NULL) && (a != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t     b  = 0;
@@ -226,13 +226,13 @@ static agc_status_t moonmx_angles(agc_interp_t *ip, agc_tp_t tsubo,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     a->cob = agc_dp_cos(ip, b);
     a->sob = agc_dp_sin(ip, b);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DMP SL1R: product of two half-scaled quantities, back to scale 2^1. */
@@ -240,10 +240,10 @@ static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
-    return agc_dp_shl_round(ip, agc_dp_mul(ip, a, b), 1);
+    return (agc_dp_shl_round(ip, agc_dp_mul(ip, a, b), 1));
 }
 
 /* VXSC of two vectors by two scalars, VSU/VAD, VSL1 (MOONMX second half). */
@@ -252,14 +252,14 @@ static agc_vec_t combine(agc_interp_t *ip, agc_vec_t u, agc_dp_t su,
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero();
+        return (agc_vec_zero());
     }
 
     agc_vec_t a = agc_vec_scale(ip, u, su); /* scale 2^2           */
     agc_vec_t b = agc_vec_scale(ip, v, sv);
     agc_vec_t c = subtract ? agc_vec_sub(ip, a, b) : agc_vec_add(ip, a, b);
 
-    return agc_vec_shl(ip, c, 1); /* VSL1 -> scale 2^1   */
+    return (agc_vec_shl(ip, c, 1)); /* VSL1 -> scale 2^1   */
 }
 
 /*
@@ -276,7 +276,7 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip,
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (m != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     moon_angles_t ang;
@@ -284,7 +284,7 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_dp_t  cosn   = agc_dp_cos(ip, ang.nodi);
@@ -304,7 +304,7 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip,
     m->row[1] = combine(ip, avectr, sinf, dvectr, cosf, true);
     m->row[0] = agc_vec_neg(combine(ip, avectr, cosf, dvectr, sinf, false));
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* M matrix and the libration/precession vector in the form each of
@@ -317,12 +317,12 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip,
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((m != NULL) && (l != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st;
@@ -349,7 +349,7 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip,
         }
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -362,12 +362,12 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip,
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (rp != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(r)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_mat_t    m;
@@ -376,14 +376,14 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t d = agc_vec_sub(ip, r, agc_vec_cross(ip, l, r)); /* RTORPB  */
 
     *rp = agc_vec_shl(ip, agc_mat_vec(ip, &m, d), 1);  /* RPRPXXXX*/
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /*
@@ -396,12 +396,12 @@ agc_status_t agc_planet_rp_to_r(agc_interp_t *ip,
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (r != NULL)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_navaux_vec_ok(rp)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_mat_t    m;
@@ -410,12 +410,12 @@ agc_status_t agc_planet_rp_to_r(agc_interp_t *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t s = agc_vec_add(ip, agc_vec_cross(ip, lp, rp), rp); /* RPTORB */
 
     *r = agc_vec_shl(ip, agc_vec_mat(ip, s, &m), 1); /* VXM MMATRIX, VSL1 */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

@@ -99,10 +99,10 @@ static bool is_lm(void)
 
     if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
     {
-        return false;
+        return (false);
     }
 
-    return v == AGC_VEHICLE_LM;
+    return (v == AGC_VEHICLE_LM);
 }
 
 /* Two's-complement CDU pattern as a signed count at 180 deg (CSM DAP).  */
@@ -110,17 +110,17 @@ static agc_sp_t cdu_signed(uint16_t p)
 {
     if (!AGC_ASSERT(p <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int v = (p & 040000u) ? (int) p - 0100000 : (int) p;
 
     if (!AGC_ASSERT(v >= -16384 && v <= 16383))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) v;
+    return ((agc_sp_t) v);
 }
 
 /* "TS CDUXD" (CM): the high word of the DP desired angle.               */
@@ -189,24 +189,24 @@ static uint16_t cphi(int axis) /* CPHI, CTHETA, CPSI       */
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t v = agc_erase_thetad(axis);
 
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return v;
+    return (v);
 }
 
 static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
 {
     if (!AGC_ASSERT(a <= CDU_MASK && b <= CDU_MASK))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int d = (int) ((unsigned) (a - b) & CDU_MASK);
@@ -215,27 +215,27 @@ static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
 
     if (!AGC_ASSERT(d >= -040000 && d < 040000))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return d;
+    return (d);
 }
 
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
     if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_call(dt, task);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- RATEINDX ------------------------------------------------------------ */
@@ -244,26 +244,26 @@ agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
 {
     if (!AGC_ASSERT(idx >= 0 && idx <= 6 && (idx & 1) == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (is_lm())
     {
         rateindx_lm = idx;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
 
     if (!AGC_ASSERT(rcs != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rcs->ratindx = idx; /* CM: kept with the DAP (S41.2)    */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_sp_t agc_kalc_rateindx(void)
@@ -282,29 +282,29 @@ agc_sp_t agc_kalc_rateindx(void)
         idx = 0;
     }
 
-    return idx;
+    return (idx);
 }
 
 bool agc_kalc_active(void)
 {
     if (!AGC_ASSERT(attprio <= 037))
     {
-        return false;
+        return (false);
     }
 
-    return attcadr != AGC_JOB_NONE;
+    return (attcadr != AGC_JOB_NONE);
 }
 
 agc_imu_stall_result_t agc_kalc_outcome(void)
 {
     if (!AGC_ASSERT(attprio <= 037))
     {
-        return AGC_IMU_STALL_BAD;
+        return (AGC_IMU_STALL_BAD);
     }
 
     /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
      * the user (the AGC's "all returns are now made via GOODEND").       */
-    return agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD;
+    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD);
 }
 
 /* ======================================================================= */
@@ -372,7 +372,7 @@ agc_status_t agc_kalc_zeroerror(void)
     {
         agc_lm_dap_zatteror();
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     set_cdud(0, agc_erase_cdux());
@@ -381,15 +381,15 @@ agc_status_t agc_kalc_zeroerror(void)
 
     if (!AGC_ASSERT(agc_erase_cduz() <= CDU_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_cdux() <= CDU_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* LOADCDUD / LOADYZ (CM p.419): desired angles = CPHI, CTHETA, CPSI.    */
@@ -434,14 +434,14 @@ static agc_status_t nogo(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = waitlist(2u, AGC_TASK_ENDMANU);
 
     agc_relint();
 
-    return st; /* ENDOFJOB        */
+    return (st); /* ENDOFJOB        */
 }
 
 /* NOGO -2 / NOGOM2: the maneuver was interrupted: zero the attitude error
@@ -455,12 +455,12 @@ static agc_status_t nogom2(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_relint();
 
-    return nogo();
+    return (nogo());
 }
 
 /* MANUSTOP (task): set the final angles and stop the rates.              */
@@ -472,7 +472,7 @@ agc_status_t agc_task_manustop(void)
 
         if (!AGC_ASSERT(rcs != NULL))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         csm_stopyz(rcs);      /* STOPYZ          */
@@ -480,7 +480,7 @@ agc_status_t agc_task_manustop(void)
         set_cdud(0, cphi(0)); /* ENDROLL         */
         agc_kalc_stoprate();
 
-        return agc_task_endmanu();
+        return (agc_task_endmanu());
     }
 
     agc_erase_set_delcduz(0); /* DELDCDU2        */
@@ -495,7 +495,7 @@ agc_status_t agc_task_manustop(void)
     agc_erase_set_delcdux(0); /* DELDCDU         */
     agc_erase_set_delperor(0);
 
-    return agc_task_endmanu(); /* GOODMANU        */
+    return (agc_task_endmanu()); /* GOODMANU        */
 }
 
 /* ENDMANU (CM) / GOODMANU (LM) (task): restore the user's priority, free
@@ -509,17 +509,17 @@ agc_status_t agc_task_endmanu(void)
 
     if (!AGC_ASSERT(job != AGC_JOB_NONE))
     {
-        return AGC_STATUS_OK; /* nobody waiting  */
+        return (AGC_STATUS_OK); /* nobody waiting  */
     }
 
     agc_status_t st = agc_exec_findvac(prio, job); /* SPVAC           */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ======================================================================= */
@@ -586,7 +586,7 @@ static uint16_t timechk(void)
 
     if (!AGC_ASSERT(now >= 0 && now < TIME_MOD))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     long hi = ((long) tm >> 14) - (now >> 14);
@@ -594,24 +594,24 @@ static uint16_t timechk(void)
 
     if (!AGC_ASSERT(lo > -040000L && lo < 040000L))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (hi > 0 || (hi == 0 && lo > 0))
     {
-        return 0u; /* TC Q: continue  */
+        return (0u); /* TC Q: continue  */
     }
 
     if (hi < 0)
     {
-        return 1u; /* 2NDRETRN        */
+        return (1u); /* 2NDRETRN        */
     }
 
     /* lo = +0: MANUOFF with A = 0.  lo < 0: CCS leaves |lo| - 1, COM
      * makes it -(|lo| - 1); then AD 1SEC and BZMF 2NDRETRN.             */
     long a = ONESEC_CS + ((lo == 0) ? 0 : lo + 1);
 
-    return (a <= 0) ? 1u : (uint16_t) a;
+    return ((a <= 0) ? 1u : (uint16_t) a);
 }
 
 /* CONTMANU / MANUCALL (p.416 / p.367): UPDTCALL at NEXTIME, then the next
@@ -624,7 +624,7 @@ static agc_status_t contmanu(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int diff = nextime - (int) agc_erase_time1();
@@ -636,7 +636,7 @@ static agc_status_t contmanu(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = waitlist((uint16_t) dt, AGC_TASK_UPDTCALL);
@@ -644,7 +644,7 @@ static agc_status_t contmanu(void)
     agc_relint();
     nextime = (nextime + ONESEC_CS) & (TIME1_MOD - 1); /* ADS NEXTIME    */
 
-    return st;                                         /* ENDOFJOB       */
+    return (st);                                         /* ENDOFJOB       */
 }
 
 /* INCRDCDU loop, RELINT, TMANUCHK (p.414-415 / p.365-366).               */
@@ -657,12 +657,12 @@ static agc_status_t incrdcdu_tmanuchk(void)
 
     if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(bcdu[2] == ncdu[2]))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_interrupts_inhibited())
@@ -674,7 +674,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
 
     if (dt == 0u)
     {
-        return contmanu();
+        return (contmanu());
     }
 
     agc_inhint(); /* MANUSTAL         */
@@ -682,7 +682,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
 
     agc_relint();
 
-    return st; /* ENDOFJOB         */
+    return (st); /* ENDOFJOB         */
 }
 
 /* MANUSTAT (CM p.416): completion time, enable auto maneuvers in the DAP
@@ -798,7 +798,7 @@ static agc_status_t newangl1(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     mis = agc_mat_mul(ip, &mis, &del); /* MXM3             */
@@ -813,7 +813,7 @@ static agc_status_t newangl1(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     if (agc_flag_test(AGC_FLAG_CALCMAN2))
@@ -822,7 +822,7 @@ static agc_status_t newangl1(agc_interp_t *ip)
         manustat();
     }
 
-    return incrdcdu_tmanuchk();
+    return (incrdcdu_tmanuchk());
 }
 
 /* WCALC (LOCSKIRT; GLA p.412 / NOGIMLOC p.364): DEL for one second at the
@@ -833,7 +833,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
 
     if (!AGC_ASSERT(idx >= 0 && idx < RATE_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool     lm = is_lm();
@@ -848,7 +848,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t b = agc_vec_scale(ip, cof, ar);
@@ -863,7 +863,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
 
     agc_flag_set(AGC_FLAG_CALCMAN2); /* SETGO CALCMAN2   */
 
-    return newangl1(ip);
+    return (newangl1(ip));
 }
 
 /* ======================================================================= */
@@ -881,7 +881,7 @@ static agc_status_t small_maneuver(void)
 
         if (!AGC_ASSERT(rcs != NULL))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         agc_inhint();
@@ -896,10 +896,10 @@ static agc_status_t small_maneuver(void)
 
     if (!AGC_ASSERT(!agc_interrupts_inhibited()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return nogo();
+    return (nogo());
 }
 
 /* KALCMAN3 (ANGLFIND p.399 / AMR p.351): set up and start the maneuver
@@ -920,7 +920,7 @@ static agc_status_t kalcman3(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     mis = k.mis;
@@ -932,32 +932,32 @@ static agc_status_t kalcman3(void)
         case AGC_KALC_TOOBAD: /* TOOBADF (LM)     */
             agc_alarm(ALARM_GLOCK);
 
-            return nogo();
+            return (nogo());
         case AGC_KALC_SMALL:
-            return small_maneuver();
+            return (small_maneuver());
         case AGC_KALC_NORMAL:
         case AGC_KALC_LARGE:
-            return wcalc(&ip); /* LOCSKIRT         */
+            return (wcalc(&ip)); /* LOCSKIRT         */
         default:
             break;
     }
 
-    return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
+    return (AGC_STATUS_BAD_ARG); /* unreachable: cannot happen */
 }
 
 agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return kalcman3();
+    return (kalcman3());
 }
 
 /* GOMANUR (IMU_MODE_SWITCHING_ROUTINES p.1442 / p.1331): KALCMANU must be
@@ -968,12 +968,12 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 {
     if (!AGC_ASSERT(ctx != NULL && wake_as != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (attcadr != AGC_JOB_NONE)
     {
-        return agc_poodoo(ALARM_TWO_USERS); /* two users        */
+        return (agc_poodoo(ALARM_TWO_USERS)); /* two users        */
     }
 
     attcadr = wake_as;   /* DXCH ATTCADR     */
@@ -981,10 +981,10 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 
     if (!AGC_ASSERT(attprio <= 037))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return kalcman3(); /* POSTJUMP KALCMAN3 */
+    return (kalcman3()); /* POSTJUMP KALCMAN3 */
 }
 
 /* UPDTCALL (task, p.417 / p.368): FINDVAC NEWDELHI at PRIO26.           */
@@ -992,17 +992,17 @@ agc_status_t agc_task_updtcall(void)
 {
     if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* NEWDELHI (job, p.414 / p.365): stop if the astronaut has interrupted
@@ -1011,7 +1011,7 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool interrupted;
@@ -1029,17 +1029,17 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
 
     if (interrupted)
     {
-        return nogom2();
+        return (nogom2());
     }
 
     if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
 
     agc_interp_init(&ip);
 
-    return newangl1(&ip); /* NEWANGL          */
+    return (newangl1(&ip)); /* NEWANGL          */
 }

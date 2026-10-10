@@ -23,7 +23,7 @@
 
 static bool is_csm(void)
 {
-    return agc_state_vehicle() == AGC_VEHICLE_CSM;
+    return (agc_state_vehicle() == AGC_VEHICLE_CSM);
 }
 
 /*
@@ -35,18 +35,19 @@ agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(is_csm()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = align_phase4(PH_STAR_SELECT);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_CSM_REALIGN_PICK_STARS, AGC_JOB_CSM_FINE_ALIGN);
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_CSM_REALIGN_PICK_STARS,
+                        AGC_JOB_CSM_FINE_ALIGN));
 }
 
 /*
@@ -65,7 +66,7 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* INTSTALL */
+        return (AGC_STATUS_OK); /* INTSTALL */
     }
 
     uint16_t cdu[3];
@@ -82,12 +83,12 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (found)
     {
-        return agc_job_csm_fine_align(ctx); /* P52F     */
+        return (agc_job_csm_fine_align(ctx)); /* P52F     */
     }
 
     agc_alarm(ALM_NO_STARS); /* P52I     */
@@ -95,12 +96,12 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     if (alm != AGC_STATUS_OK)
     {
-        return alm;
+        return (alm);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_CSM_FINE_ALIGN,
-                       AGC_JOB_CSM_REALIGN_STAR_SELECTION);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_CSM_FINE_ALIGN,
+                        AGC_JOB_CSM_REALIGN_STAR_SELECTION));
 }
 
 /* P52C V33: TSIGHT = now + TSIGHT1 (4 min), CALL LOCSAM. */
@@ -108,7 +109,7 @@ agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -118,10 +119,10 @@ agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return realign_pick_stars(ctx);
+    return (realign_pick_stars(ctx));
 }
 
 /* LOCSAM resumed after its integration wait. */
@@ -129,15 +130,15 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return realign_pick_stars(ctx);
+    return (realign_pick_stars(ctx));
 }
 
 /* LLASRD (P20-P25.agc p. 611): N89 registers from LAT, LONG, ALT. */
@@ -170,7 +171,7 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(is_csm()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -203,12 +204,12 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     n89_from_latlong(&ll); /* LLASRD   */
 
-    return agc_job_csm_landing_site_display(ctx);
+    return (agc_job_csm_landing_site_display(ctx));
 }
 
 /* LSDISP: flash V06N89 (LAT, LONG/2, ALT); ENTER shows it again. */
@@ -216,17 +217,18 @@ agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_CSM_LANDING_SITE_ACCEPTED,
-                       AGC_JOB_CSM_LANDING_SITE_DISPLAY);
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE,
+                        AGC_JOB_GOTOPOOH,
+                        AGC_JOB_CSM_LANDING_SITE_ACCEPTED,
+                        AGC_JOB_CSM_LANDING_SITE_DISPLAY));
 }
 
 /*
@@ -245,7 +247,7 @@ static agc_status_t landing_site_axes(void)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* INTSTALL */
+        return (AGC_STATUS_OK); /* INTSTALL */
     }
 
     if (st == AGC_STATUS_OK)
@@ -256,10 +258,10 @@ static agc_status_t landing_site_axes(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return align_goto(ram->qmaj); /* GOTO QMAJ */
+    return (align_goto(ram->qmaj)); /* GOTO QMAJ */
 }
 
 /*
@@ -270,7 +272,7 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -296,12 +298,12 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ram->xsmd.row[0] = agc_vec_unit(&ip, alphav, NULL, NULL); /* XSMD     */
 
-    return landing_site_axes();
+    return (landing_site_axes());
 }
 
 /* CSMPREC resumed after its integration wait. */
@@ -309,13 +311,13 @@ agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return landing_site_axes();
+    return (landing_site_axes());
 }

@@ -41,7 +41,7 @@ static bool vec_in_range(agc_vec_t v)
         ok = ok && v.c[i] >= AGC_DP_MIN && v.c[i] <= AGC_DP_MAX;
     }
 
-    return ok;
+    return (ok);
 }
 
 /* ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES.agc p.1357): angle from SINTH =
@@ -52,17 +52,17 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(sinth >= AGC_DP_MIN && sinth <= AGC_DP_MAX))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(costh >= AGC_DP_MIN && costh <= AGC_DP_MAX))
     {
-        return 0;
+        return (0);
     }
 
     agc_dp_t theta;
@@ -72,7 +72,7 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
         /* (45,135) or (-135,-45): X = ARCCOS(COS) WITH SIGN(SIN).        */
         theta = agc_dp_acos(ip, agc_dp_shl(ip, costh, 1));
 
-        return agc_dp_sign(theta, sinth);
+        return (agc_dp_sign(theta, sinth));
     }
 
     /* TRIG1: (-45,45) or (135,-135): X = ARCSIN(SIN).                    */
@@ -80,11 +80,11 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
 
     if (costh >= 0)
     {
-        return theta; /* (-45,45)          */
+        return (theta); /* (-45,45)          */
     }
 
     /* TRIG2 (135,-135): X = .5 WITH SIGN(SIN) - ARCSIN(SIN).             */
-    return agc_dp_sub(ip, agc_dp_sign(AGC_DP_HALF, sinth), theta);
+    return (agc_dp_sub(ip, agc_dp_sign(AGC_DP_HALF, sinth), theta));
 }
 
 /* CALCGTA (INFLIGHT_ALIGNMENT_ROUTINES.agc pp.1355-1356): gyro torquing
@@ -155,12 +155,12 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
 {
     if (!AGC_ASSERT(ip != NULL && nb != NULL && sm != NULL && thetad != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vec_in_range(nb->row[0]) && vec_in_range(sm->row[1])))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_vec_t xnb = nb->row[0];
@@ -186,7 +186,7 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM &&
@@ -194,7 +194,7 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
     {
         imu_vflag_clear(IMU_VF_CPHIFLAG);
 
-        return AGC_STATUS_OK; /* BONCLR      */
+        return (AGC_STATUS_OK); /* BONCLR      */
     }
 
     for (int i = 0; i < 3; i++)
@@ -202,7 +202,7 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
         agc_erase_set_thetad(i, thetad[i]); /* index valid */
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* AXISGEN1 (p.1361) for one frame: U = S1, V = UNIT(S1 x S2),
@@ -235,12 +235,12 @@ agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2],
 {
     if (!AGC_ASSERT(ip != NULL && a != NULL && b != NULL && a_wrt_b != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vec_in_range(a[0]) && vec_in_range(b[0])))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t ta[3];
@@ -260,7 +260,7 @@ agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2],
         a_wrt_b->row[i] = agc_vec_unit(ip, sum, NULL, NULL);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* CALCSMSC (P51-P53.agc p.763): navigation base axes in stable-member
@@ -275,12 +275,12 @@ agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, agc_vec_t sincdu,
 {
     if (!AGC_ASSERT(ip != NULL && nb != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(vec_in_range(sincdu) && vec_in_range(coscdu)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_dp_t sx = sincdu.c[0], sy = sincdu.c[1], sz = sincdu.c[2];
@@ -299,5 +299,5 @@ agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, agc_vec_t sincdu,
     nb->row[2] = agc_vec_shl(ip, agc_vec_make(z1, z2, z3), 1);
     nb->row[1] = agc_vec_shl(ip, agc_vec_cross(ip, nb->row[2], nb->row[0]), 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

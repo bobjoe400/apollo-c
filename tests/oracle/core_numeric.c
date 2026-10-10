@@ -38,7 +38,7 @@ static long long word(const char *oct) /* ones' complement word */
 {
     long v = strtol(oct, NULL, 8);
 
-    return (v < 040000) ? v : -(077777 - v);
+    return ((v < 040000) ? v : -(077777 - v));
 }
 
 static void parse_tag(ocase_t *c, const char *tag)
@@ -60,7 +60,7 @@ static void parse_tag(ocase_t *c, const char *tag)
 
 static long long dpv(long long hi, long long lo)
 {
-    return hi * 16384 + lo;
+    return (hi * 16384 + lo);
 }
 
 /* Run one case through the C library; returns 1 when everything matches. */
@@ -217,7 +217,7 @@ static int run_case(const ocase_t *c)
         {
             printf("unknown op %s\n", op);
 
-            return 0;
+            return (0);
         }
 
         if (got == 0 && exp == mdp)
@@ -231,13 +231,13 @@ static int run_case(const ocase_t *c)
     }
 
     if (!c->ok || got != exp || got2 != exp2)
-        return 0;
+        return (0);
 
     if (isvec && (r.c[0] != mdp || r.c[1] != dpv(w[3], w[4]) ||
                   r.c[2] != dpv(w[5], w[6])))
-        return 0;
+        return (0);
 
-    return !ovf_checked || ip.ovfind == w[7];
+    return (!ovf_checked || ip.ovfind == w[7]);
 }
 
 int main(void)
@@ -258,7 +258,7 @@ int main(void)
     {
         printf("oracle_core_numeric: SKIP (core_numeric.txt not found)\n");
 
-        return 0;
+        return (0);
     }
 
     memset(&c, 0, sizeof c);
@@ -314,5 +314,5 @@ int main(void)
     fclose(f);
     printf("oracle_core_numeric: %d cases, %d mismatches\n", n, bad);
 
-    return (bad != 0 || n == 0) ? 1 : 0;
+    return ((bad != 0 || n == 0) ? 1 : 0);
 }

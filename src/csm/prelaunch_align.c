@@ -38,15 +38,15 @@ agc_vec_t agc_csm_prelaunch_ervector(void)
 {
     if (!AGC_ASSERT(tmark >= 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (!AGC_ASSERT(ervector.c[2] == 0))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return ervector;
+    return (ervector);
 }
 
 /* FINETIME (p.431): read LOSCALAR twice until two reads agree, retry
@@ -57,7 +57,7 @@ agc_status_t agc_csm_finetime(uint16_t *hiscalar, uint16_t *loscalar)
 {
     if (!AGC_ASSERT(hiscalar != NULL && loscalar != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -85,10 +85,10 @@ agc_status_t agc_csm_finetime(uint16_t *hiscalar, uint16_t *loscalar)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* POSN17C (p.443): compass position, Z down, X downrange:
@@ -99,12 +99,12 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
 {
     if (!AGC_ASSERT(ip != NULL && xsm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(azimuth >= AGC_DP_MIN && azimuth <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t s = agc_dp_sin(ip, azimuth);
@@ -114,7 +114,7 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
     xsm->row[1] = agc_vec_make(0, s, c);
     xsm->row[2] = agc_vec_make(-AGC_DP_HALF, 0, 0); /* CS HALF      */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ERTHRVSE (p.430): ERVECTOR = (SIN LAT, -COS LAT, 0) OMEG/MS;
@@ -123,12 +123,12 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(latitude >= -AGC_DP_QUARTER && latitude <= AGC_DP_QUARTER))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t v = agc_vec_make(agc_dp_sin(ip, latitude),
@@ -140,7 +140,7 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
 
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, zero);
 
-    return AGC_STATUS_OK; /* ERCOMP1 = 0 */
+    return (AGC_STATUS_OK); /* ERCOMP1 = 0 */
 }
 
 /* EARTHR (p.430): ERCOMP1 = ERCOMP1 + XSM (ERVECTOR (t - TMARK) 2^9),
@@ -150,7 +150,7 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
 {
     if (!AGC_ASSERT(ip != NULL && xsm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t temptime = agc_rtb_loadtime();
@@ -163,7 +163,7 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
 
     if (!AGC_ASSERT(dt >= 0 && dt <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t    inc = agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, 9));
@@ -172,7 +172,7 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_vec_t er = agc_vec_add(ip, agc_mat_vec(ip, xsm, inc),
@@ -186,7 +186,7 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
     tmark = temptime;
 
-    return agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_NONE); /* PULSEIMU */
+    return (agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_NONE)); /* PULSEIMU */
 }
 
 /* ---- stubs -------------------------------------------------------------- */
@@ -196,81 +196,81 @@ static agc_status_t prelaunch_stub(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_UNIMPLEMENTED;
+    return (AGC_STATUS_UNIMPLEMENTED);
 }
 
 /* IMUTEST / GUESS / GEOIMUTT / IMUBACK (pp.423-428): IMU performance test
  * positioning and the test sequencer.                                    */
 agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* ESTIMS / RSTGTS1 / ALLOOP / ALFLT / NORMLOP / ALKCG ... (pp.434-442):
  * gyrocompass and drift-test filter loop.                                */
 agc_status_t agc_csm_prelaunch_estims(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* ALWAYSG / COMPGS / ADDINDRF (pp.444-445): compass and erection job.    */
 agc_status_t agc_csm_prelaunch_alwaysg(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* RESTAIER / RESTEST1 / RESTEST3 / ADERCOMP / SPITGYRO (pp.445-446).     */
 agc_status_t agc_csm_prelaunch_restaier(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* CHKCOMED / GOBKCALB / PRELTERM (pp.446-447).                           */
 agc_status_t agc_csm_prelaunch_chkcomed(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* TAR/EREF / TAR1 / CONTIN33 / NEXTBNKS (pp.449-451): target vectors.    */
 agc_status_t agc_csm_prelaunch_tar_eref(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* GCOMPVER (p.448): optical verification routine.                        */
 agc_status_t agc_csm_prelaunch_gcompver(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* OPTDATA (pp.448-449): target azimuth and elevation (V06N41).           */
 agc_status_t agc_csm_prelaunch_optdata(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* LATAZCHK (p.452): azimuth and latitude load and check.                 */
 agc_status_t agc_csm_prelaunch_latazchk(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* AZMTHCG1 (p.454): azimuth change (V78).                                */
 agc_status_t agc_csm_prelaunch_azmthcg1(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }
 
 /* TARGDRVE / RETARG / RETARG1 (pp.452-453): drive the optics to target. */
 agc_status_t agc_csm_prelaunch_targdrve(agc_job_ctx_t *ctx)
 {
-    return prelaunch_stub(ctx);
+    return (prelaunch_stub(ctx));
 }

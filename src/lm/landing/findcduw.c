@@ -91,10 +91,10 @@ static agc_sp_t fc_wrap15(int32_t d)
 
     if (!AGC_ASSERT(w >= -16384 && w <= 16383))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) w;
+    return ((agc_sp_t) w);
 }
 
 /* Value of a two's complement word when the AGC reads it as ones'. */
@@ -102,10 +102,10 @@ static agc_sp_t fc_ones_of_twos(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= -16384))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) ((v < 0) ? v + 1 : v);
+    return ((agc_sp_t) ((v < 0) ? v + 1 : v));
 }
 
 /* Value of a ones' complement word when the AGC reads it as two's. */
@@ -113,10 +113,10 @@ static agc_sp_t fc_twos_of_ones(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) ((v < 0) ? v - 1 : v);
+    return ((agc_sp_t) ((v < 0) ? v - 1 : v));
 }
 
 /* 15-bit word of a ones' complement value (what MSU sees as two's). */
@@ -124,17 +124,17 @@ static int32_t fc_word1(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int32_t w = (v < 0) ? 0x7FFF + (int32_t) v : (int32_t) v;
 
     if (!AGC_ASSERT(w >= 0 && w <= 0x7FFF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return w;
+    return (w);
 }
 
 /* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
@@ -175,7 +175,7 @@ static agc_sp_t fc_mp_dbl(agc_sp_t a, agc_sp_t b)
         hi = (hi > 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
 
-    return (agc_sp_t) hi;
+    return ((agc_sp_t) hi);
 }
 
 /* ONESTO2S (p. 924): ones' complement SP -> two's complement 15-bit word.
@@ -185,17 +185,17 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
 {
     if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t w = (uint16_t) ((int32_t) a & 0x7FFF);
 
     if (!AGC_ASSERT(w <= 0x7FFFu))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return w;
+    return (w);
 }
 
 /* LIMITSUB (p. 924, "version courtesy Hugh Blair-Smith"): limit the
@@ -205,25 +205,25 @@ agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
 {
     if (!AGC_ASSERT(limit > 0))
     {
-        return 0;
+        return (0);
     }
 
     if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
     {
-        return 0;
+        return (0);
     }
 
     if (x >= limit)
     {
-        return limit;
+        return (limit);
     }
 
     if (x <= (agc_sp_t) -limit)
     {
-        return (agc_sp_t) -limit;
+        return ((agc_sp_t) -limit);
     }
 
-    return x;
+    return (x);
 }
 
 /* SPARCSIN (p. 923, Bob Crisp): argument scaled 1, angle scaled 180 deg,
@@ -232,7 +232,7 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 {
     if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t sr = (agc_sp_t) (x / 2); /* TS SR             */
@@ -246,10 +246,10 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 
     if (!AGC_ASSERT(r >= -8192 && r <= 8192))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* SPARCSIN -1: argument scaled 2; DOUBLE, and on overflow TS SR skips and
@@ -269,10 +269,10 @@ agc_sp_t agc_lm_sparcsin_m1(agc_sp_t x2)
 
     if (!AGC_ASSERT(d >= AGC_SP_MIN && d <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_lm_sparcsin((agc_sp_t) d);
+    return (agc_lm_sparcsin((agc_sp_t) d));
 }
 
 /* ARCTRGSP (p. 922): two's complement angle (pi) from sine in A and cosine
@@ -282,12 +282,12 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 {
     if (!AGC_ASSERT(s >= AGC_SP_MIN && c >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (s == 0)
     { /* SINZERO           */
-        return (c >= 0) ? 0 : FC_NEGMAX_2S;
+        return ((c >= 0) ? 0 : FC_NEGMAX_2S);
     }
 
     int32_t as = (s < 0) ? -s : s;
@@ -297,7 +297,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
     { /* USECOS            */
         agc_sp_t a = agc_lm_ad(agc_lm_sparcsin_m1((agc_sp_t) -c), FC_HALF);
 
-        return (s > 0) ? a : (agc_sp_t) -a; /* 1TO2&TCQ          */
+        return ((s > 0) ? a : (agc_sp_t) -a); /* 1TO2&TCQ          */
     }
 
     agc_sp_t sn   = s;
@@ -314,10 +314,10 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 
     if (!AGC_ASSERT(r >= -16384 && r <= 16383))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* DVBYCOSM (p. 921): divide a matrix element (already containing
@@ -330,22 +330,22 @@ static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
 
     if (!AGC_ASSERT(tem5 >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (diff <= 0)
     {
-        return (agc_sp_t) diff; /* TSL&TCQ           */
+        return ((agc_sp_t) diff); /* TSL&TCQ           */
     }
 
     agc_sp_t q = agc_lm_dv(op, tem5);
 
     if (!AGC_ASSERT(q >= AGC_SP_MIN && q <= AGC_SP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return q;
+    return (q);
 }
 
 /* NB2CDUSP (p. 920): two's complement (pi) SP CDU angles X, Y, Z from the
@@ -356,7 +356,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
 {
     if (!AGC_ASSERT(ip != NULL && nb != NULL && cdu != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t c2 =
@@ -385,7 +385,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
 
     cdu[0] = agc_lm_arctrgsp((agc_sp_t) -sx, cx); /* CDUX             */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* FLTRSUB (p. 919): one component of the thrust direction filter. The
@@ -395,7 +395,7 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
 {
     if (!AGC_ASSERT(fc_ndxcduw == 0 || fc_ndxcduw == 1))
     {
-        return orig;
+        return (orig);
     }
 
     agc_sp_t incr = agc_lm_mp_hi(agc_lm_ad(meas, (agc_sp_t) -orig),
@@ -406,10 +406,10 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
 
     if (!AGC_ASSERT(total >= -FC_UNFVLIM && total <= FC_UNFVLIM))
     {
-        return orig;
+        return (orig);
     }
 
-    return total;
+    return (total);
 }
 
 /* UNWCTEST (p. 919): is the proposed window vector at least 15 degrees
@@ -418,7 +418,7 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return false;
+        return (false);
     }
 
     agc_dp_t d   = agc_dp_sq(ip, agc_vec_dot(ip, unz, unx));
@@ -426,17 +426,17 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 
     if (agc_dp_sub(ip, d, lim) < 0)
     {
-        return true; /* BMN DCMCL        */
+        return (true); /* BMN DCMCL        */
     }
 
     fc_flagoodw = 0; /* SSP FLAGOODW 0   */
 
     if (!AGC_ASSERT(fc_flagoodw == 0))
     {
-        return false;
+        return (false);
     }
 
-    return false;
+    return (false);
 }
 
 /* DCMCL (p. 913): the required direction cosine matrix. The filtered
@@ -446,7 +446,7 @@ static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return (agc_mat_t){0}; /* no valid result */
+        return ((agc_mat_t){0}); /* no valid result */
     }
 
     agc_vec_t uny1 = agc_vec_unit(ip, agc_vec_cross(ip, unz, unx), NULL, NULL);
@@ -463,10 +463,10 @@ static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 
     if (!AGC_ASSERT(m.row[0].c[0] <= AGC_DP_MAX))
     {
-        return (agc_mat_t){0}; /* no valid result */
+        return ((agc_mat_t){0}); /* no valid result */
     }
 
-    return m;
+    return (m);
 }
 
 /* INITCDUW (p. 910): one call before each guided maneuver. */
@@ -536,7 +536,7 @@ static agc_status_t fc_noattcnt(bool alarm)
     agc_lm_dap_stoprate();
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Limit the MGA (alarm 00401), output CPHI.. for N22, and form the
@@ -706,14 +706,14 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
 
     if (agc_interp_test_ovf(ip))
     {
-        return AGC_STATUS_NOT_FOUND; /* BOVB NOATTCNT    */
+        return (AGC_STATUS_NOT_FOUND); /* BOVB NOATTCNT    */
     }
 
     agc_vec_t u = agc_vec_unit(ip, agc_erase_delv(), NULL, NULL);
 
     if (agc_interp_test_ovf(ip))
     {
-        return AGC_STATUS_OK; /* skip the filter  */
+        return (AGC_STATUS_OK); /* skip the filter  */
     }
 
     agc_guid_smnb(trig, &u); /* unit DELV, NB    */
@@ -722,7 +722,7 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
     fc_unfv_2.c[2] = agc_dp_from_sp(
         fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* AFTRFLTR (p. 913): a suitable window pointing vector. */
@@ -732,19 +732,19 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
     if (fc_flagoodw != 0 && fc_unwctest(ip, unz, unx))
     {
-        return unz; /* window command   */
+        return (unz); /* window command   */
     }
 
     agc_vec_t znb = xnb->row[2]; /* FETCHZNB         */
 
     if (fc_unwctest(ip, znb, unx))
     {
-        return znb;
+        return (znb);
     }
 
     agc_vec_t mx = agc_vec_neg(xnb->row[0]); /* Z and -X can't both be
@@ -752,10 +752,10 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 
     if (!AGC_ASSERT(mx.c[0] >= AGC_DP_MIN))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return mx;
+    return (mx);
 }
 
 /* FINDCDUW (pp. 910-918), entry with the thrust command in MPAC.
@@ -764,7 +764,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_clear_ovf(ip);                /* BOV: clear       */
@@ -775,12 +775,12 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
-        return fc_noattcnt(true);
+        return (fc_noattcnt(true));
     }
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_mat_t m = fc_dcmcl(ip, unx, fc_window(ip, unx, unz));
@@ -790,7 +790,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     fc_gimbal_changes(cdu);
@@ -799,7 +799,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     {
         agc_relint();
 
-        return fc_noattcnt(false); /* not PNGCS auto / engine off  */
+        return (fc_noattcnt(false)); /* not PNGCS auto / engine off  */
     }
 
     fc_limit_attitude(trig);
@@ -807,7 +807,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     fc_transfer();
     agc_relint(); /* TC INTPRET after TCQCDUW     */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* FINDCDUW -2: the thrust command is already in UNFC/2. */
@@ -815,15 +815,15 @@ agc_status_t agc_lm_findcduw_m2(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t unfc = agc_lm_ldg()->unfc_2; /* VLOAD UNFC/2     */
 
     if (!AGC_ASSERT(unfc.c[0] >= AGC_DP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_findcduw(ip, unfc);
+    return (agc_lm_findcduw(ip, unfc));
 }

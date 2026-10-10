@@ -48,10 +48,10 @@ static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
 
     if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.hi <= LM_POSMAX))
     {
-        return (lm_dp_pair_t){0}; /* no valid result */
+        return ((lm_dp_pair_t){0}); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
@@ -60,10 +60,10 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 
     if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.lo >= LM_NEGMAX))
     {
-        return (lm_dp_pair_t){0}; /* no valid result */
+        return ((lm_dp_pair_t){0}); /* no valid result */
     }
 
-    return r;
+    return (r);
 }
 
 /* Sign of a DP pair, high word first (CCS high, then CCS low).          */
@@ -73,10 +73,10 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
 
     if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0));
+    return ((agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0)));
 }
 
 /* ACDT+C12 (pp.1476-1477): Q(R)ACCDOT = -NEGU x ACCDOT(magnitude); the
@@ -89,7 +89,7 @@ agc_status_t lm_dap_acdt_c12(void)
     if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) ||
         !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     d->qaccdot = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
@@ -105,7 +105,7 @@ agc_status_t lm_dap_acdt_c12(void)
     agc_chan_write(012, (uint16_t) (c12 + bits));
     d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ROOTCYCL (p.1484): one Newton iteration x' = x/2 + (ARG/2)/x.          */
@@ -113,13 +113,13 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
 {
     if (!AGC_ASSERT(x > 0))
     {
-        return 0;
+        return (0);
     }
 
     lm_dp_pair_t n = {halfarg, 0};
     agc_sp_t     q = lm_dap_dv(n, x);         /* (ARG/X)/2      */
 
-    return lm_dap_sat((int32_t) (x / 2) + q); /* SR: X/2        */
+    return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2        */
 }
 
 /* GTSQRT (pp.1481-1482): 14-bit square root of the DP *fn; the root must
@@ -129,14 +129,14 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
     if (!AGC_ASSERT(fn != NULL && shftflag != NULL) ||
         !AGC_ASSERT(inindex != NULL))
     {
-        return 0;
+        return (0);
     }
 
     *shftflag = 0;
 
     if (fn->hi < 0 || (fn->hi == 0 && fn->lo <= 0))
     {
-        return 0; /* ZEROOT         */
+        return (0); /* ZEROOT         */
     }
 
     if (fn->hi == 0)
@@ -177,10 +177,10 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 
     if (!AGC_ASSERT(*inindex >= 0 && *inindex <= 12))
     {
-        return 0;
+        return (0);
     }
 
-    return x;
+    return (x);
 }
 
 /* GTS working cells for one axis (GTSTEMPS).                             */
@@ -347,7 +347,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 
     if (prod > 0)
     {
-        return AGC_STATUS_OK; /* LOUPE          */
+        return (AGC_STATUS_OK); /* LOUPE          */
     }
 
     if (prod < 0)
@@ -369,10 +369,10 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 
     if (!AGC_ASSERT(newneg >= -1 && newneg <= 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* GTS (pp.1472-1484): trim gimbal control of Q and R this pass. The next
@@ -413,12 +413,12 @@ agc_status_t lm_dap_gts(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t sc = lm_dap_closeout();
 
-    return (st != AGC_STATUS_OK) ? st : sc;
+    return ((st != AGC_STATUS_OK) ? st : sc);
 }
 
 /* TIMEGMBL, one axis (pp.1478-1480): drive time ABS(.4 AOS / ACCDOT) in
@@ -496,13 +496,13 @@ agc_status_t agc_lm_dap_timegmbl(void)
 
     if (!AGC_ASSERT(d->allowgts == 0 || d->allowgts == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->neguq >= -1 && d->negur >= -1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lm_dap_acdt_c12();
+    return (lm_dap_acdt_c12());
 }

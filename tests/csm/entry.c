@@ -31,7 +31,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -119,8 +119,8 @@ static double model_range_revs(double *vl_out, double *gammal_out)
     *vl_out     = vl;
     *gammal_out = g;
 
-    return askep + (vl * .167003132 + q2) + aspup + aspdwn +
-           (.0349 - g) * .326388889;
+    return (askep + (vl * .167003132 + q2) + aspup + aspdwn +
+            (.0349 - g) * .326388889);
 }
 
 static void test_huntest_range(void)
@@ -197,5 +197,5 @@ int main(void)
     (void) printf("test_entry: %d checks, %d failures, %d assert reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

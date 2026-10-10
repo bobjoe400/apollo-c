@@ -73,7 +73,7 @@ static int gain_index(agc_sp_t attkalmn)
         g = GAIN_BIAS; /* ATTKALMN out of table: use +0  */
     }
 
-    return g;
+    return (g);
 }
 
 /* RATEFILT .. ADOTLOOP (pp. 1004-1006).                                  */
@@ -109,10 +109,10 @@ agc_status_t csm_rcs_ratefilt(void)
 
     if (!AGC_ASSERT(g < GAIN_N))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* Measured body rates (p. 1005): DELRHO = AMGB (CDU - RHO), kept double
@@ -123,7 +123,7 @@ static agc_status_t rcs_delrho(agc_dp_t deltemp[AGC_CSM_AXES])
 
     if (!AGC_ASSERT(deltemp != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t dx[AGC_CSM_AXES];
@@ -145,10 +145,10 @@ static agc_status_t rcs_delrho(agc_dp_t deltemp[AGC_CSM_AXES])
 
     if (!AGC_ASSERT(r->rho[2] <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* KMATRIX, TENTHSEK (pp. 1006-1007): a 1 s update of the gimbal-to-body
@@ -170,7 +170,7 @@ agc_status_t csm_rcs_kmatrix(void)
 
         if (sw != AGC_STATUS_OK)
         {
-            return sw;
+            return (sw);
         }
 
         r->attsec = NINE;
@@ -178,7 +178,7 @@ agc_status_t csm_rcs_kmatrix(void)
 
     if (!AGC_ASSERT((r->attsec >= 0) && (r->attsec <= NINE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -190,10 +190,10 @@ agc_status_t csm_rcs_kmatrix(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return rcs_dacndls();
+    return (rcs_dacndls());
 }
 
 /* DCDUINCR, DELOOP (pp. 1007-1008): CDUXD = CDUXD + DELCDUX (DP, modulo
@@ -204,7 +204,7 @@ static agc_status_t rcs_dcduincr(void)
 
     if (!AGC_ASSERT(r->holdflag < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
@@ -217,10 +217,10 @@ static agc_status_t rcs_dcduincr(void)
 
     if (!AGC_ASSERT(r->thetad[0] <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DACNDLS, FDAIDSP1, FDAIDSP2 (pp. 1009, 1022): alternate between
@@ -235,14 +235,14 @@ static agc_status_t rcs_dacndls(void)
     { /* FDAIDSP1    */
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_FDAIALT);
 
-        return csm_dap_needler(); /* KRESUME1: end phase 1  */
+        return (csm_dap_needler()); /* KRESUME1: end phase 1  */
     }
 
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) AGC_CSM_RCSF_FDAIALT);
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     {
-        return rcs_fdaitotl(); /* total attitude errors  */
+        return (rcs_fdaitotl()); /* total attitude errors  */
     }
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
@@ -252,10 +252,10 @@ static agc_status_t rcs_dacndls(void)
 
     if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* end phase 1            */
+    return (AGC_STATUS_OK); /* end phase 1            */
 }
 
 /* FDAITOTL, WRTN22, WRTN17, GETAKS (pp. 1022-1023): total attitude error
@@ -287,8 +287,8 @@ static agc_status_t rcs_fdaitotl(void)
 
     if (!AGC_ASSERT(c->ak[2] >= AGC_SP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* end phase 1 of RCS DAP */
+    return (AGC_STATUS_OK); /* end phase 1 of RCS DAP */
 }

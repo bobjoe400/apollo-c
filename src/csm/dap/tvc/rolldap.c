@@ -46,15 +46,15 @@ static agc_sp_t sgn_mul(int i, agc_sp_t v) /* INDEX I; 0 v: CA or CS v */
 {
     if (!AGC_ASSERT((i == 1) || (i == -1)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(v >= AGC_SP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (i < 0) ? (agc_sp_t) -v : v;
+    return ((i < 0) ? (agc_sp_t) -v : v);
 }
 
 /* ROLLDAP (p. 989): OGA rate, first-order difference over 1/2 s; the low
@@ -86,7 +86,7 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
 
     if (!AGC_ASSERT((i == 1) || (i == -1)))
     {
-        return 0;
+        return (0);
     }
 
     agc_sp_t a   = csm_dap_mp_hi(delogart, t->one_conacc);
@@ -104,17 +104,17 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
 
     if (!AGC_ASSERT(den != 0))
     {
-        return 0;
+        return (0);
     }
 
     int q = (int) num / (int) den; /* DV (0, NUM): overflow check       */
 
     if (q != 0)
     {
-        return (q > 0) ? AGC_SP_MAX : AGC_SP_MIN; /* MINLIMAP            */
+        return ((q > 0) ? AGC_SP_MAX : AGC_SP_MIN); /* MINLIMAP            */
     }
 
-    return csm_dap_dv(agc_dp_pack(num, 0), den); /* DVOK, B-4 rev/s     */
+    return (csm_dap_dv(agc_dp_pack(num, 0), den)); /* DVOK, B-4 rev/s     */
 }
 
 /* ROLLSET (p. 994): jet firing time from the desired minus the present
@@ -125,7 +125,7 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
 
     if (!AGC_ASSERT(t->one_conacc >= 0)) /* 1/CONACC, s^2/rev  */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_sp_t d  = csm_dap_ad_sat(desired, (agc_sp_t) -t->ogarate); /* SU     */
@@ -138,20 +138,20 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
      * below 2.4 and the C limits the exact value with its true sign.    */
     if (!AGC_ASSERT((hi > -3 * 16384) && (hi < 3 * 16384))) /* MAX < .60 */
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (hi > AGC_SP_MAX)
     {
-        return AGC_SP_MAX; /* INDEX A; CS LIMITS  */
+        return (AGC_SP_MAX); /* INDEX A; CS LIMITS  */
     }
 
     if (hi < AGC_SP_MIN)
     {
-        return AGC_SP_MIN;
+        return (AGC_SP_MIN);
     }
 
-    return (agc_sp_t) hi;
+    return ((agc_sp_t) hi);
 }
 
 /* ROLLOGIC .. REG5TST, REGION6, ROLLON, RATELIM (pp. 990-994): the
@@ -163,7 +163,7 @@ static bool roll_regions(agc_sp_t *desired)
 
     if (!AGC_ASSERT(desired != NULL))
     {
-        return false;
+        return (false);
     }
 
     agc_sp_t r = t->ogarate;
@@ -175,7 +175,7 @@ static bool roll_regions(agc_sp_t *desired)
 
     if (!AGC_ASSERT((t->sgnrt == 1) || (t->sgnrt == -1)))
     {
-        return false;
+        return (false);
     }
 
     /* DELOGA: distance from the switch parabola, + to its right         */
@@ -190,7 +190,7 @@ static bool roll_regions(agc_sp_t *desired)
         t->delogart = sgn_mul(i, (agc_sp_t) -LMCRATE); /* dummy point      */
         *desired    = roll_desired_rate(t->deloga, t->delogart, i);
 
-        return true;
+        return (true);
     }
 
     t->iogarate = sgn_mul(i, r);
@@ -199,7 +199,7 @@ static bool roll_regions(agc_sp_t *desired)
     {                                              /* REG3TST: too fast   */
         *desired = sgn_mul(i, (agc_sp_t) -MAXLIM); /* RATELIM             */
 
-        return true;
+        return (true);
     }
 
     agc_dp_t s = csm_dap_ddoubl(
@@ -210,14 +210,14 @@ static bool roll_regions(agc_sp_t *desired)
         (csm_dap_ads(t->iogarate, MINLIM) <= 0) ||                 /* REG4 */
         (csm_dap_ads(sgn_mul(i, t->ogaerr), (agc_sp_t) -DB) <= 0))
     { /* REG5 */
-        return false;
+        return (false);
     }
 
     t->deloga   = t->ogaerr; /* REGION6: actual state */
     t->delogart = r;
     *desired    = roll_desired_rate(t->deloga, t->delogart, i);
 
-    return true;
+    return (true);
 }
 
 /* +TORQUE / -TORQUE (pp. 996-997): alternate the jet pairs.              */
@@ -240,17 +240,17 @@ static agc_status_t roll_jets_on(bool plus)
 
     if (!AGC_ASSERT(t->rollword <= 3u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(jets != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_chan_write(AGC_CHAN_ROLLJETS, jets);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* JETROLL, SAMEJETS, T6ENABL (pp. 996-997): NOROLL1 in TEMREG T6 counts;
@@ -261,12 +261,12 @@ static agc_status_t roll_jetroll(uint16_t time6)
 
     if (!AGC_ASSERT(time6 <= CSM_DAP_NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((t->i_sign >= -1) && (t->i_sign <= 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_rupt_set_t6_task(AGC_TASK_NOROLL1);
@@ -276,7 +276,7 @@ static agc_status_t roll_jetroll(uint16_t time6)
 
     if ((st != AGC_STATUS_OK) || (t->i_sign == 0))
     {
-        return st; /* keep the same jets  */
+        return (st); /* keep the same jets  */
     }
 
     if (t->rollfire > 0)
@@ -298,7 +298,7 @@ static agc_status_t roll_jetroll(uint16_t time6)
         st = AGC_STATUS_OK;
     }
 
-    return st; /* RDAPEND: TASKOVER   */
+    return (st); /* RDAPEND: TASKOVER   */
 }
 
 /* NOROLL (p. 996): coast; jets may fire next pass.                       */
@@ -311,15 +311,15 @@ static agc_status_t roll_noroll(void)
 
     if (!AGC_ASSERT(t->i_sign != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(t->rollfire == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return roll_jetroll(CSM_DAP_NEG0);
+    return (roll_jetroll(CSM_DAP_NEG0));
 }
 
 /* MOREROLL / NEWROLL .. NOMXFIRE .. FIREPLUG (pp. 995-996): fire for
@@ -330,14 +330,14 @@ static agc_status_t roll_fire(agc_sp_t tf)
 
     if (!AGC_ASSERT(tf != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t s = csm_dap_mp_hi(tf, t->rollfire); /* same sign as now?   */
 
     if (s < 0)
     {
-        return roll_noroll(); /* new sign requested  */
+        return (roll_noroll()); /* new sign requested  */
     }
 
     if (s > 0)
@@ -350,7 +350,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
 
         if (mag - TMINFIRE <= 0)
         {
-            return roll_noroll(); /* MINTST              */
+            return (roll_noroll()); /* MINTST              */
         }
     }
 
@@ -364,7 +364,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
 
     if (!AGC_ASSERT(t->temreg > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (t->i_sign == 0)
@@ -373,11 +373,11 @@ static agc_status_t roll_fire(agc_sp_t tf)
 
         if (left - t->temreg <= 0)
         {
-            return AGC_STATUS_OK; /* don't; TASKOVER     */
+            return (AGC_STATUS_OK); /* don't; TASKOVER     */
         }
     }
 
-    return roll_jetroll((uint16_t) t->temreg);
+    return (roll_jetroll((uint16_t) t->temreg));
 }
 
 /* ROLLDAP, DURATION, WAIT1/2 (p. 989): waitlist task.                    */
@@ -387,13 +387,13 @@ agc_status_t agc_task_rolldap(void)
 
     if (!AGC_ASSERT(t->one_conacc >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((t->rollfire == 0) || (t->rollfire == AGC_SP_MAX) ||
                     (t->rollfire == AGC_SP_MIN)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     roll_rate();
@@ -402,14 +402,14 @@ agc_status_t agc_task_rolldap(void)
     {
         t->temreg = 0; /* jets not off for 1/2 s yet: wait      */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_sp_t desired = 0;
 
     if (!roll_regions(&desired))
     {
-        return roll_noroll();
+        return (roll_noroll());
     }
 
     t->temreg = desired; /* ROLLSET             */
@@ -419,10 +419,10 @@ agc_status_t agc_task_rolldap(void)
 
     if (tf == 0)
     {
-        return roll_noroll();
+        return (roll_noroll());
     }
 
-    return roll_fire(tf);
+    return (roll_fire(tf));
 }
 
 /* NOROLL1 (p. 997): T6 task called by JETROLL; shut off all roll jets.   */
@@ -435,8 +435,8 @@ agc_status_t agc_task_noroll1(void)
 
     if (!AGC_ASSERT(t->rollfire == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* NOQRSM              */
+    return (AGC_STATUS_OK); /* NOQRSM              */
 }

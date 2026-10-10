@@ -40,7 +40,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) expr;
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -58,21 +58,21 @@ static void check(bool ok, int line, const char *text)
 
 static bool near(double a, double b, double tol)
 {
-    return fabs(a - b) <= tol;
+    return (fabs(a - b) <= tol);
 }
 
 static double rev(agc_dp_t v)
 {
-    return agc_dp_to_double(v, 0);
+    return (agc_dp_to_double(v, 0));
 }
 
 static agc_vec_t half_unit(double x, double y, double z)
 {
     const double n = sqrt(x * x + y * y + z * z);
 
-    return agc_vec_make(agc_dp_from_double(x / n, 1),
-                        agc_dp_from_double(y / n, 1),
-                        agc_dp_from_double(z / n, 1));
+    return (agc_vec_make(agc_dp_from_double(x / n, 1),
+                         agc_dp_from_double(y / n, 1),
+                         agc_dp_from_double(z / n, 1)));
 }
 
 /* 2's complement CDU word for an angle in degrees. */
@@ -85,7 +85,7 @@ static uint16_t cdu_deg(double deg)
         c += 32768;
     }
 
-    return (uint16_t) (c % 32768);
+    return ((uint16_t) (c % 32768));
 }
 
 static double cdu_to_deg(uint16_t w)
@@ -97,7 +97,7 @@ static double cdu_to_deg(uint16_t w)
         c -= 32768;
     }
 
-    return (double) c * 360.0 / 32768.0;
+    return ((double) c * 360.0 / 32768.0);
 }
 
 static bool mat_is_identity_half(const agc_mat_t *m, double tol)
@@ -114,7 +114,7 @@ static bool mat_is_identity_half(const agc_mat_t *m, double tol)
         }
     }
 
-    return ok;
+    return (ok);
 }
 
 /* P52 option 3 (REFSMMAT), R51 / R54 / AXISGEN / R55 arithmetic. */
@@ -300,7 +300,7 @@ static long ags_read(uint16_t w)
 {
     long c = (long) (w & 077777u);
 
-    return (c >= 16384) ? (c - 32768) : c;
+    return ((c >= 16384) ? (c - 32768) : c);
 }
 
 /*
@@ -373,5 +373,5 @@ int main(void)
     (void) printf("test_align: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

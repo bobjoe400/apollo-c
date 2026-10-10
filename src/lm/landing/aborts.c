@@ -39,15 +39,15 @@ agc_sp_t agc_lm_pipctr1(void)
 {
     if (!AGC_ASSERT(ab_pipctr1 >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(ab_pipctr1 <= 7))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ab_pipctr1;
+    return (ab_pipctr1);
 }
 
 /* R10,R11 (p. 829), every 0.25 s while SERVICER runs; on the last pass of
@@ -56,14 +56,14 @@ agc_status_t agc_lm_task_abort_monitor(void)
 {
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG))
     {
-        return AGC_STATUS_OK; /* let AVGEND take care of group 2 */
+        return (AGC_STATUS_OK); /* let AVGEND take care of group 2 */
     }
 
     agc_sp_t pipctr = agc_guid_state()->avg.pipctr; /* = PHSPRDT2     */
 
     if (pipctr <= 0)
     {
-        return agc_lm_lrhtask(); /* last pass      */
+        return (agc_lm_lrhtask()); /* last pass      */
     }
 
     ab_pipctr1 = (agc_sp_t) (pipctr - 1);
@@ -72,10 +72,10 @@ agc_status_t agc_lm_task_abort_monitor(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_abort_monitor_resume();
+    return (agc_lm_abort_monitor_resume());
 }
 
 /* ABRTJASK (pp. 831-832): commit to the abort. aps_abort selects P71 (APS). */
@@ -112,7 +112,7 @@ static agc_status_t ab_abrtjask(bool aps_abort)
     agc_phase_newphase(4, 3, false);  /* 4.3SPOT for GOABORT     */
     agc_rupt_set_time(5, AB_T5_40MS); /* DAPIDLER in 40 ms       */
 
-    return agc_exec_enema();
+    return (agc_exec_enema());
 }
 
 /* R10,R11A .. P70NOW? (pp. 829-830): flash the LR lamps, then (with
@@ -136,30 +136,30 @@ agc_status_t agc_lm_abort_monitor_resume(void)
 
     if (!agc_flag_test(AGC_FLAG_LETABORT) || mm == 71)
     {
-        return agc_lm_landisp(); /* proceed to R10          */
+        return (agc_lm_landisp()); /* proceed to R10          */
     }
 
     if (agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_ABORTAPS))
     {
-        return ab_abrtjask(true); /* P71A                    */
+        return (ab_abrtjask(true)); /* P71A                    */
     }
 
     if (mm == 70)
     {
-        return agc_lm_landisp();
+        return (agc_lm_landisp());
     }
 
     if (agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_ABORTDPS))
     {
-        return ab_abrtjask(false); /* P70A                    */
+        return (ab_abrtjask(false)); /* P70A                    */
     }
 
     if (!AGC_ASSERT(mm != 70 && mm != 71))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_landisp();
+    return (agc_lm_landisp());
 }
 
 /* LEGAL? (pp. 835-836): the V37 entry is legal only when the program is
@@ -168,11 +168,11 @@ static bool ab_legal(agc_sp_t mm)
 {
     if (!AGC_ASSERT(mm == 70 || mm == 71))
     {
-        return false;
+        return (false);
     }
 
-    return agc_erase_modreg() != mm && agc_flag_test(AGC_FLAG_LETABORT) &&
-           agc_flag_test(AGC_FLAG_AVEGFLAG);
+    return (agc_erase_modreg() != mm && agc_flag_test(AGC_FLAG_LETABORT) &&
+            agc_flag_test(AGC_FLAG_AVEGFLAG));
 }
 
 /* ABORTALM (p. 836): TC FALTON, TC RELDSP, POSTJUMP PINBRNCH -- the OPR
@@ -184,10 +184,10 @@ static agc_status_t ab_abortalm(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_dsky_pinbrnch();
+    return (agc_dsky_pinbrnch());
 }
 
 /* P70 / P71 (p. 830) selected by V37. */
@@ -195,12 +195,12 @@ agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!ab_legal(70))
     {
-        return ab_abortalm();
+        return (ab_abortalm());
     }
 
     agc_inhint();
@@ -208,19 +208,19 @@ agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!ab_legal(71))
     {
-        return ab_abortalm();
+        return (ab_abortalm());
     }
 
     agc_inhint();
@@ -228,7 +228,7 @@ agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* P70A / P71A: restart points 4.27 and 4.31 (ABRTJASK again). */
@@ -236,7 +236,7 @@ agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -244,14 +244,14 @@ agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -259,7 +259,7 @@ agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* TGOCOMP (p. 836): TGO = (TIME - TIG) at 2^17 cs. */
@@ -338,7 +338,7 @@ static agc_status_t ab_upthrot(agc_job_ctx_t *ctx)
 
     agc_phase_change_var(04024, &v);
 
-    return agc_lm_job_abort_auto_control_check(ctx);
+    return (agc_lm_job_abort_auto_control_check(ctx));
 }
 
 /* UPTHROT1 -3 (p. 834): P40AUTO, returning to UPTHROT1. */
@@ -346,16 +346,16 @@ agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(
                         AGC_FLAG_FLAP)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_check_auto_control(ctx, AGC_JOB_UPTHROT1);
+    return (agc_lm_check_auto_control(ctx, AGC_JOB_UPTHROT1));
 }
 
 /* THROTUP / UPTHROT1 / GRP4OFF (pp. 834-835): SERVICER now calls the
@@ -364,14 +364,14 @@ agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_throtup();
     agc_guid_state()->avg.avgexit = AGC_JOB_ATMAG;
     agc_phase_change(4, 00004);
 
-    return AGC_STATUS_OK; /* ENDOFJOB     */
+    return (AGC_STATUS_OK); /* ENDOFJOB     */
 }
 
 /* P70INIT (p. 833): DPS engine data and targets for P70. */
@@ -382,7 +382,7 @@ static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (!AGC_ASSERT(mass > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_tgocomp(ip);
@@ -399,7 +399,7 @@ static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
     agc_lm_comminit(ip);
     ab_bothpoly(ip, false);
 
-    return ab_upthrot(ctx);
+    return (ab_upthrot(ctx));
 }
 
 /* OLDTIME restart point (p. 835): TGO = TGO1, then UPTHROT1 -3. */
@@ -407,17 +407,17 @@ agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_lm_asc()->tgo = agc_lm_asc()->tgo1;
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLAP)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_job_abort_auto_control_check(ctx);
+    return (agc_lm_job_abort_auto_control_check(ctx));
 }
 
 /* P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
@@ -440,14 +440,14 @@ static agc_status_t ab_aps_abort_return(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
         agc_phase_change_var(04024, &v);
 
-        return agc_lm_job_aps_abort_oldtime(ctx);
+        return (agc_lm_job_aps_abort_oldtime(ctx));
     }
 
     agc_lm_tgocomp(ip);
     agc_lm_powered_ascent_init(ip); /* to INJTARG   */
     ab_bothpoly(ip, true);
 
-    return ab_upthrot(ctx);
+    return (ab_upthrot(ctx));
 }
 
 /* GOABORT (pp. 832-833): the 4.3 restart after the abort ENEMA. */
@@ -455,7 +455,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -473,8 +473,8 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
     if (!agc_phase_checkmm(70))
     {
-        return ab_aps_abort_return(ctx, &ip);
+        return (ab_aps_abort_return(ctx, &ip));
     }
 
-    return ab_dps_abort_init(ctx, &ip);
+    return (ab_dps_abort_init(ctx, &ip));
 }

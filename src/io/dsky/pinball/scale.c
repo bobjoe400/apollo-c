@@ -45,7 +45,7 @@ static int pin_own_id(uint16_t id, int *kind)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     switch (id)
@@ -53,75 +53,75 @@ static int pin_own_id(uint16_t id, int *kind)
         case AGC_DATA_DSPTEM1:
             *kind = 0;
 
-            return 0;
+            return (0);
         case AGC_DATA_DSPTEM1_P1:
             *kind = 0;
 
-            return 1;
+            return (1);
         case AGC_DATA_DSPTEM1_P2:
             *kind = 0;
 
-            return 2;
+            return (2);
         case AGC_DATA_DSPTEM1_DP:
             *kind = 2;
 
-            return 0;
+            return (0);
         case AGC_DATA_DSPTEM2:
             *kind = 1;
 
-            return 3;
+            return (3);
         case AGC_DATA_DSPTEM2_P1:
             *kind = 1;
 
-            return 4;
+            return (4);
         case AGC_DATA_DSPTEM2_P2:
             *kind = 1;
 
-            return 5;
+            return (5);
         case AGC_DATA_DSPTEM2_P1_DP:
             *kind = 2;
 
-            return 4;
+            return (4);
         case AGC_DATA_DSPTEMX:
             *kind = 1;
 
-            return 4;
+            return (4);
         case AGC_DATA_DSPTEMX_P1:
             *kind = 1;
 
-            return 5;
+            return (5);
         case AGC_DATA_DSPTEMX_P2:
             *kind = 1;
 
-            return 6;
+            return (6);
         case AGC_DATA_DSPTEMX_DP:
             *kind = 2;
 
-            return 4;
+            return (4);
         case AGC_DATA_OPTIONX:
             *kind = 0;
 
-            return 4;
+            return (4);
         case AGC_DATA_OPTIONX_P1:
             *kind = 0;
 
-            return 5;
+            return (5);
         case AGC_DATA_XREG:
             *kind = 0;
 
-            return 10;
+            return (10);
         case AGC_DATA_YREG:
             *kind = 0;
 
-            return 11;
+            return (11);
         case AGC_DATA_ZREG:
             *kind = 0;
 
-            return 12;
+            return (12);
         default:
             *kind = -1;
 
-            return -1;
+            return (-1);
     }
 }
 
@@ -129,7 +129,7 @@ static uint16_t *pin_own_word(int idx)
 {
     pin_state_t *s = pin_st();
 
-    return (idx >= 10) ? &s->xyz_oct[idx - 10] : &s->dsptem[idx];
+    return ((idx >= 10) ? &s->xyz_oct[idx - 10] : &s->dsptem[idx]);
 }
 
 agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
@@ -139,17 +139,17 @@ agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
 
     if (!AGC_ASSERT(value != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (idx < 0)
     {
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     if (!AGC_ASSERT(idx <= 12 && (idx < 6 || idx >= 10 || kind == 1)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t w = *pin_own_word(idx);
@@ -168,14 +168,14 @@ agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
                              pin_sp_from_ones(*pin_own_word(idx + 1)));
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int kind = -1;
@@ -183,13 +183,13 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
 
     if (idx < 0)
     {
-        return AGC_STATUS_NOT_FOUND;
+        return (AGC_STATUS_NOT_FOUND);
     }
 
     if (!AGC_ASSERT(kind == 0 ? (value >= 0 && value <= (agc_dp_t) PIN_WORD) :
                     (value >= AGC_DP_MIN && value <= AGC_DP_MAX)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (kind == 0)
@@ -206,7 +206,7 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
         *pin_own_word(idx + 1) = pin_ones_from_sp(agc_dp_low(value));
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- component access ------------------------------------------------- */
@@ -219,17 +219,17 @@ static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return false;
+        return (false);
     }
 
     int kind = -1;
 
     if (pin_own_id(id, &kind) >= 0)
     {
-        return kind == 0;
+        return (kind == 0);
     }
 
-    return scale_raw || id == (uint16_t) AGC_DATA_OPTION2;
+    return (scale_raw || id == (uint16_t) AGC_DATA_OPTION2);
 }
 
 /* Scale information of component k, with is_raw describing the value
@@ -240,7 +240,7 @@ agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 
     if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(info != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_scale_info((agc_scale_t) s->noun.scale_type[k], info);
@@ -250,7 +250,7 @@ agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
         info->is_raw = pin_id_is_raw(s->noun.data_id[k], info->is_raw);
     }
 
-    return st;
+    return (st);
 }
 
 /* SFRUTNOR / SFRUTMIX: SF routine number of component k (0 = octal). */
@@ -258,22 +258,22 @@ uint8_t pin_comp_routine(int k)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     agc_scale_info_t info;
 
     if (pin_comp_scale(k, &info) != AGC_STATUS_OK)
     {
-        return (uint8_t) PIN_SF_OCTAL;
+        return ((uint8_t) PIN_SF_OCTAL);
     }
 
     if (!AGC_ASSERT(info.routine < (uint8_t) PIN_SF_COUNT))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return info.routine;
+    return (info.routine);
 }
 
 /* DPTEST: SF routines whose data is DP for octal display and load
@@ -282,12 +282,12 @@ bool pin_sf_is_dp(uint8_t rout)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
     {
-        return false;
+        return (false);
     }
 
     switch (rout)
@@ -296,11 +296,11 @@ bool pin_sf_is_dp(uint8_t rout)
         case PIN_SF_DP2:
         case PIN_SF_DP3:
         case PIN_SF_DP4:
-            return true;
+            return (true);
         case PIN_SF_DPFRAC:
-            return agc_state_vehicle() == AGC_VEHICLE_CSM; /* LM: 360-CDU    */
+            return (agc_state_vehicle() == AGC_VEHICLE_CSM); /* LM: 360-CDU    */
         default:
-            return false;
+            return (false);
     }
 }
 
@@ -309,30 +309,30 @@ agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (info->is_raw)
     {
-        return (agc_dp_t) (w & PIN_WORD);
+        return ((agc_dp_t) (w & PIN_WORD));
     }
 
-    return agc_dp_from_sp(pin_sp_from_ones(w));
+    return (agc_dp_from_sp(pin_sp_from_ones(w)));
 }
 
 static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (info->is_raw)
     {
-        return (uint16_t) ((uint32_t) v & PIN_WORD);
+        return ((uint16_t) ((uint32_t) v & PIN_WORD));
     }
 
-    return pin_ones_from_sp(agc_dp_high(v));
+    return (pin_ones_from_sp(agc_dp_high(v)));
 }
 
 /* Channel for nouns 10 (CHANDSP / CHANLOAD: NOUNCADR masked LOW9). */
@@ -340,12 +340,12 @@ static int pin_chan_of(int k)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int ch = (int) ((pin_st()->nouncadr + (uint16_t) k) & PIN_LOW9);
 
-    return (ch < AGC_CHAN_COUNT) ? ch : -1;
+    return ((ch < AGC_CHAN_COUNT) ? ch : -1);
 }
 
 /* Read component k of NOUNREG. MCTBS nouns read the machine address in
@@ -354,7 +354,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s = pin_st();
@@ -363,7 +363,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
 
     if (!AGC_ASSERT(v != NULL) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     uint16_t w = 0;
@@ -375,7 +375,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
         w  = (ch >= 0) ? agc_chan_read(ch) : 0u;
         *v = pin_value_of_word(&info, w);
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_AUGMENT)
@@ -384,7 +384,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
             (uint16_t) ((s->nouncadr + (uint16_t) k) & PIN_WORD), &w);
         *v = pin_value_of_word(&info, w);
 
-        return st;
+        return (st);
     }
 
     uint16_t id =
@@ -392,7 +392,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
 
     st = agc_dsky_noun_read(id, v);
 
-    return (st == AGC_STATUS_NOT_FOUND) ? agc_noun_read(id, v) : st;
+    return ((st == AGC_STATUS_NOT_FOUND) ? agc_noun_read(id, v) : st);
 }
 
 /* Write component k of NOUNREG (PUTCOM's INDEX NOUNADD, TS k). */
@@ -400,7 +400,7 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s = pin_st();
@@ -409,7 +409,7 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
 
     if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     if (s->nntype == PIN_NNTYPE_CHAN)
@@ -418,19 +418,19 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
 
         if (ch < 0)
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         agc_chan_write(ch, pin_word_of_value(&info, v));
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_AUGMENT)
     {
         uint16_t ecadr = (uint16_t) ((s->nouncadr + (uint16_t) k) & PIN_WORD);
 
-        return agc_erase_write_ecadr(ecadr, pin_word_of_value(&info, v));
+        return (agc_erase_write_ecadr(ecadr, pin_word_of_value(&info, v)));
     }
 
     uint16_t id =
@@ -438,7 +438,7 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
 
     st = agc_dsky_noun_write(id, v);
 
-    return (st == AGC_STATUS_NOT_FOUND) ? agc_noun_write(id, v) : st;
+    return ((st == AGC_STATUS_NOT_FOUND) ? agc_noun_write(id, v) : st);
 }
 
 /* The word V01-V05 show for component k. TSTFORDP / MIXNOUN: for a DP
@@ -447,7 +447,7 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_scale_info_t info;
@@ -456,14 +456,14 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
 
     if (!AGC_ASSERT(word != NULL) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     st = pin_comp_read(k, &v);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (info.is_raw)
@@ -479,14 +479,14 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
         *word = pin_ones_from_sp(agc_dp_high(v));
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- arithmetic helpers (sign and magnitude, truncating) -------------- */
 
 static int64_t pin_mag(int64_t a)
 {
-    return (a < 0) ? -a : a;
+    return ((a < 0) ? -a : a);
 }
 
 /* |a| x |b| >> shift with the sign of a (b is a positive constant). */
@@ -494,17 +494,17 @@ static int64_t pin_mul_shift(int64_t a, int64_t b, int shift)
 {
     if (!AGC_ASSERT(pin_mag(a) <= ((int64_t) 1 << AGC_DP_BITS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(b >= 0 && b <= ((int64_t) 1 << AGC_DP_BITS)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     int64_t p = (pin_mag(a) * b) >> shift;
 
-    return (a < 0) ? -p : p;
+    return ((a < 0) ? -p : p);
 }
 
 /* ---- SF output routines (pp. 335-341) --------------------------------- */
@@ -516,7 +516,7 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
 {
     if (!AGC_ASSERT(w <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int64_t mult = optics ? PIN_DEG45 : PIN_DEG18;
@@ -533,10 +533,10 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
 
     if (!AGC_ASSERT(f >= 0 && f <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_dspdecwd(f, false);
+    return (pin_dspdecwd(f, false));
 }
 
 /* OPDEGOUT (CM): optics range is 90 deg. Add the 19.775 deg bias, the
@@ -546,7 +546,7 @@ static agc_status_t pin_opdegout(uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int32_t sum;
@@ -565,7 +565,7 @@ static agc_status_t pin_opdegout(uint16_t w)
 
         if (sum == 0)
         {
-            return agc_ccshole();
+            return (agc_ccshole());
         }
 
         if (sum > 0)
@@ -580,10 +580,10 @@ static agc_status_t pin_opdegout(uint16_t w)
 
     if (!AGC_ASSERT(sum < 0100000))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_degout(u, true);
+    return (pin_degout(u, true));
 }
 
 /* ARTOUTSF: point at left of the DP SF constant. SHORTMP of the constant
@@ -592,17 +592,17 @@ static agc_status_t pin_artout(agc_sp_t sp, agc_dp_t sfout)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(sfout >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t f = (agc_dp_t) pin_mul_shift(sp, sfout, PIN_TP_DP_SHIFT);
 
-    return pin_dspdecwd(f, false);
+    return (pin_dspdecwd(f, false));
 }
 
 /* AROUT1SF: point between hi and lo parts of the SF constant; the result
@@ -611,14 +611,14 @@ static agc_status_t pin_arout1(agc_sp_t sp, agc_dp_t sfout)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int64_t  tp = pin_mul_shift(sp, sfout, 0);
     agc_dp_t f  = (agc_dp_t) ((tp < 0) ? -(pin_mag(tp) & PIN_DP_MASK) :
                               (tp & PIN_DP_MASK));
 
-    return pin_dspdecwd(f, false);
+    return (pin_dspdecwd(f, false));
 }
 
 /* DPOUT and DP1OUTSF / DP2OUTSF (also DP4) / DP3OUTSF: DMP of the fresh DP
@@ -629,7 +629,7 @@ static agc_status_t pin_dpout(uint8_t rout, agc_dp_t v, agc_dp_t sfout)
     if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX) ||
         !AGC_ASSERT(sfout >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int64_t tp = pin_mag(pin_mul_shift(v, sfout, PIN_TP_DP_SHIFT)); /* DMP  */
@@ -648,7 +648,7 @@ static agc_status_t pin_dpout(uint8_t rout, agc_dp_t v, agc_dp_t sfout)
         f = tp >> PIN_TP_DP_SHIFT; /* DP2, DP4   */
     }
 
-    return pin_dspdecwd((agc_dp_t) ((v < 0) ? -f : f), false);
+    return (pin_dspdecwd((agc_dp_t) ((v < 0) ? -f : f), false));
 }
 
 /* 2INTOUT: blank the register, + sign, the high word as 2 decimal chars in
@@ -660,7 +660,7 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
 
     if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_5blank_rel(PIN_INREL_X + k); /* to blank RXD3   */
@@ -677,7 +677,7 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
 
     pin_set_dspcount((int16_t) (k_rnd1[k] - 3));          /* RXD4            */
 
-    return (st == AGC_STATUS_OK) ? pin_dspdecvn(lo) : st; /* 2nd integer     */
+    return ((st == AGC_STATUS_OK) ? pin_dspdecvn(lo) : st); /* 2nd integer     */
 }
 
 /* Fraction F with exactly the 5 (or 2) digits n when shown truncated. */
@@ -685,15 +685,15 @@ static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(n >= 0 && n < scale))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_dp_t) (((n << AGC_DP_BITS) + scale - 1) / scale);
+    return ((agc_dp_t) (((n << AGC_DP_BITS) + scale - 1) / scale));
 }
 
 /* HMSOUT: hours in R1, minutes (mod 60) in R2, seconds with centiseconds
@@ -703,12 +703,12 @@ static agc_status_t pin_hmsout(agc_dp_t t)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool         neg     = t < 0;
@@ -725,7 +725,7 @@ static agc_status_t pin_hmsout(agc_dp_t t)
         st = pin_dspdecwd(neg ? -f : f, neg); /* DSPDECWD       */
     }
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st;
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
 }
 
 /* M/SOUT: minutes in D1D2, blank D3, seconds in D4D5, limited to 59B59.
@@ -736,7 +736,7 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
     if (!AGC_ASSERT(k >= 0 && k < 3) ||
         !AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool    neg = t < 0;
@@ -758,8 +758,8 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
 
     pin_set_dspcount(k_rnd1[k]);
 
-    return (st == AGC_STATUS_OK) ? pin_dspdc2nr(neg ? -fm : fm, neg) :
-           st;                         /* min D1D2 */
+    return ((st == AGC_STATUS_OK) ? pin_dspdc2nr(neg ? -fm : fm, neg) :
+            st);                       /* min D1D2 */
 }
 
 /* LRPOSOUT (LM): landing radar position, channel 33 bits 7-6 to bits
@@ -768,7 +768,7 @@ static agc_status_t pin_lrposout(agc_dp_t sfout)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t c33 = agc_chan_read((int) AGC_CHAN_CHAN33);
@@ -776,10 +776,10 @@ static agc_status_t pin_lrposout(agc_dp_t sfout)
 
     if (!AGC_ASSERT(pos <= 3u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_artout((agc_sp_t) pos, sfout);
+    return (pin_artout((agc_sp_t) pos, sfout));
 }
 
 /* 360-CDU (LM): if the angle is not 0 or 180 degrees, 360 minus it. */
@@ -787,21 +787,21 @@ uint16_t pin_360_cdu(uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(w <= PIN_WORD))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if ((w & PIN_POSMAX) == 0u)
     {
-        return w;
+        return (w);
     }
 
-    return (uint16_t) ((0100000u - (uint32_t) w) &
-                       PIN_WORD); /* CS MPAC, AD ONE */
+    return ((uint16_t) ((0100000u - (uint32_t) w) &
+                        PIN_WORD)); /* CS MPAC, AD ONE */
 }
 
 /* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
@@ -810,7 +810,7 @@ static agc_status_t pin_sfout_word(uint8_t rout, const agc_scale_info_t *info,
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
@@ -821,31 +821,31 @@ static agc_status_t pin_sfout_word(uint8_t rout, const agc_scale_info_t *info,
     switch (rout)
     {
         case PIN_SF_FRACT:
-            return pin_dspdecwd(agc_dp_from_sp(sp), false);
+            return (pin_dspdecwd(agc_dp_from_sp(sp), false));
         case PIN_SF_DEG:
-            return pin_degout(w, false);
+            return (pin_degout(w, false));
         case PIN_SF_ARITH:
-            return pin_artout(sp, info->sf_out);
+            return (pin_artout(sp, info->sf_out));
         case PIN_SF_ARITH1:
-            return pin_arout1(sp, info->sf_out);
+            return (pin_arout1(sp, info->sf_out));
         case PIN_SF_OPDEG:
-            return lm ? pin_lrposout(info->sf_out) : pin_opdegout(w);
+            return (lm ? pin_lrposout(info->sf_out) : pin_opdegout(w));
         case PIN_SF_DPFRAC:
-            return lm ? pin_degout(pin_360_cdu(w), false) :
-                   pin_dspdecwd(v, false);
+            return (lm ? pin_degout(pin_360_cdu(w), false) :
+                    pin_dspdecwd(v, false));
         case PIN_SF_DP1:
         case PIN_SF_DP2:
         case PIN_SF_DP3:
         case PIN_SF_DP4:
-            return pin_dpout(rout, v, info->sf_out);
+            return (pin_dpout(rout, v, info->sf_out));
         default:
 
             if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
             {
-                return AGC_STATUS_BAD_ARG;
+                return (AGC_STATUS_BAD_ARG);
             }
 
-            return pin_predspal();
+            return (pin_predspal());
     }
 }
 
@@ -855,7 +855,7 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_scale_info_t info;
@@ -863,7 +863,7 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
 
     if (!AGC_ASSERT(exited != NULL) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     pin_set_dspcount(k_rnd1[k]);
@@ -872,21 +872,21 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
     switch (info.routine)
     {
         case PIN_SF_OCTAL:
-            return pin_predspal(); /* dec disp with octal-only noun */
+            return (pin_predspal()); /* dec disp with octal-only noun */
         case PIN_SF_HMS:
-            return pin_hmsout(v);
+            return (pin_hmsout(v));
         case PIN_SF_MS:
             *exited = false;
 
-            return pin_msout(k, v);
+            return (pin_msout(k, v));
         case PIN_SF_2INT:
             *exited = false;
 
-            return pin_2intout(k, v);
+            return (pin_2intout(k, v));
         default:
             *exited = false;
 
-            return pin_sfout_word(info.routine, &info, v);
+            return (pin_sfout_word(info.routine, &info, v));
     }
 }
 
@@ -896,7 +896,7 @@ agc_status_t pin_decdsp(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s = pin_st();
@@ -904,7 +904,7 @@ agc_status_t pin_decdsp(void)
 
     if (!AGC_ASSERT(n >= 1 && n <= 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t     v[3] = {0, 0, 0};
@@ -924,10 +924,10 @@ agc_status_t pin_decdsp(void)
 
     if (st != AGC_STATUS_OK || exited)
     {
-        return st;
+        return (st);
     }
 
-    return pin_entexit();
+    return (pin_entexit());
 }
 
 /* DSPDPDEC (V07): a DP word of a normal noun as 10 decimal chars in R1,
@@ -936,14 +936,14 @@ agc_status_t pin_dspdpdec(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s = pin_st();
 
     if (s->nounreg >= PIN_MIXCON)
     {
-        return pin_dspalarm();
+        return (pin_dspalarm());
     }
 
     agc_scale_info_t info;
@@ -971,11 +971,11 @@ agc_status_t pin_dspdpdec(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     pin_set_dspcount(PIN_R1D1);
     st = pin_dsp2dec(v); /* TPAGREE, DSP2DEC */
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st;
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
 }

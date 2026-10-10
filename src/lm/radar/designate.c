@@ -66,10 +66,10 @@ static agc_status_t rr_startdes(agc_rr_designate_result_t *res)
 
     if (!AGC_ASSERT(rr_radmodes_test(RR_DESIGBIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* NORDSTAL (p.541): zero RADCADR, wiping out anyone waiting in RADSTALL,
@@ -97,7 +97,7 @@ static agc_status_t rr_lundesch(agc_rr_designate_result_t *res)
         rr_nordstal();
         *res = AGC_RR_DESIGNATE_NO_COVERAGE;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if (agc_flag_test(AGC_FLAG_RNDVZFLG))
@@ -106,12 +106,12 @@ static agc_status_t rr_lundesch(agc_rr_designate_result_t *res)
         rr_nordstal();
         *res = AGC_RR_DESIGNATE_MANEUVER;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     *res = AGC_RR_DESIGNATE_END_JOB; /* ENDOFJOB */
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- RRDESSM (pp.538-539, 542) ----------------------------------------
@@ -124,7 +124,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
 {
     if (!AGC_ASSERT(ip != NULL && res != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t *s = rr_state();
@@ -143,12 +143,12 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (along_y)
     {
-        return rr_lundesch(res);
+        return (rr_lundesch(res));
     }
 
     s->tang[0] = (agc_sp_t) rr_ones(s->modea[0]); /* MODEA EQUALS TANG */
@@ -157,7 +157,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
 
     if (rr_limits_ok(s->modea[0], s->modea[1]))
     {
-        return rr_startdes(res); /* OKDESSM */
+        return (rr_startdes(res)); /* OKDESSM */
     }
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -165,7 +165,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
         rr_nordstal();
         *res = AGC_RR_DESIGNATE_NO_COVERAGE;
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     rr_mode_invert(); /* TRYSWS  */
@@ -177,13 +177,13 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
     {
         rr_radmodes_set(RR_REMODBIT);
 
-        return rr_startdes(res);
+        return (rr_startdes(res));
     }
 
     rr_nordstal(); /* NODESSM */
     *res = AGC_RR_DESIGNATE_MANEUVER;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RRLIMNB (pp.543-544): RRLIMCHK with the mode 1 shaft lower limit at -85
@@ -192,19 +192,19 @@ static bool rr_limnb(uint16_t t, uint16_t s)
 {
     if (rr_mode2())
     {
-        return rr_limits_ok(t, s); /* MODE2CHK      */
+        return (rr_limits_ok(t, s)); /* MODE2CHK      */
     }
 
     int sv = rr_ones(s);
 
     if (!rr_magsub(rr_ones(t), RR_LIM_T1))
     {
-        return false;
+        return (false);
     }
 
     sv += (sv <= 0) ? RR_20_5DEGS : RR_5_5DEGS; /* NEGSHAFT      */
 
-    return rr_magsub(sv, RR_LIM_S1);
+    return (rr_magsub(sv, RR_LIM_S1));
 }
 
 /* ---- RRDESNB (p.543): designate to given RR gimbal angles (CDU words),
@@ -216,7 +216,7 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
     if (!AGC_ASSERT(ip != NULL && res != NULL) ||
         !AGC_ASSERT(trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t *s = rr_state();
@@ -247,12 +247,12 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
 
         if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
         {
-            return st;
+            return (st);
         }
 
         agc_rendz_clradmod();
 
-        return AGC_STATUS_OK; /* avoid the 503 alarm      */
+        return (AGC_STATUS_OK); /* avoid the 503 alarm      */
     }
 
     s->tangnb[0] = trunnion; /* OKDESNB */
@@ -261,13 +261,13 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_RRNBSW, true);
     agc_inhint();
 
-    return rr_startdes(res); /* STARTDES +1 */
+    return (rr_startdes(res)); /* STARTDES +1 */
 }
 
 /* ---- BEGDES / STDESIG / DESLOOP (pp.545-546) -------------------------- */
@@ -284,14 +284,14 @@ agc_status_t rr_stdesig(void)
     {
         rr_radmodes_clear(RR_DESIGBIT); /* BADDES  */
 
-        return rr_badend();
+        return (rr_badend());
     }
 
     if (!rr_radmodes_test(RR_CDESBIT))
     {
         if (!rr_radmodes_test(RR_DESIGBIT))
         {
-            return rr_endradar();
+            return (rr_endradar());
         }
 
         if (s->descount <= 0)
@@ -300,7 +300,7 @@ agc_status_t rr_stdesig(void)
                           (uint16_t) (RR_CH12_TRACK | RR_CH12_ENB_ECTR));
             rr_radmodes_clear(RR_DESIGBIT);
 
-            return rr_badend();
+            return (rr_badend());
         }
 
         s->descount--; /* MOREDES */
@@ -310,10 +310,10 @@ agc_status_t rr_stdesig(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_waitlist_fixdelay(RR_DT_HALFSEC, AGC_TASK_RR_DESIGNATE_LOOP);
+    return (agc_waitlist_fixdelay(RR_DT_HALFSEC, AGC_TASK_RR_DESIGNATE_LOOP));
 }
 
 /* BEGDES: remode first if one was requested (REMODE ends in STDESIG).   */
@@ -321,25 +321,25 @@ agc_status_t rr_begdes(void)
 {
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (rr_radmodes_test(RR_REMODBIT))
     {
-        return rr_remode_start();
+        return (rr_remode_start());
     }
 
-    return rr_stdesig();
+    return (rr_stdesig());
 }
 
 agc_status_t agc_task_rr_designate_begin(void)
 {
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_begdes();
+    return (rr_begdes());
 }
 
 /* DESLOOP: the .5 s designate pass.                                     */
@@ -347,10 +347,10 @@ agc_status_t agc_task_rr_designate_loop(void)
 {
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rr_stdesig();
+    return (rr_stdesig());
 }
 
 /* ---- DODES (pp.547-552) ----------------------------------------------- */
@@ -363,7 +363,7 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s,
     {
         *los = s->rrtarget; /* DONBRD  */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_vec_t r  = agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget, s->mlosv), 1);
@@ -373,7 +373,7 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s,
     agc_guid_cdutrig(trig);
     agc_guid_smnb(trig, los);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Shaft and trunnion commands for the LOS (32D), and the cosine of the
@@ -417,7 +417,7 @@ static agc_status_t rr_dodes_commands(agc_interp_t *ip, rr_state_t *s,
     *cos_err =
         agc_dp_sub(ip, agc_vec_dot(ip, urr, s->rrtarget), RR_COS_HALFDEG);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* RRDESDUN (p.551): designate over; the next DESLOOP pass ends it.      */
@@ -431,10 +431,10 @@ static agc_status_t rr_desdun(void)
 
     if (!AGC_ASSERT(!rr_radmodes_test(RR_DESIGBIT)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK; /* ENDOFJOB */
+    return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
 /* DORROUT / NOTP20 (pp.551-552): with LOSCMFLG or SRCHOPTN, advance the
@@ -470,7 +470,7 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
 
         agc_relint();
 
-        return AGC_STATUS_OK; /* ENDOFJOB */
+        return (AGC_STATUS_OK); /* ENDOFJOB */
     }
 
     agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
@@ -480,10 +480,10 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
-        return st;
+        return (st);
     }
 
-    return rz_continue(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS); /* R21LEM2 */
+    return (rz_continue(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS)); /* R21LEM2 */
 }
 
 /* DODES: one designate pass (FINDVAC job every .5 s from STDESIG).      */
@@ -491,7 +491,7 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t  *s    = rr_state();
@@ -512,21 +512,21 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     bool off = agc_dp_high(cos_err) < 0; /* MPAC +1 = 1: not pointed */
 
     if (rr_radmodes_test(RR_CDESBIT))
     {
-        return rr_dorrout(&ip, s); /* continuous: no checks    */
+        return (rr_dorrout(&ip, s)); /* continuous: no checks    */
     }
 
     if (!off)
     { /* SIGNLCHK */
         if (!agc_flag_test(AGC_FLAG_LOKONSW))
         {
-            return rr_desdun();
+            return (rr_desdun());
         }
 
         rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK); /* tracker */
@@ -534,10 +534,10 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 
     if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_RR_DGOOD) == 0U)
     {
-        return rr_desdun(); /* DGOODCHK: data good    */
+        return (rr_desdun()); /* DGOODCHK: data good    */
     }
 
-    return rr_dorrout(&ip, s);
+    return (rr_dorrout(&ip, s));
 }
 
 /* ---- GOTOV56 (p.593): P20 terminates through verb 56 (TRMTRACK)
@@ -550,10 +550,10 @@ agc_status_t agc_rendz_goto_terminate_tracking(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- TANG (noun 72) and RRDESNB for verb 41 ----------------------------
@@ -563,10 +563,10 @@ agc_sp_t agc_erase_tang(int index)
 {
     if (!AGC_ASSERT(index == 0 || index == 1))
     {
-        return 0;
+        return (0);
     }
 
-    return rr_state()->tang[index];
+    return (rr_state()->tang[index]);
 }
 
 void agc_erase_set_tang(int index, agc_sp_t v)
@@ -581,7 +581,7 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
 {
     if (!AGC_ASSERT(started != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t  *s = rr_state();
@@ -596,5 +596,5 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
 
     *started = (res == AGC_RR_DESIGNATE_STARTED);
 
-    return st;
+    return (st);
 }

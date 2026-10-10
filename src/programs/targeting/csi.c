@@ -65,10 +65,10 @@ static bool csi_f(rz_vflag_t f)
 {
     if (!AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B))
     {
-        return false;
+        return (false);
     }
 
-    return rz_vflag_test(f);
+    return (rz_vflag_test(f));
 }
 
 static void csi_set(rz_vflag_t f, bool on)
@@ -97,7 +97,7 @@ agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* PUSH PUSH; DOT VXSC UP1 UP1; VSL2 BVSU; UNIT PDVL; ABVAL VXSC; VSL1 */
@@ -110,10 +110,10 @@ agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
 
     if (!AGC_ASSERT(mag >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- ADVANCE (p.675) -----------------------------------------------------
@@ -125,14 +125,14 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = rz_precset(ip, rz, agc_erase_tig(), resume);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_flag_set(AGC_FLAG_XDELVFLG);
@@ -154,7 +154,7 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
 
     rz->vact1 = rz->vact2;
 
-    return st;
+    return (st);
 }
 
 /* ---- CSI/B (p.665): first estimate of the CSI horizontal delta V ---------
@@ -195,7 +195,7 @@ static csi_label_t csi_b1(agc_rendz_t *rz, csi_work_t *w)
 {
     if (!AGC_ASSERT(rz->loopct >= 0))
     {
-        return CSI_L_ALMXIT;
+        return (CSI_L_ALMXIT);
     }
 
     rz->loopct = (agc_sp_t) (rz->loopct + 1); /* + 1DPB28   */
@@ -204,10 +204,10 @@ static csi_label_t csi_b1(agc_rendz_t *rz, csi_work_t *w)
     {
         w->x2 = 6;
 
-        return CSI_L_SCNDSOL;
+        return (CSI_L_SCNDSOL);
     }
 
-    return CSI_L_B2;
+    return (CSI_L_B2);
 }
 
 /* ---- CSI/B2, CSI/B22 (p.666): limit |DELVCSI| to 989 fps once -----------
@@ -217,19 +217,19 @@ static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
     if (agc_dp_sub(ip, agc_dp_abs(rz->delvcsi), CSI_DVMAX1) < 0)
     {
-        return true; /* CSI/B23    */
+        return (true); /* CSI/B23    */
     }
 
     w->x2 = 7;
 
     if (csi_f(RZ_VF_CSI_F1))
     {
-        return false;
+        return (false);
     }
 
     if (csi_f(RZ_VF_CSI_F3A) && csi_f(RZ_VF_CSI_F3B))
     {
-        return false;
+        return (false);
     }
 
     csi_set(RZ_VF_CSI_F1, true); /* CSI/B22    */
@@ -237,10 +237,10 @@ static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (!AGC_ASSERT(rz->delvcsi != 0))
     {
-        return false;
+        return (false);
     }
 
-    return true;
+    return (true);
 }
 
 /* VECSHIFT + TIMETHET (time only) of the post-CSI state (RACT1, v). */
@@ -255,10 +255,10 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
 
     if (!AGC_ASSERT(st != AGC_STATUS_OK || o.t >= AGC_DP_MIN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CSI/B23 .. CSI/B23D (p.667): DELVEET1 = DELVCSI UH1, VACT4, HAFPA1 =
@@ -284,7 +284,7 @@ static agc_status_t csi_b23(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->hafpa1 = agc_dp_shr(t, 1); /* SR1        */
@@ -292,14 +292,14 @@ static agc_status_t csi_b23(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->postcsi = agc_rendz_shiftr1(rz, pa->hperi);
     *ellipse    =
         (rz->centang == 0) && (agc_dp_sub(ip, pa->ecc, CSI_ONETHTH) >= 0);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* (P/MU)^.5 / R1 part of the apsis-angle computation (p.668), B-31 (moon
@@ -320,10 +320,10 @@ static agc_dp_t csi_sqrt_p_mu(agc_interp_t *ip, const agc_rendz_t *rz,
 
     if (!AGC_ASSERT(b >= AGC_DP_MIN))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return b;
+    return (b);
 }
 
 /* Non-circular post-CSI orbit (p.668-669): RDOTV test (7 fps), then the
@@ -343,7 +343,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (*circl)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_dp_t d14 = agc_dp_sub(ip, agc_dp_shl(ip, pa->p, 2), CSI_1DPB2);
@@ -365,7 +365,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
         *pop = (rz->rdotv >= 0) ? t : agc_dp_sub(ip, rz->hafpa1, t);
     }
 
-    return st;
+    return (st);
 }
 
 /* NTP/2 (p.669): TCDH = NN HAFPA1 - pop + TCSI; TTPI - TCDH < 0 ->
@@ -382,10 +382,10 @@ static bool csi_ntp2(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
 
     if (!AGC_ASSERT(rz->tcdh >= AGC_DP_MIN))
     {
-        return false;
+        return (false);
     }
 
-    return agc_dp_sub(ip, agc_erase_ttpi(), rz->tcdh) >= 0;
+    return (agc_dp_sub(ip, agc_erase_ttpi(), rz->tcdh) >= 0);
 }
 
 /* CSINEXT1 .. CSINEXT2 head (p.669-670): states at CDH (conic), CDHMVR,
@@ -399,7 +399,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->ract2 = r;
@@ -410,7 +410,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->rpass2 = r;
@@ -425,7 +425,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz->postcdh = agc_rendz_shiftr1(rz, pa.hperi);
@@ -438,7 +438,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
         rz_store_active(rz, r, v); /* ACTIVE     */
     }
 
-    return st;
+    return (st);
 }
 
 /* U = sin(E) URA3 + cos(E) UH3 (B1): the desired line of sight at TPI. */
@@ -450,7 +450,7 @@ static agc_vec_t csi_los_unit(agc_interp_t *ip, const agc_rendz_t *rz)
     agc_vec_t c    = agc_vec_scale(ip, uh3, agc_dp_cos(ip, rz->elev)); /* 18D */
     agc_vec_t u    = agc_vec_add(ip, agc_vec_scale(ip, ura3, sine), c);
 
-    return agc_vec_shl(ip, u, 1);
+    return (agc_vec_shl(ip, u, 1));
 }
 
 /* CSINEXT2 (p.670-671): TEMP1 = U.RA3, TEMP2 = TEMP1^2 - RA3^2 + RP3^2
@@ -472,13 +472,13 @@ static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u,
 
         if ((agc_dp_t) rz->loopct - CSI_1DPB28 == 0)
         {
-            return CSI_L_ALMXITA;
+            return (CSI_L_ALMXITA);
         }
 
         rz->deldv   = agc_dp_shr(rz->deldv, 1);
         rz->delvcsi = agc_dp_sub(ip, rz->dvprev, rz->deldv);
 
-        return CSI_L_B1;
+        return (CSI_L_B1);
     }
 
     agc_dp_t temp3 = agc_tp_sqrt(ip, temp2);                   /* K10RK2 B29 */
@@ -488,7 +488,7 @@ static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u,
 
     *k = (d < 0) ? k2 : k1;
 
-    return CSI_L_DONE;
+    return (CSI_L_DONE);
 }
 
 /* K2. (p.671): GAMMA = SIGN(TEMP) ARCCOS(UNIT(RA3 + K U) . URP3), B1. */
@@ -506,10 +506,10 @@ static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u,
 
     if (!AGC_ASSERT(g >= -AGC_DP_HALF && g <= AGC_DP_HALF))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_dp_shr(g, 1); /* SR1 */
+    return (agc_dp_shr(g, 1)); /* SR1 */
 }
 
 /* FRSTPAS (p.672): GAMPREV = GAMMA, DVPREV = DELVCSI, step by DELDV. */
@@ -523,10 +523,10 @@ static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (!AGC_ASSERT(!csi_f(RZ_VF_CSI_F2)))
     {
-        return CSI_L_ALMXIT;
+        return (CSI_L_ALMXIT);
     }
 
-    return CSI_L_B1;
+    return (CSI_L_B1);
 }
 
 /* FIFTYFPS (p.673): DELDV = 50 fps signed by slope and GAMPREV; next
@@ -542,7 +542,7 @@ static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz,
     csi_set(RZ_VF_CSI_F3A, true);
     rz->gamprev = w->gamma;
 
-    return CSI_L_B2;
+    return (CSI_L_B2);
 }
 
 /* NEWTN, CSISTEP (p.673): Newton step DELDV = GAMMA / slope, limited to
@@ -561,7 +561,7 @@ static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (agc_dp_sub(ip, ad, CSI_EPSILN1) < 0)
     {
-        return CSI_L_DONE; /* CSI/SOL    */
+        return (CSI_L_DONE); /* CSI/SOL    */
     }
 
     if (agc_dp_sub(ip, ad, CSI_DELMAX1) >= 0)
@@ -571,7 +571,7 @@ static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz,
 
     rz->delvcsi = agc_dp_sub(ip, rz->delvcsi, rz->deldv); /* CSISTEP    */
 
-    return CSI_L_B1;
+    return (CSI_L_B1);
 }
 
 /* Gamma bookkeeping after K2. (p.671-673): first pass of a cycle, the
@@ -580,7 +580,7 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
     if (csi_f(RZ_VF_CSI_F2))
     {
-        return csi_frstpas(ip, rz, w);
+        return (csi_frstpas(ip, rz, w));
     }
 
     agc_dp_t dg  = agc_dp_sub(ip, w->gamma, rz->gamprev); /* 2D        */
@@ -596,22 +596,22 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     { /* "11": end of the 50 fps stage */
         if (agc_dp_mul_trunc(dg, rz->gamprev) >= 0)
         {
-            return csi_fiftyfps(ip, rz, w);
+            return (csi_fiftyfps(ip, rz, w));
         }
 
         rz->deldv = agc_dp_sign(CSI_INITST, rz->deldv); /* INITST1   */
         csi_set(RZ_VF_CSI_F3A, true);
         csi_set(RZ_VF_CSI_F3B, false);
 
-        return csi_frstpas(ip, rz, w);
+        return (csi_frstpas(ip, rz, w));
     }
 
     if (!f3a && !f3b)
     { /* THRDCHK "00" -> FIFTYFPS    */
-        return csi_fiftyfps(ip, rz, w);
+        return (csi_fiftyfps(ip, rz, w));
     }
 
-    return csi_newton(ip, rz, w, x1); /* THRDCHK "10" or "01"        */
+    return (csi_newton(ip, rz, w, x1)); /* THRDCHK "10" or "01"        */
 }
 
 /* CSI/SOL, CSINEXT4 (p.674): perigee and spacing tests of the solution.
@@ -624,14 +624,14 @@ static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (agc_dp_sub(ip, rz->postcsi, pmin) < 0)
     {
-        return CSI_L_SCNDSOL;
+        return (CSI_L_SCNDSOL);
     }
 
     w->x2 = 3;
 
     if (agc_dp_sub(ip, rz->postcdh, pmin) < 0)
     {
-        return CSI_L_SCNDSOL;
+        return (CSI_L_SCNDSOL);
     }
 
     rz->t1tot2 = agc_dp_sub(ip, rz->tcdh, rz->tcsi);
@@ -639,7 +639,7 @@ static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (agc_dp_sub(ip, rz->t1tot2, RZ_600SEC) < 0)
     {
-        return CSI_L_SCNDSOL;
+        return (CSI_L_SCNDSOL);
     }
 
     w->x2      = 5;
@@ -647,10 +647,10 @@ static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (agc_dp_sub(ip, rz->t2tot3, RZ_600SEC) >= 0)
     {
-        return CSI_L_DONE;
+        return (CSI_L_DONE);
     }
 
-    return CSI_L_SCNDSOL;
+    return (CSI_L_SCNDSOL);
 }
 
 /* SCNDSOL (p.674): in the first cycle ("01") start the second cycle at
@@ -659,7 +659,7 @@ static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
 {
     if (csi_f(RZ_VF_CSI_F3A) || !csi_f(RZ_VF_CSI_F3B))
     {
-        return CSI_L_ALMXIT;
+        return (CSI_L_ALMXIT);
     }
 
     rz->csialrm = (agc_sp_t) w->x2;
@@ -668,10 +668,10 @@ static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
 
     if (!AGC_ASSERT(rz->csialrm >= 1 && rz->csialrm <= 7))
     {
-        return CSI_L_ALMXIT;
+        return (CSI_L_ALMXIT);
     }
 
-    return CSI_L_B;
+    return (CSI_L_B);
 }
 
 /* One trial at the current DELVCSI: CSI/B23 .. K2. and the gamma logic. */
@@ -696,19 +696,19 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (w->st != AGC_STATUS_OK)
     {
-        return CSI_L_ERROR;
+        return (CSI_L_ERROR);
     }
 
     if (!csi_ntp2(ip, rz, pop, w))
     {
-        return CSI_L_SCNDSOL;
+        return (CSI_L_SCNDSOL);
     }
 
     w->st = csi_cdh_tpi(ip, rz, w->resume);
 
     if (w->st != AGC_STATUS_OK)
     {
-        return CSI_L_ERROR;
+        return (CSI_L_ERROR);
     }
 
     agc_vec_t   u = csi_los_unit(ip, rz);
@@ -717,13 +717,13 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     if (l != CSI_L_DONE)
     {
-        return l;
+        return (l);
     }
 
     w->gamma = csi_gamma(ip, rz, u, k);
     l        = csi_iterate(ip, rz, w);
 
-    return (l == CSI_L_DONE) ? csi_sol(ip, rz, w) : l;
+    return ((l == CSI_L_DONE) ? csi_sol(ip, rz, w) : l);
 }
 
 /* ---- CSI/A (p.663-674) ----------------------------------------------------
@@ -736,7 +736,7 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(alarm != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     csi_work_t w = {0, 0, 0, resume, AGC_STATUS_OK};
@@ -771,16 +771,16 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
             case CSI_L_ALMXIT:
                 *alarm = (agc_sp_t) (AGC_ALARM_CSI_00600 + rz->csialrm - 1);
 
-                return AGC_STATUS_ALARM;
+                return (AGC_STATUS_ALARM);
             case CSI_L_DONE:
-                return AGC_STATUS_OK;
+                return (AGC_STATUS_OK);
             case CSI_L_ERROR:
             default:
-                return (w.st != AGC_STATUS_OK) ? w.st : AGC_STATUS_BAD_ARG;
+                return ((w.st != AGC_STATUS_OK) ? w.st : AGC_STATUS_BAD_ARG);
         }
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* DEVIATION: the AGC has no pass bound */
+    return (AGC_STATUS_NO_CONVERGE); /* DEVIATION: the AGC has no pass bound */
 }
 
 /* ---- CDHMVR (p.680-682) ----------------------------------------------------
@@ -803,10 +803,10 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (!AGC_ASSERT(st != AGC_STATUS_OK || o->r1 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* Vertical (B7) and horizontal (B7) velocity of the active vehicle. */
@@ -837,7 +837,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_conic_time_out_t o;
@@ -845,7 +845,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     int       x2  = rz->body.rtx2;
@@ -871,7 +871,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
     rz->vact3    = agc_vec_shl(ip, v, 1);
     rz->delveet2 = agc_vec_sub(ip, rz->vact3, rz->vact2);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- S32/33.X (p.679): rows -URA1 x UP1 (VSL1), -UP1, -URA1 ------------- */
@@ -880,14 +880,14 @@ agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip,
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(m != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     m->row[1] = agc_vec_neg(rz->up1);                /* 6D         */
     m->row[2] = agc_vec_neg(rz_unit(ip, rz->ract1)); /* 12D        */
     m->row[0] = agc_vec_shl(ip, agc_vec_cross(ip, m->row[2], rz->up1), 1);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- S32/33.1 tail (p.678): DELVSIN = M^T DELVLVC (VXM, VSL1), DELVSAB.
@@ -898,7 +898,7 @@ agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(delvsin != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_mat_t    m;
@@ -908,5 +908,5 @@ agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
     rz->delvsab = rz_abval(ip, rz->delvsin);
     *delvsin    = rz->delvsin;
 
-    return st;
+    return (st);
 }

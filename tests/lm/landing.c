@@ -54,7 +54,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d: %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -82,7 +82,7 @@ static void fresh_lm(void)
 /* Acceleration a (m/s^2) as the THROTTLE input, 2^-4 m/cs^2. */
 static agc_dp_t accel_dp(double a_ms2)
 {
-    return agc_dp_from_double(a_ms2 * 1.0e-4, -4);
+    return (agc_dp_from_double(a_ms2 * 1.0e-4, -4));
 }
 
 static void test_throttle_band(void)
@@ -241,5 +241,5 @@ int main(void)
         "test_landing: %d checks, %d failures, %d assertion reports\n",
         g_checks, g_failures, g_assert_reports);
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

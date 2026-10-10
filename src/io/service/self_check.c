@@ -52,13 +52,13 @@ agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
     if (!AGC_ASSERT(nbanks >= 0 && nbanks <= AGC_ROPE_BANKS) ||
         !AGC_ASSERT(image != NULL || nbanks == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rope       = image;
     rope_banks = nbanks;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Word rel of bank b, +0 outside the image.                                */
@@ -66,20 +66,20 @@ static uint16_t rope_word(int bank, int rel)
 {
     if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(rel >= 0 && rel < AGC_ROPE_BANK_WORDS))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (rope == NULL || bank >= rope_banks)
     {
-        return 0;
+        return (0);
     }
 
-    return (uint16_t) (rope[bank * AGC_ROPE_BANK_WORDS + rel] & WORD15);
+    return ((uint16_t) (rope[bank * AGC_ROPE_BANK_WORDS + rel] & WORD15));
 }
 
 /* 16-bit ones'-complement A register image of a 15-bit word.               */
@@ -87,10 +87,10 @@ static uint32_t to16(uint16_t w)
 {
     if (!AGC_ASSERT(w <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (uint32_t) w | (((uint32_t) w & SIGN15) << 1);
+    return ((uint32_t) w | (((uint32_t) w & SIGN15) << 1));
 }
 
 /* AD in the 16-bit accumulator (end-around carry).                         */
@@ -98,7 +98,7 @@ static uint32_t ad16(uint32_t a, uint32_t b)
 {
     if (!AGC_ASSERT(a <= 0177777u && b <= 0177777u))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint32_t s = a + b;
@@ -108,7 +108,7 @@ static uint32_t ad16(uint32_t a, uint32_t b)
         s = (s & 0177777u) + 1u;
     }
 
-    return s & 0177777u;
+    return (s & 0177777u);
 }
 
 /* ADSUM: SKEEP1 = SKEEP1 + word; on overflow TS stores the overflow-
@@ -122,17 +122,17 @@ static uint16_t adsum(uint16_t sum, uint16_t word)
 
     if (!pos_ovf && !neg_ovf)
     {
-        return stored; /* CAF S+ZERO, AD, TS */
+        return (stored); /* CAF S+ZERO, AD, TS */
     }
 
     uint32_t r = ad16(to16(pos_ovf ? 1u : NEG1), to16(stored));
 
     if (!AGC_ASSERT((r & 0140000u) == 0u || (r & 0140000u) == 0140000u))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (uint16_t) ((r & 037777u) | ((r >> 1) & SIGN15));
+    return ((uint16_t) ((r & 037777u) | ((r >> 1) & SIGN15)));
 }
 
 /* First address of bank b as the self-check forms it.                     */
@@ -140,10 +140,10 @@ static uint16_t bank_base(int bank)
 {
     if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (bank == 2) ? BANK2_ADDR : (bank == 3) ? BANK3_ADDR : BANK_ADDR;
+    return ((bank == 2) ? BANK2_ADDR : (bank == 3) ? BANK3_ADDR : BANK_ADDR);
 }
 
 /* COMADRS/FXADRS .. ADRSCHK: sum bank b up to the second of two
@@ -154,7 +154,7 @@ agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
     if (!AGC_ASSERT(sum != NULL && bugger != NULL) ||
         !AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t s      = 0; /* SKEEP1              */
@@ -186,7 +186,7 @@ agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
     *sum    = s;
     *bugger = word;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* BNKCHK: |sum| must equal the bank number.                                */
@@ -198,12 +198,12 @@ bool agc_selfcheck_bank_ok(int bank)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return false;
+        return (false);
     }
 
     uint16_t mag = ((sum & SIGN15) != 0u) ? (uint16_t) (WORD15 - sum) : sum;
 
-    return mag == (uint16_t) bank;
+    return (mag == (uint16_t) bank);
 }
 
 /* ERRORS: count, alarm 01102; a + option drops to the idle loop.          */
@@ -217,7 +217,7 @@ static agc_status_t selfcheck_error(void)
         smode = 0; /* SIDLOOP            */
     }
 
-    return AGC_STATUS_ALARM;
+    return (AGC_STATUS_ALARM);
 }
 
 /* ROPECHK: every bank 0..43 in order.                                     */
@@ -231,16 +231,16 @@ static agc_status_t ropechk(void)
         {
             skeep[4] = (uint16_t) b;
 
-            return selfcheck_error();
+            return (selfcheck_error());
         }
     }
 
     if (!AGC_ASSERT(skeep[6] == NEG0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SMODECHK + the selected option, one complete cycle (SELFCHK entry).    */
@@ -248,7 +248,7 @@ agc_status_t agc_selfcheck_idle_pass(void)
 {
     if (smode == 0u)
     {
-        return AGC_STATUS_OK; /* backup idle loop    */
+        return (AGC_STATUS_OK); /* backup idle loop    */
     }
 
     int option =
@@ -260,7 +260,7 @@ agc_status_t agc_selfcheck_idle_pass(void)
     {
         smode = 0; /* BNKOPTN: SIDLOOP    */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     scount[0] = (uint16_t) ((scount[0] + 1u) & WORD15);
@@ -272,32 +272,32 @@ agc_status_t agc_selfcheck_idle_pass(void)
 
     if (option == 4)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
-    return ropechk();
+    return (ropechk());
 }
 
 agc_status_t agc_selfcheck_set_smode(uint16_t word)
 {
     if (!AGC_ASSERT(word <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     smode = word;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_selfcheck_smode(void)
 {
     if (!AGC_ASSERT(smode <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return smode;
+    return (smode);
 }
 
 /* DOFSTART: SMODE = ERESTORE = +0; SLAP1 also clears ERCOUNT.            */
@@ -312,20 +312,20 @@ agc_status_t agc_selfcheck_fresh_start(bool slap1)
 
     if (!AGC_ASSERT(smode == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_selfcheck_error_count(void)
 {
     if (!AGC_ASSERT(ercount <= WORD15))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return ercount;
+    return (ercount);
 }
 
 /* SOPTION / SDISPLAY for SHOW-BANKSUM: SKEEP1 sum, SKEEP2 bank, SKEEP3
@@ -338,7 +338,7 @@ static agc_status_t showsum_bank(int bank)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     show_bank = bank;
@@ -346,7 +346,7 @@ static agc_status_t showsum_bank(int bank)
     skeep[2]  = (uint16_t) bank;
     skeep[3]  = bug;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* SHOWSUM: SKEEP6 = +1, SMODE = +0 (self-check off), STSHOSUM.           */
@@ -357,10 +357,10 @@ agc_status_t agc_selfcheck_showsum_start(void)
 
     if (!AGC_ASSERT(skeep[6] == 1u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return showsum_bank(0);
+    return (showsum_bank(0));
 }
 
 /* NXTBNK; after the last bank ENDSUMS starts again at bank 0.            */
@@ -368,12 +368,12 @@ agc_status_t agc_selfcheck_showsum_next(void)
 {
     if (!AGC_ASSERT(show_bank >= 0 && show_bank <= LSTBNKCH))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int next = (show_bank >= LSTBNKCH) ? 0 : show_bank + 1;
 
-    return showsum_bank(next);
+    return (showsum_bank(next));
 }
 
 /* V34: SKEEP1 = SELFADRS (self-check restarts at SELFCHK).               */
@@ -384,18 +384,18 @@ agc_status_t agc_selfcheck_showsum_end(void)
 
     if (!AGC_ASSERT(show_bank >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_selfcheck_skeep(int i)
 {
     if (!AGC_ASSERT(i >= 1 && i <= 7))
     {
-        return 0;
+        return (0);
     }
 
-    return skeep[i];
+    return (skeep[i]);
 }

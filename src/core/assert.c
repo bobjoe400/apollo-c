@@ -9,5 +9,5 @@ bool agc_assert_report(const char *file, int line, const char *expr)
      * already takes its error path. (rule 7, documented ignore) */
     (void) fprintf(stderr, "%s:%d: assertion '%s' failed\n", file, line, expr);
 
-    return false;
+    return (false);
 }

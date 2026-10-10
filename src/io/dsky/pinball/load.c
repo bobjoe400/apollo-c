@@ -34,7 +34,7 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
     if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_set_dspcount(rnd1[inrel - PIN_INREL_X]);
@@ -44,7 +44,7 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
 
     pin_flashon();
 
-    return (st == AGC_STATUS_OK) ? pin_entexit() : st; /* ENDRQDAT    */
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* ENDRQDAT    */
 }
 
 /* CLPASHI's "+3 to - number, backs data requests": the request for the
@@ -53,17 +53,17 @@ pin_reqret_t pin_reqret_backup(pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return step; /* no backup */
+        return (step); /* no backup */
     }
 
     switch (step)
     {
         case PIN_REQ_ABC_Y:
-            return PIN_REQ_ABC_X;
+            return (PIN_REQ_ABC_X);
         case PIN_REQ_ABC_Z:
-            return PIN_REQ_ABC_Y;
+            return (PIN_REQ_ABC_Y);
         case PIN_REQ_AB_Y:
-            return PIN_REQ_AB_X;
+            return (PIN_REQ_AB_X);
         case PIN_REQ_PASS0:
         case PIN_REQ_ABC_X:
         case PIN_REQ_AB_X:
@@ -74,7 +74,7 @@ pin_reqret_t pin_reqret_backup(pin_reqret_t step)
         case PIN_REQ_MM:
         case PIN_REQ_COUNT:
         default:
-            return step; /* unreachable: CLPASS keeps these out */
+            return (step); /* unreachable: CLPASS keeps these out */
     }
 }
 
@@ -87,7 +87,7 @@ agc_status_t pin_loadlv(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -100,20 +100,20 @@ agc_status_t pin_loadlv(void)
 
     if (!AGC_ASSERT(s->dspcount_neg))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_OK) ? pin_recaltst() : st;
+    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st);
 }
 
 agc_status_t agc_dsky_loadlv(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_loadlv();
+    return (pin_loadlv());
 }
 
 /* ---- PUTCOM (pp. 347-348) --------------------------------------------- */
@@ -126,7 +126,7 @@ static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info,
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -135,7 +135,7 @@ static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info,
     { /* DCTSTCYC  */
         *finished = true;
 
-        return pin_almcycle();
+        return (pin_almcycle());
     }
 
     agc_status_t st   = AGC_STATUS_OK;
@@ -150,7 +150,7 @@ static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info,
             st = pin_comp_write(k, (agc_dp_t) word);
         }
 
-        return (st == AGC_STATUS_OK) ? pin_loadlv() : st;
+        return ((st == AGC_STATUS_OK) ? pin_loadlv() : st);
     }
 
     agc_dp_t v;
@@ -177,10 +177,10 @@ static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info,
 
     if (!AGC_ASSERT(word <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st == AGC_STATUS_OK) ? pin_comp_write(k, v) : st;
+    return ((st == AGC_STATUS_OK) ? pin_comp_write(k, v) : st);
 }
 
 /* PUTCOM: store component k from XREG.. (octal) or XREG,XREGLP.. (decimal
@@ -190,7 +190,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t     *s = pin_st();
@@ -199,21 +199,21 @@ static agc_status_t pin_putcom(int k, bool *finished)
 
     if (!AGC_ASSERT(finished != NULL) || st != AGC_STATUS_OK)
     {
-        return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     *finished = false;
 
     if (s->decbrnch == 0u)
     {
-        return pin_putcom_octal(k, &info, finished);
+        return (pin_putcom_octal(k, &info, finished));
     }
 
     if (info.routine == (uint8_t) PIN_SF_HMS)
     {
         *finished = true;
 
-        return pin_hmsin(); /* stores all three, LOADLV */
+        return (pin_hmsin()); /* stores all three, LOADLV */
     }
 
     agc_dp_t v = 0;
@@ -222,10 +222,10 @@ static agc_status_t pin_putcom(int k, bool *finished)
 
     if (*finished)
     {
-        return st;
+        return (st);
     }
 
-    return pin_comp_write(k, v);
+    return (pin_comp_write(k, v));
 }
 
 /* ALLDC/OC: tests that the data words loaded are either all decimal or
@@ -234,14 +234,14 @@ static agc_status_t pin_alldc_oc(int ncomp)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(ncomp == 2 || ncomp == 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t dec = (uint16_t) ((s->decbrnch >> 2) & 7u); /* dec comp bits */
@@ -249,10 +249,10 @@ static agc_status_t pin_alldc_oc(int ncomp)
 
     if (dec == 0u || dec == all)
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
-    return pin_almcycle();
+    return (pin_almcycle());
 }
 
 /* PUTXYZ noun 07 part: XREG = ECADR of the flag word, YREG = bits to be
@@ -261,7 +261,7 @@ static agc_status_t pin_noun7_bits(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const pin_state_t *s     = pin_st();
@@ -271,7 +271,7 @@ static agc_status_t pin_noun7_bits(void)
 
     if (!AGC_ASSERT(s->nounreg == 7u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -288,7 +288,7 @@ static agc_status_t pin_noun7_bits(void)
 
     agc_relint();
 
-    return st;
+    return (st);
 }
 
 /* PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store. */
@@ -297,7 +297,7 @@ static agc_status_t pin_putn(int first, int ncomp)
     if (!AGC_ASSERT(first >= 0 && first < 3) ||
         !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st       = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK;
@@ -311,7 +311,7 @@ static agc_status_t pin_putn(int first, int ncomp)
 
     if (st != AGC_STATUS_OK || finished)
     {
-        return st;
+        return (st);
     }
 
     /* If noun 7 has just been loaded, set flag bits as specified.        */
@@ -320,7 +320,7 @@ static agc_status_t pin_putn(int first, int ncomp)
         st = pin_noun7_bits();
     }
 
-    return (st == AGC_STATUS_OK) ? pin_loadlv() : st;
+    return ((st == AGC_STATUS_OK) ? pin_loadlv() : st);
 }
 
 /* ---- the load verbs (pp. 343-346) ------------------------------------- */
@@ -331,50 +331,50 @@ agc_status_t pin_load_verb(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(verb >= 21u && verb <= 25u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (verb == 21u)
     {
-        return pin_reqdat(PIN_INREL_X, PIN_REQ_A_X); /* ALOAD     */
+        return (pin_reqdat(PIN_INREL_X, PIN_REQ_A_X)); /* ALOAD     */
     }
 
     int comp = (verb == 22u || verb == 24u) ? 1 : 2;
 
     if (!pin_comptest(comp))
     {
-        return pin_dspalarm();
+        return (pin_dspalarm());
     }
 
     if (verb == 22u || verb == 23u)
     {
         s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
 
-        return (verb == 22u) ? pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) :
-               pin_reqdat(PIN_INREL_Z, PIN_REQ_C_Z);
+        return ((verb == 22u) ? pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) :
+                pin_reqdat(PIN_INREL_Z, PIN_REQ_C_Z));
     }
 
     if (!pin_nountest())
     { /* test if noun can be loaded */
-        return pin_dspalarm();
+        return (pin_dspalarm());
     }
 
     agc_status_t st = pin_updatvb(PIN_VBSP1LD);
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return pin_reqdat(PIN_INREL_X,
-                      (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X);
+    return (pin_reqdat(PIN_INREL_X,
+                       (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X));
 }
 
 /* Show the next load verb and request the next register. */
@@ -382,17 +382,17 @@ static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(verb == PIN_VBSP2LD || verb == PIN_VBSP3LD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_updatvb(verb);
 
-    return (st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st;
+    return ((st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st);
 }
 
 /* TC REQRET from ACCEPTWD: continue the load verb after its data word. */
@@ -400,39 +400,39 @@ agc_status_t pin_load_resume(pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     switch (step)
     {
         case PIN_REQ_A_X:
-            return pin_putn(0, 1); /* ALOAD  */
+            return (pin_putn(0, 1)); /* ALOAD  */
         case PIN_REQ_B_Y:
-            return pin_putn(1, 1); /* BLOAD  */
+            return (pin_putn(1, 1)); /* BLOAD  */
         case PIN_REQ_C_Z:
-            return pin_putn(2, 1); /* CLOAD  */
+            return (pin_putn(2, 1)); /* CLOAD  */
         case PIN_REQ_AB_X:
-            return pin_next_request(PIN_VBSP2LD, PIN_INREL_Y, PIN_REQ_AB_Y);
+            return (pin_next_request(PIN_VBSP2LD, PIN_INREL_Y, PIN_REQ_AB_Y));
         case PIN_REQ_AB_Y:
-            return pin_putn(0, 2); /* PUTXY  */
+            return (pin_putn(0, 2)); /* PUTXY  */
         case PIN_REQ_ABC_X:
-            return pin_next_request(PIN_VBSP2LD, PIN_INREL_Y, PIN_REQ_ABC_Y);
+            return (pin_next_request(PIN_VBSP2LD, PIN_INREL_Y, PIN_REQ_ABC_Y));
         case PIN_REQ_ABC_Y:
-            return pin_next_request(PIN_VBSP3LD, PIN_INREL_Z, PIN_REQ_ABC_Z);
+            return (pin_next_request(PIN_VBSP3LD, PIN_INREL_Z, PIN_REQ_ABC_Z));
         case PIN_REQ_ABC_Z:
-            return pin_putn(0, 3); /* PUTXYZ */
+            return (pin_putn(0, 3)); /* PUTXYZ */
         case PIN_REQ_MCTBS:
-            return pin_reqadd_resume();
+            return (pin_reqadd_resume());
         case PIN_REQ_MM:
-            return pin_mmchang_resume();
+            return (pin_mmchang_resume());
         case PIN_REQ_PASS0:
         case PIN_REQ_COUNT:
         default:
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
     }
 }

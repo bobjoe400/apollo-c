@@ -67,22 +67,22 @@ static agc_dp_t mu_srr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
     if (!AGC_ASSERT(count >= -40 && count <= 40))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (count >= 0) ? agc_dp_shr_round(a, count) :
-           agc_dp_shl_round(ip, a, -count);
+    return ((count >= 0) ? agc_dp_shr_round(a, count) :
+            agc_dp_shl_round(ip, a, -count));
 }
 
 static agc_dp_t mu_slr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
     if (!AGC_ASSERT(count >= -40 && count <= 40))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (count >= 0) ? agc_dp_shl_round(ip, a, count) :
-           agc_dp_shr_round(a, -count);
+    return ((count >= 0) ? agc_dp_shl_round(ip, a, count) :
+            agc_dp_shr_round(a, -count));
 }
 
 /* SR* on the TP MPAC: right by count (left when negative).             */
@@ -90,10 +90,10 @@ static agc_tp_t mu_tp_sr(agc_interp_t *ip, agc_tp_t v, int count)
 {
     if (!AGC_ASSERT(count >= -60 && count <= 60))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return agc_tp_shift(ip, v, -count);
+    return (agc_tp_shift(ip, v, -count));
 }
 
 /* B0 complemented when the LM is the vehicle being corrected (BON
@@ -104,10 +104,10 @@ static agc_vec_t mu_sign(agc_vec_t b, bool comp_if_csm)
 
     if (!AGC_ASSERT(b.c[0] >= AGC_DP_MIN))
     {
-        return agc_vec_zero(); /* no valid result */
+        return (agc_vec_zero()); /* no valid result */
     }
 
-    return (csm == comp_if_csm) ? agc_vec_neg(b) : b;
+    return ((csm == comp_if_csm) ? agc_vec_neg(b) : b);
 }
 
 /* ---- INTGRCAL / WLINIT (p.584) ---------------------------------------- */
@@ -119,7 +119,7 @@ static agc_status_t mu_intgrcal(agc_interp_t *ip)
 
     rz_phase(2, 04022); /* GRP2PC   */
 
-    return st;
+    return (st);
 }
 
 /* WLINIT: W = 0 except the diagonal: position WRENDPOS (surface WSURFPOS)
@@ -165,7 +165,7 @@ static agc_status_t mu_integrate(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_VINTFLAG, !csm); /* the other vehicle first */
@@ -179,7 +179,7 @@ static agc_status_t mu_integrate(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     bool w = agc_flag_test(AGC_FLAG_RENDWFLG);
@@ -195,7 +195,7 @@ static agc_status_t mu_integrate(agc_interp_t *ip, agc_job_id_t resume)
     rz_flag_put(AGC_FLAG_INTYPFLG, false);
     rz_flag_put(AGC_FLAG_STATEFLG, true);
 
-    return mu_intgrcal(ip);
+    return (mu_intgrcal(ip));
 }
 
 /* LSR22.4: the LM (from the landing site) and the CSM, 6x6 W; the first
@@ -206,7 +206,7 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_flag_put(AGC_FLAG_STATEFLG, true);
@@ -221,7 +221,7 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_erase_trkmkcnt() == 0)
@@ -230,7 +230,7 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
         rz_flag_put(AGC_FLAG_VINTFLAG, true);
         agc_integ_setiflgs();
 
-        return mu_intgrcal(ip);
+        return (mu_intgrcal(ip));
     }
 
     rz_flag_put(AGC_FLAG_D6OR9FLG, false);
@@ -238,7 +238,7 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
     rz_flag_put(AGC_FLAG_VINTFLAG, true);
     rz_flag_put(AGC_FLAG_INTYPFLG, false);
 
-    return mu_intgrcal(ip);
+    return (mu_intgrcal(ip));
 }
 
 /* ---- GETULC / RADARANG (pp.585-586) ----------------------------------- */
@@ -264,7 +264,7 @@ static agc_status_t mu_getulc(agc_interp_t *ip)
     mu.ulc = agc_rtb_normunit(ip, agc_vec_sub(ip, rc, rl), &x1, &mag, NULL);
     mu.rlc = rz_shift(ip, mag, -x1); /* SL* 0,1  */
 
-    return st;
+    return (st);
 }
 
 /* RADARANG: SINTHETA = -ULC . MY (SL1R); RXZ = RLC cos(theta), NORM.   */
@@ -280,7 +280,7 @@ static agc_status_t mu_radarang(agc_interp_t *ip)
     c      = agc_dp_shl(ip, agc_dp_mul_trunc(c, mu.rlc), 1);
     mu.rxz = rz_norm(c, &mu.rxz_x1);
 
-    return st;
+    return (st);
 }
 
 /* ---- the measurements (RANGEBQ .. TRUNBQ pp.576-582) ------------------ */
@@ -309,7 +309,7 @@ static agc_status_t mu_range(agc_interp_t *ip)
     v               = mu_tp_sr(ip, v, 0 - mu.x2);
     mu.inc.variance = (vmin - v < 0) ? v : vmin; /* QOK      */
 
-    return st;
+    return (st);
 }
 
 /* Range rate: B1 = ULC RLC (B-24/B-22), B0 = (ULC x VLC) x ULC (B-5),
@@ -340,7 +340,7 @@ static agc_status_t mu_rate_vectors(agc_interp_t *ip, agc_vec_t *vlc)
 
     *vlc = agc_vec_sub(ip, vc, vl);
 
-    return st;
+    return (st);
 }
 
 static agc_status_t mu_rate(agc_interp_t *ip)
@@ -378,7 +378,7 @@ static agc_status_t mu_rate(agc_interp_t *ip)
 
     mu.inc.variance = agc_tp_shift(ip, v, 4); /* SL4, TP  */
 
-    return st;
+    return (st);
 }
 
 /* MXMYMZ (p.579): the NB unit axes at the mark (CDUs AIG AMG AOG) in
@@ -404,7 +404,7 @@ static agc_status_t mu_mxmymz(agc_interp_t *ip)
     mu.my = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);
     mu.mz = agc_vec_shl(ip, agc_vec_mat(ip, ax[2], &refsmmat), 1);
 
-    return st;
+    return (st);
 }
 
 /* Angle measurement common part: B2 has RXZ (SR* 0-2,1, SRR* 0,2) in
@@ -457,7 +457,7 @@ static agc_status_t mu_shaft(agc_interp_t *ip)
     mu.inc.bvector[0] = mu_sign(agc_vec_unit(ip, b0, NULL, NULL), true);
     mu_angle(ip, 0, agc_rendz_nav_pad()->shaftvar, d);
 
-    return st;
+    return (st);
 }
 
 /* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 = (ULC x MY) x
@@ -475,7 +475,7 @@ static agc_status_t mu_trunnion(agc_interp_t *ip)
     d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3);
     mu_angle(ip, 1, agc_rendz_nav_pad()->trunvar, d);
 
-    return st;
+    return (st);
 }
 
 /* ---- LGCUPDTE / ASTOK (p.586) ------------------------------------------ */
@@ -497,16 +497,16 @@ static bool mu_incorp1(agc_interp_t *ip, agc_status_t *st)
 
     if (agc_dp_sub(ip, rmax, n->r22disp[0]) < 0)
     {
-        return true;
+        return (true);
     }
 
-    return agc_dp_sub(ip, agc_dp_from_sp(p->vmax), n->r22disp[1]) < 0;
+    return (agc_dp_sub(ip, agc_dp_from_sp(p->vmax), n->r22disp[1]) < 0);
 }
 
 /* INCORP2 of the waiting measurement (MOONTHIS = LMOONFLG).           */
 static agc_status_t mu_incorp2(agc_interp_t *ip)
 {
-    return rz_incorp2(ip, &mu.inc, agc_flag_test(AGC_FLAG_LMOONFLG));
+    return (rz_incorp2(ip, &mu.inc, agc_flag_test(AGC_FLAG_LMOONFLG)));
 }
 
 /* ---- the measurement sequence ------------------------------------------- */
@@ -519,16 +519,16 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
     switch (step)
     {
         case MU_RANGE:
-            return mu_range(ip);
+            return (mu_range(ip));
         case MU_RATE:
-            return mu_rate(ip);
+            return (mu_rate(ip));
         case MU_SHAFT:
-            return mu_shaft(ip);
+            return (mu_shaft(ip));
         case MU_TRUNNION:
-            return mu_trunnion(ip);
+            return (mu_trunnion(ip));
         case MU_END:
         default:
-            return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
+            return (AGC_STATUS_BAD_ARG); /* unreachable: cannot happen */
     }
 }
 
@@ -538,10 +538,10 @@ static mu_step_t mu_next(mu_step_t step)
 {
     if (step == MU_RATE && agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        return MU_END;
+        return (MU_END);
     }
 
-    return (step >= MU_TRUNNION) ? MU_END : (mu_step_t) ((int) step + 1);
+    return ((step >= MU_TRUNNION) ? MU_END : (mu_step_t) ((int) step + 1));
 }
 
 /* Measurements from mu.step on: each INCORP1; too large a change stops
@@ -553,7 +553,7 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         if (mu.step == MU_END)
         {
-            return agc_job_rendezvous_tracking_data_done(ctx); /* RENDEND */
+            return (agc_job_rendezvous_tracking_data_done(ctx)); /* RENDEND */
         }
 
         agc_status_t st  = mu_compute(ip, mu.step);
@@ -566,26 +566,26 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         if (big)
         {
-            return lmnav_n49_display(); /* R22LEM96 */
+            return (lmnav_n49_display()); /* R22LEM96 */
         }
 
         st = mu_incorp2(ip); /* ASTOK    */
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
 
         rz_phase(2, 04022);
         mu.step = mu_next(mu.step);
     }
 
-    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
+    return (AGC_STATUS_NO_CONVERGE); /* step bound exhausted */
 }
 
 /* ASTOK after the crew accepted the noun 49 display (R22LEM7): INCORP2
@@ -594,7 +594,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(mu.step != MU_END))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_interp_t ip;
@@ -604,13 +604,13 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     rz_phase(2, 04022);
     mu.step = mu_next(mu.step);
 
-    return mu_run(ctx, &ip);
+    return (mu_run(ctx, &ip));
 }
 
 /* LSR22.3 / LSR22.4: states to the mark time; W reinitialized if it was
@@ -620,7 +620,7 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     rz_phase(2, 04022); /* GRP2PC   */
@@ -647,18 +647,18 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st; /* BUSY: asleep in INTSTALL  */
+        return (st); /* BUSY: asleep in INTSTALL  */
     }
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        return agc_job_rendezvous_tracking_data_measure(ctx);
+        return (agc_job_rendezvous_tracking_data_measure(ctx));
     }
 
     lmnav_state()->r65cntr = 0;
 
-    return lmnav_tracking_attitude(ctx, false,
-                                   AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE);
+    return (lmnav_tracking_attitude(ctx, false,
+                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE));
 }
 
 /* RANGEBQ1: SCALSHFT (0 moon, 2 earth), then the measurements.          */
@@ -666,7 +666,7 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     mu.x2 = agc_flag_test(AGC_FLAG_LMOONFLG) ? 0 : 2;
@@ -676,5 +676,5 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
 
-    return mu_run(ctx, &ip);
+    return (mu_run(ctx, &ip));
 }

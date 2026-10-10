@@ -38,12 +38,12 @@ static agc_dp_t timedelt(void)
 
     if (!AGC_ASSERT((v == AGC_VEHICLE_CSM) || (v == AGC_VEHICLE_LM)))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     _Static_assert(INTEG_TIMEDELT_CSM < INTEG_TIMEDELT_LM, "AGC constant");
 
-    return (v == AGC_VEHICLE_CSM) ? INTEG_TIMEDELT_CSM : INTEG_TIMEDELT_LM;
+    return ((v == AGC_VEHICLE_CSM) ? INTEG_TIMEDELT_CSM : INTEG_TIMEDELT_LM);
 }
 
 /* ---- STATEINT (p. 1313-1314) ------------------------------------------ */
@@ -56,10 +56,10 @@ agc_status_t agc_task_stateint(void)
 
     if (!AGC_ASSERT(sf != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return sf;
+    return (sf);
 }
 
 /* ENDINT (p. 1314): CLEAR STATEFLG, PHASCHNG OCT 20032, LONGCALL STATEINT
@@ -73,10 +73,10 @@ static agc_status_t endint(void)
 
     if (!AGC_ASSERT(sl != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return sl;
+    return (sl);
 }
 
 /* STATEUP second half (CM p. 210 / LM p. 236) after the INTSTALL for the
@@ -88,7 +88,7 @@ static agc_status_t stateup_lm(agc_interp_t *ip, agc_dp_t tdec1)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_flag(AGC_FLAG_VINTFLAG, false);
@@ -109,12 +109,12 @@ static agc_status_t stateup_lm(agc_interp_t *ip, agc_dp_t tdec1)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_flag(AGC_FLAG_NODOFLAG, false); /* STATEND         */
 
-    return endint();
+    return (endint());
 }
 
 /* STATEUP second INTSTALL (+1 on resumption).                            */
@@ -126,22 +126,22 @@ static agc_status_t stateup_grab_lm(void)
 
     if (!AGC_ASSERT(stateup_tdec1 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_integ_install(0, AGC_JOB_STATEUP_STALL);
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* asleep          */
+        return (AGC_STATUS_OK); /* asleep          */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
-    return stateup_lm(&ip, stateup_tdec1);
+    return (stateup_lm(&ip, stateup_tdec1));
 }
 
 /* STATEUP first half: CSM permanent state (and W when valid: CM ORBWFLAG
@@ -166,19 +166,19 @@ static agc_status_t stateup(agc_interp_t *ip, agc_dp_t tdec1)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
         agc_integ_flag(AGC_FLAG_NODOFLAG, false); /* STATEND/NO-INT */
 
-        return endint();
+        return (endint());
     }
 
     stateup_tdec1 = agc_erase_tetcsm(); /* DLOAD TETCSM   */
 
-    return stateup_grab_lm();
+    return (stateup_grab_lm());
 }
 
 /* STATINT1 from INTSTALL +1: SET NODOFLAG, SETIFLGS, STATEUP.            */
@@ -191,18 +191,18 @@ static agc_status_t statint1_grab(void)
 
     if (st == AGC_STATUS_BUSY)
     {
-        return AGC_STATUS_OK; /* asleep          */
+        return (AGC_STATUS_OK); /* asleep          */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return (st);
     }
 
     agc_integ_flag(AGC_FLAG_NODOFLAG, true);
     agc_integ_setiflgs(); /* always OK       */
 
-    return stateup(&ip, statint1_tdec1);
+    return (stateup(&ip, statint1_tdec1));
 }
 
 /* STATINT1 job (p. 1313): no integration after V96 (QUITFLAG: NOINT);
@@ -211,7 +211,7 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
 {
     if (!AGC_ASSERT(jc != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_flag_test(AGC_FLAG_QUITFLAG))
@@ -219,7 +219,7 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
         agc_phase_change(2, 00002); /* NOINT     */
         agc_integ_flag(AGC_FLAG_QUITFLAG, false);
 
-        return AGC_STATUS_OK; /* ENDOFJOB  */
+        return (AGC_STATUS_OK); /* ENDOFJOB  */
     }
 
     statint1_tdec1 = agc_integ_loadtime();
@@ -229,37 +229,37 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
         agc_integ_csm_resume_idle_integration(); /* always OK       */
     }
 
-    return statint1_grab();
+    return (statint1_grab());
 }
 
 agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc)
 {
     if (!AGC_ASSERT(jc != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(statint1_tdec1 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return statint1_grab();
+    return (statint1_grab());
 }
 
 agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc)
 {
     if (!AGC_ASSERT(jc != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(stateup_tdec1 >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return stateup_grab_lm();
+    return (stateup_grab_lm());
 }
 
 /* ---- AVETOMID (p. 1327-1328) ------------------------------------------ */
@@ -276,15 +276,15 @@ static agc_status_t regrab(agc_job_id_t resume_job)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((st != AGC_STATUS_OK) || agc_integ_area_busy(0)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* INT/W (p. 1328): the W matrix through the burn with the pre-thrust
@@ -295,7 +295,7 @@ static agc_status_t int_w(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (!AGC_ASSERT(agc_integ_area_busy(0)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_flag(AGC_FLAG_DIM0FLAG, true);
@@ -306,10 +306,10 @@ static agc_status_t int_w(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* SETCOAST body / MOVATHIS (CM p. 1327, LM OTHERS): RN, VN (2^29, 2^7)
@@ -321,7 +321,7 @@ static agc_status_t move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
 
     if (!AGC_ASSERT(agc_integ_area_busy(0)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     ctx->sv.rrect = agc_integ_vshift(ip, agc_erase_rn(), x2); /* VSR* 0,2 */
@@ -335,10 +335,10 @@ static agc_status_t move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CM SETCOAST (p. 1327-1328): CSM permanent state from RN VN PIPTIME,
@@ -350,14 +350,14 @@ static agc_status_t setcoast_csm(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_integ_flag(AGC_FLAG_CMOONFLG, moon);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        return agc_integ_intwake(); /* FAZAB5        */
+        return (agc_integ_intwake()); /* FAZAB5        */
     }
 
     agc_integ_setiflgs(); /* always OK     */
@@ -366,10 +366,10 @@ static agc_status_t setcoast_csm(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* LM OTHERS (Luminary p. 1220): CSM permanent state to PIPTIME, then the
@@ -379,7 +379,7 @@ static agc_status_t others_lm(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_flag(AGC_FLAG_VINTFLAG, true);
@@ -393,13 +393,13 @@ static agc_status_t others_lm(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     st = move_this(ip, ctx, agc_flag_test(AGC_FLAG_LMOONFLG)); /* MOONTHIS */
     const agc_status_t sw = agc_integ_intwake(); /* FAZAB5        */
 
-    return (st == AGC_STATUS_OK) ? sw : st;
+    return ((st == AGC_STATUS_OK) ? sw : st);
 }
 
 agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -407,14 +407,14 @@ agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_integ_install(0, resume_job); /* first INTSTALL */
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_flag_test(AGC_FLAG_RENDWFLG) || agc_flag_test(AGC_FLAG_ORBWFLAG))
@@ -428,16 +428,16 @@ agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        return setcoast_csm(ip, ctx);
+        return (setcoast_csm(ip, ctx));
     }
 
-    return others_lm(ip, ctx, resume_job);
+    return (others_lm(ip, ctx, resume_job));
 }
 
 /* ---- MIDTOAV1 / MIDTOAV2 (p. 1329-1331) ------------------------------- */
@@ -475,7 +475,7 @@ static agc_status_t entmid1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
@@ -497,7 +497,7 @@ static agc_status_t entmid1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     agc_relint();
     out->slipped = ctx->notime;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -507,7 +507,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const bool   csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
@@ -515,7 +515,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_integ_flag(AGC_FLAG_MID1FLAG, true);
@@ -535,12 +535,12 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ctx->notime = slipped;
 
-    return entmid1(ip, ctx, t1, out);
+    return (entmid1(ip, ctx, t1, out));
 }
 
 agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -550,7 +550,7 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const bool   csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
@@ -558,7 +558,7 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (csm)
@@ -574,12 +574,12 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     ctx->notime = false;
 
-    return entmid1(ip, ctx, t1, out);
+    return (entmid1(ip, ctx, t1, out));
 }
 
 /* TIMEINC (p. 1331): TDEC = now + T-TO-ADD (CM) / TIMEDELT (LM).         */
@@ -590,17 +590,17 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (!AGC_ASSERT(add >= 0))
     {
-        return INTEG_NEXT_FAIL;
+        return (INTEG_NEXT_FAIL);
     }
 
     ctx->tdec = agc_dp_add(ip, agc_integ_loadtime(), add);
 
     if (!AGC_ASSERT(ctx->tdec >= 0))
     {
-        return INTEG_NEXT_FAIL;
+        return (INTEG_NEXT_FAIL);
     }
 
-    return INTEG_NEXT_TESTLOOP;
+    return (INTEG_NEXT_TESTLOOP);
 }
 
 /*
@@ -614,7 +614,7 @@ agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
-        return INTEG_NEXT_FAIL;
+        return (INTEG_NEXT_FAIL);
     }
 
     if (agc_flag_test(AGC_FLAG_MID1FLAG))
@@ -623,12 +623,12 @@ agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
         if (agc_dp_sub(ip, ctx->tdec, lim) >= 0)
         {
-            return INTEG_NEXT_TESTLOOP;
+            return (INTEG_NEXT_TESTLOOP);
         }
 
         notime(ctx, &ctx->notime);
 
-        return timeinc(ip, ctx);
+        return (timeinc(ip, ctx));
     }
 
     const agc_dp_t d = agc_dp_sub(
@@ -636,24 +636,24 @@ agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return (d < 0) ? INTEG_NEXT_APCHK : timeinc(ip, ctx);
+        return ((d < 0) ? INTEG_NEXT_APCHK : timeinc(ip, ctx));
     }
 
     if (d >= 0)
     {
-        return timeinc(ip, ctx);
+        return (timeinc(ip, ctx));
     }
 
     const agc_dp_t ahead = agc_dp_sub(ip, ctx->sv.tet, agc_integ_loadtime());
 
     if (agc_dp_sub(ip, ahead, K_5_6SECS) >= 0)
     {
-        return INTEG_NEXT_APCHK; /* 5.6 s to spare */
+        return (INTEG_NEXT_APCHK); /* 5.6 s to spare */
     }
 
     ctx->t_to_add = agc_dp_add(ip, ctx->t_to_add, INTEG_TIMEDELT_CSM);
 
-    return timeinc(ip, ctx);
+    return (timeinc(ip, ctx));
 }
 
 /* ---- INTWAKEU (p. 1332-1333) ------------------------------------------ */
@@ -667,7 +667,7 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(upsvflag != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (agc_interrupts_inhibited())
@@ -705,5 +705,5 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     agc_phase_change(6, 04026);
 
-    return (st == AGC_STATUS_OK) ? sw : st;
+    return ((st == AGC_STATUS_OK) ? sw : st);
 }

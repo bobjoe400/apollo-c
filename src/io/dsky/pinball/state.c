@@ -14,7 +14,7 @@ static pin_state_t g_pin;
 
 pin_state_t *pin_st(void)
 {
-    return &g_pin;
+    return (&g_pin);
 }
 
 /* Invariants of the pinball erasables, asserted by the module's routines. */
@@ -22,11 +22,11 @@ bool pin_invariants(void)
 {
     const pin_state_t *s = &g_pin;
 
-    return s->verbreg <= 99u && s->nounreg <= 99u && s->verbsave <= 99u &&
-           s->reqret < PIN_REQ_COUNT && s->entret <= PIN_ENT_PASTEVB &&
-           s->loadstat <= PIN_LS_DATAIN && s->nout >= 0 &&
-           s->nout <= PIN_DSPTAB_LEN && (s->dspcount & 037) <= PIN_MD1 &&
-           s->chr <= 9u && s->nntype <= PIN_NNTYPE_SPARE;
+    return (s->verbreg <= 99u && s->nounreg <= 99u && s->verbsave <= 99u &&
+            s->reqret < PIN_REQ_COUNT && s->entret <= PIN_ENT_PASTEVB &&
+            s->loadstat <= PIN_LS_DATAIN && s->nout >= 0 &&
+            s->nout <= PIN_DSPTAB_LEN && (s->dspcount & 037) <= PIN_MD1 &&
+            s->chr <= 9u && s->nntype <= PIN_NNTYPE_SPARE);
 }
 
 /* RELTAB (T4RUPT_PROGRAM p. 133), low 5 bits: relay code of digit 0-9.
@@ -48,10 +48,10 @@ uint16_t agc_dsky_relay_code(int digit)
 {
     if (!AGC_ASSERT(digit >= 0) || !AGC_ASSERT(digit <= 9))
     {
-        return AGC_DSKY_RELAY_BLANK;
+        return (AGC_DSKY_RELAY_BLANK);
     }
 
-    return k_relay_code[digit];
+    return (k_relay_code[digit]);
 }
 
 /* Inverse of RELTAB for the sim readout. */
@@ -59,30 +59,30 @@ int agc_dsky_relay_digit(uint16_t code)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_DSKY_BLANK;
+        return (AGC_DSKY_BLANK);
     }
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_DSKY_BLANK;
+        return (AGC_DSKY_BLANK);
     }
 
     for (int d = 0; d < 10; d++)
     {
         if (k_relay_code[d] == code)
         {
-            return d;
+            return (d);
         }
     }
 
-    return AGC_DSKY_BLANK;
+    return (AGC_DSKY_BLANK);
 }
 
 /* ---- ones' complement word helpers ----------------------------------- */
 
 bool pin_ones_negative(uint16_t w)
 {
-    return (w & PIN_BIT15) != 0u;
+    return ((w & PIN_BIT15) != 0u);
 }
 
 /* Magnitude of a 15-bit ones' complement word (CCS ...; AD ONE). */
@@ -90,18 +90,18 @@ uint16_t pin_ones_mag(uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t v = (uint16_t) (w & PIN_WORD);
 
-    return pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v;
+    return (pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v);
 }
 
 /* CS of a magnitude: the negative ones' complement word. */
 uint16_t pin_ones_neg(uint16_t mag)
 {
-    return (uint16_t) ((~mag) & PIN_WORD);
+    return ((uint16_t) ((~mag) & PIN_WORD));
 }
 
 /* DEVIATION: -0 (077777) maps to 0; agc_sp_t has no negative zero. */
@@ -109,32 +109,32 @@ agc_sp_t pin_sp_from_ones(uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     uint16_t v = (uint16_t) (w & PIN_WORD);
 
     if (pin_ones_negative(v))
     {
-        return (agc_sp_t) (-(int) pin_ones_mag(v));
+        return ((agc_sp_t) (-(int) pin_ones_mag(v)));
     }
 
-    return (agc_sp_t) v;
+    return ((agc_sp_t) v);
 }
 
 uint16_t pin_ones_from_sp(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN) || !AGC_ASSERT(v <= AGC_SP_MAX))
     {
-        return 0;
+        return (0);
     }
 
     if (v < 0)
     {
-        return pin_ones_neg((uint16_t) (-v));
+        return (pin_ones_neg((uint16_t) (-v)));
     }
 
-    return (uint16_t) v;
+    return ((uint16_t) v);
 }
 
 /* ---- lamps (PINBALL p. 379-380) -------------------------------------- */
@@ -202,23 +202,23 @@ int pin_inrel_of(int16_t dspcount)
 
     if (!AGC_ASSERT(idx < 20))
     {
-        return -1;
+        return (-1);
     }
 
     int inrel = k_inreltab[idx];
 
     if (!AGC_ASSERT(inrel >= 0))
     {
-        return -1; /* TC CCSHOLE                 */
+        return (-1); /* TC CCSHOLE                 */
     }
 
-    return inrel;
+    return (inrel);
 }
 
 /* GETINREL (p. 318): data register for the current DSPCOUNT. */
 int pin_getinrel(void)
 {
-    return pin_inrel_of(g_pin.dspcount);
+    return (pin_inrel_of(g_pin.dspcount));
 }
 
 /* ---- DSPTAB ---------------------------------------------------------- */
@@ -229,7 +229,7 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
 {
     if (!AGC_ASSERT(rel >= 0) || !AGC_ASSERT(rel < PIN_DSPTAB_PANEL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -244,7 +244,7 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
 
     agc_relint();
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* DSPIN / DSPIN1 (pp. 362-363). count = DSPCOUNT number (bit 14 set:
@@ -255,7 +255,7 @@ static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
     if (!AGC_ASSERT(rel >= 0 && rel < PIN_DSPTAB_PANEL) ||
         !AGC_ASSERT(sel >= 0 && sel < 4))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t cur = agc_erase_dsptab(rel);
@@ -263,38 +263,38 @@ static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
     /* A DSPTAB entry of +0 is a CCSHOLE in the AGC.                     */
     if (!AGC_ASSERT(cur != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t mag = pin_ones_mag(cur);
 
     if ((uint16_t) (mag & k_dsmsk[sel]) == code)
     {
-        return AGC_STATUS_OK; /* DSLV: same                 */
+        return (AGC_STATUS_OK); /* DSLV: same                 */
     }
 
     uint16_t nmag = (uint16_t) ((mag & (uint16_t) ~k_dsmsk[sel]) + code);
 
-    return pin_dsptab_store(rel, nmag); /* DFRNT                      */
+    return (pin_dsptab_store(rel, nmag)); /* DFRNT                      */
 }
 
 agc_status_t pin_dspin(int16_t count, uint16_t code)
 {
     if (!AGC_ASSERT(count >= 0) || !AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int rel = (count & 037) >> 1; /* SR                         */
 
     if ((count & 1) == 0)
     {
-        return pin_dspin1(rel, 0, code); /* right char                 */
+        return (pin_dspin1(rel, 0, code)); /* right char                 */
     }
 
     int sel = ((uint16_t) count & PIN_BIT14) != 0u ? 3 : 1; /* left (+sign) */
 
-    return pin_dspin1(rel, sel, (uint16_t) (code << 5));    /* SLEFT5       */
+    return (pin_dspin1(rel, sel, (uint16_t) (code << 5)));    /* SLEFT5       */
 }
 
 /* 11DSPIN (p. 363): sign relay bit 11 of DSPTAB+rel on or off. */
@@ -302,10 +302,10 @@ agc_status_t pin_11dspin(int rel, bool on)
 {
     if (!AGC_ASSERT(rel >= 0) || !AGC_ASSERT(rel < PIN_DSPTAB_PANEL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u);
+    return (pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u));
 }
 
 /* 2BLANK (p. 322): blank the pair whose left char is DSPCOUNT. */
@@ -315,10 +315,10 @@ agc_status_t pin_2blank(void)
 
     if (!AGC_ASSERT(rel < PIN_DSPTAB_PANEL) || !AGC_ASSERT(g_pin.dspcount >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_dsptab_store(rel, (uint16_t) PIN_BIT12); /* CS BLANKCON    */
+    return (pin_dsptab_store(rel, (uint16_t) PIN_BIT12)); /* CS BLANKCON    */
 }
 
 /* 5BLANK (pp. 321-322): blank R1, R2 or R3 for the current DSPCOUNT, zero
@@ -326,7 +326,7 @@ agc_status_t pin_2blank(void)
  * the left-most digit of the register.                                 */
 agc_status_t pin_5blank(void)
 {
-    return pin_5blank_rel(pin_getinrel());
+    return (pin_5blank_rel(pin_getinrel()));
 }
 
 /* 5BLANK +2 (CLR5 entry): the same with INREL already chosen. */
@@ -338,7 +338,7 @@ agc_status_t pin_5blank_rel(int inrel)
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     int k = inrel - PIN_INREL_X;
@@ -367,7 +367,7 @@ agc_status_t pin_5blank_rel(int inrel)
 
     pin_set_dspcount(rxd1[k]);
 
-    return st;
+    return (st);
 }
 
 /* ---- DSPOUT (T4RUPT p. 133) ------------------------------------------ */
@@ -379,7 +379,7 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
 {
     if (!AGC_ASSERT(relay_word != NULL) || !AGC_ASSERT(g_pin.nout > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     g_pin.nout--; /* TS NOUT (CCS'd)        */
@@ -399,13 +399,13 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
                                       (mag & PIN_LOW11));
             agc_chan_write((int) AGC_CHAN_OUT0, *relay_word);
 
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
     }
 
     g_pin.nout = 0; /* 2nd pass: +0 into NOUT */
 
-    return AGC_STATUS_NOT_FOUND;
+    return (AGC_STATUS_NOT_FOUND);
 }
 
 /* DSPOUT: display only when DSKYFLAG is on and NOUT is non-zero. */
@@ -413,22 +413,22 @@ agc_status_t agc_dsky_dspout(uint16_t *relay_word)
 {
     if (!AGC_ASSERT(relay_word != NULL) || !AGC_ASSERT(g_pin.nout >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *relay_word = 0;
 
     if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_DSKYFLAG) || g_pin.nout == 0)
     {
-        return AGC_STATUS_NOT_FOUND; /* NODSPOUT               */
+        return (AGC_STATUS_NOT_FOUND); /* NODSPOUT               */
     }
 
-    return pin_dspoutsb(relay_word);
+    return (pin_dspoutsb(relay_word));
 }
 
 int16_t agc_dsky_nout(void)
 {
-    return g_pin.nout;
+    return (g_pin.nout);
 }
 
 /* ---- sim readout ----------------------------------------------------- */
@@ -438,19 +438,19 @@ static int8_t pin_digit_at(int pos)
 {
     if (!AGC_ASSERT(pos >= 0) || !AGC_ASSERT(pos <= PIN_MD1))
     {
-        return AGC_DSKY_BLANK;
+        return (AGC_DSKY_BLANK);
     }
 
     uint16_t mag  = pin_ones_mag(agc_erase_dsptab(pos >> 1));
     uint16_t code = ((pos & 1) != 0) ? (uint16_t) ((mag >> 5) & PIN_LOW5) :
                     (uint16_t) (mag & PIN_LOW5);
 
-    return (int8_t) agc_dsky_relay_digit(code);
+    return ((int8_t) agc_dsky_relay_digit(code));
 }
 
 static bool pin_sign_lit(int rel)
 {
-    return (pin_ones_mag(agc_erase_dsptab(rel)) & PIN_BIT11) != 0u;
+    return ((pin_ones_mag(agc_erase_dsptab(rel)) & PIN_BIT11) != 0u);
 }
 
 agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
@@ -461,7 +461,7 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
 
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(g_pin.nout >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < 2; i++)
@@ -492,7 +492,7 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
     out->verbreg    = g_pin.verbreg;
     out->nounreg    = g_pin.nounreg;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- pinball erasables for other modules ----------------------------- */
@@ -501,45 +501,45 @@ uint16_t agc_dsky_dsptem(int index)
 {
     if (!AGC_ASSERT(index >= 0) || !AGC_ASSERT(index < 7))
     {
-        return 0;
+        return (0);
     }
 
-    return g_pin.dsptem[index];
+    return (g_pin.dsptem[index]);
 }
 
 agc_status_t agc_dsky_set_dsptem(int index, uint16_t word)
 {
     if (!AGC_ASSERT(index >= 0 && index < 7) || !AGC_ASSERT(word <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     g_pin.dsptem[index] = word;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 uint16_t agc_dsky_xyzreg(int index)
 {
     if (!AGC_ASSERT(index >= 0) || !AGC_ASSERT(index < 3))
     {
-        return 0;
+        return (0);
     }
 
-    return g_pin.xyz_oct[index];
+    return (g_pin.xyz_oct[index]);
 }
 
 agc_status_t agc_dsky_response(uint8_t *verb, uint8_t *noun)
 {
     if (!AGC_ASSERT(verb != NULL) || !AGC_ASSERT(noun != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     *verb = g_pin.resp_verb;
     *noun = g_pin.resp_noun;
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* ---- STARTSUB part for pinball (FRESH_START_AND_RESTART p. 190-192) --- */
@@ -565,8 +565,8 @@ agc_status_t agc_dsky_init(void)
 
     if (!AGC_ASSERT(g_pin.nout == 11))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

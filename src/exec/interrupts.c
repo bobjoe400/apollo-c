@@ -73,15 +73,15 @@ bool agc_interrupts_inhibited(void)
 {
     if (!AGC_ASSERT(inhint_depth >= 0))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(inhint_depth <= RUPT_MAX_DEPTH))
     {
-        return false;
+        return (false);
     }
 
-    return inhint_depth > 0;
+    return (inhint_depth > 0);
 }
 
 /* STARTSUB / STARTSB1 (FRESH_START C p.190 / L p.220): TIME4 = 37775,
@@ -106,17 +106,17 @@ uint16_t agc_rupt_time(int n)
 {
     if (!AGC_ASSERT(n >= 4 && n <= 6))
     {
-        return 0;
+        return (0);
     }
 
     uint16_t v = (n == 4) ? time4 : ((n == 5) ? time5 : time6);
 
     if (!AGC_ASSERT(v <= RUPT_TIME_MASK))
     {
-        return 0;
+        return (0);
     }
 
-    return v;
+    return (v);
 }
 
 void agc_rupt_set_time(int n, uint16_t v)
@@ -165,15 +165,15 @@ agc_task_id_t agc_rupt_t5_task(void)
 {
     if (!AGC_ASSERT(t5loc != AGC_TASK_NONE))
     {
-        return AGC_TASK_NONE;
+        return (AGC_TASK_NONE);
     }
 
     if (!AGC_ASSERT(inhint_depth >= 0))
     {
-        return AGC_TASK_NONE;
+        return (AGC_TASK_NONE);
     }
 
-    return t5loc;
+    return (t5loc);
 }
 
 /* T6LOC (CSM only; the LM T6RUPT always goes to DOT6RUPT).            */
@@ -193,7 +193,7 @@ static agc_status_t rupt_exit(agc_status_t st)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_relint();
@@ -204,11 +204,11 @@ static agc_status_t rupt_exit(agc_status_t st)
 
         if (!AGC_ASSERT(rs != AGC_STATUS_BAD_ARG))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
-    return st;
+    return (st);
 }
 
 /* Vector 4000: GOJAM (hardware restart) -> GOPROG.                    */
@@ -221,7 +221,7 @@ agc_status_t agc_rupt_go(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_restart_goprog();
@@ -230,10 +230,10 @@ agc_status_t agc_rupt_go(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rupt_exit(st);
+    return (rupt_exit(st));
 }
 
 /* T6RUPT: CSM DTCB through T6LOC, LM through T6ADR = DOT6RUPT.        */
@@ -256,7 +256,7 @@ agc_status_t agc_rupt_t6(void)
         {
             agc_relint();
 
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
     }
 
@@ -264,10 +264,10 @@ agc_status_t agc_rupt_t6(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rupt_exit(st);
+    return (rupt_exit(st));
 }
 
 /* T5RUPT: CSM tests TIME5 then DTCB T5LOC; LM DTCB T5ADR.             */
@@ -282,7 +282,7 @@ agc_status_t agc_rupt_t5(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!spurious)
@@ -294,10 +294,10 @@ agc_status_t agc_rupt_t5(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rupt_exit(st);
+    return (rupt_exit(st));
 }
 
 /* T3RUPT: the waitlist.                                               */
@@ -309,7 +309,7 @@ agc_status_t agc_rupt_t3(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_t3rupt();
@@ -318,10 +318,10 @@ agc_status_t agc_rupt_t3(void)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rupt_exit(st);
+    return (rupt_exit(st));
 }
 
 /* Lead-ins whose handlers belong to other lanes (dispatch.c).         */
@@ -329,7 +329,7 @@ static agc_status_t foreign_rupt(agc_rupt_id_t id)
 {
     if (!AGC_ASSERT(id >= AGC_RUPT_T6 && id <= AGC_RUPT_HAND))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_inhint();
@@ -339,45 +339,45 @@ static agc_status_t foreign_rupt(agc_rupt_id_t id)
     {
         agc_relint();
 
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return rupt_exit(st);
+    return (rupt_exit(st));
 }
 
 agc_status_t agc_rupt_t4(void)
 {
-    return foreign_rupt(AGC_RUPT_T4);
+    return (foreign_rupt(AGC_RUPT_T4));
 }
 
 agc_status_t agc_rupt_keyrupt1(void)
 {
-    return foreign_rupt(AGC_RUPT_KEY1);
+    return (foreign_rupt(AGC_RUPT_KEY1));
 }
 
 agc_status_t agc_rupt_keyrupt2(void)
 {
-    return foreign_rupt(AGC_RUPT_KEY2);
+    return (foreign_rupt(AGC_RUPT_KEY2));
 }
 
 agc_status_t agc_rupt_uprupt(void)
 {
-    return foreign_rupt(AGC_RUPT_UPRUPT);
+    return (foreign_rupt(AGC_RUPT_UPRUPT));
 }
 
 agc_status_t agc_rupt_downrupt(void)
 {
-    return foreign_rupt(AGC_RUPT_DOWNRUPT);
+    return (foreign_rupt(AGC_RUPT_DOWNRUPT));
 }
 
 agc_status_t agc_rupt_radarupt(void)
 {
-    return foreign_rupt(AGC_RUPT_RADAR);
+    return (foreign_rupt(AGC_RUPT_RADAR));
 }
 
 agc_status_t agc_rupt_rupt10(void)
 {
-    return foreign_rupt(AGC_RUPT_HAND);
+    return (foreign_rupt(AGC_RUPT_HAND));
 }
 
 /* T5IDLOC (FRESH_START C p.192): the CSM's idle T5RUPT program, every
@@ -386,13 +386,13 @@ agc_status_t agc_task_t5idloc(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }

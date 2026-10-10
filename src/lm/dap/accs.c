@@ -70,15 +70,15 @@ static agc_sp_t mass_hi(void)
 
     if (!AGC_ASSERT(m >= 0))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     if (!AGC_ASSERT(m <= AGC_DP_MAX))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
-    return (agc_sp_t) (m / 16384); /* major word of MASS          */
+    return ((agc_sp_t) (m / 16384)); /* major word of MASS          */
 }
 
 /* 1/ACCS entry .. MASSFIX (pp.1486-1487): LEMMASS from MASS, kept inside
@@ -107,7 +107,7 @@ static bool lem_mass(lm_dap_t *d, bool docked)
     {
         agc_erase_set_lemmass(lem); /* F(MASS)        */
 
-        return !ascent;
+        return (!ascent);
     }
 
     agc_erase_set_lemmass(lem);
@@ -115,10 +115,10 @@ static bool lem_mass(lm_dap_t *d, bool docked)
 
     if (!AGC_ASSERT(lem > 0))
     {
-        return false;
+        return (false);
     }
 
-    return !ascent;
+    return (!ascent);
 }
 
 /* STCTR1 (p.1488): one row of the inertia fit; the DV remainder is left
@@ -127,7 +127,7 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
 {
     if (!AGC_ASSERT(k >= 0 && k < 7) || !AGC_ASSERT(rem != NULL))
     {
-        return 0;
+        return (0);
     }
 
     lm_dp_pair_t a   = {inercona_hi[k], inercona_lo[k]};
@@ -136,7 +136,7 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
 
     *rem = q.lo;
 
-    return lm_dap_sat((int32_t) q.hi + inerconb[k]);
+    return (lm_dap_sat((int32_t) q.hi + inerconb[k]));
 }
 
 /* COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
@@ -244,15 +244,15 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
 
     if (!AGC_ASSERT(d->kq >= 0 || d->accdotq < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
@@ -269,15 +269,15 @@ static agc_status_t lresc(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(abdelv >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return spscont(d, q);
+    return (spscont(d, q));
 }
 
 /* SPSLOOP1/2 (pp.1494-1495): the docked quadratic fit in X = CSMMASS,
@@ -286,7 +286,7 @@ static agc_sp_t docked_fit(int base)
 {
     if (!AGC_ASSERT(base == 0 || base == 6))
     {
-        return 0;
+        return (0);
     }
 
     agc_sp_t        x = agc_erase_csmmass();
@@ -305,10 +305,10 @@ static agc_sp_t docked_fit(int base)
 
     if (!AGC_ASSERT(x >= 0 && y >= 0))
     {
-        return 0;
+        return (0);
     }
 
-    return m;
+    return (m);
 }
 
 /* DOCKED (pp.1494-1496): CSM-docked jet accelerations. Inertia at
@@ -334,7 +334,7 @@ static agc_status_t docked(lm_dap_t *d)
 
     if (!AGC_ASSERT(inertia > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     d->jacc[1] = lm_dap_dv(torq, inertia);
@@ -344,7 +344,7 @@ static agc_status_t docked(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->jacc[1] >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg);
@@ -352,7 +352,7 @@ static agc_status_t docked(lm_dap_t *d)
     d->accdotr =
         lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
 
-    return spscont(d, d->accdotr); /* TCF SPSCONT    */
+    return (spscont(d, d->accdotr)); /* TCF SPSCONT    */
 }
 
 /* F(MASS) .. COMMEQS for the LM alone (pp.1487-1489): the jet
@@ -364,7 +364,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
 
     if (!AGC_ASSERT(agc_erase_lemmass() > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     for (int j = 2; j >= 0; j--)
@@ -383,17 +383,17 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
         d->allowgts = 0; /* ascent         */
         d->ingts    = 0; /* 1/ACCONT -1    */
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     d->l_pvt_cg = fit_row(0, &rem);
 
     if (!AGC_ASSERT(d->jacc[3] > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return lresc(d);
+    return (lresc(d));
 }
 
 /* 1/ACCS (pp.1486-1491), called by BANKCALL or from the NOVAC jobs.      */
@@ -421,10 +421,10 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
 
     if (!AGC_ASSERT(d->jacc[0] >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* 1/ACCJOB (p.1486): NOVAC job form of 1/ACCS (CALLACCS, RCSMONIT).      */
@@ -432,15 +432,15 @@ agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_UPDATE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_dap_jet_accel_update(); /* then ENDOFJOB  */
+    return (agc_lm_dap_jet_accel_update()); /* then ENDOFJOB  */
 }
 
 /* 1/ACCSET (p.1486): entry from fresh start / restart (DAPIDLER): null
@@ -450,7 +450,7 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dap_t *d = lm_dap_state();
@@ -462,10 +462,10 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_RESET))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_lm_dap_jet_accel_update();
+    return (agc_lm_dap_jet_accel_update());
 }
 
 /* RCSMONIT / CALLACCS helper: set up 1/ACCJOB (1/ACCFIX, p.192).         */
@@ -475,10 +475,10 @@ agc_status_t lm_dap_accfix(void)
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     _Static_assert(AC_PRIO27 == 027, "AGC constant");
 
-    return st;
+    return (st);
 }

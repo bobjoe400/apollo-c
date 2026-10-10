@@ -68,7 +68,7 @@ static agc_status_t pin_endnmtst(int inrel)
     if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(!s->dspcount_neg))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->dspcount != k_critcon[inrel])
@@ -78,7 +78,7 @@ static agc_status_t pin_endnmtst(int inrel)
             s->dspcount--; /* DECREMENT DSPCOUNT */
         }
 
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     if ((s->decbrnch & 3u) != 0u && inrel >= PIN_INREL_X)
@@ -89,7 +89,7 @@ static agc_status_t pin_endnmtst(int inrel)
     /* ENDALL: block NUMIN by placing DSPCOUNT negatively.                 */
     pin_block_dspcount(s->dspcount);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
@@ -101,7 +101,7 @@ static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
     if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(chr >= 0 && chr <= 9))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (inrel == PIN_INREL_VERB || inrel == PIN_INREL_NOUN)
@@ -109,7 +109,7 @@ static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
         /* VERB/NOUN set DECBRNCH = 1, so these are always decimal.        */
         if (!AGC_ASSERT(decimal))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         uint8_t *reg = (inrel == PIN_INREL_VERB) ? &s->verbreg : &s->nounreg;
@@ -117,7 +117,7 @@ static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
 
         if (!AGC_ASSERT(v <= 99))
         {
-            return AGC_STATUS_BAD_ARG;
+            return (AGC_STATUS_BAD_ARG);
         }
 
         *reg = (uint8_t) v;
@@ -137,7 +137,7 @@ static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
                         PIN_WORD);
     }
 
-    return pin_endnmtst(inrel);
+    return (pin_endnmtst(inrel));
 }
 
 /* NUM (p. 316): numerical character in CHAR. */
@@ -147,14 +147,14 @@ static agc_status_t pin_num(void)
 
     if (s->dspcount_neg)
     {
-        return AGC_STATUS_OK; /* block data in if DSPCOUNT is - or -0 */
+        return (AGC_STATUS_OK); /* block data in if DSPCOUNT is - or -0 */
     }
 
     int inrel = pin_getinrel();
 
     if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(s->chr <= 9))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->clpass >= 0)
@@ -166,11 +166,11 @@ static agc_status_t pin_num(void)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     /* +0 octal, +1 + decimal, +2 - decimal.                                */
-    return pin_accumulate(inrel, (s->decbrnch & 3u) != 0u, s->chr);
+    return (pin_accumulate(inrel, (s->decbrnch & 3u) != 0u, s->chr));
 }
 
 /* 89TEST (p. 316): 8 or 9 is accepted only in decimal. */
@@ -178,27 +178,27 @@ static agc_status_t pin_89test(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!AGC_ASSERT(s->chr == 8 || s->chr == 9))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->dspcount_neg)
     {
-        return AGC_STATUS_OK; /* block data in if DSPCOUNT is - or -0 */
+        return (AGC_STATUS_OK); /* block data in if DSPCOUNT is - or -0 */
     }
 
     if ((s->decbrnch & 3u) == 0u)
     {
-        return pin_charalrm(); /* if DECBRNCH is +0, reject 8 or 9 */
+        return (pin_charalrm()); /* if DECBRNCH is +0, reject 8 or 9 */
     }
 
-    return pin_num();
+    return (pin_num());
 }
 
 /* ---- VERB, NOUN (p. 319) ---------------------------------------------- */
@@ -208,7 +208,7 @@ static agc_status_t pin_nvcom(bool verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -235,10 +235,10 @@ static agc_status_t pin_nvcom(bool verb)
 
     if (!AGC_ASSERT(s->dspcount == PIN_VD1 || s->dspcount == PIN_ND1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- + and - (pp. 319-320) -------------------------------------------- */
@@ -249,23 +249,23 @@ static bool pin_signtest(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return false;
+        return (false);
     }
 
     const pin_state_t *s = pin_st();
 
     if ((s->decbrnch & 3u) != 0u)
     {
-        return false; /* sign for this word already in    */
+        return (false); /* sign for this word already in    */
     }
 
     if (s->dspcount_neg)
     {
-        return false;
+        return (false);
     }
 
-    return s->dspcount == PIN_R1D1 || s->dspcount == PIN_R2D1 ||
-           s->dspcount == PIN_R3D1;
+    return (s->dspcount == PIN_R1D1 || s->dspcount == PIN_R2D1 ||
+            s->dspcount == PIN_R3D1);
 }
 
 /* POSGN / NEGSGN / BOTHSGN / FIXCLPAS. */
@@ -273,21 +273,21 @@ static agc_status_t pin_sign_key(bool minus)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
 
     if (!pin_signtest())
     {
-        return AGC_STATUS_OK; /* sign illegal: ENDOFJOB           */
+        return (AGC_STATUS_OK); /* sign illegal: ENDOFJOB           */
     }
 
     int inrel = pin_getinrel();
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = minus ? pin_minus_on() : pin_plus_on();
@@ -302,7 +302,7 @@ static agc_status_t pin_sign_key(bool minus)
         s->clpass = 0;
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- CLEAR (pp. 321-322) ---------------------------------------------- */
@@ -310,7 +310,7 @@ static agc_status_t pin_sign_key(bool minus)
 /* LEGALTST: INREL 0, 1 (verb, noun) cannot be cleared. */
 static bool pin_legaltst(int inrel)
 {
-    return inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z;
+    return (inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z);
 }
 
 /* CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
@@ -323,7 +323,7 @@ static agc_status_t pin_clear_key(void)
 
     if (!AGC_ASSERT(inrel >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->clpass > 0)
@@ -332,7 +332,7 @@ static agc_status_t pin_clear_key(void)
 
         if (!pin_legaltst(inrel))
         {
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
 
         s->reqret = pin_reqret_backup(s->reqret); /* backs data requests */
@@ -346,12 +346,12 @@ static agc_status_t pin_clear_key(void)
 
         if (st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
     else if (!pin_legaltst(inrel))
     {
-        return AGC_STATUS_OK; /* illegal      */
+        return (AGC_STATUS_OK); /* illegal      */
     }
 
     agc_status_t st = pin_5blank_rel(inrel); /* CLEAR1, CLR5 */
@@ -360,10 +360,10 @@ static agc_status_t pin_clear_key(void)
 
     if (!AGC_ASSERT(s->clpass != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- ENTER (pp. 323-324) ---------------------------------------------- */
@@ -373,7 +373,7 @@ static agc_status_t pin_enter_once(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -383,12 +383,12 @@ static agc_status_t pin_enter_once(void)
 
     if (!s->reqret_neg)
     {
-        return pin_entpas0(); /* if +, pass 0           */
+        return (pin_entpas0()); /* if +, pass 0           */
     }
 
     if (!AGC_ASSERT(s->reqret > PIN_REQ_PASS0 && s->reqret < PIN_REQ_COUNT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     /* If less than 2 chars in for the MM code, alarm and recycle (decided
@@ -398,13 +398,13 @@ static agc_status_t pin_enter_once(void)
      * chars OK.                                                          */
     if (s->reqret != PIN_REQ_MM && (s->decbrnch & 3u) != 0u && !s->dspcount_neg)
     {
-        return pin_dspalarm();
+        return (pin_dspalarm());
     }
 
     s->reqret_neg = false; /* ACCEPTWD: set REQRET + */
     pin_flashoff();
 
-    return pin_load_resume(s->reqret); /* TC REQRET              */
+    return (pin_load_resume(s->reqret)); /* TC REQRET              */
 }
 
 /* ENTER. ALMCYCLE ends in POSTJUMP ENTER; that re-entry is this loop.   */
@@ -412,7 +412,7 @@ agc_status_t pin_enter(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = PIN_STATUS_RECYCLE;
@@ -425,10 +425,10 @@ agc_status_t pin_enter(void)
 
     if (!AGC_ASSERT(st != PIN_STATUS_RECYCLE))
     {
-        return AGC_STATUS_OK; /* bound hit: ENDOFJOB    */
+        return (AGC_STATUS_OK); /* bound hit: ENDOFJOB    */
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- KEY RELEASE (pp. 367-368) ---------------------------------------- */
@@ -438,17 +438,17 @@ agc_status_t pin_tstlts4(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_reldsp();
 
     if (st != AGC_STATUS_OK || !pin_cadrstor_full())
     {
-        return st;
+        return (st);
     }
 
-    return pin_pinbrnch();
+    return (pin_pinbrnch());
 }
 
 /* VBRELDSP. Key release: an external monitor suspended by the operator
@@ -458,7 +458,7 @@ agc_status_t pin_vbreldsp(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -472,18 +472,18 @@ agc_status_t pin_vbreldsp(void)
 
         if (pin_cadrstor_full())
         {
-            return AGC_STATUS_OK;
+            return (AGC_STATUS_OK);
         }
 
-        return pin_reldsp1();
+        return (pin_reldsp1());
     }
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_tstlts4();
+    return (pin_tstlts4());
 }
 
 /* ---- ERROR LIGHT RESET (pp. 388-389) ---------------------------------- */
@@ -495,7 +495,7 @@ static agc_status_t pin_tstab(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -512,7 +512,7 @@ static agc_status_t pin_tstab(void)
         agc_relint();
     }
 
-    return st;
+    return (st);
 }
 
 /* ERROR: restore the original C(DSPLOCK) -- thus error light reset leaves
@@ -521,7 +521,7 @@ agc_status_t pin_error_key(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -564,7 +564,7 @@ agc_status_t pin_error_key(void)
 
     agc_erase_set_sfail(0);
 
-    return st;
+    return (st);
 }
 
 /* ---- CHARIN (p. 315) -------------------------------------------------- */
@@ -574,7 +574,7 @@ static agc_status_t pin_charin2(uint8_t code)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -590,34 +590,34 @@ static agc_status_t pin_charin2(uint8_t code)
         case 005:
         case 006:
         case 007:
-            return pin_num();
+            return (pin_num());
         case 010:
         case 011:
             s->chr = (uint8_t) (code - 010u + 8u);
 
-            return pin_89test();
+            return (pin_89test());
         case 020:
             s->chr = 0u; /* NUM -2: CHAR = 0       */
 
-            return pin_num();
+            return (pin_num());
         case 021:
-            return pin_nvcom(true); /* VERB                   */
+            return (pin_nvcom(true)); /* VERB                   */
         case 022:
-            return pin_error_key(); /* ERROR LIGHT RESET      */
+            return (pin_error_key()); /* ERROR LIGHT RESET      */
         case 031:
-            return pin_vbreldsp(); /* KEY RELEASE            */
+            return (pin_vbreldsp()); /* KEY RELEASE            */
         case 032:
-            return pin_sign_key(false); /* +                      */
+            return (pin_sign_key(false)); /* +                      */
         case 033:
-            return pin_sign_key(true); /* -                      */
+            return (pin_sign_key(true)); /* -                      */
         case 034:
-            return pin_enter(); /* ENTER                  */
+            return (pin_enter()); /* ENTER                  */
         case 036:
-            return pin_clear_key(); /* CLEAR                  */
+            return (pin_clear_key()); /* CLEAR                  */
         case 037:
-            return pin_nvcom(false); /* NOUN                   */
+            return (pin_nvcom(false)); /* NOUN                   */
         default:
-            return pin_charalrm();
+            return (pin_charalrm());
     }
 }
 
@@ -631,7 +631,7 @@ agc_status_t pin_charin(uint8_t code)
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     s->old_dsplock = s->dsplock; /* TS 21/22REG            */
@@ -646,10 +646,10 @@ agc_status_t pin_charin(uint8_t code)
 
     if (!AGC_ASSERT(st != PIN_STATUS_RECYCLE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* CHARIN as an executive job: the key code arrives in MPAC. */
@@ -658,12 +658,12 @@ agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = pin_charin((uint8_t) ctx->arg);
 
-    return (st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK; /* ENDOFJOB    */
+    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK); /* ENDOFJOB    */
 }
 
 /* PROCKEY (p. 367): the PRO key (sampled in T4RUPT). */
@@ -671,7 +671,7 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_state_t *s = pin_st();
@@ -682,27 +682,27 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(s->dspcount_neg))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_vbproc_common(PIN_LS_PROCEED);
+    return (pin_vbproc_common(PIN_LS_PROCEED));
 }
 
 agc_status_t agc_dsky_prockey_request(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_PROCKEY);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* ---- KEYRUPT / UPRUPT (KEYRUPT_UPRUPT.agc pp. 1449-1451) -------------- */
@@ -713,12 +713,12 @@ static agc_status_t pin_keycom(uint16_t code)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
@@ -732,7 +732,7 @@ static agc_status_t pin_keycom(uint16_t code)
             (agc_sp_t) code); /* INDEX LOCCTR TS MPAC */
     }
 
-    return st;
+    return (st);
 }
 
 /* KEYRUPT1: main DSKY, key code in channel 15. */
@@ -740,7 +740,7 @@ agc_status_t agc_dsky_keyrupt1(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_lodsampt(); /* time snatched for N65  */
@@ -749,10 +749,10 @@ agc_status_t agc_dsky_keyrupt1(void)
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_keycom(code);
+    return (pin_keycom(code));
 }
 
 /* KEYRUPT2 (CSM: via MARKRUPT): navigation DSKY, key code in channel 16. */
@@ -760,7 +760,7 @@ agc_status_t agc_dsky_keyrupt2(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     uint16_t code =
@@ -768,10 +768,10 @@ agc_status_t agc_dsky_keyrupt2(void)
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return pin_keycom(code);
+    return (pin_keycom(code));
 }
 
 /* UPRUPT: INLINK carries the character three times, C, NOT-C, C (bits
@@ -781,12 +781,12 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(inlink <= PIN_WORD))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_lodsampt();
@@ -799,7 +799,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
     {                                                           /* UPTEST */
         agc_flag_set((agc_flag_id_t) AGC_FLAG_UPLOCKFL);
 
-        return AGC_STATUS_OK; /* TMFAIL2 */
+        return (AGC_STATUS_OK); /* TMFAIL2 */
     }
 
     /* UPOK: code is good. 'Error reset' clears UPLOCKFL; any other code is
@@ -809,15 +809,15 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
         agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* CLUPLOCK */
         agc_status_t st = AGC_STATUS_OK;
 
-        return (st == AGC_STATUS_OK) ? pin_keycom(low) : st;
+        return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st);
     }
 
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_UPLOCKFL))
     {
-        return AGC_STATUS_OK; /* TC RESUME              */
+        return (AGC_STATUS_OK); /* TC RESUME              */
     }
 
-    return pin_keycom(low); /* ACCEPTUP               */
+    return (pin_keycom(low)); /* ACCEPTUP               */
 }
 
 /* ---- sim conveniences ------------------------------------------------- */
@@ -827,14 +827,14 @@ agc_status_t agc_dsky_key(uint8_t code)
 {
     if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     pin_lodsampt();
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
     agc_status_t st = AGC_STATUS_OK;
 
-    return (st == AGC_STATUS_OK) ? pin_charin(code) : st;
+    return ((st == AGC_STATUS_OK) ? pin_charin(code) : st);
 }
 
 /* Key code for one character of a key string; 0 for none. */
@@ -842,7 +842,7 @@ static uint8_t pin_key_of_char(char c)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return 0; /* no valid result */
+        return (0); /* no valid result */
     }
 
     static const uint8_t digit[10] = {020, 001, 002, 003, 004,
@@ -850,29 +850,29 @@ static uint8_t pin_key_of_char(char c)
 
     if (c >= '0' && c <= '9')
     {
-        return digit[c - '0'];
+        return (digit[c - '0']);
     }
 
     switch (c)
     {
         case 'V':
-            return (uint8_t) AGC_DSKY_KEY_VERB;
+            return ((uint8_t) AGC_DSKY_KEY_VERB);
         case 'N':
-            return (uint8_t) AGC_DSKY_KEY_NOUN;
+            return ((uint8_t) AGC_DSKY_KEY_NOUN);
         case 'E':
-            return (uint8_t) AGC_DSKY_KEY_ENTR;
+            return ((uint8_t) AGC_DSKY_KEY_ENTR);
         case 'C':
-            return (uint8_t) AGC_DSKY_KEY_CLR;
+            return ((uint8_t) AGC_DSKY_KEY_CLR);
         case 'R':
-            return (uint8_t) AGC_DSKY_KEY_RSET;
+            return ((uint8_t) AGC_DSKY_KEY_RSET);
         case 'K':
-            return (uint8_t) AGC_DSKY_KEY_KEYREL;
+            return ((uint8_t) AGC_DSKY_KEY_KEYREL);
         case '+':
-            return (uint8_t) AGC_DSKY_KEY_PLUS;
+            return ((uint8_t) AGC_DSKY_KEY_PLUS);
         case '-':
-            return (uint8_t) AGC_DSKY_KEY_MINUS;
+            return ((uint8_t) AGC_DSKY_KEY_MINUS);
         default:
-            return 0u;
+            return (0u);
     }
 }
 
@@ -881,24 +881,24 @@ static agc_status_t pin_pro_now(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_job_ctx_t ctx = {PIN_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
 
-    return agc_job_prockey(&ctx);
+    return (agc_job_prockey(&ctx));
 }
 
 agc_status_t agc_dsky_keys(const char *seq)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(seq != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = AGC_STATUS_OK;
@@ -917,7 +917,7 @@ agc_status_t agc_dsky_keys(const char *seq)
         st = (code != 0u) ? agc_dsky_key(code) : AGC_STATUS_BAD_ARG;
     }
 
-    return st;
+    return (st);
 }
 
 /* FALTON for other modules (requested by sys-misc). */

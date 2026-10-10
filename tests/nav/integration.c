@@ -52,7 +52,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
 
-    return false;
+    return (false);
 }
 
 #define CHECK(c) check((c), __LINE__, #c)
@@ -84,20 +84,20 @@ static dvec_t dv(double x, double y, double z)
 {
     dvec_t r = {x, y, z};
 
-    return r;
+    return (r);
 }
 
 static agc_vec_t to_agc(dvec_t v, int scale)
 {
-    return agc_vec_make(agc_dp_from_double(v.x, scale),
-                        agc_dp_from_double(v.y, scale),
-                        agc_dp_from_double(v.z, scale));
+    return (agc_vec_make(agc_dp_from_double(v.x, scale),
+                         agc_dp_from_double(v.y, scale),
+                         agc_dp_from_double(v.z, scale)));
 }
 
 static dvec_t from_agc(agc_vec_t v, int scale)
 {
-    return dv(agc_dp_to_double(v.c[0], scale), agc_dp_to_double(v.c[1], scale),
-              agc_dp_to_double(v.c[2], scale));
+    return (dv(agc_dp_to_double(v.c[0], scale), agc_dp_to_double(v.c[1], scale),
+               agc_dp_to_double(v.c[2], scale)));
 }
 
 static double dist(dvec_t a, dvec_t b)
@@ -106,7 +106,7 @@ static double dist(dvec_t a, dvec_t b)
     const double dy = a.y - b.y;
     const double dz = a.z - b.z;
 
-    return sqrt((dx * dx) + (dy * dy) + (dz * dz));
+    return (sqrt((dx * dx) + (dy * dy) + (dz * dz)));
 }
 
 /* Circular orbit in the plane of x and (y cos i + z sin i).             */
@@ -144,12 +144,12 @@ typedef struct dstate
 
 static double dot3(dvec_t a, dvec_t b)
 {
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+    return ((a.x * b.x) + (a.y * b.y) + (a.z * b.z));
 }
 
 static dvec_t axpy(double a, dvec_t x, dvec_t y)
 {
-    return dv((a * x.x) + y.x, (a * x.y) + y.y, (a * x.z) + y.z);
+    return (dv((a * x.x) + y.x, (a * x.y) + y.y, (a * x.z) + y.z));
 }
 
 /* Zonal J2..J4 in the AGC's form (COMTERM): (J2REQSQ/r^4) [(P3' + k3/r
@@ -166,7 +166,8 @@ static dvec_t zonal(const ref_model_t *m, dvec_t r, double rr)
     const double cu = p3 + ((m->k3 / rr) * (p4 + ((m->k4 / rr) * p5)));
     const double cz = p2 + ((m->k3 / rr) * (p3 + ((m->k4 / rr) * p4)));
 
-    return axpy(-f * cz, m->pole, dv(f * cu * u.x, f * cu * u.y, f * cu * u.z));
+    return (axpy(-f * cz, m->pole,
+                 dv(f * cu * u.x, f * cu * u.y, f * cu * u.z)));
 }
 
 /* Lunar J22 and C31 terms (QUALITY2, QUALITY3) in planet-fixed axes.     */
@@ -197,7 +198,7 @@ static dvec_t tesseral(const ref_model_t *m, dvec_t r, double rr)
         o = axpy(a[i], dv(m->mrow[i][0], m->mrow[i][1], m->mrow[i][2]), o);
     }
 
-    return o;
+    return (o);
 }
 
 static dvec_t accel(const ref_model_t *m, dvec_t r)
@@ -225,7 +226,7 @@ static dvec_t accel(const ref_model_t *m, dvec_t r)
         a = axpy(-m->bmu[i] / (bb * bb * bb), m->bpos[i], a);
     }
 
-    return a;
+    return (a);
 }
 
 static dstate_t deriv(const ref_model_t *m, dstate_t s, double h, dstate_t d)
@@ -239,7 +240,7 @@ static dstate_t deriv(const ref_model_t *m, dstate_t s, double h, dstate_t d)
     o.r = x.v;
     o.v = accel(m, x.r);
 
-    return o;
+    return (o);
 }
 
 static dstate_t rk4(const ref_model_t *m, dstate_t s0, double t)
@@ -264,7 +265,7 @@ static dstate_t rk4(const ref_model_t *m, dstate_t s0, double t)
                  axpy(1.0, axpy(2.0, k2.v, k1.v), axpy(2.0, k3.v, k4.v)), s.v);
     }
 
-    return s;
+    return (s);
 }
 
 static ref_model_t earth_model(bool j2)
@@ -280,7 +281,7 @@ static ref_model_t earth_model(bool j2)
     m.mrow[1][1] = 1.0;
     m.mrow[2][2] = 1.0;
 
-    return m;
+    return (m);
 }
 
 /* ---- setup ------------------------------------------------------------ */
@@ -311,13 +312,13 @@ static agc_status_t run_body(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v,
 
     CHECK(!agc_integ_area_busy(0)); /* INTWAKE released */
 
-    return st;
+    return (st);
 }
 
 static agc_status_t run_integrvs(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v,
                                  bool conic, double t1)
 {
-    return run_body(ctx, r, v, conic, t1, false);
+    return (run_body(ctx, r, v, conic, t1, false));
 }
 
 /* ---- 1. lock ---------------------------------------------------------- */
@@ -757,5 +758,5 @@ int main(void)
         g_checks, g_failures, g_assert_reports);
     (void) PI;
 
-    return (g_failures == 0) ? 0 : 1;
+    return ((g_failures == 0) ? 0 : 1);
 }

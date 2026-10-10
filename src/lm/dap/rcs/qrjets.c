@@ -41,15 +41,15 @@ static bool policy_ok(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->polytemp >= 0 && d->polytemp <= 0377))
     {
-        return false;
+        return (false);
     }
 
     if (!AGC_ASSERT(d->ch5mask <= 0377u))
     {
-        return false;
+        return (false);
     }
 
-    return ((uint16_t) d->polytemp & d->ch5mask) == 0u;
+    return (((uint16_t) d->polytemp & d->ch5mask) == 0u);
 }
 
 bool lm_dap_selctsub(void)
@@ -59,12 +59,12 @@ bool lm_dap_selctsub(void)
     if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) ||
         !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
-        return false;
+        return (false);
     }
 
     if (policy_ok(d))
     {
-        return true;
+        return (true);
     }
 
     for (int n = 3; n >= 0; n--)
@@ -73,11 +73,11 @@ bool lm_dap_selctsub(void)
 
         if (policy_ok(d))
         {
-            return true;
+            return (true);
         }
     }
 
-    return false;
+    return (false);
 }
 
 /* CLOSEOUT / ENDJASK (p.1458): the jask is over (DAPZRUPT negative).     */
@@ -89,15 +89,15 @@ agc_status_t lm_dap_closeout(void)
 
     if (!AGC_ASSERT(d->dapzrupt < 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* XTRANS (p.1455): no rotation (or control inhibited): TJU = TJV = 0;
@@ -127,17 +127,17 @@ agc_status_t lm_dap_xtrans(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->skip[0] == QJ_SKIPOFF))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t sc = lm_dap_closeout();
 
-    return (st != AGC_STATUS_OK) ? st : sc;
+    return ((st != AGC_STATUS_OK) ? st : sc);
 }
 
 /* ROT-TOUV (p.1457): (q, r) -> non-orthogonal (u, v) in which RCS jets
@@ -170,12 +170,12 @@ agc_status_t agc_lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u,
 {
     if (!AGC_ASSERT(u != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dap_rot_touv(q, r, u, v);
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* NOROTAT (p.1454): no rotation on this axis; write its queued
@@ -189,15 +189,15 @@ static agc_status_t norotat(int axis)
 
     if (!AGC_ASSERT(axis == 0 || axis == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* SELCTSUB failure exit (p.1458): TJx = 0, ALARM 02004, NOROTAT.        */
@@ -208,12 +208,12 @@ static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 
     if (!AGC_ASSERT(d->tj[axis + 1] == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t sn = norotat(axis);
 
-    return (sa != AGC_STATUS_OK) ? sa : sn;
+    return ((sa != AGC_STATUS_OK) ? sa : sn);
 }
 
 /* FEEDBACK (p.1455): jets fired, for the rate estimator (1 or 2).       */
@@ -256,7 +256,7 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
 
     if (!lm_dap_selctsub())
     { /* NOTMIN         */
-        return rotation_failed(d, axis);
+        return (rotation_failed(d, axis));
     }
 
     agc_inhint();
@@ -272,10 +272,10 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
 
     if (!AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return sw;
+    return (sw);
 }
 
 /* AFTERTJ / DOROTAT (pp.1453-1454): select and fire the rotation jets for
@@ -290,14 +290,14 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
     {
         *end = true;
 
-        return lm_dap_xtrans();
+        return (lm_dap_xtrans());
     }
 
     agc_sp_t tj = d->tj[axis + 1];
 
     if (tj == 0)
     {
-        return norotat(axis);
+        return (norotat(axis));
     }
 
     d->abstj    = (agc_sp_t) ((tj > 0) ? tj : -tj);
@@ -305,12 +305,12 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 
     if (d->abstj - QJ_150MS <= 0)
     {
-        return doskip(d, axis);
+        return (doskip(d, axis));
     }
 
     if (!lm_dap_selctsub())
     {
-        return rotation_failed(d, axis);
+        return (rotation_failed(d, axis));
     }
 
     agc_inhint();
@@ -321,10 +321,10 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 
     if (!AGC_ASSERT(d->abstj > QJ_150MS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /* Skip logic (TJLAW, BACKHAND): SKIPx = 0 means a short firing of the
@@ -333,22 +333,22 @@ static bool skip_axis(lm_dap_t *d, int axis)
 {
     if (!AGC_ASSERT(d->skip[axis] == 0 || d->skip[axis] == QJ_SKIPOFF))
     {
-        return false;
+        return (false);
     }
 
     if (d->skip[axis] == 0)
     {
         d->skip[axis] = QJ_SKIPOFF;
 
-        return true;
+        return (true);
     }
 
     if (!AGC_ASSERT(axis == 0 || axis == 1))
     {
-        return false;
+        return (false);
     }
 
-    return false;
+    return (false);
 }
 
 /* TJLAW +3 (pp.1452-1453): attitude control of one U,V axis: TJETLAW,
@@ -357,7 +357,7 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
 {
     if (skip_axis(d, axis))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     d->e    = (axis == 0) ? d->uerror : d->verror;
@@ -383,10 +383,10 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return aftertj(d, axis, end);
+    return (aftertj(d, axis, end));
 }
 
 /* BACKHAND (pp.1449): direct rate. TJx = -(1/ANET) URATEDIF, at 32 s,
@@ -398,7 +398,7 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 
     if (skip_axis(d, axis))
     {
-        return AGC_STATUS_OK;
+        return (AGC_STATUS_OK);
     }
 
     agc_sp_t rate = (axis == 0) ? d->omegau : d->omegav; /* URATEDIF       */
@@ -407,7 +407,7 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 
     if (!AGC_ASSERT(i >= 0 && i < LM_BLOCK_N))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     lm_dp_pair_t p      = lm_dap_mp((agc_sp_t) -d->block[i], rate);
@@ -415,7 +415,7 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 
     d->tj[axis + 1] = lm_dap_ovf(triple) ? p.hi : (agc_sp_t) triple;
 
-    return aftertj(d, axis, end);
+    return (aftertj(d, axis, end));
 }
 
 /* MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.   */
@@ -433,10 +433,10 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
 
     if (!AGC_ASSERT(axis == 0 || axis == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return aftertj(d, axis, end);
+    return (aftertj(d, axis, end));
 }
 
 /* LOOPER (p.1454): run the RETJADR body for V (AXISCTR 1) then U, then
@@ -448,7 +448,7 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
     if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) ||
         !AGC_ASSERT(body <= LM_UV_MINRTN))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     d->retjadr = body;
@@ -477,9 +477,9 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 
         if (end || st != AGC_STATUS_OK)
         {
-            return st;
+            return (st);
         }
     }
 
-    return lm_dap_closeout();
+    return (lm_dap_closeout());
 }

@@ -31,10 +31,10 @@ static agc_status_t p51_phase(void)
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return st;
+    return (st);
 }
 
 /*
@@ -51,22 +51,22 @@ agc_status_t agc_lm_imu_check(void)
 
         if (alm != AGC_STATUS_OK)
         {
-            return alm;
+            return (alm);
         }
 
         const agc_status_t st = agc_exec_gotopooh();
 
-        return (st == AGC_STATUS_OK) ? AGC_STATUS_ALARM : st;
+        return ((st == AGC_STATUS_OK) ? AGC_STATUS_ALARM : st);
     }
 
     agc_flag_set(AGC_FLAG_IMUSE);
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_IMUSE)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return AGC_STATUS_OK;
+    return (AGC_STATUS_OK);
 }
 
 /* P51: IMUCHK, then P51 +2. */
@@ -75,17 +75,17 @@ agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = agc_lm_imu_check();
 
     if (st != AGC_STATUS_OK)
     {
-        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st);
     }
 
-    return agc_job_lm_orientation_acquire_display(ctx);
+    return (agc_job_lm_orientation_acquire_display(ctx));
 }
 
 /* P51 +2: V50N25 R1 00015; V33 P51B, ENTER coarse align. */
@@ -93,17 +93,17 @@ agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_LM_ORIENTATION_MARK_SETUP,
-                       AGC_JOB_LM_ORIENTATION_COARSE);
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
+                        AGC_JOB_LM_ORIENTATION_MARK_SETUP,
+                        AGC_JOB_LM_ORIENTATION_COARSE));
 }
 
 /* ENTER: PHASCHNG, THETAD = 0, GODSPRET V06N22. */
@@ -111,7 +111,7 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = p51_phase();
@@ -124,12 +124,14 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return align_flash(
-        ctx, AGC_DSKY_GODSPRET, VN_GIMBALS, AGC_JOB_LM_ORIENTATION_COARSE_VERB,
-        AGC_JOB_LM_ORIENTATION_COARSE_VERB, AGC_JOB_LM_ORIENTATION_COARSE_VERB);
+    return (align_flash(
+                ctx, AGC_DSKY_GODSPRET, VN_GIMBALS,
+                AGC_JOB_LM_ORIENTATION_COARSE_VERB,
+                AGC_JOB_LM_ORIENTATION_COARSE_VERB,
+                AGC_JOB_LM_ORIENTATION_COARSE_VERB));
 }
 
 /* GODSPRET V41, then CALL COARSE. */
@@ -137,18 +139,18 @@ agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_thetad(0) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
-                       AGC_JOB_LM_ORIENTATION_COARSE_START,
-                       AGC_JOB_LM_ORIENTATION_COARSE_START,
-                       AGC_JOB_LM_ORIENTATION_COARSE_START);
+    return (align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
+                        AGC_JOB_LM_ORIENTATION_COARSE_START,
+                        AGC_JOB_LM_ORIENTATION_COARSE_START,
+                        AGC_JOB_LM_ORIENTATION_COARSE_START));
 }
 
 /* COARSE (IMUCOARS, IMUFINE and their stalls), returning to P51 +2. */
@@ -156,15 +158,15 @@ agc_status_t agc_job_lm_orientation_coarse_start(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(agc_erase_thetad(1) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return align_coarse(AGC_JOB_LM_ORIENTATION_COARSE_DONE);
+    return (align_coarse(AGC_JOB_LM_ORIENTATION_COARSE_DONE));
 }
 
 /* After COARSE: PHASCHNG, P51 +2. */
@@ -172,17 +174,17 @@ agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_status_t st = p51_phase();
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
-    return agc_job_lm_orientation_acquire_display(ctx);
+    return (agc_job_lm_orientation_acquire_display(ctx));
 }
 
 /* P51B: PHASCHNG 00014; NCOARSE; STARIND = 0; P51C. */
@@ -190,7 +192,7 @@ agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = align_phase4(PH_P51B);
@@ -202,12 +204,12 @@ agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_align_ram()->starind = 0;
 
-    return agc_job_lm_orientation_mark_star(ctx);
+    return (agc_job_lm_orientation_mark_star(ctx));
 }
 
 /* P51C: PHASCHNG; AOTMARK (R53); AOTSTALL. */
@@ -215,7 +217,7 @@ agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = p51_phase();
@@ -227,7 +229,7 @@ agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     bool done = false;
@@ -236,10 +238,10 @@ agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
 
     if ((st != AGC_STATUS_OK) || !done)
     {
-        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+        return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st);
     }
 
-    return align_goto(AGC_JOB_LM_ORIENTATION_MARKED);
+    return (align_goto(AGC_JOB_LM_ORIENTATION_MARKED));
 }
 
 /*
@@ -251,12 +253,12 @@ agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
-        return AGC_STATUS_OK; /* CURTAINS */
+        return (AGC_STATUS_OK); /* CURTAINS */
     }
 
     agc_align_ram_t   *ram = agc_align_ram();
@@ -264,18 +266,18 @@ agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     if (ram->starind != 0)
     {
-        return align_planet(ctx, ram->tsight,
-                            AGC_JOB_LM_ORIENTATION_SECOND_STAR);
+        return (align_planet(ctx, ram->tsight,
+                             AGC_JOB_LM_ORIENTATION_SECOND_STAR));
     }
 
     ram->starsav1 = ram->starad[1];
 
-    return align_planet(ctx, ram->tsight, AGC_JOB_LM_ORIENTATION_FIRST_STAR);
+    return (align_planet(ctx, ram->tsight, AGC_JOB_LM_ORIENTATION_FIRST_STAR));
 }
 
 /* P51D after PLANET: PLANVEC; STARIND = 1; P51C +1. */
@@ -283,7 +285,7 @@ agc_status_t agc_job_lm_orientation_first_star(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -291,7 +293,7 @@ agc_status_t agc_job_lm_orientation_first_star(agc_job_ctx_t *ctx)
     ram->planvec = ram->planet_los;
     ram->starind = 1;
 
-    return agc_job_lm_orientation_mark_star(ctx);
+    return (agc_job_lm_orientation_mark_star(ctx));
 }
 
 /* P51E after PLANET: 12D, 6D, STARAD, STARAD +6; CHKSDATA. */
@@ -299,7 +301,7 @@ agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -311,11 +313,11 @@ agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ram->starind == 1))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
-    return agc_align_sighting_data_display(ctx,
-                                           AGC_JOB_LM_ORIENTATION_DATA_CHECKED);
+    return (agc_align_sighting_data_display(ctx,
+                                            AGC_JOB_LM_ORIENTATION_DATA_CHECKED));
 }
 
 /*
@@ -326,12 +328,12 @@ agc_status_t agc_job_lm_orientation_data_checked(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
-        return agc_job_lm_orientation_acquire_display(ctx);
+        return (agc_job_lm_orientation_acquire_display(ctx));
     }
 
     agc_align_ram_t *ram = agc_align_ram();
@@ -344,11 +346,11 @@ agc_status_t agc_job_lm_orientation_data_checked(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return st;
+        return (st);
     }
 
     agc_erase_set_refsmmat(ram->xdc); /* MATMOVE  */
     agc_flag_set(AGC_FLAG_REFSMFLG);
 
-    return agc_exec_gotopooh(); /* FINIS    */
+    return (agc_exec_gotopooh()); /* FINIS    */
 }
