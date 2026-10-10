@@ -243,8 +243,7 @@ agc_sp_t     lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag,
                            agc_sp_t *inindex);  /* GTSQRT (gts.c)          */
 
 /* ---- 1/ACCS (accs.c, accont.c) ------------------------------------------ */
-agc_status_t lm_dap_switch_curves(void);           /* 1/ACCONT                  */
-agc_status_t lm_dap_docked(void);             /* DOCKED inertia fit        */
-agc_status_t lm_dap_spscont(agc_sp_t accdotq);/* SPSCONT .. 1/ACCRET       */
+agc_status_t lm_dap_switch_curves(void);      /* 1/ACCONT (accont.c)       */
+agc_status_t lm_dap_accfix(void);             /* 1/ACCFIX: NOVAC 1/ACCJOB  */
 
 #endif /* LM_DAP_INTERNAL_H */

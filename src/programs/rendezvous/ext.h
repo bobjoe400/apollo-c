@@ -94,6 +94,14 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_ORBIT_DISPLAY_MONITOR            ((agc_job_id_t)0x1139) /* V82REDSP */
 #define AGC_JOB_RENDZ_DISPLAY_TERMINATE          ((agc_job_id_t)0x113A) /* B5OFF */
 #define AGC_JOB_RENDZ_ENDEXT                     ((agc_job_id_t)0x113B) /* ENDEXT as a job */
+/* P76 target delta V (target_delta_v.c) */
+#define AGC_JOB_TARGET_DELTA_V                   ((agc_job_id_t)0x1140) /* P76 */
+#define AGC_JOB_TARGET_DELTA_V_DISPLAY           ((agc_job_id_t)0x1141) /* V06N84 */
+#define AGC_JOB_TARGET_DELTA_V_TIG               ((agc_job_id_t)0x1142) /* V06N33 */
+#define AGC_JOB_TARGET_DELTA_V_UPDATE            ((agc_job_id_t)0x1143) /* OTHPREC, COMPMAT */
+#define AGC_JOB_TARGET_DELTA_V_INTEGRATE         ((agc_job_id_t)0x1144) /* INTSTALL, INTEGRVS */
+#define AGC_JOB_TARGET_DELTA_V_STORE             ((agc_job_id_t)0x1145) /* INTSTALL, MINIRECT, ATOPOTH */
+#define AGC_JOB_TARGET_DELTA_V_END               ((agc_job_id_t)0x1146) /* ENDP76 */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */

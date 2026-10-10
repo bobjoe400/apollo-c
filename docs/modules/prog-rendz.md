@@ -97,9 +97,12 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
   (map in "Renames" below); job ids in ext.h are descriptive.
 * DONE csi_cdh_targeting.c: P32/P72, P33/P73 drivers (agc_job_csi_*, agc_job_cdh_*)
 * DONE tpi_tpm_targeting.c: P34/P74, P35/P75 drivers (agc_job_tpi_*, agc_job_tpm_*); ATIGINC/PTIGINC added to agc_rendz_t
-* TODO orbit_parameter_display.c, rendezvous_parameter_display_csm.c/rendezvous_parameter_display_lm.c, rendz_out_of_plane.c, stable_orbit.c, target_delta_v.c,
+* DONE orbit_parameter_display.c: R30 V82 (SR30.1 agc_orbit_params_compute, MAXCHK, body select, V82 jobs, TICKTEST task, B5OFF/ENDEXT jobs)
+* DONE initvel.c HAVEGUES agc_rendz_havegues (requested by guid lane), COGA kept between calls
+* DONE tests/test_rendezvous.c (17 checks pass when linked with a scratch build of the tree)
+* DONE target_delta_v.c: P76 (agc_job_target_delta_v*, COMPMAT agc_target_delta_v_lv_to_ref); VHFCNT, MRKBUF2 accessors in common.c
+* TODO rendezvous_parameter_display_csm.c/rendezvous_parameter_display_lm.c, rendz_out_of_plane.c, stable_orbit.c,
   ground_track_determination.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, rendezvous_navigation_csm.c, rendezvous_navigation_lm.c
-* TODO tests/test_rendezvous.c
 
 ## Deviations
 

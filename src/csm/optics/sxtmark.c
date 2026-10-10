@@ -129,24 +129,37 @@ agc_status_t agc_sxtmark_reserve(void)
 }
 
 /*
+ * MKRELEAS first half, also R53A's housekeeping when no mark was made
+ * (Comanche p. 771): MARKSTAT = 0 and its VAC area freed.
+ */
+agc_status_t agc_sxtmark_free_vac(void)
+{
+    agc_align_ram_t *ram = agc_align_ram();
+    const uint16_t old = agc_erase_markstat();
+    agc_erase_set_markstat(0);
+    agc_status_t st = AGC_STATUS_OK;
+    if (((old & MS_VAC_MASK) != 0u) && (ram->mkvac_index >= 0)) {
+        st = agc_exec_vac_release(ram->mkvac_index);
+        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    }
+    ram->mkvac_index = -1;
+    (void)AGC_ASSERT(agc_erase_markstat() == 0u);
+    return st;
+}
+
+/*
  * MKRELEAS / MKRLEES (p. 223): MARKSTAT = 0 and the VAC area freed; kill
  * the coarse optics (OPTMODES bit 9 off, OPTIND = -1) and disable the
  * optics error counter (channel 12 bit 2).
  */
 agc_status_t agc_sxtmark_mkreleas(void)
 {
-    agc_align_ram_t *ram = agc_align_ram();
-    const uint16_t old = agc_erase_markstat();
-    agc_erase_set_markstat(0);
-    if (((old & MS_VAC_MASK) != 0u) && (ram->mkvac_index >= 0)) {
-        const agc_status_t st = agc_exec_vac_release(ram->mkvac_index);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    }
-    ram->mkvac_index = -1;
+    agc_status_t st = agc_sxtmark_free_vac();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
     agc_inhint();                                             /* MKRLEES  */
     agc_erase_set_optmodes((uint16_t)(agc_erase_optmodes() & ~OPTM_COARSE_RET));
     agc_erase_set_optind(OPT_NONE);
-    const agc_status_t st = agc_chan_and(012, (uint16_t)~AGC_CH012_ENBOCDUERR);
+    st = agc_chan_and(012, (uint16_t)~AGC_CH012_ENBOCDUERR);
     agc_relint();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return st;

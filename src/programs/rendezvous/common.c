@@ -63,6 +63,40 @@ void agc_erase_set_trkmkcnt(agc_sp_t v)
     rendz_erasable.trkmkcnt = v;
 }
 
+/* VHFCNT (CM): VHF range mark count. */
+agc_sp_t agc_erase_vhfcnt(void)
+{
+    (void)AGC_ASSERT(rendz_erasable.vhfcnt >= AGC_SP_MIN);
+    return rendz_erasable.vhfcnt;
+}
+
+void agc_erase_set_vhfcnt(agc_sp_t v)
+{
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
+        return;
+    }
+    rendz_erasable.vhfcnt = v;
+}
+
+/* MRKBUF2 +index (CM): the second mark buffer; word 0 = -1 marks it
+ * invalid (P76 ENDP76, R22).                                            */
+agc_sp_t agc_erase_mrkbuf2(int index)
+{
+    if (!AGC_ASSERT(index >= 0 && index < 7)) {
+        return 0;
+    }
+    return rendz_erasable.mrkbuf2[index];
+}
+
+void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
+{
+    if (!AGC_ASSERT(index >= 0 && index < 7)
+        || !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
+        return;
+    }
+    rendz_erasable.mrkbuf2[index] = v;
+}
+
 /* Fresh start: all rendezvous erasables zero, earth selected. */
 void agc_rendz_reset(agc_rendz_t *rz)
 {

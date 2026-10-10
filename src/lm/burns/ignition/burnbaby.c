@@ -60,6 +60,7 @@ const ign_table_t *ign_table(void)
 agc_status_t agc_lm_noullage(void)
 {
     (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    (void)AGC_ASSERT(AGC_FLAG_ULLAGFLG != AGC_FLAG_DRIFTDFL);
     return agc_flag_clear(AGC_FLAG_ULLAGFLG);
 }
 
@@ -85,6 +86,7 @@ agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
 {
+    (void)AGC_ASSERT(ctx == NULL || ctx->id == AGC_JOB_BURNBABY);
     return agc_lm_burnbaby(ctx);
 }
 
@@ -109,6 +111,7 @@ agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
 {
+    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
     return agc_lm_burnbaby_countdown(ctx);
 }
 
@@ -203,6 +206,7 @@ agc_status_t agc_task_restore_burn_display(void)
 static agc_status_t ullgnot(void)
 {
     agc_guid_state()->avg.avgexit = ign_table()->avgexit;
+    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
     (void)agc_phase_newphase(4, 2, true);             /* 4.2SPOT, TBASE4        */
     (void)agc_phase_kill(2);                          /* REDO2.17               */
     return agc_task_redo4_2();
@@ -223,6 +227,7 @@ agc_status_t agc_task_tig_30(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     const ign_table_t *t = ign_table();
+    (void)AGC_ASSERT(t->ullage_cs <= SEC5 * 6);
     (void)agc_waitlist_call(SEC24_9, AGC_TASK_TIG_5);
     lm->dispdex = (agc_sp_t)-IGN_CNTDNDEX;            /* START UP CLOKTASK      */
     if (t->ullage_cs > 0) {
@@ -274,6 +279,7 @@ agc_status_t agc_task_ignition_if_enabled(void)
     if (ign_table()->tigtask) {
         return agc_task_tigtask();
     }
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ASTNFLAG));
     return agc_phase_kill(4);                         /* WAITABIT               */
 }
 

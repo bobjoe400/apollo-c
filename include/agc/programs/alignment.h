@@ -270,6 +270,7 @@ agc_status_t agc_ags_set_agsk(agc_dp_t t);
 agc_status_t agc_sxtmark(agc_sp_t nmarks);                /* SXTMARK       */
 agc_status_t agc_sxtmark_reserve(void);                   /* SXTMARK +2    */
 agc_status_t agc_sxtmark_mkreleas(void);                  /* MKRELEAS      */
+agc_status_t agc_sxtmark_free_vac(void);                  /* MARKSTAT = 0  */
 agc_status_t agc_sxtmark_markrupt(void);                  /* MARKRUPT      */
 agc_status_t agc_sxtmark_markcont(void);                  /* MARKCONT      */
 agc_status_t agc_sxtmark_mark2(void);                     /* MARK2/VACSTOR */

@@ -97,6 +97,14 @@ void agc_erase_set_optind(agc_sp_t v)
     }
 }
 
+/* SWSAMPLE: optics mode switch as last sampled by OPTMON (V41 N91 reads
+ * it): +1 computer (CSC), 0 manual, -1 zero optics.                       */
+agc_sp_t agc_erase_swsample(void)
+{
+    (void)AGC_ASSERT(swsample >= -1 && swsample <= 1);
+    return (agc_sp_t)swsample;
+}
+
 /* Optics drive out-counters CDUTCMD (0) / CDUSCMD (1) for the sim, which
  * drains them; 0 stands for the AGC's -0 (no pulses).                    */
 agc_sp_t agc_t4_optics_cmd(int which)

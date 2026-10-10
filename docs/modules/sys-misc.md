@@ -28,8 +28,8 @@ include/agc are declared in `src/io/service/sysmisc_ext.h` (temporary shim, see
 | NORMUNIT/NORMUNX1 (p.1401-02) | vector -> unit, shift 13/0 | agc_rtb_normunit | rtb_ops.c |
 | VECSGNAG (p.1402) | identity in this number model | agc_rtb_vecsgnag | rtb_ops.c |
 | QUALITY1/QUALITY2 (RT8, CM) | URPV B1, E3J22R2M B58 -> J22 term B61 | agc_rtb_quality1/2 | rtb_ops.c |
-| CM downlists (pp.170-180) | static const entry tables, 5 lists | agc_dnlist_csm_control/sublist | src/io/downlink_lists_csm.c |
-| LM downlists | 6 lists | agc_dnlist_lm_control/sublist | src/io/downlink_lists_lm.c |
+| CM downlists (pp.170-180) | static const entry tables, 5 lists | agc_dnlist_csm_control/sublist | src/io/telemetry/downlink_lists_csm.c |
+| LM downlists | 6 lists | agc_dnlist_lm_control/sublist | src/io/telemetry/downlink_lists_lm.c |
 | word count | list -> 100 DP words | agc_dnlist_word_count | src/io/telemetry.c |
 | DODOWNTM, DNPHASE1/2, NEWLIST, SENDID, FETCH2WD, DODNPTR, SNAPLOOP, DODNCHAN, WOZERO, WOTEST (pp.988-997) | per DOWNRUPT write DNTM1/DNTM2 (ch 34/35), CHAN13 bit 7 word order | agc_telem_downrupt + statics | src/io/telemetry.c |
 | DNDUMPI/DNDUMP/DNDUMP1/DNDUMP2 (p.995-996) | erasable dump via V74 | statics in telemetry.c | telemetry.c |
@@ -50,17 +50,17 @@ include/agc are declared in `src/io/service/sysmisc_ext.h` (temporary shim, see
 
 ## Progress
 
-- DONE  RTB op codes (all LM + CM extras incl. QUALITY1/2)  src/io/service/rtb_ops.c  (compile pending)
-- DONE  CM downlink lists  agc_dnlist_csm_control/sublist  src/io/downlink_lists_csm.c
-- DONE  LM downlink lists  agc_dnlist_lm_control/sublist  src/io/downlink_lists_lm.c
-- TODO  telemetry.c
-- TODO  service.c
-- TODO  t4rupt.c / t4rupt_csm.c / t4rupt_lm.c
-- TODO  uplink_update.c
-- TODO  extended verbs
-- TODO  self_check.c
-- TODO  imu_tests.c
-- TODO  interbank.c (comment file)
+- DONE  RTB op codes (all LM + CM extras incl. QUALITY1/2)  src/io/service/rtb_ops.c
+- DONE  CM downlink lists  agc_dnlist_csm_control/sublist  src/io/telemetry/downlink_lists_csm.c
+- DONE  LM downlink lists  agc_dnlist_lm_control/sublist  src/io/telemetry/downlink_lists_lm.c
+- DONE  down-telemetry DODOWNTM..DNDUMP, word count  src/io/telemetry/down_telemetry.c
+- DONE  service.c (compile fixed: EXTVBACT accessors declared in agc/io/service_internal.h)
+- DONE  t4rupt.c / t4rupt_csm.c / t4rupt_lm.c (+ agc_erase_swsample)
+- TODO  extended verbs  src/io/verbs/extended_verbs{,_csm,_lm}.c
+- TODO  uplink_update.c  src/io/verbs/uplink_update.c
+- TODO  self_check.c  src/io/service/self_check.c
+- TODO  systems_test.c (LM P07)  src/lm/systems_test.c
+- TODO  interbank.c (comment file)  src/io/service/interbank.c
 - TODO  tests/test_sysmisc.c
 
 ## Deviations

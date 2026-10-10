@@ -131,7 +131,10 @@ typedef struct agc_rendz {
     agc_dp_t delteeo;         /* DELTEEO: last time step, cs 2^28           */
     agc_dp_t secmax;          /* SECMAX: maximum time step, cs 2^28         */
     agc_sp_t titer;           /* TITER: S33/34.1 iteration bit              */
-    agc_sp_t trkmkcnt;        /* TRKMKCNT: rendezvous tracking marks        */
+    agc_sp_t trkmkcnt;        /* TRKMKCNT (= MARKCTR): tracking marks       */
+    agc_sp_t vhfcnt;          /* VHFCNT (CM): VHF range marks               */
+    agc_sp_t mrkbuf2[7];      /* MRKBUF2 (CM): second mark buffer, raw words
+                               * (time DP, CDUY S T X Z); -1 = invalid      */
 
     /* R36 / R31 / R34 displays */
     agc_dp_t range;           /* RANGE: m 2^29 (R36: Y out of plane)        */
@@ -184,6 +187,11 @@ typedef struct agc_rendz {
  * AVETOMID (nav-integ) and counted by P20.                               */
 agc_sp_t agc_erase_trkmkcnt(void);
 void     agc_erase_set_trkmkcnt(agc_sp_t v);
+/* VHFCNT, MRKBUF2 (CM, owned here; the guidance lane clears them).        */
+agc_sp_t agc_erase_vhfcnt(void);
+void     agc_erase_set_vhfcnt(agc_sp_t v);
+agc_sp_t agc_erase_mrkbuf2(int index);              /* index 0..6        */
+void     agc_erase_set_mrkbuf2(int index, agc_sp_t v);
 
 /* The rendezvous erasables used by the programs (module storage).          */
 agc_rendz_t *agc_rendz_erasable(void);
@@ -421,6 +429,14 @@ agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx);
 agc_status_t agc_job_rendz_display_terminate(agc_job_ctx_t *ctx);
 agc_status_t agc_job_rendz_endext(agc_job_ctx_t *ctx);
 agc_status_t agc_task_ticktest(void);
+/* target_delta_v.c (P76) */
+agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx);
+agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx);
 /* sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);

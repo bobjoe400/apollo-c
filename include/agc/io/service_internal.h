@@ -141,6 +141,8 @@ agc_status_t agc_telem_downrupt(void);              /* DODOWNTM, every 20 ms   *
 agc_status_t agc_telem_start_dump(void);            /* V74: DNTMGOTO = DNDUMPI */
 agc_status_t agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      */
 uint16_t     agc_telem_dumpcnt(void);
+uint16_t     agc_erase_agsword(void);               /* AGSWORD (LM): saved list */
+void         agc_erase_set_agsword(uint16_t v);
 
 /* ======================================================================
  * Service routines (service.c; SERVICE_ROUTINES.agc C pp.1485-1492)
@@ -186,6 +188,7 @@ uint16_t     agc_erase_optmodes(void);           /* OPTMODES (CM)            */
 void         agc_erase_set_optmodes(uint16_t v);
 agc_sp_t     agc_erase_optind(void);             /* OPTIND (CM)              */
 void         agc_erase_set_optind(agc_sp_t v);
+agc_sp_t     agc_erase_swsample(void);           /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
 agc_status_t agc_t4_rr_monitor(void);            /* RRAUTCHK..RRGIMON+GPMATRIX */
 agc_status_t agc_t4_gimbal_matrix(void);         /* GPMATRIX / DAPT4S        */

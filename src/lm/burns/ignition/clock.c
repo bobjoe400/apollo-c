@@ -246,3 +246,133 @@ agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
 }
+
+/* COMFAIL (p.742), (15): no thrust after ignition (DVMON): DV monitor off
+ * (IDLEFLAG), guidance displays suppressed (FLUNDISP), DVCNTR = 4, the
+ * clock started if it is not running (STCLOK1), V97 display, group 4 off. */
+agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_guid_t *g = agc_guid_state();
+    (void)agc_flag_set(AGC_FLAG_IDLEFLAG);
+    (void)agc_flag_set(AGC_FLAG_FLUNDISP);
+    g->lm.dvcntr = DVMON_PASSES;                      /* RESET DVMON            */
+    if (agc_phase_get(6) == 0U) {                     /* CLOCKTASK ACTIVE?      */
+        (void)agc_lm_stclok1();
+    }
+    g->lm.dispdex = (agc_sp_t)-IGN_VB97DEX;
+    (void)AGC_ASSERT(g->lm.dispdex < 0);
+    return agc_phase_change(4, (uint16_t)000004);     /* TURN OFF GROUP 4       */
+}
+
+/* COMFAIL1 (p.742): V97 PROCEED (keep going without thrust): entry (2) --
+ * COMFAIL3 kills the clock (P12, P63, aborts), COMFAIL4 brings back the
+ * countdown (P40, P42); DV monitor and guidance displays reconnected.    */
+agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_guid_lm_t *lm = &agc_guid_state()->lm;
+    lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t)IGN_DISPDEX_KILL
+                                            : (agc_sp_t)-IGN_CNTDNDEX;
+    (void)agc_flag_clear(AGC_FLAG_IDLEFLAG);          /* RECONNECT DV MONITOR   */
+    (void)agc_flag_clear(AGC_FLAG_FLUNDISP);
+    (void)AGC_ASSERT(lm->dispdex != 0);
+    return AGC_STATUS_OK;
+}
+
+/* COMFAIL2 (p.742-743): V97 ENTER (shut down and try again): ZOOM restart
+ * protection off (group 3), ZOOM removed if still to come, engine off
+ * (ENGINOF4), DAP drift bit, the other RCS system (AORBTFLG inverted),
+ * ullage on, TIG-5 in 10 ms (a new V99).
+ * KILLTASK names ZOOM (= P40ZOOMA), so it removes only a ZOOM scheduled by
+ * the 3.3 restart, not P40ZOOM or P63ZOOM (Luminary 099 as flown).       */
+agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    (void)agc_phase_change(3, (uint16_t)000003);
+    agc_inhint();
+    (void)agc_waitlist_kill(AGC_TASK_ZOOM);
+    (void)agc_lm_enginof4();
+    (void)agc_flag_set(AGC_FLAG_DRIFTDFL);
+    if (agc_flag_test(AGC_FLAG_AORBTFLG)) {           /* INVFLAG                */
+        (void)agc_flag_clear(AGC_FLAG_AORBTFLG);
+    } else {
+        (void)agc_flag_set(AGC_FLAG_AORBTFLG);
+    }
+    (void)agc_flag_set(AGC_FLAG_ULLAGFLG);            /* TURN ON ULLAGE         */
+    agc_status_t st = agc_waitlist_call(1, AGC_TASK_TIG_5);
+    agc_relint();
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG));
+    return st;
+}
+
+/* REP40ALM (p.748), (14): flash V05N09 (alarm 1706, program not consistent
+ * with vehicle configuration): V34 P00, V32 again, PROCEED to entry (14). */
+agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    const agc_dsky_cont_t c = { AGC_JOB_GOTOPOOH, AGC_JOB_STAGE_ALARM_PROCEED,
+                                AGC_JOB_STAGE_ALARM_DISPLAY };
+    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    return agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(5, 9), &c);
+}
+
+/* REP40ALM PROCEED (p.748): entry (14): P42 may go on with the LM unstaged
+ * (P42STAGE); P40 shows the alarm again.                                  */
+agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_job_id_t next = ign_table()->alarm_proceed;
+    if (!AGC_ASSERT(next != AGC_JOB_NONE)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_exec_job_yield(next);
+}
+
+/* P40A/P (p.748): +0 from G+N,AUTO = PGNCS control and auto
+ * stabilization; then on the ascent stage (APSFLAG), or in auto-throttle
+ * (channel 30 bit 5 = 0, inverted input), return. Otherwise V50N25
+ * R1 = 00203 "please perform checklist 203": V34 P00, PROCEED check
+ * again, ENTER return anyway (GOBACK).                                     */
+static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
+{
+    bool ok = (agc_imu_gn_auto() == 0);
+    if (ok && !agc_flag_test(AGC_FLAG_APSFLAG)) {
+        ok = (agc_chan_read(030) & AGC_CH030_AUTOTHROT) == 0U;
+    }
+    if (ok) {
+        return agc_exec_job_yield(ret_job);           /* GOBACK                 */
+    }
+    const agc_dsky_cont_t c = { AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE, ret_job };
+    (void)AGC_ASSERT(ret_job != AGC_JOB_NONE);
+    return agc_dsky_display(ctx, AGC_DSKY_GOPERF1, 00203U, &c);   /* TURNITON */
+}
+
+/* P40AUTO (p.748): save the return (TEMPR60), then P40A/P.                */
+agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_guid_state()->lm.auto_control_recycle = ret_job;
+    return auto_control_check(ctx, ret_job);
+}
+
+/* P40A/P recycle (PROCEED on V50N25): check again, same return.           */
+agc_status_t agc_job_auto_control_recycle(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return auto_control_check(ctx, agc_guid_state()->lm.auto_control_recycle);
+}
