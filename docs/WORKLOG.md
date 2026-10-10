@@ -94,3 +94,8 @@
             types and a different agc_conic_apsides signature -> switch to
             agc_nav.h (already told prog-rendz to code against nav-conic names).
             Launching batch B lane prog-align.
+2026-10-10  Second usage-limit cutoff killed 7 wave-2 lanes mid-work.
+            Checkpoint committed. Wave 1 complete. Per user: keep full
+            parallelism. Relaunching all 8 remaining lanes at once:
+            guid-powered, guid-landing, guid-entry, dap-lm, dap-csm,
+            prog-rendz, prog-align, sys-misc.
