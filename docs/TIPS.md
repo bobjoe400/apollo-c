@@ -91,3 +91,6 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   function from a comment, and comments are where the AGC labels must stay.
 * **A shared scratch directory needs per-agent subdirectories.** Two lanes
   overwrote each other's files before that rule existed.
+* **Look labels up exactly.** yaYUL labels start in column 0;
+  `tools/agc_label.py LABEL` finds the definition in both ropes with its
+  comment block, where a substring grep finds every mention.

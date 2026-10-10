@@ -89,3 +89,10 @@ current so a fresh agent can resume without re-reading everything:
 Resuming: if your note already exists when you start, read it and continue
 from the Progress section. Do not restart from scratch and do not rewrite
 files marked DONE unless they fail to compile.
+
+## Looking things up in the AGC source
+
+Use `python3 -I tools/agc_label.py LABEL` for an exact label lookup across
+both ropes (prints file:line, the comment block above, and the code after).
+`--grep REGEX` for anything else. Prefer this over ad-hoc grep/sed/cut
+chains so lookups are exact and repeatable.
