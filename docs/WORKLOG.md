@@ -195,3 +195,10 @@
             as the AGC does. Checker enforces (baseline 780 hard). New lane
             `status-handling` (Opus) runs after translation, before
             integration. Running lanes told to fix their own files.
+2026-10-10  dap-lm DONE (0 stubs), 120 checks, rule-7 clean. Bug fixed:
+            ROT-TOUV U/V swapped in qrjets.c. Integration: dispatch
+            JET_ACCEL_UPDATE/RESET; T4RUPT calls agc_lm_dap_rcsmon() every
+            480 ms; declare agc_erase_m11..m32 publicly; define hand-controller
+            counter accessors. REVIEW: docked 1/ACCS CCS COEFCTR literal
+            reading lands on TORQCONS (check vs page images / yaAGC); BIGAOS
+            stores 2*DB vs comment 1*DB (code followed).
