@@ -23,3 +23,4 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | sys-misc     | IN-PROGRESS | src/io/rtb_ops.c | see docs/modules/sys-misc.md |
 | oracle       | DONE (0 stubs) | tools/oracle/{agc_probe.c,Makefile,README.md,BUILD.md,bin,ropes,cases,yaAGC-src}, docs/modules/oracle.md | yaYUL+yaAGC built; ropes from virtualagc copies (Apollo-11 repo sources do not assemble); SPSIN and interpretive SQRT/SIN/COS cases proven |
 | integrate    | TODO | | |
+| naming       | DONE (phase 2 applied) | tools/gen_rename_cocci.py, tools/rename.cocci; docs/RENAMES.md, docs/RENAMES_inventory.txt; NAMING.md stems; git mv p30.c->external_delta_v.c, p40.c->burn_steering.c, p37.c->return_to_earth.c | 446 identifiers renamed in 87 files, comments byte-identical; compile failures 21 -> 5 (all pre-existing dangling refs); see docs/modules/naming.md |
