@@ -73,3 +73,10 @@
             bug (SpToDecent sign-extension) -> patch note for oracle owner.
             Known deviation: stale DVSIGN on V/SC & UNIT overflow not modelled.
             Launching batch B lane dap-lm.
+2026-10-09  nav-integ DONE (0 stubs). 177 checks; LEO J2-J4 10 min within 46 m,
+            lunar J2/J3/J22/C31 1 h within 19 m, third-body 6 h within 42 m.
+            Integration items: ids STATINT1/STATINT1_STALL/STATEUP_STALL/
+            TASK_STATEINT (integ_pending.h); layering violation ATOPCSM/ATOPLEM
+            call agc_align_svdwn() in src/programs -> move SVDWN to nav;
+            TRKMKCNT accessor needed; agc_state.h comment wrong: RN/VN always
+            2^29 m / 2^7 m/cs, not moon-scaled. Launching batch B lane dap-csm.

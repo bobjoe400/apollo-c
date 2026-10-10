@@ -53,8 +53,8 @@ agc_status_t agc_flagword_set(int word, uint16_t value);
 
 /* ---- state vectors shared by navigation, guidance and programs --------- */
 typedef struct agc_state_vector {
-    agc_vec_t r;          /* position, meters, scale 2^29 earth / 2^27 moon */
-    agc_vec_t v;          /* velocity, m/cs,   scale 2^7  earth / 2^5  moon */
+    agc_vec_t r;          /* position, meters, scale 2^29 always (RN); conic-local copies use 2^27 for moon */
+    agc_vec_t v;          /* velocity, m/cs,   scale 2^7 always (VN); conic-local copies use 2^5 for moon  */
     agc_dp_t  t;          /* time of state, centiseconds, scale 2^28        */
     bool      moon;       /* primary body (MOONFLAG equivalent)             */
 } agc_state_vector_t;
