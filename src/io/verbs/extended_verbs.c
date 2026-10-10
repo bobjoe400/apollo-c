@@ -1,0 +1,574 @@
+/*
+ * extended_verbs.c -- EXTENDED_VERBS.agc, the part common to both vehicles
+ * (Comanche055 pp. 235-262, Luminary099 pp. 261-296): the verb fan
+ * LST2FAN for verbs 40-99, TESTXACT, ALM/END, GOPIN, CHKPOOH, CKMODCAD,
+ * OP/INERT, and the verbs that are the same in both ropes:
+ *   V40 N20  zero the IMU CDUs (VBZERO / IMUZEROK)
+ *   V41 N20  coarse align the IMU from the keyboard (IMUCOARK / ICORK2)
+ *   V42      fine align the IMU with gyro torquing (IMUFINEK / FINEK2)
+ *   V49      start an automatic attitude maneuver (CREWMANU -> R62DISP)
+ *   V50 etc. please-perform verbs (GOLOADLV)
+ *   V55      align the AGC clock (ALINTIME / UPDATIME)
+ *   V64      S-band antenna angles (VB64 -> SBANDANT)
+ *   V67      W-matrix monitor, V69 hardware restart, V74 erasable dump,
+ *   V82      orbit parameters (R30), V89 final attitude (R63), V90 out of
+ *   plane (R36), V91 show-banksum (SHOWSUM).
+ * V70-V73 are the update program (uplink_update.c).  Everything else is
+ * in extended_verbs_csm.c / extended_verbs_lm.c.
+ *
+ * DEVIATION (job): in the AGC GOEXTVB runs on in the CHARIN job.  Pinball
+ * calls agc_extverb() without a job context, so GOEXTVB starts a job
+ * (AGC_JOB_EXTENDED_VERB, CHARIN's priority 30) that runs the fan.  Each
+ * place where a verb waits for the operator or a mode switch (GOXDSPF,
+ * EXDSPRET, IMUSTALL) is a separate continuation job, as
+ * docs/TRANSLATION_GUIDE.md section 4 prescribes.
+ */
+#include <stddef.h>
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/imu/imu.h"
+#include "agc/programs/rendezvous.h"
+#include "agc/io/service_internal.h"
+#include "pending.h"
+
+#define WORD15     077777u
+#define BIT6       000040u
+#define OCT24      000024u   /* EXTVBACT: bits 3 and 5                     */
+#define OC24100    024100u   /* FLAGWRD4: priority displays use the DSKY   */
+#define PRIO4      ((agc_prio_t)004)
+#define PRIO5      ((agc_prio_t)005)
+#define PRIO7      ((agc_prio_t)007)
+#define PRIO10     ((agc_prio_t)010)
+#define PRIO30     ((agc_prio_t)030)
+#define NOUN_ICDU  20        /* N20 ICDU angles                            */
+#define NVSUB_BLANK_BUT_MODE_VERB (-2)   /* CS TWO, TC NVSUB              */
+#define TIME_UPDATE_VERB 23  /* DEC23: load with V23 before the update     */
+#define CLOCK_DELTA_WORD 4   /* DSPTEM2 +1, +2 hold the delta time         */
+
+static uint16_t extvbact;            /* EXTVBACT                           */
+static int      xv_verb;             /* VERBREG at GOEXTVB                 */
+static int      xv_noun;             /* NOUNREG at GOEXTVB                 */
+
+/* ---- EXTVBACT ---------------------------------------------------------- */
+
+uint16_t agc_erase_extvbact(void)
+{
+    (void)AGC_ASSERT(extvbact <= WORD15);
+    return extvbact;
+}
+
+void agc_erase_set_extvbact(uint16_t v)
+{
+    if (AGC_ASSERT(v <= WORD15)) {
+        extvbact = v;
+    }
+}
+
+/* TS EXTVBACT by another program (P61 locks out the extended verbs).     */
+agc_status_t agc_svc_set_extvbact(uint16_t v)
+{
+    if (!AGC_ASSERT(v <= WORD15)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    extvbact = v;
+    return AGC_STATUS_OK;
+}
+
+bool agc_extverb_busy(void)
+{
+    (void)AGC_ASSERT(extvbact <= WORD15);
+    return extvbact != 0u;
+}
+
+int agc_extverb_verb(void)
+{
+    (void)AGC_ASSERT(xv_verb == 0 || (xv_verb >= 40 && xv_verb <= 99));
+    return xv_verb;
+}
+
+int agc_extverb_noun(void)
+{
+    (void)AGC_ASSERT(xv_noun >= 0 && xv_noun <= 99);
+    return xv_noun;
+}
+
+/* ---- common exits ------------------------------------------------------ */
+
+/* GOPIN: TC POSTJUMP, CADR PINBRNCH.                                      */
+agc_status_t agc_extverb_gopin(void)
+{
+    agc_status_t st = agc_dsky_pinbrnch();
+    (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    return st;
+}
+
+/* ALM/END: operator error light, then GOPIN.                              */
+agc_status_t agc_extverb_alm_end(void)
+{
+    agc_status_t st = agc_dsky_falton();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_extverb_gopin();
+}
+
+/* TESTXACT (C p.237 / L p.264): refuse (ALM/END) if an extended verb or a
+ * priority display holds the DSKY; otherwise mark the extended-verb display
+ * system busy (EXTVBACT bits 3, 5) and blank all but MODE and VERB.       */
+agc_status_t agc_extverb_testxact(bool *ok)
+{
+    if (!AGC_ASSERT(ok != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    *ok = false;
+    if (extvbact != 0u || (agc_flagword_get(4) & OC24100) != 0u) {
+        return agc_extverb_alm_end();
+    }
+    extvbact = OCT24;                                   /* SETXTACT        */
+    agc_status_t st = agc_dsky_nvsub_blank(NVSUB_BLANK_BUT_MODE_VERB);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+    *ok = true;
+    return AGC_STATUS_OK;
+}
+
+/* CHKPOOH: true if the major mode is P00 (MODREG +-0), else ALM/END.     */
+bool agc_extverb_chkpooh(void)
+{
+    if (agc_erase_modreg() == 0) {
+        return true;
+    }
+    agc_status_t st = agc_extverb_alm_end();
+    (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    return false;
+}
+
+/* CKMODCAD: true if nobody waits on IMU mode switching (MODECADR = 0),
+ * else ALM/END.                                                           */
+bool agc_extverb_ckmodcad(void)
+{
+    if (agc_erase_modecadr(0) == 0) {
+        return true;
+    }
+    agc_status_t st = agc_extverb_alm_end();
+    (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    return false;
+}
+
+/* GOLOADLV (V50 and the other please-perform verbs): FLASHOFF, then the
+ * same recall as a completed load (LOADLV1).                              */
+agc_status_t agc_extverb_goloadlv(void)
+{
+    agc_status_t st = agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(WORD15 & ~BIT6));
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_dsky_loadlv();
+}
+
+/* TC UPFLAG / DOWNFLAG, ADRES f, TC GOPIN.                               */
+agc_status_t agc_extverb_upflag(agc_flag_id_t f)
+{
+    if (!AGC_ASSERT(agc_flag_valid(f))) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    (void)agc_svc_upflag(f);                     /* new flagword not needed */
+    return agc_extverb_gopin();
+}
+
+agc_status_t agc_extverb_downflag(agc_flag_id_t f)
+{
+    if (!AGC_ASSERT(agc_flag_valid(f))) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    (void)agc_svc_downflag(f);                   /* new flagword not needed */
+    return agc_extverb_gopin();
+}
+
+/* CAF PRIOn, TC NOVAC/FINDVAC, 2CADR job, then ENDOFJOB (return).        */
+agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac)
+{
+    if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio > 0u && prio <= 037u)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_inhint();
+    agc_status_t st = vac ? agc_exec_findvac(prio, job) : agc_exec_novac(prio, job);
+    agc_relint();
+    return st;
+}
+
+/* GOXDSPF (= GOMARKF): flash VERB/NOUN; V34 ends the verb (TERMEXTV).    */
+agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
+                               agc_job_id_t on_proceed, agc_job_id_t on_enter)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb <= 99u && noun <= 99u)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_dsky_cont_t cont = { AGC_JOB_EXTENDED_VERB_END, on_proceed, on_enter };
+    return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun), &cont);
+}
+
+/* EXDSPRET: show our own verb again (VN vv00) and continue at next.      */
+agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb,
+                                   agc_job_id_t next)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 40u && verb <= 99u)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_dsky_cont_t cont = { next, next, next };
+    return agc_dsky_display(ctx, AGC_DSKY_EXDSPRET, agc_dsky_vn(verb, 0), &cont);
+}
+
+/* IMUSTALL with the continuation wake: GOOD or BAD run it now.            */
+static agc_status_t stall_then(agc_job_ctx_t *ctx, agc_job_id_t wake)
+{
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
+    agc_status_t st = agc_imu_stall(wake, &res);
+    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK) {
+        return st;
+    }
+    if (res == AGC_IMU_STALL_SLEEPING) {
+        return AGC_STATUS_OK;                    /* woken at wake           */
+    }
+    if (wake == AGC_JOB_EXTENDED_VERB_GOPIN) {
+        return agc_extverb_gopin();
+    }
+    return agc_dsky_endext();
+}
+
+/* ---- GOEXTVB ----------------------------------------------------------- */
+
+/* GOEXTVB (PINBALL VERBFAN): verb 40-99 keyed; the display system has been
+ * released.  Starts the extended-verb job (see DEVIATION above).         */
+agc_status_t agc_extverb(int verb, int noun)
+{
+    if (!AGC_ASSERT(verb >= 40 && verb <= 99) || !AGC_ASSERT(noun >= 0 && noun <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    xv_verb = verb;
+    xv_noun = noun;
+    return agc_extverb_schedule(PRIO30, AGC_JOB_EXTENDED_VERB, false);
+}
+
+/* VBZERO (V40, C p.238 / L p.265), IMU part: zero the ICDUs, then GOPIN. */
+static agc_status_t verb_zero_imu(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad()) {
+        return AGC_STATUS_OK;
+    }
+    agc_status_t st = agc_imu_zero();                    /* IMUZERO         */
+    if (!AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return st;
+    }
+    return stall_then(ctx, AGC_JOB_EXTENDED_VERB_GOPIN); /* both returns GOPIN */
+}
+
+/* IMUCOARK (V41 N20): load THETAD by V25N22, then ICORK2.                */
+static agc_status_t verb_coarse_imu(agc_job_ctx_t *ctx)
+{
+    bool ok = false;
+    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad()) {
+        return AGC_STATUS_OK;
+    }
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!ok) {
+        return st;
+    }
+    return agc_extverb_flash(ctx, 25, 22, AGC_JOB_KEYBOARD_COARSE_ALIGN,
+                             AGC_JOB_KEYBOARD_COARSE_ALIGN);
+}
+
+/* IMUFINEK (V42): load gyro torquing angles by V25N93.                   */
+static agc_status_t verb_fine_align(agc_job_ctx_t *ctx)
+{
+    bool ok = false;
+    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad()) {
+        return AGC_STATUS_OK;
+    }
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!ok) {
+        return st;
+    }
+    return agc_extverb_flash(ctx, 25, 93, AGC_JOB_KEYBOARD_FINE_ALIGN,
+                             AGC_JOB_KEYBOARD_FINE_ALIGN);
+}
+
+/* ALINTIME (V55): load the clock increment by V25N24 (LM: as R33 at
+ * priority 7).                                                            */
+static agc_status_t verb_clock_align(agc_job_ctx_t *ctx)
+{
+    bool ok = false;
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!AGC_ASSERT(ctx != NULL) || !ok) {
+        return st;
+    }
+    if (agc_state_vehicle() == AGC_VEHICLE_LM) {
+        st = agc_exec_prio_change(PRIO7);
+        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    }
+    return agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END,
+                             AGC_JOB_CLOCK_ALIGN_UPDATE);
+}
+
+/* TESTXACT (and CHKPOOH when pooh), then schedule job at prio.           */
+static agc_status_t xact_and_schedule(bool pooh, agc_prio_t prio, agc_job_id_t job)
+{
+    bool ok = false;
+    if (pooh && !agc_extverb_chkpooh()) {
+        return AGC_STATUS_OK;
+    }
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!ok) {
+        return st;
+    }
+    (void)AGC_ASSERT(job != AGC_JOB_NONE);
+    return agc_extverb_schedule(prio, job, true);       /* FINDVAC         */
+}
+
+/* V82PERF: R30 runs on in this job at priority 7 (V82CALL must not be a
+ * FINDVAC job).                                                           */
+static agc_status_t verb_orbit_parameters(agc_job_ctx_t *ctx)
+{
+    bool ok = false;
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!AGC_ASSERT(ctx != NULL) || !ok) {
+        return st;
+    }
+    st = agc_exec_prio_change(PRIO7);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_job_orbit_parameter_display(ctx);        /* POSTJUMP V82CALL */
+}
+
+/* VERB69: force a hardware restart (the AGC does TC VERB69, a TC trap).  */
+static agc_status_t verb_hardware_restart(void)
+{
+    agc_status_t st = agc_rupt_go();
+    (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    return st;
+}
+
+/* V74 DNEDUMP: replace the downlist by the erasable dump.                */
+static agc_status_t verb_erasable_dump(void)
+{
+    agc_status_t st = agc_telem_start_dump();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_extverb_gopin();
+}
+
+/* SDISPLAY / NOKILL: flash V05N01 with R1-R3 = SKEEP1-3 (sum, bank,
+ * bugger word).  V34 ends, V33 sums the next bank, ENTER shows it again.  */
+static agc_status_t banksum_display(const agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_dsky_cont_t cont = { AGC_JOB_SHOW_BANKSUM_END, AGC_JOB_SHOW_BANKSUM_NEXT,
+                             AGC_JOB_SHOW_BANKSUM_DISPLAY };
+    return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(5, 1), &cont);
+}
+
+/* SHOWSUM (V91, C p.258 / L p.288): P00 only; turn self-check off and sum
+ * the first bank (LM: at priority 7 so other CHARINs can run).            */
+static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
+{
+    bool ok = false;
+    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_chkpooh()) {
+        return AGC_STATUS_OK;
+    }
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!ok) {
+        return st;
+    }
+    if (agc_state_vehicle() == AGC_VEHICLE_LM) {
+        st = agc_exec_prio_change(PRIO7);
+        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    }
+    st = agc_selfcheck_showsum_start();             /* SKEEP6 = +1, SMODE = 0 */
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return banksum_display(ctx);
+}
+
+/* The shared verbs; NOT_FOUND for the vehicle fans.                       */
+static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
+{
+    bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+    (void)AGC_ASSERT(ctx != NULL);
+    switch (verb) {
+    case 40: return (xv_noun == NOUN_ICDU) ? verb_zero_imu(ctx) : AGC_STATUS_NOT_FOUND;
+    case 41: return (xv_noun == NOUN_ICDU) ? verb_coarse_imu(ctx) : AGC_STATUS_NOT_FOUND;
+    case 42: return verb_fine_align(ctx);
+    case 49: return xact_and_schedule(true, PRIO10, AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY);
+    case 50: case 97: case 99:
+             return agc_extverb_goloadlv();
+    case 55: return verb_clock_align(ctx);
+    case 64: return xact_and_schedule(true, PRIO4, lm ? AGC_JOB_SBANDANT_LM
+                                                      : AGC_JOB_SBANDANT_CM);
+    case 67: return xact_and_schedule(false, PRIO5, AGC_JOB_W_MATRIX_MONITOR);
+    case 69: return verb_hardware_restart();
+    case 70: case 71: case 72: case 73:
+             return agc_uplink_update_start(ctx, verb);
+    case 74: return verb_erasable_dump();
+    case 82: return verb_orbit_parameters(ctx);
+    case 89: return xact_and_schedule(true, PRIO10, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE);
+    case 90: return xact_and_schedule(false, PRIO7, AGC_JOB_OUT_OF_PLANE_DISPLAY);
+    case 91: return verb_show_banksum(ctx);
+    default: break;
+    }
+    return AGC_STATUS_NOT_FOUND;
+}
+
+/* LST2FAN (C p.236 / L p.262), run as the extended-verb job.             */
+agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(xv_verb >= 40 && xv_verb <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_status_t st = fan_shared(ctx, xv_verb);
+    if (st != AGC_STATUS_NOT_FOUND) {
+        return st;
+    }
+    if (agc_state_vehicle() == AGC_VEHICLE_LM) {
+        return agc_extverb_lm(ctx, xv_verb);
+    }
+    return agc_extverb_csm(ctx, xv_verb);
+}
+
+/* ---- continuation jobs ------------------------------------------------- */
+
+/* ENDEXT (TERMEXTV, ENDEXTVB) as a job: release the display systems.     */
+agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
+{
+    (void)AGC_ASSERT(ctx != NULL);
+    agc_status_t st = agc_dsky_endext();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return st;
+}
+
+/* GOPIN as a job (after an IMUSTALL in V40).                              */
+agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx)
+{
+    (void)AGC_ASSERT(ctx != NULL);
+    return agc_extverb_gopin();
+}
+
+/* ICORK2 (V41): show V41 again, then coarse align.                       */
+agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_extverb_redisplay(ctx, 41, AGC_JOB_KEYBOARD_COARSE_DRIVE);
+}
+
+/* ICORK2 +3: IMUCOARS to THETAD, IMUSTALL, ENDEXT either way.            */
+agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx)
+{
+    uint16_t thetad[3];
+    for (int i = 0; i < 3; i++) {
+        thetad[i] = agc_erase_thetad(i);
+    }
+    agc_status_t st = agc_imu_coarse(thetad);
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return agc_dsky_endext();
+    }
+    return stall_then(ctx, AGC_JOB_EXTENDED_VERB_END);
+}
+
+/* IMUFINEK after the load: show V42 again.                                */
+agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_extverb_redisplay(ctx, 42, AGC_JOB_KEYBOARD_FINE_MODE);
+}
+
+/* IMUFINE, IMUSTALL: bad -> ENDEXT, good -> FINEK2.                       */
+agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx)
+{
+    agc_status_t st = agc_imu_fine();
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return agc_dsky_endext();
+    }
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
+    st = agc_imu_stall(AGC_JOB_KEYBOARD_GYRO_TORQUE, &res);
+    if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING) {
+        return st;
+    }
+    return agc_job_keyboard_gyro_torque(ctx);
+}
+
+/* FINEK2: torque the gyros by the angles pinball left in OGC, IGC, MGC;
+ * IMUSTALL; ENDEXT.  Entered after the fine-align stall (bad -> ENDEXT). */
+agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)
+        || agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_BAD) {
+        return agc_dsky_endext();
+    }
+    agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_KEYBOARD_GYRO_TORQUE);
+    if (st == AGC_STATUS_BUSY) {
+        return AGC_STATUS_OK;                    /* gyros busy: woken again */
+    }
+    if (st != AGC_STATUS_OK) {
+        return agc_dsky_endext();
+    }
+    return stall_then(ctx, AGC_JOB_EXTENDED_VERB_END);
+}
+
+/* Signed value of a 15-bit ones'-complement word.                        */
+static int32_t ones_value(uint16_t w)
+{
+    (void)AGC_ASSERT(w <= WORD15);
+    return ((w & 040000u) != 0u) ? -(int32_t)(WORD15 - w) : (int32_t)w;
+}
+
+/* UPDATIME (V55): only after a V23 load, add the increment in DSPTEM2 +1,
+ * +2 (cs, DP) to TIME2,TIME1 (TPAGREE gives sign agreement; the counter
+ * wraps at 2^28 like TIME2).                                              */
+agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
+{
+    uint8_t verb = 0;
+    uint8_t noun = 0;
+    agc_status_t st = agc_dsky_response(&verb, &noun);
+    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK || verb != TIME_UPDATE_VERB) {
+        return agc_dsky_endext();                /* not a V23 data load     */
+    }
+    int32_t delta = ones_value(agc_dsky_dsptem(CLOCK_DELTA_WORD)) * 040000
+                  + ones_value(agc_dsky_dsptem(CLOCK_DELTA_WORD + 1));
+    (void)AGC_ASSERT(delta > -(int32_t)AGC_TIME_MODULUS_CS);
+    agc_inhint();
+    int64_t t = (int64_t)agc_time_now_cs() + (int64_t)delta;
+    t = ((t % (int64_t)AGC_TIME_MODULUS_CS) + (int64_t)AGC_TIME_MODULUS_CS)
+        % (int64_t)AGC_TIME_MODULUS_CS;
+    st = agc_time_set_cs((uint32_t)t);
+    agc_relint();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_dsky_endext();                    /* UPDTMEND                */
+}
+
+/* NOKILL (ENTER on the V05N01): show the same bank again.                 */
+agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx)
+{
+    (void)AGC_ASSERT(ctx != NULL);
+    return banksum_display(ctx);
+}
+
+/* NXTBNK (V33): sum the next bank (after the last: bank 0 again, ENDSUMS
+ * with SKEEP6 = +1 -> STSHOSUM) and show it.                              */
+agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
+{
+    agc_status_t st = agc_selfcheck_showsum_next();
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return agc_dsky_endext();
+    }
+    return banksum_display(ctx);
+}
+
+/* V34: SKEEP1 = SELFADRS (self-check restarts from SELFCHK), ENDEXT.     */
+agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
+{
+    (void)AGC_ASSERT(ctx != NULL);
+    agc_status_t st = agc_selfcheck_showsum_end();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_dsky_endext();
+}

@@ -131,8 +131,10 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
     tdv_moonflag(&tdv_work);
     rz_integrvs_in_t in;
     in.moon = (tdv_work.x2 != 0);
-    in.vcv = agc_vec_shr(tdv_work.vnew, tdv_work.x2);
-    in.rcv = agc_vec_shr(tdv_work.ratt, tdv_work.x2);
+    /* VSR* 0,2: count 0 - X2, i.e. shift left 2 about the moon (2^29 ->
+     * 2^27, 2^7 -> 2^5).                                                */
+    in.vcv = agc_vec_shl(&ip, tdv_work.vnew, tdv_work.x2);
+    in.rcv = agc_vec_shl(&ip, tdv_work.ratt, tdv_work.x2);
     in.tet = agc_erase_tig();
     in.conic = false;
     in.tdec1 = rz_is_csm() ? agc_erase_tetcsm() : agc_erase_tetlem();

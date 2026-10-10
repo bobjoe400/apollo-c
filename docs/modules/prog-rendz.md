@@ -101,6 +101,7 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
 * DONE initvel.c HAVEGUES agc_rendz_havegues (requested by guid lane), COGA kept between calls
 * DONE tests/test_rendezvous.c (17 checks pass when linked with a scratch build of the tree)
 * DONE target_delta_v.c: P76 (agc_job_target_delta_v*, COMPMAT agc_target_delta_v_lv_to_ref); VHFCNT, MRKBUF2 accessors in common.c
+* DONE ground_track_determination.c: P21 (agc_job_ground_track_*, P21VSAVE agc_ground_track_determination_flight_path); rz_dsptem1_dp in glue.c
 * TODO rendezvous_parameter_display_csm.c/rendezvous_parameter_display_lm.c, rendz_out_of_plane.c, stable_orbit.c,
   ground_track_determination.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, rendezvous_navigation_csm.c, rendezvous_navigation_lm.c
 

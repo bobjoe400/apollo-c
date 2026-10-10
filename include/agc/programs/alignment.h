@@ -294,25 +294,90 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
 agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star,
                            agc_vec_t *ave);
 
-/* ---- CSM P51/P52/P53/P54 and R51-R53, R56 (src/csm/) ---------------------- */
+/* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
+/* SXTSM line of sight of one mark (half-unit, SM axes).                   */
 agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m,
                            agc_vec_t *los_sm);            /* SXTSM         */
-/* SR52.1: compute SAC/PAC for the target; result 0 = trunnion > 90 deg,
- * 1 = > 50 deg, 2 = < 50 deg (the AGC's three returns).                   */
-agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, agc_job_id_t resume_job,
-                            int *result);
+/* SXTSM as called: TSIGHT = first mark time, MARKDOWN / MARK2DWN, LOS.     */
+agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm);
+/* SR52.1: AOPTIME = now + 1.3 s unless resumed after an integration wait;
+ * SAC/PAC for the target; result 0 = trunnion > 90 deg, 1 = > 50 deg,
+ * 2 = < 50 deg (the AGC's three returns).                                 */
+agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed,
+                            agc_job_id_t resume_job, int *result);
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job,
                               agc_vec_t *los);            /* ADVTRACK      */
 agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los,
                           agc_dp_t angle);                /* ROTA          */
+/* Interpretive subroutines entered from a job: ret is the job continued
+ * as on return (SAVQR52 / R53EXIT).                                       */
+agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx,
+                                             agc_job_id_t ret);         /* R52    */
+agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx,
+                                                agc_job_id_t ret);      /* ADVORB */
+agc_status_t agc_csm_sighting_mark(const agc_job_ctx_t *ctx,
+                                   agc_job_id_t ret);                   /* R53    */
+agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
+                                                 agc_job_id_t ret);     /* R56    */
 
 /* ---- LM P51/P52/P57, R51, R52, R59 (src/lm/) ------------------------------ */
 
 /* ==== job and task entry points (BEGIN generated list) ==== */
+/* src/csm/alignment/fine_align.c */
+agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_star_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_star_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_data_checked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_torqued(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_fine_align_recheck(agc_job_ctx_t *ctx);
+/* src/csm/alignment/imu_orientation_determination.c */
+agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_acquire_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_coarse(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_coarse_verb(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_first_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_second_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_orientation_data_checked(agc_job_ctx_t *ctx);
+/* src/csm/alignment/imu_realign.c */
+agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx);
+/* src/csm/optics/auto_optics_positioning.c */
+agc_status_t agc_job_auto_optics_positioning_resume(agc_job_ctx_t *ctx);
+agc_status_t agc_job_auto_optics_positioning_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_job_auto_optics_positioning_delayed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_auto_optics_positioning_tracked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_auto_optics_sighting(agc_job_ctx_t *ctx);
+agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx);
 /* src/csm/optics/s_band_antenna.c */
 agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx);
+/* src/csm/optics/sighting_mark.c */
+agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_sighting_mark_code_clean(agc_job_ctx_t *ctx);
+agc_status_t agc_job_sighting_mark_code_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx);
+agc_status_t agc_job_alternate_los_angles_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_alternate_los_reserve(agc_job_ctx_t *ctx);
+agc_status_t agc_job_alternate_los_mark_request(agc_job_ctx_t *ctx);
+agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx);
 /* src/csm/optics/sxtmark.c */
 agc_status_t agc_task_markdif(void);
 agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx);
@@ -328,10 +393,6 @@ agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx);
 /* src/programs/alignment/common.c */
 agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx);
-/* src/programs/alignment/planet.c */
-agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx);
-agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx);
-agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx);
 /* src/programs/alignment/imu_realign.c */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx);
 agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx);
@@ -349,6 +410,10 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx);
+/* src/programs/alignment/planet.c */
+agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx);
+agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx);
+agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx);
 /* src/programs/alignment/sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);

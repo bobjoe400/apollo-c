@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include "agc/core/status.h"
 #include "agc/core/word.h"
+#include "agc/core/state.h"
 #include "agc/exec/exec.h"
 
 /* ---- jobs owned by sys-misc (0x0340..0x037F) --------------------------- */
@@ -47,8 +48,6 @@
 #define AGC_JOB_UPLINK_UPDATE_EXECUTE     ((agc_job_id_t)0x0364) /* V33 after the V21N01 index */
 /* reused names from other lanes' shims (same value) */
 #define AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY ((agc_job_id_t)0x331)  /* R62DISP (V49)  */
-#define AGC_JOB_SBANDANT_CM_RECYCLE       ((agc_job_id_t)0x0A1F) /* SBANDANT (CM V64)     */
-#define AGC_JOB_SBANDANT_LM_RECYCLE       ((agc_job_id_t)0x0A20) /* SBANDANT (LM V64)     */
 #define AGC_JOB_STRKTSTI                  ((agc_job_id_t)0x0D21) /* V68 stroke test init  */
 #define AGC_JOB_COMPVER                   ((agc_job_id_t)0x0E29) /* V65 GCOMPVER (4.15)   */
 /* entries of other lanes that have no id yet (names from NAMING.md)       */
@@ -62,6 +61,8 @@
 #define AGC_JOB_SYSTEMS_TEST              ((agc_job_id_t)0x036F) /* REDO (V92, P07)         */
 #define AGC_JOB_AGS_INITIALIZATION        ((agc_job_id_t)0x0370) /* AGSINIT (LM V47, R47)   */
 #define AGC_JOB_RR_LOS_DISPLAY            ((agc_job_id_t)0x0371) /* RRLOSDSP (LM V85)       */
+#define AGC_JOB_SBANDANT_CM               ((agc_job_id_t)0x0372) /* SBANDANT (CM V64), agc_job_sbandant_cm */
+#define AGC_JOB_SBANDANT_LM               ((agc_job_id_t)0x0373) /* SBANDANT (LM V64), agc_job_sbandant_lm */
 #define AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY ((agc_task_id_t)0x0368) /* R31CALL (LM V83)   */
 /* tasks owned by sys-misc */
 #define AGC_TASK_ATTITUDE_ERROR_OUTPUT    ((agc_task_id_t)0x0307) /* V43 ATTCK1 / ATTCK2    */

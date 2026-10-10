@@ -258,3 +258,40 @@ void rz_set_option(int which, uint16_t v)
     }
     (void)agc_dsky_set_dsptem(3 + which, v);
 }
+
+/* A raw 15-bit ones' complement word as a signed SP value. */
+static agc_sp_t rz_word_to_sp(uint16_t w)
+{
+    (void)AGC_ASSERT(w <= 077777U);
+    if ((w & 040000U) != 0U) {
+        return (agc_sp_t)(-(agc_sp_t)((uint16_t)~w & 037777U));
+    }
+    return (agc_sp_t)w;
+}
+
+/* A signed SP value as a raw 15-bit ones' complement word. */
+static uint16_t rz_sp_to_word(agc_sp_t v)
+{
+    (void)AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    if (v < 0) {
+        return (uint16_t)(~(uint16_t)(-v) & 077777U);
+    }
+    return (uint16_t)v;
+}
+
+/* DSPTEM1, DSPTEM1 +1 (index 0, 1) as a DP. */
+agc_dp_t rz_dsptem1_dp(void)
+{
+    agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(0));
+    agc_sp_t lo = rz_word_to_sp(agc_dsky_dsptem(1));
+    return agc_dp_pack(hi, lo);
+}
+
+void rz_set_dsptem1_dp(agc_dp_t v)
+{
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)) {
+        return;
+    }
+    (void)agc_dsky_set_dsptem(0, rz_sp_to_word(agc_dp_high(v)));
+    (void)agc_dsky_set_dsptem(1, rz_sp_to_word(agc_dp_low(v)));
+}

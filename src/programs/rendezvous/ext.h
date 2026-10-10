@@ -102,6 +102,31 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_TARGET_DELTA_V_INTEGRATE         ((agc_job_id_t)0x1144) /* INTSTALL, INTEGRVS */
 #define AGC_JOB_TARGET_DELTA_V_STORE             ((agc_job_id_t)0x1145) /* INTSTALL, MINIRECT, ATOPOTH */
 #define AGC_JOB_TARGET_DELTA_V_END               ((agc_job_id_t)0x1146) /* ENDP76 */
+/* P21 ground track determination (ground_track_determination.c) */
+#define AGC_JOB_GROUND_TRACK_DETERMINATION       ((agc_job_id_t)0x1148) /* PROG21 */
+#define AGC_JOB_GROUND_TRACK_VEHICLE             ((agc_job_id_t)0x1149) /* GOPERF4 option 2 */
+#define AGC_JOB_GROUND_TRACK_TIME                ((agc_job_id_t)0x114A) /* P21PROG1 V06N34 */
+#define AGC_JOB_GROUND_TRACK_COMPUTE             ((agc_job_id_t)0x114B) /* INTSTALL .. V06N43 */
+#define AGC_JOB_GROUND_TRACK_RECYCLE             ((agc_job_id_t)0x114C) /* V32 on V06N43 */
+/* P38/P78 stable orbit rendezvous, P39/P79 midcourse (stable_orbit.c) */
+#define AGC_JOB_STABLE_ORBIT_RENDEZVOUS          ((agc_job_id_t)0x1150) /* P38 */
+#define AGC_JOB_STABLE_ORBIT_RENDEZVOUS_OTHER_VEHICLE ((agc_job_id_t)0x1151) /* P78 */
+#define AGC_JOB_STABLE_ORBIT_TIG                 ((agc_job_id_t)0x1152) /* after V06N33 */
+#define AGC_JOB_STABLE_ORBIT_CENTANG             ((agc_job_id_t)0x1153) /* V06N55 GOFLASHR */
+#define AGC_JOB_STABLE_ORBIT_OPTION              ((agc_job_id_t)0x1154) /* OPTION1 = 5, OPTION2 = 1, V04N06 */
+#define AGC_JOB_STABLE_ORBIT_OPTION_DISPLAY      ((agc_job_id_t)0x1155) /* V04N06 recycle */
+#define AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN       ((agc_job_id_t)0x1156) /* SOI (OPTN1) / SOR */
+#define AGC_JOB_STABLE_ORBIT_DELTAR              ((agc_job_id_t)0x1157) /* V06N57 GOFLASHR */
+#define AGC_JOB_STABLE_ORBIT_INTERCEPT_TIME      ((agc_job_id_t)0x1158) /* V06N34 */
+#define AGC_JOB_STABLE_ORBIT_START               ((agc_job_id_t)0x1159) /* JUNCTN1 */
+#define AGC_JOB_STABLE_ORBIT_RECYCLE             ((agc_job_id_t)0x115A) /* RECYCLE */
+#define AGC_JOB_STABLE_ORBIT_TARGET              ((agc_job_id_t)0x115B) /* MAINRTNE */
+#define AGC_JOB_STABLE_ORBIT_DV_LV               ((agc_job_id_t)0x115C) /* DSPLY81 */
+#define AGC_JOB_STABLE_ORBIT_DV_ACCEPTED         ((agc_job_id_t)0x115D) /* after V06N81 */
+#define AGC_JOB_STABLE_ORBIT_MIDCOURSE           ((agc_job_id_t)0x115E) /* P39 */
+#define AGC_JOB_STABLE_ORBIT_MIDCOURSE_OTHER_VEHICLE ((agc_job_id_t)0x115F) /* P79 */
+#define AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE   ((agc_job_id_t)0x1160) /* P39/P79B */
+#define AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE   ((agc_job_id_t)0x1161) /* P39/P79B PRECSET */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */

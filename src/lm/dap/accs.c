@@ -64,6 +64,7 @@ static agc_sp_t mass_hi(void)
 {
     agc_dp_t m = agc_guid_state()->lm.mass;
     (void)AGC_ASSERT(m >= 0);
+    (void)AGC_ASSERT(m <= AGC_DP_MAX);
     return (agc_sp_t)(m / 16384);          /* major word of MASS          */
 }
 
@@ -185,6 +186,7 @@ static agc_status_t lresc(lm_dap_t *d)
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
     agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1);
     (void)AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX);
+    (void)AGC_ASSERT(abdelv >= 0);
     return spscont(d, q);
 }
 
@@ -231,6 +233,7 @@ static agc_status_t docked(lm_dap_t *d)
     d->jacc[2] = d->jacc[1];
     d->coeffq = (agc_sp_t)-AC_07071;
     d->coeffr = AC_07071;
+    (void)AGC_ASSERT(d->jacc[1] >= 0);
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg);
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
     return spscont(d, d->accdotr);                       /* TCF SPSCONT    */
@@ -242,6 +245,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
 {
     agc_sp_t rem = 0;
     int base = descent ? 1 : 4;
+    (void)AGC_ASSERT(agc_erase_lemmass() > 0);
     for (int j = 2; j >= 0; j--) {                       /* R, Q, P        */
         d->jacc[j] = fit_row(base + j, &rem);
     }
@@ -256,6 +260,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
         return AGC_STATUS_OK;
     }
     d->l_pvt_cg = fit_row(0, &rem);
+    (void)AGC_ASSERT(d->jacc[3] > 0);
     return lresc(d);
 }
 

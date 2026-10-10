@@ -30,10 +30,22 @@ Language: C11, no extensions. Build flags (Makefile):
 6. **Smallest scope.** Declare variables where used. Module-private state is
    `static` in its `.c` file. Shared AGC erasables are accessed through the
    accessor API in the core headers, not via `extern` globals.
-7. **Check returns, validate params.** Every non-void call's return is used
-   or explicitly `(void)`-cast with a comment. Every function validates its
-   inputs (pointer non-null, enum in range, scaled values in range) with
-   `AGC_ASSERT`.
+7. **Check returns, validate params.** Every non-void call's return is
+   used. **Casting an `agc_status_t` to `(void)` is forbidden** in src/
+   (tools/check_rules.py reports it as a hard violation). Two consequences:
+   * If an operation cannot fail when called correctly (setting a flag by
+     enum, OR-ing a constant mask into a channel, a phase change with
+     constant codes, clearing OVFIND), it returns `void` and validates its
+     arguments with `AGC_ASSERT` internally. Do not return a status nobody
+     can act on.
+   * If an operation can fail (waitlist full, no VAC area, no core set,
+     bad erasable address, no convergence), the caller does what the AGC
+     does at that site: raise the AGC's alarm/bailout/poodoo, or propagate
+     the status to its own caller. Read the AGC source for the failure
+     path; it is usually explicit (TC ABORT / OCT 1203).
+   `(void)` on a standard-library call (fprintf in the sim) is still
+   allowed with a comment. Every function validates its inputs (pointer
+   non-null, enum in range, scaled values in range) with `AGC_ASSERT`.
 8. **Limited preprocessor.** Headers: include guards. Macros: only object-like
    constants and `AGC_ASSERT`. No token pasting, no variadics, no recursive
    macros, no function-like macros that hide control flow. Conditional

@@ -84,6 +84,7 @@ static agc_sp_t do1net_plus(acc_work_t *w, agc_sp_t a)
     w->inv = invert(w->anet);
     w->anet = funtem;
     (void)AGC_ASSERT(funtem > 0);
+    (void)AGC_ASSERT(w->inv >= 0);
     return lm_dap_dv(lm_dap_mp((agc_sp_t)-AA_BIT9, w->inv), funtem);
 }
 
@@ -123,6 +124,7 @@ static void p_axis(lm_dap_t *d)
     d->block[5] = LM_POSMAX;
     agc_relint();
     (void)AGC_ASSERT(funtem > 0);
+    (void)AGC_ASSERT(d->block[4] == LM_POSMAX);
 }
 
 /* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered flight: deadbands.       */
@@ -143,6 +145,7 @@ static void db_bigaos(const lm_dap_t *d, acc_work_t *w)
     w->t[T_DBB1 + w->s] = db1;                           /* DBONE          */
     w->t[T_DBB3 + w->ns] = w->dbval2;                    /* -.75 DB        */
     (void)AGC_ASSERT(w->absaos > AA_BIT9);
+    (void)AGC_ASSERT(w->t[T_FLAT] == 0);
 }
 
 /* NOTMUCH (p.1500): |AOS| <= AMIN: ACOAST = AMIN both ways; powered
@@ -162,6 +165,7 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
         w->t[T_DBB4] = d->db;
     }
     (void)AGC_ASSERT(w->absaos <= AA_BIT9);
+    (void)AGC_ASSERT(w->t[T_DBB3] >= 0 && w->t[T_DBB4] >= 0);
 }
 
 /* SKIPDB1 overflow branch (p.1500): ANET rescaled to pi.                 */
@@ -171,6 +175,7 @@ static agc_sp_t max_rescaled(acc_work_t *w, agc_sp_t jaccu)
     w->anet = lm_dap_sat((int32_t)anet_pi + AA_BIT8);    /* 1 + .. at 2^7  */
     w->inv = lm_dap_mphi(invert(anet_pi), AA_BIT14);     /* at 2^7/pi      */
     (void)AGC_ASSERT(w->anet > 0);
+    (void)AGC_ASSERT(anet_pi > 0);
     return lm_dap_dv(lm_dap_mp((agc_sp_t)-AA_BIT8, w->inv), w->anet);
 }
 
@@ -180,6 +185,8 @@ static agc_sp_t max_rescaled(acc_work_t *w, agc_sp_t jaccu)
 static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 {
     agc_sp_t aos = (w->uv == 0) ? d->aosu : d->aosv;
+    (void)AGC_ASSERT(w->uv == 0 || w->uv == 1);
+    (void)AGC_ASSERT(aos >= LM_NEGMAX && aos <= LM_POSMAX);
     w->s = (aos < 0) ? 1 : 0;
     w->ns = -w->s;
     w->absaos = (agc_sp_t)((aos < 0) ? -aos : aos);
@@ -222,6 +229,7 @@ static void axis_against_aos(const lm_dap_t *d, acc_work_t *w)
     agc_sp_t jaccu = d->jacc[3];
     agc_sp_t acc = anet_minus(w, lm_dap_sat(2 * (int32_t)jaccu - w->absaos));
     agc_sp_t lsave = acc;                                 /* TS L           */
+    (void)AGC_ASSERT(w->s == -w->ns);
     w->t[T_Z1 + 2 + w->s] = acc;
     w->t[T_ATEM1 + 2 + w->s] = w->inv;
     w->anet = lm_dap_sat((int32_t)jaccu - w->absaos);
@@ -342,5 +350,6 @@ agc_status_t lm_dap_switch_curves(void)
     }
     store_deadbands(d, &w);
     (void)AGC_ASSERT(d->db >= 0);
+    (void)AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1);
     return AGC_STATUS_OK;
 }

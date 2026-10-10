@@ -4,6 +4,7 @@
  * same text):
  *   S33/34.1   TPI time search for a given LOS elevation (pp.469-473)
  *   S34/35.2   rendezvous target and required velocity (pp.475-476)
+ *   S3435.25   intercept velocity from a given target (p.475-476)
  *   S34/35.3   crew overwrite of the delta V (p.477)
  *   S34/35.4   NOVRWRT, delta V in line-of-sight axes (pp.477-478)
  *   P34/P74E   the TPI computation proper (pp.464-465)
@@ -252,12 +253,8 @@ agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
 }
 
 /* ---- S34/35.2 (pp.475-476) -------------------------------------------------
- * Passive to TPASS4 (conic if NN = 0, else precision): RTARG, VPASS4.
- * ACTCENT = active central angle 0..1 rev. DELLT4, RINIT/VINIT, INITVEL
- * with NN offsets and the 15 degree cone, DELVLVC = LOMAT DELVEET3.
- * DEVIATION (open question): the AGC takes "UNIT RA . UNIT RP" from push
- * cell 0D, which holds UNIT RP when called from P34 but the S34/35.1
- * ULOS when called from P35; the documented UNIT RP is used here.      */
+ * Passive to TPASS4 (conic if NN = 0, else precision): RTARG, VPASS4,
+ * then S3435.25 (agc_rendz_intercept_velocity).                         */
 agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
                                              agc_job_id_t resume)
 {
@@ -271,8 +268,26 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    rz->rtarg = r;                                         /* S3435.25     */
-    rz->vpass4 = v;
+    return agc_rendz_intercept_velocity(ip, rz, r, v, resume);
+}
+
+/* ---- S3435.25 (p.475-476), also the P38/P39 MAINRTNE entry ------------------
+ * RTARG = r, VPASS4 = v; ACTCENT = active central angle 0..1 rev;
+ * DELLT4 = TPASS4 - INTIME; RINIT/VINIT = RACT3/VACT3; INITVEL with NN
+ * offsets and the 15 degree cone; DELVLVC = LOMAT DELVEET3.
+ * DEVIATION (open question): the AGC takes "UNIT RA . UNIT RP" from push
+ * cell 0D, which holds UNIT RP when called from P34 but the S34/35.1
+ * ULOS when called from P35; the documented UNIT RP is used here.      */
+agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
+                                          agc_vec_t rtarg, agc_vec_t vpass4,
+                                          agc_job_id_t resume)
+{
+    if (!AGC_ASSERT(ip != NULL && rz != NULL)
+        || !AGC_ASSERT(resume != AGC_JOB_NONE)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    rz->rtarg = rtarg;                                     /* S3435.25     */
+    rz->vpass4 = vpass4;
     agc_vec_t urp = rz_unit(ip, rz->rtarg);                /* 0D           */
     agc_vec_t ura = rz_unit(ip, rz->ract3);
     agc_dp_t s = agc_vec_dot(ip, agc_vec_cross(ip, ura, urp), rz->unrm);
@@ -285,7 +300,7 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     rz->dellt4 = agc_dp_sub(ip, rz->tpass4, rz->intime);
     rz->rinit = rz->ract3;
     rz->vinit = rz->vact3;
-    st = agc_rendz_initvel(ip, rz, rz->nn, TPI_EPSFOUR, resume);
+    agc_status_t st = agc_rendz_initvel(ip, rz, rz->nn, TPI_EPSFOUR, resume);
     if (st != AGC_STATUS_OK) {
         return st;
     }

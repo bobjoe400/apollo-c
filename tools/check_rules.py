@@ -39,6 +39,8 @@ def check_file(path):
             HARD.append(f'{path}:{i}: rule 8: token pasting / variadic macro')
         if s.startswith(('#if', '#ifdef', '#ifndef')):
             ifs += 1
+        if re.search(r'\(\s*void\s*\)\s*agc_', s) and not s.startswith(('/*', '*', '//')) and '/src/' in '/' + path:
+            HARD.append(f'{path}:{i}: rule 7: (void)-cast of an agc_ call; check it, handle it as the AGC does, or make the callee void')
         if re.search(r'\(\s*\*\s*\w+\s*\)\s*\(', s) and not s.startswith(('/*', '*', '//')):
             HARD.append(f'{path}:{i}: rule 9: function pointer')
         if re.search(r'\*\*\s*[A-Za-z_]', s) and not s.startswith(('/*', '*', '//')):

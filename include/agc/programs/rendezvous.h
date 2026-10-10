@@ -146,7 +146,10 @@ typedef struct agc_rendz {
     /* P38/P39 stable orbit */
     agc_dp_t deltar;          /* DELTAR: desired separation, m 2^29         */
     agc_dp_t delttime;        /* DELTTIME: time to traverse DELTAR, cs 2^28 */
-    agc_dp_t tint, tintsoi, targtime;   /* cs 2^28                          */
+    agc_dp_t targtime;        /* TARGTIME: passive at the intercept point,
+                               * cs 2^28 (TINT EQUALS TPASS4 and TINTSOI
+                               * EQUALS DELTAR in the AGC: rz->tpass4,
+                               * rz->deltar)                                */
 
     /* P17 TPI search (Comanche) */
     agc_dp_t delhite;         /* DELHITE: |RP| - |RA|, m 2^29               */
@@ -158,6 +161,15 @@ typedef struct agc_rendz {
     agc_dp_t delvee;          /* DELVEE: total delta V, m/cs 2^7            */
     agc_dp_t magvtpi, reldelv;/* m/cs 2^7                                   */
     agc_sp_t nn1;             /* NN1: pericenter code for display           */
+
+    /* P21 ground track determination (P21TIME .. P21ALT) */
+    agc_dp_t  ground_track_time;    /* P21TIME: base vector time, cs 2^28   */
+    agc_vec_t ground_track_base_r;  /* P21BASER: m 2^29 earth / 2^27 moon   */
+    agc_vec_t ground_track_base_v;  /* P21BASEV: m/cs 2^7 earth / 2^5 moon  */
+    agc_sp_t  ground_track_origin;  /* P21ORIG: 0 earth, 2 moon             */
+    agc_dp_t  ground_track_vel;     /* P21VEL: |V| m/cs 2^7 (noun 73)       */
+    agc_dp_t  ground_track_gamma;   /* P21GAM: flight path angle, revs      */
+    agc_dp_t  ground_track_alt;     /* P21ALT: altitude / 100, m 2^29       */
 
     /* P76 */
     agc_vec_t delvov;         /* DELVOV: other vehicle delta V (LV), 2^7    */
@@ -292,6 +304,11 @@ agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
 /* S34/35.2 (p.475-476): passive to TPASS4, ACTCENT, INITVEL, DELVLVC.   */
 agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
                                              agc_job_id_t resume);
+/* S3435.25 (p.475-476): RTARG VPASS4 given -> ACTCENT, DELLT4, INITVEL,
+ * DELVLVC (also P38/P39 MAINRTNE).                                     */
+agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
+                                          agc_vec_t rtarg, agc_vec_t vpass4,
+                                          agc_job_id_t resume);
 /* S34/35.3 (p.477): crew-loaded DELVLVC -> DELVEET3, RTARG, DVLOS.      */
 agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz,
                                           agc_job_id_t resume);
@@ -322,6 +339,8 @@ agc_status_t agc_rendz_params_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
                               agc_vec_t axis_nb_sm, const agc_mat_t *refsmmat);
 
 /* ---- P38/P39 stable orbit ----------------------------------------------- */
+/* DELTTIME (P38 RECYCLE, STABLE_ORBIT p.528): time to traverse DELTAR at
+ * the passive horizontal speed, |RP| DELTAR / |VP x RP|, cs 2^28.        */
 agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
                                  agc_vec_t ratt, agc_vec_t vatt);
 
@@ -330,8 +349,11 @@ agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, bool
 agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 
 /* ---- P21 ground track ---------------------------------------------------- */
-agc_status_t agc_ground_track_flight_path(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
-                                 agc_sp_t rtx2, agc_dp_t *vel,
+/* P21VSAVE (p.458): |V| (VATT1 SL* 0,2, m/cs 2^7) and the flight path
+ * angle asin(unit(RATT) . VATT / |V|), revolutions.                       */
+agc_status_t agc_ground_track_determination_flight_path(agc_interp_t *ip,
+                                 agc_vec_t ratt, agc_vec_t vatt,
+                                 agc_vec_t vatt1, int x2, agc_dp_t *vel,
                                  agc_dp_t *gamma);
 
 /* ---- P76 ---------------------------------------------------------------- */
@@ -437,6 +459,31 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx);
 agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx);
 agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx);
 agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx);
+/* ground_track_determination.c (P21) */
+agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx);
+/* stable_orbit.c (P38/P78, P39/P79) */
+agc_status_t agc_job_stable_orbit_rendezvous(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_rendezvous_other_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_tig(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_centang(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_option(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_option_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_deltar(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_dv_lv(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_dv_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_midcourse(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_midcourse_other_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx);
 /* sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);
