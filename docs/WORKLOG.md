@@ -214,3 +214,10 @@
             B27 (1 km LOS gives |u|=1.002); verify against INTERPRETER.agc
             UNIT (R63 flies at few-km ranges). Integration: ids in
             include/agc/programs/alignment_pending.h.
+2026-10-10  sys-misc DONE (1 stub: LM P07 REDO drift filter jumps into an
+            erasable-memory program not in the rope). 271 checks. Needs from
+            prog-rendz: agc_rr_designate_gimbal, OPTIONX/DSPTEM1/RR-AZ/RR-ELEV
+            accessors; RADSAMP should use R04/R77 accessors. Ids 0x0380-0x0397
+            in src/io/verbs/pending.h. Note: library built without
+            AGC_HOST_DEBUG so library asserts don't report in tests
+            (integration: consider a debug lib target for tests).
