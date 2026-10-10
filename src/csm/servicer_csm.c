@@ -58,7 +58,7 @@ static agc_status_t preread1(agc_avg_g_t *a)
     a->pipage = 1;                                    /* for REREADAC           */
     (void)agc_flag_set(AGC_FLAG_AVEGFLAG);            /* SET AVEG FLAG          */
     (void)agc_flag_clear(AGC_FLAG_DRIFTFLG);          /* KNOCK DOWN DRIFT FLAG  */
-    (void)agc_flag_set(AGC_FLAG_V37FLAG);             /* SET V37 FLAG           */
+    (void)agc_flag_set(AGC_FLAG_CHANGE_PROGRAM_FLAG);             /* SET V37 FLAG           */
     a->dvtotal = 0;                                   /* CLEAR DVTOTAL          */
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_AVEGFLAG));
     return AGC_STATUS_OK;
@@ -377,7 +377,9 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    agc_status_t st = agc_integ_avetomid();           /* CONVERT STATE VECTOR   */
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    agc_status_t st = agc_guid_avetomid(&ip, ctx->id);           /* CONVERT STATE VECTOR   */
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -387,11 +389,11 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     agc_erase_set_mrkbuf2(0, (agc_sp_t)-0400);        /* CS BIT9: INVALIDATE    */
     (void)agc_chan_and(011, (uint16_t)~(uint16_t)AGC_CH011_TESTCONN);
     (void)agc_flag_clear(AGC_FLAG_CM_DSTBY);
-    (void)agc_flag_clear(AGC_FLAG_V37FLAG);
+    (void)agc_flag_clear(AGC_FLAG_CHANGE_PROGRAM_FLAG);
     if (agc_flag_test(AGC_FLAG_RNDVZFLG)) {           /* RESTORE GROUP 1 + 2    */
         (void)agc_phase_change2(000111, 000132, NULL);/* 1.11SPOT, 2.13SPOT     */
     }
-    return agc_exec_canv37(ctx);                      /* POSTJUMP CANV37        */
+    return agc_exec_change_program_check(ctx);                      /* POSTJUMP CANV37        */
 }
 
 /* SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection

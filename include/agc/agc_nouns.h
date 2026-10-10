@@ -237,9 +237,9 @@ typedef enum agc_noun_data {
     AGC_DATA_LONG,                              /* DP DP_DEG360; CSM:43,67 LM:43 */
     AGC_DATA_MRKBUF1_P3,                        /* SP raw CDU_DEG; CSM:87,94 */
     AGC_DATA_MRKBUF1_P5,                        /* SP raw Y_OPTICS_DEG; CSM:87,94 */
-    AGC_DATA_N49DISP,                           /* DP POS4; CSM:49 */
-    AGC_DATA_N49DISP_P2,                        /* DP VEL3; CSM:49 */
-    AGC_DATA_N49DISP_P4,                        /* SP WHOLE; CSM:49 */
+    AGC_DATA_RADAR_RESIDUAL_DISP,                           /* DP POS4; CSM:49 */
+    AGC_DATA_RADAR_RESIDUAL_DISP_P2,                        /* DP VEL3; CSM:49 */
+    AGC_DATA_RADAR_RESIDUAL_DISP_P4,                        /* SP WHOLE; CSM:49 */
     AGC_DATA_NEG_TPER,                          /* DP HMS; CSM:32 LM:32 */
     AGC_DATA_NN,                                /* SP WHOLE; LM:55 */
     AGC_DATA_NN1,                               /* SP WHOLE; CSM:55 */
@@ -253,9 +253,9 @@ typedef enum agc_noun_data {
     AGC_DATA_OPTIONX,                           /* SP raw OCTAL; CSM:12 LM:12 */
     AGC_DATA_OPTIONX_P1,                        /* SP raw OCTAL; CSM:12 LM:12 */
     AGC_DATA_OUTOFPLN,                          /* DP POS7; LM:61 */
-    AGC_DATA_P21ALT,                            /* DP POS4; CSM:73 LM:91 */
-    AGC_DATA_P21GAM,                            /* DP DP_DEG360; CSM:73 LM:91 */
-    AGC_DATA_P21VEL,                            /* DP VEL2; CSM:73 LM:91 */
+    AGC_DATA_GROUND_TRACK_DETERMINATION_ALT,                            /* DP POS4; CSM:73 LM:91 */
+    AGC_DATA_GROUND_TRACK_DETERMINATION_GAM,                            /* DP DP_DEG360; CSM:73 LM:91 */
+    AGC_DATA_GROUND_TRACK_DETERMINATION_VEL,                            /* DP VEL2; CSM:73 LM:91 */
     AGC_DATA_PAC,                               /* SP raw Y_OPTICS_DEG; CSM:92 */
     AGC_DATA_PACTOFF,                           /* SP TRIM_DEG; CSM:48 */
     AGC_DATA_PIPAX,                             /* SP WHOLE; CSM:21 LM:21 */
@@ -270,8 +270,8 @@ typedef enum agc_noun_data {
     AGC_DATA_PRAXIS_P1,                         /* SP raw CDU_DEG; CSM:95 */
     AGC_DATA_PRAXIS_P2,                         /* SP raw CDU_DEG; CSM:95 */
     AGC_DATA_Q7,                                /* DP DRAG_ACCEL; CSM:69 */
-    AGC_DATA_R22DISP,                           /* DP POS4; LM:49 */
-    AGC_DATA_R22DISP_P2,                        /* DP VEL3; LM:49 */
+    AGC_DATA_RENDEZVOUS_TRACKING_DATA_DISP,                           /* DP POS4; LM:49 */
+    AGC_DATA_RENDEZVOUS_TRACKING_DATA_DISP_P2,                        /* DP VEL3; LM:49 */
     AGC_DATA_RANGE,                             /* DP POS5; CSM:53,54,90 LM:54,90 */
     AGC_DATA_RANGEDSP,                          /* DP POS7; LM:68 */
     AGC_DATA_RDOT,                              /* DP VEL_2VS; CSM:68 */
@@ -290,8 +290,8 @@ typedef enum agc_noun_data {
     AGC_DATA_RTEDVD,                            /* DP VEL2; CSM:56 */
     AGC_DATA_RTEGAM2D,                          /* DP DP_DEG360; CSM:56 */
     AGC_DATA_RTGO,                              /* DP POS6; CSM:63 */
-    AGC_DATA_RTGON64,                           /* DP POS6; CSM:64 */
-    AGC_DATA_RTGON67,                           /* DP POS6; CSM:67 */
+    AGC_DATA_RANGE_TO_GO_ENTRY_POST_0_05G,                           /* DP POS6; CSM:64 */
+    AGC_DATA_RANGE_TO_GO_ENTRY_FINAL_PHASE,                           /* DP POS6; CSM:67 */
     AGC_DATA_RTHETA,                            /* DP DP_DEG360; CSM:53,54,90 LM:54,90 */
     AGC_DATA_SAC,                               /* SP raw CDU_DEG; CSM:92 */
     AGC_DATA_SAMPTIME,                          /* DP HMS; CSM:65 LM:65 */

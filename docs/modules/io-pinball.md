@@ -47,7 +47,7 @@ agc_state_vehicle() tests; one translation.
 | DSPSIGN, DSPRND, DSPDECWD, DSPDECNR, DSPDC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT (359-362) | DP fraction -> sign + 5 digits, round 5E-6 | pinball_display.c |
 | DSPIN, DSPIN1, 11DSPIN (362-363) | relay codes into DSPTAB, NOUT | pin_dspin, pin_11dspin (pinball_state.c) |
 | DSPALARM, CHARALRM, ALMCYCLE (364) | POODOO 01501 for NVSUB | pin_dspalarm, pin_almcycle |
-| MMCHANG, REQMM (365) | V37 -> agc_v37_change_program | pin_mmchang |
+| MMCHANG, REQMM (365) | V37 -> agc_change_program | pin_mmchang |
 | VBRQEXEC, VBRQWAIT (366) | N26 DSPTEM1: prio, job/task id, (BBCON) | pin_vbrqexec, pin_vbrqwait |
 | VBPROC, VBTERM, PROCKEY, VBRESEQ (366-367) | LOADSTAT | pin_vbproc_common, agc_job_prockey |
 | VBRELDSP (368) | | pin_vbreldsp |
@@ -207,6 +207,6 @@ over a normal display and ENDMARK, LOADITIS (V21 of another noun -> redisplay).
 
 - DSPOUT is implemented here (agc_dsky_dspout) because DSPTAB/NOUT handling is
   pinball's; sys-misc's T4RUPT should call it rather than duplicate it.
-- V37 (agc_v37_change_program) currently returns UNIMPLEMENTED in the exec lane.
+- V37 (agc_change_program) currently returns UNIMPLEMENTED in the exec lane.
 - Nouns whose data ids io-nouns has not wired (UNIMPLEMENTED) make V06/V0x/loads
   stop with that status; the display interface then drops the display.

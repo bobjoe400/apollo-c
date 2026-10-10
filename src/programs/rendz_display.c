@@ -48,7 +48,7 @@ bool rz_active_vehicle_program(void)
 
 /* Continue the running job at another entry (the AGC falls back into the
  * caller's code at the stored return address).                         */
-static agc_status_t rz_continue(agc_job_id_t next)
+agc_status_t rz_continue(agc_job_id_t next)
 {
     if (!AGC_ASSERT(next != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
@@ -71,11 +71,11 @@ agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
     vnpooh_slot.noun = noun;
     vnpooh_slot.next = next;
     return rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_GOTOPOOH,
-                    next, AGC_JOB_RZ_VNPOOH);
+                    next, AGC_JOB_RENDZ_VNPOOH);
 }
 
 /* VNPOOH "TC -5": ENTER on a VNPOOH display shows it again. */
-agc_status_t agc_job_rz_vnpooh(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

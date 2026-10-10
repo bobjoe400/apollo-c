@@ -243,7 +243,7 @@ agc_status_t pin_mmchang_resume(void)
     if (!AGC_ASSERT(mm <= 99u) || st != AGC_STATUS_OK) {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
-    return agc_v37_change_program(mm);
+    return agc_change_program(mm);
 }
 
 /* ---- V35 test lights (pp. 385-387) ------------------------------------ */

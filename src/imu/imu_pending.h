@@ -38,7 +38,7 @@ void agc_erase_set_optind(agc_sp_t v);       /* OPTIND: -1 none, 0, 1       */
 agc_status_t agc_pfs_pipasr_noscale(void);
 
 /* ==== prog-rendz: GOTOV56 (terminate P20 via V56) ======================== */
-agc_status_t agc_rendz_gotov56(void);
+agc_status_t agc_rendz_goto_terminate_tracking(void);
 
 /* ==== dap-lm: interfaces not in agc_lm_dap.h ============================ */
 agc_sp_t agc_erase_1jaccq(void);      /* 1JACCQ: 1-jet Q accel, at pi/4     */
@@ -49,17 +49,17 @@ agc_sp_t agc_erase_1jaccr(void);      /* 1JACCR: 1-jet R accel, at pi/4     */
 #define AGC_JOB_KALCMAN3        ((agc_job_id_t)0x0B02) /* KALCMAN3           */
 #define AGC_JOB_NEWDELHI        ((agc_job_id_t)0x0B03) /* NEWDELHI           */
 #define AGC_JOB_GCOMP1          ((agc_job_id_t)0x0B04) /* GCOMP1 (after IMUSTALL) */
-#define AGC_JOB_R60_REDOMANC    ((agc_job_id_t)0x0B05) /* R60 V50N18 PROCEED  */
-#define AGC_JOB_R60_ENTER       ((agc_job_id_t)0x0B06) /* R60 V50N18 ENTER    */
-#define AGC_JOB_R60_ENDMANUV    ((agc_job_id_t)0x0B07) /* R60 after GOMANUR   */
-#define AGC_JOB_R60_TERM        ((agc_job_id_t)0x0B09) /* R60 V34 (R61TEST)   */
-#define AGC_JOB_R62_TERM        ((agc_job_id_t)0x0B0A) /* R62 V34 / end -> ENDEXT */
-#define AGC_JOB_R62_GOMOVE      ((agc_job_id_t)0x0B0B) /* R62 PROCEED (GOMOVE) */
+#define AGC_JOB_ATTITUDE_MANEUVER_REDOMANC    ((agc_job_id_t)0x0B05) /* R60 V50N18 PROCEED  */
+#define AGC_JOB_ATTITUDE_MANEUVER_ENTER       ((agc_job_id_t)0x0B06) /* R60 V50N18 ENTER    */
+#define AGC_JOB_ATTITUDE_MANEUVER_ENDMANUV    ((agc_job_id_t)0x0B07) /* R60 after GOMANUR   */
+#define AGC_JOB_ATTITUDE_MANEUVER_TERM        ((agc_job_id_t)0x0B09) /* R60 V34 (R61TEST)   */
+#define AGC_JOB_CREW_DEFINED_MANEUVER_TERM        ((agc_job_id_t)0x0B0A) /* R62 V34 / end -> ENDEXT */
+#define AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE      ((agc_job_id_t)0x0B0B) /* R62 PROCEED (GOMOVE) */
 #define AGC_JOB_1_GYRO_PULSE    ((agc_job_id_t)0x0B0E) /* 1/GYRO after GYROBUSY */
 /* Same names and values as the other lanes' shims (exec_pending.h,
  * sysmisc_ext.h), so the lead can merge them.                             */
 #define AGC_JOB_RELINUS         ((agc_job_id_t)0x0E11) /* CSM 1.7, LM 2.13    */
-#define AGC_JOB_R62DISP         ((agc_job_id_t)0x331)  /* R62DISP (V49)       */
+#define AGC_JOB_CREW_DEFINED_MANEUVER_DISP         ((agc_job_id_t)0x331)  /* R62DISP (V49)       */
 
 #define AGC_TASK_IMUZERO2       ((agc_task_id_t)0x0B41)
 #define AGC_TASK_IMUZERO3       ((agc_task_id_t)0x0B42)

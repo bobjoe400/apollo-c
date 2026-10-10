@@ -143,14 +143,15 @@ agc_status_t agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      *
 uint16_t     agc_telem_dumpcnt(void);
 
 /* ======================================================================
- * Service routines (service.c; SERVICE_ROUTINES.agc pp.1485-1492)
+ * Service routines (service.c; SERVICE_ROUTINES.agc C pp.1485-1492)
  * ==================================================================== */
 uint16_t     agc_svc_upflag(agc_flag_id_t f);    /* UPFLAG: returns flagword */
 uint16_t     agc_svc_downflag(agc_flag_id_t f);  /* DOWNFLAG                 */
-agc_status_t agc_svc_upent2(uint16_t bits);      /* UPENT2 (FLAGWRD4 on LM)  */
-agc_status_t agc_svc_downent2(uint16_t bits);    /* DOWNENT2                 */
+agc_status_t agc_svc_upent2(uint16_t arg);       /* UPENT2 (FLAGWRD4 on LM)  */
+agc_status_t agc_svc_downent2(uint16_t arg);     /* DOWNENT2                 */
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as); /* DELAYJOB */
-agc_status_t agc_svc_delay_wake(int delayloc);   /* WAKER task body          */
+agc_status_t agc_svc_delay_wake(int slot);       /* WAKER task body (-1)     */
+agc_status_t agc_svc_startsub_reset(void);       /* DELAYLOC = 0             */
 agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
 agc_status_t agc_svc_b5off(void);                /* B5OFF                    */
 agc_status_t agc_svc_trfailof(void);             /* TRFAILOF (CM)            */
@@ -160,14 +161,42 @@ agc_status_t agc_svc_trfailon(void);             /* TRFAILON (CM)            */
  * T4RUPT (t4rupt.c + src/csm/t4rupt_csm.c + src/lm/t4rupt_lm.c)
  * ==================================================================== */
 /* Run one T4RUPT; *next_cs receives the TIME4 reload (centiseconds until
- * the next T4RUPT: 2 for the 20 ms DSKY relay passes, 10 or 12 otherwise). */
+ * the next T4RUPT: 2 for the 20 ms DSKY relay passes, 12 otherwise).     */
 agc_status_t agc_t4rupt(uint16_t *next_cs);
-agc_status_t agc_t4_fresh_start(void);           /* T4RUPT erasable init     */
-agc_status_t agc_t4_task(agc_task_id_t task);    /* ENDTNON UNZ2 ISSUP ...   */
+agc_status_t agc_t4rupt_rupt(void);              /* rupt entry: + TIME4      */
+agc_status_t agc_t4_startsub_reset(void);        /* STARTSUB: DSRUPTSW = +0  */
+agc_status_t agc_t4_fresh_start_flush(void);     /* SLAP1: DSRUPTSW = -PRIO12 */
+agc_status_t agc_t4_task(agc_task_id_t task);    /* ENDTNON UNZ2 ISSUP ENDZOPT */
 agc_status_t agc_t4_setissw(void);               /* SETISSW (called by imu)  */
 agc_status_t agc_t4_cagesub(void);               /* CAGESUB                  */
 agc_status_t agc_t4_cagesub2(void);              /* CAGESUB2                 */
 bool         agc_t4_lamptest(void);              /* LAMPTEST: true if on     */
+agc_status_t agc_t4_imumon(void);                /* IMUMON .. GLOCKMON       */
+agc_status_t agc_t4_tnontest(void);              /* TNONTEST                 */
+agc_status_t agc_t4_c33test(void);               /* C33TEST                  */
+agc_status_t agc_t4_glockmon(void);              /* GLOCKMON                 */
+/* CSM optics (src/csm/t4rupt_csm.c). OPTIND -0 is AGC_OPTIND_NEG0.      */
+#define AGC_OPTIND_NEG0 ((agc_sp_t)-2)
+agc_status_t agc_t4_optics_monitor(void);        /* OPTMON                   */
+agc_status_t agc_t4_optics_drive(void);          /* OPTDRIVE                 */
+agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
+agc_status_t agc_t4_optics_reset(bool fresh);    /* OPTIND/OPTMODES init     */
+agc_sp_t     agc_t4_optics_cmd(int which);       /* CDUTCMD(0)/CDUSCMD(1)    */
+uint16_t     agc_erase_optmodes(void);           /* OPTMODES (CM)            */
+void         agc_erase_set_optmodes(uint16_t v);
+agc_sp_t     agc_erase_optind(void);             /* OPTIND (CM)              */
+void         agc_erase_set_optind(agc_sp_t v);
+/* LM radar monitor and DAP matrix (src/lm/t4rupt_lm.c).                 */
+agc_status_t agc_t4_rr_monitor(void);            /* RRAUTCHK..RRGIMON+GPMATRIX */
+agc_status_t agc_t4_gimbal_matrix(void);         /* GPMATRIX / DAPT4S        */
+uint16_t     agc_erase_radmodes(void);           /* RADMODES (LM)            */
+void         agc_erase_set_radmodes(uint16_t v);
+agc_sp_t     agc_erase_m11(void);                /* SIN(MG), scaled at 1     */
+agc_sp_t     agc_erase_m21(void);                /* COS(OG)COS(MG)           */
+agc_sp_t     agc_erase_m22(void);                /* SIN(OG)                  */
+agc_sp_t     agc_erase_m31(void);                /* -SIN(OG)COS(MG)          */
+agc_sp_t     agc_erase_m32(void);                /* COS(OG)                  */
+agc_sp_t     agc_erase_cosmg(void);              /* COS(MG)                  */
 
 /* ======================================================================
  * Extended verbs (extended_verbs.c, src/csm/extended_verbs_csm.c,

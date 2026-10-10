@@ -9,7 +9,7 @@ Luminary 099 only. AGC sources (pages are the Luminary 1A listing pages):
 | THE_LUNAR_LANDING.agc                  | 785-792  | src/lm/lunar_landing.c         |
 | THROTTLE_CONTROL_ROUTINES.agc          | 793-797  | src/lm/throttle.c              |
 | LUNAR_LANDING_GUIDANCE_EQUATIONS.agc   | 798-828  | src/lm/landing_guidance.c (equations) + src/lm/lunar_landing.c (R13, P64/P66/P67 entry, redesignation, ROD) |
-| P70-P71.agc                            | 829-837  | src/lm/p70_p71.c               |
+| P70-P71.agc                            | 829-837  | src/lm/landing_aborts.c               |
 | P12.agc                                | 838-842  | src/lm/ascent.c                |
 | ASCENT_GUIDANCE.agc                    | 843-856  | src/lm/ascent.c                |
 | LANDING_ANALOG_DISPLAYS.agc            | 898-907  | src/lm/landing_displays.c      |
@@ -59,31 +59,31 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 
 | AGC label | C function |
 |---|---|
-| P63LM, FLAGORGY | agc_lm_job_p63lm |
+| P63LM, FLAGORGY | agc_lm_job_braking_phase_lm |
 | IGNALG, IGNALOOP, ?GUIDSUB, GUIDSUB, EXGSUB loop | agc_lm_ignalg (bounded loop) |
 | DDUMCALC, DDUMGOOD, R60INIT | ign_ddumcalc, ign_ddumgood |
-| IGNALGRT/ASTNCLOK, ASTNRET/P63SPOT2..4 | agc_lm_job_ignalgrt, agc_lm_job_astnret, agc_lm_job_p63spot3 |
+| IGNALGRT/ASTNCLOK, ASTNRET/P63SPOT2..4 | agc_lm_job_ignalgrt, agc_lm_job_astnret, agc_lm_job_braking_phase_spot3 |
 | GUILDENSTERN (R13) | agc_lm_guildenstern |
 | STARTP66, STRTP66A, VRTSTART, STARTP67 | lnd_startp66 / lnd_strtp66a / lnd_vrtstart / lnd_startp67 |
-| STARTP64, P65START | agc_lm_startp64, agc_lm_p65start |
+| STARTP64, P65START | agc_lm_start_approach_phase, agc_lm_velocity_nulling_start |
 | REDESIG | agc_lm_redesig |
-| P64DISPS, P64CEED, RED-OVER, REDES-OK | agc_lm_p64disps, agc_lm_job_p64ceed |
-| P66VERTA, RODTASK, RODCOMP, VHORCOMP | agc_lm_p66verta, agc_lm_task_rodtask, agc_lm_job_rodcomp |
-| P67VERT | agc_lm_p67vert |
+| P64DISPS, P64CEED, RED-OVER, REDES-OK | agc_lm_p64disps, agc_lm_job_approach_phase_ceed |
+| P66VERTA, RODTASK, RODCOMP, VHORCOMP | agc_lm_rate_of_descent_landing_verta, agc_lm_task_rodtask, agc_lm_job_rodcomp |
+| P67VERT | agc_lm_manual_landing_vert |
 | PITFALL, REDESMON, COUNT'EM | agc_lm_pitfall, agc_lm_task_redesmon |
 | DESCBITS | agc_lm_descbits |
-| LANDJUNK (P68) | agc_lm_job_p68, agc_lm_job_p68b |
+| LANDJUNK (P68) | agc_lm_job_landing_confirmation, agc_lm_job_landing_confirmation_b |
 
-### Aborts (p70_p71.c), ascent (ascent.c), R10 (landing_displays.c), FINDCDUW (findcduw.c)
+### Aborts (landing_aborts.c), ascent (ascent.c), R10 (landing_displays.c), FINDCDUW (findcduw.c)
 
 | AGC label | C function |
 |---|---|
-| R10,R11, R10,R11A, FLASHH?, 10,11, P71NOW?, P70NOW? | agc_lm_task_r10r11 |
+| R10,R11, R10,R11A, FLASHH?, 10,11, P71NOW?, P70NOW? | agc_lm_task_landing_radar_monitor |
 | P70, P71, P70A, P71A, LEGAL?, ABORTALM | agc_lm_p70, agc_lm_p71, lm_legal |
 | CONTABRT, ABRTJASK | agc_lm_abrtjask |
 | GOABORT, P70INIT, BOTHPOLY, UPRATE, YOK, UPTHROT, UPTHROT1, P71RET, OLDTIME | agc_lm_job_goabort and helpers |
 | TGOCOMP, THROTUP | agc_lm_tgocomp, agc_lm_throtup |
-| P12LM..P12RET, P12INIT, COMMINIT, GUIDINIT | agc_lm_job_p12lm, agc_lm_job_p12newload, agc_lm_p12init, agc_lm_comminit, agc_lm_guidinit |
+| P12LM..P12RET, P12INIT, COMMINIT, GUIDINIT | agc_lm_job_powered_ascent_lm, agc_lm_job_p12newload, agc_lm_powered_ascent_init, agc_lm_comminit, agc_lm_guidinit |
 | ATMAG, ASCENT ... AIMER, MAINLINE, ASCTERM*, CHECKALT, EXITVR, ANG1CHEK, CHECKYAW, KEEPVR | agc_lm_atmag, agc_lm_ascent and helpers |
 | ENGOFF, ENGOFF1, CUTOFF, CUTOFF1, CUTOFF2, TERMASC | asc_engoff, agc_lm_task_engoff1, agc_lm_job_cutoff... |
 | YCOMP, LOGSUB | agc_lm_ycomp, agc_lm_logsub |
@@ -101,13 +101,13 @@ Infrastructure:
 Per file (TODO unless marked):
 - DONE throttle.c: agc_lm_throttle, agc_lm_throttle_measured (AFDUMP..DOPIF), thr_region (WHERETO..FLATOUT2), thr_doit, thr_fweight, agc_lm_throttle_flatout, agc_lm_throttle_whatout, agc_lm_massmult
 - DONE findcduw.c: agc_lm_initcduw, agc_lm_findcduw (+ _m2 = FINDCDUW -2), fc_fltrsub, fc_unwctest, fc_dcmcl, fc_nb2cdusp, fc_dvbycosm, agc_lm_arctrgsp, agc_lm_sparcsin, agc_lm_limitsub, agc_lm_onesto2s, fc_noattcnt, ALARMMGA in fc_gimbal_changes
-- DONE landing_guidance.c: agc_lm_job_lunland, agc_lm_guidpass (+ldg_front = GUILDRET+2..BRSPOT2, ldg_quadratic), agc_lm_ttfincr, agc_lm_calcrgvg, agc_lm_rgvgcalc, agc_lm_ttf8cl, agc_lm_rootpsrs, agc_lm_quadguid (+ldg_quadcoef), agc_lm_afccalc (+ldg_afclimit), agc_lm_cgcalc, ldg_extlogic, ldg_exgsub, EXBRAK, ldg_exnorm, agc_lm_steer_exit (STEER?/EXVERT/RATESTOP/GDUMP1), agc_lm_dispexit, agc_lm_job_p63disps_m2, agc_lm_job_p64disps, agc_lm_job_p64ceed, agc_lm_vertguid (P65VERT), agc_lm_startp64, agc_lm_p65start, agc_lm_tdispset
-- DONE lunar_landing.c: agc_lm_job_p63lm (+FLAGORGY), ll_ignalg_start/ll_ignalg_prec (IGNALG, LEMPREC wait job IGNALGP), ll_ignaloop/ll_ign_guidance (IGNALOOP, INTSTALL wait job IGNALOOP), ll_ddum (DDUMCALC), ll_ddumgood (DDUMGOOD/R60INIT), agc_lm_job_ignalgrt (IGNALGRT/ASTNCLOK), agc_lm_job_astnret, agc_lm_job_p63spot2/3/4, agc_lm_guildenstern (R13 incl. STARTP66/STRTP66A/VRTSTART/STARTP67/STABL?/P66NOW?/RESTART?), agc_lm_redesig (+ll_redes1), agc_lm_p66verta, agc_lm_task_rodtask, agc_lm_job_rodcomp (ll_rod_pipas/ll_rod_state/ll_rod_afc), ll_vhorcomp, agc_lm_p67vert, agc_lm_pitfall, agc_lm_task_redesmon (+COUNT'EM, RESETRPT), agc_lm_descbits, agc_lm_job_p68 / _p68_flash / _p68b (LANDJUNK)
-- DONE p70_p71.c: agc_lm_task_r10r11, agc_lm_r10r11a (FLASHH?/FLASHV?/10,11/P71NOW?/P70NOW?), ab_abrtjask (CONTABRT/ABRTJASK), ab_legal (LEGAL?/ABORTALM), agc_lm_job_p70/p71/p70a/p71a, agc_lm_job_goabort, ab_p70init, ab_bothpoly (BOTHPOLY..YOK), ab_upthrot, agc_lm_job_abtp40a (UPTHROT1 -3), agc_lm_job_upthrot1 (+GRP4OFF), ab_p71ret, agc_lm_job_p71old (OLDTIME), agc_lm_tgocomp, agc_lm_throtup
-- DONE ascent.c: agc_lm_guidinit, agc_lm_comminit, agc_lm_p12init, agc_lm_ycomp, agc_lm_logsub, as_vgvect (ASCENT state/GEFF/VGVECT/VGBODY), as_maineng, as_t2test (T2TEST/LOGSUB/NORATES/CONST), as_rates (RATES/CHKBMAG/PROK), as_cmponent (CMPONENT/NO-ATP/AIMER), as_mainline (MAINLINE/ANG1CHEK/OFFROT/CLRXFLAG), as_exitvr, as_checkalt (CHECKALT/CHECKYAW/KEEPVR/EXITVR1), as_keepvr1, as_ascterm/as_ascterm1 (ASCTERM..4), as_engoff, agc_lm_ascent, agc_lm_job_atmag, agc_lm_task_engoff1, agc_lm_job_cutoff/_cutoff5/_cutoff1/_cutoff2/_termasc, agc_lm_job_p12lm/_p12flash/_p12lm2/_p12lmb/_newload/_newload2, agc_lm_p12ret, agc_lm_job_p12burn
+- DONE landing_guidance.c: agc_lm_job_lunland, agc_lm_guidpass (+ldg_front = GUILDRET+2..BRSPOT2, ldg_quadratic), agc_lm_ttfincr, agc_lm_calcrgvg, agc_lm_rgvgcalc, agc_lm_ttf8cl, agc_lm_rootpsrs, agc_lm_quadguid (+ldg_quadcoef), agc_lm_afccalc (+ldg_afclimit), agc_lm_cgcalc, ldg_extlogic, ldg_exgsub, EXBRAK, ldg_exnorm, agc_lm_steer_exit (STEER?/EXVERT/RATESTOP/GDUMP1), agc_lm_dispexit, agc_lm_job_braking_phase_disps_m2, agc_lm_job_approach_phase_disps, agc_lm_job_approach_phase_ceed, agc_lm_vertguid (P65VERT), agc_lm_start_approach_phase, agc_lm_velocity_nulling_start, agc_lm_tdispset
+- DONE lunar_landing.c: agc_lm_job_braking_phase_lm (+FLAGORGY), ll_ignalg_start/ll_ignalg_prec (IGNALG, LEMPREC wait job IGNALGP), ll_ignaloop/ll_ign_guidance (IGNALOOP, INTSTALL wait job IGNALOOP), ll_ddum (DDUMCALC), ll_ddumgood (DDUMGOOD/R60INIT), agc_lm_job_ignalgrt (IGNALGRT/ASTNCLOK), agc_lm_job_astnret, agc_lm_job_braking_phase_spot2/3/4, agc_lm_guildenstern (R13 incl. STARTP66/STRTP66A/VRTSTART/STARTP67/STABL?/P66NOW?/RESTART?), agc_lm_redesig (+ll_redes1), agc_lm_rate_of_descent_landing_verta, agc_lm_task_rodtask, agc_lm_job_rodcomp (ll_rod_pipas/ll_rod_state/ll_rod_afc), ll_vhorcomp, agc_lm_manual_landing_vert, agc_lm_pitfall, agc_lm_task_redesmon (+COUNT'EM, RESETRPT), agc_lm_descbits, agc_lm_job_landing_confirmation / _p68_flash / _p68b (LANDJUNK)
+- DONE landing_aborts.c: agc_lm_task_landing_radar_monitor, agc_lm_landing_radar_monitor_a (FLASHH?/FLASHV?/10,11/P71NOW?/P70NOW?), ab_abrtjask (CONTABRT/ABRTJASK), ab_legal (LEGAL?/ABORTALM), agc_lm_job_dps_abort/p71/p70a/p71a, agc_lm_job_goabort, ab_dps_abort_init, ab_bothpoly (BOTHPOLY..YOK), ab_upthrot, agc_lm_job_abort_dps_burn_a (UPTHROT1 -3), agc_lm_job_upthrot1 (+GRP4OFF), ab_aps_abort_ret, agc_lm_job_aps_abort_old (OLDTIME), agc_lm_tgocomp, agc_lm_throtup
+- DONE ascent.c: agc_lm_guidinit, agc_lm_comminit, agc_lm_powered_ascent_init, agc_lm_ycomp, agc_lm_logsub, as_vgvect (ASCENT state/GEFF/VGVECT/VGBODY), as_maineng, as_t2test (T2TEST/LOGSUB/NORATES/CONST), as_rates (RATES/CHKBMAG/PROK), as_cmponent (CMPONENT/NO-ATP/AIMER), as_mainline (MAINLINE/ANG1CHEK/OFFROT/CLRXFLAG), as_exitvr, as_checkalt (CHECKALT/CHECKYAW/KEEPVR/EXITVR1), as_keepvr1, as_ascterm/as_ascterm1 (ASCTERM..4), as_engoff, agc_lm_ascent, agc_lm_job_atmag, agc_lm_task_engoff1, agc_lm_job_cutoff/_cutoff5/_cutoff1/_cutoff2/_termasc, agc_lm_job_powered_ascent_lm/_p12flash/_p12lm2/_p12lmb/_newload/_newload2, agc_lm_powered_ascent_ret, agc_lm_job_powered_ascent_burn
 - DONE landing_displays.c: agc_lm_landisp (LANDISP/ALTROUT/ALTOUT dispatch), ld_disindat (DISINDAT), agc_lm_task_intlze (INTLZE), ld_speedrun (SPEEDRUN to VARDELAY), agc_lm_task_speedrun2 (SPEEDRUN after the pause, GET22/32, LATFWDV), agc_lm_vmonitor + ld_vmon_delta (VMONITOR..ZEROLSTY, checked branch by branch against pp. 904-907), ld_altrout (ARCOMP), ld_altout/ld_extrapolate (OLDDATA/NEWDATA/ZERODATA), ld_dataout (DATAOUT), ld_disprset (DISPRSET/ABORTON)
 - DONE tests/test_landing.c (compiles; see Tests written)
-- DONE 2026-10-10 reconciliation after wave 1: ASTNRET now sets agc_align_ram()->qmaj and calls agc_job_lm_r51k (agc_align.h R51K/R51P63) instead of a private agc_align_r51p63 / agc_imu_r51p63; 1JACCQ/1JACCR taken from agc_lm_dap.h, TRKMKCNT from agc_programs.h; agc_imu.h signatures used as declared (agc_imu_r02both, agc_imu_r60, agc_imu_set_pointvsm/_scaxis, agc_imu_comp_get); all displays go through agc_dsky_display()
+- DONE 2026-10-10 reconciliation after wave 1: ASTNRET now sets agc_align_ram()->qmaj and calls agc_job_lm_fine_align_k (agc_align.h R51K/R51P63) instead of a private agc_align_r51p63 / agc_imu_r51p63; 1JACCQ/1JACCR taken from agc_lm_dap.h, TRKMKCNT from agc_programs.h; agc_imu.h signatures used as declared (agc_imu_status_check_both, agc_imu_attitude_maneuver, agc_imu_set_pointvsm/_scaxis, agc_imu_comp_get); all displays go through agc_dsky_display()
 
 ## Deviations
 

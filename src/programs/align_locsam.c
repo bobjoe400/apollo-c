@@ -430,7 +430,7 @@ agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
  * the desired-SM catalogue pair a (STARAD, STARAD+6) against the observed
  * present-SM pair b (6D, 12D) gives XDC, the desired SM wrt the present SM.
  */
-agc_status_t agc_align_r51_solve(agc_interp_t *ip, const agc_vec_t a[2],
+agc_status_t agc_align_fine_align_solve(agc_interp_t *ip, const agc_vec_t a[2],
                                  const agc_vec_t b[2], agc_mat_t *xdc)
 {
     if (!AGC_ASSERT((ip != NULL) && (a != NULL)) ||

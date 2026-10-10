@@ -16,7 +16,7 @@
 
 #define REMDIST    ((agc_dp_t)192201000) /* mean earth-moon distance B-29 m */
 #define ONEOVSQRT2 ((agc_dp_t)189812531) /* 1OVSQRT2 .7071067815            */
-#define V06N51    ALIGN_VN(6, 51)        /* VN 0651                         */
+#define VN_ANTENNA_ANGLES    ALIGN_VN(6, 51)        /* VN 0651                         */
 #define BLANK_R3   ((uint16_t)04)        /* BIT3                            */
 #define EXTVB_BIT5 ((uint16_t)020)
 #define PRIO5      ((agc_prio_t)05)
@@ -107,7 +107,7 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
     return AGC_STATUS_OK;
 }
 
-/* SBANDEX: display V06N51 at PRIO5 while EXTVBACT bit 5 is on. */
+/* SBANDEX: display VN_ANTENNA_ANGLES at PRIO5 while EXTVBACT bit 5 is on. */
 static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
@@ -115,7 +115,7 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
         return agc_dsky_endext();
     }
     (void)agc_exec_prio_change(PRIO5);         /* PRIOCHNG (no pre-emption) */
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, V06N51,
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
                                   AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF,
                                   AGC_JOB_ENDOFJOB);
     if (st != AGC_STATUS_OK) {

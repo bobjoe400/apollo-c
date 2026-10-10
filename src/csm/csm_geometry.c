@@ -133,7 +133,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
     }
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0]));
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);
-    *sac = agc_align_1sto2s(agc_imu_arctrig(ip, sinth, costh));
+    *sac = agc_align_ones_to_twos(agc_imu_arctrig(ip, sinth, costh));
     (void)agc_interp_test_ovf(ip);                             /* BOV +1  */
     const agc_dp_t ta = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star,
                                                         nb1->row[2]), 1));
@@ -146,7 +146,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
         *cult = true;                         /* BOV SXTALARM (> 90 deg)   */
         return AGC_STATUS_OK;
     }
-    *pac = agc_align_1sto2s(agc_dp_sub(ip, ta4, TWENTY_DEG_MINUS));
+    *pac = agc_align_ones_to_twos(agc_dp_sub(ip, ta4, TWENTY_DEG_MINUS));
     *cult = false;                            /* CLRGO CULTFLAG            */
     return AGC_STATUS_OK;
 }

@@ -44,8 +44,8 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    b->hper = agc_r30_maxchk(ip, agc_rendz_shiftr1(rz, pa.hperi)); /* HPER B+29 */
-    b->hapo = agc_r30_maxchk(ip, agc_rendz_shiftr1(rz, pa.hapo));  /* HAPO B+29 */
+    b->hper = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hperi)); /* HPER B+29 */
+    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hapo));  /* HAPO B+29 */
     (void)AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2);
     return AGC_STATUS_OK;
 }
@@ -56,7 +56,8 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc
 static agc_status_t s30_1_csm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_guid_prec_t p;
-    agc_status_t st = agc_integ_thisprec(agc_erase_tig(), &p);   /* TDEC1 = TIG */
+    agc_status_t st = agc_guid_prec_update(ip, AGC_VEHICLE_CSM, agc_erase_tig(),
+                                           AGC_JOB_NONE, &p);   /* THISPREC, TDEC1 = TIG */
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -81,7 +82,8 @@ static agc_status_t s30_1_csm(agc_interp_t *ip, agc_rendz_t *rz)
 static agc_status_t s30_1_lm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_guid_prec_t p;
-    agc_status_t st = agc_integ_lemprec(agc_erase_tig(), &p);
+    agc_status_t st = agc_guid_prec_update(ip, AGC_VEHICLE_LM, agc_erase_tig(),
+                                           AGC_JOB_NONE, &p);   /* LEMPREC */
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -136,7 +138,8 @@ static agc_status_t again_at(agc_interp_t *ip, agc_dp_t tdec1)
 {
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_guid_prec_t p;
-    agc_status_t st = agc_integ_thisprec(tdec1, &p);
+    agc_status_t st = agc_guid_prec_update(ip, agc_state_vehicle(), tdec1,
+                                           AGC_JOB_NONE, &p);   /* THISPREC */
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -147,7 +150,7 @@ static agc_status_t again_at(agc_interp_t *ip, agc_dp_t tdec1)
     rz->vinit = p.vatt;
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10;
     (void)AGC_ASSERT(e4 > 0);
-    return agc_rendz_initvel(ip, rz, 0, e4);
+    return agc_rendz_initvel(ip, rz, 0, e4, agc_guid_nav_resume());
 }
 
 /* AGAIN with TDEC1 as set by the caller (S31.1: TIG; S40.1B: TIG - 2 s). */
@@ -259,6 +262,7 @@ agc_status_t agc_job_p30_calc(agc_job_ctx_t *ctx)
     (void)agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_interp_t ip;
     agc_interp_init(&ip);
+    agc_guid_nav_set_resume(ctx->id);
     agc_status_t st = agc_guid_s30_1(&ip, agc_state_vehicle());
     if (st != AGC_STATUS_OK) {
         return st;
@@ -316,6 +320,7 @@ agc_status_t agc_job_p31_calc(agc_job_ctx_t *ctx)
     (void)agc_flag_clear(AGC_FLAG_NORMSW);
     agc_interp_t ip;
     agc_interp_init(&ip);
+    agc_guid_nav_set_resume(ctx->id);
     agc_status_t st = agc_guid_s31_1(&ip);
     if (st != AGC_STATUS_OK) {
         return st;

@@ -153,7 +153,8 @@ static agc_status_t s40_1b_lm(agc_interp_t *ip)
     agc_guid_t *g = agc_guid_state();
     rz->dellt4 = agc_dp_sub(ip, rz->tpass4, agc_erase_tig());  /* TDEC1 = TIG */
     agc_guid_prec_t p;
-    agc_status_t st = agc_integ_lemprec(agc_erase_tig(), &p);
+    agc_status_t st = agc_guid_prec_update(ip, AGC_VEHICLE_LM, agc_erase_tig(),
+                                           AGC_JOB_NONE, &p);   /* LEMPREC */
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -163,7 +164,7 @@ static agc_status_t s40_1b_lm(agc_interp_t *ip)
     rz->body.rtx1 = p.rtx1;
     rz->body.rtx2 = p.rtx2;
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? agc_dp_add(ip, EPS1, EPS2) : EPS1;
-    st = agc_rendz_initvel(ip, rz, 0, e4);
+    st = agc_rendz_initvel(ip, rz, 0, e4, agc_guid_nav_resume());
     if (st != AGC_STATUS_OK) {
         return st;
     }

@@ -448,8 +448,8 @@ static acc_result_t third_body(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->rpqv = moon;
     ctx->rpsv = sun;
     const bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
-    const bool p23 = lm && (agc_erase_modreg() == 23);    /* MODREG OCT27  */
-    if (p23 || agc_flag_test(AGC_FLAG_DIM0FLAG)) {
+    const bool is_cislunar_midcourse_navigation = lm && (agc_erase_modreg() == 23);    /* MODREG OCT27  */
+    if (is_cislunar_midcourse_navigation || agc_flag_test(AGC_FLAG_DIM0FLAG)) {
         const agc_vec_t r = agc_vec_scale(ip, ctx->alphav, ctx->alpham);
         const agc_vec_t rq = agc_vec_sub(ip, agc_integ_vshift(ip, r, x2 - 1),
                                          ctx->betav);     /* VSR* 1,2 VSU */

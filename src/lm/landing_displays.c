@@ -93,7 +93,7 @@ static agc_sp_t ld_ddoubl2(agc_dp_t x)
  * the descent the RR error counter enable), reset the R10 flags.      */
 static agc_status_t ld_disprset(void)
 {
-    if (!agc_flag_test(AGC_FLAG_R10FLAG)) {
+    if (!agc_flag_test(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG)) {
         uint16_t m = AGC_CH012_DISPINERT;
         if ((agc_erase_imodes33() & LD_BIT8) != 0u) {
             m = (uint16_t)(m | AGC_CH012_ENBRRCDUERR);
@@ -227,7 +227,7 @@ static agc_status_t ld_disindat(void)
     (void)agc_flag_set(AGC_FLAG_DIDFLAG);
     (void)ld_imodes33_bits(0u, LD_BIT7);     /* altrate first, then alt.   */
     ld_altpath = LD_NONE;
-    if (agc_flag_test(AGC_FLAG_R10FLAG)) {
+    if (agc_flag_test(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG)) {
         return AGC_STATUS_OK;                /* not in the descent         */
     }
     agc_status_t st = agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_DISPINERT);
@@ -330,7 +330,7 @@ agc_status_t agc_lm_vmonitor(void)
  * gimbal angle (M22 = sin AOG, M32 = cos AOG); the cross-pointers. */
 agc_status_t agc_lm_task_speedrun2(void)
 {
-    if (agc_flag_test(AGC_FLAG_R10FLAG)) {
+    if (agc_flag_test(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG)) {
         return ld_continue();                /* not in the descent         */
     }
     const agc_guid_lm_t *g = &agc_guid_state()->lm;

@@ -161,7 +161,7 @@ static void ll_ddumgood(agc_interp_t *ip, agc_dp_t tdec1)
     agc_erase_set_tig(agc_dp_sub(ip, tdec1, zt));
     agc_vec_t n = agc_vec_unit(ip, agc_vec_cross(ip, g->v, g->r), NULL, NULL);
     l->outofpln = agc_dp_shl(ip, agc_vec_dot(ip, n, l->land), 1);
-    l->r60vsave = l->unfc_2;
+    l->attitude_maneuver_vsave = l->unfc_2;
     (void)AGC_ASSERT(zt >= 0);
     (void)AGC_ASSERT(tdec1 >= 0);
 }
@@ -233,17 +233,17 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 }
 
 /* P63LM and FLAGORGY (p. 785): "Dionysian flag waving", then IGNALG. */
-agc_status_t agc_lm_job_p63lm(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_braking_phase_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    ll_restart_here(AGC_JOB_P63LM);
-    if (agc_imu_r02both() != AGC_STATUS_OK) {
+    ll_restart_here(AGC_JOB_BRAKING_PHASE_LM);
+    if (agc_imu_status_check_both() != AGC_STATUS_OK) {
         return AGC_STATUS_OK;                /* R02 alarmed and went to P00 */
     }
     agc_guid_lm_t *g = &agc_guid_state()->lm;
-    g->which = AGC_LM_WHICH_P63;             /* for BURNBABY               */
+    g->which = AGC_LM_WHICH_BRAKING_PHASE;             /* for BURNBABY               */
     g->dvthrush = LL_DPSTHRSH;               /* initialize DVMON           */
     g->dvcntr = 4;
     agc_lm_ldg()->wchphase = AGC_LM_PHASE_IGNALG;
@@ -255,7 +255,7 @@ agc_status_t agc_lm_job_p63lm(agc_job_ctx_t *ctx)
     (void)agc_flag_clear(AGC_FLAG_REDFLAG);
     (void)agc_flag_clear(AGC_FLAG_LRBYPASS);
     (void)agc_flag_set(AGC_FLAG_MUNFLAG);
-    (void)agc_flag_clear(AGC_FLAG_P25FLAG);  /* terminate P25 if running   */
+    (void)agc_flag_clear(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_FLAG);  /* terminate P25 if running   */
     (void)agc_flag_clear(AGC_FLAG_RNDVZFLG); /* terminate P20 if running   */
     return ll_ignalg_start(ctx);
 }
@@ -302,14 +302,14 @@ agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_align_ram()->qmaj = AGC_JOB_P63SPOT2;            /* SSP QMAJ    */
-    (void)AGC_ASSERT(agc_align_ram()->qmaj == AGC_JOB_P63SPOT2);
-    return agc_job_lm_r51k(ctx);                         /* RTB R51P63  */
+    agc_align_ram()->qmaj = AGC_JOB_BRAKING_PHASE_SPOT2;            /* SSP QMAJ    */
+    (void)AGC_ASSERT(agc_align_ram()->qmaj == AGC_JOB_BRAKING_PHASE_SPOT2);
+    return agc_job_lm_fine_align_k(ctx);                         /* RTB R51P63  */
 }
 
 /* P63SPOT2 (pp. 788-789): KALCMANU set for the burn attitude (+X along
  * UNIT(R60VSAVE)), 1 degree deadband, R60LEM; returns at P63SPOT3.    */
-agc_status_t agc_lm_job_p63spot2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_braking_phase_spot2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -317,34 +317,34 @@ agc_status_t agc_lm_job_p63spot2(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_status_t st = agc_imu_set_pointvsm(
-        agc_vec_unit(&ip, agc_lm_ldg()->r60vsave, NULL, NULL));
+        agc_vec_unit(&ip, agc_lm_ldg()->attitude_maneuver_vsave, NULL, NULL));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_imu_set_scaxis(agc_vec_make(AGC_DP_HALF, 0, 0));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     agc_inhint();
     (void)agc_lm_dap_pflitedb();
     agc_relint();
-    return agc_imu_r60(ctx, AGC_JOB_P63SPOT3);
+    return agc_imu_attitude_maneuver(ctx, AGC_JOB_BRAKING_PHASE_SPOT3);
 }
 
 /* P63SPOT3 (p. 789): is the LR antenna in position 1 yet? If not, ask the
  * astronaut to crank the silly thing around (V50N25 R1 = 00500).      */
-agc_status_t agc_lm_job_p63spot3(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_braking_phase_spot3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    ll_restart_here(AGC_JOB_P63SPOT3);       /* prevent recalling R60     */
+    ll_restart_here(AGC_JOB_BRAKING_PHASE_SPOT3);       /* prevent recalling R60     */
     if (agc_lm_chan_bit_present(AGC_CHAN_CHAN33, AGC_CH033_LRPOS1)) {
-        return agc_lm_job_p63spot4(ctx);
+        return agc_lm_job_braking_phase_spot4(ctx);
     }
     return ll_display(ctx, AGC_DSKY_GOPERF1, LL_CODE500,
-                      AGC_JOB_P63SPOT3,      /* PROCEED: see if he's lying */
-                      AGC_JOB_P63SPOT4);     /* ENTER                      */
+                      AGC_JOB_BRAKING_PHASE_SPOT3,      /* PROCEED: see if he's lying */
+                      AGC_JOB_BRAKING_PHASE_SPOT4);     /* ENTER                      */
 }
 
 /* P63SPOT4 (p. 789): initialize the landing radar, off to see the wizard. */
-agc_status_t agc_lm_job_p63spot4(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_braking_phase_spot4(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -360,7 +360,7 @@ agc_status_t agc_lm_job_p63spot4(agc_job_ctx_t *ctx)
 
 /* STRTP66A (p. 800): ROD initialisation (also after a restart in P66,
  * leaving VDGVERT as is).                                            */
-static void ll_strtp66a(void)
+static void ll_start_rate_of_descent_landing_a(void)
 {
     agc_lm_ldg_t *l = agc_lm_ldg();
     agc_imu_comp_params_t c;
@@ -400,18 +400,18 @@ static void ll_vrtstart(agc_sp_t wchvert)
 }
 
 /* STARTP66 (p. 800): P66 with desired altitude rate = current rate. */
-static void ll_startp66(void)
+static void ll_start_rate_of_descent_landing(void)
 {
     (void)agc_lm_fastchng();
     agc_status_t st = agc_phase_newmode(66);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     agc_lm_ldg()->vdgvert = agc_guid_state()->lm.hdotdisp;
-    ll_strtp66a();
+    ll_start_rate_of_descent_landing_a();
     ll_vrtstart(0);
 }
 
 /* STARTP67 (p. 801): no harm in "starting" P67 over and over. */
-static void ll_startp67(void)
+static void ll_start_manual_landing(void)
 {
     agc_status_t st = agc_phase_newmode(67);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
@@ -431,11 +431,11 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
     agc_lm_ldg_t *l = agc_lm_ldg();
     *entry = AGC_LM_ENTRY_VERTGUID;
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_AUTOTHROT)) {
-        ll_startp67();                       /* un-auto-throttle present  */
+        ll_start_manual_landing();                       /* un-auto-throttle present  */
         return AGC_STATUS_OK;
     }
     if (agc_phase_checkmm(67)) {             /* P67NOW?                   */
-        ll_startp66();
+        ll_start_rate_of_descent_landing();
         return AGC_STATUS_OK;
     }
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD)) {
@@ -444,7 +444,7 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
     }
     if (agc_erase_modreg() == 66) {          /* P66NOW? -> RESTART?       */
         if (!agc_flag_test(AGC_FLAG_RODFLAG)) {
-            ll_strtp66a();                   /* restart: reinitialize     */
+            ll_start_rate_of_descent_landing_a();                   /* restart: reinitialize     */
             ll_vrtstart(0);
         }
         return AGC_STATUS_OK;
@@ -453,7 +453,7 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
         *entry = AGC_LM_ENTRY_GUILDRET;      /* ROD switch not clicked    */
         return AGC_STATUS_OK;
     }
-    ll_startp66();                           /* switch into the ROD mode  */
+    ll_start_rate_of_descent_landing();                           /* switch into the ROD mode  */
     return AGC_STATUS_OK;
 }
 
@@ -632,7 +632,7 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
 }
 
 /* P66VERTA (p. 816): terminate group 3, RODTASK in one second, RODCOMP. */
-agc_status_t agc_lm_p66verta(const agc_job_ctx_t *ctx)
+agc_status_t agc_lm_rate_of_descent_landing_verta(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -664,7 +664,7 @@ agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx)
 }
 
 /* P67VERT (p. 816): terminate group 3; VHORIZ from SERVICER's V. */
-agc_status_t agc_lm_p67vert(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+agc_status_t agc_lm_manual_landing_vert(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -809,7 +809,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 }
 
 /* LANDJUNK job (P68). */
-agc_status_t agc_lm_job_p68(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -821,11 +821,11 @@ agc_status_t agc_lm_job_p68(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    return agc_lm_job_p68_flash(ctx);
+    return agc_lm_job_landing_confirmation_flash(ctx);
 }
 
 /* V06N43 flash: "astronaut: now look where you ended up". */
-agc_status_t agc_lm_job_p68_flash(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -837,7 +837,7 @@ agc_status_t agc_lm_job_p68_flash(agc_job_ctx_t *ctx)
 
 /* After PROCEED (p. 792): GSAV and (using REFMF) YNBSAV, ZNBSAV and
  * ATTFLAG for P57; then "astronaut: please select P57".             */
-agc_status_t agc_lm_job_p68b(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_landing_confirmation_b(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

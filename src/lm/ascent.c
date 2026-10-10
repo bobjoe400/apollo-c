@@ -109,7 +109,7 @@ agc_status_t agc_lm_comminit(agc_interp_t *ip)
 
 /* P12INIT (pp. 840-841): APS engine data for P12 and P71; COMMINIT too
  * unless FLAP (P71 after P70 keeps the targets).                     */
-agc_status_t agc_lm_p12init(agc_interp_t *ip)
+agc_status_t agc_lm_powered_ascent_init(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -427,7 +427,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     as_t2test(ip);
     as_cmponent(ip);
     if (agc_flag_test(AGC_FLAG_FLPI)) {
-        return agc_lm_p12ret(ctx, ip);
+        return agc_lm_powered_ascent_ret(ctx, ip);
     }
     if (agc_flag_test(AGC_FLAG_FLVR)) {
         return as_checkalt(ctx, ip);
@@ -588,45 +588,45 @@ static agc_status_t as_flash00(const agc_job_ctx_t *ctx, uint8_t noun,
 }
 
 /* P12LM (p. 838): IMU check, flags, DVMON; flash TIG (V06N33). */
-agc_status_t agc_lm_job_p12lm(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    as_restart_here(AGC_JOB_P12LM);
-    if (agc_imu_r02both() != AGC_STATUS_OK) {
+    as_restart_here(AGC_JOB_POWERED_ASCENT_LM);
+    if (agc_imu_status_check_both() != AGC_STATUS_OK) {
         return AGC_STATUS_OK;
     }
     (void)agc_flag_set(AGC_FLAG_MUNFLAG);
     (void)agc_flag_set(AGC_FLAG_ACC4_2FL);  /* insure 4-jet translation    */
-    (void)agc_flag_set(AGC_FLAG_R10FLAG);   /* no cross-pointer outputs    */
+    (void)agc_flag_set(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG);   /* no cross-pointer outputs    */
     (void)agc_rendz_clradmod();             /* RADMODES for R29            */
     (void)agc_flag_clear(AGC_FLAG_RNDVZFLG);
     agc_guid_lm_t *g = &agc_guid_state()->lm;
     g->dvthrush = AS_THRESH2;
     g->dvcntr = 4;
     agc_erase_set_trkmkcnt(0);              /* R29 downlink not ready      */
-    return agc_lm_job_p12flash(ctx);
+    return agc_lm_job_powered_ascent_flash(ctx);
 }
 
 /* V06N33 flash (ENTER repeats it). */
-agc_status_t agc_lm_job_p12flash(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_MUNFLAG));
-    return as_flash00(ctx, 33, AGC_JOB_P12LM2, AGC_JOB_P12FLASH);
+    return as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_LM2, AGC_JOB_POWERED_ASCENT_FLASH);
 }
 
 /* After PROCEED (pp. 838-839): WM, /LAND/, engine data, TGO, and the LM
  * state integrated to TIG (LEMPREC; may wait for the lock).          */
-agc_status_t agc_lm_job_p12lm2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_lm2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    as_restart_here(AGC_JOB_P12LM2);
+    as_restart_here(AGC_JOB_POWERED_ASCENT_LM2);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_status_t st = agc_lm_guidinit(&ip);
@@ -634,14 +634,14 @@ agc_status_t agc_lm_job_p12lm2(agc_job_ctx_t *ctx)
         return st;
     }
     (void)agc_flag_set(AGC_FLAG_FLPI);
-    (void)agc_lm_p12init(&ip);
+    (void)agc_lm_powered_ascent_init(&ip);
     agc_lm_asc()->tgo = AS_TGOA;            /* initial nominal TGO         */
-    return agc_lm_job_p12lmb(ctx);
+    return agc_lm_job_powered_ascent_lmb(ctx);
 }
 
 /* P12LMB (p. 839): V1S, R, gravity and UNIT/R/ at TIG; XRANGE for N76
  * and the nominal injection targets.                                 */
-agc_status_t agc_lm_job_p12lmb(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_lmb(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -649,7 +649,7 @@ agc_status_t agc_lm_job_p12lmb(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
-    agc_status_t st = agc_integ_lemprec(&ip, ic, agc_erase_tig(), AGC_JOB_P12LMB);
+    agc_status_t st = agc_integ_lemprec(&ip, ic, agc_erase_tig(), AGC_JOB_POWERED_ASCENT_LMB);
     if (st == AGC_STATUS_BUSY) {
         return AGC_STATUS_OK;                            /* asleep        */
     }
@@ -691,7 +691,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_guid_t *g = agc_guid_state();
     agc_lm_asc_t *a = agc_lm_asc();
-    g->lm.which = AGC_LM_WHICH_P12;
+    g->lm.which = AGC_LM_WHICH_POWERED_ASCENT;
     as_restart_here(AGC_JOB_NEWLOAD2);
     a->yco = agc_dp_add(&ip, agc_dp_shl(&ip, a->xrange, 5), a->y);
     const agc_vec_t ur = g->avg.unitr;
@@ -704,7 +704,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
 
 /* P12RET (p. 840): yaw and pitch of the thrust command for display,
  * one degree deadband, then the ignition sequence (P12BURN).         */
-agc_status_t agc_lm_p12ret(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+agc_status_t agc_lm_powered_ascent_ret(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -719,13 +719,13 @@ agc_status_t agc_lm_p12ret(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     agc_vec_t u = agc_vec_unit(ip, agc_lm_ldg()->unfc_2, NULL, NULL);
     agc_dp_t c = agc_dp_shl(ip, agc_vec_dot(ip, u, agc_guid_state()->avg.unitr), 1);
     a->pitch = agc_dp_neg(agc_dp_acos(ip, c));
-    as_restart_here(AGC_JOB_P12BURN);
+    as_restart_here(AGC_JOB_POWERED_ASCENT_BURN);
     agc_job_ctx_t c2 = *ctx;
-    return agc_lm_job_p12burn(&c2);
+    return agc_lm_job_powered_ascent_burn(&c2);
 }
 
 /* P12RET after its phase change: FLPI off, deadband, BURNBABY. */
-agc_status_t agc_lm_job_p12burn(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -734,6 +734,6 @@ agc_status_t agc_lm_job_p12burn(agc_job_ctx_t *ctx)
     agc_inhint();
     (void)agc_lm_dap_pflitedb();
     agc_relint();
-    (void)AGC_ASSERT(agc_guid_state()->lm.which == AGC_LM_WHICH_P12);
+    (void)AGC_ASSERT(agc_guid_state()->lm.which == AGC_LM_WHICH_POWERED_ASCENT);
     return agc_lm_burnbaby(ctx);
 }

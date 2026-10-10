@@ -21,11 +21,11 @@ agc_status_t agc_radar_lralt(void);          /* LRALT: one LR altitude sample   
 agc_status_t agc_radar_lrvel(agc_sp_t beam2);/* LRVEL: 5 velocity samples, A = 2*VSELECT */
 agc_status_t agc_radar_lrpos2(void);         /* LRPOS2: drive LR antenna to POS2 */
 agc_dp_t     agc_radar_samplsum(void);       /* SAMPLSUM: last reading (DP)     */
-agc_status_t agc_radar_r12lites(void);       /* R12LITES: LR lamps              */
-agc_status_t agc_radar_r29(void);            /* R29: RR designate (from SERVICER) */
+agc_status_t agc_radar_landing_downlink_lites(void);       /* R12LITES: LR lamps              */
+agc_status_t agc_radar_powered_flight_radar_designate(void);            /* R29: RR designate (from SERVICER) */
 
 /* ---- landing (guid-landing, P70-P71.agc p. ~829) -------------------------- */
-agc_status_t agc_lm_r10r11a(void);           /* R10,R11A (LRHTASK continues there) */
+agc_status_t agc_lm_landing_radar_monitor_a(void);           /* R10,R11A (LRHTASK continues there) */
 
 /* ---- LAMBERT / INITVEL erasables RASTEER1 reads (nav-conic / prog-rendz).
  * RTMAG, MU/A, MUASTEER are already agc_rendz_t fields.                     */
@@ -33,7 +33,7 @@ agc_sp_t  agc_erase_geomsgn(void);   /* GEOMSGN SP +.5 short way, -.5 long way *
 agc_vec_t agc_erase_un(void);        /* UN unit normal to the transfer plane 2^1 */
 
 /* ---- LM continuation jobs (lead adds to agc_jobs.h) --------------------- */
-#define AGC_JOB_P42STAGE   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
+#define AGC_JOB_APS_BURN_STAGE   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
 #define AGC_JOB_IGNITE     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 111)) /* *PROCEED / IGNITE */
 #define AGC_JOB_STAR_ENTER ((agc_job_id_t)(AGC_JOB_GUID_BASE + 112)) /* *ENTER     */
 #define AGC_JOB_COMFAIL1   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 113)) /* COMFAIL1 (V97 PROCEED) */

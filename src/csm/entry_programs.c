@@ -1,5 +1,5 @@
 /*
- * p61_p67.c -- P61-P67.agc (Comanche055, pp. 789-818): the entry programs.
+ * entry_programs.c -- P61-P67.agc (Comanche055, pp. 789-818): the entry programs.
  *
  *   P61  EMS initialisation data (N61 target, N60 GMAX/VPRED/GAMMAEI,
  *        N63 RTGO/VIO/TTE), then P62
@@ -34,18 +34,18 @@
 #include "entry_pending.h"
 
 /* Verb/noun codes (VN pseudo-op: verb, noun in decimal digits).          */
-#define VN_V06N60 6, 60
-#define VN_V06N61 6, 61
+#define VN_ENTRY_PREDICTION_DISPLAY 6, 60
+#define VN_ENTRY_TARGET_DISPLAY 6, 61
 #define ENTRY_OCT41 041            /* GOPERF1R checklist: CM/SM separation */
 #define ENTRY_BIT14 ((agc_sp_t)020000) /* .5 rev = 180 deg (ROLLC hi word)  */
 
 /* P61/P62 module erasables (EBANK6/7).                                   */
 static agc_job_id_t s61_ret_job = AGC_JOB_NONE; /* 60GENRET return point  */
 static agc_sp_t     s61dt;          /* S61DT waitlist dt for 4.43, cs      */
-static agc_dp_t     p61_mm;         /* MM: PIPTIME of RONE/VONE, cs B28    */
+static agc_dp_t     entry_preparation_mm;         /* MM: PIPTIME of RONE/VONE, cs B28    */
 static agc_vec_t    urone;          /* URONE  UNIT(RONE)/2                 */
 static agc_vec_t    urh;            /* URH    rotated UR/2 (FISHCALC)      */
-static agc_tff_t    p61_tff;        /* TFF push list (RONE, VONE, ...)     */
+static agc_tff_t    entry_preparation_tff;        /* TFF push list (RONE, VONE, ...)     */
 
 agc_sp_t agc_erase_s61dt(void)
 {
@@ -92,7 +92,7 @@ static agc_sp_t headsup_roll(const agc_entry_state_t *es)
  * ==================================================================== */
 
 /* P61 (p. 789): lock out extended verbs, HEADSUP = -1, S61.1.            */
-agc_status_t agc_job_p61(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
 
@@ -101,23 +101,23 @@ agc_status_t agc_job_p61(agc_job_ctx_t *ctx)
     }
     (void)agc_svc_set_extvbact(020000);            /* CA BIT14 TS EXTVBACT */
     es->headsup = -1;                              /* preload              */
-    s61_ret_job = AGC_JOB_P61_DSP;                 /* QXCH 60GENRET        */
+    s61_ret_job = AGC_JOB_ENTRY_PREPARATION_DSP;                 /* QXCH 60GENRET        */
     return agc_job_s61_1(ctx);
 }
 
 /* P61 display (p. 789): V06N61 LAT(SPL) LNG(SPL) HEADSUP, GOFLASHR;
  * the job goes on to P61.3.                                              */
-agc_status_t agc_job_p61_dsp(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation_dsp(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = entry_flash(ctx, AGC_DSKY_GOFLASHR, VN_V06N61,
-                                  AGC_JOB_GOTOPOOH, AGC_JOB_P61_4, AGC_JOB_P61_DSP);
+    agc_status_t st = entry_flash(ctx, AGC_DSKY_GOFLASHR, VN_ENTRY_TARGET_DISPLAY,
+                                  AGC_JOB_GOTOPOOH, AGC_JOB_ENTRY_PREPARATION_4, AGC_JOB_ENTRY_PREPARATION_DSP);
 
     (void)AGC_ASSERT(ctx != NULL);
-    return (st == AGC_STATUS_OK) ? agc_job_p61_3(ctx) : st;
+    return (st == AGC_STATUS_OK) ? agc_job_entry_preparation_3(ctx) : st;
 }
 
 /* P61.3 (p. 790): restart group 4 at the display (4.1), ENDOFJOB.        */
-agc_status_t agc_job_p61_3(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation_3(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_entry_state() != NULL);
@@ -125,27 +125,27 @@ agc_status_t agc_job_p61_3(agc_job_ctx_t *ctx)
 }
 
 /* NEWRNVN (p. 790): RONE, VONE, URONE, UNI at PIPTIME, and STARTEN1.     */
-static agc_status_t p61_newrnvn(agc_interp_t *ip, agc_entry_state_t *es)
+static agc_status_t entry_preparation_newrnvn(agc_interp_t *ip, agc_entry_state_t *es)
 {
     agc_status_t st;
 
     (void)AGC_ASSERT(ip != NULL);
-    p61_mm = agc_erase_piptime();                  /* save PIPTIME in MM   */
+    entry_preparation_mm = agc_erase_piptime();                  /* save PIPTIME in MM   */
     st = entry_starten1(ip, es);
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    p61_tff.rone = agc_erase_rn();
-    urone = agc_vec_unit(ip, p61_tff.rone, NULL, NULL);
-    p61_tff.vone = agc_erase_vn();
-    es->uni = agc_vec_unit(ip, agc_vec_cross(ip, p61_tff.vone, urone), NULL, NULL);
-    (void)AGC_ASSERT(p61_mm == agc_erase_piptime());
+    entry_preparation_tff.rone = agc_erase_rn();
+    urone = agc_vec_unit(ip, entry_preparation_tff.rone, NULL, NULL);
+    entry_preparation_tff.vone = agc_erase_vn();
+    es->uni = agc_vec_unit(ip, agc_vec_cross(ip, entry_preparation_tff.vone, urone), NULL, NULL);
+    (void)AGC_ASSERT(entry_preparation_mm == agc_erase_piptime());
     return AGC_STATUS_OK;
 }
 
 /* P61.4 (p. 790): ROLLC from HEADSUP, the target at PIPTIME (retried if
  * SERVICER updated RN, VN meanwhile), S61.2, then P61.1.                 */
-agc_status_t agc_job_p61_4(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation_4(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
     agc_interp_t      *ip = entry_ip();
@@ -157,30 +157,30 @@ agc_status_t agc_job_p61_4(agc_job_ctx_t *ctx)
     }
     es->rollc = agc_dp_pack(headsup_roll(es), 0);      /* ZL DXCH ROLLC */
     for (n = 0; n < 4; n++) {                          /* DUMPP61 bound  */
-        st = p61_newrnvn(ip, es);
-        if (st != AGC_STATUS_OK || agc_dp_sub(ip, p61_mm, agc_erase_piptime()) >= 0) {
+        st = entry_preparation_newrnvn(ip, es);
+        if (st != AGC_STATUS_OK || agc_dp_sub(ip, entry_preparation_mm, agc_erase_piptime()) >= 0) {
             break;
         }
     }
     if (st == AGC_STATUS_OK) {
         st = agc_entry_s61_2();
     }
-    return (st == AGC_STATUS_OK) ? agc_job_p61_1(ctx) : st;
+    return (st == AGC_STATUS_OK) ? agc_job_entry_preparation_1(ctx) : st;
 }
 
 /* P61.1 (p. 790): V06N60 GMAX VPRED GAMMAEI, GOFLASH.                   */
-agc_status_t agc_job_p61_1(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation_1(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)agc_dsky_clearmrk();
     (void)AGC_ASSERT(agc_entry_state() != NULL);
-    return entry_flash(ctx, AGC_DSKY_GOFLASH, VN_V06N60,
-                       AGC_JOB_GOTOPOOH, AGC_JOB_P61_2, AGC_JOB_P61_1);
+    return entry_flash(ctx, AGC_DSKY_GOFLASH, VN_ENTRY_PREDICTION_DISPLAY,
+                       AGC_JOB_GOTOPOOH, AGC_JOB_ENTRY_PREPARATION_2, AGC_JOB_ENTRY_PREPARATION_1);
 }
 
 /* P61.2 (pp. 790-791): TTE corrected for the time spent at the display,
  * V06N63 RTGO VIO TTE, GOFLASH; PROCEED falls into P62.                  */
-agc_status_t agc_job_p61_2(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_preparation_2(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
     agc_interp_t      *ip = entry_ip();
@@ -188,9 +188,9 @@ agc_status_t agc_job_p61_2(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    es->tte = agc_dp_add(ip, agc_dp_sub(ip, agc_rtb_loadtime(), p61_mm), es->tte1);
+    es->tte = agc_dp_add(ip, agc_dp_sub(ip, agc_rtb_loadtime(), entry_preparation_mm), es->tte1);
     return entry_flash(ctx, AGC_DSKY_GOFLASH, 6, 63,
-                       AGC_JOB_GOTOPOOH, AGC_JOB_P62_NEWMODE, AGC_JOB_P61_2);
+                       AGC_JOB_GOTOPOOH, AGC_JOB_CM_SM_SEPARATION_NEWMODE, AGC_JOB_ENTRY_PREPARATION_2);
 }
 
 /* ======================================================================
@@ -198,7 +198,7 @@ agc_status_t agc_job_p61_2(agc_job_ctx_t *ctx)
  * ==================================================================== */
 
 /* P62 -3 (p. 792): from P61: NEWMODEX 62, DNLSTCOD = 1 (entry list).    */
-agc_status_t agc_job_p62_newmode(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_newmode(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_phase_newmode(62);
 
@@ -207,34 +207,34 @@ agc_status_t agc_job_p62_newmode(agc_job_ctx_t *ctx)
         st = agc_telem_select_list(AGC_ENTRY_DNLSTCOD_ENTRY);
     }
     (void)AGC_ASSERT(agc_erase_modreg() == 62 || st != AGC_STATUS_OK);
-    return (st == AGC_STATUS_OK) ? agc_job_p62(ctx) : st;
+    return (st == AGC_STATUS_OK) ? agc_job_cm_sm_separation(ctx) : st;
 }
 
 /* P62 (p. 792): S61.1, then the rest of P62.                             */
-agc_status_t agc_job_p62(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    s61_ret_job = AGC_JOB_P62_S61RET;
-    (void)AGC_ASSERT(s61_ret_job == AGC_JOB_P62_S61RET);
+    s61_ret_job = AGC_JOB_CM_SM_SEPARATION_S61RET;
+    (void)AGC_ASSERT(s61_ret_job == AGC_JOB_CM_SM_SEPARATION_S61RET);
     return agc_job_s61_1(ctx);
 }
 
 /* P62 after S61.1 (p. 792): POSEXIT = P62.3 (desired .05 g gimbal angles
  * without display), CM/DAPIC (which goes on to P62.2).                   */
-agc_status_t agc_job_p62_s61ret(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_s61ret(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    es->posexit = AGC_ENTRY_POSEXIT_P62_3;
+    es->posexit = AGC_ENTRY_POSEXIT_CM_SM_SEPARATION_3;
     return agc_entry_dap_ic(ctx);
 }
 
 /* P62.2 (pp. 792-793): AVEGEXIT = CM/POSE, GOPERF1R 41 (request CM/SM
  * separation); the job goes on at P61.3.                                 */
-agc_status_t agc_job_p62_2(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_2(agc_job_ctx_t *ctx)
 {
     agc_status_t st;
 
@@ -243,15 +243,15 @@ agc_status_t agc_job_p62_2(agc_job_ctx_t *ctx)
     }
     agc_guid_state()->avg.avgexit = AGC_JOB_CM_POSE;   /* DXCH AVEGEXIT */
     {
-        const agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_P62_2B, AGC_JOB_P62_2 };
+        const agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_CM_SM_SEPARATION_2B, AGC_JOB_CM_SM_SEPARATION_2 };
         st = agc_dsky_display(ctx, AGC_DSKY_GOPERF1R, ENTRY_OCT41, &cont);
     }
     (void)AGC_ASSERT(agc_guid_state()->avg.avgexit == AGC_JOB_CM_POSE);
-    return (st == AGC_STATUS_OK) ? agc_job_p61_3(ctx) : st;
+    return (st == AGC_STATUS_OK) ? agc_job_entry_preparation_3(ctx) : st;
 }
 
 /* P62.2 +3 (p. 793): PROCEED: CM/DAPON (NODOFLAG is set there).          */
-agc_status_t agc_job_p62_2b(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_2b(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_entry_state() != NULL);
@@ -259,21 +259,21 @@ agc_status_t agc_job_p62_2b(agc_job_ctx_t *ctx)
 }
 
 /* P62.1 (p. 793): V06N61 again (terminate and enter redisplay).          */
-agc_status_t agc_job_p62_1(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_1(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_entry_state() != NULL);
-    return entry_flash(ctx, AGC_DSKY_GOFLASH, VN_V06N61,
-                       AGC_JOB_P62_1, AGC_JOB_P62_1B, AGC_JOB_P62_1);
+    return entry_flash(ctx, AGC_DSKY_GOFLASH, VN_ENTRY_TARGET_DISPLAY,
+                       AGC_JOB_CM_SM_SEPARATION_1, AGC_JOB_CM_SM_SEPARATION_1B, AGC_JOB_CM_SM_SEPARATION_1);
 }
 
 /* P62.1 PROCEED (pp. 793-794): end the attitude hold: ROLLC from
  * HEADSUP, ALFACOM = ALFAPAD, BETACOM = 0, P63FLAG = +1, N22 entry
  * display. P63 directly when CMDAPMOD is -1 or +0, else wait for WAKEP62.*/
-agc_status_t agc_job_p62_1b(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cm_sm_separation_1b(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
-    agc_phase_var_t    v = { AGC_RESTART_JOB, AGC_JOB_P62_1B, AGC_TASK_NONE, 0,
+    agc_phase_var_t    v = { AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_1B, AGC_TASK_NONE, 0,
                              false, 0U };
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL)) {
@@ -283,22 +283,22 @@ agc_status_t agc_job_p62_1b(agc_job_ctx_t *ctx)
     es->rollc = agc_dp_pack(headsup_roll(es), agc_dp_low(es->rollc)); /* TS */
     es->alfacom = es->alfapad;                         /* trim, negative   */
     es->betacom = 0;
-    es->p63flag = 1;                                   /* EXDAP2 -> +0     */
+    es->entry_initialization_flag = 1;                                   /* EXDAP2 -> +0     */
     es->entry_verb = 6;                                /* V06N22           */
     es->entry_noun = 22;
     (void)agc_flag_set(AGC_FLAG_ENTRYDSP);
     if (es->cmdapmod == AGC_ENTRY_DAPMOD_MINUS1 || es->cmdapmod == AGC_ENTRY_DAPMOD_PLUS0) {
-        return agc_job_p63(ctx);
+        return agc_job_entry_initialization(ctx);
     }
     return agc_phase_change(4, 000004);                /* P63.1           */
 }
 
 /* WAKEP62 (p. 794): task from the entry DAP when ALFA nears trim.        */
-agc_status_t agc_task_wakep62(void)
+agc_status_t agc_task_wake_cm_sm_separation(void)
 {
     (void)AGC_ASSERT(agc_entry_state() != NULL);
     (void)AGC_ASSERT(AGC_ENTRY_PRIO13 > 0);
-    return agc_exec_novac(AGC_ENTRY_PRIO13, AGC_JOB_P63);
+    return agc_exec_novac(AGC_ENTRY_PRIO13, AGC_JOB_ENTRY_INITIALIZATION);
 }
 
 /* ======================================================================
@@ -307,7 +307,7 @@ agc_status_t agc_task_wakep62(void)
 
 /* P63 (p. 795): POSEXIT = STARTENT, N64 entry display, P63FLAG = -1,
  * flush the N22 display, disable group 4, ENDOFJOB.                      */
-agc_status_t agc_job_p63(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_initialization(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state();
     agc_status_t       st;
@@ -317,7 +317,7 @@ agc_status_t agc_job_p63(agc_job_ctx_t *ctx)
     }
     st = entry_mode(es, 63, 6, 64);                   /* G VI RTOSPLASH  */
     es->posexit = AGC_ENTRY_POSEXIT_STARTENT;
-    es->p63flag = -1;
+    es->entry_initialization_flag = -1;
     (void)agc_phase_change(4, 000004);
     (void)agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL);
     (void)agc_phase_change(4, 000004);                /* P63.1           */
@@ -325,7 +325,7 @@ agc_status_t agc_job_p63(agc_job_ctx_t *ctx)
 }
 
 /* P64 (p. 797): MM 64, N74 (ROLLC VI D) at .05 g.                        */
-agc_status_t entry_p64(agc_entry_state_t *es)
+agc_status_t entry_post_0_05g(agc_entry_state_t *es)
 {
     (void)AGC_ASSERT(es != NULL);
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG__05GSW));
@@ -334,7 +334,7 @@ agc_status_t entry_p64(agc_entry_state_t *es)
 
 /* P65 (p. 798): MM 65, start the N69 job P65.1, restart 4.55 and 5.3,
  * GOTOADDR = UPCONTRL (the caller continues there, REFAZE10).            */
-agc_status_t entry_p65(agc_entry_state_t *es)
+agc_status_t entry_upcontrol(agc_entry_state_t *es)
 {
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0,
                           false, 0U };
@@ -342,7 +342,7 @@ agc_status_t entry_p65(agc_entry_state_t *es)
 
     (void)AGC_ASSERT(es != NULL);
     if (st == AGC_STATUS_OK) {
-        st = agc_exec_novac(AGC_ENTRY_PRIO13, AGC_JOB_P65_1);
+        st = agc_exec_novac(AGC_ENTRY_PRIO13, AGC_JOB_ENTRY_UPCONTROL_1);
     }
     (void)agc_phase_change2(000554, 010035, &v);
     es->gotoaddr = AGC_ENTRY_GOTO_UPCONTRL;
@@ -351,20 +351,20 @@ agc_status_t entry_p65(agc_entry_state_t *es)
 }
 
 /* P65.1 (p. 798): entry display off, V16N69 ROLLC DL VL, GOFLASHR.       */
-agc_status_t agc_job_p65_1(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_upcontrol_1(agc_job_ctx_t *ctx)
 {
     agc_status_t st;
 
     (void)AGC_ASSERT(ctx != NULL);
     (void)agc_flag_clear(AGC_FLAG_ENTRYDSP);
     st = entry_flash(ctx, AGC_DSKY_GOFLASHR, 16, 69,
-                     AGC_JOB_P65_1, AGC_JOB_P65_1B, AGC_JOB_P65_1);
+                     AGC_JOB_ENTRY_UPCONTROL_1, AGC_JOB_ENTRY_UPCONTROL_1B, AGC_JOB_ENTRY_UPCONTROL_1);
     (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENTRYDSP));
-    return (st == AGC_STATUS_OK) ? agc_job_p61_3(ctx) : st;
+    return (st == AGC_STATUS_OK) ? agc_job_entry_preparation_3(ctx) : st;
 }
 
 /* P65.1 PROCEED (p. 798): entry display back on, P63.1.                  */
-agc_status_t agc_job_p65_1b(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_upcontrol_1b(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)agc_flag_set(AGC_FLAG_ENTRYDSP);
@@ -381,7 +381,7 @@ agc_status_t entry_killgrp4(void)
 }
 
 /* P66 (p. 799): MM 66, N22 trim gimbal angles; P66END.                   */
-agc_status_t entry_p66(agc_entry_state_t *es)
+agc_status_t entry_ballistic(agc_entry_state_t *es)
 {
     agc_status_t st = entry_mode(es, 66, 6, 22);
 
@@ -391,7 +391,7 @@ agc_status_t entry_p66(agc_entry_state_t *es)
 }
 
 /* P67 (p. 800): MM 67, N66 ROLLC XRNGERR DNRNGERR; P66END.               */
-agc_status_t entry_p67(agc_entry_state_t *es)
+agc_status_t entry_final_phase(agc_entry_state_t *es)
 {
     agc_status_t st = entry_mode(es, 67, 6, 66);
 
@@ -401,17 +401,17 @@ agc_status_t entry_p67(agc_entry_state_t *es)
 }
 
 /* P67.1 (p. 800): V16N67 RTOGO LAT LONG, GOFLASH (ENTER redisplays).     */
-agc_status_t agc_job_p67_1(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_final_phase_1(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_entry_state() != NULL);
     return entry_flash(ctx, AGC_DSKY_GOFLASH, 16, 67,
-                       AGC_JOB_P67_1B, AGC_JOB_P67_1B, AGC_JOB_P67_1);
+                       AGC_JOB_ENTRY_FINAL_PHASE_1B, AGC_JOB_ENTRY_FINAL_PHASE_1B, AGC_JOB_ENTRY_FINAL_PHASE_1);
 }
 
 /* P67.1 end (pp. 800-801): entry DAP off (CM/DSTBY, GYMDIFSW), AVEGEXIT
  * = SERVEXIT, GOTOPOOH.                                                   */
-agc_status_t agc_job_p67_1b(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_final_phase_1b(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -427,7 +427,7 @@ agc_status_t agc_job_p67_1b(agc_job_ctx_t *ctx)
 
 /* P67.2 (p. 802): present LAT, LONG, ALT of RN at PIPTIME (pad radius,
  * earth). P67.3 (SERVNOUT) is done by the caller.                        */
-agc_status_t agc_entry_p67_2_latlong(void)
+agc_status_t agc_entry_final_phase_2_latlong(void)
 {
     const agc_latlong_opt_t opt = { false, false };     /* LUNA, ERAD clear */
     agc_entry_state_t      *es = agc_entry_state();
@@ -462,11 +462,11 @@ agc_status_t agc_entry_p67_2_latlong(void)
 static agc_status_t s61_return(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    (void)AGC_ASSERT(s61_ret_job == AGC_JOB_P61_DSP || s61_ret_job == AGC_JOB_P62_S61RET);
-    if (s61_ret_job == AGC_JOB_P62_S61RET) {
-        return agc_job_p62_s61ret(ctx);
+    (void)AGC_ASSERT(s61_ret_job == AGC_JOB_ENTRY_PREPARATION_DSP || s61_ret_job == AGC_JOB_CM_SM_SEPARATION_S61RET);
+    if (s61_ret_job == AGC_JOB_CM_SM_SEPARATION_S61RET) {
+        return agc_job_cm_sm_separation_s61ret(ctx);
     }
-    return agc_job_p61_dsp(ctx);
+    return agc_job_entry_preparation_dsp(ctx);
 }
 
 /* S61.1 after CALRB MIDTOAV2 (p. 804): the future state vector goes to
@@ -506,7 +506,7 @@ agc_status_t agc_job_s61_1(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_imu_r02both();                    /* IMU status check       */
+    (void)agc_imu_status_check_both();                    /* IMU status check       */
     if (agc_flag_test(AGC_FLAG_AVEGFLAG)) {
         return agc_job_s61_1a(ctx);
     }
@@ -680,24 +680,24 @@ static agc_status_t s61_2_ems(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_t 
     agc_dp_t     a;
     agc_status_t st;
 
-    p61_tff.rtmu = (agc_dp_sub(ip, es->emsalt, AGC_ENTRY_KFT290) >= 0)
+    entry_preparation_tff.rtmu = (agc_dp_sub(ip, es->emsalt, AGC_ENTRY_KFT290) >= 0)
                    ? AGC_ENTRY_RTMU_INV_LUNENT : AGC_ENTRY_RTMU_INV_EARTH;
-    st = agc_tff_conic(ip, &p61_tff);
+    st = agc_tff_conic(ip, &entry_preparation_tff);
     if (st == AGC_STATUS_OK) {
-        st = agc_tff_calctff(ip, &p61_tff, AGC_ENTRY_RTRIAL, &t);
+        st = agc_tff_calctff(ip, &entry_preparation_tff, AGC_ENTRY_RTRIAL, &t);
     }
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    a = s61_tfftrig(ip, &p61_tff, &c);
+    a = s61_tfftrig(ip, &entry_preparation_tff, &c);
     *eradm = s61_fishcalc(ip, a, c);
-    st = agc_tff_calctff(ip, &p61_tff, agc_dp_add(ip, *eradm, es->emsalt), &t);
+    st = agc_tff_calctff(ip, &entry_preparation_tff, agc_dp_add(ip, *eradm, es->emsalt), &t);
     if (st != AGC_STATUS_OK) {
         return st;
     }
     es->tte1 = agc_dp_neg(t);                           /* countdown     */
     es->tte = es->tte1;
-    a = s61_tfftrig(ip, &p61_tff, &c);
+    a = s61_tfftrig(ip, &entry_preparation_tff, &c);
     *eradm = s61_fishcalc(ip, a, c);
     a = agc_entry_vrcalc(urh, es->rt);
     a = s61_disptarg(ip, es, a);
@@ -721,19 +721,19 @@ agc_status_t agc_entry_s61_2(void)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    g = s61_vgamcalc(ip, &p61_tff, p61_tff.rterm, &vgam);           /* VIO */
+    g = s61_vgamcalc(ip, &entry_preparation_tff, entry_preparation_tff.rterm, &vgam);           /* VIO */
     es->vio = agc_dp_add(ip, agc_dp_div(ip, AGC_ENTRY_VEMSCON, agc_dp_mul(ip, g, vgam)), vgam);
-    g = s61_vgamcalc(ip, &p61_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT300), &vgam);
+    g = s61_vgamcalc(ip, &entry_preparation_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT300), &vgam);
     st = agc_entry_gmaxcalc(vgam, g, &es->gmax);
     if (st == AGC_STATUS_OK) {                          /* 2nd ERAD iter. */
-        st = agc_tff_calctff(ip, &p61_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &t);
+        st = agc_tff_calctff(ip, &entry_preparation_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &t);
     }
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    g = s61_tfftrig(ip, &p61_tff, &c);
+    g = s61_tfftrig(ip, &entry_preparation_tff, &c);
     eradm = s61_fishcalc(ip, g, c);
-    g = s61_vgamcalc(ip, &p61_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &vgam);
+    g = s61_vgamcalc(ip, &entry_preparation_tff, agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &vgam);
     es->gammaei = agc_dp_pack(agc_dp_high(agc_dp_neg(g)), agc_dp_high(es->rtgo));
     es->vpred = vgam;
     (void)AGC_ASSERT(es->vpred >= 0);

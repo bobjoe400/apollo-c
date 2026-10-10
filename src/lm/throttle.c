@@ -27,7 +27,7 @@
 #define THR_FOURSECS   400     /* 4SECS, P63/P64 guidance period x 2 (cs) */
 #define THR_FRATE_BIT6 32      /* BIT6: FRATE, 32 pulses per centisecond  */
 #define THR_LOW8       0377    /* LOW8                                    */
-#define THR_P66        66
+#define THR_RATE_OF_DESCENT_LANDING        66
 
 /* DP built from a high and low word without touching core semantics.     */
 static agc_dp_t thr_pack(int32_t hi, int32_t lo)
@@ -133,7 +133,7 @@ static void thr_fweight(agc_lm_thr_t *t)
 {
     agc_sp_t buf;                  /* low word of time of last PIPA read  */
     agc_sp_t q;                    /* 2 PGUID in cs                       */
-    if (agc_erase_modreg() == THR_P66) {
+    if (agc_erase_modreg() == THR_RATE_OF_DESCENT_LANDING) {
         buf = thr_lo(agc_lm_ldg()->thistpip);
         q = THR_TWOSECS;
     } else {

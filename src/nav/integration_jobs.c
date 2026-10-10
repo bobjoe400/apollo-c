@@ -155,7 +155,7 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
     }
     statint1_tdec1 = agc_integ_loadtime();
     if (agc_state_vehicle() == AGC_VEHICLE_CSM) {
-        (void)agc_integ_csm_clear_v96onflg();           /* always OK       */
+        (void)agc_integ_csm_clear_stop_integration_onflg();           /* always OK       */
     }
     return statint1_grab();
 }

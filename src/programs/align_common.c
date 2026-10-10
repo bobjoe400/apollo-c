@@ -67,7 +67,7 @@ agc_dp_t agc_align_cdulogic(uint16_t cdu)
  * high word is), and a doubling overflow wraps by one revolution.
  * DEVIATION: local copy of the RTB op (owner sys-misc, not public yet).
  */
-uint16_t agc_align_1sto2s(agc_dp_t revs)
+uint16_t agc_align_ones_to_twos(agc_dp_t revs)
 {
     int32_t hv = revs / CDU_TO_REVS_SHIFT;
     if (!AGC_ASSERT((revs >= AGC_DP_MIN) && (revs <= AGC_DP_MAX))) {

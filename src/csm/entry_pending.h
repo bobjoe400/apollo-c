@@ -25,7 +25,7 @@
 #include "agc/agc_jobs.h"
 #include "agc/agc_exec.h"
 /* Provisional ids the exec lane already names for this lane's restart
- * points: AGC_JOB_P67_1 S61_1A PRE_HUNT P65_1 MATRXJOB REP11 REP11A
+ * points: AGC_JOB_ENTRY_FINAL_PHASE_1 S61_1A PRE_HUNT P65_1 MATRXJOB REP11 REP11A
  * NORMLIZE, AGC_TASK_SETJTAG WAKEP62 S61_1C ATERTASK READGYMB REDOSAT.   */
 #include "../exec/exec_pending.h"
 /* sys-misc services (LOADTIME, DELAYJOB, UPFLAG, telemetry list select). */
@@ -35,32 +35,32 @@
 #define AGC_JOB_SERVEXIT   ((agc_job_id_t)0x0C00) /* SERVEXIT as AVGEXIT target */
 #define AGC_JOB_CM_POSE    ((agc_job_id_t)0x0C01) /* CM/POSE (AVGEXIT in entry) */
 #define AGC_JOB_REDOPOSE   ((agc_job_id_t)0x0C02) /* REDOPOSE group 5 restart   */
-#define AGC_JOB_P61        ((agc_job_id_t)0x0C03) /* P61 (V37)                  */
-#define AGC_JOB_P61_DSP    ((agc_job_id_t)0x0C04) /* P61 V06N61 (S61.1 return)  */
-#define AGC_JOB_P61_4      ((agc_job_id_t)0x0C05) /* P61.4                      */
-#define AGC_JOB_P61_1      ((agc_job_id_t)0x0C06) /* P61.1  V06N60              */
-#define AGC_JOB_P61_2      ((agc_job_id_t)0x0C07) /* P61.2  V06N63              */
-#define AGC_JOB_P61_3      ((agc_job_id_t)0x0C08) /* P61.3  PHASCHNG, ENDOFJOB  */
-#define AGC_JOB_P62_NEWMODE ((agc_job_id_t)0x0C09) /* P62 -3: NEWMODEX 62       */
-#define AGC_JOB_P62        ((agc_job_id_t)0x0C0A) /* P62 (V37)                  */
-#define AGC_JOB_P62_S61RET ((agc_job_id_t)0x0C0B) /* P62 after S61.1            */
-#define AGC_JOB_P62_2      ((agc_job_id_t)0x0C0C) /* P62.2  GOPERF1R 41         */
-#define AGC_JOB_P62_2B     ((agc_job_id_t)0x0C0D) /* P62.2 PROCEED: CM/DAPON    */
+#define AGC_JOB_ENTRY_PREPARATION        ((agc_job_id_t)0x0C03) /* P61 (V37)                  */
+#define AGC_JOB_ENTRY_PREPARATION_DSP    ((agc_job_id_t)0x0C04) /* P61 V06N61 (S61.1 return)  */
+#define AGC_JOB_ENTRY_PREPARATION_4      ((agc_job_id_t)0x0C05) /* P61.4                      */
+#define AGC_JOB_ENTRY_PREPARATION_1      ((agc_job_id_t)0x0C06) /* P61.1  V06N60              */
+#define AGC_JOB_ENTRY_PREPARATION_2      ((agc_job_id_t)0x0C07) /* P61.2  V06N63              */
+#define AGC_JOB_ENTRY_PREPARATION_3      ((agc_job_id_t)0x0C08) /* P61.3  PHASCHNG, ENDOFJOB  */
+#define AGC_JOB_CM_SM_SEPARATION_NEWMODE ((agc_job_id_t)0x0C09) /* P62 -3: NEWMODEX 62       */
+#define AGC_JOB_CM_SM_SEPARATION        ((agc_job_id_t)0x0C0A) /* P62 (V37)                  */
+#define AGC_JOB_CM_SM_SEPARATION_S61RET ((agc_job_id_t)0x0C0B) /* P62 after S61.1            */
+#define AGC_JOB_CM_SM_SEPARATION_2      ((agc_job_id_t)0x0C0C) /* P62.2  GOPERF1R 41         */
+#define AGC_JOB_CM_SM_SEPARATION_2B     ((agc_job_id_t)0x0C0D) /* P62.2 PROCEED: CM/DAPON    */
 #define AGC_JOB_CM_DAPON_WAIT ((agc_job_id_t)0x0C0E) /* NOTYET after DELAYJOB   */
-#define AGC_JOB_P62_1      ((agc_job_id_t)0x0C0F) /* P62.1  V06N61              */
-#define AGC_JOB_P62_1B     ((agc_job_id_t)0x0C10) /* P62.1 PROCEED              */
-#define AGC_JOB_P63        ((agc_job_id_t)0x0C11) /* P63 (NOVAC from WAKEP62)   */
-#define AGC_JOB_P65_1B     ((agc_job_id_t)0x0C12) /* P65.1 PROCEED              */
-#define AGC_JOB_P67_1B     ((agc_job_id_t)0x0C13) /* P67.1 PROCEED              */
+#define AGC_JOB_CM_SM_SEPARATION_1      ((agc_job_id_t)0x0C0F) /* P62.1  V06N61              */
+#define AGC_JOB_CM_SM_SEPARATION_1B     ((agc_job_id_t)0x0C10) /* P62.1 PROCEED              */
+#define AGC_JOB_ENTRY_INITIALIZATION        ((agc_job_id_t)0x0C11) /* P63 (NOVAC from WAKEP62)   */
+#define AGC_JOB_ENTRY_UPCONTROL_1B     ((agc_job_id_t)0x0C12) /* P65.1 PROCEED              */
+#define AGC_JOB_ENTRY_FINAL_PHASE_1B     ((agc_job_id_t)0x0C13) /* P67.1 PROCEED              */
 #define AGC_JOB_S61_1_RET  ((agc_job_id_t)0x0C14) /* RETRN1 after DELAYJOB      */
 #define AGC_JOB_S61_1_MID  ((agc_job_id_t)0x0C15) /* S61.1 after MIDTOAV2 BUSY  */
-#define AGC_JOB_P37        ((agc_job_id_t)0x0C16) /* P37 (V37)                  */
-#define AGC_JOB_P11        ((agc_job_id_t)0x0C17) /* P11                        */
+#define AGC_JOB_RETURN_TO_EARTH        ((agc_job_id_t)0x0C16) /* P37 (V37)                  */
+#define AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR        ((agc_job_id_t)0x0C17) /* P11                        */
 #define AGC_JOB_VHHDOT     ((agc_job_id_t)0x0C18) /* VHHDOT (AVGEXIT in P11)    */
 #define AGC_JOB_ATERJOB    ((agc_job_id_t)0x0C19) /* ATERJOB                    */
 #define AGC_JOB_REFAZE10   ((agc_job_id_t)0x0C1A) /* REFAZE10 group 5 restart   */
-#define AGC_JOB_P11_TEPH   ((agc_job_id_t)0x0C1B) /* P11 3.x: TEPHEM copy, on   */
-#define AGC_JOB_P11_ATER   ((agc_job_id_t)0x0C1C) /* P11 after PREREAD1         */
+#define AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_TEPH   ((agc_job_id_t)0x0C1B) /* P11 3.x: TEPHEM copy, on   */
+#define AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_ATER   ((agc_job_id_t)0x0C1C) /* P11 after PREREAD1         */
 #define AGC_JOB_ATRESET2   ((agc_job_id_t)0x0C1D) /* ATRESET after DELAYJOB 6   */
 #define AGC_TASK_JETCALL   ((agc_task_id_t)0x0C80) /* JETCALL                   */
 #define AGC_TASK_ATTRATES  ((agc_task_id_t)0x0C81) /* ATTRATES (T5RUPT)         */
@@ -83,7 +83,7 @@ agc_status_t agc_guid_preread1_csm(void);
 
 /* ---- imu (prelaunch): the P11 tail of P11+..: ERCOMP += (THETAN MXV XSM)
  * VSL1, then EARTHR +3 at TLIFTOFF with the exit P11OUT (-> MATRXJOB).   */
-agc_status_t agc_csm_prelaunch_p11_earthr(agc_interp_t *ip, agc_dp_t tliftoff);
+agc_status_t agc_csm_prelaunch_earth_orbit_insertion_monitor_earthr(agc_interp_t *ip, agc_dp_t tliftoff);
 
 /* ---- dap-csm: STICKCHK (RCS-CSM DAP p. 881) for SATSTICK: RHC bits of
  * channel 31 -> RMANNDX PMANNDX YMANNDX (agc_csm_dap_rcs()->manndx).     */

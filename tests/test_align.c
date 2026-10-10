@@ -100,7 +100,7 @@ static bool mat_is_identity_half(const agc_mat_t *m, double tol)
 }
 
 /* P52 option 3 (REFSMMAT), R51 / R54 / AXISGEN / R55 arithmetic. */
-static void test_p52_option3_identity(void)
+static void test_realign_refsmmat_option_identity(void)
 {
     agc_interp_t ip;
     agc_interp_init(&ip);
@@ -118,7 +118,7 @@ static void test_p52_option3_identity(void)
     CHECK(near(rev(diff), 0.0, 1e-6));
     CHECK(near(rev(agc_align_ram()->theta), 0.25, 1e-5));     /* 90 deg  */
     agc_mat_t xdc;
-    CHECK(agc_align_r51_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
+    CHECK(agc_align_fine_align_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
     agc_dp_t gyro[3] = { 1, 1, 1 };
     CHECK(agc_imu_calcgta(&ip, &xdc, gyro) == AGC_STATUS_OK);
@@ -224,8 +224,8 @@ static void test_misc(void)
     CHECK(agc_align_chkscode(050));
     CHECK(!agc_align_chkscode(051));
     CHECK(!agc_align_chkscode(-1));
-    CHECK(agc_align_1sto2s(agc_dp_from_double(0.25, 0)) == 020000u);
-    CHECK(agc_align_1sto2s(agc_dp_from_double(-0.25, 0)) == 060000u);
+    CHECK(agc_align_ones_to_twos(agc_dp_from_double(0.25, 0)) == 020000u);
+    CHECK(agc_align_ones_to_twos(agc_dp_from_double(-0.25, 0)) == 060000u);
     CHECK(near(rev(agc_align_cdulogic(060000u)), -0.25, 1e-9));
     /* SVDWN, other vehicle, moon (x2 = 2): R = (dR SR9 + RCV) SR2. */
     const agc_vec_t rcv = agc_vec_make(agc_dp_from_double(2.0e6, 27), 0, 0);
@@ -238,14 +238,14 @@ static void test_misc(void)
 }
 
 /* S52.3 axes for the CSM: Z down, Y opposite the orbital angular momentum. */
-static void test_s52_3_axes(void)
+static void test_nominal_orientation_axes(void)
 {
     agc_interp_t ip;
     agc_interp_init(&ip);
     const agc_vec_t r = agc_vec_make(agc_dp_from_double(7.0e6, 29), 0, 0);
     const agc_vec_t v = agc_vec_make(0, agc_dp_from_double(75.0, 7), 0);
     agc_mat_t smd;
-    CHECK(agc_align_s52_3_axes(&ip, r, v, &smd) == AGC_STATUS_OK);
+    CHECK(agc_align_nominal_orientation_axes(&ip, r, v, &smd) == AGC_STATUS_OK);
     CHECK(near(agc_dp_to_double(smd.row[2].c[0], 1), -1.0, 1e-6));  /* ZSMD */
     CHECK(near(agc_dp_to_double(smd.row[1].c[2], 1), -1.0, 1e-6));  /* YSMD */
     CHECK(near(agc_dp_to_double(smd.row[0].c[1], 1), 1.0, 1e-6));   /* XSMD */
@@ -255,15 +255,15 @@ int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     agc_align_ram_reset();
-    test_p52_option3_identity();
+    test_realign_refsmmat_option_identity();
     test_sband_plus_x();
     test_sextant_round_trip();
     test_misc();
-    test_s52_3_axes();
+    test_nominal_orientation_axes();
     agc_state_init(AGC_VEHICLE_LM);
     agc_align_ram_reset();
     test_rr_round_trip();
-    test_p52_option3_identity();
+    test_realign_refsmmat_option_identity();
     (void)printf("test_align: %d checks, %d failures, %d assertion reports\n",
                  g_checks, g_failures, g_assert_reports);
     return (g_failures == 0) ? 0 : 1;

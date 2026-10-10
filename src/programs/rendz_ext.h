@@ -34,101 +34,53 @@ uint16_t     agc_erase_extvbact(void);
 void         agc_erase_set_extvbact(uint16_t v);
 
 /* ==== provisional job ids (prog-rendz), range 0x1100 ===================== */
-/* common (rendz_common.c, rendz_display.c) */
-#define AGC_JOB_RENDZ_TTOGO_DISPLAY    ((agc_job_id_t)0x1101) /* VN1645 after DELAYJOB  */
-#define AGC_JOB_RENDZ_KILCLOCK   ((agc_job_id_t)0x1102) /* KILCLOCK               */
-#define AGC_JOB_RENDZ_TTOGO_PROCEED   ((agc_job_id_t)0x1103) /* N45PROC                */
-#define AGC_JOB_RENDZ_CLUPDATE  ((agc_job_id_t)0x1104) /* CLUPDATE               */
-#define AGC_JOB_S3435_N81     ((agc_job_id_t)0x1105) /* S34/35.5 V06N81 shown  */
-#define AGC_JOB_RENDZ_FINAL_DV_CHECKED ((agc_job_id_t)0x1106) /* S34/35.5 after N81 PRO */
-#define AGC_JOB_S3435_N59     ((agc_job_id_t)0x1107) /* S34/35.5 V06N59 shown  */
-#define AGC_JOB_DISDVLVC_DONE ((agc_job_id_t)0x1108) /* DISDVLVC after V06N8x  */
-/* P32/P72 (rendz_p32_p33.c) */
-#define AGC_JOB_P32_N11       ((agc_job_id_t)0x1110) /* P32/P72A V06N11 TCSI   */
-#define AGC_JOB_P32_N55       ((agc_job_id_t)0x1111) /* V06N55 NN ELEV         */
-#define AGC_JOB_P32_N37       ((agc_job_id_t)0x1112) /* V06N37 TTPI            */
-#define AGC_JOB_P32_SELMU     ((agc_job_id_t)0x1113) /* TIG = TCSI, SELECTMU   */
-#define AGC_JOB_P32_CALC      ((agc_job_id_t)0x1114) /* P32/P72B compute       */
-#define AGC_JOB_P32_N75       ((agc_job_id_t)0x1115) /* P32/P72F V06N75 shown  */
-#define AGC_JOB_P32_DV        ((agc_job_id_t)0x1116) /* after N75: S32/33.1    */
-#define AGC_JOB_P32_DV2       ((agc_job_id_t)0x1117) /* after V06N81: DISDVLVC */
-#define AGC_JOB_P32_DV3       ((agc_job_id_t)0x1118) /* after V06N82: VN1645   */
-#define AGC_JOB_P32_ALARM     ((agc_job_id_t)0x1119) /* ALMXIT V05N09          */
-#define AGC_JOB_P32_N11_LM    ((agc_job_id_t)0x111A) /* LM VN0611 (after N11)  */
-/* P33/P73 */
-#define AGC_JOB_P33_N13       ((agc_job_id_t)0x1120) /* P33/P73A V06N13 TCDH   */
-#define AGC_JOB_P33_SELMU     ((agc_job_id_t)0x1121) /* SELECTMU               */
-#define AGC_JOB_P33_CALC      ((agc_job_id_t)0x1122) /* P33/P73B compute       */
-#define AGC_JOB_P33_ALARM     ((agc_job_id_t)0x1123) /* 611 V05N09             */
-#define AGC_JOB_P33_ALARM_PRO ((agc_job_id_t)0x1124) /* 611 V05N09 PROCEED     */
-#define AGC_JOB_P33_N75       ((agc_job_id_t)0x1125) /* V06N75                 */
-#define AGC_JOB_P33_DV        ((agc_job_id_t)0x1126) /* after N75              */
-#define AGC_JOB_P33_DV2       ((agc_job_id_t)0x1127) /* after V06N81           */
-/* P34/P74, P35/P75 (rendz_tpi.c) */
-#define AGC_JOB_P34_N37       ((agc_job_id_t)0x1130) /* P34/P74A V06N37        */
-#define AGC_JOB_P34_N55       ((agc_job_id_t)0x1131) /* DISPLAYE V06N55        */
-#define AGC_JOB_P34_SELMU     ((agc_job_id_t)0x1132) /* P34/P74B SELECTMU      */
-#define AGC_JOB_P34_CALC      ((agc_job_id_t)0x1133) /* P34/P74C compute       */
-#define AGC_JOB_P34_ALARM     ((agc_job_id_t)0x1134) /* 611 V05N09             */
-#define AGC_JOB_P34_N55B      ((agc_job_id_t)0x1135) /* SWCHCLR DISPLAYE       */
-#define AGC_JOB_P34_N37B      ((agc_job_id_t)0x1136) /* P34/P74D V06N37        */
-#define AGC_JOB_P34_E         ((agc_job_id_t)0x1137) /* P34/P74E compute       */
-#define AGC_JOB_P34_N58       ((agc_job_id_t)0x1138) /* V06N58 shown           */
-#define AGC_JOB_P34_FINAL     ((agc_job_id_t)0x1139) /* after N58: S34/35.5    */
-#define AGC_JOB_P34_LOOP      ((agc_job_id_t)0x113A) /* after S34/35.5         */
-#define AGC_JOB_P35_SELMU     ((agc_job_id_t)0x113B) /* P35/P75A SELECTMU      */
-#define AGC_JOB_P35_CALC      ((agc_job_id_t)0x113C) /* P35/P75B compute       */
-#define AGC_JOB_P35_LOOP      ((agc_job_id_t)0x113D) /* after S34/35.5         */
-/* R36 (rendz_r36.c) */
-#define AGC_JOB_R36_OPTION    ((agc_job_id_t)0x1140) /* CM V04N12 answer       */
-#define AGC_JOB_R36_N16       ((agc_job_id_t)0x1141) /* R36P3 V06N16 shown     */
-#define AGC_JOB_R36_INT       ((agc_job_id_t)0x1142) /* after V06N16           */
-#define AGC_JOB_R36_N90       ((agc_job_id_t)0x1143) /* R36TAG2 V06N90         */
-/* R30 (r30.c) */
-#define AGC_JOB_V82_START     ((agc_job_id_t)0x1150) /* V82CALL                */
-#define AGC_JOB_V82_OPTION    ((agc_job_id_t)0x1151) /* V82GOFF V04N06 answer  */
-#define AGC_JOB_V82GOFF1      ((agc_job_id_t)0x1152) /* FINDVAC V82GOFF1       */
-#define AGC_JOB_V82_N44       ((agc_job_id_t)0x1153) /* V16N44 answer          */
-#define AGC_JOB_V82GON1       ((agc_job_id_t)0x1154) /* FINDVAC V82GON1 / loop */
-#define AGC_JOB_V82_OPT2      ((agc_job_id_t)0x1155) /* V82GON V04N06 answer   */
-#define AGC_JOB_V82_SHOW      ((agc_job_id_t)0x1156) /* V82GON2 display        */
-/* R31 (r31.c) */
-#define AGC_JOB_V83CALL       ((agc_job_id_t)0x1160) /* FINDVAC V83CALL        */
-#define AGC_JOB_V83_DISP      ((agc_job_id_t)0x1161) /* DISPN5X                */
-#define AGC_JOB_V83_LOOP      ((agc_job_id_t)0x1162) /* V83 recompute          */
-/* P38/P39 (stable_orbit.c) */
-#define AGC_JOB_P38_N33       ((agc_job_id_t)0x1170)
-#define AGC_JOB_P38_N55       ((agc_job_id_t)0x1171)
-#define AGC_JOB_P38_CALC      ((agc_job_id_t)0x1172)
-#define AGC_JOB_P38_N58       ((agc_job_id_t)0x1173)
-#define AGC_JOB_P38_N81       ((agc_job_id_t)0x1174)
-#define AGC_JOB_P38_DONE      ((agc_job_id_t)0x1175)
-#define AGC_JOB_P39_CALC      ((agc_job_id_t)0x1176)
-#define AGC_JOB_P39_N81       ((agc_job_id_t)0x1177)
-#define AGC_JOB_P39_DONE      ((agc_job_id_t)0x1178)
-/* P17 (tpi_search_csm.c) */
-#define AGC_JOB_P17_N37       ((agc_job_id_t)0x1180)
-#define AGC_JOB_P17_N55       ((agc_job_id_t)0x1181)
-#define AGC_JOB_P17_CALC      ((agc_job_id_t)0x1182)
-#define AGC_JOB_P17_N58       ((agc_job_id_t)0x1183)
-#define AGC_JOB_P17_DONE      ((agc_job_id_t)0x1184)
-/* P31 (glag_lm.c) */
-#define AGC_JOB_P31_N33       ((agc_job_id_t)0x1190)
-#define AGC_JOB_P31_CALC      ((agc_job_id_t)0x1191)
-#define AGC_JOB_P31_N81       ((agc_job_id_t)0x1192)
-#define AGC_JOB_P31_N42       ((agc_job_id_t)0x1193)
-#define AGC_JOB_P31_DONE      ((agc_job_id_t)0x1194)
-/* P76 (p76.c) */
-#define AGC_JOB_P76_N84       ((agc_job_id_t)0x11A0)
-#define AGC_JOB_P76_N33       ((agc_job_id_t)0x11A1)
-#define AGC_JOB_P76_CALC      ((agc_job_id_t)0x11A2)
-/* P21 (p21.c) */
-#define AGC_JOB_P21_N34       ((agc_job_id_t)0x11B0)
-#define AGC_JOB_P21_CALC      ((agc_job_id_t)0x11B1)
-#define AGC_JOB_P21_N43       ((agc_job_id_t)0x11B2)
-#define AGC_JOB_P21_NEXT      ((agc_job_id_t)0x11B3)
-/* radar lead-in (radar_leadin_lm.c) */
-#define AGC_JOB_DORSAMP       ((agc_job_id_t)0x11C0) /* LM radar sample job    */
+/* common (rendz_display.c) */
+#define AGC_JOB_RENDZ_VNPOOH                 ((agc_job_id_t)0x1101) /* VNPOOH TC -5: same display again */
+#define AGC_JOB_RENDZ_TTOGO_DISPLAY          ((agc_job_id_t)0x1102) /* VN1645 after DELAYJOB: V16N45 */
+#define AGC_JOB_RENDZ_KILCLOCK               ((agc_job_id_t)0x1103) /* VN1645 TERMINATE: KILCLOCK */
+#define AGC_JOB_RENDZ_TTOGO_PROCEED          ((agc_job_id_t)0x1104) /* VN1645 PROCEED: N45PROC */
+#define AGC_JOB_RENDZ_CLUPDATE               ((agc_job_id_t)0x1105) /* VN1645 RECYCLE: CLUPDATE */
+#define AGC_JOB_RENDZ_FINAL_DV_CHECKED       ((agc_job_id_t)0x1106) /* S34/35.5 after V06N81 PROCEED */
+/* P32/P72 CSI targeting (rendz_csi_cdh_targeting.c) */
+#define AGC_JOB_CSI_TARGETING                ((agc_job_id_t)0x1107) /* P32 entry */
+#define AGC_JOB_CSI_TARGETING_OTHER_VEHICLE  ((agc_job_id_t)0x1108) /* P72 entry */
+#define AGC_JOB_CSI_INPUT                    ((agc_job_id_t)0x1109) /* P32/P72A (ALMXIT recycle) */
+#define AGC_JOB_CSI_AFTER_TCSI               ((agc_job_id_t)0x110A) /* after V06N11 TCSI */
+#define AGC_JOB_CSI_AFTER_NN_ELEV            ((agc_job_id_t)0x110B) /* after V06N55 NN ELEV */
+#define AGC_JOB_CSI_AFTER_TTPI               ((agc_job_id_t)0x110C) /* after V06N37 TTPI */
+#define AGC_JOB_CSI_COMPUTE                  ((agc_job_id_t)0x110D) /* P32/P72B */
+#define AGC_JOB_CSI_ALARM_DISPLAY            ((agc_job_id_t)0x110E) /* ALMXIT V05N09 (PROCEED: show again) */
+#define AGC_JOB_CSI_AFTER_RESULTS            ((agc_job_id_t)0x110F) /* after V06N75: S32/33.1 / DISDVLVC N81 */
+#define AGC_JOB_CSI_AFTER_DV_LV              ((agc_job_id_t)0x1110) /* after V06N81: S32/33.1 tail, DISDVLVC N82 */
+#define AGC_JOB_CSI_AFTER_CDH_DV             ((agc_job_id_t)0x1111) /* after V06N82: TTPIO, VN1645 */
+/* P33/P73 CDH targeting */
+#define AGC_JOB_CDH_TARGETING                ((agc_job_id_t)0x1112) /* P33 entry */
+#define AGC_JOB_CDH_TARGETING_OTHER_VEHICLE  ((agc_job_id_t)0x1113) /* P73 entry */
+#define AGC_JOB_CDH_INPUT                    ((agc_job_id_t)0x1114) /* P33/P73A (611 recycle) */
+#define AGC_JOB_CDH_AFTER_TCDH               ((agc_job_id_t)0x1115) /* after V06N13 TCDH */
+#define AGC_JOB_CDH_COMPUTE                  ((agc_job_id_t)0x1116) /* P33/P73B */
+#define AGC_JOB_CDH_TIME_SEARCH              ((agc_job_id_t)0x1117) /* S33/34.1 after an INTSTALL sleep */
+#define AGC_JOB_CDH_ALARM_PROCEED            ((agc_job_id_t)0x1118) /* 611 V05N09 PROCEED */
+#define AGC_JOB_CDH_AFTER_RESULTS            ((agc_job_id_t)0x1119) /* after V06N75 */
+#define AGC_JOB_CDH_AFTER_DV_LV              ((agc_job_id_t)0x111A) /* after V06N81 */
+/* P34/P74 TPI and P35/P75 TPM targeting (rendz_tpi_tpm_targeting.c) */
+#define AGC_JOB_TPI_TARGETING                ((agc_job_id_t)0x111B) /* P34 entry */
+#define AGC_JOB_TPI_TARGETING_OTHER_VEHICLE  ((agc_job_id_t)0x111C) /* P74 entry */
+#define AGC_JOB_TPI_INPUT                    ((agc_job_id_t)0x111D) /* P34/P74A (611 PROCEED) */
+#define AGC_JOB_TPI_AFTER_TTPI               ((agc_job_id_t)0x111E) /* after V06N37 */
+#define AGC_JOB_TPI_AFTER_ELEV               ((agc_job_id_t)0x111F) /* after DISPLAYE V06N55 */
+#define AGC_JOB_TPI_CYCLE                    ((agc_job_id_t)0x1120) /* P34/P74C */
+#define AGC_JOB_TPI_INTLOOP                  ((agc_job_id_t)0x1121) /* INTLOOP */
+#define AGC_JOB_TPI_TIME_SEARCH              ((agc_job_id_t)0x1122) /* S33/34.1 after an INTSTALL sleep */
+#define AGC_JOB_TPI_ALARM                    ((agc_job_id_t)0x1123) /* 611 alarm and V05N09 (V32: again) */
+#define AGC_JOB_TPI_COMPUTE                  ((agc_job_id_t)0x1124) /* P34/P74E */
+#define AGC_JOB_TPI_AFTER_RESULTS            ((agc_job_id_t)0x1125) /* after V06N58: S34/35.5 */
+#define AGC_JOB_TPI_AFTER_FINAL              ((agc_job_id_t)0x1126) /* after S34/35.5: VN1645 */
+#define AGC_JOB_TPM_TARGETING                ((agc_job_id_t)0x1127) /* P35 entry */
+#define AGC_JOB_TPM_TARGETING_OTHER_VEHICLE  ((agc_job_id_t)0x1128) /* P75 entry */
+#define AGC_JOB_TPM_COMPUTE                  ((agc_job_id_t)0x1129) /* P35/P75B */
+#define AGC_JOB_TPM_AFTER_FINAL              ((agc_job_id_t)0x112A) /* after S34/35.5: VN1645 */
+/*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */
 #define AGC_TASK_RZ_TICKTEST  ((agc_task_id_t)0x1101) /* R30 V82 1 s tick      */

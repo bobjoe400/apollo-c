@@ -37,7 +37,7 @@ vehicle differences behind `agc_state_vehicle()`.
 | POODOO, POODOO1, GOPOODOO, STRTIDLE, FLAGS, CCSHOLE (C1495/L1383) | agc_poodoo, agc_ccshole, AGC_JOB_GOPOODOO | alarm.c | |
 | interrupt lead-ins at 4000 (INTERRUPT_LEAD_INS C132/L153) | agc_rupt_* | interrupts.c | |
 | SLAP1, DOFSTART, DOFSTRT1, STARTSUB, STARTSB1, STARTSB2, ENEMA, GOPROG, GOPROG3, LIGHTSET, ENDRSTRT, GOTOPOOH, GOP00FIX, VAC5STOR, T5IDLOC (FRESH C183-205/L211-225) | agc_fresh_start, agc_restart_goprog, fresh_enema, ... | fresh_start.c | foreign erasables delegated |
-| V37 / CANV37 / POOH / V37XEQ (FRESH C197-208/L227-236) | agc_v37_change_program, agc_job_canv37 | v37_p00.c | PARTIAL: checks only |
+| V37 / CANV37 / POOH / V37XEQ (FRESH C197-208/L227-236) | agc_change_program, agc_job_change_program_check | change_program_idle.c | PARTIAL: checks only |
 | job/task/rupt dispatch | agc_dispatch_job / _task / _rupt | dispatch.c | one switch each |
 
 ## Progress
@@ -53,7 +53,7 @@ vehicle differences behind `agc_state_vehicle()`.
 - DONE interrupts.c (INHINT/RELINT counter, 11 lead-ins, TIME4-6, T5LOC/T6LOC, T5IDLOC)
 - DONE exec_erasable.c (MODECADR: IMUCADR/OPTCADR/RADCADR)
 - DONE fresh_start.c (SLAP1 DOFSTART DOFSTRT1 GOPROG ENEMA GOPROG3 LIGHTSET STARTSUB STARTSB1 STARTSB2 GOTOPOOH; foreign erasables delegated)
-- PARTIAL v37_p00.c (GOP00FIX + reflash, INITSUB/RAKE, V37 front-end checks + PREMM1 tables, upcalls; CANV37, R00TOP00, SETUP70 stubbed)
+- PARTIAL change_program_idle.c (GOP00FIX + reflash, INITSUB/RAKE, V37 front-end checks + PREMM1 tables, upcalls; CANV37, R00TOP00, SETUP70 stubbed)
 - DONE dispatch.c (job, task, rupt switches; provisional ids -> default NOT_FOUND)
 - DONE check_rules clean (0 hard, density >= 2 all files)
 - DONE tests/test_exec.c (197 checks pass; links src/exec + src/core objects only)
@@ -79,8 +79,8 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Stubs
 
-- agc_job_canv37 (CANV37 .. POOH / NOUVEAU / V37XEQ): UNIMPLEMENTED.
-- agc_v37_change_program: PARTIAL (IMU-init / NODOFLAG -> 1520, PREMM1 validity -> NOT_FOUND, SERVICER running -> BUSY); returns UNIMPLEMENTED for the change itself, CSM R00TOP00 and LM SETUP70/71.
+- agc_job_change_program_check (CANV37 .. POOH / NOUVEAU / V37XEQ): UNIMPLEMENTED.
+- agc_change_program: PARTIAL (IMU-init / NODOFLAG -> 1520, PREMM1 validity -> NOT_FOUND, SERVICER running -> BUSY); returns UNIMPLEMENTED for the change itself, CSM R00TOP00 and LM SETUP70/71.
 - exec_up_servidle (LM STRTIDLE SERVIDLE) and exec_up_setcoars (CSM GOPROG SETCOARS): UNIMPLEMENTED until the owners publish them.
 - rst_read_sp/rst_read_dp for SAVET-30, ZOOMTIME, P40TMP, S61DT, CM/GYMDT: UNIMPLEMENTED (restart of LM 1.3, 3.3, 4.25; CSM 4.21, 4.43, 4.57, 6.11 returns UNIMPLEMENTED).
 - CSM INITSUB deadband restore (SETMAXDB/SETMINDB) skipped.
@@ -89,7 +89,7 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Requested core additions
 
-Added by me to include/agc/agc_exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_gop00fix, agc_job_gop00fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_canv37, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
+Added by me to include/agc/agc_exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_go_idle_fix, agc_job_go_idle_fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_change_program_check, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
 
 Requested from other owners (exact declarations):
 - state-flags / guid-powered: `agc_dp_t agc_erase_p40tmp(void);` `agc_dp_t agc_erase_savet_30(void);` `agc_sp_t agc_erase_zoomtime(void);` (restart tables; exec must not call agc_guid_state()).
@@ -98,7 +98,7 @@ Requested from other owners (exact declarations):
 - imu: `agc_status_t agc_imu_setcoars(void);` (CSM GOPROG NO ATT).
 - dap-csm: `agc_status_t agc_csm_dap_setmaxdb(void);` `agc_status_t agc_csm_dap_setmindb(void);` (CSM INITSUB).
 - sys-misc: public `agc_status_t agc_t4rupt_rupt(void);` and `agc_status_t agc_telem_downrupt(void);` for dispatch_rupt; io-pinball: an UPRUPT entry that reads INLINK itself; prog-rendz/sys-misc: the radar RUPT handler (VHFREAD / RADAREAD).
-- Each owner of a "delegated" erasable (list under Stubs): a `<lane>_startsb2_reset()` / `_dofstart_reset()` entry that fresh_start.c can call through v37_p00.c.
+- Each owner of a "delegated" erasable (list under Stubs): a `<lane>_startsb2_reset()` / `_dofstart_reset()` entry that fresh_start.c can call through change_program_idle.c.
 
 ## Requested jobs-tasks
 
@@ -113,12 +113,12 @@ Foreign, provisional in src/exec/exec_pending.h (0x0E00 range; replace with the 
 tests/test_exec.c (197 checks, all pass): priority ordering and FINDVAC-over-NOVAC tie, VAC exhaustion -> 1201 (+ PROG lamp, FAILREG chain and MULTFAIL bit), core-set exhaustion -> 1202 (7 CSM / 8 LM), sleep/wake, PRIOCHNG BUSY + yield, BAILOUT inside a job, waitlist ordering and LST1 deltas incl. RUPTAGN, overflow -> 1203, dt = 0 -> 1204 -> P00, LONGCALL 200 s, PHASCHNG A/B/C/2PHSCHNG/NEWPHASE codes, table task timing from TBASE (due / overdue), variable job (FINDVAC/NOVAC)/task/type B/X.1 restarts, LM tables (4.33 NOVAC, 1.2 aliases, 2.3 LONGCALL, unpublished erasable), KLEANs per vehicle, GOPROG (1107 + fresh start, P00 with no groups, group restart, T5LOC), LM POODOO -> GOTOPOOH 4.33.
 Build (the full libagc does not build yet because of other lanes):
 `gcc <flags> -DAGC_HOST_DEBUG -Iinclude tests/test_exec.c src/exec/{executive,waitlist,phase_table,restart_tables,restarts,alarm,fresh_start,interrupts,exec_erasable}.c src/core/{agc_state,agc_channels,agc_erasable}.c`
-(the test provides the dispatch and exec_up_* doubles; do not link dispatch.c or v37_p00.c with it.)
+(the test provides the dispatch and exec_up_* doubles; do not link dispatch.c or change_program_idle.c with it.)
 
 ## Open questions
 
 - AGC_JOB_GOTOPOOH is an agc_jobs.h member but src/csm/entry_pending.h and src/programs/rendz_ext.h #define it again: those lanes must drop their macros.
 - AGC_JOB_GOPROG in agc_jobs.h does not correspond to an AGC job; dispatch returns UNIMPLEMENTED. Remove or repurpose?
 - STATEUP / THISVINT (end of FRESH_START_AND_RESTART) are P00 integration code; assumed to belong to nav-integ.
-- Layering: v37_p00.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.
+- Layering: change_program_idle.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.
 

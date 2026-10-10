@@ -84,7 +84,11 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 * DONE tjetlaw.c (TJETLAW all zones + RUFLAW1-3), t6rupt.c (JTLST, T6JOB, T6JOBCHK, DOT6RUPT, WRITEP/U/V,
   TIME6 DINC model)
 * Session 3: NAMING rule applied (1/ACCS -> jet_accel_update etc., see docs/RENAMES.md)
-* TODO qraxis.c, qrmanual.c, qrjets.c,
+* DONE qraxis.c (QRAXIS, CALLQERR, TRYGTS, RCS, SENSEGET, QRCONTRL, QERRCALC, STILLRCS), qrmanual.c
+  (min impulse, CHEKSTIK, RHCACTIV, ENTERUV), qrjets.c (U,V loop bodies, AFTERTJ, DOSKIP, SELCTSUB, XTRANS,
+  ROT-TOUV, CLOSEOUT)
+* DONE gts.c (GTS law, GTSQRT, ROOTCYCL, ACDT+C12, TIMEGMBL)
+* TODO
   gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c, tests/test_lm_dap.c
 
 ## Deviations

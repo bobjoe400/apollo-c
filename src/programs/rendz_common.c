@@ -27,6 +27,15 @@ static const agc_dp_t mutable_rtmue_inv = 176229826;
 static const agc_dp_t mutable_mum = 122569450;
 static const agc_dp_t mutable_rtmum_inv = 198627193;
 
+/* MUTABLE entry for the primary body: MUE 2^36 (earth) or MUM 2^30 (moon),
+ * i.e. DLOAD* MUTABLE -2,1 with X1 = RTX1.                              */
+agc_dp_t rz_mutable_mu(bool moon)
+{
+    agc_dp_t mu = moon ? mutable_mum : mutable_mue;
+    (void)AGC_ASSERT(mu > 0);
+    return mu;
+}
+
 agc_rendz_t *agc_rendz_erasable(void)
 {
     (void)AGC_ASSERT(rendz_erasable.body.rtx1 <= 0);

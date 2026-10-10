@@ -168,7 +168,7 @@ static void test_xt1lim(void)
     agc_dp_t rc = agc_dp_from_double(0.7e7, 29);
     agc_dp_t x = 0;
 
-    CHECK(agc_p37_xt1lim(ma, rc, rc, agc_dp_from_double(5.0, 9), &x) == AGC_STATUS_OK);
+    CHECK(agc_return_to_earth_xt1lim(ma, rc, rc, agc_dp_from_double(5.0, 9), &x) == AGC_STATUS_OK);
     CHECK(fabs(agc_dp_to_double(x, 5) - 2.0) < 1e-4);
 }
 

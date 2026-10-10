@@ -14,7 +14,7 @@ Files:
 * src/csm/entry_internal.h -- prototypes shared between files of this lane only
 * src/csm/entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
   IMU, job/task ids). Delete at integration; see "Requested core additions".
-* src/csm/reentry.c, p61_p67.c, cm_body_attitude.c, entry_dap.c, p37.c, p11.c
+* src/csm/reentry.c, entry_programs.c, cm_body_attitude.c, entry_dap.c, p37.c, earth_orbit_insertion.c
 * tests/test_entry.c
 
 ## Design table
@@ -62,14 +62,14 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 | WHICHALF..TIMSCAL (1083-1086) | phase plane -> TON1 TOFF TON2 JNDX JNDX1 | agc_entry_dap_roll_phase_plane |
 | TIMETST/JETCALL/JETACTN/DZCALL (1087-1089) | waitlist jet schedule, ch 6 | dap_timetst, agc_entry_dap_jetcall, dap_dzcall |
 | CM/FDAI/CM/FDAIR/CM/DUMPR/CMTMFILE (1090-1091) | FDAI needles, body rate TM | dap_cm_fdai |
-| P61, P61.1-P61.4 (789-791) | displays N61 N60 N63 | agc_entry_p61* (p61_p67.c) |
+| P61, P61.1-P61.4 (789-791) | displays N61 N60 N63 | agc_entry_p61* (entry_programs.c) |
 | P62, P62.1-P62.3 (792-794) | separation, DAP on, N22 | agc_entry_p62* |
-| P63 .. P67, P67.1-P67.3, KILLGRP4 (795-802) | mode changes, displays | agc_entry_p63.., entry_p64..entry_p67 |
+| P63 .. P67, P67.1-P67.3, KILLGRP4 (795-802) | mode changes, displays | agc_entry_p63.., entry_post_0_05g..entry_final_phase |
 | S61.1/S61.1A-C (803-805) | IMU orientation check, alarms 1426/1427 | agc_entry_s61_1, agc_entry_s61_1a |
 | S61.2, FISHCALC, VGAMCALC, TFF/TRIG, DISPTARG, VRCALC (806-816) | N60/N63 predictions | agc_entry_s61_2 (stub) + pure helpers |
 | S62.3 (817-818) | ROLLC ALFAPAD UXA UYA UZA -> CPHI | agc_entry_s62_3 |
 | P37 + subroutines (890-933) | return to earth | p37.c (mostly stubs, see Stubs) |
-| P11, MATRXJOB, VHHDOT, S11.1, ATERJOB.., SATSTKON/SATSTICK (533-550) | insertion monitor | p11.c |
+| P11, MATRXJOB, VHHDOT, S11.1, ATERJOB.., SATSTKON/SATSTICK (533-550) | insertion monitor | earth_orbit_insertion.c |
 
 ## Progress
 (DONE <C function> <file> / PARTIAL / TODO)
@@ -77,10 +77,10 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - REENTRY_CONTROL: DONE reentry.c (targeting, STARTENT, all steering steps, sequencer, REFAZE10, PRE-HUNT, HUNTEST/RANGER test API)
 - CM_BODY_ATTITUDE: DONE cm_body_attitude.c (CM/POSE triad, CM/TRIO, CM/ATUP, REDOPOSE, POSEXIT, SERVNOUT, REFAZE10 job)
 - CM_ENTRY_DIGITAL_AUTOPILOT: DONE entry_dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
-- P61-P67: DONE p61_p67.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
+- P61-P67: DONE entry_programs.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
 - P37_P70: PARTIAL p37.c (XT1LIM done; P37 program and its conic/precision
   subroutines are a documented stub -- assignment asked "read and describe")
-- P11: DONE p11.c (P11, REP11, REP11A, MATRXJOB+GETDOWN, VHHDOT, S11.1,
+- P11: DONE earth_orbit_insertion.c (P11, REP11, REP11A, MATRXJOB+GETDOWN, VHHDOT, S11.1,
   ATERTASK, ATERJOB/ATTDISP/attitude errors, ATRESET, SATSTKON, REDOSAT, SATSTICK)
 - tests/test_entry.c: DONE (23 checks; see Tests written)
 - entry_pending.h: DONE rewritten against the now-available core headers (resume 2)
@@ -90,11 +90,11 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - -0 in CMDAPMOD modelled as AGC_ENTRY_DAPMOD_MINUS0.
 
 ## Stubs
-- agc_job_p37 (P37_P70.agc pp. 891-930): returns AGC_STATUS_UNIMPLEMENTED.
+- agc_job_return_to_earth (P37_P70.agc pp. 891-930): returns AGC_STATUS_UNIMPLEMENTED.
   Not translated: P37/RTE299..RTE390 conic iteration, P37E/RTEVN/RTEDISP
   displays, TMRAD100, INVC100, PREC100..PRECX precision trajectory,
   RTENCK1-3, V2T100..V2T1X, GAMDV10..GAMDVX, DVCALC, P37G..P37W targeting
-  and the P370 alarms (605, 612, 613). Only XT1LIM (agc_p37_xt1lim) is done.
+  and the P370 alarms (605, 612, 613). Only XT1LIM (agc_return_to_earth_xt1lim) is done.
   About 1500 lines of interpretive code; suggest a sibling agent (needs
   INTEGRVS, CSMPREC, TIMERAD, PARAM, GETERAD, TIMETHET, LAT-LONG).
 
@@ -105,7 +105,7 @@ at integration once the owners provide them. Flags, channel bits, DSKY
 AVERAGEG state now come from the published headers.
 - sys-misc: `agc_status_t agc_svc_set_extvbact(uint16_t v);` (TS EXTVBACT, P61).
 - guid-powered: `agc_status_t agc_guid_preread1_csm(void);` (PREREAD1, P11).
-- imu/prelaunch: `agc_status_t agc_csm_prelaunch_p11_earthr(agc_interp_t *ip,
+- imu/prelaunch: `agc_status_t agc_csm_prelaunch_earth_orbit_insertion_monitor_earthr(agc_interp_t *ip,
   agc_dp_t tliftoff);` (P11 tail of the prelaunch ERCOMP/EARTHR).
 - dap-csm: `agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);` -- public
   wrapper for csm_rcs_stickchk (rcs_manual.c), used by SATSTICK.
@@ -117,7 +117,7 @@ AVERAGEG state now come from the published headers.
 - Shared math kept as local static copies until exported: LOG, EARROT1/2
   (CSM_GEOMETRY), ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES), CDULOGIC, SIGNMPAC
   (RT8_OP_CODES), POLY (INTERPRETER). Suggest agc_interp.h/agc_nav.h exports.
-- agc_csm_entry.h: agc_p11_padload_t gained `satrate[4]` (SATRATE pad load).
+- agc_csm_entry.h: agc_earth_orbit_insertion_monitor_padload_t gained `satrate[4]` (SATRATE pad load).
 
 ## Requested jobs-tasks
 Jobs: GOTOPOOH SERVEXIT CM_POSE P61 P61_4 P61_1 P61_2 P61_3 P62 P62_1 P62_2 P62_2B

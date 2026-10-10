@@ -1,5 +1,5 @@
 /*
- * p40_csm_steer.c -- P40-P47.agc, Comanche055 pp. 697-728: the 2-second
+ * sps_burn_steer.c -- P40-P47.agc, Comanche055 pp. 697-728: the 2-second
  * steering cycle run from AVGEXIT: UPDATEVG (with SETUP.9 / SURELY.9),
  * S40.8 (VG update, low-thrust test, TGOCALC, XPRODUCT, S40.81, LOTHRUST),
  * STEERING (engine-off set-up), CALCN85, P40CNV85, CALCN83, SERVXT, the
@@ -14,10 +14,10 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "p40_csm_internal.h"
+#include "sps_burn_internal.h"
 
 #define CALLER_STEERING 1
-#define CALLER_CALCN85  2
+#define CALLER_CALC_VG_BODY  2
 #define PH_5_3_B        ((uint16_t)010035)
 
 /* 2VEXHUST 2DEC 63.020792 B-7: 2 (10 338.0564 ft/s), m/cs 2^7.            */
@@ -75,7 +75,7 @@ static agc_status_t lothrust(agc_csm_tvc_t *tvc)
     tvc->vcntr = 0;                                   /* CS ZERO: KILL MASS UPD. */
     tvc->vcntrtmp = 0;
     tvc->repfrac = 0;
-    agc_guid_state()->csm.nvword1 = AGC_CSM_NV_V97;   /* ENGINE-FAIL V97 FLASH  */
+    agc_guid_state()->csm.nvword1 = AGC_CSM_NV_ENGINE_FAIL_PROCEDURE;   /* ENGINE-FAIL V97 FLASH  */
     (void)AGC_ASSERT(tvc->vcntr == 0);
     return agc_flag_clear(AGC_FLAG_STEERSW);
 }
@@ -252,7 +252,7 @@ agc_status_t agc_job_steering_b(agc_job_ctx_t *ctx)
 }
 
 /* P40CNV85 (p.697): VGBODY = S41.1(VGPREV), VG in control axes for N85.   */
-agc_status_t agc_csm_p40cnv85(agc_interp_t *ip)
+agc_status_t agc_csm_sps_burn_convert_vg_body(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -263,25 +263,25 @@ agc_status_t agc_csm_p40cnv85(agc_interp_t *ip)
 }
 
 /* CALCN85 (p.697): AVEGEXIT of P41 / post-burn: UPDATEVG, N85, SERVEXIT.  */
-agc_status_t agc_job_calcn85_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_guid_state()->csm.updcaller = CALLER_CALCN85;
+    agc_guid_state()->csm.updcaller = CALLER_CALC_VG_BODY;
     agc_interp_t ip;
     agc_interp_init(&ip);
     bool s409 = false;
     (void)agc_csm_updatevg(&ip, &s409);
-    (void)agc_csm_p40cnv85(&ip);
+    (void)agc_csm_sps_burn_convert_vg_body(&ip);
     return agc_csm_servxt(ctx);
 }
 
 /* The caller's tail after a restart inside UPDATEVG / S40.8.               */
 static agc_status_t caller_tail(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (agc_guid_state()->csm.updcaller == CALLER_CALCN85) {
-        (void)agc_csm_p40cnv85(ip);
+    if (agc_guid_state()->csm.updcaller == CALLER_CALC_VG_BODY) {
+        (void)agc_csm_sps_burn_convert_vg_body(ip);
         return agc_csm_servxt(ctx);
     }
     (void)AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING);
@@ -312,7 +312,7 @@ agc_status_t agc_job_s40_8b_csm(agc_job_ctx_t *ctx)
 /* CALCN83 (p.698): P47 thrust monitor: DV47TEMP (= VG) = DELVCTL +
  * DELVREF, DELVIMU = S41.1(DV47TEMP), S11.1 (V I, H, HDOT for N62), then
  * DELVCTL = DV47TEMP after a 5.3 type B restart point.                    */
-agc_status_t agc_job_calcn83_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_calc_delta_v_body_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -324,10 +324,10 @@ agc_status_t agc_job_calcn83_csm(agc_job_ctx_t *ctx)
     (void)agc_guid_s41_1(&ip, AGC_VEHICLE_CSM, g->burn.vg, &g->burn.delvimu);
     (void)agc_csm_s11_1(&ip);
     phase_b(AGC_JOB_CALCN83_B);
-    return agc_job_calcn83_b(ctx);
+    return agc_job_calc_delta_v_body_b(ctx);
 }
 
-agc_status_t agc_job_calcn83_b(agc_job_ctx_t *ctx)
+agc_status_t agc_job_calc_delta_v_body_b(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -350,7 +350,7 @@ agc_status_t agc_job_s40_9_csm(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45L : EP4_10L;
     (void)agc_flag_clear(AGC_FLAG_GUESSW);
-    agc_status_t st = agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4);
+    agc_status_t st = agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4, ctx->id);
     if (st != AGC_STATUS_OK) {
         return st;
     }

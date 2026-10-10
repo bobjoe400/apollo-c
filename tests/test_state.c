@@ -56,20 +56,20 @@ static void test_flag_ids(void)
     CHECK(agc_dnum(AGC_FLAG_REFSMFLG) == 47);
     CHECK(agc_dnum(AGC_FLAG_DSKYFLAG) == 75);
     CHECK(agc_dnum(AGC_FLAG_ENGONFLG) == 83);
-    CHECK(agc_dnum(AGC_FLAG_V37FLAG) == 114);
+    CHECK(agc_dnum(AGC_FLAG_CHANGE_PROGRAM_FLAG) == 114);
     CHECK(agc_dnum(AGC_FLAG_CMOONFLG) == 123);
     CHECK(agc_dnum(AGC_FLAG_LMOONFLG) == 124);
     CHECK(agc_dnum(AGC_FLAG_QUITFLAG) == 145);
     CHECK(agc_dnum(AGC_FLAG_INTFLAG) == 151);
     CHECK(agc_dnum(AGC_FLAG__05GSW) == 102);
-    CHECK(agc_dnum(AGC_FLAG_P39_79SW) == 126);
+    CHECK(agc_dnum(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_SW) == 126);
     CHECK(agc_dnum(AGC_FLAG_CM_DSTBY) == 103);
     CHECK(agc_dnum(AGC_FLAG_S32_1F1) == 165);
     /* aliases share one bit */
     CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_FIRSTFLG);
     CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_OPTNSW);
-    CHECK((int)AGC_FLAG_EGSW == (int)AGC_FLAG_R57FLAG);
-    CHECK((int)AGC_FLAG_TARG2FLG == (int)AGC_FLAG_R23FLG);
+    CHECK((int)AGC_FLAG_EGSW == (int)AGC_FLAG_OPTICS_CALIBRATION_FLAG);
+    CHECK((int)AGC_FLAG_TARG2FLG == (int)AGC_FLAG_BACKUP_SIGHTING_MARK_FLG);
     /* encoding (word << 4) | bit: MOONFLAG = FLAGWRD0 bit 12 */
     CHECK((int)AGC_FLAG_MOONFLAG == 0x0C);
     CHECK(agc_flag_mask(AGC_FLAG_MOONFLAG) == 0x0800u);

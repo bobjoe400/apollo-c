@@ -144,8 +144,8 @@ agc_status_t agc_phase_change2(uint16_t code_a, uint16_t code_b,
 agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tbase); /* NEWPHASE */
 uint16_t     agc_phase_get(int group);            /* C(PHASEn)            */
 agc_status_t agc_phase_mr_klean(void);            /* MR.KLEAN             */
-agc_status_t agc_phase_p00_klean(void);           /* P00KLEAN             */
-agc_status_t agc_phase_v37_klean(void);           /* V37KLEAN             */
+agc_status_t agc_phase_idle_klean(void);           /* P00KLEAN             */
+agc_status_t agc_phase_change_program_klean(void);           /* V37KLEAN             */
 agc_status_t agc_phase_newmode(agc_sp_t mode);    /* NEWMODEA/NEWMODEX    */
 bool         agc_phase_checkmm(agc_sp_t mode);    /* CHECKMM              */
 agc_status_t agc_restart_group(int group);        /* RESTARTS (one group) */
@@ -159,7 +159,7 @@ agc_status_t agc_fresh_start_slap1(void);          /* SLAP1 (V36)          */
 agc_status_t agc_fresh_dofstart(void);             /* DOFSTART             */
 agc_status_t agc_restart_goprog(void);             /* GOPROG (GOJAM)       */
 uint16_t     agc_restart_redoctr(void);            /* REDOCTR              */
-agc_status_t agc_v37_change_program(uint8_t new_mm); /* V37 (MMCHANG)      */
+agc_status_t agc_change_program(uint8_t new_mm); /* V37 (MMCHANG)      */
 
 /* Interrupt lead-ins (INTERRUPT_LEAD_INS.agc), one per vector, for the sim
  * harness. Each runs with interrupts inhibited, like the AGC's RUPT.       */
@@ -205,10 +205,10 @@ agc_status_t agc_phase_kill(int group);         /* DXCH -PHASEn with NEG0 */
 
 /* Jobs and tasks defined in src/exec/ (called from dispatch.c).         */
 agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);  /* GOTOPOOH          */
-agc_status_t agc_job_gop00fix(agc_job_ctx_t *ctx);  /* GOP00FIX          */
+agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx);  /* GOP00FIX          */
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);  /* GOPOODOO          */
-agc_status_t agc_job_gop00fix_reflash(agc_job_ctx_t *ctx); /* GOP00FIX -3 */
-agc_status_t agc_job_canv37(agc_job_ctx_t *ctx);    /* CANV37 (stub)     */
+agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx); /* GOP00FIX -3 */
+agc_status_t agc_job_change_program_check(agc_job_ctx_t *ctx);    /* CANV37 (stub)     */
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);  /* ENDOFJOB as a job */
 agc_status_t agc_task_endtask(void);                /* ENDTASK / SVCT3   */
 agc_status_t agc_task_svct3(void);                  /* SVCT3 (retry)     */

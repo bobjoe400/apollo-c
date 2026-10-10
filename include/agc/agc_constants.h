@@ -85,10 +85,10 @@
 /* C5/2: DEC .0363551 (SPSIN) */
 #define AGC_K_C5_2          ((agc_sp_t)   596)  /* C5/2      01124 */
 /* V05N09: VN 0509 */
-#define AGC_K_V05N09        ((agc_sp_t)   649)  /* V05N09    01211 */
+#define AGC_K_ALARM_CODES_DISPLAY        ((agc_sp_t)   649)  /* V05N09    01211 */
 #define AGC_K_OCT1400       ((agc_sp_t)   768)  /* OCT1400   01400 */
 /* V06N22: VN 0622 */
-#define AGC_K_V06N22        ((agc_sp_t)   790)  /* V06N22    01426 */
+#define AGC_K_NEW_GIMBAL_ANGLES_DISPLAY        ((agc_sp_t)   790)  /* V06N22    01426 */
 #define AGC_K_BITS2_10      ((agc_sp_t)  1022)  /* BITS2-10  01776 */
 #define AGC_K_LOW10         ((agc_sp_t)  1023)  /* LOW10     01777 */
 /* LOW7+2K: op code mask + bank 1 FBANK */

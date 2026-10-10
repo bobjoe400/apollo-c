@@ -39,22 +39,22 @@ agc_status_t agc_exec_canv37(const agc_job_ctx_t *ctx);
 /* TBASEn: CS TIME1 / TS TBASEn without a phase change (exec lane).         */
 agc_status_t agc_phase_set_tbase(int group);
 
-/* ---- navigation: precision update and average-G hand-over (nav-integ) --- */
-agc_status_t agc_integ_thisprec(agc_dp_t tdec1, agc_guid_prec_t *out); /* THISPREC */
-agc_status_t agc_integ_csmprec(agc_dp_t tdec1, agc_guid_prec_t *out);  /* CSMPREC  */
-agc_status_t agc_integ_lemprec(agc_dp_t tdec1, agc_guid_prec_t *out);  /* LEMPREC  */
-/* MIDTOAV1: integrate RN VN to TDEC1 (or to now if TDEC1 is past), leave
- * RN1 VN1 PIPTIME1 (agc_guid_state()->avg); *dt = time from now to that
- * PIPTIME1 (cs, 2^28); *late = the integration ran past TDEC1 (the AGC's
- * return to L+2).                                                          */
-agc_status_t agc_integ_midtoav1(agc_dp_t tdec1, agc_dp_t *dt, bool *late);
-agc_status_t agc_integ_midtoav2(agc_dp_t *dt);                  /* MIDTOAV2 */
-agc_status_t agc_integ_avetomid(void);                          /* AVETOMID */
+/* ---- navigation glue to nav-integ (src/guidance/guid_nav_glue.c) --------
+ * Lane-internal. AGC_STATUS_BUSY: the job sleeps and resumes as `resume`. */
+agc_status_t agc_guid_prec_update(agc_interp_t *ip, agc_vehicle_t veh, agc_dp_t tdec1,
+                                  agc_job_id_t resume, agc_guid_prec_t *out);
+agc_status_t agc_guid_midtoav1(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
+                               agc_dp_t *dt, bool *late);
+agc_status_t agc_guid_midtoav2(agc_interp_t *ip, agc_job_id_t resume, agc_dp_t *dt);
+agc_status_t agc_guid_avetomid(agc_interp_t *ip, agc_job_id_t resume);
+/* resume job for the targeting subroutines (AGC_JOB_NONE above)          */
+void         agc_guid_nav_set_resume(agc_job_id_t job);
+agc_job_id_t agc_guid_nav_resume(void);
 
 /* ---- rendezvous targeting utilities (prog-rendz) ------------------------ */
 /* HAVEGUES: INITVEL without setting GUESSW (use the COGA guess).            */
 agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
-                                agc_sp_t numit, agc_dp_t e4);
+                                agc_sp_t numit, agc_dp_t e4, agc_job_id_t resume);
 
 /* ---- job and task ids (lead adds them to agc_jobs.h) -------------------- */
 #define AGC_JOB_GUID_BASE 0x400

@@ -30,8 +30,8 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     case AGC_JOB_DUMMY:            st = AGC_STATUS_OK;               break;
     case AGC_JOB_CHARIN:           st = agc_job_charin(ctx);         break;
     case AGC_JOB_GOTOPOOH:         st = agc_job_gotopooh(ctx);       break;
-    case AGC_JOB_GOP00FIX:         st = agc_job_gop00fix(ctx);       break;
-    case AGC_JOB_GOP00FIX_REFLASH: st = agc_job_gop00fix_reflash(ctx); break;
+    case AGC_JOB_GOP00FIX:         st = agc_job_go_idle_fix(ctx);       break;
+    case AGC_JOB_GOP00FIX_REFLASH: st = agc_job_go_idle_fix_reflash(ctx); break;
     case AGC_JOB_GOPOODOO:         st = agc_job_gopoodoo(ctx);       break;
     case AGC_JOB_ENDOFJOB:         st = agc_job_endofjob(ctx);       break;
     case AGC_JOB_GOPROG:

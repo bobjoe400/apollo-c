@@ -36,19 +36,19 @@
  * (the restart tables name them). The rest are provisional ids in this
  * lane's private range 0x0F00 (jobs) / 0x0F80 (tasks), clear of exec's.  */
 #include "../exec/exec_pending.h"
-#define AGC_JOB_P63LM      ((agc_job_id_t)0x0F01) /* P63LM                    */
+#define AGC_JOB_BRAKING_PHASE_LM      ((agc_job_id_t)0x0F01) /* P63LM                    */
 #define AGC_JOB_ASTNCLOK   ((agc_job_id_t)0x0F02) /* IGNALGRT/ASTNCLOK tail    */
 #define AGC_JOB_ASTNRET    ((agc_job_id_t)0x0F03) /* ASTNRET (STCLOK2 return)  */
-#define AGC_JOB_P63SPOT2   ((agc_job_id_t)0x0F04) /* P63SPOT2 (R51 ENTER)      */
-#define AGC_JOB_P63SPOT3   ((agc_job_id_t)0x0F05) /* P63SPOT3 (after R60)      */
-#define AGC_JOB_P63SPOT4   ((agc_job_id_t)0x0F06) /* P63SPOT4 (CODE 500 ENTER) */
-#define AGC_JOB_P64CEED    ((agc_job_id_t)0x0F07) /* P64CEED (V06N64 PROCEED)  */
-#define AGC_JOB_P64DISPS   ((agc_job_id_t)0x0F08) /* P64DISPS (V06N64 ENTER)   */
+#define AGC_JOB_BRAKING_PHASE_SPOT2   ((agc_job_id_t)0x0F04) /* P63SPOT2 (R51 ENTER)      */
+#define AGC_JOB_BRAKING_PHASE_SPOT3   ((agc_job_id_t)0x0F05) /* P63SPOT3 (after R60)      */
+#define AGC_JOB_BRAKING_PHASE_SPOT4   ((agc_job_id_t)0x0F06) /* P63SPOT4 (CODE 500 ENTER) */
+#define AGC_JOB_APPROACH_PHASE_CEED    ((agc_job_id_t)0x0F07) /* P64CEED (V06N64 PROCEED)  */
+#define AGC_JOB_APPROACH_PHASE_DISPS   ((agc_job_id_t)0x0F08) /* P64DISPS (V06N64 ENTER)   */
 #define AGC_JOB_RODCOMP    ((agc_job_id_t)0x0F09) /* RODCOMP (FINDVAC PRIO22)  */
 #define AGC_JOB_LANDJUNK   ((agc_job_id_t)0x0F0A) /* LANDJUNK (P68)            */
 #define AGC_JOB_LANDJNK2   ((agc_job_id_t)0x0F0B) /* LANDJUNK V06N43 PROCEED   */
-#define AGC_JOB_P12LM      ((agc_job_id_t)0x0F0D) /* P12LM                     */
-#define AGC_JOB_P12LM2     ((agc_job_id_t)0x0F0E) /* P12LM after V06N33A       */
+#define AGC_JOB_POWERED_ASCENT_LM      ((agc_job_id_t)0x0F0D) /* P12LM                     */
+#define AGC_JOB_POWERED_ASCENT_LM2     ((agc_job_id_t)0x0F0E) /* P12LM after V06N33A       */
 #define AGC_JOB_NEWLOAD    ((agc_job_id_t)0x0F0F) /* NEWLOAD (V06N76 flash)    */
 #define AGC_JOB_NEWLOAD2   ((agc_job_id_t)0x0F10) /* NEWLOAD PROCEED           */
 #define AGC_JOB_CUTOFF     ((agc_job_id_t)0x0F11) /* CUTOFF (FINDVAC PRIO17)   */
@@ -58,8 +58,8 @@
 #define AGC_JOB_LUNLAND    ((agc_job_id_t)0x0F15) /* LUNLAND (AVGEXIT)         */
 #define AGC_JOB_ATMAG      ((agc_job_id_t)0x0F16) /* ATMAG (AVGEXIT)           */
 #define AGC_JOB_SERVEXIT   ((agc_job_id_t)0x0F17) /* SERVEXIT (AVGEXIT)        */
-#define AGC_JOB_P70        ((agc_job_id_t)0x0F18) /* P70 (V37)                 */
-#define AGC_JOB_P71        ((agc_job_id_t)0x0F19) /* P71 (V37)                 */
+#define AGC_JOB_DPS_ABORT        ((agc_job_id_t)0x0F18) /* P70 (V37)                 */
+#define AGC_JOB_APS_ABORT        ((agc_job_id_t)0x0F19) /* P71 (V37)                 */
 #define AGC_JOB_ENDLLJOB   ((agc_job_id_t)0x0F1A) /* display "terminate" = end */
 #define AGC_JOB_IGNALGP    ((agc_job_id_t)0x0F1B) /* IGNALG after LEMPREC wait */
 #define AGC_JOB_IGNALOOP   ((agc_job_id_t)0x0F1C) /* IGNALOOP after INTSTALL  */
@@ -67,11 +67,11 @@
 #define AGC_JOB_IGNALGRT   ((agc_job_id_t)0x0F1E) /* IGNALGRT (4.2 restart)   */
 #define AGC_JOB_ABTP40A    ((agc_job_id_t)0x0F1F) /* UPTHROT1 -3 (P40AUTO)    */
 #define AGC_JOB_UPTHROT1   ((agc_job_id_t)0x0F20) /* THROTUP, UPTHROT1        */
-#define AGC_JOB_P71OLD     ((agc_job_id_t)0x0F21) /* P71 OLDTIME restart      */
-#define AGC_JOB_P12FLASH   ((agc_job_id_t)0x0F22) /* P12 V06N33 re-flash      */
-#define AGC_JOB_P12LMB     ((agc_job_id_t)0x0F23) /* P12LMB after LEMPREC wait */
+#define AGC_JOB_APS_ABORT_OLD     ((agc_job_id_t)0x0F21) /* P71 OLDTIME restart      */
+#define AGC_JOB_POWERED_ASCENT_FLASH   ((agc_job_id_t)0x0F22) /* P12 V06N33 re-flash      */
+#define AGC_JOB_POWERED_ASCENT_LMB     ((agc_job_id_t)0x0F23) /* P12LMB after LEMPREC wait */
 #define AGC_JOB_CUTOFF5    ((agc_job_id_t)0x0F24) /* CUTOFF -5 (V16N63 again) */
-#define AGC_JOB_P12BURN    ((agc_job_id_t)0x0F25) /* P12RET after PHASCHNG    */
+#define AGC_JOB_POWERED_ASCENT_BURN    ((agc_job_id_t)0x0F25) /* P12RET after PHASCHNG    */
 #define AGC_TASK_RODTASK   ((agc_task_id_t)0x0F81) /* RODTASK                  */
 #define AGC_TASK_REDESMON  ((agc_task_id_t)0x0F82) /* REDESMON (PITFALL)       */
 #define AGC_TASK_ENGOFF1   ((agc_task_id_t)0x0F83) /* ENGOFF1                  */
@@ -97,7 +97,7 @@ void     agc_erase_set_cdutcmd(int which, agc_sp_t v); /* 0 CDUTCMD 053, 1 CDUSC
 agc_sp_t agc_erase_tem(int axis);                   /* TEMX/Y/Z, axis 0..2  */
 void     agc_erase_set_tem(int axis, agc_sp_t v);
 
-/* ---- prog-align: REFMF for P57 after P68 (R51P63 is agc_job_lm_r51k in
+/* ---- prog-align: REFMF for P57 after P68 (R51P63 is agc_job_lm_fine_align_k in
  * agc_align.h, entered with agc_align_ram()->qmaj set) ------------------ */
 agc_status_t agc_align_refmf(agc_interp_t *ip);     /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
 

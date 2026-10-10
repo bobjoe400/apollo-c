@@ -234,7 +234,7 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
 
     (void)AGC_ASSERT(ctx != NULL);
     switch (es->posexit) {
-    case AGC_ENTRY_POSEXIT_P62_3:
+    case AGC_ENTRY_POSEXIT_CM_SM_SEPARATION_3:
         st = agc_entry_s62_3();             /* QPRET = ENDEXIT             */
         break;
     case AGC_ENTRY_POSEXIT_STARTENT:

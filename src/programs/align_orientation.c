@@ -27,7 +27,7 @@
  *   xnb      XNB.. output     half-unit, reference
  *   thetad   THETAD +0..+2    cdu (outer, inner, middle)
  */
-agc_status_t agc_align_s52_2(agc_interp_t *ip, const agc_mat_t *smd,
+agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
                              const agc_mat_t *refsmmat, const uint16_t cdu[3],
                              agc_mat_t *xsm, agc_mat_t *xnb, uint16_t thetad[3])
 {
@@ -59,7 +59,7 @@ agc_status_t agc_align_s52_2(agc_interp_t *ip, const agc_mat_t *smd,
  *   CSM:  ZSMD = UNIT(-R), YSMD = UNIT(V x R), XSMD = UNIT(YSMD x ZSMD)
  *   LM:   XSMD = UNIT(R),  YSMD = UNIT(V x R), ZSMD = UNIT(XSMD x YSMD)
  */
-agc_status_t agc_align_s52_3_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
+agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
                                   agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL)) {
@@ -84,7 +84,7 @@ agc_status_t agc_align_s52_3_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
  * nominal IMU orientation at time TALIGN (cs B28): CSMPREC (CM) or
  * LEMCONIC (LM) to TALIGN, then the axes from RATT, VATT.
  */
-agc_status_t agc_align_s52_3(agc_interp_t *ip, agc_dp_t talign,
+agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
                              agc_job_id_t resume_job, agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL)) {
@@ -97,7 +97,7 @@ agc_status_t agc_align_s52_3(agc_interp_t *ip, agc_dp_t talign,
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    return agc_align_s52_3_axes(ip, o.ratt, o.vatt, smd);
+    return agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd);
 }
 
 /*
@@ -138,7 +138,7 @@ static int32_t ones_value(uint16_t w)
  * DEVIATION: the DLOAD* of two SP words picks up THETAD+n+1 / the next
  * VAC word as a low order part (< 1 count); it is ignored here.
  */
-bool agc_align_cal53a_need_coarse(const uint16_t thetad[3], const uint16_t cdu[3])
+bool agc_align_coarse_align_needed(const uint16_t thetad[3], const uint16_t cdu[3])
 {
     if (!AGC_ASSERT(thetad != NULL) || !AGC_ASSERT(cdu != NULL)) {
         return true;

@@ -10,7 +10,7 @@
  * adds the entry PHSCHNGA (code word in A, used by V37RET), which is
  * agc_phase_change_var() with the code passed explicitly. The KLEANs
  * differ: Comanche's P00KLEAN kills group 1 and V37KLEAN does not;
- * Luminary's V37KLEAN kills group 1 (see agc_phase_v37_klean).
+ * Luminary's V37KLEAN kills group 1 (see agc_phase_change_program_klean).
  *
  * Each of the six restart groups n has the erasable pair -PHASEn, PHASEn
  * (they must stay complements; GOPROG3 checks this before restarting),
@@ -376,7 +376,7 @@ void phase_debug_set_negative(int group, uint16_t neg_word)
 
 /* V37KLEAN (FRESH_START C p.185 / L p.213): kill groups 3, 5, 6, and in
  * Luminary also group 1.                                               */
-agc_status_t agc_phase_v37_klean(void)
+agc_status_t agc_phase_change_program_klean(void)
 {
     agc_inhint();
     if (agc_state_vehicle() == AGC_VEHICLE_LM) {
@@ -391,7 +391,7 @@ agc_status_t agc_phase_v37_klean(void)
 }
 
 /* P00KLEAN: kill group 4 (Comanche also group 1), then V37KLEAN.       */
-agc_status_t agc_phase_p00_klean(void)
+agc_status_t agc_phase_idle_klean(void)
 {
     agc_inhint();
     phase_kill(4);
@@ -400,7 +400,7 @@ agc_status_t agc_phase_p00_klean(void)
     }
     agc_relint();
     (void)AGC_ASSERT(phase_w[4] == 0U);
-    return agc_phase_v37_klean();
+    return agc_phase_change_program_klean();
 }
 
 /* MR.KLEAN: kill group 2, then P00KLEAN -- every group is inactive.    */
@@ -409,7 +409,7 @@ agc_status_t agc_phase_mr_klean(void)
     agc_inhint();
     phase_kill(2);
     agc_relint();
-    agc_status_t st = agc_phase_p00_klean();
+    agc_status_t st = agc_phase_idle_klean();
     (void)AGC_ASSERT(phase_w[1] == 0U && phase_w[6] == 0U);
     return st;
 }

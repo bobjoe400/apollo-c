@@ -96,9 +96,9 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev);       /* BADEND         */
 agc_status_t agc_imu_endimu(void);                       /* ENDIMU         */
 
 agc_status_t agc_imu_imubad(void);                       /* IMUBAD         */
-agc_status_t agc_imu_r02both(void);                      /* R02BOTH        */
-agc_status_t agc_imu_r02zero(void);                      /* R02ZERO        */
-agc_status_t agc_imu_p06(agc_job_ctx_t *ctx);            /* P06 (stub)     */
+agc_status_t agc_imu_status_check_both(void);                      /* R02BOTH        */
+agc_status_t agc_imu_status_check_zero(void);                      /* R02ZERO        */
+agc_status_t agc_imu_standby(agc_job_ctx_t *ctx);            /* P06 (stub)     */
 agc_status_t agc_imu_postand(agc_job_ctx_t *ctx);        /* POSTAND (stub) */
 
 /* Subroutines also used by T4RUPT (sys-misc).                             */
@@ -265,15 +265,15 @@ agc_sp_t     agc_imu_gn_auto(void);
 
 /* R60CSM / R60LEM: called by a program job; on exit (ENDMANU1) job
  * ret_job is run in the same job (the AGC's BANKJUMP to TEMPR60).        */
-agc_status_t agc_imu_r60(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
-agc_status_t agc_job_r60_redomanc(agc_job_ctx_t *ctx); /* V50N18 PROCEED   */
-agc_status_t agc_job_r60_enter(agc_job_ctx_t *ctx);    /* V50N18 ENTER     */
-agc_status_t agc_job_r60_term(agc_job_ctx_t *ctx);     /* V34: R61TEST     */
-agc_status_t agc_job_r60_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR    */
+agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
+agc_status_t agc_job_attitude_maneuver_redomanc(agc_job_ctx_t *ctx); /* V50N18 PROCEED   */
+agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx);    /* V50N18 ENTER     */
+agc_status_t agc_job_attitude_maneuver_term(agc_job_ctx_t *ctx);     /* V34: R61TEST     */
+agc_status_t agc_job_attitude_maneuver_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR    */
 agc_status_t agc_job_relinus(agc_job_ctx_t *ctx);      /* RELINUS restart  */
-agc_status_t agc_job_r62disp(agc_job_ctx_t *ctx);      /* R62DISP (V49)    */
-agc_status_t agc_job_r62_gomove(agc_job_ctx_t *ctx);   /* V06N22 PROCEED   */
-agc_status_t agc_job_r62_term(agc_job_ctx_t *ctx);     /* V34 / done: ENDEXT */
+agc_status_t agc_job_crew_defined_maneuver_disp(agc_job_ctx_t *ctx);      /* R62DISP (V49)    */
+agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx);   /* V06N22 PROCEED   */
+agc_status_t agc_job_crew_defined_maneuver_term(agc_job_ctx_t *ctx);     /* V34 / done: ENDEXT */
 
 /* ======================================================================= */
 /* CM prelaunch alignment pieces (IMU_CALIBRATION_AND_ALIGNMENT.agc,       */

@@ -1,5 +1,5 @@
 /*
- * p70_p71.c -- P70-P71.agc (Luminary 099, pp. 829-837): R10,R11 (the
+ * landing_aborts.c -- P70-P71.agc (Luminary 099, pp. 829-837): R10,R11 (the
  * quarter-second landing radar lamp / landing analog display / abort
  * monitor task), the DPS (P70) and APS (P71) abort programs, and their
  * targeting: GOABORT, P70INIT, BOTHPOLY (abort injection velocity
@@ -44,7 +44,7 @@ agc_sp_t agc_lm_pipctr1(void)
 
 /* R10,R11 (p. 829), every 0.25 s while SERVICER runs; on the last pass of
  * the cycle LRHTASK (which continues at R10,R11A).                   */
-agc_status_t agc_lm_task_r10r11(void)
+agc_status_t agc_lm_task_landing_radar_monitor(void)
 {
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG)) {
         return AGC_STATUS_OK;            /* let AVGEND take care of group 2 */
@@ -54,20 +54,20 @@ agc_status_t agc_lm_task_r10r11(void)
         return agc_lm_lrhtask();                         /* last pass      */
     }
     ab_pipctr1 = (agc_sp_t)(pipctr - 1);
-    agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_R10_R11);
+    agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_LANDING_RADAR_MONITOR_RESTART);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_lm_r10r11a();
+    return agc_lm_landing_radar_monitor_a();
 }
 
-/* ABRTJASK (pp. 831-832): commit to the abort. p71 selects P71 (APS). */
-static agc_status_t ab_abrtjask(bool p71)
+/* ABRTJASK (pp. 831-832): commit to the abort. aps_abort selects P71 (APS). */
+static agc_status_t ab_abrtjask(bool aps_abort)
 {
-    agc_sp_t mm = p71 ? 71 : 70;
-    agc_status_t st = agc_phase_newphase(4, (uint16_t)(AB_OCTAL27 + (p71 ? 2 : 0)), false);
+    agc_sp_t mm = aps_abort ? 71 : 70;
+    agc_status_t st = agc_phase_newphase(4, (uint16_t)(AB_OCTAL27 + (aps_abort ? 2 : 0)), false);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     agc_erase_set_modreg(mm);
     agc_guid_state()->lm.dispdex = mm;   /* insure DISPDEX is positive     */
-    if (p71) {
+    if (aps_abort) {
         (void)agc_flag_set(AGC_FLAG_APSFLAG);   /* prior to the ENEMA      */
     }
     (void)agc_flag_clear(AGC_FLAG_ULLAGFLG);    /* DAPBITS: ullage, drift, */
@@ -79,7 +79,7 @@ static agc_status_t ab_abrtjask(bool p71)
                         (uint16_t)((c11 & ~(unsigned)AB_PRIO30) | AB_BIT13));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     (void)agc_flagword_set(11, AB_LRBYBIT);     /* terminate R12           */
-    (void)agc_flag_set(AGC_FLAG_R10FLAG);       /* no cross-pointer outputs */
+    (void)agc_flag_set(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG);       /* no cross-pointer outputs */
     (void)agc_rendz_clradmod();                 /* RADMODES for R29        */
     agc_erase_set_tevent((agc_dp_t)agc_time_now_cs());
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT;
@@ -93,7 +93,7 @@ static agc_status_t ab_abrtjask(bool p71)
 
 /* R10,R11A .. P70NOW? (pp. 829-830): flash the LR lamps, then (with
  * aborts enabled) look for the ABORT STAGE or ABORT discretes. */
-agc_status_t agc_lm_r10r11a(void)
+agc_status_t agc_lm_landing_radar_monitor_a(void)
 {
     if ((agc_erase_imodes33() & 1u) == 0u) {    /* not a lamp test         */
         if (agc_flag_test(AGC_FLAG_HFLSHFLG)) {
@@ -137,7 +137,7 @@ static bool ab_legal(agc_sp_t mm)
 }
 
 /* P70 / P71 (p. 830) selected by V37. */
-agc_status_t agc_lm_job_p70(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -151,7 +151,7 @@ agc_status_t agc_lm_job_p70(agc_job_ctx_t *ctx)
     return st;
 }
 
-agc_status_t agc_lm_job_p71(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -166,7 +166,7 @@ agc_status_t agc_lm_job_p71(agc_job_ctx_t *ctx)
 }
 
 /* P70A / P71A: restart points 4.27 and 4.31 (ABRTJASK again). */
-agc_status_t agc_lm_job_p70a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_dps_abort_a(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -177,7 +177,7 @@ agc_status_t agc_lm_job_p70a(agc_job_ctx_t *ctx)
     return st;
 }
 
-agc_status_t agc_lm_job_p71a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort_a(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -246,17 +246,17 @@ static agc_status_t ab_upthrot(agc_job_ctx_t *ctx)
                                 0, false, 0U };
     agc_status_t st = agc_phase_change_var(04024, &v);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_lm_job_abtp40a(ctx);
+    return agc_lm_job_abort_dps_burn_a(ctx);
 }
 
 /* UPTHROT1 -3 (p. 834): P40AUTO, returning to UPTHROT1. */
-agc_status_t agc_lm_job_abtp40a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_abort_dps_burn_a(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(AGC_FLAG_FLAP));
-    return agc_lm_p40auto(ctx, AGC_JOB_UPTHROT1);
+    return agc_lm_dps_burn_auto(ctx, AGC_JOB_UPTHROT1);
 }
 
 /* THROTUP / UPTHROT1 / GRP4OFF (pp. 834-835): SERVICER now calls the
@@ -274,7 +274,7 @@ agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx)
 }
 
 /* P70INIT (p. 833): DPS engine data and targets for P70. */
-static agc_status_t ab_p70init(agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc();
     agc_dp_t mass = agc_guid_state()->lm.mass;
@@ -298,36 +298,36 @@ static agc_status_t ab_p70init(agc_job_ctx_t *ctx, agc_interp_t *ip)
 }
 
 /* OLDTIME restart point (p. 835): TGO = TGO1, then UPTHROT1 -3. */
-agc_status_t agc_lm_job_p71old(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort_old(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_asc()->tgo = agc_lm_asc()->tgo1;
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_FLAP));
-    return agc_lm_job_abtp40a(ctx);
+    return agc_lm_job_abort_dps_burn_a(ctx);
 }
 
 /* P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
  * is doubled (OLDTIME) and the targets kept; otherwise TGO from TIG and
  * the APS injection targets (INJTARG).                              */
-static agc_status_t ab_p71ret(agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t ab_aps_abort_ret(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc();
     (void)agc_flag_clear(AGC_FLAG_LETABORT);
     agc_guid_state()->lm.dvthrush = AB_THRESH2;
     if (agc_flag_test(AGC_FLAG_FLAP)) {
         a->tgo1 = agc_dp_shl(ip, a->tgo, 1);             /* OLDTIME      */
-        agc_status_t st = agc_lm_p12init(ip);
+        agc_status_t st = agc_lm_powered_ascent_init(ip);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_P71OLD,
+        const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLD,
                                     AGC_TASK_NONE, 0, false, 0U };
         st = agc_phase_change_var(04024, &v);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        return agc_lm_job_p71old(ctx);
+        return agc_lm_job_aps_abort_old(ctx);
     }
     (void)agc_lm_tgocomp(ip);
-    agc_status_t st = agc_lm_p12init(ip);                 /* to INJTARG   */
+    agc_status_t st = agc_lm_powered_ascent_init(ip);                 /* to INJTARG   */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     ab_bothpoly(ip, true);
     return ab_upthrot(ctx);
@@ -351,7 +351,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
     (void)agc_flag_clear(AGC_FLAG_IDLEFLAG);
     (void)agc_flag_set(AGC_FLAG_ACC4_2FL);   /* 4-jet translation       */
     if (!agc_phase_checkmm(70)) {
-        return ab_p71ret(ctx, &ip);
+        return ab_aps_abort_ret(ctx, &ip);
     }
-    return ab_p70init(ctx, &ip);
+    return ab_dps_abort_init(ctx, &ip);
 }

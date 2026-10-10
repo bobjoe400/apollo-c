@@ -1,5 +1,5 @@
 /*
- * p40_lm_rasteer.c -- RASTEER1, the Luminary aimpoint steering (P40-P47.agc,
+ * dps_burn_rasteer.c -- RASTEER1, the Luminary aimpoint steering (P40-P47.agc,
  * Luminary099 pp. 776-780). For a Lambert-targeted burn (XDELVFLG clear) it
  * regenerates the required velocity VR at RN for reaching RTARG at TPASS4
  * on the conic whose mu/a INITVEL last found, without iterating:

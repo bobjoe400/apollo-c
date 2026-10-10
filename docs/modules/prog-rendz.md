@@ -86,8 +86,15 @@ land); assumed signatures are in src/programs/rendz_ext.h.
 * DONE rendz_csi.c: ROTATE agc_rendz_rotate, ADVANCE agc_rendz_advance,
   CSI/A..SCNDSOL agc_rendz_csi_a, CDHMVR agc_rendz_cdhmvr, S32/33.X
   agc_rendz_s32_33_x, S32/33.1 agc_rendz_s32_33_1
-* TODO rendz_tpi.c (S33/34.1, S34/35.2-.4), rendz_initvel.c (INITVEL)
-* TODO rendz_display.c (VNPOOH, VN1645, DISPLAYE, S34/35.5, DISDVLVC)
+* DONE rendz_tpi.c: S33/34.1 agc_rendz_tpi_time_search(+_cont), S34/35.2
+  agc_rendz_tpi_required_velocity, S34/35.3 agc_rendz_tpi_crew_overwrite,
+  S34/35.4 agc_rendz_tpi_los_delta_v, P34/P74E agc_rendz_tpi_compute
+* DONE rendz_initvel.c: INITVEL agc_rendz_initvel
+* DONE rendz_display.c: VNPOOH rz_vnpooh, DISPLAYE, VN1645 rz_ttogo_display
+  (+ KILCLOCK/N45PROC/CLUPDATE jobs), S34/35.5 rz_tpi_final_displays,
+  DISDVLVC, P3XORP7X, ALMXIT/611 rz_alarm_flash
+* NAMING (docs/NAMING.md): all identifiers renamed to descriptive stems
+  (map in "Renames" below); job ids in rendz_ext.h are descriptive.
 * TODO rendz_p32_p33.c, rendz_p34_p35.c drivers
 * TODO r30.c, r31_csm.c/r31_lm.c, rendz_r36.c, stable_orbit.c, p76.c,
   p21.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, p20_csm.c, p20_lm.c

@@ -459,11 +459,11 @@ static void test_kleans(void)
         for (int g = 1; g <= AGC_RESTART_GROUPS; g++) {
             (void)agc_phase_newphase(g, 3, false);
         }
-        CHECK(agc_phase_v37_klean() == AGC_STATUS_OK);
+        CHECK(agc_phase_change_program_klean() == AGC_STATUS_OK);
         CHECK(agc_phase_get(3) == 0U && agc_phase_get(5) == 0U);
         CHECK(agc_phase_get(6) == 0U && agc_phase_get(2) == 3U);
         CHECK(agc_phase_get(1) == (k == 0 ? 3U : 0U));  /* LM kills 1 */
-        CHECK(agc_phase_p00_klean() == AGC_STATUS_OK);
+        CHECK(agc_phase_idle_klean() == AGC_STATUS_OK);
         CHECK(agc_phase_get(1) == 0U && agc_phase_get(4) == 0U);
         CHECK(agc_phase_get(2) == 3U);
         CHECK(agc_phase_mr_klean() == AGC_STATUS_OK && agc_phase_get(2) == 0U);

@@ -2,11 +2,11 @@
  * align_r54_r55.c -- the two alignment subroutines that talk to the crew
  * and are shared by every alignment program of both vehicles:
  *   R54 / CHKSDATA  star data test (angle between the catalogue pair
- *                   against the angle between the marked pair, V06N05)
- *   R55             gyro torquing (CALCGTA, V06N93, IMUPULSE, IMUSTALL)
+ *                   against the angle between the marked pair, VN_STAR_ANGLE_DIFF)
+ *   R55             gyro torquing (CALCGTA, VN_GYRO_TORQUE_ANGLES, IMUPULSE, IMUSTALL)
  * Sources: P51-P53.agc, Comanche055 pp. 759-760 (R55 p. 758),
  * Luminary099 pp. 944-946.  The CSM and LM texts differ only in the CSM's
- * CLEANDSP before V06N05 and the R55 restart phase (4.31 CM, 4.21 LM).
+ * CLEANDSP before VN_STAR_ANGLE_DIFF and the R55 restart phase (4.31 CM, 4.21 LM).
  *
  * Both are interpretive subroutines entered with STQ QMIN; here the
  * caller passes the job to continue as (QMIN), and the astronaut answers
@@ -18,17 +18,17 @@
 #include "agc/agc_flags_common.h"
 #include "align_internal.h"
 
-#define V06N05 ALIGN_VN(6, 5)      /* VB6N5  VN 605: star angle difference  */
-#define V06N93 ALIGN_VN(6, 93)     /* V06N93 VN 0693: gyro torque angles     */
-#define PH_R55_CSM ((uint16_t)00314)  /* R55.2 PHASCHNG, CM: group 4 phase 31 */
-#define PH_R55_LM  ((uint16_t)00214)  /* R55.2 PHASCHNG, LM: group 4 phase 21 */
+#define VN_STAR_ANGLE_DIFF ALIGN_VN(6, 5)      /* VB6N5  VN 605: star angle difference  */
+#define VN_GYRO_TORQUE_ANGLES ALIGN_VN(6, 93)     /* VN_GYRO_TORQUE_ANGLES VN 0693: gyro torque angles     */
+#define PH_TORQUE_CSM ((uint16_t)00314)  /* R55.2 PHASCHNG, CM: group 4 phase 31 */
+#define PH_TORQUE_LM  ((uint16_t)00214)  /* R55.2 PHASCHNG, LM: group 4 phase 21 */
 
 /* VB6N5 flash with the three astronaut returns. */
 static agc_status_t chksdata_flash(const agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_align_ram()->qmin != AGC_JOB_NONE);
-    return align_flash(ctx, AGC_DSKY_GOFLASH, V06N05, AGC_JOB_GOTOPOOH,
+    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_ANGLE_DIFF, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CHKSDATA_PROCEED, AGC_JOB_CHKSDATA_ENTER);
 }
 
@@ -37,8 +37,8 @@ static agc_status_t r55_flash(const agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_align_ram()->qmin != AGC_JOB_NONE);
-    return align_flash(ctx, AGC_DSKY_GOFLASH, V06N93, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_R55_2, AGC_JOB_R55RET);
+    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GYRO_TORQUE_ANGLES, AGC_JOB_GOTOPOOH,
+                       AGC_JOB_GYRO_TORQUING_PULSE, AGC_JOB_GYRO_TORQUING_RETURN);
 }
 
 /* After the IMUSTALL of R55.2: PHASCHNG 05024 (CM) / 04024 (LM), then
@@ -46,7 +46,7 @@ static agc_status_t r55_flash(const agc_job_ctx_t *ctx)
 static agc_status_t r55_torqued(void)
 {
     const agc_status_t st = (agc_state_vehicle() == AGC_VEHICLE_CSM)
-        ? align_phase_job(ALIGN_PH_05024, AGC_JOB_R55RET, ALIGN_PRIO13)
+        ? align_phase_job(ALIGN_PH_05024, AGC_JOB_GYRO_TORQUING_RETURN, ALIGN_PRIO13)
         : agc_phase_change(4, ALIGN_PH_04024);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return align_goto(agc_align_ram()->qmin);              /* R55RET     */
@@ -56,11 +56,11 @@ static agc_status_t r55_torqued(void)
  * CHKSDATA alias R54 (Comanche pp. 759-760, Luminary pp. 945-946) --
  * FREEFLAG set; THETA = angle between STARAD and STARAD +6 (catalogue
  * pair, desired SM), 18D = angle between 6D and 12D (marked pair, present
- * SM); NORMTEM1 = |THETA - 18D| (revs) shown in V06N05.
+ * SM); NORMTEM1 = |THETA - 18D| (revs) shown in VN_STAR_ANGLE_DIFF.
  * PROCEED (CHKSDA) returns with FREEFLAG set = accept the data; ENTER
  * (V32) clears FREEFLAG = reject; V34 terminates.
  */
-agc_status_t agc_align_r54(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
+agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
@@ -83,14 +83,14 @@ agc_status_t agc_align_r54(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
         return st;
     }
     if (agc_state_vehicle() == AGC_VEHICLE_CSM) {
-        /* CAF ZERO, CLEANDSP: the job continues at the V06N05 flash.     */
+        /* CAF ZERO, CLEANDSP: the job continues at the VN_STAR_ANGLE_DIFF flash.     */
         return align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_CHKSDATA_FLASH,
                            AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH);
     }
     return chksdata_flash(ctx);
 }
 
-/* CHKSDATA: the V06N05 flash (after CLEANDSP in the CSM). */
+/* CHKSDATA: the VN_STAR_ANGLE_DIFF flash (after CLEANDSP in the CSM). */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
@@ -110,7 +110,7 @@ agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx)
     return align_goto(ret);
 }
 
-/* ENTER / V32 after V06N05: CLEAR FREEFLAG, GOTO QMIN. */
+/* ENTER / V32 after VN_STAR_ANGLE_DIFF: CLEAR FREEFLAG, GOTO QMIN. */
 agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
@@ -124,9 +124,9 @@ agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx)
 /*
  * R55 (Comanche p. 758, Luminary p. 943) -- gyro torquing: CALCGTA turns
  * XDC.. (desired SM wrt present SM, half-unit) into OGC, IGC, MGC (revs,
- * also loaded into the OGC pulse buffer); PULSEM / R55.1 flash V06N93.
+ * also loaded into the OGC pulse buffer); PULSEM / R55.1 flash VN_GYRO_TORQUE_ANGLES.
  */
-agc_status_t agc_align_r55(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
+agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
@@ -142,8 +142,8 @@ agc_status_t agc_align_r55(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
     return r55_flash(ctx);
 }
 
-/* R55.1: V06N93 -- PROCEED torques (R55.2), ENTER skips it (R55RET). */
-agc_status_t agc_job_r55_1(agc_job_ctx_t *ctx)
+/* R55.1: VN_GYRO_TORQUE_ANGLES -- PROCEED torques (R55.2), ENTER skips it (R55RET). */
+agc_status_t agc_job_gyro_torquing_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -155,15 +155,15 @@ agc_status_t agc_job_r55_1(agc_job_ctx_t *ctx)
  * R55.2: PHASCHNG, IMUPULSE on the OGC buffer (R55CDR ECADR OGC) and
  * IMUSTALL; a bad end is CURTAINS.  Re-entered when the gyros were busy.
  */
-agc_status_t agc_job_r55_2(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
-    agc_status_t st = agc_phase_change(4, csm ? PH_R55_CSM : PH_R55_LM);
+    agc_status_t st = agc_phase_change(4, csm ? PH_TORQUE_CSM : PH_TORQUE_LM);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_R55_2);  /* IMUPULSE  */
+    st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_GYRO_TORQUING_PULSE);  /* IMUPULSE  */
     if (st == AGC_STATUS_BUSY) {
         return AGC_STATUS_OK;              /* asleep until the gyros free  */
     }
@@ -171,7 +171,7 @@ agc_status_t agc_job_r55_2(agc_job_ctx_t *ctx)
         return st;
     }
     bool done = false;
-    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_R55_PULSED, &done); /* IMUSTALL */
+    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_GYRO_TORQUING_PULSED, &done); /* IMUSTALL */
     if ((st != AGC_STATUS_OK) || !done) {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
@@ -179,7 +179,7 @@ agc_status_t agc_job_r55_2(agc_job_ctx_t *ctx)
 }
 
 /* After the IMUSTALL of R55.2: the restart phase, then R55RET. */
-agc_status_t agc_job_r55_pulsed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -190,8 +190,8 @@ agc_status_t agc_job_r55_pulsed(agc_job_ctx_t *ctx)
     return r55_torqued();
 }
 
-/* R55RET (ENTER on V06N93: no torquing): GOTO QMIN. */
-agc_status_t agc_job_r55ret(agc_job_ctx_t *ctx)
+/* R55RET (ENTER on VN_GYRO_TORQUE_ANGLES: no torquing): GOTO QMIN. */
+agc_status_t agc_job_gyro_torquing_return(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

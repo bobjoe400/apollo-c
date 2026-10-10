@@ -130,6 +130,7 @@ void         rz_set_option(int which, uint16_t v);
 
 /* ---- common helpers (rendz_common.c) ------------------------------------ */
 agc_rendz_t *rz_state(void);
+agc_dp_t     rz_mutable_mu(bool moon);  /* MUE 2^36 / MUM 2^30            */
 agc_vec_t    rz_unit(agc_interp_t *ip, agc_vec_t v);
 agc_dp_t     rz_abval(agc_interp_t *ip, agc_vec_t v);
 agc_vec_t    rz_vsign(agc_vec_t v, agc_dp_t s);        /* vector SIGN   */
@@ -166,29 +167,33 @@ void         rz_store_active(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v);
 void         rz_store_passive(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v);
 
 /* ---- displays (rendz_display.c) ----------------------------------------- */
-/* VNPOOH: flash verb/noun; TERM -> P00, PROCEED -> next, ENTER -> self.  */
+/* VNPOOH: flash verb/noun; TERM -> P00, PROCEED -> next, ENTER -> again. */
 agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
-                       agc_job_id_t self, agc_job_id_t next);
+                       agc_job_id_t next);
 /* VN1645: +MGA, COMPTGO, DELAYJOB 1 s, V16N45 flash; the job continues as
  * resume_as after PROCEED (first time) or ENTER (QSAVED return).         */
 agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                       agc_rendz_t *rz, agc_job_id_t resume_as);
+                              agc_rendz_t *rz, agc_job_id_t resume_as);
 /* DISPLAYE: V06N55 flash, return = next.                                 */
-agc_status_t rz_displaye(const agc_job_ctx_t *ctx, agc_job_id_t self,
-                         agc_job_id_t next);
+agc_status_t rz_displaye(const agc_job_ctx_t *ctx, agc_job_id_t next);
 /* S34/35.5 (FINALFLG / N81 / N59 logic), continues as resume_as.         */
 agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                         agc_rendz_t *rz, agc_job_id_t resume_as);
+                                   agc_rendz_t *rz, agc_job_id_t resume_as);
+/* FLAGOFF part of S34/35.5: S34/35.4, V06N59, return to NORMEX.          */
+agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+                            agc_rendz_t *rz);
 /* ALARM code then V05N09 flash: TERM -> P00, PROCEED -> proceed,
  * ENTER -> recycle.                                                      */
 agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
                             agc_job_id_t proceed, agc_job_id_t recycle);
-/* DISDVLVC: DELVLVC = dv; rotate to the CSI/CDH display frame
+/* DISDVLVC: DELVLVC = dv rotated to the CSI/CDH display frame
  * (S32/33.X), V06N81 or V06N82 (noun), continue as next.                 */
 agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                          agc_rendz_t *rz, agc_vec_t dv, uint8_t noun,
-                         agc_job_id_t self, agc_job_id_t next);
-/* P3XORP7X: true when MODREG is P3x (this vehicle active).               */
+                         agc_job_id_t next);
+/* P3XORP7X: true when MODREG is a P3x program (this vehicle active).     */
 bool         rz_active_vehicle_program(void);
+/* Continue the running job at another entry (agc_exec_job_yield).        */
+agc_status_t rz_continue(agc_job_id_t next);
 
 #endif /* RENDZ_INTERNAL_H */

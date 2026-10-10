@@ -8,7 +8,7 @@ AGC sources (CM = Comanche055, LM = Luminary099):
   (CM P51-P53.agc p.763, LM POWERED_FLIGHT_SUBROUTINES.agc p.1265 FLESHPOT) -> src/imu/alignment.c
 * GIMBAL_LOCK_AVOIDANCE.agc, KALCMANU_STEERING.agc, ANGLFIND.agc (CM) /
   ATTITUDE_MANEUVER_ROUTINE.agc (LM) -> src/imu/maneuver.c
-* R60_62.agc (both) -> src/imu/r60.c
+* R60_62.agc (both) -> src/imu/attitude_maneuver.c
 * IMU_CALIBRATION_AND_ALIGNMENT.agc (CM only, pp.423-455) -> src/csm/prelaunch_align.c
 * Public header include/agc/agc_imu.h; pending externals in src/imu/imu_pending.h.
 
@@ -30,8 +30,8 @@ sys-misc's file. Not duplicated here (see Open questions).
 | ENDIMU/GOODEND/BADEND/CAGETEST/CAGETSTQ/CAGETSTJ (p.1438-1439) | MODECADR | job wake | agc_imu_endimu, agc_imu_goodend, agc_imu_badend |
 | STALL/IMUSTALL/OPTSTALL/RADSTALL (p.1440-1441) | MODECADR | | agc_imu_stall |
 | GOMANUR (p.1442) | ATTCADR | KALCMAN3 job | agc_imu_gomanur |
-| R02BOTH (p.1443-1444) | REFSMFLG, IMODES30 | alarm 210/220 | agc_imu_r02both |
-| P06/PRESTAND/SCALPREP/POSTAND (p.1445-1448) | TIME1/2, scaler | | agc_imu_p06 (stub), agc_imu_postand (stub) |
+| R02BOTH (p.1443-1444) | REFSMFLG, IMODES30 | alarm 210/220 | agc_imu_status_check_both |
+| P06/PRESTAND/SCALPREP/POSTAND (p.1445-1448) | TIME1/2, scaler | | agc_imu_standby (stub), agc_imu_postand (stub) |
 | 1/PIPA (ICP p.326) | DELV (pulses 2^14), PIPABIAS (pulses/cs 2^-5 LM, 2^-8 CM), PIPASCF (ppm 2^-9), 1/PIPADT (cs 2^8) | DELV compensated | agc_imu_comp_pipa |
 | IRIGCOMP/IRIGX/Y/Z/GCOMPSUB/DRIFTSUB/DRFTSUB2 (p.328-332) | DELV, ADIA/ADSRA (gyro pulses/pipa pulse 2^-6 LM, 2^-3 CM), NBD (pulses/cs 2^-5) | GCOMP (gyro pulses 2^14), GCOMPSW | agc_imu_comp_irig |
 | 1/GYRO/GCOMP1 (p.333) | GCOMP | IMUPULSE | agc_job_1_gyro, agc_job_gcomp1 |
@@ -53,7 +53,7 @@ sys-misc's file. Not duplicated here (see Open questions).
 | R60CSM/R60LEM/R61TEST/CHKLINUS/RELINUS (R60 p.390-392) | | displays | agc_job_r60 ... |
 | VECPOINT/VECPNT1/PICKAXIS/ROT180 (p.393-396) | SCAXIS, POINTVSM half-unit | CPHI.. SP | agc_imu_vecpoint |
 | BALLANGS (LM) | CPHI.. | FDAIX.. | agc_imu_ballangs |
-| R62DISP/GOMOVE (p.398) | | | agc_job_r62disp |
+| R62DISP/GOMOVE (p.398) | | | agc_job_crew_defined_maneuver_disp |
 | prelaunch: POSN17C, ERTHRVSE, EARTHR, ALWAYSG/COMPGS, RESTAIER, TAR/EREF, CHKCOMED (pp.430-450) | LATITUDE, AZIMUTH rev | ERCOMP1 rev | agc_csm_prelaunch_* |
 
 ## Progress
@@ -68,7 +68,7 @@ sys-misc's file. Not duplicated here (see Open questions).
 * maneuver_calc.c: DONE (CDUTODCM, DCMTOCDU, DELCOMP, KALCMAN3/SECAD/CHECKMAX/ALTCALC/COFMAXGO/METHOD1-3, TOOBADF test)
 * maneuver.c: DONE (GOMANUR, KALCMAN3 job, WCALC/NOGIMLOC, NEWANGL, MANUSTAT/RATEBIAS, INCRDCDU, TIMECHK/MANUSTAL,
   CONTMANU, UPDTCALL, NEWDELHI, NOGO/NOGOM2, MANUSTOP, ENDMANU/GOODMANU, STOPRATE/STOPYZ, ZEROERROR, LOADCDUD/LOADYZ)
-* r60.c: DONE (VECPOINT/VECPNT1/COMPMATX/PICKAXIS/ROT180, BALLANGS, G+N,AUTO, ISITAUTO, R60CSM/R60LEM,
+* attitude_maneuver.c: DONE (VECPOINT/VECPNT1/COMPMATX/PICKAXIS/ROT180, BALLANGS, G+N,AUTO, ISITAUTO, R60CSM/R60LEM,
   REDOMANN/REDOMANC/TOBALL(A)/AUTOMANV/ENDMANUV/ENDMANU1, R61TEST, CHKLINUS, RELINUS, R62DISP/GOMOVE)
 * prelaunch_align.c: PARTIAL -- DONE FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX; stubs: IMUTEST, ESTIMS, ALWAYSG, RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE
 * tests/test_imu.c: DONE (65 checks pass)
@@ -76,7 +76,7 @@ sys-misc's file. Not duplicated here (see Open questions).
 ## Files
 src/imu/imu_mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/imu_gyro.c (IMUPULSE and
 torquing tasks), src/imu/imu_comp.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
-src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/r60.c (VECPOINT, BALLANGS, R60, R62),
+src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/attitude_maneuver.c (VECPOINT, BALLANGS, R60, R62),
 src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/imu_internal.h (lane-private),
 src/imu/imu_pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/agc_imu.h,
 tests/test_imu.c.
@@ -107,7 +107,7 @@ tests/test_imu.c.
 * ENDMANU1 runs the return continuation (TEMPR60) in the same job via agc_dispatch_job (BANKJUMP).
 
 ## Stubs
-* agc_imu_p06, agc_imu_postand (P06 standby / POSTAND time recovery: needs scaler snapshot, GOPERF1
+* agc_imu_standby, agc_imu_postand (P06 standby / POSTAND time recovery: needs scaler snapshot, GOPERF1
   loop, restart to POSTAND).
 * src/csm/prelaunch_align.c: IMUTEST, ESTIMS (gyrocompass/drift-test filter loop), ALWAYSG/COMPGS,
   RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE (agc_csm_prelaunch_*).
@@ -118,7 +118,7 @@ Everything below is declared in src/imu/imu_pending.h until the owner publishes 
 * sys-misc (src/io/sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
   agc_rtb_signmpac, agc_rtb_loadtime, agc_t4_setissw -- same signatures as sysmisc.h; please make public.
 * guid-powered: `agc_status_t agc_pfs_pipasr_noscale(void);` (PIPASR +3, used by LM NBDONLY on surface).
-* prog-rendz: `agc_status_t agc_rendz_gotov56(void);` (R61TEST).
+* prog-rendz: `agc_status_t agc_rendz_goto_terminate_tracking(void);` (R61TEST).
 * dap-lm: `agc_sp_t agc_erase_1jaccq(void); agc_sp_t agc_erase_1jaccr(void);` (MANUSTAT RATEBIAS).
 * sys-misc/prog-rendz (CM): `void agc_erase_set_optind(agc_sp_t v);` (RELINUS).
 * exec: restart-table entries CSM 1.7 / LM 2.13 -> AGC_JOB_RELINUS (exec_pending.h already has it);
@@ -134,10 +134,10 @@ agc_imu_stall(cont) / agc_imu_optstall / agc_imu_goodend(void) / agc_imu_curtain
 ## Requested jobs-tasks
 Jobs (provisional ids in imu_pending.h): AGC_JOB_1_GYRO -> agc_job_1_gyro; AGC_JOB_1_GYRO_PULSE ->
 agc_job_1_gyro_pulse; AGC_JOB_GCOMP1 -> agc_job_gcomp1; AGC_JOB_KALCMAN3 -> agc_job_kalcman3;
-AGC_JOB_NEWDELHI -> agc_job_newdelhi (FINDVAC PRIO26); AGC_JOB_R60_REDOMANC -> agc_job_r60_redomanc;
-AGC_JOB_R60_ENTER -> agc_job_r60_enter; AGC_JOB_R60_TERM -> agc_job_r60_term; AGC_JOB_R60_ENDMANUV ->
-agc_job_r60_endmanuv; AGC_JOB_RELINUS -> agc_job_relinus; AGC_JOB_R62DISP -> agc_job_r62disp;
-AGC_JOB_R62_GOMOVE -> agc_job_r62_gomove; AGC_JOB_R62_TERM -> agc_job_r62_term.
+AGC_JOB_NEWDELHI -> agc_job_newdelhi (FINDVAC PRIO26); AGC_JOB_ATTITUDE_MANEUVER_REDOMANC -> agc_job_attitude_maneuver_redomanc;
+AGC_JOB_ATTITUDE_MANEUVER_ENTER -> agc_job_attitude_maneuver_enter; AGC_JOB_ATTITUDE_MANEUVER_TERM -> agc_job_attitude_maneuver_term; AGC_JOB_ATTITUDE_MANEUVER_ENDMANUV ->
+agc_job_attitude_maneuver_endmanuv; AGC_JOB_RELINUS -> agc_job_relinus; AGC_JOB_CREW_DEFINED_MANEUVER_DISP -> agc_job_crew_defined_maneuver_disp;
+AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE -> agc_job_crew_defined_maneuver_gomove; AGC_JOB_CREW_DEFINED_MANEUVER_TERM -> agc_job_crew_defined_maneuver_term.
 NBDONLY / LASTBIAS jobs: agc_job_nbdonly, agc_job_lastbias (started by exec SVCT3 / programs).
 Tasks: AGC_TASK_IMUZERO2/3, COARS, COARS2, CHKCORS, IMUFINED, IFAILOK, PFAILOK, STRTGYRO, 8192AUG,
 UPDTCALL, MANUSTOP, ENDMANU (= GOODMANU) -> agc_task_<name>; sys-misc's AGC_TASK_CA_ECE ->

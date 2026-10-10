@@ -41,7 +41,7 @@ typedef enum entry_step {
     ST_KEP, ST_KEP2, ST_PREFINAL, ST_PREDICT3, ST_HAVDNRNG,
     ST_GONEGLAD, ST_GOMAXLD, ST_GLIMITER, ST_GOPOSLAD,
     ST_LIMITLD, ST_L353, ST_L355, ST_L357,
-    ST_STEEROFF, ST_P67_2,
+    ST_STEEROFF, ST_ENTRY_FINAL_PHASE_2,
     ST_ENDEXIT,      /* terminal: ENDEXIT -> OVERNOUT display -> SERVNOUT   */
     ST_SERVNOUT,     /* terminal: SERVNOUT without display                  */
     ST_ERROR         /* terminal: a called routine failed                  */
@@ -216,7 +216,7 @@ static void targ_range_angle(agc_interp_t *ip, agc_entry_state_t *es)
         es->thetah = agc_dp_acos(ip, m);                     /* THETAH/360 */
     }
     (void)AGC_ASSERT(es->thetah >= 0);
-    es->rtgon67 = agc_flag_test(AGC_FLAG_GONEBY) ? es->thetah
+    es->range_to_go_entry_final_phase = agc_flag_test(AGC_FLAG_GONEBY) ? es->thetah
                                                  : agc_dp_neg(es->thetah);
 }
 
@@ -410,7 +410,7 @@ static entry_step_t step_initroll(entry_pass_t *p)
     kat = agc_dp_mul(ip, agc_dp_sq(ip, es->leq), es->leq);
     kat = agc_dp_div(ip, kat, AGC_ENTRY_ONE_OVER_KA1);
     kat = agc_dp_add(ip, kat, AGC_ENTRY_KA2);
-    if (entry_p64(es) != AGC_STATUS_OK) {        /* RTB P64: MM 64, N74   */
+    if (entry_post_0_05g(es) != AGC_STATUS_OK) {        /* RTB P64: MM 64, N74   */
         p->status = AGC_STATUS_BAD_ARG;
         return ST_ERROR;
     }
@@ -783,7 +783,7 @@ agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx)
 static entry_step_t step_gotoupsy(entry_pass_t *p)
 {
     (void)AGC_ASSERT(p->es != NULL);
-    if (entry_p65(p->es) != AGC_STATUS_OK) {
+    if (entry_upcontrol(p->es) != AGC_STATUS_OK) {
         p->status = AGC_STATUS_BAD_ARG;
         return ST_ERROR;
     }
@@ -1016,7 +1016,7 @@ static entry_step_t step_downcntl(entry_pass_t *p)
 static entry_step_t step_kep(entry_pass_t *p)
 {
     (void)AGC_ASSERT(p->es != NULL);
-    if (entry_p66(p->es) != AGC_STATUS_OK) {
+    if (entry_ballistic(p->es) != AGC_STATUS_OK) {
         p->status = AGC_STATUS_BAD_ARG;
         return ST_ERROR;
     }
@@ -1057,7 +1057,7 @@ static entry_step_t step_prefinal(entry_pass_t *p)
 {
     (void)AGC_ASSERT(p->es != NULL);
     p->es->gotoaddr = AGC_ENTRY_GOTO_PREFINAL;       /* restart protection */
-    if (entry_p67(p->es) != AGC_STATUS_OK) {
+    if (entry_final_phase(p->es) != AGC_STATUS_OK) {
         p->status = AGC_STATUS_BAD_ARG;
         return ST_ERROR;
     }
@@ -1331,21 +1331,21 @@ static entry_step_t step_steeroff(entry_pass_t *p)
                           false, 0U };
 
     (void)AGC_ASSERT(p->es != NULL);
-    if (agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_P67_1) != AGC_STATUS_OK) {
+    if (agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_ENTRY_FINAL_PHASE_1) != AGC_STATUS_OK) {
         p->status = AGC_STATUS_FULL;
         return ST_ERROR;
     }
     (void)agc_phase_change2(000414, 010035, &v);  /* 4.41 P67.1, SERVICER 5.3 */
-    p->es->gotoaddr = AGC_ENTRY_GOTO_P67_2;
-    (void)AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_P67_2);
-    return ST_P67_2;
+    p->es->gotoaddr = AGC_ENTRY_GOTO_ENTRY_FINAL_PHASE_2;
+    (void)AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_ENTRY_FINAL_PHASE_2);
+    return ST_ENTRY_FINAL_PHASE_2;
 }
 
 /* P67.2 (P61-P67.agc p. 802): present LAT, LONG, ALT (pad radius, earth),
  * then P67.3: SERVNOUT without display.                                   */
-static entry_step_t step_p67_2(entry_pass_t *p)
+static entry_step_t step_entry_final_phase_2(entry_pass_t *p)
 {
-    p->status = agc_entry_p67_2_latlong();
+    p->status = agc_entry_final_phase_2_latlong();
     (void)AGC_ASSERT(p->es != NULL);
     return (p->status == AGC_STATUS_OK) ? ST_SERVNOUT : ST_ERROR;
 }
@@ -1383,7 +1383,7 @@ static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
     case ST_KEP: case ST_KEP2: case ST_PREFINAL: case ST_PREDICT3:
     case ST_HAVDNRNG: case ST_GONEGLAD: case ST_GOMAXLD: case ST_GLIMITER:
     case ST_GOPOSLAD: case ST_LIMITLD: case ST_L353: case ST_L355:
-    case ST_L357: case ST_STEEROFF: case ST_P67_2: case ST_ENDEXIT:
+    case ST_L357: case ST_STEEROFF: case ST_ENTRY_FINAL_PHASE_2: case ST_ENDEXIT:
     case ST_SERVNOUT: case ST_ERROR:
     default:
         break;
@@ -1409,7 +1409,7 @@ static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
     case ST_L355:      return step_l355(p);
     case ST_L357:      return step_l357(p);
     case ST_STEEROFF:  return step_steeroff(p);
-    case ST_P67_2:     return step_p67_2(p);
+    case ST_ENTRY_FINAL_PHASE_2:     return step_entry_final_phase_2(p);
     case ST_INITROLL: case ST_D0EQ: case ST_INROLOUT: case ST_KATEST:
     case ST_INITRL1: case ST_HUNTEST: case ST_RANGER: case ST_GETDLEWD:
     case ST_SIDETRAK: case ST_GOTOUPSY: case ST_UPCONTRL: case ST_CONT1:
@@ -1428,7 +1428,7 @@ static entry_step_t entry_first_step(agc_entry_goto_t g)
 {
     static const entry_step_t map[AGC_ENTRY_GOTO_COUNT] = {
         ST_INITROLL, ST_HUNTEST, ST_UPCONTRL, ST_KEP2,
-        ST_PREFINAL, ST_PREDICT3, ST_ENDEXIT, ST_P67_2
+        ST_PREFINAL, ST_PREDICT3, ST_ENDEXIT, ST_ENTRY_FINAL_PHASE_2
     };
 
     if (!AGC_ASSERT(g >= AGC_ENTRY_GOTO_INITROLL && g < AGC_ENTRY_GOTO_COUNT)) {

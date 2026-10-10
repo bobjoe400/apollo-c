@@ -71,9 +71,9 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE JET_SELECTION_LOGIC agc_csm_jet_select, agc_task_jetslect, agc_task_t6start jet_select.c (re-verified vs source on resume)
 - DONE SETMINDB/SETMAXDB/S41.2/S40.14/RCSDAPON/RCSUP rcs_dapdata.c
 - DONE TVCINITIALIZE tvc_init.c (agc_task_tvcdapon, csm_tvc_mrclean, agc_task_tvcinit1, csm_tvc_init4, csm_tvc_swichovr_body, agc_csm_tvc_preswtch, csm_tvc_gains, LOADCOEF)
-- TODO TVCEXECUTIVE tvc_exec.c
-- TODO TVCMASSPROP tvc_massprop.c
-- TODO TVCRESTARTS tvc_restarts.c
+- DONE TVCEXECUTIVE tvc_exec.c (agc_task_tvcexec, csm_tvc_exec_restart; step machine over the TVCEXPHS restart points)
+- DONE TVCMASSPROP tvc_massprop.c (agc_csm_dap_massprop, agc_csm_dap_fixcw)
+- DONE TVCRESTARTS tvc_restarts.c (agc_task_redotvc, agc_task_enabl2, agc_task_cmdsout, agc_task_exrstrt)
 - TODO TVCDAPS tvc_daps.c
 - TODO TVCSTROKETEST tvc_stroke.c
 - TODO TVCROLLDAP tvc_rolldap.c

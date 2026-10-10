@@ -277,7 +277,7 @@ static void test_constants(void)
     eq("C1/2", AGC_K_C1_2, 031103);
     eq("C3/2", AGC_K_C3_2, -(077777 - 065552));
     eq("-ENDERAS", AGC_K_MINUS_ENDERAS, -2001);
-    eq("V06N22", AGC_K_V06N22, 6 * 128 + 22);
+    eq("V06N22", AGC_K_NEW_GIMBAL_ANGLES_DISPLAY, 6 * 128 + 22);
     eq("DPPOSMAX", AGC_K_DPPOSMAX, AGC_DP_MAX);
     eq("DP1/4TH", AGC_K_DP1_4TH, AGC_DP_QUARTER);
     eq("UNITY", agc_k_unity().c[1], AGC_DP_HALF);

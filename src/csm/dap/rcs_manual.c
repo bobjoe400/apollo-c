@@ -147,3 +147,12 @@ agc_status_t csm_rcs_stickchk(uint16_t bits)
     (void)AGC_ASSERT(r->manndx[0] <= 3);
     return AGC_STATUS_OK;
 }
+
+/* STICKCHK (p. 1021) for other lanes (SATSTICK): see csm_rcs_stickchk. */
+agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits)
+{
+    (void)AGC_ASSERT(ch31_bits <= 077u);
+    agc_status_t st = csm_rcs_stickchk(ch31_bits);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return st;
+}

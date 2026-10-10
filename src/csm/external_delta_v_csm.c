@@ -1,5 +1,5 @@
 /*
- * p30_csm.c -- the Comanche-only end of P30/P31 (P30-P37.agc, Comanche055
+ * external_delta_v_csm.c -- the Comanche-only end of P30/P31 (P30-P37.agc, Comanche055
  * pp. 636-638): REFTEST (+MGA), DISPMGA/COMPTGO (start the TTOGO clock),
  * DISP45 (V16N45) and END45. They use the Comanche flag TIMRFLAG, so they
  * are kept out of the shared src/guidance/p30.c.
@@ -34,7 +34,7 @@ agc_status_t agc_csm_comptgo(void)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_P30_DISP45, AGC_TASK_NONE,
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_EXTERNAL_DELTA_V_DISP45, AGC_TASK_NONE,
                           (int16_t)AGC_PRIO13, false, 0U };
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_TIMRFLAG));
     return agc_phase_change2((uint16_t)040036, (uint16_t)005024, &v); /* 6.3, 4 C */
@@ -42,7 +42,7 @@ agc_status_t agc_csm_comptgo(void)
 
 /* REFTEST (CM p.638): +MGA from DELVSIN if REFSMMAT is valid, else
  * -00001 (MARSDP: shows -.01 deg); DISPMGA: COMPTGO, then DISP45.        */
-agc_status_t agc_job_p30_reftest(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -64,19 +64,19 @@ agc_status_t agc_job_p30_reftest(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    return agc_job_p30_disp45(ctx);
+    return agc_job_external_delta_v_disp45(ctx);
 }
 
 /* DISP45 (CM p.636): flash V16N45 (marks, TFI, +MGA) -- PROCEED: END45,
  * ENTER: redisplay; then P30PHSI: 4.1 and end of job.                    */
-agc_status_t agc_job_p30_disp45(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_disp45(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    agc_status_t st = flash(ctx, AGC_DSKY_GOFLASHR, 16, 45, AGC_JOB_P30_END45,
-                            AGC_JOB_P30_DISP45);
+    agc_status_t st = flash(ctx, AGC_DSKY_GOFLASHR, 16, 45, AGC_JOB_EXTERNAL_DELTA_V_END45,
+                            AGC_JOB_EXTERNAL_DELTA_V_DISP45);
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -86,7 +86,7 @@ agc_status_t agc_job_p30_disp45(agc_job_ctx_t *ctx)
 /* END45 (CM p.636) and the tails of P30 and P31 (p.637): TIMRFLAG off,
  * XDELVFLG set after P30 (external delta-V) and reset after P31 (aimpoint),
  * then P00.                                                               */
-agc_status_t agc_job_p30_end45(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_end45(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

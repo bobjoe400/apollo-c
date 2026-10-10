@@ -1,5 +1,5 @@
 /*
- * p40_csm_clock.c -- P40-P47.agc, Comanche055 pp. 704-709 and 729-734:
+ * sps_burn_clock.c -- P40-P47.agc, Comanche055 pp. 704-709 and 729-734:
  * the once-a-second CLOKTASK/CLOCKJOB display (TTOGO, V06N40, V99 engine
  * enable request, V97 engine-fail), DYNDISP (dynamic N85 in P41), the
  * V99 and V97 responses (V99E/T/P, V97T/P/E and their tasks, QUICKIGN,
@@ -8,11 +8,11 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "p40_csm_internal.h"
+#include "sps_burn_internal.h"
 
 #define ONE_SEC        100
 #define TAILOFF_DELAY  250
-#define R40_DELAY      200
+#define ENGINE_FAIL_DELAY      200
 #define QUICKIGN_DELAY 30
 #define GIMBAL_STEP    200   /* 2 s per gimbal drive step (GPI check)      */
 #define GIMTRIM_DELAY  400   /* 4 s before the trim                       */
@@ -56,12 +56,12 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
     if (nv == 0) {
         return AGC_STATUS_OK;                         /* ENDOFJOB               */
     }
-    if (nv == AGC_CSM_NV_V97) {                       /* FAILDSP                */
-        agc_dsky_cont_t c97 = { AGC_JOB_V97T, AGC_JOB_V97P, AGC_JOB_V97E };
+    if (nv == AGC_CSM_NV_ENGINE_FAIL_PROCEDURE) {                       /* FAILDSP                */
+        agc_dsky_cont_t c97 = { AGC_JOB_ENGINE_FAIL_PROCEDURE_T, AGC_JOB_ENGINE_FAIL_PROCEDURE_P, AGC_JOB_ENGINE_FAIL_PROCEDURE_E };
         return agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, 40), &c97);
     }
-    agc_dsky_cont_t c99 = { AGC_JOB_V99T, AGC_JOB_V99P, AGC_JOB_V99E };   /* ENGREQST */
-    (void)AGC_ASSERT(nv == AGC_CSM_NV_V99);
+    agc_dsky_cont_t c99 = { AGC_JOB_ENGINE_ENABLE_REQUEST_T, AGC_JOB_ENGINE_ENABLE_REQUEST_P, AGC_JOB_ENGINE_ENABLE_REQUEST_E };   /* ENGREQST */
+    (void)AGC_ASSERT(nv == AGC_CSM_NV_ENGINE_ENABLE_REQUEST);
     return agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, 40), &c99);
 }
 
@@ -86,14 +86,14 @@ agc_status_t agc_job_dyndisp(agc_job_ctx_t *ctx)
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
-    (void)agc_csm_p40cnv85(&ip);
+    (void)agc_csm_sps_burn_convert_vg_body(&ip);
     agc_inhint();
     return cknvwrd1(ctx);
 }
 
 /* V99E / V99T (p.706): 6 off, 4 type C at PRIO27; TVCZAP; then P40RCS
  * (V16N85 post-burn) or POST41 (P00).                                     */
-static agc_status_t v99_end(agc_job_id_t next)
+static agc_status_t engine_enable_request_end(agc_job_id_t next)
 {
     agc_phase_var_t v = { AGC_RESTART_JOB, next, AGC_TASK_NONE, (int16_t)AGC_PRIO27,
                           false, 0U };
@@ -105,28 +105,28 @@ static agc_status_t v99_end(agc_job_id_t next)
     return agc_exec_job_yield(next);
 }
 
-agc_status_t agc_job_v99e(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_enable_request_e(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return v99_end(AGC_JOB_P40RCS);
+    return engine_enable_request_end(AGC_JOB_SPS_BURN_RCS);
 }
 
-agc_status_t agc_job_v99t(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_enable_request_t(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return v99_end(AGC_JOB_POST41);
+    return engine_enable_request_end(AGC_JOB_POST41);
 }
 
 /* V99P (p.706-707): engine enable. If TIG-0 has come (IGNFLAG) ignite in
  * 10 ms; in any case clear the V99 (V06N40). A second V99P (restart) only
  * clears it.                                                              */
-agc_status_t agc_job_v99p(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_enable_request_p(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -145,61 +145,61 @@ agc_status_t agc_job_v99p(agc_job_ctx_t *ctx)
 }
 
 /* V97T (p.707): engine failed, terminate: 6 off, 4.67 V97TTASK now.       */
-agc_status_t agc_job_v97t(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_fail_procedure_t(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)agc_phase_change2((uint16_t)000006, (uint16_t)040674, NULL);
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return agc_waitlist_call(1, AGC_TASK_V97TTASK);   /* TWIDDLE                */
+    return agc_waitlist_call(1, AGC_TASK_ENGINE_FAIL_PROCEDURE_TTASK);   /* TWIDDLE                */
 }
 
 /* V97TTASK (p.707): CLOCKJOB off, MASSTMP = CSMMASS + 3 s of flow (not lost
  * because the thrust failed), SPSOFF, 4.71, V97TRCS after 2.5 s.          */
-agc_status_t agc_task_v97ttask(void)
+agc_status_t agc_task_engine_fail_procedure_ttask(void)
 {
     agc_guid_state()->csm.nvword1 = 0;                /* DISABLE CLOCKJOB       */
     agc_csm_dap_tvc()->masstmp = (agc_sp_t)(AGC_CSM_3MDOT + agc_erase_csmmass());
-    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_V97TTASK2, 0,
+    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ENGINE_FAIL_PROCEDURE_TTASK2, 0,
                           true, 0U };
     (void)agc_phase_change_var((uint16_t)005014, &v);
     (void)AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
-    return agc_task_v97ttask2();
+    return agc_task_engine_fail_procedure_ttask2();
 }
 
-agc_status_t agc_task_v97ttask2(void)
+agc_status_t agc_task_engine_fail_procedure_ttask2(void)
 {
     (void)agc_csm_spsoff();
     (void)agc_phase_change(4, (uint16_t)000714);      /* 4.71 = V97TRCS         */
     (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG));
-    return agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_V97TRCS);
+    return agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_ENGINE_FAIL_PROCEDURE_TRCS);
 }
 
 /* V97TRCS (p.707): RCS DAP on in 0.6 s, V99T (TVCZAP, POST41).            */
-agc_status_t agc_task_v97trcs(void)
+agc_status_t agc_task_engine_fail_procedure_trcs(void)
 {
     agc_inhint();
     (void)agc_csm_dap_rcsdapon();
     agc_relint();
     (void)AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
-    return agc_exec_novac(AGC_PRIO27, AGC_JOB_V99T);
+    return agc_exec_novac(AGC_PRIO27, AGC_JOB_ENGINE_ENABLE_REQUEST_T);
 }
 
 /* V97P (p.707): proceed: 4.73 V97PTASK now.                               */
-agc_status_t agc_job_v97p(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_fail_procedure_p(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)agc_phase_change(4, (uint16_t)040734);
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return agc_waitlist_call(1, AGC_TASK_V97PTASK);
+    return agc_waitlist_call(1, AGC_TASK_ENGINE_FAIL_PROCEDURE_PTASK);
 }
 
 /* V97PTASK (p.707-708): mass updates again, V06N40, IDLEFAIL (one R40
  * bypass) and STEERSW set, 4.13, R40ENABL in 2 s.                         */
-agc_status_t agc_task_v97ptask(void)
+agc_status_t agc_task_engine_fail_procedure_ptask(void)
 {
     agc_csm_tvc_t *tvc = agc_csm_dap_tvc();
     tvc->vcntr = tvc->v97vcntr;
@@ -208,11 +208,11 @@ agc_status_t agc_task_v97ptask(void)
     (void)agc_flag_set(AGC_FLAG_STEERSW);
     (void)agc_phase_change(4, (uint16_t)000134);      /* 4.13 = R40ENABL        */
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_STEERSW));
-    return agc_waitlist_fixdelay(R40_DELAY, AGC_TASK_R40ENABL);
+    return agc_waitlist_fixdelay(ENGINE_FAIL_DELAY, AGC_TASK_ENGINE_FAIL_ENABL);
 }
 
 /* R40ENABL (p.708): IDLEFAIL reset (R40 enabled again), group 4 off.      */
-agc_status_t agc_task_r40enabl(void)
+agc_status_t agc_task_engine_fail_enabl(void)
 {
     (void)agc_flag_clear(AGC_FLAG_IDLEFAIL);
     (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLEFAIL));
@@ -220,19 +220,19 @@ agc_status_t agc_task_r40enabl(void)
 }
 
 /* V97E (p.708): re-ignite: 4.53 V97ETASK in 10 ms.                         */
-agc_status_t agc_job_v97e(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_fail_procedure_e(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)agc_phase_change(4, (uint16_t)040534);
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return agc_waitlist_call(1, AGC_TASK_V97ETASK);
+    return agc_waitlist_call(1, AGC_TASK_ENGINE_FAIL_PROCEDURE_ETASK);
 }
 
 /* V97ETASK / SPSOFF97 (p.708): R1 of V06N40 forced to 59x59 (TIG high word
  * = -OCT24), V06N40, MASSTMP, 4.75, SPSOFF, 4.11, V97E40.6 after 2.5 s.   */
-agc_status_t agc_task_v97etask(void)
+agc_status_t agc_task_engine_fail_procedure_etask(void)
 {
     agc_erase_set_tig(agc_dp_pack((agc_sp_t)-024, 0));    /* CS OCT24 TS TIG   */
     agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40);
@@ -247,13 +247,13 @@ agc_status_t agc_task_spsoff97(void)
     (void)agc_csm_spsoff();
     (void)agc_phase_change(4, (uint16_t)000114);      /* 4.11 = V97E40.6        */
     (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG));
-    return agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_V97E40_6);
+    return agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_ENGINE_FAIL_PROCEDURE_E40_6);
 }
 
 /* V97E40.6 / QUICKIGN (p.708-709): PRE40.6 (trim) now, RCS DAP on with the
  * narrow deadband left, 6.2 and a type C task; ASTNFLAG reset and IGNFLAG
  * set for an immediate V99 response; V99FLASH in 0.3 s.                    */
-agc_status_t agc_task_v97e40_6(void)
+agc_status_t agc_task_engine_fail_procedure_e40_6(void)
 {
     (void)agc_waitlist_call(1, AGC_TASK_PRE40_6);
     agc_inhint();
@@ -270,13 +270,13 @@ agc_status_t agc_task_quickign(void)
     (void)agc_flag_clear(AGC_FLAG_ASTNFLAG);          /* CS PRIO14 MASK         */
     (void)agc_flag_set(AGC_FLAG_IGNFLAG);             /* AD BIT13               */
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_IGNFLAG));
-    return agc_waitlist_fixdelay(QUICKIGN_DELAY, AGC_TASK_V99FLASH);
+    return agc_waitlist_fixdelay(QUICKIGN_DELAY, AGC_TASK_ENGINE_ENABLE_REQUEST_FLASH);
 }
 
 /* V99FLASH (p.709): V99 flash, 4.77 (TIG-0 now) and 3.3, S40.13 job.      */
-agc_status_t agc_task_v99flash(void)
+agc_status_t agc_task_engine_enable_request_flash(void)
 {
-    agc_guid_state()->csm.nvword1 = AGC_CSM_NV_V99;
+    agc_guid_state()->csm.nvword1 = AGC_CSM_NV_ENGINE_ENABLE_REQUEST;
     (void)agc_phase_change2((uint16_t)040774, (uint16_t)000033, NULL);
     (void)AGC_ASSERT(agc_guid_state()->csm.nvword1 < 0);
     return agc_exec_findvac(AGC_PRIO20, AGC_JOB_S40_13);

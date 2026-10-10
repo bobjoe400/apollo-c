@@ -211,6 +211,10 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word);
 /* NEEDLER with the errors given (stored in AK..AK2 first); init sets
  * RCSFLAGS BIT3 first (the user's initialisation pass). For guid-entry.   */
 agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init);
+/* STICKCHK: RHC command bits 1-6 of channel 31 (active 1 after the
+ * inversion, bits 1,2 pitch, 3,4 yaw, 5,6 roll) -> RMANNDX..YMANNDX.
+ * For SATSTICK (guid-entry / Saturn takeover).                            */
+agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);
 
 /* ---- T5 / T6 interrupt entries (T5LOC / T6LOC targets) --------------- */
 agc_status_t agc_task_redorcs(void);

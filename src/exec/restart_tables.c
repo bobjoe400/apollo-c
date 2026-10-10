@@ -50,7 +50,7 @@ typedef struct rst_group_tab {
 /* ================= Comanche055 (CSM), pp. 212-219 ===================== */
 static const rst_entry_t csm_even4[] = {   /* 4.2SPOT = 1.2 = 2.2 = 3.2 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_PRECHECK },  /* 4.2 */
-    { RST_J, 030,  RST_D, RST_E0, AGC_JOB_P47BODY, RST_TN },
+    { RST_J, 030,  RST_D, RST_E0, AGC_JOB_THRUST_MONITOR_BODY, RST_TN },
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_PRECHECK },  /* 4.4 */
     { RST_T, 2996, RST_D, RST_E0, RST_JN, AGC_TASK_TTG_0 },
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_PRECHECK },  /* 4.6 */
@@ -75,15 +75,15 @@ static const rst_entry_t csm_odd1[] = {
 static const rst_entry_t csm_odd2[] = {
     { RST_L, 0,   RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT }, /* 2.3 */
     { RST_J, 05,  RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN },    /* 2.5 */
-    { RST_J, 010, RST_D, RST_E0, AGC_JOB_R22, RST_TN },         /* 2.7 */
-    { RST_J, 014, RST_D, RST_E0, AGC_JOB_V94ENTER, RST_TN },    /* 2.11 */
-    { RST_J, 010, RST_D, RST_E0, AGC_JOB_REDOR22, RST_TN },     /* 2.13 */
+    { RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA, RST_TN },         /* 2.7 */
+    { RST_J, 014, RST_D, RST_E0, AGC_JOB_ALTERNATE_LOS_SIGHTING_MARK_ENTER, RST_TN },    /* 2.11 */
+    { RST_J, 010, RST_D, RST_E0, AGC_JOB_REDO_RENDEZVOUS_TRACKING_DATA, RST_TN },     /* 2.13 */
 };
 static const rst_entry_t csm_odd3[] = {
     { RST_J, 020, RST_D, RST_E0, AGC_JOB_S40_13, RST_TN },      /* 3.3 */
     { RST_N, 0,   RST_D, RST_E0, RST_JN, RST_TN },              /* 3.5 */
     { RST_J, 022, RST_D, RST_E0, AGC_JOB_MATRXJOB, RST_TN },    /* 3.7 */
-    { RST_J, 022, RST_D, RST_E0, AGC_JOB_REP11, RST_TN },       /* 3.11 */
+    { RST_J, 022, RST_D, RST_E0, AGC_JOB_RESTART_EARTH_ORBIT_INSERTION_MONITOR, RST_TN },       /* 3.11 */
     { RST_J, 022, RST_D, RST_E0, AGC_JOB_REP11A, RST_TN },      /* 3.13 */
     { RST_T, 0,   RST_X, RST_E_TGO_1, RST_JN, AGC_TASK_ENGINOFF }, /* 3.15 */
 };
@@ -91,32 +91,32 @@ static const rst_entry_t csm_odd4[] = {
     { RST_T, 40,   RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCON },   /* 4.3 */
     { RST_T, 160,  RST_D, RST_E0, RST_JN, AGC_TASK_DOSTRULL },  /* 4.5 */
     { RST_T, 500,  RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0 },     /* 4.7 */
-    { RST_T, 250,  RST_D, RST_E0, RST_JN, AGC_TASK_V97E40_6 },  /* 4.11 */
-    { RST_T, 200,  RST_D, RST_E0, RST_JN, AGC_TASK_R40ENABL },  /* 4.13 */
+    { RST_T, 250,  RST_D, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_PROCEDURE_E40_6 },  /* 4.11 */
+    { RST_T, 200,  RST_D, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_ENABL },  /* 4.13 */
     { RST_J, 016,  RST_D, RST_E0, AGC_JOB_COMPVER, RST_TN },    /* 4.15 */
     { RST_J, 016,  RST_D, RST_E0, AGC_JOB_AZMTHCG1, RST_TN },   /* 4.17 */
-    { RST_L, 0,    RST_G, RST_E_P40TMP, RST_JN, AGC_TASK_TIGBLNK }, /* 4.21 */
-    { RST_J, 012,  RST_D, RST_E0, AGC_JOB_P40S_SV, RST_TN },    /* 4.23 */
+    { RST_L, 0,    RST_G, RST_E_SPS_BURN_TMP, RST_JN, AGC_TASK_TIGBLNK }, /* 4.21 */
+    { RST_J, 012,  RST_D, RST_E0, AGC_JOB_SPS_BURN_S_SV, RST_TN },    /* 4.23 */
     { RST_J, 024,  RST_D, RST_E0, AGC_JOB_PROG52, RST_TN },     /* 4.25 */
     { RST_T, 250,  RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCRCS },  /* 4.27 */
-    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_R51, RST_TN },        /* 4.31 */
-    { RST_T, 2100, RST_D, RST_E0, RST_JN, AGC_TASK_WAKEP62 },   /* 4.33 */
+    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_FINE_ALIGN, RST_TN },        /* 4.31 */
+    { RST_T, 2100, RST_D, RST_E0, RST_JN, AGC_TASK_WAKE_CM_SM_SEPARATION },   /* 4.33 */
     { RST_J, 012,  RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN },   /* 4.35 */
     { RST_T, 500,  RST_D, RST_E0, RST_JN, AGC_TASK_TIGAVEG },   /* 4.37 */
-    { RST_J, 017,  RST_D, RST_E0, AGC_JOB_P67_1, RST_TN },      /* 4.41 */
+    { RST_J, 017,  RST_D, RST_E0, AGC_JOB_ENTRY_FINAL_PHASE_1, RST_TN },      /* 4.41 */
     { RST_T, 0,    RST_X, RST_E_S61DT, RST_JN, AGC_TASK_S61_1C }, /* 4.43 */
     { RST_J, 013,  RST_D, RST_E0, AGC_JOB_S61_1A, RST_TN },     /* 4.45 */
     { RST_J, 017,  RST_D, RST_E0, AGC_JOB_PRE_HUNT, RST_TN },   /* 4.47 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_ATERTASK },  /* 4.51 */
-    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_V97ETASK },  /* 4.53 */
-    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_P65_1, RST_TN },      /* 4.55 */
-    { RST_T, 0,    RST_X, RST_E_P40TMP, RST_JN, AGC_TASK_TIGON }, /* 4.57 */
+    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_PROCEDURE_ETASK },  /* 4.53 */
+    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_ENTRY_UPCONTROL_1, RST_TN },      /* 4.55 */
+    { RST_T, 0,    RST_X, RST_E_SPS_BURN_TMP, RST_JN, AGC_TASK_TIGON }, /* 4.57 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION },  /* 4.61 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_DOSPSOFF },  /* 4.63 */
     { RST_T, 10,   RST_D, RST_E0, RST_JN, AGC_TASK_TIG_5 },     /* 4.65 */
-    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_V97TTASK },  /* 4.67 */
-    { RST_T, 250,  RST_D, RST_E0, RST_JN, AGC_TASK_V97TRCS },   /* 4.71 */
-    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_V97PTASK },  /* 4.73 */
+    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_PROCEDURE_TTASK },  /* 4.67 */
+    { RST_T, 250,  RST_D, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_PROCEDURE_TRCS },   /* 4.71 */
+    { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_PROCEDURE_PTASK },  /* 4.73 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_SPSOFF97 },  /* 4.75 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_TIG_0 },     /* 4.77 */
 };
@@ -167,12 +167,12 @@ static const rst_entry_t lm_odd1[] = {
 static const rst_entry_t lm_odd2[] = {
     { RST_L, 0,    RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT }, /* 2.3 */
     { RST_J, 05,   RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN },   /* 2.5 */
-    { RST_T, 1500, RST_D, RST_E0, RST_JN, AGC_TASK_P20LEMC1 },  /* 2.7 */
-    { RST_J, 014,  RST_D, RST_E0, AGC_JOB_P25LEM1, RST_TN },    /* 2.11 */
+    { RST_T, 1500, RST_D, RST_E0, RST_JN, AGC_TASK_RENDEZVOUS_NAVIGATION_LEMC1 },  /* 2.7 */
+    { RST_J, 014,  RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_LEM1, RST_TN },    /* 2.11 */
     { RST_J, 010,  RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN },    /* 2.13 */
-    { RST_J, 026,  RST_D, RST_E0, AGC_JOB_R22RSTRT, RST_TN },   /* 2.15 */
+    { RST_J, 026,  RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RSTRT, RST_TN },   /* 2.15 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17 },  /* 2.17 */
-    { RST_T, 25,   RST_D, RST_E0, RST_JN, AGC_TASK_R10_R11 },   /* 2.21 */
+    { RST_T, 25,   RST_D, RST_E0, RST_JN, AGC_TASK_LANDING_RADAR_MONITOR_RESTART },   /* 2.21 */
 };
 static const rst_entry_t lm_odd3[] = {
     { RST_T, 0,   RST_X, RST_E_ZOOMTIME, RST_JN, AGC_TASK_ZOOM }, /* 3.3 */
@@ -186,11 +186,11 @@ static const rst_entry_t lm_odd4[] = {
     { RST_J, 012,  RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN },   /* 4.13 */
     { RST_T, 500,  RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30 },    /* 4.15 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5 },     /* 4.17 */
-    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_R51_1, RST_TN },      /* 4.21 */
+    { RST_J, 013,  RST_D, RST_E0, AGC_JOB_FINE_ALIGN_1, RST_TN },      /* 4.21 */
     { RST_T, 0,    RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION },  /* 4.23 */
     { RST_L, 0,    RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35 }, /* 4.25 */
-    { RST_J, -025, RST_D, RST_E0, AGC_JOB_P70A, RST_TN },       /* 4.27 */
-    { RST_J, -025, RST_D, RST_E0, AGC_JOB_P71A, RST_TN },       /* 4.31 */
+    { RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_A, RST_TN },       /* 4.27 */
+    { RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_A, RST_TN },       /* 4.31 */
     { RST_J, -031, RST_D, RST_E0, AGC_JOB_GOP00FIX, RST_TN },   /* 4.33 */
     { RST_J, -031, RST_D, RST_E0, AGC_JOB_GOPOODOO, RST_TN },   /* 4.35 */
     { RST_J, -025, RST_D, RST_E0, AGC_JOB_COMFAIL, RST_TN },    /* 4.37 */
@@ -285,7 +285,7 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
         break;
     case RST_E_SAVET_30:       /* LM SAVET-30 (guid-powered)            */
     case RST_E_ZOOMTIME:       /* LM ZOOMTIME (guid-powered)            */
-    case RST_E_P40TMP:         /* CSM P40TMP (guid-powered)             */
+    case RST_E_SPS_BURN_TMP:         /* CSM P40TMP (guid-powered)             */
     case RST_E_S61DT:          /* CSM S61DT (guid-entry)                */
     case RST_E_CM_GYMDT:       /* CSM CM/GYMDT (guid-entry)             */
         st = AGC_STATUS_UNIMPLEMENTED;
@@ -312,7 +312,7 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
         *out = (uint32_t)RST_600SECS_CS;
         break;
     case RST_E_SAVET_30:       /* LM SAVET-30 B(2) (guid-powered)       */
-    case RST_E_P40TMP:         /* CSM P40TMP B(2) (guid-powered)        */
+    case RST_E_SPS_BURN_TMP:         /* CSM P40TMP B(2) (guid-powered)        */
         st = AGC_STATUS_UNIMPLEMENTED;
         break;
     case RST_E_TGO_1:

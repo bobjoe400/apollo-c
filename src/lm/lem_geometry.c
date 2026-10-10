@@ -46,8 +46,8 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
     const agc_dp_t s1 = agc_imu_arctrig(ip, sinth, costh);          /* PD2 */
     const agc_dp_t s2 = agc_dp_add(ip, s1, LODPHALF);               /* PD6 */
     (void)agc_interp_test_ovf(ip);                     /* wraps one rev   */
-    uint16_t a[2] = { agc_align_1sto2s(t1), agc_align_1sto2s(s1) };
-    uint16_t b[2] = { agc_align_1sto2s(t2), agc_align_1sto2s(s2) };
+    uint16_t a[2] = { agc_align_ones_to_twos(t1), agc_align_ones_to_twos(s1) };
+    uint16_t b[2] = { agc_align_ones_to_twos(t2), agc_align_ones_to_twos(s2) };
     for (int k = 0; k < 2; k++) {
         modea[k] = rr_mode2 ? b[k] : a[k];             /* DXCH swap       */
         modeb[k] = rr_mode2 ? a[k] : b[k];

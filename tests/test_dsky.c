@@ -80,7 +80,7 @@ static bool reg_blank(const agc_dsky_state_t *s, int r)
 }
 
 /* "V06N36E": verb 06 noun 36 shows the AGC clock (HMS) in R1-R3. */
-static void test_v06n36(agc_vehicle_t veh)
+static void test_display_clock_time(agc_vehicle_t veh)
 {
     fresh(veh);
     CHECK(agc_time_set_cs(372345u) == AGC_STATUS_OK);       /* 1 h 2 min 3.45 s */
@@ -103,22 +103,22 @@ static void test_relay_words(void)
     CHECK(agc_dsky_relay_code(8) == 035u && agc_dsky_relay_digit(037u) == 9);
     CHECK(agc_dsky_keys("V06N36E") == AGC_STATUS_OK);
     bool verb06 = false;
-    bool noun36 = false;
+    bool noun_clock_time = false;
     int sent = 0;
     uint16_t w = 0;
     for (int i = 0; i < 40 && agc_dsky_dspout(&w) == AGC_STATUS_OK; i++) {
         sent++;
         verb06 = verb06 || w == (uint16_t)((10u << 11) | (025u << 5) | 034u);
-        noun36 = noun36 || w == (uint16_t)((9u << 11) | (033u << 5) | 034u);
+        noun_clock_time = noun_clock_time || w == (uint16_t)((9u << 11) | (033u << 5) | 034u);
         CHECK(agc_chan_read((int)AGC_CHAN_OUT0) == w);
     }
-    CHECK(verb06 && noun36);
+    CHECK(verb06 && noun_clock_time);
     CHECK(sent >= 2 && agc_dsky_nout() == 0);
     CHECK(agc_dsky_dspout(&w) == AGC_STATUS_NOT_FOUND);
 }
 
 /* "V21N01E12345E": machine address requested in R3, then the load. */
-static void test_v21n01(void)
+static void test_load_component_one(void)
 {
     fresh(AGC_VEHICLE_CSM);
     CHECK(agc_dsky_keys("V21N01E") == AGC_STATUS_OK);
@@ -137,7 +137,7 @@ static void test_v21n01(void)
 }
 
 /* V25N22: decimal CDU degrees in, the same angles shown by V06N22. */
-static void test_v25n22(void)
+static void test_load_three_components(void)
 {
     fresh(AGC_VEHICLE_CSM);
     CHECK(agc_dsky_keys("V25N22E+18000E+09000E-04500E") == AGC_STATUS_OK);
@@ -291,11 +291,11 @@ static void test_lights(void)
 
 int main(void)
 {
-    test_v06n36(AGC_VEHICLE_CSM);
-    test_v06n36(AGC_VEHICLE_LM);
+    test_display_clock_time(AGC_VEHICLE_CSM);
+    test_display_clock_time(AGC_VEHICLE_LM);
     test_relay_words();
-    test_v21n01();
-    test_v25n22();
+    test_load_component_one();
+    test_load_three_components();
     test_clear();
     test_alarm();
     test_monitor();

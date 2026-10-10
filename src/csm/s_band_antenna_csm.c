@@ -14,7 +14,7 @@
 #include "../programs/align_internal.h"
 
 #define HIDP1_4   AGC_DP_QUARTER          /* HIDP1/4 .25 rev = 90 deg      */
-#define V06N51    ALIGN_VN(6, 51)        /* VN 0651                         */
+#define VN_ANTENNA_ANGLES    ALIGN_VN(6, 51)        /* VN 0651                         */
 #define BLANK_R3  ((uint16_t)04)          /* BIT3                           */
 #define DELAY_1CS ((uint16_t)1)           /* BIT1: minimum DELAYJOB         */
 #define EXTVB_BIT5 ((uint16_t)020)        /* EXTVBACT bit 5: R05 running    */
@@ -96,14 +96,14 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
     return AGC_STATUS_OK;
 }
 
-/* Display V06N51 while EXTVBACT bit 5 is on (p. 935). */
+/* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
 static agc_status_t display_angles(const agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u) {
         return agc_dsky_endext();                         /* BZF ENDEXT   */
     }
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, V06N51,
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
                                   AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF,
                                   AGC_JOB_ENDOFJOB);
     if (st != AGC_STATUS_OK) {

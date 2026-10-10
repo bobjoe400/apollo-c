@@ -42,11 +42,11 @@ static void test_lm_flag_ids(void)
     /* Numbers from Luminary099/FLAGWORD_ASSIGNMENTS.agc */
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_dnum(AGC_FLAG_MOONFLAG) == 3);
-    CHECK(agc_dnum(AGC_FLAG_P21FLAG) == 4);          /* differs from CSM (033) */
+    CHECK(agc_dnum(AGC_FLAG_GROUND_TRACK_DETERMINATION_FLAG) == 4);          /* differs from CSM (033) */
     CHECK(agc_dnum(AGC_FLAG_NEEDLFLG) == 11);        /* differs from CSM (006) */
     CHECK(agc_dnum(AGC_FLAG_AVEGFLAG) == 115);       /* differs from CSM (029) */
     CHECK(agc_dnum(AGC_FLAG_ITSWICH) == 105);        /* differs from CSM (106) */
-    CHECK(agc_dnum(AGC_FLAG_V82EMFLG) == 118);       /* differs from CSM (137) */
+    CHECK(agc_dnum(AGC_FLAG_ORBIT_PARAMETER_DISPLAY_EMFLG) == 118);       /* differs from CSM (137) */
     CHECK(agc_dnum(AGC_FLAG_IDLEFLAG) == 113);
     CHECK(agc_dnum(AGC_FLAG_APSFLAG) == 152);
     CHECK(agc_dnum(AGC_FLAG_LRBYPASS) == 165);
@@ -55,7 +55,7 @@ static void test_lm_flag_ids(void)
     CHECK(agc_dnum(AGC_FLAG_AUTR1FLG) == 209);
     CHECK((int)AGC_FLAG_PULSEFLG == 0xDF);
     CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_OPTNSW);
-    CHECK((int)AGC_FLAG_R04FLAG == (int)AGC_FLAG_READRFLG);
+    CHECK((int)AGC_FLAG_RADAR_TEST_FLAG == (int)AGC_FLAG_READRFLG);
     CHECK((int)AGC_FLAG_CMOONFLG == 0x8C);                /* common header, FLAGWRD8 bit 12 */
 }
 

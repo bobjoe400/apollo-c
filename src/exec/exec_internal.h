@@ -62,7 +62,7 @@ typedef enum rst_erasable {  /* erasables named by indirect table words  */
     RST_E_600SECS,           /* both: 600SECS 2DEC 60000 (fixed const)   */
     RST_E_ZOOMTIME,          /* LM  ZOOMTIME B(1)                        */
     RST_E_TGO_1,             /* both: TGO +1 (low word of TGO B(2))      */
-    RST_E_P40TMP,            /* CSM P40TMP B(2)                          */
+    RST_E_SPS_BURN_TMP,            /* CSM P40TMP B(2)                          */
     RST_E_S61DT,             /* CSM S61DT B(1)                           */
     RST_E_CM_GYMDT           /* CSM CM/GYMDT 1P                          */
 } rst_erasable_t;
@@ -110,9 +110,9 @@ void     exec_vac5stor(void);              /* CSM debug copy of tables  */
  * (no program; the PROG lights are blanked). See io-pinball DSPMMJB.  */
 #define EXEC_MODREG_NEG0 ((agc_sp_t)-1)
 
-/* ---- up-calls into higher layers (v37_p00.c) -------------------------
+/* ---- up-calls into higher layers (change_program_idle.c) -------------------------
  * The AGC restart code calls routines that apollo-c places above exec
- * (DAP, IMU, SERVICER). These few calls are collected in v37_p00.c, the
+ * (DAP, IMU, SERVICER). These few calls are collected in change_program_idle.c, the
  * layering exception next to dispatch.c; unit tests replace them.     */
 agc_status_t exec_up_stoprate(void);       /* CSM GOPROG3 / INITSUB: STOPRATE */
 agc_status_t exec_up_servidle(void);       /* LM STRTIDLE: SERVIDLE          */
