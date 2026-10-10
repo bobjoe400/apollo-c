@@ -30,10 +30,20 @@ Phase 1 -- inventory and map (STOP after this phase and report):
    Do NOT apply anything in phase 1.
 
 Phase 2 -- apply (only when the lead says go):
-5. Apply the map tree-wide with word-boundary replacement (longest old
-   names first so prefixes don't clobber), `git mv` for files, and update
-   #include lines, the Makefile if needed, docs/modules notes, and
-   docs/MODULE_STATUS.md.
+5. Apply the map tree-wide with Coccinelle, not sed: generate ONE
+   semantic patch (tools/rename.cocci) from docs/RENAMES.md with a rule
+   per identifier kind (function names via `identifier` metavariables on
+   declarations/definitions/calls; type names; enum members; struct
+   fields; macros), run `spatch --sp-file tools/rename.cocci --in-place
+   --dir src --dir include --dir tests`, and keep the generator script in
+   tools/gen_rename_cocci.py. If `spatch` is not installed, stop and tell
+   the lead. Identifiers inside comments must NOT change (that is where
+   the AGC labels live) -- Coccinelle does this naturally; verify with a
+   grep that comment occurrences of old labels survive. Use `git mv` for
+   files; update #include lines, the Makefile if needed, docs/modules
+   notes and docs/MODULE_STATUS.md with a plain text substitution (they
+   are not C). Use universal-ctags (`ctags -R --c-kinds=+px -x`) to cross-
+   check the inventory from phase 1 against real symbols before applying.
 6. Compile every .c under src/ and tests/ with the brief's flags (-c).
    Files that failed to compile BEFORE your change (record the list in
    phase 1 by compiling first) may still fail, but no NEW failures.
