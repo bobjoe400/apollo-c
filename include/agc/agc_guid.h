@@ -13,9 +13,16 @@
  * that exist only in Comanche (csm) or Luminary (lm).
  *
  * Shared erasables owned by the state layer (REFSMMAT, CDUX/Y/Z, PIPAX/Y/Z,
- * DELV, VGTIG, TTOGO, TIG) are read through agc_state.h accessors; RN, VN,
- * PIPTIME are agc_sv_get(AGC_SV_THIS) (scaled 2^29 m, 2^7 m/cs, 2^28 cs
- * during average-G, whatever the primary body: AVETOMID/MIDTOAVE rescale).
+ * DELV, DELVSLV, VGTIG, TTOGO, TIG, TGO, TEVENT, RN, VN, PIPTIME, CSMMASS)
+ * are read through agc_state.h accessors (RN 2^29 m, VN 2^7 m/cs, PIPTIME
+ * 2^28 cs during average-G, whatever the primary body: AVETOMID/MIDTOAVE
+ * rescale). The targeting erasables shared with the rendezvous programs
+ * (RTIG VTIG DELVSIN DELVSAB DELVLVC RTARG TPASS4 DELLT4 RINIT VINIT
+ * VIPRIME DELVEET3 +MGA RTX1 RTX2) live in agc_rendz_t (agc_programs.h,
+ * agc_rendz_erasable()), because P34/P35 and P30/P31 hand them to P40/P41.
+ * The CSM TVC/RCS DAP values P40 reads or writes (WEIGHT/G, EMDOT,
+ * EREPFRAC, PACTOFF, YACTOFF, OGAD, KPRIMEDT, OMEGAC, REPFRAC, VCNTR,
+ * V97VCNTR, MASSTMP, CNTR, TVCPHASE, ADB, THETADX) are in agc_csm_dap.h.
  */
 #ifndef AGC_GUID_H
 #define AGC_GUID_H
@@ -26,6 +33,7 @@
 #include "agc_word.h"
 #include "agc_interp.h"
 #include "agc_jobs.h"
+#include "agc_exec.h"
 #include "agc_state.h"
 
 /* ======================================================================
@@ -95,20 +103,30 @@ typedef struct agc_avg_g {
     agc_sp_t  pipatmp[3]; /* PIPATMPX/Y/Z (LM) raw pulses for the DAP        */
 } agc_avg_g_t;
 
-/* PIPASR (CM p.832, LM p.869): read and zero the PIPAs, set PIPTIME1.     */
+/* PIPASR (CM p.832, LM p.869): read and zero the PIPAs into the high words
+ * of DELV (pulses, i.e. DP scale 2^14 pulses), and, unless entered at
+ * PIPASR +3 (LM BIBIBIAS), store TIME2,TIME1 in PIPTIME1 (cs 2^28).       */
 agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1);
-/* REREADAC tail (CM p.833, LM p.871): finish an interrupted PIPA read.
- * Returns AGC_STATUS_NOT_FOUND when the read had not started (go READACCS). */
+/* REREADAC decision (CM p.833, LM p.871): AGC_STATUS_NOT_FOUND when the
+ * last completed reading is already marked (PIPAGE > 0: go to READACCS),
+ * AGC_STATUS_OK when this cycle's reading was taken (go to PIPSDONE).      */
 agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a);
-/* CALCGRAV (CM pp.835-836, LM p.880). r scaled 2^29 m.                    */
+/* CALCGRAV (CM pp.835-836, LM p.880). r: ref m 2^29. moon: RTX2 = 2.      */
 agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
                                agc_vec_t r, agc_avg_g_t *a);
-/* CALCRVG (CM p.836, LM pp.880-881). delv: PIPA pulses scale 2^14.        */
+/* CALCRVG (CM p.836, LM pp.880-881). delv: SM PIPA pulses, scale 2^14;
+ * sv: RN (2^29 m) VN (2^7 m/cs). Leaves DELVREF RN1 VN1 GDT1/2.           */
 agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
                               const agc_mat_t *refsmmat, agc_vec_t delv,
                               const agc_state_vector_t *sv, agc_avg_g_t *a);
-/* Copy cycle: RN1,VN1,PIPTIME1,GDT1/2(,GOBL1/2) -> RN,VN,PIPTIME,GDT/2.   */
-agc_status_t agc_guid_copycycle(agc_vehicle_t veh, bool with_gdt, agc_avg_g_t *a);
+/* Copy cycles of the average-G package (GENTRAN in Comanche, COPYCYC in
+ * Luminary): which words of RN1.. go to RN.. under INHINT.                */
+typedef enum agc_copy_kind {
+    AGC_COPY_RVT = 0,    /* RN VN PIPTIME          (CM NORMLIZE, 14 words)  */
+    AGC_COPY_RVTG,       /* + GDT/2 (CM: + GOBL/2) (CM AVERAGEG 26, LM NORMLIZ2 20) */
+    AGC_COPY_ALL         /* LM COPYCYC: + MASS (22 words)                   */
+} agc_copy_kind_t;
+agc_status_t agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind);
 
 /* ======================================================================
  * Targeting and steering (P30-P47)
@@ -116,177 +134,147 @@ agc_status_t agc_guid_copycycle(agc_vehicle_t veh, bool with_gdt, agc_avg_g_t *a
 
 /* Result of an Encke precision update (THISPREC/CSMPREC/LEMPREC).        */
 typedef struct agc_guid_prec {
-    agc_vec_t ratt;       /* RATT  m 2^29 (2^27 moon)                        */
-    agc_vec_t vatt;       /* VATT  m/cs 2^7 (2^5 moon)                       */
-    agc_dp_t  tat;        /* TAT   cs 2^28                                   */
-    int       rtx1;       /* RTX1  -2 moon, -1 earth? (scale selector)       */
-    int       rtx2;       /* RTX2  0 earth, 2 moon                           */
+    agc_vec_t ratt;       /* RATT  ref m, scale 2^29                         */
+    agc_vec_t vatt;       /* VATT  ref m/cs, scale 2^7                       */
+    agc_vec_t ratt1;      /* RATT1 body scale m 2^29 earth / 2^27 moon       */
+    agc_vec_t vatt1;      /* VATT1 body scale m/cs 2^7 earth / 2^5 moon      */
+    agc_dp_t  tat;        /* TAT   cs, scale 2^28                            */
+    agc_sp_t  rtx1;       /* X1 left by the integrator: -2 earth, -10 moon   */
+    agc_sp_t  rtx2;       /* X2: 0 earth, 2 moon (VSR shift to body scale)   */
 } agc_guid_prec_t;
 
+/* P30-P47 erasables not shared with the rendezvous programs.               */
 typedef struct agc_burn {
-    agc_vec_t rtig;       /* RTIG     ref m 2^29                             */
-    agc_vec_t vtig;       /* VTIG     ref m/cs 2^7                           */
-    agc_vec_t delvslv;    /* DELVSLV  LV coords m/cs 2^7 (crew input N81)    */
-    agc_vec_t delvsin;    /* DELVSIN  ref m/cs 2^7                           */
-    agc_dp_t  delvsab;    /* DELVSAB  |DELVSIN| m/cs 2^7                     */
-    agc_dp_t  vgdisp;     /* VGDISP   m/cs 2^7                               */
-    agc_dp_t  hapo;       /* HAPO     m 2^29                                 */
-    agc_dp_t  hper;       /* HPER     m 2^29                                 */
-    agc_dp_t  mga;        /* +MGA     rev 2^0                                */
-    agc_vec_t delvlvc;    /* DELVLVC  LV coords m/cs 2^7                     */
-    agc_vec_t rtarg;      /* RTARG    ref m 2^29                             */
-    agc_dp_t  tpass4;     /* TPASS4   cs 2^28                                */
-    agc_dp_t  dellt4;     /* DELLT4   cs 2^28                                */
-    agc_vec_t ut;         /* UT       thrust direction, half unit 2^1        */
-    agc_vec_t vg;         /* VG       m/cs 2^7                               */
-    agc_vec_t vgprev;     /* VGPREV   m/cs 2^7                               */
-    agc_vec_t bdt;        /* BDT      m/cs 2^7                               */
-    agc_dp_t  csteer;     /* CSTEER   steer-law C, 2^1 (CM) / 2^2 (LM)       */
-    agc_dp_t  ecsteer;    /* ECSTEER  pad load, 2^1                          */
-    agc_dp_t  f;          /* F        thrust, 10^4 N (m.newton) 2^7          */
-    agc_dp_t  weight_g;   /* WEIGHT/G mass kg 2^16 (CM: SP in high word)     */
-    agc_dp_t  nomtig;     /* NOMTIG   cs 2^28                                */
-    agc_dp_t  tgo;        /* TGO      cs 2^28                                */
-    agc_vec_t pointvsm;   /* POINTVSM SM half unit 2^1                       */
-    agc_vec_t scaxis;     /* SCAXIS   half unit 2^1                          */
-    agc_vec_t xscref;     /* XSCREF   half unit 2^1                          */
+    agc_dp_t  vgdisp;     /* VGDISP   |VG| m/cs, scale 2^7                   */
+    agc_dp_t  hapo;       /* HAPO     apogee altitude m, scale 2^29          */
+    agc_dp_t  hper;       /* HPER     perigee altitude m, scale 2^29         */
+    agc_vec_t ut;         /* UT       thrust direction, half unit, scale 2^1 */
+    agc_vec_t vg;         /* VG       velocity to be gained m/cs, 2^7        */
+    agc_vec_t vgprev;     /* VGPREV   m/cs, scale 2^7                        */
+    agc_vec_t bdt;        /* BDT      m/cs, scale 2^7                        */
+    agc_dp_t  csteer;     /* CSTEER   steering-law C, 2^1 (CM) / 2^2 (LM)    */
+    agc_dp_t  ecsteer;    /* ECSTEER  pad load (CM), scale 2^1               */
+    agc_dp_t  f;          /* F        thrust, m.newton (10^4 N), scale 2^7   */
+    agc_dp_t  nomtig;     /* NOMTIG   cs, scale 2^28 (CM)                    */
+    agc_vec_t pointvsm;   /* POINTVSM SM, half unit 2^1                      */
+    agc_vec_t scaxis;     /* SCAXIS   S/C axes, half unit 2^1                */
+    agc_vec_t xscref;     /* XSCREF   ref, half unit 2^1                     */
     agc_vec_t yscref;     /* YSCREF                                          */
     agc_vec_t zscref;     /* ZSCREF                                          */
-    agc_vec_t rinit;      /* RINIT    m 2^29                                 */
-    agc_vec_t vinit;      /* VINIT    m/cs 2^7                               */
-    agc_dp_t  tnit;       /* TNIT     cs 2^28                                */
-    agc_dp_t  tnitprev;   /* TNITPREV cs 2^28                                */
-    agc_vec_t vrprev;     /* VRPREV   m/cs 2^7                               */
-    agc_vec_t viprime;    /* VIPRIME  m/cs 2^7                               */
-    agc_vec_t delveet3;   /* DELVEET3 m/cs 2^7                               */
-    agc_vec_t vgtemp;     /* VGTEMP   m/cs 2^7                               */
-    agc_vec_t delvsum;    /* DELVSUM  m/cs 2^7 (CM)                          */
-    agc_vec_t delvsump;   /* DELVSUMP m/cs 2^7 (CM)                          */
-    agc_sp_t  nbrcycls;   /* NBRCYCLS (CM) count of 2 s cycles               */
+    agc_dp_t  tnit;       /* TNIT     cs, scale 2^28 (CM)                    */
+    agc_dp_t  tnitprev;   /* TNITPREV cs, scale 2^28 (CM)                    */
+    agc_vec_t vrprev;     /* VRPREV   m/cs, scale 2^7 (CM)                   */
+    agc_vec_t vgtemp;     /* VGTEMP   m/cs, scale 2^7 (CM)                   */
+    agc_vec_t delvsum;    /* DELVSUM  m/cs, scale 2^7 (CM)                   */
+    agc_vec_t delvsump;   /* DELVSUMP m/cs, scale 2^7 (CM)                   */
+    agc_sp_t  nbrcycls;   /* NBRCYCLS (CM) 2-s cycles since S40.9; -1 = none */
     agc_sp_t  nbrcyclp;   /* NBRCYCLP (CM)                                   */
-    agc_vec_t vgbody;     /* VGBODY   body/control m/cs 2^7 (N85)            */
+    agc_vec_t vgbody;     /* VGBODY   control/body axes m/cs 2^7 (N85)       */
     agc_vec_t delvimu;    /* DELVIMU  m/cs 2^7 (N83)                         */
     agc_vec_t delvctl;    /* DELVCTL  m/cs 2^7                               */
-    agc_vec_t omegac;     /* OMEGAC   (CM) rate cmd, 1/(2 TVCDT) rev/s       */
-    agc_dp_t  tevent;     /* TEVENT   cs (TIME2,TIME1)                       */
-    agc_dp_t  unused0;    /* keeps the struct layout stable for additions    */
-    int       rtx1;       /* RTX1 left by the last precision update          */
-    int       rtx2;       /* RTX2                                            */
+    agc_vec_t dv47temp;   /* DV47TEMP (CM) / DELVSIN temp (LM) m/cs 2^7      */
 } agc_burn_t;
 
 /* Comanche-only guidance erasables.                                         */
 typedef struct agc_guid_csm {
-    agc_vec_t xpipbuf;    /* X/Y/ZPIPBUF raw PIPA counts (high words)       */
-    agc_vec_t xoldbuf;    /* X/Y/ZOLDBUF                                     */
-    agc_dp_t  emdot;      /* EMDOT    SPS flow, kg/cs 2^3 (SP high word)     */
-    agc_dp_t  etdecay;    /* ETDECAY  tail-off, cs 2^14 (SP high word)       */
-    agc_sp_t  erepfrac[2];/* EREPFRAC LM-off, LM-on                          */
-    agc_sp_t  repfrac;    /* REPFRAC  TVC CG tracking fraction               */
-    agc_dp_t  kprimedt;   /* KPRIMEDT steering gain, pi/8 rad                */
-    agc_sp_t  dvthresh;   /* DVTHRESH m/cs 2^-2                              */
-    agc_dp_t  ek1val;     /* EK1VAL   N-s/100 2^23                           */
-    agc_dp_t  ek2val;     /* EK2VAL   N-s/100 2^23                           */
-    agc_dp_t  ek3val;     /* EK3VAL   N/10^4  2^9                            */
-    agc_sp_t  nvword1;    /* NVWORD1  CLOCKJOB display selector              */
-    agc_sp_t  mrkrtmp;    /* MRKRTMP  S40.6 test/trim selector               */
-    agc_sp_t  cntr;       /* CNTR     S40.6 / TVC counter                    */
-    agc_sp_t  vcntr;      /* VCNTR    TVC half-second counter                */
-    agc_sp_t  vcntrtmp;   /* VCNTRTMP                                        */
-    agc_sp_t  v97vcntr;   /* V97VCNTR                                        */
-    agc_sp_t  masstmp;    /* MASSTMP  kg 2^16                                */
-    agc_dp_t  p40tmp;     /* P40TMP   cs                                     */
-    agc_sp_t  ogad;       /* OGAD     roll reference CDUX at ignition        */
-    agc_dp_t  rsp_rrec;   /* RSP-RREC rev (DELRSPL)                          */
-    agc_sp_t  tvcpitch;   /* TVCPITCH output counter image, 85.41"/bit       */
-    agc_sp_t  tvcyaw;     /* TVCYAW                                          */
+    agc_sp_t  xpipbuf[3]; /* X/Y/ZPIPBUF PIPA counts read by QUIKREAD/READACCS */
+    agc_sp_t  xoldbuf[3]; /* X/Y/ZOLDBUF previous readings                    */
+    agc_sp_t  etdecay;    /* ETDECAY  SPS tail-off, cs, scale 2^14 (PL)      */
+    agc_sp_t  dvthresh;   /* DVTHRESH low-thrust threshold, m/cs 2^-2 (PL)   */
+    agc_dp_t  ek1val;     /* EK1VAL   1-s SPS impulse, N-s/100, 2^23 (PL)    */
+    agc_dp_t  ek2val;     /* EK2VAL   N-s/100, scale 2^23 (PL)               */
+    agc_dp_t  ek3val;     /* EK3VAL   SPS thrust, N/10^4, scale 2^9 (PL)     */
+    agc_sp_t  nvword1;    /* NVWORD1  CLOCKJOB selector: +VN, +0 none, -0 V99, - V97 */
+    bool      nvword1_v99;/* NVWORD1 = -BIT9 (V99 flash) vs other negative   */
+    agc_sp_t  mrkrtmp;    /* MRKRTMP  S40.6: + test and trim, - trim only    */
+    agc_dp_t  p40tmp;     /* P40TMP   cs (LONGCALL delay / TIGON delay)      */
+    agc_dp_t  rsp_rrec;   /* RSP-RREC splash range error, rev (DELRSPL)      */
 } agc_guid_csm_t;
 
 /* Luminary-only guidance erasables.                                         */
 typedef struct agc_guid_lm {
-    agc_dp_t  mass;       /* MASS     kg 2^16                                */
-    agc_dp_t  mass1;      /* MASS1    kg 2^16 (also DVCNTR1 temp)            */
-    agc_sp_t  abdelv;     /* ABDELV   cm/s 2^14                              */
-    agc_dp_t  abdvconv;   /* ABDVCONV m/cs 2^5                               */
-    agc_sp_t  dvthrush;   /* DVTHRUSH pulses per 2 s                         */
-    agc_sp_t  dvcntr;     /* DVCNTR                                          */
-    agc_job_id_t outroute;/* OUTROUTE return after AVGEND                    */
-    agc_vec_t r;          /* R        SM m 2^24                              */
-    agc_vec_t v;          /* V        SM m/cs 2^7                            */
-    agc_vec_t r1s;        /* R1S      SM m 2^24                              */
-    agc_vec_t v1s;        /* V1S      SM m/cs 2^7                            */
-    agc_vec_t g_csm;      /* G(CSM)   SM m/cs 2^7                            */
-    agc_vec_t r_csm;      /* R(CSM)   SM m 2^24                              */
-    agc_vec_t v_csm;      /* V(CSM)   SM m/cs 2^7                            */
-    agc_vec_t wm;         /* WM       lunar rotation, SM                     */
-    agc_dp_t  abvel;      /* ABVEL    m/cs 2^7                               */
-    agc_dp_t  hdotdisp;   /* HDOTDISP m/cs 2^7                               */
+    agc_dp_t  mass;       /* MASS = WEIGHT/G, kg, scale 2^16                 */
+    agc_dp_t  mass1;      /* MASS1 kg 2^16 (also DVCNTR1 temporary)          */
+    agc_sp_t  abdelv;     /* ABDELV   |DELV| cm/s, scale 2^14                */
+    agc_dp_t  abdvconv;   /* ABDVCONV |DELV| m/cs, scale 2^5                 */
+    agc_sp_t  dvthrush;   /* DVTHRUSH DV monitor threshold, PIPA pulses      */
+    agc_sp_t  dvcntr;     /* DVCNTR   low-thrust passes left                 */
+    agc_job_id_t outroute;/* OUTROUTE where AVGEND returns                   */
+    agc_vec_t r;          /* R        SM, m, scale 2^24                      */
+    agc_vec_t v;          /* V        SM, m/cs, scale 2^7                    */
+    agc_vec_t r1s;        /* R1S      SM, m, scale 2^24                      */
+    agc_vec_t v1s;        /* V1S      SM, m/cs, scale 2^7                    */
+    agc_vec_t g_csm;      /* G(CSM)   SM, m/cs, scale 2^7                    */
+    agc_vec_t r_csm;      /* R(CSM)   SM, m, scale 2^24                      */
+    agc_vec_t v_csm;      /* V(CSM)   SM, m/cs, scale 2^7                    */
+    agc_vec_t wm;         /* WM       lunar rotation, SM, rad/cs 2^-33 (VSL2 -> 2^5 m/cs) */
+    agc_dp_t  abvel;      /* ABVEL    speed m/cs, scale 2^7                  */
+    agc_dp_t  hdotdisp;   /* HDOTDISP altitude rate m/cs, scale 2^7          */
     agc_vec_t delvs;      /* DELVS    lunar rotation correction m/cs 2^5     */
-    agc_dp_t  hcalc;      /* HCALC    m 2^24                                 */
-    agc_dp_t  hcalc1;     /* HCALC1   m 2^24                                 */
-    agc_dp_t  land_r;     /* /LAND/   landing-site radius m 2^24             */
-    agc_vec_t uhyp;       /* UHYP     half unit                              */
+    agc_dp_t  hcalc;      /* HCALC    altitude m, scale 2^24                 */
+    agc_dp_t  hcalc1;     /* HCALC1   m, scale 2^24                          */
+    agc_dp_t  land_r;     /* /LAND/   landing-site radius m, scale 2^24      */
+    agc_vec_t uhyp;       /* UHYP     cross-range half unit (R10)            */
     agc_vec_t uhzp;       /* UHZP     downrange half unit (R10)              */
-    agc_dp_t  altbits;    /* ALTBITS  altitude, R10 bit units 2^28           */
+    agc_dp_t  altbits;    /* ALTBITS  altitude, R10 bit units                */
     agc_sp_t  runit[3];   /* RUNIT    SP copy of UNIT/R/ for R10             */
     agc_sp_t  daltrate;   /* DALTRATE R10 altitude-rate compensation         */
     agc_mat_t xnbpip;     /* XNBPIP   NB->SM at PIPTIME, half unit 2^1       */
     /* landing radar (LR) update, pp.874-897 */
-    agc_vec_t hbeamnb;    /* HBEAMNB  range beam, NB half unit               */
-    agc_vec_t vbeamnb[3]; /* VZBEAMNB VYBEAMNB VXBEAMNB (index = VSELECT/... )*/
-    agc_dp_t  hmeas;      /* HMEAS    LR range counts (1.079 ft/bit)         */
+    agc_vec_t hbeamnb;    /* HBEAMNB  range beam, NB, half unit              */
+    agc_vec_t vbeamnb[3]; /* VZBEAMNB VYBEAMNB VXBEAMNB, NB half unit         */
+    agc_dp_t  hmeas;      /* HMEAS    LR range, 1.079 ft/bit                 */
     agc_dp_t  vmeas;      /* VMEAS    LR velocity counts                     */
-    agc_dp_t  deltah;     /* DELTAH   m 2^24                                 */
-    agc_dp_t  delqfix;    /* DELQFIX  m 2^24 reasonableness (50 ft nom.)     */
+    agc_dp_t  deltah;     /* DELTAH   m, scale 2^24                          */
+    agc_dp_t  delqfix;    /* DELQFIX  m, scale 2^24 (50 ft nominal) (PL)     */
     agc_sp_t  lrlctr, lrrctr, lrmctr, lrsctr; /* LR good/bad counters        */
     agc_sp_t  vselect;    /* VSELECT  0 Z, 1 Y, 2 X beam                     */
-    agc_sp_t  stilbadh;   /* STILBADH                                        */
+    agc_sp_t  stilbadh;   /* STILBADH 2-s passes to wait after bad H         */
     agc_sp_t  stilbadv;   /* STILBADV                                        */
-    agc_dp_t  lrvtime;    /* LRVTIME  cs 2^28                                */
+    agc_dp_t  lrvtime;    /* LRVTIME  cs, scale 2^28                         */
     uint16_t  lrcdu[3];   /* LRXCDU LRYCDU LRZCDU                            */
     agc_sp_t  piptem[3];  /* PIPTEM   raw PIPAs at RDGIMS                    */
-    agc_vec_t gnur;       /* GNUR/GNUV updated R or V                        */
-    agc_dp_t  radskal;    /* RADSKAL  doppler bias                           */
-    agc_sp_t  skalskal;   /* SKALSKAL alt scale ratio (.2 nom)               */
-    agc_sp_t  lrhmax;     /* LRHMAX   m 2^14                                 */
-    agc_sp_t  lrwh;       /* LRWH     altitude weight                        */
-    agc_sp_t  lrvmax;     /* LRVMAX                                          */
-    agc_sp_t  lrvf;       /* LRVF                                            */
-    agc_sp_t  lrwv[3];    /* LRWVZ LRWVY LRWVX                               */
-    agc_sp_t  lrwvf[3];   /* LRWVFZ LRWVFY LRWVFX                            */
-    agc_sp_t  lrwvff;     /* LRWVFF   P65-P67 weight                         */
-    agc_sp_t  lralpha[2]; /* LRALPHA POS1, POS2 (X rotation)                 */
-    agc_sp_t  lrbeta[2];  /* LRBETA  POS1, POS2 (Y rotation)                 */
-    agc_sp_t  rpcrtime;   /* RPCRTIME repositioning criterion (time)         */
+    agc_vec_t gnur;       /* GNUR = GNUV updated R1S or V1S                  */
+    agc_dp_t  radskal;    /* RADSKAL  doppler scale (PL)                     */
+    agc_sp_t  skalskal;   /* SKALSKAL low/high altitude scale ratio (PL)     */
+    agc_dp_t  hscal;      /* HSCAL    range scale (PL)                       */
+    agc_sp_t  vzscal[3];  /* VZSCAL.. velocity beam scales, m/cs 2^6 (PL)    */
+    agc_sp_t  lrhmax;     /* LRHMAX   m, scale 2^14 (PL)                     */
+    agc_sp_t  lrwh;       /* LRWH     altitude weight (PL)                   */
+    agc_sp_t  lrvmax;     /* LRVMAX   m/cs 2^7 (PL)                          */
+    agc_sp_t  lrvf;       /* LRVF     m/cs 2^7 (PL)                          */
+    agc_sp_t  lrwv[3];    /* LRWVZ LRWVY LRWVX (PL)                          */
+    agc_sp_t  lrwvf[3];   /* LRWVFZ LRWVFY LRWVFX (PL)                       */
+    agc_sp_t  lrwvff;     /* LRWVFF   P65-P67 weight (PL)                    */
+    agc_sp_t  lralpha[2]; /* LRALPHA POS1, POS2 (X rotation) (PL)            */
+    agc_sp_t  lrbeta[2];  /* LRBETA  POS1, POS2 (Y rotation) (PL)            */
+    agc_vec_t hbeamant;   /* HBEAMANT range beam in antenna axes (PL)        */
+    agc_sp_t  rpcrtime;   /* RPCRTIME repositioning criterion, TTF/8 units   */
     agc_sp_t  rpcrtqsw;   /* RPCRTQSW repositioning criterion (angle)        */
-    agc_sp_t  ttf_8;      /* TTF/8    (landing guidance, read here)          */
-    agc_dp_t  mktime;     /* MKTIME   cs                                     */
-    agc_sp_t  aig, amg, aog; /* gimbal angles at LR alt measurement          */
+    agc_dp_t  mktime;     /* MKTIME   cs, scale 2^28                         */
+    agc_sp_t  aig, amg, aog; /* gimbal angles at LR altitude measurement     */
     /* P40-P47 / BURNBABY */
-    agc_sp_t  which;      /* WHICH    selected ignition table (enum)         */
-    agc_sp_t  dispdex;    /* DISPDEX  CLOKJOB display index (neg: active)    */
-    agc_dp_t  savet_30;   /* SAVET-30 cs                                     */
+    agc_sp_t  which;      /* WHICH    ignition table (agc_lm_which_t)        */
+    agc_sp_t  dispdex;    /* DISPDEX  CLOKJOB display: >0 none, <0 -index    */
+    agc_dp_t  savet_30;   /* SAVET-30 cs, scale 2^28 / ullage delta-t        */
     agc_dp_t  gobltime;   /* GOBLTIME nominal TIG for oblateness, cs 2^28    */
-    agc_dp_t  tigsave;    /* TIGSAVE  cs 2^28                                */
-    agc_dp_t  tigsavep;   /* TIGSAVEP cs 2^28                                */
+    agc_dp_t  tigsave;    /* TIGSAVE  cs, scale 2^28                         */
+    agc_dp_t  tigsavep;   /* TIGSAVEP cs, scale 2^28                         */
     agc_dp_t  tnewa;      /* TNEWA    Lambert cycle, cs 2^28                 */
-    agc_vec_t unfc_2;     /* UNFC/2   thrust command for FINDCDUW            */
-    agc_dp_t  mdot;       /* MDOT     kg/cs 2^3                              */
-    agc_dp_t  tdecay;     /* TDECAY   cs 2^28                                */
-    agc_dp_t  vex;        /* VEX      m/cs 2^6 (2VEXHUST)                    */
-    agc_sp_t  zoomtime;   /* ZOOMTIME cs (pad load)                          */
-    agc_sp_t  ignaosq;    /* IGNAOSQ                                         */
-    agc_sp_t  ignaosr;    /* IGNAOSR                                         */
+    agc_vec_t unfc_2;     /* UNFC/2   thrust command for FINDCDUW, SM        */
+    agc_dp_t  mdot;       /* MDOT     kg/cs, scale 2^3                       */
+    agc_dp_t  tdecay;     /* TDECAY   cs, scale 2^28                         */
+    agc_dp_t  vex;        /* VEX      exhaust velocity, m/cs 2^6             */
+    agc_sp_t  zoomtime;   /* ZOOMTIME cs (PL)                                */
+    agc_sp_t  ignaosq;    /* IGNAOSQ  (PL)                                   */
+    agc_sp_t  ignaosr;    /* IGNAOSR  (PL)                                   */
     agc_sp_t  pittime;    /* PITTIME  cs                                     */
     agc_sp_t  rolltime;   /* ROLLTIME cs                                     */
-    agc_sp_t  wchphase;   /* WCHPHASE                                        */
-    agc_sp_t  flpass0;    /* FLPASS0                                         */
-    agc_dp_t  rmag;       /* RMAG     (RASTEER1)                             */
-    agc_dp_t  rtmag;      /* RTMAG    |RTARG|                                */
-    agc_vec_t unitn;      /* UN       orbit normal (RASTEER1)                */
-    agc_dp_t  geomsgn;    /* GEOMSGN  sign selector                          */
-    agc_dp_t  muasteer;   /* MUASTEER                                        */
-    agc_dp_t  mu_a;       /* MU/A                                            */
-    agc_sp_t  trkmkcnt;   /* TRKMKCNT rendezvous mark counter                */
+    agc_dp_t  rmag;       /* RMAG     |RN| m (RASTEER1 working scale)        */
+    agc_vec_t ic;         /* IC       unit(RTARG - RN) (= DELVSIN storage)   */
+    agc_dp_t  r1c;        /* R1C      RMAG * |C|, normalised                 */
+    agc_dp_t  ss;         /* SS       (R1 + R2 + C)/2                        */
+    agc_sp_t  muscale;    /* MUSCALE  normalisation shift                    */
 } agc_guid_lm_t;
 
 typedef struct agc_guid {
@@ -297,23 +285,38 @@ typedef struct agc_guid {
     agc_guid_lm_t  lm;
 } agc_guid_t;
 
-agc_guid_t  *agc_guid_state(void);          /* the one guidance block      */
-agc_status_t agc_guid_init(agc_vehicle_t veh); /* fresh start: zero + pad defaults */
+agc_guid_t  *agc_guid_state(void);             /* the one guidance block    */
+agc_status_t agc_guid_init(agc_vehicle_t veh); /* fresh start: zero + pad loads */
+
+/* ---- shared targeting (p30.c) ----------------------------------------- */
+agc_status_t agc_guid_s30_1(agc_interp_t *ip, agc_vehicle_t veh);    /* S30.1 */
+agc_status_t agc_guid_s31_1(agc_interp_t *ip);                       /* S31.1 (CM) */
+agc_status_t agc_guid_delrspl(agc_interp_t *ip, agc_dp_t hdist);     /* DELRSPL (CM) */
+agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv);        /* MIDGIM (CM) */
 
 /* ---- shared steering math (p40.c) ------------------------------------- */
+agc_status_t agc_guid_s40_1(agc_interp_t *ip, agc_vehicle_t veh);    /* S40.1 */
+agc_status_t agc_guid_again(agc_interp_t *ip);                       /* AGAIN (CM) */
+agc_status_t agc_guid_calcut(agc_interp_t *ip);                      /* CALCUT (CM) */
+agc_status_t agc_guid_s40_23_csm(agc_interp_t *ip, bool rcs);        /* S40.2,3 (CM) */
+agc_status_t agc_guid_s40_23_lm(agc_interp_t *ip);                   /* S40.2,3 (LM) */
+/* S41.1: VG (ref, 2^7) to control axes (CM, *10 and QUADROT) or LM body.  */
+agc_status_t agc_guid_s41_1(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_ref,
+                            agc_vec_t *vg_ctl);
 
-/* S40.8 TGOCALC: TGO from VG, DELVREF, BDT, 2*Vex and tail-off (2^28 cs). */
+/* S40.8 TGOCALC: TGO (cs 2^28) from VG, DELVREF, BDT, 2*Vex, tail-off.    */
 typedef struct agc_tgo_in {
     agc_vec_t vg;         /* m/cs 2^7                                        */
-    agc_vec_t delvref;    /* m/cs 2^7                                        */
-    agc_vec_t bdt;        /* m/cs 2^7                                        */
-    agc_dp_t  two_vex;    /* 2VEXHUST m/cs 2^7                               */
-    agc_dp_t  tailoff;    /* ETDECAY/TDECAY cs 2^28                          */
+    agc_vec_t delvg;      /* DELVREF - BDT (CM) / -DELVREF (LM), m/cs 2^7    */
+    agc_dp_t  vex;        /* 2VEXHUST m/cs 2^7 (CM) or VEX m/cs 2^6 (LM)     */
+    agc_dp_t  tailoff;    /* -ETDECAY 2^28 (CM) or TDECAY 2^28 (LM), cs      */
 } agc_tgo_in_t;
-agc_status_t agc_guid_s40_8_tgo(agc_interp_t *ip, const agc_tgo_in_t *in,
-                                agc_dp_t *tgo);
+agc_status_t agc_guid_s40_8_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
+                                    agc_dp_t *tgo);
+agc_status_t agc_guid_s40_8_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
+                                   agc_dp_t *tgo);
 
-/* S40.8 XPRODUCT (CM): OMEGAC = KPRIMEDT * SMNB(REFSMMAT * (uVG x uDV')) */
+/* S40.8 XPRODUCT (CM): OMEGAC = KPRIMEDT * SMNB(REFSMMAT (uDV' x uVG)).    */
 typedef struct agc_xprod_in {
     agc_vec_t vg;         /* m/cs 2^7                                        */
     agc_vec_t delvref;    /* m/cs 2^7                                        */
@@ -325,16 +328,209 @@ agc_status_t agc_guid_s40_8_xproduct(agc_interp_t *ip, const agc_xprod_in_t *in,
                                      const agc_mat_t *refsmmat,
                                      const agc_cdutrig_t *trig, agc_vec_t *omegac);
 
-agc_status_t agc_guid_s30_1(agc_interp_t *ip, agc_vehicle_t veh, agc_burn_t *b);
-agc_status_t agc_guid_s31_1(agc_interp_t *ip, agc_burn_t *b);
-agc_status_t agc_guid_s40_1(agc_interp_t *ip, agc_vehicle_t veh, agc_burn_t *b);
-agc_status_t agc_guid_s40_1b_lm(agc_interp_t *ip, agc_burn_t *b);
-agc_status_t agc_guid_again(agc_interp_t *ip, agc_burn_t *b);
-agc_status_t agc_guid_calcut(agc_interp_t *ip, agc_burn_t *b);
-agc_status_t agc_guid_s41_1(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_ref,
-                            agc_vec_t *vg_ctl);
-agc_status_t agc_guid_s40_13_csm(agc_interp_t *ip, agc_burn_t *b, bool add_ullage,
-                                 bool four_jets);
-agc_status_t agc_guid_s40_13_lm(agc_interp_t *ip, agc_burn_t *b);
+agc_status_t agc_guid_s40_9_csm(agc_interp_t *ip);   /* S40.9 body (CM)      */
+agc_status_t agc_guid_s40_9_lm(agc_interp_t *ip);    /* S40.9 body (LM)      */
+/* S40.13 TIMEBURN. four_jets: NJETSFLG clear; ullage: +X translation on.  */
+agc_status_t agc_guid_s40_13_csm(agc_interp_t *ip, bool ullage, bool four_jets);
+agc_status_t agc_guid_s40_13_lm(agc_interp_t *ip);
+
+/* ---- average-G jobs and tasks: Comanche (src/csm/servicer_csm.c) ------ */
+agc_status_t agc_task_preread_csm(void);                 /* PREREAD     */
+agc_status_t agc_task_readaccs_csm(void);                /* READACCS    */
+agc_status_t agc_task_rereadac_csm(void);                /* REREADAC    */
+agc_status_t agc_task_onmnitor(void);                    /* ONMNITOR    */
+agc_status_t agc_task_quikread(void);                    /* QUIKREAD    */
+agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx);   /* NORMLIZE    */
+agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx);   /* SERVICER    */
+agc_status_t agc_job_servexit(agc_job_ctx_t *ctx);       /* SERVEXIT (both) */
+agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx);        /* dispatch on AVGEXIT */
+
+/* ---- average-G jobs and tasks: Luminary (src/lm/servicer_lm.c) -------- */
+agc_status_t agc_task_preread_lm(void);                  /* PREREAD     */
+agc_status_t agc_task_bibibias(void);                    /* BIBIBIAS    */
+agc_status_t agc_task_readaccs_lm(void);                 /* READACCS    */
+agc_status_t agc_task_rereadac_lm(void);                 /* REREADAC    */
+agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx);    /* NORMLIZE    */
+agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx);    /* SERVICER    */
+agc_status_t agc_job_servidle(agc_job_ctx_t *ctx);       /* SERVIDLE    */
+agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx);         /* dispatch on AVGEXIT */
+agc_status_t agc_lm_munrvg(agc_interp_t *ip);            /* MUNRVG      */
+agc_status_t agc_lm_rvboth(agc_interp_t *ip);            /* RVBOTH      */
+agc_vec_t    agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r); /* MUNGRAV (r SM 2^24) -> GDT1/2 */
+agc_status_t agc_lm_munretrn(agc_interp_t *ip);          /* MUNRETRN .. COPYCYC2 */
+agc_status_t agc_lm_altchk(agc_sp_t index, bool *below); /* ALTCHK      */
+agc_status_t agc_lm_tmptospt(void);                      /* TMPTOSPT    */
+agc_status_t agc_lm_lrhtask(void);                       /* LRHTASK     */
+agc_status_t agc_lm_setpos1(void);                       /* SETPOS1     */
+agc_status_t agc_lm_setpos2(void);                       /* SETPOS2     */
+agc_status_t agc_task_rdgims(void);                      /* RDGIMS      */
+agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx);         /* LRVJOB      */
+agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx);    /* after RADSTALL */
+agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx);         /* LRHJOB      */
+agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx);    /* after RADSTALL */
+agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx);       /* HIGATJOB    */
+agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx);  /* after RADSTALL */
+agc_status_t agc_job_posalarm_pro(agc_job_ctx_t *ctx);   /* POSALARM +3 */
+
+/* ---- targeting programs (src/guidance/p30.c) -------------------------- */
+agc_status_t agc_job_p30(agc_job_ctx_t *ctx);            /* P30 (both)  */
+agc_status_t agc_job_p30_n81(agc_job_ctx_t *ctx);        /* after V06N33 PRO */
+agc_status_t agc_job_p30_calc(agc_job_ctx_t *ctx);       /* after V06N81 PRO */
+agc_status_t agc_job_p30_param(agc_job_ctx_t *ctx);      /* PARAM30     */
+agc_status_t agc_job_p30_reftest(agc_job_ctx_t *ctx);    /* REFTEST (CM) */
+agc_status_t agc_job_p30_end45(agc_job_ctx_t *ctx);      /* END45 (CM)  */
+agc_status_t agc_job_p30_disp45(agc_job_ctx_t *ctx);     /* DISP45 (CM) */
+agc_status_t agc_job_p31(agc_job_ctx_t *ctx);            /* P31 (CM)    */
+agc_status_t agc_job_p31_calc(agc_job_ctx_t *ctx);       /* after V06N33 PRO */
+agc_status_t agc_job_p31_n81(agc_job_ctx_t *ctx);        /* after V06N81 PRO */
+
+/* ---- CSM P40-P47 (src/csm/p40_csm.c) ---------------------------------- */
+agc_status_t agc_job_p40_csm(agc_job_ctx_t *ctx);        /* P40CSM      */
+agc_status_t agc_job_p41_csm(agc_job_ctx_t *ctx);        /* P41CSM      */
+agc_status_t agc_job_p47_csm(agc_job_ctx_t *ctx);        /* P47CSM      */
+agc_status_t agc_job_p40_after_r60(agc_job_ctx_t *ctx);  /* P40SXTY +4  */
+agc_status_t agc_job_p40_tsttrim(agc_job_ctx_t *ctx);    /* TST,TRIM (V33) */
+agc_status_t agc_job_p40_trimonly(agc_job_ctx_t *ctx);   /* TRIMONLY    */
+agc_status_t agc_job_p40s_sv(agc_job_ctx_t *ctx);        /* P40S/SV     */
+agc_status_t agc_job_p40blnkr(agc_job_ctx_t *ctx);       /* P40BLNKR    */
+agc_status_t agc_job_postburn_csm(agc_job_ctx_t *ctx);   /* POSTBURN    */
+agc_status_t agc_job_p40rcs(agc_job_ctx_t *ctx);         /* P40RCS      */
+agc_status_t agc_job_p40mindb(agc_job_ctx_t *ctx);       /* P40MINDB    */
+agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx);     /* TIGNOW      */
+agc_status_t agc_job_post41(agc_job_ctx_t *ctx);         /* POST41      */
+agc_status_t agc_job_calcn85_csm(agc_job_ctx_t *ctx);    /* CALCN85     */
+agc_status_t agc_job_calcn83_csm(agc_job_ctx_t *ctx);    /* CALCN83     */
+agc_status_t agc_job_p47body_csm(agc_job_ctx_t *ctx);    /* P47BODY     */
+agc_status_t agc_job_p47bod_csm(agc_job_ctx_t *ctx);     /* P47BOD      */
+agc_status_t agc_job_steering_csm(agc_job_ctx_t *ctx);   /* STEERING    */
+agc_status_t agc_job_s40_9_csm(agc_job_ctx_t *ctx);      /* S40.9       */
+agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx);       /* REDO40.9    */
+agc_status_t agc_job_s40_13_csm(agc_job_ctx_t *ctx);     /* S40.13      */
+agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx);       /* CLOCKJOB    */
+agc_status_t agc_job_dyndisp(agc_job_ctx_t *ctx);        /* DYNDISP     */
+agc_status_t agc_job_v99e(agc_job_ctx_t *ctx);           /* V99E        */
+agc_status_t agc_job_v99t(agc_job_ctx_t *ctx);           /* V99T        */
+agc_status_t agc_job_v99p(agc_job_ctx_t *ctx);           /* V99P        */
+agc_status_t agc_job_v97t(agc_job_ctx_t *ctx);           /* V97T        */
+agc_status_t agc_job_v97p(agc_job_ctx_t *ctx);           /* V97P        */
+agc_status_t agc_job_v97e(agc_job_ctx_t *ctx);           /* V97E        */
+agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx);         /* DAPFIG      */
+agc_status_t agc_csm_comptgo(void);                      /* COMPTGO     */
+agc_status_t agc_csm_s40_8(agc_interp_t *ip);            /* S40.8 (CM)  */
+agc_status_t agc_csm_updatevg(agc_interp_t *ip, bool *s40_9_started); /* UPDATEVG */
+agc_status_t agc_csm_setmindb(void);                     /* SETMINDB    */
+agc_status_t agc_csm_setmaxdb(void);                     /* SETMAXDB    */
+agc_status_t agc_csm_spsoff(void);                       /* SPSOFF/MASSBACK */
+agc_status_t agc_csm_tvczap(void);                       /* TVCZAP      */
+agc_status_t agc_task_ttg_0(void);                       /* TTG/0       */
+agc_status_t agc_task_tigblnk(void);                     /* TIGBLNK     */
+agc_status_t agc_task_tigon(void);                       /* TIGON       */
+agc_status_t agc_task_tigaveg(void);                     /* TIGAVEG     */
+agc_status_t agc_task_precheck(void);                    /* PRECHECK    */
+agc_status_t agc_task_tig_5_csm(void);                   /* TIG-5       */
+agc_status_t agc_task_tig_0_csm(void);                   /* TIG-0       */
+agc_status_t agc_task_ignition_csm(void);                /* IGNITION    */
+agc_status_t agc_task_dotvcon(void);                     /* DOTVCON     */
+agc_status_t agc_task_dostrull(void);                    /* DOSTRULL    */
+agc_status_t agc_task_implcont(void);                    /* IMPLCONT    */
+agc_status_t agc_task_enginoff_csm(void);                /* ENGINOFF    */
+agc_status_t agc_task_dospsoff(void);                    /* DOSPSOFF    */
+agc_status_t agc_task_dotvcrcs(void);                    /* DOTVCRCS    */
+agc_status_t agc_task_cloktask_csm(void);                /* CLOKTASK    */
+agc_status_t agc_task_v97ttask(void);                    /* V97TTASK    */
+agc_status_t agc_task_v97trcs(void);                     /* V97TRCS     */
+agc_status_t agc_task_v97ptask(void);                    /* V97PTASK    */
+agc_status_t agc_task_r40enabl(void);                    /* R40ENABL    */
+agc_status_t agc_task_v97etask(void);                    /* V97ETASK    */
+agc_status_t agc_task_spsoff97(void);                    /* SPSOFF97    */
+agc_status_t agc_task_v97e40_6(void);                    /* V97E40.6    */
+agc_status_t agc_task_v99flash(void);                    /* V99FLASH    */
+agc_status_t agc_task_s40_6(void);                       /* S40.6       */
+agc_status_t agc_task_pre40_6(void);                     /* PRE40.6     */
+agc_status_t agc_task_s40_6_relays(void);                /* S40.6 after 60 ms */
+agc_status_t agc_task_s40_6_rstrtst(void);               /* RSTRTST     */
+agc_status_t agc_task_s40_6_step(void);                  /* OUTPUT return / GIMTRIM */
+
+/* ---- LM P40-P47 (src/lm/p40_lm.c) ------------------------------------- */
+agc_status_t agc_job_p40_lm(agc_job_ctx_t *ctx);         /* P40LM       */
+agc_status_t agc_job_p41_lm(agc_job_ctx_t *ctx);         /* P41LM       */
+agc_status_t agc_job_p42_lm(agc_job_ctx_t *ctx);         /* P42LM       */
+agc_status_t agc_job_p47_lm(agc_job_ctx_t *ctx);         /* P47LM       */
+agc_status_t agc_job_p41_after_r60(agc_job_ctx_t *ctx);  /* P41 after R60LEM */
+agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx);    /* POSTBURN    */
+agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx);      /* TIGNOW      */
+agc_status_t agc_job_term40(agc_job_ctx_t *ctx);         /* TERM40      */
+agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx);       /* DYNMDISP    */
+agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx);        /* REDO6.7 / BLNKWAIT */
+agc_status_t agc_job_calcn85_lm(agc_job_ctx_t *ctx);     /* CALCN85     */
+agc_status_t agc_job_calcn83_lm(agc_job_ctx_t *ctx);     /* CALCN83     */
+agc_status_t agc_job_p47body_lm(agc_job_ctx_t *ctx);     /* P47BODY     */
+agc_status_t agc_job_p47bod_lm(agc_job_ctx_t *ctx);      /* P47BOD      */
+agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx);    /* STEERING    */
+agc_status_t agc_job_s40_9_lm(agc_job_ctx_t *ctx);       /* S40.9       */
+agc_status_t agc_job_s40_13_lm(agc_job_ctx_t *ctx);      /* S40.13      */
+agc_status_t agc_task_startp47(void);                    /* STARTP47    */
+agc_status_t agc_task_implburn_lm(void);                 /* IMPLBURN    */
+agc_status_t agc_task_implburn2(void);                   /* IMPLBURN +0.5 s */
+agc_status_t agc_task_engoftsk(void);                    /* ENGOFTSK    */
+agc_status_t agc_task_coastset(void);                    /* COASTSET    */
+agc_status_t agc_task_trimgimb(void);                    /* TRIMGIMB    */
+agc_status_t agc_task_trimgimb2(void);                   /* TRIMGIMB after 60 s */
+agc_status_t agc_task_rolloff(void);                     /* roll done (VARDELAY) */
+agc_status_t agc_task_pitchoff(void);                    /* PITCHOFF    */
+agc_status_t agc_lm_s40_8(agc_interp_t *ip);             /* S40.8 (LM)  */
+agc_status_t agc_lm_rasteer1(agc_interp_t *ip);          /* RASTEER1    */
+agc_status_t agc_lm_updatevg(agc_interp_t *ip);          /* UPDATEVG    */
+agc_status_t agc_lm_enginoff(void);                      /* ENGINOFF    */
+agc_status_t agc_lm_enginof1(void);                      /* ENGINOF1    */
+agc_status_t agc_lm_enginof2(void);                      /* ENGINOF2    */
+agc_status_t agc_lm_enginof3(void);                      /* ENGINOF3    */
+agc_status_t agc_lm_enginof4(void);                      /* ENGINOF4    */
+
+/* ---- LM BURN BABY BURN (src/lm/ignition.c) ----------------------------- */
+typedef enum agc_lm_which {
+    AGC_LM_WHICH_P12 = 0,  /* P12TABLE */
+    AGC_LM_WHICH_P40,      /* P40TABLE */
+    AGC_LM_WHICH_P41,      /* P41TABLE */
+    AGC_LM_WHICH_P42,      /* P42TABLE */
+    AGC_LM_WHICH_P63,      /* P63TABLE */
+    AGC_LM_WHICH_ABORT,    /* ABRTABLE */
+    AGC_LM_WHICH_COUNT
+} agc_lm_which_t;
+agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx);  /* BURNBABY    */
+agc_status_t agc_lm_brnbb(const agc_job_ctx_t *ctx);     /* B*RNB*B*    */
+agc_status_t agc_lm_p40auto(const agc_job_ctx_t *ctx, agc_job_id_t ret_job); /* P40AUTO */
+agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
+                            agc_job_id_t ret_job);      /* STCLOK2     */
+agc_status_t agc_lm_stclok1(void);                       /* STCLOK1     */
+agc_status_t agc_lm_nullclok(void);                      /* NULLCLOK    */
+agc_status_t agc_lm_noullage(void);                      /* NOULLAGE    */
+agc_status_t agc_lm_onullage(void);                      /* ONULLAGE    */
+agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx);       /* BURNBABY as a job */
+agc_status_t agc_job_brnbb(agc_job_ctx_t *ctx);          /* B*RNB*B* as a job */
+agc_status_t agc_job_p40auto_ret(agc_job_ctx_t *ctx);    /* P40A/P recycle */
+agc_status_t agc_job_p41blank(agc_job_ctx_t *ctx);       /* P41BLANK    */
+agc_status_t agc_job_tig_30a(agc_job_ctx_t *ctx);        /* TIG-30A     */
+agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx);        /* CLOKJOB     */
+agc_status_t agc_job_clok_v97(agc_job_ctx_t *ctx);       /* V97 response (proceed/enter) */
+agc_status_t agc_job_clok_n61(agc_job_ctx_t *ctx);       /* V06N61 proceed */
+agc_status_t agc_job_clok_v99(agc_job_ctx_t *ctx);       /* V99 *PROCEED / *ENTER */
+agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx);       /* STOPCLOK    */
+agc_status_t agc_job_comfail(agc_job_ctx_t *ctx);        /* COMFAIL     */
+agc_status_t agc_job_rep40alm(agc_job_ctx_t *ctx);       /* REP40ALM    */
+agc_status_t agc_job_rep40alm_pro(agc_job_ctx_t *ctx);   /* REP40ALM PROCEED */
+agc_status_t agc_task_tig_35(void);                      /* TIG-35      */
+agc_status_t agc_task_tig_30_1(void);                    /* TIG-30.1    */
+agc_status_t agc_task_tig_30(void);                      /* TIG-30      */
+agc_status_t agc_task_redo4_2(void);                     /* REDO4.2     */
+agc_status_t agc_task_ullgtask(void);                    /* ULLGTASK    */
+agc_status_t agc_task_tig_5_lm(void);                    /* TIG-5       */
+agc_status_t agc_task_tig_0_lm(void);                    /* TIG-0       */
+agc_status_t agc_task_ignition_lm(void);                 /* IGNITION    */
+agc_status_t agc_task_ullagoff(void);                    /* ULLAGOFF    */
+agc_status_t agc_task_tigtask(void);                     /* TIGTASK     */
+agc_status_t agc_task_p63zoom(void);                     /* P63ZOOM     */
+agc_status_t agc_task_p40zoom(void);                     /* P40ZOOM     */
+agc_status_t agc_task_cloktask_lm(void);                 /* CLOKTASK    */
 
 #endif /* AGC_GUID_H */

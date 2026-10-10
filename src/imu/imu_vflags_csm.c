@@ -14,7 +14,9 @@ agc_flag_id_t imu_vflag_csm(imu_vflag_t f)
         0,                   /* AUTR1FLG: LM only                         */
         0,                   /* AUTR2FLG: LM only                         */
         AGC_FLAG_NEEDLFLG,   /* FLAGWRD0 bit 9 (006D)                     */
-        AGC_FLAG_R60FLAG     /* FLAGWRD5 bit 4 (086D)                     */
+        AGC_FLAG_R60FLAG,    /* FLAGWRD5 bit 4 (086D)                     */
+        0,                   /* CALCMAN3: LM only                         */
+        AGC_FLAG_TARG1FLG    /* FLAGWRD1 bit 10 (020D)                    */
     };
     if (!AGC_ASSERT((int)f >= 0 && f < IMU_VF_COUNT)) {
         return 0;

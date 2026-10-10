@@ -1,13 +1,13 @@
 /*
- * guid_pending.h -- symbols guid-powered needs from other lanes that did not
- * exist when this module was written (see docs/modules/guid-powered.md,
- * "Requested core additions"). Everything here follows the naming
- * convention of docs/agents/_common.md. At integration, delete each block
- * whose real header exists and include that header instead; a duplicate
- * definition error points at the block to remove.
+ * guid_pending.h -- shared symbols guid-powered needs from other lanes that
+ * do not exist yet (see docs/modules/guid-powered.md, "Requested core
+ * additions" and "Requested jobs-tasks"). Names follow the convention of
+ * docs/agents/_common.md. At integration, delete each block whose real
+ * declaration exists and include that header instead; a duplicate or
+ * conflicting definition error points at the block to remove.
  *
- * Flag ids are encoded (flagword << 4) | AGC bit number (1..15), computed
- * from the interpretive switch numbers in the AGC listings.
+ * Vehicle-only requests are in src/csm/guid_pending_csm.h and
+ * src/lm/guid_pending_lm.h, which include this file.
  */
 #ifndef GUID_PENDING_H
 #define GUID_PENDING_H
@@ -21,107 +21,40 @@
 #include "agc/agc_jobs.h"
 #include "agc/agc_state.h"
 #include "agc/agc_channels.h"
+#include "agc/agc_dsky.h"
+#include "agc/agc_imu.h"
+#include "agc/agc_programs.h"
 #include "agc/agc_guid.h"
 
-/* ---- flags with the same position in Comanche and Luminary ------------- */
-#define AGC_FLAG_RNDVZFLG ((agc_flag_id_t)((0 << 4) | 7))   /* sw 8   */
-#define AGC_FLAG_NJETSFLG ((agc_flag_id_t)((1 << 4) | 15))  /* sw 15  */
-#define AGC_FLAG_ERADFLAG ((agc_flag_id_t)((1 << 4) | 13))  /* sw 17  */
-#define AGC_FLAG_UPDATFLG ((agc_flag_id_t)((1 << 4) | 7))   /* sw 23  */
-#define AGC_FLAG_TRACKFLG ((agc_flag_id_t)((1 << 4) | 5))   /* sw 25  */
-#define AGC_FLAG_GUESSW   ((agc_flag_id_t)((1 << 4) | 2))   /* sw 28  */
-#define AGC_FLAG_DRIFTFLG ((agc_flag_id_t)((2 << 4) | 15))  /* sw 30  */
-#define AGC_FLAG_STEERSW  ((agc_flag_id_t)((2 << 4) | 11))  /* sw 34  */
-#define AGC_FLAG_IMPULSW  ((agc_flag_id_t)((2 << 4) | 9))   /* sw 36  */
-#define AGC_FLAG_XDELVFLG ((agc_flag_id_t)((2 << 4) | 8))   /* sw 37  */
-#define AGC_FLAG_AVFLAG   ((agc_flag_id_t)((2 << 4) | 5))   /* sw 40  */
-#define AGC_FLAG_PFRATFLG ((agc_flag_id_t)((2 << 4) | 4))   /* sw 41  */
-#define AGC_FLAG_REFSMFLG ((agc_flag_id_t)((3 << 4) | 13))  /* sw 47  */
-#define AGC_FLAG_RNGSCFLG ((agc_flag_id_t)((5 << 4) | 10))  /* sw 80  */
-#define AGC_FLAG_ENGONFLG ((agc_flag_id_t)((5 << 4) | 7))   /* sw 83  */
-#define AGC_FLAG_3AXISFLG ((agc_flag_id_t)((5 << 4) | 6))   /* sw 84  */
-#define AGC_FLAG_IGNFLAG  ((agc_flag_id_t)((7 << 4) | 13))  /* sw 107 */
-#define AGC_FLAG_ASTNFLAG ((agc_flag_id_t)((7 << 4) | 12))  /* sw 108 */
-#define AGC_FLAG_NORMSW   ((agc_flag_id_t)((7 << 4) | 10))  /* sw 110 */
-#define AGC_FLAG_V37FLAG  ((agc_flag_id_t)((7 << 4) | 6))   /* sw 114 */
-#define AGC_FLAG_SURFFLAG ((agc_flag_id_t)((8 << 4) | 8))   /* sw 127 */
+/* ---- executive / service routines --------------------------------------- */
+/* DELAYJOB (sys-misc, src/io/sysmisc.h): sleep this job delay_cs, then
+ * continue as wake_as.                                                     */
+agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);
+/* KILLTASK (BURN_BABY_BURN p.750, exec lane): remove the first waitlist
+ * entry for task; no action if none. Leaves interrupts inhibited.          */
+agc_status_t agc_waitlist_kill(agc_task_id_t task);
+/* CANV37 (FRESH_START_AND_RESTART, exec lane): continue the V37 major-mode
+ * change after the average-G loop has been stopped (POSTJUMP CANV37).      */
+agc_status_t agc_exec_canv37(const agc_job_ctx_t *ctx);
+/* TBASEn: CS TIME1 / TS TBASEn without a phase change (exec lane).         */
+agc_status_t agc_phase_set_tbase(int group);
 
-/* ---- shared erasables (state-flags lane) -------------------------------- */
-agc_mat_t agc_erase_refsmmat(void);        /* REFSMMAT half unit 2^1        */
-uint16_t  agc_erase_cdux(void);            /* CDUX 2's comp counts          */
-uint16_t  agc_erase_cduy(void);
-uint16_t  agc_erase_cduz(void);
-agc_sp_t  agc_erase_pipax(void);           /* PIPAX counter, pulses         */
-agc_sp_t  agc_erase_pipay(void);
-agc_sp_t  agc_erase_pipaz(void);
-void      agc_erase_set_pipax(agc_sp_t v);
-void      agc_erase_set_pipay(agc_sp_t v);
-void      agc_erase_set_pipaz(agc_sp_t v);
-agc_vec_t agc_erase_delv(void);            /* DELV SM pulses 2^14           */
-void      agc_erase_set_delv(agc_vec_t v);
-agc_vec_t agc_erase_vgtig(void);           /* VGTIG ref m/cs 2^7            */
-void      agc_erase_set_vgtig(agc_vec_t v);
-agc_dp_t  agc_erase_ttogo(void);           /* TTOGO cs 2^28                 */
-void      agc_erase_set_ttogo(agc_dp_t t);
-void      agc_erase_set_1_pipadt(agc_sp_t v); /* 1/PIPADT (IMU compensation) */
-
-/* ---- executive extras (exec-sched lane) --------------------------------- */
-uint16_t     agc_phase_get(int group);     /* PHASEn (>0 active)            */
-agc_status_t agc_phase_kill(int group);    /* DXCH -PHASEn with NEG0        */
-agc_status_t agc_waitlist_kill(agc_task_id_t task); /* KILLTASK (LM p.750)  */
-agc_status_t agc_exec_delayjob(uint16_t delay_cs, agc_job_id_t wake_as); /* DELAYJOB */
-agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);  /* GOTOPOOH             */
-agc_status_t agc_job_canv37(agc_job_ctx_t *ctx);    /* CANV37               */
-
-/* ---- DSKY (io-pinball lane) --------------------------------------------- */
-agc_status_t agc_dsky_display(uint8_t verb, uint8_t noun, agc_job_id_t on_terminate,
-                              agc_job_id_t on_proceed, agc_job_id_t on_enter);
-agc_status_t agc_dsky_please_perform(uint16_t checklist, agc_job_id_t on_terminate,
-                                     agc_job_id_t on_proceed, agc_job_id_t on_enter);
-agc_status_t agc_dsky_clear(void);         /* CLEANDSP                      */
-
-/* ---- IMU (imu lane) ----------------------------------------------------- */
-agc_status_t agc_imu_1pipa(void);          /* 1/PIPA: compensate DELV       */
-agc_status_t agc_imu_pipfree(void);        /* PIPFREE                       */
-agc_status_t agc_imu_r02both(void);        /* R02BOTH IMU status check      */
-agc_status_t agc_imu_r60_start(agc_job_id_t on_done); /* R60CSM / R60LEM    */
-
-/* ---- navigation (nav-integ lane) ---------------------------------------- */
-agc_status_t agc_integ_thisprec(agc_dp_t tdec1, agc_guid_prec_t *out);
-agc_status_t agc_integ_csmprec(agc_dp_t tdec1, agc_guid_prec_t *out);
-agc_status_t agc_integ_lemprec(agc_dp_t tdec1, agc_guid_prec_t *out);
-/* MIDTOAV1/MIDTOAV2: integrate to TDEC1 (or now+), leave RN1 VN1 PIPTIME1;
- * *dt = time to PREREAD (cs, 2^28); *late = integration time exceeded.    */
+/* ---- navigation: precision update and average-G hand-over (nav-integ) --- */
+agc_status_t agc_integ_thisprec(agc_dp_t tdec1, agc_guid_prec_t *out); /* THISPREC */
+agc_status_t agc_integ_csmprec(agc_dp_t tdec1, agc_guid_prec_t *out);  /* CSMPREC  */
+agc_status_t agc_integ_lemprec(agc_dp_t tdec1, agc_guid_prec_t *out);  /* LEMPREC  */
+/* MIDTOAV1: integrate RN VN to TDEC1 (or to now if TDEC1 is past), leave
+ * RN1 VN1 PIPTIME1 (agc_guid_state()->avg); *dt = time from now to that
+ * PIPTIME1 (cs, 2^28); *late = the integration ran past TDEC1 (the AGC's
+ * return to L+2).                                                          */
 agc_status_t agc_integ_midtoav1(agc_dp_t tdec1, agc_dp_t *dt, bool *late);
-agc_status_t agc_integ_midtoav2(agc_dp_t *dt);
-agc_status_t agc_integ_avetomid(void);     /* AVETOMID                      */
+agc_status_t agc_integ_midtoav2(agc_dp_t *dt);                  /* MIDTOAV2 */
+agc_status_t agc_integ_avetomid(void);                          /* AVETOMID */
 
-/* ---- P34-35 utilities (prog-rendz lane) --------------------------------- */
-typedef struct agc_initvel {
-    agc_vec_t rinit;     /* RINIT  m 2^29                                   */
-    agc_vec_t vinit;     /* VINIT  m/cs 2^7                                 */
-    agc_vec_t rtarg;     /* RTARG  m 2^29                                   */
-    agc_dp_t  dellt4;    /* DELLT4 cs 2^28                                  */
-    agc_dp_t  eps;       /* EPSILON4 rev (pushed at 2D)                     */
-    agc_sp_t  numit;     /* iteration count (pushed at 0D)                  */
-    int       rtx1;
-    int       rtx2;
-    agc_vec_t viprime;   /* out: VIPRIME m/cs 2^7                           */
-    agc_vec_t delveet3;  /* out: DELVEET3 m/cs 2^7                          */
-} agc_initvel_t;
-agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_initvel_t *io);   /* INITVEL  */
-agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_initvel_t *io);  /* HAVEGUES */
-agc_status_t agc_rendz_periapo1(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
-                                int rtx1, int rtx2, agc_dp_t *hper, agc_dp_t *hapo);
-agc_dp_t     agc_rendz_shiftr1(agc_interp_t *ip, agc_dp_t x, int rtx1); /* SHIFTR1 */
-agc_dp_t     agc_rendz_maxchk(agc_dp_t x);                        /* MAXCHK    */
-agc_mat_t    agc_rendz_lomat(agc_interp_t *ip, agc_vec_t ract3, agc_vec_t unrm); /* LOMAT */
-/* MIDGIM: DELVLVC (LV coords) or +MGA depending on AVFLAG/COMPUTER.        */
-agc_status_t agc_rendz_midgim(agc_interp_t *ip, agc_vec_t dv, agc_vec_t rinit,
-                              agc_vec_t vinit, agc_vec_t *delvlvc, agc_dp_t *mga);
-agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t dv, agc_vec_t rinit,
-                               agc_vec_t vinit, agc_vec_t *delvlvc);   /* GET.LVC */
-agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /* GET+MGA */
+/* ---- rendezvous targeting utilities (prog-rendz) ------------------------ */
+/* HAVEGUES: INITVEL without setting GUESSW (use the COGA guess).            */
+agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
+                                agc_sp_t numit, agc_dp_t e4);
 
 /* ---- job and task ids (lead adds them to agc_jobs.h) -------------------- */
 #define AGC_JOB_GUID_BASE 0x400
@@ -139,24 +72,23 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_JOB_P31           ((agc_job_id_t)(AGC_JOB_GUID_BASE + 12)) /* P31       */
 #define AGC_JOB_P30_N81       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 13)) /* P30 after N33 PRO */
 #define AGC_JOB_P30_CALC      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 14)) /* P30 after N81 PRO */
-#define AGC_JOB_P30_PARAM     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 15)) /* PARAM30 display   */
-#define AGC_JOB_P30_REFTEST   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 16)) /* REFTEST / N42 PRO */
+#define AGC_JOB_P30_PARAM     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 15)) /* PARAM30   */
+#define AGC_JOB_P30_REFTEST   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 16)) /* REFTEST   */
 #define AGC_JOB_P30_END45     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 17)) /* END45     */
 #define AGC_JOB_P31_CALC      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 18)) /* P31 after N33 PRO */
-#define AGC_JOB_P31_N81       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 19)) /* P31 N81 then PARAM30 */
+#define AGC_JOB_P31_N81       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 19)) /* P31 after N81 PRO */
 #define AGC_JOB_REVN1645      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 20)) /* REVN1645 (prog-rendz) */
-#define AGC_JOB_P30_DISP45    ((agc_job_id_t)(AGC_JOB_GUID_BASE + 21)) /* DISP45 redisplay */
+#define AGC_JOB_P30_DISP45    ((agc_job_id_t)(AGC_JOB_GUID_BASE + 21)) /* DISP45    */
 #define AGC_JOB_POSTBURN      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 22)) /* POSTBURN  */
 #define AGC_JOB_TIGNOW        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 23)) /* TIGNOW    */
-#define AGC_JOB_POST41        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 24)) /* POST41/TERM40 */
-#define AGC_JOB_CLOCKJOB      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 25)) /* CLOCKJOB/CLOKJOB */
+#define AGC_JOB_POST41        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 24)) /* POST41 / TERM40 */
+#define AGC_JOB_CLOCKJOB      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 25)) /* CLOCKJOB / CLOKJOB */
 #define AGC_JOB_P40           ((agc_job_id_t)(AGC_JOB_GUID_BASE + 26)) /* P40CSM / P40LM */
 #define AGC_JOB_P41           ((agc_job_id_t)(AGC_JOB_GUID_BASE + 27)) /* P41CSM / P41LM */
 #define AGC_JOB_P42           ((agc_job_id_t)(AGC_JOB_GUID_BASE + 28)) /* P42LM     */
 #define AGC_JOB_P47           ((agc_job_id_t)(AGC_JOB_GUID_BASE + 29)) /* P47CSM / P47LM */
 #define AGC_JOB_P47BODY       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 30)) /* P47BODY   */
 #define AGC_JOB_P40_AFTER_R60 ((agc_job_id_t)(AGC_JOB_GUID_BASE + 31)) /* return from R60 */
-#define AGC_JOB_P40_GMBTEST   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 32)) /* P40GMB (V50N25 R1 204) */
 #define AGC_JOB_P40_TRIMONLY  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 33)) /* TRIMONLY  */
 #define AGC_JOB_P40_TSTTRIM   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 34)) /* TST,TRIM  */
 #define AGC_JOB_P40S_SV       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 35)) /* P40S/SV   */
@@ -170,7 +102,6 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_JOB_V97T          ((agc_job_id_t)(AGC_JOB_GUID_BASE + 43)) /* V97T      */
 #define AGC_JOB_V97P          ((agc_job_id_t)(AGC_JOB_GUID_BASE + 44)) /* V97P      */
 #define AGC_JOB_V97E          ((agc_job_id_t)(AGC_JOB_GUID_BASE + 45)) /* V97E      */
-#define AGC_JOB_P40_DSKY_DONE ((agc_job_id_t)(AGC_JOB_GUID_BASE + 46)) /* generic display ENDOFJOB */
 #define AGC_JOB_COMFAIL       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 47)) /* COMFAIL (LM) */
 #define AGC_JOB_LRHJOB        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 48)) /* LRHJOB    */
 #define AGC_JOB_LRVJOB        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 49)) /* LRVJOB    */
@@ -183,27 +114,43 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_JOB_TIG_30A       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 56)) /* TIG-30A   */
 #define AGC_JOB_BURNBABY      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 57)) /* BURNBABY  */
 #define AGC_JOB_P40AUTO_RET   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 58)) /* P40A/P recycle */
-#define AGC_JOB_GOCUTOFF      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 59)) /* CUTOFF (ascent) */
-#define AGC_JOB_ASTNRET       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 60)) /* ASTNRET (landing) */
+#define AGC_JOB_CUTOFF        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 59)) /* CUTOFF (guid-landing) */
+#define AGC_JOB_ASTNRET       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 60)) /* ASTNRET (guid-landing) */
 #define AGC_JOB_CLOK_V97      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 61)) /* CLOKJOB V97 responses */
 #define AGC_JOB_CLOK_V99      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 62)) /* CLOKJOB V99 responses */
-#define AGC_JOB_CLOK_N61      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 63)) /* CLOKJOB V06N61 responses */
-#define AGC_JOB_TRIMDONE      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 64)) /* TRIMDONE (R03) */
+#define AGC_JOB_CLOK_N61      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 63)) /* CLOKJOB V06N61 PROCEED */
+#define AGC_JOB_TRIMDONE      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 64)) /* TRIMDONE (R03, sys-misc) */
 #define AGC_JOB_P40_ALARM     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 65)) /* REP40ALM  */
 #define AGC_JOB_P40_ALARM_PRO ((agc_job_id_t)(AGC_JOB_GUID_BASE + 66)) /* REP40ALM PROCEED */
-#define AGC_JOB_P30_ALL_DONE  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 67)) /* P30/P31 exit */
 #define AGC_JOB_P47BOD        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 68)) /* P47BOD    */
-#define AGC_JOB_P40_POSTDISP  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 69)) /* POSTBURN PROCEED */
+#define AGC_JOB_STOPCLOK      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 69)) /* STOPCLOK  */
+#define AGC_JOB_REDO40_9      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 70)) /* REDO40.9  */
+#define AGC_JOB_REDO6_7       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 71)) /* REDO6.7 / BLNKWAIT */
+#define AGC_JOB_CLOK_V97E     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 72)) /* V97 ENTER (COMFAIL2) */
+#define AGC_JOB_CLOK_V99E     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 73)) /* V99 ENTER (*ENTER)  */
+#define AGC_JOB_SERVIDLE      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 74)) /* SERVIDLE  */
+#define AGC_JOB_DAPFIG        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 75)) /* DAPFIG    */
+#define AGC_JOB_P30_ALL_DONE  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 76)) /* P30/P31 N42 PROCEED (LM) */
+#define AGC_JOB_TERM40        ((agc_job_id_t)(AGC_JOB_GUID_BASE + 77)) /* TERM40 (LM) */
+#define AGC_JOB_P41_AFTER_R60 ((agc_job_id_t)(AGC_JOB_GUID_BASE + 78)) /* P41LM after R60LEM */
+
+
+#define AGC_JOB_LUNLAND       ((agc_job_id_t)(AGC_JOB_GUID_BASE + 81)) /* LUNLAND (guid-landing) */
+#define AGC_JOB_P63DISPS      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 82)) /* P63DISPS -2 (guid-landing) */
+#define AGC_JOB_ATMAG         ((agc_job_id_t)(AGC_JOB_GUID_BASE + 83)) /* ATMAG (guid-landing) */
+#define AGC_JOB_POSECADR      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 84)) /* CM/POSE (guid-entry) */
+#define AGC_JOB_P11SC         ((agc_job_id_t)(AGC_JOB_GUID_BASE + 85)) /* P11 AVGEXIT (guid-entry) */
+#define AGC_JOB_P40_DSKY_DONE AGC_JOB_ENDOFJOB
 
 #define AGC_TASK_GUID_BASE 0x400
 #define AGC_TASK_READACCS     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 1))  /* READACCS  */
 #define AGC_TASK_PREREAD      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 2))  /* PREREAD   */
 #define AGC_TASK_ONMNITOR     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 3))  /* ONMNITOR  */
 #define AGC_TASK_QUIKREAD     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 4))  /* QUIKREAD  */
-#define AGC_TASK_SETJTAG      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 5))  /* SETJTAG (entry) */
+#define AGC_TASK_SETJTAG      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 5))  /* SETJTAG (guid-entry) */
 #define AGC_TASK_CLOKTASK     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 6))  /* CLOKTASK  */
 #define AGC_TASK_TIGBLNK      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 7))  /* TIGBLNK   */
-#define AGC_TASK_TIGAVEG      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 8))  /* TIGAVEG (TIG-30) */
+#define AGC_TASK_TIGAVEG      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 8))  /* TIGAVEG   */
 #define AGC_TASK_TIG_5        ((agc_task_id_t)(AGC_TASK_GUID_BASE + 9))  /* TIG-5     */
 #define AGC_TASK_TIG_0        ((agc_task_id_t)(AGC_TASK_GUID_BASE + 10)) /* TIG-0     */
 #define AGC_TASK_IGNITION     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 11)) /* IGNITION  */
@@ -217,8 +164,7 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_TASK_PRE40_6      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 19)) /* PRE40.6   */
 #define AGC_TASK_S40_6_B      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 20)) /* S40.6 after 60 ms */
 #define AGC_TASK_S40_6_C      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 21)) /* RSTRTST   */
-#define AGC_TASK_S40_6_OUT    ((agc_task_id_t)(AGC_TASK_GUID_BASE + 22)) /* OUTPUT return */
-#define AGC_TASK_GIMTRIM2     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 23)) /* GIMTRIM +2 */
+#define AGC_TASK_S40_6_OUT    ((agc_task_id_t)(AGC_TASK_GUID_BASE + 22)) /* OUTPUT return / GIMTRIM */
 #define AGC_TASK_V97TTASK     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 24)) /* V97TTASK  */
 #define AGC_TASK_V97TRCS      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 25)) /* V97TRCS   */
 #define AGC_TASK_V97PTASK     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 26)) /* V97PTASK  */
@@ -237,17 +183,19 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_TASK_COASTSET     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 39)) /* COASTSET  */
 #define AGC_TASK_IMPLBURN2    ((agc_task_id_t)(AGC_TASK_GUID_BASE + 40)) /* IMPLBURN after 0.5 s */
 #define AGC_TASK_TRIMGIMB     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 41)) /* TRIMGIMB  */
-#define AGC_TASK_TRIMGIMB2    ((agc_task_id_t)(AGC_TASK_GUID_BASE + 42)) /* after 60 s */
+#define AGC_TASK_TRIMGIMB2    ((agc_task_id_t)(AGC_TASK_GUID_BASE + 42)) /* TRIMGIMB after 60 s */
 #define AGC_TASK_ROLLOFF      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 43)) /* roll off (VARDELAY) */
 #define AGC_TASK_PITCHOFF     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 44)) /* PITCHOFF  */
 #define AGC_TASK_LRHTASK      ((agc_task_id_t)(AGC_TASK_GUID_BASE + 45)) /* LRHTASK   */
 #define AGC_TASK_RDGIMS       ((agc_task_id_t)(AGC_TASK_GUID_BASE + 46)) /* RDGIMS    */
-#define AGC_TASK_R10R11       ((agc_task_id_t)(AGC_TASK_GUID_BASE + 47)) /* R10,R11 (landing) */
+#define AGC_TASK_R10R11       ((agc_task_id_t)(AGC_TASK_GUID_BASE + 47)) /* R10,R11 (guid-landing) */
 #define AGC_TASK_IMPLCONT     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 48)) /* IMPLCONT  */
-#define AGC_TASK_CLOKTASK_LM  ((agc_task_id_t)(AGC_TASK_GUID_BASE + 49)) /* CLOKTASK (LM) */
-#define AGC_TASK_IGNITION_LM  ((agc_task_id_t)(AGC_TASK_GUID_BASE + 50)) /* IGNITION (LM) */
-#define AGC_TASK_TIG_5_LM     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 51)) /* TIG-5 (LM) */
-#define AGC_TASK_TIG_0_LM     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 52)) /* TIG-0 (LM) */
+#define AGC_TASK_REREADAC     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 53)) /* REREADAC  */
+#define AGC_TASK_DOSPSOFF     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 54)) /* DOSPSOFF  */
+#define AGC_TASK_SPSOFF97     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 55)) /* SPSOFF97  */
+#define AGC_TASK_PRECHECK     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 56)) /* PRECHECK / REDO4.2 */
+#define AGC_TASK_BIBIBIAS     ((agc_task_id_t)(AGC_TASK_GUID_BASE + 57)) /* BIBIBIAS  */
+#define AGC_TASK_T5IDLOC_GUID AGC_TASK_T5IDLOC                           /* T5IDLOC   */
 
 /* Priorities: agc_prio_t = PRIOnn (octal) >> 9, i.e. the "nn" in octal.     */
 #define AGC_PRIO5  ((agc_prio_t)005)
@@ -269,9 +217,11 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, agc_dp_t *mga); /
 #define AGC_PRIO31 ((agc_prio_t)031)
 #define AGC_PRIO32 ((agc_prio_t)032)
 
-/* Channel bits used here (AGC_CH<octal chan>_<NAME>, state-flags lane).    */
-#define AGC_CH011_TESTCONN  ((uint16_t)0x0100)  /* DSALMOUT BIT9 test connector outbit */
-#define AGC_CH011_ENGINEON  ((uint16_t)0x1000)  /* DSALMOUT BIT13 engine on      */
-#define AGC_CH011_ENGINEOFF ((uint16_t)0x2000)  /* DSALMOUT BIT14 engine off (LM) */
+/* Alarm codes raised by this lane (octal, as in the listings).             */
+#define AGC_ALARM_00205 ((agc_alarm_code_t)00205) /* CM: PIPA saturated        */
+#define AGC_ALARM_00511 ((agc_alarm_code_t)00511) /* LM: LR not in position    */
+#define AGC_ALARM_00523 ((agc_alarm_code_t)00523) /* LM: LR repositioning failed */
+#define AGC_ALARM_01407 ((agc_alarm_code_t)01407) /* VG increasing (thrust > 90 deg off) */
+#define AGC_ALARM_01706 ((agc_alarm_code_t)01706) /* LM: P40/P42 vs. stage config */
 
 #endif /* GUID_PENDING_H */

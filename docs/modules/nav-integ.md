@@ -8,9 +8,33 @@ ORBITAL_INTEGRATION.agc (pp. 1334-1354), diffed against Luminary099
 vehicle differences behind `agc_state_vehicle()`; the one LM-only routine
 that needs an LM-only flag (SETITCTR, AVEGFLAG) is in its own file.
 
-Files: include/agc/agc_integ.h, src/nav/integration_init.c,
-src/nav/orbital_integration.c, src/nav/integration_lm.c,
-tests/test_integration.c.
+Files: include/agc/agc_integ.h, src/nav/integ_internal.h (private),
+src/nav/integration_init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
+src/nav/integration_jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
+MIDTOAV1/2, INTWAKEU), src/nav/orbital_integration.c (Encke step, ACCOMP,
+GAMCOMP, OBLATE, DIFEQ, W matrix, RECTIFY, origin change),
+src/nav/integration_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
+src/nav/integration_lm.c (SETITCTR, AVEGFLAG), src/nav/integ_pending.h
+(placeholder job/task ids), tests/test_integration.c.
+
+Also translated here (because they are the body of the STATEINT job):
+STATEUP/DOINT/STATEND/NO-INT and THISVINT from FRESH_START_AND_RESTART.agc
+(CM p. 209-210, LM p. 236-237).
+
+Design notes:
+* One shared integration context (agc_integ_shared_ctx()) mirrors the single
+  set of AGC integration erasables guarded by INTSTALL; tests may use their
+  own agc_integ_ctx_t.
+* The integration is a state machine (enum + switch, bounded passes) in
+  agc_integ_run(): TESTLOOP -> TIMESTEP -> ENDSTATE -> (CKMID2 | W columns ->
+  RELOADSV) -> TESTLOOP ... -> A-PCHK -> RECTOUT -> INTEXIT. GOBAQUE returns
+  to TESTLOOP. No recursion, no goto.
+* Permanent state vectors (RRECTCSM..XKEPCSM, RRECTLEM..XKEPLEM, 42 words
+  each) are kept here; RRECT/VRECT/TET parts are mirrored through the shared
+  accessors agc_erase_[set_]rrectcsm/vrectcsm/tetcsm (and LEM).
+* PBODY (X2) is an int 0 (earth) / 2 (moon); DIFEQCNT is the stage 0..2;
+  COLREG is the W column 0..8; interpretive index arithmetic on NORM counts
+  is done with positive counts n (the AGC stores -n).
 
 ## CM vs LM differences (normalised diff, comments/whitespace ignored)
 
@@ -69,7 +93,14 @@ tests/test_integration.c.
 
 ## Progress
 
-TODO all (design stage).
+* design: DONE (this note)
+* agc_integ.h: DONE include/agc/agc_integ.h
+* integ_internal.h / integ_pending.h: DONE src/nav/
+* integration_init.c (INTSTALL/INTWAKE, entries, PTOA/ATOP, TESTLOOP, A-PCHK, RECTOUT, INTEXIT, RVCON, driver): TODO
+* integration_jobs.c (STATEINT..ENDINT, AVETOMID, MIDTOAV, INTWAKEU, GRP2PC): TODO
+* orbital_integration.c: DONE (compiles) -- KEPPREP wrapper agc_integ_kepprep, FBR3 fbr3, GOBAQUE gobaque, GAMCOMP gamcomp/gamcomp_rho, ACCOMP accomp/third_body, OBLATE oblate/moon_axes/legendre_terms/comterm_tvec, QUALITY1-3 quality2/quality3, DOW.. dow/dow1, DIFEQ0/+0/+1/+2/DIFEQCOM difeq0/difeq01/difeq2, ENDSTATE state_step, AMOVED/NEXTCOL/WMATEND agc_integ_wcolumns/wmatend, RECTEST rectest, TIMESTEP agc_integ_timestep (+ LM lm_sphere), CHKSWTCH agc_integ_chkswtch, ORIGCHNG agc_integ_origchng, RECTIFY/MINIRECT agc_integ_rectify/minirect, SETMOON/CLRMOON agc_integ_setmoon
+* integration_csm.c / integration_lm.c: TODO
+* tests/test_integration.c: TODO
 
 ## Deviations
 

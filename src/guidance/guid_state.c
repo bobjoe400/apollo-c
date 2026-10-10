@@ -1,0 +1,63 @@
+/*
+ * guid_state.c -- the erasable block owned by the powered-flight guidance
+ * routines (POWERED_FLIGHT_SUBROUTINES, SERVICER207/SERVICER, P30-P47,
+ * BURN_BABY_BURN). The AGC keeps these in EBANKs 3-7 under the names given
+ * in agc_guid.h; here they are one static structure reached through
+ * agc_guid_state(), so that the program, servicer and steering modules of
+ * both vehicles share them the way the AGC routines share erasable.
+ */
+#include <stddef.h>
+#include "agc/agc_assert.h"
+#include "agc/agc_guid.h"
+#include "guid_pending.h"
+
+static agc_guid_t g_guid;
+
+/* The one guidance erasable block.                                        */
+agc_guid_t *agc_guid_state(void)
+{
+    return &g_guid;
+}
+
+/* Zero a vector (no interpreter needed).                                  */
+static agc_vec_t zero_vec(void)
+{
+    return agc_vec_zero();
+}
+
+/* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
+ * rotation axis along reference Z as a full unit vector (CM pad load,
+ * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
+static void init_avg(agc_avg_g_t *a)
+{
+    a->avgexit = AGC_JOB_SERVEXIT;
+    a->unitw = agc_vec_make(0, 0, AGC_DP_MAX);
+    a->pipage = 1;
+    a->gdt_2 = zero_vec();
+}
+
+/* Fresh start of the guidance erasables: everything zero, then the values
+ * the AGC fresh start or the pad loads put there. The pad loads below are
+ * the nominal Apollo 11 values quoted in the listings' comments; the sim
+ * harness overwrites them with a real pad load.                           */
+agc_status_t agc_guid_init(agc_vehicle_t veh)
+{
+    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_guid_t zero = { 0 };
+    g_guid = zero;
+    init_avg(&g_guid.avg);
+    g_guid.burn.nbrcycls = -1;              /* no S40.9 cycle under way      */
+    if (veh == AGC_VEHICLE_CSM) {
+        g_guid.csm.etdecay = 0;            /* ETDECAY pad load (cs, 2^14)    */
+        g_guid.csm.dvthresh = 0;           /* DVTHRESH pad load (2^-2 m/cs)  */
+    } else {
+        g_guid.lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD: SERVEXIT +2 */
+        g_guid.lm.dispdex = 1;             /* positive: CLOKTASK not running */
+        g_guid.lm.vselect = 2;             /* VSELECT: X beam first          */
+        g_guid.lm.which = (agc_sp_t)AGC_LM_WHICH_P40;
+    }
+    (void)AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT);
+    return AGC_STATUS_OK;
+}

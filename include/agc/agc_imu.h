@@ -107,11 +107,9 @@ agc_status_t agc_imu_noattoff(void);     /* NOATTOFF: NO ATT lamp off      */
 agc_status_t agc_imu_setcoars(void);     /* SETCOARS                       */
 agc_status_t agc_imu_fin20(void);        /* IMUFIN20 (= IMUFINE)           */
 agc_status_t agc_imu_clear_cmds(void);   /* -0 into CDUXCMD..Z, GYROCMD    */
-/* MODECADR +dev, encoded as the AGC word: 0 = +0 (free / in progress),
- * -1 = complete and good, +1 = a job is stalled on it (a CADR); the
- * failed state -0 is returned as -2 (DEVIATION: no -0 in agc_sp_t).       */
-agc_sp_t     agc_erase_modecadr(int dev);
-
+/* MODECADR storage is exec's (agc_erase_modecadr in agc_exec.h); the
+ * IMU lane's encoding: +0 free, -1 complete good, -2 complete failed
+ * (stands in for -0), positive = id of the stalled job.                  */
 /* Simulator side of the hardware command counters: the harness drains
  * GYROCMD and CDUXCMD..CDUZCMD as it emits the pulses.                    */
 agc_status_t agc_imu_hw_set_gyrocmd(uint16_t pulses);
@@ -257,15 +255,56 @@ agc_status_t agc_imu_vecpnt1(agc_interp_t *ip, const uint16_t cdu0[3],
 agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3], uint16_t fdai[3]);
 
 agc_status_t agc_imu_set_scaxis(agc_vec_t v);       /* SCAXIS, half-unit   */
+uint16_t     agc_erase_fdai(int axis);  /* FDAIX..Z (LM) from BALLANGS, CDU pattern */
 agc_status_t agc_imu_set_pointvsm(agc_vec_t v);     /* POINTVSM, half-unit */
 
-/* R60CSM / R60LEM: called by a program job; on exit job ret_job is woken
- * (the AGC's BANKJUMP to TEMPR60).                                        */
+/* G+N,AUTO / ISITAUTO (LM R60_62.agc): +0 when the LM is in G&N and auto
+ * stabilization, positive otherwise.                                     */
+agc_sp_t     agc_imu_isitauto(void);
+agc_sp_t     agc_imu_gn_auto(void);
+
+/* R60CSM / R60LEM: called by a program job; on exit (ENDMANU1) job
+ * ret_job is run in the same job (the AGC's BANKJUMP to TEMPR60).        */
 agc_status_t agc_imu_r60(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
-agc_status_t agc_job_r60_redomanc(agc_job_ctx_t *ctx); /* PROCEED of V50N18 */
-agc_status_t agc_job_r60_tomanv(agc_job_ctx_t *ctx);   /* display response  */
-agc_status_t agc_job_r60_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR     */
-agc_status_t agc_job_r62disp(agc_job_ctx_t *ctx);      /* R62DISP (V49)     */
-agc_status_t agc_job_r62resp(agc_job_ctx_t *ctx);      /* V06N22 response   */
+agc_status_t agc_job_r60_redomanc(agc_job_ctx_t *ctx); /* V50N18 PROCEED   */
+agc_status_t agc_job_r60_enter(agc_job_ctx_t *ctx);    /* V50N18 ENTER     */
+agc_status_t agc_job_r60_term(agc_job_ctx_t *ctx);     /* V34: R61TEST     */
+agc_status_t agc_job_r60_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR    */
+agc_status_t agc_job_relinus(agc_job_ctx_t *ctx);      /* RELINUS restart  */
+agc_status_t agc_job_r62disp(agc_job_ctx_t *ctx);      /* R62DISP (V49)    */
+agc_status_t agc_job_r62_gomove(agc_job_ctx_t *ctx);   /* V06N22 PROCEED   */
+agc_status_t agc_job_r62_term(agc_job_ctx_t *ctx);     /* V34 / done: ENDEXT */
+
+/* ======================================================================= */
+/* CM prelaunch alignment pieces (IMU_CALIBRATION_AND_ALIGNMENT.agc,       */
+/* src/csm/prelaunch_align.c)                                              */
+/* ======================================================================= */
+
+/* FINETIME: consistent read of HISCALAR/LOSCALAR; returns with interrupts
+ * inhibited, as the AGC does.                                            */
+agc_status_t agc_csm_finetime(uint16_t *hiscalar, uint16_t *loscalar);
+/* POSN17C: XSM, YSM, ZSM for the compass position (Z down, X downrange)
+ * from azimuth (revolutions from north, clockwise); rows half-unit.      */
+agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
+                                       agc_mat_t *xsm);
+/* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
+ * ERCOMP1 = 0.  latitude in revolutions.                                 */
+agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
+/* EARTHR: add the earth rate since TMARK, resolved by xsm, to ERCOMP1
+ * and torque the gyros with it (PULSEIMU on the ERCOMP buffer).          */
+agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
+agc_vec_t    agc_csm_prelaunch_ervector(void);           /* ERVECTOR       */
+/* Not translated (stubs returning AGC_STATUS_UNIMPLEMENTED).             */
+agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx);  /* IMUTEST    */
+agc_status_t agc_csm_prelaunch_estims(agc_job_ctx_t *ctx);   /* ESTIMS     */
+agc_status_t agc_csm_prelaunch_alwaysg(agc_job_ctx_t *ctx);  /* ALWAYSG    */
+agc_status_t agc_csm_prelaunch_restaier(agc_job_ctx_t *ctx); /* RESTAIER   */
+agc_status_t agc_csm_prelaunch_chkcomed(agc_job_ctx_t *ctx); /* CHKCOMED   */
+agc_status_t agc_csm_prelaunch_tar_eref(agc_job_ctx_t *ctx); /* TAR/EREF   */
+agc_status_t agc_csm_prelaunch_gcompver(agc_job_ctx_t *ctx); /* GCOMPVER   */
+agc_status_t agc_csm_prelaunch_optdata(agc_job_ctx_t *ctx);  /* OPTDATA    */
+agc_status_t agc_csm_prelaunch_latazchk(agc_job_ctx_t *ctx); /* LATAZCHK   */
+agc_status_t agc_csm_prelaunch_azmthcg1(agc_job_ctx_t *ctx); /* AZMTHCG1   */
+agc_status_t agc_csm_prelaunch_targdrve(agc_job_ctx_t *ctx); /* TARGDRVE   */
 
 #endif /* AGC_IMU_H */

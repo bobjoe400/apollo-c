@@ -59,7 +59,10 @@ static bool         gwake_pending;  /* GWAKE: waking job restarts torquing */
 
 static bool buf_ok(agc_imu_gyro_buf_t b)
 {
-    return (int)b >= 0 && b < AGC_IMU_GBUF_COUNT;
+    bool ok = (int)b >= 0 && b < AGC_IMU_GBUF_COUNT;
+    (void)AGC_ASSERT(AGC_IMU_GBUF_COUNT == 3);
+    (void)AGC_ASSERT(ok || !lgyro.busy || lgyro.buf != b);
+    return ok;
 }
 
 static void chan14(uint16_t bits, bool on)
@@ -110,12 +113,14 @@ agc_status_t agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
 bool agc_imu_gyros_busy(void)
 {
     (void)AGC_ASSERT(lgyro.phase >= 0 && lgyro.phase <= PHASE_DONE);
+    (void)AGC_ASSERT(lgyro.busy || lgyro.phase == 0);
     return lgyro.busy;
 }
 
 uint16_t agc_imu_gyrocmd(void)
 {
     (void)AGC_ASSERT(gyrocmd <= GYROCMD_MAX);
+    (void)AGC_ASSERT(aug_left >= 0);
     return gyrocmd;
 }
 
@@ -125,6 +130,7 @@ agc_status_t agc_imu_hw_set_gyrocmd(uint16_t pulses)
         return AGC_STATUS_BAD_ARG;
     }
     gyrocmd = pulses;
+    (void)AGC_ASSERT(gyrocmd == pulses);
     return AGC_STATUS_OK;
 }
 
@@ -185,6 +191,7 @@ static agc_status_t lastseg(void)
 {
     (void)AGC_ASSERT(gyrocmd <= GYROCMD_MAX);
     uint16_t dt = (uint16_t)((gyrocmd >> 5) + 3u);    /* MP BIT10, AD THREE */
+    (void)AGC_ASSERT(dt >= 3u && dt <= 03777u);
     agc_status_t st = waitlist(dt, AGC_TASK_STRTGYRO);
     chan14(AGC_CH014_GYROACT, true);                  /* GYROEXIT         */
     return st;
@@ -195,6 +202,7 @@ static agc_status_t aug3(void)
 {
     (void)AGC_ASSERT(gyrocmd >= AUG_PULSES && gyrocmd <= GYROCMD_MAX);
     uint16_t dt = (uint16_t)((gyrocmd >> 5) - 3u);    /* AD NEG3          */
+    (void)AGC_ASSERT(dt >= 253u);
     agc_status_t st = waitlist(dt, AGC_TASK_8192AUG);
     chan14(AGC_CH014_GYROACT, true);
     return st;
@@ -230,6 +238,7 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
 static bool gselect(int axis, uint16_t select, agc_status_t *st)
 {
     (void)AGC_ASSERT(axis >= 0 && axis < 3 && st != NULL);
+    (void)AGC_ASSERT(lgyro.busy && buf_ok(lgyro.buf));
     agc_dp_t cmd = gbuf[lgyro.buf][axis];
     agc_sp_t major = agc_dp_high(cmd);
     agc_sp_t minor = agc_dp_low(cmd);
@@ -263,6 +272,7 @@ static agc_status_t strtgyr2(void)
             }
             return agc_task_imufined();                /* NORESET          */
         }
+        (void)AGC_ASSERT(lgyro.busy);
         lgyro.phase = p + 1;                           /* AD BIT13 ADS LGYRO */
         agc_status_t st = AGC_STATUS_OK;
         if (gselect(axis_of[p], sel_of[p], &st)) {
@@ -280,6 +290,7 @@ agc_status_t agc_task_strtgyro(void)
         return agc_imu_imubad();
     }
     (void)AGC_ASSERT(lgyro.busy);
+    (void)AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & GDESELCT) == 0u);
     return strtgyr2();
 }
 

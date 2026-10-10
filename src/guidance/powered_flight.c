@@ -17,6 +17,7 @@
  * truncation (DMP/DMPSUB keep the high two words of the TP product) and
  * DDOUBL rescaling; SMCDURES is interpretive and uses agc_interp.h.
  */
+#include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
 #include "guid_pending.h"

@@ -21,6 +21,7 @@ bool imu_vflag_test(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f);
     (void)AGC_ASSERT((int)f >= 0 && f < IMU_VF_COUNT);
+    (void)AGC_ASSERT(id == 0U || agc_flag_valid(id));
     return (id != 0U) && agc_flag_test(id);
 }
 
@@ -30,6 +31,7 @@ agc_status_t imu_vflag_set(imu_vflag_t f)
     if (!AGC_ASSERT(id != 0U)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(agc_flag_valid(id));
     return agc_flag_set(id);
 }
 
@@ -39,5 +41,6 @@ agc_status_t imu_vflag_clear(imu_vflag_t f)
     if (!AGC_ASSERT(id != 0U)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(agc_flag_valid(id));
     return agc_flag_clear(id);
 }

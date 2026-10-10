@@ -64,16 +64,16 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 | conic_internal.h, helpers (TP MPAC model agc_conic_m*_, POLY) | DONE src/nav/conic_internal.h, conic_common.c |
 | MUTABLE table | DONE mutable_tab conic_common.c |
 | DELTIME | DONE agc_conic_deltime_ conic_universal.c |
-| GEOM / PARAM | TODO |
-| GETX (WLOOP/INVRSEQN/1/WLOOP/POLYCOEF/XCOMMON/TRUE360X/INFINITY) | TODO |
+| GEOM / PARAM | DONE agc_conic_geom_, agc_conic_param_, agc_conic_param conic_geom.c |
+| GETX (WLOOP/INVRSEQN/1/WLOOP/POLYCOEF/XCOMMON/TRUE360X/INFINITY) | DONE agc_conic_getx_ + static helpers conic_geom.c |
 | NEWSTATE / LAMENTER / KEPCONVG | DONE agc_conic_newstate_, _lamenter_, _kepconvg_ conic_universal.c |
-| ITERATOR | TODO |
-| KEPLERN (KEPLER) | TODO |
-| KEPPREP, RVCON, CSMCONIC/LEMCONIC conic path | TODO |
-| LAMBERT | TODO |
-| TIMETHET / COMMNOUT | TODO |
-| TIMERAD | TODO |
-| APSIDES | TODO |
+| ITERATOR | DONE agc_conic_iterator conic_lambert.c |
+| KEPLERN (KEPLER) | DONE agc_conic_kepler conic_kepler.c |
+| KEPPREP, RVCON, CSMCONIC/LEMCONIC conic path | DONE agc_conic_kepprep/_rvcon/_csmconic/_lemconic conic_kepler.c (LEMCONIC+SURFFLAG -> UNIMPLEMENTED) |
+| LAMBERT | DONE agc_conic_lambert conic_lambert.c |
+| TIMETHET / COMMNOUT / COGAOVFL | DONE agc_conic_timethet, agc_conic_commnout_ conic_timetheta.c |
+| TIMERAD | DONE agc_conic_timerad conic_timeradius.c |
+| APSIDES | DONE agc_conic_apsides conic_apsides.c |
 | tests/test_conic.c | TODO |
 
 ## Requested core additions

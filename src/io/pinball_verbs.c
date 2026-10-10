@@ -1,0 +1,343 @@
+/*
+ * pinball_verbs.c -- PINBALL verb execution: ENTPAS0, TESTVB, TESTNN,
+ * REQADD, USEADD, INTMCTBS, VERBFAN, VBFANDIR (VERBTAB), the octal display
+ * verbs DSPA..DSPABC with COMPTEST, DCOMPTST, DECTEST, DCTSTCYC, NOUNTEST,
+ * TSTFORDP, CHANDSP, and the alarm exits DSPALARM, PREDSPAL, CHARALRM,
+ * ALMCYCLE; plus LODNNTAB (PINBALL_NOUN_TABLES.agc) on the agc_noun_t
+ * tables.
+ *
+ * PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 324-333, 364; LM pp. 406-415,
+ * 446.
+ */
+#include <stddef.h>
+#include "pinball_internal.h"
+
+/* ---- LODNNTAB (PINBALL_NOUN_TABLES p. 270) ---------------------------- */
+
+/* Load the noun table row for NOUNREG and classify NNADTEM: +0 not in use,
+ * - specify machine address (01-03) or channel (10), -0 increment machine
+ * address (15), + normal.
+ * DEVIATION: the C noun tables carry data ids, not ECADRs, so NOUNCADR is
+ * only meaningful for nouns 01-03, 10, 15; it is zeroed for the others
+ * (the AGC loaded the noun's ECADR, used only for the MCTBS cases).      */
+agc_status_t pin_noun_load(void)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(s->nounreg <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun);
+    if (st == AGC_STATUS_NOT_FOUND || s->noun.ncomp == 0u) {
+        s->nntype = PIN_NNTYPE_SPARE;
+        s->nouncadr = 0;
+        return AGC_STATUS_NOT_FOUND;
+    }
+    if (!AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return st;
+    }
+    switch (s->noun.data_id[0]) {
+    case AGC_DATA_SPECIFY_ADDR:    s->nntype = PIN_NNTYPE_MCTBS;   break;
+    case AGC_DATA_SPECIFY_CHANNEL: s->nntype = PIN_NNTYPE_CHAN;    break;
+    case AGC_DATA_INCREMENT_ADDR:  s->nntype = PIN_NNTYPE_AUGMENT; break;
+    default:
+        s->nntype = PIN_NNTYPE_NORMAL;
+        s->nouncadr = 0;
+        break;
+    }
+    return AGC_STATUS_OK;
+}
+
+/* ---- alarm exits (p. 364) --------------------------------------------- */
+
+/* CHARALRM: not NVSUB initiated, turn on OPR ERROR; ENDOFJOB. */
+agc_status_t pin_charalrm(void)
+{
+    pin_falton();
+    return AGC_STATUS_OK;
+}
+
+/* DSPALARM: an illegal verb/noun. From an internal NVSUB this is abort
+ * 01501; from a monitor, the monitor is killed and its verb pasted back. */
+agc_status_t pin_dspalarm(void)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (s->entret == PIN_ENT_NVSUBEND) {
+        (void)agc_poodoo(PIN_ALARM_DSPALARM);    /* TC POODOO, OCT 01501  */
+        return AGC_STATUS_POODOO;
+    }
+    if (s->entret == PIN_ENT_PASTEVB) {          /* if this is a monitor, kill it */
+        pin_kilmonon();
+        pin_falton();
+        return pin_pastevb();                    /* put monitor verb back  */
+    }
+    return pin_charalrm();
+}
+
+/* PREDSPAL: alarm if decimal display with an octal-only noun. */
+agc_status_t pin_predspal(void)
+{
+    pin_block_dspcount(PIN_VD1);
+    (void)AGC_ASSERT(pin_st()->dspcount_neg);
+    return pin_dspalarm();
+}
+
+/* ALMCYCLE: turn on check fail light, put the original verb that was
+ * executed back into VERBREG and the verb lights, and re-enter ENTER
+ * (the caller's pin_enter loop does the POSTJUMP ENTER).                */
+agc_status_t pin_almcycle(void)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(s->verbsave <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    pin_falton();
+    s->reqret = PIN_REQ_PASS0;                   /* set for ENTPAS0        */
+    s->reqret_neg = false;
+    agc_status_t st = pin_updatvb(s->verbsave);
+    return (st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st;
+}
+
+/* TC ENTEXIT: the exit chosen by ENTRET. */
+agc_status_t pin_entexit(void)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (s->entret == PIN_ENT_PASTEVB) {
+        return pin_pastevb();
+    }
+    return AGC_STATUS_OK;                        /* ENDOFJOB / NVSUBEND    */
+}
+
+/* ---- component tests (pp. 331-332) ------------------------------------ */
+
+/* COMPTEST: noun comp G/E verb comp (comp numbers 0, 1, 2); else the
+ * caller alarms (noun comp L/ verb comp).                               */
+bool pin_comptest(int verb_comp)
+{
+    const pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) || !AGC_ASSERT(s->noun.ncomp >= 1u)) {
+        return false;
+    }
+    return (int)s->noun.ncomp - 1 >= verb_comp;
+}
+
+/* DECTEST / DCTSTCYC: the decimal-only bit (bit 4 of the comp code) is 0;
+ * else DECTEST alarms, DCTSTCYC (load verbs) alarms and recycles.       */
+bool pin_dectest(void)
+{
+    const pin_state_t *s = pin_st();
+    (void)AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true);
+    (void)AGC_ASSERT(s->noun.ncomp <= 3u);
+    return !s->noun.dec_only;
+}
+
+/* NOUNTEST: the noun can be loaded (no-load bit, bit 5 of the comp code). */
+bool pin_nountest(void)
+{
+    const pin_state_t *s = pin_st();
+    (void)AGC_ASSERT(s->noun.ncomp >= 1u);
+    (void)AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true);
+    return !s->noun.no_load;
+}
+
+/* ---- octal display verbs V01-V05 (pp. 330-332) ------------------------ */
+
+/* DSPA, DSPB, DSPC, DSPAB, DSPABC with DSPCOM1/2/3. V01-V03 show one
+ * component (1, 2 or 3) in R1; V04 components 1, 2 in R1, R2; V05 all
+ * three. The tests run in the AGC's order before anything is shown.     */
+static agc_status_t pin_dsp_octal(uint8_t verb)
+{
+    static const int16_t rnd1[3] = { PIN_R1D1, PIN_R2D1, PIN_R3D1 };
+    if (!AGC_ASSERT(verb >= 1u && verb <= 5u)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    int first = (verb == 2u) ? 1 : ((verb == 3u) ? 2 : 0);   /* comp shown in R1 */
+    int count = (verb <= 3u) ? 1 : (int)verb - 2;           /* registers used  */
+    int need = first + count - 1;                           /* highest comp    */
+    if (!pin_comptest(need) || !pin_dectest()) {
+        return pin_dspalarm();
+    }
+    agc_status_t st = AGC_STATUS_OK;
+    uint16_t buf[3] = { 0, 0, 0 };
+    for (int i = 0; i < count && st == AGC_STATUS_OK; i++) {
+        st = pin_comp_octal(first + i, &buf[i]);            /* TSTFORDP, CHANDSP */
+    }
+    for (int i = count - 1; i >= 0 && st == AGC_STATUS_OK; i--) {   /* DSPCOM3 */
+        pin_set_dspcount(rnd1[i]);
+        st = pin_dspoctwo(buf[i]);
+    }
+    return (st == AGC_STATUS_OK) ? pin_entexit() : st;
+}
+
+/* ---- noun test and machine address (pp. 324-325) --------------------- */
+
+/* USEADD: ECADR into NOUNCADR, reread the noun table, go to VERBFAN. */
+agc_status_t pin_usead(uint16_t ecadr)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(ecadr <= PIN_WORD)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    uint16_t keep = ecadr;
+    agc_status_t st = pin_noun_load();
+    s->nouncadr = keep;                          /* SETNCADR               */
+    if (!AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return st;
+    }
+    return pin_verbfan();
+}
+
+/* INTMCTBS: internal machine address to be specified, left in MPAC+2 by
+ * the NVSUB caller (or MONSAVE1 by MONDO). INTMCTBS +2 is also the noun
+ * 15 (increment) entry. Don't display the CADR if verb = 05.            */
+static agc_status_t pin_intmctbs(bool from_mpac2)
+{
+    pin_state_t *s = pin_st();
+    if (from_mpac2) {
+        s->nouncadr = (uint16_t)(s->mpac2 & PIN_WORD);      /* SETNCADR    */
+    }
+    (void)AGC_ASSERT(s->nouncadr <= PIN_WORD);
+    if (s->verbreg != 5u) {
+        pin_set_dspcount(PIN_R3D1);              /* VB not = 05: display CADR */
+        agc_status_t st = pin_dspoctwo(s->nouncadr);
+        if (st != AGC_STATUS_OK) {
+            return st;
+        }
+    }
+    return pin_verbfan();
+}
+
+/* REQADD: machine address (or channel) to be specified. External (keyed)
+ * requests ask for it in R3; internal ones take it from MPAC+2.          */
+static agc_status_t pin_reqadd(void)
+{
+    pin_state_t *s = pin_st();
+    s->clpass = PIN_CLPASS_NOBACK;               /* set CLPASS for pass0 only */
+    (void)AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_CHAN);
+    if (s->entret != PIN_ENT_ENDOFJOB) {
+        return pin_intmctbs(true);
+    }
+    return pin_reqdat(PIN_INREL_Z, PIN_REQ_MCTBS);           /* REQDATZ   */
+}
+
+/* REQADD continued after the operator's ENTER: alarm and recycle if
+ * decimal was used for the MCTBS. An external MCTBS display will leave
+ * flash on if ENDIDLE is not +0.                                         */
+agc_status_t pin_reqadd_resume(void)
+{
+    pin_state_t *s = pin_st();
+    if (s->decbrnch != 0u) {
+        return pin_almcycle();
+    }
+    pin_block_dspcount(PIN_VD1);                 /* block num char in      */
+    if (pin_cadrstor_full()) {
+        pin_flashon();
+    }
+    (void)AGC_ASSERT(s->dspcount_neg);
+    return pin_usead(s->xyz_oct[2]);             /* XCH ZREG               */
+}
+
+/* TESTNN: noun test for verbs below LOWVERB. */
+agc_status_t pin_testnn(void)
+{
+    pin_state_t *s = pin_st();
+    agc_status_t st = pin_noun_load();
+    if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND) {
+        return st;
+    }
+    switch (s->nntype) {
+    case PIN_NNTYPE_NORMAL:
+        return pin_verbfan();
+    case PIN_NNTYPE_MCTBS:
+    case PIN_NNTYPE_CHAN:
+        return pin_reqadd();                     /* specify machine CADR if - */
+    case PIN_NNTYPE_AUGMENT:
+        s->nouncadr = (uint16_t)((s->nouncadr + 1u) & PIN_WORD);  /* INCR NOUNCADR */
+        return pin_intmctbs(false);
+    case PIN_NNTYPE_SPARE:
+    default:
+        (void)AGC_ASSERT(s->nntype == PIN_NNTYPE_SPARE);
+        return pin_dspalarm();                   /* not in use if +0       */
+    }
+}
+
+/* ENTPAS0: noun verb sub enters here. Block further numerical characters
+ * so that stray chars do not get into verb or noun lights. TESTVB: if
+ * the verb is G/E LOWVERB, skip the noun test.                           */
+agc_status_t pin_entpas0(void)
+{
+    pin_state_t *s = pin_st();
+    s->decbrnch = 0;
+    pin_block_dspcount(PIN_VD1);
+    if (!AGC_ASSERT(s->verbreg <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    s->verbsave = s->verbreg;                    /* save verb for possible recycle */
+    if (s->verbreg >= PIN_LOWVERB) {
+        return pin_verbfan();
+    }
+    return pin_testnn();
+}
+
+/* ---- VERBFAN / VBFANDIR (pp. 325-326) --------------------------------- */
+
+/* VERBTAB VB21-VB39 part of the fan. */
+static agc_status_t pin_vbfandir_hi(uint8_t verb)
+{
+    switch (verb) {
+    case 21: case 22: case 23: case 24: case 25:
+        return pin_load_verb(verb);              /* ALOAD..ABCLOAD         */
+    case 27: return pin_dspfmem();               /* fixed memory display   */
+    case 30: return pin_vbrqexec();              /* request executive      */
+    case 31: return pin_vbrqwait();              /* request waitlist       */
+    case 32: return pin_vbproc_common(PIN_LS_DATAIN);    /* VBRESEQ        */
+    case 33: return pin_vbproc_common(PIN_LS_PROCEED);   /* VBPROC         */
+    case 34: return pin_vbproc_common(PIN_LS_TERMINATE); /* VBTERM         */
+    case 35: return pin_vbtstlts();              /* test lights            */
+    case 36: return agc_fresh_start_slap1();     /* SLAP1 fresh start      */
+    case 37: return pin_reqmm();                 /* MMCHANG: TC REQMM      */
+    default: return pin_dspalarm();              /* spare                  */
+    }
+}
+
+/* VBFANDIR: INDEX VERBREG, CAF VERBTAB. */
+static agc_status_t pin_vbfandir(uint8_t verb)
+{
+    if (!AGC_ASSERT(verb < PIN_LST2CON)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    switch (verb) {
+    case 1: case 2: case 3: case 4: case 5:
+        return pin_dsp_octal(verb);              /* DSPA..DSPABC           */
+    case 6:  return pin_decdsp();                /* decimal display        */
+    case 7:  return pin_dspdpdec();              /* DP decimal display     */
+    case 11: case 12: case 13: case 14: case 15: case 16: case 17:
+        return pin_monitor();
+    default:
+        break;
+    }
+    if (verb >= 21u) {
+        return pin_vbfandir_hi(verb);
+    }
+    return pin_dspalarm();                       /* VB00 illegal, spares   */
+}
+
+/* VERBFAN: verbs 40 and up are extended verbs: release the display
+ * system and go to GOEXTVB.                                              */
+agc_status_t pin_verbfan(void)
+{
+    pin_state_t *s = pin_st();
+    if (!AGC_ASSERT(s->verbreg <= 99)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (s->verbreg >= PIN_LST2CON) {
+        agc_status_t st = pin_reldsp();          /* release display syst   */
+        return (st == AGC_STATUS_OK) ? agc_extverb((int)s->verbreg, (int)s->nounreg) : st;
+    }
+    return pin_vbfandir(s->verbreg);
+}

@@ -36,6 +36,7 @@
 
 #define PIN_STATUS_RECYCLE AGC_STATUS_ALARM  /* ALMCYCLE: re-enter ENTER  */
 #define PIN_RECYCLE_MAX 3          /* ENTER passes per key (ALMCYCLE bound)  */
+#define PIN_CLPASS_NOBACK ((int16_t)-16383) /* CAF BIT15 TS CLPASS (pass 0 only) */
 
 /* ---- DSPCOUNT numbers (PINBALL p. 313, octal) -------------------------- */
 #define PIN_MD1   025
@@ -299,12 +300,15 @@ agc_status_t pin_entexit(void);                         /* TC ENTEXIT       */
 agc_status_t pin_dspalarm(void);                        /* DSPALARM         */
 agc_status_t pin_predspal(void);                        /* PREDSPAL         */
 agc_status_t pin_charalrm(void);                        /* CHARALRM         */
+agc_status_t pin_reqadd_resume(void);                   /* REQADD after Z   */
 agc_status_t pin_almcycle(void);                        /* ALMCYCLE         */
 agc_status_t pin_noun_load(void);                       /* LODNNTAB         */
-agc_status_t pin_comptest(int verb_comp);               /* COMPTEST         */
-agc_status_t pin_dectest(void);                         /* DECTEST          */
-agc_status_t pin_dctstcyc(void);                        /* DCTSTCYC         */
-agc_status_t pin_nountest(void);                        /* NOUNTEST         */
+/* The component tests return true when the AGC routine would return to
+ * its caller; on false the caller takes the alarm exit itself
+ * (COMPTEST, DECTEST, NOUNTEST: DSPALARM; DCTSTCYC: ALMCYCLE).          */
+bool         pin_comptest(int verb_comp);               /* COMPTEST         */
+bool         pin_dectest(void);                         /* DECTEST/DCTSTCYC */
+bool         pin_nountest(void);                        /* NOUNTEST         */
 
 /* ---- monitor, test lights, requests, proceed (pinball_monitor.c) ------- */
 agc_status_t pin_monitor(void);                         /* MONITOR          */
@@ -333,7 +337,10 @@ agc_status_t pin_comp_write(int k, agc_dp_t v);
 agc_status_t pin_comp_octal(int k, uint16_t *word);     /* word for V01-V05 */
 agc_status_t pin_decdsp(void);                          /* DECDSP (V06)     */
 agc_status_t pin_dspdpdec(void);                        /* DSPDPDEC (V07)   */
-agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out); /* PUTDECSF */
+/* PUTDECSF: the value to store for component k from the decimal fraction
+ * entered; *exited when an alarm path ended the load instead.           */
+agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out, bool *exited);
+uint16_t     pin_360_cdu(uint16_t w);                   /* 360-CDU (LM)     */
 agc_status_t pin_hmsin(void);                           /* HMSIN            */
 
 /* ---- NVSUB family (pinball_nvsub.c) ------------------------------------ */
@@ -343,7 +350,7 @@ agc_status_t pin_reldsp1(void);                         /* RELDSP1          */
 void         pin_kilmonon(void);                        /* KILMONON         */
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options); /* NVMONOPT   */
 bool         pin_dsp_blocked(void);                     /* MONSAVE1 EMB + DSPLOCK */
-agc_status_t pin_blanksub(uint16_t code, bool *done);   /* BLANKSUB         */
+agc_status_t pin_blanksub(uint16_t code);               /* BLANKSUB: BUSY = L+1 */
 agc_status_t pin_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e); /* ENDIDLE */
 agc_status_t pin_nvsubusy(agc_job_id_t wake_as);        /* NVSUBUSY         */
 bool         pin_cadrstor_full(void);                   /* CCS CADRSTOR     */

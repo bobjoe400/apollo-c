@@ -31,9 +31,8 @@ agc_dp_t     agc_rtb_loadtime(void);                          /* LOADTIME  */
 /* ==== sys-misc: T4RUPT_PROGRAM.agc ======================================= */
 agc_status_t agc_t4_setissw(void);           /* SETISSW (IMUFAIL/ICDUFAIL)  */
 
-/* ==== exec-sched ========================================================== */
-agc_status_t agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM          */
-agc_status_t agc_exec_linus(agc_job_id_t restart_job); /* LINUS + PHASCHNG 1.7 */
+/* ==== sys-misc / prog-rendz: OPTIND (CM optics mode index) ============== */
+void agc_erase_set_optind(agc_sp_t v);       /* OPTIND: -1 none, 0, 1       */
 
 /* ==== guid-powered: PIPASR +3 (read PIPAs into DELV without scaling) ===== */
 agc_status_t agc_pfs_pipasr_noscale(void);
@@ -41,39 +40,26 @@ agc_status_t agc_pfs_pipasr_noscale(void);
 /* ==== prog-rendz: GOTOV56 (terminate P20 via V56) ======================== */
 agc_status_t agc_rendz_gotov56(void);
 
-/* ==== dap-csm: RCS DAP erasables written by KALCMANU (Comanche) ========== */
-void     agc_erase_set_cduxd(int axis, agc_sp_t v); /* CDUXD/YD/ZD high word, half-rev */
-agc_sp_t agc_erase_cduxd(int axis);
-void     agc_erase_set_delcdux(int axis, agc_dp_t v); /* DELCDUX/Y/Z (CM DP)   */
-void     agc_erase_set_wbody(int axis, agc_dp_t v);   /* WBODY, WBODY1, WBODY2 */
-void     agc_erase_set_bias(int axis, agc_sp_t v);    /* BIAS, BIAS1, BIAS2    */
-uint16_t agc_erase_rcsflags(void);                    /* RCSFLAGS              */
-void     agc_erase_set_rcsflags(uint16_t v);
-agc_sp_t agc_erase_holdflag(void);                    /* HOLDFLAG              */
-void     agc_erase_set_holdflag(agc_sp_t v);
-
-/* ==== dap-lm: LM DAP erasables written by KALCMANU (Luminary) ============ */
-void     agc_erase_set_deldcdu(int axis, agc_sp_t v); /* DELDCDU, 1, 2 (SP)    */
-void     agc_erase_set_omegapd(int axis, agc_sp_t v); /* OMEGAPD/QD/RD pi/4 r/s */
-void     agc_erase_set_delperor(int axis, agc_sp_t v);/* DELPEROR/QEROR/REROR  */
-agc_sp_t agc_erase_1jacc(int axis);                   /* 1JACC, 1JACCQ, 1JACCR */
-agc_status_t agc_lm_dap_zatteror(void);               /* ZATTEROR              */
+/* ==== dap-lm: interfaces not in agc_lm_dap.h ============================ */
+agc_sp_t agc_erase_1jaccq(void);      /* 1JACCQ: 1-jet Q accel, at pi/4     */
+agc_sp_t agc_erase_1jaccr(void);      /* 1JACCR: 1-jet R accel, at pi/4     */
 
 /* ==== provisional job / task identifiers (0x0B00 range) ================== */
 #define AGC_JOB_1_GYRO          ((agc_job_id_t)0x0B01) /* 1/GYRO             */
 #define AGC_JOB_KALCMAN3        ((agc_job_id_t)0x0B02) /* KALCMAN3           */
 #define AGC_JOB_NEWDELHI        ((agc_job_id_t)0x0B03) /* NEWDELHI           */
 #define AGC_JOB_GCOMP1          ((agc_job_id_t)0x0B04) /* GCOMP1 (after IMUSTALL) */
-#define AGC_JOB_R60_REDOMANC    ((agc_job_id_t)0x0B05) /* R60 PROCEED        */
-#define AGC_JOB_R60_TOMANV      ((agc_job_id_t)0x0B06) /* R60 V50N18 ENTER/V34 */
+#define AGC_JOB_R60_REDOMANC    ((agc_job_id_t)0x0B05) /* R60 V50N18 PROCEED  */
+#define AGC_JOB_R60_ENTER       ((agc_job_id_t)0x0B06) /* R60 V50N18 ENTER    */
 #define AGC_JOB_R60_ENDMANUV    ((agc_job_id_t)0x0B07) /* R60 after GOMANUR   */
-#define AGC_JOB_R62RESP         ((agc_job_id_t)0x0B08) /* R62 V06N22 response */
 #define AGC_JOB_R60_TERM        ((agc_job_id_t)0x0B09) /* R60 V34 (R61TEST)   */
-#define AGC_JOB_R62_TERM        ((agc_job_id_t)0x0B0A) /* R62 V34 -> ENDEXT   */
-#define AGC_JOB_R62_ENTER       ((agc_job_id_t)0x0B0B) /* R62 ENTER -> redisplay */
-#define AGC_JOB_R60_RELINUS     ((agc_job_id_t)0x0B0C) /* RELINUS restart     */
-#define AGC_JOB_R60_DONE        ((agc_job_id_t)0x0B0D) /* R62 return from R60 */
+#define AGC_JOB_R62_TERM        ((agc_job_id_t)0x0B0A) /* R62 V34 / end -> ENDEXT */
+#define AGC_JOB_R62_GOMOVE      ((agc_job_id_t)0x0B0B) /* R62 PROCEED (GOMOVE) */
 #define AGC_JOB_1_GYRO_PULSE    ((agc_job_id_t)0x0B0E) /* 1/GYRO after GYROBUSY */
+/* Same names and values as the other lanes' shims (exec_pending.h,
+ * sysmisc_ext.h), so the lead can merge them.                             */
+#define AGC_JOB_RELINUS         ((agc_job_id_t)0x0E11) /* CSM 1.7, LM 2.13    */
+#define AGC_JOB_R62DISP         ((agc_job_id_t)0x331)  /* R62DISP (V49)       */
 
 #define AGC_TASK_IMUZERO2       ((agc_task_id_t)0x0B41)
 #define AGC_TASK_IMUZERO3       ((agc_task_id_t)0x0B42)

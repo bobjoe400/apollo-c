@@ -22,6 +22,8 @@ typedef enum imu_vflag {
     IMU_VF_AUTR2FLG,         /* LM FLAGWRD13 bit 2: KALCMANU rate, high bit */
     IMU_VF_NEEDLFLG,         /* CSM FLAGWRD0 bit 9 / LM FLAGWRD0 bit 4      */
     IMU_VF_R60FLAG,          /* CSM FLAGWRD5 bit 4                          */
+    IMU_VF_CALCMAN3,         /* LM FLAGWRD2 bit 3: KALCMANU gimbal-lock skip */
+    IMU_VF_TARG1FLG,         /* CSM FLAGWRD1 bit 10: R52 target flag        */
     IMU_VF_COUNT
 } imu_vflag_t;
 

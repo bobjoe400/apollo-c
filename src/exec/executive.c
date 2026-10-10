@@ -124,10 +124,12 @@ static void activity_light(bool on)
     /* CAF TWO / WOR DSALMOUT (NUDIRECT, NUCHANG2) and CS TWO / WAND
      * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2.        */
     agc_status_t st;
+    (void)AGC_ASSERT(AGC_CH011_COMPACT == 000002);
     if (on) {
         st = agc_chan_or(AGC_CHAN_DSALMOUT, (uint16_t)AGC_CH011_COMPACT);
     } else {
-        st = agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t)~(uint16_t)AGC_CH011_COMPACT);
+        st = agc_chan_and(AGC_CHAN_DSALMOUT,
+                          (uint16_t)(AGC_CHAN_MASK & ~(unsigned)AGC_CH011_COMPACT));
     }
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
 }
@@ -151,6 +153,7 @@ void exec_clear_tables(void)
     yielded = false;
     generation = (uint16_t)(generation + 1U);
     (void)AGC_ASSERT(core[0].state == AGC_CORE_FREE);
+    (void)AGC_ASSERT(!vac_used[0]);
 }
 
 uint16_t exec_restart_generation(void)
@@ -168,6 +171,7 @@ int exec_running_job_prio(void)
     if (newjob == EXEC_NEWJOB_IDLE || core[0].state != AGC_CORE_ACTIVE) {
         return -1;
     }
+    (void)AGC_ASSERT(core[0].prio <= EXEC_PRIO_MAX);
     return (int)core[0].prio;
 }
 
@@ -175,6 +179,7 @@ agc_status_t agc_exec_init(void)
 {
     exec_clear_tables();
     activity_light(false);
+    (void)AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE);
     if (!AGC_ASSERT(agc_exec_core_sets() <= AGC_EXEC_MAX_JOBS)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -203,6 +208,7 @@ static void setloc_compare(int i)
  * change pending it is compared as in SETLOC. +0 is a CCS hole.        */
 static agc_status_t spectest(void)
 {
+    (void)AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE);
     if (newjob == EXEC_NEWJOB_IDLE) {
         newjob = 0;                 /* +0 SHOWS ACTIVE JOB ALREADY SET */
         return AGC_STATUS_OK;
@@ -341,6 +347,7 @@ static int ejscan(int32_t floor)
 static void ejscan_change(void)
 {
     int best = ejscan(0);
+    (void)AGC_ASSERT(best != 0);
     if (best < 0) {
         newjob = EXEC_NEWJOB_IDLE;             /* DUMMYJOB: NEWJOB = -0 */
         activity_light(false);
@@ -412,6 +419,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
         }
     }
     agc_relint();
+    (void)AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0);
     return st;
 }
 
@@ -460,6 +468,7 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
 /* What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.     */
 static void after_job(void)
 {
+    (void)AGC_ASSERT(!in_job);
     if (core[0].state == AGC_CORE_SLEEPING) {
         ejscan_change();                        /* JOBSLP1 -> EJSCAN   */
     } else if (yielded) {
@@ -526,6 +535,7 @@ agc_job_id_t exec_running_job_loc(void)
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS)) {
         return AGC_JOB_NONE;
     }
+    (void)AGC_ASSERT(core[0].state != AGC_CORE_FREE || core[0].loc == AGC_JOB_NONE);
     return (core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc;
 }
 

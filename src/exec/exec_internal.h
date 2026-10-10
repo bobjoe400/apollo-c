@@ -99,6 +99,12 @@ void     exec_request_enema(void);         /* WHIMPER: ENEMA at next service */
 /* ---- MODECADR (exec_erasable.c) -------------------------------------- */
 void     exec_clear_modecadr(void);        /* STARTSB2: IMU/OPT/RAD CADR = 0 */
 
+/* ---- interrupt lead-ins (interrupts.c) ------------------------------ */
+void     rupt_reset_timers(void);          /* STARTSUB/STARTSB1: TIME4,5 */
+
+/* ---- VAC5STOR (alarm.c) ---------------------------------------------- */
+void     exec_vac5stor(void);              /* CSM debug copy of tables  */
+
 /* ---- MODREG = -0 ----------------------------------------------------- */
 /* agc_sp_t has no -0; the lanes agree that a negative MODREG means -0
  * (no program; the PROG lights are blanked). See io-pinball DSPMMJB.  */

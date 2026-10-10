@@ -65,16 +65,97 @@ sys-misc's file. Not duplicated here (see Open questions).
   STALL, R02BOTH/R02ZERO; P06/POSTAND stubbed) src/imu/imu_mode.c
 * imu_gyro.c: DONE (IMUPULSE/GYROBUSY/GWAKE, STRTGYRO/STRTGYR2/GSELECT/MAJ/MIN/GMERGE/LASTSEG/LONGGYRO/8192AUG)
 * imu_vflags*.c: DONE (vehicle-specific flag ids: CPHIFLAG, AUTR1/2FLG, NEEDLFLG, R60FLAG)
-* maneuver.c: TODO
-* r60.c: TODO
-* prelaunch_align.c: TODO
+* maneuver_calc.c: DONE (CDUTODCM, DCMTOCDU, DELCOMP, KALCMAN3/SECAD/CHECKMAX/ALTCALC/COFMAXGO/METHOD1-3, TOOBADF test)
+* maneuver.c: DONE (GOMANUR, KALCMAN3 job, WCALC/NOGIMLOC, NEWANGL, MANUSTAT/RATEBIAS, INCRDCDU, TIMECHK/MANUSTAL,
+  CONTMANU, UPDTCALL, NEWDELHI, NOGO/NOGOM2, MANUSTOP, ENDMANU/GOODMANU, STOPRATE/STOPYZ, ZEROERROR, LOADCDUD/LOADYZ)
+* r60.c: DONE (VECPOINT/VECPNT1/COMPMATX/PICKAXIS/ROT180, BALLANGS, G+N,AUTO, ISITAUTO, R60CSM/R60LEM,
+  REDOMANN/REDOMANC/TOBALL(A)/AUTOMANV/ENDMANUV/ENDMANU1, R61TEST, CHKLINUS, RELINUS, R62DISP/GOMOVE)
+* prelaunch_align.c: PARTIAL -- DONE FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX; stubs: IMUTEST, ESTIMS, ALWAYSG, RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE
 * tests/test_imu.c: TODO
 
+## Files
+src/imu/imu_mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/imu_gyro.c (IMUPULSE and
+torquing tasks), src/imu/imu_comp.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
+src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/r60.c (VECPOINT, BALLANGS, R60, R62),
+src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/imu_internal.h (lane-private),
+src/imu/imu_pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/agc_imu.h,
+tests/test_imu.c.
+
 ## Deviations
+* MODECADR -0 (complete, failed) is stored as -2 in exec's MODECADR word (agc_sp_t has no -0).
+  Encoding: +0 free, -1 good, -2 failed, positive = id of the stalled job. GOODEND's "advance LOC if
+  good" becomes agc_imu_stall_outcome(dev), read by the woken job.
+* GOODEND with MODECADR already negative: Luminary resets it to +0; Comanche would JOBWAKE the negative
+  word. Both vehicles use the Luminary behaviour.
+* IMUPULSE: the AGC keeps the 8192-pulse augment count in the major word of the command buffer while
+  torquing; here it is a module variable (aug_left) and the buffer holds only the final fraction.
+  GYROBUSY/GWAKE: the sleeping job is woken as wake_as and must call agc_imu_pulse_buf again.
+* Coarse align COMMAND/CDUIND overlay GCOMP in the AGC (COMMAND EQUALS GCOMP); here they are separate,
+  so coarse align no longer clobbers GCOMP.
+* MODEEXIT releases interrupts only if inhibited (IMUPULSE reaches it without INHINT; C inhibit is counted).
+* CONTMANU: NEXTIME == TIME1 would give WAITLIST a 0 delay; 1 cs is used.
+* FINETIME (CM prelaunch): the re-read loop is bounded (4 tries).
+* CALCGA: the AGC also overwrites the OGC/IGC/MGC words (the IMUPULSE buffer) with the CDU angles;
+  agc_imu_calcga does not touch the gyro buffer. CALCGTA does load it (as the header says).
+* Comanche MINANG/MAXANG are single-word DEC constants read by DSU as DP, so their low words are the
+  next constants (MAXANG, SD); modelled exactly (maneuver_calc.c). LM LOCKANGL likewise reads the next
+  instruction word (CA CDUZ, 030034) as its low half.
+* KALCMANU, CM: RATEINDX is read from / written to the CSM DAP struct (agc_csm_dap_rcs()->ratindx),
+  since dap-csm models it there; LM keeps it module-private.
+* CSM CDUXD ("TS CDUXD") writes the high word of the DAP's DP cdud[] with the sign-extended
+  two's-complement CDU pattern, keeping the low word.
+* ENDMANU1 runs the return continuation (TEMPR60) in the same job via agc_dispatch_job (BANKJUMP).
+
 ## Stubs
+* agc_imu_p06, agc_imu_postand (P06 standby / POSTAND time recovery: needs scaler snapshot, GOPERF1
+  loop, restart to POSTAND).
+* src/csm/prelaunch_align.c: IMUTEST, ESTIMS (gyrocompass/drift-test filter loop), ALWAYSG/COMPGS,
+  RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE (agc_csm_prelaunch_*).
+  Translated there: FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX.
+
 ## Requested core additions
+Everything below is declared in src/imu/imu_pending.h until the owner publishes it:
+* sys-misc (src/io/sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
+  agc_rtb_signmpac, agc_rtb_loadtime, agc_t4_setissw -- same signatures as sysmisc.h; please make public.
+* guid-powered: `agc_status_t agc_pfs_pipasr_noscale(void);` (PIPASR +3, used by LM NBDONLY on surface).
+* prog-rendz: `agc_status_t agc_rendz_gotov56(void);` (R61TEST).
+* dap-lm: `agc_sp_t agc_erase_1jaccq(void); agc_sp_t agc_erase_1jaccr(void);` (MANUSTAT RATEBIAS).
+* sys-misc/prog-rendz (CM): `void agc_erase_set_optind(agc_sp_t v);` (RELINUS).
+* exec: restart-table entries CSM 1.7 / LM 2.13 -> AGC_JOB_RELINUS (exec_pending.h already has it);
+  CSM 1.11 (PIKUP20), LM 2.7 / 2.11 are prog-rendz's.
+* exec-sched bug seen while testing: executive.c activity_light() passes (uint16_t)~BIT2 = 0177775 to
+  agc_chan_and, which asserts mask <= 077777.
+Other lanes asked the imu lane for: ZEROICDU, NOATTOFF, SETCOARS, IMUBAD, clear_cmds, MODECADR
+(sys-misc) -> provided (agc_imu_*; MODECADR now exec's); R02ZERO, IMUFIN20 (prog-align) -> provided.
+Signature mismatches in other lanes' shims (they should adopt agc_imu.h): align_pending.h
+agc_imu_stall(cont) / agc_imu_optstall / agc_imu_goodend(void) / agc_imu_curtains / agc_imu_ballangs(gimbal)
+/ agc_imu_r60lem(cont); landing_pending.h agc_imu_r51p63 (R51 is not in this lane's files).
+
 ## Requested jobs-tasks
+Jobs (provisional ids in imu_pending.h): AGC_JOB_1_GYRO -> agc_job_1_gyro; AGC_JOB_1_GYRO_PULSE ->
+agc_job_1_gyro_pulse; AGC_JOB_GCOMP1 -> agc_job_gcomp1; AGC_JOB_KALCMAN3 -> agc_job_kalcman3;
+AGC_JOB_NEWDELHI -> agc_job_newdelhi (FINDVAC PRIO26); AGC_JOB_R60_REDOMANC -> agc_job_r60_redomanc;
+AGC_JOB_R60_ENTER -> agc_job_r60_enter; AGC_JOB_R60_TERM -> agc_job_r60_term; AGC_JOB_R60_ENDMANUV ->
+agc_job_r60_endmanuv; AGC_JOB_RELINUS -> agc_job_relinus; AGC_JOB_R62DISP -> agc_job_r62disp;
+AGC_JOB_R62_GOMOVE -> agc_job_r62_gomove; AGC_JOB_R62_TERM -> agc_job_r62_term.
+NBDONLY / LASTBIAS jobs: agc_job_nbdonly, agc_job_lastbias (started by exec SVCT3 / programs).
+Tasks: AGC_TASK_IMUZERO2/3, COARS, COARS2, CHKCORS, IMUFINED, IFAILOK, PFAILOK, STRTGYRO, 8192AUG,
+UPDTCALL, MANUSTOP, ENDMANU (= GOODMANU) -> agc_task_<name>; sys-misc's AGC_TASK_CA_ECE ->
+agc_task_ca_ece.
+
 ## Tests written
+tests/test_imu.c (CSM): ARCTRIG quadrants; CALCGTA identity -> zero gyro angles and OGC buffer;
+CALCGA 30 deg MGA (no lock, THETAD stored) and 75 deg (alarm 401, GLOKFAIL); 1/PIPA with zero
+bias/scale is identity and leaves GCOMP zero; CDUTODCM/DCMTOCDU round trip; DELCOMP(0) = I;
+IMUPULSE/STRTGYRO pulse count, unsent fraction and release; KALCMANU set-up (normal and small);
+VECPOINT 30 deg pitch.  65 checks pass when linked against core + exec + imu (other lanes' missing
+symbols stubbed in a scratch file, not committed).
+
 ## Open questions
 * IMUMON and the ISS fail monitors are in T4RUPT_PROGRAM.agc (sys-misc lane), not in
   IMU_MODE_SWITCHING_ROUTINES.agc as the assignment states.
+* CALCSMSC is also implemented by prog-align (agc_align_calcsmsc); one should go.
+* GYROCMD and CDUXCMD..CDUZCMD are hardware counters: the sim must drain them
+  (agc_imu_hw_set_gyrocmd / agc_imu_hw_set_cducmd) or 8192AUG will see them grow.
+* The LM DAP header names the KALCMANU increments DELCDUX..Z (LM erasable DELDCDU = DELCDUX); written
+  as the negative 0.1 s increment, as the comment there says.

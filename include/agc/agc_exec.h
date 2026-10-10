@@ -207,6 +207,8 @@ agc_status_t agc_phase_kill(int group);         /* DXCH -PHASEn with NEG0 */
 agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);  /* GOTOPOOH          */
 agc_status_t agc_job_gop00fix(agc_job_ctx_t *ctx);  /* GOP00FIX          */
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);  /* GOPOODOO          */
+agc_status_t agc_job_gop00fix_reflash(agc_job_ctx_t *ctx); /* GOP00FIX -3 */
+agc_status_t agc_job_canv37(agc_job_ctx_t *ctx);    /* CANV37 (stub)     */
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);  /* ENDOFJOB as a job */
 agc_status_t agc_task_endtask(void);                /* ENDTASK / SVCT3   */
 agc_status_t agc_task_svct3(void);                  /* SVCT3 (retry)     */
@@ -222,5 +224,11 @@ agc_status_t agc_task_taskover(void);               /* TASKOVER as a task*/
 agc_sp_t     agc_erase_modecadr(int dev);
 agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v);
 agc_sp_t     agc_erase_imucadr(void);           /* = MODECADR +0         */
+
+/* TIME4, TIME5, TIME6 (exec-private counters, agc_state.h): the sim
+ * harness advances them and calls the T4/T5/T6 lead-ins on overflow.
+ * n = 4, 5 or 6; values are the 15-bit counter words.                 */
+uint16_t     agc_rupt_time(int n);
+agc_status_t agc_rupt_set_time(int n, uint16_t v);
 
 #endif /* AGC_EXEC_H */

@@ -29,7 +29,7 @@
 #define WL_TIME3_OVF   16384      /* TIME3 overflow, 2^14 cs = 163.84 s   */
 #define WL_POSMAX      16383      /* POSMAX, octal 37777                  */
 #define WL_NEG1_2      (-8192)    /* NEG1/2: empty LST1 slot              */
-#define WL_LST1_N      8          /* LST1 ... LST1 +7                     */
+#define WL_LST1_N      8          /* LST1 to LST1 +7                      */
 #define WL_BIT14       8192       /* BIT14 / DPBIT14 low word, 81.92 s    */
 #define WL_SVCT3_DELAY 500        /* SVCT3X: DEC 500 (5 s)                */
 #define WL_TICK_LIMIT  65536      /* bound for agc_waitlist_tick loop     */
@@ -239,6 +239,7 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
  * 5 s.                                                                 */
 static agc_status_t svct3(void)
 {
+    (void)AGC_ASSERT(agc_interrupts_inhibited());
     if (!agc_flag_test(AGC_FLAG_DRIFTFLG)) {
         return AGC_STATUS_OK;                    /* TCF TASKOVER        */
     }
@@ -301,6 +302,7 @@ agc_status_t agc_waitlist_t3rupt(void)
     agc_status_t result = AGC_STATUS_OK;
     uint16_t gen = exec_restart_generation();
     bool ruptagn = true;
+    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
     agc_inhint();
     for (int pass = 0; pass < AGC_WAITLIST_MAX_TASKS && ruptagn; pass++) {
         int32_t a = lst1[0];

@@ -55,6 +55,7 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
     if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON)) {
         return mutable_tab[0];
     }
+    (void)AGC_ASSERT(mutable_tab[0] > mutable_tab[4]);   /* MUE > MUM */
     return (body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4];
 }
 
@@ -169,10 +170,12 @@ agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m)
     return agc_tp_from_dp(agc_dp_sqrt(ip, agc_tp_to_dp(m)));
 }
 
-/* SL n (n > 0) / SR -n (n < 0) on the TP MPAC (GENSHIFT p. 1158). Left
- * shifts that overflow limit the accumulator and set OVFIND; right shifts
- * truncate the magnitude, as the ones' complement AGC does.  This is the
- * interim agc_tp_shift requested from core-numeric.                      */
+/* SL n (n > 0) / SR -n (n < 0) on the TP MPAC (GENSHIFT p. 1158, TSSL
+ * p. 1154). Left shifts go one place at a time; a place that overflows sets
+ * OVFIND and "leaves the overflow-corrected result anyway" (TS keeps the
+ * true sign and drops the carried-out bit). Right shifts truncate the
+ * magnitude, as the ones' complement AGC does. This is the interim
+ * agc_tp_shift requested from core-numeric.                              */
 agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n)
 {
     if (!AGC_ASSERT(ip != NULL)) { return m; }
@@ -182,12 +185,16 @@ agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n)
         int k = -n;
         return (k >= 62) ? 0 : (r / ((agc_tp_t)1 << k));
     }
+    const agc_tp_t one = AGC_TP_MAX + 1;               /* 2^42 = 1.0     */
     for (int i = 0; i < n; i++) {
-        if (r > AGC_TP_MAX / 2 || r < AGC_TP_MIN / 2) {
-            ip->ovfind = (r > 0) ? (agc_ovf_t)1 : (agc_ovf_t)-1;
-            return (r > 0) ? AGC_TP_MAX : AGC_TP_MIN;
-        }
         r *= 2;
+        if (r > AGC_TP_MAX) {                          /* TS OVFIND      */
+            ip->ovfind = (agc_ovf_t)1;
+            r -= one;
+        } else if (r < AGC_TP_MIN) {
+            ip->ovfind = (agc_ovf_t)-1;
+            r += one;
+        }
     }
     return r;
 }

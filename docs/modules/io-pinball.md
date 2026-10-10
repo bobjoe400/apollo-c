@@ -66,7 +66,16 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 
 (updated as files are finished)
 
-- TODO all files; design done, include/agc/agc_dsky.h and src/io/pinball_internal.h written.
+- DONE design; include/agc/agc_dsky.h; src/io/pinball_internal.h (control-flow model in its header comment)
+- DONE pinball_state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
+- DONE pinball_display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
+- DONE pinball_keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
+- DONE pinball_verbs.c: LODNNTAB, ENTPAS0, TESTVB, TESTNN, REQADD (+resume), USEADD, INTMCTBS, VERBFAN, VBFANDIR, DSPA..DSPABC, COMPTEST/DECTEST/DCTSTCYC/NOUNTEST, DSPALARM, PREDSPAL, CHARALRM, ALMCYCLE, ENTEXIT
+- DONE pinball_monitor.c: MONITOR, MONREQ, KILLMON, MONDO, PASTEVB, DSPFMEM (stub), VBRQEXEC, VBRQWAIT, VBPROC/VBTERM/VBRESEQ, REQMM, MMCHANG+1, VBTSTLTS, TSTLTS2, TSTLTS3
+- DONE pinball_load.c: REQDATX/Y/Z, ALOAD..ABCLOAD, PUTXYZ (+noun 07 bits), PUTXY, PUTCOM/PUTNORM/PUTDPCOM, CHANLOAD, ALLDC/OC, LOADLV
+- DONE pinball_scale.c: component access (MIXNOUN/TSTFORDP/CHANDSP/READLO equivalents, pinball-owned ids), DPTEST, DECDSP, DSPDCPUT, SF out routines (DEGOUTSF, OPDEGOUT, LRPOSOUT, 360-CDUO, ARTOUTSF, AROUT1SF, DP1/2/3OUTSF, 2INTOUT, DPFRACOT, HMSOUT, M/SOUT), DSPDPDEC
+- DONE pinball_sfin.c: PUTDECSF, BINROUND, DEGINSF(+SIGNFIX, LM ENDSCALE), ARTHINSF, ARTIN1SF, OPTDEGIN, DPINSF/2/4, DPFRACIN, HMSIN
+- TODO pinball_nvsub.c, display_if.c, tests/test_dsky.c
 
 ## Deviations
 

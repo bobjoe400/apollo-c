@@ -58,6 +58,7 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind);  /* DAS+OVERFLOW 
 agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x);               /* DMPSUB   */
 agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind);         /* ROUNDSUB */
 agc_w3_t agc_w_dsqsub(agc_w2_t m);                              /* DSQSUB   */
+agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind); /* DOTSUB middle */
 agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind); /* DOTSUB */
 agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind);          /* VSQSUB   */
 agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf);                   /* TSSL step */
@@ -72,5 +73,20 @@ agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort);
 agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf);
 /* GENDDV/MAXDV: positive normalised operands (divisor hi >= HALF).      */
 agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv);
+
+/* ---- shifts (GENSHIFT family, pp.1152-1161) ----------------------------- */
+/* MPACSHR / MPACSRND: TP right shift by n in 1..14 (round = MPACSRND).     */
+agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round);
+/* GENSCR: scalar SR/SRR by n >= 1 (any count; word shifts above 13).       */
+agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round);
+/* VSHRRND: DP right shift by n in 1..14 with rounding (vector component). */
+agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n);
+/* RIGHT/VRIGHT2: vector-component VSR by n >= 1 (rounds, double-rounds    */
+/* past 14 exactly as the AGC).                                             */
+agc_w2_t agc_w_vright(agc_w2_t p, int n);
+/* TSSL: scalar SL by n (wraps, OVFIND on each overflowing step).           */
+agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind);
+/* TSLC (NORM): left-justify TP MPAC, *count = left shifts done.            */
+agc_w3_t agc_w_tslc(agc_w3_t m, int *count);
 
 #endif /* AGC_MPAC_H */

@@ -163,5 +163,8 @@ agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
 /* ---- conic_timetheta.c: COMMNOUT (shared with TIMERAD) ------------------ */
 agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  bool rvsw, agc_conic_time_out_t *out);
+agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t *ctx, agc_conic_time_out_t *out);
+void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out);
+void agc_conic_time_out_clear_(agc_conic_time_out_t *out);
 
 #endif /* AGC_CONIC_INTERNAL_H */

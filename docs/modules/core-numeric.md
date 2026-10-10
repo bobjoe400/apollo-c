@@ -49,9 +49,14 @@ sign-agreeing words). -0 is never produced.
 
 * DONE word-level MPAC model (MP DAS DV TS DCS OVERFLOW DMPSUB ROUNDSUB DSQSUB
   DOTSUB VSQSUB TSSL-step POLY) src/core/agc_mpac.c + agc_mpac.h (compiles)
-* TODO SQRTSUB, DDV/GENDDV/MAXDV -> src/core/agc_divide.c
-* TODO agc_word.c, agc_sp_trig.c, agc_interp_scalar.c, agc_interp_trig.c,
-  agc_interp_vector.c, agc_constants.[ch], tests/test_core_numeric.c
+* DONE SQRTSUB, DDV/GENDDV/MAXDV src/core/agc_divide.c (compiles)
+* DONE GENSCR/MPACSHR/MPACSRND/VSHRRND/VRIGHT2/TSSL/TSLC src/core/agc_shift.c
+* DONE agc_word.h API src/core/agc_word.c; SPSIN/SPCOS src/core/agc_sp_trig.c
+* DONE constants include/agc/agc_constants.h + src/core/agc_constants.c
+* DONE (compiles, untested) agc_interp_scalar.c, agc_interp_trig.c (SQRT SIN
+  COS ASIN ACOS), agc_interp_vector.c, agc_vec_div.c (V/SC UNIT);
+  agc_interp.h prototypes + scaling comments added
+* TODO tests/test_core_numeric.c; oracle comparison; rule-5 density (>=2)
 * TODO oracle cases tools/oracle/cases/core_numeric.spec (yaAGC differential)
 * Resume notes: interp-level DAD/DSU/SL/VAD WRAP like the AGC (OVERFLOW routine),
   raw agc_word.h ops saturate (header contract). CCS leaves DABS in A, so

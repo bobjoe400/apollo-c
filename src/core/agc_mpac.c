@@ -247,7 +247,7 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
 /* Accumulate a second TP partial result into BUF (DOTSUB p.1138 middle):
  * DAS on the minor pair, then AD/AD/TS on the major word; TS OVFIND on
  * overflow (the major word is left overflow-corrected).                   */
-static agc_w3_t accumulate_tp(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
+agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
 {
     agc_w2_t lo2 = { buf.m1, buf.m2 };
     agc_w2_t add = { t.m1, t.m2 };
@@ -292,7 +292,7 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
     (void)AGC_ASSERT(ovfind != 0);
     buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
     t = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
-    buf = accumulate_tp(buf, t, ovfind);
+    buf = agc_w_dot_acc(buf, t, ovfind);
     t = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
     t = end_dot(buf, t, ovfind);
     (void)AGC_ASSERT(agc_w_ok(t.m0));
@@ -307,7 +307,7 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
     (void)AGC_ASSERT(ovfind != 0);
     buf = agc_w_dsqsub(agc_w_split(v.c[0]));
     t = agc_w_dsqsub(agc_w_split(v.c[1]));
-    buf = accumulate_tp(buf, t, ovfind);
+    buf = agc_w_dot_acc(buf, t, ovfind);
     t = agc_w_dsqsub(agc_w_split(v.c[2]));
     t = end_dot(buf, t, ovfind);
     (void)AGC_ASSERT(agc_w_ok(t.m0));

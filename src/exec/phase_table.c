@@ -71,17 +71,21 @@ static uint32_t longbase;                       /* TIME2,TIME1 at set cs */
 
 static bool group_ok(int group)
 {
+    (void)AGC_ASSERT(phase_w[0] == 0U);
+    (void)AGC_ASSERT(nphase_w[0] == PH_NEG0);
     return group >= 1 && group <= AGC_RESTART_GROUPS;
 }
 
 /* DXCH -PHASEn with (-phase, phase): both words of the pair at once. */
 void phase_set_fixed(int group, uint16_t phase)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(phase <= PH_WORD15)) {
+    if (!AGC_ASSERT(group_ok(group)) ||
+        !AGC_ASSERT(phase <= PH_WORD15)) {
         return;
     }
     phase_w[group] = phase;
     nphase_w[group] = (uint16_t)(~phase & PH_WORD15);
+    (void)AGC_ASSERT(phase_group_agrees(group));
 }
 
 /* EXTEND / DCA NEG0 / DXCH -PHASEn: -PHASEn = -0, PHASEn = +0.        */
@@ -103,6 +107,7 @@ agc_status_t agc_phase_kill(int group)
     agc_inhint();
     phase_kill(group);
     agc_relint();
+    (void)AGC_ASSERT(phase_w[group] == 0U);
     return AGC_STATUS_OK;
 }
 
@@ -120,7 +125,8 @@ static void set_tbase(int group)
 /* PHSCHNG2 decoding (C p.1410 / L p.1299): TEMPG, TEMPP, TEMPSW.      */
 static bool decode(uint16_t code, ph_code_t *out)
 {
-    if (!AGC_ASSERT(out != 0) || !AGC_ASSERT(code <= PH_WORD15)) {
+    if (!AGC_ASSERT(out != 0) ||
+        !AGC_ASSERT(code <= PH_WORD15)) {
         return false;
     }
     out->group = (int)(code & PH_GROUP);
@@ -166,7 +172,8 @@ static agc_restart_kind_t cjw_kind(uint16_t tempp)
  * at the time of the phase change, into v->prio_or_dt / long_dt_cs).   */
 static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
 {
-    if (!AGC_ASSERT(c != 0) || !AGC_ASSERT(c->type != PH_TYPE_A)) {
+    if (!AGC_ASSERT(c != 0) ||
+        !AGC_ASSERT(c->type != PH_TYPE_A)) {
         return;
     }
     phase_var_store_t *s = &var[c->group];
@@ -197,7 +204,8 @@ typedef struct ph_second {
 /* BELOW1 .. BELOW4 (C pp.1411-1412 / L pp.1300-1301).                 */
 static void below1_4(const ph_code_t *c, const ph_second_t *two)
 {
-    if (!AGC_ASSERT(c != 0) || !AGC_ASSERT(two != 0)) {
+    if (!AGC_ASSERT(c != 0) ||
+        !AGC_ASSERT(two != 0)) {
         return;
     }
     if (two->present && AGC_ASSERT(group_ok(two->group))) {
@@ -213,6 +221,7 @@ static void below1_4(const ph_code_t *c, const ph_second_t *two)
         longbase = agc_time_now_cs();             /* BELOW3: DCA TIME2 */
     }
     phase_set_fixed(c->group, c->tempp);          /* BELOW4: -PHASE    */
+    (void)AGC_ASSERT(phase_w[c->group] == c->tempp);
 }
 
 static agc_status_t phaschng_common(uint16_t code, const agc_phase_var_t *v,
@@ -247,7 +256,8 @@ agc_status_t agc_phase_change(int group, uint16_t phase_code)
 /* PHASCHNG / PHSCHNGA type B or C with the variable restart point.    */
 agc_status_t agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
 {
-    if (!AGC_ASSERT(v != 0) || !AGC_ASSERT(v->kind != AGC_RESTART_NONE)) {
+    if (!AGC_ASSERT(v != 0) ||
+        !AGC_ASSERT(v->kind != AGC_RESTART_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
     ph_second_t none = { false, 0, 0, false };
@@ -273,7 +283,8 @@ agc_status_t agc_phase_change2(uint16_t code_a, uint16_t code_b,
  * phase negative in A to ask for that).                                */
 agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tb)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(phase <= 0177U)) {
+    if (!AGC_ASSERT(group_ok(group)) ||
+        !AGC_ASSERT(phase <= 0177U)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();
@@ -290,7 +301,8 @@ agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tb)
  * (type C, A, D, J).                                                   */
 agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(job != AGC_JOB_NONE) ||
+    if (!AGC_ASSERT(group_ok(group)) ||
+        !AGC_ASSERT(job != AGC_JOB_NONE) ||
         !AGC_ASSERT(prio >= 1 && prio <= 037)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -310,6 +322,7 @@ uint16_t agc_phase_get(int group)
 
 uint16_t phase_word(int group)
 {
+    (void)AGC_ASSERT(group_ok(group));
     return agc_phase_get(group);
 }
 
@@ -326,7 +339,8 @@ bool phase_group_agrees(int group)
 
 agc_status_t phase_var_get(int group, phase_var_store_t *out)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(out != 0)) {
+    if (!AGC_ASSERT(group_ok(group)) ||
+        !AGC_ASSERT(out != 0)) {
         return AGC_STATUS_BAD_ARG;
     }
     *out = var[group];
@@ -353,7 +367,8 @@ uint32_t phase_longbase(void)
  * PHASCHNG would leave it) so the GOPROG3 table check can be exercised. */
 void phase_debug_set_negative(int group, uint16_t neg_word)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(neg_word <= PH_WORD15)) {
+    if (!AGC_ASSERT(group_ok(group)) ||
+        !AGC_ASSERT(neg_word <= PH_WORD15)) {
         return;
     }
     nphase_w[group] = neg_word;

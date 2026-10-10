@@ -61,16 +61,17 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 
 | AGC routine | status |
 |---|---|
-| include/agc/agc_guid.h | TODO |
-| pending headers (guid_pending*.h) | TODO |
-| CDUTRIG/CD*TR*GS/QUICTRIG/AX*SR*T/*SMNB*/*NBSM*/SMCDURES/FLESHPOT | TODO |
+| include/agc/agc_guid.h | DONE (rewritten on resume: targeting erasables shared with prog-rendz moved to agc_rendz_t; CSM TVC values in agc_csm_dap.h) |
+| pending headers (guid_pending*.h) | PARTIAL guid_pending.h DONE (reconciled with state-flags/exec/dsky/imu/programs); csm/lm ones TODO |
+| CDUTRIG/CD*TR*GS/QUICTRIG/AX*SR*T/*SMNB*/*NBSM*/SMCDURES/FLESHPOT | DONE powered_flight.c (all agc_guid_cdutrig..fleshpot) |
+| guid_state.c (agc_guid_state/agc_guid_init) | TODO |
 | PIPASR/REREADAC/CALCGRAV/CALCRVG/COPYCYC/NORMLIZE | TODO |
 | CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR | TODO |
 | LM PREREAD/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE | TODO |
 | LM RVBOTH/MUNRVG/MUNGRAV/MUNRETRN/LR update/LR jobs | TODO |
 | P30/P31/S30.1/S31.1/DELRSPL | TODO |
 | S40.1/S40.2,3/S40.8/S40.9/S40.13/S41.1 | TODO |
-| CM P40/P41/P47 sequencing, S40.6, S41.2, DAPFIG, S40.14 | TODO |
+| CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | TODO |
 | LM P40/P41/P42/P47 sequencing, RASTEER1, TRIMGIMB | TODO |
 | BURNBABY (ignition.c) | TODO |
 | tests/test_guidance.c | TODO |
