@@ -23,9 +23,9 @@
  * agc_lsposition selects between them with agc_state_vehicle().
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 /* ---------------- CM constants and uplinked data ----------------------- */

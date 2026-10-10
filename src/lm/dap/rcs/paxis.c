@@ -10,10 +10,10 @@
  * pass runs to completion in this call; DAPZRUPT is kept so that a pass
  * that did not reach CLOSEOUT is detected (BAILOUT 02000) as on the AGC.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define PX_150MST6   240             /* +150MST6: 150 ms in T6 counts      */
 #define PX_MINT6     22              /* MINTIMES: 14 ms minimum firing     */

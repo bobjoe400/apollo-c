@@ -13,7 +13,7 @@
  * (POLYCOEF), then x, xi, KEPC1 and KEPC2 for DELTIME (XCOMMON).
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* POLYCOEF series (p. 1293), argument R1A/W^2 at 2^0, assembled 2DEC. */
 static const agc_dp_t polycoef_coef[AGC_CONIC_POLYCOEF_NCOEF] = {

@@ -10,7 +10,7 @@
  * then proceeds as TIME-THETA with the angle between UR1 and U2.
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* TIMERAD from PARAM to UNIT (p. 1301): eccentricity vector
  * ((1 - R1A) UR1 - sqrt(P (2 - R1A)) COGA U2), 2^3. Its unit vector is

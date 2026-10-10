@@ -19,12 +19,12 @@
  * TIME3 is a 14-bit counter that overflows at 16384 cs; the overflow is
  * T3RUPT. TIME1/TIME2 are not advanced here (the sim harness owns them).
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
 #include "internal.h"
-#include "agc/agc_exec_pending.h"
+#include "agc/exec/pending.h"
 
 #define WL_TIME3_OVF   16384      /* TIME3 overflow, 2^14 cs = 163.84 s   */
 #define WL_POSMAX      16383      /* POSMAX, octal 37777                  */

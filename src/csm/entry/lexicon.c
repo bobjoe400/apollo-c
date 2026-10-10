@@ -4,9 +4,9 @@
  * (REENTRY_CONTROL.agc pp. 876-878).
  */
 #include <string.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_csm_entry.h"
-#include "agc/agc_entry_lexicon.h"
+#include "agc/core/assert.h"
+#include "agc/csm/entry.h"
+#include "agc/csm/entry_lexicon.h"
 
 /* The entry erasables. EBANK7 (RTINIT..) and EBANK6 (AOG..) in the AGC.    */
 static agc_entry_state_t entry_state;

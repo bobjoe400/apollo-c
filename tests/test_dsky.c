@@ -9,12 +9,12 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/io/dsky.h"
+#include "agc/exec/exec.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
 
 /* requested from state-flags (see docs/modules/io-pinball.md)            */
 agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);

@@ -8,7 +8,7 @@
  * they are commented where the resulting CCS/BZMF branch depends on it.
  */
 #include "mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* SQRT linear first-guess constants (INTERPRETER.agc p.1159-1174).          */
 #define SQ_SLOPEHI  9640     /* DEC .5884        octal 22650                */

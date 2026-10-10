@@ -8,8 +8,8 @@
  * evaluated with single-precision MP (major halves only) exactly as the AGC.
  */
 #include "mpac.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_constants.h"
+#include "agc/core/assert.h"
+#include "agc/core/constants.h"
 
 /* Wrap a 16-bit accumulator value like TS: corrected value, *ovf = +-1.    */
 static int32_t sp_ts(int32_t a16, int *ovf)

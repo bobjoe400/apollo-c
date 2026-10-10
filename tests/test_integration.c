@@ -33,13 +33,13 @@
  */
 #include <math.h>
 #include <stdio.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_integ.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_navaux.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/exec/exec.h"
+#include "agc/core/flags_common.h"
+#include "agc/nav/integration.h"
+#include "agc/core/interp.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/core/state.h"
 
 static int g_checks;
 static int g_failures;

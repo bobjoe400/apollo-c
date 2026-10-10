@@ -2,8 +2,8 @@
 
 ## Scope
 
-include/agc/agc_word.h and include/agc/agc_interp.h implementations, plus
-include/agc/agc_constants.h + src/core/constants.c.
+include/agc/core/word.h and include/agc/core/interp.h implementations, plus
+include/agc/core/constants.h + src/core/constants.c.
 AGC sources: SINGLE_PRECISION_SUBROUTINES.agc (p.1207), INTERPRETER.agc
 (Comanche055 pp.1131-1191, the arithmetic sections), FIXED_FIXED_CONSTANT_POOL.agc,
 INTERPRETIVE_CONSTANTS.agc. Comanche055 and Luminary099 copies are identical
@@ -60,7 +60,7 @@ interp/scalar.c, interp/trig.c, interp/vector.c, agc_vec_div.c
 * DONE tests/test_core_numeric.c (passes), tests/oracle_core_numeric.c +
   tools/oracle/cases/core_numeric.{spec,txt} (287 cases, 0 mismatches).
 * `make lib` currently stops on other lanes' files (src/csm/entry/reentry.c,
-  include/agc/agc_sysmisc.h, src/programs/*); core-numeric objects and both tests
+  include/agc/io/service_internal.h, src/programs/*); core-numeric objects and both tests
   were built and run by linking src/core/agc_{assert,mpac,divide,shift,word,
   sp_trig,constants,interp_scalar,interp_trig,interp_vector,vec_div}.c.
 
@@ -156,7 +156,7 @@ agc_dp_acos_chk, agc_tp_sqrt, agc_tp_round, agc_tp_shift (nav-conic,
 nav-aux request), agc_tp_norm (nav-conic, nav-aux request),
 agc_tp_mul_sp (SHORTMP), agc_dp_mul_int (DMPNSUB), agc_dp_poly (POLY,
 guid-entry request), agc_vec_dot_tp, agc_vec_sq_tp; plus #include
-"agc_status.h". New header include/agc/agc_constants.h.
+"agc_status.h". New header include/agc/core/constants.h.
 
 ## Requested jobs-tasks
 

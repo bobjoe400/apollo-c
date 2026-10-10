@@ -27,10 +27,10 @@
  * present in either Apollo 11 rope; listed in the assignment by mistake).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_imu.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/imu/imu.h"
+#include "agc/io/service_internal.h"
 #include "sysmisc_ext.h"
 
 #define SP_RANGE        040000      /* 2^14: weight of one SP word          */

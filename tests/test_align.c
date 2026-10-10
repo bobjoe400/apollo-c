@@ -17,13 +17,13 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "agc/agc_assert.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_imu.h"
-#include "agc/agc_align.h"
+#include "agc/core/assert.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
+#include "agc/imu/imu.h"
+#include "agc/programs/alignment.h"
 
 #define PI_D 3.14159265358979323846
 

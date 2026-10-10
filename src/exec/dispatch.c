@@ -11,13 +11,13 @@
  * lanes' *_pending.h headers fall to `default` (NOT_FOUND) until the
  * lead adds them to agc_jobs.h and here.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_align.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_landing.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/io/dsky.h"
+#include "agc/programs/alignment.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
 
 /* The job in core set 0 is started (or resumed) at ctx->id.           */
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)

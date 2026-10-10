@@ -9,10 +9,10 @@
  * agc_tp_round, agc_tp_sqrt, agc_dp_sq_tp, agc_dp_mul_tp, agc_dp_poly).
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/exec/exec.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
 
 /* MUTABLE (CONIC_SUBROUTINES.agc p. 1305; Luminary: CONTROLLED_CONSTANTS).
  * Indexed by -X1: earth X1 = -2 uses words 2..6, moon X1 = -10D words 10..14. */

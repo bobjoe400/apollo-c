@@ -18,9 +18,9 @@
  * continuation that falls back into its caller does so through
  * agc_exec_job_yield (the job keeps its core set and priority).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 /* PHASCHNG OCT 04024 (VN1645 p.482): group 4, phase 2, type A.          */

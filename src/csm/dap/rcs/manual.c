@@ -12,7 +12,7 @@
  * = MERROR + measured change - commanded change (the measured change is
  * added in the rate filter).
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define MANROT      ((uint16_t)000077) /* MANROT OCT 77                    */
 #define FORCEDBITS  ((uint16_t)001760) /* OCT01760 forced firing mask      */

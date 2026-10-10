@@ -98,3 +98,29 @@ csm/prelaunch_align.c -> ../imu/imu_pending.h, is untouched).
 * Shared glue stays at the parent level; never a `common/` folder.
 * A subfolder needs at least three files.
 * Public headers in include/agc/ keep the `agc_` prefix and stay flat.
+
+## Header layout (2026-10-10)
+
+```
+include/agc/
+  core/       status.h assert.h word.h interp.h constants.h state.h channels.h
+              flags_common.h flags_csm.h flags_lm.h
+  exec/       exec.h jobs.h            (pending.h: cross-lane shim, removed at integration)
+  io/         dsky.h nouns.h           (service_internal.h: to be folded into service.h)
+  imu/        imu.h
+  nav/        conic.h integration.h auxiliary.h
+  guidance/   guidance.h               (pending.h: cross-lane shim)
+  programs/   rendezvous.h alignment.h (alignment_internal.h, alignment_pending.h: shims)
+  csm/        entry.h entry_lexicon.h dap.h (entry_internal.h, entry_pending.h: shims)
+  lm/         landing.h dap.h
+```
+
+* Include as a path: `#include "agc/nav/conic.h"`. The `agc/` directory is
+  the namespace; file names carry no prefix.
+* Public headers mirror the src/ subsystem tree.
+* A header used by one lane only lives beside its code as `internal.h` /
+  `pending.h` at the lane's parent folder (src/csm/dap/internal.h) and is
+  included relatively (`"../internal.h"`).
+* `*_pending.h` and `*_internal.h` under include/agc/ are temporary
+  cross-lane shims; integration folds their declarations into the real API
+  headers and deletes them.

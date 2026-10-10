@@ -28,13 +28,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_csm_entry.h"
-#include "agc/agc_entry_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/exec/exec.h"
+#include "agc/csm/entry.h"
+#include "agc/csm/entry_internal.h"
 
 #define RETURN_TO_EARTH_ONE_B11   ((agc_dp_t)(8 * 16384))   /* 1RTEB25 +1 = 1.0 B-11  */
 

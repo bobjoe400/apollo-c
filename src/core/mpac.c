@@ -7,7 +7,7 @@
  * held in int32_t. See agc_mpac.h for the representation.
  */
 #include "mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* ---- representation ----------------------------------------------------- */
 

@@ -10,7 +10,7 @@
  * BOV (agc_interp_test_ovf) clears it.
  */
 #include "../mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define POLY_MAX_DEGREE 15
 

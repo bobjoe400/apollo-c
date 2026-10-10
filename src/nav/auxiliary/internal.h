@@ -10,8 +10,8 @@
 #define NAVAUX_INTERNAL_H
 
 #include <stdbool.h>
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
 
 /* Largest shift count the AGC encodes in a shift address (7 bits).       */
 #define NAVAUX_MAX_SHIFT 60

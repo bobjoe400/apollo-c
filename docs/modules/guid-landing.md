@@ -17,7 +17,7 @@ Luminary 099 only. AGC sources (pages are the Luminary 1A listing pages):
 
 Shared lane state (pad loads and erasables used by more than one of the
 files above) lives in src/lm/landing/state.c behind accessors declared in
-include/agc/agc_lm_landing.h. Symbols owned by other lanes that do not exist
+include/agc/lm/landing.h. Symbols owned by other lanes that do not exist
 yet are declared in ONE place, include/agc/agc_landing_pending.h (see "Requested core
 additions"); integration replaces that header with the real includes.
 
@@ -94,7 +94,7 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 
 Infrastructure:
 - DONE include/agc/agc_landing_pending.h (all not-yet-existing shared symbols, one place)
-- DONE include/agc/agc_lm_landing.h (lane API + state structs; may grow)
+- DONE include/agc/lm/landing.h (lane API + state structs; may grow)
 - DONE src/lm/landing/state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
 - DONE landing_pending.h reconciled 2026-10-09 with agc_guid.h, agc_lm_dap.h, agc_integ.h, agc_exec.h, exec_pending.h (job ids moved to 0x0F00/0x0F80)
 

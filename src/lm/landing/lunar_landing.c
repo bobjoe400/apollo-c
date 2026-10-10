@@ -13,11 +13,11 @@
  * are split at those points; each piece is a job function and the AGC's
  * return address becomes the continuation job id (TRANSLATION_GUIDE s.4).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "pending.h"
+#include "agc/io/service_internal.h"
 
 /* ---- constants (pp. 789, 820-822) -------------------------------------- */
 #define LL_DPSTHRSH  36          /* DPSTHRSH: THRESH1 + THRESH3 for P63     */

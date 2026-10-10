@@ -5,8 +5,8 @@
  * are kept out of the shared src/guidance/external_delta_v.c.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "guid_pending.h"
 
 #define GRP4 4

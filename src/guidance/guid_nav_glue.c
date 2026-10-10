@@ -1,7 +1,7 @@
 /*
  * guid_nav_glue.c -- the precision-integration entrances the powered-flight
  * programs use (THISPREC / CSMPREC / LEMPREC, MIDTOAV1, MIDTOAV2,
- * AVETOMID), adapted to the nav-integ interface (include/agc/agc_integ.h).
+ * AVETOMID), adapted to the nav-integ interface (include/agc/nav/integration.h).
  *
  * Each call works on the shared integration context. AGC_STATUS_BUSY means
  * the integration package was in use: the calling job has been put to sleep
@@ -11,9 +11,9 @@
  * the rendezvous body block, as the AGC leaves them in erasable.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_integ.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/nav/integration.h"
+#include "agc/guidance/pending.h"
 
 /* The job that resumes after an INTSTALL wait when a targeting subroutine
  * (S30.1, S31.1, AGAIN, S40.1) has no job context of its own: set by the

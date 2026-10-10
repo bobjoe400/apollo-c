@@ -23,10 +23,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_status.h"
-#include "agc/agc_nav.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/status.h"
+#include "agc/nav/conic.h"
 
 /* ---- constants, CONIC_SUBROUTINES.agc p. 1288 (assembled octal) ------- */
 #define AGC_CONIC_D1_8     ((agc_dp_t)33554432)  /* D1/8   04000 00000 1.0 B-3 */

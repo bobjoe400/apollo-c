@@ -12,10 +12,10 @@
  * MIDFLAG (third-body terms) is never set.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_align.h"
-#include "agc/agc_integ.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/programs/alignment.h"
+#include "agc/nav/integration.h"
 #include "internal.h"
 
 /* RME 2DEC 7178165 B-29 (oct 00333 01732), 800 km above the equatorial

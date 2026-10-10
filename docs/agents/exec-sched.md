@@ -20,7 +20,7 @@ Targets in src/exec/:
   lead-in, callable by the sim harness.
 - dispatch.c: ONE switch over agc_job_id_t and ONE over agc_task_id_t.
 
-Contract: include/agc/agc_exec.h and include/agc/agc_jobs.h. You may add
+Contract: include/agc/exec/exec.h and include/agc/exec/jobs.h. You may add
 prototypes to agc_exec.h (list each in your note) and job/task ids to
 agc_jobs.h only for jobs/tasks defined in your own files.
 

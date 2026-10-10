@@ -18,11 +18,11 @@
  * measured from TBASEn (FINDTIME), and if that time has passed it starts
  * in 1 cs. A LONGCALL is measured from LONGBASE the same way.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
 #include "internal.h"
-#include "agc/agc_exec_pending.h"
+#include "agc/exec/pending.h"
 
 #define RS_VARBITS  01400u    /* OCT1400: type B (01000) or C (0400)    */
 #define RS_TYPEB    01000u

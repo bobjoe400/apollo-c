@@ -14,7 +14,7 @@
  * words exactly as the AGC does.
  */
 #include "../mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define SIN_DEGREE  4
 #define ACOS_DEGREE 7

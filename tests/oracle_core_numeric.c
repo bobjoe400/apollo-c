@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "agc/agc_interp.h"
-#include "agc/agc_word.h"
+#include "agc/core/interp.h"
+#include "agc/core/word.h"
 
 #define MAX_IN 16
 

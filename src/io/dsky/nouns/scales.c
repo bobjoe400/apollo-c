@@ -25,8 +25,8 @@
  * scale from ASSEMBLY_AND_OPERATION_INFORMATION "NOUN SCALES AND FORMATS".
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_nouns.h"
+#include "agc/core/assert.h"
+#include "agc/io/nouns.h"
 
 #define SF_COUNT_CSM 20
 #define SF_COUNT_LM  29

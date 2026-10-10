@@ -25,9 +25,9 @@
  * outermost RELINT. In a single-threaded host they only document intent
  * and let services assert that they run in interrupt context.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
 #include "internal.h"
 
 #define RUPT_MAX_DEPTH 64            /* bound on INHINT nesting          */

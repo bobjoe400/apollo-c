@@ -15,12 +15,12 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
+#include "agc/core/assert.h"
+#include "agc/exec/exec.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
 #include "../src/exec/internal.h"
-#include "agc/agc_exec_pending.h"
+#include "agc/exec/pending.h"
 
 static int g_checks;
 static int g_failures;

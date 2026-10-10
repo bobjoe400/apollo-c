@@ -20,11 +20,11 @@
  * VGU 2^10 m/cs, accelerations 2^-4 m/cs^2, TTF/8 2^14 cs (its high word is
  * TTF/8 in centiseconds; it is negative before the target).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "pending.h"
+#include "agc/io/service_internal.h"
 
 /* ---- constants (pp. 827-828; CONTROLLED_CONSTANTS) -------------------- */
 #define LDG_HIGHESTF   ((agc_dp_t)284785)    /* 2DEC 4.34546769 B-12: max DPS

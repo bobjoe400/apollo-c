@@ -7,9 +7,9 @@
  * both vehicles share them the way the AGC routines share erasable.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
+#include "agc/guidance/pending.h"
 
 static agc_guid_t g_guid;
 

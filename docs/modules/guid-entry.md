@@ -3,16 +3,16 @@
 ## Scope
 Comanche055 only: ENTRY_LEXICON, REENTRY_CONTROL, P61-P67, CM_BODY_ATTITUDE,
 CM_ENTRY_DIGITAL_AUTOPILOT, P37_P70, P11. Output in src/csm/ plus the public
-header include/agc/agc_csm_entry.h (created by this lane).
+header include/agc/csm/entry.h (created by this lane).
 Note: Comanche P37_P70.agc contains only P37 (return to earth) and its
 subroutines; "P70" appears only in the constants title (the LM P70 abort
 program is a Luminary routine). There is no Saturn-abort code in the file.
 
 Files:
-* include/agc/agc_csm_entry.h -- entry state struct (ENTRY_LEXICON), enums, public API
-* include/agc/agc_entry_lexicon.h/.c -- constants with scales; the static entry state
-* include/agc/agc_entry_internal.h -- prototypes shared between files of this lane only
-* include/agc/agc_entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
+* include/agc/csm/entry.h -- entry state struct (ENTRY_LEXICON), enums, public API
+* include/agc/csm/entry_lexicon.h/.c -- constants with scales; the static entry state
+* include/agc/csm/entry_internal.h -- prototypes shared between files of this lane only
+* include/agc/csm/entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
   IMU, job/task ids). Delete at integration; see "Requested core additions".
 * src/csm/entry/reentry.c, programs.c, cm_body_attitude.c, dap.c, return_to_earth.c, earth_orbit_insertion.c
 * tests/test_entry.c
@@ -99,7 +99,7 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
   INTEGRVS, CSMPREC, TIMERAD, PARAM, GETERAD, TIMETHET, LAT-LONG).
 
 ## Requested core additions
-All are declared (not defined) in include/agc/agc_entry_pending.h; delete that file
+All are declared (not defined) in include/agc/csm/entry_pending.h; delete that file
 at integration once the owners provide them. Flags, channel bits, DSKY
 (agc_dsky_display/clearmrk/vn), lat/long, CALCGA/CALCGTA, NEEDLER and the
 AVERAGEG state now come from the published headers.

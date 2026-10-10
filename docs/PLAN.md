@@ -26,7 +26,7 @@ alignment, pinball, etc.). We translate:
 |------|---------------|---------------------------------------------------------------|--------------------------|
 | 1    | core-numeric  | INTERPRETER (arith parts), SINGLE_PRECISION_SUBROUTINES, FIXED_FIXED_CONSTANT_POOL, INTERPRETIVE_CONSTANTS | src/core/ |
 | 1    | exec-sched    | EXECUTIVE, WAITLIST, PHASE_TABLE_MAINTENANCE, RESTARTS_ROUTINE, RESTART_TABLES, ALARM_AND_ABORT, INTERRUPT_LEAD_INS, FRESH_START_AND_RESTART | src/exec/ |
-| 1    | state-flags   | ERASABLE_ASSIGNMENTS (both), FLAGWORD_ASSIGNMENTS (LM), CONTROLLED_CONSTANTS, INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS | include/agc/agc_flags_*.h, src/core/state.c, include/agc/agc_channels.h |
+| 1    | state-flags   | ERASABLE_ASSIGNMENTS (both), FLAGWORD_ASSIGNMENTS (LM), CONTROLLED_CONSTANTS, INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS | include/agc/agc_flags_*.h, src/core/state.c, include/agc/core/channels.h |
 | 1    | nav-conic     | CONIC_SUBROUTINES                                             | src/nav/conic.c          |
 | 1    | nav-integ     | INTEGRATION_INITIALIZATION, ORBITAL_INTEGRATION               | src/nav/integration.c    |
 | 1    | nav-aux       | LATITUDE_LONGITUDE_SUBROUTINES, PLANETARY_INERTIAL_ORIENTATION, MEASUREMENT_INCORPORATION, TIME_OF_FREE_FALL, LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES, STAR_TABLES | src/nav/ |

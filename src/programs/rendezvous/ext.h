@@ -19,13 +19,13 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_state.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/exec/exec.h"
+#include "agc/core/state.h"
 
-/* ==== sys-misc (include/agc/agc_sysmisc.h, src/io/service/sysmisc_ext.h) ================== */
+/* ==== sys-misc (include/agc/io/service_internal.h, src/io/service/sysmisc_ext.h) ================== */
 /* DELAYJOB (SERVICE_ROUTINES): sleep the calling job delay_cs, then resume
  * it as wake_as.                                                          */
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);
@@ -81,14 +81,27 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_TPM_COMPUTE                  ((agc_job_id_t)0x1129) /* P35/P75B */
 #define AGC_JOB_TPM_AFTER_FINAL              ((agc_job_id_t)0x112A) /* after S34/35.5: VN1645 */
 #define AGC_JOB_TPM_ADVANCE                  ((agc_job_id_t)0x112B) /* P35/P75B from PRECSET (INTSTALL resume) */
+/* R30 orbit parameter display, verb 82 (orbit_parameter_display.c) */
+#define AGC_JOB_ORBIT_PARAMETER_DISPLAY          ((agc_job_id_t)0x1130) /* V82CALL */
+#define AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT     ((agc_job_id_t)0x1131) /* V82GOFF V04N12 */
+#define AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED   ((agc_job_id_t)0x1132) /* V04N12 PROCEED */
+#define AGC_JOB_ORBIT_DISPLAY_RECYCLE            ((agc_job_id_t)0x1133) /* V82GOFLP */
+#define AGC_JOB_ORBIT_DISPLAY_STALL              ((agc_job_id_t)0x1134) /* V82STALL */
+#define AGC_JOB_ORBIT_DISPLAY_UPDATE             ((agc_job_id_t)0x1135) /* V82GOFF1 */
+#define AGC_JOB_ORBIT_DISPLAY_AVERAGE_G          ((agc_job_id_t)0x1136) /* V82GON1 */
+#define AGC_JOB_ORBIT_DISPLAY_REPEAT             ((agc_job_id_t)0x1137) /* V82GON3 */
+#define AGC_JOB_ORBIT_DISPLAY_SPLASH             ((agc_job_id_t)0x1138) /* CANDEL (CM) */
+#define AGC_JOB_ORBIT_DISPLAY_MONITOR            ((agc_job_id_t)0x1139) /* V82REDSP */
+#define AGC_JOB_RENDZ_DISPLAY_TERMINATE          ((agc_job_id_t)0x113A) /* B5OFF */
+#define AGC_JOB_RENDZ_ENDEXT                     ((agc_job_id_t)0x113B) /* ENDEXT as a job */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */
-#define AGC_TASK_RZ_TICKTEST  ((agc_task_id_t)0x1101) /* R30 V82 1 s tick      */
+#define AGC_TASK_TICKTEST     ((agc_task_id_t)0x1101) /* R30 V82 1 s tick      */
 #define AGC_TASK_RZ_DSPDELAY  ((agc_task_id_t)0x1102) /* R31 display delay     */
 #define AGC_TASK_RADSAMP      ((agc_task_id_t)0x1103) /* LM radar sampling     */
 /* CLOKTASK (LM BURN_BABY_BURN, owner guid-powered); same name as in
- * include/agc/agc_guid_pending.h.                                           */
+ * include/agc/guidance/pending.h.                                           */
 #define AGC_TASK_CLOKTASK_RZ  ((agc_task_id_t)0x1104)
 
 #endif /* RENDZ_EXT_H */

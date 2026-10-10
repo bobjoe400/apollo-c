@@ -16,8 +16,8 @@
  * words (octal in the comments), read back from the Luminary099 rope.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 static const agc_vec_t STAR_TABLE[AGC_STAR_COUNT] = {

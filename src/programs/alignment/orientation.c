@@ -6,8 +6,8 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/programs/alignment_internal.h"
 
 #define CDU_WORD_MASK   077777u
 #define CDU_SIGN_BIT    040000u

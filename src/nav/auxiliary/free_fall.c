@@ -13,8 +13,8 @@
  * VGAMCALC and TFF/TRIG, which use these results, are in P61-P67.agc.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 /* PI/16 2DEC 3.141592653 B-4, oct 06220 37553: pi scale 2^4 (2 pi at 2^5). */

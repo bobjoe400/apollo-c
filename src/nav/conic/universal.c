@@ -12,7 +12,7 @@
  *   v2 = sqrt(mu) x (xi S - 1) / r2 ur1 + (1 - x^2 C / r2) v1  (LAMENTER)
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* DELTIME POLY coefficients for S(XI) (2^1) and C(XI) (2^4), argument XI
  * at 2^6 (p. 1283). Assembled 2DEC values; octal in the comments.        */

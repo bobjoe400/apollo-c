@@ -9,10 +9,10 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/guidance.h"
+#include "agc/programs/alignment_internal.h"
 
 #define CDU_WORD_MASK     077777u   /* 15-bit CDU register                  */
 #define CDU_MODULUS       0100000   /* one revolution in CDU counts         */

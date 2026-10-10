@@ -6,8 +6,8 @@
  * V99FLASH), S40.6 (gimbal drive test and trim, PRE40.6) and DAPFIG (V46).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define ONE_SEC        100

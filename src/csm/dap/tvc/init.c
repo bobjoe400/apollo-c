@@ -12,7 +12,7 @@
  * Called by DOTVCON (P40) with T5LOC = TVCDAPON, TIME5 = .6SECT5.
  * MRCLEAN and TVCINIT4 are TVC-restart entry points.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define NZERO       51                 /* 00063: words to zero less one (odd) */
 #define NZEROJR     23                 /* 00027: MCLEANJR words less one      */

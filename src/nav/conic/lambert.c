@@ -18,9 +18,9 @@
  *   INITV     CSM: CLEAR SOLNSW           LM: (cleared at entry)
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
 
 /* LAMBERT erasables beyond the shared context. */
 typedef struct lambert_state {

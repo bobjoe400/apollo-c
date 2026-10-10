@@ -11,7 +11,7 @@
 | LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc (CM pp. 785-788, LM pp. 984-987) | DIFFERENT: CM 9th-degree lunar polynomial + rotating sun vector; LM analytic mean-element unit vectors | src/nav/auxiliary/ephemerides.c |
 | STAR_TABLES.agc (CM pp. 1389-1393) / LM CONTROLLED_CONSTANTS.agc pp. 49-51 | identical 37-star table, CATLOG 6970 | src/nav/auxiliary/star_tables.c |
 
-Public header: include/agc/agc_navaux.h. Private helpers: src/nav/auxiliary/internal.h + src/nav/auxiliary/util.c.
+Public header: include/agc/nav/auxiliary.h. Private helpers: src/nav/auxiliary/internal.h + src/nav/auxiliary/util.c.
 All constants were verified word-for-word against the assembled ropes
 (tools/oracle/ropes/*.bin read at the symtab address).
 
@@ -65,7 +65,7 @@ MXV(rows blk[b][3a..3a+2]) BVECTOR[b]; OMEGA[b] = sum_a VXM(ZI[a], same).
 
 | Routine / table | Status |
 |---|---|
-| header agc_navaux.h | DONE include/agc/agc_navaux.h |
+| header agc_navaux.h | DONE include/agc/nav/auxiliary.h |
 | util.c helpers | DONE src/nav/auxiliary/util.c |
 | planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/auxiliary/planetary.c |
 | latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/auxiliary/latlong.c |

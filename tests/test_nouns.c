@@ -6,9 +6,9 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_nouns.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/io/nouns.h"
+#include "agc/core/state.h"
 
 static int g_checks;
 static int g_failures;

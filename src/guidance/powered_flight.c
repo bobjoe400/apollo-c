@@ -18,9 +18,9 @@
  * DDOUBL rescaling; SMCDURES is interpretive and uses agc_interp.h.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
+#include "agc/guidance/pending.h"
 
 #define CDU_SIGN_BIT   ((uint16_t)040000)  /* bit 15 of the 15-bit CDU word  */
 #define CDU_MASK       ((uint16_t)077777)

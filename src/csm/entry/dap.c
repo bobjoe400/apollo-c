@@ -21,18 +21,18 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_state.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_csm_dap.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_csm_entry.h"
-#include "agc/agc_entry_lexicon.h"
-#include "agc/agc_entry_internal.h"
-#include "agc/agc_entry_pending.h"
+#include "agc/core/assert.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/core/channels.h"
+#include "agc/csm/dap.h"
+#include "agc/core/flags_csm.h"
+#include "agc/csm/entry.h"
+#include "agc/csm/entry_lexicon.h"
+#include "agc/csm/entry_internal.h"
+#include "agc/csm/entry_pending.h"
 
 /* ---- module erasables (EBANK6, "ANGLE REGISTERS FOR ENTRY DAPS") ------ */
 static agc_sp_t aog, aig, amg;            /* AOG AIG AMG gimbal /180       */

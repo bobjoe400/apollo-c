@@ -3,9 +3,9 @@
  * (p. 1245): SETITCTR, which needs the LM position of AVEGFLAG.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_lm.h"
-#include "agc/agc_integ.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_lm.h"
+#include "agc/nav/integration.h"
 
 /* SETITCTR: ITERCTR = 20D, or 5 while AVEGFLAG (AVERAGEG running), then
  * LAMBERT (agent nav-conic).  The caller's input is copied with iterctr

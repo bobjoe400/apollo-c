@@ -16,7 +16,7 @@
  * progress is terminated (a new V68 is required). REDOTVC is reached by
  * T5 from ELRSKIP after any restart that finds FLAGWRD6 bits 15,14 = 10.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define EXRSTRT_DELAY ((uint16_t)9)      /* NINE cs: before PITCHDAP, after CMDSOUT */
 #define T5_60MS       ((uint16_t)037772) /* TVCEXADR: 60 ms                 */

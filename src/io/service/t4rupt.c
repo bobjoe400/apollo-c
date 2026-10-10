@@ -32,14 +32,14 @@
  * skipped quick pass.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_imu.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/lm/dap.h"
+#include "agc/io/service_internal.h"
 #include "sysmisc_ext.h"
 
 #define BIT1   000001u

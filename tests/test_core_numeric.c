@@ -13,9 +13,9 @@
  */
 #include <math.h>
 #include <stdio.h>
-#include "agc/agc_constants.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_word.h"
+#include "agc/core/constants.h"
+#include "agc/core/interp.h"
+#include "agc/core/word.h"
 
 #define PI 3.14159265358979323846
 

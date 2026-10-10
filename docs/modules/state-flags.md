@@ -7,7 +7,7 @@ names, `agc_state.c` (time, flagwords, state vectors, vehicle selection),
 `agc_erasable.c` (accessors for the widely shared erasables), and the lookup
 table AGC erasable name -> C accessor / owner (end of this note).
 
-Files: `include/agc/agc_flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
+Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 `agc_channels.h` (edited), `agc_state.h` (extended), `src/core/state.c`,
 `src/core/channels.c`, `src/core/erasable.c`, `tests/test_state.c`,
 `tests/test_state_lm.c`.
@@ -154,7 +154,7 @@ I own the headers below, so these were made directly; other lanes should know:
 * Names used from `_common.md` convention: `AGC_FLAG_<AGCNAME>`, `AGC_CH<oct>_<NAME>`,
   `agc_erase_<name>()` / `agc_erase_set_<name>()`. Note `AGC_CH030_IMUOPER` is the name for
   channel 30 bit 9 (the example in `_common.md` spelled it that way and I used it). Other lanes
-  guessing names should grep `include/agc/agc_channels.h`; names are in AGC-source spirit,
+  guessing names should grep `include/agc/core/channels.h`; names are in AGC-source spirit,
   not the AGC symbols (the AGC has none for individual bits).
 
 ## Requested jobs-tasks

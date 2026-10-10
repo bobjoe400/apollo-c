@@ -1,6 +1,6 @@
 /* agc_assert.c -- host-side reporting hook for AGC_ASSERT (rule 5). */
 #include <stdio.h>
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
 {

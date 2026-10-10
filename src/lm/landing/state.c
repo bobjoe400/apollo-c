@@ -9,11 +9,11 @@
  * the accessors below, never as extern globals.
  */
 #include <string.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/exec/exec.h"
+#include "agc/lm/landing.h"
+#include "agc/core/state.h"
 
 static agc_lm_pad_t lm_pad;   /* W-matrix overlay pad loads, EBANK 5     */
 static agc_lm_ldg_t lm_ldg;   /* landing guidance erasables, EBANK 7     */

@@ -1,6 +1,6 @@
 # Assignment: dap-csm   (tier: translation)
 
-Scope (Comanche only), into src/csm/dap/ with include/agc/agc_csm_dap.h:
+Scope (Comanche only), into src/csm/dap/ with include/agc/csm/dap.h:
 RCS-CSM_DIGITAL_AUTOPILOT.agc (the CSM RCS DAP: rate/attitude error,
 phase plane, the DAP data load R03), JET_SELECTION_LOGIC.agc (quad
 selection tables, the jet-polarity logic with the failed-quad flags),

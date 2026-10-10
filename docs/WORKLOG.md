@@ -165,3 +165,11 @@
             csm/burns/sps delegated to guid-powered); agc_ dropped from
             src/core .c names (public headers keep it). All moved files
             compile. Rules recorded in ARCHITECTURE.md "Folder rules".
+2026-10-10  Header tree foldered (user): include/agc/<subsystem>/<name>.h,
+            agc_ prefix dropped from header file names; single-lane
+            internal/pending headers moved back beside their code; cross-lane
+            shims stay public with _internal/_pending suffix for integration
+            to fold. All include lines rewritten (public, header-to-header,
+            private relative). Compile: 169+5 pass; remaining failures are
+            lane-owned undeclared symbols (prog-align, sys-misc, guid-powered
+            mid-edit) plus aborts.c orphan fixed by lead. 7 lanes notified.

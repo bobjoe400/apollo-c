@@ -66,7 +66,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 
 (updated as files are finished)
 
-- DONE design; include/agc/agc_dsky.h; src/io/dsky/pinball/internal.h (control-flow model in its header comment)
+- DONE design; include/agc/io/dsky.h; src/io/dsky/pinball/internal.h (control-flow model in its header comment)
 - DONE state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
 - DONE display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
 - DONE keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
@@ -80,7 +80,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - DONE agc_dsky_endext (ENDEXT EQUALS ENDMARK)
 - DONE tests/test_dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
   violations, assertion density 1.25-1.93 per file (warn)
-- Files: include/agc/agc_dsky.h; src/io/dsky/pinball/internal.h, state.c,
+- Files: include/agc/io/dsky.h; src/io/dsky/pinball/internal.h, state.c,
   display.c, keys.c, verbs.c, monitor.c,
   load.c, scale.c, sfin.c, nvsub.c, display_if.c
 
@@ -145,7 +145,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
   (RECAL2: terminate/proceed/data-in return; XCHNYLOC: XCHTOEND / XCHSLEEP).
   NOT_FOUND if no job sleeps at loc. Declared in internal.h.
 - sys-misc: `agc_status_t agc_extverb(int verb, int noun);` (GOEXTVB, already in
-  include/agc/agc_sysmisc.h) and `void agc_erase_set_extvbact(uint16_t)` (CLEARMRK; in
+  include/agc/io/service_internal.h) and `void agc_erase_set_extvbact(uint16_t)` (CLEARMRK; in
   sysmisc_ext.h). GOPIN (ALM/END -> PINBRNCH) stays sys-misc's; it should call
   agc_dsky_pinbrnch(). T4RUPT's DSPOUT should call agc_dsky_dspout(); PRO key ->
   agc_dsky_prockey_request(); MARKRUPT nav-DSKY keys -> agc_dsky_keyrupt2().

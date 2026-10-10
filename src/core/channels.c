@@ -22,8 +22,8 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
 
 static uint16_t g_chan[AGC_CHAN_COUNT];
 

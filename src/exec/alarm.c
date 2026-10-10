@@ -26,10 +26,10 @@
  * runs inside the job or task that failed and the call graph has no
  * cycle (ENEMA -> RESTARTS -> NOVAC -> BAILOUT).
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
 #include "internal.h"
 
 #define AL_DSPTAB_LAMPS 11        /* DSPTAB +11D: C/S lamp word          */

@@ -29,8 +29,8 @@
  * integration temporaries supplied in agc_incorp_sv_t.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 /* DP1/4TH 2DEC .25 (oct 10000 00000): 1/4, the GAMMA numerator.           */

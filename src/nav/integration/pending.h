@@ -1,12 +1,12 @@
 /*
  * pending.h -- placeholder job/task ids for the nav-integ lane until
- * the lead adds them to include/agc/agc_jobs.h (see docs/modules/nav-integ.md
+ * the lead adds them to include/agc/exec/jobs.h (see docs/modules/nav-integ.md
  * "Requested jobs-tasks"). Values are in a range no other lane uses (0x0F).
  */
 #ifndef INTEG_PENDING_H
 #define INTEG_PENDING_H
 
-#include "agc/agc_exec.h"
+#include "agc/exec/exec.h"
 
 /* STATINT1: FINDVAC PRIO5 from the STATEINT task (p. 1313).              */
 #define AGC_JOB_STATINT1        ((agc_job_id_t)0x0F01)

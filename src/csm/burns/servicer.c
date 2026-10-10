@@ -18,8 +18,8 @@
  * inside SERVICER name the C continuation job for each restart point.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "guid_pending.h"
 
 #define MAXDELV       6398    /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */

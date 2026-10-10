@@ -6,11 +6,11 @@
  * FRESH_START_AND_RESTART.agc pp.211-213 (DOFSTRT1, DAP pad-load defaults)
  * and pp.220-221 (STARTSB1).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/guidance/guidance.h"
+#include "agc/lm/dap.h"
+#include "internal.h"
 
 /* Fresh-start constants (FRESH_START_AND_RESTART.agc p.218, CONTROLLED_
  * CONSTANTS FULLAPS; octal values checked in the yaYUL listing).         */

@@ -7,8 +7,8 @@ UPDATE_PROGRAM (P27), SERVICE_ROUTINES, AGC_BLOCK_TWO_SELF_CHECK,
 SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2 / _TESTS_4 (LM P07),
 INTER-BANK_COMMUNICATION, RTB_OP_CODES (LM) / RT8_OP_CODES (CM).
 
-Public API of this lane: `include/agc/agc_sysmisc.h` (request: promote to
-`include/agc/agc_sysmisc.h`).  Symbols owned by other lanes / not yet in
+Public API of this lane: `include/agc/io/service_internal.h` (request: promote to
+`include/agc/io/service_internal.h`).  Symbols owned by other lanes / not yet in
 include/agc are declared in `src/io/service/sysmisc_ext.h` (temporary shim, see
 "Requested core additions"); flag-bit shims in `src/io/service/sysmisc_flags_*.h`.
 

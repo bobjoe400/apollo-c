@@ -4,9 +4,9 @@
  * zero its commanded attitude and rates. All are called with interrupts
  * inhibited (INHINT / TC IBNKCALL / RELINT in the AGC).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/lm/dap.h"
+#include "internal.h"
 
 #define DB_NARROW ((agc_sp_t)0155)     /* NARROWDB 00155: 0.3 deg at 45    */
 #define DB_WIDE   ((agc_sp_t)03434)    /* WIDEDB 03434: 5.0 deg at 45      */

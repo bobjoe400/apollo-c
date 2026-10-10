@@ -15,9 +15,9 @@
  * period.
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
 
 /* KEPLER erasables that are not shared with the other conic routines. */
 typedef struct kepler_state {

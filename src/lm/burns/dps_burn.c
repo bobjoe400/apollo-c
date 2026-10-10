@@ -8,8 +8,8 @@
  * S40.9 and S40.13 and TRIMGIMB (RASTEER1 is in dps_burn_rasteer.c).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "guid_pending.h"
 
 #define ONE_SEC     100
@@ -191,7 +191,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_MANEUVER, AGC_TASK_NONE,
                           (int16_t)AGC_PRIO20, false, 0U };
     (void)agc_phase_change2((uint16_t)000076, (uint16_t)004024, &v);
-    return agc_lm_brnbb(ctx);
+    return agc_lm_burnbaby_countdown(ctx);
 }
 
 /* REDO6.7 / BLNKWAIT (p.756): on a restart do not put up N85 while the

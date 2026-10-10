@@ -15,7 +15,7 @@
  * deg, AMGB elements scaled 1, KMJ (450)(1600)/(57.3)(16384) = 1/1.3,
  * DFT in 1/1600 s.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define QUARTER   ((agc_sp_t)8192)    /* QUARTER = BIT13                      */
 #define LOW4      ((agc_sp_t)017)     /* LOW4                                 */

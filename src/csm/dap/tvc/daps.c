@@ -23,8 +23,8 @@
  * the C value may differ from the AGC by one unit of the lower word's
  * weight carried into the upper word.
  */
-#include "agc/agc_csm_dap_internal.h"
-#include "agc/agc_guid.h"
+#include "../internal.h"
+#include "agc/guidance/guidance.h"
 
 #define ACTSAT       ((agc_sp_t)253)    /* 00375: actuator limit 6 deg, 1 ascrev */
 #define RECIP_ACTSAT ((agc_sp_t)65)     /* 00101 DEC .0039525692 (1/253)        */
@@ -62,6 +62,7 @@ static void tvcd_pcdudots(void)
     t->mcduzdot = tvcd_rlimtest(csm_dap_msu(t->pcduzpst, z));
     t->pcduzpst = z;
     (void)AGC_ASSERT(t->pcduypst == y);
+    (void)AGC_ASSERT(t->pcduzpst == z);
 }
 
 /* Body-axis pitch rate OMEGAYB (PINTEGRL, p. 964) or yaw rate OMEGAZB
@@ -81,6 +82,7 @@ static agc_dp_t tvcd_body_rate(tvcd_axis_t ax)
     agc_dp_t w = csm_dap_ddoubl(agc_sp_mul(k, t->mcduydot));
     w = csm_dap_das(w, csm_dap_ddoubl(agc_sp_mul((agc_sp_t)-t->mcduzdot, c)));
     (void)AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
+    (void)AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX));
     return w;
 }
 
@@ -167,6 +169,7 @@ static void tvcd_cascade_pre(agc_dp_t in, agc_dp_t out, int j, int k)
     t->tmp[k] = csm_dap_das(t->tmp[k + 1], csm_dap_ddoubl(a));
     t->tmp[k + 1] = csm_dap_das(csm_dap_smallmp(nout, t->n10[j + 3]),
                                 csm_dap_smallmp(in, t->n10[j + 1]));
+    (void)AGC_ASSERT((t->tmp[k] >= AGC_DP_MIN) && (t->tmp[k] <= AGC_DP_MAX));
 }
 
 /* PRECOMP (pp. 972-976): the third cascade only for CSM/LM (bit 13 off). */
@@ -179,6 +182,7 @@ static void tvcd_precomp(void)
         tvcd_cascade_pre(t->dap2, t->dap3, 11, 4);         /* 3CASFLTR  */
     }
     (void)AGC_ASSERT(t->n10[0] != 0);
+    (void)AGC_ASSERT(t->vark >= 0);
 }
 
 /* DELBARP / DELBARY (pp. 966, 969): offset-tracker filter
@@ -211,6 +215,7 @@ agc_status_t csm_tvc_pcopy(bool restart)
     t->pcmd = agc_dp_high(t->cmdtmp);              /* actuator command     */
     t->delpbar = t->delbrtmp;                      /* offset tracker       */
     t->tvcphase = 2;                               /* completed (2)        */
+    (void)AGC_ASSERT(t->pcmd == agc_dp_high(t->cmdtmp));
     return AGC_STATUS_OK;
 }
 
@@ -232,6 +237,7 @@ agc_status_t csm_tvc_ycopy(bool restart)
     t->ycmd = agc_dp_high(t->cmdtmp);
     t->delybar = t->delbrtmp;
     t->tvcphase = 0;                               /* reset TVCPHASE       */
+    (void)AGC_ASSERT(t->ycmd == agc_dp_high(t->cmdtmp));
     return AGC_STATUS_OK;
 }
 
@@ -243,6 +249,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     bool p = (ax == TVCD_PITCH);
     int a = p ? 1 : 2;                             /* OMEGAYC / OMEGAZC    */
+    (void)AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
     /* xINTEGRL: body-axis rate error integral, B-1 rev                   */
     t->errbtmp = csm_dap_das(p ? t->perrb : t->yerrb, t->omegac[a]);
     t->omegab[a] = tvcd_body_rate(ax);
@@ -254,6 +261,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     tvcd_fwdfltr();
     t->cmdtmp = csm_dap_das(t->cmdtmp, p ? t->pdeloff : t->ydeloff); /* B+0 */
     tvcd_actlim();
+    (void)AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT);   /* limited     */
     /* xOUT: incremental command to the error counter and count release */
     agc_sp_t inc = csm_dap_ads((agc_sp_t)-(p ? t->pcmd : t->ycmd), agc_dp_high(t->cmdtmp));
     agc_status_t st;
@@ -279,6 +287,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     agc_task_id_t next = (ax == TVCD_PITCH) ? AGC_TASK_YAWDAP : AGC_TASK_PITCHDAP;
+    (void)AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
     agc_status_t st = csm_dap_set_t5(next, (uint16_t)t->t5tvcdt);
     if ((st == AGC_STATUS_OK) && (t->stroker != 0)) {  /* (STRKFLG)    */
         st = csm_tvc_hack();
@@ -321,5 +330,6 @@ agc_status_t agc_task_dapinit(void)
     agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t)w);
     t->pcduypst = agc_erase_cduy();
     t->pcduzpst = agc_erase_cduz();
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return st;                                     /* NOQRSM               */
 }

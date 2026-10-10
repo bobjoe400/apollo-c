@@ -24,7 +24,7 @@ Language: C11, no extensions. Build flags (Makefile):
    comments excluded). `tools/check_rules.py` enforces this. Split AGC
    routines at their natural labels.
 5. **Assertions.** Average >= 2 assertions per function. Use `AGC_ASSERT(cond)`
-   from `include/agc/agc_assert.h`: it is side-effect free, evaluates to a
+   from `include/agc/core/assert.h`: it is side-effect free, evaluates to a
    `bool`, and callers recover by returning `AGC_STATUS_*` error codes. Never
    use `<assert.h>`. Assertions that cannot fail do not count.
 6. **Smallest scope.** Declare variables where used. Module-private state is

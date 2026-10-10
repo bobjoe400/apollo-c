@@ -11,8 +11,8 @@
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/programs/alignment_internal.h"
 
 #define REMDIST    ((agc_dp_t)192201000) /* mean earth-moon distance B-29 m */
 #define ONEOVSQRT2 ((agc_dp_t)189812531) /* 1OVSQRT2 .7071067815            */

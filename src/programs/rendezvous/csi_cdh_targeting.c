@@ -13,8 +13,8 @@
  *
  * Scales: r m 2^29, v m/cs 2^7, t cs 2^28.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
 #include "internal.h"
 
 #define CSI_MOD_LOOP_MAX 800    /* > 2^28 cs / 60 min: bound of the modulo

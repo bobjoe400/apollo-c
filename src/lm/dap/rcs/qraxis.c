@@ -8,10 +8,10 @@
  * engine trim gimbal (GTS, gts.c) or by the RCS jets about the
  * non-orthogonal U,V axes (qrjets.c).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define QR_CH31_AUTO   0x1000u     /* BIT13 of 31 = 1: not attitude hold   */
 #define QR_CH31_PLUSX  0x0040u     /* BIT7 of 31 = 0: +X translation       */

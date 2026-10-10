@@ -20,7 +20,7 @@
  * agc_csm_jet_select() is the pure table logic (JETSLECT after the timer
  * set-up through CALCDT6); agc_task_jetslect() is the T5 program around it.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define XLNMASK    ((uint16_t)007700) /* XLNMASK OCT 7700: THC bits 7-12     */
 #define PJETS      ((uint16_t)001417) /* pitch, X-translation jets + count   */

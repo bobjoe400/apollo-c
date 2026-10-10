@@ -7,8 +7,8 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
 
 #define AGC_WORD15_MAX 077777u   /* a raw 15-bit AGC word */
 

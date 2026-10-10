@@ -14,7 +14,7 @@ CSM-docked RCS law).
 
 Code: `src/lm/dap/*.c`, internal header `include/agc/agc_lm_dap_internal.h`,
 shim for not-yet-existing shared symbols `include/agc/agc_lm_dap_pending.h`,
-public API `include/agc/agc_lm_dap.h`. Test: `tests/test_lm_dap.c`.
+public API `include/agc/lm/dap.h`. Test: `tests/test_lm_dap.c`.
 
 ## Design table
 

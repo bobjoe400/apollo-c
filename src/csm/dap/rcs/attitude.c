@@ -15,7 +15,7 @@
  * hysteresis slope SLOPE2 0.8 deg/s/deg, switch-line SLOPE 0.6 deg/s/deg.
  * Jet on-time T = J/M (DELTA W), scaled 16384/1600 s (1 bit = 1/1600 s).
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define MANROT     ((uint16_t)000077)
 #define DAMPBITS   ((uint16_t)016000) /* OCT16000                          */

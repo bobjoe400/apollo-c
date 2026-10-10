@@ -6,12 +6,12 @@
  * the precomputation at P41SPOT (state integrated to TIG - 30 s), the
  * TIG-35 / TIG-30 / TIG-5 / TIG-0 waitlist chain, ullage, IGNITION and the
  * program-specific ignition tails, ZOOM (throttle-up), TIGTASK.
- * The once-a-second display (CLOKTASK/CLOKJOB), the crew responses,
- * COMFAIL, P40AUTO and REP40ALM are in clock.c.
+ * The once-a-second display (CLOKTASK/CLOKJOB), STCLOK, NULLCLOK, the
+ * crew responses, COMFAIL, P40AUTO and REP40ALM are in clock.c.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define SEC1        100
@@ -22,26 +22,27 @@
 #define ULLAGE_OFF  50        /* DEC 50: ullage off 0.5 s after light-up   */
 #define BIT13       010000
 
-/* NOLI SE TANGERE (p.732-734). P41TABLE starts at entry (5) (P41ADRES =
+/* NOLI SE TANGERE (p.732-734). Entry (0) is VN 06xx; the noun is kept as
+ * the decimal DSKY noun. P41TABLE starts at entry (5) (P41ADRES =
  * P41TABLE -5); its entries (0)-(4), (13), (14) are never used.            */
 static const ign_table_t IGN_TABLES[AGC_LM_WHICH_COUNT] = {
     /* P12TABLE */
-    { 074, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_SERVEXIT,
+    { 74, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_SERVEXIT,
       IGN_TIG5_DISPCHNG, false, IGN_KIND_ASCENT, AGC_JOB_NONE },
     /* P40TABLE */
-    { 040, false, false, IGN_ENTER_GOPOST, true, 2240, AGC_JOB_STEERING,
+    { 40, false, false, IGN_ENTER_GOPOST, true, 2240, AGC_JOB_STEERING,
       IGN_TIG5_TIMEBURN, false, IGN_KIND_DPS, AGC_JOB_STAGE_ALARM_DISPLAY },
     /* P41TABLE */
     { 0, false, false, IGN_ENTER_GOPOST, false, -1, AGC_JOB_CALC_VG_BODY,
       IGN_TIG5_COMMON, true, IGN_KIND_NONE, AGC_JOB_NONE },
     /* P42TABLE */
-    { 040, true, false, IGN_ENTER_GOPOST, true, 2640, AGC_JOB_STEERING,
+    { 40, true, false, IGN_ENTER_GOPOST, true, 2640, AGC_JOB_STEERING,
       IGN_TIG5_TIMEBURN, false, IGN_KIND_APS, AGC_JOB_APS_BURN_STAGE_CHECKED },
     /* P63TABLE */
-    { 062, false, true, IGN_ENTER_RECYCLE, false, 2240, AGC_JOB_SERVEXIT,
+    { 62, false, true, IGN_ENTER_RECYCLE, false, 2240, AGC_JOB_SERVEXIT,
       IGN_TIG5_DISPCHNG, false, IGN_KIND_BRAKING, AGC_JOB_NONE },
-    /* ABRTABLE: (5)-(7) are NOOPs, so B*RNB*B* falls into P40SPOT.        */
-    { 063, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_NONE,
+    /* ABRTABLE (P70/P71, which do not enter BURNBABY): (5)-(7) are NOOPs. */
+    { 63, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_NONE,
       IGN_TIG5_DISPCHNG, false, IGN_KIND_ABORT, AGC_JOB_NONE }
 };
 
@@ -79,7 +80,7 @@ agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
                           (int16_t)ctx->prio, false, 0U };
     (void)agc_phase_change_var((uint16_t)004024, &v);
     agc_guid_state()->avg.dvtotal = 0;                /* EXTIRPATE JUNK         */
-    return agc_lm_check_auto_control(ctx, AGC_JOB_BRNBB);
+    return agc_lm_check_auto_control(ctx, AGC_JOB_BURNBABY_COUNTDOWN);
 }
 
 agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
@@ -87,9 +88,10 @@ agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
     return agc_lm_burnbaby(ctx);
 }
 
-/* B*RNB*B* (p.735): GOBLTIME = TIG (oblateness, P70/P71), engine off
- * (ENGINOF3); (5): P40SPOT starts the countdown clock, then P41SPOT.     */
-agc_status_t agc_lm_brnbb(const agc_job_ctx_t *ctx)
+/* B*RNB*B* (p.733): GOBLTIME = TIG (oblateness, P70/P71), engine off
+ * (ENGINOF3); (5): P40SPOT starts the countdown clock (STCLOK2), then
+ * P41SPOT (P63SPOT = P41SPOT: in P63 CLOKTASK is already going).          */
+agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -99,14 +101,15 @@ agc_status_t agc_lm_brnbb(const agc_job_ctx_t *ctx)
     (void)agc_lm_enginof3();
     agc_relint();
     if (ign_table()->start_clock) {                   /* P40SPOT: STCLOK2       */
-        (void)ign_start_clock((agc_sp_t)-IGN_CNTDNDEX, AGC_JOB_IGN_INTEGRATE);
+        agc_guid_state()->lm.dispdex = (agc_sp_t)-IGN_CNTDNDEX;
+        (void)ign_start_clock(AGC_JOB_PREBURN_STATE_VECTOR);
     }
-    return agc_exec_job_yield(AGC_JOB_IGN_INTEGRATE); /* P41SPOT                */
+    return agc_exec_job_yield(AGC_JOB_PREBURN_STATE_VECTOR); /* P41SPOT         */
 }
 
-agc_status_t agc_job_brnbb(agc_job_ctx_t *ctx)
+agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
 {
-    return agc_lm_brnbb(ctx);
+    return agc_lm_burnbaby_countdown(ctx);
 }
 
 /* P41SPOT, CSM part (p.736): with MUNFLAG the CSM state at TDEC1 in SM
@@ -134,7 +137,7 @@ static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self,
  * the CSM state (MUNFLAG), MIDTOAV1; a slipped TIG becomes PIPTIME1 +
  * 29.9 s. TIG-35 by LONGCALL (4.25); in P63 the countdown display starts
  * now and ABVEL = |VN1|.                                                   */
-agc_status_t agc_job_ign_integrate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -191,7 +194,7 @@ agc_status_t agc_task_tig_35(void)
 agc_status_t agc_task_restore_burn_display(void)
 {
     (void)AGC_ASSERT(ign_table()->ullage_cs < 0);
-    return agc_exec_novac(AGC_PRIO17, AGC_JOB_TIG_30A);
+    return agc_exec_novac(AGC_PRIO17, AGC_JOB_RESTORE_BURN_DISPLAY);
 }
 
 /* ULLGNOT .. REDO4.2 (p.739): AVEGEXIT from the table, 4.2 (restart at
@@ -261,9 +264,9 @@ agc_status_t agc_task_tig_5_lm(void)
     return agc_phase_change(4, (uint16_t)040074);     /* 4.7SPOT                */
 }
 
-/* IGNYET? (p.740): the crew has answered the V99 (ASTNFLAG): IGNITION;
+/* IGNYET? (p.738): the crew has answered the V99 (ASTNFLAG): IGNITION;
  * otherwise (12): TIGTASK (P41) or WAITABIT (wait for *PROCEED).          */
-agc_status_t agc_task_ignyet(void)
+agc_status_t agc_task_ignition_if_enabled(void)
 {
     if (agc_flag_test(AGC_FLAG_ASTNFLAG)) {
         return agc_task_ignition_lm();
@@ -283,8 +286,186 @@ agc_status_t agc_task_tig_0_lm(void)
         agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
         (void)AGC_ASSERT(zoom > 0);
         (void)agc_waitlist_call((uint16_t)zoom, AGC_TASK_BRAKING_PHASE_ZOOM);
-        agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNYET, 0, true, 0U };
+        agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_IF_ENABLED, 0, true, 0U };
         (void)agc_phase_change2((uint16_t)040033, (uint16_t)005014, &v);
     }
-    return agc_task_ignyet();
+    return agc_task_ignition_if_enabled();
+}
+
+/* P63IGN (p.739): burn displays (AVEGEXIT = P63DISPS -2), CLOKTASK killed,
+ * LETABORT (P70/P71 allowed), SWANDISP (R10 on), DAP out of minimum-impulse
+ * mode (in case of P66), TIG = TIME for P70/P71, WCHPHASE = WCHPHOLD = 0,
+ * FLPASS0 = 2.                                                            */
+static void braking_phase_ignition(void)
+{
+    agc_guid_t *g = agc_guid_state();
+    g->avg.avgexit = AGC_JOB_BRAKING_PHASE_DISPLAY;   /* DSP2CADR               */
+    g->lm.dispdex = IGN_DISPDEX_KILL;                 /* ASSASSINATE CLOKTASK   */
+    (void)agc_flag_set(AGC_FLAG_LETABORT);
+    (void)agc_flag_set(AGC_FLAG_SWANDISP);
+    (void)agc_flag_clear(AGC_FLAG_PULSEFLG);
+    agc_erase_set_tig((agc_dp_t)agc_time_now_cs());   /* TIG FOR P70 AND P71    */
+    agc_lm_ldg_t *ldg = agc_lm_ldg();
+    ldg->wchphase = 0;
+    ldg->wchphold = 0;
+    ldg->flpass0 = 2;
+    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_LETABORT));
+}
+
+/* P12IGN (p.740): DAP bias acceleration estimates AOSQ, AOSR = the pad
+ * loads IGNAOSQ, IGNAOSR (upper words only: CA / TS), then ABRTIGN.
+ * ABRTIGN: CLOKTASK killed, AVEGEXIT = ATMAG (ascent guidance), R10 on.  */
+static void ascent_ignition(bool load_bias)
+{
+    agc_guid_t *g = agc_guid_state();
+    if (load_bias) {
+        agc_erase_set_aosq(agc_dp_pack(g->lm.ignaosq, agc_dp_low(agc_erase_aosq())));
+        agc_erase_set_aosr(agc_dp_pack(g->lm.ignaosr, agc_dp_low(agc_erase_aosr())));
+    }
+    g->lm.dispdex = IGN_DISPDEX_KILL;                 /* ABRTIGN: KILL CLOKTASK */
+    g->avg.avgexit = AGC_JOB_ATMAG;                   /* ATMAGADR               */
+    (void)agc_flag_set(AGC_FLAG_SWANDISP);            /* ENABLE R10             */
+    (void)AGC_ASSERT(g->lm.dispdex > 0);
+}
+
+/* P40IGN (p.739-740): unless NOTHROTL, throttle-up (P40ZOOM) ZOOMTIME
+ * after ignition; P63IGN1: 3.3 for the ZOOM restart and 4.1 type C,
+ * immediate, at P42IGN.                                                   */
+static agc_status_t dps_ignition(void)
+{
+    if (agc_flag_test(AGC_FLAG_NOTHROTL)) {
+        return agc_task_ignition_finish();
+    }
+    agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
+    (void)AGC_ASSERT(zoom > 0);
+    (void)agc_waitlist_call((uint16_t)zoom, AGC_TASK_DPS_BURN_ZOOM);
+    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH,
+                          0, true, 0U };
+    (void)agc_phase_change2((uint16_t)040033, (uint16_t)005014, &v);
+    return agc_task_ignition_finish();
+}
+
+/* INDEX WHICH / TCF 13 (p.739): the program-specific part of IGNITION.   */
+static agc_status_t ignition_by_program(ign_kind_t kind)
+{
+    switch (kind) {
+    case IGN_KIND_BRAKING:
+        braking_phase_ignition();
+        return agc_task_ignition_finish();
+    case IGN_KIND_DPS:
+        return dps_ignition();
+    case IGN_KIND_ASCENT:
+        ascent_ignition(true);
+        return agc_task_ignition_finish();
+    case IGN_KIND_ABORT:
+        ascent_ignition(false);
+        return agc_task_ignition_finish();
+    case IGN_KIND_APS:
+        return agc_task_ignition_finish();
+    case IGN_KIND_NONE:
+    default:
+        /* P41 has no entry (13): it never asks V99, so ASTNFLAG stays reset
+         * and IGNYET? goes to TIGTASK instead.                            */
+        (void)AGC_ASSERT(false);
+        return AGC_STATUS_BAD_ARG;
+    }
+}
+
+/* IGNITION (p.738-739): ENGONFLG set, engine on (DSALMOUT bits 13, 14 =
+ * 1, 0), TEVENT = TIME for the downlink, TIG = TIME + TGO (TGO from
+ * S40.13), guidance displays permitted (FLUNDISP reset), then (13).      */
+agc_status_t agc_task_ignition_lm(void)
+{
+    (void)agc_flag_set(AGC_FLAG_ENGONFLG);            /* INSURE ENGONFLG IS SET */
+    uint16_t ch11 = agc_chan_read(011);
+    ch11 = (uint16_t)((ch11 & ~(uint16_t)(AGC_CH011_ENGINEON | AGC_CH011_ENGINEOFF)) |
+                      (uint16_t)AGC_CH011_ENGINEON);
+    (void)agc_chan_write(011, ch11);                  /* TURN ON THE ENGINE     */
+    agc_dp_t now = (agc_dp_t)agc_time_now_cs();
+    agc_erase_set_tevent(now);
+    agc_dp_t tgo = agc_erase_tgo();
+    (void)AGC_ASSERT(tgo >= 0 && tgo <= AGC_DP_MAX - now);
+    agc_erase_set_tig(tgo + now);                     /* UPDATE TIG USING TGO   */
+    (void)agc_flag_clear(AGC_FLAG_FLUNDISP);
+    return ignition_by_program(ign_table()->kind);
+}
+
+/* P42IGN (p.740): powered-flight switching curves (DRIFTDFL reset); an
+ * impulsive burn (IMPULSW) goes to IMPLBURN; otherwise DVMONCON: DV monitor
+ * connected (IGNFLAG, ASTNFLAG, IDLEFLAG reset), 4.5, ullage off 0.5 s
+ * after light-up.                                                        */
+agc_status_t agc_task_ignition_finish(void)
+{
+    (void)agc_flag_clear(AGC_FLAG_DRIFTDFL);
+    if (agc_flag_test(AGC_FLAG_IMPULSW)) {
+        return agc_task_implburn_lm();
+    }
+    (void)agc_flag_clear(AGC_FLAG_IGNFLAG);           /* CONNECT DVMON          */
+    (void)agc_flag_clear(AGC_FLAG_ASTNFLAG);
+    (void)agc_flag_clear(AGC_FLAG_IDLEFLAG);
+    (void)agc_phase_change(4, (uint16_t)040054);      /* 4.5SPOT                */
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLEFLAG));
+    return agc_waitlist_fixdelay(ULLAGE_OFF, AGC_TASK_ULLAGOFF);
+}
+
+/* ULLAGOFF (p.740): ullage off; WAITABIT: group 4 off.                   */
+agc_status_t agc_task_ullagoff(void)
+{
+    (void)agc_lm_noullage();
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_ULLAGFLG));
+    return agc_phase_kill(4);                         /* WAITABIT               */
+}
+
+/* TIGTASK / TIGTASK1 (p.741), P41 at TIG: TIGNOW at PRIO16, group 6 off. */
+agc_status_t agc_task_tigtask(void)
+{
+    (void)AGC_ASSERT(ign_table()->tigtask);
+    (void)agc_exec_novac(AGC_PRIO16, AGC_JOB_TIGNOW);
+    return agc_phase_change(6, (uint16_t)000006);     /* KILL GROUP 6           */
+}
+
+/* P63ZOOM (p.741): AVEGEXIT = LUNLAND, FLATOUT (full thrust), ZOOM.       */
+agc_status_t agc_task_braking_phase_zoom(void)
+{
+    agc_guid_state()->avg.avgexit = AGC_JOB_LUNLAND;  /* LUNLANAD               */
+    (void)agc_lm_throttle_flatout();
+    (void)AGC_ASSERT(agc_guid_state()->avg.avgexit == AGC_JOB_LUNLAND);
+    return agc_task_zoom();
+}
+
+/* P40ZOOM (p.741): THRUST = BIT13 and channel 14 bit 4 (thrust drive):
+ * throttle to full, then ZOOM.                                            */
+agc_status_t agc_task_dps_burn_zoom(void)
+{
+    agc_erase_set_thrust((agc_sp_t)BIT13);
+    (void)agc_chan_or(014, (uint16_t)AGC_CH014_THRUSTACT);
+    (void)AGC_ASSERT((agc_chan_read(014) & AGC_CH014_THRUSTACT) != 0U);
+    return agc_task_zoom();
+}
+
+/* ZOOM = P40ZOOMA (p.741-742): group 3 off. This is also the 3.3 restart
+ * point, so after a restart only the phase is cleared: the throttle-up
+ * itself is not repeated (Luminary 099 as flown).                        */
+agc_status_t agc_task_zoom(void)
+{
+    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    return agc_phase_change(3, (uint16_t)000003);
+}
+
+/* P41BLANK (p.735): blank the DSKY (CLOKJOB is not running in P41).       */
+agc_status_t agc_job_rcs_burn_blank_dsky(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0U, NULL);
+}
+
+/* TIG-30A (p.736): restore the V16N85 display (REGODSP ends the job).    */
+agc_status_t agc_job_restore_burn_display(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_dsky_display(ctx, AGC_DSKY_REGODSP, agc_dsky_vn(16, 85), NULL);
 }

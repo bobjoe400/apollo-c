@@ -17,8 +17,8 @@
  * shared accessors, see docs/modules/nav-aux.md).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 /* ---- constants (p. 1251; LM CONTROLLED_CONSTANTS p. 52-53) ------------ */

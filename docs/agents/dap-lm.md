@@ -1,6 +1,6 @@
 # Assignment: dap-lm   (tier: translation)
 
-Scope (Luminary only), into src/lm/dap/ with include/agc/agc_lm_dap.h:
+Scope (Luminary only), into src/lm/dap/ with include/agc/lm/dap.h:
 DAPIDLER_PROGRAM.agc (DAP startup, the 100 ms T5RUPT cycle, mode
 selection), P-AXIS_RCS_AUTOPILOT.agc, Q_R-AXIS_RCS_AUTOPILOT.agc (the
 P/Q/R axis phase-plane logic, jet firing times), TJET_LAW.agc (the

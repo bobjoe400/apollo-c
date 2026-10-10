@@ -12,11 +12,11 @@
  * Units: forces are DP with the high word in pulses (2^14 pulses), i.e. the
  * stored value / 2^14 = pulses. BITPERF = 0.0797959872 pulse per newton.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_state.h"
-#include "agc/agc_landing_pending.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "agc/core/state.h"
+#include "pending.h"
 
 /* SCALEFAC 2DEC* +7.97959872E+2 B-16* (CONTROLLED_CONSTANTS): pulses per
  * (kg m/cs^2) = 1E4 * BITPERF, scale 2^16.                                */

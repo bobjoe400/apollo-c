@@ -14,9 +14,9 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/programs/alignment_internal.h"
 
 #define VN_STAR_ANGLE_DIFF ALIGN_VN(6, 5)      /* VB6N5  VN 605: star angle difference  */
 #define VN_GYRO_TORQUE_ANGLES ALIGN_VN(6, 93)     /* VN_GYRO_TORQUE_ANGLES VN 0693: gyro torque angles     */

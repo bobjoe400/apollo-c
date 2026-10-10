@@ -12,8 +12,8 @@
  * (the AGC keeps that in QTEMP1).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define CALLER_STEERING 1

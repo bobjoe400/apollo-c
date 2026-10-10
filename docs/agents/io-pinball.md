@@ -1,8 +1,8 @@
 # Assignment: io-pinball   (tier: translation)
 
 Scope: the DSKY logic into src/io/ with a header you create,
-include/agc/agc_dsky.h. The noun TABLES are a separate agent (io-nouns):
-you consume include/agc/agc_nouns.h, which that agent creates; until it
+include/agc/io/dsky.h. The noun TABLES are a separate agent (io-nouns):
+you consume include/agc/io/nouns.h, which that agent creates; until it
 exists, write your code against the interface described below and note it.
 
 - PINBALL_GAME_BUTTONS_AND_LIGHTS.agc (diff CM vs LM; translate once):

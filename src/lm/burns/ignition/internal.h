@@ -37,7 +37,7 @@ typedef enum ign_kind {
 } ign_kind_t;
 
 typedef struct ign_table {
-    uint8_t      noun;          /* (0)  VN 06xx: countdown / V99 noun        */
+    uint8_t      noun;          /* (0)  VN 06xx noun (decimal, as keyed)     */
     bool         want_aps;      /* (1)  WANTAPS before ULLGNOT               */
     bool         comfail_kill;  /* (2)  COMFAIL3 (kill CLOKTASK) / COMFAIL4  */
     ign_enter_t  enter;         /* (3)                                       */
@@ -60,8 +60,13 @@ const ign_table_t *ign_table(void);
 #define IGN_VB97DEX   035  /* OCT35: V97 engine-fail (COMFAIL)              */
 #define IGN_ASTNDEX   025  /* V06N61 (landing ASTNCLOK)                     */
 #define IGN_BLANKDEX  2    /* TWO: DSKY blank at TIG-35                     */
+/* "CA Z / TS DISPDEX": any positive DISPDEX kills CLOKTASK. The AGC stores
+ * the (positive) address in Z; 1 is used here, as POSTBURN does.         */
+#define IGN_DISPDEX_KILL 1
 
-/* STCLOK3 (p.746): start CLOKTASK at the next whole second before TIG. */
-agc_status_t ign_start_clock(agc_sp_t dispdex, agc_job_id_t restart_job);
+/* STCLOK3 (p.743-744): start CLOKTASK at the next whole second before TIG
+ * (6.3) and protect the caller with a 4.2 type C restart at restart_job.
+ * DISPDEX must already be set (STCLOK1/STCLOK2).                          */
+agc_status_t ign_start_clock(agc_job_id_t restart_job);
 
 #endif /* IGNITION_INTERNAL_H */

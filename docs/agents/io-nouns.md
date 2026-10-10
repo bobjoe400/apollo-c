@@ -2,7 +2,7 @@
 
 Scope: PINBALL_NOUN_TABLES.agc for both vehicles (they differ) into
 src/io/dsky/nouns/tables_csm.c and src/io/dsky/nouns/tables_lm.c plus
-include/agc/agc_nouns.h (you create it) and src/io/dsky/nouns/data.c.
+include/agc/io/nouns.h (you create it) and src/io/dsky/nouns/data.c.
 
 Header interface (agent io-pinball codes against exactly this):
   typedef struct { uint8_t noun; uint8_t ncomp; uint8_t scale_type[3];
@@ -21,7 +21,7 @@ scale types, data ids, and a comment with the AGC noun description
 (from ASSEMBLY_AND_OPERATION_INFORMATION.agc noun list). Mixed nouns
 (NNADTAB with the IDADDTAB/RUTMXTAB indirections) must be resolved into the
 same flat struct. noun_data.c resolves data ids through ONE switch that
-calls the accessors in include/agc/agc_state.h; for erasables that core
+calls the accessors in include/agc/core/state.h; for erasables that core
 does not expose yet, return AGC_STATUS_UNIMPLEMENTED and list every one of
 them under "Requested core additions" with the AGC scale.
 

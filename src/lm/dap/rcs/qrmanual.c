@@ -9,10 +9,10 @@
  * deflection in counts. Q and R are coupled through U,V control and must
  * use the same law (direct rate or pseudo-auto).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define QM_14MS     ((agc_sp_t)22)   /* 14MS = +TJMINT6                    */
 #define QM_OCT63    0x0033u          /* OCT63: channel 31 bits 1,2,5,6     */

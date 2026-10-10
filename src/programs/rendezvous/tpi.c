@@ -15,8 +15,8 @@
  * Scales: r m 2^29, v m/cs 2^7, t cs 2^28, angles revolutions 2^0, unit
  * vectors 2^1.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
 #include "internal.h"
 
 /* ---- constants (P34-35 p.485) ------------------------------------------- */

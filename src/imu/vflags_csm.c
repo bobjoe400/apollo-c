@@ -2,8 +2,8 @@
  * vflags_csm.c -- Comanche055 ids of the imu lane's vehicle-specific
  * flags (see internal.h imu_vflag_t).  Includes only agc_flags_csm.h.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_csm.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_csm.h"
 #include "internal.h"
 
 /* imu_vflag_csm -- CSM flag id, or 0 when the flag is LM-only.           */

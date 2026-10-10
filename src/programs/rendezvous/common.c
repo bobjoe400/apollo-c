@@ -9,9 +9,9 @@
  * revolutions 2^0, unit vectors 2^1, mu 2^36. "Body scale" is 2^27/2^5
  * when RTX2 = 2 (moon).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 /* The rendezvous erasables (E-bank storage of ERASABLE_ASSIGNMENTS). */

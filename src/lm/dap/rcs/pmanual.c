@@ -12,10 +12,10 @@
  * Every path ends in a jet decision (PJETSLEC, JETSOFF or PURGENCY); the
  * caller (PAXIS) then runs QRAXIS.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define PM_CH31_ATTHOLD 0x1000u   /* BIT13 of 31 = 0: attitude hold        */
 #define PM_CH31_DETENT  0x4000u   /* BIT15 of 31 = 0: RHC out of detent    */

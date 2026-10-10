@@ -15,10 +15,10 @@
  * Here the pending path is the static ld_altpath and the task after the
  * pause is SPEEDRN2 (agc_lm_task_speedrun2).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "pending.h"
 
 #define LD_ARCONV    10498     /* OCT 24402: 656.1679798 B-10, rate to bits */
 #define LD_ARTOA     873       /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */

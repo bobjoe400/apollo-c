@@ -16,22 +16,22 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_state.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_imu.h"
-#include "agc/agc_integ.h"
-#include "agc/agc_navaux.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_csm_entry.h"
-#include "agc/agc_entry_lexicon.h"
-#include "agc/agc_entry_internal.h"
-#include "agc/agc_entry_pending.h"
+#include "agc/core/assert.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/nav/integration.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/core/flags_csm.h"
+#include "agc/csm/entry.h"
+#include "agc/csm/entry_lexicon.h"
+#include "agc/csm/entry_internal.h"
+#include "agc/csm/entry_pending.h"
 
 /* Verb/noun codes (VN pseudo-op: verb, noun in decimal digits).          */
 #define VN_ENTRY_PREDICTION_DISPLAY 6, 60

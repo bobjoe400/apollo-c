@@ -10,9 +10,9 @@
  */
 #include <math.h>
 #include <stdio.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/nav/auxiliary.h"
 
 static int g_checks;
 static int g_failures;

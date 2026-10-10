@@ -8,7 +8,7 @@
  * raw / 2^28).  This is confined to this file and documented per helper.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 #include "internal.h"
 
 #define NAVAUX_DP_ONE ((int64_t)1 << AGC_DP_BITS)   /* 1.0 in DP raw units */

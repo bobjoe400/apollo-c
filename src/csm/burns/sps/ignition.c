@@ -6,8 +6,8 @@
  * POST41, P41/DSP, P47CSM, TIGON, P47BODY, P47BOD.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define DOTVCON_DELAY   40    /* DEC 40: 0.4 s for thrust build-up         */

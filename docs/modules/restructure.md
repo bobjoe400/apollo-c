@@ -14,16 +14,16 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 |---|---|---|
 | src/csm/dap/csm_dap_internal.h | include/agc/agc_csm_dap_internal.h | used by csm/dap, dap/rcs, dap/tvc |
 | src/csm/dap/csm_dap_pending.h | include/agc/agc_csm_dap_pending.h | included by agc_csm_dap_internal.h |
-| src/csm/entry_internal.h | include/agc/agc_entry_internal.h | csm/entry + csm/burns |
-| src/csm/entry_lexicon.h | include/agc/agc_entry_lexicon.h | csm/entry + csm/burns |
-| src/csm/entry_pending.h | include/agc/agc_entry_pending.h | csm/entry + csm/burns |
+| src/csm/entry_internal.h | include/agc/csm/entry_internal.h | csm/entry + csm/burns |
+| src/csm/entry_lexicon.h | include/agc/csm/entry_lexicon.h | csm/entry + csm/burns |
+| src/csm/entry_pending.h | include/agc/csm/entry_pending.h | csm/entry + csm/burns |
 | src/exec/exec_pending.h | include/agc/agc_exec_pending.h | included by promoted entry/landing pending headers; exec files and tests/test_exec.c updated |
-| src/guidance/guid_pending.h | include/agc/agc_guid_pending.h | src/guidance + csm/burns + lm/burns |
-| src/io/sysmisc.h | include/agc/agc_sysmisc.h | io/service + lm + csm + io/downlink_lists |
+| src/guidance/guid_pending.h | include/agc/guidance/pending.h | src/guidance + csm/burns + lm/burns |
+| src/io/sysmisc.h | include/agc/io/service_internal.h | io/service + lm + csm + io/downlink_lists |
 | src/lm/dap/lm_dap_internal.h | include/agc/agc_lm_dap_internal.h | lm/dap/rcs, lm/dap/common, lm/dap/gts.c |
 | src/lm/dap/lm_dap_pending.h | include/agc/agc_lm_dap_pending.h | included by agc_lm_dap_internal.h |
 | src/lm/landing_pending.h | include/agc/agc_landing_pending.h | lm/landing + lm/ascent.c + lm/burns |
-| src/programs/align_internal.h | include/agc/agc_align_internal.h | used by programs/alignment, csm/optics, lm |
+| src/programs/align_internal.h | include/agc/programs/alignment_internal.h | used by programs/alignment, csm/optics, lm |
 | src/programs/align_pending.h | include/agc/agc_align_pending.h | included by agc_align_internal.h |
 
 ## Move table (old path -> final path; includes the folder-prefix renames)

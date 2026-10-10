@@ -17,13 +17,13 @@
  * running -> wait for it); the program change itself (CANV37 .. POOH /
  * NOUVEAU / V37XEQ) and Comanche R00TOP00 / Luminary SETUP70 are stubs.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_imu.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/io/dsky.h"
+#include "agc/imu/imu.h"
 #include "internal.h"
 
 #define VP_VERB_CHANGE_PROGRAM        37U

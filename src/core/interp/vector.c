@@ -10,7 +10,7 @@
  * X+12, exactly the AGC layout.
  */
 #include "../mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define VSHIFT_MAX 43            /* a VSL past 42 places leaves zero        */
 

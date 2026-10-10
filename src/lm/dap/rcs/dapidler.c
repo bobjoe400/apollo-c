@@ -4,10 +4,10 @@
  * and the IMU and CDUs are usable, initialises the DAP (STARTDAP) and then
  * hands T5ADR to PAXIS; and the T5RUPT dispatch through T5ADR.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define CH31_MODE_OFF  030000u        /* BIT13-14: mode select switch OFF  */
 #define IMODES33_NOIMU 000040u        /* BIT6: IMU not usable              */

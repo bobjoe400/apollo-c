@@ -19,9 +19,9 @@
  * written out with their signs.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_integ.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/nav/integration.h"
 #include "internal.h"
 
 /* ---- constant pool (CM pp. 1353-1354) --------------------------------- */

@@ -5,8 +5,8 @@
  *   AMOONFLG  read by SETCOAST (p. 1327), set by MIDTOAV1/2 (p. 1330):
  *             the sphere of influence of the RN, VN state of AVERAGEG.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_csm.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_csm.h"
 #include "internal.h"
 
 agc_status_t agc_integ_csm_resume_idle_integration(void)

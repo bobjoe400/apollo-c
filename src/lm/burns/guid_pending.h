@@ -6,10 +6,10 @@
 #ifndef GUID_PENDING_LM_H
 #define GUID_PENDING_LM_H
 
-#include "agc/agc_guid_pending.h"
-#include "agc/agc_flags_lm.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_landing.h"
+#include "agc/guidance/pending.h"
+#include "agc/core/flags_lm.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
 
 /* ---- counters (state-flags / exec) ---------------------------------------- */
 agc_sp_t agc_erase_time5(void);              /* TIME5 counter (T5RUPT)       */
@@ -34,13 +34,12 @@ agc_vec_t agc_erase_un(void);        /* UN unit normal to the transfer plane 2^1
 
 /* ---- LM continuation jobs (lead adds to agc_jobs.h) --------------------- */
 #define AGC_JOB_APS_BURN_STAGE_CHECKED   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
-#define AGC_JOB_IGNITE     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 111)) /* *PROCEED / IGNITE */
-#define AGC_JOB_STAR_ENTER ((agc_job_id_t)(AGC_JOB_GUID_BASE + 112)) /* *ENTER     */
-#define AGC_JOB_COMFAIL1   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 113)) /* COMFAIL1 (V97 PROCEED) */
-#define AGC_JOB_COMFAIL2   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 114)) /* COMFAIL2 (V97 ENTER) */
-#define AGC_JOB_ASTNRETN   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 115)) /* ASTNRETN (V06N61 PROCEED) */
-#define AGC_JOB_GOPOST     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 116)) /* GOPOST    */
-#define AGC_JOB_BRNBB      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 117)) /* B*RNB*B* after P40AUTO */
-#define AGC_TASK_REDO4_2   ((agc_task_id_t)(AGC_TASK_GUID_BASE + 63)) /* REDO4.2  */
+#define AGC_JOB_BURNBABY_COUNTDOWN ((agc_job_id_t)(AGC_JOB_GUID_BASE + 117)) /* B*RNB*B* after P40AUTO */
+#define AGC_TASK_IGNITION_IF_ENABLED ((agc_task_id_t)(AGC_TASK_GUID_BASE + 64)) /* IGNYET? (TIG-0 restart) */
+#define AGC_TASK_IGNITION_FINISH ((agc_task_id_t)(AGC_TASK_GUID_BASE + 65)) /* P42IGN (P40IGN 4.1 restart) */
+/* Copied token-for-token from src/exec/pending.h (the restart
+ * tables use these values) so either header may be included.              */
+#define AGC_TASK_ZOOM      ((agc_task_id_t)0x0EC4) /* 3.3                         */
+#define AGC_TASK_REDO4_2   ((agc_task_id_t)0x0EC5) /* 4.2 second part             */
 
 #endif /* GUID_PENDING_LM_H */

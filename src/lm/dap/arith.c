@@ -11,8 +11,8 @@
  * (P-AXIS_RCS_AUTOPILOT.agc p.1422 1STOTWOS / OVERSUB, AOSTASK_AND_AOSJOB.agc
  * p.1492-1493 DVOVSUB, FIXED_FIXED_CONSTANT_POOL LIMITS).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "internal.h"
 
 #define ARITH_WORD   16384      /* 2^14: one major-word unit in minor units */
 #define ARITH_MAXMAG 16383      /* POSMAX                                    */

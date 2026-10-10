@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_exec.h"
+#include "agc/exec/exec.h"
 
 /* ---- priorities used inside the exec lane (PRIOnn octal >> 9) --------- */
 #define EXEC_PRIO14 ((agc_prio_t)014)   /* INITDSP display restart        */

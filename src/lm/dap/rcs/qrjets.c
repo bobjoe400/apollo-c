@@ -10,10 +10,10 @@
  * loop over the axis in lm_dap_uvloop().
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define QJ_150MS    240         /* -150MS = -240: 150 ms in T6 counts      */
 #define QJ_TJMIN    22          /* +TJMINT6 = 14MS: 14 ms minimum firing   */
@@ -96,8 +96,9 @@ agc_status_t lm_dap_xtrans(void)
 }
 
 /* ROT-TOUV (p.1457): (q, r) -> non-orthogonal (u, v) in which RCS jets
- * produce no cross-coupling: u = COEFFQ q + COEFFR r, v = -COEFFQ q +
- * COEFFR r, each limited to POSMAX/NEGMAX.                              */
+ * produce no cross-coupling. The AGC leaves U in A = -COEFFQ q + COEFFR r
+ * and V in L = COEFFQ q + COEFFR r (COEFFQ < 0, so U ~ (Q+R)/sqrt2 and
+ * V ~ (R-Q)/sqrt2), each limited to POSMAX/NEGMAX.                      */
 void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
 {
     const lm_dap_t *d = lm_dap_state();
@@ -106,8 +107,8 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
     }
     agc_sp_t cq = lm_dap_mphi(q, d->coeffq);
     agc_sp_t cr = lm_dap_mphi(r, d->coeffr);
-    *u = lm_dap_sat((int32_t)cq + cr);
-    *v = lm_dap_sat((int32_t)cr - cq);
+    *u = lm_dap_sat((int32_t)cr - cq);
+    *v = lm_dap_sat((int32_t)cq + cr);
     (void)AGC_ASSERT(*u >= LM_NEGMAX && *v >= LM_NEGMAX);
 }
 

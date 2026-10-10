@@ -14,13 +14,13 @@
 #include <math.h>
 
 #define PI_D 3.14159265358979323846
-#include "agc/agc_assert.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_state.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_imu.h"
+#include "agc/core/assert.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/core/flags_csm.h"
+#include "agc/imu/imu.h"
 
 static int g_checks;
 static int g_failures;

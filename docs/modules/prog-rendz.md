@@ -10,7 +10,7 @@ GENERAL_LAMBERT_AIMPOINT_GUIDANCE.agc, RADAR_LEADIN_ROUTINES.agc (LM).
 
 C target: src/programs/ (all files, vehicle-only files suffixed _csm/_lm
 because the assignment names src/programs as the target directory), public
-header include/agc/agc_programs.h section "rendezvous".
+header include/agc/programs/rendezvous.h section "rendezvous".
 
 Vehicle diff summary (code lines, comments stripped):
 * CSI/CDH: identical algorithm. LM adds automatic TCSI (TCSI<0 -> TIMERAD

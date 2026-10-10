@@ -1,6 +1,6 @@
 # Assignment: nav-aux   (tier: translation)
 
-Scope, into src/nav/ with a header you create, include/agc/agc_navaux.h:
+Scope, into src/nav/ with a header you create, include/agc/nav/auxiliary.h:
 - LATITUDE_LONGITUDE_SUBROUTINES.agc (LAT-LONG, LALOTORV, Fischer
   ellipsoid / lunar radius logic) -> latlong.c
 - PLANETARY_INERTIAL_ORIENTATION.agc (RP-TO-R, R-TO-RP, earth/moon

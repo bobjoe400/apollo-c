@@ -28,11 +28,11 @@
  *   type A  phase 0..127, type B  01000 + D 0400 + A 0200 + phase,
  *   type C  0400 + A 0200 + D 0100 + XXX 070 + CJW.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
 #include "internal.h"
-#include "agc/agc_exec_pending.h"
+#include "agc/exec/pending.h"
 
 #define PH_WORD15   077777u   /* 15-bit word; also -0                     */
 #define PH_NEG0     077777u   /* -0 (NEG0) in -PHASEn                     */

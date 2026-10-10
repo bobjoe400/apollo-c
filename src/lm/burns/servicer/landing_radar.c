@@ -12,8 +12,8 @@
  * VMEAS LR velocity counts (VZSCAL..: ft/s/bit to m/cs 2^18).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define RDGIMS_DELAY  17      /* 170MS EQUALS ND1 (OCT 21 = 17 cs)          */

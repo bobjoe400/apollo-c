@@ -13,10 +13,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_exec.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/exec/exec.h"
 
 /* ---- requested from prog-rendz (P20-P25.agc) ---------------------------- */
 bool         agc_rr_limchk(uint16_t cdut, uint16_t cdus);  /* RRLIMCHK: true = in limits */

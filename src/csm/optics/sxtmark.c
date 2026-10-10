@@ -16,11 +16,11 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/flags_csm.h"
+#include "agc/programs/alignment_internal.h"
 
 #define MS_VAC_MASK    ((uint16_t)0777)     /* LOW9: VAC area               */
 #define MS_REJECT_OK   ((uint16_t)01000)    /* BIT10                        */

@@ -34,14 +34,14 @@
  *     HALF+HALF overflow trick (same result).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_imu.h"
+#include "agc/core/assert.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/exec/exec.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
+#include "agc/imu/imu.h"
 #include "pending.h"
 
 /* Powers of two used as MP multipliers (BITn = 2^(n-1)).                 */

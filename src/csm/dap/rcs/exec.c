@@ -10,7 +10,7 @@
  * where PHI and PSI are CDU angles; PHI is taken 7.25 degrees from CDUX
  * for the jet quad angular offset. Elements scaled 1.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define QUADANGL ((uint16_t)660)   /* 01224 DEC 660 = 7.25 degrees        */
 

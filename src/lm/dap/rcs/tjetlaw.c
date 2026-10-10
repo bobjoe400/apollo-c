@@ -15,8 +15,8 @@
  * Inputs : E (at pi), EDOT (at pi/4 rad/s), AXISCTR, SENSETYP, TJx.
  * Outputs: TJx (T6 counts), NUMBERT (U,V jet policy), FIREFCT (at pi/4).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "../internal.h"
 
 #define TJ_SENSOR    6400    /* SENSOR 14400: 4 s / 10.24 s               */
 #define TJ_M3DEG     (-1092) /* -3DEG  DEC -.06667 at 45 deg              */

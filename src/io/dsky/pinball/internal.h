@@ -24,15 +24,15 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_dsky.h"
-#include "agc/agc_nouns.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/nouns.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/state.h"
 
 #define PIN_STATUS_RECYCLE AGC_STATUS_ALARM  /* ALMCYCLE: re-enter ENTER  */
 #define PIN_RECYCLE_MAX 3          /* ENTER passes per key (ALMCYCLE bound)  */

@@ -11,10 +11,10 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_csm.h"
+#include "agc/core/state.h"
 
 static int g_checks;
 static int g_failures;

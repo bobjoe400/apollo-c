@@ -1,6 +1,6 @@
 # Assignment: guid-entry   (tier: translation)
 
-Scope (Comanche only), into src/csm/ with include/agc/agc_csm_entry.h:
+Scope (Comanche only), into src/csm/ with include/agc/csm/entry.h:
 - ENTRY_LEXICON.agc (erasable and constant definitions for entry; produce
   the entry state struct and constants with scales) -> lexicon.c/.h
 - REENTRY_CONTROL.agc (P61-P67 entry guidance: initial roll, HUNTEST,

@@ -19,7 +19,7 @@
  * rope. The table is indexed by noun number (entry n has .noun == n); spare
  * nouns have ncomp == 0.
  */
-#include "agc/agc_nouns.h"
+#include "agc/io/nouns.h"
 
 const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
     /* 00  Not in use */

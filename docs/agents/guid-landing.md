@@ -1,6 +1,6 @@
 # Assignment: guid-landing   (tier: translation)
 
-Scope (Luminary only), into src/lm/ with include/agc/agc_lm_landing.h:
+Scope (Luminary only), into src/lm/ with include/agc/lm/landing.h:
 - LUNAR_LANDING_GUIDANCE_EQUATIONS.agc (P63/P64/P66 guidance: the
   quadratic/explicit guidance law, the target tables, LPD angle, the
   throttle command interface, the 1202/1201 context (where tasks are

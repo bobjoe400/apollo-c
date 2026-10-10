@@ -26,11 +26,11 @@
  * the code returns L+2 when zero optics is processing.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_align.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
+#include "agc/programs/alignment.h"
+#include "agc/io/service_internal.h"
 #include "sysmisc_ext.h"
 
 #define BIT1   000001u

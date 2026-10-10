@@ -53,10 +53,10 @@
  * at a sleep/yield, so a job that continues later stores what it needs in
  * module erasables) -- the VAC area is only accounted for, not used.
  */
-#include "agc/agc_exec.h"
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_channels.h"
+#include "agc/exec/exec.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/channels.h"
 #include "internal.h"
 
 /* Priority word layout: priority number in bits 10-14 (PRIOnn = nn000

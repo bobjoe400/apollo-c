@@ -3,7 +3,7 @@
 Read this before translating a module. The headers in include/agc/ are the
 contract; this document explains the intent behind them.
 
-## 1. Numeric model (include/agc/agc_word.h)
+## 1. Numeric model (include/agc/core/word.h)
 
 | AGC            | C type       | Representation                                   |
 |----------------|--------------|--------------------------------------------------|
@@ -25,7 +25,7 @@ AGC scale factor** and write it in a comment. Helpers:
 Use the double helpers only in tests, the sim harness, and DSKY conversion,
 never inside flight algorithms (they must run on the fixed-point ops).
 
-## 2. Interpreter (include/agc/agc_interp.h)
+## 2. Interpreter (include/agc/core/interp.h)
 
 The interpretive language is not emulated. Each interpretive instruction
 becomes a call on the fixed-point library, operating on C locals instead of
@@ -94,7 +94,7 @@ label (lower case), with the AGC scale in a comment.
 Flags: the AGC flagwords FLAGWRD0..FLAGWRD11 are bit-named in
 `agc_flags_csm.h` / `agc_flags_lm.h`. Use `agc_flag_test(AGC_FLAG_xxx)`.
 
-## 4. Executive and waitlist (include/agc/agc_exec.h)
+## 4. Executive and waitlist (include/agc/exec/exec.h)
 
 * A **job** (NOVAC/FINDVAC) is an `agc_job_id_t` enum member; its body is a
   `agc_status_t agc_job_<name>(agc_job_ctx_t *ctx)` function registered in
@@ -114,14 +114,14 @@ Flags: the AGC flagwords FLAGWRD0..FLAGWRD11 are bit-named in
 * `ALARM`, `BAILOUT`, `POODOO`, `ABORT`: `agc_alarm()`, `agc_bailout()`,
   `agc_poodoo()` then return an error status.
 
-## 5. I/O channels (include/agc/agc_channels.h)
+## 5. I/O channels (include/agc/core/channels.h)
 
 `READ`/`WRITE`/`ROR`/`WAND`/etc. become `agc_chan_read(n)` /
 `agc_chan_write(n, v)` / `agc_chan_or` / `agc_chan_and` on the 15-bit channel
 image kept in core. Bit names are in `agc_channels.h` (from the LM
 INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS and the CM erasable comments).
 
-## 6. DSKY / pinball (include/agc/agc_dsky.h)
+## 6. DSKY / pinball (include/agc/io/dsky.h)
 
 Verb/noun tables stay tables (static const arrays). The display registers
 R1-R3, VERB, NOUN, PROG are a struct. Noun scaling routines translate to

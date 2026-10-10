@@ -14,10 +14,10 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_navaux.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/programs/alignment_internal.h"
 
 /* ---- constants (2DEC value -> DP integer = value * 2^28 / 2^B) --------- */
 #define RSUBM      ((agc_dp_t)869045)     /* 1738090 B-29   moon radius m     */

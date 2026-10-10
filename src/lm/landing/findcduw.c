@@ -26,11 +26,11 @@
  * below and are marked. Angles "2's, pi" are two's complement, scaled pi
  * radians (16384 = pi), range -16384 .. 16383.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "pending.h"
+#include "agc/io/service_internal.h"
 
 /* ---- constants (p. 925) ------------------------------------------------ */
 static const agc_sp_t fc_gainfltr[2] = {

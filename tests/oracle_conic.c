@@ -19,10 +19,10 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_nav.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/interp.h"
+#include "agc/nav/conic.h"
+#include "agc/core/state.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
 {

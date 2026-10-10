@@ -13,10 +13,10 @@
  * and VGDISP (m/cs 2^7) to agc_guid_state()->burn.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/pending.h"
 
 #define GRP4 4
 

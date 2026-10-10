@@ -3,8 +3,8 @@
  * flags (internal.h).  A flag absent from the vehicle reads false and
  * cannot be set.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
 #include "internal.h"
 
 agc_flag_id_t imu_vflag(imu_vflag_t f)

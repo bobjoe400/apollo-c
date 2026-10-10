@@ -11,15 +11,22 @@
  *     body-axis error integral gives a negative actuator command (the
  *     sign change in the forward loop), and a large error is limited to
  *     ACTSAT = 253 (6 deg).
- *  3. MASSPROP / FIXCW (TVCMASSPROP) for the CSM alone: IXX = VARST0 +
+ *  3. Stroke test (TVCSTROKETEST p. 982): set 1 is 10 bursts in 1/2
+ *     amplitude with 4 reversals = 80 bursts returning the waveform to
+ *     zero, then set 2 is loaded (REVS 5, N -6); after all four sets
+ *     (80 + 72 + 100 + 112 bursts) STROKER is +0.
+ *  4. Roll DAP (TVCROLLDAP pp. 989-997): a +10 deg OGA error at rest is
+ *     region 6 and fires negative roll torque, jets 12 and 10 (chan 6
+ *     OCT 12); inside the deadband at rest is a coast.
+ *  5. MASSPROP / FIXCW (TVCMASSPROP) for the CSM alone: IXX = VARST0 +
  *     (CSMMASS + NEGBPW) VARST5 x 2.
  */
 #include <stdio.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_csm_dap.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/csm/dap.h"
+#include "agc/core/channels.h"
+#include "agc/core/state.h"
 
 static int g_checks;
 static int g_failures;
@@ -121,6 +128,9 @@ static void tvc_setup(agc_sp_t perrb_hi)
     t->stroker = 0;
     t->pcduypst = agc_erase_cduy();                      /* zero CDU rates  */
     t->pcduzpst = agc_erase_cduz();
+    for (int i = 0; i < 6; i++) {                        /* filter memory   */
+        t->ptmp[i] = 0;
+    }
 }
 
 static void test_tvc_step(void)
@@ -138,10 +148,72 @@ static void test_tvc_step(void)
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
     CHECK(t->pcmd > 0);
 
+    /* Saturation needs filter memory: the error alone gives at most
+     * 4096 x N10 x N20 x N30 x VARK x 4 = 122 < ACTSAT. TMP3 (second
+     * cascade) = 1000 -> DAP2 = 1125, DAP3 = 562, CMDTMP = -1072. A large
+     * TMP1 would overflow DAP1 (DAS wraps as in the AGC), so use TMP3.   */
     tvc_setup(4000);                                     /* large error     */
-    agc_csm_dap_tvc()->ptmp[0] = agc_dp_from_sp(16000);  /* filter memory   */
+    agc_csm_dap_tvc()->ptmp[2] = agc_dp_from_sp(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
     CHECK(t->pcmd == -253);                              /* ACTSAT limit    */
+}
+
+/* One HACKWLST burst; the waveform position follows STROKER's sign.    */
+static int stroke_bursts(int count, int pos)
+{
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    for (int i = 0; (i < count) && (t->stroker != 0); i++) {
+        pos += t->stroker;
+        CHECK(agc_task_hackwlst() == AGC_STATUS_OK);
+        CHECK((pos >= -50) && (pos <= 50));              /* 10 x ESTROKER   */
+    }
+    return pos;
+}
+
+static void test_stroke(void)
+{
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    t->caddy = -10;                                      /* TSTINIT: -FCADDY */
+    t->n = -10;
+    t->revs = 3;                                         /* FREVS           */
+    t->card = -4;                                        /* -FCARD          */
+    t->stroker = 5;                                      /* ESTROKER        */
+    int pos = stroke_bursts(80, 0);                      /* set 1           */
+    CHECK(pos == 0);
+    CHECK(t->card == -3);
+    CHECK(t->revs == 5);
+    CHECK(t->caddy == -6);
+    CHECK(t->stroker == 5);                              /* no sign change  */
+    pos = stroke_bursts(72 + 100 + 111, pos);            /* sets 2, 3, 4    */
+    CHECK(t->stroker == 5);
+    pos = stroke_bursts(1, pos);
+    CHECK(pos == 0);
+    CHECK(t->stroker == 0);                              /* STROKILL        */
+}
+
+static void test_rolldap(void)
+{
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    t->oganow = 0;
+    t->ogapast = 0;                                      /* OGARATE 0       */
+    t->one_conacc = 1000;
+    t->rollfire = 0;
+    t->temreg = 0;
+    t->rollword = 0;
+    t->ogaerr = 455;                                     /* 10 deg, B+0 rev */
+    CHECK(agc_task_rolldap() == AGC_STATUS_OK);
+    CHECK(t->rollfire < 0);                              /* -TORQUE         */
+    CHECK(t->temreg > 24);                               /* > TMINFIRE      */
+    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 012u);     /* jets 12, 10     */
+    CHECK(t->rollword == 2u);
+    CHECK(agc_task_noroll1() == AGC_STATUS_OK);
+    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
+
+    t->temreg = 0;
+    t->ogaerr = 100;                                     /* inside 5 deg DB */
+    CHECK(agc_task_rolldap() == AGC_STATUS_OK);
+    CHECK(t->rollfire == 0);                             /* coast           */
+    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 }
 
 static void test_massprop(void)
@@ -162,6 +234,8 @@ int main(void)
 {
     test_jet_select();
     test_tvc_step();
+    test_stroke();
+    test_rolldap();
     test_massprop();
     (void)printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n",
                  g_checks, g_failures, g_assert_reports);

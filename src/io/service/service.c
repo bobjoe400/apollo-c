@@ -10,10 +10,10 @@
  * LM); TRFAILOF/TRFAILON exist only in Comanche.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/io/service_internal.h"
 #include "sysmisc_ext.h"
 
 #define WORD15     077777u

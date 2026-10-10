@@ -6,11 +6,11 @@
  * following errors, or total errors when NEEDLFLG is set) and driving the
  * needles through the IMU error counters (CDUXCMD..CDUZCMD) via NEEDLER.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_imu.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/imu/imu.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define NDL_ONETENTH ((agc_sp_t)03146)   /* ONETENTH: 0.1 at 1             */
 #define NDL_DACMAX   384                 /* 384 bits = 42 3/16 deg (DAC)   */

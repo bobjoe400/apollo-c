@@ -3,10 +3,10 @@
 Scope: INTEGRATION_INITIALIZATION.agc and ORBITAL_INTEGRATION.agc (Comanche
 pp. 1309-1354; diff against Luminary; translate once, note differences)
 into src/nav/integration/init.c and src/nav/integration/orbital_integration.c with a
-header you create, include/agc/agc_integ.h.
+header you create, include/agc/nav/integration.h.
 
 Routines: INTEGRV/INTEGRVS/INTSTALL/INTWAKE (the integration lock and
-sleep/wake protocol, via include/agc/agc_exec.h); the Encke method
+sleep/wake protocol, via include/agc/exec/exec.h); the Encke method
 (RECTIFY, ACCOMP, disturbing acceleration with earth J2-J4 and the
 moon/earth/sun third-body terms, the Nystrom step, TIMESTEP selection,
 ORBCHGO); the W-matrix integration path (DIM0FLAG/D6OR9FLG); state-vector

@@ -9,7 +9,7 @@
  * returns exactly that arrangement (see DEVIATION notes for the sign).
  */
 #include "mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define VDIV_NORM_MAX 28         /* divisor doublings: |s| >= 2^-28         */
 

@@ -9,7 +9,7 @@
  * universal variable x, DELTIME the time and NEWSTATE the new state.
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* Copy the shared outputs and debris into *out. */
 static void time_out_fill(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)

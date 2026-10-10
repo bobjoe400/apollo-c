@@ -7,10 +7,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_state.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
 
 /* Flags whose flagword position differs between Comanche and Luminary, or
  * that exist in one vehicle only.  imu_vflag() returns the id for the

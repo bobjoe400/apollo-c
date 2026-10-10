@@ -17,7 +17,7 @@ RCSDAPON (p.736). R03 itself (DAPDISP/DONOUN46-48, EXTENDED_VERBS
 p.253-254) is display flow and stays with sys-misc; it calls our S41.2,
 MASSPROP and S40.14.
 
-C target: src/csm/dap/, public header include/agc/agc_csm_dap.h.
+C target: src/csm/dap/, public header include/agc/csm/dap.h.
 
 ## Design
 
@@ -62,7 +62,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 | ROLLDAP/NOROLL1 (989-997) | OGANOW/OGAPAST/OGAERR (rev), 1/CONACC | CHAN6 roll jets, TIME6 | agc_task_rolldap, agc_task_noroll1 (rolldap.c) |
 
 ## Progress
-- DONE include/agc/agc_csm_dap.h (resume: thetad/rho/ogad/oganow/pcdu*pst now raw uint16_t words, tempdap[2], errbinit[2], cphix[3], setmaxdb/setmindb/rcsdapon_t5/rcsup), include/agc/agc_csm_dap_pending.h, csm_dap_internal.h, state.c
+- DONE include/agc/csm/dap.h (resume: thetad/rho/ogad/oganow/pcdu*pst now raw uint16_t words, tempdap[2], errbinit[2], cphix[3], setmaxdb/setmindb/rcsdapon_t5/rcsup), include/agc/agc_csm_dap_pending.h, csm_dap_internal.h, state.c
 - NOTE constants verified against tools/oracle/ropes/Comanche055.bin (scratchpad rope.py reads banked fixed words via agc_probe whatis)
 - DONE MYSUBS csm_dap_smallmp, csm_dap_dpadd + word helpers (MSU, ADS, DAS, MP, DV) mysubs.c
 - DONE RCS-CSM_DIGITAL_AUTOPILOT: t5rupt.c (REDORCS RCSATT SETT5 FREECHK REINIT FRESHDAP/REDAP ZEROJET T5PHASE2/KALUPDT), filter.c (RATEFILT KMATRIX DCDUINCR DACNDLS FDAIDSP1/2 GETAKS), manual.c (manual rotation, SETWBODY, FREEFUNC, STICKCHK), needles.c (NEEDLER..DACLOOP, agc_dap_needler)

@@ -2,8 +2,8 @@
  * vflags_lm.c -- Luminary099 ids of the imu lane's vehicle-specific
  * flags (see internal.h imu_vflag_t).  Includes only agc_flags_lm.h.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_lm.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_lm.h"
 #include "internal.h"
 
 /* imu_vflag_lm -- LM flag id, or 0 when the flag is CSM-only.            */

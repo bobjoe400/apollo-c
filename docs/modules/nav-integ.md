@@ -8,7 +8,7 @@ ORBITAL_INTEGRATION.agc (pp. 1334-1354), diffed against Luminary099
 vehicle differences behind `agc_state_vehicle()`; the one LM-only routine
 that needs an LM-only flag (SETITCTR, AVEGFLAG) is in its own file.
 
-Files: include/agc/agc_integ.h, src/nav/integration/internal.h (private),
+Files: include/agc/nav/integration.h, src/nav/integration/internal.h (private),
 src/nav/integration/init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
 src/nav/integration/jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
 MIDTOAV1/2, INTWAKEU), src/nav/integration/orbital_integration.c (Encke step, ACCOMP,
@@ -94,7 +94,7 @@ Design notes:
 ## Progress
 
 * design: DONE (this note)
-* agc_integ.h: DONE include/agc/agc_integ.h
+* agc_integ.h: DONE include/agc/nav/integration.h
 * internal.h / pending.h: DONE src/nav/
 * init.c: DONE (compiles) -- INTSTALL/ERASTAL1/2/OKTOGRAB agc_integ_install, INTWAKE agc_integ_intwake, INTWAKE0/1 agc_integ_intwake0, ERASWAK1/2 agc_integ_eraswake, WAKE wake, CSMPREC/LEMPREC/CSMCONIC/LEMCONIC special_entry, INTEGRVS agc_integ_integrvs, INTEGRV agc_integ_integrv, INTEGRV1 agc_integ_integrv1, INTEGRV2 integrv2, ALOADED aloaded, ATOPCSM/ATOPLEM atop, PTOACSM/PTOALEM agc_integ_ptoacsm/ptoalem, USEPIOS usepios, TESTLOOP testloop, NORFINAL norfinal, DT/2COMP..USEMAXDT dt2comp, POOHCHK poohchk, A-PCHK/ANDOUT/PHEXIT a_pchk, RECTOUT rectout, INTEXIT intexit, RVCON rvcon, ENDSTATE W part wmatrix, RELOADSV reload, driver agc_integ_run, SETIFLGS, THISVINT, GRP2PC, permanent SV agc_integ_perm_get/set
 * jobs.c: DONE (compiles) -- STATEINT agc_task_stateint, STATINT1 agc_job_statint1(+_stall), STATEUP stateup/stateup_lm(+agc_job_stateup_stall), ENDINT endint, NOINT (in statint1), AVETOMID agc_integ_avetomid (INT/W int_w, SETCOAST setcoast_csm, OTHERS others_lm, MOVATHIS move_this), MIDTOAV1/2 agc_integ_midtoav1/2, ENTMID1 entmid1, NOTIME notime, CKMID2/MID2 agc_integ_ckmid2, TIMEINC timeinc, INTWAKEU agc_integ_intwakeu

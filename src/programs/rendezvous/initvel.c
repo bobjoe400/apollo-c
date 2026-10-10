@@ -17,8 +17,8 @@
  * target) 2^29, VIPRIME, VTPRIME, DELVEET3 m/cs 2^7. As in the AGC,
  * RINIT and VINIT are left at the primary-body scale (2^27 / 2^5).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
 #include "internal.h"
 
 /* Work cells of one INITVEL call (AGC erasables RTARG1 R1VEC R2VEC UN
@@ -170,20 +170,19 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
     rz->vinit = w->vinit;
 }
 
-/* ---- INITVEL (pp.487-491) ------------------------------------------------- */
-agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
-                               agc_sp_t numit, agc_dp_t e4,
-                               agc_job_id_t resume)
+/* COGA: cotangent of the flight path angle, Lambert's last solution;
+ * an erasable in the AGC, kept between calls for HAVEGUES.            */
+static agc_dp_t iv_coga = 0;
+
+/* INITVEL / HAVEGUES body (pp.487-491). */
+static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit,
+                           agc_dp_t e4, bool guessw, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL)
-        || !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER)) {
-        return AGC_STATUS_BAD_ARG;
-    }
     iv_work_t w;
     iv_setup(ip, rz, e4, &w);
     w.lin.r1vec = w.rinit;                                 /* R1VEC        */
-    w.lin.guessw = true;                                   /* SET GUESSW   */
-    w.lin.coga = 0;
+    w.lin.guessw = guessw;                                 /* GUESSW       */
+    w.lin.coga = iv_coga;
     w.lin.iterctr = AGC_CONIC_LAMBERT_ITERCTR;
     agc_status_t st = AGC_STATUS_OK;
     for (int pass = 0; pass <= (int)numit; pass++) {       /* INITVEL2     */
@@ -191,6 +190,7 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
             iv_rotate(ip, &w);
         }
         st = iv_lambert(ip, rz, numit, &w);
+        iv_coga = w.lin.coga;
         if (st != AGC_STATUS_OK || numit == 0) {
             break;                                         /* INITVEL7     */
         }
@@ -210,4 +210,29 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
         iv_finish(ip, rz, &w);
     }
     return st;
+}
+
+/* ---- INITVEL (pp.487-491): SET GUESSW (no COGA guess available) ---------- */
+agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
+                               agc_sp_t numit, agc_dp_t e4,
+                               agc_job_id_t resume)
+{
+    if (!AGC_ASSERT(ip != NULL && rz != NULL)
+        || !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return iv_run(ip, rz, numit, e4, true, resume);
+}
+
+/* ---- HAVEGUES (p.487): INITVEL using the COGA of the previous Lambert
+ * solution as the first guess (S40.1 cross-product steering).           */
+agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
+                                agc_sp_t numit, agc_dp_t e4,
+                                agc_job_id_t resume)
+{
+    if (!AGC_ASSERT(ip != NULL && rz != NULL)
+        || !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return iv_run(ip, rz, numit, e4, false, resume);
 }

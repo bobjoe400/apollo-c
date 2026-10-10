@@ -9,7 +9,7 @@
  * words (losing MPAC+2), as GENSCR does.
  */
 #include "mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define SHIFT_MAX_LEFT 43        /* 42 TP bits: further shifts leave 0     */
 #define SHIFT_MAX_WORDS 4        /* GENSCR word-shift passes (count < 127) */

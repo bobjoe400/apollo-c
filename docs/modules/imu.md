@@ -10,7 +10,7 @@ AGC sources (CM = Comanche055, LM = Luminary099):
   ATTITUDE_MANEUVER_ROUTINE.agc (LM) -> src/imu/maneuver.c
 * R60_62.agc (both) -> src/imu/attitude_maneuver.c
 * IMU_CALIBRATION_AND_ALIGNMENT.agc (CM only, pp.423-455) -> src/csm/prelaunch_align.c
-* Public header include/agc/agc_imu.h; pending externals in src/imu/pending.h.
+* Public header include/agc/imu/imu.h; pending externals in src/imu/pending.h.
 
 Note: IMUMON / SETISSW / PIPFAIL / GLOCKMON live in T4RUPT_PROGRAM.agc, which is
 sys-misc's file. Not duplicated here (see Open questions).
@@ -78,7 +78,7 @@ src/imu/mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/gyro.c (IM
 torquing tasks), src/imu/compensation.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
 src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/attitude_maneuver.c (VECPOINT, BALLANGS, R60, R62),
 src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/internal.h (lane-private),
-src/imu/pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/agc_imu.h,
+src/imu/pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/imu/imu.h,
 tests/test_imu.c.
 
 ## Deviations
@@ -115,7 +115,7 @@ tests/test_imu.c.
 
 ## Requested core additions
 Everything below is declared in src/imu/pending.h until the owner publishes it:
-* sys-misc (include/agc/agc_sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
+* sys-misc (include/agc/io/service_internal.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
   agc_rtb_signmpac, agc_rtb_loadtime, agc_t4_setissw -- same signatures as sysmisc.h; please make public.
 * guid-powered: `agc_status_t agc_pfs_pipasr_noscale(void);` (PIPASR +3, used by LM NBDONLY on surface).
 * prog-rendz: `agc_status_t agc_rendz_goto_terminate_tracking(void);` (R61TEST).

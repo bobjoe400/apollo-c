@@ -12,10 +12,10 @@
  * RTIG m 2^29; F m.newton 2^7; WEIGHT/G kg 2^16; TGO cs 2^28; angles rev.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/pending.h"
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
 static const agc_dp_t THETACON = 333772;

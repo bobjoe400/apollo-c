@@ -8,7 +8,7 @@
  * position scale or the conic is not an ellipse.
  */
 #include "internal.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 /* Copy the PARAM debris to *out. */
 static void apsides_debris(const agc_conic_ctx_t *ctx, agc_apsides_out_t *out)

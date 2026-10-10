@@ -3,8 +3,8 @@
  * (Comanche055 pp.1205-1206): UNITX/UNITY/UNITZ, XUNIT/YUNIT/ZUNIT and
  * ZEROVECS/ZEROVEC. Scalar constants are macros in agc_constants.h.
  */
-#include "agc/agc_constants.h"
-#include "agc/agc_assert.h"
+#include "agc/core/constants.h"
+#include "agc/core/assert.h"
 
 /* UNITX = XUNIT: 2DEC .5, 2DEC 0, 2DEC 0 (half-unit x, scale 2^1).        */
 agc_vec_t agc_k_unitx(void)

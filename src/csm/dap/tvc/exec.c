@@ -13,7 +13,7 @@
  * The copycycles are restart-protected by the phase points TVCEXPHS 1..6
  * (INCR TVCEXPHS); EXRSTRT (restarts.c) re-enters at the phase point.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define HALF_SEC_CS  ((uint16_t)50)     /* .5SEC                          */
 #define ROLL_DELAY   ((uint16_t)3)      /* THREE cs: ROLLDAP task delay   */

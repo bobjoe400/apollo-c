@@ -11,8 +11,8 @@
  * A = 6378166 m, B = 6356784 m (Fischer 1960 ellipsoid).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
 #include "internal.h"
 
 /* B2XSC 2DEC .0179450689, oct 00446 00305: B^2 scaled 2^51 m^2.          */

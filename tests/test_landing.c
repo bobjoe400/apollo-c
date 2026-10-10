@@ -18,13 +18,13 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "agc/agc_assert.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_state.h"
-#include "agc/agc_exec.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_lm_landing.h"
+#include "agc/core/assert.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/lm/landing.h"
 
 /* INTEGRATION: the THRUST counter has no accessor in include/agc yet
  * (include/agc/agc_landing_pending.h declares it for state-flags). Until it does,

@@ -12,8 +12,8 @@
  * S40.14 and RCSDAPON are the DAP lane's (agc_csm_dap.h). DAPFIG (V46).
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 /* FENG 2DEC 9.1188544 B-7: SPS thrust 20 500 lb in m.newton (10^4 N).     */

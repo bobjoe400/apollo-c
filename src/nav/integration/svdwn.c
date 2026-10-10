@@ -3,7 +3,7 @@
  * CSM_GEOMETRY.agc (Comanche055 p. 289-290) and LEM_GEOMETRY.agc
  * (Luminary099 p. 320-321).  Owner: prog-align; kept in src/nav/ because
  * the integration package (ATOPCSM / ATOPLEM) is its caller, so nav does
- * not depend on src/programs/.  Declared in include/agc/agc_align.h.
+ * not depend on src/programs/.  Declared in include/agc/programs/alignment.h.
  *
  * The two programs exchange the names: SVDWN1 is the CSM state in both
  * (this vehicle in Comanche, the other one in Luminary), so "this vehicle"
@@ -11,10 +11,10 @@
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_state.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_align.h"
+#include "agc/core/assert.h"
+#include "agc/core/state.h"
+#include "agc/core/flags_common.h"
+#include "agc/programs/alignment.h"
 
 #define SVDWN_R_SHIFT 7     /* TDELTAV E 2^22 / M 2^18 -> RCV scale        */
 #define SVDWN_V_SHIFT 4     /* TNUV    E 2^3  / M 2^-1 -> VCV scale        */

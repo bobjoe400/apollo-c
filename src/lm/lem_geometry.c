@@ -9,8 +9,8 @@
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/programs/alignment_internal.h"
 
 #define LODPHALF AGC_DP_HALF     /* LODPHALF .5 rev = 180 degrees            */
 

@@ -9,10 +9,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/state.h"
 
 #define AGC_WORD15_MASK   0x7FFFu
 #define AGC_TIME1_BITS    14      /* TIME1 holds the low 14 bits of the count */

@@ -9,9 +9,9 @@
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_navaux.h"
-#include "agc/agc_align_internal.h"
+#include "agc/core/assert.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/programs/alignment_internal.h"
 
 #define HIDP1_4   AGC_DP_QUARTER          /* HIDP1/4 .25 rev = 90 deg      */
 #define VN_ANTENNA_ANGLES    ALIGN_VN(6, 51)        /* VN 0651                         */

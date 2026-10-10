@@ -15,9 +15,9 @@
  * separate job function (AGC_JOB_..._STALL) that repeats INTSTALL +1.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_integ.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/nav/integration.h"
 #include "internal.h"
 #include "pending.h"
 

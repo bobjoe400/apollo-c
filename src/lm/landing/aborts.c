@@ -11,11 +11,11 @@
  * requests a software restart (ENEMA). Here ABRTJASK runs as a function
  * and the restart is the executive's deferred ENEMA (exec-sched note).
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "pending.h"
+#include "agc/io/service_internal.h"
 
 #define AB_OCT31      25        /* OCT31: R10,R11 period, cs                */
 #define AB_OCTAL27    027       /* 4.27 (P70A) / 4.31 (P71A) restart phase  */

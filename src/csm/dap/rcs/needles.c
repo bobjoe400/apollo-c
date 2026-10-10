@@ -15,8 +15,8 @@
  * Users set RCSFLAGS BIT3 in their initialisation, then store AK, AK1,
  * AK2 (scaled 180 deg) and call NEEDLER under INHINT.
  */
-#include "agc/agc_imu.h"
-#include "agc/agc_csm_dap_internal.h"
+#include "agc/imu/imu.h"
+#include "../internal.h"
 
 #define FLAGS_23   ((uint16_t)000006) /* SIX: RCSFLAGS bits 3, 2              */
 #define DACLIMIT   ((agc_sp_t)384)    /* DACLIMIT +-1: DEC 384 (00600)        */

@@ -1,6 +1,6 @@
 # Assignment: guid-powered   (tier: translation)
 
-Scope, into src/guidance/ with include/agc/agc_guid.h (you create it):
+Scope, into src/guidance/ with include/agc/guidance/guidance.h (you create it):
 - POWERED_FLIGHT_SUBROUTINES.agc (CDUTRIG, FINDCDU/CALCGTA interplay,
   READACCS/PIPASR accelerometer reading, AVETOMID/MIDTOAVE, the average-G
   routine CALCRVG, the "flashing" and thrust direction helpers) ->

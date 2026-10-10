@@ -89,7 +89,7 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Requested core additions
 
-Added by me to include/agc/agc_exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_go_idle_fix, agc_job_go_idle_fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_change_program_continue, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
+Added by me to include/agc/exec/exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_go_idle_fix, agc_job_go_idle_fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_change_program_continue, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
 
 Requested from other owners (exact declarations):
 - state-flags / guid-powered: `agc_dp_t agc_erase_preread_delay(void);` `agc_dp_t agc_erase_savet_30(void);` `agc_sp_t agc_erase_zoomtime(void);` (restart tables; exec must not call agc_guid_state()).
@@ -117,7 +117,7 @@ Build (the full libagc does not build yet because of other lanes):
 
 ## Open questions
 
-- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/agc_entry_pending.h and src/programs/rendezvous/ext.h #define it again: those lanes must drop their macros.
+- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/csm/entry_pending.h and src/programs/rendezvous/ext.h #define it again: those lanes must drop their macros.
 - AGC_JOB_GOPROG in agc_jobs.h does not correspond to an AGC job; dispatch returns UNIMPLEMENTED. Remove or repurpose?
 - STATEUP / THISVINT (end of FRESH_START_AND_RESTART) are P00 integration code; assumed to belong to nav-integ.
 - Layering: change_program_idle.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.

@@ -7,7 +7,7 @@
 #define INTEG_INTERNAL_H
 
 #include <stdbool.h>
-#include "agc/agc_integ.h"
+#include "agc/nav/integration.h"
 
 /* Where the integration goes next: the AGC labels it jumps to. The driver
  * agc_integ_run() is the one switch over these (no goto, no recursion).  */

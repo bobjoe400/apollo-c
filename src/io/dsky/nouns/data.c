@@ -16,10 +16,10 @@
  * of the agc_dp_t, a DP erasable as the agc_dp_t itself.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_nouns.h"
-#include "agc/agc_state.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/io/nouns.h"
+#include "agc/core/state.h"
 
 /* LODNNTAB (PINBALL_NOUN_TABLES.agc p. 270): row for one noun of one vehicle. */
 agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,

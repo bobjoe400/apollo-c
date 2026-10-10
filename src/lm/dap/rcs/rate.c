@@ -9,8 +9,8 @@
  * offset acceleration, and corrected by the accumulated difference between
  * the CDU-measured and predicted rates once it exceeds the trap size.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "../internal.h"
 
 #define RT_100MST6  160              /* -100MST6 = -160: 100 ms in T6 counts */
 #define RT_100MS    ((agc_sp_t)1638) /* -100MS = DEC -.1 (74631)            */

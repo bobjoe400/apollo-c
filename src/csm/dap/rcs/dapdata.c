@@ -14,7 +14,7 @@
  * 2 deg/s). DAPDATR2 (N46 R2): bit 13 AC roll, bits 10,4 quads A,C good,
  * bits 7,1 quads B,D good.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define MINDB      ((agc_sp_t)46)     /* 00056 DEC 46: 0.5 deg, 180 deg    */
 #define MAXDB      ((agc_sp_t)455)    /* 00707 DEC 455: 5 deg              */

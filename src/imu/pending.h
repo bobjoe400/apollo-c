@@ -16,10 +16,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_status.h"
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
-#include "agc/agc_exec.h"
+#include "agc/core/status.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
+#include "agc/exec/exec.h"
 
 /* ==== sys-misc: RTB op codes (src/io/service/rtb_ops.c, header not yet public) == */
 agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern);          /* CDULOGIC  */

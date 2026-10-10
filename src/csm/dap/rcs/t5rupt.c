@@ -15,7 +15,7 @@
  * Every function here is the body of a T5RUPT or is called from one; the
  * AGC's "TCF RESUME" is a return of AGC_STATUS_OK.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 /* TIME5 words: T5RUPT occurs when TIME5 overflows 2^14 (10 ms per count). */
 #define T5_100MS   ((uint16_t)037766) /* OCT37766: reinitialise in 100 ms   */

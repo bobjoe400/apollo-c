@@ -16,7 +16,7 @@
  * (SNA-8-D-027, March 1968, amendment 1). Masses are kg, scale B+16.
  * Called by DONOUN47 (job, R03) and TVCEXECUTIVE (task).
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define VARST_N   AGC_CSM_VARST_WORDS
 #define NEGBPW    ((agc_sp_t)-3851)   /* 70364 DEC -15402.17 B-16: breakpoint

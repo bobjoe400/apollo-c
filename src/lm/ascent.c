@@ -14,11 +14,11 @@
  * 2^-9 m/cs^2 unless stated; the push-down list holds -L (0D), D12 (2D),
  * D21 (4D) and E (6D) in the AGC and C locals here.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_landing.h"
-#include "agc/agc_landing_pending.h"
-#include "agc/agc_sysmisc.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/landing.h"
+#include "landing/pending.h"
+#include "agc/io/service_internal.h"
 
 /* ---- constants (pp. 842, 836, 852, 855-856; CONTROLLED_CONSTANTS) ----- */
 #define AS_THRESH2   308

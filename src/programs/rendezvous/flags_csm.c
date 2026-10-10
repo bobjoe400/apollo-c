@@ -4,9 +4,9 @@
  * only (id 0 = absent), see internal.h rz_vflag.
  * Source: Comanche055/ERASABLE_ASSIGNMENTS.agc via agc_flags_csm.h.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_flags_csm.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/flags_csm.h"
 #include "internal.h"
 
 /* rz_vflag_csm -- CSM flag id for a vehicle-dependent rendezvous flag. */

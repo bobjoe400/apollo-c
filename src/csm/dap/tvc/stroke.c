@@ -14,7 +14,7 @@
  *   set 3: 5, 10; set 4: 4, 14.
  * Amplitude 10 ESTROKER (1/42.15) deg, nominally 50/42.15 = 1.185 deg.
  */
-#include "agc/agc_csm_dap_internal.h"
+#include "../internal.h"
 
 #define HACK_DELAY ((uint16_t)2)       /* 20MS = BIT2 (cs)                 */
 #define FCADDY     ((agc_sp_t)10)      /* bursts in 1/2 amplitude, set 1    */
@@ -75,6 +75,7 @@ static void stroke_next_set(void)
     t->revs = fcard_revs[k];                       /* reinitialise         */
     t->n = (agc_sp_t)-fcard_bursts[k];
     t->caddy = t->n;
+    (void)AGC_ASSERT(t->n < 0);
 }
 
 /* HACKWLST +3 .. REVUP (pp. 982-983): one pulse burst into TVCPITCH,
@@ -82,6 +83,7 @@ static void stroke_next_set(void)
 static agc_status_t stroke_burst(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    (void)AGC_ASSERT((t->caddy < 0) || (t->stroker == 0)); /* +0: STROKILL */
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker));
     agc_status_t st = agc_chan_or(AGC_CHAN_CHAN14, (uint16_t)AGC_CH014_DRIVECDUS);
     t->caddy = (agc_sp_t)(t->caddy + 1);           /* INCR CADDY           */
@@ -123,5 +125,6 @@ agc_status_t agc_task_hackwlst(void)
     t->bunker_task = true;
     agc_status_t st = stroke_burst();
     (void)AGC_ASSERT(t->bunker_task);
+    (void)AGC_ASSERT((t->card >= -FCARD) && (t->card <= 0));
     return st;                                     /* TASKOVER             */
 }

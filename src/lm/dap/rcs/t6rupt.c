@@ -13,10 +13,10 @@
  * TIME6 itself is kept by the executive (agc_rupt_time(6)); the DINC
  * pulses are applied by the sim through agc_lm_dap_time6_count().
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_channels.h"
-#include "agc/agc_lm_dap.h"
-#include "agc/agc_lm_dap_internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/lm/dap.h"
+#include "../internal.h"
 
 #define T6_ENABLE   040000u   /* BIT15 of channel 13: TIME6 counting      */
 #define T6_PRIO37   15872     /* PRIO37 = 37000: overflow test for > 511 */

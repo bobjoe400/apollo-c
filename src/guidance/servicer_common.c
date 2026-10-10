@@ -17,9 +17,9 @@
  * PIPA pulses in the high words (DP scale 2^14 pulses); UNITR half unit.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
-#include "agc/agc_guid_pending.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
+#include "agc/guidance/pending.h"
 
 /* ---- constants (SERVICER207 p.836 / SERVICER p.881, CONTROLLED_CONSTANTS) */
 /* -MUDT(E) 2DEC* -7.9720645 E+12 B-44*: -mu(earth) * 200 cs, m^3/cs.      */

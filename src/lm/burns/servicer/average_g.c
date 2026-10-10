@@ -12,8 +12,8 @@
  * ABDVCONV m/cs 2^5; DVTOTAL m/cs 2^7.
  */
 #include <stddef.h>
-#include "agc/agc_assert.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 #define TWO_SECS      200     /* 2SECS, cs                                  */

@@ -3,9 +3,9 @@
  * other lanes (conic subroutines, integration, DSKY, executive, guidance
  * clock display). Each function is the AGC call set-up of the named entry.
  */
-#include "agc/agc_assert.h"
-#include "agc/agc_flags_common.h"
-#include "agc/agc_guid.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/guidance/guidance.h"
 #include "internal.h"
 
 /* Conic body from RTX1: the AGC passes X1 = -2 (earth) or -10 (moon). */

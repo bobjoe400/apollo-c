@@ -1,5 +1,5 @@
 /*
- * agc_word.c -- the AGC numeric model of include/agc/agc_word.h.
+ * agc_word.c -- the AGC numeric model of include/agc/core/word.h.
  *
  * SP/DP/TP values are signed fractions (v / 2^14, 2^28, 2^42). A DP or TP
  * value maps onto AGC words with agreeing signs (agc_w_split): the AGC can
@@ -13,7 +13,7 @@
  */
 #include <math.h>
 #include "mpac.h"
-#include "agc/agc_assert.h"
+#include "agc/core/assert.h"
 
 #define WORD_SCALE   16384.0         /* 2^14                                */
 #define SHIFT_DP_MAX 28              /* a DP right shift past this is 0     */

@@ -6,10 +6,10 @@
 #ifndef GUID_PENDING_CSM_H
 #define GUID_PENDING_CSM_H
 
-#include "agc/agc_guid_pending.h"
-#include "agc/agc_flags_csm.h"
-#include "agc/agc_csm_dap.h"
-#include "agc/agc_csm_entry.h"
+#include "agc/guidance/pending.h"
+#include "agc/core/flags_csm.h"
+#include "agc/csm/dap.h"
+#include "agc/csm/entry.h"
 
 /* ---- entry DAP angle registers (guid-entry) ------------------------------ */
 agc_sp_t agc_erase_aog(void);               /* AOG outer gimbal, /180 2's comp */

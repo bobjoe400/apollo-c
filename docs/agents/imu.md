@@ -1,6 +1,6 @@
 # Assignment: imu   (tier: translation)
 
-Scope, into src/imu/ with include/agc/agc_imu.h (you create it):
+Scope, into src/imu/ with include/agc/imu/imu.h (you create it):
 - IMU_MODE_SWITCHING_ROUTINES.agc (IMUZERO, IMUCOARS, IMUFINE, IMUSTALL,
   the CDU zero / coarse-align pulse logic, gyro torquing (IMUPULSE), the
   IMU fail / CDU fail / PIPA fail monitors, IMUMON) -> mode.c

@@ -9,7 +9,7 @@
   KEPPREP -> KEPLERN -> TET update). The integration lock, A-memory and
   TESTLOOP/INTEXIT bookkeeping belong to nav-integ.
 
-C target: include/agc/agc_nav.h (section "conic"), src/nav/conic/internal.h,
+C target: include/agc/nav/conic.h (section "conic"), src/nav/conic/internal.h,
 src/nav/conic/common.c (MUTABLE, MPAC model, flags, ABTCONIC),
 universal.c (DELTIME, NEWSTATE, LAMENTER, KEPCONVG), geom.c
 (GEOM, PARAM, GETX), kepler.c (KEPLERN, KEPPREP, RVCON, CSMCONIC,
@@ -72,7 +72,7 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 
 | Routine / table | Status |
 |---|---|
-| agc_nav.h (conic section) | DONE include/agc/agc_nav.h |
+| agc_nav.h (conic section) | DONE include/agc/nav/conic.h |
 | internal.h, helpers (TP MPAC model agc_conic_m*_, POLY) | DONE src/nav/conic/internal.h, common.c |
 | MUTABLE table | DONE mutable_tab common.c |
 | DELTIME | DONE agc_conic_deltime_ universal.c |
@@ -205,7 +205,7 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
 
 * src/programs/rendezvous/ext.h (prog-rendz) declares its own agc_timethet_in_t,
   agc_lambert_in_t and an agc_conic_apsides with a different signature;
-  those must be replaced by include/agc/agc_nav.h (adapt glue.c).
+  those must be replaced by include/agc/nav/conic.h (adapt glue.c).
 * nav-integ's agc_integ_kepprep (orbital_integration.c) already calls
   agc_conic_kepprep + agc_conic_kepler with RCV/VCV vs RRECT/VRECT split
   correctly; agc_conic_rvcon/csmconic/lemconic are the stand-alone

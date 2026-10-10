@@ -18,8 +18,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "agc/agc_word.h"
-#include "agc/agc_interp.h"
+#include "agc/core/word.h"
+#include "agc/core/interp.h"
 
 #define AGC_W_ONE     16384      /* 2^14: weight of the overflow bit (1.0)  */
 #define AGC_W_POSMAX  16383      /* POSMAX, octal 37777                     */

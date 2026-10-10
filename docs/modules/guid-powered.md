@@ -13,8 +13,8 @@
 | P40-P47.agc CM-only (P40CSM/P41CSM/P47CSM, TIG-30/-5/-0, IGNITION, CLOKTASK, V97/V99, S40.6, S41.2, S40.14, DAPFIG) | src/csm/burns/sps_burn.c |
 | P40-P47.agc LM-only (P40LM/P41LM/P42LM/P47LM, POSTBURN, ENGINOFF, STEERING, RASTEER1, TRIMGIMB) | src/lm/burns/dps_burn.c |
 | BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc (LM pp.731-751) | src/lm/burns/ignition.c |
-| public interface                                           | include/agc/agc_guid.h |
-| pending (not-yet-existing) shared symbols, one place each  | include/agc/agc_guid_pending.h, src/csm/burns/guid_pending.h, src/lm/burns/guid_pending.h |
+| public interface                                           | include/agc/guidance/guidance.h |
+| pending (not-yet-existing) shared symbols, one place each  | include/agc/guidance/pending.h, src/csm/burns/guid_pending.h, src/lm/burns/guid_pending.h |
 
 ## Design table (written before coding)
 
@@ -61,7 +61,7 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 
 | AGC routine | status |
 |---|---|
-| include/agc/agc_guid.h | DONE (rewritten on resume: targeting erasables shared with prog-rendz moved to agc_rendz_t; CSM TVC values in agc_csm_dap.h) |
+| include/agc/guidance/guidance.h | DONE (rewritten on resume: targeting erasables shared with prog-rendz moved to agc_rendz_t; CSM TVC values in agc_csm_dap.h) |
 | pending headers (guid_pending*.h) | DONE guid_pending.h, src/csm/burns/guid_pending.h, src/lm/burns/guid_pending.h (extend as needed) |
 | CDUTRIG/CD*TR*GS/QUICTRIG/AX*SR*T/*SMNB*/*NBSM*/SMCDURES/FLESHPOT | DONE powered_flight.c (all agc_guid_cdutrig..fleshpot) |
 | guid_state.c (agc_guid_state/agc_guid_init) | DONE guid_state.c |
