@@ -68,9 +68,12 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
 }
 
 /*
- * SCALEVEC (p. 209): V = REFSMMAT VATT1 x VSCALE, VSL2 (ft/s); R =
- * REFSMMAT RATT1 x RSCALE, VSL8 (ft); each rounded.  out = RX, VX, RY, VY,
- * RZ, VZ (the high words; VATT1's go into R's low-word places).
+ * SCALEVEC (p. 209): V = REFSMMAT VATT1 x VSCALE, VSL2; R = REFSMMAT RATT1
+ * x RSCALE, VSL8; each rounded.  With the half-unit REFSMMAT (MXV keeps
+ * its B1) and moon-sphere states (RATT1 m B27, VATT1 m/cs B5) the high
+ * words are R in 512 ft (2^23 ft full scale) and V in 0.5 ft/s (2^13 ft/s).
+ * out = RX, VX, RY, VY, RZ, VZ (the high words; VATT1's go into R's
+ * low-word places).
  */
 agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1,
                               const agc_mat_t *refsmmat, uint16_t out[6])
@@ -273,12 +276,14 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
     return ags_end(ctx);
 }
 
-/* ENDEXT. */
+/* ENDEXT (= ENDMARK): the extended verb is over.  NODOFLAG is left as it
+ * is: AGSEND has already cleared it, and V34 on the first V06N16 comes
+ * before AGSVCALC sets it.                                               */
 agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_flag_clear(AGC_FLAG_NODOFLAG);
+    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
     return agc_dsky_endext();
 }

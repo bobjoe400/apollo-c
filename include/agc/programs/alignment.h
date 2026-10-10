@@ -259,8 +259,9 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
                          const agc_mat_t *refsmmat, agc_vec_t *pointvsm);
 
 /* ---- R47 AGS initialisation (LM) ----------------------------------------- */
-/* SCALEVEC: RATT1/VATT1 (integration output, sphere scaling) -> SM axes,
- * ft / ft/s, rounded; out = RX, VX, RY, VY, RZ, VZ high words.            */
+/* SCALEVEC: RATT1/VATT1 (moon sphere m B27, m/cs B5) -> SM axes (half-
+ * unit REFSMMAT), AEA words of 512 ft and 0.5 ft/s, rounded for the AEA's
+ * 2's complement; out = RX, VX, RY, VY, RZ, VZ (high words).              */
 agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1,
                               const agc_mat_t *refsmmat, uint16_t out[6]);
 agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk,

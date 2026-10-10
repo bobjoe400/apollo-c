@@ -11,7 +11,8 @@
  *     CM pitch 0, yaw 0; LM pitch 90 deg, yaw -45 deg (antenna base is the
  *     NB rotated 45 deg about Z).
  * Also: SXTNB / SXTANG round trip, RRNB / RRANGLES round trip, LOG,
- * SVDWN shifts, S52.3 axes, CHKSCODE, 1STO2S.
+ * SVDWN shifts, S52.3 axes, CHKSCODE, 1STO2S, R47 SCALEVEC rounding and
+ * AGS time, R63 line of sight.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -251,6 +252,59 @@ static void test_nominal_orientation_axes(void)
     CHECK(near(agc_dp_to_double(smd.row[0].c[1], 1), 1.0, 1e-6));   /* XSMD */
 }
 
+/* AGS word as the 2's complement AEA reads it (15 bits). */
+static long ags_read(uint16_t w)
+{
+    long c = (long)(w & 077777u);
+    return (c >= 16384) ? (c - 32768) : c;
+}
+
+/*
+ * R47 SCALEVEC in the moon sphere: half-unit identity REFSMMAT (MXV keeps
+ * the matrix's B1, so the result is half the vector); r = (1e6, 0, -1e6)
+ * m (RATT1 B27), v = (1, 0, -1) m/cs (VATT1 B5).  High words: R in 512 ft
+ * (6407.9 -> 6408), V in 0.5 ft/s (656.17 -> 656), rounded to nearest as
+ * the AEA reads them (2's complement), so -656.17 reads -656.  AGSBUFF
+ * +12D: 3600 s at B18.
+ */
+static void test_ags_scalevec(void)
+{
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    const agc_mat_t ident = agc_mat_identity_half();
+    const agc_vec_t r = agc_vec_make(agc_dp_from_double(1.0e6, 27), 0,
+                                     agc_dp_from_double(-1.0e6, 27));
+    const agc_vec_t v = agc_vec_make(agc_dp_from_double(1.0, 5), 0,
+                                     agc_dp_from_double(-1.0, 5));
+    uint16_t out[6] = {0, 0, 0, 0, 0, 0};
+    CHECK(agc_ags_scalevec(&ip, r, v, &ident, out) == AGC_STATUS_OK);
+    CHECK(ags_read(out[0]) == 6408);                   /* RX            */
+    CHECK(ags_read(out[1]) == 656);                    /* VX            */
+    CHECK((ags_read(out[2]) == 0) && (ags_read(out[3]) == 0));
+    CHECK(ags_read(out[4]) == -6408);                  /* RZ            */
+    CHECK(ags_read(out[5]) == -656);                   /* VZ            */
+    agc_dp_t t = 0;
+    CHECK(agc_ags_time(&ip, agc_dp_from_double(400000.0, 28),
+                       agc_dp_from_double(40000.0, 28), &t) == AGC_STATUS_OK);
+    CHECK(near(agc_dp_to_double(t, 18), 3600.0, 0.01));
+}
+
+/* R63: CSM 50 km along +X of the LM, identity REFSMMAT -> LOS +X (half
+ * unit).  (UNIT loses precision for vectors of a few km at B27.)        */
+static void test_final_attitude_los(void)
+{
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    const agc_mat_t ident = agc_mat_identity_half();
+    const agc_vec_t rlem = agc_vec_make(agc_dp_from_double(1.8e6, 27), 0, 0);
+    const agc_vec_t rcsm = agc_vec_make(agc_dp_from_double(1.85e6, 27), 0, 0);
+    agc_vec_t los = agc_vec_zero();
+    CHECK(agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &ident, &los) == AGC_STATUS_OK);
+    CHECK(near(agc_dp_to_double(los.c[0], 1), 1.0, 1e-5));
+    CHECK(near(agc_dp_to_double(los.c[1], 1), 0.0, 1e-5));
+    CHECK(near(agc_dp_to_double(los.c[2], 1), 0.0, 1e-5));
+}
+
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -264,6 +318,8 @@ int main(void)
     agc_align_ram_reset();
     test_rr_round_trip();
     test_realign_refsmmat_option_identity();
+    test_ags_scalevec();
+    test_final_attitude_los();
     (void)printf("test_align: %d checks, %d failures, %d assertion reports\n",
                  g_checks, g_failures, g_assert_reports);
     return (g_failures == 0) ? 0 : 1;
