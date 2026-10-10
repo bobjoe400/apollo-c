@@ -303,3 +303,46 @@ agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
     }
     return st;
 }
+
+/* PHASCHNG with a type A code: a constant code cannot fail.             */
+void rz_phase(int group, uint16_t code)
+{
+    (void)AGC_ASSERT(group >= 1 && group <= 6);
+    agc_status_t st = agc_phase_change(group, code);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+}
+
+/* PHASCHNG / 2PHSCHNG with a type C code whose restart point is job
+ * `job` at priority `prio` (the AGC's OCT 05022 / OCT 26000 pair: the
+ * restart runs the job by FINDVAC). code_a = 0: a single PHASCHNG.     */
+void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
+                  int16_t prio)
+{
+    (void)AGC_ASSERT(job != AGC_JOB_NONE && prio > 0);
+    agc_phase_var_t v;
+    v.kind = AGC_RESTART_JOB;
+    v.job = job;
+    v.task = AGC_TASK_NONE;
+    v.prio_or_dt = prio;
+    v.immediate = false;
+    v.long_dt_cs = 0U;
+    agc_status_t st = (code_a == 0U) ? agc_phase_change_var(code_c, &v)
+                                     : agc_phase_change2(code_a, code_c, &v);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+}
+
+/* PRIOLARM (DISPLAY_INTERFACE_ROUTINES): the alarm, then V05N09 as a
+ * priority display with the three astronaut returns.                   */
+agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
+                           agc_job_id_t term, agc_job_id_t proceed,
+                           agc_job_id_t enter)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_status_t st = agc_prioalarm(code);
+    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM) {
+        return st;
+    }
+    return rz_flash(ctx, AGC_DSKY_PRIODSP, 5U, 9U, term, proceed, enter);
+}

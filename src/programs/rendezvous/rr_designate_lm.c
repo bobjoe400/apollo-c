@@ -118,6 +118,8 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
     if (along_y) {
         return rr_lundesch(res);
     }
+    s->tang[0] = (agc_sp_t)rr_ones(s->modea[0]);   /* MODEA EQUALS TANG */
+    s->tang[1] = (agc_sp_t)rr_ones(s->modea[1]);
     agc_inhint();
     if (rr_limits_ok(s->modea[0], s->modea[1])) {
         return rr_startdes(res);                              /* OKDESSM */
@@ -398,5 +400,38 @@ agc_status_t agc_rendz_goto_terminate_tracking(void)
 {
     agc_status_t st = agc_extverb(56, 0);
     (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    return st;
+}
+
+/* ---- TANG (noun 72) and RRDESNB for verb 41 ----------------------------
+ * TANG, TANG +1 hold the gimbal command or, for RRDESNB, the desired
+ * trunnion and shaft CDU words (kept as ones' complement SP numbers).  */
+agc_sp_t agc_erase_tang(int index)
+{
+    if (!AGC_ASSERT(index == 0 || index == 1)) {
+        return 0;
+    }
+    return rr_state()->tang[index];
+}
+
+void agc_erase_set_tang(int index, agc_sp_t v)
+{
+    if (AGC_ASSERT(index == 0 || index == 1)) {
+        rr_state()->tang[index] = v;
+    }
+}
+
+agc_status_t agc_rr_designate_gimbal(bool *started)
+{
+    if (!AGC_ASSERT(started != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    rr_state_t *s = rr_state();
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB;
+    agc_status_t st = agc_rr_designate_nb(&ip, rr_word(s->tang[0]),
+                                          rr_word(s->tang[1]), &res);
+    *started = (res == AGC_RR_DESIGNATE_STARTED);
     return st;
 }

@@ -139,6 +139,10 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     if (st != AGC_STATUS_OK) {
         return st;
     }
+    st = agc_navaux_set_latlong(&ll);                    /* LAT LONG ALT */
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     rz->ground_track_alt = agc_dp_mul(ip, ll.alt, GTD_K01);   /* DMP K.01 */
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH,
                     AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE);

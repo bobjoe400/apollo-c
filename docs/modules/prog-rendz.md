@@ -66,7 +66,7 @@ angles revolutions 2^0, unit vectors 2^1, mu m^3/cs^2 2^36.
 | P76 | DELVLVC TIG -> other SV updated | agc_prog_target_delta_v, agc_target_delta_v_lv_to_ref | target_delta_v.c |
 | P21 PROG21 (GTDP) | time -> lat long alt, vel, gamma | agc_prog_ground_track_determination, agc_ground_track_determination_flight_path | ground_track_determination.c |
 | P20-P25 CSM: BVECTORS, GETUM, R22 REND*, SETINTG, SHIFTNDX, CMPOS/LMPOS, INITIALW, RANGERD | marks -> state update | rendezvous_navigation_csm.c | |
-| P20-P25 LM: LPS20.1, LPS20.2, LRS22.1-3, RR routines | radar -> state update | rendezvous_navigation_lm.c | |
+| P20-P25 LM: LPS20.1, LPS20.2, LRS22.1-3, RR routines | radar -> state update | navigation_lm.c | |
 | RADSAMP / DORSAMP / VARADAR (LM) | radar sampling test | radar_leadin_lm.c | |
 
 External calls are funnelled through src/programs/rendezvous/glue.c (one place
@@ -106,8 +106,56 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
 * DONE rule-7 pass (no (void) casts of agc_ calls; rz_flag_put/rz_vflag_set/rz_avflag/rz_tracking_flags_on now void)
 * DONE out_of_plane_display.c: R36 V90 (agc_rendz_out_of_plane_compute, agc_job_out_of_plane_*)
 * DONE rendezvous_parameter_display.c: R31 V83 both vehicles + CM R34 (COMPDISP agc_rendezvous_parameter_display_compdisp, agc_job_rendezvous_params_*)
-* TODO tpi_search_csm.c (P17),
-  lambert_aimpoint_guidance_lm.c (P31), radar_leadin_lm.c, rendezvous_navigation_csm.c / _lm.c (P20-P25)
+* DONE tpi_search_csm.c (P17/P77: S17.1, S17.2, TRANSANG, jobs) -- verified complete on resume
+* DONE lambert_aimpoint_guidance_lm.c (P31) -- verified complete on resume
+* DONE radar_lm.h (private LM radar interface; RADMODES bit names)
+* DONE rr_moding_lm.c: MAGSUB, RRLIMCHK agc_rr_limchk, SETTRKF agc_rr_settrkf,
+  FLIP agc_rendz_flip, CLRADMOD agc_rendz_clradmod, RRTURNON/RRZEROSB tasks,
+  RRZERO agc_rr_zero, DORREPOS/REPOSRPT, REMODE, RR1AXIS (bounded loop),
+  RROUT, ENDRADAR/RGOODEND/RDBADEND, RADNOOP
+* DONE rr_designate_lm.c: RRDESSM agc_rr_designate_sm, RRDESNB
+  agc_rr_designate_nb, STARTDES, BEGDES/STDESIG/DESLOOP, DODES
+  agc_job_rr_designate_command, GOTOV56 agc_rendz_goto_terminate_tracking
+* DONE radar_read_lm.c: INITREAD + lead-ins (agc_radar_rrrange/rrrdot/lralt/lrvel),
+  RADAREAD agc_rendz_radar_read, LRPOS2 + scan tasks, R12LITES/RADLITES
+* DONE powered_flight_designate_lm.c (R29: agc_radar_powered_flight_designate,
+  R29REM0J, PREPOS29, BEGDES29/R29DLOOP, R29DODES, R29READ/R29RDJOB)
+* DONE radar_leadin_lm.c (RADSAMP agc_task_radsamp, DORSAMP, VARADAR, RSTACK)
+* DONE rr_designate_lm.c additions: agc_rr_designate_gimbal (V41 request), TANG accessors
+* DONE navigation_lm.c: PROG20/PROG22 (LM), ORBCHGO..ORBCHG3, PROG20A,
+  P20LEM1, 526ALARM, P20LEMA/B/B3-B6/C/C3/D + tasks P20LEMC1/D1, P20LEMWT
+  (lmnav_wait), UPPSV, LPS20.1 lmnav_los, LPS20.2, P25 (PROG25, P25LEM1/2)
+* DONE tracking_attitude_lm.c: R61LEM/R65LEM (lmnav_tracking_attitude, jobs)
+* DONE acquisition_lm.c: R21LEM (all), R23LEM, R24LEM + LRS24.1
+* DONE tracking_data_lm.c (R22LEM, LRS22.1/2, N49DSP + N49FLAG wait, R22RSTRT)
+* DONE measurement_update_lm.c (LSR22.3/.4, GETULC, RADARANG, MXMYMZ,
+  LGCUPDTE (INCORP1 + RMAX/VMAX check), INCORP2 glue, WLINIT, INTGRCAL)
+* DONE common.c: agc_rendz_nav_pad (pad loads), X789 accessors
+* DONE w_matrix_monitor.c (V67 both vehicles: V67CALL, V67WW, V6N99PRO/INP)
+* DONE rz_clear_ovf, rz_phase, rz_phase_job, rz_prio_alarm glue helpers
+* DONE navigation_lm.c renamed from rendezvous_navigation_lm.c (file-name rule:
+  the folder name is not repeated); LM entry is agc_job_rendezvous_navigation_lm
+* DONE common.c: MRKBUF1/MRKBUF2 storage (agc_erase_mrkbuf / set; owned here),
+  rz_incorp2 (INCORP2 glue, both vehicles), rz_word_value
+* DONE tracking_attitude_csm.c: R61CSM agc_rendz_tracking_attitude_csm, CRS61.1,
+  CRS61.2(A), the R63 subroutine (desired CDUs), R61CNTR accessors
+* DONE navigation_csm.c: P20/P22 vehicle dispatch (agc_job_rendezvous_navigation,
+  agc_job_orbital_navigation), PROG20 CSM, PIKUP20, P20R52JB, SETINTG rz_setintg,
+  WAITONE/CONTCHK/REDOR22 rz_waitone, R21CSM (V57), R23CSM (V54), LANDMARK
+* DONE tracking_data_csm.c: R22 CSM (REND1..REND18, RENDISP), BVECTORS, GETUM,
+  SHIFTNDX, CMPOS/LMPOS, INITIALW, RANGERD, VHFREAD agc_rendz_vhf_read
+* DONE V89 CSM (R63: agc_job_rendezvous_final_attitude_csm..., tracking_attitude_csm.c)
+* DONE display.c agc_rendz_ttogo_display_start; noun_data.c agc_rendz_noun_read/write
+* DONE navigation_csm.c LLASRD/LLASRDA (agc_rendz_llasrd/llasrda); P21 now stores
+  LAT LONG ALT (agc_navaux_set_latlong)
+* DONE orbital_navigation_csm.c: PROG22 (CSM), V06N45, PROG22A/B/C, S22N7071 code
+  check (S22DSPPA/S22DSPP/S22ABDE), S22LSITE, OBTAINLL/P22SUBRB/N89ERRX, CALLR52,
+  DE-GR-50, DOV5N71, P22OVER
+* DONE landmark_navigation_csm.c: S22.1 (marks to SVMRKDAT, FIG2EXIT/S2INTS1,
+  DMPINTEG, unknown landmark U/E/W72-W78, known landmark S22BOX22, S22D=9,
+  S22BOX12/32/42, N49, S22F244, N89, RLS), S22F2410, S2231X13, 9DWTO6DW, ROWDOT
+* DONE common.c rz_bvectors (BVECTORS, shared CSM R22/S22.1)
+* TODO R57 (optics calibration), P23 (cislunar midcourse nav, R23 HORIZ)
 
 ## Deviations
 

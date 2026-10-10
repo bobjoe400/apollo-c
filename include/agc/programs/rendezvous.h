@@ -133,8 +133,6 @@ typedef struct agc_rendz {
     agc_sp_t titer;           /* TITER: S33/34.1 iteration bit              */
     agc_sp_t trkmkcnt;        /* TRKMKCNT (= MARKCTR): tracking marks       */
     agc_sp_t vhfcnt;          /* VHFCNT (CM): VHF range marks               */
-    agc_sp_t mrkbuf2[7];      /* MRKBUF2 (CM): second mark buffer, raw words
-                               * (time DP, CDUY S T X Z); -1 = invalid      */
 
     /* R36 / R31 / R34 displays */
     agc_dp_t range;           /* RANGE: m 2^29 (R36: Y out of plane)        */
@@ -205,6 +203,10 @@ void     agc_erase_set_trkmkcnt(agc_sp_t v);
 agc_sp_t agc_erase_vhfcnt(void);
 void     agc_erase_set_vhfcnt(agc_sp_t v);
 agc_sp_t agc_erase_mrkbuf2(int index);              /* index 0..6        */
+/* MRKBUF1 / MRKBUF2 raw words (buf 1 or 2, index 0..6); same declarations
+ * as include/agc/programs/alignment_pending.h.                           */
+uint16_t agc_erase_mrkbuf(int buf, int index);
+void     agc_erase_set_mrkbuf(int buf, int index, uint16_t v);
 void     agc_erase_set_mrkbuf2(int index, agc_sp_t v);
 
 /* The rendezvous erasables used by the programs (module storage).          */
@@ -380,6 +382,140 @@ agc_status_t agc_rendz_tracking_bvectors(agc_interp_t *ip, agc_vec_t rclp,
                               agc_vec_t um, agc_vec_t *ustar,
                               agc_vec_t *bvec, agc_dp_t *deltaq);
 
+/* ---- navigation pad loads (P20-P25; ERASABLE_ASSIGNMENTS "PL") --------
+ * Initial W-matrix values, maximum state vector changes and measurement
+ * variances, SP unless noted. Both vehicles keep their own subset.      */
+typedef struct agc_rendz_nav_pad {
+    agc_sp_t wrendpos;    /* WRENDPOS: rendezvous W position (LM km 2^-7,
+                           * CM m 2^-14)                                   */
+    agc_sp_t wrendvel;    /* WRENDVEL: rendezvous W velocity (LM km^-1/2
+                           * 2^11, CM m/cs 2^0)                            */
+    agc_sp_t wshaft;      /* WSHAFT (LM): RR shaft bias W, km 2^-7         */
+    agc_sp_t wtrun;       /* WTRUN (LM): RR trunnion bias W, km 2^-7       */
+    agc_sp_t wsurfpos;    /* WSURFPOS (LM): surface W position             */
+    agc_sp_t wsurfvel;    /* WSURFVEL (LM): surface W velocity             */
+    agc_sp_t rmax;        /* RMAX: max position change, m 2^19             */
+    agc_sp_t vmax;        /* VMAX: max velocity change, m/cs 2^7           */
+    agc_sp_t shaftvar;    /* SHAFTVAR (LM): rad^2 2^12                     */
+    agc_sp_t trunvar;     /* TRUNVAR (LM): rad^2 2^10                      */
+    agc_dp_t rangevar;    /* RANGEVAR (LM, DP): RR range variance 2^12     */
+    agc_dp_t ratevar;     /* RATEVAR (LM, DP): RR range-rate variance 2^12 */
+    agc_sp_t rvarmin;     /* RVARMIN: min range variance (LM 2^-12)        */
+    agc_sp_t vvarmin;     /* VVARMIN (LM): min range-rate variance 2^12    */
+    agc_sp_t worbpos;     /* WORBPOS (CM): orbit nav W position, m 2^-14   */
+    agc_sp_t worbvel;     /* WORBVEL (CM): orbit nav W velocity, m/cs      */
+    agc_sp_t s22wsubl;    /* S22WSUBL (CM): landmark W, m 2^-14            */
+    agc_dp_t rpvar;       /* RPVAR (CM, DP): landmark radius variance       */
+    agc_dp_t horizalt;    /* HORIZALT (CM, DP): horizon altitude, m 2^29    */
+    agc_sp_t wmidpos;     /* WMIDPOS (CM): cislunar W position             */
+    agc_sp_t wmidvel;     /* WMIDVEL (CM): cislunar W velocity             */
+    agc_sp_t rvarmin_cm[3]; /* RVARMIN +0..+2 (CM, VHF radar): the minimum
+                           * variance, TP, stored negative               */
+    agc_dp_t rvar;        /* RVAR (CM, DP): VHF radar range variance       */
+    agc_sp_t altvar;      /* ALTVAR (CM): COAS (R23) sighting variance,
+                           * milliradians squared 2^-16                   */
+    agc_sp_t intvar;      /* INTVAR (CM): expected integration variance
+                           * B-15                                          */
+} agc_rendz_nav_pad_t;
+agc_rendz_nav_pad_t *agc_rendz_nav_pad(void);
+/* X789 (both): the 7th-9th state components of the W matrix (radar or
+ * landmark biases).                                                       */
+agc_vec_t    agc_erase_x789(void);
+void         agc_erase_set_x789(agc_vec_t v);
+
+/* ---- LM radar (P20-P25.agc pp.520-563, 594-613) ------------------------
+ * Rendezvous radar (RR) moding and designate, radar reading, landing
+ * radar position and lamps (src/programs/rendezvous/rr_*_lm.c,
+ * radar_read_lm.c, powered_flight_designate_lm.c, radar_leadin_lm.c).
+ * A program that starts a radar operation (RRZERO, RRDESSM, RRDESNB,
+ * LRPOS2, a read lead-in) then waits with agc_imu_stall_dev(
+ * AGC_IMU_DEV_RADAR, ...) (RADSTALL); RGOODEND / RDBADEND wake it.     */
+/* Results of RRDESSM / RRDESNB (the AGC's return points).               */
+typedef enum agc_rr_designate_result {
+    AGC_RR_DESIGNATE_NO_COVERAGE = 0, /* RRDESSM L+2: LOS outside mode 2
+                                       * coverage on the lunar surface     */
+    AGC_RR_DESIGNATE_MANEUVER,        /* RRDESSM L+3: vehicle maneuver
+                                       * required                          */
+    AGC_RR_DESIGNATE_STARTED,         /* RRDESSM L+4 / RRDESNB L+2: designate
+                                       * begun; the caller RADSTALLs       */
+    AGC_RR_DESIGNATE_END_JOB,         /* ENDOFJOB: a job already waits in
+                                       * RADSTALL, or RRDESNB rejected the
+                                       * angles (alarm 502)                */
+    AGC_RR_DESIGNATE_RESULT_COUNT
+} agc_rr_designate_result_t;
+bool         agc_rr_limchk(uint16_t cdut, uint16_t cdus);  /* RRLIMCHK: in limits */
+agc_status_t agc_rr_settrkf(void);                         /* SETTRKF       */
+agc_status_t agc_rendz_flip(uint16_t lamp_bit);            /* FLIP          */
+agc_status_t agc_rendz_clradmod(void);                     /* CLRADMOD      */
+agc_status_t agc_rr_zero(void);                            /* RRZERO        */
+/* RRDESSM: designate to RRTARGET (half unit, SM; set by LPS20.1).       */
+agc_status_t agc_rr_designate_sm(agc_interp_t *ip,
+                                 agc_rr_designate_result_t *res);
+/* RRDESNB: designate to RR gimbal angles (trunnion, shaft CDU words).   */
+agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
+                                 uint16_t shaft, agc_rr_designate_result_t *res);
+agc_status_t agc_rendz_goto_terminate_tracking(void);      /* GOTOV56       */
+/* read lead-ins (one sample; LRVEL five), RADAREAD, SAMPLSUM            */
+agc_status_t agc_radar_rrrange(void);                      /* RRRANGE       */
+agc_status_t agc_radar_rrrdot(void);                       /* RRRDOT        */
+agc_status_t agc_radar_lralt(void);                        /* LRALT         */
+agc_status_t agc_radar_lrvel(agc_sp_t beam2);              /* LRVEL 0,2,4 = Z,Y,X */
+agc_status_t agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples); /* LRVELZ/Y/X */
+agc_status_t agc_rendz_radar_read(void);                   /* RADAREAD (rupt) */
+agc_dp_t     agc_radar_samplsum(void);                     /* SAMPLSUM counts */
+uint16_t     agc_erase_dnrrange(int index);                /* DNRRANGE +index */
+agc_status_t agc_radar_lrpos2(void);                       /* LRPOS2        */
+agc_status_t agc_radar_landing_radar_lights(void);         /* R12LITES      */
+agc_status_t agc_radar_powered_flight_designate(void);     /* R29 (SERVICER) */
+/* waitlist tasks and jobs of the radar routines                         */
+agc_status_t agc_task_rrturnon(void);                      /* RRTURNON      */
+agc_status_t agc_task_rr_zero_counters(void);              /* RRZEROSB      */
+agc_status_t agc_task_rr_zero_settled(void);
+agc_status_t agc_task_rr_turnon_done(void);
+agc_status_t agc_task_rr_zero(void);                       /* RRZ2          */
+agc_status_t agc_task_rr_goodend(void);                    /* RGOODEND      */
+agc_status_t agc_task_rr_one_axis(void);                   /* NXTRR1AX      */
+agc_status_t agc_task_dorrepos(void);                      /* DORREPOS      */
+agc_status_t agc_task_rr_reposition_drive(void);
+agc_status_t agc_task_rr_remode(void);                     /* REMODE        */
+agc_status_t agc_task_rr_designate_begin(void);            /* BEGDES        */
+agc_status_t agc_task_rr_designate_loop(void);             /* DESLOOP       */
+agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx); /* DODES     */
+agc_status_t agc_task_lr_position_scan(void);              /* LRPOSCAN      */
+agc_status_t agc_task_lr_position_check(void);             /* LRPOSNXT      */
+agc_status_t agc_task_lr_position_settled(void);           /* LASTLRDT      */
+
+agc_status_t agc_task_radsamp(void);                       /* RADSAMP       */
+agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx);      /* DORSAMP       */
+agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx);
+agc_dp_t     agc_erase_rstack(int index);                  /* RSTACK, 0..3  */
+/* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
+ * job ended instead (angles rejected, or a job already in RADSTALL).    */
+agc_status_t agc_rr_designate_gimbal(bool *started);
+agc_sp_t     agc_erase_tang(int index);                    /* TANG +index   */
+void         agc_erase_set_tang(int index, agc_sp_t v);
+
+/* R29 downlink set (RM RDOTM MKTIME TANGNB AIG AMG AOG, P20-P25 p.606);
+ * TRKMKCNT = 1 when it is consistent.                                   */
+typedef struct agc_rr_downlink {
+    uint16_t rm;          /* RM: RR range, raw count                      */
+    uint16_t rdotm;       /* RDOTM: RR range rate, raw count              */
+    agc_dp_t mktime;      /* MKTIME: time of the reading, cs 2^28         */
+    uint16_t tangnb[2];   /* TANGNB: RR trunnion, shaft CDU words         */
+    uint16_t aig, amg, aog; /* IMU CDU Y, Z, X words at the reading       */
+} agc_rr_downlink_t;
+const agc_rr_downlink_t *agc_rendz_rr_downlink(void);
+agc_status_t agc_job_powered_flight_remode(agc_job_ctx_t *ctx);   /* R29REM0J */
+agc_status_t agc_task_powered_flight_preposition(void);           /* PREPOS29 */
+agc_status_t agc_task_powered_flight_designate(void);             /* BEGDES29 */
+agc_status_t agc_task_powered_flight_designate_loop(void);        /* R29DLOOP */
+agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx); /* R29DODES */
+agc_status_t agc_task_powered_flight_read(void);                  /* R29READ  */
+agc_status_t agc_task_powered_flight_read_loop(void);
+agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx);     /* R29RDJOB */
+agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx);
+agc_status_t agc_job_powered_flight_read_done(agc_job_ctx_t *ctx);
+
 /* ---- program entry points and continuation jobs -------------------------
  * Programs run as executive jobs (agc_jobs.h convention): each entry job
  * runs to its first display; the AGC's returns from flashing displays,
@@ -392,6 +528,12 @@ agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx);      /* KILCLOCK     */
 agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx); /* N45PROC      */
 agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx);      /* CLUPDATE     */
 agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx); /* S34/35.5 */
+/* VN1645 entry for other programs (+MGA, COMPTGO, QSAVED, V16N45).     */
+agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+                                           agc_job_id_t resume_as);
+/* LLASRD / LLASRDA (P22): LAT, LONG, ALT <-> the noun 89 registers.    */
+agc_status_t agc_rendz_llasrd(void);
+agc_status_t agc_rendz_llasrda(void);
 /*@JOBS@*/
 /* imu_realign.c */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx);
@@ -531,6 +673,147 @@ agc_status_t agc_job_gyro_torquing_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gyro_torquing_return(agc_job_ctx_t *ctx);
+/* navigation_lm.c (P20 = P22 LM, P25 LM) */
+agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx);              /* P20: by vehicle */
+agc_status_t agc_job_rendezvous_navigation_lm(agc_job_ctx_t *ctx);           /* PROG20 (LM) */
+agc_status_t agc_job_rendezvous_navigation_orbit_option(agc_job_ctx_t *ctx); /* ORBCHGO */
+agc_status_t agc_job_rendezvous_navigation_orbit_chosen(agc_job_ctx_t *ctx); /* ORBCHG1 */
+agc_status_t agc_job_rendezvous_navigation_launch_time(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_navigation_orbit_change(agc_job_ctx_t *ctx); /* ORBCHG3 */
+agc_status_t agc_job_rendezvous_navigation_start(agc_job_ctx_t *ctx);        /* PROG20A */
+agc_status_t agc_job_rendezvous_navigation_range_check(agc_job_ctx_t *ctx);  /* P20LEM1 */
+agc_status_t agc_job_rendezvous_navigation_range_alarm(agc_job_ctx_t *ctx);  /* 526ALARM */
+agc_status_t agc_job_rendezvous_navigation_terminate(agc_job_ctx_t *ctx);    /* GOTOV56 */
+agc_status_t agc_job_rendezvous_navigation_attitude(agc_job_ctx_t *ctx);     /* P20LEMA */
+agc_status_t agc_job_rendezvous_navigation_acquire(agc_job_ctx_t *ctx);      /* P20LEMB */
+agc_status_t agc_job_rendezvous_navigation_manual_request(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_navigation_cdu_zero_wait(agc_job_ctx_t *ctx); /* P20LEMB3 */
+agc_status_t agc_job_rendezvous_navigation_update_states(agc_job_ctx_t *ctx); /* P20LEMC3 */
+agc_status_t agc_job_rendezvous_navigation_designate(agc_job_ctx_t *ctx);    /* P20LEMC */
+agc_status_t agc_task_rendezvous_navigation_track_check(void);               /* P20LEMC1 */
+agc_status_t agc_task_rendezvous_navigation_track_wait(void);                /* P20LEMD1 */
+agc_status_t agc_job_preferred_tracking_attitude(agc_job_ctx_t *ctx);        /* PROG25 */
+agc_status_t agc_job_preferred_tracking_attitude_check(agc_job_ctx_t *ctx);  /* P25LEM1 */
+agc_status_t agc_task_preferred_tracking_attitude_wait(void);                /* P25LEM2 */
+/* tracking_attitude_lm.c (R61LEM / R65LEM) */
+agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx);     /* R61C+L01 */
+agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx);  /* after R60LEM */
+agc_status_t agc_task_tracking_attitude_wait(void);                     /* R61C+L2 */
+/* acquisition_lm.c (R21LEM, R23LEM, R24LEM / LRS24.1) */
+agc_status_t agc_job_rendezvous_sighting_mark(agc_job_ctx_t *ctx);               /* R21LEM */
+agc_status_t agc_job_rendezvous_sighting_mark_centered(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_sighting_mark_designate_los(agc_job_ctx_t *ctx); /* R21LEM10 */
+agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx);       /* R21LEM2 */
+agc_status_t agc_job_rendezvous_sighting_mark_lockon(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_sighting_mark_alarm(agc_job_ctx_t *ctx);         /* R21-503 */
+agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx);        /* R21DISP */
+agc_status_t agc_job_rendezvous_sighting_mark_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx);    /* R21LEM12 */
+agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx);         /* R21LEMB */
+agc_status_t agc_task_rendezvous_sighting_mark_redesignate(void);                /* R21LEM9 */
+agc_status_t agc_job_rendezvous_sighting_mark_coverage_alarm(agc_job_ctx_t *ctx);/* R21LEM11 */
+agc_status_t agc_job_manual_acquisition(agc_job_ctx_t *ctx);                     /* R23LEM */
+agc_status_t agc_job_manual_acquisition_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_manual_acquisition_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_manual_acquisition_limit_alarm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_manual_acquisition_terminate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_manual_acquisition_maneuver(agc_job_ctx_t *ctx);
+agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx);                           /* R24LEM */
+agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx);                    /* R24END */
+agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx);                  /* R24LEM3 */
+agc_status_t agc_job_radar_search_maneuver_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_radar_search_resume(agc_job_ctx_t *ctx);                    /* R24LEM4 */
+agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx);                     /* CHKSRCH */
+agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx);                       /* LRS24.11 */
+agc_status_t agc_task_radar_search_next_point(void);                             /* CALLDGCH */
+agc_status_t agc_job_radar_search_data_check(agc_job_ctx_t *ctx);                /* DATGDCHK */
+/* tracking_data_lm.c, measurement_update_lm.c (R22LEM, LRS22.1/2, LSR22.3/4) */
+agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx);             /* R22LEM */
+agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx);       /* LRS22.1 */
+agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx);   /* 525 */
+agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx);      /* R22LEM1 */
+agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx);      /* R22LEM2 */
+agc_status_t agc_job_rendezvous_tracking_data_wait(agc_job_ctx_t *ctx);        /* R22WAIT */
+agc_status_t agc_job_rendezvous_tracking_data_update(agc_job_ctx_t *ctx);      /* R22LEM3 */
+agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx);        /* R22LEM42 */
+agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx);        /* R22LEM93 */
+agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx);         /* N49DSP */
+agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_n49_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx);     /* R22RSTRT */
+agc_status_t agc_job_rendezvous_tracking_data_restart_read(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx); /* LSR22.3 */
+agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx);     /* RANGEBQ1 */
+/* w_matrix_monitor.c (V67, both vehicles) */
+agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx);           /* V67CALL */
+agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx);   /* V06N99DS */
+agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx);   /* V6N99PRO */
+/* tracking_attitude_csm.c (R61CSM, CRS61.1/.2) */
+agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
+agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx);
+agc_sp_t     agc_erase_r61cntr(void);                 /* R61CNTR (CM)       */
+void         agc_erase_set_r61cntr(agc_sp_t v);
+uint16_t     agc_rendz_tracking_angles(bool preferred, int axis); /* PRAXIS / CPHIX */
+/* navigation_csm.c (P20 CSM, R21CSM V57, R23CSM V54, dispatch) */
+agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx);                 /* P22: by vehicle */
+agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx);             /* PROG22 (CM) */
+agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx);          /* PROG20 (CM) */
+agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx);    /* PIKUP20 */
+agc_status_t agc_job_rendezvous_navigation_csm_optics(agc_job_ctx_t *ctx);   /* P20R52JB */
+agc_status_t agc_job_rendezvous_navigation_csm_optics_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx);    /* CONTCHK */
+agc_status_t agc_job_rendezvous_sighting_mark_csm(agc_job_ctx_t *ctx);       /* R21CSM V57 */
+agc_status_t agc_job_backup_sighting_mark(agc_job_ctx_t *ctx);               /* R23CSM V54 */
+agc_status_t agc_job_rendezvous_sighting_mark_request(agc_job_ctx_t *ctx);   /* R21C1 */
+agc_status_t agc_job_backup_sighting_mark_request(agc_job_ctx_t *ctx);       /* R23CSM1 */
+agc_status_t agc_job_backup_sighting_mark_taken(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx);      /* R21CSMA */
+agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx);       /* R21END */
+agc_sp_t     agc_erase_landmark(void);                                       /* LANDMARK */
+void         agc_erase_set_landmark(agc_sp_t v);
+/* tracking_data_csm.c (R22 CSM, VHFREAD) */
+agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx);              /* R22 */
+agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx);         /* REND1A */
+agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx);          /* REND3 */
+agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx);        /* RANGERD */
+agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(agc_job_ctx_t *ctx);  /* REND4 */
+agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx);      /* RENDISP */
+agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_rendz_vhf_read(void);                                             /* VHFREAD (rupt) */
+agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx);          /* V89 (CM) */
+agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx);  /* V89RECL */
+agc_status_t agc_job_rendezvous_final_attitude_csm_maneuver(agc_job_ctx_t *ctx);
+/* landmark_navigation_csm.c (S22.1) */
+agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx);          /* S22.1 */
+agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx);           /* S22NXTIN */
+agc_status_t agc_job_orbital_navigation_delta_accept(agc_job_ctx_t *ctx);   /* S22BOX42 */
+agc_status_t agc_job_orbital_navigation_marks_exit(agc_job_ctx_t *ctx);     /* S22EXEX */
+agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx);           /* S22F244 */
+agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx);
+agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx);      /* S22.981X */
+agc_status_t agc_job_orbital_navigation_site_terminate(agc_job_ctx_t *ctx); /* S22GTP */
+/* orbital_navigation_csm.c (P22 CSM) */
+agc_status_t agc_job_orbital_navigation_orbit_display(agc_job_ctx_t *ctx);  /* V06N45 */
+agc_status_t agc_job_orbital_navigation_landmark(agc_job_ctx_t *ctx);       /* PROG22A */
+agc_status_t agc_job_orbital_navigation_code(agc_job_ctx_t *ctx);           /* S22DSPPA */
+agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_orbital_navigation_landing_site(agc_job_ctx_t *ctx);   /* P22SUBRB */
+agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_orbital_navigation_optics(agc_job_ctx_t *ctx);         /* CALLR52 */
+agc_status_t agc_job_orbital_navigation_advanced_optics(agc_job_ctx_t *ctx);/* DE-GR-50 */
+agc_status_t agc_job_orbital_navigation_marked(agc_job_ctx_t *ctx);         /* DOV5N71 */
+agc_status_t agc_job_orbital_navigation_process(agc_job_ctx_t *ctx);        /* PROG22C */
+agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx);           /* P22OVER */
 /*@JOBS-END@*/
 
 /* Noun data for the rendezvous erasables (delegated from agc_noun_read). */

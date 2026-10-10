@@ -24,6 +24,7 @@
 #include "agc/core/interp.h"
 #include "agc/exec/exec.h"
 #include "agc/core/state.h"
+#include "agc/nav/auxiliary.h"
 
 /* ==== sys-misc (include/agc/io/service_internal.h, src/io/service/sysmisc_ext.h) ================== */
 /* DELAYJOB (SERVICE_ROUTINES): sleep the calling job delay_cs, then resume
@@ -32,6 +33,30 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);
 /* EXTVBACT: extended-verb / marking-system activity word (R30/R31/R36).  */
 uint16_t     agc_erase_extvbact(void);
 void         agc_erase_set_extvbact(uint16_t v);
+
+/* ==== exec-sched: KILLTASK (same declaration as include/agc/guidance/pending.h) */
+agc_status_t agc_waitlist_kill(agc_task_id_t task);
+
+/* ==== state-flags: radar counters (same declarations as src/lm/landing/pending.h)
+ * RNRAD (counter 046): the radar reading, raw 15-bit word.                 */
+uint16_t     agc_erase_rnrad(void);
+void         agc_erase_set_cdutcmd(int which, agc_sp_t v); /* 0 CDUTCMD 053, 1 CDUSCMD 054 */
+
+/* ==== sys-misc: R04 / R77 radar test storage (src/io/verbs/extended_verbs_lm_radar.c) */
+agc_sp_t agc_erase_rsampdt(void);
+agc_sp_t agc_erase_rtstdex(void);
+void     agc_erase_set_rtstdex(agc_sp_t v);
+agc_sp_t agc_erase_rtstbase(void);
+agc_sp_t agc_erase_rtstmax(void);
+agc_sp_t agc_erase_rtstloc(void);
+void     agc_erase_set_rtstloc(agc_sp_t v);
+agc_sp_t agc_erase_rfailcnt(void);
+void     agc_erase_set_rfailcnt(agc_sp_t v);
+
+/* ==== nav-aux: LAT, LONG, ALT erasables (noun 43; same declaration as
+ * src/lm/landing/pending.h for the setter). LANDLAT EQUALS LAT (CM).     */
+agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
+agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 
 /* ==== provisional job ids (prog-rendz), range 0x1100 ===================== */
 /* common (display.c) */
@@ -153,6 +178,136 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_LAMBERT_AIMPOINT_COMPUTE         ((agc_job_id_t)0x1181) /* after V06N33 */
 #define AGC_JOB_LAMBERT_AIMPOINT_APSIDES         ((agc_job_id_t)0x1182) /* V06N42 */
 #define AGC_JOB_LAMBERT_AIMPOINT_TTOGO           ((agc_job_id_t)0x1183) /* REVN1645 */
+/* LM radar (rr_designate_lm.c, powered_flight_designate_lm.c, radar_leadin_lm.c) */
+#define AGC_JOB_RR_DESIGNATE_COMMAND             ((agc_job_id_t)0x1188) /* DODES */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS ((agc_job_id_t)0x1189) /* R21LEM2 (LM) */
+#define AGC_JOB_POWERED_FLIGHT_REMODE            ((agc_job_id_t)0x118A) /* R29REM0J */
+#define AGC_JOB_POWERED_FLIGHT_DESIGNATE         ((agc_job_id_t)0x118B) /* R29DODES */
+#define AGC_JOB_POWERED_FLIGHT_READ              ((agc_job_id_t)0x118C) /* R29RDJOB */
+#define AGC_JOB_POWERED_FLIGHT_READ_RANGE        ((agc_job_id_t)0x118D) /* R29RDJOB after RRRDOT RADSTALL */
+#define AGC_JOB_POWERED_FLIGHT_READ_DONE         ((agc_job_id_t)0x118E) /* R29RDJOB after RRRANGE RADSTALL */
+#define AGC_JOB_RADAR_SAMPLE                     ((agc_job_id_t)0x118F) /* DORSAMP */
+#define AGC_JOB_RADAR_SAMPLE_DONE                ((agc_job_id_t)0x1190) /* DORSAMP after RADSTALL */
+/* LM P20/P22/P25 (navigation_lm.c, tracking_attitude_lm.c) */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION            ((agc_job_id_t)0x1191) /* PROG20 = PROG22 (LM) */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION ((agc_job_id_t)0x1192) /* ORBCHGO GOPERF4 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN ((agc_job_id_t)0x1193) /* ORBCHG1 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_LAUNCH_TIME  ((agc_job_id_t)0x1194) /* V06N33* */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE ((agc_job_id_t)0x1195) /* ORBCHG2/3 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_START      ((agc_job_id_t)0x1196) /* PROG20A */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_CHECK ((agc_job_id_t)0x1197) /* P20LEM1 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM ((agc_job_id_t)0x1198) /* 526ALARM */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_ATTITUDE   ((agc_job_id_t)0x1199) /* P20LEMA */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_ACQUIRE    ((agc_job_id_t)0x119A) /* P20LEMB */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_MANUAL_REQUEST ((agc_job_id_t)0x119B) /* P20LEMB6 ENTER */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CDU_ZERO_WAIT ((agc_job_id_t)0x119C) /* P20LEMB3 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_UPDATE_STATES ((agc_job_id_t)0x119D) /* P20LEMC3 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE  ((agc_job_id_t)0x119E) /* P20LEMC */
+#define AGC_JOB_PREFERRED_TRACKING_ATTITUDE      ((agc_job_id_t)0x119F) /* PROG25 */
+#define AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK ((agc_job_id_t)0x11A0) /* P25LEM1 */
+#define AGC_JOB_TRACKING_ATTITUDE_COMPUTE        ((agc_job_id_t)0x11A1) /* R61C+L01 */
+#define AGC_JOB_TRACKING_ATTITUDE_MANEUVERED     ((agc_job_id_t)0x11A2) /* after R60LEM */
+/* LM R21 / R23 / R24 (acquisition_lm.c) */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK         ((agc_job_id_t)0x11A3) /* R21LEM */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CENTERED ((agc_job_id_t)0x11A4) /* R21LEM6 RADSTALL */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_LOCKON  ((agc_job_id_t)0x11A5) /* R21LEM3 RADSTALL */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_ALARM   ((agc_job_id_t)0x11A6) /* R21-503 */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION ((agc_job_id_t)0x11A7) /* R21LEM12 */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_COVERAGE_ALARM ((agc_job_id_t)0x11A8) /* R21LEM11 */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY  ((agc_job_id_t)0x11A9) /* R21DISP */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DESIGNATE_LOS ((agc_job_id_t)0x11AA) /* R21LEM10 */
+#define AGC_JOB_MANUAL_ACQUISITION               ((agc_job_id_t)0x11AB) /* R23LEM */
+#define AGC_JOB_MANUAL_ACQUISITION_DISPLAY       ((agc_job_id_t)0x11AC) /* R23LEM1 */
+#define AGC_JOB_MANUAL_ACQUISITION_CHECK         ((agc_job_id_t)0x11AD) /* R23LEM11 */
+#define AGC_JOB_MANUAL_ACQUISITION_MANEUVER      ((agc_job_id_t)0x11AE) /* R23LEM3 */
+#define AGC_JOB_MANUAL_ACQUISITION_TERMINATE     ((agc_job_id_t)0x11AF) /* R23LEM2 */
+#define AGC_JOB_MANUAL_ACQUISITION_LIMIT_ALARM   ((agc_job_id_t)0x11B0) /* OUTOFLIM */
+#define AGC_JOB_RADAR_SEARCH                     ((agc_job_id_t)0x11B1) /* R24LEM */
+#define AGC_JOB_RADAR_SEARCH_DISPLAY             ((agc_job_id_t)0x11B2) /* R24LEM2 */
+#define AGC_JOB_RADAR_SEARCH_ACCEPT              ((agc_job_id_t)0x11B3) /* R24END */
+#define AGC_JOB_RADAR_SEARCH_MANEUVER            ((agc_job_id_t)0x11B4) /* R24LEM3 */
+#define AGC_JOB_RADAR_SEARCH_MANEUVER_DONE       ((agc_job_id_t)0x11B5) /* R24LEM4 */
+#define AGC_JOB_RADAR_SEARCH_POINT               ((agc_job_id_t)0x11B6) /* LRS24.1 CHKSRCH */
+#define AGC_JOB_RADAR_SEARCH_DATA_CHECK          ((agc_job_id_t)0x11B7) /* DATGDCHK */
+/* LM R22 (tracking_data_lm.c, measurement_update_lm.c) */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA         ((agc_job_id_t)0x11B8) /* R22LEM */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE   ((agc_job_id_t)0x11B9) /* LRS22.1 after RRRDOT */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK    ((agc_job_id_t)0x11BA) /* LRS22.1 after RRRANGE */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_LOS_ALARM ((agc_job_id_t)0x11BB) /* alarm 525 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA  ((agc_job_id_t)0x11BC) /* R22LEM1 V06N05 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT  ((agc_job_id_t)0x11BD) /* R22LEM2 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT    ((agc_job_id_t)0x11BE) /* R22LEM42 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_UPDATE  ((agc_job_id_t)0x11BF) /* R22LEM3 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49     ((agc_job_id_t)0x11C0) /* N49DSP */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT ((agc_job_id_t)0x11C1) /* N49FLAG poll */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_PROCEED ((agc_job_id_t)0x11C2) /* N49 PROCEED */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_RECYCLE ((agc_job_id_t)0x11C3) /* N49 RECYCLE */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART ((agc_job_id_t)0x11C4) /* R22RSTRT */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART_READ ((agc_job_id_t)0x11C5) /* R22RSTRT RADSTALL */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_INCORPORATE ((agc_job_id_t)0x11C6) /* LSR22.3 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE ((agc_job_id_t)0x11C7) /* LSR22.3 RANGEBQ.. after R65 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_DONE    ((agc_job_id_t)0x11C8) /* R22LEM93/R22LEM44 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_ATTITUDE ((agc_job_id_t)0x11C9) /* R22LEM45 R65 */
+#define AGC_JOB_W_MATRIX_MONITOR                 ((agc_job_id_t)0x036B) /* V67CALL (value as in src/io/verbs/pending.h) */
+#define AGC_JOB_W_MATRIX_MONITOR_PROCEED         ((agc_job_id_t)0x11CA) /* V6N99PRO */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE  ((agc_job_id_t)0x11CB) /* GOTOV56 as a job */
+#define AGC_JOB_RADAR_SEARCH_RESUME              ((agc_job_id_t)0x11CC) /* R24LEM4 */
+#define AGC_JOB_RADAR_SEARCH_LOS                 ((agc_job_id_t)0x11CD) /* LRS24.11 */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_WAIT    ((agc_job_id_t)0x11CE) /* R21DISP PROCEED */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_AHEAD   ((agc_job_id_t)0x11CF) /* R21LEMB */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT    ((agc_job_id_t)0x11D0) /* R22WAIT after R61 */
+#define AGC_JOB_W_MATRIX_MONITOR_DISPLAY         ((agc_job_id_t)0x11D1) /* V06N99DS */
+/* CSM P20-P25 (navigation_csm.c, tracking_attitude_csm.c, tracking_data_csm.c) */
+#define AGC_JOB_TRACKING_ATTITUDE_CSM            ((agc_job_id_t)0x11D2) /* R61CSM CRS61.1 */
+#define AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED ((agc_job_id_t)0x11D3) /* after R60CSM */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK  ((agc_job_id_t)0x11D4) /* CONTCHK after 4 s */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE ((agc_job_id_t)0x11D5) /* PROG20 integration */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK  ((agc_job_id_t)0x11D6) /* PIKUP20 */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS ((agc_job_id_t)0x11D7) /* P20R52JB */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS_DONE ((agc_job_id_t)0x11D8) /* after R52 */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM     ((agc_job_id_t)0x036C) /* R21CSM, V57 (= AGC_JOB_SIGHTING_MARK in src/io/verbs/pending.h) */
+#define AGC_JOB_BACKUP_SIGHTING_MARK             ((agc_job_id_t)0x036D) /* R23CSM, V54 (value as in src/io/verbs/pending.h) */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REQUEST ((agc_job_id_t)0x11D9) /* R21C1 V51 */
+#define AGC_JOB_BACKUP_SIGHTING_MARK_REQUEST     ((agc_job_id_t)0x11DA) /* R23CSM1 V53 */
+#define AGC_JOB_BACKUP_SIGHTING_MARK_TAKEN       ((agc_job_id_t)0x11DB) /* R23CSM1 ENTER */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE    ((agc_job_id_t)0x11DC) /* R21CSMA */
+#define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_END     ((agc_job_id_t)0x11DD) /* R21END */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM     ((agc_job_id_t)0x11DE) /* R22 (CSM) */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK ((agc_job_id_t)0x11DF) /* REND1A */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF ((agc_job_id_t)0x11E0) /* REND3 after WAITONE */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE ((agc_job_id_t)0x11E1) /* RANGERD after RADSTALL */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE ((agc_job_id_t)0x11E2) /* REND4 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_DISPLAY ((agc_job_id_t)0x11E3) /* RENDISP */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49 ((agc_job_id_t)0x11E4) /* RENDISP2 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT ((agc_job_id_t)0x11E5) /* RENDISP7 */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_PROCEED ((agc_job_id_t)0x11E6)
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_RECYCLE ((agc_job_id_t)0x11E7)
+#define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM    ((agc_job_id_t)0x11E8) /* V89CALL (CSM) */
+#define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION ((agc_job_id_t)0x11E9) /* V04N06 */
+#define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN ((agc_job_id_t)0x11EA) /* SETPAF/RSTPAF */
+#define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE ((agc_job_id_t)0x11EB) /* V89RECL */
+#define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER ((agc_job_id_t)0x11EC) /* R60CSM */
+/* CSM P22 (orbital_navigation_csm.c, landmark_navigation_csm.c) */
+#define AGC_JOB_ORBITAL_NAVIGATION_MARKS         ((agc_job_id_t)0x11ED) /* S22.1 */
+#define AGC_JOB_ORBITAL_NAVIGATION_MARK          ((agc_job_id_t)0x11EE) /* S22NXTIN */
+#define AGC_JOB_ORBITAL_NAVIGATION_DELTA_ACCEPT  ((agc_job_id_t)0x11EF) /* S22BOX42 */
+#define AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT    ((agc_job_id_t)0x11F0) /* S22EXEX */
+#define AGC_JOB_ORBITAL_NAVIGATION_SITE          ((agc_job_id_t)0x11F1) /* S22F244 */
+#define AGC_JOB_ORBITAL_NAVIGATION_SITE_ACCEPT   ((agc_job_id_t)0x11F2) /* RLS */
+#define AGC_JOB_ORBITAL_NAVIGATION_SITE_DONE     ((agc_job_id_t)0x11F3) /* S22.981X */
+#define AGC_JOB_ORBITAL_NAVIGATION_SITE_TERMINATE ((agc_job_id_t)0x11F4) /* S22GTP */
+#define AGC_JOB_ORBITAL_NAVIGATION               ((agc_job_id_t)0x11F5) /* P22 (by vehicle) */
+#define AGC_JOB_ORBITAL_NAVIGATION_ORBIT_DISPLAY ((agc_job_id_t)0x11F6) /* V06N45 */
+#define AGC_JOB_ORBITAL_NAVIGATION_LANDMARK      ((agc_job_id_t)0x11F7) /* PROG22A */
+#define AGC_JOB_ORBITAL_NAVIGATION_CODE          ((agc_job_id_t)0x11F8) /* S22DSPPA */
+#define AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK    ((agc_job_id_t)0x11F9) /* S22DSPPA PROCEED */
+#define AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE  ((agc_job_id_t)0x11FA) /* P22SUBRB */
+#define AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK    ((agc_job_id_t)0x11FB) /* P22SUBRB PROCEED */
+#define AGC_JOB_ORBITAL_NAVIGATION_OPTICS        ((agc_job_id_t)0x11FC) /* CALLR52 */
+#define AGC_JOB_ORBITAL_NAVIGATION_ADVANCED_OPTICS ((agc_job_id_t)0x11FD) /* DE-GR-50 */
+#define AGC_JOB_ORBITAL_NAVIGATION_MARKED        ((agc_job_id_t)0x11FE) /* DOV5N71 */
+#define AGC_JOB_ORBITAL_NAVIGATION_PROCESS       ((agc_job_id_t)0x11FF) /* PROG22C */
+#define AGC_JOB_ORBITAL_NAVIGATION_OVER          ((agc_job_id_t)0x1200) /* P22OVER */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */
@@ -162,5 +317,34 @@ void         agc_erase_set_extvbact(uint16_t v);
 /* CLOKTASK (LM BURN_BABY_BURN, owner guid-powered); same name as in
  * include/agc/guidance/pending.h.                                           */
 #define AGC_TASK_CLOKTASK_RZ  ((agc_task_id_t)0x1104)
+/* LM radar moding (rr_moding_lm.c); RRTURNON and DORREPOS keep the values
+ * sys-misc gave them in src/io/service/sysmisc_ext.h.                       */
+#define AGC_TASK_RRTURNON  ((agc_task_id_t)0x312)  /* prog-rendz: RRTURNON   */
+#define AGC_TASK_DORREPOS  ((agc_task_id_t)0x313)  /* prog-rendz: DORREPOS   */
+#define AGC_TASK_RR_ZERO_COUNTERS      ((agc_task_id_t)0x1105) /* RRZEROSB +20 ms */
+#define AGC_TASK_RR_ZERO_SETTLED       ((agc_task_id_t)0x1106) /* RRZEROSB +10 s  */
+#define AGC_TASK_RR_TURNON_DONE        ((agc_task_id_t)0x1107) /* RRTURNON +1 s   */
+#define AGC_TASK_RR_ZERO               ((agc_task_id_t)0x1108) /* RRZ2            */
+#define AGC_TASK_RR_GOODEND            ((agc_task_id_t)0x1109) /* RADNOOP: RGOODEND */
+#define AGC_TASK_RR_ONE_AXIS           ((agc_task_id_t)0x110A) /* NXTRR1AX        */
+#define AGC_TASK_RR_REPOSITION_DRIVE   ((agc_task_id_t)0x110B) /* DORREPOS +20 ms */
+#define AGC_TASK_RR_REMODE             ((agc_task_id_t)0x110C) /* REMODE as a task */
+#define AGC_TASK_RR_DESIGNATE_BEGIN    ((agc_task_id_t)0x110D) /* BEGDES          */
+#define AGC_TASK_RR_DESIGNATE_LOOP     ((agc_task_id_t)0x110E) /* DESLOOP/STDESIG */
+#define AGC_TASK_LR_POSITION_SCAN      ((agc_task_id_t)0x110F) /* LRPOSCAN        */
+#define AGC_TASK_LR_POSITION_CHECK     ((agc_task_id_t)0x1110) /* LRPOSNXT        */
+#define AGC_TASK_LR_POSITION_SETTLED   ((agc_task_id_t)0x1111) /* LASTLRDT        */
+#define AGC_TASK_POWERED_FLIGHT_PREPOSITION ((agc_task_id_t)0x1112) /* PREPOS29 */
+#define AGC_TASK_POWERED_FLIGHT_DESIGNATE   ((agc_task_id_t)0x1113) /* BEGDES29 */
+#define AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP ((agc_task_id_t)0x1114) /* R29DLOOP after VARDELAY */
+#define AGC_TASK_POWERED_FLIGHT_READ   ((agc_task_id_t)0x1115) /* R29READ         */
+#define AGC_TASK_POWERED_FLIGHT_READ_LOOP ((agc_task_id_t)0x1116) /* R29READ after 2 s */
+#define AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK ((agc_task_id_t)0x1117) /* P20LEMC1 */
+#define AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_WAIT  ((agc_task_id_t)0x1118) /* P20LEMD1 */
+#define AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT  ((agc_task_id_t)0x1119) /* P25LEM2 */
+#define AGC_TASK_TRACKING_ATTITUDE_WAIT            ((agc_task_id_t)0x111A) /* R61C+L2 */
+#define AGC_TASK_RENDEZVOUS_SIGHTING_MARK_REDESIGNATE ((agc_task_id_t)0x111B) /* R21LEM9 */
+#define AGC_TASK_RADAR_SEARCH_NEXT_POINT           ((agc_task_id_t)0x111C) /* CALLDGCH */
+/*@MORETASKS@*/
 
 #endif /* RENDZ_EXT_H */

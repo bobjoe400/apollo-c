@@ -78,23 +78,42 @@ void agc_erase_set_vhfcnt(agc_sp_t v)
     rendz_erasable.vhfcnt = v;
 }
 
-/* MRKBUF2 +index (CM): the second mark buffer; word 0 = -1 marks it
- * invalid (P76 ENDP76, R22).                                            */
+/* MRKBUF1, MRKBUF2 (CM, EBANK= MRKBUF1): the two seven-word mark buffers
+ * (time DP, CDUY, CDUS, CDUZ, CDUT, CDUX), raw words; word 0 = -1 (77776)
+ * marks a buffer empty. SXTMARK fills MRKBUF1 (and moves it to MRKBUF2
+ * for R21); R22, P76 and the verbs read and clear them.                */
+#define RZ_MRKBUF_WORDS 7
+static uint16_t mrkbuf[2][RZ_MRKBUF_WORDS];
+
+uint16_t agc_erase_mrkbuf(int buf, int index)
+{
+    if (!AGC_ASSERT(buf == 1 || buf == 2) || !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS)) {
+        return 0U;
+    }
+    return mrkbuf[buf - 1][index];
+}
+
+void agc_erase_set_mrkbuf(int buf, int index, uint16_t v)
+{
+    if (!AGC_ASSERT(buf == 1 || buf == 2) || !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS)) {
+        return;
+    }
+    mrkbuf[buf - 1][index] = (uint16_t)(v & 077777u);
+}
+
+/* MRKBUF2 +index as an SP number (P76 ENDP76, R22: -1 = invalid).      */
 agc_sp_t agc_erase_mrkbuf2(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index < 7)) {
-        return 0;
-    }
-    return rendz_erasable.mrkbuf2[index];
+    return (agc_sp_t)rz_word_value(agc_erase_mrkbuf(2, index));
 }
 
 void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index < 7)
-        || !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
         return;
     }
-    rendz_erasable.mrkbuf2[index] = v;
+    uint16_t w = (v >= 0) ? (uint16_t)v : (uint16_t)(077777 + v);
+    agc_erase_set_mrkbuf(2, index, w);
 }
 
 /* Fresh start: all rendezvous erasables zero, earth selected. */
@@ -546,4 +565,125 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
     }
     *mga = a;
     return agc_flag_clear(AGC_FLAG_MGLVFLAG);
+}
+
+/* ---- navigation pad loads and X789 (P20-P25 erasables, owned here) ---- */
+static agc_rendz_nav_pad_t nav_pad;
+static agc_vec_t x789;          /* X789: radar / landmark bias states     */
+
+agc_rendz_nav_pad_t *agc_rendz_nav_pad(void)
+{
+    (void)AGC_ASSERT(nav_pad.rmax >= 0);
+    return &nav_pad;
+}
+
+agc_vec_t agc_erase_x789(void)
+{
+    (void)AGC_ASSERT(x789.c[0] >= AGC_DP_MIN);
+    return x789;
+}
+
+void agc_erase_set_x789(agc_vec_t v)
+{
+    (void)AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX);
+    x789 = v;
+}
+
+/* BOVB TCDANZIG / BOV +1: clear the overflow indicator (its state is not
+ * wanted here).                                                          */
+void rz_clear_ovf(agc_interp_t *ip)
+{
+    if (!AGC_ASSERT(ip != NULL)) {
+        return;
+    }
+    bool had = agc_interp_test_ovf(ip);
+    (void)AGC_ASSERT(!had || !agc_interp_test_ovf(ip));
+}
+
+int rz_word_value(uint16_t w)
+{
+    uint16_t v = (uint16_t)(w & 077777u);
+    int r = ((v & 040000u) != 0u) ? -(int)(077777u - v) : (int)v;
+    (void)AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX);
+    return r;
+}
+
+/* INCORP2: W update, then the deviation into the corrected vehicle's
+ * state (MOVEP.., FAZAB, RECTIFY on overflow, MOVEA.. with SVDWN), X789,
+ * INTWAKE. moonthis: CMOONFLG (CM) or LMOONFLG (LM).                    */
+agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis)
+{
+    if (!AGC_ASSERT(ip != NULL && inc != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
+    bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG);
+    agc_vehicle_t veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
+    agc_status_t st = agc_incorp2_wupdate(ip, inc, &ctx->w);
+    rz_phase(2, 04022);                                       /* FAZC     */
+    if (st == AGC_STATUS_OK) {
+        st = agc_integ_perm_get(veh, &ctx->sv);               /* MOVEP..  */
+    }
+    agc_incorp_sv_t sv;
+    sv.moon = moonthis;                                       /* MOONTHIS */
+    sv.rcv = ctx->sv.rcv;
+    sv.vcv = ctx->sv.vcv;
+    sv.tdeltav = ctx->sv.deltav;
+    sv.tnuv = ctx->sv.nuv;
+    sv.x789 = agc_erase_x789();
+    if (st == AGC_STATUS_OK) {
+        st = agc_incorp2_state(ip, inc, &sv);
+    }
+    ctx->sv.rcv = sv.rcv;
+    ctx->sv.vcv = sv.vcv;
+    ctx->sv.deltav = sv.tdeltav;
+    ctx->sv.nuv = sv.tnuv;
+    ctx->pbody = sv.moon ? 2 : 0;
+    rz_flag_put(AGC_FLAG_MOONFLAG, sv.moon);
+    if (st == AGC_STATUS_OK && sv.rectify) {
+        st = agc_integ_rectify(ip, ctx);                      /* FAZAB2   */
+    }
+    rz_phase(2, 04022);                                       /* FAZAB3   */
+    if (st == AGC_STATUS_OK) {
+        st = csm ? agc_integ_atopcsm(ip, ctx, ctx->pbody)
+                 : agc_integ_atoplem(ip, ctx, ctx->pbody);
+    }
+    if (inc->dim9) {
+        agc_erase_set_x789(sv.x789);                          /* FAZAB4   */
+    }
+    agc_status_t sw = agc_integ_area_busy(0) ? agc_integ_intwake() : AGC_STATUS_OK;
+    return (st == AGC_STATUS_OK) ? sw : st;
+}
+
+
+/* BVECTORS (P20-P25 CM p.576): USTAR = UNIT(USTAR x UNIT(RCLP)) = B0,
+ * DELTAQ = (ACOS(USTAR . UM) - 1/4) PI/4 |RCLP| normalized (SRR* 0-3,1),
+ * B1 = B2 = 0. rclp body scale, um and ustar half unit.                 */
+#define RZ_PI_4 ((agc_dp_t)210828714)       /* PI/4.0 2DEC .785398164     */
+void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
+                 agc_vec_t *ustar, agc_incorp_t *inc)
+{
+    if (!AGC_ASSERT(ip != NULL && ustar != NULL) || !AGC_ASSERT(inc != NULL)) {
+        return;
+    }
+    agc_dp_t absr = 0;
+    agc_vec_t u = agc_vec_unit(ip, rclp, &absr, NULL);        /* 26D      */
+    inc->bvector[0] = agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
+    rz_phase(2, 04022);                                       /* GRP2PC   */
+    *ustar = inc->bvector[0];
+    agc_dp_t a = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
+    int x1 = 0;
+    agc_dp_t n = rz_norm(agc_dp_sub(ip, a, AGC_DP_QUARTER), &x1);
+    agc_tp_t t = agc_dp_mul_tp(agc_dp_mul_trunc(n, RZ_PI_4), absr);
+    inc->deltaq = agc_tp_round(ip, agc_tp_shift(ip, t, -(-3 - x1)));   /* SRR* 0-3,1 */
+    inc->bvector[1] = agc_vec_zero();
+    inc->bvector[2] = agc_vec_zero();
+}
+
+uint16_t rz_word_of(int v)
+{
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
+        return 0U;
+    }
+    return (v >= 0) ? (uint16_t)v : (uint16_t)(077777 + v);
 }

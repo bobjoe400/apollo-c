@@ -291,3 +291,14 @@ agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return rz_vnpooh(ctx, 6U, 59U, rz->normex);
 }
+
+/* VN1645 as a public entry (return to earth, guid-entry): the same as
+ * rz_ttogo_display with the rendezvous erasables.                        */
+agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+                                           agc_job_id_t resume_as)
+{
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return rz_ttogo_display(ctx, ip, rz_state(), resume_as);
+}

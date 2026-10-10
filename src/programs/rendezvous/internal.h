@@ -134,8 +134,30 @@ agc_dp_t     rz_dsptem_dp(int index);
 agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v);
 agc_status_t rz_set_option(int which, uint16_t v);
 
+/* PHASCHNG type A (group, code), and type C restarting job `job` at
+ * priority prio (code_a = 0: single PHASCHNG; else 2PHSCHNG code_a).    */
+void         rz_phase(int group, uint16_t code);
+void         rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
+                          int16_t prio);
+/* PRIOLARM: alarm and V05N09 priority display.                          */
+agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
+                           agc_job_id_t term, agc_job_id_t proceed,
+                           agc_job_id_t enter);
+
 /* ---- common helpers (common.c) ------------------------------------ */
 agc_rendz_t *rz_state(void);
+void         rz_clear_ovf(agc_interp_t *ip);      /* BOVB TCDANZIG     */
+/* INCORP2 (MEASUREMENT_INCORPORATION FAZA..FAZAB5): W update, the
+ * deviation into the permanent state of the vehicle being corrected
+ * (VEHUPFLG: CSM), RECTIFY on overflow, X789 when 9x9, INTWAKE.        */
+agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis);
+/* BVECTORS (CM): B0 = new USTAR, DELTAQ for an optics mark.               */
+void         rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
+                         agc_vec_t *ustar, agc_incorp_t *inc);
+/* A 15-bit word (CDU counter, MRKBUF) as the AGC reads it with CA: a
+ * ones' complement SP number.                                           */
+int          rz_word_value(uint16_t w);
+uint16_t     rz_word_of(int v);                   /* the word of v     */
 agc_dp_t     rz_mutable_mu(bool moon);  /* MUE 2^36 / MUM 2^30            */
 agc_vec_t    rz_unit(agc_interp_t *ip, agc_vec_t v);
 agc_dp_t     rz_abval(agc_interp_t *ip, agc_vec_t v);
@@ -201,5 +223,19 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 bool         rz_active_vehicle_program(void);
 /* Continue the running job at another entry (agc_exec_job_yield).        */
 agc_status_t rz_continue(agc_job_id_t next);
+
+/* ---- CSM P20 helpers (navigation_csm.c) ---------------------------- */
+agc_dp_t     rz_marktime(void);                 /* MARKTIME           */
+void         rz_set_marktime(agc_dp_t t);
+agc_status_t rz_setintg(agc_job_id_t resume);   /* SETINTG            */
+/* WAITONE: 4 s, then CONTCHK; returns (continues as pointex) when the
+ * update flag is on.                                                     */
+agc_status_t rz_waitone(agc_job_id_t pointex);
+/* N49DISP +index (CSM R22, noun 49).                                     */
+agc_dp_t     rz_csm_n49disp(int index);
+/* S22.1 (landmark_navigation_csm.c): nmarks marks of the sighting, the
+ * caller continues as ret; CXOFF of the landmark code.                  */
+agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret);
+void         rz_landmark_set_offset(agc_sp_t cxoff);
 
 #endif /* RENDZ_INTERNAL_H */

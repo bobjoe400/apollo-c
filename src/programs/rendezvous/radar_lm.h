@@ -26,6 +26,7 @@
 #include "agc/core/word.h"
 #include "agc/core/interp.h"
 #include "agc/exec/exec.h"
+#include "agc/programs/rendezvous.h"
 
 /* ---- RADMODES (FLGWRD12) bits ---------------------------------------- */
 #define RR_CDESBIT   040000u   /* BIT15 CDESFLAG: continuous designate      */
@@ -65,28 +66,16 @@ typedef enum rr_axis_client {
     RR_AXIS_CLIENT_COUNT
 } rr_axis_client_t;
 
-/* Results of RRDESSM / RRDESNB (the AGC's return points).               */
-typedef enum agc_rr_designate_result {
-    AGC_RR_DESIGNATE_NO_COVERAGE = 0, /* RRDESSM L+2: LOS outside mode 2
-                                       * coverage on the lunar surface     */
-    AGC_RR_DESIGNATE_MANEUVER,        /* RRDESSM L+3: vehicle maneuver
-                                       * required                          */
-    AGC_RR_DESIGNATE_STARTED,         /* RRDESSM L+4 / RRDESNB L+2: designate
-                                       * begun; the caller RADSTALLs       */
-    AGC_RR_DESIGNATE_END_JOB,         /* ENDOFJOB: a job already waits in
-                                       * RADSTALL, or RRDESNB rejected the
-                                       * angles (alarm 502)                */
-    AGC_RR_DESIGNATE_RESULT_COUNT
-} agc_rr_designate_result_t;
 
 /* Designate erasables (P20-P25, EBANK= LOSCOUNT).                        */
 typedef struct rr_state {
     agc_vec_t rrtarget;   /* RRTARGET: LOS half unit, SM (NB when RRNBSW),
                            * scale 2^1 (R29: LOSSM, the non-unit LOS in SM
                            * axes, m 2^24)                                 */
-    agc_dp_t  mlosv;      /* MLOSV: |LOS|, m 2^29                           */
-    agc_vec_t losvel;     /* LOSVEL: LOS rate, m/cs 2^16 so that LOSVEL x
-                           * MCTOMS is m 2^29 (R29: LOSVDT/4, m 2^24)     */
+    agc_dp_t  mlosv;      /* MLOSV: |LOS|, m 2^20 in P20 (LPS20.1 shifts
+                           * the LOS 9 places)                             */
+    agc_vec_t losvel;     /* LOSVEL: relative velocity V(CSM) - V(LM) in SM
+                           * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
     agc_sp_t  loscount;   /* LOSCOUNT: DODES passes before a new LOS       */
     agc_sp_t  descount;   /* DESCOUNT: designate passes left (.5 s each)   */
     agc_sp_t  tang[2];    /* TANG, TANG +1: trunnion, shaft gyro command,
@@ -137,5 +126,64 @@ agc_dp_t     rr_timehold(void);         /* TIMEHOLD: reading mid time    */
 /* RADLITES: lamps after a read; ITEMP1 = the data-good bit (BIT4 RR,
  * BIT5 LR altitude, BIT8 LR velocity).                                  */
 void         rr_radlites(uint16_t itemp1);
+
+/* ---- LM rendezvous navigation erasables (P20-P25) ---------------------- */
+typedef struct lmnav_state {
+    /* LPS20.1 */
+    agc_vec_t lmpos;      /* LMPOS: LM position at TDEC1, m 2^29           */
+    agc_vec_t lmvel;      /* LMVEL: LM velocity, m/cs 2^7                  */
+    /* LRS22.1 mark data */
+    agc_dp_t  rm;         /* RM: RR range, m 2^29                          */
+    agc_dp_t  rdotm;      /* RDOTM: RR range rate, m/cs 2^7                */
+    agc_dp_t  rrtrun;     /* RRTRUN: RR trunnion, revolutions              */
+    agc_dp_t  rrshaft;    /* RRSHAFT: RR shaft, revolutions                */
+    agc_dp_t  mktime;     /* MKTIME: mark time (mid range-rate read), cs   */
+    agc_dp_t  cdutime;    /* 20D: time of the CDU readings, cs 2^28        */
+    uint16_t  aig, amg, aog; /* AIG AMG AOG: IMU CDU words at the mark      */
+    uint16_t  tang[2];    /* TANG: RR CDU words at the mark                */
+    agc_dp_t  rdotmsav;   /* RDOTMSAV: raw range-rate count                */
+    agc_vec_t rrborsit;   /* RRBORSIT: RR boresight, NB, half unit         */
+    agc_dp_t  dtheta;     /* DSPTEM1: radar vs state-vector LOS, revs (N05) */
+    uint16_t  rangrdot[2];/* RANGRDOT: raw range, range rate (downlink)    */
+    /* R22 */
+    agc_dp_t  r22disp[2]; /* R22DISP: |dR| m 2^29, |dV| m/cs 2^7 (noun 49) */
+    agc_sp_t  n49flag;    /* N49FLAG: 0 open, -1 proceed, + recycle        */
+    agc_sp_t  whchread;   /* WHCHREAD: 1 range, 2 rate, 3 shaft, 4 trunnion */
+    agc_sp_t  r65cntr;    /* R65CNTR: R65 passes left                      */
+    /* R21 */
+    agc_sp_t  reposcnt;   /* REPOSCNT: 10 s retries left                   */
+    agc_dp_t  repostm;    /* REPOSTM: time of the LOS, cs 2^28             */
+    /* R24 */
+    agc_sp_t  nsrchpnt;   /* NSRCHPNT: search pattern point 0..6           */
+    agc_sp_t  datagood;   /* DATAGOOD: 11111 lock-on, 0 none (noun 80)     */
+    agc_dp_t  omegad;     /* OMEGDISP: RR boresight to +Z, revs (noun 80)  */
+    agc_vec_t losdesrd;   /* LOSDESRD: desired LOS, reference, half unit   */
+    agc_vec_t vxrcm;      /* VXRCM: unit(V(CSM) x R(CSM))                   */
+    agc_vec_t uxvect;     /* UXVECT, UYVECT: search pattern axes           */
+    agc_vec_t uyvect;
+    agc_vec_t savlemv;    /* SAVLEMV: V(CSM) - V(LM), SM, m/cs 2^7         */
+    /* R61 / R65 */
+    agc_job_id_t genret;  /* GENRET: where R61LEM / R65LEM return          */
+    /* P22 surface: assumed CSM orbit change (ORBCHG3)                     */
+    agc_dp_t  lnchtm;     /* LNCHTM: estimated launch time, cs 2^28        */
+} lmnav_state_t;
+
+lmnav_state_t *lmnav_state(void);
+/* LPS20.1: LM and CSM to tdec1 (conic), RRTARGET (SM half unit), MLOSV,
+ * LOSVEL; *too_far when the range exceeds the 9-place shift (526ALARM).
+ * BUSY: INTSTALL put the job to sleep; it resumes as `resume`.          */
+agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
+                       bool *too_far);
+bool         lmnav_range_ok(void);                     /* LPS20.2        */
+/* R61LEM (r61 = true) / R65LEM: preferred tracking attitude; the job
+ * continues as ret_job when done.                                       */
+agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
+                                     agc_job_id_t ret_job);
+/* P20LEMWT (+1 with the delay): wait, then R22 or the designate again.  */
+agc_status_t lmnav_wait(uint16_t delay_cs);
+/* R22LEM96: the noun 49 display job and the N49FLAG wait.             */
+agc_status_t lmnav_n49_display(void);
+/* ASTOK after a noun 49 PROCEED (measurement_update_lm.c).             */
+agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx);
 
 #endif /* RENDZ_RADAR_LM_H */
