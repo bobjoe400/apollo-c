@@ -29,10 +29,9 @@ agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);                 /* SIGNMPAC  */
 agc_dp_t     agc_rtb_loadtime(void);                          /* LOADTIME  */
 
 /* ==== sys-misc: T4RUPT_PROGRAM.agc ======================================= */
-agc_status_t agc_t4rupt_setissw(void);       /* SETISSW (IMUFAIL/ICDUFAIL)  */
+agc_status_t agc_t4_setissw(void);           /* SETISSW (IMUFAIL/ICDUFAIL)  */
 
 /* ==== exec-sched ========================================================== */
-agc_status_t agc_exec_gotopooh(void);        /* GOTOPOOH                    */
 agc_status_t agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM          */
 agc_status_t agc_exec_linus(agc_job_id_t restart_job); /* LINUS + PHASCHNG 1.7 */
 
@@ -74,6 +73,7 @@ agc_status_t agc_lm_dap_zatteror(void);               /* ZATTEROR              *
 #define AGC_JOB_R62_ENTER       ((agc_job_id_t)0x0B0B) /* R62 ENTER -> redisplay */
 #define AGC_JOB_R60_RELINUS     ((agc_job_id_t)0x0B0C) /* RELINUS restart     */
 #define AGC_JOB_R60_DONE        ((agc_job_id_t)0x0B0D) /* R62 return from R60 */
+#define AGC_JOB_1_GYRO_PULSE    ((agc_job_id_t)0x0B0E) /* 1/GYRO after GYROBUSY */
 
 #define AGC_TASK_IMUZERO2       ((agc_task_id_t)0x0B41)
 #define AGC_TASK_IMUZERO3       ((agc_task_id_t)0x0B42)

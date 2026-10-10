@@ -7,9 +7,9 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | core-numeric | IN-PROGRESS | src/core/agc_*.c (numeric), include/agc/agc_constants.h | see docs/modules/core-numeric.md |
 | exec-sched   | TODO | | |
 | state-flags  | DONE (0 stubs) | include/agc/agc_flags_{common,csm,lm}.h, agc_channels.h, agc_state.h; src/core/agc_state.c, agc_channels.c, agc_erasable.c; tests/test_state.c, test_state_lm.c | CSM channel bits derived from code comments (no CM bit table in source); see docs/modules/state-flags.md |
-| nav-conic    | TODO | | |
+| nav-conic    | IN-PROGRESS | include/agc/agc_nav.h, src/nav/conic_*.c | see docs/modules/nav-conic.md |
 | nav-integ    | IN-PROGRESS | include/agc/agc_integ.h, src/nav/integration_init.c, src/nav/orbital_integration.c | design written |
-| nav-aux      | IN-PROGRESS | src/nav/{latlong,planetary,measurement,free_fall,ephemerides,star_tables}.c | see docs/modules/nav-aux.md |
+| nav-aux      | DONE (0 stubs) | include/agc/agc_navaux.h; src/nav/{latlong,planetary,measurement,free_fall,ephemerides,star_tables,navaux_util}.c, navaux_internal.h; tests/test_navaux.c | agc_lsposition ready for nav-integ; pad-load accessors requested; see docs/modules/nav-aux.md |
 | io-pinball   | IN-PROGRESS | include/agc/agc_dsky.h, src/io/pinball_*.c, src/io/display_if.c | see docs/modules/io-pinball.md |
 | io-nouns | DONE (0 stubs; 182 data ids UNIMPLEMENTED pending core accessors) | include/agc/agc_nouns.h, src/io/noun_tables_{csm,lm}.c, noun_scales.c, noun_data.c, tests/test_nouns.c | see docs/modules/io-nouns.md |
 | imu          | IN-PROGRESS | src/imu, src/csm/prelaunch_align.c | |

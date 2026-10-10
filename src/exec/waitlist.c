@@ -24,6 +24,7 @@
 #include "agc/agc_state.h"
 #include "agc/agc_flags_common.h"
 #include "exec_internal.h"
+#include "exec_pending.h"
 
 #define WL_TIME3_OVF   16384      /* TIME3 overflow, 2^14 cs = 163.84 s   */
 #define WL_POSMAX      16383      /* POSMAX, octal 37777                  */
@@ -271,6 +272,15 @@ agc_status_t agc_task_longcycl(void)
     return longcycl();
 }
 
+/* TASKOVER as a task (LM RESTART_TABLES 1.2SPOT dummy entry, p.239):
+ * "TASKOVER" ends the task at once.                                   */
+agc_status_t agc_task_taskover(void)
+{
+    (void)AGC_ASSERT(agc_interrupts_inhibited());
+    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
+    return AGC_STATUS_OK;
+}
+
 /* GETCADR (C p.1235 / L p.1132): DXCH LONGCADR / DTCB. Handled in
  * agc_waitlist_t3rupt, which dispatches LONGCADR in its place (so that
  * dispatch never calls itself); this entry exists for completeness.    */
@@ -313,11 +323,16 @@ agc_status_t agc_waitlist_t3rupt(void)
         if (st != AGC_STATUS_OK && result == AGC_STATUS_OK) {
             result = st;
         }
-        if (exec_restart_generation() != gen) {
+        if (exec_restart_generation() != gen || agc_exec_restart_pending()) {
             ruptagn = false;     /* restart: the RUPTAGN chain is gone */
         }
     }
     agc_relint();
+    if (agc_exec_restart_pending()) {
+        /* BAILOUT/POODOO in a task: WHIMPER -> ENEMA after the RUPT. */
+        agc_status_t st = agc_exec_service_restart();
+        (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
+    }
     return result;
 }
 

@@ -42,7 +42,14 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Progress
 
-(see bottom of file; updated as files are completed)
+- DONE executive.c (NOVAC FINDVAC SPECTEST CHANJOB EJSCAN ENDOFJOB JOBSLEEP JOBWAKE PRIOCHNG CHANG1 DUMMYJOB)
+- DONE waitlist.c (compiles; T3RUPT services a pending ENEMA; TASKOVER task added)
+- DONE exec_pending.h (provisional foreign job/task ids, 0x0E00 range)
+- DONE agc_exec.h second-pass prototypes; agc_jobs.h AGC_JOB_ENDOFJOB, AGC_TASK_TASKOVER
+- DONE phase_table.c (PHASCHNG A/B/C, 2PHSCHNG, NEWPHASE, KLEANs, NEWMODE, CHECKMM, SETUPDSP)
+- DONE restart_tables.c (both vehicles, static const; 5 indirect erasables UNIMPLEMENTED pending accessors)
+- TODO restarts.c, alarm.c, fresh_start.c, interrupts.c, exec_erasable.c, v37_p00.c, dispatch.c
+- TODO tests/test_exec.c
 
 ## Requested core additions
 

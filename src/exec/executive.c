@@ -82,6 +82,7 @@ static bool       vac_used[AGC_EXEC_MAX_VACS];  /* VACnUSE = +0 in use */
 static int        newjob = EXEC_NEWJOB_IDLE;    /* NEWJOB             */
 static int        locctr = -1;                  /* LOCCTR             */
 static bool       yielded;                      /* CHANG1 this pass   */
+static bool       in_job;                       /* job body running   */
 static uint16_t   generation;                   /* STARTSB2 count     */
 
 /* NO.CORES + 1 for the vehicle being modelled. */
@@ -497,12 +498,46 @@ agc_status_t agc_exec_run_one(void)
     ctx.arg = core[0].arg;
     yielded = false;
     uint16_t gen = generation;
+    in_job = true;
     agc_status_t st = agc_dispatch_job(&ctx);
-    if (gen == generation) {
+    in_job = false;
+    if (agc_exec_restart_pending()) {
+        /* BAILOUT / POODOO / ABORT in the job: WHIMPER -> ENEMA. The
+         * job's core set is wiped by STARTSB2, so no ENDOFJOB.        */
+        agc_status_t rs = agc_exec_service_restart();
+        (void)AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT);
+    } else if (gen == generation) {
         after_job();
+    } else {
+        /* a fresh start (V36 SLAP1) re-initialised the tables in the job */
     }
-    /* else: a BAILOUT/restart re-initialised the tables inside the job. */
     return st;
+}
+
+bool exec_in_job(void)
+{
+    (void)AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE);
+    (void)AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS);
+    return in_job;
+}
+
+agc_job_id_t exec_running_job_loc(void)
+{
+    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS)) {
+        return AGC_JOB_NONE;
+    }
+    return (core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc;
+}
+
+/* A job whose 2CADR is ENDOFJOB (LM RESTART_TABLES 1.2SPOT, p.239): it
+ * ends as soon as it is dispatched.                                    */
+agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != 0)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    (void)AGC_ASSERT(ctx->id == AGC_JOB_ENDOFJOB);
+    return AGC_STATUS_OK;
 }
 
 bool agc_exec_idle(void)

@@ -9,12 +9,20 @@
  * routine to the next are kept as one field; the rest get separate fields
  * because no AGC path reads one name after writing the other.
  *
+ * The interpretive MPAC is modelled as an agc_tp_t (three words): DMP and
+ * DSQ leave a TP product, DAD/DSU/BDSU change only MPAC,+1 and keep MPAC+2,
+ * shifts, NORM, TAD and ROUND work on all three words, and a DP-mode STORE
+ * or PUSH drops MPAC+2. The agc_conic_m*_ helpers below are one function
+ * per interpretive instruction on that model, so the C reads in the same
+ * order as the AGC listing.
+ *
  * Functions ending in '_' are module-internal (not part of agc_nav.h).
  */
 #ifndef AGC_CONIC_INTERNAL_H
 #define AGC_CONIC_INTERNAL_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "agc/agc_word.h"
 #include "agc/agc_interp.h"
 #include "agc/agc_status.h"
@@ -38,15 +46,24 @@
 #define AGC_CONIC_ONEBIT   ((agc_dp_t)1)         /* ONEBIT 00000 00001 1.0 B-28 */
 #define AGC_CONIC_COGUPLIM ((agc_dp_t)268304351) /* COGUPLIM 37767 37737 .999511597 */
 #define AGC_CONIC_COGLOLIM ((agc_dp_t)-268304351)/* COGLOLIM 40010 40040 -.999511597 */
-#define AGC_CONIC_DP1_4    ((agc_dp_t)67108864)  /* DP1/4 (ORBITAL_INTEGRATION) .25 */
+#define AGC_CONIC_DP1_4    ((agc_dp_t)67108864)  /* DP1/4 (fixed-fixed pool) .25   */
 #define AGC_CONIC_LODPHALF ((agc_dp_t)134217728) /* LODPHALF = XUNIT 20000 00000 .5 */
 #define AGC_CONIC_LDPOSMAX ((agc_dp_t)268435455) /* LDPOSMAX = LODPMAX 37777 37777 */
 #define AGC_CONIC_DP2_3    ((agc_dp_t)178956971) /* DP2/3 25252 25253 .6666666667 */
 #define AGC_CONIC_KEPZERO  ((agc_dp_t)0)         /* KEPZERO = LO6ZEROS         */
+#define AGC_CONIC_GEOMSGN_POS ((agc_sp_t)0x3FFF) /* SSP GEOMSGN 37777 (PARAM)   */
+#define AGC_CONIC_TWEEKIT_GUESS   ((agc_sp_t)1)      /* SSP TWEEKIT 00001      */
+#define AGC_CONIC_TWEEKIT_NOGUESS ((agc_sp_t)0x2000) /* SSP TWEEKIT 20000 (.5) */
 
-/* ITERCTR bound for LAMBERT re-entries of LAMBLOOP that do not decrement
- * ITERCTR (NEGP/HIENERGY/LOENERGY/COMMONLM halve DCOGA, which reaches zero
- * within 28 halvings). (ITERCTR max 20 + 1) * 30 passes.                 */
+/* TIX,2 with X2 = 3, S2 = 1 (GETX): WLOOP and 1/WLOOP run three passes.  */
+#define AGC_CONIC_GETX_PASSES 3
+/* POLY coefficient counts: "DEC N" in the listing is the count minus 2.  */
+#define AGC_CONIC_DELTIME_NCOEF 10   /* DEC 8 */
+#define AGC_CONIC_POLYCOEF_NCOEF 7   /* DEC 5 */
+
+/* Bound on LAMBLOOP passes. Passes through NEGP/HIENERGY/LOENERGY do not
+ * decrement ITERCTR; each halves DCOGA, which reaches zero within 28
+ * halvings, so (ITERCTR max 20 + 1) * 30 passes cover every AGC path.   */
 #define AGC_CONIC_LAMBERT_MAX_PASSES 630
 /* PERIODCH: TAU. is reduced by one period per pass; the AGC loop has no
  * bound. 4096 passes cover |TAU.| = 2^28 cs (31 days) for any period of
@@ -67,15 +84,13 @@ typedef struct agc_conic_ctx {
     agc_dp_t  root_mu;     /* ROOTMU (16D)    2^18 / 2^15                    */
     agc_dp_t  inv_root_mu; /* 1/ROOTMU (18D)  2^-17 / 2^-14                  */
     agc_dp_t  r1;          /* R1 (32D)        2^29 / 2^27 m                  */
-    agc_vec_t ur1;         /* UR1             2^1                            */
+    agc_vec_t ur1;         /* UR1 (KEPLER: URRECT) 2^1                       */
     agc_vec_t u2;          /* U2              2^1                            */
     agc_vec_t un;          /* UN              2^1                            */
-    agc_vec_t vvec;        /* VVEC            2^7 / 2^5 m/cs                 */
+    agc_vec_t vvec;        /* VVEC (KEPLER: VRECT) 2^7 / 2^5 m/cs            */
     agc_dp_t  magvec2;     /* MAGVEC2 = R2    scale of V2VEC                 */
     agc_dp_t  snth;        /* SNTH            2^1                            */
     agc_dp_t  csth;        /* CSTH            2^1                            */
-    agc_dp_t  one_m_csth;  /* 1-CSTH          2^2                            */
-    agc_dp_t  csth_rho;    /* CSTH-RHO        2^7                            */
     agc_dp_t  p;           /* P               2^4                            */
     agc_dp_t  r1a;         /* R1A             2^6                            */
     agc_dp_t  coga;        /* COGA            2^5                            */
@@ -96,36 +111,56 @@ typedef struct agc_conic_ctx {
     bool      cogaflag;    /* COGAFLAG                                       */
 } agc_conic_ctx_t;
 
-/* ---- conic_common.c: arithmetic helpers -------------------------------- */
+/* ---- conic_common.c: MUTABLE and switches ------------------------------ */
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
-agc_dp_t agc_conic_mu_(agc_conic_body_t body);             /* MUEARTH / MUM */
-agc_dp_t agc_conic_shift_(agc_interp_t *ip, agc_dp_t a, int n);       /* SL*/SR*  */
-agc_dp_t agc_conic_shift_round_(agc_interp_t *ip, agc_dp_t a, int n); /* SLR*/SRR* */
-agc_dp_t agc_conic_dmp_(agc_dp_t a, agc_dp_t b);           /* DMP, then DP use */
-agc_dp_t agc_conic_dmp_shift_(agc_interp_t *ip, agc_dp_t a, agc_dp_t b,
-                              int n, bool round);           /* DMP SL/SR(R)   */
-agc_tp_t agc_conic_tp_shift_(agc_interp_t *ip, agc_tp_t v, int n);
-agc_tp_t agc_conic_tp_norm_(agc_tp_t v, int *nshift);
-agc_dp_t agc_conic_norm_(agc_dp_t a, int *nshift);          /* NORM on DP    */
-agc_dp_t agc_conic_sq_norm_(agc_dp_t a, int *nshift);       /* DSQ NORM      */
-agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef); /* POLY */
-agc_dp_t agc_conic_sign_sp_(agc_dp_t a, agc_sp_t s);        /* SIGN (SP word) */
-agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s);     /* vector SIGN   */
+agc_dp_t agc_conic_mu_(agc_conic_body_t body);              /* MUEARTH / MUM */
 agc_status_t agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
-agc_status_t agc_conic_abtconic_(void);                     /* ABTCONIC      */
+agc_status_t agc_conic_abtconic_(void);                      /* ABTCONIC     */
 
-/* ---- conic_common.c: shared lower-rank subroutines ---------------------- */
+/* ---- conic_common.c: interpretive MPAC (TP) one instruction each -------- */
+agc_tp_t agc_conic_mload_(agc_dp_t d);                       /* DLOAD        */
+agc_dp_t agc_conic_mstore_(agc_tp_t m);                      /* STORE / PUSH */
+agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
+agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
+agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
+agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
+agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
+agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
+agc_tp_t agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
+agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
+agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
+agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
+agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n);     /* SL n / SR -n */
+agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n);    /* SLR n / SRR -n */
+agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m);            /* ROUND */
+agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift);                  /* NORM: X = -nshift */
+agc_tp_t agc_conic_mabs_(agc_tp_t m);                                /* ABS  */
+agc_tp_t agc_conic_mneg_(agc_tp_t m);                                /* DCOMP */
+agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s);           /* SIGN, DP word */
+agc_tp_t agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s);        /* SIGN, SP tag  */
+bool     agc_conic_mbmn_(agc_tp_t m);                        /* BMN taken     */
+bool     agc_conic_mbze_(agc_tp_t m);                        /* BZE taken     */
+agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s);      /* vector SIGN   */
+agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef); /* POLY */
+
+/* ---- conic_universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */
 agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
+agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
+                                 agc_vec_t *r2vec, agc_vec_t *v2vec);
+agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
+                                 agc_dp_t r2mag, agc_vec_t *v2vec);
+agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
+                                 agc_vec_t *rcv, agc_vec_t *vcv);
+
+/* ---- conic_geom.c: GEOM, PARAM, GETX ------------------------------------ */
 agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                              agc_vec_t r1vec, agc_vec_t v2vec,
                              agc_dp_t *snth, agc_dp_t *csth);
 agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                               agc_vec_t rvec, agc_vec_t vvec, agc_dp_t *sngamma);
 agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
-agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
-                                 agc_vec_t *r2vec, agc_vec_t *v2vec);
-agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
-                                 agc_dp_t r2mag, agc_vec_t *v2vec);
+
+/* ---- conic_timetheta.c: COMMNOUT (shared with TIMERAD) ------------------ */
 agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  bool rvsw, agc_conic_time_out_t *out);
 

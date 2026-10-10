@@ -58,9 +58,13 @@ sys-misc's file. Not duplicated here (see Open questions).
 
 ## Progress
 (updated as files complete)
-* imu_comp.c: TODO
-* alignment.c: TODO
-* imu_mode.c: TODO
+* imu_comp.c: DONE (1/PIPA, IRIGCOMP, GCOMPZER, 1/GYRO, GCOMP1, NBDONLY, LASTBIAS) src/imu/imu_comp.c; compiles
+* alignment.c: DONE (ARCTRIG, CALCGTA, CALCGA, AXISGEN, CALCSMSC) src/imu/alignment.c
+* imu_mode.c: DONE (ZEROICDU, IMUZERO/2/3, IMUCOARS/COARS/COARS2/CHKCORS, CA+ECE, SETCOARS, RNDREFDR,
+  IMUFINE/IMUFIN20/IMUFINED/IFAILOK/PFAILOK, NOATTOFF, PIPUSE/PIPUSE1/PIPFREE, GOODEND/BADEND/ENDIMU/IMUBAD,
+  STALL, R02BOTH/R02ZERO; P06/POSTAND stubbed) src/imu/imu_mode.c
+* imu_gyro.c: DONE (IMUPULSE/GYROBUSY/GWAKE, STRTGYRO/STRTGYR2/GSELECT/MAJ/MIN/GMERGE/LASTSEG/LONGGYRO/8192AUG)
+* imu_vflags*.c: DONE (vehicle-specific flag ids: CPHIFLAG, AUTR1/2FLG, NEEDLFLG, R60FLAG)
 * maneuver.c: TODO
 * r60.c: TODO
 * prelaunch_align.c: TODO

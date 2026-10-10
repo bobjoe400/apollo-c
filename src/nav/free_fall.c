@@ -158,7 +158,8 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     tff->tffdelq = agc_dp_sub(ip, q2, tff->tffq1);               /* Q2-Q1    */
     agc_dp_t inv_az = agc_navaux_dp_shift(ip, agc_dp_mul(ip, dn, tff->tff1_alf), na);
     agc_dp_t x = agc_navaux_dp_shift(ip, agc_dp_mul(ip, inv_az, dn), na);
-    (void)agc_interp_test_ovf(ip);       /* BOVB SIGNMPAC: X saturates to +-max */
+    /* DEVIATION: BOVB SIGNMPAC is the saturation agc_dp_shl already gives. */
+    (void)agc_interp_test_ovf(ip);
     tff->tffx = x;
     agc_dp_t xt = agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, x), x), 3);
     agc_dp_t term = agc_dp_mul(ip, agc_dp_sub(ip, xt, DP2_M3), inv_az);
@@ -228,8 +229,10 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     }
     tff->tffx = num;
     agc_dp_t absden = agc_dp_abs(den);
-    (void)agc_interp_test_ovf(ip);       /* BOV after DAD LIM(-22) clears it */
-    if (absden < DP_M22) {               /* DEN = 0: Z indeterminate         */
+    /* DAD LIM(-22) BOV TFFXTEST: overflows iff |DEN| >= 2^-22; the BOV also
+     * sees any OVFIND left by the Q1/DEN arithmetic, and clears it.       */
+    bool ovf_prior = agc_interp_test_ovf(ip);
+    if (!ovf_prior && (absden < DP_M22)) {  /* DEN = 0: Z indeterminate   */
         if (tff->tffalfa > 0) {
             return tff_el1(ip, tff, 0, q2, t_cs);  /* assume 90 deg, D/N = 0 */
         }

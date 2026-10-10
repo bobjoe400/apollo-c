@@ -244,10 +244,15 @@ agc_status_t pin_2blank(void)
  * the left-most digit of the register.                                 */
 agc_status_t pin_5blank(void)
 {
+    return pin_5blank_rel(pin_getinrel());
+}
+
+/* 5BLANK +2 (CLR5 entry): the same with INREL already chosen. */
+agc_status_t pin_5blank_rel(int inrel)
+{
     static const int16_t sinblank[3] = { 016, 005, 004 };  /* SINBLANK     */
     static const int16_t doublk[3]   = { 015, 011, 003 };  /* DOUBLK       */
     static const int16_t rxd1[3]     = { PIN_R1D1, PIN_R2D1, PIN_R3D1 };
-    int inrel = pin_getinrel();
     if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z)) {
         return AGC_STATUS_BAD_ARG;
     }

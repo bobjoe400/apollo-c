@@ -47,7 +47,15 @@ sign-agreeing words). -0 is never produced.
 
 ## Progress
 
-* TODO everything (note created before code)
+* DONE word-level MPAC model (MP DAS DV TS DCS OVERFLOW DMPSUB ROUNDSUB DSQSUB
+  DOTSUB VSQSUB TSSL-step POLY) src/core/agc_mpac.c + agc_mpac.h (compiles)
+* TODO SQRTSUB, DDV/GENDDV/MAXDV -> src/core/agc_divide.c
+* TODO agc_word.c, agc_sp_trig.c, agc_interp_scalar.c, agc_interp_trig.c,
+  agc_interp_vector.c, agc_constants.[ch], tests/test_core_numeric.c
+* TODO oracle cases tools/oracle/cases/core_numeric.spec (yaAGC differential)
+* Resume notes: interp-level DAD/DSU/SL/VAD WRAP like the AGC (OVERFLOW routine),
+  raw agc_word.h ops saturate (header contract). CCS leaves DABS in A, so
+  TS MAXDVSW after an equal-majors CCS stores +0 (-> MAXDV), not -0.
 
 ## Deviations
 

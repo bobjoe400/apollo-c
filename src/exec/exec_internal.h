@@ -46,6 +46,7 @@ uint16_t     phase_tbase(int group);         /* TIME1 at TBASEn set     */
 uint32_t     phase_longbase(void);           /* TIME2,TIME1 at LONGBASE */
 void         phase_kill(int group);          /* -PHASEn,PHASEn = -0,+0  */
 void         phase_set_fixed(int group, uint16_t phase); /* both words  */
+void         phase_debug_set_negative(int group, uint16_t neg_word); /* tests */
 
 /* ---- restart tables (restart_tables.c) -------------------------------- */
 typedef enum rst_dtsrc {
@@ -87,5 +88,28 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out);
 /* ---- fresh start (fresh_start.c) -------------------------------------- */
 agc_status_t fresh_enema(void);              /* ENEMA software restart   */
 agc_status_t fresh_mmdsplay(void);           /* MMDSPLAY/SETUPDSP        */
+
+/* ---- executive (executive.c), second pass ---------------------------- */
+bool     exec_in_job(void);                /* a job body is executing   */
+agc_job_id_t exec_running_job_loc(void);   /* LOC of core set 0 (LOCALARM) */
+
+/* ---- software restart request (alarm.c) ------------------------------ */
+void     exec_request_enema(void);         /* WHIMPER: ENEMA at next service */
+
+/* ---- MODECADR (exec_erasable.c) -------------------------------------- */
+void     exec_clear_modecadr(void);        /* STARTSB2: IMU/OPT/RAD CADR = 0 */
+
+/* ---- MODREG = -0 ----------------------------------------------------- */
+/* agc_sp_t has no -0; the lanes agree that a negative MODREG means -0
+ * (no program; the PROG lights are blanked). See io-pinball DSPMMJB.  */
+#define EXEC_MODREG_NEG0 ((agc_sp_t)-1)
+
+/* ---- up-calls into higher layers (v37_p00.c) -------------------------
+ * The AGC restart code calls routines that apollo-c places above exec
+ * (DAP, IMU, SERVICER). These few calls are collected in v37_p00.c, the
+ * layering exception next to dispatch.c; unit tests replace them.     */
+agc_status_t exec_up_stoprate(void);       /* CSM GOPROG3 / INITSUB: STOPRATE */
+agc_status_t exec_up_servidle(void);       /* LM STRTIDLE: SERVIDLE          */
+agc_status_t exec_up_setcoars(void);       /* CSM GOPROG: SETCOARS (NO ATT)  */
 
 #endif /* AGC_EXEC_INTERNAL_H */

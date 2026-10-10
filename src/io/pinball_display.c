@@ -9,6 +9,7 @@
  * an agc_dp_t (units 2^-28) this is exactly digit = (f*10) >> 28,
  * f = (f*10) mod 2^28 -- display conversion, not flight arithmetic.
  */
+#include <stddef.h>
 #include "pinball_internal.h"
 
 #define PIN_DP_ONE  ((int64_t)1 << AGC_DP_BITS)   /* 2^28                  */

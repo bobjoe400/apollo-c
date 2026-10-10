@@ -60,13 +60,13 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 
 | Routine / table | Status |
 |---|---|
-| agc_nav.h (conic section) | TODO |
-| conic_internal.h, helpers (TP shift/norm, POLY) | TODO |
-| MUTABLE table | TODO |
-| DELTIME | TODO |
+| agc_nav.h (conic section) | DONE include/agc/agc_nav.h |
+| conic_internal.h, helpers (TP MPAC model agc_conic_m*_, POLY) | DONE src/nav/conic_internal.h, conic_common.c |
+| MUTABLE table | DONE mutable_tab conic_common.c |
+| DELTIME | DONE agc_conic_deltime_ conic_universal.c |
 | GEOM / PARAM | TODO |
 | GETX (WLOOP/INVRSEQN/1/WLOOP/POLYCOEF/XCOMMON/TRUE360X/INFINITY) | TODO |
-| NEWSTATE / LAMENTER | TODO |
+| NEWSTATE / LAMENTER / KEPCONVG | DONE agc_conic_newstate_, _lamenter_, _kepconvg_ conic_universal.c |
 | ITERATOR | TODO |
 | KEPLERN (KEPLER) | TODO |
 | KEPPREP, RVCON, CSMCONIC/LEMCONIC conic path | TODO |

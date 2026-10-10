@@ -191,4 +191,36 @@ agc_status_t agc_rupt_set_t6_task(agc_task_id_t task); /* T6LOC (CSM)      */
 agc_task_id_t agc_rupt_t5_task(void);
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt); /* dispatch.c: handlers in other lanes */
 
+/* ---- added by exec-sched (second pass) -------------------------------- */
+/* Software restart requests. BAILOUT, POODOO and ABORT end in WHIMPER ->
+ * ENEMA; in C the request is recorded and ENEMA runs at the next service
+ * point (end of the running job, end of T3RUPT, end of an interrupt
+ * lead-in, or the sim harness), so that ENEMA never runs inside the job
+ * or task that asked for it and the call graph stays acyclic.          */
+bool         agc_exec_restart_pending(void);
+agc_status_t agc_exec_service_restart(void);    /* runs ENEMA if requested */
+agc_status_t agc_exec_enema(void);              /* request ENEMA (GOPROG2)  */
+agc_status_t agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM      */
+agc_status_t agc_phase_kill(int group);         /* DXCH -PHASEn with NEG0 */
+
+/* Jobs and tasks defined in src/exec/ (called from dispatch.c).         */
+agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);  /* GOTOPOOH          */
+agc_status_t agc_job_gop00fix(agc_job_ctx_t *ctx);  /* GOP00FIX          */
+agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);  /* GOPOODOO          */
+agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);  /* ENDOFJOB as a job */
+agc_status_t agc_task_endtask(void);                /* ENDTASK / SVCT3   */
+agc_status_t agc_task_svct3(void);                  /* SVCT3 (retry)     */
+agc_status_t agc_task_longcycl(void);               /* LONGCYCL          */
+agc_status_t agc_task_getcadr(void);                /* GETCADR           */
+agc_status_t agc_task_t5idloc(void);                /* T5IDLOC (CSM)     */
+agc_status_t agc_task_taskover(void);               /* TASKOVER as a task*/
+
+/* MODECADR = IMUCADR, OPTCADR, RADCADR (MODE SWITCHING ERASABLE): the
+ * waiting-job words cleared by STARTSB2 and tested by SVCT3. Raw SP word
+ * (+0 none, positive = a job is waiting; IMU lane defines the rest).    */
+#define AGC_MODECADR_N 3
+agc_sp_t     agc_erase_modecadr(int dev);
+agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v);
+agc_sp_t     agc_erase_imucadr(void);           /* = MODECADR +0         */
+
 #endif /* AGC_EXEC_H */

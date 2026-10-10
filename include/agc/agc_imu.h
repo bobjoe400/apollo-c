@@ -95,8 +95,27 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev);      /* GOODEND        */
 agc_status_t agc_imu_badend(agc_imu_device_t dev);       /* BADEND         */
 agc_status_t agc_imu_endimu(void);                       /* ENDIMU         */
 
+agc_status_t agc_imu_imubad(void);                       /* IMUBAD         */
 agc_status_t agc_imu_r02both(void);                      /* R02BOTH        */
+agc_status_t agc_imu_r02zero(void);                      /* R02ZERO        */
 agc_status_t agc_imu_p06(agc_job_ctx_t *ctx);            /* P06 (stub)     */
+agc_status_t agc_imu_postand(agc_job_ctx_t *ctx);        /* POSTAND (stub) */
+
+/* Subroutines also used by T4RUPT (sys-misc).                             */
+agc_status_t agc_imu_zeroicdu(void);     /* ZEROICDU: CDUX/Y/Z = 0         */
+agc_status_t agc_imu_noattoff(void);     /* NOATTOFF: NO ATT lamp off      */
+agc_status_t agc_imu_setcoars(void);     /* SETCOARS                       */
+agc_status_t agc_imu_fin20(void);        /* IMUFIN20 (= IMUFINE)           */
+agc_status_t agc_imu_clear_cmds(void);   /* -0 into CDUXCMD..Z, GYROCMD    */
+/* MODECADR +dev, encoded as the AGC word: 0 = +0 (free / in progress),
+ * -1 = complete and good, +1 = a job is stalled on it (a CADR); the
+ * failed state -0 is returned as -2 (DEVIATION: no -0 in agc_sp_t).       */
+agc_sp_t     agc_erase_modecadr(int dev);
+
+/* Simulator side of the hardware command counters: the harness drains
+ * GYROCMD and CDUXCMD..CDUZCMD as it emits the pulses.                    */
+agc_status_t agc_imu_hw_set_gyrocmd(uint16_t pulses);
+agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses);
 
 /* Waitlist tasks of the mode-switching routines (dispatch.c).             */
 agc_status_t agc_task_imuzero2(void);
@@ -109,6 +128,7 @@ agc_status_t agc_task_ifailok(void);
 agc_status_t agc_task_pfailok(void);
 agc_status_t agc_task_strtgyro(void);
 agc_status_t agc_task_8192aug(void);
+agc_status_t agc_task_ca_ece(void);      /* CA+ECE (T4RUPT)                */
 
 /* ======================================================================= */
 /* Compensation (IMU_COMPENSATION_PACKAGE.agc)                             */
@@ -133,8 +153,11 @@ void         agc_imu_set_1_pipadt(agc_sp_t v);
 /* 1/PIPA: compensate the PIPA counts DELV (pulses x 2^14, X Y Z) in place
  * for scale factor and bias, then IRIGCOMP the gyros.                     */
 agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv);
+/* IRIGCOMP: gyro compensation from compensated DELV (pulses x 2^14).     */
+agc_status_t agc_imu_comp_irig(agc_vec_t delv);
 agc_status_t agc_imu_gcompzer(void);                     /* GCOMPZER       */
 agc_status_t agc_job_1_gyro(agc_job_ctx_t *ctx);         /* 1/GYRO         */
+agc_status_t agc_job_1_gyro_pulse(agc_job_ctx_t *ctx);   /* 1/GYRO retry   */
 agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx);         /* GCOMP1         */
 agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);        /* NBDONLY        */
 agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx);       /* LASTBIAS       */
