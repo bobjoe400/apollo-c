@@ -345,7 +345,7 @@ agc_status_t agc_imu_zero(void)
     (void) AGC_ASSERT(lamps <= CDU_MASK);
     if ((notmask(lamps) & (DSP11_NOATT | DSP11_GLOCK)) == 0u)
     {
-        (void) agc_alarm(ALARM_ZERO_IN_GLOCK);
+        agc_alarm(ALARM_ZERO_IN_GLOCK);
         mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD, AGC_JOB_NONE); /* CAGETSTJ +4 */
         return imu_modeexit();
     }
@@ -364,7 +364,7 @@ agc_status_t agc_imu_zero(void)
     (void) waitlist(DT_IMUZERO2, AGC_TASK_IMUZERO2);
     if ((agc_erase_imodes30() & IM30_NOTOPER) != 0u)
     {
-        (void) agc_alarm(ALARM_IMU_NOT_OPER); /* IMU not operating */
+        agc_alarm(ALARM_IMU_NOT_OPER); /* IMU not operating */
     }
     return imu_modeexit();
 }
@@ -514,7 +514,7 @@ agc_status_t agc_task_chkcors(void)
         int mag  = (diff < 0) ? -diff : diff;
         if (mag != 0 && (mag - 1) - COARSTOL > 0)
         { /* COARSERR         */
-            (void) agc_alarm(ALARM_COARSE_ERR);
+            agc_alarm(ALARM_COARSE_ERR);
             return agc_imu_imubad();
         }
     }
@@ -558,7 +558,8 @@ agc_status_t agc_imu_rndrefdr(void)
     (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_flag_clear(AGC_FLAG_DRIFTFLG);
     (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_flag_clear(AGC_FLAG_REFSMFLG);
+    agc_flag_clear(AGC_FLAG_REFSMFLG);
+    return AGC_STATUS_OK;
 }
 
 /* ======================================================================= */
@@ -684,7 +685,7 @@ agc_status_t agc_imu_pipfree(void)
     {
         return imu_modeexit();
     }
-    (void) agc_alarm(ALARM_PIP_FAIL);
+    agc_alarm(ALARM_PIP_FAIL);
     agc_inhint();
     setissw(); /* PIPFREE2         */
     return imu_modeexit();
@@ -848,7 +849,7 @@ agc_status_t agc_imu_status_check(void)
         code = ALARM_IMU_NOT_OPER; /* 220 - BIT4      */
     }
     (void) AGC_ASSERT(code == 00220 || code == 00210);
-    (void) agc_exec_varalarm(code);
+    agc_exec_varalarm(code);
     (void) agc_exec_gotopooh();
     return AGC_STATUS_POODOO;
 }

@@ -202,7 +202,7 @@ static agc_status_t ll_ign_guidance(agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else
     {
-        (void) agc_alarm(AGC_ALARM_01412); /* DEVIATION: NIGNLOOP stays 0 */
+        agc_alarm(AGC_ALARM_01412); /* DEVIATION: NIGNLOOP stays 0 */
     }
     return AGC_STATUS_OK;
 }
@@ -236,8 +236,8 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
         {
             return AGC_STATUS_OK; /* asleep; resumes IGNALOOP  */
         }
-        (void) agc_flag_set(AGC_FLAG_INTYPFLG);
-        (void) agc_flag_set(AGC_FLAG_MOONFLAG);
+        agc_flag_set(AGC_FLAG_INTYPFLG);
+        agc_flag_set(AGC_FLAG_MOONFLAG);
         ic->sv.tet = agc_guid_state()->avg.piptime1;
         ic->sv.rcv = ic->out.ratt1; /* hopefully ?GUIDSUB did not */
         ic->sv.vcv = ic->out.vatt1; /* clobber RATT1 and VATT1    */
@@ -271,13 +271,12 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_status_t st        = agc_chan_and(
                AGC_CHAN_CHAN12, (uint16_t) (077777u & ~(unsigned) AGC_CH012_RRLOCKON));
     (void) AGC_ASSERT(st == AGC_STATUS_OK); /* remove track-enable        */
-    (void) agc_flag_clear(AGC_FLAG_NOTHROTL);
-    (void) agc_flag_clear(AGC_FLAG_REDFLAG);
-    (void) agc_flag_clear(AGC_FLAG_LRBYPASS);
-    (void) agc_flag_set(AGC_FLAG_MUNFLAG);
-    (void) agc_flag_clear(
-        AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE); /* terminate P25 if running   */
-    (void) agc_flag_clear(AGC_FLAG_RNDVZFLG); /* terminate P20 if running   */
+    agc_flag_clear(AGC_FLAG_NOTHROTL);
+    agc_flag_clear(AGC_FLAG_REDFLAG);
+    agc_flag_clear(AGC_FLAG_LRBYPASS);
+    agc_flag_set(AGC_FLAG_MUNFLAG);
+    agc_flag_clear(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE); /* terminate P25 if running   */
+    agc_flag_clear(AGC_FLAG_RNDVZFLG); /* terminate P20 if running   */
     return ll_ignalg_start(ctx);
 }
 
@@ -406,7 +405,7 @@ static void ll_rate_of_descent_setup(void)
                                agc_dp_from_sp(c.pipabias[1]),
                                agc_dp_from_sp(c.pipabias[2]));
     l->vbias    = agc_vec_scale(&ip, b, LL_BIASFACT);
-    (void) agc_flag_set(AGC_FLAG_RODFLAG);
+    agc_flag_set(AGC_FLAG_RODFLAG);
     for (int i = 0; i < 3; i++)
     { /* VCOMP of TEMX..TEMZ  */
         l->oldpipa[i] = (agc_sp_t) -agc_erase_tem(i);
@@ -429,8 +428,8 @@ static void ll_vrtstart(agc_sp_t wchvert)
     l->wchphase     = AGC_LM_PHASE_VERTICAL;
     agc_status_t st = agc_lm_dap_stoprate();
     (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
-    (void) agc_flag_clear(AGC_FLAG_XOVINFLG);
-    (void) agc_flag_clear(AGC_FLAG_REDFLAG);
+    agc_flag_clear(AGC_FLAG_XOVINFLG);
+    agc_flag_clear(AGC_FLAG_REDFLAG);
     (void) AGC_ASSERT(wchvert >= 0);
 }
 
@@ -849,10 +848,10 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     (void) agc_lm_dap_zatteror();
     (void) agc_lm_dap_setmaxdb();
     agc_relint();
-    (void) agc_flag_set(AGC_FLAG_SURFFLAG);
-    (void) agc_flag_clear(AGC_FLAG_LETABORT);
-    (void) agc_flag_set(AGC_FLAG_APSFLAG);
-    (void) agc_flag_set(AGC_FLAG_LUNAFLAG);
+    agc_flag_set(AGC_FLAG_SURFFLAG);
+    agc_flag_clear(AGC_FLAG_LETABORT);
+    agc_flag_set(AGC_FLAG_APSFLAG);
+    agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_navaux_padload_t nav;
     agc_status_t         st = agc_navaux_get_padload(&nav);
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

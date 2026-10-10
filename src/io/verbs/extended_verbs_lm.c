@@ -129,7 +129,8 @@ agc_status_t agc_extverb_lm_attck2(void)
             return st;
         }
     }
-    return agc_chan_or((int) AGC_CHAN_CHAN14, (uint16_t) OCT70000);
+    agc_chan_or((int)AGC_CHAN_CHAN14, (uint16_t)OCT70000);
+    return AGC_STATUS_OK;
 }
 
 /* ---- V48 R03 ---------------------------------------------------------------- */

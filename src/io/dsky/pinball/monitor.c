@@ -289,10 +289,10 @@ agc_status_t pin_vbtstlts(void)
     agc_inhint();
     /* Set bit 1 of IMODES33 so IMUMON won't turn out any lamps.          */
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_BIT1));
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_TSTCON1);
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_TSTCON1);
     agc_status_t st =
         agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
-    (void) agc_chan_or((int) AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
+    agc_chan_or((int)AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* TSTLTS1 */
         st = agc_erase_set_dsptab(i, pin_ones_neg(PIN_FULLDSP));
@@ -327,10 +327,9 @@ static agc_status_t pin_tstlts3_lamps(void)
 {
     (void) AGC_ASSERT(pin_invariants());
     agc_inhint();
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_TSTCON3));
-    (void) agc_chan_and((int) AGC_CHAN_CHAN13,
-                        (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
+    agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_TSTCON3));
+    agc_chan_and((int)AGC_CHAN_CHAN13,
+                 (uint16_t)(PIN_WORD ^ PIN_CH13_TESTALM));
     uint16_t c =
         (uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN12) & PIN_CH12_COARSE) |
                     PIN_BIT15);

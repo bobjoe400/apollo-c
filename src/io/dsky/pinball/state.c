@@ -121,27 +121,26 @@ uint16_t pin_ones_from_sp(agc_sp_t v)
 /* FALTON: turn on operator error light, bit 7 of channel 11. */
 void pin_falton(void)
 {
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT,
-                       PIN_CH11_OPRERR); /* WOR cannot fail */
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_CH11_OPRERR); /* WOR cannot fail */
 }
 
 /* FLASHON: turn on V/N flash, bit 6 of channel 11. */
 void pin_flashon(void)
 {
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_FLASH);
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_CH11_FLASH);
 }
 
 /* FLASHOFF: turn off V/N flash. */
 void pin_flashoff(void)
 {
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_CH11_FLASH));
+    agc_chan_and((int)AGC_CHAN_DSALMOUT,
+		 (uint16_t)(PIN_WORD ^ PIN_CH11_FLASH));
 }
 
 /* RELDSPON: turn on key release light, bit 5 of channel 11. */
 void pin_reldspon(void)
 {
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_KEYREL);
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_CH11_KEYREL);
 }
 
 /* LODSAMPT (p. 380): time is snatched in rupt for noun 65 (SAMPTIME). */
@@ -338,7 +337,8 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
             (void) agc_erase_set_dsptab(g_pin.dspcnt, mag); /* replace + */
             *relay_word = (uint16_t) (((uint16_t) (g_pin.dspcnt + 1) << 11) |
                                       (mag & PIN_LOW11));
-            return agc_chan_write((int) AGC_CHAN_OUT0, *relay_word);
+            agc_chan_write((int)AGC_CHAN_OUT0, *relay_word);
+            return AGC_STATUS_OK;
         }
     }
     g_pin.nout = 0; /* 2nd pass: +0 into NOUT */

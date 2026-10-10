@@ -595,7 +595,8 @@ agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit,
     m.row[0] = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /*  6D */
     *delvlvc = agc_vec_shl(ip, agc_mat_vec(ip, &m, dv), 1);
     (void) AGC_ASSERT(delvlvc->c[0] != AGC_DP_MIN);
-    return agc_flag_set(AGC_FLAG_MGLVFLAG);
+    agc_flag_set(AGC_FLAG_MGLVFLAG);
+    return AGC_STATUS_OK;
 }
 
 /* ---- GET+MGA (MIDGIM p.493): +MGA = ARCSIN(UNIT(dV) . Ysm) in 0..1 rev */
@@ -616,7 +617,8 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
         a = agc_dp_add(ip, agc_dp_add(ip, a, halfrev), halfrev);
     }
     *mga = a;
-    return agc_flag_clear(AGC_FLAG_MGLVFLAG);
+    agc_flag_clear(AGC_FLAG_MGLVFLAG);
+    return AGC_STATUS_OK;
 }
 
 /* ---- navigation pad loads and X789 (P20-P25 erasables, owned here) ---- */

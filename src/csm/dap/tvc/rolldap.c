@@ -180,7 +180,8 @@ static agc_status_t roll_jets_on(bool plus)
     }
     (void) AGC_ASSERT(t->rollword <= 3u);
     (void) AGC_ASSERT(jets != 0u);
-    return agc_chan_write(AGC_CHAN_ROLLJETS, jets);
+    agc_chan_write(AGC_CHAN_ROLLJETS, jets);
+    return AGC_STATUS_OK;
 }
 
 /* JETROLL, SAMEJETS, T6ENABL (pp. 996-997): NOROLL1 in TEMREG T6 counts;

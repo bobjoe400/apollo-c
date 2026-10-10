@@ -267,7 +267,7 @@ static void dap_gymic(bool set_gymdifsw)
 {
     if (set_gymdifsw)
     {
-        (void) agc_flag_set(AGC_FLAG_GYMDIFSW);
+        agc_flag_set(AGC_FLAG_GYMDIFSW);
     }
     jetag                     = 0;
     oldelp                    = 0;
@@ -355,9 +355,10 @@ static agc_status_t dap_bodyrate(void)
     {
         return AGC_STATUS_OK; /* STBYDUMP          */
     }
-    (void) agc_rupt_set_time(5, 037777); /* TIME5 = POSMAX    */
+    agc_rupt_set_time(5, 037777); /* TIME5 = POSMAX    */
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_CMDAPARM));
-    return agc_rupt_set_t5_task(AGC_TASK_ATTRATES); /* T5LOC = ATTRATES  */
+    agc_rupt_set_t5_task(AGC_TASK_ATTRATES);
+    return AGC_STATUS_OK; /* T5LOC = ATTRATES  */
 }
 
 /* READGYMB / READGYM1 / DOBRATE? (pp. 1063-1064): .1 s task.             */
@@ -368,7 +369,7 @@ agc_status_t agc_task_readgymb(void)
     cm_gymdt = entry_sp_sat((int32_t) cm_gymdt + 10); /* ADS CM/GYMDT */
     if ((agc_erase_imodes33() & 040u) != 0u)
     { /* not fine align */
-        (void) agc_flag_clear(AGC_FLAG_GYMDIFSW);
+        agc_flag_clear(AGC_FLAG_GYMDIFSW);
         (void) agc_entry_dap_flushjet();
         dap_gymic(false);
         return agc_waitlist_call(10, AGC_TASK_READGYMB); /* DOBRATE1, JETEM 0 */
@@ -385,7 +386,8 @@ agc_status_t agc_task_readgymb(void)
     if (sel >= 2u)
     { /* CM/DSTBY off */
         (void) agc_entry_dap_flushjet();
-        return agc_phase_change(6, 000006); /* group 6 off  */
+        agc_phase_change(6, 000006);
+        return AGC_STATUS_OK; /* group 6 off  */
     }
     if (sel == 1u)
     {
@@ -486,7 +488,7 @@ static uint16_t dap_exdap2(agc_entry_state_t *es)
     rate    = (es->salfa > 0) ? (agc_sp_t) (-betadot) :
                                 ((es->salfa < 0) ? betadot : 0);
     tag     = dap_biasedz(rate, err);
-    (void) agc_chan_write(AGC_CHAN_ROLLJETS, agc_entry_dap_roll_jet_bits(tag));
+    agc_chan_write(AGC_CHAN_ROLLJETS, agc_entry_dap_roll_jet_bits(tag));
     err = entry_sp_sat((int32_t) es->rollhold - (int32_t) es->roll_180);
     err = (es->salfa > 0) ? err : ((es->salfa < 0) ? (agc_sp_t) (-err) : 0);
     (void) AGC_ASSERT(es->cmdapmod == AGC_ENTRY_DAPMOD_PLUS1);
@@ -505,14 +507,14 @@ static uint16_t dap_exdap(agc_entry_state_t *es)
     }
     if (es->calfa > 0 && es->wake_separation_interlock == 0)
     {
-        (void) agc_phase_change(4, 040334); /* 4.33 WAKEP62 */
+        agc_phase_change(4, 040334); /* 4.33 WAKEP62 */
         es->wake_separation_interlock = -1; /* single pass  */
         (void) agc_waitlist_call(AGC_ENTRY_NSEC,
                                  AGC_TASK_WAKE_CM_SM_SEPARATION);
     }
     if (jetag < 0)
     { /* EXDAP4       */
-        (void) agc_chan_write(AGC_CHAN_ROLLJETS, 0);
+        agc_chan_write(AGC_CHAN_ROLLJETS, 0);
         jetag = 0;
     }
     if (es->calfa > 0)
@@ -544,7 +546,7 @@ static agc_status_t dap_fdai(bool integrate)
     {
         bool init    = needler_init;
         needler_init = false;
-        (void) agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* CM/END        */
+        agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* CM/END        */
         return agc_dap_needler(ak, ak1, ak2, init);
     }
     if (sw_ndx + 3 > 0)
@@ -563,7 +565,8 @@ static agc_status_t dap_fdai(bool integrate)
         endbuf[3 * idx + 1] = qrel;
         endbuf[3 * idx + 2] = rrel;
     }
-    return agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* CM/END        */
+    agc_rupt_set_t5_task(AGC_TASK_T5IDLOC);
+    return AGC_STATUS_OK; /* CM/END        */
 }
 
 /* ======================================================================
@@ -578,7 +581,8 @@ agc_status_t agc_task_setjtag(void)
     jetag = 1;
     (void) AGC_ASSERT(tused >= 0);
     (void) AGC_ASSERT(jetag == 1);
-    return agc_phase_change(1, 000001);
+    agc_phase_change(1, 000001);
+    return AGC_STATUS_OK;
 }
 
 /* GETON2 / GETOFF / TOFFOVFL / GETOFF2 / TIMSCAL (pp. 1085-1086).       */
@@ -756,7 +760,8 @@ static agc_status_t dap_jetlist(int start)
         }
     }
     (void) AGC_ASSERT(nujet <= 0377u);
-    return agc_chan_write(AGC_CHAN_ROLLJETS, nujet); /* JETACTN          */
+    agc_chan_write(AGC_CHAN_ROLLJETS, nujet);
+    return AGC_STATUS_OK; /* JETACTN          */
 }
 
 /* TIMETST (pp. 1087-1088): keep only intervals > 2 cs that start within
@@ -798,7 +803,8 @@ agc_status_t agc_task_jetcall(void)
 {
     if (!agc_flag_test(AGC_FLAG_CM_DSTBY))
     {
-        return agc_chan_write(AGC_CHAN_ROLLJETS, 0); /* JETACTN +1       */
+        agc_chan_write(AGC_CHAN_ROLLJETS, 0);
+        return AGC_STATUS_OK; /* JETACTN +1       */
     }
     (void) AGC_ASSERT(jet_time[0] <= 0);
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_CM_DSTBY));
@@ -849,7 +855,7 @@ static void rcs_dzcall(agc_entry_state_t *es)
     {
         es->rollhold = entry_angle_wrap(2 * (int32_t) agc_dp_high(es->rollc));
     }
-    (void) agc_chan_write(AGC_CHAN_ROLLJETS, 0);
+    agc_chan_write(AGC_CHAN_ROLLJETS, 0);
     vdt_180 = 0;
     (void) AGC_ASSERT(vdt_180 == 0);
 }
@@ -867,7 +873,7 @@ static agc_status_t dap_cm_rcs(agc_entry_state_t *es)
 
     if (!agc_flag_test(AGC_FLAG_LATSW))
     {
-        (void) agc_flag_set(AGC_FLAG_LATSW); /* over the top */
+        agc_flag_set(AGC_FLAG_LATSW); /* over the top */
         lcx = entry_sp_sat((int32_t) rollc + sr);
     }
     else
@@ -919,7 +925,7 @@ agc_status_t agc_task_attrates(void)
     {
         bits = dap_exdap(es);
     }
-    (void) agc_chan_write(AGC_CHAN_PYJETS, bits); /* EXDAPIN */
+    agc_chan_write(AGC_CHAN_PYJETS, bits); /* EXDAPIN */
     (void) AGC_ASSERT(jetag >= -1 && jetag <= 1);
     if (jetag > 0)
     {
@@ -957,8 +963,8 @@ agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx)
     es->rollhold = es->roll_180;
     es->rollc    = agc_dp_pack(entry_sp_mp(es->roll_180, AGC_SP_HALF),
                                agc_dp_low(es->rollc)); /* ROLL/360  */
-    (void) agc_flag_set(AGC_FLAG_CMDAPARM);
-    (void) agc_flag_set(AGC_FLAG_NODOFLAG); /* no V37 now */
+    agc_flag_set(AGC_FLAG_CMDAPARM);
+    agc_flag_set(AGC_FLAG_NODOFLAG); /* no V37 now */
     agc_relint();
     return agc_job_cm_sm_separation_target_display(ctx); /* POSTJUMP   */
 }
@@ -971,10 +977,10 @@ agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_clear(AGC_FLAG_DAPBIT1);
-    (void) agc_flag_clear(AGC_FLAG_DAPBIT2);
-    (void) agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* T5IDLER1   */
-    (void) agc_rupt_set_t6_task(AGC_TASK_T5IDLOC);
+    agc_flag_clear(AGC_FLAG_DAPBIT1);
+    agc_flag_clear(AGC_FLAG_DAPBIT2);
+    agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* T5IDLER1   */
+    agc_rupt_set_t6_task(AGC_TASK_T5IDLOC);
     (void) agc_entry_dap_flushjet();
     agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() & ~070000u));
     (void) AGC_ASSERT((agc_erase_dapdatr1() & 070000u) == 0u);
@@ -1023,14 +1029,14 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
     (void) agc_waitlist_call((uint16_t) cm_gymdt, AGC_TASK_READGYMB);
     for (i = 0; i < (sizeof clr / sizeof clr[0]); i++)
     {
-        (void) agc_flag_clear(clr[i]);
+        agc_flag_clear(clr[i]);
     }
-    (void) agc_flag_set(AGC_FLAG_CM_DSTBY); /* CM/SWIC2 = 012     */
-    (void) agc_flag_set(AGC_FLAG_LATSW);
+    agc_flag_set(AGC_FLAG_CM_DSTBY); /* CM/SWIC2 = 012     */
+    agc_flag_set(AGC_FLAG_LATSW);
     agc_entry_state()->beta_180 = 0; /* no ovfl correction */
     sw_ndx                      = 1;
     agc_relint();
-    (void) agc_phase_change2(040116, 005024, &v); /* 6.11, 4.2 P62.2    */
+    agc_phase_change2(040116, 005024, &v); /* 6.11, 4.2 P62.2    */
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_CM_DSTBY));
     return agc_job_cm_sm_separation_request(ctx); /* POSTJUMP P62.2     */
 }

@@ -672,14 +672,16 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
     {
         if ((MAX_PAIR - ram->markcntr) <= 0)
         {
-            return agc_alarm(ALM_FIVE); /* 5MKALARM */
+            agc_alarm(ALM_FIVE);
+            return AGC_STATUS_ALARM; /* 5MKALARM */
         }
         ram->markcntr = (agc_sp_t) (ram->markcntr + 1);
         set_markstat((uint16_t) (markstat() & ~MS_PAIR_CLR));
     }
     if ((markstat() & bit) != 0u)
     { /* VERIFYMK */
-        return agc_alarm(ALM_UNWANTED);
+        agc_alarm(ALM_UNWANTED);
+        return AGC_STATUS_ALARM;
     }
     return vacstor(s, y_mark, bit);
 }
@@ -697,7 +699,8 @@ static agc_status_t mark_reject(void)
     { /* SURFREJ  */
         if (ram->markcntr <= 0)
         {
-            return agc_alarm(ALM_NO_REJECT);
+            agc_alarm(ALM_NO_REJECT);
+            return AGC_STATUS_ALARM;
         }
         ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
         return AGC_STATUS_OK;
@@ -705,7 +708,8 @@ static agc_status_t mark_reject(void)
     const uint16_t old = markstat();
     if ((old & MS_XY) == 0u)
     {
-        return agc_alarm(ALM_NO_REJECT); /* REJALM   */
+        agc_alarm(ALM_NO_REJECT);
+        return AGC_STATUS_ALARM; /* REJALM   */
     }
     uint16_t       ms = (uint16_t) ((old & ~MS_REJECT_CLR) + MS_REJECTED);
     const uint16_t drop =
@@ -723,7 +727,8 @@ static agc_status_t other_key(uint16_t in)
     {
         return agc_lm_descbits(); /* POSTJUMP */
     }
-    return agc_alarm(ALM_NO_INBITS);
+    agc_alarm(ALM_NO_INBITS);
+    return AGC_STATUS_ALARM;
 }
 
 /*
@@ -751,7 +756,8 @@ agc_status_t agc_aotmark_markrupt(void)
     }
     if (ms == 0u)
     {
-        return agc_alarm(ALM_NOT_TAKEN);
+        agc_alarm(ALM_NOT_TAKEN);
+        return AGC_STATUS_ALARM;
     }
     if ((in & AGC_CH016_AOTREJECT) != 0u)
     {

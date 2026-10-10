@@ -47,7 +47,8 @@ static const agc_dp_t MUDTMUN = -(agc_dp_t) 95757383;
 static agc_status_t gnufaze5(uint16_t phase, bool tbase)
 {
     (void) AGC_ASSERT(phase <= 7U);
-    return agc_phase_newphase(GRP5, phase, tbase);
+    agc_phase_newphase(GRP5, phase, tbase);
+    return AGC_STATUS_OK;
 }
 
 /* QUIKFAZ5 (p.890): store the restart address in PHSNAME5. In C the
@@ -60,7 +61,8 @@ agc_status_t agc_lm_serv_quikfaz5(agc_job_id_t resume)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return agc_phase_change_var(PH_5_3_BJOB, &v);
+    agc_phase_change_var(PH_5_3_BJOB, &v);
+    return AGC_STATUS_OK;
 }
 
 /* REPIP4 (p.870): guidance period PGUIDE = PIPTIME1 - PIPTIME, the CDUs at
@@ -100,9 +102,9 @@ agc_status_t agc_task_bibibias(void)
     {
         return st;
     }
-    (void) agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SUPER011: BITS 5, 6    */
-    (void) agc_flag_set(AGC_FLAG_AVEGFLAG);
-    (void) agc_flag_clear(AGC_FLAG_DRIFTFLG);
+    agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SUPER011: BITS 5, 6    */
+    agc_flag_set(AGC_FLAG_AVEGFLAG);
+    agc_flag_clear(AGC_FLAG_DRIFTFLG);
     g->avg.pipage  = 4;                /* INITIALIZE DV MONITOR  */
     g->lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD               */
     st             = agc_exec_findvac(AGC_PRIO22, AGC_JOB_NORMLIZE);
@@ -133,7 +135,7 @@ static agc_status_t abort_monitor_setup(agc_avg_g_t *a)
 {
     a->pipctr = 7; /* PIPCTR FOR 4X/SEC RATE */
     (void) agc_phase_set_tbase(GRP2);
-    (void) agc_phase_newphase(GRP2, 021, false); /* 2.21SPOT FOR R10,R11   */
+    agc_phase_newphase(GRP2, 021, false); /* 2.21SPOT FOR R10,R11   */
     (void) AGC_ASSERT(a->pipctr == 7);
     return agc_waitlist_call(ABORT_MONITOR_FIRST_CS, AGC_TASK_ABORT_MONITOR);
 }
@@ -148,8 +150,7 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
     {
         return st;
     }
-    (void) agc_chan_or(011,
-                       (uint16_t) AGC_CH011_TESTCONN); /* TEST CONNECTOR ON */
+    agc_chan_or(011, (uint16_t)AGC_CH011_TESTCONN); /* TEST CONNECTOR ON */
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG))
     { /* AVEGOUT                */
         a->avgexit = AGC_JOB_AVGEND;
@@ -428,13 +429,12 @@ static agc_status_t lothrust(agc_job_ctx_t *ctx)
         (void) agc_lm_serv_quikfaz5(AGC_JOB_SERV_DECCNTR);
         lm->dvcntr = agc_dp_high(lm->mass1);
         (void) agc_lm_dap_stoprate();           /* NO STEERING (INHINT)   */
-        (void) agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
+        agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
         return servout(ctx);
     }
     if (agc_phase_get(4) == 0U)
     { /* COMFAIL JOB ACTIVE?    */
-        (void) agc_phase_change(4,
-                                (uint16_t) 000374); /* 4.37SPOT FOR COMFAIL   */
+        agc_phase_change(4, (uint16_t)000374); /* 4.37SPOT FOR COMFAIL   */
         (void) agc_exec_novac(AGC_PRIO25, AGC_JOB_COMFAIL);
     }
     (void) AGC_ASSERT(lm->dvcntr <= 0);
@@ -451,17 +451,17 @@ static agc_status_t dvmon(agc_job_ctx_t *ctx)
     {
         return lothrust(ctx);
     }
-    (void) agc_flag_set(AGC_FLAG_STEERSW);
+    agc_flag_set(AGC_FLAG_STEERSW);
     lm->dvcntr = 1; /* DVCNTSET               */
     bool jets  = agc_flag_test(AGC_FLAG_APSFLAG) ||
                 ((agc_chan_read(032) & (uint16_t) AGC_CH032_DPSGIMBDIS) == 0U);
     if (jets)
     {
-        (void) agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
+        agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
     }
     else
     {
-        (void) agc_flag_clear(AGC_FLAG_USEQRFLG); /* USEGTS                 */
+        agc_flag_clear(AGC_FLAG_USEQRFLG); /* USEGTS                 */
     }
     (void) AGC_ASSERT(lm->dvcntr == 1);
     return servout(ctx);
@@ -480,17 +480,17 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
     (void) agc_guid_copycycle(AGC_VEHICLE_LM, AGC_COPY_ALL);
     agc_inhint(); /* RETURN UNDER INHINT    */
     g->avg.pipatmp[0] = g->avg.pipatmp[1] = g->avg.pipatmp[2] = 0;
-    (void) agc_flag_clear(AGC_FLAG_STEERSW);
+    agc_flag_clear(AGC_FLAG_STEERSW);
     if (agc_flag_test(AGC_FLAG_IDLEFLAG))
     {
-        (void) agc_flag_clear(AGC_FLAG_AUXFLAG); /* NODVMON1               */
-        (void) agc_flag_set(AGC_FLAG_USEQRFLG);
+        agc_flag_clear(AGC_FLAG_AUXFLAG); /* NODVMON1               */
+        agc_flag_set(AGC_FLAG_USEQRFLG);
         return servout(ctx);
     }
     if (!agc_flag_test(AGC_FLAG_AUXFLAG))
     {
-        (void) agc_flag_set(AGC_FLAG_AUXFLAG); /* NODVMON2               */
-        (void) agc_flag_set(AGC_FLAG_USEQRFLG);
+        agc_flag_set(AGC_FLAG_AUXFLAG); /* NODVMON2               */
+        agc_flag_set(AGC_FLAG_USEQRFLG);
         return servout(ctx);
     }
     return dvmon(ctx);
@@ -570,7 +570,7 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
         agc_inhint();
         g->lm.dvcntr = agc_dp_high(g->lm.mass1); /* CA DVCNTR1 TS DVCNTR   */
         (void) agc_lm_dap_stoprate();
-        (void) agc_flag_set(AGC_FLAG_USEQRFLG);
+        agc_flag_set(AGC_FLAG_USEQRFLG);
         return servout(ctx);
     }
     return getabval(ctx); /* SERVICER / GETABVAL    */
@@ -587,13 +587,13 @@ agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_imu_set_pipa_interval(
         agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
-    (void) agc_flag_set(AGC_FLAG_DRIFTFLG);
+    agc_flag_set(AGC_FLAG_DRIFTFLG);
     (void) agc_imu_pipfree();
-    (void) agc_chan_and(011, (uint16_t) ~(uint16_t) AGC_CH011_TESTCONN);
+    agc_chan_and(011, (uint16_t)~(uint16_t)AGC_CH011_TESTCONN);
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change2(000005, 005022, &v); /* GROUP 5 OFF, 2 ON      */
+    agc_phase_change2(000005, 005022, &v); /* GROUP 5 OFF, 2 ON      */
     return agc_job_avetomid_lm(ctx);
 }
 
@@ -606,10 +606,9 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    (void) agc_flag_set(
-        AGC_FLAG_NO_POWERED_DESIGNATE);       /* SHUT OFF R29           */
-    (void) agc_flag_clear(AGC_FLAG_SWANDISP); /* SHUT OFF R10           */
-    (void) agc_flag_clear(AGC_FLAG_MUNFLAG);
+    agc_flag_set(AGC_FLAG_NO_POWERED_DESIGNATE);       /* SHUT OFF R29           */
+    agc_flag_clear(AGC_FLAG_SWANDISP); /* SHUT OFF R10           */
+    agc_flag_clear(AGC_FLAG_MUNFLAG);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_status_t st = agc_guid_avetomid(&ip, ctx->id);
@@ -617,7 +616,7 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    (void) agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
+    agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     agc_job_id_t out = agc_guid_state()->lm.outroute;
     if (out == AGC_JOB_ENDOFJOB || out == AGC_JOB_NONE)
     {
@@ -639,18 +638,17 @@ agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_state()->avg.avgexit =
         AGC_JOB_SERVEXIT; /* SVEXTADR               */
-    (void) agc_flag_set(AGC_FLAG_IDLEFLAG);
-    (void) agc_flagword_set(
-        agc_flag_word(AGC_FLAG_LRBYPASS),
-        agc_flag_mask(AGC_FLAG_LRBYPASS)); /* TS FLGWRD11  */
-    (void) agc_phase_kill(1);
+    agc_flag_set(AGC_FLAG_IDLEFLAG);
+    agc_flagword_set(agc_flag_word(AGC_FLAG_LRBYPASS),
+                     agc_flag_mask(AGC_FLAG_LRBYPASS)); /* TS FLGWRD11  */
+    agc_phase_kill(1);
     if (!agc_flag_test(AGC_FLAG_MUNFLAG))
     {
-        (void) agc_phase_kill(GRP2);
+        agc_phase_kill(GRP2);
     }
-    (void) agc_phase_kill(3);
-    (void) agc_phase_kill(6);
-    (void) agc_phase_newphase(4, 033, false); /* 4.33SPOT FOR GOP00FIX  */
+    agc_phase_kill(3);
+    agc_phase_kill(6);
+    agc_phase_newphase(4, 033, false); /* 4.33SPOT FOR GOP00FIX  */
     return agc_exec_enema();                  /* TCF WHIMPER            */
 }
 
@@ -676,7 +674,7 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx)
         g->lm.v = agc_mat_vec(&ip, &refsmmat, agc_vec_shl(&ip, g->avg.vn1, 1));
         g->lm.uhyp = agc_vec_unit(
             &ip, agc_vec_cross(&ip, g->lm.v_csm, g->lm.r_csm), NULL, NULL);
-        (void) agc_phase_kill(GRP2); /* GROUP 2 IS OFF         */
+        agc_phase_kill(GRP2); /* GROUP 2 IS OFF         */
     }
     else
     {

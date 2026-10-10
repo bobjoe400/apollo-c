@@ -47,7 +47,8 @@ static agc_status_t serv_phase(uint16_t code, agc_job_id_t job)
     agc_phase_var_t v = {AGC_RESTART_JOB,      job,   AGC_TASK_NONE,
                          (int16_t) AGC_PRIO20, false, 0U};
     (void) AGC_ASSERT(job != AGC_JOB_NONE);
-    return agc_phase_change_var(code, &v);
+    agc_phase_change_var(code, &v);
+    return AGC_STATUS_OK;
 }
 
 /* PREREAD1 (p.823): last free-fall PIPA reading and package set-up.        */
@@ -59,9 +60,9 @@ static agc_status_t preread1(agc_avg_g_t *a)
         return st;
     }
     a->pipage = 1;                                  /* for REREADAC           */
-    (void) agc_flag_set(AGC_FLAG_AVEGFLAG);         /* SET AVEG FLAG          */
-    (void) agc_flag_clear(AGC_FLAG_DRIFTFLG);       /* KNOCK DOWN DRIFT FLAG  */
-    (void) agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SET V37 FLAG           */
+    agc_flag_set(AGC_FLAG_AVEGFLAG);         /* SET AVEG FLAG          */
+    agc_flag_clear(AGC_FLAG_DRIFTFLG);       /* KNOCK DOWN DRIFT FLAG  */
+    agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SET V37 FLAG           */
     a->dvtotal = 0;                                 /* CLEAR DVTOTAL          */
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_AVEGFLAG));
     return AGC_STATUS_OK;
@@ -89,7 +90,8 @@ agc_status_t agc_task_preread_csm(void)
     {
         return st;
     }
-    return agc_phase_newphase(GRP5, 2, true); /* CS TWO NEWPHASE 5 */
+    agc_phase_newphase(GRP5, 2, true);
+    return AGC_STATUS_OK; /* CS TWO NEWPHASE 5 */
 }
 
 /* Entry-DAP part of REDO5.5 (p.824-825): during entry (CM/DSTBY set) the
@@ -124,9 +126,10 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
     }
     agc_erase_set_cm_gymdt(5); /* CA FIVE TS CM/GYMDT    */
     (void) agc_waitlist_call(JTAGTIME, AGC_TASK_SETJTAG);
-    (void) agc_phase_newphase(GRP1, 3, true); /* 1.3SPOT FOR SETJTAG    */
+    agc_phase_newphase(GRP1, 3, true); /* 1.3SPOT FOR SETJTAG    */
     (void) AGC_ASSERT(a->pipctr == 2);
-    return agc_phase_newphase(GRP5, 037, false); /* 5.37 = CHEKAVEG        */
+    agc_phase_newphase(GRP5, 037, false);
+    return AGC_STATUS_OK; /* 5.37 = CHEKAVEG        */
 }
 
 /* CHEKAVEG / MAKESERV / AVEGOUT (p.825-826): recall READACCS while AVEGFLAG
@@ -151,15 +154,15 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
     {
         return st;
     }
-    (void) agc_phase_newphase(GRP5, 4, true); /* CS FOUR NEWPHASE 5     */
-    return agc_chan_or(011,
-                       (uint16_t) AGC_CH011_TESTCONN); /* TEST CONNECTOR ON */
+    agc_phase_newphase(GRP5, 4, true); /* CS FOUR NEWPHASE 5     */
+    agc_chan_or(011, (uint16_t)AGC_CH011_TESTCONN);
+    return AGC_STATUS_OK; /* TEST CONNECTOR ON */
 }
 
 /* PIPSDONE / REDO5.5 (p.824): mark the reading done and continue.          */
 static agc_status_t pipsdone(agc_avg_g_t *a)
 {
-    (void) agc_phase_newphase(GRP5, 5, false); /* CAF FIVE DXCH -PHASE5  */
+    agc_phase_newphase(GRP5, 5, false); /* CAF FIVE DXCH -PHASE5  */
     a->pipage = 1;                             /* SHOW PIPS HAVE BEEN READ */
     a->pipctr = 2;                             /* PIPCTR FOR ONMNITOR    */
     if (agc_flag_test(AGC_FLAG_CM_DSTBY))
@@ -301,7 +304,7 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
     agc_relint();
     if (bad)
     {
-        (void) agc_alarm(AGC_ALARM_00205); /* SATURATED-PIPA ALARM   */
+        agc_alarm(AGC_ALARM_00205); /* SATURATED-PIPA ALARM   */
         return agc_job_serv_averageg_csm(ctx);
     }
     (void) serv_phase(PH_5_3_BJOB,
@@ -410,11 +413,11 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
     agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime()));
-    (void) agc_flag_set(AGC_FLAG_DRIFTFLG);
+    agc_flag_set(AGC_FLAG_DRIFTFLG);
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change2(000005, 005022, &v); /* 5 OFF, 2.2 AVETOMID    */
+    agc_phase_change2(000005, 005022, &v); /* 5 OFF, 2.2 AVETOMID    */
     return agc_job_avetomid_csm(ctx);
 }
 
@@ -438,13 +441,12 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     agc_rendz_erasable()->trkmkcnt = 0;
     (void) agc_imu_pipfree();
     agc_erase_set_mrkbuf2(0, (agc_sp_t) -0400); /* CS BIT9: INVALIDATE    */
-    (void) agc_chan_and(011, (uint16_t) ~(uint16_t) AGC_CH011_TESTCONN);
-    (void) agc_flag_clear(AGC_FLAG_CM_DSTBY);
-    (void) agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
+    agc_chan_and(011, (uint16_t)~(uint16_t)AGC_CH011_TESTCONN);
+    agc_flag_clear(AGC_FLAG_CM_DSTBY);
+    agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     if (agc_flag_test(AGC_FLAG_RNDVZFLG))
     { /* RESTORE GROUP 1 + 2    */
-        (void) agc_phase_change2(000111, 000132,
-                                 NULL); /* 1.11SPOT, 2.13SPOT     */
+        agc_phase_change2(000111, 000132, NULL); /* 1.11SPOT, 2.13SPOT     */
     }
     return agc_exec_change_program_continue(ctx); /* POSTJUMP CANV37        */
 }
@@ -458,5 +460,6 @@ agc_status_t agc_job_servexit(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(agc_guid_state()->avg.avgexit != AGC_JOB_NONE);
-    return agc_phase_change(GRP5, PH_5_3_A);
+    agc_phase_change(GRP5, PH_5_3_A);
+    return AGC_STATUS_OK;
 }

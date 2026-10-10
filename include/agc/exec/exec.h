@@ -39,7 +39,7 @@ agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job);   /* NOVAC   */
 agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job); /* FINDVAC */
 agc_status_t agc_exec_job_sleep(agc_job_id_t wake_as);            /* JOBSLEEP*/
 agc_status_t agc_exec_job_wake(agc_job_id_t job);                 /* JOBWAKE */
-agc_status_t agc_exec_prio_change(agc_prio_t new_prio);           /* PRIOCHNG*/
+void         agc_exec_prio_change(agc_prio_t new_prio);           /* PRIOCHNG*/
 agc_status_t agc_exec_run_one(void); /* run highest-priority ready job  */
 bool         agc_exec_idle(void);    /* DUMMYJOB would run              */
 
@@ -64,15 +64,15 @@ void agc_relint(void);
 bool agc_interrupts_inhibited(void);
 
 /* Alarms and aborts (ALARM_AND_ABORT.agc pp. 1493-1496).                   */
-agc_status_t agc_alarm(agc_alarm_code_t code);     /* ALARM: light, store   */
-agc_status_t agc_prioalarm(agc_alarm_code_t code); /* PRIOLARM              */
+void         agc_alarm(agc_alarm_code_t code);     /* ALARM: light, store   */
+void         agc_prioalarm(agc_alarm_code_t code); /* PRIOLARM              */
 agc_status_t agc_bailout(agc_alarm_code_t code);   /* BAILOUT -> restart    */
 agc_status_t agc_poodoo(agc_alarm_code_t code);    /* POODOO  -> P00        */
 agc_status_t agc_abort_restart(void);              /* ABORT                 */
 
 /* Phase table maintenance (PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413).    */
 #define AGC_RESTART_GROUPS 6
-agc_status_t agc_phase_change(int group, uint16_t phase_code); /* PHASCHNG */
+void agc_phase_change(int group, uint16_t phase_code); /* PHASCHNG */
 agc_status_t agc_phase_new(int group, agc_job_id_t job,
                            agc_prio_t prio); /* NEWPHASE */
 agc_status_t agc_phase_restart_all(void);    /* RESTART  */
@@ -165,12 +165,11 @@ typedef struct agc_phase_var
     uint32_t long_dt_cs;          /* longcall: DP delta time, cs              */
 } agc_phase_var_t;
 
-agc_status_t
-             agc_phase_change_var(uint16_t               code,
+void agc_phase_change_var(uint16_t               code,
                                   const agc_phase_var_t *v); /* PHASCHNG type B/C */
-agc_status_t agc_phase_change2(uint16_t code_a, uint16_t code_b,
+void agc_phase_change2(uint16_t code_a, uint16_t code_b,
                                const agc_phase_var_t *v); /* 2PHSCHNG */
-agc_status_t agc_phase_newphase(int group, uint16_t phase,
+void agc_phase_newphase(int group, uint16_t phase,
                                 bool set_tbase);   /* NEWPHASE */
 uint16_t     agc_phase_get(int group);             /* C(PHASEn)            */
 agc_status_t agc_phase_mr_klean(void);             /* MR.KLEAN             */
@@ -181,7 +180,7 @@ bool         agc_phase_checkmm(agc_sp_t mode);     /* CHECKMM              */
 agc_status_t agc_restart_group(int group);         /* RESTARTS (one group) */
 
 /* Alarms.                                                                 */
-agc_status_t agc_curtains(void); /* CURTAINS: ALARM 217  */
+void agc_curtains(void); /* CURTAINS: ALARM 217  */
 agc_status_t agc_ccshole(void);  /* CCSHOLE: POODOO 1103 */
 
 /* Fresh start and restart (FRESH_START_AND_RESTART.agc).                  */
@@ -218,8 +217,8 @@ agc_status_t  agc_rupt_uprupt(void);
 agc_status_t  agc_rupt_downrupt(void);
 agc_status_t  agc_rupt_radarupt(void);
 agc_status_t  agc_rupt_rupt10(void);
-agc_status_t  agc_rupt_set_t5_task(agc_task_id_t task); /* DXCH T5ADR/T5LOC */
-agc_status_t  agc_rupt_set_t6_task(agc_task_id_t task); /* T6LOC (CSM)      */
+void  agc_rupt_set_t5_task(agc_task_id_t task); /* DXCH T5ADR/T5LOC */
+void  agc_rupt_set_t6_task(agc_task_id_t task); /* T6LOC (CSM)      */
 agc_task_id_t agc_rupt_t5_task(void);
 agc_status_t
 agc_dispatch_rupt(agc_rupt_id_t rupt); /* dispatch.c: handlers in other lanes */
@@ -233,8 +232,8 @@ agc_dispatch_rupt(agc_rupt_id_t rupt); /* dispatch.c: handlers in other lanes */
 bool         agc_exec_restart_pending(void);
 agc_status_t agc_exec_service_restart(void); /* runs ENEMA if requested */
 agc_status_t agc_exec_enema(void);           /* request ENEMA (GOPROG2)  */
-agc_status_t agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM      */
-agc_status_t agc_phase_kill(int group); /* DXCH -PHASEn with NEG0 */
+void agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM      */
+void agc_phase_kill(int group); /* DXCH -PHASEn with NEG0 */
 
 /* Jobs and tasks defined in src/exec/ (called from dispatch.c).         */
 agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);    /* GOTOPOOH          */
@@ -263,6 +262,6 @@ agc_sp_t     agc_erase_imucadr(void); /* = MODECADR +0         */
  * harness advances them and calls the T4/T5/T6 lead-ins on overflow.
  * n = 4, 5 or 6; values are the 15-bit counter words.                 */
 uint16_t     agc_rupt_time(int n);
-agc_status_t agc_rupt_set_time(int n, uint16_t v);
+void agc_rupt_set_time(int n, uint16_t v);
 
 #endif /* AGC_EXEC_H */

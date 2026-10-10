@@ -71,7 +71,8 @@ agc_status_t agc_task_cloktask_lm(void)
     (void) agc_phase_set_tbase(6);
     if (agc_guid_state()->lm.dispdex > 0)
     {
-        return agc_phase_kill(6); /* KILLCLOK               */
+        agc_phase_kill(6);
+        return AGC_STATUS_OK; /* KILLCLOK               */
     }
     (void) agc_exec_novac(AGC_PRIO27, AGC_JOB_CLOCKJOB);
     (void) AGC_ASSERT(agc_guid_state()->lm.dispdex <= 0);
@@ -157,7 +158,7 @@ agc_status_t agc_lm_nullclok(void)
     agc_inhint();
     (void) agc_lm_noullage();
     (void) agc_waitlist_kill(AGC_TASK_ULLGTASK);
-    (void) agc_phase_change(1, (uint16_t) 000001);
+    agc_phase_change(1, (uint16_t)000001);
     agc_guid_state()->lm.dispdex = IGN_DISPDEX_KILL;
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_ULLAGFLG));
     return AGC_STATUS_OK;
@@ -186,7 +187,7 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED,
                          AGC_TASK_NONE,   (int16_t) ctx->prio,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 004024, &v);
+    agc_phase_change_var((uint16_t)004024, &v);
     agc_guid_state()->lm.dispdex = 0;
     return agc_exec_findvac(AGC_PRIO13, AGC_JOB_ASTNRET);
 }
@@ -200,12 +201,12 @@ agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_set(AGC_FLAG_ASTNFLAG);
+    agc_flag_set(AGC_FLAG_ASTNFLAG);
     if (agc_flag_test(AGC_FLAG_IGNFLAG))
     {
         agc_inhint();
         (void) agc_waitlist_call(1, AGC_TASK_IGNITION);
-        (void) agc_phase_newphase(4, (uint16_t) 023, false);
+        agc_phase_newphase(4, (uint16_t)023, false);
         agc_relint();
     }
     agc_guid_state()->lm.dispdex = (agc_sp_t) -IGN_CNTDNDEX; /* IGNITE1     */
@@ -232,7 +233,7 @@ static agc_status_t go_postburn(void)
 static agc_status_t go_cutoff(void)
 {
     (void) agc_exec_findvac(AGC_PRIO17, AGC_JOB_CUTOFF);
-    (void) agc_flag_clear(AGC_FLAG_FLUNDISP);
+    agc_flag_clear(AGC_FLAG_FLUNDISP);
     agc_inhint();
     (void) agc_lm_dap_allcoast();
     (void) agc_lm_nullclok();
@@ -276,8 +277,8 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_guid_t *g = agc_guid_state();
-    (void) agc_flag_set(AGC_FLAG_IDLEFLAG);
-    (void) agc_flag_set(AGC_FLAG_FLUNDISP);
+    agc_flag_set(AGC_FLAG_IDLEFLAG);
+    agc_flag_set(AGC_FLAG_FLUNDISP);
     g->lm.dvcntr = DVMON_PASSES; /* RESET DVMON            */
     if (agc_phase_get(6) == 0U)
     { /* CLOCKTASK ACTIVE?      */
@@ -285,7 +286,8 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
     }
     g->lm.dispdex = (agc_sp_t) -IGN_VB97DEX;
     (void) AGC_ASSERT(g->lm.dispdex < 0);
-    return agc_phase_change(4, (uint16_t) 000004); /* TURN OFF GROUP 4       */
+    agc_phase_change(4, (uint16_t)000004);
+    return AGC_STATUS_OK; /* TURN OFF GROUP 4       */
 }
 
 /* COMFAIL1 (p.742): V97 PROCEED (keep going without thrust): entry (2) --
@@ -300,8 +302,8 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t) IGN_DISPDEX_KILL :
                                               (agc_sp_t) -IGN_CNTDNDEX;
-    (void) agc_flag_clear(AGC_FLAG_IDLEFLAG); /* RECONNECT DV MONITOR   */
-    (void) agc_flag_clear(AGC_FLAG_FLUNDISP);
+    agc_flag_clear(AGC_FLAG_IDLEFLAG); /* RECONNECT DV MONITOR   */
+    agc_flag_clear(AGC_FLAG_FLUNDISP);
     (void) AGC_ASSERT(lm->dispdex != 0);
     return AGC_STATUS_OK;
 }
@@ -318,20 +320,20 @@ agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_phase_change(3, (uint16_t) 000003);
+    agc_phase_change(3, (uint16_t)000003);
     agc_inhint();
     (void) agc_waitlist_kill(AGC_TASK_ZOOM);
     (void) agc_lm_enginof4();
-    (void) agc_flag_set(AGC_FLAG_DRIFTDFL);
+    agc_flag_set(AGC_FLAG_DRIFTDFL);
     if (agc_flag_test(AGC_FLAG_AORBTFLG))
     { /* INVFLAG                */
-        (void) agc_flag_clear(AGC_FLAG_AORBTFLG);
+        agc_flag_clear(AGC_FLAG_AORBTFLG);
     }
     else
     {
-        (void) agc_flag_set(AGC_FLAG_AORBTFLG);
+        agc_flag_set(AGC_FLAG_AORBTFLG);
     }
-    (void) agc_flag_set(AGC_FLAG_ULLAGFLG); /* TURN ON ULLAGE         */
+    agc_flag_set(AGC_FLAG_ULLAGFLG); /* TURN ON ULLAGE         */
     agc_status_t st = agc_waitlist_call(1, AGC_TASK_TIG_5);
     agc_relint();
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG));

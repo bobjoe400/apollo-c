@@ -473,7 +473,7 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else if (ip->ovfind != 0)
     {
-        (void) agc_alarm(AGC_ALARM_01410); /* non-abortive     */
+        agc_alarm(AGC_ALARM_01410); /* non-abortive     */
         ldg_ratestop();
     }
     else
@@ -509,7 +509,7 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
     }
     if (agc_lm_ldg()->tredes == 0)
     {
-        (void) agc_flag_clear(AGC_FLAG_REDFLAG); /* RED-OVER         */
+        agc_flag_clear(AGC_FLAG_REDFLAG); /* RED-OVER         */
         return ldg_display(ctx, AGC_DSKY_REGODSPR, 64);
     }
     if (agc_flag_test(AGC_FLAG_REDFLAG))
@@ -547,7 +547,7 @@ agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
     }
     if (kill_group3)
     {
-        (void) agc_phase_kill(3); /* DXCH -PHASE3     */
+        agc_phase_kill(3); /* DXCH -PHASE3     */
     }
     if (agc_flag_test(AGC_FLAG_FLUNDISP))
     {
@@ -615,7 +615,7 @@ agc_status_t agc_lm_start_approach_phase(void)
     agc_status_t s2 =
         agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A); /* BIT12 */
     (void) AGC_ASSERT(s2 == AGC_STATUS_OK);
-    (void) agc_flag_clear(AGC_FLAG_REDFLAG);
+    agc_flag_clear(AGC_FLAG_REDFLAG);
     (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     return AGC_STATUS_OK;
 }
@@ -625,7 +625,7 @@ agc_status_t agc_lm_start_velocity_nulling(void)
 {
     agc_status_t st       = agc_phase_newmode(65);
     agc_lm_ldg()->wchvert = -2;
-    (void) agc_flag_clear(AGC_FLAG_XOVINFLG);
+    agc_flag_clear(AGC_FLAG_XOVINFLG);
     (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     (void) AGC_ASSERT(agc_lm_ldg()->wchvert < 0);
     return AGC_STATUS_OK;
@@ -681,7 +681,7 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             (void) agc_poodoo(AGC_ALARM_01406); /* 1406P00          */
             return AGC_STATUS_POODOO;
         }
-        (void) agc_alarm(AGC_ALARM_01406); /* 1406ALM          */
+        agc_alarm(AGC_ALARM_01406); /* 1406ALM          */
         ldg_ratestop();
         return agc_lm_dispexit(ctx, true);
     }

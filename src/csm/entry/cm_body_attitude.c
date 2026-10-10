@@ -169,7 +169,7 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     es->gama = gama_new;
     if (!agc_flag_test(AGC_FLAG_GAMDIFSW))
     {
-        (void) agc_flag_set(AGC_FLAG_GAMDIFSW); /* first difference next */
+        agc_flag_set(AGC_FLAG_GAMDIFSW); /* first difference next */
         es->gamdot = 0;                         /* NOGAMDOT              */
         return;
     }
@@ -216,7 +216,7 @@ static void entry_cm_atup(const agc_dp_t angles[4])
     tempalfa = atup_angle(angles[2], es->alfa_pip, es->alfa_180, true);
     tempbeta = atup_angle(angles[1], es->beta_pip, es->beta_180, false);
     /* DCA REPOSADR / DXCH PHSNAME5: group 5 now restarts at REDOPOSE.     */
-    (void) agc_phase_change_var(010035, &v);
+    agc_phase_change_var(010035, &v);
     agc_relint();
     (void) AGC_ASSERT(es->gamdot == 0 || agc_flag_test(AGC_FLAG_GAMDIFSW));
 }

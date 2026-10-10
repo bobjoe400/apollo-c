@@ -62,13 +62,15 @@ agc_status_t agc_lm_noullage(void)
 {
     (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
     (void) AGC_ASSERT(AGC_FLAG_ULLAGFLG != AGC_FLAG_DRIFTDFL);
-    return agc_flag_clear(AGC_FLAG_ULLAGFLG);
+    agc_flag_clear(AGC_FLAG_ULLAGFLG);
+    return AGC_STATUS_OK;
 }
 
 agc_status_t agc_lm_onullage(void)
 {
     (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
-    return agc_flag_set(AGC_FLAG_ULLAGFLG);
+    agc_flag_set(AGC_FLAG_ULLAGFLG);
+    return AGC_STATUS_OK;
 }
 
 /* BURNBABY (p.735): group 4 restarts here; DVTOTAL zeroed; P40AUTO (crew
@@ -82,7 +84,7 @@ agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_BURNBABY,
                          AGC_TASK_NONE,   (int16_t) ctx->prio,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 004024, &v);
+    agc_phase_change_var((uint16_t)004024, &v);
     agc_guid_state()->avg.dvtotal = 0; /* EXTIRPATE JUNK         */
     return agc_lm_check_auto_control(ctx, AGC_JOB_BURNBABY_COUNTDOWN);
 }
@@ -183,7 +185,7 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
     (void) agc_waitlist_longcall(
         (uint32_t) ((g->lm.savet_30 > 0) ? g->lm.savet_30 : 1),
         AGC_TASK_TIG_35);
-    (void) agc_phase_change(4, (uint16_t) 020254); /* 4.25SPOT               */
+    agc_phase_change(4, (uint16_t)020254); /* 4.25SPOT               */
     if (agc_phase_checkmm(63))
     { /* P63 DISPLAYS NOW       */
         g->lm.dispdex = (agc_sp_t) -IGN_CNTDNDEX;
@@ -199,7 +201,7 @@ agc_status_t agc_task_tig_35(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     (void) agc_waitlist_call(SEC5, AGC_TASK_TIG_30);
-    (void) agc_phase_change(4, (uint16_t) 040154); /* 4.15SPOT               */
+    agc_phase_change(4, (uint16_t)040154); /* 4.15SPOT               */
     lm->dispdex = (agc_sp_t) -IGN_BLANKDEX;
     if (ign_table()->ullage_cs >= 0)
     { /* CS 6, BZMF TASKOVER    */
@@ -223,8 +225,8 @@ static agc_status_t ullgnot(void)
 {
     agc_guid_state()->avg.avgexit = ign_table()->avgexit;
     (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
-    (void) agc_phase_newphase(4, 2, true); /* 4.2SPOT, TBASE4        */
-    (void) agc_phase_kill(2);              /* REDO2.17               */
+    agc_phase_newphase(4, 2, true); /* 4.2SPOT, TBASE4        */
+    agc_phase_kill(2);              /* REDO2.17               */
     return agc_task_redo4_2();
 }
 
@@ -251,10 +253,10 @@ agc_status_t agc_task_tig_30(void)
     {
         lm->savet_30 = (agc_dp_t) t->ullage_cs; /* FOR RESTART            */
         (void) agc_waitlist_call((uint16_t) t->ullage_cs, AGC_TASK_ULLGTASK);
-        (void) agc_phase_newphase(1, 3, true); /* 1.3SPOT, TBASE1        */
+        agc_phase_newphase(1, 3, true); /* 1.3SPOT, TBASE1        */
         if (t->want_aps)
         {
-            (void) agc_flag_set(AGC_FLAG_APSFLAG); /* WANTAPS                */
+            agc_flag_set(AGC_FLAG_APSFLAG); /* WANTAPS                */
         }
     }
     return ullgnot();
@@ -265,7 +267,8 @@ agc_status_t agc_task_ullgtask(void)
 {
     (void) agc_lm_onullage();
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_ULLAGFLG));
-    return agc_phase_change(1, (uint16_t) 000001);
+    agc_phase_change(1, (uint16_t)000001);
+    return AGC_STATUS_OK;
 }
 
 /* TIG-5 (p.739-740): group 3 off, TIG-0 in 5 s, IGNFLAG and ASTNFLAG
@@ -274,22 +277,22 @@ agc_status_t agc_task_ullgtask(void)
 agc_status_t agc_task_tig_5_lm(void)
 {
     const ign_table_t *t = ign_table();
-    (void) agc_phase_kill(3);
+    agc_phase_kill(3);
     (void) agc_waitlist_call(SEC5, AGC_TASK_TIG_0);
-    (void) agc_flag_clear(AGC_FLAG_IGNFLAG);
-    (void) agc_flag_clear(AGC_FLAG_ASTNFLAG);
+    agc_flag_clear(AGC_FLAG_IGNFLAG);
+    agc_flag_clear(AGC_FLAG_ASTNFLAG);
     if (t->tig5 == IGN_TIG5_TIMEBURN && agc_phase_get(3) == 0U)
     {
         (void) agc_exec_findvac(AGC_PRIO20, AGC_JOB_TIMEBURN);
-        (void) agc_phase_change(3,
-                                (uint16_t) 000053); /* 3.5SPOT FOR S40.13     */
+        agc_phase_change(3, (uint16_t)000053); /* 3.5SPOT FOR S40.13     */
     }
     if (t->tig5 != IGN_TIG5_COMMON)
     {
         agc_guid_state()->lm.dispdex =
             (agc_sp_t) -IGN_VB99DEX; /* DISPCHNG    */
     }
-    return agc_phase_change(4, (uint16_t) 040074); /* 4.7SPOT                */
+    agc_phase_change(4, (uint16_t)040074);
+    return AGC_STATUS_OK; /* 4.7SPOT                */
 }
 
 /* IGNYET? (p.738): the crew has answered the V99 (ASTNFLAG): IGNITION;
@@ -305,14 +308,15 @@ agc_status_t agc_task_ignition_if_enabled(void)
         return agc_task_tigtask();
     }
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_ASTNFLAG));
-    return agc_phase_kill(4); /* WAITABIT               */
+    agc_phase_kill(4);
+    return AGC_STATUS_OK; /* WAITABIT               */
 }
 
 /* TIG-0 (p.740): IGNFLAG set; in P63 throttle-up comes ZOOMTIME after
  * the nominal ignition (P63ZOOM, 3.3, type C restart here).                */
 agc_status_t agc_task_tig_0_lm(void)
 {
-    (void) agc_flag_set(AGC_FLAG_IGNFLAG);
+    agc_flag_set(AGC_FLAG_IGNFLAG);
     if (agc_phase_checkmm(63))
     {
         agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
@@ -324,7 +328,7 @@ agc_status_t agc_task_tig_0_lm(void)
                              0,
                              true,
                              0U};
-        (void) agc_phase_change2((uint16_t) 040033, (uint16_t) 005014, &v);
+        agc_phase_change2((uint16_t)040033, (uint16_t)005014, &v);
     }
     return agc_task_ignition_if_enabled();
 }
@@ -338,9 +342,9 @@ static void braking_phase_ignition(void)
     agc_guid_t *g  = agc_guid_state();
     g->avg.avgexit = AGC_JOB_BRAKING_PHASE_DISPLAY; /* DSP2CADR               */
     g->lm.dispdex  = IGN_DISPDEX_KILL;              /* ASSASSINATE CLOKTASK   */
-    (void) agc_flag_set(AGC_FLAG_LETABORT);
-    (void) agc_flag_set(AGC_FLAG_SWANDISP);
-    (void) agc_flag_clear(AGC_FLAG_PULSEFLG);
+    agc_flag_set(AGC_FLAG_LETABORT);
+    agc_flag_set(AGC_FLAG_SWANDISP);
+    agc_flag_clear(AGC_FLAG_PULSEFLG);
     agc_erase_set_tig(
         (agc_dp_t) agc_time_now_cs()); /* TIG FOR P70 AND P71    */
     agc_lm_ldg_t *ldg = agc_lm_ldg();
@@ -365,7 +369,7 @@ static void ascent_ignition(bool load_bias)
     }
     g->lm.dispdex  = IGN_DISPDEX_KILL;      /* ABRTIGN: KILL CLOKTASK */
     g->avg.avgexit = AGC_JOB_ATMAG;         /* ATMAGADR               */
-    (void) agc_flag_set(AGC_FLAG_SWANDISP); /* ENABLE R10             */
+    agc_flag_set(AGC_FLAG_SWANDISP); /* ENABLE R10             */
     (void) AGC_ASSERT(g->lm.dispdex > 0);
 }
 
@@ -383,7 +387,7 @@ static agc_status_t dps_ignition(void)
     (void) agc_waitlist_call((uint16_t) zoom, AGC_TASK_DPS_BURN_ZOOM);
     agc_phase_var_t v = {
         AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH, 0, true, 0U};
-    (void) agc_phase_change2((uint16_t) 040033, (uint16_t) 005014, &v);
+    agc_phase_change2((uint16_t)040033, (uint16_t)005014, &v);
     return agc_task_ignition_finish();
 }
 
@@ -419,18 +423,18 @@ static agc_status_t ignition_by_program(ign_kind_t kind)
  * S40.13), guidance displays permitted (FLUNDISP reset), then (13).      */
 agc_status_t agc_task_ignition_lm(void)
 {
-    (void) agc_flag_set(AGC_FLAG_ENGONFLG); /* INSURE ENGONFLG IS SET */
+    agc_flag_set(AGC_FLAG_ENGONFLG); /* INSURE ENGONFLG IS SET */
     uint16_t ch11 = agc_chan_read(011);
     ch11          = (uint16_t) ((ch11 & ~(uint16_t) (AGC_CH011_ENGINEON |
                                             AGC_CH011_ENGINEOFF)) |
                        (uint16_t) AGC_CH011_ENGINEON);
-    (void) agc_chan_write(011, ch11); /* TURN ON THE ENGINE     */
+    agc_chan_write(011, ch11); /* TURN ON THE ENGINE     */
     agc_dp_t now = (agc_dp_t) agc_time_now_cs();
     agc_erase_set_tevent(now);
     agc_dp_t tgo = agc_erase_tgo();
     (void) AGC_ASSERT(tgo >= 0 && tgo <= AGC_DP_MAX - now);
     agc_erase_set_tig(tgo + now); /* UPDATE TIG USING TGO   */
-    (void) agc_flag_clear(AGC_FLAG_FLUNDISP);
+    agc_flag_clear(AGC_FLAG_FLUNDISP);
     return ignition_by_program(ign_table()->kind);
 }
 
@@ -440,15 +444,15 @@ agc_status_t agc_task_ignition_lm(void)
  * after light-up.                                                        */
 agc_status_t agc_task_ignition_finish(void)
 {
-    (void) agc_flag_clear(AGC_FLAG_DRIFTDFL);
+    agc_flag_clear(AGC_FLAG_DRIFTDFL);
     if (agc_flag_test(AGC_FLAG_IMPULSW))
     {
         return agc_task_implburn_lm();
     }
-    (void) agc_flag_clear(AGC_FLAG_IGNFLAG); /* CONNECT DVMON          */
-    (void) agc_flag_clear(AGC_FLAG_ASTNFLAG);
-    (void) agc_flag_clear(AGC_FLAG_IDLEFLAG);
-    (void) agc_phase_change(4, (uint16_t) 040054); /* 4.5SPOT                */
+    agc_flag_clear(AGC_FLAG_IGNFLAG); /* CONNECT DVMON          */
+    agc_flag_clear(AGC_FLAG_ASTNFLAG);
+    agc_flag_clear(AGC_FLAG_IDLEFLAG);
+    agc_phase_change(4, (uint16_t)040054); /* 4.5SPOT                */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLEFLAG));
     return agc_waitlist_fixdelay(ULLAGE_OFF, AGC_TASK_ULLAGOFF);
 }
@@ -458,7 +462,8 @@ agc_status_t agc_task_ullagoff(void)
 {
     (void) agc_lm_noullage();
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_ULLAGFLG));
-    return agc_phase_kill(4); /* WAITABIT               */
+    agc_phase_kill(4);
+    return AGC_STATUS_OK; /* WAITABIT               */
 }
 
 /* TIGTASK / TIGTASK1 (p.741), P41 at TIG: TIGNOW at PRIO16, group 6 off. */
@@ -466,7 +471,8 @@ agc_status_t agc_task_tigtask(void)
 {
     (void) AGC_ASSERT(ign_table()->tigtask);
     (void) agc_exec_novac(AGC_PRIO16, AGC_JOB_TIGNOW);
-    return agc_phase_change(6, (uint16_t) 000006); /* KILL GROUP 6           */
+    agc_phase_change(6, (uint16_t)000006);
+    return AGC_STATUS_OK; /* KILL GROUP 6           */
 }
 
 /* P63ZOOM (p.741): AVEGEXIT = LUNLAND, FLATOUT (full thrust), ZOOM.       */
@@ -484,7 +490,7 @@ agc_status_t agc_task_braking_phase_zoom(void)
 agc_status_t agc_task_dps_burn_zoom(void)
 {
     agc_erase_set_thrust((agc_sp_t) BIT13);
-    (void) agc_chan_or(014, (uint16_t) AGC_CH014_THRUSTACT);
+    agc_chan_or(014, (uint16_t)AGC_CH014_THRUSTACT);
     (void) AGC_ASSERT((agc_chan_read(014) & AGC_CH014_THRUSTACT) != 0U);
     return agc_task_zoom();
 }
@@ -495,7 +501,8 @@ agc_status_t agc_task_dps_burn_zoom(void)
 agc_status_t agc_task_zoom(void)
 {
     (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
-    return agc_phase_change(3, (uint16_t) 000003);
+    agc_phase_change(3, (uint16_t)000003);
+    return AGC_STATUS_OK;
 }
 
 /* P41BLANK (p.735): blank the DSKY (CLOKJOB is not running in P41).       */

@@ -83,7 +83,8 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
         case AGC_DATA_TIME2: /* C(TIME2,TIME1)                   */
             if (write)
             {
-                return agc_time_set_cs((uint32_t) *value);
+                agc_time_set_cs((uint32_t) * value);
+                return AGC_STATUS_OK;
             }
             *value = (agc_dp_t) agc_time_now_cs();
             return AGC_STATUS_OK;

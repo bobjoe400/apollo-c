@@ -481,35 +481,27 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
 }
 
 /* PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
- * job a new priority, keeping its VAC bits. Returns OK if it is still the
- * highest (BUF = 0); BUSY if a waiting job is now strictly higher: NEWJOB
- * is set and the caller must agc_exec_job_yield() and return, which is
- * where the AGC would have done the change-job.                         */
-agc_status_t agc_exec_prio_change(agc_prio_t new_prio)
+ * job a new priority, keeping its VAC bits. If a waiting job is now
+ * strictly higher (BUF > 0), NEWJOB names it: agc_exec_newjob() > 0. The
+ * AGC changes job inside PRIOCHNG; in C the caller that must give way
+ * tests agc_exec_newjob() and does agc_exec_job_yield() and returns.
+ * Bad arguments are programming errors (asserted), so this is void.    */
+void agc_exec_prio_change(agc_prio_t new_prio)
 {
     if (!AGC_ASSERT(new_prio >= 1 && new_prio <= EXEC_PRIO_MAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
-    core[0].prio      = new_prio;
-    int          best = ejscan(prio_word(0));
-    agc_status_t st   = AGC_STATUS_OK;
-    if (best > 0)
-    {
-        newjob = best;
-        st     = AGC_STATUS_BUSY;
-    }
-    else
-    {
-        newjob = 0; /* ENDPRCHG -1: TS NEWJOB (+0)     */
-    }
+    core[0].prio = new_prio;
+    int best     = ejscan(prio_word(0));
+    newjob       = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
-    return st;
+    (void) AGC_ASSERT(newjob >= 0);
 }
 
 /* CHANG1 / CHANG2 (C p.1208 / L p.1103): the running job offers the

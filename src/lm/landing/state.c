@@ -69,7 +69,8 @@ agc_status_t agc_lm_phaschng(uint16_t octal_code)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return agc_phase_change(group, octal_code);
+    agc_phase_change(group, octal_code);
+    return AGC_STATUS_OK;
 }
 
 /* FASTCHNG (LUNAR_LANDING_GUIDANCE_EQUATIONS.agc p. 826): specialised

@@ -225,7 +225,8 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
             *res = TA_MANEUVER; /* MANUEXIT */
             return AGC_STATUS_OK;
         }
-        return agc_chan_or(AGC_CHAN_DSALMOUT, TA_UPACTY); /* ASET     */
+        agc_chan_or(AGC_CHAN_DSALMOUT, TA_UPACTY);
+        return AGC_STATUS_OK; /* ASET     */
     }
     uint16_t c31 = agc_chan_read(AGC_CHAN_CHAN31);
     if (((c31 ^ TA_CH31_AUTO) & TA_FURST3) != 0U || stick)

@@ -262,7 +262,7 @@ static void as_t2test(agc_interp_t *ip)
     bool     norates = agc_flag_test(AGC_FLAG_FLPC);
     if (!norates && agc_dp_sub(ip, a->tgo, AS_T3) < 0)
     {
-        (void) agc_flag_set(AGC_FLAG_FLPC);
+        agc_flag_set(AGC_FLAG_FLPC);
         norates = true;
     }
     if (norates)
@@ -371,11 +371,10 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         {
             return as_keepvr1(ctx, ip);
         }
-        (void) agc_flag_clear(AGC_FLAG_ROTFLAG); /* OFFROT */
+        agc_flag_clear(AGC_FLAG_ROTFLAG); /* OFFROT */
     }
-    (void) agc_flag_clear(
-        AGC_FLAG_NO_POWERED_DESIGNATE);       /* start R29 in ascent    */
-    (void) agc_flag_clear(AGC_FLAG_XOVINFLG); /* allow X-axis override  */
+    agc_flag_clear(AGC_FLAG_NO_POWERED_DESIGNATE);       /* start R29 in ascent    */
+    agc_flag_clear(AGC_FLAG_XOVINFLG); /* allow X-axis override  */
     return as_ascterm(ctx, ip);
 }
 
@@ -383,7 +382,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  * rise continues another ten seconds (TXO).                         */
 static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    (void) agc_flag_clear(AGC_FLAG_FLVR);
+    agc_flag_clear(AGC_FLAG_FLVR);
     if (!agc_flag_test(AGC_FLAG_ROTFLAG))
     {
         agc_lm_asc()->txo = agc_dp_add(ip, agc_erase_piptime(), AS_10SECS);
@@ -405,7 +404,7 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         return as_exitvr(ctx, ip);
     }
-    (void) agc_flag_set(AGC_FLAG_XOVINFLG); /* prohibit X override    */
+    agc_flag_set(AGC_FLAG_XOVINFLG); /* prohibit X override    */
     agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a->laxis, a->aty),
                                 agc_vec_scale(ip, a->zaxis1, a->atp));
     los           = agc_vec_unit(ip, los, NULL, NULL);
@@ -413,7 +412,7 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     if (agc_dp_sub(ip, s, AS_SIN5DEG) < 0 &&
         agc_dp_sub(ip, g->lm.hdotdisp, AS_40FPS) >= 0)
     {
-        (void) agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
+        agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
         return as_exitvr(ctx, ip);
     }
     agc_lm_ldg()->unwc_2 = los; /* KEEPVR */
@@ -439,7 +438,7 @@ static void as_engoff(agc_interp_t *ip)
     st                      = agc_phase_change_var(047014, &v);
     (void) AGC_ASSERT(st == AGC_STATUS_OK);
     agc_relint();
-    (void) agc_flag_set(AGC_FLAG_IDLEFLAG); /* DVMON off     */
+    agc_flag_set(AGC_FLAG_IDLEFLAG); /* DVMON off     */
 }
 
 /* ASCENT (pp. 845-850). Ends the job (ASCTERM), or for P12 (FLPI) goes
@@ -499,8 +498,8 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
             agc_relint();
             return as_ascterm1(ctx);
         }
-        (void) agc_flag_clear(AGC_FLAG_SURFFLAG);
-        (void) agc_flag_clear(AGC_FLAG_RENDWFLG);
+        agc_flag_clear(AGC_FLAG_SURFFLAG);
+        agc_flag_clear(AGC_FLAG_RENDWFLG);
         agc_dp_t n = agc_dp_div(&ip, agc_dp_from_sp(AS_BIT3H), g->abdvconv);
         g->mass1   = a->dv[1]; /* 1/DV0 = MASS1 */
         a->dv[1]   = a->dv[2];
@@ -555,7 +554,7 @@ agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_set(AGC_FLAG_FLRCS);
+    agc_flag_set(AGC_FLAG_FLRCS);
     return agc_lm_job_cutoff5(ctx);
 }
 
@@ -613,7 +612,7 @@ agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
     agc_inhint();
     (void) agc_lm_dap_restordb();
     agc_relint();
-    (void) agc_flag_clear(AGC_FLAG_LETABORT);
+    agc_flag_clear(AGC_FLAG_LETABORT);
     return agc_exec_gotopooh();
 }
 
@@ -653,12 +652,11 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_OK;
     }
-    (void) agc_flag_set(AGC_FLAG_MUNFLAG);
-    (void) agc_flag_set(AGC_FLAG_ACC4_2FL); /* insure 4-jet translation    */
-    (void) agc_flag_set(
-        AGC_FLAG_ALTITUDE_METERS_ONLY); /* no cross-pointer outputs    */
+    agc_flag_set(AGC_FLAG_MUNFLAG);
+    agc_flag_set(AGC_FLAG_ACC4_2FL); /* insure 4-jet translation    */
+    agc_flag_set(AGC_FLAG_ALTITUDE_METERS_ONLY); /* no cross-pointer outputs    */
     (void) agc_rendz_clradmod();        /* RADMODES for R29            */
-    (void) agc_flag_clear(AGC_FLAG_RNDVZFLG);
+    agc_flag_clear(AGC_FLAG_RNDVZFLG);
     agc_guid_lm_t *g = &agc_guid_state()->lm;
     g->dvthrush      = AS_THRESH2;
     g->dvcntr        = 4;
@@ -694,7 +692,7 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    (void) agc_flag_set(AGC_FLAG_FLPI);
+    agc_flag_set(AGC_FLAG_FLPI);
     (void) agc_lm_powered_ascent_init(&ip);
     agc_lm_asc()->tgo = AS_TGOA; /* initial nominal TGO         */
     return agc_lm_job_powered_ascent_at_ignition(ctx);
@@ -766,7 +764,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
     g->lm.hdotdisp =
         agc_dp_shl(&ip, agc_vec_dot(&ip, g->lm.v, ur), 1); /* RDOT */
     a->zaxis1 = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
-    (void) agc_flag_set(AGC_FLAG_FLVR);
+    agc_flag_set(AGC_FLAG_FLVR);
     return agc_lm_ascent(ctx, &ip);
 }
 
@@ -804,7 +802,7 @@ agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_clear(AGC_FLAG_FLPI);
+    agc_flag_clear(AGC_FLAG_FLPI);
     agc_inhint();
     (void) agc_lm_dap_pflitedb();
     agc_relint();

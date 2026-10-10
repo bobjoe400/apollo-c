@@ -29,10 +29,10 @@ bool agc_csm_tvc_on(void)
  * DOTVCON in 0.4 s.                                                        */
 agc_status_t agc_csm_preptvc(void)
 {
-    (void) agc_flag_clear(AGC_FLAG_DAPBIT1); /* RESET T5 BITS          */
-    (void) agc_flag_clear(AGC_FLAG_DAPBIT2);
-    (void) agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* KILL RCS               */
-    (void) agc_phase_newphase(4, 3, true);         /* 4.3 = DOTVCON (40CS)   */
+    agc_flag_clear(AGC_FLAG_DAPBIT1); /* RESET T5 BITS          */
+    agc_flag_clear(AGC_FLAG_DAPBIT2);
+    agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* KILL RCS               */
+    agc_phase_newphase(4, 3, true);         /* 4.3 = DOTVCON (40CS)   */
     (void) AGC_ASSERT(!agc_csm_tvc_on());
     return agc_waitlist_fixdelay(DOTVCON_DELAY, AGC_TASK_DOTVCON);
 }
@@ -44,20 +44,20 @@ agc_status_t agc_task_ignition_csm(void)
 {
     agc_csm_dap_com()->ogad = agc_erase_cdux(); /* ROLL DAP REF.    */
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
-    (void) agc_flag_set(AGC_FLAG_ENGONFLG);
-    (void) agc_chan_or(011, AGC_CSM_SPSON); /* SPSON                  */
+    agc_flag_set(AGC_FLAG_ENGONFLG);
+    agc_chan_or(011, AGC_CSM_SPSON); /* SPSON                  */
     if (agc_flag_test(AGC_FLAG_IMPULSW))
     {                                             /* IMPULCHK               */
-        (void) agc_flag_clear(AGC_FLAG_STRULLSW); /* IMPLBURN               */
+        agc_flag_clear(AGC_FLAG_STRULLSW); /* IMPLBURN               */
         agc_erase_set_tig(agc_erase_tgo() + (agc_dp_t) agc_time_now_cs());
         agc_phase_var_t v = {
             AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IMPLCONT, 0, true, 0U};
-        (void) agc_phase_change2((uint16_t) 040153, (uint16_t) 007014, &v);
+        agc_phase_change2((uint16_t)040153, (uint16_t)007014, &v);
         agc_status_t st = agc_waitlist_call(
             (uint16_t) agc_dp_low(agc_erase_tgo()), AGC_TASK_ENGINOFF);
         return (st != AGC_STATUS_OK) ? st : agc_task_implcont();
     }
-    (void) agc_flag_set(AGC_FLAG_STRULLSW); /* NON-IMPULSIVE          */
+    agc_flag_set(AGC_FLAG_STRULLSW); /* NON-IMPULSIVE          */
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_ENGONFLG));
     return agc_csm_preptvc();
 }
@@ -66,7 +66,7 @@ agc_status_t agc_task_ignition_csm(void)
  * case ENGINOFF comes before TVCDAPON, then PREPTVC.                      */
 agc_status_t agc_task_implcont(void)
 {
-    (void) agc_flag_clear(AGC_FLAG_IMPULSW);
+    agc_flag_clear(AGC_FLAG_IMPULSW);
     agc_csm_dap_tvc()->engine_fail_vcntr = 0;
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW));
     return agc_csm_preptvc();
@@ -85,14 +85,14 @@ agc_status_t agc_task_dotvcon(void)
     }
     tvc->tvcphase = -1; /* CS BIT1                */
     tvc->tvcexphs = 0;
-    (void) agc_flag_set(AGC_FLAG_DAPBIT1); /* BITS 15,14 = 10        */
-    (void) agc_flag_clear(AGC_FLAG_DAPBIT2);
-    (void) agc_phase_newphase(6, 3, false); /* 6.3 = CLOKTASK         */
+    agc_flag_set(AGC_FLAG_DAPBIT1); /* BITS 15,14 = 10        */
+    agc_flag_clear(AGC_FLAG_DAPBIT2);
+    agc_phase_newphase(6, 3, false); /* 6.3 = CLOKTASK         */
     tvc->errbtmp =
         agc_dp_neg(agc_dp_pack(rcs->error[1], rcs->error[2])); /* DCS ERRORY */
-    (void) agc_phase_newphase(4, 5, true);          /* 4.5 = DOSTRULL         */
+    agc_phase_newphase(4, 5, true);          /* 4.5 = DOSTRULL         */
     agc_erase_set_time5(AGC_SP_MAX);                /* START RIGHT AWAY       */
-    (void) agc_rupt_set_t5_task(AGC_TASK_TVCDAPON); /* KILLS RCS DAP          */
+    agc_rupt_set_t5_task(AGC_TASK_TVCDAPON); /* KILLS RCS DAP          */
     (void) AGC_ASSERT(agc_csm_tvc_on());
     return agc_waitlist_fixdelay(DOSTRULL_DELAY, AGC_TASK_DOSTRULL);
 }
@@ -103,11 +103,12 @@ agc_status_t agc_task_dostrull(void)
 {
     if (agc_flag_test(AGC_FLAG_STRULLSW))
     {
-        (void) agc_flag_set(AGC_FLAG_STEERSW); /* STEERULL               */
+        agc_flag_set(AGC_FLAG_STEERSW); /* STEERULL               */
     }
-    (void) agc_chan_write(05, 0U); /* ULAGEOFF: ZERO CHAN5   */
+    agc_chan_write(05, 0U); /* ULAGEOFF: ZERO CHAN5   */
     (void) AGC_ASSERT(agc_chan_read(05) == 0U);
-    return agc_phase_kill(4);
+    agc_phase_kill(4);
+    return AGC_STATUS_OK;
 }
 
 /* ENGINOFF (p.701-702): MASSTMP = CSMMASS (copy cycle for MASSBACK), group
@@ -115,7 +116,7 @@ agc_status_t agc_task_dostrull(void)
 agc_status_t agc_task_enginoff_csm(void)
 {
     agc_csm_dap_tvc()->masstmp = agc_erase_csmmass();
-    (void) agc_phase_change2((uint16_t) 000003, (uint16_t) 040634, NULL);
+    agc_phase_change2((uint16_t)000003, (uint16_t)040634, NULL);
     (void) AGC_ASSERT(agc_csm_dap_tvc()->masstmp == agc_erase_csmmass());
     return agc_task_dospsoff();
 }
@@ -128,7 +129,7 @@ agc_status_t agc_task_dospsoff(void)
     {
         return st;
     }
-    (void) agc_phase_newphase(4, 027, true); /* 4.27 = DOTVCRCS        */
+    agc_phase_newphase(4, 027, true); /* 4.27 = DOTVCRCS        */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG));
     return agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_DOTVCRCS);
 }
@@ -145,7 +146,7 @@ agc_status_t agc_task_dotvcrcs(void)
     agc_inhint();
     (void) agc_csm_tvczap();
     agc_relint();
-    (void) agc_phase_change(4, (uint16_t) 000354); /* 4.35 = POSTBURN        */
+    agc_phase_change(4, (uint16_t)000354); /* 4.35 = POSTBURN        */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_TIMRFLAG));
     return agc_exec_novac(AGC_PRIO12, AGC_JOB_POSTBURN);
 }
@@ -175,9 +176,9 @@ static void massback(void)
 agc_status_t agc_csm_spsoff(void)
 {
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
-    (void) agc_flag_clear(AGC_FLAG_ENGONFLG); /* RESTARTS WILL SHUT DOWN */
-    (void) agc_chan_and(011, (uint16_t) ~AGC_CSM_SPSON);
-    (void) agc_chan_or(012, AGC_CSM_SIVCUTOFF); /* SIV CUTOFF COMMAND     */
+    agc_flag_clear(AGC_FLAG_ENGONFLG); /* RESTARTS WILL SHUT DOWN */
+    agc_chan_and(011, (uint16_t)~AGC_CSM_SPSON);
+    agc_chan_or(012, AGC_CSM_SIVCUTOFF); /* SIV CUTOFF COMMAND     */
     massback();
     (void) AGC_ASSERT((agc_chan_read(011) & AGC_CSM_SPSON) == 0U);
     return AGC_STATUS_OK;
@@ -188,10 +189,10 @@ agc_status_t agc_csm_spsoff(void)
  * reset (stops CLOKTASK).                                                 */
 agc_status_t agc_csm_tvczap(void)
 {
-    (void) agc_chan_and(012, (uint16_t) ~AGC_CSM_TVCOPT);
+    agc_chan_and(012, (uint16_t)~AGC_CSM_TVCOPT);
     agc_erase_set_optind(-1); /* CS BIT1                */
     agc_guid_state()->csm.nvword1 = 0;
-    (void) agc_flag_clear(AGC_FLAG_TIMRFLAG);
+    agc_flag_clear(AGC_FLAG_TIMRFLAG);
     (void) AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
     return AGC_STATUS_OK;
 }
@@ -253,7 +254,7 @@ agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx)
     }
     agc_phase_var_t v = {AGC_RESTART_JOB,      AGC_JOB_TIGNOW, AGC_TASK_NONE,
                          (int16_t) AGC_PRIO20, false,          0U};
-    (void) agc_phase_change_var((uint16_t) 005024, &v);
+    agc_phase_change_var((uint16_t)005024, &v);
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     return flash_post41(ctx, AGC_DSKY_REFLASH, 16, 85, AGC_JOB_POST41,
                         AGC_JOB_TIGNOW);
@@ -286,7 +287,7 @@ agc_status_t agc_csm_rcs_burn_display(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     (void) agc_csm_convert_vg_body(&ip); /* VGTIG IN CTRL COORDS   */
     g->avg.avgexit = AGC_JOB_CALC_VG_BODY;
-    (void) agc_phase_change2((uint16_t) 040036, (uint16_t) 000234, NULL);
+    agc_phase_change2((uint16_t)040036, (uint16_t)000234, NULL);
     return agc_csm_preburn_start_clock(ctx);
 }
 
@@ -314,7 +315,8 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    return agc_phase_change(4, (uint16_t) 040574); /* 4.57 = TIGON           */
+    agc_phase_change(4, (uint16_t)040574);
+    return AGC_STATUS_OK; /* 4.57 = TIGON           */
 }
 
 /* TIGON (p.698): AVEGEXIT = CALCN83, P47BODY job, 4.2 and PRECHECK.       */
@@ -326,7 +328,7 @@ agc_status_t agc_task_tigon(void)
     {
         return st;
     }
-    (void) agc_phase_newphase(4, 2, true); /* 4.2 = PRECHECK, P47BODY */
+    agc_phase_newphase(4, 2, true); /* 4.2 = PRECHECK, P47BODY */
     return agc_task_precheck();
 }
 
@@ -341,7 +343,7 @@ agc_status_t agc_job_thrust_monitor_reset_csm(agc_job_ctx_t *ctx)
     agc_burn_t *b = &agc_guid_state()->burn;
     b->delvimu    = agc_vec_zero();
     b->delvctl    = agc_vec_zero();
-    (void) agc_exec_prio_change(AGC_PRIO15);
+    agc_exec_prio_change(AGC_PRIO15);
     return agc_job_thrust_monitor_display_csm(ctx);
 }
 
@@ -354,7 +356,7 @@ agc_status_t agc_job_thrust_monitor_display_csm(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_THRUST_MONITOR_DISPLAY,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO15,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 005024, &v);
+    agc_phase_change_var((uint16_t)005024, &v);
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH,
                             AGC_JOB_THRUST_MONITOR_RESET};
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);

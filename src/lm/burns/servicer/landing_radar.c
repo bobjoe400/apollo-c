@@ -82,8 +82,8 @@ agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_inhint();
-    (void) agc_flag_clear(AGC_FLAG_RNGEDATA);
-    (void) agc_flag_clear(AGC_FLAG_VELDATA);
+    agc_flag_clear(AGC_FLAG_RNGEDATA);
+    agc_flag_clear(AGC_FLAG_VELDATA);
     (void) agc_radar_landing_radar_lights(); /* SET LR LITES PROPERLY  */
     agc_relint();
     return agc_lm_serv_copycyc1(ctx);
@@ -99,8 +99,8 @@ agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_inhint();
-    (void) agc_flag_set(AGC_FLAG_PSTHIGAT);
-    (void) agc_flag_set(AGC_FLAG_NOLRREAD);
+    agc_flag_set(AGC_FLAG_PSTHIGAT);
+    agc_flag_set(AGC_FLAG_NOLRREAD);
     (void) agc_exec_findvac(AGC_PRIO32, AGC_JOB_HIGATJOB);
     agc_relint();
     return agc_lm_serv_contserv(ctx);
@@ -136,7 +136,7 @@ static agc_status_t lr_position(agc_job_ctx_t *ctx)
             return agc_lm_serv_updatchk(ctx);
         }
     }
-    (void) agc_alarm(AGC_ALARM_00511); /* LRPOSALM               */
+    agc_alarm(AGC_ALARM_00511); /* LRPOSALM               */
     return agc_lm_serv_contserv(ctx);
 }
 
@@ -159,7 +159,7 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
         (void) agc_lm_altchk(2, &below);
         if (below)
         {
-            (void) agc_flag_set(AGC_FLAG_READLR);
+            agc_flag_set(AGC_FLAG_READLR);
         }
         return agc_lm_serv_contserv(ctx);
     }
@@ -168,8 +168,8 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
         (void) agc_lm_altchk(6, &below);
         if (below)
         {
-            (void) agc_flag_set(AGC_FLAG_XOVINFLG);
-            (void) agc_flag_set(AGC_FLAG_XORFLG);
+            agc_flag_set(AGC_FLAG_XOVINFLG);
+            agc_flag_set(AGC_FLAG_XORFLG);
         }
     }
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_READLR));
@@ -230,7 +230,7 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
         (radmodes & (uint16_t) 010002) != 0U)
     {
         agc_inhint();                             /* R29NODES               */
-        (void) agc_flag_clear(AGC_FLAG_DESIGFLG); /* DESIGNATION IS OFF     */
+        agc_flag_clear(AGC_FLAG_DESIGFLG); /* DESIGNATION IS OFF     */
         agc_relint();
     }
     else if ((radmodes & (uint16_t) 022000) == 0U)
@@ -253,7 +253,7 @@ static agc_status_t hfail(agc_job_ctx_t *ctx)
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     if (lm->lrrctr != 0 && ((lm->lrlctr - lm->lrrctr) & ~3) == 0)
     {
-        (void) agc_flag_set(AGC_FLAG_HFLSHFLG); /* TRACKER FAIL LITE      */
+        agc_flag_set(AGC_FLAG_HFLSHFLG); /* TRACKER FAIL LITE      */
     }
     lm->lrrctr = lm->lrlctr; /* NORLITE: R = L         */
     (void) AGC_ASSERT(lm->lrrctr == lm->lrlctr);
@@ -351,7 +351,7 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
         {
             return hfail(ctx); /* DELTA H TOO LARGE      */
         }
-        (void) agc_flag_clear(AGC_FLAG_HFLSHFLG); /* ALT FAIL LAMP OFF      */
+        agc_flag_clear(AGC_FLAG_HFLSHFLG); /* ALT FAIL LAMP OFF      */
     }
     if (!agc_flag_test(AGC_FLAG_LRINH))
     {
@@ -366,12 +366,12 @@ static agc_status_t vfail(agc_job_ctx_t *ctx)
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     if (lm->lrsctr != 0 && ((lm->lrmctr - lm->lrsctr) & ~3) == 0)
     {
-        (void) agc_flag_set(AGC_FLAG_VFLSHFLG); /* TRACKER FAIL LITE      */
+        agc_flag_set(AGC_FLAG_VFLSHFLG); /* TRACKER FAIL LITE      */
     }
     lm->lrsctr = lm->lrmctr; /* NOLITE: S = M          */
     if (lm->vselect == 0)
     {                                        /* Z COMPONENT            */
-        (void) agc_flag_set(AGC_FLAG_VXINH); /* SKIP X (CROSS LOBE)    */
+        agc_flag_set(AGC_FLAG_VXINH); /* SKIP X (CROSS LOBE)    */
     }
     (void) AGC_ASSERT(lm->lrsctr == lm->lrmctr);
     return agc_lm_serv_valtchk(ctx); /* ENDVDAT                */
@@ -461,10 +461,10 @@ agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx)
     {
         return vfail(ctx); /* DELTA V TOO LARGE      */
     }
-    (void) agc_flag_clear(AGC_FLAG_VFLSHFLG); /* VEL FAIL LAMP OFF      */
+    agc_flag_clear(AGC_FLAG_VFLSHFLG); /* VEL FAIL LAMP OFF      */
     if (agc_flag_test(AGC_FLAG_VXINH))
     {
-        (void) agc_flag_clear(AGC_FLAG_VXINH);
+        agc_flag_clear(AGC_FLAG_VXINH);
         if (g->lm.vselect == 2)
         {
             return agc_lm_serv_valtchk(ctx); /* BYPASS X UPDATE        */
@@ -509,7 +509,7 @@ agc_status_t agc_lm_serv_valtchk(agc_job_ctx_t *ctx)
         {
             return agc_lm_serv_contserv(ctx); /* V > 2000 FT/SEC        */
         }
-        (void) agc_flag_set(AGC_FLAG_READVEL);
+        agc_flag_set(AGC_FLAG_READVEL);
     }
     (void) agc_exec_novac(AGC_PRIO32,
                           AGC_JOB_LRVJOB); /* READV                  */
@@ -526,7 +526,7 @@ agc_status_t agc_lm_lrhtask(void)
     {
         (void) agc_exec_novac(AGC_PRIO32, AGC_JOB_LRHJOB);
     }
-    (void) agc_phase_kill(2); /* GRP2OFF                */
+    agc_phase_kill(2); /* GRP2OFF                */
     (void) AGC_ASSERT(agc_phase_get(2) == 0U);
     return agc_lm_abort_monitor_resume();
 }
@@ -591,7 +591,7 @@ agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
     {
         agc_inhint();
         lm->vmeas = agc_radar_samplsum(); /* STOW AWAY VMEAS        */
-        (void) agc_flag_set(AGC_FLAG_VELDATA);
+        agc_flag_set(AGC_FLAG_VELDATA);
         agc_relint();
     }
     lm->vselect =
@@ -632,8 +632,8 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
     {
         if (agc_flag_test(AGC_FLAG_RNGSCFLG))
         {
-            return agc_flag_clear(
-                AGC_FLAG_RNGSCFLG); /* SCALE CHANGE: IGNORE   */
+            agc_flag_clear(AGC_FLAG_RNGSCFLG);
+            return AGC_STATUS_OK; /* SCALE CHANGE: IGNORE   */
         }
         g->lm.stilbadh = 2; /* WAIT 4 SECONDS         */
         return AGC_STATUS_OK;
@@ -649,7 +649,7 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
     g->lm.aig    = (agc_sp_t) g->avg.cdutemp[1]; /* CDUY,Z = AIG,AMG       */
     g->lm.amg    = (agc_sp_t) g->avg.cdutemp[2];
     g->lm.aog    = (agc_sp_t) g->avg.cdutemp[0];
-    (void) agc_flag_set(AGC_FLAG_RNGEDATA);
+    agc_flag_set(AGC_FLAG_RNGEDATA);
     agc_relint();
     (void) AGC_ASSERT(g->lm.hmeas >= 0);
     return AGC_STATUS_OK;
@@ -729,9 +729,9 @@ agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx)
  * the job is short and runs at once).                                     */
 static agc_status_t posgood(void)
 {
-    (void) agc_exec_prio_change(PRIO23_LR);
+    agc_exec_prio_change(PRIO23_LR);
     agc_status_t st = agc_lm_setpos2();
-    (void) agc_flag_clear(AGC_FLAG_NOLRREAD); /* ENABLE LR READING      */
+    agc_flag_clear(AGC_FLAG_NOLRREAD); /* ENABLE LR READING      */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_NOLRREAD));
     return st;
 }
@@ -740,7 +740,7 @@ static agc_status_t posgood(void)
  * check again (POSALARM_PRO), V32 -> end R12.                              */
 static agc_status_t posalarm(agc_job_ctx_t *ctx)
 {
-    (void) agc_prioalarm(AGC_ALARM_00523);
+    agc_prioalarm(AGC_ALARM_00523);
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_POSALARM_PRO,
                             AGC_JOB_ENDOFJOB};
     (void) AGC_ASSERT(ctx != NULL);

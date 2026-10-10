@@ -54,7 +54,7 @@ static agc_status_t vg_to_lvc(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg)
     agc_rendz_t *rz = agc_rendz_erasable();
     if (veh == AGC_VEHICLE_CSM)
     {
-        (void) agc_flag_set(AGC_FLAG_AVFLAG);
+        agc_flag_set(AGC_FLAG_AVFLAG);
         return agc_guid_midgim(ip, vg);
     }
     (void) AGC_ASSERT(rz != NULL);
@@ -338,7 +338,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip)
     }
     b->zscref = agc_vec_neg(
         agc_vec_shl(ip, agc_vec_cross(ip, b->yscref, b->xscref), 1));
-    (void) agc_flag_set(AGC_FLAG_PFRATFLG);
+    agc_flag_set(AGC_FLAG_PFRATFLG);
     (void) agc_imu_set_pointvsm(b->pointvsm);
     return agc_imu_set_scaxis(b->scaxis);
 }
@@ -504,7 +504,7 @@ agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage,
         return AGC_STATUS_BAD_ARG;
     }
     agc_burn_t *b = &agc_guid_state()->burn;
-    (void) agc_flag_set(AGC_FLAG_IMPULSW); /* ASSUME NO STEERING */
+    agc_flag_set(AGC_FLAG_IMPULSW); /* ASSUME NO STEERING */
     agc_dp_t v = agc_vec_abval(ip, agc_erase_vgtig());
     if (ullage)
     {
@@ -518,7 +518,8 @@ agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage,
     agc_dp_t t14 = timeburn_csm(ip, v, b->weight_g, emdot, fang);
     if (t14 < 0)
     {
-        return agc_flag_clear(AGC_FLAG_IMPULSW); /* WILL STEER  */
+        agc_flag_clear(AGC_FLAG_IMPULSW);
+        return AGC_STATUS_OK; /* WILL STEER  */
     }
     agc_erase_set_tgo((agc_dp_t) agc_dp_high(t14)); /* TGO AT +28  */
     return AGC_STATUS_OK;

@@ -495,7 +495,7 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
     if (lm)
     {
-        (void) agc_exec_prio_change(PRIO26);
+        agc_exec_prio_change(PRIO26);
     }
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
@@ -507,12 +507,12 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
         (void) AGC_ASSERT(st == AGC_STATUS_OK);
         return AGC_STATUS_OK; /* ENDOFJOB      */
     }
-    (void) agc_flag_set(AGC_FLAG_PDSPFLAG);
+    agc_flag_set(AGC_FLAG_PDSPFLAG);
     if (!lm)
     {
         (void) imu_vflag_set(IMU_VF_TARG1FLG); /* for R52       */
         agc_erase_set_optind(0); /* OPTIND was set to -1 by V37    */
-        (void) agc_exec_prio_change(PRIO14);
+        agc_exec_prio_change(PRIO14);
     }
     return relinus_static ? automanv(ctx) : toballa(ctx); /* TC TBASE    */
 }

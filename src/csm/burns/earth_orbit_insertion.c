@@ -83,16 +83,16 @@ agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_phase_change(3, 000113);          /* -PHASE3 = REP11S   */
+    agc_phase_change(3, 000113);          /* -PHASE3 = REP11S   */
     lifttemp_set = false;                        /* CS ZERO TS LIFTTEMP */
-    (void) agc_phase_kill(5);                    /* prelaunch group 5   */
+    agc_phase_kill(5);                    /* prelaunch group 5   */
     tliftoff_set = false;                        /* REP11SA in TLIFTOFF */
     lifttemp     = (agc_dp_t) agc_time_now_cs(); /* DCA TIME2           */
     lifttemp_set = true;
-    (void) agc_time_set_cs(0u);     /* zero CMC clock      */
+    agc_time_set_cs(0u);     /* zero CMC clock      */
     agc_erase_set_tevent(lifttemp); /* TLIFTOFF            */
     tliftoff_set = true;
-    (void) agc_phase_change(3, 000133); /* REP11A-1: 3.13      */
+    agc_phase_change(3, 000133); /* REP11A-1: 3.13      */
     (void) AGC_ASSERT(agc_time_now_cs() < 100u);
     return agc_job_earth_orbit_insertion_monitor_ephemeris(ctx);
 }
@@ -112,7 +112,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
     agc_inhint();
     tephem1 = agc_erase_tephem() + (agc_tp_t) agc_erase_tevent(); /* DAS/ADS */
     agc_relint();
-    (void) agc_phase_change_var(005023, &v); /* PRIO22         */
+    agc_phase_change_var(005023, &v); /* PRIO22         */
     return agc_job_earth_orbit_insertion_monitor_preread(ctx);
 }
 
@@ -133,7 +133,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
     agc_erase_set_tephem(tephem1);
     agc_relint();
     st = agc_guid_preread1_csm(); /* zero PIPs, AVERAGEG */
-    (void) agc_phase_change_var(005023, &v);
+    agc_phase_change_var(005023, &v);
     (void) AGC_ASSERT(agc_erase_tephem() == tephem1);
     return (st == AGC_STATUS_OK) ?
                agc_job_earth_orbit_insertion_monitor_setup(ctx) :
@@ -153,10 +153,10 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
     }
     (void) agc_waitlist_call(50, AGC_TASK_ATERTASK); /* .5SEC     */
     (void) agc_phase_newmode(11);
-    (void) agc_flag_set(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION);
+    agc_flag_set(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION);
     (void) agc_telem_select_list(INSERTION_POWDNCOD);
     (void) agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL); /* V75 case  */
-    (void) agc_phase_change2(040514, 000073, NULL);           /* 4.51, 3.7 */
+    agc_phase_change2(040514, 000073, NULL);           /* 4.51, 3.7 */
     st = agc_csm_prelaunch_earthr_at_liftoff(entry_ip(), agc_erase_tevent());
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION));
     return (st == AGC_STATUS_OK) ? agc_job_matrxjob(ctx) : st;
@@ -182,12 +182,12 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
     {
         if (agc_time_now_cs() >= 16384u)
         {                               /* CCS TIME2: not yet  */
-            (void) agc_time_set_cs(0u); /* zeroed: REP11A -5   */
+            agc_time_set_cs(0u); /* zeroed: REP11A -5   */
         }
         agc_erase_set_tevent(lifttemp); /* REP11A -2           */
         tliftoff_set = true;
     }
-    (void) agc_phase_change(3, 000133); /* ENDREP11: 3.13      */
+    agc_phase_change(3, 000133); /* ENDREP11: 3.13      */
     (void) AGC_ASSERT(tliftoff_set);
     return agc_job_earth_orbit_insertion_monitor_ephemeris(ctx);
 }
@@ -251,7 +251,7 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
     int32_t dt;
 
     (void) AGC_ASSERT(ctx != NULL);
-    (void) agc_phase_change_var(004023, &v);
+    agc_phase_change_var(004023, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_VHHDOT; /* P11SCADR      */
     agc_imu_set_pipa_interval((agc_sp_t) 031000);   /* PRIO31: 2 s   */
     agc_inhint();
@@ -264,7 +264,7 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
     }
     (void) agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
     agc_relint();
-    (void) agc_phase_change2(000003, 000025, NULL); /* 3 off, 5.2    */
+    agc_phase_change2(000003, 000025, NULL); /* 3 off, 5.2    */
     (void) AGC_ASSERT(dt > 0);
     return agc_job_normlize_csm(ctx); /* POSTJUMP      */
 }
@@ -291,7 +291,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
     ogc_lo[0] = agc_guid_cdulogic(agc_erase_cdux()); /* OGC B-1: revs */
     ogc_lo[1] = agc_guid_cdulogic(agc_erase_cduy());
     ogc_lo[2] = agc_guid_cdulogic(agc_erase_cduz());
-    (void) agc_flag_clear(AGC_FLAG_ERADFLAG);
+    agc_flag_clear(AGC_FLAG_ERADFLAG);
     st = agc_navaux_get_padload(&pad);
     if (st == AGC_STATUS_OK)
     {
@@ -317,7 +317,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
         agc_dp_add(ip,
                    agc_dp_sub(ip, INSERTION_HALFREV, insertion_pad.launchaz),
                    insertion_pad.azimuth));
-    (void) agc_flag_set(AGC_FLAG_REFSMFLG);
+    agc_flag_set(AGC_FLAG_REFSMFLG);
     return matrx_tail(ctx);
 }
 
@@ -375,7 +375,7 @@ agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     st = agc_csm_velocity_altitude_rate(entry_ip());
-    (void) agc_phase_change(5, 000035);
+    agc_phase_change(5, 000035);
     (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_dsky_display(ctx, AGC_DSKY_REGODSP, agc_dsky_vn(6, 62), NULL);
 }
@@ -564,13 +564,13 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
     }
     if (satsw > 0)
     {
-        (void) agc_chan_or(012, AGC_CH012_SIVBTAKEOVER); /* TAKEON   */
+        agc_chan_or(012, AGC_CH012_SIVBTAKEOVER); /* TAKEON   */
         satsw = 0;
     }
     else
     {
         satsw = 1;
-        (void) agc_chan_and(012, (uint16_t) ~AGC_CH012_SIVBTAKEOVER);
+        agc_chan_and(012, (uint16_t)~AGC_CH012_SIVBTAKEOVER);
     }
     (void) AGC_ASSERT(satsw == 0 || satsw == 1);
     (void) agc_dap_needler(0, 0, 0, false); /* SATOUT   */
@@ -590,10 +590,10 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();
-    (void) agc_rupt_set_t5_task(AGC_TASK_REDOSAT);
-    (void) agc_rupt_set_time(5, 037777); /* POSMAX   */
-    (void) agc_flag_set(AGC_FLAG_DAPBIT1);
-    (void) agc_flag_set(AGC_FLAG_DAPBIT2);
+    agc_rupt_set_t5_task(AGC_TASK_REDOSAT);
+    agc_rupt_set_time(5, 037777); /* POSMAX   */
+    agc_flag_set(AGC_FLAG_DAPBIT1);
+    agc_flag_set(AGC_FLAG_DAPBIT2);
     (void) agc_csm_dap_zerojet();
     agc_relint();
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_DAPBIT1));
@@ -604,11 +604,12 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
 agc_status_t agc_task_redosat(void)
 {
     (void) agc_dap_needler(0, 0, 0, true);
-    (void) agc_chan_or(012, AGC_CH012_SIVBTAKEOVER);
-    (void) agc_rupt_set_t5_task(AGC_TASK_SATSTICK);
+    agc_chan_or(012, AGC_CH012_SIVBTAKEOVER);
+    agc_rupt_set_t5_task(AGC_TASK_SATSTICK);
     (void) AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_SATSTICK);
     (void) AGC_ASSERT((agc_chan_read(012) & AGC_CH012_SIVBTAKEOVER) != 0u);
-    return agc_rupt_set_time(5, INSERTION_100MST5); /* 100MST5  */
+    agc_rupt_set_time(5, INSERTION_100MST5);
+    return AGC_STATUS_OK; /* 100MST5  */
 }
 
 /* SATSTICK (p. 550): every 100 ms (T5): the RHC rotation bits of channel
@@ -621,8 +622,8 @@ agc_status_t agc_task_satstick(void)
     uint16_t             bits;
     agc_status_t         st;
 
-    (void) agc_rupt_set_t5_task(AGC_TASK_SATSTICK); /* 2SATSTCK */
-    (void) agc_rupt_set_time(5, INSERTION_100MST5); /* 100MST5  */
+    agc_rupt_set_t5_task(AGC_TASK_SATSTICK); /* 2SATSTCK */
+    agc_rupt_set_time(5, INSERTION_100MST5); /* 100MST5  */
     bits = (uint16_t) ((INSERTION_STIKBITS ^ agc_chan_read(031)) &
                        INSERTION_STIKBITS);
     st   = agc_csm_dap_stickchk(bits);

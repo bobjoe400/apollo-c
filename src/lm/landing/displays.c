@@ -113,7 +113,7 @@ static agc_status_t ld_disprset(void)
         (void) AGC_ASSERT(st == AGC_STATUS_OK);
     }
     (void) ld_imodes33_bits(0u, LD_BITS8_7); /* ABORTON        */
-    (void) agc_flag_clear(AGC_FLAG_DIDFLAG);
+    agc_flag_clear(AGC_FLAG_DIDFLAG);
     ld_altpath = LD_NONE;
     return AGC_STATUS_OK; /* TASKOVER       */
 }
@@ -246,7 +246,7 @@ static agc_status_t ld_disindat(void)
     {
         return ld_speedrun();
     }
-    (void) agc_flag_set(AGC_FLAG_DIDFLAG);
+    agc_flag_set(AGC_FLAG_DIDFLAG);
     (void) ld_imodes33_bits(0u, LD_BIT7); /* altrate first, then alt.   */
     ld_altpath = LD_NONE;
     if (agc_flag_test(AGC_FLAG_ALTITUDE_METERS_ONLY))

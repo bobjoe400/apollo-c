@@ -383,7 +383,7 @@ static agc_status_t fc_noattcnt(bool alarm)
 {
     if (alarm)
     {
-        (void) agc_alarm(AGC_ALARM_00402); /* alarm is recorded; go on  */
+        agc_alarm(AGC_ALARM_00402); /* alarm is recorded; go on  */
     }
     agc_inhint();
     agc_status_t st = agc_lm_dap_stoprate();
@@ -400,7 +400,7 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
     agc_sp_t limited = fc_twos_of_ones(lim);
     if (fc_wrap15((int32_t) cdu[2] - limited) != 0)
     {
-        (void) agc_alarm(AGC_ALARM_00401); /* ALARMMGA         */
+        agc_alarm(AGC_ALARM_00401); /* ALARMMGA         */
     }
     cdu[2]                 = limited;
     const uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(),

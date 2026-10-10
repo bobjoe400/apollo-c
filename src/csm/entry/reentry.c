@@ -235,7 +235,7 @@ static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es)
     }
     if (agc_dp_sub(ip, es->v, AGC_ENTRY_FOURTH) < 0)
     {                                           /* SUBETA: VMIN */
-        (void) agc_flag_set(AGC_FLAG_RELVELSW); /* SET RELVELSW */
+        agc_flag_set(AGC_FLAG_RELVELSW); /* SET RELVELSW */
     }
     return agc_dp_div(ip, agc_dp_mul(ip, es->thetah, AGC_ENTRY_KT1), es->v);
 }
@@ -319,18 +319,18 @@ agc_status_t agc_entry_targeting(void)
         return st;
     }
     es->latang = agc_vec_dot(ip, es->rt, es->uni); /* LATANG/4 */
-    (void) agc_flag_clear(AGC_FLAG_GONEBY);
+    agc_flag_clear(AGC_FLAG_GONEBY);
     if (agc_vec_dot(ip, agc_vec_cross(ip, es->rt, unitr), es->uni) < 0)
     {
-        (void) agc_flag_set(AGC_FLAG_GONEBY); /* have gone past target  */
+        agc_flag_set(AGC_FLAG_GONEBY); /* have gone past target  */
     }
     targ_range_angle(ip, es);
     if (agc_dp_sub(ip, es->d, AGC_ENTRY_G05) < 0)
     {
-        (void) agc_flag_clear(AGC_FLAG__05GSW); /* NO.05G (for the DAP)   */
+        agc_flag_clear(AGC_FLAG__05GSW); /* NO.05G (for the DAP)   */
         return AGC_STATUS_OK;
     }
-    (void) agc_flag_set(AGC_FLAG__05GSW);
+    agc_flag_set(AGC_FLAG__05GSW);
     targ_ldcalc(ip, es);
     return AGC_STATUS_OK;
 }
@@ -364,8 +364,8 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
     {
         return st;
     }
-    (void) agc_flag_clear(AGC_FLAG_ERADFLAG); /* use pad radius        */
-    (void) agc_flag_clear(AGC_FLAG_LUNAFLAG); /* earth lat-long        */
+    agc_flag_clear(AGC_FLAG_ERADFLAG); /* use pad radius        */
+    agc_flag_clear(AGC_FLAG_LUNAFLAG); /* earth lat-long        */
     ll.lat       = es->lat_spl;
     ll.lon       = es->lng_spl; /* ALT = 0 (3ZEROS)      */
     es->time_rto = sv.t;        /* TIME/RTO = PIPTIME    */
@@ -401,11 +401,11 @@ static void entry_init_switches(void)
     agc_inhint();
     for (i = 0; i < (sizeof clr / sizeof clr[0]); i++)
     {
-        (void) agc_flag_clear(clr[i]); /* flag API cannot fail on valid ids */
+        agc_flag_clear(clr[i]); /* flag API cannot fail on valid ids */
     }
-    (void) agc_flag_set(AGC_FLAG_ENTRYDSP);
-    (void) agc_flag_set(AGC_FLAG_GONEPAST);
-    (void) agc_flag_set(AGC_FLAG_LATSW);
+    agc_flag_set(AGC_FLAG_ENTRYDSP);
+    agc_flag_set(AGC_FLAG_GONEPAST);
+    agc_flag_set(AGC_FLAG_LATSW);
     agc_relint();
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_LATSW));
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_HIND));
@@ -488,7 +488,7 @@ static entry_step_t step_initroll(entry_pass_t *p)
         (agc_dp_sub(ip, kat, AGC_ENTRY_KALIM) < 0) ? kat : AGC_ENTRY_KALIM;
     (void) AGC_ASSERT(es->kat <= AGC_ENTRY_KALIM);
     /* CLEAR GONEPAST: ROLLC follows HEADSUP only until P64.               */
-    (void) agc_flag_clear(AGC_FLAG_GONEPAST);
+    agc_flag_clear(AGC_FLAG_GONEPAST);
     if (agc_dp_sub(ip, es->v, AGC_ENTRY_VFINAL1) >= 0)
     {
         return ST_D0EQ;
@@ -534,7 +534,7 @@ static entry_step_t step_inrolout(entry_pass_t *p)
     bool was_set = agc_flag_test(AGC_FLAG_INRLSW);
 
     (void) AGC_ASSERT(p != NULL);
-    (void) agc_flag_set(AGC_FLAG_INRLSW);
+    agc_flag_set(AGC_FLAG_INRLSW);
     return was_set ? ST_KATEST : ST_LIMITLD;
 }
 
@@ -840,11 +840,11 @@ static entry_step_t step_sidetrak(entry_pass_t *p)
     (void) AGC_ASSERT(p->hunt_iter >= 0);
     /* CA PRIO16 / TS PHSPRDT5: group 5 restart priority one below group 4
      * (no exec API for PHSPRDT5 alone; the restart uses the stored one).  */
-    (void) agc_phase_change(4, 000474);            /* 4.47 PRE-HUNT      */
-    (void) agc_exec_prio_change(AGC_ENTRY_PRIO16); /* BUSY: see above    */
+    agc_phase_change(4, 000474);            /* 4.47 PRE-HUNT      */
+    agc_exec_prio_change(AGC_ENTRY_PRIO16); /* BUSY: see above    */
     es->gotoaddr = AGC_ENTRY_GOTO_ENDEXIT;         /* ADENDEXT           */
     es->diffold  = es->diff;
-    (void) agc_flag_set(AGC_FLAG_HIND);
+    agc_flag_set(AGC_FLAG_HIND);
     es->q7 = AGC_ENTRY_Q7F;
     p->hunt_iter++;
     if (p->hunt_iter >= AGC_ENTRY_HUNTEST_MAX_ITER)
@@ -864,7 +864,7 @@ agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_clear(AGC_FLAG_HIND);
+    agc_flag_clear(AGC_FLAG_HIND);
     entry_forehunt(es);
     es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
     return AGC_STATUS_OK; /* next SERVICER pass continues at HUNTEST */
@@ -898,7 +898,7 @@ static entry_step_t step_upcontrl(entry_pass_t *p)
     (void) AGC_ASSERT(ip != NULL && es != NULL);
     if (agc_dp_sub(ip, es->d, AGC_ENTRY_C21) >= 0)
     {
-        (void) agc_flag_set(AGC_FLAG_NOSWITCH); /* suppress lat switch */
+        agc_flag_set(AGC_FLAG_NOSWITCH); /* suppress lat switch */
     }
     if (agc_dp_sub(ip, es->v, es->v1) >= 0)
     {
@@ -1026,7 +1026,7 @@ static entry_step_t step_negtests(entry_pass_t *p)
     {
         return ST_LIMITLD;
     }
-    (void) agc_flag_clear(AGC_FLAG_LATSW);
+    agc_flag_clear(AGC_FLAG_LATSW);
     if (p->mpac < 0)
     {
         es->l_d = 0;
@@ -1177,7 +1177,7 @@ static entry_step_t step_prefinal(entry_pass_t *p)
         p->status = AGC_STATUS_BAD_ARG;
         return ST_ERROR;
     }
-    (void) agc_flag_set(AGC_FLAG_EGSW);
+    agc_flag_set(AGC_FLAG_EGSW);
     p->es->gotoaddr = AGC_ENTRY_GOTO_PREDICT3;
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_EGSW));
     return ST_PREDICT3;
@@ -1292,7 +1292,7 @@ static entry_step_t step_predict3(entry_pass_t *p)
         return ST_HAVDNRNG;
     }
     es->dnrngerr = AGC_ENTRY_MAXRNG; /* 9999.9 NM   */
-    (void) agc_flag_set(AGC_FLAG_GONEPAST);
+    agc_flag_set(AGC_FLAG_GONEPAST);
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_GONEPAST));
     return ST_GONEGLAD;
 }
@@ -1426,7 +1426,7 @@ static entry_step_t step_l353(entry_pass_t *p)
     }
     if (agc_flag_test(AGC_FLAG_NOSWITCH))
     {
-        (void) agc_flag_clear(AGC_FLAG_NOSWITCH);
+        agc_flag_clear(AGC_FLAG_NOSWITCH);
         return ST_L355;
     }
     es->k2roll = agc_dp_neg(es->k2roll); /* K2ROLL = -K2ROLL           */
@@ -1446,7 +1446,7 @@ static entry_step_t step_l355(entry_pass_t *p)
     (void) agc_interp_test_ovf(ip);
     m         = agc_dp_acos(ip, agc_dp_shr(m, 1));
     es->rollc = agc_dp_sign(m, es->k2roll);
-    (void) agc_flag_clear(AGC_FLAG_NOSWITCH);
+    agc_flag_clear(AGC_FLAG_NOSWITCH);
     (void) AGC_ASSERT(agc_dp_abs(es->rollc) <= AGC_DP_HALF);
     return ST_ENDEXIT;
 }
@@ -1474,7 +1474,7 @@ static entry_step_t step_steeroff(entry_pass_t *p)
         p->status = AGC_STATUS_FULL;
         return ST_ERROR;
     }
-    (void) agc_phase_change2(000414, 010035, &v); /* 4.41 P67.1, SERVICER 5.3 */
+    agc_phase_change2(000414, 010035, &v); /* 4.41 P67.1, SERVICER 5.3 */
     p->es->gotoaddr = AGC_ENTRY_GOTO_FINAL_PHASE_LATLONG;
     (void) AGC_ASSERT(p->es->gotoaddr == AGC_ENTRY_GOTO_FINAL_PHASE_LATLONG);
     return ST_FINAL_PHASE_LATLONG;
@@ -1697,7 +1697,7 @@ agc_status_t agc_entry_refaze10(bool *display)
         return AGC_STATUS_BAD_ARG;
     }
     *display = false;
-    (void) agc_phase_change_var(010035, &v); /* SERVICER 5.3        */
+    agc_phase_change_var(010035, &v); /* SERVICER 5.3        */
     pass.ip        = entry_ip();
     pass.es        = agc_entry_state();
     pass.mpac      = 0;

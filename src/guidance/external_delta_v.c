@@ -205,7 +205,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
     {
         return st;
     }
-    (void) agc_flag_set(AGC_FLAG_AVFLAG);
+    agc_flag_set(AGC_FLAG_AVFLAG);
     st = agc_guid_midgim(ip, rz->delveet3); /* DELVLVC B7 FOR DISPLAY */
     if (st != AGC_STATUS_OK)
     {
@@ -248,8 +248,8 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
                                         agc_job_id_t next)
 {
-    (void) agc_flag_set(AGC_FLAG_UPDATFLG);
-    (void) agc_flag_set(AGC_FLAG_TRACKFLG);
+    agc_flag_set(AGC_FLAG_UPDATFLG);
+    agc_flag_set(AGC_FLAG_TRACKFLG);
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return flash(ctx, AGC_DSKY_GOFLASH, 6, 33, next,
@@ -260,7 +260,8 @@ static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
     {
         return st;
     }
-    return agc_phase_change(GRP4, (uint16_t) 000014); /* 4.1 ENDOFJOB  */
+    agc_phase_change(GRP4, (uint16_t)000014);
+    return AGC_STATUS_OK; /* 4.1 ENDOFJOB  */
 }
 
 agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
@@ -294,7 +295,7 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    (void) agc_flag_clear(AGC_FLAG_UPDATFLG);
+    agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
@@ -306,7 +307,7 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
     }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        (void) agc_flag_set(AGC_FLAG_UPDATFLG);
+        agc_flag_set(AGC_FLAG_UPDATFLG);
     }
     return agc_job_external_delta_v_display_parameters(ctx);
 }
@@ -336,7 +337,7 @@ agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    (void) agc_flag_set(AGC_FLAG_XDELVFLG); /* EXTERNAL DELTA-V      */
+    agc_flag_set(AGC_FLAG_XDELVFLG); /* EXTERNAL DELTA-V      */
     return agc_exec_job_yield(AGC_JOB_MARKS_TFI_MGA_MONITOR);
 }
 
@@ -361,8 +362,8 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    (void) agc_flag_clear(AGC_FLAG_UPDATFLG);
-    (void) agc_flag_clear(AGC_FLAG_NORMSW);
+    agc_flag_clear(AGC_FLAG_UPDATFLG);
+    agc_flag_clear(AGC_FLAG_NORMSW);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);

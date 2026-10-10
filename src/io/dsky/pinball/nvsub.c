@@ -64,8 +64,8 @@ void pin_kilmonon(void)
 static void pin_reldsp2(void)
 {
     (void) AGC_ASSERT(pin_invariants());
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
+    agc_chan_and((int)AGC_CHAN_DSALMOUT,
+                 (uint16_t)(PIN_WORD ^ PIN_CH11_KEYREL));
     pin_st()->dsplock = false;
 }
 

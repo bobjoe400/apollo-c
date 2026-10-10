@@ -39,7 +39,7 @@ static void phase_b(agc_job_id_t job)
     agc_phase_var_t v = {AGC_RESTART_JOB,      job,   AGC_TASK_NONE,
                          (int16_t) AGC_PRIO20, false, 0U};
     (void) AGC_ASSERT(job != AGC_JOB_NONE);
-    (void) agc_phase_change_var(PH_5_3_B, &v);
+    agc_phase_change_var(PH_5_3_B, &v);
 }
 
 /* SERVXT (p.704): POSTJUMP SERVEXIT.                                       */
@@ -58,11 +58,12 @@ agc_status_t agc_csm_servxt(agc_job_ctx_t *ctx)
  * STEERSW reset.                                                          */
 static agc_status_t short_burn_cutoff(agc_csm_tvc_t *tvc)
 {
-    (void) agc_flag_set(AGC_FLAG_IMPULSW);
+    agc_flag_set(AGC_FLAG_IMPULSW);
     tvc->omegac[0] = tvc->omegac[1] = tvc->omegac[2] = 0; /* RATEZRO         */
     tvc->cntr                                        = AGC_SP_MAX;
     (void) AGC_ASSERT(tvc->cntr == AGC_SP_MAX);
-    return agc_flag_clear(AGC_FLAG_STEERSW);
+    agc_flag_clear(AGC_FLAG_STEERSW);
+    return AGC_STATUS_OK;
 }
 
 /* LOTHRUST (p.722): thrust failure, unless IDLEFAIL (one bypass after V97
@@ -81,7 +82,8 @@ static agc_status_t lothrust(agc_csm_tvc_t *tvc)
     agc_guid_state()->csm.nvword1 =
         AGC_CSM_NV_ENGINE_FAIL_PROCEDURE; /* ENGINE-FAIL V97 FLASH  */
     (void) AGC_ASSERT(tvc->vcntr == 0);
-    return agc_flag_clear(AGC_FLAG_STEERSW);
+    agc_flag_clear(AGC_FLAG_STEERSW);
+    return AGC_STATUS_OK;
 }
 
 /* S40.8 after its restart point (p.719-720): VGPREV = VG; with STEERSW:
@@ -110,7 +112,8 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
     agc_status_t st  = agc_guid_steering_tgo_csm(ip, &in, &tgo);
     if (st == AGC_STATUS_ALARM)
     {
-        return agc_alarm(AGC_ALARM_01407); /* INCRSVG                */
+        agc_alarm(AGC_ALARM_01407);
+        return AGC_STATUS_ALARM; /* INCRSVG                */
     }
     agc_erase_set_tgo(tgo);
     agc_erase_set_tig(agc_dp_add(ip, tgo, agc_erase_piptime()));
@@ -188,7 +191,7 @@ static agc_status_t setup_9(agc_interp_t *ip)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_SURELY9_RESTART,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change2((uint16_t) 000051, PH_5_3_B, &v);
+    agc_phase_change2((uint16_t)000051, PH_5_3_B, &v);
     (void) AGC_ASSERT(g->burn.nbrcyclp >= 0);
     return surely9_restart(ip);
 }
@@ -239,7 +242,7 @@ static agc_status_t steering_tail(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STEERING_RESTART,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change2((uint16_t) 040153, PH_5_3_B, &v);
+    agc_phase_change2((uint16_t)040153, PH_5_3_B, &v);
     agc_relint();
     (void) AGC_ASSERT(dt >= 1);
     return agc_job_steering_restart(ctx);
@@ -271,7 +274,7 @@ agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_flag_clear(AGC_FLAG_IMPULSW);
+    agc_flag_clear(AGC_FLAG_IMPULSW);
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW));
     return agc_csm_servxt(ctx);
 }
@@ -388,7 +391,7 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45L : EP4_10L;
-    (void) agc_flag_clear(AGC_FLAG_GUESSW);
+    agc_flag_clear(AGC_FLAG_GUESSW);
     agc_status_t st =
         agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4, ctx->id);
     if (st != AGC_STATUS_OK)
@@ -397,7 +400,7 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
     }
     agc_phase_var_t v = {AGC_RESTART_JOB,      AGC_JOB_ENDLAMB, AGC_TASK_NONE,
                          (int16_t) AGC_PRIO10, false,           0U};
-    (void) agc_phase_change_var((uint16_t) 005021, &v);
+    agc_phase_change_var((uint16_t)005021, &v);
     return agc_job_endlamb(ctx);
 }
 
@@ -436,7 +439,7 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_COPY40_9,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO10,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 004021, &v);
+    agc_phase_change_var((uint16_t)004021, &v);
     return agc_job_copy40_9(ctx);
 }
 
@@ -451,10 +454,11 @@ agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
     agc_guid_t *g    = agc_guid_state();
     g->burn.tnitprev = g->burn.tnit;
     g->burn.vrprev   = agc_rendz_erasable()->viprime;
-    (void) agc_flag_clear(AGC_FLAG_FIRSTFLG);
+    agc_flag_clear(AGC_FLAG_FIRSTFLG);
     g->burn.nbrcycls = -1;
     (void) AGC_ASSERT(g->burn.nbrcycls == -1);
-    return agc_phase_kill(1);
+    agc_phase_kill(1);
+    return AGC_STATUS_OK;
 }
 
 /* REDO40.9 (p.725): restart of S40.9: give up this pass, keep VGPREV.     */
@@ -470,7 +474,8 @@ agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
     agc_rendz_erasable()->delveet3 = agc_erase_vgtig(); /* VGTEMP      */
     g->burn.nbrcycls               = -1;                /* ENDS40.9 -2 */
     (void) AGC_ASSERT(g->burn.nbrcyclp == 0);
-    return agc_phase_kill(1);
+    agc_phase_kill(1);
+    return AGC_STATUS_OK;
 }
 
 /* S40.13 job (p.726-728): TIMEBURN with the present mass, then group 3 off.
@@ -490,6 +495,6 @@ agc_status_t agc_job_timeburn_csm(agc_job_ctx_t *ctx)
     agc_status_t st =
         agc_guid_timeburn_csm(&ip, ullage, !agc_flag_test(AGC_FLAG_NJETSFLG),
                               com->emdot, g->csm.fang);
-    (void) agc_phase_change(3, (uint16_t) 000003); /* KILL GROUP 3           */
+    agc_phase_change(3, (uint16_t)000003); /* KILL GROUP 3           */
     return st;
 }

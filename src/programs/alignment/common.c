@@ -300,7 +300,8 @@ agc_status_t align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio)
     v.kind            = AGC_RESTART_JOB;
     v.job             = job;
     v.prio_or_dt      = (int16_t) prio;
-    return agc_phase_change_var(code, &v);
+    agc_phase_change_var(code, &v);
+    return AGC_STATUS_OK;
 }
 
 /* LOADTIME (RTB): TIME2, TIME1, cs B28. */

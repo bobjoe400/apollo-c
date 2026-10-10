@@ -258,3 +258,11 @@
             Style follow-ups for integration/review: include/agc/core/assert.h
             shadows <assert.h> name (guide 3.4) -> consider rename;
             check_style findings to be worked down in review wave.
+2026-10-10  User: paragraphing (blank lines between declarations, asserts,
+            blocks, return) missing; clang-format cannot insert blank lines.
+            Decision: replace clang-format with Uncrustify 0.72 (installed);
+            `style2` lane ports .clang-format + guide 5.5 paragraphing to
+            uncrustify.cfg on a scratch copy; tree-wide run after
+            status-handling. Also found 3,233 `(void) AGC_ASSERT(...)`
+            sites (rule 7 + rule 5 dodge, uppercase slipped past the
+            checker): checker extended; status-handling lane scope widened.

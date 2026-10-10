@@ -109,3 +109,10 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   of THISPREC/MIDTOAV). Fine while headers churn; wrong in the result.
   Integration must replace every wrapper with a direct call through the
   owning module's public header and keep one copy of each AGC entry.
+* **An assertion with `(void)` in front is not an assertion.** Rule 5 wants
+  an explicit recovery; `(void) AGC_ASSERT(x);` is a no-op. Write
+  `if (!AGC_ASSERT(x)) { return <failure>; }` and make the checker's
+  pattern case-insensitive from the start (3,233 of these slipped through).
+* **clang-format cannot insert blank lines.** For statement paragraphing
+  (NASA guide 5.5) use Uncrustify (nl_before_if, nl_func_var_def_blk,
+  nl_before_return, nl_after_brace_close) and let it be the only formatter.

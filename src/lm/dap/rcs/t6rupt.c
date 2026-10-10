@@ -60,7 +60,8 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     }
     if (index == T6_IDX_P)
     {
-        return agc_chan_write(006, jets);
+        agc_chan_write(006, jets);
+        return AGC_STATUS_OK;
     }
     uint16_t keep;
     if (index == T6_IDX_U)
@@ -75,7 +76,8 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return agc_chan_write(005, (uint16_t) (keep + jets)); /* AD L            */
+    agc_chan_write(005, (uint16_t)(keep + jets));
+    return AGC_STATUS_OK; /* AD L            */
 }
 
 /* WRITEx -1: write the jets queued for after the firing (NEXTP/U/V).     */

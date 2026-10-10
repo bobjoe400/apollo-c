@@ -141,8 +141,7 @@ static void f4_up(uint16_t bits)
 {
     (void) AGC_ASSERT(pin_invariants());
     agc_inhint();
-    (void) agc_flagword_set(
-        DIF_F4, (uint16_t) (f4() | bits)); /* cannot fail for word 4 */
+    agc_flagword_set(DIF_F4, (uint16_t)(f4() | bits)); /* cannot fail for word 4 */
     agc_relint();
 }
 
@@ -150,7 +149,7 @@ static void f4_down(uint16_t bits)
 {
     (void) AGC_ASSERT(pin_invariants());
     agc_inhint();
-    (void) agc_flagword_set(DIF_F4, (uint16_t) (f4() & ~bits));
+    agc_flagword_set(DIF_F4, (uint16_t)(f4() & ~bits));
     agc_relint();
 }
 
@@ -174,8 +173,8 @@ static agc_status_t dif_priobort(void)
 static agc_status_t dif_witchone(agc_job_id_t new_loc)
 {
     (void) AGC_ASSERT(pin_invariants());
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
+    agc_chan_and((int)AGC_CHAN_DSALMOUT,
+                 (uint16_t)(PIN_WORD ^ PIN_CH11_KEYREL));
     pin_sleeper_t sl = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
     agc_status_t  st = AGC_STATUS_OK;
     agc_inhint();
@@ -216,8 +215,7 @@ static agc_status_t dif_endit(agc_prio_t userprio, agc_job_id_t cont)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_exec_prio_change(
-        userprio); /* BUSY only means: yield, done next */
+    agc_exec_prio_change(userprio); /* BUSY only means: yield, done next */
     return agc_exec_job_yield(cont);
 }
 
@@ -304,7 +302,7 @@ static agc_status_t dif_markplay(void)
 {
     (void) AGC_ASSERT(pin_invariants());
     agc_inhint();
-    (void) agc_flagword_set(DIF_F4, (uint16_t) ((f4() & ~05u) | DIF_XDSPFLAG));
+    agc_flagword_set(DIF_F4, (uint16_t)((f4() & ~05u) | DIF_XDSPFLAG));
     agc_relint();
     if ((g_cls[DIF_MARKC].flags & DIF_PERFORM) != 0u)
     { /* GOGOMARK */
@@ -450,7 +448,7 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_exec_prio_change(PIN_PRIO33); /* raising: never pre-empted */
+    agc_exec_prio_change(PIN_PRIO33); /* raising: never pre-empted */
     if ((rq->flags & DIF_MARK) != 0u)
     {
         return dif_makemark(rq, userprio);
@@ -1023,7 +1021,7 @@ agc_status_t agc_dsky_initdsp(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_exec_prio_change(g_restreg);
+    agc_exec_prio_change(g_restreg);
     dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags,
                     g_cls[DIF_NORMC].cadr};
     rq.flags     = (uint16_t) (rq.flags & ~DIF_SECOND);

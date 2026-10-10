@@ -34,7 +34,8 @@ agc_status_t imu_vflag_set(imu_vflag_t f)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(agc_flag_valid(id));
-    return agc_flag_set(id);
+    agc_flag_set(id);
+    return AGC_STATUS_OK;
 }
 
 agc_status_t imu_vflag_clear(imu_vflag_t f)
@@ -45,5 +46,6 @@ agc_status_t imu_vflag_clear(imu_vflag_t f)
         return AGC_STATUS_BAD_ARG;
     }
     (void) AGC_ASSERT(agc_flag_valid(id));
-    return agc_flag_clear(id);
+    agc_flag_clear(id);
+    return AGC_STATUS_OK;
 }

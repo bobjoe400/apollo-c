@@ -117,33 +117,32 @@ static void store_alarm(agc_alarm_code_t code)
 }
 
 /* ALARM (C p.1493 / L p.1381): light PROG, record the code, return.    */
-agc_status_t agc_alarm(agc_alarm_code_t code)
+void agc_alarm(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     store_alarm(code);
     agc_relint();
     (void) AGC_ASSERT(agc_erase_failreg(0) != 0U);
-    return AGC_STATUS_ALARM;
 }
 
 /* VARALARM (C p.1496 / L p.1384): ALARM with the code in A.            */
-agc_status_t agc_exec_varalarm(agc_alarm_code_t code)
+void agc_exec_varalarm(agc_alarm_code_t code)
 {
     (void) AGC_ASSERT(code != 0U);
     (void) AGC_ASSERT(code <= AL_POSMAX);
-    return agc_alarm(code);
+    agc_alarm(code);
 }
 
 /* CURTAINS (C p.1496 / L p.1383): ALARM 217.                           */
-agc_status_t agc_curtains(void)
+void agc_curtains(void)
 {
     (void) AGC_ASSERT(AGC_ALARM_00217 <= AL_POSMAX);
     (void) AGC_ASSERT(restarts_run < UINT16_MAX);
-    return agc_alarm(AGC_ALARM_00217);
+    agc_alarm(AGC_ALARM_00217);
 }
 
 /* PRIOLARM (C p.1494 / L p.1382): record the alarm as ALARM does, then
@@ -151,18 +150,17 @@ agc_status_t agc_curtains(void)
  * DEVIATION: the display needs the caller's job context and its three
  * astronaut continuations, which the exec layer cannot name; the caller
  * requests it with agc_dsky_display(ctx, AGC_DSKY_PRIODSPR, V05N09, ..)
- * after this returns AGC_STATUS_ALARM.                                 */
-agc_status_t agc_prioalarm(agc_alarm_code_t code)
+ * after this returns.                                 */
+void agc_prioalarm(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     store_alarm(code);
     agc_relint();
     (void) AGC_ASSERT(agc_erase_failreg(0) != 0U);
-    return AGC_STATUS_ALARM;
 }
 
 /* WHIMPER (C p.1495 / L p.1383): software restart via ENEMA.           */

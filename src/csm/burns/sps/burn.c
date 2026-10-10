@@ -85,7 +85,7 @@ static agc_status_t burn_setup_with_thrust(agc_job_ctx_t *ctx, agc_dp_t f)
     g->burn.nomtig = agc_erase_tig(); /* ORIGINAL TIG FOR S40.9 */
     (void) agc_imu_status_check();    /* IMU STATUS CHECK       */
     g->burn.weight_g = agc_dp_from_sp(agc_csm_dap_com()->weight_g);
-    (void) agc_flag_set(AGC_FLAG_FIRSTFLG); /* S40.1: SET FIRSTFLG    */
+    agc_flag_set(AGC_FLAG_FIRSTFLG); /* S40.1: SET FIRSTFLG    */
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
@@ -101,7 +101,7 @@ static agc_status_t burn_setup_with_thrust(agc_job_ctx_t *ctx, agc_dp_t f)
     {
         return st;
     }
-    (void) agc_flag_set(AGC_FLAG_PFRATFLG);
+    agc_flag_set(AGC_FLAG_PFRATFLG);
     agc_inhint();
     (void) agc_csm_setmindb(); /* NARROW DEADBAND        */
     agc_relint();
@@ -118,7 +118,7 @@ agc_status_t agc_job_sps_burn(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_guid_t *g = agc_guid_state();
-    (void) agc_flag_clear(AGC_FLAG_ENG2FLAG);
+    agc_flag_clear(AGC_FLAG_ENG2FLAG);
     g->burn.csteer = agc_flag_test(AGC_FLAG_XDELVFLG) ? 0 : g->burn.ecsteer;
     (void) AGC_ASSERT(FENG > 0);
     return burn_setup_with_thrust(ctx, FENG);
@@ -132,7 +132,7 @@ agc_status_t agc_job_rcs_burn_csm(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_guid_t *g = agc_guid_state();
-    (void) agc_flag_set(AGC_FLAG_ENG2FLAG); /* SET FOR RCS            */
+    agc_flag_set(AGC_FLAG_ENG2FLAG); /* SET FOR RCS            */
     g->burn.csteer = 0;
     agc_dp_t f     = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : 2 * FRCS2;
     (void) AGC_ASSERT(f > 0);
@@ -149,7 +149,7 @@ agc_status_t agc_job_sps_burn_after_maneuver(agc_job_ctx_t *ctx)
     }
     agc_guid_t *g    = agc_guid_state();
     g->burn.nbrcycls = -1;                  /* FOR UPDATEVG           */
-    (void) agc_flag_set(AGC_FLAG_TIMRFLAG); /* ALLOW CLOCKTASK        */
+    agc_flag_set(AGC_FLAG_TIMRFLAG); /* ALLOW CLOCKTASK        */
     if (agc_csm_is_rcs_burn())
     {
         return agc_csm_rcs_burn_display(ctx);
@@ -212,7 +212,7 @@ agc_status_t agc_job_preburn_start_clock(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_phase_change2((uint16_t) 040026, (uint16_t) 000234, NULL);
+    agc_phase_change2((uint16_t)040026, (uint16_t)000234, NULL);
     (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     return agc_csm_preburn_start_clock(ctx);
 }
@@ -268,7 +268,8 @@ agc_status_t agc_job_preburn_state_vector(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    return agc_phase_change(4, (uint16_t) 020214); /* 4.21 = TIGBLNK         */
+    agc_phase_change(4, (uint16_t)020214);
+    return AGC_STATUS_OK; /* 4.21 = TIGBLNK         */
 }
 
 /* P40BLNKR (p.695): blank the DSKY (not restart protected).               */
@@ -294,7 +295,8 @@ agc_status_t agc_task_tigblnk(void)
     agc_guid_state()->csm.nvword1 = 0; /* DISABLE HERE           */
     (void) agc_exec_novac(AGC_PRIO14, AGC_JOB_PREBURN_BLANK_DSKY);
     (void) AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
-    return agc_phase_newphase(4, 037, true); /* 4.37 = TIGAVEG         */
+    agc_phase_newphase(4, 037, true);
+    return AGC_STATUS_OK; /* 4.37 = TIGAVEG         */
 }
 
 /* PRECHECK (p.699): start the average-G loop (PREREAD) unless SERVICER is
@@ -320,13 +322,13 @@ agc_status_t agc_task_tigaveg(void)
     {
         g->csm.nvword1 = agc_csm_vn(16, 85); /* REDISPLAY NONFLASHING  */
         st             = agc_waitlist_call((uint16_t) SEC29_96, AGC_TASK_TTG_0);
-        (void) agc_phase_newphase(4, 4, true);
+        agc_phase_newphase(4, 4, true);
     }
     else
     {
         g->csm.nvword1 = agc_csm_vn(6, 40); /* UNBLANK DISPLAY        */
         st             = agc_waitlist_call(SEC24_96, AGC_TASK_TIG_5);
-        (void) agc_phase_newphase(4, 6, true); /* 4.6 = TIG-5, PRECHECK  */
+        agc_phase_newphase(4, 6, true); /* 4.6 = TIG-5, PRECHECK  */
     }
     if (st != AGC_STATUS_OK)
     {
@@ -339,7 +341,7 @@ agc_status_t agc_task_tigaveg(void)
 agc_status_t agc_task_ttg_0(void)
 {
     agc_status_t st = agc_exec_novac(AGC_PRIO20, AGC_JOB_TIGNOW);
-    (void) agc_flag_clear(AGC_FLAG_TIMRFLAG); /* P40CLK                 */
+    agc_flag_clear(AGC_FLAG_TIMRFLAG); /* P40CLK                 */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_TIMRFLAG));
     return st;
 }
@@ -354,7 +356,7 @@ agc_status_t agc_task_tig_5_csm(void)
     }
     agc_guid_state()->csm.nvword1 =
         AGC_CSM_NV_ENGINE_ENABLE_REQUEST; /* WILL CAUSE V99 FLASH   */
-    (void) agc_phase_change2((uint16_t) 040074, (uint16_t) 000033, NULL);
+    agc_phase_change2((uint16_t)040074, (uint16_t)000033, NULL);
     (void) AGC_ASSERT(agc_guid_state()->csm.nvword1 ==
                       AGC_CSM_NV_ENGINE_ENABLE_REQUEST);
     return agc_exec_findvac(AGC_PRIO20, AGC_JOB_TIMEBURN);
@@ -364,14 +366,14 @@ agc_status_t agc_task_tig_5_csm(void)
  * the V99 (ASTNFLAG), else wait for V99P.                                 */
 agc_status_t agc_task_tig_0_csm(void)
 {
-    (void) agc_flag_set(AGC_FLAG_IGNFLAG);
+    agc_flag_set(AGC_FLAG_IGNFLAG);
     if (!agc_flag_test(AGC_FLAG_ASTNFLAG))
     {
         return AGC_STATUS_OK; /* WAIT FOR V99P          */
     }
     agc_guid_state()->csm.nvword1 =
         agc_csm_vn(6, 40);                         /* CLEAR THE V99         */
-    (void) agc_phase_change(4, (uint16_t) 000614); /* 4.61 = IGNITION        */
+    agc_phase_change(4, (uint16_t)000614); /* 4.61 = IGNITION        */
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_IGNFLAG));
     return agc_task_ignition_csm();
 }

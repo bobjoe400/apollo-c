@@ -354,8 +354,8 @@ agc_status_t pin_vbreldsp(void)
 {
     (void) AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
+    agc_chan_and((int)AGC_CHAN_DSALMOUT,
+                 (uint16_t)(PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
     if (s->old_dsplock && (s->monsave1 & PIN_BIT14) != 0u)
     {
         s->dsplock = false; /* UNSUSPEN               */
@@ -398,8 +398,7 @@ agc_status_t pin_error_key(void)
     pin_state_t *s = pin_st();
     s->dsplock     = s->old_dsplock; /* XCH 21/22REG           */
     agc_inhint();
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT,
-                       PIN_CH11_CAUTRST); /* caution reset */
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_CH11_CAUTRST); /* caution reset */
     /* Leave gimbal lock and no att intact, turning off auto, hold, free,
      * prog alarm and tracker.                                           */
     uint16_t c = (uint16_t) ((agc_erase_dsptab(11) & PIN_GLNOATT) | PIN_BIT15);
@@ -417,10 +416,9 @@ agc_status_t pin_error_key(void)
         agc_erase_set_radmodes(
             (uint16_t) ((agc_erase_radmodes() & ~PIN_RFAILS) | PIN_RCDUFBIT));
     }
-    (void) agc_chan_and((int) AGC_CHAN_CHAN13,
-                        (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
-    (void) agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                        (uint16_t) (PIN_WORD ^ PIN_ERCON));
+    agc_chan_and((int)AGC_CHAN_CHAN13,
+                 (uint16_t)(PIN_WORD ^ PIN_CH13_TESTALM));
+    agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_ERCON));
     agc_relint();
     if (st == AGC_STATUS_OK)
     {
@@ -593,13 +591,14 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
         return AGC_STATUS_BAD_ARG;
     }
     pin_lodsampt();
-    (void) agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT); /* UPACT on */
+    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_CH11_UPACT); /* UPACT on */
     uint16_t low  = (uint16_t) (inlink & PIN_LOW5);
     uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5);
     uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5);
     if (mid != (uint16_t) (~low & PIN_LOW5) || high != low)
     {                                                           /* UPTEST */
-        return agc_flag_set((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* TMFAIL2 */
+        agc_flag_set((agc_flag_id_t)AGC_FLAG_UPLOCKFL);
+        return AGC_STATUS_OK; /* TMFAIL2 */
     }
     /* UPOK: code is good. 'Error reset' clears UPLOCKFL; any other code is
      * accepted only if UPLOCKFL is clear.                               */

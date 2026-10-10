@@ -108,14 +108,14 @@ static agc_status_t burn_program_start(agc_job_ctx_t *ctx, agc_job_id_t ret_job,
         (void) agc_lm_dap_pflitedb(); /* ONE DEGREE, ERRORS 0   */
     }
     agc_relint();
-    (void) agc_flag_clear(AGC_FLAG_3AXISFLG);       /* P41MANU: USE VECPOINT  */
+    agc_flag_clear(AGC_FLAG_3AXISFLG);       /* P41MANU: USE VECPOINT  */
     return agc_imu_attitude_maneuver(ctx, ret_job); /* R60LEM                 */
 }
 
 /* P40ALM (p.746): alarm 1706, then the V05N09 loop REP40ALM.              */
 static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
 {
-    (void) agc_alarm(AGC_ALARM_01706); /* PROGRAM vs. CONFIG.    */
+    agc_alarm(AGC_ALARM_01706); /* PROGRAM vs. CONFIG.    */
     (void) AGC_ASSERT(ctx != NULL);
     return agc_job_stage_alarm_display(ctx);
 }
@@ -133,7 +133,7 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_DPS_BURN,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 004024, &v);
+    agc_phase_change_var((uint16_t)004024, &v);
     g->lm.which = (agc_sp_t) AGC_LM_WHICH_DPS_BURN; /* P40ADRES               */
     if (agc_flag_test(AGC_FLAG_APSFLAG))
     {
@@ -144,7 +144,7 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
         (agc_sp_t) ((agc_flag_test(AGC_FLAG_CSMDKFLG) ? 0 : THRESH1) + THRESH3);
     g->lm.dvcntr = 4;
     load_engine(false);
-    (void) agc_flag_clear(AGC_FLAG_NOTHROTL);
+    agc_flag_clear(AGC_FLAG_NOTHROTL);
     return burn_program_start(ctx, AGC_JOB_BURNBABY, false);
 }
 
@@ -161,7 +161,7 @@ agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_BURN,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change_var((uint16_t) 004024, &v);
+    agc_phase_change_var((uint16_t)004024, &v);
     g->lm.which = (agc_sp_t) AGC_LM_WHICH_APS_BURN;
     if (!agc_flag_test(AGC_FLAG_APSFLAG) &&
         ctx->id != AGC_JOB_APS_BURN_STAGE_CHECKED)
@@ -171,7 +171,7 @@ agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
     (void) agc_imu_status_check(); /* P42STAGE               */
     g->lm.dvthrush = THRESH2;
     g->lm.dvcntr   = 4;
-    (void) agc_flag_set(AGC_FLAG_AVFLAG);
+    agc_flag_set(AGC_FLAG_AVFLAG);
     load_engine(true);
     return burn_program_start(ctx, AGC_JOB_BURNBABY, false);
 }
@@ -211,7 +211,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_MANEUVER,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change2((uint16_t) 000076, (uint16_t) 004024, &v);
+    agc_phase_change2((uint16_t)000076, (uint16_t)004024, &v);
     return agc_lm_burnbaby_countdown(ctx);
 }
 
@@ -228,7 +228,7 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
         return agc_svc_delayjob(ONE_SEC, AGC_JOB_REDO6_7); /* BLNKWAIT      */
     }
     (void) agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), NULL);
-    (void) agc_exec_prio_change(AGC_PRIO5);
+    agc_exec_prio_change(AGC_PRIO5);
     return agc_job_dynmdisp(ctx);
 }
 
@@ -270,7 +270,8 @@ agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    return agc_phase_change(4, (uint16_t) 000014); /* P40PHS1                */
+    agc_phase_change(4, (uint16_t)000014);
+    return AGC_STATUS_OK; /* P40PHS1                */
 }
 
 /* TIGNOW (p.754): attitude errors zeroed, 0.3 deg deadband, flash V16N85
@@ -292,7 +293,8 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    return agc_phase_change(4, (uint16_t) 000014);
+    agc_phase_change(4, (uint16_t)000014);
+    return AGC_STATUS_OK;
 }
 
 /* TERM40 (p.754-755): AVEGEXIT = SERVEXIT, rendezvous mark counter 0,
@@ -356,7 +358,7 @@ agc_status_t agc_task_start_thrust_monitor(void)
 {
     agc_phase_var_t v = {
         AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_TIGON, 0, true, 0U};
-    (void) agc_phase_change_var((uint16_t) 005014, &v);
+    agc_phase_change_var((uint16_t)005014, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
     (void) agc_exec_findvac(AGC_PRIO20, AGC_JOB_THRUST_MONITOR_RESET);
     (void) AGC_ASSERT(agc_guid_state()->avg.avgexit ==
@@ -382,7 +384,7 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CALC_DELTA_V_BODY,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
-    (void) agc_phase_change_var(PH_5_3_B, &v);
+    agc_phase_change_var(PH_5_3_B, &v);
     g->burn.delvctl = rz->delvsin;
     return agc_job_servexit(ctx);
 }
@@ -414,7 +416,8 @@ agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    return agc_phase_change(4, (uint16_t) 000014); /* P40PHS1                */
+    agc_phase_change(4, (uint16_t)000014);
+    return AGC_STATUS_OK; /* P40PHS1                */
 }
 
 /* GETDT (p.762): the engine-off delay, at least 1 cs; TGO = (0, delay).   */
@@ -432,10 +435,10 @@ agc_status_t agc_task_implburn_lm(void)
 {
     (void) agc_waitlist_call(getdt(agc_dp_low(agc_erase_tgo())),
                              AGC_TASK_ENGINOFF);
-    (void) agc_flag_clear(AGC_FLAG_IGNFLAG);
-    (void) agc_flag_clear(AGC_FLAG_ASTNFLAG);
-    (void) agc_flag_clear(AGC_FLAG_IMPULSW);
-    (void) agc_phase_change(4, (uint16_t) 040114); /* ENGOFTSK (ENGINOFF)    */
+    agc_flag_clear(AGC_FLAG_IGNFLAG);
+    agc_flag_clear(AGC_FLAG_ASTNFLAG);
+    agc_flag_clear(AGC_FLAG_IMPULSW);
+    agc_phase_change(4, (uint16_t)040114); /* ENGOFTSK (ENGINOFF)    */
     (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW));
     return agc_waitlist_fixdelay(HALF_SEC, AGC_TASK_IMPLBURN2);
 }
@@ -458,16 +461,17 @@ agc_status_t agc_task_engoftsk(void)
  * -HIRTHROT, channel 14 bit 4).                                           */
 agc_status_t agc_lm_enginof3(void)
 {
-    (void) agc_flag_clear(AGC_FLAG_ENGONFLG);
+    agc_flag_clear(AGC_FLAG_ENGONFLG);
     uint16_t ch11 = agc_chan_read(011);
     ch11          = (uint16_t) ((ch11 & ~(uint16_t) (AGC_CH011_ENGINEON |
                                             AGC_CH011_ENGINEOFF)) |
                        (uint16_t) AGC_CH011_ENGINEOFF);
-    (void) agc_chan_write(011, ch11);         /* TURN OFF THE ENGINE    */
-    (void) agc_flag_set(AGC_FLAG_USEQRFLG);   /* TURN OFF TRIM GIMBAL   */
+    agc_chan_write(011, ch11);         /* TURN OFF THE ENGINE    */
+    agc_flag_set(AGC_FLAG_USEQRFLG);   /* TURN OFF TRIM GIMBAL   */
     agc_erase_set_thrust((agc_sp_t) -010000); /* CS HIRTHROT (BIT13)    */
     (void) AGC_ASSERT((agc_chan_read(011) & AGC_CH011_ENGINEON) == 0U);
-    return agc_chan_or(014, (uint16_t) AGC_CH014_THRUSTACT);
+    agc_chan_or(014, (uint16_t)AGC_CH014_THRUSTACT);
+    return AGC_STATUS_OK;
 }
 
 /* ENGINOF4 (p.760): TEVENT, then ENGINOF3.                                 */
@@ -481,7 +485,7 @@ agc_status_t agc_lm_enginof4(void)
 /* ENGINOF1 (p.760): DV monitor off (IDLEFLAG), ullage off, ENGINOF4.       */
 agc_status_t agc_lm_enginof1(void)
 {
-    (void) agc_flag_set(AGC_FLAG_IDLEFLAG);
+    agc_flag_set(AGC_FLAG_IDLEFLAG);
     (void) agc_lm_noullage();
     (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_IDLEFLAG));
     return agc_lm_enginof4();
@@ -523,7 +527,7 @@ static agc_status_t steering_commands(agc_interp_t *ip)
     agc_status_t st  = agc_guid_steering_tgo_lm(ip, &in, &tgo);
     if (st == AGC_STATUS_ALARM)
     {
-        (void) agc_alarm(AGC_ALARM_01407); /* ALARMIT                */
+        agc_alarm(AGC_ALARM_01407); /* ALARMIT                */
         return agc_lm_findcduw_m2(ip);
     }
     agc_erase_set_tgo(tgo);
@@ -532,8 +536,9 @@ static agc_status_t steering_commands(agc_interp_t *ip)
     {
         return agc_lm_findcduw_m2(ip); /* FINDCDUW -2      */
     }
-    (void) agc_flag_set(AGC_FLAG_IMPULSW);
-    return agc_flag_clear(AGC_FLAG_STEERSW);
+    agc_flag_set(AGC_FLAG_IMPULSW);
+    agc_flag_clear(AGC_FLAG_STEERSW);
+    return AGC_STATUS_OK;
 }
 
 /* S40.8 Luminary (p.770-771): VG = VGPREV - DELVREF (external delta-V) or
@@ -603,7 +608,7 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
     if (start && agc_phase_get(2) == 0U)
     { /* 180SETUP               */
         (void) agc_exec_findvac(AGC_PRIO10, AGC_JOB_VTOGAIN);
-        (void) agc_phase_change2((uint16_t) 000172, PH_5_3_B, NULL);
+        agc_phase_change2((uint16_t)000172, PH_5_3_B, NULL);
         g->lm.tigsave = g->lm.tigsavep; /* ENDSTEER               */
         rz->rinit     = agc_erase_rn();
         rz->vinit     = agc_erase_vn();
@@ -635,12 +640,12 @@ agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
     }
     agc_inhint();
     (void) agc_lm_dap_stoprate();
-    (void) agc_flag_clear(AGC_FLAG_IMPULSW);
-    (void) agc_flag_set(AGC_FLAG_IDLEFLAG); /* TURN OFF DVMON         */
+    agc_flag_clear(AGC_FLAG_IMPULSW);
+    agc_flag_set(AGC_FLAG_IDLEFLAG); /* TURN OFF DVMON         */
     agc_dp_t t  = agc_erase_tig() - (agc_dp_t) agc_time_now_cs();
     agc_sp_t lo = (agc_dp_high(t) == 0) ? agc_dp_low(t) : 0;
     (void) agc_waitlist_call(getdt(lo), AGC_TASK_ENGINOFF);
-    (void) agc_phase_change2((uint16_t) 040114, (uint16_t) 000035, NULL);
+    agc_phase_change2((uint16_t)040114, (uint16_t)000035, NULL);
     agc_relint();
     return AGC_STATUS_OK; /* ENDOFJOB               */
 }
@@ -655,12 +660,12 @@ agc_status_t agc_job_vtogain_lm(agc_job_ctx_t *ctx)
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
-    (void) agc_flag_set(AGC_FLAG_AVFLAG);
+    agc_flag_set(AGC_FLAG_AVFLAG);
     agc_dp_t e4 =
         agc_flag_test(AGC_FLAG_NORMSW) ? agc_dp_add(&ip, EPS1, EPS2) : EPS1;
     agc_status_t st =
         agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4, ctx->id);
-    (void) agc_phase_kill(2); /* ENDS40.9               */
+    agc_phase_kill(2); /* ENDS40.9               */
     return st;
 }
 
@@ -705,7 +710,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m,
         return agc_dp_shl(ip, agc_dp_div(ip, mv, FAPS), 2);
     }
     agc_dp_t t = agc_dp_div(ip, mv, DPS_IMPULSE_THRUST);
-    (void) agc_flag_clear(AGC_FLAG_NOTHROTL);
+    agc_flag_clear(AGC_FLAG_NOTHROTL);
     if (agc_interp_test_ovf(ip))
     { /* S40.130V */
         agc_erase_set_tgo(
@@ -720,7 +725,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m,
     }
     if (agc_dp_sub(ip, d, SEC89_14) < 0)
     { /* S40.138  */
-        (void) agc_flag_set(AGC_FLAG_NOTHROTL);
+        agc_flag_set(AGC_FLAG_NOTHROTL);
     }
     return t; /* STORETGO */
 }
@@ -744,7 +749,7 @@ agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
-    (void) agc_flag_clear(AGC_FLAG_IMPULSW); /* NO STEERING UNTIL FOUND  */
+    agc_flag_clear(AGC_FLAG_IMPULSW); /* NO STEERING UNTIL FOUND  */
     agc_dp_t v   = agc_vec_abval(&ip, agc_erase_vgtig());
     agc_dp_t dvu = agc_dp_shl(
         &ip, agc_dp_div(&ip, agc_dp_mul_trunc(SEC4_17, FRCS2), m), 1);
@@ -753,7 +758,7 @@ agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
     agc_dp_t t14       = -1;
     if (agc_flag_test(AGC_FLAG_APSFLAG))
     {
-        (void) agc_flag_set(AGC_FLAG_NOTHROTL);
+        agc_flag_set(AGC_FLAG_NOTHROTL);
         t14       = timeburn_aps(&ip, v, m);
         impulsive = (t14 >= 0);
     }
@@ -763,15 +768,15 @@ agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
     }
     if (impulsive)
     {
-        (void) agc_flag_set(AGC_FLAG_IMPULSW); /* S40.132                  */
+        agc_flag_set(AGC_FLAG_IMPULSW); /* S40.132                  */
     }
     if (t14 >= 0)
     {
         agc_erase_set_tgo(
             (agc_dp_t) agc_dp_high(t14)); /* S40.132*: TGO = (0, MPAC) */
     }
-    return agc_phase_change(3,
-                            (uint16_t) 000003); /* S40.134                  */
+    agc_phase_change(3, (uint16_t)000003);
+    return AGC_STATUS_OK; /* S40.134                  */
 }
 
 /* TRIMGIMB (formerly S40.6), p.781-782, a waitlist task from R03: trims
@@ -780,10 +785,9 @@ agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
  * off, TRIMDONE (R03) as a PRIO10 job. GMBDRVSW records "one is done".  */
 agc_status_t agc_task_trimgimb(void)
 {
-    (void) agc_flag_clear(AGC_FLAG_GMBDRVSW);
-    (void) agc_chan_and(012,
-                        (uint16_t) ~TRIM_MINUS); /* - PITCH, - ROLL OFF     */
-    (void) agc_chan_or(012, TRIM_PLUS);          /* + PITCH, + ROLL ON      */
+    agc_flag_clear(AGC_FLAG_GMBDRVSW);
+    agc_chan_and(012, (uint16_t)~TRIM_MINUS); /* - PITCH, - ROLL OFF     */
+    agc_chan_or(012, TRIM_PLUS);          /* + PITCH, + ROLL ON      */
     (void) AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U);
     return agc_waitlist_fixdelay(TRIM_WAIT, AGC_TASK_TRIMGIMB2);
 }
@@ -797,8 +801,8 @@ agc_status_t agc_task_trimgimb2(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_chan_and(012, (uint16_t) ~TRIM_PLUS);
-    (void) agc_chan_or(012, TRIM_MINUS);
+    agc_chan_and(012, (uint16_t)~TRIM_PLUS);
+    agc_chan_or(012, TRIM_MINUS);
     (void) agc_waitlist_call((uint16_t) lm->pittime,
                              AGC_TASK_PITCHOFF); /* TWIDDLE */
     return agc_waitlist_vardelay((uint16_t) lm->rolltime, AGC_TASK_ROLLOFF);
@@ -813,13 +817,14 @@ static agc_status_t rollover(void)
         (void) AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U);
         return agc_exec_novac(AGC_PRIO10, AGC_JOB_TRIMDONE); /* RETURN TO R03 */
     }
-    return agc_flag_set(AGC_FLAG_GMBDRVSW); /* PITCHOFF +4             */
+    agc_flag_set(AGC_FLAG_GMBDRVSW);
+    return AGC_STATUS_OK; /* PITCHOFF +4             */
 }
 
 /* TRIMGIMB after ROLLTIME: shut off - roll (BIT12), ROLLOVER.            */
 agc_status_t agc_task_rolloff(void)
 {
-    (void) agc_chan_and(012, (uint16_t) ~TRIM_ROLL);
+    agc_chan_and(012, (uint16_t)~TRIM_ROLL);
     (void) AGC_ASSERT((agc_chan_read(012) & TRIM_ROLL) == 0U);
     return rollover();
 }
@@ -827,7 +832,7 @@ agc_status_t agc_task_rolloff(void)
 /* PITCHOFF: shut off - pitch (BIT10), ROLLOVER.                           */
 agc_status_t agc_task_pitchoff(void)
 {
-    (void) agc_chan_and(012, (uint16_t) ~TRIM_PITCH);
+    agc_chan_and(012, (uint16_t)~TRIM_PITCH);
     (void) AGC_ASSERT((agc_chan_read(012) & TRIM_PITCH) == 0U);
     return rollover();
 }

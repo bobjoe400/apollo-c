@@ -584,7 +584,7 @@ static agc_status_t newangl1(agc_interp_t *ip)
     }
     if (agc_flag_test(AGC_FLAG_CALCMAN2))
     { /* BONCLR CALCMAN2  */
-        (void) agc_flag_clear(AGC_FLAG_CALCMAN2);
+        agc_flag_clear(AGC_FLAG_CALCMAN2);
         manustat();
     }
     return incrdcdu_tmanuchk();
@@ -617,7 +617,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
     {
         biastemp = agc_vec_scale(ip, brate, BIASCALE);
     }
-    (void) agc_flag_set(AGC_FLAG_CALCMAN2); /* SETGO CALCMAN2   */
+    agc_flag_set(AGC_FLAG_CALCMAN2); /* SETGO CALCMAN2   */
     return newangl1(ip);
 }
 
@@ -674,7 +674,7 @@ static agc_status_t kalcman3(void)
     switch (k.kcase)
     {
         case AGC_KALC_TOOBAD: /* TOOBADF (LM)     */
-            (void) agc_alarm(ALARM_GLOCK);
+            agc_alarm(ALARM_GLOCK);
             return nogo();
         case AGC_KALC_SMALL:
             return small_maneuver();
