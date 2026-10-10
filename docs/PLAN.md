@@ -116,7 +116,8 @@ bits), split that part off to a Sonnet agent.
    e. docs/TIPS.md consolidated from every lane's "Lessons" section: the
       tips and tricks for translating AGC into C, organised by topic.
 
-Waves: 1-2 translation (done/in progress) -> 3 integrate + sim (items 2-5,7)
+Waves: 1-2 translation (done/in progress) -> 2b status-handling (rule 7, whole
+tree) -> 3 integrate + sim (items 2-5,7)
 -> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8)
 -> 6 documentation (9).
 

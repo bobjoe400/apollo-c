@@ -94,3 +94,8 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
 * **Look labels up exactly.** yaYUL labels start in column 0;
   `tools/agc_label.py LABEL` finds the definition in both ropes with its
   comment block, where a substring grep finds every mention.
+* **Do not let `(void)` become the rule-7 escape hatch.** 777 casts had
+  accumulated. Most were on operations that cannot fail (flag set, channel
+  mask, phase change): those should return void. The rest hid real AGC
+  failure paths (WAITLIST overflow -> 1203, FINDVAC -> 1201/1202) that the
+  C must raise. Make the checker reject `(void)agc_` from day one.

@@ -188,3 +188,10 @@
             REVIEW NOTE: AGC ZOOM aliases P40ZOOMA (clears only restart group
             3), so COMFAIL2 KILLTASK / 3.3 restart never touch the throttle-up
             tasks; translated as flown -- reviewer to confirm.
+2026-10-10  User flagged `(void)agc_waitlist_call(...)`. Audit: 777 void-casts
+            (253 flag set/clear, 51 phase_change, 40 test_ovf-as-clear, 24
+            waitlist_call, 29 alarm, ...). Rule 7 restated: no void-cast of
+            agc_ calls; infallible APIs return void; fallible calls handled
+            as the AGC does. Checker enforces (baseline 780 hard). New lane
+            `status-handling` (Opus) runs after translation, before
+            integration. Running lanes told to fix their own files.

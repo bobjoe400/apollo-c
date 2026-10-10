@@ -19,8 +19,9 @@
  *     valve of channel 32 bit 1 inhibits jets ch5 bit 2 and ch6 bit 7
  *     (5FAILTAB/6FAILTAB), reopening it clears them.
  *  6. SPSRCS (SPS_BACK-UP_RCS_CONTROL pp.1507-1510): a rate above
- *     1.73 deg/s commands -HALF; a jet stop sets the inhibition counter
- *     (UTIME = 10 passes for U).
+ *     1.73 deg/s commands -HALF, kept until the rate passes the
+ *     -0.10 deg/s target; the stop sets the inhibition counter (UTIME =
+ *     10 passes for U), which then inhibits a new firing.
  *  7. ROT-TOUV: with the docked orthogonal coefficients a pure +Q
  *     quantity gives +U and -V.
  */
@@ -158,15 +159,15 @@ static void test_rcsmon(void)
 {
     (void)agc_lm_dap_fresh_start();
     const lm_dap_t *d = lm_dap_state();
-    (void)agc_chan_write(032, 077777u);        /* all valves open (inverted) */
+    (void)agc_chan_set_input(032, 077777u);    /* all valves open (inverted) */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u);
-    (void)agc_chan_write(032, 077776u);        /* bit 1 low: valve closed  */
+    (void)agc_chan_set_input(032, 077776u);    /* bit 1 low: valve closed  */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 000002u);
     CHECK(d->ch6mask == 000100u);
     CHECK(d->pvalvest == 000001u);
-    (void)agc_chan_write(032, 077777u);
+    (void)agc_chan_set_input(032, 077777u);
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u && d->pvalvest == 0u);
 }
@@ -180,7 +181,10 @@ static void test_spsrcs(void)
     set_axis(d, 0, 0, 700);                    /* 1.92 deg/s               */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == -8192);
-    d->edot = 0;                               /* past target: stop        */
+    d->edot = 0;                               /* target is -0.1 deg/s     */
+    CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
+    CHECK(d->tj[1] == -8192);                  /* keep firing              */
+    d->edot = -50;                             /* past target: stop        */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == 0);
     CHECK(d->jetctr[1] == 10);
