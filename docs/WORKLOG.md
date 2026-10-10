@@ -155,3 +155,7 @@
             message is the assignment doc change (git add -A swept them in).
             Follow-up running: strip folder-redundant filename prefixes;
             rename nav/aux -> nav/auxiliary (Windows reserved name).
+2026-10-10  Filename pass DONE: 83 files lost folder-redundant prefixes;
+            nav/aux -> nav/auxiliary; compile parity (172/177). Pause over.
+            Resuming all 7 lanes (guid-powered, dap-lm, dap-csm, prog-rendz,
+            prog-align, sys-misc, p37) with docs/agents/_resume_after_naming.md.
