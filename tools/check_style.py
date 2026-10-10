@@ -459,6 +459,8 @@ def check_functions(src, funcs):
             by_end[c['end']] = c
     for idx, f in enumerate(funcs):
         line = f['start_line']
+        if f['name'] == 'main' and idx > 0:
+            report(src.path, line, 'main-first', 'main() is not the first function')
         c = by_end.get(line - 1)
         if c is None:
             report(src.path, line, 'function-prolog',
@@ -481,8 +483,6 @@ def check_functions(src, funcs):
         if ret != 'void' and not re.search(r'\breturn', text, re.I):
             report(src.path, c['start'], 'function-prolog-returns',
                    'prolog of %s does not describe the return value' % f['name'])
-        if f['name'] == 'main' and idx > 0:
-            report(src.path, line, 'main-first', 'main() is not the first function')
 
 
 def check_return_sizeof(src):
@@ -688,7 +688,13 @@ def check_side_effects(src):
     nofor = blank_for_headers(code)
     for text, begin, end, term in statements(src, nofor):
         toks = tokens(text)
-        n = sum(1 for t in toks if t[0] == 'op' and (t[1] in ASSIGN_OPS or t[1] in ('++', '--')))
+        n = 0
+        for k, t in enumerate(toks):
+            if t[0] != 'op' or (t[1] not in ASSIGN_OPS and t[1] not in ('++', '--')):
+                continue
+            if t[1] == '=' and k >= 2 and toks[k - 2][1] == '.' and toks[k - 1][0] == 'id':
+                continue  # designated initializer `.field =`
+            n += 1
         if n > 1:
             report(src.path, src.line_of(begin + len(text) - len(text.lstrip())),
                    'multiple-side-effects', '%d side effects in one statement' % n)
@@ -719,9 +725,8 @@ def check_blocks(src, blocks):
                 depth += 1
             elif t == '}':
                 depth -= 1
-            elif depth == 0 or t.startswith('case') or t.startswith('default'):
-                if depth <= 1:
-                    labels.append('default' if t.startswith('default') else 'case')
+            elif depth == 0:
+                labels.append('default' if t.startswith('default') else 'case')
         if 'default' not in labels:
             report(src.path, b['open_line'], 'switch-default', 'switch has no default')
         elif labels[-1] != 'default':
@@ -747,7 +752,10 @@ def check_misc(src):
             if w not in spellings:
                 spellings[w] = i
     for low, spellings in seen.items():
-        if len(spellings) > 1:
+        # NAMING.md rule 7: AGC_JOB_X (enum/macro) and agc_job_x (function)
+        # deliberately share a stem; only mixed-case variants are reported.
+        mixed = [w for w in spellings if not (w.isupper() or w.islower())]
+        if len(spellings) > 1 and mixed:
             items = sorted(spellings.items(), key=lambda kv: kv[1])
             report(src.path, items[1][1], 'case-unique',
                    'names differ only by case: ' + ', '.join(k for k, _ in items))
@@ -755,6 +763,8 @@ def check_misc(src):
 
 def collect_typedefs(paths):
     for path in paths:
+        if not os.path.isfile(path):
+            continue
         with open(path, encoding='utf-8', errors='replace') as fh:
             for m in re.finditer(r'typedef\s+([\w\s]+?)\s+(\w+)\s*;', fh.read()):
                 if is_int_type(m.group(1)):
@@ -762,8 +772,11 @@ def collect_typedefs(paths):
 
 
 def check_file(path):
-    with open(path, encoding='utf-8', errors='replace') as fh:
-        src = Source(path, fh.read())
+    try:
+        with open(path, encoding='utf-8', errors='replace') as fh:
+            src = Source(path, fh.read())
+    except FileNotFoundError:
+        return  # moved or deleted while the tree was being walked
     blocks = find_blocks(src)
     funcs = [f for f in (parse_function(src, b) for b in blocks
                          if b['kind'] == 'function') if f]

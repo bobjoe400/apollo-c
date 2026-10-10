@@ -103,3 +103,9 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   value, so a half-unit matrix (rows UNITX/Y/Z = 0.5) halves the vector.
   Code that follows with VSL2/VSL8 (SCALEVEC) only lands on the right scale
   because of that factor; keep it.
+* **Parallel lanes grow adapter layers; budget a pass to dissolve them.**
+  Each lane insulated itself from the others with `glue.c`, `ext.h`,
+  `pending.h` wrappers (rz_lambert around agc_conic_lambert, a second copy
+  of THISPREC/MIDTOAV). Fine while headers churn; wrong in the result.
+  Integration must replace every wrapper with a direct call through the
+  owning module's public header and keep one copy of each AGC entry.

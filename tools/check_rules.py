@@ -78,6 +78,9 @@ def main(argv):
         for dp, _, files in os.walk(root):
             for f in sorted(files):
                 if f.endswith(('.c', '.h')):
+                    low = f.lower()
+                    if any(k in low for k in ('glue', 'shim', '_ext.', 'pending', 'adapter', 'wrapper')) or low == 'ext.h':
+                        WARN.append(f'{os.path.join(dp, f)}: scaffolding file (glue/shim/ext/pending); must be gone after integration')
                     check_file(os.path.join(dp, f))
     for w in WARN:
         print('WARN', w)

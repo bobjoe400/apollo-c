@@ -83,7 +83,10 @@ bits), split that part off to a Sonnet agent.
 1. Coverage: every AGC file in both ropes maps to C in MODULE_STATUS; every
    routine translated or a named, justified stub. No unlisted omissions.
 2. Builds clean: `make` builds libagc.a + sim with the full -Werror set; one
-   flat job/task registry; no *_pending.h shims; no duplicates; layering kept.
+   flat job/task registry; no *_pending.h / ext.h / glue / shim / adapter
+   files anywhere (callers use the owning subsystem's public header; where
+   two lanes translated the same AGC entry from both sides, one copy
+   remains, in the owning module); no duplicates; layering kept.
 3. Rules pass: `make check` zero hard violations AND assertion-density
    warnings cleared; `make format-check` and `make style` clean (NASA
    SEL-94-003 C Style Guide via .clang-format + tools/check_style.py).

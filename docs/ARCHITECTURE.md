@@ -98,7 +98,11 @@ csm/prelaunch_align.c -> ../imu/imu_pending.h, is untouched).
   named by the prefix (burns/sps/, dsky/pinball/, dsky/nouns/, core/interp/).
 * Shared glue stays at the parent level; never a `common/` folder.
 * A subfolder needs at least three files.
-* Public headers in include/agc/ keep the `agc_` prefix and stay flat.
+* No adapter layers. Files named glue, shim, ext, pending, adapter or
+  wrapper are scaffolding from parallel translation and are deleted at
+  integration. A module calls another only through that module's public
+  header, with the real function names. (mysubs.c is NOT such a file: MYSUBS
+  is a real AGC log section.)
 
 ## Header layout (2026-10-10)
 
