@@ -57,3 +57,12 @@
             SETCOARS, SETMAXDB/SETMINDB; interrupt handlers T4RUPT/UPRUPT/
             DOWNRUPT/RADAR pending from sys-misc/io lanes.
             Launching batch B lane guid-landing.
+2026-10-09  imu DONE (13 stubs: P06/POSTAND + 11 Comanche prelaunch entries).
+            65 checks pass. Integration items: provisional ids in
+            src/imu/imu_pending.h; MODECADR moved to exec storage (-0 stored
+            as -2); prog-align's align_pending.h and guid-landing's
+            landing_pending.h declare agc_imu_* with mismatched signatures ->
+            adopt agc_imu.h; CALCSMSC duplicated in imu and prog-align (drop
+            one); BUG exec-sched executive.c activity_light() passes 0177775 to
+            agc_chan_and (mask > 077777 assertion); sim must drain GYROCMD /
+            CDU?CMD via agc_imu_hw_set_*. Launching batch B lane guid-entry.
