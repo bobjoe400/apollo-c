@@ -24,6 +24,7 @@
 #include "agc/csm/dap.h"
 #include "agc/guidance/guidance.h"
 #include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
 #include "agc/programs/alignment_pending.h"
 #include "agc/io/service_internal.h"
 #include "pending.h"
@@ -42,6 +43,8 @@
 #define NOUN_OCDU  91        /* N91 optics CDUs                            */
 #define ALARM_NO_REND_TRACK ((agc_alarm_code_t)00406)
 #define ALARM_NO_P07       ((agc_alarm_code_t)01521)
+#define ALARM_OPTICS_SWITCH   ((agc_alarm_code_t)00115) /* optics not at computer */
+#define ALARM_OPTICS_RESERVED ((agc_alarm_code_t)00117) /* OPTIND = -0          */
 #define MRKBUF_REJECT      077776u   /* NEGONE                             */
 #define PHASE_R64          0112u     /* group 2: do R64                     */
 #define PHASE_AZIMUTH      0174u     /* group 4 phase 15                    */
@@ -467,12 +470,60 @@ static agc_status_t verb_quit_integration(void)
     return agc_change_program(0);
 }
 
-/* OPTCOARK (V41 N91): keyboard drive of the optics CDUs.                  */
+/* OPTCOARK (V41 N91, p.242): "temporary routine to run the optics CDUs
+ * from the keyboard".  MODECADR (optics) must be free; optics switch not
+ * at computer -> OPR ERR and alarm 115 (and carry on); OPTIND = -0
+ * (optics reserved) -> alarm 117, ENDEXT; else load V24N92.              */
 static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
-    (void)AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU);
-    return AGC_STATUS_UNIMPLEMENTED;              /* stub, see module note   */
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (agc_erase_modecadr((int)AGC_IMU_DEV_OPTICS) != 0) {
+        return agc_extverb_alm_end();             /* CKMODCAD +1            */
+    }
+    bool ok = false;
+    agc_status_t st = agc_extverb_testxact(&ok);
+    if (!ok) {
+        return st;
+    }
+    if (agc_erase_swsample() <= 0) {              /* not at computer        */
+        st = agc_dsky_falton();
+        agc_status_t sa = agc_alarm(ALARM_OPTICS_SWITCH);
+        (void)AGC_ASSERT(st == AGC_STATUS_OK && sa != AGC_STATUS_BAD_ARG);
+    }
+    if (agc_erase_optind() == AGC_OPTIND_NEG0) {
+        st = agc_alarm(ALARM_OPTICS_RESERVED);
+        (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        return agc_dsky_endext();
+    }
+    return agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE,
+                             AGC_JOB_OPTICS_COARSE_DRIVE);  /* OPTC1        */
+}
+
+/* OPTC1 after the load (V33 or ENTER): DESOPTS = SAC, DESOPTT = PAC; show
+ * V41 again.                                                              */
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
+{
+    agc_align_ram_t *ar = agc_align_ram();
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ar != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    ar->desopts = ar->sac;
+    ar->desoptt = ar->pac;
+    return agc_extverb_redisplay(ctx, 41, AGC_JOB_OPTICS_COARSE_START);
+}
+
+/* OPTC1 after EXDSPRET: OPTIND = 1 (coarse optics working; T4RUPT's
+ * OPTDRIVE takes it from here), ENDEXT.                                   */
+agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_erase_set_optind(1);
+    (void)AGC_ASSERT(agc_erase_optind() == 1);
+    return agc_dsky_endext();
 }
 
 /* Verbs 40-47.                                                             */

@@ -7,7 +7,9 @@
  * after 100 words); LOADTIME returns TIME2,TIME1; SGNAGREE on a sign-
  * disagreeing DP / TP fixes the signs and keeps the value; the self-check
  * bank sum (end-around carry, TC SELF words and the bugger word); service
- * routines UPFLAG/DOWNFLAG and GENTRAN; EXTVBACT.
+ * routines UPFLAG/DOWNFLAG and GENTRAN; EXTVBACT; LM T4RUPT fills the
+ * DAP gimbal matrix M11..M32; RRDESEND is a no-op outside continuous
+ * designate.
  *
  * AGC_ASSERT failures are expected in the negative tests; this file counts
  * any that reach agc_assert_report (only asserts compiled with
@@ -19,7 +21,9 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/flags_lm.h"
 #include "agc/io/service_internal.h"
+#include "../src/io/verbs/pending.h"   /* provisional job ids, verb entries */
 
 static int g_checks;
 static int g_failures;
@@ -184,6 +188,56 @@ static void test_service(void)
     CHECK(!agc_extverb_busy());
 }
 
+/* Run n T4RUPTs (the quick-display passes do not advance the phase).    */
+static void run_t4rupts(int n)
+{
+    for (int pass = 0; pass < n; pass++) {
+        uint16_t next = 0;
+        agc_status_t st = agc_t4rupt(&next);
+        CHECK(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+        CHECK(next > 0u);
+    }
+}
+
+/* T4RUPT on the LM: within 0.96 s T4JUMP runs DAPT4S/GPMATRIX, so M11 =
+ * SIN(MG) and M32 = COS(OG) from CDUZ, CDUX (scaled at 1); RCSMONIT runs
+ * at phases 0 and 4 (every 480 ms, dap-lm).  The first passes see the ISS
+ * come on (IMUMON zeroes the ICDUs), so the CDUs are set after them.     */
+static void test_t4rupt_gimbal_matrix(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_chan_reset();
+    CHECK(agc_chan_set_input(AGC_CHAN_CHAN30, 077777u) == AGC_STATUS_OK);
+    CHECK(agc_chan_set_input(AGC_CHAN_CHAN33, 077777u) == AGC_STATUS_OK);
+    run_t4rupts(24);
+    agc_erase_set_cduz(010000u);                  /* MG = 45 degrees       */
+    agc_erase_set_cdux(0u);                       /* OG = 0                */
+    run_t4rupts(16);
+    int m11 = (int)agc_erase_m11();
+    int m32 = (int)agc_erase_m32();
+    CHECK(m11 > 11500 && m11 < 11700);            /* .7071 x 2^14 = 11585  */
+    CHECK(m32 > 16300);                           /* COS 0 = 1 (POSMAX)    */
+    CHECK(agc_erase_m22() == 0);                  /* SIN 0                 */
+}
+
+/* RRDESEND (V44) outside continuous designate is just GOPIN: RADMODES and
+ * NORRMON untouched.                                                      */
+static void test_radar_verbs(void)
+{
+    agc_job_ctx_t ctx = { AGC_JOB_EXTENDED_VERB, 030, false, -1, 0 };
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_erase_set_radmodes(01000u);               /* designate, not continuous */
+    CHECK(agc_flag_set(AGC_FLAG_NORRMON) == AGC_STATUS_OK);
+    CHECK(agc_extverb_rr_designate_end(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_erase_radmodes() == 01000u);
+    CHECK(agc_flag_test(AGC_FLAG_NORRMON));
+    /* after the 1 s delay of a real RRDESEND: R25 back on, GOPIN          */
+    CHECK(agc_job_rr_designate_end_monitor(&ctx) == AGC_STATUS_OK);
+    CHECK(!agc_flag_test(AGC_FLAG_NORRMON));
+    agc_erase_set_rsampdt(0);
+    CHECK(agc_erase_rsampdt() == 0);
+}
+
 int main(void)
 {
     test_downlist_word_counts();
@@ -192,6 +246,8 @@ int main(void)
     test_sgnagree();
     test_banksum();
     test_service();
+    test_t4rupt_gimbal_matrix();
+    test_radar_verbs();
     (void)printf("test_sysmisc: %d checks, %d failures, %d expected assert reports\n",
                  g_checks, g_failures, g_assert_reports);
     return (g_failures == 0) ? 0 : 1;

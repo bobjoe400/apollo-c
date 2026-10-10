@@ -8,11 +8,8 @@
  *   during DPS burns (SNUFFER), V76/V77 minimum impulse / rate command,
  *   V80/V81 vector to update, V83 R31, V92 IMU performance test, V93
  *   RENDWFLG reset, V95 no state vector update, V96 quit integration.
- * The rendezvous / landing radar verbs (V40 N72 RRZEROK, V41 N72
- * RRDESNBK and AURLOKON, V44 RRDESEND, V60 LRPOS2K, V63 R04, V78/V79
- * R77, V85 RRLOSDSP) are stubs: the radar mode-switching routines they
- * call (RRZERO, RRDESNB, LRPOS2, RADSTALL, CLRADMOD, RRNBMPAC, RADSAMP)
- * are not available yet (see docs/modules/sys-misc.md "Stubs").
+ * The rendezvous / landing radar verbs (V40 N72, V41 N72, V44, V60, V63,
+ * V78, V79, V85) are in extended_verbs_lm_radar.c.
  */
 #include <stddef.h>
 #include "agc/core/assert.h"
@@ -338,8 +335,8 @@ agc_status_t agc_job_tracking_terminate_lm(agc_job_ctx_t *ctx)
     agc_inhint();
     agc_status_t s1 = agc_lm_dap_stoprate();
     agc_status_t s2 = agc_lm_dap_restordb();
-    /* CLRADMOD (bits 10, 15 of RADMODES): the radar lane's routine.        */
-    agc_erase_set_radmodes((uint16_t)(agc_erase_radmodes() & ~(uint32_t)041000u));
+    agc_status_t s3 = agc_rendz_clradmod();      /* bits 10, 15 of RADMODES */
+    (void)AGC_ASSERT(s3 == AGC_STATUS_OK);
     st = agc_chan_and((int)AGC_CHAN_CHAN12, (uint16_t)(WORD15 & ~BIT14));
     (void)AGC_ASSERT(st == AGC_STATUS_OK && s1 == AGC_STATUS_OK && s2 == AGC_STATUS_OK);
     return agc_exec_enema();                     /* GOPROG2                 */
@@ -417,24 +414,19 @@ static agc_status_t verb_quit_integration(void)
     return agc_change_program(0);
 }
 
-/* Radar verbs (see the file header).                                      */
-static agc_status_t verb_radar_stub(int verb)
-{
-    (void)AGC_ASSERT(verb >= 40 && verb <= 99);
-    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
-    return AGC_STATUS_UNIMPLEMENTED;
-}
-
 /* Verbs 40-69.                                                             */
 static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
 {
     (void)AGC_ASSERT(ctx != NULL);
     switch (verb) {
-    case 40: case 41:
-        return (agc_extverb_noun() == 72) ? verb_radar_stub(verb) : agc_extverb_alm_end();
+    case 40: return (agc_extverb_noun() == 72) ? agc_extverb_rr_zero(ctx)
+                                               : agc_extverb_alm_end();
+    case 41: return (agc_extverb_noun() == 72) ? agc_extverb_rr_designate(ctx)
+                                               : agc_extverb_alm_end();
     case 43: return verb_attitude_error(ctx);
-    case 44: case 60: case 63:
-        return verb_radar_stub(verb);
+    case 44: return agc_extverb_rr_designate_end(ctx);
+    case 60: return agc_extverb_lr_position_two(ctx);
+    case 63: return agc_extverb_radar_test(ctx);
     case 47: return xact_findvac(false, PRIO4, AGC_JOB_AGS_INITIALIZATION);
     case 48: return verb_dap_data_load(ctx);
     case 52: case 53: case 54:
@@ -451,14 +443,15 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
 }
 
 /* Verbs 75-98.                                                             */
-static agc_status_t fan_70s_90s(int verb)
+static agc_status_t fan_70s_90s(agc_job_ctx_t *ctx, int verb)
 {
     switch (verb) {
     case 75: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_SNUFFER);
     case 76: return verb_minimum_impulse(true);
     case 77: return verb_minimum_impulse(false);
-    case 78: case 79: case 85:
-        return verb_radar_stub(verb);
+    case 78: return agc_extverb_lr_spurious_test(ctx);
+    case 79: return agc_extverb_lr_spurious_test_end(ctx);
+    case 85: return agc_extverb_rr_los_display(ctx);
     case 80: return verb_vector_to_update(false);
     case 81: return verb_vector_to_update(true);
     case 83: return verb_rendezvous_display();
@@ -481,5 +474,5 @@ agc_status_t agc_extverb_lm(agc_job_ctx_t *ctx, int verb)
     if (verb < 70) {
         return fan_40s_60s(ctx, verb);
     }
-    return fan_70s_90s(verb);
+    return fan_70s_90s(ctx, verb);
 }

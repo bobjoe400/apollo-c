@@ -65,6 +65,33 @@
 #define AGC_JOB_SBANDANT_CM               ((agc_job_id_t)0x0372) /* SBANDANT (CM V64), agc_job_sbandant_cm */
 #define AGC_JOB_SBANDANT_LM               ((agc_job_id_t)0x0373) /* SBANDANT (LM V64), agc_job_sbandant_lm */
 #define AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY ((agc_task_id_t)0x0368) /* R31CALL (LM V83)   */
+/* LM radar verbs (extended_verbs_lm_radar.c)                              */
+#define AGC_JOB_LR_POSITION_TWO_CHECK     ((agc_job_id_t)0x0380) /* V60 after RADSTALL      */
+#define AGC_JOB_RR_DESIGNATE_LOAD         ((agc_job_id_t)0x0381) /* V41N72 V24N73 (V33 again) */
+#define AGC_JOB_RR_LOCKON_QUERY           ((agc_job_id_t)0x0382) /* AURLOKON (ENTER on N73) */
+#define AGC_JOB_RR_LOCKON_DISPLAY         ((agc_job_id_t)0x0383) /* AURLOKON -5 V04N12      */
+#define AGC_JOB_RR_LOCKON_ANSWER          ((agc_job_id_t)0x0384) /* AURLOKON +5 (V33)       */
+#define AGC_JOB_RR_DESIGNATE_SCHEDULE     ((agc_job_id_t)0x0385) /* RRDESNBK after EXDSPRET */
+#define AGC_JOB_RR_DESIGNATE_DRIVE        ((agc_job_id_t)0x0386) /* RRDESK2                 */
+#define AGC_JOB_RR_DESIGNATE_RESULT       ((agc_job_id_t)0x0387) /* RRDESK2 after RADSTALL  */
+#define AGC_JOB_RR_DESIGNATE_END_MONITOR  ((agc_job_id_t)0x0388) /* V44 after DELAYJOB      */
+#define AGC_JOB_RR_LOS_DISPLAY_NEXT       ((agc_job_id_t)0x0389) /* V85 RRLOSDSP after 1 s  */
+#define AGC_JOB_RR_LOS_DISPLAY_STOP       ((agc_job_id_t)0x038A) /* V85 responses: B5OFF    */
+#define AGC_JOB_RADAR_TEST_OPTION_DISPLAY ((agc_job_id_t)0x038B) /* R04A +2 V04N12          */
+#define AGC_JOB_RADAR_TEST_SELECT         ((agc_job_id_t)0x038C) /* R04 V33 on V04N12       */
+#define AGC_JOB_RADAR_TEST_AUTO_CHECK     ((agc_job_id_t)0x038D) /* R04B                    */
+#define AGC_JOB_RADAR_TEST_AUTO_REQUEST   ((agc_job_id_t)0x038E) /* R04B +5 V50N25          */
+#define AGC_JOB_RADAR_TEST_FIRST_DISPLAY  ((agc_job_id_t)0x038F) /* R04RR / R04LR           */
+#define AGC_JOB_RADAR_TEST_SECOND_DISPLAY ((agc_job_id_t)0x0390) /* V16N78 / V16N67         */
+#define AGC_JOB_RADAR_TEST_SWITCH         ((agc_job_id_t)0x0391) /* R04Y                    */
+#define AGC_JOB_RADAR_TEST_SWITCH_RESUME  ((agc_job_id_t)0x0392) /* R04Y after 2 s          */
+#define AGC_JOB_RADAR_TEST_END            ((agc_job_id_t)0x0393) /* R04END                  */
+#define AGC_JOB_RADAR_TEST_END_RESUME     ((agc_job_id_t)0x0394) /* R04END after 1.28 s     */
+#define AGC_JOB_LR_SPURIOUS_TEST_END_RESUME ((agc_job_id_t)0x0395) /* R77END after 320 ms   */
+#define AGC_JOB_OPTICS_COARSE_DRIVE       ((agc_job_id_t)0x0396) /* CSM V41N91 OPTC1        */
+#define AGC_JOB_OPTICS_COARSE_START       ((agc_job_id_t)0x0397) /* CSM V41N91 after EXDSPRET */
+/* prog-rendz's RADAR_LEADIN_ROUTINES task (value as in its ext.h)          */
+#define AGC_TASK_RADSAMP      ((agc_task_id_t)0x1103) /* LM radar sampling     */
 /* tasks owned by sys-misc */
 #define AGC_TASK_ATTITUDE_ERROR_OUTPUT    ((agc_task_id_t)0x0307) /* V43 ATTCK1 / ATTCK2    */
 
@@ -92,6 +119,32 @@ agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb,
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);  /* V71/V72 store */
 /* ---- requested from prog-rendz (LANDMARK owner): V52 sets the offset --- */
 void         agc_erase_set_landmark(agc_sp_t v);
+
+/* ---- requested from prog-rendz (P20-P25.agc; same declarations as the
+ * landing and powered-flight shims where those exist) ------------------- */
+agc_status_t agc_rr_zero(void);               /* RRZERO: zero the RR CDUs      */
+/* RRDESNB: designate to TANG, TANG +1.  *started = false when RRDESNB
+ * ended the job instead (angles rejected, alarm 502; or a job already
+ * waits in RADSTALL); then the caller ends without RADSTALL.             */
+agc_status_t agc_rr_designate_gimbal(bool *started);
+agc_status_t agc_rendz_clradmod(void);        /* CLRADMOD (RADMODES)           */
+agc_status_t agc_radar_lrpos2(void);          /* LRPOS2: LR to position 2      */
+/* ---- requested from prog-align / io-pinball / io-nouns (display buffers) */
+agc_sp_t     agc_erase_optionx(int index);    /* OPTIONX +index (N12)          */
+void         agc_erase_set_optionx(int index, agc_sp_t v);
+void         agc_erase_set_dsptem1(int index, agc_sp_t v); /* DSPTEM1 +index   */
+void         agc_erase_set_rr_az(agc_dp_t v);   /* RR-AZ (N56), revs           */
+void         agc_erase_set_rr_elev(agc_dp_t v); /* RR-ELEV (N56), revs         */
+
+/* LM radar verb entries (extended_verbs_lm_radar.c)                       */
+agc_status_t agc_extverb_rr_zero(agc_job_ctx_t *ctx);             /* V40 N72 */
+agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx);        /* V41 N72 */
+agc_status_t agc_extverb_rr_designate_end(agc_job_ctx_t *ctx);    /* V44     */
+agc_status_t agc_extverb_lr_position_two(agc_job_ctx_t *ctx);     /* V60     */
+agc_status_t agc_extverb_radar_test(agc_job_ctx_t *ctx);          /* V63 R04 */
+agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx);    /* V78 R77 */
+agc_status_t agc_extverb_lr_spurious_test_end(agc_job_ctx_t *ctx); /* V79    */
+agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx);      /* V85     */
 
 agc_status_t agc_extverb_state_vector_copy(bool from_other); /* V66 / CSM V47 */
 agc_status_t agc_extverb_lm_attck2(void);      /* LM V43 ATTCK2 (task body)  */

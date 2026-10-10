@@ -194,3 +194,16 @@ itself is a number-free word (KEPLER, LAMBERT, SERVICER, CALCGTA) keep it.
 Rule-4 word count counts one canonical stem as one term. A job segment that
 resumes after a PHASCHNG restart point ends in `_restart`; crew responses end
 in what they do (`_proceed`, `_terminate`, `_display`), never in T/P/E/B/1/1B.
+
+### Added by sys-misc (extended verbs, LM radar)
+
+| AGC      | Vehicle | Identifier stem          | AGC description                                    |
+|----------|---------|--------------------------|----------------------------------------------------|
+| R04      | LM      | radar_test               | V63 "SAMPLE RADAR ONCE PER SECOND" (R04FLAG)       |
+| R77      | LM      | lr_spurious_test         | V78/V79 "LR SPURIOUS RETURN TEST"                  |
+| V40 N72  | LM      | rr_zero                  | RRZEROK: zero the RR CDUs (RRZERO = agc_rr_zero)   |
+| V41 N72  | LM      | rr_designate             | RRDESNBK: designate to desired gimbal angles       |
+| V44      | LM      | rr_designate_end         | RRDESEND: terminate continuous designate           |
+| V60      | LM      | lr_position_two          | LRPOS2K: command landing radar to position 2       |
+| V85      | LM      | rr_los_display           | RR LOS azimuth and elevation (RRLOSDSP)            |
+| V41 N91  | CSM     | optics_coarse            | OPTCOARK: run the optics CDUs from the keyboard    |

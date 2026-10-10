@@ -239,6 +239,44 @@ agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);                /* LM TRIMDONE
 agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);       /* V66 / CSM V47 */
 agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx);      /* CSM V56 */
 agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx);   /* LM V43 */
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx);    /* CSM V41 N91 OPTC1 */
+agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx);    /* CSM V41 N91 OPTIND */
+/* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c)                */
+agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx);   /* V60 LRP2ALM */
+agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx);       /* V41N72 V24N73 */
+agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);         /* AURLOKON  */
+agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);       /* AURLOKON V04N12 */
+agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);        /* AURLOKON +5 */
+agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);   /* RRDESNBK end */
+agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx);      /* RRDESK2   */
+agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx);     /* RRDESK2 alarm 503 */
+agc_status_t agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx); /* V44 NORRMON */
+agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx);          /* V85 RRLOSDSP */
+agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx);     /* RRLOSDSP loop */
+agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx);     /* V85 B5OFF */
+agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx); /* R04A V04N12 */
+agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);       /* R04 RTSTDEX */
+agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx);   /* R04B      */
+agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx); /* R04B V50N25 */
+agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx); /* R04RR/R04LR */
+agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx); /* N78/N67 */
+agc_status_t agc_job_radar_test_switch(agc_job_ctx_t *ctx);       /* R04Y      */
+agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx); /* R04Y +2 s */
+agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx);          /* R04END    */
+agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx);   /* R04END +1.28 s */
+agc_status_t agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx); /* R77END */
+/* R04/R77 radar test storage (owned here; RADSAMP/DORSAMP read and write
+ * them).  SP integers.                                                    */
+agc_sp_t     agc_erase_rsampdt(void);   /* RSAMPDT: interval + 1, cs; 0 stops */
+void         agc_erase_set_rsampdt(agc_sp_t v);
+agc_sp_t     agc_erase_rtstdex(void);   /* RTSTDEX: sample index           */
+void         agc_erase_set_rtstdex(agc_sp_t v);
+agc_sp_t     agc_erase_rtstbase(void);  /* RTSTBASE: 0 RR, 2 LR            */
+agc_sp_t     agc_erase_rtstmax(void);   /* RTSTMAX: 2 RR, 6 LR             */
+agc_sp_t     agc_erase_rtstloc(void);   /* RTSTLOC: storage index          */
+void         agc_erase_set_rtstloc(agc_sp_t v);
+agc_sp_t     agc_erase_rfailcnt(void);  /* RFAILCNT: bad samples           */
+void         agc_erase_set_rfailcnt(agc_sp_t v);
 
 /* P27 (V70-V73).  The uplinked words are UPBUFF; COMPNUMB, UPOLDMOD,
  * UPVERB, UPCOUNT, UPBUFF +0..+19D are downlinked (index 0..23).          */

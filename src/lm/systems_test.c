@@ -11,8 +11,15 @@
  * STUB: REDO and the IMU performance tests behind it (GEOIMUTT, the
  * position/drift tests, ESTIMS, the gyro torquing and PIP pulse catching
  * loops) are a ground-test program of about 700 lines that drives the IMU
- * through the test positions; agc_job_systems_test sets MM 07 and returns
- * AGC_STATUS_UNIMPLEMENTED (see docs/modules/sys-misc.md "Stubs").
+ * through the test positions.  The rope does not hold the whole test: the
+ * drift filter's calculation (PERFERAS, p.387) does "TC ATIGINC -- GOTO
+ * ERASABLE TO CALCULATE", into an erasable-memory program that "MUST BE
+ * LOADED BEFORE ANY ATTEMPT IS MADE TO RUN THE IMU PERFORMANCE TEST".
+ * That program is not in Luminary099, so the test cannot be translated
+ * whole; agc_job_systems_test sets MM 07 and returns
+ * AGC_STATUS_UNIMPLEMENTED (see docs/modules/sys-misc.md "Stubs").  The
+ * earth-rate routines ERTHRVSE / EARTHR (p.380) are the same text as the
+ * CM prelaunch ones (src/csm/prelaunch_align.c, agc_csm_prelaunch_*).
  *
  * The erasable-memory program helpers in SYSTEM_TEST_STANDARD_LEAD_INS
  * (E/BKCALL, E/CALL, E/SWITCH, E/JOBWAK) exist only so that programs
