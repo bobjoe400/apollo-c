@@ -159,3 +159,9 @@
             nav/aux -> nav/auxiliary; compile parity (172/177). Pause over.
             Resuming all 7 lanes (guid-powered, dap-lm, dap-csm, prog-rendz,
             prog-align, sys-misc, p37) with docs/agents/_resume_after_naming.md.
+2026-10-10  Folder rules tightened (user): no common/ folders (lm/dap/common
+            flattened); >=3 files sharing a prefix -> subfolder named by the
+            prefix (core/interp, dsky/pinball, dsky/nouns done by lead;
+            csm/burns/sps delegated to guid-powered); agc_ dropped from
+            src/core .c names (public headers keep it). All moved files
+            compile. Rules recorded in ARCHITECTURE.md "Folder rules".
