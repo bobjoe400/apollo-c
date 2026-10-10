@@ -107,3 +107,12 @@
             agc_guid_preread1_csm (guid-powered), agc_csm_prelaunch_p11_earthr
             (imu), agc_csm_dap_stickchk (dap-csm), agc_dsky_gopin (io-pinball),
             temp ids 0x0C00-0x0C83.
+2026-10-10  guid-landing DONE (0 stubs). 17 checks; throttle 319 pulses
+            matches FC-FP; on-trajectory gives zero correction. Pending in
+            src/lm/landing_pending.h: THRUST/ALTM/CDUT,SCMD accessors,
+            TEMX/Y/Z, agc_align_refmf, agc_navaux_set_latlong, rendz flip/
+            clradmod, M22/M32, ids 0x0F01-0x0F25 / 0x0F81-0x0F86; exec needs a
+            TBASE2 setter; test has LANDING_TEST_FAKE_THRUST to drop.
+            User rule: no P/R/V/N or page numbers in identifiers ->
+            docs/NAMING.md; rename agent launched for done lanes; running
+            lanes notified.
