@@ -58,6 +58,7 @@
 #define AGC_JOB_P11        ((agc_job_id_t)0x0C17) /* P11                        */
 #define AGC_JOB_VHHDOT     ((agc_job_id_t)0x0C18) /* VHHDOT (AVGEXIT in P11)    */
 #define AGC_JOB_ATERJOB    ((agc_job_id_t)0x0C19) /* ATERJOB                    */
+#define AGC_JOB_REFAZE10   ((agc_job_id_t)0x0C1A) /* REFAZE10 group 5 restart   */
 #define AGC_TASK_JETCALL   ((agc_task_id_t)0x0C80) /* JETCALL                   */
 #define AGC_TASK_ATTRATES  ((agc_task_id_t)0x0C81) /* ATTRATES (T5RUPT)         */
 #define AGC_TASK_READACCS  ((agc_task_id_t)0x0C82) /* READACCS (guid-powered)   */

@@ -463,32 +463,31 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
     agc_guid_t *g = agc_guid_state();
     agc_interp_t ip;
     agc_interp_init(&ip);
-    switch (ctx->id) {
-    case AGC_JOB_SERV_RVBOTH2:
+    const agc_job_id_t id = ctx->id;
+    if (id == AGC_JOB_SERV_RVBOTH2) {
         rvboth_store(g);
         (void)agc_lm_serv_quikfaz5(AGC_JOB_SERV_MUNRVG);
-        return (agc_lm_munrvg(&ip) != AGC_STATUS_OK) ? AGC_STATUS_BAD_ARG
-                                                     : agc_lm_serv_munretrn(ctx);
-    case AGC_JOB_SERV_MUNRVG:
-        return (agc_lm_munrvg(&ip) != AGC_STATUS_OK) ? AGC_STATUS_BAD_ARG
-                                                     : agc_lm_serv_munretrn(ctx);
-    case AGC_JOB_SERV_COPY:     return agc_lm_serv_copycycl(ctx);
-    case AGC_JOB_SERV_EXIT:     return agc_lm_avgexit(ctx);
-    case AGC_JOB_SERV_COPYCYC1: return agc_lm_serv_copycyc1(ctx);
-    case AGC_JOB_SERV_VMEASCHK: return agc_lm_serv_vmeaschk(ctx);
-    case AGC_JOB_SERV_VALTCHK:  return agc_lm_serv_valtchk(ctx);
-    case AGC_JOB_SERV_RUPDATED: return agc_lm_serv_rupdated(ctx);
-    case AGC_JOB_SERV_VUPDATED: return agc_lm_serv_vupdated(ctx);
-    case AGC_JOB_SERV_LOTHRUST: return lothrust(ctx);
-    case AGC_JOB_SERV_DECCNTR:
+    }
+    if (id == AGC_JOB_SERV_RVBOTH2 || id == AGC_JOB_SERV_MUNRVG) {
+        agc_status_t st = agc_lm_munrvg(&ip);
+        return (st != AGC_STATUS_OK) ? st : agc_lm_serv_munretrn(ctx);
+    }
+    if (id == AGC_JOB_SERV_COPY)     { return agc_lm_serv_copycycl(ctx); }
+    if (id == AGC_JOB_SERV_EXIT)     { return agc_lm_avgexit(ctx); }
+    if (id == AGC_JOB_SERV_COPYCYC1) { return agc_lm_serv_copycyc1(ctx); }
+    if (id == AGC_JOB_SERV_VMEASCHK) { return agc_lm_serv_vmeaschk(ctx); }
+    if (id == AGC_JOB_SERV_VALTCHK)  { return agc_lm_serv_valtchk(ctx); }
+    if (id == AGC_JOB_SERV_RUPDATED) { return agc_lm_serv_rupdated(ctx); }
+    if (id == AGC_JOB_SERV_VUPDATED) { return agc_lm_serv_vupdated(ctx); }
+    if (id == AGC_JOB_SERV_LOTHRUST) { return lothrust(ctx); }
+    if (id == AGC_JOB_SERV_DECCNTR) {
         agc_inhint();
         g->lm.dvcntr = agc_dp_high(g->lm.mass1);      /* CA DVCNTR1 TS DVCNTR   */
         (void)agc_lm_dap_stoprate();
         (void)agc_flag_set(AGC_FLAG_USEQRFLG);
         return servout(ctx);
-    default:
-        return getabval(ctx);                         /* SERVICER / GETABVAL    */
     }
+    return getabval(ctx);                             /* SERVICER / GETABVAL    */
 }
 
 /* AVGEND (p.863): the final pass. Free-fall gyro compensation, DRIFT flag,

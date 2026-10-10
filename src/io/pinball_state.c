@@ -16,6 +16,16 @@ pin_state_t *pin_st(void)
     return &g_pin;
 }
 
+/* Invariants of the pinball erasables, asserted by the module's routines. */
+bool pin_invariants(void)
+{
+    const pin_state_t *s = &g_pin;
+    return s->verbreg <= 99u && s->nounreg <= 99u && s->verbsave <= 99u
+        && s->reqret < PIN_REQ_COUNT && s->entret <= PIN_ENT_PASTEVB
+        && s->loadstat <= PIN_LS_DATAIN && s->nout >= 0 && s->nout <= PIN_DSPTAB_LEN
+        && (s->dspcount & 037) <= PIN_MD1 && s->chr <= 9u && s->nntype <= PIN_NNTYPE_SPARE;
+}
+
 /* RELTAB (T4RUPT_PROGRAM p. 133), low 5 bits: relay code of digit 0-9.
  * Bits 12-15 of RELTAB give the relay word number = index + 1.           */
 static const uint16_t k_relay_code[10] = {
@@ -45,6 +55,7 @@ uint16_t agc_dsky_relay_code(int digit)
 /* Inverse of RELTAB for the sim readout. */
 int agc_dsky_relay_digit(uint16_t code)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(code <= PIN_LOW5)) {
         return AGC_DSKY_BLANK;
     }
@@ -66,6 +77,7 @@ bool pin_ones_negative(uint16_t w)
 /* Magnitude of a 15-bit ones' complement word (CCS ...; AD ONE). */
 uint16_t pin_ones_mag(uint16_t w)
 {
+    (void)AGC_ASSERT(pin_invariants());
     uint16_t v = (uint16_t)(w & PIN_WORD);
     return pin_ones_negative(v) ? (uint16_t)((~v) & PIN_POSMAX) : v;
 }
@@ -79,6 +91,7 @@ uint16_t pin_ones_neg(uint16_t mag)
 /* DEVIATION: -0 (077777) maps to 0; agc_sp_t has no negative zero. */
 agc_sp_t pin_sp_from_ones(uint16_t w)
 {
+    (void)AGC_ASSERT(pin_invariants());
     uint16_t v = (uint16_t)(w & PIN_WORD);
     if (pin_ones_negative(v)) {
         return (agc_sp_t)(-(int)pin_ones_mag(v));

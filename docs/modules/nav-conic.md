@@ -103,10 +103,17 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 * KEPLER TIMEOVFL exit through KEPRTN (DELX halved to 0): RCV/VCV are not
   computed by the AGC; out->rcv/vcv = in->rrect/vrect (what RECTIFY left in
   RCV/VCV), status AGC_STATUS_OVERFLOW.
-* SQRT uses MPAC,+1 only (SQRTSUB pulls MPAC+2 up only for arguments below
-  2^-14). DOT/VSQ/UNIT come from the core as DP (the AGC's TP dot product
-  feeds one following SL1 in GEOM / KEPLERN).
+* MPAC sign-mixed words are not modelled (an agc_tp_t is one number): a
+  DMP of a sign-mixed MPAC or BDSU's uncomplemented MPAC+2 can differ from
+  the AGC in the last bits before a SL/SQRT (APSIDES ECC differs by ~40
+  LSB in the oracle for this reason).
+* SQRT of a negative argument (SQRTABRT, POODOO 01302) is only asserted:
+  every conic SQRT argument is tested or built non-negative first.
 * ITERATOR reads TWEEKIT as the DP (40D, 41D) = (TWEEKIT, S2) with S2 = 1.
+* SSP constants are the ASSEMBLED words: "SSP TWEEKIT 20000" is 10000
+  (.25) and "SSP GEOMSGN 37777" is 27777 in both ropes (the assembler
+  stores an operand >= 10000 octal less 10000). Using .5 made LM LAMBERT
+  with a small ITERCTR take a different branch than the AGC.
 * RVCON/CSMCONIC/LEMCONIC: the state vector has no TDELTAV/TNUV, so it is
   taken as rectified (RCV = RRECT); TET += TC; output stays in the body's
   scale (RECTOUT's RATT/VATT rescale to 2^29/2^7 and INTSTALL/INTEXIT
@@ -127,19 +134,13 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 
 ## Requested core additions
 
-* `agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n);` -- SL/SR on
-  the TP MPAC: n>0 one place at a time, an overflowing place sets OVFIND and
-  keeps the overflow-corrected (wrapped, true sign) value; n<0 truncating
-  right. Interim local version: `agc_conic_mshift_()` in conic_common.c.
-* `agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift);` -- NORM (TSLC) on the
-  TP MPAC (left-justify until |v| >= 1/2, *nshift = left shifts; the AGC
-  stores -*nshift in the index register; 0 stays 0 with count 0).
-  Interim: `agc_conic_mnorm_()`.
-* `agc_dp_t agc_dp_poly(agc_dp_t x, const agc_dp_t *coef, int n);` -- POLY
-  (DMPSUB + DAS per term, no overflow report). Interim: `agc_conic_poly_()`.
-* For core-numeric (observation, not an API request): yaAGC shows DDV of
-  (00200,77777) by (00313,31474) = 0.627988409 vs 0.628065 for the
-  sign-agreeing (00200,00000)+1 -- the -0 minor word matters to DDV.
+None outstanding. The TP operations requested earlier (TP shift with
+overflow-corrected wrap, TP NORM, POLY) have landed in agc_interp.h and
+the agc_conic_m*_ helpers now wrap agc_tp_shift, agc_tp_norm, agc_tp_round,
+agc_tp_sqrt, agc_dp_sq_tp, agc_dp_mul_tp, agc_dp_poly and agc_vec_dot_tp.
+* For core-numeric (observation): yaAGC gives DDV of (00200,77777) by
+  (00313,31474) = 0.627988409 vs 0.628065 for the sign-agreeing
+  (00200,00000)+1 -- a -0 minor word changes DDV by ~2^-14.
 * Flags used (all present in agc_flags_common.h): AGC_FLAG_SOLNSW,
   AGC_FLAG_INFINFLG, AGC_FLAG_COGAFLAG, AGC_FLAG_APSESW, AGC_FLAG_ORDERSW,
   AGC_FLAG_CMOONFLG, AGC_FLAG_LMOONFLG, AGC_FLAG_SURFFLAG. Accessors used
@@ -158,9 +159,11 @@ None (conic subroutines run inside the caller's job).
   TIMETHET 90 degrees, TIMERAD to r = a vs Kepler's equation, RVCON.
 * tests/oracle_conic.c -- 31 Comanche055 + 4 Luminary099 cases against the
   yaAGC dumps (tolerance one SP LSB, see Deviations for the -0 case).
-* Both were run in a scratch build against a throw-away approximate core
-  (not in the tree): 40/40 and 299/299 checks pass. They compile now and
-  run under `make test` once core-numeric lands.
+* Both run against the real core (src/core, built in a scratch dir):
+  test_conic 40/40, oracle_conic 299/299. With the real core KEPPREP,
+  TIMETHET, TIMERAD and most KEPLER outputs are bit-exact; the rest are
+  within a few hundred LSB except the -0 / sign-mixed-word effects noted
+  under Deviations.
 
 ## Oracle cases
 
@@ -191,19 +194,20 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
   R2 = 0D-5D, V2 = MPAC, INFINFLG/COGAFLAG in FLAGWRD8), TIMERAD
   (RDESIRED, SGNRDOT; also CSTH, SNTH, APSESW, SOLNSW) and APSIDES (out
   MPAC = RA, 0D = RP, ECC).
-* Agreement (scratch core): XKEPNEW/TC/T usually exact, positions within
-  ~100 LSB, velocities within ~3000 LSB (VSL8 amplifies), flags and abort
-  paths (INFINFLG, COGAFLAG/COLINEAR, CIRCULAR, APSESW, LM SUFFCHEK) match.
-  The scratch harness lives in the session scratchpad (nav-conic/run.sh).
+* Agreement (real core): XKEPNEW/TC/T exact, positions within ~100 LSB,
+  velocities within ~800 LSB (VSL8 amplifies) except the circular -0 cases,
+  flags and abort paths (INFINFLG, COGAFLAG/COLINEAR, CIRCULAR, APSESW, LM
+  SUFFCHEK with VVEC) match. Scratch harness: session scratchpad
+  nav-conic/run.sh, realrun.sh.
 
 ## Open questions
 
 * src/programs/rendz_ext.h (prog-rendz) declares its own agc_timethet_in_t,
   agc_lambert_in_t and an agc_conic_apsides with a different signature;
   those must be replaced by include/agc/agc_nav.h (adapt rendz_glue.c).
-* nav-integ's design lists agc_integ_kepprep()/rvcon(); they should call
-  agc_conic_kepprep/agc_conic_kepler (and may wrap agc_conic_rvcon) rather
-  than translate KEPPREP twice. RATT/VATT earth-scale output and the
-  TDELTAV/TNUV deviations belong to nav-integ.
+* nav-integ's agc_integ_kepprep (orbital_integration.c) already calls
+  agc_conic_kepprep + agc_conic_kepler with RCV/VCV vs RRECT/VRECT split
+  correctly; agc_conic_rvcon/csmconic/lemconic are the stand-alone
+  (rectified-state) versions for callers outside the integration package.
 * LM LAMBERT callers must supply in->iterctr (SETITCTR: 20, or 5 when
   AVEGFLAG); the CSM ignores it.

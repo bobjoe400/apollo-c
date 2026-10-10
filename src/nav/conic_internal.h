@@ -51,9 +51,13 @@
 #define AGC_CONIC_LDPOSMAX ((agc_dp_t)268435455) /* LDPOSMAX = LODPMAX 37777 37777 */
 #define AGC_CONIC_DP2_3    ((agc_dp_t)178956971) /* DP2/3 25252 25253 .6666666667 */
 #define AGC_CONIC_KEPZERO  ((agc_dp_t)0)         /* KEPZERO = LO6ZEROS         */
-#define AGC_CONIC_GEOMSGN_POS ((agc_sp_t)0x3FFF) /* SSP GEOMSGN 37777 (PARAM)   */
+/* SSP constants: the assembler stores an octal operand of 10000 or more
+ * less 10000 (the rope has 27777 for "37777" and 10000 for "20000"; the
+ * Comanche055 / Luminary099 ropes are checksum-verified). The assembled
+ * words are what the flight code used.                                   */
+#define AGC_CONIC_GEOMSGN_POS ((agc_sp_t)0x2FFF) /* SSP GEOMSGN 37777 -> 27777 */
 #define AGC_CONIC_TWEEKIT_GUESS   ((agc_sp_t)1)      /* SSP TWEEKIT 00001      */
-#define AGC_CONIC_TWEEKIT_NOGUESS ((agc_sp_t)0x2000) /* SSP TWEEKIT 20000 (.5) */
+#define AGC_CONIC_TWEEKIT_NOGUESS ((agc_sp_t)0x1000) /* SSP TWEEKIT 20000 -> 10000 (.25) */
 
 /* TIX,2 with X2 = 3, S2 = 1 (GETX): WLOOP and 1/WLOOP run three passes.  */
 #define AGC_CONIC_GETX_PASSES 3

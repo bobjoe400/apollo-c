@@ -42,6 +42,7 @@ static const int16_t k_rnd1[3] = { PIN_R1D1, PIN_R2D1, PIN_R3D1 };
  * DSPTEMX = OPTIONX = DSPTEM2 +1; NORMTEM1 = DSPTEM1.                     */
 static int pin_own_id(uint16_t id, int *kind)
 {
+    (void)AGC_ASSERT(pin_invariants());
     switch (id) {
     case AGC_DATA_DSPTEM1:       *kind = 0; return 0;
     case AGC_DATA_DSPTEM1_P1:    *kind = 0; return 1;
@@ -66,6 +67,7 @@ static int pin_own_id(uint16_t id, int *kind)
 
 static uint16_t *pin_own_word(int idx)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     return (idx >= 10) ? &s->xyz_oct[idx - 10] : &s->dsptem[idx];
 }
@@ -94,6 +96,7 @@ agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
 
 agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
 {
+    (void)AGC_ASSERT(pin_invariants());
     int kind = -1;
     int idx = pin_own_id(data_id, &kind);
     if (idx < 0) {
@@ -122,6 +125,7 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
  * INTEGRATION: replace by a per-id query once io-nouns offers one.      */
 static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 {
+    (void)AGC_ASSERT(pin_invariants());
     int kind = -1;
     if (pin_own_id(id, &kind) >= 0) {
         return kind == 0;
@@ -148,6 +152,7 @@ agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 /* SFRUTNOR / SFRUTMIX: SF routine number of component k (0 = octal). */
 uint8_t pin_comp_routine(int k)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_scale_info_t info;
     if (pin_comp_scale(k, &info) != AGC_STATUS_OK) {
         return (uint8_t)PIN_SF_OCTAL;
@@ -160,6 +165,7 @@ uint8_t pin_comp_routine(int k)
  * (DP1OUT, DP2OUT, DP3OUT, DP4OUT and, CM only, DPFRACOT).               */
 bool pin_sf_is_dp(uint8_t rout)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(rout < (uint8_t)PIN_SF_COUNT);
     switch (rout) {
     case PIN_SF_DP1: case PIN_SF_DP2: case PIN_SF_DP3: case PIN_SF_DP4:
@@ -174,6 +180,7 @@ bool pin_sf_is_dp(uint8_t rout)
 /* Value <-> 15-bit machine word for a component of the given kind. */
 agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (info->is_raw) {
         return (agc_dp_t)(w & PIN_WORD);
     }
@@ -182,6 +189,7 @@ agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 
 static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (info->is_raw) {
         return (uint16_t)((uint32_t)v & PIN_WORD);
     }
@@ -191,6 +199,7 @@ static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
 /* Channel for nouns 10 (CHANDSP / CHANLOAD: NOUNCADR masked LOW9). */
 static int pin_chan_of(int k)
 {
+    (void)AGC_ASSERT(pin_invariants());
     int ch = (int)((pin_st()->nouncadr + (uint16_t)k) & PIN_LOW9);
     return (ch < AGC_CHAN_COUNT) ? ch : -1;
 }
@@ -199,6 +208,7 @@ static int pin_chan_of(int k)
  * NOUNCADR (+k); noun 10 reads the channel.                             */
 agc_status_t pin_comp_read(int k, agc_dp_t *v)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     agc_scale_info_t info;
     agc_status_t st = pin_comp_scale(k, &info);
@@ -225,6 +235,7 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
 /* Write component k of NOUNREG (PUTCOM's INDEX NOUNADD, TS k). */
 agc_status_t pin_comp_write(int k, agc_dp_t v)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     agc_scale_info_t info;
     agc_status_t st = pin_comp_scale(k, &info);
@@ -248,6 +259,7 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
  * scale only the minor part; CHANDSP: the channel.                      */
 agc_status_t pin_comp_octal(int k, uint16_t *word)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_scale_info_t info;
     agc_dp_t v = 0;
     agc_status_t st = pin_comp_scale(k, &info);
@@ -310,6 +322,7 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
  * an overflow by putting it into bit 15; then DEGOUTSF with .45.        */
 static agc_status_t pin_opdegout(uint16_t w)
 {
+    (void)AGC_ASSERT(pin_invariants());
     int32_t sum;
     if (!pin_ones_negative(w)) {
         sum = (int32_t)w + PIN_20BIAS;                   /* pos or +0      */
@@ -335,6 +348,7 @@ static agc_status_t pin_opdegout(uint16_t w)
  * by the SP datum, result MPAC, MPAC+1.                                  */
 static agc_status_t pin_artout(agc_sp_t sp, agc_dp_t sfout)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(sfout >= 0);
     agc_dp_t f = (agc_dp_t)pin_mul_shift(sp, sfout, PIN_TP_DP_SHIFT);
     return pin_dspdecwd(f, false);
@@ -344,6 +358,7 @@ static agc_status_t pin_artout(agc_sp_t sp, agc_dp_t sfout)
  * is shifted left 14 by taking it from MPAC+1, MPAC+2.                   */
 static agc_status_t pin_arout1(agc_sp_t sp, agc_dp_t sfout)
 {
+    (void)AGC_ASSERT(pin_invariants());
     int64_t tp = pin_mul_shift(sp, sfout, 0);
     agc_dp_t f = (agc_dp_t)((tp < 0) ? -(pin_mag(tp) & PIN_DP_MASK) : (tp & PIN_DP_MASK));
     return pin_dspdecwd(f, false);
@@ -394,6 +409,7 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
 /* Fraction F with exactly the 5 (or 2) digits n when shown truncated. */
 static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(n >= 0 && n < scale);
     return (agc_dp_t)(((n << AGC_DP_BITS) + scale - 1) / scale);
 }
@@ -403,6 +419,7 @@ static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
  * (SEPSECNR). Displayed in the AGC's order R3, R2, R1.                   */
 static agc_status_t pin_hmsout(agc_dp_t t)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -447,6 +464,7 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
  * 2-1, complemented; displayed as whole (ARTOUTSF).                     */
 static agc_status_t pin_lrposout(agc_dp_t sfout)
 {
+    (void)AGC_ASSERT(pin_invariants());
     uint16_t c33 = agc_chan_read((int)AGC_CHAN_CHAN33);
     uint16_t pos = (uint16_t)(~(uint16_t)(c33 >> 5) & 3u);   /* MP BIT10, COM */
     (void)AGC_ASSERT(pos <= 3u);
@@ -456,6 +474,7 @@ static agc_status_t pin_lrposout(agc_dp_t sfout)
 /* 360-CDU (LM): if the angle is not 0 or 180 degrees, 360 minus it. */
 uint16_t pin_360_cdu(uint16_t w)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(w <= PIN_WORD);
     if ((w & PIN_POSMAX) == 0u) {
         return w;
@@ -466,6 +485,7 @@ uint16_t pin_360_cdu(uint16_t w)
 /* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
 static agc_status_t pin_sfout_word(uint8_t rout, const agc_scale_info_t *info, agc_dp_t v)
 {
+    (void)AGC_ASSERT(pin_invariants());
     bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     uint16_t w = info->is_raw ? (uint16_t)((uint32_t)v & PIN_WORD) : pin_ones_from_sp(agc_dp_high(v));
     agc_sp_t sp = pin_sp_from_ones(w);
@@ -488,6 +508,7 @@ static agc_status_t pin_sfout_word(uint8_t rout, const agc_scale_info_t *info, a
  * when the routine left through ENTEXIT itself (HMSOUT) or alarmed.     */
 static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_scale_info_t info;
     agc_status_t st = pin_comp_scale(k, &info);
     if (!AGC_ASSERT(exited != NULL) || st != AGC_STATUS_OK) {
@@ -510,6 +531,7 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
  * from the last component to R1 (DSPDCPUT / DSPDCEND).                 */
 agc_status_t pin_decdsp(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     int n = (int)s->noun.ncomp;
     if (!AGC_ASSERT(n >= 1 && n <= 3)) {
@@ -534,6 +556,7 @@ agc_status_t pin_decdsp(void)
  * R2 (no rounding); mixed nouns alarm.                                   */
 agc_status_t pin_dspdpdec(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     if (s->nounreg >= PIN_MIXCON) {
         return pin_dspalarm();

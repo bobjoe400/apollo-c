@@ -45,6 +45,7 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
  * previous register of the same load verb.                               */
 pin_reqret_t pin_reqret_backup(pin_reqret_t step)
 {
+    (void)AGC_ASSERT(pin_invariants());
     switch (step) {
     case PIN_REQ_ABC_Y: return PIN_REQ_ABC_X;
     case PIN_REQ_ABC_Z: return PIN_REQ_ABC_Y;
@@ -65,6 +66,7 @@ pin_reqret_t pin_reqret_backup(pin_reqret_t step)
  * RECALTST to see if there is recall from ENDIDLE.                       */
 agc_status_t pin_loadlv(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->decbrnch = 0;
     s->loadstat = PIN_LS_DATAIN;               /* CS ZERO TS LOADSTAT      */
@@ -86,6 +88,7 @@ agc_status_t agc_dsky_loadlv(void)
  * for noun 10.                                                           */
 static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info, bool *finished)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!pin_dectest()) {                                     /* DCTSTCYC  */
         *finished = true;
@@ -121,6 +124,7 @@ static agc_status_t pin_putcom_octal(int k, const agc_scale_info_t *info, bool *
  * CHANLOAD going on to LOADLV).                                          */
 static agc_status_t pin_putcom(int k, bool *finished)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     agc_scale_info_t info;
     agc_status_t st = pin_comp_scale(k, &info);
@@ -147,6 +151,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
  * all octal; alarms (and recycles) if not.                               */
 static agc_status_t pin_alldc_oc(int ncomp)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     if (!AGC_ASSERT(ncomp == 2 || ncomp == 3)) {
         return AGC_STATUS_BAD_ARG;
@@ -163,6 +168,7 @@ static agc_status_t pin_alldc_oc(int ncomp)
  * processed, ZREG zero to reset bits, non-zero to set bits.              */
 static agc_status_t pin_noun7_bits(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     uint16_t ecadr = s->xyz_oct[0];
     uint16_t bits = s->xyz_oct[1];
@@ -208,6 +214,7 @@ static agc_status_t pin_putn(int first, int ncomp)
  * component tests, then the first data request.                          */
 agc_status_t pin_load_verb(uint8_t verb)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(verb >= 21u && verb <= 25u)) {
         return AGC_STATUS_BAD_ARG;
@@ -237,6 +244,7 @@ agc_status_t pin_load_verb(uint8_t verb)
 /* Show the next load verb and request the next register. */
 static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(verb == PIN_VBSP2LD || verb == PIN_VBSP3LD);
     agc_status_t st = pin_updatvb(verb);
     return (st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st;
@@ -245,6 +253,7 @@ static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 /* TC REQRET from ACCEPTWD: continue the load verb after its data word. */
 agc_status_t pin_load_resume(pin_reqret_t step)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT)) {
         return AGC_STATUS_BAD_ARG;
     }

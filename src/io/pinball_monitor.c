@@ -35,6 +35,7 @@
  * external monitor bit (14) on.                                          */
 agc_status_t pin_monitor(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u)) {
         return AGC_STATUS_BAD_ARG;
@@ -65,6 +66,7 @@ agc_status_t pin_monitor(void)
 /* MONREQ: called by waitlist every second while the monitor lives. */
 agc_status_t agc_task_monreq(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     pin_lodsampt();                        /* time is snatched in rupt for N65 */
     if ((s->monsave1 & PIN_BIT15) != 0u) { /* killer bit = 1: KILLMON      */
@@ -193,6 +195,7 @@ agc_status_t pin_vbrqwait(void)
  * display, flash off and see if there is any recall from ENDIDLE.       */
 agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN)) {
         return AGC_STATUS_BAD_ARG;
@@ -210,6 +213,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
  * lights (ENTPASHI assumes the TC REQMM at MMCHANG).                    */
 agc_status_t pin_reqmm(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->reqret = PIN_REQ_MM;
     s->reqret_neg = true;
@@ -226,6 +230,7 @@ agc_status_t pin_reqmm(void)
  * (DSPCOUNT = -ND2), blank the noun lights and go to V37 (MODROUTB).    */
 agc_status_t pin_mmchang_resume(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!s->dspcount_neg || s->dspcount != PIN_ND2) {
         return pin_almcycle();             /* DSPCOUNT not = -ND2           */
@@ -248,6 +253,7 @@ agc_status_t pin_mmchang_resume(void)
  * until TSTLTS3 to insure that the lights test will be seen.            */
 agc_status_t pin_vbtstlts(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
     if (csm && agc_erase_modreg() != 0) {          /* CHKPOOH (CM only)   */
@@ -278,6 +284,7 @@ agc_status_t pin_vbtstlts(void)
 /* TSTLTS2: called by waitlist. */
 agc_status_t agc_task_tstlts2(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_TSTLTS3);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
     return st;
@@ -288,6 +295,7 @@ agc_status_t agc_task_tstlts2(void)
  * light on if in coarse align); set bits to indicate all lamps out.     */
 static agc_status_t pin_tstlts3_lamps(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_inhint();
     (void)agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_TSTCON3));
     (void)agc_chan_and((int)AGC_CHAN_CHAN13, (uint16_t)(PIN_WORD ^ PIN_CH13_TESTALM));
@@ -310,6 +318,7 @@ static agc_status_t pin_tstlts3_lamps(void)
  * response).                                                            */
 agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }

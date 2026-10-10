@@ -141,14 +141,17 @@ agc_status_t agc_dsky_nvmonopt(uint8_t verb, uint8_t noun, uint16_t options);
  * -1 blank R's only.                                                    */
 agc_status_t agc_dsky_nvsub_blank(int code);
 /* NVSBWAIT: executes now (OK) or puts the job to sleep in DSPLIST and
- * resumes it as wake_as when the operator releases the DSKY (BUSY).   */
+ * resumes it as wake_as when the operator releases the DSKY (BUSY; the
+ * job must return, and wake_as re-issues the call).                   */
 agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb,
                                uint8_t noun, agc_job_id_t wake_as);
 agc_status_t agc_dsky_nvsubusy(const agc_job_ctx_t *ctx, agc_job_id_t wake_as);
 agc_status_t agc_dsky_blanksub(uint16_t code);    /* bit1 R1 bit2 R2 bit3 R3 */
-/* ENDIDLE: the calling job must return (ENDOFJOB) right after an OK.
- * The operator's answer starts one continuation at the caller's
- * priority: V34 terminate, V33 proceed, data load / V32 recycle.      */
+/* ENDIDLE: puts the calling job to sleep (it must return right after an
+ * OK); the operator's answer wakes it at one continuation: V34
+ * terminate, V33 proceed, data load / V32 recycle. agc_dsky_response()
+ * then gives the verb and noun of the answer. POODOO (abort 01206) if a
+ * job already waits in CADRSTOR or DSPLIST.                           */
 agc_status_t agc_dsky_endidle(const agc_job_ctx_t *ctx,
                               agc_job_id_t on_terminate,
                               agc_job_id_t on_proceed,
@@ -193,12 +196,17 @@ uint16_t agc_dsky_vn(uint8_t verb, uint8_t noun);
 
 /* Requests a display. vn_or_value is the VN code, or the checklist
  * value (GOPERF1), or the option code (GOPERF4). Non-R kinds run as part
- * of the calling job, which must return right after an OK; R kinds
- * return OK at once and the display runs as job MAKEPLAY.             */
+ * of the calling job, which must return right after an OK: the job has
+ * then ended (GODSP), been put to sleep (flashing displays: it wakes at
+ * cont->terminate/proceed/enter) or been set to continue at
+ * cont->terminate (GODSPRET, EXDSPRET). R kinds return OK at once (the
+ * immediate return, call CADR +4) and the display runs as job MAKEPLAY
+ * at the caller's priority. cont may be NULL for non-flashing kinds.   */
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                               uint16_t vn_or_value, const agc_dsky_cont_t *cont);
 agc_status_t agc_dsky_blanket(uint16_t bits);  /* BLANKET after an R call  */
-agc_status_t agc_dsky_endmark(void);           /* ENDMARK / ENDEXT          */
+agc_status_t agc_dsky_endmark(void);           /* ENDMARK                   */
+agc_status_t agc_dsky_endext(void);            /* ENDEXT EQUALS ENDMARK     */
 agc_status_t agc_dsky_clearmrk(void);          /* CLEARMRK                  */
 agc_status_t agc_dsky_pinbrnch(void);          /* PINBRNCH                  */
 agc_status_t agc_dsky_initdsp(void);           /* INITDSP (.1 restarts)     */

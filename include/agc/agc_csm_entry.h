@@ -22,6 +22,7 @@
 #include "agc_status.h"
 #include "agc_word.h"
 #include "agc_interp.h"
+#include "agc_exec.h"
 
 /* GOTOADDR: the entry phase sequencer (REENTRY_CONTROL p. 847).          */
 typedef enum agc_entry_goto {
@@ -163,12 +164,16 @@ typedef struct agc_entry_state {
 agc_entry_state_t *agc_entry_state(void);       /* the one entry erasable set */
 void               agc_entry_lexicon_reset(void);
 
-/* ---- entry guidance (reentry.c) ----------------------------------------- */
-agc_status_t agc_entry_startent(void);   /* STARTENT  first guidance pass    */
-agc_status_t agc_entry_scalepop(void);   /* SCALEPOP  TARGETNG + sequencer   */
-agc_status_t agc_entry_targeting(void);  /* TARGETNG                         */
-agc_status_t agc_entry_pre_hunt(void);   /* PRE-HUNT  restart job (group 4)  */
-agc_status_t agc_entry_steeroff_lat_long(void); /* P67.2 + P67.3            */
+/* ---- entry guidance (reentry.c) -----------------------------------------
+ * The steering runs inside the CM/POSE job (AVGEXIT during entry). The
+ * pass functions return *display = true when the AGC ends at ENDEXIT
+ * (entry display ENTRYVN, then SERVNOUT) and false for SERVNOUT alone.    */
+agc_status_t agc_entry_startent(void);            /* STARTENT first pass  */
+agc_status_t agc_entry_scalepop(bool *display);   /* SCALEPOP: TARGETNG + REFAZE10 */
+agc_status_t agc_entry_refaze10(bool *display);   /* REFAZE10: GOTO GOTOADDR */
+agc_status_t agc_entry_targeting(void);           /* TARGETNG             */
+agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx);/* PRE-HUNT  4.47 restart */
+agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx);/* REFAZE10  5.3 restart  */
 
 /* HUNTEST and RANGER without the sequencing side effects (unit tests and
  * the oracle). huntest_predict runs HUNTEST from the current state up to
@@ -184,38 +189,58 @@ agc_status_t agc_entry_huntest_predict(agc_entry_hunt_result_t *result,
 agc_status_t agc_entry_range_predict(agc_dp_t gammal, agc_dp_t *diff);
 
 /* ---- body attitude (cm_body_attitude.c) --------------------------------- */
-agc_status_t agc_entry_cm_pose(void);    /* CM/POSE: AVEGEXIT during entry   */
+agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx);  /* CM/POSE (AVGEXIT)    */
+agc_status_t agc_job_redopose(agc_job_ctx_t *ctx); /* REDOPOSE 5.x restart */
+/* CM/POSE, CM/POSE2: trajectory triad UXA UYA UZA and -VREL (no CDUs).    */
+agc_status_t agc_entry_cm_pose_triad(void);
+/* CM/TRIO: body triad and -(ROLL, BETA, ALFA)/180 /2 at PIPA time, and
+ * -GAMA/180 /2, from AOG/AIG/AMG at PIP and REFSMMAT; angles[0..3] DP.    */
+agc_status_t agc_entry_cm_trio(agc_dp_t angles[4]);
 
-/* ---- P61-P67 (p61_p67.c) ------------------------------------------------ */
-agc_status_t agc_entry_p61(void);        /* P61      V37 entry               */
-agc_status_t agc_entry_p61_4(void);      /* P61.4    after N61 PROCEED       */
-agc_status_t agc_entry_p61_1(void);      /* P61.1    N60 display             */
-agc_status_t agc_entry_p61_2(void);      /* P61.2    N63 display             */
-agc_status_t agc_entry_p61_3(void);      /* P61.3    phase change, ENDOFJOB  */
-agc_status_t agc_entry_p62(void);        /* P62                              */
-agc_status_t agc_entry_p62_2(void);      /* P62.2    separation request      */
-agc_status_t agc_entry_p62_2b(void);     /* P62.2 +3 PROCEED: CM/DAPON       */
-agc_status_t agc_entry_p62_1(void);      /* P62.1    N61 then entry attitude */
-agc_status_t agc_entry_p63(void);        /* P63                              */
-agc_status_t agc_entry_p65_1(void);      /* P65.1    N69 flashing display    */
-agc_status_t agc_entry_p65_1b(void);     /* P65.1    PROCEED                 */
-agc_status_t agc_entry_p67_1(void);      /* P67.1    N67 flashing display    */
-agc_status_t agc_entry_p67_1b(void);     /* P67.1    PROCEED: end entry      */
-agc_status_t agc_entry_s61_1(void);      /* S61.1    state vector, IMU check */
-agc_status_t agc_entry_s61_1a(void);     /* S61.1A   IMU orientation check   */
-agc_status_t agc_entry_s61_2(void);      /* S61.2    N60/N63 data (stub)     */
-agc_status_t agc_entry_s62_3(void);      /* S62.3    desired gimbal angles   */
-agc_status_t agc_entry_wakep62(void);    /* WAKEP62  task                    */
+/* ---- P61-P67 (p61_p67.c) ------------------------------------------------
+ * Jobs: the AGC program text split at every DSKY / sleep resumption.      */
+agc_status_t agc_job_p61(agc_job_ctx_t *ctx);        /* P61                 */
+agc_status_t agc_job_p61_dsp(agc_job_ctx_t *ctx);    /* P61 V06N61          */
+agc_status_t agc_job_p61_4(agc_job_ctx_t *ctx);      /* P61.4               */
+agc_status_t agc_job_p61_1(agc_job_ctx_t *ctx);      /* P61.1 V06N60        */
+agc_status_t agc_job_p61_2(agc_job_ctx_t *ctx);      /* P61.2 V06N63        */
+agc_status_t agc_job_p61_3(agc_job_ctx_t *ctx);      /* P61.3               */
+agc_status_t agc_job_p62_newmode(agc_job_ctx_t *ctx);/* P62 -3 (from P61)   */
+agc_status_t agc_job_p62(agc_job_ctx_t *ctx);        /* P62 (V37)           */
+agc_status_t agc_job_p62_s61ret(agc_job_ctx_t *ctx); /* P62 after S61.1     */
+agc_status_t agc_job_p62_2(agc_job_ctx_t *ctx);      /* P62.2 GOPERF1R 41   */
+agc_status_t agc_job_p62_2b(agc_job_ctx_t *ctx);     /* P62.2 +3 CM/DAPON   */
+agc_status_t agc_job_p62_1(agc_job_ctx_t *ctx);      /* P62.1 V06N61        */
+agc_status_t agc_job_p62_1b(agc_job_ctx_t *ctx);     /* P62.1 PROCEED       */
+agc_status_t agc_job_p63(agc_job_ctx_t *ctx);        /* P63                 */
+agc_status_t agc_job_p65_1(agc_job_ctx_t *ctx);      /* P65.1 V16N69        */
+agc_status_t agc_job_p65_1b(agc_job_ctx_t *ctx);     /* P65.1 PROCEED       */
+agc_status_t agc_job_p67_1(agc_job_ctx_t *ctx);      /* P67.1 V16N67        */
+agc_status_t agc_job_p67_1b(agc_job_ctx_t *ctx);     /* P67.1 PROCEED       */
+agc_status_t agc_job_s61_1a(agc_job_ctx_t *ctx);     /* S61.1A  4.45        */
+agc_status_t agc_job_s61_1_mid(agc_job_ctx_t *ctx);  /* S61.1 MIDTOAV2 retry*/
+agc_status_t agc_job_s61_1_ret(agc_job_ctx_t *ctx);  /* RETRN1 after delay  */
+agc_status_t agc_task_s61_1c(void);                  /* S61.1C  4.43        */
+agc_status_t agc_task_wakep62(void);                 /* WAKEP62 4.33        */
+agc_status_t agc_entry_s61_2(void);                  /* S61.2 N60/N63 data  */
+agc_status_t agc_entry_s62_3(void);                  /* S62.3 CPHI for N22  */
+agc_status_t agc_entry_p67_2_latlong(void);          /* P67.2 LAT LONG ALT  */
+/* S61.2 helpers (pure, used by the oracle).                               */
+agc_dp_t     agc_entry_vrcalc(agc_vec_t urh, agc_vec_t rt); /* VRCALC, revs */
+agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam,
+                                agc_dp_t *gmax);     /* GMAX 100g B-14      */
 
 /* ---- entry DAP (entry_dap.c) -------------------------------------------- */
-agc_status_t agc_entry_dap_readgymb(void); /* READGYMB  .1 s task            */
-agc_status_t agc_entry_dap_setjtag(void);  /* SETJTAG   2 s task             */
-agc_status_t agc_entry_dap_jetcall(void);  /* JETCALL   roll jet task        */
-agc_status_t agc_entry_dap_on(void);       /* CM/DAPON  job                  */
-agc_status_t agc_entry_dap_ic(void);       /* CM/DAPIC  DAP initialisation   */
-agc_status_t agc_entry_dap_flushjet(void); /* FLUSHJET  all jets off         */
+agc_status_t agc_task_readgymb(void);   /* READGYMB  .1 s task             */
+agc_status_t agc_task_attrates(void);   /* ATTRATES  T5RUPT after BODYRATE */
+agc_status_t agc_task_setjtag(void);    /* SETJTAG   2 s task (READACCS)   */
+agc_status_t agc_task_jetcall(void);    /* JETCALL   roll jet task         */
+agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx);      /* CM/DAPON        */
+agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx); /* NOTYET +4       */
+agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx);      /* CM/DAPIC        */
+agc_status_t agc_entry_dap_flushjet(void);              /* FLUSHJET        */
 
-/* Roll phase-plane solution of CM/RCS (p. 1081-1086) for a roll error and
+/* Roll phase-plane solution of CM/RCS (pp. 1081-1086) for a roll error and
  * roll rate, as a pure function (used by CM/RCS and by unit tests).       */
 typedef struct agc_entry_roll_cmd {
     agc_sp_t ton1;        /* TON1 first jet-on interval, cs (<= 0: none)    */
@@ -225,24 +250,46 @@ typedef struct agc_entry_roll_cmd {
     int      jndx1;       /* JNDX1 jet index for TON2                        */
     bool     in_deadzone; /* DZCALL taken: all roll jets off                 */
 } agc_entry_roll_cmd_t;
-/* lcx_360: roll error (ROLLC - ROLL)/360, already corrected for cos alfa;
- * mvt_180: -2 V T/180 (roll rate term as formed at CM/RCS entry).          */
+/* lcx_360: roll error (ROLLC - ROLL)/360, already corrected for cos alfa
+ * (COMPAT); mvt_180: -2 V T/180 as formed at CM/RCS entry.                */
 agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180,
                                             agc_entry_roll_cmd_t *out);
-uint16_t agc_entry_dap_roll_jet_bits(int jndx); /* P/RJCODE[jndx]            */
+uint16_t agc_entry_dap_roll_jet_bits(int jndx); /* P/RJCODE[jndx]           */
+uint16_t agc_entry_dap_yaw_jet_bits(int jndx);  /* YJETCODE[jndx]           */
+
+/* Entry DAP erasables other lanes read (AOG = BCDU in EBANK6, CM/GYMDT). */
+agc_sp_t agc_erase_aog(void);           /* AOG outer gimbal /180, 2s comp  */
+agc_sp_t agc_erase_aig(void);           /* AIG inner gimbal                */
+agc_sp_t agc_erase_amg(void);           /* AMG middle gimbal               */
+agc_sp_t agc_erase_cm_gymdt(void);      /* CM/GYMDT restart dt (6.11), cs  */
+void     agc_erase_set_cm_gymdt(agc_sp_t v);
+agc_sp_t agc_erase_s61dt(void);         /* S61DT restart dt (4.43), cs     */
 
 /* ---- P37 return to earth (p37.c) ---------------------------------------- */
-agc_status_t agc_p37(void);
+agc_status_t agc_job_p37(agc_job_ctx_t *ctx);        /* P37 (stub)          */
+/* XT1LIM (p. 930): X(T1) limit (B5) from MA (B30), RCON and R(T1) (B29),
+ * BETA5 (B9).                                                             */
 agc_status_t agc_p37_xt1lim(agc_dp_t ma, agc_dp_t rcon, agc_dp_t r_t1,
                             agc_dp_t beta5, agc_dp_t *xt1lim);
-agc_status_t agc_p37_tig_bias(agc_dp_t dv, agc_sp_t option2, agc_dp_t t1,
-                              agc_dp_t *tig);
 
 /* ---- P11 earth orbit insertion monitor (p11.c) -------------------------- */
-agc_status_t agc_p11(void);
-agc_status_t agc_p11_matrxjob(void);
-agc_status_t agc_p11_vhhdot(void);
-agc_status_t agc_p11_aterjob(void);
+agc_status_t agc_job_p11(agc_job_ctx_t *ctx);        /* P11                 */
+agc_status_t agc_job_rep11(agc_job_ctx_t *ctx);      /* REP11  3.11         */
+agc_status_t agc_job_rep11a(agc_job_ctx_t *ctx);     /* REP11A 3.13         */
+agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx);   /* MATRXJOB 3.7        */
+agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx);     /* VHHDOT (AVGEXIT)    */
+agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx);    /* ATERJOB             */
+agc_status_t agc_task_atertask(void);                /* ATERTASK 4.51       */
+agc_status_t agc_task_redosat(void);                 /* REDOSAT (T5)        */
+agc_status_t agc_task_satstick(void);                /* SATSTICK (T5)       */
+agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx); /* SATSTKON (V46)  */
+/* S11.1: VMAGI = |VN|, HDOT = UNIT(RN).VN, ALTI = |RN| - RPAD (earth) or
+ * - |RLS| (moon, AMOONFLG). Stored for the N62 display.                   */
+agc_status_t agc_csm_s11_1(agc_interp_t *ip);
 agc_status_t agc_p11_s11_1(agc_dp_t *vmagi, agc_dp_t *hdot, agc_dp_t *alti);
+/* ATERJOB attitude-error kernel (pp. 543-545): desired gimbal angles
+ * (OGC IGC MGC, DP revs) and present CDUs -> AK AK1 AK2 (SP, error/180).  */
+agc_status_t agc_p11_attitude_errors(const agc_dp_t desired[3],
+                                     const uint16_t cdu[3], agc_sp_t ak[3]);
 
 #endif /* AGC_CSM_ENTRY_H */

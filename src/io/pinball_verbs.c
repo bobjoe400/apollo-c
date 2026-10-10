@@ -52,6 +52,7 @@ agc_status_t pin_noun_load(void)
 /* CHARALRM: not NVSUB initiated, turn on OPR ERROR; ENDOFJOB. */
 agc_status_t pin_charalrm(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_falton();
     return AGC_STATUS_OK;
 }
@@ -60,6 +61,7 @@ agc_status_t pin_charalrm(void)
  * 01501; from a monitor, the monitor is killed and its verb pasted back. */
 agc_status_t pin_dspalarm(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB)) {
         return AGC_STATUS_BAD_ARG;
@@ -79,6 +81,7 @@ agc_status_t pin_dspalarm(void)
 /* PREDSPAL: alarm if decimal display with an octal-only noun. */
 agc_status_t pin_predspal(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_block_dspcount(PIN_VD1);
     (void)AGC_ASSERT(pin_st()->dspcount_neg);
     return pin_dspalarm();
@@ -89,6 +92,7 @@ agc_status_t pin_predspal(void)
  * (the caller's pin_enter loop does the POSTJUMP ENTER).                */
 agc_status_t pin_almcycle(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->verbsave <= 99)) {
         return AGC_STATUS_BAD_ARG;
@@ -103,6 +107,7 @@ agc_status_t pin_almcycle(void)
 /* TC ENTEXIT: the exit chosen by ENTRET. */
 agc_status_t pin_entexit(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB)) {
         return AGC_STATUS_BAD_ARG;
@@ -153,6 +158,7 @@ bool pin_nountest(void)
  * three. The tests run in the AGC's order before anything is shown.     */
 static agc_status_t pin_dsp_octal(uint8_t verb)
 {
+    (void)AGC_ASSERT(pin_invariants());
     static const int16_t rnd1[3] = { PIN_R1D1, PIN_R2D1, PIN_R3D1 };
     if (!AGC_ASSERT(verb >= 1u && verb <= 5u)) {
         return AGC_STATUS_BAD_ARG;
@@ -198,6 +204,7 @@ agc_status_t pin_usead(uint16_t ecadr)
  * 15 (increment) entry. Don't display the CADR if verb = 05.            */
 static agc_status_t pin_intmctbs(bool from_mpac2)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (from_mpac2) {
         s->nouncadr = (uint16_t)(s->mpac2 & PIN_WORD);      /* SETNCADR    */
@@ -217,6 +224,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
  * requests ask for it in R3; internal ones take it from MPAC+2.          */
 static agc_status_t pin_reqadd(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->clpass = PIN_CLPASS_NOBACK;               /* set CLPASS for pass0 only */
     (void)AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_CHAN);
@@ -231,6 +239,7 @@ static agc_status_t pin_reqadd(void)
  * flash on if ENDIDLE is not +0.                                         */
 agc_status_t pin_reqadd_resume(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (s->decbrnch != 0u) {
         return pin_almcycle();
@@ -246,6 +255,7 @@ agc_status_t pin_reqadd_resume(void)
 /* TESTNN: noun test for verbs below LOWVERB. */
 agc_status_t pin_testnn(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     agc_status_t st = pin_noun_load();
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND) {
@@ -272,6 +282,7 @@ agc_status_t pin_testnn(void)
  * the verb is G/E LOWVERB, skip the noun test.                           */
 agc_status_t pin_entpas0(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->decbrnch = 0;
     pin_block_dspcount(PIN_VD1);
@@ -290,6 +301,7 @@ agc_status_t pin_entpas0(void)
 /* VERBTAB VB21-VB39 part of the fan. */
 static agc_status_t pin_vbfandir_hi(uint8_t verb)
 {
+    (void)AGC_ASSERT(pin_invariants());
     switch (verb) {
     case 21: case 22: case 23: case 24: case 25:
         return pin_load_verb(verb);              /* ALOAD..ABCLOAD         */
@@ -309,6 +321,7 @@ static agc_status_t pin_vbfandir_hi(uint8_t verb)
 /* VBFANDIR: INDEX VERBREG, CAF VERBTAB. */
 static agc_status_t pin_vbfandir(uint8_t verb)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(verb < PIN_LST2CON)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -332,6 +345,7 @@ static agc_status_t pin_vbfandir(uint8_t verb)
  * system and go to GOEXTVB.                                              */
 agc_status_t pin_verbfan(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->verbreg <= 99)) {
         return AGC_STATUS_BAD_ARG;

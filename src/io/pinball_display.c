@@ -66,6 +66,7 @@ static agc_status_t pin_dspsign(agc_dp_t *v, bool negzero)
 /* DSPRND (p. 359): round by 5 E-6; on overflow force DPOSMAX. */
 static agc_dp_t pin_dsprnd(agc_dp_t v)
 {
+    (void)AGC_ASSERT(pin_invariants());
     (void)AGC_ASSERT(v >= 0);
     int64_t s = (int64_t)v + PIN_DECROUND;
     if (s > (int64_t)AGC_DP_MAX) {

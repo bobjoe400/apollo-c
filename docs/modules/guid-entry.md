@@ -73,14 +73,15 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 
 ## Progress
 (DONE <C function> <file> / PARTIAL / TODO)
-- ENTRY_LEXICON: DONE agc_csm_entry.h struct; TODO entry_lexicon.h/.c constants
-- REENTRY_CONTROL: TODO
+- ENTRY_LEXICON: DONE agc_csm_entry.h struct, entry_lexicon.h/.c (constants, VREFER)
+- REENTRY_CONTROL: DONE reentry.c (targeting, STARTENT, all steering steps, sequencer, REFAZE10, PRE-HUNT, HUNTEST/RANGER test API)
 - CM_BODY_ATTITUDE: TODO
 - CM_ENTRY_DIGITAL_AUTOPILOT: TODO
 - P61-P67: TODO
 - P37_P70: TODO
 - P11: TODO
 - tests/test_entry.c: TODO
+- entry_pending.h: DONE rewritten against the now-available core headers (resume 2)
 
 ## Deviations
 (filled as found)

@@ -244,6 +244,7 @@ typedef struct pin_state {
 #define PIN_NNTYPE_SPARE  4          /* NNADTEM +0 : not in use              */
 
 pin_state_t *pin_st(void);
+bool         pin_invariants(void);       /* AGC_ASSERT(pin_invariants())   */
 
 /* ---- word helpers (pinball_state.c) ------------------------------------ */
 bool     pin_ones_negative(uint16_t w);

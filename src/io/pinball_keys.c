@@ -128,6 +128,7 @@ static agc_status_t pin_num(void)
 /* 89TEST (p. 316): 8 or 9 is accepted only in decimal. */
 static agc_status_t pin_89test(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->chr == 8 || s->chr == 9)) {
         return AGC_STATUS_BAD_ARG;
@@ -146,6 +147,7 @@ static agc_status_t pin_89test(void)
 /* NVCOM: blank the verb or noun lights and get ready for 2 decimal chars. */
 static agc_status_t pin_nvcom(bool verb)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (verb) {
         s->verbreg = 0;
@@ -171,6 +173,7 @@ static agc_status_t pin_nvcom(bool verb)
  * the first of consecutive +/- characters.                              */
 static bool pin_signtest(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     const pin_state_t *s = pin_st();
     if ((s->decbrnch & 3u) != 0u) {
         return false;                    /* sign for this word already in    */
@@ -184,6 +187,7 @@ static bool pin_signtest(void)
 /* POSGN / NEGSGN / BOTHSGN / FIXCLPAS. */
 static agc_status_t pin_sign_key(bool minus)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     if (!pin_signtest()) {
         return AGC_STATUS_OK;            /* sign illegal: ENDOFJOB           */
@@ -247,6 +251,7 @@ static agc_status_t pin_clear_key(void)
 /* ENTER, ENTPASHI, ACCEPTWD: one pass. */
 static agc_status_t pin_enter_once(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->clpass = 0;
     s->entret = PIN_ENT_ENDOFJOB;
@@ -272,6 +277,7 @@ static agc_status_t pin_enter_once(void)
 /* ENTER. ALMCYCLE ends in POSTJUMP ENTER; that re-entry is this loop.   */
 agc_status_t pin_enter(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_status_t st = PIN_STATUS_RECYCLE;
     for (int pass = 0; pass < PIN_RECYCLE_MAX && st == PIN_STATUS_RECYCLE; pass++) {
         st = pin_enter_once();
@@ -287,6 +293,7 @@ agc_status_t pin_enter(void)
 /* TSTLTS4: release display system and re-establish if CADRSTOR is full. */
 agc_status_t pin_tstlts4(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_status_t st = pin_reldsp();
     if (st != AGC_STATUS_OK || !pin_cadrstor_full()) {
         return st;
@@ -299,6 +306,7 @@ agc_status_t pin_tstlts4(void)
  * the display system is released.                                        */
 agc_status_t pin_vbreldsp(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     (void)agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
     if (s->old_dsplock && (s->monsave1 & PIN_BIT14) != 0u) {
@@ -319,6 +327,7 @@ agc_status_t pin_vbreldsp(void)
  * DECBRNCH, etc."                                                        */
 static agc_status_t pin_tstab(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_status_t st = AGC_STATUS_OK;
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--) {
         agc_inhint();
@@ -334,6 +343,7 @@ static agc_status_t pin_tstab(void)
  * DSPLOCK unchanged -- and reset the caution/alarm lamps.               */
 agc_status_t pin_error_key(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->dsplock = s->old_dsplock;                 /* XCH 21/22REG           */
     agc_inhint();
@@ -369,6 +379,7 @@ agc_status_t pin_error_key(void)
 /* CHARIN2 fan on the 5-bit input code. */
 static agc_status_t pin_charin2(uint8_t code)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_state_t *s = pin_st();
     s->chr = (code <= 7u) ? code : 0u;
     switch (code) {
@@ -439,6 +450,7 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 
 agc_status_t agc_dsky_prockey_request(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_PROCKEY);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
     return st;
@@ -450,6 +462,7 @@ agc_status_t agc_dsky_prockey_request(void)
  * a new CHARIN job.                                                      */
 static agc_status_t pin_keycom(uint16_t code)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(code <= PIN_LOW5)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -466,6 +479,7 @@ static agc_status_t pin_keycom(uint16_t code)
 /* KEYRUPT1: main DSKY, key code in channel 15. */
 agc_status_t agc_dsky_keyrupt1(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_lodsampt();                              /* time snatched for N65  */
     uint16_t code = (uint16_t)(agc_chan_read((int)AGC_CHAN_MNKEYIN) & PIN_LOW5);
     (void)AGC_ASSERT(code <= PIN_LOW5);
@@ -475,6 +489,7 @@ agc_status_t agc_dsky_keyrupt1(void)
 /* KEYRUPT2 (CSM: via MARKRUPT): navigation DSKY, key code in channel 16. */
 agc_status_t agc_dsky_keyrupt2(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     uint16_t code = (uint16_t)(agc_chan_read((int)AGC_CHAN_NAVKEYIN) & PIN_LOW5);
     (void)AGC_ASSERT(code <= PIN_LOW5);
     return pin_keycom(code);
@@ -485,6 +500,7 @@ agc_status_t agc_dsky_keyrupt2(void)
  * 'error reset' is sent via uplink.                                      */
 agc_status_t agc_dsky_uprupt(uint16_t inlink)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(inlink <= PIN_WORD)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -525,6 +541,7 @@ agc_status_t agc_dsky_key(uint8_t code)
 /* Key code for one character of a key string; 0 for none. */
 static uint8_t pin_key_of_char(char c)
 {
+    (void)AGC_ASSERT(pin_invariants());
     static const uint8_t digit[10] = { 020, 001, 002, 003, 004, 005, 006, 007, 010, 011 };
     if (c >= '0' && c <= '9') {
         return digit[c - '0'];
@@ -545,12 +562,14 @@ static uint8_t pin_key_of_char(char c)
 /* PRO for the sim: PROCKEY run at once. */
 static agc_status_t pin_pro_now(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     agc_job_ctx_t ctx = { PIN_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0 };
     return agc_job_prockey(&ctx);
 }
 
 agc_status_t agc_dsky_keys(const char *seq)
 {
+    (void)AGC_ASSERT(pin_invariants());
     if (!AGC_ASSERT(seq != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -569,6 +588,7 @@ agc_status_t agc_dsky_keys(const char *seq)
 /* FALTON for other modules (requested by sys-misc). */
 agc_status_t agc_dsky_falton(void)
 {
+    (void)AGC_ASSERT(pin_invariants());
     pin_falton();
     return AGC_STATUS_OK;
 }
