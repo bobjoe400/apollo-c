@@ -49,6 +49,18 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
     return set;
 }
 
+/* BOV used only to reset OVFIND (the AGC idiom "BOV +1" or a BOV whose
+ * branch target is the next instruction): clear the indicator.            */
+void agc_interp_clear_ovf(agc_interp_t *ip)
+{
+    if (!AGC_ASSERT(ip != 0))
+    {
+        return;
+    }
+    (void) AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1));
+    ip->ovfind = 0;
+}
+
 /* ---- add / subtract (p.1131-1135) ---------------------------------------- */
 
 /* DAD: DAS MPAC; OVERFLOW if A non-zero (ENDVXV). Wraps on overflow.       */

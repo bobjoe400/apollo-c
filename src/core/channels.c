@@ -108,10 +108,7 @@ void agc_chan_reset(void)
     {
         g_chan[i] = chan_inverted(i) ? (uint16_t) AGC_CHAN_MASK : 0u;
     }
-    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK))
-    {
-        return;
-    }
+    (void) AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK);
 }
 
 uint16_t agc_chan_read(int chan)
@@ -138,19 +135,19 @@ static void reset_flipflops(void)
         (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
 }
 
-agc_status_t agc_chan_write(int chan, uint16_t value)
+void agc_chan_write(int chan, uint16_t value)
 {
     if (!AGC_ASSERT(chan_valid(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    if (!chan_writable(chan))
+    if (!AGC_ASSERT(chan_writable(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (chan == AGC_CHAN_CHAN33)
     {
@@ -159,27 +156,23 @@ agc_status_t agc_chan_write(int chan, uint16_t value)
     else
     {
         g_chan[chan] = value;
-        if (!AGC_ASSERT(g_chan[chan] == value))
-        {
-            return AGC_STATUS_BAD_ARG;
-        }
+        (void) AGC_ASSERT(g_chan[chan] == value);
     }
-    return AGC_STATUS_OK;
 }
 
-agc_status_t agc_chan_or(int chan, uint16_t mask)
+void agc_chan_or(int chan, uint16_t mask)
 {
     if (!AGC_ASSERT(chan_valid(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    if (!chan_writable(chan))
+    if (!AGC_ASSERT(chan_writable(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (chan == AGC_CHAN_CHAN33)
     {
@@ -188,27 +181,23 @@ agc_status_t agc_chan_or(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
-        if (!AGC_ASSERT((g_chan[chan] & mask) == mask))
-        {
-            return AGC_STATUS_BAD_ARG;
-        }
+        (void) AGC_ASSERT((g_chan[chan] & mask) == mask);
     }
-    return AGC_STATUS_OK;
 }
 
-agc_status_t agc_chan_and(int chan, uint16_t mask)
+void agc_chan_and(int chan, uint16_t mask)
 {
     if (!AGC_ASSERT(chan_valid(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    if (!chan_writable(chan))
+    if (!AGC_ASSERT(chan_writable(chan)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (chan == AGC_CHAN_CHAN33)
     {
@@ -217,12 +206,8 @@ agc_status_t agc_chan_and(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
-        if (!AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u))
-        {
-            return AGC_STATUS_BAD_ARG;
-        }
+        (void) AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u);
     }
-    return AGC_STATUS_OK;
 }
 
 agc_status_t agc_chan_set_input(int chan, uint16_t value)

@@ -48,10 +48,7 @@ void agc_state_init(agc_vehicle_t v)
     {
         return;
     }
-    if (!AGC_ASSERT((g_time_cs == 0u) && (g_flagword[0] == 0u)))
-    {
-        return;
-    }
+    (void) AGC_ASSERT((g_time_cs == 0u) && (g_flagword[0] == 0u));
 }
 
 agc_vehicle_t agc_state_vehicle(void)
@@ -78,18 +75,14 @@ uint32_t agc_time_now_cs(void)
     return g_time_cs;
 }
 
-agc_status_t agc_time_set_cs(uint32_t t_cs)
+void agc_time_set_cs(uint32_t t_cs)
 {
     if (!AGC_ASSERT(t_cs < AGC_TIME_MODULUS_CS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_time_cs = t_cs;
-    if (!AGC_ASSERT(g_time_cs == t_cs))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return AGC_STATUS_OK;
+    (void) AGC_ASSERT(g_time_cs == t_cs);
 }
 
 void agc_time_advance_cs(uint16_t dt_cs)
@@ -210,47 +203,35 @@ bool agc_flag_test(agc_flag_id_t f)
     return (g_flagword[f >> 4] & agc_flag_mask(f)) != 0u;
 }
 
-agc_status_t agc_flag_set(agc_flag_id_t f)
+void agc_flag_set(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] | agc_flag_mask(f));
-    if (!AGC_ASSERT(agc_flag_test(f)))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return AGC_STATUS_OK;
+    (void) AGC_ASSERT(agc_flag_test(f));
 }
 
-agc_status_t agc_flag_clear(agc_flag_id_t f)
+void agc_flag_clear(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] & ~agc_flag_mask(f));
-    if (!AGC_ASSERT(!agc_flag_test(f)))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return AGC_STATUS_OK;
+    (void) AGC_ASSERT(!agc_flag_test(f));
 }
 
-agc_status_t agc_flag_invert(agc_flag_id_t f)
+void agc_flag_invert(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     const bool before  = agc_flag_test(f);
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] ^ agc_flag_mask(f));
-    if (!AGC_ASSERT(agc_flag_test(f) != before))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return AGC_STATUS_OK;
+    (void) AGC_ASSERT(agc_flag_test(f) != before);
 }
 
 uint16_t agc_flagword_get(int word)
@@ -266,22 +247,18 @@ uint16_t agc_flagword_get(int word)
     return g_flagword[word];
 }
 
-agc_status_t agc_flagword_set(int word, uint16_t value)
+void agc_flagword_set(int word, uint16_t value)
 {
     if (!AGC_ASSERT((word >= 0) && (word < words_for_vehicle())))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(value <= AGC_WORD15_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_flagword[word] = value;
-    if (!AGC_ASSERT(g_flagword[word] == value))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return AGC_STATUS_OK;
+    (void) AGC_ASSERT(g_flagword[word] == value);
 }
 
 /* ---- state vectors ------------------------------------------------------ */

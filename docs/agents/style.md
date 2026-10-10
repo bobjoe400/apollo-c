@@ -8,7 +8,7 @@ that.
 Deliverables:
 1. docs/STYLE.md -- every rule in the guide, one row each, in the guide's
    order, with columns: section | rule (one line, your words) | how enforced:
-   `clang-format` (give the option), `check_rules` (describe the check),
+   `uncrustify` / `clang-format` (give the option), `check_rules` (describe the check),
    `review` (manual), or `n/a` (explain: e.g. K&R-era argument declarations,
    PDL, malloc rules that Power of Ten already forbids) | conflict with
    docs/CODING_STANDARD.md or docs/NAMING.md, if any, and which wins

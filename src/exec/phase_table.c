@@ -108,17 +108,16 @@ void phase_kill(int group)
     (void) AGC_ASSERT(phase_group_agrees(group));
 }
 
-agc_status_t agc_phase_kill(int group)
+void agc_phase_kill(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     phase_kill(group);
     agc_relint();
     (void) AGC_ASSERT(phase_w[group] == 0U);
-    return AGC_STATUS_OK;
 }
 
 /* CS TIME1 / TS TBASEn. DEVIATION: the AGC stores -TIME1 and RESTARTS
@@ -252,13 +251,13 @@ static void below1_4(const ph_code_t *c, const ph_second_t *two)
     (void) AGC_ASSERT(phase_w[c->group] == c->tempp);
 }
 
-static agc_status_t phaschng_common(uint16_t code, const agc_phase_var_t *v,
-                                    const ph_second_t *two)
+static void phaschng_common(uint16_t code, const agc_phase_var_t *v,
+                            const ph_second_t *two)
 {
     ph_code_t c;
-    if (!decode(code, &c))
+    if (!AGC_ASSERT(decode(code, &c)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     if (c.type != PH_TYPE_A)
@@ -267,57 +266,56 @@ static agc_status_t phaschng_common(uint16_t code, const agc_phase_var_t *v,
     }
     below1_4(&c, two);
     agc_relint();
-    return AGC_STATUS_OK;
 }
 
 /* PHASCHNG (C p.1409 / L p.1298), fixed form: `group` must be the GGG of
  * the code word. A type B/C code given here keeps the stored restart
  * point and priority (as if D = 0 and the old 2CADR were still right). */
-agc_status_t agc_phase_change(int group, uint16_t phase_code)
+void agc_phase_change(int group, uint16_t phase_code)
 {
     if (!AGC_ASSERT(group_ok(group)) ||
         !AGC_ASSERT((int) (phase_code & PH_GROUP) == group))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     ph_second_t none = {false, 0, 0, false};
-    return phaschng_common(phase_code, 0, &none);
+    phaschng_common(phase_code, 0, &none);
 }
 
 /* PHASCHNG / PHSCHNGA type B or C with the variable restart point.    */
-agc_status_t agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
+void agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
 {
     if (!AGC_ASSERT(v != 0) || !AGC_ASSERT(v->kind != AGC_RESTART_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     ph_second_t none = {false, 0, 0, false};
-    return phaschng_common(code, v, &none);
+    phaschng_common(code, v, &none);
 }
 
 /* 2PHSCHNG (C p.1409 / L p.1298): code_a (type A only; its L bit is
  * disregarded) for one group, code_b (A, B or C) for another. v may be
  * NULL when code_b is type A.                                          */
-agc_status_t agc_phase_change2(uint16_t code_a, uint16_t code_b,
+void agc_phase_change2(uint16_t code_a, uint16_t code_b,
                                const agc_phase_var_t *v)
 {
     ph_code_t a;
-    if (!decode(code_a, &a) || !AGC_ASSERT(a.type == PH_TYPE_A))
+    if (!AGC_ASSERT(decode(code_a, &a)) || !AGC_ASSERT(a.type == PH_TYPE_A))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     ph_second_t two = {true, a.group, a.tempp, a.tbit};
-    return phaschng_common(code_b, v, &two);
+    phaschng_common(code_b, v, &two);
 }
 
 /* NEWPHASE (RESTART_TABLES C p.221 / L p.243): quick fixed phase change
  * of `group` to `phase`, optionally setting TBASE (the AGC passes the
  * phase negative in A to ask for that).                                */
-agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tb)
+void agc_phase_newphase(int group, uint16_t phase, bool set_tb)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(phase <= 0177U))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     if (set_tb)
@@ -326,7 +324,6 @@ agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tb)
     }
     phase_set_fixed(group, phase);
     agc_relint();
-    return AGC_STATUS_OK;
 }
 
 /* Contract helper: make `group` restart `job` as a FINDVAC job of

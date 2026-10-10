@@ -39,7 +39,7 @@ void          agc_erase_reset(
 #define AGC_TIME_MODULUS_CS \
     0x10000000u /* TIME2,TIME1 wrap at 2^28 cs (about 745.7 h) */
 uint32_t     agc_time_now_cs(void);          /* C(TIME2,TIME1) as 28-bit  */
-agc_status_t agc_time_set_cs(uint32_t t_cs); /* t_cs < 2^28 */
+void         agc_time_set_cs(uint32_t t_cs); /* t_cs < 2^28 */
 void         agc_time_advance_cs(
             uint16_t dt_cs); /* wraps modulo 2^28 like TIME2 overflow */
 agc_sp_t
@@ -57,11 +57,11 @@ int      agc_flag_word(agc_flag_id_t f);  /* flagword index of f   */
 int      agc_flag_bit(agc_flag_id_t f);   /* AGC bit number 1..15  */
 uint16_t agc_flag_mask(agc_flag_id_t f);  /* 1 << (bit - 1)        */
 bool     agc_flag_test(agc_flag_id_t f);  /* BON/BOFF        */
-agc_status_t agc_flag_set(agc_flag_id_t f);    /* SET             */
-agc_status_t agc_flag_clear(agc_flag_id_t f);  /* CLEAR           */
-agc_status_t agc_flag_invert(agc_flag_id_t f); /* INVERT          */
+void         agc_flag_set(agc_flag_id_t f);    /* SET             */
+void         agc_flag_clear(agc_flag_id_t f);  /* CLEAR           */
+void         agc_flag_invert(agc_flag_id_t f); /* INVERT          */
 uint16_t     agc_flagword_get(int word);
-agc_status_t agc_flagword_set(int word, uint16_t value);
+void         agc_flagword_set(int word, uint16_t value);
 
 /* ---- state vectors shared by navigation, guidance and programs --------- */
 typedef struct agc_state_vector

@@ -410,9 +410,9 @@ enum agc_channel_bits
 };
 
 uint16_t     agc_chan_read(int chan);                  /* READ          */
-agc_status_t agc_chan_write(int chan, uint16_t value); /* WRITE         */
-agc_status_t agc_chan_or(int chan, uint16_t mask);     /* WOR           */
-agc_status_t agc_chan_and(int chan, uint16_t mask);    /* WAND          */
+void         agc_chan_write(int chan, uint16_t value); /* WRITE         */
+void         agc_chan_or(int chan, uint16_t mask);     /* WOR           */
+void         agc_chan_and(int chan, uint16_t mask);    /* WAND          */
 agc_status_t agc_chan_set_input(int      chan,
                                 uint16_t value); /* sim: raw sensed value */
 agc_status_t agc_chan_set_signal(int chan, uint16_t mask,

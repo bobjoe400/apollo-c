@@ -72,6 +72,7 @@ typedef struct agc_interp
 
 void agc_interp_init(agc_interp_t *ip);
 bool agc_interp_test_ovf(agc_interp_t *ip); /* BOV: test and clear   */
+void agc_interp_clear_ovf(agc_interp_t *ip); /* BOV +1: clear only  */
 
 /* ---- scalar DP ---------------------------------------------------------- */
 agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);  /* DAD   */

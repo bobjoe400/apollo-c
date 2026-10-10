@@ -89,11 +89,11 @@ uint16_t agc_rupt_time(int n)
     return v;
 }
 
-agc_status_t agc_rupt_set_time(int n, uint16_t v)
+void agc_rupt_set_time(int n, uint16_t v)
 {
     if (!AGC_ASSERT(n >= 4 && n <= 6) || !AGC_ASSERT(v <= RUPT_TIME_MASK))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (n == 4)
     {
@@ -108,19 +108,17 @@ agc_status_t agc_rupt_set_time(int n, uint16_t v)
         time6 = v;
     }
     (void) AGC_ASSERT(agc_rupt_time(n) == v);
-    return AGC_STATUS_OK;
 }
 
 /* DXCH T5LOC (CSM) / T5ADR (LM): the program the next T5RUPT runs.    */
-agc_status_t agc_rupt_set_t5_task(agc_task_id_t task)
+void agc_rupt_set_t5_task(agc_task_id_t task)
 {
     if (!AGC_ASSERT(task != AGC_TASK_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     t5loc = task;
     (void) AGC_ASSERT(t5loc == task);
-    return AGC_STATUS_OK;
 }
 
 agc_task_id_t agc_rupt_t5_task(void)
@@ -131,15 +129,14 @@ agc_task_id_t agc_rupt_t5_task(void)
 }
 
 /* T6LOC (CSM only; the LM T6RUPT always goes to DOT6RUPT).            */
-agc_status_t agc_rupt_set_t6_task(agc_task_id_t task)
+void agc_rupt_set_t6_task(agc_task_id_t task)
 {
     if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
         !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     t6loc = task;
-    return AGC_STATUS_OK;
 }
 
 /* RESUME: leave the interrupt; run a software restart it requested.   */
