@@ -75,7 +75,21 @@ land); assumed signatures are in src/programs/rendz_ext.h.
 
 ## Progress
 
-* TODO everything (note created before code; header include/agc/agc_programs.h written)
+* DONE infrastructure: rendz_ext.h (pending externals + provisional ids
+  0x1100), rendz_internal.h, rendz_glue.c (adapted to the real agc_nav.h,
+  agc_integ.h, agc_dsky.h, agc_exec.h), rendz_flags_csm.c / _lm.c
+* DONE rendz_common.c: SELECTMU agc_rendz_selectmu, VECSHIFT
+  agc_rendz_vec_to_body, SHIFTR1 agc_rendz_shiftr1, PERIAPO1/PERIAPO/SETRAD
+  agc_rendz_periapo1/agc_rendz_periapo, PRECSET/LEMSTORE/CSMSTORE/ACTIVE/
+  PASSIVE rz_precset/rz_store_*, INTINT rz_intint, S34/35.1, LOMAT,
+  GET.LVC, GET+MGA, AVFLAGA/P rz_avflag, P20FLGON, TRKMKCNT accessors
+* TODO rendz_csi.c (CSI/A.., CDHMVR, ADVANCE, ROTATE, S32/33.1, S32/33.X)
+* TODO rendz_tpi.c (S33/34.1, S34/35.2-.4), rendz_initvel.c (INITVEL)
+* TODO rendz_display.c (VNPOOH, VN1645, DISPLAYE, S34/35.5, DISDVLVC)
+* TODO rendz_p32_p33.c, rendz_p34_p35.c drivers
+* TODO r30.c, r31_csm.c/r31_lm.c, rendz_r36.c, stable_orbit.c, p76.c,
+  p21.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, p20_csm.c, p20_lm.c
+* TODO tests/test_rendezvous.c
 
 ## Deviations
 

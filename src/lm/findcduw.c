@@ -183,7 +183,7 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 
 /* SPARCSIN -1: argument scaled 2; DOUBLE, and on overflow TS SR skips and
  * INDEX A / CS LIMITS picks +-POSMAX (LIMITS-1 = POSMAX, LIMITS+1 = BIT15). */
-static agc_sp_t fc_sparcsin_m1(agc_sp_t x2)
+agc_sp_t agc_lm_sparcsin_m1(agc_sp_t x2)
 {
     int32_t d = 2 * (int32_t)x2;
     if (d > AGC_SP_MAX) {
@@ -207,7 +207,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
     int32_t as = (s < 0) ? -s : s;
     int32_t ac = (c < 0) ? -c : c;
     if (ac < as) {                                   /* USECOS            */
-        agc_sp_t a = agc_lm_ad(fc_sparcsin_m1((agc_sp_t)-c), FC_HALF);
+        agc_sp_t a = agc_lm_ad(agc_lm_sparcsin_m1((agc_sp_t)-c), FC_HALF);
         return (s > 0) ? a : (agc_sp_t)-a;           /* 1TO2&TCQ          */
     }
     agc_sp_t sn = s;
@@ -216,7 +216,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
         sn = (agc_sp_t)-s;
         base = FC_NEGMAX_2S;
     }
-    agc_sp_t a = fc_sparcsin_m1(sn);
+    agc_sp_t a = agc_lm_sparcsin_m1(sn);
     agc_sp_t r = fc_wrap15((int32_t)a - base);       /* MSU TEM3          */
     (void)AGC_ASSERT(r >= -16384 && r <= 16383);
     return r;

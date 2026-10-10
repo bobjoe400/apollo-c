@@ -75,10 +75,10 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 (DONE <C function> <file> / PARTIAL / TODO)
 - ENTRY_LEXICON: DONE agc_csm_entry.h struct, entry_lexicon.h/.c (constants, VREFER)
 - REENTRY_CONTROL: DONE reentry.c (targeting, STARTENT, all steering steps, sequencer, REFAZE10, PRE-HUNT, HUNTEST/RANGER test API)
-- CM_BODY_ATTITUDE: TODO
-- CM_ENTRY_DIGITAL_AUTOPILOT: TODO
-- P61-P67: TODO
-- P37_P70: TODO
+- CM_BODY_ATTITUDE: DONE cm_body_attitude.c (CM/POSE triad, CM/TRIO, CM/ATUP, REDOPOSE, POSEXIT, SERVNOUT, REFAZE10 job)
+- CM_ENTRY_DIGITAL_AUTOPILOT: DONE entry_dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
+- P61-P67: DONE p61_p67.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
+- P37_P70: PARTIAL p37.c (XT1LIM done; P37 program stub)
 - P11: TODO
 - tests/test_entry.c: TODO
 - entry_pending.h: DONE rewritten against the now-available core headers (resume 2)

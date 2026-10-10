@@ -23,6 +23,7 @@
 #include "agc_status.h"
 #include "agc_word.h"
 #include "agc_interp.h"
+#include "agc_exec.h"
 
 /* ---- guidance phases (WCHPHASE, p. 798) --------------------------------- */
 #define AGC_LM_PHASE_IGNALG   (-1)   /* ignition algorithm                  */
@@ -221,83 +222,100 @@ agc_status_t agc_lm_initcduw(void);
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
 agc_status_t agc_lm_findcduw_m2(agc_interp_t *ip);
 agc_sp_t     agc_lm_sparcsin(agc_sp_t x);   /* arg scale 1, angle 180 deg */
+agc_sp_t     agc_lm_sparcsin_m1(agc_sp_t x); /* SPARCSIN -1: arg scale 2  */
 agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t     agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
 uint16_t     agc_lm_onesto2s(agc_sp_t a);   /* -> 15-bit 2's comp word    */
 
-/* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (landing_guidance.c) -------------- */
+/* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (landing_guidance.c) --------------
+ * Job functions take the executive's job context (dispatch.c calls them);
+ * display continuations are job ids.                                     */
 #define AGC_LM_ROOT_MAX_DEGREE 5   /* ROOTPSRS erasables allow N <= 5      */
 #define AGC_LM_ROOT_MAX_PASSES 8   /* "Klumpp says give up after 8 passes" */
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
                              agc_sp_t precroot, agc_dp_t *root, int *passes);
-agc_status_t agc_lm_lunland(void);
-agc_status_t agc_lm_guidpass_from(int entry);
-agc_status_t agc_lm_ttfincr(agc_interp_t *ip);
-agc_status_t agc_lm_calcrgvg(agc_interp_t *ip);
-agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip);
-agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);
-agc_status_t agc_lm_quadguid(agc_interp_t *ip);
-agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg);
-agc_status_t agc_lm_cgcalc(agc_interp_t *ip);
-agc_status_t agc_lm_vertguid(agc_interp_t *ip);
-agc_status_t agc_lm_dispexit(bool kill_group3);
-agc_status_t agc_lm_steer_exit(agc_interp_t *ip);
-void         agc_lm_tdispset(void);
 #define AGC_LM_ENTRY_GUILDRET   0  /* normal pass via LUNLAND/GUILDEN     */
 #define AGC_LM_ENTRY_GUIDSUB    1  /* IGNALG passes after the first       */
 #define AGC_LM_ENTRY_QGUIDSUB   2  /* ?GUIDSUB first IGNALG pass          */
 #define AGC_LM_ENTRY_VERTGUID   3  /* straight to VERTGUID                */
+agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx);      /* LUNLAND      */
+agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry);
+agc_status_t agc_lm_startp64(void);                       /* STARTP64     */
+agc_status_t agc_lm_p65start(void);                       /* P65START     */
+agc_status_t agc_lm_ttfincr(agc_interp_t *ip);            /* TTFINCR      */
+agc_status_t agc_lm_calcrgvg(agc_interp_t *ip);           /* CALCRGVG     */
+agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip);           /* RGVGCALC     */
+agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);             /* TTF/8CL      */
+agc_status_t agc_lm_quadguid(agc_interp_t *ip);           /* QUADGUID     */
+agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg); /* AFCCALC1 */
+agc_status_t agc_lm_cgcalc(agc_interp_t *ip);             /* CGCALC       */
+agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
+agc_status_t agc_lm_job_p63disps_m2(agc_job_ctx_t *ctx);  /* P63DISPS -2  */
+agc_status_t agc_lm_job_p64disps(agc_job_ctx_t *ctx);     /* P64DISPS     */
+agc_status_t agc_lm_job_p64ceed(agc_job_ctx_t *ctx);      /* P64CEED      */
+void         agc_lm_tdispset(void);                       /* TDISPSET     */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
-agc_status_t agc_lm_job_p63lm(void);
-agc_status_t agc_lm_ignalg(void);
-agc_status_t agc_lm_job_ignalgrt(void);
-agc_status_t agc_lm_job_astnret(void);
-agc_status_t agc_lm_job_p63spot3(void);
-agc_status_t agc_lm_job_p63spot4(void);
-agc_status_t agc_lm_guildenstern(int *entry);
-agc_status_t agc_lm_startp64(void);
-agc_status_t agc_lm_p65start(void);
-agc_status_t agc_lm_redesig(agc_interp_t *ip);
-agc_status_t agc_lm_p64disps(void);
-agc_status_t agc_lm_job_p64ceed(void);
-agc_status_t agc_lm_p66verta(void);
-agc_status_t agc_lm_p67vert(agc_interp_t *ip);
-agc_status_t agc_lm_task_rodtask(void);
-agc_status_t agc_lm_job_rodcomp(void);
-agc_status_t agc_lm_pitfall(void);
-agc_status_t agc_lm_task_redesmon(void);
-agc_status_t agc_lm_descbits(uint16_t chan16_bits);
-agc_status_t agc_lm_job_p68(void);
-agc_status_t agc_lm_job_p68b(void);
+agc_status_t agc_lm_job_p63lm(agc_job_ctx_t *ctx);        /* P63LM        */
+agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx);  /* IGNALG LEMPREC retry */
+agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx);     /* IGNALOOP (INTSTALL retry) */
+agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx);     /* IGNALGRT     */
+agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx);      /* ASTNRET      */
+agc_status_t agc_lm_job_p63spot2(agc_job_ctx_t *ctx);     /* P63SPOT2     */
+agc_status_t agc_lm_job_p63spot3(agc_job_ctx_t *ctx);     /* P63SPOT3     */
+agc_status_t agc_lm_job_p63spot4(agc_job_ctx_t *ctx);     /* P63SPOT4     */
+agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry); /* R13 */
+agc_status_t agc_lm_redesig(agc_interp_t *ip);            /* REDESIG      */
+agc_status_t agc_lm_p66verta(const agc_job_ctx_t *ctx);   /* P66VERTA     */
+agc_status_t agc_lm_p67vert(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_task_rodtask(void);                   /* RODTASK      */
+agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx);      /* RODCOMP      */
+agc_status_t agc_lm_pitfall(void);                        /* PITFALL (RUPT10) */
+agc_status_t agc_lm_task_redesmon(void);                  /* REDESMON     */
+agc_status_t agc_lm_descbits(void);                       /* DESCBITS (ch 16) */
+agc_status_t agc_lm_job_p68(agc_job_ctx_t *ctx);          /* LANDJUNK     */
+agc_status_t agc_lm_job_p68_flash(agc_job_ctx_t *ctx);    /* V06N43 flash */
+agc_status_t agc_lm_job_p68b(agc_job_ctx_t *ctx);         /* after V06N43 PROCEED */
 
 /* ---- P70-P71 (p70_p71.c) ------------------------------------------------ */
-agc_status_t agc_lm_task_r10r11(void);
-agc_status_t agc_lm_p70(void);
-agc_status_t agc_lm_p71(void);
-agc_status_t agc_lm_abrtjask(bool p71);
-agc_status_t agc_lm_job_goabort(void);
-agc_status_t agc_lm_tgocomp(void);
-agc_status_t agc_lm_throtup(void);
-agc_status_t agc_lm_bothpoly(agc_interp_t *ip, int coef_base);
+agc_status_t agc_lm_task_r10r11(void);                    /* R10,R11      */
+agc_status_t agc_lm_r10r11a(void);                        /* R10,R11A     */
+agc_status_t agc_lm_job_p70(agc_job_ctx_t *ctx);          /* P70          */
+agc_status_t agc_lm_job_p71(agc_job_ctx_t *ctx);          /* P71          */
+agc_status_t agc_lm_job_p70a(agc_job_ctx_t *ctx);         /* P70A restart */
+agc_status_t agc_lm_job_p71a(agc_job_ctx_t *ctx);         /* P71A restart */
+agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx);      /* GOABORT      */
+agc_status_t agc_lm_job_abtp40a(agc_job_ctx_t *ctx);      /* UPTHROT1 -3  */
+agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx);     /* UPTHROT1     */
+agc_status_t agc_lm_job_p71old(agc_job_ctx_t *ctx);       /* OLDTIME restart */
+agc_sp_t     agc_lm_pipctr1(void);                        /* PIPCTR1 for LANDISP */
+agc_status_t agc_lm_tgocomp(agc_interp_t *ip);            /* TGOCOMP      */
+agc_status_t agc_lm_throtup(void);                        /* THROTUP      */
 
 /* ---- P12 and ASCENT_GUIDANCE (ascent.c) --------------------------------- */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);
 agc_status_t agc_lm_p12init(agc_interp_t *ip);
 agc_status_t agc_lm_comminit(agc_interp_t *ip);
-agc_status_t agc_lm_job_p12lm(void);
-agc_status_t agc_lm_job_p12lm2(void);
-agc_status_t agc_lm_job_newload(void);
-agc_status_t agc_lm_job_newload2(void);
-agc_status_t agc_lm_atmag(void);
-agc_status_t agc_lm_ascent(agc_interp_t *ip);
+agc_status_t agc_lm_job_p12lm(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_p12lm2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_p12flash(agc_job_ctx_t *ctx);     /* V06N33 flash */
+agc_status_t agc_lm_job_p12lmb(agc_job_ctx_t *ctx);       /* P12LMB       */
+agc_status_t agc_lm_p12ret(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_job_p12burn(agc_job_ctx_t *ctx);      /* P12RET tail  */
+agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);        /* ATMAG (AVGEXIT) */
+agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_dp_t     agc_lm_ycomp(agc_interp_t *ip);
 agc_dp_t     agc_lm_logsub(agc_interp_t *ip, agc_dp_t x);
 agc_status_t agc_lm_task_engoff1(void);
-agc_status_t agc_lm_job_cutoff(void);
-agc_status_t agc_lm_job_cutoff1(void);
-agc_status_t agc_lm_job_cutoff2(void);
-agc_status_t agc_lm_job_termasc(void);
+agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_cutoff5(agc_job_ctx_t *ctx);      /* CUTOFF -5    */
+agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx);
 
 /* ---- LANDING_ANALOG_DISPLAYS (landing_displays.c) ----------------------- */
 agc_status_t agc_lm_landisp(void);

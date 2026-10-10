@@ -59,6 +59,9 @@
 #define AGC_JOB_VHHDOT     ((agc_job_id_t)0x0C18) /* VHHDOT (AVGEXIT in P11)    */
 #define AGC_JOB_ATERJOB    ((agc_job_id_t)0x0C19) /* ATERJOB                    */
 #define AGC_JOB_REFAZE10   ((agc_job_id_t)0x0C1A) /* REFAZE10 group 5 restart   */
+#define AGC_JOB_P11_TEPH   ((agc_job_id_t)0x0C1B) /* P11 3.x: TEPHEM copy, on   */
+#define AGC_JOB_P11_ATER   ((agc_job_id_t)0x0C1C) /* P11 after PREREAD1         */
+#define AGC_JOB_ATRESET2   ((agc_job_id_t)0x0C1D) /* ATRESET after DELAYJOB 6   */
 #define AGC_TASK_JETCALL   ((agc_task_id_t)0x0C80) /* JETCALL                   */
 #define AGC_TASK_ATTRATES  ((agc_task_id_t)0x0C81) /* ATTRATES (T5RUPT)         */
 #define AGC_TASK_READACCS  ((agc_task_id_t)0x0C82) /* READACCS (guid-powered)   */
@@ -69,6 +72,25 @@
 #define AGC_ENTRY_PRIO13 ((agc_prio_t)013)
 #define AGC_ENTRY_PRIO16 ((agc_prio_t)016)
 #define AGC_ENTRY_PRIO20 ((agc_prio_t)020)
+
+/* ---- extended verbs (sys-misc): TS EXTVBACT (P61 locks out extended
+ * verbs so it may use the TFF routines' erasables).                     */
+agc_status_t agc_svc_set_extvbact(uint16_t v);
+
+/* ---- guid-powered: PREREAD1 (SERVICER207 p. 823) is static there; P11
+ * calls it directly (IBNKCALL) to zero the PIPAs and start AVERAGEG.     */
+agc_status_t agc_guid_preread1_csm(void);
+
+/* ---- imu (prelaunch): the P11 tail of P11+..: ERCOMP += (THETAN MXV XSM)
+ * VSL1, then EARTHR +3 at TLIFTOFF with the exit P11OUT (-> MATRXJOB).   */
+agc_status_t agc_csm_prelaunch_p11_earthr(agc_interp_t *ip, agc_dp_t tliftoff);
+
+/* ---- dap-csm: STICKCHK (RCS-CSM DAP p. 881) for SATSTICK: RHC bits of
+ * channel 31 -> RMANNDX PMANNDX YMANNDX (agc_csm_dap_rcs()->manndx).     */
+agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);
+
+/* ---- io-pinball: GOPIN (exit of an extended verb started by V46).    */
+agc_status_t agc_dsky_gopin(const agc_job_ctx_t *ctx);
 
 /* ---- telemetry (sys-misc) -------------------------------------------- */
 #define AGC_ENTRY_DNLSTCOD_ENTRY   1   /* DNLSTCOD 1: ENTRY/UPDATE list     */

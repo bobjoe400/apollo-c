@@ -77,10 +77,12 @@ typedef struct agc_csm_rcs {
     agc_sp_t tau[AGC_CSM_AXES];     /* TAU rotation command, 1/1600 s       */
     agc_sp_t bias[AGC_CSM_AXES];    /* BIAS KALCMANU lead, 180 deg          */
     agc_sp_t error[AGC_CSM_AXES];   /* ERRORX attitude error, 180 deg       */
-    agc_sp_t thetad[AGC_CSM_AXES];  /* THETADX desired gimbal, 180 deg      */
+    uint16_t thetad[AGC_CSM_AXES];  /* THETADX..Z hold reference: raw CDU
+                                       word (GRABANG) or 1's comp DPADD high
+                                       word (DCDUINCR), 180 deg            */
     agc_dp_t cdud[AGC_CSM_AXES];    /* CDUXD desired gimbal DP, 180 deg     */
     agc_dp_t delcdu[AGC_CSM_AXES];  /* DELCDUX increment per 0.1 s, 180 deg*/
-    agc_sp_t rho[AGC_CSM_AXES];     /* RHO previous CDU (raw word)          */
+    uint16_t rho[AGC_CSM_AXES];     /* RHO, RHO1, RHO2 previous CDU (raw)   */
     agc_sp_t amgb1, amgb4, amgb5, amgb7, amgb8; /* AMGB elements, scale 1   */
     agc_sp_t capsi;                 /* CAPSI cos(psi), scale 1              */
     agc_sp_t kmj[AGC_CSM_AXES];     /* KMJ torque/inertia (S40.14)          */
@@ -117,7 +119,8 @@ typedef struct agc_csm_dapcom {
     agc_sp_t erepfrac[2];           /* EREPFRAC off/on, 2^2 (PL)            */
     agc_sp_t pactoff, yactoff;      /* PACTOFF/YACTOFF trims, 85.41"/bit    */
     agc_sp_t hbn10[AGC_CSM_N10_WORDS]; /* HBN10.. high-bandwidth coeffs (PL)*/
-    agc_sp_t ogad;                  /* OGAD outer gimbal at ignition (raw)  */
+    uint16_t ogad;                  /* OGAD outer gimbal at ignition (raw)  */
+    uint16_t cphix[AGC_CSM_AXES];   /* CPHIX N17 attitude (V60/V25N17), raw */
 } agc_csm_dapcom_t;
 
 /* ---- TVC DAP erasables ------------------------------------------------ */
@@ -142,15 +145,17 @@ typedef struct agc_csm_tvc {
     agc_sp_t one_conacc;            /* 1/CONACC, s^2/rev, scale 2^9         */
     agc_sp_t vark;                  /* VARK, (2^3 ascrev)                   */
     agc_sp_t repfrac;               /* REPFRAC, 2^2                         */
-    agc_sp_t vcntr, v97vcntr;       /* VCNTR, V97VCNTR gain update counters */
+    agc_sp_t vcntr, v97vcntr;       /* VCNTR, V97VCNTR gain update counters;
+                                       any negative value stands for the
+                                       AGC's -0 (V97/R40 LOTHRUST)         */
     agc_sp_t tvcphase;              /* TVCPHASE -2..3                       */
-    agc_sp_t pcduypst, pcduzpst;    /* PCDUYPST/PCDUZPST past CDUs (raw)    */
+    uint16_t pcduypst, pcduzpst;    /* PCDUYPST/PCDUZPST past CDUs (raw)    */
     agc_sp_t mcduydot, mcduzdot;    /* MCDUYDOT/MCDUZDOT minus CDU rates    */
     agc_sp_t tvcexphs;              /* TVCEXPHS 0..6                        */
     agc_sp_t masstmp, vcntrtmp;     /* MASSTMP, VCNTRTMP                    */
     agc_sp_t strktime, caddy, n, revs, card; /* stroke test                 */
     bool     bunker_task;           /* BUNKER = TC TASKOVER (vs. DAP return)*/
-    agc_sp_t oganow, ogapast;       /* OGANOW/OGAPAST outer gimbal (raw)    */
+    uint16_t oganow, ogapast;       /* OGANOW/OGAPAST outer gimbal (raw)    */
     agc_sp_t ogaerr;                /* OGA/OGAERR fly-from error, rev 2^0   */
     agc_sp_t ogarate;               /* OGARATE rev/s, scale 2^-4            */
     agc_sp_t delogart, sgnrt, deloga, iogarate; /* roll logic temporaries   */
@@ -158,9 +163,12 @@ typedef struct agc_csm_tvc {
     agc_dp_t pacttmp, yacttmp;      /* PACTTMP/YACTTMP                      */
     agc_sp_t cntr, cntrtmp;         /* CNTR/CNTRTMP one-shot counter        */
     agc_dp_t delbrtmp, errbtmp, cmdtmp; /* restart temporaries              */
+    agc_sp_t errbinit[2];           /* ERRBTMP, +1 as two SP words: ERRORY,
+                                       ERRORZ (180 deg) stored by P40 DOTVCON
+                                       for ATTINIT (overlay of errbtmp)    */
     agc_dp_t tmp[6];                /* TMP1..TMP6                           */
     agc_sp_t n10[AGC_CSM_N10_WORDS];/* N10..D32 active filter coefficients  */
-    agc_dp_t tempdap;               /* TEMPDAP correction fraction (2 words)*/
+    agc_sp_t tempdap[2];            /* TEMPDAP, TEMPDAP+1 correction fraction*/
     agc_sp_t phasetmp;              /* PHASETMP (V46 switch-over)           */
     agc_sp_t varst[AGC_CSM_VARST_WORDS]; /* VARST0..9 MASSPROP breakpoints  */
 } agc_csm_tvc_t;
@@ -196,6 +204,10 @@ agc_status_t agc_csm_dap_massprop(void);     /* MASSPROP                  */
 agc_status_t agc_csm_dap_fixcw(void);        /* FIXCW (MASSPROP +)        */
 agc_status_t agc_csm_dap_zerojet(void);      /* ZEROJET                   */
 agc_status_t agc_csm_tvc_preswtch(void);     /* PRESWTCH (V46 CSM/LM switch-over) */
+agc_status_t agc_csm_dap_setmaxdb(void);     /* SETMAXDB (P40-P47 p.687)  */
+agc_status_t agc_csm_dap_setmindb(void);     /* SETMINDB (P40-P47 p.687)  */
+/* RCSDAPON +1 (R00TOP00 entry): TIME5 word supplied by the caller.       */
+agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word);
 /* NEEDLER with the errors given (stored in AK..AK2 first); init sets
  * RCSFLAGS BIT3 first (the user's initialisation pass). For guid-entry.   */
 agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init);
@@ -214,6 +226,7 @@ agc_status_t agc_task_redotvc(void);
 agc_status_t agc_task_enabl2(void);
 agc_status_t agc_task_cmdsout(void);
 agc_status_t agc_task_noroll1(void);
+agc_status_t agc_task_rcsup(void);          /* RCSUP (P40-P47 p.736)     */
 /* ---- waitlist tasks and jobs ------------------------------------------ */
 agc_status_t agc_task_tvcexec(void);
 agc_status_t agc_task_rolldap(void);

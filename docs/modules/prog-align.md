@@ -60,21 +60,28 @@ output, B-1). Angles: "revs" = DP fraction of one revolution (B0);
 
 ## Progress
 
+Resumed session 2 (real core headers now exist): align_pending.h trimmed to
+interfaces still missing; CALCSMSC now the imu lane's (agc_imu_calcsmsc),
+CDUTRIG/CDULOGIC guid-powered's; displays via agc_dsky_display().
+
 | item | status |
 |---|---|
-| include/agc/agc_align.h (public API, alignment erasable block) | PARTIAL (job prototypes finalised at end) |
-| src/programs/align_pending.h (assumed external interfaces, provisional job ids) | DONE |
-| align util: CDULOGIC/1STO2S/CDUTRIG-equiv/CALCSMSC/RAM | TODO |
-| S52.2, S52.3, P52LS, LSORIENT, CAL53A compare, GYCRS math | TODO |
-| LOCSAM, OCCOS, OCCULT, PICAPAR/R56, PLANET, CHKSDATA math, R51 solve, SVDWN | TODO |
-| R54/R55 shared jobs | TODO |
-| CSM P52/P54, P51/P53, R51, R52, SR52.1, ADVTRACK, R53, R56, SXTSM | TODO |
-| SXTMARK.agc | TODO |
-| CSM_GEOMETRY.agc | TODO |
+| include/agc/agc_align.h (public API, alignment erasable block) | DONE (rewritten for real APIs; job prototypes listed) |
+| src/programs/align_pending.h (missing external interfaces, provisional job ids) | DONE |
+| src/programs/align_internal.h + align_common.c (RAM, CDULOGIC wrap, 1STO2S, CDUTRIG glue, integration/display/stall/phase helpers, SET1/PDT) | DONE |
+| align_s52.c: S52.2 agc_align_s52_2, S52.3 agc_align_s52_3(_axes), LSORIENT/P52LS tail agc_align_lsorient, CALOOP agc_align_cal53a_need_coarse, GYCRS math agc_align_gyro_coarse_dc | DONE |
+| align_locsam.c: LOCSAM agc_align_locsam(_from), OCCOS, OCCULT, PICAPAR/R56, PLANET agc_align_planet_vector, CHKSDATA math, R51 AXISGEN agc_align_r51_solve, CHKSCODE | DONE |
+| SVDWN1/SVDWN2 agc_align_svdwn -> src/nav/svdwn.c (declared in agc_align.h) | DONE |
+| R54/R55 shared jobs (align_r54_r55.c) | TODO |
+| CSM_GEOMETRY.agc (csm_geometry.c) | TODO |
+| LEM_GEOMETRY.agc (lem_geometry.c) | TODO |
 | S-band CM / LM | TODO |
-| LM P52, P51, R51, R52, R59, P57 family | TODO |
+| CSM P52/P54, P51/P53 (p51_p53_csm.c) | TODO |
+| CSM R51, R52, SR52.1, ADVTRACK, R53, R56, SXTSM, PLANET job (r5x_csm.c) | TODO |
+| SXTMARK.agc | TODO |
+| LM P52, P51, R51, R52, R59 (p51_p53_lm.c, r5x_lm.c) | TODO |
+| LM P57 family (p57.c) | TODO |
 | AOTMARK.agc | TODO |
-| LEM_GEOMETRY.agc | TODO |
 | R63.agc | TODO |
 | AGS_INITIALIZATION.agc | TODO |
 | LUNAR_LANDMARK_SELECTION_FOR_CM.agc | DONE (file is empty in Comanche 055) |

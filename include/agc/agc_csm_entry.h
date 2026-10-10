@@ -217,6 +217,7 @@ agc_status_t agc_job_p65_1(agc_job_ctx_t *ctx);      /* P65.1 V16N69        */
 agc_status_t agc_job_p65_1b(agc_job_ctx_t *ctx);     /* P65.1 PROCEED       */
 agc_status_t agc_job_p67_1(agc_job_ctx_t *ctx);      /* P67.1 V16N67        */
 agc_status_t agc_job_p67_1b(agc_job_ctx_t *ctx);     /* P67.1 PROCEED       */
+agc_status_t agc_job_s61_1(agc_job_ctx_t *ctx);      /* S61.1 (return job set by caller) */
 agc_status_t agc_job_s61_1a(agc_job_ctx_t *ctx);     /* S61.1A  4.45        */
 agc_status_t agc_job_s61_1_mid(agc_job_ctx_t *ctx);  /* S61.1 MIDTOAV2 retry*/
 agc_status_t agc_job_s61_1_ret(agc_job_ctx_t *ctx);  /* RETRN1 after delay  */
@@ -283,10 +284,31 @@ agc_status_t agc_task_atertask(void);                /* ATERTASK 4.51       */
 agc_status_t agc_task_redosat(void);                 /* REDOSAT (T5)        */
 agc_status_t agc_task_satstick(void);                /* SATSTICK (T5)       */
 agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx); /* SATSTKON (V46)  */
-/* S11.1: VMAGI = |VN|, HDOT = UNIT(RN).VN, ALTI = |RN| - RPAD (earth) or
- * - |RLS| (moon, AMOONFLG). Stored for the N62 display.                   */
+/* S11.1: VMAGI = |VN| (m/cs B7), HDOT = UNIT(RN).VN (B7), ALTI = |RN| -
+ * RPAD (earth) or - |RLS| (moon, AMOONFLG) (m B29), stored for N62;
+ * agc_p11_s11_1 reads the stored values (noun tables).                    */
 agc_status_t agc_csm_s11_1(agc_interp_t *ip);
 agc_status_t agc_p11_s11_1(agc_dp_t *vmagi, agc_dp_t *hdot, agc_dp_t *alti);
+agc_status_t agc_job_p11_teph(agc_job_ctx_t *ctx);  /* P11 TEPHEM restart */
+agc_status_t agc_job_p11_ater(agc_job_ctx_t *ctx);  /* P11 after PREREAD1 */
+agc_status_t agc_job_atreset2(agc_job_ctx_t *ctx);  /* ATRESET +5        */
+
+/* P11 pad loads (ERASABLE_ASSIGNMENTS: P11 storage, SATURN BOOST storage). */
+#define AGC_P11_POLY_MAX 6
+typedef struct agc_p11_padload {
+    agc_dp_t latitude;    /* LATITUDE geodetic latitude of the pad, revs     */
+    agc_dp_t padlong;     /* PADLONG  longitude of the pad, revs             */
+    agc_dp_t pgncsalt;    /* PGNCSALT altitude of the PGNCS, m B29           */
+    agc_dp_t launchaz;    /* LAUNCHAZ launch azimuth (X SM), revs            */
+    agc_dp_t azimuth;     /* AZIMUTH  -(north to Z S/C), revs                */
+    agc_dp_t satrlrt;     /* SATRLRT  Saturn roll rate, rev/cs B-? (pad)     */
+    agc_sp_t rpstart;     /* RPSTART  pitch/roll start, cs after liftoff     */
+    agc_sp_t polystop;    /* POLYSTOP -(polynomial cutoff - RPSTART), cs     */
+    agc_sp_t polynum;     /* POLYNUM  polynomial degree N (<= 6)             */
+    agc_dp_t poly[AGC_P11_POLY_MAX + 1]; /* A0..A6 pitch, 32 revs (B5)      */
+    agc_sp_t satscale;    /* SATSCALE Saturn steering scale factor           */
+} agc_p11_padload_t;
+agc_status_t agc_p11_set_padload(const agc_p11_padload_t *pad);
 /* ATERJOB attitude-error kernel (pp. 543-545): desired gimbal angles
  * (OGC IGC MGC, DP revs) and present CDUs -> AK AK1 AK2 (SP, error/180).  */
 agc_status_t agc_p11_attitude_errors(const agc_dp_t desired[3],

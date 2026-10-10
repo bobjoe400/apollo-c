@@ -35,6 +35,7 @@
 #include "agc_status.h"
 #include "agc_word.h"
 #include "agc_interp.h"
+#include "agc_exec.h"
 
 /* ======================================================================== */
 /* ==== section "rendezvous" (prog-rendz) ================================= */
@@ -153,7 +154,32 @@ typedef struct agc_rendz {
 
     /* P76 */
     agc_vec_t delvov;         /* DELVOV: other vehicle delta V (LV), 2^7    */
+
+    /* working cells */
+    agc_dp_t tdec2;           /* TDEC2: PRECSET time, cs 2^28               */
+    agc_job_id_t qsaved;      /* QSAVED: VN1645 return (job to resume)      */
+    agc_job_id_t normex;      /* NORMEX/SUBEXIT: S34/35.5, DISDVLVC return  */
+    agc_dp_t rtmag;           /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
+    agc_dp_t mu_a;            /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
+    agc_dp_t muasteer;        /* MUASTEER (LM INITVEL exit)                 */
+    agc_sp_t numit;           /* ITCTR: INITVEL offset iterations done      */
+
+    /* R30 (V82) */
+    agc_vec_t rone, vone;     /* RONE m 2^29, VONE m/cs 2^7 (moon: SL2)     */
+    agc_dp_t hapox, hperx;    /* HAPOX HPERX: m 2^29                        */
+    agc_dp_t tff;             /* TFF: cs 2^28 (negative)                    */
+    agc_dp_t neg_tper;        /* -TPER: cs 2^28                             */
+    agc_dp_t tstart82;        /* TSTART82: cs 2^28                          */
+    agc_dp_t rpadtem;         /* RPADTEM: pad / landing site radius         */
+    agc_dp_t r30_hpermin;     /* HPERMIN (R30 use): m 2^29 / 2^27           */
+    agc_dp_t tff_rtmu;        /* TFF/RTMU: 1/sqrt(mu)                       */
+    agc_sp_t v82flags;        /* V82FLAGS: bit1 tick -TPER, bit2 tick TFF   */
 } agc_rendz_t;
+
+/* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
+ * AVETOMID (nav-integ) and counted by P20.                               */
+agc_sp_t agc_erase_trkmkcnt(void);
+void     agc_erase_set_trkmkcnt(agc_sp_t v);
 
 /* The rendezvous erasables used by the programs (module storage).          */
 agc_rendz_t *agc_rendz_erasable(void);
@@ -200,10 +226,17 @@ typedef struct agc_rendz_periapo {
     agc_dp_t hperi;     /* 8D: pericenter altitude, body scale (MPAC)      */
     agc_dp_t ecc;       /* ECC: eccentricity, scale 2^3                    */
     agc_dp_t xxxalt;    /* XXXALT: primary body radius, body scale         */
+    agc_dp_t r1;        /* R1 (APSIDES debris): |RVEC|, body scale         */
+    agc_dp_t p;         /* P  (APSIDES debris): semilatus rectum/R1, 2^4   */
 } agc_rendz_periapo_t;
+/* PERIAPO1: r, v at earth scale (shifted to body scale first).             */
 agc_status_t agc_rendz_periapo1(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_vec_t r, agc_vec_t v,
                                 agc_rendz_periapo_t *out);
+/* PERIAPO: r, v already at body scale (RVEC, VVEC).                        */
+agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
+                               agc_vec_t r, agc_vec_t v,
+                               agc_rendz_periapo_t *out);
 agc_status_t agc_rendz_s34_35_1(agc_interp_t *ip, agc_rendz_t *rz);
 agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz,
                              agc_mat_t *m);
@@ -216,19 +249,22 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
 /* ---- CSI / CDH (P32-P33_P72-P73.agc pp.663-682) ------------------------ */
 agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1,
                               agc_vec_t v, agc_vec_t *out);
-agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_advance_from(agc_interp_t *ip, agc_rendz_t *rz,
-                                    agc_vec_t ra, agc_vec_t va,
-                                    agc_vec_t rp, agc_vec_t vp);
+/* Calls that integrate take `resume`: AGC_STATUS_BUSY means INTSTALL put
+ * the job to sleep and it will be resumed as that job (which redoes the
+ * step from its start).                                                   */
+/* ADVANCE: PRECSET to TIG, passive plane UP1, active rotated into it.     */
+agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
+                               agc_job_id_t resume);
 /* CSI/A: on success returns OK with DELVEET1/TCDH/... set; on failure
  * returns AGC_STATUS_ALARM with *alarm = 00600..00606.                    */
 agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz,
-                             agc_sp_t *alarm);
+                             agc_sp_t *alarm, agc_job_id_t resume);
 agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz);
 agc_status_t agc_rendz_s32_33_x(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_mat_t *m);
+/* S32/33.1 after the V06N81 display: DELVSIN = M^T DELVLVC, DELVSAB.      */
 agc_status_t agc_rendz_s32_33_1(agc_interp_t *ip, agc_rendz_t *rz,
-                                agc_vec_t delveet);
+                                agc_vec_t *delvsin);
 
 /* ---- TPI / TPM (P34-35_P74-75.agc) ------------------------------------- */
 /* S33/34.1: iterate TPI time (or elevation); returns AGC_STATUS_ALARM with

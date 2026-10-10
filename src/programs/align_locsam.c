@@ -3,7 +3,7 @@
  * S50/LOCSAM (sun, earth, moon lines of sight and occultation cones),
  * OCCULT, PICAPAR (R56 in Luminary: best star pair), PLANET (reference
  * vector of the sighted body), the CHKSDATA (R54) angle test, the R51
- * AXISGEN set-up and SVDWN1/SVDWN2 (both GEOMETRY files).
+ * AXISGEN set-up and CHKSCODE.  (SVDWN1/SVDWN2 are in src/nav/svdwn.c.)
  *
  * Comanche and Luminary differ in LOCSAM (CSM uses conic state, the
  * ecliptic-pole aberration term and a 15 degree sun cone; LM uses the
@@ -15,9 +15,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "agc/agc_assert.h"
-#include "agc/agc_align.h"
 #include "agc/agc_flags_common.h"
-#include "align_pending.h"
+#include "agc/agc_navaux.h"
+#include "align_internal.h"
 
 /* ---- constants (2DEC value -> DP integer = value * 2^28 / 2^B) --------- */
 #define RSUBM      ((agc_dp_t)869045)     /* 1738090 B-29   moon radius m     */
@@ -115,37 +115,58 @@ static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
 }
 
 /*
+ * LOCSAM tail (Comanche pp. 749-750, Luminary pp. 935-936): the lines of
+ * sight and cones from the integrated state sv (RATT 2^29 m, VATT 2^7
+ * m/cs) and the LSPOS output (CSM: moon 2^29 m, sun 2^38 m earth centred;
+ * LM: unit vectors VMOON, VSUN scale 2).
+ */
+agc_status_t agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv,
+                                   agc_vec_t moon, agc_vec_t sun,
+                                   agc_align_locsam_t *out)
+{
+    if (!AGC_ASSERT((ip != NULL) && (sv != NULL)) || !AGC_ASSERT(out != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM) {
+        locsam_csm(ip, sv, moon, sun, out);
+    } else {
+        locsam_lm(ip, sv, moon, sun, out);
+    }
+    return AGC_STATUS_OK;
+}
+
+/*
  * S50 alias LOCSAM (P51-P53.agc, Comanche pp. 748-751, Luminary pp.
  * 934-936) -- lines of sight to earth, sun and moon and their occultation
  * cone cosines at time time_cs (cs B28).  CSM: LSPOS + CSMCONIC; LM: LSPOS
- * + LEMPREC.  TSIGHT is set to the time.
+ * + LEMPREC.  TSIGHT is set to the time.  BUSY: asleep in INTSTALL.
  */
 agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs,
-                              agc_align_locsam_t *out)
+                              agc_job_id_t resume_job, agc_align_locsam_t *out)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_vec_t moon;
     agc_vec_t sun;
-    agc_state_vector_t sv;
     agc_align_ram()->tsight = time_cs;
     agc_status_t st = agc_lsposition(ip, time_cs, &moon, &sun);
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    if (agc_state_vehicle() == AGC_VEHICLE_CSM) {
-        st = agc_integ_csmconic(ip, time_cs, &sv);
-        if (st == AGC_STATUS_OK) {
-            locsam_csm(ip, &sv, moon, sun, out);
-        }
-    } else {
-        st = agc_integ_lemprec(ip, time_cs, &sv);
-        if (st == AGC_STATUS_OK) {
-            locsam_lm(ip, &sv, moon, sun, out);
-        }
+    const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
+    agc_integ_out_t o;
+    st = align_integ(ip, csm ? ALIGN_CSMCONIC : ALIGN_LEMPREC, time_cs,
+                     resume_job, &o);
+    if (st != AGC_STATUS_OK) {
+        return st;
     }
-    return st;
+    agc_state_vector_t sv;
+    sv.r = o.ratt;
+    sv.v = o.vatt;
+    sv.t = o.tat;
+    sv.moon = (o.x2 != 0);                    /* X2: 0 earth, 2 moon       */
+    return agc_align_locsam_from(ip, &sv, moon, sun, out);
 }
 
 /*
@@ -293,11 +314,11 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
                     (found != NULL))) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_align_trig_t trig;
+    agc_cdutrig_t trig;
     agc_mat_t nb;
-    agc_status_t st = agc_align_cdutrig(ip, cdu, &trig);
+    agc_status_t st = agc_align_cdutrig(cdu, &trig);          /* CDUTRIG  */
     if (st == AGC_STATUS_OK) {
-        st = agc_align_calcsmsc(ip, &trig, &nb);
+        st = agc_align_calcsmsc(ip, &trig, &nb);              /* CALCSMSC */
     }
     if (st != AGC_STATUS_OK) {
         return st;
@@ -342,7 +363,7 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
  */
 agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
                                      agc_sp_t starind, agc_dp_t time_cs,
-                                     agc_vec_t *los)
+                                     agc_job_id_t resume_job, agc_vec_t *los)
 {
     if (!AGC_ASSERT((ip != NULL) && (los != NULL)) ||
         !AGC_ASSERT((star6 >= 0) && (star6 <= STAR6_MAX) && (starind >= 0) &&
@@ -354,7 +375,10 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
     ram->tsight = time_cs;
     agc_status_t st = AGC_STATUS_OK;
     if (csm || (star6 >= STAR6_SUN)) {
-        st = agc_align_locsam(ip, time_cs, &ram->locsam);
+        st = agc_align_locsam(ip, time_cs, resume_job, &ram->locsam);
+        if (st != AGC_STATUS_OK) {
+            return st;
+        }
     }
     if (starind == 0) {
         ram->besti = star6;
@@ -382,49 +406,39 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
 
 /*
  * CHKSDATA / R54 angle test (Comanche pp. 759-760, Luminary pp. 945-946):
- *   A1 = ACOS(OS1 . OS2), A2 = ACOS(SS1 . SS2), NORMTEM1 = ABS(A2 - A1)
- * obs = STARAD, STARAD+6; cat = VAC 6D, 12D (all half-unit).  revs B0.
+ * first pass X1 = STARAD:  18D   = ACOS(STARAD . STARAD+6)   (catalogue)
+ * second pass X1 = 6D:     THETA = ACOS(6D . 12D)            (observed)
+ * NORMTEM1 = ABS(THETA - 18D), revs B0.  All vectors half-unit.
  */
-agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t obs[2],
-                                      const agc_vec_t cat[2], agc_dp_t *diff)
+agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
+                                      const agc_vec_t obs[2], agc_dp_t *diff)
 {
     if (!AGC_ASSERT((ip != NULL) && (obs != NULL)) ||
         !AGC_ASSERT((cat != NULL) && (diff != NULL))) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    ram->theta18 = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, obs[0], obs[1]), 1));
-    ram->theta = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, cat[0], cat[1]), 1));
+    ram->theta18 = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, cat[0], cat[1]), 1));
+    ram->theta = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, obs[0], obs[1]), 1));
     *diff = agc_dp_abs(agc_dp_sub(ip, ram->theta, ram->theta18));
-    ram->normtem1 = *diff;            /* SGNAGREE: no-op in this model     */
+    ram->normtem1 = *diff;            /* RTB SGNAGREE: no-op in this model */
     return AGC_STATUS_OK;
 }
 
 /*
- * R51 fine-align solution (Comanche p. 757 / Luminary p. 942): the
- * catalogue vectors are taken to the desired SM (MXV REFSMMAT, UNIT) and
- * AXISGEN gives the desired SM referred to the present SM (XDC) from them
- * and the observed (present SM) vectors.  Pair order is the caller's
- * (Comanche passes star 2 first, Luminary star 1).
+ * R51 fine-align solution (Comanche p. 757 / Luminary p. 942): AXISGEN of
+ * the desired-SM catalogue pair a (STARAD, STARAD+6) against the observed
+ * present-SM pair b (6D, 12D) gives XDC, the desired SM wrt the present SM.
  */
-agc_status_t agc_align_r51_solve(agc_interp_t *ip, const agc_vec_t cat_ref[2],
-                                 const agc_vec_t obs_sm[2],
-                                 const agc_mat_t *refsmmat, agc_mat_t *xdc)
+agc_status_t agc_align_r51_solve(agc_interp_t *ip, const agc_vec_t a[2],
+                                 const agc_vec_t b[2], agc_mat_t *xdc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (cat_ref != NULL) && (obs_sm != NULL)) ||
-        !AGC_ASSERT((refsmmat != NULL) && (xdc != NULL))) {
+    if (!AGC_ASSERT((ip != NULL) && (a != NULL)) ||
+        !AGC_ASSERT((b != NULL) && (xdc != NULL))) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_vec_t a[2];
-    for (int k = 0; k < 2; k++) {
-        a[k] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, cat_ref[k]), NULL, NULL);
-    }
     agc_align_ram_t *ram = agc_align_ram();
-    ram->starad[0] = a[0];
-    ram->starad[1] = a[1];
-    ram->vac6 = obs_sm[0];
-    ram->vac12 = obs_sm[1];
-    const agc_status_t st = agc_imu_axisgen(ip, a, obs_sm, xdc);
+    const agc_status_t st = agc_imu_axisgen(ip, a, b, xdc);   /* AXISGEN */
     if (st == AGC_STATUS_OK) {
         ram->xdc = *xdc;
     }
@@ -432,36 +446,12 @@ agc_status_t agc_align_r51_solve(agc_interp_t *ip, const agc_vec_t cat_ref[2],
 }
 
 /*
- * SVDWN1 / SVDWN2 (CSM_GEOMETRY.agc p. 289-290, LEM_GEOMETRY.agc p.
- * 320-321; the names are exchanged between the vehicles) -- form the
- * actual state from the conic part and the deviations for downlink:
- *   R = (TDELTAV SR(7+X2) + RCV) SR X2  -> m B29
- *   V = (TNUV    SR(4+X2) + VCV) SR X2  -> m/cs B7
- * x2 = 0 for B29/B7 input, 2 for B27/B5.  This vehicle: RN, VN, PIPTIME =
- * TET, skipped while AVEMIDSW is set (W-matrix integration); other
- * vehicle: R-OTHER, V-OTHER.
+ * CHKSCODE (Comanche p. 773): star codes 0..50 octal are acceptable
+ * (L+3 return), anything else is not (L+1).  STARCODE -0 counts as 0.
  */
-agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
-                             agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
-                             agc_vec_t tnuv, agc_dp_t tet)
+bool agc_align_chkscode(agc_sp_t starcode)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2))) {
-        return AGC_STATUS_BAD_ARG;
-    }
-    if (this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW)) {
-        return AGC_STATUS_OK;                         /* BOF ... RVQ       */
-    }
-    const agc_vec_t r = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tdeltav, 7 + x2),
-                                                rcv), x2);
-    const agc_vec_t v = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tnuv, 4 + x2),
-                                                vcv), x2);
-    if (this_vehicle) {
-        agc_erase_set_rn(r);
-        agc_erase_set_vn(v);
-        agc_erase_set_piptime(tet);
-        return AGC_STATUS_OK;
-    }
-    agc_erase_set_r_other(r);
-    agc_erase_set_v_other(v);
-    return AGC_STATUS_OK;
+    (void)AGC_ASSERT(starcode >= AGC_SP_MIN);
+    (void)AGC_ASSERT(starcode <= AGC_SP_MAX);
+    return (starcode >= 0) && (starcode <= AGC_ALIGN_STAR_CODE_MAX);
 }

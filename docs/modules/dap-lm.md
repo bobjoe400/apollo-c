@@ -69,7 +69,17 @@ jet times in TIME6 counts (0.625 ms, "scaled at 10.24 s") unless noted.
 
 ## Progress
 
-TODO all routines (infrastructure being written: lm_dap_internal.h, lm_dap_pending.h, arith.c, state.c)
+Session 2 (resumed): only lm_dap_pending.h existed. Files planned (all src/lm/dap/):
+lm_dap_internal.h (state struct = DAP erasables, word primitives), arith.c (MP/DV/DAS/MSU/
+1STOTWOS/OVERSUB/DVOVSUB), state.c (state, accessors, fresh start/restart), dapif.c,
+dapidler.c, needles.c, rate.c, paxis.c, pmanual.c, qraxis.c, qrmanual.c, qrjets.c,
+t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
+
+* DONE lm_dap_internal.h, lm_dap_pending.h (updated: flags now real), arith.c, state.c
+  (accessors, agc_lm_dap_fresh_start/restart), dapif.c (SETMAXDB..ALLCOAST, CALLACCS),
+  dapidler.c (CHEKBITS, DAPIDLER, STARTDAP, MOREIDLE, SHUTDOWN, t5rupt), needles.c
+* TODO rate.c, paxis.c, pmanual.c, qraxis.c, qrmanual.c, qrjets.c, t6rupt.c, tjetlaw.c,
+  gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c, tests/test_lm_dap.c
 
 ## Deviations
 

@@ -6,6 +6,7 @@
 #ifndef AGC_ENTRY_INTERNAL_H
 #define AGC_ENTRY_INTERNAL_H
 
+#include <stdint.h>
 #include "agc/agc_status.h"
 #include "agc/agc_word.h"
 #include "agc/agc_interp.h"
@@ -31,8 +32,11 @@ agc_status_t entry_p67(agc_entry_state_t *es);
 agc_status_t entry_killgrp4(void);
 
 /* entry_dap.c */
-agc_sp_t entry_angovcor(agc_sp_t a, agc_ovf_t ovf); /* ANGOVCOR / CORANGOV   */
-agc_sp_t entry_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf); /* AD with overflow */
+/* ANGOVCOR / CORANGOV: an SP angle/180 sum (at most one overflow) wrapped
+ * back into [-1, 1) (i.e. modulo 360 deg).                               */
+agc_sp_t entry_angle_wrap(int32_t sum);
 agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b);  /* MP: high word of a b      */
+agc_sp_t entry_sp_sat(int32_t sum);            /* AD whose result is kept
+                                                  (overflow not expected)  */
 
 #endif /* AGC_ENTRY_INTERNAL_H */

@@ -37,4 +37,15 @@ typedef struct agc_rendz_lmsteer {
 } agc_rendz_lmsteer_t;
 agc_status_t agc_rendz_lm_aimsteer(agc_rendz_lmsteer_t *out);
 
+/* ---- LM continuation jobs (lead adds to agc_jobs.h) --------------------- */
+#define AGC_JOB_P42STAGE   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
+#define AGC_JOB_IGNITE     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 111)) /* *PROCEED / IGNITE */
+#define AGC_JOB_STAR_ENTER ((agc_job_id_t)(AGC_JOB_GUID_BASE + 112)) /* *ENTER     */
+#define AGC_JOB_COMFAIL1   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 113)) /* COMFAIL1 (V97 PROCEED) */
+#define AGC_JOB_COMFAIL2   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 114)) /* COMFAIL2 (V97 ENTER) */
+#define AGC_JOB_ASTNRETN   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 115)) /* ASTNRETN (V06N61 PROCEED) */
+#define AGC_JOB_GOPOST     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 116)) /* GOPOST    */
+#define AGC_JOB_BRNBB      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 117)) /* B*RNB*B* after P40AUTO */
+#define AGC_TASK_REDO4_2   ((agc_task_id_t)(AGC_TASK_GUID_BASE + 63)) /* REDO4.2  */
+
 #endif /* GUID_PENDING_LM_H */

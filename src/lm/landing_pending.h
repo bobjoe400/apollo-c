@@ -27,6 +27,7 @@
 #include "agc/agc_imu.h"
 #include "agc/agc_navaux.h"
 #include "agc/agc_integ.h"
+#include "agc/agc_align.h"
 #include "agc/agc_lm_dap.h"
 #include "agc/agc_lm_landing.h"
 
@@ -60,6 +61,17 @@
 #define AGC_JOB_P70        ((agc_job_id_t)0x0F18) /* P70 (V37)                 */
 #define AGC_JOB_P71        ((agc_job_id_t)0x0F19) /* P71 (V37)                 */
 #define AGC_JOB_ENDLLJOB   ((agc_job_id_t)0x0F1A) /* display "terminate" = end */
+#define AGC_JOB_IGNALGP    ((agc_job_id_t)0x0F1B) /* IGNALG after LEMPREC wait */
+#define AGC_JOB_IGNALOOP   ((agc_job_id_t)0x0F1C) /* IGNALOOP after INTSTALL  */
+#define AGC_JOB_LANDJNKF   ((agc_job_id_t)0x0F1D) /* LANDJUNK V06N43 re-flash */
+#define AGC_JOB_IGNALGRT   ((agc_job_id_t)0x0F1E) /* IGNALGRT (4.2 restart)   */
+#define AGC_JOB_ABTP40A    ((agc_job_id_t)0x0F1F) /* UPTHROT1 -3 (P40AUTO)    */
+#define AGC_JOB_UPTHROT1   ((agc_job_id_t)0x0F20) /* THROTUP, UPTHROT1        */
+#define AGC_JOB_P71OLD     ((agc_job_id_t)0x0F21) /* P71 OLDTIME restart      */
+#define AGC_JOB_P12FLASH   ((agc_job_id_t)0x0F22) /* P12 V06N33 re-flash      */
+#define AGC_JOB_P12LMB     ((agc_job_id_t)0x0F23) /* P12LMB after LEMPREC wait */
+#define AGC_JOB_CUTOFF5    ((agc_job_id_t)0x0F24) /* CUTOFF -5 (V16N63 again) */
+#define AGC_JOB_P12BURN    ((agc_job_id_t)0x0F25) /* P12RET after PHASCHNG    */
 #define AGC_TASK_RODTASK   ((agc_task_id_t)0x0F81) /* RODTASK                  */
 #define AGC_TASK_REDESMON  ((agc_task_id_t)0x0F82) /* REDESMON (PITFALL)       */
 #define AGC_TASK_ENGOFF1   ((agc_task_id_t)0x0F83) /* ENGOFF1                  */
@@ -81,11 +93,28 @@ void     agc_erase_set_thrust(agc_sp_t pulses);     /* THRUST counter 055   */
 void     agc_erase_set_altm(agc_sp_t v);            /* ALTM counter 060     */
 void     agc_erase_set_cdutcmd(int which, agc_sp_t v); /* 0 CDUTCMD 053, 1 CDUSCMD 054 */
 
+/* ---- guid-powered: TEMX, TEMY, TEMZ (PIPA counts READACCS left for P66) - */
+agc_sp_t agc_erase_tem(int axis);                   /* TEMX/Y/Z, axis 0..2  */
+void     agc_erase_set_tem(int axis, agc_sp_t v);
+
+/* ---- prog-align: R51 from P63, REFMF for P57 after P68 ------------------ */
+agc_status_t agc_align_r51p63(const agc_job_ctx_t *ctx, agc_job_id_t qmaj); /* R51P63 */
+agc_status_t agc_align_refmf(agc_interp_t *ip);     /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
+
+/* ---- nav-aux / io-nouns: LAT, LONG, ALT erasables (noun 43) ------------- */
+agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
+
 /* ---- dap-lm: the other two 1-jet accelerations (agc_lm_dap.h has P) ---- */
 agc_sp_t agc_erase_1jaccq(void);                    /* 1JACCQ pi/4 r/s^2    */
 agc_sp_t agc_erase_1jaccr(void);                    /* 1JACCR pi/4 r/s^2    */
 
 /* ---- prog-rendz: R29/R12 radar helpers (RADAR_LEADIN / R10 lamps) ------- */
 agc_status_t agc_rendz_flip(uint16_t lamp_bit);     /* FLIP (R10 LR lamps)  */
+agc_status_t agc_rendz_clradmod(void);              /* CLRADMOD (RADMODES for R29) */
+
+/* ---- sys-misc (T4RUPT): gimbal-to-pilot matrix elements (R10 meters) ---- */
+agc_sp_t agc_erase_m22(void);                       /* M22 = sin(AOG), at 1 */
+agc_sp_t agc_erase_m32(void);                       /* M32 = cos(AOG), at 1 */
+void     agc_erase_set_trkmkcnt(agc_sp_t v);        /* TRKMKCNT (guid-powered) */
 
 #endif /* LANDING_PENDING_H */

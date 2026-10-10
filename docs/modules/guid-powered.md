@@ -69,9 +69,9 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR/NORMLIZE/REREADAC/SERVEXIT | DONE src/csm/servicer_csm.c (guid_pending_csm.h written) |
 | LM PREREAD/BIBIBIAS/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE/NORMLIZE/REREADAC | DONE src/lm/servicer_lm.c (guid_pending_lm.h, servicer_lm_internal.h) |
 | LM RVBOTH/MUNRVG/MUNGRAV | DONE servicer_lm.c; MUNRETRN/ALTCHK/LR update/LR jobs/SETPOS DONE src/lm/servicer_lm_lr.c |
-| P30/P31/S30.1/S31.1/DELRSPL | TODO |
-| S40.1/S40.2,3/S40.8/S40.9/S40.13/S41.1 | TODO |
-| CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | TODO |
+| P30/P31/S30.1/S31.1/MIDGIM/AGAIN | DONE src/guidance/p30.c (+ CM REFTEST/COMPTGO/DISP45/END45 in src/csm/p30_csm.c); DELRSPL stub |
+| S40.1/CALCUT/S40.2,3/S41.1/S40.8 TGO+XPRODUCT/CM S40.13 | DONE src/guidance/p40.c (CM S40.8/S40.9 drivers in p40_csm_steer.c; LM S40.8/S40.9/S40.13 TODO in p40_lm.c) |
+| CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | DONE src/csm/p40_csm.c, p40_csm_burn.c, p40_csm_steer.c, p40_csm_clock.c, p40_csm_internal.h |
 | LM P40/P41/P42/P47 sequencing, RASTEER1, TRIMGIMB | TODO |
 | BURNBABY (ignition.c) | TODO |
 | tests/test_guidance.c | TODO |

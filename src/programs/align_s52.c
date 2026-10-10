@@ -7,8 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "agc/agc_assert.h"
-#include "agc/agc_align.h"
-#include "align_pending.h"
+#include "align_internal.h"
 
 #define CDU_WORD_MASK   077777u
 #define CDU_SIGN_BIT    040000u
@@ -37,10 +36,10 @@ agc_status_t agc_align_s52_2(agc_interp_t *ip, const agc_mat_t *smd,
                     (thetad != NULL))) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_align_trig_t trig;
-    agc_status_t st = agc_align_cdutrig(ip, cdu, &trig);
+    agc_cdutrig_t trig;
+    agc_status_t st = agc_align_cdutrig(cdu, &trig);      /* CDUTRIG        */
     if (st == AGC_STATUS_OK) {
-        st = agc_align_calcsmsc(ip, &trig, xnb);
+        st = agc_align_calcsmsc(ip, &trig, xnb);          /* CALCSMSC       */
     }
     if (st != AGC_STATUS_OK) {
         return st;
@@ -55,35 +54,50 @@ agc_status_t agc_align_s52_2(agc_interp_t *ip, const agc_mat_t *smd,
 }
 
 /*
- * S52.3 (P51-P53.agc, Comanche p. 780 / Luminary p. 954, label S52.3) --
- * nominal IMU orientation at time TALIGN (cs B28).
- *   CSM (CSMPREC):  ZSMD = UNIT(-R), YSMD = UNIT(V x R), XSMD = UNIT(YSMD x ZSMD)
- *   LM  (LEMCONIC): XSMD = UNIT(R),  YSMD = UNIT(V x R), ZSMD = UNIT(XSMD x YSMD)
+ * S52.3 axes (P51-P53.agc, Comanche p. 780 / Luminary p. 954) -- nominal
+ * IMU orientation from the state (r, v at any common scales):
+ *   CSM:  ZSMD = UNIT(-R), YSMD = UNIT(V x R), XSMD = UNIT(YSMD x ZSMD)
+ *   LM:   XSMD = UNIT(R),  YSMD = UNIT(V x R), ZSMD = UNIT(XSMD x YSMD)
  */
-agc_status_t agc_align_s52_3(agc_interp_t *ip, agc_dp_t talign, agc_mat_t *smd)
+agc_status_t agc_align_s52_3_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
+                                  agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_state_vector_t sv;
-    const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
-    agc_status_t st = csm ? agc_integ_csmprec(ip, talign, &sv)
-                          : agc_integ_lemconic(ip, talign, &sv);
-    if (st != AGC_STATUS_OK) {
-        return st;
-    }
-    if (csm) {
-        smd->row[2] = agc_vec_unit(ip, agc_vec_neg(sv.r), NULL, NULL);
-        smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, sv.v, sv.r), NULL, NULL);
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM) {
+        smd->row[2] = agc_vec_unit(ip, agc_vec_neg(r), NULL, NULL);
+        smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, v, r), NULL, NULL);
         smd->row[0] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[1], smd->row[2]),
                                    NULL, NULL);
     } else {
-        smd->row[0] = agc_vec_unit(ip, sv.r, NULL, NULL);
-        smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, sv.v, sv.r), NULL, NULL);
+        smd->row[0] = agc_vec_unit(ip, r, NULL, NULL);
+        smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, v, r), NULL, NULL);
         smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[0], smd->row[1]),
                                    NULL, NULL);
     }
     return AGC_STATUS_OK;
+}
+
+/*
+ * S52.3 (P51-P53.agc, Comanche p. 780 / Luminary p. 954, label S52.3) --
+ * nominal IMU orientation at time TALIGN (cs B28): CSMPREC (CM) or
+ * LEMCONIC (LM) to TALIGN, then the axes from RATT, VATT.
+ */
+agc_status_t agc_align_s52_3(agc_interp_t *ip, agc_dp_t talign,
+                             agc_job_id_t resume_job, agc_mat_t *smd)
+{
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_integ_out_t o;
+    const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
+    const agc_status_t st = align_integ(ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC,
+                                        talign, resume_job, &o);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
+    return agc_align_s52_3_axes(ip, o.ratt, o.vatt, smd);
 }
 
 /*

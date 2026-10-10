@@ -220,6 +220,7 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_t *g = agc_guid_state();
     agc_status_t st = agc_guid_copycycle(AGC_VEHICLE_CSM, AGC_COPY_RVT); /* 14 REGS */
     if (st != AGC_STATUS_OK) {
@@ -261,6 +262,7 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_inhint();
     bool bad = pipas_saturated(agc_erase_delv());
     agc_relint();
@@ -300,6 +302,7 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_t *g = agc_guid_state();
     (void)serv_phase(PH_5_3_B, AGC_JOB_SERV_AVERAGEG);
     agc_state_vector_t sv;
@@ -325,6 +328,7 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     (void)serv_phase(PH_5_3_B, AGC_JOB_SERV_COPY);
     agc_status_t st = agc_guid_copycycle(AGC_VEHICLE_CSM, AGC_COPY_RVTG);
     if (st != AGC_STATUS_OK) {
@@ -356,6 +360,7 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
     agc_imu_set_1_pipadt(agc_dp_low(agc_erase_piptime()));
     (void)agc_flag_set(AGC_FLAG_DRIFTFLG);
@@ -371,6 +376,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_status_t st = agc_integ_avetomid();           /* CONVERT STATE VECTOR   */
     if (st != AGC_STATUS_OK) {
         return st;

@@ -29,6 +29,13 @@
 agc_status_t agc_lm_dap_fresh_start(void);  /* DAP erasables on fresh start   */
 agc_status_t agc_lm_dap_restart(void);      /* STARTSB1 DAP part (both)        */
 
+/* ---- alarm codes (octal, as in the listing) ----------------------------- */
+#define AGC_ALARM_02000 ((agc_alarm_code_t)02000) /* BAILOUT: DAP pass overrun  */
+#define AGC_ALARM_02001 ((agc_alarm_code_t)02001) /* no Y,Z translation policy  */
+#define AGC_ALARM_02002 ((agc_alarm_code_t)02002) /* no X translation policy    */
+#define AGC_ALARM_02003 ((agc_alarm_code_t)02003) /* no P rotation policy       */
+#define AGC_ALARM_02004 ((agc_alarm_code_t)02004) /* no U,V rotation policy     */
+
 /* ---- interrupts --------------------------------------------------------- */
 agc_status_t agc_lm_dap_t5rupt(void);       /* T5RUPT via T5ADR (DAPIDLER/PAXIS) */
 agc_status_t agc_lm_dap_t6rupt(void);       /* DOT6RUPT                          */
@@ -37,6 +44,9 @@ void         agc_lm_dap_time6_count(uint16_t counts); /* sim: TIME6 DINC pulses 
 bool         agc_lm_dap_t6_pending(void);   /* TIME6 = -0: a T6RUPT is due       */
 bool         agc_lm_dap_running(void);      /* T5ADR = PAXIS                     */
 agc_status_t agc_lm_dap_rcsmon(void);       /* RCSMONIT, from T4RUPT every 480 ms */
+/* T5ADR programs as exec tasks (agc_rupt_set_t5_task / dispatch.c).        */
+agc_status_t agc_task_dapidler(void);       /* AGC_TASK_DAPIDLER: DAPIDLER     */
+agc_status_t agc_task_paxis(void);          /* AGC_TASK_PAXIS: PAXIS           */
 
 /* ---- 1/ACCS (AOSTASK_AND_AOSJOB.agc pp. 1485-1506) ---------------------- */
 agc_status_t agc_lm_dap_1_accs(void);              /* BANKCALL 1/ACCS        */
@@ -98,6 +108,8 @@ agc_sp_t agc_erase_perror(void);            /* attitude errors, at pi          *
 agc_sp_t agc_erase_qerror(void);
 agc_sp_t agc_erase_rerror(void);
 agc_sp_t agc_erase_1jacc(void);             /* 1-jet P accel, at pi/4          */
+agc_sp_t agc_erase_1jaccq(void);            /* 1-jet Q accel, at pi/4          */
+agc_sp_t agc_erase_1jaccr(void);            /* 1-jet R accel, at pi/4          */
 agc_sp_t agc_erase_kq(void);                /* GTS jerk gain, at pi/2^8        */
 /* crew/pad-load parameters                                                 */
 agc_sp_t agc_erase_db(void);                /* deadband, at 45 deg             */

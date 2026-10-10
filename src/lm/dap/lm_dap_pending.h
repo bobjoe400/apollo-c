@@ -2,15 +2,14 @@
  * lm_dap_pending.h -- shared symbols the LM DAP needs that other lanes have
  * not published yet (see docs/agents/_common.md naming convention).
  *
- * INTEGRATION: when agc_flags_lm.h / agc_flags_common.h, the erasable
- * accessors and the job ids exist, replace the body of this file with
- *     #include "agc/agc_flags_common.h"
- *     #include "agc/agc_flags_lm.h"
- * and delete the definitions below. Every name here follows the convention,
- * so no DAP source file needs to change.
+ * The DAPBOOLS flags (FLGWRD13), NEEDLFLG, SNUFFER and APSFLAG now come from
+ * agc_flags_lm.h; CDUX..Z, IMODES33, LEMMASS, CSMMASS and THETAD (= CPHI,
+ * CTHETA, CPSI) from agc_state.h; MASS and ABDELV from agc_guid.h
+ * (agc_guid_state()->lm); CDUXCMD..CDUZCMD from agc_imu.h.
  *
- * Flag ids are encoded (flagword << 4) | (AGC bit number - 1) as a
- * placeholder; the authoritative encoding belongs to the state-flags agent.
+ * INTEGRATION: when the owners publish the accessors below, delete them
+ * here; the names follow the convention, so no DAP source file changes.
+ * The job and task ids move to agc_jobs.h (lead).
  */
 #ifndef LM_DAP_PENDING_H
 #define LM_DAP_PENDING_H
@@ -19,59 +18,29 @@
 #include "agc/agc_word.h"
 #include "agc/agc_state.h"
 #include "agc/agc_jobs.h"
+#include "agc/agc_flags_lm.h"
 
-/* ---- flags (FLAGWORD_ASSIGNMENTS.agc) ----------------------------------- */
-#define AGC_FLAG_NEEDLFLG ((agc_flag_id_t)((0u << 4) | 3u))   /* 011 FW0 B4  */
-#define AGC_FLAG_SNUFFER  ((agc_flag_id_t)((5u << 4) | 12u))  /* 077 FW5 B13 */
-#define AGC_FLAG_APSFLAG  ((agc_flag_id_t)((10u << 4) | 12u)) /* 152 FW10 B13 */
-/* DAPBOOLS = FLGWRD13 (flags 195-209)                                      */
-#define AGC_FLAG_PULSEFLG ((agc_flag_id_t)((13u << 4) | 14u)) /* PULSES   B15 */
-#define AGC_FLAG_USEQRFLG ((agc_flag_id_t)((13u << 4) | 13u)) /* USEQRJTS B14 */
-#define AGC_FLAG_CSMDKFLG ((agc_flag_id_t)((13u << 4) | 12u)) /* CSMDOCKD B13 */
-#define AGC_FLAG_OURRCFLG ((agc_flag_id_t)((13u << 4) | 11u)) /* OURRCBIT B12 */
-#define AGC_FLAG_ACC4_2FL ((agc_flag_id_t)((13u << 4) | 10u)) /* ACC4OR2X B11 */
-#define AGC_FLAG_AORBTFLG ((agc_flag_id_t)((13u << 4) | 9u))  /* AORBTRAN B10 */
-#define AGC_FLAG_XOVINFLG ((agc_flag_id_t)((13u << 4) | 8u))  /* XOVINHIB B9  */
-#define AGC_FLAG_DRIFTDFL ((agc_flag_id_t)((13u << 4) | 7u))  /* DRIFTBIT B8  */
-#define AGC_FLAG_ULLAGFLG ((agc_flag_id_t)((13u << 4) | 5u))  /* ULLAGER  B6  */
-#define AGC_FLAG_AORBSFLG ((agc_flag_id_t)((13u << 4) | 4u))  /* AORBSYST B5  */
-#define AGC_FLAG_DBSELFLG ((agc_flag_id_t)((13u << 4) | 3u))  /* DBSELECT B4  */
-#define AGC_FLAG_ACCOKFLG ((agc_flag_id_t)((13u << 4) | 2u))  /* ACCSOKAY B3  */
-
-/* ---- job ids (agc_jobs.h, integrated by the lead) ----------------------- */
-#define AGC_JOB_1_ACCJOB ((agc_job_id_t)101)                  /* 1/ACCJOB    */
-#define AGC_JOB_1_ACCSET ((agc_job_id_t)102)                  /* 1/ACCSET    */
+/* ---- job and task ids (agc_jobs.h, integrated by the lead) ------------- */
+#define AGC_JOB_1_ACCJOB  ((agc_job_id_t)0x0D01)   /* 1/ACCJOB, PRIO27 NOVAC  */
+#define AGC_JOB_1_ACCSET  ((agc_job_id_t)0x0D02)   /* 1/ACCSET, PRIO27 NOVAC  */
+#define AGC_TASK_DAPIDLER ((agc_task_id_t)0x0D81)  /* T5ADR = DAPIDLER        */
+#define AGC_TASK_PAXIS    ((agc_task_id_t)0x0D82)  /* T5ADR = PAXIS           */
 
 /* ---- erasables owned by other lanes ------------------------------------ */
-uint16_t agc_erase_cdux(void);        /* CDUX, 15-bit 2's complement at pi  */
-uint16_t agc_erase_cduy(void);
-uint16_t agc_erase_cduz(void);
-uint16_t agc_erase_cphi(void);        /* THETAD desired gimbal angles, 2's c */
-uint16_t agc_erase_ctheta(void);
-uint16_t agc_erase_cpsi(void);
-agc_sp_t agc_erase_m11(void);         /* gimbal-to-pilot matrix, at 1 (T4RUPT) */
+/* Gimbal-to-pilot-axis matrix, SP scaled at 1, written by T4RUPT (sys-misc,
+ * GPMATRIX/DAPT4S in src/lm/t4rupt_lm.c). M13 = 1 identically.            */
+agc_sp_t agc_erase_m11(void);
 agc_sp_t agc_erase_m21(void);
 agc_sp_t agc_erase_m31(void);
 agc_sp_t agc_erase_m22(void);
 agc_sp_t agc_erase_m32(void);
-agc_dp_t agc_erase_mass(void);        /* MASS, DP at 2^16 kg                */
-void     agc_erase_set_mass(agc_dp_t v);
-agc_sp_t agc_erase_lemmass(void);     /* LEMMASS, at 2^16 kg                */
-void     agc_erase_set_lemmass(agc_sp_t v);
-agc_sp_t agc_erase_csmmass(void);     /* CSMMASS, at 2^16 kg                */
-agc_dp_t agc_erase_abdelv(void);      /* ABDELV, DP at 2^13 cm/s^2          */
-uint16_t agc_erase_imodes33(void);    /* IMODES33 (bit 6: IMU not usable)   */
-agc_sp_t agc_erase_p_rhcctr(void);    /* RHC counters (counter cells 042-044) */
+/* Rotational hand controller counters P-RHCCTR, Q-RHCCTR, R-RHCCTR
+ * (counter cells 042-044, state-flags / sim harness), SP counts.          */
+agc_sp_t agc_erase_p_rhcctr(void);
 agc_sp_t agc_erase_q_rhcctr(void);
 agc_sp_t agc_erase_r_rhcctr(void);
 void     agc_erase_set_p_rhcctr(agc_sp_t v);
 void     agc_erase_set_q_rhcctr(agc_sp_t v);
 void     agc_erase_set_r_rhcctr(agc_sp_t v);
-agc_sp_t agc_erase_cduxcmd(void);     /* IMU error counter drive outputs    */
-agc_sp_t agc_erase_cduycmd(void);
-agc_sp_t agc_erase_cduzcmd(void);
-void     agc_erase_set_cduxcmd(agc_sp_t v);
-void     agc_erase_set_cduycmd(agc_sp_t v);
-void     agc_erase_set_cduzcmd(agc_sp_t v);
 
 #endif /* LM_DAP_PENDING_H */

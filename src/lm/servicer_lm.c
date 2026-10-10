@@ -233,6 +233,7 @@ agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     (void)agc_lm_serv_quikfaz5(AGC_JOB_SERV_DVTOTUP);  /* PHASCHNG 16035 GETABVAL */
     agc_imu_set_1_pipadt(ONEPIPADT_2S);               /* IN CASE LASTBIAS SKIPPED */
     agc_vec_t delv = agc_erase_delv();
@@ -423,6 +424,7 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_t *g = agc_guid_state();
     (void)agc_guid_copycycle(AGC_VEHICLE_LM, AGC_COPY_ALL);
     agc_inhint();                                     /* RETURN UNDER INHINT    */
@@ -460,6 +462,7 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_t *g = agc_guid_state();
     agc_interp_t ip;
     agc_interp_init(&ip);
@@ -497,6 +500,7 @@ agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_imu_set_1_pipadt(agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
     (void)agc_flag_set(AGC_FLAG_DRIFTFLG);
     (void)agc_imu_pipfree();
@@ -514,6 +518,7 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     (void)agc_flag_set(AGC_FLAG_NOR29FLG);            /* SHUT OFF R29           */
     (void)agc_flag_clear(AGC_FLAG_SWANDISP);          /* SHUT OFF R10           */
     (void)agc_flag_clear(AGC_FLAG_MUNFLAG);
@@ -538,6 +543,7 @@ agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT; /* SVEXTADR               */
     (void)agc_flag_set(AGC_FLAG_IDLEFLAG);
     (void)agc_flagword_set(agc_flag_word(AGC_FLAG_LRBYPASS),
@@ -561,6 +567,7 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
+    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     agc_guid_t *g = agc_guid_state();
     agc_interp_t ip;
     agc_interp_init(&ip);
