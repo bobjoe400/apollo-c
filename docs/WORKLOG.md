@@ -127,3 +127,6 @@
             then phase 2 applies tree-wide; then all 7 lanes resume
             (guid-powered, dap-lm, dap-csm, prog-rendz, prog-align, sys-misc,
             p37) with instructions to re-read NAMING.md and RENAMES.md.
+2026-10-10  Installed coccinelle 1.1.1, universal-ctags 5.9, clangd 14
+            (user ran apt). Renames now applied via Coccinelle semantic patch
+            (identifiers only; comments keep AGC labels); inventory via ctags.

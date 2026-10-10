@@ -66,3 +66,11 @@ Language: C11, no extensions. Build flags (Makefile):
   `POODOO` become `agc_alarm(code)` / `agc_bailout(code)` calls followed by an
   error return; the octal alarm codes are preserved (e.g. `AGC_ALARM_01201`).
 * No `printf` in library code; the sim harness owns all I/O.
+
+## Tooling
+
+* `spatch` (Coccinelle) for any tree-wide rename: generate a semantic patch,
+  never sed identifiers.
+* `ctags -R --c-kinds=+px -x` for symbol inventories.
+* `clangd` (with `bear -- make` or a generated compile_commands.json) for
+  cross-reference checks once the tree compiles.
