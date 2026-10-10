@@ -33,3 +33,9 @@ header is not there yet, and list each one you used in your note:
 * Shared erasable accessors: `agc_erase_<agcname>()` / `agc_erase_set_<agcname>()`
   with the same upper-to-lower name mapping (e.g. agc_erase_refsmmat()).
 * Jobs/tasks: `AGC_JOB_<LABEL>` / `AGC_TASK_<LABEL>` using the AGC entry label.
+
+## Scratchpad hygiene
+
+The session scratchpad is shared by all agents. Use only
+SCRATCH/<your-agent-id>/ for throwaway files; never write into another
+agent's directory.

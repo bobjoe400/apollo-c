@@ -87,3 +87,10 @@
             (PIN_JOB_* in pinball_internal.h); align_pending.h and
             guid_pending_csm.h must switch to agc_dsky_display(). Launching
             batch B lane prog-rendz.
+2026-10-09  nav-conic DONE (1 stub: LEMCONIC SURFFLAG landing-site path).
+            40/40 unit, 299/299 oracle checks (35 yaAGC cases). Known gap:
+            -0 / mixed-sign words shift exactly-circular KEPLER by ~2^-14.
+            Integration items: prog-rendz rendz_ext.h declares its own conic
+            types and a different agc_conic_apsides signature -> switch to
+            agc_nav.h (already told prog-rendz to code against nav-conic names).
+            Launching batch B lane prog-align.
