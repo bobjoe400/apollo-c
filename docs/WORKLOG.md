@@ -229,3 +229,15 @@
             .clang-format, tools/check_style.py, prolog templates, make
             targets. Tree-wide `make format` runs after prog-rendz finishes,
             before status-handling. clang-format needs install (sudo).
+2026-10-10  prog-rendz DONE (0 stubs). TRANSLATION FIRST PASS COMPLETE:
+            all 19 translation lanes done (core-numeric, exec-sched,
+            state-flags, nav-conic, nav-integ, nav-aux, io-pinball, io-nouns,
+            imu, guid-powered, guid-landing, guid-entry, dap-lm, dap-csm,
+            prog-rendz, prog-align, sys-misc, p37, oracle). Integration
+            items from prog-rendz: ids 0x1100-0x1217 / tasks 0x1101-0x111C;
+            RADMODES must be one storage word (sys-misc has a copy);
+            LAT/LONG/ALT, RNRAD, CDUTCMD, KILLTASK accessors; V57/V54/V89
+            dispatch by vehicle; P23/R22LEM restart priority deviation;
+            P24 not in either rope (remove from NAMING.md).
+            Next: style lane output -> make format tree-wide -> status-
+            handling -> integrate.

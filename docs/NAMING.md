@@ -73,7 +73,6 @@ satisfy ALL of the following:
 | P21   | both    | ground_track_determination         |                                       |
 | P22   | both    | orbital_navigation                 | (LM: lunar surface navigation)        |
 | P23   | CSM     | cislunar_midcourse_navigation      |                                       |
-| P24   | CSM     | rate_aided_tracking                |                                       |
 | P25   | both    | preferred_tracking_attitude        |                                       |
 | P27   | both    | uplink_update                      |                                       |
 | P30   | both    | external_delta_v                   |                                       |
