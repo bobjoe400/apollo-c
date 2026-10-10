@@ -202,3 +202,5 @@
             counter accessors. REVIEW: docked 1/ACCS CCS COEFCTR literal
             reading lands on TORQCONS (check vs page images / yaAGC); BIGAOS
             stores 2*DB vs comment 1*DB (code followed).
+2026-10-10  Third usage-limit cutoff killed prog-rendz, prog-align, sys-misc,
+            p37 mid-work. Checkpoint committed; relaunching all four.
