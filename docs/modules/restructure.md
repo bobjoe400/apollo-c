@@ -94,9 +94,9 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 | src/io/service.c | src/io/service/service.c |
 | src/io/sysmisc_ext.h | src/io/service/sysmisc_ext.h |
 | src/io/t4rupt.c | src/io/service/t4rupt.c |
-| src/lm/dap/arith.c | src/lm/dap/common/arith.c |
+| src/lm/dap/arith.c | src/lm/dap/arith.c |
 | src/lm/dap/dapidler.c | src/lm/dap/rcs/dapidler.c |
-| src/lm/dap/dapif.c | src/lm/dap/common/dapif.c |
+| src/lm/dap/dapif.c | src/lm/dap/dapif.c |
 | src/lm/dap/needles.c | src/lm/dap/rcs/needles.c |
 | src/lm/dap/paxis.c | src/lm/dap/rcs/paxis.c |
 | src/lm/dap/pmanual.c | src/lm/dap/rcs/pmanual.c |
@@ -104,7 +104,7 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 | src/lm/dap/qrjets.c | src/lm/dap/rcs/qrjets.c |
 | src/lm/dap/qrmanual.c | src/lm/dap/rcs/qrmanual.c |
 | src/lm/dap/rate.c | src/lm/dap/rcs/rate.c |
-| src/lm/dap/state.c | src/lm/dap/common/state.c |
+| src/lm/dap/state.c | src/lm/dap/state.c |
 | src/lm/dap/t6rupt.c | src/lm/dap/rcs/t6rupt.c |
 | src/lm/dap/tjetlaw.c | src/lm/dap/rcs/tjetlaw.c |
 | src/lm/downlink_lists_lm.c | src/io/downlink_lists_lm.c |
