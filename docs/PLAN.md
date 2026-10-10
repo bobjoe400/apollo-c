@@ -131,3 +131,16 @@ STYLE.md, .clang-format, check_style.py; then `make format` tree-wide)
 Usage limits are expected and irrelevant to planning. Keep full parallelism,
 relaunch every interrupted lane on reset with resume semantics, never reduce
 lane count to avoid limits. The run continues until the definition of done.
+
+## Wave assignments (docs/agents/)
+
+| Wave | Assignment file          | Status (2026-10-10)                 |
+|------|--------------------------|-------------------------------------|
+| 1-2  | <lane>.md (19 lanes)     | DONE                                |
+| 2a   | style.md, style2.md      | DONE (Uncrustify is the formatter)  |
+| 2b   | status-handling.md       | DONE (0 hard violations)            |
+| 3    | integrate.md             | RUNNING                             |
+| 3b   | sim.md                   | queued after integrate              |
+| 4    | oracle-cases.md          | queued after integrate              |
+| 5    | review.md (one per lane) | queued after sim + oracle-cases     |
+| 6    | document.md              | queued last                         |
