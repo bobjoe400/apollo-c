@@ -27,15 +27,10 @@ agc_status_t agc_radar_r29(void);            /* R29: RR designate (from SERVICER
 /* ---- landing (guid-landing, P70-P71.agc p. ~829) -------------------------- */
 agc_status_t agc_lm_r10r11a(void);           /* R10,R11A (LRHTASK continues there) */
 
-/* ---- prog-rendz: aimpoint-steering constants left by LM INITVEL ---------- */
-typedef struct agc_rendz_lmsteer {
-    agc_vec_t un;        /* UN    unit normal to the transfer plane, 2^1      */
-    agc_sp_t  geomsgn;   /* GEOMSGN +.5 short way, -.5 long way               */
-    agc_dp_t  mu_a;      /* MU/A  mu / semi-major axis (INITVEL exit scale)   */
-    agc_dp_t  muasteer;  /* MUASTEER                                          */
-    agc_dp_t  rtmag;     /* RTMAG |RTARG| (INITVEL exit scale)                */
-} agc_rendz_lmsteer_t;
-agc_status_t agc_rendz_lm_aimsteer(agc_rendz_lmsteer_t *out);
+/* ---- LAMBERT / INITVEL erasables RASTEER1 reads (nav-conic / prog-rendz).
+ * RTMAG, MU/A, MUASTEER are already agc_rendz_t fields.                     */
+agc_sp_t  agc_erase_geomsgn(void);   /* GEOMSGN SP +.5 short way, -.5 long way */
+agc_vec_t agc_erase_un(void);        /* UN unit normal to the transfer plane 2^1 */
 
 /* ---- LM continuation jobs (lead adds to agc_jobs.h) --------------------- */
 #define AGC_JOB_P42STAGE   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */

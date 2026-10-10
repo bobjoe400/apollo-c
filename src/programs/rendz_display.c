@@ -39,7 +39,7 @@ typedef struct rz_vnpooh_slot {
 static rz_vnpooh_slot_t vnpooh_slot = { 6U, 55U, AGC_JOB_GOTOPOOH };
 
 /* ---- P3XORP7X (p.484): MODREG & HIGH9 = 0 -> P3x ---------------------- */
-bool rz_p3x(void)
+bool rz_active_vehicle_program(void)
 {
     agc_sp_t mm = agc_erase_modreg();
     (void)AGC_ASSERT(mm >= 0);
@@ -112,7 +112,7 @@ agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
  * +MGA = -.01 deg (not computed); -.02 deg on the final pass; when
  * REFSMFLG is set and this is a P3x program, +MGA from DELVSIN (GET+MGA).
  * Then COMPTGO (TTOGO clock), QSAVED = return, DELAYJOB 1 s, V16N45.   */
-agc_status_t rz_vn1645(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                        agc_rendz_t *rz, agc_job_id_t resume_as)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL)
@@ -122,32 +122,32 @@ agc_status_t rz_vn1645(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     rz->plus_mga = RZ_DP_MINUS_01;                          /* MGA = -.01 */
     if (agc_flag_test(AGC_FLAG_FINALFLG)) {
         rz->plus_mga = agc_dp_add(ip, RZ_DP_MINUS_01, RZ_DP_MINUS_01);
-        if (agc_flag_test(AGC_FLAG_REFSMFLG) && rz_p3x()) {
+        if (agc_flag_test(AGC_FLAG_REFSMFLG) && rz_active_vehicle_program()) {
             agc_mat_t refsmmat = agc_erase_refsmmat();
             agc_status_t st = agc_rendz_get_mga(ip, rz->delvsin, &refsmmat,
                                                 &rz->plus_mga);
             (void)AGC_ASSERT(st == AGC_STATUS_OK);
         }
     }
-    agc_status_t st = rz_comptgo(AGC_JOB_VN1645_DSP);   /* GET45: COMPTGO */
+    agc_status_t st = rz_comptgo(AGC_JOB_RENDZ_TTOGO_DISPLAY);   /* GET45: COMPTGO */
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
     rz->qsaved = resume_as;                             /* TS QSAVED      */
-    return rz_delayjob(RZ_1SEC_CS, AGC_JOB_VN1645_DSP); /* DELAYJOB 1SEC  */
+    return rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDZ_TTOGO_DISPLAY); /* DELAYJOB 1SEC  */
 }
 
 /* VN1645 after DELAYJOB: V16N45 (TRKMKCNT, TTOGO, +MGA) flashing. */
-agc_status_t agc_job_vn1645_dsp(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(rz_state()->qsaved != AGC_JOB_NONE);
-    return rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_VN1645_TERM,
-                    AGC_JOB_VN1645_PROC, AGC_JOB_VN1645_RECYC);
+    return rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_RENDZ_KILCLOCK,
+                    AGC_JOB_RENDZ_TTOGO_PROCEED, AGC_JOB_RENDZ_CLUPDATE);
 }
 
 /* KILCLOCK (p.481): DISPDEX = 0 (stop the clock display), GOTOPOOH. */
-agc_status_t agc_job_vn1645_term(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     rz_dispdex_zero();
@@ -158,7 +158,7 @@ agc_status_t agc_job_vn1645_term(agc_job_ctx_t *ctx)
 
 /* CLUPDATE (p.482): DISPDEX = 0, PHASCHNG 04024, CLEAR UPDATFLG, return
  * to QSAVED for the next computation cycle.                            */
-agc_status_t agc_job_vn1645_recyc(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -173,19 +173,19 @@ agc_status_t agc_job_vn1645_recyc(agc_job_ctx_t *ctx)
 
 /* N45PROC (p.482): FINALFLG already set -> KILCLOCK (await a new
  * program); otherwise PHASCHNG 04024, set FINALFLG, CLUPDATE.          */
-agc_status_t agc_job_vn1645_proc(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (agc_flag_test(AGC_FLAG_FINALFLG)) {
-        return agc_job_vn1645_term(ctx);
+        return agc_job_rendz_kilclock(ctx);
     }
     agc_status_t st = agc_phase_change(4, RZ_PHASE_04024);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_flag_set(AGC_FLAG_FINALFLG);                 /* UPFLAG     */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_job_vn1645_recyc(ctx);
+    return agc_job_rendz_clupdate(ctx);
 }
 
 /* ---- DISDVLVC (P32-P33 p.662) -------------------------------------------
@@ -201,7 +201,7 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     }
     rz->delvlvc = dv;                                       /* STORE      */
     agc_mat_t m;
-    agc_status_t st = agc_rendz_s32_33_x(ip, rz, &m);
+    agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m);
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -213,7 +213,7 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
  * Not the final pass: set UPDATFLG, go to FLAGOFF. Final pass: save the
  * computed DELVLVC (CM in DVLOS, LM in GDT/2 after clearing NTARGFLG)
  * and show V06N81 for a crew overwrite.                                 */
-agc_status_t rz_s34_35_5(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                          agc_rendz_t *rz, agc_job_id_t resume_as)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL)
@@ -224,7 +224,7 @@ agc_status_t rz_s34_35_5(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     if (!agc_flag_test(AGC_FLAG_FINALFLG)) {
         agc_status_t st = agc_flag_set(AGC_FLAG_UPDATFLG);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        return rz_s34_35_flagoff(ctx, ip, rz);
+        return rz_tpi_flagoff(ctx, ip, rz);
     }
     if (rz_is_csm()) {
         rz->dvlos = rz->delvlvc;                        /* FLAGON (CM)  */
@@ -232,7 +232,7 @@ agc_status_t rz_s34_35_5(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         (void)rz_vflag_set(RZ_VF_NTARGFLG, false);      /* FLAGON (LM)  */
         rz->gdt_2 = rz->delvlvc;
     }
-    return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_S3435_N81_DONE);
+    return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_RENDZ_FINAL_DV_CHECKED);
 }
 
 /* LM NTARGCHK: add the differences of the six words of DELVLVC and its
@@ -256,7 +256,7 @@ static bool rz_ntargchk(const agc_rendz_t *rz)
  * computed delta V (CM: |DELVLVC - DVLOS| non-zero; LM: NTARGCHK sets
  * NTARGFLG); an overwrite is processed by S34/35.3. NOCHG: CLEAR
  * XDELVFLG, DELVSIN = DELVEET3. FLAGOFF follows.                       */
-agc_status_t agc_job_s3435_n81_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -275,7 +275,7 @@ agc_status_t agc_job_s3435_n81_done(agc_job_ctx_t *ctx)
         }
     }
     if (overwrite) {
-        agc_status_t st = agc_rendz_s34_35_3(&ip, rz, AGC_JOB_S3435_N81_DONE);
+        agc_status_t st = agc_rendz_tpi_crew_overwrite(&ip, rz, AGC_JOB_RENDZ_FINAL_DV_CHECKED);
         if (st != AGC_STATUS_OK) {
             return st;                     /* INTSTALL sleep: redo step */
         }
@@ -283,17 +283,17 @@ agc_status_t agc_job_s3435_n81_done(agc_job_ctx_t *ctx)
     agc_status_t st = agc_flag_clear(AGC_FLAG_XDELVFLG);   /* NOCHG     */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     rz->delvsin = rz->delveet3;
-    return rz_s34_35_flagoff(ctx, &ip, rz);
+    return rz_tpi_flagoff(ctx, &ip, rz);
 }
 
 /* FLAGOFF: S34/35.4 (DVLOS from DELVEET3), V06N59, return to SUBEXIT. */
-agc_status_t rz_s34_35_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                                agc_rendz_t *rz)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_rendz_s34_35_4(ip, rz);
+    agc_status_t st = agc_rendz_tpi_los_delta_v(ip, rz);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return rz_vnpooh(ctx, 6U, 59U, rz->normex);
 }

@@ -52,17 +52,17 @@
 typedef enum rz_vflag {
     RZ_VF_ITSWICH = 0,  /* CSM 106D, LM 105D                               */
     RZ_VF_AVEGFLAG,     /* CSM 029D, LM 115D                               */
-    RZ_VF_V82EMFLG,     /* CSM 137D, LM 118D                               */
-    RZ_VF_P21FLAG,      /* CSM 033D, LM 004D                               */
-    RZ_VF_S32_1F1,      /* CSI indicators, both vehicles, other positions  */
-    RZ_VF_S32_1F2,
-    RZ_VF_S32_1F3A,
-    RZ_VF_S32_1F3B,
+    RZ_VF_ORBIT_DISPLAY_MOON,     /* CSM 137D, LM 118D                               */
+    RZ_VF_GROUND_TRACK,      /* CSM 033D, LM 004D                               */
+    RZ_VF_CSI_F1,      /* CSI indicators, both vehicles, other positions  */
+    RZ_VF_CSI_F2,
+    RZ_VF_CSI_F3A,
+    RZ_VF_CSI_F3B,
     RZ_VF_NTARGFLG,     /* LM only                                         */
     RZ_VF_COMPUTER,     /* CSM only (MIDGIM)                               */
     RZ_VF_AMOONFLG,     /* CSM only (R30)                                  */
-    RZ_VF_R31FLAG,      /* CSM only (R31/R34)                              */
-    RZ_VF_V37FLAG,      /* both                                            */
+    RZ_VF_RENDZ_DISPLAY,      /* CSM only (R31/R34)                              */
+    RZ_VF_CHANGE_PROGRAM,      /* both                                            */
     RZ_VF_MUNFLAG,      /* LM only (R31)                                   */
     RZ_VF_TIMRFLAG,     /* CSM only (COMPTGO)                              */
     RZ_VF_COUNT
@@ -171,13 +171,13 @@ agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
                        agc_job_id_t self, agc_job_id_t next);
 /* VN1645: +MGA, COMPTGO, DELAYJOB 1 s, V16N45 flash; the job continues as
  * resume_as after PROCEED (first time) or ENTER (QSAVED return).         */
-agc_status_t rz_vn1645(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                        agc_rendz_t *rz, agc_job_id_t resume_as);
 /* DISPLAYE: V06N55 flash, return = next.                                 */
 agc_status_t rz_displaye(const agc_job_ctx_t *ctx, agc_job_id_t self,
                          agc_job_id_t next);
 /* S34/35.5 (FINALFLG / N81 / N59 logic), continues as resume_as.         */
-agc_status_t rz_s34_35_5(const agc_job_ctx_t *ctx, agc_interp_t *ip,
+agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                          agc_rendz_t *rz, agc_job_id_t resume_as);
 /* ALARM code then V05N09 flash: TERM -> P00, PROCEED -> proceed,
  * ENTER -> recycle.                                                      */
@@ -189,6 +189,6 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                          agc_rendz_t *rz, agc_vec_t dv, uint8_t noun,
                          agc_job_id_t self, agc_job_id_t next);
 /* P3XORP7X: true when MODREG is P3x (this vehicle active).               */
-bool         rz_p3x(void);
+bool         rz_active_vehicle_program(void);
 
 #endif /* RENDZ_INTERNAL_H */

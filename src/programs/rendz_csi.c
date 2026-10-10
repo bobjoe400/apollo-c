@@ -61,13 +61,13 @@ typedef struct csi_work {
 /* ---- flag helpers ------------------------------------------------------- */
 static bool csi_f(rz_vflag_t f)
 {
-    (void)AGC_ASSERT(f >= RZ_VF_S32_1F1 && f <= RZ_VF_S32_1F3B);
+    (void)AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B);
     return rz_vflag_test(f);
 }
 
 static void csi_set(rz_vflag_t f, bool on)
 {
-    (void)AGC_ASSERT(f >= RZ_VF_S32_1F1 && f <= RZ_VF_S32_1F3B);
+    (void)AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B);
     agc_status_t st = rz_vflag_set(f, on);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
 }
@@ -76,10 +76,10 @@ static void csi_set(rz_vflag_t f, bool on)
  * cycle) or 0 0 (second cycle).                                           */
 static void csi_set_cycle(bool first_cycle)
 {
-    csi_set(RZ_VF_S32_1F1, false);
-    csi_set(RZ_VF_S32_1F2, true);
-    csi_set(RZ_VF_S32_1F3A, false);
-    csi_set(RZ_VF_S32_1F3B, first_cycle);
+    csi_set(RZ_VF_CSI_F1, false);
+    csi_set(RZ_VF_CSI_F2, true);
+    csi_set(RZ_VF_CSI_F3A, false);
+    csi_set(RZ_VF_CSI_F3B, first_cycle);
 }
 
 /* ---- ROTATE (p.676): project v into the passive orbit plane, keep |v| --- */
@@ -178,13 +178,13 @@ static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
         return true;                                         /* CSI/B23    */
     }
     w->x2 = 7;
-    if (csi_f(RZ_VF_S32_1F1)) {
+    if (csi_f(RZ_VF_CSI_F1)) {
         return false;
     }
-    if (csi_f(RZ_VF_S32_1F3A) && csi_f(RZ_VF_S32_1F3B)) {
+    if (csi_f(RZ_VF_CSI_F3A) && csi_f(RZ_VF_CSI_F3B)) {
         return false;
     }
-    csi_set(RZ_VF_S32_1F1, true);                            /* CSI/B22    */
+    csi_set(RZ_VF_CSI_F1, true);                            /* CSI/B22    */
     rz->delvcsi = agc_dp_sign(CSI_DVMAX2, rz->delvcsi);
     (void)AGC_ASSERT(rz->delvcsi != 0);
     return true;
@@ -393,8 +393,8 @@ static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
     rz->gamprev = w->gamma;
     rz->dvprev = rz->delvcsi;
     rz->delvcsi = agc_dp_sub(ip, rz->delvcsi, rz->deldv);    /* CSINEXT3   */
-    csi_set(RZ_VF_S32_1F2, false);
-    (void)AGC_ASSERT(!csi_f(RZ_VF_S32_1F2));
+    csi_set(RZ_VF_CSI_F2, false);
+    (void)AGC_ASSERT(!csi_f(RZ_VF_CSI_F2));
     return CSI_L_B1;
 }
 
@@ -407,8 +407,8 @@ static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz,
                              rz->gamprev);
     rz->deldv = d;
     rz->delvcsi = agc_dp_add(ip, agc_dp_neg(d), rz->delvcsi);
-    csi_set(RZ_VF_S32_1F3B, true);
-    csi_set(RZ_VF_S32_1F3A, true);
+    csi_set(RZ_VF_CSI_F3B, true);
+    csi_set(RZ_VF_CSI_F3A, true);
     rz->gamprev = w->gamma;
     return CSI_L_B2;
 }
@@ -440,7 +440,7 @@ static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz,
 static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz,
                                csi_work_t *w)
 {
-    if (csi_f(RZ_VF_S32_1F2)) {
+    if (csi_f(RZ_VF_CSI_F2)) {
         return csi_frstpas(ip, rz, w);
     }
     agc_dp_t dg = agc_dp_sub(ip, w->gamma, rz->gamprev);      /* 2D        */
@@ -448,15 +448,15 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t ddv = rz_norm(agc_dp_sub(ip, rz->delvcsi, rz->dvprev), &x1);
     w->slope = agc_dp_div(ip, dg, ddv);                      /* 4D         */
     rz->dvprev = rz->delvcsi;
-    bool f3a = csi_f(RZ_VF_S32_1F3A);
-    bool f3b = csi_f(RZ_VF_S32_1F3B);
+    bool f3a = csi_f(RZ_VF_CSI_F3A);
+    bool f3b = csi_f(RZ_VF_CSI_F3B);
     if (f3a && f3b) {                        /* "11": end of the 50 fps stage */
         if (agc_dp_mul_trunc(dg, rz->gamprev) >= 0) {
             return csi_fiftyfps(ip, rz, w);
         }
         rz->deldv = agc_dp_sign(CSI_INITST, rz->deldv);       /* INITST1   */
-        csi_set(RZ_VF_S32_1F3A, true);
-        csi_set(RZ_VF_S32_1F3B, false);
+        csi_set(RZ_VF_CSI_F3A, true);
+        csi_set(RZ_VF_CSI_F3B, false);
         return csi_frstpas(ip, rz, w);
     }
     if (!f3a && !f3b) {                      /* THRDCHK "00" -> FIFTYFPS    */
@@ -495,7 +495,7 @@ static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  * CSI/B with CSIALRM = X2; otherwise ALMXIT.                            */
 static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
 {
-    if (csi_f(RZ_VF_S32_1F3A) || !csi_f(RZ_VF_S32_1F3B)) {
+    if (csi_f(RZ_VF_CSI_F3A) || !csi_f(RZ_VF_CSI_F3B)) {
         return CSI_L_ALMXIT;
     }
     rz->csialrm = (agc_sp_t)w->x2;
@@ -655,7 +655,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
 }
 
 /* ---- S32/33.X (p.679): rows -URA1 x UP1 (VSL1), -UP1, -URA1 ------------- */
-agc_status_t agc_rendz_s32_33_x(agc_interp_t *ip, const agc_rendz_t *rz,
+agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_mat_t *m)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(m != NULL)) {
@@ -669,14 +669,14 @@ agc_status_t agc_rendz_s32_33_x(agc_interp_t *ip, const agc_rendz_t *rz,
 
 /* ---- S32/33.1 tail (p.678): DELVSIN = M^T DELVLVC (VXM, VSL1), DELVSAB.
  * The AGC returns DELVSIN in MPAC; the program stores it as DELVEET1/2. */
-agc_status_t agc_rendz_s32_33_1(agc_interp_t *ip, agc_rendz_t *rz,
+agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip, agc_rendz_t *rz,
                                 agc_vec_t *delvsin)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(delvsin != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_mat_t m;
-    agc_status_t st = agc_rendz_s32_33_x(ip, rz, &m);
+    agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m);
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     rz->delvsab = rz_abval(ip, rz->delvsin);
     *delvsin = rz->delvsin;

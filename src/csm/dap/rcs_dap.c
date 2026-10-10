@@ -162,9 +162,9 @@ agc_status_t csm_rcs_freshdap(bool fresh)
     if (fresh) {
         r->holdflag = 1;                        /* CAF ONE; TS HOLDFLAG   */
     }
-    agc_status_t st = agc_csm_dap_s41_2();
+    agc_status_t st = agc_csm_dap_decode_dap_data();
     if (st == AGC_STATUS_OK) {
-        st = agc_csm_dap_s40_14();
+        st = agc_csm_dap_rcs_gains();
     }
     if (st == AGC_STATUS_OK) {
         st = rcs_zerot5();

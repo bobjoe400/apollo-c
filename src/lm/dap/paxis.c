@@ -116,7 +116,7 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
 }
 
 /* PJETSLEC -6 (p.1436): two jets of the system named by AORBSYST.        */
-agc_status_t lm_dap_pjetslec6(void)
+agc_status_t lm_dap_pjetslec_pair(void)
 {
     agc_sp_t n = agc_flag_test(AGC_FLAG_AORBSFLG) ? 5 : 4;
     (void)AGC_ASSERT(n == 4 || n == 5);
@@ -139,7 +139,7 @@ agc_status_t lm_dap_calcperr(void)
 
 /* PURGENCY +4 (p.1438): P control with E, EDOT set; docked: SPSRCS,
  * otherwise TJETLAW and the 2-jet / 4-jet choice (HEADTJET).             */
-agc_status_t lm_dap_purgency4(void)
+agc_status_t lm_dap_purgency_law(void)
 {
     lm_dap_t *d = lm_dap_state();
     d->axisctr = -1;
@@ -150,19 +150,19 @@ agc_status_t lm_dap_purgency4(void)
             (void)altsyst();
             return lm_dap_jetsoff();
         }
-        return lm_dap_pjetslec6();
+        return lm_dap_pjetslec_pair();
     }
     d->sensetyp = 0;                                     /* HEADTJET       */
     agc_status_t st = lm_dap_tjetlaw();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     if ((int32_t)-d->firefct - PX_FOURDEG <= 0) {        /* not 4 deg past */
-        return lm_dap_pjetslec6();
+        return lm_dap_pjetslec_pair();
     }
     if (d->tj[0] == 0) {
         return lm_dap_jetsoff();
     }
     if ((int32_t)lm_dap_ccs_dim(d->tj[0]) - PX_160MST6 <= 0) {
-        return lm_dap_pjetslec6();
+        return lm_dap_pjetslec_pair();
     }
     return lm_dap_pjetslec(6);                           /* four jets      */
 }
@@ -175,7 +175,7 @@ agc_status_t lm_dap_purgency(void)
     d->edot = lm_dap_wrap((int32_t)d->omegap - d->omegapd);  /* EDOTP     */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     (void)AGC_ASSERT(d->edot >= LM_NEGMAX && d->edot <= LM_POSMAX);
-    return lm_dap_purgency4();
+    return lm_dap_purgency_law();
 }
 
 /* ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.    */
@@ -262,9 +262,9 @@ agc_status_t lm_dap_pretimck(void)
  * complement); then count down the direct-rate timers TCP, TCQR.         */
 static void kalcmanu_step(lm_dap_t *d)
 {
-    d->cduxd = lm_dap_1sto2s(lm_dap_msu(d->cduxd, (uint16_t)((uint16_t)d->delcdux & 077777u)));
-    d->cduyd = lm_dap_1sto2s(lm_dap_msu(d->cduyd, (uint16_t)((uint16_t)d->delcduy & 077777u)));
-    d->cduzd = lm_dap_1sto2s(lm_dap_msu(d->cduzd, (uint16_t)((uint16_t)d->delcduz & 077777u)));
+    d->cduxd = lm_dap_ones_to_twos(lm_dap_msu(d->cduxd, (uint16_t)((uint16_t)d->delcdux & 077777u)));
+    d->cduyd = lm_dap_ones_to_twos(lm_dap_msu(d->cduyd, (uint16_t)((uint16_t)d->delcduy & 077777u)));
+    d->cduzd = lm_dap_ones_to_twos(lm_dap_msu(d->cduzd, (uint16_t)((uint16_t)d->delcduz & 077777u)));
     d->tcp = lm_dap_dim(d->tcp);
     d->tcqr = lm_dap_dim(d->tcqr);
     (void)AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u);

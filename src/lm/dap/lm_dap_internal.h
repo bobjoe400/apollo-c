@@ -177,7 +177,7 @@ agc_sp_t     lm_dap_wrap(int32_t v);                 /* ADS/XCH store      */
 agc_sp_t     lm_dap_sat(int32_t v);                  /* OVERSUB / LIMITS   */
 bool         lm_dap_ovf(int32_t v);                  /* TS skip test       */
 agc_sp_t     lm_dap_msu(uint16_t a, uint16_t b);     /* MSU: 1's at pi     */
-uint16_t     lm_dap_1sto2s(int32_t v);               /* MSU + 1STOTWOS     */
+uint16_t     lm_dap_ones_to_twos(int32_t v);               /* MSU + 1STOTWOS     */
 agc_sp_t     lm_dap_ccs_dim(agc_sp_t v);             /* CCS: |v| - 1, >= 0 */
 agc_sp_t     lm_dap_dim(agc_sp_t v);                 /* DIM               */
 agc_sp_t     lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d); /* DVOVSUB        */
@@ -206,9 +206,9 @@ agc_status_t lm_dap_pretimck(void);           /* PRETIMCK .. SKIPPAXS test */
 bool         lm_dap_chkvisfz(void);           /* CHKVISFZ: false = no policy */
 agc_status_t lm_dap_pstate(void);             /* P state logic             */
 agc_status_t lm_dap_purgency(void);           /* PURGENCY                  */
-agc_status_t lm_dap_purgency4(void);          /* PURGENCY +4               */
+agc_status_t lm_dap_purgency_law(void);          /* PURGENCY +4               */
 agc_status_t lm_dap_pjetslec(agc_sp_t numbert);  /* PJETSLEC -1            */
-agc_status_t lm_dap_pjetslec6(void);          /* PJETSLEC -6               */
+agc_status_t lm_dap_pjetslec_pair(void);          /* PJETSLEC -6               */
 agc_status_t lm_dap_jetsoff(void);            /* JETSOFF                   */
 agc_status_t lm_dap_calcperr(void);           /* CALCPERR                  */
 agc_status_t lm_dap_detentck(void);           /* DETENTCK                  */
@@ -224,7 +224,8 @@ agc_status_t lm_dap_chekstik(void);           /* CHEKSTIK .. BACKHAND      */
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis);
 agc_status_t lm_dap_xtrans(void);             /* XTRANS                    */
 agc_status_t lm_dap_closeout(void);           /* CLOSEOUT / ENDJASK        */
-agc_sp_t     lm_dap_selctsub(bool *failed);   /* SELCTSUB (POLYTEMP)       */
+bool         lm_dap_selctsub(void);           /* SELCTSUB: false = FAILOOP out */
+agc_status_t lm_dap_stillrcs(void);           /* STILLRCS / ATTSTEER       */
 void         lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v);
 
 /* ---- T6 (t6rupt.c) ------------------------------------------------------ */
@@ -242,7 +243,7 @@ agc_sp_t     lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag,
                            agc_sp_t *inindex);  /* GTSQRT (gts.c)          */
 
 /* ---- 1/ACCS (accs.c, accont.c) ------------------------------------------ */
-agc_status_t lm_dap_1_accont(void);           /* 1/ACCONT                  */
+agc_status_t lm_dap_switch_curves(void);           /* 1/ACCONT                  */
 agc_status_t lm_dap_docked(void);             /* DOCKED inertia fit        */
 agc_status_t lm_dap_spscont(agc_sp_t accdotq);/* SPSCONT .. 1/ACCRET       */
 

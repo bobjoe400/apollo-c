@@ -98,8 +98,22 @@ not `agc_verb37`).
 | R62   | both    | crew_defined_maneuver              |                                       |
 | R63   | LM      | rendezvous_final_attitude          |                                       |
 | V37   | both    | change_program                     | (verb handler name)                   |
+| 1/ACCS   | LM   | jet_accel_update                   | DAP jet accelerations / TJETLAW params (agc_lm_dap_jet_accel_update) |
+| 1/ACCJOB | LM   | jet_accel_update (job)             | AGC_JOB_JET_ACCEL_UPDATE              |
+| 1/ACCSET | LM   | jet_accel_reset (job)              | null offsets, then 1/ACCS: AGC_JOB_JET_ACCEL_RESET |
+| 1/ACCONT | LM   | switch_curves                      | TJETLAW switch-curve parameters (lm_dap_switch_curves) |
+| 1STOTWOS | LM DAP | ones_to_twos                     | ones- to twos-complement (lm_dap_ones_to_twos) |
 
 File names follow the stem: `return_to_earth.c`, `entry_programs.c` (for
 a file holding P61-P67 together), `sps_burn.c`, `landing_programs.c`.
 Job ids: `AGC_JOB_RETURN_TO_EARTH`, not `AGC_JOB_P37`. Where the AGC label
 itself is a number-free word (KEPLER, LAMBERT, SERVICER, CALCGTA) keep it.
+
+### Added by dap-csm (GSOP section-numbered subroutines)
+
+| AGC    | Vehicle | Identifier stem   | AGC description                                   |
+|--------|---------|-------------------|---------------------------------------------------|
+| S41.2  | CSM     | decode_dap_data   | decode DAPDATR1/2 (N46) into RCS DAP parameters   |
+| S40.14 | CSM     | rcs_gains         | RCS DAP gains J/M, KMJ from IXX, IAVG             |
+| S40.15 | CSM     | tvc_gains         | TVC DAP gains 1/CONACC, VARK                      |
+| V68    | CSM     | stroke_test       | TVC stroke test (STRKTSTI job keeps its label)    |

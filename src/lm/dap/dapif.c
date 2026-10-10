@@ -17,7 +17,7 @@
  * switch curves are repositioned for the new deadband / masks.           */
 agc_status_t lm_dap_callaccs(void)
 {
-    agc_status_t st = agc_exec_novac(PRIO27, AGC_JOB_1_ACCJOB);
+    agc_status_t st = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_UPDATE);
     (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
     (void)AGC_ASSERT(lm_dap_state()->db >= 0);
     return st;

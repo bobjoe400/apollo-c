@@ -30,7 +30,7 @@ jet times in TIME6 counts (0.625 ms, "scaled at 10.24 s") unless noted.
 | NEEDLER, NEEDLES, DACLOOP (1417-1419) | AK (at 180 deg), RCSFLAGS b2,b3 | CDUXCMD.., EDRIVEX.., CHAN12 b6, CHAN14 b13-15 | lm_dap_needler (needles.c) |
 | OVERSUB2 / OVERSUB (1419,1422) | A with overflow | A limited | lm_dap_add_lim (arith.c) |
 | PAXIS (1421-1422) | DAPZRUPT, CDUs, CDUxD, DELCDUx | CDUxD advanced, TCP,TCQR | lm_dap_paxis (paxis.c) |
-| 1STOTWOS, SUBDIVDE, DIVIDER (1422) | | | lm_dap_1sto2s (arith.c), lm_dap_subdivde (rate.c) |
+| 1STOTWOS, SUBDIVDE, DIVIDER (1422) | | | lm_dap_ones_to_twos (arith.c), lm_dap_subdivde (rate.c) |
 | RATELOOP, ROTORQUE (KALMAN_FILTER 1470-1471) | TJP/U/V, NO.xJETS, 1JACC.. | JETRATE,Q,R (pi/4), DOWNTORK | lm_dap_rateloop (rate.c) |
 | BACKP rate derivation (1423-1427) | CDU deltas, M-matrix, gains | OMEGAP,Q,R (pi/4), TRAPEDx, AOSQ/R, DxERROR | lm_dap_backp / lm_dap_traps (rate.c) |
 | Offset estimator WORKTIME (1427) | QACCDOT,RACCDOT (pi/2^7) | AOSQ,R (pi/2), ALPHAQ,R, AOSxTERM (pi/4) | lm_dap_offset_est (rate.c) |
@@ -56,10 +56,10 @@ jet times in TIME6 counts (0.625 ms, "scaled at 10.24 s") unless noted.
 | GTSQRT, ROOTCYCL (1481-1484) | FUNCTION (DP) | sqrt (SP), SHFTFLAG | lm_dap_gtsqrt (gts.c) |
 | ACDT+C12 (1476) | NEGUQ/R, ACCDOTQ/R | QACCDOT,RACCDOT, CHAN12 | lm_dap_acdt_c12 (gts.c) |
 | TIMEGMBL (1478-1480) | AOSQ/R (pi/2), ACCDOTQ/R (pi/2^7) | Q/RGIMTIMR (0.1 s), NEGUQ/R, ALLOWGTS | agc_lm_dap_timegmbl (gts.c) |
-| 1/ACCSET, 1/ACCJOB, 1/ACCS, F(MASS), COMMEQS, LRESC, SPSCONT (1486-1491) | MASS (B16 kg), ABDELV (B13 cm/s2), DB, AOSQ/R | 1JACC.. (pi/4), COEFFQ/R, ACCDOTQ/R, KQ | agc_lm_dap_1_accs / agc_job_1_accjob / agc_job_1_accset (accs.c) |
+| 1/ACCSET, 1/ACCJOB, 1/ACCS, F(MASS), COMMEQS, LRESC, SPSCONT (1486-1491) | MASS (B16 kg), ABDELV (B13 cm/s2), DB, AOSQ/R | 1JACC.. (pi/4), COEFFQ/R, ACCDOTQ/R, KQ | agc_lm_dap_jet_accel_update / agc_job_jet_accel_update / agc_job_jet_accel_reset (accs.c) |
 | DVOVSUB (1492) | DP dividend, SP divisor | SP quotient, limited | lm_dap_dvovsub (arith.c) |
 | DOCKED inertia fit (1494-1496) | LEMMASS, CSMMASS | 1JACC.., ACCDOTR | lm_dap_docked (accs.c) |
-| 1/ACCONT, BOTHAXES, DO1/NET+, 1/ANET-, FIXMIN, DBFUN, STORV, DRFDB, 1/ACCRET (1497-1505) | 1JACC.., AOSU/V, DB, FLAT | BLOCKTOP[48] | lm_dap_1_accont (accont.c) |
+| 1/ACCONT, BOTHAXES, DO1/NET+, 1/ANET-, FIXMIN, DBFUN, STORV, DRFDB, 1/ACCRET (1497-1505) | 1JACC.., AOSU/V, DB, FLAT | BLOCKTOP[48] | lm_dap_switch_curves (accont.c) |
 | RESTORDB, SETMAXDB, SETMINDB, PFLITEDB (1407-1408) | DBSELECT | DB (at 45 deg), 1/ACCJOB | agc_lm_dap_restordb/setmaxdb/setmindb/pflitedb (dapif.c) |
 | ZATTEROR, STOPRATE, ALLCOAST (1408-1409) | CDUs | CDUxD, OMEGAxD, DELCDUx, DELxEROR, AOS | agc_lm_dap_zatteror/stoprate/allcoast (dapif.c) |
 | T6JOBCHK, T6JOB, DOT6RUPT, WRITEP/U/V (1403-1405) | TIME6 list | CHAN5, CHAN6, CHAN13 b15 | agc_lm_dap_t6jobchk / agc_lm_dap_t6rupt / lm_dap_write_p/u/v (t6rupt.c) |
@@ -81,7 +81,10 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 * DONE rate.c (RATELOOP/ROTORQUE, BACKP, offset estimator), paxis.c (PAXIS, PRETIMCK, CHKVISFZ,
   PJETSLEC, SELECTP, ALTSYST, CALCPERR, PURGENCY, JETSOFF) -- session 3 fixed chkvisfz prototype
 * DONE pmanual.c (state logic, min impulse, DETENTCK, RATERROR, PEGI, JUSTOUT, RATEDONE, ZEROENBL)
-* TODO qraxis.c, qrmanual.c, qrjets.c, t6rupt.c, tjetlaw.c,
+* DONE tjetlaw.c (TJETLAW all zones + RUFLAW1-3), t6rupt.c (JTLST, T6JOB, T6JOBCHK, DOT6RUPT, WRITEP/U/V,
+  TIME6 DINC model)
+* Session 3: NAMING rule applied (1/ACCS -> jet_accel_update etc., see docs/RENAMES.md)
+* TODO qraxis.c, qrmanual.c, qrjets.c,
   gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c, tests/test_lm_dap.c
 
 ## Deviations
@@ -110,8 +113,8 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 
 ## Requested jobs-tasks
 
-* AGC_JOB_1_ACCJOB (PRIO27, NOVAC) -> agc_job_1_accjob()
-* AGC_JOB_1_ACCSET (PRIO27, NOVAC) -> agc_job_1_accset()
+* AGC_JOB_JET_ACCEL_UPDATE (PRIO27, NOVAC) -> agc_job_jet_accel_update()
+* AGC_JOB_JET_ACCEL_RESET (PRIO27, NOVAC) -> agc_job_jet_accel_reset()
 * Interrupts (not waitlist tasks): T5RUPT -> agc_lm_dap_t5rupt(); T6RUPT -> agc_lm_dap_t6rupt();
   T4RUPT must call agc_lm_dap_rcsmon() every 480 ms (RCSMONIT).
 

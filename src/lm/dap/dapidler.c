@@ -164,7 +164,7 @@ agc_status_t agc_task_dapidler(void)
     (void)AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER);
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u) {   /* 1/ACCSET since restart? */
         d->rcsflags = (uint16_t)(d->rcsflags | LM_RCS_ACCSET);
-        agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_1_ACCSET);
+        agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET);
         (void)AGC_ASSERT(sj != AGC_STATUS_BAD_ARG);
     }
     if (!lm_dap_chekbits()) {                    /* CHECKUP                 */

@@ -35,12 +35,12 @@ void         agc_erase_set_extvbact(uint16_t v);
 
 /* ==== provisional job ids (prog-rendz), range 0x1100 ===================== */
 /* common (rendz_common.c, rendz_display.c) */
-#define AGC_JOB_VN1645_DSP    ((agc_job_id_t)0x1101) /* VN1645 after DELAYJOB  */
-#define AGC_JOB_VN1645_TERM   ((agc_job_id_t)0x1102) /* KILCLOCK               */
-#define AGC_JOB_VN1645_PROC   ((agc_job_id_t)0x1103) /* N45PROC                */
-#define AGC_JOB_VN1645_RECYC  ((agc_job_id_t)0x1104) /* CLUPDATE               */
+#define AGC_JOB_RENDZ_TTOGO_DISPLAY    ((agc_job_id_t)0x1101) /* VN1645 after DELAYJOB  */
+#define AGC_JOB_RENDZ_KILCLOCK   ((agc_job_id_t)0x1102) /* KILCLOCK               */
+#define AGC_JOB_RENDZ_TTOGO_PROCEED   ((agc_job_id_t)0x1103) /* N45PROC                */
+#define AGC_JOB_RENDZ_CLUPDATE  ((agc_job_id_t)0x1104) /* CLUPDATE               */
 #define AGC_JOB_S3435_N81     ((agc_job_id_t)0x1105) /* S34/35.5 V06N81 shown  */
-#define AGC_JOB_S3435_N81_DONE ((agc_job_id_t)0x1106) /* S34/35.5 after N81 PRO */
+#define AGC_JOB_RENDZ_FINAL_DV_CHECKED ((agc_job_id_t)0x1106) /* S34/35.5 after N81 PRO */
 #define AGC_JOB_S3435_N59     ((agc_job_id_t)0x1107) /* S34/35.5 V06N59 shown  */
 #define AGC_JOB_DISDVLVC_DONE ((agc_job_id_t)0x1108) /* DISDVLVC after V06N8x  */
 /* P32/P72 (rendz_p32_p33.c) */

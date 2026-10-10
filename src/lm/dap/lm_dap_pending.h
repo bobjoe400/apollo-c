@@ -21,8 +21,8 @@
 #include "agc/agc_flags_lm.h"
 
 /* ---- job and task ids (agc_jobs.h, integrated by the lead) ------------- */
-#define AGC_JOB_1_ACCJOB  ((agc_job_id_t)0x0D01)   /* 1/ACCJOB, PRIO27 NOVAC  */
-#define AGC_JOB_1_ACCSET  ((agc_job_id_t)0x0D02)   /* 1/ACCSET, PRIO27 NOVAC  */
+#define AGC_JOB_JET_ACCEL_UPDATE  ((agc_job_id_t)0x0D01)   /* 1/ACCJOB, PRIO27 NOVAC  */
+#define AGC_JOB_JET_ACCEL_RESET  ((agc_job_id_t)0x0D02)   /* 1/ACCSET, PRIO27 NOVAC  */
 #define AGC_TASK_DAPIDLER ((agc_task_id_t)0x0D81)  /* T5ADR = DAPIDLER        */
 #define AGC_TASK_PAXIS    ((agc_task_id_t)0x0D82)  /* T5ADR = PAXIS           */
 

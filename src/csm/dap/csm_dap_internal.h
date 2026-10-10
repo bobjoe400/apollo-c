@@ -82,7 +82,7 @@ bool         csm_rcs_rate_init_pending(void);/* RCSFLAGS BIT14 (NORATE)     */
 agc_status_t csm_tvc_mrclean(void);          /* MRCLEAN .. ENDMRC           */
 agc_status_t csm_tvc_init4(void);            /* TVCINIT4 .. ENDTVCIN        */
 agc_status_t csm_tvc_swichovr_body(void);    /* SWICHOVR +5 .. TC RTRNLOC   */
-agc_status_t csm_tvc_s40_15(bool full);      /* S40.15 (full) or S40.15 +7  */
+agc_status_t csm_tvc_gains(bool full);      /* S40.15 (full) or S40.15 +7  */
 agc_status_t csm_tvc_pcopy(bool restart);    /* PCOPY (restart: PCOPY +1)   */
 agc_status_t csm_tvc_ycopy(bool restart);    /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */

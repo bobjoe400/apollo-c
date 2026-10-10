@@ -51,9 +51,9 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 | AMBGUPDT (1037-1038) | CDUX, CDUZ | AMGB1,4,5,7,8 (scale 1) | agc_job_ambgupdt (rcs_dap_exec.c) |
 | JETSLECT .. T6SETUP (1039-1060) | CHAN31 THC, TAU, RACFAIL, RBDFAIL, ACORBD, XTRANS | RWORD/PWORD/YWORD 1,2 (chan 6/5 bits), BLAST (1/1600 s), DFT | agc_csm_jet_select (pure), agc_task_jetslect (jet_select.c) |
 | T6START/T6RUPTOR/REPLACE*/ZBLAST* (1061-1062) | BLAST, words | CHAN5, CHAN6, TIME6 | agc_task_t6start (jet_select.c) |
-| S41.2, S40.14, RCSDAPON (P40-P47 731-736) | DAPDATR1/2, IXX, IAVG | RATEINDX, ADB, XTRANS, ACORBD, RACFAIL, RBDFAIL, J/M, KMJ | agc_csm_dap_s41_2, agc_csm_dap_s40_14, agc_csm_dap_rcsdapon (rcs_dapdata.c) |
+| S41.2, S40.14, RCSDAPON (P40-P47 731-736) | DAPDATR1/2, IXX, IAVG | RATEINDX, ADB, XTRANS, ACORBD, RACFAIL, RBDFAIL, J/M, KMJ | agc_csm_dap_decode_dap_data, agc_csm_dap_rcs_gains, agc_csm_dap_rcsdapon (rcs_dapdata.c) |
 | TVCDAPON/MRCLEAN/TVCINIT1-4/ATTINIT/NEEDLEIN (937-941) | pad loads, DAPDATR1, CDUX | TVC state, T5, waitlist | agc_task_tvcdapon, agc_task_tvcinit1, csm_tvc_mrclean, csm_tvc_init4 (tvc_init.c) |
-| PRESWTCH/SWICHOVR/MCLEANJR/LOADCOEF/S40.15 (941-944) | IXX (2^20 kg m^2), KTLX/I, IAVG/TLX | 1/CONACC (2^9 s^2/rev), VARK, N10.. | agc_csm_tvc_preswtch, csm_tvc_swichovr, csm_tvc_loadcoef, csm_tvc_s40_15 |
+| PRESWTCH/SWICHOVR/MCLEANJR/LOADCOEF/S40.15 (941-944) | IXX (2^20 kg m^2), KTLX/I, IAVG/TLX | 1/CONACC (2^9 s^2/rev), VARK, N10.. | agc_csm_tvc_preswtch, csm_tvc_swichovr, csm_tvc_loadcoef, csm_tvc_gains |
 | TVCEXEC .. TVCEXFIN (946-949) | CDUX, OGAD, engine-on, VCNTR, CNTR, REPFRAC | OGAERR, AK, CSMMASS, PACTOFF/YACTOFF | agc_task_tvcexec, csm_tvc_exec_from (tvc_exec.c) |
 | MASSPROP/FIXCW (951-955) | CSMMASS, LEMMASS (2^16 kg), DAPDATR1 | IXX, IAVG (2^20 kg m^2), IAVG/TLX (2^2 s^2), WEIGHT/G | agc_csm_dap_massprop, agc_csm_dap_fixcw (tvc_massprop.c) |
 | REDOTVC/ENABL1/ENABL2/CMDSOUT/PHSCHK2/CHKSTRK/FINCOPY/TRIM/CMD/EXRSTRT (958-960) | TVCPHASE, TVCEXPHS, STROKER | restart sequencing | agc_task_redotvc, agc_task_enabl2, agc_task_cmdsout, agc_task_exrstrt (tvc_restarts.c) |
@@ -70,7 +70,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE AMBGUPDT agc_job_ambgupdt rcs_dap_exec.c
 - DONE JET_SELECTION_LOGIC agc_csm_jet_select, agc_task_jetslect, agc_task_t6start jet_select.c (re-verified vs source on resume)
 - DONE SETMINDB/SETMAXDB/S41.2/S40.14/RCSDAPON/RCSUP rcs_dapdata.c
-- TODO TVCINITIALIZE tvc_init.c
+- DONE TVCINITIALIZE tvc_init.c (agc_task_tvcdapon, csm_tvc_mrclean, agc_task_tvcinit1, csm_tvc_init4, csm_tvc_swichovr_body, agc_csm_tvc_preswtch, csm_tvc_gains, LOADCOEF)
 - TODO TVCEXECUTIVE tvc_exec.c
 - TODO TVCMASSPROP tvc_massprop.c
 - TODO TVCRESTARTS tvc_restarts.c

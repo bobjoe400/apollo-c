@@ -98,7 +98,7 @@ static agc_status_t s41_2_datr2(void)
 
 /* S41.2 (pp. 731-733): decode DAPDATR1, DAPDATR2. Called by DONOUN46
  * (V48) or directly by FRESHDAP.                                         */
-agc_status_t agc_csm_dap_s41_2(void)
+agc_status_t agc_csm_dap_decode_dap_data(void)
 {
     agc_status_t st = s41_2_datr1();
     agc_status_t st2 = s41_2_datr2();
@@ -110,7 +110,7 @@ agc_status_t agc_csm_dap_s41_2(void)
 /* S40.14 (p. 735): RCS gains from IXX, IAVG (2^20 kg m^2):
  * J/M = IXX (2PI/M), J/M1 = J/M2 = IAVG (2PI/M);
  * KMJ = .00118 / IXX, KMJ1 = KMJ2 = .00118 / IAVG.                       */
-agc_status_t agc_csm_dap_s40_14(void)
+agc_status_t agc_csm_dap_rcs_gains(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();

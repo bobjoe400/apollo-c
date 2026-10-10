@@ -173,7 +173,7 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
 
 /* 1STOTWOS (p.1422): a ones'-complement value back to a 15-bit two's-
  * complement word (CCS A, AD ONE / CS A).                                 */
-uint16_t lm_dap_1sto2s(int32_t v)
+uint16_t lm_dap_ones_to_twos(int32_t v)
 {
     (void)AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG);
     int32_t w = (v >= 0) ? v : (v + ARITH_TWOS);

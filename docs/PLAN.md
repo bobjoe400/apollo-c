@@ -77,3 +77,31 @@ Subagents must not default to the lead's model. Assign per task:
 Wave 1 ran on Fable (launched before this rule). Not restarted: sunk cost.
 Where a wave-2 scope is mostly tables (noun tables, restart tables, channel
 bits), split that part off to a Sonnet agent.
+
+## Definition of done (2026-10-10)
+
+1. Coverage: every AGC file in both ropes maps to C in MODULE_STATUS; every
+   routine translated or a named, justified stub. No unlisted omissions.
+2. Builds clean: `make` builds libagc.a + sim with the full -Werror set; one
+   flat job/task registry; no *_pending.h shims; no duplicates; layering kept.
+3. Rules pass: `make check` zero hard violations AND assertion-density
+   warnings cleared.
+4. Naming: docs/NAMING.md applied everywhere; docs/RENAMES.md fully done.
+5. Tests: `make test` green through the real library (no scratch stand-ins).
+6. Oracle: every numeric module has committed yaAGC cases passing within a
+   documented tolerance; bit-exact where -0 quirks allow.
+7. Runs end to end: sim fresh-starts either vehicle, drives clock/interrupts
+   and DSKY, and completes at least one real program sequence per vehicle
+   (e.g. P52 realign with simulated marks; P40 with a simulated burn) with
+   the AGC's expected displays.
+8. Reviewed: final fidelity/clarity review of every lane vs its AGC source,
+   findings fixed.
+
+Waves: 1-2 translation (done/in progress) -> 3 integrate + sim (items 2-5,7)
+-> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8).
+
+## Session limits (user direction, 2026-10-10)
+
+Usage limits are expected and irrelevant to planning. Keep full parallelism,
+relaunch every interrupted lane on reset with resume semantics, never reduce
+lane count to avoid limits. The run continues until the definition of done.

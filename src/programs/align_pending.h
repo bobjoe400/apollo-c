@@ -245,6 +245,12 @@ agc_status_t agc_rendz_r61csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
 #define AGC_JOB_ALIGN_COARSE_DONE     ((agc_job_id_t)0x0AAF)
 #define AGC_JOB_ALIGN_FINE_DONE       ((agc_job_id_t)0x0AB0)
 
+#define AGC_JOB_P52T_FLASH            ((agc_job_id_t)0x0AB1)
+#define AGC_JOB_CAL53A_COARSED        ((agc_job_id_t)0x0AB2)
+#define AGC_JOB_CAL53A_FINEONLY       ((agc_job_id_t)0x0AB3)
+#define AGC_JOB_GYCRS_PULSE           ((agc_job_id_t)0x0AB4)
+#define AGC_JOB_GYCRS_TORQUED         ((agc_job_id_t)0x0AB5)
+
 #define AGC_TASK_MARKDIF           ((agc_task_id_t)0x0A01) /* MARKDIF (CM)   */
 #define AGC_TASK_ENDMARKS          ((agc_task_id_t)0x0A02) /* ENDMARKS (CM)  */
 #define AGC_TASK_AOT_MKRELEAS      ((agc_task_id_t)0x0A03) /* MKRELEAS (LM)  */

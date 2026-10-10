@@ -71,7 +71,7 @@ agc_status_t lm_dap_pminimp(void)
     }
     d->oldpmin = 1;
     (void)AGC_ASSERT(d->tj[0] != 0);
-    return lm_dap_pjetslec6();
+    return lm_dap_pjetslec_pair();
 }
 
 /* STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
@@ -154,7 +154,7 @@ static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
         return lm_dap_pjetslec(6);                       /* four jets      */
     }
     d->tj[0] = lm_dap_wrap(2 * (int32_t)d->tj[0]);       /* ADS TJP        */
-    return lm_dap_pjetslec6();
+    return lm_dap_pjetslec_pair();
 }
 
 /* PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
@@ -205,7 +205,7 @@ static agc_status_t raterror(lm_dap_t *d)
     }
     d->e = d->dxerror;                                   /* pseudo-auto    */
     d->perror = d->dxerror;
-    return lm_dap_purgency4();
+    return lm_dap_purgency_law();
 }
 
 /* DETENTCK / RUTH / RATEDAMP / RHCMOVED (pp.1432-1434): the rate-command

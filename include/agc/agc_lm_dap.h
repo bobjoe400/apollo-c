@@ -49,9 +49,9 @@ agc_status_t agc_task_dapidler(void);       /* AGC_TASK_DAPIDLER: DAPIDLER     *
 agc_status_t agc_task_paxis(void);          /* AGC_TASK_PAXIS: PAXIS           */
 
 /* ---- 1/ACCS (AOSTASK_AND_AOSJOB.agc pp. 1485-1506) ---------------------- */
-agc_status_t agc_lm_dap_1_accs(void);              /* BANKCALL 1/ACCS        */
-agc_status_t agc_job_1_accjob(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCJOB     */
-agc_status_t agc_job_1_accset(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCSET     */
+agc_status_t agc_lm_dap_jet_accel_update(void);              /* BANKCALL 1/ACCS        */
+agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCJOB     */
+agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCSET     */
 
 /* ---- DAP interface subroutines (pp. 1406-1409); call with INHINT ------- */
 agc_status_t agc_lm_dap_setmaxdb(void);     /* DB = 5.0 deg                    */

@@ -5,7 +5,7 @@
  * POSTBURN, TIGNOW, TERM40, BLNKWAIT/REDO6.7/DYNMDISP, CALCN85, P47LM,
  * STARTP47, CALCN83, P47BOD, P47BODY, IMPLBURN, ENGOFTSK, ENGINOFF ..
  * ENGINOF4, COASTSET, UPDATEVG, STEERING, GETDT, the Luminary S40.8,
- * S40.9 and S40.13, RASTEER1 (stub) and TRIMGIMB.
+ * S40.9 and S40.13 and TRIMGIMB (RASTEER1 is in p40_lm_rasteer.c).
  */
 #include <stddef.h>
 #include "agc/agc_assert.h"
@@ -455,22 +455,6 @@ agc_status_t agc_task_coastset(void)
 {
     (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
     return agc_lm_dap_allcoast();
-}
-
-/* RASTEER1 (Luminary p.776-780): aimpoint steering for Lambert-targeted
- * burns: from RN, RTARG, TPASS4 and the INITVEL constants (UN, GEOMSGN,
- * MU/A, MUASTEER, RTMAG) it computes the required velocity
- *   VR = A UNIT(R) + B UNIT(C)  (or the 165-195 degree NORMSW variants)
- * with SS = (R1 + R2 + C)/2 and A, B from the semi-major-axis constants,
- * then DELVEET3 = VR - VN1 (+ the oblateness term) and VG at VGAIN*.
- * The heavily index-scaled fixed-point sequence is not translated yet.     */
-agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
-{
-    if (!AGC_ASSERT(ip != NULL)) {
-        return AGC_STATUS_BAD_ARG;
-    }
-    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_XDELVFLG));
-    return AGC_STATUS_UNIMPLEMENTED;
 }
 
 /* The steering part of S40.8 (p.771): TGDCALC with VEX and TDECAY; TIG =

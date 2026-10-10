@@ -241,7 +241,7 @@ agc_dp_t agc_rendz_shiftr1(const agc_rendz_t *rz, agc_dp_t a)
  * Choose mu and the scale indices for the primary body of the CSM state
  * (CMOONFLG). RTMU is always at 2^36 (the lunar MUM, 2^30, is shifted
  * right 6). The AGC then clears FINALFLG and goes to VN1645; the program
- * drivers do the display (rz_vn1645) themselves.                         */
+ * drivers do the display (rz_ttogo_display) themselves.                         */
 agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
 {
     if (!AGC_ASSERT(rz != NULL)) {
@@ -437,7 +437,7 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
 }
 
 /* ---- S34/35.1 (p.474): unit normal and line of sight at T3 ------------- */
-agc_status_t agc_rendz_s34_35_1(agc_interp_t *ip, agc_rendz_t *rz)
+agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL)) {
         return AGC_STATUS_BAD_ARG;

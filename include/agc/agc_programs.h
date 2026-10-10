@@ -169,11 +169,11 @@ typedef struct agc_rendz {
     agc_dp_t hapox, hperx;    /* HAPOX HPERX: m 2^29                        */
     agc_dp_t tff;             /* TFF: cs 2^28 (negative)                    */
     agc_dp_t neg_tper;        /* -TPER: cs 2^28                             */
-    agc_dp_t tstart82;        /* TSTART82: cs 2^28                          */
+    agc_dp_t tstart_orbit;        /* TSTART82: cs 2^28                          */
     agc_dp_t rpadtem;         /* RPADTEM: pad / landing site radius         */
     agc_dp_t r30_hpermin;     /* HPERMIN (R30 use): m 2^29 / 2^27           */
     agc_dp_t tff_rtmu;        /* TFF/RTMU: 1/sqrt(mu)                       */
-    agc_sp_t v82flags;        /* V82FLAGS: bit1 tick -TPER, bit2 tick TFF   */
+    agc_sp_t orbit_display_flags;        /* V82FLAGS: bit1 tick -TPER, bit2 tick TFF   */
 } agc_rendz_t;
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
@@ -186,32 +186,32 @@ agc_rendz_t *agc_rendz_erasable(void);
 void         agc_rendz_reset(agc_rendz_t *rz);
 
 /* ---- R30 orbital parameters (SR30.1) ------------------------------------ */
-typedef struct agc_r30_in {
+typedef struct agc_orbit_params_in {
     agc_vec_t rone;      /* RONE: m, 2^29 (earth or moon centred)          */
     agc_vec_t vone;      /* VONE: m/cs, 2^7                                */
     bool      moon;      /* V82EMFLG: set = moon (RONE/VONE rescaled SL2)  */
     agc_dp_t  tff_rtmu;  /* TFF/RTMU: 1/sqrt(mu) 2^17 earth / 2^14 moon    */
     agc_dp_t  rpadtem;   /* RPADTEM: pad / landing site radius 2^29 / 2^27 */
     agc_dp_t  hpermin;   /* HPERMIN: 300 kft 2^29 earth / 35 kft 2^27 moon */
-} agc_r30_in_t;
+} agc_orbit_params_in_t;
 
-typedef struct agc_r30_out {
+typedef struct agc_orbit_params_out {
     agc_dp_t rapo;       /* RAPO: m 2^29 earth / 2^27 moon                  */
     agc_dp_t rper;       /* RPER: m 2^29 earth / 2^27 moon                  */
     agc_dp_t hapox;      /* HAPOX: m 2^29, limited to 9999.9 NM             */
     agc_dp_t hperx;      /* HPERX: m 2^29, limited to 9999.9 NM             */
     agc_dp_t tff;        /* TFF: cs 2^28 (negative quantity)                */
     agc_dp_t neg_tper;   /* -TPER: cs 2^28 (negative, or +0)                */
-} agc_r30_out_t;
+} agc_orbit_params_out_t;
 
 /* SR30.1 (R30.agc pp.521-523): apogee/perigee, heights, TFF and TPER.     */
-agc_status_t agc_r30_sr30_1(agc_interp_t *ip, const agc_r30_in_t *in,
-                            agc_r30_out_t *out);
+agc_status_t agc_orbit_params_compute(agc_interp_t *ip, const agc_orbit_params_in_t *in,
+                            agc_orbit_params_out_t *out);
 /* MAXCHK (R30.agc p.523): limit a height to MAXNM (9999.9 NM), m 2^29.     */
-agc_dp_t     agc_r30_maxchk(agc_interp_t *ip, agc_dp_t h);
+agc_dp_t     agc_orbit_params_maxchk(agc_interp_t *ip, agc_dp_t h);
 /* V82 earth/moon parameter selection (V82GON1 MOONGON/EARTHGON).          */
-agc_status_t agc_r30_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
-                                 agc_r30_in_t *in);
+agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
+                                 agc_orbit_params_in_t *in);
 
 /* ---- rendezvous subroutines (P34-35_P74-75.agc pp.469-500) ------------- */
 agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg);
@@ -237,7 +237,7 @@ agc_status_t agc_rendz_periapo1(agc_interp_t *ip, const agc_rendz_t *rz,
 agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
                                agc_vec_t r, agc_vec_t v,
                                agc_rendz_periapo_t *out);
-agc_status_t agc_rendz_s34_35_1(agc_interp_t *ip, agc_rendz_t *rz);
+agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz);
 agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz,
                              agc_mat_t *m);
 agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit,
@@ -260,82 +260,89 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
 agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz,
                              agc_sp_t *alarm, agc_job_id_t resume);
 agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_s32_33_x(agc_interp_t *ip, const agc_rendz_t *rz,
+agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_mat_t *m);
 /* S32/33.1 after the V06N81 display: DELVSIN = M^T DELVLVC, DELVSAB.      */
-agc_status_t agc_rendz_s32_33_1(agc_interp_t *ip, agc_rendz_t *rz,
+agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip, agc_rendz_t *rz,
                                 agc_vec_t *delvsin);
 
 /* ---- TPI / TPM (P34-35_P74-75.agc) ------------------------------------- */
-/* S33/34.1: iterate TPI time (or elevation); returns AGC_STATUS_ALARM with
- * alarm 00611 when no solution (the AGC's non-zero MPAC exit).           */
-agc_status_t agc_rendz_s33_34_1(agc_interp_t *ip, agc_rendz_t *rz,
-                                bool itswich, bool etpiflag,
-                                agc_dp_t *ttpi);
-agc_status_t agc_rendz_s34_35_2(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_s34_35_3(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_s34_35_4(agc_interp_t *ip, agc_rendz_t *rz);
+/* Every routine that integrates takes `resume`: AGC_STATUS_BUSY means
+ * INTSTALL put the job to sleep; it is resumed as that job.               */
+/* S33/34.1 (pp.469-473): iterate the TPI time for the elevation ELEV
+ * (ITSWICH set) or compute ELEV for TTPI (ITSWICH clear). OK = the AGC's
+ * zero MPAC exit, ALARM = non-zero MPAC (caller raises 00611).           */
+agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz,
+                                       agc_job_id_t resume);
+/* The same, continued at the ADTIME/GOINT step after an INTSTALL sleep. */
+agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
+                                            agc_job_id_t resume);
+/* S34/35.2 (p.475-476): passive to TPASS4, ACTCENT, INITVEL, DELVLVC.   */
+agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
+                                             agc_job_id_t resume);
+/* S34/35.3 (p.477): crew-loaded DELVLVC -> DELVEET3, RTARG, DVLOS.      */
+agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz,
+                                          agc_job_id_t resume);
+/* S34/35.4 / NOVRWRT (p.477-478): DVLOS from DELVEET3.                  */
+agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz);
+/* INITVEL (pp.486-491): numit Lambert/precision iterations, cone e4.    */
 agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
-                               agc_sp_t numit, agc_dp_t e4);
+                               agc_sp_t numit, agc_dp_t e4,
+                               agc_job_id_t resume);
+/* P34/P74E (pp.464-465): TPASS4 from CENTANG, S34/35.2, DELVTPI,
+ * DELVTPF, POSTTPI, TIG.                                                 */
 agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
-                                   agc_dp_t ttpi);
+                                   agc_job_id_t resume);
 
 /* ---- R36 out-of-plane parameters ---------------------------------------- */
-agc_status_t agc_rendz_r36_compute(agc_interp_t *ip, agc_rendz_t *rz,
+agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
                                    agc_vec_t rp, agc_vec_t vp,
                                    agc_vec_t ra, agc_vec_t va);
 
 /* ---- R31 rendezvous parameters (COMPDISP) ------------------------------- */
-agc_status_t agc_r31_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
+agc_status_t agc_rendz_params_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
                               agc_vec_t rone, agc_vec_t vone,
                               agc_vec_t ratt, agc_vec_t vatt,
                               agc_vec_t axis_nb_sm, const agc_mat_t *refsmmat);
 
 /* ---- P38/P39 stable orbit ----------------------------------------------- */
-agc_status_t agc_rendz_p38_deltt(agc_interp_t *ip, agc_rendz_t *rz,
+agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
                                  agc_vec_t ratt, agc_vec_t vatt);
 
 /* ---- P17 TPI search (Comanche) ------------------------------------------ */
-agc_status_t agc_rendz_s17_1(agc_interp_t *ip, agc_rendz_t *rz, bool *kflag);
+agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, bool *kflag);
 agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 
 /* ---- P21 ground track ---------------------------------------------------- */
-agc_status_t agc_p21_flight_path(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
+agc_status_t agc_ground_track_flight_path(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
                                  agc_sp_t rtx2, agc_dp_t *vel,
                                  agc_dp_t *gamma);
 
 /* ---- P76 ---------------------------------------------------------------- */
-agc_status_t agc_p76_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
+agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
                                agc_vec_t vatt, agc_vec_t dv_lv,
                                agc_vec_t *v_new);
 
 /* ---- P20-P25 measurement processing -------------------------------------- */
 /* BVECTORS (CSM R22, P20-P25.agc p.576): B vector and DELTAQ for an optics
  * mark. ustar, um, b: unit vectors 2^1; rclp: LM-CSM, body scale.         */
-agc_status_t agc_r22_bvectors(agc_interp_t *ip, agc_vec_t rclp,
+agc_status_t agc_rendz_tracking_bvectors(agc_interp_t *ip, agc_vec_t rclp,
                               agc_vec_t um, agc_vec_t *ustar,
                               agc_vec_t *bvec, agc_dp_t *deltaq);
 
-/* ---- program entry points (executive jobs) ------------------------------ */
-/* Each returns the status of its first step; later steps run as
- * continuation jobs after DSKY responses (see docs/modules/prog-rendz.md). */
-agc_status_t agc_prog_p32(bool this_active);   /* P32 / P72 */
-agc_status_t agc_prog_p33(bool this_active);   /* P33 / P73 */
-agc_status_t agc_prog_p34(bool this_active);   /* P34 / P74 */
-agc_status_t agc_prog_p35(bool this_active);   /* P35 / P75 */
-agc_status_t agc_prog_p38(bool this_active);   /* P38 / P78 */
-agc_status_t agc_prog_p39(bool this_active);   /* P39 / P79 */
-agc_status_t agc_prog_p17(bool this_active);   /* P17 / P77 (CSM)  */
-agc_status_t agc_prog_p31(void);               /* P31 (LM)         */
-agc_status_t agc_prog_p76(void);
-agc_status_t agc_prog_p21(void);
-agc_status_t agc_prog_p20(void);
-agc_status_t agc_prog_p22(void);
-agc_status_t agc_prog_p23(void);               /* CSM              */
-agc_status_t agc_prog_p25(void);               /* LM               */
-agc_status_t agc_verb82_r30(void);             /* V82E             */
-agc_status_t agc_verb83_r31(void);             /* V83E             */
-agc_status_t agc_verb90_r36(void);             /* V90E             */
+/* ---- program entry points and continuation jobs -------------------------
+ * Programs run as executive jobs (agc_jobs.h convention): each entry job
+ * runs to its first display; the AGC's returns from flashing displays,
+ * DELAYJOB and INTSTALL sleeps are separate continuation jobs. Job ids
+ * are listed in docs/modules/prog-rendz.md ("Requested jobs-tasks").    */
+/* shared displays (rendz_display.c) */
+agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx);        /* VNPOOH TC -5 */
+agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx); /* VN1645 V16N45 */
+agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx);      /* KILCLOCK     */
+agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx); /* N45PROC      */
+agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx);      /* CLUPDATE     */
+agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx); /* S34/35.5 */
+/*@JOBS@*/
 
 /* Noun data for the rendezvous erasables (delegated from agc_noun_read). */
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value);
