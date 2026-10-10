@@ -204,3 +204,8 @@
             stores 2*DB vs comment 1*DB (code followed).
 2026-10-10  Third usage-limit cutoff killed prog-rendz, prog-align, sys-misc,
             p37 mid-work. Checkpoint committed; relaunching all four.
+2026-10-10  p37 DONE (0 stubs), 21 checks (coplanar min-fuel return converges
+            to -6.500 deg, DV 3.6404 m/cs). Integration: 15 job ids
+            0x0C30..0x0C3E into jobs.h/dispatch; prototypes to agc/csm/entry.h;
+            accessors t3tot4, rted1, return_to_earth_range; prog-rendz must
+            provide agc_rendz_ttogo_display_start (VN1645).
