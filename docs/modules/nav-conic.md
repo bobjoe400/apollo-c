@@ -111,9 +111,10 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
   every conic SQRT argument is tested or built non-negative first.
 * ITERATOR reads TWEEKIT as the DP (40D, 41D) = (TWEEKIT, S2) with S2 = 1.
 * SSP constants are the ASSEMBLED words: "SSP TWEEKIT 20000" is 10000
-  (.25) and "SSP GEOMSGN 37777" is 27777 in both ropes (the assembler
-  stores an operand >= 10000 octal less 10000). Using .5 made LM LAMBERT
-  with a small ITERCTR take a different branch than the AGC.
+  (.25) and "SSP GEOMSGN 37777" is 27777 in both assembled ropes
+  (Comanche055.va.lst / Luminary099.va.lst; the ropes are checksum-
+  verified against the flight listings). Using .5 made LM LAMBERT with a
+  small ITERCTR take a different branch than the AGC.
 * RVCON/CSMCONIC/LEMCONIC: the state vector has no TDELTAV/TNUV, so it is
   taken as rectified (RCV = RRECT); TET += TC; output stays in the body's
   scale (RECTOUT's RATT/VATT rescale to 2^29/2^7 and INTSTALL/INTEXIT
