@@ -14,6 +14,46 @@ Noun/verb TABLES stay indexed by number (that is data, not a name), but
 handler functions are named by what they do (`agc_verb_change_program`,
 not `agc_verb37`).
 
+
+## Rules for deriving a name (added after the first rename attempt failed)
+
+The first pass did mechanical substitution and produced names like
+`entry_entry_upcontrol`, `agc_entry_entry_final_phase_2_latlong` and
+`AGC_JOB_ENGINE_FAIL_PROCEDURE_E`. Those are not names. Every rename must
+satisfy ALL of the following:
+
+1. **Read the source first.** For every identifier that carries a label
+   (P65_1B, V97E, CLOKJOB, N61, R51K, P63SPOT2), open the AGC file, find
+   the label, and read its comment and the code around it. The new name
+   states what that code DOES, in the AGC's own words where possible.
+   Record the AGC comment you used in the map so a reviewer can check it.
+2. **No opaque suffixes.** Letters or digits inherited from the label
+   (`_E`, `_P`, `_T`, `_1B`, `_2`, `TASK2`, `EJOB`) are forbidden unless the
+   source gives them a meaning you then spell out: V97E/V97P/V97T are the
+   engine-fail variants for different engine states -> name those states.
+   Sequential job segments become `_start`, `_after_display`, `_resume`,
+   `_second_pass`, chosen from what the segment does, never `_1`/`_1b`.
+3. **No stutter.** If the prefix already says `entry`, the stem does not
+   repeat it: `agc_entry_final_phase_latlong`, not
+   `agc_entry_entry_final_phase_2_latlong`. Collapse repeated words.
+4. **English phrase, 2-4 words after the prefix.** `agc_job_` + phrase,
+   `AGC_TASK_` + PHRASE. If you need more than 4 words the name is
+   describing two things; split or pick the dominant one.
+5. **Keep word labels.** Labels that are already words (KEPLER, LAMBERT,
+   SERVICER, CALCGTA, LANDISP, CLOKJOB, BURNBABY) stay, lower-cased.
+   Do not "improve" them.
+6. **Verbs by function, nouns by content.** V97 -> `engine_fail_procedure`,
+   V99 -> `engine_enable_request`, N61 -> `landing_site_latlong` (read the
+   noun table to see what N61 holds). Tables indexed by verb/noun number
+   are data and keep numeric indices.
+7. **One name per concept, tree-wide.** Before inventing a name, grep the
+   tree and docs/NAMING.md; reuse an existing stem. The job id, the job
+   function, the file and the test share the stem:
+   `AGC_JOB_ENTRY_UPCONTROL`, `agc_job_entry_upcontrol`, `entry_programs.c`.
+8. **Map first, apply second.** Write docs/RENAMES.md completely (old |
+   new | file | AGC comment used), have it reviewed, then apply with
+   word-boundary replacement in one pass over the whole tree.
+
 ## Canonical names (use these exactly; extend the table, never invent a
 ## second name for the same program)
 
