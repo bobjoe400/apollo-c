@@ -42,3 +42,8 @@
             lines). All lanes have notes with Progress sections. Relaunching
             with resume semantics in two batches: A = core-numeric, exec-sched,
             nav-conic, nav-integ, nav-aux, io-pinball, imu; B = the rest after A.
+2026-10-09  nav-aux DONE (0 stubs). Integration items: TEPHEM has two sources
+            (shared accessor vs module pad-load struct) until core adds the
+            pad-load accessors listed in its note; nav-integ owns INCORP2's
+            restart/RECTIFY/INTWAKE; agc_dp_sign must be AGC SIGN semantics.
+            Launching batch B lane guid-powered now (one at a time as A frees).
