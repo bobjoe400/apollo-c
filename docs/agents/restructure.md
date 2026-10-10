@@ -5,6 +5,8 @@ live beside them) into subsystem subfolders. include/agc/ stays flat; no
 `#include "agc/..."` line changes. The Makefile globs src/ recursively.
 
 Rule: a subfolder needs >= 3 files; otherwise keep the file in the parent.
+Rule: never create a `common/` folder; shared glue lives at the parent level
+and only specialised subsystems (rcs, tvc, gimbal) get subfolders.
 
 Target layout (place every existing file; if a file does not fit, choose
 the closest folder and list it in your note):
@@ -26,7 +28,7 @@ src/csm/dap/rcs    RCS digital autopilot, jet selection logic, automatic
                    maneuvers, RCS DAP executive programs, DAP data load (R03)
 src/csm/dap/tvc    TVCINITIALIZE, TVCEXECUTIVE, TVCMASSPROP, TVCRESTARTS,
                    TVCDAPS (pitch/yaw), TVCSTROKETEST, TVCROLLDAP
-src/csm/dap/common MYSUBS and any DAP interface/shared helpers
+src/csm/dap        (parent) MYSUBS, DAP state -- shared glue stays at the parent
 src/csm/burns      sps burn, earth-orbit-insertion monitor, return to earth, csm servicer
 src/csm/prelaunch  prelaunch alignment / gyrocompassing
 src/csm/optics     sxtmark, s-band antenna csm, landmark selection
@@ -36,8 +38,8 @@ src/lm/burns       dps burn (+rasteer), ignition, lm servicer
 src/lm/dap/rcs     DAP idler, P-axis, Q/R-axis, TJET law, Kalman filter,
                    T6RUPT jet timing, RCS failure monitor
 src/lm/dap/gimbal  trim gimbal control system, AOS task and job
-src/lm/dap/common  DAP interface subroutines, SPS back-up RCS control,
-                   shared DAP state/pending headers
+src/lm/dap         (parent) DAP interface subroutines, arithmetic, state,
+                   SPS back-up RCS control -- shared glue stays at the parent
 src/lm/optics      aotmark, s-band antenna lm, radar lead-ins, ags init
 src/lm/tests       imu performance tests (LM P07) if present
 
