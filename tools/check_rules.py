@@ -59,8 +59,8 @@ def check_file(path):
                     continue
         else:
             depth += s.count('{') - s.count('}')
-            if s and not s.startswith(('/*', '*', '//')):
-                code_lines += 1
+            if s and s not in ('{', '}') and not s.startswith(('/*', '*', '//')):
+                code_lines += 1  # brace-only lines carry no statement (Allman style)
             if re.search(r'\b' + re.escape(in_func) + r'\s*\(', s) and not s.startswith(('/*', '*', '//')):
                 HARD.append(f'{path}:{i}: rule 1: direct recursion in {in_func}')
             if depth <= 0:
