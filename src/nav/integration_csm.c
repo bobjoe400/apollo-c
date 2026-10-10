@@ -15,6 +15,7 @@ agc_status_t agc_integ_csm_clear_v96onflg(void)
         return AGC_STATUS_BAD_ARG;
     }
     agc_integ_flag(AGC_FLAG_V96ONFLG, false);
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_V96ONFLG));
     return AGC_STATUS_OK;
 }
 
@@ -31,5 +32,6 @@ agc_status_t agc_integ_csm_set_amoonflg(bool on)
         return AGC_STATUS_BAD_ARG;
     }
     agc_integ_flag(AGC_FLAG_AMOONFLG, on);
+    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_AMOONFLG) == on);
     return AGC_STATUS_OK;
 }

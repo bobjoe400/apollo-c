@@ -40,7 +40,8 @@ Mapping (D = scalar DP, V = vector):
 | DLOAD X       | `agc_dp_t a = X;`                              |
 | DAD / DSU     | `agc_dp_add(ip,a,b)` / `agc_dp_sub(ip,a,b)`    |
 | BDSU          | `agc_dp_sub(ip,b,a)`                           |
-| DMP           | `agc_dp_mul(ip,a,b)` (TP product rounded like DMPR; use `agc_tp_mul` when the AGC keeps TP) |
+| DMP           | `agc_dp_mul_trunc(ip,a,b)` (bit-exact DMP, TP product truncated); `agc_dp_mul_tp` when the AGC keeps the TP product |
+| DMPR          | `agc_dp_mul(ip,a,b)` (rounded product) |
 | DDV / BDDV    | `agc_dp_div(ip,a,b)` / `agc_dp_div(ip,b,a)`    |
 | DSQ           | `agc_dp_sq(ip,a)`                              |
 | SQRT          | `agc_dp_sqrt(ip,a)`                            |
@@ -69,9 +70,14 @@ Mapping (D = scalar DP, V = vector):
 | SETPD/PUSH/PDDL/PDVL | C locals (the push list is a spill area)  |
 | EXIT          | end of interpretive section (no-op)            |
 
-Overflow semantics: `agc_dp_*` operations saturate the way the AGC does and
-set `ip->ovfind`. Code that tests BOV must call `agc_interp_test_ovf`, which
-clears the flag, mirroring the AGC.
+Overflow semantics (verified against yaAGC by core-numeric): DAD, DSU, BDSU,
+TAD, SL, SLR, VAD, VSU, VSL **wrap** modulo the word and set `ip->ovfind`,
+exactly as the AGC does; they do not saturate. Only DDV/BDDV, V/SC and UNIT
+produce DPPOSMAX on overflow. Code that tests BOV must call
+`agc_interp_test_ovf`, which clears the flag, mirroring the AGC. SQRT of a
+negative argument and ASIN/ACOS out of range are reported by the `*_chk`
+variants as status codes; the caller raises POODOO 01302 / ALARM 01301.
+See docs/modules/core-numeric.md for the per-op table.
 
 ## 3. Basic (machine) code
 

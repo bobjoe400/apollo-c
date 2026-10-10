@@ -145,6 +145,15 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
 #define AGC_JOB_SERV_COPY     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 88)) /* copy cycle restart  */
 #define AGC_JOB_SERV_EXIT     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 89)) /* go to AVGEXIT restart */
 #define AGC_JOB_AVETOMID      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 90)) /* AVGEND 2.2 restart (AVETOMID) */
+#define AGC_JOB_SERV_RVBOTH2  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 91)) /* LM RVBOTH after 1st QUIKFAZ5 */
+#define AGC_JOB_SERV_MUNRVG   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 92)) /* LM MUNRVG restart    */
+#define AGC_JOB_SERV_COPYCYC1 ((agc_job_id_t)(AGC_JOB_GUID_BASE + 93)) /* LM COPYCYC1 restart  */
+#define AGC_JOB_SERV_VMEASCHK ((agc_job_id_t)(AGC_JOB_GUID_BASE + 94)) /* LM VMEASCHK restart  */
+#define AGC_JOB_SERV_VALTCHK  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 95)) /* LM VALTCHK restart   */
+#define AGC_JOB_SERV_LOTHRUST ((agc_job_id_t)(AGC_JOB_GUID_BASE + 96)) /* LM LOTHRUST restart  */
+#define AGC_JOB_SERV_DECCNTR  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 97)) /* LM DECCNTR restart   */
+#define AGC_JOB_SERV_RUPDATED ((agc_job_id_t)(AGC_JOB_GUID_BASE + 98)) /* LM RUPDATED (store GNUR) */
+#define AGC_JOB_SERV_VUPDATED ((agc_job_id_t)(AGC_JOB_GUID_BASE + 99)) /* LM VUPDATED (store GNUV) */
 #define AGC_JOB_P40_DSKY_DONE AGC_JOB_ENDOFJOB
 
 #define AGC_TASK_GUID_BASE 0x400

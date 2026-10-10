@@ -16,24 +16,27 @@ static agc_guid_t g_guid;
 /* The one guidance erasable block.                                        */
 agc_guid_t *agc_guid_state(void)
 {
+    (void)AGC_ASSERT(g_guid.avg.pipage >= 0);
+    (void)AGC_ASSERT(g_guid.lm.vselect >= 0 && g_guid.lm.vselect <= 2);
     return &g_guid;
 }
 
 /* Zero a vector (no interpreter needed).                                  */
-static agc_vec_t zero_vec(void)
-{
-    return agc_vec_zero();
-}
 
 /* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
  * rotation axis along reference Z as a full unit vector (CM pad load,
  * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
 static void init_avg(agc_avg_g_t *a)
 {
+    if (!AGC_ASSERT(a != NULL)) {
+        return;
+    }
     a->avgexit = AGC_JOB_SERVEXIT;
     a->unitw = agc_vec_make(0, 0, AGC_DP_MAX);
     a->pipage = 1;
-    a->gdt_2 = zero_vec();
+    a->gdt_2 = agc_vec_zero();
+    (void)AGC_ASSERT(a->avgexit != AGC_JOB_NONE);
+    (void)AGC_ASSERT(a->unitw.c[2] > 0);
 }
 
 /* Fresh start of the guidance erasables: everything zero, then the values

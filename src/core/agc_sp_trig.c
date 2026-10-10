@@ -37,6 +37,7 @@ static agc_sp_t sp_polley(int32_t x)
     int o = 0;
     (void)AGC_ASSERT(agc_w_ok(x));
     sq = agc_w_mp(x, x).hi;                            /* MP TEMK; TS SQ   */
+    (void)AGC_ASSERT(sq >= 0);
     a = agc_w_mp(sq, AGC_K_C5_2).hi + AGC_K_C3_2;      /* MP C5/2; AD C3/2 */
     a = agc_w_mp(a, sq).hi + AGC_K_C1_2;               /* MP SQ; AD C1/2   */
     p = agc_w_mp(a, x);                                /* MP TEMK          */
@@ -53,6 +54,7 @@ static agc_sp_t sp_sine(int32_t a16)
     int o = 0;
     int32_t t = sp_ts(a16, &o);                        /* SPSIN: TS TEMK   */
     int32_t x;
+    (void)AGC_ASSERT(agc_w_ok(t));
     if (o != 0) {                                      /* arg beyond +-pi  */
         t = -t;                                        /* CS TEMK          */
     }
@@ -63,6 +65,7 @@ static agc_sp_t sp_sine(int32_t a16)
     /* XCH TEMK; INDEX TEMK; AD LIMITS; COM; AD TEMK: x -> +-1.0 - x       */
     x = (o > 0) ? (x - AGC_K_POSMAX) : (x + AGC_K_POSMAX);
     x = -x + o;
+    (void)AGC_ASSERT((x >= -AGC_W_ONE) && (x <= AGC_W_ONE));
     x = sp_ts(x, &o);                                  /* TS TEMK          */
     if (o != 0) {
         return sp_arg90(o);                            /* arg = +-pi/2     */

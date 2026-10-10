@@ -100,7 +100,8 @@ typedef struct agc_lm_ldg {
     agc_dp_t  vhoriz;     /* VHORIZ horizontal velocity, 2^7 m/cs           */
     agc_dp_t  rangedsp;   /* RANGEDSP slant range, 2^24 m                   */
     agc_sp_t  lookangl;   /* LOOKANGL LPD angle, degrees (integer)          */
-    agc_vec_t unfc_2;     /* UNFC/2 thrust command, 2^-4 m/cs^2             */
+    agc_vec_t unfc_2;     /* UNFC/2 thrust command, 2^-4 m/cs^2 (any length;
+                             FINDCDUW -2 input, also used by P40 / ascent) */
     agc_vec_t unwc_2;     /* UNWC/2 window command (half unit)              */
     agc_dp_t  afc;        /* /AFC/ commanded acceleration, 2^-4 m/cs^2      */
     agc_sp_t  wchphase;   /* WCHPHASE  -1..2                                */
@@ -214,11 +215,15 @@ agc_dp_t     agc_lm_massmult(agc_dp_t accel);
 
 /* ---- FINDCDUW--GUIDAP_INTERFACE (findcduw.c) ---------------------------- */
 agc_status_t agc_lm_initcduw(void);
-agc_status_t agc_lm_findcduw(agc_vec_t unfc_2, agc_vec_t unwc_2);
-agc_sp_t     agc_lm_sparcsin(agc_sp_t x);        /* SPARCSIN arg scale 1 */
-agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c);
+/* FINDCDUW: thrust command (any length) in MPAC; window command is
+ * agc_lm_ldg()->unwc_2. FINDCDUW -2: thrust command from UNFC/2
+ * (agc_lm_ldg()->unfc_2).                                        */
+agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
+agc_status_t agc_lm_findcduw_m2(agc_interp_t *ip);
+agc_sp_t     agc_lm_sparcsin(agc_sp_t x);   /* arg scale 1, angle 180 deg */
+agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t     agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
-agc_sp_t     agc_lm_onesto2s(agc_sp_t a);
+uint16_t     agc_lm_onesto2s(agc_sp_t a);   /* -> 15-bit 2's comp word    */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (landing_guidance.c) -------------- */
 #define AGC_LM_ROOT_MAX_DEGREE 5   /* ROOTPSRS erasables allow N <= 5      */

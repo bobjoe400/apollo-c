@@ -217,7 +217,6 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx);  /* TERMATE  (ENDIDLE+1) */
 agc_status_t agc_job_proceed(agc_job_ctx_t *ctx);  /* PROCEED  (ENDIDLE+2) */
 agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx); /* IDLERET1+2 (ENDIDLE+3) */
 agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx);  /* JAMTERM via FINDVAC */
-agc_status_t agc_job_endinst(agc_job_ctx_t *ctx);  /* ENDINST: TC ENDOFJOB (XCHTOEND) */
 agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx);/* XCHSLEEP, FACEREG 0 (mark)   */
 agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx);/* XCHSLEEP, FACEREG 1 (normal) */
 agc_status_t agc_task_monreq(void);                /* MONREQ  (waitlist)  */

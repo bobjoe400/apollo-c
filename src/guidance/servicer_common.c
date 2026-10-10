@@ -137,7 +137,8 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
 agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
                                agc_vec_t r, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(a != NULL)) {
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(a != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM)) {
@@ -168,7 +169,8 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
                               const agc_mat_t *refsmmat, agc_vec_t delv,
                               const agc_state_vector_t *sv, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) || !AGC_ASSERT(sv != NULL && a != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) ||
+        !AGC_ASSERT(sv != NULL && a != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_dp_t dt22;

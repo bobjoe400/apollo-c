@@ -3,10 +3,10 @@
  * subroutines (CONIC_SUBROUTINES.agc, Comanche 055 pp. 1262-1308).
  *
  * The interpretive MPAC is triple precision: DMP leaves a TP product, and a
- * following SL/SR/NORM/TAD/ROUND operates on all three words. The core API
- * has TP multiply/add/round but no TP shift or TP NORM; those two are local
- * here (agc_conic_mshift_, agc_conic_mnorm_) and are listed under
- * "Requested core additions" in docs/modules/nav-conic.md.
+ * following SL/SR/NORM/TAD/ROUND/SQRT operates on all three words. The
+ * agc_conic_m*_ helpers are one function per interpretive instruction on
+ * that model, built on the core TP operations (agc_tp_shift, agc_tp_norm,
+ * agc_tp_round, agc_tp_sqrt, agc_dp_sq_tp, agc_dp_mul_tp, agc_dp_poly).
  */
 #include "conic_internal.h"
 #include "agc/agc_assert.h"
@@ -86,7 +86,8 @@ agc_dp_t agc_conic_mstore_(agc_tp_t m)
     return agc_tp_to_dp(m);
 }
 
-/* DAD X (p. 1131): DAS into MPAC,+1 with OVERFLOW limiting; MPAC+2 kept. */
+/* DAD X (p. 1131): DAS into MPAC,+1 (overflow-corrected result, OVFIND);
+ * MPAC+2 kept. */
 agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 {
     if (!AGC_ASSERT(ip != NULL)) { return m; }
@@ -142,7 +143,7 @@ agc_tp_t agc_conic_mdsq_(agc_tp_t m)
     agc_dp_t d = agc_tp_to_dp(m);
     (void)AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
     (void)AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
-    return agc_dp_mul_tp(d, d);
+    return agc_dp_sq_tp(d);
 }
 
 /* DDV X (p. 1162): MPAC,+1 / X; quotient DP, OVFIND and limit on overflow. */
@@ -161,42 +162,27 @@ agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     return agc_tp_from_dp(agc_dp_div(ip, d, agc_tp_to_dp(m)));
 }
 
-/* SQRT (p. 1181): square root of MPAC,+1. DEVIATION: SQRTSUB pulls MPAC+2
- * up only when MPAC is zero (argument < 2^-14); the DP root ignores it.  */
+/* SQRT (SQRTSUB p. 1181): square root of the TP MPAC (MPAC+2 takes part
+ * when MPAC is zero). An argument below -2^-14 is the AGC's SQRTABRT
+ * (POODOO 01302); no conic path can produce one (every root is of a
+ * quantity the code has just tested or built non-negative), so it is only
+ * asserted here.                                                         */
 agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m)
 {
     if (!AGC_ASSERT(ip != NULL)) { return m; }
-    (void)AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
-    return agc_tp_from_dp(agc_dp_sqrt(ip, agc_tp_to_dp(m)));
+    (void)AGC_ASSERT(m > -((agc_tp_t)1 << (AGC_TP_BITS - AGC_SP_BITS)));
+    return agc_tp_from_dp(agc_tp_sqrt(ip, m));
 }
 
 /* SL n (n > 0) / SR -n (n < 0) on the TP MPAC (GENSHIFT p. 1158, TSSL
  * p. 1154). Left shifts go one place at a time; a place that overflows sets
- * OVFIND and "leaves the overflow-corrected result anyway" (TS keeps the
- * true sign and drops the carried-out bit). Right shifts truncate the
- * magnitude, as the ones' complement AGC does. This is the interim
- * agc_tp_shift requested from core-numeric.                              */
+ * OVFIND and "leaves the overflow-corrected result anyway" (wrapped, true
+ * sign). Right shifts truncate the magnitude. Core agc_tp_shift.         */
 agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n)
 {
     if (!AGC_ASSERT(ip != NULL)) { return m; }
     if (!AGC_ASSERT(n > -128 && n < 128)) { return m; }
-    agc_tp_t r = m;
-    if (n < 0) {
-        int k = -n;
-        return (k >= 62) ? 0 : (r / ((agc_tp_t)1 << k));
-    }
-    const agc_tp_t one = AGC_TP_MAX + 1;               /* 2^42 = 1.0     */
-    for (int i = 0; i < n; i++) {
-        r *= 2;
-        if (r > AGC_TP_MAX) {                          /* TS OVFIND      */
-            ip->ovfind = (agc_ovf_t)1;
-            r -= one;
-        } else if (r < AGC_TP_MIN) {
-            ip->ovfind = (agc_ovf_t)-1;
-            r += one;
-        }
-    }
-    return r;
+    return agc_tp_shift(ip, m, n);
 }
 
 /* SLR n / SRR -n: shift, then ROUNDSUB on the result (p. 1160-1161). */
@@ -207,33 +193,23 @@ agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n)
     return agc_conic_mround_(ip, agc_conic_mshift_(ip, m, n));
 }
 
-/* ROUND (ROUNDSUB p. 1137): round MPAC+2 into MPAC,+1 and clear it. */
+/* ROUND (ROUNDSUB p. 1137): round MPAC+2 into MPAC,+1 and clear it;
+ * OVFIND on a carry out of MPAC.                                         */
 agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m)
 {
     if (!AGC_ASSERT(ip != NULL)) { return m; }
     (void)AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
-    return agc_tp_from_dp(agc_tp_round_dp(m));
+    return agc_tp_from_dp(agc_tp_round(ip, m));
 }
 
 /* NORM X (TSLC p. 1157): left-justify the TP MPAC until |MPAC| >= 1/2;
  * *nshift = number of left shifts (the AGC stores -*nshift in X). Zero
- * is left alone with a count of 0. Interim agc_tp_norm.                  */
+ * is left alone with a count of 0. Core agc_tp_norm.                    */
 agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift)
 {
     if (!AGC_ASSERT(nshift != NULL)) { return m; }
     if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX)) { *nshift = 0; return m; }
-    const agc_tp_t half = (agc_tp_t)1 << (AGC_TP_BITS - 1);
-    agc_tp_t r = m;
-    int n = 0;
-    for (int i = 0; i < AGC_TP_BITS && r != 0; i++) {
-        if (r >= half || r <= -half) {
-            break;
-        }
-        r *= 2;
-        n++;
-    }
-    *nshift = n;
-    return r;
+    return agc_tp_norm(m, nshift);
 }
 
 /* ABS (p. 1183). */
@@ -285,24 +261,14 @@ bool agc_conic_mbze_(agc_tp_t m)
     return agc_tp_to_dp(m) == 0;
 }
 
-/*
- * POLY (INTERPRETER.agc p. 1139, basic code called through EXIT/TC POLY):
- * Horner evaluation of coef[0] + coef[1] x + ... from the top coefficient,
- * DMPSUB (MPAC+2 dropped on the next pass) then DAS of the next coefficient.
- * "User's responsibility to assure no overflow": the DAS overflow is not
- * reported (OVFIND is untouched by basic DAS).
- */
+/* POLY (INTERPRETER.agc p. 1139, called through EXIT / TC POLY / DEC N):
+ * coef[0] + coef[1] x + ... + coef[ncoef-1] x^(ncoef-1); "DEC N" in the
+ * listing is ncoef - 2. Core agc_dp_poly (DMPSUB + DAS per term).        */
 agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef)
 {
     if (!AGC_ASSERT(coef != NULL)) { return 0; }
-    if (!AGC_ASSERT(ncoef >= 1 && ncoef <= 10)) { return 0; }
-    agc_dp_t acc = coef[ncoef - 1];
-    for (int i = ncoef - 2; i >= 0; i--) {
-        agc_ovf_t ovf = 0;
-        acc = agc_dp_add_raw(agc_tp_to_dp(agc_dp_mul_tp(acc, x)), coef[i], &ovf);
-        (void)ovf;   /* DAS overflow not observed by POLY (see above) */
-    }
-    return acc;
+    if (!AGC_ASSERT(ncoef >= 2 && ncoef <= 16)) { return 0; }
+    return agc_dp_poly(x, coef, ncoef - 1);
 }
 
 /* SIGN with vector MPAC: complement the vector if the SP tag is negative. */

@@ -58,7 +58,7 @@ static agc_sp_t thr_lo(agc_dp_t v)
  * leaves whatever L held). Otherwise the result is (MPAC+1, MPAC+2).     */
 agc_dp_t agc_lm_massmult(agc_dp_t accel)
 {
-    agc_dp_t mass = agc_erase_mass();            /* 2^16 kg               */
+    agc_dp_t mass = agc_guid_state()->lm.mass;  /* MASS, 2^16 kg          */
     if (!AGC_ASSERT(mass >= 0)) {
         return 0;
     }
@@ -115,7 +115,7 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
     agc_sp_t cmd = agc_lm_ad(thr_hi(t->pif), t->pifpset);
     t->pseudo55 = cmd;
     agc_erase_set_thrust(cmd);
-    agc_status_t st = agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTDRIVE);
+    agc_status_t st = agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
     if (!AGC_ASSERT(st == AGC_STATUS_OK)) {
         return st;
     }
@@ -198,7 +198,7 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
  * the trouble: ABDELV * /AF/CNST -> 2^-4 m/cs^2.                        */
 agc_status_t agc_lm_throttle(void)
 {
-    agc_sp_t abdelv = agc_dp_high(agc_erase_abdelv());   /* CA ABDELV     */
+    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;     /* CA ABDELV     */
     if (!AGC_ASSERT(abdelv >= 0)) {
         return AGC_STATUS_BAD_ARG;
     }

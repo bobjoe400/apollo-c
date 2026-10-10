@@ -64,9 +64,9 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | include/agc/agc_guid.h | DONE (rewritten on resume: targeting erasables shared with prog-rendz moved to agc_rendz_t; CSM TVC values in agc_csm_dap.h) |
 | pending headers (guid_pending*.h) | PARTIAL guid_pending.h DONE (reconciled with state-flags/exec/dsky/imu/programs); csm/lm ones TODO |
 | CDUTRIG/CD*TR*GS/QUICTRIG/AX*SR*T/*SMNB*/*NBSM*/SMCDURES/FLESHPOT | DONE powered_flight.c (all agc_guid_cdutrig..fleshpot) |
-| guid_state.c (agc_guid_state/agc_guid_init) | TODO |
-| PIPASR/REREADAC/CALCGRAV/CALCRVG/COPYCYC/NORMLIZE | TODO |
-| CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR | TODO |
+| guid_state.c (agc_guid_state/agc_guid_init) | DONE guid_state.c |
+| PIPASR/REREADAC/CALCGRAV/CALCRVG/COPYCYC | DONE agc_guid_pipasr/rereadac_resume/calcgrav/calcrvg/copycycle servicer_common.c |
+| CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR/NORMLIZE/REREADAC/SERVEXIT | DONE src/csm/servicer_csm.c (guid_pending_csm.h written) |
 | LM PREREAD/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE | TODO |
 | LM RVBOTH/MUNRVG/MUNGRAV/MUNRETRN/LR update/LR jobs | TODO |
 | P30/P31/S30.1/S31.1/DELRSPL | TODO |

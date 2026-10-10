@@ -184,6 +184,7 @@ agc_vec_t agc_vec_cross(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     y = agc_w_dad(y, mul_top(-u.c[0], v.c[2]), &ip->ovfind);  /* - X3M1    */
     x = mul_top(u.c[1], v.c[2]);                       /* X3M2             */
     x = agc_w_dad(x, mul_top(-u.c[2], v.c[1]), &ip->ovfind);  /* - X2M3    */
+    (void)AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(y.hi) && agc_w_ok(z.hi));
     r.c[0] = agc_w_join(x);
     r.c[1] = agc_w_join(y);
     r.c[2] = agc_w_join(z);
@@ -231,6 +232,7 @@ agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
     for (k = 0; k < AGC_VEC_N; k++) {
         p[k] = agc_w_split(v.c[k]);
     }
+    (void)AGC_ASSERT(n <= 127);                        /* 7-bit count      */
     for (j = 0; (j < n) && (j < VSHIFT_MAX); j++) {
         for (k = 0; k < AGC_VEC_N; k++) {
             p[k] = agc_w_dad(p[k], p[k], &ip->ovfind);
@@ -286,6 +288,7 @@ agc_vec_t agc_mat_vec(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t v)
     for (i = 0; i < AGC_VEC_N; i++) {
         r.c[i] = agc_vec_dot(ip, v, m->row[i]);
     }
+    (void)AGC_ASSERT(i == AGC_VEC_N);
     return r;
 }
 
@@ -320,6 +323,7 @@ agc_vec_t agc_vec_mat(agc_interp_t *ip, agc_vec_t v, const agc_mat_t *m)
     for (j = 0; j < AGC_VEC_N; j++) {
         r.c[j] = agc_vec_dot(ip, v, t.row[j]);
     }
+    (void)AGC_ASSERT(j == AGC_VEC_N);
     return r;
 }
 
@@ -337,5 +341,6 @@ agc_mat_t agc_mat_mul(agc_interp_t *ip, const agc_mat_t *a, const agc_mat_t *b)
     for (j = 0; j < AGC_VEC_N; j++) {
         cols.row[j] = agc_mat_vec(ip, a, bt.row[j]);
     }
+    (void)AGC_ASSERT(j == AGC_VEC_N);
     return agc_mat_transpose(&cols);
 }

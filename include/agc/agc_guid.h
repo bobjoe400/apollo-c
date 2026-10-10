@@ -191,7 +191,8 @@ typedef struct agc_guid_csm {
     agc_dp_t  rsp_rrec;   /* RSP-RREC splash range error, rev (DELRSPL)      */
 } agc_guid_csm_t;
 
-/* Luminary-only guidance erasables.                                         */
+/* Luminary-only guidance erasables. /LAND/, WM, TTF/8, UNFC/2, UNWC/2,
+ * DELTAH, HCALC1, WCHPHASE, FLPASS0 are guid-landing's (agc_lm_ldg()).      */
 typedef struct agc_guid_lm {
     agc_dp_t  mass;       /* MASS = WEIGHT/G, kg, scale 2^16                 */
     agc_dp_t  mass1;      /* MASS1 kg 2^16 (also DVCNTR1 temporary)          */
@@ -207,13 +208,10 @@ typedef struct agc_guid_lm {
     agc_vec_t g_csm;      /* G(CSM)   SM, m/cs, scale 2^7                    */
     agc_vec_t r_csm;      /* R(CSM)   SM, m, scale 2^24                      */
     agc_vec_t v_csm;      /* V(CSM)   SM, m/cs, scale 2^7                    */
-    agc_vec_t wm;         /* WM       lunar rotation, SM, rad/cs 2^-33 (VSL2 -> 2^5 m/cs) */
     agc_dp_t  abvel;      /* ABVEL    speed m/cs, scale 2^7                  */
     agc_dp_t  hdotdisp;   /* HDOTDISP altitude rate m/cs, scale 2^7          */
     agc_vec_t delvs;      /* DELVS    lunar rotation correction m/cs 2^5     */
     agc_dp_t  hcalc;      /* HCALC    altitude m, scale 2^24                 */
-    agc_dp_t  hcalc1;     /* HCALC1   m, scale 2^24                          */
-    agc_dp_t  land_r;     /* /LAND/   landing-site radius m, scale 2^24      */
     agc_vec_t uhyp;       /* UHYP     cross-range half unit (R10)            */
     agc_vec_t uhzp;       /* UHZP     downrange half unit (R10)              */
     agc_dp_t  altbits;    /* ALTBITS  altitude, R10 bit units                */
@@ -225,7 +223,6 @@ typedef struct agc_guid_lm {
     agc_vec_t vbeamnb[3]; /* VZBEAMNB VYBEAMNB VXBEAMNB, NB half unit         */
     agc_dp_t  hmeas;      /* HMEAS    LR range, 1.079 ft/bit                 */
     agc_dp_t  vmeas;      /* VMEAS    LR velocity counts                     */
-    agc_dp_t  deltah;     /* DELTAH   m, scale 2^24                          */
     agc_dp_t  delqfix;    /* DELQFIX  m, scale 2^24 (50 ft nominal) (PL)     */
     agc_sp_t  lrlctr, lrrctr, lrmctr, lrsctr; /* LR good/bad counters        */
     agc_sp_t  vselect;    /* VSELECT  0 Z, 1 Y, 2 X beam                     */
@@ -237,8 +234,6 @@ typedef struct agc_guid_lm {
     agc_vec_t gnur;       /* GNUR = GNUV updated R1S or V1S                  */
     agc_dp_t  radskal;    /* RADSKAL  doppler scale (PL)                     */
     agc_sp_t  skalskal;   /* SKALSKAL low/high altitude scale ratio (PL)     */
-    agc_dp_t  hscal;      /* HSCAL    range scale (PL)                       */
-    agc_sp_t  vzscal[3];  /* VZSCAL.. velocity beam scales, m/cs 2^6 (PL)    */
     agc_sp_t  lrhmax;     /* LRHMAX   m, scale 2^14 (PL)                     */
     agc_sp_t  lrwh;       /* LRWH     altitude weight (PL)                   */
     agc_sp_t  lrvmax;     /* LRVMAX   m/cs 2^7 (PL)                          */
@@ -248,7 +243,6 @@ typedef struct agc_guid_lm {
     agc_sp_t  lrwvff;     /* LRWVFF   P65-P67 weight (PL)                    */
     agc_sp_t  lralpha[2]; /* LRALPHA POS1, POS2 (X rotation) (PL)            */
     agc_sp_t  lrbeta[2];  /* LRBETA  POS1, POS2 (Y rotation) (PL)            */
-    agc_vec_t hbeamant;   /* HBEAMANT range beam in antenna axes (PL)        */
     agc_sp_t  rpcrtime;   /* RPCRTIME repositioning criterion, TTF/8 units   */
     agc_sp_t  rpcrtqsw;   /* RPCRTQSW repositioning criterion (angle)        */
     agc_dp_t  mktime;     /* MKTIME   cs, scale 2^28                         */
@@ -261,7 +255,6 @@ typedef struct agc_guid_lm {
     agc_dp_t  tigsave;    /* TIGSAVE  cs, scale 2^28                         */
     agc_dp_t  tigsavep;   /* TIGSAVEP cs, scale 2^28                         */
     agc_dp_t  tnewa;      /* TNEWA    Lambert cycle, cs 2^28                 */
-    agc_vec_t unfc_2;     /* UNFC/2   thrust command for FINDCDUW, SM        */
     agc_dp_t  mdot;       /* MDOT     kg/cs, scale 2^3                       */
     agc_dp_t  tdecay;     /* TDECAY   cs, scale 2^28                         */
     agc_dp_t  vex;        /* VEX      exhaust velocity, m/cs 2^6             */
@@ -344,6 +337,11 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx);   /* NORMLIZE    */
 agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx);   /* SERVICER    */
 agc_status_t agc_job_servexit(agc_job_ctx_t *ctx);       /* SERVEXIT (both) */
 agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx);        /* dispatch on AVGEXIT */
+agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx);  /* DVTOTUP restart */
+agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx); /* AVERAGEG restart */
+agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx);  /* GENTRAN restart  */
+agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx);     /* AVGEND      */
+agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx);   /* AVGEND 2.2 restart */
 
 /* ---- average-G jobs and tasks: Luminary (src/lm/servicer_lm.c) -------- */
 agc_status_t agc_task_preread_lm(void);                  /* PREREAD     */
@@ -354,10 +352,13 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx);    /* NORMLIZE    */
 agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx);    /* SERVICER    */
 agc_status_t agc_job_servidle(agc_job_ctx_t *ctx);       /* SERVIDLE    */
 agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx);         /* dispatch on AVGEXIT */
+agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx);      /* AVGEND      */
+agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx);    /* AVGEND 2.2 restart */
+/* Restart points set by QUIKFAZ5 (AGC_JOB_SERV_*): one entry, by ctx->id. */
+agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_munrvg(agc_interp_t *ip);            /* MUNRVG      */
 agc_status_t agc_lm_rvboth(agc_interp_t *ip);            /* RVBOTH      */
 agc_vec_t    agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r); /* MUNGRAV (r SM 2^24) -> GDT1/2 */
-agc_status_t agc_lm_munretrn(agc_interp_t *ip);          /* MUNRETRN .. COPYCYC2 */
 agc_status_t agc_lm_altchk(agc_sp_t index, bool *below); /* ALTCHK      */
 agc_status_t agc_lm_tmptospt(void);                      /* TMPTOSPT    */
 agc_status_t agc_lm_lrhtask(void);                       /* LRHTASK     */

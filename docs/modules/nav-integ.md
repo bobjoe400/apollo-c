@@ -101,8 +101,8 @@ Design notes:
 * orbital_integration.c: DONE (compiles) -- KEPPREP wrapper agc_integ_kepprep, FBR3 fbr3, GOBAQUE gobaque, GAMCOMP gamcomp/gamcomp_rho, ACCOMP accomp/third_body, OBLATE oblate/moon_axes/legendre_terms/comterm_tvec, QUALITY1-3 quality2/quality3, DOW.. dow/dow1, DIFEQ0/+0/+1/+2/DIFEQCOM difeq0/difeq01/difeq2, ENDSTATE state_step, AMOVED/NEXTCOL/WMATEND agc_integ_wcolumns/wmatend, RECTEST rectest, TIMESTEP agc_integ_timestep (+ LM lm_sphere), CHKSWTCH agc_integ_chkswtch, ORIGCHNG agc_integ_origchng, RECTIFY/MINIRECT agc_integ_rectify/minirect, SETMOON/CLRMOON agc_integ_setmoon
 * integration_csm.c / integration_lm.c: DONE (SETITCTR agc_integ_setitctr)
 * assertion density top-up: TODO
-* scratch run of the test against a host shim of the numeric core: TODO
-* tests/test_integration.c: TODO
+* scratch run of the test: DONE (see Tests written)
+* tests/test_integration.c: DONE (12 tests, 177 checks; all pass against the current core/exec/nav objects with a scratch link shim for dispatch/svdwn/dsky)
 
 ## Deviations
 

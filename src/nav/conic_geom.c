@@ -51,7 +51,7 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ctx->u2 = agc_vec_unit(ip, v2vec, &mag, NULL);  /* UNIT, STODL U2 / 36D */
     ctx->magvec2 = mag;                             /* STOVL MAGVEC2        */
     ctx->ur1 = agc_vec_unit(ip, r1vec, &mag, NULL); /* UNIT, STORE UR1      */
-    agc_tp_t m = agc_conic_mload_(agc_vec_dot(ip, ctx->ur1, ctx->u2));
+    agc_tp_t m = agc_vec_dot_tp(ip, ctx->ur1, ctx->u2);     /* DOT: TP MPAC */
     *csth = agc_conic_mstore_(agc_conic_mshift_(ip, m, 1)); /* DOT SL1: 0D */
     ctx->r1 = mag;                                  /* STOVL R1 / UR1       */
     agc_vec_t n = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, ctx->u2), 1);

@@ -116,13 +116,32 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
 
 /* ---- component access ------------------------------------------------- */
 
+/* Whether the value of a data id is passed raw. agc_nouns.h: an id used
+ * by both a raw and a signed scale is raw (DSPTEM1 +0..+2: WHOLE, OCTAL,
+ * CDU_DEG; CSM OPTION2: OCTAL and WHOLE in noun 72).
+ * INTEGRATION: replace by a per-id query once io-nouns offers one.      */
+static bool pin_id_is_raw(uint16_t id, bool scale_raw)
+{
+    int kind = -1;
+    if (pin_own_id(id, &kind) >= 0) {
+        return kind == 0;
+    }
+    return scale_raw || id == (uint16_t)AGC_DATA_OPTION2;
+}
+
+/* Scale information of component k, with is_raw describing the value
+ * convention of the component's data id.                                */
 agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 {
     const pin_state_t *s = pin_st();
     if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(info != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    return agc_scale_info((agc_scale_t)s->noun.scale_type[k], info);
+    agc_status_t st = agc_scale_info((agc_scale_t)s->noun.scale_type[k], info);
+    if (st == AGC_STATUS_OK && s->nntype == PIN_NNTYPE_NORMAL) {
+        info->is_raw = pin_id_is_raw(s->noun.data_id[k], info->is_raw);
+    }
+    return st;
 }
 
 /* SFRUTNOR / SFRUTMIX: SF routine number of component k (0 = octal). */
@@ -152,7 +171,7 @@ bool pin_sf_is_dp(uint8_t rout)
 }
 
 /* Value <-> 15-bit machine word for a component of the given kind. */
-static agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
+agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 {
     if (info->is_raw) {
         return (agc_dp_t)(w & PIN_WORD);

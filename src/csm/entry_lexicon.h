@@ -104,7 +104,7 @@
 
 /* ---- loop bounds (Power of Ten rule 2) --------------------------------- */
 #define AGC_ENTRY_HUNTEST_MAX_ITER 25   /* DEVIATION: AGC iterates HUNTEST without a bound */
-#define AGC_ENTRY_SEQ_MAX_STEPS    64   /* max sequencer steps in one 2 s pass             */
+#define AGC_ENTRY_SEQ_MAX_STEPS   200   /* max sequencer steps in one 2 s pass (>= 6 per HUNTEST iteration) */
 #define AGC_ENTRY_VREFER_N         13   /* points per VREFER function                       */
 #define AGC_ENTRY_VREFER_TABLES     7   /* VREF plus six functions of V                     */
 

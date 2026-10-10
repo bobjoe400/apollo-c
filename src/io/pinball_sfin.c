@@ -212,6 +212,13 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out, boo
         break;
     }
     *exited = (st != AGC_STATUS_OK);
+    if (st == AGC_STATUS_OK && !pin_sf_is_dp(info.routine)) {
+        /* the SP result (MPAC) in the value convention of the data id */
+        bool angle = info.routine == (uint8_t)PIN_SF_DEG || info.routine == (uint8_t)PIN_SF_OPDEG
+                     || info.routine == (uint8_t)PIN_SF_DPFRAC;
+        uint16_t w = angle ? (uint16_t)*out : pin_ones_from_sp(agc_dp_high(*out));
+        *out = (lm || info.routine != (uint8_t)PIN_SF_DPFRAC) ? pin_value_of_word(&info, w) : *out;
+    }
     return st;
 }
 

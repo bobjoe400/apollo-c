@@ -95,11 +95,12 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 Infrastructure:
 - DONE src/lm/landing_pending.h (all not-yet-existing shared symbols, one place)
 - DONE include/agc/agc_lm_landing.h (lane API + state structs; may grow)
-- TODO src/lm/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
+- DONE src/lm/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
+- DONE landing_pending.h reconciled 2026-10-09 with agc_guid.h, agc_lm_dap.h, agc_integ.h, agc_exec.h, exec_pending.h (job ids moved to 0x0F00/0x0F80)
 
 Per file (TODO unless marked):
-- TODO throttle.c: THROTTLE, AFDUMP, WHERETO..FLATOUT2, DOPIF, DOIT, FWEIGHT, FLATOUT, WHATOUT, MASSMULT
-- TODO findcduw.c: INITCDUW, FINDCDUW, FLTRSUB, UNWCTEST, DCMCL, NB2CDUSP, DVBYCOSM, ARCTRGSP, SPARCSIN, LIMITSUB, ONESTO2S, NOATTCNT, ALARMMGA
+- DONE throttle.c: agc_lm_throttle, agc_lm_throttle_measured (AFDUMP..DOPIF), thr_region (WHERETO..FLATOUT2), thr_doit, thr_fweight, agc_lm_throttle_flatout, agc_lm_throttle_whatout, agc_lm_massmult
+- DONE findcduw.c: agc_lm_initcduw, agc_lm_findcduw (+ _m2 = FINDCDUW -2), fc_fltrsub, fc_unwctest, fc_dcmcl, fc_nb2cdusp, fc_dvbycosm, agc_lm_arctrgsp, agc_lm_sparcsin, agc_lm_limitsub, agc_lm_onesto2s, fc_noattcnt, ALARMMGA in fc_gimbal_changes
 - TODO landing_guidance.c: LUNLAND/GUILDRET, TTFINCR, CALCRGVG, RGVGCALC, TTF/8CL, ROOTPSRS, QUADGUID, AFCCALC, CGCALC, EXTLOGIC, EXGSUB/EXBRAK/EXNORM, STEER?, DISPEXIT, P65VERT, TDISPSET
 - TODO lunar_landing.c: P63LM, IGNALG, DDUMCALC, ASTNRET..P63SPOT4, GUILDEN (R13), STARTP64/66/67, REDESIG, P64DISPS, RODTASK/RODCOMP, PITFALL/REDESMON, DESCBITS, P68
 - TODO p70_p71.c: R10,R11, P70/P71, ABRTJASK, GOABORT, P70INIT, BOTHPOLY, P71RET, TGOCOMP, THROTUP

@@ -191,6 +191,7 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         return AGC_DP_MAX;
     }
     q = agc_w_ddv(a, b, &o);
+    (void)AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN));
     if (o != 0) {
         ip->ovfind = 1;                                /* CAF ONE; TS OVFIND */
     }
@@ -209,6 +210,7 @@ agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
     if (n < 0) {
         return agc_dp_shr(a, -n);
     }
+    (void)AGC_ASSERT(n <= 127);                        /* 7-bit count      */
     return agc_w_join(agc_w3_top(agc_w_tssl(m, n, &ip->ovfind)));
 }
 
@@ -223,6 +225,7 @@ agc_dp_t agc_dp_shl_round(agc_interp_t *ip, agc_dp_t a, int n)
     if (n < 0) {
         return agc_dp_shr_round(a, -n);
     }
+    (void)AGC_ASSERT(n <= 127);                        /* 7-bit count      */
     m = agc_w_tssl(m, n, &ip->ovfind);
     m = agc_w_roundsub(m, &ip->ovfind);
     return agc_w_join(agc_w3_top(m));

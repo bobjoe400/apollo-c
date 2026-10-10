@@ -4,10 +4,10 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 
 | Agent id     | Status | Files produced | Notes |
 |--------------|--------|----------------|-------|
-| core-numeric | IN-PROGRESS | src/core/agc_*.c (numeric), include/agc/agc_constants.h | see docs/modules/core-numeric.md |
+| core-numeric | DONE (0 stubs) | src/core/agc_{mpac,divide,shift,word,sp_trig,constants,interp_scalar,interp_trig,interp_vector,vec_div}.c, agc_mpac.h; include/agc/agc_constants.h; agc_interp.h prototypes/scalings; tests/test_core_numeric.c, tests/oracle_core_numeric.c, tools/oracle/cases/core_numeric.{spec,txt} | bit-exact vs yaAGC (20.7k interp cases, exhaustive SPSIN/SPCOS); DAD/SL wrap like AGC (no saturation); yaAGC DV -0 bug found; see docs/modules/core-numeric.md |
 | exec-sched   | DONE (V37/CANV37 partial; 5 restart erasables + 4 rupt handlers pending owners) | src/exec/*.c, exec_internal.h, exec_pending.h; agc_exec.h/agc_jobs.h additions; tests/test_exec.c (197 checks pass) | see docs/modules/exec-sched.md |
 | state-flags  | DONE (0 stubs) | include/agc/agc_flags_{common,csm,lm}.h, agc_channels.h, agc_state.h; src/core/agc_state.c, agc_channels.c, agc_erasable.c; tests/test_state.c, test_state_lm.c | CSM channel bits derived from code comments (no CM bit table in source); see docs/modules/state-flags.md |
-| nav-conic    | IN-PROGRESS | include/agc/agc_nav.h, src/nav/conic_*.c | see docs/modules/nav-conic.md |
+| nav-conic    | DONE (1 stub) | include/agc/agc_nav.h (conic), src/nav/conic_*.c, tests/test_conic.c, tests/oracle_conic.c, tools/oracle/cases/nav_conic{,_lm}.{spec,txt} | stub: LEMCONIC+SURFFLAG (USEPIOS, nav-integ); 35 oracle cases match yaAGC within 1 SP LSB (scratch core) |
 | nav-integ    | IN-PROGRESS | include/agc/agc_integ.h, src/nav/integration_init.c, src/nav/orbital_integration.c | design written |
 | nav-aux      | DONE (0 stubs) | include/agc/agc_navaux.h; src/nav/{latlong,planetary,measurement,free_fall,ephemerides,star_tables,navaux_util}.c, navaux_internal.h; tests/test_navaux.c | agc_lsposition ready for nav-integ; pad-load accessors requested; see docs/modules/nav-aux.md |
 | io-pinball   | IN-PROGRESS | include/agc/agc_dsky.h, src/io/pinball_*.c, src/io/display_if.c | see docs/modules/io-pinball.md |

@@ -13,6 +13,7 @@
 
 bool agc_w_ok(int32_t w)
 {
+    /* No AGC_ASSERT here: this is the predicate the assertions use.        */
     return (w > -AGC_W_ONE) && (w < AGC_W_ONE);
 }
 
@@ -77,6 +78,8 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
     }
     r.hi = (a * b) / AGC_W_ONE;
     r.lo = (a * b) % AGC_W_ONE;
+    (void)AGC_ASSERT(agc_w_ok(r.hi));
+    (void)AGC_ASSERT(agc_w_ok(r.lo));
     return r;
 }
 
@@ -159,6 +162,7 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
     if (o != 0) {
         *ovfind = (agc_ovf_t)o;                         /* SETOVF2        */
     }
+    (void)AGC_ASSERT(agc_w_ok(m.hi));
     return m;
 }
 
@@ -348,5 +352,7 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
         m.m0 = top.hi;
         m.m1 = top.lo;
     }
+    (void)AGC_ASSERT(k == -1);
+    (void)AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m2));
     return m;
 }

@@ -119,7 +119,7 @@
 #define PIN_JOB_PROCEED   ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 10))
 #define PIN_JOB_IDLERET3  ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 11))
 #define PIN_JOB_JAMTERM   ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 12))
-#define PIN_JOB_ENDINST   ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 13))
+#define PIN_JOB_ENDINST   AGC_JOB_ENDOFJOB          /* ENDINST: TC ENDOFJOB    */
 #define PIN_JOB_XCHSLEEPM ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 14))
 #define PIN_JOB_XCHSLEEPN ((agc_job_id_t)(AGC_JOB_COUNT_PLACEHOLDER + 15))
 #define PIN_TASK_MONREQ   ((agc_task_id_t)(AGC_TASK_COUNT_PLACEHOLDER + 1))
@@ -341,6 +341,7 @@ agc_status_t pin_dspdpdec(void);                        /* DSPDPDEC (V07)   */
  * entered; *exited when an alarm path ended the load instead.           */
 agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out, bool *exited);
 uint16_t     pin_360_cdu(uint16_t w);                   /* 360-CDU (LM)     */
+agc_dp_t     pin_value_of_word(const agc_scale_info_t *info, uint16_t w);
 agc_status_t pin_hmsin(void);                           /* HMSIN            */
 
 /* ---- NVSUB family (pinball_nvsub.c) ------------------------------------ */

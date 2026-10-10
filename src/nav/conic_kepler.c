@@ -50,7 +50,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ctx->ur1 = agc_vec_unit(ip, in->rrect, &r1, NULL); /* UNIT, URRECT   */
     ctx->r1 = r1;                                      /* STOVL R1       */
     ctx->vvec = in->vrect;
-    agc_tp_t m = agc_conic_mload_(agc_vec_dot(ip, in->rrect, in->vrect));
+    agc_tp_t m = agc_vec_dot_tp(ip, in->rrect, in->vrect);  /* DOT: TP MPAC */
     m = agc_conic_mshiftr_(ip, m, 1);                  /* DOT SL1R       */
     m = agc_conic_mshiftr_(ip, agc_conic_mdmp_(m, ctx->inv_root_mu), 1);
     ctx->kepc1 = agc_conic_mstore_(m);                 /* KEPC1 2^17     */

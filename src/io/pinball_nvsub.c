@@ -419,10 +419,3 @@ agc_status_t agc_dsky_dspmm(void)
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
     return st;
 }
-
-/* ENDINST: TC ENDOFJOB, the LOC XCHTOEND gives a woken job. */
-agc_status_t agc_job_endinst(agc_job_ctx_t *ctx)
-{
-    (void)AGC_ASSERT(ctx != NULL);
-    return AGC_STATUS_OK;
-}

@@ -186,7 +186,7 @@ static agc_status_t regrab(agc_job_id_t resume_job)
 {
     const agc_status_t st = agc_integ_install(0, resume_job);
     (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
-    (void)AGC_ASSERT(resume_job != AGC_JOB_NONE);
+    (void)AGC_ASSERT((st != AGC_STATUS_OK) || agc_integ_area_busy(0));
     return st;
 }
 
@@ -266,7 +266,8 @@ static agc_status_t others_lm(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_job_id_t resume_job)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx))) {
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(agc_integ_valid_ctx(ctx))) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_integ_install(0, resume_job);  /* first INTSTALL */
@@ -338,7 +339,8 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_dp_t tdec1, agc_job_id_t resume_job,
                                 agc_integ_midtoav_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(out != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -368,7 +370,8 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_job_id_t resume_job,
                                 agc_integ_midtoav_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(out != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
@@ -411,7 +414,8 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  */
 agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx))) {
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(agc_integ_valid_ctx(ctx))) {
         return INTEG_NEXT_FAIL;
     }
     if (agc_flag_test(AGC_FLAG_MID1FLAG)) {
@@ -446,7 +450,8 @@ agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_sp_t *upsvflag)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
         !AGC_ASSERT(upsvflag != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }

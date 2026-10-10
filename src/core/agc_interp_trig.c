@@ -68,6 +68,7 @@ agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return AGC_STATUS_BAD_ARG;
     }
     r = sqrt_words(agc_w3_from_tp(agc_tp_from_dp(a)), &abort);
+    (void)AGC_ASSERT(r.hi >= 0);
     *out = agc_w_join(r);
     return abort ? AGC_STATUS_POODOO : AGC_STATUS_OK;
 }
@@ -75,6 +76,7 @@ agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t r = 0;
+    (void)AGC_ASSERT(ip != 0);
     /* POODOO 01302 is reported by agc_dp_sqrt_chk; here the result is 0.   */
     (void)agc_dp_sqrt_chk(ip, a, &r);
     (void)AGC_ASSERT(r >= 0);
@@ -220,6 +222,7 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return AGC_STATUS_BAD_ARG;
     }
     *out = agc_w_join(arc_words(a, false, &alarm));
+    (void)AGC_ASSERT((*out >= 0) && (*out <= AGC_DP_HALF));
     return alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK;
 }
 
@@ -230,6 +233,7 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return AGC_STATUS_BAD_ARG;
     }
     *out = agc_w_join(arc_words(a, true, &alarm));
+    (void)AGC_ASSERT((*out >= -AGC_DP_QUARTER) && (*out <= AGC_DP_QUARTER));
     return alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK;
 }
 
@@ -237,7 +241,8 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t r = 0;
-    (void)agc_dp_acos_chk(ip, a, &r);
+    (void)AGC_ASSERT(ip != 0);
+    (void)agc_dp_acos_chk(ip, a, &r);                  /* alarm: see _chk  */
     (void)AGC_ASSERT(r >= 0);
     return r;
 }
@@ -245,7 +250,8 @@ agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
 agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t r = 0;
-    (void)agc_dp_asin_chk(ip, a, &r);
+    (void)AGC_ASSERT(ip != 0);
+    (void)agc_dp_asin_chk(ip, a, &r);                  /* alarm: see _chk  */
     (void)AGC_ASSERT((r >= -AGC_DP_QUARTER) && (r <= AGC_DP_QUARTER));
     return r;
 }

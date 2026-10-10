@@ -71,13 +71,13 @@ static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     w = agc_vec_cross(ip, w, uecc);                     /* VXV 0D, PDVL   */
     agc_vec_t u2 = agc_vec_add(ip, agc_vec_scale(ip, uecc, cosf), w);
     u2 = agc_vec_shl(ip, u2, 1);                        /* VSL1 PUSH: U2  */
-    agc_tp_t m = agc_conic_mload_(agc_vec_dot(ip, u2, ctx->ur1));
+    agc_tp_t m = agc_vec_dot_tp(ip, u2, ctx->ur1);            /* DOT        */
     m = agc_conic_mddv_(ip, m, AGC_CONIC_DP1_4);        /* DDV DP1/4: limit */
     m = agc_conic_mshift_(ip, m, -1);                   /* SR1            */
     (void)agc_interp_test_ovf(ip);                      /* BOV +1         */
     ctx->csth = agc_conic_mstore_(m);                   /* CSTH 2^1       */
     agc_vec_t c = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, u2), 1);
-    m = agc_conic_mshift_(ip, agc_conic_mload_(agc_vec_dot(ip, c, ctx->un)), 1);
+    m = agc_conic_mshift_(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
     ctx->snth = agc_conic_mstore_(m);                   /* SNTH 2^1       */
 }
 

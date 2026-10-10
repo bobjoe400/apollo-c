@@ -25,6 +25,7 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 {
     int32_t t = shift_bit(n);
     agc_w2_t lo2;
+    (void)AGC_ASSERT(t > 0);
     agc_w2_t p;
     int o = 0;
     (void)AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2));
@@ -94,6 +95,7 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
     int o = 0;
     agc_w2_t rnd = { 0, 0 };
     (void)AGC_ASSERT(n >= 1);
+    (void)AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo));
     for (pass = 0; pass < SHIFT_MAX_WORDS; pass++) {
         if (left <= 13) {                              /* BZMF VSSR        */
             return agc_w_vshrrnd(p, left);

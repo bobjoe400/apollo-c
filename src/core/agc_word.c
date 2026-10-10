@@ -41,14 +41,16 @@ static double clamp_round(double v, double max)
 agc_sp_t agc_sp_from_double(double x, int scale_pow2)
 {
     double v = ldexp(x, AGC_SP_BITS - scale_pow2);
-    (void)AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64));
+    (void)AGC_ASSERT(scale_pow2 > -64);
+    (void)AGC_ASSERT(scale_pow2 < 64);
     return (agc_sp_t)clamp_round(v, (double)AGC_SP_MAX);
 }
 
 agc_dp_t agc_dp_from_double(double x, int scale_pow2)
 {
     double v = ldexp(x, AGC_DP_BITS - scale_pow2);
-    (void)AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64));
+    (void)AGC_ASSERT(scale_pow2 > -64);
+    (void)AGC_ASSERT(scale_pow2 < 64);
     return (agc_dp_t)clamp_round(v, (double)AGC_DP_MAX);
 }
 
@@ -77,13 +79,15 @@ double agc_tp_to_double(agc_tp_t v, int scale_pow2)
 
 agc_sp_t agc_dp_high(agc_dp_t v)
 {
-    (void)AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
+    (void)AGC_ASSERT(v >= AGC_DP_MIN);
+    (void)AGC_ASSERT(v <= AGC_DP_MAX);
     return (agc_sp_t)agc_w_split(v).hi;
 }
 
 agc_sp_t agc_dp_low(agc_dp_t v)
 {
-    (void)AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
+    (void)AGC_ASSERT(v >= AGC_DP_MIN);
+    (void)AGC_ASSERT(v <= AGC_DP_MAX);
     return (agc_sp_t)agc_w_split(v).lo;
 }
 
@@ -107,20 +111,23 @@ agc_dp_t agc_dp_pack(agc_sp_t hi, agc_sp_t lo)
 
 agc_dp_t agc_dp_from_sp(agc_sp_t v)
 {
-    (void)AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
+    (void)AGC_ASSERT(v >= AGC_SP_MIN);
+    (void)AGC_ASSERT(v <= AGC_SP_MAX);
     return (agc_dp_t)((int32_t)v * AGC_W_ONE);
 }
 
 agc_tp_t agc_tp_from_dp(agc_dp_t v)
 {
-    (void)AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
+    (void)AGC_ASSERT(v >= AGC_DP_MIN);
+    (void)AGC_ASSERT(v <= AGC_DP_MAX);
     return (agc_tp_t)v * AGC_W_ONE;
 }
 
 /* Drop MPAC+2 of the sign-agreeing word triple (truncation toward zero).   */
 agc_dp_t agc_tp_to_dp(agc_tp_t v)
 {
-    (void)AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
+    (void)AGC_ASSERT(v >= AGC_TP_MIN);
+    (void)AGC_ASSERT(v <= AGC_TP_MAX);
     return agc_w_join(agc_w3_top(agc_w3_from_tp(v)));
 }
 
@@ -131,6 +138,7 @@ agc_dp_t agc_tp_round_dp(agc_tp_t v)
     agc_ovf_t ovf = 0;
     agc_w3_t m = agc_w_roundsub(agc_w3_from_tp(v), &ovf);
     (void)AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
+    (void)AGC_ASSERT(m.m2 == 0);                       /* ROUNDSUB zeroes  */
     if (ovf != 0) {
         return (ovf > 0) ? AGC_DP_MAX : AGC_DP_MIN;
     }
@@ -160,13 +168,15 @@ static int32_t saturate32(int64_t v, int32_t max, agc_ovf_t *ovf)
 
 agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    (void)AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
     return (agc_sp_t)saturate32((int64_t)a + b, AGC_SP_MAX, ovf);
 }
 
 agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    (void)AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
     return (agc_sp_t)saturate32((int64_t)a - b, AGC_SP_MAX, ovf);
 }
 
@@ -293,6 +303,7 @@ agc_dp_t agc_dp_round(agc_dp_t a)
     (void)AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
     (void)agc_w_ts(2 * p.lo, &o);                      /* DOUBLE; TS L     */
     p.hi += o;
+    (void)AGC_ASSERT((p.hi >= -AGC_W_ONE) && (p.hi <= AGC_W_ONE));
     if (p.hi > AGC_W_POSMAX) {
         p.hi = AGC_W_POSMAX;
     } else if (p.hi < -AGC_W_POSMAX) {

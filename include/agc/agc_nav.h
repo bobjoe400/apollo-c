@@ -77,8 +77,9 @@ typedef struct agc_kepler_out {
  * behaviour accept this status.
  * Returns AGC_STATUS_OVERFLOW on the TIMEOVFL path when DELX halves to zero:
  * the AGC then returns through KEPRTN WITHOUT computing RCV/VCV (they keep
- * their previous contents); out->rcv/vcv are zeroed and out->tc/xprev are
- * the inputs, so the caller must keep its previous state.
+ * their previous contents, which after RECTIFY are RRECT/VRECT); here
+ * out->rcv/vcv = in->rrect/vrect, out->tc = TC as last set by the
+ * iteration and out->xprev = in->xprev.
  */
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
                               agc_kepler_out_t *out);
@@ -138,8 +139,10 @@ typedef struct agc_lambert_out {
 
 /* LAMBERT. AGC_STATUS_OK when SOLNSW is clear. AGC_STATUS_NO_CONVERGE when
  * SOLNSW is set (transfer near 0/360 deg, or iteration did not reach the
- * SUFFCHEK tolerance); the flag SOLNSW is also set. On the LM, VVEC is
- * still computed when SUFFCHEK fails (Luminary 099 behaviour).            */
+ * SUFFCHEK tolerance); the flag SOLNSW is also set. On the LM, VVEC (and
+ * VTARGET) are still computed when SUFFCHEK fails (Luminary 099); on the
+ * CSM, and for 360LAMB, the AGC leaves them unchanged and here they are
+ * zero. Debris is filled in every case.                                  */
 agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in,
                                agc_lambert_out_t *out);
 
@@ -152,11 +155,14 @@ typedef struct agc_iterator {
     agc_dp_t delindep;   /* DELINDEP in/out step           (DCOGA)            */
     agc_dp_t max;        /* MAX      upper bound           (COGAMAX)          */
     agc_dp_t min;        /* MIN      lower bound           (COGAMIN)          */
-    agc_sp_t tweekit;    /* TWEEKIT  first-step fraction of MAX-MIN, SP      */
+    agc_sp_t tweekit;    /* TWEEKIT (40D = S1) first-step fraction of
+                          * MAX-MIN, SP; DMP reads 40D,41D as DP and 41D is
+                          * S2 = 1 (set by GETX), so the DP is (tweekit, 1) */
     bool     slopesw;    /* SLOPESW  set: first pass (cleared by ITERATOR)   */
     bool     ordersw;    /* ORDERSW  set: 2nd-order (never set in Apollo 11) */
 } agc_iterator_t;
 
+/* ITERATOR: new DELINDEP (and MAX/MIN, SLOPESW) in *it. */
 agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it);
 
 /* ---- TIMETHET / TIMERAD / APSIDES / PARAM ----------------------------- */

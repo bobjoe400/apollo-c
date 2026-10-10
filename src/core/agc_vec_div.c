@@ -92,6 +92,7 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
             return vsc_result(AGC_DP_MAX, m[1], m[2]);
         }
     }
+    (void)AGC_ASSERT(s != 0);
     if (s < 0) {                                       /* /BUF-            */
         s = -s;
         sneg = true;
@@ -127,6 +128,7 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])),
                         agc_w_dsqsub(agc_w_split(v.c[1])), &o);
     a = (o != 0) ? (int32_t)o : acc.m0;                /* TS BUF / TS OVFIND */
+    (void)AGC_ASSERT(agc_w_ok(a));
     ip->ovfind = 1;
     /* DEVIATION: DVSIGN is stale in the AGC; +DPPOSMAX used.               */
     return vsc_result(AGC_DP_MAX, 0, (agc_dp_t)(a * AGC_W_ONE));
@@ -139,7 +141,7 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root)
     agc_dp_t a = (c < 0) ? -c : c;
     agc_dp_t q;
     (void)AGC_ASSERT((kdiv >= -1) && (kdiv <= 13));
-    (void)AGC_ASSERT(root >= AGC_DP_HALF);
+    (void)AGC_ASSERT(root > AGC_DP_QUARTER);           /* normalised root  */
     if (c == 0) {
         return 0;                                      /* exit on zero     */
     }

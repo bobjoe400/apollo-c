@@ -13,7 +13,8 @@
 agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
                                 agc_lambert_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(in != NULL) ||
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT(in != NULL) ||
         !AGC_ASSERT(out != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
