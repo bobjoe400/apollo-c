@@ -40,11 +40,12 @@
 #define AGC_JOB_DAP_DATA_LOAD_TRIM        ((agc_job_id_t)0x0353) /* R03 LM DPDAT3           */
 #define AGC_JOB_DAP_DATA_LOAD_END         ((agc_job_id_t)0x0354) /* R03 LM ENDR03 (V34)     */
 #define AGC_JOB_STATE_VECTOR_COPY         ((agc_job_id_t)0x0355) /* V66 ATTACHIT / V47 LMTOCM */
-#define AGC_JOB_TRIMDONE_CHECK            ((agc_job_id_t)0x0356) /* reserved                */
+#define AGC_JOB_TRACKING_TERMINATE        ((agc_job_id_t)0x0356) /* V56 CSM after INTSTALL  */
+#define AGC_JOB_ATTITUDE_ERROR_ENABLE     ((agc_job_id_t)0x0357) /* V43 LM after EXDSPRET   */
 #define AGC_JOB_UPLINK_UPDATE             ((agc_job_id_t)0x0360) /* V70-V73 entry           */
 #define AGC_JOB_UPLINK_UPDATE_LOAD        ((agc_job_id_t)0x0361) /* after a V21N01 load     */
 #define AGC_JOB_UPLINK_UPDATE_TERMINATE   ((agc_job_id_t)0x0362) /* V34: UPOUT +1           */
-#define AGC_JOB_UPLINK_UPDATE_VERIFY      ((agc_job_id_t)0x0363) /* V33 after the V21N02    */
+#define AGC_JOB_UPLINK_UPDATE_PROCEED     ((agc_job_id_t)0x0363) /* V33 on a V21N01/N02     */
 #define AGC_JOB_UPLINK_UPDATE_EXECUTE     ((agc_job_id_t)0x0364) /* V33 after the V21N01 index */
 /* reused names from other lanes' shims (same value) */
 #define AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY ((agc_job_id_t)0x331)  /* R62DISP (V49)  */
@@ -75,7 +76,7 @@ agc_status_t agc_extverb_testxact(bool *ok);   /* TESTXACT: false = ALM/END done
 agc_status_t agc_extverb_alm_end(void);        /* ALM/END: FALTON, PINBRNCH     */
 agc_status_t agc_extverb_gopin(void);          /* GOPIN: PINBRNCH               */
 bool         agc_extverb_chkpooh(void);        /* CHKPOOH: P00 (ALM/END if not) */
-bool         agc_extverb_ckmodcad(void);       /* CKMODCAD: IMU free (ALM/END)  */
+bool         agc_extverb_ckmodcad(void);       /* CKMODCAD: no IMU mode user     */
 agc_status_t agc_extverb_goloadlv(void);       /* GOLOADLV: please-perform done */
 agc_status_t agc_extverb_upflag(agc_flag_id_t f);   /* TC UPFLAG, TC GOPIN       */
 agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
@@ -86,6 +87,31 @@ agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
 /* EXDSPRET: show our verb again and continue at next.                     */
 agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb,
                                    agc_job_id_t next);
+
+/* ---- requested from state-flags (same declaration as io-pinball's) ----- */
+agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);  /* V71/V72 store */
+/* ---- requested from prog-rendz (LANDMARK owner): V52 sets the offset --- */
+void         agc_erase_set_landmark(agc_sp_t v);
+
+agc_status_t agc_extverb_state_vector_copy(bool from_other); /* V66 / CSM V47 */
+agc_status_t agc_extverb_lm_attck2(void);      /* LM V43 ATTCK2 (task body)  */
+
+/* vehicle halves of the jobs whose AGC code differs (wrappers in
+ * extended_verbs.c pick one by vehicle)                                   */
+agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_terminate_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx);
 
 /* vehicle verb fans (extended_verbs_csm.c / extended_verbs_lm.c)          */
 agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb);

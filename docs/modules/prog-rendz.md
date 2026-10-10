@@ -104,7 +104,9 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
 * DONE ground_track_determination.c: P21 (agc_job_ground_track_*, P21VSAVE agc_ground_track_determination_flight_path); rz_dsptem1_dp in glue.c
 * DONE stable_orbit.c: P38/P78, P39/P79 (agc_job_stable_orbit_*, DELTTIME agc_rendz_stable_orbit_deltt); S3435.25 split out of tpi.c as agc_rendz_intercept_velocity
 * DONE rule-7 pass (no (void) casts of agc_ calls; rz_flag_put/rz_vflag_set/rz_avflag/rz_tracking_flags_on now void)
-* TODO R36 out_of_plane.c, R31 rendezvous_parameter_display_csm.c/_lm.c, tpi_search_csm.c (P17),
+* DONE out_of_plane_display.c: R36 V90 (agc_rendz_out_of_plane_compute, agc_job_out_of_plane_*)
+* DONE rendezvous_parameter_display.c: R31 V83 both vehicles + CM R34 (COMPDISP agc_rendezvous_parameter_display_compdisp, agc_job_rendezvous_params_*)
+* TODO tpi_search_csm.c (P17),
   lambert_aimpoint_guidance_lm.c (P31), radar_leadin_lm.c, rendezvous_navigation_csm.c / _lm.c (P20-P25)
 
 ## Deviations

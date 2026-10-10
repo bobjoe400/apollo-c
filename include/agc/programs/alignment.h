@@ -233,7 +233,7 @@ typedef struct agc_csm_earrot {
 agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e);
 agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
 
-/* ---- LM geometry (src/lm/lem_geometry.c) --------------------------------- */
+/* ---- LM geometry (src/lm/optics/lem_geometry.c) --------------------------------- */
 /* RRANGLES: los_nb half-unit; modea/modeb = (trunnion, shaft) cdu for RR
  * mode 1 and mode 2 (swapped when RADMODES antenna bit says mode 2);
  * *along_y when the LOS is along Y (the AGC's BOVB LUNDESCH).             */
@@ -280,7 +280,7 @@ agc_status_t agc_sxtmark_mkreject(void);                  /* MKREJECT      */
 agc_sp_t     agc_sxtmark_marks_made(void);                /* QPRET count   */
 agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
 
-/* ---- AOTMARK (LM, src/lm/aotmark.c) -------------------------------------- */
+/* ---- AOTMARK (LM, src/lm/optics/aotmark.c) -------------------------------------- */
 agc_status_t agc_aotmark(void);                           /* AOTMARK       */
 agc_status_t agc_aotmark_markrupt(void);                  /* MARKRUPT      */
 agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el,
@@ -288,7 +288,7 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el,
 agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp,
                              uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
 agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m,
-                              agc_vec_t oa, agc_vec_t uxp, agc_vec_t uyp,
+                              agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb,
                               agc_vec_t *star_sm);
 agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
                                 agc_vec_t xpnb, agc_vec_t ypnb,
@@ -323,6 +323,26 @@ agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
                                                  agc_job_id_t ret);     /* R56    */
 
 /* ---- LM P51/P52/P57, R51, R52, R59 (src/lm/) ------------------------------ */
+/* IMUCHK: OK with the IMU on (IMUSE set); AGC_STATUS_ALARM after alarm 210
+ * and GOTOPOOH.                                                           */
+agc_status_t agc_lm_imu_check(void);
+/* N89DISP: landing site at time t (ALPHAV, m B29) shown on V06N89; the
+ * job continues as ret with the accepted site in agc_align_ram()->alphav. */
+agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t,
+                                         agc_job_id_t ret);
+/* R52 (LM): point the AOT detent at the star; continues as ret.          */
+agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id_t ret);
+/* MFREF / REFMF (P57): VEC1, VEC2 moon fixed -> reference; YNBSAV, ZNBSAV
+ * (moon fixed) from the present attitude, SET ATTFLAG.                    */
+agc_status_t agc_align_mfref(agc_interp_t *ip);
+agc_status_t agc_align_refmf(agc_interp_t *ip);
+/* P57 pieces entered from more than one file (src/lm/alignment/).        */
+agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx);      /* GVDETER  */
+agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx);    /* JUSTTRIM */
+agc_status_t agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx);  /* COATRIM  */
+agc_status_t agc_lm_lunar_surface_two_stars(agc_job_ctx_t *ctx);    /* 2STARS   */
+agc_status_t agc_lm_lunar_surface_one_star(agc_job_ctx_t *ctx);     /* 1STAR    */
+agc_status_t agc_lm_lunar_surface_surfline(agc_job_ctx_t *ctx);     /* SURFLINE */
 
 /* ==== job and task entry points (BEGIN generated list) ==== */
 /* src/csm/alignment/fine_align.c */
@@ -389,7 +409,102 @@ agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx);
 agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx);
 agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx);
 agc_status_t agc_task_endmarks(void);
-/* src/lm/s_band_antenna.c */
+/* src/lm/alignment/auto_optics_positioning.c */
+agc_status_t agc_job_lm_auto_optics_star_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_auto_optics_az_el_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_auto_optics_az_el_loaded(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_auto_optics_maneuvered(agc_job_ctx_t *ctx);
+/* src/lm/alignment/fine_align.c */
+agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_perform(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_mark(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_first_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_second_located(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_data_checked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_torqued(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx);
+/* src/lm/alignment/imu_orientation_determination.c */
+agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_coarse_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_first_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_orientation_data_checked(agc_job_ctx_t *ctx);
+/* src/lm/alignment/imu_realign.c */
+agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_landing_site_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lm_realign_site_orientation(agc_job_ctx_t *ctx);
+/* src/lm/alignment/lunar_surface_align.c */
+agc_status_t agc_job_lunar_surface_align(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_option_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_option(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_time_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_time_entered(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_site_orientation(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_options_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_options_chosen(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_attitude_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_realign(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_data_checked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_torque_test(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_aligned(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_post(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_post_enter(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_site_updated(agc_job_ctx_t *ctx);
+/* src/lm/alignment/lunar_surface_gravity.c */
+agc_status_t agc_job_lunar_gravity_coarsed(agc_job_ctx_t *ctx);
+agc_status_t agc_task_lunar_gravity_sample(void);
+agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_gravity_rotate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_gravity_recycle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_trim_pulse(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_trim_retry(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_trimmed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_coarse_trim_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_coarse_trimmed(agc_job_ctx_t *ctx);
+/* src/lm/alignment/lunar_surface_sighting.c */
+agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_star_positioned(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_star_mark(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_first_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lunar_surface_second_star(agc_job_ctx_t *ctx);
+/* src/lm/optics/aotmark.c */
+agc_status_t agc_task_aot_mark_release(void);
+agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_coas_loaded(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx);
+agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx);
+/* src/lm/optics/s_band_antenna.c */
 agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx);
 /* src/programs/alignment/common.c */

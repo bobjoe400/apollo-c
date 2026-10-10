@@ -111,6 +111,17 @@ typedef struct rte_v2t {
     int      x1;          /* X1   normalisation difference of R(T1) and RCON    */
 } rte_v2t_t;
 
+/* RTEDISP output (stored by the job layer into the shared erasables).     */
+typedef struct rte_display {
+    agc_dp_t  vpred;      /* VPRED    speed at 400,000 ft, m/cs B7                */
+    agc_dp_t  t3tot4;     /* T3TOT4   TIG to 400,000 ft, cs B28                   */
+    agc_dp_t  gammaei;    /* GAMMAEI  flight path angle at 400,000 ft, revs B0    */
+    agc_vec_t delvlvc;    /* DELVLVC  delta V, local vertical coordinates, m/cs B7 */
+    agc_dp_t  vgdisp;     /* VGDISP   |DELVLVC|, m/cs B7                          */
+    agc_dp_t  lat_spl;    /* LAT(SPL) landing site latitude, revs B0              */
+    agc_dp_t  lng_spl;    /* LNG(SPL) landing site longitude, revs B0             */
+} rte_display_t;
+
 /* return_to_earth_velocity.c (module storage lives here so the arithmetic
  * files link without the job layer).                                       */
 rte_erasable_t *rte_state(void);
@@ -125,10 +136,12 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,
                                  agc_vec_t ratt, agc_vec_t vatt, agc_dp_t tat,
                                  int x2);                              /* INVC100 tail */
 agc_status_t rte_conic_setup(agc_interp_t *ip, rte_erasable_t *rs);   /* RTE299 tail */
-agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs);  /* RTE317-390 */
+agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
+                              agc_dp_t rted1);                       /* RTE317-390 */
 agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rvec,
                              agc_vec_t vvec, agc_dp_t rdesired);      /* TMRAD100   */
-agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs); /* RTEDISP   */
+agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t tig,
+                                agc_sp_t range_override, rte_display_t *out); /* RTEDISP */
 agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma,
                           agc_dp_t *phie, agc_dp_t *te);              /* AUGEKUGL   */
 agc_status_t rte_entry_side(agc_interp_t *ip, rte_erasable_t *rs);    /* RTE505     */

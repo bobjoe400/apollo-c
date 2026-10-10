@@ -191,6 +191,8 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit,
         }
         st = iv_lambert(ip, rz, numit, &w);
         iv_coga = w.lin.coga;
+        rz->csth = w.lout.csth;                            /* debris       */
+        rz->snth = w.lout.snth;
         if (st != AGC_STATUS_OK || numit == 0) {
             break;                                         /* INITVEL7     */
         }

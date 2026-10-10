@@ -185,7 +185,7 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_UPDATFLG, true);
     rz->tpass4 = agc_dp_add(&ip, t, agc_erase_tig()); /* TI = TIG + TF   */
     if (rz_is_csm()) {
-        st = rz_set_dsptem1_dp(rz->tpass4);            /* FOR DISPLAY    */
+        st = rz_set_dsptem_dp(RZ_DSPTEM1, rz->tpass4);            /* FOR DISPLAY    */
         if (st != AGC_STATUS_OK) {
             return st;
         }
@@ -207,7 +207,7 @@ agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     if (!rz_is_csm()) {
-        agc_status_t st = rz_set_dsptem1_dp(rz_state()->tpass4); /* TINT */
+        agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, rz_state()->tpass4); /* TINT */
         if (st != AGC_STATUS_OK) {
             return st;
         }

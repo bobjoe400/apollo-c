@@ -126,9 +126,12 @@ agc_status_t rz_comptgo(agc_job_id_t cont);
 void         rz_dispdex_zero(void);
 /* OPTION1 / OPTION2 (= DSPTEMX = DSPTEM2 +1, +2), raw SP words.          */
 uint16_t     rz_option(int which);
-/* DSPTEM1, DSPTEM1 +1 as a DP (a time loaded on noun 34), and back.     */
-agc_dp_t     rz_dsptem1_dp(void);
-agc_status_t rz_set_dsptem1_dp(agc_dp_t v);
+/* A DP in the display temporaries (a time loaded on noun 34 or 16):
+ * DSPTEM1, DSPTEM1 +1 or DSPTEMX, DSPTEMX +1 (= OPTION1, OPTION2).      */
+#define RZ_DSPTEM1 0
+#define RZ_DSPTEMX 4
+agc_dp_t     rz_dsptem_dp(int index);
+agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v);
 agc_status_t rz_set_option(int which, uint16_t v);
 
 /* ---- common helpers (common.c) ------------------------------------ */

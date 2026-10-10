@@ -236,15 +236,23 @@ agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx);    /* R03 N48   *
 agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx);      /* LM DPDAT3 */
 agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);       /* LM ENDR03 */
 agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);                /* LM TRIMDONE */
-agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);       /* V66/V47 CSM */
+agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);       /* V66 / CSM V47 */
+agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx);      /* CSM V56 */
+agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx);   /* LM V43 */
 
 /* P27 (V70-V73).  The uplinked words are UPBUFF; COMPNUMB, UPOLDMOD,
  * UPVERB, UPCOUNT, UPBUFF +0..+19D are downlinked (index 0..23).          */
 agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb); /* V70..V73 */
 uint16_t     agc_uplink_update_dnword(int idx);
 agc_status_t agc_uplink_update_fresh_start(void);         /* UPSVFLAG etc.   */
+/* The word an ECADR load/write puts into COMPNUMB..UPBUFF +19D (0..23) or
+ * UPTEMP (24); agc_uplink_update_target() = the index the V21N01/N02 on
+ * the DSKY loads (the AGC's MPAC+2).                                      */
+agc_status_t agc_uplink_update_write(int idx, uint16_t word);
+int          agc_uplink_update_target(void);
+agc_sp_t     agc_erase_upsvflag(void);   /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
+void         agc_erase_set_upsvflag(agc_sp_t v);
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx);      /* after V21N01 */
-agc_status_t agc_job_uplink_update_verify(agc_job_ctx_t *ctx);    /* V21N02 */
 agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx);   /* UPJOB  */
 agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx); /* UPOUT +1 */
 agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx);   /* V33 on a load */
@@ -263,10 +271,10 @@ agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
  * with end-around carry up to the two TC SELF words and the bugger word. */
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger);
 bool         agc_selfcheck_bank_ok(int bank);             /* |sum| = bank    */
-agc_status_t agc_selfcheck_set_smode(agc_sp_t smode);     /* N27 load (SMODE) */
-agc_sp_t     agc_selfcheck_smode(void);
+agc_status_t agc_selfcheck_set_smode(uint16_t word);      /* N27 load (SMODE, raw; 077777 = -0) */
+uint16_t     agc_selfcheck_smode(void);
 agc_status_t agc_selfcheck_idle_pass(void);               /* SMODECHK, one pass */
-agc_status_t agc_selfcheck_fresh_start(void);             /* SMODE, ERESTORE = 0 */
+agc_status_t agc_selfcheck_fresh_start(bool slap1);       /* SMODE = 0; SLAP1: ERCOUNT = 0 */
 agc_status_t agc_selfcheck_showsum_start(void);           /* V91 STSHOSUM    */
 agc_status_t agc_selfcheck_showsum_next(void);            /* V33 NXTBNK      */
 agc_status_t agc_selfcheck_showsum_end(void);             /* V34             */

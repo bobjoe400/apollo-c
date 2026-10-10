@@ -127,11 +127,37 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_STABLE_ORBIT_MIDCOURSE_OTHER_VEHICLE ((agc_job_id_t)0x115F) /* P79 */
 #define AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE   ((agc_job_id_t)0x1160) /* P39/P79B */
 #define AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE   ((agc_job_id_t)0x1161) /* P39/P79B PRECSET */
+/* R36 out-of-plane display, verb 90 (out_of_plane_display.c) */
+#define AGC_JOB_OUT_OF_PLANE_DISPLAY             ((agc_job_id_t)0x1168) /* R36 */
+#define AGC_JOB_OUT_OF_PLANE_VEHICLE             ((agc_job_id_t)0x1169) /* CM V04N12 */
+#define AGC_JOB_OUT_OF_PLANE_START               ((agc_job_id_t)0x116A) /* R36A */
+#define AGC_JOB_OUT_OF_PLANE_TIME                ((agc_job_id_t)0x116B) /* R36P3 V06N16 */
+#define AGC_JOB_OUT_OF_PLANE_COMPUTE             ((agc_job_id_t)0x116C) /* R36INT .. V06N90 */
+/* R31 rendezvous parameter display, verb 83 (rendezvous_parameter_display.c) */
+#define AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY     ((agc_job_id_t)0x1170) /* R31CALL */
+#define AGC_JOB_RENDEZVOUS_PARAMS_WAIT           ((agc_job_id_t)0x1171) /* CM DSPDELAY */
+#define AGC_JOB_RENDEZVOUS_PARAMS_MONITOR        ((agc_job_id_t)0x1172) /* DISPN5X */
+#define AGC_JOB_RENDEZVOUS_PARAMS_START          ((agc_job_id_t)0x1173) /* V83CALL */
+#define AGC_JOB_RENDEZVOUS_PARAMS_UPDATE         ((agc_job_id_t)0x1174) /* V83 / REV83 */
+/* P17/P77 TPI search, CSM (tpi_search_csm.c) */
+#define AGC_JOB_TPI_SEARCH                       ((agc_job_id_t)0x1178) /* P17 */
+#define AGC_JOB_TPI_SEARCH_OTHER_VEHICLE         ((agc_job_id_t)0x1179) /* P77 */
+#define AGC_JOB_TPI_SEARCH_INPUT                 ((agc_job_id_t)0x117A) /* P17.1 V06N37 */
+#define AGC_JOB_TPI_SEARCH_START                 ((agc_job_id_t)0x117B) /* S17.1, V06N72 */
+#define AGC_JOB_TPI_SEARCH_COMPUTE               ((agc_job_id_t)0x117C) /* S17.2, V06N58 */
+#define AGC_JOB_TPI_SEARCH_RESULTS               ((agc_job_id_t)0x117D) /* V06N55 */
+#define AGC_JOB_TPI_SEARCH_DISPLAY               ((agc_job_id_t)0x117E) /* VNCOMP17 again */
+#define AGC_JOB_TPI_SEARCH_RESPONSE              ((agc_job_id_t)0x117F) /* VNCOMP17 ENTER */
+/* P31 general Lambert aimpoint guidance, LM (lambert_aimpoint_guidance_lm.c) */
+#define AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE        ((agc_job_id_t)0x1180) /* P31 */
+#define AGC_JOB_LAMBERT_AIMPOINT_COMPUTE         ((agc_job_id_t)0x1181) /* after V06N33 */
+#define AGC_JOB_LAMBERT_AIMPOINT_APSIDES         ((agc_job_id_t)0x1182) /* V06N42 */
+#define AGC_JOB_LAMBERT_AIMPOINT_TTOGO           ((agc_job_id_t)0x1183) /* REVN1645 */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */
 #define AGC_TASK_TICKTEST     ((agc_task_id_t)0x1101) /* R30 V82 1 s tick      */
-#define AGC_TASK_RZ_DSPDELAY  ((agc_task_id_t)0x1102) /* R31 display delay     */
+#define AGC_TASK_RENDEZVOUS_PARAMS_WAIT ((agc_task_id_t)0x1102) /* R31 DSPDELAY (LM) */
 #define AGC_TASK_RADSAMP      ((agc_task_id_t)0x1103) /* LM radar sampling     */
 /* CLOKTASK (LM BURN_BABY_BURN, owner guid-powered); same name as in
  * include/agc/guidance/pending.h.                                           */

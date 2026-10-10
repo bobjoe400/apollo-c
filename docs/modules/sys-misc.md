@@ -56,8 +56,10 @@ include/agc are declared in `src/io/service/sysmisc_ext.h` (temporary shim, see
 - DONE  down-telemetry DODOWNTM..DNDUMP, word count  src/io/telemetry/down_telemetry.c
 - DONE  service.c (compile fixed: EXTVBACT accessors declared in agc/io/service_internal.h)
 - DONE  t4rupt.c / t4rupt_csm.c / t4rupt_lm.c (+ agc_erase_swsample)
-- TODO  extended verbs  src/io/verbs/extended_verbs{,_csm,_lm}.c
-- TODO  uplink_update.c  src/io/verbs/uplink_update.c
+- DONE  extended verbs, shared fan + V40/41 N20, V42, V49, V50/97/99, V55, V64, V67, V69, V74, V82, V89, V90, V91  src/io/verbs/extended_verbs.c
+- DONE  extended verbs CSM (all but V41 N91 stub)  src/io/verbs/extended_verbs_csm.c
+- PARTIAL extended verbs LM (radar verbs V40/41 N72, V44, V60, V63, V78, V79, V85 stubbed)  src/io/verbs/extended_verbs_lm.c
+- DONE  P27 V70-V73 (UPPART2..UPOUT, TIMEDIDL/R, UPEND70-73)  src/io/verbs/uplink_update.c
 - TODO  self_check.c  src/io/service/self_check.c
 - TODO  systems_test.c (LM P07)  src/lm/systems_test.c
 - TODO  interbank.c (comment file)  src/io/service/interbank.c

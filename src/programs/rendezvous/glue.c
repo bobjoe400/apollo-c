@@ -279,22 +279,27 @@ static uint16_t rz_sp_to_word(agc_sp_t v)
     return (uint16_t)v;
 }
 
-/* DSPTEM1, DSPTEM1 +1 (index 0, 1) as a DP. */
-agc_dp_t rz_dsptem1_dp(void)
+/* A DP in the display temporaries: index 0 = DSPTEM1, 4 = DSPTEMX. */
+agc_dp_t rz_dsptem_dp(int index)
 {
-    agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(0));
-    agc_sp_t lo = rz_word_to_sp(agc_dsky_dsptem(1));
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX)) {
+        return 0;
+    }
+    agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(index));
+    agc_sp_t lo = rz_word_to_sp(agc_dsky_dsptem(index + 1));
     return agc_dp_pack(hi, lo);
 }
 
-agc_status_t rz_set_dsptem1_dp(agc_dp_t v)
+agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)) {
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX)
+        || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_dsky_set_dsptem(0, rz_sp_to_word(agc_dp_high(v)));
+    agc_status_t st = agc_dsky_set_dsptem(index,
+                                          rz_sp_to_word(agc_dp_high(v)));
     if (st == AGC_STATUS_OK) {
-        st = agc_dsky_set_dsptem(1, rz_sp_to_word(agc_dp_low(v)));
+        st = agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
     }
     return st;
 }

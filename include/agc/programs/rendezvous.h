@@ -161,6 +161,8 @@ typedef struct agc_rendz {
     agc_dp_t delvee;          /* DELVEE: total delta V, m/cs 2^7            */
     agc_dp_t magvtpi, reldelv;/* m/cs 2^7                                   */
     agc_sp_t nn1;             /* NN1: pericenter code for display           */
+    agc_dp_t csth, snth;      /* CSTH SNTH: cos, sin of the last Lambert
+                               * transfer angle (INITVEL debris), 2^1        */
 
     /* P21 ground track determination (P21TIME .. P21ALT) */
     agc_dp_t  ground_track_time;    /* P21TIME: base vector time, cs 2^28   */
@@ -333,10 +335,14 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
                                    agc_vec_t ra, agc_vec_t va);
 
 /* ---- R31 rendezvous parameters (COMPDISP) ------------------------------- */
-agc_status_t agc_rendz_params_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
-                              agc_vec_t rone, agc_vec_t vone,
+/* COMPDISP (R31.agc): RANGE, RRATE of the other vehicle (RATT VATT) seen
+ * from this one (RONE VONE), m 2^29 / m/cs 2^7, and RTHETA, the angle
+ * of the vehicle axis (stable-member half unit, before REFSMMAT) above
+ * the local horizontal, revolutions.                                    */
+agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip,
+                              agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone,
                               agc_vec_t ratt, agc_vec_t vatt,
-                              agc_vec_t axis_nb_sm, const agc_mat_t *refsmmat);
+                              agc_vec_t axis_sm, const agc_mat_t *refsmmat);
 
 /* ---- P38/P39 stable orbit ----------------------------------------------- */
 /* DELTTIME (P38 RECYCLE, STABLE_ORBIT p.528): time to traverse DELTAR at
@@ -345,7 +351,13 @@ agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
                                  agc_vec_t ratt, agc_vec_t vatt);
 
 /* ---- P17 TPI search (Comanche) ------------------------------------------ */
-agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, bool *kflag);
+/* S17.1: both vehicles to TTPI (conic), DELHITE, KFLAG, E2, THETZERO.   */
+agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz,
+                                        agc_job_id_t resume);
+/* S17.2: the search; OK solution, ALARM no safe pericenter (00124).     */
+agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz,
+                                         agc_job_id_t resume);
+/* TRANSANG: CENTANG of the passive vehicle over TF.                    */
 agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 
 /* ---- P21 ground track ---------------------------------------------------- */
@@ -484,6 +496,33 @@ agc_status_t agc_job_stable_orbit_midcourse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_stable_orbit_midcourse_other_vehicle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx);
 agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx);
+/* out_of_plane_display.c (R36, verb 90) */
+agc_status_t agc_job_out_of_plane_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_out_of_plane_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_out_of_plane_time(agc_job_ctx_t *ctx);
+agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx);
+/* rendezvous_parameter_display.c (R31 verb 83, CM R34) */
+agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_task_rendezvous_params_wait(void);
+agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx);
+/* tpi_search_csm.c (P17/P77, CSM) */
+agc_status_t agc_job_tpi_search(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_other_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_input(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_start(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_results(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_search_response(agc_job_ctx_t *ctx);
+/* lambert_aimpoint_guidance_lm.c (P31, LM) */
+agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx);
 /* sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);

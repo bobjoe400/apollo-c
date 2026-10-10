@@ -32,6 +32,7 @@
 #include "agc/io/dsky.h"
 #include "agc/imu/imu.h"
 #include "agc/programs/rendezvous.h"
+#include "agc/nav/integration.h"
 #include "agc/io/service_internal.h"
 #include "pending.h"
 
@@ -50,6 +51,7 @@
 #define CLOCK_DELTA_WORD 4   /* DSPTEM2 +1, +2 hold the delta time         */
 
 static uint16_t extvbact;            /* EXTVBACT                           */
+static bool     sv_from_other;       /* V47 (LMTOCM) rather than V66        */
 static int      xv_verb;             /* VERBREG at GOEXTVB                 */
 static int      xv_noun;             /* NOUNREG at GOEXTVB                 */
 
@@ -404,6 +406,7 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
     case 55: return verb_clock_align(ctx);
     case 64: return xact_and_schedule(true, PRIO4, lm ? AGC_JOB_SBANDANT_LM
                                                       : AGC_JOB_SBANDANT_CM);
+    case 66: return agc_extverb_state_vector_copy(false);
     case 67: return xact_and_schedule(false, PRIO5, AGC_JOB_W_MATRIX_MONITOR);
     case 69: return verb_hardware_restart();
     case 70: case 71: case 72: case 73:
@@ -573,4 +576,109 @@ agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
     agc_status_t st = agc_selfcheck_showsum_end();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_dsky_endext();
+}
+
+/* ATTACHED (V66) / LMTOCMSV (CSM V47): FINDVAC the copy at priority 10. */
+agc_status_t agc_extverb_state_vector_copy(bool from_other)
+{
+    (void)AGC_ASSERT(!from_other || agc_state_vehicle() == AGC_VEHICLE_CSM);
+    sv_from_other = from_other;
+    return agc_extverb_schedule(PRIO10, AGC_JOB_STATE_VECTOR_COPY, true);
+}
+
+/* ATTACHIT / LMTOCM: with INTSTALL held, copy the 42-word permanent state
+ * of one vehicle into the other's (GENTRAN OCT51 words) with its moon
+ * flag (MOONTHIS / MOONOTH), refresh the temporary set (PTOACSM, PTOALEM),
+ * INTWAKE, PINBRNCH.
+ * DEVIATION: SVDWN1/SVDWN2 (downlink copies) are not called; the down-
+ * telemetry reads the state vectors directly (down_telemetry.c).         */
+agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx)
+{
+    agc_status_t st = agc_integ_install(0, AGC_JOB_STATE_VECTOR_COPY);
+    if (!AGC_ASSERT(ctx != NULL) || st == AGC_STATUS_BUSY) {
+        return AGC_STATUS_OK;                    /* sleeps in INTSTALL      */
+    }
+    bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+    agc_vehicle_t self = lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
+    agc_vehicle_t other = lm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
+    agc_vehicle_t from = sv_from_other ? other : self;
+    agc_integ_sv_t sv;
+    st = agc_integ_perm_get(from, &sv);
+    if (st == AGC_STATUS_OK) {
+        st = agc_integ_perm_set(sv_from_other ? self : other, &sv);
+    }
+    agc_flag_id_t mself = (agc_flag_id_t)(lm ? AGC_FLAG_LMOONFLG : AGC_FLAG_CMOONFLG);
+    agc_flag_id_t moth = (agc_flag_id_t)(lm ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG);
+    bool moon = agc_flag_test(sv_from_other ? moth : mself);
+    agc_flag_id_t dst = sv_from_other ? mself : moth;
+    agc_status_t sf = moon ? agc_flag_set(dst) : agc_flag_clear(dst);
+    (void)AGC_ASSERT(sf == AGC_STATUS_OK);
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    bool surface = false;
+    agc_status_t sp = lm ? agc_integ_ptoalem(&ip, agc_integ_shared_ctx(), &surface)
+                         : agc_integ_ptoacsm(agc_integ_shared_ctx());
+    agc_status_t sw = agc_integ_intwake();
+    if (st != AGC_STATUS_OK || sp != AGC_STATUS_OK || sw != AGC_STATUS_OK) {
+        return (st != AGC_STATUS_OK) ? st : (sp != AGC_STATUS_OK) ? sp : sw;
+    }
+    return agc_extverb_gopin();                  /* TCPIN: RTB PINBRNCH     */
+}
+
+/* ---- jobs whose code differs by vehicle ---------------------------------- */
+
+agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_attitude_error_load_lm(ctx) : agc_job_attitude_error_load_csm(ctx);
+}
+
+agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_tracking_terminate_lm(ctx) : agc_job_tracking_terminate_csm(ctx);
+}
+
+agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun46_lm(ctx) : agc_job_dap_data_load_noun46_csm(ctx);
+}
+
+agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_config_lm(ctx) : agc_job_dap_data_load_config_csm(ctx);
+}
+
+agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun47_lm(ctx) : agc_job_dap_data_load_noun47_csm(ctx);
+}
+
+agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_mass_lm(ctx) : agc_job_dap_data_load_mass_csm(ctx);
+}
+
+agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return (agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun48_lm(ctx) : agc_job_dap_data_load_noun48_csm(ctx);
 }
