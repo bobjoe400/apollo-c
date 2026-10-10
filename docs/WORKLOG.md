@@ -209,3 +209,8 @@
             0x0C30..0x0C3E into jobs.h/dispatch; prototypes to agc/csm/entry.h;
             accessors t3tot4, rted1, return_to_earth_range; prog-rendz must
             provide agc_rendz_ttogo_display_start (VN1645).
+2026-10-10  prog-align DONE (0 stubs), 83 checks, rule-7 clean. OPEN for
+            core/review: agc_vec_unit loses precision on short vectors at
+            B27 (1 km LOS gives |u|=1.002); verify against INTERPRETER.agc
+            UNIT (R63 flies at few-km ranges). Integration: ids in
+            include/agc/programs/alignment_pending.h.

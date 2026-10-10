@@ -99,3 +99,7 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   mask, phase change): those should return void. The rest hid real AGC
   failure paths (WAITLIST overflow -> 1203, FINDVAC -> 1201/1202) that the
   C must raise. Make the checker reject `(void)agc_` from day one.
+* **MXV/VXM do not shift.** The interpreter's matrix ops multiply at face
+  value, so a half-unit matrix (rows UNITX/Y/Z = 0.5) halves the vector.
+  Code that follows with VSL2/VSL8 (SCALEVEC) only lands on the right scale
+  because of that factor; keep it.
