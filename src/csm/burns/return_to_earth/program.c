@@ -99,10 +99,12 @@ static agc_status_t rte_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((proceed != AGC_JOB_NONE) && (enter != AGC_JOB_NONE)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont);
 }
 
@@ -119,10 +121,12 @@ static agc_status_t rte_flash_blank(const agc_job_ctx_t *ctx, uint8_t verb,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_dsky_blanket(blank); /* TCF ENDOFJOB  */
 }
 
@@ -135,24 +139,28 @@ static agc_status_t rte_alarm(const agc_job_ctx_t  *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_exec_varalarm(rs->alarm_code);
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U,
                      AGC_JOB_RETURN_TO_EARTH_ALARM_DISPLAY,
                      AGC_JOB_RETURN_TO_EARTH);
 }
 
 /* The result of a computation step: alarm display, or the abort status. */
-static agc_status_t rte_failed(const agc_job_ctx_t  *ctx,
+static agc_status_t rte_failed(const agc_job_ctx_t *ctx,
                                const rte_erasable_t *rs, agc_status_t st)
 {
     if (!AGC_ASSERT(st != AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(rs != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_ALARM) ? rte_alarm(ctx, rs) : st;
 }
 
@@ -164,10 +172,12 @@ agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(rte_state()->alarm_code != 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U,
                      AGC_JOB_RETURN_TO_EARTH_ALARM_DISPLAY,
                      AGC_JOB_RETURN_TO_EARTH);
@@ -184,10 +194,12 @@ agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_phase_change(4, RTE_PHASE_NOT_RESTARTABLE);
     g->burn.ecsteer = agc_dp_pack(RTE_ECSTEER, agc_dp_low(g->burn.ecsteer));
     es->vpred       = 0; /* ZEROVECS      */
     es->gammaei     = 0;
+
     return agc_job_return_to_earth_tig_display(ctx);
 }
 
@@ -198,10 +210,12 @@ agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U,
                      AGC_JOB_RETURN_TO_EARTH_ENTRY_DISPLAY,
                      AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY);
@@ -215,10 +229,12 @@ agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash_blank(ctx, 6U, 60U, RTE_BLANK_R1,
                            AGC_JOB_RETURN_TO_EARTH_CONIC_SEARCH,
                            AGC_JOB_RETURN_TO_EARTH_ENTRY_DISPLAY);
@@ -237,25 +253,31 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(vnstore != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    rs->vnstore     = vnstore; /* STQ VNSTORE   */
+
+    rs->vnstore = vnstore; /* STQ VNSTORE   */
     agc_status_t st = rte_display_values(ip, rs, agc_erase_tig(),
                                          agc_erase_return_to_earth_range(), &d);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_entry_state_t *es = agc_entry_state();
-    es->vpred             = d.vpred;
-    es->gammaei           = d.gammaei;
-    es->lat_spl           = d.lat_spl;
-    es->lng_spl           = d.lng_spl;
+
+    es->vpred   = d.vpred;
+    es->gammaei = d.gammaei;
+    es->lat_spl = d.lat_spl;
+    es->lng_spl = d.lng_spl;
     agc_erase_set_t3tot4(d.t3tot4);
     agc_rendz_erasable()->delvlvc = d.delvlvc;
     agc_guid_state()->burn.vgdisp = d.vgdisp;
+
     return rte_flash_blank(ctx, 6U, 61U, RTE_BLANK_R3,
                            AGC_JOB_RETURN_TO_EARTH_TRANSIT_DISPLAY,
                            AGC_JOB_RETURN_TO_EARTH);
@@ -274,32 +296,39 @@ agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    ip->ovfind      = 0; /* SSP OVFIND 0  */
-    rs->rtedvd      = agc_entry_state()->vpred;
-    rs->rtegam2d    = agc_entry_state()->gammaei;
+
+    ip->ovfind   = 0;    /* SSP OVFIND 0  */
+    rs->rtedvd   = agc_entry_state()->vpred;
+    rs->rtegam2d = agc_entry_state()->gammaei;
     agc_status_t st = agc_integ_csmprec(ip, ic, agc_erase_tig(),
                                         AGC_JOB_RETURN_TO_EARTH_CONIC_SEARCH);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* asleep        */
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = rte_initial_vectors(ip, rs, ic->out.ratt, ic->out.vatt,
                                  ic->out.tat, ic->out.x2);
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = rte_conic_setup(ip, rs);
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = rte_conic_search(ip, rs, agc_erase_rted1());
     }
+
     if (st != AGC_STATUS_OK)
     {
         return rte_failed(ctx, rs, st);
     }
+
     return rte_show_solution(ctx, ip, rs,
                              AGC_JOB_RETURN_TO_EARTH_PRECISION); /* P37E */
 }
@@ -311,23 +340,26 @@ agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 6U, 39U,
                      AGC_JOB_RETURN_TO_EARTH_ENTRY_CONDITIONS_DISPLAY,
                      AGC_JOB_RETURN_TO_EARTH);
 }
 
 /* RTEVN (p. 895): V06N60, R1 blank, VPRED and GAMMAEI. V32: P37.          */
-agc_status_t
-agc_job_return_to_earth_entry_conditions_display(agc_job_ctx_t *ctx)
+agc_status_t agc_job_return_to_earth_entry_conditions_display(
+    agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash_blank(ctx, 6U, 60U, RTE_BLANK_R1,
                            AGC_JOB_RETURN_TO_EARTH_DELTA_V_DISPLAY,
                            AGC_JOB_RETURN_TO_EARTH);
@@ -342,10 +374,12 @@ agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(rs->vnstore != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 6U, 81U, rs->vnstore,
                      AGC_JOB_RETURN_TO_EARTH);
 }
@@ -359,15 +393,19 @@ agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = rte_entry_side(rte_ip(), rs);
+
     if (st == AGC_STATUS_OK)
     {
         st = rte_precision_start(rs);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_job_return_to_earth_precision_resume(ctx);
 }
 
@@ -383,16 +421,20 @@ agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st =
         rte_precision_run(ip, rs, AGC_JOB_RETURN_TO_EARTH_PRECISION_RESUME);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* asleep        */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return rte_failed(ctx, rs, st);
     }
+
     return rte_show_solution(
         ctx, ip, rs, AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION); /* P37G */
 }
@@ -404,12 +446,15 @@ agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_option1(0, RTE_OPTION1_P37);
     agc_erase_set_option1(1, RTE_OPTION2_SPS);
+
     return agc_job_return_to_earth_option_display(ctx);
 }
 
@@ -420,10 +465,12 @@ agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U,
                      AGC_JOB_RETURN_TO_EARTH_IGNITION_TIME,
                      AGC_JOB_RETURN_TO_EARTH_OPTION_DISPLAY);
@@ -447,10 +494,11 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_erase_option1(1) == RTE_OPTION2_RCS)
     { /* P37Q          */
         mdot = agc_flag_test(AGC_FLAG_NJETSFLG) ? MDOTRCS :
-                                                  agc_dp_shl(ip, MDOTRCS, 1);
+               agc_dp_shl(ip, MDOTRCS, 1);
         mdot = agc_dp_shl(ip, mdot, 1); /* P37R SL1      */
         vc   = VCRCS;
     }
@@ -458,22 +506,28 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
     {
         mdot = agc_dp_from_sp(dc->emdot); /* SLOAD EMDOT   */
     }
+
     mdot = agc_dp_norm(mdot, &n1); /* NORM X1       */
+
     if (!AGC_ASSERT(mdot != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(rs->dv >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t a =
         agc_dp_poly(agc_dp_div(ip, rs->dv, vc), BURN_POLY, 2); /* P37T  */
     agc_dp_t w =
         agc_dp_mul_trunc(agc_dp_from_sp(dc->weight_g), a); /* DMP     */
     agc_dp_t dtb =
         agc_dp_shl(ip, agc_dp_div(ip, w, mdot), n1 - 12); /* SL* B28 */
+
     agc_erase_set_tig(agc_dp_sub(ip, rs->t1, agc_dp_mul_trunc(dtb, CSUBT)));
+
     return agc_job_return_to_earth_biased_tig_display(ctx);
 }
 
@@ -484,10 +538,12 @@ agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rte_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U,
                      AGC_JOB_RETURN_TO_EARTH_TARGETING,
                      AGC_JOB_RETURN_TO_EARTH_BIASED_TIG_DISPLAY);
@@ -506,29 +562,35 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_vhfcnt(0);
     agc_erase_set_trkmkcnt(0);
     agc_status_t st =
         rte_integrate(ip, rs, rs->r_t1v, rs->v2_t1v, rs->t1, rs->t2, true,
                       AGC_JOB_RETURN_TO_EARTH_TARGETING);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* asleep        */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
-    rs->rtarg     = rs->r_t2v; /* pushed R(T2)/ */
+
+    rs->rtarg = rs->r_t2v; /* pushed R(T2)/ */
     agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);
     agc_vec_t k   = agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5),
                                 agc_vec_scale(ip, rs->uh, MSIN7_5));
+
     if (agc_dp_add(ip, agc_vec_dot(ip, k, ur2), MCOS22_5) >= 0)
     {
         agc_timetheta_in_t   in;
         agc_conic_time_out_t out;
         agc_dp_t             th =
             (agc_vec_dot(ip, rs->uh, rs->r_t2v) < 0) ? THETA210 : THETA165;
+
         in.snth = agc_dp_sin(ip, th); /* P37V          */
         in.csth = agc_dp_cos(ip, th);
         agc_flag_clear(AGC_FLAG_RVSW);
@@ -537,13 +599,16 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
         in.vvec = rs->v2_t1v;
         in.body = AGC_CONIC_EARTH;
         st      = agc_conic_timethet(ip, &in, &out);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
+
         rs->rtarg   = out.rnew;
         rs->conic_t = out.t;
     }
+
     return agc_job_return_to_earth_target_store(ctx);
 }
 
@@ -563,16 +628,20 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_flag_clear(AGC_FLAG_XDELVFLG);
     agc_flag_clear(AGC_FLAG_NORMSW);
     agc_flag_set(AGC_FLAG_FINALFLG);
+
     if (!AGC_ASSERT(rs->conic_t != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz->rtarg   = rs->rtarg;
     rz->tpass4  = agc_dp_add(ip, rs->conic_t, rs->t1);
     rz->delvsin = agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v);
+
     return agc_rendz_ttogo_display_start(ctx, ip,
                                          AGC_JOB_RETURN_TO_EARTH_TARGET_STORE);
 }

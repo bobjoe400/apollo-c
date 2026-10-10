@@ -33,8 +33,8 @@ agc_flag_id_t imu_vflag(imu_vflag_t f);
 agc_flag_id_t imu_vflag_csm(imu_vflag_t f);
 agc_flag_id_t imu_vflag_lm(imu_vflag_t f);
 bool          imu_vflag_test(imu_vflag_t f); /* false if not in vehicle */
-void  imu_vflag_set(imu_vflag_t f);
-void  imu_vflag_clear(imu_vflag_t f);
+void          imu_vflag_set(imu_vflag_t f);
+void          imu_vflag_clear(imu_vflag_t f);
 
 /* IMODES30 bits used by mode switching (IMU_MODE_SWITCHING_ROUTINES).    */
 #define IM30_PIPNOTUSED  0x0001u /* BIT1: program not using PIPAs (PIPFREE) */
@@ -57,7 +57,7 @@ void  imu_vflag_clear(imu_vflag_t f);
 /* Mode-switching helpers shared by mode.c and gyro.c.             */
 bool         imu_caged(void);    /* IMODES30 BIT6                     */
 agc_status_t imu_cagetstj(void); /* CAGETSTJ: OK, or BUSY if caged    */
-void imu_modeexit(void); /* MODEEXIT: RELINT                  */
+void         imu_modeexit(void); /* MODEEXIT: RELINT                  */
 
 /* One gyro pulse = 2^-21 revolution = 128 LSB of an agc_dp_t (2^28/rev). */
 #define IMU_DP_PER_GYRO_PULSE 128

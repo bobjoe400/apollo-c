@@ -43,23 +43,29 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW))
     {
         return AGC_STATUS_OK; /* BOF AVEMIDSW; RVQ */
     }
+
     const agc_vec_t r = agc_vec_shr(
         agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv), x2);
     const agc_vec_t v = agc_vec_shr(
         agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
+
     if (this_vehicle)
     {
         agc_erase_set_rn(r);        /* STOVL RN          */
         agc_erase_set_vn(v);        /* STODL VN          */
         agc_erase_set_piptime(tet); /* STORE PIPTIME     */
+
         return AGC_STATUS_OK;
     }
+
     r_other = r; /* STOVL R-OTHER     */
     v_other = v; /* STORE V-OTHER     */
+
     return AGC_STATUS_OK;
 }
 
@@ -70,10 +76,12 @@ agc_vec_t agc_align_r_other(void)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(r_other.c[0] <= AGC_DP_MAX))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return r_other;
 }
 
@@ -84,9 +92,11 @@ agc_vec_t agc_align_v_other(void)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(v_other.c[0] <= AGC_DP_MAX))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v_other;
 }

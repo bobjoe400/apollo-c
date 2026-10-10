@@ -37,11 +37,14 @@ agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = align_phase4(PH_STAR_SELECT);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_REALIGN_PICK_STARS, AGC_JOB_CSM_FINE_ALIGN);
 }
@@ -55,36 +58,46 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     agc_status_t st = agc_align_locsam(
         &ip, ram->tsight, AGC_JOB_CSM_REALIGN_STARS_LOCATED, &ram->locsam);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* INTSTALL */
     }
+
     uint16_t cdu[3];
+
     align_read_cdus(cdu);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
     bool            found    = false;
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti,
                                &ram->bestj, &found);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (found)
     {
         return agc_job_csm_fine_align(ctx); /* P52F     */
     }
+
     agc_alarm(ALM_NO_STARS); /* P52I     */
     const agc_status_t alm = AGC_STATUS_ALARM;
+
     if (alm != AGC_STATUS_OK)
     {
         return alm;
     }
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_FINE_ALIGN,
                        AGC_JOB_CSM_REALIGN_STAR_SELECTION);
@@ -97,13 +110,17 @@ agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_align_ram()->tsight = agc_dp_add(&ip, align_loadtime(), TSIGHT1_CS);
+
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return realign_pick_stars(ctx);
 }
 
@@ -114,10 +131,12 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return realign_pick_stars(ctx);
 }
 
@@ -125,14 +144,18 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 static void n89_from_latlong(const agc_latlong_t *ll)
 {
     agc_align_ram_t *ram = agc_align_ram();
+
     if (!AGC_ASSERT(ll != NULL))
     {
         return;
     }
+
     ram->landalt  = ll->alt;                /* LANDALT  */
     ram->landlong = agc_dp_shr(ll->lon, 1); /* SR1      */
     ram->landlat  = ll->lat;
-    if (!AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) && (ram->landlat <= AGC_DP_QUARTER)))
+
+    if (!AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) &&
+                    (ram->landlat <= AGC_DP_QUARTER)))
     {
         return;
     }
@@ -149,33 +172,42 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->qmaj            = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
+
+    ram->qmaj = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
     agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_flag_set(AGC_FLAG_ERADFLAG);
     ram->tsight = align_dsptem1();
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_navaux_padload_t pad;
     agc_status_t         st = agc_navaux_get_padload(&pad);
     agc_vec_t            r  = agc_vec_zero();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight,
                                 &r);
     }
+
     const agc_vec_t         alphav = agc_vec_shr(r, 2); /* VSR2     */
     const agc_latlong_opt_t opt    = {.lunar = true, .erad = true};
     agc_latlong_t           ll;
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_latlong_from_r(&ip, &pad, opt, alphav, ram->tsight, &ll);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     n89_from_latlong(&ll); /* LLASRD   */
+
     return agc_job_csm_landing_site_display(ctx);
 }
 
@@ -186,10 +218,12 @@ agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_LANDING_SITE_ACCEPTED,
                        AGC_JOB_CSM_LANDING_SITE_DISPLAY);
@@ -203,23 +237,28 @@ static agc_status_t landing_site_axes(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     agc_integ_out_t o;
     agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ram->tsight,
                                      AGC_JOB_CSM_LANDING_SITE_AXES, &o);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* INTSTALL */
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_lsorient(&ip, ram->xsmd.row[0], o.ratt, o.vatt,
                                 &ram->xsmd);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return align_goto(ram->qmaj); /* GOTO QMAJ */
 }
 
@@ -233,10 +272,13 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     agc_latlong_t ll;
+
     ll.lat   = ram->landlat;
     ll.lon   = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
     ll.alt   = ram->landalt;
@@ -246,15 +288,19 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
     agc_navaux_padload_t    pad;
     agc_status_t            st     = agc_navaux_get_padload(&pad);
     agc_vec_t               alphav = agc_vec_zero();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_latlong_to_r(&ip, &pad, opt, &ll, ram->tsight, &alphav, NULL);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     ram->xsmd.row[0] = agc_vec_unit(&ip, alphav, NULL, NULL); /* XSMD     */
+
     return landing_site_axes();
 }
 
@@ -265,9 +311,11 @@ agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return landing_site_axes();
 }

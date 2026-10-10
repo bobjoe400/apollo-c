@@ -142,10 +142,13 @@ agc_status_t agc_star_vector(int star, agc_vec_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((star >= 1) && (star <= AGC_STAR_COUNT)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = STAR_TABLE[star - 1];
+
     return AGC_STATUS_OK;
 }

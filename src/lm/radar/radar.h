@@ -71,21 +71,21 @@ typedef enum rr_axis_client
 /* Designate erasables (P20-P25, EBANK= LOSCOUNT).                        */
 typedef struct rr_state
 {
-    agc_vec_t rrtarget;   /* RRTARGET: LOS half unit, SM (NB when RRNBSW),
-                           * scale 2^1 (R29: LOSSM, the non-unit LOS in SM
-                           * axes, m 2^24)                                 */
-    agc_dp_t  mlosv;      /* MLOSV: |LOS|, m 2^20 in P20 (LPS20.1 shifts
-                           * the LOS 9 places)                             */
-    agc_vec_t losvel;     /* LOSVEL: relative velocity V(CSM) - V(LM) in SM
-                           * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
-    agc_sp_t  loscount;   /* LOSCOUNT: DODES passes before a new LOS       */
-    agc_sp_t  descount;   /* DESCOUNT: designate passes left (.5 s each)   */
-    agc_sp_t  tang[2];    /* TANG, TANG +1: trunnion, shaft gyro command,
-                           * pulses (RRDESNB input: desired CDU words)     */
-    uint16_t  tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
-    uint16_t  modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
-    uint16_t  modeb[2];   /* MODEB: (T, S) for the other mode              */
-    agc_sp_t  lastcmd[2]; /* LASTYCMD (trunnion), LASTXCMD (shaft)         */
+    agc_vec_t rrtarget;  /* RRTARGET: LOS half unit, SM (NB when RRNBSW),
+                          * scale 2^1 (R29: LOSSM, the non-unit LOS in SM
+                          * axes, m 2^24)                                 */
+    agc_dp_t mlosv;      /* MLOSV: |LOS|, m 2^20 in P20 (LPS20.1 shifts
+                          * the LOS 9 places)                             */
+    agc_vec_t losvel;    /* LOSVEL: relative velocity V(CSM) - V(LM) in SM
+                          * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
+    agc_sp_t loscount;   /* LOSCOUNT: DODES passes before a new LOS       */
+    agc_sp_t descount;   /* DESCOUNT: designate passes left (.5 s each)   */
+    agc_sp_t tang[2];    /* TANG, TANG +1: trunnion, shaft gyro command,
+                          * pulses (RRDESNB input: desired CDU words)     */
+    uint16_t tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
+    uint16_t modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
+    uint16_t modeb[2];   /* MODEB: (T, S) for the other mode              */
+    agc_sp_t lastcmd[2]; /* LASTYCMD (trunnion), LASTXCMD (shaft)         */
 } rr_state_t;
 
 rr_state_t *rr_state(void);
@@ -143,9 +143,9 @@ typedef struct lmnav_state
     agc_dp_t  mktime;        /* MKTIME: mark time (mid range-rate read), cs   */
     agc_dp_t  cdutime;       /* 20D: time of the CDU readings, cs 2^28        */
     uint16_t  aig, amg, aog; /* AIG AMG AOG: IMU CDU words at the mark      */
-    uint16_t  tang[2];       /* TANG: RR CDU words at the mark                */
-    agc_dp_t  rdotmsav;      /* RDOTMSAV: raw range-rate count                */
-    agc_vec_t rrborsit;      /* RRBORSIT: RR boresight, NB, half unit         */
+    uint16_t  tang[2];     /* TANG: RR CDU words at the mark                */
+    agc_dp_t  rdotmsav;    /* RDOTMSAV: raw range-rate count                */
+    agc_vec_t rrborsit;    /* RRBORSIT: RR boresight, NB, half unit         */
     agc_dp_t  dtheta;      /* DSPTEM1: radar vs state-vector LOS, revs (N05) */
     uint16_t  rangrdot[2]; /* RANGRDOT: raw range, range rate (downlink)    */
     /* R22 */
@@ -177,7 +177,7 @@ lmnav_state_t *lmnav_state(void);
  * BUSY: INTSTALL put the job to sleep; it resumes as `resume`.          */
 agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
                        bool *too_far);
-bool         lmnav_range_ok(void); /* LPS20.2        */
+bool lmnav_range_ok(void); /* LPS20.2        */
 /* R61LEM (r61 = true) / R65LEM: preferred tracking attitude; the job
  * continues as ret_job when done.                                       */
 agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,

@@ -44,21 +44,27 @@ agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
     {
         agc_alarm(ALM_IMU_OFF);
         const agc_status_t alm = AGC_STATUS_ALARM;
+
         if (alm != AGC_STATUS_OK)
         {
             return alm;
         }
+
         return agc_exec_gotopooh();
     }
+
     const agc_status_t st = agc_imu_set_in_use(); /* R02ZERO  */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_csm_orientation_acquire_display(ctx);
 }
 
@@ -69,10 +75,12 @@ agc_status_t agc_job_csm_orientation_acquire_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_ORIENTATION_MARK_SETUP,
                        AGC_JOB_CSM_ORIENTATION_COARSE);
@@ -85,11 +93,14 @@ agc_status_t agc_job_csm_orientation_coarse(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     p51_phase(AGC_JOB_CSM_ORIENTATION_COARSE);
+
     for (int i = 0; i < 3; i++)
     {
         agc_erase_set_thetad(i, 0); /* P51ZERO  */
     }
+
     return align_flash(ctx, AGC_DSKY_GODSPRET, VN_GIMBALS,
                        AGC_JOB_CSM_ORIENTATION_COARSE_VERB,
                        AGC_JOB_CSM_ORIENTATION_COARSE_VERB,
@@ -103,10 +114,12 @@ agc_status_t agc_job_csm_orientation_coarse_verb(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_erase_thetad(0) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
                        AGC_JOB_CSM_ORIENTATION_COARSE_START,
                        AGC_JOB_CSM_ORIENTATION_COARSE_START,
@@ -120,23 +133,31 @@ agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t thetad[3];
+
     for (int i = 0; i < 3; i++)
     {
         thetad[i] = agc_erase_thetad(i);
     }
+
     agc_status_t st = agc_imu_coarse(thetad); /* IMUCOARS */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool done = false;
+
     st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_CSM_ORIENTATION_COARSE_DONE,
                      &done);
+
     if ((st != AGC_STATUS_OK) || !done)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
+
     return align_goto(AGC_JOB_CSM_ORIENTATION_COARSE_DONE);
 }
 
@@ -147,21 +168,28 @@ agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK; /* CURTAINS */
     }
+
     agc_status_t st = agc_imu_fin20(); /* IMUFIN20 */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool done = false;
+
     st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_CSM_ORIENTATION_FINE_DONE, &done);
+
     if ((st != AGC_STATUS_OK) || !done)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
+
     return align_goto(AGC_JOB_CSM_ORIENTATION_FINE_DONE);
 }
 
@@ -172,11 +200,14 @@ agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK;
     }
+
     p51_phase(AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY);
+
     return agc_job_csm_orientation_acquire_display(ctx);
 }
 
@@ -190,16 +221,21 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_status_t     st  = align_phase4(PH_P51B);
-    ram->starind         = 0;
-    st                   = align_set1_pdt();
+
+    ram->starind = 0;
+    st           = align_set1_pdt();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     ram->markindx = 1;
+
     return agc_job_csm_orientation_mark_star(ctx);
 }
 
@@ -210,12 +246,15 @@ agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
+
     if (agc_phase_checkmm(MM_BACKUP_ORIENT))
     {
         return agc_csm_alternate_los_sighting_mark(
             ctx, AGC_JOB_CSM_ORIENTATION_MARKED);
     }
+
     return agc_csm_sighting_mark(ctx, AGC_JOB_CSM_ORIENTATION_MARKED);
 }
 
@@ -226,18 +265,24 @@ agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx)
 static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
+
     p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     const agc_status_t st = agc_sxtmark_mkreleas();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (ram->starind == 0)
     {
         ram->starind = 1;
+
         return align_goto(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     }
+
     p51_phase(AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
+
     return align_planet(ctx, ram->tsight, AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
 }
 
@@ -251,21 +296,28 @@ agc_status_t agc_job_csm_orientation_marked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     agc_vec_t          los;
     const agc_status_t st = agc_csm_sxtsm_marks(&ip, &los);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (ram->starind != 0)
     {
         ram->starsav2 = los;
+
         return orientation_after_mark(ctx);
     }
+
     ram->starsav1 = los; /* P51D     */
+
     return align_planet(ctx, ram->tsight, AGC_JOB_CSM_ORIENTATION_FIRST_STAR);
 }
 
@@ -276,12 +328,16 @@ agc_status_t agc_job_csm_orientation_first_star(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->planvec         = ram->planet_los;
+
+    ram->planvec = ram->planet_los;
+
     if (!AGC_ASSERT(ram->starind == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return orientation_after_mark(ctx);
 }
 
@@ -295,15 +351,19 @@ agc_status_t agc_job_csm_orientation_second_star(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->vac12           = ram->planet_los;
-    ram->vac6            = ram->planvec;
-    ram->starad[0]       = ram->starsav1;
-    ram->starad[1]       = ram->starsav2;
+
+    ram->vac12     = ram->planet_los;
+    ram->vac6      = ram->planvec;
+    ram->starad[0] = ram->starsav1;
+    ram->starad[1] = ram->starsav2;
+
     if (!AGC_ASSERT(ram->starind == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_align_sighting_data_display(
         ctx, AGC_JOB_CSM_ORIENTATION_DATA_CHECKED);
 }
@@ -318,22 +378,28 @@ agc_status_t agc_job_csm_orientation_data_checked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
         return agc_job_csm_orientation_acquire_display(ctx);
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     const agc_vec_t a[2] = {ram->starad[0], ram->starad[1]};
     const agc_vec_t b[2] = {ram->vac6, ram->vac12};
-    agc_status_t st = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    agc_status_t    st   = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     agc_erase_set_refsmmat(ram->xdc); /* MATMOVE  */
     agc_flag_set(AGC_FLAG_REFSMFLG);
+
     return agc_exec_gotopooh(); /* ENDP50S  */
 }

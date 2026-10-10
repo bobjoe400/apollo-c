@@ -15,6 +15,9 @@ import sys
 
 MAX_FUNC_LINES = 60
 FUNC_RE = re.compile(r'^[A-Za-z_][\w\s\*]*\s\**([A-Za-z_]\w*)\s*\([^;]*\)\s*\{?\s*$')
+# a statement such as `if (x)` inside a function whose multi-line signature
+# FUNC_RE did not recognise is not a function definition
+C_KEYWORDS = {'if', 'while', 'for', 'switch', 'return', 'sizeof', 'else', 'do'}
 HARD = []
 WARN = []
 
@@ -49,7 +52,7 @@ def check_file(path):
             n_asserts += 1
         if in_func is None:
             m = FUNC_RE.match(s)
-            if m and not s.startswith(('#', 'typedef', 'return')) and path.endswith('.c'):
+            if m and m.group(1) not in C_KEYWORDS and not s.startswith(('#', 'typedef', 'return')) and path.endswith('.c'):
                 if s.endswith('{') or (i < len(lines) and lines[i].strip() == '{'):
                     in_func = m.group(1)
                     start = i

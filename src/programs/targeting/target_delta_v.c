@@ -48,16 +48,21 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_mat_t m;
-    m.row[2]     = agc_vec_neg(rz_unit(ip, ratt));                     /* 24D */
-    m.row[1]     = rz_unit(ip, agc_vec_cross(ip, m.row[2], vatt));     /* 18D */
-    m.row[0]     = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
+
+    m.row[2] = agc_vec_neg(rz_unit(ip, ratt));                     /* 24D */
+    m.row[1] = rz_unit(ip, agc_vec_cross(ip, m.row[2], vatt));     /* 18D */
+    m.row[0] = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
     agc_vec_t dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
-    *v_new       = agc_vec_add(ip, dv, vatt);
+
+    *v_new = agc_vec_add(ip, dv, vatt);
+
     if (!AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -69,7 +74,9 @@ static void tdv_moonflag(tdv_work_t *w)
     {
         w->x2 = agc_flag_test(AGC_FLAG_CMOONFLG) ? 2 : 0;
     }
+
     rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
+
     if (!AGC_ASSERT(w->x2 == 0 || w->x2 == 2))
     {
         return;
@@ -85,12 +92,16 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_flag_set(AGC_FLAG_TRACKFLG);
+
     if (!rz_is_csm())
     {
         agc_rendz_t *rz = rz_state();
-        rz->delvov      = rz->delvlvc;
+
+        rz->delvov = rz->delvlvc;
     }
+
     return agc_job_target_delta_v_display(ctx);
 }
 
@@ -101,6 +112,7 @@ agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 84U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_TIG, AGC_JOB_TARGET_DELTA_V_DISPLAY);
 }
@@ -112,6 +124,7 @@ agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_UPDATE, AGC_JOB_TARGET_DELTA_V_TIG);
 }
@@ -124,23 +137,30 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_integ_out_t o;
     agc_status_t    st = rz_integ(&ip, RZ_OTHPREC, agc_erase_tig(),
                                   AGC_JOB_TARGET_DELTA_V_UPDATE, &o);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     tdv_work.ratt = o.ratt;
     tdv_work.x2   = o.x2;
-    st = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt, rz_state()->delvov,
-                                      &tdv_work.vnew);
+    st            = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt,
+                                                 rz_state()->delvov,
+                                                 &tdv_work.vnew);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_target_delta_v_integrate(ctx);
 }
 
@@ -152,10 +172,13 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     tdv_moonflag(&tdv_work);
     rz_integrvs_in_t in;
+
     in.moon = (tdv_work.x2 != 0);
     /* VSR* 0,2: count 0 - X2, i.e. shift left 2 about the moon (2^29 ->
      * 2^27, 2^7 -> 2^5).                                                */
@@ -167,12 +190,15 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
     agc_integ_out_t o;
     agc_status_t    st =
         rz_integrvs(&ip, &in, AGC_JOB_TARGET_DELTA_V_INTEGRATE, &o);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     tdv_work.x2 = o.x2; /* RATT1 VATT1 TAT stay in the integration
-                             * output, as in the AGC erasables         */
+                         * output, as in the AGC erasables         */
+
     return agc_job_target_delta_v_store(ctx);
 }
 
@@ -185,36 +211,46 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
+
     if (st != AGC_STATUS_OK)
     {
         return st; /* asleep        */
     }
+
     if (rz_is_csm())
     {
         tdv_moonflag(&tdv_work);
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
-    ic->sv.rrect        = ic->out.ratt1;
-    ic->sv.rcv          = ic->out.ratt1;
-    ic->sv.tet          = ic->out.tat;
+
+    ic->sv.rrect = ic->out.ratt1;
+    ic->sv.rcv   = ic->out.ratt1;
+    ic->sv.tet   = ic->out.tat;
     agc_integ_minirect(ic, ic->out.vatt1);
     agc_phase_change(4, TDV_PHASE_04024);
     agc_flag_set(AGC_FLAG_REINTFLG);
     st = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2) /* ATOPOTH */
-                       :
-                       agc_integ_atopcsm(&ip, ic, tdv_work.x2);
+         :
+         agc_integ_atopcsm(&ip, ic, tdv_work.x2);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     st = agc_integ_intwake0(); /* INTWAKE1      */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_job_target_delta_v_end(ctx);
 }
 
@@ -225,11 +261,14 @@ agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_trkmkcnt(0); /* MARKCTR       */
+
     if (rz_is_csm())
     {
         agc_erase_set_vhfcnt(0);
         agc_erase_set_mrkbuf2(0, -1); /* NEGONE        */
     }
+
     return rz_gotopooh();
 }

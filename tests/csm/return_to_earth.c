@@ -33,6 +33,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
+
     return false;
 }
 
@@ -41,6 +42,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -66,6 +68,7 @@ static double fpa_at_radius(const double r1[3], const double v[3], double r)
         0.5 * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) - MU / vnorm(r1);
     double vr = sqrt(2.0 * (en + MU / r));
     double c  = vnorm(h) / (r * vr);
+
     return -acos(c > 1.0 ? 1.0 : c) * 180.0 / 3.14159265358979;
 }
 
@@ -85,8 +88,8 @@ static void get_vec(double out[3], agc_vec_t v, int scale)
 
 static void test_coplanar_conic_return(void)
 {
-    rte_erasable_t *rs    = rte_state();
-    agc_interp_t   *ip    = rte_ip();
+    rte_erasable_t *rs = rte_state();
+    agc_interp_t   *ip = rte_ip();
     const double    r1[3] = {3.0e8, 0.0, 0.0}; /* m                 */
     const double    v1[3] = {-3.0, 6.0, 0.0};  /* m/cs (300, 600 m/s) */
     agc_vec_t       r, v;
@@ -106,6 +109,7 @@ static void test_coplanar_conic_return(void)
     double rcon = agc_dp_to_double(rs->rcon, 29);
     double gam  = fpa_at_radius(r1, v2, rcon);
     double dv   = agc_dp_to_double(rs->dv, 7);
+
     (void) printf(
         "conic: RCON %.0f m, V2 (%.4f %.4f %.4f) m/cs, DV %.4f m/cs, "
         "gamma %.3f deg, X(T2) %.5f, T12 %.0f s, iterations %d\n",
@@ -121,20 +125,25 @@ static void test_coplanar_conic_return(void)
     double uh[3] = {0.0, 1.0, 0.0};
     double x     = agc_dp_to_double(rs->x_t1, 5);
     double best  = 1e30;
+
     for (int k = -1; k <= 1; k++)
     {
         double xk  = x + 0.002 * k;
         double lam = r1[0] / rcon;
         double b1  = 1.0 + pow(agc_dp_to_double(rs->x_t2, 0), 2);
-        double p = 2.0 * r1[0] * (lam - 1.0) / (b1 * lam * lam - 1.0 - xk * xk);
-        double s = sqrt(MU * p) / r1[0];
+        double p   = 2.0 * r1[0] * (lam - 1.0) /
+                     (b1 * lam * lam - 1.0 - xk * xk);
+        double s   = sqrt(MU * p) / r1[0];
         double dvk = hypot(s * xk * ur[0] - v1[0], s * uh[1] - v1[1]);
+
         if (k == 0)
         {
             CHECK(fabs(dvk - dv) < 1e-3 * dv);
         }
+
         best = (dvk < best) ? dvk : best;
     }
+
     CHECK(fabs(best - dv) < 1e-3 * dv);
     CHECK(agc_flag_test(AGC_FLAG_RETROFLG) == false);
 }
@@ -143,8 +152,8 @@ static void test_coplanar_conic_return(void)
  * be met within EPC10RTE, on the faster (lower X(T1) magnitude) side.    */
 static void test_time_critical_return(void)
 {
-    rte_erasable_t *rs    = rte_state();
-    agc_interp_t   *ip    = rte_ip();
+    rte_erasable_t *rs = rte_state();
+    agc_interp_t   *ip = rte_ip();
     const double    r1[3] = {3.0e8, 0.0, 0.0};
     const double    v1[3] = {-3.0, 6.0, 0.0};
     agc_vec_t       r, v;
@@ -162,6 +171,7 @@ static void test_time_critical_return(void)
     CHECK(rte_conic_search(ip, rs, 0) == AGC_STATUS_OK);
     get_vec(v2, rs->v2_t1v, 7);
     double rcon = agc_dp_to_double(rs->rcon, 29);
+
     (void) printf("time critical: DV %.5f m/cs, T12 %.0f s, gamma %.3f deg\n",
                   agc_dp_to_double(rs->dv, 7),
                   agc_dp_to_double(rs->t12, 28) / 100.0,
@@ -213,5 +223,6 @@ int main(void)
     (void) printf(
         "test_return_to_earth: %d checks, %d failures, %d assert reports\n",
         g_checks, g_failures, g_assert_reports);
+
     return (g_failures == 0) ? 0 : 1;
 }

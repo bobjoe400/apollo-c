@@ -34,11 +34,15 @@ static agc_status_t tvcr_enabl1(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
     agc_status_t st = AGC_STATUS_OK;
+
     st = csm_dap_set_t5(AGC_TASK_ENABL2, T5_60MS);
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
+
+    if (!AGC_ASSERT((agc_chan_read(
+                         AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* RESUME               */
 }
 
@@ -48,20 +52,24 @@ agc_status_t agc_task_redotvc(void)
     agc_csm_tvc_t          *t  = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c  = agc_csm_dap_com();
     agc_status_t            st = AGC_STATUS_OK;
+
     if (t->tvcexphs > 0)
     { /* must restart the TVC executive      */
         st = agc_waitlist_call(EXRSTRT_DELAY, AGC_TASK_EXRSTRT);
     }
+
     /* TVCPHASE bits 15 and 1 select the DAP restart location.           */
     if (t->tvcphase == 1)
     { /* FINCOPY: pitch copycycle (PCOPY +1) */
         agc_status_t s2 = csm_tvc_pcopy(true);
-        st              = (st != AGC_STATUS_OK) ? st : s2;
+
+        st = (st != AGC_STATUS_OK) ? st : s2;
     }
     else if (t->tvcphase == 3)
     { /* FINCOPY: yaw copycycle (YCOPY +1)   */
         agc_status_t s2 = csm_tvc_ycopy(true);
-        st              = (st != AGC_STATUS_OK) ? st : s2;
+
+        st = (st != AGC_STATUS_OK) ? st : s2;
     }
     else if (t->tvcphase == -1)
     {
@@ -72,12 +80,15 @@ agc_status_t agc_task_redotvc(void)
     }
     else
     {
-        if (!AGC_ASSERT((t->tvcphase == 0) || (t->tvcphase == 2) || (t->tvcphase == -2)))
+        if (!AGC_ASSERT((t->tvcphase == 0) || (t->tvcphase == 2) ||
+                        (t->tvcphase == -2)))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     agc_status_t s3 = tvcr_enabl1();
+
     return (st != AGC_STATUS_OK) ? st : s3;
 }
 
@@ -87,15 +98,19 @@ agc_status_t agc_task_enabl2(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBOCDUERR);
     agc_status_t st = AGC_STATUS_OK;
+
     st = csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS);
+
     if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* NOQRSM               */
 }
 
@@ -104,19 +119,24 @@ agc_status_t agc_task_enabl2(void)
 static agc_status_t tvcr_chkstrk(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     if (t->stroker != 0)
     {
         t->stroker = 0; /* TSTINITJ             */
     }
+
     agc_status_t st = csm_tvc_init4(); /* POSTJUMP TVCINIT4    */
+
     if (!AGC_ASSERT(t->stroker == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(t->tvcphase == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -129,23 +149,29 @@ static agc_status_t tvcr_chkstrk(void)
 agc_status_t agc_task_cmdsout(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     agc_erase_set_tvcpitch(t->pcmd);
     agc_erase_set_tvcyaw(t->ycmd);
     agc_chan_or(AGC_CHAN_CHAN14, CH14_RELEASE);
     agc_status_t st = AGC_STATUS_OK;
+
     if (t->tvcphase == -1)
     {
         return csm_tvc_mrclean(); /* repeat initialisation */
     }
+
     if (t->tvcphase == -2)
     {
         st = csm_tvc_swichovr_body(); /* repeat switch-over   */
     }
+
     agc_status_t s2 = tvcr_chkstrk();
+
     if (!AGC_ASSERT(t->tvcphase >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st != AGC_STATUS_OK) ? st : s2;
 }
 
@@ -154,9 +180,11 @@ agc_status_t agc_task_cmdsout(void)
 agc_status_t agc_task_exrstrt(void)
 {
     agc_sp_t phs = agc_csm_dap_tvc()->tvcexphs;
+
     if (!AGC_ASSERT((phs >= 1) && (phs <= 6)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return csm_tvc_exec_restart(phs);
 }

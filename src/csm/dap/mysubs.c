@@ -21,14 +21,17 @@
 agc_sp_t csm_dap_word_sp(uint16_t w)
 {
     uint16_t v = (uint16_t) (w & CSM_DAP_NEG0);
+
     if (!AGC_ASSERT(v <= CSM_DAP_NEG0))
     {
         return 0; /* no valid result */
     }
+
     if ((v & CSM_DAP_BIT15) != 0u)
     {
         return (agc_sp_t) (-(int) ((~(unsigned) v) & 037777u));
     }
+
     return (agc_sp_t) v;
 }
 
@@ -39,14 +42,17 @@ uint16_t csm_dap_sp_word(agc_sp_t v)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(v <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     if (v < 0)
     {
         return (uint16_t) (077777 + (int) v);
     }
+
     return (uint16_t) v;
 }
 
@@ -58,15 +64,19 @@ agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(b <= CSM_DAP_NEG0))
     {
         return 0; /* no valid result */
     }
+
     unsigned d = ((unsigned) a - (unsigned) b) & 077777u;
+
     if ((d & 040000u) != 0u)
     {
         d -= 1u; /* two's -> ones' complement          */
     }
+
     return csm_dap_word_sp((uint16_t) d);
 }
 
@@ -74,10 +84,12 @@ agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
 agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 {
     int s = (int) a + (int) b;
+
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
     {
         return 0; /* no valid result */
     }
+
     if (s > AGC_SP_MAX)
     {
         s -= W_ONE;
@@ -90,10 +102,12 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
     {
         /* no overflow */
     }
+
     if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) s;
 }
 
@@ -101,10 +115,12 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 {
     int s = (int) a + (int) b;
+
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
     {
         return 0; /* no valid result */
     }
+
     if (s > AGC_SP_MAX)
     {
         s = AGC_SP_MAX;
@@ -117,10 +133,12 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
     {
         /* no overflow */
     }
+
     if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) s;
 }
 
@@ -128,14 +146,17 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
 {
     int64_t s = (int64_t) a + (int64_t) b;
+
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     if (s > AGC_DP_MAX)
     {
         s -= W_DP_ONE;
@@ -148,6 +169,7 @@ agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
     {
         /* no overflow */
     }
+
     return (agc_dp_t) s;
 }
 
@@ -158,6 +180,7 @@ agc_dp_t csm_dap_ddoubl(agc_dp_t a)
     {
         return 0; /* no valid result */
     }
+
     return csm_dap_das(a, a);
 }
 
@@ -167,10 +190,12 @@ agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_high(agc_sp_mul(a, b));
 }
 
@@ -180,10 +205,12 @@ agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_low(agc_sp_mul(a, b));
 }
 
@@ -196,18 +223,23 @@ agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     bool    neg = ((num < 0) != (den < 0)) && (num != 0);
     int64_t an  = (num < 0) ? -(int64_t) num : (int64_t) num;
     int64_t ad  = (den < 0) ? -(int64_t) den : (int64_t) den;
+
     if ((ad == 0) || (an >= ad * W_ONE))
     {
         return neg ? AGC_SP_MIN : AGC_SP_MAX;
     }
+
     int64_t q = an / ad;
+
     return (agc_sp_t) (neg ? -q : q);
 }
 
@@ -219,12 +251,15 @@ agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac)); /* AY (KMPAC +1) */
     agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));   /* AX            */
+
     return csm_dap_das(ax, (agc_dp_t) ay);             /* AX + AY       */
 }
 
@@ -238,11 +273,14 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX)))
     {
         return 0; /* no valid result */
     }
+
     int64_t s = (int64_t) kmpac + (int64_t) al;
+
     if (s > AGC_DP_MAX)
     {
         s -= 2 * W_DP_ONE; /* + overflow: subtract 360 deg       */
@@ -255,6 +293,7 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
     {
         /* no overflow */
     }
+
     return (agc_dp_t) s;
 }
 
@@ -265,14 +304,17 @@ uint16_t csm_dap_cdu(int axis)
     {
         return 0; /* no valid result */
     }
+
     if (axis == 1)
     {
         return agc_erase_cduy();
     }
+
     if (axis == 2)
     {
         return agc_erase_cduz();
     }
+
     return agc_erase_cdux();
 }
 
@@ -284,8 +326,10 @@ agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_rupt_set_t5_task(task);
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
+
     return AGC_STATUS_OK;
 }
 
@@ -295,7 +339,9 @@ agc_status_t csm_dap_set_time5(uint16_t time5_word)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
+
     return AGC_STATUS_OK;
 }
 
@@ -303,10 +349,12 @@ agc_status_t csm_dap_set_time5(uint16_t time5_word)
 bool csm_dap_engine_on(void)
 {
     uint16_t ch11 = agc_chan_read(AGC_CHAN_DSALMOUT);
+
     if (!AGC_ASSERT(ch11 <= CSM_DAP_NEG0))
     {
         return false;
     }
+
     return (ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u;
 }
 
@@ -315,9 +363,11 @@ bool csm_tvc_dap_is_tvc(void)
 {
     bool b1 = agc_flag_test(AGC_FLAG_DAPBIT1);
     bool b2 = agc_flag_test(AGC_FLAG_DAPBIT2);
+
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1)))
     {
         return false;
     }
+
     return b1 && !b2;
 }

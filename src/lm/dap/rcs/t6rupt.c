@@ -29,19 +29,24 @@
 agc_sp_t lm_dap_time6_value(void)
 {
     uint16_t raw = agc_rupt_time(6);
+
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {
         return 0; /* no valid result */
     }
+
     if (raw <= LM_T6_POSMAX)
     {
         return (agc_sp_t) raw;
     }
+
     agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO);
+
     if (!AGC_ASSERT(v <= 0))
     {
         return 0; /* no valid result */
     }
+
     return v;
 }
 
@@ -51,7 +56,9 @@ static agc_status_t set_time6(agc_sp_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_rupt_set_time(6, (uint16_t) v);
+
     return AGC_STATUS_OK;
 }
 
@@ -63,12 +70,16 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (index == T6_IDX_P)
     {
         agc_chan_write(006, jets);
+
         return AGC_STATUS_OK;
     }
+
     uint16_t keep;
+
     if (index == T6_IDX_U)
     {
         keep = (uint16_t) (agc_chan_read(005) & (uint16_t) ~T6_UBITS & 077777u);
@@ -81,7 +92,9 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_chan_write(005, (uint16_t)(keep + jets));
+
+    agc_chan_write(005, (uint16_t) (keep + jets));
+
     return AGC_STATUS_OK; /* AD L            */
 }
 
@@ -89,13 +102,17 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
 agc_status_t lm_dap_write_next(agc_sp_t index)
 {
     const lm_dap_t *d = lm_dap_state();
-    if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U || index == T6_IDX_V))
+
+    if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U ||
+                    index == T6_IDX_V))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t jets = (index == T6_IDX_P) ?
-                        d->nextp :
-                        ((index == T6_IDX_U) ? d->nextu : d->nextv);
+                    d->nextp :
+                    ((index == T6_IDX_U) ? d->nextu : d->nextv);
+
     return lm_dap_write(index, jets);
 }
 
@@ -107,35 +124,45 @@ agc_status_t lm_dap_jtlst(void)
     agc_sp_t  t     = d->t6furtha[0];
     agc_sp_t  idx   = d->t6furtha[1];
     agc_sp_t  time6 = lm_dap_time6_value();
+
     if (!AGC_ASSERT(t > 0 && t <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((int32_t) time6 - t > 0)
     { /* new first entry */
-        d->t6furtha[0]  = d->t6next[0];
-        d->t6furtha[1]  = d->t6next[1];
-        d->t6next[0]    = (agc_sp_t) (time6 - t);
-        d->t6next[1]    = d->nxt6adr;
-        d->nxt6adr      = idx;
+        d->t6furtha[0] = d->t6next[0];
+        d->t6furtha[1] = d->t6next[1];
+        d->t6next[0]   = (agc_sp_t) (time6 - t);
+        d->t6next[1]   = d->nxt6adr;
+        d->nxt6adr     = idx;
         agc_status_t st = set_time6(t);
+
         agc_chan_or(013, T6_ENABLE); /* TURNON         */
+
         return st;
     }
+
     int32_t mid = (int32_t) time6 - t + d->t6next[0]; /* MIDORLST       */
+
     if (mid > 0)
     {
         d->t6furtha[0] = lm_dap_sat(mid);
         d->t6furtha[1] = d->t6next[1];
         d->t6next[0]   = (agc_sp_t) (t - time6);
         d->t6next[1]   = idx;
+
         return AGC_STATUS_OK;
     }
+
     d->t6furtha[0] = lm_dap_sat(-mid); /* LASTCHG        */
+
     if (!AGC_ASSERT(d->t6furtha[0] >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -145,31 +172,36 @@ agc_status_t lm_dap_jtlst(void)
 static agc_status_t t6job(lm_dap_t *d)
 {
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
-    agc_sp_t     head = d->t6next[0];                    /* DXCH T6NEXT    */
-    agc_sp_t     done = d->nxt6adr;                      /* LXCH NXT6ADR   */
-    d->nxt6adr        = d->t6next[1];
-    d->t6next[0]      = d->t6furtha[0]; /* DXCH T6FURTHA  */
-    d->t6next[1]      = d->t6furtha[1];
-    d->t6furtha[0]    = LM_POSMAX;
-    d->t6furtha[1]    = 0;
+    agc_sp_t head = d->t6next[0];                    /* DXCH T6NEXT    */
+    agc_sp_t done = d->nxt6adr;                      /* LXCH NXT6ADR   */
+
+    d->nxt6adr     = d->t6next[1];
+    d->t6next[0]   = d->t6furtha[0];    /* DXCH T6FURTHA  */
+    d->t6next[1]   = d->t6furtha[1];
+    d->t6furtha[0] = LM_POSMAX;
+    d->t6furtha[1] = 0;
     agc_status_t st;
+
     if ((int32_t) head + T6_PRIO37 > LM_POSMAX)
     { /* list empty     */
         st = set_time6(LM_POSMAX);
     }
     else
     {
-        st              = set_time6(head); /* ENABLET6       */
+        st = set_time6(head); /* ENABLET6       */
         agc_chan_or(013, T6_ENABLE);
+
         if ((int32_t) d->t6next[0] + T6_PRIO37 > LM_POSMAX)
         {
             d->t6next[0] = LM_POSMAX;
         }
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_write_next(done); /* GOCH56         */
 }
 
@@ -179,18 +211,22 @@ static agc_status_t t6job(lm_dap_t *d)
 agc_status_t agc_lm_dap_t6jobchk(void)
 {
     uint16_t raw = agc_rupt_time(6);
+
     if (raw > 0u && raw <= LM_T6_POSMAX)
     {
         return AGC_STATUS_OK;
     }
+
     if (raw == 0u)
     {
         return agc_ccshole(); /* CCSHOLE: POODOO 01103 */
     }
+
     if (!AGC_ASSERT(raw == LM_T6_NEGZERO))
     {
         return AGC_STATUS_BAD_ARG; /* DEVIATION: AGC hangs here */
     }
+
     return t6job(lm_dap_state());
 }
 
@@ -198,14 +234,17 @@ agc_status_t agc_lm_dap_t6jobchk(void)
 agc_status_t agc_lm_dap_t6rupt(void)
 {
     agc_status_t st = agc_lm_dap_t6jobchk();
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -214,14 +253,18 @@ agc_status_t agc_lm_dap_t6rupt(void)
 void agc_lm_dap_time6_count(uint16_t counts)
 {
     uint16_t raw = agc_rupt_time(6);
+
     if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX ||
         counts == 0u)
     {
         return; /* idle, or rupt already due */
     }
+
     uint16_t next =
         (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts);
+
     agc_rupt_set_time(6, next);
+
     if (!AGC_ASSERT(next <= LM_T6_NEGZERO))
     {
         return;
@@ -232,9 +275,11 @@ void agc_lm_dap_time6_count(uint16_t counts)
 bool agc_lm_dap_t6_pending(void)
 {
     uint16_t raw = agc_rupt_time(6);
+
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {
         return false;
     }
+
     return raw == LM_T6_NEGZERO;
 }

@@ -153,10 +153,10 @@
     ((agc_dp_t) 176229826) /* 2DEC* .50087529 E-5 B17*: 1/RTMUE */
 #define AGC_ENTRY_HALVE \
     ((agc_dp_t)         \
-         AGC_DP_HALF) /* HALVE = HIDPHALF .5; also Q19, 1/GMAX, VSAT/2VS */
+     AGC_DP_HALF)     /* HALVE = HIDPHALF .5; also Q19, 1/GMAX, VSAT/2VS */
 #define AGC_ENTRY_FOURTH \
     ((agc_dp_t)          \
-         AGC_DP_QUARTER) /* FOURTH = HIDP1/4 .25; also VMIN = (VS/2)/2VS */
+     AGC_DP_QUARTER)     /* FOURTH = HIDP1/4 .25; also VMIN = (VS/2)/2VS */
 #define AGC_ENTRY_NEAR1_4 \
     ((agc_dp_t) (07777 *  \
                  16384)) /* 2OCT 0777700000: 1/4 less 1 bit in upper part */

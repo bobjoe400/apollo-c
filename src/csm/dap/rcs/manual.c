@@ -53,9 +53,11 @@ agc_status_t csm_rcs_manual(void)
 {
     agc_csm_rcs_t    *r = agc_csm_dap_rcs();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
-    c->rcsflags         = (uint16_t) (c->rcsflags & ~(unsigned) FORCEDBITS);
-    uint16_t ch31       = agc_chan_read(AGC_CHAN_CHAN31);
-    uint16_t chg = (uint16_t) ((r->ch31temp ^ ch31) & MANROT); /* RXOR LCHAN */
+
+    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) FORCEDBITS);
+    uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);
+    uint16_t chg  = (uint16_t) ((r->ch31temp ^ ch31) & MANROT); /* RXOR LCHAN */
+
     if (chg != 0u)
     {
         r->ch31temp = ch31; /* save channel 31 in CH31TEMP       */
@@ -63,46 +65,57 @@ agc_status_t csm_rcs_manual(void)
         c->rcsflags = (uint16_t) (c->rcsflags + (unsigned) (chg << 4));
         c->rcsflags = (uint16_t) (c->rcsflags | DAMPBITS); /* rate damping */
     }
+
     uint16_t cmd = (uint16_t) (~(unsigned) r->ch31temp & MANROT); /* NOCHANGE */
+
     if (cmd == 0u)
     {
         return csm_rcs_ahfnorot(); /* no manual commands                */
     }
-    r->holdflag     = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
+
+    r->holdflag = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
     agc_status_t st = csm_rcs_stickchk(cmd);
+
     if (st == AGC_STATUS_OK)
     {
         agc_flag_set(AGC_FLAG_STIKFLAG); /* inform P20: astronaut control */
         st = AGC_STATUS_OK;
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
         return rcs_freefunc();
     }
+
     if (csm_rcs_rate_init_pending())
     {
         return csm_rcs_reinit(); /* ..... TILT, recycle the filter    */
     }
+
     if (r->ratindx - 5 > 0)
     {
         r->attkalmn = -1; /* manual maneuver at high rate      */
     }
+
     return rcs_setwbody();
 }
 
 /* SETWBODY .. SPNDXCHK (pp. 1018-1019), auto-hold manual rotation.       */
 static agc_status_t rcs_setwbody(void)
 {
-    agc_csm_rcs_t          *r = agc_csm_dap_rcs();
-    const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    bool damped = (c->rcsflags & DAMPBITS) == 0u; /* rate damping completed */
+    agc_csm_rcs_t          *r      = agc_csm_dap_rcs();
+    const agc_csm_dapcom_t *c      = agc_csm_dap_com();
+    bool                    damped = (c->rcsflags & DAMPBITS) == 0u; /* rate damping completed */
+
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
         int m = (int) r->manndx[i]; /* 0 none, 1 +, 2 - rotation         */
+
         if (m == 0)
         {
             r->wbody[i] = 0; /* NORATE                            */
@@ -110,27 +123,35 @@ static agc_status_t rcs_setwbody(void)
         else
         {
             int q = m + (int) r->ratindx - 1; /* MANTABLE -1 + Q         */
+
             if (!AGC_ASSERT((q >= 0) && (q < MANTAB_N)))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             r->wbody[i] = agc_sp_mul(mantable[q], BIT9); /* WBODY       */
+
             if (damped)
             { /* MERUPDAT    */
                 agc_sp_t neg = (agc_sp_t) -mantable[q];
+
                 r->merror[i] = csm_dap_das(r->merror[i], agc_sp_mul(neg, BIT7));
             }
         }
+
         if (!damped)
         {
             r->merror[i] = 0; /* ZEROER                            */
         }
+
         r->error[i] = agc_dp_high(r->merror[i]); /* SPNDXCHK    */
     }
+
     if (!AGC_ASSERT(r->ratindx >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return csm_rcs_jets();
 }
 
@@ -138,19 +159,24 @@ static agc_status_t rcs_setwbody(void)
 static agc_status_t rcs_freefunc(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         int m = (int) r->manndx[i];
+
         if (!AGC_ASSERT((m >= 0) && (m <= 3)))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         r->tau[i] = freetau[m]; /* TAU, TAU1, TAU2                   */
     }
+
     if (!AGC_ASSERT(r->tau[0] >= -480))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return csm_rcs_t6progm();
 }
 
@@ -160,18 +186,23 @@ static agc_status_t rcs_freefunc(void)
 agc_status_t csm_rcs_stickchk(uint16_t bits)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(bits <= MANROT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     r->manndx[1] = (agc_sp_t) (bits & 3u); /* PMANNDX: bits 1,2   */
-    unsigned t   = (unsigned) bits >> 2;   /* MP QUARTER          */
+    unsigned t = (unsigned) bits >> 2;   /* MP QUARTER          */
+
     r->manndx[2] = (agc_sp_t) (t & 3u);    /* YMANNDX: bits 3,4   */
     r->manndx[0] = (agc_sp_t) (t >> 2);    /* RMANNDX: bits 5,6   */
+
     if (!AGC_ASSERT(r->manndx[0] <= 3))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -182,10 +213,13 @@ agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = csm_rcs_stickchk(ch31_bits);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }

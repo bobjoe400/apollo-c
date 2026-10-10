@@ -27,10 +27,12 @@ int32_t lm_dap_dpval(lm_dp_pair_t x)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return (int32_t) x.hi * ARITH_WORD + (int32_t) x.lo;
 }
 
@@ -39,10 +41,12 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
 {
     lm_dp_pair_t r;
     int32_t      hi = v / ARITH_WORD; /* C truncates toward zero      */
+
     if (!AGC_ASSERT(hi >= -ARITH_MAXMAG && hi <= ARITH_MAXMAG))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     if (hi > ARITH_MAXMAG)
     {
         hi = ARITH_MAXMAG;
@@ -51,12 +55,15 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
     {
         hi = -ARITH_MAXMAG;
     }
+
     r.hi = (agc_sp_t) hi;
     r.lo = (agc_sp_t) (v - hi * ARITH_WORD);
+
     if (!AGC_ASSERT(r.lo > -ARITH_WORD && r.lo < ARITH_WORD))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return r;
 }
 
@@ -67,20 +74,24 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return lm_dap_dpmake((int32_t) a * (int32_t) b);
 }
 
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
     lm_dp_pair_t p = lm_dap_mp(a, b);
+
     if (!AGC_ASSERT(p.hi >= -ARITH_MAXMAG && p.hi <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return p.hi;
 }
 
@@ -91,29 +102,37 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r   = {0, 0};
     int32_t      num = lm_dap_dpval(n);
+
     if (!AGC_ASSERT(d != 0))
     {
         r.hi = (num >= 0) ? ARITH_MAXMAG : -ARITH_MAXMAG;
+
         return r;
     }
+
     int32_t q   = num / (int32_t) d;
     int32_t rem = num - q * (int32_t) d;
+
     if (!AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     r.hi = lm_dap_sat(q);
     r.lo = (agc_sp_t) rem;
+
     return r;
 }
 
 agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r = lm_dap_dvqr(n, d);
+
     if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return r.hi;
 }
 
@@ -125,6 +144,7 @@ agc_sp_t lm_dap_wrap(int32_t v)
     {
         return 0; /* no valid result */
     }
+
     for (int i = 0; i < 2; i++)
     { /* a 3-term sum may need two  */
         if (v > ARITH_MAXMAG)
@@ -136,10 +156,12 @@ agc_sp_t lm_dap_wrap(int32_t v)
             v += ARITH_WORD;
         }
     }
+
     if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return lm_dap_sat(v);
 }
 
@@ -147,6 +169,7 @@ agc_sp_t lm_dap_wrap(int32_t v)
 agc_sp_t lm_dap_sat(int32_t v)
 {
     agc_sp_t r;
+
     if (v > ARITH_MAXMAG)
     {
         r = ARITH_MAXMAG;
@@ -159,10 +182,12 @@ agc_sp_t lm_dap_sat(int32_t v)
     {
         r = (agc_sp_t) v;
     }
+
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -173,6 +198,7 @@ bool lm_dap_ovf(int32_t v)
     {
         return false;
     }
+
     return (v > ARITH_MAXMAG) || (v < -ARITH_MAXMAG);
 }
 
@@ -182,23 +208,28 @@ lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
 {
     int32_t lo    = (int32_t) x.lo + (int32_t) y.lo;
     int32_t carry = 0;
+
     if (lo > ARITH_MAXMAG)
     {
-        lo -= ARITH_WORD;
+        lo   -= ARITH_WORD;
         carry = 1;
     }
     else if (lo < -ARITH_MAXMAG)
     {
-        lo += ARITH_WORD;
+        lo   += ARITH_WORD;
         carry = -1;
     }
+
     lm_dp_pair_t r;
+
     r.hi = lm_dap_wrap((int32_t) x.hi + (int32_t) y.hi + carry);
     r.lo = (agc_sp_t) lo;
+
     if (!AGC_ASSERT(r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return r;
 }
 
@@ -209,10 +240,12 @@ lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return lm_dap_das(x, x);
 }
 
@@ -225,12 +258,15 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(b <= ARITH_MASK15))
     {
         return 0; /* no valid result */
     }
+
     int32_t d = ((int32_t) a - (int32_t) b) & ARITH_MASK15;
     int32_t v;
+
     if (d < ARITH_SIGN15)
     {
         v = d;
@@ -243,6 +279,7 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
     {
         v = d - ARITH_TWOS;
     }
+
     return (agc_sp_t) v;
 }
 
@@ -254,11 +291,14 @@ uint16_t lm_dap_ones_to_twos(int32_t v)
     {
         return 0; /* no valid result */
     }
+
     int32_t w = (v >= 0) ? v : (v + ARITH_TWOS);
+
     if (!AGC_ASSERT(w >= 0 && w <= ARITH_MASK15))
     {
         return 0; /* no valid result */
     }
+
     return (uint16_t) w;
 }
 
@@ -269,12 +309,15 @@ agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
     {
         return 0; /* no valid result */
     }
+
     agc_sp_t r =
         (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (-v - 1) : 0);
+
     if (!AGC_ASSERT(r >= 0))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -285,12 +328,15 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
     {
         return 0; /* no valid result */
     }
+
     agc_sp_t r =
         (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (v + 1) : 0);
+
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG + 1 || r == 0))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -303,21 +349,28 @@ agc_sp_t lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d)
     {
         return 0; /* no valid result */
     }
+
     if (d == 0)
     {
         return ARITH_MAXMAG; /* MAXPLUS            */
     }
+
     int32_t ad = (d > 0) ? d : -(int32_t) d;
     int32_t ah = (n.hi >= 0) ? n.hi : -(int32_t) n.hi;
+
     if (ad - ah <= 0)
     { /* MAKEMAX            */
         bool pos = (n.hi > 0) == (d > 0);
+
         return pos ? ARITH_MAXMAG : (agc_sp_t) -ARITH_MAXMAG;
     }
+
     agc_sp_t q = lm_dap_dv(n, d);
+
     if (!AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG))
     {
         return 0; /* no valid result */
     }
+
     return q;
 }

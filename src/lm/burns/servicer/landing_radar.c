@@ -50,9 +50,11 @@ void agc_lm_altchk(agc_sp_t index, bool *below)
     {
         return;
     }
+
     agc_ovf_t ovf = 0;
-    agc_dp_t  d =
+    agc_dp_t  d   =
         agc_dp_sub_raw(ALTCRIT[index / 2], agc_guid_state()->lm.hcalc, &ovf);
+
     *below = (d >= 0); /* BRANCH +4: L+4 if <=   */
 }
 
@@ -60,6 +62,7 @@ void agc_lm_altchk(agc_sp_t index, bool *below)
 static void gnurvst(bool velocity)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
     if (velocity)
     {
         lm->v1s = lm->gnur;
@@ -68,6 +71,7 @@ static void gnurvst(bool velocity)
     {
         lm->r1s = lm->gnur;
     }
+
     if (!AGC_ASSERT(lm->gnur.c[0] >= AGC_DP_MIN))
     {
         return;
@@ -82,15 +86,18 @@ agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_flag_clear(AGC_FLAG_RNGEDATA);
     agc_flag_clear(AGC_FLAG_VELDATA);
     agc_radar_landing_radar_lights(); /* SET LR LITES PROPERLY  */
     agc_relint();
+
     return agc_lm_serv_copycyc1(ctx);
 }
 
@@ -102,20 +109,26 @@ agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_flag_set(AGC_FLAG_PSTHIGAT);
     agc_flag_set(AGC_FLAG_NOLRREAD);
     agc_status_t st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_HIGATJOB);
+
     if (st != AGC_STATUS_OK)
     {
         agc_relint();
+
         return st;
     }
+
     agc_relint();
+
     return agc_lm_serv_contserv(ctx);
 }
 
@@ -125,12 +138,14 @@ static agc_status_t lr_position(agc_job_ctx_t *ctx)
 {
     agc_guid_lm_t *lm   = &agc_guid_state()->lm;
     uint16_t       ch33 = agc_chan_read(033);
+
     if (agc_flag_test(AGC_FLAG_PSTHIGAT))
     { /* POS2CHK                */
         if ((ch33 & (uint16_t) AGC_CH033_LRPOS2) == 0U)
         {
             return agc_lm_serv_updatchk(ctx);
         }
+
         if ((agc_chan_read(012) & (uint16_t) AGC_CH012_LRPOS2CMD) != 0U)
         {
             return agc_lm_serv_contserv(ctx); /* BEING REPOSITIONED     */
@@ -139,17 +154,21 @@ static agc_status_t lr_position(agc_job_ctx_t *ctx)
     else
     { /* HIGATCHK               */
         agc_dp_t ttf8 = agc_lm_ldg()->ttf_8;
+
         if ((int) agc_dp_high(ttf8) + lm->rpcrtime > 0 &&
             (int) lm->rpcrtqsw - (int) agc_dp_high(lm->xnbpip.row[0].c[0]) <= 0)
         {
             return agc_lm_serv_higatask(ctx); /* UXBXP > QSW: REPOSITION */
         }
+
         if ((ch33 & (uint16_t) AGC_CH033_LRPOS1) == 0U)
         { /* POS1CHK         */
             return agc_lm_serv_updatchk(ctx);
         }
     }
+
     agc_alarm(AGC_ALARM_00511); /* LRPOSALM               */
+
     return agc_lm_serv_contserv(ctx);
 }
 
@@ -162,33 +181,42 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_flag_test(AGC_FLAG_LRBYPASS))
     {
         return agc_lm_serv_copycyc1(ctx); /* BYPASS LR LOGIC        */
     }
+
     bool below = false;
+
     if (!agc_flag_test(AGC_FLAG_READLR))
     { /* 35KCHK                 */
         agc_lm_altchk(2, &below);
+
         if (below)
         {
             agc_flag_set(AGC_FLAG_READLR);
         }
+
         return agc_lm_serv_contserv(ctx);
     }
+
     if (!agc_flag_test(AGC_FLAG_XORFLG))
     { /* XORCHK                 */
         agc_lm_altchk(6, &below);
+
         if (below)
         {
             agc_flag_set(AGC_FLAG_XOVINFLG);
             agc_flag_set(AGC_FLAG_XORFLG);
         }
     }
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_READLR)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lr_position(ctx); /* HITEST                 */
 }
 
@@ -200,35 +228,44 @@ static agc_status_t no_powered_designate_now(agc_job_ctx_t *ctx)
     agc_guid_t   *g   = agc_guid_state();
     agc_lm_ldg_t *ldg = agc_lm_ldg();
     agc_interp_t  ip;
+
     agc_interp_init(&ip);
     agc_dp_t r1mag = agc_vec_abval(&ip, g->lm.r1s); /* PUSH         */
-    g->lm.hcalc    = agc_dp_sub(&ip, r1mag, ldg->land_mag);
-    ldg->hcalc1    = g->lm.hcalc;
-    g->lm.altbits  = agc_dp_mul(&ip, g->lm.hcalc, ALTCONV); /* DMPR, SGNAGREE */
-    g->lm.uhzp = agc_vec_unit(&ip, agc_vec_cross(&ip, g->avg.unitr, g->lm.uhyp),
-                              NULL, NULL);
+
+    g->lm.hcalc   = agc_dp_sub(&ip, r1mag, ldg->land_mag);
+    ldg->hcalc1   = g->lm.hcalc;
+    g->lm.altbits = agc_dp_mul(&ip, g->lm.hcalc, ALTCONV); /* DMPR, SGNAGREE */
+    g->lm.uhzp    =
+        agc_vec_unit(&ip, agc_vec_cross(&ip, g->avg.unitr, g->lm.uhyp),
+                     NULL, NULL);
     agc_mat_t refsmmat = agc_erase_refsmmat();
+
     g->avg.rn1 =
         agc_vec_shr(agc_vec_mat(&ip, g->lm.r1s, &refsmmat), 4); /* 2^29 */
-    g->avg.vn1  = agc_vec_shl(&ip, agc_vec_mat(&ip, g->lm.v1s, &refsmmat), 1);
+    g->avg.vn1 = agc_vec_shl(&ip, agc_vec_mat(&ip, g->lm.v1s, &refsmmat), 1);
     agc_dp_t vh = agc_dp_shl(
         &ip, agc_vec_abval(&ip, agc_vec_cross(&ip, g->avg.unitr, g->lm.v1s)),
         1);
     agc_dp_t comp =
         agc_dp_mul(&ip, agc_dp_div(&ip, agc_dp_sq(&ip, vh), r1mag), ARCONV1);
+
     agc_inhint(); /* COPYCYC2     */
+
     for (int i = 0; i < 3; i++)
     {
         g->lm.runit[i] = agc_dp_high(g->avg.unitr.c[i]); /* RUNIT FOR R10 */
     }
+
     g->lm.daltrate = agc_dp_high(comp); /* DALTRATE     */
     g->lm.r        = g->lm.r1s;
     g->lm.v        = g->lm.v1s;
     agc_relint();
+
     if (!AGC_ASSERT(r1mag > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_lm_serv_copycycl(ctx);
 }
 
@@ -242,8 +279,10 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_COPYCYC1);
     uint16_t radmodes = agc_flagword_get(12); /* FLGWRD12 = RADMODES    */
+
     if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) ||
         agc_flag_test(AGC_FLAG_READRFLG) ||
         (radmodes & (uint16_t) 010002) != 0U)
@@ -256,6 +295,7 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
     {
         /* TCF R29 (-> NOR29NOW) */
         const agc_status_t sr = agc_radar_powered_flight_designate();
+
         if (sr != AGC_STATUS_OK)
         {
             return sr;
@@ -268,6 +308,7 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     return no_powered_designate_now(ctx);
 }
 
@@ -276,15 +317,19 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
 static agc_status_t hfail(agc_job_ctx_t *ctx)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
     if (lm->lrrctr != 0 && ((lm->lrlctr - lm->lrrctr) & ~3) == 0)
     {
         agc_flag_set(AGC_FLAG_HFLSHFLG); /* TRACKER FAIL LITE      */
     }
+
     lm->lrrctr = lm->lrlctr; /* NORLITE: R = L         */
+
     if (!AGC_ASSERT(lm->lrrctr == lm->lrlctr))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_lm_serv_vmeaschk(ctx);
 }
 
@@ -298,17 +343,21 @@ static agc_dp_t lr_deltah(agc_interp_t *ip, agc_guid_t *g)
     agc_vec_t vrel =
         agc_vec_add(ip, agc_vec_shl(ip, g->lm.v1s, 2), g->lm.delvs);
     agc_dp_t dop = agc_dp_mul(ip, agc_vec_dot(ip, vrel, hbsm), g->lm.radskal);
+
     if (!agc_flag_test(AGC_FLAG_ALTSCALE))
     { /* LOW SCALE: RESCALE     */
         dop = agc_tp_to_dp(agc_dp_mul_tp(dop, agc_dp_from_sp(g->lm.skalskal)));
     }
+
     agc_dp_t  slant = agc_dp_shl(ip, agc_dp_add(ip, dop, g->lm.hmeas), 7);
-    agc_vec_t sv =
+    agc_vec_t sv    =
         agc_vec_scale(ip, hbsm, agc_dp_mul(ip, slant, HSCAL)); /* 2^23 */
+
     if (!AGC_ASSERT(g->lm.hmeas >= 0))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_sub(ip, agc_vec_dot(ip, sv, g->avg.unitr), g->lm.hcalc);
 }
 
@@ -321,20 +370,25 @@ static agc_status_t lr_rupdate(agc_job_ctx_t *ctx, agc_interp_t *ip,
     agc_sp_t hhi = agc_dp_high(h28);
     agc_sp_t hlo = agc_dp_low(h28); /* H AT 2(14) M           */
     int      d   = (int) g->lm.lrhmax - (int) hlo;
+
     if (hhi != 0 || d <= 0 || !AGC_ASSERT(g->lm.lrhmax > 0))
     {
         return agc_lm_serv_vmeaschk(ctx); /* H > HMAX: BYPASS       */
     }
+
     agc_ovf_t ovf = 0;
-    agc_dp_t  wq =
+    agc_dp_t  wq  =
         agc_dp_div_raw(agc_sp_mul((agc_sp_t) d, g->lm.lrwh),
                        agc_dp_from_sp(g->lm.lrhmax), &ovf); /* MP DV */
-    agc_dp_t  dh = agc_tp_to_dp(agc_dp_mul_tp(
-         agc_lm_ldg()->deltah, agc_dp_from_sp(agc_dp_high(wq)))); /* SHORTMP2 */
+    agc_dp_t dh = agc_tp_to_dp(agc_dp_mul_tp(
+                                   agc_lm_ldg()->deltah,
+                                   agc_dp_from_sp(agc_dp_high(wq)))); /* SHORTMP2 */
     agc_vec_t dr = agc_vec_scale(ip, g->avg.unitr, agc_dp_shl(ip, dh, 1));
-    g->lm.gnur   = agc_vec_add(ip, dr, g->lm.r1s);
+
+    g->lm.gnur    = agc_vec_add(ip, dr, g->lm.r1s);
     g->avg.gdt1_2 = agc_lm_mungrav(ip, g->lm.gnur); /* GDT1/2 */
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_RUPDATED);
+
     return agc_lm_serv_rupdated(ctx);
 }
 
@@ -345,11 +399,14 @@ agc_status_t agc_lm_serv_rupdated(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     gnurvst(false);
+
     return agc_lm_serv_vmeaschk(ctx);
 }
 
@@ -360,40 +417,53 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_t *g = agc_guid_state();
+
     if (agc_flag_test(AGC_FLAG_NOLRREAD))
     {
         return agc_lm_serv_contserv(ctx); /* LR UPDATE INHIBITED    */
     }
+
     if (!agc_flag_test(AGC_FLAG_RNGEDATA))
     {
         return agc_lm_serv_vmeaschk(ctx); /* NO ALT MEAS THIS CYCLE */
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
-    agc_dp_t dh          = lr_deltah(&ip, g);
+    agc_dp_t dh = lr_deltah(&ip, g);
+
     agc_lm_ldg()->deltah = dh; /* STORE DELTAH           */
+
     if (agc_flag_test(AGC_FLAG_PSTHIGAT))
     { /* REASONABLENESS TEST    */
         agc_dp_t t = agc_dp_sub(
             &ip,
             agc_dp_shl(&ip, agc_dp_sub(&ip, agc_dp_abs(dh), g->lm.delqfix), 3),
             g->lm.hcalc);
+
         g->lm.lrlctr++;
+
         if (t >= 0)
         {
             return hfail(ctx); /* DELTA H TOO LARGE      */
         }
+
         agc_flag_clear(AGC_FLAG_HFLSHFLG); /* ALT FAIL LAMP OFF      */
     }
+
     if (!agc_flag_test(AGC_FLAG_LRINH))
     {
         return agc_lm_serv_vmeaschk(ctx); /* UPDATE INHIBITED       */
     }
+
     return lr_rupdate(ctx, &ip, g);
 }
 
@@ -401,19 +471,24 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
 static agc_status_t vfail(agc_job_ctx_t *ctx)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
     if (lm->lrsctr != 0 && ((lm->lrmctr - lm->lrsctr) & ~3) == 0)
     {
         agc_flag_set(AGC_FLAG_VFLSHFLG); /* TRACKER FAIL LITE      */
     }
+
     lm->lrsctr = lm->lrmctr; /* NOLITE: S = M          */
+
     if (lm->vselect == 0)
     {                                        /* Z COMPONENT            */
         agc_flag_set(AGC_FLAG_VXINH); /* SKIP X (CROSS LOBE)    */
     }
+
     if (!AGC_ASSERT(lm->lrsctr == lm->lrmctr))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_lm_serv_valtchk(ctx); /* ENDVDAT                */
 }
 
@@ -424,6 +499,7 @@ static agc_sp_t lr_vweight(const agc_guid_lm_t *lm)
     agc_sp_t v = agc_dp_high(lm->abvel); /* ABVEL*                 */
     int      s = lm->vselect;
     agc_sp_t w;
+
     if (v - lm->lrvf <= 0)
     {
         w = lm->lrwvf[s]; /* USEVF                  */
@@ -435,19 +511,23 @@ static agc_sp_t lr_vweight(const agc_guid_lm_t *lm)
     else
     {
         agc_ovf_t ovf = 0;
-        agc_dp_t  q =
+        agc_dp_t  q   =
             agc_dp_div_raw(agc_sp_mul((agc_sp_t) (lm->lrvmax - v), lm->lrwv[s]),
                            agc_dp_from_sp(lm->lrvmax), &ovf);
+
         w = agc_dp_high(q); /* WV (1 - V/VMAX)        */
     }
+
     if (agc_erase_modreg() - 64 > 0)
     {
         w = lm->lrwvff; /* P65, P66, P67          */
     }
+
     if (!AGC_ASSERT(s >= 0 && s <= 2))
     {
         return 0; /* no valid result */
     }
+
     return w;
 }
 
@@ -460,10 +540,11 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm,
 {
     int            s        = g->lm.vselect;
     const uint16_t lrcdu[3] = {g->lm.lrcdu[1], g->lm.lrcdu[2], g->lm.lrcdu[0]};
+
     agc_guid_quictrig(&g->trig, lrcdu); /* CDUSPOT = LRY LRZ LRX  */
     *vbsm = g->lm.vbeamnb[s];
     agc_guid_nbsm(&g->trig, vbsm); /* *NBSM*                 */
-    agc_dp_t  vm = agc_dp_mul(ip, agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);
+    agc_dp_t  vm    = agc_dp_mul(ip, agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);
     agc_vec_t delvu =
         agc_vec_scale(ip,
                       agc_vec_make(agc_dp_pack(g->lm.piptem[0], 0),
@@ -474,12 +555,15 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm,
         ip, agc_dp_sub(ip, g->lm.lrvtime, agc_erase_piptime()), TWOSEC_28);
     agc_vec_t gt = agc_vec_shl(ip, agc_vec_scale(ip, g->avg.gdt_2, frac), 1);
     agc_vec_t vu = agc_vec_add(ip, agc_vec_add(ip, gt, g->lm.v), delvu);
-    vu = agc_vec_add(ip, agc_vec_shl(ip, vu, 2), g->lm.delvs); /* 2^5         */
+
+    vu   = agc_vec_add(ip, agc_vec_shl(ip, vu, 2), g->lm.delvs); /* 2^5         */
     *lim = agc_dp_add(ip, agc_dp_shr(agc_vec_abval(ip, vu), 4), SEVEN_HALF);
+
     if (!AGC_ASSERT(s >= 0 && s <= 2))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_sub(ip, vm, agc_vec_dot(ip, vu, *vbsm)); /* BDSU        */
 }
 
@@ -490,43 +574,58 @@ agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_t *g = agc_guid_state();
+
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_VMEASCHK);
+
     if (!agc_flag_test(AGC_FLAG_VELDATA))
     {
         return agc_lm_serv_valtchk(ctx); /* NO V READING           */
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_vec_t vbsm;
     agc_dp_t  lim = 0;
     agc_dp_t  dv  = lr_deltav(&ip, g, &vbsm, &lim);
+
     g->lm.lrmctr++;
+
     if (agc_dp_sub(&ip, agc_dp_abs(dv), lim) >= 0)
     {
         return vfail(ctx); /* DELTA V TOO LARGE      */
     }
+
     agc_flag_clear(AGC_FLAG_VFLSHFLG); /* VEL FAIL LAMP OFF      */
+
     if (agc_flag_test(AGC_FLAG_VXINH))
     {
         agc_flag_clear(AGC_FLAG_VXINH);
+
         if (g->lm.vselect == 2)
         {
             return agc_lm_serv_valtchk(ctx); /* BYPASS X UPDATE        */
         }
     }
+
     if (!agc_flag_test(AGC_FLAG_LRINH))
     {
         return agc_lm_serv_valtchk(ctx); /* UPDATE INHIBITED       */
     }
+
     agc_dp_t wdv = agc_dp_mul(&ip, agc_dp_from_sp(lr_vweight(&g->lm)), dv);
+
     g->lm.gnur =
         agc_vec_add(&ip, agc_vec_scale(&ip, vbsm, wdv), g->lm.v1s); /* GNUV */
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_VUPDATED);
+
     return agc_lm_serv_vupdated(ctx);
 }
 
@@ -537,11 +636,14 @@ agc_status_t agc_lm_serv_vupdated(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     gnurvst(true);
+
     return agc_lm_serv_valtchk(ctx);
 }
 
@@ -553,25 +655,32 @@ agc_status_t agc_lm_serv_valtchk(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_VALTCHK);
+
     if (!agc_flag_test(AGC_FLAG_READVEL))
     {
         if (TWOKFT_SEC - agc_dp_high(agc_guid_state()->lm.abvel) <= 0)
         {
             return agc_lm_serv_contserv(ctx); /* V > 2000 FT/SEC        */
         }
+
         agc_flag_set(AGC_FLAG_READVEL);
     }
+
     agc_status_t st = agc_exec_novac(AGC_PRIO32,
-                          AGC_JOB_LRVJOB); /* READV                  */
+                                     AGC_JOB_LRVJOB); /* READV                  */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_lm_serv_contserv(ctx);
 }
 
@@ -584,16 +693,20 @@ agc_status_t agc_lm_lrhtask(void)
         !agc_flag_test(AGC_FLAG_NOLRREAD))
     {
         agc_status_t st = agc_exec_novac(AGC_PRIO32, AGC_JOB_LRHJOB);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
     }
+
     agc_phase_kill(2); /* GRP2OFF                */
+
     if (!AGC_ASSERT(agc_phase_get(2) == 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_lm_abort_monitor_resume();
 }
 
@@ -602,6 +715,7 @@ agc_status_t agc_lm_lrhtask(void)
 agc_status_t agc_task_rdgims(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
     lm->lrvtime   = (agc_dp_t) agc_time_now_cs(); /* DCA TIME2              */
     lm->lrcdu[0]  = agc_erase_cdux();
     lm->lrcdu[1]  = agc_erase_cduy();
@@ -609,10 +723,12 @@ agc_status_t agc_task_rdgims(void)
     lm->piptem[0] = agc_erase_pipax();
     lm->piptem[1] = agc_erase_pipay();
     lm->piptem[2] = agc_erase_pipaz();
+
     if (!AGC_ASSERT(lm->lrvtime >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -624,25 +740,32 @@ agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
-    agc_status_t sw = agc_waitlist_call(RDGIMS_DELAY, AGC_TASK_RDGIMS);
+    agc_status_t   sw = agc_waitlist_call(RDGIMS_DELAY, AGC_TASK_RDGIMS);
+
     if (sw != AGC_STATUS_OK)
     {
         return sw;
     }
+
     agc_sp_t beam = (lm->vselect > 0) ? (agc_sp_t) (lm->vselect - 1) : 2;
-    agc_radar_lrvel((agc_sp_t)(2 * beam)); /* 2 X VSELECT INDEX      */
+
+    agc_radar_lrvel((agc_sp_t) (2 * beam)); /* 2 X VSELECT INDEX      */
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
-    agc_status_t           st =
+    agc_status_t           st  =
         agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_LRVJOB_DONE, &res);
+
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
         return st;
     }
+
     return agc_job_lrvjob_done(ctx);
 }
 
@@ -654,7 +777,9 @@ agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
         lm->stilbadv = 2; /* VBAD: WAIT 4 SECONDS   */
@@ -670,12 +795,15 @@ agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
         agc_flag_set(AGC_FLAG_VELDATA);
         agc_relint();
     }
+
     lm->vselect =
         (lm->vselect > 0) ? (agc_sp_t) (lm->vselect - 1) : 2; /* ENDLRV */
+
     if (!AGC_ASSERT(lm->vselect >= 0 && lm->vselect <= 2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -686,18 +814,22 @@ agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_radar_lralt();
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
-    agc_status_t           st =
+    agc_status_t           st  =
         agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_LRHJOB_DONE, &res);
+
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
         return st;
     }
+
     return agc_job_lrhjob_done(ctx);
 }
 
@@ -709,22 +841,30 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_t *g = agc_guid_state();
+
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
         if (agc_flag_test(AGC_FLAG_RNGSCFLG))
         {
             agc_flag_clear(AGC_FLAG_RNGSCFLG);
+
             return AGC_STATUS_OK; /* SCALE CHANGE: IGNORE   */
         }
+
         g->lm.stilbadh = 2; /* WAIT 4 SECONDS         */
+
         return AGC_STATUS_OK;
     }
+
     if (g->lm.stilbadh > 0)
     {
         g->lm.stilbadh--; /* HSTILBAD               */
+
         return AGC_STATUS_OK;
     }
+
     agc_inhint();
     g->lm.hmeas  = agc_radar_samplsum(); /* 1.079 FT/BIT           */
     g->lm.mktime = g->avg.piptime1;
@@ -733,10 +873,12 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
     g->lm.aog    = (agc_sp_t) g->avg.cdutemp[0];
     agc_flag_set(AGC_FLAG_RNGEDATA);
     agc_relint();
+
     if (!AGC_ASSERT(g->lm.hmeas >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -747,26 +889,34 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
 static agc_status_t setpos(int pos)
 {
     agc_guid_t *g = agc_guid_state();
+
     if (!AGC_ASSERT(pos == 0 || pos == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const uint16_t cdu[3] = {
         (uint16_t) ((uint16_t) g->lm.lrbeta[pos] & 077777U), 0U,
-        (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U)};
-    agc_vec_t y = agc_vec_make(0, AGC_DP_HALF, 0);
+        (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U)
+    };
+    agc_vec_t      y = agc_vec_make(0, AGC_DP_HALF, 0);
+
     agc_guid_trg_smnb(&g->trig, cdu, &y);
     g->lm.vbeamnb[1] = y; /* VYBEAMNB               */
-    agc_vec_t x      = agc_vec_make(AGC_DP_HALF, 0, 0);
+    agc_vec_t x = agc_vec_make(AGC_DP_HALF, 0, 0);
+
     agc_guid_smnb(&g->trig, &x);
     g->lm.vbeamnb[2] = x; /* VXBEAMNB               */
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     g->lm.vbeamnb[0] =
         agc_vec_shl(&ip, agc_vec_cross(&ip, x, y), 1); /* Z = X * Y */
     agc_vec_t h = agc_vec_make(HBEAMANT[0], HBEAMANT[1], HBEAMANT[2]);
+
     agc_guid_smnb(&g->trig, &h);
     g->lm.hbeamnb = h;
+
     return AGC_STATUS_OK;
 }
 
@@ -775,14 +925,17 @@ static agc_status_t setpos(int pos)
 agc_status_t agc_lm_setpos1(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
-    lm->stilbadh      = 2;
-    lm->stilbadv      = 2;
-    lm->lrlctr = lm->lrmctr = lm->lrrctr = lm->lrsctr = 0;
-    lm->vselect                                       = 0;
+
+    lm->stilbadh = 2;
+    lm->stilbadv = 2;
+    lm->lrlctr   = lm->lrmctr = lm->lrrctr = lm->lrsctr = 0;
+    lm->vselect  = 0;
+
     if (!AGC_ASSERT(lm->vselect == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return setpos(0);
 }
 
@@ -793,6 +946,7 @@ agc_status_t agc_lm_setpos2(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return setpos(1);
 }
 
@@ -803,22 +957,28 @@ agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t sw = agc_radar_lrpos2();
+
     if (sw != AGC_STATUS_OK)
     {
         return sw;
     }
+
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
-    agc_status_t           st =
+    agc_status_t           st  =
         agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_HIGATJOB_DONE, &res);
+
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
         return st;
     }
+
     return agc_job_higatjob_done(ctx);
 }
 
@@ -829,11 +989,14 @@ static agc_status_t posgood(void)
 {
     agc_exec_prio_change(PRIO23_LR);
     agc_status_t st = agc_lm_setpos2();
+
     agc_flag_clear(AGC_FLAG_NOLRREAD); /* ENABLE LR READING      */
+
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_NOLRREAD)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -844,10 +1007,12 @@ static agc_status_t posalarm(agc_job_ctx_t *ctx)
     agc_prioalarm(AGC_ALARM_00523);
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_POSALARM_PRO,
                             AGC_JOB_ENDOFJOB};
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_display(ctx, AGC_DSKY_PRIODSP, agc_dsky_vn(5, 9), &cont);
 }
 
@@ -858,14 +1023,17 @@ agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
         return posalarm(ctx); /* BAD END: ALARM         */
     }
+
     return posgood();
 }
 
@@ -876,13 +1044,16 @@ agc_status_t agc_job_posalarm_pro(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((agc_chan_read(033) & (uint16_t) AGC_CH033_LRPOS2) == 0U)
     {
         return posgood(); /* POS2 ACHIEVED          */
     }
+
     return posalarm(ctx); /* STILL DIDN'T MAKE IT   */
 }

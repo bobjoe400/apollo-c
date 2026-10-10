@@ -18,14 +18,17 @@
 agc_status_t lm_dap_callaccs(void)
 {
     agc_status_t st = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_UPDATE);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(lm_dap_state()->db >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -36,10 +39,12 @@ agc_status_t lm_dap_alarm(agc_alarm_code_t code)
 {
     agc_alarm(code);
     agc_status_t st = AGC_STATUS_ALARM;
+
     if (!AGC_ASSERT(code >= AGC_ALARM_02000 && code <= AGC_ALARM_02004))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
 }
 
@@ -50,13 +55,16 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     lm_dap_state()->t5adr = a;
     agc_rupt_set_t5_task(
-              (a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER);
+        (a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER);
+
     if (!AGC_ASSERT(lm_dap_state()->t5adr == a))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -64,11 +72,14 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 agc_status_t agc_lm_dap_setmaxdb(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->db       = DB_WIDE;
+
+    d->db = DB_WIDE;
+
     if (!AGC_ASSERT(d->db > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_callaccs();
 }
 
@@ -76,11 +87,14 @@ agc_status_t agc_lm_dap_setmaxdb(void)
 agc_status_t agc_lm_dap_setmindb(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->db       = DB_NARROW;
+
+    d->db = DB_NARROW;
+
     if (!AGC_ASSERT(d->db > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_callaccs();
 }
 
@@ -89,10 +103,12 @@ agc_status_t agc_lm_dap_setmindb(void)
 agc_status_t agc_lm_dap_restordb(void)
 {
     bool wide = agc_flag_test(AGC_FLAG_DBSELFLG);
+
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DBSELFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return wide ? agc_lm_dap_setmaxdb() : agc_lm_dap_setmindb();
 }
 
@@ -101,12 +117,15 @@ agc_status_t agc_lm_dap_restordb(void)
 agc_status_t agc_lm_dap_pflitedb(void)
 {
     agc_lm_dap_zatteror();
-    lm_dap_t    *d  = lm_dap_state();
-    d->db           = DB_POWER;
+    lm_dap_t *d = lm_dap_state();
+
+    d->db = DB_POWER;
+
     if (!AGC_ASSERT(d->db == DB_POWER))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_callaccs();
 }
 
@@ -114,17 +133,21 @@ agc_status_t agc_lm_dap_pflitedb(void)
 void agc_lm_dap_zatteror(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->cduxd    = agc_erase_cdux();
-    d->cduyd    = agc_erase_cduy();
-    d->cduzd    = agc_erase_cduz();
+
+    d->cduxd = agc_erase_cdux();
+    d->cduyd = agc_erase_cduy();
+    d->cduzd = agc_erase_cduz();
+
     if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
     {
         return;
     }
+
     if (!AGC_ASSERT(d->cduzd <= 077777u))
     {
         return;
     }
+
     agc_lm_dap_stoprate();
 }
 
@@ -133,6 +156,7 @@ void agc_lm_dap_zatteror(void)
 void agc_lm_dap_stoprate(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->omegapd  = 0;
     d->omegaqd  = 0;
     d->omegard  = 0;
@@ -142,10 +166,12 @@ void agc_lm_dap_stoprate(void)
     d->delperor = 0;
     d->delqeror = 0;
     d->delreror = 0;
+
     if (!AGC_ASSERT(d->omegapd == 0 && d->delcdux == 0))
     {
         return;
     }
+
     if (!AGC_ASSERT(d->delperor == 0))
     {
         return;
@@ -159,15 +185,17 @@ agc_status_t agc_lm_dap_allcoast(void)
 {
     agc_lm_dap_stoprate();
     lm_dap_t *d = lm_dap_state();
-    d->aosq         = 0;
-    d->aosq_lo      = 0;
-    d->aosr         = 0;
-    d->aosr_lo      = 0;
-    d->alphaq       = 0; /* for downlist                   */
-    d->alphar       = 0;
-    d->aosqterm     = 0;
-    d->aosrterm     = 0;
+
+    d->aosq     = 0;
+    d->aosq_lo  = 0;
+    d->aosr     = 0;
+    d->aosr_lo  = 0;
+    d->alphaq   = 0;     /* for downlist                   */
+    d->alphar   = 0;
+    d->aosqterm = 0;
+    d->aosrterm = 0;
     agc_flag_set(AGC_FLAG_DRIFTDFL); /* DRIFTBIT       */
+
     return agc_lm_dap_restordb(); /* TC RESTORDB +1                 */
 }
 
@@ -176,14 +204,18 @@ agc_status_t agc_lm_dap_allcoast(void)
 agc_status_t agc_lm_dap_needles_init(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3);
+
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) != 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->rcsflags <= 077777u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }

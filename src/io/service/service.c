@@ -41,9 +41,11 @@ uint16_t agc_svc_upflag(agc_flag_id_t f)
     {
         return 0;
     }
+
     agc_inhint();
     agc_flag_set(f);
     agc_relint();
+
     return agc_flagword_get(agc_flag_word(f));
 }
 
@@ -54,9 +56,11 @@ uint16_t agc_svc_downflag(agc_flag_id_t f)
     {
         return 0;
     }
+
     agc_inhint();
     agc_flag_clear(f);
     agc_relint();
+
     return agc_flagword_get(agc_flag_word(f));
 }
 
@@ -67,13 +71,16 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
     {
         return -1;
     }
-    *bits    = (uint16_t) (arg & OCT77770);
+
+    *bits = (uint16_t) (arg & OCT77770);
     int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? LM_ENT2_FLAGWORD :
-                                                         (int) (arg & OCT7);
+               (int) (arg & OCT7);
+
     if (!AGC_ASSERT(word >= 0 && word < AGC_FLAGWORDS))
     {
         return -1;
     }
+
     return word;
 }
 
@@ -83,13 +90,16 @@ agc_status_t agc_svc_upent2(uint16_t arg)
 {
     uint16_t bits = 0;
     int      word = ent2_word(arg, &bits);
+
     if (!AGC_ASSERT(word >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_flagword_set(word, (uint16_t) (agc_flagword_get(word) | bits));
     agc_relint();
+
     return AGC_STATUS_OK;
 }
 
@@ -98,14 +108,17 @@ agc_status_t agc_svc_downent2(uint16_t arg)
 {
     uint16_t bits = 0;
     int      word = ent2_word(arg, &bits);
+
     if (!AGC_ASSERT(word >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_flagword_set(
         word, (uint16_t) (agc_flagword_get(word) & ~(uint32_t) bits & WORD15));
     agc_relint();
+
     return AGC_STATUS_OK;
 }
 
@@ -120,8 +133,10 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     int slot = -1;
+
     for (int i = DELAYNUM - 1; i >= 0 && slot < 0; i--)
     { /* DELLOOP     */
         if (delayloc[i] == AGC_JOB_NONE)
@@ -129,28 +144,37 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
             slot = i;
         }
     }
+
     if (slot < 0)
     {
         agc_relint();
         agc_status_t bst =
             agc_bailout(ALARM_NO_DELAYLOC); /* restart requested */
+
         if (!AGC_ASSERT(bst == AGC_STATUS_BAILOUT))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         return bst;
     }
+
     delayloc[slot] = wake_as;
     delaydue[slot] =
         (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);
     agc_status_t st = agc_waitlist_call(delay_cs, AGC_TASK_WAKER);
+
     agc_relint();
+
     if (st != AGC_STATUS_OK)
     {
         delayloc[slot] = AGC_JOB_NONE;
+
         return st;
     }
+
     agc_exec_job_sleep(wake_as);
+
     return AGC_STATUS_OK; /* TC JOBSLEEP            */
 }
 
@@ -161,14 +185,17 @@ static int32_t delay_lateness(int i, uint32_t now)
     {
         return 0; /* no valid result */
     }
+
     uint32_t d    = (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);
     int32_t  late = (d >= (AGC_TIME_MODULUS_CS >> 1)) ?
-                        (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS :
-                        (int32_t) d;
+                    (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS :
+                    (int32_t) d;
+
     if (!AGC_ASSERT(late > -(int32_t) AGC_TIME_MODULUS_CS))
     {
         return 0; /* no valid result */
     }
+
     return late;
 }
 
@@ -181,14 +208,18 @@ agc_status_t agc_svc_delay_wake(int slot)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint32_t now = agc_time_now_cs();
+
     for (int i = 0; i < DELAYNUM && slot < 0; i++)
     {
         if (delayloc[i] == AGC_JOB_NONE)
         {
             continue;
         }
+
         bool earliest = true;
+
         for (int j = 0; j < DELAYNUM; j++)
         {
             if (j != i && delayloc[j] != AGC_JOB_NONE &&
@@ -197,17 +228,22 @@ agc_status_t agc_svc_delay_wake(int slot)
                 earliest = false;
             }
         }
+
         if (earliest)
         {
             slot = i;
         }
     }
+
     if (slot < 0 || delayloc[slot] == AGC_JOB_NONE)
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     agc_job_id_t job = delayloc[slot];
-    delayloc[slot]   = AGC_JOB_NONE; /* make DELAYLOC available */
+
+    delayloc[slot] = AGC_JOB_NONE; /* make DELAYLOC available */
+
     return agc_exec_job_wake(job);
 }
 
@@ -219,10 +255,12 @@ agc_status_t agc_svc_startsub_reset(void)
         delayloc[i] = AGC_JOB_NONE;
         delaydue[i] = 0;
     }
+
     if (!AGC_ASSERT(delayloc[0] == AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -234,11 +272,14 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint(); /* no RELINT (MOD 2)      */
+
     for (int i = n - 1; i >= 0; i--)
     {
         to[i] = from[i];
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -247,11 +288,14 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 agc_status_t agc_svc_b5off(void)
 {
     uint16_t x = agc_erase_extvbact();
+
     if (!AGC_ASSERT(x <= WORD15))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
+
     return AGC_STATUS_OK;
 }
 
@@ -263,12 +307,15 @@ agc_status_t agc_svc_trfailof(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
-    uint16_t     w  = agc_erase_dsptab(LAMPWORD);
+    uint16_t w = agc_erase_dsptab(LAMPWORD);
+
     agc_erase_set_dsptab(
         LAMPWORD, (uint16_t) ((w & ~(uint32_t) OCT40200) + BIT15));
     agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | BIT7));
     agc_relint();
+
     return AGC_STATUS_OK;
 }
 
@@ -279,9 +326,12 @@ agc_status_t agc_svc_trfailon(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
-    uint16_t     w  = agc_erase_dsptab(LAMPWORD);
+    uint16_t w = agc_erase_dsptab(LAMPWORD);
+
     agc_erase_set_dsptab(LAMPWORD, (uint16_t) (w | OCT40200));
     agc_relint();
+
     return AGC_STATUS_OK;
 }

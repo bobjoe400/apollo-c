@@ -21,16 +21,20 @@ bool agc_w_ok(int32_t w)
 agc_w2_t agc_w_split(agc_dp_t v)
 {
     agc_w2_t p = {0, 0};
+
     if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
     {
         v = (v < 0) ? AGC_DP_MIN : AGC_DP_MAX;
     }
+
     p.hi = v / AGC_W_ONE; /* C division truncates toward zero */
     p.lo = v % AGC_W_ONE; /* so lo carries the sign of v      */
+
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     return p;
 }
 
@@ -40,27 +44,33 @@ agc_dp_t agc_w_join(agc_w2_t p)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_w_ok(p.lo)))
     {
         return 0; /* no valid result */
     }
+
     return (agc_dp_t) (p.hi * AGC_W_ONE + p.lo);
 }
 
 agc_w3_t agc_w3_from_tp(agc_tp_t v)
 {
     agc_w3_t m = {0, 0, 0};
+
     if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
     {
         v = (v < 0) ? AGC_TP_MIN : AGC_TP_MAX;
     }
+
     m.m0 = (int32_t) (v / ((agc_tp_t) AGC_W_ONE * AGC_W_ONE));
     m.m1 = (int32_t) ((v / AGC_W_ONE) % AGC_W_ONE);
     m.m2 = (int32_t) (v % AGC_W_ONE);
+
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return m;
 }
 
@@ -70,26 +80,32 @@ agc_tp_t agc_w3_value(agc_w3_t m)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_w_ok(m.m2)))
     {
         return 0; /* no valid result */
     }
+
     return ((agc_tp_t) m.m0 * AGC_W_ONE + m.m1) * AGC_W_ONE + m.m2;
 }
 
 agc_w2_t agc_w3_top(agc_w3_t m)
 {
     agc_w2_t p;
+
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_w_ok(m.m1)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     p.hi = m.m0;
     p.lo = m.m1;
+
     return p;
 }
 
@@ -99,20 +115,25 @@ agc_w2_t agc_w3_top(agc_w3_t m)
 agc_w2_t agc_w_mp(int32_t a, int32_t b)
 {
     agc_w2_t r = {0, 0};
+
     if (!AGC_ASSERT(agc_w_ok(a)) || !AGC_ASSERT(agc_w_ok(b)))
     {
         return r;
     }
+
     r.hi = (a * b) / AGC_W_ONE;
     r.lo = (a * b) % AGC_W_ONE;
+
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
         return r;
     }
+
     if (!AGC_ASSERT(agc_w_ok(r.lo)))
     {
         return r;
     }
+
     return r;
 }
 
@@ -121,24 +142,28 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
 int32_t agc_w_ts(int32_t a16, int *ovf)
 {
     int o = 0;
+
     if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
     {
         return 0; /* no valid result */
     }
+
     if (a16 >= AGC_W_ONE)
     {
         a16 -= AGC_W_ONE;
-        o = 1;
+        o    = 1;
     }
     else if (a16 <= -AGC_W_ONE)
     {
         a16 += AGC_W_ONE;
-        o = -1;
+        o    = -1;
     }
+
     if (AGC_ASSERT(ovf != 0))
     {
         *ovf = o;
     }
+
     return a16;
 }
 
@@ -146,14 +171,21 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
  * used as the rounding carry; the stored word itself is not wanted.       */
 int agc_w_ovf(int32_t a16)
 {
-    if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
+    if (!AGC_ASSERT(a16 > -2 * AGC_W_ONE))
     {
-        return 0; /* outside the 16-bit accumulator: no carry */
+        return 0; /* below the 16-bit accumulator: no carry */
     }
+
+    if (!AGC_ASSERT(a16 < 2 * AGC_W_ONE))
+    {
+        return 0; /* above the 16-bit accumulator: no carry */
+    }
+
     if (a16 >= AGC_W_ONE)
     {
         return 1;
     }
+
     return (a16 <= -AGC_W_ONE) ? -1 : 0;
 }
 
@@ -165,16 +197,20 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
 {
     agc_w2_t r;
     int      carry = 0;
+
     if (!AGC_ASSERT(agc_w_ok(x.lo) && agc_w_ok(y.lo)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
     r.hi = agc_w_ts(x.hi + y.hi + carry, ovf);
+
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     return r;
 }
 
@@ -185,32 +221,40 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
 {
     agc_w2_t r        = {AGC_W_POSMAX, 0};
     int32_t  dividend = a * AGC_W_ONE + l;
+
     if (!AGC_ASSERT(k != 0) || !AGC_ASSERT(agc_w_ok(l)))
     {
         return r;
     }
+
     r.hi = dividend / k;
     r.lo = dividend % k;
+
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
         return r;
     }
+
     return r;
 }
 
 agc_w2_t agc_w_dcs(agc_w2_t p)
 {
     agc_w2_t r;
+
     if (!AGC_ASSERT(agc_w_ok(p.hi)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_w_ok(p.lo)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     r.hi = -p.hi;
     r.lo = -p.lo;
+
     return r;
 }
 
@@ -224,21 +268,26 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
 {
     int32_t buf;
     int     o = 0;
+
     if (!AGC_ASSERT((a == 1) || (a == -1)) || !AGC_ASSERT(ovfind != 0))
     {
         return m;
     }
+
     buf  = (a > 0) ? AGC_W_POSMAX : -AGC_W_POSMAX; /* CS LIMITS      */
     m.lo = agc_w_ts(m.lo + buf + a, &o);           /* AUG A, ADS     */
     m.hi = agc_w_ts(m.hi + buf + o, &o);           /* AD BUF, ADS    */
+
     if (o != 0)
     {
         *ovfind = (agc_ovf_t) o; /* SETOVF2        */
     }
+
     if (!AGC_ASSERT(agc_w_ok(m.hi)))
     {
         return m;
     }
+
     return m;
 }
 
@@ -247,18 +296,22 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
 {
     int      o = 0;
     agc_w2_t r = agc_w_das(m, x, &o);
+
     if (!AGC_ASSERT(ovfind != 0))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     if (o != 0)
     {
         r = agc_w_overflow(r, o, ovfind);
     }
+
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
         return (agc_w2_t){0}; /* no valid result */
     }
+
     return r;
 }
 
@@ -269,14 +322,17 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
     agc_w3_t m;
     agc_w2_t acc;
     int      o = 0;
+
     if (!AGC_ASSERT(agc_w_ok(mpac.hi) && agc_w_ok(mpac.lo)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(x.lo)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     acc.hi = 0;                                           /* MPAC+1 := 0    */
     acc.lo = agc_w_mp(mpac.lo, x.lo).hi;                  /* MPAC+2         */
     acc    = agc_w_das(acc, agc_w_mp(x.lo, mpac.hi), &o); /* no overflow    */
@@ -288,6 +344,7 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
     acc    = agc_w_das(acc, agc_w_mp(mpac.hi, x.hi), &o); /* no overflow    */
     m.m0   = acc.hi;
     m.m1   = acc.lo;
+
     return m;
 }
 
@@ -296,25 +353,32 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
 agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
 {
     int o = 0;
+
     if (!AGC_ASSERT(agc_w_ok(m.m2)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
-    o = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
+
+    o    = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
     m.m2 = 0;
+
     if (o == 0)
     {
         return m;
     }
+
     m.m1 = agc_w_ts(m.m1 + o, &o);
+
     if (o != 0)
     {
         m.m0 = agc_w_ts(m.m0 + o, &o);
+
         if ((o != 0) && AGC_ASSERT(ovfind != 0))
         {
             *ovfind = (agc_ovf_t) o; /* SETOVF2        */
         }
     }
+
     return m;
 }
 
@@ -325,27 +389,31 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
     agc_w2_t acc;
     agc_w2_t cross;
     int      o = 0;
+
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
-    acc.hi = 0;
-    acc.lo = agc_w_mp(p.lo, p.lo).hi; /* MPAC+2         */
-    cross  = agc_w_mp(p.lo, p.hi);
-    cross  = agc_w_das(cross, cross, &o); /* DDOUBL         */
+
+    acc.hi    = 0;
+    acc.lo    = agc_w_mp(p.lo, p.lo).hi; /* MPAC+2         */
+    cross     = agc_w_mp(p.lo, p.hi);
+    cross     = agc_w_das(cross, cross, &o); /* DDOUBL         */
     cross.hi += o * AGC_W_ONE;            /* A keeps ovf    */
-    acc    = agc_w_das(acc, cross, &o);
-    m.m1   = acc.hi;
-    m.m2   = acc.lo;
-    acc.hi = o;
-    acc.lo = m.m1;
-    acc    = agc_w_das(acc, agc_w_mp(p.hi, p.hi), &o); /* SQUARE; DAS    */
-    m.m0   = acc.hi;
-    m.m1   = acc.lo;
+    acc       = agc_w_das(acc, cross, &o);
+    m.m1      = acc.hi;
+    m.m2      = acc.lo;
+    acc.hi    = o;
+    acc.lo    = m.m1;
+    acc       = agc_w_das(acc, agc_w_mp(p.hi, p.hi), &o); /* SQUARE; DAS    */
+    m.m0      = acc.hi;
+    m.m1      = acc.lo;
+
     if (!AGC_ASSERT(o == 0))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return m;
 }
 
@@ -357,18 +425,22 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     agc_w2_t lo2 = {buf.m1, buf.m2};
     agc_w2_t add = {t.m1, t.m2};
     int      o   = 0;
+
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     lo2    = agc_w_das(lo2, add, &o);
     buf.m1 = lo2.hi;
     buf.m2 = lo2.lo;
     buf.m0 = agc_w_ts(o + t.m0 + buf.m0, &o);
+
     if ((o != 0) && AGC_ASSERT(ovfind != 0))
     {
         *ovfind = (agc_ovf_t) o;
     }
+
     return buf;
 }
 
@@ -379,24 +451,29 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     agc_w2_t add = {buf.m1, buf.m2};
     agc_w2_t top;
     int      o = 0;
+
     if (!AGC_ASSERT(ovfind != 0))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     lo2  = agc_w_das(lo2, add, &o);
     t.m1 = lo2.hi;
     t.m2 = lo2.lo;
     t.m0 = agc_w_ts(o + t.m0 + buf.m0, &o);
+
     if (o != 0)
     {
         top  = agc_w_overflow(agc_w3_top(t), o, ovfind);
         t.m0 = top.hi;
         t.m1 = top.lo;
     }
+
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return t;
 }
 
@@ -405,19 +482,23 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
 {
     agc_w3_t buf;
     agc_w3_t t;
+
     if (!AGC_ASSERT(ovfind != 0))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
     t   = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
     buf = agc_w_dot_acc(buf, t, ovfind);
     t   = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
     t   = end_dot(buf, t, ovfind);
+
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return t;
 }
 
@@ -426,19 +507,23 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
 {
     agc_w3_t buf;
     agc_w3_t t;
+
     if (!AGC_ASSERT(ovfind != 0))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     buf = agc_w_dsqsub(agc_w_split(v.c[0]));
     t   = agc_w_dsqsub(agc_w_split(v.c[1]));
     buf = agc_w_dot_acc(buf, t, ovfind);
     t   = agc_w_dsqsub(agc_w_split(v.c[2]));
     t   = end_dot(buf, t, ovfind);
+
     if (!AGC_ASSERT(agc_w_ok(t.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return t;
 }
 
@@ -448,18 +533,22 @@ agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
 {
     agc_w2_t lo2   = {m.m1, m.m2};
     int      carry = 0;
+
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     lo2  = agc_w_das(lo2, lo2, &carry);
     m.m1 = lo2.hi;
     m.m2 = lo2.lo;
     m.m0 = agc_w_ts(carry + m.m0 + m.m0, ovf);
+
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
         return (agc_w3_t){0}; /* no valid result */
     }
+
     return m;
 }
 
@@ -472,11 +561,14 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
     agc_w2_t top;
     int      o = 0;
     int      k;
+
     if (!AGC_ASSERT(coef != 0) || !AGC_ASSERT((degree >= 1) && (degree <= 15)))
     {
         return m;
     }
+
     top = agc_w_split(coef[degree]);
+
     for (k = degree - 1; k >= 0; k--)
     { /* bound: degree  */
         m    = agc_w_dmpsub(top, x);
@@ -484,13 +576,16 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
         m.m0 = top.hi;
         m.m1 = top.lo;
     }
+
     if (!AGC_ASSERT(k == -1))
     {
         return m;
     }
+
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m2)))
     {
         return m;
     }
+
     return m;
 }

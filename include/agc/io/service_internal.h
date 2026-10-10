@@ -37,7 +37,7 @@ uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev); /* 1STO2S            */
 agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev,
                              uint16_t  out[3]); /* V1STO2S  */
 agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
-uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc); /* CDUINC   */
+uint16_t     agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc); /* CDUINC   */
 agc_status_t agc_rtb_incrcdus(uint16_t  thetad[3],
                               agc_vec_t incr);      /* INCRCDUS */
 agc_vec_t    agc_rtb_readpips(void);                /* READPIPS */
@@ -47,8 +47,9 @@ agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);       /* SIGNMPAC         */
 agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
                               agc_dp_t *abval,
                               agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
-agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);   /* VECSGNAG         */
-agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m);
+agc_vec_t agc_rtb_vecsgnag(agc_vec_t v);      /* VECSGNAG         */
+agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv,
+                           agc_sp_t e3j22r2m);
 agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag,
                               agc_sp_t e3j22r2m, agc_vec_t *out);
 
@@ -229,15 +230,14 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
  * ==================================================================== */
 agc_status_t agc_telem_fresh_start(int dnlstcod); /* DNLSTCOD, DNTMGOTO init */
 agc_status_t agc_telem_restart(void);             /* STARTSUB: restart list  */
-void agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
+void         agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
 int          agc_telem_list_code(void);           /* C(DNLSTCOD)             */
 agc_status_t agc_telem_downrupt(void);            /* DODOWNTM, every 20 ms   */
 agc_status_t agc_telem_start_dump(void);          /* V74: DNTMGOTO = DNDUMPI */
-agc_status_t
-         agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      */
-uint16_t agc_telem_dumpcnt(void);
-uint16_t agc_erase_agsword(void); /* AGSWORD (LM): saved list */
-void     agc_erase_set_agsword(uint16_t v);
+agc_status_t agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      */
+uint16_t     agc_telem_dumpcnt(void);
+uint16_t     agc_erase_agsword(void); /* AGSWORD (LM): saved list */
+void         agc_erase_set_agsword(uint16_t v);
 
 /* ======================================================================
  * Service routines (service.c; SERVICE_ROUTINES.agc C pp.1485-1492)
@@ -285,8 +285,7 @@ uint16_t     agc_erase_optmodes(void);        /* OPTMODES (CM)            */
 void         agc_erase_set_optmodes(uint16_t v);
 agc_sp_t     agc_erase_optind(void); /* OPTIND (CM)              */
 void         agc_erase_set_optind(agc_sp_t v);
-agc_sp_t
-agc_erase_swsample(void); /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
+agc_sp_t     agc_erase_swsample(void); /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
 agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
 agc_status_t agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
@@ -307,16 +306,15 @@ agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB (pinball) */
 bool         agc_extverb_busy(void);          /* EXTVBACT != 0   */
 /* EXTVBACT: extended-verb / marking-system activity word (bit 2 marking
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
-uint16_t     agc_erase_extvbact(void);
-void         agc_erase_set_extvbact(uint16_t v);
-void agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
+uint16_t agc_erase_extvbact(void);
+void     agc_erase_set_extvbact(uint16_t v);
+void     agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
 /* jobs and tasks (ids in src/io/verbs/pending.h until integration)       */
 agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);         /* LST2FAN   */
 agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx);     /* ENDEXT    */
 agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx);   /* GOPIN     */
 agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx); /* V41 ICORK2 */
-agc_status_t
-agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx);            /* V41 IMUCOARS */
+agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx);            /* V41 IMUCOARS */
 agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx); /* V42       */
 agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx);  /* V42 IMUFINE */
 agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx); /* V42 FINEK2 */
@@ -325,62 +323,45 @@ agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx); /* V91 NOKILL */
 agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx);    /* V91 NXTBNK */
 agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx);     /* V91 V34   */
 agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx);  /* V43       */
-agc_status_t
-agc_job_attitude_error_terminate(agc_job_ctx_t *ctx); /* V43 CSM TRMATTCK */
+agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx); /* V43 CSM TRMATTCK */
 agc_status_t agc_task_attitude_error_output(void);    /* V43 ATTCK1/2 */
 agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx); /* R03 N46   */
-agc_status_t
-agc_job_dap_data_load_config(agc_job_ctx_t *ctx); /* R03 N46 done */
+agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx); /* R03 N46 done */
 agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx); /* R03 N47   */
 agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx); /* R03 N47 done */
 agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx); /* R03 N48   */
-agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx);   /* LM DPDAT3 */
-agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);    /* LM ENDR03 */
-agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);             /* LM TRIMDONE */
+agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx); /* LM DPDAT3 */
+agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);  /* LM ENDR03 */
+agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);           /* LM TRIMDONE */
 agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);  /* V66 / CSM V47 */
 agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx); /* CSM V56 */
 agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx); /* LM V43 */
-agc_status_t
-agc_job_optics_coarse_drive(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTC1 */
-agc_status_t
-agc_job_optics_coarse_start(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTIND */
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTC1 */
+agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTIND */
 /* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c)                */
-agc_status_t
-agc_job_lr_position_two_check(agc_job_ctx_t *ctx);          /* V60 LRP2ALM */
+agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx);          /* V60 LRP2ALM */
 agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx); /* V41N72 V24N73 */
 agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);   /* AURLOKON  */
-agc_status_t
-agc_job_rr_lockon_display(agc_job_ctx_t *ctx);             /* AURLOKON V04N12 */
+agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx); /* AURLOKON V04N12 */
 agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx); /* AURLOKON +5 */
-agc_status_t
-agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);           /* RRDESNBK end */
+agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);           /* RRDESNBK end */
 agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx); /* RRDESK2   */
-agc_status_t
-agc_job_rr_designate_result(agc_job_ctx_t *ctx); /* RRDESK2 alarm 503 */
-agc_status_t
-agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx);    /* V44 NORRMON */
+agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx); /* RRDESK2 alarm 503 */
+agc_status_t agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx);    /* V44 NORRMON */
 agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx); /* V85 RRLOSDSP */
-agc_status_t
-agc_job_rr_los_display_next(agc_job_ctx_t *ctx); /* RRLOSDSP loop */
+agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx); /* RRLOSDSP loop */
 agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx); /* V85 B5OFF */
-agc_status_t
-agc_job_radar_test_option_display(agc_job_ctx_t *ctx);      /* R04A V04N12 */
+agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx);      /* R04A V04N12 */
 agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx); /* R04 RTSTDEX */
 agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx); /* R04B      */
-agc_status_t
-agc_job_radar_test_auto_request(agc_job_ctx_t *ctx); /* R04B V50N25 */
-agc_status_t
-agc_job_radar_test_first_display(agc_job_ctx_t *ctx); /* R04RR/R04LR */
-agc_status_t
-agc_job_radar_test_second_display(agc_job_ctx_t *ctx);      /* N78/N67 */
+agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx); /* R04B V50N25 */
+agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx); /* R04RR/R04LR */
+agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx);      /* N78/N67 */
 agc_status_t agc_job_radar_test_switch(agc_job_ctx_t *ctx); /* R04Y      */
-agc_status_t
-agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx);    /* R04Y +2 s */
+agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx);    /* R04Y +2 s */
 agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx); /* R04END    */
-agc_status_t
-agc_job_radar_test_end_resume(agc_job_ctx_t *ctx); /* R04END +1.28 s */
-agc_status_t
-agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx); /* R77END */
+agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx); /* R04END +1.28 s */
+agc_status_t agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx); /* R77END */
 /* R04/R77 radar test storage (owned here; RADSAMP/DORSAMP read and write
  * them).  SP integers.                                                    */
 agc_sp_t agc_erase_rsampdt(void); /* RSAMPDT: interval + 1, cs; 0 stops */
@@ -405,14 +386,12 @@ agc_status_t agc_uplink_update_fresh_start(void); /* UPSVFLAG etc.   */
  * the DSKY loads (the AGC's MPAC+2).                                      */
 agc_status_t agc_uplink_update_write(int idx, uint16_t word);
 int          agc_uplink_update_target(void);
-agc_sp_t
-     agc_erase_upsvflag(void); /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
-void agc_erase_set_upsvflag(agc_sp_t v);
+agc_sp_t     agc_erase_upsvflag(void); /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
+void         agc_erase_set_upsvflag(agc_sp_t v);
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx); /* after V21N01 */
 agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx);   /* UPJOB  */
 agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx); /* UPOUT +1 */
-agc_status_t
-agc_job_uplink_update_proceed(agc_job_ctx_t *ctx); /* V33 on a load */
+agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx); /* V33 on a load */
 agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx); /* restart 6.5 */
 
 /* ======================================================================
@@ -428,12 +407,10 @@ agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
  * with end-around carry up to the two TC SELF words and the bugger word. */
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger);
 bool         agc_selfcheck_bank_ok(int bank); /* |sum| = bank    */
-agc_status_t
-agc_selfcheck_set_smode(uint16_t word); /* N27 load (SMODE, raw; 077777 = -0) */
+agc_status_t agc_selfcheck_set_smode(uint16_t word); /* N27 load (SMODE, raw; 077777 = -0) */
 uint16_t     agc_selfcheck_smode(void);
 agc_status_t agc_selfcheck_idle_pass(void); /* SMODECHK, one pass */
-agc_status_t
-agc_selfcheck_fresh_start(bool slap1); /* SMODE = 0; SLAP1: ERCOUNT = 0 */
+agc_status_t agc_selfcheck_fresh_start(bool slap1); /* SMODE = 0; SLAP1: ERCOUNT = 0 */
 agc_status_t agc_selfcheck_showsum_start(void); /* V91 STSHOSUM    */
 agc_status_t agc_selfcheck_showsum_next(void);  /* V33 NXTBNK      */
 agc_status_t agc_selfcheck_showsum_end(void);   /* V34             */
@@ -446,7 +423,7 @@ uint16_t     agc_selfcheck_error_count(void);   /* ERCOUNT         */
  * ==================================================================== */
 agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);    /* ZEROING  */
 agc_status_t agc_systems_test_finetime(agc_dp_t *t);              /* FINETIME */
-agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX */
+agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX */
 agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx); /* REDO (V92) */
 
 #endif /* AGC_SYSMISC_H */

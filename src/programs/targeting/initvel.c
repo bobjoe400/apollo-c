@@ -25,16 +25,16 @@
  * COZY4 ITCTR VTARGTAG VTARGET and the Lambert inputs).                */
 typedef struct iv_work
 {
-    agc_vec_t        rinit, vinit; /* body scale                              */
-    agc_vec_t        rtarg1;       /* RTARG1 target, body scale               */
-    agc_vec_t        r2vec;   /* R2VEC (conic, offset) target, body scale */
-    agc_vec_t        un;      /* UN unit(RI x VI), 2^1                    */
-    agc_vec_t        viprime; /* VIPRIME body scale                       */
-    agc_vec_t        vtarget; /* VTARGET body scale                       */
-    agc_dp_t         cozy4;   /* COZY4: cos(E4)/4 + URT.URI/4, 2^2         */
-    int              itctr;   /* ITCTR: -1, 0, 1, ...                     */
-    bool             normsw;  /* NORMSW: UN is a Lambert input             */
-    agc_lambert_in_t lin;
+    agc_vec_t         rinit, vinit; /* body scale                              */
+    agc_vec_t         rtarg1; /* RTARG1 target, body scale               */
+    agc_vec_t         r2vec;  /* R2VEC (conic, offset) target, body scale */
+    agc_vec_t         un;     /* UN unit(RI x VI), 2^1                    */
+    agc_vec_t         viprime; /* VIPRIME body scale                       */
+    agc_vec_t         vtarget; /* VTARGET body scale                       */
+    agc_dp_t          cozy4;  /* COZY4: cos(E4)/4 + URT.URI/4, 2^2         */
+    int               itctr;  /* ITCTR: -1, 0, 1, ...                     */
+    bool              normsw; /* NORMSW: UN is a Lambert input             */
+    agc_lambert_in_t  lin;
     agc_lambert_out_t lout;
 } iv_work_t;
 
@@ -43,10 +43,12 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4,
                      iv_work_t *w)
 {
     bool moon = (rz->body.rtx2 != 0);
+
     w->rtarg1 = rz->rtarg;
     rz->rtmag = rz_abval(ip, w->rtarg1); /* LM RTMAG     */
     w->rinit  = rz->rinit;
     w->vinit  = rz->vinit;
+
     if (moon)
     { /* B29 -> B27   */
         w->rinit  = agc_vec_shl(ip, w->rinit, 2);
@@ -54,14 +56,17 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4,
         w->rtarg1 = agc_vec_shl(ip, w->rtarg1, 2);
         rz->rtmag = rz_abval(ip, w->rtarg1);
     }
-    w->itctr      = -1;
-    w->cozy4      = agc_dp_shr(agc_dp_cos(ip, e4), 1); /* COSINE SR1   */
-    w->r2vec      = w->rtarg1;
+
+    w->itctr = -1;
+    w->cozy4 = agc_dp_shr(agc_dp_cos(ip, e4), 1); /* COSINE SR1   */
+    w->r2vec = w->rtarg1;
     agc_vec_t uri = rz_unit(ip, w->rinit); /* 0D           */
-    w->un         = rz_unit(ip, agc_vec_cross(ip, uri, w->vinit));
+
+    w->un    = rz_unit(ip, agc_vec_cross(ip, uri, w->vinit));
     w->cozy4 =
         agc_dp_add(ip, agc_vec_dot(ip, rz_unit(ip, w->rtarg1), uri), w->cozy4);
     w->normsw = false;
+
     if (!AGC_ASSERT(w->cozy4 >= AGC_DP_MIN))
     {
         return;
@@ -71,15 +76,18 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4,
 /* INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept. */
 static void iv_rotate(agc_interp_t *ip, iv_work_t *w)
 {
-    w->normsw    = true;
+    w->normsw = true;
     agc_dp_t  rc = rz_abval(ip, w->r2vec); /* 0D           */
     agc_vec_t p  = agc_vec_shl(ip, agc_vec_proj(ip, w->r2vec, w->un), 2);
     agc_vec_t u  = rz_unit(ip, agc_vec_sub(ip, w->r2vec, p));
-    w->r2vec     = agc_vec_shl(ip, agc_vec_scale(ip, u, rc), 1);
+
+    w->r2vec = agc_vec_shl(ip, agc_vec_scale(ip, u, rc), 1);
+
     if (w->itctr < 0)
     {
         w->rtarg1 = w->r2vec; /* first pass   */
     }
+
     if (!AGC_ASSERT(rc >= 0))
     {
         return;
@@ -96,21 +104,25 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz,
     /* MUEARTH 2DEC* 3.986032 E10 B-36*: used only as a positive word */
     static const agc_dp_t muearth = 155704375;
     agc_vec_t             ur2     = rz_unit(ip, w->r2vec); /* 2D           */
-    agc_vec_t             ur1 = rz_unit(ip, w->lin.r1vec); /* 8D           */
-    agc_vec_t negn = agc_vec_neg(agc_vec_cross(ip, ur1, ur2)); /* 14D      */
-    int       x1   = rz->body.rtx1;
+    agc_vec_t             ur1     = rz_unit(ip, w->lin.r1vec); /* 8D           */
+    agc_vec_t             negn    = agc_vec_neg(agc_vec_cross(ip, ur1, ur2)); /* 14D      */
+    int                   x1      = rz->body.rtx1;
+
     if (negn.c[2] >= 0)
     { /* 18D BMN      */
         x1 -= 8;
     }
+
     x1 += 10;
     agc_vec_t v = (x1 != 0) ? agc_vec_neg(negn) : negn;
     agc_dp_t  d = agc_vec_dot(ip, agc_vec_cross(ip, v, ur1), ur2);
     agc_dp_t  g = (d >= 0) ? muearth : agc_dp_neg(muearth);
+
     if (!AGC_ASSERT(x1 >= -8 && x1 <= 8))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_high(g);
 }
 
@@ -127,14 +139,17 @@ static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz,
     w->lin.vtargtag = numit;
     w->lin.body     = rz_body(rz);
     agc_status_t st = rz_lambert(ip, &w->lin, &w->lout);
+
     if (st == AGC_STATUS_NO_CONVERGE)
     {
         st = AGC_STATUS_OK;
     }
+
     w->lin.guessw = false;        /* CLEAR GUESSW       */
     w->lin.coga   = w->lout.coga; /* next guess         */
     w->viprime    = w->lout.vvec;
     w->vtarget    = w->lout.vtarget;
+
     return st;
 }
 
@@ -145,6 +160,7 @@ static agc_status_t iv_integrate(agc_interp_t *ip, const agc_rendz_t *rz,
                                  agc_vec_t *rend)
 {
     rz_integrvs_in_t in;
+
     in.moon  = (rz->body.rtx2 != 0);
     in.rcv   = w->rinit;
     in.vcv   = w->viprime;
@@ -153,11 +169,13 @@ static agc_status_t iv_integrate(agc_interp_t *ip, const agc_rendz_t *rz,
     in.conic = false; /* CLEAR INTYPFLG     */
     agc_integ_out_t o;
     agc_status_t    st = rz_integrvs(ip, &in, resume, &o);
+
     if (st == AGC_STATUS_OK)
     {
         w->vtarget = o.vatt1;
         *rend      = o.ratt1;
     }
+
     return st;
 }
 
@@ -168,6 +186,7 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
     rz->delveet3 = agc_vec_sub(ip, w->viprime, w->vinit);
     rz->vtprime  = w->vtarget;
     rz->viprime  = w->viprime;
+
     if (rz->body.rtx2 != 0)
     { /* VSR2        */
         rz->vtprime  = agc_vec_shr(rz->vtprime, 2);
@@ -175,13 +194,16 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
         w->rtarg1    = agc_vec_shr(w->rtarg1, 2);
         rz->delveet3 = agc_vec_shr(rz->delveet3, 2);
     }
+
     if (!rz_is_csm())
     { /* LM INITVELX */
-        agc_dp_t mu  = rz_mutable_mu(rz->body.rtx2 != 0);
-        agc_dp_t a   = agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
+        agc_dp_t mu = rz_mutable_mu(rz->body.rtx2 != 0);
+        agc_dp_t a  = agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
+
         rz->mu_a     = agc_dp_div(ip, a, w->lout.r1); /* MU/A        */
         rz->muasteer = agc_dp_shr(rz->mu_a, 6);       /* SR 6        */
     }
+
     rz->rtarg = w->rtarg1;
     rz->rinit = w->rinit; /* the AGC leaves them at body scale */
     rz->vinit = w->vinit;
@@ -196,44 +218,56 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit,
                            agc_dp_t e4, bool guessw, agc_job_id_t resume)
 {
     iv_work_t w;
+
     iv_setup(ip, rz, e4, &w);
-    w.lin.r1vec     = w.rinit; /* R1VEC        */
-    w.lin.guessw    = guessw;  /* GUESSW       */
-    w.lin.coga      = iv_coga;
-    w.lin.iterctr   = AGC_CONIC_LAMBERT_ITERCTR;
+    w.lin.r1vec   = w.rinit;   /* R1VEC        */
+    w.lin.guessw  = guessw;    /* GUESSW       */
+    w.lin.coga    = iv_coga;
+    w.lin.iterctr = AGC_CONIC_LAMBERT_ITERCTR;
     agc_status_t st = AGC_STATUS_OK;
+
     for (int pass = 0; pass <= (int) numit; pass++)
     { /* INITVEL2     */
         if (w.cozy4 < 0)
         {
             iv_rotate(ip, &w);
         }
+
         st       = iv_lambert(ip, rz, numit, &w);
         iv_coga  = w.lin.coga;
         rz->csth = w.lout.csth; /* debris       */
         rz->snth = w.lout.snth;
+
         if (st != AGC_STATUS_OK || numit == 0)
         {
             break; /* INITVEL7     */
         }
+
         agc_vec_t rend;
+
         st = iv_integrate(ip, rz, &w, resume, &rend);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
+
         w.itctr++; /* INCR ITCTR   */
+
         if (w.itctr == (int) numit)
         {
             w.rtarg1 = w.r2vec; /* INITVEL6     */
             break;
         }
+
         w.r2vec = agc_vec_add(ip, agc_vec_sub(ip, w.rtarg1, rend), w.r2vec);
     }
+
     if (st == AGC_STATUS_OK)
     {
         iv_finish(ip, rz, &w);
     }
+
     return st;
 }
 
@@ -246,6 +280,7 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return iv_run(ip, rz, numit, e4, true, resume);
 }
 
@@ -260,5 +295,6 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return iv_run(ip, rz, numit, e4, false, resume);
 }

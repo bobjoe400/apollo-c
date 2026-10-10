@@ -67,10 +67,12 @@ static agc_status_t rcs_fdaitotl(void);
 static int gain_index(agc_sp_t attkalmn)
 {
     int g = (int) attkalmn + GAIN_BIAS;
+
     if (!AGC_ASSERT((g >= 0) && (g < GAIN_N)))
     {
         g = GAIN_BIAS; /* ATTKALMN out of table: use +0  */
     }
+
     return g;
 }
 
@@ -79,29 +81,37 @@ agc_status_t csm_rcs_ratefilt(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
     int            g = gain_index(r->attkalmn);
+
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {                                                         /* DRHOLOOP   */
-        agc_sp_t m     = (agc_sp_t) -agc_dp_high(r->drho[i]); /* CS DRHO    */
-        r->drho[i]     = csm_dap_das(r->drho[i], agc_sp_mul(m, gain1[g]));
+        agc_sp_t m = (agc_sp_t) -agc_dp_high(r->drho[i]); /* CS DRHO    */
+
+        r->drho[i] = csm_dap_das(r->drho[i], agc_sp_mul(m, gain1[g]));
         agc_dp_t kmpac = csm_dap_smallmp(-r->adot[i], QUARTER); /* -(.1)ADOT */
-        r->drho[i]     = csm_dap_das(r->drho[i], kmpac);
+
+        r->drho[i] = csm_dap_das(r->drho[i], kmpac);
     }
+
     agc_dp_t     deltemp[AGC_CSM_AXES];
     agc_status_t st = rcs_delrho(deltemp);
+
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     { /* ADOTLOOP   */
         r->drho[i]   = csm_dap_das(r->drho[i], deltemp[i]);
         r->merror[i] = csm_dap_das(r->merror[i], deltemp[i]);
-        agc_sp_t d   = agc_dp_high(r->drho[i]);
-        d            = csm_dap_ads(d, d); /* DOUBLE N.B. */
-        d            = csm_dap_ads(d, d); /* DOUBLE N.B. */
-        r->adot[i]   = csm_dap_das(r->adot[i], agc_sp_mul(d, gain2[g]));
+        agc_sp_t d = agc_dp_high(r->drho[i]);
+
+        d          = csm_dap_ads(d, d);   /* DOUBLE N.B. */
+        d          = csm_dap_ads(d, d);   /* DOUBLE N.B. */
+        r->adot[i] = csm_dap_das(r->adot[i], agc_sp_mul(d, gain2[g]));
         r->adot[i] = csm_dap_das(r->adot[i], agc_sp_mul(r->kmj[i], r->dft[i]));
     }
+
     if (!AGC_ASSERT(g < GAIN_N))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -110,27 +120,34 @@ agc_status_t csm_rcs_ratefilt(void)
 static agc_status_t rcs_delrho(agc_dp_t deltemp[AGC_CSM_AXES])
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(deltemp != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_sp_t dx[AGC_CSM_AXES];
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         uint16_t now = csm_dap_cdu(i); /* CA CDUX; XCH RHO        */
-        dx[i] = (agc_sp_t) -csm_dap_msu(r->rho[i], now); /* MSU RHO; COM   */
+
+        dx[i]     = (agc_sp_t) -csm_dap_msu(r->rho[i], now); /* MSU RHO; COM   */
         r->rho[i] = now;
     }
+
     deltemp[0] =
         csm_dap_das(agc_dp_from_sp(dx[0]), agc_sp_mul(dx[1], r->amgb1));
     deltemp[1] = agc_sp_mul(r->amgb4, dx[1]);
     deltemp[2] = agc_sp_mul(r->amgb7, dx[1]);
     deltemp[1] = csm_dap_das(deltemp[1], agc_sp_mul(dx[2], r->amgb5));
     deltemp[2] = csm_dap_das(deltemp[2], agc_sp_mul(r->amgb8, dx[2]));
+
     if (!AGC_ASSERT(r->rho[2] <= CSM_DAP_NEG0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -141,6 +158,7 @@ agc_status_t csm_rcs_kmatrix(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
     agc_sp_t       a = (agc_sp_t) (r->attsec & LOW4);
+
     if (a > 0)
     {
         r->attsec = (agc_sp_t) (a - 1);
@@ -149,25 +167,32 @@ agc_status_t csm_rcs_kmatrix(void)
     {
         /* NOVAC returns after scheduling; a 1202 is raised by the exec.  */
         agc_status_t sw = agc_exec_novac(CSM_DAP_PRIO34, AGC_JOB_AMBGUPDT);
+
         if (sw != AGC_STATUS_OK)
         {
             return sw;
         }
+
         r->attsec = NINE;
     }
+
     if (!AGC_ASSERT((r->attsec >= 0) && (r->attsec <= NINE)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     if (r->holdflag < 0)
     { /* HOLDFLAG +0,-0,+: bypass auto cmds */
         st = rcs_dcduincr();
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return rcs_dacndls();
 }
 
@@ -176,20 +201,25 @@ agc_status_t csm_rcs_kmatrix(void)
 static agc_status_t rcs_dcduincr(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(r->holdflag < 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
         agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]);
-        r->thetad[i]   = csm_dap_sp_word(agc_dp_high(kmpac));
-        r->cdud[i]     = kmpac;
+
+        r->thetad[i] = csm_dap_sp_word(agc_dp_high(kmpac));
+        r->cdud[i]   = kmpac;
     }
+
     if (!AGC_ASSERT(r->thetad[0] <= CSM_DAP_NEG0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -200,24 +230,31 @@ static agc_status_t rcs_dacndls(void)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
     agc_csm_dapcom_t    *c = agc_csm_dap_com();
+
     if ((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u)
     { /* FDAIDSP1    */
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_FDAIALT);
+
         return csm_dap_needler(); /* KRESUME1: end phase 1  */
     }
+
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) AGC_CSM_RCSF_FDAIALT);
+
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     {
         return rcs_fdaitotl(); /* total attitude errors  */
     }
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         c->ak[i] = (agc_sp_t) -r->error[i]; /* DCS ERRORX; DXCH AK    */
     }
+
     if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* end phase 1            */
 }
 
@@ -231,22 +268,27 @@ static agc_status_t rcs_fdaitotl(void)
     uint16_t             ref[AGC_CSM_AXES];
     bool                 use_desired_angles =
         agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES);
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         ref[i] = use_desired_angles ? agc_erase_thetad(i) :
-                                      c->cphix[i]; /* CPHI.. / CPHIX.. */
+                 c->cphix[i];                      /* CPHI.. / CPHIX.. */
     }
-    c->ak[0]   = csm_dap_msu(ref[0], agc_erase_cdux());
+
+    c->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux());
     agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy());
-    c->ak[0]   = csm_dap_ads(c->ak[0], csm_dap_mp_hi(t, r->amgb1));
-    c->ak[1]   = csm_dap_mp_hi(t, r->amgb4);
-    c->ak[2]   = csm_dap_mp_hi(t, r->amgb7);
-    t          = csm_dap_msu(ref[2], agc_erase_cduz());
-    c->ak[1]   = csm_dap_ads(c->ak[1], csm_dap_mp_hi(t, r->amgb5));
-    c->ak[2]   = csm_dap_ads(c->ak[2], csm_dap_mp_hi(t, r->amgb8));
+
+    c->ak[0] = csm_dap_ads(c->ak[0], csm_dap_mp_hi(t, r->amgb1));
+    c->ak[1] = csm_dap_mp_hi(t, r->amgb4);
+    c->ak[2] = csm_dap_mp_hi(t, r->amgb7);
+    t        = csm_dap_msu(ref[2], agc_erase_cduz());
+    c->ak[1] = csm_dap_ads(c->ak[1], csm_dap_mp_hi(t, r->amgb5));
+    c->ak[2] = csm_dap_ads(c->ak[2], csm_dap_mp_hi(t, r->amgb8));
+
     if (!AGC_ASSERT(c->ak[2] >= AGC_SP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* end phase 1 of RCS DAP */
 }

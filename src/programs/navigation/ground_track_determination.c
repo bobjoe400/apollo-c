@@ -34,11 +34,14 @@ agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = rz_set_option(2, 1U);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_job_ground_track_vehicle(ctx);
 }
 
@@ -50,10 +53,13 @@ agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dsky_cont_t cont;
+
     cont.terminate = AGC_JOB_GOTOPOOH;
     cont.proceed   = AGC_JOB_GROUND_TRACK_TIME;
     cont.enter     = AGC_JOB_GROUND_TRACK_VEHICLE;
+
     return agc_dsky_display(ctx, AGC_DSKY_GOPERF4, GTD_OPTION_CODE, &cont);
 }
 
@@ -64,6 +70,7 @@ agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 34U, AGC_JOB_GOTOPOOH,
                     AGC_JOB_GROUND_TRACK_COMPUTE, AGC_JOB_GROUND_TRACK_TIME);
 }
@@ -78,11 +85,14 @@ agc_status_t agc_ground_track_determination_flight_path(
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     /* ABVAL SL* 0,2: count 0 - X2, so the moon-scale 2^5 speed is shifted
      * right 2 to 2^7.                                                   */
-    *vel       = rz_sl_star(ip, rz_abval(ip, vatt1), 0, x2);
+    *vel = rz_sl_star(ip, rz_abval(ip, vatt1), 0, x2);
     agc_dp_t c = agc_vec_dot(ip, rz_unit(ip, ratt), vatt); /* U(R).V     */
-    *gamma     = agc_dp_asin(ip, agc_dp_div(ip, c, *vel)); /* DDV ASIN   */
+
+    *gamma = agc_dp_asin(ip, agc_dp_div(ip, c, *vel)); /* DDV ASIN   */
+
     return AGC_STATUS_OK;
 }
 
@@ -93,9 +103,11 @@ static agc_status_t gtd_first_pass(agc_interp_t *ip, agc_integ_ctx_t *ic,
 {
     bool other = ((rz_option(2) >> 1) != 0U); /* SR1 BHIZ      */
     bool csm   = rz_is_csm() ? !other : other;
+
     rz_flag_put(AGC_FLAG_VINTFLAG, csm);
     rz_flag_put(AGC_FLAG_DIM0FLAG, false);
     rz_flag_put(AGC_FLAG_INTYPFLG, false); /* PRECISION     */
+
     return agc_integ_integrv(ip, ic, tdec1);
 }
 
@@ -108,6 +120,7 @@ static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic,
     ic->sv.tet = rz->ground_track_time;
     rz_flag_put(AGC_FLAG_DIM0FLAG, false);
     rz_flag_put(AGC_FLAG_MOONFLAG, rz->ground_track_origin != 0);
+
     return agc_integ_integrvs(ip, ic, tdec1);
 }
 
@@ -119,15 +132,18 @@ static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
     rz->ground_track_time   = o->tat;
     rz->ground_track_base_r = o->ratt1;
     rz->ground_track_base_v = o->vatt1;
-    agc_status_t st         = agc_ground_track_determination_flight_path(
-                ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel,
-                &rz->ground_track_gamma);
+    agc_status_t st = agc_ground_track_determination_flight_path(
+        ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel,
+        &rz->ground_track_gamma);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
     }
+
     rz->ground_track_origin = (agc_sp_t) o->x2;
-    bool this_vehicle       = ((rz_option(2) >> 1) == 0U);
+    bool this_vehicle = ((rz_option(2) >> 1) == 0U);
+
     if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG))
     {
         rz_vflag_set(RZ_VF_GROUND_TRACK, true);
@@ -140,6 +156,7 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                                 agc_rendz_t *rz, const agc_integ_out_t *o)
 {
     agc_latlong_opt_t opt;
+
     opt.lunar = (o->x2 != 0);
     opt.erad  = false;
     rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
@@ -147,20 +164,26 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     agc_navaux_padload_t pad;
     agc_status_t         st = agc_navaux_get_padload(&pad);
     agc_latlong_t        ll;
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_latlong_from_r(ip, &pad, opt, o->ratt, o->tat, &ll);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     st = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     rz->ground_track_alt = agc_dp_mul(ip, ll.alt, GTD_K01); /* DMP K.01 */
+
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH,
                     AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE);
 }
@@ -173,16 +196,21 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_rendz_t *rz    = rz_state();
     agc_dp_t     tdec1 = rz_dsptem_dp(RZ_DSPTEM1);
     agc_status_t st    = agc_integ_install(0, AGC_JOB_GROUND_TRACK_COMPUTE);
+
     if (st != AGC_STATUS_OK)
     {
         return st; /* asleep        */
     }
+
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
+
     if (rz_vflag_test(RZ_VF_GROUND_TRACK))
     { /* BON P21CONT   */
         st = gtd_from_base(&ip, ic, rz, tdec1);
@@ -191,12 +219,16 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     {
         st = gtd_first_pass(&ip, ic, tdec1);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_integ_out_t o = ic->out;
+
     gtd_save_base(&ip, rz, &o);
+
     return gtd_display(ctx, &ip, rz, &o);
 }
 
@@ -207,13 +239,17 @@ agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_dp_t     t  = agc_dp_add(&ip, rz_state()->ground_track_time, RZ_600SEC);
     agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, t);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_job_ground_track_time(ctx);
 }

@@ -49,6 +49,7 @@ void agc_inhint(void)
     {
         inhint_depth++;
     }
+
     if (!AGC_ASSERT(inhint_depth > 0))
     {
         return;
@@ -61,6 +62,7 @@ void agc_relint(void)
     {
         inhint_depth--;
     }
+
     if (!AGC_ASSERT(inhint_depth >= 0))
     {
         return;
@@ -73,10 +75,12 @@ bool agc_interrupts_inhibited(void)
     {
         return false;
     }
+
     if (!AGC_ASSERT(inhint_depth <= RUPT_MAX_DEPTH))
     {
         return false;
     }
+
     return inhint_depth > 0;
 }
 
@@ -86,10 +90,12 @@ void rupt_reset_timers(void)
 {
     time4 = RUPT_TIME4_SB;
     time5 = RUPT_TIME5_SB;
+
     if (!AGC_ASSERT(time4 <= RUPT_TIME_MASK))
     {
         return;
     }
+
     if (!AGC_ASSERT(time5 <= RUPT_TIME_MASK))
     {
         return;
@@ -102,11 +108,14 @@ uint16_t agc_rupt_time(int n)
     {
         return 0;
     }
+
     uint16_t v = (n == 4) ? time4 : ((n == 5) ? time5 : time6);
+
     if (!AGC_ASSERT(v <= RUPT_TIME_MASK))
     {
         return 0;
     }
+
     return v;
 }
 
@@ -116,6 +125,7 @@ void agc_rupt_set_time(int n, uint16_t v)
     {
         return;
     }
+
     if (n == 4)
     {
         time4 = v;
@@ -128,6 +138,7 @@ void agc_rupt_set_time(int n, uint16_t v)
     {
         time6 = v;
     }
+
     if (!AGC_ASSERT(agc_rupt_time(n) == v))
     {
         return;
@@ -141,7 +152,9 @@ void agc_rupt_set_t5_task(agc_task_id_t task)
     {
         return;
     }
+
     t5loc = task;
+
     if (!AGC_ASSERT(t5loc == task))
     {
         return;
@@ -154,10 +167,12 @@ agc_task_id_t agc_rupt_t5_task(void)
     {
         return AGC_TASK_NONE;
     }
+
     if (!AGC_ASSERT(inhint_depth >= 0))
     {
         return AGC_TASK_NONE;
     }
+
     return t5loc;
 }
 
@@ -169,6 +184,7 @@ void agc_rupt_set_t6_task(agc_task_id_t task)
     {
         return;
     }
+
     t6loc = task;
 }
 
@@ -179,15 +195,19 @@ static agc_status_t rupt_exit(agc_status_t st)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_relint();
+
     if (agc_exec_restart_pending())
     {
         agc_status_t rs = agc_exec_service_restart();
+
         if (!AGC_ASSERT(rs != AGC_STATUS_BAD_ARG))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     return st;
 }
 
@@ -196,17 +216,23 @@ agc_status_t agc_rupt_go(void)
 {
     inhint_depth = 0; /* GOJAM clears the RUPT state   */
     agc_inhint();
+
     if (!AGC_ASSERT(inhint_depth == 1))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_restart_goprog();
+
     if (!AGC_ASSERT(inhint_depth == 1))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     return rupt_exit(st);
 }
 
@@ -215,6 +241,7 @@ agc_status_t agc_rupt_t6(void)
 {
     agc_inhint();
     agc_status_t st = AGC_STATUS_NOT_FOUND;
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         st = agc_dispatch_rupt(AGC_RUPT_T6);
@@ -228,14 +255,18 @@ agc_status_t agc_rupt_t6(void)
         if (!AGC_ASSERT(t6loc == AGC_TASK_NONE)) /* no T6 program   */
         {
             agc_relint();
+
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     return rupt_exit(st);
 }
 
@@ -245,21 +276,27 @@ agc_status_t agc_rupt_t5(void)
     agc_inhint();
     agc_status_t st       = AGC_STATUS_OK;
     bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) &&
-                    (RUPT_HALF_SEC - (int32_t) time5 <= 0);
+                            (RUPT_HALF_SEC - (int32_t) time5 <= 0);
+
     if (!AGC_ASSERT(time5 <= RUPT_TIME_MASK))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!spurious)
     { /* CSM: BZMF NOQBRSM              */
         st = agc_dispatch_task(t5loc);
     }
+
     if (!AGC_ASSERT(t5loc != AGC_TASK_NONE))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     return rupt_exit(st);
 }
 
@@ -267,17 +304,23 @@ agc_status_t agc_rupt_t5(void)
 agc_status_t agc_rupt_t3(void)
 {
     agc_inhint();
+
     if (!AGC_ASSERT(agc_waitlist_time3() < 040000u))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_waitlist_t3rupt();
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     return rupt_exit(st);
 }
 
@@ -288,13 +331,17 @@ static agc_status_t foreign_rupt(agc_rupt_id_t id)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_status_t st = agc_dispatch_rupt(id);
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     return rupt_exit(st);
 }
 
@@ -341,9 +388,11 @@ agc_status_t agc_task_t5idloc(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }

@@ -43,10 +43,12 @@ static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(c >= 0 && c < PIN_DP_LIM))
     {
         return 0; /* no valid result */
     }
+
     return (pin_abs64(f) * c) >> AGC_SP_BITS;
 }
 
@@ -58,13 +60,17 @@ static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t mag = pin_abs64(dp);
     int64_t hi  = (mag >> AGC_SP_BITS) + (((mag & 037777) >= 020000) ? 1 : 0);
+
     if (hi >= PIN_SP_LIM)
     {
         return pin_almcycle(); /* OF: alarm and recycle  */
     }
+
     *out = agc_dp_from_sp((agc_sp_t) ((dp < 0) ? -hi : hi));
+
     return AGC_STATUS_OK;
 }
 
@@ -77,12 +83,16 @@ static agc_status_t pin_arthinsf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t tp = pin_dmp_tp(f, sfin);
+
     if ((tp >> AGC_DP_BITS) != 0)
     {
         return pin_almcycle();
     }
+
     int64_t dp = tp & (PIN_DP_LIM - 1);
+
     return pin_binround((f < 0) ? -dp : dp, out);
 }
 
@@ -93,11 +103,14 @@ static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t dp = pin_dmp_tp(f, sfin) >> AGC_SP_BITS;
+
     if (!AGC_ASSERT(dp < PIN_DP_LIM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return pin_binround((f < 0) ? -dp : dp, out);
 }
 
@@ -112,13 +125,17 @@ static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t tp = pin_dmp_tp(f, sfin) << shift; /* TPLEFTN    */
     int64_t dp = (tp >> AGC_SP_BITS) + (((tp & 037777) >= 020000) ? 1 : 0);
+
     if ((tp >> AGC_TP_BITS) != 0 || dp >= PIN_DP_LIM)
     {
         return pin_almcycle(); /* TESTOFUF   */
     }
+
     *out = (agc_dp_t) ((f < 0) ? -dp : dp);
+
     return AGC_STATUS_OK;
 }
 
@@ -131,11 +148,14 @@ static uint16_t pin_angle_word(bool neg, int64_t m)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(m >= 0 && m < 0100000))
     {
         return 0; /* no valid result */
     }
+
     int64_t w = neg ? (0100000 - m) : m;
+
     return (uint16_t) (w & PIN_WORD);
 }
 
@@ -149,25 +169,33 @@ static agc_status_t pin_deginsf(agc_dp_t f, bool cdu360, agc_dp_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(out != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t d = pin_dmp_tp(f, PIN_DEGCON1) >> AGC_SP_BITS; /* MPAC, MPAC+1 */
+
     if ((d & 037777) != 0)
     {
         d += 02000; /* +-BIT11    */
     }
+
     if (d >= PIN_DP_LIM || (d >> 12) >= PIN_SP_LIM)
     {
         return pin_almcycle(); /* OF/UF after 2 shifts       */
     }
+
     uint16_t w = pin_angle_word(f < 0, d >> 11); /* left 3     */
+
     if (cdu360)
     {
         w = pin_360_cdu(w); /* LM ENDSCALE: 360 - CDU deg */
     }
+
     *out = (agc_dp_t) w;
+
     return AGC_STATUS_OK;
 }
 
@@ -183,23 +211,29 @@ static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(out != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (f < 0 || negzero)
     {
         return pin_almcycle(); /* reject - input         */
     }
+
     agc_dp_t fb = f - (agc_dp_t) (PIN_NEG_2 * PIN_SP_LIM); /* ADS MPAC   */
     int64_t  d  = pin_dmp_tp(fb, PIN_DEGCON2) >> AGC_SP_BITS;
     int64_t  v  = ((fb < 0) ? -d : d) + 04000; /* + BIT12    */
     int64_t  m  = pin_abs64(v);
+
     if ((m >> 13) >= PIN_SP_LIM)
     {
         return pin_almcycle();
     }
+
     *out = (agc_dp_t) pin_angle_word(v < 0, m >> 12);
+
     return AGC_STATUS_OK;
 }
 
@@ -221,10 +255,12 @@ static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info,
         case PIN_SF_DP4:
             return pin_dpinsf(f, info->sf_in, 3, out); /* DPINSF4 */
         default:
+
             if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             return AGC_STATUS_BAD_ARG;
     }
 }
@@ -236,14 +272,19 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_scale_info_t info;
     agc_status_t     st = pin_comp_scale(k, &info);
+
     if (!AGC_ASSERT(out != NULL && exited != NULL) || st != AGC_STATUS_OK)
     {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
+
     bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+
     *exited = true;
+
     switch (info.routine)
     {
         case PIN_SF_OCTAL:
@@ -253,10 +294,12 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
         case PIN_SF_HMS:  /* (HMSIN is entered by the caller)   */
             return pin_dspalarm();
         case PIN_SF_OPDEG: /* LM: LRPOSOUT can't be loaded       */
+
             if (lm)
             {
                 return pin_dspalarm();
             }
+
             st = pin_optdegin(frac, negzero, out);
             break;
         case PIN_SF_FRACT:
@@ -267,16 +310,20 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
             break;
         case PIN_SF_DPFRAC: /* CM: DPFRACIN.  LM: DEGINSF (360-CDU) */
             st = lm ? pin_deginsf(frac, true, out) : AGC_STATUS_OK;
+
             if (!lm)
             {
                 *out = frac;
             }
+
             break;
         default:
             st = pin_sfin_const(info.routine, &info, frac, out);
             break;
     }
+
     *exited = (st != AGC_STATUS_OK);
+
     if (st == AGC_STATUS_OK && !pin_sf_is_dp(info.routine))
     {
         /* the SP result (MPAC) in the value convention of the data id */
@@ -285,10 +332,12 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
                      info.routine == (uint8_t) PIN_SF_DPFRAC;
         uint16_t w =
             angle ? (uint16_t) *out : pin_ones_from_sp(agc_dp_high(*out));
+
         *out = (lm || info.routine != (uint8_t) PIN_SF_DPFRAC) ?
-                   pin_value_of_word(&info, w) :
-                   *out;
+               pin_value_of_word(&info, w) :
+               *out;
     }
+
     return st;
 }
 
@@ -302,13 +351,17 @@ static bool pin_whole(agc_dp_t f, int64_t *n)
     {
         return false;
     }
+
     int64_t w =
         (pin_abs64(f) * PIN_WHOLECON + (PIN_DP_LIM >> 1)) >> AGC_DP_BITS;
+
     if (!AGC_ASSERT(n != NULL))
     {
         return false;
     }
+
     *n = (f < 0) ? -w : w;
+
     return w < PIN_SP_LIM;
 }
 
@@ -321,32 +374,43 @@ agc_status_t pin_hmsin(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if ((s->decbrnch & PIN_DEC345) != PIN_DEC345)
     {                     /* ALL3DEC    */
         s->verbsave = 25; /* FORCEV25: force verb 25 by recycle */
+
         return pin_almcycle();
     }
+
     int64_t h   = 0;
     int64_t m   = 0;
     int64_t sec = 0;
-    bool ok = pin_whole(s->xyz_frac[0], &h) && pin_whole(s->xyz_frac[1], &m) &&
-              pin_whole(s->xyz_frac[2], &sec);
-    ok = ok && pin_abs64(h) * PIN_CS_HOUR < PIN_DP_LIM /* MPACTST: G/ 745 */
-         && pin_abs64(m) <= PIN_59MIN                  /* SIZETST         */
-         && pin_abs64(sec) <= PIN_5999CS;
+    bool    ok  =
+        pin_whole(s->xyz_frac[0], &h) && pin_whole(s->xyz_frac[1], &m) &&
+        pin_whole(s->xyz_frac[2], &sec);
+
+    ok = ok && pin_abs64(h) * PIN_CS_HOUR < PIN_DP_LIM && /* MPACTST: G/ 745 */
+         pin_abs64(m) <= PIN_59MIN &&                  /* SIZETST         */
+         pin_abs64(sec) <= PIN_5999CS;
     int64_t t = h * PIN_CS_HOUR + m * PIN_CS_MIN; /* DAS HITEMIN     */
-    ok        = ok && pin_abs64(t) < PIN_DP_LIM;
+
+    ok = ok && pin_abs64(t) < PIN_DP_LIM;
     t += sec;
     ok = ok && pin_abs64(t) < PIN_DP_LIM;
+
     if (!ok)
     {
         return pin_almcycle();
     }
+
     if (!AGC_ASSERT(pin_comp_routine(0) == (uint8_t) PIN_SF_HMS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_comp_write(0, (agc_dp_t) t); /* TPAGREE, DXCH */
+
     return (st == AGC_STATUS_OK) ? pin_loadlv() : st;
 }

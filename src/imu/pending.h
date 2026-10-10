@@ -27,8 +27,8 @@ agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern); /* CDULOGIC  */
 uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);     /* 1STO2S    */
 agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev,
                              uint16_t  out[3]); /* V1STO2S */
-agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);  /* SIGNMPAC  */
-agc_dp_t     agc_rtb_loadtime(void);           /* LOADTIME  */
+agc_dp_t agc_rtb_signmpac(agc_dp_t mpac);  /* SIGNMPAC  */
+agc_dp_t agc_rtb_loadtime(void);           /* LOADTIME  */
 
 /* ==== sys-misc: T4RUPT_PROGRAM.agc ======================================= */
 agc_status_t agc_t4_setissw(void); /* SETISSW (IMUFAIL/ICDUFAIL)  */

@@ -55,15 +55,15 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 agc_status_t     agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 agc_status_t     agc_integ_chkswtch(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                     agc_dp_t *test);
-agc_status_t     agc_integ_origchng(agc_interp_t *ip, agc_integ_ctx_t *ctx);
-agc_dp_t         agc_integ_mu(int x2); /* MUEARTH - X2 (0,2,4) */
-agc_vec_t        agc_integ_vshift(agc_interp_t *ip, agc_vec_t v, int n);
-agc_dp_t         agc_integ_dshift(agc_interp_t *ip, agc_dp_t a, int n);
-agc_status_t     agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon);
+agc_status_t agc_integ_origchng(agc_interp_t *ip, agc_integ_ctx_t *ctx);
+agc_dp_t     agc_integ_mu(int x2);     /* MUEARTH - X2 (0,2,4) */
+agc_vec_t    agc_integ_vshift(agc_interp_t *ip, agc_vec_t v, int n);
+agc_dp_t     agc_integ_dshift(agc_interp_t *ip, agc_dp_t a, int n);
+agc_status_t agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon);
 
 /* ---- flags_csm.c (CM-only flags) ------------------------------ */
 void agc_integ_csm_resume_idle_integration(void);
-bool         agc_integ_csm_amoonflg(void);
+bool agc_integ_csm_amoonflg(void);
 void agc_integ_csm_set_amoonflg(bool on);
 
 #endif /* INTEG_INTERNAL_H */

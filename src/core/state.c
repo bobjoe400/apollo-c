@@ -36,18 +36,23 @@ void agc_state_init(agc_vehicle_t v)
     {
         return;
     }
+
     g_vehicle = v;
     g_time_cs = 0;
+
     for (int i = 0; i < AGC_FLAGWORDS; i++)
     {
         g_flagword[i] = 0;
     }
+
     agc_erase_reset();
     agc_chan_reset();
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return;
     }
+
     if (!AGC_ASSERT((g_time_cs == 0u) && (g_flagword[0] == 0u)))
     {
         return;
@@ -60,6 +65,7 @@ agc_vehicle_t agc_state_vehicle(void)
     {
         return AGC_VEHICLE_CSM;
     }
+
     return g_vehicle;
 }
 
@@ -71,10 +77,12 @@ uint32_t agc_time_now_cs(void)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return 0;
     }
+
     return g_time_cs;
 }
 
@@ -84,7 +92,9 @@ void agc_time_set_cs(uint32_t t_cs)
     {
         return;
     }
+
     g_time_cs = t_cs;
+
     if (!AGC_ASSERT(g_time_cs == t_cs))
     {
         return;
@@ -97,8 +107,10 @@ void agc_time_advance_cs(uint16_t dt_cs)
     {
         return;
     }
+
     /* TIME2 overflow wraps the whole 28-bit count to zero. */
     g_time_cs = (g_time_cs + dt_cs) & (AGC_TIME_MODULUS_CS - 1u);
+
     if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
     {
         g_time_cs = 0;
@@ -111,10 +123,12 @@ agc_sp_t agc_erase_time1(void)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return 0;
     }
+
     return (agc_sp_t) (g_time_cs & AGC_TIME_FIELD);
 }
 
@@ -124,10 +138,12 @@ agc_sp_t agc_erase_time2(void)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return 0;
     }
+
     return (agc_sp_t) ((g_time_cs >> AGC_TIME1_BITS) & AGC_TIME_FIELD);
 }
 
@@ -139,6 +155,7 @@ static int words_for_vehicle(void)
     {
         return AGC_FLAGWORDS_CSM;
     }
+
     return (g_vehicle == AGC_VEHICLE_LM) ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM;
 }
 
@@ -146,14 +163,17 @@ bool agc_flag_valid(agc_flag_id_t f)
 {
     const int word = (int) (f >> 4);
     const int bit  = (int) (f & 0xFu);
+
     if (!AGC_ASSERT(f <= 0xFFu))
     {
         return false;
     }
+
     if (!AGC_ASSERT(bit >= 0))
     {
         return false;
     }
+
     return (word < words_for_vehicle()) && (bit >= 1) && (bit <= 15);
 }
 
@@ -163,10 +183,12 @@ int agc_flag_word(agc_flag_id_t f)
     {
         return -1;
     }
+
     if (!AGC_ASSERT(((int) (f >> 4)) < AGC_FLAGWORDS))
     {
         return -1;
     }
+
     return (int) (f >> 4);
 }
 
@@ -176,10 +198,12 @@ int agc_flag_bit(agc_flag_id_t f)
     {
         return -1;
     }
+
     if (!AGC_ASSERT((f & 0xFu) != 0u))
     {
         return -1;
     }
+
     return (int) (f & 0xFu);
 }
 
@@ -189,10 +213,12 @@ uint16_t agc_flag_mask(agc_flag_id_t f)
     {
         return 0;
     }
+
     if (!AGC_ASSERT((f & 0xFu) <= 15u))
     {
         return 0;
     }
+
     return (uint16_t) (1u << ((f & 0xFu) - 1u));
 }
 
@@ -202,10 +228,12 @@ bool agc_flag_test(agc_flag_id_t f)
     {
         return false;
     }
+
     if (!AGC_ASSERT(agc_flag_mask(f) != 0u))
     {
         return false;
     }
+
     return (g_flagword[f >> 4] & agc_flag_mask(f)) != 0u;
 }
 
@@ -215,7 +243,9 @@ void agc_flag_set(agc_flag_id_t f)
     {
         return;
     }
+
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] | agc_flag_mask(f));
+
     if (!AGC_ASSERT(agc_flag_test(f)))
     {
         return;
@@ -228,7 +258,9 @@ void agc_flag_clear(agc_flag_id_t f)
     {
         return;
     }
+
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] & ~agc_flag_mask(f));
+
     if (!AGC_ASSERT(!agc_flag_test(f)))
     {
         return;
@@ -241,8 +273,11 @@ void agc_flag_invert(agc_flag_id_t f)
     {
         return;
     }
-    const bool before  = agc_flag_test(f);
+
+    const bool before = agc_flag_test(f);
+
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] ^ agc_flag_mask(f));
+
     if (!AGC_ASSERT(agc_flag_test(f) != before))
     {
         return;
@@ -257,6 +292,7 @@ void agc_flag_put(agc_flag_id_t f, bool on)
     {
         return;
     }
+
     if (on)
     {
         agc_flag_set(f);
@@ -264,6 +300,11 @@ void agc_flag_put(agc_flag_id_t f, bool on)
     else
     {
         agc_flag_clear(f);
+    }
+
+    if (!AGC_ASSERT(agc_flag_test(f) == on))
+    {
+        return;
     }
 }
 
@@ -273,10 +314,12 @@ uint16_t agc_flagword_get(int word)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(g_flagword[word] <= AGC_WORD15_MASK))
     {
         return 0;
     }
+
     return g_flagword[word];
 }
 
@@ -286,11 +329,14 @@ void agc_flagword_set(int word, uint16_t value)
     {
         return;
     }
+
     if (!AGC_ASSERT(value <= AGC_WORD15_MASK))
     {
         return;
     }
+
     g_flagword[word] = value;
+
     if (!AGC_ASSERT(g_flagword[word] == value))
     {
         return;
@@ -306,13 +352,16 @@ static agc_flag_id_t other_moon_flag(void)
     {
         return (agc_flag_id_t) AGC_FLAG_LMOONFLG;
     }
+
     const agc_flag_id_t f = (g_vehicle == AGC_VEHICLE_CSM) ?
-                                (agc_flag_id_t) AGC_FLAG_LMOONFLG :
-                                (agc_flag_id_t) AGC_FLAG_CMOONFLG;
+                            (agc_flag_id_t) AGC_FLAG_LMOONFLG :
+                            (agc_flag_id_t) AGC_FLAG_CMOONFLG;
+
     if (!AGC_ASSERT(agc_flag_valid(f)))
     {
         return (agc_flag_id_t) AGC_FLAG_LMOONFLG;
     }
+
     return f;
 }
 
@@ -322,10 +371,12 @@ agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((which == AGC_SV_THIS) || (which == AGC_SV_OTHER)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (which == AGC_SV_THIS)
     {
         out->r    = agc_erase_rn();
@@ -347,10 +398,12 @@ agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
         out->t    = agc_erase_tetcsm();
         out->moon = agc_flag_test(other_moon_flag());
     }
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -360,11 +413,14 @@ static agc_status_t set_moon(agc_flag_id_t f, bool moon)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((f >> 4) < AGC_FLAGWORDS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_flag_put(f, moon);
+
     return AGC_STATUS_OK;
 }
 
@@ -374,21 +430,26 @@ agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((which == AGC_SV_THIS) || (which == AGC_SV_OTHER)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (which == AGC_SV_THIS)
     {
         agc_erase_set_rn(in->r);
         agc_erase_set_vn(in->v);
         agc_erase_set_piptime(in->t);
+
         return set_moon(AGC_FLAG_MOONFLAG, in->moon);
     }
+
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (g_vehicle == AGC_VEHICLE_CSM)
     {
         agc_erase_set_rrectlem(in->r);
@@ -401,5 +462,6 @@ agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
         agc_erase_set_vrectcsm(in->v);
         agc_erase_set_tetcsm(in->t);
     }
+
     return set_moon(other_moon_flag(), in->moon);
 }

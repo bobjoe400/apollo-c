@@ -64,6 +64,7 @@ static perm_ext_t perm_ext[2];
 void agc_integ_flag(agc_flag_id_t f, bool on)
 {
     agc_flag_put(f, on);
+
     if (!AGC_ASSERT(agc_flag_test(f) == on))
     {
         return;
@@ -74,14 +75,17 @@ void agc_integ_flag(agc_flag_id_t f, bool on)
 agc_dp_t agc_integ_loadtime(void)
 {
     const uint32_t t = agc_time_now_cs();
+
     if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((agc_dp_t) (t & 0x0FFFFFFFu) <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return (agc_dp_t) (t & 0x0FFFFFFFu);
 }
 
@@ -102,15 +106,19 @@ agc_integ_ctx_t *agc_integ_shared_ctx(void)
 agc_status_t agc_integ_ctx_init(agc_integ_ctx_t *ctx)
 {
     static const agc_integ_ctx_t zero_ctx;
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *ctx = zero_ctx;
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -118,6 +126,11 @@ agc_status_t agc_integ_ctx_init(agc_integ_ctx_t *ctx)
 void agc_integ_grp2pc(void)
 {
     agc_phase_change(2, 04022);
+
+    if (!AGC_ASSERT(agc_phase_get(2) == 2u))
+    {
+        return;
+    }
 }
 
 /* SETIFLGS (p. 1314).                                                    */
@@ -127,7 +140,13 @@ void agc_integ_setiflgs(void)
     agc_integ_flag(AGC_FLAG_INTYPFLG, false);
     agc_integ_flag(AGC_FLAG_DIM0FLAG, false);
     agc_integ_flag(AGC_FLAG_D6OR9FLG, false);
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_STATEFLG)))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_INTYPFLG)))
     {
         return;
     }
@@ -137,7 +156,9 @@ void agc_integ_setiflgs(void)
 void agc_integ_thisvint(void)
 {
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
+
     agc_integ_flag(AGC_FLAG_VINTFLAG, csm);
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_VINTFLAG) == csm))
     {
         return;
@@ -153,17 +174,20 @@ agc_status_t agc_integ_perm_get(agc_vehicle_t veh, agc_integ_sv_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const bool        csm = (veh == AGC_VEHICLE_CSM);
     const perm_ext_t *e   = &perm_ext[csm ? 0 : 1];
-    out->rrect            = csm ? agc_erase_rrectcsm() : agc_erase_rrectlem();
-    out->vrect            = csm ? agc_erase_vrectcsm() : agc_erase_vrectlem();
-    out->tet              = csm ? agc_erase_tetcsm() : agc_erase_tetlem();
-    out->deltav           = e->deltav;
-    out->nuv              = e->nuv;
-    out->rcv              = e->rcv;
-    out->vcv              = e->vcv;
-    out->tc               = e->tc;
-    out->xkep             = e->xkep;
+
+    out->rrect  = csm ? agc_erase_rrectcsm() : agc_erase_rrectlem();
+    out->vrect  = csm ? agc_erase_vrectcsm() : agc_erase_vrectlem();
+    out->tet    = csm ? agc_erase_tetcsm() : agc_erase_tetlem();
+    out->deltav = e->deltav;
+    out->nuv    = e->nuv;
+    out->rcv    = e->rcv;
+    out->vcv    = e->vcv;
+    out->tc     = e->tc;
+    out->xkep   = e->xkep;
+
     return AGC_STATUS_OK;
 }
 
@@ -174,7 +198,9 @@ agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     perm_ext_t *e = &perm_ext[(veh == AGC_VEHICLE_CSM) ? 0 : 1];
+
     if (veh == AGC_VEHICLE_CSM)
     {
         agc_erase_set_rrectcsm(in->rrect);
@@ -187,12 +213,14 @@ agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in)
         agc_erase_set_vrectlem(in->vrect);
         agc_erase_set_tetlem(in->tet);
     }
+
     e->deltav = in->deltav;
     e->nuv    = in->nuv;
     e->rcv    = in->rcv;
     e->vcv    = in->vcv;
     e->tc     = in->tc;
     e->xkep   = in->xkep;
+
     return AGC_STATUS_OK;
 }
 
@@ -201,10 +229,12 @@ agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in)
 static int area_count(void)
 {
     const agc_vehicle_t v = agc_state_vehicle();
+
     if (!AGC_ASSERT((v == AGC_VEHICLE_CSM) || (v == AGC_VEHICLE_LM)))
     {
         return 0; /* no valid result */
     }
+
     return (v == AGC_VEHICLE_CSM) ? AGC_INTEG_AREAS_CSM : AGC_INTEG_AREAS_LM;
 }
 
@@ -214,6 +244,7 @@ bool agc_integ_area_busy(int area)
     {
         return true;
     }
+
     return (agc_flagword_get(INTEG_RASFLAG_WORD) & INTBITAB[area]) != 0;
 }
 
@@ -229,20 +260,26 @@ agc_status_t agc_integ_install(int area, agc_job_id_t resume_job)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const uint16_t ras = agc_flagword_get(INTEG_RASFLAG_WORD);
+
     if ((ras & INTBITAB[area]) != 0)
     {
         agc_exec_job_sleep(resume_job); /* JOBSLEEP */
+
         if (AGC_ASSERT(n_sleepers[area] < INTEG_MAX_SLEEPERS))
         {
             sleepers[area][n_sleepers[area]] = resume_job;
-            n_sleepers[area] += 1;
+            n_sleepers[area]                += 1;
         }
+
         return AGC_STATUS_BUSY;
     }
+
     agc_inhint();
     agc_flagword_set(INTEG_RASFLAG_WORD, (uint16_t) (ras | INTFLBIT[area]));
     agc_relint();
+
     return AGC_STATUS_OK;
 }
 
@@ -254,16 +291,21 @@ static agc_status_t wake(int area)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint(); /* INHINT (the AGC repeats it per JOBWAKE) */
+
     for (int i = 0; i < n_sleepers[area]; i++)
     {
         agc_exec_job_wake_if_asleep(sleepers[area][i]); /* JOBWAKE */
     }
-    n_sleepers[area]       = 0;
-    const uint16_t     ras = agc_flagword_get(INTEG_RASFLAG_WORD);
+
+    n_sleepers[area] = 0;
+    const uint16_t ras = agc_flagword_get(INTEG_RASFLAG_WORD);
+
     agc_flagword_set(
-         INTEG_RASFLAG_WORD, (uint16_t) (ras & (uint16_t) ~INTBITAB[area]));
+        INTEG_RASFLAG_WORD, (uint16_t) (ras & (uint16_t) ~INTBITAB[area]));
     agc_relint();
+
     return AGC_STATUS_OK;
 }
 
@@ -275,11 +317,13 @@ agc_status_t agc_integ_intwake(void)
     if ((agc_flagword_get(INTEG_RASFLAG_WORD) & INTEG_REINTBIT) != 0)
     {
         agc_integ_grp2pc();
+
         if ((agc_flagword_get(INTEG_RASFLAG_WORD) & INTEG_REINTBIT) == 0)
         {
             return AGC_STATUS_OK; /* GOBAC   */
         }
     }
+
     return wake(0);
 }
 
@@ -289,10 +333,12 @@ agc_status_t agc_integ_intwake0(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(n_sleepers[0] <= INTEG_MAX_SLEEPERS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return wake(0);
 }
 
@@ -303,6 +349,7 @@ agc_status_t agc_integ_eraswake(int area)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return wake(area);
 }
 
@@ -316,24 +363,34 @@ agc_status_t agc_integ_eraswake(int area)
 static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2,
                          agc_vehicle_t veh)
 {
+    if (!AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_flag_id_t mflag =
         (veh == AGC_VEHICLE_CSM) ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG;
     agc_status_t st = agc_integ_perm_set(veh, &ctx->sv);
+
     agc_integ_flag(mflag, true);
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv,
                              ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv,
                              ctx->sv.tet);
     }
+
     if (!agc_flag_test(AGC_FLAG_MOONFLAG))
     {
         agc_integ_flag(mflag, false);
     }
+
     return st;
 }
 
@@ -343,6 +400,7 @@ agc_status_t agc_integ_atopcsm(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return atop(ip, ctx, x2, AGC_VEHICLE_CSM);
 }
 
@@ -352,6 +410,7 @@ agc_status_t agc_integ_atoplem(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return atop(ip, ctx, x2, AGC_VEHICLE_LM);
 }
 
@@ -362,11 +421,14 @@ agc_status_t agc_integ_ptoacsm(agc_integ_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = agc_integ_perm_get(AGC_VEHICLE_CSM, &ctx->sv);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     return agc_integ_setmoon(ctx, agc_flag_test(AGC_FLAG_CMOONFLG));
 }
 
@@ -377,31 +439,38 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_navaux_padload_t pad;
     agc_vec_t            pole  = agc_vec_zero();
     const agc_vec_t      zunit = agc_vec_make(0, 0, AGC_DP_HALF);
-    ctx->sv.tet                = ctx->tdec1;
-    agc_status_t st            = agc_navaux_get_padload(&pad);
+
+    ctx->sv.tet = ctx->tdec1;
+    agc_status_t st = agc_navaux_get_padload(&pad);
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_planet_rp_to_r(ip, &pad, true, agc_erase_rls(), ctx->sv.tet,
                                 &ctx->sv.rcv); /* m 2^27     */
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_planet_rp_to_r(ip, &pad, true, zunit, ctx->sv.tet, &pole);
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     agc_integ_flag(AGC_FLAG_MOONFLAG, true);
-    ctx->sv.vcv    = agc_vec_scale(ip, agc_vec_cross(ip, pole, ctx->sv.rcv),
-                                   K_OMEGMOON); /* m/cs 2^5   */
+    ctx->sv.vcv = agc_vec_scale(ip, agc_vec_cross(ip, pole, ctx->sv.rcv),
+                                K_OMEGMOON);    /* m/cs 2^5   */
     ctx->sv.deltav = agc_vec_zero();
     ctx->sv.nuv    = agc_vec_zero();
     ctx->pbody     = INTEG_PBODY_MOON;
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_MOONFLAG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -410,24 +479,35 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                bool *surface)
 {
+    if (!AGC_ASSERT(surface != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(ip != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const bool surf = agc_flag_test(AGC_FLAG_SURFFLAG);
+
     if (surface != NULL)
     {
         *surface = surf;
     }
+
     if (surf)
     {
         return usepios(ip, ctx);
     }
+
     const agc_status_t st = agc_integ_perm_get(AGC_VEHICLE_LM, &ctx->sv);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_integ_setmoon(ctx, agc_flag_test(AGC_FLAG_LMOONFLG));
 }
 
@@ -442,24 +522,30 @@ static agc_dp_t norfinal(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(ctx->rc >= 0))
     {
         return 0; /* no valid result */
     }
+
     agc_dp_t x =
         agc_dp_shr_round(agc_tp_round_dp(agc_dp_mul_tp(ctx->rc, rsq)), 1);
+
     x = agc_dp_sqrt(ip, agc_dp_div(ip, x, agc_integ_mu(ctx->pbody)));
     x = agc_dp_shr(agc_tp_to_dp(agc_dp_mul_tp(x, K_P3D)),
                    7);         /* SR3 SR4, DLOAD MPAC */
     x = agc_dp_shl(ip, x, 15); /* SL 15D      */
+
     if (agc_interp_test_ovf(ip))
     {
         return K_DT2MAX; /* BOV MAXDT   */
     }
+
     if (agc_dp_sub(ip, K_DT2MAX, x) < 0)
     {
         return K_DT2MAX; /* BDSU BMN    */
     }
+
     return x;
 }
 
@@ -471,13 +557,17 @@ static void dt2comp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return;
     }
+
     if (!AGC_ASSERT(ip != NULL))
     {
         return;
     }
+
     const agc_dp_t dt =
         agc_dp_shl(ip, agc_dp_sub(ip, ctx->tdec, ctx->sv.tet), 8);
+
     ctx->dt2 = dt; /* DT/2 B-19   */
+
     if (agc_interp_test_ovf(ip))
     {
         ctx->dt2 = (dt < 0) ? AGC_DP_MIN : AGC_DP_MAX; /* SIGNMPAC    */
@@ -502,38 +592,48 @@ static agc_integ_next_t poohchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (!AGC_ASSERT(ip != NULL))
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (agc_dp_sub(ip, agc_dp_abs(ctx->dt2), K_DT2MIN) < 0)
     {
         return INTEG_NEXT_APCHK;
     }
+
     if ((agc_erase_modreg() != 0) || agc_flag_test(AGC_FLAG_PRECIFLG))
     {
         return INTEG_NEXT_TIMESTEP;
     }
+
     if (agc_dp_sub(ip, ctx->dt2, ctx->dtmax) < 0)
     {
         return INTEG_NEXT_APCHK;
     }
+
     if (!agc_flag_test(AGC_FLAG_NEWIFLG))
     {
         return INTEG_NEXT_TIMESTEP; /* BOFCLR      */
     }
+
     agc_integ_flag(AGC_FLAG_NEWIFLG, false);
     const agc_dp_t d = agc_dp_sub(ip, ctx->tdec, ctx->sv.tet);
+
     if (d < 0)
     {
         return INTEG_NEXT_INTEXIT; /* no backward */
     }
+
     const agc_dp_t dt4 =
         agc_dp_shr_round(agc_dp_shr(ctx->dt2, 4), 2); /* 4 DT */
+
     if (agc_dp_sub(ip, d, dt4) < 0)
     {
         return INTEG_NEXT_INTEXIT;
     }
+
     return INTEG_NEXT_TIMESTEP;
 }
 
@@ -543,24 +643,32 @@ static agc_integ_next_t testloop(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     if (agc_flag_test(AGC_FLAG_QUITFLAG))
     {
         agc_integ_flag(AGC_FLAG_STATEFLG, false);
+
         return INTEG_NEXT_INTEXIT; /* CLRGO       */
     }
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
         return INTEG_NEXT_FAIL;
     }
-    const int       b = ctx->pbody / 2;
+
+    const int       b   = ctx->pbody / 2;
     const agc_dp_t *rme =
         (agc_state_vehicle() == AGC_VEHICLE_CSM) ? RME_CSM : RME_LM;
-    ctx->rc            = agc_vec_abval(ip, ctx->sv.rcv); /* 10D         */
+
+    ctx->rc = agc_vec_abval(ip, ctx->sv.rcv); /* 10D         */
     const agc_dp_t rsq = agc_vec_sq(ip, ctx->sv.rcv);    /* 34D         */
+
     agc_integ_flag(AGC_FLAG_MIDFLAG, false);
+
     if (agc_dp_sub(ip, ctx->rc, rme[b]) >= 0)
     {
         agc_integ_flag(AGC_FLAG_MIDFLAG, true);
     }
+
     ctx->dtmax = norfinal(ip, ctx, rsq); /* 12D         */
     dt2comp(ip, ctx);
+
     return poohchk(ip, ctx);
 }
 
@@ -574,34 +682,42 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
         return INTEG_NEXT_FAIL;
     }
+
     const bool   csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     agc_status_t st  = AGC_STATUS_OK;
+
     if (csm && agc_flag_test(AGC_FLAG_MIDFLAG))
     {
         agc_dp_t test = 0;
-        st            = agc_integ_chkswtch(ip, ctx, &test);
+
+        st = agc_integ_chkswtch(ip, ctx, &test);
+
         if ((st == AGC_STATUS_OK) && (test < 0))
         {
             st = agc_integ_origchng(ip, ctx); /* BPL ANDOUT  */
         }
     }
+
     if ((st == AGC_STATUS_OK) && agc_flag_test(AGC_FLAG_STATEFLG))
     {
         if (csm)
         {
             agc_integ_flag(AGC_FLAG_STATEFLG, false); /* BOFCLR      */
         }
+
         agc_integ_grp2pc(); /* OCT 04022   */
         agc_integ_flag(AGC_FLAG_REINTFLG, true);
         st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-                 agc_integ_atopcsm(ip, ctx, ctx->pbody) :
-                 agc_integ_atoplem(ip, ctx, ctx->pbody);
+             agc_integ_atopcsm(ip, ctx, ctx->pbody) :
+             agc_integ_atoplem(ip, ctx, ctx->pbody);
         agc_integ_grp2pc(); /* PHEXIT      */
     }
+
     return (st == AGC_STATUS_OK) ? INTEG_NEXT_RECTOUT : INTEG_NEXT_FAIL;
 }
 
@@ -613,11 +729,14 @@ static agc_integ_next_t rectout(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     const int p = ctx->pbody;
+
     if (!AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
     {
         return INTEG_NEXT_FAIL;
     }
+
     ctx->out.ratt  = agc_vec_shr(ctx->sv.rrect, p); /* VSL* 0,2    */
     ctx->out.vatt  = agc_vec_shr(ctx->sv.vrect, p);
     ctx->out.tat   = ctx->sv.tet;
@@ -627,10 +746,12 @@ static agc_integ_next_t rectout(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->out.x1    = agc_flag_test(AGC_FLAG_MOONFLAG) ? -10 : -2;
     ctx->out.x2    = p;
     ctx->out.valid = true;
+
     if (!AGC_ASSERT(ctx->out.valid))
     {
         return INTEG_NEXT_FAIL;
     }
+
     return INTEG_NEXT_INTEXIT;
 }
 
@@ -642,7 +763,9 @@ static agc_status_t intexit(agc_interp_t *ip)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_clear_ovf(ip); /* BOV +1      */
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         agc_integ_flag(AGC_FLAG_MIDAVFLG, false);
@@ -651,12 +774,15 @@ static agc_status_t intexit(agc_interp_t *ip)
     {
         agc_integ_flag(AGC_FLAG_STATEFLG, false);
     }
+
     agc_integ_flag(AGC_FLAG_AVEMIDSW, false);
     agc_integ_flag(AGC_FLAG_PRECIFLG, false);
+
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_AVEMIDSW)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_integ_intwake();
 }
 
@@ -667,17 +793,23 @@ static agc_integ_next_t rvcon(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
         return INTEG_NEXT_FAIL;
     }
+
     ctx->tau = agc_dp_sub(ip, ctx->tdec, ctx->sv.tet);
-    if ((agc_integ_rectify(ip, ctx) != AGC_STATUS_OK) ||
+
+    if ((agc_integ_rectify(ip,
+                           ctx) != AGC_STATUS_OK) ||
         (agc_integ_kepprep(ip, ctx) != AGC_STATUS_OK))
     {
         return INTEG_NEXT_FAIL;
     }
+
     ctx->sv.tet = agc_dp_add(ip, ctx->sv.tc, ctx->sv.tet);
+
     return INTEG_NEXT_RECTOUT;
 }
 
@@ -688,13 +820,16 @@ static agc_integ_next_t aloaded(agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     ctx->tdec = ctx->tdec1;
+
     if (!AGC_ASSERT(ctx->tdec == ctx->tdec1))
     {
         return INTEG_NEXT_FAIL;
     }
+
     return agc_flag_test(AGC_FLAG_INTYPFLG) ? INTEG_NEXT_RVCON :
-                                              INTEG_NEXT_TESTLOOP;
+           INTEG_NEXT_TESTLOOP;
 }
 
 /* INTEGRV2 (p. 1320): load A-memory from the permanent state vector of the
@@ -702,21 +837,26 @@ static agc_integ_next_t aloaded(agc_integ_ctx_t *ctx)
 static agc_integ_next_t integrv2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     bool surface = false;
+
     if (!AGC_ASSERT(ip != NULL))
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
         return INTEG_NEXT_FAIL;
     }
+
     const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-                                agc_integ_ptoacsm(ctx) :
-                                agc_integ_ptoalem(ip, ctx, &surface);
+                            agc_integ_ptoacsm(ctx) :
+                            agc_integ_ptoalem(ip, ctx, &surface);
+
     if (st != AGC_STATUS_OK)
     {
         return INTEG_NEXT_FAIL;
     }
+
     return surface ? INTEG_NEXT_APCHK : aloaded(ctx);
 }
 
@@ -727,12 +867,14 @@ static agc_integ_next_t wmatrix(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_integ_grp2pc();
     agc_integ_flag(AGC_FLAG_REINTFLG, true);
     const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-                                agc_integ_atopcsm(ip, ctx, ctx->pbody) :
-                                agc_integ_atoplem(ip, ctx, ctx->pbody);
+                            agc_integ_atopcsm(ip, ctx, ctx->pbody) :
+                            agc_integ_atoplem(ip, ctx, ctx->pbody);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return INTEG_NEXT_FAIL;
     }
+
     return agc_integ_wcolumns(ip, ctx);
 }
 
@@ -744,11 +886,14 @@ static agc_integ_next_t reload(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return INTEG_NEXT_FAIL;
     }
+
     if (!AGC_ASSERT(ip != NULL))
     {
         return INTEG_NEXT_FAIL;
     }
+
     ctx->tdec1 = ctx->tdec;
+
     return integrv2(ip, ctx);
 }
 
@@ -765,7 +910,9 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_integ_next_t next = first;
+
     for (int32_t pass = 0; pass < AGC_INTEG_MAX_PASSES; pass++)
     {
         switch (next)
@@ -801,13 +948,16 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
             case INTEG_NEXT_FAIL:
             {
                 const agc_status_t sx = intexit(ip); /* release (DEVIATION) */
+
                 return (sx != AGC_STATUS_OK) ? sx : AGC_STATUS_BAD_ARG;
             }
             default:
                 return AGC_STATUS_BAD_ARG;
         }
     }
+
     const agc_status_t sx = intexit(ip);
+
     return (sx != AGC_STATUS_OK) ? sx : AGC_STATUS_NO_CONVERGE;
 }
 
@@ -820,9 +970,11 @@ agc_status_t agc_integ_integrv1(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_integ_flag(AGC_FLAG_RPQFLAG, true);
     agc_integ_flag(AGC_FLAG_NEWIFLG, true);
     ctx->out.valid = false;
+
     return agc_integ_run(ip, ctx, integrv2(ip, ctx));
 }
 
@@ -835,19 +987,25 @@ static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = agc_integ_install(0, resume_job); /* INTSTALL */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     ctx->tdec1 = tdec1;
     agc_integ_flag(AGC_FLAG_VINTFLAG, csm);
+
     if (!conic)
     {
         agc_integ_flag(AGC_FLAG_PRECIFLG, true);
     }
+
     agc_integ_flag(AGC_FLAG_DIM0FLAG, false);
     agc_integ_flag(AGC_FLAG_INTYPFLG, conic);
+
     return agc_integ_integrv1(ip, ctx);
 }
 
@@ -858,6 +1016,7 @@ agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return special_entry(ip, ctx, tdec1, resume_job, true, false);
 }
 
@@ -868,6 +1027,7 @@ agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return special_entry(ip, ctx, tdec1, resume_job, false, false);
 }
 
@@ -878,6 +1038,7 @@ agc_status_t agc_integ_csmconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return special_entry(ip, ctx, tdec1, resume_job, true, true);
 }
 
@@ -888,6 +1049,7 @@ agc_status_t agc_integ_lemconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return special_entry(ip, ctx, tdec1, resume_job, false, true);
 }
 
@@ -900,21 +1062,25 @@ agc_status_t agc_integ_integrvs(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     { /* INTSTALL held  */
         return AGC_STATUS_BAD_ARG;
     }
+
     ctx->tdec1 = tdec1;
     agc_integ_flag(AGC_FLAG_PRECIFLG, true);
     ctx->pbody =
         agc_flag_test(AGC_FLAG_MOONFLAG) ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH;
-    ctx->sv.deltav        = agc_vec_zero();
-    ctx->sv.nuv           = agc_vec_zero();
+    ctx->sv.deltav = agc_vec_zero();
+    ctx->sv.nuv    = agc_vec_zero();
     const agc_status_t st = agc_integ_rectify(ip, ctx);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_integ_flag(AGC_FLAG_DIM0FLAG, false);
     agc_integ_flag(AGC_FLAG_NEWIFLG, true);
     agc_integ_flag(AGC_FLAG_RPQFLAG, true);
     ctx->out.valid = false;
+
     return agc_integ_run(ip, ctx, aloaded(ctx));
 }
 
@@ -927,6 +1093,8 @@ agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     { /* INTSTALL held  */
         return AGC_STATUS_BAD_ARG;
     }
+
     ctx->tdec1 = tdec1;
+
     return agc_integ_integrv1(ip, ctx);
 }

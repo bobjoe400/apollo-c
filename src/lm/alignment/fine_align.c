@@ -30,10 +30,12 @@
 static agc_status_t fine_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_FINE_ALIGN);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -45,10 +47,12 @@ agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_lm_fine_align_perform(ctx);
 }
 
@@ -59,11 +63,14 @@ agc_status_t agc_job_lm_fine_align_perform(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = fine_align_phase();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_job_lm_fine_align_star_acquire(ctx);
 }
 
@@ -74,10 +81,12 @@ agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_FINE_ALIGN_PICK_STARS,
                        AGC_JOB_LM_FINE_ALIGN_FIRST_STAR);
@@ -91,36 +100,46 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     agc_status_t st = agc_align_locsam(
         &ip, ram->tsight, AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED, &ram->locsam);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* INTSTALL */
     }
+
     uint16_t cdu[3];
+
     align_read_cdus(cdu);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
     bool            found    = false;
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti,
                                &ram->bestj, &found);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (found)
     {
         return agc_job_lm_fine_align_first_star(ctx); /* R51F     */
     }
+
     agc_alarm(ALM_NO_STARS); /* R51I     */
     const agc_status_t alm = AGC_STATUS_ALARM;
+
     if (alm != AGC_STATUS_OK)
     {
         return alm;
     }
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_FINE_ALIGN_FIRST_STAR,
                        AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE);
@@ -133,13 +152,17 @@ agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_align_ram()->tsight = agc_dp_add(&ip, align_loadtime(), TSIGHT1_CS);
+
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return fine_align_pick(ctx);
 }
 
@@ -150,10 +173,12 @@ agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return fine_align_pick(ctx);
 }
 
@@ -164,7 +189,9 @@ agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram()->starind = 0;
+
     return agc_job_lm_fine_align_next_star(ctx);
 }
 
@@ -175,15 +202,20 @@ agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = fine_align_phase();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
-    if (!AGC_ASSERT((agc_align_ram()->starind == 0) || (agc_align_ram()->starind == 1)))
+
+    if (!AGC_ASSERT((agc_align_ram()->starind == 0) ||
+                    (agc_align_ram()->starind == 1)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_lm_auto_optics_positioning(ctx, AGC_JOB_LM_FINE_ALIGN_MARK);
 }
 
@@ -194,17 +226,23 @@ agc_status_t agc_job_lm_fine_align_mark(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_aotmark();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     bool done = false;
+
     st = align_stall(AGC_IMU_DEV_OPTICS, AGC_JOB_LM_FINE_ALIGN_MARKED, &done);
+
     if ((st != AGC_STATUS_OK) || !done)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
+
     return align_goto(AGC_JOB_LM_FINE_ALIGN_MARKED);
 }
 
@@ -219,23 +257,30 @@ agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK; /* CURTAINS */
     }
+
     agc_align_ram_t *ram = agc_align_ram();
+
     if (ram->starind == 0)
     {
         ram->starsav1 = ram->starad[1]; /* R51.4    */
+
         return align_planet(ctx, ram->tsight,
                             AGC_JOB_LM_FINE_ALIGN_FIRST_LOCATED);
     }
-    ram->starsav2         = ram->starad[1];
+
+    ram->starsav2 = ram->starad[1];
     const agc_status_t st = fine_align_phase();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return align_planet(ctx, ram->tsight, AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED);
 }
 
@@ -246,9 +291,12 @@ agc_status_t agc_job_lm_fine_align_first_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->planvec         = ram->planet_los;
-    ram->starind         = 1;
+
+    ram->planvec = ram->planet_los;
+    ram->starind = 1;
+
     return agc_job_lm_fine_align_next_star(ctx);
 }
 
@@ -262,16 +310,20 @@ agc_status_t agc_job_lm_fine_align_second_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    ram->starad[1]           = agc_vec_unit(
-                  &ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
+
+    ram->starad[1] = agc_vec_unit(
+        &ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
     ram->starad[0] = agc_vec_unit(
         &ip, agc_mat_vec(&ip, &refsmmat, ram->planvec), NULL, NULL);
     ram->vac6  = ram->starsav1;
     ram->vac12 = ram->starsav2;
+
     return agc_align_sighting_data_display(ctx,
                                            AGC_JOB_LM_FINE_ALIGN_DATA_CHECKED);
 }
@@ -283,21 +335,26 @@ agc_status_t agc_job_lm_fine_align_data_checked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
         return agc_job_lm_fine_align_recheck(ctx);
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
     const agc_vec_t    a[2] = {ram->starad[0], ram->starad[1]};
     const agc_vec_t    b[2] = {ram->vac6, ram->vac12};
-    const agc_status_t st =
+    const agc_status_t st   =
         agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_align_gyro_torquing(ctx,
                                    AGC_JOB_LM_FINE_ALIGN_TORQUED); /* R55 */
 }
@@ -309,11 +366,14 @@ agc_status_t agc_job_lm_fine_align_torqued(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_flag_clear(AGC_FLAG_PFRATFLG);
+
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_PFRATFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_lm_fine_align_recheck(ctx);
 }
 
@@ -327,11 +387,14 @@ agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_job_id_t ret = agc_align_ram()->qmaj;
+
     if (!AGC_ASSERT(ret != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK,
                        AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE,
                        ret);

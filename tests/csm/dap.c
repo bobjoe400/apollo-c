@@ -40,6 +40,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
     g_assert_reports++;
+
     return false;
 }
 
@@ -48,6 +49,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -58,6 +60,7 @@ static void check(bool ok, int line, const char *text)
 static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
 {
     agc_csm_jet_in_t in;
+
     in.chan31  = (uint16_t) 077777; /* THC in detent: bits read 1 (inactive) */
     in.lem_on  = false;
     in.tau[0]  = roll;
@@ -67,6 +70,7 @@ static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
     in.rbdfail = 0;
     in.acorbd  = 1; /* BD roll                              */
     in.xtrans  = 0;
+
     return in;
 }
 
@@ -74,6 +78,7 @@ static void test_jet_select(void)
 {
     agc_csm_jet_out_t out;
     agc_csm_jet_in_t  in = jet_in(0, 100, 0);
+
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
     CHECK(out.pword1 == 01005u); /* 2 jets + count  */
     CHECK((out.pword1 & 017u) == (AGC_CH005_PYJET1 | AGC_CH005_PYJET3));
@@ -114,6 +119,7 @@ static void tvc_setup(agc_sp_t perrb_hi)
 {
     agc_csm_tvc_t    *t = agc_csm_dap_tvc();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     agc_erase_set_dapdatr1((uint16_t) 020000); /* 010: CSM/LM     */
     c->ektlx_i[2] = 8000;
     c->iavg_tlx   = 4000;
@@ -131,6 +137,7 @@ static void tvc_setup(agc_sp_t perrb_hi)
     t->stroker   = 0;
     t->pcduypst  = agc_erase_cduy(); /* zero CDU rates  */
     t->pcduzpst  = agc_erase_cduz();
+
     for (int i = 0; i < 6; i++)
     { /* filter memory   */
         t->ptmp[i] = 0;
@@ -140,6 +147,7 @@ static void tvc_setup(agc_sp_t perrb_hi)
 static void test_tvc_step(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     tvc_setup(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
     CHECK(t->pcmd < 0); /* sign change     */
@@ -166,24 +174,28 @@ static void test_tvc_step(void)
 static int stroke_bursts(int count, int pos)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     for (int i = 0; (i < count) && (t->stroker != 0); i++)
     {
         pos += t->stroker;
         CHECK(agc_task_hackwlst() == AGC_STATUS_OK);
         CHECK((pos >= -50) && (pos <= 50)); /* 10 x ESTROKER   */
     }
+
     return pos;
 }
 
 static void test_stroke(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->caddy         = -10; /* TSTINIT: -FCADDY */
-    t->n             = -10;
-    t->revs          = 3;                    /* FREVS           */
-    t->card          = -4;                   /* -FCARD          */
-    t->stroker       = 5;                    /* ESTROKER        */
-    int pos          = stroke_bursts(80, 0); /* set 1           */
+
+    t->caddy   = -10;       /* TSTINIT: -FCADDY */
+    t->n       = -10;
+    t->revs    = 3;                    /* FREVS           */
+    t->card    = -4;                   /* -FCARD          */
+    t->stroker = 5;                    /* ESTROKER        */
+    int pos = stroke_bursts(80, 0); /* set 1           */
+
     CHECK(pos == 0);
     CHECK(t->card == -3);
     CHECK(t->revs == 5);
@@ -199,13 +211,14 @@ static void test_stroke(void)
 static void test_rolldap(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->oganow        = 0;
-    t->ogapast       = 0; /* OGARATE 0       */
-    t->one_conacc    = 1000;
-    t->rollfire      = 0;
-    t->temreg        = 0;
-    t->rollword      = 0;
-    t->ogaerr        = 455; /* 10 deg, B+0 rev */
+
+    t->oganow     = 0;
+    t->ogapast    = 0;    /* OGARATE 0       */
+    t->one_conacc = 1000;
+    t->rollfire   = 0;
+    t->temreg     = 0;
+    t->rollword   = 0;
+    t->ogaerr     = 455;    /* 10 deg, B+0 rev */
     CHECK(agc_task_rolldap() == AGC_STATUS_OK);
     CHECK(t->rollfire < 0);                          /* -TORQUE         */
     CHECK(t->temreg > 24);                           /* > TMINFIRE      */
@@ -224,6 +237,7 @@ static void test_rolldap(void)
 static void test_massprop(void)
 {
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     agc_erase_set_dapdatr1((uint16_t) 010000); /* 001: CSM alone  */
     agc_erase_set_csmmass(5000);               /* kg, B+16        */
     agc_erase_set_lemmass(0);
@@ -231,6 +245,7 @@ static void test_massprop(void)
     /* TEMP333 = 2 (5000 - 3851) = 2298 > 0: slopes VARST3, 4; VARST5.   */
     agc_sp_t d   = 2298;
     agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14));
+
     CHECK(c->ixx == ixx);
     CHECK(c->weight_g == 5000);
 }
@@ -245,5 +260,6 @@ int main(void)
     (void) printf(
         "test_csm_dap: %d checks, %d failures, %d assertion reports\n",
         g_checks, g_failures, g_assert_reports);
+
     return (g_failures == 0) ? 0 : 1;
 }

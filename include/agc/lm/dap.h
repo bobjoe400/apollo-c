@@ -46,9 +46,9 @@ agc_status_t agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
 agc_status_t agc_lm_dap_t5rupt(void);   /* T5RUPT via T5ADR (DAPIDLER/PAXIS) */
 agc_status_t agc_lm_dap_t6rupt(void);   /* DOT6RUPT                          */
 agc_status_t agc_lm_dap_t6jobchk(void); /* T6JOBCHK                          */
-void agc_lm_dap_time6_count(uint16_t counts); /* sim: TIME6 DINC pulses */
-bool agc_lm_dap_t6_pending(void);     /* TIME6 = -0: a T6RUPT is due       */
-bool agc_lm_dap_running(void);        /* T5ADR = PAXIS                     */
+void         agc_lm_dap_time6_count(uint16_t counts); /* sim: TIME6 DINC pulses */
+bool         agc_lm_dap_t6_pending(void); /* TIME6 = -0: a T6RUPT is due       */
+bool         agc_lm_dap_running(void);    /* T5ADR = PAXIS                     */
 agc_status_t agc_lm_dap_rcsmon(void); /* RCSMONIT, from T4RUPT every 480 ms */
 /* T5ADR programs as exec tasks (agc_rupt_set_t5_task / dispatch.c).        */
 agc_status_t agc_task_dapidler(void); /* AGC_TASK_DAPIDLER: DAPIDLER     */
@@ -56,22 +56,19 @@ agc_status_t agc_task_paxis(void);    /* AGC_TASK_PAXIS: PAXIS           */
 
 /* ---- 1/ACCS (AOSTASK_AND_AOSJOB.agc pp. 1485-1506) ---------------------- */
 agc_status_t agc_lm_dap_jet_accel_update(void); /* BANKCALL 1/ACCS        */
-agc_status_t
-agc_job_jet_accel_update(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCJOB     */
-agc_status_t
-agc_job_jet_accel_reset(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCSET     */
+agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCJOB     */
+agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx); /* NOVAC job 1/ACCSET     */
 
 /* ---- DAP interface subroutines (pp. 1406-1409); call with INHINT ------- */
 agc_status_t agc_lm_dap_setmaxdb(void); /* DB = 5.0 deg                    */
 agc_status_t agc_lm_dap_setmindb(void); /* DB = 0.3 deg                    */
 agc_status_t agc_lm_dap_restordb(void); /* DB per DBSELECT                 */
 agc_status_t agc_lm_dap_pflitedb(void); /* DB = 1.0 deg, zero errors       */
-void agc_lm_dap_zatteror(void); /* CDUxD = CDUx, STOPRATE          */
-void agc_lm_dap_stoprate(void); /* zero commanded rates and lags   */
+void         agc_lm_dap_zatteror(void); /* CDUxD = CDUx, STOPRATE          */
+void         agc_lm_dap_stoprate(void); /* zero commanded rates and lags   */
 agc_status_t agc_lm_dap_allcoast(void); /* coasting-flight DAP init        */
 agc_status_t agc_lm_dap_timegmbl(void); /* TIMEGMBL trim-gimbal null drive */
-agc_status_t
-agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  */
+agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  */
 
 /* ROT-TOUV: (q, r) -> non-orthogonal (u, v) using COEFFQ/COEFFR.            */
 agc_status_t agc_lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u,

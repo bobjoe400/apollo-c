@@ -63,12 +63,12 @@ agc_dp_t agc_dp_sub_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf);
 agc_tp_t agc_dp_mul_tp(agc_dp_t a, agc_dp_t b);  /* DMP: exact TP product */
 agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b); /* DMPR: rounded to DP   */
 agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf); /* DDV   */
-agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf);      /* SL n  */
-agc_dp_t agc_dp_shr(agc_dp_t a, int n);             /* SR n (truncating)     */
-agc_dp_t agc_dp_shr_round(agc_dp_t a, int n);       /* SRR n                 */
-agc_dp_t agc_dp_neg(agc_dp_t a);                    /* DCOMP                 */
-agc_dp_t agc_dp_abs(agc_dp_t a);                    /* ABS                   */
-agc_dp_t agc_dp_round(agc_dp_t a);                  /* ROUND -> SP precision */
+agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf); /* SL n  */
+agc_dp_t agc_dp_shr(agc_dp_t a, int n);                     /* SR n (truncating)     */
+agc_dp_t agc_dp_shr_round(agc_dp_t a, int n);               /* SRR n                 */
+agc_dp_t agc_dp_neg(agc_dp_t a);                            /* DCOMP                 */
+agc_dp_t agc_dp_abs(agc_dp_t a);                            /* ABS                   */
+agc_dp_t agc_dp_round(agc_dp_t a);                          /* ROUND -> SP precision */
 agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of); /* SIGN X            */
 agc_dp_t agc_dp_norm(agc_dp_t a, int *shift);       /* NORM: left-justify   */
 int      agc_dp_norm_count(agc_dp_t a);             /* NORM: count only     */

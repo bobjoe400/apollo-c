@@ -20,6 +20,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) file;
     (void) line;
     (void) expr;
+
     return false;
 }
 
@@ -28,6 +29,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -44,13 +46,16 @@ static bool is_spare(const agc_noun_t *n)
 static void test_table_complete(agc_vehicle_t veh)
 {
     int spares = 0;
+
     for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
     {
         agc_noun_t         row;
         const agc_status_t st = agc_noun_lookup_vehicle(veh, n, &row);
+
         CHECK(row.noun == n);
         CHECK(row.ncomp <= AGC_NOUN_MAX_COMP);
         CHECK(row.no_load ? row.dec_only : true);
+
         if (is_spare(&row))
         {
             spares++;
@@ -59,11 +64,14 @@ static void test_table_complete(agc_vehicle_t veh)
                   row.scale_type[0] == AGC_SCALE_NONE);
             continue;
         }
+
         CHECK(st == AGC_STATUS_OK);
+
         for (int k = 0; k < AGC_NOUN_MAX_COMP; k++)
         {
             CHECK(row.data_id[k] < AGC_DATA_COUNT);
             CHECK(row.scale_type[k] < AGC_SCALE_COUNT);
+
             if (k >= row.ncomp)
             {
                 CHECK(row.scale_type[k] == AGC_SCALE_NONE &&
@@ -77,6 +85,7 @@ static void test_table_complete(agc_vehicle_t veh)
             }
         }
     }
+
     CHECK(spares == ((veh == AGC_VEHICLE_CSM) ? 9 : 16));
 }
 
@@ -84,6 +93,7 @@ static void test_table_complete(agc_vehicle_t veh)
 static void test_known_nouns(void)
 {
     agc_noun_t n;
+
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 36, &n) == AGC_STATUS_OK);
     CHECK(n.ncomp == 3 && n.dec_only && !n.no_load);
     CHECK(n.scale_type[0] == AGC_SCALE_HMS &&
@@ -125,6 +135,7 @@ static void test_known_nouns(void)
 static void test_unknown(void)
 {
     agc_noun_t n;
+
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 100, &n) ==
           AGC_STATUS_BAD_ARG);
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 255, &n) ==
@@ -142,6 +153,7 @@ static void test_unknown(void)
 static void test_scales(void)
 {
     agc_scale_info_t si;
+
     CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_HMS, &si) ==
           AGC_STATUS_OK);
     CHECK(si.routine == AGC_SFR_HMS && si.sf_code == 0 && si.is_dp &&
@@ -171,17 +183,22 @@ static void test_scales(void)
 
     agc_dp_t in  = 0;
     agc_dp_t out = 0;
+
     CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 20, &in, &out) ==
           AGC_STATUS_BAD_ARG);
     CHECK(agc_scale_sfconst(AGC_VEHICLE_LM, 28, &in, &out) == AGC_STATUS_OK);
+
     /* every scale type a noun uses resolves for that vehicle */
     for (int veh = 0; veh < 2; veh++)
     {
         const agc_vehicle_t v = (veh == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
+
         for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
         {
             agc_noun_t row;
+
             (void) agc_noun_lookup_vehicle(v, n, &row);
+
             for (int k = 0; k < row.ncomp; k++)
             {
                 CHECK(agc_scale_info_vehicle(v, (agc_scale_t) row.scale_type[k],
@@ -196,6 +213,7 @@ static void test_data(void)
 {
     agc_dp_t   v = 0;
     agc_noun_t n;
+
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_noun_lookup(36, &n) == AGC_STATUS_OK &&
           n.data_id[0] == AGC_DATA_TIME2);
@@ -231,5 +249,6 @@ int main(void)
     test_scales();
     test_data();
     (void) printf("test_nouns: %d checks, %d failures\n", g_checks, g_failures);
+
     return (g_failures == 0) ? 0 : 1;
 }

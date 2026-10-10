@@ -51,6 +51,7 @@ static agc_dp_t oct2(int hi, int lo) /* AGC words -> DP value     */
 {
     int h = (hi < 040000) ? hi : -(077777 - hi);
     int l = (lo < 040000) ? lo : -(077777 - lo);
+
     return agc_dp_pack((agc_sp_t) h, (agc_sp_t) l);
 }
 
@@ -58,6 +59,7 @@ static void test_words(void)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  v   = oct2(012345, 054321);
+
     eq("pack hi", agc_dp_high(oct2(012345, 012345)), 012345);
     eq("pack lo", agc_dp_low(oct2(012345, 012345)), 012345);
     eq("disagreeing pair value", v, 012345 * 16384 - (077777 - 054321));
@@ -92,6 +94,7 @@ static void test_shifts(void)
 {
     agc_interp_t ip;
     int          sh = 0;
+
     agc_interp_init(&ip);
     eq("SR truncates", agc_dp_shr(-7, 1), -3);
     eq("SR 14", agc_dp_shr(5 * 16384 + 3, 14), 5);
@@ -119,6 +122,7 @@ static void test_shifts(void)
 static void test_add_mul(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     /* DAD wraps like the AGC: .75 + .5 = 1.25 -> .25, OVFIND = +1.        */
     eq("DAD wrap", agc_dp_add(&ip, 3 * AGC_DP_QUARTER, AGC_DP_HALF),
@@ -153,6 +157,7 @@ static void test_add_mul(void)
 static void test_divide(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     eq("DDV", agc_dp_div(&ip, AGC_DP_QUARTER, AGC_DP_HALF), AGC_DP_HALF);
     eq("DDV signs", agc_dp_div(&ip, -AGC_DP_QUARTER, AGC_DP_HALF),
@@ -186,6 +191,7 @@ static void test_sqrt_trig(void)
     agc_interp_t ip;
     agc_dp_t     r = 0;
     int          k;
+
     agc_interp_init(&ip);
     /* yaAGC (interp_sqrt_sin.txt).                                         */
     eq("SQRT .5", agc_dp_sqrt(&ip, AGC_DP_HALF), oct2(026501, 007463));
@@ -206,15 +212,18 @@ static void test_sqrt_trig(void)
     eq("ACOS alarm value", r, 0);
     eq("ASIN -range", agc_dp_asin_chk(&ip, -AGC_DP_MAX, &r), AGC_STATUS_ALARM);
     eq("ASIN -range value", r, -AGC_DP_QUARTER);
+
     for (k = -1000; k <= 1000; k++)
     {
         double   x  = k / 1000.0 * 0.999; /* revolutions             */
         agc_dp_t a  = agc_dp_from_double(x, 0);
         double   xa = agc_dp_to_double(a, 0);
+
         near("SIN", agc_dp_to_double(agc_dp_sin(&ip, a), 0),
              0.5 * sin(2 * PI * xa), 2.1e-8);
         near("COS", agc_dp_to_double(agc_dp_cos(&ip, a), 0),
              0.5 * cos(2 * PI * xa), 2.1e-8);
+
         if (fabs(xa) <= 0.5)
         {
             near("ASIN", agc_dp_to_double(agc_dp_asin(&ip, a), 0),
@@ -222,12 +231,14 @@ static void test_sqrt_trig(void)
             near("ACOS", agc_dp_to_double(agc_dp_acos(&ip, a), 0),
                  acos(2 * xa) / (2 * PI), 1.2e-8);
         }
+
         if (xa > 0)
         {
             near("SQRT", agc_dp_to_double(agc_dp_sqrt(&ip, a), 0), sqrt(xa),
                  2.9e-8);
         }
     }
+
     for (k = -16383; k <= 16383; k += 7)
     {
         near("SPSIN", agc_sp_sin((agc_sp_t) k) / 16384.0, sin(PI * k / 16384.0),
@@ -235,6 +246,7 @@ static void test_sqrt_trig(void)
         near("SPCOS", agc_sp_cos((agc_sp_t) k) / 16384.0, cos(PI * k / 16384.0),
              2.6e-4);
     }
+
     eq("SPSIN 1/2", agc_sp_sin(AGC_SP_HALF), AGC_SP_MAX); /* ARG90 path     */
     eq("SPCOS 0", agc_sp_cos(0), AGC_SP_MAX);
     eq("no ovf from trig", ip.ovfind, 0);
@@ -245,7 +257,7 @@ static void test_vectors(void)
     agc_interp_t ip;
     agc_dp_t     lv   = 0;
     agc_dp_t     lvsq = 0;
-    agc_vec_t    u =
+    agc_vec_t    u    =
         agc_vec_make(agc_dp_from_double(0.3, 0), agc_dp_from_double(-0.2, 0),
                      agc_dp_from_double(0.1, 0));
     agc_vec_t v =
@@ -255,6 +267,7 @@ static void test_vectors(void)
     agc_mat_t m = agc_mat_identity_half();
     agc_mat_t mm;
     int       k;
+
     agc_interp_init(&ip);
     near("DOT", agc_dp_to_double(agc_vec_dot(&ip, u, v), 0),
          0.3 * 0.05 - 0.2 * 0.4 - 0.1 * 0.25, 1.0e-8);
@@ -268,11 +281,13 @@ static void test_vectors(void)
     near("ABVAL", agc_dp_to_double(agc_vec_abval(&ip, u), 0), sqrt(0.14),
          3.0e-8);
     r = agc_vec_unit(&ip, u, &lv, &lvsq);
+
     for (k = 0; k < AGC_VEC_N; k++)
     {
         near("UNIT", agc_dp_to_double(r.c[k], 0),
              agc_dp_to_double(u.c[k], 0) / (2.0 * sqrt(0.14)), 2.5e-8);
     }
+
     near("UNIT LV", agc_dp_to_double(lv, 0), sqrt(0.14), 3.0e-8);
     near("UNIT LVSQUARE", agc_dp_to_double(lvsq, 0), 0.14, 1.0e-8);
     eq("UNIT no ovf", ip.ovfind, 0);
@@ -331,11 +346,15 @@ int main(void)
     test_sqrt_trig();
     test_vectors();
     test_constants();
+
     if (failures != 0)
     {
         printf("test_core_numeric: %d failures\n", failures);
+
         return 1;
     }
+
     printf("test_core_numeric: all passed\n");
+
     return 0;
 }

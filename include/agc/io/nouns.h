@@ -55,20 +55,20 @@
  */
 typedef enum agc_sf_routine
 {
-    AGC_SFR_OCTAL    = 0, /* octal only */
-    AGC_SFR_FRACTION = 1, /* straight fractional */
-    AGC_SFR_CDU_DEG  = 2, /* CDU degrees (xxx.xx) */
-    AGC_SFR_ARITH    = 3, /* arithmetic SF */
-    AGC_SFR_DP1 = 4, /* ARITH DP1: out multiply by 2^14 at end, in straight */
-    AGC_SFR_DP2 = 5, /* ARITH DP2: out straight, in SL 7 at end */
+    AGC_SFR_OCTAL       = 0, /* octal only */
+    AGC_SFR_FRACTION    = 1, /* straight fractional */
+    AGC_SFR_CDU_DEG     = 2, /* CDU degrees (xxx.xx) */
+    AGC_SFR_ARITH       = 3, /* arithmetic SF */
+    AGC_SFR_DP1         = 4, /* ARITH DP1: out multiply by 2^14 at end, in straight */
+    AGC_SFR_DP2         = 5, /* ARITH DP2: out straight, in SL 7 at end */
     AGC_SFR_Y_OPTICS    = 6, /* CSM: Y optics degrees (xx.xxx max 89.999) */
     AGC_SFR_LR_POSITION = 6, /* LM: landing radar position (+0000x) */
     AGC_SFR_DP3         = 7, /* ARITH DP3: out SL 7 at end, in straight */
-    AGC_SFR_HMS =
+    AGC_SFR_HMS         =
         8, /* hours R1, minutes R2, seconds R3 (alarms if used with octal) */
     AGC_SFR_MIN_SEC =
         9, /* minutes D1D2, blank D3, seconds D4D5 (limits to 59B59) */
-    AGC_SFR_DP4 = 10, /* ARITH DP4: out straight, in SL 3 at end */
+    AGC_SFR_DP4    = 10, /* ARITH DP4: out straight, in SL 3 at end */
     AGC_SFR_ARITH1 =
         11, /* ARITH1 SF: out multiply by 2^14 at end, in straight */
     AGC_SFR_TWO_INT     = 12, /* 2 integers D1D2, D4D5, D3 blank */
@@ -263,22 +263,22 @@ typedef enum agc_noun_data
     AGC_DATA_GROUND_TRACK_DETERMINATION_ALT, /* DP POS4; CSM:73 LM:91 */
     AGC_DATA_GROUND_TRACK_DETERMINATION_GAM, /* DP DP_DEG360; CSM:73 LM:91 */
     AGC_DATA_GROUND_TRACK_DETERMINATION_VEL, /* DP VEL2; CSM:73 LM:91 */
-    AGC_DATA_PAC,                            /* SP raw Y_OPTICS_DEG; CSM:92 */
-    AGC_DATA_PACTOFF,                        /* SP TRIM_DEG; CSM:48 */
-    AGC_DATA_PIPAX,                          /* SP WHOLE; CSM:21 LM:21 */
-    AGC_DATA_PIPAY,                          /* SP WHOLE; CSM:21 LM:21 */
-    AGC_DATA_PIPAZ,                          /* SP WHOLE; CSM:21 LM:21 */
-    AGC_DATA_PITCH,                          /* DP DP_DEG360; LM:74 */
-    AGC_DATA_PITTIME,                        /* SP TRIM_DEG2; LM:48 */
-    AGC_DATA_PLUS_MGA,                       /* DP DP_DEG360; CSM:45 LM:45 */
-    AGC_DATA_POSCODE,                        /* SP WHOLE; LM:79 */
-    AGC_DATA_POSTTPI,                        /* DP POS4; CSM:58 LM:58 */
-    AGC_DATA_PRAXIS,                         /* SP raw CDU_DEG; CSM:95 */
-    AGC_DATA_PRAXIS_P1,                      /* SP raw CDU_DEG; CSM:95 */
-    AGC_DATA_PRAXIS_P2,                      /* SP raw CDU_DEG; CSM:95 */
-    AGC_DATA_Q7,                             /* DP DRAG_ACCEL; CSM:69 */
-    AGC_DATA_RADAR_DELTA_R,                  /* DP POS4; LM:49 */
-    AGC_DATA_RADAR_DELTA_V,                  /* DP VEL3; LM:49 */
+    AGC_DATA_PAC,             /* SP raw Y_OPTICS_DEG; CSM:92 */
+    AGC_DATA_PACTOFF,         /* SP TRIM_DEG; CSM:48 */
+    AGC_DATA_PIPAX,           /* SP WHOLE; CSM:21 LM:21 */
+    AGC_DATA_PIPAY,           /* SP WHOLE; CSM:21 LM:21 */
+    AGC_DATA_PIPAZ,           /* SP WHOLE; CSM:21 LM:21 */
+    AGC_DATA_PITCH,           /* DP DP_DEG360; LM:74 */
+    AGC_DATA_PITTIME,         /* SP TRIM_DEG2; LM:48 */
+    AGC_DATA_PLUS_MGA,        /* DP DP_DEG360; CSM:45 LM:45 */
+    AGC_DATA_POSCODE,         /* SP WHOLE; LM:79 */
+    AGC_DATA_POSTTPI,         /* DP POS4; CSM:58 LM:58 */
+    AGC_DATA_PRAXIS,          /* SP raw CDU_DEG; CSM:95 */
+    AGC_DATA_PRAXIS_P1,       /* SP raw CDU_DEG; CSM:95 */
+    AGC_DATA_PRAXIS_P2,       /* SP raw CDU_DEG; CSM:95 */
+    AGC_DATA_Q7,              /* DP DRAG_ACCEL; CSM:69 */
+    AGC_DATA_RADAR_DELTA_R,   /* DP POS4; LM:49 */
+    AGC_DATA_RADAR_DELTA_V,   /* DP VEL3; LM:49 */
     AGC_DATA_RANGE,           /* DP POS5; CSM:53,54,90 LM:54,90 */
     AGC_DATA_RANGEDSP,        /* DP POS7; LM:68 */
     AGC_DATA_RDOT,            /* DP VEL_2VS; CSM:68 */
@@ -330,8 +330,8 @@ typedef enum agc_noun_data
     AGC_DATA_TTE,             /* DP MIN_SEC; CSM:63 */
     AGC_DATA_TTFDISP,         /* DP MIN_SEC; LM:61,68 */
     AGC_DATA_TTOGO, /* DP HMS,MIN_SEC; CSM:35,40,45,80 LM:35,40,45,61,62,74,77 */
-    AGC_DATA_TTPI,  /* DP HMS; CSM:37 LM:37 */
-    AGC_DATA_VGBODY,    /* DP VEL3; CSM:85 LM:85 */
+    AGC_DATA_TTPI,   /* DP HMS; CSM:37 LM:37 */
+    AGC_DATA_VGBODY, /* DP VEL3; CSM:85 LM:85 */
     AGC_DATA_VGBODY_P2, /* DP VEL3; CSM:85 LM:85 */
     AGC_DATA_VGBODY_P4, /* DP VEL3; CSM:85 LM:85 */
     AGC_DATA_VGDISP,    /* DP VEL3,VEL2; CSM:40,42,80 LM:40,42 */

@@ -65,25 +65,25 @@ typedef struct rte_erasable
     agc_vec_t uh;    /* UH/      unit horizontal vector, B1                  */
     agc_dp_t  cfpa;  /* CFPA     cos of initial flight path angle, B1        */
     /* conic and precision solution */
-    agc_dp_t  mamax1; /* MAMAX1   major axis lower-bound limit, m B30         */
-    agc_dp_t  mamax2; /* MAMAX2   major axis upper-bound limit, m B30         */
-    agc_dp_t  rcon;   /* RCON     conic final radius, m B29                   */
-    agc_dp_t  x_t2;   /* X(T2)    cot of final flight path angle (from
-                           *          the vertical), B0                          */
-    agc_dp_t  beta1;  /* BETA1    1 + X(T2)^2, B1                             */
-    agc_dp_t  x_t1;   /* X(T1)    cot of post impulse flight path angle, B5   */
-    agc_dp_t  pcon;   /* PCON     semi-latus rectum, m B28                    */
+    agc_dp_t mamax1; /* MAMAX1   major axis lower-bound limit, m B30         */
+    agc_dp_t mamax2; /* MAMAX2   major axis upper-bound limit, m B30         */
+    agc_dp_t rcon;   /* RCON     conic final radius, m B29                   */
+    agc_dp_t x_t2;   /* X(T2)    cot of final flight path angle (from
+                      *          the vertical), B0                          */
+    agc_dp_t  beta1; /* BETA1    1 + X(T2)^2, B1                             */
+    agc_dp_t  x_t1;  /* X(T1)    cot of post impulse flight path angle, B5   */
+    agc_dp_t  pcon;  /* PCON     semi-latus rectum, m B28                    */
     agc_vec_t v2_t1v; /* V2(T1)/  post impulse velocity, m/cs B7              */
     agc_dp_t  dv;     /* DV       |V2(T1)/ - V(T1)/|, m/cs B7                 */
     agc_vec_t r_t2v;  /* R(T2)/   final position, m B29                       */
     agc_vec_t v_t2v;  /* V(T2)/   final velocity, m/cs B7                     */
     agc_dp_t  t2;     /* T2       final time, cs B28                          */
     agc_dp_t  t12;    /* T12      transfer time (TMRAD100), cs B28            */
-    agc_dp_t conic_t; /* T (30D)  time left by the last conic routine, cs B28 */
-    agc_dp_t drcon;   /* DRCON    conic: previous X(T2)ERR B0; precision:
-                           *          RCON step, m B29                            */
+    agc_dp_t  conic_t; /* T (30D)  time left by the last conic routine, cs B28 */
+    agc_dp_t  drcon;  /* DRCON    conic: previous X(T2)ERR B0; precision:
+                       *          RCON step, m B29                            */
     agc_dp_t rpre_prev; /* RPRE'    conic: previous X(T2) B0; precision:
-                           *          previous RPRE, m B29                        */
+                         *          previous RPRE, m B29                        */
     int      nn1a;  /* NN1A     iteration counter 1 (DP B28 integer)        */
     int      nn2;   /* NN2      iteration counter 2 (DP B28 integer)        */
     agc_dp_t phi2;  /* PHI2     -1 perigee / +1 apogee entry, B2            */
@@ -131,7 +131,7 @@ typedef struct rte_display
     agc_dp_t t3tot4;  /* T3TOT4   TIG to 400,000 ft, cs B28                   */
     agc_dp_t gammaei; /* GAMMAEI  flight path angle at 400,000 ft, revs B0    */
     agc_vec_t
-        delvlvc;     /* DELVLVC  delta V, local vertical coordinates, m/cs B7 */
+             delvlvc; /* DELVLVC  delta V, local vertical coordinates, m/cs B7 */
     agc_dp_t vgdisp; /* VGDISP   |DELVLVC|, m/cs B7                          */
     agc_dp_t lat_spl; /* LAT(SPL) landing site latitude, revs B0              */
     agc_dp_t lng_spl; /* LNG(SPL) landing site longitude, revs B0             */
@@ -143,8 +143,8 @@ rte_erasable_t *rte_state(void);
 agc_interp_t   *rte_ip(void);
 agc_status_t    rte_post_impulse_velocity(agc_interp_t   *ip,
                                           rte_erasable_t *rs); /* V2T100 */
-agc_status_t    rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
-                            const rte_v2t_t *pl); /* DVCALC */
+agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
+                         const rte_v2t_t *pl);    /* DVCALC */
 agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
                         const rte_v2t_t *pl, agc_dp_t *xt1lim); /* XT1LIM */
 

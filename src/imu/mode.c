@@ -82,8 +82,10 @@ static modecadr_word_t mc_get(int dev)
     {
         return (modecadr_word_t){0}; /* no valid result */
     }
+
     agc_sp_t        v = agc_erase_modecadr(dev);
     modecadr_word_t w = {MC_FREE, AGC_JOB_NONE};
+
     if (v == MC_WORD_GOOD)
     {
         w.state = MC_DONE_GOOD;
@@ -104,6 +106,7 @@ static modecadr_word_t mc_get(int dev)
             return (modecadr_word_t){0}; /* no valid result */
         }
     }
+
     return w;
 }
 
@@ -113,11 +116,13 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
     {
         return;
     }
-    agc_sp_t     v  = (s == MC_DONE_GOOD) ? MC_WORD_GOOD :
-                      (s == MC_DONE_BAD)  ? MC_WORD_BAD :
-                      (s == MC_STALLED)   ? (agc_sp_t) job :
-                                            0;
+
+    agc_sp_t v = (s == MC_DONE_GOOD) ? MC_WORD_GOOD :
+                 (s == MC_DONE_BAD) ? MC_WORD_BAD :
+                 (s == MC_STALLED) ? (agc_sp_t) job :
+                 0;
     agc_status_t st = agc_erase_set_modecadr(dev, v);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
@@ -125,8 +130,8 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
 }
 
 static agc_imu_stall_result_t outcome[AGC_IMU_DEV_COUNT];
-static agc_sp_t command[3]; /* COMMAND: coarse-align pulses to go, 1:S   */
-static agc_sp_t cducmd[3];  /* CDUXCMD..CDUZCMD hardware counters        */
+static agc_sp_t               command[3]; /* COMMAND: coarse-align pulses to go, 1:S   */
+static agc_sp_t               cducmd[3]; /* CDUXCMD..CDUZCMD hardware counters        */
 
 /* ---- small helpers ------------------------------------------------------ */
 
@@ -136,11 +141,14 @@ static uint16_t notmask(uint16_t m)
     {
         return 0; /* no valid result */
     }
+
     uint16_t r = (uint16_t) (~(unsigned) m & CDU_MASK);
+
     if (!AGC_ASSERT((r & m) == 0u))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -150,7 +158,9 @@ static void imodes30_or(uint16_t bits)
     {
         return;
     }
+
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() | bits));
+
     if (!AGC_ASSERT((agc_erase_imodes30() & bits) == bits))
     {
         return;
@@ -163,7 +173,9 @@ static void imodes30_clear(uint16_t bits)
     {
         return;
     }
+
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & notmask(bits)));
+
     if (!AGC_ASSERT((agc_erase_imodes30() & bits) == 0u))
     {
         return;
@@ -176,9 +188,12 @@ static void imodes33_set(uint16_t bits, bool on)
     {
         return;
     }
+
     uint16_t v = agc_erase_imodes33();
-    v          = on ? (uint16_t) (v | bits) : (uint16_t) (v & notmask(bits));
+
+    v = on ? (uint16_t) (v | bits) : (uint16_t) (v & notmask(bits));
     agc_erase_set_imodes33(v);
+
     if (!AGC_ASSERT(((agc_erase_imodes33() & bits) != 0u) == on))
     {
         return;
@@ -191,6 +206,7 @@ static void dsp11_write(uint16_t v)
     {
         return;
     }
+
     agc_erase_set_dsptab(11, v);
 }
 
@@ -200,6 +216,7 @@ static void chan_or(int chan, uint16_t bits)
     {
         return;
     }
+
     agc_chan_or(chan, bits);
 }
 
@@ -209,16 +226,19 @@ static void chan_clear(int chan, uint16_t bits)
     {
         return;
     }
+
     agc_chan_and(chan, notmask(bits));
 }
 
 static void setissw(void)
 {
     agc_status_t st = agc_t4_setissw(); /* IBNKCALL SETISSW      */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
     }
+
     if (!AGC_ASSERT(agc_erase_imodes30() <= CDU_MASK))
     {
         return;
@@ -231,11 +251,14 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_waitlist_call(dt, task);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -247,15 +270,19 @@ static int cdu_msu(uint16_t a, uint16_t b)
     {
         return 0; /* no valid result */
     }
+
     int d = (int) ((unsigned) (a - b) & CDU_MASK);
+
     if (d >= 040000)
     {
         d -= 0100000;
     }
+
     if (!AGC_ASSERT(d >= -040000 && d < 040000))
     {
         return 0; /* no valid result */
     }
+
     return d;
 }
 
@@ -265,13 +292,16 @@ static uint16_t cdu_read(int axis)
     {
         return 0; /* no valid result */
     }
+
     uint16_t v = (axis == 0) ? agc_erase_cdux() :
                  (axis == 1) ? agc_erase_cduy() :
-                               agc_erase_cduz();
+                 agc_erase_cduz();
+
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
         return 0; /* no valid result */
     }
+
     return v;
 }
 
@@ -280,10 +310,12 @@ static uint16_t cdu_read(int axis)
 bool imu_caged(void)
 {
     uint16_t m = agc_erase_imodes30();
+
     if (!AGC_ASSERT(m <= CDU_MASK))
     {
         return false;
     }
+
     return (m & IM30_CAGE) != 0u;
 }
 
@@ -295,10 +327,12 @@ void imu_modeexit(void)
     {
         agc_relint(); /* MODEEXIT: RELINT */
     }
+
     if (!AGC_ASSERT(agc_erase_modecadr(AGC_IMU_DEV_IMU) >= MC_WORD_BAD))
     {
         return;
     }
+
     return; /* TCF SWRETURN     */
 }
 
@@ -310,13 +344,17 @@ agc_status_t imu_cagetstj(void)
     {
         return AGC_STATUS_OK; /* TC Q             */
     }
+
     mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD,
            AGC_JOB_NONE); /* CS ZERO; TS IMUCADR */
+
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state == MC_DONE_BAD))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     imu_modeexit();
+
     return AGC_STATUS_BUSY;
 }
 
@@ -328,11 +366,14 @@ static bool cagetest(void)
     {
         return false;
     }
+
     agc_status_t st = agc_imu_imubad();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return false;
     }
+
     return true;
 }
 
@@ -343,15 +384,18 @@ agc_status_t agc_imu_mode_init(void)
         mc_set(d, MC_FREE, AGC_JOB_NONE);
         outcome[d] = AGC_IMU_STALL_SLEEPING;
     }
+
     for (int i = 0; i < 3; i++)
     {
         command[i] = 0;
         cducmd[i]  = 0;
     }
+
     if (!AGC_ASSERT(mc_get(0).state == MC_FREE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -361,10 +405,12 @@ void agc_imu_zeroicdu(void)
     agc_erase_set_cdux(0);
     agc_erase_set_cduy(0);
     agc_erase_set_cduz(0);
+
     if (!AGC_ASSERT(agc_erase_cdux() == 0u && agc_erase_cduy() == 0u))
     {
         return;
     }
+
     if (!AGC_ASSERT(agc_erase_cduz() == 0u))
     {
         return;
@@ -376,10 +422,12 @@ void agc_imu_zeroicdu(void)
 void agc_imu_noattoff(void)
 {
     uint16_t v = agc_erase_dsptab(11);
+
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
         return;
     }
+
     v = (uint16_t) ((v & notmask(DSP11_NOATT | DSP11_CHANGED)) | DSP11_CHANGED);
     dsp11_write(v);
 }
@@ -390,11 +438,14 @@ agc_status_t agc_imu_clear_cmds(void)
     {
         cducmd[i] = 0; /* -0: no pulses outstanding    */
     }
+
     agc_imu_hw_set_gyrocmd(0);
+
     if (!AGC_ASSERT(cducmd[0] == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -404,10 +455,12 @@ agc_sp_t agc_imu_cducmd(int axis)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(cducmd[axis] >= AGC_SP_MIN))
     {
         return 0;
     }
+
     return cducmd[axis];
 }
 
@@ -417,11 +470,14 @@ agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(pulses >= -COMMAX_ && pulses <= COMMAX_))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     cducmd[axis] = pulses;
+
     return AGC_STATUS_OK;
 }
 
@@ -435,44 +491,58 @@ agc_status_t agc_imu_zero(void)
 {
     agc_inhint();
     uint16_t lamps = agc_erase_dsptab(11);
+
     if (!AGC_ASSERT(lamps <= CDU_MASK))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((notmask(lamps) & (DSP11_NOATT | DSP11_GLOCK)) == 0u)
     {
         agc_alarm(ALARM_ZERO_IN_GLOCK);
         mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD, AGC_JOB_NONE); /* CAGETSTJ +4 */
         imu_modeexit();
+
         return AGC_STATUS_OK;
     }
+
     if (imu_cagetstj() != AGC_STATUS_OK)
     { /* IMUZEROA       */
         return AGC_STATUS_OK;
     }
+
     imodes33_set(IM33_DAPDIS, true); /* disable DAP auto, hold */
     imodes30_or(IM30_ICDUFAILINH | IM30_IMUFAILINH);
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_COARSE | AGC_CH012_ENBIMUERR);
     agc_imu_noattoff();
     chan_or(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
+
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) == 0u))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_imu_zeroicdu();
     agc_status_t st = waitlist(DT_IMUZERO2, AGC_TASK_IMUZERO2);
+
     if (st != AGC_STATUS_OK)
     {
         agc_relint();
+
         return st;
     }
+
     if ((agc_erase_imodes30() & IM30_NOTOPER) != 0u)
     {
         agc_alarm(ALARM_IMU_NOT_OPER); /* IMU not operating */
     }
+
     imu_modeexit();
+
     return AGC_STATUS_OK;
 }
 
@@ -483,13 +553,16 @@ agc_status_t agc_task_imuzero2(void)
     {
         return AGC_STATUS_OK;
     }
+
     agc_imu_zeroicdu();
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
     agc_status_t st = agc_waitlist_vardelay(DT_IMUZERO3, AGC_TASK_IMUZERO3);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -500,17 +573,22 @@ agc_status_t agc_task_imuzero3(void)
     {
         return AGC_STATUS_OK;
     }
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u))
+
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
+                    0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     imodes30_clear(IM30_ICDUFAILINH | IM30_IMUFAILINH);
     imodes33_set(IM33_DAPDIS, false);
     setissw();
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_imu_endimu();
 }
 
@@ -525,27 +603,36 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i < 3; i++)
     {
         if (!AGC_ASSERT(thetad[i] <= CDU_MASK))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         agc_erase_set_thetad(i, thetad[i]);
     }
+
     agc_inhint();
+
     if (imu_cagetstj() != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK;
     }
+
     agc_imu_setcoars();
     agc_status_t st = waitlist(DT_COARS, AGC_TASK_COARS);
+
     if (st != AGC_STATUS_OK)
     {
         agc_relint();
+
         return st;
     }
+
     imu_modeexit();
+
     return AGC_STATUS_OK;
 }
 
@@ -555,11 +642,14 @@ static agc_sp_t coarse_command(int axis)
     int diff = cdu_msu(agc_erase_thetad(axis), cdu_read(axis));
     int mag  = (diff < 0) ? -diff : diff;
     int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0); /* MP BIT13, round */
-    cmd      = (diff < 0) ? -cmd : cmd;
+
+    cmd = (diff < 0) ? -cmd : cmd;
+
     if (!AGC_ASSERT(cmd >= -4096 && cmd <= 4096))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) cmd;
 }
 
@@ -570,16 +660,21 @@ agc_status_t agc_task_coars(void)
     {
         return AGC_STATUS_OK;
     }
+
     chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
+
     for (int cduind = 2; cduind >= 0; cduind--)
     { /* CDUIND 2, 1, 0  */
         command[cduind] = coarse_command(cduind);
     }
+
     agc_status_t st = agc_waitlist_vardelay(DT_COARS2, AGC_TASK_COARS2);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -591,18 +686,24 @@ static agc_sp_t coarse_slice(int axis)
     {
         return 0; /* no valid result */
     }
+
     int c   = command[axis];
     int mag = (c < 0) ? -c : c;
+
     if (mag - 1 - COMMAX <= 0)
     { /* COMZERO          */
         command[axis] = 0;
+
         return (agc_sp_t) c;
     }
+
     command[axis] = (agc_sp_t) ((c < 0) ? c + COMMAX_ : c - COMMAX_);
+
     if (!AGC_ASSERT(command[axis] != 0))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) ((c < 0) ? -COMMAX_ : COMMAX_);
 }
 
@@ -614,28 +715,35 @@ agc_status_t agc_task_coars2(void)
     {
         return AGC_STATUS_OK;
     }
+
     int itemp1 = 0; /* pulses to go?    */
+
     for (int cduind = 2; cduind >= 0; cduind--)
     {
         agc_sp_t slice = (command[cduind] == 0) ? 0 : coarse_slice(cduind);
-        itemp1 += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
+
+        itemp1        += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
         cducmd[cduind] = slice;         /* TS CDUXCMD       */
     }
+
     agc_status_t st;
+
     if (itemp1 > 0)
     { /* SENDPULS         */
         chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY |
-                                     AGC_CH014_DRIVECDUZ);
+                AGC_CH014_DRIVECDUZ);
         st = agc_waitlist_vardelay(DT_600MS, AGC_TASK_COARS2);
     }
     else
     {
         st = agc_waitlist_fixdelay(DT_SETTLE, AGC_TASK_CHKCORS);
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -646,20 +754,25 @@ agc_status_t agc_task_chkcors(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(cducmd[0] >= -COMMAX_ && cducmd[0] <= COMMAX_))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 2; i >= 0; i--)
     {
         int diff = cdu_msu(cdu_read(i), agc_erase_thetad(i));
         int mag  = (diff < 0) ? -diff : diff;
+
         if (mag != 0 && (mag - 1) - COARSTOL > 0)
         { /* COARSERR         */
             agc_alarm(ALARM_COARSE_ERR);
+
             return agc_imu_imubad();
         }
     }
+
     return agc_imu_endimu(); /* end of coarse    */
 }
 
@@ -667,10 +780,13 @@ agc_status_t agc_task_chkcors(void)
 agc_status_t agc_task_ca_ece(void)
 {
     chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
+
+    if (!AGC_ASSERT((agc_chan_read(
+                         AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* TASKOVER         */
 }
 
@@ -681,23 +797,28 @@ void agc_imu_setcoars(void)
     {
         return;
     }
+
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR); /* clear error ctrs */
-    chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT);   /* gyro activity   */
-    agc_imu_hw_set_gyrocmd(0);                 /* CS ZERO: -0     */
+    chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT); /* gyro activity   */
+    agc_imu_hw_set_gyrocmd(0);                      /* CS ZERO: -0     */
     chan_or(AGC_CHAN_CHAN12, AGC_CH012_COARSE);
     dsp11_write(
         (uint16_t) (agc_erase_dsptab(11) | DSP11_NOATT | DSP11_CHANGED));
     imodes33_set(IM33_DAPDIS6, true);
     imodes30_or(IM30_IMUFAILINH);
+
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) != 0u))
     {
         return;
     }
+
     if (!AGC_ASSERT((agc_erase_dsptab(11) & DSP11_NOATT) != 0u))
     {
         return;
     }
+
     agc_imu_rndrefdr();
+
     return;
 }
 
@@ -718,36 +839,50 @@ void agc_imu_rndrefdr(void)
 agc_status_t agc_imu_fine(void)
 {
     agc_inhint();
+
     if (imu_cagetstj() != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK;
     }
+
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_COARSE | AGC_CH012_ZEROICDU);
     imodes33_set(IM33_DAPDIS6, false);
     agc_imu_noattoff();
+
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) == 0u))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((agc_erase_dsptab(11) & DSP11_NOATT) == 0u))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t sw = waitlist(DT_IFAILOK, AGC_TASK_IFAILOK);
+
     if (sw != AGC_STATUS_OK)
     {
         agc_relint();
+
         return sw;
     }
+
     agc_status_t st = waitlist(DT_2SECS, AGC_TASK_IMUFINED);
+
     if (st != AGC_STATUS_OK)
     {
         agc_relint();
+
         return st;
     }
+
     imu_modeexit();
+
     return AGC_STATUS_OK;
 }
 
@@ -755,10 +890,12 @@ agc_status_t agc_imu_fin20(void)
 {
     _Static_assert(AGC_TASK_IMUFINED != AGC_TASK_NONE, "AGC constant");
     agc_status_t st = agc_imu_fine(); /* IMUFIN20 = IMUFINE */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -769,30 +906,38 @@ agc_status_t agc_task_imufined(void)
     {
         return AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(!agc_imu_gyros_busy()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_imu_endimu();
 }
 
 /* PFAILOK2 tail shared by IFAILOK and PFAILOK.                           */
 static agc_status_t pfailok2(uint16_t clear_bits)
 {
-    if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH || clear_bits == IM30_PIPFAILINH))
+    if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH ||
+                    clear_bits == IM30_PIPFAILINH))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     imodes30_clear(clear_bits);
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     setissw();            /* the ISS warning may come on now               */
+
     return AGC_STATUS_OK; /* TASKOVER         */
 }
 
@@ -803,15 +948,19 @@ agc_status_t agc_task_ifailok(void)
     { /* CAGETSTQ         */
         return AGC_STATUS_OK;
     }
+
     if ((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) != 0u)
     {
         return AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     imodes30_or(IM30_IMUOK); /* reset IMUFAIL    */
+
     return pfailok2(IM30_IMUFAILINH);
 }
 
@@ -822,12 +971,15 @@ agc_status_t agc_task_pfailok(void)
     {
         return AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     imodes30_or(IM30_PIPOK); /* reset fail bits  */
     imodes33_set(IM33_PIPOK, true);
+
     return pfailok2(IM30_PIPFAILINH);
 }
 
@@ -841,11 +993,14 @@ agc_status_t agc_imu_pipuse(void)
     agc_erase_set_pipax(0); /* CS ZERO: -0      */
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
+
     if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_imu_pipuse1();
+
     return AGC_STATUS_OK;
 }
 
@@ -856,15 +1011,20 @@ void agc_imu_pipuse1(void)
     { /* do not enable PIPA fail     */
         return;
     }
+
     agc_inhint();
     imodes30_clear(IM30_PIPNOTUSED);
+
     if (!AGC_ASSERT(!imu_caged()))
     {
         agc_relint();
+
         return;
     }
+
     setissw(); /* PIPFREE2         */
     imu_modeexit();
+
     return;
 }
 
@@ -874,20 +1034,26 @@ void agc_imu_pipfree(void)
 {
     agc_inhint();
     imodes30_or(IM30_PIPNOTUSED);
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         agc_relint();
+
         return;
     }
+
     if ((agc_erase_imodes30() & IM30_PIPOK) != 0u)
     {
         imu_modeexit();
+
         return;
     }
+
     agc_alarm(ALARM_PIP_FAIL);
     agc_inhint();
     setissw(); /* PIPFREE2         */
     imu_modeexit();
+
     return;
 }
 
@@ -904,24 +1070,32 @@ static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     modecadr_word_t        w   = mc_get((int) dev);
     agc_imu_stall_result_t res = good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD;
+
     if (w.state == MC_FREE)
     { /* ENDMODE          */
         mc_set((int) dev, good ? MC_DONE_GOOD : MC_DONE_BAD, AGC_JOB_NONE);
+
         return AGC_STATUS_OK;
     }
+
     if (w.state != MC_STALLED)
     { /* already negative */
         mc_set((int) dev, MC_FREE, AGC_JOB_NONE);
+
         return AGC_STATUS_OK;
     }
+
     mc_set((int) dev, MC_FREE, AGC_JOB_NONE); /* XCH MODECADR     */
     outcome[dev] = res;                       /* ADS LOC if good  */
+
     if (!AGC_ASSERT(w.job != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_exec_job_wake(w.job); /* JOBWAKE          */
 }
 
@@ -931,11 +1105,14 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = goodend_common(dev, true);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -945,11 +1122,14 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = goodend_common(dev, false);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -957,10 +1137,12 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev)
 agc_status_t agc_imu_imubad(void)
 {
     agc_status_t st = agc_imu_badend(AGC_IMU_DEV_IMU);
+
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
 }
 
@@ -972,11 +1154,14 @@ agc_status_t agc_imu_endimu(void)
     {
         return agc_imu_imubad();
     }
+
     agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_IMU);
+
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
 }
 
@@ -984,10 +1169,12 @@ agc_status_t agc_imu_endimu(void)
 static agc_status_t modabort(void)
 {
     _Static_assert(ALARM_TWO_USERS == 01210, "AGC constant");
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return agc_bailout(ALARM_TWO_USERS); /* BAILOUT1 01210   */
     }
+
     return agc_poodoo(ALARM_TWO_USERS); /* POODOO 01210     */
 }
 
@@ -999,36 +1186,46 @@ static agc_status_t modabort(void)
 agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
                                agc_imu_stall_result_t *result)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT && result != NULL))
+    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT &&
+                    result != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     modecadr_word_t w = mc_get((int) dev);
+
     if (w.state == MC_STALLED)
     {
         agc_relint();
+
         return modabort();
     }
+
     if (w.state == MC_FREE)
     { /* MODESLP          */
         if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
         {
             agc_relint();
+
             return AGC_STATUS_BAD_ARG;
         }
+
         mc_set((int) dev, MC_STALLED, wake_as);
         outcome[dev] = AGC_IMU_STALL_SLEEPING;
         *result      = AGC_IMU_STALL_SLEEPING;
         agc_relint();
         agc_exec_job_sleep(wake_as);
+
         return AGC_STATUS_OK;
     }
+
     *result =
         (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD;
     outcome[dev] = *result;
     mc_set((int) dev, MC_FREE, AGC_JOB_NONE); /* MG2: reset to +0 */
     imu_modeexit();
+
     return AGC_STATUS_OK;
 }
 
@@ -1038,11 +1235,14 @@ agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, wake_as, result);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -1052,10 +1252,12 @@ agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
     {
         return AGC_IMU_STALL_BAD;
     }
+
     if (!AGC_ASSERT(outcome[dev] <= AGC_IMU_STALL_SLEEPING))
     {
         return AGC_IMU_STALL_BAD;
     }
+
     return outcome[dev];
 }
 
@@ -1072,17 +1274,22 @@ agc_status_t agc_imu_status_check(void)
     {
         return agc_imu_set_in_use();
     }
+
     agc_alarm_code_t code = ALARM_REFSMMAT; /* OCT220          */
+
     if ((agc_erase_imodes30() & IM30_NOTOPER) != 0u)
     {
         code = ALARM_IMU_NOT_OPER; /* 220 - BIT4      */
     }
+
     if (!AGC_ASSERT(code == 00220 || code == 00210))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_exec_varalarm(code);
     const agc_status_t gs = agc_exec_gotopooh();
+
     return (gs != AGC_STATUS_OK) ? gs : AGC_STATUS_POODOO;
 }
 
@@ -1090,10 +1297,12 @@ agc_status_t agc_imu_status_check(void)
 agc_status_t agc_imu_set_in_use(void)
 {
     agc_flag_set(AGC_FLAG_IMUSE);
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_IMUSE)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -1105,10 +1314,12 @@ agc_status_t agc_imu_standby(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -1119,9 +1330,11 @@ agc_status_t agc_imu_postand(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }

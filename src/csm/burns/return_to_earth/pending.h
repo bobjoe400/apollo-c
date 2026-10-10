@@ -57,8 +57,8 @@ agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx);
-agc_status_t
-agc_job_return_to_earth_entry_conditions_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_entry_conditions_display(
+    agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx);
 agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx);

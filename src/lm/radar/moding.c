@@ -39,7 +39,7 @@
 #define RR_1DEG     (-91)    /* DEC -.00555: 1 degree                 */
 #define RR_SPGAIN \
     9677                     /* RRSPGAIN DEC .59062: null .7 of the
-                                 * error in .5 s                          */
+                              * error in .5 s                          */
 #define RR_LIMIT     (-384)  /* -RRLIMIT DEC -384 pulses               */
 #define RR_13_7_2    010102u /* 13,7,2: zeroing, CDU OK, not in auto  */
 #define RR_BIT11_1   002001u /* BIT11+1: reposition, turn-on          */
@@ -93,10 +93,12 @@ int rr_ones(uint16_t w)
 {
     uint16_t v = (uint16_t) (w & RR_WORD_MASK);
     int      r = ((v & 040000u) != 0u) ? -(int) (RR_WORD_MASK - v) : (int) v;
+
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -106,6 +108,7 @@ uint16_t rr_word(int v)
     {
         return 0U;
     }
+
     return (v >= 0) ? (uint16_t) v : (uint16_t) ((int) RR_WORD_MASK + v);
 }
 
@@ -116,7 +119,9 @@ bool rr_magsub(int a, int k)
     {
         return false;
     }
+
     int m = (a < 0) ? -a : a;
+
     return (m + k) <= 0;
 }
 
@@ -126,14 +131,17 @@ bool rr_magsub(int a, int k)
 static int rr_msu(uint16_t a, uint16_t k)
 {
     int d = ((int) (a & RR_WORD_MASK) - (int) (k & RR_WORD_MASK)) & 077777;
+
     if ((d & 040000) != 0)
     {
         d -= 0100000;
     }
+
     if (!AGC_ASSERT(d >= -16384 && d <= 16383))
     {
         return 0; /* no valid result */
     }
+
     return (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
 }
 
@@ -144,16 +152,19 @@ static int rr_mp(int a, int b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b));
 }
 
 void rr_chan_or(int chan, uint16_t bits)
 {
     agc_chan_or(chan, bits);
+
     if (!AGC_ASSERT(bits <= RR_WORD_MASK))
     {
         return;
@@ -163,6 +174,7 @@ void rr_chan_or(int chan, uint16_t bits)
 void rr_chan_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & RR_WORD_MASK));
+
     if (!AGC_ASSERT(bits <= RR_WORD_MASK))
     {
         return;
@@ -175,6 +187,7 @@ void rr_radmodes_set(uint16_t bits)
     {
         return;
     }
+
     agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() | bits));
 }
 
@@ -184,6 +197,7 @@ void rr_radmodes_clear(uint16_t bits)
     {
         return;
     }
+
     agc_erase_set_radmodes(
         (uint16_t) (agc_erase_radmodes() & ~bits & RR_WORD_MASK));
 }
@@ -194,6 +208,7 @@ bool rr_radmodes_test(uint16_t bits)
     {
         return false;
     }
+
     return (agc_erase_radmodes() & bits) != 0U;
 }
 
@@ -206,7 +221,9 @@ bool rr_mode2(void)
 void rr_mode_invert(void)
 {
     uint16_t m = agc_erase_radmodes();
+
     agc_erase_set_radmodes((uint16_t) (m ^ RR_ANTENBIT));
+
     if (!AGC_ASSERT(((agc_erase_radmodes() ^ m) & RR_ANTENBIT) != 0U))
     {
         return;
@@ -220,15 +237,18 @@ bool rr_limits_ok(uint16_t t, uint16_t s)
 {
     int tv = rr_ones(t);
     int sv = rr_ones(s);
+
     if (!rr_mode2())
     {
         return rr_magsub(tv, RR_LIM_T1) &&
                rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1);
     }
+
     if (!rr_magsub(sv + RR_82DEGS, RR_LIM_S2))
     {
         return false;
     }
+
     return !rr_magsub(tv, RR_LIM_T2);
 }
 
@@ -240,6 +260,7 @@ bool agc_rr_limchk(uint16_t cdut, uint16_t cdus)
     {
         return false;
     }
+
     return rr_limits_ok(cdut, cdus);
 }
 
@@ -252,7 +273,9 @@ void agc_rendz_flip(uint16_t lamp_bit)
     {
         return;
     }
+
     uint16_t w = agc_erase_dsptab(RR_DSPTAB_11);
+
     w = (uint16_t) (((w ^ lamp_bit) & 037777u) | 040000u); /* POSMAX, BIT15 */
     agc_erase_set_dsptab(RR_DSPTAB_11, w);
 }
@@ -262,10 +285,12 @@ void agc_rendz_flip(uint16_t lamp_bit)
 void rr_lamp_put(uint16_t lamp, bool on)
 {
     bool now = (agc_erase_dsptab(RR_DSPTAB_11) & lamp) != 0U;
+
     if (now == on)
     {
         return; /* NO CHANGE      */
     }
+
     agc_rendz_flip(lamp);
 }
 
@@ -276,6 +301,7 @@ static void rr_trkf(void)
 {
     uint16_t m  = agc_erase_radmodes();
     bool     on = ((m & RR_13_7_2) == 0U) || ((m & RR_RRDATABT) != 0U);
+
     rr_lamp_put(RR_TRKF_LAMP, on);
 }
 
@@ -286,11 +312,14 @@ agc_status_t agc_rr_settrkf(void)
     {
         return AGC_STATUS_OK;
     }
+
     rr_trkf();
+
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -300,20 +329,24 @@ agc_status_t agc_rr_settrkf(void)
 agc_status_t rr_goodend(void)
 {
     agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_RADAR);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
 }
 
 agc_status_t rr_badend(void)
 {
     agc_status_t st = agc_imu_badend(AGC_IMU_DEV_RADAR);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
 }
 
@@ -333,10 +366,12 @@ agc_status_t agc_task_rr_goodend(void)
 agc_status_t rr_radnoop(void)
 {
     agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_GOODEND);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -349,6 +384,7 @@ void agc_rendz_clradmod(void)
     rr_radmodes_clear(RR_BIT10_15);
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
     agc_relint();
+
     if (!AGC_ASSERT(!rr_radmodes_test(RR_BIT10_15)))
     {
         return;
@@ -363,6 +399,7 @@ void rr_setrrecr(void)
     {
         return;
     }
+
     rr_designate_state.lastcmd[0] = 0;
     rr_designate_state.lastcmd[1] = 0;
     rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
@@ -375,17 +412,22 @@ void rr_setrrecr(void)
 void rr_rrout(void)
 {
     rr_state_t *s = &rr_designate_state;
+
     for (int i = 1; i >= 0; i--)
     { /* shaft, then trunnion   */
         int cmd = s->tang[i];
+
         if (!rr_magsub(cmd, RR_LIMIT))
         {
             cmd = (cmd > 0) ? -RR_LIMIT : RR_LIMIT; /* RROUTLIM   */
         }
-        int delta     = cmd - s->lastcmd[i];
+
+        int delta = cmd - s->lastcmd[i];
+
         s->lastcmd[i] = (agc_sp_t) cmd;
         agc_erase_set_cdutcmd(i, (agc_sp_t) delta);
     }
+
     rr_chan_or(AGC_CHAN_CHAN14, RR_CH14_DRIVE_TS);
 }
 
@@ -400,10 +442,12 @@ static agc_status_t rr_zero_begin(rr_zero_return_t ret)
     rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
     agc_status_t st =
         agc_waitlist_fixdelay(RR_DT_20MS, AGC_TASK_RR_ZERO_COUNTERS);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -415,10 +459,12 @@ agc_status_t agc_task_rr_zero_counters(void)
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
     agc_status_t st =
         agc_waitlist_fixdelay(RR_DT_10SEC, AGC_TASK_RR_ZERO_SETTLED);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -426,6 +472,7 @@ agc_status_t agc_task_rr_zero_counters(void)
 agc_status_t agc_task_rr_zero_settled(void)
 {
     rr_radmodes_clear(RR_RCDU0BIT);
+
     if (rr_magsub(rr_ones(agc_erase_cdut()), RR_LIM_90))
     {
         rr_radmodes_clear(RR_ANTENBIT); /* mode 1  */
@@ -434,22 +481,28 @@ agc_status_t agc_task_rr_zero_settled(void)
     {
         rr_radmodes_set(RR_ANTENBIT); /* mode 2  */
     }
+
     agc_status_t st = agc_rr_settrkf();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (rr_zero_ret == RR_ZERO_FOR_RRZERO)
     {
         return rr_endradar(); /* RRZ2    */
     }
+
     /* RRTURNON: wait 1 s before removing the turn-on flag, so that a
      * monitor reposition will not alarm.                                */
     st = agc_waitlist_fixdelay(RR_DT_1SEC, AGC_TASK_RR_TURNON_DONE);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -461,16 +514,19 @@ agc_status_t agc_task_rrturnon(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_zero_begin(RR_ZERO_FOR_TURNON);
 }
 
 agc_status_t agc_task_rr_turnon_done(void)
 {
     rr_radmodes_clear(RR_TURNONBT);
+
     if (!AGC_ASSERT(!rr_radmodes_test(RR_TURNONBT)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* TASKOVER */
 }
 
@@ -481,6 +537,7 @@ agc_status_t agc_task_rr_zero(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_zero_begin(RR_ZERO_FOR_RRZERO);
 }
 
@@ -493,15 +550,19 @@ agc_status_t agc_rr_zero(void)
     {
         return rr_radnoop();
     }
+
     agc_inhint();
     rr_radmodes_set(RR_RCDU0BIT);
     agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_ZERO);
+
     if (st == AGC_STATUS_OK && rr_radmodes_test(RR_AUTOMBIT))
     {
         st = rz_alarm(RR_ALARM_NOT_AUTO);
         st = (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
+
     agc_relint(); /* ROADBACK */
+
     return st;
 }
 
@@ -513,18 +574,24 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
 {
     bool             m2             = rr_mode2();
     static const int remode_axis[5] = {0, 1, 0, 0, 1};
-    *rrindex                        = 0;
+
+    *rrindex = 0;
+
     switch (c)
     {
         case RR_AXIS_REPOSITION: /* DORREPOS: T to 0 (180), S to 0 (-90) */
             *rrindex = step;
-            *rdes = (step == 0) ? (m2 ? RR_W_180 : 0U) : (m2 ? RR_W_M90 : 0U);
+            *rdes    =
+                (step == 0) ? (m2 ? RR_W_180 : 0U) : (m2 ? RR_W_M90 : 0U);
+
             return step <= 1;
         case RR_AXIS_REMODE: /* REMODE pp.531-532                    */
+
             if (step < 0 || step > 4)
             {
                 return false;
             }
+
             *rrindex = remode_axis[step];
             *rdes    = (step == 0) ? (m2 ? RR_W_180 : 0U) /* T 0 (180)  */
                        :
@@ -533,11 +600,13 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
                        (step == 2) ? (m2 ? RR_W_M50 : RR_W_M130) /* T -130(-50)*/
                        :
                        (step == 3) ? (m2 ? 0U : RR_W_180) /* T -180 (0) */
-                                     :
-                                     (m2 ? 0U : RR_W_M90); /* S -90 (0)  */
+                       :
+                       (m2 ? 0U : RR_W_M90);               /* S -90 (0)  */
+
             return true;
         case RR_AXIS_PREPOSITION_R29: /* PREPOS29: T to -180 (NEGMAX)          */
             *rdes = RR_W_180;
+
             return step == 0;
         case RR_AXIS_CLIENT_COUNT:
         default:
@@ -557,23 +626,28 @@ typedef enum rr_axis_outcome
  * RROUT, again in .5 s.                                                 */
 static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
 {
-    *st        = AGC_STATUS_OK;
+    *st = AGC_STATUS_OK;
     uint16_t m = agc_erase_radmodes();
+
     if ((~m & (RR_REMODBIT | RR_REPOSBIT)) == 0U)
     {
         return RR_AXIS_ABANDON;
     }
+
     uint16_t cdu = (rr_axis.rrindex == 0) ? agc_erase_cdut() : agc_erase_cdus();
     int      err = rr_msu(rr_axis.rdes, cdu); /* ITEMP1  */
     int      cmd = rr_mp(err, RR_SPGAIN);     /* L       */
+
     if (rr_magsub(err, RR_1DEG) || (m & RR_AUTOMBIT) != 0U)
     {
         return RR_AXIS_DONE;
     }
+
     rr_designate_state.tang[0] = (agc_sp_t) ((rr_axis.rrindex == 0) ? cmd : 0);
     rr_designate_state.tang[1] = (agc_sp_t) ((rr_axis.rrindex == 0) ? 0 : cmd);
     rr_rrout();
     *st = agc_waitlist_fixdelay(RR_DT_HALFSEC, AGC_TASK_RR_ONE_AXIS);
+
     return RR_AXIS_WAITING;
 }
 
@@ -584,18 +658,24 @@ static bool rr_reposrpt(agc_status_t *st)
 {
     *st = AGC_STATUS_OK;
     rr_radmodes_clear(RR_REPOSBIT);
+
     if (!rr_radmodes_test(RR_DESIGBIT))
     {
         rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
+
         return false; /* TASKOVER */
     }
+
     if (!rr_radmodes_test(RR_REMODBIT))
     {
         *st = rr_stdesig(); /* BEGDES   */
+
         return false;
     }
+
     rr_axis.client = RR_AXIS_REMODE; /* REMODE   */
     rr_axis.step   = 0;
+
     return rr_axis_target(RR_AXIS_REMODE, 0, &rr_axis.rrindex, &rr_axis.rdes);
 }
 
@@ -605,10 +685,12 @@ static agc_status_t rr_remode_done(void)
 {
     rr_mode_invert(); /* RMODINV  */
     rr_radmodes_clear(RR_REMODBIT);
+
     if (rr_radmodes_test(RR_DESIGBIT))
     {
         return rr_stdesig();
     }
+
     return rr_goodend();
 }
 
@@ -618,20 +700,24 @@ static bool rr_axis_advance(agc_status_t *st)
 {
     *st = AGC_STATUS_OK;
     rr_axis.step++;
+
     if (rr_axis_target(rr_axis.client, rr_axis.step, &rr_axis.rrindex,
                        &rr_axis.rdes))
     {
         return true;
     }
+
     switch (rr_axis.client)
     {
         case RR_AXIS_REPOSITION:
             return rr_reposrpt(st);
         case RR_AXIS_REMODE:
             *st = rr_remode_done();
+
             return false;
         case RR_AXIS_PREPOSITION_R29: /* PREPOS29: repositioning off */
             rr_radmodes_clear(RR_REPOSBIT);
+
             return false;
         case RR_AXIS_CLIENT_COUNT:
         default:
@@ -644,14 +730,17 @@ static bool rr_axis_advance(agc_status_t *st)
 static agc_status_t rr_axis_run(void)
 {
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 0; i < RR_AXIS_MAX_STEPS; i++)
     {
         rr_axis_outcome_t o    = rr_axis_pass(&st);
         bool              more = false;
+
         if (o == RR_AXIS_WAITING)
         {
             return st;
         }
+
         if (o == RR_AXIS_ABANDON)
         {
             more = rr_reposrpt(&st);
@@ -660,11 +749,13 @@ static agc_status_t rr_axis_run(void)
         {
             more = rr_axis_advance(&st);
         }
+
         if (!more)
         {
             return st;
         }
     }
+
     return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
 }
 
@@ -676,10 +767,12 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rr_axis.client  = client;
     rr_axis.step    = step;
     rr_axis.rrindex = rrindex;
     rr_axis.rdes    = (uint16_t) (rdes & RR_WORD_MASK);
+
     return rr_axis_run();
 }
 
@@ -690,6 +783,7 @@ agc_status_t agc_task_rr_one_axis(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_axis_run();
 }
 
@@ -701,10 +795,12 @@ agc_status_t agc_task_dorrepos(void)
     rr_setrrecr();
     agc_status_t st =
         agc_waitlist_fixdelay(RR_DT_20MS, AGC_TASK_RR_REPOSITION_DRIVE);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -713,10 +809,12 @@ agc_status_t agc_task_rr_reposition_drive(void)
     int      idx  = 0;
     uint16_t rdes = 0U;
     bool     ok   = rr_axis_target(RR_AXIS_REPOSITION, 0, &idx, &rdes);
+
     if (!AGC_ASSERT(ok))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_axis_start(RR_AXIS_REPOSITION, 0, idx, rdes);
 }
 
@@ -727,10 +825,12 @@ agc_status_t rr_remode_start(void)
     int      idx  = 0;
     uint16_t rdes = 0U;
     bool     ok   = rr_axis_target(RR_AXIS_REMODE, 0, &idx, &rdes);
+
     if (!AGC_ASSERT(ok))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_axis_start(RR_AXIS_REMODE, 0, idx, rdes);
 }
 
@@ -741,5 +841,6 @@ agc_status_t agc_task_rr_remode(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_remode_start();
 }

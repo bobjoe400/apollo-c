@@ -32,6 +32,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
+
     return false;
 }
 
@@ -40,6 +41,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -92,25 +94,30 @@ static agc_status_t run_kepler(agc_interp_t *ip, double tau,
                                agc_kepler_out_t *out)
 {
     agc_kepler_in_t in;
-    in.rrect        = pos(R0, 0.0, 0.0);
-    in.vrect        = vel(0.0, circ_speed(), 0.0);
-    in.tau          = agc_dp_from_double(tau, 28);
-    in.tc           = 0;
-    in.xprev        = 0;
-    in.xkepnew      = 0;
-    in.body         = AGC_CONIC_EARTH;
+
+    in.rrect   = pos(R0, 0.0, 0.0);
+    in.vrect   = vel(0.0, circ_speed(), 0.0);
+    in.tau     = agc_dp_from_double(tau, 28);
+    in.tc      = 0;
+    in.xprev   = 0;
+    in.xkepnew = 0;
+    in.body    = AGC_CONIC_EARTH;
     agc_status_t st = agc_conic_kepprep(ip, &in, &in.xkepnew);
+
     CHECK(st == AGC_STATUS_OK);
+
     return agc_conic_kepler(ip, &in, out);
 }
 
 static void test_kepler(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_kepler_out_t out;
     const double     v = circ_speed();
     const double     q = circ_period() / 4.0;
+
     CHECK(run_kepler(&ip, q, &out) == AGC_STATUS_OK);
     CHECK(near_vec(out.rcv, 29, 0.0, R0, 0.0, 300.0));
     CHECK(near_vec(out.vcv, 7, -v, 0.0, 0.0, 5e-4));
@@ -131,21 +138,23 @@ static void test_kepler(void)
 static void test_lambert(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_lambert_in_t  in;
     agc_lambert_out_t out;
     const double      v = circ_speed();
-    in.r1vec            = pos(R0, 0.0, 0.0);
-    in.r2vec            = pos(0.0, R0, 0.0);
-    in.tdesired         = agc_dp_from_double(circ_period() / 4.0, 28);
-    in.geomsgn          = (agc_sp_t) 0x2000; /* +.5: less than 180 degrees  */
-    in.guessw           = true;
-    in.coga             = 0;
-    in.normsw           = false;
-    in.un               = agc_vec_zero();
-    in.vtargtag         = 0; /* also compute VTARGET        */
-    in.iterctr          = AGC_CONIC_LAMBERT_ITERCTR;
-    in.body             = AGC_CONIC_EARTH;
+
+    in.r1vec    = pos(R0, 0.0, 0.0);
+    in.r2vec    = pos(0.0, R0, 0.0);
+    in.tdesired = agc_dp_from_double(circ_period() / 4.0, 28);
+    in.geomsgn  = (agc_sp_t) 0x2000;         /* +.5: less than 180 degrees  */
+    in.guessw   = true;
+    in.coga     = 0;
+    in.normsw   = false;
+    in.un       = agc_vec_zero();
+    in.vtargtag = 0; /* also compute VTARGET        */
+    in.iterctr  = AGC_CONIC_LAMBERT_ITERCTR;
+    in.body     = AGC_CONIC_EARTH;
     CHECK(agc_conic_lambert(&ip, &in, &out) == AGC_STATUS_OK);
     CHECK(!out.solnsw);
     CHECK(near_vec(out.vvec, 7, 0.0, v, 0.0, 2e-3));
@@ -169,10 +178,13 @@ static void ellipse(double *rp, double *vp, double *a, double *e)
 static void test_apsides(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     double rp, vp, a, e;
+
     ellipse(&rp, &vp, &a, &e);
     agc_apsides_out_t out;
+
     CHECK(agc_conic_apsides(&ip, pos(rp, 0.0, 0.0), vel(0.0, vp, 0.0),
                             AGC_CONIC_EARTH, &out) == AGC_STATUS_OK);
     CHECK(fabs(agc_dp_to_double(out.rperi, 29) - rp) < 200.0);
@@ -187,9 +199,11 @@ static void test_apsides(void)
 static void test_timethet_timerad(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_conic_time_out_t out;
     agc_timetheta_in_t   tt;
+
     tt.rvec = pos(R0, 0.0, 0.0);
     tt.vvec = vel(0.0, circ_speed(), 0.0);
     tt.snth = agc_dp_from_double(1.0, 1); /* 90 degrees                  */
@@ -202,11 +216,13 @@ static void test_timethet_timerad(void)
     CHECK(!out.infinflg && !out.cogaflag);
 
     double rp, vp, a, e;
+
     ellipse(&rp, &vp, &a, &e);
     const double     rd       = a; /* E = 90 deg: r = a           */
     const double     n        = sqrt(MU / (a * a * a));
     const double     t_expect = (PI / 2.0 - e) / n; /* M = E - e sin E       */
     agc_timerad_in_t tr;
+
     tr.rvec     = pos(rp, 0.0, 0.0);
     tr.vvec     = vel(0.0, vp, 0.0);
     tr.rdesired = agc_dp_from_double(rd, 29);
@@ -221,14 +237,17 @@ static void test_timethet_timerad(void)
 static void test_rvcon(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_state_vector_t sv;
     agc_state_vector_t out;
-    sv.r           = pos(R0, 0.0, 0.0);
-    sv.v           = vel(0.0, circ_speed(), 0.0);
-    sv.t           = agc_dp_from_double(100000.0, 28);
-    sv.moon        = false;
+
+    sv.r    = pos(R0, 0.0, 0.0);
+    sv.v    = vel(0.0, circ_speed(), 0.0);
+    sv.t    = agc_dp_from_double(100000.0, 28);
+    sv.moon = false;
     const double q = circ_period() / 4.0;
+
     CHECK(agc_conic_rvcon(&ip, &sv, agc_dp_from_double(100000.0 + q, 28), &out,
                           NULL) == AGC_STATUS_OK);
     CHECK(near_vec(out.r, 29, 0.0, R0, 0.0, 300.0));
@@ -246,5 +265,6 @@ int main(void)
     test_rvcon();
     (void) printf("test_conic: %d checks, %d failures, %d assert reports\n",
                   g_checks, g_failures, g_assert_reports);
+
     return (g_failures == 0) ? 0 : 1;
 }

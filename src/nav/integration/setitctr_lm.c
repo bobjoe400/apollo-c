@@ -19,10 +19,13 @@ agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_lambert_in_t li = *in;
-    li.iterctr          = agc_flag_test(AGC_FLAG_AVEGFLAG) ?
-                              (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR_AVEG /* SSP 5   */
-                              :
-                              (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR; /* SSP 20D */
+
+    li.iterctr = agc_flag_test(AGC_FLAG_AVEGFLAG) ?
+                 (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR_AVEG              /* SSP 5   */
+                 :
+                 (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR;              /* SSP 20D */
+
     return agc_conic_lambert(ip, &li, out);
 }

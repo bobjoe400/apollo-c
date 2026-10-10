@@ -99,60 +99,60 @@ typedef enum agc_conic_flag
 typedef struct agc_conic_ctx
 {
     agc_conic_body_t body;
-    agc_dp_t  inv_mu;      /* 1/MU (14D)      2^-34 / 2^-28                  */
-    agc_dp_t  root_mu;     /* ROOTMU (16D)    2^18 / 2^15                    */
-    agc_dp_t  inv_root_mu; /* 1/ROOTMU (18D)  2^-17 / 2^-14                  */
-    agc_dp_t  r1;          /* R1 (32D)        2^29 / 2^27 m                  */
-    agc_vec_t ur1;         /* UR1 (KEPLER: URRECT) 2^1                       */
-    agc_vec_t u2;          /* U2              2^1                            */
-    agc_vec_t un;          /* UN              2^1                            */
-    agc_vec_t vvec;        /* VVEC (KEPLER: VRECT) 2^7 / 2^5 m/cs            */
-    agc_dp_t  magvec2;     /* MAGVEC2 = R2    scale of V2VEC                 */
-    agc_dp_t  snth;        /* SNTH            2^1                            */
-    agc_dp_t  csth;        /* CSTH            2^1                            */
-    agc_dp_t  p;           /* P               2^4                            */
-    agc_dp_t  r1a;         /* R1A             2^6                            */
-    agc_dp_t  coga;        /* COGA            2^5                            */
-    agc_dp_t  x;           /* X (20D)         2^17 / 2^16 sqrt(m)            */
-    agc_dp_t  xi;          /* XI (24D)        2^6                            */
-    agc_dp_t  s_xi;        /* S(XI) (26D)     2^1                            */
-    agc_dp_t  xsqc_xi;     /* XSQC(XI) (28D)  2^33 / 2^31                    */
-    agc_dp_t  t;           /* T (30D)         2^28 cs                        */
-    agc_dp_t  kepc1;       /* KEPC1 (34D)     2^17 / 2^16                    */
-    agc_dp_t  kepc2;       /* KEPC2 (36D)     2^6                            */
-    agc_dp_t  xsq;         /* 0D on entry to DELTIME: X^2 normalized,
-                            * 2^(34-N1) / 2^(32-N1)                          */
-    int       xsq_n1;      /* N1: the X1 left by that NORM is -N1            */
-    agc_sp_t  geomsgn;     /* GEOMSGN SP                                     */
-    bool      normsw;      /* NORMSW                                         */
-    bool      sw360;       /* 360SW                                          */
-    bool      infinflg;    /* INFINFLG                                       */
-    bool      cogaflag;    /* COGAFLAG                                       */
+    agc_dp_t         inv_mu;  /* 1/MU (14D)      2^-34 / 2^-28                  */
+    agc_dp_t         root_mu; /* ROOTMU (16D)    2^18 / 2^15                    */
+    agc_dp_t         inv_root_mu; /* 1/ROOTMU (18D)  2^-17 / 2^-14                  */
+    agc_dp_t         r1;      /* R1 (32D)        2^29 / 2^27 m                  */
+    agc_vec_t        ur1;     /* UR1 (KEPLER: URRECT) 2^1                       */
+    agc_vec_t        u2;      /* U2              2^1                            */
+    agc_vec_t        un;      /* UN              2^1                            */
+    agc_vec_t        vvec;    /* VVEC (KEPLER: VRECT) 2^7 / 2^5 m/cs            */
+    agc_dp_t         magvec2; /* MAGVEC2 = R2    scale of V2VEC                 */
+    agc_dp_t         snth;    /* SNTH            2^1                            */
+    agc_dp_t         csth;    /* CSTH            2^1                            */
+    agc_dp_t         p;       /* P               2^4                            */
+    agc_dp_t         r1a;     /* R1A             2^6                            */
+    agc_dp_t         coga;    /* COGA            2^5                            */
+    agc_dp_t         x;       /* X (20D)         2^17 / 2^16 sqrt(m)            */
+    agc_dp_t         xi;      /* XI (24D)        2^6                            */
+    agc_dp_t         s_xi;    /* S(XI) (26D)     2^1                            */
+    agc_dp_t         xsqc_xi; /* XSQC(XI) (28D)  2^33 / 2^31                    */
+    agc_dp_t         t;       /* T (30D)         2^28 cs                        */
+    agc_dp_t         kepc1;   /* KEPC1 (34D)     2^17 / 2^16                    */
+    agc_dp_t         kepc2;   /* KEPC2 (36D)     2^6                            */
+    agc_dp_t         xsq;     /* 0D on entry to DELTIME: X^2 normalized,
+                               * 2^(34-N1) / 2^(32-N1)                          */
+    int      xsq_n1;          /* N1: the X1 left by that NORM is -N1            */
+    agc_sp_t geomsgn;         /* GEOMSGN SP                                     */
+    bool     normsw;          /* NORMSW                                         */
+    bool     sw360;           /* 360SW                                          */
+    bool     infinflg;        /* INFINFLG                                       */
+    bool     cogaflag;        /* COGAFLAG                                       */
 } agc_conic_ctx_t;
 
 /* ---- common.c: MUTABLE and switches ------------------------------ */
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
 agc_dp_t     agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
-void agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
+void         agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
 agc_status_t agc_conic_abtconic_(void); /* ABTCONIC     */
 
 /* ---- common.c: interpretive MPAC (TP) one instruction each -------- */
-agc_tp_t  agc_conic_mload_(agc_dp_t d);  /* DLOAD        */
-agc_dp_t  agc_conic_mstore_(agc_tp_t m); /* STORE / PUSH */
-agc_tp_t  agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
-agc_tp_t  agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
-agc_tp_t  agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
-agc_tp_t  agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
-agc_tp_t  agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
-agc_tp_t  agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
-agc_tp_t  agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
-agc_tp_t  agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
-agc_tp_t  agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
-agc_tp_t  agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
-agc_tp_t  agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m,
-                            int n); /* SL n / SR -n */
-agc_tp_t  agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m,
-                             int n);                       /* SLR n / SRR -n */
+agc_tp_t agc_conic_mload_(agc_dp_t d);  /* DLOAD        */
+agc_dp_t agc_conic_mstore_(agc_tp_t m); /* STORE / PUSH */
+agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
+agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
+agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
+agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
+agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
+agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
+agc_tp_t agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
+agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
+agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
+agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
+agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m,
+                           int n);  /* SL n / SR -n */
+agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m,
+                            int n);                        /* SLR n / SRR -n */
 agc_tp_t  agc_conic_mround_(agc_interp_t *ip, agc_tp_t m); /* ROUND */
 agc_tp_t  agc_conic_mnorm_(agc_tp_t m, int *nshift);    /* NORM: X = -nshift */
 agc_tp_t  agc_conic_mabs_(agc_tp_t m);                  /* ABS  */
@@ -188,8 +188,8 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  bool rvsw, agc_conic_time_out_t *out);
 agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
                                  agc_conic_time_out_t *out);
-void         agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
-                                      agc_conic_time_out_t  *out);
-void         agc_conic_time_out_clear_(agc_conic_time_out_t *out);
+void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
+                              agc_conic_time_out_t  *out);
+void agc_conic_time_out_clear_(agc_conic_time_out_t *out);
 
 #endif /* AGC_CONIC_INTERNAL_H */

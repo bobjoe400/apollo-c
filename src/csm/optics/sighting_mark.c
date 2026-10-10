@@ -37,21 +37,28 @@
 static agc_status_t sighting_mark_request(void)
 {
     const agc_sp_t n = (agc_sp_t) (agc_align_ram()->markindx & MARKS_MASK);
+
     if (!AGC_ASSERT((n >= 0) && (n <= MARKS_MASK)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_sxtmark(n);
+
     if (st != AGC_STATUS_OK)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st; /* BAILOUT */
     }
+
     bool done = false;
+
     st = align_stall(AGC_IMU_DEV_OPTICS, AGC_JOB_SIGHTING_MARK_MARKED, &done);
+
     if ((st != AGC_STATUS_OK) || !done)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st; /* CURTAINS */
     }
+
     return align_goto(AGC_JOB_SIGHTING_MARK_MARKED);
 }
 
@@ -64,8 +71,10 @@ agc_status_t agc_csm_sighting_mark(const agc_job_ctx_t *ctx, agc_job_id_t ret)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram()->sighting_mark_return = ret; /* R53EXIT  */
     agc_flag_set(AGC_FLAG_SIGHTING_MARK_REQUESTED);
+
     return sighting_mark_request();
 }
 
@@ -73,6 +82,7 @@ agc_status_t agc_csm_sighting_mark(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 static agc_status_t sighting_mark_done(void)
 {
     agc_flag_set(AGC_FLAG_TERMIFLG);
+
     return align_goto(agc_align_ram()->sighting_mark_return);
 }
 
@@ -87,23 +97,29 @@ agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return AGC_STATUS_OK; /* CURTAINS */
     }
+
     if (agc_sxtmark_marks_made() <= 0)
     {
         const agc_status_t st = agc_sxtmark_free_vac(); /* XCH MARKSTAT */
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         return sighting_mark_request(); /* TCF R53A */
     }
+
     if (agc_phase_checkmm(MM_ORBITAL_NAV) || agc_phase_checkmm(MM_CISLUNAR_NAV))
     {
         return sighting_mark_done(); /* R53D     */
     }
+
     return agc_job_sighting_mark_code_clean(ctx);
 }
 
@@ -114,10 +130,12 @@ agc_status_t agc_job_sighting_mark_code_clean(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(
         ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY,
         AGC_JOB_SIGHTING_MARK_CODE_DISPLAY, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY);
@@ -130,10 +148,12 @@ agc_status_t agc_job_sighting_mark_code_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_SIGHTING_MARK_CODE_ENTERED,
                        AGC_JOB_SIGHTING_MARK_CODE_DISPLAY);
@@ -149,17 +169,23 @@ agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
+
     if (!agc_align_chkscode(ram->starcode))
     {
         agc_dsky_falton(); /* FALTON   */
+
         return agc_job_sighting_mark_code_display(ctx);
     }
+
     const agc_sp_t star6 = (agc_sp_t) ((ram->starcode & STAR_BITS) * SIGHTSIX);
+
     if (!AGC_ASSERT((ram->starind == 0) || (ram->starind == 1)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (ram->starind == 0)
     {
         ram->besti = star6; /* INDEX STARIND */
@@ -168,6 +194,7 @@ agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
     {
         ram->bestj = star6;
     }
+
     return sighting_mark_done();
 }
 
@@ -182,7 +209,9 @@ agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram()->sighting_mark_return = ret; /* R53EXIT  */
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH,
                        AGC_JOB_ALTERNATE_LOS_RESERVE,
                        AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY);
@@ -195,6 +224,7 @@ agc_status_t agc_job_alternate_los_angles_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH,
                        AGC_JOB_ALTERNATE_LOS_RESERVE,
                        AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY);
@@ -207,10 +237,12 @@ static agc_status_t alternate_los_clean(const agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(
         ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST,
         AGC_JOB_ALTERNATE_LOS_MARK_REQUEST, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST);
@@ -223,11 +255,14 @@ agc_status_t agc_job_alternate_los_reserve(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st = agc_sxtmark_reserve();
+
     if (st != AGC_STATUS_OK)
     {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st; /* BAILOUT */
     }
+
     return alternate_los_clean(ctx);
 }
 
@@ -239,10 +274,12 @@ agc_status_t agc_job_alternate_los_mark_request(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return align_flash(ctx, AGC_DSKY_GOMARK2, VN_ALT_MARK, AGC_JOB_GOTOPOOH,
                        AGC_JOB_ALTERNATE_LOS_MARK_REQUEST,
                        AGC_JOB_ALTERNATE_LOS_MARKED);
@@ -260,11 +297,14 @@ agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->sac             = agc_erase_mrkbuf(1, MRKBUF_CDUS);
-    ram->pac             = agc_erase_mrkbuf(1, MRKBUF_CDUT);
+
+    ram->sac = agc_erase_mrkbuf(1, MRKBUF_CDUS);
+    ram->pac = agc_erase_mrkbuf(1, MRKBUF_CDUT);
     agc_inhint();
     agc_align_sxt_mark_t m;
+
     m.t         = align_loadtime();
     m.cduy      = agc_erase_cduy();
     m.cdus      = ram->sac;
@@ -274,9 +314,11 @@ agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
     ram->sxt[0] = m; /* INDEX MARKSTAT TS */
     agc_relint();
     agc_dsky_clearmrk(); /* CLEARMRK */
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF1, CHK_MARK_DONE, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_SIGHTING_MARK_CODE_CLEAN,
-                     AGC_JOB_ALTERNATE_LOS_REMARK);
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF1, CHK_MARK_DONE,
+                                  AGC_JOB_GOTOPOOH,
+                                  AGC_JOB_SIGHTING_MARK_CODE_CLEAN,
+                                  AGC_JOB_ALTERNATE_LOS_REMARK);
+
     return st;
 }
 
@@ -287,6 +329,7 @@ agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return alternate_los_clean(ctx);
 }
 
@@ -302,19 +345,25 @@ agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_vec_t    v;
     agc_status_t st = agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux};
     agc_cdutrig_t  t;
+
     st = agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
+
     if (st == AGC_STATUS_OK)
     {
         *los_sm = v;
     }
+
     return st;
 }
 
@@ -325,6 +374,7 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
     {
         return;
     }
+
     w[0] = align_sp_to_word(agc_dp_high(m->t));
     w[1] = align_sp_to_word(agc_dp_low(m->t));
     w[2] = m->cduy;
@@ -332,6 +382,7 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
     w[4] = m->cduz;
     w[5] = m->cdut;
     w[6] = m->cdux;
+
     if (!AGC_ASSERT(w[0] <= 077777u))
     {
         return;
@@ -349,11 +400,15 @@ agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t           *ram = agc_align_ram();
     const agc_align_sxt_mark_t m   = ram->sxt[0];
-    ram->tsight                    = m.t; /* TSIGHT   */
+
+    ram->tsight = m.t; /* TSIGHT   */
     uint16_t w[MARK_WORDS];
+
     mark_words(&m, w);
+
     for (int i = 0; i < MARK_WORDS; i++)
     {
         if (ram->starind == 0)
@@ -365,5 +420,6 @@ agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
             agc_erase_set_mark2dwn(i, w[i]);
         }
     }
+
     return agc_csm_sxtsm(ip, &m, los_sm);
 }

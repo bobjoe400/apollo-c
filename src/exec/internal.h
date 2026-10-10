@@ -34,11 +34,11 @@ typedef struct phase_var_store
     agc_job_id_t       job;        /* PHSNAMEn when it names a job           */
     agc_task_id_t      task;       /* PHSNAMEn when it names a task/longcall */
     int16_t            prdt;       /* PHSPRDTn: +prio FINDVAC / -prio NOVAC,
-                                  or delta time in cs for a task          */
-    bool               immediate;  /* PHSPRDTn = -0: immediate task       */
-    uint32_t           long_dt_cs; /* DP delta time for a variable
-                                      LONGCALL (C(-GENADR) at the time of
-                                      the phase change)                   */
+                                      or delta time in cs for a task          */
+    bool     immediate;            /* PHSPRDTn = -0: immediate task       */
+    uint32_t long_dt_cs; /* DP delta time for a variable
+                            LONGCALL (C(-GENADR) at the time of
+                            the phase change)                   */
 } phase_var_store_t;
 
 bool         phase_group_agrees(int group); /* PHASEn vs -PHASEn       */
@@ -60,7 +60,8 @@ typedef enum rst_dtsrc
 } rst_dtsrc_t;
 
 typedef enum rst_erasable
-{ /* erasables named by indirect table words  */
+{
+    /* erasables named by indirect table words  */
     RST_E_NONE = 0,
     RST_E_SAVET_30,      /* LM  SAVET-30 B(2)                        */
     RST_E_600SECS,       /* both: 600SECS 2DEC 60000 (fixed const)   */
@@ -76,10 +77,10 @@ typedef struct rst_entry
     agc_restart_kind_t kind; /* NONE for the DEC 0 placeholders         */
     int16_t            prdt; /* job: +prio FINDVAC, -prio NOVAC;
                                  task DIRECT: delta time cs             */
-    rst_dtsrc_t        dtsrc;
-    rst_erasable_t     src; /* for INDIRECT / LONG                     */
-    agc_job_id_t       job;
-    agc_task_id_t      task;
+    rst_dtsrc_t    dtsrc;
+    rst_erasable_t src; /* for INDIRECT / LONG                     */
+    agc_job_id_t   job;
+    agc_task_id_t  task;
 } rst_entry_t;
 
 /* Look up entry `part` (0 or 1; 1 only for even phases) of phase `phase`

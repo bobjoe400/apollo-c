@@ -166,19 +166,16 @@
 
 /* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
 /* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
-int agc_extverb_verb(void);
-int agc_extverb_noun(void);
-agc_status_t
-agc_extverb_testxact(bool *ok);          /* TESTXACT: false = ALM/END done */
-agc_status_t agc_extverb_alm_end(void);  /* ALM/END: FALTON, PINBRNCH     */
-agc_status_t agc_extverb_gopin(void);    /* GOPIN: PINBRNCH               */
-bool         agc_extverb_chkpooh(void);  /* CHKPOOH: P00 (ALM/END if not) */
+int          agc_extverb_verb(void);
+int          agc_extverb_noun(void);
+agc_status_t agc_extverb_testxact(bool *ok); /* TESTXACT: false = ALM/END done */
+agc_status_t agc_extverb_alm_end(void);      /* ALM/END: FALTON, PINBRNCH     */
+agc_status_t agc_extverb_gopin(void);        /* GOPIN: PINBRNCH               */
+bool         agc_extverb_chkpooh(void);      /* CHKPOOH: P00 (ALM/END if not) */
 bool         agc_extverb_ckmodcad(void); /* CKMODCAD: no IMU mode user     */
 agc_status_t agc_extverb_goloadlv(void); /* GOLOADLV: please-perform done */
-agc_status_t
-agc_extverb_upflag(agc_flag_id_t f); /* TC UPFLAG, TC GOPIN       */
-agc_status_t
-agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
+agc_status_t agc_extverb_upflag(agc_flag_id_t f); /* TC UPFLAG, TC GOPIN       */
+agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
 agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac);
 /* Request a flashing display for the running verb (GOXDSPF = GOMARKF).    */
 agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb,
@@ -201,7 +198,7 @@ agc_status_t agc_rr_zero(void); /* RRZERO: zero the RR CDUs      */
  * ended the job instead (angles rejected, alarm 502; or a job already
  * waits in RADSTALL); then the caller ends without RADSTALL.             */
 agc_status_t agc_rr_designate_gimbal(bool *started);
-void agc_rendz_clradmod(void); /* CLRADMOD (RADMODES)           */
+void         agc_rendz_clradmod(void); /* CLRADMOD (RADMODES)           */
 agc_status_t agc_radar_lrpos2(void);   /* LRPOS2: LR to position 2      */
 /* ---- requested from prog-align / io-pinball / io-nouns (display buffers) */
 agc_sp_t agc_erase_optionx(int index); /* OPTIONX +index (N12)          */

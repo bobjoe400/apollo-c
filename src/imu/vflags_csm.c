@@ -18,13 +18,16 @@ agc_flag_id_t imu_vflag_csm(imu_vflag_t f)
         0,                /* CALCMAN3: LM only                         */
         AGC_FLAG_TARG1FLG /* FLAGWRD1 bit 10 (020D)                    */
     };
+
     if (!AGC_ASSERT((int) f >= 0 && f < IMU_VF_COUNT))
     {
         return 0;
     }
+
     if (!AGC_ASSERT(ids[IMU_VF_CPHIFLAG] != 0U))
     {
         return 0;
     }
+
     return ids[f];
 }

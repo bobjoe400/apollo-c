@@ -27,19 +27,23 @@ agc_status_t lm_dap_qerrcalc(void)
     agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd); /* DAPTEMP1 */
     agc_sp_t  zdif = lm_dap_msu(agc_erase_cduz(), d->cduzd); /* DAPTEMP2 */
     int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) +
-                lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
+                     lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
     int32_t r = (int32_t) lm_dap_mphi(ydif, agc_erase_m31()) +
                 lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror;
+
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
+
     if (!AGC_ASSERT(d->qerror >= LM_NEGMAX && d->qerror <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->rerror >= LM_NEGMAX && d->rerror <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -48,15 +52,19 @@ agc_status_t lm_dap_qerrcalc(void)
 agc_status_t lm_dap_stillrcs(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     lm_dap_rot_touv(d->qerror, d->rerror, &d->uerror, &d->verror);
+
     if (!AGC_ASSERT(d->uerror >= LM_NEGMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->verror >= LM_NEGMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_uvloop(LM_UV_TJLAW, 1);
 }
 
@@ -70,17 +78,22 @@ static agc_status_t senseget(lm_dap_t *d)
         ((ch31 & QR_CH31_PLUSX) == 0u) ||
         (((ch31 & QR_CH31_MINUSX) != 0u) && agc_flag_test(AGC_FLAG_ULLAGFLG));
     bool minus = !plus && ((ch31 & QR_CH31_MINUSX) == 0u);
+
     if (!plus && !minus)
     {
-        d->nextu     = 0;
-        d->nextv     = 0;
+        d->nextu = 0;
+        d->nextv = 0;
         bool burning = !agc_flag_test(AGC_FLAG_DRIFTDFL);
+
         d->sensetyp =
             (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
+
         return AGC_STATUS_OK;
     }
+
     d->rotindex = plus ? 5 : 4; /* +X0RULGE/-XTRANS */
     d->sensetyp = (agc_sp_t) (d->rotindex - 3);
+
     if (agc_flag_test(AGC_FLAG_ACC4_2FL))
     {
         d->numbert = 4; /* TRANS4         */
@@ -89,20 +102,26 @@ static agc_status_t senseget(lm_dap_t *d)
     {
         d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2;
     }
+
     bool found = lm_dap_selctsub();
+
     if (!AGC_ASSERT(found)) /* FAILOOP returns 0 before running out */
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     if (!found || d->polytemp == 0)
     {
         d->polytemp = 0;
         st          = lm_dap_alarm(AGC_ALARM_02002);
     }
+
     d->nextu = (uint16_t) ((uint16_t) d->polytemp & QR_UBITS); /* TSNEXTS */
     d->nextv =
         (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
+
     return st;
 }
 
@@ -112,25 +131,31 @@ static agc_status_t senseget(lm_dap_t *d)
 agc_status_t lm_dap_rcs(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->cotroler = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
     agc_status_t st = senseget(d);
+
     if (!AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if ((agc_chan_read(031) & QR_CH31_AUTO) != 0u)
     { /* QRCONTRL       */
         return lm_dap_stillrcs();
     }
+
     if (agc_flag_test(AGC_FLAG_PULSEFLG))
     {
         return lm_dap_qrminimp();
     }
+
     return lm_dap_chekstik();
 }
 
@@ -143,25 +168,31 @@ static agc_status_t trygts(lm_dap_t *d)
     {
         return lm_dap_rcs();
     }
+
     if (agc_chan_read(005) == 0u)
     {
         return lm_dap_gts(); /* GOTOGTS        */
     }
+
     if (d->ingts != 0)
     { /* CHKINGTS       */
         agc_inhint();
         agc_status_t st = agc_lm_dap_timegmbl();
+
         agc_relint();
         d->ingts = 0;
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     if (!AGC_ASSERT(d->ingts == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_rcs();
 }
 
@@ -171,24 +202,30 @@ static agc_status_t trygts(lm_dap_t *d)
 agc_status_t lm_dap_qraxis(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->edotr    = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
-    d->edotq    = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);
+
+    d->edotr = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
+    d->edotq = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);
     bool automatic = (agc_chan_read(031) & QR_CH31_AUTO) != 0u;
+
     if (automatic || !agc_flag_test(AGC_FLAG_OURRCFLG))
     {
         agc_status_t sq = lm_dap_qerrcalc();
+
         if (!AGC_ASSERT(sq == AGC_STATUS_OK))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     if (!AGC_ASSERT(d->edotq >= LM_NEGMAX && d->edotr >= LM_NEGMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (d->cotroler > 0)
     {
         return lm_dap_gts();
     }
+
     return (d->cotroler == 0) ? trygts(d) : lm_dap_rcs();
 }

@@ -211,7 +211,8 @@ static const agc_dn_entry_t lmrenddl[] = {
     {1, false, AGC_DN_NN, 0},       /* NN,+1                     */
     {1, false, AGC_DN_DIFFALT, 0},  /* DIFFALT,+1                */
     {1, false, AGC_DN_DELVTPF, 0},  /* DELVTPF,+1                */
-    {1, true, AGC_DN_SPARE, 0}};
+    {1, true, AGC_DN_SPARE, 0}
+};
 static const agc_dn_entry_t lmrend07[] = {
     /* SNAPSHOT, p.199            */
     {1, true, AGC_DN_AIG, 0},     /* AIG,AMG                   */
@@ -269,9 +270,10 @@ static const agc_dn_entry_t lmdsas07[] = {
     {1, false, AGC_DN_MKTIME, 0},   /* MKTIME,+1                 */
     {1, true, AGC_DN_LRXCDUDL, 0}   /* LRXCDUDL,LRYCDUDL         */
 };
-static const agc_dn_entry_t lmdsas08[] = {/* SEND SNAPSHOT              */
-                                          {6, false, AGC_DN_DNTMBUFF, 0},
-                                          {5, true, AGC_DN_DNTMBUFF, 12}};
+static const agc_dn_entry_t lmdsas08[] = { /* SEND SNAPSHOT              */
+    {6, false, AGC_DN_DNTMBUFF, 0},
+    {5, true, AGC_DN_DNTMBUFF, 12}
+};
 
 /* ---------------- LM LUNAR SURFACE ALIGN LIST (LMLSALDL), p.202 -------- */
 static const agc_dn_entry_t lmlsaldl[] = {
@@ -297,7 +299,8 @@ static const agc_dn_entry_t lmlsaldl[] = {
     {1, false, AGC_DN_TIG, 0},      /* TIG,+1                    */
     {PTR, false, LMORBM05, 0},      /* LMLSAL05: COMMON DATA     */
     {PTR, false, LMORBM06, 0},      /* LMLSAL06: COMMON DATA     */
-    {1, false, AGC_DN_SPARE, 0},    {1, true, AGC_DN_SPARE, 0}};
+    {1, false, AGC_DN_SPARE, 0}, {1, true, AGC_DN_SPARE, 0}
+};
 
 /* ---------------- LM AGS INITIALIZATION / UPDATE LIST (LMAGSIDL), p.204 */
 static const agc_dn_entry_t lmagsidl[] = {
@@ -359,7 +362,8 @@ static const agc_dn_list_t sublists[LM_SUB_COUNT] = {
     {lmcsta07, (uint8_t) (sizeof lmcsta07 / sizeof lmcsta07[0]), false},
     {lmrend07, (uint8_t) (sizeof lmrend07 / sizeof lmrend07[0]), true},
     {lmdsas07, (uint8_t) (sizeof lmdsas07 / sizeof lmdsas07[0]), true},
-    {lmdsas08, (uint8_t) (sizeof lmdsas08 / sizeof lmdsas08[0]), false}};
+    {lmdsas08, (uint8_t) (sizeof lmdsas08 / sizeof lmdsas08[0]), false}
+};
 
 /* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */
 agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out)
@@ -368,11 +372,14 @@ agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_LM_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = dntable[code];
+
     return AGC_STATUS_OK;
 }
 
@@ -383,10 +390,13 @@ agc_status_t agc_dnlist_lm_sublist(int sub, agc_dn_list_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(sub >= 0 && sub < LM_SUB_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = sublists[sub];
+
     return AGC_STATUS_OK;
 }

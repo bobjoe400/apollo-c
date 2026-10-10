@@ -30,6 +30,7 @@ static int g_failures;
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
+
     return false;
 }
 
@@ -38,6 +39,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -70,23 +72,28 @@ static agc_dp_t dp_absdiff(agc_dp_t a, agc_dp_t b)
 static void test_orbit_parameters_circular(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_orbit_params_in_t in;
+
     in.rone = pos(R0, 0.0, 0.0);
     CHECK(agc_orbit_params_select_body(false, agc_dp_from_double(RPAD, 29),
                                        &in) == AGC_STATUS_OK);
     in.vone = vel(0.0, sqrt(MU / R0), 0.0);
     agc_orbit_params_out_t out;
     agc_status_t           st = agc_orbit_params_compute(&ip, &in, &out);
+
     CHECK(st == AGC_STATUS_OK);
     CHECK(dp_absdiff(out.rapo, out.rper) < 400); /* < 800 m    */
     CHECK(dp_absdiff(out.hapox, out.hperx) < 400);
     agc_dp_t h = agc_dp_from_double(R0 - RPAD, 29);
+
     CHECK(dp_absdiff(out.hperx, h) < 400);
     CHECK(out.neg_tper <= 0);
     /* MAXCHK: 20000 NM is shown as 9999.9 NM. */
     agc_dp_t big = agc_dp_from_double(20000.0 * 1852.0, 29);
     agc_dp_t lim = agc_orbit_params_maxchk(&ip, big);
+
     CHECK(lim == agc_dp_from_double(9999.9 * 1852.0, 29) ||
           dp_absdiff(lim, agc_dp_from_double(9999.9 * 1852.0, 29)) < 2);
     CHECK(agc_orbit_params_maxchk(&ip, h) == h);
@@ -98,21 +105,25 @@ static void test_orbit_parameters_circular(void)
 static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable();
+
     agc_rendz_reset(rz);
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
-    double ra      = R0;
-    double rp      = R0 + 15.0 * 1852.0;
-    rz->ract1      = pos(ra, 0.0, 0.0);
-    rz->vact1      = vel(0.0, sqrt(MU / ra), 0.0);
+    double ra = R0;
+    double rp = R0 + 15.0 * 1852.0;
+
+    rz->ract1 = pos(ra, 0.0, 0.0);
+    rz->vact1 = vel(0.0, sqrt(MU / ra), 0.0);
     double vp      = sqrt(MU / rp);
     double ttpi_cs = 2.0 * 3600.0 * 100.0;   /* TPI two hours on   */
     double th3     = th + vp / rp * ttpi_cs; /* passive at TTPI     */
-    rz->rpass1     = pos(rp * cos(th), rp * sin(th), 0.0); /* passive at TCSI */
-    rz->vpass1     = vel(-vp * sin(th), vp * cos(th), 0.0);
-    rz->rpass2     = rz->rpass1;
-    rz->vpass2     = rz->vpass1;
+
+    rz->rpass1 = pos(rp * cos(th), rp * sin(th), 0.0); /* passive at TCSI */
+    rz->vpass1 = vel(-vp * sin(th), vp * cos(th), 0.0);
+    rz->rpass2 = rz->rpass1;
+    rz->vpass2 = rz->vpass1;
     rz->rpass3 = pos(rp * cos(th3), rp * sin(th3), 0.0); /* P32/P72B INTINT */
     rz->vpass3 = vel(-vp * sin(th3), vp * cos(th3), 0.0);
     rz->ract2  = rz->ract1;
@@ -125,10 +136,12 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
     agc_erase_set_ttpi(agc_dp_from_double(ttpi_cs, 28));
     agc_sp_t     alarm = 0;
     agc_status_t st    = agc_rendz_csi_a(&ip, rz, &alarm, AGC_JOB_CSI_COMPUTE);
+
     (void) printf("CSI status %d alarm %o DELVCSI %.3f fps\n", (int) st,
                   (unsigned) alarm,
                   (double) rz->delvcsi / 2147483648.0 * 128.0 * 100.0 / 0.3048);
     *delvcsi = rz->delvcsi;
+
     return st;
 }
 
@@ -139,6 +152,7 @@ static void test_csi_coplanar_circular(void)
 {
     agc_dp_t     dv = 0;
     agc_status_t st = csi_case(0.02, &dv);
+
     CHECK(st == AGC_STATUS_OK);
     CHECK(dv > 0);
     st = csi_case(0.15, &dv);
@@ -150,12 +164,16 @@ static void test_csi_coplanar_circular(void)
 static void test_periapo_circular(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable();
+
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
     agc_rendz_periapo_t pa;
     agc_status_t        st = agc_rendz_periapo1(&ip, rz, pos(R0, 0.0, 0.0),
-                                                vel(0.0, sqrt(MU / R0), 0.0), &pa);
+                                                vel(0.0, sqrt(
+                                                        MU / R0), 0.0), &pa);
+
     CHECK(st == AGC_STATUS_OK);
     /* Measured: APSIDES (nav-conic) gives ECC 6.9E-4 for this circular
      * orbit, apsides 9 km apart; the bound is 8192 LSB = 16 km. Reported
@@ -171,5 +189,6 @@ int main(void)
     test_csi_coplanar_circular();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,
                   g_failures);
+
     return (g_failures == 0) ? 0 : 1;
 }

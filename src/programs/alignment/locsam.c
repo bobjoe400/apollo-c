@@ -55,12 +55,16 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(radius > 0))
     {
         return 0; /* no valid result */
     }
+
     agc_dp_t a = agc_dp_shr(agc_dp_div(ip, radius, rmag), 1);
-    a          = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
+
+    a = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
+
     return agc_dp_shr(agc_dp_cos(ip, a), 1);
 }
 
@@ -69,14 +73,17 @@ static void locsam_csm(agc_interp_t *ip, const agc_state_vector_t *sv,
                        agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
 {
     agc_dp_t rmag = 0;
+
     if (!AGC_ASSERT(sv != NULL))
     {
         return;
     }
+
     if (!AGC_ASSERT(o != NULL))
     {
         return;
     }
+
     if (!sv->moon)
     { /* EARTCNTR   */
         o->vmoon  = agc_vec_unit(ip, agc_vec_sub(ip, moon, sv->r), NULL, NULL);
@@ -96,9 +103,11 @@ static void locsam_csm(agc_interp_t *ip, const agc_state_vector_t *sv,
         o->cmoon  = occos(ip, RSUBM, rmag);
         o->cearth = CSS5;
     }
+
     /* ENDSAM: VEL/C = VSUN x ECLIPOL + VATT (1/C)                         */
     const agc_vec_t eclipol = agc_vec_make(0, ECLIPOL_Y, ECLIPOL_Z);
     const agc_vec_t aber    = agc_vec_cross(ip, o->vsun, eclipol);
+
     o->vel_c = agc_vec_add(ip, agc_vec_scale(ip, sv->v, ONE_OVER_C), aber);
     o->csun  = CSSUN_CSM;
 }
@@ -108,19 +117,24 @@ static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
                       agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
 {
     agc_dp_t rmag = 0;
+
     if (!AGC_ASSERT(sv != NULL))
     {
         return;
     }
+
     if (!AGC_ASSERT(o != NULL))
     {
         return;
     }
+
     o->vsun = sun;
+
     if (!sv->moon)
     { /* EARTCNTR   */
         const agc_vec_t rem =
             agc_vec_shl(ip, agc_vec_scale(ip, moon, RSUBEM), 1);
+
         o->vmoon  = agc_vec_unit(ip, agc_vec_sub(ip, rem, sv->r), NULL, NULL);
         o->vearth = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
         o->cearth = occos(ip, RSUBE, rmag);
@@ -131,12 +145,14 @@ static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
         o->vsun = agc_vec_unit(
             ip, agc_vec_sub(ip, sun, agc_vec_scale(ip, moon, ROE)), NULL, NULL);
         const agc_vec_t rem = agc_vec_scale(ip, moon, RSUBEM);
-        o->vearth           = agc_vec_neg(
-                      agc_vec_unit(ip, agc_vec_add(ip, rem, sv->r), NULL, NULL));
+
+        o->vearth = agc_vec_neg(
+            agc_vec_unit(ip, agc_vec_add(ip, rem, sv->r), NULL, NULL));
         o->vmoon  = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
         o->cmoon  = occos(ip, RSUBM, rmag);
         o->cearth = CSS5;
     }
+
     o->vel_c = agc_vec_zero();
     o->csun  = CSSUN_LM; /* ENDSAM     */
 }
@@ -147,7 +163,7 @@ static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
  * m/cs) and the LSPOS output (CSM: moon 2^29 m, sun 2^38 m earth centred;
  * LM: unit vectors VMOON, VSUN scale 2).
  */
-agc_status_t agc_align_locsam_from(agc_interp_t             *ip,
+agc_status_t agc_align_locsam_from(agc_interp_t *ip,
                                    const agc_state_vector_t *sv, agc_vec_t moon,
                                    agc_vec_t sun, agc_align_locsam_t *out)
 {
@@ -155,6 +171,7 @@ agc_status_t agc_align_locsam_from(agc_interp_t             *ip,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         locsam_csm(ip, sv, moon, sun, out);
@@ -163,6 +180,7 @@ agc_status_t agc_align_locsam_from(agc_interp_t             *ip,
     {
         locsam_lm(ip, sv, moon, sun, out);
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -179,27 +197,36 @@ agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_vec_t moon;
     agc_vec_t sun;
+
     agc_align_ram()->tsight = time_cs;
-    agc_status_t st         = agc_lsposition(ip, time_cs, &moon, &sun);
+    agc_status_t st = agc_lsposition(ip, time_cs, &moon, &sun);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     const bool      csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     agc_integ_out_t o;
+
     st = align_integ(ip, csm ? ALIGN_CSMCONIC : ALIGN_LEMPREC, time_cs,
                      resume_job, &o);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_state_vector_t sv;
+
     sv.r    = o.ratt;
     sv.v    = o.vatt;
     sv.t    = o.tat;
     sv.moon = (o.x2 != 0); /* X2: 0 earth, 2 moon       */
+
     return agc_align_locsam_from(ip, &sv, moon, sun, out);
 }
 
@@ -217,13 +244,17 @@ bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls,
     {
         return true;
     }
+
     agc_mat_t cultrix;
-    cultrix.row[0]      = ls->vearth;
-    cultrix.row[1]      = ls->vsun;
-    cultrix.row[2]      = ls->vmoon;
+
+    cultrix.row[0] = ls->vearth;
+    cultrix.row[1] = ls->vsun;
+    cultrix.row[2] = ls->vmoon;
     const agc_vec_t css = agc_vec_make(ls->cearth, ls->csun, ls->cmoon);
-    const agc_vec_t d   = agc_vec_sub(ip, css, agc_mat_vec(ip, &cultrix, star));
-    const bool      cult = (d.c[0] <= 0) || (d.c[1] < 0) || (d.c[2] < 0);
+    const agc_vec_t d   =
+        agc_vec_sub(ip, css, agc_mat_vec(ip, &cultrix, star));
+    const bool cult = (d.c[0] <= 0) || (d.c[1] < 0) || (d.c[2] < 0);
+
     return cult;
 }
 
@@ -231,10 +262,12 @@ bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls,
 static agc_vec_t catlog(int star6)
 {
     agc_vec_t v = agc_vec_zero();
+
     if (!AGC_ASSERT((star6 % 6) == 0))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (AGC_ASSERT((star6 >= 6) && (star6 <= 6 * AGC_ALIGN_NSTARS)))
     {
         if (agc_star_vector(star6 / 6, &v) != AGC_STATUS_OK)
@@ -242,6 +275,7 @@ static agc_vec_t catlog(int star6)
             v = agc_vec_zero();
         }
     }
+
     return v;
 }
 
@@ -263,24 +297,30 @@ static void picapar_strategy(picapar_search_t *s, int i6, int j6)
     {
         return;
     }
+
     if (!AGC_ASSERT((i6 > j6) && (j6 >= 6)))
     {
         return;
     }
+
     if (s->vflag)
     { /* BONCLR VFLAG    */
         s->vflag = false;
         s->besti = i6; /* NEWPAR          */
         s->bestj = j6;
+
         return;
     }
+
     const agc_dp_t best =
         agc_vec_dot(s->ip, catlog(s->besti), catlog(s->bestj));
     const agc_dp_t cur = agc_vec_dot(s->ip, catlog(i6), catlog(j6));
+
     if (agc_dp_sub(s->ip, cur, best) >= 0)
     { /* BPL PIC3        */
         return;
     }
+
     s->besti = i6; /* NEWPAR          */
     s->bestj = j6;
 }
@@ -292,43 +332,54 @@ static void picapar_search_csm(picapar_search_t *s)
     {
         return;
     }
+
     if (!AGC_ASSERT(s->ip != NULL))
     {
         return;
     }
+
     for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
     { /* PIC1 */
         const agc_vec_t si = catlog(i6);
+
         if (agc_align_occult(s->ip, s->ls, si))
         {
             continue; /* PIC2 */
         }
+
         for (int j6 = i6 - 6; j6 >= 6; j6 -= 6)
         { /* PIC3 */
             const agc_vec_t sj = catlog(j6);
+
             if (agc_align_occult(s->ip, s->ls, sj))
             {
                 continue; /* PIC4 */
             }
+
             agc_dp_t d = agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, sj), CSS66);
+
             if (d < 0)
             {
                 continue; /* separation outside the upper limit */
             }
+
             if (agc_dp_add(s->ip, d, CSS6640) >= 0)
             {
                 continue; /* separation less than 30 degrees     */
             }
+
             if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, s->sax), CSS33_CSM) <
                 0)
             {
                 break; /* major star not in cone: PIC1        */
             }
+
             if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, sj, s->sax), CSS33_CSM) <
                 0)
             {
                 continue;
             }
+
             picapar_strategy(s, i6, j6); /* STRATGY */
         }
     }
@@ -341,36 +392,45 @@ static void picapar_search_lm(picapar_search_t *s)
     {
         return;
     }
+
     if (!AGC_ASSERT(s->ip != NULL))
     {
         return;
     }
+
     for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
     { /* PIC1 */
         const agc_vec_t si = catlog(i6);
+
         if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, s->sax), CSS40_LM) < 0)
         {
             continue; /* PIC2 */
         }
+
         for (int j6 = i6 - 6; j6 >= 6; j6 -= 6)
         { /* PIC3 */
             const agc_vec_t sj = catlog(j6);
+
             if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, sj, s->sax), CSS40_LM) < 0)
             {
                 continue; /* PIC4 */
             }
+
             if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, sj), CSS40_LM) >= 0)
             {
                 continue; /* separation less than 50 degrees     */
             }
+
             if (agc_align_occult(s->ip, s->ls, si))
             {
                 break; /* major star occulted: PIC1           */
             }
+
             if (agc_align_occult(s->ip, s->ls, sj))
             {
                 continue;
             }
+
             picapar_strategy(s, i6, j6); /* STRATGY */
         }
     }
@@ -395,25 +455,32 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_cdutrig_t trig;
     agc_mat_t     nb;
     agc_status_t  st = agc_align_cdutrig(cdu, &trig); /* CDUTRIG  */
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_calcsmsc(ip, &trig, &nb); /* CALCSMSC */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     const bool       csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_vec_t  xs  = agc_vec_scale(ip, nb.row[0], csm ? SIN33 : HALFDP);
     const agc_vec_t  zs  = agc_vec_scale(ip, nb.row[2], csm ? COS33 : HALFDP);
     picapar_search_t s   = {
-          .ip = ip, .ls = ls, .vflag = true, .besti = 0, .bestj = 0};
+        .ip = ip, .ls = ls, .vflag = true, .besti = 0, .bestj = 0
+    };
+
     s.sax = agc_vec_unit(ip, agc_vec_mat(ip, agc_vec_add(ip, zs, xs), refsmmat),
                          NULL, NULL);
     agc_align_ram()->sax = s.sax;
+
     if (csm)
     {
         picapar_search_csm(&s);
@@ -421,22 +488,27 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
     else
     {
         picapar_search_lm(&s);
+
         if (!s.vflag)
         { /* PICGXT */
             const agc_dp_t di = agc_vec_dot(ip, s.sax, catlog(s.besti));
             const agc_dp_t dj = agc_vec_dot(ip, s.sax, catlog(s.bestj));
+
             if (agc_dp_sub(ip, dj, di) < 0)
             {
                 const int t = s.besti;
-                s.besti     = s.bestj;
-                s.bestj     = t;
+
+                s.besti = s.bestj;
+                s.bestj = t;
             }
         }
     }
+
     *besti = (agc_sp_t) s.besti;
     *bestj = (agc_sp_t) s.bestj;
     *found = !s.vflag;
     agc_flag_put(AGC_FLAG_VFLAG, s.vflag); /* SET VFLAG; CLEAR if a pair found */
+
     return AGC_STATUS_OK;
 }
 
@@ -460,18 +532,23 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
     const bool       csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
-    ram->tsight          = time_cs;
-    agc_status_t st      = AGC_STATUS_OK;
+
+    ram->tsight = time_cs;
+    agc_status_t st = AGC_STATUS_OK;
+
     if (csm || (star6 >= STAR6_SUN))
     {
         st = agc_align_locsam(ip, time_cs, resume_job, &ram->locsam);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
     }
+
     if (starind == 0)
     {
         ram->besti = star6;
@@ -480,12 +557,14 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
     {
         ram->bestj = star6;
     }
+
     agc_vec_t v;
+
     if (star6 == 0)
     { /* planet  */
         v = csm ? agc_vec_unit(ip, agc_vec_scale(ip, ram->starsav3, ONE_SQRT3),
                                NULL, NULL) :
-                  agc_vec_unit(ip, ram->starad[0], NULL, NULL);
+            agc_vec_unit(ip, ram->starad[0], NULL, NULL);
     }
     else if (star6 < STAR6_SUN)
     {
@@ -503,9 +582,11 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
     {
         v = ram->locsam.vmoon;
     }
+
     *los = csm ? agc_vec_unit(ip, agc_vec_add(ip, v, ram->locsam.vel_c), NULL,
                               NULL) :
-                 v; /* CORPLAN */
+           v;       /* CORPLAN */
+
     return st;
 }
 
@@ -523,13 +604,16 @@ agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
+
     ram->theta18 =
         agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, cat[0], cat[1]), 1));
     ram->theta =
         agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, obs[0], obs[1]), 1));
     *diff         = agc_dp_abs(agc_dp_sub(ip, ram->theta, ram->theta18));
     ram->normtem1 = *diff; /* RTB SGNAGREE: no-op in this model */
+
     return AGC_STATUS_OK;
 }
 
@@ -546,12 +630,15 @@ agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2],
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t   *ram = agc_align_ram();
     const agc_status_t st  = agc_imu_axisgen(ip, a, b, xdc); /* AXISGEN */
+
     if (st == AGC_STATUS_OK)
     {
         ram->xdc = *xdc;
     }
+
     return st;
 }
 
@@ -565,9 +652,11 @@ bool agc_align_chkscode(agc_sp_t starcode)
     {
         return false;
     }
+
     if (!AGC_ASSERT(starcode <= AGC_SP_MAX))
     {
         return false;
     }
+
     return (starcode >= 0) && (starcode <= AGC_ALIGN_STAR_CODE_MAX);
 }

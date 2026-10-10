@@ -28,6 +28,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
     g_assert_reports++;
+
     return false;
 }
 
@@ -36,6 +37,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -114,6 +116,7 @@ static void test_flag_ops(void)
 static void test_flag_errors(void)
 {
     const int before = g_assert_reports;
+
     agc_state_init(AGC_VEHICLE_CSM);
     agc_flag_set((agc_flag_id_t) 0x00); /* rejected by AGC_ASSERT */ /* bit 0 */
     agc_flag_set((agc_flag_id_t) 0xC1); /* rejected by AGC_ASSERT */ /* word 12 is LM-only */
@@ -163,7 +166,8 @@ static void test_channels(void)
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
     agc_chan_or(AGC_CHAN_DSALMOUT, AGC_CH011_ENGINEON);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == (0123u | 010000u));
-    agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t) ~AGC_CH011_ENGINEON & AGC_CHAN_MASK);
+    agc_chan_and(AGC_CHAN_DSALMOUT,
+                 (uint16_t) ~AGC_CH011_ENGINEON & AGC_CHAN_MASK);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
 
     /* bit constants: bit n has value 1 << (n - 1) */
@@ -234,9 +238,11 @@ static void test_inverted_inputs(void)
 static agc_vec_t vec3(agc_dp_t a, agc_dp_t b, agc_dp_t c)
 {
     agc_vec_t v;
+
     v.c[0] = a;
     v.c[1] = b;
     v.c[2] = c;
+
     return v;
 }
 
@@ -249,6 +255,7 @@ static void test_state_vectors(void)
 {
     agc_state_vector_t in;
     agc_state_vector_t out;
+
     agc_state_init(AGC_VEHICLE_CSM);
 
     in.r    = vec3(1000, -2000, 3000);
@@ -295,6 +302,7 @@ static void test_erasables(void)
 {
     agc_mat_t m;
     const int before = g_assert_reports;
+
     agc_state_init(AGC_VEHICLE_CSM);
 
     agc_erase_set_tig(0x0ABCDEF);
@@ -350,5 +358,6 @@ int main(void)
     test_state_vectors();
     test_erasables();
     (void) printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
+
     return (g_failures == 0) ? 0 : 1;
 }

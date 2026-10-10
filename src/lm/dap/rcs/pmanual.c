@@ -36,17 +36,25 @@
  * zero the three counters and enable them (channel 13 bits 8,9).         */
 agc_status_t lm_dap_zeroenbl(void)
 {
-    lm_dap_t *d    = lm_dap_state();
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
+    lm_dap_t *d = lm_dap_state();
+
     d->savehand[0] = agc_erase_q_rhcctr();
     d->savehand[1] = agc_erase_r_rhcctr();
     agc_erase_set_p_rhcctr(0);
     agc_erase_set_q_rhcctr(0);
     agc_erase_set_r_rhcctr(0);
     agc_chan_or(013, PM_BITS8_9);
+
     if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -55,19 +63,24 @@ agc_status_t lm_dap_zeroenbl(void)
  * until the controller is released.                                       */
 agc_status_t lm_dap_pminimp(void)
 {
-    lm_dap_t *d   = lm_dap_state();
-    d->perror     = 0;
-    d->cduxd      = agc_erase_cdux();
+    lm_dap_t *d = lm_dap_state();
+
+    d->perror = 0;
+    d->cduxd  = agc_erase_cdux();
     uint16_t ch31 = agc_chan_read(031);
+
     if (!AGC_ASSERT(d->oldpmin >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (d->oldpmin > 0)
     { /* CHECKP         */
         d->oldpmin = (agc_sp_t) ((uint16_t) ~ch31 & PM_OCT14);
+
         return lm_dap_jetsoff();
     }
+
     if ((ch31 & PM_CH31_PLUSX) == 0u)
     { /* FIREP: +XMIN   */
         d->tj[0] = PM_MINTJ;
@@ -80,11 +93,14 @@ agc_status_t lm_dap_pminimp(void)
     {
         return lm_dap_jetsoff();
     }
+
     d->oldpmin = 1;
+
     if (!AGC_ASSERT(d->tj[0] != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_pjetslec_pair();
 }
 
@@ -94,26 +110,32 @@ agc_status_t lm_dap_pminimp(void)
 agc_status_t lm_dap_pstate(void)
 {
     bool atthold = (agc_chan_read(031) & PM_CH31_ATTHOLD) == 0u;
+
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_PULSEFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_XOVINFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!atthold)
     {
         if (agc_flag_test(AGC_FLAG_XOVINFLG))
         {
             return lm_dap_purgency(); /* attitude steer */
         }
+
         return lm_dap_detentck();
     }
+
     if (agc_flag_test(AGC_FLAG_PULSEFLG))
     { /* MANMODE        */
         return lm_dap_pminimp();
     }
+
     return lm_dap_detentck();
 }
 
@@ -122,30 +144,33 @@ agc_status_t lm_dap_pstate(void)
  * Q,R counters, clear PBIT/QRBIT, set the just-in bit, enable counters.  */
 static agc_status_t justout(lm_dap_t *d)
 {
-    d->perror       = 0;
+    d->perror = 0;
     agc_flag_set(AGC_FLAG_OURRCFLG);
-    d->dxerror      = 0;
-    d->dxerror_lo   = 0;
-    d->qerror       = 0; /* DYERROR                        */
-    d->dyerror_lo   = 0;
-    d->rerror       = 0; /* DZERROR                        */
-    d->dzerror_lo   = 0;
-    d->plast        = 0;
-    d->qlast        = 0;
-    d->rlast        = 0;
+    d->dxerror    = 0;
+    d->dxerror_lo = 0;
+    d->qerror     = 0;   /* DYERROR                        */
+    d->dyerror_lo = 0;
+    d->rerror     = 0;   /* DZERROR                        */
+    d->dzerror_lo = 0;
+    d->plast      = 0;
+    d->qlast      = 0;
+    d->rlast      = 0;
     agc_erase_set_q_rhcctr(0);
     agc_erase_set_r_rhcctr(0);
-    d->rcsflags     = (uint16_t) (d->rcsflags & PM_PQRBIT);
-    d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
+    d->rcsflags = (uint16_t) (d->rcsflags & PM_PQRBIT);
+    d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
     agc_status_t sz = lm_dap_zeroenbl();
+
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_PBIT) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_jetsoff();
 }
 
@@ -154,8 +179,14 @@ static agc_status_t justout(lm_dap_t *d)
  * X-axis override; all three via ZATTEROR in attitude hold).            */
 static agc_status_t ratedone(lm_dap_t *d)
 {
+    if (!AGC_ASSERT(d != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     agc_inhint();
     agc_flag_clear(AGC_FLAG_OURRCFLG);
+
     if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
     {
         d->cduxd = agc_erase_cdux(); /* X-axis override */
@@ -164,11 +195,14 @@ static agc_status_t ratedone(lm_dap_t *d)
     {
         agc_lm_dap_zatteror();
     }
+
     agc_relint();
+
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_purgency();
 }
 
@@ -180,20 +214,26 @@ static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
     lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]);
     int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
     agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
-    d->tj[0]           = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
+
+    d->tj[0] = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
+
     if (!AGC_ASSERT(d->neg_2jetlim <= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(absedotp >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((int32_t) absedotp + d->neg_2jetlim > 0)
     {
         return lm_dap_pjetslec(6); /* four jets      */
     }
+
     d->tj[0] = lm_dap_wrap(2 * (int32_t) d->tj[0]); /* ADS TJP        */
+
     return lm_dap_pjetslec_pair();
 }
 
@@ -202,12 +242,14 @@ static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
  * and TCP has not run out, then fire against the rate error.            */
 static agc_status_t pegi(lm_dap_t *d)
 {
-    d->cduxd          = agc_erase_cdux();
-    d->dxerror        = 0;
-    d->dxerror_lo     = 0;
-    d->perror         = 0;
+    d->cduxd      = agc_erase_cdux();
+    d->dxerror    = 0;
+    d->dxerror_lo = 0;
+    d->perror     = 0;
     agc_sp_t absedotp = lm_dap_ccs_dim(d->edot); /* ABSEDOTP       */
-    bool     outside = ((int32_t) absedotp + d->neg_ratedb > 0) && (d->tcp > 0);
+    bool     outside  = ((int32_t) absedotp + d->neg_ratedb > 0) &&
+                        (d->tcp > 0);
+
     if (outside)
     {
         d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_PBIT);
@@ -216,14 +258,17 @@ static agc_status_t pegi(lm_dap_t *d)
     { /* LAST           */
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_PBIT);
     }
+
     if (!AGC_ASSERT(d->neg_ratedb <= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->tcp >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return pegi_fire(d, absedotp);
 }
 
@@ -234,34 +279,45 @@ static agc_status_t pegi(lm_dap_t *d)
  * DXERROR.                                                               */
 static agc_status_t raterror(lm_dap_t *d)
 {
-    d->cduxd     = agc_erase_cdux();
+    d->cduxd = agc_erase_cdux();
     agc_sp_t cnt = agc_erase_p_rhcctr();
+
     if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
-    agc_sp_t lin = lm_dap_mp(k, cnt).lo; /* CA L           */
-    agc_sp_t cmd = lm_dap_mphi(lin, d->stiksens);
+
+    agc_sp_t k =
+        lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
+    agc_sp_t lin    = lm_dap_mp(k, cnt).lo; /* CA L           */
+    agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);
     agc_sp_t change = lm_dap_wrap((int32_t) cmd - d->plast); /* DAPTEMP1    */
-    d->plast        = cmd;
+
+    d->plast = cmd;
     agc_status_t sz = lm_dap_zeroenbl();
+
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->plast); /* EDOTP       */
+
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (change != 0 && (int32_t) lm_dap_ccs_dim(change) + d->neg_ratedb > 0)
     {
         d->tcp = PM_40CYC;
+
         return pegi(d);
     }
+
     if ((d->rcsflags & LM_RCS_PBIT) != 0u)
     {
         return pegi(d);
     }
+
     d->e      = d->dxerror; /* pseudo-auto    */
     d->perror = d->dxerror;
+
     return lm_dap_purgency_law();
 }
 
@@ -270,16 +326,20 @@ static agc_status_t raterror(lm_dap_t *d)
 agc_status_t lm_dap_detentck(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->ch31temp = agc_chan_read(031);
-    bool ourrc  = agc_flag_test(AGC_FLAG_OURRCFLG);
+    bool ourrc = agc_flag_test(AGC_FLAG_OURRCFLG);
+
     if ((d->ch31temp & PM_CH31_DETENT) == 0u)
     { /* RHCMOVED       */
         return ourrc ? raterror(d) : justout(d);
     }
+
     if (!ourrc)
     {
         return lm_dap_purgency();
     }
+
     if ((d->rcsflags & LM_RCS_JUSTIN) != 0u)
     { /* just in detent */
         if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
@@ -291,14 +351,18 @@ agc_status_t lm_dap_detentck(void)
     { /* RUTH */
         return ratedone(d);
     }
+
     agc_erase_set_p_rhcctr(0); /* RATEDAMP       */
+
     if (!AGC_ASSERT(d->ch31temp <= 077777u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return raterror(d);
 }

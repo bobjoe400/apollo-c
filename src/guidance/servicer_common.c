@@ -68,26 +68,32 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
+
     if (set_piptime1)
     {
         a->piptime1 =
             (agc_dp_t) agc_time_now_cs(); /* DCA TIME2 DXCH PIPTIME1 */
     }
-    a->pipage   = 0; /* reading in progress     */
+
+    a->pipage = 0; /* reading in progress     */
     agc_sp_t px = agc_erase_pipax();
     agc_sp_t py = agc_erase_pipay();
     agc_sp_t pz = agc_erase_pipaz();
+
     agc_erase_set_pipax(0); /* PIPAS SET TO ZERO AS READ */
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
     agc_erase_set_delv(agc_vec_make(agc_dp_pack(px, 0), agc_dp_pack(py, 0),
                                     agc_dp_pack(pz, 0)));
     agc_relint();
+
     if (!AGC_ASSERT(a->piptime1 >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -101,10 +107,12 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(a->pipage >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK;
 }
 
@@ -120,6 +128,7 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
 {
     const bool cm = (veh == AGC_VEHICLE_CSM);
     agc_dp_t   s;
+
     if (cm)
     {
         s = agc_vec_dot(ip, a->unitr, a->unitw); /* DOT UNITW      */
@@ -127,10 +136,13 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
     else
     {
         agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ          */
+
         s = agc_dp_shl(ip, agc_vec_dot(ip, unitz, a->unitr), 1); /* SL1      */
     }
+
     agc_dp_t fact =
         agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* DSQ BDSU DP1/20 */
+
     a->resq_rsq =
         agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq); /* -> 32D */
     agc_dp_t m =
@@ -140,6 +152,7 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
     agc_dp_t  n  = agc_dp_mul(ip, agc_dp_mul(ip, s, cm ? J2_CM : J2_LM),
                               a->resq_rsq); /* DMP 2J, DMP 32D */
     agc_vec_t t2;
+
     if (cm)
     {
         t2 = agc_vec_scale(ip, a->unitw, n); /* VXSC UNITW     */
@@ -147,13 +160,16 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
     else
     {
         agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);
-        t2              = agc_vec_shl(ip, agc_vec_scale(ip, unitz, n),
-                                      1); /* VXSC VSL1 UNITZ */
+
+        t2 = agc_vec_shl(ip, agc_vec_scale(ip, unitz, n),
+                         1);              /* VXSC VSL1 UNITZ */
     }
+
     if (!AGC_ASSERT(a->rmagsq > 0))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return agc_vec_add(ip, t2, t1); /* VAD (pop)      */
 }
 
@@ -171,26 +187,34 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     a->unitr = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH      */
     agc_vec_t dir = a->unitr;
+
     if (!moon)
     {
         a->gobl1_2 = oblateness(ip, veh, a);                /* STORE GOBL1/2  */
         dir        = agc_vec_add(ip, a->gobl1_2, a->unitr); /* VAD PUSH UNITR */
     }
+
     int      n = 0;
     agc_dp_t x = agc_dp_norm(a->rmagsq, &n); /* NORM 34D X2    */
+
     if (!AGC_ASSERT(x != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t k = agc_dp_div(ip, moon ? MUDT_M : MUDT_E, x); /* BDDV* -MUDT,1  */
-    k          = agc_dp_shl_round(ip, k, n - 21);           /* SLR* 0-21D,2   */
-    a->gdt1_2  = agc_vec_scale(ip, dir, k);                 /* VXSC STORE     */
+
+    k         = agc_dp_shl_round(ip, k, n - 21);           /* SLR* 0-21D,2   */
+    a->gdt1_2 = agc_vec_scale(ip, dir, k);                 /* VXSC STORE     */
+
     return AGC_STATUS_OK;
 }
 
@@ -207,10 +231,13 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t dt22;
+
     if (veh == AGC_VEHICLE_CSM)
     {
         agc_vec_t dv = agc_vec_scale(ip, delv, KPIP1_CM); /* VXSC KPIP1  */
+
         a->delvref =
             agc_vec_shl(ip, agc_vec_mat(ip, dv, refsmmat), 1); /* VXM VSL1 */
         dt22 = TWOSEC_22;
@@ -218,23 +245,30 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
     else
     {
         agc_vec_t dv = agc_vec_mat(ip, delv, refsmmat); /* VXM REFSMMAT */
+
         a->delvref =
             agc_vec_shl(ip, agc_vec_scale(ip, dv, KPIP1_LM), 1); /* VXSC VSL1 */
         dt22 = agc_dp_shl(ip, a->pguide, 6); /* PDDL PGUIDE SL 6 */
     }
+
     agc_vec_t half_dv = agc_vec_shr(a->delvref, 1);         /* VSR1 PUSH   */
     agc_vec_t avg_acc = agc_vec_add(ip, half_dv, a->gdt_2); /* VAD PUSH GDT/2 */
     agc_vec_t vdt     = agc_vec_scale(ip, agc_vec_add(ip, avg_acc, sv->v),
                                       dt22);         /* VAD VN, VXSC */
-    a->rn1            = agc_vec_add(ip, vdt, sv->r); /* VAD RN; STORE RN1 */
-    agc_status_t st   = agc_guid_calcgrav(ip, veh, moon, a->rn1, a);
+
+    a->rn1 = agc_vec_add(ip, vdt, sv->r); /* VAD RN; STORE RN1 */
+    agc_status_t st = agc_guid_calcgrav(ip, veh, moon, a->rn1, a);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_vec_t v1 = agc_vec_add(ip, a->gdt1_2, sv->v); /* VAD VN      */
-    v1           = agc_vec_add(ip, v1, avg_acc);      /* VAD (pop)   */
-    a->vn1       = agc_vec_add(ip, v1, half_dv);      /* VAD (pop)   */
+
+    v1     = agc_vec_add(ip, v1, avg_acc);      /* VAD (pop)   */
+    a->vn1 = agc_vec_add(ip, v1, half_dv);      /* VAD (pop)   */
+
     return AGC_STATUS_OK;
 }
 
@@ -249,27 +283,34 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
     {
         return;
     }
+
     if (!AGC_ASSERT(kind == AGC_COPY_RVT || kind == AGC_COPY_RVTG ||
                     kind == AGC_COPY_ALL))
     {
         return;
     }
+
     agc_guid_t *g = agc_guid_state();
+
     agc_inhint();
     agc_erase_set_rn(g->avg.rn1);
     agc_erase_set_vn(g->avg.vn1);
     agc_erase_set_piptime(g->avg.piptime1);
+
     if (kind != AGC_COPY_RVT)
     {
         g->avg.gdt_2 = g->avg.gdt1_2;
+
         if (veh == AGC_VEHICLE_CSM)
         {
             g->avg.gobl_2 = g->avg.gobl1_2;
         }
     }
+
     if (kind == AGC_COPY_ALL && veh == AGC_VEHICLE_LM)
     {
         g->lm.mass = g->lm.mass1;
     }
+
     agc_relint();
 }

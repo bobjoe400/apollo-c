@@ -31,14 +31,17 @@ static void init_avg(agc_avg_g_t *a)
     {
         return;
     }
+
     a->avgexit = AGC_JOB_SERVEXIT;
     a->unitw   = agc_vec_make(0, 0, AGC_DP_MAX);
     a->pipage  = 1;
     a->gdt_2   = agc_vec_zero();
+
     if (!AGC_ASSERT(a->avgexit != AGC_JOB_NONE))
     {
         return;
     }
+
     if (!AGC_ASSERT(a->unitw.c[2] > 0))
     {
         return;
@@ -55,10 +58,13 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_t zero = {0};
-    g_guid          = zero;
+
+    g_guid = zero;
     init_avg(&g_guid.avg);
     g_guid.burn.nbrcycls = -1; /* no S40.9 cycle under way      */
+
     if (veh == AGC_VEHICLE_CSM)
     {
         g_guid.csm.etdecay  = 0; /* ETDECAY pad load (cs, 2^14)    */
@@ -71,9 +77,11 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
         g_guid.lm.vselect  = 2; /* VSELECT: X beam first          */
         g_guid.lm.which    = (agc_sp_t) AGC_LM_WHICH_DPS_BURN;
     }
+
     if (!AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }

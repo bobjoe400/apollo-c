@@ -39,23 +39,29 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_cdutrig_t trig;
     agc_status_t  st = agc_align_cdutrig(cdu, &trig); /* CDUTRIG        */
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_align_calcsmsc(ip, &trig, xnb); /* CALCSMSC       */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     /* S52.2A: X1 = 18, 12, 6 selects XNB, YNB, ZNB in turn (TIX,1 by 6). */
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         xnb->row[i] = agc_vec_unit(ip, agc_vec_mat(ip, xnb->row[i], refsmmat),
                                    NULL, NULL);
     }
+
     *xsm = *smd;                                 /* S52.2.1 MATMOVE        */
+
     return agc_imu_calcga(ip, xnb, xsm, thetad); /* CALCGA -> THETAD       */
 }
 
@@ -72,6 +78,7 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         smd->row[2] = agc_vec_unit(ip, agc_vec_neg(r), NULL, NULL);
@@ -86,6 +93,7 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
         smd->row[2] = agc_vec_unit(
             ip, agc_vec_cross(ip, smd->row[0], smd->row[1]), NULL, NULL);
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -96,20 +104,23 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
  */
 agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
                                            agc_job_id_t resume_job,
-                                           agc_mat_t   *smd)
+                                           agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_integ_out_t    o;
     const bool         csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_status_t st  = align_integ(
-         ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC, talign, resume_job, &o);
+        ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC, talign, resume_job, &o);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd);
 }
 
@@ -126,11 +137,14 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_vec_t h = agc_vec_cross(ip, rcsm, vcsm);
-    smd->row[0]       = xsmd;
+
+    smd->row[0] = xsmd;
     smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, h, xsmd), NULL, NULL);
     smd->row[1] =
         agc_vec_unit(ip, agc_vec_cross(ip, smd->row[2], xsmd), NULL, NULL);
+
     return AGC_STATUS_OK;
 }
 
@@ -138,18 +152,22 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
 static int32_t ones_value(uint16_t w)
 {
     const uint16_t m = (uint16_t) (w & CDU_WORD_MASK);
+
     if (!AGC_ASSERT(w <= CDU_WORD_MASK))
     {
         return 0; /* no valid result */
     }
+
     if ((m & CDU_SIGN_BIT) != 0u)
     {
         return (int32_t) m - CDU_ONES_NEG;
     }
+
     if (!AGC_ASSERT(m < CDU_SIGN_BIT))
     {
         return 0; /* no valid result */
     }
+
     return (int32_t) m;
 }
 
@@ -166,19 +184,24 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
     {
         return true;
     }
+
     bool coarse = false;
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         int32_t diff = ones_value(cdu[i]) - ones_value(thetad[i]);
+
         if (diff < 0)
         {
             diff = -diff; /* ABS                     */
         }
+
         if ((diff >= DEGREE1_X2) && (diff < DEG359_X2))
         {
             coarse = true; /* COARFINE                */
         }
     }
+
     return coarse;
 }
 
@@ -195,10 +218,12 @@ agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         xdc->row[i] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, smd->row[i]),
                                    NULL, NULL);
     }
+
     return AGC_STATUS_OK;
 }

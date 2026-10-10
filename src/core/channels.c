@@ -39,6 +39,7 @@ static bool chan_inverted(int chan)
     {
         return false;
     }
+
     return (chan >= AGC_CHAN_FIRST_INVERTED) &&
            (chan <= AGC_CHAN_LAST_INVERTED);
 }
@@ -50,10 +51,12 @@ static bool chan_writable(int chan)
     {
         return false;
     }
+
     if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
     {
         return false;
     }
+
     switch (chan)
     {
         case AGC_CHAN_L:
@@ -82,10 +85,12 @@ static bool chan_input(int chan)
     {
         return false;
     }
+
     if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
     {
         return false;
     }
+
     switch (chan)
     {
         case AGC_CHAN_HISCALAR:
@@ -108,6 +113,7 @@ void agc_chan_reset(void)
     {
         g_chan[i] = chan_inverted(i) ? (uint16_t) AGC_CHAN_MASK : 0u;
     }
+
     if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK))
     {
         return;
@@ -120,10 +126,12 @@ uint16_t agc_chan_read(int chan)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
     {
         return 0;
     }
+
     return g_chan[chan];
 }
 
@@ -134,6 +142,7 @@ static void reset_flipflops(void)
     {
         return;
     }
+
     g_chan[AGC_CHAN_CHAN33] =
         (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
 }
@@ -144,14 +153,17 @@ void agc_chan_write(int chan, uint16_t value)
     {
         return;
     }
+
     if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
     {
         return;
     }
+
     if (!AGC_ASSERT(chan_writable(chan)))
     {
         return;
     }
+
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -159,6 +171,7 @@ void agc_chan_write(int chan, uint16_t value)
     else
     {
         g_chan[chan] = value;
+
         if (!AGC_ASSERT(g_chan[chan] == value))
         {
             return;
@@ -172,14 +185,17 @@ void agc_chan_or(int chan, uint16_t mask)
     {
         return;
     }
+
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
         return;
     }
+
     if (!AGC_ASSERT(chan_writable(chan)))
     {
         return;
     }
+
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -187,6 +203,7 @@ void agc_chan_or(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
+
         if (!AGC_ASSERT((g_chan[chan] & mask) == mask))
         {
             return;
@@ -200,14 +217,17 @@ void agc_chan_and(int chan, uint16_t mask)
     {
         return;
     }
+
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
         return;
     }
+
     if (!AGC_ASSERT(chan_writable(chan)))
     {
         return;
     }
+
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -215,6 +235,7 @@ void agc_chan_and(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
+
         if (!AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u))
         {
             return;
@@ -228,19 +249,24 @@ agc_status_t agc_chan_set_input(int chan, uint16_t value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!chan_input(chan))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     g_chan[chan] = value;
+
     if (!AGC_ASSERT(g_chan[chan] == value))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -250,14 +276,17 @@ agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!chan_input(chan))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     /* Inverted channels: signal present = bit cleared. */
     if (present == chan_inverted(chan))
     {
@@ -267,9 +296,11 @@ agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present)
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
     }
+
     if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }

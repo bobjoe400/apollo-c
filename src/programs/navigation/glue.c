@@ -15,10 +15,12 @@ agc_conic_body_t rz_body(const agc_rendz_t *rz)
     {
         return AGC_CONIC_EARTH;
     }
+
     if (!AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10))
     {
         return AGC_CONIC_EARTH;
     }
+
     return (rz->body.rtx1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
 }
 
@@ -30,6 +32,7 @@ agc_status_t rz_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_conic_timethet(ip, in, out);
 }
 
@@ -41,6 +44,7 @@ agc_status_t rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_conic_timerad(ip, in, out);
 }
 
@@ -53,11 +57,14 @@ agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (rz_is_csm())
     {
         in->iterctr = AGC_CONIC_LAMBERT_ITERCTR;
+
         return agc_conic_lambert(ip, in, out);
     }
+
     return agc_integ_setitctr(ip, in, out);
 }
 
@@ -70,6 +77,7 @@ agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_conic_apsides(ip, r, v, body, out);
 }
 
@@ -77,18 +85,22 @@ agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
 static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
 {
     bool csm = rz_is_csm();
+
     if (!AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
     {
         return csm ? RZ_CSMPREC : RZ_LEMPREC; /* THISPREC */
     }
+
     if (kind == RZ_THISPREC)
     {
         return csm ? RZ_CSMPREC : RZ_LEMPREC;
     }
+
     if (kind == RZ_OTHPREC)
     {
         return csm ? RZ_LEMPREC : RZ_CSMPREC;
     }
+
     return kind;
 }
 
@@ -102,8 +114,10 @@ agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
     agc_status_t     st;
+
     switch (rz_resolve_kind(kind))
     {
         case RZ_CSMPREC:
@@ -125,10 +139,12 @@ agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
             st = AGC_STATUS_BAD_ARG;
             break;
     }
+
     if (st == AGC_STATUS_OK)
     {
         *out = ctx->out;
     }
+
     return st;
 }
 
@@ -140,22 +156,28 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_integ_install(0, resume); /* INTSTALL */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
+
     rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
     rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
     ctx->sv.rcv = in->rcv;
     ctx->sv.vcv = in->vcv;
     ctx->sv.tet = in->tet;
     st          = agc_integ_integrvs(ip, ctx, in->tdec1);
+
     if (st == AGC_STATUS_OK)
     {
         *out = ctx->out;
     }
+
     return st;
 }
 
@@ -163,10 +185,12 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
 agc_vec_t rz_rls(void)
 {
     agc_vec_t rls = agc_erase_rls();
+
     if (!AGC_ASSERT(rls.c[0] >= AGC_DP_MIN && rls.c[0] <= AGC_DP_MAX))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return rls;
 }
 
@@ -181,10 +205,13 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dsky_cont_t cont;
+
     cont.terminate = term;
     cont.proceed   = proceed;
     cont.enter     = enter;
+
     return agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont);
 }
 
@@ -192,10 +219,12 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 agc_status_t rz_gotopooh(void)
 {
     agc_status_t st = agc_exec_gotopooh();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -203,10 +232,12 @@ agc_status_t rz_gotopooh(void)
 agc_status_t rz_endext(void)
 {
     agc_status_t st = agc_dsky_endext();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -217,6 +248,7 @@ agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_svc_delayjob(delay_cs, cont);
 }
 
@@ -224,10 +256,12 @@ agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont)
 agc_dp_t rz_loadtime(void)
 {
     uint32_t t = agc_time_now_cs();
+
     if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
     {
         return 0; /* no valid result */
     }
+
     return (agc_dp_t) (t & (uint32_t) AGC_DP_MAX);
 }
 
@@ -238,12 +272,15 @@ agc_status_t rz_alarm(agc_alarm_code_t code)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_alarm(code);
     agc_status_t st = AGC_STATUS_ALARM;
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -260,7 +297,9 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t delay = 2U;
+
     if (rz_is_csm())
     {
         rz_vflag_set(RZ_VF_TIMRFLAG, true);
@@ -271,17 +310,20 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
     {
         agc_guid_state()->lm.dispdex = 0;
     }
+
     agc_inhint();
     agc_status_t    st = agc_waitlist_call(delay, AGC_TASK_CLOKTASK_RZ);
     agc_phase_var_t v;
-    v.kind           = AGC_RESTART_JOB;
-    v.job            = cont;
-    v.task           = AGC_TASK_NONE;
-    v.prio_or_dt     = 013; /* PRIO13          */
-    v.immediate      = false;
-    v.long_dt_cs     = 0U;
+
+    v.kind       = AGC_RESTART_JOB;
+    v.job        = cont;
+    v.task       = AGC_TASK_NONE;
+    v.prio_or_dt = 013; /* PRIO13          */
+    v.immediate  = false;
+    v.long_dt_cs = 0U;
     agc_phase_change2(040036U, 05024U, &v);
     agc_relint();
+
     return st;
 }
 
@@ -293,7 +335,9 @@ void rz_dispdex_zero(void)
     {
         return;
     }
+
     agc_guid_state()->lm.dispdex = 0;
+
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == 0))
     {
         return;
@@ -307,6 +351,7 @@ uint16_t rz_option(int which)
     {
         return 0U;
     }
+
     return agc_dsky_dsptem(3 + which);
 }
 
@@ -316,6 +361,7 @@ agc_status_t rz_set_option(int which, uint16_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_set_dsptem(3 + which, v);
 }
 
@@ -326,10 +372,12 @@ static agc_sp_t rz_word_to_sp(uint16_t w)
     {
         return 0; /* no valid result */
     }
+
     if ((w & 040000U) != 0U)
     {
         return (agc_sp_t) (-(agc_sp_t) ((uint16_t) ~w & 037777U));
     }
+
     return (agc_sp_t) w;
 }
 
@@ -340,10 +388,12 @@ static uint16_t rz_sp_to_word(agc_sp_t v)
     {
         return 0; /* no valid result */
     }
+
     if (v < 0)
     {
         return (uint16_t) (~(uint16_t) (-v) & 077777U);
     }
+
     return (uint16_t) v;
 }
 
@@ -354,8 +404,10 @@ agc_dp_t rz_dsptem_dp(int index)
     {
         return 0;
     }
+
     agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(index));
     agc_sp_t lo = rz_word_to_sp(agc_dsky_dsptem(index + 1));
+
     return agc_dp_pack(hi, lo);
 }
 
@@ -366,11 +418,14 @@ agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_dsky_set_dsptem(index, rz_sp_to_word(agc_dp_high(v)));
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
     }
+
     return st;
 }
 
@@ -381,6 +436,7 @@ void rz_phase(int group, uint16_t code)
     {
         return;
     }
+
     agc_phase_change(group, code);
 }
 
@@ -390,17 +446,25 @@ void rz_phase(int group, uint16_t code)
 void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
                   int16_t prio)
 {
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return;
+    }
+
     if (!AGC_ASSERT(job != AGC_JOB_NONE && prio > 0))
     {
         return;
     }
+
     agc_phase_var_t v;
-    v.kind          = AGC_RESTART_JOB;
-    v.job           = job;
-    v.task          = AGC_TASK_NONE;
-    v.prio_or_dt    = prio;
-    v.immediate     = false;
-    v.long_dt_cs    = 0U;
+
+    v.kind       = AGC_RESTART_JOB;
+    v.job        = job;
+    v.task       = AGC_TASK_NONE;
+    v.prio_or_dt = prio;
+    v.immediate  = false;
+    v.long_dt_cs = 0U;
+
     if (code_a == 0U)
     {
         agc_phase_change_var(code_c, &v);
@@ -417,15 +481,23 @@ agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
                            agc_job_id_t term, agc_job_id_t proceed,
                            agc_job_id_t enter)
 {
+    if (!AGC_ASSERT(code != 0U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_prioalarm(code);
     agc_status_t st = AGC_STATUS_ALARM;
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
     {
         return st;
     }
+
     return rz_flash(ctx, AGC_DSKY_PRIODSP, 5U, 9U, term, proceed, enter);
 }

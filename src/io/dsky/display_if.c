@@ -143,8 +143,9 @@ static void f4_up(uint16_t bits)
     {
         return;
     }
+
     agc_inhint();
-    agc_flagword_set(DIF_F4, (uint16_t)(f4() | bits)); /* cannot fail for word 4 */
+    agc_flagword_set(DIF_F4, (uint16_t) (f4() | bits)); /* cannot fail for word 4 */
     agc_relint();
 }
 
@@ -154,8 +155,9 @@ static void f4_down(uint16_t bits)
     {
         return;
     }
+
     agc_inhint();
-    agc_flagword_set(DIF_F4, (uint16_t)(f4() & ~bits));
+    agc_flagword_set(DIF_F4, (uint16_t) (f4() & ~bits));
     agc_relint();
 }
 
@@ -172,6 +174,7 @@ static agc_status_t dif_priobort(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_poodoo(PIN_ALARM_PRIOBORT);
 }
 
@@ -184,21 +187,27 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_chan_and((int)AGC_CHAN_DSALMOUT,
-                 (uint16_t)(PIN_WORD ^ PIN_CH11_KEYREL));
+
+    agc_chan_and((int) AGC_CHAN_DSALMOUT,
+                 (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
     pin_sleeper_t sl = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
     agc_status_t  st = AGC_STATUS_OK;
+
     agc_inhint();
+
     if (sl.used)
     {
         st = agc_exec_job_wake_as(sl.cont[0], new_loc); /* XCHNYLOC  */
         st = (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
     }
+
     agc_relint(); /* RELINTQ   */
+
     if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -210,12 +219,15 @@ static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
     {
         return;
     }
+
     agc_inhint();
     g_cls[c].flags = (uint16_t) (rq->flags & ~DIF_EBANKBITS); /* DSPFLG   */
+
     if ((rq->flags & DIF_CADRMASK) != 0u)
     {
         g_cls[c].cadr = rq->cadr; /* CADRFLSH */
     }
+
     g_cls[c].nvword   = rq->vn; /* NVWORD   */
     g_cls[c].userprio = userprio;
     agc_relint();
@@ -229,7 +241,9 @@ static agc_status_t dif_endit(agc_prio_t userprio, agc_job_id_t cont)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_exec_prio_change(userprio); /* BUSY only means: yield, done next */
+
     return agc_exec_job_yield(cont);
 }
 
@@ -244,10 +258,12 @@ static agc_job_id_t dif_wakecadr(int c)
     {
         return AGC_JOB_NONE;
     }
+
     if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
     {
         return AGC_JOB_NONE;
     }
+
     return (c == DIF_MARKC) ? PIN_JOB_MARKPLAY : PIN_JOB_PLAYJUM1;
 }
 
@@ -259,15 +275,21 @@ static agc_status_t dif_xchsleep(int c)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_job_id_t wake = dif_wakecadr(c);
+
     agc_inhint();
     agc_status_t st = agc_exec_job_wake_as(wake, PIN_JOB_ENDINST);
+
     agc_relint();
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
+
     agc_exec_job_sleep(wake);
+
     return AGC_STATUS_OK; /* JOBSLEEP   */
 }
 
@@ -278,11 +300,14 @@ static agc_status_t dif_gosleeps(int c)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     f4_up((uint16_t) (k_genmask[c] & DIF_WAITMASK));
+
     return dif_xchsleep(c);
 }
 
@@ -292,10 +317,12 @@ agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_xchsleep(DIF_MARKC);
 }
 
@@ -305,10 +332,12 @@ agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_xchsleep(DIF_NORMC);
 }
 
@@ -321,7 +350,9 @@ static agc_status_t dif_redoprio(agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     g_priotime = (uint16_t) agc_erase_time1(); /* save time PRIODSP sent out */
+
     return dif_nvdsp(DIF_PRIOC, userprio);
 }
 
@@ -333,11 +364,14 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (rq != NULL)
     {
         dif_copies(DIF_PRIOC, rq, userprio); /* COPYNORM               */
     }
+
     agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
+
     return (st == AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st;
 }
 
@@ -349,17 +383,21 @@ static agc_status_t dif_markplay(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
-    agc_flagword_set(DIF_F4, (uint16_t)((f4() & ~05u) | DIF_XDSPFLAG));
+    agc_flagword_set(DIF_F4, (uint16_t) ((f4() & ~05u) | DIF_XDSPFLAG));
     agc_relint();
+
     if ((g_cls[DIF_MARKC].flags & DIF_PERFORM) != 0u)
     { /* GOGOMARK */
         g_cls[DIF_MARKC].nvword = pin_ones_neg(g_cls[DIF_MARKC].nvword);
     }
+
     if (!AGC_ASSERT((f4() & DIF_XDSPFLAG) != 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_nvdsp(DIF_MARKC, g_cls[DIF_MARKC].userprio); /* MARKCOP */
 }
 
@@ -373,22 +411,28 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(face == 0 || face == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st =
         dif_witchone((face == 0) ? PIN_JOB_XCHSLEEPM : PIN_JOB_XCHSLEEPN);
+
     f4_down((uint16_t) (k_genmask[face + 1] & DIF_IDLESLEP));
     f4_up((face == 0) ? DIF_MRUPTFLG : DIF_NRUPTFLG);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if ((f4() & DIF_MKOVFLAG) != 0u)
     {                          /* mark over norm         */
         return dif_markplay(); /* GENMARK                */
     }
+
     return dif_oktocopy(rq, userprio);
 }
 
@@ -401,17 +445,22 @@ static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
     {
         return;
     }
+
     *linus = false;
     *end   = false;
+
     if ((rq->flags & DIF_LINUS) == 0u)
     {
         return; /* Q+1: no                */
     }
+
     *linus = true;
+
     if (rq->cadr.terminate == g_cls[c].cadr.terminate && pin_st()->dsplock)
     {
         *end = true; /* already active         */
     }
+
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
         return;
@@ -426,25 +475,32 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool linus = false;
     bool end   = false;
+
     dif_linuschr(DIF_PRIOC, rq, &linus, &end);
+
     if (end)
     {
         return AGC_STATUS_OK;
     }
+
     if (!linus && (f4() & DIF_OCT20100) != 0u)
     { /* prio in ENDIDLE or busy */
         return dif_priobort();
     }
+
     if ((f4() & DIF_OCT40400) != 0u)
     {                                        /* HIPRIO: mark active    */
         return dif_jobxchs(0, rq, userprio); /* SETMARK                */
     }
+
     if ((f4() & DIF_OCT10200) != 0u)
     {                                        /* normal active          */
         return dif_jobxchs(1, rq, userprio); /* SETNORM                */
     }
+
     return dif_oktocopy(rq, userprio);
 }
 
@@ -455,25 +511,32 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     dif_copies(DIF_MARKC, rq, userprio);
     uint16_t f = f4();
+
     if ((f & DIF_OCT34300) == 0u)
     { /* norm or prio busy/waiting? */
         if ((f & DIF_MRKNVFLG) != 0u)
         {
             return AGC_STATUS_OK; /* mark asleep, astro busy */
         }
+
         return dif_markplay();
     }
+
     if ((f & DIF_OCT24100) != 0u)
     { /* mark attempt during prio */
         if ((f & DIF_BITS5_11) != 0u)
         {
             return AGC_STATUS_OK; /* mark already on        */
         }
+
         return dif_gosleeps(DIF_MARKC);
     }
+
     f4_up(DIF_MKOVFLAG);                   /* set mark over norm     */
+
     return dif_jobxchs(1, NULL, userprio); /* SETNORM                */
 }
 
@@ -485,27 +548,35 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool linus = false;
     bool end   = false;
+
     dif_linuschr(DIF_NORMC, rq, &linus, &end);
+
     if (end)
     {
         return AGC_STATUS_OK;
     }
+
     if (!linus && (g_cls[DIF_NORMC].flags & DIF_FLASH) != 0u &&
         (f4() & DIF_NBUSMASK) != 0u)
     {
         return dif_priobort(); /* were norms asleep      */
     }
+
     dif_copies(DIF_NORMC, rq, userprio); /* OKTOPLAY: COPIES2      */
     g_restreg = userprio;
+
     if ((f4() & DIF_PMMASK) != 0u)
     { /* prio or mark going     */
         return dif_gosleeps(DIF_NORMC);
     }
+
     agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
+
     return (st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
-                                   st; /* PLAYJUM1 */
+           st;                         /* PLAYJUM1 */
 }
 
 /* MAKEPLAY: is it mark or prio or norm. The priority is raised to 33 for
@@ -517,15 +588,19 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_exec_prio_change(PIN_PRIO33); /* raising: never pre-empted */
+
     if ((rq->flags & DIF_MARK) != 0u)
     {
         return dif_makemark(rq, userprio);
     }
+
     if ((rq->flags & DIF_PRIO) != 0u)
     {
         return dif_makeprio(rq, userprio);
     }
+
     return dif_makenorm(rq, userprio);
 }
 
@@ -539,11 +614,14 @@ static agc_status_t dif_cleanend(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_exec_findvac(PIN_PRIO32, PIN_JOB_JAMTERM);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -556,24 +634,30 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (flash)
     {
         pin_flashon();
     }
+
     f4_up((uint16_t) (k_genmask[c] & DIF_IDLEMASK));
+
     /* DEVIATION: the R1SAVE repeat-and-return branch (UNSETR1) is not
      * modelled: R1SAVE is only ever zeroed (fresh start) in both programs. */
     if (pin_cadrstor_full())
     {
         return ((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() :
-                                               AGC_STATUS_OK; /* ISITPRIO */
+               AGC_STATUS_OK;                                 /* ISITPRIO */
     }
+
     g_idle.copmpac  = c; /* COPMPAC                */
     g_idle.userprio = userprio;
+
     return pin_endidle(PIN_JOB_TERMATE, PIN_JOB_PROCEED, PIN_JOB_IDLERET3);
 }
 
@@ -586,18 +670,23 @@ static agc_status_t dif_rest(int c)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     static const agc_job_id_t nvcadr[3] = {PIN_JOB_REDOPRIO, PIN_JOB_MARKPLAY,
                                            PIN_JOB_PLAYJUM1};
+
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (pin_cadrstor_full())
     {
         return AGC_STATUS_OK; /* ENDOFJOB               */
     }
+
     f4_up((uint16_t) (k_genmask[c] & DIF_ASTROMSK));
     agc_status_t st = pin_nvsubusy(nvcadr[c]); /* busy or abort if illegal */
+
     return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
 }
 
@@ -609,22 +698,27 @@ static agc_status_t dif_goanidle(const dif_job_t *j)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((j->tempor2 & DIF_FLASH) != 0u)
     {
         return dif_flashsub(j->c, j->userprio, true);
     }
+
     if ((j->tempor2 & DIF_GODSPRET) != 0u)
     {
         return dif_endit(j->userprio, g_cls[j->c].cadr.terminate); /* ENDIT */
     }
+
     if ((g_cls[j->c].nvword & PIN_LOW7) == 0u)
     { /* ISITN00: is this a paste */
         return dif_flashsub(j->c, j->userprio, true);
     }
+
     if (!AGC_ASSERT(j->c >= DIF_PRIOC))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* not flash, not GOPERF: exit      */
 }
 
@@ -636,19 +730,24 @@ static uint16_t dif_second_vn(const dif_job_t *j)
     {
         return 0; /* no valid result */
     }
+
     if ((j->tempor2 & DIF_MARK) != 0u)
     {
         return (uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7); /* MARKPERF  */
     }
+
     if ((j->tempor2 & DIF_CLOCK) != 0u)
     {
         int vn = (int) agc_dsky_vn(97, 0) - (int) pin_sp_from_ones(g_nvword1);
+
         if (!AGC_ASSERT(vn > 0 && vn <= (int) PIN_POSMAX))
         {
             return 0; /* no valid result */
         }
+
         return (uint16_t) vn;
     }
+
     return agc_dsky_vn(50, 0); /* V50PASTE  */
 }
 
@@ -660,14 +759,18 @@ static uint16_t dif_first_vn(int c)
     {
         return 0; /* no valid result */
     }
+
     uint16_t nv = g_cls[c].nvword;
+
     if (!pin_ones_negative(nv))
     {
         return nv;
     }
+
     g_cls[c].nvword =
         pin_ones_neg(nv); /* in case MARKPLAY awakened after sleeping */
     uint16_t dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u;
+
     return (uint16_t) ((g_cls[c].nvword & PIN_LOW7) +
                        agc_dsky_vn((uint8_t) (5u + dec), 0));
 }
@@ -680,45 +783,57 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    dif_job_t j = {c, g_cls[c].flags, userprio, 0}; /* COPYPACS */
+
+    dif_job_t j    = {c, g_cls[c].flags, userprio, 0}; /* COPYPACS */
     uint16_t  opts =
         (uint16_t) (j.tempor2 & DIF_BLANKS); /* blank bits for NVMONOPT */
+
     g_cls[c].flags = (uint16_t) (g_cls[c].flags & ~DIF_SECOND);
-    uint16_t vn    = dif_first_vn(c);
+    uint16_t vn = dif_first_vn(c);
+
     if (vn == 0u)
     {
         agc_status_t st = dif_cleanend();
+
         return (st == AGC_STATUS_OK) ? dif_flashsub(c, userprio, false) :
-                                       st; /* FLASHSUB +1 */
+               st;                         /* FLASHSUB +1 */
     }
+
     for (int part = 0; part < 2; part++)
     { /* NV50DSP  */
         agc_status_t st = pin_nvmonopt(vn, opts);
+
         if (st == AGC_STATUS_BUSY)
         {
             return dif_rest(c);
         }
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
+
         pin_flashoff();             /* in case of extended verb non flash */
         j.tempor2 = g_cls[c].flags; /* COPYTOGO: MPACS destroyed by NVSUB */
         f4_down(DIF_MRKNVFLG | DIF_NRMNVFLG |
                 DIF_PRONVFLG);        /* unset sleeping bits */
         st = pin_blanksub(j.tempor2); /* BLANKCHK                      */
+
         if (!AGC_ASSERT(st != AGC_STATUS_BUSY))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         if ((j.tempor2 & DIF_PERFORM) == 0u || (j.tempor2 & DIF_SECOND) != 0u)
         {
             break; /* PERFCHEK: not GOPERF, or second */
         }
+
         g_cls[c].flags = (uint16_t) (g_cls[c].flags | DIF_SECOND);
         vn             = dif_second_vn(&j);
         opts           = 0; /* ZL                            */
     }
+
     return dif_goanidle(&j);
 }
 
@@ -729,25 +844,31 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 static agc_status_t dif_endret(int outhere)
 {
     int c = g_idle.copmpac;
+
     if (outhere < 0)
     {
         return AGC_STATUS_OK; /* ENDOFJOB (MARKOVER)    */
     }
+
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) ||
         !AGC_ASSERT(outhere <= 2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_dsky_cont_t *k    = &g_cls[c].cadr;
     agc_job_id_t           cont = (outhere == 0) ?
-                                      k->terminate :
-                                      ((outhere == 1) ? k->proceed : k->enter);
+                                  k->terminate :
+                                  ((outhere == 1) ? k->proceed : k->enter);
+
     f4_down((uint16_t) (k_genmask[c] & DIF_PINIDMSK));
     agc_status_t st = agc_dsky_nvsub_blank(-3);
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
         return st;
     }
+
     return dif_endit(g_idle.userprio, cont);
 }
 
@@ -759,8 +880,10 @@ static agc_status_t dif_normret(int outhere)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t     f  = f4();
     agc_status_t st = AGC_STATUS_OK;
+
     if ((f & DIF_BITS5_11) != 0u)
     { /* MARKWAKE       */
         f4_down(DIF_BITS5_11);
@@ -778,14 +901,17 @@ static agc_status_t dif_normret(int outhere)
         st = agc_exec_novac(PIN_PRIO15, PIN_JOB_PLAYJUM1);
         agc_relint();
     }
+
     if (!AGC_ASSERT(outhere >= -1 && outhere <= 2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
+
     return dif_endret(outhere);
 }
 
@@ -797,26 +923,33 @@ static agc_status_t dif_endout(int outhere)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t m = (uint16_t) (f4() & DIF_OCT60000);
+
     if ((m & DIF_MRKIDFLG) != 0u)
     { /* MARKRET        */
         f4_down(06u);
+
         return dif_endret(outhere);
     }
+
     if (m != 0u)
     { /* TIMECHEK       */
         /* CS TIME1, AD PRIOTIME: equal times give -0, i.e. no time.     */
         int d       = (int) g_priotime - (int) agc_erase_time1();
         int elapsed = (d > 0) ? 040000 - d : -d; /* TIME1 wraps at 2^14 */
+
         if (elapsed <= DIF_2SEC)
         {
             return dif_redoprio(g_cls[DIF_PRIOC].userprio); /* KEEPPRIO */
         }
     }
+
     if (!AGC_ASSERT(outhere >= 0 && outhere <= 2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_normret(outhere);
 }
 
@@ -827,10 +960,12 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_endout(0);
 }
 
@@ -841,10 +976,12 @@ agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_endout(1);
 }
 
@@ -855,24 +992,30 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
 {
     uint8_t verb = 0;
     uint8_t noun = 0;
+
     if (!AGC_ASSERT(ctx != NULL) ||
         agc_dsky_response(&verb, &noun) != AGC_STATUS_OK)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int d = (int) verb - PIN_LOWLOAD;
+
     if (d >= -1 && d <= 1)
     { /* V21, V22, V23   */
         int c = g_idle.copmpac;
+
         if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         if ((g_cls[c].nvword & PIN_LOW7) != noun)
         {
             return pin_pinbrnch();
         }
     }
+
     return dif_endout(2); /* OKTOENT         */
 }
 
@@ -886,11 +1029,14 @@ static agc_status_t dif_normbnch(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     f4_up(DIF_PINBRFLG);
+
     if ((f4() & DIF_PRIODFLG) != 0u)
     {
         return dif_redoprio(g_cls[DIF_PRIOC].userprio); /* KEEPPRIO   */
     }
+
     return dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio); /* PLAYJUM1   */
 }
 
@@ -902,20 +1048,27 @@ agc_status_t pin_pinbrnch(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t m = (uint16_t) (f4() & DIF_PINMASK);
+
     if ((m & DIF_MRKIDFLG) != 0u)
     {
         return dif_markplay();
     }
+
     if (m != 0u)
     {
         return dif_normbnch();
     }
+
     agc_status_t st = agc_dsky_nvsub_blank(-3); /* ERASER         */
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY || st == AGC_STATUS_POODOO))
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY ||
+                    st == AGC_STATUS_POODOO))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
 }
 
@@ -925,7 +1078,9 @@ agc_status_t agc_dsky_pinbrnch(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_relint(); /* RELINT         */
+
     return pin_pinbrnch();
 }
 
@@ -936,8 +1091,10 @@ void agc_dsky_clearmrk(void)
     {
         return;
     }
+
     agc_erase_set_extvbact(0);
     f4_down(DIF_XDSPFLAG);
+
     if (!AGC_ASSERT((f4() & DIF_XDSPFLAG) == 0u))
     {
         return;
@@ -952,11 +1109,14 @@ agc_status_t agc_dsky_endmark(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dsky_clearmrk();
+
     if ((f4() & DIF_PRIO30) != 0u)
     { /* normal or prio in ENDIDLE */
         return dif_normbnch();
     }
+
     return dif_normret(-1);
 }
 
@@ -967,6 +1127,7 @@ agc_status_t agc_dsky_endext(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_endmark();
 }
 
@@ -980,12 +1141,16 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    dif_req_t rq            = g_rq[ctx->arg - 1];
+
+    dif_req_t rq = g_rq[ctx->arg - 1];
+
     g_rq[ctx->arg - 1].used = false;
+
     if (!AGC_ASSERT(rq.used))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_makeplay(&rq, ctx->prio);
 }
 
@@ -996,10 +1161,12 @@ agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio);
 }
 
@@ -1009,10 +1176,12 @@ agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_markplay();
 }
 
@@ -1022,10 +1191,12 @@ agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_redoprio(g_cls[DIF_PRIOC].userprio);
 }
 
@@ -1076,6 +1247,7 @@ static const dif_kind_t k_kinds[AGC_DSKY_DISP_COUNT] = {
 static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 {
     int slot = -1;
+
     for (int i = 0; i < DIF_RQ_LEN && slot < 0; i++)
     {
         if (!g_rq[i].used)
@@ -1083,14 +1255,17 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
             slot = i;
         }
     }
+
     if (!AGC_ASSERT(slot >= 0) || !AGC_ASSERT(prio >= 1u && prio <= 037u))
     {
         return AGC_STATUS_FULL;
     }
+
     agc_inhint();
     agc_status_t st = ((rq->flags & DIF_FLASH) != 0u) ?
-                          agc_exec_findvac(prio, PIN_JOB_MAKEPLAY) :
-                          agc_exec_novac(prio, PIN_JOB_MAKEPLAY);
+                      agc_exec_findvac(prio, PIN_JOB_MAKEPLAY) :
+                      agc_exec_novac(prio, PIN_JOB_MAKEPLAY);
+
     if (st == AGC_STATUS_OK)
     {
         st              = agc_exec_set_new_job_arg((agc_sp_t) (slot + 1));
@@ -1098,7 +1273,9 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
         g_rq[slot].used = true;
         g_rq_last       = slot;
     }
+
     agc_relint();
+
     return st;
 }
 
@@ -1110,15 +1287,18 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const dif_kind_t *k  = &k_kinds[kind];
     dif_req_t         rq = {true,
                             vn_or_value,
                             k->flags,
                             {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
+
     if (cont != NULL)
     {
         rq.cadr = *cont;
     }
+
     /* Flashing displays need the three astronaut returns; GODSPRET and
      * EXDSPRET return to call CADR +1 (terminate). CLEANDSP and KLEENEX
      * (VN forced to +0) have no return slots in their AGC calling
@@ -1130,6 +1310,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (k->src == 1u)
     {
         rq.vn = 0; /* CAF ZERO       */
@@ -1138,7 +1319,9 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     {
         agc_status_t st = agc_dsky_set_dsptem(
             0, (uint16_t) (vn_or_value & PIN_WORD)); /* NORMTEM1 */
+
         rq.vn = agc_dsky_vn(1, 25);                  /* V01N25         */
+
         if (st != AGC_STATUS_OK)
         {
             return st;
@@ -1150,10 +1333,12 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
             pin_sp_from_ones((uint16_t) (vn_or_value & PIN_WORD))); /* PURRS4 */
         rq.vn = agc_dsky_vn(4, 6); /* V04N06         */
     }
+
     if (k->r)
     {
         return dif_start_makeplay(&rq, ctx->prio);
     }
+
     return dif_makeplay(&rq, ctx->prio); /* GOFLASH2: SAVELOCS, MAKEPLAY */
 }
 
@@ -1166,11 +1351,14 @@ agc_status_t agc_dsky_blanket(uint16_t bits)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!g_rq[g_rq_last].used)
     {
         return AGC_STATUS_NOT_FOUND; /* already started */
     }
+
     g_rq[g_rq_last].flags = (uint16_t) (g_rq[g_rq_last].flags | bits);
+
     return AGC_STATUS_OK;
 }
 
@@ -1185,14 +1373,18 @@ agc_status_t agc_dsky_initdsp(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_exec_prio_change(g_restreg);
     dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags,
                     g_cls[DIF_NORMC].cadr};
-    rq.flags     = (uint16_t) (rq.flags & ~DIF_SECOND);
+
+    rq.flags = (uint16_t) (rq.flags & ~DIF_SECOND);
+
     if (!AGC_ASSERT((rq.flags & (DIF_MARK | DIF_PRIO)) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dif_makeplay(&rq, g_restreg);
 }
 
@@ -1202,9 +1394,11 @@ void agc_dsky_set_nvword1(uint16_t word)
     {
         return;
     }
+
     if (!AGC_ASSERT(word <= PIN_WORD))
     {
         return;
     }
+
     g_nvword1 = word;
 }

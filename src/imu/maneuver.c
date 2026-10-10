@@ -73,10 +73,10 @@ static const agc_dp_t arate_lm[RATE_COUNT] = {
 #define BIASCALE_LM ((agc_sp_t) -1024) /* OCT 75777 = -1/16 (LM)         */
 /* QUADROT (CM): S/C to control axes, X rotation -7.25 deg, scaled .1.    */
 static const agc_mat_t quadrot = {{
-    {{26843546, 0, 0}},        /* .1,      0,       0           */
-    {{0, 26628797, -3387655}}, /* 0,  .099200, -.012620         */
-    {{0, 3387655, 26628797}}   /* 0,  .012620,  .099200         */
-}};
+                                      {{26843546, 0, 0}}, /* .1,      0,       0           */
+                                      {{0, 26628797, -3387655}}, /* 0,  .099200, -.012620         */
+                                      {{0, 3387655, 26628797}} /* 0,  .012620,  .099200         */
+                                  }};
 
 /* KALCMANU erasables (module-private; EBANK BCDU).                       */
 static uint16_t     bcdu[3];     /* BCDU: initial / previous desired CDUs   */
@@ -96,10 +96,12 @@ static agc_prio_t   attprio;     /* ATTPRIO: user's priority                */
 static bool is_lm(void)
 {
     agc_vehicle_t v = agc_state_vehicle();
+
     if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
     {
         return false;
     }
+
     return v == AGC_VEHICLE_LM;
 }
 
@@ -110,11 +112,14 @@ static agc_sp_t cdu_signed(uint16_t p)
     {
         return 0; /* no valid result */
     }
+
     int v = (p & 040000u) ? (int) p - 0100000 : (int) p;
+
     if (!AGC_ASSERT(v >= -16384 && v <= 16383))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) v;
 }
 
@@ -125,11 +130,14 @@ static void csm_set_cdud(int axis, uint16_t p)
     {
         return;
     }
+
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(rcs != NULL))
     {
         return;
     }
+
     rcs->cdud[axis] =
         (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
 }
@@ -140,6 +148,7 @@ static void lm_set_cdud(int axis, uint16_t p)
     {
         return;
     }
+
     if (axis == 0)
     {
         agc_erase_set_cduxd(p);
@@ -160,10 +169,12 @@ static void set_cdud(int axis, uint16_t p)
     {
         return;
     }
+
     if (!AGC_ASSERT(p <= CDU_MASK))
     {
         return;
     }
+
     if (is_lm())
     {
         lm_set_cdud(axis, p);
@@ -180,11 +191,14 @@ static uint16_t cphi(int axis) /* CPHI, CTHETA, CPSI       */
     {
         return 0; /* no valid result */
     }
+
     uint16_t v = agc_erase_thetad(axis);
+
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
         return 0; /* no valid result */
     }
+
     return v;
 }
 
@@ -194,12 +208,16 @@ static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
     {
         return 0; /* no valid result */
     }
+
     int d = (int) ((unsigned) (a - b) & CDU_MASK);
-    d     = (d >= 040000) ? d - 0100000 : d;
+
+    d = (d >= 040000) ? d - 0100000 : d;
+
     if (!AGC_ASSERT(d >= -040000 && d < 040000))
     {
         return 0; /* no valid result */
     }
+
     return d;
 }
 
@@ -209,11 +227,14 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_waitlist_call(dt, task);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -225,32 +246,42 @@ agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (is_lm())
     {
         rateindx_lm = idx;
+
         return AGC_STATUS_OK;
     }
+
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(rcs != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rcs->ratindx = idx; /* CM: kept with the DAP (S41.2)    */
+
     return AGC_STATUS_OK;
 }
 
 agc_sp_t agc_kalc_rateindx(void)
 {
     agc_sp_t idx = rateindx_lm;
+
     if (!is_lm())
     {
         const agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-        idx                      = (rcs != NULL) ? rcs->ratindx : 0;
+
+        idx = (rcs != NULL) ? rcs->ratindx : 0;
     }
+
     if (!AGC_ASSERT(idx >= 0 && idx <= 6))
     {
         idx = 0;
     }
+
     return idx;
 }
 
@@ -260,6 +291,7 @@ bool agc_kalc_active(void)
     {
         return false;
     }
+
     return attcadr != AGC_JOB_NONE;
 }
 
@@ -269,6 +301,7 @@ agc_imu_stall_result_t agc_kalc_outcome(void)
     {
         return AGC_IMU_STALL_BAD;
     }
+
     /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
      * the user (the AGC's "all returns are now made via GOODEND").       */
     return agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD;
@@ -285,12 +318,14 @@ static void csm_stopyz(agc_csm_rcs_t *rcs)
     {
         return;
     }
+
     for (int i = 1; i < 3; i++)
     {
         rcs->delcdu[i] = 0;
         rcs->wbody[i]  = 0;
         rcs->bias[i]   = 0;
     }
+
     if (!AGC_ASSERT(rcs->wbody[2] == 0))
     {
         return;
@@ -304,21 +339,27 @@ void agc_kalc_stoprate(void)
     if (is_lm())
     {
         agc_lm_dap_stoprate();
+
         return;
     }
+
     agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
     agc_csm_dapcom_t *com = agc_csm_dap_com();
+
     if (!AGC_ASSERT(rcs != NULL && com != NULL))
     {
         return;
     }
+
     rcs->delcdu[0] = 0;
     rcs->wbody[0]  = 0;
     rcs->bias[0]   = 0;
+
     if (!AGC_ASSERT(rcs->wbody[0] == 0))
     {
         return;
     }
+
     com->rcsflags = (uint16_t) (com->rcsflags &
                                 (~(unsigned) AGC_CSM_RCSF_HIRATE & 077777u));
     csm_stopyz(rcs);
@@ -330,19 +371,24 @@ agc_status_t agc_kalc_zeroerror(void)
     if (is_lm())
     {
         agc_lm_dap_zatteror();
+
         return AGC_STATUS_OK;
     }
+
     set_cdud(0, agc_erase_cdux());
     set_cdud(1, agc_erase_cduy());
     set_cdud(2, agc_erase_cduz());
+
     if (!AGC_ASSERT(agc_erase_cduz() <= CDU_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_erase_cdux() <= CDU_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -353,10 +399,12 @@ static void loadcdud(int first_axis)
     {
         return;
     }
+
     for (int i = first_axis; i < 3; i++)
     {
         set_cdud(i, cphi(i));
     }
+
     if (!AGC_ASSERT(cphi(2) <= CDU_MASK))
     {
         return;
@@ -381,13 +429,18 @@ static agc_status_t nogo(void)
         agc_inhint();
         agc_kalc_stoprate();
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = waitlist(2u, AGC_TASK_ENDMANU);
+
     agc_relint();
+
     return st; /* ENDOFJOB        */
 }
 
@@ -397,12 +450,16 @@ static agc_status_t nogom2(void)
 {
     agc_inhint();
     agc_status_t st = agc_kalc_zeroerror();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_relint();
+
     return nogo();
 }
 
@@ -412,16 +469,20 @@ agc_status_t agc_task_manustop(void)
     if (!is_lm())
     {
         agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
         if (!AGC_ASSERT(rcs != NULL))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         csm_stopyz(rcs);      /* STOPYZ          */
         loadcdud(1);          /* LOADYZ          */
         set_cdud(0, cphi(0)); /* ENDROLL         */
         agc_kalc_stoprate();
+
         return agc_task_endmanu();
     }
+
     agc_erase_set_delcduz(0); /* DELDCDU2        */
     agc_erase_set_omegard(0);
     agc_erase_set_delreror(0);
@@ -433,6 +494,7 @@ agc_status_t agc_task_manustop(void)
     agc_erase_set_omegapd(0);
     agc_erase_set_delcdux(0); /* DELDCDU         */
     agc_erase_set_delperor(0);
+
     return agc_task_endmanu(); /* GOODMANU        */
 }
 
@@ -442,16 +504,21 @@ agc_status_t agc_task_endmanu(void)
 {
     agc_job_id_t job  = attcadr;
     agc_prio_t   prio = attprio; /* NEWPRIO         */
-    attcadr           = AGC_JOB_NONE;
+
+    attcadr = AGC_JOB_NONE;
+
     if (!AGC_ASSERT(job != AGC_JOB_NONE))
     {
         return AGC_STATUS_OK; /* nobody waiting  */
     }
+
     agc_status_t st = agc_exec_findvac(prio, job); /* SPVAC           */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -467,12 +534,16 @@ static void incrdcdu_axis(int i)
     {
         return;
     }
+
     uint16_t old = bcdu[i];
+
     if (is_lm())
     {
-        int d        = msu(bcdu[i], ncdu[i]);
-        d            = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
+        int d = msu(bcdu[i], ncdu[i]);
+
+        d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
         agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH));
+
         /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
         if (i == 0)
         {
@@ -489,15 +560,18 @@ static void incrdcdu_axis(int i)
     }
     else
     {
-        int d              = msu(ncdu[i], bcdu[i]);
-        d                  = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
+        int d = msu(ncdu[i], bcdu[i]);
+
+        d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
         agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
         if (AGC_ASSERT(rcs != NULL))
         {
             rcs->delcdu[i] =
                 agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
         }
     }
+
     bcdu[i] = ncdu[i];
     set_cdud(i, old);
 }
@@ -509,27 +583,34 @@ static void incrdcdu_axis(int i)
 static uint16_t timechk(void)
 {
     long now = (long) agc_time_now_cs();
+
     if (!AGC_ASSERT(now >= 0 && now < TIME_MOD))
     {
         return 0; /* no valid result */
     }
+
     long hi = ((long) tm >> 14) - (now >> 14);
     long lo = ((long) tm & 037777L) - (now & 037777L);
+
     if (!AGC_ASSERT(lo > -040000L && lo < 040000L))
     {
         return 0; /* no valid result */
     }
+
     if (hi > 0 || (hi == 0 && lo > 0))
     {
         return 0u; /* TC Q: continue  */
     }
+
     if (hi < 0)
     {
         return 1u; /* 2NDRETRN        */
     }
+
     /* lo = +0: MANUOFF with A = 0.  lo < 0: CCS leaves |lo| - 1, COM
      * makes it -(|lo| - 1); then AD 1SEC and BZMF 2NDRETRN.             */
     long a = ONESEC_CS + ((lo == 0) ? 0 : lo + 1);
+
     return (a <= 0) ? 1u : (uint16_t) a;
 }
 
@@ -538,23 +619,31 @@ static uint16_t timechk(void)
 static agc_status_t contmanu(void)
 {
     agc_inhint();
+
     if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     int diff = nextime - (int) agc_erase_time1();
     int dt   = (diff > 0) ? diff : (diff == 0) ? 1 : TIME1_MOD + diff;
+
     /* DEVIATION: NEXTIME == TIME1 gives the AGC a zero WAITLIST delay;
      * one centisecond is used instead.                                   */
     if (!AGC_ASSERT(dt > 0 && dt < TIME1_MOD))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = waitlist((uint16_t) dt, AGC_TASK_UPDTCALL);
+
     agc_relint();
     nextime = (nextime + ONESEC_CS) & (TIME1_MOD - 1); /* ADS NEXTIME    */
+
     return st;                                         /* ENDOFJOB       */
 }
 
@@ -565,26 +654,34 @@ static agc_status_t incrdcdu_tmanuchk(void)
     { /* CAF TWO: Z, Y, X */
         incrdcdu_axis(i);
     }
+
     if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(bcdu[2] == ncdu[2]))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_interrupts_inhibited())
     {
         agc_relint();
     }
+
     uint16_t dt = timechk();
+
     if (dt == 0u)
     {
         return contmanu();
     }
+
     agc_inhint(); /* MANUSTAL         */
     agc_status_t st = waitlist(dt, AGC_TASK_MANUSTOP);
+
     agc_relint();
+
     return st; /* ENDOFJOB         */
 }
 
@@ -594,19 +691,24 @@ static void manustat_cm(void)
 {
     agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
     agc_csm_dapcom_t *com = agc_csm_dap_com();
+
     if (!AGC_ASSERT(rcs != NULL && com != NULL))
     {
         return;
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         return;
     }
+
     rcs->holdflag = -1;
+
     if (6 - agc_kalc_rateindx() <= 0)
     { /* HIGHGAIN         */
         com->rcsflags = (uint16_t) (com->rcsflags | AGC_CSM_RCSF_HIRATE);
     }
+
     for (int i = 0; i < 3; i++)
     {
         rcs->wbody[i] = brate.c[i];                /* WBODY, 1, 2      */
@@ -621,20 +723,23 @@ static void manustat_lm(void)
     {
         return;
     }
+
     for (int i = 2; i >= 0; i--)
     {
         agc_sp_t w    = agc_dp_high(brate.c[i]);
         agc_sp_t jacc = (i == 0) ? agc_erase_1jacc() :
                         (i == 1) ? agc_erase_1jaccq() :
-                                   agc_erase_1jaccr();
-        agc_sp_t a    = (agc_sp_t) ((w > 0) ? -w : w); /* -|W|             */
-        agc_sp_t q    = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16   */
-        agc_dp_t p    = agc_sp_mul(q, w); /* MP BRATE (A, L)  */
-        agc_dp_t lag  = 0;
+                        agc_erase_1jaccr();
+        agc_sp_t a   = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|             */
+        agc_sp_t q   = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16   */
+        agc_dp_t p   = agc_sp_mul(q, w);                        /* MP BRATE (A, L)  */
+        agc_dp_t lag = 0;
+
         if (AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc)))
         {
             lag = p / jacc; /* DV 1JACC         */
         }
+
         if (i == 0)
         {
             agc_erase_set_omegapd(w);
@@ -657,8 +762,10 @@ static void manustat_lm(void)
 static void manustat(void)
 {
     long t = ((long) tm + (long) agc_time_now_cs() - ONESEC_CS) % TIME_MOD;
-    tm     = (agc_dp_t) ((t < 0) ? t + TIME_MOD : t);
+
+    tm = (agc_dp_t) ((t < 0) ? t + TIME_MOD : t);
     agc_inhint();
+
     if (is_lm())
     {
         manustat_lm();
@@ -667,15 +774,20 @@ static void manustat(void)
     {
         manustat_cm();
     }
+
     nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1);
+
     if (!AGC_ASSERT(tm >= 0))
     {
         agc_relint();
+
         return;
     }
+
     if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
     {
         agc_relint();
+
         return;
     }
 }
@@ -688,23 +800,28 @@ static agc_status_t newangl1(agc_interp_t *ip)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     mis = agc_mat_mul(ip, &mis, &del); /* MXM3             */
     agc_vec_t    ang;
     agc_dp_t     cmga;
     agc_status_t st = agc_kalc_dcmtocdu(ip, &mis, &ang, &cmga);
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_rtb_v1sto2s(ang, ncdu); /* NCDU             */
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     if (agc_flag_test(AGC_FLAG_CALCMAN2))
     { /* BONCLR CALCMAN2  */
         agc_flag_clear(AGC_FLAG_CALCMAN2);
         manustat();
     }
+
     return incrdcdu_tmanuchk();
 }
 
@@ -713,29 +830,39 @@ static agc_status_t newangl1(agc_interp_t *ip)
 static agc_status_t wcalc(agc_interp_t *ip)
 {
     int idx = agc_kalc_rateindx() / 2;
+
     if (!AGC_ASSERT(idx >= 0 && idx < RATE_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool     lm = is_lm();
     agc_dp_t ar = lm ? arate_lm[idx] : arate_cm[idx];
+
     if (lm)
     {
         imu_vflag_set(IMU_VF_CALCMAN3); /* NOGIMLOC         */
     }
+
     agc_status_t st = agc_kalc_delcomp(ip, cof, agc_dp_shr(ar, 4), &del);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     agc_vec_t b = agc_vec_scale(ip, cof, ar);
-    brate       = lm ? b : agc_mat_vec(ip, &quadrot, b); /* MXV QUADROT (CM) */
-    tm = agc_dp_shr(agc_dp_div(ip, agc_dp_mul(ip, am, ANGLTIME), ar), 5);
+
+    brate = lm ? b : agc_mat_vec(ip, &quadrot, b); /* MXV QUADROT (CM) */
+    tm    = agc_dp_shr(agc_dp_div(ip, agc_dp_mul(ip, am, ANGLTIME), ar), 5);
+
     if (!lm)
     {
         biastemp = agc_vec_scale(ip, brate, BIASCALE);
     }
+
     agc_flag_set(AGC_FLAG_CALCMAN2); /* SETGO CALCMAN2   */
+
     return newangl1(ip);
 }
 
@@ -751,10 +878,12 @@ static agc_status_t small_maneuver(void)
     if (!is_lm())
     {
         agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
         if (!AGC_ASSERT(rcs != NULL))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         agc_inhint();
         rcs->holdflag = -1;
         loadcdud(0);
@@ -764,10 +893,12 @@ static agc_status_t small_maneuver(void)
     {
         loadcdud(0);
     }
+
     if (!AGC_ASSERT(!agc_interrupts_inhibited()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return nogo();
 }
 
@@ -776,6 +907,7 @@ static agc_status_t small_maneuver(void)
 static agc_status_t kalcman3(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_inhint(); /* READCDUK         */
     bcdu[0] = agc_erase_cdux();
@@ -785,17 +917,21 @@ static agc_status_t kalcman3(void)
     const uint16_t   fin[3] = {cphi(0), cphi(1), cphi(2)};
     agc_kalc_setup_t k;
     agc_status_t     st = agc_kalc_compute(&ip, bcdu, fin, &k);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     mis = k.mis;
     cof = k.cof;
     am  = k.am;
+
     switch (k.kcase)
     {
         case AGC_KALC_TOOBAD: /* TOOBADF (LM)     */
             agc_alarm(ALARM_GLOCK);
+
             return nogo();
         case AGC_KALC_SMALL:
             return small_maneuver();
@@ -805,6 +941,7 @@ static agc_status_t kalcman3(void)
         default:
             break;
     }
+
     return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
 }
 
@@ -814,10 +951,12 @@ agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return kalcman3();
 }
 
@@ -831,16 +970,20 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (attcadr != AGC_JOB_NONE)
     {
         return agc_poodoo(ALARM_TWO_USERS); /* two users        */
     }
+
     attcadr = wake_as;   /* DXCH ATTCADR     */
     attprio = ctx->prio; /* ATTPRIO          */
+
     if (!AGC_ASSERT(attprio <= 037))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return kalcman3(); /* POSTJUMP KALCMAN3 */
 }
 
@@ -851,11 +994,14 @@ agc_status_t agc_task_updtcall(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -867,7 +1013,9 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     bool interrupted;
+
     if (is_lm())
     {
         interrupted = (agc_imu_isitauto() > 0); /* CCS A: TCF NOGO-2 */
@@ -875,17 +1023,23 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
     else
     {
         const agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
         interrupted = (rcs == NULL) || (rcs->holdflag >= 0); /* BZMF NOGO-2 */
     }
+
     if (interrupted)
     {
         return nogom2();
     }
+
     if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
+
     return newangl1(&ip); /* NEWANGL          */
 }

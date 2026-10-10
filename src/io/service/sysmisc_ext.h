@@ -20,8 +20,8 @@
 #include "agc/exec/exec.h"
 
 /* ---- requested from prog-rendz (P20-P25.agc) ---------------------------- */
-bool         agc_rr_limchk(uint16_t cdut,
-                           uint16_t cdus); /* RRLIMCHK: true = in limits */
+bool agc_rr_limchk(uint16_t cdut,
+                   uint16_t cdus);         /* RRLIMCHK: true = in limits */
 agc_status_t agc_rr_settrkf(void);         /* SETTRKF: tracker lamp  */
 
 /* ---- job / task placeholders (lead adds them to agc_jobs.h) ------------ */

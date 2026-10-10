@@ -558,10 +558,12 @@ static int32_t sf_word_value(uint16_t w)
     {
         return 0;
     }
+
     if (w >= 040000u)
     {
         return -(int32_t) (077777u - w);
     }
+
     return (int32_t) w;
 }
 
@@ -572,6 +574,7 @@ static agc_dp_t sf_pair_value(const sf_pair_t *p)
     {
         return 0;
     }
+
     return (agc_dp_t) (sf_word_value(p->hi) * 16384 + sf_word_value(p->lo));
 }
 
@@ -583,23 +586,29 @@ agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (veh == AGC_VEHICLE_CSM)
     {
         if (!AGC_ASSERT(sf_code < SF_COUNT_CSM))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         *sf_in  = sf_pair_value(&sfintab_csm[sf_code]);
         *sf_out = sf_pair_value(&sfoutab_csm[sf_code]);
+
         return AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(veh == AGC_VEHICLE_LM) ||
         !AGC_ASSERT(sf_code < SF_COUNT_LM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *sf_in  = sf_pair_value(&sfintab_lm[sf_code]);
     *sf_out = sf_pair_value(&sfoutab_lm[sf_code]);
+
     return AGC_STATUS_OK;
 }
 
@@ -612,29 +621,36 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    const scale_def_t *def = &scale_defs[scale];
+
+    const scale_def_t *def     = &scale_defs[scale];
     const int          routine =
         (veh == AGC_VEHICLE_CSM) ? def->csm_routine : def->lm_routine;
     const int code = (veh == AGC_VEHICLE_CSM) ? def->csm_code : def->lm_code;
+
     if (routine < 0)
     {
         return AGC_STATUS_NOT_FOUND; /* not defined in this program */
     }
+
     agc_status_t st =
         agc_scale_sfconst(veh, (uint8_t) code, &out->sf_in, &out->sf_out);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     out->scale   = scale;
     out->routine = (uint8_t) routine;
     out->sf_code = (uint8_t) code;
     out->is_dp   = def->is_dp;
     out->is_raw  = def->is_raw;
+
     return AGC_STATUS_OK;
 }
 
@@ -645,5 +661,6 @@ agc_status_t agc_scale_info(agc_scale_t scale, agc_scale_info_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_scale_info_vehicle(agc_state_vehicle(), scale, out);
 }

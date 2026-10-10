@@ -15,22 +15,19 @@
 agc_sp_t agc_erase_time5(void); /* TIME5 counter (T5RUPT)       */
 void     agc_erase_set_time5(agc_sp_t v);
 void     agc_erase_set_thrust(
-        agc_sp_t pulses); /* THRUST counter 055 (landing_pending.h) */
+    agc_sp_t pulses);     /* THRUST counter 055 (landing_pending.h) */
 
 /* ---- radar routines (prog-rendz, P20-P25.agc pp. ~2727-3070, 4487, 5115) -- */
-void agc_radar_lralt(void); /* LRALT: one LR altitude sample   */
-void
-agc_radar_lrvel(agc_sp_t beam2); /* LRVEL: 5 velocity samples, A = 2*VSELECT */
+void         agc_radar_lralt(void); /* LRALT: one LR altitude sample   */
+void         agc_radar_lrvel(agc_sp_t beam2); /* LRVEL: 5 velocity samples, A = 2*VSELECT */
 agc_status_t agc_radar_lrpos2(void);   /* LRPOS2: drive LR antenna to POS2 */
 agc_dp_t     agc_radar_samplsum(void); /* SAMPLSUM: last reading (DP)     */
-void
-agc_radar_landing_radar_lights(void); /* R12LITES: LR lamps              */
+void         agc_radar_landing_radar_lights(void); /* R12LITES: LR lamps              */
 agc_status_t agc_radar_powered_flight_designate(
     void); /* R29: RR designate (from SERVICER) */
 
 /* ---- landing (guid-landing, P70-P71.agc p. ~829) -------------------------- */
-agc_status_t
-agc_lm_abort_monitor_resume(void); /* R10,R11A (LRHTASK continues there) */
+agc_status_t agc_lm_abort_monitor_resume(void); /* R10,R11A (LRHTASK continues there) */
 
 /* ---- LAMBERT / INITVEL erasables RASTEER1 reads (nav-conic / prog-rendz).
  * RTMAG, MU/A, MUASTEER are already agc_rendz_t fields.                     */

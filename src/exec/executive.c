@@ -90,18 +90,22 @@ static uint16_t   generation;                  /* STARTSB2 count     */
 int agc_exec_core_sets(void)
 {
     int n = AGC_EXEC_CORE_SETS_CSM;
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         n = AGC_EXEC_CORE_SETS_LM;
     }
+
     if (!AGC_ASSERT(n <= AGC_EXEC_MAX_JOBS))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(n > 0))
     {
         return 0; /* no valid result */
     }
+
     return n;
 }
 
@@ -113,12 +117,16 @@ static int32_t prio_word(int i)
     {
         return 0;
     }
+
     const core_set_t *c = &core[i];
-    int32_t w = ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1);
+    int32_t           w =
+        ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1);
+
     if (!AGC_ASSERT(c->vac >= -1 && c->vac < AGC_EXEC_MAX_VACS))
     {
         w = (int32_t) c->prio << EXEC_PRIO_SHIFT;
     }
+
     if (c->state == AGC_CORE_FREE)
     {
         w = 0;
@@ -131,6 +139,7 @@ static int32_t prio_word(int i)
     {
         /* active: positive */
     }
+
     return w;
 }
 
@@ -139,7 +148,9 @@ static void activity_light(bool on)
     /* CAF TWO / WOR DSALMOUT (NUDIRECT, NUCHANG2) and CS TWO / WAND
      * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2.        */
     agc_status_t st;
+
     _Static_assert(AGC_CH011_COMPACT == 000002, "AGC constant");
+
     if (on)
     {
         agc_chan_or(AGC_CHAN_DSALMOUT, (uint16_t) AGC_CH011_COMPACT);
@@ -151,6 +162,7 @@ static void activity_light(bool on)
             (uint16_t) (AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT));
         st = AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
@@ -169,18 +181,22 @@ void exec_clear_tables(void)
         core[i].loc   = AGC_JOB_NONE;
         core[i].arg   = 0;
     }
+
     for (int v = 0; v < AGC_EXEC_MAX_VACS; v++)
     {
         vac_used[v] = false; /* VACnUSE = own address */
     }
+
     newjob     = EXEC_NEWJOB_IDLE; /* TS NEWJOB (-0)        */
     locctr     = -1;
     yielded    = false;
     generation = (uint16_t) (generation + 1U);
+
     if (!AGC_ASSERT(core[0].state == AGC_CORE_FREE))
     {
         return;
     }
+
     if (!AGC_ASSERT(!vac_used[0]))
     {
         return;
@@ -193,10 +209,12 @@ uint16_t exec_restart_generation(void)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
     {
         return 0; /* no valid result */
     }
+
     return generation;
 }
 
@@ -206,14 +224,17 @@ int exec_running_job_prio(void)
     {
         return -1;
     }
+
     if (newjob == EXEC_NEWJOB_IDLE || core[0].state != AGC_CORE_ACTIVE)
     {
         return -1;
     }
+
     if (!AGC_ASSERT(core[0].prio <= EXEC_PRIO_MAX))
     {
         return -1;
     }
+
     return (int) core[0].prio;
 }
 
@@ -221,14 +242,17 @@ agc_status_t agc_exec_init(void)
 {
     exec_clear_tables();
     activity_light(false);
+
     if (!AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_exec_core_sets() <= AGC_EXEC_MAX_JOBS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -241,11 +265,14 @@ static void setloc_compare(int i)
     {
         return;
     }
+
     int idx = (newjob > 0) ? newjob : 0;
+
     if (!AGC_ASSERT(idx < AGC_EXEC_MAX_JOBS))
     {
         return;
     }
+
     if (prio_word(i) - prio_word(idx) > 0)
     {
         newjob = i;
@@ -261,16 +288,21 @@ static agc_status_t spectest(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         newjob = 0; /* +0 SHOWS ACTIVE JOB ALREADY SET */
+
         return AGC_STATUS_OK;
     }
+
     if (!AGC_ASSERT(newjob > 0))
     { /* TC CCSHOLE                      */
         return agc_ccshole();
     }
+
     setloc_compare(0);
+
     return AGC_STATUS_OK;
 }
 
@@ -284,8 +316,10 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int n     = agc_exec_core_sets();
     int found = -1;
+
     for (int i = 0; i < n && found < 0; i++)
     {
         if (core[i].state == AGC_CORE_FREE)
@@ -293,21 +327,26 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
             found = i;
         }
     }
+
     if (found < 0)
     {
         return agc_bailout(AGC_ALARM_01202); /* NO CORE SETS */
     }
+
     core[found].state = AGC_CORE_ACTIVE;
     core[found].prio  = prio;
     core[found].vac   = vac;
     core[found].loc   = job;
     core[found].arg   = 0;
     locctr            = found;
+
     if (found == 0)
     {
         return spectest();
     }
+
     setloc_compare(found);
+
     return AGC_STATUS_OK;
 }
 
@@ -320,9 +359,12 @@ agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_status_t st = novac2(prio, job, -1);
+
     agc_relint();
+
     return st;
 }
 
@@ -336,8 +378,10 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     int vac = -1;
+
     for (int v = 0; v < AGC_EXEC_MAX_VACS && vac < 0; v++)
     {
         if (!vac_used[v])
@@ -345,7 +389,9 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
             vac = v;
         }
     }
+
     agc_status_t st;
+
     if (vac < 0)
     {
         st = agc_bailout(AGC_ALARM_01201); /* NO VAC AREAS */
@@ -355,7 +401,9 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
         vac_used[vac] = true; /* store +0 in VACnUSE */
         st            = novac2(prio, job, vac);
     }
+
     agc_relint();
+
     return st;
 }
 
@@ -367,11 +415,14 @@ agc_status_t agc_exec_set_new_job_arg(agc_sp_t arg)
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     if (!AGC_ASSERT(core[locctr].state == AGC_CORE_ACTIVE))
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     core[locctr].arg = arg;
+
     return AGC_STATUS_OK;
 }
 
@@ -383,10 +434,13 @@ static void chanjob(int k)
     {
         return;
     }
+
     core_set_t tmp = core[0];
-    core[0]        = core[k];
-    core[k]        = tmp;
-    newjob         = 0;
+
+    core[0] = core[k];
+    core[k] = tmp;
+    newjob  = 0;
+
     if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
     {
         return;
@@ -402,22 +456,27 @@ static int ejscan(int32_t floor)
     {
         return -1;
     }
+
     int     n    = agc_exec_core_sets();
     int     best = -1;
     int32_t high = floor;
+
     for (int i = 1; i < n; i++)
     {
         int32_t w = prio_word(i);
+
         if (w > 0 && w - high > 0)
         { /* EJ1: CCS of new-old  */
             high = w;
             best = i;
         }
     }
+
     if (!AGC_ASSERT(best < n))
     {
         return -1;
     }
+
     return best;
 }
 
@@ -425,10 +484,12 @@ static int ejscan(int32_t floor)
 static void ejscan_change(void)
 {
     int best = ejscan(0);
+
     if (!AGC_ASSERT(best != 0))
     {
         return;
     }
+
     if (best < 0)
     {
         newjob = EXEC_NEWJOB_IDLE; /* DUMMYJOB: NEWJOB = -0 */
@@ -438,6 +499,7 @@ static void ejscan_change(void)
     {
         chanjob(best); /* NEWJOB, CHANJOB -2   */
     }
+
     if (!AGC_ASSERT(newjob <= 0))
     {
         return;
@@ -452,10 +514,12 @@ static void end_of_job(void)
     {
         return;
     }
+
     if (core[0].vac >= 0 && AGC_ASSERT(core[0].vac < AGC_EXEC_MAX_VACS))
     {
         vac_used[core[0].vac] = false; /* INDEX A / TS 0      */
     }
+
     core[0].state = AGC_CORE_FREE; /* XCH PRIORITY (-0)   */
     core[0].vac   = -1;
     core[0].loc   = AGC_JOB_NONE;
@@ -471,10 +535,12 @@ void agc_exec_job_sleep(agc_job_id_t wake_as)
     {
         return;
     }
+
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return; /* not called from a job */
     }
+
     core[0].loc   = wake_as;           /* TS LOC              */
     core[0].state = AGC_CORE_SLEEPING; /* CS PRIORITY         */
 }
@@ -488,9 +554,11 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     int n     = agc_exec_core_sets();
     int found = -1;
+
     for (int i = 0; i < n && found < 0; i++)
     {
         if (core[i].state == AGC_CORE_SLEEPING && core[i].loc == job)
@@ -498,7 +566,9 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
             found = i;
         }
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     if (found < 0)
     {
         locctr = -1; /* CS ONE / TS LOCCTR  */
@@ -508,6 +578,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     {
         core[found].state = AGC_CORE_ACTIVE; /* re-complement PRIORITY */
         locctr            = found;
+
         if (found == 0)
         {
             st = spectest();
@@ -517,11 +588,14 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
             setloc_compare(found);
         }
     }
+
     agc_relint();
+
     if (!AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -531,6 +605,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
 void agc_exec_job_wake_if_asleep(agc_job_id_t job)
 {
     const agc_status_t st = agc_exec_job_wake(job);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
         return;
@@ -549,15 +624,19 @@ void agc_exec_prio_change(agc_prio_t new_prio)
     {
         return;
     }
+
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return;
     }
+
     agc_inhint();
     core[0].prio = new_prio;
-    int best     = ejscan(prio_word(0));
-    newjob       = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
+    int best = ejscan(prio_word(0));
+
+    newjob = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
+
     if (!AGC_ASSERT(newjob >= 0))
     {
         return;
@@ -572,12 +651,15 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     core[0].loc = resume_as; /* LOC = return point  */
     yielded     = true;
+
     return AGC_STATUS_OK;
 }
 
@@ -588,6 +670,7 @@ static void after_job(void)
     {
         return;
     }
+
     if (core[0].state == AGC_CORE_SLEEPING)
     {
         ejscan_change(); /* JOBSLP1 -> EJSCAN   */
@@ -603,6 +686,7 @@ static void after_job(void)
     {
         end_of_job(); /* ENDOFJOB            */
     }
+
     if (!AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE))
     {
         return;
@@ -618,35 +702,44 @@ agc_status_t agc_exec_run_one(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         return AGC_STATUS_NOT_FOUND; /* DUMMYJOB            */
     }
+
     if (newjob > 0)
     {
         chanjob(newjob); /* NUCHANG2 / CHANJOB  */
     }
+
     if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
     {
         return agc_ccshole();
     }
+
     activity_light(true); /* NUDIRECT            */
     agc_job_ctx_t ctx;
-    ctx.id          = core[0].loc;
-    ctx.prio        = core[0].prio;
-    ctx.has_vac     = core[0].vac >= 0;
-    ctx.vac_index   = core[0].vac;
-    ctx.arg         = core[0].arg;
-    yielded         = false;
-    uint16_t gen    = generation;
-    in_job          = true;
+
+    ctx.id        = core[0].loc;
+    ctx.prio      = core[0].prio;
+    ctx.has_vac   = core[0].vac >= 0;
+    ctx.vac_index = core[0].vac;
+    ctx.arg       = core[0].arg;
+    yielded       = false;
+    uint16_t gen = generation;
+
+    in_job = true;
     agc_status_t st = agc_dispatch_job(&ctx);
-    in_job          = false;
+
+    in_job = false;
+
     if (agc_exec_restart_pending())
     {
         /* BAILOUT / POODOO / ABORT in the job: WHIMPER -> ENEMA. The
          * job's core set is wiped by STARTSB2, so no ENDOFJOB.        */
         agc_status_t rs = agc_exec_service_restart();
+
         if (!AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT))
         {
             return AGC_STATUS_BAD_ARG;
@@ -660,6 +753,7 @@ agc_status_t agc_exec_run_one(void)
     {
         /* a fresh start (V36 SLAP1) re-initialised the tables in the job */
     }
+
     return st;
 }
 
@@ -669,10 +763,12 @@ bool exec_in_job(void)
     {
         return false;
     }
+
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
     {
         return false;
     }
+
     return in_job;
 }
 
@@ -682,10 +778,13 @@ agc_job_id_t exec_running_job_loc(void)
     {
         return AGC_JOB_NONE;
     }
-    if (!AGC_ASSERT(core[0].state != AGC_CORE_FREE || core[0].loc == AGC_JOB_NONE))
+
+    if (!AGC_ASSERT(core[0].state != AGC_CORE_FREE ||
+                    core[0].loc == AGC_JOB_NONE))
     {
         return AGC_JOB_NONE;
     }
+
     return (core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc;
 }
 
@@ -697,10 +796,12 @@ agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id == AGC_JOB_ENDOFJOB))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -710,10 +811,12 @@ bool agc_exec_idle(void)
     {
         return false;
     }
+
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
     {
         return false;
     }
+
     return newjob == EXEC_NEWJOB_IDLE;
 }
 
@@ -723,10 +826,12 @@ int agc_exec_newjob(void)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
     {
         return 0; /* no valid result */
     }
+
     return newjob;
 }
 
@@ -737,9 +842,11 @@ agc_status_t agc_exec_core_info(int core_set, agc_exec_core_info_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     out->state     = core[core_set].state;
     out->prio      = core[core_set].prio;
     out->vac_index = core[core_set].vac;
     out->loc       = core[core_set].loc;
+
     return AGC_STATUS_OK;
 }

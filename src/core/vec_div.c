@@ -24,27 +24,35 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
     agc_w2_t w;
     agc_w2_t d = agc_w_split(s_abs);
     agc_dp_t q;
+
     if (!AGC_ASSERT((k >= 0) && (k < VDIV_NORM_MAX)))
     {
         return false;
     }
+
     if (a == 0)
     {
         return true; /* exit on zero     */
     }
+
     if (a < 0)
     { /* /MPAC-           */
         a   = -a;
         neg = !neg;
     }
+
     w = agc_w_split(a);
+
     if ((d.hi - w.hi < 0) || ((d.hi == w.hi) && (d.lo - w.lo <= 0)))
     {
         *c = neg ? AGC_DP_MIN : AGC_DP_MAX; /* DVOVF            */
+
         return false;
     }
+
     q  = agc_w_genddv(a * ((agc_dp_t) 1 << k), s_norm, d.hi == w.hi);
     *c = neg ? -q : q;
+
     return true;
 }
 
@@ -54,41 +62,51 @@ static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
 {
     int      k;
     agc_w2_t w;
+
     if (!AGC_ASSERT(s != 0))
     {
         return 0; /* no valid result */
     }
+
     *s = agc_w_split(*s).lo * AGC_W_ONE;
+
     for (k = 0; k < AGC_VEC_N; k++)
     {
         w    = agc_w_split(m[k]);
         m[k] = w.lo * AGC_W_ONE; /* XCH +1; XCH      */
+
         if (w.hi != 0)
         {
             return k; /* BZF +2; DVOVF    */
         }
     }
+
     if (!AGC_ASSERT(k == AGC_VEC_N))
     {
         return 0; /* no valid result */
     }
+
     return (*s == 0) ? 0 : -1; /* zero divisor     */
 }
 
 static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
 {
     agc_vec_t r;
+
     r.c[0] = m0; /* MPAC             */
     r.c[1] = m3; /* MPAC +3          */
     r.c[2] = m5; /* MPAC +5          */
+
     if (!AGC_ASSERT((m0 >= AGC_DP_MIN) && (m0 <= AGC_DP_MAX)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return r;
 }
 
@@ -101,48 +119,62 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
     bool     sneg = false;
     int      k    = 0;
     int      bad;
+
     if (!AGC_ASSERT(ip != 0))
     {
         return v;
     }
+
     if (agc_w_split(s).hi == 0)
     {
         bad = vsc_shift14(m, &s);
+
         if (bad >= 0)
         {
             ip->ovfind = 1;
+
             /* DEVIATION: DVSIGN is stale here in the AGC; +DPPOSMAX used.  */
             return vsc_result(AGC_DP_MAX, m[1], m[2]);
         }
     }
+
     if (!AGC_ASSERT(s != 0))
     {
         return v;
     }
+
     if (s < 0)
     { /* /BUF-            */
         s    = -s;
         sneg = true;
     }
+
     for (s_norm = s; (k < VDIV_NORM_MAX) && (s_norm < AGC_DP_HALF); k++)
     {
         s_norm *= 2; /* /NORM2           */
     }
+
     if (!vsc_dv(&m[0], s, s_norm, k, sneg))
     {
         ip->ovfind = 1;
+
         return vsc_result(m[0], m[1], m[2]);
     }
+
     if (!vsc_dv(&m[1], s, s_norm, k, sneg))
     { /* MPAC = y, +3 = x */
         ip->ovfind = 1;
+
         return vsc_result(m[1], m[0], m[2]);
     }
+
     if (!vsc_dv(&m[2], s, s_norm, k, sneg))
     { /* MPAC = z, +5 = y */
         ip->ovfind = 1;
+
         return vsc_result(m[2], m[0], m[1]);
     }
+
     return vsc_result(m[0], m[1], m[2]); /* VROTATEX         */
 }
 
@@ -155,18 +187,23 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
     agc_ovf_t o = 0;
     agc_w3_t  acc;
     int32_t   a;
+
     if (!AGC_ASSERT(ip != 0))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])),
                         agc_w_dsqsub(agc_w_split(v.c[1])), &o);
-    a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */
+    a = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */
+
     if (!AGC_ASSERT(agc_w_ok(a)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     ip->ovfind = 1;
+
     /* DEVIATION: DVSIGN is stale in the AGC; +DPPOSMAX used.               */
     return vsc_result(AGC_DP_MAX, 0, (agc_dp_t) (a * AGC_W_ONE));
 }
@@ -177,20 +214,25 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root)
 {
     agc_dp_t a = (c < 0) ? -c : c;
     agc_dp_t q;
+
     if (!AGC_ASSERT((kdiv >= -1) && (kdiv <= 13)))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(root > AGC_DP_QUARTER)) /* normalised root  */
     {
         return 0; /* no valid result */
     }
+
     if (c == 0)
     {
         return 0; /* exit on zero     */
     }
+
     a = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));
     q = agc_w_genddv(a, root, false); /* MAXDVSW = -1     */
+
     return (c < 0) ? -q : q;
 }
 
@@ -206,42 +248,53 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
     int       kdiv;
     int       k;
     bool      abort = false;
+
     if (!AGC_ASSERT(ip != 0))
     {
         return v;
     }
+
     sq = agc_w_vsqsub(v, &o); /* OVFIND saved     */
+
     if (o != 0)
     {
         return unit_overflow(ip, v); /* LV not written   */
     }
+
     if (vsq != 0)
     {
         *vsq = agc_w_join(agc_w3_top(sq)); /* LVSQUARE         */
     }
+
     root = agc_w_sqrtsub(sq, &shift, &abort);
+
     if (!AGC_ASSERT(!abort))
     {
         return v;
     }
+
     if (root.hi == 0)
     { /* input to SQRT 0  */
         if (abval != 0)
         {
             *abval = 0; /* LV = 0           */
         }
+
         return unit_overflow(ip, v);
     }
+
     if (shift > 14)
     { /* SMALL            */
         kdiv  = shift - 15;
         lv.m1 = agc_w_mp((int32_t) 1 << (28 - shift), root.hi).hi;
+
         for (k = 0; k < AGC_VEC_N; k++)
         {
             if (!AGC_ASSERT(agc_w_split(v.c[k]).hi == 0))
             {
                 return v;
             }
+
             v.c[k] *= AGC_W_ONE; /* VBUF left 14     */
         }
     }
@@ -263,13 +316,16 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
         lv.m0 = root.hi;
         lv.m1 = root.lo;
     }
+
     if (abval != 0)
     {
         *abval = agc_w_join(agc_w3_top(lv)); /* LV               */
     }
+
     for (k = 0; k < AGC_VEC_N; k++)
     {
         v.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root));
     }
+
     return v;
 }

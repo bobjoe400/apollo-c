@@ -16,14 +16,14 @@
 #define PIN_FULLDSP1 07675u /* FULLDSP1: all 8's and +            */
 #define PIN_TSTCON1 \
     00175u /* uplink activity, temp, key rlse,
-                                       * V/N flash, operator error          */
+            * V/N flash, operator error          */
 #define PIN_TSTCON2_CSM \
     040650u                    /* DSPTAB+11D bits 4,6,8,9: no att,
-                                       * gimbal lock, tracker, prog alm     */
+                                * gimbal lock, tracker, prog alm     */
 #define PIN_TSTCON2_LM 040674u /* bits 3,4,5,6,8,9: also LR lites    */
 #define PIN_TSTCON3 \
     00115u                      /* chan 11 bits 1,3,4,7: uplink
-                                       * activity, temp, operator error     */
+                                 * activity, temp, operator error     */
 #define PIN_13_11_1     016001u /* 13-11,1                            */
 #define PIN_PRIO16_BITS 016000u /* PRIO16                             */
 #define PIN_OCT55000    055000u
@@ -43,35 +43,46 @@ agc_status_t pin_monitor(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t m1 = (uint16_t) (s->nouncadr & ~(PIN_BIT15 | PIN_BIT14));
+
     if (s->entret == PIN_ENT_ENDOFJOB)
     {
-        m1 |= PIN_BIT14; /* externally initiated monitor  */
+        m1         |= PIN_BIT14; /* externally initiated monitor  */
         s->monsave2 = 0; /* zero NVMONOPT options         */
     }
+
     uint16_t m =
         (uint16_t) (((uint16_t) (s->verbreg & PIN_LOW7) << 7) | s->nounreg);
-    s->dsplock      = false; /* +0 into DSPLOCK so monitor can run */
+
+    s->dsplock = false; /* +0 into DSPLOCK so monitor can run */
     agc_status_t st = AGC_STATUS_OK;
+
     /* Turn off KR lite if CADRSTOR and DSPLIST are both empty. (Lite comes
      * on if new monitor is keyed in over old monitor.)                   */
     if (!pin_cadrstor_full())
     {
         st = pin_reldsp1();
     }
+
     agc_inhint();
+
     if (s->monsave == 0u && st == AGC_STATUS_OK)
     {
         st = agc_waitlist_call(1, PIN_TASK_MONREQ); /* request MONREQ  */
     }
+
     s->monsave  = m;
     s->monsave1 = m1;
     agc_relint();
+
     return (st == AGC_STATUS_OK) ? pin_entexit() : st; /* TC ENTRET   */
 }
 
@@ -82,20 +93,27 @@ agc_status_t agc_task_monreq(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     pin_lodsampt(); /* time is snatched in rupt for N65 */
+
     if ((s->monsave1 & PIN_BIT15) != 0u)
     { /* killer bit = 1: KILLMON      */
         s->monsave  = 0;
         s->monsave1 = 0; /* turn off kill and external bits */
+
         return AGC_STATUS_OK;
     }
+
     agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, PIN_TASK_MONREQ);
     agc_status_t st2 = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_MONDO);
+
     if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_OK) ? st2 : st;
 }
 
@@ -105,29 +123,37 @@ agc_status_t agc_task_monreq(void)
 agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 {
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((s->monsave1 & PIN_BIT15) != 0u)
     {
         return AGC_STATUS_OK; /* terminate came since last MONREQ */
     }
+
     if (s->dsplock)
     { /* MONBUSY: NVSUB is busy        */
         pin_reldspon();
+
         return AGC_STATUS_OK;
     }
+
     agc_status_t st    = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
     int          dverb = (int) ((s->monsave & PIN_MID7) >> 7) - PIN_MONREF;
+
     if (st != AGC_STATUS_OK || !AGC_ASSERT(dverb >= 1 && dverb <= 7))
     {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
+
     s->verbreg = (uint8_t) dverb;
     s->entret  = PIN_ENT_PASTEVB; /* return to PASTEVB after display */
     s->mpac2   = (uint16_t) (s->monsave1 & ~(PIN_BIT15 | PIN_BIT14));
     st         = pin_testnn();
+
     return (st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK;
 }
 
@@ -138,24 +164,30 @@ agc_status_t pin_pastevb(void)
 {
     pin_state_t *s     = pin_st();
     uint16_t     paste = (uint16_t) (s->monsave2 & PIN_MID7); /* paste option */
-    uint16_t     verb =
+    uint16_t     verb  =
         (paste != 0u) ? (uint16_t) (paste >> 7) : (uint16_t) (s->monsave >> 7);
+
     if (!AGC_ASSERT(verb <= 99u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_updatvb((uint8_t) verb);
-    s->reqret       = PIN_REQ_PASS0;
-    s->reqret_neg   = false;
+
+    s->reqret     = PIN_REQ_PASS0;
+    s->reqret_neg = false;
+
     if (st == AGC_STATUS_OK)
     {
         st = pin_blanksub(s->monsave2); /* either return goes on (TC +1) */
         st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
     }
+
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* ENDOFJOB                       */
 }
 
@@ -166,14 +198,17 @@ agc_status_t pin_pastevb(void)
 agc_status_t pin_dspfmem(void)
 {
     const pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->verbreg == 27u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -185,24 +220,30 @@ agc_status_t pin_dspfmem(void)
  * fixed-memory addresses); BBCON is ignored.                             */
 agc_status_t pin_vbrqexec(void)
 {
-    pin_state_t *s = pin_st();
-    uint16_t     w = s->dsptem[0];
+    pin_state_t *s    = pin_st();
+    uint16_t     w    = s->dsptem[0];
     agc_prio_t   prio =
         (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
     agc_job_id_t job = (agc_job_id_t) s->dsptem[1];
     agc_status_t st  = pin_reldsp(); /* REQUESTC    */
-    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) || !AGC_ASSERT(job != AGC_JOB_NONE))
+
+    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) ||
+        !AGC_ASSERT(job != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
+
     if (st == AGC_STATUS_OK)
     {
         st = ((w & PIN_BIT1) != 0u) ? agc_exec_findvac(prio, job) /* SETVAC */
-                                      :
-                                      agc_exec_novac(prio, job);
+             :
+             agc_exec_novac(prio, job);
     }
+
     agc_relint();
+
     return st; /* ENDOFJOB    */
 }
 
@@ -214,16 +255,21 @@ agc_status_t pin_vbrqwait(void)
     uint16_t      delay = s->dsptem[0];
     agc_task_id_t task  = (agc_task_id_t) s->dsptem[1];
     agc_status_t  st    = pin_reldsp();
+
     if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_waitlist_call(delay, task);
     }
+
     agc_relint();
+
     return st;
 }
 
@@ -238,15 +284,20 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     s->loadstat = ls;
     pin_kilmonon(); /* turn on kill monitor bit      */
     agc_status_t st = pin_reldsp();
+
     pin_flashoff();
+
     return (st == AGC_STATUS_OK) ? pin_recaltst() : st;
 }
 
@@ -260,18 +311,23 @@ agc_status_t pin_reqmm(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
-    s->reqret      = PIN_REQ_MM;
-    s->reqret_neg  = true;
+
+    s->reqret     = PIN_REQ_MM;
+    s->reqret_neg = true;
     pin_set_dspcount(PIN_ND1);
-    s->nounreg      = 0;
+    s->nounreg = 0;
     agc_status_t st = pin_2blank();
+
     pin_flashon();
     s->decbrnch = 1u; /* set for dec                   */
+
     if (!AGC_ASSERT(s->dspcount == PIN_ND1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_OK) ? pin_entexit() : st;
 }
 
@@ -283,20 +339,27 @@ agc_status_t pin_mmchang_resume(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!s->dspcount_neg || s->dspcount != PIN_ND2)
     {
         return pin_almcycle(); /* DSPCOUNT not = -ND2           */
     }
+
     uint8_t mm = s->nounreg;
+
     s->nounreg = 0;
     pin_set_dspcount(PIN_ND1);
     agc_status_t st = pin_2blank();
+
     pin_block_dspcount(PIN_VD1); /* block num char in             */
+
     if (!AGC_ASSERT(mm <= 99u) || st != AGC_STATUS_OK)
     {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
+
     return agc_change_program(mm);
 }
 
@@ -311,37 +374,49 @@ agc_status_t pin_vbtstlts(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s   = pin_st();
     bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
+
     if (csm && agc_erase_modreg() != 0)
     {                 /* CHKPOOH (CM only)   */
         pin_falton(); /* ALM/END             */
+
         return pin_pinbrnch();
     }
+
     agc_inhint();
     /* Set bit 1 of IMODES33 so IMUMON won't turn out any lamps.          */
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_BIT1));
-    agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_TSTCON1);
+    agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_TSTCON1);
     agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
     agc_status_t st = AGC_STATUS_OK;
-    agc_chan_or((int)AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
+
+    agc_chan_or((int) AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
+
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* TSTLTS1 */
         agc_erase_set_dsptab(i, pin_ones_neg(PIN_FULLDSP));
         st = AGC_STATUS_OK;
     }
+
     static const int plus_rel[3] = {1, 4, 6}; /* turn on 3 plus signs */
+
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
         agc_erase_set_dsptab(plus_rel[i], pin_ones_neg(PIN_FULLDSP1));
         st = AGC_STATUS_OK;
     }
+
     s->nout = PIN_DSPTAB_PANEL; /* CAF ELEVEN TS NOUT  */
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_waitlist_call(PIN_SHOLTS_CS, PIN_TASK_TSTLTS2);
     }
+
     agc_relint();
+
     return st;
 }
 
@@ -352,11 +427,14 @@ agc_status_t agc_task_tstlts2(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_TSTLTS3);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -369,18 +447,21 @@ static agc_status_t pin_tstlts3_lamps(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
-    agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_TSTCON3));
-    agc_chan_and((int)AGC_CHAN_CHAN13,
-                 (uint16_t)(PIN_WORD ^ PIN_CH13_TESTALM));
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_TSTCON3));
+    agc_chan_and((int) AGC_CHAN_CHAN13,
+                 (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
     uint16_t c =
         (uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN12) & PIN_CH12_COARSE) |
                     PIN_BIT15);
+
     agc_erase_set_dsptab(11, c);
     agc_erase_set_imodes33(
         (uint16_t) ((agc_erase_imodes33() & ~PIN_13_11_1) | PIN_PRIO16_BITS));
     agc_erase_set_imodes30(
         (uint16_t) ((agc_erase_imodes30() & ~PIN_OCT55000) | PIN_PRIO15_BITS));
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | PIN_BIT7));
@@ -390,11 +471,14 @@ static agc_status_t pin_tstlts3_lamps(void)
         agc_erase_set_radmodes(
             (uint16_t) ((agc_erase_radmodes() & ~PIN_RFAILS2) | PIN_RCDUFBIT));
     }
+
     agc_relint();
+
     if (!AGC_ASSERT(c >= PIN_BIT15))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -407,17 +491,22 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_tstlts3_lamps();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_dsky_dspmm();
     }
+
     pin_kilmonon();
     pin_flashoff();
     agc_status_t st4 = pin_tstlts4();
+
     return (st == AGC_STATUS_OK) ? st4 : st;
 }

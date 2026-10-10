@@ -124,8 +124,7 @@ void     agc_erase_set_tem(int axis, agc_sp_t v);
 
 /* ---- prog-align: REFMF for P57 after P68 (R51P63 is agc_job_lm_fine_align_k in
  * agc_align.h, entered with agc_align_ram()->qmaj set) ------------------ */
-agc_status_t
-agc_align_refmf(agc_interp_t *ip); /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
+agc_status_t agc_align_refmf(agc_interp_t *ip); /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
 
 /* ---- nav-aux / io-nouns: LAT, LONG, ALT erasables (noun 43) ------------- */
 agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);

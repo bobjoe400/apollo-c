@@ -83,10 +83,12 @@ static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((n > -64) && (n < 64)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return (n >= 0) ? agc_vec_shl(ip, v, n) : agc_vec_shr(v, -n);
 }
 
@@ -106,21 +108,28 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t den =
         agc_dp_sub(ip, ma, agc_dp_shr(rs->rcon, 1)); /* RCON SR1 BDSU */
+
     if (!AGC_ASSERT(den != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    den        = agc_dp_norm(den, &n2);                       /* NORM X2      */
+
+    den = agc_dp_norm(den, &n2);                       /* NORM X2      */
     agc_dp_t q = agc_dp_sub(ip, ma, agc_dp_shr(rs->r_t1, 1)); /* MA - R(T1)   */
-    q          = agc_dp_div(ip, q, den);                      /* DDV          */
-    q          = agc_dp_shl(ip, q, n2 - 3);                   /* SL* 0-3,2 B3 */
-    agc_tp_t t = agc_dp_mul_tp(q, pl->beta5);                 /* DMP 28D      */
-    t          = agc_tp_shift(ip, t, -6 - pl->x1);            /* SL* 0-6,1    */
+
+    q = agc_dp_div(ip, q, den);                      /* DDV          */
+    q = agc_dp_shl(ip, q, n2 - 3);                   /* SL* 0-3,2 B3 */
+    agc_tp_t t = agc_dp_mul_tp(q, pl->beta5);        /* DMP 28D      */
+
+    t = agc_tp_shift(ip, t, -6 - pl->x1);            /* SL* 0-6,1    */
     agc_dp_t beta10 =
         agc_dp_sub(ip, agc_tp_to_dp(t), ONE_B11); /* B11          */
+
     beta10 = agc_dp_shl(ip, beta10, 1);           /* SL1 -> B10   */
+
     if (agc_interp_test_ovf(ip))
     {
         beta10 = TWO_B1; /* XT1LIM2      */
@@ -128,13 +137,17 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
     else if (beta10 < 0)
     {
         *xt1lim = 0; /* XT1LIM5      */
+
         return AGC_STATUS_OK;
     }
+
     *xt1lim = agc_dp_sqrt(ip, beta10); /* XT1LIM3, B5  */
+
     if (!AGC_ASSERT(*xt1lim >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -152,11 +165,13 @@ agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_interp_init(&ip);
     rs.rcon  = rcon;
     rs.r_t1  = r_t1;
     pl.beta5 = beta5;
     pl.x1    = -7;
+
     return rte_xt1lim(&ip, &rs, ma, &pl, xt1lim);
 }
 
@@ -179,34 +194,45 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_tp_t t =
         agc_tp_shift(ip, agc_dp_sq_tp(rs->x_t1), -7); /* DSQ SR 7: B17 */
-    t            = agc_tp_add(ip, pl->theta1, -t);    /* DCOMP TAD 02D */
+
+    t = agc_tp_add(ip, pl->theta1, -t);    /* DCOMP TAD 02D */
     agc_dp_t den = agc_tp_to_dp(agc_tp_norm(t, &n1)); /* NORM X1       */
     agc_dp_t num =
         agc_tp_to_dp(agc_tp_norm(pl->theta2, &n2));   /* TLOAD NORM X2 */
-    num        = agc_dp_shr(num, 1);                  /* DPMODE SR1    */
-    agc_dp_t q = agc_dp_div(ip, num, den);            /* XSU,2 X1; DDV */
-    rs->pcon   = agc_dp_shl(ip, q, -(6 - (n1 - n2))); /* SR* 6,2: B28  */
+
+    num = agc_dp_shr(num, 1);                  /* DPMODE SR1    */
+    agc_dp_t q = agc_dp_div(ip, num, den);     /* XSU,2 X1; DDV */
+
+    rs->pcon = agc_dp_shl(ip, q, -(6 - (n1 - n2))); /* SR* 6,2: B28  */
+
     if (agc_dp_sqrt_chk(ip, rs->pcon, &root) != AGC_STATUS_OK)
     {
         rs->alarm_code = RTE_POODOO_SQRT;
+
         return agc_poodoo(RTE_POODOO_SQRT);
     }
+
     agc_dp_t k =
         agc_tp_to_dp(agc_tp_norm(agc_dp_mul_tp(root, pl->theta3), &n1));
     agc_dp_t  xn = agc_dp_norm(rs->x_t1, &n2);     /* NORM X2       */
     agc_vec_t v  = agc_vec_scale(ip, rs->ur1, xn); /* VXSC UR1/     */
-    v            = agc_vec_scale(ip, v, k);        /* XAD,2 X1; 28D */
-    v            = rte_vshift(ip, v, 9 - n1 - n2); /* VSR* 0-9D,2   */
-    agc_vec_t h  = agc_vec_scale(ip, rs->uh, k);   /* UH/ VXSC 28D  */
-    h            = rte_vshift(ip, h, 4 - n1);      /* VSR* 0-4,1    */
-    rs->v2_t1v   = agc_vec_add(ip, v, h);          /* V2(T1)/ B7    */
-    rs->dv       = agc_vec_abval(ip, agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v));
+
+    v = agc_vec_scale(ip, v, k);        /* XAD,2 X1; 28D */
+    v = rte_vshift(ip, v, 9 - n1 - n2); /* VSR* 0-9D,2   */
+    agc_vec_t h = agc_vec_scale(ip, rs->uh, k);   /* UH/ VXSC 28D  */
+
+    h          = rte_vshift(ip, h, 4 - n1);      /* VSR* 0-4,1    */
+    rs->v2_t1v = agc_vec_add(ip, v, h);          /* V2(T1)/ B7    */
+    rs->dv     = agc_vec_abval(ip, agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v));
+
     if (!AGC_ASSERT(rs->dv >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -220,25 +246,32 @@ static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = rte_dv_calc(ip, rs, pl);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_dp_t beta8 =
         agc_dp_sub(ip, pl->x_t1max, pl->x_t1min); /* BETA8 B5      */
+
     if (agc_interp_test_ovf(ip))
     {
         return AGC_STATUS_OK; /* BOV GAMDV20   */
     }
+
     if (agc_dp_sub(ip, beta8, EPC9RTE) < 0)
     {
         return AGC_STATUS_NOT_FOUND; /* GAMDVX        */
     }
+
     if (agc_dp_sub(ip, beta8, pl->dx_t1max) < 0)
     { /* GAMDV15       */
         pl->dx_t1 = agc_dp_shr(agc_dp_sign(beta8, pl->dx_t1), 1);
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -256,11 +289,14 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t dverr = agc_dp_sub(ip, rs->rtedvd, rs->dv); /* DVD-DV=DVERR  */
+
     if (agc_dp_sub(ip, agc_dp_abs(dverr), EPC10RTE) < 0)
     {
         return AGC_STATUS_NOT_FOUND; /* GAMDVX        */
     }
+
     ip->ovfind = 0; /* BOVB TCDANZIG */
     agc_dp_t d =
         agc_dp_norm(agc_dp_sub(ip, rs->dv, dv_prev), &n2); /* NORM X2     */
@@ -268,17 +304,22 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs,
     agc_dp_t q = agc_dp_div(ip, e, d);                     /* DDV           */
     agc_tp_t t =
         agc_dp_mul_tp(agc_dp_sub(ip, rs->x_t1, x_prev), q); /* BDSU DMP   */
+
     pl->dx_t1 = agc_tp_to_dp(t);                            /* PRESERVE SIGN */
     t         = agc_tp_shift(ip, t, 1 + n2 - n1); /* XSU,1; SR* 0-1,1 */
+
     if (!agc_interp_test_ovf(ip))
     {
         pl->dx_t1 = agc_tp_to_dp(t);
+
         if (agc_dp_sub(ip, agc_dp_abs(pl->dx_t1), pl->dx_t1max) < 0)
         {
             return AGC_STATUS_OK;
         }
     }
+
     pl->dx_t1 = agc_dp_sign(pl->dx_t1max, pl->dx_t1); /* GAMDV47       */
+
     return AGC_STATUS_OK;
 }
 
@@ -291,10 +332,12 @@ static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_tp_t t =
         agc_tp_shift(ip, agc_dp_mul_tp(pl->dx_t1, K_1_1_B1), 1); /* DMP SL1 */
     agc_dp_t beta9 =
         agc_dp_add(ip, agc_tp_to_dp(t), rs->x_t1); /* BETA9 B5      */
+
     if (agc_dp_sub(ip, beta9, pl->x_t1max) >= 0)
     {
         pl->dx_t1 = agc_dp_shr(agc_dp_sub(ip, pl->x_t1max, rs->x_t1), 1);
@@ -303,10 +346,12 @@ static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs,
     { /* GAMDV60       */
         pl->dx_t1 = agc_dp_shr(agc_dp_sub(ip, pl->x_t1min, rs->x_t1), 1);
     }
+
     if (agc_dp_sub(ip, agc_dp_abs(pl->dx_t1), EPC9RTE) < 0)
     { /* GAMDV65       */
         return AGC_STATUS_NOT_FOUND;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -321,17 +366,22 @@ static agc_status_t rte_min_dv_search(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = gamdv_start(ip, rs, pl); /* GAMDV10       */
+
     if (st != AGC_STATUS_OK)
     {
         return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
     }
+
     for (rs->nn2 = 1 - RTE_GAMDV_PASSES; rs->nn2 < 0; rs->nn2++)
     {                                                   /* GAMDV25 */
         const agc_dp_t x_prev  = rs->x_t1;              /* X(T1),        */
         const agc_dp_t dv_prev = rs->dv;                /* DV,           */
+
         rs->x_t1 = agc_dp_add(ip, rs->x_t1, pl->dx_t1); /* GAMDV30       */
         st       = rte_dv_calc(ip, rs, pl);
+
         if ((st == AGC_STATUS_OK) && rs->f2rte)
         {
             st = gamdv_secant(ip, rs, pl, x_prev, dv_prev); /* GAMDV35       */
@@ -342,16 +392,20 @@ static agc_status_t rte_min_dv_search(agc_interp_t *ip, rte_erasable_t *rs,
             pl->dx_t1 =
                 agc_dp_shr(agc_dp_neg(pl->dx_t1), 1); /* GAMDV32       */
         }
+
         if (st == AGC_STATUS_OK)
         {
             st = gamdv_bound(ip, rs, pl); /* GAMDV50       */
         }
+
         if (st != AGC_STATUS_OK)
         {
             return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
         }
     }
+
     rs->alarm_code = RTE_ALARM_ITERATIONS; /* OCT605        */
+
     return AGC_STATUS_ALARM;
 }
 
@@ -370,34 +424,42 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
-    rs->f2rte       = false;                      /* CLEAR F2RTE   */
+
+    rs->f2rte = false;                      /* CLEAR F2RTE   */
     agc_dp_t rcon_n = agc_dp_norm(rs->rcon, &n1); /* NORM X1       */
     agc_dp_t r1_n   = agc_dp_norm(rs->r_t1, &ns); /* NORM S1, 10D  */
+
     pl->lambda =
         agc_dp_div(ip, agc_dp_shr(r1_n, 1), rcon_n); /* SR1 DDV       */
-    pl->x1     = ns - n1;                            /* XSU,1 S1      */
-    rs->beta1  = agc_dp_add(ip, agc_dp_shr(agc_dp_sq(ip, rs->x_t2), 1), ONE_B1);
-    pl->beta5  = agc_dp_mul_trunc(rs->beta1, pl->lambda); /* STORE 28D     */
+    pl->x1    = ns - n1;                             /* XSU,1 S1      */
+    rs->beta1 = agc_dp_add(ip, agc_dp_shr(agc_dp_sq(ip, rs->x_t2), 1), ONE_B1);
+    pl->beta5 = agc_dp_mul_trunc(rs->beta1, pl->lambda); /* STORE 28D     */
     agc_tp_t t = agc_dp_mul_tp(pl->beta5, pl->lambda);    /* DMP 00D       */
+
     t          = agc_tp_shift(ip, t, -7 - pl->x1);        /* SL* 0-7,1     */
     t          = agc_tp_shift(ip, t, -7 - pl->x1);        /* SL* 0-7,1     */
     pl->theta1 = agc_tp_from_dp(agc_dp_sub(ip, agc_tp_to_dp(t), ONE_B17));
     agc_dp_t a = agc_dp_neg(agc_dp_shl(ip, ONE_B1, pl->x1)); /* SR* 0,1 DCOMP */
+
     a          = agc_dp_add(ip, a, pl->lambda);              /* LAMBDA - 1    */
     pl->theta2 = agc_tp_shift(ip, agc_dp_mul_tp(a, rs->r_t1), -7 - pl->x1);
     agc_dp_t m = agc_dp_shr(agc_dp_norm(RTMURTE, &nm), 1); /* NORM SR1 X2   */
     agc_dp_t q = agc_dp_div(ip, m, r1_n);                  /* XSU,2 S1; DDV */
+
     pl->theta3 = agc_dp_shl(ip, q, -(6 - (ns - nm)));      /* SR* 6,2 B-4   */
     agc_dp_t     lim = 0;
-    agc_status_t st =
+    agc_status_t st  =
         rte_xt1lim(ip, rs, rs->mamax1, pl, &lim); /* MAMAX1 = MA   */
+
     pl->x_t1min  = agc_dp_neg(lim);               /* X(T1)MIN      */
     pl->dx_t1max = agc_dp_shr(lim, 4);            /* DX(T1)MAX     */
+
     if (st == AGC_STATUS_OK)
     {
         st = rte_xt1lim(ip, rs, rs->mamax2, pl,
                         &pl->x_t1max); /* X(T1)MAX      */
     }
+
     return st;
 }
 
@@ -413,13 +475,16 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t a = agc_dp_sub(ip, agc_dp_shl(ip, TWO_B1, pl->x1),
                             pl->lambda);      /* SR* 0,1 DSU 00D */
     agc_tp_t t = agc_dp_mul_tp(a, pl->beta5); /* DMP 28D       */
+
     t          = agc_tp_shift(ip, t, -7 - pl->x1);
     t          = agc_tp_shift(ip, t, -7 - pl->x1);
-    t = agc_tp_add(ip, t, agc_tp_from_dp(-ONE_B17)); /* TAD: BETA6 B17*/
+    t          = agc_tp_add(ip, t, agc_tp_from_dp(-ONE_B17)); /* TAD: BETA6 B17*/
     pl->x_t1pp = rs->x_t1;                           /* X(T1),, 00D   */
+
     if (t <= 0)
     { /* V2T115        */
         if (rs->phi2 >= 0)
@@ -427,10 +492,14 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
             rs->phi2 = agc_dp_neg(rs->phi2);
             rs->nn1a = RTE_PREC_OUTER; /* 10RTE         */
         }
+
         *start_high = (rs->x_t1 > 0); /* V2T125        */
+
         return AGC_STATUS_OK;
     }
+
     agc_dp_t lim = agc_tp_sqrt(ip, agc_tp_shift(ip, t, 7)); /* SL 7 SQRT B5  */
+
     if (rs->phi2 >= 0)
     {
         pl->x_t1max = lim; /* X(T1)LIM=MAX  */
@@ -447,6 +516,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
         pl->x_t1max = agc_dp_neg(lim); /* V2T135        */
         *start_high = false;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -459,7 +529,9 @@ static agc_status_t v2t_time_critical(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rs->f2rte = true;
+
     if (agc_flag_test(AGC_FLAG_SLOWFLG))
     {
         pl->x_t1min = rs->x_t1;
@@ -470,6 +542,7 @@ static agc_status_t v2t_time_critical(agc_interp_t *ip, rte_erasable_t *rs,
         pl->x_t1max = rs->x_t1;
         pl->dx_t1   = agc_dp_neg(pl->dx_t1max);
     }
+
     return rte_min_dv_search(ip, rs, pl); /* V2T179        */
 }
 
@@ -482,12 +555,16 @@ static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t beta7 = agc_dp_abs(agc_dp_sub(ip, rs->x_t1, pl->x_t1pp));
+
     if (agc_dp_sub(ip, beta7, agc_dp_shl(ip, pl->dx_t1max, 1)) < 0)
     {
         return AGC_STATUS_OK; /* V2T300        */
     }
+
     rs->x_t1 = pl->x_t1pp; /* X(T1) = X,,   */
+
     if (agc_dp_sub(ip, rs->x_t1, pl->x_t1max) >= 0)
     {
         rs->x_t1 = pl->x_t1max;
@@ -496,6 +573,7 @@ static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs,
     {                           /* V2T195        */
         rs->x_t1 = pl->x_t1min; /* V2T200        */
     }
+
     return rte_dv_calc(ip, rs, pl); /* V2T205        */
 }
 
@@ -508,30 +586,38 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     if (agc_dp_sub(ip, rs->rtedvd, rs->dv) < 0)
     { /* V2T155        */
         if (rs->nn1a >= 0)
         {
             return v2t_limit_change(ip, rs, pl); /* V2T185        */
         }
+
         if ((rs->x_t1 > 0) || (rs->cfpa <= 0))
         {                         /* V2T160/165    */
             return AGC_STATUS_OK; /* V2T300        */
         }
+
         rs->x_t1  = pl->x_t1max;
         pl->dx_t1 = agc_dp_neg(pl->dx_t1max);
         st        = rte_min_dv_search(ip, rs, pl);
+
         if ((st != AGC_STATUS_OK) || (agc_dp_sub(ip, rs->rtedvd, rs->dv) < 0))
         {
             return st;
         }
     }
+
     st = v2t_time_critical(ip, rs, pl); /* V2T175        */
+
     if ((st != AGC_STATUS_OK) || (rs->nn1a < 0))
     {
         return st;
     }
+
     return v2t_limit_change(ip, rs, pl); /* V2T185        */
 }
 
@@ -548,12 +634,16 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((rs->rcon < 0) || (agc_dp_sub(ip, rs->rcon, rs->r_t1) >= 0))
     {
         rs->alarm_code = RTE_POODOO_NO_SOLUTION; /* V2TERROR      */
+
         return agc_poodoo(RTE_POODOO_NO_SOLUTION);
     }
+
     agc_status_t st = v2t_setup(ip, rs, &pl);
+
     if ((st == AGC_STATUS_OK) && (rs->nn1a >= 0))
     {
         st = v2t_precision_bounds(ip, rs, &pl, &start_high); /* V2T110        */
@@ -562,16 +652,20 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
     {
         start_high = (rs->rtedvd == 0) && (rs->cfpa >= 0); /* V2T102/105    */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     rs->x_t1 = start_high ? pl.x_t1max : pl.x_t1min; /* V2T145/140    */
     pl.dx_t1 = start_high ? agc_dp_neg(pl.dx_t1max) : pl.dx_t1max;
     st       = rte_min_dv_search(ip, rs, &pl); /* V2T150        */
+
     if ((st != AGC_STATUS_OK) || (rs->rtedvd == 0))
     {
         return st; /* minimum fuel  */
     }
+
     return v2t_desired_dv(ip, rs, &pl);
 }

@@ -45,14 +45,18 @@
 static agc_mat_t nb2nb1(void)
 {
     agc_mat_t m;
+
     m.row[0] = agc_vec_make(NB_COS, 0, -NB_SIN);
     m.row[1] = agc_vec_make(0, NB_HALF, 0);
     m.row[2] = agc_vec_make(NB_SIN, 0, NB_COS);
+
     if (!AGC_ASSERT(m.row[1].c[1] == AGC_DP_HALF))
     {
         return (agc_mat_t){0}; /* no valid result */
     }
+
     _Static_assert(NB_COS > NB_SIN, "AGC constant");
+
     return m;
 }
 
@@ -60,14 +64,17 @@ static agc_mat_t nb2nb1(void)
 static agc_mat_t nb1nb2(void)
 {
     const agc_mat_t m = nb2nb1();
+
     if (!AGC_ASSERT(m.row[0].c[2] == -NB_SIN))
     {
         return (agc_mat_t){0}; /* no valid result */
     }
+
     if (!AGC_ASSERT(m.row[2].c[0] == NB_SIN))
     {
         return (agc_mat_t){0}; /* no valid result */
     }
+
     return agc_mat_transpose(&m);
 }
 
@@ -82,13 +89,16 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
     {
         return 0; /* no valid result */
     }
+
     agc_ovf_t      ovf = 0;
     const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu),
                                         TEN_DEGS_MINUS, &ovf); /* ADS MPAC */
+
     if (!AGC_ASSERT(ovf == 0))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_shr(a, 2); /* x QUARTER */
 }
 
@@ -105,15 +115,19 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_dp_t ta     = agc_csm_sxtlogic(trunnion_cdu);        /* PD0 */
     const agc_dp_t sin_ta = agc_dp_shl(ip, agc_dp_sin(ip, ta), 1); /* PD2 */
     const agc_dp_t sa     = agc_align_cdulogic(shaft_cdu);         /* PD4 */
     agc_vec_t      starm;
-    starm.c[0]        = agc_dp_mul_trunc(agc_dp_cos(ip, sa), sin_ta); /* DMP */
-    starm.c[1]        = agc_dp_mul_trunc(agc_dp_sin(ip, sa), sin_ta);
-    starm.c[2]        = agc_dp_cos(ip, ta);
+
+    starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(ip, sa), sin_ta); /* DMP */
+    starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(ip, sa), sin_ta);
+    starm.c[2] = agc_dp_cos(ip, ta);
     const agc_mat_t m = nb1nb2();
+
     *starm_nb = agc_vec_shl(ip, agc_mat_vec(ip, &m, starm), 1); /* MXV VSL1 */
+
     return AGC_STATUS_OK;
 }
 
@@ -124,10 +138,12 @@ static void znb_eq_s1(uint16_t *sac, uint16_t *pac, bool *cult)
     {
         return;
     }
+
     if (!AGC_ASSERT(pac != NULL))
     {
         return;
     }
+
     *sac  = SHAFT_270DEG;     /* DLOAD 270DEG STODL SAC */
     *pac  = PAC_20DEGS_MINUS; /* 20DEGS- STORE PAC      */
     *cult = false;            /* CLRGO CULTFLAG         */
@@ -150,37 +166,51 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_vec_t pda = agc_vec_cross(ip, nb1->row[2], star);
+
     align_clear_ovf(ip); /* BOV +1  */
     pda = agc_vec_unit(ip, pda, NULL, NULL);
+
     if (agc_interp_test_ovf(ip))
     { /* BOV     */
         znb_eq_s1(sac, pac, cult);
+
         return AGC_STATUS_OK;
     }
+
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0]));
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);
+
     *sac = agc_align_ones_to_twos(agc_imu_arctrig(ip, sinth, costh));
     align_clear_ovf(ip); /* BOV +1  */
     const agc_dp_t ta =
         agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star, nb1->row[2]), 1));
+
     if (ta < 0)
     {
         *cult = true; /* BMN SXTALARM: SETGO       */
+
         return AGC_STATUS_OK;
     }
+
     const agc_dp_t ta4 = agc_dp_shl(ip, ta, 2); /* SL2     */
+
     if (agc_interp_test_ovf(ip))
     {
         *cult = true; /* BOV SXTALARM (> 90 deg)   */
+
         return AGC_STATUS_OK;
     }
+
     *pac  = agc_align_ones_to_twos(agc_dp_sub(ip, ta4, TWENTY_DEG_MINUS));
     *cult = false; /* CLRGO CULTFLAG            */
+
     return AGC_STATUS_OK;
 }
 
@@ -188,10 +218,12 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
 static agc_status_t store_cult(bool cult)
 {
     agc_flag_put(AGC_FLAG_CULTFLAG, cult);
+
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_CULTFLAG) == cult))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -210,17 +242,22 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_vec_t    s  = star_sm;
+
+    agc_vec_t s = star_sm;
+
     agc_guid_smnb(t, &s); /* *SMNB*  */
     const agc_mat_t m = nb2nb1();
-    s = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1);  /* MXV VSL1 */
-    agc_align_ram()->star = s;                       /* STOVL STAR */
-    const agc_mat_t unit  = agc_mat_identity_half(); /* HIUNITX.. */
-    agc_status_t st = sxtang1(ip, s, &unit, sac, pac, cult);
+
+    s                     = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1); /* MXV VSL1 */
+    agc_align_ram()->star = s;                                          /* STOVL STAR */
+    const agc_mat_t unit = agc_mat_identity_half(); /* HIUNITX.. */
+    agc_status_t    st   = sxtang1(ip, s, &unit, sac, pac, cult);
+
     if (st == AGC_STATUS_OK)
     {
         st = store_cult(*cult);
     }
+
     return st;
 }
 
@@ -239,19 +276,24 @@ agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_mat_t eref = agc_mat_transpose(nb); /* EREF WRT NB2     */
     const agc_mat_t m    = nb2nb1();
     agc_mat_t       t1;
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         t1.row[i] = agc_vec_shl(ip, agc_mat_vec(ip, &m, eref.row[i]), 1);
     }
+
     const agc_mat_t nb1 = agc_mat_transpose(&t1); /* TRANSP2          */
     agc_status_t    st  = sxtang1(ip, star, &nb1, sac, pac, cult);
+
     if (st == AGC_STATUS_OK)
     {
         st = store_cult(*cult);
     }
+
     return st;
 }
 
@@ -266,22 +308,28 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int            n  = 0;
     const agc_dp_t xn = agc_dp_norm(x, &n); /* NORM     */
+
     if (!AGC_ASSERT((n >= 0) && (n < AGC_DP_BITS)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_dp_t y       = agc_dp_sub(ip, NEARLY1, xn); /* BDSU     */
     const agc_dp_t coef[4] = {0, LOG_A1, LOG_A2, LOG_A3};
     const agc_dp_t p       = agc_dp_poly(y, coef, 3);            /* POLY     */
-    const agc_dp_t k   = agc_dp_mul_int(CLOG2_32, (agc_sp_t) n); /* SHORTMP  */
-    agc_ovf_t      ovf = 0;
-    *neg_log           = agc_dp_add_raw(p, k, &ovf); /* DAS MPAC */
+    const agc_dp_t k       = agc_dp_mul_int(CLOG2_32, (agc_sp_t) n); /* SHORTMP  */
+    agc_ovf_t      ovf     = 0;
+
+    *neg_log = agc_dp_add_raw(p, k, &ovf); /* DAS MPAC */
+
     if (!AGC_ASSERT(ovf == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -295,8 +343,10 @@ agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     e->rteast = agc_vec_cross(ip, e->unitw, e->rtinit); /* .5 UNIT  */
     e->rtnorm = agc_vec_cross(ip, e->rteast, e->unitw); /* .5 UNIT  */
+
     return agc_csm_earrot2(ip, e);
 }
 
@@ -313,18 +363,24 @@ agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     align_clear_ovf(ip); /* BOVB     */
     agc_dp_t wt = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
+
     for (int k = 0; (k < OVERADAY_MAX) && agc_interp_test_ovf(ip); k++)
     {
         const agc_dp_t day = agc_dp_sign(ONE_OVER_WIE, e->dtearot);
-        e->dtearot         = agc_dp_sub(ip, e->dtearot, day); /* OVERADAY */
-        wt                 = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
+
+        e->dtearot = agc_dp_sub(ip, e->dtearot, day); /* OVERADAY */
+        wt         = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
     }
+
     const agc_vec_t a = agc_vec_scale(
         ip, e->rtnorm, agc_dp_sub(ip, agc_dp_cos(ip, wt), AGC_DP_HALF));
     const agc_vec_t b = agc_vec_scale(ip, e->rteast, agc_dp_sin(ip, wt));
     const agc_vec_t c = agc_vec_shl(ip, agc_vec_add(ip, b, a), 1); /* VSL1 */
+
     e->rt = agc_vec_unit(ip, agc_vec_add(ip, c, e->rtinit), NULL, NULL);
+
     return AGC_STATUS_OK;
 }

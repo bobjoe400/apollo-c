@@ -77,7 +77,6 @@ enum agc_channel_bits
     AGC_CH005_PYJET7 = 000100,
     /* bit  8: PYJETS jet-driver bit 8 (pitch/yaw RCS jets) */
     AGC_CH005_PYJET8 = 000200,
-
     /* ---- channel 006 ---- */
     /* bit  1: ROLLJETS jet-driver bit 1 (roll RCS jets) */
     AGC_CH006_ROLLJET1 = 000001,
@@ -95,7 +94,6 @@ enum agc_channel_bits
     AGC_CH006_ROLLJET7 = 000100,
     /* bit  8: ROLLJETS jet-driver bit 8 (roll RCS jets) */
     AGC_CH006_ROLLJET8 = 000200,
-
     /* ---- channel 007 ---- */
     /* bit  5: fixed-extension (superbank) select, low bit */
     AGC_CH007_FEXT0 = 000020,
@@ -105,7 +103,6 @@ enum agc_channel_bits
     AGC_CH007_FEXT2 = 000100,
     /* all three fixed-extension bits (bits 5-7) */
     AGC_CH007_FEXT_MASK = 000160,
-
     /* ---- channel 011 ---- */
     /* bit  1: ISS warning lamp */
     AGC_CH011_ISSWARN = 000001,
@@ -137,7 +134,6 @@ enum agc_channel_bits
     AGC_CH011_ENGINEOFF = 020000,
     /* bit 15: spare */
     AGC_CH011_SPARE15 = 040000,
-
     /* ---- channel 012 ---- */
     /* bit  1: CSM: zero optics CDUs */
     AGC_CH012_ZEROOCDU = 000001,
@@ -181,7 +177,6 @@ enum agc_channel_bits
     AGC_CH012_RRLOCKON = 020000,
     /* bit 15: ISS turn-on delay complete */
     AGC_CH012_ISSDELAYDONE = 040000,
-
     /* ---- channel 013 ---- */
     /* bit  1: radar C (A,B,C matrix setting selects radar parameters to be read) */
     AGC_CH013_RADARC = 000001,
@@ -213,7 +208,6 @@ enum agc_channel_bits
     AGC_CH013_RSTTRAP32 = 020000,
     /* bit 15: enable T6 rupt */
     AGC_CH013_ENBT6RUPT = 040000,
-
     /* ---- channel 014 ---- */
     /* bit  1: outlink activity (not used) */
     AGC_CH014_OUTLINKACT = 000001,
@@ -245,7 +239,6 @@ enum agc_channel_bits
     AGC_CH014_DRIVECDUY = 020000,
     /* bit 15: drive CDU X */
     AGC_CH014_DRIVECDUX = 040000,
-
     /* ---- channel 016 ---- */
     /* bit  3: LM: optics X-axis mark signal for alignment optical telescope */
     AGC_CH016_XAXISMARK = 000004,
@@ -263,7 +256,6 @@ enum agc_channel_bits
     AGC_CH016_DESCENTDN = 000100,
     /* CSM: navigation DSKY key code (bits 5-1) */
     AGC_CH016_NAVKEY_MASK = 000037,
-
     /* ---- channel 030 ---- */
     /* bit  1: LM: abort with descent stage */
     AGC_CH030_ABORTDPS = 000001,
@@ -303,7 +295,6 @@ enum agc_channel_bits
     AGC_CH030_IMUTEMPOK = 040000,
     /* all channel 30 bits are inverted (0 = signal present) */
     AGC_CH030_INVERT_ALL = 077777,
-
     /* ---- channel 031 ---- */
     /* bit  1: rotation (RHC) commanded in positive pitch; must be in minimum impulse mode; LM also positive elevation change for landing point designator */
     AGC_CH031_PLUSPITCH = 000001,
@@ -343,7 +334,6 @@ enum agc_channel_bits
     AGC_CH031_ROT_MASK = 000077,
     /* THC translation command bits 7-12 (Comanche XLNMASK) */
     AGC_CH031_XLATE_MASK = 007700,
-
     /* ---- channel 032 ---- */
     /* bit  1: LM: thrusters 2 & 4 disabled by crew */
     AGC_CH032_THR24DIS = 000001,
@@ -367,7 +357,6 @@ enum agc_channel_bits
     AGC_CH032_DPSGIMBFAIL = 001000,
     /* bit 14: proceed key is depressed */
     AGC_CH032_PROCEED = 020000,
-
     /* ---- channel 033 ---- */
     /* bit  1: spare */
     AGC_CH033_SPARE1 = 000001,
@@ -417,6 +406,6 @@ agc_status_t agc_chan_set_input(int      chan,
                                 uint16_t value); /* sim: raw sensed value */
 agc_status_t agc_chan_set_signal(int chan, uint16_t mask,
                                  bool present); /* sim: signal on/off */
-void         agc_chan_reset(void);              /* power-up image */
+void agc_chan_reset(void);              /* power-up image */
 
 #endif /* AGC_CHANNELS_H */

@@ -13,52 +13,64 @@ agc_flag_id_t imu_vflag(imu_vflag_t f)
     {
         return 0;
     }
+
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+
     if (!AGC_ASSERT(lm || agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return 0;
     }
+
     return lm ? imu_vflag_lm(f) : imu_vflag_csm(f);
 }
 
 bool imu_vflag_test(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f);
+
     if (!AGC_ASSERT((int) f >= 0 && f < IMU_VF_COUNT))
     {
         return false;
     }
+
     if (!AGC_ASSERT(id == 0U || agc_flag_valid(id)))
     {
         return false;
     }
+
     return (id != 0U) && agc_flag_test(id);
 }
 
 void imu_vflag_set(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f);
+
     if (!AGC_ASSERT(id != 0U))
     {
         return;
     }
+
     if (!AGC_ASSERT(agc_flag_valid(id)))
     {
         return;
     }
+
     agc_flag_set(id);
 }
 
 void imu_vflag_clear(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f);
+
     if (!AGC_ASSERT(id != 0U))
     {
         return;
     }
+
     if (!AGC_ASSERT(agc_flag_valid(id)))
     {
         return;
     }
+
     agc_flag_clear(id);
 }

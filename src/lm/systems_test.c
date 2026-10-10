@@ -51,10 +51,12 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i < n; i++)
     {
         block[i] = 0;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -68,24 +70,32 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     uint16_t lo = POSMAX;
+
     for (int k = 0; k < FINETIME_TRIES && lo == POSMAX; k++)
     {
-        lo             = agc_chan_read((int) AGC_CHAN_LOSCALAR);
+        lo = agc_chan_read((int) AGC_CHAN_LOSCALAR);
         uint16_t again = agc_chan_read((int) AGC_CHAN_LOSCALAR);
+
         if (again != lo)
         { /* RXOR, BZF               */
             lo = agc_chan_read((int) AGC_CHAN_LOSCALAR);
         }
     }
+
     uint16_t hi = agc_chan_read((int) AGC_CHAN_HISCALAR);
+
     if (!AGC_ASSERT(hi <= WORD15 && lo <= WORD15))
     {
         agc_relint();
+
         return AGC_STATUS_BAD_ARG;
     }
+
     *t = agc_dp_pack((agc_sp_t) (hi & POSMAX), (agc_sp_t) (lo & POSMAX));
+
     return (lo == POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK;
 }
 
@@ -97,12 +107,16 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
     {
         return a;
     }
+
     agc_dp_t s = agc_dp_add(ip, a, AGC_DP_MAX);
-    s          = agc_dp_add(ip, s, ONEDPP);
+
+    s = agc_dp_add(ip, s, ONEDPP);
+
     if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
     {
         return a;
     }
+
     return s;
 }
 
@@ -115,18 +129,23 @@ agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_phase_newmode((agc_sp_t) SYSTEMS_TEST_MODE);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         return agc_csm_prelaunch_imutest(ctx); /* FALL INTO IMUTEST       */
     }
+
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }

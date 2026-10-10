@@ -84,10 +84,10 @@ typedef struct lm_dap
     /* permanent DAP storage (p.105) */
     uint16_t       rcsflags;   /* RCSFLAGS, bits above                    */
     lm_dap_t5adr_t t5adr;      /* T5ADR                                   */
-    uint16_t ch5mask, ch6mask; /* failed-jet masks, channel 5/6 format     */
-    uint16_t pvalvest;         /* PVALVEST, channel 32 format              */
-    agc_sp_t delperor, delqeror, delreror; /* KALCMANU command lags, at pi  */
-    agc_sp_t db; /* DB deadband, at 45 deg                   */
+    uint16_t       ch5mask, ch6mask; /* failed-jet masks, channel 5/6 format     */
+    uint16_t       pvalvest;   /* PVALVEST, channel 32 format              */
+    agc_sp_t       delperor, delqeror, delreror; /* KALCMANU command lags, at pi  */
+    agc_sp_t       db; /* DB deadband, at 45 deg                   */
     /* pad loads (p.129) */
     agc_sp_t hiascent; /* HIASCENT, B16 kg                         */
     agc_sp_t dktrap, dkomegan, dkkaosn; /* docked estimator gains         */
@@ -114,12 +114,12 @@ typedef struct lm_dap
     agc_sp_t savehand[2];         /* SAVEHAND: Q,R RHC counts                 */
     agc_sp_t perror;              /* PERROR at pi                             */
     /* jet timing list (T6) */
-    agc_sp_t nxt6adr;             /* NXT6ADR axis index 0/4/13                */
-    agc_sp_t t6next[2];           /* T6NEXT: delta counts, axis index         */
-    agc_sp_t t6furtha[2];         /* T6FURTHA                                 */
-    uint16_t nextp, nextu, nextv; /* jets after the T6RUPT (chan 6/5 codes) */
-    agc_sp_t neg_2jetlim;         /* -2JETLIM, at 45 deg/s                    */
-    agc_sp_t neg_ratedb;          /* -RATEDB = TARGETDB, at 45 deg/s          */
+    agc_sp_t        nxt6adr;      /* NXT6ADR axis index 0/4/13                */
+    agc_sp_t        t6next[2];    /* T6NEXT: delta counts, axis index         */
+    agc_sp_t        t6furtha[2];  /* T6FURTHA                                 */
+    uint16_t        nextp, nextu, nextv; /* jets after the T6RUPT (chan 6/5 codes) */
+    agc_sp_t        neg_2jetlim;  /* -2JETLIM, at 45 deg/s                    */
+    agc_sp_t        neg_ratedb;   /* -RATEDB = TARGETDB, at 45 deg/s          */
     lm_dap_uvbody_t retjadr;      /* RETJADR                                  */
     agc_sp_t        sensetyp;     /* SENSETYP 0, 1 (-X), 2 (+X)               */
     /* trim gimbal */
@@ -236,8 +236,8 @@ void         lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v);
 
 /* ---- T6 (t6rupt.c) ------------------------------------------------------ */
 agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets); /* WRITEP/U/V    */
-agc_status_t lm_dap_write_next(agc_sp_t index);           /* WRITEx -1     */
-agc_status_t lm_dap_jtlst(void);       /* JTLST (input T6FURTHA)    */
+agc_status_t lm_dap_write_next(agc_sp_t index); /* WRITEx -1     */
+agc_status_t lm_dap_jtlst(void);                /* JTLST (input T6FURTHA)    */
 agc_sp_t     lm_dap_time6_value(void); /* TIME6 as a 1's value      */
 
 /* ---- control laws ------------------------------------------------------- */

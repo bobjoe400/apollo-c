@@ -30,19 +30,24 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ?
-                                &agc_noun_table_csm[noun] :
-                                &agc_noun_table_lm[noun];
+                            &agc_noun_table_csm[noun] :
+                            &agc_noun_table_lm[noun];
+
     if (!AGC_ASSERT(row->noun == noun) ||
         !AGC_ASSERT(row->ncomp <= AGC_NOUN_MAX_COMP))
     {
         return AGC_STATUS_BAD_ARG; /* table corrupted */
     }
+
     *out = *row;
+
     return (row->ncomp == 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK;
 }
 
@@ -53,6 +58,7 @@ agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_noun_lookup_vehicle(agc_state_vehicle(), noun, out);
 }
 
@@ -64,7 +70,9 @@ static agc_status_t noun_access_chan33(bool write, agc_dp_t *value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *value = (agc_dp_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & 077777u);
+
     return AGC_STATUS_OK;
 }
 
@@ -78,17 +86,23 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (data_id)
     {
         case AGC_DATA_TIME2: /* C(TIME2,TIME1)                   */
+
             if (write)
             {
-                agc_time_set_cs((uint32_t) * value);
+                agc_time_set_cs((uint32_t) *value);
+
                 return AGC_STATUS_OK;
             }
+
             *value = (agc_dp_t) agc_time_now_cs();
+
             return AGC_STATUS_OK;
         case AGC_DATA_TIG:
+
             if (write)
             {
                 agc_erase_set_tig(*value);
@@ -97,8 +111,10 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
             {
                 *value = agc_erase_tig();
             }
+
             return AGC_STATUS_OK;
         case AGC_DATA_TTOGO:
+
             if (write)
             {
                 agc_erase_set_ttogo(*value);
@@ -107,8 +123,10 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
             {
                 *value = agc_erase_ttogo();
             }
+
             return AGC_STATUS_OK;
         case AGC_DATA_TTPI:
+
             if (write)
             {
                 agc_erase_set_ttpi(*value);
@@ -117,6 +135,7 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
             {
                 *value = agc_erase_ttpi();
             }
+
             return AGC_STATUS_OK;
         default:
             return AGC_STATUS_BAD_ARG;
@@ -131,11 +150,14 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_sp_t w = write ? agc_dp_high(*value) : 0;
     agc_sp_t       r = 0;
+
     switch (data_id)
     {
         case AGC_DATA_PIPAX:
+
             if (write)
             {
                 agc_erase_set_pipax(w);
@@ -144,8 +166,10 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             {
                 r = agc_erase_pipax();
             }
+
             break;
         case AGC_DATA_PIPAY:
+
             if (write)
             {
                 agc_erase_set_pipay(w);
@@ -154,8 +178,10 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             {
                 r = agc_erase_pipay();
             }
+
             break;
         case AGC_DATA_PIPAZ:
+
             if (write)
             {
                 agc_erase_set_pipaz(w);
@@ -164,8 +190,10 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             {
                 r = agc_erase_pipaz();
             }
+
             break;
         case AGC_DATA_CSMMASS:
+
             if (write)
             {
                 agc_erase_set_csmmass(w);
@@ -174,8 +202,10 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             {
                 r = agc_erase_csmmass();
             }
+
             break;
         case AGC_DATA_LEMMASS:
+
             if (write)
             {
                 agc_erase_set_lemmass(w);
@@ -184,18 +214,22 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             {
                 r = agc_erase_lemmass();
             }
+
             break;
         default:
             return AGC_STATUS_BAD_ARG;
     }
+
     if (!write)
     {
         if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         *value = agc_dp_from_sp(r);
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -203,10 +237,12 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
 static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
 {
     uint16_t w = 0;
+
     if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (data_id)
     {
         case AGC_DATA_CDUX:
@@ -251,11 +287,14 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
         default:
             return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(w <= 077777u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *value = (agc_dp_t) w;
+
     return AGC_STATUS_OK;
 }
 
@@ -267,29 +306,38 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const uint16_t w = (uint16_t) value;
+
     switch (data_id)
     {
         case AGC_DATA_CDUX:
             agc_erase_set_cdux(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_CDUY:
             agc_erase_set_cduy(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_CDUZ:
             agc_erase_set_cduz(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_CDUS:
             agc_erase_set_cdus(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_CDUT:
             agc_erase_set_cdut(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_DAPDATR1:
             agc_erase_set_dapdatr1(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_DAPDATR2:
             agc_erase_set_dapdatr2(w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_FAILREG:
             return agc_erase_set_failreg(0, w);
@@ -299,12 +347,15 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
             return agc_erase_set_failreg(2, w);
         case AGC_DATA_THETAD:
             agc_erase_set_thetad(0, w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_THETAD_P1:
             agc_erase_set_thetad(1, w);
+
             return AGC_STATUS_OK;
         case AGC_DATA_THETAD_P2:
             agc_erase_set_thetad(2, w);
+
             return AGC_STATUS_OK;
         default:
             return AGC_STATUS_BAD_ARG;
@@ -320,6 +371,7 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (data_id)
     {
         case AGC_DATA_SPECIFY_ADDR:    /* nouns 01-03, 10, 15: the pinball */
@@ -353,7 +405,7 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_THETAD_P1:
         case AGC_DATA_THETAD_P2:
             return write ? noun_raw_write(data_id, *value) :
-                           noun_raw_read(data_id, value);
+                   noun_raw_read(data_id, value);
         default: /* not yet exposed by core          */
             return AGC_STATUS_UNIMPLEMENTED;
     }
@@ -366,6 +418,7 @@ agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return noun_data_access(data_id, false, value);
 }
 
@@ -373,10 +426,12 @@ agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
 agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value)
 {
     agc_dp_t v = value;
+
     if (!AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
         !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return noun_data_access(data_id, true, &v);
 }

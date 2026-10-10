@@ -31,18 +31,22 @@ static const agc_sp_t fcard_bursts[3] = {6, 5, 4};
 agc_status_t csm_tvc_tstinit(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->caddy         = (agc_sp_t) -FCADDY; /* sign change (+ to -) */
-    t->n             = (agc_sp_t) -FCADDY;
-    t->revs          = FREVS;
-    t->card          = (agc_sp_t) -FCARD;
+
+    t->caddy = (agc_sp_t) -FCADDY; /* sign change (+ to -) */
+    t->n     = (agc_sp_t) -FCADDY;
+    t->revs  = FREVS;
+    t->card  = (agc_sp_t) -FCARD;
+
     if (!AGC_ASSERT(t->caddy < 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(t->card < 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* TC Q                 */
 }
 
@@ -54,17 +58,23 @@ agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = csm_tvc_tstinit();
+
     agc_inhint();
+
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u)
     {
         agc_csm_dap_tvc()->stroker = agc_csm_dap_com()->estroker;
     }
+
     agc_relint();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* ENDOFJOB             */
 }
 
@@ -72,22 +82,30 @@ agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
 static void stroke_next_set(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->card          = (agc_sp_t) (t->card + 1); /* INCR CARD            */
+
+    t->card = (agc_sp_t) (t->card + 1); /* INCR CARD            */
+
     if (t->card >= 0)
     {                   /* all sets completed   */
         t->card    = 0; /* (AGC: -0)            */
         t->stroker = 0; /* STROKILL: +0 ends it */
+
         return;
     }
+
     int k = (int) t->card + 3; /* CARD -3, -2, -1      */
+
     if (!AGC_ASSERT((k >= 0) && (k < 3)))
     {
         t->stroker = 0;
+
         return;
     }
+
     t->revs  = fcard_revs[k]; /* reinitialise         */
     t->n     = (agc_sp_t) -fcard_bursts[k];
     t->caddy = t->n;
+
     if (!AGC_ASSERT(t->n < 0))
     {
         return;
@@ -99,17 +117,21 @@ static void stroke_next_set(void)
 static agc_status_t stroke_burst(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     if (!AGC_ASSERT((t->caddy < 0) || (t->stroker == 0))) /* +0: STROKILL */
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker));
     agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
     t->caddy = (agc_sp_t) (t->caddy + 1); /* INCR CADDY           */
+
     if (t->caddy < 0)
     {
         return AGC_STATUS_OK; /* exit, on a slope     */
     }
+
     if (t->revs > 0)
     { /* REVUP                */
         t->revs  = (agc_sp_t) (t->revs - 1);
@@ -123,13 +145,17 @@ static agc_status_t stroke_burst(void)
     else
     {
         stroke_next_set(); /* exit, end of set     */
+
         return AGC_STATUS_OK;
     }
+
     t->stroker = (agc_sp_t) -t->stroker; /* change sign of slope */
+
     if (!AGC_ASSERT(t->caddy <= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* exit at a reversal   */
 }
 
@@ -138,17 +164,21 @@ static agc_status_t stroke_burst(void)
 agc_status_t csm_tvc_hack(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     if (!AGC_ASSERT(t->stroker != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    t->bunker_task  = false; /* QXCH BUNKER          */
+
+    t->bunker_task = false; /* QXCH BUNKER          */
     agc_status_t st = agc_waitlist_call(HACK_DELAY, AGC_TASK_HACKWLST);
     agc_status_t s2 = stroke_burst();
+
     if (!AGC_ASSERT(!t->bunker_task))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st != AGC_STATUS_OK) ? st : s2;
 }
 
@@ -156,15 +186,19 @@ agc_status_t csm_tvc_hack(void)
 agc_status_t agc_task_hackwlst(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->bunker_task   = true;
-    agc_status_t st  = stroke_burst();
+
+    t->bunker_task = true;
+    agc_status_t st = stroke_burst();
+
     if (!AGC_ASSERT(t->bunker_task))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT((t->card >= -FCARD) && (t->card <= 0)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* TASKOVER             */
 }

@@ -40,17 +40,21 @@ static uint16_t findtime(int group, int32_t dt)
     {
         return RS_SOON_CS;
     }
+
     uint32_t now     = agc_time_now_cs() & RS_TIME1;
     uint32_t elapsed = (now - (uint32_t) phase_tbase(group)) & RS_TIME1;
     int32_t  left    = dt - (int32_t) elapsed;
+
     if (left < RS_SOON_CS)
     {
         left = RS_SOON_CS; /* overdue: in 1 cs  */
     }
+
     if (!AGC_ASSERT(left <= (int32_t) RS_TIME1))
     {
         return RS_SOON_CS;
     }
+
     return (uint16_t) left;
 }
 
@@ -62,10 +66,12 @@ static agc_status_t start_job(int16_t prdt, agc_job_id_t job)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (prdt > 0)
     {
         return agc_exec_findvac((agc_prio_t) prdt, job);
     }
+
     return agc_exec_novac((agc_prio_t) (-prdt), job);
 }
 
@@ -79,13 +85,16 @@ static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint32_t elapsed =
         (agc_time_now_cs() - phase_longbase()) & (AGC_TIME_MODULUS_CS - 1U);
     int64_t left = (int64_t) dt_cs - (int64_t) elapsed;
+
     if (left > 0)
     {
         return agc_waitlist_longcall((uint32_t) left, task);
     }
+
     return agc_waitlist_call(RS_SOON_CS, task); /* IMEDIATE -3      */
 }
 
@@ -96,7 +105,9 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t delay = RS_SOON_CS; /* -0: IMEDIATE      */
+
     if (e->dtsrc == RST_DT_DIRECT)
     {
         delay = findtime(group, e->prdt);
@@ -105,10 +116,12 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
     {
         int16_t      dt = 0;
         agc_status_t st = rst_read_sp(e->src, &dt);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
+
         delay = findtime(group, dt);
     }
     else
@@ -118,6 +131,7 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     return agc_waitlist_call(delay, e->task);
 }
 
@@ -128,8 +142,10 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_NOT_FOUND;
     uint32_t     dt = 0;
+
     switch (e->kind)
     {
         case AGC_RESTART_JOB:
@@ -140,21 +156,26 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
             break;
         case AGC_RESTART_LONGCALL: /* ITSLGCL1          */
             st = rst_read_dp(e->src, &dt);
+
             if (st == AGC_STATUS_OK)
             {
                 st = start_long(dt, e->task);
             }
+
             break;
         case AGC_RESTART_NONE:
         default:
+
             /* DEVIATION: a "DEC 0" placeholder; the AGC would start a job at
-         * address 0. Nothing is restarted.                             */
+             * address 0. Nothing is restarted.                             */
             if (!AGC_ASSERT(e->kind != AGC_RESTART_NONE))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             break;
     }
+
     return st;
 }
 
@@ -167,25 +188,32 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
     {
         return AGC_STATUS_BAD_ARG; /* phase 0: CCS hole */
     }
+
     if (phase == 1)
     { /* X.1: last display */
         return agc_exec_findvac(RS_PRIO14, AGC_JOB_INITDSP);
     }
+
     rst_entry_t  e;
     agc_status_t st = rst_table_lookup(group, phase, 0, &e);
+
     if (st == AGC_STATUS_OK)
     {
         st = restart_entry(group, &e);
     }
+
     if ((phase % 2) == 0 && !first_only)
     {
         agc_status_t st2 = rst_table_lookup(group, phase, 1, &e);
+
         if (st2 == AGC_STATUS_OK)
         {
             st2 = restart_entry(group, &e);
         }
+
         st = (st == AGC_STATUS_OK) ? st2 : st;
     }
+
     return st;
 }
 
@@ -197,20 +225,26 @@ static agc_status_t restart_type_c(int group, uint16_t tempphs,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int cjw = (int) (tempphs & 07U) - 2; /* AD MINUS2 / CCS   */
+
     if (cjw > 0)
     { /* ITSLNGCL          */
         return start_long(s->long_dt_cs, s->task);
     }
+
     if (cjw == 0)
     { /* ITSAJOB           */
         return start_job(s->prdt, s->job);
     }
+
     uint16_t delay = RS_SOON_CS; /* ITSAWAIT          */
+
     if (!s->immediate)
     {
         delay = findtime(group, s->prdt);
     }
+
     return agc_waitlist_call(delay, s->task);
 }
 
@@ -221,27 +255,35 @@ agc_status_t agc_restart_group(int group)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t tempphs = phase_word(group);
+
     if (tempphs == 0U)
     {
         return AGC_STATUS_NOT_FOUND; /* group inactive    */
     }
+
     if ((tempphs & RS_VARBITS) == 0U)
     {
         return restart_table(group, (int) tempphs, false);
     }
+
     phase_var_store_t s;
     agc_status_t      st = phase_var_get(group, &s);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if ((tempphs & RS_TYPEB) == 0U)
     {
         return restart_type_c(group, tempphs, &s);
     }
-    st               = start_job(s.prdt, s.job); /* ITSLIKEB          */
+
+    st = start_job(s.prdt, s.job); /* ITSLIKEB          */
     agc_status_t st2 = restart_table(group, (int) (tempphs & RS_LOW7), true);
+
     return (st == AGC_STATUS_OK) ? st2 : st;
 }
 
@@ -252,21 +294,25 @@ agc_status_t agc_phase_restart_all(void)
 {
     agc_status_t result = AGC_STATUS_OK;
     bool         any    = false;
+
     for (int g = AGC_RESTART_GROUPS; g >= 1; g--)
     {
         if (phase_word(g) != 0U)
         {                           /* CCS PHASEn: PNZ   */
-            any             = true; /* INCR MPAC +6      */
+            any = true; /* INCR MPAC +6      */
             agc_status_t st = agc_restart_group(g);
+
             if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
             {
                 result = st;
             }
         }
     }
+
     if (!AGC_ASSERT(result != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return any ? result : AGC_STATUS_NOT_FOUND;
 }

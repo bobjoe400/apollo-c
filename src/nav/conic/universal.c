@@ -55,39 +55,47 @@ agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->xsq_n1 >= 0 && ctx->xsq_n1 <= AGC_TP_BITS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const int n1 = ctx->xsq_n1;
+
     /* TC POLY ... STODL S(XI) / XI ... TC POLY: C(XI) 2^4 */
     ctx->s_xi =
         agc_conic_poly_(ctx->xi, deltime_s_coef, AGC_CONIC_DELTIME_NCOEF);
     agc_tp_t m = agc_conic_mload_(
         agc_conic_poly_(ctx->xi, deltime_c_coef, AGC_CONIC_DELTIME_NCOEF));
+
     m            = agc_conic_mdmp_(m, ctx->xsq);      /* DMP 0D               */
     m            = agc_conic_mshiftr_(ip, m, 5 - n1); /* SRR* 0 -5,1          */
     ctx->xsqc_xi = agc_conic_mstore_(m);              /* XSQC(XI) 2^33        */
     m            = agc_conic_mdmp_(m, ctx->kepc1);    /* DMP KEPC1, SL1       */
     m            = agc_conic_mshift_(ip, m, 1);
     const agc_tp_t c1_xsq_c = m;           /* 0D TP, 2^49          */
+
     m = agc_conic_mload_(ctx->xsq);        /* XCH with PL          */
     m = agc_conic_mdmp_(m, ctx->s_xi);     /* DMP S(XI)            */
     m = agc_conic_mshiftr_(ip, m, 5 - n1); /* SRR* 0 -5,1          */
     m = agc_conic_mdmp_(m, ctx->kepc2);    /* DMP KEPC2, SL1       */
     m = agc_conic_mshift_(ip, m, 1);
     const agc_tp_t c2_xsq_s = m;        /* 3D TP, 2^35          */
-    m      = agc_conic_mload_(ctx->r1); /* DLOAD R1, SR 6       */
-    m      = agc_conic_mshift_(ip, m, -6);
-    m      = agc_conic_mtad_(ip, m, c2_xsq_s); /* TAD                  */
+
+    m = agc_conic_mload_(ctx->r1); /* DLOAD R1, SR 6       */
+    m = agc_conic_mshift_(ip, m, -6);
+    m = agc_conic_mtad_(ip, m, c2_xsq_s); /* TAD                  */
     int n3 = 0;
+
     m      = agc_conic_mnorm_(m, &n3);             /* NORM X1              */
     m      = agc_conic_mdmp_(m, ctx->x);           /* DMP X                */
     m      = agc_conic_mshift_(ip, m, 3 - n3);     /* SR* 0 -3,1           */
     m      = agc_conic_mtad_(ip, m, c1_xsq_c);     /* TAD: 2^49            */
     m      = agc_conic_mshiftr_(ip, m, 4);         /* SL4R                 */
-    m = agc_conic_mdmpr_(ip, m, ctx->inv_root_mu); /* DMPR 1/ROOTMU        */
+    m      = agc_conic_mdmpr_(ip, m, ctx->inv_root_mu); /* DMPR 1/ROOTMU        */
     ctx->t = agc_conic_mstore_(m);                 /* T 2^28               */
+
     return AGC_STATUS_OK;
 }
 
@@ -99,19 +107,24 @@ static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     agc_tp_t m = agc_conic_mload_(ctx->r1); /* DLOAD R1, SR4R       */
-    m          = agc_conic_mshiftr_(ip, m, -4);
+
+    m = agc_conic_mshiftr_(ip, m, -4);
     m = agc_conic_mdsu_(ip, m, ctx->xsqc_xi); /* DSU XSQC(XI)         */
     agc_vec_t fpart = agc_vec_scale(ip, ctx->ur1, agc_conic_mstore_(m));
-    fpart           = agc_vec_shl(ip, fpart, 1); /* VSL1: 0D 2^33        */
-    m               = agc_conic_mload_(ctx->x);  /* DLOAD X, DSQ, NORM X1 */
-    m               = agc_conic_mdsq_(m);
-    int n1          = 0;
-    m               = agc_conic_mnorm_(m, &n1);
+
+    fpart = agc_vec_shl(ip, fpart, 1); /* VSL1: 0D 2^33        */
+    m     = agc_conic_mload_(ctx->x);            /* DLOAD X, DSQ, NORM X1 */
+    m     = agc_conic_mdsq_(m);
+    int n1 = 0;
+
+    m = agc_conic_mnorm_(m, &n1);
     m = agc_conic_mdmpr_(ip, m, ctx->inv_root_mu); /* DMPR 1/ROOTMU        */
     m = agc_conic_mdmpr_(ip, m, ctx->x);           /* DMPR X               */
     m = agc_conic_mdmp_(m, ctx->s_xi);             /* DMP S(XI)            */
@@ -119,8 +132,10 @@ static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
     m = agc_conic_mbdsu_(ip, m, ctx->t);           /* BDSU T, SL1          */
     m = agc_conic_mshift_(ip, m, 1);
     agc_vec_t r2 = agc_vec_scale(ip, ctx->vvec, agc_conic_mstore_(m));
-    r2           = agc_vec_shl(ip, r2, 1); /* VSL1, VAD            */
-    r2           = agc_vec_add(ip, r2, fpart);
+
+    r2 = agc_vec_shl(ip, r2, 1); /* VSL1, VAD            */
+    r2 = agc_vec_add(ip, r2, fpart);
+
     return agc_vec_shl(ip, r2, 4); /* VSL4                 */
 }
 
@@ -135,13 +150,16 @@ static agc_vec_t lamenter_velocity(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(n >= 0 && n <= AGC_TP_BITS))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     agc_tp_t m = agc_conic_mload_(ctx->xi);
-    m          = round_xis ? agc_conic_mdmpr_(ip, m, ctx->s_xi) :
-                             agc_conic_mdmp_(m, ctx->s_xi); /* XI S(XI) 2^7       */
+
+    m = round_xis ? agc_conic_mdmpr_(ip, m, ctx->s_xi) :
+        agc_conic_mdmp_(m, ctx->s_xi);                      /* XI S(XI) 2^7       */
     m = agc_conic_mdsu_(ip, m, AGC_CONIC_D1_128); /* DSU D1/128          */
     m = agc_conic_mdmp_(m, ctx->root_mu);         /* DMP ROOTMU, SL1R    */
     m = agc_conic_mshiftr_(ip, m, 1);
@@ -149,13 +167,16 @@ static agc_vec_t lamenter_velocity(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     m = agc_conic_mshiftr_(ip, m, n - 3);
     m = agc_conic_mddv_(ip, m, r2n); /* DDV R2: 2^15        */
     agc_vec_t fdot = agc_vec_scale(ip, ctx->ur1, agc_conic_mstore_(m));
-    fdot           = agc_vec_shl(ip, fdot, 1);       /* VSL1: 2^15          */
-    m              = agc_conic_mload_(ctx->xsqc_xi); /* XSQC(XI), SLR* 0 -4,n */
-    m              = agc_conic_mshiftr_(ip, m, n - 4);
-    m              = agc_conic_mddv_(ip, m, r2n);  /* DDV R2              */
-    m = agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_256); /* BDSU D1/256: 2^8    */
+
+    fdot = agc_vec_shl(ip, fdot, 1);       /* VSL1: 2^15          */
+    m    = agc_conic_mload_(ctx->xsqc_xi); /* XSQC(XI), SLR* 0 -4,n */
+    m    = agc_conic_mshiftr_(ip, m, n - 4);
+    m    = agc_conic_mddv_(ip, m, r2n);            /* DDV R2              */
+    m    = agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_256); /* BDSU D1/256: 2^8    */
     agc_vec_t v2 = agc_vec_scale(ip, ctx->vvec, agc_conic_mstore_(m));
-    v2           = agc_vec_add(ip, v2, fdot); /* VAD, VSL8           */
+
+    v2 = agc_vec_add(ip, v2, fdot); /* VAD, VSL8           */
+
     return agc_vec_shl(ip, v2, 8);
 }
 
@@ -171,14 +192,18 @@ agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(v2vec != NULL && r2mag >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    int      n   = 0;
-    agc_tp_t m   = agc_conic_mnorm_(agc_conic_mload_(r2mag), &n); /* NORM X1 */
+
+    int      n = 0;
+    agc_tp_t m = agc_conic_mnorm_(agc_conic_mload_(r2mag), &n); /* NORM X1 */
+
     ctx->magvec2 = agc_conic_mstore_(m);                          /* STODL R2 */
     *v2vec       = lamenter_velocity(ip, ctx, ctx->magvec2, n, false);
+
     return AGC_STATUS_OK;
 }
 
@@ -194,11 +219,14 @@ agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(r2vec != NULL && v2vec != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *r2vec = newstate_position(ip, ctx); /* VSL4 PUSH, ABVAL     */
+
     return agc_conic_lamenter_(ip, ctx, agc_vec_abval(ip, *r2vec), v2vec);
 }
 
@@ -214,15 +242,19 @@ agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(rcv != NULL && vcv != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    *rcv        = newstate_position(ip, ctx); /* STORE RCV            */
+
+    *rcv = newstate_position(ip, ctx); /* STORE RCV            */
     int      n2 = 0;                          /* ABVAL, NORM X2       */
-    agc_tp_t m =
+    agc_tp_t m  =
         agc_conic_mnorm_(agc_conic_mload_(agc_vec_abval(ip, *rcv)), &n2);
     const agc_dp_t rcnorm = agc_conic_mstore_(m); /* STODL RCNORM         */
-    *vcv                  = lamenter_velocity(ip, ctx, rcnorm, n2, true);
+
+    *vcv = lamenter_velocity(ip, ctx, rcnorm, n2, true);
+
     return AGC_STATUS_OK;
 }

@@ -45,20 +45,24 @@ static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
     lm_dp_pair_t hi = lm_dap_mp(x.hi, k);
     lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
     lm_dp_pair_t r  = lm_dap_das(hi, lo);
+
     if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.hi <= LM_POSMAX))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return r;
 }
 
 static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 {
     lm_dp_pair_t r = {(agc_sp_t) -x.hi, (agc_sp_t) -x.lo};
+
     if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.lo >= LM_NEGMAX))
     {
         return (lm_dp_pair_t){0}; /* no valid result */
     }
+
     return r;
 }
 
@@ -66,10 +70,12 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 static agc_sp_t dp_sign(lm_dp_pair_t x)
 {
     agc_sp_t w = (x.hi != 0) ? x.hi : x.lo;
+
     if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0));
 }
 
@@ -79,20 +85,26 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
 agc_status_t lm_dap_acdt_c12(void)
 {
     lm_dap_t *d = lm_dap_state();
-    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) || !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
+
+    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) ||
+        !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    d->qaccdot    = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
-    d->raccdot    = lm_dap_mp((agc_sp_t) -d->negur, d->accdotr).lo;
+
+    d->qaccdot = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
+    d->raccdot = lm_dap_mp((agc_sp_t) -d->negur, d->accdotr).lo;
     uint16_t bits = (d->neguq > 0) ? GT_BIT10 : ((d->neguq < 0) ? GT_BIT9 : 0u);
+
     bits =
         (uint16_t) (bits + ((d->negur > 0) ? GT_BIT12 :
-                                             ((d->negur < 0) ? GT_BIT11 : 0u)));
+                            ((d->negur < 0) ? GT_BIT11 : 0u)));
     uint16_t c12 =
         (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u);
+
     agc_chan_write(012, (uint16_t) (c12 + bits));
-    d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
+    d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
+
     return AGC_STATUS_OK;
 }
 
@@ -103,8 +115,10 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
     {
         return 0;
     }
+
     lm_dp_pair_t n = {halfarg, 0};
     agc_sp_t     q = lm_dap_dv(n, x);         /* (ARG/X)/2      */
+
     return lm_dap_sat((int32_t) (x / 2) + q); /* SR: X/2        */
 }
 
@@ -112,47 +126,60 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  * be shifted right by SHFTFLAG + ININDEX/2. Zero or negative -> 0.      */
 agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
-    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) || !AGC_ASSERT(inindex != NULL))
+    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) ||
+        !AGC_ASSERT(inindex != NULL))
     {
         return 0;
     }
+
     *shftflag = 0;
+
     if (fn->hi < 0 || (fn->hi == 0 && fn->lo <= 0))
     {
         return 0; /* ZEROOT         */
     }
+
     if (fn->hi == 0)
     { /* ZEROHIGH       */
         fn->hi    = fn->lo;
         fn->lo    = 0;
         *shftflag = 7;
     }
-    *inindex   = 12;     /* TWELVE         */
+
+    *inindex = 12;     /* TWELVE         */
     agc_sp_t a = fn->hi; /* SCALSTRT       */
+
     for (int i = 0; i < 6; i++)
     { /* SCALLOOP       */
         agc_sp_t ref = (agc_sp_t) (1 << (14 - *inindex));
+
         if ((int32_t) ref - fn->hi > 0)
         {                            /* arg < reference */
             a = lm_dap_dv(*fn, ref); /* HALFARG        */
             break;
         }
+
         *inindex = (agc_sp_t) (*inindex - 2); /* MULBUSH        */
+
         if (*inindex <= 0)
         {
             break;
         }
     }
+
     agc_sp_t half = lm_dap_mphi(a, (agc_sp_t) 8192); /* SCALDONE       */
     agc_sp_t x    = ((half & 4096) != 0) ? LM_POSMAX : GT_ROOTHALF;
+
     for (int k = 0; k < 3; k++)
     {
         x = rootcycl(x, half);
     }
+
     if (!AGC_ASSERT(*inindex >= 0 && *inindex <= 12))
     {
         return 0;
     }
+
     return x;
 }
 
@@ -175,13 +202,16 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
 {
     agc_sp_t     aos = (i == 0) ? d->aosq : d->aosr; /* at pi/2        */
     lm_dp_pair_t p   = lm_dap_mp(aos, (agc_sp_t) 2); /* MP BIT2        */
+
     w->alpha = (p.hi == 0) ? p.lo : ((p.hi > 0) ? LM_POSMAX : LM_NEGMAX);
     w->omega = (i == 0) ? d->edotq : d->edotr;
     w->k     = (i == 0) ? d->kq : d->krdap;
+
     if (!AGC_ASSERT(w->k >= 0))
     {
         return;
     }
+
     if (!AGC_ASSERT(i == 0 || i == 1))
     {
         return;
@@ -195,22 +225,28 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF, RDIFF   */
     lm_dp_pair_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
     lm_dp_pair_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
-    w->k2theta.hi     = hi16.hi;
+
+    w->k2theta.hi = hi16.hi;
     w->k2theta.lo =
         lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
     agc_sp_t     half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192);
     lm_dp_pair_t sq   = lm_dap_mp(half, w->alpha); /* -ALPHA^2/2     */
+
     if ((int32_t) sq.hi + w->k <= 0)
     { /* HUGEQUOT       */
         w->a2.hi = LM_POSMAX;
         w->a2.lo = LM_POSMAX;
+
         return;
     }
+
     lm_dp_pair_t num = dp_neg(sq); /* ALPHA^2/2      */
     lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k);
     lm_dp_pair_t rem = {q1.lo, 0}; /* LXCH 7         */
-    w->a2.hi         = q1.hi;
-    w->a2.lo         = lm_dap_dv(rem, w->k);
+
+    w->a2.hi = q1.hi;
+    w->a2.lo = lm_dap_dv(rem, w->k);
+
     if (!AGC_ASSERT(w->a2.hi >= 0 && w->a2.lo >= 0))
     {
         return;
@@ -222,10 +258,12 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
  * NEGUSUM.                                                              */
 static void gts_middle_terms(gts_w_t *w)
 {
-    w->k2          = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
+    w->k2 = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
     lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) :
-                                      lm_dap_das(w->k2, dp_neg(w->a2));
-    w->del         = dp_sign(f);
+                     lm_dap_das(w->k2, dp_neg(w->a2));
+
+    w->del = dp_sign(f);
+
     if (w->del == 0)
     { /* DEFUNCT        */
         w->k2.hi = 0;
@@ -235,14 +273,17 @@ static void gts_middle_terms(gts_w_t *w)
     { /* NEGFNCT2       */
         w->k2 = dp_neg(w->k2);
     }
+
     w->k2      = lm_dap_das(w->k2, w->a2);  /* FUNCT2         */
     w->a2      = dp_x_sp(w->a2, GT_NEG1_3); /* -ALPHA^2/(6K)  */
     w->a2      = lm_dap_das(w->a2, w->k2);
     w->k2theta = lm_dap_das(w->k2theta, dp_x_sp(w->a2, w->alpha));
+
     if (!AGC_ASSERT(w->del >= -1 && w->del <= 1))
     {
         return;
     }
+
     if (!AGC_ASSERT(w->k2theta.hi >= LM_NEGMAX))
     {
         return;
@@ -254,28 +295,35 @@ static void gts_middle_terms(gts_w_t *w)
 static void gts_root_term(gts_w_t *w)
 {
     w->fn = dp_x_sp(w->k2, w->k); /* at pi^2/16     */
+
     if (w->del == 0)
     {
         return; /* NEGUSUM        */
     }
+
     if (w->del < 0)
     {
         w->k2 = dp_neg(w->k2); /* NEGATE         */
     }
+
     agc_sp_t shft    = 0;
     agc_sp_t inindex = 0;
     agc_sp_t root    = lm_dap_gtsqrt(&w->fn, &shft, &inindex);
-    w->k2            = dp_x_sp(w->k2, root); /* PRODUCT        */
-    shft =
+
+    w->k2 = dp_x_sp(w->k2, root); /* PRODUCT        */
+    shft  =
         (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
+
     if (!AGC_ASSERT(shft >= 0 && shft <= 14))
     {
         return;
     }
+
     if (shft != 0)
     {
         w->k2 = dp_x_sp(w->k2, (agc_sp_t) (1 << (14 - shft))); /* 2^-S     */
     }
+
     w->k2theta = lm_dap_das(w->k2theta, w->k2); /* ADDITIN        */
 }
 
@@ -285,6 +333,7 @@ static void gts_root_term(gts_w_t *w)
 static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
     agc_sp_t old = (i == 0) ? d->neguq : d->negur;
+
     if (i == 0)
     {
         d->neguq = newneg;
@@ -293,11 +342,14 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
     {
         d->negur = newneg;
     }
-    agc_sp_t     prod = (agc_sp_t) (old * newneg);
+
+    agc_sp_t prod = (agc_sp_t) (old * newneg);
+
     if (prod > 0)
     {
         return AGC_STATUS_OK; /* LOUPE          */
     }
+
     if (prod < 0)
     { /* REVERSAL       */
         if (i == 0)
@@ -308,14 +360,18 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
         {
             d->raccdot = 0;
         }
+
         agc_chan_and(
             012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
     }
+
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
+
     if (!AGC_ASSERT(newneg >= -1 && newneg <= 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -325,6 +381,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 agc_status_t lm_dap_gts(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->cotroler = -1;
     d->skip[0]  = GT_SKIPOFF;
     d->skip[1]  = GT_SKIPOFF;
@@ -333,11 +390,14 @@ agc_status_t lm_dap_gts(void)
     d->rgimtimr = GT_TWO;
     /* DEVIATION: SAVESR (the editing shift register) is not modelled.   */
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 1; i >= 0; i--)
     { /* R, then Q      */
         gts_w_t w = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0};
+
         gts_inputs(d, i, &w);
         agc_sp_t newneg = 0;
+
         if (w.k != 0)
         { /* else POSDRIVE +1 */
             gts_first_terms(d, i, &w);
@@ -345,14 +405,19 @@ agc_status_t lm_dap_gts(void)
             gts_root_term(&w);
             newneg = dp_sign(w.k2theta);
         }
+
         agc_status_t s = gts_drive(d, i, newneg);
-        st             = s;
+
+        st = (s != AGC_STATUS_OK) ? s : st;
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t sc = lm_dap_closeout();
+
     return (st != AGC_STATUS_OK) ? st : sc;
 }
 
@@ -363,17 +428,21 @@ agc_status_t lm_dap_gts(void)
 static void timegmbl_axis(lm_dap_t *d, int i)
 {
     agc_sp_t accdot    = (i == 0) ? d->accdotq : d->accdotr; /* at pi/2^7    */
-    agc_sp_t negaos    = (agc_sp_t) - ((i == 0) ? d->aosq : d->aosr);
+    agc_sp_t negaos    = (agc_sp_t) -((i == 0) ? d->aosq : d->aosr);
     agc_sp_t negu      = 0;
     agc_sp_t timer     = 0;
     bool     set_timer = false;
+
     if (accdot > 0 && negaos != 0)
     {
         int32_t v = (int32_t) lm_dap_mphi(negaos, GT_POINT6) +
                     negaos;                            /* -.4 AOS at pi/8 */
-        negu          = (agc_sp_t) ((v > 0) ? -1 : 1); /* SGN(AOS)       */
+
+        negu = (agc_sp_t) ((v > 0) ? -1 : 1); /* SGN(AOS)       */
         agc_sp_t absa = (agc_sp_t) ((v > 0) ? v : -v);
-        set_timer     = true;
+
+        set_timer = true;
+
         if (lm_dap_ovf(v) ||
             (int32_t) lm_dap_mphi(accdot, (agc_sp_t) 2048) - absa <= 0)
         {
@@ -383,6 +452,7 @@ static void timegmbl_axis(lm_dap_t *d, int i)
         else
         {
             timer = lm_dap_dv(lm_dap_mp(absa, GT_10_1024), accdot);
+
             if (timer == 0)
             {
                 negu      = 0; /* TGOFFNOW       */
@@ -390,6 +460,7 @@ static void timegmbl_axis(lm_dap_t *d, int i)
             }
         }
     }
+
     if (i == 0)
     {
         d->neguq    = negu;
@@ -400,10 +471,12 @@ static void timegmbl_axis(lm_dap_t *d, int i)
         d->negur    = negu;
         d->rgimtimr = set_timer ? timer : d->rgimtimr;
     }
+
     if (!AGC_ASSERT(negu >= -1 && negu <= 1))
     {
         return;
     }
+
     if (!AGC_ASSERT(timer >= 0))
     {
         return;
@@ -416,16 +489,20 @@ static void timegmbl_axis(lm_dap_t *d, int i)
 agc_status_t agc_lm_dap_timegmbl(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->allowgts = 1;
     timegmbl_axis(d, 1); /* R axis first   */
     timegmbl_axis(d, 0);
+
     if (!AGC_ASSERT(d->allowgts == 0 || d->allowgts == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->neguq >= -1 && d->negur >= -1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_acdt_c12();
 }

@@ -21,10 +21,12 @@ agc_sp_t agc_erase_modecadr(int dev)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(modecadr[dev] >= AGC_SP_MIN))
     {
         return 0;
     }
+
     return modecadr[dev];
 }
 
@@ -34,21 +36,31 @@ agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     modecadr[dev] = v;
+
     return AGC_STATUS_OK;
 }
 
 agc_sp_t agc_erase_imucadr(void)
 {
+    if (!AGC_ASSERT(modecadr[0] <= AGC_SP_MAX))
+    {
+        return 0;
+    }
+
     _Static_assert(AGC_MODECADR_N == 3, "AGC constant");
+
     if (!AGC_ASSERT(modecadr[0] >= AGC_SP_MIN))
     {
         return 0; /* no valid result */
     }
+
     return agc_erase_modecadr(0);
 }
 
@@ -59,10 +71,12 @@ void exec_clear_modecadr(void)
     {
         return;
     }
+
     for (int d = 0; d < AGC_MODECADR_N; d++)
     {
         modecadr[d] = 0;
     }
+
     if (!AGC_ASSERT(modecadr[0] == 0))
     {
         return;

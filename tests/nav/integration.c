@@ -51,6 +51,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
+
     return false;
 }
 
@@ -59,6 +60,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -81,6 +83,7 @@ typedef struct dvec
 static dvec_t dv(double x, double y, double z)
 {
     dvec_t r = {x, y, z};
+
     return r;
 }
 
@@ -102,6 +105,7 @@ static double dist(dvec_t a, dvec_t b)
     const double dx = a.x - b.x;
     const double dy = a.y - b.y;
     const double dz = a.z - b.z;
+
     return sqrt((dx * dx) + (dy * dy) + (dz * dz));
 }
 
@@ -113,8 +117,9 @@ static void circular(double mu, double r, double incl, double t, dvec_t *pos,
     const double v = n * r;
     const double c = cos(n * t);
     const double s = sin(n * t);
-    *pos           = dv(r * c, r * s * cos(incl), r * s * sin(incl));
-    *vel           = dv(-v * s, v * c * cos(incl), v * c * sin(incl));
+
+    *pos = dv(r * c, r * s * cos(incl), r * s * sin(incl));
+    *vel = dv(-v * s, v * c * cos(incl), v * c * sin(incl));
 }
 
 /* ---- double reference model, RK4, time in cs --------------------------- */
@@ -160,6 +165,7 @@ static dvec_t zonal(const ref_model_t *m, dvec_t r, double rr)
     const double f  = m->j2k / (rr * rr * rr * rr);
     const double cu = p3 + ((m->k3 / rr) * (p4 + ((m->k4 / rr) * p5)));
     const double cz = p2 + ((m->k3 / rr) * (p3 + ((m->k4 / rr) * p4)));
+
     return axpy(-f * cz, m->pole, dv(f * cu * u.x, f * cu * u.y, f * cu * u.z));
 }
 
@@ -176,51 +182,63 @@ static dvec_t tesseral(const ref_model_t *m, dvec_t r, double rr)
     const double r4   = rr * rr * rr * rr;
     const double g    = m->e22 / r4;
     const double q    = 5.0 * ((x * x) - (y * y));
-    double       a[3] = {g * ((2.0 * x) - (q * x)), g * ((-2.0 * y) - (q * y)),
-                         g * (-q * z)};
-    const double h    = m->e31 / (r4 * rr);
-    const double w    = 5.0 * x * (1.0 - (7.0 * z * z));
+    double       a[3] = {g *((2.0 * x) - (q * x)), g *((-2.0 * y) - (q * y)),
+                         g *(-q * z)};
+    const double h = m->e31 / (r4 * rr);
+    const double w = 5.0 * x * (1.0 - (7.0 * z * z));
+
     a[0] += h * ((w * x) + (5.0 * z * z) - 1.0);
     a[1] += h * (w * y);
     a[2] += h * ((w * z) + (10.0 * x * z));
     dvec_t o = dv(0.0, 0.0, 0.0);
+
     for (int i = 0; i < 3; i++)
     {
         o = axpy(a[i], dv(m->mrow[i][0], m->mrow[i][1], m->mrow[i][2]), o);
     }
+
     return o;
 }
 
 static dvec_t accel(const ref_model_t *m, dvec_t r)
 {
     const double rr = sqrt(dot3(r, r));
-    dvec_t a = dv(-m->mu * r.x / (rr * rr * rr), -m->mu * r.y / (rr * rr * rr),
-                  -m->mu * r.z / (rr * rr * rr));
+    dvec_t       a  =
+        dv(-m->mu * r.x / (rr * rr * rr), -m->mu * r.y / (rr * rr * rr),
+           -m->mu * r.z / (rr * rr * rr));
+
     if (m->j2k != 0.0)
     {
         const dvec_t z = zonal(m, r, rr);
-        a              = axpy(1.0, z, a);
-        a              = axpy(1.0, tesseral(m, r, rr), a);
+
+        a = axpy(1.0, z, a);
+        a = axpy(1.0, tesseral(m, r, rr), a);
     }
+
     for (int i = 0; i < m->nbody; i++)
     {
         const dvec_t d  = axpy(-1.0, r, m->bpos[i]); /* body - r  */
         const double dd = sqrt(dot3(d, d));
         const double bb = sqrt(dot3(m->bpos[i], m->bpos[i]));
-        a               = axpy(m->bmu[i] / (dd * dd * dd), d, a);
-        a               = axpy(-m->bmu[i] / (bb * bb * bb), m->bpos[i], a);
+
+        a = axpy(m->bmu[i] / (dd * dd * dd), d, a);
+        a = axpy(-m->bmu[i] / (bb * bb * bb), m->bpos[i], a);
     }
+
     return a;
 }
 
 static dstate_t deriv(const ref_model_t *m, dstate_t s, double h, dstate_t d)
 {
     dstate_t x;
+
     x.r = axpy(h, d.r, s.r);
     x.v = axpy(h, d.v, s.v);
     dstate_t o;
+
     o.r = x.v;
     o.v = accel(m, x.r);
+
     return o;
 }
 
@@ -230,12 +248,14 @@ static dstate_t rk4(const ref_model_t *m, dstate_t s0, double t)
     const double   h    = t / n;
     const dstate_t zero = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     dstate_t       s    = s0;
+
     for (int i = 0; i < n; i++)
     {
         const dstate_t k1 = deriv(m, s, 0.0, zero);
         const dstate_t k2 = deriv(m, s, h / 2.0, k1);
         const dstate_t k3 = deriv(m, s, h / 2.0, k2);
         const dstate_t k4 = deriv(m, s, h, k3);
+
         s.r =
             axpy(h / 6.0,
                  axpy(1.0, axpy(2.0, k2.r, k1.r), axpy(2.0, k3.r, k4.r)), s.r);
@@ -243,20 +263,23 @@ static dstate_t rk4(const ref_model_t *m, dstate_t s0, double t)
             axpy(h / 6.0,
                  axpy(1.0, axpy(2.0, k2.v, k1.v), axpy(2.0, k3.v, k4.v)), s.v);
     }
+
     return s;
 }
 
 static ref_model_t earth_model(bool j2)
 {
     ref_model_t m = {0};
-    m.mu          = MU_E;
-    m.j2k         = j2 ? J2K : 0.0;
-    m.k3          = -.1355426363e5;
-    m.k4          = .4991607391e7;
-    m.pole        = dv(0.0, 0.0, 1.0);
-    m.mrow[0][0]  = 1.0;
-    m.mrow[1][1]  = 1.0;
-    m.mrow[2][2]  = 1.0;
+
+    m.mu         = MU_E;
+    m.j2k        = j2 ? J2K : 0.0;
+    m.k3         = -.1355426363e5;
+    m.k4         = .4991607391e7;
+    m.pole       = dv(0.0, 0.0, 1.0);
+    m.mrow[0][0] = 1.0;
+    m.mrow[1][1] = 1.0;
+    m.mrow[2][2] = 1.0;
+
     return m;
 }
 
@@ -275,6 +298,7 @@ static agc_status_t run_body(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v,
                              bool conic, double t1, bool moon)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
@@ -284,7 +308,9 @@ static agc_status_t run_body(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v,
     agc_flag_put(AGC_FLAG_MOONFLAG, moon);
     agc_flag_put(AGC_FLAG_INTYPFLG, conic);
     const agc_status_t st = agc_integ_integrvs(&ip, ctx, (agc_dp_t) t1);
+
     CHECK(!agc_integ_area_busy(0)); /* INTWAKE released */
+
     return st;
 }
 
@@ -321,6 +347,7 @@ static void test_rectify(void)
 {
     agc_interp_t    ip;
     agc_integ_ctx_t ctx;
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     CHECK(agc_integ_ctx_init(&ctx) == AGC_STATUS_OK);
@@ -333,6 +360,7 @@ static void test_rectify(void)
     CHECK(agc_integ_rectify(&ip, &ctx) == AGC_STATUS_OK);
     const dvec_t r = from_agc(ctx.sv.rrect, 29);
     const dvec_t v = from_agc(ctx.sv.vrect, 7);
+
     CHECK(fabs(r.x - 7001000.0) < 4.0);
     CHECK(fabs(r.y + 500.0) < 4.0);
     CHECK(fabs(v.z - 0.05) < 1e-6);
@@ -346,6 +374,7 @@ static void test_conic_leo(void)
 {
     agc_integ_ctx_t ctx;
     dvec_t          r0, v0, r1, v1;
+
     fresh(AGC_VEHICLE_CSM);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     circular(MU_E, 6678137.0, 0.5, TEN_MIN_CS, &r1, &v1);
@@ -354,6 +383,7 @@ static void test_conic_leo(void)
     CHECK(ctx.out.tat == (agc_dp_t) TEN_MIN_CS);
     const double dr   = dist(from_agc(ctx.out.ratt, 29), r1);
     const double dvel = dist(from_agc(ctx.out.vatt, 7), v1);
+
     (void) printf("conic LEO 10 min: |dr| = %.1f m, |dv| = %.3g m/cs\n", dr,
                   dvel);
     CHECK(dr < 50.0);
@@ -367,6 +397,7 @@ static void test_encke_twobody(void)
 {
     agc_integ_ctx_t ctx;
     dvec_t          r0, v0, r1, v1;
+
     fresh(AGC_VEHICLE_LM);
     agc_erase_set_modreg(20);
     circular(MU_E, 1.0e8, 0.3, 0.0, &r0, &v0);
@@ -376,6 +407,7 @@ static void test_encke_twobody(void)
     CHECK(!agc_flag_test(AGC_FLAG_MIDFLAG)); /* LM: RME = DPPOSMAX */
     const double dr   = dist(from_agc(ctx.out.ratt, 29), r1);
     const double dvel = dist(from_agc(ctx.out.vatt, 7), v1);
+
     (void) printf("two-body Encke 10 min: |dr| = %.1f m, |dv| = %.3g m/cs\n",
                   dr, dvel);
     CHECK(dr < 50.0);
@@ -388,6 +420,7 @@ static void test_encke_leo(void)
 {
     agc_integ_ctx_t ctx;
     dvec_t          r0, v0, r1, v1;
+
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
@@ -402,6 +435,7 @@ static void test_encke_leo(void)
     const double      dr   = dist(ra, ref.r);
     const double      dvel = dist(from_agc(ctx.out.vatt, 7), ref.v);
     const double      d2b  = dist(ra, r1);
+
     (void) printf(
         "Encke LEO 10 min: |dr| vs J2 ref = %.1f m, |dv| = %.3g m/cs, "
         "vs two-body %.0f m\n",
@@ -417,17 +451,19 @@ static void test_wmatrix(void)
     agc_interp_t     ip;
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
     dvec_t           r0, v0;
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
     CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     agc_integ_sv_t sv = ctx->sv;
-    sv.rrect          = to_agc(r0, 29);
-    sv.rcv            = sv.rrect;
-    sv.vrect          = to_agc(v0, 7);
-    sv.vcv            = sv.vrect;
-    sv.tet            = 0;
+
+    sv.rrect = to_agc(r0, 29);
+    sv.rcv   = sv.rrect;
+    sv.vrect = to_agc(v0, 7);
+    sv.vcv   = sv.vrect;
+    sv.tet   = 0;
     CHECK(agc_integ_perm_set(AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK);
     agc_flag_clear(AGC_FLAG_CMOONFLG);
     /* W column 0: 100 m along x at the stored scale (YV SL3: 2^19 m).    */
@@ -441,12 +477,15 @@ static void test_wmatrix(void)
     CHECK(agc_integ_integrv(&ip, ctx, (agc_dp_t) TEN_MIN_CS) == AGC_STATUS_OK);
     dstate_t a = {r0, v0};
     dstate_t b = a;
+
     b.r.x += 100.0;
-    const ref_model_t m  = earth_model(false);
-    const dstate_t    ra = rk4(&m, a, TEN_MIN_CS);
-    const dstate_t    rb = rk4(&m, b, TEN_MIN_CS);
-    const dvec_t want = dv(rb.r.x - ra.r.x, rb.r.y - ra.r.y, rb.r.z - ra.r.z);
-    const dvec_t got  = from_agc(ctx->w.blk[0][0], 19);
+    const ref_model_t m    = earth_model(false);
+    const dstate_t    ra   = rk4(&m, a, TEN_MIN_CS);
+    const dstate_t    rb   = rk4(&m, b, TEN_MIN_CS);
+    const dvec_t      want = dv(rb.r.x - ra.r.x, rb.r.y - ra.r.y,
+                                rb.r.z - ra.r.z);
+    const dvec_t got = from_agc(ctx->w.blk[0][0], 19);
+
     (void) printf(
         "W column 0 after 10 min: (%.2f %.2f %.2f) want (%.2f %.2f %.2f)\n",
         got.x, got.y, got.z, want.x, want.y, want.z);
@@ -464,6 +503,7 @@ static void test_lunar_gravity(void)
     agc_mat_t            mm;
     dvec_t               r0, v0, r1, v1;
     const double         t = 360000.0; /* 1 hour            */
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
@@ -472,21 +512,26 @@ static void test_lunar_gravity(void)
      * for C31 = 2.8E-5 at the scale B80 implied by QUALITY3.             */
     const agc_sp_t e22 = 5232;
     const agc_sp_t e31 = 1465;
+
     CHECK(agc_integ_set_lunar_coeffs(e22, e31) == AGC_STATUS_OK);
     CHECK(agc_planet_moonmx(&ip, &pad, 180000, &mm) == AGC_STATUS_OK);
     ref_model_t m = {0};
-    m.mu          = MU_M;
-    m.j2k         = .3067493316e18;
-    m.k3          = -176236.02;
-    m.k4          = 0.0;
+
+    m.mu  = MU_M;
+    m.j2k = .3067493316e18;
+    m.k3  = -176236.02;
+    m.k4  = 0.0;
+
     for (int i = 0; i < 3; i++)
     {
         const dvec_t row = from_agc(mm.row[i], 1);
         const double n   = sqrt(dot3(row, row));
-        m.mrow[i][0]     = row.x / n;
-        m.mrow[i][1]     = row.y / n;
-        m.mrow[i][2]     = row.z / n;
+
+        m.mrow[i][0] = row.x / n;
+        m.mrow[i][1] = row.y / n;
+        m.mrow[i][2] = row.z / n;
     }
+
     m.pole = dv(m.mrow[2][0], m.mrow[2][1], m.mrow[2][2]);
     m.e22  = agc_sp_to_double(e22, 58);
     m.e31  = agc_sp_to_double(e31, 40) * pow(2.0, 40.0); /* B80 */
@@ -496,14 +541,16 @@ static void test_lunar_gravity(void)
     CHECK(ctx.out.valid);
     CHECK(ctx.out.x1 == -10);
     CHECK(ctx.out.x2 == 2);
-    dstate_t       s0   = {r0, v0};
-    const dstate_t ref  = rk4(&m, s0, t);
-    ref_model_t    m2   = m;
-    m2.k3               = 0.0;
-    m2.e22              = 0.0;
-    m2.e31              = 0.0;
+    dstate_t       s0  = {r0, v0};
+    const dstate_t ref = rk4(&m, s0, t);
+    ref_model_t    m2  = m;
+
+    m2.k3  = 0.0;
+    m2.e22 = 0.0;
+    m2.e31 = 0.0;
     const dstate_t ref2 = rk4(&m2, s0, t);
     const dvec_t   ra   = from_agc(ctx.out.ratt1, 27);
+
     (void) printf("lunar 1 h: |dr| vs ref = %.1f m (J2-only ref %.1f m, "
                   "two-body %.0f m)\n",
                   dist(ra, ref.r), dist(ra, ref2.r), dist(ra, r1));
@@ -520,21 +567,24 @@ static void test_third_body(void)
     agc_ephem_csm_t      eph = {0};
     dvec_t               r0, v0;
     const double         t = 2160000.0; /* 6 hours           */
+
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
     agc_erase_set_tephem(0);
     CHECK(agc_navaux_set_padload(&pad) == AGC_STATUS_OK);
-    const dvec_t moon               = dv(3.8e8, 1.0e7, -2.0e7);
-    const dvec_t sun                = dv(1.5e11, 0.0, 0.0);
+    const dvec_t moon = dv(3.8e8, 1.0e7, -2.0e7);
+    const dvec_t sun  = dv(1.5e11, 0.0, 0.0);
+
     eph.vecoem[AGC_EPHEM_NCOEF - 1] = to_agc(moon, 31); /* a0, fixed    */
     eph.reso                        = to_agc(sun, 38);
     CHECK(agc_ephem_set_csm_data(&eph) == AGC_STATUS_OK);
     ref_model_t m = earth_model(true);
-    m.nbody       = 2;
-    m.bpos[0]     = moon;
-    m.bmu[0]      = MU_M;
-    m.bpos[1]     = sun;
-    m.bmu[1]      = MU_S;
+
+    m.nbody   = 2;
+    m.bpos[0] = moon;
+    m.bmu[0]  = MU_M;
+    m.bpos[1] = sun;
+    m.bmu[1]  = MU_S;
     circular(MU_E, 6.0e7, 0.4, 0.0, &r0, &v0);
     CHECK(run_integrvs(&ctx, r0, v0, false, t) == AGC_STATUS_OK);
     CHECK(ctx.out.valid);
@@ -545,6 +595,7 @@ static void test_third_body(void)
     ref_model_t    m2   = earth_model(true);
     const dstate_t ref2 = rk4(&m2, s0, t);
     const dvec_t   ra   = from_agc(ctx.out.ratt, 29);
+
     (void) printf(
         "third body 6 h: |dr| vs ref = %.1f m (without moon/sun %.0f m)\n",
         dist(ra, ref.r), dist(ra, ref2.r));
@@ -556,11 +607,12 @@ static void test_third_body(void)
 static void set_perm(agc_vehicle_t veh, dvec_t r, dvec_t v, agc_dp_t t)
 {
     agc_integ_sv_t sv = {0};
-    sv.rrect          = to_agc(r, 29);
-    sv.rcv            = sv.rrect;
-    sv.vrect          = to_agc(v, 7);
-    sv.vcv            = sv.vrect;
-    sv.tet            = t;
+
+    sv.rrect = to_agc(r, 29);
+    sv.rcv   = sv.rrect;
+    sv.vrect = to_agc(v, 7);
+    sv.vcv   = sv.vrect;
+    sv.tet   = t;
     CHECK(agc_integ_perm_set(veh, &sv) == AGC_STATUS_OK);
 }
 
@@ -571,6 +623,7 @@ static void test_stateint(void)
     agc_integ_sv_t c;
     agc_integ_sv_t l;
     dvec_t         r0, v0;
+
     fresh(AGC_VEHICLE_CSM);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
@@ -597,6 +650,7 @@ static void test_midtoav(void)
     agc_interp_t            ip;
     agc_integ_midtoav_out_t out;
     dvec_t                  r0, v0, r1, v1;
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(40);
@@ -629,6 +683,7 @@ static void test_avetomid(void)
     agc_integ_sv_t   c;
     agc_integ_sv_t   l;
     dvec_t           r0, v0, r1, v1;
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(40);
@@ -661,6 +716,7 @@ static void test_intwakeu(void)
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
     agc_integ_sv_t   l;
     agc_sp_t         u = -1;
+
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
@@ -700,5 +756,6 @@ int main(void)
         "test_integration: %d checks, %d failures, %d assert reports\n",
         g_checks, g_failures, g_assert_reports);
     (void) PI;
+
     return (g_failures == 0) ? 0 : 1;
 }

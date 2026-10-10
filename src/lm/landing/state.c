@@ -61,14 +61,17 @@ void agc_lm_landing_reset(void)
 void agc_lm_phaschng(uint16_t octal_code)
 {
     int group = (int) (octal_code & 7u);
+
     if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
     {
         return;
     }
+
     if (!AGC_ASSERT(octal_code <= 077777u))
     {
         return;
     }
+
     agc_phase_change(group, octal_code);
 }
 
@@ -86,10 +89,12 @@ agc_sp_t agc_lm_time1(void)
 {
     uint32_t t  = agc_time_now_cs();
     agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu);
+
     if (!AGC_ASSERT(t1 >= 0))
     {
         return 0; /* no valid result */
     }
+
     return t1;
 }
 
@@ -103,11 +108,14 @@ agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
     {
         return (dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
+
     int32_t q = dividend / (int32_t) divisor;
+
     if (!AGC_ASSERT(q <= AGC_SP_MAX && q >= AGC_SP_MIN))
     {
         q = (q > 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
+
     return (agc_sp_t) q;
 }
 
@@ -116,10 +124,12 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
 {
     int32_t p  = (int32_t) a * (int32_t) b; /* DP product, 2^-28 units   */
     int32_t hi = p / 16384;                 /* truncate toward zero      */
+
     if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) hi;
 }
 
@@ -128,10 +138,12 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
 agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
 {
     int32_t s = (int32_t) a + (int32_t) b;
+
     if (!AGC_ASSERT(s <= AGC_SP_MAX && s >= AGC_SP_MIN))
     {
         s = (s > 0) ? AGC_SP_MAX : AGC_SP_MIN;
     }
+
     return (agc_sp_t) s;
 }
 
@@ -142,9 +154,11 @@ bool agc_lm_chan_bit_present(int chan, uint16_t bit)
     {
         return false;
     }
+
     if (!AGC_ASSERT(bit != 0u))
     {
         return false;
     }
+
     return (agc_chan_read(chan) & bit) == 0u;
 }

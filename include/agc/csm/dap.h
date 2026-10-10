@@ -81,38 +81,38 @@ typedef struct agc_csm_rcs
     agc_csm_t5phase_t t5phase;    /* T5PHASE                                  */
     agc_sp_t          t5time;     /* T5TIME, TIME5 counts (10 ms)             */
     agc_sp_t          holdflag;   /* HOLDFLAG: + grab, +0 hold, - auto steer  */
-    agc_dp_t wbody[AGC_CSM_AXES]; /* WBODY commanded rate, 450 deg/s      */
-    agc_dp_t adot[AGC_CSM_AXES];  /* ADOT estimated rate, 450 deg/s       */
-    agc_dp_t merror[AGC_CSM_AXES]; /* MERRORX manual att. error, 180 deg   */
-    agc_sp_t dft[AGC_CSM_AXES];    /* DFT expected 1-jet firing, 1/1600 s  */
-    agc_dp_t drho[AGC_CSM_AXES];   /* DRHO filter residual, 180 deg        */
-    agc_sp_t attsec;               /* ATTSEC 0.1 s pass counter            */
-    agc_sp_t tau[AGC_CSM_AXES];    /* TAU rotation command, 1/1600 s       */
-    agc_sp_t bias[AGC_CSM_AXES];   /* BIAS KALCMANU lead, 180 deg          */
-    agc_sp_t error[AGC_CSM_AXES];  /* ERRORX attitude error, 180 deg       */
-    uint16_t thetad[AGC_CSM_AXES]; /* THETADX..Z hold reference: raw CDU
-                                       word (GRABANG) or 1's comp DPADD high
-                                       word (DCDUINCR), 180 deg            */
-    agc_dp_t cdud[AGC_CSM_AXES];   /* CDUXD desired gimbal DP, 180 deg     */
-    agc_dp_t delcdu[AGC_CSM_AXES]; /* DELCDUX increment per 0.1 s, 180 deg*/
-    uint16_t rho[AGC_CSM_AXES];    /* RHO, RHO1, RHO2 previous CDU (raw)   */
-    agc_sp_t amgb1, amgb4, amgb5, amgb7, amgb8; /* AMGB elements, scale 1   */
-    agc_sp_t capsi;                /* CAPSI cos(psi), scale 1              */
-    agc_sp_t kmj[AGC_CSM_AXES];    /* KMJ torque/inertia (S40.14)          */
-    agc_sp_t jm[AGC_CSM_AXES];     /* J/M inertia/torque (S40.14)          */
-    agc_sp_t attkalmn;             /* ATTKALMN gain index -3..11           */
-    agc_sp_t ratindx;              /* RATEINDX 0,2,4,6 (S41.2)             */
-    agc_sp_t adb;                  /* ADB deadband, 180 deg (46 or 455)    */
-    agc_sp_t slope;                /* SLOPE switch-line slope .24          */
-    agc_sp_t racfail, rbdfail;     /* +: A(B) failed, -: C(D) failed, 0 ok */
-    agc_sp_t acorbd;               /* - AC roll, + BD roll                 */
-    agc_sp_t xtrans;               /* +1 BD-only X, -1 AC-only X, 0 both   */
-    uint16_t ch31temp;             /* CH31TEMP last channel 31 image       */
-    uint16_t chantemp;             /* CHANTEMP last channel 32 image       */
-    agc_sp_t manndx[AGC_CSM_AXES]; /* RMANNDX,PMANNDX,YMANNDX 0 none 1 + 2 -*/
-    uint16_t rword1, rword2;       /* RWORD1/2 channel 6 images            */
-    uint16_t pword1, pword2;       /* PWORD1/2 channel 5 pitch part        */
-    uint16_t yword1, yword2;       /* YWORD1/2 channel 5 yaw part          */
+    agc_dp_t          wbody[AGC_CSM_AXES]; /* WBODY commanded rate, 450 deg/s      */
+    agc_dp_t          adot[AGC_CSM_AXES]; /* ADOT estimated rate, 450 deg/s       */
+    agc_dp_t          merror[AGC_CSM_AXES]; /* MERRORX manual att. error, 180 deg   */
+    agc_sp_t          dft[AGC_CSM_AXES];   /* DFT expected 1-jet firing, 1/1600 s  */
+    agc_dp_t          drho[AGC_CSM_AXES];  /* DRHO filter residual, 180 deg        */
+    agc_sp_t          attsec;              /* ATTSEC 0.1 s pass counter            */
+    agc_sp_t          tau[AGC_CSM_AXES];   /* TAU rotation command, 1/1600 s       */
+    agc_sp_t          bias[AGC_CSM_AXES];  /* BIAS KALCMANU lead, 180 deg          */
+    agc_sp_t          error[AGC_CSM_AXES]; /* ERRORX attitude error, 180 deg       */
+    uint16_t          thetad[AGC_CSM_AXES]; /* THETADX..Z hold reference: raw CDU
+                                                word (GRABANG) or 1's comp DPADD high
+                                                word (DCDUINCR), 180 deg            */
+    agc_dp_t        cdud[AGC_CSM_AXES]; /* CDUXD desired gimbal DP, 180 deg     */
+    agc_dp_t        delcdu[AGC_CSM_AXES]; /* DELCDUX increment per 0.1 s, 180 deg*/
+    uint16_t        rho[AGC_CSM_AXES]; /* RHO, RHO1, RHO2 previous CDU (raw)   */
+    agc_sp_t        amgb1, amgb4, amgb5, amgb7, amgb8; /* AMGB elements, scale 1   */
+    agc_sp_t        capsi;             /* CAPSI cos(psi), scale 1              */
+    agc_sp_t        kmj[AGC_CSM_AXES]; /* KMJ torque/inertia (S40.14)          */
+    agc_sp_t        jm[AGC_CSM_AXES];  /* J/M inertia/torque (S40.14)          */
+    agc_sp_t        attkalmn;          /* ATTKALMN gain index -3..11           */
+    agc_sp_t        ratindx;           /* RATEINDX 0,2,4,6 (S41.2)             */
+    agc_sp_t        adb;               /* ADB deadband, 180 deg (46 or 455)    */
+    agc_sp_t        slope;             /* SLOPE switch-line slope .24          */
+    agc_sp_t        racfail, rbdfail;  /* +: A(B) failed, -: C(D) failed, 0 ok */
+    agc_sp_t        acorbd;            /* - AC roll, + BD roll                 */
+    agc_sp_t        xtrans;            /* +1 BD-only X, -1 AC-only X, 0 both   */
+    uint16_t        ch31temp;          /* CH31TEMP last channel 31 image       */
+    uint16_t        chantemp;          /* CHANTEMP last channel 32 image       */
+    agc_sp_t        manndx[AGC_CSM_AXES]; /* RMANNDX,PMANNDX,YMANNDX 0 none 1 + 2 -*/
+    uint16_t        rword1, rword2; /* RWORD1/2 channel 6 images            */
+    uint16_t        pword1, pword2; /* PWORD1/2 channel 5 pitch part        */
+    uint16_t        yword1, yword2; /* YWORD1/2 channel 5 yaw part          */
     agc_csm_blast_t blast[AGC_CSM_AXES]; /* BLAST, BLAST1, BLAST2           */
 } agc_csm_rcs_t;
 
@@ -122,16 +122,16 @@ typedef struct agc_csm_dapcom
     agc_sp_t ak[AGC_CSM_AXES]; /* AK, AK1, AK2 needle errors, 180 deg  */
     uint16_t rcsflags;         /* RCSFLAGS                             */
     agc_sp_t
-        edrive[AGC_CSM_AXES];  /* EDRIVEX.. DAC contents, 1 bit = .044 deg */
-    agc_sp_t ixx;              /* IXX, kg m^2, scale 2^20              */
-    agc_sp_t iavg;             /* IAVG, kg m^2, scale 2^20             */
-    agc_sp_t iavg_tlx;         /* IAVG/TLX, s^2, scale 2^2             */
-    agc_sp_t weight_g;         /* WEIGHT/G, kg, scale 2^16             */
-    agc_sp_t emdot;            /* EMDOT SPS flow, kg/cs, scale 2^3 (PL)*/
-    agc_sp_t estroker;         /* ESTROKER burst size, 85.41"/bit (PL) */
-    agc_sp_t ekprime[2];       /* EKPRIME LM-off/on, (100 pi)/16 (PL)  */
-    agc_sp_t ektlx_i[3];       /* EKTLX/I off/on/low-bw, 1/(8 ascrev) (PL) */
-    agc_sp_t erepfrac[2];      /* EREPFRAC off/on, 2^2 (PL)            */
+             edrive[AGC_CSM_AXES]; /* EDRIVEX.. DAC contents, 1 bit = .044 deg */
+    agc_sp_t ixx;                  /* IXX, kg m^2, scale 2^20              */
+    agc_sp_t iavg;                 /* IAVG, kg m^2, scale 2^20             */
+    agc_sp_t iavg_tlx;             /* IAVG/TLX, s^2, scale 2^2             */
+    agc_sp_t weight_g;             /* WEIGHT/G, kg, scale 2^16             */
+    agc_sp_t emdot;                /* EMDOT SPS flow, kg/cs, scale 2^3 (PL)*/
+    agc_sp_t estroker;             /* ESTROKER burst size, 85.41"/bit (PL) */
+    agc_sp_t ekprime[2];           /* EKPRIME LM-off/on, (100 pi)/16 (PL)  */
+    agc_sp_t ektlx_i[3];           /* EKTLX/I off/on/low-bw, 1/(8 ascrev) (PL) */
+    agc_sp_t erepfrac[2];          /* EREPFRAC off/on, 2^2 (PL)            */
     agc_sp_t pactoff, yactoff; /* PACTOFF/YACTOFF trims, 85.41"/bit    */
     agc_sp_t hbn10[AGC_CSM_N10_WORDS]; /* HBN10.. high-bandwidth coeffs (PL)*/
     uint16_t ogad;                /* OGAD outer gimbal at ignition (raw)  */
@@ -143,7 +143,7 @@ typedef struct agc_csm_tvc
 {
     agc_dp_t omegac[AGC_CSM_AXES]; /* OMEGAXC.. steering rate cmd (S40.8)  */
     agc_dp_t
-        omegab[AGC_CSM_AXES];  /* OMEGAXB.. body rate (Y,Z), 1/2 TVCDT revs */
+             omegab[AGC_CSM_AXES]; /* OMEGAXB.. body rate (Y,Z), 1/2 TVCDT revs */
     agc_dp_t ptmp[6], ytmp[6]; /* PTMP1-6, YTMP1-6 filter nodes        */
     agc_sp_t rollfire;         /* ROLLFIRE: +-POSMAX on, 0 off         */
     uint16_t rollword;         /* ROLLWORD alternation bits 1,2        */
@@ -163,8 +163,8 @@ typedef struct agc_csm_tvc
     agc_sp_t vark;             /* VARK, (2^3 ascrev)                   */
     agc_sp_t repfrac;          /* REPFRAC, 2^2                         */
     agc_sp_t vcntr, engine_fail_vcntr; /* VCNTR, V97VCNTR gain update counters;
-                                       any negative value stands for the
-                                       AGC's -0 (V97/R40 LOTHRUST)         */
+                                          any negative value stands for the
+                                          AGC's -0 (V97/R40 LOTHRUST)         */
     agc_sp_t tvcphase;           /* TVCPHASE -2..3                       */
     uint16_t pcduypst, pcduzpst; /* PCDUYPST/PCDUZPST past CDUs (raw)    */
     agc_sp_t mcduydot, mcduzdot; /* MCDUYDOT/MCDUZDOT minus CDU rates    */
@@ -180,9 +180,9 @@ typedef struct agc_csm_tvc
     agc_dp_t pacttmp, yacttmp; /* PACTTMP/YACTTMP                      */
     agc_sp_t cntr, cntrtmp;    /* CNTR/CNTRTMP one-shot counter        */
     agc_dp_t delbrtmp, errbtmp, cmdtmp; /* restart temporaries              */
-    agc_sp_t errbinit[2];               /* ERRBTMP, +1 as two SP words: ERRORY,
-                                       ERRORZ (180 deg) stored by P40 DOTVCON
-                                       for ATTINIT (overlay of errbtmp)    */
+    agc_sp_t errbinit[2];            /* ERRBTMP, +1 as two SP words: ERRORY,
+                                        ERRORZ (180 deg) stored by P40 DOTVCON
+                                        for ATTINIT (overlay of errbtmp)    */
     agc_dp_t tmp[6];                 /* TMP1..TMP6                           */
     agc_sp_t n10[AGC_CSM_N10_WORDS]; /* N10..D32 active filter coefficients  */
     agc_sp_t tempdap[2];             /* TEMPDAP, TEMPDAP+1 correction fraction*/
@@ -222,9 +222,9 @@ agc_csm_dapcom_t *agc_csm_dap_com(void);
 agc_status_t agc_csm_dap_decode_dap_data(void); /* S41.2 decode DAPDATR1/2   */
 agc_status_t agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
 agc_status_t agc_csm_dap_rcsdapon(void); /* RCSDAPON (call under INHINT) */
-void agc_csm_dap_massprop(void); /* MASSPROP                  */
-void agc_csm_dap_fixcw(void);    /* FIXCW (MASSPROP +)        */
-void agc_csm_dap_zerojet(void);  /* ZEROJET                   */
+void         agc_csm_dap_massprop(void); /* MASSPROP                  */
+void         agc_csm_dap_fixcw(void);   /* FIXCW (MASSPROP +)        */
+void         agc_csm_dap_zerojet(void); /* ZEROJET                   */
 agc_status_t agc_csm_tvc_preswtch(void); /* PRESWTCH (V46 CSM/LM switch-over) */
 agc_status_t agc_csm_dap_setmaxdb(void); /* SETMAXDB (P40-P47 p.687)  */
 agc_status_t agc_csm_dap_setmindb(void); /* SETMINDB (P40-P47 p.687)  */

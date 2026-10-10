@@ -10,14 +10,17 @@
 agc_vec_t agc_k_unitx(void)
 {
     agc_vec_t v = agc_vec_make(AGC_K_DPHALF, 0, 0);
+
     if (!AGC_ASSERT(v.c[0] == AGC_DP_HALF))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((v.c[1] == 0) && (v.c[2] == 0)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v;
 }
 
@@ -25,14 +28,17 @@ agc_vec_t agc_k_unitx(void)
 agc_vec_t agc_k_unity(void)
 {
     agc_vec_t v = agc_vec_make(0, AGC_K_DPHALF, 0);
+
     if (!AGC_ASSERT(v.c[1] == AGC_DP_HALF))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((v.c[0] == 0) && (v.c[2] == 0)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v;
 }
 
@@ -40,14 +46,17 @@ agc_vec_t agc_k_unity(void)
 agc_vec_t agc_k_unitz(void)
 {
     agc_vec_t v = agc_vec_make(0, 0, AGC_K_DPHALF);
+
     if (!AGC_ASSERT(v.c[2] == AGC_DP_HALF))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((v.c[0] == 0) && (v.c[1] == 0)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v;
 }
 
@@ -55,13 +64,16 @@ agc_vec_t agc_k_unitz(void)
 agc_vec_t agc_k_zerovec(void)
 {
     agc_vec_t v = agc_vec_zero();
+
     if (!AGC_ASSERT(v.c[0] == 0))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT((v.c[1] == 0) && (v.c[2] == 0)))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v;
 }

@@ -88,11 +88,14 @@ static uint16_t sp_word(agc_sp_t v)
     {
         return 0; /* no valid result */
     }
+
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
+
     if (!AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15))
     {
         return 0; /* no valid result */
     }
+
     return (uint16_t) w;
 }
 
@@ -103,6 +106,7 @@ static uint16_t dp_word(agc_dp_t v, int k)
     {
         return 0; /* no valid result */
     }
+
     return sp_word((k == 0) ? agc_dp_high(v) : agc_dp_low(v));
 }
 
@@ -113,6 +117,7 @@ static uint16_t vec_word(agc_vec_t v, int k)
     {
         return 0;
     }
+
     return dp_word(v.c[k / 2], k % 2);
 }
 
@@ -121,18 +126,22 @@ static uint16_t other_word(agc_dn_item_t item, int k)
 {
     agc_state_vector_t sv;
     agc_status_t       st = agc_sv_get(AGC_SV_OTHER, &sv);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return 0;
     }
+
     if (item == AGC_DN_R_OTHER)
     {
         return vec_word(sv.r, k);
     }
+
     if (item == AGC_DN_V_OTHER)
     {
         return vec_word(sv.v, k);
     }
+
     return (k < 2) ? dp_word(sv.t, k) : 0u;
 }
 
@@ -144,6 +153,7 @@ static uint16_t counter_word(int k)
     {
         return 0; /* no valid result */
     }
+
     switch (k)
     {
         case 0:
@@ -165,6 +175,7 @@ static uint16_t counter_word(int k)
         default:
             break;
     }
+
     return 0;
 }
 
@@ -175,9 +186,11 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
     {
         return false;
     }
+
     bool      vec = true;
     agc_vec_t v   = {{0, 0, 0}};
     agc_dp_t  t   = 0;
+
     switch ((int) item)
     {
         case AGC_DN_RN:
@@ -221,6 +234,7 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
         default:
             return false;
     }
+
     if (vec)
     {
         *w = (k < 2 * AGC_VEC_N) ? vec_word(v, k) : 0u;
@@ -229,6 +243,7 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
     {
         *w = (k < 2) ? dp_word(t, k) : 0u;
     }
+
     return true;
 }
 
@@ -239,7 +254,9 @@ static uint16_t refsmmat_word(int k)
     {
         return 0;
     }
+
     agc_mat_t m = agc_erase_refsmmat();
+
     return vec_word(m.row[k / 6], k % 6);
 }
 
@@ -250,18 +267,20 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
     {
         return false;
     }
+
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+
     switch ((int) item)
     {
         case AGC_DN_TIME2:
             *w = (k == 0) ? sp_word(agc_erase_time2()) :
                  (k == 1) ? sp_word(agc_erase_time1()) :
-                            0u;
+                 0u;
             break;
         case AGC_DN_STATE:
             *w = (k < (lm ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM)) ?
-                     agc_flagword_get(k) :
-                     0u;
+                 agc_flagword_get(k) :
+                 0u;
             break;
         case AGC_DN_DSPTAB:
             *w = (k < 12) ? agc_erase_dsptab(k) : 0u;
@@ -278,7 +297,7 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
         case AGC_DN_IMODES30:
             *w = (k == 0) ? agc_erase_imodes30() :
                  (k == 1) ? agc_erase_imodes33() :
-                            0u;
+                 0u;
             break;
         case AGC_DN_OPTMODES:
             *w = (k == 0 && !lm) ? agc_erase_optmodes() : 0u;
@@ -289,20 +308,20 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
         case AGC_DN_LEMMASS:
             *w = (k == 0) ? sp_word(agc_erase_lemmass()) :
                  (k == 1) ? sp_word(agc_erase_csmmass()) :
-                            0u;
+                 0u;
             break;
         case AGC_DN_DAPDATR1:
             *w = (k == 0) ? agc_erase_dapdatr1() :
                  (k == 1) ? agc_erase_dapdatr2() :
-                            0u;
+                 0u;
             break;
         case AGC_DN_CADRFLSH:
             *w = (k >= 3 && k < 6) ? agc_erase_failreg(k - 3) : 0u;
             break;
         case AGC_DN_REDOCTR:
             *w = (k == 0) ? agc_restart_redoctr() :
-                 (k < 4)  ? agc_erase_thetad(k - 1) :
-                            0u;
+                 (k < 4) ? agc_erase_thetad(k - 1) :
+                 0u;
             break;
         case AGC_DN_COMPNUMB:
             *w = agc_uplink_update_dnword(k);
@@ -316,6 +335,7 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
         default:
             return false;
     }
+
     return true;
 }
 
@@ -326,38 +346,41 @@ static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
     {
         return false;
     }
+
     if (agc_state_vehicle() != AGC_VEHICLE_LM)
     {
         return false;
     }
+
     switch ((int) item)
     {
         case AGC_DN_CDUXD:
             *w = (k == 0) ? agc_erase_cduxd() :
                  (k == 1) ? agc_erase_cduyd() :
                  (k == 2) ? agc_erase_cduzd() :
-                            0u;
+                 0u;
             break;
         case AGC_DN_OMEGAP:
             *w = (k == 0) ? sp_word(agc_erase_omegap()) :
                  (k == 1) ? sp_word(agc_erase_omegaq()) :
                  (k == 2) ? sp_word(agc_erase_omegar()) :
-                            0u;
+                 0u;
             break;
         case AGC_DN_OMEGAPD:
             *w = (k == 0) ? sp_word(agc_erase_omegapd()) :
                  (k == 1) ? sp_word(agc_erase_omegaqd()) :
                  (k == 2) ? sp_word(agc_erase_omegard()) :
-                            0u;
+                 0u;
             break;
         case AGC_DN_ALPHAQ:
             *w = (k == 0) ? sp_word(agc_erase_alphaq()) :
                  (k == 1) ? sp_word(agc_erase_alphar()) :
-                            0u;
+                 0u;
             break;
         default:
             return false;
     }
+
     return true;
 }
 
@@ -368,21 +391,26 @@ static uint16_t item_word(agc_dn_item_t item, int k)
     {
         return 0;
     }
+
     uint16_t w = 0;
+
     if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER ||
         item == AGC_DN_T_OTHER)
     {
         return other_word(item, k);
     }
+
     if (item == AGC_DN_REFSMMAT)
     {
         return refsmmat_word(k);
     }
+
     if (item_word_state(item, k, &w) || item_word_block(item, k, &w) ||
         item_word_lm_dap(item, k, &w))
     {
         return (uint16_t) (w & WORD15);
     }
+
     return 0; /* ERASZERO / no accessor   */
 }
 
@@ -393,6 +421,7 @@ static agc_status_t dntmexit(uint16_t a, uint16_t l)
 {
     agc_chan_write((int) AGC_CHAN_DNTM1, (uint16_t) (a & WORD15));
     agc_chan_write((int) AGC_CHAN_DNTM2, (uint16_t) (l & WORD15));
+
     return AGC_STATUS_OK;
 }
 
@@ -400,6 +429,7 @@ static agc_status_t dntmexit(uint16_t a, uint16_t l)
 static void wozero(void)
 {
     agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (WORD15 & ~BIT7));
+
     if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN13) & BIT7) == 0u))
     {
         return;
@@ -413,7 +443,9 @@ static agc_status_t sendid(uint16_t id)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     wozero();
+
     return dntmexit(id, (uint16_t) AGC_DN_LOWIDCOD);
 }
 
@@ -425,13 +457,15 @@ static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return sub ? agc_dnlist_lm_sublist(ref, out) :
-                     agc_dnlist_lm_control(ref, out);
+               agc_dnlist_lm_control(ref, out);
     }
+
     return sub ? agc_dnlist_csm_sublist(ref, out) :
-                 agc_dnlist_csm_control(ref, out);
+           agc_dnlist_csm_control(ref, out);
 }
 
 /* Take the next entry of a list (NEXTINCL / NEXTINSL): advance, and mark
@@ -439,20 +473,25 @@ static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
 static agc_dn_entry_t cursor_take(tm_cursor_t *c)
 {
     agc_dn_entry_t e = {1, true, (uint16_t) AGC_DN_SPARE, 0};
+
     if (!AGC_ASSERT(c != NULL && c->active && c->next < c->list.count))
     {
         return e;
     }
+
     e = c->list.entry[c->next];
     c->next++;
+
     if (c->next >= c->list.count)
     {
         if (!AGC_ASSERT(e.neg)) /* -xDNADR ends every list   */
         {
             return e;
         }
+
         c->active = false;
     }
+
     return e;
 }
 
@@ -463,10 +502,13 @@ static agc_status_t fetch2wd(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t a = item_word(dn_item, dn_offset);
     uint16_t l = item_word(dn_item, dn_offset + 1);
+
     dn_offset += 2; /* ADS DNECADR (74001)      */
     dn_left--;
+
     return dntmexit(a, l);
 }
 
@@ -479,19 +521,25 @@ static agc_status_t snapshot(const agc_dn_list_t *sub)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i + 1 < sub->count; i++)
     {
         agc_dn_entry_t e = sub->entry[i];
+
         if (!AGC_ASSERT(e.op == 1)) /* 1DNADRs only (rule 3)     */
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         dntmbuff[2 * i]     = item_word((agc_dn_item_t) e.ref, e.offset);
         dntmbuff[2 * i + 1] = item_word((agc_dn_item_t) e.ref, e.offset + 1);
     }
+
     agc_dn_entry_t last = sub->entry[sub->count - 1];
-    sublist.active      = false; /* SUBLIST, DNECADR = -1    */
-    dn_left             = 0;
+
+    sublist.active = false; /* SUBLIST, DNECADR = -1    */
+    dn_left        = 0;
+
     return dntmexit(item_word((agc_dn_item_t) last.ref, last.offset),
                     item_word((agc_dn_item_t) last.ref, last.offset + 1));
 }
@@ -501,30 +549,37 @@ static agc_status_t dodnptr(int ref)
 {
     agc_dn_list_t sub;
     agc_status_t  st = list_lookup(true, ref, &sub);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     if (sub.snapshot)
     {
         return snapshot(&sub);
     }
-    sublist.list     = sub; /* DOSUBLST                 */
-    sublist.next     = 0;
-    sublist.active   = true;
+
+    sublist.list   = sub;   /* DOSUBLST                 */
+    sublist.next   = 0;
+    sublist.active = true;
     agc_dn_entry_t e = cursor_take(&sublist);
+
     if (!AGC_ASSERT(e.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (e.op == AGC_DN_OP_CHAN)
     {
         return dntmexit(agc_chan_read((int) e.ref),
                         agc_chan_read((int) e.ref + 1));
     }
+
     dn_item   = (agc_dn_item_t) e.ref;
     dn_offset = e.offset;
     dn_left   = e.op;
+
     return fetch2wd();
 }
 
@@ -536,26 +591,32 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (from_control && e.op == 1 && e.ref == (uint16_t) AGC_DN_TIME2)
     {
         wozero(); /* SETWO                    */
     }
+
     if (e.op == AGC_DN_OP_PTR)
     {
         return dodnptr((int) e.ref);
     }
+
     if (e.op == AGC_DN_OP_CHAN)
     {                                   /* DODNCHAN: channels n,n+1 */
         if (!AGC_ASSERT(e.ref != 0u)) /* 'DNCHAN 0' cannot be used */
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         return dntmexit(agc_chan_read((int) e.ref),
                         agc_chan_read((int) e.ref + 1));
     }
+
     dn_item   = (agc_dn_item_t) e.ref;
     dn_offset = e.offset;
     dn_left   = e.op;
+
     return fetch2wd();
 }
 
@@ -563,12 +624,15 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
 static agc_status_t newlist(void)
 {
     agc_status_t st = list_lookup(false, dnlstcod, &ctlist.list);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     ctlist.next   = 0;
     ctlist.active = true;
+
     return sendid((uint16_t) (WORD15 - (uint16_t) dnlstcod)); /* CS DNLSTCOD */
 }
 
@@ -579,16 +643,21 @@ static agc_status_t dnphase2(void)
     { /* CCS DNECADR: in progress */
         return fetch2wd();
     }
+
     if (sublist.active)
     { /* NEXTINSL                 */
         agc_dn_entry_t e = cursor_take(&sublist);
+
         return do_entry(e, false);
     }
+
     if (!ctlist.active)
     { /* CHKLIST: end of list     */
         return newlist();
     }
+
     agc_dn_entry_t e = cursor_take(&ctlist); /* NEXTINCL                 */
+
     return do_entry(e, true);
 }
 
@@ -598,10 +667,12 @@ static agc_status_t dnphase1(void)
     sublist.active = false;
     dn_left        = 0;
     dntmgoto       = TM_PHASE2;
+
     if (!AGC_ASSERT(!sublist.active))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return newlist();
 }
 
@@ -611,12 +682,15 @@ static agc_status_t dnphase1(void)
 static agc_status_t dndump_id(void)
 {
     dntmgoto = TM_DUMP_LOC;
-    bool lm  = (agc_state_vehicle() == AGC_VEHICLE_LM);
+    bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+
     if (!AGC_ASSERT((dumploc & LOW8) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     wozero();
+
     return dntmexit(lm ? ERASID_LM : ERASID_CSM, (uint16_t) AGC_DN_LOWIDCOD);
 }
 
@@ -625,18 +699,22 @@ static agc_status_t dndump_id(void)
 static agc_status_t dndump(void)
 {
     dumploc = (uint16_t) ((dumploc + 2u) & WORD15);
+
     if ((dumploc & LOW8) != 0u)
     {
         return dntmexit(0, 0); /* DNDUMP2 (DEVIATION: 0)   */
     }
+
     if ((dumploc & dumpcnt & PRIO34) != 0u)
     {
         return dnphase1(); /* resume the downlist      */
     }
+
     if (!AGC_ASSERT((dumploc & PRIO34) <= PRIO34))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return dndump_id();
 }
 
@@ -647,10 +725,12 @@ static agc_status_t dndump(void)
 agc_status_t agc_telem_downrupt(void)
 {
     agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
+
     if (!AGC_ASSERT(dn_left >= 0 && dn_left <= 6))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (dntmgoto)
     {
         case TM_PHASE1:
@@ -661,15 +741,18 @@ agc_status_t agc_telem_downrupt(void)
             return dndump_id();
         case TM_DUMP_LOC: /* DUMPLOC and TIME1        */
             dntmgoto = TM_DUMP_FIRST;
+
             return dntmexit(dumploc, sp_word(agc_erase_time1()));
         case TM_DUMP_FIRST: /* DNDUMP1 -> DNDUMP2       */
             dntmgoto = TM_DUMP_NEXT;
+
             return dntmexit(0, 0);
         case TM_DUMP_NEXT:
             return dndump();
         default:
             break;
     }
+
     return AGC_STATUS_BAD_ARG;
 }
 
@@ -678,12 +761,15 @@ agc_status_t agc_telem_downrupt(void)
 agc_status_t agc_telem_fresh_start(int code)
 {
     agc_telem_select_list(code);
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         agc_erase_set_agsword((uint16_t) code);
         dumpcnt = 004000u; /* BIT12: dump for one pass */
     }
+
     dumploc = 0;
+
     return agc_telem_restart();
 }
 
@@ -692,10 +778,12 @@ agc_status_t agc_telem_restart(void)
 {
     dntmgoto = TM_PHASE1;
     dn_left  = 0;
+
     if (!AGC_ASSERT(dntmgoto == TM_PHASE1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -703,11 +791,13 @@ agc_status_t agc_telem_restart(void)
 void agc_telem_select_list(int code)
 {
     int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT :
-                                                      AGC_DNLIST_CSM_COUNT;
+            AGC_DNLIST_CSM_COUNT;
+
     if (!AGC_ASSERT(code >= 0 && code < n))
     {
         return;
     }
+
     dnlstcod = code;
 }
 
@@ -717,6 +807,7 @@ int agc_telem_list_code(void)
     {
         return 0; /* no valid result */
     }
+
     return dnlstcod;
 }
 
@@ -725,10 +816,12 @@ agc_status_t agc_telem_start_dump(void)
 {
     dumploc  = 0;
     dntmgoto = TM_DUMP_ID;
+
     if (!AGC_ASSERT(dumploc == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -738,7 +831,9 @@ agc_status_t agc_telem_set_dumpcnt(uint16_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     dumpcnt = v;
+
     return AGC_STATUS_OK;
 }
 
@@ -748,6 +843,7 @@ uint16_t agc_telem_dumpcnt(void)
     {
         return 0; /* no valid result */
     }
+
     return dumpcnt;
 }
 
@@ -758,6 +854,7 @@ uint16_t agc_erase_agsword(void)
     {
         return 0; /* no valid result */
     }
+
     return agsword;
 }
 
@@ -775,24 +872,31 @@ static int sublist_words(int ref)
 {
     agc_dn_list_t sub;
     agc_status_t  st = list_lookup(true, ref, &sub);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return 0;
     }
+
     if (sub.snapshot)
     {
         return 1;
     }
+
     int n = 0;
+
     for (int i = 0; i < sub.count; i++)
     {
         uint8_t op = sub.entry[i].op;
+
         if (!AGC_ASSERT(op != AGC_DN_OP_PTR))
         {
             return 0;
         }
+
         n += (op == AGC_DN_OP_CHAN) ? 1 : (int) op;
     }
+
     return n;
 }
 
@@ -803,20 +907,27 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dn_list_t list;
     agc_status_t  st = list_lookup(false, code, &list);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     int n = 1; /* ID / sync word           */
+
     for (int i = 0; i < list.count; i++)
     {
         agc_dn_entry_t e = list.entry[i];
-        n += (e.op == AGC_DN_OP_PTR)  ? sublist_words((int) e.ref) :
+
+        n += (e.op == AGC_DN_OP_PTR) ? sublist_words((int) e.ref) :
              (e.op == AGC_DN_OP_CHAN) ? 1 :
-                                        (int) e.op;
+             (int) e.op;
     }
+
     *words = n;
+
     return AGC_STATUS_OK;
 }

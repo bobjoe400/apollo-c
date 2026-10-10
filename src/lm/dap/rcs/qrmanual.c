@@ -25,19 +25,24 @@
 agc_status_t lm_dap_qrminimp(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     agc_inhint();
     agc_lm_dap_zatteror();
-    d->qerror       = 0; /* displays       */
-    d->rerror       = 0;
+    d->qerror = 0; /* displays       */
+    d->rerror = 0;
     agc_relint();
     uint16_t t31 = agc_chan_read(031); /* TEMP31         */
+
     if (d->oldqrmin > 0)
     { /* CHECKIN        */
         d->oldqrmin = (agc_sp_t) ((uint16_t) ~t31 & QM_OCT63);
+
         return lm_dap_xtrans();
     }
+
     agc_sp_t u;
     agc_sp_t v;
+
     if ((t31 & 0x0001u) == 0u)
     { /* +QMIN          */
         u = QM_14MS;
@@ -62,13 +67,16 @@ agc_status_t lm_dap_qrminimp(void)
     {
         return lm_dap_xtrans();
     }
+
     d->tj[1]    = u; /* MINQR          */
     d->tj[2]    = v;
     d->oldqrmin = 1;
+
     if (!AGC_ASSERT(d->oldqrmin == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_uvloop(LM_UV_MINRTN, 1);
 }
 
@@ -80,13 +88,16 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
     {
         return 0; /* no valid result */
     }
+
     agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT);
     agc_sp_t lin = lm_dap_mp(k, c).lo; /* CA L           */
     agc_sp_t r   = lm_dap_mphi(lin, stiksens);
+
     if (!AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -97,10 +108,12 @@ static bool beyond(agc_sp_t x, agc_sp_t negdb)
     {
         return false;
     }
+
     if (!AGC_ASSERT(x >= LM_NEGMAX && x <= LM_POSMAX))
     {
         return false;
     }
+
     return (int32_t) lm_dap_ccs_dim(x) + negdb > 0;
 }
 
@@ -117,15 +130,17 @@ static agc_status_t enteruv(lm_dap_t *d)
     d->dyerror_lo = 0;
     d->rerror     = 0; /* DZERROR        */
     d->dzerror_lo = 0;
-    bool uout     = beyond(d->omegau, d->neg_ratedb); /* TARGETDB       */
-    bool vout     = beyond(d->omegav, d->neg_ratedb);
+    bool uout = beyond(d->omegau, d->neg_ratedb); /* TARGETDB       */
+    bool vout = beyond(d->omegav, d->neg_ratedb);
     bool direct;
+
     if (uout)
     {
         if (!vout)
         {
             d->omegav = 0; /* VRATEDIF = 0   */
         }
+
         direct = d->tcqr > 0; /* QRTIME         */
     }
     else if (vout)
@@ -137,6 +152,7 @@ static agc_status_t enteruv(lm_dap_t *d)
     {
         direct = false; /* TOPSEUDO       */
     }
+
     if (direct)
     {
         d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_QRBIT);
@@ -145,6 +161,7 @@ static agc_status_t enteruv(lm_dap_t *d)
     {
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_QRBIT);
     }
+
     return lm_dap_uvloop(LM_UV_BACKHAND, 1);
 }
 
@@ -156,24 +173,30 @@ static agc_status_t rhcactiv(lm_dap_t *d)
 {
     agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens);
     agc_sp_t dq = lm_dap_wrap((int32_t) q - d->qlast); /* DAPTEMP3       */
-    d->qlast    = q;
+
+    d->qlast = q;
     agc_sp_t r  = stick_rate(d->savehand[1], d->stiksens);
     agc_sp_t dr = lm_dap_wrap((int32_t) r - d->rlast); /* DAPTEMP4       */
-    d->rlast    = r;
+
+    d->rlast = r;
     /* TS QRATEDIF / RRATEDIF: an overflow (> 45 deg/s difference) would
      * make the AGC skip an instruction; the stored wrapped value is used. */
     d->edotq = lm_dap_wrap((int32_t) d->omegaq - d->qlast);
     d->edotr = lm_dap_wrap((int32_t) d->omegar - d->rlast);
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav); /* URATEDIF */
+
     if (beyond(dq, d->neg_ratedb) || beyond(dr, d->neg_ratedb))
     {
         d->tcqr = QM_40CYCL;
+
         return enteruv(d);
     }
+
     if ((d->rcsflags & LM_RCS_QRBIT) != 0u)
     {
         return enteruv(d);
     }
+
     return lm_dap_stillrcs();
 }
 
@@ -183,22 +206,28 @@ static agc_status_t rhcactiv(lm_dap_t *d)
 agc_status_t lm_dap_chekstik(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->ingts    = 0;
     d->cotroler = -1;
+
     if ((d->ch31temp & QM_DETENT) == 0u)
     { /* out of detent  */
         return rhcactiv(d);
     }
+
     if (!agc_flag_test(AGC_FLAG_OURRCFLG))
     {
         return lm_dap_stillrcs();
     }
+
     d->rcsflags    = (uint16_t) (d->rcsflags & ~LM_RCS_JUSTIN);
     d->savehand[0] = 0; /* DAMPING        */
     d->savehand[1] = 0;
+
     if (!AGC_ASSERT(d->cotroler < 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rhcactiv(d);
 }

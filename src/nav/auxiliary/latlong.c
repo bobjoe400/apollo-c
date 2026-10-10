@@ -47,15 +47,18 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
     {
         return ERAD;
     }
+
     if (!AGC_ASSERT(agc_navaux_dp_ok(half_sin_lat)))
     {
         return ERAD;
     }
+
     agc_dp_t sin2 =
         agc_dp_shl(ip, agc_dp_sq(ip, half_sin_lat), 1); /* sin^2/2 */
     agc_dp_t cos2 = agc_dp_sub(ip, AGC_DP_HALF, sin2);  /* BDSU DP1/2     */
     agc_dp_t den  = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));
     agc_dp_t q    = agc_dp_div(ip, B2XSC, den);     /* BDDV B2XSC     */
+
     return agc_dp_shr_round(agc_dp_sqrt(ip, q), 4); /* SQRT, SR4R     */
 }
 
@@ -64,7 +67,7 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
  * Earth: ERADFLAG = 0 -> ERAD, 1 -> GETERAD.  Moon: ERADFLAG = 1 -> 504RM,
  * 0 -> |RLS| (TSTRLSRM, RLS scale 2^27 m, SR2R to 2^29 m).
  */
-agc_status_t agc_latlong_setre(agc_interp_t               *ip,
+agc_status_t agc_latlong_setre(agc_interp_t *ip,
                                const agc_navaux_padload_t *pad,
                                agc_latlong_opt_t opt, agc_dp_t half_sin_lat,
                                agc_dp_t *eradm)
@@ -73,10 +76,12 @@ agc_status_t agc_latlong_setre(agc_interp_t               *ip,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_navaux_vec_ok(pad->rls)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (opt.lunar)
     {
         *eradm =
@@ -86,6 +91,7 @@ agc_status_t agc_latlong_setre(agc_interp_t               *ip,
     {
         *eradm = opt.erad ? agc_latlong_geterad(ip, half_sin_lat) : ERAD;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -100,31 +106,41 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(agc_navaux_dp_ok(sinth) && agc_navaux_dp_ok(costh)))
     {
         return 0;
     }
+
     agc_interp_clear_ovf(ip); /* BOV CLROVFLW   */
     agc_dp_t r2 = agc_dp_add(ip, agc_dp_sq(ip, sinth), agc_dp_sq(ip, costh));
+
     if (r2 == 0)
     {
         return 0; /* ARCTANXX: 0/0  */
     }
+
     agc_dp_t q = agc_dp_div(ip, sinth, agc_dp_sqrt(ip, r2)); /* sin, 2^0  */
+
     if (agc_interp_test_ovf(ip))
     {
         return agc_dp_sign(AGC_DP_QUARTER, sinth); /* ATAN=90        */
     }
+
     agc_dp_t theta = agc_dp_asin(ip, agc_dp_shr(q, 1)); /* SR1 ASIN       */
+
     if (costh >= 0)
     {
         return theta; /* BMN NEGCOS not taken */
     }
+
     agc_dp_t neg = agc_dp_neg(theta); /* NEGCOS: DCOMP  */
+
     if (neg >= 0)
     {
         return agc_dp_sub(ip, neg, AGC_DP_HALF); /* NEGOUT         */
     }
+
     return agc_dp_add(ip, neg, AGC_DP_HALF);
 }
 
@@ -134,7 +150,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
  * revs 2^0, ALT = |R| - ERADM scale 2^29 m.  The geodetic latitude uses
  * tan(LAT) = sin(Lc) / (GAMMA cos(Lc)).
  */
-agc_status_t agc_latlong_from_r(agc_interp_t               *ip,
+agc_status_t agc_latlong_from_r(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad,
                                 agc_latlong_opt_t opt, agc_vec_t r,
                                 agc_dp_t t_cs, agc_latlong_t *out)
@@ -143,31 +159,40 @@ agc_status_t agc_latlong_from_r(agc_interp_t               *ip,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_navaux_vec_ok(r)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t     alpham = agc_vec_abval(ip, r); /* ALPHAM 2^29 m  */
     agc_vec_t    rp;
     agc_status_t st = agc_planet_r_to_rp(ip, pad, opt.lunar, r, t_cs, &rp);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_vec_t alphav = agc_vec_unit(ip, rp, NULL, NULL); /* unit RP 2^1    */
     agc_dp_t  gamrp  = agc_latlong_setgamma(opt.lunar);
+
     st = agc_latlong_setre(ip, pad, opt, alphav.c[2], &out->eradm);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_dp_t costh = agc_dp_sqrt(ip, agc_dp_add(ip, agc_dp_sq(ip, alphav.c[0]),
                                                 agc_dp_sq(ip, alphav.c[1])));
+
     costh =
         agc_dp_shl_round(ip, agc_dp_mul(ip, costh, gamrp), 1); /* DMP SL1R */
     out->lat = agc_latlong_arctan(ip, alphav.c[2], costh);
     out->lon = agc_latlong_arctan(ip, alphav.c[1], alphav.c[0]);
     out->alt = agc_dp_sub(ip, alpham, out->eradm);
+
     return AGC_STATUS_OK;
 }
 
@@ -185,32 +210,40 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_navaux_dp_ok(in->lat) && agc_navaux_dp_ok(in->alt)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t     gamrp = agc_latlong_setgamma(opt.lunar);
     agc_dp_t     clat  = agc_dp_cos(ip, in->lat); /* scale 2^1      */
-    agc_dp_t     z   = agc_dp_mul(ip, agc_dp_sin(ip, in->lat), gamrp); /* 2^2 */
-    agc_dp_t     y   = agc_dp_mul(ip, agc_dp_sin(ip, in->lon), clat);
-    agc_dp_t     x   = agc_dp_mul(ip, agc_dp_cos(ip, in->lon), clat);
-    agc_vec_t    urp = agc_vec_unit(ip, agc_vec_make(x, y, z), NULL, NULL);
+    agc_dp_t     z     = agc_dp_mul(ip, agc_dp_sin(ip, in->lat), gamrp); /* 2^2 */
+    agc_dp_t     y     = agc_dp_mul(ip, agc_dp_sin(ip, in->lon), clat);
+    agc_dp_t     x     = agc_dp_mul(ip, agc_dp_cos(ip, in->lon), clat);
+    agc_vec_t    urp   = agc_vec_unit(ip, agc_vec_make(x, y, z), NULL, NULL);
     agc_dp_t     eradm = 0;
     agc_status_t st    = agc_latlong_setre(ip, pad, opt, urp.c[2], &eradm);
     agc_vec_t    ur    = agc_vec_zero();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_planet_rp_to_r(ip, pad, opt.lunar, urp, t_cs, &ur);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_dp_t rad = agc_dp_add(ip, eradm, in->alt);       /* RE + ALT 2^29  */
+
     *r = agc_vec_shl(ip, agc_vec_scale(ip, ur, rad), 1); /* VXSC VSL1      */
+
     if (out_eradm != NULL)
     {
         *out_eradm = eradm;
     }
+
     return AGC_STATUS_OK;
 }

@@ -307,7 +307,8 @@ static const agc_dn_entry_t cmpg22dl[] = {
     {1, false, AGC_DN_SPARE, 0},
     {1, false, AGC_DN_SPARE, 0},
     {1, false, AGC_DN_SPARE, 0},
-    {1, true, AGC_DN_SPARE, 0}};
+    {1, true, AGC_DN_SPARE, 0}
+};
 static const agc_dn_entry_t cm_orbital_nav_list05[] = {
     /* SNAPSHOT DATA, p.180       */
     {1, true, AGC_DN_LONG, 0}, /* LONG,+1                   */
@@ -343,7 +344,8 @@ static const agc_dn_list_t sublists[CM_SUB_COUNT] = {
     {cmentr05, (uint8_t) (sizeof cmentr05 / sizeof cmentr05[0]), true},
     {cm_orbital_nav_list05,
      (uint8_t) (sizeof cm_orbital_nav_list05 / sizeof cm_orbital_nav_list05[0]),
-     true}};
+     true}
+};
 
 /* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */
 agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
@@ -352,11 +354,14 @@ agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_CSM_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = dntable[code];
+
     return AGC_STATUS_OK;
 }
 
@@ -367,10 +372,13 @@ agc_status_t agc_dnlist_csm_sublist(int sub, agc_dn_list_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(sub >= 0 && sub < CM_SUB_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = sublists[sub];
+
     return AGC_STATUS_OK;
 }

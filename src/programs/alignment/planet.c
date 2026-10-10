@@ -25,10 +25,12 @@ static agc_sp_t star6_of_code(void)
 {
     const agc_sp_t code =
         (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
+
     if (!AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX)))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) (code * STAR_WORDS);
 }
 
@@ -37,22 +39,28 @@ static agc_status_t planet_compute(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
+
     agc_interp_init(&ip);
+
     if (!AGC_ASSERT((ram->starind == 0) || (ram->starind == 1)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_status_t st =
         agc_align_planet_vector(&ip, star6_of_code(), ram->starind, ram->tsight,
                                 AGC_JOB_PLANET_RESUME, &ram->planet_los);
+
     if (st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* INTSTALL sleep  */
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return align_goto(ram->planet_ret);
 }
 
@@ -64,9 +72,11 @@ static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ?
-                                  AGC_JOB_GOTOPOOH :
-                                  AGC_JOB_PLANET_FLASH;
+                              AGC_JOB_GOTOPOOH :
+                              AGC_JOB_PLANET_FLASH;
+
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_PLANET_VECTOR, term,
                        AGC_JOB_PLANET_LOADED, AGC_JOB_PLANET_FLASH);
 }
@@ -82,17 +92,22 @@ agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_align_ram_t *ram = agc_align_ram();
-    ram->tsight          = t;
-    ram->planet_ret      = ret;
+
+    ram->tsight     = t;
+    ram->planet_ret = ret;
+
     if (star6_of_code() != 0)
     {
         return planet_compute(); /* NOTPLAN        */
     }
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         ram->starad[0] = agc_vec_zero(); /* STORE STARAD   */
     }
+
     return planet_flash(ctx);
 }
 
@@ -103,6 +118,7 @@ agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return planet_flash(ctx);
 }
 
@@ -113,10 +129,12 @@ agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return planet_compute();
 }
 
@@ -127,9 +145,11 @@ agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return planet_compute();
 }

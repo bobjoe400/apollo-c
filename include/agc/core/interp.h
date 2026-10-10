@@ -76,8 +76,8 @@ void agc_interp_clear_ovf(agc_interp_t *ip); /* BOV +1: clear only  */
 
 /* ---- scalar DP ---------------------------------------------------------- */
 agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);  /* DAD   */
-void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DAD, BOV */
-void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DDV, BOV */
+void     agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DAD, BOV */
+void     agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DDV, BOV */
 agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);  /* DSU   */
 agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);  /* DMPR  */
 agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);  /* DDV   */

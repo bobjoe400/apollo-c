@@ -48,18 +48,22 @@ static int32_t cdu_pattern_value(uint16_t pattern)
 {
     uint16_t p = (uint16_t) (pattern & CDU_MASK);
     int32_t  v = (int32_t) p;
+
     if (!AGC_ASSERT((pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
     {
         return 0; /* no valid result */
     }
+
     if ((p & CDU_SIGN) != 0u)
     {
         v -= (int32_t) CDU_MODULUS;
     }
+
     if (!AGC_ASSERT(v >= -(int32_t) SP_RANGE && v < (int32_t) SP_RANGE))
     {
         return 0; /* no valid result */
     }
+
     return v;
 }
 
@@ -68,18 +72,23 @@ static int32_t cdu_pattern_value(uint16_t pattern)
 static uint16_t cdu_value_pattern(int32_t v)
 {
     int32_t m = v % (int32_t) CDU_MODULUS;
-    if (!AGC_ASSERT(v > -4 * (int32_t) CDU_MODULUS && v < 4 * (int32_t) CDU_MODULUS))
+
+    if (!AGC_ASSERT(v > -4 * (int32_t) CDU_MODULUS &&
+                    v < 4 * (int32_t) CDU_MODULUS))
     {
         return 0; /* no valid result */
     }
+
     if (m < 0)
     {
         m += (int32_t) CDU_MODULUS;
     }
+
     if (!AGC_ASSERT(m >= 0 && m < (int32_t) CDU_MODULUS))
     {
         return 0; /* no valid result */
     }
+
     return (uint16_t) m;
 }
 
@@ -88,15 +97,19 @@ static uint16_t cdu_value_pattern(int32_t v)
 agc_dp_t agc_rtb_loadtime(void)
 {
     uint32_t t = agc_time_now_cs();
+
     if (!AGC_ASSERT(t <= (uint32_t) DP_TIME_MASK))
     {
         return 0; /* no valid result */
     }
+
     t &= (uint32_t) DP_TIME_MASK;
+
     if (!AGC_ASSERT((agc_dp_t) t <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return (agc_dp_t) t;
 }
 
@@ -112,14 +125,17 @@ agc_dp_t agc_rtb_cdulogic(uint16_t cdu_pattern)
 {
     int32_t  v = cdu_pattern_value(cdu_pattern); /* 2^-14 half-revs       */
     agc_dp_t r = (agc_dp_t) (v * (int32_t) (SP_RANGE / 2));
+
     if (!AGC_ASSERT(r >= -AGC_DP_HALF && r < AGC_DP_HALF))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT((cdu_pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
     {
         return 0; /* no valid result */
     }
+
     return r; /* revolutions, scale 2^0 */
 }
 
@@ -135,6 +151,7 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
     {
         return 0;
     }
+
     for (int i = 0; i < 3; i++)
     {
         if (!AGC_ASSERT(mpac->w[i] >= AGC_SP_MIN && mpac->w[i] <= AGC_SP_MAX))
@@ -142,6 +159,7 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
             return 0;
         }
     }
+
     int64_t v = ((int64_t) mpac->w[0] * SP_RANGE * SP_RANGE) +
                 ((int64_t) mpac->w[1] * SP_RANGE) + (int64_t) mpac->w[2];
     int     sign = (v > 0) ? 1 : ((v < 0) ? -1 : 0);
@@ -149,15 +167,19 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
     /* DEVIATION: when |V| >= 1 the AGC leaves an overflowed high word; the
      * C version saturates the high word at POSMAX instead.                  */
     int64_t hi = mag / ((int64_t) SP_RANGE * SP_RANGE);
+
     if (hi > AGC_SP_MAX)
     {
         hi = AGC_SP_MAX;
     }
+
     int64_t mid = (mag / SP_RANGE) % SP_RANGE;
     int64_t lo  = mag % SP_RANGE;
-    mpac->w[0]  = (agc_sp_t) (sign * hi);
-    mpac->w[1]  = (agc_sp_t) (sign * mid);
-    mpac->w[2]  = (agc_sp_t) (sign * lo);
+
+    mpac->w[0] = (agc_sp_t) (sign * hi);
+    mpac->w[1] = (agc_sp_t) (sign * mid);
+    mpac->w[2] = (agc_sp_t) (sign * lo);
+
     return sign;
 }
 
@@ -166,22 +188,27 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
 agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 {
     agc_mpac_tp_t m;
+
     if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     m.w[0] = hi;
     m.w[1] = lo;
     m.w[2] = 0;
     int sg = agc_rtb_sgnagree(&m); /* signum of the agreed pair           */
+
     if (!AGC_ASSERT(sg >= -1 && sg <= 1))
     {
         return 0; /* no valid result */
     }
+
     return (agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE +
                        (int32_t) m.w[1]);
 }
@@ -195,14 +222,18 @@ static uint16_t one_to_two(agc_dp_t angle_rev)
 {
     int64_t doubled = 2 * (int64_t) angle_rev;      /* DDOUBL            */
     int64_t hi      = doubled / (int64_t) SP_RANGE; /* truncates to 0    */
+
     if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN && angle_rev <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
-    if (!AGC_ASSERT(hi > -2 * (int64_t) SP_RANGE && hi < 2 * (int64_t) SP_RANGE))
+
+    if (!AGC_ASSERT(hi > -2 * (int64_t) SP_RANGE &&
+                    hi < 2 * (int64_t) SP_RANGE))
     {
         return 0; /* no valid result */
     }
+
     return cdu_value_pattern((int32_t) hi);
 }
 
@@ -211,14 +242,17 @@ static uint16_t one_to_two(agc_dp_t angle_rev)
 uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
 {
     uint16_t p = one_to_two(angle_rev);
+
     if (!AGC_ASSERT(p <= CDU_MASK))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN))
     {
         return 0; /* no valid result */
     }
+
     return p;
 }
 
@@ -230,14 +264,18 @@ agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         out[i] = one_to_two(angles_rev.c[i]);
     }
-    if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK && out[2] <= CDU_MASK))
+
+    if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK &&
+                    out[2] <= CDU_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -249,12 +287,15 @@ agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     out[0] = one_to_two(a_rev);
     out[1] = one_to_two(b_rev);
+
     if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -266,15 +307,19 @@ agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
 uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
 {
     int32_t a = cdu_pattern_value(angle_pattern);
+
     if (!AGC_ASSERT(inc >= AGC_SP_MIN && inc <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     uint16_t r = cdu_value_pattern(a + (int32_t) inc);
+
     if (!AGC_ASSERT(r <= CDU_MASK))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -288,15 +333,19 @@ agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         int32_t hi = incr.c[i] / (int32_t) SP_RANGE; /* MPAC, MPAC+3, +5  */
+
         if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         thetad[i] = agc_rtb_cduinc(thetad[i], (agc_sp_t) hi);
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -309,19 +358,25 @@ agc_vec_t agc_rtb_readpips(void)
     agc_sp_t x = agc_erase_pipax();
     agc_sp_t y = agc_erase_pipay();
     agc_sp_t z = agc_erase_pipaz();
+
     agc_relint();
+
     if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(y >= AGC_SP_MIN && z >= AGC_SP_MIN))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     agc_vec_t v;
+
     v.c[0] = (agc_dp_t) x * (agc_dp_t) SP_RANGE;
     v.c[1] = (agc_dp_t) y * (agc_dp_t) SP_RANGE;
     v.c[2] = (agc_dp_t) z * (agc_dp_t) SP_RANGE;
+
     return v;
 }
 
@@ -337,11 +392,14 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     agc_status_t st = agc_imu_pulse(gyro_cmds.c); /* OGC buffer */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -353,20 +411,26 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     static const int swap_r[3] = {0, 0, 1};
     static const int swap_c[3] = {1, 2, 2};
+
     for (int k = 0; k < 3; k++)
     {
         int r = swap_r[k];
         int c = swap_c[k];
+
         if (!AGC_ASSERT(r < c && c < AGC_VEC_N))
         {
             return AGC_STATUS_BAD_ARG;
         }
-        agc_dp_t t     = m->row[r].c[c];
+
+        agc_dp_t t = m->row[r].c[c];
+
         m->row[r].c[c] = m->row[c].c[r];
         m->row[c].c[r] = t;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -377,14 +441,17 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
 agc_dp_t agc_rtb_signmpac(agc_dp_t mpac)
 {
     agc_dp_t r = (mpac < 0) ? -AGC_DP_MAX : AGC_DP_MAX;
+
     if (!AGC_ASSERT(mpac >= AGC_DP_MIN && mpac <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(r == AGC_DP_MAX || r == -AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -403,15 +470,19 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
 {
     agc_vec_t w = v;
     int       n = 0;
+
     if (!AGC_ASSERT(ip != NULL))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(shift != NULL))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     bool all_small = true;
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         if (v.c[i] >= (agc_dp_t) SP_RANGE || v.c[i] <= -(agc_dp_t) SP_RANGE)
@@ -419,18 +490,22 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
             all_small = false;
         }
     }
+
     if (all_small)
     {
         for (int i = 0; i < AGC_VEC_N; i++)
         {
             w.c[i] = v.c[i] * (agc_dp_t) NORMUNIT_FACTOR;
         }
+
         n = NORMUNIT_SHIFT;
     }
+
     if (shift != NULL)
     {
         *shift = n;
     }
+
     return agc_vec_unit(ip, w, abval, vsq); /* UNIT +1               */
 }
 
@@ -443,10 +518,12 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(v.c[1] >= AGC_DP_MIN && v.c[2] >= AGC_DP_MIN))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     return v;
 }
 
@@ -465,19 +542,24 @@ agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(e3j22r2m >= AGC_SP_MIN && e3j22r2m <= AGC_SP_MAX))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     static const agc_dp_t five_eighths = 0x0A000000;     /* 5/8: 2DEC 5 B-3 */
-    agc_dp_t              x2 = agc_dp_sq(ip, urpv.c[0]); /* B2              */
-    agc_dp_t              y2 = agc_dp_sq(ip, urpv.c[1]); /* B2              */
-    agc_dp_t              d  = agc_dp_sub(ip, y2, x2);   /* DSU, B2         */
-    d           = agc_dp_mul(ip, d, five_eighths);       /* DMP 5/8, B5     */
-    agc_vec_t v = agc_vec_scale(ip, urpv, d);            /* VXSC, B6        */
-    v           = agc_vec_shl(ip, v, 3);                 /* VSL3, B3        */
+    agc_dp_t              x2           = agc_dp_sq(ip, urpv.c[0]); /* B2              */
+    agc_dp_t              y2           = agc_dp_sq(ip, urpv.c[1]); /* B2              */
+    agc_dp_t              d            = agc_dp_sub(ip, y2, x2); /* DSU, B2         */
+
+    d = agc_dp_mul(ip, d, five_eighths);       /* DMP 5/8, B5     */
+    agc_vec_t v = agc_vec_scale(ip, urpv, d);  /* VXSC, B6        */
+
+    v      = agc_vec_shl(ip, v, 3);                      /* VSL3, B3        */
     v.c[0] = agc_dp_add(ip, agc_dp_shr(urpv.c[0], 1), v.c[0]); /* SR1 DAD  */
     v.c[1] = agc_dp_sub(ip, v.c[1], agc_dp_shr(urpv.c[1], 1)); /* SR1 BDSU */
+
     return agc_vec_scale(ip, v, agc_dp_from_sp(e3j22r2m));     /* VXSC B61 */
 }
 
@@ -491,10 +573,13 @@ agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!moonflag)
     {
         return AGC_STATUS_NOT_FOUND; /* BOF -> NBRANCH  */
     }
+
     *out = agc_rtb_quality2(ip, urpv, e3j22r2m);
+
     return AGC_STATUS_OK;
 }

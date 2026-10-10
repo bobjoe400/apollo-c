@@ -231,32 +231,32 @@ static const rst_entry_t lm_odd6[] = {
 
 /* SIZETAB (C p.212 / L p.239), index group-1. */
 static const rst_group_tab_t csm_tab[AGC_RESTART_GROUPS] = {
-    {csm_even4, (int) (sizeof(csm_even4) / sizeof(csm_even4[0])), csm_odd1,
-     (int) (sizeof(csm_odd1) / sizeof(csm_odd1[0]))},
-    {csm_even4, (int) (sizeof(csm_even4) / sizeof(csm_even4[0])), csm_odd2,
-     (int) (sizeof(csm_odd2) / sizeof(csm_odd2[0]))},
-    {csm_even4, (int) (sizeof(csm_even4) / sizeof(csm_even4[0])), csm_odd3,
-     (int) (sizeof(csm_odd3) / sizeof(csm_odd3[0]))},
-    {csm_even4, (int) (sizeof(csm_even4) / sizeof(csm_even4[0])), csm_odd4,
-     (int) (sizeof(csm_odd4) / sizeof(csm_odd4[0]))},
-    {csm_even5, (int) (sizeof(csm_even5) / sizeof(csm_even5[0])), csm_odd5,
-     (int) (sizeof(csm_odd5) / sizeof(csm_odd5[0]))},
-    {csm_even6, (int) (sizeof(csm_even6) / sizeof(csm_even6[0])), csm_odd6,
-     (int) (sizeof(csm_odd6) / sizeof(csm_odd6[0]))},
+    {csm_even4, (int) (sizeof (csm_even4) / sizeof (csm_even4[0])), csm_odd1,
+     (int) (sizeof (csm_odd1) / sizeof (csm_odd1[0]))},
+    {csm_even4, (int) (sizeof (csm_even4) / sizeof (csm_even4[0])), csm_odd2,
+     (int) (sizeof (csm_odd2) / sizeof (csm_odd2[0]))},
+    {csm_even4, (int) (sizeof (csm_even4) / sizeof (csm_even4[0])), csm_odd3,
+     (int) (sizeof (csm_odd3) / sizeof (csm_odd3[0]))},
+    {csm_even4, (int) (sizeof (csm_even4) / sizeof (csm_even4[0])), csm_odd4,
+     (int) (sizeof (csm_odd4) / sizeof (csm_odd4[0]))},
+    {csm_even5, (int) (sizeof (csm_even5) / sizeof (csm_even5[0])), csm_odd5,
+     (int) (sizeof (csm_odd5) / sizeof (csm_odd5[0]))},
+    {csm_even6, (int) (sizeof (csm_even6) / sizeof (csm_even6[0])), csm_odd6,
+     (int) (sizeof (csm_odd6) / sizeof (csm_odd6[0]))},
 };
 static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS] = {
-    {lm_even1, (int) (sizeof(lm_even1) / sizeof(lm_even1[0])), lm_odd1,
-     (int) (sizeof(lm_odd1) / sizeof(lm_odd1[0]))},
-    {lm_even1, (int) (sizeof(lm_even1) / sizeof(lm_even1[0])), lm_odd2,
-     (int) (sizeof(lm_odd2) / sizeof(lm_odd2[0]))},
-    {lm_even1, (int) (sizeof(lm_even1) / sizeof(lm_even1[0])), lm_odd3,
-     (int) (sizeof(lm_odd3) / sizeof(lm_odd3[0]))},
-    {lm_even4, (int) (sizeof(lm_even4) / sizeof(lm_even4[0])), lm_odd4,
-     (int) (sizeof(lm_odd4) / sizeof(lm_odd4[0]))},
-    {lm_even5, (int) (sizeof(lm_even5) / sizeof(lm_even5[0])), lm_odd5,
-     (int) (sizeof(lm_odd5) / sizeof(lm_odd5[0]))},
-    {lm_even1, (int) (sizeof(lm_even1) / sizeof(lm_even1[0])), lm_odd6,
-     (int) (sizeof(lm_odd6) / sizeof(lm_odd6[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd1,
+     (int) (sizeof (lm_odd1) / sizeof (lm_odd1[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd2,
+     (int) (sizeof (lm_odd2) / sizeof (lm_odd2[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd3,
+     (int) (sizeof (lm_odd3) / sizeof (lm_odd3[0]))},
+    {lm_even4, (int) (sizeof (lm_even4) / sizeof (lm_even4[0])), lm_odd4,
+     (int) (sizeof (lm_odd4) / sizeof (lm_odd4[0]))},
+    {lm_even5, (int) (sizeof (lm_even5) / sizeof (lm_even5[0])), lm_odd5,
+     (int) (sizeof (lm_odd5) / sizeof (lm_odd5[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd6,
+     (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
 };
 
 /* ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419): the
@@ -272,12 +272,14 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ?
-                                   &lm_tab[group - 1] :
-                                   &csm_tab[group - 1];
-    int                    idx;
-    int                    n;
-    const rst_entry_t     *base;
+                               &lm_tab[group - 1] :
+                               &csm_tab[group - 1];
+    int                idx;
+    int                n;
+    const rst_entry_t *base;
+
     if ((phase % 2) == 0)
     {
         idx  = (phase - 2) + part; /* 2 entries per even phase      */
@@ -290,11 +292,14 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
         n    = t->n_odd;
         base = t->odd;
     }
+
     if (!AGC_ASSERT(idx >= 0 && idx < n))
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     *out = base[idx];
+
     return AGC_STATUS_OK;
 }
 
@@ -303,10 +308,12 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 static int16_t dp_low_word(agc_dp_t v)
 {
     int32_t lo = v % RST_SP_SCALE;
+
     if (!AGC_ASSERT(lo > -RST_SP_SCALE && lo < RST_SP_SCALE))
     {
         return 0; /* no valid result */
     }
+
     return (int16_t) lo;
 }
 
@@ -319,7 +326,9 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     switch (src)
     {
         case RST_E_TGO_1: /* TGO +1: low word of TGO, cs          */
@@ -337,13 +346,16 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
             break;
         case RST_E_NONE:
         default:
+
             if (!AGC_ASSERT(src == RST_E_NONE))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             st = AGC_STATUS_BAD_ARG;
             break;
     }
+
     return st;
 }
 
@@ -355,7 +367,9 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     switch (src)
     {
         case RST_E_600SECS: /* 600SECS 2DEC 60000 (FRESH_START)      */
@@ -371,12 +385,15 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
         case RST_E_CM_GYMDT:
         case RST_E_NONE:
         default:
+
             if (!AGC_ASSERT(src == RST_E_NONE)) /* not a DP delta time  */
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             st = AGC_STATUS_BAD_ARG;
             break;
     }
+
     return st;
 }

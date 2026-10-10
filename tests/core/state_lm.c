@@ -20,6 +20,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) file;
     (void) line;
     (void) expr;
+
     return false;
 }
 
@@ -28,6 +29,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -88,6 +90,7 @@ static void test_lm_state(void)
 {
     agc_state_vector_t in;
     agc_state_vector_t out;
+
     agc_state_init(AGC_VEHICLE_LM);
     in.r.c[0] = 11;
     in.r.c[1] = 22;
@@ -128,5 +131,6 @@ int main(void)
     test_lm_state();
     (void) printf("test_state_lm: %d checks, %d failures\n", g_checks,
                   g_failures);
+
     return (g_failures == 0) ? 0 : 1;
 }

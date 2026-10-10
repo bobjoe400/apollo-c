@@ -30,12 +30,14 @@ typedef struct
 } ocase_t;
 
 static const char *const names[14] = {
-    "MPAC",   "MPAC+1",  "MPAC+2",  "MPAC+3",  "MPAC+4",  "MPAC+5",  "MPAC+6",
-    "OVFIND", "VAC1+30", "VAC1+34", "VAC1+35", "VAC1+36", "VAC1+37", "FAILREG"};
+    "MPAC", "MPAC+1", "MPAC+2", "MPAC+3", "MPAC+4", "MPAC+5", "MPAC+6",
+    "OVFIND", "VAC1+30", "VAC1+34", "VAC1+35", "VAC1+36", "VAC1+37", "FAILREG"
+};
 
 static long long word(const char *oct) /* ones' complement word */
 {
     long v = strtol(oct, NULL, 8);
+
     return (v < 040000) ? v : -(077777 - v);
 }
 
@@ -43,11 +45,13 @@ static void parse_tag(ocase_t *c, const char *tag)
 {
     char  buf[512];
     char *tok;
+
     strncpy(buf, tag, sizeof buf - 1);
     buf[sizeof buf - 1] = '\0';
     tok                 = strtok(buf, ",");
     strncpy(c->op, tok ? tok : "", sizeof c->op - 1);
     c->nin = 0;
+
     while ((tok = strtok(NULL, ",")) != NULL && c->nin < MAX_IN)
     {
         c->in[c->nin++] = strtoll(tok, NULL, 10);
@@ -64,19 +68,24 @@ static int run_case(const ocase_t *c)
 {
     agc_interp_t     ip;
     const long long *w = c->w;
-    long long mp = (w[0] * 16384 + w[1]) * 16384 + w[2], mdp = dpv(w[0], w[1]);
-    long long got = 0, exp = mdp, got2 = 0, exp2 = 0;
-    agc_vec_t u = agc_vec_zero(), v = agc_vec_zero(), r = agc_vec_zero();
-    agc_mat_t m;
-    agc_dp_t  t = 0, lv = 0, lvsq = 0;
-    int       isvec = 0, k, ovf_checked = 1;
+    long long        mp = (w[0] * 16384 + w[1]) * 16384 + w[2], mdp = dpv(w[0],
+                                                                          w[1]);
+    long long        got = 0, exp = mdp, got2 = 0, exp2 = 0;
+    agc_vec_t        u = agc_vec_zero(), v = agc_vec_zero(), r = agc_vec_zero();
+    agc_mat_t        m;
+    agc_dp_t         t = 0, lv = 0, lvsq = 0;
+    int              isvec = 0, k, ovf_checked = 1;
     const long long *in = c->in;
     const char      *op = c->op;
+
     agc_interp_init(&ip);
+
     if (c->nin >= 3)
         u = agc_vec_make((agc_dp_t) in[0], (agc_dp_t) in[1], (agc_dp_t) in[2]);
+
     if (c->nin >= 6)
         v = agc_vec_make((agc_dp_t) in[3], (agc_dp_t) in[4], (agc_dp_t) in[5]);
+
     if (!strcmp(op, "DMP"))
     {
         got  = agc_dp_mul_tp((agc_dp_t) in[0], (agc_dp_t) in[1]);
@@ -117,11 +126,12 @@ static int run_case(const ocase_t *c)
     else if (!strcmp(op, "ASIN") || !strcmp(op, "ACOS"))
     {
         agc_status_t s = !strcmp(op, "ASIN") ?
-                             agc_dp_asin_chk(&ip, (agc_dp_t) in[0], &t) :
-                             agc_dp_acos_chk(&ip, (agc_dp_t) in[0], &t);
-        got            = t;
-        got2           = (s == AGC_STATUS_ALARM);
-        exp2           = (w[13] == 01301);
+                         agc_dp_asin_chk(&ip, (agc_dp_t) in[0], &t) :
+                         agc_dp_acos_chk(&ip, (agc_dp_t) in[0], &t);
+
+        got  = t;
+        got2 = (s == AGC_STATUS_ALARM);
+        exp2 = (w[13] == 01301);
     }
     else if (!strcmp(op, "ABS"))
         got = agc_dp_abs((agc_dp_t) in[0]);
@@ -139,13 +149,14 @@ static int run_case(const ocase_t *c)
     else if (!strcmp(op, "NORM"))
     {
         int sh = 0;
-        got    = agc_dp_norm((agc_dp_t) in[0], &sh);
-        got2   = -sh;
-        exp2   = w[8];
+
+        got  = agc_dp_norm((agc_dp_t) in[0], &sh);
+        got2 = -sh;
+        exp2 = w[8];
     }
     else if (!strcmp(op, "SR"))
     {
-        got = agc_dp_shr((agc_dp_t) in[0], (int) in[1]);
+        got  = agc_dp_shr((agc_dp_t) in[0], (int) in[1]);
         got2 =
             agc_tp_shift(&ip, agc_tp_from_dp((agc_dp_t) in[0]), -(int) in[1]);
         exp2 = mp;
@@ -163,9 +174,11 @@ static int run_case(const ocase_t *c)
     else
     {
         isvec = 1;
+
         if (!strcmp(op, "UNIT"))
         {
             r = agc_vec_unit(&ip, u, &lv, &lvsq);
+
             if (ip.ovfind == 0)
             {
                 got  = lv;
@@ -192,8 +205,9 @@ static int run_case(const ocase_t *c)
         {
             for (k = 0; k < 9; k++)
                 m.row[k / 3].c[k % 3] = (agc_dp_t) in[3 + k];
+
             r = !strcmp(op, "MXV") ? agc_mat_vec(&ip, &m, u) :
-                                     agc_vec_mat(&ip, u, &m);
+                agc_vec_mat(&ip, u, &m);
         }
         else if (!strcmp(op, "VSL"))
             r = agc_vec_shl(&ip, u, (int) in[3]);
@@ -202,21 +216,27 @@ static int run_case(const ocase_t *c)
         else
         {
             printf("unknown op %s\n", op);
+
             return 0;
         }
+
         if (got == 0 && exp == mdp)
             exp = 0; /* no scalar output        */
     }
+
     if (!strcmp(op, "SQRT") || !strcmp(op, "SIGN") || !strcmp(op, "ABS") ||
         !strcmp(op, "DCOMP"))
     {
         ovf_checked = 0;
     }
+
     if (!c->ok || got != exp || got2 != exp2)
         return 0;
+
     if (isvec && (r.c[0] != mdp || r.c[1] != dpv(w[3], w[4]) ||
                   r.c[2] != dpv(w[5], w[6])))
         return 0;
+
     return !ovf_checked || ip.ovfind == w[7];
 }
 
@@ -224,24 +244,32 @@ int main(void)
 {
     static const char *const paths[2] = {
         "tools/oracle/cases/core_numeric.txt",
-        "../tools/oracle/cases/core_numeric.txt"};
-    FILE   *f = NULL;
-    char    line[1024];
-    ocase_t c;
-    int     n = 0, bad = 0, k, in_case = 0;
+        "../tools/oracle/cases/core_numeric.txt"
+    };
+    FILE                    *f = NULL;
+    char                     line[1024];
+    ocase_t                  c;
+    int                      n = 0, bad = 0, k, in_case = 0;
+
     for (k = 0; k < 2 && f == NULL; k++)
         f = fopen(paths[k], "r");
+
     if (f == NULL)
     {
         printf("oracle_core_numeric: SKIP (core_numeric.txt not found)\n");
+
         return 0;
     }
+
     memset(&c, 0, sizeof c);
+
     while (fgets(line, sizeof line, f) != NULL)
     {
         char a[64], b[512];
+
         if (line[0] == '#' || sscanf(line, "%63s %511s", a, b) < 1)
             continue;
+
         if (!strcmp(a, "CASE"))
         {
             memset(&c, 0, sizeof c);
@@ -251,14 +279,18 @@ int main(void)
         else if (!strcmp(a, "END") && in_case)
         {
             n++;
+
             if (!run_case(&c))
             {
                 bad++;
                 printf("MISMATCH %s", c.op);
+
                 for (k = 0; k < c.nin; k++)
                     printf(" %lld", c.in[k]);
+
                 printf("\n");
             }
+
             in_case = 0;
         }
         else if (!strcmp(a, "STATUS"))
@@ -278,7 +310,9 @@ int main(void)
             }
         }
     }
+
     fclose(f);
     printf("oracle_core_numeric: %d cases, %d mismatches\n", n, bad);
+
     return (bad != 0 || n == 0) ? 1 : 0;
 }

@@ -26,6 +26,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
     g_assert_reports++;
+
     return false;
 }
 
@@ -35,6 +36,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -46,6 +48,7 @@ static void check_near(double got, double want, double tol, int line,
                        const char *text)
 {
     g_checks++;
+
     if (!(fabs(got - want) <= tol))
     {
         g_failures++;
@@ -75,6 +78,7 @@ static double vec_comp(agc_vec_t v, int i, int scale)
 static double rev_wrap(double x)
 {
     double r = fmod(x, 1.0);
+
     if (r > 0.5)
     {
         r -= 1.0;
@@ -83,15 +87,18 @@ static double rev_wrap(double x)
     {
         r += 1.0;
     }
+
     return r;
 }
 
 static agc_navaux_padload_t zero_pad(void)
 {
     agc_navaux_padload_t pad = {0};
-    pad.tephem               = 0;
-    pad.lm504                = agc_vec_zero();
-    pad.rls                  = agc_vec_zero();
+
+    pad.tephem = 0;
+    pad.lm504  = agc_vec_zero();
+    pad.rls    = agc_vec_zero();
+
     return pad;
 }
 
@@ -99,6 +106,7 @@ static agc_navaux_padload_t zero_pad(void)
 static void test_latlong_equator(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_navaux_padload_t pad  = zero_pad();
     agc_latlong_opt_t    opt  = {false, false};
@@ -106,6 +114,7 @@ static void test_latlong_equator(void)
     const double         t_cs = 2160000.0; /* 6 h                  */
     agc_vec_t            r    = vec_m(0.0, erad + 100000.0, 0.0, 29);
     agc_latlong_t        ll;
+
     CHECK(agc_latlong_from_r(&ip, &pad, opt, r, (agc_dp_t) t_cs, &ll) ==
           AGC_STATUS_OK);
     CHECK_NEAR(agc_dp_to_double(ll.lat, 0), 0.0, 1e-7);
@@ -119,18 +128,22 @@ static void test_latlong_equator(void)
 static void test_latlong_round_trip(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_navaux_padload_t pad = zero_pad();
-    pad.azo                  = agc_dp_from_double(0.1, 0);
-    agc_latlong_opt_t opt    = {false, true};
-    agc_latlong_t     in     = {agc_dp_from_double(28.608 / 360.0, 0),
-                                agc_dp_from_double(-80.604 / 360.0, 0),
-                                agc_dp_from_double(150.0, 29), 0};
+
+    pad.azo = agc_dp_from_double(0.1, 0);
+    agc_latlong_opt_t opt = {false, true};
+    agc_latlong_t     in  = {agc_dp_from_double(28.608 / 360.0, 0),
+                             agc_dp_from_double(-80.604 / 360.0, 0),
+                             agc_dp_from_double(150.0, 29), 0};
     agc_vec_t         r;
     agc_dp_t          eradm = 0;
+
     CHECK(agc_latlong_to_r(&ip, &pad, opt, &in, 360000, &r, &eradm) ==
           AGC_STATUS_OK);
     agc_latlong_t out;
+
     CHECK(agc_latlong_from_r(&ip, &pad, opt, r, 360000, &out) == AGC_STATUS_OK);
     CHECK_NEAR(agc_dp_to_double(out.lat, 0), agc_dp_to_double(in.lat, 0), 2e-6);
     CHECK_NEAR(agc_dp_to_double(out.lon, 0), agc_dp_to_double(in.lon, 0), 2e-6);
@@ -144,30 +157,37 @@ static void test_latlong_round_trip(void)
 static void test_rp_round_trip(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_navaux_padload_t pad = zero_pad();
-    pad.tephem               = (agc_tp_t) 134474400; /* ~15.56 days, cs      */
-    pad.azo                  = agc_dp_from_double(0.3, 0);
-    pad.axo                  = agc_dp_from_double(2.0e-5, 0);
-    pad.neg_ayo              = agc_dp_from_double(-1.5e-5, 0);
-    pad.lm504                = vec_m(1.0e-4, -2.0e-4, 0.5e-4, 0);
-    agc_vec_t r              = vec_m(-3.1e7, 2.2e7, 1.3e7, 29);
+
+    pad.tephem  = (agc_tp_t) 134474400;              /* ~15.56 days, cs      */
+    pad.azo     = agc_dp_from_double(0.3, 0);
+    pad.axo     = agc_dp_from_double(2.0e-5, 0);
+    pad.neg_ayo = agc_dp_from_double(-1.5e-5, 0);
+    pad.lm504   = vec_m(1.0e-4, -2.0e-4, 0.5e-4, 0);
+    agc_vec_t r = vec_m(-3.1e7, 2.2e7, 1.3e7, 29);
+
     for (int moon = 0; moon < 2; moon++)
     {
         agc_vec_t rp;
         agc_vec_t r2;
+
         CHECK(agc_planet_r_to_rp(&ip, &pad, moon == 1, r, 1234567, &rp) ==
               AGC_STATUS_OK);
         CHECK(agc_planet_rp_to_r(&ip, &pad, moon == 1, rp, 1234567, &r2) ==
               AGC_STATUS_OK);
+
         for (int i = 0; i < AGC_VEC_N; i++)
         {
             CHECK_NEAR(vec_comp(r2, i, 29), vec_comp(r, i, 29), 30.0);
         }
+
         double n1 = hypot(hypot(vec_comp(r, 0, 29), vec_comp(r, 1, 29)),
                           vec_comp(r, 2, 29));
         double n2 = hypot(hypot(vec_comp(rp, 0, 29), vec_comp(rp, 1, 29)),
                           vec_comp(rp, 2, 29));
+
         CHECK_NEAR(n2, n1, 30.0); /* rotation keeps |R|  */
     }
 }
@@ -175,9 +195,11 @@ static void test_rp_round_trip(void)
 static agc_tff_t tff_state(double r, double v)
 {
     agc_tff_t tff = {0};
-    tff.rone      = vec_m(r, 0.0, 0.0, 29);
-    tff.vone      = vec_m(0.0, v, 0.0, 7);
-    tff.rtmu      = agc_dp_from_double(TFF_RTMU, -17);
+
+    tff.rone = vec_m(r, 0.0, 0.0, 29);
+    tff.vone = vec_m(0.0, v, 0.0, 7);
+    tff.rtmu = agc_dp_from_double(TFF_RTMU, -17);
+
     return tff;
 }
 
@@ -185,16 +207,19 @@ static agc_tff_t tff_state(double r, double v)
 static void test_tff_circular(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const double mu  = 1.0 / (TFF_RTMU * TFF_RTMU); /* m^3/cs^2            */
     const double r   = 6678000.0;
     agc_tff_t    tff = tff_state(r, sqrt(mu / r));
+
     CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
     CHECK(agc_tff_rp_ra(&ip, &tff) == AGC_STATUS_OK);
     CHECK_NEAR(agc_dp_to_double(tff.rper, 29), r, 2000.0);
     CHECK_NEAR(agc_dp_to_double(tff.rapo, 29), r, 2000.0);
     agc_dp_t t     = 0;
     agc_dp_t rterm = agc_dp_from_double(6373338.0 + 121920.0, 29); /* 400k ft */
+
     CHECK(agc_tff_calctff(&ip, &tff, rterm, &t) == AGC_STATUS_OK);
     CHECK(t == AGC_TFF_NEARONE);
 }
@@ -203,6 +228,7 @@ static void test_tff_circular(void)
 static void test_tff_ellipse(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const double mu  = 1.0 / (TFF_RTMU * TFF_RTMU);
     const double ra  = 6678000.0;
@@ -210,14 +236,17 @@ static void test_tff_ellipse(void)
     const double a   = 0.5 * (ra + rpg);
     const double e   = (ra - rpg) / (ra + rpg);
     agc_tff_t    tff = tff_state(ra, sqrt(mu * 2.0 * rpg / (ra * (ra + rpg))));
+
     CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
     CHECK(agc_tff_rp_ra(&ip, &tff) == AGC_STATUS_OK);
     CHECK_NEAR(agc_dp_to_double(tff.rper, 29), rpg, 2000.0);
     CHECK_NEAR(agc_dp_to_double(tff.rapo, 29), ra, 2000.0);
     const double rterm = 6373338.0 + 121920.0;
-    double       e0 = acos((1.0 - (rterm / a)) / e); /* E at RTERM, outbound */
-    double want = sqrt(a * a * a / mu) * ((TWO_PI / 2.0) - e0 + (e * sin(e0)));
-    agc_dp_t t  = 0;
+    double       e0    = acos((1.0 - (rterm / a)) / e); /* E at RTERM, outbound */
+    double       want  = sqrt(a * a * a / mu) *
+                         ((TWO_PI / 2.0) - e0 + (e * sin(e0)));
+    agc_dp_t t = 0;
+
     CHECK(agc_tff_calctff(&ip, &tff, agc_dp_from_double(rterm, 29), &t) ==
           AGC_STATUS_OK);
     CHECK_NEAR(agc_dp_to_double(t, 28), want, want * 2e-3);
@@ -231,12 +260,14 @@ static void test_tff_ellipse(void)
 static void test_tff_poly(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     CHECK_NEAR(agc_dp_to_double(agc_tff_poly(&ip, 0), 0), 1.0 / 3.0, 1e-8);
     double x      = 0.5;
     double series = (1.0 / 3.0) - (x / 5.0) + (x * x / 7.0) -
                     (x * x * x / 9.0) + (x * x * x * x / 11.0) -
                     (x * x * x * x * x / 13.0);
+
     CHECK_NEAR(agc_dp_to_double(agc_tff_poly(&ip, agc_dp_from_double(x, 0)), 0),
                series, 5e-3);
 }
@@ -247,17 +278,22 @@ static void test_star_table(void)
     for (int s = 1; s <= AGC_STAR_COUNT; s++)
     {
         agc_vec_t v;
+
         CHECK(agc_star_vector(s, &v) == AGC_STATUS_OK);
         double x = vec_comp(v, 0, 0);
         double y = vec_comp(v, 1, 0);
         double z = vec_comp(v, 2, 0);
+
         CHECK_NEAR(sqrt((x * x) + (y * y) + (z * z)), 0.5, 1e-8);
     }
+
     agc_vec_t polaris;
+
     CHECK(agc_star_vector(5, &polaris) == AGC_STATUS_OK);
     CHECK(vec_comp(polaris, 2, 0) > 0.4999);
     int       before = g_assert_reports;
     agc_vec_t bad;
+
     CHECK(agc_star_vector(0, &bad) == AGC_STATUS_BAD_ARG);
     CHECK(agc_star_vector(38, &bad) == AGC_STATUS_BAD_ARG);
     CHECK(g_assert_reports == before + 2);
@@ -268,32 +304,38 @@ static void test_star_table(void)
 static void test_incorp(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const double   s   = 0.25;
     const double   h   = 0.5;
     const double   var = 0.01;
     const double   dq  = 0.001;
     agc_incorp_w_t w;
+
     for (int b = 0; b < AGC_INCORP_BLKS; b++)
     {
         for (int m = 0; m < AGC_INCORP_ROWS; m++)
         {
             w.blk[b][m] = agc_vec_zero();
+
             if ((m / 3) == b)
             {
                 w.blk[b][m].c[m % 3] = agc_dp_from_double(s, 0);
             }
         }
     }
+
     agc_incorp_t inc = {0};
-    inc.dim9         = true;
-    inc.bvector[0]   = agc_vec_make(agc_dp_from_double(h, 0), 0, 0);
-    inc.bvector[1]   = agc_vec_zero();
-    inc.bvector[2]   = agc_vec_zero();
-    inc.deltaq       = agc_dp_from_double(dq, 0);
-    inc.variance     = (agc_tp_t) llround(var * 4398046511104.0); /* TP 2^42 */
+
+    inc.dim9       = true;
+    inc.bvector[0] = agc_vec_make(agc_dp_from_double(h, 0), 0, 0);
+    inc.bvector[1] = agc_vec_zero();
+    inc.bvector[2] = agc_vec_zero();
+    inc.deltaq     = agc_dp_from_double(dq, 0);
+    inc.variance   = (agc_tp_t) llround(var * 4398046511104.0);   /* TP 2^42 */
     CHECK(agc_incorp1(&ip, &w, &inc) == AGC_STATUS_OK);
     double a = (s * s * h * h) + var;
+
     /* DELTAX = OMEGA DELTAQ / A, delivered at half scale (see note).      */
     CHECK_NEAR(vec_comp(inc.deltax[0], 0, 0), 0.5 * s * s * h * dq / a, 2e-7);
     CHECK_NEAR(vec_comp(inc.deltax[0], 1, 0), 0.0, 1e-8);
@@ -301,12 +343,14 @@ static void test_incorp(void)
     CHECK(agc_incorp2_wupdate(&ip, &inc, &w) == AGC_STATUS_OK);
     double gamma = 1.0 / (a + sqrt(a * var));
     double w00   = s - ((s * h) * (s * s * h) * gamma);
+
     CHECK_NEAR(vec_comp(w.blk[0][0], 0, 0), w00, 1e-6);
     CHECK_NEAR(vec_comp(w.blk[0][1], 1, 0), s, 1e-8); /* untouched  */
     CHECK_NEAR(vec_comp(w.blk[2][8], 2, 0), s, 1e-8);
 
     agc_incorp_sv_t sv = {0};
-    sv.moon            = false;
+
+    sv.moon = false;
     CHECK(agc_incorp2_state(&ip, &inc, &sv) == AGC_STATUS_OK);
     CHECK(!sv.rectify);
     CHECK(sv.tdeltav.c[0] == agc_dp_shl(&ip, inc.deltax[0].c[0], 7));
@@ -317,13 +361,17 @@ static void test_incorp(void)
 static void test_ephemerides(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_ephem_csm_t eph = {0};
-    eph.timemo          = 0;
+
+    eph.timemo = 0;
+
     for (int i = 0; i < AGC_EPHEM_NCOEF; i++)
     {
         eph.vecoem[i] = agc_vec_zero();
     }
+
     eph.vecoem[AGC_EPHEM_NCOEF - 1] = vec_m(3.8e8, 1.0e7, -2.0e7, 31); /* a0 */
     eph.vecoem[AGC_EPHEM_NCOEF - 2] = vec_m(100.0, 0.0, 0.0, 5); /* a1 m/cs */
     eph.reso                        = vec_m(1.5e11, 0.0, 0.0, 38);
@@ -331,29 +379,35 @@ static void test_ephemerides(void)
     eph.omegaes                     = 0;
     agc_vec_t moon;
     agc_vec_t sun;
+
     CHECK(agc_ephem_csm_lspos(&ip, &eph, 0, 0, &moon, &sun) == AGC_STATUS_OK);
     CHECK_NEAR(vec_comp(moon, 0, 29), 3.8e8, 8.0);
     CHECK_NEAR(vec_comp(moon, 2, 29), -2.0e7, 8.0);
     CHECK_NEAR(vec_comp(sun, 0, 38), 1.5e11, 4096.0);
     agc_vec_t vm;
+
     CHECK(agc_ephem_csm_lunvel(&ip, &eph, 0, 0, &vm) == AGC_STATUS_OK);
     CHECK_NEAR(vec_comp(vm, 0, 7), 100.0, 1e-3);
 
     agc_vec_t vmoon;
     agc_vec_t vsun;
     agc_tp_t  tephem = (agc_tp_t) 134472000; /* 15.5639 days, cs     */
+
     CHECK(agc_ephem_lm_lspos(&ip, tephem, 0, &vmoon, &vsun) == AGC_STATUS_OK);
     double sx = vec_comp(vsun, 0, 1);
     double sy = vec_comp(vsun, 1, 1);
     double sz = vec_comp(vsun, 2, 1);
+
     CHECK_NEAR(sqrt((sx * sx) + (sy * sy) + (sz * sz)), 1.0, 1e-6);
     double lam = 113.6 * TWO_PI / 360.0; /* sun longitude        */
+
     CHECK_NEAR(sx, cos(lam), 0.02);
     CHECK_NEAR(sy, 0.91745 * sin(lam), 0.02);
     CHECK_NEAR(sz, 0.39784 * sin(lam), 0.02);
     double mx = vec_comp(vmoon, 0, 1);
     double my = vec_comp(vmoon, 1, 1);
     double mz = vec_comp(vmoon, 2, 1);
+
     CHECK_NEAR(sqrt((mx * mx) + (my * my) + (mz * mz)), 1.0, 1e-6);
 }
 
@@ -371,5 +425,6 @@ int main(void)
     test_ephemerides();
     (void) printf("test_navaux: %d checks, %d failures\n", g_checks,
                   g_failures);
+
     return (g_failures == 0) ? 0 : 1;
 }

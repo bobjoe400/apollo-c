@@ -31,10 +31,10 @@
 
 #define TD_RDOTCONV \
     ((agc_dp_t) -65748541) /* RDOTCONV 2DEC -.0019135344 B7:
-                                             * RR rate count to m/cs 2^7   */
+                            * RR rate count to m/cs 2^7   */
 #define TD_RANGCONV \
     ((agc_dp_t) 95932926)                      /* RANGCONV 2DEC 2.859024 B-3:
-                                             * RR range count to m 2^29    */
+                                                * RR range count to m 2^29    */
 #define TD_THREEDEG      ((agc_dp_t) 2236962)  /* THREEDEG 2DEC .008333333    */
 #define TD_30DEG         ((agc_dp_t) 22369621) /* 30DEG 2DEC .083333333       */
 #define TD_1500DEC       1500U
@@ -47,11 +47,14 @@
 static agc_status_t td_stall(agc_job_id_t wake_as)
 {
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
-    agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as, &res);
+    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as,
+                                                   &res);
+
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
         return st;
     }
+
     return rz_continue(wake_as);
 }
 
@@ -64,10 +67,12 @@ static bool td_good(void)
 static agc_status_t td_read_rdot(void)
 {
     agc_status_t st = agc_radar_rrrdot();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE);
 }
 
@@ -81,37 +86,46 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz_phase(2, 04022);
+
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
         return AGC_STATUS_OK; /* ENDOFJOB */
     }
+
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
         return lmnav_wait(TD_1500DEC); /* R22WAIT  */
     }
+
     if ((agc_chan_read(AGC_CHAN_CHAN12) & RR_CH12_TRACK) == 0U)
     {
         return agc_job_rendezvous_navigation_attitude(ctx); /* P20LEMA  */
     }
+
     if ((agc_chan_read(AGC_CHAN_CHAN33) & TD_CH33_RR_AUTO) != 0U)
     {
         /* DEVIATION: P20LEMB5 is entered through P20LEMB, which checks
          * the track flag and auto discrete again before it.           */
         return agc_job_rendezvous_navigation_acquire(ctx);
     }
+
     if (rr_radmodes_test(RR_RCDU0BIT))
     {
         return agc_job_rendezvous_tracking_data_next(ctx); /* R22LEM42 */
     }
+
     rz_phase(2, 00152);                    /* restart reads range rate again */
     rz_flag_put(AGC_FLAG_RNGSCFLG, false); /* LRS22.1  */
     agc_inhint();
     uint16_t scale =
         (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & TD_CH33_RR_SCALE);
+
     agc_erase_set_radmodes(
         (uint16_t) ((agc_erase_radmodes() & ~RR_RRRSBIT) | scale));
     agc_relint();
+
     return td_read_rdot();
 }
 
@@ -124,11 +138,14 @@ agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!td_good())
     {
         return agc_job_rendezvous_navigation_designate(ctx); /* EREXIT1  */
     }
+
     lmnav_state_t *n = lmnav_state();
+
     agc_inhint();
     n->mktime   = rr_timehold();
     n->rdotmsav = agc_radar_samplsum();
@@ -140,10 +157,12 @@ agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
     n->tang[1]  = agc_erase_cdus();
     agc_relint();
     agc_status_t st = agc_radar_rrrange();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK);
 }
 
@@ -153,6 +172,7 @@ agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
 static agc_status_t td_convert(agc_interp_t *ip, lmnav_state_t *n)
 {
     rr_state_t *s = rr_state();
+
     agc_inhint();
     n->rangrdot[0] = agc_erase_dnrrange(0);
     n->rangrdot[1] = agc_erase_dnrrange(1);
@@ -163,7 +183,8 @@ static agc_status_t td_convert(agc_interp_t *ip, lmnav_state_t *n)
     n->rrtrun  = agc_guid_cdulogic(n->tang[0]);
     n->rrshaft = agc_guid_cdulogic(n->tang[1]);
     n->rm      = agc_dp_shl_round(
-             ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
+        ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
+
     return agc_lm_rrnb(ip, n->tang[0], n->tang[1], &n->rrborsit);
 }
 
@@ -178,45 +199,57 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!td_good())
     { /* CHEXERR  */
         return agc_flag_test(AGC_FLAG_RNGSCFLG) ?
-                   td_read_rdot() :
-                   agc_job_rendezvous_navigation_designate(ctx);
+               td_read_rdot() :
+               agc_job_rendezvous_navigation_designate(ctx);
     }
+
     lmnav_state_t *n = lmnav_state();
     agc_interp_t   ip;
+
     agc_interp_init(&ip);
     agc_status_t st      = td_convert(&ip, n);
     bool         too_far = false;
+
     if (st == AGC_STATUS_OK)
     {
         st = lmnav_los(&ip, n->cdutime, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK,
                        &too_far);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st; /* BUSY: asleep in INTSTALL  */
     }
+
     if (too_far)
     {
         return rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM);
     }
+
     agc_cdutrig_t trig;
     uint16_t      yzx[3] = {n->aig, n->amg, n->aog};
     agc_vec_t     los    = rr_state()->rrtarget;
+
     agc_guid_trg_smnb(&trig, yzx, &los);
     agc_dp_t c = agc_dp_shl(&ip, agc_vec_dot(&ip, los, n->rrborsit), 1);
-    n->dtheta  = agc_dp_acos(&ip, c);
-    st         = rz_set_dsptem_dp(RZ_DSPTEM1, n->dtheta);
+
+    n->dtheta = agc_dp_acos(&ip, c);
+    st        = rz_set_dsptem_dp(RZ_DSPTEM1, n->dtheta);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (agc_dp_sub(&ip, n->dtheta, TD_THREEDEG) < 0)
     { /* NORMEXIT */
         return agc_job_rendezvous_tracking_data_accept(ctx);
     }
+
     return agc_job_rendezvous_tracking_data_los_alarm(ctx);
 }
 
@@ -228,6 +261,7 @@ agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_prio_alarm(ctx, TD_ALARM_LOS,
                          AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
                          AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA,
@@ -242,7 +276,9 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz_phase(2, 04022);
+
     return rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U,
                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT,
@@ -258,23 +294,30 @@ agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz_phase(2, 04022);
+
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
         return agc_job_rendezvous_tracking_data_update(ctx);
     }
+
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
         return lmnav_wait(TD_1500DEC);
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_dp_t phi =
         agc_dp_acos(&ip, lmnav_state()->rrborsit.c[2]); /* 30DEGCHK */
+
     if (agc_dp_sub(&ip, phi, TD_30DEG) < 0)
     {
         return agc_job_rendezvous_tracking_data_update(ctx);
     }
+
     return lmnav_tracking_attitude(ctx, true,
                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT);
 }
@@ -286,6 +329,7 @@ agc_status_t agc_job_rendezvous_tracking_data_wait(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lmnav_wait(TD_1500DEC);
 }
 
@@ -298,10 +342,12 @@ agc_status_t agc_job_rendezvous_tracking_data_update(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_flag_test(AGC_FLAG_NOUPFLAG) || !agc_flag_test(AGC_FLAG_UPDATFLG))
     {
         return agc_job_rendezvous_tracking_data_next(ctx);
     }
+
     return agc_job_rendezvous_tracking_data_incorporate(ctx);
 }
 
@@ -312,11 +358,14 @@ agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* R22LEM46 */
         return rz_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA);
     }
+
     lmnav_state()->r65cntr = 2;
+
     return lmnav_tracking_attitude(ctx, false,
                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA);
 }
@@ -329,13 +378,17 @@ agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz_phase(2, 04022);
     agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
+
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
         return rz_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA);
     }
+
     lmnav_state()->r65cntr = 5;
+
     return lmnav_tracking_attitude(ctx, false,
                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA);
 }
@@ -349,10 +402,12 @@ agc_status_t lmnav_n49_display(void)
     rz_phase(2, 04022);
     agc_status_t st =
         agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT);
 }
 
@@ -364,6 +419,7 @@ agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_PROCEED,
@@ -376,7 +432,9 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     lmnav_state()->n49flag = -1;
+
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
 
@@ -386,7 +444,9 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     lmnav_state()->n49flag = 1;
+
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
 
@@ -399,21 +459,28 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_wait(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_sp_t f = lmnav_state()->n49flag;
+
     if (f == 0)
     {
         return rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT);
     }
+
     if (f < 0)
     {
         rz_phase(2, 04022);                     /* GRP2PC   */
+
         return lmnav_incorporate_accepted(ctx); /* ASTOK    */
     }
+
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
         return lmnav_wait(TD_1500DEC);
     }
+
     lmnav_state()->r65cntr = 0;
+
     return lmnav_tracking_attitude(ctx, false,
                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA);
 }
@@ -426,12 +493,15 @@ agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     rz_phase(2, 00152);
     agc_status_t st = agc_radar_rrrdot();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART_READ);
 }
 
@@ -441,9 +511,11 @@ agc_status_t agc_job_rendezvous_tracking_data_restart_read(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!td_good())
     {
         return agc_job_rendezvous_navigation_designate(ctx);
     }
+
     return agc_job_rendezvous_tracking_data(ctx);
 }

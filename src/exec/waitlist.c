@@ -48,14 +48,17 @@ void waitlist_clear_lists(void)
     {
         lst1[k] = (int16_t) WL_NEG1_2;
     }
+
     for (int k = 0; k < AGC_WAITLIST_MAX_TASKS; k++)
     {
         lst2[k] = AGC_TASK_ENDTASK;
     }
+
     if (!AGC_ASSERT(lst1[0] == WL_NEG1_2))
     {
         return;
     }
+
     if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK))
     {
         return;
@@ -66,10 +69,12 @@ void waitlist_clear_lists(void)
 void waitlist_reset_time3(void)
 {
     time3 = (uint16_t) WL_POSMAX;
+
     if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
     {
         return;
     }
+
     if (!AGC_ASSERT(time3 > 0))
     {
         return;
@@ -82,10 +87,12 @@ agc_status_t agc_waitlist_init(void)
     waitlist_clear_lists();
     longtime = 0;
     longcadr = AGC_TASK_NONE;
+
     if (!AGC_ASSERT(lst2[0] == AGC_TASK_ENDTASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -99,6 +106,7 @@ static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     /* DEVIATION: the AGC shifts first and checks the ejected LST2 word
      * afterwards; checking first is equivalent because the BAILOUT that
      * follows re-initialises both lists in STARTSB2.                   */
@@ -106,23 +114,29 @@ static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
     {
         return agc_bailout(AGC_ALARM_01203); /* NO ROOM IN THE INN  */
     }
+
     if (n < WL_LST1_N)
     { /* INDEX Q / TCF WTLST4 */
         if (!AGC_ASSERT(delta >= -WL_POSMAX && delta <= 1))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         for (int k = WL_LST1_N - 1; k > n; k--)
         {
             lst1[k] = lst1[k - 1]; /* XCH LST1 +k chain   */
         }
+
         lst1[n] = (int16_t) delta;
     }
+
     for (int k = AGC_WAITLIST_MAX_TASKS - 1; k > n; k--)
     {
         lst2[k] = lst2[k - 1]; /* DXCH LST2 +2k chain */
     }
+
     lst2[n] = task;
+
     return AGC_STATUS_OK;
 }
 
@@ -135,18 +149,23 @@ static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     /* DEVIATION: the "TIME3 overflow already happened" branch (C(TIME3)
      * < 200 octal) cannot arise: T3RUPT runs synchronously at overflow.  */
     int32_t a =
         (int32_t) dt - (WL_TIME3_OVF - (int32_t) time3) + 1; /* TD-T1+1 */
+
     if (a <= 0)
     {
         /* TD before T1: new task 1. TIME3 = 1.0 - DELTA T, and the old
          * task 1 gets LST1 = -(T1 - TD) + 1, which equals a.             */
         time3 = (uint16_t) (WL_TIME3_OVF - (int32_t) dt);
+
         return wtlst4(0, a, task);
     }
+
     a = a - 1 + lst1[0]; /* TD - T2 + 1         */
+
     for (int n = 1; n < AGC_WAITLIST_MAX_TASKS; n++)
     {
         if (a <= 0)
@@ -154,22 +173,28 @@ static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
             /* WTLST2: T(n) <= TD < T(n+1). LST1 +n-1 becomes
              * -(TD - T(n)) + 1 and -(T(n+1) - TD) + 1 = a is inserted.  */
             int32_t prev = (int32_t) lst1[n - 1] - a + 1;
+
             if (!AGC_ASSERT(prev <= 1 && prev >= -WL_POSMAX))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             agc_status_t st = wtlst4(n, a, task);
+
             if (st == AGC_STATUS_OK)
             {
                 lst1[n - 1] = (int16_t) prev;
             }
+
             return st;
         }
+
         if (n < WL_LST1_N)
         {
             a = a - 1 + lst1[n]; /* TD - T(n+2) + 1     */
         }
     }
+
     return agc_bailout(AGC_ALARM_01203); /* WTABORT              */
 }
 
@@ -181,17 +206,22 @@ agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (delay_cs == 0)
     {
         return agc_poodoo(AGC_ALARM_01204);
     }
+
     if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     agc_status_t st = wait2(delay_cs, task);
+
     agc_relint();
+
     return st;
 }
 
@@ -206,10 +236,12 @@ agc_status_t agc_waitlist_vardelay(uint16_t delay_cs, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         return AGC_STATUS_BAD_ARG; /* must be in a task    */
     }
+
     return agc_waitlist_call(delay_cs, task);
 }
 
@@ -221,10 +253,12 @@ agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_waitlist_vardelay(delay_cs, task);
 }
 
@@ -237,18 +271,25 @@ static agc_status_t longcycl(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int64_t rem = (int64_t) longtime - WL_BIT14; /* DCS DPBIT14 / DAS    */
+
     if (rem > 0)
     {
         longtime = (uint32_t) rem;
+
         return agc_waitlist_call((uint16_t) WL_BIT14, AGC_TASK_LONGCYCL);
     }
+
     rem += WL_BIT14; /* LASTTIME: ADS BIT14 */
+
     if (!AGC_ASSERT(rem >= 0 && rem <= WL_BIT14))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     longtime = (uint32_t) rem;
+
     return agc_waitlist_call((uint16_t) rem, AGC_TASK_GETCADR);
 }
 
@@ -262,15 +303,19 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (delay_cs == 0 && agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return agc_poodoo(AGC_ALARM_01204); /* LONGPOOH            */
     }
+
     agc_inhint();
-    longtime        = delay_cs; /* DXCH LONGTIME       */
-    longcadr        = task;     /* DXCH LONGCADR       */
+    longtime = delay_cs; /* DXCH LONGTIME       */
+    longcadr = task;     /* DXCH LONGCADR       */
     agc_status_t st = longcycl();
+
     agc_relint();
+
     return st;
 }
 
@@ -284,19 +329,24 @@ static agc_status_t svct3(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!agc_flag_test(AGC_FLAG_DRIFTFLG))
     {
         return AGC_STATUS_OK; /* TCF TASKOVER        */
     }
+
     if (agc_erase_imucadr() != 0)
     { /* CCS IMUCADR         */
         return agc_waitlist_fixdelay(WL_SVCT3_DELAY, AGC_TASK_SVCT3);
     }
+
     agc_status_t st = agc_exec_novac(EXEC_PRIO35, AGC_JOB_NBDONLY);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -307,10 +357,12 @@ agc_status_t agc_task_endtask(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(lst2[0] != AGC_TASK_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return svct3();
 }
 
@@ -320,10 +372,12 @@ agc_status_t agc_task_svct3(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(lst2[0] != AGC_TASK_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return svct3();
 }
 
@@ -333,10 +387,12 @@ agc_status_t agc_task_longcycl(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(longcadr != AGC_TASK_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return longcycl();
 }
 
@@ -348,10 +404,12 @@ agc_status_t agc_task_taskover(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -364,10 +422,12 @@ agc_status_t agc_task_getcadr(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(longcadr != AGC_TASK_NONE && longcadr != AGC_TASK_GETCADR))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -379,52 +439,68 @@ agc_status_t agc_waitlist_t3rupt(void)
     agc_status_t result  = AGC_STATUS_OK;
     uint16_t     gen     = exec_restart_generation();
     bool         ruptagn = true;
+
     if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
+
     for (int pass = 0; pass < AGC_WAITLIST_MAX_TASKS && ruptagn; pass++)
     {
         int32_t a = lst1[0];
+
         for (int k = 0; k < WL_LST1_N - 1; k++)
         {
             lst1[k] = lst1[k + 1];
         }
+
         lst1[WL_LST1_N - 1] = (int16_t) WL_NEG1_2;     /* 81.91 s for ENDTASK */
         int32_t sum = (int32_t) time3 + a + WL_POSMAX; /* ADS TIME3      */
-        ruptagn     = sum >= WL_TIME3_OVF;             /* RUPTAGN = +1     */
-        time3       = (uint16_t) (ruptagn ? sum - WL_TIME3_OVF : sum);
+
+        ruptagn = sum >= WL_TIME3_OVF;             /* RUPTAGN = +1     */
+        time3   = (uint16_t) (ruptagn ? sum - WL_TIME3_OVF : sum);
         agc_task_id_t task = lst2[0];
+
         for (int k = 0; k < AGC_WAITLIST_MAX_TASKS - 1; k++)
         {
             lst2[k] = lst2[k + 1];
         }
+
         lst2[AGC_WAITLIST_MAX_TASKS - 1] = AGC_TASK_ENDTASK;
+
         if (task == AGC_TASK_GETCADR)
         {
             task = longcadr; /* GETCADR: DXCH LONGCADR */
         }
+
         agc_status_t st = agc_dispatch_task(task);
+
         if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
         {
             result = st;
         }
+
         if (exec_restart_generation() != gen || agc_exec_restart_pending())
         {
             ruptagn = false; /* restart: the RUPTAGN chain is gone */
         }
     }
+
     agc_relint();
+
     if (agc_exec_restart_pending())
     {
         /* BAILOUT/POODOO in a task: WHIMPER -> ENEMA after the RUPT. */
         agc_status_t st = agc_exec_service_restart();
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     return result;
 }
 
@@ -436,11 +512,14 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t result = AGC_STATUS_OK;
     int32_t      left   = (int32_t) elapsed_cs;
+
     for (int i = 0; i < WL_TICK_LIMIT && left > 0; i++)
     {
         int32_t to_ovf = WL_TIME3_OVF - (int32_t) time3;
+
         if (left < to_ovf)
         {
             time3 = (uint16_t) ((int32_t) time3 + left);
@@ -449,18 +528,21 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
         else
         {
             left -= to_ovf;
-            time3           = 0; /* overflow -> T3RUPT */
+            time3 = 0; /* overflow -> T3RUPT */
             agc_status_t st = agc_waitlist_t3rupt();
+
             if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
             {
                 result = st;
             }
         }
     }
+
     if (!AGC_ASSERT(left == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return result;
 }
 
@@ -470,10 +552,12 @@ uint16_t agc_waitlist_time3(void)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE))
     {
         return 0; /* no valid result */
     }
+
     return time3;
 }
 
@@ -487,6 +571,7 @@ agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (i == 0)
     {
         *lst1_out = (int16_t) ((int32_t) time3 - WL_TIME3_OVF + 1);
@@ -495,6 +580,8 @@ agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out,
     {
         *lst1_out = lst1[i - 1];
     }
+
     *lst2_out = lst2[i];
+
     return AGC_STATUS_OK;
 }

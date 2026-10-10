@@ -55,9 +55,9 @@ typedef enum agc_entry_posexit
 typedef enum agc_entry_dapmod
 {
     AGC_ENTRY_DAPMOD_MINUS1 = -1, /* in atmosphere (D > .05 g)             */
-    AGC_ENTRY_DAPMOD_PLUS0 =
+    AGC_ENTRY_DAPMOD_PLUS0  =
         0, /* ext. atmosphere, |cos alfa| > .707, cos alfa > 0 */
-    AGC_ENTRY_DAPMOD_PLUS1 = 1, /* ext. atmosphere, |cos alfa| <= .707   */
+    AGC_ENTRY_DAPMOD_PLUS1  = 1, /* ext. atmosphere, |cos alfa| <= .707   */
     AGC_ENTRY_DAPMOD_MINUS0 =
         2 /* ext. atmosphere, cos alfa < 0: damping only */
 } agc_entry_dapmod_t;
@@ -122,7 +122,7 @@ typedef struct agc_entry_state
     agc_dp_t time_rto;    /* TIME/RTO time of RTINIT, cs B28                 */
     agc_dp_t dtearot;     /* DTEAROT time RTINIT -> RT, cs B28               */
     agc_dp_t
-        range_to_target; /* RTGON67 range to go, revs (neg = short)         */
+             range_to_target; /* RTGON67 range to go, revs (neg = short)         */
     agc_dp_t dnrngerr;   /* DNRNGERR (PREDANG - THETAH), revs               */
     agc_sp_t asps_tm[5]; /* ASPS(TM) high words of ASKEP..ASPDWN (TM)       */
     /* -- final phase table look-up (SP) -------------------------------- */
@@ -141,8 +141,8 @@ typedef struct agc_entry_state
     /* -- sequencing ---------------------------------------------------- */
     agc_entry_goto_t    gotoaddr; /* GOTOADDR                               */
     agc_entry_posexit_t posexit;  /* POSEXIT                                */
-    uint8_t entry_verb; /* ENTRYVN verb for the entry display              */
-    uint8_t entry_noun; /* ENTRYVN noun                                    */
+    uint8_t             entry_verb; /* ENTRYVN verb for the entry display              */
+    uint8_t             entry_noun; /* ENTRYVN noun                                    */
     /* -- displays (P61, entry) ----------------------------------------- */
     agc_dp_t vmagi;   /* VMAGI inertial speed, m/cs B7                   */
     agc_dp_t gmax;    /* GMAX 100 gmax B-14 g                            */
@@ -164,10 +164,10 @@ typedef struct agc_entry_state
     /* -- entry DAP values shared with guidance and P62 ------------------- */
     agc_sp_t rollhold; /* ROLLHOLD roll /180 for attitude hold            */
     agc_sp_t
-        wake_separation_interlock; /* P63FLAG -1, +0, +1                              */
+                       wake_separation_interlock; /* P63FLAG -1, +0, +1                              */
     agc_entry_dapmod_t cmdapmod; /* CMDAPMOD                                 */
-    agc_sp_t alfacom, betacom;   /* ALFACOM BETACOM /180                     */
-    agc_sp_t calfa, salfa;       /* CALFA SALFA cos/sin alfa, scale 1       */
+    agc_sp_t           alfacom, betacom; /* ALFACOM BETACOM /180                     */
+    agc_sp_t           calfa, salfa;     /* CALFA SALFA cos/sin alfa, scale 1       */
 } agc_entry_state_t;
 
 /* ---- lexicon (lexicon.c) ----------------------------------------- */
@@ -179,8 +179,7 @@ void               agc_entry_lexicon_reset(void);
  * pass functions return *display = true when the AGC ends at ENDEXIT
  * (entry display ENTRYVN, then SERVNOUT) and false for SERVNOUT alone.    */
 agc_status_t agc_entry_startent(void); /* STARTENT first pass  */
-agc_status_t
-agc_entry_scalepop(bool *display); /* SCALEPOP: TARGETNG + REFAZE10 */
+agc_status_t agc_entry_scalepop(bool *display); /* SCALEPOP: TARGETNG + REFAZE10 */
 agc_status_t agc_entry_refaze10(bool *display);    /* REFAZE10: GOTO GOTOADDR */
 agc_status_t agc_entry_targeting(void);            /* TARGETNG             */
 agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx); /* PRE-HUNT  4.47 restart */
@@ -212,50 +211,35 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4]);
 
 /* ---- P61-P67 (programs.c) ------------------------------------------------
  * Jobs: the AGC program text split at every DSKY / sleep resumption.      */
-agc_status_t
-agc_job_entry_preparation(agc_job_ctx_t *ctx); /* P61                 */
+agc_status_t agc_job_entry_preparation(agc_job_ctx_t *ctx); /* P61                 */
 agc_status_t agc_job_entry_preparation_target_display(
     agc_job_ctx_t *ctx); /* P61 V06N61          */
-agc_status_t
-agc_job_entry_preparation_compute(agc_job_ctx_t *ctx); /* P61.4               */
+agc_status_t agc_job_entry_preparation_compute(agc_job_ctx_t *ctx); /* P61.4               */
 agc_status_t agc_job_entry_preparation_prediction_display(
     agc_job_ctx_t *ctx); /* P61.1 V06N60        */
 agc_status_t agc_job_entry_preparation_ems_display(
     agc_job_ctx_t *ctx); /* P61.2 V06N63        */
-agc_status_t
-agc_job_entry_display_protect(agc_job_ctx_t *ctx); /* P61.3               */
-agc_status_t
-agc_job_cm_sm_separation_newmode(agc_job_ctx_t *ctx); /* P62 -3 (from P61)   */
-agc_status_t
-agc_job_cm_sm_separation(agc_job_ctx_t *ctx); /* P62 (V37)           */
+agc_status_t agc_job_entry_display_protect(agc_job_ctx_t *ctx); /* P61.3               */
+agc_status_t agc_job_cm_sm_separation_newmode(agc_job_ctx_t *ctx); /* P62 -3 (from P61)   */
+agc_status_t agc_job_cm_sm_separation(agc_job_ctx_t *ctx); /* P62 (V37)           */
 agc_status_t agc_job_cm_sm_separation_after_check(
     agc_job_ctx_t *ctx); /* P62 after S61.1     */
-agc_status_t
-agc_job_cm_sm_separation_request(agc_job_ctx_t *ctx); /* P62.2 GOPERF1R 41   */
-agc_status_t
-agc_job_cm_sm_separation_proceed(agc_job_ctx_t *ctx); /* P62.2 +3 CM/DAPON   */
+agc_status_t agc_job_cm_sm_separation_request(agc_job_ctx_t *ctx); /* P62.2 GOPERF1R 41   */
+agc_status_t agc_job_cm_sm_separation_proceed(agc_job_ctx_t *ctx); /* P62.2 +3 CM/DAPON   */
 agc_status_t agc_job_cm_sm_separation_target_display(
     agc_job_ctx_t *ctx); /* P62.1 V06N61        */
-agc_status_t
-agc_job_cm_sm_separation_end_hold(agc_job_ctx_t *ctx); /* P62.1 PROCEED       */
-agc_status_t
-agc_job_entry_initialization(agc_job_ctx_t *ctx); /* P63                 */
-agc_status_t
-agc_job_entry_upcontrol_display(agc_job_ctx_t *ctx); /* P65.1 V16N69        */
-agc_status_t
-agc_job_entry_upcontrol_proceed(agc_job_ctx_t *ctx); /* P65.1 PROCEED       */
-agc_status_t
-agc_job_entry_final_phase_display(agc_job_ctx_t *ctx); /* P67.1 V16N67        */
-agc_status_t
-agc_job_entry_final_phase_end(agc_job_ctx_t *ctx); /* P67.1 PROCEED       */
+agc_status_t agc_job_cm_sm_separation_end_hold(agc_job_ctx_t *ctx); /* P62.1 PROCEED       */
+agc_status_t agc_job_entry_initialization(agc_job_ctx_t *ctx); /* P63                 */
+agc_status_t agc_job_entry_upcontrol_display(agc_job_ctx_t *ctx); /* P65.1 V16N69        */
+agc_status_t agc_job_entry_upcontrol_proceed(agc_job_ctx_t *ctx); /* P65.1 PROCEED       */
+agc_status_t agc_job_entry_final_phase_display(agc_job_ctx_t *ctx); /* P67.1 V16N67        */
+agc_status_t agc_job_entry_final_phase_end(agc_job_ctx_t *ctx); /* P67.1 PROCEED       */
 agc_status_t agc_job_entry_imu_check(
     agc_job_ctx_t *ctx); /* S61.1 (return job set by caller) */
-agc_status_t
-agc_job_entry_imu_axis_test(agc_job_ctx_t *ctx); /* S61.1A  4.45        */
+agc_status_t agc_job_entry_imu_axis_test(agc_job_ctx_t *ctx); /* S61.1A  4.45        */
 agc_status_t agc_job_entry_imu_check_extrapolated(
     agc_job_ctx_t *ctx); /* S61.1 MIDTOAV2 retry*/
-agc_status_t
-agc_job_entry_imu_check_return(agc_job_ctx_t *ctx); /* RETRN1 after delay  */
+agc_status_t agc_job_entry_imu_check_return(agc_job_ctx_t *ctx); /* RETRN1 after delay  */
 agc_status_t agc_task_entry_start_average_g(void);  /* S61.1C  4.43        */
 agc_status_t agc_task_wake_cm_sm_separation(void);  /* WAKEP62 4.33        */
 agc_status_t agc_entry_ems_data(void);              /* S61.2 N60/N63 data  */
@@ -269,12 +253,12 @@ agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam,
 /* ---- entry DAP (dap.c) -------------------------------------------- */
 agc_status_t agc_task_readgymb(void); /* READGYMB  .1 s task             */
 agc_status_t agc_task_attrates(void); /* ATTRATES  T5RUPT after BODYRATE */
-agc_status_t agc_task_setjtag(void);  /* SETJTAG   2 s task (READACCS)   */
-agc_status_t agc_task_jetcall(void);  /* JETCALL   roll jet task         */
-agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx);      /* CM/DAPON        */
+agc_status_t agc_task_setjtag(void);               /* SETJTAG   2 s task (READACCS)   */
+agc_status_t agc_task_jetcall(void);               /* JETCALL   roll jet task         */
+agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx); /* CM/DAPON        */
 agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx); /* NOTYET +4       */
-agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx);      /* CM/DAPIC        */
-void agc_entry_dap_flushjet(void);              /* FLUSHJET        */
+agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx); /* CM/DAPIC        */
+void         agc_entry_dap_flushjet(void);         /* FLUSHJET        */
 
 /* Roll phase-plane solution of CM/RCS (pp. 1081-1086) for a roll error and
  * roll rate, as a pure function (used by CM/RCS and by unit tests).       */
@@ -304,8 +288,7 @@ void     agc_erase_set_cm_gymdt(agc_sp_t v);
 agc_sp_t agc_erase_s61dt(void); /* S61DT restart dt (4.43), cs     */
 
 /* ---- P37 return to earth (p37.c) ---------------------------------------- */
-agc_status_t
-agc_job_return_to_earth(agc_job_ctx_t *ctx); /* P37 (stub)          */
+agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx); /* P37 (stub)          */
 /* XT1LIM (p. 930): X(T1) limit (B5) from MA (B30), RCON and R(T1) (B29),
  * BETA5 (B9).                                                             */
 agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
@@ -329,7 +312,7 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx); /* SATSTKON (V46)  */
 /* S11.1: VMAGI = |VN| (m/cs B7), HDOT = UNIT(RN).VN (B7), ALTI = |RN| -
  * RPAD (earth) or - |RLS| (moon, AMOONFLG) (m B29), stored for N62;
  * agc_earth_orbit_insertion_monitor_s11_1 reads the stored values (noun tables).                    */
-void agc_csm_velocity_altitude_rate(agc_interp_t *ip);
+void         agc_csm_velocity_altitude_rate(agc_interp_t *ip);
 agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
                                                        agc_dp_t *hdot,
                                                        agc_dp_t *alti);
@@ -337,8 +320,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(
     agc_job_ctx_t *ctx); /* P11 TEPHEM restart */
 agc_status_t agc_job_earth_orbit_insertion_monitor_setup(
     agc_job_ctx_t *ctx); /* P11 after PREREAD1 */
-agc_status_t
-agc_job_atreset_after_delay(agc_job_ctx_t *ctx); /* ATRESET +5        */
+agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx); /* ATRESET +5        */
 
 /* P11 pad loads (ERASABLE_ASSIGNMENTS: P11 storage, SATURN BOOST storage). */
 #define AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX 6

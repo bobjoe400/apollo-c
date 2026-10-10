@@ -39,10 +39,12 @@ static uint16_t cdu_pattern(agc_sp_t a)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(a <= 16383))
     {
         return 0; /* no valid result */
     }
+
     return (uint16_t) ((uint16_t) a & 077777u);
 }
 
@@ -62,25 +64,30 @@ agc_status_t agc_entry_cm_pose_triad(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    w         = agc_vec_scale(ip, agc_vec_cross(ip, avg->unitw, avg->unitr),
-                              AGC_ENTRY_KWE);
+
+    w = agc_vec_scale(ip, agc_vec_cross(ip, avg->unitw, avg->unitr),
+                      AGC_ENTRY_KWE);
     es->mvrel = agc_vec_add(
         ip, w, agc_vec_scale(ip, agc_erase_vn(), AGC_ENTRY_MKVSCALE));
     es->uxa = agc_vec_unit(ip, es->mvrel, &vmag, NULL); /* LXA,1 36D  */
     uy      = agc_vec_neg(agc_vec_cross(ip, es->uxa, avg->unitr));
     uy      = agc_vec_unit(ip, uy, NULL, NULL);
+
     /* TIX,1: branch to CM/POSE2 (new UYA) when X1 = |VREL| > S1 = SPVQUIT. */
     if (agc_dp_high(vmag) > AGC_ENTRY_SPVQUIT)
     {
         es->olduya = uy;
     }
+
     es->uya = es->olduya; /* CM/POSE2  */
     es->uza =
         agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
+
     if (!AGC_ASSERT(vmag >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -95,10 +102,12 @@ static agc_vec_t trio_uby_sm(agc_interp_t *ip, agc_dp_t ci, agc_dp_t si,
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     if (!AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF))
     {
         return agc_vec_zero(); /* no valid result */
     }
+
     /* (-SM CI, noise, SM SI)/2 with CM/2 replacing the noise              */
     uby = agc_vec_make(
         agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
@@ -107,6 +116,7 @@ static agc_vec_t trio_uby_sm(agc_interp_t *ip, agc_dp_t ci, agc_dp_t si,
     uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul(ip, so, agc_dp_neg(si))),
                           uby.c[0]);
     uby.c[2] = agc_dp_add(ip, agc_dp_mul(ip, so, ci), uby.c[2]);
+
     return uby;
 }
 
@@ -128,6 +138,7 @@ static void trio_body_axes(agc_interp_t *ip, agc_entry_state_t *es)
     {
         return;
     }
+
     es->uby = trio_uby_sm(ip, ci, si, sm, cm, agc_dp_sin(ip, aog),
                           agc_dp_cos(ip, aog));
     es->uby =
@@ -138,6 +149,7 @@ static void trio_body_axes(agc_interp_t *ip, agc_entry_state_t *es)
     es->ubx =
         agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
     es->ubz = agc_vec_shl(ip, agc_vec_cross(ip, es->ubx, es->uby), 1);
+
     if (!AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF))
     {
         return;
@@ -162,19 +174,23 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     trio_body_axes(ip, es);
-    ul = agc_vec_unit(ip, agc_vec_cross(ip, es->uxa, es->uby), NULL, NULL);
-    c  = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
-    s  = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
+    ul =
+        agc_vec_unit(ip, agc_vec_cross(ip, es->uxa, es->uby), NULL, NULL);
+    c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
+    s         = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
     angles[0] = agc_imu_arctrig(ip, s, c);
     s         = agc_dp_shl(ip, agc_vec_dot(ip, es->uby, es->uxa), 1);
     angles[1] = agc_dp_asin(ip, s);
     s         = agc_vec_dot(ip, ul, es->ubx); /* -SIN(ALFA)/4 */
     c         = agc_vec_dot(ip, ul, es->ubz); /* COS(ALFA)/4  */
     angles[2] = agc_imu_arctrig(ip, s, c);
-    c = agc_dp_shl(ip, agc_vec_dot(ip, agc_guid_state()->avg.unitr, es->uza),
+    c         =
+        agc_dp_shl(ip, agc_vec_dot(ip, agc_guid_state()->avg.unitr, es->uza),
                    1);
     angles[3] = agc_dp_acos(ip, c);
+
     return AGC_STATUS_OK;
 }
 
@@ -190,20 +206,26 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     {
         return;
     }
+
     es->gama = gama_new;
+
     if (!agc_flag_test(AGC_FLAG_GAMDIFSW))
     {
         agc_flag_set(AGC_FLAG_GAMDIFSW); /* first difference next */
         es->gamdot = 0;                         /* NOGAMDOT              */
+
         return;
     }
+
     es->gamdot = entry_sp_mp(entry_sp_sat((int32_t) es->gama - (int32_t) old),
                              AGC_ENTRY_TCDU);
     g = (es->gamdot > 0) ? -(int32_t) es->gamdot : (int32_t) es->gamdot;
+
     if (g + 5 > 0)
     { /* |GAMDOT| < 5 bits     */
         es->gamdot = 0;
     }
+
     if (!AGC_ASSERT(es->gamdot == 0 || es->gamdot >= 5 || es->gamdot <= -5))
     {
         return;
@@ -221,15 +243,19 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(pip >= -16384))
     {
         return 0; /* no valid result */
     }
+
     if (wrap)
     {
         sum = (int32_t) entry_angle_wrap(eul) - (int32_t) pip + (int32_t) now;
+
         return entry_angle_wrap(sum);
     }
+
     return entry_sp_sat(eul - (int32_t) pip +
                         (int32_t) now); /* BETA: no ovfl */
 }
@@ -240,12 +266,14 @@ static void entry_cm_atup(const agc_dp_t angles[4])
 {
     agc_entry_state_t *es = agc_entry_state();
     agc_phase_var_t    v  = {
-            AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U};
+        AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U
+    };
 
     if (!AGC_ASSERT(angles != NULL))
     {
         return;
     }
+
     agc_inhint(); /* until the body angles are updated     */
     atup_gamdot(es, (agc_sp_t) (-agc_dp_high(angles[3]))); /* CS 10D */
     temproll = atup_angle(angles[0], es->roll_pip, es->roll_180, true);
@@ -254,6 +282,7 @@ static void entry_cm_atup(const agc_dp_t angles[4])
     /* DCA REPOSADR / DXCH PHSNAME5: group 5 now restarts at REDOPOSE.     */
     agc_phase_change_var(010035, &v);
     agc_relint();
+
     if (!AGC_ASSERT(es->gamdot == 0 || agc_flag_test(AGC_FLAG_GAMDIFSW)))
     {
         return;
@@ -270,17 +299,21 @@ agc_status_t entry_servnout(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     nj = agc_exec_newjob(); /* CCS NEWJOB                   */
     agc_relint();
+
     if (nj > 0)
     {
         return agc_exec_job_yield(AGC_JOB_SERVEXIT); /* TC CHANG1  */
     }
+
     if (!AGC_ASSERT(nj <= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_servexit(ctx);
 }
 
@@ -295,6 +328,7 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (es->posexit)
     {
         case AGC_ENTRY_POSEXIT_DESIRED_GIMBALS:
@@ -311,22 +345,28 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
         case AGC_ENTRY_POSEXIT_ENDEXIT:
         case AGC_ENTRY_POSEXIT_COUNT:
         default:
+
             if (!AGC_ASSERT(es->posexit == AGC_ENTRY_POSEXIT_ENDEXIT))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             break;
     }
+
     if (st == AGC_STATUS_OK && disp)
     {
         st = entry_endexit(ctx, es); /* OVERNOUT                    */
     }
+
     if (st != AGC_STATUS_OK)
     {
         /* end the SERVICER job anyway; a restart it asks for outranks st */
         const agc_status_t sn = entry_servnout(ctx);
+
         return (sn == AGC_STATUS_BAILOUT) ? sn : st;
     }
+
     return entry_servnout(ctx);
 }
 
@@ -340,12 +380,14 @@ static agc_status_t entry_redopose_tail(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     es->roll_180 = temproll;
     es->alfa_180 = tempalfa;
     es->beta_180 = tempbeta;
     agc_relint();
     es->vmagi = agc_vec_abval(entry_ip(), agc_erase_vn()); /* 2^7 m/cs */
+
     return entry_posexit(ctx);
 }
 
@@ -359,20 +401,26 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     st = agc_entry_cm_pose_triad();
+
     if (st == AGC_STATUS_OK)
     {
         st = agc_entry_cm_trio(angles);
     }
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     entry_cm_atup(angles);
+
     if (!AGC_ASSERT(agc_entry_state()->posexit < AGC_ENTRY_POSEXIT_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return entry_redopose_tail(ctx);
 }
 
@@ -383,10 +431,12 @@ agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_entry_state() != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return entry_redopose_tail(ctx);
 }
 
@@ -400,14 +450,18 @@ agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     st = agc_entry_refaze10(&disp);
+
     if (st == AGC_STATUS_OK && disp)
     {
         st = entry_endexit(ctx, agc_entry_state());
     }
+
     if (!AGC_ASSERT(agc_entry_state()->gotoaddr < AGC_ENTRY_GOTO_COUNT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (st == AGC_STATUS_OK) ? entry_servnout(ctx) : st;
 }

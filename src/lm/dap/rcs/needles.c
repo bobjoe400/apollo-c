@@ -23,26 +23,33 @@
 agc_status_t lm_dap_altdsply(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_DSPLYALT);
+
     if ((d->rcsflags & LM_RCS_DSPLYALT) != 0u)
     {
         return lm_dap_needler();
     }
+
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     { /* total attitude error   */
         return lm_dap_dsplytot();
     }
+
     d->ak[1] = (agc_sp_t) -d->qerror; /* error complements      */
     d->ak[2] = (agc_sp_t) -d->rerror;
     d->ak[0] = (agc_sp_t) -d->perror;
+
     if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -50,27 +57,31 @@ agc_status_t lm_dap_altdsply(void)
  * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.        */
 agc_status_t lm_dap_dsplytot(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d    = lm_dap_state();
     agc_sp_t  ydif =
         lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
     agc_sp_t zdif =
         lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
     agc_sp_t xdif =
         lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
+
     d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) +
                           (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
     d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) +
                           (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
     d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) +
                           (int32_t) xdif);
+
     if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -79,22 +90,28 @@ agc_status_t lm_dap_dsplytot(void)
 static agc_status_t needle11(lm_dap_t *d)
 {
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 0; i < 3; i++)
     {
-        d->ak[i]       = 0;
-        d->edrive[i]   = 0;
+        d->ak[i]     = 0;
+        d->edrive[i] = 0;
         agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
-        st             = s;
+
+        st = (s != AGC_STATUS_OK) ? s : st;
     }
+
     d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
+
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -102,11 +119,23 @@ static agc_status_t needle11(lm_dap_t *d)
  * IMU error counter, limited to +-384 bits.                              */
 static agc_status_t needles(lm_dap_t *d)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
+    if (!AGC_ASSERT(d != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 2; i >= 0; i--)
     { /* DINDX = 2, 1, 0       */
         int32_t l =
             lm_dap_mphi((agc_sp_t) -NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
+
         if (l > NDL_DACMAX)
         {
             l = NDL_DACMAX; /* overflow: DACLIMIT +1 */
@@ -115,40 +144,58 @@ static agc_status_t needles(lm_dap_t *d)
         {
             l = -NDL_DACMAX;
         }
-        int32_t cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i];
+
+        int32_t cmd = (int32_t) agc_imu_cducmd(i) + l -
+                      (int32_t) d->edrive[i];
         agc_status_t s =
             agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
-        st           = s;
+
+        st           = (s != AGC_STATUS_OK) ? s : st;
         d->edrive[i] = (agc_sp_t) l;
     }
+
     agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */
+
     if (!AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
 /* NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.            */
 agc_status_t lm_dap_needler(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     lm_dap_t *d    = lm_dap_state();
     uint16_t  pass = (uint16_t) (d->rcsflags & NDL_PASSBITS);
+
     if (pass != 0u)
     {
         if ((pass & LM_RCS_NEEDLE3) != 0u)
         { /* first pass         */
             agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
+
             return needle11(d);
         }
+
         agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */
-        d->rcsflags    = (uint16_t) (d->rcsflags & ~NDL_PASSBITS);
+        d->rcsflags = (uint16_t) (d->rcsflags & ~NDL_PASSBITS);
+
         return AGC_STATUS_OK;
     }
+
     if ((agc_chan_read(012) & NDL_IMUERR) == 0u)
     { /* NEEDLES3           */
         d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* re-init  */
+
         return AGC_STATUS_OK;
     }
+
     return needles(d);
 }

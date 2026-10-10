@@ -29,13 +29,16 @@ agc_flag_id_t rz_vflag_lm(rz_vflag_t f)
         AGC_FLAG_MUNFLAG /* MUNFLAG */,
         0U /* TIMRFLAG */
     };
+
     if (!AGC_ASSERT((int) f >= 0 && f < RZ_VF_COUNT))
     {
         return 0U;
     }
+
     if (!AGC_ASSERT(ids[f] == 0U || agc_flag_bit(ids[f]) >= 1))
     {
         return 0U;
     }
+
     return ids[f];
 }

@@ -44,6 +44,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
+
     return false;
 }
 
@@ -52,6 +53,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -71,6 +73,7 @@ static agc_status_t setup_descent(int32_t kg)
     agc_erase_set_csmmass(0);
     agc_guid_state()->lm.mass   = (agc_dp_t) (KG(kg) * 16384);
     agc_guid_state()->lm.abdelv = 0;
+
     return agc_lm_dap_jet_accel_update();
 }
 
@@ -78,6 +81,7 @@ static void test_accs(void)
 {
     agc_status_t    st = setup_descent(15000);
     const lm_dap_t *d  = lm_dap_state();
+
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_erase_lemmass() == KG(15000));
     CHECK(d->jacc[0] > 0 && d->jacc[1] > 0 && d->jacc[2] > 0);
@@ -110,13 +114,16 @@ static void test_tjetlaw(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
+
     for (agc_sp_t axis = -1; axis <= 1; axis++)
     {
         set_axis(d, axis, 0, 0);
         CHECK(lm_dap_tjetlaw() == AGC_STATUS_OK);
         CHECK(d->tj[axis + 1] == 0);
     }
+
     agc_sp_t ten_deg = (agc_sp_t) (16384 * 10 / 180); /* at pi            */
+
     for (agc_sp_t axis = 0; axis <= 1; axis++)
     {
         set_axis(d, axis, ten_deg, 0);
@@ -132,32 +139,38 @@ static void test_rate_estimator(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
-    d->nptraps  = 2; /* STARTDAP                 */
-    d->nqtraps  = 2;
-    d->nrtraps  = 2;
-    d->omegap   = 0;
-    d->trapedp  = 0;
-    d->plast    = 0;
+
+    d->nptraps = 2; /* STARTDAP                 */
+    d->nqtraps = 2;
+    d->nrtraps = 2;
+    d->omegap  = 0;
+    d->trapedp = 0;
+    d->plast   = 0;
+
     for (int i = 0; i < 3; i++)
     {
         d->tj[i]     = 0;
         d->dapcdu[i] = 0;
     }
-    d->oldxforp      = 0;
-    d->oldyforp      = 0;
-    d->oldzforq      = 0;
+
+    d->oldxforp = 0;
+    d->oldyforp = 0;
+    d->oldzforq = 0;
     int converged_at = -1;
+
     for (int pass = 1; pass <= 30; pass++)
     {
         d->dapcdu[0] = (uint16_t) ((d->dapcdu[0] + 10u) & 077777u);
         CHECK(lm_dap_rateloop() == AGC_STATUS_OK);
         CHECK(lm_dap_backp() == AGC_STATUS_OK);
         int32_t err = (int32_t) d->omegap - 400;
+
         if (converged_at < 0 && err >= -8 && err <= 8)
         {
             converged_at = pass;
         }
     }
+
     CHECK(converged_at > 0);
     CHECK(d->omegap >= 392 && d->omegap <= 408);
     CHECK(d->omegaq == 0 && d->omegar == 0);
@@ -167,6 +180,7 @@ static void test_rcsmon(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     const lm_dap_t *d = lm_dap_state();
+
     agc_chan_set_input(032, 077777u); /* all valves open (inverted) */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u);
@@ -184,6 +198,7 @@ static void test_spsrcs(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
+
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
     set_axis(d, 0, 0, 700); /* 1.92 deg/s               */
@@ -204,10 +219,12 @@ static void test_spsrcs(void)
 static void test_rot_touv(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->coeffq   = -11585;
-    d->coeffr   = 11585;
-    agc_sp_t u  = 0;
-    agc_sp_t v  = 0;
+
+    d->coeffq = -11585;
+    d->coeffr = 11585;
+    agc_sp_t u = 0;
+    agc_sp_t v = 0;
+
     CHECK(agc_lm_dap_rot_touv(1000, 0, &u, &v) == AGC_STATUS_OK);
     CHECK(u > 0 && v < 0);
     CHECK(u == -v);
@@ -224,5 +241,6 @@ int main(void)
     test_rot_touv();
     (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
+
     return (g_failures == 0) ? 0 : 1;
 }

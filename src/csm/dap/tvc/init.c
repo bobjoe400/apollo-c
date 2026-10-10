@@ -44,7 +44,7 @@ static const agc_sp_t csmn10[AGC_CSM_N10_WORDS] = {
     0,      /* N22    DEC 0                                             */
     -4411,  /* D21/2  DEC -.2692                                        */
     0,      /* D22    DEC 0                                             */
-    16383,  -5382, -5408, -14911, 13861 /* LBN10 .. LBD12 (overrun)       */
+    16383, -5382, -5408, -14911, 13861 /* LBN10 .. LBD12 (overrun)       */
 };
 
 /* LBN10 (p. 943), CSM/LM low-bandwidth filter coefficients, scale 1.     */
@@ -67,7 +67,8 @@ static const agc_sp_t lbn10[AGC_CSM_N10_WORDS] = {
 };
 
 typedef enum tvc_coef_set
-{ /* COEFFADR: CSMCFADR, HBCFADR, LBCFADR   */
+{
+    /* COEFFADR: CSMCFADR, HBCFADR, LBCFADR   */
     TVC_COEF_CSM = 0,
     TVC_COEF_HB,
     TVC_COEF_LB
@@ -80,10 +81,13 @@ static void tvc_loadcoef(tvc_coef_set_t set)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) || (set == TVC_COEF_LB)))
+
+    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) ||
+                    (set == TVC_COEF_LB)))
     {
         return;
     }
+
     for (int i = 0; i < AGC_CSM_N10_WORDS; i++)
     {
         if (set == TVC_COEF_HB)
@@ -99,6 +103,7 @@ static void tvc_loadcoef(tvc_coef_set_t set)
             t->n10[i] = csmn10[i];
         }
     }
+
     if (!AGC_ASSERT(t->n10[0] != 0))
     {
         return;
@@ -113,19 +118,25 @@ agc_status_t csm_tvc_gains(bool full)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     if (!AGC_ASSERT(c->ixx >= 0) || !AGC_ASSERT(c->iavg_tlx >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (full)
     {
-        agc_dp_t p    = agc_sp_mul(c->ixx, TWOPI_M);
+        agc_dp_t p = agc_sp_mul(c->ixx, TWOPI_M);
+
         p             = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(p)));
         t->one_conacc = agc_dp_high(p); /* TS 1/CONACC          */
     }
+
     agc_dp_t v = agc_sp_mul(t->ktlx_i, c->iavg_tlx);
-    v          = csm_dap_ddoubl(csm_dap_ddoubl(v));
-    t->vark    = agc_dp_high(v); /* TS VARK              */
+
+    v       = csm_dap_ddoubl(csm_dap_ddoubl(v));
+    t->vark = agc_dp_high(v); /* TS VARK              */
+
     return AGC_STATUS_OK;
 }
 
@@ -135,36 +146,43 @@ agc_status_t csm_tvc_gains(bool full)
 agc_status_t csm_tvc_mrclean(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     _Static_assert(NZERO % 2 == 1, "AGC constant");
     t->omegac[1] = 0;
     t->omegac[2] = 0; /* OMEGAYC, OMEGAZC     */
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         t->omegab[i] = 0; /* OMEGAB (= OGARATE)   */
     }
+
     t->ogarate = 0;
+
     for (int i = 0; i < 6; i++)
     {
         t->ptmp[i] = 0; /* PTMP1..6, YTMP1..6   */
         t->ytmp[i] = 0;
     }
-    t->rollfire     = 0;
-    t->rollword     = 0u;
-    t->temreg       = 0;
-    t->stroker      = 0;
-    t->perrb        = 0;
-    t->yerrb        = 0;
-    t->delpbar      = 0;
-    t->delybar      = 0;
-    t->pdeloff      = 0;
-    t->ydeloff      = 0;
-    t->ttmp1        = 0;
-    t->cntr         = 0; /* CNTR (loop counter)  */
+
+    t->rollfire = 0;
+    t->rollword = 0u;
+    t->temreg   = 0;
+    t->stroker  = 0;
+    t->perrb    = 0;
+    t->yerrb    = 0;
+    t->delpbar  = 0;
+    t->delybar  = 0;
+    t->pdeloff  = 0;
+    t->ydeloff  = 0;
+    t->ttmp1    = 0;
+    t->cntr     = 0;     /* CNTR (loop counter)  */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_TVCINIT1, T5_POSMAX);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* ENDMRC: RESUME       */
 }
 
@@ -175,11 +193,14 @@ agc_status_t agc_task_tvcdapon(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = csm_tvc_mrclean();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -190,19 +211,23 @@ static agc_status_t tvc_init2(int lem)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     if (!AGC_ASSERT((lem == 0) || (lem == 1)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     /* TVCDT/2 in cs, scale B+14 cs: BIT2 (20 ms, CSM 40 ms filter) or
      * BIT3 (40 ms, CSM/LM 80 ms filter).                                  */
     agc_sp_t half_dt = (lem != 0) ? (agc_sp_t) 4 : (agc_sp_t) 2;
+
     t->t5tvcdt =
         (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX; AD BIT1 */
     agc_flag_clear(AGC_FLAG_SWTOVER); /* reset SWTOVER   */
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: the LXCH A exchanges the
      * product words, which shifts it 14 places left; scaled pi/8.        */
     agc_sp_t ek = c->ekprime[lem];
+
     t->kprimedt =
         agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
     t->repfrac           = c->erepfrac[lem];
@@ -210,10 +235,12 @@ static agc_status_t tvc_init2(int lem)
     t->strktime          = -1;         /* no stroke test yet    */
     t->vcntr             = NINETEEN;   /* gain update in 10 s   */
     t->engine_fail_vcntr = NINETEEN;   /* for ENGFAIL (R41)     */
+
     if (!AGC_ASSERT(t->t5tvcdt > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -223,16 +250,19 @@ static void tvc_init3(void)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    t->pdeloff                = agc_dp_pack(c->pactoff, agc_dp_low(t->pdeloff));
-    t->pcmd                   = c->pactoff;
-    t->delpbar                = agc_dp_pack(c->pactoff, agc_dp_low(t->delpbar));
-    t->ydeloff                = agc_dp_pack(c->yactoff, agc_dp_low(t->ydeloff));
-    t->ycmd                   = c->yactoff;
-    t->delybar                = agc_dp_pack(c->yactoff, agc_dp_low(t->delybar));
+
+    t->pdeloff = agc_dp_pack(c->pactoff, agc_dp_low(t->pdeloff));
+    t->pcmd    = c->pactoff;
+    t->delpbar = agc_dp_pack(c->pactoff, agc_dp_low(t->delpbar));
+    t->ydeloff = agc_dp_pack(c->yactoff, agc_dp_low(t->ydeloff));
+    t->ycmd    = c->yactoff;
+    t->delybar = agc_dp_pack(c->yactoff, agc_dp_low(t->delybar));
+
     if (!AGC_ASSERT(t->pcmd == c->pactoff))
     {
         return;
     }
+
     if (!AGC_ASSERT(t->ycmd == c->yactoff))
     {
         return;
@@ -245,14 +275,17 @@ static void tvc_init3(void)
 static void tvc_attinit(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT13) == 0u)
     {
         return; /* CSM/LM: NEEDLEIN      */
     }
+
     for (int k = 1; k >= 0; k--)
     { /* TTMP1 = 1, 0          */
         agc_sp_t e = t->errbinit[k];
         agc_sp_t q = csm_dap_mp_hi(e, RECIP_ATTLIM); /* 0 if |e| < 1.5 deg  */
+
         if (q > 0)
         {
             t->errbinit[k] = ATTLIM;
@@ -266,8 +299,10 @@ static void tvc_attinit(void)
             /* |error| less than 1.5 deg: keep it */
         }
     }
+
     t->perrb = agc_dp_pack(t->errbinit[0], agc_dp_low(t->perrb));
     t->yerrb = agc_dp_pack(t->errbinit[1], agc_dp_low(t->yerrb));
+
     if (!AGC_ASSERT((t->errbinit[0] >= -ATTLIM) && (t->errbinit[0] <= ATTLIM)))
     {
         return;
@@ -279,29 +314,37 @@ agc_status_t agc_task_tvcinit1(void)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     agc_csm_dap_massprop(); /* IXX, IAVG/TLX        */
     agc_status_t st = AGC_STATUS_OK;
+
     /* TENMDOT = EMDOT (kg/cs, B+3) x 1000: 10-s mass loss, kg B+16       */
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
-    int lem    = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
+    int lem = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
+
     tvc_loadcoef((lem != 0) ? TVC_COEF_HB : TVC_COEF_CSM);
-    t->ktlx_i       = c->ektlx_i[lem];     /* 1/(8 ascrev) scale    */
+    t->ktlx_i = c->ektlx_i[lem];     /* 1/(8 ascrev) scale    */
     agc_status_t s2 = csm_tvc_gains(true); /* 1/CONACC, VARK        */
     agc_status_t s3 = tvc_init2(lem);
+
     tvc_init3();
     tvc_attinit();
     /* NEEDLEIN: set RCSFLAGS bit 3 for the initialisation pass, NEEDLER. */
     agc_csm_dapcom_t *cw = agc_csm_dap_com();
-    cw->rcsflags         = (uint16_t) (cw->rcsflags | AGC_CSM_RCSF_NEEDLE1);
-    agc_status_t s4      = csm_dap_needler();
-    if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK) || (s3 != AGC_STATUS_OK) || (s4 != AGC_STATUS_OK))
+
+    cw->rcsflags = (uint16_t) (cw->rcsflags | AGC_CSM_RCSF_NEEDLE1);
+    agc_status_t s4 = csm_dap_needler();
+
+    if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK) ||
+        (s3 != AGC_STATUS_OK) || (s4 != AGC_STATUS_OK))
     {
         return (st != AGC_STATUS_OK) ?
-                   st :
-                   ((s2 != AGC_STATUS_OK) ? s2 :
-                                            ((s3 != AGC_STATUS_OK) ? s3 : s4));
+               st :
+               ((s2 != AGC_STATUS_OK) ? s2 :
+                ((s3 != AGC_STATUS_OK) ? s3 : s4));
     }
+
     return csm_tvc_init4();
 }
 
@@ -311,23 +354,29 @@ agc_status_t agc_task_tvcinit1(void)
 agc_status_t csm_tvc_init4(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->tvcphase      = 0;
-    t->oganow        = agc_erase_cdux();
+
+    t->tvcphase = 0;
+    t->oganow   = agc_erase_cdux();
+
     /* If the engine is already off, ENGINOFF (MASSBACK) has set the
      * post-burn CSMMASS; do not touch it.                                 */
     if (csm_dap_engine_on())
     {
         agc_erase_set_csmmass(t->masstmp); /* COPYCYCLE            */
     }
+
     agc_status_t st = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC);
+
     if (st == AGC_STATUS_OK)
     { /* allow time for restart */
         st = csm_dap_set_t5(AGC_TASK_DAPINIT, (uint16_t) t->t5tvcdt);
     }
+
     if (!AGC_ASSERT(t->t5tvcdt > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st; /* ENDTVCIN: RESUME     */
 }
 
@@ -340,25 +389,31 @@ agc_status_t csm_tvc_swichovr_body(void)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     _Static_assert(NZEROJR + 1 == 2 * 6 * 2, "AGC constant");
+
     for (int i = 0; i < 6; i++)
     { /* MCLEANJR             */
         t->ptmp[i] = 0;
         t->ytmp[i] = 0;
     }
+
     agc_flag_set(AGC_FLAG_SWTOVER);
-    t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth gains   */
+    t->ktlx_i = c->ektlx_i[2];        /* low-bandwidth gains   */
     agc_status_t s2 = csm_tvc_gains(false); /* S40.15 +7: VARK only  */
+
     t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering */
     t->repfrac  = FREPFRAC;   /* TMC loop             */
     t->pdeloff  = t->delpbar; /* update trim estimates */
     t->ydeloff  = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp; /* restore TVCPHASE     */
+
     if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return s2;
 }
 
@@ -367,15 +422,19 @@ agc_status_t csm_tvc_swichovr_body(void)
 agc_status_t agc_csm_tvc_preswtch(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
+
     agc_inhint();
-    t->phasetmp     = t->tvcphase; /* save TVCPHASE        */
-    t->tvcphase     = -2;
+    t->phasetmp = t->tvcphase; /* save TVCPHASE        */
+    t->tvcphase = -2;
     agc_status_t st = csm_tvc_swichovr_body();
+
     /* exit via PINBRNCH, which does the RELINT                            */
     agc_relint();
+
     if (!AGC_ASSERT(t->tvcphase != -2))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }

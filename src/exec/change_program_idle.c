@@ -52,13 +52,15 @@ static const vp_premm_t premm_csm[] = {
     {72, 013}, {62, 013}, {61, 013}, {54, 013}, {53, 013}, {52, 013}, {51, 013},
     {47, 013}, {41, 013}, {40, 013}, {39, 013}, {38, 013}, {37, 013}, {35, 013},
     {34, 013}, {33, 013}, {32, 013}, {31, 013}, {30, 013}, {23, 013}, {22, 013},
-    {21, 013}, {20, 013}, {17, 013}, {6, 013},  {1, 020}};
+    {21, 013}, {20, 013}, {17, 013}, {6, 013}, {1, 020}
+};
 static const vp_premm_t premm_lm[] = {
     {79, 013}, {78, 013}, {76, 013}, {75, 013}, {74, 013}, {73, 013},
     {72, 013}, {68, 013}, {63, 013}, {57, 013}, {52, 013}, {51, 013},
     {47, 013}, {42, 013}, {41, 013}, {40, 013}, {39, 013}, {38, 013},
     {35, 013}, {34, 013}, {33, 013}, {32, 013}, {31, 013}, {30, 013},
-    {25, 013}, {22, 013}, {21, 013}, {20, 013}, {12, 013}, {6, 013}};
+    {25, 013}, {22, 013}, {21, 013}, {20, 013}, {12, 013}, {6, 013}
+};
 
 static uint8_t mmnumber; /* MMNUMBER: the requested major mode    */
 
@@ -69,11 +71,14 @@ agc_status_t exec_up_stoprate(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(agc_interrupts_inhibited() || mmnumber <= 99U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_kalc_stoprate();
+
     return AGC_STATUS_OK;
 }
 
@@ -84,10 +89,12 @@ agc_status_t exec_up_servidle(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -98,10 +105,12 @@ agc_status_t exec_up_setcoars(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -111,18 +120,28 @@ agc_status_t exec_up_setcoars(void)
  * OPTIND = -1 is delegated to the optics owner.                       */
 static void initsub_csm(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return;
+    }
+
     static const uint16_t flagtabl[VP_RAKE_WORDS] = {
-        0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0};
-    agc_status_t st = exec_up_stoprate();
+        0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0
+    };
+    agc_status_t          st = exec_up_stoprate();
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return;
     }
+
     for (int w = VP_RAKE_WORDS - 1; w >= 0; w--)
     { /* RAKE         */
         uint16_t v = (uint16_t) (agc_flagword_get(w) & ~flagtabl[w]);
+
         agc_flagword_set(w, v);
     }
+
     agc_flag_set(AGC_FLAG_IMPULSW);
 }
 
@@ -133,14 +152,21 @@ static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
     agc_dsky_cont_t cont = {AGC_JOB_GO_IDLE_FIX_REFLASH,
                             AGC_JOB_GO_IDLE_FIX_REFLASH,
                             AGC_JOB_GO_IDLE_FIX_REFLASH};
+
     if (!AGC_ASSERT(ctx != 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
                             agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM,
                                         (uint8_t) VP_GO_IDLE_NOUN),
                             &cont);
+
+    if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 }
 
 /* GOP00FIX (C p.194 / L p.223): P00 has been requested by a restart
@@ -152,16 +178,25 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
+    if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         initsub_csm(); /* TC INITSUB        */
     }
     else
     {
-        uint16_t     f13 = (uint16_t) (agc_flagword_get(13) & ~VP_LM_F13_CLR);
+        uint16_t f13 = (uint16_t) (agc_flagword_get(13) & ~VP_LM_F13_CLR);
+
         agc_flagword_set(13, f13); /* XOVINFLG, ULLAGFLG */
     }
+
     agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
+
     return flash_program_request(ctx);
 }
 
@@ -171,10 +206,12 @@ agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return flash_program_request(ctx);
 }
 
@@ -183,21 +220,26 @@ static bool premm_has(uint8_t mm)
 {
     bool              lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     const vp_premm_t *t  = lm ? premm_lm : premm_csm;
-    int               n  = lm ? (int) (sizeof(premm_lm) / sizeof(premm_lm[0])) :
-                                (int) (sizeof(premm_csm) / sizeof(premm_csm[0]));
-    bool              found = false;
+    int               n  =
+        lm ? (int) (sizeof (premm_lm) / sizeof (premm_lm[0])) :
+        (int) (sizeof (premm_csm) / sizeof (premm_csm[0]));
+    bool found = false;
+
     for (int i = 0; i < n && !found; i++)
     {
         found = t[i].mm == mm;
     }
+
     if (!AGC_ASSERT(n > 0))
     {
         return false;
     }
+
     if (!AGC_ASSERT(mm <= 99U))
     {
         return false;
     }
+
     return found;
 }
 
@@ -207,21 +249,27 @@ static bool premm_has(uint8_t mm)
 static agc_status_t change_program_refuse(bool alarm_1520)
 {
     agc_status_t result = AGC_STATUS_NOT_FOUND;
+
     if (alarm_1520)
     {
         agc_alarm(AGC_ALARM_01520);
         result = AGC_STATUS_ALARM;
     }
+
     agc_status_t st = agc_dsky_releasedsp(); /* TC RELDSP         */
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     st = agc_dsky_pinbrnch(); /* CADR PINBRNCH     */
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return result;
 }
 
@@ -231,42 +279,55 @@ static agc_status_t change_program_refuse(bool alarm_1520)
  * UNIMPLEMENTED (the program change itself, see file header).         */
 agc_status_t agc_change_program(uint8_t new_mm)
 {
+    if (!AGC_ASSERT(new_mm <= 99u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     if (!AGC_ASSERT(new_mm <= 99U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     mmnumber = new_mm; /* TS MMNUMBER       */
-    bool lm  = agc_state_vehicle() == AGC_VEHICLE_LM;
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+
     if ((agc_erase_imodes30() & VP_BIT6) != 0U)
     { /* IMU initialising  */
         return change_program_refuse(true);
     }
+
     if (lm && (mmnumber == VP_DPS_ABORT || mmnumber == VP_APS_ABORT))
     {
         return AGC_STATUS_UNIMPLEMENTED; /* SETUP70 / SETUP71 */
     }
+
     if (!lm && ((agc_chan_read(AGC_CHAN_DSALMOUT) & VP_BIT13) != 0U ||
                 (agc_flagword_get(6) & VP_F6_DAPBITS) == VP_F6_TVC))
     {
         return AGC_STATUS_UNIMPLEMENTED; /* R00TOP00          */
     }
+
     if (mmnumber != 0U)
     {
         if (agc_flag_test(AGC_FLAG_NODOFLAG))
         {
             return change_program_refuse(true); /* CANTR00           */
         }
+
         if (!premm_has(mmnumber))
         {
             return change_program_refuse(false); /* V37NONO           */
         }
     }
+
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     { /* ISSERVON          */
         /* DOWNFLAG AVEGFLAG (vehicle-specific bit, owned by SERVICER):
          * delegated; SERVICER returns to CANV37 when it has stopped.   */
         return AGC_STATUS_BUSY;
     }
+
     return AGC_STATUS_UNIMPLEMENTED; /* CANV37            */
 }
 
@@ -279,9 +340,11 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(mmnumber <= 99U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_UNIMPLEMENTED;
 }

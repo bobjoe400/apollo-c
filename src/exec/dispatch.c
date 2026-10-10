@@ -26,7 +26,9 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_NOT_FOUND;
+
     switch (ctx->id)
     {
         case AGC_JOB_DUMMY:
@@ -52,21 +54,24 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
             break;
         case AGC_JOB_GOPROG:
             /* registry placeholder: no AGC job of this name (GOPROG is the
-         * GOJAM restart entry, agc_rupt_go).                          */
+             * GOJAM restart entry, agc_rupt_go).                          */
             st = AGC_STATUS_UNIMPLEMENTED;
             break;
         case AGC_JOB_NONE:
         case AGC_JOB_COUNT_PLACEHOLDER:
+
             if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             st = AGC_STATUS_BAD_ARG;
             break;
         default:
             st = AGC_STATUS_NOT_FOUND; /* provisional id, not integrated  */
             break;
     }
+
     return st;
 }
 
@@ -77,7 +82,9 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = AGC_STATUS_NOT_FOUND;
+
     switch (task)
     {
         case AGC_TASK_ENDTASK:
@@ -100,16 +107,19 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
             break;
         case AGC_TASK_NONE:
         case AGC_TASK_COUNT_PLACEHOLDER:
+
             if (!AGC_ASSERT(task != AGC_TASK_NONE))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             st = AGC_STATUS_BAD_ARG;
             break;
         default:
             st = AGC_STATUS_NOT_FOUND; /* provisional id, not integrated  */
             break;
     }
+
     return st;
 }
 
@@ -118,10 +128,12 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
     bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_status_t st = AGC_STATUS_UNIMPLEMENTED;
+
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (rupt)
     {
         case AGC_RUPT_T6: /* LM DOT6RUPT; CSM goes through T6LOC     */
@@ -150,9 +162,11 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
             st = AGC_STATUS_UNIMPLEMENTED;
             break;
     }
+
     if (!AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }

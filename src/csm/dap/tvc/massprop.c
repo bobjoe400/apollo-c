@@ -36,7 +36,7 @@ static const agc_sp_t nolemval[VARST_N] = {
     394,       /* DEC 1.54 B-6          IXX slope                           */
     1990,      /* DEC 7.77177 B-6       IAVG slope, CSMMASS < breakpoint     */
     2325,      /* DEC 3.46458 E-5 B+12  IAVG/TLX slope, CSMMASS < breakpoint */
-    420,  1992 /* (INTVALUE 0, 1: overrun)           */
+    420, 1992 /* (INTVALUE 0, 1: overrun)           */
 };
 /* INTVALUE (p. 954), LM docked: intercepts of VARST0..9.                */
 static const agc_sp_t intvalue[VARST_N] = {
@@ -71,13 +71,17 @@ static void das_words(agc_sp_t *hi, agc_sp_t *lo, agc_sp_t ahi, agc_sp_t alo)
 {
     int l     = (int) *lo + (int) alo;
     int carry = (l > AGC_SP_MAX) ? 1 : ((l < AGC_SP_MIN) ? -1 : 0);
+
     l -= carry * W_ONE_SP;
+
     if (!AGC_ASSERT((l >= AGC_SP_MIN) && (l <= AGC_SP_MAX)))
     {
         return;
     }
+
     *lo = (agc_sp_t) l;
     *hi = csm_dap_ads(csm_dap_ads(*hi, ahi), (agc_sp_t) carry);
+
     if (!AGC_ASSERT(*hi >= AGC_SP_MIN))
     {
         return;
@@ -91,15 +95,18 @@ void agc_csm_dap_massprop(void)
     uint16_t       d1  = agc_erase_dapdatr1();
     bool           lem = (d1 & CSM_DAP_BIT13) == 0u; /* LEM attached      */
     agc_sp_t       lm2 = csm_dap_ads(agc_erase_lemmass(), agc_erase_lemmass());
+
     if (!AGC_ASSERT(agc_erase_lemmass() >= 0))
     {
         return;
     }
+
     for (int phi = VARST_N - 1; phi >= 0; phi--)
     { /* ten passes, PHI333 */
         if (lem)
         { /* LEMYES            */
-            agc_dp_t p    = csm_dap_ddoubl(agc_sp_mul(lm2, slopeval[phi]));
+            agc_dp_t p = csm_dap_ddoubl(agc_sp_mul(lm2, slopeval[phi]));
+
             t->varst[phi] = csm_dap_ads(agc_dp_high(p), intvalue[phi]);
         }
         else
@@ -107,12 +114,15 @@ void agc_csm_dap_massprop(void)
             t->varst[phi] = nolemval[phi]; /* LEMNO             */
         }
     }
+
     if ((d1 & CSM_DAP_BIT15) != 0u)
     { /* LM descent stage off */
         das_words(&t->varst[1], &t->varst[2], t->varst[8], t->varst[9]);
         t->varst[7] = csm_dap_ads(t->varst[7], DXITFIX);
     }
+
     agc_csm_dap_fixcw();
+
     return;
 }
 
@@ -123,30 +133,38 @@ void agc_csm_dap_fixcw(void)
     const agc_csm_tvc_t *t = agc_csm_dap_tvc();
     agc_csm_dapcom_t    *c = agc_csm_dap_com();
     agc_sp_t             m = agc_erase_csmmass();
+
     if (!AGC_ASSERT(m >= 0))
     {
         return;
     }
+
     agc_sp_t d       = csm_dap_ads(m, NEGBPW);
     agc_sp_t temp333 = csm_dap_ads(d, d);      /* DOUBLE: delta CSM wt */
     int      phi     = (temp333 > 0) ? -2 : 2; /* slope locations    */
     agc_sp_t out[3];
+
     for (int psi = 2; psi >= 0; psi--)
     { /* PSI333 = 2, 1, 0   */
         agc_sp_t s = csm_dap_mp_hi(t->varst[5 + phi], temp333);
-        out[psi]   = csm_dap_ads(csm_dap_ads(s, s), t->varst[psi]);
-        phi += (phi > 0) ? -1 : ((phi < 0) ? 1 : 0); /* DIM PHI333         */
+
+        out[psi] = csm_dap_ads(csm_dap_ads(s, s), t->varst[psi]);
+        phi     += (phi > 0) ? -1 : ((phi < 0) ? 1 : 0); /* DIM PHI333         */
     }
+
     c->ixx      = out[0];
     c->iavg     = out[1];
     c->iavg_tlx = out[2];
     agc_sp_t lm = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ?
-                      agc_erase_lemmass() :
-                      0;
+                  agc_erase_lemmass() :
+                  0;
+
     c->weight_g = csm_dap_ads(lm, m); /* WEIGHT/G           */
+
     if (!AGC_ASSERT(phi == 0))
     {
         return;
     }
+
     return; /* ENDMASSP: TC Q     */
 }

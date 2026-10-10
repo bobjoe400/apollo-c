@@ -34,9 +34,9 @@ typedef struct agc_navaux_padload
 {
     agc_tp_t tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July
                            preceding launch to AGC clock zero, TP scale 2^42 cs */
-    agc_dp_t azo;     /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
-    agc_dp_t axo;     /* AXO: earth precession angle about X, scale 2^0 rad   */
-    agc_dp_t neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad         */
+    agc_dp_t  azo;    /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
+    agc_dp_t  axo;    /* AXO: earth precession angle about X, scale 2^0 rad   */
+    agc_dp_t  neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad         */
     agc_vec_t lm504;  /* 504LM: lunar libration vector, moon-fixed, 2^0 rad   */
     agc_vec_t rls;    /* RLS: landing site, moon-fixed, scale 2^27 m          */
 } agc_navaux_padload_t;
@@ -55,10 +55,10 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out);
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
                                  agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot,
                                  int xdot_shift, agc_dp_t *x);
-agc_status_t agc_planet_earthmx(agc_interp_t               *ip,
+agc_status_t agc_planet_earthmx(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad, agc_dp_t t_cs,
                                 agc_mat_t *m); /* EARTHMX */
-agc_status_t agc_planet_moonmx(agc_interp_t               *ip,
+agc_status_t agc_planet_moonmx(agc_interp_t *ip,
                                const agc_navaux_padload_t *pad, agc_dp_t t_cs,
                                agc_mat_t *m); /* MOONMX  */
 agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad,
@@ -66,10 +66,10 @@ agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad,
 /* R-TO-RP: RP = M(T) (R - L x R); RP-TO-R: R = MT(T) (RP + LP x RP).
  * Scale preserving: 2^29 m (earth) / 2^27 m (moon) in the AGC callers, or
  * a half-unit vector.  moon selects MOONMX/504LM versus EARTHMX/EARTHL.   */
-agc_status_t agc_planet_r_to_rp(agc_interp_t               *ip,
+agc_status_t agc_planet_r_to_rp(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad, bool moon,
                                 agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp);
-agc_status_t agc_planet_rp_to_r(agc_interp_t               *ip,
+agc_status_t agc_planet_rp_to_r(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad, bool moon,
                                 agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r);
 
@@ -93,7 +93,7 @@ typedef struct agc_latlong
 } agc_latlong_t;
 
 /* LAT-LONG: r scale 2^29 m (earth or moon centred).                       */
-agc_status_t agc_latlong_from_r(agc_interp_t               *ip,
+agc_status_t agc_latlong_from_r(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad,
                                 agc_latlong_opt_t opt, agc_vec_t r,
                                 agc_dp_t t_cs, agc_latlong_t *out);
@@ -109,7 +109,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
 /* SETGAMMA: b^2/a^2 (earth) or 1 (moon), scale 2^1.                       */
 agc_dp_t agc_latlong_setgamma(bool lunar);
 /* SETRE: radius ERADM scale 2^29 m.                                        */
-agc_status_t agc_latlong_setre(agc_interp_t               *ip,
+agc_status_t agc_latlong_setre(agc_interp_t *ip,
                                const agc_navaux_padload_t *pad,
                                agc_latlong_opt_t opt, agc_dp_t half_sin_lat,
                                agc_dp_t *eradm);
@@ -142,8 +142,8 @@ typedef struct agc_incorp
                                                [0] pos 2^29/2^27 m,
                                                [1] vel 2^7/2^5 m/cs,
                                                [2] bias                   */
-    agc_dp_t  gamma;                   /* GAMMA (normalized)         */
-    int       normgam;                 /* NORMGAM, AGC index value   */
+    agc_dp_t gamma;                   /* GAMMA (normalized)         */
+    int      normgam;                 /* NORMGAM, AGC index value   */
 } agc_incorp_t;
 
 /* Integration temporaries touched by INCORP2 phase 3 (FAZC..FAZAB5). */
@@ -206,7 +206,7 @@ agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
                              agc_dp_t *t_cs); /* CALCTFF  */
 agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper,
                               agc_dp_t *t_cs);           /* CALCTPER */
-agc_dp_t     agc_tff_poly(agc_interp_t *ip, agc_dp_t x); /* T(X)     */
+agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x); /* T(X)     */
 
 #define AGC_TFF_NEARONE \
     ((agc_dp_t) 268435455) /* NEARONE 2DEC .999999999,

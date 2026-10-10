@@ -39,6 +39,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
     g_assert_reports++;
+
     return false;
 }
 
@@ -47,6 +48,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -67,6 +69,7 @@ static double rev(agc_dp_t v)
 static agc_vec_t half_unit(double x, double y, double z)
 {
     const double n = sqrt(x * x + y * y + z * z);
+
     return agc_vec_make(agc_dp_from_double(x / n, 1),
                         agc_dp_from_double(y / n, 1),
                         agc_dp_from_double(z / n, 1));
@@ -76,34 +79,41 @@ static agc_vec_t half_unit(double x, double y, double z)
 static uint16_t cdu_deg(double deg)
 {
     long c = lround(deg / 360.0 * 32768.0);
+
     while (c < 0)
     {
         c += 32768;
     }
+
     return (uint16_t) (c % 32768);
 }
 
 static double cdu_to_deg(uint16_t w)
 {
     long c = (long) (w & 077777u);
+
     if (c >= 16384)
     {
         c -= 32768;
     }
+
     return (double) c * 360.0 / 32768.0;
 }
 
 static bool mat_is_identity_half(const agc_mat_t *m, double tol)
 {
     bool ok = true;
+
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
             const double want = (i == j) ? 1.0 : 0.0;
+
             ok = ok && near(agc_dp_to_double(m->row[i].c[j], 1), want, tol);
         }
     }
+
     return ok;
 }
 
@@ -111,31 +121,40 @@ static bool mat_is_identity_half(const agc_mat_t *m, double tol)
 static void test_realign_refsmmat_option_identity(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_mat_identity_half();  /* B1 scale */
     const agc_vec_t cat1     = half_unit(1.0, 0.0, 0.0); /* star 1  */
     const agc_vec_t cat2     = half_unit(0.0, 1.0, 0.0); /* star 2  */
     agc_vec_t       a[2]; /* STARAD, STARAD+6: catalogue in desired SM */
+
     a[0] = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, cat2), NULL, NULL);
     a[1] = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, cat1), NULL, NULL);
     agc_vec_t b[2]; /* 6D, 12D: STARSAV2, STARSAV1 observed (SM) */
-    b[0]          = cat2;
-    b[1]          = cat1;
+
+    b[0] = cat2;
+    b[1] = cat1;
     agc_dp_t diff = -1;
+
     CHECK(agc_align_chksdata_angle(&ip, a, b, &diff) == AGC_STATUS_OK);
     CHECK(near(rev(diff), 0.0, 1e-6));
     CHECK(near(rev(agc_align_ram()->theta), 0.25, 1e-5)); /* 90 deg  */
     agc_mat_t xdc;
+
     CHECK(agc_align_fine_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
     agc_dp_t gyro[3] = {1, 1, 1};
+
     agc_imu_calcgta(&ip, &xdc, gyro);
+
     for (int k = 0; k < 3; k++)
     {
         CHECK(near(rev(gyro[k]), 0.0, 1e-6));
     }
+
     /* GYCRS / GYCOARS with XSMD = REFSMMAT rows: XDC identity again. */
     agc_mat_t smd = agc_mat_identity_half();
+
     CHECK(agc_align_gyro_coarse_dc(&ip, &smd, &refsmmat, &xdc) ==
           AGC_STATUS_OK);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
@@ -145,10 +164,12 @@ static void test_realign_refsmmat_option_identity(void)
 static void test_sband_plus_x(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_dp_t  pitch = 1;
     agc_dp_t  yaw   = 1;
     agc_vec_t r     = agc_vec_make(agc_dp_from_double(3.0e8, 29), 0, 0);
+
     CHECK(agc_sband_cm_angles(&ip, r, &pitch, &yaw) == AGC_STATUS_OK);
     CHECK(near(rev(pitch) * 360.0, 0.0, 0.01));
     CHECK(near(rev(yaw) * 360.0, 0.0, 0.01));
@@ -161,6 +182,7 @@ static void test_sband_plus_x(void)
     CHECK(near(rev(yaw) * 360.0, 270.0, 0.01));
     /* LM: unit vector along +X body. */
     agc_vec_t ue = half_unit(1.0, 0.0, 0.0);
+
     CHECK(agc_sband_lm_angles(&ip, ue, &pitch, &yaw) == AGC_STATUS_OK);
     CHECK(near(rev(pitch) * 360.0, 90.0, 0.01));
     CHECK(near(rev(yaw) * 360.0, -45.0, 0.01));
@@ -170,12 +192,14 @@ static void test_sband_plus_x(void)
 static void test_sextant_round_trip(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const double   sa_deg = 40.0;
     const double   ta_deg = 20.0; /* true trunnion angle     */
     const uint16_t shaft  = cdu_deg(sa_deg);
     const uint16_t trun   = cdu_deg(4.0 * ta_deg - 79.1015625);
     agc_vec_t      los;
+
     CHECK(agc_csm_sxtnb(&ip, trun, shaft, &los) == AGC_STATUS_OK);
     CHECK(near(rev(agc_csm_sxtlogic(trun)) * 360.0, ta_deg, 0.02));
     CHECK(near(agc_dp_to_double(agc_vec_abval(&ip, los), 1), 1.0, 1e-5));
@@ -183,12 +207,14 @@ static void test_sextant_round_trip(void)
     uint16_t        sac  = 0;
     uint16_t        pac  = 0;
     bool            cult = true;
+
     CHECK(agc_csm_sxtang(&ip, los, &nb, &sac, &pac, &cult) == AGC_STATUS_OK);
     CHECK(!cult);
     CHECK(near(cdu_to_deg(sac), sa_deg, 0.03));
     CHECK(near(cdu_to_deg(pac), cdu_to_deg(trun), 0.1));
     /* A star along the shaft axis: SAC 270 deg, PAC = 20DEGS-. */
     agc_vec_t z1;
+
     CHECK(agc_csm_sxtnb(&ip, cdu_deg(-79.1015625), 0, &z1) == AGC_STATUS_OK);
     CHECK(agc_csm_sxtang(&ip, z1, &nb, &sac, &pac, &cult) == AGC_STATUS_OK);
     CHECK(sac == 060000u);
@@ -198,14 +224,17 @@ static void test_sextant_round_trip(void)
 static void test_rr_round_trip(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const uint16_t t = cdu_deg(-25.0);
     const uint16_t s = cdu_deg(30.0);
     agc_vec_t      los;
+
     CHECK(agc_lm_rrnb(&ip, t, s, &los) == AGC_STATUS_OK);
     uint16_t ma[2]   = {0, 0};
     uint16_t mb[2]   = {0, 0};
     bool     along_y = true;
+
     CHECK(agc_lm_rrangles(&ip, los, false, ma, mb, &along_y) == AGC_STATUS_OK);
     CHECK(!along_y);
     CHECK(near(cdu_to_deg(ma[0]), -25.0, 0.03));
@@ -220,8 +249,10 @@ static void test_rr_round_trip(void)
 static void test_misc(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_dp_t l = 0;
+
     CHECK(agc_csm_log(&ip, agc_dp_from_double(0.5, 0), &l) == AGC_STATUS_OK);
     /* LOG is a 3-term fit, good to ~1.5e-3 in ln x; the AGC model values
      * (same polynomial in double) are .69178 for x = .5 and 1.20506 for .3. */
@@ -242,6 +273,7 @@ static void test_misc(void)
     const agc_vec_t vcv = agc_vec_make(0, agc_dp_from_double(16.0, 5), 0);
     const agc_vec_t dr  = agc_vec_make(agc_dp_from_double(1000.0, 18), 0, 0);
     const agc_vec_t dv  = agc_vec_make(0, agc_dp_from_double(0.01, -1), 0);
+
     CHECK(agc_align_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0) == AGC_STATUS_OK);
     CHECK(near(agc_dp_to_double(agc_align_r_other().c[0], 29), 2.001e6, 2.0));
     CHECK(near(agc_dp_to_double(agc_align_v_other().c[1], 7), 16.01, 1e-3));
@@ -251,10 +283,12 @@ static void test_misc(void)
 static void test_nominal_orientation_axes(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const agc_vec_t r = agc_vec_make(agc_dp_from_double(7.0e6, 29), 0, 0);
     const agc_vec_t v = agc_vec_make(0, agc_dp_from_double(75.0, 7), 0);
     agc_mat_t       smd;
+
     CHECK(agc_align_nominal_orientation_axes(&ip, r, v, &smd) == AGC_STATUS_OK);
     CHECK(near(agc_dp_to_double(smd.row[2].c[0], 1), -1.0, 1e-6)); /* ZSMD */
     CHECK(near(agc_dp_to_double(smd.row[1].c[2], 1), -1.0, 1e-6)); /* YSMD */
@@ -265,6 +299,7 @@ static void test_nominal_orientation_axes(void)
 static long ags_read(uint16_t w)
 {
     long c = (long) (w & 077777u);
+
     return (c >= 16384) ? (c - 32768) : c;
 }
 
@@ -279,13 +314,15 @@ static long ags_read(uint16_t w)
 static void test_ags_scalevec(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
-    const agc_mat_t ident  = agc_mat_identity_half();
-    const agc_vec_t r      = agc_vec_make(agc_dp_from_double(1.0e6, 27), 0,
-                                          agc_dp_from_double(-1.0e6, 27));
-    const agc_vec_t v      = agc_vec_make(agc_dp_from_double(1.0, 5), 0,
-                                          agc_dp_from_double(-1.0, 5));
-    uint16_t        out[6] = {0, 0, 0, 0, 0, 0};
+    const agc_mat_t ident = agc_mat_identity_half();
+    const agc_vec_t r     = agc_vec_make(agc_dp_from_double(1.0e6, 27), 0,
+                                         agc_dp_from_double(-1.0e6, 27));
+    const agc_vec_t v = agc_vec_make(agc_dp_from_double(1.0, 5), 0,
+                                     agc_dp_from_double(-1.0, 5));
+    uint16_t out[6] = {0, 0, 0, 0, 0, 0};
+
     CHECK(agc_ags_scalevec(&ip, r, v, &ident, out) == AGC_STATUS_OK);
     CHECK(ags_read(out[0]) == 6408); /* RX            */
     CHECK(ags_read(out[1]) == 656);  /* VX            */
@@ -293,6 +330,7 @@ static void test_ags_scalevec(void)
     CHECK(ags_read(out[4]) == -6408); /* RZ            */
     CHECK(ags_read(out[5]) == -656);  /* VZ            */
     agc_dp_t t = 0;
+
     CHECK(agc_ags_time(&ip, agc_dp_from_double(400000.0, 28),
                        agc_dp_from_double(40000.0, 28), &t) == AGC_STATUS_OK);
     CHECK(near(agc_dp_to_double(t, 18), 3600.0, 0.01));
@@ -303,11 +341,13 @@ static void test_ags_scalevec(void)
 static void test_final_attitude_los(void)
 {
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     const agc_mat_t ident = agc_mat_identity_half();
     const agc_vec_t rlem  = agc_vec_make(agc_dp_from_double(1.8e6, 27), 0, 0);
     const agc_vec_t rcsm  = agc_vec_make(agc_dp_from_double(1.85e6, 27), 0, 0);
     agc_vec_t       los   = agc_vec_zero();
+
     CHECK(agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &ident, &los) ==
           AGC_STATUS_OK);
     CHECK(near(agc_dp_to_double(los.c[0], 1), 1.0, 1e-5));
@@ -332,5 +372,6 @@ int main(void)
     test_final_attitude_los();
     (void) printf("test_align: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
+
     return (g_failures == 0) ? 0 : 1;
 }

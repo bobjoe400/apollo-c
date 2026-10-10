@@ -17,10 +17,12 @@ static void apsides_debris(const agc_conic_ctx_t *ctx, agc_apsides_out_t *out)
     {
         return;
     }
+
     if (!AGC_ASSERT(out != NULL))
     {
         return;
     }
+
     out->r1      = ctx->r1;
     out->r1a     = ctx->r1a;
     out->p       = ctx->p;
@@ -42,37 +44,47 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_conic_ctx_t ctx;
     agc_status_t    st = agc_conic_ctx_init_(&ctx, body);
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
     agc_dp_t sngamma = 0;
+
     st = agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma); /* CALL PARAM  */
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     agc_interp_clear_ovf(ip);       /* BOV GETECC     */
     agc_tp_t m = agc_conic_mload_(ctx.p); /* GETECC: DMP R1A SL4 */
-    m          = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.r1a), 4);
-    m          = agc_conic_msqrt_(
-                 ip, agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_64)); /* BDSU SQRT */
+
+    m = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.r1a), 4);
+    m = agc_conic_msqrt_(
+        ip, agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_64));          /* BDSU SQRT */
     out->ecc = agc_conic_mstore_(m); /* ECC 2^3        */
     const agc_dp_t one_p_e =
         agc_conic_mstore_(agc_conic_mdad_(ip, m, AGC_CONIC_D1_8));
+
     m = agc_conic_mshift_(ip, agc_conic_mdmp_(agc_conic_mload_(ctx.r1), ctx.p),
                           1);
     out->rperi =
         agc_conic_mstore_(agc_conic_mddv_(ip, m, one_p_e)); /* 0D = RP */
-    int            n = 0;
+    int            n    = 0;
     const agc_dp_t r1an =
         agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(ctx.r1a), &n));
+
     m = agc_conic_mshift_(ip, agc_conic_mload_(ctx.r1), n - 5); /* SL* 0 -5,1 */
     m = agc_conic_mdsu_(ip, agc_conic_mddv_(ip, m, r1an),
                         out->rperi); /* DDV DSU */
+
     if (agc_interp_test_ovf(ip) || agc_conic_mbmn_(m))
     {                                   /* BOV BMN INFINAPO */
         out->rapo = AGC_CONIC_LDPOSMAX; /* DLOAD LDPOSMAX */
@@ -81,6 +93,8 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     {
         out->rapo = agc_conic_mstore_(m);
     }
+
     apsides_debris(&ctx, out);
+
     return AGC_STATUS_OK;
 }

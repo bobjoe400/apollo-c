@@ -26,18 +26,22 @@ static const int k_sgntab[3] = {5, 3, 0};
 static agc_status_t pin_sign_on(bool plus)
 {
     int inrel = pin_getinrel();
+
     if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    int minus_rel = k_sgntab[inrel - PIN_INREL_X];
-    int off       = plus ? minus_rel : minus_rel + 1; /* SGNOFF               */
-    int on        = plus ? minus_rel + 1 : minus_rel; /* SGNON                */
-    agc_status_t st = pin_11dspin(off, false);
+
+    int          minus_rel = k_sgntab[inrel - PIN_INREL_X];
+    int          off       = plus ? minus_rel : minus_rel + 1; /* SGNOFF               */
+    int          on        = plus ? minus_rel + 1 : minus_rel; /* SGNON                */
+    agc_status_t st        = pin_11dspin(off, false);
+
     if (st == AGC_STATUS_OK)
     {
         st = pin_11dspin(on, true);
     }
+
     return st;
 }
 
@@ -59,11 +63,14 @@ static agc_status_t pin_dspsign(agc_dp_t *v, bool negzero)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (*v < 0 || (*v == 0 && negzero))
     {
         *v = -*v;
+
         return pin_minus_on();
     }
+
     return pin_plus_on();
 }
 
@@ -74,15 +81,19 @@ static agc_dp_t pin_dsprnd(agc_dp_t v)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(v >= 0))
     {
         return 0; /* no valid result */
     }
+
     int64_t s = (int64_t) v + PIN_DECROUND;
+
     if (s > (int64_t) AGC_DP_MAX)
     {
         return AGC_DP_MAX;
     }
+
     return (agc_dp_t) s;
 }
 
@@ -94,19 +105,25 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s  = pin_st();
     int64_t      f  = v;
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 0; i < ndig && st == AGC_STATUS_OK; i++)
     {
         f *= PIN_BINCON; /* SHORTMP by BINCON    */
         int digit = (int) (f >> AGC_DP_BITS);
+
         f &= PIN_DP_ONE - 1;
         int16_t count = s->dspcount;
-        s->dspcount   = (count > 0) ? (int16_t) (count - 1) : count;
-        st            = pin_dspin(count, agc_dsky_relay_code(digit));
+
+        s->dspcount = (count > 0) ? (int16_t) (count - 1) : count;
+        st          = pin_dspin(count, agc_dsky_relay_code(digit));
     }
+
     pin_block_dspcount(PIN_VD1);
+
     return st;
 }
 
@@ -117,11 +134,14 @@ agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_dspsign(&v, negzero);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return pin_dspdcwd1(pin_dsprnd(v), 5);
 }
 
@@ -132,7 +152,9 @@ agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_dspsign(&v, negzero);
+
     return (st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 5) : st;
 }
 
@@ -143,7 +165,9 @@ agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_dspsign(&v, negzero);
+
     return (st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 2) : st;
 }
 
@@ -154,15 +178,19 @@ agc_status_t pin_dsp2dec(agc_dp_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = pin_11dspin(3, false); /* -R2 off              */
+
     if (st == AGC_STATUS_OK)
     {
         st = pin_11dspin(4, false); /* +R2 off              */
     }
+
     if (st == AGC_STATUS_OK)
     {
         st = pin_dspsign(&v, false);
     }
+
     return (st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 10) : st;
 }
 
@@ -174,9 +202,11 @@ agc_status_t pin_dspdecvn(int n)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int32_t lword =
         (int32_t) (((int32_t) n * PIN_VNDSPCON) & (int32_t) PIN_POSMAX);
     agc_dp_t f = (agc_dp_t) (lword << AGC_SP_BITS); /* MPAC = L, MPAC+1 = 0 */
+
     return pin_dspdcwd1(f, 2);                      /* DSPDC2NR +3          */
 }
 
@@ -189,17 +219,23 @@ agc_status_t pin_dspoctwo(uint16_t w)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    pin_state_t *s  = pin_st();
-    s->dspcount     = (int16_t) ((uint16_t) s->dspcount | PIN_BIT14);
+
+    pin_state_t *s = pin_st();
+
+    s->dspcount = (int16_t) ((uint16_t) s->dspcount | PIN_BIT14);
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 4; i >= 0 && st == AGC_STATUS_OK; i--)
     {                                                /* WDAGAIN      */
         int     digit = (int) ((w >> (3 * i)) & 7u); /* CYL x3, DSPMSK */
         int16_t count = s->dspcount;
-        s->dspcount   = ((count & 037) > 0) ? (int16_t) (count - 1) : count;
-        st            = pin_dspin(count, agc_dsky_relay_code(digit));
+
+        s->dspcount = ((count & 037) > 0) ? (int16_t) (count - 1) : count;
+        st          = pin_dspin(count, agc_dsky_relay_code(digit));
     }
+
     pin_block_dspcount(PIN_VD1); /* DSPLV        */
+
     return st;
 }
 
@@ -211,15 +247,21 @@ agc_status_t pin_dsp2bit(uint16_t w)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s  = pin_st();
     agc_status_t st = AGC_STATUS_OK;
+
     for (int i = 1; i >= 0 && st == AGC_STATUS_OK; i--)
     {
         int16_t count = s->dspcount;
-        s->dspcount   = (count > 0) ? (int16_t) (count - 1) : count;
-        st = pin_dspin(count, agc_dsky_relay_code((int) ((w >> (3 * i)) & 7u)));
+
+        s->dspcount = (count > 0) ? (int16_t) (count - 1) : count;
+        st          =
+            pin_dspin(count, agc_dsky_relay_code((int) ((w >> (3 * i)) & 7u)));
     }
+
     pin_block_dspcount(PIN_VD1);
+
     return st;
 }
 
@@ -230,8 +272,10 @@ agc_status_t pin_updatvb(uint8_t verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_st()->verbreg = verb;
     pin_set_dspcount(PIN_VD1);
+
     return pin_dspdecvn(verb); /* GOVNUPDT             */
 }
 
@@ -243,13 +287,17 @@ agc_status_t pin_updatnn(uint8_t noun)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_st()->nounreg = noun;
-    agc_status_t st   = pin_noun_load();
+    agc_status_t st = pin_noun_load();
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
+
     pin_set_dspcount(PIN_ND1);
+
     return pin_dspdecvn(noun);
 }
 
@@ -262,13 +310,17 @@ agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s        = pin_st();
     int16_t      save     = s->dspcount; /* DSPMMTEM             */
     bool         save_neg = s->dspcount_neg;
     agc_sp_t     mm       = agc_erase_modreg();
+
     pin_set_dspcount(PIN_MD1);
     agc_status_t st = (mm >= 0) ? pin_dspdecvn(mm) : pin_2blank();
+
     s->dspcount     = save;
     s->dspcount_neg = save_neg;
+
     return st;
 }

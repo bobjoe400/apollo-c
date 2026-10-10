@@ -86,8 +86,8 @@ void rz_flag_put(agc_flag_id_t f, bool on);
 agc_conic_body_t rz_body(const agc_rendz_t *rz);
 agc_status_t     rz_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
                              agc_conic_time_out_t *out);
-agc_status_t     rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
-                            agc_conic_time_out_t *out);
+agc_status_t rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
+                        agc_conic_time_out_t *out);
 /* LAMBERT (CM) / SETITCTR + LAMBERT (LM).                                 */
 agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
                         agc_lambert_out_t *out);
@@ -125,7 +125,7 @@ typedef struct rz_integrvs_in
 
 agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
                          agc_job_id_t resume, agc_integ_out_t *out);
-agc_vec_t    rz_rls(void);
+agc_vec_t rz_rls(void);
 /* GOFLASH-type display with the three astronaut returns.                  */
 agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                       uint8_t verb, uint8_t noun, agc_job_id_t term,

@@ -42,8 +42,8 @@
 #define AGC_INTEG_AREAS_MAX 3
 #define AGC_INTEG_MAX_PASSES \
     60000                     /* bound on the TESTLOOP state machine:
-                                     * > 2^28 cs / 128 cs-steps x 3 states.
-                                     * The AGC has no bound (DEVIATION).  */
+                               * > 2^28 cs / 128 cs-steps x 3 states.
+                               * The AGC has no bound (DEVIATION).  */
 #define AGC_INTEG_W_COLUMNS 9 /* W columns (6 for 6x6, 9 for 9x9)      */
 #define AGC_INTEG_VECTAB    6 /* VECTAB: 3 stages x (R, R - RPQ)       */
 
@@ -73,8 +73,8 @@ typedef struct agc_integ_sv
 /* ---- output left in the push-down list (section 3.0, p. 1311) -------- */
 typedef struct agc_integ_out
 {
-    bool      valid; /* RECTOUT ran (INTEXIT reached without it leaves the
-                          push list untouched: QUITFLAG, backward request) */
+    bool valid; /* RECTOUT ran (INTEXIT reached without it leaves the
+                     push list untouched: QUITFLAG, backward request) */
     agc_vec_t ratt;  /* 0D  RATT  position, m, 2^29 (both bodies)        */
     agc_vec_t vatt;  /* 6D  VATT  velocity, m/cs, 2^7 (both bodies)      */
     agc_dp_t  tat;   /* 12D TAT   time, cs, 2^28                         */
@@ -104,18 +104,18 @@ typedef struct agc_integ_ctx
     agc_vec_t      betav;  /* BETAV  R or perturbing-body vector      */
     agc_dp_t       betam;  /* BETAM  |BETAV| or MU                    */
     agc_vec_t      phiv, psiv; /* PHIV PSIV Nystrom sums                  */
-    agc_vec_t      fv;         /* FV     disturbing acceleration,
-                                   m/cs^2 E 2^-16 M 2^-20 (= YV/H^2 scale) */
-    agc_vec_t      yv, zv;     /* YV ZV  deviation pos/vel at step start  */
+    agc_vec_t      fv;    /* FV     disturbing acceleration,
+                              m/cs^2 E 2^-16 M 2^-20 (= YV/H^2 scale) */
+    agc_vec_t yv, zv;     /* YV ZV  deviation pos/vel at step start  */
     agc_vec_t vectab[AGC_INTEG_VECTAB]; /* VECTAB: [2k] R at stage k (E 2^29
-                                   M 2^27), [2k+1] R - RPQ, 2^29 (W use)   */
-    agc_vec_t rpqv;           /* RPQV primary to secondary body, m 2^29  */
-    agc_vec_t rpsv;           /* RPSV primary to sun, m 2^38             */
-    agc_vec_t rqvv;           /* RQVV secondary body to vehicle, m 2^29
-                                   (LM only stores it)                     */
-    agc_incorp_w_t  w;        /* W  error transition matrix: blk[0][m] =
-                                   position part of column m, blk[1][m] =
-                                   velocity part (stored at YV/ZV scale x8) */
+                                           M 2^27), [2k+1] R - RPQ, 2^29 (W use)   */
+    agc_vec_t rpqv;          /* RPQV primary to secondary body, m 2^29  */
+    agc_vec_t rpsv;          /* RPSV primary to sun, m 2^38             */
+    agc_vec_t rqvv;          /* RQVV secondary body to vehicle, m 2^29
+                                  (LM only stores it)                     */
+    agc_incorp_w_t w;        /* W  error transition matrix: blk[0][m] =
+                                  position part of column m, blk[1][m] =
+                                  velocity part (stored at YV/ZV scale x8) */
     agc_dp_t        t_to_add; /* T-TO-ADD (CSM MIDTOAV), cs 2^28         */
     bool            notime;   /* NOTIME taken (IRETURN1 incremented)     */
     agc_integ_out_t out;      /* RATT .. X2 (push list output)           */
@@ -206,7 +206,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_dp_t tdec1, agc_job_id_t resume_job,
                                 agc_integ_midtoav_out_t *out);
 agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                agc_job_id_t             resume_job,
+                                agc_job_id_t resume_job,
                                 agc_integ_midtoav_out_t *out);
 /* INTWAKEU: finish a P27 state vector update (UPSVFLAG: 0 none, +1 CSM
  * earth, +2 CSM moon, -1 LM earth, -2 LM moon). RRECT/VRECT/TET of the

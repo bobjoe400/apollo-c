@@ -30,9 +30,8 @@ agc_sp_t     agc_csm_vn(uint8_t verb, uint8_t noun); /* VN as NVWORD1 */
 bool         agc_csm_is_rcs_burn(void);              /* P41/P40       */
 bool         agc_csm_tvc_on(void);                   /* FLAGWRD6 15,14 = 10 */
 agc_status_t agc_csm_rcs_burn_display(agc_job_ctx_t *ctx); /* P41/DSP       */
-agc_status_t
-agc_csm_preburn_start_clock(agc_job_ctx_t *ctx);        /* P40S/RS       */
-void agc_csm_convert_vg_body(agc_interp_t *ip); /* P40CNV85      */
+agc_status_t agc_csm_preburn_start_clock(agc_job_ctx_t *ctx);        /* P40S/RS       */
+void         agc_csm_convert_vg_body(agc_interp_t *ip); /* P40CNV85      */
 agc_status_t agc_csm_servxt(agc_job_ctx_t *ctx);        /* SERVXT        */
 agc_status_t agc_csm_preptvc(void);                     /* PREPTVC       */
 agc_status_t agc_csm_vtogain_body(agc_interp_t *ip);    /* S40.9 to COPY40.9 */

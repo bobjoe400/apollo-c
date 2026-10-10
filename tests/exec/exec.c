@@ -34,6 +34,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     (void) line;
     (void) expr;
     g_assert_reports++;
+
     return false;
 }
 
@@ -42,6 +43,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
+
     if (!ok)
     {
         g_failures++;
@@ -77,7 +79,9 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     {
         job_log[job_n++] = ctx->id;
     }
+
     agc_status_t st = AGC_STATUS_OK;
+
     if (ctx->id == TJ_SLEEPER)
     {
         agc_exec_job_sleep(TJ_WOKEN);
@@ -96,6 +100,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
         prio_nj1 = agc_exec_newjob();
         agc_exec_prio_change(005);
         prio_nj2 = agc_exec_newjob();
+
         if (prio_nj2 > 0)
         {
             st = agc_exec_job_yield(TJ_A);
@@ -109,6 +114,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     {
         /* plain test job: ENDOFJOB */
     }
+
     return st;
 }
 
@@ -133,16 +139,19 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
         default:
             break;
     }
+
     if (task_n < LOG_N)
     {
         task_log[task_n++] = task;
     }
+
     return AGC_STATUS_OK;
 }
 
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
     (void) rupt;
+
     return AGC_STATUS_OK;
 }
 
@@ -151,18 +160,21 @@ static int up_calls;
 agc_status_t exec_up_stoprate(void)
 {
     up_calls++;
+
     return AGC_STATUS_OK;
 }
 
 agc_status_t exec_up_servidle(void)
 {
     up_calls++;
+
     return AGC_STATUS_OK;
 }
 
 agc_status_t exec_up_setcoars(void)
 {
     up_calls++;
+
     return AGC_STATUS_OK;
 }
 
@@ -180,16 +192,20 @@ static bool only_dspmm_waiting(void)
 {
     int  active = 0;
     bool dspmm  = false;
+
     for (int i = 0; i < agc_exec_core_sets(); i++)
     {
         agc_exec_core_info_t ci;
+
         (void) agc_exec_core_info(i, &ci);
+
         if (ci.state != AGC_CORE_FREE)
         {
             active++;
             dspmm = dspmm || ci.loc == AGC_JOB_DSPMMJB;
         }
     }
+
     return active == 1 && dspmm; /* GOPROG3 MMDSPLAY: DSPMMJOB only */
 }
 
@@ -198,10 +214,12 @@ static void reset(agc_vehicle_t v)
     agc_state_init(v);
     (void) agc_phase_mr_klean();
     agc_erase_set_modreg(EXEC_MODREG_NEG0);
+
     for (int i = 0; i < 4 && agc_exec_restart_pending(); i++)
     {
         (void) agc_exec_service_restart();
     }
+
     (void) agc_chan_set_signal(AGC_CHAN_CHAN33, 060000u, false);
     (void) agc_fresh_start_slap1();
     (void) agc_exec_init();
@@ -213,11 +231,13 @@ static void reset(agc_vehicle_t v)
 static int run_all(void)
 {
     int n = 0;
+
     for (int i = 0; i < 40 && !agc_exec_idle(); i++)
     {
         (void) agc_exec_run_one();
         n++;
     }
+
     return n;
 }
 
@@ -226,13 +246,16 @@ static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
     for (int i = 0; i < agc_exec_core_sets(); i++)
     {
         agc_exec_core_info_t ci;
+
         (void) agc_exec_core_info(i, &ci);
+
         if (ci.state != AGC_CORE_FREE && ci.loc == loc && ci.prio == prio &&
             ((vac < 0) == (ci.vac_index < 0)))
         {
             return true;
         }
     }
+
     return false;
 }
 
@@ -240,7 +263,9 @@ static bool task_entry(int i, agc_task_id_t task, int16_t lst1)
 {
     int16_t       d = 0;
     agc_task_id_t t = AGC_TASK_NONE;
+
     (void) agc_waitlist_entry(i, &d, &t);
+
     return t == task && d == lst1;
 }
 
@@ -250,12 +275,15 @@ static bool task_queued(agc_task_id_t task)
     {
         int16_t       d = 0;
         agc_task_id_t t = AGC_TASK_NONE;
+
         (void) agc_waitlist_entry(i, &d, &t);
+
         if (t == task)
         {
             return true;
         }
     }
+
     return false;
 }
 
@@ -286,10 +314,12 @@ static void test_priority_order(void)
 static void test_vac_exhaustion_1201(void)
 {
     reset(AGC_VEHICLE_CSM);
+
     for (int i = 0; i < AGC_EXEC_MAX_VACS; i++)
     {
         CHECK(agc_exec_findvac(010, TJ_A) == AGC_STATUS_OK);
     }
+
     CHECK(agc_exec_findvac(010, TJ_A) == AGC_STATUS_BAILOUT);
     CHECK(agc_erase_failreg(0) == 01201);
     CHECK((agc_erase_dsptab(11) & 0400u) != 0U); /* PROG lamp       */
@@ -310,14 +340,17 @@ static void test_core_exhaustion_1202(void)
 {
     agc_vehicle_t v[2]    = {AGC_VEHICLE_CSM, AGC_VEHICLE_LM};
     int           sets[2] = {7, 8};
+
     for (int k = 0; k < 2; k++)
     {
         reset(v[k]);
         CHECK(agc_exec_core_sets() == sets[k]);
+
         for (int i = 0; i < sets[k]; i++)
         {
             CHECK(agc_exec_novac(010, TJ_A) == AGC_STATUS_OK);
         }
+
         CHECK(agc_exec_novac(010, TJ_A) == AGC_STATUS_BAILOUT);
         CHECK(agc_erase_failreg(0) == 01202);
         (void) agc_exec_service_restart();
@@ -387,11 +420,13 @@ static void test_waitlist_order(void)
 static void test_waitlist_overflow_1203(void)
 {
     reset(AGC_VEHICLE_LM);
+
     for (int i = 0; i < AGC_WAITLIST_MAX_TASKS; i++)
     {
         CHECK(agc_waitlist_call((uint16_t) (10 * (i + 1)), TT_A) ==
               AGC_STATUS_OK);
     }
+
     CHECK(agc_waitlist_call(5, TT_B) == AGC_STATUS_BAILOUT);
     CHECK(agc_erase_failreg(0) == 01203);
     (void) agc_exec_service_restart();
@@ -414,10 +449,12 @@ static void test_longcall(void)
 {
     reset(AGC_VEHICLE_CSM);
     CHECK(agc_waitlist_longcall(20000, TT_LONG) == AGC_STATUS_OK);
+
     for (int i = 0; i < 19; i++)
     {
         (void) agc_waitlist_tick(1000);
     }
+
     (void) agc_waitlist_tick(999);
     CHECK(task_n == 0);
     (void) agc_waitlist_tick(1);
@@ -434,6 +471,7 @@ static void test_phase_codes(void)
     agc_phase_change(3, 040064); /* group 4: rejected by AGC_ASSERT */
     CHECK(agc_phase_get(3) == 0U);
     agc_phase_var_t v = {AGC_RESTART_JOB, TJ_A, AGC_TASK_NONE, 023, false, 0};
+
     agc_phase_change_var(05023, &v); /* type C  */
     CHECK(agc_phase_get(3) == 0502U);
     agc_phase_change2(000032, 000015, 0);
@@ -465,20 +503,24 @@ static void test_restart_variable(void)
 {
     reset(AGC_VEHICLE_CSM);
     agc_phase_var_t vj = {AGC_RESTART_JOB, TJ_A, AGC_TASK_NONE, 023, false, 0};
+
     agc_phase_change_var(05023, &vj);
     CHECK(agc_restart_group(3) == AGC_STATUS_OK);
     CHECK(job_present(TJ_A, 023, 0)); /* + prio: FINDVAC */
     agc_phase_var_t vn = {AGC_RESTART_JOB, TJ_B, AGC_TASK_NONE, -015, false, 0};
+
     agc_phase_change_var(05021, &vn);
     CHECK(agc_restart_group(1) == AGC_STATUS_OK);
     CHECK(job_present(TJ_B, 015, -1)); /* - prio: NOVAC   */
     agc_phase_var_t vt = {AGC_RESTART_TASK, AGC_JOB_NONE, TT_C, 0, true, 0};
+
     agc_phase_change_var(05015, &vt);
     CHECK(agc_restart_group(5) == AGC_STATUS_OK);
     CHECK(task_entry(0, TT_C, 0)); /* immediate: 1 cs */
     /* type B: job + first entry of the fixed phase (5.3 REREADAC)    */
     wl_clean();
     agc_phase_var_t vb = {AGC_RESTART_JOB, TJ_C, AGC_TASK_NONE, 015, false, 0};
+
     agc_phase_change_var(014035, &vb);
     CHECK(agc_phase_get(5) == 01403U);
     CHECK(agc_restart_group(5) == AGC_STATUS_OK);
@@ -510,13 +552,16 @@ static void test_lm_tables(void)
 static void test_kleans(void)
 {
     agc_vehicle_t v[2] = {AGC_VEHICLE_CSM, AGC_VEHICLE_LM};
+
     for (int k = 0; k < 2; k++)
     {
         reset(v[k]);
+
         for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
         {
             agc_phase_newphase(g, 3, false);
         }
+
         CHECK(agc_phase_change_program_klean() == AGC_STATUS_OK);
         CHECK(agc_phase_get(3) == 0U && agc_phase_get(5) == 0U);
         CHECK(agc_phase_get(6) == 0U && agc_phase_get(2) == 3U);
@@ -532,6 +577,7 @@ static void test_goprog(void)
 {
     reset(AGC_VEHICLE_CSM);
     uint16_t redo = agc_restart_redoctr();
+
     agc_erase_set_modreg(0);
     phase_debug_set_negative(3, 0); /* tables disagree */
     CHECK(agc_rupt_go() == AGC_STATUS_ALARM);
@@ -601,5 +647,6 @@ int main(void)
     test_inhint();
     (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
+
     return g_failures == 0 ? 0 : 1;
 }

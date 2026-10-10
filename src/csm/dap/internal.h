@@ -48,19 +48,19 @@
 #define CSM_DAP_TIME6  6
 
 /* ---- word arithmetic in the AGC's manner (mysubs.c) --------------------- */
-agc_sp_t csm_dap_word_sp(uint16_t w);         /* 1's comp word -> value  */
-uint16_t csm_dap_sp_word(agc_sp_t v);         /* value -> 1's comp word  */
-agc_sp_t csm_dap_msu(uint16_t a, uint16_t b); /* MSU: (a - b) mod 2^15   */
-agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b); /* AD/ADS, overflow-corrected */
-agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b); /* AD; TS; INDEX A CS LIMITS */
-agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b);    /* DAS, overflow-corrected */
-agc_dp_t csm_dap_ddoubl(agc_dp_t a);             /* DDOUBL                  */
-agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b);  /* MP, upper word (A)      */
-agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b);  /* MP, lower word (L)      */
-agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den); /* DV, limited to +-POSMAX */
-agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a); /* SMALLMP            */
-agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al);  /* DPADD (mod 360 deg) */
-uint16_t csm_dap_cdu(int axis); /* CDUX, CDUY, CDUZ raw    */
+agc_sp_t     csm_dap_word_sp(uint16_t w);     /* 1's comp word -> value  */
+uint16_t     csm_dap_sp_word(agc_sp_t v);     /* value -> 1's comp word  */
+agc_sp_t     csm_dap_msu(uint16_t a, uint16_t b); /* MSU: (a - b) mod 2^15   */
+agc_sp_t     csm_dap_ads(agc_sp_t a, agc_sp_t b); /* AD/ADS, overflow-corrected */
+agc_sp_t     csm_dap_ad_sat(agc_sp_t a, agc_sp_t b); /* AD; TS; INDEX A CS LIMITS */
+agc_dp_t     csm_dap_das(agc_dp_t a, agc_dp_t b);   /* DAS, overflow-corrected */
+agc_dp_t     csm_dap_ddoubl(agc_dp_t a);            /* DDOUBL                  */
+agc_sp_t     csm_dap_mp_hi(agc_sp_t a, agc_sp_t b); /* MP, upper word (A)      */
+agc_sp_t     csm_dap_mp_lo(agc_sp_t a, agc_sp_t b); /* MP, lower word (L)      */
+agc_sp_t     csm_dap_dv(agc_dp_t num, agc_sp_t den); /* DV, limited to +-POSMAX */
+agc_dp_t     csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a); /* SMALLMP            */
+agc_dp_t     csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al); /* DPADD (mod 360 deg) */
+uint16_t     csm_dap_cdu(int axis); /* CDUX, CDUY, CDUZ raw    */
 agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
 agc_status_t csm_dap_set_time5(uint16_t time5_word);
 bool         csm_dap_engine_on(void); /* channel 11 bit 13       */

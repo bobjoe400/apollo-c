@@ -59,19 +59,24 @@ void exec_vac5stor(void)
     {
         return; /* Comanche only     */
     }
+
     for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
     {
         agc_status_t st = agc_exec_core_info(i, &vac5.core[i]);
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
             return;
         }
     }
+
     for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
     {
         vac5.phase[g - 1] = phase_word(g);
     }
+
     vac5.newjob = agc_exec_newjob();
+
     if (!AGC_ASSERT(vac5.newjob >= -1))
     {
         return;
@@ -83,10 +88,12 @@ void exec_vac5stor(void)
 static void proglarm(void)
 {
     uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS);
+
     if (!AGC_ASSERT(w <= 077777u))
     {
         return;
     }
+
     agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
 }
 
@@ -97,12 +104,16 @@ static void store_alarm(agc_alarm_code_t code)
     {
         return;
     }
+
     almcadr = exec_running_job_loc(); /* TS ALMCADR        */
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         localarm = almcadr; /* CA LOC/TS LOCALARM */
     }
+
     agc_status_t st;
+
     if (agc_erase_failreg(0) == 0U)
     {
         st = agc_erase_set_failreg(0, code); /* first alarm       */
@@ -120,6 +131,7 @@ static void store_alarm(agc_alarm_code_t code)
     {
         st = agc_erase_set_failreg(2, code);
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
@@ -133,9 +145,11 @@ void agc_alarm(agc_alarm_code_t code)
     {
         return;
     }
+
     agc_inhint();
     store_alarm(code);
     agc_relint();
+
     if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
     {
         return;
@@ -149,10 +163,12 @@ void agc_exec_varalarm(agc_alarm_code_t code)
     {
         return;
     }
+
     if (!AGC_ASSERT(code <= AL_POSMAX))
     {
         return;
     }
+
     agc_alarm(code);
 }
 
@@ -160,10 +176,12 @@ void agc_exec_varalarm(agc_alarm_code_t code)
 void agc_curtains(void)
 {
     _Static_assert(AGC_ALARM_00217 <= AL_POSMAX, "AGC constant");
+
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
         return;
     }
+
     agc_alarm(AGC_ALARM_00217);
 }
 
@@ -179,9 +197,11 @@ void agc_prioalarm(agc_alarm_code_t code)
     {
         return;
     }
+
     agc_inhint();
     store_alarm(code);
     agc_relint();
+
     if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
     {
         return;
@@ -195,7 +215,9 @@ void exec_request_enema(void)
     {
         return;
     }
+
     enema_wanted = true;
+
     if (!AGC_ASSERT(enema_wanted))
     {
         return;
@@ -205,14 +227,17 @@ void exec_request_enema(void)
 agc_status_t agc_exec_enema(void)
 {
     exec_request_enema();
+
     if (!AGC_ASSERT(agc_exec_restart_pending()))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -222,10 +247,12 @@ bool agc_exec_restart_pending(void)
     {
         return false;
     }
+
     if (!AGC_ASSERT(agc_erase_failreg(2) <= 077777u))
     {
         return false;
     }
+
     return enema_wanted;
 }
 
@@ -238,17 +265,23 @@ agc_status_t agc_exec_service_restart(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!enema_wanted)
     {
         return AGC_STATUS_OK;
     }
-    enema_wanted    = false;
-    restarts_run    = (uint16_t) (restarts_run + 1U);
+
+    enema_wanted = false;
+    restarts_run = (uint16_t) (restarts_run + 1U);
     agc_status_t st = fresh_enema();
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT ||
+                    st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND ||
+                    st == AGC_STATUS_UNIMPLEMENTED))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -260,19 +293,23 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     exec_vac5stor();
     store_alarm(code);
     exec_request_enema(); /* OCT40400+1: WHIMPER */
     agc_relint();
+
     if (!AGC_ASSERT(enema_wanted))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_BAILOUT;
 }
 
@@ -283,39 +320,58 @@ static void poodoo_flags(void)
     agc_flag_clear(AGC_FLAG_STATEFLG);
     agc_flag_clear(AGC_FLAG_REINTFLG);
     agc_flag_clear(AGC_FLAG_NODOFLAG);
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_STATEFLG)))
+    {
+        return;
+    }
 }
 
 /* GOPOODOO / STRTIDLE (L p.1383): the Luminary POODOO tail, also the
  * 4.35 restart job.                                                   */
 static agc_status_t gopoodoo(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     agc_inhint();
     poodoo_flags();
     agc_status_t st = AGC_STATUS_POODOO;
+
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
         agc_relint();
         /* STRTIDLE: SERVICER to its "ground" state, then GOTOPOOH.    */
         agc_status_t s1 = exec_up_servidle();
+
         if (!AGC_ASSERT(s1 == AGC_STATUS_OK || s1 == AGC_STATUS_UNIMPLEMENTED))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         agc_status_t s2 = agc_exec_gotopooh();
+
         if (!AGC_ASSERT(s2 == AGC_STATUS_OK || s2 == AGC_STATUS_BAILOUT))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         return st;
     }
+
     agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
     agc_status_t k2 = agc_phase_mr_klean();             /* 2,4,... (4 last)  */
+
     if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     exec_request_enema(); /* TCF WHIMPER       */
     agc_relint();
+
     return st;
 }
 
@@ -326,22 +382,29 @@ static agc_status_t poodoo_csm(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {                         /* average G on      */
         exec_request_enema(); /* TC WHIMPER -1     */
+
         return AGC_STATUS_BAILOUT;
     }
+
     poodoo_flags();
     agc_status_t st = agc_phase_mr_klean();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     exec_request_enema(); /* TC WHIMPER        */
+
     if (!AGC_ASSERT(phase_word(4) == 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_POODOO;
 }
 
@@ -353,21 +416,26 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_inhint();
     exec_vac5stor();
     store_alarm(code);
     agc_relint();
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         return poodoo_csm();
     }
+
     agc_inhint();
     phase_set_fixed(4, AL_PHASE_4_35); /* DXCH -PHASE4      */
     agc_relint();
+
     if (!AGC_ASSERT(phase_group_agrees(4)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return gopoodoo();
 }
 
@@ -379,6 +447,7 @@ agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return gopoodoo();
 }
 
@@ -389,7 +458,9 @@ agc_status_t agc_ccshole(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     _Static_assert(AGC_ALARM_01103 <= AL_POSMAX, "AGC constant");
+
     return agc_poodoo(AGC_ALARM_01103);
 }
 
@@ -398,12 +469,19 @@ agc_status_t agc_ccshole(void)
  * call, which this entry does not have; both vehicles do the WHIMPER. */
 agc_status_t agc_abort_restart(void)
 {
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+
     agc_inhint();
     exec_request_enema();
     agc_relint();
+
     if (!AGC_ASSERT(enema_wanted))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_BAILOUT;
 }

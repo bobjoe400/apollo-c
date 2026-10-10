@@ -24,10 +24,12 @@
 static agc_status_t settime5(void)
 {
     agc_rupt_set_time(5, LM_MS100);
+
     if (!AGC_ASSERT(agc_rupt_time(5) == LM_MS100))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -35,15 +37,17 @@ static agc_status_t settime5(void)
  * gimbal off, and come back in 100 ms.                                    */
 agc_status_t lm_dap_shutdown(void)
 {
-    lm_dap_t    *d   = lm_dap_state();
-    agc_status_t st  = lm_dap_set_t5adr(LM_T5_DAPIDLER);
-    d->nextp         = 0;
-    d->nextu         = 0;
-    d->nextv         = 0;
+    lm_dap_t    *d  = lm_dap_state();
+    agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER);
+
+    d->nextp = 0;
+    d->nextu = 0;
+    d->nextv = 0;
     agc_chan_write(005, 0); /* command jets off        */
     agc_chan_write(006, 0);
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
     agc_status_t t5 = settime5();
+
     return (st != AGC_STATUS_OK) ? st : t5;
 }
 
@@ -53,14 +57,17 @@ agc_status_t lm_dap_moreidle(void)
 {
     agc_status_t sq = lm_dap_qerrcalc();
     agc_status_t sp = lm_dap_calcperr();
+
     if (!AGC_ASSERT(sq == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(sp == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return lm_dap_shutdown();
 }
 
@@ -71,36 +78,47 @@ agc_status_t lm_dap_moreidle(void)
 agc_status_t lm_dap_chekbits(bool *on)
 {
     lm_dap_t *d = lm_dap_state();
+
     if (!AGC_ASSERT(on != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    *on           = false;
+
+    *on = false;
     uint16_t ch31 = agc_chan_read(031);
+
     if (((uint16_t) ~ch31 & CH31_MODE_OFF) == 0u)
     { /* mode switch OFF     */
         return lm_dap_moreidle();
     }
+
     if ((agc_erase_imodes33() & IMODES33_NOIMU) != 0u)
     {
         d->rcsflags =
             (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* IMU not usable */
+
         return lm_dap_shutdown();
     }
+
     agc_status_t st = lm_dap_altdsply(); /* JUMPDSP             */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     if ((agc_chan_read(030) & CH30_NOPGNCS) != 0u)
     { /* CHEKMORE            */
         return lm_dap_moreidle();
     }
+
     if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *on = true;
+
     return AGC_STATUS_OK;
 }
 
@@ -113,6 +131,7 @@ static void startdap_zero(lm_dap_t *d)
         d->tj[i]     = 0;
         d->jetctr[i] = 0; /* docked jet inhibition counters     */
     }
+
     d->omegap   = 0;
     d->omegaq   = 0;
     d->omegar   = 0;
@@ -138,10 +157,12 @@ static void startdap_zero(lm_dap_t *d)
     d->rgimtimr = 0;
     d->oldpmin  = 0;
     d->oldqrmin = 0;
+
     if (!AGC_ASSERT(d->tj[0] == 0 && d->aosq == 0))
     {
         return;
     }
+
     if (!AGC_ASSERT(d->cotroler == 0))
     {
         return;
@@ -152,34 +173,37 @@ static void startdap_zero(lm_dap_t *d)
  * initialisation, then T5ADR = PAXIS.                                    */
 agc_status_t lm_dap_startdap(void)
 {
-    lm_dap_t    *d  = lm_dap_state();
+    lm_dap_t *d = lm_dap_state();
+
     agc_lm_dap_zatteror();
     startdap_zero(d);
-    d->rcsflags     = (uint16_t) (d->rcsflags & ~MANFLAG);
-    d->oldxforp     = agc_erase_cdux();
-    d->oldyforp     = agc_erase_cduy();
-    d->oldzforq     = agc_erase_cduz();
-    d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
-    d->skip[0]      = STARTDAP_SKIP;
-    d->skip[1]      = STARTDAP_SKIP;
+    d->rcsflags = (uint16_t) (d->rcsflags & ~MANFLAG);
+    d->oldxforp = agc_erase_cdux();
+    d->oldyforp = agc_erase_cduy();
+    d->oldzforq = agc_erase_cduz();
+    d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
+    d->skip[0]  = STARTDAP_SKIP;
+    d->skip[1]  = STARTDAP_SKIP;
     agc_rupt_set_time(6, LM_T6_POSMAX);
-    d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;
-    d->t6furtha[0]  = (agc_sp_t) LM_T6_POSMAX;
-    d->t6next[1]    = 0;
-    d->t6furtha[1]  = 0;
-    d->nxt6adr      = 0;
-    d->nextp        = 0;
-    d->nextu        = 0;
-    d->nextv        = 0;
-    d->dapzrupt     = LM_DAPZ_NEG; /* jask not in progress               */
-    d->nptraps      = STARTDAP_TRAPS;
-    d->nqtraps      = STARTDAP_TRAPS;
-    d->nrtraps      = STARTDAP_TRAPS;
+    d->t6next[0]   = (agc_sp_t) LM_T6_POSMAX;
+    d->t6furtha[0] = (agc_sp_t) LM_T6_POSMAX;
+    d->t6next[1]   = 0;
+    d->t6furtha[1] = 0;
+    d->nxt6adr     = 0;
+    d->nextp       = 0;
+    d->nextu       = 0;
+    d->nextv       = 0;
+    d->dapzrupt    = LM_DAPZ_NEG;  /* jask not in progress               */
+    d->nptraps     = STARTDAP_TRAPS;
+    d->nqtraps     = STARTDAP_TRAPS;
+    d->nrtraps     = STARTDAP_TRAPS;
     agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS);
+
     if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return settime5();
 }
 
@@ -187,29 +211,36 @@ agc_status_t lm_dap_startdap(void)
 agc_status_t agc_task_dapidler(void)
 {
     lm_dap_t *d = lm_dap_state();
+
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u)
     { /* 1/ACCSET since restart? */
-        d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);
+        d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);
         agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET);
+
         if (sj != AGC_STATUS_OK)
         {
             return sj; /* NOVAC's own BAILOUT 1202 */
         }
     }
+
     bool         on = false;
     agc_status_t sc = lm_dap_chekbits(&on); /* CHECKUP                 */
+
     if (sc != AGC_STATUS_OK || !on)
     {
         return sc;
     }
+
     if (!agc_flag_test(AGC_FLAG_ACCOKFLG))
     { /* 1/ACCS not done: idle   */
         return lm_dap_moreidle();
     }
+
     return lm_dap_startdap();
 }
 
@@ -217,9 +248,11 @@ agc_status_t agc_task_dapidler(void)
 agc_status_t agc_lm_dap_t5rupt(void)
 {
     const lm_dap_t *d = lm_dap_state();
+
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return (d->t5adr == LM_T5_PAXIS) ? agc_task_paxis() : agc_task_dapidler();
 }

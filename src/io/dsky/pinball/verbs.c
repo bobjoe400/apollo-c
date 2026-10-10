@@ -24,21 +24,27 @@
 agc_status_t pin_noun_load(void)
 {
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->nounreg <= 99))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun);
+
     if (st == AGC_STATUS_NOT_FOUND || s->noun.ncomp == 0u)
     {
         s->nntype   = PIN_NNTYPE_SPARE;
         s->nouncadr = 0;
+
         return AGC_STATUS_NOT_FOUND;
     }
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     switch (s->noun.data_id[0])
     {
         case AGC_DATA_SPECIFY_ADDR:
@@ -55,6 +61,7 @@ agc_status_t pin_noun_load(void)
             s->nouncadr = 0;
             break;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -67,7 +74,9 @@ agc_status_t pin_charalrm(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_falton();
+
     return AGC_STATUS_OK;
 }
 
@@ -79,21 +88,27 @@ agc_status_t pin_dspalarm(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (s->entret == PIN_ENT_NVSUBEND)
     {
         return agc_poodoo(PIN_ALARM_DSPALARM); /* TC POODOO, OCT 01501  */
     }
+
     if (s->entret == PIN_ENT_PASTEVB)
     { /* if this is a monitor, kill it */
         pin_kilmonon();
         pin_falton();
+
         return pin_pastevb(); /* put monitor verb back  */
     }
+
     return pin_charalrm();
 }
 
@@ -104,11 +119,14 @@ agc_status_t pin_predspal(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_block_dspcount(PIN_VD1);
+
     if (!AGC_ASSERT(pin_st()->dspcount_neg))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return pin_dspalarm();
 }
 
@@ -121,15 +139,19 @@ agc_status_t pin_almcycle(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->verbsave <= 99))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_falton();
-    s->reqret       = PIN_REQ_PASS0; /* set for ENTPAS0        */
-    s->reqret_neg   = false;
+    s->reqret     = PIN_REQ_PASS0;   /* set for ENTPAS0        */
+    s->reqret_neg = false;
     agc_status_t st = pin_updatvb(s->verbsave);
+
     return (st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st;
 }
 
@@ -140,15 +162,19 @@ agc_status_t pin_entexit(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (s->entret == PIN_ENT_PASTEVB)
     {
         return pin_pastevb();
     }
+
     return AGC_STATUS_OK; /* ENDOFJOB / NVSUBEND    */
 }
 
@@ -159,11 +185,13 @@ agc_status_t pin_entexit(void)
 bool pin_comptest(int verb_comp)
 {
     const pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) ||
         !AGC_ASSERT(s->noun.ncomp >= 1u))
     {
         return false;
     }
+
     return (int) s->noun.ncomp - 1 >= verb_comp;
 }
 
@@ -172,14 +200,17 @@ bool pin_comptest(int verb_comp)
 bool pin_dectest(void)
 {
     const pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
     {
         return false;
     }
+
     if (!AGC_ASSERT(s->noun.ncomp <= 3u))
     {
         return false;
     }
+
     return !s->noun.dec_only;
 }
 
@@ -187,14 +218,17 @@ bool pin_dectest(void)
 bool pin_nountest(void)
 {
     const pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->noun.ncomp >= 1u))
     {
         return false;
     }
+
     if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
     {
         return false;
     }
+
     return !s->noun.no_load;
 }
 
@@ -209,30 +243,38 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
+
     if (!AGC_ASSERT(verb >= 1u && verb <= 5u))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     int first =
         (verb == 2u) ? 1 : ((verb == 3u) ? 2 : 0); /* comp shown in R1 */
     int count = (verb <= 3u) ? 1 : (int) verb - 2; /* registers used  */
     int need  = first + count - 1;                 /* highest comp    */
+
     if (!pin_comptest(need) || !pin_dectest())
     {
         return pin_dspalarm();
     }
+
     agc_status_t st     = AGC_STATUS_OK;
     uint16_t     buf[3] = {0, 0, 0};
+
     for (int i = 0; i < count && st == AGC_STATUS_OK; i++)
     {
         st = pin_comp_octal(first + i, &buf[i]); /* TSTFORDP, CHANDSP */
     }
+
     for (int i = count - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* DSPCOM3 */
         pin_set_dspcount(rnd1[i]);
         st = pin_dspoctwo(buf[i]);
     }
+
     return (st == AGC_STATUS_OK) ? pin_entexit() : st;
 }
 
@@ -242,17 +284,22 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
 agc_status_t pin_usead(uint16_t ecadr)
 {
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(ecadr <= PIN_WORD))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     uint16_t     keep = ecadr;
     agc_status_t st   = pin_noun_load();
-    s->nouncadr       = keep; /* SETNCADR               */
+
+    s->nouncadr = keep; /* SETNCADR               */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return st;
     }
+
     return pin_verbfan();
 }
 
@@ -265,24 +312,30 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (from_mpac2)
     {
         s->nouncadr = (uint16_t) (s->mpac2 & PIN_WORD); /* SETNCADR    */
     }
+
     if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (s->verbreg != 5u)
     {
         pin_set_dspcount(PIN_R3D1); /* VB not = 05: display CADR */
         agc_status_t st = pin_dspoctwo(s->nouncadr);
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
     }
+
     return pin_verbfan();
 }
 
@@ -294,16 +347,22 @@ static agc_status_t pin_reqadd(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
-    s->clpass      = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
-    if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_CHAN))
+
+    s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
+
+    if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS ||
+                    s->nntype == PIN_NNTYPE_CHAN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (s->entret != PIN_ENT_ENDOFJOB)
     {
         return pin_intmctbs(true);
     }
+
     return pin_reqdat(PIN_INREL_Z, PIN_REQ_MCTBS); /* REQDATZ   */
 }
 
@@ -316,20 +375,26 @@ agc_status_t pin_reqadd_resume(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (s->decbrnch != 0u)
     {
         return pin_almcycle();
     }
+
     pin_block_dspcount(PIN_VD1); /* block num char in      */
+
     if (pin_cadrstor_full())
     {
         pin_flashon();
     }
+
     if (!AGC_ASSERT(s->dspcount_neg))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return pin_usead(s->xyz_oct[2]); /* XCH ZREG               */
 }
 
@@ -340,12 +405,15 @@ agc_status_t pin_testnn(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s  = pin_st();
     agc_status_t st = pin_noun_load();
+
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
+
     switch (s->nntype)
     {
         case PIN_NNTYPE_NORMAL:
@@ -356,13 +424,16 @@ agc_status_t pin_testnn(void)
         case PIN_NNTYPE_AUGMENT:
             s->nouncadr =
                 (uint16_t) ((s->nouncadr + 1u) & PIN_WORD); /* INCR NOUNCADR */
+
             return pin_intmctbs(false);
         case PIN_NNTYPE_SPARE:
         default:
+
             if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_SPARE))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             return pin_dspalarm(); /* not in use if +0       */
     }
 }
@@ -376,18 +447,24 @@ agc_status_t pin_entpas0(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
-    s->decbrnch    = 0;
+
+    s->decbrnch = 0;
     pin_block_dspcount(PIN_VD1);
+
     if (!AGC_ASSERT(s->verbreg <= 99))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     s->verbsave = s->verbreg; /* save verb for possible recycle */
+
     if (s->verbreg >= PIN_LOWVERB)
     {
         return pin_verbfan();
     }
+
     return pin_testnn();
 }
 
@@ -400,6 +477,7 @@ static agc_status_t pin_vbfandir_hi(uint8_t verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (verb)
     {
         case 21:
@@ -438,10 +516,12 @@ static agc_status_t pin_vbfandir(uint8_t verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!AGC_ASSERT(verb < PIN_LST2CON))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (verb)
     {
         case 1:
@@ -465,10 +545,12 @@ static agc_status_t pin_vbfandir(uint8_t verb)
         default:
             break;
     }
+
     if (verb >= 21u)
     {
         return pin_vbfandir_hi(verb);
     }
+
     return pin_dspalarm(); /* VB00 illegal, spares   */
 }
 
@@ -480,17 +562,22 @@ agc_status_t pin_verbfan(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     pin_state_t *s = pin_st();
+
     if (!AGC_ASSERT(s->verbreg <= 99))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (s->verbreg >= PIN_LST2CON)
     {
         agc_status_t st = pin_reldsp(); /* release display syst   */
+
         return (st == AGC_STATUS_OK) ?
-                   agc_extverb((int) s->verbreg, (int) s->nounreg) :
-                   st;
+               agc_extverb((int) s->verbreg, (int) s->nounreg) :
+               st;
     }
+
     return pin_vbfandir(s->verbreg);
 }

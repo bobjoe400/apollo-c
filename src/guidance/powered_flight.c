@@ -39,10 +39,12 @@
 static agc_sp_t cdu_as_sp(uint16_t cdu)
 {
     uint16_t w = (uint16_t) (cdu & CDU_MASK);
+
     if ((w & CDU_SIGN_BIT) != 0U)
     {
         return (agc_sp_t) ((int) w - 077777);
     }
+
     return (agc_sp_t) w;
 }
 
@@ -53,10 +55,12 @@ static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(b >= AGC_DP_MIN && b <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return agc_tp_to_dp(agc_dp_mul_tp(a, b));
 }
 
@@ -66,10 +70,12 @@ static agc_dp_t ddoubl(agc_dp_t a)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  r   = agc_dp_shl_raw(a, 1, &ovf);
+
     if (!AGC_ASSERT(ovf == 0))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -77,10 +83,12 @@ static agc_dp_t das(agc_dp_t a, agc_dp_t b)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  r   = agc_dp_add_raw(a, b, &ovf);
+
     if (!AGC_ASSERT(ovf == 0))
     {
         return 0; /* no valid result */
     }
+
     return r;
 }
 
@@ -93,10 +101,12 @@ static agc_dp_t das(agc_dp_t a, agc_dp_t b)
 agc_dp_t agc_guid_cdulogic(uint16_t cdu)
 {
     long w = (long) (cdu & CDU_MASK);
+
     if (w >= (long) CDU_SIGN_BIT)
     {
         w -= CDU_FULL_SCALE; /* 2's complement negative angle */
     }
+
     return (agc_dp_t) (w * 8192L); /* w / 2^15 rev at scale 2^0    */
 }
 
@@ -111,8 +121,11 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     {
         return;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
+
     for (int k = 2; k >= 0; k--)
     { /* TRIGLOOP (TR*GL*P): index 4, 2, 0 */
         t->cduraw[k]  = cdu_as_sp(cdu_yzx[k]);
@@ -131,7 +144,9 @@ void agc_guid_cdutrig(agc_cdutrig_t *t)
     {
         return;
     }
+
     uint16_t cdu[3];
+
     cdu[AGC_TRIG_X] = agc_erase_cdux(); /* CA CDUX  TS CDUSPOT +4       */
     cdu[AGC_TRIG_Y] = agc_erase_cduy(); /* CA CDUY  TS CDUSPOT          */
     cdu[AGC_TRIG_Z] = agc_erase_cduz(); /* CA CDUZ  TS CDUSPOT +2       */
@@ -151,14 +166,18 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     {
         return;
     }
+
     agc_inhint();
+
     for (int k = 2; k >= 0; k--)
     { /* index 4, 2, 0 (X Z Y)       */
-        agc_sp_t a   = cdu_as_sp(cdu_yzx[k]);
+        agc_sp_t a = cdu_as_sp(cdu_yzx[k]);
+
         t->cduraw[k] = a;
         t->sincdu[k] = agc_sp_mul(agc_sp_sin(a), AGC_SP_HALF); /* MP BIT14 */
         t->coscdu[k] = agc_sp_mul(agc_sp_cos(a), AGC_SP_HALF);
     }
+
     agc_relint();
 }
 
@@ -177,17 +196,21 @@ static void axis_step(const agc_cdutrig_t *t, bool nbsm, int d1, int d2,
     agc_dp_t old2 = v->c[d2];
     /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
     agc_dp_t term = dmpsub(agc_dp_neg(v->c[d1]), s);
+
     if (!nbsm)
     {
         term = agc_dp_neg(term); /* SMNB case: DCS MPAC          */
     }
+
     v->c[d2] = ddoubl(das(term, dmpsub(v->c[d2], c)));
     /* second pass, BUF = 0: old VBUF(D2) times sine                      */
     term = dmpsub(old2, s);
+
     if (!nbsm)
     {
         term = agc_dp_neg(term);
     }
+
     v->c[d1] = ddoubl(das(term, dmpsub(v->c[d1], c)));
 }
 
@@ -196,26 +219,31 @@ static void axis_step(const agc_cdutrig_t *t, bool nbsm, int d1, int d2,
  * (DEX1, DEX2) pairs; DEXDEX counts 3, 2, 1 (or -3, -2, -1). Guaranteed
  * safe only for vectors of magnitude less than unity.                    */
 void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-                              agc_vec_t *v)
+                      agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
         return;
     }
+
     if (!AGC_ASSERT(dir == AGC_AXISROT_NBSM || dir == AGC_AXISROT_SMNB))
     {
         return;
     }
+
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};
     const bool       nbsm      = (dir == AGC_AXISROT_NBSM);
+
     for (int dexdex = 3; dexdex >= 1; dexdex--)
     {                                               /* ROTLOOP, DIM DEXDEX */
         int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
+
         if (!AGC_ASSERT(k >= 0 && k <= 2))
         {
             return;
         }
+
         axis_step(t, nbsm, indexi[k], indexi[k + 1], v);
     }
 }
@@ -227,7 +255,9 @@ void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
     {
         return;
     }
+
     agc_guid_axisrot(t, AGC_AXISROT_SMNB, v);
+
     return; /* C*MM*N1: CS THREE */
 }
 
@@ -238,7 +268,9 @@ void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
     {
         return;
     }
+
     agc_guid_axisrot(t, AGC_AXISROT_NBSM, v);
+
     return; /* C*MM*N3: CA THREE */
 }
 
@@ -249,8 +281,10 @@ void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
     {
         return;
     }
+
     agc_guid_cdutrig(t);
     agc_guid_smnb(t, v);
+
     return;
 }
 
@@ -261,22 +295,26 @@ agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_cdutrig(t);
     agc_guid_nbsm(t, v);
+
     return AGC_STATUS_OK;
 }
 
 /* TRG*SMNB (CM p.1368, LM p.1262): CD*TR*GS on caller's angles (Y Z X),
  * then SM -> NB.                                                          */
 void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                               agc_vec_t *v)
+                       agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
         return;
     }
+
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_smnb(t, v);
+
     return;
 }
 
@@ -289,8 +327,10 @@ agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_nbsm(t, v);
+
     return AGC_STATUS_OK;
 }
 
@@ -308,19 +348,22 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z], cz = t->coscdu[AGC_TRIG_Z];
     /* DLOAD DMP DTHETASM COSCDUY ; PDDL DMP DTHETASM+4 SINCDUY ; BDSU ; DDV */
     agc_dp_t pd0 = agc_dp_mul(ip, dthetasm.c[0], cy);
     agc_dp_t a   = agc_dp_sub(ip, pd0, agc_dp_mul(ip, dthetasm.c[2], sy));
-    a            = agc_dp_div(ip, a, cz);
-    dcdu->c[0]   = a;                                      /* STORE DCDU     */
+
+    a          = agc_dp_div(ip, a, cz);
+    dcdu->c[0] = a;                                      /* STORE DCDU     */
     a          = agc_dp_shl(ip, agc_dp_mul(ip, a, sz), 1); /* DMP SL1 SINCDUZ */
     dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a);         /* BDSU DTHETASM+2 */
     /* DLOAD DTHETASM ; DMP PDDL SINCDUY DTHETASM+4 ; DMP DAD COSCDUY ; SL1 */
     pd0        = agc_dp_mul(ip, dthetasm.c[0], sy);
     a          = agc_dp_add(ip, agc_dp_mul(ip, dthetasm.c[2], cy), pd0);
     dcdu->c[2] = agc_dp_shl(ip, a, 1); /* STORE DCDU +4  */
+
     return AGC_STATUS_OK;
 }
 
@@ -330,13 +373,15 @@ static void fleshpot_rows02(const agc_cdutrig_t *t, agc_mat_t *m)
     const agc_dp_t sx = t->sincdu[AGC_TRIG_X], cx = t->coscdu[AGC_TRIG_X];
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z], cz = t->coscdu[AGC_TRIG_Z];
-    m->row[0].c[0] = ddoubl(dmpsub(cy, cz));                    /* COSY COSZ  */
-    m->row[0].c[1] = sz;                                        /* SINZ       */
-    m->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));        /* -SINY COSZ */
-    m->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));        /* -SINX COSZ */
-    agc_dp_t mxz   = dmpsub(agc_dp_neg(sx), sz);                /* -SX SZ /4  */
-    agc_dp_t t5    = ddoubl(ddoubl(dmpsub(mxz, sy)));           /* -SX SY SZ  */
+
+    m->row[0].c[0] = ddoubl(dmpsub(cy, cz));                  /* COSY COSZ  */
+    m->row[0].c[1] = sz;                                      /* SINZ       */
+    m->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));      /* -SINY COSZ */
+    m->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));      /* -SINX COSZ */
+    agc_dp_t mxz = dmpsub(agc_dp_neg(sx), sz);                /* -SX SZ /4  */
+    agc_dp_t t5  = ddoubl(ddoubl(dmpsub(mxz, sy)));           /* -SX SY SZ  */
     agc_dp_t buf = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY  */
+
     m->row[2].c[2] = das(t5, ddoubl(dmpsub(cy, cx))); /* CX CY - SX SY SZ */
     /* The listing's comment reads "- SINY COSX + SINX SINZ COSY" but the
      * code loads +SINCDUY (DCA, not DCS): the element is +SY CX + SX SZ CY,
@@ -353,15 +398,20 @@ void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
     {
         return;
     }
+
     fleshpot_rows02(t, xnb);
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_vec_t y = agc_vec_cross(&ip, xnb->row[2], xnb->row[0]); /* VXV   */
+
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         xnb->row[1].c[i] = ddoubl(y.c[i]); /* DDOUBL */
     }
+
     const bool ovf = agc_interp_test_ovf(&ip); /* VXV must not overflow */
+
     if (!AGC_ASSERT(!ovf))
     {
         return;

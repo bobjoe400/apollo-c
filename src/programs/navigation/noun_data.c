@@ -20,6 +20,7 @@
 static agc_dp_t *nd_dp(uint16_t id)
 {
     agc_rendz_t *rz = rz_state();
+
     switch (id)
     {
         case AGC_DATA_ACTCENT:
@@ -87,30 +88,38 @@ static agc_dp_t *nd_dp(uint16_t id)
 static agc_vec_t *nd_vec(uint16_t id, int *k)
 {
     agc_rendz_t *rz = rz_state();
-    *k              = 0;
+
+    *k = 0;
+
     switch (id)
     {
         case AGC_DATA_DELVLVC_P4:
             *k = 2;
+
             return &rz->delvlvc;
         case AGC_DATA_DELVLVC_P2:
             *k = 1;
+
             return &rz->delvlvc;
         case AGC_DATA_DELVLVC:
             return &rz->delvlvc;
         case AGC_DATA_DELVOV_P4:
             *k = 2;
+
             return &rz->delvov;
         case AGC_DATA_DELVOV_P2:
             *k = 1;
+
             return &rz->delvov;
         case AGC_DATA_DELVOV:
             return &rz->delvov;
         case AGC_DATA_DVLOS_P4:
             *k = 2;
+
             return &rz->dvlos;
         case AGC_DATA_DVLOS_P2:
             *k = 1;
+
             return &rz->dvlos;
         case AGC_DATA_DVLOS:
             return &rz->dvlos;
@@ -123,55 +132,72 @@ static agc_vec_t *nd_vec(uint16_t id, int *k)
 static bool nd_other(uint16_t id, agc_dp_t *v)
 {
     const lmnav_state_t *n = lmnav_state();
+
     switch (id)
     {
         case AGC_DATA_DATAGOOD:
             *v = agc_dp_from_sp(n->datagood);
+
             return true;
         case AGC_DATA_OMEGAD:
             *v = n->omegad;
+
             return true;
         case AGC_DATA_RADAR_DELTA_R:
             *v = n->r22disp[0];
+
             return true;
         case AGC_DATA_RADAR_DELTA_V:
             *v = n->r22disp[1];
+
             return true;
         case AGC_DATA_WHCHREAD:
             *v = agc_dp_from_sp(n->whchread);
+
             return true;
         case AGC_DATA_MARK_DELTA_R:
             *v = rz_csm_n49disp(0);
+
             return true;
         case AGC_DATA_MARK_DELTA_V:
             *v = rz_csm_n49disp(1);
+
             return true;
         case AGC_DATA_MARK_SOURCE_CODE:
             *v = agc_dp_from_sp((agc_sp_t) rz_csm_n49disp(2));
+
             return true;
         case AGC_DATA_RSTACK:
             *v = agc_erase_rstack(0);
+
             return true;
         case AGC_DATA_RSTACK_P2:
             *v = agc_erase_rstack(1);
+
             return true;
         case AGC_DATA_RSTACK_P4:
             *v = agc_erase_rstack(2);
+
             return true;
         case AGC_DATA_RSTACK_P6:
             *v = agc_erase_rstack(3);
+
             return true;
         case AGC_DATA_NN:
             *v = agc_dp_from_sp(rz_state()->nn);
+
             return true;
         case AGC_DATA_NN1:
             *v = agc_dp_from_sp(rz_state()->nn1);
+
             return true;
         case AGC_DATA_TRKMKCNT:
             *v = agc_dp_from_sp(agc_erase_trkmkcnt());
+
             return true;
         case AGC_DATA_VHFCNT:
             *v = agc_dp_pack(agc_erase_vhfcnt(), agc_erase_trkmkcnt());
+
             return true;
         default:
             return false;
@@ -185,39 +211,51 @@ static bool nd_raw(uint16_t id, uint16_t *w)
     {
         case AGC_DATA_LANDMARK:
             *w = rr_word(agc_erase_landmark());
+
             return true;
         case AGC_DATA_HORIZON:
             *w = agc_erase_horizon();
+
             return true;
         case AGC_DATA_MRKBUF1_P3:
             *w = agc_erase_mrkbuf(1, 3);
+
             return true;
         case AGC_DATA_MRKBUF1_P5:
             *w = agc_erase_mrkbuf(1, 5);
+
             return true;
         case AGC_DATA_TANG:
             *w = rr_word(agc_erase_tang(0));
+
             return true;
         case AGC_DATA_TANG_P1:
             *w = rr_word(agc_erase_tang(1));
+
             return true;
         case AGC_DATA_PRAXIS:
             *w = agc_rendz_tracking_angles(true, 0);
+
             return true;
         case AGC_DATA_PRAXIS_P1:
             *w = agc_rendz_tracking_angles(true, 1);
+
             return true;
         case AGC_DATA_PRAXIS_P2:
             *w = agc_rendz_tracking_angles(true, 2);
+
             return true;
         case AGC_DATA_CPHIX:
             *w = agc_rendz_tracking_angles(false, 0);
+
             return true;
         case AGC_DATA_CPHIX_P1:
             *w = agc_rendz_tracking_angles(false, 1);
+
             return true;
         case AGC_DATA_CPHIX_P2:
             *w = agc_rendz_tracking_angles(false, 2);
+
             return true;
         default:
             return false;
@@ -230,10 +268,12 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t  *p  = nd_dp(data_id);
     int        k  = 0;
     agc_vec_t *vp = nd_vec(data_id, &k);
     uint16_t   w  = 0U;
+
     if (p != NULL)
     {
         *value = *p;
@@ -250,6 +290,7 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -260,9 +301,11 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dp_t  *p  = nd_dp(data_id);
     int        k  = 0;
     agc_vec_t *vp = nd_vec(data_id, &k);
+
     if (p != NULL)
     {
         *p = value;
@@ -294,5 +337,6 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     {
         return AGC_STATUS_NOT_FOUND;
     }
+
     return AGC_STATUS_OK;
 }

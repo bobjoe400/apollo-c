@@ -52,6 +52,7 @@ uint16_t agc_erase_radmodes(void)
     {
         return 0; /* no valid result */
     }
+
     return radmodes;
 }
 
@@ -101,11 +102,14 @@ static agc_sp_t cdu_sp(uint16_t cdu)
     {
         return 0; /* no valid result */
     }
+
     int v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu;
+
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) v;
 }
 
@@ -113,10 +117,12 @@ static agc_sp_t cdu_sp(uint16_t cdu)
 static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
 {
     agc_dp_t p = agc_sp_mul(a, b);
+
     if (!AGC_ASSERT(p >= AGC_DP_MIN && p <= AGC_DP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_high(p);
 }
 
@@ -125,22 +131,26 @@ agc_status_t agc_t4_gimbal_matrix(void)
 {
     agc_sp_t mg = cdu_sp(agc_erase_cduz());
     agc_sp_t og = cdu_sp(agc_erase_cdux());
-    m11         = agc_sp_sin(mg);        /* SIN(MG)                       */
-    cosmg       = agc_sp_cos(mg);        /* COS(MG), only a factor        */
-    m22         = agc_sp_sin(og);        /* SIN(OG), also MR22            */
-    m31 = mp_hi((agc_sp_t) -m22, cosmg); /* -SIN(OG)COS(MG)               */
-    m32 = agc_sp_cos(og);                /* COS(OG), also MR23            */
-    m21 = mp_hi(m32, cosmg);             /* COS(OG)COS(MG)                */
+
+    m11   = agc_sp_sin(mg);        /* SIN(MG)                       */
+    cosmg = agc_sp_cos(mg);        /* COS(MG), only a factor        */
+    m22   = agc_sp_sin(og);        /* SIN(OG), also MR22            */
+    m31   = mp_hi((agc_sp_t) -m22, cosmg); /* -SIN(OG)COS(MG)               */
+    m32   = agc_sp_cos(og);              /* COS(OG), also MR23            */
+    m21   = mp_hi(m32, cosmg);           /* COS(OG)COS(MG)                */
+
     if (!AGC_ASSERT(m11 >= AGC_SP_MIN && m21 >= AGC_SP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK; /* ENDDAPT4 = RESUME             */
 }
 
 static void ch_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
+
     if (!AGC_ASSERT(bits <= WORD15))
     {
         return;
@@ -154,22 +164,27 @@ static void t4_rrgimon(void)
     {
         return; /* no angle monitor     */
     }
+
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_AVEGFLAG) &&
         agc_flag_test((agc_flag_id_t) AGC_FLAG_MUNFLAG))
     {
         return; /* SERVICER + MUNFLAG   */
     }
+
     if ((radmodes & OCT32002) != 0u)
     {
         return; /* remode, zeroing ...  */
     }
+
     if (agc_rr_limchk(agc_erase_cdut(), agc_erase_cdus()))
     {
         return; /* angles in limits     */
     }
+
     radmodes = (uint16_t) (radmodes + BIT11); /* reposition           */
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) OCT20002);
     agc_status_t st = agc_waitlist_call(DORREPOS_DELAY_CS, AGC_TASK_DORREPOS);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return;
@@ -182,25 +197,32 @@ static bool t4_rrcduchk(void)
 {
     uint16_t chg =
         (uint16_t) ((radmodes ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & BIT7);
+
     if (chg == 0u)
     {
         return true; /* on to RRGIMON         */
     }
+
     if ((radmodes & BIT2) != 0u)
     {
         return false; /* not in auto mode      */
     }
+
     radmodes = (uint16_t) (radmodes ^ BIT7);
+
     if ((radmodes & BIT7) == 0u &&
         agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
     {
         agc_alarm(ALARM_RR_CDU_FAIL);
     }
+
     agc_status_t st = agc_rr_settrkf(); /* TRKFLCDU: lamp        */
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return false;
     }
+
     return true;
 }
 
@@ -210,25 +232,32 @@ agc_status_t agc_t4_rr_monitor(void)
 {
     uint16_t chg =
         (uint16_t) ((radmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & BIT2);
+
     if (chg != 0u)
     {
         radmodes = (uint16_t) ((radmodes ^ chg) & OCT05776);
+
         if ((radmodes & BIT2) == 0u)
         { /* just on               */
             radmodes = (uint16_t) (radmodes + OCT10001);
             agc_status_t st =
                 agc_waitlist_call(RRTURNON_DELAY_CS, AGC_TASK_RRTURNON);
+
             if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
             {
                 return AGC_STATUS_BAD_ARG;
             }
+
             return agc_t4_gimbal_matrix();
         }
+
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT2); /* RRCDUCHK -3    */
     }
+
     if (t4_rrcduchk())
     {
         t4_rrgimon();
     }
+
     return agc_t4_gimbal_matrix();
 }

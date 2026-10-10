@@ -36,14 +36,17 @@ static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b,
                        int rows)
 {
     agc_dp_t s = 0;
+
     for (int m = 0; m < rows && m < AGC_INCORP_ROWS; m++)
     {
         s = agc_dp_add(ip, agc_vec_sq(ip, w->blk[b][m]), s); /* VSQ, DAD */
     }
+
     if (!AGC_ASSERT(b >= 0 && b < AGC_INCORP_BLKS))
     {
         return 0; /* no valid result */
     }
+
     return s;
 }
 
@@ -52,30 +55,36 @@ static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b,
 static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_status_t st = agc_integ_install(0, AGC_JOB_W_MATRIX_MONITOR);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     rz_clear_ovf(ip); /* BOV +1   */
     const agc_incorp_w_t *w    = &agc_integ_shared_ctx()->w;
     bool                  csm  = rz_is_csm();
     int                   rows = csm ? 6 : 9; /* X1 36/54 */
     agc_dp_t              pos  = wm_sum(ip, w, 0, rows);
     agc_dp_t              vel  = wm_sum(ip, w, 1, rows);
+
     rz->rtheta =
         csm ? 0 : agc_dp_shr(agc_dp_sqrt(ip, wm_sum(ip, w, 2, rows)), 10);
     rz->rrate = agc_dp_sqrt(ip, vel);
     rz->range = agc_dp_sqrt(ip, pos);
+
     if (agc_interp_test_ovf(ip))
     {
         rz->range  = RZ_DPPOSMAX;
         rz->rrate  = RZ_DPPOSMAX;
         rz->rtheta = csm ? rz->rtheta : RZ_DPPOSMAX;
     }
+
     if (agc_dp_sub(ip, rz->range, WM_FT99999) >= 0)
     { /* V67XXX   */
         rz->range = WM_FT99999;
     }
+
     return agc_integ_intwake();
 }
 
@@ -87,21 +96,28 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_rendz_t *rz = rz_state();
     agc_interp_t ip;
+
     agc_interp_init(&ip);
+
     if (!rz_is_csm())
     {
         rz_flag_put(AGC_FLAG_W_MATRIX_OVERWRITE, false); /* V67FLAG  */
     }
+
     agc_status_t st = wm_compute(&ip, rz);
+
     if (st != AGC_STATUS_OK)
     {
         return st; /* BUSY: asleep in INTSTALL  */
     }
+
     wm_saved[0] = rz->range;
     wm_saved[1] = rz->rrate;
     wm_saved[2] = rz->rtheta;
+
     return agc_job_w_matrix_monitor_display(ctx);
 }
 
@@ -111,6 +127,7 @@ agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rz_flash(
         ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT, /* GOXDSPF */
         AGC_JOB_W_MATRIX_MONITOR_PROCEED, AGC_JOB_W_MATRIX_MONITOR_DISPLAY);
@@ -123,6 +140,7 @@ static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
     agc_sp_t opt = agc_dp_high(rz->rtheta); /* WWOPT    */
     agc_sp_t x1  = agc_dp_high(rz->range);  /* LXA,1    */
     agc_sp_t x2  = agc_dp_high(rz->rrate);
+
     if (opt == WM_DEC2)
     { /* V67WORB  */
         p->worbpos = x1;
@@ -138,6 +156,7 @@ static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
         p->wrendpos = x1;
         p->wrendvel = x2;
     }
+
     rz_flag_put(AGC_FLAG_ORBWFLAG, false); /* V67EXITX */
 }
 
@@ -146,9 +165,11 @@ static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
 static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz,
                        agc_rendz_nav_pad_t *p)
 {
-    agc_sp_t pos = agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
-    agc_sp_t vel = agc_dp_high(rz->rrate);
+    agc_sp_t pos =
+        agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
+    agc_sp_t vel  = agc_dp_high(rz->rrate);
     agc_sp_t bias = agc_dp_high(agc_dp_shl(ip, rz->rtheta, 10));
+
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* V67SURF  */
         p->wsurfpos = pos;
@@ -159,6 +180,7 @@ static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz,
         p->wrendpos = pos;
         p->wrendvel = vel;
     }
+
     p->wtrun  = bias; /* V67CLRF  */
     p->wshaft = bias;
 }
@@ -171,16 +193,20 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_rendz_t         *rz = rz_state();
     agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad();
     agc_interp_t         ip;
+
     agc_interp_init(&ip);
+
     if (rz_is_csm())
     {
         if (agc_dp_high(rz->rtheta) == 0)
         { /* BHIZ     */
             return rz_endext();
         }
+
         wm_load_csm(rz, p);
     }
     else
@@ -190,12 +216,16 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
         {
             rz_flag_put(AGC_FLAG_W_MATRIX_OVERWRITE, true);
         }
+
         if (!agc_flag_test(AGC_FLAG_W_MATRIX_OVERWRITE))
         {
             return rz_endext();
         }
+
         wm_load_lm(&ip, rz, p);
     }
+
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
+
     return rz_endext();
 }

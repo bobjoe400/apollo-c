@@ -68,12 +68,13 @@ typedef struct ph_code
 
 /* Group n is index n; index 0 is unused. A fresh AGC's DOFSTART kills
  * every group, so the static image starts with all groups killed. */
-static uint16_t phase_w[AGC_RESTART_GROUPS + 1];    /* PHASEn      */
-static uint16_t nphase_w[AGC_RESTART_GROUPS + 1] = {/* -PHASEn     */
-                                                    PH_NEG0, PH_NEG0, PH_NEG0,
-                                                    PH_NEG0, PH_NEG0, PH_NEG0,
-                                                    PH_NEG0};
-static uint16_t tbase[AGC_RESTART_GROUPS + 1];        /* TIME1 at set, cs     */
+static uint16_t          phase_w[AGC_RESTART_GROUPS + 1]; /* PHASEn      */
+static uint16_t          nphase_w[AGC_RESTART_GROUPS + 1] = { /* -PHASEn     */
+    PH_NEG0, PH_NEG0, PH_NEG0,
+    PH_NEG0, PH_NEG0, PH_NEG0,
+    PH_NEG0
+};
+static uint16_t          tbase[AGC_RESTART_GROUPS + 1]; /* TIME1 at set, cs     */
 static phase_var_store_t var[AGC_RESTART_GROUPS + 1]; /* PHSNAMEn/PRDTn */
 static uint32_t          longbase; /* TIME2,TIME1 at set cs */
 
@@ -83,10 +84,12 @@ static bool group_ok(int group)
     {
         return false;
     }
+
     if (!AGC_ASSERT(nphase_w[0] == PH_NEG0))
     {
         return false;
     }
+
     return group >= 1 && group <= AGC_RESTART_GROUPS;
 }
 
@@ -97,8 +100,10 @@ void phase_set_fixed(int group, uint16_t phase)
     {
         return;
     }
+
     phase_w[group]  = phase;
     nphase_w[group] = (uint16_t) (~phase & PH_WORD15);
+
     if (!AGC_ASSERT(phase_group_agrees(group)))
     {
         return;
@@ -112,8 +117,10 @@ void phase_kill(int group)
     {
         return;
     }
+
     nphase_w[group] = PH_NEG0;
     phase_w[group]  = 0;
+
     if (!AGC_ASSERT(phase_group_agrees(group)))
     {
         return;
@@ -126,9 +133,11 @@ void agc_phase_kill(int group)
     {
         return;
     }
+
     agc_inhint();
     phase_kill(group);
     agc_relint();
+
     if (!AGC_ASSERT(phase_w[group] == 0U))
     {
         return;
@@ -143,7 +152,9 @@ static void set_tbase(int group)
     {
         return;
     }
+
     tbase[group] = (uint16_t) (agc_time_now_cs() & PH_TIME1);
+
     if (!AGC_ASSERT(tbase[group] <= PH_TIME1))
     {
         return;
@@ -157,10 +168,12 @@ static bool decode(uint16_t code, ph_code_t *out)
     {
         return false;
     }
+
     out->group = (int) (code & PH_GROUP);
     out->tempp = (uint16_t) ((code & PH_PMASK) >> PH_PSHIFT);
     out->tbit  = (code & PH_TBIT) != 0U;
     out->lbit  = (code & PH_LBIT) != 0U;
+
     if ((code & PH_TYPEB) != 0U)
     {
         out->type = PH_TYPE_B; /* CHECKB            */
@@ -176,6 +189,7 @@ static bool decode(uint16_t code, ph_code_t *out)
         out->type = PH_TYPE_A;
         out->dbit = false;
     }
+
     return AGC_ASSERT(group_ok(out->group));
 }
 
@@ -185,6 +199,7 @@ static agc_restart_kind_t cjw_kind(uint16_t tempp)
 {
     int                cjw = (int) (tempp & PH_GROUP) - 2;
     agc_restart_kind_t k   = AGC_RESTART_TASK;
+
     if (cjw > 0)
     {
         k = AGC_RESTART_LONGCALL;
@@ -197,10 +212,12 @@ static agc_restart_kind_t cjw_kind(uint16_t tempp)
     {
         /* W: waitlist task */
     }
+
     if (!AGC_ASSERT(cjw >= -2 && cjw <= 5))
     {
         return AGC_RESTART_NONE;
     }
+
     return k;
 }
 
@@ -217,20 +234,25 @@ static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
     {
         return;
     }
+
     phase_var_store_t *s = &var[c->group];
     agc_restart_kind_t k =
         (c->type == PH_TYPE_B) ? AGC_RESTART_JOB : cjw_kind(c->tempp);
+
     if (v == 0)
     {
         return;
     }
+
     if (!AGC_ASSERT(v->kind == k))
     {
         return;
     }
+
     s->kind = k;
     s->job  = v->job;
     s->task = v->task;
+
     if (c->dbit)
     {
         s->prdt       = v->prio_or_dt;
@@ -255,23 +277,29 @@ static void below1_4(const ph_code_t *c, const ph_second_t *two)
     {
         return;
     }
+
     if (two->present && AGC_ASSERT(group_ok(two->group)))
     {
         phase_set_fixed(two->group, two->phase); /* DXCH -PHASE(G2)   */
+
         if (two->tbit)
         {
             set_tbase(two->group);
         }
     }
+
     if (c->tbit)
     {
         set_tbase(c->group); /* BELOW2 -> TBASE   */
     }
+
     if (c->lbit)
     {
         longbase = agc_time_now_cs(); /* BELOW3: DCA TIME2 */
     }
+
     phase_set_fixed(c->group, c->tempp); /* BELOW4: -PHASE    */
+
     if (!AGC_ASSERT(phase_w[c->group] == c->tempp))
     {
         return;
@@ -282,15 +310,19 @@ static void phaschng_common(uint16_t code, const agc_phase_var_t *v,
                             const ph_second_t *two)
 {
     ph_code_t c;
+
     if (!AGC_ASSERT(decode(code, &c)))
     {
         return;
     }
+
     agc_inhint();
+
     if (c.type != PH_TYPE_A)
     {
         store_var(&c, v);
     }
+
     below1_4(&c, two);
     agc_relint();
 }
@@ -305,7 +337,9 @@ void agc_phase_change(int group, uint16_t phase_code)
     {
         return;
     }
+
     ph_second_t none = {false, 0, 0, false};
+
     phaschng_common(phase_code, 0, &none);
 }
 
@@ -316,7 +350,9 @@ void agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
     {
         return;
     }
+
     ph_second_t none = {false, 0, 0, false};
+
     phaschng_common(code, v, &none);
 }
 
@@ -324,14 +360,17 @@ void agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
  * disregarded) for one group, code_b (A, B or C) for another. v may be
  * NULL when code_b is type A.                                          */
 void agc_phase_change2(uint16_t code_a, uint16_t code_b,
-                               const agc_phase_var_t *v)
+                       const agc_phase_var_t *v)
 {
     ph_code_t a;
+
     if (!AGC_ASSERT(decode(code_a, &a)) || !AGC_ASSERT(a.type == PH_TYPE_A))
     {
         return;
     }
+
     ph_second_t two = {true, a.group, a.tempp, a.tbit};
+
     phaschng_common(code_b, v, &two);
 }
 
@@ -344,11 +383,14 @@ void agc_phase_newphase(int group, uint16_t phase, bool set_tb)
     {
         return;
     }
+
     agc_inhint();
+
     if (set_tb)
     {
         set_tbase(group); /* NUFAZ+10          */
     }
+
     phase_set_fixed(group, phase);
     agc_relint();
 }
@@ -363,9 +405,12 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_phase_var_t v = {AGC_RESTART_JOB, job,   AGC_TASK_NONE,
-                         (int16_t) prio,  false, 0U};
-    agc_phase_change_var((uint16_t)(07020U | (uint16_t)group), &v);
+
+    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
+                         (int16_t) prio, false, 0U};
+
+    agc_phase_change_var((uint16_t) (07020U | (uint16_t) group), &v);
+
     return AGC_STATUS_OK;
 }
 
@@ -375,10 +420,12 @@ uint16_t agc_phase_get(int group)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(phase_w[group] <= PH_WORD15))
     {
         return 0;
     }
+
     return phase_w[group];
 }
 
@@ -388,6 +435,7 @@ uint16_t phase_word(int group)
     {
         return 0; /* no valid result */
     }
+
     return agc_phase_get(group);
 }
 
@@ -399,10 +447,12 @@ bool phase_group_agrees(int group)
     {
         return false;
     }
+
     if (!AGC_ASSERT(nphase_w[group] <= PH_WORD15))
     {
         return false;
     }
+
     return (uint16_t) (nphase_w[group] ^ phase_w[group]) == PH_NEG0;
 }
 
@@ -412,7 +462,9 @@ agc_status_t phase_var_get(int group, phase_var_store_t *out)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     *out = var[group];
+
     return AGC_STATUS_OK;
 }
 
@@ -422,10 +474,12 @@ uint16_t phase_tbase(int group)
     {
         return 0;
     }
+
     if (!AGC_ASSERT(tbase[group] <= PH_TIME1))
     {
         return 0;
     }
+
     return tbase[group];
 }
 
@@ -435,10 +489,12 @@ uint32_t phase_longbase(void)
     {
         return 0; /* no valid result */
     }
+
     if (!AGC_ASSERT(phase_w[0] == 0U))
     {
         return 0; /* no valid result */
     }
+
     return longbase;
 }
 
@@ -450,6 +506,7 @@ void phase_debug_set_negative(int group, uint16_t neg_word)
     {
         return;
     }
+
     nphase_w[group] = neg_word;
 }
 
@@ -458,18 +515,22 @@ void phase_debug_set_negative(int group, uint16_t neg_word)
 agc_status_t agc_phase_change_program_klean(void)
 {
     agc_inhint();
+
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         phase_kill(1);
     }
+
     phase_kill(3);
     phase_kill(5);
     phase_kill(6);
     agc_relint();
+
     if (!AGC_ASSERT(phase_w[3] == 0U && phase_w[5] == 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return AGC_STATUS_OK;
 }
 
@@ -478,15 +539,19 @@ agc_status_t agc_phase_idle_klean(void)
 {
     agc_inhint();
     phase_kill(4);
+
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         phase_kill(1);
     }
+
     agc_relint();
+
     if (!AGC_ASSERT(phase_w[4] == 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_phase_change_program_klean();
 }
 
@@ -497,10 +562,12 @@ agc_status_t agc_phase_mr_klean(void)
     phase_kill(2);
     agc_relint();
     agc_status_t st = agc_phase_idle_klean();
+
     if (!AGC_ASSERT(phase_w[1] == 0U && phase_w[6] == 0U))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -510,11 +577,14 @@ agc_status_t fresh_mmdsplay(void)
 {
     agc_inhint();
     agc_status_t st = agc_exec_novac(PH_PRIO30, AGC_JOB_DSPMMJB);
+
     agc_relint();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -526,7 +596,9 @@ agc_status_t agc_phase_newmode(agc_sp_t mode)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_modreg(mode); /* TS MODREG         */
+
     return fresh_mmdsplay();
 }
 
@@ -537,10 +609,13 @@ bool agc_phase_checkmm(agc_sp_t mode)
     {
         return false;
     }
+
     agc_sp_t mm = agc_erase_modreg();
+
     if (!AGC_ASSERT(mm >= EXEC_MODREG_NEG0))
     {
         return false;
     }
+
     return mm == mode;
 }

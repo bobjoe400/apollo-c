@@ -62,10 +62,12 @@
 static bool tvc_on(void)
 {
     uint16_t f6 = agc_flagword_get(6);
+
     if (!AGC_ASSERT(f6 <= WORD15))
     {
         return false;
     }
+
     return (f6 & OCT60000) == TVC_BITS;
 }
 
@@ -76,11 +78,14 @@ static bool after_liftoff(void)
     {
         return true;
     }
+
     uint16_t c30 = agc_chan_read((int) AGC_CHAN_CHAN30);
+
     if (!AGC_ASSERT(c30 <= WORD15))
     {
         return false;
     }
+
     return (c30 & BIT5) == 0u;
 }
 
@@ -91,11 +96,14 @@ static agc_sp_t cdu_signed(uint16_t w)
     {
         return 0; /* no valid result */
     }
+
     int v = ((w & 040000u) != 0u) ? (int) w - 0100000 : (int) w;
+
     if (!AGC_ASSERT(v >= -040000 && v < 040000))
     {
         return 0; /* no valid result */
     }
+
     return (agc_sp_t) ((v < AGC_SP_MIN) ? AGC_SP_MIN : v);
 }
 
@@ -107,23 +115,28 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_OK;
     }
+
     if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u)
     {
         return agc_extverb_alm_end();
     }
+
     if (after_liftoff())
     {
         bool         ok = false;
         agc_status_t st = agc_extverb_testxact(&ok);
+
         if (!ok)
         {
             return st;
         }
     }
+
     agc_chan_and((int) AGC_CHAN_CHAN12, (uint16_t) (WORD15 & ~OCT50));
     agc_dsky_cont_t cont = {AGC_JOB_ATTITUDE_ERROR_TERMINATE,
                             AGC_JOB_ATTITUDE_ERROR_LOAD,
                             AGC_JOB_ATTITUDE_ERROR_LOAD};
+
     return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont);
 }
 
@@ -134,6 +147,7 @@ agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return after_liftoff() ? agc_dsky_endext() : agc_extverb_gopin();
 }
 
@@ -145,16 +159,21 @@ agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_status_t st = agc_dap_needler(0, 0, 0, true);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     st = agc_waitlist_call(ATTCK_DELAY_CS, AGC_TASK_ATTITUDE_ERROR_OUTPUT);
+
     if (st != AGC_STATUS_OK)
     {
         return st; /* WAITLIST did its alarm  */
     }
+
     return agc_job_attitude_error_terminate(ctx);
 }
 
@@ -163,15 +182,19 @@ agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
 static agc_status_t attck1(void)
 {
     agc_sp_t ak[3];
+
     for (int i = 0; i < 3; i++)
     {
         ak[i] = cdu_signed(agc_erase_thetad(i));
     }
+
     agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -183,19 +206,24 @@ static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (!tvc_on())
     {
         return agc_job_dapfig(ctx); /* POSTJUMP DAPFIG         */
     }
+
     if ((agc_erase_dapdatr1() & BIT14) == 0u)
     {
         return agc_extverb_alm_end(); /* CSM alone               */
     }
+
     agc_status_t st = agc_csm_tvc_preswtch();
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     return agc_extverb_gopin(); /* PRESWTCH exits via PINBRNCH */
 }
 
@@ -209,7 +237,9 @@ static agc_status_t r03_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, next, again};
+
     return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun),
                             &cont);
 }
@@ -218,16 +248,21 @@ static agc_status_t r03_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
 static agc_status_t verb_dap_data_load(agc_job_ctx_t *ctx)
 {
     bool ok = false;
+
     if (!AGC_ASSERT(ctx != NULL) || tvc_on())
     {
         return agc_extverb_alm_end();
     }
+
     agc_status_t st = agc_extverb_testxact(&ok);
+
     if (!ok)
     {
         return st;
     }
+
     agc_exec_prio_change(PRIO10);
+
     return agc_job_dap_data_load_noun46_csm(ctx);
 }
 
@@ -241,13 +276,16 @@ agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx)
 /* N46 proceed: MAXDBFLG from DAPDATR1 bit 4, S41.2, then V06N47.          */
 agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx)
 {
-    agc_flag_id_t f  = (agc_flag_id_t) AGC_FLAG_MAXDBFLG;
+    agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_MAXDBFLG;
+
     agc_flag_put(f, (agc_erase_dapdatr1() & BIT4) != 0u);
     agc_status_t st = agc_csm_dap_decode_dap_data(); /* S41.2 (MAXOUT)          */
+
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_dap_data_load_noun47_csm(ctx);
 }
 
@@ -263,22 +301,27 @@ agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx)
 agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
 {
     uint16_t cfg = (uint16_t) (agc_erase_dapdatr1() & PRIO30BITS);
+
     if (cfg != 0u && cfg != PRIO30BITS)
     {
         agc_inhint();
         agc_csm_dap_massprop(); /* IXX, IAVG, IAVG/TLX */
         agc_status_t st = AGC_STATUS_OK;
+
         agc_relint();
         st = agc_csm_dap_rcs_gains(); /* S40.14              */
+
         if (st != AGC_STATUS_OK)
         {
             return st;
         }
     }
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_job_dap_data_load_noun48_csm(ctx);
 }
 
@@ -296,19 +339,24 @@ agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx)
 static agc_status_t verb_marking(bool backup)
 {
     agc_flag_id_t r23 = (agc_flag_id_t) AGC_FLAG_BACKUP_MARKING;
+
     agc_flag_put(r23, backup);
     bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
+
     if (!ok)
     {
         return st;
     }
+
     if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) ||
         !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
     {
         agc_alarm(ALARM_NO_REND_TRACK); /* R22ALARM           */
+
         return agc_dsky_endext();
     }
+
     return agc_extverb_schedule(
         PRIO16, backup ? AGC_JOB_BACKUP_SIGHTING_MARK : AGC_JOB_SIGHTING_MARK,
         false);
@@ -324,11 +372,14 @@ static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
     {
         return agc_extverb_gopin();
     }
+
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
+
     if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
     {
         return agc_extverb_gopin();
     }
+
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_TRACKFLG);
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPDATFLG);
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
@@ -336,6 +387,7 @@ static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
     agc_kalc_stoprate(); /* STOPRATE           */
     agc_erase_set_optind(-1); /* OPTIND = NEGONE    */
     agc_relint();
+
     return agc_job_tracking_terminate_csm(ctx);
 }
 
@@ -343,13 +395,16 @@ static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
 agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_integ_install(0, AGC_JOB_TRACKING_TERMINATE);
+
     if (!AGC_ASSERT(ctx != NULL) || st == AGC_STATUS_BUSY)
     {
         return AGC_STATUS_OK; /* sleeps in INTSTALL */
     }
+
     agc_phase_change(2, 02); /* 2PHSCHNG OCT 2, 1  */
     agc_phase_change(1, 01);
     agc_inhint(); /* CLEANOUT           */
+
     return agc_exec_enema();
 }
 
@@ -363,15 +418,19 @@ static agc_status_t verb_landmark_offset(void)
     {
         return agc_extverb_alm_end();
     }
-    int lm = (int) agc_erase_landmark() & ~(int) PRIO7BITS; /* CS PRIO7 MASK */
+
+    int lm   = (int) agc_erase_landmark() & ~(int) PRIO7BITS; /* CS PRIO7 MASK */
     int mark =
         (int) ((agc_erase_markstat() >> 1) & PRIO7BITS); /* TS SR, CA SR */
     int v = lm + ((int) PRIO5BITS - mark); /* CS A, AD PRIO5, ADS */
+
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_landmark((agc_sp_t) v);
+
     return agc_extverb_gopin();
 }
 
@@ -379,13 +438,16 @@ static agc_status_t verb_landmark_offset(void)
 static agc_status_t verb_attitude_to_cdus(void)
 {
     agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     if (!AGC_ASSERT(c != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     c->cphix[0] = agc_erase_cdux();
     c->cphix[1] = agc_erase_cduy();
     c->cphix[2] = agc_erase_cduz();
+
     return agc_extverb_gopin();
 }
 
@@ -395,6 +457,7 @@ static agc_status_t verb_total_error(bool wrt_n22)
 {
     agc_flag_set((agc_flag_id_t) AGC_FLAG_NEEDLFLG);
     agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES;
+
     return wrt_n22 ? agc_extverb_upflag(f) : agc_extverb_downflag(f);
 }
 
@@ -405,17 +468,21 @@ static agc_status_t verb_prelaunch(bool azimuth)
     {
         return agc_extverb_alm_end();
     }
+
     agc_status_t st = agc_extverb_schedule(
         PRIO16, azimuth ? AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE : AGC_JOB_COMPVER,
         true);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     if (azimuth)
     {
         agc_phase_change(4, PHASE_AZIMUTH);
     }
+
     return agc_extverb_gopin();
 }
 
@@ -426,7 +493,9 @@ static agc_status_t verb_stroke_test(void)
     {
         return agc_extverb_alm_end();
     }
+
     agc_status_t st = agc_extverb_schedule(PRIO30, AGC_JOB_STRKTSTI, false);
+
     return (st == AGC_STATUS_OK) ? agc_extverb_gopin() : st;
 }
 
@@ -435,12 +504,16 @@ static agc_status_t verb_rendezvous_display(bool r31)
 {
     bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
+
     if (!ok)
     {
         return st;
     }
+
     agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_RENDEZVOUS_DISPLAY_THETA;
+
     agc_flag_put(f, r31);
+
     return agc_extverb_schedule(PRIO5, AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY,
                                 false);
 }
@@ -449,10 +522,12 @@ static agc_status_t verb_rendezvous_display(bool r31)
 static agc_status_t verb_mark_reject(void)
 {
     agc_erase_set_mrkbuf(1, 0, MRKBUF_REJECT);
+
     if (!AGC_ASSERT(agc_erase_mrkbuf(1, 0) == MRKBUF_REJECT))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_extverb_gopin();
 }
 
@@ -461,10 +536,12 @@ static agc_status_t verb_vhf_off(void)
 {
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
     agc_status_t st = agc_svc_trfailof();
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_extverb_gopin();
 }
 
@@ -476,13 +553,16 @@ static agc_status_t verb_systems_test(void)
     {
         return AGC_STATUS_OK;
     }
+
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_NO_PRELAUNCH_INITIALIZATION))
     {
         return agc_poodoo(ALARM_NO_P07);
     }
+
     agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* EXDAPOFF */
     agc_flagword_set(6, (uint16_t) (agc_flagword_get(6) & ~OCT60000));
     agc_status_t st = agc_extverb_schedule(PRIO20, AGC_JOB_SYSTEMS_TEST, true);
+
     return (st == AGC_STATUS_OK) ? agc_extverb_gopin() : st;
 }
 
@@ -490,17 +570,22 @@ static agc_status_t verb_systems_test(void)
 static agc_status_t verb_r64(void)
 {
     agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_ALTERNATE_LOS_ALLOWED;
+
     if (!agc_flag_test(f))
     {
         return agc_extverb_alm_end();
     }
+
     agc_flag_clear(f);
+
     if (!agc_phase_checkmm(23))
     {
         return agc_extverb_alm_end();
     }
+
     agc_phase_change(2, PHASE_R64);
     agc_inhint(); /* CLEANOUT           */
+
     return agc_exec_enema();
 }
 
@@ -508,6 +593,7 @@ static agc_status_t verb_r64(void)
 static agc_status_t verb_w_matrix_reset(void)
 {
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
+
     return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_ORBWFLAG);
 }
 
@@ -516,6 +602,7 @@ static agc_status_t verb_quit_integration(void)
 {
     agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
     agc_flag_set((agc_flag_id_t) AGC_FLAG_IDLE_INTEGRATION_INHIBITED);
+
     return agc_change_program(0);
 }
 
@@ -530,32 +617,40 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (agc_erase_modecadr((int) AGC_IMU_DEV_OPTICS) != 0)
     {
         return agc_extverb_alm_end(); /* CKMODCAD +1            */
     }
+
     bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
+
     if (!ok)
     {
         return st;
     }
+
     if (agc_erase_swsample() <= 0)
     { /* not at computer        */
         agc_dsky_falton();
         st = AGC_STATUS_OK;
         agc_alarm(ALARM_OPTICS_SWITCH);
         agc_status_t sa = AGC_STATUS_ALARM;
+
         if (!AGC_ASSERT(sa != AGC_STATUS_BAD_ARG))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     if (agc_erase_optind() == AGC_OPTIND_NEG0)
     {
         agc_alarm(ALARM_OPTICS_RESERVED);
+
         return agc_dsky_endext();
     }
+
     return agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE,
                              AGC_JOB_OPTICS_COARSE_DRIVE); /* OPTC1        */
 }
@@ -565,12 +660,15 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ar = agc_align_ram();
+
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ar != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     ar->desopts = ar->sac;
     ar->desoptt = ar->pac;
+
     return agc_extverb_redisplay(ctx, 41, AGC_JOB_OPTICS_COARSE_START);
 }
 
@@ -582,11 +680,14 @@ agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     agc_erase_set_optind(1);
+
     if (!AGC_ASSERT(agc_erase_optind() == 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_dsky_endext();
 }
 
@@ -599,7 +700,7 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
             return agc_extverb_alm_end(); /* N91 "not in use yet"    */
         case 41:
             return (agc_extverb_noun() == NOUN_OCDU) ? verb_optics_coarse(ctx) :
-                                                       agc_extverb_alm_end();
+                   agc_extverb_alm_end();
         case 43:
             return verb_attitude_error(ctx);
         case 44:
@@ -615,10 +716,12 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
         default:
             break;
     }
+
     if (!AGC_ASSERT(verb >= 40 && verb < 50))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_extverb_alm_end();
 }
 
@@ -629,6 +732,7 @@ static agc_status_t fan_50s_60s(agc_job_ctx_t *ctx, int verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     switch (verb)
     {
         case 51:
@@ -660,6 +764,7 @@ static agc_status_t fan_50s_60s(agc_job_ctx_t *ctx, int verb)
         default:
             break;
     }
+
     return agc_extverb_alm_end();
 }
 
@@ -701,10 +806,12 @@ static agc_status_t fan_70s_90s(int verb)
         default:
             break;
     }
+
     if (!AGC_ASSERT(verb >= 70 && verb <= 99))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return agc_extverb_alm_end(); /* V79, V84, V95, V98     */
 }
 
@@ -715,14 +822,17 @@ agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb)
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (verb < 50)
     {
         return fan_40s(ctx, verb);
     }
+
     if (verb < 70)
     {
         return fan_50s_60s(ctx, verb);
     }
+
     return fan_70s_90s(verb);
 }
 
@@ -733,5 +843,6 @@ agc_status_t agc_task_attitude_error_output(void)
     {
         return agc_extverb_lm_attck2();
     }
+
     return attck1();
 }

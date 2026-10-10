@@ -54,12 +54,12 @@
 typedef struct rd_state
 {
     agc_dp_t timehold;   /* TIMEHOLD: nominal mid time of the reading,
-                           * cs 2^28                                       */
+                          * cs 2^28                                       */
     agc_dp_t samplsum;   /* SAMPLSUM: sum of good samples, counts         */
     agc_dp_t sample;     /* ITEMP3, ITEMP4: this sample, counts           */
     agc_sp_t nsamp;      /* NSAMP: good samples still wanted, minus one   */
     agc_sp_t samplim;    /* SAMPLIM: tries left, -1 none expected (also
-                           * the LRPOS2 scan counter)                      */
+                          * the LRPOS2 scan counter)                      */
     uint16_t oldatagd;   /* OLDATAGD: data-good bits at the last sample   */
     uint16_t itemp1;     /* ITEMP1: this radar's data-good bit            */
     uint16_t dnindex;    /* DNINDEX: chan 13 select bits 1-3              */
@@ -74,6 +74,7 @@ agc_dp_t agc_radar_samplsum(void)
     {
         return 0; /* no valid result */
     }
+
     return rd.samplsum;
 }
 
@@ -83,6 +84,7 @@ agc_dp_t rr_timehold(void)
     {
         return 0; /* no valid result */
     }
+
     return rd.timehold;
 }
 
@@ -93,6 +95,7 @@ uint16_t agc_erase_dnrrange(int index)
     {
         return 0U;
     }
+
     return rd.dnradar[index];
 }
 
@@ -108,6 +111,7 @@ static void rd_initread(uint16_t code, agc_sp_t n)
     {
         return;
     }
+
     agc_inhint();
     rd.timehold = (agc_dp_t) (4 * n); /* MP BIT3  */
     rd.nsamp    = (agc_sp_t) (n - 1);
@@ -125,18 +129,21 @@ static void rd_initread(uint16_t code, agc_sp_t n)
 agc_status_t agc_radar_rrrange(void)
 {
     rd_initread(RD_RRRANGE, 1);
+
     return AGC_STATUS_OK;
 }
 
 agc_status_t agc_radar_rrrdot(void)
 {
     rd_initread(RD_RRRDOT, 1);
+
     return AGC_STATUS_OK;
 }
 
 void agc_radar_lralt(void)
 {
     rd_initread(RD_LRALT, 1);
+
     return;
 }
 
@@ -148,8 +155,11 @@ void agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples)
     {
         return;
     }
+
     static const uint16_t codes[3] = {RD_LRVELZ, RD_LRVELY, RD_LRVELX};
+
     rd_initread(codes[beam], nsamples);
+
     return;
 }
 
@@ -161,7 +171,9 @@ void agc_radar_lrvel(agc_sp_t beam2)
     {
         return;
     }
+
     agc_radar_lr_velocity_beam(beam2 / 2, 5);
+
     return;
 }
 
@@ -174,11 +186,14 @@ static void rd_lr_lamp(bool velocity)
 {
     uint16_t      lamp  = velocity ? RD_VLITE : RD_HLITE;
     agc_flag_id_t flash = velocity ? AGC_FLAG_VFLSHFLG : AGC_FLAG_HFLSHFLG;
-    bool          fail = rr_radmodes_test(velocity ? RR_LRVELBIT : RR_LRALTBIT);
+    bool          fail  =
+        rr_radmodes_test(velocity ? RR_LRVELBIT : RR_LRALTBIT);
+
     if (!velocity && agc_flag_test(AGC_FLAG_SCALBAD))
     {
         fail = true;
     }
+
     if (fail)
     { /* ONLITES  */
         rz_flag_put(flash, false);
@@ -188,7 +203,9 @@ static void rd_lr_lamp(bool velocity)
     {
         rr_lamp_put(lamp, false); /* LITIT    */
     }
+
     agc_status_t st = agc_rr_settrkf(); /* RRTRKF   */
+
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
@@ -203,10 +220,12 @@ void rr_radlites(uint16_t itemp1)
     {
         return;
     }
+
     if ((agc_erase_imodes33() & 1U) != 0U)
     {
         return; /* lamp test */
     }
+
     if (itemp1 == RR_LRVELBIT)
     {
         rd_lr_lamp(true);
@@ -218,6 +237,7 @@ void rr_radlites(uint16_t itemp1)
     else
     {
         agc_status_t st = agc_rr_settrkf();
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
             return;
@@ -232,8 +252,10 @@ void agc_radar_landing_radar_lights(void)
     {
         return; /* ISWRETRN */
     }
+
     rd_lr_lamp(false);
     rd_lr_lamp(true);
+
     if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
     {
         return;
@@ -245,6 +267,7 @@ void agc_radar_landing_radar_lights(void)
 static agc_status_t rd_badrad(void)
 {
     rd.samplim = -1;
+
     return rr_badend();
 }
 
@@ -256,11 +279,13 @@ static agc_status_t rd_nomore(void)
         !agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED))
     {
         agc_status_t st = rz_alarm(RD_ALARM_NO_DATA);
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
         {
             return AGC_STATUS_BAD_ARG;
         }
     }
+
     return rd_badrad();
 }
 
@@ -272,11 +297,14 @@ static agc_status_t rd_resample(void)
     if (rd.samplim > 0)
     {
         rr_chan_or(AGC_CHAN_CHAN13, RD_ACTIVITY);
+
         return AGC_STATUS_OK; /* RESUME   */
     }
+
     rr_radmodes_set(rd.itemp1); /* DATAFAIL */
     rd.samplsum = rd.sample;
     rr_radlites(rd.itemp1);
+
     return rd_nomore();
 }
 
@@ -286,6 +314,7 @@ static agc_status_t rd_goodrad(void)
     rd.samplim = -1;
     rr_radmodes_clear(rd.itemp1);
     rr_radlites(rd.itemp1);
+
     return rr_goodend();
 }
 
@@ -295,14 +324,19 @@ static bool rd_dgcheck(void)
 {
     uint16_t now    = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & rd.itemp1);
     uint16_t before = (uint16_t) (rd.oldatagd & rd.itemp1);
-    rd.oldatagd     = (uint16_t) ((rd.oldatagd & ~rd.itemp1) | now);
+
+    rd.oldatagd = (uint16_t) ((rd.oldatagd & ~rd.itemp1) | now);
+
     if ((before | now) != 0U)
     {
         return false;
     }
+
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     rd.samplsum = agc_dp_add(&ip, rd.samplsum, rd.sample); /* DAS      */
+
     return true;
 }
 
@@ -313,10 +347,12 @@ static agc_dp_t rd_count(int bias)
     uint16_t w  = (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
     int      hi = (int) ((w >> 14) & 1U);
     int      lo = (int) (w & RD_POSMAX) + bias;
+
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
     {
         return 0; /* no valid result */
     }
+
     return agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo);
 }
 
@@ -327,11 +363,14 @@ static void rd_lr_scale(void)
 {
     bool low =
         (agc_dp_high(rd.sample) <= 0) && (agc_dp_low(rd.sample) < RD_HISCALIM);
+
     rz_flag_put(AGC_FLAG_SCALBAD, low);
     agc_interp_t ip;
+
     agc_interp_init(&ip);
     agc_dp_t four = agc_dp_shl(&ip, rd.sample, 2);    /* DDOUBL x2 */
-    rd.sample     = agc_dp_add(&ip, rd.sample, four); /* DASAMPL  */
+
+    rd.sample = agc_dp_add(&ip, rd.sample, four); /* DASAMPL  */
 }
 
 /* SCALECHK / RADIN / SCALADJ / DGCHECK2 for RR range, RR range rate and
@@ -341,10 +380,12 @@ static void rd_lr_scale(void)
 static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
 {
     uint16_t now = 0U;
+
     if (scale_bit != 0U)
     { /* SCALECHK */
         now = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & scale_bit);
         uint16_t before = (uint16_t) (agc_erase_radmodes() & scale_bit);
+
         if (now != before)
         { /* SCALCHNG */
             agc_erase_set_radmodes(
@@ -352,13 +393,17 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
             rd.oldatagd =
                 (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
             rz_flag_put(AGC_FLAG_RNGSCFLG, true);
+
             return rd_badrad();
         }
     }
+
     rd.sample = rd_count(0); /* RADIN    */
+
     if (scale_bit == 0U)
     { /* RR RDOT: no scale    */
         agc_interp_t ip;
+
         agc_interp_init(&ip);
         rd.sample = agc_dp_sub(&ip, rd.sample, RD_RDOTBIAS);
     }
@@ -371,10 +416,12 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
         else
         {
             agc_interp_t ip;
+
             agc_interp_init(&ip);
             rd.sample = agc_dp_shl(&ip, rd.sample, 3); /* x 8      */
         }
     }
+
     return rd_dgcheck() ? rd_goodrad() : rd_resample(); /* DGCHECK2 */
 }
 
@@ -385,36 +432,48 @@ static agc_status_t rd_landing_radar(void)
     if (agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED))
     { /* R77CHECK */
         uint16_t m = (uint16_t) (agc_erase_radmodes() & ~RD_BITS5_8);
+
         m = (uint16_t) (m | (agc_chan_read(AGC_CHAN_CHAN33) & RD_BITS5_8));
         agc_erase_set_radmodes((uint16_t) (m & RR_WORD_MASK));
+
         return rr_goodend();
     }
+
     if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) &
          RR_LRPOSBIT) != 0U)
     { /* LRPOSCHK */
         agc_status_t st = rz_alarm(RD_ALARM_LR_POS);
+
         if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         return rd_badrad();
     }
+
     if (((agc_chan_read(AGC_CHAN_CHAN13) ^ 3U) & 3U) == 0U)
     {
         rd.itemp1 = RR_LRALTBIT; /* LRHEIGHT */
+
         return rd_scaled(RR_ALTSCBIT, true);
     }
+
     rd.sample = rd_count(RD_LVELBIAS); /* VELCHK   */
     rd.itemp1 = RR_LRVELBIT;
+
     if (!rd_dgcheck())
     {
         return rd_resample();
     }
+
     if (rd.nsamp > 0)
     { /* NOEND    */
         rd.nsamp--;
+
         return rd_resample();
     }
+
     return rd_goodrad();
 }
 
@@ -426,8 +485,10 @@ static agc_status_t rd_rendezvous_radar(void)
     {
         return rd_badrad();
     }
-    rd.itemp1  = RR_RRDATABT;
+
+    rd.itemp1 = RR_RRDATABT;
     bool range = (agc_chan_read(AGC_CHAN_CHAN13) & 1U) != 0U;
+
     return rd_scaled(range ? RR_RRRSBIT : 0U, false);
 }
 
@@ -436,25 +497,32 @@ static agc_status_t rd_rendezvous_radar(void)
 agc_status_t agc_rendz_radar_read(void)
 {
     rd.dnindex = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN13) & 7U);
+
     if (rd.dnindex != 0U)
     {
         rd.dnradar[rd.dnindex - 1U] =
             (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
     }
+
     if (rd.samplim < 0)
     { /* TRYCOUNT */
         agc_status_t st = rz_alarm(RD_ALARM_UNEXPECTED);
+
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st; /* RESUME  */
     }
+
     if (rd.samplim == 0)
     {
         return rd_nomore();
     }
+
     rd.samplim--; /* PLENTY   */
+
     if ((agc_chan_read(AGC_CHAN_CHAN13) & RD_LR_SELECT) == 0U)
     {
         return rd_rendezvous_radar();
     }
+
     return rd_landing_radar();
 }
 
@@ -466,6 +534,7 @@ agc_status_t agc_radar_lrpos2(void)
     agc_inhint();
     rr_radmodes_set(RR_LRPOSBIT);
     agc_status_t st;
+
     if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_LR_POS2) == 0U)
     {
         st = rr_radnoop(); /* already  */
@@ -475,7 +544,9 @@ agc_status_t agc_radar_lrpos2(void)
         rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
         st = agc_waitlist_call(RD_LR_POS2_WAIT, AGC_TASK_LR_POSITION_SCAN);
     }
+
     agc_relint();
+
     return st;
 }
 
@@ -485,10 +556,12 @@ agc_status_t agc_task_lr_position_scan(void)
     rd.samplim = RD_POS_TRIES;
     agc_status_t st =
         agc_waitlist_fixdelay(RD_1SEC, AGC_TASK_LR_POSITION_CHECK);
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -496,6 +569,7 @@ agc_status_t agc_task_lr_position_scan(void)
 agc_status_t agc_task_lr_position_check(void)
 {
     agc_status_t st;
+
     if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_LR_POS2) == 0U)
     {
         st = agc_waitlist_vardelay(RD_2SECS, AGC_TASK_LR_POSITION_SETTLED);
@@ -508,12 +582,15 @@ agc_status_t agc_task_lr_position_check(void)
     else
     {
         rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_LRPOS2); /* time up  */
+
         return rr_badend();
     }
+
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return st;
 }
 
@@ -521,9 +598,11 @@ agc_status_t agc_task_lr_position_check(void)
 agc_status_t agc_task_lr_position_settled(void)
 {
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
+
     if (!AGC_ASSERT(rr_radmodes_test(RR_LRPOSBIT)))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rr_goodend();
 }

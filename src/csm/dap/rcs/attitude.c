@@ -37,7 +37,8 @@ static const uint16_t forcemask[AGC_CSM_AXES] = {001400, 000060, 000300};
 static const uint16_t dampbit[AGC_CSM_AXES]   = {010000, 004000, 002000};
 
 typedef enum pp_region
-{ /* outcome of the switching logic       */
+{
+    /* outcome of the switching logic       */
     PP_J18 = 0,
     PP_J20,
     PP_J21,
@@ -69,26 +70,32 @@ static agc_sp_t     rcs_jtime(int i, agc_dp_t kmpac);
 agc_status_t csm_rcs_ahfnorot(void)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
         return rcs_freecont();
     }
+
     if (csm_rcs_rate_init_pending())
     {
         return csm_rcs_reinit(); /* recycle to initialise the filter  */
     }
+
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_ATTHOLD) == 0u)
     {
         return rcs_holdfunc();
     }
+
     if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, -     */
         return rcs_atthold();
     }
+
     return rcs_grabang();
 }
 
@@ -97,24 +104,31 @@ agc_status_t csm_rcs_ahfnorot(void)
 static agc_status_t rcs_freecont(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    r->holdflag      = 1; /* inhibit automatic steering        */
-    uint16_t ch32    = agc_chan_read(AGC_CHAN_CHAN32);
-    uint16_t bits    = (uint16_t) (~(unsigned) ch32 & MANROT & r->chantemp);
-    r->chantemp      = ch32; /* LXCH CHANTEMP                     */
-    agc_status_t st  = csm_rcs_stickchk(bits);
+
+    r->holdflag = 1; /* inhibit automatic steering        */
+    uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);
+    uint16_t bits = (uint16_t) (~(unsigned) ch32 & MANROT & r->chantemp);
+
+    r->chantemp = ch32; /* LXCH CHANTEMP                     */
+    agc_status_t st = csm_rcs_stickchk(bits);
+
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         int m = (int) r->manndx[i];
+
         if (!AGC_ASSERT((m >= 0) && (m <= 3)))
         {
             return AGC_STATUS_BAD_ARG;
         }
+
         r->tau[i] = mintau[m]; /* TAU, TAU1, TAU2                   */
     }
+
     return csm_rcs_t6progm();
 }
 
@@ -122,14 +136,17 @@ static agc_status_t rcs_freecont(void)
 static agc_status_t rcs_holdfunc(void)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     if (r->holdflag == 0)
     {
         return rcs_atthold();
     }
+
     return rcs_grabang();
 }
 
@@ -139,28 +156,35 @@ static agc_status_t rcs_grabang(void)
 {
     agc_csm_rcs_t          *r = agc_csm_dap_rcs();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         r->wbody[i] = 0;
         r->bias[i]  = 0;
     }
+
     if ((c->rcsflags & DAMPBITS) != 0u)
     { /* rate damping not done   */
         for (int i = 0; i < AGC_CSM_AXES; i++)
         {
             r->error[i] = 0;
         }
+
         return csm_rcs_jets();
     }
+
     r->holdflag = 0; /* ENDDAMP                 */
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         r->thetad[i] = csm_dap_cdu(i); /* DCA CDUX; DXCH THETADX  */
     }
+
     if (!AGC_ASSERT(r->holdflag == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rcs_atthold();
 }
 
@@ -170,12 +194,14 @@ static agc_status_t rcs_atthold(void)
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();
     agc_sp_t       ex = csm_dap_msu(agc_erase_cdux(), r->thetad[0]);
     agc_sp_t       t  = csm_dap_msu(agc_erase_cduy(), r->thetad[1]);
-    r->error[0]       = csm_dap_ads(ex, csm_dap_mp_hi(t, r->amgb1));
-    r->error[1]       = csm_dap_mp_hi(t, r->amgb4);
-    r->error[2]       = csm_dap_mp_hi(t, r->amgb7);
-    t                 = csm_dap_msu(agc_erase_cduz(), r->thetad[2]);
-    r->error[1]       = csm_dap_ads(r->error[1], csm_dap_mp_hi(t, r->amgb5));
-    r->error[2]       = csm_dap_ads(r->error[2], csm_dap_mp_hi(t, r->amgb8));
+
+    r->error[0] = csm_dap_ads(ex, csm_dap_mp_hi(t, r->amgb1));
+    r->error[1] = csm_dap_mp_hi(t, r->amgb4);
+    r->error[2] = csm_dap_mp_hi(t, r->amgb7);
+    t           = csm_dap_msu(agc_erase_cduz(), r->thetad[2]);
+    r->error[1] = csm_dap_ads(r->error[1], csm_dap_mp_hi(t, r->amgb5));
+    r->error[2] = csm_dap_ads(r->error[2], csm_dap_mp_hi(t, r->amgb8));
+
     if (r->holdflag < 0)
     { /* add biases only if automatic      */
         for (int i = 0; i < AGC_CSM_AXES; i++)
@@ -183,10 +209,12 @@ static agc_status_t rcs_atthold(void)
             r->error[i] = csm_dap_ads(r->error[i], r->bias[i]);
         }
     }
+
     if (!AGC_ASSERT(r->error[0] >= AGC_SP_MIN))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return csm_rcs_jets();
 }
 
@@ -196,63 +224,80 @@ agc_status_t csm_rcs_jets(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
     pp_point_t     p;
+
     p.adbaf = csm_dap_ads(r->adb, AF); /* T5TEMP     */
+
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
         p.edot = r->adot[i];
+
         if (r->holdflag != 0)
         { /* not INHOLD: rate error from WBODY */
             p.edot = csm_dap_das(p.edot, -r->wbody[i]); /* ADOT-WBODY */
         }
-        p.aerr         = r->error[i];   /* AERR = BIAS + AK                  */
-        bool pos       = (p.edot >= 0); /* POSVEL / NEGVEL (SIGNCK1)         */
-        p.edotvel      = pos ? p.edot : -p.edot;
-        p.adbvel       = pos ? p.adbaf : (agc_sp_t) -p.adbaf;
-        p.aerrvel      = pos ? p.aerr : (agc_sp_t) -p.aerr;
+
+        p.aerr = r->error[i];   /* AERR = BIAS + AK                  */
+        bool pos = (p.edot >= 0); /* POSVEL / NEGVEL (SIGNCK1)         */
+
+        p.edotvel = pos ? p.edot : -p.edot;
+        p.adbvel  = pos ? p.adbaf : (agc_sp_t) -p.adbaf;
+        p.aerrvel = pos ? p.aerr : (agc_sp_t) -p.aerr;
         agc_dp_t kmpac = 0;
+
         if (rcs_delta_w(i, &p, &kmpac))
         {
             r->tau[i] = rcs_jtime(i, kmpac); /* DOJET      */
         }
     }
+
     if (!AGC_ASSERT(p.adbaf > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rcs_t6prog();
 }
 
 /* J6. .. NJ23 (pp. 1030-1032): which region of FIG. 1 the point is in.  */
 static pp_region_t rcs_region(const pp_point_t *p)
 {
-    const agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    int adb = (int) r->adb;
+    const agc_csm_rcs_t *r   = agc_csm_dap_rcs();
+    int                  adb = (int) r->adb;
+
     if ((int) p->aerrvel - adb + WLH_SLOP > 0)
     { /* J6.        */
         if ((int) p->aerrvel - (int) p->adbaf > 0)
         { /* J7         */
             return ((-WLMH_SLP - (int) p->adbaf + (int) p->aerrvel) <= 0) ?
-                       PP_J20 :
-                       PP_J21;
+                   PP_J20 :
+                   PP_J21;
         }
+
         int q = (int) csm_dap_dv(-p->edotvel, r->slope);
+
         return ((q - (int) p->aerrvel + adb) <= 0) ? PP_J18 : PP_J23;
     }
+
     if (csm_dap_das(-WLH, p->edotvel) >= 0)
     { /* J8         */
         return PP_J22;
     }
+
     int a = (int) csm_dap_dv(p->edotvel, r->slope) + (int) p->adbaf +
             (int) p->aerrvel;
+
     if (a >= 0)
     { /* NJ22       */
         return PP_J23;
     }
+
     if (csm_dap_das(-WLMH, p->edotvel) >= 0)
     {
         return PP_J23;
     }
+
     a = (int) p->aerrvel + (int) p->adbaf + WLMH_SLP; /* NJ23       */
+
     return (a >= 0) ? PP_J24 : PP_J22;
 }
 
@@ -265,6 +310,7 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
     pp_region_t       reg   = rcs_region(p);
     agc_dp_t          medot = -p->edot;
     bool              fire  = true;
+
     switch (reg)
     {
         case PP_J23:
@@ -298,10 +344,12 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
             fire = false; /* unreachable: cannot happen */
             break;
     }
+
     if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
     {
         return false;
     }
+
     return fire;
 }
 
@@ -311,21 +359,27 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
 static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
     {
         return 0;
     }
-    agc_dp_t k  = csm_dap_smallmp(kmpac, r->jm[i]); /* J/M, J/M1, J/M2     */
-    k           = csm_dap_smallmp(k, BIT11);
+
+    agc_dp_t k = csm_dap_smallmp(kmpac, r->jm[i]); /* J/M, J/M1, J/M2     */
+
+    k = csm_dap_smallmp(k, BIT11);
     agc_sp_t hi = agc_dp_high(k);
+
     if (hi > 0)
     {
         return AGC_SP_MAX;
     }
+
     if (hi < 0)
     {
         return AGC_SP_MIN;
     }
+
     return agc_dp_low(k); /* TAUNORM            */
 }
 
@@ -333,14 +387,17 @@ static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 agc_status_t csm_rcs_t6progm(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
+
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         r->error[i] = 0;
     }
+
     if (!AGC_ASSERT(r->error[2] == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
+
     return rcs_t6prog();
 }
 
@@ -349,5 +406,6 @@ agc_status_t csm_rcs_t6progm(void)
 static agc_status_t rcs_t6prog(void)
 {
     agc_rupt_set_t5_task(AGC_TASK_JETSLECT);
+
     return AGC_STATUS_OK;
 }
