@@ -15,7 +15,7 @@
  *
  * Job entry points (agc_job_*) are the AGC labels at which a job starts or
  * resumes after a display, a stall or a delay; the lead registers them in
- * agc_jobs.h / dispatch.c (provisional ids in src/programs/align_pending.h).
+ * agc_jobs.h / dispatch.c (provisional ids in include/agc/agc_align_pending.h).
  */
 #ifndef AGC_ALIGN_H
 #define AGC_ALIGN_H
@@ -203,13 +203,13 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
 agc_vec_t    agc_align_r_other(void);    /* R-OTHER  m B29 (downlink)      */
 agc_vec_t    agc_align_v_other(void);    /* V-OTHER  m/cs B7 (downlink)    */
 
-/* ---- COARSE (both vehicles, src/programs/align_common.c) ---------------- */
+/* ---- COARSE (both vehicles, src/programs/alignment/align_common.c) ---------------- */
 
 /* ---- shared alignment jobs: R54 (CHKSDATA) and R55 (src/programs/) ------ */
 agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 
-/* ---- CSM geometry (src/csm/csm_geometry.c) ------------------------------- */
+/* ---- CSM geometry (src/csm/optics/csm_geometry.c) ------------------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
                            uint16_t shaft_cdu, agc_vec_t *starm_nb);
@@ -266,7 +266,7 @@ const uint16_t *agc_ags_buffer(void);    /* AGSBUFF, 14 raw words           */
 agc_dp_t     agc_ags_agsk(void);         /* AGSK cs B28                     */
 agc_status_t agc_ags_set_agsk(agc_dp_t t);
 
-/* ---- SXTMARK (CSM, src/csm/sxtmark.c) ------------------------------------ */
+/* ---- SXTMARK (CSM, src/csm/optics/sxtmark.c) ------------------------------------ */
 agc_status_t agc_sxtmark(agc_sp_t nmarks);                /* SXTMARK       */
 agc_status_t agc_sxtmark_reserve(void);                   /* SXTMARK +2    */
 agc_status_t agc_sxtmark_mkreleas(void);                  /* MKRELEAS      */
@@ -308,11 +308,11 @@ agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los,
 /* ---- LM P51/P52/P57, R51, R52, R59 (src/lm/) ------------------------------ */
 
 /* ==== job and task entry points (BEGIN generated list) ==== */
-/* src/csm/s_band_antenna_csm.c */
+/* src/csm/optics/s_band_antenna_csm.c */
 agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx);
-/* src/csm/sxtmark.c */
+/* src/csm/optics/sxtmark.c */
 agc_status_t agc_task_markdif(void);
 agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_mark_request_flash(agc_job_ctx_t *ctx);
@@ -324,14 +324,14 @@ agc_status_t agc_task_endmarks(void);
 /* src/lm/s_band_antenna_lm.c */
 agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx);
-/* src/programs/align_common.c */
+/* src/programs/alignment/align_common.c */
 agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx);
-/* src/programs/align_planet.c */
+/* src/programs/alignment/align_planet.c */
 agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx);
 agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx);
-/* src/programs/imu_realign.c */
+/* src/programs/alignment/imu_realign.c */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx);
 agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx);
@@ -348,7 +348,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx);
-/* src/programs/sighting_data_and_gyro_torquing.c */
+/* src/programs/alignment/sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx);

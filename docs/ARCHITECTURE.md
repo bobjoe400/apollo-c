@@ -16,15 +16,50 @@ include/agc/        public API (lead-owned contract)
   agc_nav.h         conic/integration interfaces  (nav agents)
   agc_imu.h         IMU interfaces                (imu agent)
   agc_guid.h        guidance interfaces           (guidance agents)
+  agc_*_internal.h / agc_*_pending.h / agc_sysmisc.h
+                    former lane-private headers shared by more than one src
+                    subfolder, promoted here by the restructure (see
+                    docs/modules/restructure.md)
 src/core/           numeric model, state, channels      (libagc)
 src/exec/           executive, waitlist, restarts, alarms, dispatch
-src/io/             pinball/DSKY, keyrupt, T4RUPT, downlink, extended verbs
+src/io/             downlink_lists_{csm,lm}.c (telemetry; < 3 files so no subfolder)
+  dsky/             pinball_*.c, display_if.c, noun_*.c, pinball_internal.h
+  service/          t4rupt*.c (common, csm optics, lm radar), service.c,
+                    rtb_ops.c, sysmisc_ext.h
+  (telemetry/, verbs/ are not created until they hold >= 3 files: down
+   telemetry, uplink update, extended verbs, self-check)
 src/imu/            IMU moding, compensation, alignment, maneuvers
-src/nav/            conic, integration, lat/long, planetary, ephemerides
-src/guidance/       powered-flight subroutines, P30s, P40s shared parts
-src/programs/       P20s rendezvous, P50s alignment, R-routines (shared)
-src/csm/            Comanche-only: entry (P61-67), TVC/RCS DAP, P11, P37
-src/lm/             Luminary-only: landing, ascent, LM DAP, AGS init
+src/nav/
+  conic/            conic_*.c, conic_internal.h
+  integration/      integration_*.c, orbital_integration.c, svdwn.c
+  aux/              latlong, planetary, measurement, free_fall, ephemerides,
+                    star_tables, navaux_util
+src/guidance/       powered-flight subroutines, shared burn programs
+                    (external_delta_v, burn_steering), servicer_common
+src/programs/
+  rendezvous/       rendz_*.c
+  alignment/        align_*.c, imu_realign.c, sighting_data_and_gyro_torquing.c
+src/csm/            Comanche-only
+  entry/            entry lexicon, reentry, entry programs, CM body attitude,
+                    entry DAP
+  dap/rcs/          RCS DAP, jet selection, FDAI needles, DAP data load
+  dap/tvc/          TVC init/executive/mass properties/restarts/pitch-yaw/
+                    stroke test/roll DAP
+  dap/              mysubs.c, dap_state.c (shared; < 3 files so no common/)
+  burns/            sps_burn*, earth_orbit_insertion, return_to_earth,
+                    servicer_csm, external_delta_v_csm
+  optics/           sxtmark, s_band_antenna_csm, csm_geometry
+  prelaunch_align.c (< 3 files in prelaunch/)
+src/lm/             Luminary-only
+  landing/          landing guidance/displays/aborts/state, throttle,
+                    findcduw, lunar_landing
+  burns/            dps_burn*, ignition, servicer_lm*
+  dap/rcs/          idler, P-axis, Q/R-axis, TJET law, rate/Kalman, T6RUPT,
+                    needles
+  dap/common/       dapif.c, state.c, arith.c
+  dap/gts.c         trim gimbal system (< 3 files in gimbal/)
+  ascent.c, s_band_antenna_lm.c, lem_geometry.c  (ascent/, optics/ not yet
+                    >= 3 files)
 src/sim/            host harness: clock, interrupts, DSKY console (no lib)
 tests/              unit tests (one binary per file, -DAGC_HOST_DEBUG)
 tools/              check_rules.py (Power of Ten lint)
@@ -37,3 +72,9 @@ core < exec < io/imu/nav < guidance < programs < csm|lm < sim.
 Dispatch: `src/exec/dispatch.c` holds the one `switch` from `agc_job_id_t`
 / `agc_task_id_t` to the job/task functions, so the call graph stays
 static and recursion-free (rules 1 and 9).
+
+Subfolder rule: a src/ subfolder exists only when it holds >= 3 files;
+otherwise its files stay in the parent. A private header included from a
+different folder is promoted to include/agc/ with an `agc_` prefix, so no
+moved file needs a `../` include (the one pre-existing cross-folder include,
+csm/prelaunch_align.c -> ../imu/imu_pending.h, is untouched).

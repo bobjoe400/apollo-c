@@ -20,7 +20,7 @@
 #include "agc/agc_state.h"
 #include "agc/agc_channels.h"
 #include "../src/exec/exec_internal.h"
-#include "../src/exec/exec_pending.h"
+#include "agc/agc_exec_pending.h"
 
 static int g_checks;
 static int g_failures;

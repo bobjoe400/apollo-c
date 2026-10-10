@@ -69,9 +69,9 @@ angles revolutions 2^0, unit vectors 2^1, mu m^3/cs^2 2^36.
 | P20-P25 LM: LPS20.1, LPS20.2, LRS22.1-3, RR routines | radar -> state update | rendezvous_navigation_lm.c | |
 | RADSAMP / DORSAMP / VARADAR (LM) | radar sampling test | radar_leadin_lm.c | |
 
-External calls are funnelled through src/programs/rendz_glue.c (one place
+External calls are funnelled through src/programs/rendezvous/rendz_glue.c (one place
 to adapt when agc_nav.h / agc_integ.h / agc_navaux.h / agc_dsky.h / agc_imu.h
-land); assumed signatures are in src/programs/rendz_ext.h.
+land); assumed signatures are in src/programs/rendezvous/rendz_ext.h.
 
 ## Progress
 

@@ -12,7 +12,7 @@
  * and returns a ones' complement result, MP keeps the upper (A) and lower
  * (L) words of the exact 28-bit product.
  */
-#include "csm_dap_internal.h"
+#include "agc/agc_csm_dap_internal.h"
 
 #define W_ONE      16384     /* 2^14: 1.0 in SP units                     */
 #define W_DP_ONE   (1L << 28) /* 1.0 in DP units                          */

@@ -21,7 +21,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_channels.h"
 #include "agc/agc_lm_dap.h"
-#include "lm_dap_internal.h"
+#include "agc/agc_lm_dap_internal.h"
 
 #define GT_BGIM      007400u   /* BGIM: channel 12 bits 9-12              */
 #define GT_GIMQ      001400u   /* GMBLBITA: bits 9,10 (Q drive)           */

@@ -1,0 +1,121 @@
+/*
+ * needles.c -- the FDAI attitude-error display of the LM DAP
+ * (DAPIDLER_PROGRAM.agc pp.1414-1420): ALTDSPLY, DSPLYTOT, NEEDLER.
+ *
+ * ALTDSPLY alternates every 100 ms between computing the errors (DAP
+ * following errors, or total errors when NEEDLFLG is set) and driving the
+ * needles through the IMU error counters (CDUXCMD..CDUZCMD) via NEEDLER.
+ */
+#include "agc/agc_assert.h"
+#include "agc/agc_channels.h"
+#include "agc/agc_imu.h"
+#include "agc/agc_lm_dap.h"
+#include "agc/agc_lm_dap_internal.h"
+
+#define NDL_ONETENTH ((agc_sp_t)03146)   /* ONETENTH: 0.1 at 1             */
+#define NDL_DACMAX   384                 /* 384 bits = 42 3/16 deg (DAC)   */
+#define NDL_IMUERR   000040u             /* CHAN12 bit 6: IMU error cntr   */
+#define NDL_DACBITS  070000u             /* 13,14,15: CHAN14 DAC activity  */
+#define NDL_PASSBITS 6u                  /* SIX: RCSFLAGS bits 2,3         */
+
+/* ALTDSPLY (pp.1414-1415): invert DSPLYALT; display (NEEDLER) or compute
+ * the errors for the next pass.                                           */
+agc_status_t lm_dap_altdsply(void)
+{
+    lm_dap_t *d = lm_dap_state();
+    d->rcsflags = (uint16_t)(d->rcsflags ^ LM_RCS_DSPLYALT);
+    if ((d->rcsflags & LM_RCS_DSPLYALT) != 0u) {
+        return lm_dap_needler();
+    }
+    if (agc_flag_test(AGC_FLAG_NEEDLFLG)) {       /* total attitude error   */
+        return lm_dap_dsplytot();
+    }
+    d->ak[1] = (agc_sp_t)-d->qerror;              /* error complements      */
+    d->ak[2] = (agc_sp_t)-d->rerror;
+    d->ak[0] = (agc_sp_t)-d->perror;
+    (void)AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX);
+    (void)AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX);
+    return AGC_STATUS_OK;
+}
+
+/* DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
+ * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.        */
+agc_status_t lm_dap_dsplytot(void)
+{
+    lm_dap_t *d = lm_dap_state();
+    agc_sp_t ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
+    agc_sp_t zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
+    agc_sp_t xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
+    d->ak[1] = lm_dap_sat((int32_t)lm_dap_mphi(ydif, agc_erase_m21()) +
+                          (int32_t)lm_dap_mphi(zdif, agc_erase_m22()));
+    d->ak[2] = lm_dap_sat((int32_t)lm_dap_mphi(ydif, agc_erase_m31()) +
+                          (int32_t)lm_dap_mphi(zdif, agc_erase_m32()));
+    d->ak[0] = lm_dap_sat((int32_t)lm_dap_mphi(ydif, agc_erase_m11()) +
+                          (int32_t)xdif);
+    (void)AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX);
+    (void)AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX);
+    return AGC_STATUS_OK;
+}
+
+/* NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
+ * the error counters; next pass enables the counters.                    */
+static agc_status_t needle11(lm_dap_t *d)
+{
+    agc_status_t st = AGC_STATUS_OK;
+    for (int i = 0; i < 3; i++) {
+        d->ak[i] = 0;
+        d->edrive[i] = 0;
+        agc_status_t s = agc_imu_hw_set_cducmd(i, 0);   /* CS ZERO: -0       */
+        st = (s != AGC_STATUS_OK) ? s : st;
+    }
+    d->rcsflags = (uint16_t)((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
+    (void)AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return st;
+}
+
+/* NEEDLES / DACLOOP (p.1419): meter the change of each display into the
+ * IMU error counter, limited to +-384 bits.                              */
+static agc_status_t needles(lm_dap_t *d)
+{
+    agc_status_t st = AGC_STATUS_OK;
+    for (int i = 2; i >= 0; i--) {                 /* DINDX = 2, 1, 0       */
+        int32_t l = lm_dap_mphi((agc_sp_t)-NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
+        if (l > NDL_DACMAX) {
+            l = NDL_DACMAX;                        /* overflow: DACLIMIT +1 */
+        } else if (l < -NDL_DACMAX) {
+            l = -NDL_DACMAX;
+        }
+        int32_t cmd = (int32_t)agc_imu_cducmd(i) + l - (int32_t)d->edrive[i];
+        agc_status_t s = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
+        st = (s != AGC_STATUS_OK) ? s : st;
+        d->edrive[i] = (agc_sp_t)l;
+    }
+    agc_status_t s14 = agc_chan_or(014, NDL_DACBITS);  /* DAC activity bits */
+    (void)AGC_ASSERT(s14 == AGC_STATUS_OK);
+    (void)AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX);
+    return st;
+}
+
+/* NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.            */
+agc_status_t lm_dap_needler(void)
+{
+    lm_dap_t *d = lm_dap_state();
+    uint16_t pass = (uint16_t)(d->rcsflags & NDL_PASSBITS);
+    if (pass != 0u) {
+        if ((pass & LM_RCS_NEEDLE3) != 0u) {          /* first pass         */
+            agc_status_t s = agc_chan_and(012, (uint16_t)~NDL_IMUERR & 077777u);
+            (void)AGC_ASSERT(s == AGC_STATUS_OK);
+            return needle11(d);
+        }
+        agc_status_t s = agc_chan_or(012, NDL_IMUERR);  /* NEEDLER2: enable */
+        d->rcsflags = (uint16_t)(d->rcsflags & ~NDL_PASSBITS);
+        (void)AGC_ASSERT(s == AGC_STATUS_OK);
+        return s;
+    }
+    if ((agc_chan_read(012) & NDL_IMUERR) == 0u) {    /* NEEDLES3           */
+        d->rcsflags = (uint16_t)(d->rcsflags | LM_RCS_NEEDLE3); /* re-init  */
+        return AGC_STATUS_OK;
+    }
+    return needles(d);
+}

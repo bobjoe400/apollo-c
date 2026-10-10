@@ -25,8 +25,8 @@ docs/RENAMES_inventory.txt.
    for a file only if its token stream (comments excluded) is identical to
    spatch's output: 86 of 87 files matched; guid_pending.h differed only by
    the intentional VHHDOT edit and was re-applied the same way.
-4. `git mv` src/guidance/p30.c -> external_delta_v.c, src/guidance/p40.c ->
-   burn_steering.c, src/csm/p37.c -> return_to_earth.c (no #include or
+4. `git mv` src/guidance/external_delta_v.c -> external_delta_v.c, src/guidance/burn_steering.c ->
+   burn_steering.c, src/csm/burns/return_to_earth.c -> return_to_earth.c (no #include or
    Makefile change needed; the Makefile globs src/).
 5. docs/modules/*.md and docs/MODULE_STATUS.md: word-boundary text
    substitution with every map row incl. the files/docs sections, longest
@@ -40,9 +40,9 @@ docs/RENAMES_inventory.txt.
   pointer comment in guid_pending.h; AGC labels such as V97TTASK, P63SPOT2,
   R51K, CANV37, GOP00FIX, S40.9, REP11A have the same counts as before.
 * Compile (brief flags, -c) of every .c under src/ and tests/: baseline 21
-  failures -> 5, no new failure. Remaining: src/csm/sxtmark.c,
-  src/io/service.c, src/lm/ignition.c, src/lm/lunar_landing.c,
-  src/programs/imu_realign.c -- all are references to functions their
+  failures -> 5, no new failure. Remaining: src/csm/optics/sxtmark.c,
+  src/io/service/service.c, src/lm/burns/ignition.c, src/lm/landing/lunar_landing.c,
+  src/programs/alignment/imu_realign.c -- all are references to functions their
   paused lanes have not written yet (e.g. agc_job_lm_fine_align_recheck,
   agc_erase_extvbact, AGC_JOB_IGN_INTEGRATE).
 * tools/check_rules.py src include tests: identical before/after
@@ -61,7 +61,7 @@ docs/RENAMES_inventory.txt.
   to be part of a pre-existing parallel registry of about 40 ids
   (TIG_0, TIG_5, TTG_0, CLOKTASK, ENGINOFF, REDO40_9 ...) and the two
   headers are never in one translation unit; deleting only the 10 would
-  have broken src/csm/sps_burn*.c and src/lm/dps_burn.c. Only the unused
+  have broken src/csm/burns/sps_burn*.c and src/lm/burns/dps_burn.c. Only the unused
   AGC_JOB_VHHDOT (ex P11SC) line was removed. Merging the registries is an
   integration task (see RENAMES.md).
 * The guid-landing section (42 rows) was missing from the reviewed

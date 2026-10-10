@@ -8,7 +8,7 @@
  *
  * Static storage (rule 3); other lanes reach it through the accessors.
  */
-#include "csm_dap_internal.h"
+#include "agc/agc_csm_dap_internal.h"
 
 static agc_csm_rcs_t    rcs;    /* RCS DAP erasables                     */
 static agc_csm_tvc_t    tvc;    /* TVC DAP erasables                     */

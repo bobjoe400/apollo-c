@@ -59,8 +59,8 @@ agc_interp_scalar.c, agc_interp_trig.c, agc_interp_vector.c, agc_vec_div.c
   flags; check_rules: 0 hard, density >= 2 in every core-numeric file.
 * DONE tests/test_core_numeric.c (passes), tests/oracle_core_numeric.c +
   tools/oracle/cases/core_numeric.{spec,txt} (287 cases, 0 mismatches).
-* `make lib` currently stops on other lanes' files (src/csm/reentry.c,
-  src/io/sysmisc.h, src/programs/*); core-numeric objects and both tests
+* `make lib` currently stops on other lanes' files (src/csm/entry/reentry.c,
+  include/agc/agc_sysmisc.h, src/programs/*); core-numeric objects and both tests
   were built and run by linking src/core/agc_{assert,mpac,divide,shift,word,
   sp_trig,constants,interp_scalar,interp_trig,interp_vector,vec_div}.c.
 

@@ -8,13 +8,13 @@ ORBITAL_INTEGRATION.agc (pp. 1334-1354), diffed against Luminary099
 vehicle differences behind `agc_state_vehicle()`; the one LM-only routine
 that needs an LM-only flag (SETITCTR, AVEGFLAG) is in its own file.
 
-Files: include/agc/agc_integ.h, src/nav/integ_internal.h (private),
-src/nav/integration_init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
-src/nav/integration_jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
-MIDTOAV1/2, INTWAKEU), src/nav/orbital_integration.c (Encke step, ACCOMP,
+Files: include/agc/agc_integ.h, src/nav/integration/integ_internal.h (private),
+src/nav/integration/integration_init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
+src/nav/integration/integration_jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
+MIDTOAV1/2, INTWAKEU), src/nav/integration/orbital_integration.c (Encke step, ACCOMP,
 GAMCOMP, OBLATE, DIFEQ, W matrix, RECTIFY, origin change),
-src/nav/integration_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
-src/nav/integration_lm.c (SETITCTR, AVEGFLAG), src/nav/integ_pending.h
+src/nav/integration/integration_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
+src/nav/integration/integration_lm.c (SETITCTR, AVEGFLAG), src/nav/integration/integ_pending.h
 (placeholder job/task ids), tests/test_integration.c.
 
 Also translated here (because they are the body of the STATEINT job):
@@ -157,7 +157,7 @@ though Luminary099 never reaches them.
   prog-rendz) -- AVETOMID zeroes it. Meanwhile `trkmkcnt_pending` static in
   integration_jobs.c.
 * Layering: ATOPCSM/ATOPLEM call `agc_align_svdwn()` (SVDWN1/SVDWN2,
-  agc_align.h, src/programs/align_locsam.c), i.e. nav calls programs.
+  agc_align.h, src/programs/alignment/align_locsam.c), i.e. nav calls programs.
   Request: move SVDWN to nav (e.g. `agc_integ_svdwn`) or core.
 * agc_state.h comment fix: RN/VN are always 2^29 m / 2^7 m/cs (AVERAGEG);
   SETCOAST shifts them left 2 for the moon scale (VSR* 0,2 with X2 = 2).
@@ -171,7 +171,7 @@ though Luminary099 never reaches them.
 
 ## Requested jobs-tasks
 
-Placeholders in src/nav/integ_pending.h (range 0x0F):
+Placeholders in src/nav/integration/integ_pending.h (range 0x0F):
 
 | id | AGC | body | how started |
 |---|---|---|---|

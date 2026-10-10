@@ -115,7 +115,7 @@ tests/test_imu.c.
 
 ## Requested core additions
 Everything below is declared in src/imu/imu_pending.h until the owner publishes it:
-* sys-misc (src/io/sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
+* sys-misc (include/agc/agc_sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
   agc_rtb_signmpac, agc_rtb_loadtime, agc_t4_setissw -- same signatures as sysmisc.h; please make public.
 * guid-powered: `agc_status_t agc_pfs_pipasr_noscale(void);` (PIPASR +3, used by LM NBDONLY on surface).
 * prog-rendz: `agc_status_t agc_rendz_goto_terminate_tracking(void);` (R61TEST).

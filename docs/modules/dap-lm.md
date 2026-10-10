@@ -12,8 +12,8 @@ derivation), DAP_INTERFACE_SUBROUTINES, T6-RUPT_PROGRAMS, RCS_FAILURE_MONITOR,
 SPS_BACK-UP_RCS_CONTROL (name is correct in the repo; it holds SPSRCS, the
 CSM-docked RCS law).
 
-Code: `src/lm/dap/*.c`, internal header `src/lm/dap/lm_dap_internal.h`,
-shim for not-yet-existing shared symbols `src/lm/dap/lm_dap_pending.h`,
+Code: `src/lm/dap/*.c`, internal header `include/agc/agc_lm_dap_internal.h`,
+shim for not-yet-existing shared symbols `include/agc/agc_lm_dap_pending.h`,
 public API `include/agc/agc_lm_dap.h`. Test: `tests/test_lm_dap.c`.
 
 ## Design table

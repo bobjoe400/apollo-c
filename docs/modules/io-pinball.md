@@ -66,7 +66,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 
 (updated as files are finished)
 
-- DONE design; include/agc/agc_dsky.h; src/io/pinball_internal.h (control-flow model in its header comment)
+- DONE design; include/agc/agc_dsky.h; src/io/dsky/pinball_internal.h (control-flow model in its header comment)
 - DONE pinball_state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
 - DONE pinball_display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
 - DONE pinball_keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
@@ -80,7 +80,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - DONE agc_dsky_endext (ENDEXT EQUALS ENDMARK)
 - DONE tests/test_dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
   violations, assertion density 1.25-1.93 per file (warn)
-- Files: include/agc/agc_dsky.h; src/io/pinball_internal.h, pinball_state.c,
+- Files: include/agc/agc_dsky.h; src/io/dsky/pinball_internal.h, pinball_state.c,
   pinball_display.c, pinball_keys.c, pinball_verbs.c, pinball_monitor.c,
   pinball_load.c, pinball_scale.c, pinball_sfin.c, pinball_nvsub.c, display_if.c
 
@@ -145,7 +145,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
   (RECAL2: terminate/proceed/data-in return; XCHNYLOC: XCHTOEND / XCHSLEEP).
   NOT_FOUND if no job sleeps at loc. Declared in pinball_internal.h.
 - sys-misc: `agc_status_t agc_extverb(int verb, int noun);` (GOEXTVB, already in
-  src/io/sysmisc.h) and `void agc_erase_set_extvbact(uint16_t)` (CLEARMRK; in
+  include/agc/agc_sysmisc.h) and `void agc_erase_set_extvbact(uint16_t)` (CLEARMRK; in
   sysmisc_ext.h). GOPIN (ALM/END -> PINBRNCH) stays sys-misc's; it should call
   agc_dsky_pinbrnch(). T4RUPT's DSPOUT should call agc_dsky_dspout(); PRO key ->
   agc_dsky_prockey_request(); MARKRUPT nav-DSKY keys -> agc_dsky_keyrupt2().
@@ -165,8 +165,8 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
   request), agc_dsky_loadlv (GOLOADLV of V50/V51), agc_dsky_set_nvword1 (P30-P47),
   agc_dsky_endext, agc_job_xchsleepm/n.
 - Other lanes declared different DSKY entry points in their pending headers
-  (src/programs/align_pending.h: agc_dsky_goflash/goperf1/goperf4/gomark/godsp/
-  exdspret/priolarm/cleandsp/keycom/set_dsptem1_word; src/csm/guid_pending_csm.h:
+  (include/agc/agc_align_pending.h: agc_dsky_goflash/goperf1/goperf4/gomark/godsp/
+  exdspret/priolarm/cleandsp/keycom/set_dsptem1_word; src/csm/burns/guid_pending_csm.h:
   agc_dsky_gopin). They map onto agc_dsky_display(ctx, kind, vn, cont),
   agc_dsky_set_dsptem(0, w), agc_dsky_keyrupt1, agc_dsky_pinbrnch; the lead should
   rewrite those call sites at integration.
@@ -183,7 +183,7 @@ interface), AGC_JOB_JAMTERM (FINDVAC PRIO32), AGC_JOB_XCHSLEEPM, AGC_JOB_XCHSLEE
 (XCHSLEEP with FACEREG 0 / 1). XCHTOEND uses the existing AGC_JOB_ENDOFJOB.
 Tasks (agc_status_t f(void)): AGC_TASK_MONREQ (agc_task_monreq),
 AGC_TASK_TSTLTS2 (agc_task_tstlts2). Placeholders PIN_JOB_* / PIN_TASK_* in
-src/io/pinball_internal.h are to be replaced at integration.
+src/io/dsky/pinball_internal.h are to be replaced at integration.
 
 ## Tests written
 

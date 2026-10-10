@@ -334,7 +334,7 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t *ip, const agc_xprod_i
 agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage, bool four_jets,
                                  agc_sp_t emdot, agc_sp_t fang);
 
-/* ---- average-G jobs and tasks: Comanche (src/csm/servicer_csm.c) ------ */
+/* ---- average-G jobs and tasks: Comanche (src/csm/burns/servicer_csm.c) ------ */
 agc_status_t agc_task_preread_csm(void);                 /* PREREAD     */
 agc_status_t agc_task_readaccs_csm(void);                /* READACCS    */
 agc_status_t agc_task_rereadac_csm(void);                /* REREADAC    */
@@ -350,7 +350,7 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx);  /* GENTRAN restart  */
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx);     /* AVGEND      */
 agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx);   /* AVGEND 2.2 restart */
 
-/* ---- average-G jobs and tasks: Luminary (src/lm/servicer_lm.c) -------- */
+/* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer_lm.c) -------- */
 agc_status_t agc_task_preread_lm(void);                  /* PREREAD     */
 agc_status_t agc_task_bibibias(void);                    /* BIBIBIAS    */
 agc_status_t agc_task_readaccs_lm(void);                 /* READACCS    */
@@ -380,7 +380,7 @@ agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx);       /* HIGATJOB    */
 agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx);  /* after RADSTALL */
 agc_status_t agc_job_posalarm_pro(agc_job_ctx_t *ctx);   /* POSALARM +3 */
 
-/* ---- targeting programs (src/guidance/p30.c) -------------------------- */
+/* ---- targeting programs (src/guidance/external_delta_v.c) -------------------------- */
 agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx);            /* P30 (both)  */
 agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx);        /* after V06N33 PRO */
 agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx);       /* after V06N81 PRO */
@@ -393,7 +393,7 @@ agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx);            /
 agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx);       /* after V06N33 PRO */
 agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx);        /* after V06N81 PRO */
 
-/* ---- CSM P40-P47 (src/csm/sps_burn.c) ---------------------------------- */
+/* ---- CSM P40-P47 (src/csm/burns/sps_burn.c) ---------------------------------- */
 agc_status_t agc_job_sps_burn(agc_job_ctx_t *ctx);        /* P40CSM      */
 agc_status_t agc_job_rcs_burn_csm(agc_job_ctx_t *ctx);        /* P41CSM      */
 agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx);        /* P47CSM      */
@@ -468,7 +468,7 @@ agc_status_t agc_task_gimbal_test_relays(void);                /* S40.6 after 60
 agc_status_t agc_task_gimbal_test_rstrtst(void);               /* RSTRTST     */
 agc_status_t agc_task_gimbal_test_step(void);                  /* OUTPUT return / GIMTRIM */
 
-/* ---- LM P40-P47 (src/lm/dps_burn.c) ------------------------------------- */
+/* ---- LM P40-P47 (src/lm/burns/dps_burn.c) ------------------------------------- */
 agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx);         /* P40LM       */
 agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx);         /* P41LM       */
 agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx);         /* P42LM       */
@@ -504,7 +504,7 @@ agc_status_t agc_lm_enginof2(void);                      /* ENGINOF2    */
 agc_status_t agc_lm_enginof3(void);                      /* ENGINOF3    */
 agc_status_t agc_lm_enginof4(void);                      /* ENGINOF4    */
 
-/* ---- LM BURN BABY BURN (src/lm/ignition.c) ----------------------------- */
+/* ---- LM BURN BABY BURN (src/lm/burns/ignition.c) ----------------------------- */
 typedef enum agc_lm_which {
     AGC_LM_WHICH_POWERED_ASCENT = 0,  /* P12TABLE */
     AGC_LM_WHICH_DPS_BURN,      /* P40TABLE */

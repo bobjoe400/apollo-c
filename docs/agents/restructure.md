@@ -57,3 +57,27 @@ Steps:
 5. Write docs/modules/restructure.md: the move table, includes you fixed,
    files you had to place by judgment. Report <= 15 lines. Do not use git
    except `git mv`.
+
+## File names after the move (added mid-task)
+
+Once a file sits in its subsystem folder, drop any filename prefix that
+only repeats an enclosing folder name, for .c and private .h alike:
+
+    src/nav/conic/conic_kepler.c          -> kepler.c
+    src/nav/integration/integration_init.c-> init.c
+    src/csm/entry/entry_programs.c        -> programs.c
+    src/csm/dap/tvc/tvc_daps.c            -> daps.c
+    src/lm/dap/rcs/lm_dap_tjet.c          -> tjet.c
+    src/io/dsky/pinball_state.c           -> state.c   (folder already says dsky)
+    src/lm/landing/landing_guidance.c     -> guidance.c
+    src/csm/optics/sxtmark.c              -> sxtmark.c (keep: AGC name, not a folder)
+
+Keep words that carry meaning rather than location (AGC names like
+sxtmark, aotmark, servicer, kalcmanu). Vehicle suffixes `_csm`/`_lm` stay
+in shared folders (src/io/verbs/extended_verbs_csm.c) and drop inside a
+vehicle folder (src/csm/optics/s_band_antenna.c). If two files would
+collapse to the same name in one folder, keep one distinguishing word on
+each. Update every `#include "..."` of a renamed private header, every
+path in docs/modules, docs/agents, MODULE_STATUS.md, and the link
+commands in the lane notes. Record old -> new in your move table.
+Public headers in include/agc/ keep their names.

@@ -5,7 +5,7 @@
  * rendezvous programs), the subroutines S30.1 and S31.1, MIDGIM and the
  * display sequence P30/P31, CNTNUP30, PARAM30 (the Comanche-only REFTEST,
  * DISP45, END45 and COMPTGO, which use Comanche flags, are in
- * src/csm/p30_csm.c). DELRSPL (the V82 splash-error continuation) is a stub.
+ * src/csm/burns/external_delta_v_csm.c). DELRSPL (the V82 splash-error continuation) is a stub.
  *
  * The targeting results go to the rendezvous erasables (agc_rendz_t,
  * agc_programs.h): RTIG VTIG m 2^29 / m/cs 2^7, DELVSIN DELVLVC m/cs 2^7,
@@ -16,7 +16,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
 #include "agc/agc_flags_common.h"
-#include "guid_pending.h"
+#include "agc/agc_guid_pending.h"
 
 #define GRP4 4
 

@@ -24,7 +24,7 @@
 #include "agc/agc_state.h"
 #include "agc/agc_flags_common.h"
 #include "exec_internal.h"
-#include "exec_pending.h"
+#include "agc/agc_exec_pending.h"
 
 #define WL_TIME3_OVF   16384      /* TIME3 overflow, 2^14 cs = 163.84 s   */
 #define WL_POSMAX      16383      /* POSMAX, octal 37777                  */

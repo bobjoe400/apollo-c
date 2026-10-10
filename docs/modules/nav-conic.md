@@ -9,8 +9,8 @@
   KEPPREP -> KEPLERN -> TET update). The integration lock, A-memory and
   TESTLOOP/INTEXIT bookkeeping belong to nav-integ.
 
-C target: include/agc/agc_nav.h (section "conic"), src/nav/conic_internal.h,
-src/nav/conic_common.c (MUTABLE, MPAC model, flags, ABTCONIC),
+C target: include/agc/agc_nav.h (section "conic"), src/nav/conic/conic_internal.h,
+src/nav/conic/conic_common.c (MUTABLE, MPAC model, flags, ABTCONIC),
 conic_universal.c (DELTIME, NEWSTATE, LAMENTER, KEPCONVG), conic_geom.c
 (GEOM, PARAM, GETX), conic_kepler.c (KEPLERN, KEPPREP, RVCON, CSMCONIC,
 LEMCONIC), conic_lambert.c (LAMBERT, ITERATOR), conic_timetheta.c
@@ -73,7 +73,7 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 | Routine / table | Status |
 |---|---|
 | agc_nav.h (conic section) | DONE include/agc/agc_nav.h |
-| conic_internal.h, helpers (TP MPAC model agc_conic_m*_, POLY) | DONE src/nav/conic_internal.h, conic_common.c |
+| conic_internal.h, helpers (TP MPAC model agc_conic_m*_, POLY) | DONE src/nav/conic/conic_internal.h, conic_common.c |
 | MUTABLE table | DONE mutable_tab conic_common.c |
 | DELTIME | DONE agc_conic_deltime_ conic_universal.c |
 | GEOM / PARAM | DONE agc_conic_geom_, agc_conic_param_, agc_conic_param conic_geom.c |
@@ -203,7 +203,7 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
 
 ## Open questions
 
-* src/programs/rendz_ext.h (prog-rendz) declares its own agc_timethet_in_t,
+* src/programs/rendezvous/rendz_ext.h (prog-rendz) declares its own agc_timethet_in_t,
   agc_lambert_in_t and an agc_conic_apsides with a different signature;
   those must be replaced by include/agc/agc_nav.h (adapt rendz_glue.c).
 * nav-integ's agc_integ_kepprep (orbital_integration.c) already calls

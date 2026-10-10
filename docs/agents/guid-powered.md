@@ -12,8 +12,8 @@ Scope, into src/guidance/ with include/agc/agc_guid.h (you create it):
   thrust monitor; S40.1/S40.2/S40.8/S40.9 steering (cross-product
   steering), the TIG-30/TIG-5 countdown, ullage, engine on/off, the
   pre-ignition display sequence -> p40.c (shared) with vehicle-specific
-  parts in src/csm/p40_csm.c and src/lm/p40_lm.c
-- BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc (Luminary) -> src/lm/ignition.c
+  parts in src/csm/burns/sps_burn.c and src/lm/burns/dps_burn.c
+- BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc (Luminary) -> src/lm/burns/ignition.c
 - SERVICER (Luminary SERVICER.agc: the 2-second average-G loop, PIPA
   readings, state update, the landing/ascent branches) and SERVICER207
   (Comanche) -> servicer_lm.c / servicer_csm.c, with the shared

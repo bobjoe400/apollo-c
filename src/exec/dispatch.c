@@ -7,7 +7,7 @@
  * It is the single place where src/exec/ calls into every other layer.
  *
  * INTEGRATION: only the ids that are members of agc_jobs.h today have a
- * case. The provisional ids of src/exec/exec_pending.h and of the other
+ * case. The provisional ids of include/agc/agc_exec_pending.h and of the other
  * lanes' *_pending.h headers fall to `default` (NOT_FOUND) until the
  * lead adds them to agc_jobs.h and here.
  */

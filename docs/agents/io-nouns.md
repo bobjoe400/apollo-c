@@ -1,8 +1,8 @@
 # Assignment: io-nouns   (tier: mechanical)
 
 Scope: PINBALL_NOUN_TABLES.agc for both vehicles (they differ) into
-src/io/noun_tables_csm.c and src/io/noun_tables_lm.c plus
-include/agc/agc_nouns.h (you create it) and src/io/noun_data.c.
+src/io/dsky/noun_tables_csm.c and src/io/dsky/noun_tables_lm.c plus
+include/agc/agc_nouns.h (you create it) and src/io/dsky/noun_data.c.
 
 Header interface (agent io-pinball codes against exactly this):
   typedef struct { uint8_t noun; uint8_t ncomp; uint8_t scale_type[3];

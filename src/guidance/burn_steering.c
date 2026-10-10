@@ -6,7 +6,7 @@
  * attitude), S41.1 (VG to control/body axes), the S40.8 time-to-go
  * computations and the Comanche cross-product steering XPRODUCT, and the
  * Comanche S40.13 TIMEBURN. The flag-dependent sequencing is in
- * src/csm/p40_csm.c and src/lm/p40_lm.c.
+ * src/csm/burns/sps_burn.c and src/lm/burns/dps_burn.c.
  *
  * Scales: UT half unit (2^1); VGTIG, VG, DELVREF, BDT, DELVSIN m/cs 2^7;
  * RTIG m 2^29; F m.newton 2^7; WEIGHT/G kg 2^16; TGO cs 2^28; angles rev.
@@ -15,7 +15,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
 #include "agc/agc_flags_common.h"
-#include "guid_pending.h"
+#include "agc/agc_guid_pending.h"
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
 static const agc_dp_t THETACON = 333772;

@@ -32,7 +32,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
 #include "exec_internal.h"
-#include "exec_pending.h"
+#include "agc/agc_exec_pending.h"
 
 #define PH_WORD15   077777u   /* 15-bit word; also -0                     */
 #define PH_NEG0     077777u   /* -0 (NEG0) in -PHASEn                     */

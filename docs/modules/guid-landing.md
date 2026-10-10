@@ -6,19 +6,19 @@ Luminary 099 only. AGC sources (pages are the Luminary 1A listing pages):
 
 | AGC file                               | pages    | C file                         |
 |----------------------------------------|----------|--------------------------------|
-| THE_LUNAR_LANDING.agc                  | 785-792  | src/lm/lunar_landing.c         |
-| THROTTLE_CONTROL_ROUTINES.agc          | 793-797  | src/lm/throttle.c              |
-| LUNAR_LANDING_GUIDANCE_EQUATIONS.agc   | 798-828  | src/lm/landing_guidance.c (equations) + src/lm/lunar_landing.c (R13, P64/P66/P67 entry, redesignation, ROD) |
-| P70-P71.agc                            | 829-837  | src/lm/landing_aborts.c               |
+| THE_LUNAR_LANDING.agc                  | 785-792  | src/lm/landing/lunar_landing.c         |
+| THROTTLE_CONTROL_ROUTINES.agc          | 793-797  | src/lm/landing/throttle.c              |
+| LUNAR_LANDING_GUIDANCE_EQUATIONS.agc   | 798-828  | src/lm/landing/landing_guidance.c (equations) + src/lm/landing/lunar_landing.c (R13, P64/P66/P67 entry, redesignation, ROD) |
+| P70-P71.agc                            | 829-837  | src/lm/landing/landing_aborts.c               |
 | P12.agc                                | 838-842  | src/lm/ascent.c                |
 | ASCENT_GUIDANCE.agc                    | 843-856  | src/lm/ascent.c                |
-| LANDING_ANALOG_DISPLAYS.agc            | 898-907  | src/lm/landing_displays.c      |
-| FINDCDUW--GUIDAP_INTERFACE.agc         | 908-925  | src/lm/findcduw.c              |
+| LANDING_ANALOG_DISPLAYS.agc            | 898-907  | src/lm/landing/landing_displays.c      |
+| FINDCDUW--GUIDAP_INTERFACE.agc         | 908-925  | src/lm/landing/findcduw.c              |
 
 Shared lane state (pad loads and erasables used by more than one of the
-files above) lives in src/lm/landing_state.c behind accessors declared in
+files above) lives in src/lm/landing/landing_state.c behind accessors declared in
 include/agc/agc_lm_landing.h. Symbols owned by other lanes that do not exist
-yet are declared in ONE place, src/lm/landing_pending.h (see "Requested core
+yet are declared in ONE place, include/agc/agc_landing_pending.h (see "Requested core
 additions"); integration replaces that header with the real includes.
 
 ## Design table
@@ -93,9 +93,9 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 ## Progress
 
 Infrastructure:
-- DONE src/lm/landing_pending.h (all not-yet-existing shared symbols, one place)
+- DONE include/agc/agc_landing_pending.h (all not-yet-existing shared symbols, one place)
 - DONE include/agc/agc_lm_landing.h (lane API + state structs; may grow)
-- DONE src/lm/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
+- DONE src/lm/landing/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
 - DONE landing_pending.h reconciled 2026-10-09 with agc_guid.h, agc_lm_dap.h, agc_integ.h, agc_exec.h, exec_pending.h (job ids moved to 0x0F00/0x0F80)
 
 Per file (TODO unless marked):
@@ -136,13 +136,13 @@ Link status: libagc does not link yet (other lanes' pending symbols: radar, DSKY
 
 ## Requested core additions
 
-Exact list = src/lm/landing_pending.h (re-checked 2026-10-10 against every include/agc header; everything else it used to hold now comes from real headers):
+Exact list = include/agc/agc_landing_pending.h (re-checked 2026-10-10 against every include/agc header; everything else it used to hold now comes from real headers):
 - state-flags: `void agc_erase_set_thrust(agc_sp_t pulses);` (THRUST 055), `void agc_erase_set_altm(uint16_t word);` (ALTM 060, raw word), `void agc_erase_set_cdutcmd(int which, agc_sp_t v);` (0 CDUTCMD 053, 1 CDUSCMD 054)
 - guid-powered: `agc_sp_t agc_erase_tem(int axis); void agc_erase_set_tem(int axis, agc_sp_t v);` (TEMX/Y/Z)
 - prog-align: `agc_status_t agc_align_refmf(agc_interp_t *ip);` (REFMF)
 - nav-aux / io-nouns: `agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);` (LAT/LONG/ALT for N43)
 - prog-rendz: `agc_status_t agc_rendz_flip(uint16_t lamp_bit); agc_status_t agc_rendz_clradmod(void);`
-- sys-misc / dap-lm: `agc_sp_t agc_erase_m22(void); agc_sp_t agc_erase_m32(void);` (also in src/lm/dap/lm_dap_pending.h)
+- sys-misc / dap-lm: `agc_sp_t agc_erase_m22(void); agc_sp_t agc_erase_m32(void);` (also in include/agc/agc_lm_dap_pending.h)
 - alarms 00401 00402 01406 01410 01412 as AGC_ALARM_* constants.
 
 ## Requested jobs-tasks

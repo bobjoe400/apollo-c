@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_integ.h"
-#include "guid_pending.h"
+#include "agc/agc_guid_pending.h"
 
 /* The job that resumes after an INTSTALL wait when a targeting subroutine
  * (S30.1, S31.1, AGAIN, S40.1) has no job context of its own: set by the

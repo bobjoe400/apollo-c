@@ -4,14 +4,14 @@
 
 | AGC file (Comanche055 pages) | CM vs LM | C file |
 |---|---|---|
-| LATITUDE_LONGITUDE_SUBROUTINES.agc (pp. 1236-1242) | identical code (LM keeps ERAD/504RM in CONTROLLED_CONSTANTS) | src/nav/latlong.c |
-| PLANETARY_INERTIAL_ORIENTATION.agc (pp. 1243-1251) | identical code (LM: LO6ZEROS for HI6ZEROS, bank split only) | src/nav/planetary.c |
-| MEASUREMENT_INCORPORATION.agc (pp. 1252-1261) | identical code (NEWZCOMP bank split only) | src/nav/measurement.c |
-| TIME_OF_FREE_FALL.agc (pp. 1373-1388) | identical code (LM keeps 1/RTMU in CONTROLLED_CONSTANTS) | src/nav/free_fall.c |
-| LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc (CM pp. 785-788, LM pp. 984-987) | DIFFERENT: CM 9th-degree lunar polynomial + rotating sun vector; LM analytic mean-element unit vectors | src/nav/ephemerides.c |
-| STAR_TABLES.agc (CM pp. 1389-1393) / LM CONTROLLED_CONSTANTS.agc pp. 49-51 | identical 37-star table, CATLOG 6970 | src/nav/star_tables.c |
+| LATITUDE_LONGITUDE_SUBROUTINES.agc (pp. 1236-1242) | identical code (LM keeps ERAD/504RM in CONTROLLED_CONSTANTS) | src/nav/aux/latlong.c |
+| PLANETARY_INERTIAL_ORIENTATION.agc (pp. 1243-1251) | identical code (LM: LO6ZEROS for HI6ZEROS, bank split only) | src/nav/aux/planetary.c |
+| MEASUREMENT_INCORPORATION.agc (pp. 1252-1261) | identical code (NEWZCOMP bank split only) | src/nav/aux/measurement.c |
+| TIME_OF_FREE_FALL.agc (pp. 1373-1388) | identical code (LM keeps 1/RTMU in CONTROLLED_CONSTANTS) | src/nav/aux/free_fall.c |
+| LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc (CM pp. 785-788, LM pp. 984-987) | DIFFERENT: CM 9th-degree lunar polynomial + rotating sun vector; LM analytic mean-element unit vectors | src/nav/aux/ephemerides.c |
+| STAR_TABLES.agc (CM pp. 1389-1393) / LM CONTROLLED_CONSTANTS.agc pp. 49-51 | identical 37-star table, CATLOG 6970 | src/nav/aux/star_tables.c |
 
-Public header: include/agc/agc_navaux.h. Private helpers: src/nav/navaux_internal.h + src/nav/navaux_util.c.
+Public header: include/agc/agc_navaux.h. Private helpers: src/nav/aux/navaux_internal.h + src/nav/aux/navaux_util.c.
 All constants were verified word-for-word against the assembled ropes
 (tools/oracle/ropes/*.bin read at the symtab address).
 
@@ -66,13 +66,13 @@ MXV(rows blk[b][3a..3a+2]) BVECTOR[b]; OMEGA[b] = sum_a VXM(ZI[a], same).
 | Routine / table | Status |
 |---|---|
 | header agc_navaux.h | DONE include/agc/agc_navaux.h |
-| navaux_util.c helpers | DONE src/nav/navaux_util.c |
-| planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/planetary.c |
-| latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/latlong.c |
-| free_fall.c (TFFCONIC TFFRP/RA CALCTFF CALCTPER T(X)) | DONE agc_tff_* src/nav/free_fall.c |
-| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp1 agc_incorp2_wupdate agc_incorp2_state src/nav/measurement.c |
-| ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/ephemerides.c |
-| star_tables.c | DONE agc_star_vector src/nav/star_tables.c (37 stars, rope-verified) |
+| navaux_util.c helpers | DONE src/nav/aux/navaux_util.c |
+| planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/aux/planetary.c |
+| latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/aux/latlong.c |
+| free_fall.c (TFFCONIC TFFRP/RA CALCTFF CALCTPER T(X)) | DONE agc_tff_* src/nav/aux/free_fall.c |
+| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp1 agc_incorp2_wupdate agc_incorp2_state src/nav/aux/measurement.c |
+| ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/aux/ephemerides.c |
+| star_tables.c | DONE agc_star_vector src/nav/aux/star_tables.c (37 stars, rope-verified) |
 | tests/test_navaux.c | DONE (compiles; links once core-numeric lands) |
 
 All files compile with the project flags (-Werror); tools/check_rules.py:

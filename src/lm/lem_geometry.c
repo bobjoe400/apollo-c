@@ -2,7 +2,7 @@
  * lem_geometry.c -- LEM_GEOMETRY.agc (Luminary099 pp. 320-325): rendezvous
  * radar gimbal angles for a line of sight (RRANGLES) and the radar line of
  * sight in navigation-base axes from its CDUs (RRNB, RRNBMPAC).
- * SVDWN2/SVDWN1 of the same file are in src/nav/svdwn.c.
+ * SVDWN2/SVDWN1 of the same file are in src/nav/integration/svdwn.c.
  *
  * RR angles: T = trunnion, S = shaft.  Mode 1: T = ASIN(-Y), S = ARCTRIG
  * of the X-Z projection; mode 2: T2 = 180 - T, S2 = S + 180.
@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "agc/agc_assert.h"
-#include "../programs/align_internal.h"
+#include "agc/agc_align_internal.h"
 
 #define LODPHALF AGC_DP_HALF     /* LODPHALF .5 rev = 180 degrees            */
 

@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "guid_pending.h"
+#include "agc/agc_guid_pending.h"
 
 #define CDU_SIGN_BIT   ((uint16_t)040000)  /* bit 15 of the 15-bit CDU word  */
 #define CDU_MASK       ((uint16_t)077777)

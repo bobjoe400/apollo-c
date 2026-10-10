@@ -22,7 +22,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
 #include "exec_internal.h"
-#include "exec_pending.h"
+#include "agc/agc_exec_pending.h"
 
 #define RS_VARBITS  01400u    /* OCT1400: type B (01000) or C (0400)    */
 #define RS_TYPEB    01000u

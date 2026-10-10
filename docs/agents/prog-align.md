@@ -8,7 +8,7 @@ P51-P53.agc (both; diff): IMU orientation determination P51, P52 realign
 with the four options (preferred, nominal, REFSMMAT, landing site), P53/P54
 backup; the star selection routine R56? (check), the sighting mark
 processing S52.2/S52.3; SXTMARK.agc (Comanche sextant/scanning telescope
-marks, the optics CDU handling) -> src/csm/sxtmark.c; AOTMARK.agc
+marks, the optics CDU handling) -> src/csm/optics/sxtmark.c; AOTMARK.agc
 (Luminary alignment optical telescope marks, the cursor/spiral logic) ->
 src/lm/aotmark.c; R63.agc (Luminary rendezvous final attitude);
 CSM_GEOMETRY.agc / LEM_GEOMETRY.agc (NB-to-SM matrices, optics/AOT

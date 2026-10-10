@@ -3,13 +3,13 @@
 Apply docs/NAMING.md to already-committed code. Other agents are still
 writing in some directories, so your scope is strictly:
   include/agc/, src/core/, src/exec/, src/nav/, src/imu/,
-  src/io/pinball_*.c src/io/display_if.c src/io/noun_*.c,
-  src/csm/ EXCEPT src/csm/p37.c and src/csm/dap/,
+  src/io/dsky/pinball_*.c src/io/dsky/display_if.c src/io/dsky/noun_*.c,
+  src/csm/ EXCEPT src/csm/burns/return_to_earth.c and src/csm/dap/,
   src/lm/ EXCEPT src/lm/dap/,
   tests/ files belonging to those lanes, docs/modules notes of those lanes.
 Do NOT touch src/guidance, src/programs, src/lm/dap, src/csm/dap,
-src/csm/p37.c, src/io/t4rupt*.c, src/io/extended_verbs*, src/io/telemetry*,
-src/io/service*, src/io/rtb_ops*, src/io/self_check* (in progress elsewhere).
+src/csm/burns/return_to_earth.c, src/io/service/t4rupt*.c, src/io/extended_verbs*, src/io/telemetry*,
+src/io/service/service*, src/io/service/rtb_ops*, src/io/self_check* (in progress elsewhere).
 
 Steps:
 1. grep for identifiers containing program/routine/verb/noun/page numbers:
@@ -20,10 +20,10 @@ Steps:
    docs/NAMING.md; add rows to NAMING.md for anything missing (e.g. labels
    like P63SPOT2 -> braking_phase_spot2, R51K -> fine_align_k, CANV37 ->
    change_program_check). Keep the AGC label in the header comment.
-2. Rename file names too (git mv), e.g. src/csm/p61_p67.c ->
-   src/csm/entry_programs.c, src/lm/p70_p71.c -> src/lm/landing_aborts.c,
-   src/exec/v37_p00.c -> src/exec/change_program_idle.c, src/imu/r60.c ->
-   src/imu/attitude_maneuver.c, src/csm/p11.c -> earth_orbit_insertion.c.
+2. Rename file names too (git mv), e.g. src/csm/entry/entry_programs.c ->
+   src/csm/entry/entry_programs.c, src/lm/landing/landing_aborts.c -> src/lm/landing/landing_aborts.c,
+   src/exec/v37_p00.c -> src/exec/change_program_idle.c, src/imu/attitude_maneuver.c ->
+   src/imu/attitude_maneuver.c, src/csm/burns/earth_orbit_insertion.c -> earth_orbit_insertion.c.
 3. Apply the renames across your scope (sed with word boundaries), then
    grep the EXCLUDED directories for any old identifier you changed and
    append those occurrences to docs/RENAMES.md under "Callers outside

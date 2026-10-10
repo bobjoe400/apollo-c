@@ -17,8 +17,8 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_channels.h"
 #include "agc/agc_lm_landing.h"
-#include "landing_pending.h"
-#include "../io/sysmisc.h"
+#include "agc/agc_landing_pending.h"
+#include "agc/agc_sysmisc.h"
 
 /* ---- constants (pp. 842, 836, 852, 855-856; CONTROLLED_CONSTANTS) ----- */
 #define AS_THRESH2   308

@@ -104,7 +104,7 @@ Requested from other owners (exact declarations):
 
 Mine, already added to agc_jobs.h: AGC_JOB_GOTOPOOH, AGC_JOB_GO_IDLE_FIX, AGC_JOB_GO_IDLE_FIX_REFLASH, AGC_JOB_GOPOODOO, AGC_JOB_ENDOFJOB; AGC_TASK_SVCT3, AGC_TASK_LONGCYCL, AGC_TASK_GETCADR, AGC_TASK_T5IDLOC, AGC_TASK_TASKOVER (dispatch.c cases present).
 
-Foreign, provisional in src/exec/exec_pending.h (0x0E00 range; replace with the owner's id and add the dispatch case):
+Foreign, provisional in include/agc/agc_exec_pending.h (0x0E00 range; replace with the owner's id and add the dispatch case):
 - jobs: INITDSP, DSPMMJB, NBDONLY, STATINT1, RELINUS, TIMEBURN, POSTBURN, NORMLIZE, SERVICER, TIMEDIDR, REDO40_9, PIKUP20, R22, V94ENTER, REDOR22, MATRXJOB, REP11, REP11A, P47BODY, COMPVER, AZMTHCG1, PREBURN_STATE_VECTOR, PROG52, R51, ENTRY_FINAL_PHASE_DISPLAY, ENTRY_IMU_AXIS_TEST, PRE_HUNT, ENTRY_UPCONTROL_DISPLAY, RSTGTS1, WTLISTNT, RESTEST1, GEOSTRT4, ALFLT1, RESTEST3, RESTAIER, RESCHNG, P25LEM1, R22RSTRT, GOABORT, FINE_ALIGN_PERFORM, P70A, P71A, COMFAIL, REDO6_7.
 - tasks: STATEINT, REREADAC, REDO5_5, CLOKTASK, TIG_5, TIG_0, IGNITION, SETJTAG, ENGINOFF, PRECHECK, TTG_0, DOTVCON, DOSTRULL, ENGINE_FAIL_REIGNITE_TRIM, R40ENABL, TIGBLNK, DOTVCRCS, WAKEP62, TIGAVEG, ENTRY_START_AVERAGE_G, ATERTASK, V97ETASK, TIGON, DOSPSOFF, V97TTASK, V97TRCS, V97PTASK, SPSOFF97, ALLOOP1, SPECSTS, CHEKAVEG, PREREAD, PRE40_6, READGYMB, REDORCS, REDOTVC, REDOSAT, TVCEXEC, CA_ECE, ULLGTASK, P20LEMC1, REDO2_17, ABORT_MONITOR, ZOOM, REDO4_2, ULLAGOFF, ENGOFTSK, TIG_30, TIG_35, BIBIBIAS, DAPIDLER.
 
@@ -117,7 +117,7 @@ Build (the full libagc does not build yet because of other lanes):
 
 ## Open questions
 
-- AGC_JOB_GOTOPOOH is an agc_jobs.h member but src/csm/entry_pending.h and src/programs/rendz_ext.h #define it again: those lanes must drop their macros.
+- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/agc_entry_pending.h and src/programs/rendezvous/rendz_ext.h #define it again: those lanes must drop their macros.
 - AGC_JOB_GOPROG in agc_jobs.h does not correspond to an AGC job; dispatch returns UNIMPLEMENTED. Remove or repurpose?
 - STATEUP / THISVINT (end of FRESH_START_AND_RESTART) are P00 integration code; assumed to belong to nav-integ.
 - Layering: change_program_idle.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.

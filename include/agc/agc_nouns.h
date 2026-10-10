@@ -6,7 +6,7 @@
  * IDADDTAB, RUTMXTAB) plus the SFINTAB/SFOUTAB scale-factor constants; here
  * each noun is resolved into one flat agc_noun_t.
  *
- * Consumed by io-pinball (src/io). Implemented in src/io/noun_tables_csm.c,
+ * Consumed by io-pinball (src/io). Implemented in src/io/dsky/noun_tables_csm.c,
  * noun_tables_lm.c, noun_scales.c and noun_data.c (agent io-nouns).
  *
  * Component conventions

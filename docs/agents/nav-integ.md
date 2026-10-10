@@ -2,7 +2,7 @@
 
 Scope: INTEGRATION_INITIALIZATION.agc and ORBITAL_INTEGRATION.agc (Comanche
 pp. 1309-1354; diff against Luminary; translate once, note differences)
-into src/nav/integration_init.c and src/nav/orbital_integration.c with a
+into src/nav/integration/integration_init.c and src/nav/integration/orbital_integration.c with a
 header you create, include/agc/agc_integ.h.
 
 Routines: INTEGRV/INTEGRVS/INTSTALL/INTWAKE (the integration lock and

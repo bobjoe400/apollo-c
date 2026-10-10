@@ -27,7 +27,7 @@
 #include "agc/agc_lm_landing.h"
 
 /* INTEGRATION: the THRUST counter has no accessor in include/agc yet
- * (src/lm/landing_pending.h declares it for state-flags). Until it does,
+ * (include/agc/agc_landing_pending.h declares it for state-flags). Until it does,
  * this test supplies it and records the last command; set
  * LANDING_TEST_FAKE_THRUST to 0 once libagc defines it.                 */
 #define LANDING_TEST_FAKE_THRUST 1

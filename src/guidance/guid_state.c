@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "guid_pending.h"
+#include "agc/agc_guid_pending.h"
 
 static agc_guid_t g_guid;
 

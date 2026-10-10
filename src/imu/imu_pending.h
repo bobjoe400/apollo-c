@@ -21,7 +21,7 @@
 #include "agc/agc_interp.h"
 #include "agc/agc_exec.h"
 
-/* ==== sys-misc: RTB op codes (src/io/rtb_ops.c, header not yet public) == */
+/* ==== sys-misc: RTB op codes (src/io/service/rtb_ops.c, header not yet public) == */
 agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern);          /* CDULOGIC  */
 uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);              /* 1STO2S    */
 agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3]); /* V1STO2S */
