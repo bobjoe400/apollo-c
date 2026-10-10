@@ -159,3 +159,38 @@ itself is a number-free word (KEPLER, LAMBERT, SERVICER, CALCGTA) keep it.
 | S40.14 | CSM     | rcs_gains         | RCS DAP gains J/M, KMJ from IXX, IAVG             |
 | S40.15 | CSM     | tvc_gains         | TVC DAP gains 1/CONACC, VARK                      |
 | V68    | CSM     | stroke_test       | TVC stroke test (STRKTSTI job keeps its label)    |
+
+### Added by naming (phase 1 map, docs/RENAMES.md)
+
+| AGC     | Vehicle | Identifier stem              | AGC description                                         |
+|---------|---------|------------------------------|---------------------------------------------------------|
+| P65     | LM      | velocity_nulling             | landing phase P65 (P65START)                            |
+| P67     | LM      | manual_landing               | landing phase P67 (STARTP67, P67VERT)                   |
+| R10     | LM      | landing_analog_displays      | landing analog displays (LANDISP keeps its label)       |
+| R11     | LM      | abort_monitor                | R10,R11 task: "IS AN ABORT (STAGE) COMMANDED?"          |
+| R12     | LM      | landing_radar_lights         | R12LITES: H/V landing-radar lamps                       |
+| R29     | LM      | powered_flight_designate     | RR designate during powered flight (NOR29FLG)           |
+| V97     | both    | engine_fail_procedure        | NV word only; jobs/tasks use the R40 stem engine_fail   |
+| V99     | both    | engine_enable_request        | NV word only; jobs/tasks use engine_enable              |
+| S11.1   | CSM     | velocity_altitude_rate       | "CALC. VI, H, HDOT FOR NOUN 62"                         |
+| S30.1   | both    | external_delta_v_vectors     | apogee, perigee, DELVSIN for P30                        |
+| S31.1   | CSM     | lambert_aimpoint_vectors     | DELV in ref and LV coords, intercept time for P31       |
+| S40.1   | both    | initial_velocity_to_gain     | "COMPUTE INITIAL THRUST DIRECTION(UT) AND ... VGTIG"    |
+| S40.2,3 | both    | preferred_thrust_attitude    | POINTVSM / preferred attitude                           |
+| S40.6   | CSM     | gimbal_test_trim             | "GIMBAL DRIVE TEST AND/OR GIMBAL TRIM" (PRE40.6 = gimbal_trim_restart) |
+| S40.8   | both    | cross_product_steering       | VG update, TGO, FINDCDUW steering                       |
+| S40.9   | both    | vtogain                      | AGC's own name "S40.9 -- VTOGAIN"                       |
+| S40.13  | both    | timeburn                     | AGC's own name "S40.13 -- TIMEBURN"                     |
+| S41.1   | both    | reference_to_body            | reference-to-body velocity transformation               |
+| S52.2   | both    | gimbal_angles                | "COMPUTE GIMBAL ANGLES"                                 |
+| S52.3   | both    | nominal_orientation          | nominal REFSMMAT orientation                            |
+| SR52.1  | CSM     | target_optics_angles         | SAC/PAC for the target                                  |
+| S61.1   | CSM     | entry_imu_check              | "CHECK STATE VECTOR AND IMU ORIENTATION"                |
+| S61.2   | CSM     | ems_data                     | N60 / N63 EMS initialization data                       |
+| S62.3   | CSM     | desired_gimbal_angles        | "COMPUTE DESIRED GIMBAL ANGLES FOR ENTRY ATTITUDE"      |
+| 1/GYRO  | both    | gyro_command_pulse           | "SCALE GYRO COMMANDS FOR IMUPULSE"                      |
+| 1/PIPADT| both    | pipa_interval                | PIPA interval used by drift compensation                |
+
+Rule-4 word count counts one canonical stem as one term. A job segment that
+resumes after a PHASCHNG restart point ends in `_restart`; crew responses end
+in what they do (`_proceed`, `_terminate`, `_display`), never in T/P/E/B/1/1B.
