@@ -37,3 +37,8 @@
             0 mismatches vs official binsource. agc_probe proven on SPSIN and
             interpretive SQRT/SIN via the VAC-snippet technique. Binaries and
             11.8 MB symtabs are gitignored (rebuild per BUILD.md).
+2026-10-09  Usage limit killed 14 Opus lanes mid-work; io-nouns and
+            state-flags finished clean first. Committed checkpoint (16.6k
+            lines). All lanes have notes with Progress sections. Relaunching
+            with resume semantics in two batches: A = core-numeric, exec-sched,
+            nav-conic, nav-integ, nav-aux, io-pinball, imu; B = the rest after A.
