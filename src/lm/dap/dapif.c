@@ -53,12 +53,11 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
     lm_dap_state()->t5adr = a;
     agc_rupt_set_t5_task(
               (a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(lm_dap_state()->t5adr == a))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* SETMAXDB (p.1407): deadband 5.0 degrees, then CALLACCS.                 */

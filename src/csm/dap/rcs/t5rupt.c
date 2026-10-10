@@ -233,7 +233,6 @@ static agc_status_t rcs_zerot5(void)
     }
     r->attsec       = 0;
     agc_csm_dap_zerojet();
-    agc_status_t st = AGC_STATUS_OK;
     r->chantemp     = CSM_DAP_NEG0; /* minimum impulse memory */
     r->ch31temp     = CSM_DAP_NEG0; /* RHC position memory    */
     r->slope        = SLOPE_024;
@@ -265,7 +264,7 @@ static agc_status_t rcs_zerot5(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return (st != AGC_STATUS_OK) ? st : st2;
+    return st2;
 }
 
 /* ZEROJET (pp. 1015-1016): zero BLAST2, BLAST1, BLAST, YWORD2 .. RWORD1,

@@ -358,13 +358,12 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
     }
     agc_inhint();                                      /* 1/ACCRET       */
     agc_flag_set(AGC_FLAG_ACCOKFLG); /* data good      */
-    agc_status_t fs = AGC_STATUS_OK;
     agc_relint();
     if (!AGC_ASSERT(d->jacc[0] >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return (st != AGC_STATUS_OK) ? st : fs;
+    return st;
 }
 
 /* 1/ACCJOB (p.1486): NOVAC job form of 1/ACCS (CALLACCS, RCSMONIT).      */

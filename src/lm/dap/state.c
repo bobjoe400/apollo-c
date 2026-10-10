@@ -41,12 +41,11 @@ agc_status_t agc_lm_dap_restart(void)
         (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
     d->t6next[0] = (agc_sp_t) LM_T6_POSMAX; /* a pending T6RUPT is made     */
     agc_chan_and(013, LM_T6_POSMAX); /* ineffectual        */
-    agc_status_t st = AGC_STATUS_OK;
     d->nxt6adr      = 0;
     d->nextp        = 0;
     agc_flag_clear(AGC_FLAG_ACCOKFLG); /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);
-    return (ts != AGC_STATUS_OK) ? ts : st;
+    return ts;
 }
 
 /* DOFSTRT1 DAP part (pp.211-213), then STARTSB1.                          */
@@ -59,12 +58,9 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->ch6mask                  = 0;
     d->pvalvest                 = 0; /* RCS failure monitor           */
     agc_chan_write(005, 0); /* turn off RCS jets       */
-    agc_status_t s5 = AGC_STATUS_OK;
     agc_chan_write(006, 0);
-    agc_status_t s6 = AGC_STATUS_OK;
     d->db           = FS_MAXDB;
     agc_flagword_set(DAPBOOLS_WORD, FS_BOOLSTRT);
-    agc_status_t sb = AGC_STATUS_OK;
     d->stiksens     = FS_STIKSTRT;
     d->neg_ratedb   = FS_RATESTRT;
     d->hiascent     = FS_FULLAPS;
@@ -75,11 +71,6 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->lmomegan     = 0; /* unity gain                     */
     d->dkomegan     = FS_DKOMEGAN;
     d->dkdb         = FS_DKDB;
-    if (!AGC_ASSERT(s5 == AGC_STATUS_OK && s6 == AGC_STATUS_OK) ||
-        !AGC_ASSERT(sb == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
     return agc_lm_dap_restart();
 }
 

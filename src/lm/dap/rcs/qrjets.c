@@ -52,8 +52,7 @@ static bool policy_ok(lm_dap_t *d)
 bool lm_dap_selctsub(void)
 {
     lm_dap_t *d = lm_dap_state();
-    if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) ||
-        !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
+    if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) || !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
         return false;
     }
@@ -104,7 +103,7 @@ agc_status_t lm_dap_xtrans(void)
         if (old != 0)
         {
             agc_status_t s = lm_dap_write_next(indexes[axis]);
-            st             = (s != AGC_STATUS_OK) ? s : st;
+            st             = s;
         }
     }
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -370,8 +369,7 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 {
     lm_dap_t *d = lm_dap_state();
-    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) ||
-        !AGC_ASSERT(body <= LM_UV_MINRTN))
+    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) || !AGC_ASSERT(body <= LM_UV_MINRTN))
     {
         return AGC_STATUS_BAD_ARG;
     }

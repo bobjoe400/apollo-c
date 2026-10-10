@@ -59,8 +59,7 @@ static void pin_decend(int inrel)
 static agc_status_t pin_endnmtst(int inrel)
 {
     pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(!s->dspcount_neg))
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(!s->dspcount_neg))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -86,8 +85,7 @@ static agc_status_t pin_endnmtst(int inrel)
 static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
 {
     pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(chr >= 0 && chr <= 9))
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(chr >= 0 && chr <= 9))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -464,10 +462,7 @@ agc_status_t pin_error_key(void)
                  (uint16_t)(PIN_WORD ^ PIN_CH13_TESTALM));
     agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_ERCON));
     agc_relint();
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_tstab();
-    }
+    st = pin_tstab();
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
         st = agc_erase_set_failreg(i, 0); /* FAILREG, +1, +2        */
@@ -553,8 +548,7 @@ agc_status_t pin_charin(uint8_t code)
 /* CHARIN as an executive job: the key code arrives in MPAC. */
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5))
     {
         return AGC_STATUS_BAD_ARG;
     }

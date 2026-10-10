@@ -112,7 +112,6 @@ static agc_status_t enteruv(lm_dap_t *d)
 {
     agc_inhint();
     agc_lm_dap_zatteror();
-    agc_status_t sz = AGC_STATUS_OK;
     agc_relint();
     d->qerror     = 0; /* DYERROR        */
     d->dyerror_lo = 0;
@@ -145,10 +144,6 @@ static agc_status_t enteruv(lm_dap_t *d)
     else
     {
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_QRBIT);
-    }
-    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
     }
     return lm_dap_uvloop(LM_UV_BACKHAND, 1);
 }

@@ -191,8 +191,7 @@ agc_status_t pin_vbrqexec(void)
         (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
     agc_job_id_t job = (agc_job_id_t) s->dsptem[1];
     agc_status_t st  = pin_reldsp(); /* REQUESTC    */
-    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) ||
-        !AGC_ASSERT(job != AGC_JOB_NONE))
+    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) || !AGC_ASSERT(job != AGC_JOB_NONE))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -378,7 +377,6 @@ static agc_status_t pin_tstlts3_lamps(void)
         (uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN12) & PIN_CH12_COARSE) |
                     PIN_BIT15);
     agc_erase_set_dsptab(11, c);
-    agc_status_t st = AGC_STATUS_OK;
     agc_erase_set_imodes33(
         (uint16_t) ((agc_erase_imodes33() & ~PIN_13_11_1) | PIN_PRIO16_BITS));
     agc_erase_set_imodes30(
@@ -397,7 +395,7 @@ static agc_status_t pin_tstlts3_lamps(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash

@@ -180,8 +180,7 @@ static bool rr_limnb(uint16_t t, uint16_t s)
 agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
                                  uint16_t shaft, agc_rr_designate_result_t *res)
 {
-    if (!AGC_ASSERT(ip != NULL && res != NULL) ||
-        !AGC_ASSERT(trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK))
+    if (!AGC_ASSERT(ip != NULL && res != NULL) || !AGC_ASSERT(trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -343,15 +342,13 @@ static agc_status_t rr_dodes_commands(agc_interp_t *ip, rr_state_t *s,
     agc_vec_t urr = agc_vec_make(
         agc_dp_shl(ip, agc_dp_mul_trunc(sn_s, cs_t), 1), agc_dp_neg(sn_t),
         agc_dp_shl(ip, agc_dp_mul_trunc(cs_s, cs_t), 1));
-    agc_status_t st = AGC_STATUS_OK;
     if (!agc_flag_test(AGC_FLAG_RRNBSW))
     {
         agc_guid_nbsm(trig, &urr);
-        st = AGC_STATUS_OK;
     }
     *cos_err =
         agc_dp_sub(ip, agc_vec_dot(ip, urr, s->rrtarget), RR_COS_HALFDEG);
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* RRDESDUN (p.551): designate over; the next DESLOOP pass ends it.      */

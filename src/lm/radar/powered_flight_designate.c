@@ -217,16 +217,11 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
 {
     agc_vec_t    v  = agc_vec_unit(ip, los, NULL, NULL);
     agc_guid_axisrot(trig, AGC_AXISROT_SMNB, &v);
-    agc_status_t st = AGC_STATUS_OK;
     for (int i = 0; i < 3; i++)
     {
         u[i] = agc_dp_high(v.c[i]);
     }
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* MP chains: high word of a*b, then times c as a DP.                    */

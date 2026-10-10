@@ -120,8 +120,7 @@ agc_status_t lm_dap_jtlst(void)
         d->nxt6adr      = idx;
         agc_status_t st = set_time6(t);
         agc_chan_or(013, T6_ENABLE); /* TURNON         */
-        agc_status_t so = AGC_STATUS_OK;
-        return (st != AGC_STATUS_OK) ? st : so;
+        return st;
     }
     int32_t mid = (int32_t) time6 - t + d->t6next[0]; /* MIDORLST       */
     if (mid > 0)
@@ -146,7 +145,6 @@ agc_status_t lm_dap_jtlst(void)
 static agc_status_t t6job(lm_dap_t *d)
 {
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
-    agc_status_t s13 = AGC_STATUS_OK;
     agc_sp_t     head = d->t6next[0];                    /* DXCH T6NEXT    */
     agc_sp_t     done = d->nxt6adr;                      /* LXCH NXT6ADR   */
     d->nxt6adr        = d->t6next[1];
@@ -168,7 +166,7 @@ static agc_status_t t6job(lm_dap_t *d)
             d->t6next[0] = LM_POSMAX;
         }
     }
-    if (!AGC_ASSERT(s13 == AGC_STATUS_OK && st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }

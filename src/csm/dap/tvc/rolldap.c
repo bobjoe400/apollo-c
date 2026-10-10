@@ -357,14 +357,9 @@ agc_status_t agc_task_noroll1(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     t->rollfire      = 0; /* jets now off        */
     agc_chan_write(AGC_CHAN_ROLLJETS, 0u); /* KILLJETS  */
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(t->rollfire == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
-    return st; /* NOQRSM              */
+    return AGC_STATUS_OK; /* NOQRSM              */
 }

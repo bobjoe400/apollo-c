@@ -84,7 +84,7 @@ static agc_status_t needle11(lm_dap_t *d)
         d->ak[i]       = 0;
         d->edrive[i]   = 0;
         agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
-        st             = (s != AGC_STATUS_OK) ? s : st;
+        st             = s;
     }
     d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
@@ -118,7 +118,7 @@ static agc_status_t needles(lm_dap_t *d)
         int32_t cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i];
         agc_status_t s =
             agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
-        st           = (s != AGC_STATUS_OK) ? s : st;
+        st           = s;
         d->edrive[i] = (agc_sp_t) l;
     }
     agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */

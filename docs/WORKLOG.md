@@ -266,3 +266,10 @@
             status-handling. Also found 3,233 `(void) AGC_ASSERT(...)`
             sites (rule 7 + rule 5 dodge, uppercase slipped past the
             checker): checker extended; status-handling lane scope widened.
+2026-10-10  style2 DONE: uncrustify.cfg (164 options), .clang-format deleted,
+            `make format` runs Uncrustify twice (align-then-wrap), token-
+            identical preprocessed output on 241/241 files, idempotent by
+            pass 3. Lead decisions: guard runs keep a blank between guards;
+            >80-col trailing comments (920 lines) left for the review wave
+            to shorten (check_style reports them); long-block check counts
+            blank lines. Tree-wide `make format` runs after status-handling.

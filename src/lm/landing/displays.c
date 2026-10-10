@@ -135,13 +135,12 @@ static agc_status_t ld_dataout(uint16_t word)
 {
     agc_erase_set_altm(word);
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_ALTMETERACT);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(word <= 077777u))
     {
         return AGC_STATUS_BAD_ARG;
     }
     ld_altpath = LD_NONE;
-    return st; /* TASKOVER       */
+    return AGC_STATUS_OK; /* TASKOVER       */
 }
 
 /* ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
@@ -393,12 +392,11 @@ agc_status_t agc_lm_vmonitor(void)
     }
     agc_chan_or(AGC_CHAN_CHAN14,
                     (uint16_t) (AGC_CH014_DRIVECDUS | AGC_CH014_DRIVECDUT));
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(ld_trak[0] >= -1 && ld_trak[0] <= 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* SPEEDRUN after the pause (pp. 902-904): in the descent, VHY and VHZ

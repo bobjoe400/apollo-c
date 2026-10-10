@@ -53,14 +53,13 @@ agc_status_t csm_dap_needler(void)
         return needle11();
     }
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
-    agc_status_t st = AGC_STATUS_OK;
     c->rcsflags =
         (uint16_t) (c->rcsflags & ~(unsigned) FLAGS_23); /* NEEDLER2 */
     if (!AGC_ASSERT((c->rcsflags & FLAGS_23) == 0u))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st; /* wait at least 4 ms for relay closure               */
+    return AGC_STATUS_OK; /* wait at least 4 ms for relay closure               */
 }
 
 /* NEEDLE11: zero the inputs, the display registers and the out counters
@@ -145,8 +144,7 @@ static agc_status_t needles(void)
 agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
 {
     agc_csm_dapcom_t *c = agc_csm_dap_com();
-    if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) &&
-                    (ak2 >= AGC_SP_MIN)))
+    if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) && (ak2 >= AGC_SP_MIN)))
     {
         return AGC_STATUS_BAD_ARG;
     }

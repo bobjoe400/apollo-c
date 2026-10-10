@@ -105,7 +105,6 @@ static agc_status_t stroke_burst(void)
     }
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker));
     agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
-    agc_status_t st = AGC_STATUS_OK;
     t->caddy = (agc_sp_t) (t->caddy + 1); /* INCR CADDY           */
     if (t->caddy < 0)
     {
@@ -124,14 +123,14 @@ static agc_status_t stroke_burst(void)
     else
     {
         stroke_next_set(); /* exit, end of set     */
-        return st;
+        return AGC_STATUS_OK;
     }
     t->stroker = (agc_sp_t) -t->stroker; /* change sign of slope */
     if (!AGC_ASSERT(t->caddy <= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st; /* exit at a reversal   */
+    return AGC_STATUS_OK; /* exit at a reversal   */
 }
 
 /* HACK (p. 982): entry in the T5 interrupt from the TVC DAPs (BUNKER =

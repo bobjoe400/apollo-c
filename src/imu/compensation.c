@@ -446,12 +446,11 @@ agc_status_t agc_imu_gcompzer(void)
     agc_dp_t zero[3] = {0, 0, 0};
     gcompsw          = 0;
     gcomp_write(zero);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(gcompsw == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* ---- 1/GYRO and GCOMP1 --------------------------------------------------- */

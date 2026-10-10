@@ -216,13 +216,12 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
     agc_inhint();
     uint16_t     old = agc_erase_dsptab(rel);
     agc_erase_set_dsptab(rel, pin_ones_neg((uint16_t) (mag & PIN_POSMAX)));
-    agc_status_t st = AGC_STATUS_OK;
     if (!pin_ones_negative(old) && old != 0u)
     {
         g_pin.nout++;
     }
     agc_relint();
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* DSPIN / DSPIN1 (pp. 362-363). count = DSPCOUNT number (bit 14 set:
@@ -230,8 +229,7 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
  * 11DSPIN count 2 and code 0 / BIT11 with rel given separately.        */
 static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
 {
-    if (!AGC_ASSERT(rel >= 0 && rel < PIN_DSPTAB_PANEL) ||
-        !AGC_ASSERT(sel >= 0 && sel < 4))
+    if (!AGC_ASSERT(rel >= 0 && rel < PIN_DSPTAB_PANEL) || !AGC_ASSERT(sel >= 0 && sel < 4))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -482,7 +480,6 @@ agc_status_t agc_dsky_init(void)
     g_pin            = zero;
     /* STARTSB2: turn off uplink acty, temp caution, KR, flash, op. error */
     agc_chan_and((int) AGC_CHAN_DSALMOUT, 077603u);
-    agc_status_t st = AGC_STATUS_OK;
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0; i--)
     { /* DSPOFF         */
         agc_erase_set_dsptab(i, pin_ones_neg((uint16_t) PIN_BIT12));
@@ -491,12 +488,8 @@ agc_status_t agc_dsky_init(void)
     g_pin.entret   = PIN_ENT_ENDOFJOB;
     g_pin.loadstat = PIN_LS_WAITING;
     pin_block_dspcount(PIN_VD1); /* CS VD1; TS DSPCOUNT    */
-    if (st == AGC_STATUS_OK)
-    {
-        agc_flagword_set(4, 0); /* kill interface displays */
-        st = AGC_STATUS_OK;
-    }
-    if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(g_pin.nout == 11))
+    agc_flagword_set(4, 0); /* kill interface displays */
+    if (!AGC_ASSERT(g_pin.nout == 11))
     {
         return AGC_STATUS_BAD_ARG;
     }

@@ -24,12 +24,11 @@
 static agc_status_t settime5(void)
 {
     agc_rupt_set_time(5, LM_MS100);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(agc_rupt_time(5) == LM_MS100))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* SHUTDOWN (p.1413): T5ADR = DAPIDLER, kill jet requests, jets off, trim
@@ -42,16 +41,8 @@ agc_status_t lm_dap_shutdown(void)
     d->nextu         = 0;
     d->nextv         = 0;
     agc_chan_write(005, 0); /* command jets off        */
-    agc_status_t s5 = AGC_STATUS_OK;
     agc_chan_write(006, 0);
-    agc_status_t s6 = AGC_STATUS_OK;
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
-    agc_status_t s12 = AGC_STATUS_OK;
-    if (!AGC_ASSERT(s5 == AGC_STATUS_OK && s6 == AGC_STATUS_OK) ||
-        !AGC_ASSERT(s12 == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
     agc_status_t t5 = settime5();
     return (st != AGC_STATUS_OK) ? st : t5;
 }
@@ -163,7 +154,6 @@ agc_status_t lm_dap_startdap(void)
 {
     lm_dap_t    *d  = lm_dap_state();
     agc_lm_dap_zatteror();
-    agc_status_t st = AGC_STATUS_OK;
     startdap_zero(d);
     d->rcsflags     = (uint16_t) (d->rcsflags & ~MANFLAG);
     d->oldxforp     = agc_erase_cdux();
@@ -173,7 +163,6 @@ agc_status_t lm_dap_startdap(void)
     d->skip[0]      = STARTDAP_SKIP;
     d->skip[1]      = STARTDAP_SKIP;
     agc_rupt_set_time(6, LM_T6_POSMAX);
-    agc_status_t s6 = AGC_STATUS_OK;
     d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;
     d->t6furtha[0]  = (agc_sp_t) LM_T6_POSMAX;
     d->t6next[1]    = 0;
@@ -187,8 +176,7 @@ agc_status_t lm_dap_startdap(void)
     d->nqtraps      = STARTDAP_TRAPS;
     d->nrtraps      = STARTDAP_TRAPS;
     agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS);
-    if (!AGC_ASSERT(st == AGC_STATUS_OK && s6 == AGC_STATUS_OK) ||
-        !AGC_ASSERT(s5 == AGC_STATUS_OK))
+    if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
     {
         return AGC_STATUS_BAD_ARG;
     }

@@ -41,13 +41,12 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
     agc_phase_var_t v = {AGC_RESTART_JOB,      restart_job, AGC_TASK_NONE,
                          (int16_t) AGC_PRIO13, false,       0U};
     agc_phase_change2((uint16_t) 040036, (uint16_t) 005024, &v);
-    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (!AGC_ASSERT(rem >= 0 && rem < ONE_SEC))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* STCLOK2 (p.743): DISPDEX = dispdex, STCLOK3, return to ret_job.         */
@@ -276,13 +275,12 @@ static agc_status_t go_postburn(void)
     }
     agc_lm_nullclok();
     agc_phase_change(4, (uint16_t) 000134);
-    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex > 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* GOCUTOFF (p.747): CUTOFF at PRIO17, guidance displays allowed, coasting
@@ -306,13 +304,12 @@ static agc_status_t go_cutoff(void)
     agc_phase_var_t v  = {AGC_RESTART_JOB,      AGC_JOB_CUTOFF, AGC_TASK_NONE,
                           (int16_t) AGC_PRIO17, false,          0U};
     agc_phase_change_var((uint16_t) 007024, &v);
-    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_FLUNDISP)))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* *ENTER (p.746): V99 answered ENTER: entry (3) -- GOPOST (P40, P42),

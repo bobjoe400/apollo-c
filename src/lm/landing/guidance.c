@@ -130,7 +130,6 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
     l->landtemp     = agc_vec_shl(ip, agc_vec_scale(ip, w, l->land_mag), 1);
     l->ttf_8tmp     = (agc_dp_t) (l->ttf_8tmp + dt); /* DAS TTF/8TMP */
     agc_lm_fastchng();
-    agc_status_t st = AGC_STATUS_OK;
     l->ttf_8        = l->ttf_8tmp;
     l->land         = l->landtemp;
     agc_lm_tdispset();
@@ -139,7 +138,7 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* CALCRGVG (p. 806): in IGNALG, V from the integration output plus the
@@ -201,8 +200,7 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
                              agc_sp_t precroot, agc_dp_t *root, int *passes)
 {
-    if (!AGC_ASSERT(coef != NULL && root != NULL && passes != NULL) ||
-        !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE))
+    if (!AGC_ASSERT(coef != NULL && root != NULL && passes != NULL) || !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -373,14 +371,13 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
     l->afc = agc_vec_abval(ip, l->unfc_2); /* AFCCALC2: |AFC| for THROTTLE */
     ldg_afclimit(ip, l);
     agc_lm_fastchng();
-    agc_status_t st = AGC_STATUS_OK;
     l->wchphold     = l->wchphase;              /* for phase switching logic  */
     l->flpass0      = agc_lm_ad(l->flpass0, 1); /* INCR FLPASS0               */
     if (!AGC_ASSERT(l->afc >= 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* CGCALC (pp. 810-811): erect the guidance-to-stable-member matrix, but
@@ -803,9 +800,7 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  * IGNALG pass), GUIDSUB (later IGNALG passes: CALCRGVG), VERTGUID.      */
 agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(entry >= AGC_LM_ENTRY_GUILDRET &&
-                    entry <= AGC_LM_ENTRY_VERTGUID))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(entry >= AGC_LM_ENTRY_GUILDRET && entry <= AGC_LM_ENTRY_VERTGUID))
     {
         return AGC_STATUS_BAD_ARG;
     }

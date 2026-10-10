@@ -43,12 +43,11 @@ agc_status_t lm_dap_zeroenbl(void)
     agc_erase_set_q_rhcctr(0);
     agc_erase_set_r_rhcctr(0);
     agc_chan_or(013, PM_BITS8_9);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* Minimum impulse mode, P axis (p.1431): one 14 ms pulse per deflection of
@@ -157,8 +156,6 @@ static agc_status_t ratedone(lm_dap_t *d)
 {
     agc_inhint();
     agc_flag_clear(AGC_FLAG_OURRCFLG);
-    agc_status_t sf = AGC_STATUS_OK;
-    agc_status_t sz = AGC_STATUS_OK;
     if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
     {
         d->cduxd = agc_erase_cdux(); /* X-axis override */
@@ -166,13 +163,8 @@ static agc_status_t ratedone(lm_dap_t *d)
     else
     {
         agc_lm_dap_zatteror();
-        sz = AGC_STATUS_OK;
     }
     agc_relint();
-    if (!AGC_ASSERT(sf == AGC_STATUS_OK && sz == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
-    }
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
     {
         return AGC_STATUS_BAD_ARG;

@@ -391,12 +391,11 @@ agc_status_t agc_imu_clear_cmds(void)
         cducmd[i] = 0; /* -0: no pulses outstanding    */
     }
     agc_imu_hw_set_gyrocmd(0);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(cducmd[0] == 0))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 agc_sp_t agc_imu_cducmd(int axis)
@@ -1000,8 +999,7 @@ static agc_status_t modabort(void)
 agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
                                agc_imu_stall_result_t *result)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT &&
-                    result != NULL))
+    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT && result != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -1092,12 +1090,11 @@ agc_status_t agc_imu_status_check(void)
 agc_status_t agc_imu_set_in_use(void)
 {
     agc_flag_set(AGC_FLAG_IMUSE);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_IMUSE)))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* P06 / PRESTAND / SCALPREP (pp.1445-1447): GNCS to standby.  Needs the

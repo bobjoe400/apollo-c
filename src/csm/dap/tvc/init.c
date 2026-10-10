@@ -200,7 +200,6 @@ static agc_status_t tvc_init2(int lem)
     t->t5tvcdt =
         (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX; AD BIT1 */
     agc_flag_clear(AGC_FLAG_SWTOVER); /* reset SWTOVER   */
-    agc_status_t st = AGC_STATUS_OK;
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: the LXCH A exchanges the
      * product words, which shifts it 14 places left; scaled pi/8.        */
     agc_sp_t ek = c->ekprime[lem];
@@ -215,7 +214,7 @@ static agc_status_t tvc_init2(int lem)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* TVCINIT3 (p. 939): trim values to the trim trackers, output trackers,
@@ -296,8 +295,7 @@ agc_status_t agc_task_tvcinit1(void)
     agc_csm_dapcom_t *cw = agc_csm_dap_com();
     cw->rcsflags         = (uint16_t) (cw->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     agc_status_t s4      = csm_dap_needler();
-    if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK) ||
-        (s3 != AGC_STATUS_OK) || (s4 != AGC_STATUS_OK))
+    if ((st != AGC_STATUS_OK) || (s2 != AGC_STATUS_OK) || (s3 != AGC_STATUS_OK) || (s4 != AGC_STATUS_OK))
     {
         return (st != AGC_STATUS_OK) ?
                    st :
@@ -349,7 +347,6 @@ agc_status_t csm_tvc_swichovr_body(void)
         t->ytmp[i] = 0;
     }
     agc_flag_set(AGC_FLAG_SWTOVER);
-    agc_status_t st = AGC_STATUS_OK;
     t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth gains   */
     agc_status_t s2 = csm_tvc_gains(false); /* S40.15 +7: VARK only  */
     t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering */
@@ -362,7 +359,7 @@ agc_status_t csm_tvc_swichovr_body(void)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return (st != AGC_STATUS_OK) ? st : s2;
+    return s2;
 }
 
 /* PRESWTCH, SWICHOVR (p. 941): entry from V46 (CSM/LM switch-over to the

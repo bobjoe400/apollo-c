@@ -48,8 +48,7 @@ static bool selectp(lm_dap_t *d)
 {
     for (int tempnum = 6; tempnum >= -1; tempnum--)
     { /* <= 8 tries     */
-        if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 6) ||
-            !AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 10))
+        if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 6) || !AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 10))
         {
             return false;
         }
@@ -89,12 +88,11 @@ agc_status_t lm_dap_jetsoff(void)
 static agc_status_t altsyst(void)
 {
     agc_flag_invert(AGC_FLAG_AORBSFLG);
-    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_AORBSFLG)))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* PJETSLEC (pp.1436-1437), entered at PJETSLEC -1 with NUMBERT = 4, 5
@@ -337,16 +335,11 @@ agc_status_t lm_dap_pretimck(void)
         d->negur    = 0;
         d->raccdot  = 0;
         agc_chan_and(012, (uint16_t) ~PX_GIMR & 077777u);
-        st = AGC_STATUS_OK;
         d->rgimtimr = LM_NEGMAX;
     }
     for (int i = 0; i < 3; i++)
     {
         d->jetctr[i] = lm_dap_dim(d->jetctr[i]); /* DIM PJETCTR..  */
-    }
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return AGC_STATUS_BAD_ARG;
     }
     if (!AGC_ASSERT(d->qgimtimr != 0 || d->rgimtimr != 0 || true == (st == AGC_STATUS_OK)))
     {

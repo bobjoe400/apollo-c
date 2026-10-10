@@ -79,8 +79,7 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
 agc_status_t lm_dap_acdt_c12(void)
 {
     lm_dap_t *d = lm_dap_state();
-    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) ||
-        !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
+    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) || !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
@@ -113,8 +112,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  * be shifted right by SHFTFLAG + ININDEX/2. Zero or negative -> 0.      */
 agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
-    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) ||
-        !AGC_ASSERT(inindex != NULL))
+    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) || !AGC_ASSERT(inindex != NULL))
     {
         return 0;
     }
@@ -296,7 +294,6 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
         d->negur = newneg;
     }
     agc_sp_t     prod = (agc_sp_t) (old * newneg);
-    agc_status_t st   = AGC_STATUS_OK;
     if (prod > 0)
     {
         return AGC_STATUS_OK; /* LOUPE          */
@@ -313,14 +310,13 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
         }
         agc_chan_and(
             012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
-        st = AGC_STATUS_OK;
     }
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
     if (!AGC_ASSERT(newneg >= -1 && newneg <= 1))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* GTS (pp.1472-1484): trim gimbal control of Q and R this pass. The next
@@ -350,7 +346,7 @@ agc_status_t lm_dap_gts(void)
             newneg = dp_sign(w.k2theta);
         }
         agc_status_t s = gts_drive(d, i, newneg);
-        st             = (s != AGC_STATUS_OK) ? s : st;
+        st             = s;
     }
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
