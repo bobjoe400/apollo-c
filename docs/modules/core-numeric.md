@@ -3,7 +3,7 @@
 ## Scope
 
 include/agc/agc_word.h and include/agc/agc_interp.h implementations, plus
-include/agc/agc_constants.h + src/core/agc_constants.c.
+include/agc/agc_constants.h + src/core/constants.c.
 AGC sources: SINGLE_PRECISION_SUBROUTINES.agc (p.1207), INTERPRETER.agc
 (Comanche055 pp.1131-1191, the arithmetic sections), FIXED_FIXED_CONSTANT_POOL.agc,
 INTERPRETIVE_CONSTANTS.agc. Comanche055 and Luminary099 copies are identical
@@ -24,33 +24,33 @@ count 14) the observable branch is reproduced. Files: agc_mpac.[ch]
 (instructions + DMPSUB/ROUNDSUB/DOTSUB/DSQSUB/VSQSUB/POLY), agc_shift.c
 (GENSCR/MPACSHR/MPACSRND/VSHRRND/VRIGHT2/TSSL/TSLC), agc_divide.c
 (DDV/GENDDV/MAXDV/SQRTSUB), agc_word.c (agc_word.h), agc_sp_trig.c,
-agc_interp_scalar.c, agc_interp_trig.c, agc_interp_vector.c, agc_vec_div.c
+interp/scalar.c, interp/trig.c, interp/vector.c, agc_vec_div.c
 (V/SC, UNIT), agc_constants.c.
 
 | AGC routine (label, page) | C function | file |
 |---|---|---|
 | SPSIN/SPCOS/POLLEY/ARG90 p.1207 | agc_sp_sin, agc_sp_cos | agc_sp_trig.c |
-| DAD DSU BDSU ENDVXV OVERFLOW p.1131-1134 | agc_dp_add, agc_dp_sub (BDSU = swapped) | agc_interp_scalar.c |
-| TAD p.1135 | agc_tp_add | agc_interp_scalar.c |
-| DMPSUB DMP1 DMPR ROUNDSUB p.1136-1137,1149 | agc_dp_mul_tp, agc_dp_mul_raw, agc_dp_mul, agc_dp_mul_trunc, agc_tp_round_dp, agc_tp_round | agc_mpac.c, agc_word.c, agc_interp_scalar.c |
-| DOTSUB DOT p.1138,1143 | agc_vec_dot, agc_vec_dot_tp | agc_mpac.c, agc_interp_vector.c |
-| POLY/POWRSERS p.1139-1140 | agc_dp_poly | agc_mpac.c, agc_interp_scalar.c |
-| SHORTMP, DMPNSUB p.1141-1142 | agc_tp_mul_sp, agc_dp_mul_int | agc_interp_scalar.c |
-| MXV VXM p.1143-1144; MXM3 (ANGLFIND p.404) | agc_mat_vec, agc_vec_mat, agc_mat_mul, agc_mat_transpose | agc_interp_vector.c |
-| VXSC VVXSC DVXSC VPROJ VROUND p.1145-1146 | agc_vec_scale, agc_vec_proj | agc_interp_vector.c |
-| VXV p.1147 | agc_vec_cross | agc_interp_vector.c |
-| VAD VSU BVSU p.1131-1133 | agc_vec_add, agc_vec_sub | agc_interp_vector.c |
-| DDV BDDV DDV/BDDV GENDDV MAXDV p.1149,1162-1170 | agc_dp_div, agc_dp_div_raw | agc_divide.c, agc_interp_scalar.c |
+| DAD DSU BDSU ENDVXV OVERFLOW p.1131-1134 | agc_dp_add, agc_dp_sub (BDSU = swapped) | interp/scalar.c |
+| TAD p.1135 | agc_tp_add | interp/scalar.c |
+| DMPSUB DMP1 DMPR ROUNDSUB p.1136-1137,1149 | agc_dp_mul_tp, agc_dp_mul_raw, agc_dp_mul, agc_dp_mul_trunc, agc_tp_round_dp, agc_tp_round | agc_mpac.c, agc_word.c, interp/scalar.c |
+| DOTSUB DOT p.1138,1143 | agc_vec_dot, agc_vec_dot_tp | agc_mpac.c, interp/vector.c |
+| POLY/POWRSERS p.1139-1140 | agc_dp_poly | agc_mpac.c, interp/scalar.c |
+| SHORTMP, DMPNSUB p.1141-1142 | agc_tp_mul_sp, agc_dp_mul_int | interp/scalar.c |
+| MXV VXM p.1143-1144; MXM3 (ANGLFIND p.404) | agc_mat_vec, agc_vec_mat, agc_mat_mul, agc_mat_transpose | interp/vector.c |
+| VXSC VVXSC DVXSC VPROJ VROUND p.1145-1146 | agc_vec_scale, agc_vec_proj | interp/vector.c |
+| VXV p.1147 | agc_vec_cross | interp/vector.c |
+| VAD VSU BVSU p.1131-1133 | agc_vec_add, agc_vec_sub | interp/vector.c |
+| DDV BDDV DDV/BDDV GENDDV MAXDV p.1149,1162-1170 | agc_dp_div, agc_dp_div_raw | agc_divide.c, interp/scalar.c |
 | V/SC V/SC2 V/SCDV p.1150,1171-1173 | agc_vec_div | agc_vec_div.c |
-| SIGN COMP DCOMP VCOMP p.1151 | agc_dp_sign, agc_dp_neg, agc_vec_neg | agc_word.c, agc_interp_vector.c |
-| SR SRR SL SLR VSR VSL GENSHIFT GENSCR TSSL VSSL VRIGHT2 p.1152-1161 | agc_dp_shr, agc_dp_shr_round, agc_dp_shl, agc_dp_shl_round, agc_dp_shl_raw, agc_vec_shr, agc_vec_shl, agc_tp_shift | agc_shift.c, agc_word.c, agc_interp_scalar.c, agc_interp_vector.c |
-| TSLC (NORM) p.1157 | agc_dp_norm, agc_tp_norm | agc_shift.c, agc_word.c, agc_interp_scalar.c |
+| SIGN COMP DCOMP VCOMP p.1151 | agc_dp_sign, agc_dp_neg, agc_vec_neg | agc_word.c, interp/vector.c |
+| SR SRR SL SLR VSR VSL GENSHIFT GENSCR TSSL VSSL VRIGHT2 p.1152-1161 | agc_dp_shr, agc_dp_shr_round, agc_dp_shl, agc_dp_shl_round, agc_dp_shl_raw, agc_vec_shr, agc_vec_shl, agc_tp_shift | agc_shift.c, agc_word.c, interp/scalar.c, interp/vector.c |
+| TSLC (NORM) p.1157 | agc_dp_norm, agc_tp_norm | agc_shift.c, agc_word.c, interp/scalar.c |
 | UNIT UNITDV SMALL LARGE p.1175-1179 | agc_vec_unit | agc_vec_div.c |
 | DSQ DSQSUB VSQ VSQSUB ABVAL ABS p.1180-1183 | agc_dp_sq, agc_dp_sq_tp, agc_vec_sq, agc_vec_sq_tp, agc_vec_abval, agc_dp_abs | agc_interp_*.c, agc_word.c |
-| SQRT SQRTSUB SQRTSHFT p.1181-1186 | agc_dp_sqrt, agc_dp_sqrt_chk, agc_tp_sqrt | agc_divide.c, agc_interp_trig.c |
-| SINE COSINE PRESINE SN1 p.1187-1188 | agc_dp_sin, agc_dp_cos | agc_interp_trig.c |
-| ARCSIN ARCCOS ACOSST2 ACOS3 SUBTR ASINEX p.1189-1191 | agc_dp_asin(_chk), agc_dp_acos(_chk) | agc_interp_trig.c |
-| BOV(B) p.1196 | agc_interp_test_ovf | agc_interp_scalar.c |
+| SQRT SQRTSUB SQRTSHFT p.1181-1186 | agc_dp_sqrt, agc_dp_sqrt_chk, agc_tp_sqrt | agc_divide.c, interp/trig.c |
+| SINE COSINE PRESINE SN1 p.1187-1188 | agc_dp_sin, agc_dp_cos | interp/trig.c |
+| ARCSIN ARCCOS ACOSST2 ACOS3 SUBTR ASINEX p.1189-1191 | agc_dp_asin(_chk), agc_dp_acos(_chk) | interp/trig.c |
+| BOV(B) p.1196 | agc_interp_test_ovf | interp/scalar.c |
 | FIXED_FIXED_CONSTANT_POOL pp.1200-1204, INTERPRETIVE_CONSTANTS pp.1205-1206 | AGC_K_* macros, agc_k_unitx/y/z, agc_k_zerovec | agc_constants.h/.c |
 
 ## Progress

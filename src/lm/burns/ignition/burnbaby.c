@@ -1,5 +1,5 @@
 /*
- * ignition.c -- BURN, BABY, BURN -- MASTER IGNITION ROUTINE (Luminary099
+ * burnbaby.c -- BURN, BABY, BURN -- MASTER IGNITION ROUTINE (Luminary099
  * BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc pp. 731-751, by Adler and
  * Eyles): everything between the 45-second pre-ignition check and TIG + 26 s
  * for P12, P40, P41, P42, P63 and the aborts: the ignition tables, BURNBABY,
@@ -7,12 +7,12 @@
  * TIG-35 / TIG-30 / TIG-5 / TIG-0 waitlist chain, ullage, IGNITION and the
  * program-specific ignition tails, ZOOM (throttle-up), TIGTASK.
  * The once-a-second display (CLOKTASK/CLOKJOB), the crew responses,
- * COMFAIL, P40AUTO and REP40ALM are in ignition_clock.c.
+ * COMFAIL, P40AUTO and REP40ALM are in clock.c.
  */
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "ignition_internal.h"
+#include "internal.h"
 
 #define SEC1        100
 #define SEC5        500       /* 5SEC                                      */

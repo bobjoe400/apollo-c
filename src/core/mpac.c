@@ -6,7 +6,7 @@
  * subroutine instruction by instruction, on 15-bit ones'-complement words
  * held in int32_t. See agc_mpac.h for the representation.
  */
-#include "agc_mpac.h"
+#include "mpac.h"
 #include "agc/agc_assert.h"
 
 /* ---- representation ----------------------------------------------------- */

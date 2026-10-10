@@ -1,5 +1,5 @@
 /*
- * sps_burn_ignition.c -- P40-P47.agc, Comanche055 pp. 696-704: from ignition to
+ * ignition.c -- P40-P47.agc, Comanche055 pp. 696-704: from ignition to
  * the end of the burn program: IGNITION, IMPULCHK, PREPTVC, DOTVCON,
  * DOSTRULL/STEERULL/ULAGEOFF, IMPLBURN, IMPLCONT, ENGINOFF, DOSPSOFF,
  * DOTVCRCS, SPSOFF/MASSBACK, TVCZAP, POSTBURN, P40RCS, P40MINDB, TIGNOW,
@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "sps_burn_internal.h"
+#include "internal.h"
 
 #define DOTVCON_DELAY   40    /* DEC 40: 0.4 s for thrust build-up         */
 #define DOSTRULL_DELAY  160   /* DEC 160: 0.4 + 1.6 = 2 s to ullage off    */

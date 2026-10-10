@@ -18,7 +18,7 @@ Language: C11, no extensions. Build flags (Makefile):
    counters as the bound (e.g. `AGC_KEPLER_MAX_ITER`). The scheduler's
    run-forever loop is the single documented exception and lives in `src/sim/`.
 3. **No heap.** No `malloc`/`calloc`/`realloc`/`free`/`strdup`. All erasable
-   memory is static storage declared in `src/core/agc_state.c` or in the
+   memory is static storage declared in `src/core/state.c` or in the
    owning module's `.c` file, mirroring the AGC's fixed erasable banks.
 4. **Short functions.** <= 60 lines of code per function (blank lines and
    comments excluded). `tools/check_rules.py` enforces this. Split AGC

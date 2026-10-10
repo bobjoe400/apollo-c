@@ -1,13 +1,13 @@
 /*
- * servicer_internal.h -- stages of the Luminary SERVICER job shared by
- * src/lm/burns/servicer.c and src/lm/burns/servicer_lr.c (the landing radar
+ * internal.h -- stages of the Luminary SERVICER job shared by
+ * src/lm/burns/servicer/average_g.c and landing_radar.c (the landing radar
  * update). Each stage is a label of SERVICER.agc that the other file
  * branches to; they all run inside the SERVICER job.
  */
 #ifndef SERVICER_LM_INTERNAL_H
 #define SERVICER_LM_INTERNAL_H
 
-#include "guid_pending.h"
+#include "../guid_pending.h"
 
 /* QUIKFAZ5 (p.890): make `resume` the group-5 restart point.             */
 agc_status_t agc_lm_serv_quikfaz5(agc_job_id_t resume);

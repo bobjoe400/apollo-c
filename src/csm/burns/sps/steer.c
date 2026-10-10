@@ -1,5 +1,5 @@
 /*
- * sps_burn_steer.c -- P40-P47.agc, Comanche055 pp. 697-728: the 2-second
+ * steer.c -- P40-P47.agc, Comanche055 pp. 697-728: the 2-second
  * steering cycle run from AVGEXIT: UPDATEVG (with SETUP.9 / SURELY.9),
  * S40.8 (VG update, low-thrust test, TGOCALC, XPRODUCT, S40.81, LOTHRUST),
  * STEERING (engine-off set-up), CALCN85, P40CNV85, CALCN83, SERVXT, the
@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "sps_burn_internal.h"
+#include "internal.h"
 
 #define CALLER_STEERING 1
 #define CALLER_CALC_VG_BODY  2

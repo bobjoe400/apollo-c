@@ -7,7 +7,7 @@
  * Places where the AGC computes x + (-x) produce -0 in the real machine;
  * they are commented where the resulting CCS/BZMF branch depends on it.
  */
-#include "agc_mpac.h"
+#include "mpac.h"
 #include "agc/agc_assert.h"
 
 /* SQRT linear first-guess constants (INTERPRETER.agc p.1159-1174).          */

@@ -66,7 +66,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 
 (updated as files are finished)
 
-- DONE design; include/agc/agc_dsky.h; src/io/dsky/internal.h (control-flow model in its header comment)
+- DONE design; include/agc/agc_dsky.h; src/io/dsky/pinball/internal.h (control-flow model in its header comment)
 - DONE state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
 - DONE display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
 - DONE keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
@@ -80,7 +80,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - DONE agc_dsky_endext (ENDEXT EQUALS ENDMARK)
 - DONE tests/test_dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
   violations, assertion density 1.25-1.93 per file (warn)
-- Files: include/agc/agc_dsky.h; src/io/dsky/internal.h, state.c,
+- Files: include/agc/agc_dsky.h; src/io/dsky/pinball/internal.h, state.c,
   display.c, keys.c, verbs.c, monitor.c,
   load.c, scale.c, sfin.c, nvsub.c, display_if.c
 
@@ -183,7 +183,7 @@ interface), AGC_JOB_JAMTERM (FINDVAC PRIO32), AGC_JOB_XCHSLEEPM, AGC_JOB_XCHSLEE
 (XCHSLEEP with FACEREG 0 / 1). XCHTOEND uses the existing AGC_JOB_ENDOFJOB.
 Tasks (agc_status_t f(void)): AGC_TASK_MONREQ (agc_task_monreq),
 AGC_TASK_TSTLTS2 (agc_task_tstlts2). Placeholders PIN_JOB_* / PIN_TASK_* in
-src/io/dsky/internal.h are to be replaced at integration.
+src/io/dsky/pinball/internal.h are to be replaced at integration.
 
 ## Tests written
 

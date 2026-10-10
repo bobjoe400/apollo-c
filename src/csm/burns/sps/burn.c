@@ -1,5 +1,5 @@
 /*
- * sps_burn.c -- P40-P47.agc, Comanche055 pp. 693-736: the CSM thrusting
+ * burn.c -- P40-P47.agc, Comanche055 pp. 693-736: the CSM thrusting
  * programs P40 (SPS), P41 (RCS) and P47 (thrust monitor): P40CSM, P41CSM,
  * P40PVA/P40SXTY (S40.1, S40.2,3, R60), P40TTOG/P40GMB (gimbal test and
  * trim), P40S/SV (time to TIG-30), TIGBLNK, TIGAVEG (TIG-30), TIG-5,
@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "sps_burn_internal.h"
+#include "internal.h"
 
 /* FENG 2DEC 9.1188544 B-7: SPS thrust 20 500 lb in m.newton (10^4 N).     */
 static const agc_dp_t FENG = 19123624;

@@ -9,7 +9,7 @@
  * or the words at X, X+2, X+4. A matrix is three row vectors at X, X+6,
  * X+12, exactly the AGC layout.
  */
-#include "agc_mpac.h"
+#include "../mpac.h"
 #include "agc/agc_assert.h"
 
 #define VSHIFT_MAX 43            /* a VSL past 42 places leaves zero        */

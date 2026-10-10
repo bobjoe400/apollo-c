@@ -1,5 +1,5 @@
 /*
- * servicer_lr.c -- SERVICER.agc, Luminary099 pp. 872-897: the landing
+ * landing_radar.c -- SERVICER.agc, Luminary099 pp. 872-897: the landing
  * radar (LR) part of the lunar-landing SERVICER: MUNRETRN (the return
  * point of MUNRVG) with the altitude tests ALTCHK/XORCHK/35KCHK, the high
  * gate antenna repositioning test, CONTSERV, COPYCYC1/R29/NOR29NOW/
@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "servicer_internal.h"
+#include "internal.h"
 
 #define RDGIMS_DELAY  17      /* 170MS EQUALS ND1 (OCT 21 = 17 cs)          */
 #define PRIO23_LR     AGC_PRIO23

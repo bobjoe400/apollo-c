@@ -3,8 +3,8 @@
  * downlink lists and down-telemetry, P27 update program, service routines,
  * self-check / show-banksum, RTB op codes, LM P07 IMU tests).
  *
- * Lives in src/io/ because sys-misc may not edit include/agc/.  Requested in
- * docs/modules/sys-misc.md: promote unchanged to include/agc/agc_sysmisc.h.
+ * Promoted from src/io/sysmisc.h by the restructure; owned by the sys-misc
+ * lane (docs/modules/sys-misc.md).
  */
 #ifndef AGC_SYSMISC_H
 #define AGC_SYSMISC_H
@@ -223,6 +223,11 @@ agc_status_t agc_extverb_pending(agc_xv_display_t *out);
 agc_status_t agc_extverb_job(agc_job_id_t job);          /* jobs owned here */
 agc_status_t agc_extverb_task(agc_task_id_t task);       /* tasks owned here */
 bool         agc_extverb_busy(void);                     /* EXTVBACT != 0   */
+/* EXTVBACT: extended-verb / marking-system activity word (bit 2 marking
+ * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
+uint16_t     agc_erase_extvbact(void);
+void         agc_erase_set_extvbact(uint16_t v);
+agc_status_t agc_svc_set_extvbact(uint16_t v);           /* TS EXTVBACT     */
 
 agc_status_t agc_uplink_update_start(int verb);                    /* V70..V73        */
 agc_status_t agc_uplink_update_response(agc_dsky_resp_t r, uint16_t octal_word);

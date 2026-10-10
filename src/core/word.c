@@ -12,7 +12,7 @@
  * GENSCR, MPACSRND) so their low-order bits match the real machine.
  */
 #include <math.h>
-#include "agc_mpac.h"
+#include "mpac.h"
 #include "agc/agc_assert.h"
 
 #define WORD_SCALE   16384.0         /* 2^14                                */

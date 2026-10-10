@@ -7,7 +7,7 @@
  *     sin(pi/2 x) ~ 2 x (C1/2 + C3/2 x^2 + C5/2 x^4),  x scaled at pi/2,
  * evaluated with single-precision MP (major halves only) exactly as the AGC.
  */
-#include "agc_mpac.h"
+#include "mpac.h"
 #include "agc/agc_assert.h"
 #include "agc/agc_constants.h"
 

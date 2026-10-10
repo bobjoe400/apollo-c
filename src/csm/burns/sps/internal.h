@@ -1,14 +1,14 @@
 /*
- * sps_burn_internal.h -- pieces of the Comanche P40-P47 programs shared by
- * src/csm/burns/sps_burn.c (program start and countdown), sps_burn_ignition.c
- * (ignition to post-burn), sps_burn_steer.c (UPDATEVG, S40.8, S40.9,
- * S40.13, STEERING, N85/N83) and sps_burn_clock.c (CLOKTASK, CLOCKJOB,
+ * internal.h -- pieces of the Comanche P40-P47 programs shared by
+ * src/csm/burns/sps/burn.c (program start and countdown), ignition.c
+ * (ignition to post-burn), steer.c (UPDATEVG, S40.8, S40.9,
+ * S40.13, STEERING, N85/N83) and clock.c (CLOKTASK, CLOCKJOB,
  * V97/V99, S40.6, DAPFIG).
  */
 #ifndef SPS_BURN_INTERNAL_H
 #define SPS_BURN_INTERNAL_H
 
-#include "guid_pending.h"
+#include "../guid_pending.h"
 
 /* NVWORD1 of the CLOCKJOB: the V99 flash (-BIT9) and the V97 flash, which
  * the AGC marks with -0 (DEVIATION: -0 is not representable; -1 is used). */

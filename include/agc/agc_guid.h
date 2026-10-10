@@ -350,7 +350,7 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx);  /* GENTRAN restart  */
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx);     /* AVGEND      */
 agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx);   /* AVGEND 2.2 restart */
 
-/* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer.c) -------- */
+/* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer/) -------- */
 agc_status_t agc_task_preread_lm(void);                  /* PREREAD     */
 agc_status_t agc_task_bibibias(void);                    /* BIBIBIAS    */
 agc_status_t agc_task_readaccs_lm(void);                 /* READACCS    */
@@ -393,7 +393,7 @@ agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx);            /
 agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx);       /* after V06N33 PRO */
 agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx);        /* after V06N81 PRO */
 
-/* ---- CSM P40-P47 (src/csm/burns/sps_burn.c) ---------------------------------- */
+/* ---- CSM P40-P47 (src/csm/burns/sps/) ---------------------------------- */
 agc_status_t agc_job_sps_burn(agc_job_ctx_t *ctx);        /* P40CSM      */
 agc_status_t agc_job_rcs_burn_csm(agc_job_ctx_t *ctx);        /* P41CSM      */
 agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx);        /* P47CSM      */
@@ -504,7 +504,7 @@ agc_status_t agc_lm_enginof2(void);                      /* ENGINOF2    */
 agc_status_t agc_lm_enginof3(void);                      /* ENGINOF3    */
 agc_status_t agc_lm_enginof4(void);                      /* ENGINOF4    */
 
-/* ---- LM BURN BABY BURN (src/lm/burns/ignition.c) ----------------------------- */
+/* ---- LM BURN BABY BURN (src/lm/burns/ignition/) ----------------------------- */
 typedef enum agc_lm_which {
     AGC_LM_WHICH_POWERED_ASCENT = 0,  /* P12TABLE */
     AGC_LM_WHICH_DPS_BURN,      /* P40TABLE */

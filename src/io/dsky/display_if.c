@@ -26,7 +26,7 @@
  * g_idle, since only one job can be in ENDIDLE.
  */
 #include <stddef.h>
-#include "internal.h"
+#include "pinball/internal.h"
 
 void agc_erase_set_extvbact(uint16_t v);           /* EXTVBACT (sys-misc)  */
 

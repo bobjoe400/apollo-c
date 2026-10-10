@@ -8,7 +8,7 @@
  * and leaves the other MPAC slots as they are at that moment; the C code
  * returns exactly that arrangement (see DEVIATION notes for the sign).
  */
-#include "agc_mpac.h"
+#include "mpac.h"
 #include "agc/agc_assert.h"
 
 #define VDIV_NORM_MAX 28         /* divisor doublings: |s| >= 2^-28         */

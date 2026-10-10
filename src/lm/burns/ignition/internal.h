@@ -1,6 +1,6 @@
 /*
- * ignition_internal.h -- the BURN, BABY, BURN ignition tables shared by
- * src/lm/burns/ignition.c and src/lm/ignition_clock.c (Luminary099 pp. 731-751).
+ * internal.h -- the BURN, BABY, BURN ignition tables shared by
+ * src/lm/burns/ignition/burnbaby.c and clock.c (Luminary099 pp. 731-751).
  *
  * The AGC indexes a table of constants and TCF instructions by WHICH
  * (P12TABLE, P40TABLE, P41TABLE -5, P42TABLE, P63TABLE, ABRTABLE). Here each
@@ -10,7 +10,7 @@
 #ifndef IGNITION_INTERNAL_H
 #define IGNITION_INTERNAL_H
 
-#include "guid_pending.h"
+#include "../guid_pending.h"
 
 /* (3) the *ENTER response of the V99 engine-enable request.               */
 typedef enum ign_enter {

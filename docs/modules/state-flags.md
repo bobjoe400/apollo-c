@@ -8,8 +8,8 @@ names, `agc_state.c` (time, flagwords, state vectors, vehicle selection),
 table AGC erasable name -> C accessor / owner (end of this note).
 
 Files: `include/agc/agc_flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
-`agc_channels.h` (edited), `agc_state.h` (extended), `src/core/agc_state.c`,
-`src/core/agc_channels.c`, `src/core/agc_erasable.c`, `tests/test_state.c`,
+`agc_channels.h` (edited), `agc_state.h` (extended), `src/core/state.c`,
+`src/core/channels.c`, `src/core/erasable.c`, `tests/test_state.c`,
 `tests/test_state_lm.c`.
 
 ## Progress
@@ -169,8 +169,8 @@ None.
   accessors including range rejection. Defines its own `agc_assert_report` to count AGC_ASSERT reports.
 * `tests/test_state_lm.c` (LM): LM flag numbers (including FLGWRD12/13), vehicle-dependent validity
   of flag ids, OTHER = CSM state vector, LM channel names.
-* Build used: `gcc ... -DAGC_HOST_DEBUG tests/test_state.c src/core/agc_state.c src/core/agc_channels.c
-  src/core/agc_erasable.c` (does not depend on other lanes' objects).
+* Build used: `gcc ... -DAGC_HOST_DEBUG tests/test_state.c src/core/state.c src/core/channels.c
+  src/core/erasable.c` (does not depend on other lanes' objects).
 
 ## Open questions
 

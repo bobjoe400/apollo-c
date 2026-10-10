@@ -105,6 +105,10 @@ typedef struct agc_rendz {
     agc_dp_t tcsi, tcdh, ttpio, tpass4, intime, tstrt, dellt4, nomtpi;
     agc_dp_t t1tot2, t2tot3;  /* CSI->CDH and CDH->TPI intervals            */
     agc_dp_t kt;              /* KT: ATIGINC/PTIGINC preparation time       */
+    agc_dp_t atiginc;         /* ATIGINC: P35 TIG increment, this vehicle
+                               * active (pad loaded), cs 2^28               */
+    agc_dp_t ptiginc;         /* PTIGINC: P75 TIG increment, other vehicle
+                               * active (pad loaded), cs 2^28               */
     agc_dp_t hafpa1;          /* HAFPA1: half period after CSI (2^28)       */
 
     /* angles, revolutions 2^0 */
@@ -381,6 +385,24 @@ agc_status_t agc_job_cdh_time_search(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cdh_alarm_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cdh_after_results(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cdh_after_dv_lv(agc_job_ctx_t *ctx);
+/* tpi_tpm_targeting.c */
+agc_status_t agc_job_tpi_targeting(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_targeting_other_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_input(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_after_ttpi(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_after_elev(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_cycle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_intloop(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_time_search(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_alarm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_after_results(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpi_after_final(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpm_targeting(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpm_targeting_other_vehicle(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpm_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpm_advance(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tpm_after_final(agc_job_ctx_t *ctx);
 /* sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);

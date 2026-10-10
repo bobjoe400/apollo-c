@@ -6,7 +6,7 @@
  * attitude), S41.1 (VG to control/body axes), the S40.8 time-to-go
  * computations and the Comanche cross-product steering XPRODUCT, and the
  * Comanche S40.13 TIMEBURN. The flag-dependent sequencing is in
- * src/csm/burns/sps_burn.c and src/lm/burns/dps_burn.c.
+ * src/csm/burns/sps/burn.c and src/lm/burns/dps_burn.c.
  *
  * Scales: UT half unit (2^1); VGTIG, VG, DELVREF, BDT, DELVSIN m/cs 2^7;
  * RTIG m 2^29; F m.newton 2^7; WEIGHT/G kg 2^16; TGO cs 2^28; angles rev.

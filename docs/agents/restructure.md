@@ -5,6 +5,10 @@ live beside them) into subsystem subfolders. include/agc/ stays flat; no
 `#include "agc/..."` line changes. The Makefile globs src/ recursively.
 
 Rule: a subfolder needs >= 3 files; otherwise keep the file in the parent.
+Rule: three or more files in one folder sharing a name prefix become a
+subfolder named by that prefix and lose it (sps_burn_*.c -> sps/burn.c,
+clock.c, ...; noun_*.c -> nouns/; agc_interp_*.c -> interp/). Project
+prefix `agc_` is dropped from .c file names (it stays on public headers).
 Rule: never create a `common/` folder; shared glue lives at the parent level
 and only specialised subsystems (rcs, tvc, gimbal) get subfolders.
 

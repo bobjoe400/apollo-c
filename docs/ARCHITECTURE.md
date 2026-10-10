@@ -88,3 +88,13 @@ otherwise its files stay in the parent. A private header included from a
 different folder is promoted to include/agc/ with an `agc_` prefix, so no
 moved file needs a `../` include (the one pre-existing cross-folder include,
 csm/prelaunch_align.c -> ../imu/imu_pending.h, is untouched).
+
+## Folder rules (2026-10-10)
+
+* A file's folder path says where it belongs; its name says what it does.
+  No folder-name prefixes on files, no `agc_` prefix on .c files.
+* Three or more files sharing a prefix in one folder form a subfolder
+  named by the prefix (burns/sps/, dsky/pinball/, dsky/nouns/, core/interp/).
+* Shared glue stays at the parent level; never a `common/` folder.
+* A subfolder needs at least three files.
+* Public headers in include/agc/ keep the `agc_` prefix and stay flat.

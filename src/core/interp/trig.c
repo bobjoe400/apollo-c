@@ -13,7 +13,7 @@
  * hi = 1.0 - hi, lo = -lo); the polynomial and multiply steps see those
  * words exactly as the AGC does.
  */
-#include "agc_mpac.h"
+#include "../mpac.h"
 #include "agc/agc_assert.h"
 
 #define SIN_DEGREE  4

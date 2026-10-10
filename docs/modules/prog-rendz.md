@@ -95,7 +95,8 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
   DISDVLVC, P3XORP7X, ALMXIT/611 rz_alarm_flash
 * NAMING (docs/NAMING.md): all identifiers renamed to descriptive stems
   (map in "Renames" below); job ids in ext.h are descriptive.
-* TODO csi_cdh_targeting.c, rendz_tpi_tpm_targeting.c drivers
+* DONE csi_cdh_targeting.c: P32/P72, P33/P73 drivers (agc_job_csi_*, agc_job_cdh_*)
+* DONE tpi_tpm_targeting.c: P34/P74, P35/P75 drivers (agc_job_tpi_*, agc_job_tpm_*); ATIGINC/PTIGINC added to agc_rendz_t
 * TODO orbit_parameter_display.c, rendezvous_parameter_display_csm.c/rendezvous_parameter_display_lm.c, rendz_out_of_plane.c, stable_orbit.c, target_delta_v.c,
   ground_track_determination.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, rendezvous_navigation_csm.c, rendezvous_navigation_lm.c
 * TODO tests/test_rendezvous.c

@@ -9,7 +9,7 @@
  * OVFIND is set exactly where the AGC sets it and is never cleared here;
  * BOV (agc_interp_test_ovf) clears it.
  */
-#include "agc_mpac.h"
+#include "../mpac.h"
 #include "agc/agc_assert.h"
 
 #define POLY_MAX_DEGREE 15

@@ -1,5 +1,5 @@
 /*
- * sps_burn_clock.c -- P40-P47.agc, Comanche055 pp. 704-709 and 729-734:
+ * clock.c -- P40-P47.agc, Comanche055 pp. 704-709 and 729-734:
  * the once-a-second CLOKTASK/CLOCKJOB display (TTOGO, V06N40, V99 engine
  * enable request, V97 engine-fail), DYNDISP (dynamic N85 in P41), the
  * V99 and V97 responses (V99E/T/P, V97T/P/E and their tasks, QUICKIGN,
@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "sps_burn_internal.h"
+#include "internal.h"
 
 #define ONE_SEC        100
 #define TAILOFF_DELAY  250

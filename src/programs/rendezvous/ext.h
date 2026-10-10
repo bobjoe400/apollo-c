@@ -80,6 +80,7 @@ void         agc_erase_set_extvbact(uint16_t v);
 #define AGC_JOB_TPM_TARGETING_OTHER_VEHICLE  ((agc_job_id_t)0x1128) /* P75 entry */
 #define AGC_JOB_TPM_COMPUTE                  ((agc_job_id_t)0x1129) /* P35/P75B */
 #define AGC_JOB_TPM_AFTER_FINAL              ((agc_job_id_t)0x112A) /* after S34/35.5: VN1645 */
+#define AGC_JOB_TPM_ADVANCE                  ((agc_job_id_t)0x112B) /* P35/P75B from PRECSET (INTSTALL resume) */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */

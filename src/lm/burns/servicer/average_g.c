@@ -1,10 +1,10 @@
 /*
- * servicer.c -- SERVICER.agc, Luminary099 pp. 857-883: PREREAD,
+ * average_g.c -- SERVICER.agc, Luminary099 pp. 857-883: PREREAD,
  * BIBIBIAS, READACCS, SERVICER (mass monitor, DV monitor), AVERAGEG with
  * CALCRVG or the lunar-surface integrator MUNRVG/RVBOTH/MUNGRAV, the copy
  * cycle, AVGEND, SERVIDLE, SERVEXIT and NORMLIZE, and the REREADAC restart
  * task. The landing radar logic entered from MUNRETRN is in
- * servicer_lr.c; the arithmetic shared with Comanche is in
+ * landing_radar.c; the arithmetic shared with Comanche is in
  * src/guidance/servicer_common.c.
  *
  * Scales: R, R1S, R(CSM) SM m 2^24; V, V1S, V(CSM), G(CSM), GDT/2 m/cs 2^7;
@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "servicer_internal.h"
+#include "internal.h"
 
 #define TWO_SECS      200     /* 2SECS, cs                                  */
 #define ABORT_MONITOR_FIRST_CS  20      /* OCT24: first R10,R11 in .200 seconds       */

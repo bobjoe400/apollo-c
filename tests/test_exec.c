@@ -10,7 +10,7 @@
  * agc_dispatch_rupt and exec_up_* (the exec lane's only links to other
  * lanes), so it links against src/exec and src/core objects only:
  *   src/exec/{executive,waitlist,phase_table,restart_tables,restarts,
- *   alarm,fresh_start,interrupts,erasable}.c + src/core/agc_state.c,
+ *   alarm,fresh_start,interrupts,erasable}.c + src/core/state.c,
  *   agc_channels.c, agc_erasable.c.
  */
 #include <stdio.h>

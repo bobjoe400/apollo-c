@@ -1,9 +1,9 @@
 # Assignment: core-numeric   (tier: translation)
 
 Implement the numeric core declared in include/agc/agc_word.h and
-include/agc/agc_interp.h, in src/core/agc_word.c, src/core/agc_sp_trig.c,
-src/core/agc_interp_scalar.c, src/core/agc_interp_vector.c (split further as
-needed; every function <= 60 lines). Also create src/core/agc_constants.c
+include/agc/agc_interp.h, in src/core/word.c, src/core/sp_trig.c,
+src/core/interp/scalar.c, src/core/interp/vector.c (split further as
+needed; every function <= 60 lines). Also create src/core/constants.c
 and include/agc/agc_constants.h (you MAY create that header) from
 FIXED_FIXED_CONSTANT_POOL.agc and INTERPRETIVE_CONSTANTS.agc, keeping the
 AGC names and octal values as comments.

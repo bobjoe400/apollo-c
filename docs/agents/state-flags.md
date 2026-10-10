@@ -11,10 +11,10 @@ Scope: the shared state layer. Mostly careful transcription.
 2. include/agc/agc_channels.h (you MAY edit it): add named bit constants
    AGC_CH<chan>_<NAME> for every bit in Luminary099/
    INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS.agc and the Comanche channel
-   comments in ERASABLE_ASSIGNMENTS.agc. Implement src/core/agc_channels.c
+   comments in ERASABLE_ASSIGNMENTS.agc. Implement src/core/channels.c
    (15-bit channel image; read/write/or/and; input side for the sim; note
    that channels 030-033 are inverted-logic inputs).
-3. include/agc/agc_state.h (you MAY extend it) and src/core/agc_state.c:
+3. include/agc/agc_state.h (you MAY extend it) and src/core/state.c:
    time (TIME1/TIME2 centisecond counter), flagword storage and the flag
    API, state-vector accessors (this vehicle's RN/VN/PIPTIME and the other
    vehicle's set), TIG, MODREG, plus accessors for widely shared erasables
