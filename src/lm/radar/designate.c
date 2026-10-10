@@ -1,5 +1,5 @@
 /*
- * rr_designate_lm.c -- rendezvous radar designate, LM only (P20-P25.agc,
+ * designate.c -- rendezvous radar designate, LM only (P20-P25.agc,
  * Luminary099 pp.538-552, 593): RRDESSM, STARTDES, TRYSWS, RRDESNB,
  * RRLIMNB, BEGDES / STDESIG / DESLOOP, DODES, GOTOV56.
  *

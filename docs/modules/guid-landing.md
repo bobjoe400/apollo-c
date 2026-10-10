@@ -106,7 +106,7 @@ Per file (TODO unless marked):
 - DONE aborts.c: agc_lm_task_abort_monitor, agc_lm_abort_monitor_resume (FLASHH?/FLASHV?/10,11/P71NOW?/P70NOW?), ab_abrtjask (CONTABRT/ABRTJASK), ab_legal (LEGAL?/ABORTALM), agc_lm_job_dps_abort/p71/p70a/p71a, agc_lm_job_goabort, ab_dps_abort_init, ab_bothpoly (BOTHPOLY..YOK), ab_upthrot, agc_lm_job_abort_auto_control_check (UPTHROT1 -3), agc_lm_job_upthrot1 (+GRP4OFF), ab_aps_abort_return, agc_lm_job_aps_abort_oldtime (OLDTIME), agc_lm_tgocomp, agc_lm_throtup
 - DONE ascent.c: agc_lm_guidinit, agc_lm_comminit, agc_lm_powered_ascent_init, agc_lm_ycomp, agc_lm_logsub, as_vgvect (ASCENT state/GEFF/VGVECT/VGBODY), as_maineng, as_t2test (T2TEST/LOGSUB/NORATES/CONST), as_rates (RATES/CHKBMAG/PROK), as_cmponent (CMPONENT/NO-ATP/AIMER), as_mainline (MAINLINE/ANG1CHEK/OFFROT/CLRXFLAG), as_exitvr, as_checkalt (CHECKALT/CHECKYAW/KEEPVR/EXITVR1), as_keepvr1, as_ascterm/as_ascterm1 (ASCTERM..4), as_engoff, agc_lm_ascent, agc_lm_job_atmag, agc_lm_task_engoff1, agc_lm_job_cutoff/_cutoff5/_cutoff1/_cutoff2/_termasc, agc_lm_job_powered_ascent/_powered_ascent_flash/_powered_ascent_proceed/_powered_ascent_at_ignition/_newload/_newload2, agc_lm_powered_ascent_return, agc_lm_job_powered_ascent_burn
 - DONE displays.c: agc_lm_landisp (LANDISP/ALTROUT/ALTOUT dispatch), ld_disindat (DISINDAT), agc_lm_task_intlze (INTLZE), ld_speedrun (SPEEDRUN to VARDELAY), agc_lm_task_speedrun2 (SPEEDRUN after the pause, GET22/32, LATFWDV), agc_lm_vmonitor + ld_vmon_delta (VMONITOR..ZEROLSTY, checked branch by branch against pp. 904-907), ld_altrout (ARCOMP), ld_altout/ld_extrapolate (OLDDATA/NEWDATA/ZERODATA), ld_dataout (DATAOUT), ld_disprset (DISPRSET/ABORTON)
-- DONE tests/test_landing.c (compiles; see Tests written)
+- DONE tests/lm/landing.c (compiles; see Tests written)
 - DONE 2026-10-10 reconciliation after wave 1: ASTNRET now sets agc_align_ram()->qmaj and calls agc_job_lm_fine_align_recheck (agc_align.h R51K/R51P63) instead of a private agc_align_fine_align_recheck / agc_imu_fine_align_recheck; 1JACCQ/1JACCR taken from agc_lm_dap.h, TRKMKCNT from agc_programs.h; agc_imu.h signatures used as declared (agc_imu_status_check, agc_imu_attitude_maneuver, agc_imu_set_pointvsm/_scaxis, agc_imu_comp_get); all displays go through agc_dsky_display()
 
 ## Deviations
@@ -124,7 +124,7 @@ None in this lane. Calls into other lanes that may still return AGC_STATUS_UNIMP
 
 ## Tests written
 
-tests/test_landing.c (LM). Compiles with the project flags + -DAGC_HOST_DEBUG.
+tests/lm/landing.c (LM). Compiles with the project flags + -DAGC_HOST_DEBUG.
 1. Throttle law in the 10%-60% band: MASS 8000 kg, commanded 2.0 m/s^2 (FC 1276.7 pulses), measured 1.5 m/s^2 (FP 957.6) -> 319 pulses to THRUST (PIFPSET 0); above HIGHCRIT -> FCODD = FMAXPOS, PIFPSET = FEXTRA.
 2. QUADGUID with the vehicle exactly on r = RDG + VDG T + ADG T^2/2 (T = -400 s, LEADTIME -1 cs) -> ACG = ADG to 1e-4 relative (zero correction); 10 m x offset -> correction -12 dx/T^2 = -0.00075 m/s^2 exactly as expected.
 Link status: libagc does not link yet (other lanes' pending symbols: radar, DSKY ecadr, exec wake_as, etc.), so `make test` cannot build it until integration. Verified in scratch by linking with --unresolved-symbols=ignore-all: 17 checks, 0 failures. The test defines agc_erase_set_thrust itself under LANDING_TEST_FAKE_THRUST (set to 0 once state-flags provides it).

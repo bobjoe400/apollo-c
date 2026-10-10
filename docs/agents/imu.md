@@ -17,6 +17,6 @@ Scope, into src/imu/ with include/agc/imu/imu.h (you create it):
 Diff CM vs LM for shared files. The IMU hardware side (CDU counters,
 channel 012/014/030 bits, PIPA counters) is accessed via agc_channels.h and
 agc_state.h accessors. Waitlist tasks and jobs via agc_exec.h.
-Tests: tests/test_imu.c (compiles): CALCGTA on identity REFSMMAT gives zero
+Tests: tests/imu/imu.c (compiles): CALCGTA on identity REFSMMAT gives zero
 gyro angles; gimbal-lock check on a known attitude; PIPA compensation with
 zero bias is identity.

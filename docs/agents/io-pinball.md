@@ -32,5 +32,5 @@ and programs can request displays (agc_dsky_display(verb, noun,
 continuation ids)). Preserve verb/noun numbers, the 5-bit relay segment
 codes, alarm codes, and the AGC's own comments.
 
-Tests: tests/test_dsky.c (compiles now): "V06N36E" sets verb 06 noun 36;
+Tests: tests/io/dsky.c (compiles now): "V06N36E" sets verb 06 noun 36;
 "V21N01E12345E" loads; relay word for digit pairs.

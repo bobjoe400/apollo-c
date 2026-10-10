@@ -77,7 +77,7 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | naming rule (docs/NAMING.md) rename pass | DONE for the ignition files (B*RNB*B* -> burnbaby_countdown, IGNYET? -> ignition_if_enabled, TIG-30A -> restore_burn_display, P41SPOT -> preburn_state_vector_lm); rest was done tree-wide by the naming agent |
 | BURNBABY (tables, B*RNB*B*, P41SPOT, TIG-35..TIG-0, IGNYET?, IGNITION, P12/P40/P42/P63/ABRT IGN, P42IGN/DVMONCON, ULLAGOFF, TIGTASK, P40ZOOM/P63ZOOM/ZOOM, P41BLANK, TIG-30A) | DONE src/lm/burns/ignition/burnbaby.c |
 | STCLOK1/2/3, CLOKTASK, CLOKJOB, STOPCLOK, NULLCLOK, ASTNRETN, *PROCEED/IGNITE, *ENTER/GOPOST/GOCUTOFF, COMFAIL/1-4, REP40ALM, P40AUTO | DONE src/lm/burns/ignition/clock.c |
-| tests/test_guidance.c | TODO |
+| tests/guidance/guidance.c | TODO |
 
 ## File moves (layout rule: 3+ files sharing a prefix become a subfolder)
 
@@ -155,7 +155,7 @@ AGC_JOB_COMFAIL2, AGC_JOB_ASTNRETN, AGC_JOB_GOPOST.
 
 ## Tests written
 
-tests/test_guidance.c (13 checks, all pass when linked with core + src/guidance objects;
+tests/guidance/guidance.c (13 checks, all pass when linked with core + src/guidance objects;
 the full libagc link currently fails on other lanes' undefined symbols):
 1. CALCRVG with zero delta-V and GDT/2 = 0 over a 2-s step (LM, moon): RN1 - RN = VN * 200 cs
    within 2 LSB (4 m at 2^29), VN1 = VN + GDT1/2 within 0.2 % of mu dt / 2 r^2.

@@ -57,7 +57,7 @@ interp/scalar.c, interp/trig.c, interp/vector.c, agc_vec_div.c
 
 * DONE everything in the table above; all files compile with the project
   flags; check_rules: 0 hard, density >= 2 in every core-numeric file.
-* DONE tests/test_core_numeric.c (passes), tests/oracle_core_numeric.c +
+* DONE tests/core/numeric.c (passes), tests/oracle/core_numeric.c +
   tools/oracle/cases/core_numeric.{spec,txt} (287 cases, 0 mismatches).
 * `make lib` currently stops on other lanes' files (src/csm/entry/reentry.c,
   include/agc/io/service_internal.h, src/programs/*); core-numeric objects and both tests
@@ -124,7 +124,7 @@ interpretive runs (all counts 1-45 for SR/SRR/VSR, near-equal DDV/MAXDV,
 tiny vectors for UNIT SMALL, ACOS at +-1/2 +- 1 LSB) bit-identical to yaAGC
 with its DV bug (below) patched; exhaustive SPSIN and SPCOS (all 32,767
 inputs each) bit-identical to stock yaAGC. Committed: 287 cases that stock
-yaAGC computes correctly (tests/oracle_core_numeric.c, 0 mismatches).
+yaAGC computes correctly (tests/oracle/core_numeric.c, 0 mismatches).
 
 ## Deviations
 
@@ -164,14 +164,14 @@ none
 
 ## Tests written
 
-* tests/test_core_numeric.c: pack/unpack, saturation and *ovf of the raw
+* tests/core/numeric.c: pack/unpack, saturation and *ovf of the raw
   ops, wrap + OVFIND of DAD/DSU/SL/VSL, BOV clearing, DMP/DMPR rounding
   (half away from zero), SHORTMP/DMPNSUB/ROUND, DDV incl. overflow, 0/x,
   x/0, MAXDV, SQRT/SIN/COS against yaAGC words, SQRT abort, ACOS/ASIN alarm,
   SIN/COS/ASIN/ACOS/SQRT/SPSIN/SPCOS vs libm (bounds above), UNIT (+LV,
   LVSQUARE, zero vector), DOT, VXV, VSQ, ABVAL, MXV, VXM, MXM3, VXSC, V/SC
   (+overflow slot), VPROJ, VAD/VSU, constants.
-* tests/oracle_core_numeric.c: 287 yaAGC cases, bit-exact.
+* tests/oracle/core_numeric.c: 287 yaAGC cases, bit-exact.
 
 ## Open questions
 

@@ -1,5 +1,5 @@
 /*
- * navigation_lm.c -- P20 RENDEZVOUS NAVIGATION, P22 LUNAR
+ * navigation.c -- P20 RENDEZVOUS NAVIGATION, P22 LUNAR
  * SURFACE NAVIGATION (PROG22 = PROG20) and P25 PREFERRED TRACKING
  * ATTITUDE, LM only (P20-P25.agc, Luminary099 pp.492-503, 507, 564-567).
  *
@@ -12,8 +12,8 @@
  * (ORBCHGO .. ORBCHG3: the CSM orbit assumed to change before launch),
  * UPPSV (permanent state vectors to now), LPS20.1 (LOS from the state
  * vectors) and LPS20.2 (400 NM check), P25, LUNSFCHK. R21/R23/R24 are in
- * acquisition_lm.c, R22 in tracking_data_lm.c, R61/R65 in
- * tracking_attitude_lm.c.
+ * lm/radar/acquisition.c, R22 in lm/navigation/tracking_data.c, R61/R65 in
+ * lm/navigation/tracking_attitude.c.
  *
  * Scales: r m 2^29 (moon-centred states in the integration at 2^27), v
  * m/cs 2^7, t cs 2^28, LOS half unit, MLOSV m 2^20.

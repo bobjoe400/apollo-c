@@ -9,7 +9,7 @@
  *
  * Each AGC program is one job that sleeps on its flashing displays; every
  * return from a display (and every resumption after an INTSTALL sleep) is
- * a continuation job (ids in ext.h), the program state lives in the
+ * a continuation job (ids in pending.h), the program state lives in the
  * rendezvous erasables.
  *
  * Scales: r m 2^29, v m/cs 2^7, t cs 2^28, angles revolutions 2^0.

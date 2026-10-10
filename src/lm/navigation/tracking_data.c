@@ -1,5 +1,5 @@
 /*
- * tracking_data_lm.c -- R22LEM DATA READ ROUTINE, LM only (P20-P25.agc,
+ * tracking_data.c -- R22LEM DATA READ ROUTINE, LM only (P20-P25.agc,
  * Luminary099 pp.504-507, 568-573): R22LEM, LRS22.1 (data read
  * subroutine 1), LRS22.2 (data read subroutine 2), N49DSP, R22RSTRT.
  *
@@ -10,7 +10,7 @@
  * computed from state vectors to see if they are within three degrees".
  * LRS22.2 "checks if the RR LOS (i.e., the radar boresight vector) is
  * within 30 degrees of the LM +Z axis". The incorporation (LSR22.3) is in
- * measurement_update_lm.c.
+ * lm/navigation/measurement_update.c.
  *
  * Scales: RM m 2^29, RDOTM m/cs 2^7, angles revolutions, times cs 2^28,
  * RRBORSIT half unit (NB).

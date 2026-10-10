@@ -77,7 +77,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE TVCDAPS daps.c (agc_task_pitchdap, agc_task_yawdap, agc_task_dapinit, csm_tvc_pcopy, csm_tvc_ycopy; ERRORLIM ACTLIM FWDFLTR OPTVARK PRECOMP 2/3CASFLTR DELBARP/Y) re-verified vs source on resume
 - DONE TVCSTROKETEST stroke.c (agc_job_strktsti, csm_tvc_tstinit, csm_tvc_hack, agc_task_hackwlst) re-verified
 - DONE TVCROLLDAP rolldap.c (agc_task_rolldap, agc_task_noroll1; all regions, ROLLSET, MOREROLL/NEWROLL/FIREPLUG, +-TORQUE) re-verified, constants checked
-- DONE tests/test_csm_dap.c: 791 checks, 0 failures (see Tests written)
+- DONE tests/csm/dap.c: 791 checks, 0 failures (see Tests written)
 - DONE check_rules: 0 hard; density >= 2 in daps.c, rolldap.c, stroke.c; the earlier RCS/TVC files still warn (1.1-1.7)
 
 ## Deviations
@@ -105,7 +105,7 @@ None. Every routine in scope is translated.
 All in src/csm/dap/pending.h (provisional 0x0D00 range; REDORCS, REDOTVC, TVCEXEC match exec_pending.h): T5 AGC_TASK_RCSATT, JETSLECT, TVCDAPON, TVCINIT1, DAPINIT, PITCHDAP, YAWDAP, ENABL2, CMDSOUT, RCSUP, REDORCS, REDOTVC; T6 AGC_TASK_T6START, NOROLL1; waitlist AGC_TASK_ROLLDAP, HACKWLST, EXRSTRT, TVCEXEC; jobs AGC_JOB_AMBGUPDT (PRIO34), AGC_JOB_STRKTSTI (V68). Dispatch cases are needed for each.
 
 ## Tests written
-tests/test_csm_dap.c (791 checks, 0 failures; linked with scratch stubs for the missing symbols of other lanes):
+tests/csm/dap.c (791 checks, 0 failures; linked with scratch stubs for the missing symbols of other lanes):
 1. Jet selection: +pitch with all quads good gives channel 5 bits 1 and 3 (PYTABLE masked by PJETS, OCT 1005) for TAU/2. Also checked: -pitch, quad A failed (one jet, full TAU), the 0.1 s limit with DFTMAX, and +X translation.
 2. TVC pitch DAP step response, CSM/LM: a positive error gives a negative PCMD (sign change in OPTVARK) and a negative error gives a positive one. TVCPHASE ends at 2 and T5 is re-armed. With filter memory in TMP3, PCMD is limited to ACTSAT = -253. The earlier failure (line 144) was the test, not the TVC erasables: it put 16000 into TMP1, which overflows DAP1 (DAS wraps, as in the AGC), so the command came out at -107. setup now clears PTMP and saturates through TMP3.
 3. Stroke test: set 1 is 80 bursts (10 in 1/2 amplitude, 4 reversals) and returns to zero. Set 2 is then loaded (REVS 5, N -6). After 364 bursts STROKER is +0. These checks do not depend on the TVCPITCH accessor.

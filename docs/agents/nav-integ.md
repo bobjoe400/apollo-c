@@ -21,6 +21,6 @@ Ephemeris: agent nav-aux implements
 declare it in agc_integ.h with that exact signature and documented scales;
 put any changes you need under "Requested core additions".
 
-Tests: tests/test_integration.c (compiles now): two-body-only LEO
+Tests: tests/nav/integration.c (compiles now): two-body-only LEO
 propagation over 10 minutes vs analytic circular motion. List oracle cases
 in your note.

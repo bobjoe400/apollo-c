@@ -71,7 +71,7 @@ sys-misc's file. Not duplicated here (see Open questions).
 * attitude_maneuver.c: DONE (VECPOINT/VECPNT1/COMPMATX/PICKAXIS/ROT180, BALLANGS, G+N,AUTO, ISITAUTO, R60CSM/R60LEM,
   REDOMANN/REDOMANC/TOBALL(A)/AUTOMANV/ENDMANUV/ENDMANU1, R61TEST, CHKLINUS, RELINUS, R62DISP/GOMOVE)
 * prelaunch_align.c: PARTIAL -- DONE FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX; stubs: IMUTEST, ESTIMS, ALWAYSG, RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE
-* tests/test_imu.c: DONE (65 checks pass)
+* tests/imu/imu.c: DONE (65 checks pass)
 
 ## Files
 src/imu/mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/gyro.c (IMUPULSE and
@@ -79,7 +79,7 @@ torquing tasks), src/imu/compensation.c, src/imu/alignment.c, src/imu/maneuver_c
 src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/attitude_maneuver.c (VECPOINT, BALLANGS, R60, R62),
 src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/internal.h (lane-private),
 src/imu/pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/imu/imu.h,
-tests/test_imu.c.
+tests/imu/imu.c.
 
 ## Deviations
 * MODECADR -0 (complete, failed) is stored as -2 in exec's MODECADR word (agc_sp_t has no -0).
@@ -144,7 +144,7 @@ UPDTCALL, MANUSTOP, ENDMANU (= GOODMANU) -> agc_task_<name>; sys-misc's AGC_TASK
 agc_task_ca_ece.
 
 ## Tests written
-tests/test_imu.c (CSM): ARCTRIG quadrants; CALCGTA identity -> zero gyro angles and OGC buffer;
+tests/imu/imu.c (CSM): ARCTRIG quadrants; CALCGTA identity -> zero gyro angles and OGC buffer;
 CALCGA 30 deg MGA (no lock, THETAD stored) and 75 deg (alarm 401, GLOKFAIL); 1/PIPA with zero
 bias/scale is identity and leaves GCOMP zero; CDUTODCM/DCMTOCDU round trip; DELCOMP(0) = I;
 IMUPULSE/STRTGYRO pulse count, unsent fraction and release; KALCMANU set-up (normal and small);

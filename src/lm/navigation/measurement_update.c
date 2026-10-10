@@ -1,5 +1,5 @@
 /*
- * measurement_update_lm.c -- LSR22.3 / LSR22.4, LM only (P20-P25.agc,
+ * measurement_update.c -- LSR22.3 / LSR22.4, LM only (P20-P25.agc,
  * Luminary099 pp.574-587): the rendezvous radar measurement incorporation
  * of R22LEM, with GETULC, RADARANG, LGCUPDTE, WLINIT and INTGRCAL.
  *

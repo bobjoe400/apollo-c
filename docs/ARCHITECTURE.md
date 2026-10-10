@@ -42,21 +42,36 @@ src/nav/
 src/guidance/       powered-flight subroutines, shared burn programs
                     (external_delta_v, burn_steering), servicer_common
 src/programs/
-  rendezvous/       common, csi, csi_cdh_targeting, display, flags_{csm,lm},
-                    glue, initvel, tpi, internal.h, ext.h
+  navigation/       shared P20 core: common, w_matrix_monitor,
+                    ground_track_determination, noun_data, flags_{csm,lm},
+                    glue, internal.h, pending.h (job-id shim)
+  targeting/        csi, csi_cdh_targeting, tpi, tpi_tpm_targeting,
+                    stable_orbit, target_delta_v, initvel,
+                    lambert_aimpoint_guidance_lm (LM only; lm/targeting/
+                    would hold < 3 files)
+  displays/         orbit_parameter_display, rendezvous_parameter_display,
+                    out_of_plane_display, display
   alignment/        common, locsam, orientation, planet, imu_realign.c,
-                    , sighting_data_and_gyro_torquing.c
+                    sighting_data_and_gyro_torquing.c
 src/csm/            Comanche-only
   entry/            lexicon, reentry, programs, CM body attitude, dap
   dap/rcs/          RCS DAP, jet selection, FDAI needles, DAP data load
   dap/tvc/          TVC init/executive/mass properties/restarts/pitch-yaw/
                     stroke test/roll DAP
   dap/              mysubs.c, state.c (shared; < 3 files so no common/)
-  burns/            sps_burn*, earth_orbit_insertion, return_to_earth,
-                    servicer, external_delta_v
+  burns/            sps/, earth_orbit_insertion, servicer, external_delta_v
+    return_to_earth/ program, conic, velocity, precision, internal.h,
+                    pending.h
+  navigation/       P20-P25 CSM side: navigation, orbital_navigation,
+                    cislunar_navigation, landmark_navigation,
+                    tracking_attitude, tracking_data, tpi_search
   optics/           sxtmark, s_band_antenna, geometry
   prelaunch_align.c (< 3 files in prelaunch/)
 src/lm/             Luminary-only
+  navigation/       P20-P25 LM side: navigation, tracking_attitude,
+                    tracking_data, measurement_update
+  radar/            rendezvous radar: designate, moding, read, leadin,
+                    acquisition, powered_flight_designate, radar.h
   landing/          guidance, displays, aborts, state, throttle,
                     findcduw, lunar_landing
   burns/            dps_burn*, ignition, servicer*
@@ -68,7 +83,9 @@ src/lm/             Luminary-only
   ascent.c, s_band_antenna.c, lem_geometry.c  (ascent/, optics/ not yet
                     >= 3 files)
 src/sim/            host harness: clock, interrupts, DSKY console (no lib)
-tests/              unit tests (one binary per file, -DAGC_HOST_DEBUG)
+tests/              unit tests, mirroring src/ (core exec nav io imu guidance
+                    programs csm lm oracle); one binary per file found
+                    recursively, -DAGC_HOST_DEBUG
 tools/              check_rules.py (Power of Ten lint)
 docs/modules/       working notes per agent/module
 ```

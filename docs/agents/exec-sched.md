@@ -31,7 +31,7 @@ pre-emption (CHANG1/CHANG2) is modelled: a C job body runs to completion or
 to an explicit sleep/yield; agc_exec_run_one() picks the highest-priority
 ready job; state what is preserved and what is lost.
 
-Tests: tests/test_exec.c: priority ordering, VAC exhaustion -> 1201,
+Tests: tests/exec/exec.c: priority ordering, VAC exhaustion -> 1201,
 waitlist ordering and delta arithmetic, overflow -> 1203, phase change /
 restart group behaviour. Link your own objects if other lanes break the
 build.

@@ -56,7 +56,7 @@ vehicle differences behind `agc_state_vehicle()`.
 - PARTIAL change_program_idle.c (GOP00FIX + reflash, INITSUB/RAKE, V37 front-end checks + PREMM1 tables, upcalls; CANV37, R00TOP00, SETUP70 stubbed)
 - DONE dispatch.c (job, task, rupt switches; provisional ids -> default NOT_FOUND)
 - DONE check_rules clean (0 hard, density >= 2 all files)
-- DONE tests/test_exec.c (197 checks pass; links src/exec + src/core objects only)
+- DONE tests/exec/exec.c (197 checks pass; links src/exec + src/core objects only)
 - DONE module note sections, MODULE_STATUS row
 
 ## Deviations
@@ -110,14 +110,14 @@ Foreign, provisional in include/agc/agc_exec_pending.h (0x0E00 range; replace wi
 
 ## Tests written
 
-tests/test_exec.c (197 checks, all pass): priority ordering and FINDVAC-over-NOVAC tie, VAC exhaustion -> 1201 (+ PROG lamp, FAILREG chain and MULTFAIL bit), core-set exhaustion -> 1202 (7 CSM / 8 LM), sleep/wake, PRIOCHNG BUSY + yield, BAILOUT inside a job, waitlist ordering and LST1 deltas incl. RUPTAGN, overflow -> 1203, dt = 0 -> 1204 -> P00, LONGCALL 200 s, PHASCHNG A/B/C/2PHSCHNG/NEWPHASE codes, table task timing from TBASE (due / overdue), variable job (FINDVAC/NOVAC)/task/type B/X.1 restarts, LM tables (4.33 NOVAC, 1.2 aliases, 2.3 LONGCALL, unpublished erasable), KLEANs per vehicle, GOPROG (1107 + fresh start, P00 with no groups, group restart, T5LOC), LM POODOO -> GOTOPOOH 4.33.
+tests/exec/exec.c (197 checks, all pass): priority ordering and FINDVAC-over-NOVAC tie, VAC exhaustion -> 1201 (+ PROG lamp, FAILREG chain and MULTFAIL bit), core-set exhaustion -> 1202 (7 CSM / 8 LM), sleep/wake, PRIOCHNG BUSY + yield, BAILOUT inside a job, waitlist ordering and LST1 deltas incl. RUPTAGN, overflow -> 1203, dt = 0 -> 1204 -> P00, LONGCALL 200 s, PHASCHNG A/B/C/2PHSCHNG/NEWPHASE codes, table task timing from TBASE (due / overdue), variable job (FINDVAC/NOVAC)/task/type B/X.1 restarts, LM tables (4.33 NOVAC, 1.2 aliases, 2.3 LONGCALL, unpublished erasable), KLEANs per vehicle, GOPROG (1107 + fresh start, P00 with no groups, group restart, T5LOC), LM POODOO -> GOTOPOOH 4.33.
 Build (the full libagc does not build yet because of other lanes):
-`gcc <flags> -DAGC_HOST_DEBUG -Iinclude tests/test_exec.c src/exec/{executive,waitlist,phase_table,restart_tables,restarts,alarm,fresh_start,interrupts,exec_erasable}.c src/core/{agc_state,agc_channels,agc_erasable}.c`
+`gcc <flags> -DAGC_HOST_DEBUG -Iinclude tests/exec/exec.c src/exec/{executive,waitlist,phase_table,restart_tables,restarts,alarm,fresh_start,interrupts,exec_erasable}.c src/core/{agc_state,agc_channels,agc_erasable}.c`
 (the test provides the dispatch and exec_up_* doubles; do not link dispatch.c or change_program_idle.c with it.)
 
 ## Open questions
 
-- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/csm/entry_pending.h and src/programs/rendezvous/ext.h #define it again: those lanes must drop their macros.
+- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/csm/entry_pending.h and src/programs/navigation/pending.h #define it again: those lanes must drop their macros.
 - AGC_JOB_GOPROG in agc_jobs.h does not correspond to an AGC job; dispatch returns UNIMPLEMENTED. Remove or repurpose?
 - STATEUP / THISVINT (end of FRESH_START_AND_RESTART) are P00 integration code; assumed to belong to nav-integ.
 - Layering: change_program_idle.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.

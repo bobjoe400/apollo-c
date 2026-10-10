@@ -26,7 +26,7 @@ docs/RENAMES_inventory.txt.
    spatch's output: 86 of 87 files matched; guid_pending.h differed only by
    the intentional VHHDOT edit and was re-applied the same way.
 4. `git mv` src/guidance/external_delta_v.c -> external_delta_v.c, src/guidance/burn_steering.c ->
-   burn_steering.c, src/csm/burns/return_to_earth.c -> return_to_earth.c (no #include or
+   burn_steering.c, src/csm/burns/return_to_earth/program.c -> src/csm/burns/return_to_earth/program.c (no #include or
    Makefile change needed; the Makefile globs src/).
 5. docs/modules/*.md and docs/MODULE_STATUS.md: word-boundary text
    substitution with every map row incl. the files/docs sections, longest
@@ -46,7 +46,7 @@ docs/RENAMES_inventory.txt.
   paused lanes have not written yet (e.g. agc_job_lm_fine_align_recheck,
   agc_erase_extvbact, AGC_JOB_IGN_INTEGRATE).
 * tools/check_rules.py src include tests: identical before/after
-  (1 hard violation in tests/oracle_core_numeric.c, 95 warnings).
+  (1 hard violation in tests/oracle/core_numeric.c, 95 warnings).
 * Wave-1 tests (linked against the library with auto-stubs for missing
   symbols, -w): before the rename test_align, test_csm_dap and test_landing
   crashed and test_entry failed 1 check (stubs stood in for functions whose

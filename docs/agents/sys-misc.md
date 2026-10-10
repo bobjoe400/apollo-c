@@ -20,6 +20,6 @@ bookkeeping and mostly vanish; document that in a short comment file);
 RTB_OP_CODES.agc / RT8_OP_CODES.agc (the RTB routines: LOADTIME, CDULOGIC,
 SGNAGREE, the 1/PIPA interplay, FORMDEG etc. -- these ARE used by
 interpretive code and must be translated as functions) -> rtb_ops.c.
-Tests: tests/test_sysmisc.c (compiles): the downlist for the CM coast
+Tests: tests/io/sysmisc.c (compiles): the downlist for the CM coast
 list has the documented word count; LOADTIME returns the current time;
 SGNAGREE on a sign-disagreeing DP pair fixes it up.

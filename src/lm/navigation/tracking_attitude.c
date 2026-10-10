@@ -1,5 +1,5 @@
 /*
- * tracking_attitude_lm.c -- R61LEM PREFERRED TRACKING ATTITUDE ROUTINE and
+ * tracking_attitude.c -- R61LEM PREFERRED TRACKING ATTITUDE ROUTINE and
  * R65LEM (the fine preferred tracking attitude), LM only (P20-P25.agc,
  * Luminary099 pp.517-520).
  *

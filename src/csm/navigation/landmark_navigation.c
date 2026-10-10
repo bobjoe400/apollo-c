@@ -1,5 +1,5 @@
 /*
- * landmark_navigation_csm.c -- S22.1 ORBITAL NAVIGATION ROUTINE, CSM
+ * landmark_navigation.c -- S22.1 ORBITAL NAVIGATION ROUTINE, CSM
  * (P20-P25.agc, Comanche055 pp.598-614): S22.1, S22F2410, S22CALRC,
  * S2231X13, GETTF, S22FLGS, 9DWTO6DW, ROWDOT.
  *

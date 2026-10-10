@@ -12,6 +12,6 @@ SPS_BACK-UP_RCS_CONTROL.agc (check: may be mis-named in the repo; translate
 whatever is there). Jet commands go to channels 005/006 via agc_channels.h;
 timing via the waitlist/T6 model in agc_exec.h (if T6 needs a new primitive,
 declare it locally and list it under requested core additions).
-Tests: tests/test_lm_dap.c (compiles): TJET law for zero error/rate is no
+Tests: tests/lm/dap.c (compiles): TJET law for zero error/rate is no
 firing; phase-plane for a large positive error commands the correct jet
 polarity; Kalman estimator converges on a constant rate within N cycles.

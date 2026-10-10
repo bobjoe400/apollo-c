@@ -1,5 +1,5 @@
 /*
- * tpi_search_csm.c -- P17/P77 TPI SEARCH, CSM only (TPI_SEARCH.agc,
+ * tpi_search.c -- P17/P77 TPI SEARCH, CSM only (TPI_SEARCH.agc,
  * Comanche055 pp.551-561).
  *
  * "The TPI search routine determines the minimum total velocity transfer

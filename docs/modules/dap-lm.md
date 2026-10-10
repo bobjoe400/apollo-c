@@ -16,7 +16,7 @@ Code: shared glue in `src/lm/dap/` (arith.c, state.c, dapif.c, accs.c, accont.c,
 gts.c, private `internal.h`, shim `pending.h` for not-yet-published shared symbols);
 the RCS autopilot in `src/lm/dap/rcs/` (dapidler, needles, paxis, pmanual, rate,
 qraxis, qrmanual, qrjets, tjetlaw, t6rupt, rcsmon, spsrcs). Public API
-`include/agc/lm/dap.h`. Test: `tests/test_lm_dap.c`.
+`include/agc/lm/dap.h`. Test: `tests/lm/dap.c`.
 
 ## Design table
 
@@ -97,7 +97,7 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
     ACCTHERE, 1/ANET-, 1/NETMIN, DO1/NET+, DOACCFUN, FIXMIN, STMIN-, FAIL-, DBFUN, STORV,
     DRFDB, INVERT)
   * DONE rcs/rcsmon.c (RCSMON), rcs/spsrcs.c (SPSRCS, POSTHRST, SPSSTART, SETCTR, ZAPTJ)
-  * DONE tests/test_lm_dap.c (120 checks)
+  * DONE tests/lm/dap.c (120 checks)
   * FIXED rcs/qrjets.c ROT-TOUV: U and V were swapped (AGC: U = -COEFFQ q + COEFFR r in A,
     V = COEFFQ q + COEFFR r in L).
   * Rule 7 (no (void) on agc_ calls): lm_dap_alarm() wrapper (dapif.c) for TC ALARM in a DAP
@@ -160,7 +160,7 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 
 ## Tests written
 
-tests/test_lm_dap.c, 120 checks: 1/ACCS descent at 15000 kg (jet accelerations, U,V
+tests/lm/dap.c, 120 checks: 1/ACCS descent at 15000 kg (jet accelerations, U,V
 coefficients, -2JETLIM, ACCSOKAY, BLOCKTOP filled, mass limited to HIDESCNT); TJETLAW zero
 error/rate gives TJ = 0 on P, U, V; +10 deg error gives TJ < 0 and -10 deg gives TJ > 0 on U, V;
 rate estimator converges on a constant 400 (1.1 deg/s) P rate to +-8 within 30 passes; RCSMON

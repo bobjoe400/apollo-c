@@ -1,5 +1,5 @@
 /*
- * radar_leadin_lm.c -- RADAR_LEADIN_ROUTINES.agc, LM only (Luminary099
+ * leadin.c -- RADAR_LEADIN_ROUTINES.agc, LM only (Luminary099
  * pp.490-491): the radar sampling loop of the R04 radar test (verb 63)
  * and R77 (verb 78).
  *

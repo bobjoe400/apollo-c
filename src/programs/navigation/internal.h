@@ -1,6 +1,7 @@
 /*
  * internal.h -- private interface between the files of the
- * rendezvous programs (src/programs/rendezvous/rendz_*.c, r30.c, r31_*.c, ...).
+ * rendezvous programs (src/programs/{navigation,targeting,displays},
+ * src/csm/navigation, src/lm/navigation, src/lm/radar).
  */
 #ifndef RENDZ_INTERNAL_H
 #define RENDZ_INTERNAL_H
@@ -224,7 +225,7 @@ bool         rz_active_vehicle_program(void);
 /* Continue the running job at another entry (agc_exec_job_yield).        */
 agc_status_t rz_continue(agc_job_id_t next);
 
-/* ---- CSM P20 helpers (navigation_csm.c) ---------------------------- */
+/* ---- CSM P20 helpers (csm/navigation/navigation.c) ------------------- */
 agc_dp_t     rz_marktime(void);                 /* MARKTIME           */
 void         rz_set_marktime(agc_dp_t t);
 agc_status_t rz_setintg(agc_job_id_t resume);   /* SETINTG            */
@@ -234,8 +235,8 @@ agc_status_t rz_waitone(agc_job_id_t pointex);
 /* N49DISP +index (CSM R22, noun 49).                                     */
 agc_dp_t     rz_csm_n49disp(int index);
 void         rz_set_csm_n49disp(int index, agc_dp_t v);   /* P23 R23.53 */
-/* S22.1 (landmark_navigation_csm.c): nmarks marks of the sighting, the
- * caller continues as ret; CXOFF of the landmark code.                  */
+/* S22.1 (csm/navigation/landmark_navigation.c): nmarks marks of the
+ * sighting, the caller continues as ret; CXOFF of the landmark code.                  */
 agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret);
 void         rz_landmark_set_offset(agc_sp_t cxoff);
 /* P22SUBRB (noun 89 landmark coordinates); continue as ret.              */

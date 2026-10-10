@@ -15,7 +15,7 @@ universal.c (DELTIME, NEWSTATE, LAMENTER, KEPCONVG), geom.c
 (GEOM, PARAM, GETX), kepler.c (KEPLERN, KEPPREP, RVCON, CSMCONIC,
 LEMCONIC), lambert.c (LAMBERT, ITERATOR), timetheta.c
 (TIMETHET, COMMNOUT, COGAOVFL), timeradius.c (TIMERAD),
-apsides.c (APSIDES); tests/test_conic.c, tests/oracle_conic.c.
+apsides.c (APSIDES); tests/nav/conic.c, tests/oracle/conic.c.
 
 ### Comanche vs Luminary (code-only diff, comments stripped)
 
@@ -86,7 +86,7 @@ INTERPRETER.agc and by re-deriving KEPPREP's scale chain):
 | TIMETHET / COMMNOUT / COGAOVFL | DONE agc_conic_timethet, agc_conic_commnout_ timetheta.c |
 | TIMERAD | DONE agc_conic_timerad timeradius.c |
 | APSIDES | DONE agc_conic_apsides apsides.c |
-| tests/test_conic.c, tests/oracle_conic.c, tools/oracle/cases/nav_conic*.spec/.txt | DONE |
+| tests/nav/conic.c, tests/oracle/conic.c, tools/oracle/cases/nav_conic*.spec/.txt | DONE |
 
 ## Deviations
 
@@ -153,12 +153,12 @@ None (conic subroutines run inside the caller's job).
 
 ## Tests written
 
-* tests/test_conic.c -- analytic two-body checks (earth, CSM build):
+* tests/nav/conic.c -- analytic two-body checks (earth, CSM build):
   KEPPREP+KEPLER quarter period forward/backward and 2.25 periods
   (PERIODCH), LAMBERT 90 degrees in a quarter period (VVEC, VTARGET,
   COGA ~ 0) and 360LAMB, APSIDES ellipse + hyperbola (RA = DPPOSMAX),
   TIMETHET 90 degrees, TIMERAD to r = a vs Kepler's equation, RVCON.
-* tests/oracle_conic.c -- 31 Comanche055 + 4 Luminary099 cases against the
+* tests/oracle/conic.c -- 31 Comanche055 + 4 Luminary099 cases against the
   yaAGC dumps (tolerance one SP LSB, see Deviations for the -0 case).
 * Both run against the real core (src/core, built in a scratch dir):
   test_conic 40/40, oracle_conic 299/299. With the real core KEPPREP,
@@ -203,7 +203,7 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
 
 ## Open questions
 
-* src/programs/rendezvous/ext.h (prog-rendz) declares its own agc_timethet_in_t,
+* src/programs/navigation/pending.h (prog-rendz) declares its own agc_timethet_in_t,
   agc_lambert_in_t and an agc_conic_apsides with a different signature;
   those must be replaced by include/agc/nav/conic.h (adapt glue.c).
 * nav-integ's agc_integ_kepprep (orbital_integration.c) already calls

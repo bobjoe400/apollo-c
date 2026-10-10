@@ -9,8 +9,8 @@ table AGC erasable name -> C accessor / owner (end of this note).
 
 Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 `agc_channels.h` (edited), `agc_state.h` (extended), `src/core/state.c`,
-`src/core/channels.c`, `src/core/erasable.c`, `tests/test_state.c`,
-`tests/test_state_lm.c`.
+`src/core/channels.c`, `src/core/erasable.c`, `tests/core/state.c`,
+`tests/core/state_lm.c`.
 
 ## Progress
 
@@ -163,13 +163,13 @@ None.
 
 ## Tests written
 
-* `tests/test_state.c` (CSM): flag id decoding vs AGC decimal numbers, aliases, set/clear/invert/test,
+* `tests/core/state.c` (CSM): flag id decoding vs AGC decimal numbers, aliases, set/clear/invert/test,
   whole-word get/set, invalid ids, channel write/or/and/read masks, inverted inputs, 033 flip-flops,
   bit constants, TIME1/TIME2 split and wrap, state-vector round trip (THIS and OTHER), erasable
   accessors including range rejection. Defines its own `agc_assert_report` to count AGC_ASSERT reports.
-* `tests/test_state_lm.c` (LM): LM flag numbers (including FLGWRD12/13), vehicle-dependent validity
+* `tests/core/state_lm.c` (LM): LM flag numbers (including FLGWRD12/13), vehicle-dependent validity
   of flag ids, OTHER = CSM state vector, LM channel names.
-* Build used: `gcc ... -DAGC_HOST_DEBUG tests/test_state.c src/core/state.c src/core/channels.c
+* Build used: `gcc ... -DAGC_HOST_DEBUG tests/core/state.c src/core/state.c src/core/channels.c
   src/core/erasable.c` (does not depend on other lanes' objects).
 
 ## Open questions

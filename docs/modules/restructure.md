@@ -184,3 +184,86 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 
 ## Docs updated
 docs/ARCHITECTURE.md layout block; path mentions in docs/*.md, docs/modules/*.md, docs/agents/*.md and in source comments (exact old-path -> new-path substitution, plus stale pre-naming file names such as p30.c, p37.c, sband_cm.c mapped to current files). Untouched as history: docs/WORKLOG.md, docs/RENAMES.md, docs/RENAMES_inventory.txt. Bare header names in prose (e.g. "landing_pending.h") were not rewritten; see the promotion table.
+
+
+## Pass 2 (restructure2)
+
+Split of src/programs/rendezvous by subject, return_to_earth grouping, tests/ mirrored on src/.
+
+| from | to |
+|---|---|
+| src/programs/rendezvous/common.c | src/programs/navigation/common.c |
+| src/programs/rendezvous/w_matrix_monitor.c | src/programs/navigation/w_matrix_monitor.c |
+| src/programs/rendezvous/ground_track_determination.c | src/programs/navigation/ground_track_determination.c |
+| src/programs/rendezvous/noun_data.c | src/programs/navigation/noun_data.c |
+| src/programs/rendezvous/flags_csm.c | src/programs/navigation/flags_csm.c |
+| src/programs/rendezvous/flags_lm.c | src/programs/navigation/flags_lm.c |
+| src/programs/rendezvous/glue.c | src/programs/navigation/glue.c |
+| src/programs/rendezvous/internal.h | src/programs/navigation/internal.h |
+| src/programs/rendezvous/ext.h | src/programs/navigation/pending.h |
+| src/programs/rendezvous/csi.c | src/programs/targeting/csi.c |
+| src/programs/rendezvous/csi_cdh_targeting.c | src/programs/targeting/csi_cdh_targeting.c |
+| src/programs/rendezvous/tpi.c | src/programs/targeting/tpi.c |
+| src/programs/rendezvous/tpi_tpm_targeting.c | src/programs/targeting/tpi_tpm_targeting.c |
+| src/programs/rendezvous/stable_orbit.c | src/programs/targeting/stable_orbit.c |
+| src/programs/rendezvous/target_delta_v.c | src/programs/targeting/target_delta_v.c |
+| src/programs/rendezvous/initvel.c | src/programs/targeting/initvel.c |
+| src/programs/rendezvous/lambert_aimpoint_guidance_lm.c | src/programs/targeting/lambert_aimpoint_guidance_lm.c |
+| src/programs/rendezvous/orbit_parameter_display.c | src/programs/displays/orbit_parameter_display.c |
+| src/programs/rendezvous/rendezvous_parameter_display.c | src/programs/displays/rendezvous_parameter_display.c |
+| src/programs/rendezvous/out_of_plane_display.c | src/programs/displays/out_of_plane_display.c |
+| src/programs/rendezvous/display.c | src/programs/displays/display.c |
+| src/programs/rendezvous/cislunar_navigation_csm.c | src/csm/navigation/cislunar_navigation.c |
+| src/programs/rendezvous/landmark_navigation_csm.c | src/csm/navigation/landmark_navigation.c |
+| src/programs/rendezvous/orbital_navigation_csm.c | src/csm/navigation/orbital_navigation.c |
+| src/programs/rendezvous/navigation_csm.c | src/csm/navigation/navigation.c |
+| src/programs/rendezvous/tracking_attitude_csm.c | src/csm/navigation/tracking_attitude.c |
+| src/programs/rendezvous/tracking_data_csm.c | src/csm/navigation/tracking_data.c |
+| src/programs/rendezvous/tpi_search_csm.c | src/csm/navigation/tpi_search.c |
+| src/programs/rendezvous/navigation_lm.c | src/lm/navigation/navigation.c |
+| src/programs/rendezvous/tracking_attitude_lm.c | src/lm/navigation/tracking_attitude.c |
+| src/programs/rendezvous/tracking_data_lm.c | src/lm/navigation/tracking_data.c |
+| src/programs/rendezvous/measurement_update_lm.c | src/lm/navigation/measurement_update.c |
+| src/programs/rendezvous/rr_designate_lm.c | src/lm/radar/designate.c |
+| src/programs/rendezvous/rr_moding_lm.c | src/lm/radar/moding.c |
+| src/programs/rendezvous/radar_read_lm.c | src/lm/radar/read.c |
+| src/programs/rendezvous/radar_leadin_lm.c | src/lm/radar/leadin.c |
+| src/programs/rendezvous/acquisition_lm.c | src/lm/radar/acquisition.c |
+| src/programs/rendezvous/powered_flight_designate_lm.c | src/lm/radar/powered_flight_designate.c |
+| src/programs/rendezvous/radar_lm.h | src/lm/radar/radar.h |
+| src/csm/burns/return_to_earth.c | src/csm/burns/return_to_earth/program.c |
+| src/csm/burns/return_to_earth_conic.c | src/csm/burns/return_to_earth/conic.c |
+| src/csm/burns/return_to_earth_velocity.c | src/csm/burns/return_to_earth/velocity.c |
+| src/csm/burns/return_to_earth_precision.c | src/csm/burns/return_to_earth/precision.c |
+| src/csm/burns/return_to_earth_internal.h | src/csm/burns/return_to_earth/internal.h |
+| src/csm/burns/return_to_earth_pending.h | src/csm/burns/return_to_earth/pending.h |
+| tests/test_core_numeric.c | tests/core/numeric.c |
+| tests/test_state.c | tests/core/state.c |
+| tests/test_state_lm.c | tests/core/state_lm.c |
+| tests/test_exec.c | tests/exec/exec.c |
+| tests/test_conic.c | tests/nav/conic.c |
+| tests/test_integration.c | tests/nav/integration.c |
+| tests/test_navaux.c | tests/nav/navaux.c |
+| tests/test_dsky.c | tests/io/dsky.c |
+| tests/test_nouns.c | tests/io/nouns.c |
+| tests/test_sysmisc.c | tests/io/sysmisc.c |
+| tests/test_imu.c | tests/imu/imu.c |
+| tests/test_guidance.c | tests/guidance/guidance.c |
+| tests/test_align.c | tests/programs/align.c |
+| tests/test_rendezvous.c | tests/programs/rendezvous.c |
+| tests/test_csm_dap.c | tests/csm/dap.c |
+| tests/test_entry.c | tests/csm/entry.c |
+| tests/test_return_to_earth.c | tests/csm/return_to_earth.c |
+| tests/test_landing.c | tests/lm/landing.c |
+| tests/test_lm_dap.c | tests/lm/dap.c |
+| tests/oracle_conic.c | tests/oracle/conic.c |
+| tests/oracle_core_numeric.c | tests/oracle/core_numeric.c |
+
+## Pass 2 notes
+* Include fixes: files in programs/targeting and programs/displays include "../navigation/internal.h"; csm/navigation, lm/navigation and lm/radar include "../../programs/navigation/internal.h"; lm/navigation includes "../radar/radar.h"; programs/navigation/noun_data.c includes "../../lm/radar/radar.h" (pre-existing upward dependency on the LM radar header, kept). These are cross-folder relative includes of a private header, as the assignment prescribes; integration promotes the shared declarations to include/agc/ later.
+* programs/navigation/common.c holds the rendezvous erasables and the shared P34-P35 numeric helpers used by every rendezvous file, not only P20, so it stays beside internal.h (its API) rather than moving into targeting/.
+* lambert_aimpoint_guidance_lm.c stays in programs/targeting/ with its suffix (it is the only LM-only targeting file; lm/targeting/ would hold < 3 files).
+* include/agc/programs/rendezvous.h kept; top comment lists the new source folders. Public header rename is integration's job.
+* Makefile: TEST_SRCS now uses `find tests -name '*.c' | sort` (TEST_BINS and the pattern rule already handled subdirectories). The style agent's Makefile edits are untouched.
+* Comments in src/include/tests that named moved files now give vehicle-relative short paths (e.g. lm/radar/moding.c). Docs updated except WORKLOG, RENAMES*, the Pass 1 table above and the style agent's files.
+* Verified: all 241 .c files in src/ and tests/ compile with the brief's flags (-DAGC_HOST_DEBUG added for tests), same as before; check_rules hard violations unchanged at 712 (warnings unchanged).

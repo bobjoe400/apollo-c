@@ -1,5 +1,5 @@
 /*
- * acquisition_lm.c -- rendezvous radar acquisition of the CSM, LM only
+ * acquisition.c -- rendezvous radar acquisition of the CSM, LM only
  * (P20-P25.agc, Luminary099 pp.508-516, 588-593):
  *   R21LEM   RR designate routine ("to point the rendezvous radar at the
  *            CSM until automatic acquisition of the CSM is accomplished")

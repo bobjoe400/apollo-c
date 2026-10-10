@@ -28,6 +28,6 @@ them under "Requested core additions" with the AGC scale.
 Also transcribe the SFINTAB/SFOUTAB scale-factor constant tables (octal
 values with their engineering meaning as comments) into noun_scales.c.
 
-Tests: tests/test_nouns.c: lookup noun 36 (time of AGC clock) gives 3
+Tests: tests/io/nouns.c: lookup noun 36 (time of AGC clock) gives 3
 components with the hr/min/sec scale types; an unknown noun fails; the
 table is sorted/complete for 00-99.

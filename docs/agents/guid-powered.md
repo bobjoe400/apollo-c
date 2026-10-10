@@ -22,6 +22,6 @@ Engine/thrust commands go through agc_channels.h; the executive/waitlist
 through agc_exec.h; display requests through the agc_dsky.h interface
 (agc_dsky_display(verb, noun, continuation ids); if the header is not yet
 present, declare locally what you need and list it).
-Tests: tests/test_guidance.c (compiles): average-G with zero delta-V over
+Tests: tests/guidance/guidance.c (compiles): average-G with zero delta-V over
 one 2-s step moves position by v*dt within precision; cross-product steering
 with velocity-to-be-gained along thrust gives zero commanded rate.

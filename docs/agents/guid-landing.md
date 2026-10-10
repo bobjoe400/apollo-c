@@ -18,6 +18,6 @@ Scope (Luminary only), into src/lm/ with include/agc/lm/landing.h:
   findcduw.c
 Use agc_channels.h for radar/throttle channels, agc_exec.h for jobs/tasks,
 the agc_dsky.h display interface as in docs/agents/guid-powered.md.
-Tests: tests/test_landing.c (compiles): throttle law at a commanded
+Tests: tests/lm/landing.c (compiles): throttle law at a commanded
 thrust in the 10%-60% band returns the expected pulse count; guidance with
 the vehicle exactly on a target trajectory commands zero correction.

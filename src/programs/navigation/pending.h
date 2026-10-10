@@ -1,5 +1,5 @@
 /*
- * ext.h -- interfaces the rendezvous programs (prog-rendz) use that
+ * pending.h -- interfaces the rendezvous programs (prog-rendz) use that
  * other lanes own but had not published in include/agc when this module was
  * written, plus the provisional job/task ids of this module.
  *
@@ -164,7 +164,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_RENDEZVOUS_PARAMS_MONITOR        ((agc_job_id_t)0x1172) /* DISPN5X */
 #define AGC_JOB_RENDEZVOUS_PARAMS_START          ((agc_job_id_t)0x1173) /* V83CALL */
 #define AGC_JOB_RENDEZVOUS_PARAMS_UPDATE         ((agc_job_id_t)0x1174) /* V83 / REV83 */
-/* P17/P77 TPI search, CSM (tpi_search_csm.c) */
+/* P17/P77 TPI search, CSM (csm/navigation/tpi_search.c) */
 #define AGC_JOB_TPI_SEARCH                       ((agc_job_id_t)0x1178) /* P17 */
 #define AGC_JOB_TPI_SEARCH_OTHER_VEHICLE         ((agc_job_id_t)0x1179) /* P77 */
 #define AGC_JOB_TPI_SEARCH_INPUT                 ((agc_job_id_t)0x117A) /* P17.1 V06N37 */
@@ -178,7 +178,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_LAMBERT_AIMPOINT_COMPUTE         ((agc_job_id_t)0x1181) /* after V06N33 */
 #define AGC_JOB_LAMBERT_AIMPOINT_APSIDES         ((agc_job_id_t)0x1182) /* V06N42 */
 #define AGC_JOB_LAMBERT_AIMPOINT_TTOGO           ((agc_job_id_t)0x1183) /* REVN1645 */
-/* LM radar (rr_designate_lm.c, powered_flight_designate_lm.c, radar_leadin_lm.c) */
+/* LM radar (lm/radar/{designate,powered_flight_designate,leadin}.c) */
 #define AGC_JOB_RR_DESIGNATE_COMMAND             ((agc_job_id_t)0x1188) /* DODES */
 #define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS ((agc_job_id_t)0x1189) /* R21LEM2 (LM) */
 #define AGC_JOB_POWERED_FLIGHT_REMODE            ((agc_job_id_t)0x118A) /* R29REM0J */
@@ -188,7 +188,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_POWERED_FLIGHT_READ_DONE         ((agc_job_id_t)0x118E) /* R29RDJOB after RRRANGE RADSTALL */
 #define AGC_JOB_RADAR_SAMPLE                     ((agc_job_id_t)0x118F) /* DORSAMP */
 #define AGC_JOB_RADAR_SAMPLE_DONE                ((agc_job_id_t)0x1190) /* DORSAMP after RADSTALL */
-/* LM P20/P22/P25 (navigation_lm.c, tracking_attitude_lm.c) */
+/* LM P20/P22/P25 (lm/navigation/{navigation,tracking_attitude}.c) */
 #define AGC_JOB_RENDEZVOUS_NAVIGATION            ((agc_job_id_t)0x1191) /* PROG20 = PROG22 (LM) */
 #define AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION ((agc_job_id_t)0x1192) /* ORBCHGO GOPERF4 */
 #define AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN ((agc_job_id_t)0x1193) /* ORBCHG1 */
@@ -207,7 +207,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK ((agc_job_id_t)0x11A0) /* P25LEM1 */
 #define AGC_JOB_TRACKING_ATTITUDE_COMPUTE        ((agc_job_id_t)0x11A1) /* R61C+L01 */
 #define AGC_JOB_TRACKING_ATTITUDE_MANEUVERED     ((agc_job_id_t)0x11A2) /* after R60LEM */
-/* LM R21 / R23 / R24 (acquisition_lm.c) */
+/* LM R21 / R23 / R24 (lm/radar/acquisition.c) */
 #define AGC_JOB_RENDEZVOUS_SIGHTING_MARK         ((agc_job_id_t)0x11A3) /* R21LEM */
 #define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CENTERED ((agc_job_id_t)0x11A4) /* R21LEM6 RADSTALL */
 #define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_LOCKON  ((agc_job_id_t)0x11A5) /* R21LEM3 RADSTALL */
@@ -229,7 +229,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_RADAR_SEARCH_MANEUVER_DONE       ((agc_job_id_t)0x11B5) /* R24LEM4 */
 #define AGC_JOB_RADAR_SEARCH_POINT               ((agc_job_id_t)0x11B6) /* LRS24.1 CHKSRCH */
 #define AGC_JOB_RADAR_SEARCH_DATA_CHECK          ((agc_job_id_t)0x11B7) /* DATGDCHK */
-/* LM R22 (tracking_data_lm.c, measurement_update_lm.c) */
+/* LM R22 (lm/navigation/tracking_data.c, lm/navigation/measurement_update.c) */
 #define AGC_JOB_RENDEZVOUS_TRACKING_DATA         ((agc_job_id_t)0x11B8) /* R22LEM */
 #define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE   ((agc_job_id_t)0x11B9) /* LRS22.1 after RRRDOT */
 #define AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK    ((agc_job_id_t)0x11BA) /* LRS22.1 after RRRANGE */
@@ -257,7 +257,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_RENDEZVOUS_SIGHTING_MARK_AHEAD   ((agc_job_id_t)0x11CF) /* R21LEMB */
 #define AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT    ((agc_job_id_t)0x11D0) /* R22WAIT after R61 */
 #define AGC_JOB_W_MATRIX_MONITOR_DISPLAY         ((agc_job_id_t)0x11D1) /* V06N99DS */
-/* CSM P20-P25 (navigation_csm.c, tracking_attitude_csm.c, tracking_data_csm.c) */
+/* CSM P20-P25 (csm/navigation/{navigation,tracking_attitude,tracking_data}.c) */
 #define AGC_JOB_TRACKING_ATTITUDE_CSM            ((agc_job_id_t)0x11D2) /* R61CSM CRS61.1 */
 #define AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED ((agc_job_id_t)0x11D3) /* after R60CSM */
 #define AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK  ((agc_job_id_t)0x11D4) /* CONTCHK after 4 s */
@@ -287,7 +287,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN ((agc_job_id_t)0x11EA) /* SETPAF/RSTPAF */
 #define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE ((agc_job_id_t)0x11EB) /* V89RECL */
 #define AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER ((agc_job_id_t)0x11EC) /* R60CSM */
-/* CSM P22 (orbital_navigation_csm.c, landmark_navigation_csm.c) */
+/* CSM P22 (csm/navigation/{orbital_navigation,landmark_navigation}.c) */
 #define AGC_JOB_ORBITAL_NAVIGATION_MARKS         ((agc_job_id_t)0x11ED) /* S22.1 */
 #define AGC_JOB_ORBITAL_NAVIGATION_MARK          ((agc_job_id_t)0x11EE) /* S22NXTIN */
 #define AGC_JOB_ORBITAL_NAVIGATION_DELTA_ACCEPT  ((agc_job_id_t)0x11EF) /* S22BOX42 */
@@ -340,7 +340,7 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 /* CLOKTASK (LM BURN_BABY_BURN, owner guid-powered); same name as in
  * include/agc/guidance/pending.h.                                           */
 #define AGC_TASK_CLOKTASK_RZ  ((agc_task_id_t)0x1104)
-/* LM radar moding (rr_moding_lm.c); RRTURNON and DORREPOS keep the values
+/* LM radar moding (lm/radar/moding.c); RRTURNON and DORREPOS keep the values
  * sys-misc gave them in src/io/service/sysmisc_ext.h.                       */
 #define AGC_TASK_RRTURNON  ((agc_task_id_t)0x312)  /* prog-rendz: RRTURNON   */
 #define AGC_TASK_DORREPOS  ((agc_task_id_t)0x313)  /* prog-rendz: DORREPOS   */

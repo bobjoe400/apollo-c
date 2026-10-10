@@ -70,7 +70,7 @@ by other lanes / not yet in include/agc are declared in
 - DONE  self-check / show-banksum  src/io/service/self_check.c
 - PARTIAL LM P07 systems test: ZEROING, FINETIME, OVERFFIX done; REDO stub  src/lm/systems_test.c
 - DONE  interbank.c (comment file)  src/io/service/interbank.c
-- DONE  tests/test_sysmisc.c (271 checks pass against a scratch build of the tree with link
+- DONE  tests/io/sysmisc.c (271 checks pass against a scratch build of the tree with link
         stubs for other lanes' missing symbols; the tree does not link yet)
 
 ## Deviations
@@ -99,11 +99,11 @@ Declared (extern, not defined) in src/io/service/sysmisc_ext.h or src/io/verbs/p
 names follow docs/agents/_common.md.  Array erasables take an index argument.
 - prog-rendz (P20-P25.agc): `bool agc_rr_limchk(uint16_t cdut, uint16_t cdus)` (RRLIMCHK),
   `agc_status_t agc_rr_settrkf(void)` (SETTRKF), `agc_status_t agc_rr_zero(void)`
-  (RRZERO; prog-rendz has it in rr_moding_lm.c), `agc_status_t agc_rr_designate_gimbal(bool *started)`
+  (RRZERO; prog-rendz has it in src/lm/radar/moding.c), `agc_status_t agc_rr_designate_gimbal(bool *started)`
   (RRDESNB, angles in TANG; *started false when RRDESNB ended the job, e.g. alarm 502),
   `agc_status_t agc_rendz_clradmod(void)` (CLRADMOD; same declaration as the landing shim),
   `agc_status_t agc_radar_lrpos2(void)` (LRPOS2; same as the powered-flight shim),
-  task `AGC_TASK_RADSAMP` (0x1103, value from src/programs/rendezvous/ext.h).
+  task `AGC_TASK_RADSAMP` (0x1103, value from src/programs/navigation/pending.h).
   RADSAMP/DORSAMP should use this lane's R04/R77 storage accessors
   agc_erase_rsampdt/rtstdex/rtstbase/rtstmax/rtstloc/rfailcnt (service_internal.h).
 - prog-align / io-pinball: `agc_sp_t agc_erase_optionx(int index)`,
@@ -118,7 +118,7 @@ names follow docs/agents/_common.md.  Array erasables take an index argument.
 
 ## Tests written
 
-tests/test_sysmisc.c: every downlist (CM 5, LM 6) is 100 DP words; DOWNRUPT sequence of
+tests/io/sysmisc.c: every downlist (CM 5, LM 6) is 100 DP words; DOWNRUPT sequence of
 the CM coast-and-align list (ID/sync, TIME2/TIME1, next list, UPDNLIST); LOADTIME;
 SGNAGREE / TPAGREE sign fix-up; ROPECHK/SHOWSUM bank sums; UPFLAG/DOWNFLAG, GENTRAN,
 B5OFF/EXTVBACT; LM T4RUPT fills M11..M32 from CDUZ/CDUX; V44 RRDESEND outside continuous

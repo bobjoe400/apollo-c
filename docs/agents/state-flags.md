@@ -26,5 +26,5 @@ Scope: the shared state layer. Mostly careful transcription.
    C accessor or "module-private (owner)" covering the unswitched and
    shared E3-E7 regions, so later agents can look names up fast.
 
-Tests: tests/test_state.c: flags set/clear/invert/test for both vehicles,
+Tests: tests/core/state.c: flags set/clear/invert/test for both vehicles,
 channel write/or/and/read masks, time, state-vector round trip.

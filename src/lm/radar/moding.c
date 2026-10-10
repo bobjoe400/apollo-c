@@ -1,5 +1,5 @@
 /*
- * rr_moding_lm.c -- rendezvous radar (RR) moding, LM only (P20-P25.agc,
+ * moding.c -- rendezvous radar (RR) moding, LM only (P20-P25.agc,
  * Luminary099 pp.521-537, 563): MAGSUB, RRLIMCHK, SETTRKF / FLIP,
  * RRTURNON / RRZEROSB, DORREPOS / REPOSRPT / SETRRECR, REMODE / RMODINV,
  * RRTONLY / RRSONLY / RR1AXIS, RROUT, RRZERO, ENDRADAR / RGOODEND /
@@ -10,7 +10,7 @@
  * RR1AXIS). Here each FIXDELAY continuation is its own task and RRRET is
  * an enum naming the caller's next step.
  *
- * Angles are CDU words (radar_lm.h); one revolution = 2^15 counts and the
+ * Angles are CDU words (lm/radar/radar.h); one revolution = 2^15 counts and the
  * AGC treats them as ones' complement SP numbers scaled in half
  * revolutions (16384 = 180 degrees). Gyro commands are SP pulses.
  */

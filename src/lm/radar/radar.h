@@ -1,12 +1,12 @@
 /*
- * radar_lm.h -- private interface between the LM radar files of the
+ * radar.h -- private interface between the LM radar files of the
  * rendezvous programs (P20-P25.agc, Luminary099 pp.520-563, 594-613):
- *   rr_moding_lm.c          RR limits, lamps, turn-on, CDU zero, reposition,
+ *   lm/radar/moding.c          RR limits, lamps, turn-on, CDU zero, reposition,
  *                           remode, single-axis drive, RROUT
- *   rr_designate_lm.c       RRDESSM, RRDESNB, STARTDES, BEGDES, DODES
- *   radar_read_lm.c         radar read lead-ins, RADAREAD, LRPOS2, R12 lamps
- *   powered_flight_designate_lm.c   R29 (RR designate in powered flight)
- *   radar_leadin_lm.c       RADSAMP / DORSAMP (radar sampling test)
+ *   lm/radar/designate.c       RRDESSM, RRDESNB, STARTDES, BEGDES, DODES
+ *   lm/radar/read.c         radar read lead-ins, RADAREAD, LRPOS2, R12 lamps
+ *   lm/radar/powered_flight_designate.c   R29 (RR designate in powered flight)
+ *   lm/radar/leadin.c       RADSAMP / DORSAMP (radar sampling test)
  *
  * RADMODES is the radar flagword FLGWRD12 (owned by sys-misc,
  * agc_erase_radmodes); its bits are named below as in
@@ -88,7 +88,7 @@ typedef struct rr_state {
 
 rr_state_t *rr_state(void);
 
-/* ---- word helpers (rr_moding_lm.c) ----------------------------------- */
+/* ---- word helpers (lm/radar/moding.c) ----------------------------------- */
 int      rr_ones(uint16_t w);          /* 15-bit word as ones' complement  */
 uint16_t rr_word(int v);               /* ones' complement word of v       */
 /* MAGSUB: true ("L+3") when |a| <= -k, k a negative constant.           */
@@ -101,7 +101,7 @@ bool     rr_radmodes_test(uint16_t bits);   /* any of bits set           */
 bool     rr_mode2(void);                    /* ANTENBIT                  */
 void     rr_mode_invert(void);              /* RMODINV                   */
 
-/* ---- moding routines (rr_moding_lm.c) -------------------------------- */
+/* ---- moding routines (lm/radar/moding.c) -------------------------------- */
 /* RRLIMCHK on (T, S) words, the present mode's limits.                  */
 bool         rr_limits_ok(uint16_t t, uint16_t s);
 void         rr_setrrecr(void);                         /* SETRRECR      */
@@ -117,11 +117,11 @@ agc_status_t rr_radnoop(void);                          /* RADNOOP       */
 /* Turn the lamp `lamp` (DSPTAB +11D bit) on or off (TRKFLON +1).       */
 void         rr_lamp_put(uint16_t lamp, bool on);
 
-/* ---- designate (rr_designate_lm.c) ----------------------------------- */
+/* ---- designate (lm/radar/designate.c) ----------------------------------- */
 agc_status_t rr_begdes(void);           /* BEGDES (task body)            */
 agc_status_t rr_stdesig(void);          /* STDESIG (task body)           */
 
-/* ---- radar read (radar_read_lm.c) ------------------------------------ */
+/* ---- radar read (lm/radar/read.c) ------------------------------------ */
 agc_dp_t     rr_timehold(void);         /* TIMEHOLD: reading mid time    */
 /* RADLITES: lamps after a read; ITEMP1 = the data-good bit (BIT4 RR,
  * BIT5 LR altitude, BIT8 LR velocity).                                  */
@@ -183,7 +183,7 @@ agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
 agc_status_t lmnav_wait(uint16_t delay_cs);
 /* R22LEM96: the noun 49 display job and the N49FLAG wait.             */
 agc_status_t lmnav_n49_display(void);
-/* ASTOK after a noun 49 PROCEED (measurement_update_lm.c).             */
+/* ASTOK after a noun 49 PROCEED (lm/navigation/measurement_update.c). */
 agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx);
 
 #endif /* RENDZ_RADAR_LM_H */

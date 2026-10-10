@@ -1,5 +1,5 @@
 /*
- * tracking_attitude_csm.c -- R61CSM PREFERRED TRACKING ATTITUDE ROUTINE
+ * tracking_attitude.c -- R61CSM PREFERRED TRACKING ATTITUDE ROUTINE
  * and CRS61.1 / CRS61.2, CSM only (P20-P25.agc, Comanche055 pp.574-575,
  * 590-597).
  *

@@ -22,7 +22,7 @@ SQRT iteration with NORM pre-scaling, the ARCSIN/ARCCOS method, UNIT's
 normalisation) rather than calling libm, so results match the real AGC to
 the bit where feasible. libm is allowed only in tests for comparison.
 
-Tests: tests/test_core_numeric.c (plain C, returns non-zero on failure):
+Tests: tests/core/numeric.c (plain C, returns non-zero on failure):
 pack/unpack, saturation and overflow flags, DMP/DMPR rounding, DDV, SQRT,
 SIN/COS vs libm within AGC precision (state the achieved error bound),
 UNIT, cross/dot, MXV. Run `make lib` and `make test`; if another lane's

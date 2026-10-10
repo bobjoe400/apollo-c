@@ -90,7 +90,7 @@
 #define AGC_JOB_LR_SPURIOUS_TEST_END_RESUME ((agc_job_id_t)0x0395) /* R77END after 320 ms   */
 #define AGC_JOB_OPTICS_COARSE_DRIVE       ((agc_job_id_t)0x0396) /* CSM V41N91 OPTC1        */
 #define AGC_JOB_OPTICS_COARSE_START       ((agc_job_id_t)0x0397) /* CSM V41N91 after EXDSPRET */
-/* prog-rendz's RADAR_LEADIN_ROUTINES task (value as in its ext.h)          */
+/* prog-rendz's RADAR_LEADIN_ROUTINES task (value as in programs/navigation/pending.h)          */
 #define AGC_TASK_RADSAMP      ((agc_task_id_t)0x1103) /* LM radar sampling     */
 /* tasks owned by sys-misc */
 #define AGC_TASK_ATTITUDE_ERROR_OUTPUT    ((agc_task_id_t)0x0307) /* V43 ATTCK1 / ATTCK2    */

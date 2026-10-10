@@ -15,7 +15,7 @@ MIDTOAV1/2, INTWAKEU), src/nav/integration/orbital_integration.c (Encke step, AC
 GAMCOMP, OBLATE, DIFEQ, W matrix, RECTIFY, origin change),
 src/nav/integration/flags_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
 src/nav/integration/setitctr_lm.c (SETITCTR, AVEGFLAG), src/nav/integration/pending.h
-(placeholder job/task ids), tests/test_integration.c.
+(placeholder job/task ids), tests/nav/integration.c.
 
 Also translated here (because they are the body of the STATEINT job):
 STATEUP/DOINT/STATEND/NO-INT and THISVINT from FRESH_START_AND_RESTART.agc
@@ -102,7 +102,7 @@ Design notes:
 * flags_csm.c / setitctr_lm.c: DONE (SETITCTR agc_integ_setitctr)
 * assertion density top-up: DONE (check_rules: no warnings on the nav-integ files)
 * scratch run of the test: DONE (see Tests written)
-* tests/test_integration.c: DONE (12 tests, 177 checks; all pass against the current core/exec/nav objects with a scratch link shim for dispatch/svdwn/dsky)
+* tests/nav/integration.c: DONE (12 tests, 177 checks; all pass against the current core/exec/nav objects with a scratch link shim for dispatch/svdwn/dsky)
 
 ## Deviations
 
@@ -185,7 +185,7 @@ continuation job (resume_job) for the INTSTALL sleep.
 
 ## Tests written
 
-tests/test_integration.c (compiles with the project flags; 12 tests, 177
+tests/nav/integration.c (compiles with the project flags; 12 tests, 177
 checks). Run against the current core/exec/nav objects (dispatch, SVDWN and
 the DSKY entry points shimmed in the scratchpad since other lanes are not
 linkable yet): all pass. Results:

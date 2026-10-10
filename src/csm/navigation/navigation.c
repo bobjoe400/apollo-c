@@ -1,5 +1,5 @@
 /*
- * navigation_csm.c -- P20 RENDEZVOUS NAVIGATION, CSM (P20-P25.agc,
+ * navigation.c -- P20 RENDEZVOUS NAVIGATION, CSM (P20-P25.agc,
  * Comanche055 pp.562-564, 572-573, 586), with the R21CSM / R23CSM marking
  * verbs (V57 / V54), SETINTG, the CNTCHK / WAITONE / REDOR22 wait of R22,
  * and the LANDMARK erasable. Also the vehicle dispatch of the P20 / P22

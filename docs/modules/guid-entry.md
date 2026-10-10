@@ -14,8 +14,8 @@ Files:
 * include/agc/csm/entry_internal.h -- prototypes shared between files of this lane only
 * include/agc/csm/entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
   IMU, job/task ids). Delete at integration; see "Requested core additions".
-* src/csm/entry/reentry.c, programs.c, cm_body_attitude.c, dap.c, return_to_earth.c, earth_orbit_insertion.c
-* tests/test_entry.c
+* src/csm/entry/reentry.c, programs.c, cm_body_attitude.c, dap.c, src/csm/burns/return_to_earth/program.c, earth_orbit_insertion.c
+* tests/csm/entry.c
 
 ## Design table
 
@@ -68,7 +68,7 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 | S61.1/S61.1A-C (803-805) | IMU orientation check, alarms 1426/1427 | agc_job_entry_imu_check, agc_job_entry_imu_axis_test |
 | S61.2, FISHCALC, VGAMCALC, TFF/TRIG, DISPTARG, VRCALC (806-816) | N60/N63 predictions | agc_entry_ems_data (stub) + pure helpers |
 | S62.3 (817-818) | ROLLC ALFAPAD UXA UYA UZA -> CPHI | agc_entry_desired_gimbal_angles |
-| P37 + subroutines (890-933) | return to earth | return_to_earth.c (mostly stubs, see Stubs) |
+| P37 + subroutines (890-933) | return to earth | src/csm/burns/return_to_earth/program.c (mostly stubs, see Stubs) |
 | P11, MATRXJOB, VHHDOT, S11.1, ATERJOB.., SATSTKON/SATSTICK (533-550) | insertion monitor | earth_orbit_insertion.c |
 
 ## Progress
@@ -78,11 +78,11 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - CM_BODY_ATTITUDE: DONE cm_body_attitude.c (CM/POSE triad, CM/TRIO, CM/ATUP, REDOPOSE, POSEXIT, SERVNOUT, REFAZE10 job)
 - CM_ENTRY_DIGITAL_AUTOPILOT: DONE dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
 - P61-P67: DONE programs.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
-- P37_P70: PARTIAL return_to_earth.c (XT1LIM done; P37 program and its conic/precision
+- P37_P70: PARTIAL src/csm/burns/return_to_earth/program.c (XT1LIM done; P37 program and its conic/precision
   subroutines are a documented stub -- assignment asked "read and describe")
 - P11: DONE earth_orbit_insertion.c (P11, REP11, REP11A, MATRXJOB+GETDOWN, VHHDOT, S11.1,
   ATERTASK, ATERJOB/ATTDISP/attitude errors, ATRESET, SATSTKON, REDOSAT, SATSTICK)
-- tests/test_entry.c: DONE (23 checks; see Tests written)
+- tests/csm/entry.c: DONE (23 checks; see Tests written)
 - entry_pending.h: DONE rewritten against the now-available core headers (resume 2)
 
 ## Deviations
@@ -126,7 +126,7 @@ ATERJOB NORMLIZE. Tasks: READGYMB SETJTAG JETCALL WAKEP62 ENTRY_START_AVERAGE_G 
 READACCS. (Temporary values in entry_pending.h.)
 
 ## Tests written
-tests/test_entry.c (compiles with -Werror; links only once the whole
+tests/csm/entry.c (compiles with -Werror; links only once the whole
 library links -- verified locally with abort stubs for other lanes'
 missing symbols: 23 checks, 0 failures, 0 assert reports):
 - HUNTEST/RANGER for a nominal up-control state (V 32000 fps, RDOT -300

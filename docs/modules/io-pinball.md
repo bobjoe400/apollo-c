@@ -78,7 +78,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - DONE nvsub.c: NVSUB, NVMONOPT, NVSBWAIT, BLANKDSP, NVSUB1/2, KILMONON, ENDIDLE, ISCADR+0/ISLIST+0/DSPABORT, NVSUBUSY, RECALTST, RELDSP, RELDSP1, BLANKSUB, JAMTERM, JAMPROC, DSPMM, agc_dsky_vn
 - DONE display_if.c: all GO*/RE*/PRIODSP/GOMARK*/EXDSPRET/KLEENEX/CLOCPLAY entries, GODSPRS1, MAKEPLAY, MAKEPRIO, MAKEMARK, IFLEGAL/OKTOPLAY, LINUSCHR, JOBXCHS, WITCHONE, GOSLEEPS/XCHSLEEP, NVDSP/PERFCHEK/1STOR2ND, REST, GOANIDLE, FLASHSUB, CLEANEND, ENDOUT/TIMECHEK/NORMRET/MARKRET/ENDRET/ENDIT, TERMATE/PROCEED/IDLERET1+2/LOADITIS, PINBRNCH/NORMBNCH/ERASER, CLEARMRK, MARKOVER, BLANKET, INITDSP
 - DONE agc_dsky_endext (ENDEXT EQUALS ENDMARK)
-- DONE tests/test_dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
+- DONE tests/io/dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
   violations, assertion density 1.25-1.93 per file (warn)
 - Files: include/agc/io/dsky.h; src/io/dsky/pinball/internal.h, state.c,
   display.c, keys.c, verbs.c, monitor.c,
@@ -187,7 +187,7 @@ src/io/dsky/pinball/internal.h are to be replaced at integration.
 
 ## Tests written
 
-tests/test_dsky.c (182 checks; all pass when linked with core, exec, noun tables
+tests/io/dsky.c (182 checks; all pass when linked with core, exec, noun tables
 and scratch stand-ins for the requested accessors): V06N36E clock display (CSM and
 LM), DSPOUT relay words for digit pairs (AAAA/B/CCCCC/DDDDD), V21N01E12345E +
 octal load to a machine address, V25N22 decimal CDU-degree load (180, 90, -45) and

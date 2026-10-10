@@ -11,5 +11,5 @@ TVCROLLDAP.agc, MYSUBS.agc. Keep the filter coefficients with octal and
 engineering values and the sample periods. Jet commands on channels
 005/006, gimbal commands on the OPTICS/gimbal CDU channels via
 agc_channels.h; timing via agc_exec.h.
-Tests: tests/test_csm_dap.c (compiles): jet selection for +pitch with all
+Tests: tests/csm/dap.c (compiles): jet selection for +pitch with all
 quads good yields the documented jet pair; TVC filter step response sign.

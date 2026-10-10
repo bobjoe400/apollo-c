@@ -14,6 +14,6 @@ GENERAL_LAMBERT_AIMPOINT_GUIDANCE.agc (Luminary), RADAR_LEADIN_ROUTINES.agc
 in parallel by nav-conic; if not present, code against the struct names in
 docs/agents/nav-conic.md) and integration (agc_integ.h). Display through
 the agc_dsky.h interface; scheduling through agc_exec.h.
-Tests: tests/test_rendezvous.c (compiles): CSI targeting on a coplanar
+Tests: tests/programs/rendezvous.c (compiles): CSI targeting on a coplanar
 circular case gives a delta-V of the expected sign; R30 apogee/perigee of
 a circular orbit are equal within precision.

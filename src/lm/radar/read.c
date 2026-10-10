@@ -1,5 +1,5 @@
 /*
- * radar_read_lm.c -- LM radar reading (P20-P25.agc, Luminary099
+ * read.c -- LM radar reading (P20-P25.agc, Luminary099
  * pp.553-563, 612-613): the read lead-ins RRRANGE, RRRDOT, LRVELX/Y/Z,
  * LRALT, LRVEL and INITREAD; the RADAR RUPT reader RADAREAD with its
  * scale, data-good and bias handling; LRPOS2 (landing radar to position

@@ -1,10 +1,10 @@
 /*
- * orbital_navigation_csm.c -- P22 ORBITAL NAVIGATION PROGRAM, CSM
+ * orbital_navigation.c -- P22 ORBITAL NAVIGATION PROGRAM, CSM
  * (P20-P25.agc, Comanche055 pp.565-569): PROG22, PROG22A/B/C, CALLR52,
  * DOV5N71, P22OVER, the landmark code check (S22N7071, S22DSPPA, S22DSPP,
  * S22ABDE, DE-GR-50) and the landmark coordinates (S22LSITE, OBTAINLL,
  * P22SUBRB, N89ERRX). The mark processing S22.1 is in
- * landmark_navigation_csm.c.
+ * csm/navigation/landmark_navigation.c.
  *
  * The crew identifies the landmark on noun 70 / 71 as ABCDE (octal): A =
  * 1 known, 2 unknown; B = the offset point mark (0-5); DE = 00 coordinates

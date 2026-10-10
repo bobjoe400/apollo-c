@@ -1,5 +1,5 @@
 /*
- * powered_flight_designate_lm.c -- R29 RENDEZVOUS RADAR DESIGNATE DURING
+ * powered_flight_designate.c -- R29 RENDEZVOUS RADAR DESIGNATE DURING
  * POWERED FLIGHT, LM only (P20-P25.agc, Luminary099 pp.594-607).
  *
  * "Designates the rendezvous radar toward the computed LOS to the CSM,
