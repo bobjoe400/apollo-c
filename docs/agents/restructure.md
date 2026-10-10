@@ -4,6 +4,8 @@ All other agents are PAUSED. Move .c files (and lane-private .h files that
 live beside them) into subsystem subfolders. include/agc/ stays flat; no
 `#include "agc/..."` line changes. The Makefile globs src/ recursively.
 
+Rule: a subfolder needs >= 3 files; otherwise keep the file in the parent.
+
 Target layout (place every existing file; if a file does not fit, choose
 the closest folder and list it in your note):
 
@@ -20,14 +22,22 @@ src/guidance       powered-flight subroutines, shared burn programs, servicer_co
 src/programs/rendezvous   rendz_*.c and the P20s/P3x/R30/R31/stable-orbit files
 src/programs/alignment    align_*.c sighting marks, R63
 src/csm/entry      entry lexicon, reentry, entry programs, cm body attitude, entry dap
-src/csm/dap        unchanged (rcs + tvc)
+src/csm/dap/rcs    RCS digital autopilot, jet selection logic, automatic
+                   maneuvers, RCS DAP executive programs, DAP data load (R03)
+src/csm/dap/tvc    TVCINITIALIZE, TVCEXECUTIVE, TVCMASSPROP, TVCRESTARTS,
+                   TVCDAPS (pitch/yaw), TVCSTROKETEST, TVCROLLDAP
+src/csm/dap/common MYSUBS and any DAP interface/shared helpers
 src/csm/burns      sps burn, earth-orbit-insertion monitor, return to earth, csm servicer
 src/csm/prelaunch  prelaunch alignment / gyrocompassing
 src/csm/optics     sxtmark, s-band antenna csm, landmark selection
 src/lm/landing     landing guidance, throttle, landing displays, aborts, findcduw
 src/lm/ascent      powered ascent, ascent guidance
 src/lm/burns       dps burn (+rasteer), ignition, lm servicer
-src/lm/dap         unchanged
+src/lm/dap/rcs     DAP idler, P-axis, Q/R-axis, TJET law, Kalman filter,
+                   T6RUPT jet timing, RCS failure monitor
+src/lm/dap/gimbal  trim gimbal control system, AOS task and job
+src/lm/dap/common  DAP interface subroutines, SPS back-up RCS control,
+                   shared DAP state/pending headers
 src/lm/optics      aotmark, s-band antenna lm, radar lead-ins, ags init
 src/lm/tests       imu performance tests (LM P07) if present
 
