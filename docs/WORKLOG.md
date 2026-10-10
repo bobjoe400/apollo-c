@@ -173,3 +173,10 @@
             private relative). Compile: 169+5 pass; remaining failures are
             lane-owned undeclared symbols (prog-align, sys-misc, guid-powered
             mid-edit) plus aborts.c orphan fixed by lead. 7 lanes notified.
+2026-10-10  dap-csm DONE (0 stubs), 791 checks. Needs: TVCPITCH/TVCYAW
+            accessors (state-flags), ids from src/csm/dap/pending.h into
+            jobs.h + dispatch. NAMING FOLLOW-UP (integration/review):
+            digit-suffixed label names remain in DAP code (agc_task_noroll1,
+            agc_task_tvcinit1, csm_tvc_init4, ...) -- NAMING.md rule 2 says
+            spell them out; defer to integration so cross-lane callers move
+            together.
