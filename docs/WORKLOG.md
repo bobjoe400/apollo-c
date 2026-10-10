@@ -116,3 +116,14 @@
             User rule: no P/R/V/N or page numbers in identifiers ->
             docs/NAMING.md; rename agent launched for done lanes; running
             lanes notified.
+2026-10-10  NAMING RESET. First rename pass (Sonnet, mechanical) produced
+            stutter and pasted label fragments (entry_entry_upcontrol,
+            AGC_TASK_..._TTASK, _E/_P/_T suffixes). User paused everything.
+            All 8 agents stopped; tree checkpointed as-is (partial renames +
+            lane progress). NAMING.md gained 8 derivation rules (read the
+            AGC source for every label; no opaque suffixes; no stutter;
+            2-4 words; map before apply). Single Opus `naming` agent runs
+            phase 1 (inventory + map only); lead reviews docs/RENAMES.md,
+            then phase 2 applies tree-wide; then all 7 lanes resume
+            (guid-powered, dap-lm, dap-csm, prog-rendz, prog-align, sys-misc,
+            p37) with instructions to re-read NAMING.md and RENAMES.md.
