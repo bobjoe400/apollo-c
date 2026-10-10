@@ -80,3 +80,10 @@
             call agc_align_svdwn() in src/programs -> move SVDWN to nav;
             TRKMKCNT accessor needed; agc_state.h comment wrong: RN/VN always
             2^29 m / 2^7 m/cs, not moon-scaled. Launching batch B lane dap-csm.
+2026-10-09  io-pinball DONE (1 stub: V27 fixed-memory display). 182 checks
+            pass with scratch stand-ins. Integration items: exec needs
+            agc_exec_job_wake_as(loc,new_loc); state needs read/write_ecadr,
+            optmodes/radmodes, set_samptime/option1/sfail; 15 jobs + 2 tasks
+            (PIN_JOB_* in pinball_internal.h); align_pending.h and
+            guid_pending_csm.h must switch to agc_dsky_display(). Launching
+            batch B lane prog-rendz.
