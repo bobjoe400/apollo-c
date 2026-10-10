@@ -47,3 +47,13 @@
             pad-load accessors listed in its note; nav-integ owns INCORP2's
             restart/RECTIFY/INTWAKE; agc_dp_sign must be AGC SIGN semantics.
             Launching batch B lane guid-powered now (one at a time as A frees).
+2026-10-09  exec-sched DONE (V37 partial). 197 checks pass. Integration items:
+            deferred software restart (ENEMA runs at job/interrupt end, not
+            inline, to avoid recursion); 44 provisional job ids + 51 task ids in
+            src/exec/exec_pending.h (0x0E00 range) must move into agc_jobs.h and
+            dispatch.c; duplicate AGC_JOB_GOTOPOOH in src/csm/entry_pending.h
+            and src/programs/rendz_ext.h; AGC_JOB_GOPROG placeholder to remove;
+            restart-table delays need core accessors; up-calls SERVIDLE,
+            SETCOARS, SETMAXDB/SETMINDB; interrupt handlers T4RUPT/UPRUPT/
+            DOWNRUPT/RADAR pending from sys-misc/io lanes.
+            Launching batch B lane guid-landing.
