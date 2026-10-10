@@ -135,6 +135,7 @@ static agc_status_t ld_altrout(void)
     ld_altrate = agc_lm_ad(agc_lm_mp_hi(g->daltrate, ld_dt), rate);
     uint16_t w = (ld_altrate < 0) ? (uint16_t)(-ld_altrate)
                                   : (uint16_t)((uint16_t)ld_altrate | LD_BIT15W);
+    (void)AGC_ASSERT(w != 0u || ld_altrate < 0);         /* never +0       */
     return ld_dataout(w);
 }
 
@@ -151,6 +152,7 @@ static agc_status_t ld_extrapolate(agc_sp_t factor)
     ld_altsave = total;
     int32_t hi = total / 16384;
     int32_t lo = total % 16384;
+    (void)AGC_ASSERT(hi >= 0);
     uint16_t w = (uint16_t)(((hi > 0) ? LD_BIT15W : 0u) + (uint16_t)lo);
     (void)AGC_ASSERT(lo >= 0);
     return ld_dataout(w);
@@ -170,6 +172,7 @@ static agc_status_t ld_altout(void)
         return ld_extrapolate(LD_ARTOA);                 /* OLDDATA        */
     }
     ld_altsave = g->altbits;                             /* new data       */
+    (void)AGC_ASSERT(ld_altsave >= 0);
     g->altbits = agc_dp_from_sp(-1);     /* -1: extrapolate next pass     */
     agc_sp_t dt9 = agc_lm_dv((agc_dp_t)ld_dt * 16384, 512);   /* DV BIT10 */
     return ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2));
@@ -331,6 +334,7 @@ agc_status_t agc_lm_task_speedrun2(void)
         return ld_continue();                /* not in the descent         */
     }
     const agc_guid_lm_t *g = &agc_guid_state()->lm;
+    (void)AGC_ASSERT(ld_altpath != LD_NONE);
     int32_t hy = 0;
     int32_t hz = 0;
     for (int i = 0; i < 3; i++) {

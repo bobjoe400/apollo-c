@@ -48,6 +48,10 @@ Language: C11, no extensions. Build flags (Makefile):
 
 ## Project conventions
 
+* **No program/routine/page numbers in identifiers.** P30, R60, V37, page
+  numbers go in comments only. Use the canonical descriptive names in
+  docs/NAMING.md for files, functions, types, enums and job ids.
+
 * Names: `agc_<module>_<verb>()`. Types end in `_t`. Constants `AGC_UPPER`.
 * Every translated function has a header comment giving the AGC label,
   source file, page number(s), and a one-line description, e.g.

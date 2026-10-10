@@ -202,6 +202,7 @@ agc_vec_t    agc_align_v_other(void);    /* V-OTHER  m/cs B7 (downlink)    */
 
 /* ---- shared alignment jobs: R54 (CHKSDATA) and R55 (src/programs/) ------ */
 agc_status_t agc_align_r54(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
+agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);     /* V06N05      */
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);   /* CHKSDA      */
 agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx);     /* V32: CLEAR  */
 agc_status_t agc_align_r55(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);

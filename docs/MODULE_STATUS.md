@@ -14,7 +14,7 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | io-nouns | DONE (0 stubs; 182 data ids UNIMPLEMENTED pending core accessors) | include/agc/agc_nouns.h, src/io/noun_tables_{csm,lm}.c, noun_scales.c, noun_data.c, tests/test_nouns.c | see docs/modules/io-nouns.md |
 | imu          | DONE (13 stubs: P06, POSTAND, 11 CM prelaunch) | src/imu, src/csm/prelaunch_align.c, include/agc/agc_imu.h | tests/test_imu.c 65 checks pass |
 | guid-powered | IN-PROGRESS | | design note written |
-| guid-landing | IN-PROGRESS | src/lm/ | translating |
+| guid-landing | DONE (0 stubs) | src/lm/{throttle,findcduw,landing_guidance,lunar_landing,p70_p71,ascent,landing_displays,landing_state}.c, landing_pending.h, include/agc/agc_lm_landing.h, tests/test_landing.c | test compiles; links only after integration (pending symbols in landing_pending.h); see docs/modules/guid-landing.md |
 | guid-entry   | DONE (1 stub: P37 program) | include/agc/agc_csm_entry.h; src/csm/entry_lexicon.{c,h}, entry_internal.h, entry_pending.h, reentry.c, p61_p67.c, cm_body_attitude.c, entry_dap.c, p37.c, p11.c; tests/test_entry.c | P61-P67, entry DAP, CM body attitude, P11 done; P37 only XT1LIM; test 23 checks pass (needs full lib link); see docs/modules/guid-entry.md |
 | dap-lm       | IN-PROGRESS | src/lm/dap/ | see docs/modules/dap-lm.md |
 | dap-csm      | IN-PROGRESS | src/csm/dap/, include/agc/agc_csm_dap.h | see docs/modules/dap-csm.md |

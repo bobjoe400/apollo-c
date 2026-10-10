@@ -39,3 +39,9 @@ header is not there yet, and list each one you used in your note:
 The session scratchpad is shared by all agents. Use only
 SCRATCH/<your-agent-id>/ for throwaway files; never write into another
 agent's directory.
+
+## Naming: no numbers for programs/routines (added 2026-10-10)
+
+Read docs/NAMING.md. Identifiers never contain P/R/V/N numbers or page
+numbers; those go in comments. Use the canonical stems in that table and
+add a row (do not invent a second name) if your program is missing.

@@ -240,6 +240,8 @@ agc_status_t agc_rendz_r61csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
 #define AGC_JOB_2STARS             ((agc_job_id_t)0x0AA9)
 #define AGC_JOB_1STAR              ((agc_job_id_t)0x0AAA)
 
+#define AGC_JOB_CHKSDATA_FLASH        ((agc_job_id_t)0x0AAE)
+
 #define AGC_TASK_MARKDIF           ((agc_task_id_t)0x0A01) /* MARKDIF (CM)   */
 #define AGC_TASK_ENDMARKS          ((agc_task_id_t)0x0A02) /* ENDMARKS (CM)  */
 #define AGC_TASK_AOT_MKRELEAS      ((agc_task_id_t)0x0A03) /* MKRELEAS (LM)  */
