@@ -60,5 +60,4 @@
 /* ---- 4.6: functions, each preceded by its boxed prolog
  *      (docs/templates/function_prolog.c) ------------------------------ */
 
-
 /* Header files (.h) use the abbreviated prolog in header_prolog.h. */

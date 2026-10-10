@@ -26,6 +26,6 @@
 #include "agc/core/word.h"
 
 /* 4.4 order: enums, typedefs, constant macros, function macros.       */
-#define AGC_TEMPLATE_LIMIT  ((agc_dp_t)0x0400000)  /* example, 2^28 cs */
+#define AGC_TEMPLATE_LIMIT ((agc_dp_t) 0x0400000) /* example, 2^28 cs */
 
 #endif /* AGC_TEMPLATE_HEADER_PROLOG_H */

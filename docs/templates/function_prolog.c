@@ -43,7 +43,7 @@ agc_status_t agc_template_limit_magnitude(agc_dp_t value, agc_dp_t limit,
  **********************************************************************/
 static bool magnitude_exceeds(agc_dp_t value, agc_dp_t limit)
 {
-    bool exceeds = false;  /* result of the comparison */
+    bool exceeds = false; /* result of the comparison */
 
     (void) AGC_ASSERT(limit > 0);
     (void) AGC_ASSERT(value >= AGC_DP_MIN);
@@ -73,7 +73,7 @@ static bool magnitude_exceeds(agc_dp_t value, agc_dp_t limit)
 agc_status_t agc_template_limit_magnitude(agc_dp_t value, agc_dp_t limit,
                                           agc_dp_t *out)
 {
-    agc_status_t status = AGC_STATUS_OK;  /* returned to the caller      */
+    agc_status_t status  = AGC_STATUS_OK; /* returned to the caller      */
     agc_dp_t     limited = value;         /* value after LIMIT, 2^28 cs  */
 
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(limit > 0))
@@ -88,7 +88,7 @@ agc_status_t agc_template_limit_magnitude(agc_dp_t value, agc_dp_t limit,
          */
         if (magnitude_exceeds(value, limit))
         {
-            limited = (value > 0) ? limit : -limit;  /* sign of input */
+            limited = (value > 0) ? limit : -limit; /* sign of input */
         }
         *out = limited;
     }

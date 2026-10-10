@@ -1,7 +1,8 @@
 # .clang-format -- NASA SEL-94-003 "C Style Guide" (Aug 1994) for apollo-c.
-# Written for clang-format 14. Each option cites the guide section it
-# encodes; docs/STYLE.md has the full rule table. Not yet verified with
-# `clang-format --dump-config` (clang-format is not installed here).
+# Written for and verified with clang-format 14.0.6 (Debian 12): every key
+# below appears with this value in `clang-format --dump-config`, and a probe
+# file was formatted to confirm the behaviours noted. Each option cites the
+# guide section it encodes; docs/STYLE.md has the full rule table.
 ---
 Language: Cpp
 BasedOnStyle: LLVM
@@ -17,7 +18,6 @@ ContinuationIndentWidth: 4
 IndentWrappedFunctionNames: false
 # 5.2: function definitions start in column 1; return type on that line.
 AlwaysBreakAfterReturnType: None
-AlwaysBreakAfterDefinitionReturnType: None
 
 # 7.1.2 Braces-Stand-Alone everywhere (Allman), and 7.3.3: the `while` of
 # a do-while goes on its own line after the closing brace.
@@ -93,8 +93,10 @@ AlignConsecutiveMacros: Consecutive
 AlignConsecutiveBitFields: Consecutive
 AlignEscapedNewlines: Left
 AlignTrailingComments: true
-# 2.3: "tab comment over far enough to separate it from code".
-SpacesBeforeTrailingComments: 2
+# 2.3: "tab comment over far enough to separate it from code": trailing
+# comments are aligned into one column. (SpacesBeforeTrailingComments only
+# affects // comments in clang-format 14; /* */ always gets one space.)
+SpacesBeforeTrailingComments: 1
 # Boxed prologs and AGC comment layouts are kept as written.
 ReflowComments: false
 
