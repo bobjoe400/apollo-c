@@ -138,3 +138,11 @@
             CANV37 continues V37). Phase 2 (Coccinelle apply) running.
             Baseline: 156 files compile, 21 fail (paused lanes vs changed
             headers). After phase 2: resume the 7 lanes.
+2026-10-10  Naming phase 2 DONE: 446 identifiers via Coccinelle (21 rules);
+            spatch 1.1.1 honours only the last --dir, so run per dir; it
+            reflows lines, so layout preserved by token-compare. Compile
+            failures 21 -> 5 (all pre-existing, paused lanes). Comments
+            byte-identical. 42 guid-landing rows restored and reviewed.
+            OPEN for integration: guid_pending.h vs exec_pending.h define
+            ~40 of the same job/task ids with different values; merge into
+            agc_jobs.h. Restructure (subsystem subfolders) launched.
