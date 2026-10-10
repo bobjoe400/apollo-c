@@ -99,3 +99,11 @@
             parallelism. Relaunching all 8 remaining lanes at once:
             guid-powered, guid-landing, guid-entry, dap-lm, dap-csm,
             prog-rendz, prog-align, sys-misc.
+2026-10-10  guid-entry DONE (1 stub: P37 return-to-earth, ~1500 lines of
+            interpretive code; only XT1LIM translated -> sibling agent
+            `p37` queued for wave 3). 23 checks pass; range prediction
+            1304.0 NM matches a double-precision model within 1 NM. Requests
+            in src/csm/entry_pending.h: agc_svc_set_extvbact (sys-misc),
+            agc_guid_preread1_csm (guid-powered), agc_csm_prelaunch_p11_earthr
+            (imu), agc_csm_dap_stickchk (dap-csm), agc_dsky_gopin (io-pinball),
+            temp ids 0x0C00-0x0C83.
