@@ -63,7 +63,7 @@ static void tdv_moonflag(tdv_work_t *w)
     if (!rz_is_csm()) {
         w->x2 = agc_flag_test(AGC_FLAG_CMOONFLG) ? 2 : 0;
     }
-    (void)rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
+    rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
     (void)AGC_ASSERT(w->x2 == 0 || w->x2 == 2);
 }
 
@@ -75,8 +75,7 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_flag_set(AGC_FLAG_TRACKFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_TRACKFLG);
     if (!rz_is_csm()) {
         agc_rendz_t *rz = rz_state();
         rz->delvov = rz->delvlvc;
@@ -169,16 +168,20 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
     ic->sv.rcv = ic->out.ratt1;
     ic->sv.tet = ic->out.tat;
     st = agc_integ_minirect(ic, ic->out.vatt1);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_phase_change(4, TDV_PHASE_04024);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_set(AGC_FLAG_REINTFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
+    agc_phase_change(4, TDV_PHASE_04024);
+    agc_flag_set(AGC_FLAG_REINTFLG);
     st = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2)   /* ATOPOTH */
                      : agc_integ_atopcsm(&ip, ic, tdv_work.x2);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     st = agc_integ_intwake0();                             /* INTWAKE1      */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_target_delta_v_end(ctx);
 }
 

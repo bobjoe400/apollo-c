@@ -51,8 +51,7 @@ static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 {
     agc_status_t st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_clear(AGC_FLAG_FINALFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_FINALFLG);
     return rz_ttogo_display(ctx, ip, rz, next);
 }
 
@@ -61,8 +60,7 @@ static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
  * P32STRT: CENTANG = 0, then P32/P72A.                                   */
 static agc_status_t csi_start(agc_job_ctx_t *ctx, bool this_active)
 {
-    agc_status_t st = rz_avflag(this_active);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_avflag(this_active);
     rz_state()->centang = 0;
     return agc_job_csi_input(ctx);
 }
@@ -89,8 +87,7 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_rendz_t *rz = rz_state();
-    agc_status_t st = rz_tracking_flags_on();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_tracking_flags_on();
     if (rz_is_csm()) {
         rz->nn = 0;
     } else {
@@ -116,7 +113,7 @@ static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
     in.sgnrdot = AGC_SP_HALF;   /* not set by the AGC; unused at APSESW */
     in.rvsw = true;
     in.body = rz_body(rz);
-    (void)rz_flag_put(AGC_FLAG_RVSW, true);
+    rz_flag_put(AGC_FLAG_RVSW, true);
     agc_conic_time_out_t o;
     st = rz_timerad(ip, &in, &o);
     if (st != AGC_STATUS_OK) {
@@ -176,8 +173,7 @@ static agc_status_t csi_results(agc_job_ctx_t *ctx, agc_interp_t *ip,
                                 agc_rendz_t *rz)
 {
     if (!agc_flag_test(AGC_FLAG_FINALFLG)) {
-        agc_status_t st = agc_flag_set(AGC_FLAG_UPDATFLG);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_flag_set(AGC_FLAG_UPDATFLG);
     }
     rz->t1tot2 = csi_mod_hour(ip, rz->t1tot2);              /* P32/P72E  */
     rz->t2tot3 = csi_mod_hour(ip, rz->t2tot3);              /* P32/P72F  */
@@ -247,8 +243,7 @@ agc_status_t agc_job_csi_after_cdh_dv(agc_job_ctx_t *ctx)
 /* ======================= P33 / P73 (pp.658-660) ========================== */
 static agc_status_t cdh_start(agc_job_ctx_t *ctx, bool this_active)
 {
-    agc_status_t st = rz_avflag(this_active);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_avflag(this_active);
     return agc_job_cdh_input(ctx);
 }
 
@@ -272,8 +267,7 @@ agc_status_t agc_job_cdh_input(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = rz_tracking_flags_on();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_tracking_flags_on();
     return rz_vnpooh(ctx, 6U, 13U, AGC_JOB_CDH_AFTER_TCDH);
 }
 
@@ -294,8 +288,7 @@ static agc_status_t cdh_results(agc_job_ctx_t *ctx, agc_interp_t *ip,
                                 agc_rendz_t *rz)
 {
     if (!agc_flag_test(AGC_FLAG_FINALFLG)) {
-        agc_status_t st = agc_flag_set(AGC_FLAG_UPDATFLG);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_flag_set(AGC_FLAG_UPDATFLG);
     }
     agc_dp_t ttpi = agc_dp_add(ip, rz->nomtpi, agc_erase_ttpi());
     agc_erase_set_ttpi(ttpi);
@@ -349,7 +342,7 @@ agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
     }
     rz_store_passive(rz, r, v);
     rz->nomtpi = 0;
-    (void)rz_vflag_set(RZ_VF_ITSWICH, true);
+    rz_vflag_set(RZ_VF_ITSWICH, true);
     st = agc_rendz_tpi_time_search(&ip, rz, AGC_JOB_CDH_TIME_SEARCH);
     return cdh_after_search(ctx, &ip, rz, st);
 }

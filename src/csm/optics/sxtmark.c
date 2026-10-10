@@ -73,8 +73,8 @@ static agc_status_t markok(void)
     int vac = -1;
     const agc_status_t st = agc_exec_vac_claim(&vac);
     if (st != AGC_STATUS_OK) {
-        (void)agc_bailout(ALM_NO_VAC);
-        return AGC_STATUS_ALARM;
+        const agc_status_t bo = agc_bailout(ALM_NO_VAC);
+        return (bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo;
     }
     if (!AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS))) {
         return AGC_STATUS_BAD_ARG;
@@ -96,8 +96,8 @@ static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
     agc_inhint();
     if ((agc_erase_extvbact() & EXTVB_BUSY) != 0u) {
         agc_relint();
-        (void)agc_bailout(ALM_BUSY);                          /* MKABORT  */
-        return AGC_STATUS_ALARM;
+        const agc_status_t bo = agc_bailout(ALM_BUSY);
+        return (bo == AGC_STATUS_OK) ? AGC_STATUS_ALARM : bo;
     }
     agc_erase_set_extvbact((uint16_t)(agc_erase_extvbact() | EXTVB_MARKING));
     agc_status_t st = markok();
@@ -195,7 +195,10 @@ agc_status_t agc_sxtmark_markrupt(void)
     if ((in & AGC_CH016_NAVKEY_MASK) != 0u) {
         return agc_dsky_keyrupt2();                           /* KEYCOM   */
     }
-    (void)agc_alarm(ALM_NO_INBITS);
+    const agc_status_t alm = agc_alarm(ALM_NO_INBITS);
+    if (alm != AGC_STATUS_OK) {
+        return alm;
+    }
     return AGC_STATUS_OK;                                     /* RESUME   */
 }
 
@@ -226,7 +229,10 @@ agc_status_t agc_task_markdif(void)
                         difchk(mk.cduy, agc_erase_cduy()) &&
                         difchk(mk.cduz, agc_erase_cduz());
         if (!ok) {
-            (void)agc_alarm(ALM_MOVED);
+            const agc_status_t alm = agc_alarm(ALM_MOVED);
+            if (alm != AGC_STATUS_OK) {
+                return alm;
+            }
             return AGC_STATUS_OK;                             /* TASKOVER */
         }
     }
@@ -264,7 +270,10 @@ agc_status_t agc_sxtmark_markcont(void)
     }
     if (((agc_erase_extvbact() & EXTVB_MARKING) == 0u) ||
         !agc_flag_test(AGC_FLAG_CALIBRATION_MARKING)) {
-        (void)agc_alarm(ALM_UNCALLED);                        /* MARKET3  */
+        const agc_status_t alm = agc_alarm(ALM_UNCALLED); /* MARKET3  */
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return AGC_STATUS_OK;
     }
     const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_MARKDISP);
@@ -287,7 +296,10 @@ agc_status_t agc_sxtmark_mark2(void)
     agc_align_ram_t *ram = agc_align_ram();
     uint16_t ms = agc_erase_markstat();
     if ((ms & MS_WANTED_MASK) == 0u) {
-        (void)agc_alarm(ALM_UNWANTED);                        /* 114ALM   */
+        const agc_status_t alm = agc_alarm(ALM_UNWANTED); /* 114ALM   */
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return AGC_STATUS_OK;
     }
     ms = (uint16_t)((ms - MS_WANTED_ONE) | MS_REJECT_OK);
@@ -318,12 +330,18 @@ agc_status_t agc_sxtmark_mkreject(void)
     }
     const uint16_t ms = agc_erase_markstat();
     if (ms == 0u) {
-        (void)agc_alarm(ALM_NO_REJECT);
+        const agc_status_t alm = agc_alarm(ALM_NO_REJECT);
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return AGC_STATUS_OK;
     }
     agc_erase_set_markstat((uint16_t)(ms & ~MS_REJECT_OK));
     if ((ms & MS_REJECT_OK) == 0u) {
-        (void)agc_alarm(ALM_REJECT2);
+        const agc_status_t alm = agc_alarm(ALM_REJECT2);
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return AGC_STATUS_OK;
     }
     if (!AGC_ASSERT(ram->qpret > 0)) {

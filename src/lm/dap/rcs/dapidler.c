@@ -4,6 +4,7 @@
  * and the IMU and CDUs are usable, initialises the DAP (STARTDAP) and then
  * hands T5ADR to PAXIS; and the T5RUPT dispatch through T5ADR.
  */
+#include <stddef.h>
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
@@ -58,31 +59,35 @@ agc_status_t lm_dap_moreidle(void)
     return lm_dap_shutdown();
 }
 
-/* CHEKBITS / CHEKMORE (p.1410). Returns true ("RETURN") when the DAP is to
+/* CHEKBITS / CHEKMORE (p.1410). *on = true ("RETURN") when the DAP is to
  * stay on; otherwise the idle path (MOREIDLE or SHUTDOWN) has been run and
  * the interrupt ends. On the way the attitude-error display is serviced
  * (JUMPDSP -> ALTDSPLY -> RETNMORE -> CHEKMORE).                         */
-bool lm_dap_chekbits(void)
+agc_status_t lm_dap_chekbits(bool *on)
 {
     lm_dap_t *d = lm_dap_state();
+    if (!AGC_ASSERT(on != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    *on = false;
     uint16_t ch31 = agc_chan_read(031);
     if (((uint16_t)~ch31 & CH31_MODE_OFF) == 0u) {   /* mode switch OFF     */
-        (void)lm_dap_moreidle();      /* status reported by its own asserts  */
-        return false;
+        return lm_dap_moreidle();
     }
     if ((agc_erase_imodes33() & IMODES33_NOIMU) != 0u) {
         d->rcsflags = (uint16_t)(d->rcsflags | LM_RCS_NEEDLE3); /* IMU not usable */
-        (void)lm_dap_shutdown();
-        return false;
+        return lm_dap_shutdown();
     }
     agc_status_t st = lm_dap_altdsply();             /* JUMPDSP             */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK)) {
+        return st;
+    }
     if ((agc_chan_read(030) & CH30_NOPGNCS) != 0u) { /* CHEKMORE            */
-        (void)lm_dap_moreidle();
-        return false;
+        return lm_dap_moreidle();
     }
     (void)AGC_ASSERT(d->t5adr <= LM_T5_PAXIS);
-    return true;
+    *on = true;
+    return AGC_STATUS_OK;
 }
 
 /* STARTDAP (pp.1411-1412), first half: zero attitude error, rates, offset
@@ -165,10 +170,14 @@ agc_status_t agc_task_dapidler(void)
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u) {   /* 1/ACCSET since restart? */
         d->rcsflags = (uint16_t)(d->rcsflags | LM_RCS_ACCSET);
         agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET);
-        (void)AGC_ASSERT(sj != AGC_STATUS_BAD_ARG);
+        if (sj != AGC_STATUS_OK) {
+            return sj;                           /* NOVAC's own BAILOUT 1202 */
+        }
     }
-    if (!lm_dap_chekbits()) {                    /* CHECKUP                 */
-        return AGC_STATUS_OK;
+    bool on = false;
+    agc_status_t sc = lm_dap_chekbits(&on);      /* CHECKUP                 */
+    if (sc != AGC_STATUS_OK || !on) {
+        return sc;
     }
     if (!agc_flag_test(AGC_FLAG_ACCOKFLG)) {     /* 1/ACCS not done: idle   */
         return lm_dap_moreidle();

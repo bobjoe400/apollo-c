@@ -202,67 +202,84 @@ agc_sp_t     agc_erase_m32(void);                /* COS(OG)                  */
 agc_sp_t     agc_erase_cosmg(void);              /* COS(MG)                  */
 
 /* ======================================================================
- * Extended verbs (extended_verbs.c, src/csm/extended_verbs_csm.c,
- * src/lm/extended_verbs_lm.c) and P27 (p27.c)
+ * Extended verbs (src/io/verbs/extended_verbs{,_csm,_lm}.c) and the update
+ * program P27 (src/io/verbs/uplink_update.c)
  * ==================================================================== */
-typedef enum agc_dsky_resp {
-    AGC_RESP_TERMINATE = 0,   /* V34                                      */
-    AGC_RESP_PROCEED,         /* V33                                      */
-    AGC_RESP_ENTER,           /* data loaded / ENTER                      */
-    AGC_RESP_RECYCLE          /* V32                                      */
-} agc_dsky_resp_t;
-
-/* A display the extended verb is waiting on (GOXDSPF/GOMARKF etc.).       */
-typedef struct agc_xv_display {
-    bool    active;
-    uint8_t verb;
-    uint8_t noun;
-    bool    flash;
-} agc_xv_display_t;
-
-agc_status_t agc_extverb(int verb, int noun);            /* GOEXTVB fan     */
-agc_status_t agc_extverb_response(agc_dsky_resp_t r, const agc_dp_t data[3]);
-agc_status_t agc_extverb_pending(agc_xv_display_t *out);
-agc_status_t agc_extverb_job(agc_job_id_t job);          /* jobs owned here */
-agc_status_t agc_extverb_task(agc_task_id_t task);       /* tasks owned here */
+agc_status_t agc_extverb(int verb, int noun);            /* GOEXTVB (pinball) */
 bool         agc_extverb_busy(void);                     /* EXTVBACT != 0   */
 /* EXTVBACT: extended-verb / marking-system activity word (bit 2 marking
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
 uint16_t     agc_erase_extvbact(void);
 void         agc_erase_set_extvbact(uint16_t v);
 agc_status_t agc_svc_set_extvbact(uint16_t v);           /* TS EXTVBACT     */
+/* jobs and tasks (ids in src/io/verbs/pending.h until integration)       */
+agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);           /* LST2FAN   */
+agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx);       /* ENDEXT    */
+agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx);     /* GOPIN     */
+agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx);   /* V41 ICORK2 */
+agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx);   /* V41 IMUCOARS */
+agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx);     /* V42       */
+agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx);      /* V42 IMUFINE */
+agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx);    /* V42 FINEK2 */
+agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx);      /* V55 UPDATIME */
+agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx);    /* V91 NOKILL */
+agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx);       /* V91 NXTBNK */
+agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx);        /* V91 V34   */
+agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx);     /* V43       */
+agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx); /* V43 CSM TRMATTCK */
+agc_status_t agc_task_attitude_error_output(void);                /* V43 ATTCK1/2 */
+agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx);    /* R03 N46   */
+agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx);    /* R03 N46 done */
+agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx);    /* R03 N47   */
+agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx);      /* R03 N47 done */
+agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx);    /* R03 N48   */
+agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx);      /* LM DPDAT3 */
+agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);       /* LM ENDR03 */
+agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);                /* LM TRIMDONE */
+agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);       /* V66/V47 CSM */
 
-agc_status_t agc_uplink_update_start(int verb);                    /* V70..V73        */
-agc_status_t agc_uplink_update_response(agc_dsky_resp_t r, uint16_t octal_word);
-agc_status_t agc_uplink_update_pending(agc_xv_display_t *out);
-uint16_t     agc_uplink_update_dnword(int idx);  /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF.. */
-agc_status_t agc_uplink_update_restart(int phase);                 /* group 6 restart */
+/* P27 (V70-V73).  The uplinked words are UPBUFF; COMPNUMB, UPOLDMOD,
+ * UPVERB, UPCOUNT, UPBUFF +0..+19D are downlinked (index 0..23).          */
+agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb); /* V70..V73 */
+uint16_t     agc_uplink_update_dnword(int idx);
+agc_status_t agc_uplink_update_fresh_start(void);         /* UPSVFLAG etc.   */
+agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx);      /* after V21N01 */
+agc_status_t agc_job_uplink_update_verify(agc_job_ctx_t *ctx);    /* V21N02 */
+agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx);   /* UPJOB  */
+agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx); /* UPOUT +1 */
+agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx);   /* V33 on a load */
+agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx);                /* restart 6.5 */
 
 /* ======================================================================
- * Self-check and show-banksum (self_check.c; AGC_BLOCK_TWO_SELF_CHECK.agc)
+ * Self-check and show-banksum (src/io/service/self_check.c;
+ * AGC_BLOCK_TWO_SELF_CHECK.agc)
  * ==================================================================== */
 #define AGC_ROPE_BANK_WORDS 02000   /* 1024 words per fixed bank          */
-agc_status_t agc_selfcheck_banksum(const uint16_t *bank, int nwords,
-                                   uint16_t base_addr, uint16_t *sum,
-                                   uint16_t *bugger);
-agc_status_t agc_selfcheck_ropechk(const uint16_t *rope, int nbanks,
-                                   int *bad_bank);
-agc_status_t agc_selfcheck_set_smode(agc_sp_t smode);    /* N27 load      */
-agc_status_t agc_selfcheck_idle_pass(const uint16_t *rope, int nbanks);
-agc_status_t agc_selfcheck_showsum(const uint16_t *rope, int nbanks, int bank,
-                                   uint16_t r[3]);      /* V91 display    */
-uint16_t     agc_selfcheck_error_count(void);           /* ERCOUNT        */
+#define AGC_ROPE_BANKS      044     /* banks 0..43 octal                  */
+/* The sim's fixed-memory image: nbanks banks of 1024 words, bank b at
+ * rope[b * 1024], 15-bit words.  NULL = no rope (all words zero).         */
+agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
+/* Sum one bank as ROPECHK / SHOWSUM do: sum = the ones'-complement sum
+ * with end-around carry up to the two TC SELF words and the bugger word. */
+agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger);
+bool         agc_selfcheck_bank_ok(int bank);             /* |sum| = bank    */
+agc_status_t agc_selfcheck_set_smode(agc_sp_t smode);     /* N27 load (SMODE) */
+agc_sp_t     agc_selfcheck_smode(void);
+agc_status_t agc_selfcheck_idle_pass(void);               /* SMODECHK, one pass */
+agc_status_t agc_selfcheck_fresh_start(void);             /* SMODE, ERESTORE = 0 */
+agc_status_t agc_selfcheck_showsum_start(void);           /* V91 STSHOSUM    */
+agc_status_t agc_selfcheck_showsum_next(void);            /* V33 NXTBNK      */
+agc_status_t agc_selfcheck_showsum_end(void);             /* V34             */
+uint16_t     agc_selfcheck_skeep(int i);                  /* SKEEP1..3 (N01) */
+uint16_t     agc_selfcheck_error_count(void);             /* ERCOUNT         */
 
 /* ======================================================================
- * Luminary P07 IMU performance tests (src/lm/imu_tests.c)
+ * P07 IMU performance tests (src/lm/systems_test.c; Luminary099
+ * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
-agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);     /* ZEROING       */
-agc_status_t agc_systems_test_finetime(uint16_t hi, uint16_t lo_a, uint16_t lo_b,
-                              agc_dp_t *t);              /* FINETIME       */
-agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX   */
-agc_status_t agc_systems_test_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
-agc_status_t agc_systems_test_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
-agc_status_t agc_systems_test_redo(void);                          /* REDO (V92)    */
-agc_status_t agc_systems_test_estims(void);                        /* ESTIMS        */
+agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);     /* ZEROING  */
+agc_status_t agc_systems_test_finetime(agc_dp_t *t);               /* FINETIME */
+agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX */
+agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);             /* REDO (V92) */
 
 #endif /* AGC_SYSMISC_H */

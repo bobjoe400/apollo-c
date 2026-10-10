@@ -125,7 +125,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
     (void)AGC_ASSERT(nb1 != NULL);
     (void)AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL));
     agc_vec_t pda = agc_vec_cross(ip, nb1->row[2], star);
-    (void)agc_interp_test_ovf(ip);                             /* BOV +1  */
+    align_clear_ovf(ip);                             /* BOV +1  */
     pda = agc_vec_unit(ip, pda, NULL, NULL);
     if (agc_interp_test_ovf(ip)) {                             /* BOV     */
         znb_eq_s1(sac, pac, cult);
@@ -134,7 +134,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0]));
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);
     *sac = agc_align_ones_to_twos(agc_imu_arctrig(ip, sinth, costh));
-    (void)agc_interp_test_ovf(ip);                             /* BOV +1  */
+    align_clear_ovf(ip);                             /* BOV +1  */
     const agc_dp_t ta = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star,
                                                         nb1->row[2]), 1));
     if (ta < 0) {
@@ -270,7 +270,7 @@ agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e)
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(e != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_interp_test_ovf(ip);                             /* BOVB     */
+    align_clear_ovf(ip);                             /* BOVB     */
     agc_dp_t wt = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
     for (int k = 0; (k < OVERADAY_MAX) && agc_interp_test_ovf(ip); k++) {
         const agc_dp_t day = agc_dp_sign(ONE_OVER_WIE, e->dtearot);

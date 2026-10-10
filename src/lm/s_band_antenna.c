@@ -68,7 +68,7 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
     const agc_vec_t ur = agc_vec_unit(ip, r, NULL, NULL);            /* 0D */
     const agc_vec_t py = agc_vec_shl(ip, agc_vec_proj(ip, r, u.row[1]), 2);
     agc_vec_t urp = agc_vec_sub(ip, r, py);                /* BVSU RLM     */
-    (void)agc_interp_test_ovf(ip);
+    align_clear_ovf(ip);
     urp = agc_vec_unit(ip, urp, NULL, NULL);               /* COVCNV       */
     if (agc_interp_test_ovf(ip)) {
         return AGC_STATUS_OK;                              /* BOV SBANDEX  */
@@ -114,8 +114,11 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u) {
         return agc_dsky_endext();
     }
-    (void)agc_exec_prio_change(PRIO5);         /* PRIOCHNG (no pre-emption) */
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
+    agc_status_t st = agc_exec_prio_change(PRIO5);   /* PRIOCHNG       */
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
+    st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
                                   AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF,
                                   AGC_JOB_ENDOFJOB);
     if (st != AGC_STATUS_OK) {

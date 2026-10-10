@@ -38,6 +38,10 @@ agc_sp_t  agc_erase_landmark(void);            /* LANDMARK (CM, prog-rendz)  */
 agc_sp_t  agc_erase_cduchkwd(void);            /* CDUCHKWD cs (CM, pad)      */
 agc_sp_t  agc_erase_swsample(void);            /* SWSAMPLE (CM, T4RUPT)      */
 uint16_t  agc_erase_agsword(void);             /* AGSWORD old downlist code  */
+agc_sp_t  agc_erase_optionx(int index);        /* OPTIONX +index (N12), LM   */
+void      agc_erase_set_optionx(int index, agc_sp_t v);
+agc_dp_t  agc_erase_dsptemx(void);             /* DSPTEMX (N16 time), cs B28 */
+void      agc_erase_set_dsptemx(agc_dp_t v);
 void      agc_erase_set_mrkbuf(int buf, int index, uint16_t v); /* MRKBUF1/2 */
 uint16_t  agc_erase_mrkbuf(int buf, int index);
 void      agc_erase_set_markdown(int index, uint16_t v); /* MARKDOWN +0..6   */

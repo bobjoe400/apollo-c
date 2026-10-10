@@ -31,7 +31,10 @@
 agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    rz_set_option(2, 1U);
+    agc_status_t st = rz_set_option(2, 1U);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_ground_track_vehicle(ctx);
 }
 
@@ -80,9 +83,9 @@ static agc_status_t gtd_first_pass(agc_interp_t *ip, agc_integ_ctx_t *ic,
 {
     bool other = ((rz_option(2) >> 1) != 0U);              /* SR1 BHIZ      */
     bool csm = rz_is_csm() ? !other : other;
-    (void)rz_flag_put(AGC_FLAG_VINTFLAG, csm);
-    (void)rz_flag_put(AGC_FLAG_DIM0FLAG, false);
-    (void)rz_flag_put(AGC_FLAG_INTYPFLG, false);           /* PRECISION     */
+    rz_flag_put(AGC_FLAG_VINTFLAG, csm);
+    rz_flag_put(AGC_FLAG_DIM0FLAG, false);
+    rz_flag_put(AGC_FLAG_INTYPFLG, false);           /* PRECISION     */
     return agc_integ_integrv(ip, ic, tdec1);
 }
 
@@ -93,8 +96,8 @@ static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic,
     ic->sv.rcv = rz->ground_track_base_r;
     ic->sv.vcv = rz->ground_track_base_v;
     ic->sv.tet = rz->ground_track_time;
-    (void)rz_flag_put(AGC_FLAG_DIM0FLAG, false);
-    (void)rz_flag_put(AGC_FLAG_MOONFLAG, rz->ground_track_origin != 0);
+    rz_flag_put(AGC_FLAG_DIM0FLAG, false);
+    rz_flag_put(AGC_FLAG_MOONFLAG, rz->ground_track_origin != 0);
     return agc_integ_integrvs(ip, ic, tdec1);
 }
 
@@ -113,7 +116,7 @@ static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
     rz->ground_track_origin = (agc_sp_t)o->x2;
     bool this_vehicle = ((rz_option(2) >> 1) == 0U);
     if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG)) {
-        (void)rz_vflag_set(RZ_VF_GROUND_TRACK, true);
+        rz_vflag_set(RZ_VF_GROUND_TRACK, true);
     }
 }
 
@@ -125,8 +128,8 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     agc_latlong_opt_t opt;
     opt.lunar = (o->x2 != 0);
     opt.erad = false;
-    (void)rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
-    (void)rz_flag_put(AGC_FLAG_ERADFLAG, false);
+    rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
+    rz_flag_put(AGC_FLAG_ERADFLAG, false);
     agc_navaux_padload_t pad;
     agc_status_t st = agc_navaux_get_padload(&pad);
     agc_latlong_t ll;
@@ -175,6 +178,9 @@ agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_dp_t t = agc_dp_add(&ip, rz_state()->ground_track_time, RZ_600SEC);
-    rz_set_dsptem1_dp(t);
+    agc_status_t st = rz_set_dsptem1_dp(t);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_ground_track_time(ctx);
 }

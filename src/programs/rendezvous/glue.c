@@ -117,8 +117,8 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
         return st;
     }
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
-    (void)rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
-    (void)rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
+    rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
+    rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
     ctx->sv.rcv = in->rcv;
     ctx->sv.vcv = in->vcv;
     ctx->sv.tet = in->tet;
@@ -210,7 +210,7 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
     }
     uint16_t delay = 2U;
     if (rz_is_csm()) {
-        (void)rz_vflag_set(RZ_VF_TIMRFLAG, true);
+        rz_vflag_set(RZ_VF_TIMRFLAG, true);
         agc_guid_state()->csm.nvword1 = 0;
         delay = 1U;
     } else {
@@ -251,12 +251,12 @@ uint16_t rz_option(int which)
     return agc_dsky_dsptem(3 + which);
 }
 
-void rz_set_option(int which, uint16_t v)
+agc_status_t rz_set_option(int which, uint16_t v)
 {
     if (!AGC_ASSERT(which == 1 || which == 2) || !AGC_ASSERT(v <= 077777U)) {
-        return;
+        return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_dsky_set_dsptem(3 + which, v);
+    return agc_dsky_set_dsptem(3 + which, v);
 }
 
 /* A raw 15-bit ones' complement word as a signed SP value. */
@@ -287,11 +287,14 @@ agc_dp_t rz_dsptem1_dp(void)
     return agc_dp_pack(hi, lo);
 }
 
-void rz_set_dsptem1_dp(agc_dp_t v)
+agc_status_t rz_set_dsptem1_dp(agc_dp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)) {
-        return;
+        return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_dsky_set_dsptem(0, rz_sp_to_word(agc_dp_high(v)));
-    (void)agc_dsky_set_dsptem(1, rz_sp_to_word(agc_dp_low(v)));
+    agc_status_t st = agc_dsky_set_dsptem(0, rz_sp_to_word(agc_dp_high(v)));
+    if (st == AGC_STATUS_OK) {
+        st = agc_dsky_set_dsptem(1, rz_sp_to_word(agc_dp_low(v)));
+    }
+    return st;
 }

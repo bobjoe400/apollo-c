@@ -171,7 +171,8 @@ agc_status_t agc_extverb_upflag(agc_flag_id_t f)
     if (!AGC_ASSERT(agc_flag_valid(f))) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_svc_upflag(f);                     /* new flagword not needed */
+    uint16_t w = agc_svc_upflag(f);              /* the new flagword        */
+    (void)AGC_ASSERT((w & agc_flag_mask(f)) != 0u);
     return agc_extverb_gopin();
 }
 
@@ -180,7 +181,8 @@ agc_status_t agc_extverb_downflag(agc_flag_id_t f)
     if (!AGC_ASSERT(agc_flag_valid(f))) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_svc_downflag(f);                   /* new flagword not needed */
+    uint16_t w = agc_svc_downflag(f);            /* the new flagword        */
+    (void)AGC_ASSERT((w & agc_flag_mask(f)) == 0u);
     return agc_extverb_gopin();
 }
 

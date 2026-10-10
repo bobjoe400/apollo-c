@@ -244,17 +244,23 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
         return st;
     }
     if ((r == SR52_OVER_90) && !agc_flag_test(AGC_FLAG_TARG1FLG)) {   /* R52L */
-        (void)agc_prioalarm(ALM_TRUNNION_90);
+        const agc_status_t alm = agc_prioalarm(ALM_TRUNNION_90);
+        if (alm != AGC_STATUS_ALARM) {
+            return alm;
+        }
         return align_flash(ctx, AGC_DSKY_PRIODSPR, VN_ALARM,
                            AGC_JOB_AUTO_OPTICS_POSITIONING_TERMINATE,
                            AGC_JOB_AUTO_OPTICS_POSITIONING_WAIT,
                            AGC_JOB_AUTO_OPTICS_POSITIONING_WAIT);  /* ENDOFJOB */
     }
     if (r == SR52_UNDER_50) {
-        (void)agc_svc_upflag(AGC_FLAG_TRUNFLAG);                /* UPFLAG   */
+        agc_svc_upflag(AGC_FLAG_TRUNFLAG);                /* UPFLAG   */
     } else {
-        (void)agc_svc_downflag(AGC_FLAG_TRUNFLAG);              /* R52J     */
-        (void)agc_alarm(ALM_TRUNNION_50);
+        agc_svc_downflag(AGC_FLAG_TRUNFLAG);              /* R52J     */
+        const agc_status_t alm = agc_alarm(ALM_TRUNNION_50);
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
     }
     return auto_optics_drive(ctx);
 }
@@ -290,12 +296,12 @@ static agc_status_t auto_optics_start(const agc_job_ctx_t *ctx, agc_job_id_t ret
     ram->desoptt = agc_erase_cdut();
     ram->desopts = agc_erase_cdus();
     agc_erase_set_optind(0);
-    (void)agc_flag_clear(AGC_FLAG_SIGHTING_MARK_REQUESTED);
-    (void)agc_flag_set(AGC_FLAG_TRUNFLAG);
+    agc_flag_clear(AGC_FLAG_SIGHTING_MARK_REQUESTED);
+    agc_flag_set(AGC_FLAG_TRUNFLAG);
     if (agc_flag_test(AGC_FLAG_TARG1FLG)) {                      /* R52H     */
         return agc_rendz_tracking_attitude_csm(ctx, AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED);
     }
-    (void)agc_flag_clear(AGC_FLAG_TERMIFLG);
+    agc_flag_clear(AGC_FLAG_TERMIFLG);
     return auto_optics_cycle(ctx);
 }
 
@@ -305,7 +311,7 @@ agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_i
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_flag_clear(AGC_FLAG_ADVTRK);
+    agc_flag_clear(AGC_FLAG_ADVTRK);
     return auto_optics_start(ctx, ret);
 }
 
@@ -315,9 +321,9 @@ agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx, agc_jo
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_flag_set(AGC_FLAG_ADVTRK);
-    (void)agc_flag_set(AGC_FLAG_LUNAFLAG);
-    (void)agc_flag_set(AGC_FLAG_ERADFLAG);
+    agc_flag_set(AGC_FLAG_ADVTRK);
+    agc_flag_set(AGC_FLAG_LUNAFLAG);
+    agc_flag_set(AGC_FLAG_ERADFLAG);
     return auto_optics_start(ctx, ret);
 }
 

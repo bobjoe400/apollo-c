@@ -186,10 +186,11 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v);               /* sign-agreeing pair */
 
 /* ---- DAP interface (dapif.c) -------------------------------------------- */
 agc_status_t lm_dap_callaccs(void);           /* CALLACCS: NOVAC 1/ACCJOB  */
+agc_status_t lm_dap_alarm(agc_alarm_code_t code); /* TC ALARM, pass goes on */
 agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a); /* DXCH T5ADR             */
 
 /* ---- idler and display (dapidler.c, needles.c) ------------------------- */
-bool         lm_dap_chekbits(void);           /* CHEKBITS: true = DAP on   */
+agc_status_t lm_dap_chekbits(bool *on);       /* CHEKBITS: *on = DAP on    */
 agc_status_t lm_dap_moreidle(void);           /* MOREIDLE                  */
 agc_status_t lm_dap_shutdown(void);           /* SHUTDOWN + SETTIME5       */
 agc_status_t lm_dap_startdap(void);           /* STARTDAP                  */
@@ -203,7 +204,7 @@ agc_status_t lm_dap_rateloop(void);           /* RATELOOP + ROTORQUE       */
 agc_status_t lm_dap_backp(void);              /* BACKP rate derivation     */
 agc_status_t lm_dap_offset_est(void);         /* offset estimator          */
 agc_status_t lm_dap_pretimck(void);           /* PRETIMCK .. SKIPPAXS test */
-bool         lm_dap_chkvisfz(void);           /* CHKVISFZ: false = no policy */
+agc_status_t lm_dap_chkvisfz(bool *policy);   /* CHKVISFZ: false = no policy */
 agc_status_t lm_dap_pstate(void);             /* P state logic             */
 agc_status_t lm_dap_purgency(void);           /* PURGENCY                  */
 agc_status_t lm_dap_purgency_law(void);          /* PURGENCY +4               */

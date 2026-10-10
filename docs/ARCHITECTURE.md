@@ -61,9 +61,10 @@ src/lm/             Luminary-only
                     findcduw, lunar_landing
   burns/            dps_burn*, ignition, servicer*
   dap/rcs/          idler, P-axis, Q/R-axis, TJET law, rate/Kalman, T6RUPT,
-                    needles
-  dap/common/       dapif.c, state.c, arith.c
-  dap/gts.c         trim gimbal system (< 3 files in gimbal/)
+                    needles, rcsmon (failure monitor), spsrcs (docked law)
+  dap/              shared glue: dapif.c, state.c, arith.c, accs.c and
+                    accont.c (1/ACCS, 1/ACCONT), gts.c (trim gimbal),
+                    internal.h, pending.h
   ascent.c, s_band_antenna.c, lem_geometry.c  (ascent/, optics/ not yet
                     >= 3 files)
 src/sim/            host harness: clock, interrupts, DSKY console (no lib)

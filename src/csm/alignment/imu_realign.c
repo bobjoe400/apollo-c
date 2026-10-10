@@ -70,7 +70,10 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
     if (found) {
         return agc_job_csm_fine_align(ctx);                     /* P52F     */
     }
-    (void)agc_alarm(ALM_NO_STARS);                              /* P52I     */
+    const agc_status_t alm = agc_alarm(ALM_NO_STARS); /* P52I     */
+    if (alm != AGC_STATUS_OK) {
+        return alm;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_FINE_ALIGN, AGC_JOB_CSM_REALIGN_STAR_SELECTION);
 }
@@ -121,8 +124,8 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
     }
     agc_align_ram_t *ram = agc_align_ram();
     ram->qmaj = AGC_JOB_REALIGN_GIMBAL_DISPLAY;                 /* QMAJ     */
-    (void)agc_flag_set(AGC_FLAG_LUNAFLAG);
-    (void)agc_flag_set(AGC_FLAG_ERADFLAG);
+    agc_flag_set(AGC_FLAG_LUNAFLAG);
+    agc_flag_set(AGC_FLAG_ERADFLAG);
     ram->tsight = align_dsptem1();
     agc_interp_t ip;
     agc_interp_init(&ip);

@@ -149,8 +149,7 @@ agc_status_t agc_lm_dap_t6jobchk(void)
         return AGC_STATUS_OK;
     }
     if (raw == 0u) {
-        (void)agc_ccshole();
-        return AGC_STATUS_POODOO;
+        return agc_ccshole();                /* CCSHOLE: POODOO 01103 */
     }
     if (!AGC_ASSERT(raw == LM_T6_NEGZERO)) {
         return AGC_STATUS_BAD_ARG;          /* DEVIATION: AGC hangs here */

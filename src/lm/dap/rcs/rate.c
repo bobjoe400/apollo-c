@@ -175,7 +175,8 @@ agc_status_t lm_dap_backp(void)
     agc_sp_t trap = docked ? d->dktrap : d->lmtrap;        /* DAPTREG6     */
     agc_sp_t corr = 0;
     agc_sp_t oldn = 0;
-    (void)trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan, trap, &corr, &oldn);
+    bool ptrap = trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan, trap, &corr, &oldn);
+    (void)AGC_ASSERT(!ptrap || d->trapedp == 0);         /* no P offset   */
     d->omegap = lm_dap_sat((int32_t)d->omegap + d->jetrate[0]);      /* P-RATE */
     if (trap_axis(&d->trapedq, &d->nqtraps, &d->omegaq, omegan, trap, &corr, &oldn)) {
         d->aosq = aos_update(d->aosq, corr, oldn, kaosn);

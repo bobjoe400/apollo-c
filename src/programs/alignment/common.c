@@ -234,8 +234,8 @@ agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
         return st;
     }
     if (r == AGC_IMU_STALL_BAD) {
-        (void)agc_curtains();               /* TC CURTAINS (alarm 217)      */
-        return AGC_STATUS_ALARM;
+        const agc_status_t c = agc_curtains();  /* TC CURTAINS (alarm 217)  */
+        return (c == AGC_STATUS_OK) ? AGC_STATUS_ALARM : c;
     }
     *done = (r == AGC_IMU_STALL_GOOD);
     return AGC_STATUS_OK;
@@ -250,8 +250,8 @@ agc_status_t align_stall_outcome(agc_imu_device_t dev)
     const agc_imu_stall_result_t r = agc_imu_stall_outcome(dev);
     (void)AGC_ASSERT(r != AGC_IMU_STALL_SLEEPING);
     if (r != AGC_IMU_STALL_GOOD) {
-        (void)agc_curtains();
-        return AGC_STATUS_ALARM;
+        const agc_status_t c = agc_curtains();
+        return (c == AGC_STATUS_OK) ? AGC_STATUS_ALARM : c;
     }
     return AGC_STATUS_OK;
 }
@@ -421,4 +421,18 @@ agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx)
         return AGC_STATUS_OK;                             /* CURTAINS   */
     }
     return align_goto(agc_align_ram()->coarse_ret);
+}
+
+/*
+ * BOV +1 / BOVB to the next instruction: the overflow indicator is tested
+ * (and so cleared) but either way the code goes on.
+ */
+void align_clear_ovf(agc_interp_t *ip)
+{
+    if (!AGC_ASSERT(ip != NULL)) {
+        return;
+    }
+    const bool was_set = agc_interp_test_ovf(ip);
+    (void)was_set;                          /* the overflow is discarded    */
+    (void)AGC_ASSERT(ip->ovfind == 0);
 }

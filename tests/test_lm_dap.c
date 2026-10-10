@@ -61,10 +61,10 @@ static void check(bool ok, int line, const char *text)
 /* Fresh start, LM alone, descent stage, given mass; then 1/ACCS.        */
 static agc_status_t setup_descent(int32_t kg)
 {
-    (void)agc_lm_dap_fresh_start();
-    (void)agc_flag_clear(AGC_FLAG_CSMDKFLG);
-    (void)agc_flag_clear(AGC_FLAG_APSFLAG);
-    (void)agc_flag_set(AGC_FLAG_DRIFTDFL);
+    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_CSMDKFLG);
+    agc_flag_clear(AGC_FLAG_APSFLAG);
+    agc_flag_set(AGC_FLAG_DRIFTDFL);
     agc_erase_set_csmmass(0);
     agc_guid_state()->lm.mass = (agc_dp_t)(KG(kg) * 16384);
     agc_guid_state()->lm.abdelv = 0;
@@ -105,7 +105,7 @@ static void set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot)
 
 static void test_tjetlaw(void)
 {
-    (void)setup_descent(15000);
+    CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
     for (agc_sp_t axis = -1; axis <= 1; axis++) {
         set_axis(d, axis, 0, 0);
@@ -125,7 +125,7 @@ static void test_tjetlaw(void)
 
 static void test_rate_estimator(void)
 {
-    (void)setup_descent(15000);
+    CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
     d->nptraps = 2;                            /* STARTDAP                 */
     d->nqtraps = 2;
@@ -157,26 +157,26 @@ static void test_rate_estimator(void)
 
 static void test_rcsmon(void)
 {
-    (void)agc_lm_dap_fresh_start();
+    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     const lm_dap_t *d = lm_dap_state();
-    (void)agc_chan_set_input(032, 077777u);    /* all valves open (inverted) */
+    agc_chan_set_input(032, 077777u);    /* all valves open (inverted) */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u);
-    (void)agc_chan_set_input(032, 077776u);    /* bit 1 low: valve closed  */
+    agc_chan_set_input(032, 077776u);    /* bit 1 low: valve closed  */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 000002u);
     CHECK(d->ch6mask == 000100u);
     CHECK(d->pvalvest == 000001u);
-    (void)agc_chan_set_input(032, 077777u);
+    agc_chan_set_input(032, 077777u);
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u && d->pvalvest == 0u);
 }
 
 static void test_spsrcs(void)
 {
-    (void)agc_lm_dap_fresh_start();
+    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
-    (void)agc_flag_clear(AGC_FLAG_DRIFTDFL);
+    agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
     set_axis(d, 0, 0, 700);                    /* 1.92 deg/s               */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);

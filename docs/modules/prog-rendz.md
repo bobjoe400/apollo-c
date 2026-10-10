@@ -102,8 +102,10 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
 * DONE tests/test_rendezvous.c (17 checks pass when linked with a scratch build of the tree)
 * DONE target_delta_v.c: P76 (agc_job_target_delta_v*, COMPMAT agc_target_delta_v_lv_to_ref); VHFCNT, MRKBUF2 accessors in common.c
 * DONE ground_track_determination.c: P21 (agc_job_ground_track_*, P21VSAVE agc_ground_track_determination_flight_path); rz_dsptem1_dp in glue.c
-* TODO rendezvous_parameter_display_csm.c/rendezvous_parameter_display_lm.c, rendz_out_of_plane.c, stable_orbit.c,
-  ground_track_determination.c, tpi_search_csm.c, glag_lm.c, radar_leadin_lm.c, rendezvous_navigation_csm.c, rendezvous_navigation_lm.c
+* DONE stable_orbit.c: P38/P78, P39/P79 (agc_job_stable_orbit_*, DELTTIME agc_rendz_stable_orbit_deltt); S3435.25 split out of tpi.c as agc_rendz_intercept_velocity
+* DONE rule-7 pass (no (void) casts of agc_ calls; rz_flag_put/rz_vflag_set/rz_avflag/rz_tracking_flags_on now void)
+* TODO R36 out_of_plane.c, R31 rendezvous_parameter_display_csm.c/_lm.c, tpi_search_csm.c (P17),
+  lambert_aimpoint_guidance_lm.c (P31), radar_leadin_lm.c, rendezvous_navigation_csm.c / _lm.c (P20-P25)
 
 ## Deviations
 

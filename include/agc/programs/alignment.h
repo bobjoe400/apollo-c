@@ -138,6 +138,8 @@ typedef struct agc_align_ram {
     agc_job_id_t coarse_ret;     /* return of COARSE (QPRET of CALL COARSE)    */
     agc_vec_t    planet_los;     /* PLANET result (MPAC): half-unit, reference */
     agc_dp_t     landing_site_time;        /* GDT/2 +4: N89DISP time, cs B28 (LM)        */
+    agc_vec_t    alphav;         /* ALPHAV  landing site / LALOTORV result, m B29 */
+    agc_job_id_t lunar_gravity_return; /* QMIN of LUNG / GYROTRIM (P57)        */
 } agc_align_ram_t;
 
 agc_align_ram_t *agc_align_ram(void);

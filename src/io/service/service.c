@@ -121,8 +121,9 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     }
     if (slot < 0) {
         agc_relint();
-        (void)agc_bailout(ALARM_NO_DELAYLOC);     /* restart requested     */
-        return AGC_STATUS_BAILOUT;
+        agc_status_t bst = agc_bailout(ALARM_NO_DELAYLOC);  /* restart requested */
+        (void)AGC_ASSERT(bst == AGC_STATUS_BAILOUT);
+        return bst;
     }
     delayloc[slot] = wake_as;
     delaydue[slot] = (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);

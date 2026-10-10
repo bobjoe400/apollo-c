@@ -130,7 +130,10 @@ agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
     }
     agc_align_ram_t *ram = agc_align_ram();
     if (!agc_align_chkscode(ram->starcode)) {
-        (void)agc_dsky_falton();                                /* FALTON   */
+        const agc_status_t alm = agc_dsky_falton(); /* FALTON   */
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return agc_job_sighting_mark_code_display(ctx);
     }
     const agc_sp_t star6 = (agc_sp_t)((ram->starcode & STAR_BITS) * SIGHTSIX);

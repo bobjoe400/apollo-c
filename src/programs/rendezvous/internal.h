@@ -71,11 +71,11 @@ agc_flag_id_t rz_vflag(rz_vflag_t f);
 agc_flag_id_t rz_vflag_csm(rz_vflag_t f);
 agc_flag_id_t rz_vflag_lm(rz_vflag_t f);
 bool          rz_vflag_test(rz_vflag_t f);
-agc_status_t  rz_vflag_set(rz_vflag_t f, bool on);
+void          rz_vflag_set(rz_vflag_t f, bool on);
 bool          rz_is_csm(void);
 /* MOONTHIS: CMOONFLG in the CM, LMOONFLG in the LM                       */
 bool          rz_moonthis(void);
-agc_status_t  rz_flag_put(agc_flag_id_t f, bool on);
+void          rz_flag_put(agc_flag_id_t f, bool on);
 
 /* ---- glue to other lanes (glue.c) --------------------------------- */
 /* Conic body from RTX1 (-2 earth, -10 moon).                              */
@@ -128,8 +128,8 @@ void         rz_dispdex_zero(void);
 uint16_t     rz_option(int which);
 /* DSPTEM1, DSPTEM1 +1 as a DP (a time loaded on noun 34), and back.     */
 agc_dp_t     rz_dsptem1_dp(void);
-void         rz_set_dsptem1_dp(agc_dp_t v);
-void         rz_set_option(int which, uint16_t v);
+agc_status_t rz_set_dsptem1_dp(agc_dp_t v);
+agc_status_t rz_set_option(int which, uint16_t v);
 
 /* ---- common helpers (common.c) ------------------------------------ */
 agc_rendz_t *rz_state(void);
@@ -149,8 +149,8 @@ agc_vec_t    rz_vshift(agc_interp_t *ip, agc_vec_t v, int k);
 agc_vec_t    rz_vec_from_body(agc_interp_t *ip, const agc_rendz_t *rz,
                               agc_vec_t v);
 /* AVFLAGA / AVFLAGP: AVFLAG reset = CSM active, set = LM active.         */
-agc_status_t rz_avflag(bool this_active);
-agc_status_t rz_tracking_flags_on(void);    /* P20FLGON: set UPDATFLG, TRACKFLG    */
+void         rz_avflag(bool this_active);
+void         rz_tracking_flags_on(void);    /* P20FLGON: set UPDATFLG, TRACKFLG    */
 /* PRECSET: precision update of both vehicles to tdec1 (ACTIVE/PASSIVE).  */
 agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1,
                         agc_job_id_t resume);

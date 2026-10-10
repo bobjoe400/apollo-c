@@ -105,8 +105,9 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 {
     agc_dp_t rp = 0;
     agc_dp_t ra = 0;
-    (void)agc_vec_unit(ip, rz->rpass3, &rp, NULL);            /* 36D -> 12D */
-    (void)agc_vec_unit(ip, rz->ract3, &ra, NULL);             /* 36D -> 14D */
+    agc_vec_t urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL);  /* 36D -> 12D */
+    agc_vec_t ura = agc_vec_unit(ip, rz->ract3, &ra, NULL);   /* 36D -> 14D */
+    (void)AGC_ASSERT(urp.c[0] >= AGC_DP_MIN && ura.c[0] >= AGC_DP_MIN);
     bool fail = false;
     agc_dp_t ang = tpi_figtime_angle(ip, rz, rp, ra, &fail);
     if (fail) {

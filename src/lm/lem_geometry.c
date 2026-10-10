@@ -45,7 +45,7 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
     const agc_dp_t costh = agc_dp_shr(p.c[2], 1);      /* SR1 -> COSTH    */
     const agc_dp_t s1 = agc_imu_arctrig(ip, sinth, costh);          /* PD2 */
     const agc_dp_t s2 = agc_dp_add(ip, s1, LODPHALF);               /* PD6 */
-    (void)agc_interp_test_ovf(ip);                     /* wraps one rev   */
+    align_clear_ovf(ip);                     /* wraps one rev   */
     uint16_t a[2] = { agc_align_ones_to_twos(t1), agc_align_ones_to_twos(s1) };
     uint16_t b[2] = { agc_align_ones_to_twos(t2), agc_align_ones_to_twos(s2) };
     for (int k = 0; k < 2; k++) {

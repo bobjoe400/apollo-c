@@ -55,8 +55,8 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
     agc_status_t st = AGC_STATUS_OK;
     if (is_csm()) {
         st = align_phase4(PH_REALIGN);
-        (void)agc_flag_clear(AGC_FLAG_UPDATFLG);  /* status needs no check */
-        (void)agc_flag_clear(AGC_FLAG_TRACKFLG);
+        agc_flag_clear(AGC_FLAG_UPDATFLG);  /* status needs no check */
+        agc_flag_clear(AGC_FLAG_TRACKFLG);
     }
     st = agc_imu_status_check();                                   /* R02BOTH   */
     if (st != AGC_STATUS_OK) {
@@ -311,8 +311,8 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    (void)agc_flag_clear(AGC_FLAG_DRIFTFLG);        /* flag ids are valid  */
-    (void)agc_flag_clear(AGC_FLAG_REFSMFLG);
+    agc_flag_clear(AGC_FLAG_DRIFTFLG);        /* flag ids are valid  */
+    agc_flag_clear(AGC_FLAG_REFSMFLG);
     st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS);             /* GODSPR    */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_gycrs_pulse(ctx);
@@ -364,7 +364,7 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
     agc_align_ram_t *ram = agc_align_ram();
     agc_status_t st = align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);
     agc_erase_set_refsmmat(ram->xsmd);                        /* MATMOVE   */
-    (void)agc_flag_clear(AGC_FLAG_PFRATFLG);        /* flag ids are valid  */
+    agc_flag_clear(AGC_FLAG_PFRATFLG);        /* flag ids are valid  */
     st = agc_flag_set(AGC_FLAG_REFSMFLG);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     st = is_csm() ? align_set1_pdt() : align_ncoarse();

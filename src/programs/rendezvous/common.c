@@ -105,7 +105,9 @@ void agc_rendz_reset(agc_rendz_t *rz)
     }
     static const agc_rendz_t zero;
     *rz = zero;
-    (void)agc_rendz_selectmu(rz, false);
+    if (agc_rendz_selectmu(rz, false) != AGC_STATUS_OK) {
+        return;
+    }
     (void)AGC_ASSERT(rz->body.rtx1 == -2);
 }
 
@@ -133,22 +135,29 @@ bool rz_vflag_test(rz_vflag_t f)
     return (id != 0U) && agc_flag_test(id);
 }
 
-agc_status_t rz_flag_put(agc_flag_id_t f, bool on)
+/* SET / CLEAR by a run-time choice (cannot fail for a valid flag id). */
+void rz_flag_put(agc_flag_id_t f, bool on)
 {
-    (void)AGC_ASSERT(f != 0U);
-    return on ? agc_flag_set(f) : agc_flag_clear(f);
+    if (!AGC_ASSERT(f != 0U)) {
+        return;
+    }
+    if (on) {
+        agc_flag_set(f);
+    } else {
+        agc_flag_clear(f);
+    }
 }
 
-agc_status_t rz_vflag_set(rz_vflag_t f, bool on)
+void rz_vflag_set(rz_vflag_t f, bool on)
 {
     if (!AGC_ASSERT((int)f >= 0 && f < RZ_VF_COUNT)) {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_flag_id_t id = rz_vflag(f);
     if (!AGC_ASSERT(id != 0U)) {
-        return AGC_STATUS_BAD_ARG;          /* not a flag of this vehicle */
+        return;                             /* not a flag of this vehicle */
     }
-    return rz_flag_put(id, on);
+    rz_flag_put(id, on);
 }
 
 /* MOONTHIS EQUALS CMOONFLG (CM) / LMOONFLG (LM), TAGS_FOR_RELATIVE_SETLOC */
@@ -309,28 +318,25 @@ agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
 /* ---- AVFLAGA / AVFLAGP / P20FLGON (CM P30-P37 p.~, LM P32-P35) ---------
  * AVFLAG reset = CSM active, set = LM active. "This vehicle active" is
  * AVFLAGA. The CM AVFLAGA also sets ECSTEER = 1 (BIT13).                  */
-agc_status_t rz_avflag(bool this_active)
+void rz_avflag(bool this_active)
 {
     bool csm = rz_is_csm();
     bool lm_active = csm ? !this_active : this_active;
-    agc_status_t st = rz_flag_put(AGC_FLAG_AVFLAG, lm_active);
+    rz_flag_put(AGC_FLAG_AVFLAG, lm_active);
     if (csm && this_active) {
         /* CAF BIT13, TS ECSTEER: "SET ECSTEER = 1" (high word only) */
         agc_burn_t *b = &agc_guid_state()->burn;
         b->ecsteer = agc_dp_pack((agc_sp_t)010000, agc_dp_low(b->ecsteer));
     }
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_AVFLAG) == lm_active);
-    return st;
 }
 
-agc_status_t rz_tracking_flags_on(void)
+void rz_tracking_flags_on(void)
 {
-    agc_status_t st = agc_flag_set(AGC_FLAG_TRACKFLG);
-    if (st == AGC_STATUS_OK) {
-        st = agc_flag_set(AGC_FLAG_UPDATFLG);
-    }
-    (void)AGC_ASSERT(st != AGC_STATUS_OK || agc_flag_test(AGC_FLAG_UPDATFLG));
-    return st;
+    agc_flag_set(AGC_FLAG_TRACKFLG);
+    agc_flag_set(AGC_FLAG_UPDATFLG);
+    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_UPDATFLG));
+    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_TRACKFLG));
 }
 
 /* ---- PRECSET / LEMSTORE / CSMSTORE / ACTIVE / PASSIVE (p.498) ---------- */
@@ -431,7 +437,7 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
     in.csth = csth;
     in.rvsw = rvsw;
     in.body = rz_body(rz);
-    (void)rz_flag_put(AGC_FLAG_RVSW, rvsw);
+    rz_flag_put(AGC_FLAG_RVSW, rvsw);
     return rz_timethet(ip, &in, out);
 }
 

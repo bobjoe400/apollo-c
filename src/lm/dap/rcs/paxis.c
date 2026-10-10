@@ -10,6 +10,7 @@
  * pass runs to completion in this call; DAPZRUPT is kept so that a pass
  * that did not reach CLOSEOUT is detected (BAILOUT 02000) as on the AGC.
  */
+#include <stddef.h>
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
@@ -93,8 +94,9 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     d->abstj = (agc_sp_t)((d->tj[0] > 0) ? d->tj[0] : -d->tj[0]);
     d->rotindex = (d->tj[0] > 0) ? 1 : 0;                 /* +P : -P        */
     if (!selectp(d)) {
-        (void)agc_alarm(AGC_ALARM_02003);                 /* ALARMJET       */
-        return lm_dap_jetsoff();
+        agc_status_t sa = lm_dap_alarm(AGC_ALARM_02003);  /* ALARMJET       */
+        agc_status_t so = lm_dap_jetsoff();
+        return (sa != AGC_STATUS_OK) ? sa : so;
     }
     d->nojets[0] = (d->numbert == 6) ? 4 : 2;
     agc_status_t st = lm_dap_write(0, (uint16_t)d->polytemp);
@@ -147,8 +149,9 @@ agc_status_t lm_dap_purgency_law(void)
         agc_status_t ss = lm_dap_spsrcs();
         (void)AGC_ASSERT(ss == AGC_STATUS_OK);
         if (d->tj[0] == 0) {                             /* DKALT          */
-            (void)altsyst();
-            return lm_dap_jetsoff();
+            agc_status_t sa = altsyst();
+            agc_status_t so = lm_dap_jetsoff();
+            return (sa != AGC_STATUS_OK) ? sa : so;
         }
         return lm_dap_pjetslec_pair();
     }
@@ -188,43 +191,48 @@ static void alteryz(lm_dap_t *d)
 }
 
 /* CHKVISFZ / TRYUORV / ABORTYZ (pp.1429-1430): Y,Z translation from the
- * THC into NEXTP. Returns false if SELECTP found no policy (ALARM 02003,
+ * THC into NEXTP. *policy = false if SELECTP found no policy (ALARM 02003,
  * JETSOFF done): the pass then goes straight to QRAXIS.                  */
-bool lm_dap_chkvisfz(void)
+agc_status_t lm_dap_chkvisfz(bool *policy)
 {
     lm_dap_t *d = lm_dap_state();
+    if (!AGC_ASSERT(policy != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    *policy = true;
     uint16_t bits = (uint16_t)(~agc_chan_read(031) & PX_TRANSBITS);
     if (bits == 0u) {
         d->nextp = 0;
-        return true;
+        return AGC_STATUS_OK;
     }
     d->rotindex = indxyz[bits >> 8];                     /* MP BIT7        */
     for (int pass = 0; pass < 2; pass++) {               /* TRYUORV        */
         if (d->rotindex == PX_BADINDEX) {                /* TC JETSALL -1  */
             d->rcsflags = (uint16_t)(d->rcsflags ^ LM_RCS_ZEROOR1);  /* ABORTYZ +2 */
             d->nextp = 0;
-            return true;
+            return AGC_STATUS_OK;
         }
         d->numbert = 6;
         if (!selectp(d)) {
-            (void)agc_alarm(AGC_ALARM_02003);
-            (void)lm_dap_jetsoff();
-            return false;
+            *policy = false;
+            agc_status_t sa = lm_dap_alarm(AGC_ALARM_02003);
+            agc_status_t so = lm_dap_jetsoff();
+            return (sa != AGC_STATUS_OK) ? sa : so;
         }
         if (d->numbert == 6 || (d->rotindex > 5 && d->numbert >= 4)) {
             d->nextp = (uint16_t)d->polytemp;
-            return true;
+            return AGC_STATUS_OK;
         }
         if (d->rotindex > 5) {
             break;                                       /* ABORTYZ        */
         }
         alteryz(d);
     }
-    (void)agc_alarm(AGC_ALARM_02001);
+    agc_status_t sa = lm_dap_alarm(AGC_ALARM_02001);
     d->rcsflags = (uint16_t)(d->rcsflags ^ LM_RCS_ZEROOR1);
     d->nextp = 0;
     (void)AGC_ASSERT(d->nextp == 0u);
-    return true;
+    return sa;
 }
 
 /* PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
@@ -276,23 +284,28 @@ agc_status_t agc_task_paxis(void)
 {
     lm_dap_t *d = lm_dap_state();
     uint16_t t5 = agc_rupt_time(5);
-    (void)agc_rupt_set_time(5, (uint16_t)((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
-    if (d->dapzrupt > 0) {                     /* previous jask unfinished */
-        (void)agc_bailout(AGC_ALARM_02000);
-        return AGC_STATUS_BAILOUT;
+    agc_status_t s5 = agc_rupt_set_time(5, (uint16_t)((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
+    if (!AGC_ASSERT(s5 == AGC_STATUS_OK)) {
+        return s5;
     }
-    if (!lm_dap_chekbits()) {
-        return AGC_STATUS_OK;
+    if (d->dapzrupt > 0) {                     /* previous jask unfinished */
+        return agc_bailout(AGC_ALARM_02000);
+    }
+    bool on = false;
+    agc_status_t sc = lm_dap_chekbits(&on);
+    if (sc != AGC_STATUS_OK || !on) {
+        return sc;
     }
     d->dapcdu[0] = agc_erase_cdux();           /* DAPTREG4..6              */
     d->dapcdu[1] = agc_erase_cduy();
     d->dapcdu[2] = agc_erase_cduz();
     kalcmanu_step(d);
+    agc_status_t st = AGC_STATUS_OK;
     if ((d->rcsflags & LM_RCS_CALLGMBL) != 0u) {          /* PAXFILT       */
-        (void)lm_dap_acdt_c12();
+        st = lm_dap_acdt_c12();
     }
     d->dapzrupt = 1;                           /* SUPERJOB: jask running   */
-    agc_status_t st = lm_dap_rateloop();
+    st = (st == AGC_STATUS_OK) ? lm_dap_rateloop() : st;
     st = (st == AGC_STATUS_OK) ? lm_dap_backp() : st;
     st = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st;
     st = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;
@@ -301,8 +314,12 @@ agc_status_t agc_task_paxis(void)
     }
     if ((d->rcsflags & LM_RCS_PSKIP) == 0u) {
         d->rcsflags = (uint16_t)(d->rcsflags | LM_RCS_PSKIP);       /* SKIPPAXS */
-    } else if (lm_dap_chkvisfz()) {
-        st = lm_dap_pstate();
+    } else {
+        bool policy = true;
+        st = lm_dap_chkvisfz(&policy);
+        if (st == AGC_STATUS_OK && policy) {
+            st = lm_dap_pstate();
+        }
     }
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return lm_dap_qraxis();

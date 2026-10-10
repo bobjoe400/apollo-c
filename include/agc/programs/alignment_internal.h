@@ -65,6 +65,9 @@ agc_status_t align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio);
  * agc_align_ram()->planet_los; the job continues as ret.                 */
 agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret);
 
+/* BOV +1: test (and so clear) OVFIND, going on either way.               */
+void         align_clear_ovf(agc_interp_t *ip);
+
 /* PHASCHNG with a fixed (type A) group 4 code.                           */
 agc_status_t align_phase4(uint16_t code);
 

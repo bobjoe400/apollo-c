@@ -23,6 +23,17 @@ agc_status_t lm_dap_callaccs(void)
     return st;
 }
 
+/* TC ALARM in a DAP pass: the alarm is stored and the PROG light lit, and
+ * the pass goes on (ALARM returns to its caller). A failure of ALARM
+ * itself (bad code) is passed back.                                      */
+agc_status_t lm_dap_alarm(agc_alarm_code_t code)
+{
+    agc_status_t st = agc_alarm(code);
+    (void)AGC_ASSERT(st == AGC_STATUS_ALARM);
+    (void)AGC_ASSERT(code >= AGC_ALARM_02000 && code <= AGC_ALARM_02004);
+    return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+}
+
 /* DXCH T5ADR: choose the program of the next T5RUPT (DAPIDLER or PAXIS). */
 agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {

@@ -164,10 +164,8 @@ agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     rz_dispdex_zero();
-    agc_status_t st = agc_phase_change(4, RZ_PHASE_04024);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_clear(AGC_FLAG_UPDATFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_change(4, RZ_PHASE_04024);
+    agc_flag_clear(AGC_FLAG_UPDATFLG);
     return rz_continue(rz_state()->qsaved);
 }
 
@@ -181,10 +179,8 @@ agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx)
     if (agc_flag_test(AGC_FLAG_FINALFLG)) {
         return agc_job_rendz_kilclock(ctx);
     }
-    agc_status_t st = agc_phase_change(4, RZ_PHASE_04024);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_set(AGC_FLAG_FINALFLG);                 /* UPFLAG     */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_change(4, RZ_PHASE_04024);
+    agc_flag_set(AGC_FLAG_FINALFLG);                      /* UPFLAG     */
     return agc_job_rendz_clupdate(ctx);
 }
 
@@ -222,14 +218,13 @@ agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     }
     rz->normex = resume_as;                             /* STQ SUBEXIT  */
     if (!agc_flag_test(AGC_FLAG_FINALFLG)) {
-        agc_status_t st = agc_flag_set(AGC_FLAG_UPDATFLG);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_flag_set(AGC_FLAG_UPDATFLG);
         return rz_tpi_flagoff(ctx, ip, rz);
     }
     if (rz_is_csm()) {
         rz->dvlos = rz->delvlvc;                        /* FLAGON (CM)  */
     } else {
-        (void)rz_vflag_set(RZ_VF_NTARGFLG, false);      /* FLAGON (LM)  */
+        rz_vflag_set(RZ_VF_NTARGFLG, false);      /* FLAGON (LM)  */
         rz->gdt_2 = rz->delvlvc;
     }
     return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_RENDZ_FINAL_DV_CHECKED);
@@ -271,7 +266,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
     } else {
         overwrite = rz_ntargchk(rz);
         if (overwrite) {
-            (void)rz_vflag_set(RZ_VF_NTARGFLG, true);   /* UPFLAG       */
+            rz_vflag_set(RZ_VF_NTARGFLG, true);   /* UPFLAG       */
         }
     }
     if (overwrite) {
@@ -280,8 +275,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
             return st;                     /* INTSTALL sleep: redo step */
         }
     }
-    agc_status_t st = agc_flag_clear(AGC_FLAG_XDELVFLG);   /* NOCHG     */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_XDELVFLG);                     /* NOCHG     */
     rz->delvsin = rz->delveet3;
     return rz_tpi_flagoff(ctx, &ip, rz);
 }

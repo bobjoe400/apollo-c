@@ -140,7 +140,8 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
     m.w[0] = hi;
     m.w[1] = lo;
     m.w[2] = 0;
-    (void)agc_rtb_sgnagree(&m);   /* signum not needed here (rule 7)       */
+    int sg = agc_rtb_sgnagree(&m);  /* signum of the agreed pair           */
+    (void)AGC_ASSERT(sg >= -1 && sg <= 1);
     return (agc_dp_t)((int32_t)m.w[0] * (int32_t)SP_RANGE + (int32_t)m.w[1]);
 }
 

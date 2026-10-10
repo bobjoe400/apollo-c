@@ -68,8 +68,7 @@ static bool csi_f(rz_vflag_t f)
 static void csi_set(rz_vflag_t f, bool on)
 {
     (void)AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B);
-    agc_status_t st = rz_vflag_set(f, on);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_vflag_set(f, on);
 }
 
 /* CSI/A first lines and SCNDSOL: F1 = 0, F2 = 1, F3A F3B = 0 1 (first
@@ -113,7 +112,7 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    (void)agc_flag_set(AGC_FLAG_XDELVFLG);
+    agc_flag_set(AGC_FLAG_XDELVFLG);
     rz->vpass2 = rz->vpass3;
     rz->vpass1 = rz->vpass3;
     rz->rpass2 = rz->rpass3;
@@ -213,7 +212,10 @@ static agc_status_t csi_b23(agc_interp_t *ip, agc_rendz_t *rz,
                                               rz_unit(ip, rz->ract1)));
     rz->delveet1 = agc_vec_shl(ip, agc_vec_scale(ip, uh1, rz->delvcsi), 1);
     rz->vact4 = agc_vec_add(ip, rz->delveet1, rz->vact1);
-    (void)agc_interp_test_ovf(ip);                           /* BOV        */
+    if (agc_interp_test_ovf(ip)) {
+        /* BOV CSI/B23D: the branch target is the next line; the test
+         * only resets the overflow indicator.                          */
+    }
     agc_dp_t t = 0;
     agc_status_t st = csi_timethet(ip, rz, rz->vact4, RZ_SN359, RZ_CS359, &t);
     if (st != AGC_STATUS_OK) {

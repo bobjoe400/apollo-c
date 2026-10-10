@@ -52,8 +52,8 @@ agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    (void)agc_flag_clear(AGC_FLAG_TARG2FLG);
-    (void)agc_flag_clear(AGC_FLAG_TARG1FLG);
+    agc_flag_clear(AGC_FLAG_TARG2FLG);
+    agc_flag_clear(AGC_FLAG_TARG1FLG);
     const agc_status_t st = align_phase_job(PH_SIGHTING, AGC_JOB_CSM_FINE_ALIGN_STAR_CODE,
                                             ALIGN_PRIO13);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
@@ -103,7 +103,10 @@ agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     if (!agc_align_chkscode(agc_align_ram()->starcode)) {
-        (void)agc_dsky_falton();
+        const agc_status_t alm = agc_dsky_falton();
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return agc_job_csm_fine_align_star_display(ctx);
     }
     return align_planet(ctx, align_loadtime(), AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED);

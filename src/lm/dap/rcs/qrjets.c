@@ -137,9 +137,10 @@ static agc_status_t norotat(int axis)
 static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 {
     d->tj[axis + 1] = 0;
-    (void)agc_alarm(AGC_ALARM_02004);
+    agc_status_t sa = lm_dap_alarm(AGC_ALARM_02004);
     (void)AGC_ASSERT(d->tj[axis + 1] == 0);
-    return norotat(axis);
+    agc_status_t sn = norotat(axis);
+    return (sa != AGC_STATUS_OK) ? sa : sn;
 }
 
 /* FEEDBACK (p.1455): jets fired, for the rate estimator (1 or 2).       */

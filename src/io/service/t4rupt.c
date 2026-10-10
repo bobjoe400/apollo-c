@@ -349,7 +349,7 @@ agc_status_t agc_t4_setissw(void)
         agc_status_t st = agc_exec_varalarm((agc_alarm_code_t)(fail - 1u));
         (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
         chan_or((int)AGC_CHAN_DSALMOUT, (uint16_t)BIT1);
-        return AGC_STATUS_OK;
+        return st;
     }
     if (!agc_t4_lamptest()) {                           /* ISSWOFF         */
         chan_clear((int)AGC_CHAN_DSALMOUT, (uint16_t)BIT1);
@@ -509,7 +509,10 @@ static bool t4_ifailjmp(int bit, uint16_t newbit)
         return false;
     case 13:                            /* IMUFAIL  EQUALS SETISSW         */
     case 12:                            /* ICDUFAIL EQUALS SETISSW         */
-        (void)agc_t4_setissw();         /* always OK                       */
+        {
+            agc_status_t st = agc_t4_setissw();
+            (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        }
         return false;
     case 11:
         return t4_imucage(newbit);
@@ -603,7 +606,8 @@ static void t4_c33jmp(int bit, uint16_t newbit)
     uint16_t im30 = (uint16_t)((agc_erase_imodes30() & ~(uint32_t)BIT10)
                                | (newbit != 0u ? BIT10 : 0u));
     im30_set(im30);
-    (void)agc_t4_setissw();                           /* always OK         */
+    agc_status_t sst = agc_t4_setissw();
+    (void)AGC_ASSERT(sst != AGC_STATUS_BAD_ARG);
     im30 = agc_erase_imodes30();
     if ((im30 & BIT1) != 0u && (im30 & OCT1720) == 0u) {
         raise_alarm(ALARM_PIPA_FAIL);  /* no ISS warning, operating, not caged */
@@ -724,7 +728,8 @@ static agc_status_t t4_issup(void)
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
         agc_imu_set_pipa_interval(agc_erase_time1());
     }
-    (void)agc_t4_setissw();                            /* always OK         */
+    agc_status_t sst = agc_t4_setissw();
+    (void)AGC_ASSERT(sst != AGC_STATUS_BAD_ARG);
     chan_clear((int)AGC_CHAN_CHAN12, (uint16_t)BIT15);
     call_wait((uint16_t)FOUR_SECS_CS, AGC_TASK_PFAILOK);
     return AGC_STATUS_OK;

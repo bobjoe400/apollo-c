@@ -37,8 +37,7 @@ static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 {
     agc_status_t st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_clear(AGC_FLAG_FINALFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_FINALFLG);
     return rz_ttogo_display(ctx, ip, rz, next);
 }
 
@@ -47,8 +46,7 @@ static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 agc_status_t agc_job_tpi_targeting(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    agc_status_t st = rz_avflag(true);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_avflag(true);
     return agc_job_tpi_input(ctx);
 }
 
@@ -56,8 +54,7 @@ agc_status_t agc_job_tpi_targeting(agc_job_ctx_t *ctx)
 agc_status_t agc_job_tpi_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    agc_status_t st = rz_avflag(false);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_avflag(false);
     return agc_job_tpi_input(ctx);
 }
 
@@ -67,8 +64,7 @@ agc_status_t agc_job_tpi_input(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = rz_tracking_flags_on();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_tracking_flags_on();
     return rz_vnpooh(ctx, 6U, 37U, AGC_JOB_TPI_AFTER_TTPI);
 }
 
@@ -94,12 +90,10 @@ agc_status_t agc_job_tpi_after_elev(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
     agc_rendz_t *rz = tpi_begin(ctx, &ip);
-    agc_status_t st = agc_flag_clear(AGC_FLAG_ETPIFLAG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_ETPIFLAG);
     agc_erase_set_tig(agc_erase_ttpi());
     if (rz->elev != 0) {                          /* BZE P34/P74B         */
-        st = agc_flag_set(AGC_FLAG_ETPIFLAG);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_flag_set(AGC_FLAG_ETPIFLAG);
     }
     return tpi_selectmu(ctx, &ip, rz, AGC_JOB_TPI_CYCLE);
 }
@@ -112,9 +106,9 @@ agc_status_t agc_job_tpi_cycle(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_rendz_t *rz = rz_state();
-    (void)rz_vflag_set(RZ_VF_ITSWICH, true);
+    rz_vflag_set(RZ_VF_ITSWICH, true);
     if (!agc_flag_test(AGC_FLAG_ETPIFLAG)) {      /* BON ETPIFLAG SWCHSET */
-        (void)rz_vflag_set(RZ_VF_ITSWICH, false);
+        rz_vflag_set(RZ_VF_ITSWICH, false);
     }
     rz->nomtpi = 0;                               /* SWCHSET STORE NOMTPI */
     (void)AGC_ASSERT(rz->nomtpi == 0);
@@ -133,7 +127,7 @@ static agc_status_t tpi_after_search(agc_job_ctx_t *ctx, agc_status_t st)
         return st;                                /* INTSTALL sleep       */
     }
     if (rz_vflag_test(RZ_VF_ITSWICH)) {           /* BONCLR ITSWICH       */
-        (void)rz_vflag_set(RZ_VF_ITSWICH, false);
+        rz_vflag_set(RZ_VF_ITSWICH, false);
         return rz_continue(AGC_JOB_TPI_INTLOOP);
     }
     if (agc_flag_test(AGC_FLAG_ETPIFLAG)) {       /* P34/P74D             */
@@ -214,11 +208,9 @@ static agc_status_t tpm_start(agc_job_ctx_t *ctx, bool this_active)
 {
     agc_interp_t ip;
     agc_rendz_t *rz = tpi_begin(ctx, &ip);
-    agc_status_t st = rz_avflag(this_active);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_avflag(this_active);
     rz->kt = this_active ? rz->atiginc : rz->ptiginc;  /* DCA xTIGINC */
-    st = rz_tracking_flags_on();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    rz_tracking_flags_on();
     return tpi_selectmu(ctx, &ip, rz, AGC_JOB_TPM_COMPUTE);
 }
 

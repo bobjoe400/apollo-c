@@ -51,7 +51,7 @@ agc_status_t lm_dap_stillrcs(void)
 /* SENSEGET (pp.1442-1444): X translation from the THC (bits 7,8 of
  * channel 31) or the ullage request, into NEXTU/NEXTV; SENSETYP tells the
  * rotation logic which X sense to favour (0 none, 1 -X, 2 +X).          */
-static void senseget(lm_dap_t *d)
+static agc_status_t senseget(lm_dap_t *d)
 {
     uint16_t ch31 = agc_chan_read(031);
     bool plus = ((ch31 & QR_CH31_PLUSX) == 0u) || (((ch31 & QR_CH31_MINUSX) != 0u) &&
@@ -62,7 +62,7 @@ static void senseget(lm_dap_t *d)
         d->nextv = 0;
         bool burning = !agc_flag_test(AGC_FLAG_DRIFTDFL);
         d->sensetyp = (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
-        return;
+        return AGC_STATUS_OK;
     }
     d->rotindex = plus ? 5 : 4;                          /* +X0RULGE/-XTRANS */
     d->sensetyp = (agc_sp_t)(d->rotindex - 3);
@@ -73,12 +73,14 @@ static void senseget(lm_dap_t *d)
     }
     bool found = lm_dap_selctsub();
     (void)AGC_ASSERT(found);          /* FAILOOP returns 0 before running out */
+    agc_status_t st = AGC_STATUS_OK;
     if (!found || d->polytemp == 0) {
         d->polytemp = 0;
-        (void)agc_alarm(AGC_ALARM_02002);
+        st = lm_dap_alarm(AGC_ALARM_02002);
     }
     d->nextu = (uint16_t)((uint16_t)d->polytemp & QR_UBITS);    /* TSNEXTS */
     d->nextv = (uint16_t)((uint16_t)d->polytemp & (uint16_t)~QR_UBITS & 0377u);
+    return st;
 }
 
 /* RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V
@@ -89,8 +91,11 @@ agc_status_t lm_dap_rcs(void)
     lm_dap_t *d = lm_dap_state();
     d->cotroler = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
-    senseget(d);
+    agc_status_t st = senseget(d);
     (void)AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     if ((agc_chan_read(031) & QR_CH31_AUTO) != 0u) {     /* QRCONTRL       */
         return lm_dap_stillrcs();
     }

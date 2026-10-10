@@ -54,7 +54,7 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
     const agc_vec_t ur = agc_vec_unit(ip, r_nb, NULL, NULL);          /* 8D */
     const agc_vec_t pz = agc_vec_shl(ip, agc_vec_proj(ip, r_nb, hiunit.row[2]), 2);
     agc_vec_t urp = agc_vec_sub(ip, r_nb, pz);            /* BVSU R       */
-    (void)agc_interp_test_ovf(ip);                        /* BOV COVCNV   */
+    align_clear_ovf(ip);                        /* BOV COVCNV   */
     urp = agc_vec_unit(ip, urp, NULL, NULL);              /* COVCNV UNIT  */
     if (!agc_interp_test_ovf(ip)) {                       /* BOV NOADJUST */
         *yaw = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, urp, hiunit.row[0]), 1));

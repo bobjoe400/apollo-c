@@ -69,7 +69,8 @@ agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
     in->tff_rtmu = moon ? OPD_1_RTMUM : OPD_1_RTMUE;
     in->hpermin = moon ? OPD_MINPERM : OPD_MINPERE;
     in->rpadtem = rls_mag_or_rpad;
-    return rz_vflag_set(RZ_VF_ORBIT_DISPLAY_MOON, moon);
+    rz_vflag_set(RZ_VF_ORBIT_DISPLAY_MOON, moon);
+    return AGC_STATUS_OK;
 }
 
 /* SR2R if moon centred (2^27 -> 2^29 for display), then MAXCHK. */
@@ -179,11 +180,18 @@ agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx)
     if (rz_vflag_test(RZ_VF_AVEGFLAG)) {                   /* V82GON        */
         agc_status_t st = agc_exec_findvac(OPD_PRIO7,
                                            AGC_JOB_ORBIT_DISPLAY_AVERAGE_G);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+        if (st != AGC_STATUS_OK) {
+            return st;                 /* FINDVAC: no VAC area (alarm) */
+        }
         return rz_continue(AGC_JOB_ORBIT_DISPLAY_MONITOR);  /* CHANG1     */
     }
-    rz_set_option(1, 2U);                                  /* OPTIONX = 2   */
-    rz_set_option(2, 1U);                                  /* OPTIONX+1 = 1 */
+    agc_status_t st = rz_set_option(1, 2U);                /* OPTIONX = 2   */
+    if (st == AGC_STATUS_OK) {
+        st = rz_set_option(2, 1U);                         /* OPTIONX+1 = 1 */
+    }
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_orbit_display_vehicle_select(ctx);
 }
 
@@ -205,7 +213,9 @@ agc_status_t agc_job_orbit_display_vehicle_selected(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_waitlist_call(OPD_BIT4_CS, AGC_TASK_TICKTEST);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_orbit_display_recycle(ctx);
 }
 
@@ -218,7 +228,9 @@ agc_status_t agc_job_orbit_display_recycle(agc_job_ctx_t *ctx)
     }
     rz_state()->orbit_display_flags = 0;
     agc_status_t st = agc_exec_findvac(OPD_PRIO7, AGC_JOB_ORBIT_DISPLAY_UPDATE);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     return agc_job_orbit_display_stall(ctx);
 }
 
@@ -276,7 +288,10 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
     rz->rone = o.ratt;                                     /* BOTHSHIP      */
     rz->vone = o.vatt;
     agc_orbit_params_in_t in;
-    (void)opd_input(&ip, rz, o.x2 != 0, &in);
+    st = opd_input(&ip, rz, o.x2 != 0, &in);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
     st = opd_sr30_1(&ip, rz, &in);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     if (rz_is_csm() && agc_erase_modreg() == 0) {          /* CANDEL        */
@@ -296,8 +311,11 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
     rz->vone = agc_erase_vn();
     bool moon = rz_is_csm() ? rz_vflag_test(RZ_VF_AMOONFLG) : rz_moonthis();
     agc_orbit_params_in_t in;
-    (void)opd_input(&ip, rz, moon, &in);
-    agc_status_t st = opd_sr30_1(&ip, rz, &in);
+    agc_status_t st = opd_input(&ip, rz, moon, &in);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
+    st = opd_sr30_1(&ip, rz, &in);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     if (rz_is_csm()
         && agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR)) {
@@ -333,7 +351,10 @@ agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
     }
     st = agc_guid_delrspl(&ip, rz->tff);
     if (st != AGC_STATUS_OK) {
-        (void)agc_integ_intwake();
+        st = agc_integ_intwake();
+        if (st != AGC_STATUS_OK) {
+            return st;
+        }
     }
     if (agc_erase_modreg() == 0) {
         return opd_start_ticking(&ip, rz);                 /* SPLRET1       */
@@ -376,9 +397,7 @@ agc_status_t agc_task_ticktest(void)
 agc_status_t agc_job_rendz_display_terminate(agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
-    agc_status_t st = agc_svc_b5off();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
-    return AGC_STATUS_OK;
+    return agc_svc_b5off();
 }
 
 /* ENDEXT as a job (TICKTEST's NOVAC; V82GOFF TERMINATE). */

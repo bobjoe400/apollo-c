@@ -45,7 +45,10 @@ agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u) {
-        (void)agc_alarm(ALM_IMU_OFF);
+        const agc_status_t alm = agc_alarm(ALM_IMU_OFF);
+        if (alm != AGC_STATUS_OK) {
+            return alm;
+        }
         return agc_exec_gotopooh();
     }
     const agc_status_t st = agc_imu_set_in_use();               /* R02ZERO  */
@@ -161,7 +164,7 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
     ram->starind = 0;
     st = align_set1_pdt();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    (void)agc_flag_clear(AGC_FLAG_TARG2FLG);
+    agc_flag_clear(AGC_FLAG_TARG2FLG);
     ram->markindx = 1;
     return agc_job_csm_orientation_mark_star(ctx);
 }
@@ -273,7 +276,7 @@ agc_status_t agc_job_csm_orientation_data_checked(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    (void)agc_flag_clear(AGC_FLAG_REFSMFLG);
+    agc_flag_clear(AGC_FLAG_REFSMFLG);
     agc_erase_set_refsmmat(ram->xdc);                           /* MATMOVE  */
     st = agc_flag_set(AGC_FLAG_REFSMFLG);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
