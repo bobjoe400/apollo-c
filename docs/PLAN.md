@@ -113,6 +113,8 @@ bits), split that part off to a Sonnet agent.
       the data each routine reads/writes with scale, and the AGC labels
       cross-referenced to the C functions.
    d. A cross-reference index AGC label -> C function -> file, generated.
+   e. docs/TIPS.md consolidated from every lane's "Lessons" section: the
+      tips and tricks for translating AGC into C, organised by topic.
 
 Waves: 1-2 translation (done/in progress) -> 3 integrate + sim (items 2-5,7)
 -> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8)

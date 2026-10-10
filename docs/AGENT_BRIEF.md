@@ -58,7 +58,10 @@ inside your lane and put your findings in files, not in your final report.
 * Code under your assigned directory only.
 * `docs/modules/<agent-id>.md` with sections:
   Scope / Design table / Deviations / Stubs / Requested core additions /
-  Requested jobs-tasks / Tests written / Open questions.
+  Requested jobs-tasks / Tests written / Open questions / Lessons.
+  "Lessons" = anything you learned about translating AGC into C that the
+  next agent should know (a trap, a trick, a reading of the source that
+  was not obvious). The lead folds these into docs/TIPS.md.
 * Update your row in `docs/MODULE_STATUS.md` (one line).
 * Final chat report to the lead: at most 15 lines -- what is done, what is
   stubbed, blocking issues. Nothing else.
