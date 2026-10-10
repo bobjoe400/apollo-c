@@ -41,6 +41,7 @@ void agc_align_ram_reset(void)
     align_ram.savqr52 = AGC_JOB_NONE;
     align_ram.r53exit = AGC_JOB_NONE;
     align_ram.planet_ret = AGC_JOB_NONE;
+    align_ram.coarse_ret = AGC_JOB_NONE;
     (void)AGC_ASSERT(align_ram.mkvac_index == -1);
     (void)AGC_ASSERT(align_ram.starind == 0);
 }
@@ -338,4 +339,86 @@ agc_status_t align_set1_pdt(void)
     }
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return st;
+}
+
+/* TC PHASCHNG; OCT code (type A, group 4). */
+agc_status_t align_phase4(uint16_t code)
+{
+    if (!AGC_ASSERT((code & 07u) == 4u)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    const agc_status_t st = agc_phase_change(4, code);
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    return st;
+}
+
+/*
+ * NCOARSE (P51-P53.agc, Luminary p. 951) -- 1/PIPADT = TIME1, PIPAX, Y, Z
+ * = -0 (0 here), GCOMP = 0, SET DRIFTFLG.
+ */
+agc_status_t align_ncoarse(void)
+{
+    agc_erase_set_pipax(0);
+    agc_erase_set_pipay(0);
+    agc_erase_set_pipaz(0);
+    (void)AGC_ASSERT(agc_erase_pipax() == 0);
+    return align_set1_pdt();
+}
+
+/* COARSE, second half: IMUFINE and its IMUSTALL. */
+static agc_status_t coarse_fine(void)
+{
+    agc_status_t st = agc_imu_fine();                         /* IMUFINE   */
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    bool done = false;
+    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_ALIGN_FINE_DONE, &done);
+    if ((st != AGC_STATUS_OK) || !done) {
+        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+    }
+    return align_goto(agc_align_ram()->coarse_ret);
+}
+
+/* COARSE (Luminary p. 951): IMUCOARS to THETAD and its IMUSTALL. */
+agc_status_t align_coarse(agc_job_id_t ret)
+{
+    if (!AGC_ASSERT(ret != AGC_JOB_NONE)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_align_ram()->coarse_ret = ret;
+    uint16_t thetad[3];
+    for (int i = 0; i < 3; i++) {
+        thetad[i] = agc_erase_thetad(i);
+    }
+    agc_status_t st = agc_imu_coarse(thetad);                 /* IMUCOARS  */
+    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    bool done = false;
+    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_ALIGN_COARSE_DONE, &done);
+    if ((st != AGC_STATUS_OK) || !done) {
+        return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+    }
+    return coarse_fine();
+}
+
+/* COARSE: woken after the IMUCOARS stall. */
+agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
+        return AGC_STATUS_OK;                             /* CURTAINS   */
+    }
+    return coarse_fine();
+}
+
+/* COARSE: woken after the IMUFINE stall; continue as the caller asked. */
+agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
+        return AGC_STATUS_OK;                             /* CURTAINS   */
+    }
+    return align_goto(agc_align_ram()->coarse_ret);
 }

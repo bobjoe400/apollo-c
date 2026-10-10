@@ -15,6 +15,15 @@
 #define ONE_SEC     100
 #define HALF_SEC    50
 #define TRIM_WAIT   6000      /* DEC 6000: one minute to full + trim       */
+/* TRIMGIMB channel 12 masks as the listing names them (p.781): EBANK5
+ * 02400 = bits 9, 11 "+ PITCH, + ROLL"; PRIO5 05000 = bits 10, 12
+ * "- PITCH, - ROLL"; BIT10 shuts off pitch, BIT12 roll. agc_channels.h
+ * names these bits TRIMPITCHM/TRIMROLLM (9, 11) and TRIMPITCHP/TRIMROLLP
+ * (10, 12) -- the opposite sense; see the module note, Open questions.   */
+#define TRIM_PLUS   ((uint16_t)(AGC_CH012_TRIMPITCHM | AGC_CH012_TRIMROLLM))
+#define TRIM_MINUS  ((uint16_t)(AGC_CH012_TRIMPITCHP | AGC_CH012_TRIMROLLP))
+#define TRIM_PITCH  ((uint16_t)AGC_CH012_TRIMPITCHP)  /* BIT10            */
+#define TRIM_ROLL   ((uint16_t)AGC_CH012_TRIMROLLP)   /* BIT12            */
 #define PH_5_3_B    ((uint16_t)010035)
 
 /* CONTROLLED_CONSTANTS (p.~): DPS and APS thrust, flow, tail-off; RCS.     */
@@ -48,8 +57,7 @@ static const agc_dp_t SEC3_5 = 11468800;
 static const agc_dp_t SEC5_14 = 8192000;
 static const agc_dp_t SEC6_14 = 9830400;
 static const agc_dp_t SEC89_14 = 145817600;
-/* -FOURDT 2DEC -800 B-18, FOURSECS 2DEC 400 (B-28).                       */
-static const agc_dp_t MFOURDT = -819200;
+/* FOURSECS 2DEC 400 (B-28); -FOURDT is in agc_guid_s40_8_tgo_lm.          */
 static const agc_dp_t FOURSECS = 400;
 /* EPS1 10 deg, EPS2 35 deg (rev).                                          */
 static const agc_dp_t EPS1 = 7456540;
@@ -593,4 +601,151 @@ agc_status_t agc_job_s40_9_lm(agc_job_ctx_t *ctx)
     agc_status_t st = agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4);
     (void)agc_phase_kill(2);                          /* ENDS40.9               */
     return st;
+}
+
+/* S40.13 short-burn branch, APS (p.773-774): v = |VGTIG| less the 4 s of
+ * 2-jet ullage (2^7), m = WEIGHT/G (2^16). Below K1/m (one second of APS):
+ * TGO = (m v SR1 + K2)/K3; otherwise with TEMP1 = v - K1/m and TEMP2 =
+ * 5 s F SR2 / (m - 3.5 s MDOT): TGO = 1 s + 5 s TEMP1/TEMP2 if TEMP1 <
+ * TEMP2. Result: TGO cs at 2^14 (IMPULSW to be set), or -1 to steer.     */
+static agc_dp_t timeburn_aps(agc_interp_t *ip, agc_dp_t v, agc_dp_t m)
+{
+    const agc_guid_t *g = agc_guid_state();
+    agc_dp_t temp1 = agc_dp_sub(ip, v, agc_dp_div(ip, K1VAL, m));        /* BDSU 00D */
+    if (temp1 < 0) {                                                     /* S40.131  */
+        agc_dp_t mv = agc_dp_shr(agc_dp_mul_trunc(m, v), 1);
+        return agc_dp_div(ip, agc_dp_add(ip, mv, K2VAL), K3VAL);
+    }
+    agc_dp_t mass = agc_dp_sub(ip, m, agc_dp_mul_trunc(g->lm.mdot, SEC3_5));
+    agc_dp_t f5 = agc_dp_shr(agc_dp_mul_trunc(g->burn.f, SEC5_14), 2);
+    agc_dp_t temp2 = agc_dp_div(ip, f5, mass);                           /* 04D      */
+    if (agc_dp_sub(ip, temp1, temp2) >= 0) {
+        return -1;                                                       /* S40.13D  */
+    }
+    (void)AGC_ASSERT(temp2 > 0);
+    agc_dp_t r = agc_dp_div(ip, temp1, temp2);                           /* BDDV     */
+    return agc_dp_add(ip, agc_dp_mul_trunc(r, SEC5_14), SEC1_2D);
+}
+
+/* S40.13D (p.774-775), the burn is long enough to steer: APS TGO = m v /
+ * FAPS SL2; DPS TGO = m v / (.4671 M N), NOTHROTL cleared, under 6 s an
+ * impulsive burn (IMPULSW), under 95 s NOTHROTL set; a DPS quotient that
+ * overflows 2^14 cs is recomputed at 2^28 (S40.130V) and stored as is.
+ * Returns TGO at 2^14 (SP cs) or, for S40.130V, sets TGO itself and
+ * returns -1.                                                             */
+static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *impulsive)
+{
+    agc_dp_t mv = agc_dp_mul_trunc(v, m);                                /* 2^23     */
+    if (agc_flag_test(AGC_FLAG_APSFLAG)) {                               /* APSTGO   */
+        return agc_dp_shl(ip, agc_dp_div(ip, mv, FAPS), 2);
+    }
+    agc_dp_t t = agc_dp_div(ip, mv, S40_136);
+    (void)agc_flag_clear(AGC_FLAG_NOTHROTL);
+    if (agc_interp_test_ovf(ip)) {                                       /* S40.130V */
+        agc_erase_set_tgo(agc_dp_div(ip, agc_dp_shr(mv, 4), S40_136S));
+        return -1;
+    }
+    agc_dp_t d = agc_dp_sub(ip, t, SEC6_14);                             /* S40.127  */
+    if (d < 0) {
+        *impulsive = true;                                               /* S40.132  */
+        return t;
+    }
+    if (agc_dp_sub(ip, d, SEC89_14) < 0) {                               /* S40.138  */
+        (void)agc_flag_set(AGC_FLAG_NOTHROTL);
+    }
+    return t;                                                            /* STORETGO */
+}
+
+/* S40.13 TIMEBURN, Luminary (p.773-775), a job: decides whether the burn
+ * (VGTIG, WEIGHT/G, F, MDOT, APSFLAG) is long enough to steer. Outputs
+ * IMPULSW (set: attitude hold, engine off TGO after ignition), NOTHROTL
+ * (set: no throttling) and TGO (cs, 2^28: the high word of the 2^14
+ * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.   */
+agc_status_t agc_job_s40_13_lm(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    const agc_guid_t *g = agc_guid_state();
+    agc_dp_t m = g->burn.weight_g;
+    if (!AGC_ASSERT(m > 0)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_interp_t ip;
+    agc_interp_init(&ip);
+    (void)agc_flag_clear(AGC_FLAG_IMPULSW);           /* NO STEERING UNTIL FOUND  */
+    agc_dp_t v = agc_vec_abval(&ip, agc_erase_vgtig());
+    agc_dp_t dvu = agc_dp_shl(&ip, agc_dp_div(&ip, agc_dp_mul_trunc(SEC4_17, FRCS2), m), 1);
+    v = agc_dp_sub(&ip, v, dvu);                      /* 00D: VG LESS ULLAGE      */
+    bool impulsive = false;
+    agc_dp_t t14 = -1;
+    if (agc_flag_test(AGC_FLAG_APSFLAG)) {
+        (void)agc_flag_set(AGC_FLAG_NOTHROTL);
+        t14 = timeburn_aps(&ip, v, m);
+        impulsive = (t14 >= 0);
+    }
+    if (t14 < 0) {
+        t14 = timeburn_long(&ip, v, m, &impulsive);
+    }
+    if (impulsive) {
+        (void)agc_flag_set(AGC_FLAG_IMPULSW);         /* S40.132                  */
+    }
+    if (t14 >= 0) {
+        agc_erase_set_tgo((agc_dp_t)agc_dp_high(t14)); /* S40.132*: TGO = (0, MPAC) */
+    }
+    return agc_phase_change(3, (uint16_t)000003);     /* S40.134                  */
+}
+
+/* TRIMGIMB (formerly S40.6), p.781-782, a waitlist task from R03: trims
+ * the DPS engine: drive to full + pitch and + roll for one minute, then
+ * run - pitch for PITTIME and - roll for ROLLTIME (cs); when both are
+ * off, TRIMDONE (R03) as a PRIO10 job. GMBDRVSW records "one is done".  */
+agc_status_t agc_task_trimgimb(void)
+{
+    (void)agc_flag_clear(AGC_FLAG_GMBDRVSW);
+    (void)agc_chan_and(012, (uint16_t)~TRIM_MINUS);   /* - PITCH, - ROLL OFF     */
+    (void)agc_chan_or(012, TRIM_PLUS);                /* + PITCH, + ROLL ON      */
+    (void)AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U);
+    return agc_waitlist_fixdelay(TRIM_WAIT, AGC_TASK_TRIMGIMB2);
+}
+
+/* TRIMGIMB after the minute: + off, - on, PITCHOFF at PITTIME, roll off
+ * at ROLLTIME (VARDELAY).                                                 */
+agc_status_t agc_task_trimgimb2(void)
+{
+    const agc_guid_lm_t *lm = &agc_guid_state()->lm;
+    if (!AGC_ASSERT(lm->pittime >= 0 && lm->rolltime >= 0)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    (void)agc_chan_and(012, (uint16_t)~TRIM_PLUS);
+    (void)agc_chan_or(012, TRIM_MINUS);
+    (void)agc_waitlist_call((uint16_t)lm->pittime, AGC_TASK_PITCHOFF); /* TWIDDLE */
+    return agc_waitlist_vardelay((uint16_t)lm->rolltime, AGC_TASK_ROLLOFF);
+}
+
+/* ROLLOVER (p.781-782): the second of roll/pitch to finish starts
+ * TRIMDONE; the first sets GMBDRVSW. Then TASKOVER.                       */
+static agc_status_t rollover(void)
+{
+    if (agc_flag_test(AGC_FLAG_GMBDRVSW)) {
+        (void)AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U);
+        return agc_exec_novac(AGC_PRIO10, AGC_JOB_TRIMDONE);   /* RETURN TO R03 */
+    }
+    return agc_flag_set(AGC_FLAG_GMBDRVSW);           /* PITCHOFF +4             */
+}
+
+/* TRIMGIMB after ROLLTIME: shut off - roll (BIT12), ROLLOVER.            */
+agc_status_t agc_task_rolloff(void)
+{
+    (void)agc_chan_and(012, (uint16_t)~TRIM_ROLL);
+    (void)AGC_ASSERT((agc_chan_read(012) & TRIM_ROLL) == 0U);
+    return rollover();
+}
+
+/* PITCHOFF: shut off - pitch (BIT10), ROLLOVER.                           */
+agc_status_t agc_task_pitchoff(void)
+{
+    (void)agc_chan_and(012, (uint16_t)~TRIM_PITCH);
+    (void)AGC_ASSERT((agc_chan_read(012) & TRIM_PITCH) == 0U);
+    return rollover();
 }

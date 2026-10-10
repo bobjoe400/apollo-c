@@ -170,8 +170,8 @@ agc_status_t agc_rendz_r61csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
 #define AGC_JOB_LM_P52LS           ((agc_job_id_t)0x0A63)
 #define AGC_JOB_N89DISP            ((agc_job_id_t)0x0A64)
 #define AGC_JOB_N89DISP_PROCEED    ((agc_job_id_t)0x0A65)
-#define AGC_JOB_LM_COARSE_DONE     ((agc_job_id_t)0x0A66)
-#define AGC_JOB_LM_FINE_DONE       ((agc_job_id_t)0x0A67)
+
+
 #define AGC_JOB_LM_R51             ((agc_job_id_t)0x0A68)
 #define AGC_JOB_LM_R51_LOCSAM      ((agc_job_id_t)0x0A69)
 #define AGC_JOB_LM_R51E            ((agc_job_id_t)0x0A6A)
@@ -241,6 +241,9 @@ agc_status_t agc_rendz_r61csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
 #define AGC_JOB_1STAR              ((agc_job_id_t)0x0AAA)
 
 #define AGC_JOB_CHKSDATA_FLASH        ((agc_job_id_t)0x0AAE)
+
+#define AGC_JOB_ALIGN_COARSE_DONE     ((agc_job_id_t)0x0AAF)
+#define AGC_JOB_ALIGN_FINE_DONE       ((agc_job_id_t)0x0AB0)
 
 #define AGC_TASK_MARKDIF           ((agc_task_id_t)0x0A01) /* MARKDIF (CM)   */
 #define AGC_TASK_ENDMARKS          ((agc_task_id_t)0x0A02) /* ENDMARKS (CM)  */

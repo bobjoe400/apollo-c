@@ -61,6 +61,18 @@ agc_status_t align_stall_outcome(agc_imu_device_t dev);
 /* PHASCHNG with a type C code and a job restart point at priority prio. */
 agc_status_t align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio);
 
+/* PHASCHNG with a fixed (type A) group 4 code.                           */
+agc_status_t align_phase4(uint16_t code);
+
+/* NCOARSE (Luminary p. 951): SET1/PDT plus PIPAX/Y/Z = -0.               */
+agc_status_t align_ncoarse(void);
+
+/* COARSE (Luminary p. 951; the same sequence is inline in the Comanche
+ * callers): IMUCOARS to THETAD, IMUSTALL, IMUFINE, IMUSTALL, then the job
+ * continues as ret.  A bad end does CURTAINS.  The caller returns the
+ * status.                                                                */
+agc_status_t align_coarse(agc_job_id_t ret);
+
 /* LOADTIME: TIME2, TIME1 as a DP, cs B28.                                */
 agc_dp_t     align_loadtime(void);
 /* DSPTEM1, DSPTEM1 +1 as a DP (cs B28), and the store.                    */

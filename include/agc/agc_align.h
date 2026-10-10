@@ -135,6 +135,8 @@ typedef struct agc_align_ram {
     agc_job_id_t savqr52;        /* SAVQR52                                    */
     agc_job_id_t r53exit;        /* R53EXIT                                    */
     agc_job_id_t planet_ret;     /* return of PLANET when it flashes V06N88    */
+    agc_job_id_t coarse_ret;     /* return of COARSE (QPRET of CALL COARSE)    */
+    agc_dp_t     n89time;        /* GDT/2 +4: N89DISP time, cs B28 (LM)        */
 } agc_align_ram_t;
 
 agc_align_ram_t *agc_align_ram(void);
@@ -199,6 +201,10 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
                              agc_vec_t tnuv, agc_dp_t tet);
 agc_vec_t    agc_align_r_other(void);    /* R-OTHER  m B29 (downlink)      */
 agc_vec_t    agc_align_v_other(void);    /* V-OTHER  m/cs B7 (downlink)    */
+
+/* ---- COARSE (both vehicles, src/programs/align_common.c) ---------------- */
+agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx);  /* IMUCOARS stall */
+agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx);    /* IMUFINE stall  */
 
 /* ---- shared alignment jobs: R54 (CHKSDATA) and R55 (src/programs/) ------ */
 agc_status_t agc_align_r54(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
@@ -405,8 +411,6 @@ agc_status_t agc_job_lm_p52t_proceed(agc_job_ctx_t *ctx); /* P52T (LM)     */
 agc_status_t agc_job_lm_p52ls(agc_job_ctx_t *ctx);        /* P52LS (LM)    */
 agc_status_t agc_job_n89disp(agc_job_ctx_t *ctx);         /* N89DISP LSDISP*/
 agc_status_t agc_job_n89disp_proceed(agc_job_ctx_t *ctx); /* LSDISP V33    */
-agc_status_t agc_job_lm_coarse_done(agc_job_ctx_t *ctx);  /* COARSE stall 1*/
-agc_status_t agc_job_lm_fine_done(agc_job_ctx_t *ctx);    /* COARSE stall 2*/
 agc_status_t agc_job_lm_r51(agc_job_ctx_t *ctx);          /* R51 (LM)      */
 agc_status_t agc_job_lm_r51_locsam(agc_job_ctx_t *ctx);   /* R51C V33      */
 agc_status_t agc_job_lm_r51e(agc_job_ctx_t *ctx);         /* R51E          */
