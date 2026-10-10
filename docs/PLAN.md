@@ -140,7 +140,8 @@ lane count to avoid limits. The run continues until the definition of done.
 | 2a   | style.md, style2.md      | DONE (Uncrustify is the formatter)  |
 | 2b   | status-handling.md       | DONE (0 hard violations)            |
 | 3    | integrate.md             | RUNNING                             |
-| 3b   | sim.md                   | queued after integrate              |
-| 4    | oracle-cases.md          | queued after integrate              |
+| 3a   | collapse.md              | queued after integrate (inline single-use helpers via call graph) |
+| 3b   | sim.md                   | queued after collapse               |
+| 4    | oracle-cases.md          | queued after collapse               |
 | 5    | review.md (one per lane) | queued after sim + oracle-cases     |
 | 6    | document.md              | queued last                         |
