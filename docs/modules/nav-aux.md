@@ -4,14 +4,14 @@
 
 | AGC file (Comanche055 pages) | CM vs LM | C file |
 |---|---|---|
-| LATITUDE_LONGITUDE_SUBROUTINES.agc (pp. 1236-1242) | identical code (LM keeps ERAD/504RM in CONTROLLED_CONSTANTS) | src/nav/aux/latlong.c |
-| PLANETARY_INERTIAL_ORIENTATION.agc (pp. 1243-1251) | identical code (LM: LO6ZEROS for HI6ZEROS, bank split only) | src/nav/aux/planetary.c |
-| MEASUREMENT_INCORPORATION.agc (pp. 1252-1261) | identical code (NEWZCOMP bank split only) | src/nav/aux/measurement.c |
-| TIME_OF_FREE_FALL.agc (pp. 1373-1388) | identical code (LM keeps 1/RTMU in CONTROLLED_CONSTANTS) | src/nav/aux/free_fall.c |
-| LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc (CM pp. 785-788, LM pp. 984-987) | DIFFERENT: CM 9th-degree lunar polynomial + rotating sun vector; LM analytic mean-element unit vectors | src/nav/aux/ephemerides.c |
-| STAR_TABLES.agc (CM pp. 1389-1393) / LM CONTROLLED_CONSTANTS.agc pp. 49-51 | identical 37-star table, CATLOG 6970 | src/nav/aux/star_tables.c |
+| LATITUDE_LONGITUDE_SUBROUTINES.agc (pp. 1236-1242) | identical code (LM keeps ERAD/504RM in CONTROLLED_CONSTANTS) | src/nav/auxiliary/latlong.c |
+| PLANETARY_INERTIAL_ORIENTATION.agc (pp. 1243-1251) | identical code (LM: LO6ZEROS for HI6ZEROS, bank split only) | src/nav/auxiliary/planetary.c |
+| MEASUREMENT_INCORPORATION.agc (pp. 1252-1261) | identical code (NEWZCOMP bank split only) | src/nav/auxiliary/measurement.c |
+| TIME_OF_FREE_FALL.agc (pp. 1373-1388) | identical code (LM keeps 1/RTMU in CONTROLLED_CONSTANTS) | src/nav/auxiliary/free_fall.c |
+| LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc (CM pp. 785-788, LM pp. 984-987) | DIFFERENT: CM 9th-degree lunar polynomial + rotating sun vector; LM analytic mean-element unit vectors | src/nav/auxiliary/ephemerides.c |
+| STAR_TABLES.agc (CM pp. 1389-1393) / LM CONTROLLED_CONSTANTS.agc pp. 49-51 | identical 37-star table, CATLOG 6970 | src/nav/auxiliary/star_tables.c |
 
-Public header: include/agc/agc_navaux.h. Private helpers: src/nav/aux/navaux_internal.h + src/nav/aux/navaux_util.c.
+Public header: include/agc/agc_navaux.h. Private helpers: src/nav/auxiliary/internal.h + src/nav/auxiliary/util.c.
 All constants were verified word-for-word against the assembled ropes
 (tools/oracle/ropes/*.bin read at the symtab address).
 
@@ -66,13 +66,13 @@ MXV(rows blk[b][3a..3a+2]) BVECTOR[b]; OMEGA[b] = sum_a VXM(ZI[a], same).
 | Routine / table | Status |
 |---|---|
 | header agc_navaux.h | DONE include/agc/agc_navaux.h |
-| navaux_util.c helpers | DONE src/nav/aux/navaux_util.c |
-| planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/aux/planetary.c |
-| latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/aux/latlong.c |
-| free_fall.c (TFFCONIC TFFRP/RA CALCTFF CALCTPER T(X)) | DONE agc_tff_* src/nav/aux/free_fall.c |
-| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp1 agc_incorp2_wupdate agc_incorp2_state src/nav/aux/measurement.c |
-| ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/aux/ephemerides.c |
-| star_tables.c | DONE agc_star_vector src/nav/aux/star_tables.c (37 stars, rope-verified) |
+| util.c helpers | DONE src/nav/auxiliary/util.c |
+| planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/auxiliary/planetary.c |
+| latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/auxiliary/latlong.c |
+| free_fall.c (TFFCONIC TFFRP/RA CALCTFF CALCTPER T(X)) | DONE agc_tff_* src/nav/auxiliary/free_fall.c |
+| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp1 agc_incorp2_wupdate agc_incorp2_state src/nav/auxiliary/measurement.c |
+| ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/auxiliary/ephemerides.c |
+| star_tables.c | DONE agc_star_vector src/nav/auxiliary/star_tables.c (37 stars, rope-verified) |
 | tests/test_navaux.c | DONE (compiles; links once core-numeric lands) |
 
 All files compile with the project flags (-Werror); tools/check_rules.py:
@@ -82,7 +82,7 @@ agc_interp.h (scratch only, not committed): 143 checks, 0 failures.
 
 ## Deviations
 
-* navaux_util.c: TP shift / TP normalize / low-DP-of-TP and angle wrap
+* util.c: TP shift / TP normalize / low-DP-of-TP and angle wrap
   helpers work on the integer representation, because agc_interp.h has no
   TP shift or normalize and its DP ops saturate where the AGC wraps.
 * NEWANGLE (planetary.c) and LM LSPOS POSITB/POSITD (ephemerides.c): angle
@@ -122,7 +122,7 @@ None.
   (agc_erase_tephem() and agc_erase_rls() now exist in agc_state.h;
   agc_lsposition uses agc_erase_tephem.)
 * agc_tp_shl / agc_tp_norm in agc_interp.h (core-numeric lists
-  agc_tp_shift, agc_tp_norm in its design) would let navaux_util.c drop
+  agc_tp_shift, agc_tp_norm in its design) would let util.c drop
   its raw-representation TP helpers; agc_vec_sq_tp would remove the INCORP1
   VSQ deviation.
 

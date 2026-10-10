@@ -1,9 +1,9 @@
 # Assignment: nav-conic   (tier: translation)
 
 Scope: CONIC_SUBROUTINES.agc (Comanche pp. 1262-1308; diff against
-Luminary's copy, note differences) into src/nav/conic/conic*.c (conic_common.c,
-conic_kepler.c, conic_lambert.c, conic_timetheta.c, conic_timeradius.c,
-conic_apsides.c as needed) with a header you create, include/agc/agc_nav.h
+Luminary's copy, note differences) into src/nav/conic/conic*.c (common.c,
+kepler.c, lambert.c, timetheta.c, timeradius.c,
+apsides.c as needed) with a header you create, include/agc/agc_nav.h
 (section "conic").
 
 Routines: CSMCONIC/LEMCONIC wrappers, KEPPREP, KEPLER, LAMBERT, TIMETHET,

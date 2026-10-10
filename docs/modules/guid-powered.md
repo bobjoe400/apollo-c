@@ -6,15 +6,15 @@
 |------------------------------------------------------------|--------|
 | POWERED_FLIGHT_SUBROUTINES.agc (CM pp.1365-1372, LM pp.1259-1267) | src/guidance/powered_flight.c |
 | SERVICER207.agc (CM pp.819-836) / SERVICER.agc (LM pp.857-897), shared part | src/guidance/servicer_common.c |
-| SERVICER207.agc, CM-only part                              | src/csm/burns/servicer_csm.c |
-| SERVICER.agc, LM-only part (MUNRVG, mass monitor, DVMON, LR update) | src/lm/burns/servicer_lm.c |
+| SERVICER207.agc, CM-only part                              | src/csm/burns/servicer.c |
+| SERVICER.agc, LM-only part (MUNRVG, mass monitor, DVMON, LR update) | src/lm/burns/servicer.c |
 | P30-P37.agc (CM pp.635-648) / P30_P37.agc (LM pp.614-617)  | src/guidance/external_delta_v.c |
 | P40-P47.agc shared math (S40.1, S40.2,3, S40.8 TGO/XPRODUCT, S40.9, S40.13, S41.1) | src/guidance/burn_steering.c |
 | P40-P47.agc CM-only (P40CSM/P41CSM/P47CSM, TIG-30/-5/-0, IGNITION, CLOKTASK, V97/V99, S40.6, S41.2, S40.14, DAPFIG) | src/csm/burns/sps_burn.c |
 | P40-P47.agc LM-only (P40LM/P41LM/P42LM/P47LM, POSTBURN, ENGINOFF, STEERING, RASTEER1, TRIMGIMB) | src/lm/burns/dps_burn.c |
 | BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc (LM pp.731-751) | src/lm/burns/ignition.c |
 | public interface                                           | include/agc/agc_guid.h |
-| pending (not-yet-existing) shared symbols, one place each  | include/agc/agc_guid_pending.h, src/csm/burns/guid_pending_csm.h, src/lm/burns/guid_pending_lm.h |
+| pending (not-yet-existing) shared symbols, one place each  | include/agc/agc_guid_pending.h, src/csm/burns/guid_pending.h, src/lm/burns/guid_pending.h |
 
 ## Design table (written before coding)
 
@@ -62,14 +62,14 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | AGC routine | status |
 |---|---|
 | include/agc/agc_guid.h | DONE (rewritten on resume: targeting erasables shared with prog-rendz moved to agc_rendz_t; CSM TVC values in agc_csm_dap.h) |
-| pending headers (guid_pending*.h) | DONE guid_pending.h, src/csm/burns/guid_pending_csm.h, src/lm/burns/guid_pending_lm.h (extend as needed) |
+| pending headers (guid_pending*.h) | DONE guid_pending.h, src/csm/burns/guid_pending.h, src/lm/burns/guid_pending.h (extend as needed) |
 | CDUTRIG/CD*TR*GS/QUICTRIG/AX*SR*T/*SMNB*/*NBSM*/SMCDURES/FLESHPOT | DONE powered_flight.c (all agc_guid_cdutrig..fleshpot) |
 | guid_state.c (agc_guid_state/agc_guid_init) | DONE guid_state.c |
 | PIPASR/REREADAC/CALCGRAV/CALCRVG/COPYCYC | DONE agc_guid_pipasr/rereadac_resume/calcgrav/calcrvg/copycycle servicer_common.c |
-| CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR/NORMLIZE/REREADAC/SERVEXIT | DONE src/csm/burns/servicer_csm.c (guid_pending_csm.h written) |
-| LM PREREAD/BIBIBIAS/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE/NORMLIZE/REREADAC | DONE src/lm/burns/servicer_lm.c (guid_pending_lm.h, servicer_lm_internal.h) |
-| LM RVBOTH/MUNRVG/MUNGRAV | DONE servicer_lm.c; MUNRETRN/ALTCHK/LR update/LR jobs/SETPOS DONE src/lm/burns/servicer_lm_lr.c |
-| P30/P31/S30.1/S31.1/MIDGIM/AGAIN | DONE src/guidance/external_delta_v.c (+ CM REFTEST/COMPTGO/DISP45/END45 in src/csm/burns/external_delta_v_csm.c); DELRSPL stub |
+| CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR/NORMLIZE/REREADAC/SERVEXIT | DONE src/csm/burns/servicer.c (guid_pending_csm.h written) |
+| LM PREREAD/BIBIBIAS/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE/NORMLIZE/REREADAC | DONE src/lm/burns/servicer.c (guid_pending_lm.h, servicer_lm_internal.h) |
+| LM RVBOTH/MUNRVG/MUNGRAV | DONE servicer_lm.c; MUNRETRN/ALTCHK/LR update/LR jobs/SETPOS DONE src/lm/burns/servicer_lr.c |
+| P30/P31/S30.1/S31.1/MIDGIM/AGAIN | DONE src/guidance/external_delta_v.c (+ CM REFTEST/COMPTGO/DISP45/END45 in src/csm/burns/external_delta_v.c); DELRSPL stub |
 | S40.1/CALCUT/S40.2,3/S41.1/S40.8 TGO+XPRODUCT/CM S40.13 | DONE src/guidance/burn_steering.c (CM S40.8/S40.9 drivers in sps_burn_steer.c; LM S40.8/S40.9/S40.13 DONE in dps_burn.c) |
 | CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | DONE src/csm/burns/sps_burn.c, sps_burn_ignition.c, sps_burn_steer.c, sps_burn_clock.c, sps_burn_internal.h |
 | LM P40/P41/P42/P47 sequencing, TRIMGIMB | DONE src/lm/burns/dps_burn.c |

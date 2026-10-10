@@ -57,7 +57,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
 #include "agc/agc_channels.h"
-#include "exec_internal.h"
+#include "internal.h"
 
 /* Priority word layout: priority number in bits 10-14 (PRIOnn = nn000
  * octal), low 9 bits = VAC address or LOC(MPAC)-36D for NOVAC. The C

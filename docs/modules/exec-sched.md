@@ -51,7 +51,7 @@ vehicle differences behind `agc_state_vehicle()`.
 - DONE restarts.c (RESTARTS, FINDTIME, LONGCALL restart, NXTRST loop = agc_phase_restart_all)
 - DONE alarm.c (ALARM VARALARM PRIOLARM(store only) CURTAINS BAILOUT POODOO GOPOODOO CCSHOLE ABORT VAC5STOR, ENEMA request/service)
 - DONE interrupts.c (INHINT/RELINT counter, 11 lead-ins, TIME4-6, T5LOC/T6LOC, T5IDLOC)
-- DONE exec_erasable.c (MODECADR: IMUCADR/OPTCADR/RADCADR)
+- DONE erasable.c (MODECADR: IMUCADR/OPTCADR/RADCADR)
 - DONE fresh_start.c (SLAP1 DOFSTART DOFSTRT1 GOPROG ENEMA GOPROG3 LIGHTSET STARTSUB STARTSB1 STARTSB2 GOTOPOOH; foreign erasables delegated)
 - PARTIAL change_program_idle.c (GOP00FIX + reflash, INITSUB/RAKE, V37 front-end checks + PREMM1 tables, upcalls; CANV37, R00TOP00, SETUP70 stubbed)
 - DONE dispatch.c (job, task, rupt switches; provisional ids -> default NOT_FOUND)
@@ -117,7 +117,7 @@ Build (the full libagc does not build yet because of other lanes):
 
 ## Open questions
 
-- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/agc_entry_pending.h and src/programs/rendezvous/rendz_ext.h #define it again: those lanes must drop their macros.
+- AGC_JOB_GOTOPOOH is an agc_jobs.h member but include/agc/agc_entry_pending.h and src/programs/rendezvous/ext.h #define it again: those lanes must drop their macros.
 - AGC_JOB_GOPROG in agc_jobs.h does not correspond to an AGC job; dispatch returns UNIMPLEMENTED. Remove or repurpose?
 - STATEUP / THISVINT (end of FRESH_START_AND_RESTART) are P00 integration code; assumed to belong to nav-integ.
 - Layering: change_program_idle.c and dispatch.c call io/imu/dap; everything else in src/exec calls only core and exec.

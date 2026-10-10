@@ -40,7 +40,7 @@
 /* ---- erasable accessors requested from state-flags ---------------------
  * TVCPITCH = CDUSCMD (054) and TVCYAW = CDUTCMD (053): optics CDU error
  * counter drive registers, 85.41 arcsec/bit in TVC mode. Same prototypes
- * as src/csm/burns/guid_pending_csm.h (guid-powered requests the setters too). */
+ * as src/csm/burns/guid_pending.h (guid-powered requests the setters too). */
 agc_sp_t agc_erase_tvcpitch(void);
 void     agc_erase_set_tvcpitch(agc_sp_t v); /* TVCPITCH counter, 85.41"/bit */
 agc_sp_t agc_erase_tvcyaw(void);

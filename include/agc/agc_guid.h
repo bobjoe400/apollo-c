@@ -334,7 +334,7 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t *ip, const agc_xprod_i
 agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage, bool four_jets,
                                  agc_sp_t emdot, agc_sp_t fang);
 
-/* ---- average-G jobs and tasks: Comanche (src/csm/burns/servicer_csm.c) ------ */
+/* ---- average-G jobs and tasks: Comanche (src/csm/burns/servicer.c) ------ */
 agc_status_t agc_task_preread_csm(void);                 /* PREREAD     */
 agc_status_t agc_task_readaccs_csm(void);                /* READACCS    */
 agc_status_t agc_task_rereadac_csm(void);                /* REREADAC    */
@@ -350,7 +350,7 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx);  /* GENTRAN restart  */
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx);     /* AVGEND      */
 agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx);   /* AVGEND 2.2 restart */
 
-/* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer_lm.c) -------- */
+/* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer.c) -------- */
 agc_status_t agc_task_preread_lm(void);                  /* PREREAD     */
 agc_status_t agc_task_bibibias(void);                    /* BIBIBIAS    */
 agc_status_t agc_task_readaccs_lm(void);                 /* READACCS    */

@@ -2,7 +2,7 @@
 
 Scope (Comanche only), into src/csm/ with include/agc/agc_csm_entry.h:
 - ENTRY_LEXICON.agc (erasable and constant definitions for entry; produce
-  the entry state struct and constants with scales) -> entry_lexicon.c/.h
+  the entry state struct and constants with scales) -> lexicon.c/.h
 - REENTRY_CONTROL.agc (P61-P67 entry guidance: initial roll, HUNTEST,
   UPCONTROL, KEP2 (ballistic), the final phase (PREDICT3), the
   drag/lift logic, the range prediction, the lateral logic) -> reentry.c
@@ -10,7 +10,7 @@ Scope (Comanche only), into src/csm/ with include/agc/agc_csm_entry.h:
   checks, the entry DAP handoff) -> p61_p67.c
 - CM_BODY_ATTITUDE.agc (body-attitude computation for entry) -> cm_body_attitude.c
 - CM_ENTRY_DIGITAL_AUTOPILOT.agc (the entry DAP: roll command, the
-  pitch/yaw rate damping, jet selection for the CM) -> entry_dap.c
+  pitch/yaw rate damping, jet selection for the CM) -> dap.c
 - P37_P70.agc (return-to-earth targeting P37 and P70 saturn abort?
   -- read and describe) -> p37.c
 - P11.agc (earth-orbit insertion monitor) -> p11.c

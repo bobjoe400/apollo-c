@@ -4,7 +4,7 @@
  * wave-1 lanes landed, against every include/agc header).
  *
  * Names follow docs/agents/_common.md; where another lane's pending header
- * already declares the same symbol (src/imu/imu_pending.h) the identical
+ * already declares the same symbol (src/imu/pending.h) the identical
  * prototype is repeated here. INTEGRATION: delete each block once the
  * owning lane's header provides it. Nothing here is defined in src/lm/.
  */

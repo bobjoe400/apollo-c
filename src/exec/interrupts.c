@@ -28,7 +28,7 @@
 #include "agc/agc_exec.h"
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
-#include "exec_internal.h"
+#include "internal.h"
 
 #define RUPT_MAX_DEPTH 64            /* bound on INHINT nesting          */
 #define RUPT_TIME_MASK 077777u       /* 15-bit counter words             */

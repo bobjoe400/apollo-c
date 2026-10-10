@@ -23,7 +23,7 @@
 #include "agc/agc_exec.h"
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
-#include "exec_internal.h"
+#include "internal.h"
 #include "agc/agc_exec_pending.h"
 
 #define RST_J  AGC_RESTART_JOB

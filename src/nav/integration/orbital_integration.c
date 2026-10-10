@@ -22,7 +22,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_flags_common.h"
 #include "agc/agc_integ.h"
-#include "integ_internal.h"
+#include "internal.h"
 
 /* ---- constant pool (CM pp. 1353-1354) --------------------------------- */
 /* 3/4   2DEC 3.0 B-2, oct 30000 00000: 3 at scale 2^2 (also the rectify

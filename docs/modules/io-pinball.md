@@ -23,40 +23,40 @@ agc_state_vehicle() tests; one translation.
 
 | AGC routine (label, CM page) | In / out, scale | C function (file) |
 |---|---|---|
-| KEYRUPT1, KEYCOM, ACCEPTUP (1449) | ch15 low5 key; sets DSKYFLAG; NOVAC CHARIN | agc_dsky_keyrupt1, agc_dsky_keyrupt2 (pinball_keys.c) |
-| UPRUPT, UPTEST, UPOK, TMFAIL2 (1450) | INLINK 15 bits = C, ~C, C triple; UPLOCKFL | agc_dsky_uprupt (pinball_keys.c) |
+| KEYRUPT1, KEYCOM, ACCEPTUP (1449) | ch15 low5 key; sets DSKYFLAG; NOVAC CHARIN | agc_dsky_keyrupt1, agc_dsky_keyrupt2 (keys.c) |
+| UPRUPT, UPTEST, UPOK, TMFAIL2 (1450) | INLINK 15 bits = C, ~C, C triple; UPLOCKFL | agc_dsky_uprupt (keys.c) |
 | CHARIN (315) | key code 5 bits | pin_charin, agc_job_charin |
-| NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND (316-318) | octal 3 bits/char; decimal N -> N/10^5 frac (DECON 2^14/10^5) | pin_num (pinball_keys.c) |
-| GETINREL / INRELTAB (318) | DSPCOUNT -> 0 VERB 1 NOUN 2-4 R1-R3 | pin_getinrel (pinball_state.c) |
+| NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND (316-318) | octal 3 bits/char; decimal N -> N/10^5 frac (DECON 2^14/10^5) | pin_num (keys.c) |
+| GETINREL / INRELTAB (318) | DSPCOUNT -> 0 VERB 1 NOUN 2-4 R1-R3 | pin_getinrel (state.c) |
 | VERB, NOUN, NVCOM (319) | | pin_verb_key, pin_noun_key |
 | POSGN, NEGSGN, SIGNTEST, +ON, -ON (319-320) | DECBRNCH sign bits | pin_sign_key, pin_plus_on/minus_on |
 | CLEAR, CLPASHI, LEGALTST, 5BLANK, 2BLANK (321-322) | CLPASS | pin_clear_key, pin_5blank, pin_2blank |
 | ENTER, ENTPASHI, ACCEPTWD (323) | REQRET | pin_enter |
-| ENTPAS0, TESTVB, TESTNN, REQADD, USEADD, INTMCTBS, VERBFAN (324-325) | | pin_entpas0, pin_testnn (pinball_verbs.c) |
+| ENTPAS0, TESTVB, TESTNN, REQADD, USEADD, INTMCTBS, VERBFAN (324-325) | | pin_entpas0, pin_testnn (verbs.c) |
 | VERBTAB VB00-VB39 (325-326) | | pin_vbfandir switch |
 | MIXNOUN, DPTEST (327) | flat agc_noun_t replaces IDADDTAB | pin_comp_read, pin_sf_is_dp |
 | REQDATX/Y/Z, UPDATNN, UPDATVB (328) | | pin_reqdat, pin_updatnn, pin_updatvb |
-| DSPA..DSPABC, COMPTEST, DCOMPTST, DECTEST, NOUNTEST, TSTFORDP, CHANDSP (331-333) | octal display, minor part of DP | pin_dsp_octal (pinball_verbs.c) |
-| DECDSP, DSPDCPUT, SFOUTABR (333-334) | SF routine 0-13 | pin_decdsp, pin_decdsp_comp (pinball_scale.c) |
-| DEGOUTSF, OPDEGOUT, ARTOUTSF, AROUT1SF, DP1/2/3OUTSF, DPOUT, 2INTOUT, DPFRACOT, HMSOUT, M/SOUT, SEPSEC, SEPMIN (335-341); LM 360-CDUO, LRPOSOUT | DP fraction for DSPDECWD | pin_degout, pin_opdegout, pin_artout, pin_dpout, pin_hmsout, pin_msout.. (pinball_scale.c) |
+| DSPA..DSPABC, COMPTEST, DCOMPTST, DECTEST, NOUNTEST, TSTFORDP, CHANDSP (331-333) | octal display, minor part of DP | pin_dsp_octal (verbs.c) |
+| DECDSP, DSPDCPUT, SFOUTABR (333-334) | SF routine 0-13 | pin_decdsp, pin_decdsp_comp (scale.c) |
+| DEGOUTSF, OPDEGOUT, ARTOUTSF, AROUT1SF, DP1/2/3OUTSF, DPOUT, 2INTOUT, DPFRACOT, HMSOUT, M/SOUT, SEPSEC, SEPMIN (335-341); LM 360-CDUO, LRPOSOUT | DP fraction for DSPDECWD | pin_degout, pin_opdegout, pin_artout, pin_dpout, pin_hmsout, pin_msout.. (scale.c) |
 | DSPDPDEC V07 (341) | DP as 10 digits | pin_dspdpdec |
-| ABCLOAD..CLOAD, PUTXYZ, PUTXY, LOADLV, ALLDC/OC, PUTCOM, CHANLOAD (343-348) | | pin_load_verb, pin_load_resume, pin_putcom, pin_putn (pinball_load.c) |
-| SFINTABR, DEGINSF, ARTHINSF, BINROUND, ARTIN1SF, OPTDEGIN, DPINSF, DPINSF2/4, DPFRACIN, HMSIN, 2ROUND, TESTOFUF (349-354) | decimal frac -> erasable word(s) | pin_putdecsf, pin_deginsf, pin_dpinsf, pin_hmsin.. (pinball_sfin.c) |
-| MONITOR, MONREQ, KILLMON, MONDO, PASTEVB (355-357) | 1 s waitlist (MONDEL 144 oct) | pin_monitor, agc_task_monreq, agc_job_mondo, pin_pastevb (pinball_monitor.c) |
+| ABCLOAD..CLOAD, PUTXYZ, PUTXY, LOADLV, ALLDC/OC, PUTCOM, CHANLOAD (343-348) | | pin_load_verb, pin_load_resume, pin_putcom, pin_putn (load.c) |
+| SFINTABR, DEGINSF, ARTHINSF, BINROUND, ARTIN1SF, OPTDEGIN, DPINSF, DPINSF2/4, DPFRACIN, HMSIN, 2ROUND, TESTOFUF (349-354) | decimal frac -> erasable word(s) | pin_putdecsf, pin_deginsf, pin_dpinsf, pin_hmsin.. (sfin.c) |
+| MONITOR, MONREQ, KILLMON, MONDO, PASTEVB (355-357) | 1 s waitlist (MONDEL 144 oct) | pin_monitor, agc_task_monreq, agc_job_mondo, pin_pastevb (monitor.c) |
 | DSPFMEM V27 (358) | fixed memory | stub |
-| DSPSIGN, DSPRND, DSPDECWD, DSPDECNR, DSPDC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT (359-362) | DP fraction -> sign + 5 digits, round 5E-6 | pinball_display.c |
-| DSPIN, DSPIN1, 11DSPIN (362-363) | relay codes into DSPTAB, NOUT | pin_dspin, pin_11dspin (pinball_state.c) |
+| DSPSIGN, DSPRND, DSPDECWD, DSPDECNR, DSPDC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT (359-362) | DP fraction -> sign + 5 digits, round 5E-6 | display.c |
+| DSPIN, DSPIN1, 11DSPIN (362-363) | relay codes into DSPTAB, NOUT | pin_dspin, pin_11dspin (state.c) |
 | DSPALARM, CHARALRM, ALMCYCLE (364) | POODOO 01501 for NVSUB | pin_dspalarm, pin_almcycle |
 | MMCHANG, REQMM (365) | V37 -> agc_change_program | pin_mmchang |
 | VBRQEXEC, VBRQWAIT (366) | N26 DSPTEM1: prio, job/task id, (BBCON) | pin_vbrqexec, pin_vbrqwait |
 | VBPROC, VBTERM, PROCKEY, VBRESEQ (366-367) | LOADSTAT | pin_vbproc_common, agc_job_prockey |
 | VBRELDSP (368) | | pin_vbreldsp |
-| NVSUB, NVMONOPT, NVSBWAIT, BLANKDSP, NVSUB1, NVSUB2 (370-372) | | pinball_nvsub.c |
-| KILMONON, ENDIDLE, ISCADR+0, ISLIST+0, JAMTERM, JAMPROC, BLANKSUB (372-375) | ENDIDLE: 3 continuation job ids | pinball_nvsub.c |
+| NVSUB, NVMONOPT, NVSBWAIT, BLANKDSP, NVSUB1, NVSUB2 (370-372) | | nvsub.c |
+| KILMONON, ENDIDLE, ISCADR+0, ISLIST+0, JAMTERM, JAMPROC, BLANKSUB (372-375) | ENDIDLE: 3 continuation job ids | nvsub.c |
 | DSPMM, DSPMMJB, RECALTST (375-377) | | agc_dsky_dspmm, agc_job_dspmmjb, pin_recaltst |
-| PRENVBSY, NVSUBUSY, RELDSP, RELDSP1 (382-383) | | pinball_nvsub.c |
-| VBTSTLTS, TSTLTS2, TSTLTS3 (385-387) | 5 s | pin_vbtstlts, agc_task_tstlts2, agc_job_tstlts3 (pinball_monitor.c) |
-| ERROR (RSET) (388-389) | | pin_error_key (pinball_keys.c) |
+| PRENVBSY, NVSUBUSY, RELDSP, RELDSP1 (382-383) | | nvsub.c |
+| VBTSTLTS, TSTLTS2, TSTLTS3 (385-387) | 5 s | pin_vbtstlts, agc_task_tstlts2, agc_job_tstlts3 (monitor.c) |
+| ERROR (RSET) (388-389) | | pin_error_key (keys.c) |
 | Display interface: GODSP..GOMARK4R, MAKEPLAY, MAKEPRIO, MAKEMARK, NVDSP, FLASHSUB, ENDOUT, ENDRET, PINBRNCH, LINUSCHR, WITCHONE, JOBXCHS, GOSLEEPS (1465-1484) | FLAGWRD4 masks, 3 display classes | display_if.c |
 
 Data model: DSPTAB kept as raw 15-bit AGC words (negative = still to be
@@ -66,23 +66,23 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 
 (updated as files are finished)
 
-- DONE design; include/agc/agc_dsky.h; src/io/dsky/pinball_internal.h (control-flow model in its header comment)
-- DONE pinball_state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
-- DONE pinball_display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
-- DONE pinball_keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
-- DONE pinball_verbs.c: LODNNTAB, ENTPAS0, TESTVB, TESTNN, REQADD (+resume), USEADD, INTMCTBS, VERBFAN, VBFANDIR, DSPA..DSPABC, COMPTEST/DECTEST/DCTSTCYC/NOUNTEST, DSPALARM, PREDSPAL, CHARALRM, ALMCYCLE, ENTEXIT
-- DONE pinball_monitor.c: MONITOR, MONREQ, KILLMON, MONDO, PASTEVB, DSPFMEM (stub), VBRQEXEC, VBRQWAIT, VBPROC/VBTERM/VBRESEQ, REQMM, MMCHANG+1, VBTSTLTS, TSTLTS2, TSTLTS3
-- DONE pinball_load.c: REQDATX/Y/Z, ALOAD..ABCLOAD, PUTXYZ (+noun 07 bits), PUTXY, PUTCOM/PUTNORM/PUTDPCOM, CHANLOAD, ALLDC/OC, LOADLV
-- DONE pinball_scale.c: component access (MIXNOUN/TSTFORDP/CHANDSP/READLO equivalents, pinball-owned ids), DPTEST, DECDSP, DSPDCPUT, SF out routines (DEGOUTSF, OPDEGOUT, LRPOSOUT, 360-CDUO, ARTOUTSF, AROUT1SF, DP1/2/3OUTSF, 2INTOUT, DPFRACOT, HMSOUT, M/SOUT), DSPDPDEC
-- DONE pinball_sfin.c: PUTDECSF, BINROUND, DEGINSF(+SIGNFIX, LM ENDSCALE), ARTHINSF, ARTIN1SF, OPTDEGIN, DPINSF/2/4, DPFRACIN, HMSIN
-- DONE pinball_nvsub.c: NVSUB, NVMONOPT, NVSBWAIT, BLANKDSP, NVSUB1/2, KILMONON, ENDIDLE, ISCADR+0/ISLIST+0/DSPABORT, NVSUBUSY, RECALTST, RELDSP, RELDSP1, BLANKSUB, JAMTERM, JAMPROC, DSPMM, agc_dsky_vn
+- DONE design; include/agc/agc_dsky.h; src/io/dsky/internal.h (control-flow model in its header comment)
+- DONE state.c: erasables, RELTAB, INRELTAB, DSPIN/DSPIN1/11DSPIN, 2BLANK, 5BLANK (+2), lamps, LODSAMPT, DSPOUT/DSPOUTSB, agc_dsky_get_state, agc_dsky_init
+- DONE display.c: +ON/-ON, DSPSIGN, DSPRND, DSPDECWD/NR/DC2NR, DSP2DEC, DSPDECVN, DSPOCTWO, DSP2BIT, UPDATVB, UPDATNN, DSPMMJB
+- DONE keys.c: CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, VERB/NOUN/NVCOM, POSGN/NEGSGN/SIGNTEST, CLEAR/CLPASHI/LEGALTST, ENTER/ENTPASHI/ACCEPTWD, VBRELDSP/UNSUSPEN/TSTLTS4, ERROR/TSTAB, PROCKEY, KEYRUPT1/2, UPRUPT, agc_dsky_key(s), agc_dsky_falton
+- DONE verbs.c: LODNNTAB, ENTPAS0, TESTVB, TESTNN, REQADD (+resume), USEADD, INTMCTBS, VERBFAN, VBFANDIR, DSPA..DSPABC, COMPTEST/DECTEST/DCTSTCYC/NOUNTEST, DSPALARM, PREDSPAL, CHARALRM, ALMCYCLE, ENTEXIT
+- DONE monitor.c: MONITOR, MONREQ, KILLMON, MONDO, PASTEVB, DSPFMEM (stub), VBRQEXEC, VBRQWAIT, VBPROC/VBTERM/VBRESEQ, REQMM, MMCHANG+1, VBTSTLTS, TSTLTS2, TSTLTS3
+- DONE load.c: REQDATX/Y/Z, ALOAD..ABCLOAD, PUTXYZ (+noun 07 bits), PUTXY, PUTCOM/PUTNORM/PUTDPCOM, CHANLOAD, ALLDC/OC, LOADLV
+- DONE scale.c: component access (MIXNOUN/TSTFORDP/CHANDSP/READLO equivalents, pinball-owned ids), DPTEST, DECDSP, DSPDCPUT, SF out routines (DEGOUTSF, OPDEGOUT, LRPOSOUT, 360-CDUO, ARTOUTSF, AROUT1SF, DP1/2/3OUTSF, 2INTOUT, DPFRACOT, HMSOUT, M/SOUT), DSPDPDEC
+- DONE sfin.c: PUTDECSF, BINROUND, DEGINSF(+SIGNFIX, LM ENDSCALE), ARTHINSF, ARTIN1SF, OPTDEGIN, DPINSF/2/4, DPFRACIN, HMSIN
+- DONE nvsub.c: NVSUB, NVMONOPT, NVSBWAIT, BLANKDSP, NVSUB1/2, KILMONON, ENDIDLE, ISCADR+0/ISLIST+0/DSPABORT, NVSUBUSY, RECALTST, RELDSP, RELDSP1, BLANKSUB, JAMTERM, JAMPROC, DSPMM, agc_dsky_vn
 - DONE display_if.c: all GO*/RE*/PRIODSP/GOMARK*/EXDSPRET/KLEENEX/CLOCPLAY entries, GODSPRS1, MAKEPLAY, MAKEPRIO, MAKEMARK, IFLEGAL/OKTOPLAY, LINUSCHR, JOBXCHS, WITCHONE, GOSLEEPS/XCHSLEEP, NVDSP/PERFCHEK/1STOR2ND, REST, GOANIDLE, FLASHSUB, CLEANEND, ENDOUT/TIMECHEK/NORMRET/MARKRET/ENDRET/ENDIT, TERMATE/PROCEED/IDLERET1+2/LOADITIS, PINBRNCH/NORMBNCH/ERASER, CLEARMRK, MARKOVER, BLANKET, INITDSP
 - DONE agc_dsky_endext (ENDEXT EQUALS ENDMARK)
 - DONE tests/test_dsky.c (182 checks pass, see Tests written); check_rules: 0 hard
   violations, assertion density 1.25-1.93 per file (warn)
-- Files: include/agc/agc_dsky.h; src/io/dsky/pinball_internal.h, pinball_state.c,
-  pinball_display.c, pinball_keys.c, pinball_verbs.c, pinball_monitor.c,
-  pinball_load.c, pinball_scale.c, pinball_sfin.c, pinball_nvsub.c, display_if.c
+- Files: include/agc/agc_dsky.h; src/io/dsky/internal.h, state.c,
+  display.c, keys.c, verbs.c, monitor.c,
+  load.c, scale.c, sfin.c, nvsub.c, display_if.c
 
 ## Deviations
 
@@ -143,7 +143,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - exec-sched: `agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc);`
   JOBWAKE the job sleeping at LOC loc, then INDEX LOCCTR / TS LOC = new_loc
   (RECAL2: terminate/proceed/data-in return; XCHNYLOC: XCHTOEND / XCHSLEEP).
-  NOT_FOUND if no job sleeps at loc. Declared in pinball_internal.h.
+  NOT_FOUND if no job sleeps at loc. Declared in internal.h.
 - sys-misc: `agc_status_t agc_extverb(int verb, int noun);` (GOEXTVB, already in
   include/agc/agc_sysmisc.h) and `void agc_erase_set_extvbact(uint16_t)` (CLEARMRK; in
   sysmisc_ext.h). GOPIN (ALM/END -> PINBRNCH) stays sys-misc's; it should call
@@ -166,7 +166,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
   agc_dsky_endext, agc_job_xchsleepm/n.
 - Other lanes declared different DSKY entry points in their pending headers
   (include/agc/agc_align_pending.h: agc_dsky_goflash/goperf1/goperf4/gomark/godsp/
-  exdspret/priolarm/cleandsp/keycom/set_dsptem1_word; src/csm/burns/guid_pending_csm.h:
+  exdspret/priolarm/cleandsp/keycom/set_dsptem1_word; src/csm/burns/guid_pending.h:
   agc_dsky_gopin). They map onto agc_dsky_display(ctx, kind, vn, cont),
   agc_dsky_set_dsptem(0, w), agc_dsky_keyrupt1, agc_dsky_pinbrnch; the lead should
   rewrite those call sites at integration.
@@ -183,7 +183,7 @@ interface), AGC_JOB_JAMTERM (FINDVAC PRIO32), AGC_JOB_XCHSLEEPM, AGC_JOB_XCHSLEE
 (XCHSLEEP with FACEREG 0 / 1). XCHTOEND uses the existing AGC_JOB_ENDOFJOB.
 Tasks (agc_status_t f(void)): AGC_TASK_MONREQ (agc_task_monreq),
 AGC_TASK_TSTLTS2 (agc_task_tstlts2). Placeholders PIN_JOB_* / PIN_TASK_* in
-src/io/dsky/pinball_internal.h are to be replaced at integration.
+src/io/dsky/internal.h are to be replaced at integration.
 
 ## Tests written
 

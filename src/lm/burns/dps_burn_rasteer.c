@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "guid_pending_lm.h"
+#include "guid_pending.h"
 #include "agc/agc_sysmisc.h"
 
 /* 2PI+3: 2DEC 3.141592653 B-2 (pi at 2^2).                                 */

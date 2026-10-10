@@ -14,7 +14,7 @@ Files:
 * include/agc/agc_entry_internal.h -- prototypes shared between files of this lane only
 * include/agc/agc_entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
   IMU, job/task ids). Delete at integration; see "Requested core additions".
-* src/csm/entry/reentry.c, entry_programs.c, cm_body_attitude.c, entry_dap.c, return_to_earth.c, earth_orbit_insertion.c
+* src/csm/entry/reentry.c, programs.c, cm_body_attitude.c, dap.c, return_to_earth.c, earth_orbit_insertion.c
 * tests/test_entry.c
 
 ## Design table
@@ -43,13 +43,13 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 | GONEGLAD/GOMAXL/D/GLIMITER/GOPOSLAD (872) | g limiter -> L/D | step functions |
 | LIMITL/D/L350/L353/L355/L357 (873-875) | lateral logic -> K2ROLL ROLLC | entry_step_limitld, entry_step_l355 |
 | ENDEXIT/OVERNOUT/SERVNOUT/STEEROFF (873-875) | display, exit | entry_endexit, entry_step_steeroff |
-| VREFER table (876-878) | 13 x 6 SP table | entry_vrefer[] (entry_lexicon.c) |
+| VREFER table (876-878) | 13 x 6 SP table | entry_vrefer[] (lexicon.c) |
 | CM/POSE, CM/POSE2 (883) | VN UNITR UNITW -> -VREL UXA UYA UZA OLDUYA | agc_entry_cm_pose (cm_body_attitude.c) |
 | CM/TRIO (884-886) | AOG/AIG/AMG at PIP, REFSMMAT -> UBX UBY UBZ, roll beta alfa gamma | entry_cm_trio |
 | ARCTRIG (INFLIGHT_ALIGNMENT 1357) | sin/4 cos/4 -> angle revs | entry_arctrig (local copy) |
 | CDULOGIC (RT8 op codes) | SP CDU -> DP revs | entry_cdulogic (local copy) |
 | CM/ATUP/CMTR1/CMTR2/REDOPOSE/CM/POSE3/CORANGOV (887-889) | GAMA GAMDOT ROLL/180 ALFA/180 BETA/180 VMAGI | entry_cm_atup |
-| READGYMB/DOBRATE?/DOBRATE/CM/GYMIC (1063-1064) | CDUX/Y/Z -> -DELAOG/AIG/AMG | agc_entry_dap_readgymb (entry_dap.c) |
+| READGYMB/DOBRATE?/DOBRATE/CM/GYMIC (1063-1064) | CDUX/Y/Z -> -DELAOG/AIG/AMG | agc_entry_dap_readgymb (dap.c) |
 | ANGOVCOR/FLUSHJET/RATEAVG (1065) | helpers | dap_angovcor, agc_entry_dap_flushjet, dap_rateavg |
 | CM/DAPON/NOTYET (1066-1067) | DAP turn-on, attitude hold | agc_entry_dap_on |
 | CM/DAPIC (1068) | READGYMB start, flag init | agc_entry_dap_ic |
@@ -62,7 +62,7 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 | WHICHALF..TIMSCAL (1083-1086) | phase plane -> TON1 TOFF TON2 JNDX JNDX1 | agc_entry_dap_roll_phase_plane |
 | TIMETST/JETCALL/JETACTN/DZCALL (1087-1089) | waitlist jet schedule, ch 6 | dap_timetst, agc_entry_dap_jetcall, dap_dzcall |
 | CM/FDAI/CM/FDAIR/CM/DUMPR/CMTMFILE (1090-1091) | FDAI needles, body rate TM | dap_cm_fdai |
-| P61, P61.1-P61.4 (789-791) | displays N61 N60 N63 | agc_job_entry_preparation* (entry_programs.c) |
+| P61, P61.1-P61.4 (789-791) | displays N61 N60 N63 | agc_job_entry_preparation* (programs.c) |
 | P62, P62.1-P62.3 (792-794) | separation, DAP on, N22 | agc_job_cm_sm_separation* |
 | P63 .. P67, P67.1-P67.3, KILLGRP4 (795-802) | mode changes, displays | agc_job_entry_initialization.., entry_post_0_05g..entry_final_phase |
 | S61.1/S61.1A-C (803-805) | IMU orientation check, alarms 1426/1427 | agc_job_entry_imu_check, agc_job_entry_imu_axis_test |
@@ -76,8 +76,8 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - ENTRY_LEXICON: DONE agc_csm_entry.h struct, entry_lexicon.h/.c (constants, VREFER)
 - REENTRY_CONTROL: DONE reentry.c (targeting, STARTENT, all steering steps, sequencer, REFAZE10, PRE-HUNT, HUNTEST/RANGER test API)
 - CM_BODY_ATTITUDE: DONE cm_body_attitude.c (CM/POSE triad, CM/TRIO, CM/ATUP, REDOPOSE, POSEXIT, SERVNOUT, REFAZE10 job)
-- CM_ENTRY_DIGITAL_AUTOPILOT: DONE entry_dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
-- P61-P67: DONE entry_programs.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
+- CM_ENTRY_DIGITAL_AUTOPILOT: DONE dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
+- P61-P67: DONE programs.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
 - P37_P70: PARTIAL return_to_earth.c (XT1LIM done; P37 program and its conic/precision
   subroutines are a documented stub -- assignment asked "read and describe")
 - P11: DONE earth_orbit_insertion.c (P11, REP11, REP11A, MATRXJOB+GETDOWN, VHHDOT, S11.1,
@@ -108,7 +108,7 @@ AVERAGEG state now come from the published headers.
 - imu/prelaunch: `agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip,
   agc_dp_t tliftoff);` (P11 tail of the prelaunch ERCOMP/EARTHR).
 - dap-csm: `agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);` -- public
-  wrapper for csm_rcs_stickchk (rcs_manual.c), used by SATSTICK.
+  wrapper for csm_rcs_stickchk (manual.c), used by SATSTICK.
 - io-pinball: `agc_status_t agc_dsky_gopin(const agc_job_ctx_t *ctx);` (GOPIN,
   also requested by guid-powered).
 - Provisional job/task ids AGC_JOB_SERVEXIT..AGC_JOB_ATRESET_AFTER_DELAY (0x0C00..0x0C1D),

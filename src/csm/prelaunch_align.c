@@ -12,7 +12,7 @@
  *
  * Scales: LATITUDE and azimuth in revolutions (2^0); ERVECTOR earth rate
  * per (centisecond x 2^-19) in revolutions (OMEG/MS); ERCOMP1 is the
- * ERCOMP gyro command buffer of imu_gyro.c, DP revolutions.
+ * ERCOMP gyro command buffer of gyro.c, DP revolutions.
  */
 #include <stddef.h>
 #include "agc/agc_assert.h"
@@ -23,7 +23,7 @@
 #include "agc/agc_state.h"
 #include "agc/agc_channels.h"
 #include "agc/agc_imu.h"
-#include "../imu/imu_pending.h"
+#include "../imu/pending.h"
 
 #define OMEG_MS   ((agc_dp_t)65334634)  /* 2DEC .24339048 (OMEG/MS)        */
 #define POSMAX_W  037777u               /* POSMAX                         */

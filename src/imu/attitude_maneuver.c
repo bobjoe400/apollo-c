@@ -32,8 +32,8 @@
 #include "agc/agc_guid.h"
 #include "agc/agc_navaux.h"
 #include "agc/agc_imu.h"
-#include "imu_internal.h"
-#include "imu_pending.h"
+#include "internal.h"
+#include "pending.h"
 
 #define SINGIMLC ((agc_dp_t)115047034)  /* 2DEC .4285836003 = sin(59)/2  */
 #define SINVEC1  ((agc_dp_t)101907670)  /* 2DEC .3796356537 = sin(49.4)/2 */

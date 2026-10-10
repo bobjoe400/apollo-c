@@ -223,7 +223,7 @@ agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc);  /* 2nd INTSTALL  */
 agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
                                 agc_lambert_out_t *out);
 
-/* ---- ephemeris (agent nav-aux, src/nav/aux/ephemerides.c) ---------------
+/* ---- ephemeris (agent nav-aux, src/nav/auxiliary/ephemerides.c) ---------------
  * time_cs: cs scale 2^28.  CM: *moon_pos = moon position earth-centred
  * m 2^29, *sun_pos = sun position earth-centred m 2^38.  LM: unit vectors
  * VMOON/VSUN scale 2^1 (only reachable in the LM through MIDFLAG, which

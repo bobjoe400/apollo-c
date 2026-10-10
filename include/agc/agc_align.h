@@ -203,13 +203,13 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
 agc_vec_t    agc_align_r_other(void);    /* R-OTHER  m B29 (downlink)      */
 agc_vec_t    agc_align_v_other(void);    /* V-OTHER  m/cs B7 (downlink)    */
 
-/* ---- COARSE (both vehicles, src/programs/alignment/align_common.c) ---------------- */
+/* ---- COARSE (both vehicles, src/programs/alignment/common.c) ---------------- */
 
 /* ---- shared alignment jobs: R54 (CHKSDATA) and R55 (src/programs/) ------ */
 agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 
-/* ---- CSM geometry (src/csm/optics/csm_geometry.c) ------------------------------- */
+/* ---- CSM geometry (src/csm/optics/geometry.c) ------------------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
                            uint16_t shaft_cdu, agc_vec_t *starm_nb);
@@ -308,7 +308,7 @@ agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los,
 /* ---- LM P51/P52/P57, R51, R52, R59 (src/lm/) ------------------------------ */
 
 /* ==== job and task entry points (BEGIN generated list) ==== */
-/* src/csm/optics/s_band_antenna_csm.c */
+/* src/csm/optics/s_band_antenna.c */
 agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx);
@@ -321,13 +321,13 @@ agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx);
 agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx);
 agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx);
 agc_status_t agc_task_endmarks(void);
-/* src/lm/s_band_antenna_lm.c */
+/* src/lm/s_band_antenna.c */
 agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx);
-/* src/programs/alignment/align_common.c */
+/* src/programs/alignment/common.c */
 agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx);
-/* src/programs/alignment/align_planet.c */
+/* src/programs/alignment/planet.c */
 agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx);
 agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx);

@@ -335,7 +335,7 @@ agc_status_t agc_rendz_tracking_bvectors(agc_interp_t *ip, agc_vec_t rclp,
  * runs to its first display; the AGC's returns from flashing displays,
  * DELAYJOB and INTSTALL sleeps are separate continuation jobs. Job ids
  * are listed in docs/modules/prog-rendz.md ("Requested jobs-tasks").    */
-/* shared displays (rendz_display.c) */
+/* shared displays (display.c) */
 agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx);        /* VNPOOH TC -5 */
 agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx); /* VN1645 V16N45 */
 agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx);      /* KILCLOCK     */
@@ -360,7 +360,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx);
 agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx);
-/* rendz_csi_cdh_targeting.c */
+/* csi_cdh_targeting.c */
 agc_status_t agc_job_csi_targeting(agc_job_ctx_t *ctx);
 agc_status_t agc_job_csi_targeting_other_vehicle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx);

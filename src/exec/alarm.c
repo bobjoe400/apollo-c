@@ -30,7 +30,7 @@
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
 #include "agc/agc_flags_common.h"
-#include "exec_internal.h"
+#include "internal.h"
 
 #define AL_DSPTAB_LAMPS 11        /* DSPTAB +11D: C/S lamp word          */
 #define AL_OCT40400     040400u   /* bit 15 (update) + bit 9 (PROG lamp) */

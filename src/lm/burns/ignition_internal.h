@@ -10,7 +10,7 @@
 #ifndef IGNITION_INTERNAL_H
 #define IGNITION_INTERNAL_H
 
-#include "guid_pending_lm.h"
+#include "guid_pending.h"
 
 /* (3) the *ENTER response of the V99 engine-enable request.               */
 typedef enum ign_enter {

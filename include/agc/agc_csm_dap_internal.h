@@ -64,7 +64,7 @@ agc_status_t csm_dap_set_time5(uint16_t time5_word);
 bool     csm_dap_engine_on(void);                /* channel 11 bit 13       */
 agc_status_t csm_dap_needler(void);              /* NEEDLER on AK..AK2      */
 
-/* ---- RCS DAP (rcs_dap.c, rcs_filter.c, rcs_manual.c, rcs_attitude.c) ---- */
+/* ---- RCS DAP (t5rupt.c, filter.c, manual.c, attitude.c) ---- */
 agc_status_t csm_rcs_freshdap(bool fresh);   /* FRESHDAP (true) / REDAP     */
 agc_status_t csm_rcs_reinit(void);           /* REINIT ("TILT")             */
 agc_status_t csm_rcs_phase1(void);           /* SETT5 -0 branch .. RESUME   */

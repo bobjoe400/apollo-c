@@ -24,7 +24,7 @@
 #include "agc/agc_flags_common.h"
 #include "agc/agc_dsky.h"
 #include "agc/agc_imu.h"
-#include "exec_internal.h"
+#include "internal.h"
 
 #define VP_VERB_CHANGE_PROGRAM        37U
 #define VP_GO_IDLE_NOUN        99U

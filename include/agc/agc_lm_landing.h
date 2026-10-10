@@ -191,14 +191,14 @@ typedef struct agc_lm_asc {
     agc_dp_t  rdotv;      /* RDOT used by P12 (alias of RDOT)               */
 } agc_lm_asc_t;
 
-/* ---- lane state accessors (landing_state.c) ----------------------------- */
+/* ---- lane state accessors (state.c) ----------------------------- */
 agc_lm_pad_t *agc_lm_pad(void);
 agc_lm_ldg_t *agc_lm_ldg(void);
 agc_lm_thr_t *agc_lm_thr(void);
 agc_lm_asc_t *agc_lm_asc(void);
 void          agc_lm_landing_reset(void);
 
-/* basic-language helpers shared by the lane (landing_state.c) */
+/* basic-language helpers shared by the lane (state.c) */
 agc_status_t agc_lm_phaschng(uint16_t octal_code);           /* PHASCHNG  */
 agc_status_t agc_lm_fastchng(void);                          /* FASTCHNG  */
 agc_sp_t     agc_lm_time1(void);                             /* TIME1     */
@@ -227,7 +227,7 @@ agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t     agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
 uint16_t     agc_lm_onesto2s(agc_sp_t a);   /* -> 15-bit 2's comp word    */
 
-/* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (landing_guidance.c) --------------
+/* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
  * Job functions take the executive's job context (dispatch.c calls them);
  * display continuations are job ids.                                     */
 #define AGC_LM_ROOT_MAX_DEGREE 5   /* ROOTPSRS erasables allow N <= 5      */
@@ -279,7 +279,7 @@ agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx);          /* LA
 agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx);    /* V06N43 flash */
 agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx);         /* after V06N43 PROCEED */
 
-/* ---- P70-P71 (landing_aborts.c) ------------------------------------------------ */
+/* ---- P70-P71 (aborts.c) ------------------------------------------------ */
 agc_status_t agc_lm_task_abort_monitor(void);                    /* R10,R11      */
 agc_status_t agc_lm_abort_monitor_resume(void);                        /* R10,R11A     */
 agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx);          /* P70          */
@@ -317,7 +317,7 @@ agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx);
 
-/* ---- LANDING_ANALOG_DISPLAYS (landing_displays.c) ----------------------- */
+/* ---- LANDING_ANALOG_DISPLAYS (displays.c) ----------------------- */
 agc_status_t agc_lm_landisp(void);
 agc_status_t agc_lm_task_intlze(void);
 agc_status_t agc_lm_task_speedrun2(void);

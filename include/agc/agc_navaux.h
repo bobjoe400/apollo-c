@@ -3,13 +3,13 @@
  *
  * Translated from (Comanche055 page numbers; Luminary099 code is identical
  * unless noted):
- *   LATITUDE_LONGITUDE_SUBROUTINES.agc        pp. 1236-1242  src/nav/aux/latlong.c
- *   PLANETARY_INERTIAL_ORIENTATION.agc        pp. 1243-1251  src/nav/aux/planetary.c
- *   MEASUREMENT_INCORPORATION.agc             pp. 1252-1261  src/nav/aux/measurement.c
- *   TIME_OF_FREE_FALL.agc                     pp. 1373-1388  src/nav/aux/free_fall.c
+ *   LATITUDE_LONGITUDE_SUBROUTINES.agc        pp. 1236-1242  src/nav/auxiliary/latlong.c
+ *   PLANETARY_INERTIAL_ORIENTATION.agc        pp. 1243-1251  src/nav/auxiliary/planetary.c
+ *   MEASUREMENT_INCORPORATION.agc             pp. 1252-1261  src/nav/auxiliary/measurement.c
+ *   TIME_OF_FREE_FALL.agc                     pp. 1373-1388  src/nav/auxiliary/free_fall.c
  *   LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES   CM pp. 785-788, LM pp. 984-987
- *                                                            src/nav/aux/ephemerides.c
- *   STAR_TABLES.agc (LM: CONTROLLED_CONSTANTS) pp. 1389-1393 src/nav/aux/star_tables.c
+ *                                                            src/nav/auxiliary/ephemerides.c
+ *   STAR_TABLES.agc (LM: CONTROLLED_CONSTANTS) pp. 1389-1393 src/nav/auxiliary/star_tables.c
  *
  * Scale notation: "scale 2^N u" means value = fraction * 2^N in unit u
  * (the AGC comment "B-N").  cs = centiseconds, revs = revolutions.

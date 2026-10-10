@@ -8,13 +8,13 @@ ORBITAL_INTEGRATION.agc (pp. 1334-1354), diffed against Luminary099
 vehicle differences behind `agc_state_vehicle()`; the one LM-only routine
 that needs an LM-only flag (SETITCTR, AVEGFLAG) is in its own file.
 
-Files: include/agc/agc_integ.h, src/nav/integration/integ_internal.h (private),
-src/nav/integration/integration_init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
-src/nav/integration/integration_jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
+Files: include/agc/agc_integ.h, src/nav/integration/internal.h (private),
+src/nav/integration/init.c (entries, lock, TESTLOOP/A-PCHK/RECTOUT, driver),
+src/nav/integration/jobs.c (STATEINT/STATINT1/STATEUP/ENDINT, AVETOMID,
 MIDTOAV1/2, INTWAKEU), src/nav/integration/orbital_integration.c (Encke step, ACCOMP,
 GAMCOMP, OBLATE, DIFEQ, W matrix, RECTIFY, origin change),
-src/nav/integration/integration_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
-src/nav/integration/integration_lm.c (SETITCTR, AVEGFLAG), src/nav/integration/integ_pending.h
+src/nav/integration/flags_csm.c (CSM-only flags V96ONFLG/AMOONFLG),
+src/nav/integration/setitctr_lm.c (SETITCTR, AVEGFLAG), src/nav/integration/pending.h
 (placeholder job/task ids), tests/test_integration.c.
 
 Also translated here (because they are the body of the STATEINT job):
@@ -49,7 +49,7 @@ Design notes:
 | MIDTOAV1/2 | T-TO-ADD stepping, 5.6 s margin, TIMEDELT 1250 | TIMEDELT 2000, simpler MID2 | vehicle test |
 | ACCOMP | RQVV not stored | RQVV stored; MODREG=27 forces RQVV | vehicle test |
 | TIMESTEP | CHKSWTCH (RPQ via LUNPOS, sphere test) | R.V*DT test, LSPOS, INLUNCHK/LUNSPH | vehicle test |
-| SETITCTR | absent | ITERCTR 20 or 5 (AVEGFLAG) then LAMBERT | integration_lm.c |
+| SETITCTR | absent | ITERCTR 20 or 5 (AVEGFLAG) then LAMBERT | setitctr_lm.c |
 | QUALITY1/2 | in RT8_OP_CODES (same code) | here | translated here |
 | Constant pool MUEARTH.. | here | CONTROLLED_CONSTANTS (same values) | one static table |
 | RME/RMM | 7178165 m / 2538.09 km | both = DPPOSMAX (MIDFLAG never set) | per-vehicle consts |
@@ -95,11 +95,11 @@ Design notes:
 
 * design: DONE (this note)
 * agc_integ.h: DONE include/agc/agc_integ.h
-* integ_internal.h / integ_pending.h: DONE src/nav/
-* integration_init.c: DONE (compiles) -- INTSTALL/ERASTAL1/2/OKTOGRAB agc_integ_install, INTWAKE agc_integ_intwake, INTWAKE0/1 agc_integ_intwake0, ERASWAK1/2 agc_integ_eraswake, WAKE wake, CSMPREC/LEMPREC/CSMCONIC/LEMCONIC special_entry, INTEGRVS agc_integ_integrvs, INTEGRV agc_integ_integrv, INTEGRV1 agc_integ_integrv1, INTEGRV2 integrv2, ALOADED aloaded, ATOPCSM/ATOPLEM atop, PTOACSM/PTOALEM agc_integ_ptoacsm/ptoalem, USEPIOS usepios, TESTLOOP testloop, NORFINAL norfinal, DT/2COMP..USEMAXDT dt2comp, POOHCHK poohchk, A-PCHK/ANDOUT/PHEXIT a_pchk, RECTOUT rectout, INTEXIT intexit, RVCON rvcon, ENDSTATE W part wmatrix, RELOADSV reload, driver agc_integ_run, SETIFLGS, THISVINT, GRP2PC, permanent SV agc_integ_perm_get/set
-* integration_jobs.c: DONE (compiles) -- STATEINT agc_task_stateint, STATINT1 agc_job_statint1(+_stall), STATEUP stateup/stateup_lm(+agc_job_stateup_stall), ENDINT endint, NOINT (in statint1), AVETOMID agc_integ_avetomid (INT/W int_w, SETCOAST setcoast_csm, OTHERS others_lm, MOVATHIS move_this), MIDTOAV1/2 agc_integ_midtoav1/2, ENTMID1 entmid1, NOTIME notime, CKMID2/MID2 agc_integ_ckmid2, TIMEINC timeinc, INTWAKEU agc_integ_intwakeu
+* internal.h / pending.h: DONE src/nav/
+* init.c: DONE (compiles) -- INTSTALL/ERASTAL1/2/OKTOGRAB agc_integ_install, INTWAKE agc_integ_intwake, INTWAKE0/1 agc_integ_intwake0, ERASWAK1/2 agc_integ_eraswake, WAKE wake, CSMPREC/LEMPREC/CSMCONIC/LEMCONIC special_entry, INTEGRVS agc_integ_integrvs, INTEGRV agc_integ_integrv, INTEGRV1 agc_integ_integrv1, INTEGRV2 integrv2, ALOADED aloaded, ATOPCSM/ATOPLEM atop, PTOACSM/PTOALEM agc_integ_ptoacsm/ptoalem, USEPIOS usepios, TESTLOOP testloop, NORFINAL norfinal, DT/2COMP..USEMAXDT dt2comp, POOHCHK poohchk, A-PCHK/ANDOUT/PHEXIT a_pchk, RECTOUT rectout, INTEXIT intexit, RVCON rvcon, ENDSTATE W part wmatrix, RELOADSV reload, driver agc_integ_run, SETIFLGS, THISVINT, GRP2PC, permanent SV agc_integ_perm_get/set
+* jobs.c: DONE (compiles) -- STATEINT agc_task_stateint, STATINT1 agc_job_statint1(+_stall), STATEUP stateup/stateup_lm(+agc_job_stateup_stall), ENDINT endint, NOINT (in statint1), AVETOMID agc_integ_avetomid (INT/W int_w, SETCOAST setcoast_csm, OTHERS others_lm, MOVATHIS move_this), MIDTOAV1/2 agc_integ_midtoav1/2, ENTMID1 entmid1, NOTIME notime, CKMID2/MID2 agc_integ_ckmid2, TIMEINC timeinc, INTWAKEU agc_integ_intwakeu
 * orbital_integration.c: DONE (compiles) -- KEPPREP wrapper agc_integ_kepprep, FBR3 fbr3, GOBAQUE gobaque, GAMCOMP gamcomp/gamcomp_rho, ACCOMP accomp/third_body, OBLATE oblate/moon_axes/legendre_terms/comterm_tvec, QUALITY1-3 quality2/quality3, DOW.. dow/dow1, DIFEQ0/+0/+1/+2/DIFEQCOM difeq0/difeq01/difeq2, ENDSTATE state_step, AMOVED/NEXTCOL/WMATEND agc_integ_wcolumns/wmatend, RECTEST rectest, TIMESTEP agc_integ_timestep (+ LM lm_sphere), CHKSWTCH agc_integ_chkswtch, ORIGCHNG agc_integ_origchng, RECTIFY/MINIRECT agc_integ_rectify/minirect, SETMOON/CLRMOON agc_integ_setmoon
-* integration_csm.c / integration_lm.c: DONE (SETITCTR agc_integ_setitctr)
+* flags_csm.c / setitctr_lm.c: DONE (SETITCTR agc_integ_setitctr)
 * assertion density top-up: DONE (check_rules: no warnings on the nav-integ files)
 * scratch run of the test: DONE (see Tests written)
 * tests/test_integration.c: DONE (12 tests, 177 checks; all pass against the current core/exec/nav objects with a scratch link shim for dispatch/svdwn/dsky)
@@ -155,23 +155,23 @@ though Luminary099 never reaches them.
 
 * `void agc_erase_set_trkmkcnt(agc_sp_t v);` (TRKMKCNT, B(1)PRM, owner
   prog-rendz) -- AVETOMID zeroes it. Meanwhile `trkmkcnt_pending` static in
-  integration_jobs.c.
+  jobs.c.
 * Layering: ATOPCSM/ATOPLEM call `agc_align_svdwn()` (SVDWN1/SVDWN2,
-  agc_align.h, src/programs/alignment/align_locsam.c), i.e. nav calls programs.
+  agc_align.h, src/programs/alignment/locsam.c), i.e. nav calls programs.
   Request: move SVDWN to nav (e.g. `agc_integ_svdwn`) or core.
 * agc_state.h comment fix: RN/VN are always 2^29 m / 2^7 m/cs (AVERAGEG);
   SETCOAST shifts them left 2 for the moon scale (VSR* 0,2 with X2 = 2).
 * agc_nav.h: `agc_conic_kepprep()` must take the current conic point
   (RCV, VCV at TC) in in->rrect/in->vrect -- KEPPREP reads RCV/VCV, not
   RRECT/VRECT; agc_integ_kepprep() passes them that way (works with the
-  current conic_kepler.c: all integration tests pass).
+  current kepler.c: all integration tests pass).
 * E3J22R2M / E32C31RM (SP pad loads at FANG+2/+3, CM P40 pad-load area) are
   module statics here with `agc_integ_set_lunar_coeffs()`; if the uplink /
   pad-load code needs them, promote to shared accessors.
 
 ## Requested jobs-tasks
 
-Placeholders in src/nav/integration/integ_pending.h (range 0x0F):
+Placeholders in src/nav/integration/pending.h (range 0x0F):
 
 | id | AGC | body | how started |
 |---|---|---|---|

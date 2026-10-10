@@ -32,7 +32,7 @@
 #include "agc/agc_state.h"
 #include "agc/agc_channels.h"
 #include "agc/agc_flags_common.h"
-#include "exec_internal.h"
+#include "internal.h"
 #include "agc/agc_exec_pending.h"
 
 #define FS_BIT15       040000u

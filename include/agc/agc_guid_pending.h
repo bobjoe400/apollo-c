@@ -6,8 +6,8 @@
  * declaration exists and include that header instead; a duplicate or
  * conflicting definition error points at the block to remove.
  *
- * Vehicle-only requests are in src/csm/burns/guid_pending_csm.h and
- * src/lm/burns/guid_pending_lm.h, which include this file.
+ * Vehicle-only requests are in src/csm/burns/guid_pending.h and
+ * src/lm/burns/guid_pending.h, which include this file.
  */
 #ifndef GUID_PENDING_H
 #define GUID_PENDING_H

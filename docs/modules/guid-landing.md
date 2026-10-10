@@ -8,15 +8,15 @@ Luminary 099 only. AGC sources (pages are the Luminary 1A listing pages):
 |----------------------------------------|----------|--------------------------------|
 | THE_LUNAR_LANDING.agc                  | 785-792  | src/lm/landing/lunar_landing.c         |
 | THROTTLE_CONTROL_ROUTINES.agc          | 793-797  | src/lm/landing/throttle.c              |
-| LUNAR_LANDING_GUIDANCE_EQUATIONS.agc   | 798-828  | src/lm/landing/landing_guidance.c (equations) + src/lm/landing/lunar_landing.c (R13, P64/P66/P67 entry, redesignation, ROD) |
-| P70-P71.agc                            | 829-837  | src/lm/landing/landing_aborts.c               |
+| LUNAR_LANDING_GUIDANCE_EQUATIONS.agc   | 798-828  | src/lm/landing/guidance.c (equations) + src/lm/landing/lunar_landing.c (R13, P64/P66/P67 entry, redesignation, ROD) |
+| P70-P71.agc                            | 829-837  | src/lm/landing/aborts.c               |
 | P12.agc                                | 838-842  | src/lm/ascent.c                |
 | ASCENT_GUIDANCE.agc                    | 843-856  | src/lm/ascent.c                |
-| LANDING_ANALOG_DISPLAYS.agc            | 898-907  | src/lm/landing/landing_displays.c      |
+| LANDING_ANALOG_DISPLAYS.agc            | 898-907  | src/lm/landing/displays.c      |
 | FINDCDUW--GUIDAP_INTERFACE.agc         | 908-925  | src/lm/landing/findcduw.c              |
 
 Shared lane state (pad loads and erasables used by more than one of the
-files above) lives in src/lm/landing/landing_state.c behind accessors declared in
+files above) lives in src/lm/landing/state.c behind accessors declared in
 include/agc/agc_lm_landing.h. Symbols owned by other lanes that do not exist
 yet are declared in ONE place, include/agc/agc_landing_pending.h (see "Requested core
 additions"); integration replaces that header with the real includes.
@@ -37,7 +37,7 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 | FLATOUT / WHATOUT | agc_lm_throttle_flatout / _whatout | pulses | THRUST |
 | MASSMULT | agc_lm_massmult | accel (2^-4 m/cs^2) | force pulses DP (hi word = pulses) |
 
-### Landing guidance (landing_guidance.c)
+### Landing guidance (guidance.c)
 
 | AGC label | C function | key data (scale) |
 |---|---|---|
@@ -74,7 +74,7 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 | DESCBITS | agc_lm_descbits |
 | LANDJUNK (P68) | agc_lm_job_landing_confirmation, agc_lm_job_landing_confirmation_proceed |
 
-### Aborts (landing_aborts.c), ascent (ascent.c), R10 (landing_displays.c), FINDCDUW (findcduw.c)
+### Aborts (aborts.c), ascent (ascent.c), R10 (displays.c), FINDCDUW (findcduw.c)
 
 | AGC label | C function |
 |---|---|
@@ -95,28 +95,28 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 Infrastructure:
 - DONE include/agc/agc_landing_pending.h (all not-yet-existing shared symbols, one place)
 - DONE include/agc/agc_lm_landing.h (lane API + state structs; may grow)
-- DONE src/lm/landing/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
+- DONE src/lm/landing/state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
 - DONE landing_pending.h reconciled 2026-10-09 with agc_guid.h, agc_lm_dap.h, agc_integ.h, agc_exec.h, exec_pending.h (job ids moved to 0x0F00/0x0F80)
 
 Per file (TODO unless marked):
 - DONE throttle.c: agc_lm_throttle, agc_lm_throttle_measured (AFDUMP..DOPIF), thr_region (WHERETO..FLATOUT2), thr_doit, thr_fweight, agc_lm_throttle_flatout, agc_lm_throttle_whatout, agc_lm_massmult
 - DONE findcduw.c: agc_lm_initcduw, agc_lm_findcduw (+ _m2 = FINDCDUW -2), fc_fltrsub, fc_unwctest, fc_dcmcl, fc_nb2cdusp, fc_dvbycosm, agc_lm_arctrgsp, agc_lm_sparcsin, agc_lm_limitsub, agc_lm_onesto2s, fc_noattcnt, ALARMMGA in fc_gimbal_changes
-- DONE landing_guidance.c: agc_lm_job_lunland, agc_lm_guidpass (+ldg_front = GUILDRET+2..BRSPOT2, ldg_quadratic), agc_lm_ttfincr, agc_lm_calcrgvg, agc_lm_rgvgcalc, agc_lm_ttf8cl, agc_lm_rootpsrs, agc_lm_quadguid (+ldg_quadcoef), agc_lm_afccalc (+ldg_afclimit), agc_lm_cgcalc, ldg_extlogic, ldg_exgsub, EXBRAK, ldg_exnorm, agc_lm_steer_exit (STEER?/EXVERT/RATESTOP/GDUMP1), agc_lm_dispexit, agc_lm_job_braking_phase_display, agc_lm_job_approach_phase_display, agc_lm_job_approach_phase_proceed, agc_lm_vertguid (P65VERT), agc_lm_start_approach_phase, agc_lm_start_velocity_nulling, agc_lm_tdispset
+- DONE guidance.c: agc_lm_job_lunland, agc_lm_guidpass (+ldg_front = GUILDRET+2..BRSPOT2, ldg_quadratic), agc_lm_ttfincr, agc_lm_calcrgvg, agc_lm_rgvgcalc, agc_lm_ttf8cl, agc_lm_rootpsrs, agc_lm_quadguid (+ldg_quadcoef), agc_lm_afccalc (+ldg_afclimit), agc_lm_cgcalc, ldg_extlogic, ldg_exgsub, EXBRAK, ldg_exnorm, agc_lm_steer_exit (STEER?/EXVERT/RATESTOP/GDUMP1), agc_lm_dispexit, agc_lm_job_braking_phase_display, agc_lm_job_approach_phase_display, agc_lm_job_approach_phase_proceed, agc_lm_vertguid (P65VERT), agc_lm_start_approach_phase, agc_lm_start_velocity_nulling, agc_lm_tdispset
 - DONE lunar_landing.c: agc_lm_job_braking_phase (+FLAGORGY), ll_ignalg_start/ll_ignalg_prec (IGNALG, LEMPREC wait job IGNALGP), ll_ignaloop/ll_ign_guidance (IGNALOOP, INTSTALL wait job IGNALOOP), ll_ddum (DDUMCALC), ll_ddumgood (DDUMGOOD/R60INIT), agc_lm_job_ignalgrt (IGNALGRT/ASTNCLOK), agc_lm_job_astnret, agc_lm_job_braking_phase_burn_attitude/3/4, agc_lm_guildenstern (R13 incl. STARTP66/STRTP66A/VRTSTART/STARTP67/STABL?/P66NOW?/RESTART?), agc_lm_redesig (+ll_redes1), agc_lm_rate_of_descent_vertical, agc_lm_task_rodtask, agc_lm_job_rodcomp (ll_rod_pipas/ll_rod_state/ll_rod_afc), ll_vhorcomp, agc_lm_manual_landing_vertical, agc_lm_pitfall, agc_lm_task_redesmon (+COUNT'EM, RESETRPT), agc_lm_descbits, agc_lm_job_landing_confirmation / _landing_confirmation_flash / _landing_confirmation_proceed (LANDJUNK)
-- DONE landing_aborts.c: agc_lm_task_abort_monitor, agc_lm_abort_monitor_resume (FLASHH?/FLASHV?/10,11/P71NOW?/P70NOW?), ab_abrtjask (CONTABRT/ABRTJASK), ab_legal (LEGAL?/ABORTALM), agc_lm_job_dps_abort/p71/p70a/p71a, agc_lm_job_goabort, ab_dps_abort_init, ab_bothpoly (BOTHPOLY..YOK), ab_upthrot, agc_lm_job_abort_auto_control_check (UPTHROT1 -3), agc_lm_job_upthrot1 (+GRP4OFF), ab_aps_abort_return, agc_lm_job_aps_abort_oldtime (OLDTIME), agc_lm_tgocomp, agc_lm_throtup
+- DONE aborts.c: agc_lm_task_abort_monitor, agc_lm_abort_monitor_resume (FLASHH?/FLASHV?/10,11/P71NOW?/P70NOW?), ab_abrtjask (CONTABRT/ABRTJASK), ab_legal (LEGAL?/ABORTALM), agc_lm_job_dps_abort/p71/p70a/p71a, agc_lm_job_goabort, ab_dps_abort_init, ab_bothpoly (BOTHPOLY..YOK), ab_upthrot, agc_lm_job_abort_auto_control_check (UPTHROT1 -3), agc_lm_job_upthrot1 (+GRP4OFF), ab_aps_abort_return, agc_lm_job_aps_abort_oldtime (OLDTIME), agc_lm_tgocomp, agc_lm_throtup
 - DONE ascent.c: agc_lm_guidinit, agc_lm_comminit, agc_lm_powered_ascent_init, agc_lm_ycomp, agc_lm_logsub, as_vgvect (ASCENT state/GEFF/VGVECT/VGBODY), as_maineng, as_t2test (T2TEST/LOGSUB/NORATES/CONST), as_rates (RATES/CHKBMAG/PROK), as_cmponent (CMPONENT/NO-ATP/AIMER), as_mainline (MAINLINE/ANG1CHEK/OFFROT/CLRXFLAG), as_exitvr, as_checkalt (CHECKALT/CHECKYAW/KEEPVR/EXITVR1), as_keepvr1, as_ascterm/as_ascterm1 (ASCTERM..4), as_engoff, agc_lm_ascent, agc_lm_job_atmag, agc_lm_task_engoff1, agc_lm_job_cutoff/_cutoff5/_cutoff1/_cutoff2/_termasc, agc_lm_job_powered_ascent/_powered_ascent_flash/_powered_ascent_proceed/_powered_ascent_at_ignition/_newload/_newload2, agc_lm_powered_ascent_return, agc_lm_job_powered_ascent_burn
-- DONE landing_displays.c: agc_lm_landisp (LANDISP/ALTROUT/ALTOUT dispatch), ld_disindat (DISINDAT), agc_lm_task_intlze (INTLZE), ld_speedrun (SPEEDRUN to VARDELAY), agc_lm_task_speedrun2 (SPEEDRUN after the pause, GET22/32, LATFWDV), agc_lm_vmonitor + ld_vmon_delta (VMONITOR..ZEROLSTY, checked branch by branch against pp. 904-907), ld_altrout (ARCOMP), ld_altout/ld_extrapolate (OLDDATA/NEWDATA/ZERODATA), ld_dataout (DATAOUT), ld_disprset (DISPRSET/ABORTON)
+- DONE displays.c: agc_lm_landisp (LANDISP/ALTROUT/ALTOUT dispatch), ld_disindat (DISINDAT), agc_lm_task_intlze (INTLZE), ld_speedrun (SPEEDRUN to VARDELAY), agc_lm_task_speedrun2 (SPEEDRUN after the pause, GET22/32, LATFWDV), agc_lm_vmonitor + ld_vmon_delta (VMONITOR..ZEROLSTY, checked branch by branch against pp. 904-907), ld_altrout (ARCOMP), ld_altout/ld_extrapolate (OLDDATA/NEWDATA/ZERODATA), ld_dataout (DATAOUT), ld_disprset (DISPRSET/ABORTON)
 - DONE tests/test_landing.c (compiles; see Tests written)
 - DONE 2026-10-10 reconciliation after wave 1: ASTNRET now sets agc_align_ram()->qmaj and calls agc_job_lm_fine_align_recheck (agc_align.h R51K/R51P63) instead of a private agc_align_fine_align_recheck / agc_imu_fine_align_recheck; 1JACCQ/1JACCR taken from agc_lm_dap.h, TRKMKCNT from agc_programs.h; agc_imu.h signatures used as declared (agc_imu_status_check, agc_imu_attitude_maneuver, agc_imu_set_pointvsm/_scaxis, agc_imu_comp_get); all displays go through agc_dsky_display()
 
 ## Deviations
 
-- FASTCHNG (landing_state.c): group 3 re-armed at the LUNLAND phase; a restart repeats the whole guidance pass (C cannot restart mid-function).
+- FASTCHNG (state.c): group 3 re-armed at the LUNLAND phase; a restart repeats the whole guidance pass (C cannot restart mid-function).
 - THROTTLE (throttle.c): -0 values (PIFPSET initial, WHATOUT FCOLD/PIF) modelled as +0; MASSMULT overflow and FLATOUT1 low words returned as 0 (AGC leaves stale L).
-- landing_guidance.c QUADGUID coefficients: stored SP over stale low words in the AGC, here as clean DP (low word 0).
+- guidance.c QUADGUID coefficients: stored SP over stale low words in the AGC, here as clean DP (low word 0).
 - IGNALG (lunar_landing.c): loop bounded; on exhaustion alarm 01412 and NIGNLOOP left 0; returns AGC_STATUS_NO_CONVERGE.
 - FINDCDUW (findcduw.c): DV's L after LIMITSUB modelled as A.
-- R10 (landing_displays.c): LANDISP's "LXCH PIPCTR1 / DXCH TBASE2" done via agc_phase_newphase(2, current phase, set_tbase) (no TBASE2 setter in agc_exec.h); VMONITOR's AD NEG0 (+0 -> -0 for the DINC hardware) omitted; DDOUBL overflow kept wrapped; LADQSAVE return address modelled as a static enum (ALTROUT +1 / ALTOUT +1) resumed by task SPEEDRN2 after the 40 ms VARDELAY.
+- R10 (displays.c): LANDISP's "LXCH PIPCTR1 / DXCH TBASE2" done via agc_phase_newphase(2, current phase, set_tbase) (no TBASE2 setter in agc_exec.h); VMONITOR's AD NEG0 (+0 -> -0 for the DINC hardware) omitted; DDOUBL overflow kept wrapped; LADQSAVE return address modelled as a static enum (ALTROUT +1 / ALTOUT +1) resumed by task SPEEDRN2 after the 40 ms VARDELAY.
 
 ## Stubs
 

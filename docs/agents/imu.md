@@ -3,9 +3,9 @@
 Scope, into src/imu/ with include/agc/agc_imu.h (you create it):
 - IMU_MODE_SWITCHING_ROUTINES.agc (IMUZERO, IMUCOARS, IMUFINE, IMUSTALL,
   the CDU zero / coarse-align pulse logic, gyro torquing (IMUPULSE), the
-  IMU fail / CDU fail / PIPA fail monitors, IMUMON) -> imu_mode.c
+  IMU fail / CDU fail / PIPA fail monitors, IMUMON) -> mode.c
 - IMU_COMPENSATION_PACKAGE.agc (1/PIPA, PIPA bias and scale compensation,
-  gyro drift compensation NBDX/ADIAX/ADSRAX, 1/GYRO) -> imu_comp.c
+  gyro drift compensation NBDX/ADIAX/ADSRAX, 1/GYRO) -> compensation.c
 - INFLIGHT_ALIGNMENT_ROUTINES.agc (CALCGTA, CALCGA, AXISGEN, CALCSMSC) ->
   alignment.c
 - GIMBAL_LOCK_AVOIDANCE.agc, KALCMANU_STEERING.agc, and the maneuver

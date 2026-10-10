@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_guid.h"
-#include "guid_pending_lm.h"
+#include "guid_pending.h"
 
 #define ONE_SEC     100
 #define HALF_SEC    50

@@ -23,42 +23,48 @@ include/agc/        public API (lead-owned contract)
 src/core/           numeric model, state, channels      (libagc)
 src/exec/           executive, waitlist, restarts, alarms, dispatch
 src/io/             downlink_lists_{csm,lm}.c (telemetry; < 3 files so no subfolder)
-  dsky/             pinball_*.c, display_if.c, noun_*.c, pinball_internal.h
+  dsky/             PINBALL (display, keys, load, monitor, nvsub, scale,
+                    sfin, state, verbs, internal.h), display_if.c, noun_*.c
   service/          t4rupt*.c (common, csm optics, lm radar), service.c,
                     rtb_ops.c, sysmisc_ext.h
   (telemetry/, verbs/ are not created until they hold >= 3 files: down
    telemetry, uplink update, extended verbs, self-check)
 src/imu/            IMU moding, compensation, alignment, maneuvers
+                    (files named without the imu_ prefix: mode, gyro,
+                    compensation, vflags*, internal.h, pending.h)
 src/nav/
-  conic/            conic_*.c, conic_internal.h
-  integration/      integration_*.c, orbital_integration.c, svdwn.c
-  aux/              latlong, planetary, measurement, free_fall, ephemerides,
-                    star_tables, navaux_util
+  conic/            apsides, common, geom, kepler, lambert, timeradius,
+                    timetheta, universal, internal.h
+  integration/      init, jobs, flags_csm, setitctr_lm, orbital_integration,
+                    svdwn, internal.h, pending.h
+  auxiliary/        latlong, planetary, measurement, free_fall, ephemerides,
+                    star_tables, util, internal.h
 src/guidance/       powered-flight subroutines, shared burn programs
                     (external_delta_v, burn_steering), servicer_common
 src/programs/
-  rendezvous/       rendz_*.c
-  alignment/        align_*.c, imu_realign.c, sighting_data_and_gyro_torquing.c
+  rendezvous/       common, csi, csi_cdh_targeting, display, flags_{csm,lm},
+                    glue, initvel, tpi, internal.h, ext.h
+  alignment/        common, locsam, orientation, planet, imu_realign.c,
+                    , sighting_data_and_gyro_torquing.c
 src/csm/            Comanche-only
-  entry/            entry lexicon, reentry, entry programs, CM body attitude,
-                    entry DAP
+  entry/            lexicon, reentry, programs, CM body attitude, dap
   dap/rcs/          RCS DAP, jet selection, FDAI needles, DAP data load
   dap/tvc/          TVC init/executive/mass properties/restarts/pitch-yaw/
                     stroke test/roll DAP
-  dap/              mysubs.c, dap_state.c (shared; < 3 files so no common/)
+  dap/              mysubs.c, state.c (shared; < 3 files so no common/)
   burns/            sps_burn*, earth_orbit_insertion, return_to_earth,
-                    servicer_csm, external_delta_v_csm
-  optics/           sxtmark, s_band_antenna_csm, csm_geometry
+                    servicer, external_delta_v
+  optics/           sxtmark, s_band_antenna, geometry
   prelaunch_align.c (< 3 files in prelaunch/)
 src/lm/             Luminary-only
-  landing/          landing guidance/displays/aborts/state, throttle,
+  landing/          guidance, displays, aborts, state, throttle,
                     findcduw, lunar_landing
-  burns/            dps_burn*, ignition, servicer_lm*
+  burns/            dps_burn*, ignition, servicer*
   dap/rcs/          idler, P-axis, Q/R-axis, TJET law, rate/Kalman, T6RUPT,
                     needles
   dap/common/       dapif.c, state.c, arith.c
   dap/gts.c         trim gimbal system (< 3 files in gimbal/)
-  ascent.c, s_band_antenna_lm.c, lem_geometry.c  (ascent/, optics/ not yet
+  ascent.c, s_band_antenna.c, lem_geometry.c  (ascent/, optics/ not yet
                     >= 3 files)
 src/sim/            host harness: clock, interrupts, DSKY console (no lib)
 tests/              unit tests (one binary per file, -DAGC_HOST_DEBUG)
@@ -72,6 +78,10 @@ core < exec < io/imu/nav < guidance < programs < csm|lm < sim.
 Dispatch: `src/exec/dispatch.c` holds the one `switch` from `agc_job_id_t`
 / `agc_task_id_t` to the job/task functions, so the call graph stays
 static and recursion-free (rules 1 and 9).
+
+File-name rule: inside a folder a file drops any prefix that only repeats an
+enclosing folder name (conic/kepler.c, not conic/conic_kepler.c); AGC names
+and _csm/_lm suffixes in shared folders are kept.
 
 Subfolder rule: a src/ subfolder exists only when it holds >= 3 files;
 otherwise its files stay in the parent. A private header included from a

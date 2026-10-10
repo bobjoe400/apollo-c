@@ -1,7 +1,7 @@
 /*
  * entry_internal.h -- functions shared between the files of the guid-entry
- * lane only (src/csm/entry/reentry.c, entry_programs.c, cm_body_attitude.c,
- * entry_dap.c, earth_orbit_insertion.c). Not part of the public API.
+ * lane only (src/csm/entry/reentry.c, programs.c, cm_body_attitude.c,
+ * dap.c, earth_orbit_insertion.c). Not part of the public API.
  */
 #ifndef AGC_ENTRY_INTERNAL_H
 #define AGC_ENTRY_INTERNAL_H
@@ -24,14 +24,14 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es); /* STARTEN
 /* cm_body_attitude.c: SERVNOUT (CHANG1 if a job waits, then SERVEXIT).  */
 agc_status_t entry_servnout(agc_job_ctx_t *ctx);
 
-/* entry_programs.c: mode/display changes called from the steering via RTB.        */
+/* programs.c: mode/display changes called from the steering via RTB.        */
 agc_status_t entry_post_0_05g(agc_entry_state_t *es);
 agc_status_t entry_upcontrol(agc_entry_state_t *es);
 agc_status_t entry_ballistic(agc_entry_state_t *es);
 agc_status_t entry_final_phase(agc_entry_state_t *es);
 agc_status_t entry_killgrp4(void);
 
-/* entry_dap.c */
+/* dap.c */
 /* ANGOVCOR / CORANGOV: an SP angle/180 sum (at most one overflow) wrapped
  * back into [-1, 1) (i.e. modulo 360 deg).                               */
 agc_sp_t entry_angle_wrap(int32_t sum);

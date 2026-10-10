@@ -20,8 +20,8 @@ Steps:
    docs/NAMING.md; add rows to NAMING.md for anything missing (e.g. labels
    like P63SPOT2 -> braking_phase_spot2, R51K -> fine_align_k, CANV37 ->
    change_program_check). Keep the AGC label in the header comment.
-2. Rename file names too (git mv), e.g. src/csm/entry/entry_programs.c ->
-   src/csm/entry/entry_programs.c, src/lm/landing/landing_aborts.c -> src/lm/landing/landing_aborts.c,
+2. Rename file names too (git mv), e.g. src/csm/entry/programs.c ->
+   src/csm/entry/programs.c, src/lm/landing/aborts.c -> src/lm/landing/aborts.c,
    src/exec/v37_p00.c -> src/exec/change_program_idle.c, src/imu/attitude_maneuver.c ->
    src/imu/attitude_maneuver.c, src/csm/burns/earth_orbit_insertion.c -> earth_orbit_insertion.c.
 3. Apply the renames across your scope (sed with word boundaries), then

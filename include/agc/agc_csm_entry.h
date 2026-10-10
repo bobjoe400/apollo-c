@@ -160,7 +160,7 @@ typedef struct agc_entry_state {
     agc_sp_t calfa, salfa;       /* CALFA SALFA cos/sin alfa, scale 1       */
 } agc_entry_state_t;
 
-/* ---- lexicon (entry_lexicon.c) ----------------------------------------- */
+/* ---- lexicon (lexicon.c) ----------------------------------------- */
 agc_entry_state_t *agc_entry_state(void);       /* the one entry erasable set */
 void               agc_entry_lexicon_reset(void);
 
@@ -197,7 +197,7 @@ agc_status_t agc_entry_cm_pose_triad(void);
  * -GAMA/180 /2, from AOG/AIG/AMG at PIP and REFSMMAT; angles[0..3] DP.    */
 agc_status_t agc_entry_cm_trio(agc_dp_t angles[4]);
 
-/* ---- P61-P67 (entry_programs.c) ------------------------------------------------
+/* ---- P61-P67 (programs.c) ------------------------------------------------
  * Jobs: the AGC program text split at every DSKY / sleep resumption.      */
 agc_status_t agc_job_entry_preparation(agc_job_ctx_t *ctx);        /* P61                 */
 agc_status_t agc_job_entry_preparation_target_display(agc_job_ctx_t *ctx);    /* P61 V06N61          */
@@ -231,7 +231,7 @@ agc_dp_t     agc_entry_vrcalc(agc_vec_t urh, agc_vec_t rt); /* VRCALC, revs */
 agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam,
                                 agc_dp_t *gmax);     /* GMAX 100g B-14      */
 
-/* ---- entry DAP (entry_dap.c) -------------------------------------------- */
+/* ---- entry DAP (dap.c) -------------------------------------------- */
 agc_status_t agc_task_readgymb(void);   /* READGYMB  .1 s task             */
 agc_status_t agc_task_attrates(void);   /* ATTRATES  T5RUPT after BODYRATE */
 agc_status_t agc_task_setjtag(void);    /* SETJTAG   2 s task (READACCS)   */

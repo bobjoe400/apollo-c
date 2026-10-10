@@ -8,7 +8,7 @@
 #ifndef SPS_BURN_INTERNAL_H
 #define SPS_BURN_INTERNAL_H
 
-#include "guid_pending_csm.h"
+#include "guid_pending.h"
 
 /* NVWORD1 of the CLOCKJOB: the V99 flash (-BIT9) and the V97 flash, which
  * the AGC marks with -0 (DEVIATION: -0 is not representable; -1 is used). */

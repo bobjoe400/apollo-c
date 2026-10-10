@@ -18,7 +18,7 @@
  * routines start job MAKEPLAY at the user's priority and return at once.
  *
  * C model: a job that the AGC JOBSLEEPs or JOBWAKEs at another CADR is put
- * to sleep / woken with the continuation job ids of pinball_internal.h;
+ * to sleep / woken with the continuation job ids of internal.h;
  * the user's returns (call CADR +1/+2/+3) are the agc_dsky_cont_t ids,
  * reached by agc_exec_job_yield() after PRIOCHNG to the user's priority
  * (ENDIT). The job temporaries the AGC keeps in the sleeping job's MPAC
@@ -26,7 +26,7 @@
  * g_idle, since only one job can be in ENDIDLE.
  */
 #include <stddef.h>
-#include "pinball_internal.h"
+#include "internal.h"
 
 void agc_erase_set_extvbact(uint16_t v);           /* EXTVBACT (sys-misc)  */
 

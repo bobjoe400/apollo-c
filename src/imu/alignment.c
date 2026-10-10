@@ -22,8 +22,8 @@
 #include "agc/agc_state.h"
 #include "agc/agc_flags_common.h"
 #include "agc/agc_imu.h"
-#include "imu_internal.h"
-#include "imu_pending.h"
+#include "internal.h"
+#include "pending.h"
 
 /* QTSN45: 2DEC .1768 = sin(45 deg)/4.                                    */
 #define QTSN45 ((agc_dp_t)47459389)       /* .1768 x 2^28                */

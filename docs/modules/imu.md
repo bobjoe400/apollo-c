@@ -2,15 +2,15 @@
 
 ## Scope
 AGC sources (CM = Comanche055, LM = Luminary099):
-* IMU_MODE_SWITCHING_ROUTINES.agc (CM pp.1420-1448, LM pp.1309-1337) -> src/imu/imu_mode.c
-* IMU_COMPENSATION_PACKAGE.agc (CM pp.297-306, LM pp.326-337) -> src/imu/imu_comp.c
+* IMU_MODE_SWITCHING_ROUTINES.agc (CM pp.1420-1448, LM pp.1309-1337) -> src/imu/mode.c
+* IMU_COMPENSATION_PACKAGE.agc (CM pp.297-306, LM pp.326-337) -> src/imu/compensation.c
 * INFLIGHT_ALIGNMENT_ROUTINES.agc (CM pp.1355-1363, LM same text) + CALCSMSC
   (CM P51-P53.agc p.763, LM POWERED_FLIGHT_SUBROUTINES.agc p.1265 FLESHPOT) -> src/imu/alignment.c
 * GIMBAL_LOCK_AVOIDANCE.agc, KALCMANU_STEERING.agc, ANGLFIND.agc (CM) /
   ATTITUDE_MANEUVER_ROUTINE.agc (LM) -> src/imu/maneuver.c
 * R60_62.agc (both) -> src/imu/attitude_maneuver.c
 * IMU_CALIBRATION_AND_ALIGNMENT.agc (CM only, pp.423-455) -> src/csm/prelaunch_align.c
-* Public header include/agc/agc_imu.h; pending externals in src/imu/imu_pending.h.
+* Public header include/agc/agc_imu.h; pending externals in src/imu/pending.h.
 
 Note: IMUMON / SETISSW / PIPFAIL / GLOCKMON live in T4RUPT_PROGRAM.agc, which is
 sys-misc's file. Not duplicated here (see Open questions).
@@ -58,12 +58,12 @@ sys-misc's file. Not duplicated here (see Open questions).
 
 ## Progress
 (updated as files complete)
-* imu_comp.c: DONE (1/PIPA, IRIGCOMP, GCOMPZER, 1/GYRO, GCOMP1, NBDONLY, LASTBIAS) src/imu/imu_comp.c; compiles
+* compensation.c: DONE (1/PIPA, IRIGCOMP, GCOMPZER, 1/GYRO, GCOMP1, NBDONLY, LASTBIAS) src/imu/compensation.c; compiles
 * alignment.c: DONE (ARCTRIG, CALCGTA, CALCGA, AXISGEN, CALCSMSC) src/imu/alignment.c
-* imu_mode.c: DONE (ZEROICDU, IMUZERO/2/3, IMUCOARS/COARS/COARS2/CHKCORS, CA+ECE, SETCOARS, RNDREFDR,
+* mode.c: DONE (ZEROICDU, IMUZERO/2/3, IMUCOARS/COARS/COARS2/CHKCORS, CA+ECE, SETCOARS, RNDREFDR,
   IMUFINE/IMUFIN20/IMUFINED/IFAILOK/PFAILOK, NOATTOFF, PIPUSE/PIPUSE1/PIPFREE, GOODEND/BADEND/ENDIMU/IMUBAD,
-  STALL, R02BOTH/R02ZERO; P06/POSTAND stubbed) src/imu/imu_mode.c
-* imu_gyro.c: DONE (IMUPULSE/GYROBUSY/GWAKE, STRTGYRO/STRTGYR2/GSELECT/MAJ/MIN/GMERGE/LASTSEG/LONGGYRO/8192AUG)
+  STALL, R02BOTH/R02ZERO; P06/POSTAND stubbed) src/imu/mode.c
+* gyro.c: DONE (IMUPULSE/GYROBUSY/GWAKE, STRTGYRO/STRTGYR2/GSELECT/MAJ/MIN/GMERGE/LASTSEG/LONGGYRO/8192AUG)
 * imu_vflags*.c: DONE (vehicle-specific flag ids: CPHIFLAG, AUTR1/2FLG, NEEDLFLG, R60FLAG)
 * maneuver_calc.c: DONE (CDUTODCM, DCMTOCDU, DELCOMP, KALCMAN3/SECAD/CHECKMAX/ALTCALC/COFMAXGO/METHOD1-3, TOOBADF test)
 * maneuver.c: DONE (GOMANUR, KALCMAN3 job, WCALC/NOGIMLOC, NEWANGL, MANUSTAT/RATEBIAS, INCRDCDU, TIMECHK/MANUSTAL,
@@ -74,11 +74,11 @@ sys-misc's file. Not duplicated here (see Open questions).
 * tests/test_imu.c: DONE (65 checks pass)
 
 ## Files
-src/imu/imu_mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/imu_gyro.c (IMUPULSE and
-torquing tasks), src/imu/imu_comp.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
+src/imu/mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/gyro.c (IMUPULSE and
+torquing tasks), src/imu/compensation.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
 src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/attitude_maneuver.c (VECPOINT, BALLANGS, R60, R62),
-src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/imu_internal.h (lane-private),
-src/imu/imu_pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/agc_imu.h,
+src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/internal.h (lane-private),
+src/imu/pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/agc_imu.h,
 tests/test_imu.c.
 
 ## Deviations
@@ -114,7 +114,7 @@ tests/test_imu.c.
   Translated there: FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX.
 
 ## Requested core additions
-Everything below is declared in src/imu/imu_pending.h until the owner publishes it:
+Everything below is declared in src/imu/pending.h until the owner publishes it:
 * sys-misc (include/agc/agc_sysmisc.h, not public): agc_rtb_cdulogic, agc_rtb_1sto2s, agc_rtb_v1sto2s,
   agc_rtb_signmpac, agc_rtb_loadtime, agc_t4_setissw -- same signatures as sysmisc.h; please make public.
 * guid-powered: `agc_status_t agc_pfs_pipasr_noscale(void);` (PIPASR +3, used by LM NBDONLY on surface).
@@ -132,7 +132,7 @@ agc_imu_stall(cont) / agc_imu_optstall / agc_imu_goodend(void) / agc_imu_curtain
 / agc_imu_attitude_maneuver(cont); landing_pending.h agc_imu_fine_align_recheck (R51 is not in this lane's files).
 
 ## Requested jobs-tasks
-Jobs (provisional ids in imu_pending.h): AGC_JOB_GYRO_COMMAND_PULSE -> agc_job_gyro_command_pulse; AGC_JOB_GYRO_COMMAND_RETRY ->
+Jobs (provisional ids in pending.h): AGC_JOB_GYRO_COMMAND_PULSE -> agc_job_gyro_command_pulse; AGC_JOB_GYRO_COMMAND_RETRY ->
 agc_job_gyro_command_retry; AGC_JOB_GCOMP1 -> agc_job_gcomp1; AGC_JOB_KALCMAN3 -> agc_job_kalcman3;
 AGC_JOB_NEWDELHI -> agc_job_newdelhi (FINDVAC PRIO26); AGC_JOB_REDOMANC -> agc_job_redomanc;
 AGC_JOB_ATTITUDE_MANEUVER_ENTER -> agc_job_attitude_maneuver_enter; AGC_JOB_ATTITUDE_MANEUVER_TERMINATE -> agc_job_attitude_maneuver_terminate; AGC_JOB_ENDMANUV ->
