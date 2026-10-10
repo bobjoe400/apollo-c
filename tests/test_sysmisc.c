@@ -10,7 +10,8 @@
  * routines UPFLAG/DOWNFLAG and GENTRAN; EXTVBACT.
  *
  * AGC_ASSERT failures are expected in the negative tests; this file counts
- * them instead of printing.
+ * any that reach agc_assert_report (only asserts compiled with
+ * AGC_HOST_DEBUG do) instead of printing.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -62,9 +63,9 @@ static void test_downlist_word_counts(void)
         CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, code, &words) == AGC_STATUS_OK);
         CHECK(words == AGC_DNLIST_WORDS);
     }
-    int before = g_assert_reports;
+    /* out-of-range list code: refused (the library is built without
+     * AGC_HOST_DEBUG, so its AGC_ASSERTs do not reach agc_assert_report) */
     CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, AGC_DNLIST_LM_COUNT, &words) != AGC_STATUS_OK);
-    CHECK(g_assert_reports > before);
 }
 
 /* DODOWNTM on the CM coast-and-align list (DNLSTCOD 0, ID 77777).        */

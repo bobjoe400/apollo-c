@@ -259,9 +259,10 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
                          const agc_mat_t *refsmmat, agc_vec_t *pointvsm);
 
 /* ---- R47 AGS initialisation (LM) ----------------------------------------- */
+/* SCALEVEC: RATT1/VATT1 (integration output, sphere scaling) -> SM axes,
+ * ft / ft/s, rounded; out = RX, VX, RY, VY, RZ, VZ high words.            */
 agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1,
-                              bool moon, const agc_mat_t *refsmmat,
-                              uint16_t out[6]);
+                              const agc_mat_t *refsmmat, uint16_t out[6]);
 agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk,
                           agc_dp_t *out);
 const uint16_t *agc_ags_buffer(void);    /* AGSBUFF, 14 raw words           */
@@ -409,6 +410,16 @@ agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx);
 agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx);
 agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx);
 agc_status_t agc_task_endmarks(void);
+/* src/lm/ags_initialization.c */
+agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_new_zero(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx);
 /* src/lm/alignment/auto_optics_positioning.c */
 agc_status_t agc_job_lm_auto_optics_star_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx);
@@ -507,6 +518,14 @@ agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx);
 /* src/lm/optics/s_band_antenna.c */
 agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx);
+/* src/lm/rendezvous_final_attitude.c */
+agc_status_t agc_job_rendezvous_final_attitude(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_csm_state(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_lm_state(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx);
 /* src/programs/alignment/common.c */
 agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx);
