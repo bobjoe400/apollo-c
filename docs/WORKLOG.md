@@ -180,3 +180,11 @@
             agc_task_tvcinit1, csm_tvc_init4, ...) -- NAMING.md rule 2 says
             spell them out; defer to integration so cross-lane callers move
             together.
+2026-10-10  guid-powered DONE (1 stub: DELRSPL). 13 checks. Moved sps_burn*,
+            servicer*, ignition* into burns/{sps,servicer,ignition}/.
+            Integration: ids duplicated between src/exec/pending.h and
+            guidance pending with different values (CLOKTASK, TIG_5/0/30/35,
+            IGNITION, ULLGTASK, ULLAGOFF, COMFAIL...) -> one value each.
+            REVIEW NOTE: AGC ZOOM aliases P40ZOOMA (clears only restart group
+            3), so COMFAIL2 KILLTASK / 3.3 restart never touch the throttle-up
+            tasks; translated as flown -- reviewer to confirm.
