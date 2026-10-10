@@ -146,3 +146,12 @@
             OPEN for integration: guid_pending.h vs exec_pending.h define
             ~40 of the same job/task ids with different values; merge into
             agc_jobs.h. Restructure (subsystem subfolders) launched.
+2026-10-10  Restructure DONE: 139 files into subsystem subfolders
+            (io/{dsky,service}, nav/{conic,integration,aux}, programs/
+            {rendezvous,alignment}, csm/{entry,burns,optics,dap/rcs,dap/tvc},
+            lm/{landing,burns,dap/rcs,dap/common}); 13 shared private
+            headers promoted to include/agc/; compile parity (172/177, same
+            5 failing). NOTE: the moves landed in commit 7aafe81, whose
+            message is the assignment doc change (git add -A swept them in).
+            Follow-up running: strip folder-redundant filename prefixes;
+            rename nav/aux -> nav/auxiliary (Windows reserved name).
