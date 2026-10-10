@@ -49,8 +49,8 @@ static const agc_sp_t DPSVEX = -15134;
 static const agc_dp_t K1VAL = 3986;
 static const agc_dp_t K2VAL = 498;
 static const agc_dp_t K3VAL = 408132;
-static const agc_dp_t S40_136 = 244895;
-static const agc_dp_t S40_136S = 250772403;
+static const agc_dp_t DPS_IMPULSE_THRUST = 244895;
+static const agc_dp_t DPS_IMPULSE_THRUST_SHIFTED = 250772403;
 static const agc_dp_t SEC4_17 = 819200;
 static const agc_dp_t SEC1_2D = 1638400;
 static const agc_dp_t SEC3_5 = 11468800;
@@ -77,16 +77,16 @@ static void load_engine(bool aps)
 
 /* P40IN .. P40SXT4 (p.753-754): S40.1, S40.2,3; DB 1 deg (PFLITEDB); R60
  * with VECPOINT (3AXISFLG reset); then ret_job (BURNBABY / P41 rest).    */
-static agc_status_t dps_burn_in(agc_job_ctx_t *ctx, agc_job_id_t ret_job, bool rcs_burn)
+static agc_status_t burn_program_start(agc_job_ctx_t *ctx, agc_job_id_t ret_job, bool rcs_burn)
 {
     agc_guid_t *g = agc_guid_state();
     g->burn.weight_g = g->lm.mass;                    /* WEIGHT/G = MASS        */
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = agc_guid_s40_1(&ip, AGC_VEHICLE_LM);
+    agc_status_t st = agc_guid_initial_velocity_to_gain(&ip, AGC_VEHICLE_LM);
     if (st == AGC_STATUS_OK) {
-        st = agc_guid_s40_23_lm(&ip);                 /* PREFERRED ORIENTATION  */
+        st = agc_guid_preferred_thrust_attitude_lm(&ip);                 /* PREFERRED ORIENTATION  */
     }
     if (st != AGC_STATUS_OK) {
         return st;
@@ -104,17 +104,17 @@ static agc_status_t dps_burn_in(agc_job_ctx_t *ctx, agc_job_id_t ret_job, bool r
 }
 
 /* P40ALM (p.746): alarm 1706, then the V05N09 loop REP40ALM.              */
-static agc_status_t dps_burn_alm(agc_job_ctx_t *ctx)
+static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
 {
     (void)agc_alarm(AGC_ALARM_01706);                 /* PROGRAM vs. CONFIG.    */
     (void)AGC_ASSERT(ctx != NULL);
-    return agc_job_repeat_dps_burn_alm(ctx);
+    return agc_job_stage_alarm_display(ctx);
 }
 
 /* P40LM (p.753): DPS burn. 4 type C here; WHICH = P40TABLE; APS staged ->
  * alarm 1706; IMU status; DV monitor 36 pulses (12 docked to the CSM),
  * 4 low passes; DPS constants, NOTHROTL reset; then P40IN and BURNBABY.  */
-agc_status_t agc_job_dps_burn_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -125,20 +125,20 @@ agc_status_t agc_job_dps_burn_lm(agc_job_ctx_t *ctx)
     (void)agc_phase_change_var((uint16_t)004024, &v);
     g->lm.which = (agc_sp_t)AGC_LM_WHICH_DPS_BURN;         /* P40ADRES               */
     if (agc_flag_test(AGC_FLAG_APSFLAG)) {
-        return dps_burn_alm(ctx);
+        return stage_alarm(ctx);
     }
-    (void)agc_imu_status_check_both();
+    (void)agc_imu_status_check();
     g->lm.dvthrush = (agc_sp_t)((agc_flag_test(AGC_FLAG_CSMDKFLG) ? 0 : THRESH1) + THRESH3);
     g->lm.dvcntr = 4;
     load_engine(false);
     (void)agc_flag_clear(AGC_FLAG_NOTHROTL);
-    return dps_burn_in(ctx, AGC_JOB_BURNBABY, false);
+    return burn_program_start(ctx, AGC_JOB_BURNBABY, false);
 }
 
 /* P42LM / P42STAGE (p.756): APS burn; an unstaged LM gets alarm 1706 (the
  * crew may proceed: REP40ALM (14) -> P42STAGE, entered as AGC_JOB_APS_BURN_STAGE).
  * DV monitor 308 pulses, AVFLAG set.                                      */
-agc_status_t agc_job_aps_burn_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -148,15 +148,15 @@ agc_status_t agc_job_aps_burn_lm(agc_job_ctx_t *ctx)
                           (int16_t)AGC_PRIO20, false, 0U };
     (void)agc_phase_change_var((uint16_t)004024, &v);
     g->lm.which = (agc_sp_t)AGC_LM_WHICH_APS_BURN;
-    if (!agc_flag_test(AGC_FLAG_APSFLAG) && ctx->id != AGC_JOB_APS_BURN_STAGE) {
-        return dps_burn_alm(ctx);
+    if (!agc_flag_test(AGC_FLAG_APSFLAG) && ctx->id != AGC_JOB_APS_BURN_STAGE_CHECKED) {
+        return stage_alarm(ctx);
     }
-    (void)agc_imu_status_check_both();                          /* P42STAGE               */
+    (void)agc_imu_status_check();                          /* P42STAGE               */
     g->lm.dvthrush = THRESH2;
     g->lm.dvcntr = 4;
     (void)agc_flag_set(AGC_FLAG_AVFLAG);
     load_engine(true);
-    return dps_burn_in(ctx, AGC_JOB_BURNBABY, false);
+    return burn_program_start(ctx, AGC_JOB_BURNBABY, false);
 }
 
 /* P41LM (p.755): RCS burn: F = 2-jet (NJETSFLG) or 4-jet, S40.1, S40.2,3,
@@ -168,15 +168,15 @@ agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx)
     }
     agc_guid_t *g = agc_guid_state();
     g->lm.which = (agc_sp_t)AGC_LM_WHICH_RCS_BURN;
-    (void)agc_imu_status_check_both();
+    (void)agc_imu_status_check();
     g->burn.f = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : FRCS4;
     (void)AGC_ASSERT(g->burn.f > 0);
-    return dps_burn_in(ctx, AGC_JOB_RCS_BURN_AFTER_ATTITUDE_MANEUVER, true);
+    return burn_program_start(ctx, AGC_JOB_RCS_BURN_AFTER_MANEUVER, true);
 }
 
 /* P41 after R60 (p.755-756): VGBODY = S41.1(VGTIG) for V16N85, DISPDEX
  * positive, DYNMDISP at PRIO5, 6.7 (REDO6.7) and 4 type C, B*RNB*B*.     */
-agc_status_t agc_job_rcs_burn_after_attitude_maneuver(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -184,11 +184,11 @@ agc_status_t agc_job_rcs_burn_after_attitude_maneuver(agc_job_ctx_t *ctx)
     agc_guid_t *g = agc_guid_state();
     agc_interp_t ip;
     agc_interp_init(&ip);
-    (void)agc_guid_s41_1(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
+    (void)agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
     (void)agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), NULL);
     g->lm.dispdex = (agc_sp_t)AGC_PRIO5;              /* FOR SAFETY ONLY        */
     (void)agc_exec_findvac(AGC_PRIO5, AGC_JOB_DYNDISP);
-    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_ATTITUDE_MANEUVER, AGC_TASK_NONE,
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_MANEUVER, AGC_TASK_NONE,
                           (int16_t)AGC_PRIO20, false, 0U };
     (void)agc_phase_change2((uint16_t)000076, (uint16_t)004024, &v);
     return agc_lm_brnbb(ctx);
@@ -222,7 +222,7 @@ agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx)
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
-    (void)agc_guid_s41_1(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
+    (void)agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
     return agc_svc_delayjob(ONE_SEC, AGC_JOB_DYNDISP);
 }
 
@@ -290,7 +290,7 @@ agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     (void)agc_lm_updatevg(&ip);
-    (void)agc_guid_s41_1(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
+    (void)agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
     return agc_job_servexit(ctx);
 }
 
@@ -300,7 +300,7 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_imu_status_check_both();
+    (void)agc_imu_status_check();
     agc_dp_t dt = 0;
     agc_interp_t ip;
     agc_interp_init(&ip);
@@ -319,7 +319,7 @@ agc_status_t agc_task_start_thrust_monitor(void)
     agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_TIGON, 0, true, 0U };
     (void)agc_phase_change_var((uint16_t)005014, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
-    (void)agc_exec_findvac(AGC_PRIO20, AGC_JOB_THRUST_MONITOR_BODY);
+    (void)agc_exec_findvac(AGC_PRIO20, AGC_JOB_THRUST_MONITOR_RESET);
     (void)AGC_ASSERT(agc_guid_state()->avg.avgexit == AGC_JOB_CALC_DELTA_V_BODY);
     return agc_task_redo4_2();
 }
@@ -336,7 +336,7 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     rz->delvsin = agc_vec_add(&ip, g->burn.delvctl, g->avg.delvref);
-    (void)agc_guid_s41_1(&ip, AGC_VEHICLE_LM, rz->delvsin, &g->burn.delvimu);
+    (void)agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, rz->delvsin, &g->burn.delvimu);
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_CALC_DELTA_V_BODY, AGC_TASK_NONE,
                           (int16_t)AGC_PRIO20, false, 0U };
     (void)agc_phase_change_var(PH_5_3_B, &v);
@@ -345,7 +345,7 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
 }
 
 /* P47BODY / P47BOD (p.758-759): clear N83, flash V16N83 (ENTER clears).   */
-agc_status_t agc_job_thrust_monitor_body_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -353,15 +353,15 @@ agc_status_t agc_job_thrust_monitor_body_lm(agc_job_ctx_t *ctx)
     agc_burn_t *b = &agc_guid_state()->burn;
     b->delvimu = agc_vec_zero();
     b->delvctl = agc_vec_zero();
-    return agc_job_thrust_monitor_bod_lm(ctx);
+    return agc_job_thrust_monitor_display_lm(ctx);
 }
 
-agc_status_t agc_job_thrust_monitor_bod_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_BODY };
+    agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_RESET };
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 83), &cont);
     if (st != AGC_STATUS_OK) {
         return st;
@@ -464,12 +464,12 @@ agc_status_t agc_task_coastset(void)
  * PIPTIME + TGO; FINDCDUW while TGO >= 4 s, else IMPULSW set, STEERSW
  * reset. A VG more than 90 degrees from the thrust gives alarm 1407 and
  * goes straight to FINDCDUW.                                               */
-static agc_status_t s40_8_steer(agc_interp_t *ip)
+static agc_status_t steering_commands(agc_interp_t *ip)
 {
     agc_guid_t *g = agc_guid_state();
     agc_tgo_in_t in = { g->burn.vg, agc_vec_neg(g->avg.delvref), g->lm.vex, g->lm.tdecay };
     agc_dp_t tgo = 0;
-    agc_status_t st = agc_guid_s40_8_tgo_lm(ip, &in, &tgo);
+    agc_status_t st = agc_guid_steering_tgo_lm(ip, &in, &tgo);
     if (st == AGC_STATUS_ALARM) {
         (void)agc_alarm(AGC_ALARM_01407);             /* ALARMIT                */
         return agc_lm_findcduw_m2(ip);
@@ -486,7 +486,7 @@ static agc_status_t s40_8_steer(agc_interp_t *ip)
 /* S40.8 Luminary (p.770-771): VG = VGPREV - DELVREF (external delta-V) or
  * from RASTEER1 (aimpoint); UNFC/2 = REFSMMAT VG VSL1; VGDISP; VGPREV =
  * VG; with STEERSW, TGO and FINDCDUW.                                     */
-agc_status_t agc_lm_s40_8(agc_interp_t *ip)
+agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -508,7 +508,7 @@ agc_status_t agc_lm_s40_8(agc_interp_t *ip)
     if (!agc_flag_test(AGC_FLAG_STEERSW)) {
         return AGC_STATUS_OK;
     }
-    return s40_8_steer(ip);
+    return steering_commands(ip);
 }
 
 /* UPDATEVG Luminary (p.761-762): S40.8; for aimpoint burns a new Lambert
@@ -522,7 +522,7 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
     }
     agc_guid_t *g = agc_guid_state();
     agc_rendz_t *rz = agc_rendz_erasable();
-    (void)agc_lm_s40_8(ip);                           /* X-PRODUCT STEERING     */
+    (void)agc_lm_cross_product_steering(ip);                           /* X-PRODUCT STEERING     */
     if (agc_flag_test(AGC_FLAG_XDELVFLG)) {
         return AGC_STATUS_OK;
     }
@@ -536,7 +536,7 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
         }
     }
     if (start && agc_phase_get(2) == 0U) {            /* 180SETUP               */
-        (void)agc_exec_findvac(AGC_PRIO10, AGC_JOB_S40_9);
+        (void)agc_exec_findvac(AGC_PRIO10, AGC_JOB_VTOGAIN);
         (void)agc_phase_change2((uint16_t)000172, PH_5_3_B, NULL);
         g->lm.tigsave = g->lm.tigsavep;               /* ENDSTEER               */
         rz->rinit = agc_erase_rn();
@@ -576,7 +576,7 @@ agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
 
 /* S40.9 Luminary (p.776): AVFLAG set (LM active), HAVEGUES with NUMIT 0
  * and EPSILON4 10 or 45 degrees (NORMSW), group 2 off.                    */
-agc_status_t agc_job_s40_9_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_vtogain_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -626,10 +626,10 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
     if (agc_flag_test(AGC_FLAG_APSFLAG)) {                               /* APSTGO   */
         return agc_dp_shl(ip, agc_dp_div(ip, mv, FAPS), 2);
     }
-    agc_dp_t t = agc_dp_div(ip, mv, S40_136);
+    agc_dp_t t = agc_dp_div(ip, mv, DPS_IMPULSE_THRUST);
     (void)agc_flag_clear(AGC_FLAG_NOTHROTL);
     if (agc_interp_test_ovf(ip)) {                                       /* S40.130V */
-        agc_erase_set_tgo(agc_dp_div(ip, agc_dp_shr(mv, 4), S40_136S));
+        agc_erase_set_tgo(agc_dp_div(ip, agc_dp_shr(mv, 4), DPS_IMPULSE_THRUST_SHIFTED));
         return -1;
     }
     agc_dp_t d = agc_dp_sub(ip, t, SEC6_14);                             /* S40.127  */
@@ -648,7 +648,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
  * IMPULSW (set: attitude hold, engine off TGO after ignition), NOTHROTL
  * (set: no throttling) and TGO (cs, 2^28: the high word of the 2^14
  * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.   */
-agc_status_t agc_job_s40_13_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

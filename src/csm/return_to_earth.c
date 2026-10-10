@@ -36,10 +36,10 @@
 #include "agc/agc_csm_entry.h"
 #include "entry_internal.h"
 
-#define P37_ONE_B11   ((agc_dp_t)(8 * 16384))   /* 1RTEB25 +1 = 1.0 B-11  */
+#define RETURN_TO_EARTH_ONE_B11   ((agc_dp_t)(8 * 16384))   /* 1RTEB25 +1 = 1.0 B-11  */
 
 /* P37 (p. 891): return-to-earth targeting. STUB: not translated.         */
-agc_status_t agc_job_p37(agc_job_ctx_t *ctx)
+agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -57,7 +57,7 @@ agc_status_t agc_job_p37(agc_job_ctx_t *ctx)
  * of MA - RCON) and the product with SL* 0-6,1, where X1 is left by the
  * caller V2T100; here the shifts are those that give the documented
  * scales (ratio B3, product B12 -> B11), i.e. X1 = -7.                    */
-agc_status_t agc_p37_xt1lim(agc_dp_t ma, agc_dp_t rcon, agc_dp_t r_t1,
+agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon, agc_dp_t r_t1,
                             agc_dp_t beta5, agc_dp_t *xt1lim)
 {
     agc_interp_t *ip = entry_ip();
@@ -76,7 +76,7 @@ agc_status_t agc_p37_xt1lim(agc_dp_t ma, agc_dp_t rcon, agc_dp_t r_t1,
     q = agc_dp_div(ip, agc_dp_sub(ip, ma, agc_dp_shr(r_t1, 1)), den);
     q = (n2 >= 3) ? agc_dp_shl(ip, q, n2 - 3) : agc_dp_shr(q, 3 - n2); /* B3 */
     q = agc_dp_mul(ip, q, beta5);                          /* B12           */
-    q = agc_dp_sub(ip, agc_dp_shl(ip, q, 1), P37_ONE_B11); /* BETA10 B11    */
+    q = agc_dp_sub(ip, agc_dp_shl(ip, q, 1), RETURN_TO_EARTH_ONE_B11); /* BETA10 B11    */
     q = agc_dp_shl(ip, q, 1);                              /* SL1 -> B10    */
     if (agc_interp_test_ovf(ip)) {
         q = AGC_DP_MAX;                                    /* XT1LIM2       */

@@ -145,7 +145,7 @@ typedef struct agc_csm_tvc {
     agc_sp_t one_conacc;            /* 1/CONACC, s^2/rev, scale 2^9         */
     agc_sp_t vark;                  /* VARK, (2^3 ascrev)                   */
     agc_sp_t repfrac;               /* REPFRAC, 2^2                         */
-    agc_sp_t vcntr, v97vcntr;       /* VCNTR, V97VCNTR gain update counters;
+    agc_sp_t vcntr, engine_fail_vcntr;       /* VCNTR, V97VCNTR gain update counters;
                                        any negative value stands for the
                                        AGC's -0 (V97/R40 LOTHRUST)         */
     agc_sp_t tvcphase;              /* TVCPHASE -2..3                       */

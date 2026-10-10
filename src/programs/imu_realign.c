@@ -58,7 +58,7 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
         (void)agc_flag_clear(AGC_FLAG_UPDATFLG);  /* status needs no check */
         (void)agc_flag_clear(AGC_FLAG_TRACKFLG);
     }
-    st = agc_imu_r02both();                                   /* R02BOTH   */
+    st = agc_imu_status_check();                                   /* R02BOTH   */
     if (st != AGC_STATUS_OK) {
         return AGC_STATUS_OK;               /* alarm 210/220, GOTOPOOH done */
     }
@@ -188,7 +188,7 @@ agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
 }
 
 /* CALL S52.2 on the present CDUs: XSM = XSMD, THETAD, XNB (reference). */
-static agc_status_t p52_s52_2(void)
+static agc_status_t realign_gimbal_angles(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t ip;
@@ -209,7 +209,7 @@ agc_status_t agc_job_realign_gimbal_display(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_status_t st = p52_s52_2();
+    const agc_status_t st = realign_gimbal_angles();
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -239,7 +239,7 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = p52_s52_2();
+    agc_status_t st = realign_gimbal_angles();
     if (st != AGC_STATUS_OK) {
         return st;
     }
@@ -249,7 +249,7 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
     for (int i = 0; i < 3; i++) {
         thetad[i] = agc_erase_thetad(i);
     }
-    if (!agc_align_coarse_align_needed(thetad, cdu)) {
+    if (!agc_align_coarse_needed(thetad, cdu)) {
         return agc_job_coarse_align_fineonly(ctx);                  /* CALOOP1   */
     }
     st = align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN, ctx->prio); /* COARFINE */
@@ -370,8 +370,8 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
     st = is_csm() ? align_set1_pdt() : align_ncoarse();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     if (is_csm()) {
-        return agc_job_csm_fine_align_k(ctx);
+        return agc_job_csm_fine_align_recheck(ctx);
     }
     ram->qmaj = AGC_JOB_GOTOPOOH;                             /* P52OUT    */
-    return agc_job_lm_fine_align_k(ctx);
+    return agc_job_lm_fine_align_recheck(ctx);
 }

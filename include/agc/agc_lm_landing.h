@@ -122,7 +122,7 @@ typedef struct agc_lm_ldg {
     agc_sp_t  elvira;     /* ELVIRA LPD bits last pass                      */
     agc_sp_t  zerlina;    /* ZERLINA monitor countdown                      */
     agc_dp_t  outofpln;   /* OUTOFPLN out-of-plane distance, 2^24 m (derived) */
-    agc_vec_t attitude_maneuver_vsave;   /* R60VSAVE                                       */
+    agc_vec_t pointvsm_save;   /* R60VSAVE                                       */
     agc_dp_t  deltah;     /* DELTAH display init, 2^24 m                    */
     agc_dp_t  hcalc1;     /* HCALC1 P66 altitude, 2^24 m                    */
     agc_vec_t delvrod;    /* DELVROD P66 PIPA delta, PIPA counts            */
@@ -241,7 +241,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
 agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx);      /* LUNLAND      */
 agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry);
 agc_status_t agc_lm_start_approach_phase(void);                       /* STARTP64     */
-agc_status_t agc_lm_velocity_nulling_start(void);                       /* P65START     */
+agc_status_t agc_lm_start_velocity_nulling(void);                       /* P65START     */
 agc_status_t agc_lm_ttfincr(agc_interp_t *ip);            /* TTFINCR      */
 agc_status_t agc_lm_calcrgvg(agc_interp_t *ip);           /* CALCRGVG     */
 agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip);           /* RGVGCALC     */
@@ -252,24 +252,24 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip);             /* CGCALC       */
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
-agc_status_t agc_lm_job_braking_phase_disps_m2(agc_job_ctx_t *ctx);  /* P63DISPS -2  */
-agc_status_t agc_lm_job_approach_phase_disps(agc_job_ctx_t *ctx);     /* P64DISPS     */
-agc_status_t agc_lm_job_approach_phase_ceed(agc_job_ctx_t *ctx);      /* P64CEED      */
+agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);  /* P63DISPS -2  */
+agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);     /* P64DISPS     */
+agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx);      /* P64CEED      */
 void         agc_lm_tdispset(void);                       /* TDISPSET     */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
-agc_status_t agc_lm_job_braking_phase_lm(agc_job_ctx_t *ctx);        /* P63LM        */
+agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx);        /* P63LM        */
 agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx);  /* IGNALG LEMPREC retry */
 agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx);     /* IGNALOOP (INTSTALL retry) */
 agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx);     /* IGNALGRT     */
 agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx);      /* ASTNRET      */
-agc_status_t agc_lm_job_braking_phase_spot2(agc_job_ctx_t *ctx);     /* P63SPOT2     */
-agc_status_t agc_lm_job_braking_phase_spot3(agc_job_ctx_t *ctx);     /* P63SPOT3     */
-agc_status_t agc_lm_job_braking_phase_spot4(agc_job_ctx_t *ctx);     /* P63SPOT4     */
+agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx);     /* P63SPOT2     */
+agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx);     /* P63SPOT3     */
+agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx);     /* P63SPOT4     */
 agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry); /* R13 */
 agc_status_t agc_lm_redesig(agc_interp_t *ip);            /* REDESIG      */
-agc_status_t agc_lm_rate_of_descent_landing_verta(const agc_job_ctx_t *ctx);   /* P66VERTA     */
-agc_status_t agc_lm_manual_landing_vert(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx);   /* P66VERTA     */
+agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_task_rodtask(void);                   /* RODTASK      */
 agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx);      /* RODCOMP      */
 agc_status_t agc_lm_pitfall(void);                        /* PITFALL (RUPT10) */
@@ -277,19 +277,19 @@ agc_status_t agc_lm_task_redesmon(void);                  /* REDESMON     */
 agc_status_t agc_lm_descbits(void);                       /* DESCBITS (ch 16) */
 agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx);          /* LANDJUNK     */
 agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx);    /* V06N43 flash */
-agc_status_t agc_lm_job_landing_confirmation_b(agc_job_ctx_t *ctx);         /* after V06N43 PROCEED */
+agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx);         /* after V06N43 PROCEED */
 
 /* ---- P70-P71 (landing_aborts.c) ------------------------------------------------ */
-agc_status_t agc_lm_task_landing_radar_monitor(void);                    /* R10,R11      */
-agc_status_t agc_lm_landing_radar_monitor_a(void);                        /* R10,R11A     */
+agc_status_t agc_lm_task_abort_monitor(void);                    /* R10,R11      */
+agc_status_t agc_lm_abort_monitor_resume(void);                        /* R10,R11A     */
 agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx);          /* P70          */
 agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx);          /* P71          */
-agc_status_t agc_lm_job_dps_abort_a(agc_job_ctx_t *ctx);         /* P70A restart */
-agc_status_t agc_lm_job_aps_abort_a(agc_job_ctx_t *ctx);         /* P71A restart */
+agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx);         /* P70A restart */
+agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);         /* P71A restart */
 agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx);      /* GOABORT      */
-agc_status_t agc_lm_job_abort_dps_burn_a(agc_job_ctx_t *ctx);      /* UPTHROT1 -3  */
+agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx);      /* UPTHROT1 -3  */
 agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx);     /* UPTHROT1     */
-agc_status_t agc_lm_job_aps_abort_old(agc_job_ctx_t *ctx);       /* OLDTIME restart */
+agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);       /* OLDTIME restart */
 agc_sp_t     agc_lm_pipctr1(void);                        /* PIPCTR1 for LANDISP */
 agc_status_t agc_lm_tgocomp(agc_interp_t *ip);            /* TGOCOMP      */
 agc_status_t agc_lm_throtup(void);                        /* THROTUP      */
@@ -298,13 +298,13 @@ agc_status_t agc_lm_throtup(void);                        /* THROTUP      */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);
 agc_status_t agc_lm_powered_ascent_init(agc_interp_t *ip);
 agc_status_t agc_lm_comminit(agc_interp_t *ip);
-agc_status_t agc_lm_job_powered_ascent_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_powered_ascent_lm2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx);     /* V06N33 flash */
-agc_status_t agc_lm_job_powered_ascent_lmb(agc_job_ctx_t *ctx);       /* P12LMB       */
-agc_status_t agc_lm_powered_ascent_ret(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx);       /* P12LMB       */
+agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx);      /* P12RET tail  */
 agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);        /* ATMAG (AVGEXIT) */
 agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);

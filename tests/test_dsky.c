@@ -102,17 +102,17 @@ static void test_relay_words(void)
     CHECK(agc_dsky_relay_code(0) == 025u && agc_dsky_relay_code(6) == 034u);
     CHECK(agc_dsky_relay_code(8) == 035u && agc_dsky_relay_digit(037u) == 9);
     CHECK(agc_dsky_keys("V06N36E") == AGC_STATUS_OK);
-    bool verb06 = false;
+    bool saw_decimal_display = false;
     bool noun_clock_time = false;
     int sent = 0;
     uint16_t w = 0;
     for (int i = 0; i < 40 && agc_dsky_dspout(&w) == AGC_STATUS_OK; i++) {
         sent++;
-        verb06 = verb06 || w == (uint16_t)((10u << 11) | (025u << 5) | 034u);
+        saw_decimal_display = saw_decimal_display || w == (uint16_t)((10u << 11) | (025u << 5) | 034u);
         noun_clock_time = noun_clock_time || w == (uint16_t)((9u << 11) | (033u << 5) | 034u);
         CHECK(agc_chan_read((int)AGC_CHAN_OUT0) == w);
     }
-    CHECK(verb06 && noun_clock_time);
+    CHECK(saw_decimal_display && noun_clock_time);
     CHECK(sent >= 2 && agc_dsky_nout() == 0);
     CHECK(agc_dsky_dspout(&w) == AGC_STATUS_NOT_FOUND);
 }

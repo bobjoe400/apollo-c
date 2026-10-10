@@ -9,13 +9,13 @@
 #include "agc/agc_flags_csm.h"
 #include "integ_internal.h"
 
-agc_status_t agc_integ_csm_clear_stop_integration_onflg(void)
+agc_status_t agc_integ_csm_resume_idle_integration(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_integ_flag(AGC_FLAG_STOP_INTEGRATION_ONFLG, false);
-    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_STOP_INTEGRATION_ONFLG));
+    agc_integ_flag(AGC_FLAG_IDLE_INTEGRATION_INHIBITED, false);
+    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLE_INTEGRATION_INHIBITED));
     return AGC_STATUS_OK;
 }
 

@@ -147,7 +147,7 @@ agc_vec_t    rz_vec_from_body(agc_interp_t *ip, const agc_rendz_t *rz,
                               agc_vec_t v);
 /* AVFLAGA / AVFLAGP: AVFLAG reset = CSM active, set = LM active.         */
 agc_status_t rz_avflag(bool this_active);
-agc_status_t rz_p20flgon(void);    /* P20FLGON: set UPDATFLG, TRACKFLG    */
+agc_status_t rz_tracking_flags_on(void);    /* P20FLGON: set UPDATFLG, TRACKFLG    */
 /* PRECSET: precision update of both vehicles to tdec1 (ACTIVE/PASSIVE).  */
 agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1,
                         agc_job_id_t resume);

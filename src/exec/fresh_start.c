@@ -554,10 +554,10 @@ agc_status_t agc_exec_gotopooh(void)
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
     }
     if (exec_in_job()) {
-        st = agc_exec_job_yield(AGC_JOB_GOP00FIX);
+        st = agc_exec_job_yield(AGC_JOB_GO_IDLE_FIX);
     } else {
         st = agc_exec_novac(restreg > 0U ? restreg : FS_PRIO30,
-                            AGC_JOB_GOP00FIX);
+                            AGC_JOB_GO_IDLE_FIX);
     }
     (void)AGC_ASSERT(phase_group_agrees(4));
     return st;

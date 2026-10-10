@@ -30,13 +30,13 @@ static const ign_table_t IGN_TABLES[AGC_LM_WHICH_COUNT] = {
       IGN_TIG5_DISPCHNG, false, IGN_KIND_ASCENT, AGC_JOB_NONE },
     /* P40TABLE */
     { 040, false, false, IGN_ENTER_GOPOST, true, 2240, AGC_JOB_STEERING,
-      IGN_TIG5_TIMEBURN, false, IGN_KIND_DPS, AGC_JOB_P40_ALARM },
+      IGN_TIG5_TIMEBURN, false, IGN_KIND_DPS, AGC_JOB_STAGE_ALARM_DISPLAY },
     /* P41TABLE */
-    { 0, false, false, IGN_ENTER_GOPOST, false, -1, AGC_JOB_CALCN85,
+    { 0, false, false, IGN_ENTER_GOPOST, false, -1, AGC_JOB_CALC_VG_BODY,
       IGN_TIG5_COMMON, true, IGN_KIND_NONE, AGC_JOB_NONE },
     /* P42TABLE */
     { 040, true, false, IGN_ENTER_GOPOST, true, 2640, AGC_JOB_STEERING,
-      IGN_TIG5_TIMEBURN, false, IGN_KIND_APS, AGC_JOB_P42STAGE },
+      IGN_TIG5_TIMEBURN, false, IGN_KIND_APS, AGC_JOB_APS_BURN_STAGE_CHECKED },
     /* P63TABLE */
     { 062, false, true, IGN_ENTER_RECYCLE, false, 2240, AGC_JOB_SERVEXIT,
       IGN_TIG5_DISPCHNG, false, IGN_KIND_BRAKING, AGC_JOB_NONE },
@@ -49,7 +49,7 @@ const ign_table_t *ign_table(void)
 {
     agc_sp_t w = agc_guid_state()->lm.which;
     if (!AGC_ASSERT(w >= 0 && w < (agc_sp_t)AGC_LM_WHICH_COUNT)) {
-        return &IGN_TABLES[AGC_LM_WHICH_P40];
+        return &IGN_TABLES[AGC_LM_WHICH_DPS_BURN];
     }
     return &IGN_TABLES[w];
 }
@@ -79,7 +79,7 @@ agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
                           (int16_t)ctx->prio, false, 0U };
     (void)agc_phase_change_var((uint16_t)004024, &v);
     agc_guid_state()->avg.dvtotal = 0;                /* EXTIRPATE JUNK         */
-    return agc_lm_p40auto(ctx, AGC_JOB_BRNBB);
+    return agc_lm_check_auto_control(ctx, AGC_JOB_BRNBB);
 }
 
 agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
@@ -183,12 +183,12 @@ agc_status_t agc_task_tig_35(void)
     if (ign_table()->ullage_cs >= 0) {                /* CS 6, BZMF TASKOVER    */
         return AGC_STATUS_OK;
     }
-    (void)agc_waitlist_call(SEC4_9, AGC_TASK_TIG_30_1);
-    return agc_exec_novac(AGC_PRIO17, AGC_JOB_P41BLANK);
+    (void)agc_waitlist_call(SEC4_9, AGC_TASK_RESTORE_BURN_DISPLAY);
+    return agc_exec_novac(AGC_PRIO17, AGC_JOB_RCS_BURN_BLANK_DSKY);
 }
 
 /* TIG-30.1 (p.738): restore the display by a job (TIG-30A).                */
-agc_status_t agc_task_tig_30_1(void)
+agc_status_t agc_task_restore_burn_display(void)
 {
     (void)AGC_ASSERT(ign_table()->ullage_cs < 0);
     return agc_exec_novac(AGC_PRIO17, AGC_JOB_TIG_30A);
@@ -252,7 +252,7 @@ agc_status_t agc_task_tig_5_lm(void)
     (void)agc_flag_clear(AGC_FLAG_IGNFLAG);
     (void)agc_flag_clear(AGC_FLAG_ASTNFLAG);
     if (t->tig5 == IGN_TIG5_TIMEBURN && agc_phase_get(3) == 0U) {
-        (void)agc_exec_findvac(AGC_PRIO20, AGC_JOB_S40_13);
+        (void)agc_exec_findvac(AGC_PRIO20, AGC_JOB_TIMEBURN);
         (void)agc_phase_change(3, (uint16_t)000053);  /* 3.5SPOT FOR S40.13     */
     }
     if (t->tig5 != IGN_TIG5_COMMON) {
@@ -282,7 +282,7 @@ agc_status_t agc_task_tig_0_lm(void)
     if (agc_phase_checkmm(63)) {
         agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
         (void)AGC_ASSERT(zoom > 0);
-        (void)agc_waitlist_call((uint16_t)zoom, AGC_TASK_P63ZOOM);
+        (void)agc_waitlist_call((uint16_t)zoom, AGC_TASK_BRAKING_PHASE_ZOOM);
         agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNYET, 0, true, 0U };
         (void)agc_phase_change2((uint16_t)040033, (uint16_t)005014, &v);
     }

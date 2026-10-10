@@ -49,7 +49,7 @@
 static agc_vec_t scaxis;     /* SCAXIS: S/C axis to point, half-unit     */
 static agc_vec_t pointvsm;   /* POINTVSM: direction in SM axes, half-unit */
 static uint16_t  fdai[3];    /* FDAIX, FDAIY, FDAIZ (LM), CDU patterns   */
-static agc_job_id_t temp_attitude_maneuver; /* TEMPR60: where R60 returns               */
+static agc_job_id_t attitude_maneuver_return; /* TEMPR60: where R60 returns               */
 static bool relinus_static;  /* last R60 display was the static V06N18   */
 
 static bool vec_ok(agc_vec_t v)
@@ -321,7 +321,7 @@ static void chklinus(bool is_static)
  * maneuver"; V34 -> R61TEST, PROCEED -> REDOMANC, ENTER -> ENDMANU1.     */
 static agc_status_t toballa(const agc_job_ctx_t *ctx)
 {
-    const agc_dsky_cont_t cont = { AGC_JOB_ATTITUDE_MANEUVER_TERM, AGC_JOB_ATTITUDE_MANEUVER_REDOMANC,
+    const agc_dsky_cont_t cont = { AGC_JOB_ATTITUDE_MANEUVER_TERMINATE, AGC_JOB_REDOMANC,
                                    AGC_JOB_ATTITUDE_MANEUVER_ENTER };
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6, 18), &cont);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
@@ -336,7 +336,7 @@ static agc_status_t automanv(const agc_job_ctx_t *ctx)
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 18), NULL);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     chklinus(true);
-    return agc_imu_gomanur(ctx, AGC_JOB_ATTITUDE_MANEUVER_ENDMANUV);
+    return agc_imu_gomanur(ctx, AGC_JOB_ENDMANUV);
 }
 
 /* Auto-mode test before the maneuver: CM "mode auto and control GNC"
@@ -358,14 +358,14 @@ agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t re
     if (!AGC_ASSERT(ctx != NULL && ret_job != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
-    temp_attitude_maneuver = ret_job;                                   /* MAKECADR      */
+    attitude_maneuver_return = ret_job;                                   /* MAKECADR      */
     (void)final_angles();                                /* REDOMANN      */
     lm_ballangs();                                       /* TOBALL (LM)   */
     return toballa(ctx);
 }
 
 /* REDOMANC (PROCEED): recompute, then maneuver if in auto, else ask again. */
-agc_status_t agc_job_attitude_maneuver_redomanc(agc_job_ctx_t *ctx)
+agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -379,7 +379,7 @@ agc_status_t agc_job_attitude_maneuver_redomanc(agc_job_ctx_t *ctx)
 }
 
 /* ENDMANUV: maneuver finished; ask for the next one (TOBALL / TOBALLA).  */
-agc_status_t agc_job_attitude_maneuver_endmanuv(agc_job_ctx_t *ctx)
+agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -393,11 +393,11 @@ static agc_status_t endmanu1(const agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_flag_clear(AGC_FLAG_3AXISFLG);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    if (temp_attitude_maneuver == AGC_JOB_NONE) {
+    if (attitude_maneuver_return == AGC_JOB_NONE) {
         return AGC_STATUS_OK;
     }
     agc_job_ctx_t next = *ctx;                           /* same job      */
-    next.id = temp_attitude_maneuver;
+    next.id = attitude_maneuver_return;
     return agc_dispatch_job(&next);
 }
 
@@ -412,7 +412,7 @@ agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx)
 
 /* R61TEST (V34): in P00 (V49/V89) return to the user, who does ENDEXT;
  * in R61 (priority display flag) terminate P20 via V56; else GOTOPOOH.   */
-agc_status_t agc_job_attitude_maneuver_term(agc_job_ctx_t *ctx)
+agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -458,13 +458,13 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
 
 /* R62DISP (V49): flash V06N22 with CPHI, CTHETA, CPSI; the crew may load
  * new angles (ENTER redisplays); PROCEED -> GOMOVE; V34 -> ENDEXT.       */
-agc_status_t agc_job_crew_defined_maneuver_disp(agc_job_ctx_t *ctx)
+agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_dsky_cont_t cont = { AGC_JOB_CREW_DEFINED_MANEUVER_TERM, AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE,
-                                   AGC_JOB_CREW_DEFINED_MANEUVER_DISP };
+    const agc_dsky_cont_t cont = { AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE, AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE,
+                                   AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY };
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 22), &cont);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return st;
@@ -478,10 +478,10 @@ agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
     }
     agc_status_t st = agc_flag_set(AGC_FLAG_3AXISFLG);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_CREW_DEFINED_MANEUVER_TERM);
+    return agc_imu_attitude_maneuver(ctx, AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE);
 }
 
-agc_status_t agc_job_crew_defined_maneuver_term(agc_job_ctx_t *ctx)
+agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;

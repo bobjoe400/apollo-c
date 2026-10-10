@@ -24,30 +24,30 @@
 /* ---- jobs named in the restart tables (both vehicles) ---------------- */
 #define AGC_JOB_STATINT1   ((agc_job_id_t)0x0E10) /* 2.5  nav-integ               */
 #define AGC_JOB_RELINUS    ((agc_job_id_t)0x0E11) /* CSM 1.7, LM 2.13 (imu/pinball)*/
-#define AGC_JOB_S40_13     ((agc_job_id_t)0x0E12) /* CSM 3.3, LM 3.5 guid-powered */
+#define AGC_JOB_TIMEBURN     ((agc_job_id_t)0x0E12) /* CSM 3.3, LM 3.5 guid-powered */
 #define AGC_JOB_POSTBURN   ((agc_job_id_t)0x0E13) /* CSM 4.35, LM 4.13            */
 #define AGC_JOB_NORMLIZE   ((agc_job_id_t)0x0E14) /* 5.2  guid-powered            */
 #define AGC_JOB_SERVICER   ((agc_job_id_t)0x0E15) /* 5.4  guid-powered            */
 #define AGC_JOB_TIMEDIDR   ((agc_job_id_t)0x0E16) /* 6.5  P27 (sys-misc)          */
 /* CSM only */
 #define AGC_JOB_REDO40_9   ((agc_job_id_t)0x0E20) /* 1.5  REDO40.9                */
-#define AGC_JOB_PIKUP20    ((agc_job_id_t)0x0E21) /* 1.11                         */
+#define AGC_JOB_RENDEZVOUS_NAVIGATION_PICKUP    ((agc_job_id_t)0x0E21) /* 1.11                         */
 #define AGC_JOB_RENDEZVOUS_TRACKING_DATA        ((agc_job_id_t)0x0E22) /* 2.7                          */
-#define AGC_JOB_ALTERNATE_LOS_SIGHTING_MARK_ENTER   ((agc_job_id_t)0x0E23) /* 2.11                         */
+#define AGC_JOB_ALTERNATE_LOS_ENTER   ((agc_job_id_t)0x0E23) /* 2.11                         */
 #define AGC_JOB_REDO_RENDEZVOUS_TRACKING_DATA    ((agc_job_id_t)0x0E24) /* 2.13                         */
 #define AGC_JOB_MATRXJOB   ((agc_job_id_t)0x0E25) /* 3.7                          */
-#define AGC_JOB_RESTART_EARTH_ORBIT_INSERTION_MONITOR      ((agc_job_id_t)0x0E26) /* 3.11                         */
-#define AGC_JOB_REP11A     ((agc_job_id_t)0x0E27) /* 3.13                         */
-#define AGC_JOB_THRUST_MONITOR_BODY    ((agc_job_id_t)0x0E28) /* 4.2 second part              */
+#define AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_RESTART      ((agc_job_id_t)0x0E26) /* 3.11                         */
+#define AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_EPHEMERIS     ((agc_job_id_t)0x0E27) /* 3.13                         */
+#define AGC_JOB_THRUST_MONITOR_RESET    ((agc_job_id_t)0x0E28) /* 4.2 second part              */
 #define AGC_JOB_COMPVER    ((agc_job_id_t)0x0E29) /* 4.15                         */
 #define AGC_JOB_AZMTHCG1   ((agc_job_id_t)0x0E2A) /* 4.17                         */
-#define AGC_JOB_SPS_BURN_S_SV    ((agc_job_id_t)0x0E2B) /* 4.23 P40S/SV                 */
+#define AGC_JOB_PREBURN_STATE_VECTOR    ((agc_job_id_t)0x0E2B) /* 4.23 P40S/SV                 */
 #define AGC_JOB_PROG52     ((agc_job_id_t)0x0E2C) /* 4.25                         */
 #define AGC_JOB_FINE_ALIGN        ((agc_job_id_t)0x0E2D) /* 4.31 (R51 +1)                */
-#define AGC_JOB_ENTRY_FINAL_PHASE_1      ((agc_job_id_t)0x0E2E) /* 4.41 P67.1                   */
-#define AGC_JOB_S61_1A     ((agc_job_id_t)0x0E2F) /* 4.45 (S61.1A -1)             */
+#define AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY      ((agc_job_id_t)0x0E2E) /* 4.41 P67.1                   */
+#define AGC_JOB_ENTRY_IMU_AXIS_TEST     ((agc_job_id_t)0x0E2F) /* 4.45 (S61.1A -1)             */
 #define AGC_JOB_PRE_HUNT   ((agc_job_id_t)0x0E30) /* 4.47 PRE-HUNT                */
-#define AGC_JOB_ENTRY_UPCONTROL_1      ((agc_job_id_t)0x0E31) /* 4.55 P65.1                   */
+#define AGC_JOB_ENTRY_UPCONTROL_DISPLAY      ((agc_job_id_t)0x0E31) /* 4.55 P65.1                   */
 #define AGC_JOB_RSTGTS1    ((agc_job_id_t)0x0E32) /* 5.7  prelaunch               */
 #define AGC_JOB_WTLISTNT   ((agc_job_id_t)0x0E33) /* 5.13                         */
 #define AGC_JOB_RESTEST1   ((agc_job_id_t)0x0E34) /* 5.15                         */
@@ -57,12 +57,12 @@
 #define AGC_JOB_RESTAIER   ((agc_job_id_t)0x0E38) /* 5.27                         */
 #define AGC_JOB_RESCHNG    ((agc_job_id_t)0x0E39) /* 5.33                         */
 /* LM only */
-#define AGC_JOB_PREFERRED_TRACKING_ATTITUDE_LEM1    ((agc_job_id_t)0x0E40) /* 2.11                         */
-#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RSTRT   ((agc_job_id_t)0x0E41) /* 2.15                         */
+#define AGC_JOB_PREFERRED_TRACKING_ATTITUDE_LOOP    ((agc_job_id_t)0x0E40) /* 2.11                         */
+#define AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART   ((agc_job_id_t)0x0E41) /* 2.15                         */
 #define AGC_JOB_GOABORT    ((agc_job_id_t)0x0E42) /* 4.3                          */
-#define AGC_JOB_FINE_ALIGN_1      ((agc_job_id_t)0x0E43) /* 4.21 (R51.1 +1)              */
-#define AGC_JOB_DPS_ABORT_A       ((agc_job_id_t)0x0E44) /* 4.27                         */
-#define AGC_JOB_APS_ABORT_A       ((agc_job_id_t)0x0E45) /* 4.31                         */
+#define AGC_JOB_FINE_ALIGN_PERFORM      ((agc_job_id_t)0x0E43) /* 4.21 (R51.1 +1)              */
+#define AGC_JOB_DPS_ABORT_COMMANDED       ((agc_job_id_t)0x0E44) /* 4.27                         */
+#define AGC_JOB_APS_ABORT_COMMANDED       ((agc_job_id_t)0x0E45) /* 4.31                         */
 #define AGC_JOB_COMFAIL    ((agc_job_id_t)0x0E46) /* 4.37                         */
 #define AGC_JOB_REDO6_7    ((agc_job_id_t)0x0E47) /* 6.7                          */
 
@@ -81,26 +81,26 @@
 #define AGC_TASK_TTG_0     ((agc_task_id_t)0x0E93) /* 4.4 TTG/0                   */
 #define AGC_TASK_DOTVCON   ((agc_task_id_t)0x0E94) /* 4.3                         */
 #define AGC_TASK_DOSTRULL  ((agc_task_id_t)0x0E95) /* 4.5                         */
-#define AGC_TASK_ENGINE_FAIL_PROCEDURE_E40_6  ((agc_task_id_t)0x0E96) /* 4.11 V97E40.6               */
-#define AGC_TASK_ENGINE_FAIL_ENABL  ((agc_task_id_t)0x0E97) /* 4.13                        */
+#define AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM  ((agc_task_id_t)0x0E96) /* 4.11 V97E40.6               */
+#define AGC_TASK_ENGINE_FAIL_REENABLE  ((agc_task_id_t)0x0E97) /* 4.13                        */
 #define AGC_TASK_TIGBLNK   ((agc_task_id_t)0x0E98) /* 4.21 LONGCALL               */
 #define AGC_TASK_DOTVCRCS  ((agc_task_id_t)0x0E99) /* 4.27                        */
 #define AGC_TASK_WAKE_CM_SM_SEPARATION   ((agc_task_id_t)0x0E9A) /* 4.33                        */
 #define AGC_TASK_TIGAVEG   ((agc_task_id_t)0x0E9B) /* 4.37                        */
-#define AGC_TASK_S61_1C    ((agc_task_id_t)0x0E9C) /* 4.43 S61.1C                 */
+#define AGC_TASK_ENTRY_START_AVERAGE_G    ((agc_task_id_t)0x0E9C) /* 4.43 S61.1C                 */
 #define AGC_TASK_ATERTASK  ((agc_task_id_t)0x0E9D) /* 4.51                        */
-#define AGC_TASK_ENGINE_FAIL_PROCEDURE_ETASK  ((agc_task_id_t)0x0E9E) /* 4.53                        */
+#define AGC_TASK_ENGINE_FAIL_REIGNITE_PREP  ((agc_task_id_t)0x0E9E) /* 4.53                        */
 #define AGC_TASK_TIGON     ((agc_task_id_t)0x0E9F) /* 4.57                        */
 #define AGC_TASK_DOSPSOFF  ((agc_task_id_t)0x0EA0) /* 4.63                        */
-#define AGC_TASK_ENGINE_FAIL_PROCEDURE_TTASK  ((agc_task_id_t)0x0EA1) /* 4.67                        */
-#define AGC_TASK_ENGINE_FAIL_PROCEDURE_TRCS   ((agc_task_id_t)0x0EA2) /* 4.71                        */
-#define AGC_TASK_ENGINE_FAIL_PROCEDURE_PTASK  ((agc_task_id_t)0x0EA3) /* 4.73                        */
+#define AGC_TASK_ENGINE_FAIL_SHUTDOWN  ((agc_task_id_t)0x0EA1) /* 4.67                        */
+#define AGC_TASK_ENGINE_FAIL_RCS_DAP   ((agc_task_id_t)0x0EA2) /* 4.71                        */
+#define AGC_TASK_ENGINE_FAIL_RESUME  ((agc_task_id_t)0x0EA3) /* 4.73                        */
 #define AGC_TASK_SPSOFF97  ((agc_task_id_t)0x0EA4) /* 4.75                        */
 #define AGC_TASK_ALLOOP1   ((agc_task_id_t)0x0EA5) /* 5.11                        */
 #define AGC_TASK_SPECSTS   ((agc_task_id_t)0x0EA6) /* 5.23                        */
 #define AGC_TASK_CHEKAVEG  ((agc_task_id_t)0x0EA7) /* 5.37                        */
 #define AGC_TASK_PREREAD   ((agc_task_id_t)0x0EA8) /* 5.41                        */
-#define AGC_TASK_PRE40_6   ((agc_task_id_t)0x0EA9) /* 6.2 PRE40.6                 */
+#define AGC_TASK_GIMBAL_TRIM_RESTART   ((agc_task_id_t)0x0EA9) /* 6.2 PRE40.6                 */
 #define AGC_TASK_READGYMB  ((agc_task_id_t)0x0EAA) /* 6.11                        */
 #define AGC_TASK_REDORCS   ((agc_task_id_t)0x0EAB) /* T5LOC: RCS DAP (dap-csm)    */
 #define AGC_TASK_REDOTVC   ((agc_task_id_t)0x0EAC) /* T5LOC: TVC DAP (dap-csm)    */
@@ -109,9 +109,9 @@
 #define AGC_TASK_CA_ECE    ((agc_task_id_t)0x0EAF) /* GOPROG NO ATT (CA+ECE, imu) */
 /* LM only */
 #define AGC_TASK_ULLGTASK  ((agc_task_id_t)0x0EC0) /* 1.3                         */
-#define AGC_TASK_RENDEZVOUS_NAVIGATION_LEMC1  ((agc_task_id_t)0x0EC1) /* 2.7                         */
+#define AGC_TASK_RENDEZVOUS_NAVIGATION_CYCLE  ((agc_task_id_t)0x0EC1) /* 2.7                         */
 #define AGC_TASK_REDO2_17  ((agc_task_id_t)0x0EC2) /* 2.17                        */
-#define AGC_TASK_LANDING_RADAR_MONITOR_RESTART   ((agc_task_id_t)0x0EC3) /* 2.21 R10,R11                */
+#define AGC_TASK_ABORT_MONITOR_RESTART   ((agc_task_id_t)0x0EC3) /* 2.21 R10,R11                */
 #define AGC_TASK_ZOOM      ((agc_task_id_t)0x0EC4) /* 3.3                         */
 #define AGC_TASK_REDO4_2   ((agc_task_id_t)0x0EC5) /* 4.2 second part             */
 #define AGC_TASK_ULLAGOFF  ((agc_task_id_t)0x0EC6) /* 4.5                         */

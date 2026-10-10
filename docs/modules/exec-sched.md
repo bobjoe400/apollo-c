@@ -29,7 +29,7 @@ vehicle differences behind `agc_state_vehicle()`.
 | PHASCHNG, 2PHSCHNG, PHSCHNGA, PHSCHNG2, CON2, BELOW1-4 (PTM C1409/L1298) | agc_phase_change, agc_phase_change_var, agc_phase_change2 | phase_table.c | types A/B/C |
 | NEWPHASE (RESTART_TABLES C221) | agc_phase_newphase | phase_table.c | |
 | NEWMODEX/NEWMODEA/MMDSPLAY/SETUPDSP/CHECKMM (PTM C1404/L1294) | agc_phase_newmode / agc_phase_checkmm / fresh_mmdsplay | phase_table.c | |
-| MR.KLEAN, P00KLEAN, V37KLEAN (FRESH C185/L213) | agc_phase_mr_klean / _p00_klean / _v37_klean | phase_table.c | group sets differ CSM/LM |
+| MR.KLEAN, P00KLEAN, V37KLEAN (FRESH C185/L213) | agc_phase_mr_klean / _idle_klean / _change_program_klean | phase_table.c | group sets differ CSM/LM |
 | RESTARTS ... PHSPART2 (RESTARTS_ROUTINE C1414/L1303) | agc_restart_group | restarts.c | |
 | SIZETAB, n.mSPOT tables (RESTART_TABLES C212/L239) | rst_table_lookup | restart_tables.c | static const, both vehicles |
 | ALARM, ALARM1/2, VARALARM, PRIOLARM, CURTAINS (A&A C1493/L1381) | agc_alarm, agc_prioalarm, agc_curtains | alarm.c | FAILREG[3], PROG light |
@@ -37,7 +37,7 @@ vehicle differences behind `agc_state_vehicle()`.
 | POODOO, POODOO1, GOPOODOO, STRTIDLE, FLAGS, CCSHOLE (C1495/L1383) | agc_poodoo, agc_ccshole, AGC_JOB_GOPOODOO | alarm.c | |
 | interrupt lead-ins at 4000 (INTERRUPT_LEAD_INS C132/L153) | agc_rupt_* | interrupts.c | |
 | SLAP1, DOFSTART, DOFSTRT1, STARTSUB, STARTSB1, STARTSB2, ENEMA, GOPROG, GOPROG3, LIGHTSET, ENDRSTRT, GOTOPOOH, GOP00FIX, VAC5STOR, T5IDLOC (FRESH C183-205/L211-225) | agc_fresh_start, agc_restart_goprog, fresh_enema, ... | fresh_start.c | foreign erasables delegated |
-| V37 / CANV37 / POOH / V37XEQ (FRESH C197-208/L227-236) | agc_change_program, agc_job_change_program_check | change_program_idle.c | PARTIAL: checks only |
+| V37 / CANV37 / POOH / V37XEQ (FRESH C197-208/L227-236) | agc_change_program, agc_job_change_program_continue | change_program_idle.c | PARTIAL: checks only |
 | job/task/rupt dispatch | agc_dispatch_job / _task / _rupt | dispatch.c | one switch each |
 
 ## Progress
@@ -79,7 +79,7 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Stubs
 
-- agc_job_change_program_check (CANV37 .. POOH / NOUVEAU / V37XEQ): UNIMPLEMENTED.
+- agc_job_change_program_continue (CANV37 .. POOH / NOUVEAU / V37XEQ): UNIMPLEMENTED.
 - agc_change_program: PARTIAL (IMU-init / NODOFLAG -> 1520, PREMM1 validity -> NOT_FOUND, SERVICER running -> BUSY); returns UNIMPLEMENTED for the change itself, CSM R00TOP00 and LM SETUP70/71.
 - exec_up_servidle (LM STRTIDLE SERVIDLE) and exec_up_setcoars (CSM GOPROG SETCOARS): UNIMPLEMENTED until the owners publish them.
 - rst_read_sp/rst_read_dp for SAVET-30, ZOOMTIME, P40TMP, S61DT, CM/GYMDT: UNIMPLEMENTED (restart of LM 1.3, 3.3, 4.25; CSM 4.21, 4.43, 4.57, 6.11 returns UNIMPLEMENTED).
@@ -89,10 +89,10 @@ vehicle differences behind `agc_state_vehicle()`.
 
 ## Requested core additions
 
-Added by me to include/agc/agc_exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_go_idle_fix, agc_job_go_idle_fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_change_program_check, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
+Added by me to include/agc/agc_exec.h (allowed by the assignment): agc_exec_restart_pending, agc_exec_service_restart, agc_exec_enema, agc_exec_varalarm, agc_phase_kill, agc_job_gotopooh, agc_job_go_idle_fix, agc_job_go_idle_fix_reflash, agc_job_gopoodoo, agc_job_endofjob, agc_job_change_program_continue, agc_task_endtask, agc_task_svct3, agc_task_longcycl, agc_task_getcadr, agc_task_t5idloc, agc_task_taskover, AGC_MODECADR_N, agc_erase_modecadr, agc_erase_set_modecadr, agc_erase_imucadr, agc_rupt_time, agc_rupt_set_time (earlier pass: everything under "Additions by exec-sched").
 
 Requested from other owners (exact declarations):
-- state-flags / guid-powered: `agc_dp_t agc_erase_p40tmp(void);` `agc_dp_t agc_erase_savet_30(void);` `agc_sp_t agc_erase_zoomtime(void);` (restart tables; exec must not call agc_guid_state()).
+- state-flags / guid-powered: `agc_dp_t agc_erase_preread_delay(void);` `agc_dp_t agc_erase_savet_30(void);` `agc_sp_t agc_erase_zoomtime(void);` (restart tables; exec must not call agc_guid_state()).
 - state-flags / guid-entry: `agc_sp_t agc_erase_s61dt(void);` `agc_sp_t agc_erase_cm_gymdt(void);`
 - guid-powered: `agc_status_t agc_guid_servidle(void);` (SERVIDLE: SERVICER to ground state only; exec then does GOTOPOOH).
 - imu: `agc_status_t agc_imu_setcoars(void);` (CSM GOPROG NO ATT).
@@ -102,11 +102,11 @@ Requested from other owners (exact declarations):
 
 ## Requested jobs-tasks
 
-Mine, already added to agc_jobs.h: AGC_JOB_GOTOPOOH, AGC_JOB_GOP00FIX, AGC_JOB_GOP00FIX_REFLASH, AGC_JOB_GOPOODOO, AGC_JOB_ENDOFJOB; AGC_TASK_SVCT3, AGC_TASK_LONGCYCL, AGC_TASK_GETCADR, AGC_TASK_T5IDLOC, AGC_TASK_TASKOVER (dispatch.c cases present).
+Mine, already added to agc_jobs.h: AGC_JOB_GOTOPOOH, AGC_JOB_GO_IDLE_FIX, AGC_JOB_GO_IDLE_FIX_REFLASH, AGC_JOB_GOPOODOO, AGC_JOB_ENDOFJOB; AGC_TASK_SVCT3, AGC_TASK_LONGCYCL, AGC_TASK_GETCADR, AGC_TASK_T5IDLOC, AGC_TASK_TASKOVER (dispatch.c cases present).
 
 Foreign, provisional in src/exec/exec_pending.h (0x0E00 range; replace with the owner's id and add the dispatch case):
-- jobs: INITDSP, DSPMMJB, NBDONLY, STATINT1, RELINUS, S40_13, POSTBURN, NORMLIZE, SERVICER, TIMEDIDR, REDO40_9, PIKUP20, R22, V94ENTER, REDOR22, MATRXJOB, REP11, REP11A, P47BODY, COMPVER, AZMTHCG1, P40S_SV, PROG52, R51, P67_1, S61_1A, PRE_HUNT, P65_1, RSTGTS1, WTLISTNT, RESTEST1, GEOSTRT4, ALFLT1, RESTEST3, RESTAIER, RESCHNG, P25LEM1, R22RSTRT, GOABORT, R51_1, P70A, P71A, COMFAIL, REDO6_7.
-- tasks: STATEINT, REREADAC, REDO5_5, CLOKTASK, TIG_5, TIG_0, IGNITION, SETJTAG, ENGINOFF, PRECHECK, TTG_0, DOTVCON, DOSTRULL, V97E40_6, R40ENABL, TIGBLNK, DOTVCRCS, WAKEP62, TIGAVEG, S61_1C, ATERTASK, V97ETASK, TIGON, DOSPSOFF, V97TTASK, V97TRCS, V97PTASK, SPSOFF97, ALLOOP1, SPECSTS, CHEKAVEG, PREREAD, PRE40_6, READGYMB, REDORCS, REDOTVC, REDOSAT, TVCEXEC, CA_ECE, ULLGTASK, P20LEMC1, REDO2_17, R10_R11, ZOOM, REDO4_2, ULLAGOFF, ENGOFTSK, TIG_30, TIG_35, BIBIBIAS, DAPIDLER.
+- jobs: INITDSP, DSPMMJB, NBDONLY, STATINT1, RELINUS, TIMEBURN, POSTBURN, NORMLIZE, SERVICER, TIMEDIDR, REDO40_9, PIKUP20, R22, V94ENTER, REDOR22, MATRXJOB, REP11, REP11A, P47BODY, COMPVER, AZMTHCG1, PREBURN_STATE_VECTOR, PROG52, R51, ENTRY_FINAL_PHASE_DISPLAY, ENTRY_IMU_AXIS_TEST, PRE_HUNT, ENTRY_UPCONTROL_DISPLAY, RSTGTS1, WTLISTNT, RESTEST1, GEOSTRT4, ALFLT1, RESTEST3, RESTAIER, RESCHNG, P25LEM1, R22RSTRT, GOABORT, FINE_ALIGN_PERFORM, P70A, P71A, COMFAIL, REDO6_7.
+- tasks: STATEINT, REREADAC, REDO5_5, CLOKTASK, TIG_5, TIG_0, IGNITION, SETJTAG, ENGINOFF, PRECHECK, TTG_0, DOTVCON, DOSTRULL, ENGINE_FAIL_REIGNITE_TRIM, R40ENABL, TIGBLNK, DOTVCRCS, WAKEP62, TIGAVEG, ENTRY_START_AVERAGE_G, ATERTASK, V97ETASK, TIGON, DOSPSOFF, V97TTASK, V97TRCS, V97PTASK, SPSOFF97, ALLOOP1, SPECSTS, CHEKAVEG, PREREAD, PRE40_6, READGYMB, REDORCS, REDOTVC, REDOSAT, TVCEXEC, CA_ECE, ULLGTASK, P20LEMC1, REDO2_17, ABORT_MONITOR, ZOOM, REDO4_2, ULLAGOFF, ENGOFTSK, TIG_30, TIG_35, BIBIBIAS, DAPIDLER.
 
 ## Tests written
 

@@ -767,10 +767,10 @@ agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
 /* R02BOTH: if REFSMMAT is known set IMUSE and return OK.  Otherwise alarm
  * 00220 (REFSMMAT unknown) or 00210 (IMU not operating) via VARALARM and
  * GOTOPOOH; returns AGC_STATUS_POODOO.                                   */
-agc_status_t agc_imu_status_check_both(void)
+agc_status_t agc_imu_status_check(void)
 {
     if (agc_flag_test(AGC_FLAG_REFSMFLG)) {
-        return agc_imu_status_check_zero();
+        return agc_imu_set_in_use();
     }
     agc_alarm_code_t code = ALARM_REFSMMAT;            /* OCT220          */
     if ((agc_erase_imodes30() & IM30_NOTOPER) != 0u) {
@@ -783,7 +783,7 @@ agc_status_t agc_imu_status_check_both(void)
 }
 
 /* R02ZERO: UPFLAG IMUSE.                                                 */
-agc_status_t agc_imu_status_check_zero(void)
+agc_status_t agc_imu_set_in_use(void)
 {
     agc_status_t st = agc_flag_set(AGC_FLAG_IMUSE);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);

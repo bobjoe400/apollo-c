@@ -158,8 +158,8 @@ the time of the state vector being integrated, not PIPTIME).
 | MRKBUF1_P3 | SP raw | CDU_DEG | SP, bit 1 = 360/2^15 deg (15-bit magnitude, 2s complement) | CSM:87,94 |
 | MRKBUF1_P5 | SP raw | Y_OPTICS_DEG | SP, bit 1 = 90/2^15 deg | CSM:87,94 |
 | N49DISP | DP | POS4 | DP, bit 1 of low word = 2 m | CSM:49 |
-| N49DISP_P2 | DP | VEL3 | DP, bit 1 of high word = 2^-7 m/cs | CSM:49 |
-| N49DISP_P4 | SP | WHOLE | SP, bit 1 = 1 unit (max 16383) | CSM:49 |
+| MARK_DELTA_V | DP | VEL3 | DP, bit 1 of high word = 2^-7 m/cs | CSM:49 |
+| MARK_SOURCE_CODE | SP | WHOLE | SP, bit 1 = 1 unit (max 16383) | CSM:49 |
 | NEG_TPER | DP | HMS | DP centiseconds, bit 1 of low word = 10^-2 s (max 745h39m14.55s) | CSM:32 LM:32 |
 | NN | SP | WHOLE | SP, bit 1 = 1 unit (max 16383) | LM:55 |
 | NN1 | SP | WHOLE | SP, bit 1 = 1 unit (max 16383) | CSM:55 |
@@ -188,7 +188,7 @@ the time of the state vector being integrated, not PIPTIME).
 | PRAXIS_P2 | SP raw | CDU_DEG | SP, bit 1 = 360/2^15 deg (15-bit magnitude, 2s complement) | CSM:95 |
 | Q7 | DP | DRAG_ACCEL | DP, bit 1 of low word = 25 x 2^-28 g | CSM:69 |
 | R22DISP | DP | POS4 | DP, bit 1 of low word = 2 m | LM:49 |
-| R22DISP_P2 | DP | VEL3 | DP, bit 1 of high word = 2^-7 m/cs | LM:49 |
+| RADAR_DELTA_V | DP | VEL3 | DP, bit 1 of high word = 2^-7 m/cs | LM:49 |
 | RANGE | DP | POS5 | DP, bit 1 of low word = 2 m | CSM:53,54,90 LM:54,90 |
 | RANGEDSP | DP | POS7 | DP, bit 1 of low word = 2^-4 m | LM:68 |
 | RDOT | DP | VEL_2VS | DP, fractional part of 2VS ft/sec (VS = 25766.1973) | CSM:68 |

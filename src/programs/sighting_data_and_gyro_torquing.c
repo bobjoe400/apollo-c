@@ -33,7 +33,7 @@ static agc_status_t chksdata_flash(const agc_job_ctx_t *ctx)
 }
 
 /* R55.1 flash. */
-static agc_status_t r55_flash(const agc_job_ctx_t *ctx)
+static agc_status_t gyro_angles_flash(const agc_job_ctx_t *ctx)
 {
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(agc_align_ram()->qmin != AGC_JOB_NONE);
@@ -43,7 +43,7 @@ static agc_status_t r55_flash(const agc_job_ctx_t *ctx)
 
 /* After the IMUSTALL of R55.2: PHASCHNG 05024 (CM) / 04024 (LM), then
  * R55RET.                                                                 */
-static agc_status_t r55_torqued(void)
+static agc_status_t gyro_torquing_done(void)
 {
     const agc_status_t st = (agc_state_vehicle() == AGC_VEHICLE_CSM)
         ? align_phase_job(ALIGN_PH_05024, AGC_JOB_GYRO_TORQUING_RETURN, ALIGN_PRIO13)
@@ -139,7 +139,7 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    return r55_flash(ctx);
+    return gyro_angles_flash(ctx);
 }
 
 /* R55.1: VN_GYRO_TORQUE_ANGLES -- PROCEED torques (R55.2), ENTER skips it (R55RET). */
@@ -148,7 +148,7 @@ agc_status_t agc_job_gyro_torquing_display(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    return r55_flash(ctx);
+    return gyro_angles_flash(ctx);
 }
 
 /*
@@ -175,7 +175,7 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
     if ((st != AGC_STATUS_OK) || !done) {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
-    return r55_torqued();
+    return gyro_torquing_done();
 }
 
 /* After the IMUSTALL of R55.2: the restart phase, then R55RET. */
@@ -187,7 +187,7 @@ agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx)
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
         return AGC_STATUS_OK;                         /* CURTAINS done    */
     }
-    return r55_torqued();
+    return gyro_torquing_done();
 }
 
 /* R55RET (ENTER on VN_GYRO_TORQUE_ANGLES: no torquing): GOTO QMIN. */

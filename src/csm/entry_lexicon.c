@@ -50,7 +50,7 @@ void agc_entry_lexicon_reset(void)
 {
     (void)memset(&entry_state, 0, sizeof entry_state); /* returns its arg */
     entry_state.gotoaddr = AGC_ENTRY_GOTO_INITROLL;
-    entry_state.posexit  = AGC_ENTRY_POSEXIT_CM_SM_SEPARATION_3;
+    entry_state.posexit  = AGC_ENTRY_POSEXIT_DESIRED_GIMBALS;
     entry_state.cmdapmod = AGC_ENTRY_DAPMOD_PLUS0;
     (void)AGC_ASSERT(entry_state.jj == 0);
     (void)AGC_ASSERT(entry_state.d == 0);

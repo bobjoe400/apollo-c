@@ -63,7 +63,7 @@ agc_status_t agc_exec_vac_release(int vac_index);   /* TS VACnUSE          */
 agc_status_t agc_rendz_llasrd(void);     /* LLASRD: LAT,LONG,ALT -> N89 regs */
 agc_status_t agc_rendz_llasrda(void);    /* LLASRDA: N89 regs -> LAT,LONG,ALT*/
 /* R61CSM: CSM tracking attitude; returns after the maneuver/update.        */
-agc_status_t agc_rendz_r61csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
+agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
 
 /* ==== provisional job and task identifiers ================================ */
 #define AGC_JOB_ALIGN_COARSE_DONE           ((agc_job_id_t)0x0A01)

@@ -43,9 +43,9 @@ include/agc are declared in `src/io/sysmisc_ext.h` (temporary shim, see
 | RRAUTCHK, RRCDUCHK, RRGIMON, GPMATRIX/DAPT4S (LM) | RADMODES, M11..M32 SP scaled 1 | statics | src/lm/t4rupt_lm.c |
 | GOEXTVB/LST2FAN, TESTXACT, XACT0, ALM/END, GOPIN, CHKPOOH, CKMODCAD (shared) | verb 40-99 dispatch | agc_extverb + statics | src/io/extended_verbs.c |
 | vehicle verbs | see Progress | statics | extended_verbs_csm.c / _lm.c |
-| V70-V73 UPDATE PROGRAM P27 (pp. Comanche UPDATE_PROGRAM) | UPBUFF etc. | agc_p27_* | src/io/p27.c |
+| V70-V73 UPDATE PROGRAM P27 (pp. Comanche UPDATE_PROGRAM) | UPBUFF etc. | agc_uplink_update_* | src/io/uplink_update.c |
 | SELF-CHECK SMODECHK/ROPECHK/ADSUM/ADRSCHK/NXTBNK/SOPTION, SHOWSUM | rope image -> bank sums | agc_selfcheck_* | src/io/self_check.c |
-| P07 REDO/ZEROING/FINETIME/OVERFFIX/ERTHRVSE/EARTHR/ESTIMS (LM) | | agc_p07_* | src/lm/imu_tests.c |
+| P07 REDO/ZEROING/FINETIME/OVERFFIX/ERTHRVSE/EARTHR/ESTIMS (LM) | | agc_systems_test_* | src/lm/imu_tests.c |
 | BANKCALL/SWCALL/POSTJUMP..., E/BKCALL, E/CALL, E/JOBWAK | vanish | comment file | src/io/interbank.c |
 
 ## Progress
@@ -56,7 +56,7 @@ include/agc are declared in `src/io/sysmisc_ext.h` (temporary shim, see
 - TODO  telemetry.c
 - TODO  service.c
 - TODO  t4rupt.c / t4rupt_csm.c / t4rupt_lm.c
-- TODO  p27.c
+- TODO  uplink_update.c
 - TODO  extended verbs
 - TODO  self_check.c
 - TODO  imu_tests.c

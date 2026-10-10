@@ -8,10 +8,10 @@
 | SERVICER207.agc (CM pp.819-836) / SERVICER.agc (LM pp.857-897), shared part | src/guidance/servicer_common.c |
 | SERVICER207.agc, CM-only part                              | src/csm/servicer_csm.c |
 | SERVICER.agc, LM-only part (MUNRVG, mass monitor, DVMON, LR update) | src/lm/servicer_lm.c |
-| P30-P37.agc (CM pp.635-648) / P30_P37.agc (LM pp.614-617)  | src/guidance/p30.c |
-| P40-P47.agc shared math (S40.1, S40.2,3, S40.8 TGO/XPRODUCT, S40.9, S40.13, S41.1) | src/guidance/p40.c |
-| P40-P47.agc CM-only (P40CSM/P41CSM/P47CSM, TIG-30/-5/-0, IGNITION, CLOKTASK, V97/V99, S40.6, S41.2, S40.14, DAPFIG) | src/csm/p40_csm.c |
-| P40-P47.agc LM-only (P40LM/P41LM/P42LM/P47LM, POSTBURN, ENGINOFF, STEERING, RASTEER1, TRIMGIMB) | src/lm/p40_lm.c |
+| P30-P37.agc (CM pp.635-648) / P30_P37.agc (LM pp.614-617)  | src/guidance/external_delta_v.c |
+| P40-P47.agc shared math (S40.1, S40.2,3, S40.8 TGO/XPRODUCT, S40.9, S40.13, S41.1) | src/guidance/burn_steering.c |
+| P40-P47.agc CM-only (P40CSM/P41CSM/P47CSM, TIG-30/-5/-0, IGNITION, CLOKTASK, V97/V99, S40.6, S41.2, S40.14, DAPFIG) | src/csm/sps_burn.c |
+| P40-P47.agc LM-only (P40LM/P41LM/P42LM/P47LM, POSTBURN, ENGINOFF, STEERING, RASTEER1, TRIMGIMB) | src/lm/dps_burn.c |
 | BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc (LM pp.731-751) | src/lm/ignition.c |
 | public interface                                           | include/agc/agc_guid.h |
 | pending (not-yet-existing) shared symbols, one place each  | src/guidance/guid_pending.h, src/csm/guid_pending_csm.h, src/lm/guid_pending_lm.h |
@@ -38,19 +38,19 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | RVBOTH / MUNRVG / MUNGRAV (LM 882-883) | DELV, R 2^24, V 2^7 (SM), PGUIDE | R1S 2^24, V1S 2^7, GDT1/2, ABVEL, HDOTDISP, DELVS 2^5, HCALC 2^24 | agc_lm_munrvg(), agc_lm_mungrav(), agc_lm_rvboth() |
 | MUNRETRN..COPYCYC2, ALTCHK, LR update (LM 874-891) | LR data, flags | R1S/V1S updated, lamps | agc_lm_munretrn() and helpers |
 | LRVJOB/LRHJOB/RDGIMS/HIGATJOB/SETPOS1/SETPOS2 (LM 892-897) | LR read routines | VMEAS, HMEAS, beam vectors | servicer_lm.c |
-| P30 / P31 / P30/P31 / CNTNUP30 / PARAM30 / REFTEST (CM 636-638), P30 (LM 614-615) | | | agc_job_p30_csm(), agc_job_p31_csm(), agc_job_p30_lm() + continuations |
-| S30.1 (CM 639-640, LM 616-617) | TIG cs 2^28, DELVSLV 2^7 | RTIG 2^29, VTIG 2^7, DELVSIN 2^7, VGDISP/DELVSAB, HAPO/HPER 2^29 | agc_guid_s30_1() |
-| S31.1 (CM 641-642) | TIG, DELLT4, RTARG | HAPO HPER DELVLVC VGDISP TPASS4 | agc_guid_s31_1() |
+| P30 / P31 / P30/P31 / CNTNUP30 / PARAM30 / REFTEST (CM 636-638), P30 (LM 614-615) | | | agc_job_external_delta_v_csm(), agc_job_lambert_aimpoint_guidance_csm(), agc_job_external_delta_v_lm() + continuations |
+| S30.1 (CM 639-640, LM 616-617) | TIG cs 2^28, DELVSLV 2^7 | RTIG 2^29, VTIG 2^7, DELVSIN 2^7, VGDISP/DELVSAB, HAPO/HPER 2^29 | agc_guid_external_delta_v_vectors() |
+| S31.1 (CM 641-642) | TIG, DELLT4, RTARG | HAPO HPER DELVLVC VGDISP TPASS4 | agc_guid_lambert_aimpoint_vectors() |
 | DELRSPL (CM 643-647) | | RSP-RREC | agc_guid_delrspl() (stub) |
-| S40.1 / S40.1B / AGAIN / CALCUT (CM 709-713, LM 764-767) | see header | UT 2^1, VGTIG 2^7, DELVLVC, BDT | agc_guid_s40_1() |
-| S40.2,3 (CM 714-717, LM 768-769) | UT, REFSMMAT, RTIG, trims | POINTVSM, SCAXIS, X/Y/ZSCREF | agc_guid_s40_23_csm(), agc_guid_s40_23_lm() |
-| S41.1 (CM 717-718, LM 783-784) | VG ref 2^7, trig | VG control/body 2^7 | agc_guid_s41_1() |
-| S40.8 (CM 719-722, LM 770-772) | VGPREV DELVREF BDT 2^7, CSTEER | VG, VGDISP, TGO 2^28 cs, TIG, OMEGAC | agc_guid_s40_8_tgo(), agc_guid_s40_8_xproduct(), agc_csm_s40_8(), agc_lm_s40_8() |
-| S40.9 (CM 723-725, LM 775-776) | RINIT VINIT TNIT VRPREV | VGTEMP, BDT, VRPREV | agc_job_s40_9_csm(), agc_job_s40_9_lm() |
-| S40.13 TIMEBURN (CM 726-728, LM 773-775) | VGTIG, WEIGHT/G, F, MDOT | IMPULSW, NOTHROTL, TGO | agc_guid_s40_13_csm(), agc_guid_s40_13_lm() |
-| UPDATEVG / STEERING / CALCN85 / CALCN83 (CM 699-702, LM 761-763) | | | p40_csm.c / p40_lm.c |
-| TIG-30 / TIG-5 / TIG-0 / IGNITION / SPSOFF / ENGINOFF / CLOKTASK / CLOCKJOB / V97x / V99x (CM 693-709) | | | p40_csm.c |
-| S40.6 / S41.2 / DAPFIG / S40.14 / RCSDAPON (CM 729-736) | | | p40_csm.c |
+| S40.1 / S40.1B / AGAIN / CALCUT (CM 709-713, LM 764-767) | see header | UT 2^1, VGTIG 2^7, DELVLVC, BDT | agc_guid_initial_velocity_to_gain() |
+| S40.2,3 (CM 714-717, LM 768-769) | UT, REFSMMAT, RTIG, trims | POINTVSM, SCAXIS, X/Y/ZSCREF | agc_guid_preferred_thrust_attitude_csm(), agc_guid_preferred_thrust_attitude_lm() |
+| S41.1 (CM 717-718, LM 783-784) | VG ref 2^7, trig | VG control/body 2^7 | agc_guid_reference_to_body() |
+| S40.8 (CM 719-722, LM 770-772) | VGPREV DELVREF BDT 2^7, CSTEER | VG, VGDISP, TGO 2^28 cs, TIG, OMEGAC | agc_guid_steering_tgo(), agc_guid_steering_cross_product(), agc_csm_cross_product_steering(), agc_lm_cross_product_steering() |
+| S40.9 (CM 723-725, LM 775-776) | RINIT VINIT TNIT VRPREV | VGTEMP, BDT, VRPREV | agc_job_vtogain_csm(), agc_job_vtogain_lm() |
+| S40.13 TIMEBURN (CM 726-728, LM 773-775) | VGTIG, WEIGHT/G, F, MDOT | IMPULSW, NOTHROTL, TGO | agc_guid_timeburn_csm(), agc_guid_timeburn_lm() |
+| UPDATEVG / STEERING / CALCN85 / CALCN83 (CM 699-702, LM 761-763) | | | sps_burn.c / dps_burn.c |
+| TIG-30 / TIG-5 / TIG-0 / IGNITION / SPSOFF / ENGINOFF / CLOKTASK / CLOCKJOB / V97x / V99x (CM 693-709) | | | sps_burn.c |
+| S40.6 / S41.2 / DAPFIG / S40.14 / RCSDAPON (CM 729-736) | | | sps_burn.c |
 | RASTEER1 (LM 776-780) | RTARG RN TPASS4 | VG via VGAIN* | agc_lm_rasteer1() |
 | TRIMGIMB (LM 781-782) | PITTIME ROLLTIME | channel 12 | agc_task_trimgimb() ... |
 | BURNBABY tables, TIG-35/30/5/0, IGNITION, COMFAIL, CLOKTASK/CLOKJOB, STCLOK, NULLCLOK, P40AUTO, KILLTASK (LM 731-751) | | | ignition.c |
@@ -69,11 +69,11 @@ Scale notation: "2^n unit" = the stored fraction times 2^n gives the value in th
 | CM PREREAD/READACCS/SERVICER/AVERAGEG/AVGEND/ONMNITOR/NORMLIZE/REREADAC/SERVEXIT | DONE src/csm/servicer_csm.c (guid_pending_csm.h written) |
 | LM PREREAD/BIBIBIAS/READACCS/SERVICER/MASSMON/DVMON/AVGEND/SERVIDLE/NORMLIZE/REREADAC | DONE src/lm/servicer_lm.c (guid_pending_lm.h, servicer_lm_internal.h) |
 | LM RVBOTH/MUNRVG/MUNGRAV | DONE servicer_lm.c; MUNRETRN/ALTCHK/LR update/LR jobs/SETPOS DONE src/lm/servicer_lm_lr.c |
-| P30/P31/S30.1/S31.1/MIDGIM/AGAIN | DONE src/guidance/p30.c (+ CM REFTEST/COMPTGO/DISP45/END45 in src/csm/p30_csm.c); DELRSPL stub |
-| S40.1/CALCUT/S40.2,3/S41.1/S40.8 TGO+XPRODUCT/CM S40.13 | DONE src/guidance/p40.c (CM S40.8/S40.9 drivers in p40_csm_steer.c; LM S40.8/S40.9/S40.13 DONE in p40_lm.c) |
-| CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | DONE src/csm/p40_csm.c, p40_csm_burn.c, p40_csm_steer.c, p40_csm_clock.c, p40_csm_internal.h |
-| LM P40/P41/P42/P47 sequencing, TRIMGIMB | DONE src/lm/p40_lm.c |
-| RASTEER1 | DONE agc_lm_rasteer1 src/lm/p40_lm_rasteer.c (formula verified vs Kepler orbit in python) |
+| P30/P31/S30.1/S31.1/MIDGIM/AGAIN | DONE src/guidance/external_delta_v.c (+ CM REFTEST/COMPTGO/DISP45/END45 in src/csm/external_delta_v_csm.c); DELRSPL stub |
+| S40.1/CALCUT/S40.2,3/S41.1/S40.8 TGO+XPRODUCT/CM S40.13 | DONE src/guidance/burn_steering.c (CM S40.8/S40.9 drivers in sps_burn_steer.c; LM S40.8/S40.9/S40.13 DONE in dps_burn.c) |
+| CM P40/P41/P47 sequencing, S40.6, DAPFIG (S41.2/S40.14/RCSDAPON are dap-csm's) | DONE src/csm/sps_burn.c, sps_burn_ignition.c, sps_burn_steer.c, sps_burn_clock.c, sps_burn_internal.h |
+| LM P40/P41/P42/P47 sequencing, TRIMGIMB | DONE src/lm/dps_burn.c |
+| RASTEER1 | DONE agc_lm_rasteer1 src/lm/dps_burn_rasteer.c (formula verified vs Kepler orbit in python) |
 | naming rule (docs/NAMING.md) rename pass | TODO (after ignition.c + tests) |
 | BURNBABY (ignition.c) | TODO |
 | tests/test_guidance.c | TODO |

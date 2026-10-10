@@ -77,7 +77,7 @@ agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
     agc_inhint();
     (void)agc_flag_clear(AGC_FLAG_RNGEDATA);
     (void)agc_flag_clear(AGC_FLAG_VELDATA);
-    (void)agc_radar_landing_downlink_lites();                       /* SET LR LITES PROPERLY  */
+    (void)agc_radar_landing_radar_lights();                       /* SET LR LITES PROPERLY  */
     agc_relint();
     return agc_lm_serv_copycyc1(ctx);
 }
@@ -158,7 +158,7 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
 /* NOR29NOW .. COPYCYC2 (p.876-877): HCALC, ALTBITS and UHZP for R10, the
  * reference-frame RN1/VN1, the altitude-rate compensation, then R and V
  * replaced by R1S and V1S and the common COPYCYCL.                        */
-static agc_status_t no_powered_flight_radar_designate_now(agc_job_ctx_t *ctx)
+static agc_status_t no_powered_designate_now(agc_job_ctx_t *ctx)
 {
     agc_guid_t *g = agc_guid_state();
     agc_lm_ldg_t *ldg = agc_lm_ldg();
@@ -198,17 +198,17 @@ agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
     }
     (void)agc_lm_serv_quikfaz5(AGC_JOB_SERV_COPYCYC1);
     uint16_t radmodes = agc_flagword_get(12);         /* FLGWRD12 = RADMODES    */
-    if (agc_flag_test(AGC_FLAG_NOR29FLG) || agc_flag_test(AGC_FLAG_READRFLG) ||
+    if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) || agc_flag_test(AGC_FLAG_READRFLG) ||
         (radmodes & (uint16_t)010002) != 0U) {
         agc_inhint();                                 /* R29NODES               */
         (void)agc_flag_clear(AGC_FLAG_DESIGFLG);      /* DESIGNATION IS OFF     */
         agc_relint();
     } else if ((radmodes & (uint16_t)022000) == 0U) {
-        (void)agc_radar_powered_flight_radar_designate();                        /* TCF R29 (-> NOR29NOW)  */
+        (void)agc_radar_powered_flight_designate();                        /* TCF R29 (-> NOR29NOW)  */
     } else {
         (void)AGC_ASSERT((radmodes & (uint16_t)022000) != 0U); /* NOR29NOW     */
     }
-    return no_powered_flight_radar_designate_now(ctx);
+    return no_powered_designate_now(ctx);
 }
 
 /* HFAIL (p.890): a bad altitude. Tracker-fail lamp if the previous bad
@@ -450,7 +450,7 @@ agc_status_t agc_lm_lrhtask(void)
     }
     (void)agc_phase_kill(2);                          /* GRP2OFF                */
     (void)AGC_ASSERT(agc_phase_get(2) == 0U);
-    return agc_lm_landing_radar_monitor_a();
+    return agc_lm_abort_monitor_resume();
 }
 
 /* RDGIMS (p.894): task about midway through the 5 velocity samples: time,

@@ -289,7 +289,7 @@ agc_status_t rz_avflag(bool this_active)
     return st;
 }
 
-agc_status_t rz_p20flgon(void)
+agc_status_t rz_tracking_flags_on(void)
 {
     agc_status_t st = agc_flag_set(AGC_FLAG_TRACKFLG);
     if (st == AGC_STATUS_OK) {

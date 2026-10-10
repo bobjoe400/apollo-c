@@ -58,7 +58,7 @@ static agc_status_t preread1(agc_avg_g_t *a)
     a->pipage = 1;                                    /* for REREADAC           */
     (void)agc_flag_set(AGC_FLAG_AVEGFLAG);            /* SET AVEG FLAG          */
     (void)agc_flag_clear(AGC_FLAG_DRIFTFLG);          /* KNOCK DOWN DRIFT FLAG  */
-    (void)agc_flag_set(AGC_FLAG_CHANGE_PROGRAM_FLAG);             /* SET V37 FLAG           */
+    (void)agc_flag_set(AGC_FLAG_SERVICER_RUNNING);             /* SET V37 FLAG           */
     a->dvtotal = 0;                                   /* CLEAR DVTOTAL          */
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_AVEGFLAG));
     return AGC_STATUS_OK;
@@ -176,7 +176,7 @@ agc_status_t agc_task_rereadac_csm(void)
     if (agc_phase_get(GRP5) == 0U) {                  /* LAST PASS CHECK        */
         return AGC_STATUS_OK;                         /* TASKOVER               */
     }
-    agc_imu_set_1_pipadt(ONEPIPADT_2S);               /* PRIO31 = 2.0 SEC B+8CS */
+    agc_imu_set_pipa_interval(ONEPIPADT_2S);               /* PRIO31 = 2.0 SEC B+8CS */
     agc_status_t st = agc_guid_rereadac_resume(&g->avg);
     if (st == AGC_STATUS_NOT_FOUND) {
         return agc_task_readaccs_csm();               /* NOT STARTED: BEGINNING */
@@ -362,7 +362,7 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
-    agc_imu_set_1_pipadt(agc_dp_low(agc_erase_piptime()));
+    agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime()));
     (void)agc_flag_set(AGC_FLAG_DRIFTFLG);
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_AVETOMID, AGC_TASK_NONE,
                           (int16_t)AGC_PRIO20, false, 0U };
@@ -389,11 +389,11 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     agc_erase_set_mrkbuf2(0, (agc_sp_t)-0400);        /* CS BIT9: INVALIDATE    */
     (void)agc_chan_and(011, (uint16_t)~(uint16_t)AGC_CH011_TESTCONN);
     (void)agc_flag_clear(AGC_FLAG_CM_DSTBY);
-    (void)agc_flag_clear(AGC_FLAG_CHANGE_PROGRAM_FLAG);
+    (void)agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     if (agc_flag_test(AGC_FLAG_RNDVZFLG)) {           /* RESTORE GROUP 1 + 2    */
         (void)agc_phase_change2(000111, 000132, NULL);/* 1.11SPOT, 2.13SPOT     */
     }
-    return agc_exec_change_program_check(ctx);                      /* POSTJUMP CANV37        */
+    return agc_exec_change_program_continue(ctx);                      /* POSTJUMP CANV37        */
 }
 
 /* SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection

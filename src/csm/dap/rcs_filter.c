@@ -192,9 +192,9 @@ static agc_status_t rcs_fdaitotl(void)
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
     uint16_t ref[AGC_CSM_AXES];
-    bool n22 = agc_flag_test(AGC_FLAG_N22ORN17);
+    bool use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES);
     for (int i = 0; i < AGC_CSM_AXES; i++) {
-        ref[i] = n22 ? agc_erase_thetad(i) : c->cphix[i]; /* CPHI.. / CPHIX.. */
+        ref[i] = use_desired_angles ? agc_erase_thetad(i) : c->cphix[i]; /* CPHI.. / CPHIX.. */
     }
     c->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux());
     agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy());

@@ -343,7 +343,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         }
         (void)agc_flag_clear(AGC_FLAG_ROTFLAG);                    /* OFFROT */
     }
-    (void)agc_flag_clear(AGC_FLAG_NOR29FLG);    /* start R29 in ascent    */
+    (void)agc_flag_clear(AGC_FLAG_NO_POWERED_DESIGNATE);    /* start R29 in ascent    */
     (void)agc_flag_clear(AGC_FLAG_XOVINFLG);    /* allow X-axis override  */
     return as_ascterm(ctx, ip);
 }
@@ -427,7 +427,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     as_t2test(ip);
     as_cmponent(ip);
     if (agc_flag_test(AGC_FLAG_FLPI)) {
-        return agc_lm_powered_ascent_ret(ctx, ip);
+        return agc_lm_powered_ascent_return(ctx, ip);
     }
     if (agc_flag_test(AGC_FLAG_FLVR)) {
         return as_checkalt(ctx, ip);
@@ -588,18 +588,18 @@ static agc_status_t as_flash00(const agc_job_ctx_t *ctx, uint8_t noun,
 }
 
 /* P12LM (p. 838): IMU check, flags, DVMON; flash TIG (V06N33). */
-agc_status_t agc_lm_job_powered_ascent_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    as_restart_here(AGC_JOB_POWERED_ASCENT_LM);
-    if (agc_imu_status_check_both() != AGC_STATUS_OK) {
+    as_restart_here(AGC_JOB_POWERED_ASCENT);
+    if (agc_imu_status_check() != AGC_STATUS_OK) {
         return AGC_STATUS_OK;
     }
     (void)agc_flag_set(AGC_FLAG_MUNFLAG);
     (void)agc_flag_set(AGC_FLAG_ACC4_2FL);  /* insure 4-jet translation    */
-    (void)agc_flag_set(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG);   /* no cross-pointer outputs    */
+    (void)agc_flag_set(AGC_FLAG_ALTITUDE_METERS_ONLY);   /* no cross-pointer outputs    */
     (void)agc_rendz_clradmod();             /* RADMODES for R29            */
     (void)agc_flag_clear(AGC_FLAG_RNDVZFLG);
     agc_guid_lm_t *g = &agc_guid_state()->lm;
@@ -616,17 +616,17 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_MUNFLAG));
-    return as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_LM2, AGC_JOB_POWERED_ASCENT_FLASH);
+    return as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED, AGC_JOB_POWERED_ASCENT_FLASH);
 }
 
 /* After PROCEED (pp. 838-839): WM, /LAND/, engine data, TGO, and the LM
  * state integrated to TIG (LEMPREC; may wait for the lock).          */
-agc_status_t agc_lm_job_powered_ascent_lm2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    as_restart_here(AGC_JOB_POWERED_ASCENT_LM2);
+    as_restart_here(AGC_JOB_POWERED_ASCENT_PROCEED);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_status_t st = agc_lm_guidinit(&ip);
@@ -636,12 +636,12 @@ agc_status_t agc_lm_job_powered_ascent_lm2(agc_job_ctx_t *ctx)
     (void)agc_flag_set(AGC_FLAG_FLPI);
     (void)agc_lm_powered_ascent_init(&ip);
     agc_lm_asc()->tgo = AS_TGOA;            /* initial nominal TGO         */
-    return agc_lm_job_powered_ascent_lmb(ctx);
+    return agc_lm_job_powered_ascent_at_ignition(ctx);
 }
 
 /* P12LMB (p. 839): V1S, R, gravity and UNIT/R/ at TIG; XRANGE for N76
  * and the nominal injection targets.                                 */
-agc_status_t agc_lm_job_powered_ascent_lmb(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -649,7 +649,7 @@ agc_status_t agc_lm_job_powered_ascent_lmb(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
-    agc_status_t st = agc_integ_lemprec(&ip, ic, agc_erase_tig(), AGC_JOB_POWERED_ASCENT_LMB);
+    agc_status_t st = agc_integ_lemprec(&ip, ic, agc_erase_tig(), AGC_JOB_POWERED_ASCENT_AT_IGNITION);
     if (st == AGC_STATUS_BUSY) {
         return AGC_STATUS_OK;                            /* asleep        */
     }
@@ -704,7 +704,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
 
 /* P12RET (p. 840): yaw and pitch of the thrust command for display,
  * one degree deadband, then the ignition sequence (P12BURN).         */
-agc_status_t agc_lm_powered_ascent_ret(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
         return AGC_STATUS_BAD_ARG;

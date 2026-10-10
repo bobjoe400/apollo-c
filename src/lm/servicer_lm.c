@@ -17,7 +17,7 @@
 #include "servicer_lm_internal.h"
 
 #define TWO_SECS      200     /* 2SECS, cs                                  */
-#define LANDING_RADAR_MONITOR_FIRST_CS  20      /* OCT24: first R10,R11 in .200 seconds       */
+#define ABORT_MONITOR_FIRST_CS  20      /* OCT24: first R10,R11 in .200 seconds       */
 #define ONEPIPADT_2S  ((agc_sp_t)12800)  /* PRIO31 = OCT 31000: 2.0 s at B+8 cs */
 #define TIME5_SYNC    ((agc_sp_t)16377)  /* OCT37771: PAXIS rupt 70 ms after READACCS */
 #define GRP2          2
@@ -92,7 +92,7 @@ agc_status_t agc_task_bibibias(void)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    (void)agc_flag_set(AGC_FLAG_CHANGE_PROGRAM_FLAG);             /* SUPER011: BITS 5, 6    */
+    (void)agc_flag_set(AGC_FLAG_SERVICER_RUNNING);             /* SUPER011: BITS 5, 6    */
     (void)agc_flag_set(AGC_FLAG_AVEGFLAG);
     (void)agc_flag_clear(AGC_FLAG_DRIFTFLG);
     g->avg.pipage = 4;                                /* INITIALIZE DV MONITOR  */
@@ -119,13 +119,13 @@ static void time5_sync(void)
 /* R10,R11 set-up of REDO5.5 (p.858-859): 4x/s rate, group 2 at 2.21.
  * DEVIATION: TBASE2 is set ".05 seconds in the past" (-TIME1 + 5 - 1.0)
  * in the AGC; the exec API bases it on TIME1.                              */
-static agc_status_t landing_radar_monitor_setup(agc_avg_g_t *a)
+static agc_status_t abort_monitor_setup(agc_avg_g_t *a)
 {
     a->pipctr = 7;                                    /* PIPCTR FOR 4X/SEC RATE */
     (void)agc_phase_set_tbase(GRP2);
     (void)agc_phase_newphase(GRP2, 021, false);       /* 2.21SPOT FOR R10,R11   */
     (void)AGC_ASSERT(a->pipctr == 7);
-    return agc_waitlist_call(LANDING_RADAR_MONITOR_FIRST_CS, AGC_TASK_LANDING_RADAR_MONITOR);
+    return agc_waitlist_call(ABORT_MONITOR_FIRST_CS, AGC_TASK_ABORT_MONITOR);
 }
 
 /* PIPSDONE / REDO5.5 / MAKEACCS / AVEGOUT (p.858-859).                    */
@@ -143,7 +143,7 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
         return gnufaze5(4, true);                     /* TASKOVER, no READACCS  */
     }
     if (agc_flag_test(AGC_FLAG_MUNFLAG) && agc_phase_get(GRP2) == 0U) {
-        st = landing_radar_monitor_setup(a);                            /* not if PHASE2 active   */
+        st = abort_monitor_setup(a);                            /* not if PHASE2 active   */
         if (st != AGC_STATUS_OK) {
             return st;
         }
@@ -235,7 +235,7 @@ agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx)
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     (void)agc_lm_serv_quikfaz5(AGC_JOB_SERV_DVTOTUP);  /* PHASCHNG 16035 GETABVAL */
-    agc_imu_set_1_pipadt(ONEPIPADT_2S);               /* IN CASE LASTBIAS SKIPPED */
+    agc_imu_set_pipa_interval(ONEPIPADT_2S);               /* IN CASE LASTBIAS SKIPPED */
     agc_vec_t delv = agc_erase_delv();
     agc_status_t st = agc_imu_one_over_pipa(&delv);   /* PIPA COMPENSATION      */
     if (st != AGC_STATUS_OK) {
@@ -501,7 +501,7 @@ agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    agc_imu_set_1_pipadt(agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
+    agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
     (void)agc_flag_set(AGC_FLAG_DRIFTFLG);
     (void)agc_imu_pipfree();
     (void)agc_chan_and(011, (uint16_t)~(uint16_t)AGC_CH011_TESTCONN);
@@ -519,7 +519,7 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    (void)agc_flag_set(AGC_FLAG_NOR29FLG);            /* SHUT OFF R29           */
+    (void)agc_flag_set(AGC_FLAG_NO_POWERED_DESIGNATE);            /* SHUT OFF R29           */
     (void)agc_flag_clear(AGC_FLAG_SWANDISP);          /* SHUT OFF R10           */
     (void)agc_flag_clear(AGC_FLAG_MUNFLAG);
     agc_interp_t ip;
@@ -528,7 +528,7 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    (void)agc_flag_clear(AGC_FLAG_CHANGE_PROGRAM_FLAG);
+    (void)agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     agc_job_id_t out = agc_guid_state()->lm.outroute;
     if (out == AGC_JOB_ENDOFJOB || out == AGC_JOB_NONE) {
         return AGC_STATUS_OK;                         /* SERVEXIT +2: ENDOFJOB  */

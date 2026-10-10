@@ -208,7 +208,7 @@ agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);  /* GOTOPOOH          */
 agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx);  /* GOP00FIX          */
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);  /* GOPOODOO          */
 agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx); /* GOP00FIX -3 */
-agc_status_t agc_job_change_program_check(agc_job_ctx_t *ctx);    /* CANV37 (stub)     */
+agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx);    /* CANV37 (stub)     */
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);  /* ENDOFJOB as a job */
 agc_status_t agc_task_endtask(void);                /* ENDTASK / SVCT3   */
 agc_status_t agc_task_svct3(void);                  /* SVCT3 (retry)     */

@@ -118,7 +118,7 @@ static void test_realign_refsmmat_option_identity(void)
     CHECK(near(rev(diff), 0.0, 1e-6));
     CHECK(near(rev(agc_align_ram()->theta), 0.25, 1e-5));     /* 90 deg  */
     agc_mat_t xdc;
-    CHECK(agc_align_fine_align_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
+    CHECK(agc_align_fine_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
     agc_dp_t gyro[3] = { 1, 1, 1 };
     CHECK(agc_imu_calcgta(&ip, &xdc, gyro) == AGC_STATUS_OK);

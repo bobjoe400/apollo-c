@@ -305,7 +305,7 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      *     3 comp, dec only; NNADTAB 24033, NNTYPTAB 00510, RUTMXTAB 06347 */
     { 49, 3,
       { AGC_SCALE_POS4, AGC_SCALE_VEL3, AGC_SCALE_WHOLE },
-      { AGC_DATA_RADAR_RESIDUAL_DISP, AGC_DATA_RADAR_RESIDUAL_DISP_P2, AGC_DATA_RADAR_RESIDUAL_DISP_P4 },
+      { AGC_DATA_MARK_DELTA_R, AGC_DATA_MARK_DELTA_V, AGC_DATA_MARK_SOURCE_CODE },
       true, false },
     /* 50  Splash error / Perigee / TFF
      *     3 comp, dec only, no load; NNADTAB 64036, NNTYPTAB 00417, RUTMXTAB 22347 */
@@ -395,7 +395,7 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      *     3 comp, dec only; NNADTAB 24110, NNTYPTAB 36460, RUTMXTAB 16505 */
     { 64, 3,
       { AGC_SCALE_DRAG_ACCEL, AGC_SCALE_VEL2, AGC_SCALE_POS6 },
-      { AGC_DATA_D, AGC_DATA_VMAGI, AGC_DATA_RANGE_TO_GO_ENTRY_POST_0_05G },
+      { AGC_DATA_D, AGC_DATA_VMAGI, AGC_DATA_RANGE_TO_SPLASH },
       true, false },
     /* 65  Sampled AGC time (HRS,MIN,SEC) / (fetched in interrupt)
      *     3 comp, dec only; NNADTAB 24113, NNTYPTAB 00000, RUTMXTAB 20410 */
@@ -413,7 +413,7 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      *     3 comp, dec only; NNADTAB 24121, NNTYPTAB 10217, RUTMXTAB 24507 */
     { 67, 3,
       { AGC_SCALE_POS6, AGC_SCALE_DP_DEG360, AGC_SCALE_DP_DEG360 },
-      { AGC_DATA_RANGE_TO_GO_ENTRY_FINAL_PHASE, AGC_DATA_LAT, AGC_DATA_LONG },
+      { AGC_DATA_RANGE_TO_TARGET, AGC_DATA_LAT, AGC_DATA_LONG },
       true, false },
     /* 68  Command bank angle (beta) / Inertial velocity (VI) / Alt rate change (RDOT)
      *     3 comp, dec only; NNADTAB 24124, NNTYPTAB 34444, RUTMXTAB 24512 */

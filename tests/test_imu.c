@@ -137,7 +137,7 @@ static void test_pipa_zero_comp(void)
                                 { 0, 0, 0 }, { 0, 0, 0 } };
     CHECK(agc_imu_comp_load(&p) == AGC_STATUS_OK);
     CHECK(agc_imu_gcompzer() == AGC_STATUS_OK);
-    agc_imu_set_1_pipadt((agc_sp_t)(200 * 64));   /* 2 s, cs x 2^8        */
+    agc_imu_set_pipa_interval((agc_sp_t)(200 * 64));   /* 2 s, cs x 2^8        */
     agc_vec_t in = agc_vec_make(agc_dp_pack(123, 0), agc_dp_pack(-45, 0),
                                 agc_dp_pack(7000, 0));
     agc_vec_t delv = in;

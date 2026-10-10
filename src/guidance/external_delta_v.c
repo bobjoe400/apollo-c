@@ -53,7 +53,7 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc
 /* S30.1 Comanche (p.639-640): state at TIG by THISPREC, the local-vertical
  * matrix from LOMAT (UNRM = UNIT(RTIG x VTIG), RACT3 = RTIG), DELVSIN =
  * DELVSLV VXM matrix VSL1, VGDISP = |DELVSIN|, apogee/perigee.           */
-static agc_status_t s30_1_csm(agc_interp_t *ip, agc_rendz_t *rz)
+static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_guid_prec_t p;
     agc_status_t st = agc_guid_prec_update(ip, AGC_VEHICLE_CSM, agc_erase_tig(),
@@ -79,7 +79,7 @@ static agc_status_t s30_1_csm(agc_interp_t *ip, agc_rendz_t *rz)
 /* S30.1 Luminary (p.616-617): LEMPREC; the LV axes at TIG built inline:
  * Z = -UNIT(RTIG), Y = UNIT(VTIG x RTIG), X = VSL1(Y x Z); DELVSIN =
  * DELVSLV VXM (X Y Z) VSL1, DELVSAB = |DELVSIN|, apogee/perigee.          */
-static agc_status_t s30_1_lm(agc_interp_t *ip, agc_rendz_t *rz)
+static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_guid_prec_t p;
     agc_status_t st = agc_guid_prec_update(ip, AGC_VEHICLE_LM, agc_erase_tig(),
@@ -100,7 +100,7 @@ static agc_status_t s30_1_lm(agc_interp_t *ip, agc_rendz_t *rz)
 }
 
 /* S30.1 (CM p.639, LM p.616): external delta-V targeting at TIG.          */
-agc_status_t agc_guid_s30_1(agc_interp_t *ip, agc_vehicle_t veh)
+agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t veh)
 {
     if (!AGC_ASSERT(ip != NULL) ||
         !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM)) {
@@ -110,7 +110,7 @@ agc_status_t agc_guid_s30_1(agc_interp_t *ip, agc_vehicle_t veh)
     if (!AGC_ASSERT(rz != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    return (veh == AGC_VEHICLE_CSM) ? s30_1_csm(ip, rz) : s30_1_lm(ip, rz);
+    return (veh == AGC_VEHICLE_CSM) ? external_delta_v_vectors_csm(ip, rz) : external_delta_v_vectors_lm(ip, rz);
 }
 
 /* MIDGIM (Comanche P34-35 p.493): with AVFLAG equal to COMPUTER (both set
@@ -166,7 +166,7 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
 /* S31.1 (Comanche p.641-642): Lambert to RTARG from TIG; apogee/perigee of
  * (RTIG, VIPRIME); DELVLVC from DELVEET3 (SET AVFLAG; MIDGIM -> GET.LVC);
  * VGDISP = |DELVLVC|; TPASS4 = TIG + DELLT4.                              */
-agc_status_t agc_guid_s31_1(agc_interp_t *ip)
+agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -218,7 +218,7 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 
 /* P30 (CM p.637 / P30/P31 p.637; LM p.614): set UPDATFLG and TRACKFLG,
  * flash V06N33 (TIG). Comanche uses GOFLASHR and protects 4.1.            */
-static agc_status_t p30_p31_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
+static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
                                   agc_job_id_t next)
 {
     (void)agc_flag_set(AGC_FLAG_UPDATFLG);
@@ -233,27 +233,27 @@ static agc_status_t p30_p31_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
     return agc_phase_change(GRP4, (uint16_t)000014);        /* 4.1 ENDOFJOB  */
 }
 
-agc_status_t agc_job_p30(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return p30_p31_entry(ctx, AGC_JOB_P30, AGC_JOB_P30_N81);
+    return ignition_time_entry(ctx, AGC_JOB_EXTERNAL_DELTA_V, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV);
 }
 
 /* CNTNUP30 (CM p.637) / P30N33+2 (LM): flash V06N81 (DELVSLV).            */
-agc_status_t agc_job_p30_n81(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_P30_CALC, AGC_JOB_P30_N81);
+    return flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_COMPUTE, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV);
 }
 
 /* P30 after N81 PROCEED (CM p.636, LM p.614): S30.1, then PARAM30.        */
-agc_status_t agc_job_p30_calc(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -263,54 +263,54 @@ agc_status_t agc_job_p30_calc(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = agc_guid_s30_1(&ip, agc_state_vehicle());
+    agc_status_t st = agc_guid_external_delta_v_vectors(&ip, agc_state_vehicle());
     if (st != AGC_STATUS_OK) {
         return st;
     }
     if (agc_state_vehicle() == AGC_VEHICLE_LM) {
         (void)agc_flag_set(AGC_FLAG_UPDATFLG);
     }
-    return agc_job_p30_param(ctx);
+    return agc_job_external_delta_v_display_parameters(ctx);
 }
 
 /* PARAM30 (CM p.637, LM p.614): flash V06N42 (HAPO, HPER, VGDISP). CM:
  * PROCEED -> REFTEST; LM: PROCEED -> XDELVFLG set, REVN1645.              */
-agc_status_t agc_job_p30_param(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    agc_job_id_t pro = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_JOB_P30_ALL_DONE
-                                                               : AGC_JOB_P30_REFTEST;
-    return flash(ctx, AGC_DSKY_GOFLASH, 6, 42, pro, AGC_JOB_P30_PARAM);
+    agc_job_id_t pro = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_JOB_EXTERNAL_DELTA_V_ACCEPT
+                                                               : AGC_JOB_EXTERNAL_DELTA_V_REFTEST;
+    return flash(ctx, AGC_DSKY_GOFLASH, 6, 42, pro, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS);
 }
 
 /* LM PARAM30 PROCEED (p.614): SETGO XDELVFLG REVN1645 (TRKMKCNT, TTOGO,
  * +MGA display of the rendezvous programs).                               */
-agc_status_t agc_job_p30_all_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     (void)agc_flag_set(AGC_FLAG_XDELVFLG);              /* EXTERNAL DELTA-V      */
-    return agc_exec_job_yield(AGC_JOB_REVN1645);
+    return agc_exec_job_yield(AGC_JOB_MARKS_TFI_MGA_MONITOR);
 }
 
 /* P31 (CM p.637): as P30, but S31.1 before V06N81.                         */
-agc_status_t agc_job_p31(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return p30_p31_entry(ctx, AGC_JOB_P31, AGC_JOB_P31_CALC);
+    return ignition_time_entry(ctx, AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE);
 }
 
 /* P31 after V06N33 PROCEED (CM p.637): UPDATFLG and NORMSW reset, S31.1,
  * then CNTNUP30 (V06N81) and PARAM30.                                     */
-agc_status_t agc_job_p31_calc(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -321,19 +321,19 @@ agc_status_t agc_job_p31_calc(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = agc_guid_s31_1(&ip);
+    agc_status_t st = agc_guid_lambert_aimpoint_vectors(&ip);
     if (st != AGC_STATUS_OK) {
         return st;
     }
-    return agc_job_p31_n81(ctx);
+    return agc_job_lambert_aimpoint_display_dv(ctx);
 }
 
 /* CNTNUP30 for P31: V06N81 (DELVLVC), PROCEED -> PARAM30.                */
-agc_status_t agc_job_p31_n81(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_P30_PARAM, AGC_JOB_P31_N81);
+    return flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS, AGC_JOB_LAMBERT_AIMPOINT_DISPLAY_DV);
 }

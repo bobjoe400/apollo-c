@@ -455,8 +455,8 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                                 uint8_t noun)
 {
-    const agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_APPROACH_PHASE_CEED,
-                                   AGC_JOB_APPROACH_PHASE_DISPS };
+    const agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_APPROACH_PHASE_PROCEED,
+                                   AGC_JOB_APPROACH_PHASE_DISPLAY };
     (void)AGC_ASSERT(ctx != NULL);
     (void)AGC_ASSERT(noun == 60 || noun == 63 || noun == 64);
     return agc_dsky_display(ctx, kind, agc_dsky_vn(6, noun), &cont);
@@ -465,7 +465,7 @@ static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 /* P64DISPS .. REDES-OK (pp. 814-815): V06N64, flashing until the crew
  * proceeds to permit redesignations; static once REDFLAG is set or TREDES
  * has run out (RED-OVER clears REDFLAG).                               */
-agc_status_t agc_lm_job_approach_phase_disps(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -483,7 +483,7 @@ agc_status_t agc_lm_job_approach_phase_disps(agc_job_ctx_t *ctx)
 }
 
 /* P64CEED (p. 815): PROCEED on V06N64 enables the redesignation logic. */
-agc_status_t agc_lm_job_approach_phase_ceed(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -514,14 +514,14 @@ agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
     (void)AGC_ASSERT(ph >= AGC_LM_PHASE_BRAKQUAD);
     if (ph == AGC_LM_PHASE_APPRQUAD) {
         agc_job_ctx_t c = *ctx;
-        return agc_lm_job_approach_phase_disps(&c);
+        return agc_lm_job_approach_phase_display(&c);
     }
     uint8_t noun = (ph == AGC_LM_PHASE_VERTICAL) ? 60 : 63;  /* VERTDISP */
     return ldg_display(ctx, AGC_DSKY_REGODSPR, noun);
 }
 
 /* P63DISPS -2 (p. 814): restart point that kills group 5, then V06N63. */
-agc_status_t agc_lm_job_braking_phase_disps_m2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -540,10 +540,10 @@ agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     agc_lm_ldg_t *l = agc_lm_ldg();
     if (l->wchvert > 0) {
-        return agc_lm_manual_landing_vert(ctx, ip);
+        return agc_lm_manual_landing_vertical(ctx, ip);
     }
     if (l->wchvert == 0) {
-        return agc_lm_rate_of_descent_landing_verta(ctx);                  /* POSTJUMP         */
+        return agc_lm_rate_of_descent_vertical(ctx);                  /* POSTJUMP         */
     }
     const agc_lm_pad_t *p = agc_lm_pad();             /* P65VERT          */
     agc_vec_t acg = agc_vec_div(ip, agc_vec_sub(ip, p->v2fg, l->vgu), p->tauvert);
@@ -569,7 +569,7 @@ agc_status_t agc_lm_start_approach_phase(void)
 }
 
 /* P65START (p. 802): P65, WCHVERT = -2, X-axis override permitted. */
-agc_status_t agc_lm_velocity_nulling_start(void)
+agc_status_t agc_lm_start_velocity_nulling(void)
 {
     agc_status_t st = agc_phase_newmode(65);
     agc_lm_ldg()->wchvert = -2;
@@ -593,7 +593,7 @@ static agc_status_t ldg_front(agc_interp_t *ip)
         if (l->wchphase == AGC_LM_PHASE_APPRQUAD) {
             st = agc_lm_start_approach_phase();
         } else if (l->wchphase == AGC_LM_PHASE_VERTICAL) {
-            st = agc_lm_velocity_nulling_start();
+            st = agc_lm_start_velocity_nulling();
         }
     }
     (void)AGC_ASSERT(st == AGC_STATUS_OK);

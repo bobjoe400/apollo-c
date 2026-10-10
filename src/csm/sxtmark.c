@@ -242,7 +242,7 @@ static void to_mrkbuf1(bool shift_to_buf2)
  */
 agc_status_t agc_sxtmark_markcont(void)
 {
-    if (agc_flag_test(AGC_FLAG_R21MARK)) {
+    if (agc_flag_test(AGC_FLAG_MARKRUPT_OPTION_ONE)) {
         to_mrkbuf1(true);                                     /* MARKIT1  */
         return AGC_STATUS_OK;
     }
@@ -250,7 +250,7 @@ agc_status_t agc_sxtmark_markcont(void)
         return agc_sxtmark_mark2();
     }
     if (((agc_erase_extvbact() & EXTVB_MARKING) == 0u) ||
-        !agc_flag_test(AGC_FLAG_V59FLAG)) {
+        !agc_flag_test(AGC_FLAG_CALIBRATION_MARKING)) {
         (void)agc_alarm(ALM_UNCALLED);                        /* MARKET3  */
         return AGC_STATUS_OK;
     }
@@ -299,7 +299,7 @@ agc_status_t agc_sxtmark_mark2(void)
 agc_status_t agc_sxtmark_mkreject(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    if (agc_flag_test(AGC_FLAG_R21MARK)) {
+    if (agc_flag_test(AGC_FLAG_MARKRUPT_OPTION_ONE)) {
         agc_erase_set_mrkbuf(1, 0, align_sp_to_word(-1));
         return AGC_STATUS_OK;
     }
@@ -388,7 +388,7 @@ agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
     agc_status_t st = agc_dsky_clearmrk();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     if (!agc_phase_checkmm(3)) {
-        return agc_job_auto_optics_positioning_term(ctx);     /* TERM52   */
+        return agc_job_auto_optics_positioning_terminate(ctx);     /* TERM52   */
     }
     st = agc_flag_set(AGC_FLAG_TRM03FLG);                     /* TERMP03  */
     (void)AGC_ASSERT(st == AGC_STATUS_OK);

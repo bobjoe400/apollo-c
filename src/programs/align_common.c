@@ -38,8 +38,8 @@ void agc_align_ram_reset(void)
     align_ram = zero;
     align_ram.qmin = AGC_JOB_NONE;
     align_ram.qmaj = AGC_JOB_NONE;
-    align_ram.savqr52 = AGC_JOB_NONE;
-    align_ram.r53exit = AGC_JOB_NONE;
+    align_ram.auto_optics_return = AGC_JOB_NONE;
+    align_ram.sighting_mark_return = AGC_JOB_NONE;
     align_ram.planet_ret = AGC_JOB_NONE;
     align_ram.coarse_ret = AGC_JOB_NONE;
     (void)AGC_ASSERT(align_ram.mkvac_index == -1);
@@ -331,7 +331,7 @@ agc_status_t align_set_dsptem1(agc_dp_t v)
 agc_status_t align_set1_pdt(void)
 {
     const agc_dp_t zero3[3] = { 0, 0, 0 };
-    agc_imu_set_1_pipadt(agc_erase_time1());
+    agc_imu_set_pipa_interval(agc_erase_time1());
     agc_status_t st = agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, zero3);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     if (st == AGC_STATUS_OK) {

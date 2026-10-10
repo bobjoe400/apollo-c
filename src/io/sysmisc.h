@@ -224,11 +224,11 @@ agc_status_t agc_extverb_job(agc_job_id_t job);          /* jobs owned here */
 agc_status_t agc_extverb_task(agc_task_id_t task);       /* tasks owned here */
 bool         agc_extverb_busy(void);                     /* EXTVBACT != 0   */
 
-agc_status_t agc_p27_start(int verb);                    /* V70..V73        */
-agc_status_t agc_p27_response(agc_dsky_resp_t r, uint16_t octal_word);
-agc_status_t agc_p27_pending(agc_xv_display_t *out);
-uint16_t     agc_p27_dnword(int idx);  /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF.. */
-agc_status_t agc_p27_restart(int phase);                 /* group 6 restart */
+agc_status_t agc_uplink_update_start(int verb);                    /* V70..V73        */
+agc_status_t agc_uplink_update_response(agc_dsky_resp_t r, uint16_t octal_word);
+agc_status_t agc_uplink_update_pending(agc_xv_display_t *out);
+uint16_t     agc_uplink_update_dnword(int idx);  /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF.. */
+agc_status_t agc_uplink_update_restart(int phase);                 /* group 6 restart */
 
 /* ======================================================================
  * Self-check and show-banksum (self_check.c; AGC_BLOCK_TWO_SELF_CHECK.agc)
@@ -248,13 +248,13 @@ uint16_t     agc_selfcheck_error_count(void);           /* ERCOUNT        */
 /* ======================================================================
  * Luminary P07 IMU performance tests (src/lm/imu_tests.c)
  * ==================================================================== */
-agc_status_t agc_p07_zeroing(uint16_t *block, int n);     /* ZEROING       */
-agc_status_t agc_p07_finetime(uint16_t hi, uint16_t lo_a, uint16_t lo_b,
+agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);     /* ZEROING       */
+agc_status_t agc_systems_test_finetime(uint16_t hi, uint16_t lo_a, uint16_t lo_b,
                               agc_dp_t *t);              /* FINETIME       */
-agc_dp_t     agc_p07_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX   */
-agc_status_t agc_p07_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
-agc_status_t agc_p07_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
-agc_status_t agc_p07_redo(void);                          /* REDO (V92)    */
-agc_status_t agc_p07_estims(void);                        /* ESTIMS        */
+agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX   */
+agc_status_t agc_systems_test_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
+agc_status_t agc_systems_test_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
+agc_status_t agc_systems_test_redo(void);                          /* REDO (V92)    */
+agc_status_t agc_systems_test_estims(void);                        /* ESTIMS        */
 
 #endif /* AGC_SYSMISC_H */

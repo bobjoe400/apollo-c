@@ -722,7 +722,7 @@ static agc_status_t t4_issup(void)
         && !agc_flag_test((agc_flag_id_t)AGC_FLAG_DRIFTFLG)) {
         agc_status_t st = agc_flag_set((agc_flag_id_t)AGC_FLAG_DRIFTFLG);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        agc_imu_set_1_pipadt(agc_erase_time1());
+        agc_imu_set_pipa_interval(agc_erase_time1());
     }
     (void)agc_t4_setissw();                            /* always OK         */
     chan_clear((int)AGC_CHAN_CHAN12, (uint16_t)BIT15);

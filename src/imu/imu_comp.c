@@ -142,13 +142,13 @@ void agc_imu_set_gcompsw(agc_sp_t v)
     }
 }
 
-agc_sp_t agc_imu_1_pipadt(void)
+agc_sp_t agc_imu_pipa_interval(void)
 {
     (void)AGC_ASSERT(one_pipadt >= AGC_SP_MIN && one_pipadt <= AGC_SP_MAX);
     return one_pipadt;
 }
 
-void agc_imu_set_1_pipadt(agc_sp_t v)
+void agc_imu_set_pipa_interval(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX)) {
         one_pipadt = v;
@@ -328,7 +328,7 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
     if (gcompsw <= 0) {
         return AGC_STATUS_OK;                            /* TCF IRIG1      */
     }
-    agc_status_t st = agc_exec_novac(PRIO21, AGC_JOB_1_GYRO);
+    agc_status_t st = agc_exec_novac(PRIO21, AGC_JOB_GYRO_COMMAND_PULSE);
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
     return st;
 }
@@ -360,7 +360,7 @@ static agc_dp_t gyro_rescale(agc_dp_t g)
 /* Common tail of 1/GYRO: IMUPULSE on GCOMP, then IMUSTALL.               */
 static agc_status_t one_gyro_pulse(void)
 {
-    agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_GCOMP, AGC_JOB_1_GYRO_PULSE);
+    agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_GCOMP, AGC_JOB_GYRO_COMMAND_RETRY);
     if (st != AGC_STATUS_OK) {
         /* BUSY: sleeping until the gyros free up; ALARM: IMU caged.      */
         (void)AGC_ASSERT(st == AGC_STATUS_BUSY || st == AGC_STATUS_ALARM);
@@ -376,7 +376,7 @@ static agc_status_t one_gyro_pulse(void)
 }
 
 /* 1/GYRO (ICP p.333): job started by IRIGCOMP or NBDONLY.                */
-agc_status_t agc_job_1_gyro(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -393,12 +393,12 @@ agc_status_t agc_job_1_gyro(agc_job_ctx_t *ctx)
 }
 
 /* Continuation of 1/GYRO after GYROBUSY sleep: retry IMUPULSE.           */
-agc_status_t agc_job_1_gyro_pulse(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(ctx->id == AGC_JOB_1_GYRO_PULSE);
+    (void)AGC_ASSERT(ctx->id == AGC_JOB_GYRO_COMMAND_RETRY);
     return one_gyro_pulse();
 }
 
@@ -472,7 +472,7 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
     }
     (void)gcomp_write(g);
     if (gcompsw > 0) {
-        return agc_job_1_gyro(ctx);              /* TCF 1/GYRO              */
+        return agc_job_gyro_command_pulse(ctx);              /* TCF 1/GYRO              */
     }
     (void)AGC_ASSERT(gcompsw == 0);
     return AGC_STATUS_OK;                        /* ENDOFJOB                */

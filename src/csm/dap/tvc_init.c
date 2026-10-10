@@ -172,7 +172,7 @@ static agc_status_t tvc_init2(int lem)
     t->cntr = tcorr[lem];                          /* one-shot correction   */
     t->strktime = -1;                              /* no stroke test yet    */
     t->vcntr = NINETEEN;                           /* gain update in 10 s   */
-    t->v97vcntr = NINETEEN;                        /* for ENGFAIL (R41)     */
+    t->engine_fail_vcntr = NINETEEN;                        /* for ENGFAIL (R41)     */
     (void)AGC_ASSERT(t->t5tvcdt > 0);
     return st;
 }

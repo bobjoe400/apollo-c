@@ -85,7 +85,7 @@ static tvcx_step_t tvcx_execcopy(void)
     (void)AGC_ASSERT(t->tvcexphs == 1);
     agc_erase_set_csmmass(t->masstmp);
     t->vcntr = t->vcntrtmp;
-    t->v97vcntr = t->vcntrtmp;     /* for ENGFAIL (R41) updates at SPSOFF  */
+    t->engine_fail_vcntr = t->vcntrtmp;     /* for ENGFAIL (R41) updates at SPSOFF  */
     t->tvcexphs = 2;               /* copycycle over (2)                   */
     (void)AGC_ASSERT(t->vcntr >= 0);
     return TVCX_1SHOTCHK;

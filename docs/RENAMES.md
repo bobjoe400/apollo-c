@@ -321,6 +321,56 @@ Conventions used for every row:
 | `agc_p37_xt1lim` | `agc_return_to_earth_xt1lim` | src/csm/p37.c | XT1LIM word label (P37 conic limit); first-attempt name kept |
 | `P37_ONE_B11` | `RETURN_TO_EARTH_ONE_B11` | src/csm/p37.c | 1RTEB25 +1 = 1.0 B-11 constant (file-local) |
 
+## landing -- P12, P63-P68, P70/P71, R10/R11, R12, R29
+
+> Phase-2 note: this guid-landing section was generated in phase 1 but dropped from the reviewed
+> copy by a lane-key typo in the generator (42 rows). It was restored and applied in phase 2.
+
+| old | new | files | AGC source / comment |
+|---|---|---|---|
+| `AGC_JOB_BRAKING_PHASE_LM` | `AGC_JOB_BRAKING_PHASE` | src/lm/landing_pending.h src/lm/lunar_landing.c | first-attempt name (LM suffix redundant) |
+| `agc_lm_job_braking_phase_lm` | `agc_lm_job_braking_phase` | include/agc/agc_lm_landing.h src/lm/lunar_landing.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_BRAKING_PHASE_SPOT2` | `AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE` | src/lm/landing_pending.h src/lm/lunar_landing.c | first-attempt name (pasted SPOT2) |
+| `agc_lm_job_braking_phase_spot2` | `agc_lm_job_braking_phase_burn_attitude` | include/agc/agc_lm_landing.h src/lm/lunar_landing.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_BRAKING_PHASE_SPOT3` | `AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK` | src/lm/landing_pending.h src/lm/lunar_landing.c | first-attempt name |
+| `agc_lm_job_braking_phase_spot3` | `agc_lm_job_braking_phase_antenna_check` | include/agc/agc_lm_landing.h src/lm/lunar_landing.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_BRAKING_PHASE_SPOT4` | `AGC_JOB_BRAKING_PHASE_RADAR_INIT` | src/lm/landing_pending.h src/lm/lunar_landing.c | first-attempt name |
+| `agc_lm_job_braking_phase_spot4` | `agc_lm_job_braking_phase_radar_init` | include/agc/agc_lm_landing.h src/lm/lunar_landing.c | first-attempt name |
+| `AGC_JOB_P63DISPS` | `AGC_JOB_BRAKING_PHASE_DISPLAY` | src/guidance/guid_pending.h | P63DISPS -2: "CAF V06N63 ... REGODSPR" |
+| `agc_lm_job_braking_phase_disps_m2` | `agc_lm_job_braking_phase_display` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c docs:guid-landing | first-attempt name (opaque m2) |
+| `AGC_JOB_APPROACH_PHASE_DISPS` | `AGC_JOB_APPROACH_PHASE_DISPLAY` | src/lm/landing_guidance.c src/lm/landing_pending.h | first-attempt name |
+| `agc_lm_job_approach_phase_disps` | `agc_lm_job_approach_phase_display` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_APPROACH_PHASE_CEED` | `AGC_JOB_APPROACH_PHASE_PROCEED` | src/lm/landing_guidance.c src/lm/landing_pending.h | first-attempt name (pasted CEED) |
+| `agc_lm_job_approach_phase_ceed` | `agc_lm_job_approach_phase_proceed` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c docs:guid-landing | first-attempt name |
+| `agc_lm_velocity_nulling_start` | `agc_lm_start_velocity_nulling` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c docs:guid-landing | first-attempt name |
+| `ll_start_rate_of_descent_landing_a` | `ll_rate_of_descent_setup` | src/lm/lunar_landing.c | first-attempt name (opaque _a) |
+| `agc_lm_rate_of_descent_landing_verta` | `agc_lm_rate_of_descent_vertical` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c src/lm/lunar_landing.c docs:guid-landing | first-attempt name (pasted VERTA) |
+| `agc_lm_manual_landing_vert` | `agc_lm_manual_landing_vertical` | include/agc/agc_lm_landing.h src/lm/landing_guidance.c src/lm/lunar_landing.c docs:guid-landing | first-attempt name |
+| `agc_lm_job_landing_confirmation_b` | `agc_lm_job_landing_confirmation_proceed` | include/agc/agc_lm_landing.h src/lm/lunar_landing.c docs:guid-landing | first-attempt name (opaque _b) |
+| `agc_lm_job_dps_abort_a` | `agc_lm_job_dps_abort_commanded` | include/agc/agc_lm_landing.h src/lm/landing_aborts.c | first-attempt name (opaque _a) |
+| `agc_lm_job_aps_abort_a` | `agc_lm_job_aps_abort_commanded` | include/agc/agc_lm_landing.h src/lm/landing_aborts.c | first-attempt name (opaque _a) |
+| `AGC_JOB_APS_ABORT_OLD` | `AGC_JOB_APS_ABORT_OLDTIME` | src/lm/landing_aborts.c src/lm/landing_pending.h | first-attempt name |
+| `agc_lm_job_aps_abort_old` | `agc_lm_job_aps_abort_oldtime` | include/agc/agc_lm_landing.h src/lm/landing_aborts.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_ABTP40A` | `AGC_JOB_ABORT_AUTO_CONTROL_CHECK` | src/lm/landing_aborts.c src/lm/landing_pending.h | UPTHROT1 -3: "P40AUTO" (check PGNCS/auto modes) during abort |
+| `agc_lm_job_abort_dps_burn_a` | `agc_lm_job_abort_auto_control_check` | include/agc/agc_lm_landing.h src/lm/landing_aborts.c docs:guid-landing | first-attempt name (wrong: not a DPS burn) |
+| `ab_aps_abort_ret` | `ab_aps_abort_return` | src/lm/landing_aborts.c docs:guid-landing | first-attempt name |
+| `AGC_TASK_R10R11` | `AGC_TASK_ABORT_MONITOR` | src/guidance/guid_pending.h | R10,R11: R11 "IS AN ABORT (STAGE) COMMANDED?" then R10 LANDISP |
+| `AGC_TASK_LANDING_RADAR_MONITOR` | `AGC_TASK_ABORT_MONITOR` | src/lm/servicer_lm.c | first-attempt name (R10/R11 is not a radar monitor) |
+| `agc_lm_task_landing_radar_monitor` | `agc_lm_task_abort_monitor` | include/agc/agc_lm_landing.h src/lm/landing_aborts.c docs:guid-landing | first-attempt name |
+| `agc_lm_landing_radar_monitor_a` | `agc_lm_abort_monitor_resume` | include/agc/agc_lm_landing.h src/lm/guid_pending_lm.h src/lm/landing_aborts.c src/lm/servicer_lm_lr.c docs:guid-landing | first-attempt name (opaque _a) |
+| `LANDING_RADAR_MONITOR_FIRST_CS` | `ABORT_MONITOR_FIRST_CS` | src/lm/servicer_lm.c | first-attempt name |
+| `landing_radar_monitor_setup` | `abort_monitor_setup` | src/lm/servicer_lm.c | first-attempt name |
+| `AGC_JOB_POWERED_ASCENT_LM` | `AGC_JOB_POWERED_ASCENT` | src/lm/ascent.c src/lm/landing_pending.h | first-attempt name (LM suffix redundant) |
+| `agc_lm_job_powered_ascent_lm` | `agc_lm_job_powered_ascent` | include/agc/agc_lm_landing.h src/lm/ascent.c docs:guid-landing | first-attempt name |
+| `AGC_JOB_POWERED_ASCENT_LM2` | `AGC_JOB_POWERED_ASCENT_PROCEED` | src/lm/ascent.c src/lm/landing_pending.h | first-attempt name (pasted LM2) |
+| `agc_lm_job_powered_ascent_lm2` | `agc_lm_job_powered_ascent_proceed` | include/agc/agc_lm_landing.h src/lm/ascent.c | first-attempt name |
+| `AGC_JOB_POWERED_ASCENT_LMB` | `AGC_JOB_POWERED_ASCENT_AT_IGNITION` | src/lm/ascent.c src/lm/landing_pending.h | first-attempt name (pasted LMB) |
+| `agc_lm_job_powered_ascent_lmb` | `agc_lm_job_powered_ascent_at_ignition` | include/agc/agc_lm_landing.h src/lm/ascent.c | first-attempt name |
+| `agc_lm_powered_ascent_ret` | `agc_lm_powered_ascent_return` | include/agc/agc_lm_landing.h src/lm/ascent.c docs:guid-landing | first-attempt name |
+| `agc_radar_landing_downlink_lites` | `agc_radar_landing_radar_lights` | src/lm/guid_pending_lm.h src/lm/servicer_lm_lr.c | first-attempt name (not downlink) |
+| `agc_radar_powered_flight_radar_designate` | `agc_radar_powered_flight_designate` | src/lm/guid_pending_lm.h src/lm/servicer_lm_lr.c | first-attempt name (stutter radar_radar) |
+| `no_powered_flight_radar_designate_now` | `no_powered_designate_now` | src/lm/servicer_lm_lr.c | first-attempt name |
+
 ## exec -- exec-sched: V37/P00, restart-table targets
 
 | old | new | files | AGC source / comment |

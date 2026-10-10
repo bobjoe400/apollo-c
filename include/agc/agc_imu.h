@@ -96,8 +96,8 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev);       /* BADEND         */
 agc_status_t agc_imu_endimu(void);                       /* ENDIMU         */
 
 agc_status_t agc_imu_imubad(void);                       /* IMUBAD         */
-agc_status_t agc_imu_status_check_both(void);                      /* R02BOTH        */
-agc_status_t agc_imu_status_check_zero(void);                      /* R02ZERO        */
+agc_status_t agc_imu_status_check(void);                      /* R02BOTH        */
+agc_status_t agc_imu_set_in_use(void);                      /* R02ZERO        */
 agc_status_t agc_imu_standby(agc_job_ctx_t *ctx);            /* P06 (stub)     */
 agc_status_t agc_imu_postand(agc_job_ctx_t *ctx);        /* POSTAND (stub) */
 
@@ -145,8 +145,8 @@ agc_status_t agc_imu_comp_load(const agc_imu_comp_params_t *p);
 agc_status_t agc_imu_comp_get(agc_imu_comp_params_t *p);
 agc_sp_t     agc_imu_gcompsw(void);                      /* GCOMPSW        */
 void         agc_imu_set_gcompsw(agc_sp_t v);
-agc_sp_t     agc_imu_1_pipadt(void);   /* 1/PIPADT, cs x 2^8 (or TIME1)   */
-void         agc_imu_set_1_pipadt(agc_sp_t v);
+agc_sp_t     agc_imu_pipa_interval(void);   /* 1/PIPADT, cs x 2^8 (or TIME1)   */
+void         agc_imu_set_pipa_interval(agc_sp_t v);
 
 /* 1/PIPA: compensate the PIPA counts DELV (pulses x 2^14, X Y Z) in place
  * for scale factor and bias, then IRIGCOMP the gyros.                     */
@@ -154,8 +154,8 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv);
 /* IRIGCOMP: gyro compensation from compensated DELV (pulses x 2^14).     */
 agc_status_t agc_imu_comp_irig(agc_vec_t delv);
 agc_status_t agc_imu_gcompzer(void);                     /* GCOMPZER       */
-agc_status_t agc_job_1_gyro(agc_job_ctx_t *ctx);         /* 1/GYRO         */
-agc_status_t agc_job_1_gyro_pulse(agc_job_ctx_t *ctx);   /* 1/GYRO retry   */
+agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx);         /* 1/GYRO         */
+agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx);   /* 1/GYRO retry   */
 agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx);         /* GCOMP1         */
 agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);        /* NBDONLY        */
 agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx);       /* LASTBIAS       */
@@ -266,14 +266,14 @@ agc_sp_t     agc_imu_gn_auto(void);
 /* R60CSM / R60LEM: called by a program job; on exit (ENDMANU1) job
  * ret_job is run in the same job (the AGC's BANKJUMP to TEMPR60).        */
 agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);
-agc_status_t agc_job_attitude_maneuver_redomanc(agc_job_ctx_t *ctx); /* V50N18 PROCEED   */
+agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx); /* V50N18 PROCEED   */
 agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx);    /* V50N18 ENTER     */
-agc_status_t agc_job_attitude_maneuver_term(agc_job_ctx_t *ctx);     /* V34: R61TEST     */
-agc_status_t agc_job_attitude_maneuver_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR    */
+agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx);     /* V34: R61TEST     */
+agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx); /* after GOMANUR    */
 agc_status_t agc_job_relinus(agc_job_ctx_t *ctx);      /* RELINUS restart  */
-agc_status_t agc_job_crew_defined_maneuver_disp(agc_job_ctx_t *ctx);      /* R62DISP (V49)    */
+agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx);      /* R62DISP (V49)    */
 agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx);   /* V06N22 PROCEED   */
-agc_status_t agc_job_crew_defined_maneuver_term(agc_job_ctx_t *ctx);     /* V34 / done: ENDEXT */
+agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx);     /* V34 / done: ENDEXT */
 
 /* ======================================================================= */
 /* CM prelaunch alignment pieces (IMU_CALIBRATION_AND_ALIGNMENT.agc,       */

@@ -226,7 +226,7 @@ static agc_status_t gopoodoo(void)
     agc_inhint();
     poodoo_flags();
     agc_status_t st = AGC_STATUS_POODOO;
-    if (agc_flag_test(AGC_FLAG_CHANGE_PROGRAM_FLAG)) {
+    if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING)) {
         agc_relint();
         /* STRTIDLE: SERVICER to its "ground" state, then GOTOPOOH.    */
         agc_status_t s1 = exec_up_servidle();
@@ -247,7 +247,7 @@ static agc_status_t gopoodoo(void)
 static agc_status_t poodoo_csm(void)
 {
     (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
-    if (agc_flag_test(AGC_FLAG_CHANGE_PROGRAM_FLAG)) {        /* average G on      */
+    if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING)) {        /* average G on      */
         exec_request_enema();                     /* TC WHIMPER -1     */
         return AGC_STATUS_BAILOUT;
     }

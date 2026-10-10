@@ -62,7 +62,7 @@ typedef enum rst_erasable {  /* erasables named by indirect table words  */
     RST_E_600SECS,           /* both: 600SECS 2DEC 60000 (fixed const)   */
     RST_E_ZOOMTIME,          /* LM  ZOOMTIME B(1)                        */
     RST_E_TGO_1,             /* both: TGO +1 (low word of TGO B(2))      */
-    RST_E_SPS_BURN_TMP,            /* CSM P40TMP B(2)                          */
+    RST_E_PREREAD_DELAY,            /* CSM P40TMP B(2)                          */
     RST_E_S61DT,             /* CSM S61DT B(1)                           */
     RST_E_CM_GYMDT           /* CSM CM/GYMDT 1P                          */
 } rst_erasable_t;

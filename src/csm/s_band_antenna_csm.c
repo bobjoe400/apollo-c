@@ -154,7 +154,7 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_status_t st = agc_imu_r02both();            /* R02BOTH      */
+    const agc_status_t st = agc_imu_status_check();            /* R02BOTH      */
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK)) {
         return AGC_STATUS_OK;                             /* alarm + P00  */
     }

@@ -43,7 +43,7 @@ Files: `include/agc/agc_flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 
 * C name `AGC_FLAG_<AGCNAME>`: upper case, `/`, `-`, `.` -> `_` (per `_common.md`):
   `.05GSW` -> `AGC_FLAG__05GSW`, `CM/DSTBY` -> `AGC_FLAG_CM_DSTBY`, `P39/79SW` ->
-  `AGC_FLAG_STABLE_ORBIT_MIDCOURSE_SW`, `S32.1F1` -> `AGC_FLAG_S32_1F1`, `ACC4-2FL` -> `AGC_FLAG_ACC4_2FL`.
+  `AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE`, `S32.1F1` -> `AGC_FLAG_S32_1F1`, `ACC4-2FL` -> `AGC_FLAG_ACC4_2FL`.
 * Each header comment gives the AGC name, flagword, bit number, AGC decimal number nnnD,
   and the AGC's SET / RESET text (transcribed, upper case as in the listing).
 * `agc_flags_common.h` holds a flag when the same AGC name sits at the same flagword and

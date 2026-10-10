@@ -27,7 +27,7 @@
 #include "exec_internal.h"
 
 #define VP_VERB_CHANGE_PROGRAM        37U
-#define VP_NOUN_ENABLE_REQUEST        99U
+#define VP_GO_IDLE_NOUN        99U
 #define VP_BIT6       000040u     /* IMODES30 bit 6: IMU being initialised */
 #define VP_BIT13      010000u     /* DSALMOUT bit 13: engine on            */
 #define VP_F6_DAPBITS 060000u
@@ -105,16 +105,16 @@ static void initsub_csm(void)
 
 /* The V37 N99 flash of GOP00FIX: every response re-flashes it
  * (TCF -3 / -4 / -5 back to CAF V37N99).                              */
-static agc_status_t flash_change_program_enable_request(const agc_job_ctx_t *ctx)
+static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
 {
-    agc_dsky_cont_t cont = { AGC_JOB_GOP00FIX_REFLASH,
-                             AGC_JOB_GOP00FIX_REFLASH,
-                             AGC_JOB_GOP00FIX_REFLASH };
+    agc_dsky_cont_t cont = { AGC_JOB_GO_IDLE_FIX_REFLASH,
+                             AGC_JOB_GO_IDLE_FIX_REFLASH,
+                             AGC_JOB_GO_IDLE_FIX_REFLASH };
     if (!AGC_ASSERT(ctx != 0)) {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
-                            agc_dsky_vn((uint8_t)VP_VERB_CHANGE_PROGRAM, (uint8_t)VP_NOUN_ENABLE_REQUEST),
+                            agc_dsky_vn((uint8_t)VP_VERB_CHANGE_PROGRAM, (uint8_t)VP_GO_IDLE_NOUN),
                             &cont);
 }
 
@@ -135,7 +135,7 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
     }
     agc_status_t st = agc_dsky_clearmrk();        /* TC CLEARMRK +2    */
     (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
-    return flash_change_program_enable_request(ctx);
+    return flash_program_request(ctx);
 }
 
 agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
@@ -143,8 +143,8 @@ agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != 0)) {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(ctx->id == AGC_JOB_GOP00FIX_REFLASH);
-    return flash_change_program_enable_request(ctx);
+    (void)AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH);
+    return flash_program_request(ctx);
 }
 
 /* CHECKTAB / AGAINMM (C p.198 / L p.228): is `mm` a selectable mode?  */
@@ -208,7 +208,7 @@ agc_status_t agc_change_program(uint8_t new_mm)
             return change_program_refuse(false);              /* V37NONO           */
         }
     }
-    if (agc_flag_test(AGC_FLAG_CHANGE_PROGRAM_FLAG)) {         /* ISSERVON          */
+    if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING)) {         /* ISSERVON          */
         /* DOWNFLAG AVEGFLAG (vehicle-specific bit, owned by SERVICER):
          * delegated; SERVICER returns to CANV37 when it has stopped.   */
         return AGC_STATUS_BUSY;
@@ -219,7 +219,7 @@ agc_status_t agc_change_program(uint8_t new_mm)
 /* CANV37 (C p.199 / L p.229): STUB. Waits for integration (INTSTALL),
  * clears outbits and flags, then POOH (P00) or NOUVEAU (new program via
  * restart group 4 and GOPROG2).                                       */
-agc_status_t agc_job_change_program_check(agc_job_ctx_t *ctx)
+agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0)) {
         return AGC_STATUS_BAD_ARG;

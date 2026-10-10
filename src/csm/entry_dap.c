@@ -429,8 +429,8 @@ static uint16_t dap_exdap2(agc_entry_state_t *es)
 
     es->cmdapmod = AGC_ENTRY_DAPMOD_PLUS1;
     jetag = -1;                          /* roll jets now from here      */
-    if (es->entry_initialization_flag > 0) {
-        es->entry_initialization_flag = 0;
+    if (es->wake_separation_interlock > 0) {
+        es->wake_separation_interlock = 0;
     }
     err = (es->salfa > 0) ? (agc_sp_t)(-raxerr) : ((es->salfa < 0) ? raxerr : 0);
     paxerr1 = entry_sp_mp(err, AGC_SP_HALF);              /* error/360   */
@@ -452,9 +452,9 @@ static uint16_t dap_exdap(agc_entry_state_t *es)
     if (dap_dz(es->calfa, AGC_ENTRY_C45LIM) == 0) {
         return dap_exdap2(es);
     }
-    if (es->calfa > 0 && es->entry_initialization_flag == 0) {
+    if (es->calfa > 0 && es->wake_separation_interlock == 0) {
         (void)agc_phase_change(4, 040334);              /* 4.33 WAKEP62 */
-        es->entry_initialization_flag = -1;                               /* single pass  */
+        es->wake_separation_interlock = -1;                               /* single pass  */
         (void)agc_waitlist_call(AGC_ENTRY_NSEC, AGC_TASK_WAKE_CM_SM_SEPARATION);
     }
     if (jetag < 0) {                                    /* EXDAP4       */
@@ -830,7 +830,7 @@ agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx)
         return agc_svc_delayjob(50, AGC_JOB_CM_DAPON_WAIT); /* .5SEC     */
     }
     needler_init = true;                  /* CS ONE / TS RCSFLAGS (BIT3) */
-    es->entry_initialization_flag = -1;                     /* no WAKEP62 before HEADSUP    */
+    es->wake_separation_interlock = -1;                     /* no WAKEP62 before HEADSUP    */
     jetag = 0;
     paxerr1 = 0;                          /* needles zero until update    */
     agc_inhint();
@@ -842,7 +842,7 @@ agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx)
     (void)agc_flag_set(AGC_FLAG_CMDAPARM);
     (void)agc_flag_set(AGC_FLAG_NODOFLAG);                 /* no V37 now */
     agc_relint();
-    return agc_job_cm_sm_separation_1(ctx);                             /* POSTJUMP   */
+    return agc_job_cm_sm_separation_target_display(ctx);                             /* POSTJUMP   */
 }
 
 /* CM/DAPON (p. 1066): RCS DAP off (DAPBIT1/2, T5LOC/T6LOC idle), jets
@@ -888,7 +888,7 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
         AGC_FLAG_GYMDIFSW, AGC_FLAG_CM_DSTBY, AGC_FLAG__05GSW, AGC_FLAG_LATSW,
         AGC_FLAG_GAMDIFSW, AGC_FLAG_CMDAPARM, AGC_FLAG_ENTRYDSP
     };
-    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_2, AGC_TASK_NONE,
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_REQUEST, AGC_TASK_NONE,
                           (int16_t)AGC_ENTRY_PRIO13, false, 0U };
     unsigned i;
 
@@ -908,5 +908,5 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
     agc_relint();
     (void)agc_phase_change2(040116, 005024, &v);   /* 6.11, 4.2 P62.2    */
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_CM_DSTBY));
-    return agc_job_cm_sm_separation_2(ctx);                     /* POSTJUMP P62.2     */
+    return agc_job_cm_sm_separation_request(ctx);                     /* POSTJUMP P62.2     */
 }

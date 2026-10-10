@@ -31,7 +31,7 @@
 /* Sublist ids (the AGC labels).                                           */
 enum {
     CMPOWE01 = 0, CMPOWE02, CMPOWE03, CMPOWE04, CMPOWE05, CMPOWE06,
-    CMPOWE07, CMENTR05, CMPG2205, CM_SUB_COUNT
+    CMPOWE07, CMENTR05, CM_ORBITAL_NAV_LIST05, CM_SUB_COUNT
 };
 
 #define PTR AGC_DN_OP_PTR
@@ -268,7 +268,7 @@ static const agc_dn_entry_t cmpg22dl[] = {
     { 1, false, AGC_DN_SPARE, 0 },
     { PTR, false, CMPOWE04, 0 },              /* CMPG2204                  */
     { 1, false, AGC_DN_TIME2, 0 },            /* TIME2,TIME1               */
-    { PTR, false, CMPG2205, 0 },              /* COLLECT SNAPSHOT          */
+    { PTR, false, CM_ORBITAL_NAV_LIST05, 0 },              /* COLLECT SNAPSHOT          */
     { 2, false, AGC_DN_DNTMBUFF, 0 },         /* SEND SNAPSHOT             */
     { 1, false, AGC_DN_SPARE, 0 },
     { 1, false, AGC_DN_SPARE, 0 },
@@ -291,7 +291,7 @@ static const agc_dn_entry_t cmpg22dl[] = {
     { 1, false, AGC_DN_SPARE, 0 },
     { 1, true,  AGC_DN_SPARE, 0 }
 };
-static const agc_dn_entry_t cmpg2205[] = {   /* SNAPSHOT DATA, p.180       */
+static const agc_dn_entry_t cm_orbital_nav_list05[] = {   /* SNAPSHOT DATA, p.180       */
     { 1, true,  AGC_DN_LONG, 0 },             /* LONG,+1                   */
     { 1, false, AGC_DN_ALT, 0 },              /* ALT,+1                    */
     { 1, true,  AGC_DN_LAT, 0 }               /* LAT,+1                    */
@@ -318,7 +318,7 @@ static const agc_dn_list_t sublists[CM_SUB_COUNT] = {
     { cmpowe06, (uint8_t)(sizeof cmpowe06 / sizeof cmpowe06[0]), false },
     { cmpowe07, (uint8_t)(sizeof cmpowe07 / sizeof cmpowe07[0]), false },
     { cmentr05, (uint8_t)(sizeof cmentr05 / sizeof cmentr05[0]), true  },
-    { cmpg2205, (uint8_t)(sizeof cmpg2205 / sizeof cmpg2205[0]), true  }
+    { cm_orbital_nav_list05, (uint8_t)(sizeof cm_orbital_nav_list05 / sizeof cm_orbital_nav_list05[0]), true  }
 };
 
 /* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */

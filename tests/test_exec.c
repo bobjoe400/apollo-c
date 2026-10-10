@@ -354,7 +354,7 @@ static void test_waitlist_dt0_1204(void)
     CHECK(agc_exec_restart_pending());
     (void)agc_exec_service_restart();              /* -> GOTOPOOH     */
     CHECK(agc_phase_get(4) == 1U);                 /* CSM 4.1         */
-    CHECK(job_present(AGC_JOB_GOP00FIX, 030, -1));
+    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
 }
 
 static void test_longcall(void)
@@ -439,7 +439,7 @@ static void test_lm_tables(void)
     reset(AGC_VEHICLE_LM);
     CHECK(agc_phase_newphase(4, 033, false) == AGC_STATUS_OK);
     CHECK(agc_restart_group(4) == AGC_STATUS_OK);
-    CHECK(job_present(AGC_JOB_GOP00FIX, 031, -1)); /* OCT 46777 NOVAC  */
+    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 031, -1)); /* OCT 46777 NOVAC  */
     CHECK(agc_phase_newphase(1, 2, false) == AGC_STATUS_OK); /* 1.2SPOT */
     CHECK(agc_restart_group(1) == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_ENDOFJOB, 021, 0));
@@ -485,7 +485,7 @@ static void test_goprog(void)
     agc_erase_set_modreg(0);
     CHECK(agc_restart_goprog() == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_DSPMMJB, 030, -1));  /* MMDSPLAY        */
-    CHECK(job_present(AGC_JOB_GOP00FIX, 030, -1));
+    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
     CHECK(agc_phase_get(4) == 1U);
     /* an active group is restarted                                    */
     reset(AGC_VEHICLE_CSM);
@@ -505,7 +505,7 @@ static void test_poodoo_lm(void)
     CHECK(agc_phase_get(2) == 0U);                 /* MR.KLEAN        */
     (void)agc_exec_service_restart();              /* WHIMPER -> ENEMA */
     CHECK(agc_phase_get(4) == 033U);               /* GOTOPOOH 4.33   */
-    CHECK(job_present(AGC_JOB_GOP00FIX, 030, -1));
+    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
     CHECK(agc_rupt_t5_task() == AGC_TASK_DAPIDLER);  /* STARTSB1      */
 }
 

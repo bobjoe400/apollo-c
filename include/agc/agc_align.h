@@ -132,8 +132,8 @@ typedef struct agc_align_ram {
      * address in the AGC; here the continuation job)                        */
     agc_job_id_t qmin;           /* QMIN                                       */
     agc_job_id_t qmaj;           /* QMAJ                                       */
-    agc_job_id_t save_q_auto_optics_positioning;        /* SAVQR52                                    */
-    agc_job_id_t sighting_mark_exit;        /* R53EXIT                                    */
+    agc_job_id_t auto_optics_return;        /* SAVQR52                                    */
+    agc_job_id_t sighting_mark_return;        /* R53EXIT                                    */
     agc_job_id_t planet_ret;     /* return of PLANET when it flashes V06N88    */
     agc_job_id_t coarse_ret;     /* return of COARSE (QPRET of CALL COARSE)    */
     agc_vec_t    planet_los;     /* PLANET result (MPAC): half-unit, reference */
@@ -166,7 +166,7 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
                              agc_job_id_t resume_job, agc_mat_t *smd);
 agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
                                 agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd);
-bool         agc_align_coarse_align_needed(const uint16_t thetad[3],
+bool         agc_align_coarse_needed(const uint16_t thetad[3],
                                           const uint16_t cdu[3]);
 agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
                                       const agc_mat_t *refsmmat, agc_mat_t *xdc);
@@ -188,7 +188,7 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
                                      agc_job_id_t resume_job, agc_vec_t *los);
 agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
                                       const agc_vec_t obs[2], agc_dp_t *diff);
-agc_status_t agc_align_fine_align_solve(agc_interp_t *ip, const agc_vec_t a[2],
+agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2],
                                  const agc_vec_t b[2], agc_mat_t *xdc);
 /* CHKSCODE: true when 0 <= STARCODE <= 50 octal.                          */
 bool         agc_align_chkscode(agc_sp_t starcode);
@@ -298,7 +298,7 @@ agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m,
                            agc_vec_t *los_sm);            /* SXTSM         */
 /* SR52.1: compute SAC/PAC for the target; result 0 = trunnion > 90 deg,
  * 1 = > 50 deg, 2 = < 50 deg (the AGC's three returns).                   */
-agc_status_t agc_csm_auto_optics_positioning_sub_1(agc_interp_t *ip, agc_job_id_t resume_job,
+agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, agc_job_id_t resume_job,
                             int *result);
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job,
                               agc_vec_t *los);            /* ADVTRACK      */

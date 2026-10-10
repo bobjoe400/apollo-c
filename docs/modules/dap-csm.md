@@ -11,7 +11,7 @@ RCS-CSM_DAP_EXECUTIVE_PROGRAMS (1037-1038, AMBGUPDT), JET_SELECTION_LOGIC
 TVCSTROKETEST (979-983), TVCROLLDAP (984-998).
 
 Also translated here because they only read/write DAP-private erasables
-(lead to arbitrate with guid-powered, whose note lists them under p40_csm.c):
+(lead to arbitrate with guid-powered, whose note lists them under sps_burn.c):
 S41.2 (DAPDATR1/2 decode, P40-P47 p.731-733), S40.14 (RCS gains, p.735),
 RCSDAPON (p.736). R03 itself (DAPDISP/DONOUN46-48, EXTENDED_VERBS
 p.253-254) is display flow and stays with sys-misc; it calls our S41.2,

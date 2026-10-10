@@ -41,7 +41,7 @@ static const agc_dp_t Q_SIN = 3387655;       /* .012620 = (.1) SIN 7.25    */
 static const agc_dp_t MFOURDT = -819200;
 /* S40.13 (CM): S40.135 2DEC 69.6005183 B-23 (7.96 s of 2-jet ullage),
  * 1SEC2D 100 B-14, 3.5SEC 350 B-13, 5SECOND 500 B-14.                     */
-static const agc_dp_t S40_135 = 2227;
+static const agc_dp_t TWO_JET_IMPULSE = 2227;
 static const agc_dp_t SEC1_2D = 1638400;
 static const agc_dp_t SEC3_5 = 11468800;
 static const agc_dp_t SEC5_14 = 8192000;
@@ -125,7 +125,7 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
 
 /* S40.1B Comanche (p.710-711): VIPRIME at TIG - 2 s (kept in UT), then
  * the Lambert solution at TIG: VGTIG = DELVEET3, DELVLVC, CALCUT.         */
-static agc_status_t s40_1b_csm(agc_interp_t *ip)
+static agc_status_t initial_vg_lambert_csm(agc_interp_t *ip)
 {
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_dp_t tdec1 = agc_dp_sub(ip, agc_erase_tig(), TWODT);
@@ -147,7 +147,7 @@ static agc_status_t s40_1b_csm(agc_interp_t *ip)
 
 /* S40.1B Luminary (p.766-767): LEMPREC to TIG, INITVEL (NUMIT 0, EPSILON4
  * 10 degrees, or 45 with NORMSW), VGTIG = DELVEET3, UT, VGDISP, DELVLVC.  */
-static agc_status_t s40_1b_lm(agc_interp_t *ip)
+static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
 {
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_guid_t *g = agc_guid_state();
@@ -176,7 +176,7 @@ static agc_status_t s40_1b_lm(agc_interp_t *ip)
 /* S40.1 (CM p.709, LM p.764): initial thrust direction UT and VGTIG.
  * Comanche: BDT = 0 here; the caller sets FIRSTFLG (a Comanche-only flag).
  * Luminary: TIGSAVE = TIG.                                                */
-agc_status_t agc_guid_s40_1(agc_interp_t *ip, agc_vehicle_t veh)
+agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip, agc_vehicle_t veh)
 {
     if (!AGC_ASSERT(ip != NULL) ||
         !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM)) {
@@ -190,7 +190,7 @@ agc_status_t agc_guid_s40_1(agc_interp_t *ip, agc_vehicle_t veh)
         g->lm.tigsave = agc_erase_tig();
     }
     if (!agc_flag_test(AGC_FLAG_XDELVFLG)) {
-        return (veh == AGC_VEHICLE_CSM) ? s40_1b_csm(ip) : s40_1b_lm(ip);
+        return (veh == AGC_VEHICLE_CSM) ? initial_vg_lambert_csm(ip) : initial_vg_lambert_lm(ip);
     }
     if (veh == AGC_VEHICLE_CSM) {
         rz->delvsab = agc_vec_abval(ip, rz->delvsin);           /* P30/P40 I/F */
@@ -239,7 +239,7 @@ static void bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff, agc_
  * the bell axes give SCAXIS and, rotated into the frame X = UT, Y = UNIT(
  * UT x R), Z = UT x Y, the preferred orientation XSCREF..ZSCREF; for the
  * RCS (ENG2FLAG) SCAXIS = UNITX and the frame itself.                     */
-agc_status_t agc_guid_s40_23_csm(agc_interp_t *ip, bool rcs, agc_sp_t pactoff,
+agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs, agc_sp_t pactoff,
                                  agc_sp_t yactoff)
 {
     if (!AGC_ASSERT(ip != NULL)) {
@@ -274,7 +274,7 @@ agc_status_t agc_guid_s40_23_csm(agc_interp_t *ip, bool rcs, agc_sp_t pactoff,
 /* S40.2,3 Luminary (p.768-769): POINTVSM, SCAXIS = +X (DPS, APS and RCS
  * alike), XSCREF = UT, YSCREF = UNIT(UT x RTIG) (or UNIT(UT x VTIG) when
  * that is null: FIXY), ZSCREF = -(YSCREF x XSCREF) VSL1; PFRATFLG set.    */
-agc_status_t agc_guid_s40_23_lm(agc_interp_t *ip)
+agc_status_t agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -299,7 +299,7 @@ agc_status_t agc_guid_s40_23_lm(agc_interp_t *ip)
 /* S41.1 (CM p.717-718, LM p.783-784): VG (reference, m/cs 2^7) to the
  * Comanche control axes (CDUTRIG, REFSMMAT, *SMNB*, QUADROT, x10, VSL5)
  * or the Luminary body axes (REFSMMAT VSL1, CDU*SMNB).                    */
-agc_status_t agc_guid_s41_1(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_ref,
+agc_status_t agc_guid_reference_to_body(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_ref,
                             agc_vec_t *vg_ctl)
 {
     if (!AGC_ASSERT(ip != NULL) ||
@@ -331,7 +331,7 @@ agc_status_t agc_guid_s41_1(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_re
  * caller -- AGC_STATUS_ALARM),
  *   TGO = -4(200 cs) d (1 + d/2Vex) / |BDT - DELVREF| - ETDECAY,
  * normalised by NORM X1 / NORM X2 and SL* (n2 - n1 - 9).                  */
-agc_status_t agc_guid_s40_8_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
+agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
                                     agc_dp_t *tgo)
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) ||
@@ -359,7 +359,7 @@ agc_status_t agc_guid_s40_8_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in,
 
 /* TGDCALC (Luminary S40.8 p.771): with d = UNIT(-DELVREF) . VG < 0,
  *   TGO = -4(200 cs) d (1 + d/2VEX) SR 10 / |DELVREF| + TDECAY.           */
-agc_status_t agc_guid_s40_8_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
+agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
                                    agc_dp_t *tgo)
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) ||
@@ -385,7 +385,7 @@ agc_status_t agc_guid_s40_8_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in,
  *   OMEGAC = KPRIMEDT * SMNB(REFSMMAT (UNIT(VG) x UNIT(c BDT - DELVREF))).
  * With the velocity-to-be-gained along the thrust (c BDT - DELVREF
  * parallel to VG) the commanded rate is zero.                             */
-agc_status_t agc_guid_s40_8_xproduct(agc_interp_t *ip, const agc_xprod_in_t *in,
+agc_status_t agc_guid_steering_cross_product(agc_interp_t *ip, const agc_xprod_in_t *in,
                                      const agc_mat_t *refsmmat,
                                      const agc_cdutrig_t *trig, agc_vec_t *omegac)
 {
@@ -428,7 +428,7 @@ static agc_dp_t timeburn_csm(agc_interp_t *ip, agc_dp_t v, agc_dp_t m,
  * engine off at TGO) for a burn short enough; TGO (cs 2^28) is then the
  * time from ignition to the engine-off command. With +X translation the
  * 7.96 s of 2-jet (doubled for 4-jet) ullage impulse is deducted.          */
-agc_status_t agc_guid_s40_13_csm(agc_interp_t *ip, bool ullage, bool four_jets,
+agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage, bool four_jets,
                                  agc_sp_t emdot, agc_sp_t fang)
 {
     if (!AGC_ASSERT(ip != NULL) ||
@@ -439,7 +439,7 @@ agc_status_t agc_guid_s40_13_csm(agc_interp_t *ip, bool ullage, bool four_jets,
     (void)agc_flag_set(AGC_FLAG_IMPULSW);                        /* ASSUME NO STEERING */
     agc_dp_t v = agc_vec_abval(ip, agc_erase_vgtig());
     if (ullage) {
-        agc_dp_t dvu = agc_dp_div(ip, S40_135, b->weight_g);
+        agc_dp_t dvu = agc_dp_div(ip, TWO_JET_IMPULSE, b->weight_g);
         if (four_jets) {
             dvu = agc_dp_shl(ip, dvu, 1);                        /* SL1: 4 JETS */
         }

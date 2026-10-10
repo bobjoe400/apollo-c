@@ -89,7 +89,7 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_rendz_t *rz = rz_state();
-    agc_status_t st = rz_p20flgon();
+    agc_status_t st = rz_tracking_flags_on();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     if (rz_is_csm()) {
         rz->nn = 0;
@@ -272,7 +272,7 @@ agc_status_t agc_job_cdh_input(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = rz_p20flgon();
+    agc_status_t st = rz_tracking_flags_on();
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     return rz_vnpooh(ctx, 6U, 13U, AGC_JOB_CDH_AFTER_TCDH);
 }

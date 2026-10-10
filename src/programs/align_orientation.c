@@ -138,7 +138,7 @@ static int32_t ones_value(uint16_t w)
  * DEVIATION: the DLOAD* of two SP words picks up THETAD+n+1 / the next
  * VAC word as a low order part (< 1 count); it is ignored here.
  */
-bool agc_align_coarse_align_needed(const uint16_t thetad[3], const uint16_t cdu[3])
+bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
 {
     if (!AGC_ASSERT(thetad != NULL) || !AGC_ASSERT(cdu != NULL)) {
         return true;

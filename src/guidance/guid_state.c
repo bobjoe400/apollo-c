@@ -59,7 +59,7 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
         g_guid.lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD: SERVEXIT +2 */
         g_guid.lm.dispdex = 1;             /* positive: CLOKTASK not running */
         g_guid.lm.vselect = 2;             /* VSELECT: X beam first          */
-        g_guid.lm.which = (agc_sp_t)AGC_LM_WHICH_P40;
+        g_guid.lm.which = (agc_sp_t)AGC_LM_WHICH_DPS_BURN;
     }
     (void)AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT);
     return AGC_STATUS_OK;

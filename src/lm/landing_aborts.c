@@ -44,7 +44,7 @@ agc_sp_t agc_lm_pipctr1(void)
 
 /* R10,R11 (p. 829), every 0.25 s while SERVICER runs; on the last pass of
  * the cycle LRHTASK (which continues at R10,R11A).                   */
-agc_status_t agc_lm_task_landing_radar_monitor(void)
+agc_status_t agc_lm_task_abort_monitor(void)
 {
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG)) {
         return AGC_STATUS_OK;            /* let AVGEND take care of group 2 */
@@ -54,9 +54,9 @@ agc_status_t agc_lm_task_landing_radar_monitor(void)
         return agc_lm_lrhtask();                         /* last pass      */
     }
     ab_pipctr1 = (agc_sp_t)(pipctr - 1);
-    agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_LANDING_RADAR_MONITOR_RESTART);
+    agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR_RESTART);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_lm_landing_radar_monitor_a();
+    return agc_lm_abort_monitor_resume();
 }
 
 /* ABRTJASK (pp. 831-832): commit to the abort. aps_abort selects P71 (APS). */
@@ -79,7 +79,7 @@ static agc_status_t ab_abrtjask(bool aps_abort)
                         (uint16_t)((c11 & ~(unsigned)AB_PRIO30) | AB_BIT13));
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
     (void)agc_flagword_set(11, AB_LRBYBIT);     /* terminate R12           */
-    (void)agc_flag_set(AGC_FLAG_LANDING_ANALOG_DISPLAYS_FLAG);       /* no cross-pointer outputs */
+    (void)agc_flag_set(AGC_FLAG_ALTITUDE_METERS_ONLY);       /* no cross-pointer outputs */
     (void)agc_rendz_clradmod();                 /* RADMODES for R29        */
     agc_erase_set_tevent((agc_dp_t)agc_time_now_cs());
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT;
@@ -93,7 +93,7 @@ static agc_status_t ab_abrtjask(bool aps_abort)
 
 /* R10,R11A .. P70NOW? (pp. 829-830): flash the LR lamps, then (with
  * aborts enabled) look for the ABORT STAGE or ABORT discretes. */
-agc_status_t agc_lm_landing_radar_monitor_a(void)
+agc_status_t agc_lm_abort_monitor_resume(void)
 {
     if ((agc_erase_imodes33() & 1u) == 0u) {    /* not a lamp test         */
         if (agc_flag_test(AGC_FLAG_HFLSHFLG)) {
@@ -166,7 +166,7 @@ agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
 }
 
 /* P70A / P71A: restart points 4.27 and 4.31 (ABRTJASK again). */
-agc_status_t agc_lm_job_dps_abort_a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -177,7 +177,7 @@ agc_status_t agc_lm_job_dps_abort_a(agc_job_ctx_t *ctx)
     return st;
 }
 
-agc_status_t agc_lm_job_aps_abort_a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
@@ -242,21 +242,21 @@ static agc_status_t ab_upthrot(agc_job_ctx_t *ctx)
     (void)agc_flag_set(AGC_FLAG_FLVR);
     (void)agc_flag_set(AGC_FLAG_ROTFLAG);
     (void)agc_lm_throtup();
-    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_ABTP40A, AGC_TASK_NONE,
+    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_ABORT_AUTO_CONTROL_CHECK, AGC_TASK_NONE,
                                 0, false, 0U };
     agc_status_t st = agc_phase_change_var(04024, &v);
     (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_lm_job_abort_dps_burn_a(ctx);
+    return agc_lm_job_abort_auto_control_check(ctx);
 }
 
 /* UPTHROT1 -3 (p. 834): P40AUTO, returning to UPTHROT1. */
-agc_status_t agc_lm_job_abort_dps_burn_a(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(AGC_FLAG_FLAP));
-    return agc_lm_dps_burn_auto(ctx, AGC_JOB_UPTHROT1);
+    return agc_lm_check_auto_control(ctx, AGC_JOB_UPTHROT1);
 }
 
 /* THROTUP / UPTHROT1 / GRP4OFF (pp. 834-835): SERVICER now calls the
@@ -298,20 +298,20 @@ static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
 }
 
 /* OLDTIME restart point (p. 835): TGO = TGO1, then UPTHROT1 -3. */
-agc_status_t agc_lm_job_aps_abort_old(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_asc()->tgo = agc_lm_asc()->tgo1;
     (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_FLAP));
-    return agc_lm_job_abort_dps_burn_a(ctx);
+    return agc_lm_job_abort_auto_control_check(ctx);
 }
 
 /* P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
  * is doubled (OLDTIME) and the targets kept; otherwise TGO from TIG and
  * the APS injection targets (INJTARG).                              */
-static agc_status_t ab_aps_abort_ret(agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t ab_aps_abort_return(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc();
     (void)agc_flag_clear(AGC_FLAG_LETABORT);
@@ -320,11 +320,11 @@ static agc_status_t ab_aps_abort_ret(agc_job_ctx_t *ctx, agc_interp_t *ip)
         a->tgo1 = agc_dp_shl(ip, a->tgo, 1);             /* OLDTIME      */
         agc_status_t st = agc_lm_powered_ascent_init(ip);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLD,
+        const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME,
                                     AGC_TASK_NONE, 0, false, 0U };
         st = agc_phase_change_var(04024, &v);
         (void)AGC_ASSERT(st == AGC_STATUS_OK);
-        return agc_lm_job_aps_abort_old(ctx);
+        return agc_lm_job_aps_abort_oldtime(ctx);
     }
     (void)agc_lm_tgocomp(ip);
     agc_status_t st = agc_lm_powered_ascent_init(ip);                 /* to INJTARG   */
@@ -351,7 +351,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
     (void)agc_flag_clear(AGC_FLAG_IDLEFLAG);
     (void)agc_flag_set(AGC_FLAG_ACC4_2FL);   /* 4-jet translation       */
     if (!agc_phase_checkmm(70)) {
-        return ab_aps_abort_ret(ctx, &ip);
+        return ab_aps_abort_return(ctx, &ip);
     }
     return ab_dps_abort_init(ctx, &ip);
 }
