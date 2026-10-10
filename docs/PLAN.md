@@ -96,9 +96,27 @@ bits), split that part off to a Sonnet agent.
    the AGC's expected displays.
 8. Reviewed: final fidelity/clarity review of every lane vs its AGC source,
    findings fixed.
+9. Documented (ONLY after 7 and 8 -- documenting unfinished code describes
+   intentions, not the program): generated from the final code, not written
+   ahead of it.
+   a. docs/overview/ -- system overview: the two vehicles, the executive/
+      waitlist model, interrupt and clock model, erasable/flag layout,
+      the DSKY loop, how a program (Pxx) is started, runs, displays, and
+      ends; a layered module map with dependencies (from the real
+      #include/call graph, e.g. via clangd/ctags, not hand-drawn).
+   b. Flowcharts: one per major program sequence and per scheduler path
+      (fresh start, restart, job pre-emption, waitlist tick, V37 change,
+      P40 burn, P52 realign, P63-P66 landing, P61-P67 entry), as Mermaid
+      in Markdown, derived from the C control flow.
+   c. docs/modules/<lane>.md gains a "Program flow and decisions" section:
+      the decision points (flags tested, alarms raised, branches taken),
+      the data each routine reads/writes with scale, and the AGC labels
+      cross-referenced to the C functions.
+   d. A cross-reference index AGC label -> C function -> file, generated.
 
 Waves: 1-2 translation (done/in progress) -> 3 integrate + sim (items 2-5,7)
--> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8).
+-> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8)
+-> 6 documentation (9).
 
 ## Session limits (user direction, 2026-10-10)
 
