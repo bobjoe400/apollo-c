@@ -547,3 +547,10 @@ agc_dp_t rz_csm_n49disp(int index)
     }
     return td.n49disp[index];
 }
+
+void rz_set_csm_n49disp(int index, agc_dp_t v)
+{
+    if (AGC_ASSERT(index >= 0 && index < 3)) {
+        td.n49disp[index] = v;
+    }
+}

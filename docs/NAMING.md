@@ -207,3 +207,16 @@ in what they do (`_proceed`, `_terminate`, `_display`), never in T/P/E/B/1/1B.
 | V60      | LM      | lr_position_two          | LRPOS2K: command landing radar to position 2       |
 | V85      | LM      | rr_los_display           | RR LOS azimuth and elevation (RRLOSDSP)            |
 | V41 N91  | CSM     | optics_coarse            | OPTCOARK: run the optics CDUs from the keyboard    |
+
+### Added by prog-rendz (P20-P25 radar / optics routines)
+
+| AGC      | Vehicle | Identifier stem          | AGC description                                    |
+|----------|---------|--------------------------|----------------------------------------------------|
+| R23      | LM      | manual_acquisition       | R23LEM: manual acquisition of the CSM by the RR    |
+| R24      | LM      | radar_search             | R24LEM / LRS24.1: RR search pattern                |
+| R57      | CSM     | optics_calibration       | "OPTICS CALIBRATION ROUTINE" (trunnion bias)       |
+| R65      | LM      | tracking_attitude        | R65LEM fine preferred tracking attitude (= R61 stem) |
+| V67      | both    | w_matrix_monitor         | V67CALL: W-matrix RMS error display / load         |
+| V94      | CSM     | cislunar_midcourse_navigation_point | V94ENTER: CMC points the vehicle in P23 |
+| LSR22.3  | LM      | rendezvous_tracking_data_incorporate | LSR22.3/.4 measurement incorporation    |
+| S22.1    | CSM     | orbital_navigation_marks | S22.1 landmark mark processing                     |

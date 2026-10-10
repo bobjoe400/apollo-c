@@ -1,0 +1,123 @@
+# .clang-format -- NASA SEL-94-003 "C Style Guide" (Aug 1994) for apollo-c.
+# Written for clang-format 14. Each option cites the guide section it
+# encodes; docs/STYLE.md has the full rule table. Not yet verified with
+# `clang-format --dump-config` (clang-format is not installed here).
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# 2.2.3 four-space indentation, no tabs. The guide gives no column limit;
+# its printed examples fit 80 columns, so 80 is used.
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 80
+# 6.7 / 7.3.2: continuation lines are indented one level (PDF: +4 cols).
+ContinuationIndentWidth: 4
+IndentWrappedFunctionNames: false
+# 5.2: function definitions start in column 1; return type on that line.
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+
+# 7.1.2 Braces-Stand-Alone everywhere (Allman), and 7.3.3: the `while` of
+# a do-while goes on its own line after the closing brace.
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+# 7.2.5 (and 2.3, 4.2.2.3, 7.1.1): `case` labels one level inside the
+# switch braces, statements one level further.
+IndentCaseLabels: true
+IndentCaseBlocks: false
+SpaceBeforeCaseColon: false
+
+# 7.1.1 one statement per line; 7.2.1/7.3.x single statements indented on
+# their own line, never `if (x) y;`.
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+# 6.2.3 one enumerator per line.
+AllowShortEnumsOnASingleLine: false
+
+# 6.7 operator spacing.
+#   no space before call parens; space after if/for/while/switch (7.1.2).
+SpaceBeforeParens: ControlStatements
+#   no space between parentheses and the expression inside them.
+SpacesInParentheses: false
+SpaceInEmptyParentheses: false
+SpacesInConditionalStatement: false
+SpacesInCStyleCastParentheses: false
+#   no space around [ ] ; unary operators hug their operand (`!p`).
+SpacesInSquareBrackets: false
+SpaceBeforeSquareBrackets: false
+SpaceAfterLogicalNot: false
+#   casts are the exception: `(long) m`.
+SpaceAfterCStyleCast: true
+#   space around assignment operators (binary and ?: are always spaced).
+SpaceBeforeAssignmentOperators: true
+# 6.7 / 6.5: pointer `*` goes with the name: `char *s`.
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# 6.7: split long conditions AFTER the logical operator; operands aligned.
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: false
+AlignOperands: Align
+AlignAfterOpenBracket: Align
+# 7.3.2: a `for` header that does not fit is split over three lines; this
+# is built-in clang-format behaviour once one section is wrapped.
+
+# 5.4 / 6.2 / 6.2.3 alignment: variable names in one column, constant
+# definitions and enum values aligned, short comments aligned (2.3).
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+# 2.3: "tab comment over far enough to separate it from code".
+SpacesBeforeTrailingComments: 2
+# Boxed prologs and AGC comment layouts are kept as written.
+ReflowComments: false
+
+# 2.2.1 / 5.5: one blank line between paragraphs, never more.
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+# 4.6: functions separated (the boxed prolog row of asterisks follows).
+SeparateDefinitionBlocks: Always
+
+# 4.3 include order: <stdio.h>/<stdlib.h>, other system headers, then
+# "user headers"; sorted within each group. Main-header detection is
+# disabled so a file's own header does not jump ahead of the system ones.
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeIsMainRegex: '^_never_a_main_header_$'
+IncludeCategories:
+  - Regex: '^<(stdio|stdlib)\.h>$'
+    Priority: 1
+  - Regex: '^<.*>$'
+    Priority: 2
+  - Regex: '^".*"$'
+    Priority: 3
+
+# Preprocessor: directives start in column 1 (4.4).
+IndentPPDirectives: None
+...

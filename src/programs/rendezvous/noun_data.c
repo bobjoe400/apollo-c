@@ -96,11 +96,12 @@ static bool nd_other(uint16_t id, agc_dp_t *v)
     }
 }
 
-/* Raw words: LANDMARK, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.               */
+/* Raw words: LANDMARK, HORIZON, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.               */
 static bool nd_raw(uint16_t id, uint16_t *w)
 {
     switch (id) {
     case AGC_DATA_LANDMARK:   *w = rr_word(agc_erase_landmark()); return true;
+    case AGC_DATA_HORIZON:    *w = agc_erase_horizon();          return true;
     case AGC_DATA_MRKBUF1_P3: *w = agc_erase_mrkbuf(1, 3);       return true;
     case AGC_DATA_MRKBUF1_P5: *w = agc_erase_mrkbuf(1, 5);       return true;
     case AGC_DATA_TANG:       *w = rr_word(agc_erase_tang(0));   return true;
@@ -153,6 +154,8 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
         rz_state()->rtheta = agc_dp_from_sp(agc_dp_high(value));
     } else if (data_id == AGC_DATA_LANDMARK) {
         agc_erase_set_landmark((agc_sp_t)rz_word_value((uint16_t)(value & 077777)));
+    } else if (data_id == AGC_DATA_HORIZON) {
+        agc_erase_set_horizon((uint16_t)(value & 077777));
     } else if (data_id == AGC_DATA_TANG || data_id == AGC_DATA_TANG_P1) {
         agc_erase_set_tang((data_id == AGC_DATA_TANG) ? 0 : 1,
                            (agc_sp_t)rz_word_value((uint16_t)(value & 077777)));

@@ -65,9 +65,24 @@ angles revolutions 2^0, unit vectors 2^1, mu m^3/cs^2 2^36.
 | P31 (GLAG, LM) | TIG RTARG DELLT4 -> DELVSIN HAPO HPER | agc_prog_lambert_aimpoint_guidance | glag_lm.c |
 | P76 | DELVLVC TIG -> other SV updated | agc_prog_target_delta_v, agc_target_delta_v_lv_to_ref | target_delta_v.c |
 | P21 PROG21 (GTDP) | time -> lat long alt, vel, gamma | agc_prog_ground_track_determination, agc_ground_track_determination_flight_path | ground_track_determination.c |
-| P20-P25 CSM: BVECTORS, GETUM, R22 REND*, SETINTG, SHIFTNDX, CMPOS/LMPOS, INITIALW, RANGERD | marks -> state update | rendezvous_navigation_csm.c | |
-| P20-P25 LM: LPS20.1, LPS20.2, LRS22.1-3, RR routines | radar -> state update | navigation_lm.c | |
-| RADSAMP / DORSAMP / VARADAR (LM) | radar sampling test | radar_leadin_lm.c | |
+| PROG20 CSM, PIKUP20, SETINTG, WAITONE/CONTCHK, R21CSM, R23CSM, LLASRD | P20 flow | agc_job_rendezvous_navigation_csm*, rz_setintg, rz_waitone | navigation_csm.c |
+| R22 CSM REND1..REND18, BVECTORS, GETUM, SHIFTNDX, INITIALW, RANGERD, VHFREAD | optics/VHF marks -> state update | agc_job_rendezvous_tracking_data_csm*, rz_bvectors, agc_rendz_vhf_read | tracking_data_csm.c, common.c |
+| R61CSM CRS61.1/.2, R63 (V89 CSM) | desired CDUs, DAP rates | agc_rendz_tracking_attitude_csm, agc_job_rendezvous_final_attitude_csm* | tracking_attitude_csm.c |
+| PROG22 CSM, S22N7071, P22SUBRB, CALLR52, DOV5N71 | P22 flow | agc_job_orbital_navigation_csm* | orbital_navigation_csm.c |
+| S22.1, S22F2410, 9DWTO6DW, ROWDOT | landmark marks -> state | agc_job_orbital_navigation_marks* | landmark_navigation_csm.c |
+| P23, V94ENTER, POINTAXS, R23.55-R23.7, HORIZ, RECT.1, LDPLANET | star-landmark/horizon angle -> CSM state | agc_job_cislunar_midcourse_navigation* | cislunar_navigation_csm.c |
+| R57 R57A/B, ENDR57 | trunnion bias TRUNBIAS | rz_optics_calibration, agc_job_optics_calibration* | cislunar_navigation_csm.c |
+| PROG20/22 LM, ORBCHG*, P20LEM*, LPS20.1/.2, UPPSV, P25 | LM P20/P22/P25 flow | agc_job_rendezvous_navigation_lm*, agc_job_preferred_tracking_attitude* | navigation_lm.c |
+| R61LEM/R65LEM | LM tracking attitude | lmnav_tracking_attitude, agc_job_tracking_attitude_* | tracking_attitude_lm.c |
+| R21LEM, R23LEM, R24LEM/LRS24.1 | RR acquisition, manual, search | agc_job_rendezvous_sighting_mark*, agc_job_manual_acquisition*, agc_job_radar_search* | acquisition_lm.c |
+| R22LEM, LRS22.1/.2, N49DSP | RR marks | agc_job_rendezvous_tracking_data* | tracking_data_lm.c |
+| LSR22.3/.4, GETULC, RADARANG, WLINIT, LGCUPDTE | RR data -> state update | agc_job_rendezvous_tracking_data_incorporate/_measure | measurement_update_lm.c |
+| MAGSUB, RRLIMCHK, SETTRKF, FLIP, CLRADMOD, RRTURNON, RRZERO, REMODE, RROUT, ENDRADAR | RR moding | agc_rr_*, agc_rendz_flip/clradmod, agc_task_rr_* | rr_moding_lm.c |
+| RRDESSM, RRDESNB, BEGDES, DODES, GOTOV56 | RR designate | agc_rr_designate_*, agc_job_rr_designate_command | rr_designate_lm.c |
+| RADAREAD, INITREAD, LRPOS2, R12LITES/RADLITES | radar reads | agc_rendz_radar_read, agc_radar_* | radar_read_lm.c |
+| R29 | powered-flight designate | agc_radar_powered_flight_designate, agc_job/task_powered_flight_* | powered_flight_designate_lm.c |
+| RADSAMP / DORSAMP / VARADAR (LM) | radar sampling test | agc_task_radsamp, agc_job_radar_sample* | radar_leadin_lm.c |
+| V67 (both) | W-matrix monitor | agc_job_w_matrix_monitor* | w_matrix_monitor.c |
 
 External calls are funnelled through src/programs/rendezvous/glue.c (one place
 to adapt when agc_nav.h / agc_integ.h / agc_navaux.h / agc_dsky.h / agc_imu.h
@@ -155,15 +170,63 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
   DMPINTEG, unknown landmark U/E/W72-W78, known landmark S22BOX22, S22D=9,
   S22BOX12/32/42, N49, S22F244, N89, RLS), S22F2410, S2231X13, 9DWTO6DW, ROWDOT
 * DONE common.c rz_bvectors (BVECTORS, shared CSM R22/S22.1)
-* TODO R57 (optics calibration), P23 (cislunar midcourse nav, R23 HORIZ)
+* DONE cislunar_navigation_csm.c: R57 (rz_optics_calibration, R57A/MARKDISP/R57B/
+  ENDR57), P23 (P23.00 .. P23.85, LDPLANET, V94ENTER, POINTAXS, RECT.1, HORIZ,
+  R23.55 .. R23.7), TRUNBIAS and HORIZON storage (noun 70/71 R3 in noun_data.c),
+  N49DISP shared with R22 CSM (rz_set_csm_n49disp)
+* DONE docs/NAMING.md rows for the new stems (radar_search, manual_acquisition,
+  optics_calibration, w_matrix_monitor, ...)
+* MODULE COMPLETE: all files compile with the pedantic flag set; check_rules 0 hard
+  violations (rule-5 assertion-density warnings only)
 
 ## Deviations
 
-(filled in as translated)
+Each is marked DEVIATION in the source:
+* No recursion / unbounded AGC loops: CSI/A (csi.c) and the P17 search
+  (tpi_search_csm.c) have a pass bound (AGC_STATUS_NO_CONVERGE); RR1AXIS,
+  the R22 incorporation chains and S22.1 are bounded loops.
+* INTSTALL BUSY: the job returns BUSY and resumes from its start entry; P20
+  CSM re-reads MARKTIME after the sleep; P35 redoes the PRECSET step.
+* Restart priorities PHSPRDT2 (R22LEM PRIO26, P23 PRIO13) and TEMPFLSH
+  (R60ADRS) are not kept (exec lane owns the restart tables).
+* GOTOV56 starts verb 56 as its own job (agc_extverb) instead of continuing
+  the calling job at TRMTRACK.
+* COMPTGO: own copy (rz_comptgo) with the return job as parameter.
+* RSTACK has its own storage (AGC: EQUALS RANGE); RADMODES bit names in
+  radar_lm.h but storage is FLGWRD12 (see Open questions).
+* Ones'-complement artefacts not modelled: NTARGCHK sums exactly; MSU -180
+  deg exactly taken as -16383; RROUT's -0 zero change; ENDRADAR "-2" entries
+  same as plain entries.
+* R31 LM GETRVN reads RN/VN without the PRIO22 raise; R30 CANDEL does the
+  INTWAKE itself when DELRSPL fails.
+* tpi.c S34/35.2 uses UNIT RP for push cell 0D (open question).
 
 ## Stubs
 
+None. (P24 rate-aided tracking named in NAMING.md is not in Comanche055 or
+Luminary099; nothing to translate.)
+
 ## Requested core additions
+
+All are declared in src/programs/rendezvous/ext.h with the owning lane's
+spelling, to be moved to include/agc when the owner publishes them:
+* sys-misc: agc_svc_delayjob, agc_erase_extvbact / set (EXTVBACT);
+  R04/R77 storage accessors (RSAMPDT, RTSTDEX, RTSTBASE, RTSTMAX, RTSTLOC,
+  RFAILCNT).
+* exec-sched: agc_waitlist_kill (KILLTASK).
+* state-flags: agc_erase_rnrad (RNRAD counter), agc_erase_set_cdutcmd
+  (CDUTCMD/CDUSCMD); RADMODES must be FLGWRD12 (one storage word).
+* nav-aux: agc_navaux_get_latlong / agc_navaux_set_latlong (LAT LONG ALT,
+  LANDLAT EQUALS LAT on the CM).
+* Published by this module for other lanes (include/agc/programs/rendezvous.h):
+  agc_rr_limchk, agc_rr_settrkf, agc_rr_zero, agc_rr_designate_gimbal,
+  agc_rendz_radar_read, agc_rendz_vhf_read, agc_rendz_flip,
+  agc_rendz_clradmod, agc_radar_lralt/lrvel/lrpos2/samplsum/
+  landing_radar_lights/powered_flight_designate, agc_rendz_goto_terminate_tracking,
+  agc_rendz_tracking_attitude_csm, agc_rendz_llasrd/llasrda,
+  agc_erase_landmark/set, agc_erase_horizon/set, agc_erase_trunbias,
+  agc_erase_mrkbuf/set, agc_erase_tang/set, agc_erase_rstack,
+  agc_rendz_ttogo_display_start, agc_rendz_noun_read/write, agc_rendz_nav_pad.
 
 * agc_state.h: `agc_vec_t agc_erase_rls(void);` landing site vector RLS
   (moon-fixed, m 2^27); used by SETRAD/PERIAPO, R30 MOONPAD, P22.
@@ -174,10 +237,33 @@ land); assumed signatures are in src/programs/rendezvous/ext.h.
 
 ## Requested jobs-tasks
 
-(filled in as translated)
+Provisional ids in src/programs/rendezvous/ext.h (prototypes in
+include/agc/programs/rendezvous.h before /*@JOBS-END@*/): jobs
+0x1100-0x1217 (plus 0x036B W_MATRIX_MONITOR, 0x036C/0x036D V57/V54 with
+the values of src/io/verbs/pending.h); tasks 0x1101-0x111C plus RRTURNON
+0x312 and DORREPOS 0x313 (the values of sysmisc_ext.h). The lead maps them
+to agc_jobs.h members and dispatch.c cases. Verb entries: V94 ->
+AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT; V67 -> W_MATRIX_MONITOR;
+V57/V54/V89 CSM -> the _CSM jobs (LM V89 is prog-align's R63).
 
 ## Tests written
 
 ## Open questions
 
 * CM 1DPB2 is transcribed "2DEC 1.08-2"; LM has "1.0 B-2". Used 1.0 B-2.
+* RADMODES EQUALS FLGWRD12 in the AGC; sys-misc keeps a separate static
+  RADMODES. One storage word is needed (state-flags).
+* LUNDESCH -> NODESSM performs a mode invert that looks spurious; kept
+  faithful.
+* V57 / V54 / V89 dispatch by vehicle (CSM jobs here, LM R63 in
+  prog-align).
+* tpi.c push cell 0D (see Deviations).
+
+## Lessons
+
+* Interpretive relative offsets (+11) are octal; PDDL/PDVL with no operand
+  exchange with the push-down top; NORM stores -shifts and indexed shift
+  counts are addr - C(X).
+* Keep TRUNION/MRKBUF words raw and convert (MSU) at the point of use.
+* Split a job where the AGC re-reads the clock, so a BUSY resume does not
+  change MARKTIME (V94ENTER / POINTAXS).

@@ -233,9 +233,14 @@ agc_status_t rz_setintg(agc_job_id_t resume);   /* SETINTG            */
 agc_status_t rz_waitone(agc_job_id_t pointex);
 /* N49DISP +index (CSM R22, noun 49).                                     */
 agc_dp_t     rz_csm_n49disp(int index);
+void         rz_set_csm_n49disp(int index, agc_dp_t v);   /* P23 R23.53 */
 /* S22.1 (landmark_navigation_csm.c): nmarks marks of the sighting, the
  * caller continues as ret; CXOFF of the landmark code.                  */
 agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret);
 void         rz_landmark_set_offset(agc_sp_t cxoff);
+/* P22SUBRB (noun 89 landmark coordinates); continue as ret.              */
+agc_status_t rz_landing_site_display(agc_job_ctx_t *ctx, agc_job_id_t ret);
+/* R57 optics calibration; continue as ret.                               */
+agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret);
 
 #endif /* RENDZ_INTERNAL_H */

@@ -776,6 +776,9 @@ agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx);      /* 
 agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx);       /* R21END */
 agc_sp_t     agc_erase_landmark(void);                                       /* LANDMARK */
 void         agc_erase_set_landmark(agc_sp_t v);
+agc_sp_t     agc_erase_trunbias(void);              /* TRUNBIAS (R57), CDU units  */
+uint16_t     agc_erase_horizon(void);               /* HORIZON (noun 70 R3)       */
+void         agc_erase_set_horizon(uint16_t v);
 /* tracking_data_csm.c (R22 CSM, VHFREAD) */
 agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx);              /* R22 */
 agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx);         /* REND1A */
@@ -814,6 +817,30 @@ agc_status_t agc_job_orbital_navigation_advanced_optics(agc_job_ctx_t *ctx);/* D
 agc_status_t agc_job_orbital_navigation_marked(agc_job_ctx_t *ctx);         /* DOV5N71 */
 agc_status_t agc_job_orbital_navigation_process(agc_job_ctx_t *ctx);        /* PROG22C */
 agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx);           /* P22OVER */
+/* P23 / R57 (cislunar_navigation_csm.c) */
+agc_status_t agc_job_optics_calibration(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optics_calibration_mark_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optics_calibration_end_mark(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_sight(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_ident(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_star(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_planet(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_checklist(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_calibrate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_point(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_optics(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_mark_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_save(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx);
 /*@JOBS-END@*/
 
 /* Noun data for the rendezvous erasables (delegated from agc_noun_read). */

@@ -292,3 +292,14 @@ agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx)
     rz_phase(2, 04022);
     return agc_job_orbital_navigation_landmark(ctx);
 }
+
+/* P22SUBRB for other programs (P23): noun 89, the caller continues as
+ * ret after LLASRDA.                                                      */
+agc_status_t rz_landing_site_display(agc_job_ctx_t *ctx, agc_job_id_t ret)
+{
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    on.ret = ret;
+    return agc_job_orbital_navigation_landing_site(ctx);
+}

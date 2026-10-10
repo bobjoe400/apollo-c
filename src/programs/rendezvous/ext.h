@@ -308,6 +308,29 @@ agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 #define AGC_JOB_ORBITAL_NAVIGATION_MARKED        ((agc_job_id_t)0x11FE) /* DOV5N71 */
 #define AGC_JOB_ORBITAL_NAVIGATION_PROCESS       ((agc_job_id_t)0x11FF) /* PROG22C */
 #define AGC_JOB_ORBITAL_NAVIGATION_OVER          ((agc_job_id_t)0x1200) /* P22OVER */
+#define AGC_JOB_OPTICS_CALIBRATION               ((agc_job_id_t)0x1201) /* R57A */
+#define AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY  ((agc_job_id_t)0x1202) /* MARKDISP */
+#define AGC_JOB_OPTICS_CALIBRATION_BIAS          ((agc_job_id_t)0x1203) /* R57B */
+#define AGC_JOB_OPTICS_CALIBRATION_END           ((agc_job_id_t)0x1204) /* ENDR57 */
+#define AGC_JOB_OPTICS_CALIBRATION_END_MARK      ((agc_job_id_t)0x1205) /* ENDMARK PRIO14 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION    ((agc_job_id_t)0x1206) /* P23 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SIGHT ((agc_job_id_t)0x1207) /* P23.00 R53 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT ((agc_job_id_t)0x1208) /* P23.06 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT_CHECK ((agc_job_id_t)0x1209) /* P23.15 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR ((agc_job_id_t)0x120A) /* P23.30 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET ((agc_job_id_t)0x120B) /* LDPLANET */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_CHECKLIST ((agc_job_id_t)0x120C) /* P23.31 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_CALIBRATE ((agc_job_id_t)0x120D) /* P23.55/56 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT ((agc_job_id_t)0x120E) /* V94ENTER */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT_AXES ((agc_job_id_t)0x120F) /* V94ENTER POINTAXS */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED ((agc_job_id_t)0x1210) /* after R60CSM */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS ((agc_job_id_t)0x1211) /* P23.57 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE ((agc_job_id_t)0x1212) /* after R52 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARKED ((agc_job_id_t)0x1213) /* P23.60 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY ((agc_job_id_t)0x1214) /* V05N71 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE ((agc_job_id_t)0x1215) /* P23.65 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_INCORPORATE ((agc_job_id_t)0x1216) /* P23.85 */
+#define AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_UPDATE ((agc_job_id_t)0x1217) /* R23.7 */
 /*@MOREJOBS@*/
 
 /* ==== provisional task ids ================================================ */
