@@ -241,3 +241,10 @@
             P24 not in either rope (remove from NAMING.md).
             Next: style lane output -> make format tree-wide -> status-
             handling -> integrate.
+2026-10-10  Restructure pass 2 DONE: programs/rendezvous (39 files) ->
+            programs/{navigation,targeting,displays}, csm/navigation,
+            lm/navigation, lm/radar; csm/burns/return_to_earth/; tests/
+            mirrors src/. All 241 .c files compile (-c). check_rules hard
+            count 712 (all rule-7 void-casts; status-handling lane next).
+            Known upward dependency to fix at integration:
+            programs/navigation/noun_data.c includes lm/radar/radar.h.
