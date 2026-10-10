@@ -16,7 +16,7 @@ one statement / one declaration per line, comments on declarations and
 constants, numeric literal forms, side effects, switch defaults, long-block
 closing comments, dummy loop bodies, naming case. Formatting rules
 (indentation, braces, spacing, alignment, line length) belong to
-clang-format (`make format-check`) and are NOT repeated here.
+uncrustify (`make format-check`) and are NOT repeated here.
 
 The script only reads files; it never edits them. Exit status 1 when any
 finding is reported (unless --exit-zero).
@@ -501,7 +501,7 @@ def check_return_sizeof(src):
         if not ok:
             report(src.path, src.line_of(m.start()), 'return-parens',
                    'write return (expression);')
-    for m in re.finditer(r'\bsizeof\b\s*(?!\()', code):
+    for m in re.finditer(r'\bsizeof\b(?!\s*\()', code):
         report(src.path, src.line_of(m.start()), 'sizeof-parens',
                'write sizeof (object)')
 

@@ -36,7 +36,7 @@ uint16_t agc_erase_extvbact(void);
 void     agc_erase_set_extvbact(uint16_t v);
 
 /* ==== exec-sched: KILLTASK (same declaration as include/agc/guidance/pending.h) */
-agc_status_t agc_waitlist_kill(agc_task_id_t task);
+void agc_waitlist_kill(agc_task_id_t task);
 
 /* ==== state-flags: radar counters (same declarations as src/lm/landing/pending.h)
  * RNRAD (counter 046): the radar reading, raw 15-bit word.                 */

@@ -38,7 +38,10 @@ agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = align_phase4(PH_STAR_SELECT);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_REALIGN_PICK_STARS, AGC_JOB_CSM_FINE_ALIGN);
 }
@@ -76,7 +79,8 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
     {
         return agc_job_csm_fine_align(ctx); /* P52F     */
     }
-    const agc_status_t alm = agc_alarm(ALM_NO_STARS); /* P52I     */
+    agc_alarm(ALM_NO_STARS); /* P52I     */
+    const agc_status_t alm = AGC_STATUS_ALARM;
     if (alm != AGC_STATUS_OK)
     {
         return alm;
@@ -96,7 +100,10 @@ agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_align_ram()->tsight = agc_dp_add(&ip, align_loadtime(), TSIGHT1_CS);
-    (void) AGC_ASSERT(agc_align_ram()->tsight >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return realign_pick_stars(ctx);
 }
 
@@ -107,7 +114,10 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->tsight >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return realign_pick_stars(ctx);
 }
 
@@ -115,12 +125,17 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 static void n89_from_latlong(const agc_latlong_t *ll)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    (void) AGC_ASSERT(ll != NULL);
+    if (!AGC_ASSERT(ll != NULL))
+    {
+        return;
+    }
     ram->landalt  = ll->alt;                /* LANDALT  */
     ram->landlong = agc_dp_shr(ll->lon, 1); /* SR1      */
     ram->landlat  = ll->lat;
-    (void) AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) &&
-                      (ram->landlat <= AGC_DP_QUARTER));
+    if (!AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) && (ram->landlat <= AGC_DP_QUARTER)))
+    {
+        return;
+    }
 }
 
 /*
@@ -171,7 +186,10 @@ agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_LANDING_SITE_ACCEPTED,
                        AGC_JOB_CSM_LANDING_SITE_DISPLAY);
@@ -247,6 +265,9 @@ agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return landing_site_axes();
 }

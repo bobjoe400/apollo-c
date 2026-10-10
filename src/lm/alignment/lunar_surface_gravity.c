@@ -34,7 +34,10 @@ static agc_cdutrig_t lung_trig;
 static agc_status_t p57_phase(void)
 {
     const agc_status_t st = align_phase4(PH_P57);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -59,7 +62,10 @@ static agc_status_t lung(agc_job_id_t ret)
 static agc_status_t read_pipas(void)
 {
     const agc_status_t st = agc_guid_pipasr(&agc_guid_state()->avg, false);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -112,7 +118,10 @@ agc_status_t agc_task_lunar_gravity_sample(void)
     {
         st = agc_exec_findvac(ALIGN_PRIO13, AGC_JOB_LUNAR_GRAVITY_ACCUMULATE);
     }
-    (void) AGC_ASSERT(agc_align_ram()->gctr < 0);
+    if (!AGC_ASSERT(agc_align_ram()->gctr < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -145,16 +154,11 @@ agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
     }
     ram->star   = agc_vec_unit(&ip, ram->gacc, NULL, NULL);
     agc_vec_t g = ram->star;
-    st          = agc_guid_cdutrig(&lung_trig);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_guid_smnb(&lung_trig, &g); /* *SMNB*   */
-    }
-    if (st == AGC_STATUS_OK)
-    {
-        ram->gout = g;
-        st        = p57_phase();
-    }
+    agc_guid_cdutrig(&lung_trig);
+    st = AGC_STATUS_OK;
+    agc_guid_smnb(&lung_trig, &g); /* *SMNB*   */
+    ram->gout = g;
+    st        = p57_phase();
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -172,19 +176,9 @@ agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_erase_set_thetad(0, THETA_42DEG);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_erase_set_thetad(1, THETA_MINUS_42);
-    }
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_erase_set_thetad(2, THETA_35DEG);
-    }
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_erase_set_thetad(0, THETA_42DEG);
+    agc_erase_set_thetad(1, THETA_MINUS_42);
+    agc_erase_set_thetad(2, THETA_35DEG);
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     return lung(AGC_JOB_LUNAR_GRAVITY_ROTATE);
 }
@@ -209,7 +203,8 @@ agc_status_t agc_job_lunar_gravity_rotate(agc_job_ctx_t *ctx)
     for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
     {
         agc_vec_t nb    = unit.row[i];
-        st              = agc_guid_nbsm(&lung_trig, &nb); /* *NBSM*   */
+        agc_guid_nbsm(&lung_trig, &nb); /* *NBSM*   */
+        st = AGC_STATUS_OK;
         ram->xnb.row[i] = nb;
         const agc_vec_t uu =
             agc_vec_shl(&ip, agc_vec_scale(&ip, ram->star, ram->star.c[i]), 2);
@@ -263,7 +258,10 @@ agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GRAVITY, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_GRAVITY_ACCEPTED,
                        AGC_JOB_LUNAR_GRAVITY_RECYCLE);
@@ -310,7 +308,10 @@ agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->lunar_gravity_return != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->lunar_gravity_return != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_imu_fine(); /* IMUFINE  */
     if (st != AGC_STATUS_OK)
     {
@@ -415,7 +416,8 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
     agc_status_t    st = agc_guid_trg_nbsm(&t, yzx, &x);
     if (st == AGC_STATUS_OK)
     {
-        st = agc_guid_nbsm(&t, &y);
+        agc_guid_nbsm(&t, &y);
+        st = AGC_STATUS_OK;
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
@@ -431,7 +433,8 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
     }
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -480,7 +483,10 @@ agc_status_t agc_job_lunar_surface_coarse_trim_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_INITALGN));
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_INITALGN)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GIMBALS, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_SURFACE_COARSE_TRIM_GO,
                        AGC_JOB_LUNAR_SURFACE_COARSE_TRIM_DISPLAY);

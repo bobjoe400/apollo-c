@@ -30,7 +30,10 @@ static const agc_sp_t utime[3] = {4, 012, 012};
 static agc_sp_t spsstart(const lm_dap_t *d)
 {
     agc_sp_t outer = lm_dap_mphi(d->edot, SR_RATELIM1);
-    (void) AGC_ASSERT(d->dkdb >= 0);
+    if (!AGC_ASSERT(d->dkdb >= 0))
+    {
+        return 0; /* no valid result */
+    }
     if (outer > 0)
     {
         return (agc_sp_t) -SR_HALF; /* NEGTHRST           */
@@ -48,7 +51,10 @@ static agc_sp_t spsstart(const lm_dap_t *d)
     {
         return ((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF;
     }
-    (void) AGC_ASSERT(ez < 0);
+    if (!AGC_ASSERT(ez < 0))
+    {
+        return 0; /* no valid result */
+    }
     return ((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0;
 }
 
@@ -58,7 +64,10 @@ static agc_sp_t spsstart(const lm_dap_t *d)
 static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 {
     agc_sp_t tj = d->tj[i];
-    (void) AGC_ASSERT(i >= 0 && i <= 2);
+    if (!AGC_ASSERT(i >= 0 && i <= 2))
+    {
+        return;
+    }
     if (oldsense != 0)
     {
         bool same = (oldsense > 0) ? (tj > 0) : (tj < 0);
@@ -75,7 +84,10 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
     {
         d->tj[i] = 0;
     }
-    (void) AGC_ASSERT(d->jetctr[i] >= 0);
+    if (!AGC_ASSERT(d->jetctr[i] >= 0))
+    {
+        return;
+    }
 }
 
 /* SPSRCS (p.1509): jet sense test, rate deadband test, SPSSTART.        */
@@ -101,6 +113,9 @@ agc_status_t lm_dap_spsrcs(void)
         d->tj[i] = spsstart(d);
     }
     postcheck(d, i, oldsense);
-    (void) AGC_ASSERT(d->tj[i] >= -SR_HALF && d->tj[i] <= SR_HALF);
+    if (!AGC_ASSERT(d->tj[i] >= -SR_HALF && d->tj[i] <= SR_HALF))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }

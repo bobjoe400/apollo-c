@@ -81,7 +81,10 @@ static uint16_t markstat(void)
 
 static void set_markstat(uint16_t v)
 {
-    (void) AGC_ASSERT((v & MS_VAC) != 0u);
+    if (!AGC_ASSERT((v & MS_VAC) != 0u))
+    {
+        return;
+    }
     agc_erase_set_markstat(v);
 }
 
@@ -268,7 +271,10 @@ agc_status_t agc_aotmark(void)
         const agc_status_t bo = agc_bailout(ALM_NO_VAC);
         return (bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo;
     }
-    (void) AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS));
+    if (!AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_align_ram()->mkvac_index = vac;
     set_markstat((uint16_t) (vac + 1)); /* MKVACFND */
     const agc_status_t st =
@@ -303,7 +309,10 @@ agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_erase_set_extvbact(0);
-    (void) AGC_ASSERT(agc_erase_extvbact() == 0u);
+    if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_exec_gotopooh();
 }
 
@@ -324,9 +333,14 @@ agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
 /* PASTIT: GOMARK4 with a mark verb; V33 MARKCHEX, ENTER GETDAT. */
 static agc_status_t request_marks(const agc_job_ctx_t *ctx, uint16_t vn)
 {
-    (void) AGC_ASSERT(ctx != NULL);
-    (void) AGC_ASSERT((vn == VN_MARK_XY) || (vn == VN_MARK_Y) ||
-                      (vn == VN_MARK_X));
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((vn == VN_MARK_XY) || (vn == VN_MARK_Y) || (vn == VN_MARK_X)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_AOT_MARK_KILL,
                        AGC_JOB_AOT_MARK_CHECK, AGC_JOB_AOT_MARK_STAR_DISPLAY);
 }
@@ -383,7 +397,10 @@ static uint16_t cdu_msu(uint16_t a, uint16_t b)
     {
         /* in range */
     }
-    (void) AGC_ASSERT((d >= -CDU_HALF) && (d < CDU_HALF));
+    if (!AGC_ASSERT((d >= -CDU_HALF) && (d < CDU_HALF)))
+    {
+        return 0; /* no valid result */
+    }
     return align_sp_to_word((agc_sp_t) ((d < 0) ? (d + 1) : d));
 }
 
@@ -423,7 +440,10 @@ agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->xymark == DETENT_COAS);
+    if (!AGC_ASSERT(agc_align_ram()->xymark == DETENT_COAS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOMARKF, VN_AZ_EL, AGC_JOB_AOT_MARK_KILL,
                        AGC_JOB_AOT_MARK_COAS_LOADED,
                        AGC_JOB_AOT_MARK_COAS_DISPLAY);
@@ -487,7 +507,8 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
     { /* CNTCHK   */
         if (ram->markcntr <= 0)
         {
-            const agc_status_t alm = agc_alarm(ALM_NO_PAIR); /* MKALARM  */
+            agc_alarm(ALM_NO_PAIR); /* MKALARM  */
+            const agc_status_t alm = AGC_STATUS_ALARM;
             if (alm != AGC_STATUS_OK)
             {
                 return alm;
@@ -528,7 +549,10 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
         return agc_job_aot_mark_surface_display(ctx);
     }
     const agc_sp_t k = agc_align_ram()->mkdex;
-    (void) AGC_ASSERT((k >= 0) && (k <= 3));
+    if (!AGC_ASSERT((k >= 0) && (k <= 3)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const uint16_t vn =
         (k == 1) ? VN_MARK_Y : ((k == 2) ? VN_MARK_X : VN_MARK_XY);
     return request_marks(ctx, vn);
@@ -541,7 +565,10 @@ agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(surface_marks());
+    if (!AGC_ASSERT(surface_marks()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOMARKF, VN_CURSOR, AGC_JOB_AOT_MARK_KILL,
                        AGC_JOB_AOT_MARK_SURFACE_END,
                        AGC_JOB_AOT_MARK_SURFACE_ANSWER);
@@ -568,7 +595,8 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
     }
     if ((ram->markcntr + 1) >= AGC_ALIGN_AOT_PAIRS)
     {
-        const agc_status_t alm = agc_alarm(ALM_FIVE); /* 5MKALARM */
+        agc_alarm(ALM_FIVE); /* 5MKALARM */
+        const agc_status_t alm = AGC_STATUS_ALARM;
         if (alm != AGC_STATUS_OK)
         {
             return alm;

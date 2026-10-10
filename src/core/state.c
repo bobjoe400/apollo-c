@@ -48,7 +48,10 @@ void agc_state_init(agc_vehicle_t v)
     {
         return;
     }
-    (void) AGC_ASSERT((g_time_cs == 0u) && (g_flagword[0] == 0u));
+    if (!AGC_ASSERT((g_time_cs == 0u) && (g_flagword[0] == 0u)))
+    {
+        return;
+    }
 }
 
 agc_vehicle_t agc_state_vehicle(void)
@@ -82,7 +85,10 @@ void agc_time_set_cs(uint32_t t_cs)
         return;
     }
     g_time_cs = t_cs;
-    (void) AGC_ASSERT(g_time_cs == t_cs);
+    if (!AGC_ASSERT(g_time_cs == t_cs))
+    {
+        return;
+    }
 }
 
 void agc_time_advance_cs(uint16_t dt_cs)
@@ -210,7 +216,10 @@ void agc_flag_set(agc_flag_id_t f)
         return;
     }
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] | agc_flag_mask(f));
-    (void) AGC_ASSERT(agc_flag_test(f));
+    if (!AGC_ASSERT(agc_flag_test(f)))
+    {
+        return;
+    }
 }
 
 void agc_flag_clear(agc_flag_id_t f)
@@ -220,7 +229,10 @@ void agc_flag_clear(agc_flag_id_t f)
         return;
     }
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] & ~agc_flag_mask(f));
-    (void) AGC_ASSERT(!agc_flag_test(f));
+    if (!AGC_ASSERT(!agc_flag_test(f)))
+    {
+        return;
+    }
 }
 
 void agc_flag_invert(agc_flag_id_t f)
@@ -231,7 +243,28 @@ void agc_flag_invert(agc_flag_id_t f)
     }
     const bool before  = agc_flag_test(f);
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] ^ agc_flag_mask(f));
-    (void) AGC_ASSERT(agc_flag_test(f) != before);
+    if (!AGC_ASSERT(agc_flag_test(f) != before))
+    {
+        return;
+    }
+}
+
+/* SET or CLEAR by a computed condition (the AGC tests and branches to one
+ * of the two instructions; in C the condition is the argument).        */
+void agc_flag_put(agc_flag_id_t f, bool on)
+{
+    if (!AGC_ASSERT(agc_flag_valid(f)))
+    {
+        return;
+    }
+    if (on)
+    {
+        agc_flag_set(f);
+    }
+    else
+    {
+        agc_flag_clear(f);
+    }
 }
 
 uint16_t agc_flagword_get(int word)
@@ -258,7 +291,10 @@ void agc_flagword_set(int word, uint16_t value)
         return;
     }
     g_flagword[word] = value;
-    (void) AGC_ASSERT(g_flagword[word] == value);
+    if (!AGC_ASSERT(g_flagword[word] == value))
+    {
+        return;
+    }
 }
 
 /* ---- state vectors ------------------------------------------------------ */
@@ -328,7 +364,8 @@ static agc_status_t set_moon(agc_flag_id_t f, bool moon)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    return moon ? agc_flag_set(f) : agc_flag_clear(f);
+    agc_flag_put(f, moon);
+    return AGC_STATUS_OK;
 }
 
 agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)

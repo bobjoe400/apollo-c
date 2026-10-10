@@ -25,7 +25,10 @@ static agc_sp_t star6_of_code(void)
 {
     const agc_sp_t code =
         (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
-    (void) AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX));
+    if (!AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) (code * STAR_WORDS);
 }
 
@@ -35,7 +38,10 @@ static agc_status_t planet_compute(void)
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
     agc_interp_init(&ip);
-    (void) AGC_ASSERT((ram->starind == 0) || (ram->starind == 1));
+    if (!AGC_ASSERT((ram->starind == 0) || (ram->starind == 1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_status_t st =
         agc_align_planet_vector(&ip, star6_of_code(), ram->starind, ram->tsight,
                                 AGC_JOB_PLANET_RESUME, &ram->planet_los);
@@ -54,7 +60,10 @@ static agc_status_t planet_compute(void)
  * V34) shows it again.                                                    */
 static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ?
                                   AGC_JOB_GOTOPOOH :
                                   AGC_JOB_PLANET_FLASH;
@@ -104,7 +113,10 @@ agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return planet_compute();
 }
 
@@ -115,6 +127,9 @@ agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return planet_compute();
 }

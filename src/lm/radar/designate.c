@@ -60,7 +60,10 @@ static agc_status_t rr_startdes(agc_rr_designate_result_t *res)
                AGC_RR_DESIGNATE_STARTED :
                AGC_RR_DESIGNATE_END_JOB;
     agc_relint();
-    (void) AGC_ASSERT(rr_radmodes_test(RR_DESIGBIT));
+    if (!AGC_ASSERT(rr_radmodes_test(RR_DESIGBIT)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -70,7 +73,10 @@ static void rr_nordstal(void)
 {
     agc_status_t st = agc_erase_set_modecadr(AGC_IMU_DEV_RADAR, 0);
     agc_relint(); /* DESRTRN */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
 }
 
 /* RRANGLES failed (LOS along the navigation-base Y axis): LUNDESCH. On
@@ -112,16 +118,11 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
     rz_flag_put(AGC_FLAG_RRNBSW, false);
     agc_cdutrig_t trig;
     agc_vec_t     los = s->rrtarget;
-    agc_status_t  st  = agc_guid_cdutrig(&trig);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_guid_smnb(&trig, &los);
-    }
+    agc_guid_cdutrig(&trig);
+    agc_status_t st = AGC_STATUS_OK;
+    agc_guid_smnb(&trig, &los);
     bool along_y = false;
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_lm_rrangles(ip, los, rr_mode2(), s->modea, s->modeb, &along_y);
-    }
+    st = agc_lm_rrangles(ip, los, rr_mode2(), s->modea, s->modeb, &along_y);
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -208,7 +209,8 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
         {
             return st;
         }
-        return agc_rendz_clradmod(); /* avoid the 503 alarm      */
+        agc_rendz_clradmod();
+        return AGC_STATUS_OK; /* avoid the 503 alarm      */
     }
     s->tangnb[0]    = trunnion; /* OKDESNB */
     s->tangnb[1]    = shaft;
@@ -262,7 +264,10 @@ agc_status_t rr_stdesig(void)
 /* BEGDES: remode first if one was requested (REMODE ends in STDESIG).   */
 agc_status_t rr_begdes(void)
 {
-    (void) AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK);
+    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (rr_radmodes_test(RR_REMODBIT))
     {
         return rr_remode_start();
@@ -272,14 +277,20 @@ agc_status_t rr_begdes(void)
 
 agc_status_t agc_task_rr_designate_begin(void)
 {
-    (void) AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK);
+    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rr_begdes();
 }
 
 /* DESLOOP: the .5 s designate pass.                                     */
 agc_status_t agc_task_rr_designate_loop(void)
 {
-    (void) AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK);
+    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rr_stdesig();
 }
 
@@ -297,12 +308,9 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s,
     agc_vec_t r  = agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget, s->mlosv), 1);
     agc_vec_t dv = agc_vec_scale(ip, s->losvel, RR_MCTOMS);
     *los         = agc_vec_unit(ip, agc_vec_add(ip, r, dv), NULL, NULL);
-    agc_status_t st = agc_guid_cdutrig(trig);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
-    return agc_guid_smnb(trig, los);
+    agc_guid_cdutrig(trig);
+    agc_guid_smnb(trig, los);
+    return AGC_STATUS_OK;
 }
 
 /* Shaft and trunnion commands for the LOS (32D), and the cosine of the
@@ -338,7 +346,8 @@ static agc_status_t rr_dodes_commands(agc_interp_t *ip, rr_state_t *s,
     agc_status_t st = AGC_STATUS_OK;
     if (!agc_flag_test(AGC_FLAG_RRNBSW))
     {
-        st = agc_guid_nbsm(trig, &urr);
+        agc_guid_nbsm(trig, &urr);
+        st = AGC_STATUS_OK;
     }
     *cos_err =
         agc_dp_sub(ip, agc_vec_dot(ip, urr, s->rrtarget), RR_COS_HALFDEG);
@@ -353,7 +362,10 @@ static agc_status_t rr_desdun(void)
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
     agc_relint();
-    (void) AGC_ASSERT(!rr_radmodes_test(RR_DESIGBIT));
+    if (!AGC_ASSERT(!rr_radmodes_test(RR_DESIGBIT)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
 
@@ -385,7 +397,8 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
         agc_relint();
         return AGC_STATUS_OK; /* ENDOFJOB */
     }
-    agc_status_t st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
@@ -445,7 +458,10 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 agc_status_t agc_rendz_goto_terminate_tracking(void)
 {
     agc_status_t st = agc_extverb(56, 0);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 

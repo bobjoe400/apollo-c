@@ -24,7 +24,10 @@
 static double clamp_round(double v, double max)
 {
     double r;
-    (void) AGC_ASSERT(max > 0.0);
+    if (!AGC_ASSERT(max > 0.0))
+    {
+        return 0; /* no valid result */
+    }
     if (!AGC_ASSERT(v == v))
     { /* NaN              */
         return 0.0;
@@ -48,37 +51,67 @@ static double clamp_round(double v, double max)
 agc_sp_t agc_sp_from_double(double x, int scale_pow2)
 {
     double v = ldexp(x, AGC_SP_BITS - scale_pow2);
-    (void) AGC_ASSERT(scale_pow2 > -64);
-    (void) AGC_ASSERT(scale_pow2 < 64);
+    if (!AGC_ASSERT(scale_pow2 > -64))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(scale_pow2 < 64))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) clamp_round(v, (double) AGC_SP_MAX);
 }
 
 agc_dp_t agc_dp_from_double(double x, int scale_pow2)
 {
     double v = ldexp(x, AGC_DP_BITS - scale_pow2);
-    (void) AGC_ASSERT(scale_pow2 > -64);
-    (void) AGC_ASSERT(scale_pow2 < 64);
+    if (!AGC_ASSERT(scale_pow2 > -64))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(scale_pow2 < 64))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) clamp_round(v, (double) AGC_DP_MAX);
 }
 
 double agc_sp_to_double(agc_sp_t v, int scale_pow2)
 {
-    (void) AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
-    (void) AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64));
+    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64)))
+    {
+        return 0; /* no valid result */
+    }
     return ldexp((double) v, scale_pow2 - AGC_SP_BITS);
 }
 
 double agc_dp_to_double(agc_dp_t v, int scale_pow2)
 {
-    (void) AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
-    (void) AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64));
+    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64)))
+    {
+        return 0; /* no valid result */
+    }
     return ldexp((double) v, scale_pow2 - AGC_DP_BITS);
 }
 
 double agc_tp_to_double(agc_tp_t v, int scale_pow2)
 {
-    (void) AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
-    (void) AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64));
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64)))
+    {
+        return 0; /* no valid result */
+    }
     return ldexp((double) v, scale_pow2 - AGC_TP_BITS);
 }
 
@@ -86,15 +119,27 @@ double agc_tp_to_double(agc_tp_t v, int scale_pow2)
 
 agc_sp_t agc_dp_high(agc_dp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_DP_MIN);
-    (void) AGC_ASSERT(v <= AGC_DP_MAX);
+    if (!AGC_ASSERT(v >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) agc_w_split(v).hi;
 }
 
 agc_sp_t agc_dp_low(agc_dp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_DP_MIN);
-    (void) AGC_ASSERT(v <= AGC_DP_MAX);
+    if (!AGC_ASSERT(v >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) agc_w_split(v).lo;
 }
 
@@ -104,8 +149,14 @@ agc_sp_t agc_dp_low(agc_dp_t v)
 agc_dp_t agc_dp_pack(agc_sp_t hi, agc_sp_t lo)
 {
     int32_t v = (int32_t) hi * AGC_W_ONE + (int32_t) lo;
-    (void) AGC_ASSERT((hi >= AGC_SP_MIN) && (hi <= AGC_SP_MAX));
-    (void) AGC_ASSERT((lo >= AGC_SP_MIN) && (lo <= AGC_SP_MAX));
+    if (!AGC_ASSERT((hi >= AGC_SP_MIN) && (hi <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((lo >= AGC_SP_MIN) && (lo <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (v > AGC_DP_MAX)
     {
         v = AGC_DP_MAX;
@@ -123,23 +174,41 @@ agc_dp_t agc_dp_pack(agc_sp_t hi, agc_sp_t lo)
 
 agc_dp_t agc_dp_from_sp(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_SP_MIN);
-    (void) AGC_ASSERT(v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) ((int32_t) v * AGC_W_ONE);
 }
 
 agc_tp_t agc_tp_from_dp(agc_dp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_DP_MIN);
-    (void) AGC_ASSERT(v <= AGC_DP_MAX);
+    if (!AGC_ASSERT(v >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_tp_t) v * AGC_W_ONE;
 }
 
 /* Drop MPAC+2 of the sign-agreeing word triple (truncation toward zero).   */
 agc_dp_t agc_tp_to_dp(agc_tp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_TP_MIN);
-    (void) AGC_ASSERT(v <= AGC_TP_MAX);
+    if (!AGC_ASSERT(v >= AGC_TP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(agc_w3_top(agc_w3_from_tp(v)));
 }
 
@@ -149,8 +218,14 @@ agc_dp_t agc_tp_round_dp(agc_tp_t v)
 {
     agc_ovf_t ovf = 0;
     agc_w3_t  m   = agc_w_roundsub(agc_w3_from_tp(v), &ovf);
-    (void) AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
-    (void) AGC_ASSERT(m.m2 == 0); /* ROUNDSUB zeroes  */
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.m2 == 0)) /* ROUNDSUB zeroes  */
+    {
+        return 0; /* no valid result */
+    }
     if (ovf != 0)
     {
         return (ovf > 0) ? AGC_DP_MAX : AGC_DP_MIN;
@@ -163,7 +238,10 @@ agc_dp_t agc_tp_round_dp(agc_tp_t v)
 static int32_t saturate32(int64_t v, int32_t max, agc_ovf_t *ovf)
 {
     agc_ovf_t o = 0;
-    (void) AGC_ASSERT(max > 0);
+    if (!AGC_ASSERT(max > 0))
+    {
+        return 0; /* no valid result */
+    }
     if (v > max)
     {
         v = max;
@@ -187,37 +265,67 @@ static int32_t saturate32(int64_t v, int32_t max, agc_ovf_t *ovf)
 
 agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) saturate32((int64_t) a + b, AGC_SP_MAX, ovf);
 }
 
 agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) saturate32((int64_t) a - b, AGC_SP_MAX, ovf);
 }
 
 /* MP: SP x SP -> DP, exact (both result words carry the product sign).     */
 agc_dp_t agc_sp_mul(agc_sp_t a, agc_sp_t b)
 {
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(agc_w_mp(a, b));
 }
 
 agc_dp_t agc_dp_add_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) saturate32((int64_t) a + b, AGC_DP_MAX, ovf);
 }
 
 agc_dp_t agc_dp_sub_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) saturate32((int64_t) a - b, AGC_DP_MAX, ovf);
 }
 
@@ -226,8 +334,14 @@ agc_dp_t agc_dp_sub_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
  * product by less than 2^-42.                                               */
 agc_tp_t agc_dp_mul_tp(agc_dp_t a, agc_dp_t b)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w3_value(agc_w_dmpsub(agc_w_split(a), agc_w_split(b)));
 }
 
@@ -237,8 +351,14 @@ agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
     agc_ovf_t ovf = 0;
     agc_w3_t  m   = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
     m             = agc_w_roundsub(m, &ovf);
-    (void) AGC_ASSERT(ovf == 0); /* |a b| < 1        */
-    (void) AGC_ASSERT(m.m2 == 0);
+    if (!AGC_ASSERT(ovf == 0)) /* |a b| < 1        */
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.m2 == 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(agc_w3_top(m));
 }
 
@@ -248,7 +368,10 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
     int      o = 0;
     agc_dp_t q = agc_w_ddv(a, b, &o);
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (AGC_ASSERT(ovf != 0))
     {
         *ovf = (agc_ovf_t) o;
@@ -262,8 +385,14 @@ agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf)
 {
     int64_t v = a;
     int     k;
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT(n >= 0);
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(n >= 0))
+    {
+        return 0; /* no valid result */
+    }
     for (k = 0; (k < n) && (k < SHIFT_DP_MAX + 1); k++)
     {
         v *= 2;
@@ -279,7 +408,10 @@ agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf)
 agc_dp_t agc_dp_shr(agc_dp_t a, int n)
 {
     agc_w3_t m;
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return a;
+    }
     if (!AGC_ASSERT(n >= 0) || (n == 0))
     {
         return a;
@@ -292,7 +424,10 @@ agc_dp_t agc_dp_shr(agc_dp_t a, int n)
 agc_dp_t agc_dp_shr_round(agc_dp_t a, int n)
 {
     agc_w3_t m;
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return a;
+    }
     if (!AGC_ASSERT(n >= 0) || (n == 0))
     {
         return a;
@@ -304,16 +439,28 @@ agc_dp_t agc_dp_shr_round(agc_dp_t a, int n)
 /* DCOMP (p.1151). -0 is not represented: DCOMP of 0 is 0.                  */
 agc_dp_t agc_dp_neg(agc_dp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_DP_MIN);
-    (void) AGC_ASSERT(a <= AGC_DP_MAX);
+    if (!AGC_ASSERT(a >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return -a;
 }
 
 /* ABS (p.1181): BRANCH on the sign, COMP if negative.                       */
 agc_dp_t agc_dp_abs(agc_dp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_DP_MIN);
-    (void) AGC_ASSERT(a <= AGC_DP_MAX);
+    if (!AGC_ASSERT(a >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (a < 0) ? -a : a;
 }
 
@@ -324,10 +471,16 @@ agc_dp_t agc_dp_round(agc_dp_t a)
 {
     agc_w2_t p = agc_w_split(a);
     int      o = 0;
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) agc_w_ts(2 * p.lo, &o); /* DOUBLE; TS L     */
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    o = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
     p.hi += o;
-    (void) AGC_ASSERT((p.hi >= -AGC_W_ONE) && (p.hi <= AGC_W_ONE));
+    if (!AGC_ASSERT((p.hi >= -AGC_W_ONE) && (p.hi <= AGC_W_ONE)))
+    {
+        return 0; /* no valid result */
+    }
     if (p.hi > AGC_W_POSMAX)
     {
         p.hi = AGC_W_POSMAX;
@@ -346,8 +499,14 @@ agc_dp_t agc_dp_round(agc_dp_t a)
 /* SIGN X (p.1151): complement MPAC when X is negative non-zero.            */
 agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((sign_of >= AGC_DP_MIN) && (sign_of <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((sign_of >= AGC_DP_MIN) && (sign_of <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (sign_of < 0) ? -a : a;
 }
 
@@ -357,7 +516,10 @@ agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
 {
     int      count = 0;
     agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a));
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     m = agc_w_tslc(m, &count);
     if (AGC_ASSERT(shift != 0))
     {
@@ -366,9 +528,28 @@ agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
     return agc_w_join(agc_w3_top(m));
 }
 
+/* NORM X1 when only the shift count is wanted (the normalised MPAC is
+ * not used): left shifts that left-justify a.                           */
+int agc_dp_norm_count(agc_dp_t a)
+{
+    int            count = 0;
+    const agc_dp_t n     = agc_dp_norm(a, &count);
+    if (!AGC_ASSERT((n < 0) == (a < 0)))
+    {
+        return 0; /* sign lost: no shift */
+    }
+    return count;
+}
+
 int agc_dp_sgn(agc_dp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_DP_MIN);
-    (void) AGC_ASSERT(a <= AGC_DP_MAX);
+    if (!AGC_ASSERT(a >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (a > 0) ? 1 : ((a < 0) ? -1 : 0);
 }

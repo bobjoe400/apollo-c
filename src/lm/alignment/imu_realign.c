@@ -65,7 +65,10 @@ agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_LANDING_SITE_ACCEPTED,
                        AGC_JOB_LM_LANDING_SITE_DISPLAY);

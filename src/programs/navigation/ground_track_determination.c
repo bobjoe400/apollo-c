@@ -30,7 +30,10 @@
 /* PROG21 (p.457): OPTION2 = 1 (this vehicle assumed). */
 agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = rz_set_option(2, 1U);
     if (st != AGC_STATUS_OK)
     {
@@ -43,7 +46,10 @@ agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
  * data load ("TC -5") -> the request again.                            */
 agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_dsky_cont_t cont;
     cont.terminate = AGC_JOB_GOTOPOOH;
     cont.proceed   = AGC_JOB_GROUND_TRACK_TIME;
@@ -54,7 +60,10 @@ agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx)
 /* P21PROG1 (p.457): V06N34 flashing (time in DSPTEM1). */
 agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 34U, AGC_JOB_GOTOPOOH,
                     AGC_JOB_GROUND_TRACK_COMPUTE, AGC_JOB_GROUND_TRACK_TIME);
 }
@@ -113,7 +122,10 @@ static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
     agc_status_t st         = agc_ground_track_determination_flight_path(
                 ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel,
                 &rz->ground_track_gamma);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
     rz->ground_track_origin = (agc_sp_t) o->x2;
     bool this_vehicle       = ((rz_option(2) >> 1) == 0U);
     if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -157,7 +169,10 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
  * An INTSTALL sleep resumes this job from its start.                   */
 agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz    = rz_state();
@@ -188,7 +203,10 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 /* V32 on V06N43 (p.459): DSPTEM1 = P21TIME + 600SEC, P21PROG1. */
 agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_dp_t     t  = agc_dp_add(&ip, rz_state()->ground_track_time, RZ_600SEC);

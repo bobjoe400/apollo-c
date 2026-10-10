@@ -32,8 +32,14 @@ agc_status_t lm_dap_qerrcalc(void)
                 lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror;
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
-    (void) AGC_ASSERT(d->qerror >= LM_NEGMAX && d->qerror <= LM_POSMAX);
-    (void) AGC_ASSERT(d->rerror >= LM_NEGMAX && d->rerror <= LM_POSMAX);
+    if (!AGC_ASSERT(d->qerror >= LM_NEGMAX && d->qerror <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->rerror >= LM_NEGMAX && d->rerror <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -43,8 +49,14 @@ agc_status_t lm_dap_stillrcs(void)
 {
     lm_dap_t *d = lm_dap_state();
     lm_dap_rot_touv(d->qerror, d->rerror, &d->uerror, &d->verror);
-    (void) AGC_ASSERT(d->uerror >= LM_NEGMAX);
-    (void) AGC_ASSERT(d->verror >= LM_NEGMAX);
+    if (!AGC_ASSERT(d->uerror >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->verror >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_uvloop(LM_UV_TJLAW, 1);
 }
 
@@ -78,7 +90,10 @@ static agc_status_t senseget(lm_dap_t *d)
         d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2;
     }
     bool found = lm_dap_selctsub();
-    (void) AGC_ASSERT(found); /* FAILOOP returns 0 before running out */
+    if (!AGC_ASSERT(found)) /* FAILOOP returns 0 before running out */
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = AGC_STATUS_OK;
     if (!found || d->polytemp == 0)
     {
@@ -100,7 +115,10 @@ agc_status_t lm_dap_rcs(void)
     d->cotroler = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
     agc_status_t st = senseget(d);
-    (void) AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2);
+    if (!AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -135,9 +153,15 @@ static agc_status_t trygts(lm_dap_t *d)
         agc_status_t st = agc_lm_dap_timegmbl();
         agc_relint();
         d->ingts = 0;
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
-    (void) AGC_ASSERT(d->ingts == 0);
+    if (!AGC_ASSERT(d->ingts == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_rcs();
 }
 
@@ -153,9 +177,15 @@ agc_status_t lm_dap_qraxis(void)
     if (automatic || !agc_flag_test(AGC_FLAG_OURRCFLG))
     {
         agc_status_t sq = lm_dap_qerrcalc();
-        (void) AGC_ASSERT(sq == AGC_STATUS_OK);
+        if (!AGC_ASSERT(sq == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
-    (void) AGC_ASSERT(d->edotq >= LM_NEGMAX && d->edotr >= LM_NEGMAX);
+    if (!AGC_ASSERT(d->edotq >= LM_NEGMAX && d->edotr >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (d->cotroler > 0)
     {
         return lm_dap_gts();

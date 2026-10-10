@@ -1206,22 +1206,21 @@ uint16_t agc_erase_dsptab(int index)
     return g_dsptab[index];
 }
 
-agc_status_t agc_erase_set_dsptab(int index, uint16_t v)
+void agc_erase_set_dsptab(int index, uint16_t v)
 {
     if (!AGC_ASSERT((index >= 0) && (index < 12)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(w15_ok(v)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_dsptab[index] = v;
     if (!AGC_ASSERT(g_dsptab[index] == v))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return AGC_STATUS_OK;
 }
 
 uint16_t agc_erase_failreg(int index)
@@ -1268,22 +1267,21 @@ uint16_t agc_erase_thetad(int index)
     return g_thetad[index];
 }
 
-agc_status_t agc_erase_set_thetad(int index, uint16_t v)
+void agc_erase_set_thetad(int index, uint16_t v)
 {
     if (!AGC_ASSERT((index >= 0) && (index < 3)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(w15_ok(v)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     g_thetad[index] = v;
     if (!AGC_ASSERT(g_thetad[index] == v))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return AGC_STATUS_OK;
 }
 
 void agc_erase_reset(void)

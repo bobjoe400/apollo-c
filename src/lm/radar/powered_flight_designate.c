@@ -49,7 +49,6 @@ static uint16_t          pfd_cdu[5]; /* MPAC +2..+6: CDUT CDUS CDUY CDUZ CDUX */
 
 const agc_rr_downlink_t *agc_rendz_rr_downlink(void)
 {
-    (void) AGC_ASSERT(pfd_down.mktime >= 0);
     return &pfd_down;
 }
 
@@ -59,7 +58,10 @@ static uint16_t pfd_offset(void)
 {
     agc_sp_t c  = agc_guid_state()->avg.pipctr;
     int      dt = ((c > 0) ? -PFD_SUPER110 : 0) + PFD_1SEC; /* CCS PIPCTR */
-    (void) AGC_ASSERT(dt == 4 || dt == PFD_1SEC);
+    if (!AGC_ASSERT(dt == 4 || dt == PFD_1SEC))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) dt;
 }
 
@@ -132,7 +134,10 @@ static agc_status_t pfd_los(void)
 /* R29 (p.596), called by SERVICER.                                      */
 agc_status_t agc_radar_powered_flight_designate(void)
 {
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE));
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!rr_radmodes_test(RR_DESIGBIT))
     {
         return pfd_start();
@@ -159,7 +164,10 @@ agc_status_t agc_job_powered_flight_remode(agc_job_ctx_t *ctx)
 /* PREPOS29: trunnion to -180 degrees, then repositioning off.           */
 agc_status_t agc_task_powered_flight_preposition(void)
 {
-    (void) AGC_ASSERT(rr_radmodes_test(RR_REPOSBIT));
+    if (!AGC_ASSERT(rr_radmodes_test(RR_REPOSBIT)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rr_axis_start(RR_AXIS_PREPOSITION_R29, 0, 0, 040000U);
 }
 
@@ -208,12 +216,16 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
                                const agc_cdutrig_t *trig, agc_sp_t u[3])
 {
     agc_vec_t    v  = agc_vec_unit(ip, los, NULL, NULL);
-    agc_status_t st = agc_guid_axisrot(trig, AGC_AXISROT_SMNB, &v);
+    agc_guid_axisrot(trig, AGC_AXISROT_SMNB, &v);
+    agc_status_t st = AGC_STATUS_OK;
     for (int i = 0; i < 3; i++)
     {
         u[i] = agc_dp_high(v.c[i]);
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -221,7 +233,10 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
 static agc_dp_t pfd_mp3(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 {
     agc_dp_t ab = agc_sp_mul(a, b);
-    (void) AGC_ASSERT(ab >= AGC_DP_MIN && ab <= AGC_DP_MAX);
+    if (!AGC_ASSERT(ab >= AGC_DP_MIN && ab <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_sp_mul(agc_dp_high(ab), c);
 }
 
@@ -236,12 +251,10 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
     uint16_t cdus   = agc_erase_cdus();
     uint16_t yzx[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
     agc_relint();
-    agc_status_t st   = agc_guid_quictrig(trig, yzx);
+    agc_guid_quictrig(trig, yzx);
+    agc_status_t st = AGC_STATUS_OK;
     agc_sp_t     u[3] = {0, 0, 0};
-    if (st == AGC_STATUS_OK)
-    {
-        st = pfd_ulosnb(ip, los, trig, u);
-    }
+    st = pfd_ulosnb(ip, los, trig, u);
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -272,8 +285,14 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
     agc_dp_t trun = pfd_mp3(t->sin_t, t->sin_s, u[0]) +
                     agc_sp_mul(t->cos_t, u[1]) +
                     pfd_mp3(t->sin_t, t->cos_s, u[2]);
-    (void) AGC_ASSERT(shaft >= AGC_DP_MIN && shaft <= AGC_DP_MAX);
-    (void) AGC_ASSERT(trun >= AGC_DP_MIN && trun <= AGC_DP_MAX);
+    if (!AGC_ASSERT(shaft >= AGC_DP_MIN && shaft <= AGC_DP_MAX))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(trun >= AGC_DP_MIN && trun <= AGC_DP_MAX))
+    {
+        return;
+    }
     rr_state_t *s = rr_state();
     s->tang[0]    = agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN));
     s->tang[1]    = agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN));
@@ -357,7 +376,10 @@ static agc_status_t pfd_read_end(void)
     agc_erase_set_trkmkcnt(0);
     rz_flag_put(AGC_FLAG_READRFLG, false);
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_TRACK);
-    (void) AGC_ASSERT(agc_erase_trkmkcnt() == 0);
+    if (!AGC_ASSERT(agc_erase_trkmkcnt() == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
 

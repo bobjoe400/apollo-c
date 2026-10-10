@@ -107,7 +107,7 @@
 
 /* ---- extended verbs (sys-misc): TS EXTVBACT (P61 locks out extended
  * verbs so it may use the TFF routines' erasables).                     */
-agc_status_t agc_svc_set_extvbact(uint16_t v);
+void agc_svc_set_extvbact(uint16_t v);
 
 /* ---- guid-powered: PREREAD1 (SERVICER207 p. 823) is static there; P11
  * calls it directly (IBNKCALL) to zero the PIPAs and start AVERAGEG.     */

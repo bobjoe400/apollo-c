@@ -106,7 +106,10 @@ static void td_initialw(agc_sp_t pos, agc_sp_t vel)
         w->blk[0][k].c[k]     = agc_dp_from_sp(pos);
         w->blk[1][3 + k].c[k] = agc_dp_from_sp(vel);
     }
-    (void) AGC_ASSERT(w->blk[0][0].c[0] == agc_dp_from_sp(pos));
+    if (!AGC_ASSERT(w->blk[0][0].c[0] == agc_dp_from_sp(pos)))
+    {
+        return;
+    }
 }
 
 /* ---- GETUM (p.578): the optics LOS of the mark in reference axes (SXTNB,
@@ -244,7 +247,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_exec_prio_change(TD_PRIO26);
+    agc_exec_prio_change(TD_PRIO26);
+    agc_status_t st = AGC_STATUS_OK;
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
         return st;
@@ -312,22 +316,16 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
         return agc_job_rendezvous_tracking_data_csm_mark(ctx); /* REND1A */
     }
     agc_inhint();
-    agc_status_t st =
-        agc_chan_and(AGC_CHAN_CHAN13, (uint16_t) (077777u & ~017u));
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_chan_or(AGC_CHAN_CHAN13, TD_CH13_READ);
-    }
+    agc_chan_and(AGC_CHAN_CHAN13, (uint16_t) (077777u & ~017u));
+    agc_status_t st = AGC_STATUS_OK;
+    agc_chan_or(AGC_CHAN_CHAN13, TD_CH13_READ);
     agc_relint();
     rz_set_marktime(rz_loadtime());
     rz_flag_put(AGC_FLAG_SKIPVHF, false);
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
-    if (st == AGC_STATUS_OK)
-    {
-        st =
-            agc_imu_stall_dev(AGC_IMU_DEV_RADAR,
-                              AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE, &res);
-    }
+    st =
+        agc_imu_stall_dev(AGC_IMU_DEV_RADAR,
+                          AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE, &res);
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
         return st;
@@ -501,8 +499,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
             return st;
         }
     }
-    (void) AGC_ASSERT(false);
-    return AGC_STATUS_NO_CONVERGE;
+    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
 }
 
 /* REND4 .. REND6, then the passes.                                       */
@@ -570,7 +567,10 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx)
 agc_status_t
 agc_job_rendezvous_tracking_data_csm_n49_proceed(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     td.tempor1 = -1;
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
@@ -578,7 +578,10 @@ agc_job_rendezvous_tracking_data_csm_n49_proceed(agc_job_ctx_t *ctx)
 agc_status_t
 agc_job_rendezvous_tracking_data_csm_n49_recycle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     td.tempor1 = 1;
     return AGC_STATUS_OK; /* ENDOFJOB */
 }

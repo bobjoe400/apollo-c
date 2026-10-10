@@ -40,7 +40,10 @@ static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b,
     {
         s = agc_dp_add(ip, agc_vec_sq(ip, w->blk[b][m]), s); /* VSQ, DAD */
     }
-    (void) AGC_ASSERT(b >= 0 && b < AGC_INCORP_BLKS);
+    if (!AGC_ASSERT(b >= 0 && b < AGC_INCORP_BLKS))
+    {
+        return 0; /* no valid result */
+    }
     return s;
 }
 

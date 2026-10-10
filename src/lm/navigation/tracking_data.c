@@ -205,11 +205,7 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     agc_cdutrig_t trig;
     uint16_t      yzx[3] = {n->aig, n->amg, n->aog};
     agc_vec_t     los    = rr_state()->rrtarget;
-    st                   = agc_guid_trg_smnb(&trig, yzx, &los);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_guid_trg_smnb(&trig, yzx, &los);
     agc_dp_t c = agc_dp_shl(&ip, agc_vec_dot(&ip, los, n->rrborsit), 1);
     n->dtheta  = agc_dp_acos(&ip, c);
     st         = rz_set_dsptem_dp(RZ_DSPTEM1, n->dtheta);
@@ -376,14 +372,20 @@ agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     lmnav_state()->n49flag = -1;
     return AGC_STATUS_OK; /* ENDOFJOB */
 }
 
 agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     lmnav_state()->n49flag = 1;
     return AGC_STATUS_OK; /* ENDOFJOB */
 }

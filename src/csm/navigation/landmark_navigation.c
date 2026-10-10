@@ -71,7 +71,10 @@ static agc_dp_t *ln_w(int o)
 /* GETTF: the time of mark I (SVMRKDAT at S22LOC).                        */
 static agc_dp_t ln_gettf(void)
 {
-    (void) AGC_ASSERT(ln.loc >= 0 && ln.loc + 1 < LN_SVMRK);
+    if (!AGC_ASSERT(ln.loc >= 0 && ln.loc + 1 < LN_SVMRK))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_pack((agc_sp_t) ln.svmrkdat[ln.loc],
                        (agc_sp_t) ln.svmrkdat[ln.loc + 1]);
 }
@@ -121,7 +124,10 @@ static agc_mat_t ln_outer(agc_interp_t *ip, agc_vec_t a, agc_vec_t b)
     {
         m.row[k] = agc_vec_scale(ip, b, a.c[k]);
     }
-    (void) AGC_ASSERT(m.row[0].c[0] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(m.row[0].c[0] >= AGC_DP_MIN))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
     return m;
 }
 
@@ -274,7 +280,10 @@ static agc_dp_t ln_rowdot(agc_interp_t *ip, int wi, int wj)
 static int ln_9dw_next(int x)
 {
     int n = x - 2; /* 9DWID    */
-    (void) AGC_ASSERT(x > 0);
+    if (!AGC_ASSERT(x > 0))
+    {
+        return 0; /* no valid result */
+    }
     return (n == 52) ? 4 : n;
 }
 
@@ -371,7 +380,10 @@ agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
         d[4]                    = m.cduz;
         d[5]                    = m.cdut;
         d[6]                    = m.cdux;
-        (void) AGC_ASSERT(st == AGC_STATUS_OK || k >= ln.n);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK || k >= ln.n))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     rz_flag_put(AGC_FLAG_ORBITAL_NAVIGATION_MARK_TAKEN, true); /* P22MKFLG */
     agc_status_t st = agc_sxtmark_mkreleas();
@@ -542,8 +554,7 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip,
         rz_flag_put(AGC_FLAG_INCORFLG, false);
         ln.rclp = agc_vec_sub(ip, agc_erase_x789(), ln.csmpos);
     }
-    (void) AGC_ASSERT(false);
-    return AGC_STATUS_NO_CONVERGE;
+    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
 }
 
 /* S22BOX22, a known landmark: the landmark rows of W from S22WSUBL; RL
@@ -689,7 +700,10 @@ agc_status_t agc_job_orbital_navigation_marks_exit(agc_job_ctx_t *ctx)
 
 void rz_landmark_set_offset(agc_sp_t cxoff)
 {
-    (void) AGC_ASSERT(cxoff >= 0);
+    if (!AGC_ASSERT(cxoff >= 0))
+    {
+        return;
+    }
     ln.cxoff = cxoff;
 }
 

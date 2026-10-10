@@ -39,7 +39,10 @@
  * external monitor bit (14) on.                                          */
 agc_status_t pin_monitor(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u))
     {
@@ -75,7 +78,10 @@ agc_status_t pin_monitor(void)
 /* MONREQ: called by waitlist every second while the monitor lives. */
 agc_status_t agc_task_monreq(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     pin_lodsampt(); /* time is snatched in rupt for N65 */
     if ((s->monsave1 & PIN_BIT15) != 0u)
@@ -86,7 +92,10 @@ agc_status_t agc_task_monreq(void)
     }
     agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, PIN_TASK_MONREQ);
     agc_status_t st2 = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_MONDO);
-    (void) AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ? st2 : st;
 }
 
@@ -143,7 +152,10 @@ agc_status_t pin_pastevb(void)
         st = pin_blanksub(s->monsave2); /* either return goes on (TC +1) */
         st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
     }
-    (void) AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB);
+    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* ENDOFJOB                       */
 }
 
@@ -154,8 +166,14 @@ agc_status_t pin_pastevb(void)
 agc_status_t pin_dspfmem(void)
 {
     const pin_state_t *s = pin_st();
-    (void) AGC_ASSERT(s->verbreg == 27u);
-    (void) AGC_ASSERT(s->nouncadr <= PIN_WORD);
+    if (!AGC_ASSERT(s->verbreg == 27u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -217,7 +235,10 @@ agc_status_t pin_vbrqwait(void)
  * display, flash off and see if there is any recall from ENDIDLE.       */
 agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN))
     {
@@ -236,7 +257,10 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
  * lights (ENTPASHI assumes the TC REQMM at MMCHANG).                    */
 agc_status_t pin_reqmm(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     s->reqret      = PIN_REQ_MM;
     s->reqret_neg  = true;
@@ -245,7 +269,10 @@ agc_status_t pin_reqmm(void)
     agc_status_t st = pin_2blank();
     pin_flashon();
     s->decbrnch = 1u; /* set for dec                   */
-    (void) AGC_ASSERT(s->dspcount == PIN_ND1);
+    if (!AGC_ASSERT(s->dspcount == PIN_ND1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ? pin_entexit() : st;
 }
 
@@ -253,7 +280,10 @@ agc_status_t pin_reqmm(void)
  * (DSPCOUNT = -ND2), blank the noun lights and go to V37 (MODROUTB).    */
 agc_status_t pin_mmchang_resume(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!s->dspcount_neg || s->dspcount != PIN_ND2)
     {
@@ -278,7 +308,10 @@ agc_status_t pin_mmchang_resume(void)
  * until TSTLTS3 to insure that the lights test will be seen.            */
 agc_status_t pin_vbtstlts(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s   = pin_st();
     bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
     if (csm && agc_erase_modreg() != 0)
@@ -290,17 +323,19 @@ agc_status_t pin_vbtstlts(void)
     /* Set bit 1 of IMODES33 so IMUMON won't turn out any lamps.          */
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_BIT1));
     agc_chan_or((int)AGC_CHAN_DSALMOUT, PIN_TSTCON1);
-    agc_status_t st =
-        agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
+    agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
+    agc_status_t st = AGC_STATUS_OK;
     agc_chan_or((int)AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* TSTLTS1 */
-        st = agc_erase_set_dsptab(i, pin_ones_neg(PIN_FULLDSP));
+        agc_erase_set_dsptab(i, pin_ones_neg(PIN_FULLDSP));
+        st = AGC_STATUS_OK;
     }
     static const int plus_rel[3] = {1, 4, 6}; /* turn on 3 plus signs */
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        st = agc_erase_set_dsptab(plus_rel[i], pin_ones_neg(PIN_FULLDSP1));
+        agc_erase_set_dsptab(plus_rel[i], pin_ones_neg(PIN_FULLDSP1));
+        st = AGC_STATUS_OK;
     }
     s->nout = PIN_DSPTAB_PANEL; /* CAF ELEVEN TS NOUT  */
     if (st == AGC_STATUS_OK)
@@ -314,9 +349,15 @@ agc_status_t pin_vbtstlts(void)
 /* TSTLTS2: called by waitlist. */
 agc_status_t agc_task_tstlts2(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_TSTLTS3);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -325,7 +366,10 @@ agc_status_t agc_task_tstlts2(void)
  * light on if in coarse align); set bits to indicate all lamps out.     */
 static agc_status_t pin_tstlts3_lamps(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_inhint();
     agc_chan_and((int)AGC_CHAN_DSALMOUT, (uint16_t)(PIN_WORD ^ PIN_TSTCON3));
     agc_chan_and((int)AGC_CHAN_CHAN13,
@@ -333,7 +377,8 @@ static agc_status_t pin_tstlts3_lamps(void)
     uint16_t c =
         (uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN12) & PIN_CH12_COARSE) |
                     PIN_BIT15);
-    agc_status_t st = agc_erase_set_dsptab(11, c);
+    agc_erase_set_dsptab(11, c);
+    agc_status_t st = AGC_STATUS_OK;
     agc_erase_set_imodes33(
         (uint16_t) ((agc_erase_imodes33() & ~PIN_13_11_1) | PIN_PRIO16_BITS));
     agc_erase_set_imodes30(
@@ -348,7 +393,10 @@ static agc_status_t pin_tstlts3_lamps(void)
             (uint16_t) ((agc_erase_radmodes() & ~PIN_RFAILS2) | PIN_RCDUFBIT));
     }
     agc_relint();
-    (void) AGC_ASSERT(c >= PIN_BIT15);
+    if (!AGC_ASSERT(c >= PIN_BIT15))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -357,7 +405,10 @@ static agc_status_t pin_tstlts3_lamps(void)
  * response).                                                            */
 agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;

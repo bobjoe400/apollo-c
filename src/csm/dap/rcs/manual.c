@@ -72,8 +72,8 @@ agc_status_t csm_rcs_manual(void)
     agc_status_t st = csm_rcs_stickchk(cmd);
     if (st == AGC_STATUS_OK)
     {
-        st =
-            agc_flag_set(AGC_FLAG_STIKFLAG); /* inform P20: astronaut control */
+        agc_flag_set(AGC_FLAG_STIKFLAG); /* inform P20: astronaut control */
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -127,7 +127,10 @@ static agc_status_t rcs_setwbody(void)
         }
         r->error[i] = agc_dp_high(r->merror[i]); /* SPNDXCHK    */
     }
-    (void) AGC_ASSERT(r->ratindx >= 0);
+    if (!AGC_ASSERT(r->ratindx >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return csm_rcs_jets();
 }
 
@@ -144,7 +147,10 @@ static agc_status_t rcs_freefunc(void)
         }
         r->tau[i] = freetau[m]; /* TAU, TAU1, TAU2                   */
     }
-    (void) AGC_ASSERT(r->tau[0] >= -480);
+    if (!AGC_ASSERT(r->tau[0] >= -480))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return csm_rcs_t6progm();
 }
 
@@ -162,15 +168,24 @@ agc_status_t csm_rcs_stickchk(uint16_t bits)
     unsigned t   = (unsigned) bits >> 2;   /* MP QUARTER          */
     r->manndx[2] = (agc_sp_t) (t & 3u);    /* YMANNDX: bits 3,4   */
     r->manndx[0] = (agc_sp_t) (t >> 2);    /* RMANNDX: bits 5,6   */
-    (void) AGC_ASSERT(r->manndx[0] <= 3);
+    if (!AGC_ASSERT(r->manndx[0] <= 3))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 /* STICKCHK (p. 1021) for other lanes (SATSTICK): see csm_rcs_stickchk. */
 agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits)
 {
-    (void) AGC_ASSERT(ch31_bits <= 077u);
+    if (!AGC_ASSERT(ch31_bits <= 077u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = csm_rcs_stickchk(ch31_bits);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

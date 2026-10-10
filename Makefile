@@ -15,8 +15,9 @@ SIM_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SIM_SRCS))
 TEST_SRCS := $(shell find tests -name '*.c' | sort)
 TEST_BINS := $(patsubst tests/%.c,$(BUILD)/tests/%,$(TEST_SRCS))
 
-# NASA SEL-94-003 style (docs/STYLE.md): clang-format 14 + tools/check_style.py
-CLANG_FORMAT ?= clang-format
+# NASA SEL-94-003 style (docs/STYLE.md): Uncrustify 0.72 + tools/check_style.py
+UNCRUSTIFY     ?= uncrustify
+UNCRUSTIFY_CFG := uncrustify.cfg
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
@@ -43,7 +44,7 @@ $(BUILD)/tests/%: tests/%.c $(BUILD)/libagc.a
 test: $(TEST_BINS)
 	@for t in $(TEST_BINS); do echo "== $$t"; $$t || exit 1; done
 
-# Power of Ten rules, clang-format layout, then the SEL-94-003 text checks.
+# Power of Ten rules, Uncrustify layout, then the SEL-94-003 text checks.
 # Use `make -k check` to see all three reports when one fails.
 check: check-rules format-check style
 
@@ -51,13 +52,19 @@ check-rules:
 	python3 -I tools/check_rules.py src include
 
 # Rewrites files in place: run on a clean tree and rebuild afterwards.
+# Two passes: Uncrustify 0.72 aligns before it wraps long lines, so a line
+# it wraps (or a trailing comment whose gap changed) can regroup on the next
+# run.  The second pass reaches the fixed point; a third changes nothing.
 format:
-	@command -v $(CLANG_FORMAT) >/dev/null || { echo "$(CLANG_FORMAT) not installed"; exit 1; }
-	$(CLANG_FORMAT) -i $(FORMAT_SRCS)
+	@command -v $(UNCRUSTIFY) >/dev/null || { echo "$(UNCRUSTIFY) not installed"; exit 1; }
+	$(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --replace --no-backup $(FORMAT_SRCS)
+	$(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --replace --no-backup $(FORMAT_SRCS)
 
+# Lists each file that would change (FAIL: ...) and fails if there is one.
 format-check:
-	@command -v $(CLANG_FORMAT) >/dev/null || { echo "$(CLANG_FORMAT) not installed"; exit 1; }
-	$(CLANG_FORMAT) --dry-run --Werror $(FORMAT_SRCS)
+	@command -v $(UNCRUSTIFY) >/dev/null || { echo "$(UNCRUSTIFY) not installed"; exit 1; }
+	@out=$$($(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --check $(FORMAT_SRCS)); rc=$$?; \
+	  printf '%s\n' "$$out" | grep -v '^PASS' || true; exit $$rc
 
 # Report only (never edits). STYLE_FLAGS=--summary or --exit-zero, or
 # STYLE_FLAGS='--rule return-parens' to narrow the report.

@@ -47,10 +47,12 @@ static bool magnitude_exceeds(agc_dp_t value, agc_dp_t limit)
 
     (void) AGC_ASSERT(limit > 0);
     (void) AGC_ASSERT(value >= AGC_DP_MIN);
+
     if ((value > limit) || (value < -limit))
     {
         exceeds = true;
     }
+
     return (exceeds);
 }
 
@@ -90,7 +92,9 @@ agc_status_t agc_template_limit_magnitude(agc_dp_t value, agc_dp_t limit,
         {
             limited = (value > 0) ? limit : -limit; /* sign of input */
         }
+
         *out = limited;
     }
+
     return (status);
 }

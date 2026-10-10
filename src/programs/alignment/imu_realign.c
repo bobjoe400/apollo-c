@@ -41,7 +41,10 @@ static bool is_csm(void)
 static agc_sp_t option2(void)
 {
     const agc_sp_t v = agc_erase_option1(1);
-    (void) AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX));
+    if (!AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
@@ -70,7 +73,10 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
     }
     agc_erase_set_option1(1, agc_flag_test(AGC_FLAG_PFRATFLG) ? OPTION2_PREF :
                                                                 OPTION2_NOM);
-    (void) AGC_ASSERT(option2() != 0);
+    if (!AGC_ASSERT(option2() != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_imu_realign_option_display(ctx);
 }
 
@@ -108,7 +114,10 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const int opt = (int) (option2() & OPTION_MASK3);
-    (void) AGC_ASSERT((opt >= 0) && (opt <= OPTION_MASK3));
+    if (!AGC_ASSERT((opt >= 0) && (opt <= OPTION_MASK3)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (opt == 1)
     {
         return agc_job_realign_gimbal_display(ctx); /* P52J / P52H    */
@@ -139,7 +148,10 @@ agc_status_t agc_job_realign_time(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = align_set_dsptem1(0);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_realign_time_flash(ctx);
 }
 
@@ -150,7 +162,10 @@ agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(option2() >= 0);
+    if (!AGC_ASSERT(option2() >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALIGN_TIME, AGC_JOB_GOTOPOOH,
                        AGC_JOB_REALIGN_TIME_PROCEED,
                        AGC_JOB_REALIGN_TIME_FLASH);
@@ -174,13 +189,19 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
         if (t == 0)
         { /* BZF       */
             const agc_status_t st = align_set_dsptem1(align_loadtime());
-            (void) AGC_ASSERT(st == AGC_STATUS_OK);
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
         }
         return nominal ? agc_job_realign_nominal_orientation(ctx) :
                          agc_job_csm_imu_realign_landing_site(ctx);
     }
     agc_align_ram()->talign = (t <= 0) ? align_loadtime() : t; /* BZMF   */
-    (void) AGC_ASSERT(agc_align_ram()->talign >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->talign >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return nominal ? agc_job_realign_nominal_orientation(ctx) :
                      agc_job_lm_imu_realign_landing_site(ctx);
 }
@@ -225,7 +246,10 @@ static agc_status_t realign_gimbal_angles(void)
     uint16_t           thetad[3];
     const agc_status_t st = agc_align_gimbal_angles(
         &ip, &ram->xsmd, &refsmmat, cdu, &ram->xsm, &ram->xnb, thetad);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -253,7 +277,10 @@ agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(option2() >= 0);
+    if (!AGC_ASSERT(option2() >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_OCT13, AGC_JOB_GOTOPOOH,
                        AGC_JOB_COARSE_ALIGN, AGC_JOB_GYCRS);
 }
@@ -286,9 +313,8 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
     {
         return agc_job_coarse_align_fineonly(ctx); /* CALOOP1   */
     }
-    st = align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN,
+    align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN,
                          ctx->prio); /* COARFINE */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return align_coarse(AGC_JOB_COARSE_ALIGN_COARSED);
 }
 
@@ -300,7 +326,10 @@ agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_coarse_align_fineonly(ctx);
 }
 
@@ -316,14 +345,12 @@ agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
     }
     agc_align_ram_t *ram = agc_align_ram();
     agc_erase_set_refsmmat(ram->xsm); /* MATMOVE   */
-    agc_status_t st = agc_flag_set(AGC_FLAG_REFSMFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_REFSMFLG);
     if (is_csm())
     {
         return agc_job_csm_realign_star_selection(ctx);
     }
-    st = agc_flag_clear(AGC_FLAG_PFRATFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_PFRATFLG);
     ram->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT    */
     return agc_job_lm_fine_align(ctx);
 }
@@ -347,7 +374,8 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
         agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA   */
+        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA   */
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -356,7 +384,10 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_DRIFTFLG); /* flag ids are valid  */
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_gycrs_pulse(ctx);
 }
 
@@ -411,14 +442,15 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_status_t     st =
-        align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);
+    align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);
     agc_erase_set_refsmmat(ram->xsmd); /* MATMOVE   */
     agc_flag_clear(AGC_FLAG_PFRATFLG); /* flag ids are valid  */
-    st = agc_flag_set(AGC_FLAG_REFSMFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = is_csm() ? align_set1_pdt() : align_ncoarse();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_REFSMFLG);
+    agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (is_csm())
     {
         return agc_job_csm_fine_align_recheck(ctx);

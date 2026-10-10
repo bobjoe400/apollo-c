@@ -19,7 +19,7 @@ agc_interp_t *entry_ip(void);            /* shared interpreter state (OVFIND) */
 agc_dp_t     entry_signmpac(agc_dp_t x); /* SIGNMPAC: +-DPOSMAX               */
 agc_dp_t     entry_log(agc_interp_t *ip,
                        agc_dp_t      x); /* LOG: -ln(x)/32               */
-agc_status_t entry_earrot(agc_interp_t *ip, agc_entry_state_t *es,
+void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es,
                           bool first); /* EARROT1/2 */
 agc_status_t entry_endexit(agc_job_ctx_t     *ctx,
                            agc_entry_state_t *es); /* OVERNOUT */

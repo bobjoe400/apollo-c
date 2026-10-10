@@ -60,6 +60,7 @@ bool     agc_flag_test(agc_flag_id_t f);  /* BON/BOFF        */
 void         agc_flag_set(agc_flag_id_t f);    /* SET             */
 void         agc_flag_clear(agc_flag_id_t f);  /* CLEAR           */
 void         agc_flag_invert(agc_flag_id_t f); /* INVERT          */
+void agc_flag_put(agc_flag_id_t f, bool on); /* SET if on, else CLEAR */
 uint16_t     agc_flagword_get(int word);
 void         agc_flagword_set(int word, uint16_t value);
 
@@ -263,7 +264,7 @@ void     agc_erase_set_dapdatr2(uint16_t v);
 /* display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word
  * (15-bit relay words) Index 0..11. */
 uint16_t     agc_erase_dsptab(int index);
-agc_status_t agc_erase_set_dsptab(int index, uint16_t v);
+void agc_erase_set_dsptab(int index, uint16_t v);
 
 /* three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. */
 uint16_t     agc_erase_failreg(int index);
@@ -272,6 +273,6 @@ agc_status_t agc_erase_set_failreg(int index, uint16_t v);
 /* desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style
  * words, 2^15 = 1 revolution Index 0..2. */
 uint16_t     agc_erase_thetad(int index);
-agc_status_t agc_erase_set_thetad(int index, uint16_t v);
+void agc_erase_set_thetad(int index, uint16_t v);
 
 #endif /* AGC_STATE_H */

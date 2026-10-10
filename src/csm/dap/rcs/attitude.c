@@ -81,7 +81,10 @@ agc_status_t csm_rcs_ahfnorot(void)
     {
         return rcs_holdfunc();
     }
-    (void) AGC_ASSERT(r->holdflag >= AGC_SP_MIN);
+    if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, -     */
         return rcs_atthold();
@@ -119,7 +122,10 @@ static agc_status_t rcs_freecont(void)
 static agc_status_t rcs_holdfunc(void)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    (void) AGC_ASSERT(r->holdflag >= AGC_SP_MIN);
+    if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (r->holdflag == 0)
     {
         return rcs_atthold();
@@ -151,7 +157,10 @@ static agc_status_t rcs_grabang(void)
     {
         r->thetad[i] = csm_dap_cdu(i); /* DCA CDUX; DXCH THETADX  */
     }
-    (void) AGC_ASSERT(r->holdflag == 0);
+    if (!AGC_ASSERT(r->holdflag == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rcs_atthold();
 }
 
@@ -174,7 +183,10 @@ static agc_status_t rcs_atthold(void)
             r->error[i] = csm_dap_ads(r->error[i], r->bias[i]);
         }
     }
-    (void) AGC_ASSERT(r->error[0] >= AGC_SP_MIN);
+    if (!AGC_ASSERT(r->error[0] >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return csm_rcs_jets();
 }
 
@@ -203,7 +215,10 @@ agc_status_t csm_rcs_jets(void)
             r->tau[i] = rcs_jtime(i, kmpac); /* DOJET      */
         }
     }
-    (void) AGC_ASSERT(p.adbaf > 0);
+    if (!AGC_ASSERT(p.adbaf > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rcs_t6prog();
 }
 
@@ -211,7 +226,6 @@ agc_status_t csm_rcs_jets(void)
 static pp_region_t rcs_region(const pp_point_t *p)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    (void) AGC_ASSERT(p != NULL);
     int adb = (int) r->adb;
     if ((int) p->aerrvel - adb + WLH_SLOP > 0)
     { /* J6.        */
@@ -239,7 +253,6 @@ static pp_region_t rcs_region(const pp_point_t *p)
         return PP_J23;
     }
     a = (int) p->aerrvel + (int) p->adbaf + WLMH_SLP; /* NJ23       */
-    (void) AGC_ASSERT(a >= -3 * AGC_SP_MAX);
     return (a >= 0) ? PP_J24 : PP_J22;
 }
 
@@ -282,11 +295,13 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
             *kmpac = csm_dap_das(medot, (p->edot >= 0) ? WL : -WL);
             break;
         default:
-            (void) AGC_ASSERT(false);
-            fire = false;
+            fire = false; /* unreachable: cannot happen */
             break;
     }
-    (void) AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES));
+    if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
+    {
+        return false;
+    }
     return fire;
 }
 
@@ -322,7 +337,10 @@ agc_status_t csm_rcs_t6progm(void)
     {
         r->error[i] = 0;
     }
-    (void) AGC_ASSERT(r->error[2] == 0);
+    if (!AGC_ASSERT(r->error[2] == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rcs_t6prog();
 }
 
@@ -330,7 +348,6 @@ agc_status_t csm_rcs_t6progm(void)
  * determined, reset T5LOC for phase 3 (JETSLECT). RESUME.                */
 static agc_status_t rcs_t6prog(void)
 {
-    agc_status_t st = agc_rupt_set_t5_task(AGC_TASK_JETSLECT);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_rupt_set_t5_task(AGC_TASK_JETSLECT);
+    return AGC_STATUS_OK;
 }

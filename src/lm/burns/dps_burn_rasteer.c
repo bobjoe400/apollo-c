@@ -50,7 +50,10 @@ typedef struct rs_work
 /* SL* n: left for n > 0 (overflow to OVFIND), truncating right for n < 0. */
 static agc_dp_t dp_shift(agc_interp_t *ip, agc_dp_t v, int n)
 {
-    (void) AGC_ASSERT(n > -64 && n < 64);
+    if (!AGC_ASSERT(n > -64 && n < 64))
+    {
+        return 0; /* no valid result */
+    }
     if (n >= 0)
     {
         return agc_dp_shl(ip, v, n);
@@ -103,7 +106,10 @@ static agc_dp_t rs_speed(agc_interp_t *ip, const rs_work_t *w, agc_dp_t len,
     int      k = 0;
     agc_dp_t d =
         agc_dp_norm(agc_dp_sub(ip, w->ss, rk), &k); /* NORM X1        */
-    (void) AGC_ASSERT(d > 0);
+    if (!AGC_ASSERT(d > 0))
+    {
+        return 0; /* no valid result */
+    }
     d          = agc_dp_shr(d, 1);                     /* SR1            */
     agc_dp_t q = agc_dp_div(ip, d, w->r1c);            /* DDV R1C        */
     agc_tp_t p = agc_dp_mul_tp(q, energy);             /* DMP (pushed)   */
@@ -121,7 +127,7 @@ static agc_dp_t rs_time_error(agc_interp_t *ip, const rs_work_t *w)
     agc_dp_t g  = agc_dp_asin(ip, agc_dp_shr(x, 1)); /* SR1 ASIN, rev  */
     agc_dp_t g8 = agc_dp_mul_trunc(g, PI_B2);        /* gamma/8 (rad)  */
     agc_dp_t y  = agc_dp_sqrt(ip, agc_dp_div(ip, w->c, w->ss));
-    (void) agc_interp_test_ovf(ip); /* BOV +1         */
+    agc_interp_clear_ovf(ip); /* BOV +1         */
     agc_dp_t t =
         agc_dp_sub(ip, g8, agc_dp_shr(agc_dp_mul_trunc(y, x), 3)); /* BDSU */
     t            = agc_dp_sign(t, agc_dp_from_sp(w->geomsgn));
@@ -130,7 +136,10 @@ static agc_dp_t rs_time_error(agc_interp_t *ip, const rs_work_t *w)
     agc_dp_t num = agc_dp_mul_trunc(agc_dp_sqrt(ip, agc_dp_shr(w->ss, 3)), q);
     agc_dp_t den =
         agc_dp_sqrt(ip, agc_dp_shl(ip, w->muasteer, 3)); /* SL3 SQRT */
-    (void) AGC_ASSERT(den > 0);
+    if (!AGC_ASSERT(den > 0))
+    {
+        return 0; /* no valid result */
+    }
     agc_dp_t tm = agc_dp_div(ip, num, den); /* BDDV           */
     return agc_dp_add(ip, agc_dp_sub(ip, tm, rz->tpass4), agc_erase_piptime());
 }
@@ -143,7 +152,10 @@ static agc_vec_t rs_normal(agc_interp_t *ip, agc_vec_t v, agc_sp_t geomsgn)
     {
         n = agc_vec_neg(n); /* SIGN GEOMSGN   */
     }
-    (void) AGC_ASSERT(geomsgn != 0);
+    if (!AGC_ASSERT(geomsgn != 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return agc_vec_unit(ip, n, NULL, NULL);
 }
 
@@ -193,9 +205,12 @@ static agc_vec_t rs_vg(agc_interp_t *ip, agc_vec_t vr)
     {
         return vg; /* NOGOBL         */
     }
-    agc_dp_t rsq = 0;
-    (void) agc_vec_unit(ip, agc_erase_rn(), NULL, &rsq); /* 34D = |RN|^2   */
-    (void) AGC_ASSERT(rsq > 0);
+    /* UNIT RN leaves |RN|^2 at 34D (LVSQUARE, the VSQ of RN).          */
+    agc_dp_t rsq = agc_vec_sq(ip, agc_erase_rn());
+    if (!AGC_ASSERT(rsq > 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_dp_t dt = agc_dp_sub(ip, agc_erase_piptime(), g->lm.gobltime);
     agc_dp_t k =
         agc_dp_div(ip, agc_dp_mul_trunc(dt, EARTHMU), rsq); /* 2^6     */

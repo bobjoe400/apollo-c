@@ -298,11 +298,14 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
         case AGC_DATA_FAILREG_P2:
             return agc_erase_set_failreg(2, w);
         case AGC_DATA_THETAD:
-            return agc_erase_set_thetad(0, w);
+            agc_erase_set_thetad(0, w);
+            return AGC_STATUS_OK;
         case AGC_DATA_THETAD_P1:
-            return agc_erase_set_thetad(1, w);
+            agc_erase_set_thetad(1, w);
+            return AGC_STATUS_OK;
         case AGC_DATA_THETAD_P2:
-            return agc_erase_set_thetad(2, w);
+            agc_erase_set_thetad(2, w);
+            return AGC_STATUS_OK;
         default:
             return AGC_STATUS_BAD_ARG;
     }

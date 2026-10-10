@@ -65,7 +65,10 @@ agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los,
     {
         return los;
     }
-    (void) AGC_ASSERT((angle >= AGC_DP_MIN) && (angle <= AGC_DP_MAX));
+    if (!AGC_ASSERT((angle >= AGC_DP_MIN) && (angle <= AGC_DP_MAX)))
+    {
+        return los;
+    }
     const agc_dp_t  s = agc_dp_sin(ip, angle); /* 1/2 SIN */
     const agc_vec_t t1 =
         agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, axis, los), s), 2);
@@ -173,7 +176,10 @@ static int trunnion_class(uint16_t pac)
     {
         return SR52_OVER_50; /* SR52E22  */
     }
-    (void) AGC_ASSERT(p < TRUN_50DEG);
+    if (!AGC_ASSERT(p < TRUN_50DEG))
+    {
+        return 0; /* no valid result */
+    }
     return ((p - TRUN_LOW) >= 0) ? SR52_UNDER_50 : SR52_OVER_50;
 }
 
@@ -220,11 +226,9 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed,
                              NULL); /* COM52 */
     agc_cdutrig_t t;
     bool          cult = false;
-    st                 = agc_guid_cdutrig(&t); /* CDUTRIG  */
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
-    }
+    agc_guid_cdutrig(&t); /* CDUTRIG  */
+    st = AGC_STATUS_OK;
+    st = agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
     *result = cult ? SR52_OVER_90 : trunnion_class(ram->pac);
     return st;
 }
@@ -232,10 +236,16 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed,
 /* R52F: wait 1/2 s (or 1.8 s from R52SYNC), then R52 continues. */
 static agc_status_t auto_optics_wait(uint16_t dt)
 {
-    (void) AGC_ASSERT((dt == DT_HALF_SEC) || (dt == DT_SYNC));
+    if (!AGC_ASSERT((dt == DT_HALF_SEC) || (dt == DT_SYNC)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_status_t st =
         agc_svc_delayjob(dt, AGC_JOB_AUTO_OPTICS_POSITIONING_DELAYED);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -251,7 +261,10 @@ static agc_status_t auto_optics_drive(const agc_job_ctx_t *ctx)
     {
         const agc_status_t st =
             align_show(ctx, AGC_DSKY_GODSPR, VN_OPTICS_ANGLES);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     if (cmc_mode() && agc_flag_test(AGC_FLAG_TRUNFLAG))
     { /* R52E     */
@@ -283,11 +296,7 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
     }
     if ((r == SR52_OVER_90) && !agc_flag_test(AGC_FLAG_TARG1FLG))
     { /* R52L */
-        const agc_status_t alm = agc_prioalarm(ALM_TRUNNION_90);
-        if (alm != AGC_STATUS_ALARM)
-        {
-            return alm;
-        }
+        agc_prioalarm(ALM_TRUNNION_90);
         return align_flash(ctx, AGC_DSKY_PRIODSPR, VN_ALARM,
                            AGC_JOB_AUTO_OPTICS_POSITIONING_TERMINATE,
                            AGC_JOB_AUTO_OPTICS_POSITIONING_WAIT,
@@ -300,7 +309,8 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
     else
     {
         agc_svc_downflag(AGC_FLAG_TRUNFLAG); /* R52J     */
-        const agc_status_t alm = agc_alarm(ALM_TRUNNION_50);
+        agc_alarm(ALM_TRUNNION_50);
+        const agc_status_t alm = AGC_STATUS_ALARM;
         if (alm != AGC_STATUS_OK)
         {
             return alm;
@@ -325,7 +335,10 @@ static agc_status_t auto_optics_cycle(const agc_job_ctx_t *ctx)
         const agc_status_t st =
             agc_exec_findvac(ALIGN_PRIO24, AGC_JOB_AUTO_OPTICS_SIGHTING);
         agc_relint();
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     return auto_optics_wait(DT_HALF_SEC);
 }
@@ -387,7 +400,10 @@ agc_status_t agc_job_auto_optics_positioning_resume(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return auto_optics_target(ctx, true);
 }
 
@@ -398,7 +414,10 @@ agc_status_t agc_job_auto_optics_positioning_wait(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return auto_optics_wait(DT_HALF_SEC);
 }
 
@@ -465,12 +484,17 @@ agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_dsky_clearmrk();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_sxtmark_mkreleas();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_dsky_clearmrk();
+    agc_status_t st = agc_sxtmark_mkreleas();
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     st = agc_erase_set_modecadr(AGC_IMU_DEV_OPTICS, 0); /* OPTCADR  */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_GOTOPOOH,
                        AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH);
 }

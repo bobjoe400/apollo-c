@@ -23,8 +23,14 @@
 /* hi * 2^14 + lo: the value of a word pair in minor-word units.           */
 int32_t lm_dap_dpval(lm_dp_pair_t x)
 {
-    (void) AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG);
-    (void) AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return (int32_t) x.hi * ARITH_WORD + (int32_t) x.lo;
 }
 
@@ -33,7 +39,10 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
 {
     lm_dp_pair_t r;
     int32_t      hi = v / ARITH_WORD; /* C truncates toward zero      */
-    (void) AGC_ASSERT(hi >= -ARITH_MAXMAG && hi <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(hi >= -ARITH_MAXMAG && hi <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     if (hi > ARITH_MAXMAG)
     {
         hi = ARITH_MAXMAG;
@@ -44,22 +53,34 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
     }
     r.hi = (agc_sp_t) hi;
     r.lo = (agc_sp_t) (v - hi * ARITH_WORD);
-    (void) AGC_ASSERT(r.lo > -ARITH_WORD && r.lo < ARITH_WORD);
+    if (!AGC_ASSERT(r.lo > -ARITH_WORD && r.lo < ARITH_WORD))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return r;
 }
 
 /* MP: A,L = a * b (14 x 14 bits, exact), both words with the product sign. */
 lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
 {
-    (void) AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG);
-    (void) AGC_ASSERT(b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return lm_dap_dpmake((int32_t) a * (int32_t) b);
 }
 
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
     lm_dp_pair_t p = lm_dap_mp(a, b);
-    (void) AGC_ASSERT(p.hi >= -ARITH_MAXMAG && p.hi <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(p.hi >= -ARITH_MAXMAG && p.hi <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return p.hi;
 }
 
@@ -77,7 +98,10 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
     }
     int32_t q   = num / (int32_t) d;
     int32_t rem = num - q * (int32_t) d;
-    (void) AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     r.hi = lm_dap_sat(q);
     r.lo = (agc_sp_t) rem;
     return r;
@@ -86,7 +110,10 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r = lm_dap_dvqr(n, d);
-    (void) AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return r.hi;
 }
 
@@ -94,7 +121,10 @@ agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
  * overflow-corrected value (sum -+ 2^14).                                 */
 agc_sp_t lm_dap_wrap(int32_t v)
 {
-    (void) AGC_ASSERT(v >= -3 * ARITH_MAXMAG && v <= 3 * ARITH_MAXMAG);
+    if (!AGC_ASSERT(v >= -3 * ARITH_MAXMAG && v <= 3 * ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     for (int i = 0; i < 2; i++)
     { /* a 3-term sum may need two  */
         if (v > ARITH_MAXMAG)
@@ -106,7 +136,10 @@ agc_sp_t lm_dap_wrap(int32_t v)
             v += ARITH_WORD;
         }
     }
-    (void) AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return lm_dap_sat(v);
 }
 
@@ -126,14 +159,20 @@ agc_sp_t lm_dap_sat(int32_t v)
     {
         r = (agc_sp_t) v;
     }
-    (void) AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
 /* "TS A" / "TS 7" skip test: does A hold an overflowed value?              */
 bool lm_dap_ovf(int32_t v)
 {
-    (void) AGC_ASSERT(v >= -4 * ARITH_WORD && v <= 4 * ARITH_WORD);
+    if (!AGC_ASSERT(v >= -4 * ARITH_WORD && v <= 4 * ARITH_WORD))
+    {
+        return false;
+    }
     return (v > ARITH_MAXMAG) || (v < -ARITH_MAXMAG);
 }
 
@@ -156,15 +195,24 @@ lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
     lm_dp_pair_t r;
     r.hi = lm_dap_wrap((int32_t) x.hi + (int32_t) y.hi + carry);
     r.lo = (agc_sp_t) lo;
-    (void) AGC_ASSERT(r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return r;
 }
 
 /* DDOUBL (DAS A).                                                          */
 lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
 {
-    (void) AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG);
-    (void) AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return lm_dap_das(x, x);
 }
 
@@ -173,8 +221,14 @@ lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
  * revolution (two's 40000) comes out +POSMAX, as on the AGC.             */
 agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
 {
-    (void) AGC_ASSERT(a <= ARITH_MASK15);
-    (void) AGC_ASSERT(b <= ARITH_MASK15);
+    if (!AGC_ASSERT(a <= ARITH_MASK15))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(b <= ARITH_MASK15))
+    {
+        return 0; /* no valid result */
+    }
     int32_t d = ((int32_t) a - (int32_t) b) & ARITH_MASK15;
     int32_t v;
     if (d < ARITH_SIGN15)
@@ -196,29 +250,47 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
  * complement word (CCS A, AD ONE / CS A).                                 */
 uint16_t lm_dap_ones_to_twos(int32_t v)
 {
-    (void) AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     int32_t w = (v >= 0) ? v : (v + ARITH_TWOS);
-    (void) AGC_ASSERT(w >= 0 && w <= ARITH_MASK15);
+    if (!AGC_ASSERT(w >= 0 && w <= ARITH_MASK15))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) w;
 }
 
 /* CCS: the diminished absolute value |v| - 1 (0 for 0).                    */
 agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t r =
         (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (-v - 1) : 0);
-    (void) AGC_ASSERT(r >= 0);
+    if (!AGC_ASSERT(r >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
 /* DIM: decrement the magnitude, stopping at zero.                          */
 agc_sp_t lm_dap_dim(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t r =
         (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (v + 1) : 0);
-    (void) AGC_ASSERT(r >= -ARITH_MAXMAG + 1 || r == 0);
+    if (!AGC_ASSERT(r >= -ARITH_MAXMAG + 1 || r == 0))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -227,7 +299,10 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
  * POSMAX if the quotient would be positive, NEGMAX if negative.          */
 agc_sp_t lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d)
 {
-    (void) AGC_ASSERT(n.hi >= -ARITH_MAXMAG && n.hi <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(n.hi >= -ARITH_MAXMAG && n.hi <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     if (d == 0)
     {
         return ARITH_MAXMAG; /* MAXPLUS            */
@@ -240,6 +315,9 @@ agc_sp_t lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d)
         return pos ? ARITH_MAXMAG : (agc_sp_t) -ARITH_MAXMAG;
     }
     agc_sp_t q = lm_dap_dv(n, d);
-    (void) AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG);
+    if (!AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG))
+    {
+        return 0; /* no valid result */
+    }
     return q;
 }

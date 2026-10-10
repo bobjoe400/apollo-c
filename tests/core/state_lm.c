@@ -68,21 +68,20 @@ static void test_lm_flag_ops(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_state_vehicle() == AGC_VEHICLE_LM);
-    CHECK(agc_flag_set(AGC_FLAG_PULSEFLG) ==
-          AGC_STATUS_OK); /* word 13 exists on LM */
+    agc_flag_set(AGC_FLAG_PULSEFLG); /* word 13 exists on LM */
     CHECK(agc_flag_test(AGC_FLAG_PULSEFLG));
     CHECK(agc_flagword_get(13) == 0x4000u);
-    CHECK(agc_flag_invert(AGC_FLAG_PULSEFLG) == AGC_STATUS_OK);
+    agc_flag_invert(AGC_FLAG_PULSEFLG);
     CHECK(!agc_flag_test(AGC_FLAG_PULSEFLG));
-    CHECK(agc_flag_set(AGC_FLAG_TURNONFL) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_TURNONFL);
     CHECK(agc_flagword_get(12) == 0x0001u);
-    CHECK(agc_flag_clear(AGC_FLAG_TURNONFL) == AGC_STATUS_OK);
-    CHECK(agc_flagword_set(13, 077777u) == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_TURNONFL);
+    agc_flagword_set(13, 077777u);
     CHECK(agc_flag_test(AGC_FLAG_AUTR1FLG));
     CHECK(agc_flag_valid(AGC_FLAG_AUTR1FLG));
     agc_state_init(AGC_VEHICLE_CSM); /* same id invalid on CSM */
     CHECK(!agc_flag_valid(AGC_FLAG_AUTR1FLG));
-    CHECK(agc_flag_set(AGC_FLAG_AUTR1FLG) == AGC_STATUS_BAD_ARG);
+    agc_flag_set(AGC_FLAG_AUTR1FLG); /* rejected (assertion; flag word 12 has no AUTR1 on CSM) */
 }
 
 static void test_lm_state(void)

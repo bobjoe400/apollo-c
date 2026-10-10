@@ -35,8 +35,14 @@ static agc_sp_t tempbeta;
 /* SP angle of a gimbal saved at PIP time as the 15-bit CDU pattern.       */
 static uint16_t cdu_pattern(agc_sp_t a)
 {
-    (void) AGC_ASSERT(a >= -16384);
-    (void) AGC_ASSERT(a <= 16383);
+    if (!AGC_ASSERT(a >= -16384))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= 16383))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) ((uint16_t) a & 077777u);
 }
 
@@ -71,7 +77,10 @@ agc_status_t agc_entry_cm_pose_triad(void)
     es->uya = es->olduya; /* CM/POSE2  */
     es->uza =
         agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
-    (void) AGC_ASSERT(vmag >= 0);
+    if (!AGC_ASSERT(vmag >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -82,8 +91,14 @@ static agc_vec_t trio_uby_sm(agc_interp_t *ip, agc_dp_t ci, agc_dp_t si,
 {
     agc_vec_t uby;
 
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     /* (-SM CI, noise, SM SI)/2 with CM/2 replacing the noise              */
     uby = agc_vec_make(
         agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
@@ -109,7 +124,10 @@ static void trio_body_axes(agc_interp_t *ip, agc_entry_state_t *es)
     agc_dp_t  cm       = agc_dp_cos(ip, amg);
     agc_vec_t ubx;
 
-    (void) AGC_ASSERT(es != NULL);
+    if (!AGC_ASSERT(es != NULL))
+    {
+        return;
+    }
     es->uby = trio_uby_sm(ip, ci, si, sm, cm, agc_dp_sin(ip, aog),
                           agc_dp_cos(ip, aog));
     es->uby =
@@ -120,7 +138,10 @@ static void trio_body_axes(agc_interp_t *ip, agc_entry_state_t *es)
     es->ubx =
         agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
     es->ubz = agc_vec_shl(ip, agc_vec_cross(ip, es->ubx, es->uby), 1);
-    (void) AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF);
+    if (!AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF))
+    {
+        return;
+    }
 }
 
 /* CM/TRIO (pp. 884-886): body triad, then
@@ -165,7 +186,10 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     agc_sp_t old = es->gama;
     int32_t  g;
 
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return;
+    }
     es->gama = gama_new;
     if (!agc_flag_test(AGC_FLAG_GAMDIFSW))
     {
@@ -180,7 +204,10 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     { /* |GAMDOT| < 5 bits     */
         es->gamdot = 0;
     }
-    (void) AGC_ASSERT(es->gamdot == 0 || es->gamdot >= 5 || es->gamdot <= -5);
+    if (!AGC_ASSERT(es->gamdot == 0 || es->gamdot >= 5 || es->gamdot <= -5))
+    {
+        return;
+    }
 }
 
 /* One Euler angle: (EUL/180) = -2 MPAC, + (NOW - PIP) increment since
@@ -190,8 +217,14 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
     int32_t eul = -2 * (int32_t) agc_dp_high(mpac); /* CS MPAC, DOUBLE      */
     int32_t sum;
 
-    (void) AGC_ASSERT(eul >= -32768 && eul <= 32768);
-    (void) AGC_ASSERT(pip >= -16384);
+    if (!AGC_ASSERT(eul >= -32768 && eul <= 32768))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(pip >= -16384))
+    {
+        return 0; /* no valid result */
+    }
     if (wrap)
     {
         sum = (int32_t) entry_angle_wrap(eul) - (int32_t) pip + (int32_t) now;
@@ -209,7 +242,10 @@ static void entry_cm_atup(const agc_dp_t angles[4])
     agc_phase_var_t    v  = {
             AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U};
 
-    (void) AGC_ASSERT(angles != NULL);
+    if (!AGC_ASSERT(angles != NULL))
+    {
+        return;
+    }
     agc_inhint(); /* until the body angles are updated     */
     atup_gamdot(es, (agc_sp_t) (-agc_dp_high(angles[3]))); /* CS 10D */
     temproll = atup_angle(angles[0], es->roll_pip, es->roll_180, true);
@@ -218,7 +254,10 @@ static void entry_cm_atup(const agc_dp_t angles[4])
     /* DCA REPOSADR / DXCH PHSNAME5: group 5 now restarts at REDOPOSE.     */
     agc_phase_change_var(010035, &v);
     agc_relint();
-    (void) AGC_ASSERT(es->gamdot == 0 || agc_flag_test(AGC_FLAG_GAMDIFSW));
+    if (!AGC_ASSERT(es->gamdot == 0 || agc_flag_test(AGC_FLAG_GAMDIFSW)))
+    {
+        return;
+    }
 }
 
 /* SERVNOUT / NODISKY (REENTRY_CONTROL p. 874): CHANG1 if a higher job
@@ -238,7 +277,10 @@ agc_status_t entry_servnout(agc_job_ctx_t *ctx)
     {
         return agc_exec_job_yield(AGC_JOB_SERVEXIT); /* TC CHANG1  */
     }
-    (void) AGC_ASSERT(nj <= 0);
+    if (!AGC_ASSERT(nj <= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_servexit(ctx);
 }
 
@@ -249,7 +291,10 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     agc_status_t       st   = AGC_STATUS_OK;
     bool               disp = true;
 
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     switch (es->posexit)
     {
         case AGC_ENTRY_POSEXIT_DESIRED_GIMBALS:
@@ -266,7 +311,10 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
         case AGC_ENTRY_POSEXIT_ENDEXIT:
         case AGC_ENTRY_POSEXIT_COUNT:
         default:
-            (void) AGC_ASSERT(es->posexit == AGC_ENTRY_POSEXIT_ENDEXIT);
+            if (!AGC_ASSERT(es->posexit == AGC_ENTRY_POSEXIT_ENDEXIT))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             break;
     }
     if (st == AGC_STATUS_OK && disp)
@@ -275,8 +323,9 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     }
     if (st != AGC_STATUS_OK)
     {
-        (void) entry_servnout(ctx); /* end the SERVICER job anyway */
-        return st;
+        /* end the SERVICER job anyway; a restart it asks for outranks st */
+        const agc_status_t sn = entry_servnout(ctx);
+        return (sn == AGC_STATUS_BAILOUT) ? sn : st;
     }
     return entry_servnout(ctx);
 }
@@ -320,15 +369,24 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
         return st;
     }
     entry_cm_atup(angles);
-    (void) AGC_ASSERT(agc_entry_state()->posexit < AGC_ENTRY_POSEXIT_COUNT);
+    if (!AGC_ASSERT(agc_entry_state()->posexit < AGC_ENTRY_POSEXIT_COUNT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return entry_redopose_tail(ctx);
 }
 
 /* REDOPOSE as the group 5 restart job (p. 888).                          */
 agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
-    (void) AGC_ASSERT(agc_entry_state() != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_entry_state() != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return entry_redopose_tail(ctx);
 }
 
@@ -347,6 +405,9 @@ agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
     {
         st = entry_endexit(ctx, agc_entry_state());
     }
-    (void) AGC_ASSERT(agc_entry_state()->gotoaddr < AGC_ENTRY_GOTO_COUNT);
+    if (!AGC_ASSERT(agc_entry_state()->gotoaddr < AGC_ENTRY_GOTO_COUNT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ? entry_servnout(ctx) : st;
 }

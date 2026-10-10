@@ -30,7 +30,10 @@
 static agc_status_t fine_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_FINE_ALIGN);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -42,7 +45,10 @@ agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_lm_fine_align_perform(ctx);
 }
 
@@ -68,7 +74,10 @@ agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_FINE_ALIGN_PICK_STARS,
                        AGC_JOB_LM_FINE_ALIGN_FIRST_STAR);
@@ -106,7 +115,8 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
     {
         return agc_job_lm_fine_align_first_star(ctx); /* R51F     */
     }
-    const agc_status_t alm = agc_alarm(ALM_NO_STARS); /* R51I     */
+    agc_alarm(ALM_NO_STARS); /* R51I     */
+    const agc_status_t alm = AGC_STATUS_ALARM;
     if (alm != AGC_STATUS_OK)
     {
         return alm;
@@ -126,7 +136,10 @@ agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_align_ram()->tsight = agc_dp_add(&ip, align_loadtime(), TSIGHT1_CS);
-    (void) AGC_ASSERT(agc_align_ram()->tsight >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return fine_align_pick(ctx);
 }
 
@@ -137,7 +150,10 @@ agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->tsight >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return fine_align_pick(ctx);
 }
 
@@ -164,8 +180,10 @@ agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    (void) AGC_ASSERT((agc_align_ram()->starind == 0) ||
-                      (agc_align_ram()->starind == 1));
+    if (!AGC_ASSERT((agc_align_ram()->starind == 0) || (agc_align_ram()->starind == 1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_lm_auto_optics_positioning(ctx, AGC_JOB_LM_FINE_ALIGN_MARK);
 }
 
@@ -292,7 +310,10 @@ agc_status_t agc_job_lm_fine_align_torqued(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_flag_clear(AGC_FLAG_PFRATFLG);
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_PFRATFLG));
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_PFRATFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_lm_fine_align_recheck(ctx);
 }
 
@@ -307,7 +328,10 @@ agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_job_id_t ret = agc_align_ram()->qmaj;
-    (void) AGC_ASSERT(ret != AGC_JOB_NONE);
+    if (!AGC_ASSERT(ret != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK,
                        AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE,
                        ret);

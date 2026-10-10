@@ -274,7 +274,7 @@ agc_status_t agc_task_jetcall(void);  /* JETCALL   roll jet task         */
 agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx);      /* CM/DAPON        */
 agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx); /* NOTYET +4       */
 agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx);      /* CM/DAPIC        */
-agc_status_t agc_entry_dap_flushjet(void);              /* FLUSHJET        */
+void agc_entry_dap_flushjet(void);              /* FLUSHJET        */
 
 /* Roll phase-plane solution of CM/RCS (pp. 1081-1086) for a roll error and
  * roll rate, as a pure function (used by CM/RCS and by unit tests).       */
@@ -329,7 +329,7 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx); /* SATSTKON (V46)  */
 /* S11.1: VMAGI = |VN| (m/cs B7), HDOT = UNIT(RN).VN (B7), ALTI = |RN| -
  * RPAD (earth) or - |RLS| (moon, AMOONFLG) (m B29), stored for N62;
  * agc_earth_orbit_insertion_monitor_s11_1 reads the stored values (noun tables).                    */
-agc_status_t agc_csm_velocity_altitude_rate(agc_interp_t *ip);
+void agc_csm_velocity_altitude_rate(agc_interp_t *ip);
 agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
                                                        agc_dp_t *hdot,
                                                        agc_dp_t *alti);
@@ -365,7 +365,7 @@ agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
     const agc_earth_orbit_insertion_monitor_padload_t *pad);
 /* ATERJOB attitude-error kernel (pp. 543-545): desired gimbal angles
  * (OGC IGC MGC, DP revs) and present CDUs -> AK AK1 AK2 (SP, error/180).  */
-agc_status_t agc_earth_orbit_insertion_monitor_attitude_errors(
+void agc_earth_orbit_insertion_monitor_attitude_errors(
     const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak[3]);
 
 #endif /* AGC_CSM_ENTRY_H */

@@ -62,8 +62,8 @@ agc_dp_t         agc_integ_dshift(agc_interp_t *ip, agc_dp_t a, int n);
 agc_status_t     agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon);
 
 /* ---- flags_csm.c (CM-only flags) ------------------------------ */
-agc_status_t agc_integ_csm_resume_idle_integration(void);
+void agc_integ_csm_resume_idle_integration(void);
 bool         agc_integ_csm_amoonflg(void);
-agc_status_t agc_integ_csm_set_amoonflg(bool on);
+void agc_integ_csm_set_amoonflg(bool on);
 
 #endif /* INTEG_INTERNAL_H */

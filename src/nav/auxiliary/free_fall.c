@@ -131,7 +131,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
     rp          = agc_navaux_dp_shift(ip, rp, -tff->nr);    /* SR* 0,1  */
     tff->rper   = agc_navaux_dp_shift(ip, rp, 7 - tff->nr); /* SR* 0-7,1 */
     agc_dp_t ra = agc_dp_mul(ip, onepe, tff->tff1_alf);
-    (void) agc_interp_test_ovf(ip); /* BOVB TCDANZIG */
+    agc_interp_clear_ovf(ip); /* BOVB TCDANZIG */
     tff->rapo = AGC_TFF_NEARONE;    /* MAXRA    */
     if (ra != 0)
     {
@@ -177,7 +177,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
         agc_navaux_dp_shift(ip, agc_dp_mul(ip, dn, tff->tff1_alf), na);
     agc_dp_t x = agc_navaux_dp_shift(ip, agc_dp_mul(ip, inv_az, dn), na);
     /* DEVIATION: BOVB SIGNMPAC is the saturation agc_dp_shl already gives. */
-    (void) agc_interp_test_ovf(ip);
+    agc_interp_clear_ovf(ip);
     tff->tffx     = x;
     agc_dp_t xt   = agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, x), x), 3);
     agc_dp_t term = agc_dp_mul(ip, agc_dp_sub(ip, xt, DP2_M3), inv_az);
@@ -274,7 +274,7 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     }
     agc_dp_t zra = agc_dp_mul(ip, num, tff->tffrtalf);        /* TFFXTEST */
     zra          = agc_navaux_dp_shift(ip, zra, 3 - tff->na); /* SR* 0-3,2 */
-    (void) agc_dp_div(ip, zra, absden); /* Z sqrt(ALFA): only OVFIND matters */
+    agc_dp_div_ovf_only(ip, zra, absden); /* Z sqrt(ALFA): only OVFIND matters */
     if (agc_interp_test_ovf(ip))
     { /* BOV TFFELL                       */
         agc_dp_t dn = agc_dp_div(ip, den, agc_dp_shl(ip, num, 2)); /* D/N   */
@@ -322,7 +322,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
         return AGC_STATUS_OK;
     }
     agc_dp_t q2 = agc_dp_neg(agc_dp_sqrt(ip, q2sq)); /* Q2 (-16), inbound */
-    (void) agc_interp_test_ovf(ip);                  /* BOVB TCDANZIG     */
+    agc_interp_clear_ovf(ip);                  /* BOVB TCDANZIG     */
     tff->tfftem = q2;
     tff->tffq1  = agc_dp_shl(ip, agc_vec_dot(ip, tff->vone_p, tff->rone), 3);
     if (tff->tffq1 < 0)

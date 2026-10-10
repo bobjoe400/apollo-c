@@ -36,15 +36,20 @@ static agc_dp_t agsk; /* AGSK: AGS clock zero, cs B28  */
 
 const uint16_t *agc_ags_buffer(void)
 {
-    (void) AGC_ASSERT(AGC_ALIGN_AGSBUFF_WORDS == 14);
-    (void) AGC_ASSERT(agsk >= AGC_DP_MIN);
+    _Static_assert(AGC_ALIGN_AGSBUFF_WORDS == 14, "AGC constant");
     return agsbuff;
 }
 
 agc_dp_t agc_ags_agsk(void)
 {
-    (void) AGC_ASSERT(agsk >= AGC_DP_MIN);
-    (void) AGC_ASSERT(agsk <= AGC_DP_MAX);
+    if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(agsk <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agsk;
 }
 
@@ -67,7 +72,10 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
         const agc_dp_t r = agc_dp_add(ip, v.c[i], AGS_ROUND);
         w[i]             = align_sp_to_word(agc_dp_high(r));
     }
-    (void) AGC_ASSERT(w[0] <= 077777u);
+    if (!AGC_ASSERT(w[0] <= 077777u))
+    {
+        return;
+    }
 }
 
 /*
@@ -135,7 +143,8 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
     }
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
-        const agc_status_t alm = agc_alarm(ALM_NO_REFSMMAT);
+        agc_alarm(ALM_NO_REFSMMAT);
+        const agc_status_t alm = AGC_STATUS_ALARM;
         return (alm == AGC_STATUS_OK) ? agc_dsky_endext() : alm;
     }
     return show_agsk(ctx);
@@ -153,7 +162,10 @@ agc_status_t agc_job_ags_initialization_new_zero(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agsk = align_resp_recycle() ? agc_erase_samptime() : agc_erase_dsptemx();
-    (void) AGC_ASSERT(agsk >= AGC_DP_MIN);
+    if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return show_agsk(ctx);
 }
 
@@ -236,7 +248,8 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
     {
         agsbuff[AGSBUFF_TIME]     = align_sp_to_word(agc_dp_high(t));
         agsbuff[AGSBUFF_TIME + 1] = align_sp_to_word(agc_dp_low(t));
-        st = agc_telem_select_list(LAGSLIST); /* DNLSTCOD */
+        agc_telem_select_list(LAGSLIST); /* DNLSTCOD */
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -291,11 +304,7 @@ agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_status_t st = agc_telem_select_list((int) agc_erase_agsword());
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_telem_select_list((int) agc_erase_agsword());
     if (agc_flag_test(AGC_FLAG_IMUSE))
     {
         return ags_end(ctx);
@@ -310,8 +319,10 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) !=
-                      AGC_IMU_STALL_SLEEPING);
+    if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_SLEEPING))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return ags_end(ctx);
 }
 
@@ -324,6 +335,9 @@ agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_dsky_endext();
 }

@@ -32,7 +32,10 @@ static agc_sp_t detent_code(void)
 {
     const agc_sp_t d =
         (agc_sp_t) ((agc_align_ram()->starcode >> DETENT_SHIFT) & DETENT_MASK);
-    (void) AGC_ASSERT((d >= 0) && (d <= DETENT_COAS));
+    if (!AGC_ASSERT((d >= 0) && (d <= DETENT_COAS)))
+    {
+        return 0; /* no valid result */
+    }
     return d;
 }
 
@@ -50,7 +53,10 @@ agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx,
     agc_align_ram_t *ram    = agc_align_ram();
     ram->auto_optics_return = ret; /* SAVQR52  */
     const agc_sp_t star6    = (ram->starind == 0) ? ram->besti : ram->bestj;
-    (void) AGC_ASSERT(star6 >= 0);
+    if (!AGC_ASSERT(star6 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     ram->starcode = (agc_sp_t) ((star6 / STAR_WORDS) + DETENT_2);
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_AUTO_OPTICS_ORIENT,
@@ -64,7 +70,10 @@ agc_status_t agc_job_lm_auto_optics_star_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_AUTO_OPTICS_ORIENT,
                        AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY);
@@ -116,7 +125,10 @@ agc_status_t agc_job_lm_auto_optics_az_el_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE);
+    if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_AZ_EL, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED,
                        AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY);
@@ -146,11 +158,9 @@ agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx)
     const agc_mat_t refsmmat = agc_erase_refsmmat();
     ram->pointvsm            = agc_vec_unit(
                    &ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
-    agc_status_t st = agc_imu_set_pointvsm(ram->pointvsm);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_set_scaxis(ram->scaxis);
-    }
+    agc_imu_set_pointvsm(ram->pointvsm);
+    agc_status_t st = AGC_STATUS_OK;
+    st = agc_imu_set_scaxis(ram->scaxis);
     if (st != AGC_STATUS_OK)
     {
         return st;

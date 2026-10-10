@@ -69,9 +69,9 @@ agc_status_t agc_imu_zero(void);                       /* IMUZERO        */
 agc_status_t agc_imu_coarse(const uint16_t thetad[3]); /* IMUCOARS       */
 agc_status_t agc_imu_fine(void);                       /* IMUFINE/IMUFIN20 */
 agc_status_t agc_imu_pipuse(void);                     /* PIPUSE         */
-agc_status_t agc_imu_pipuse1(void);                    /* PIPUSE1        */
-agc_status_t agc_imu_pipfree(void);                    /* PIPFREE        */
-agc_status_t agc_imu_rndrefdr(void);                   /* RNDREFDR       */
+void agc_imu_pipuse1(void);                    /* PIPUSE1        */
+void agc_imu_pipfree(void);                    /* PIPFREE        */
+void agc_imu_rndrefdr(void);                   /* RNDREFDR       */
 
 /* IMUPULSE with an explicit buffer.  If the gyros are busy and wake_as is
  * not AGC_JOB_NONE the calling job is put to sleep (GYROBUSY) and wake_as is
@@ -82,7 +82,7 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as);
 /* IMUPULSE on the OGC buffer after loading it with gyro[0..2] (X,Y,Z).    */
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3]);
 agc_status_t agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3]);
-agc_status_t agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3]);
+void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3]);
 bool         agc_imu_gyros_busy(void); /* LGYRO != 0     */
 uint16_t     agc_imu_gyrocmd(void);    /* GYROCMD counter (pulses)      */
 agc_sp_t     agc_imu_cducmd(int axis); /* CDUXCMD..CDUZCMD (pulses)     */
@@ -107,9 +107,9 @@ agc_status_t agc_imu_standby(agc_job_ctx_t *ctx); /* P06 (stub)     */
 agc_status_t agc_imu_postand(agc_job_ctx_t *ctx); /* POSTAND (stub) */
 
 /* Subroutines also used by T4RUPT (sys-misc).                             */
-agc_status_t agc_imu_zeroicdu(void);   /* ZEROICDU: CDUX/Y/Z = 0         */
-agc_status_t agc_imu_noattoff(void);   /* NOATTOFF: NO ATT lamp off      */
-agc_status_t agc_imu_setcoars(void);   /* SETCOARS                       */
+void agc_imu_zeroicdu(void);   /* ZEROICDU: CDUX/Y/Z = 0         */
+void agc_imu_noattoff(void);   /* NOATTOFF: NO ATT lamp off      */
+void agc_imu_setcoars(void);   /* SETCOARS                       */
 agc_status_t agc_imu_fin20(void);      /* IMUFIN20 (= IMUFINE)           */
 agc_status_t agc_imu_clear_cmds(void); /* -0 into CDUXCMD..Z, GYROCMD    */
 /* MODECADR storage is exec's (agc_erase_modecadr in agc_exec.h); the
@@ -117,7 +117,7 @@ agc_status_t agc_imu_clear_cmds(void); /* -0 into CDUXCMD..Z, GYROCMD    */
  * (stands in for -0), positive = id of the stalled job.                  */
 /* Simulator side of the hardware command counters: the harness drains
  * GYROCMD and CDUXCMD..CDUZCMD as it emits the pulses.                    */
-agc_status_t agc_imu_hw_set_gyrocmd(uint16_t pulses);
+void agc_imu_hw_set_gyrocmd(uint16_t pulses);
 agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses);
 
 /* Waitlist tasks of the mode-switching routines (dispatch.c).             */
@@ -177,7 +177,7 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx); /* LASTBIAS       */
 agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
 /* CALCGTA: dc rows = XDC, YDC, ZDC (half-unit) -> gyro[] = OGC, IGC, MGC
  * (revolutions).  Also loads the OGC gyro buffer.                         */
-agc_status_t agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc,
+void agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc,
                              agc_dp_t gyro[3]);
 /* CALCGA: nb rows = XNB, YNB, ZNB; sm rows = XSM, YSM, ZSM (half-unit,
  * same reference frame) -> thetad[] = OGC, IGC, MGC as CDU patterns.
@@ -251,7 +251,7 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx); /* NEWDELHI            */
 agc_status_t agc_task_updtcall(void);              /* UPDTCALL            */
 agc_status_t agc_task_manustop(void);              /* MANUSTOP            */
 agc_status_t agc_task_endmanu(void);               /* ENDMANU / GOODMANU  */
-agc_status_t agc_kalc_stoprate(void);              /* STOPRATE            */
+void agc_kalc_stoprate(void);              /* STOPRATE            */
 agc_status_t agc_kalc_zeroerror(void);             /* ZEROERROR (CM)      */
 
 /* ======================================================================= */
@@ -273,7 +273,7 @@ agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
 agc_status_t agc_imu_set_scaxis(agc_vec_t v); /* SCAXIS, half-unit   */
 uint16_t
 agc_erase_fdai(int axis); /* FDAIX..Z (LM) from BALLANGS, CDU pattern */
-agc_status_t agc_imu_set_pointvsm(agc_vec_t v); /* POINTVSM, half-unit */
+void agc_imu_set_pointvsm(agc_vec_t v); /* POINTVSM, half-unit */
 
 /* G+N,AUTO / ISITAUTO (LM R60_62.agc): +0 when the LM is in G&N and auto
  * stabilization, positive otherwise.                                     */

@@ -62,8 +62,14 @@ agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
 /* Word rel of bank b, +0 outside the image.                                */
 static uint16_t rope_word(int bank, int rel)
 {
-    (void) AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH);
-    (void) AGC_ASSERT(rel >= 0 && rel < AGC_ROPE_BANK_WORDS);
+    if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(rel >= 0 && rel < AGC_ROPE_BANK_WORDS))
+    {
+        return 0; /* no valid result */
+    }
     if (rope == NULL || bank >= rope_banks)
     {
         return 0;
@@ -74,14 +80,20 @@ static uint16_t rope_word(int bank, int rel)
 /* 16-bit ones'-complement A register image of a 15-bit word.               */
 static uint32_t to16(uint16_t w)
 {
-    (void) AGC_ASSERT(w <= WORD15);
+    if (!AGC_ASSERT(w <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return (uint32_t) w | (((uint32_t) w & SIGN15) << 1);
 }
 
 /* AD in the 16-bit accumulator (end-around carry).                         */
 static uint32_t ad16(uint32_t a, uint32_t b)
 {
-    (void) AGC_ASSERT(a <= 0177777u && b <= 0177777u);
+    if (!AGC_ASSERT(a <= 0177777u && b <= 0177777u))
+    {
+        return 0; /* no valid result */
+    }
     uint32_t s = a + b;
     if (s > 0177777u)
     {
@@ -103,14 +115,20 @@ static uint16_t adsum(uint16_t sum, uint16_t word)
         return stored; /* CAF S+ZERO, AD, TS */
     }
     uint32_t r = ad16(to16(pos_ovf ? 1u : NEG1), to16(stored));
-    (void) AGC_ASSERT((r & 0140000u) == 0u || (r & 0140000u) == 0140000u);
+    if (!AGC_ASSERT((r & 0140000u) == 0u || (r & 0140000u) == 0140000u))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) ((r & 037777u) | ((r >> 1) & SIGN15));
 }
 
 /* First address of bank b as the self-check forms it.                     */
 static uint16_t bank_base(int bank)
 {
-    (void) AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH);
+    if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
+    {
+        return 0; /* no valid result */
+    }
     return (bank == 2) ? BANK2_ADDR : (bank == 3) ? BANK3_ADDR : BANK_ADDR;
 }
 
@@ -168,8 +186,7 @@ bool agc_selfcheck_bank_ok(int bank)
 static agc_status_t selfcheck_error(void)
 {
     ercount         = (uint16_t) ((ercount + 1u) & WORD15);
-    agc_status_t st = agc_alarm(ALARM_SELF_CHECK); /* ALARM2 01102       */
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    agc_alarm(ALARM_SELF_CHECK); /* ALARM2 01102       */
     if (smode != NEG0 && (smode & SIGN15) == 0u)
     {
         smode = 0; /* SIDLOOP            */
@@ -189,7 +206,10 @@ static agc_status_t ropechk(void)
             return selfcheck_error();
         }
     }
-    (void) AGC_ASSERT(skeep[6] == NEG0);
+    if (!AGC_ASSERT(skeep[6] == NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -233,7 +253,10 @@ agc_status_t agc_selfcheck_set_smode(uint16_t word)
 
 uint16_t agc_selfcheck_smode(void)
 {
-    (void) AGC_ASSERT(smode <= WORD15);
+    if (!AGC_ASSERT(smode <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return smode;
 }
 
@@ -245,13 +268,19 @@ agc_status_t agc_selfcheck_fresh_start(bool slap1)
     {
         ercount = 0;
     }
-    (void) AGC_ASSERT(smode == 0u);
+    if (!AGC_ASSERT(smode == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 uint16_t agc_selfcheck_error_count(void)
 {
-    (void) AGC_ASSERT(ercount <= WORD15);
+    if (!AGC_ASSERT(ercount <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return ercount;
 }
 
@@ -278,14 +307,20 @@ agc_status_t agc_selfcheck_showsum_start(void)
 {
     skeep[6] = 1;
     smode    = 0;
-    (void) AGC_ASSERT(skeep[6] == 1u);
+    if (!AGC_ASSERT(skeep[6] == 1u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return showsum_bank(0);
 }
 
 /* NXTBNK; after the last bank ENDSUMS starts again at bank 0.            */
 agc_status_t agc_selfcheck_showsum_next(void)
 {
-    (void) AGC_ASSERT(show_bank >= 0 && show_bank <= LSTBNKCH);
+    if (!AGC_ASSERT(show_bank >= 0 && show_bank <= LSTBNKCH))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     int next = (show_bank >= LSTBNKCH) ? 0 : show_bank + 1;
     return showsum_bank(next);
 }
@@ -295,7 +330,10 @@ agc_status_t agc_selfcheck_showsum_end(void)
 {
     skeep[1] = 0;
     skeep[6] = NEG0;
-    (void) AGC_ASSERT(show_bank >= 0);
+    if (!AGC_ASSERT(show_bank >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 

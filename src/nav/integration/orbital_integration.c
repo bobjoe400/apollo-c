@@ -119,7 +119,10 @@ agc_dp_t agc_integ_mu(int x2)
 agc_vec_t agc_integ_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 {
     int k = n;
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     if (!AGC_ASSERT((k <= INTEG_MAX_SHIFT) && (k >= -INTEG_MAX_SHIFT)))
     {
         k = (k > 0) ? INTEG_MAX_SHIFT : -INTEG_MAX_SHIFT;
@@ -134,7 +137,10 @@ agc_vec_t agc_integ_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 agc_dp_t agc_integ_dshift(agc_interp_t *ip, agc_dp_t a, int n)
 {
     int k = n;
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return 0; /* no valid result */
+    }
     if (!AGC_ASSERT((k <= INTEG_MAX_SHIFT) && (k >= -INTEG_MAX_SHIFT)))
     {
         k = (k > 0) ? INTEG_MAX_SHIFT : -INTEG_MAX_SHIFT;
@@ -152,8 +158,14 @@ static agc_tp_t tp_norm(agc_interp_t *ip, agc_tp_t v, int *n)
 {
     agc_tp_t m = v;
     int      k = 0;
-    (void) AGC_ASSERT(n != NULL);
-    (void) AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
+    if (!AGC_ASSERT(n != NULL))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (m != 0)
     {
         for (k = 0; k < AGC_TP_BITS; k++)
@@ -196,15 +208,16 @@ agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->sv.rcv = ctx->sv.rrect;
     const agc_vec_t v =
         agc_vec_add(ip, agc_vec_shr(ctx->sv.nuv, 4 + p), ctx->sv.vcv);
-    return agc_integ_minirect(ctx, v);
+    agc_integ_minirect(ctx, v);
+    return AGC_STATUS_OK;
 }
 
 /* MINIRECT (p. 1347): VRECT = VCV = v, zero TDELTAV TNUV TC XKEP.        */
-agc_status_t agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
+void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     ctx->sv.vrect  = v;
     ctx->sv.vcv    = v;
@@ -212,7 +225,6 @@ agc_status_t agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
     ctx->sv.nuv    = agc_vec_zero();
     ctx->sv.tc     = 0;
     ctx->sv.xkep   = 0;
-    return AGC_STATUS_OK;
 }
 
 /*
@@ -276,7 +288,10 @@ static agc_status_t fbr3(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_dp_t d = (ctx->stage == 1) ? agc_dp_shr(ctx->dt2, 9) :
                                            agc_dp_shr_round(ctx->dt2, 9);
     ctx->tau         = agc_dp_add(ip, d, ctx->sv.tc);  /* TAU. = TC + DT/2 */
@@ -289,12 +304,17 @@ static agc_status_t fbr3(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * integration is hopeless: POODOO 00430.                                 */
 static agc_integ_next_t gobaque(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT(agc_integ_valid_ctx(ctx));
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return INTEG_NEXT_FAIL;
+    }
+    if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
+    {
+        return INTEG_NEXT_FAIL;
+    }
     if (agc_vec_abval(ip, ctx->sv.deltav) == 0)
     {
-        (void) agc_poodoo(AGC_INTEG_ALARM_INT_ABRT); /* status in ABORT  */
-        return INTEG_NEXT_ABORT;
+        return INTEG_NEXT_ABORT; /* POODOO INT-ABRT, raised by the driver */
     }
     const agc_dp_t h28 = agc_dp_shr(ctx->h, 9); /* H 2^19 -> 2^28   */
     ctx->tau           = agc_dp_sub(ip, ctx->sv.tc, h28);
@@ -326,20 +346,32 @@ typedef enum acc_result
 static agc_tp_t vsq_tp(agc_interp_t *ip, agc_vec_t v)
 {
     agc_tp_t s = agc_dp_mul_tp(v.c[0], v.c[0]);
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return 0; /* no valid result */
+    }
     for (int i = 1; i < AGC_VEC_N; i++)
     {
         s = agc_tp_add(ip, s, agc_dp_mul_tp(v.c[i], v.c[i]));
     }
-    (void) AGC_ASSERT((s >= 0) && (s <= AGC_TP_MAX));
+    if (!AGC_ASSERT((s >= 0) && (s <= AGC_TP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return s;
 }
 
 /* DMP x SL1R: TP product, shifted left one, rounded to DP.              */
 static agc_dp_t dmp_sl1r(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     agc_tp_t t = agc_dp_mul_tp(a, b);
     t          = agc_tp_add(ip, t, t);
     return agc_tp_round_dp(t);
@@ -373,8 +405,14 @@ static void gamcomp_rho(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1,
     g->rho_q    = agc_dp_shr_round(agc_dp_div(ip, am, bm), 1); /* BDDV SR1R  */
     g->xs  = ASCALE_S1[x1 / 2] - n2 + n3; /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
     g->rho = agc_integ_dshift(ip, g->rho_q, 1 + g->xs); /* SR* 0 -1,2  */
-    (void) AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N));
-    (void) AGC_ASSERT(ctx->betam >= 0);
+    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N)))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(ctx->betam >= 0))
+    {
+        return;
+    }
 }
 
 /*
@@ -413,7 +451,7 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
     f          = agc_dp_neg(agc_tp_to_dp(agc_dp_mul_tp(f, agc_integ_mu(x2))));
     v          = agc_vec_scale(ip, v, f); /* DCOMP VXSC       */
     const int xsum = g.xs + ASCALE_S2[x1 / 2] + n4 + g.n1; /* XAD XSU XSU */
-    (void) agc_interp_test_ovf(ip);              /* BOV +1 (reset)   */
+    agc_interp_clear_ovf(ip);              /* BOV +1 (reset)   */
     v       = agc_integ_vshift(ip, v, 1 + xsum); /* VSR* 0 -1,2      */
     ctx->fv = agc_vec_add(ip, v, ctx->fv);       /* VAD FV, STORE FV */
     return agc_interp_test_ovf(ip);              /* BOV -> GOBAQUE   */
@@ -422,8 +460,14 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
 /* LUNPOS: CM ephemeris (earth-centred moon, 2^29 m); LM LUNPOS = LSPOS.  */
 static agc_status_t lunpos(agc_interp_t *ip, agc_dp_t t, agc_vec_t *moon)
 {
-    (void) AGC_ASSERT(moon != NULL);
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(moon != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         agc_vec_t sun;
@@ -442,8 +486,14 @@ static agc_status_t lunpos(agc_interp_t *ip, agc_dp_t t, agc_vec_t *moon)
  * FOOL INTEGRATION" (unreachable there); zero is returned.               */
 static agc_status_t lunvel(agc_interp_t *ip, agc_dp_t t, agc_vec_t *vmoon)
 {
-    (void) AGC_ASSERT(vmoon != NULL);
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(vmoon != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         *vmoon = agc_vec_zero(); /* DEVIATION: MPAC left as is in AGC */
@@ -552,15 +602,24 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
     w->cphi      = w->urpv.c[2];
     agc_vec_t ax = agc_vec_add(ip, agc_vec_cross(ip, pad.lm504, zunit), zunit);
     w->uz        = agc_vec_unit(ip, agc_vec_mat(ip, ax, &m), NULL, NULL);
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 /* COMTERM Legendre polynomials in COSPHI/2.                             */
 static void legendre_terms(agc_interp_t *ip, agc_dp_t cphi, legendre_t *l)
 {
-    (void) AGC_ASSERT(l != NULL);
-    (void) AGC_ASSERT((cphi >= AGC_DP_MIN) && (cphi <= AGC_DP_MAX));
+    if (!AGC_ASSERT(l != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT((cphi >= AGC_DP_MIN) && (cphi <= AGC_DP_MAX)))
+    {
+        return;
+    }
     l->p2      = agc_dp_mul(ip, cphi, K_3_32); /* P2/64 0D */
     l->p3      = agc_dp_sub(ip, agc_dp_mul(ip, agc_dp_sq(ip, cphi), K_15_16),
                             K_3_64); /* P3/32 2D */
@@ -577,8 +636,14 @@ static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
                               const obl_work_t *w, const legendre_t *l)
 {
     const int b = ctx->pbody / 2;
-    (void) AGC_ASSERT((b == 0) || (b == 1));
-    (void) AGC_ASSERT(ctx->alpham > 0);
+    if (!AGC_ASSERT((b == 0) || (b == 1)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ctx->alpham > 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_dp_t t = agc_dp_mul(ip, l->p5, J4REQ_J3[b]); /* DMP*     */
     t          = agc_dp_add(ip, agc_dp_div(ip, t, ctx->alpham), l->p4);
     t          = agc_dp_mul(ip, t, J3RE_J2_2[b]); /* DMPR*    */
@@ -597,8 +662,14 @@ static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
 static agc_vec_t quality2(agc_interp_t *ip, const obl_work_t *w)
 {
     const agc_vec_t u = w->urpv;
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT(w->r4n >= 0);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(w->r4n >= 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_dp_t t  = agc_dp_sub(ip, agc_dp_sq(ip, u.c[1]), agc_dp_sq(ip, u.c[0]));
     t           = agc_dp_mul(ip, t, K_5_8);                      /* DMP 5/8  */
     agc_vec_t q = agc_vec_shl(ip, agc_vec_scale(ip, u, t), 3);   /* VSL3 2D */
@@ -638,7 +709,7 @@ static acc_result_t quality3(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     {
         return ACC_FAIL;
     }
-    (void) agc_interp_test_ovf(ip); /* "OVERFLOW INDICATOR RESET IN RP-TO-R" */
+    agc_interp_clear_ovf(ip); /* "OVERFLOW INDICATOR RESET IN RP-TO-R" */
     ctx->fv = agc_vec_add(ip, r, ctx->fv);
     return agc_interp_test_ovf(ip) ? ACC_OVF : ACC_OK;
 }
@@ -684,7 +755,7 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         agc_tp_to_dp(tp_norm(ip, agc_dp_mul_tp(r2, r2), &m)); /* DSQ NORM S1 */
     const agc_dp_t k = agc_dp_div(ip, J2REQSQ_TAB[b], w.r4n); /* BDDV*      */
     agc_vec_t      v = agc_vec_scale(ip, tvec, k);
-    (void) agc_interp_test_ovf(ip);                /* BOV +1 (reset) */
+    agc_interp_clear_ovf(ip);                /* BOV +1 (reset) */
     w.x1    = -(4 * n) - m;                        /* XAD,1 X1 X1 S1 */
     v       = agc_integ_vshift(ip, v, -22 - w.x1); /* VSL* 0 -22D,1  */
     ctx->fv = agc_vec_add(ip, v, ctx->fv);
@@ -752,8 +823,14 @@ static agc_vec_t dow1(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_vec_t r)
     const agc_dp_t k =
         agc_dp_div(ip, agc_dp_shr(ctx->betam, 1), agc_tp_to_dp(r3));
     g = agc_vec_scale(ip, g, k);
-    (void) AGC_ASSERT(rmag >= 0);
-    (void) AGC_ASSERT(ctx->betam > 0);
+    if (!AGC_ASSERT(rmag >= 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ctx->betam > 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return agc_integ_vshift(ip, g, (3 * n) + m - 8); /* 0 -8D,2 */
 }
 
@@ -762,8 +839,14 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
     const int k = ctx->stage;
-    (void) AGC_ASSERT((k >= 0) && (k <= 2));
-    (void) AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON));
+    if (!AGC_ASSERT((k >= 0) && (k <= 2)))
+    {
+        return;
+    }
+    if (!AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
+    {
+        return;
+    }
     ctx->betam = agc_integ_mu(p); /* MUEARTH,2   */
     ctx->fv    = dow1(ip, ctx, ctx->vectab[2 * k]);
     if (!agc_flag_test(AGC_FLAG_MIDFLAG))
@@ -786,18 +869,27 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* DIFEQ0 (p. 1345): ALPHAV = YV, DIFEQCNT = 0, H = 0.                    */
 static void difeq0(agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return;
+    }
     ctx->alphav = ctx->yv;
     ctx->stage  = 0;
     ctx->h      = 0;
-    (void) AGC_ASSERT(ctx->dt2 != 0);
+    if (!AGC_ASSERT(ctx->dt2 != 0))
+    {
+        return;
+    }
 }
 
 /* DIFEQ+0 / DIFEQ+1 (p. 1348) and DIFEQCOM (p. 1350): accumulate PHIV,
  * PSIV, advance H by DT/2 and predict ALPHAV = YV + H (ZV + H FV / 2).   */
 static void difeq01(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT((ctx->stage == 0) || (ctx->stage == 1));
+    if (!AGC_ASSERT((ctx->stage == 0) || (ctx->stage == 1)))
+    {
+        return;
+    }
     if (ctx->stage == 0)
     {
         ctx->phiv = agc_vec_shr(ctx->fv, 3); /* DIFEQ+0 */
@@ -813,14 +905,23 @@ static void difeq01(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_vec_t a = agc_vec_shr(agc_vec_scale(ip, ctx->fv, ctx->h), 1);
     a           = agc_vec_scale(ip, agc_vec_add(ip, a, ctx->zv), ctx->h);
     ctx->alphav = agc_vec_add(ip, a, ctx->yv);
-    (void) AGC_ASSERT(ctx->stage <= 2);
+    if (!AGC_ASSERT(ctx->stage <= 2))
+    {
+        return;
+    }
 }
 
 /* DIFEQ+2 (p. 1348): end of the step, YV and ZV updated.                */
 static void difeq2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx->stage == 2);
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ctx->stage == 2))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return;
+    }
     const agc_dp_t h23 = agc_dp_mul(ip, ctx->h, K_2_3);
     agc_vec_t      y   = agc_vec_shl(ip, agc_vec_scale(ip, ctx->phiv, h23), 1);
     y                  = agc_vec_scale(ip, agc_vec_add(ip, y, ctx->zv), ctx->h);
@@ -834,7 +935,10 @@ static void difeq2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * evaluations at H = 0, DT/2, DT with FBR3 conic advances in between.   */
 static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return INTEG_NEXT_FAIL;
+    }
     difeq0(ctx);
     for (int k = 0; k < 3; k++)
     { /* NBRANCH stages        */
@@ -883,18 +987,25 @@ static agc_integ_next_t wmatend(void)
     agc_integ_flag(AGC_FLAG_ORBWFLAG, false);
     agc_integ_flag(AGC_FLAG_RENDWFLG, false);
     agc_integ_flag(AGC_FLAG_STATEFLG, true);
-    const agc_status_t st = agc_alarm(AGC_INTEG_ALARM_WMATEND);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_DIM0FLAG));
+    agc_alarm(AGC_INTEG_ALARM_WMATEND);
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_DIM0FLAG)))
+    {
+        return INTEG_NEXT_FAIL;
+    }
     return INTEG_NEXT_TESTLOOP;
 }
 
 /* One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2. */
 static void wcolumn_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH));
-    (void) AGC_ASSERT((ctx->colreg >= 0) &&
-                      (ctx->colreg < AGC_INTEG_W_COLUMNS));
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH)))
+    {
+        return;
+    }
+    if (!AGC_ASSERT((ctx->colreg >= 0) && (ctx->colreg < AGC_INTEG_W_COLUMNS)))
+    {
+        return;
+    }
     difeq0(ctx);
     for (int k = 0; k < 3; k++)
     {
@@ -925,11 +1036,11 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     for (int col = first; col >= 0; col--)
     {
         ctx->colreg = col;
-        (void) agc_integ_grp2pc(); /* NEXTCOL  */
+        agc_integ_grp2pc(); /* NEXTCOL  */
         ctx->yv = agc_vec_shr(ctx->w.blk[0][col], 3);
         ctx->zv = agc_vec_shr(ctx->w.blk[1][col], 3);
         wcolumn_step(ip, ctx);
-        (void) agc_integ_grp2pc();                        /* DIFEQ+2  */
+        agc_integ_grp2pc();                        /* DIFEQ+2  */
         ctx->w.blk[1][col] = agc_vec_shl(ip, ctx->zv, 3); /* W +54D,2 */
         const agc_vec_t y  = agc_vec_shl(ip, ctx->yv, 3);
         if (agc_interp_test_ovf(ip))
@@ -937,7 +1048,7 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
             return wmatend();
         }
         ctx->w.blk[0][col] = y; /* W,2      */
-        (void) agc_integ_grp2pc();
+        agc_integ_grp2pc();
     }
     return INTEG_NEXT_RELOAD; /* RELOADSV */
 }
@@ -947,7 +1058,10 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
-    (void) AGC_ASSERT(ctx->rc >= 0);
+    if (!AGC_ASSERT(ctx->rc >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_dp_t d    = agc_vec_abval(ip, ctx->sv.deltav);
     bool           rect = agc_interp_test_ovf(ip); /* BOV      */
     if (!rect)
@@ -970,7 +1084,10 @@ static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         return agc_integ_rectify(ip, ctx); /* CALLRECT */
     }
-    (void) AGC_ASSERT(!rect);
+    if (!AGC_ASSERT(!rect))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -981,7 +1098,10 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
 {
     agc_vec_t sun;
     *sw = false;
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     const agc_dp_t rv =
         agc_dp_mul(ip, agc_vec_dot(ip, ctx->sv.rcv, ctx->sv.vcv), ctx->dt2);
     if (rv < 0)
@@ -1019,7 +1139,10 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
     const agc_dp_t d =
         agc_vec_abval(ip, agc_vec_sub(ip, ctx->sv.rcv, ctx->rpqv));
     *sw = (agc_dp_sub(ip, d, K_RSPHERE) < 0); /* INLUNCHK */
-    (void) AGC_ASSERT(d >= 0);
+    if (!AGC_ASSERT(d >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 

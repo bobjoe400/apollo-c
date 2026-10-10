@@ -40,8 +40,14 @@ static int highest_change(uint16_t change)
             break;
         }
     }
-    (void) AGC_ASSERT(change != 0u && change <= RM_LOW8);
-    (void) AGC_ASSERT(idx >= 0 && idx < RM_NBITS);
+    if (!AGC_ASSERT(change != 0u && change <= RM_LOW8))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(idx >= 0 && idx < RM_NBITS))
+    {
+        return 0; /* no valid result */
+    }
     return idx;
 }
 
@@ -56,7 +62,10 @@ agc_status_t agc_lm_dap_rcsmon(void)
         return AGC_STATUS_OK; /* no action required */
     }
     int l = highest_change(change);
-    (void) AGC_ASSERT(d->pvalvest <= RM_LOW8);
+    if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     uint16_t bit = (uint16_t) (0200u >> l);
     if ((d->pvalvest & bit) != 0u)
     { /* VOPENED            */
@@ -70,6 +79,9 @@ agc_status_t agc_lm_dap_rcsmon(void)
         d->ch6mask  = (uint16_t) (d->ch6mask | fail6[l]);
         d->pvalvest = (uint16_t) (d->pvalvest | bit);
     }
-    (void) AGC_ASSERT(d->pvalvest <= RM_LOW8);
+    if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_accfix(); /* 1/ACCFIX           */
 }

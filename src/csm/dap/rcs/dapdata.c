@@ -36,7 +36,10 @@ agc_status_t agc_csm_dap_setmindb(void)
     r->adb = MINDB;
     agc_erase_set_dapdatr1(
         (uint16_t) (agc_erase_dapdatr1() & ~(unsigned) CSM_DAP_BIT4));
-    (void) AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) == 0u);
+    if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -46,8 +49,14 @@ agc_status_t agc_csm_dap_setmaxdb(void)
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
     r->adb           = MAXDB;
     agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() | CSM_DAP_BIT4));
-    (void) AGC_ASSERT(r->adb == MAXDB);
-    (void) AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) != 0u);
+    if (!AGC_ASSERT(r->adb == MAXDB))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -59,11 +68,8 @@ static agc_status_t s41_2_datr1(void)
     uint16_t       d1 = agc_erase_dapdatr1();
     r->ratindx        = (agc_sp_t) (2u * (d1 & 3u)); /* MASK THREE; AD A     */
     agc_inhint();
-    agc_status_t st = ((d1 & CONFIGBITS) == CSM_DAP_BIT14) /* LEM attached  */
-                          ?
-                          agc_flag_set(AGC_FLAG_ATTCHFLG) /* TOGETHER    */
-                          :
-                          agc_flag_clear(AGC_FLAG_ATTCHFLG);
+    /* LEM attached: TOGETHER */
+    agc_flag_put(AGC_FLAG_ATTCHFLG, (d1 & CONFIGBITS) == CSM_DAP_BIT14);
     agc_relint();
     r->adb    = (agc_sp_t) ((((d1 & CSM_DAP_BIT4) != 0u) ? DEC409 : 0) + MINDB);
     r->xtrans = ((d1 & CSM_DAP_BIT7) != 0u) ? 1 : 0; /* quad BD     */
@@ -72,11 +78,13 @@ static agc_status_t s41_2_datr1(void)
         r->xtrans = (agc_sp_t) (r->xtrans - 1); /* quad AC     */
     }
     agc_inhint();
-    agc_status_t st2 = (r->xtrans != 0) ? agc_flag_set(AGC_FLAG_NJETSFLG) :
-                                          agc_flag_clear(AGC_FLAG_NJETSFLG);
+    agc_flag_put(AGC_FLAG_NJETSFLG, r->xtrans != 0);
     agc_relint();
-    (void) AGC_ASSERT((r->adb == MINDB) || (r->adb == MAXDB));
-    return (st != AGC_STATUS_OK) ? st : st2;
+    if (!AGC_ASSERT((r->adb == MINDB) || (r->adb == MAXDB)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return AGC_STATUS_OK;
 }
 
 /* S41.2 (pp. 732-733), part 2: AC/BD roll and the quad failure flags.   */
@@ -104,8 +112,14 @@ static agc_status_t s41_2_datr2(void)
     {
         r->rbdfail = ((d2 & CSM_DAP_BIT1) == 0u) ? -1 : 0; /* D failed     */
     }
-    (void) AGC_ASSERT((r->racfail >= -1) && (r->racfail <= 1));
-    (void) AGC_ASSERT((r->rbdfail >= -1) && (r->rbdfail <= 1));
+    if (!AGC_ASSERT((r->racfail >= -1) && (r->racfail <= 1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((r->rbdfail >= -1) && (r->rbdfail <= 1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -115,8 +129,14 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
 {
     agc_status_t st  = s41_2_datr1();
     agc_status_t st2 = s41_2_datr2();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(st2 == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(st2 == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : st2;
 }
 
@@ -159,11 +179,13 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
      * TVCEXEC and ROLLDAP)                                                */
     if (st == AGC_STATUS_OK)
     {
-        st = agc_flag_clear(AGC_FLAG_DAPBIT1);
+        agc_flag_clear(AGC_FLAG_DAPBIT1);
+        st = AGC_STATUS_OK;
     }
     if (st == AGC_STATUS_OK)
     {
-        st = agc_flag_set(AGC_FLAG_DAPBIT2);
+        agc_flag_set(AGC_FLAG_DAPBIT2);
+        st = AGC_STATUS_OK;
     }
     return st;
 }
@@ -171,9 +193,15 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
 /* RCSDAPON (p. 736): 0.6 s allows TVCEXEC/ROLLDAP to die.                */
 agc_status_t agc_csm_dap_rcsdapon(void)
 {
-    (void) AGC_ASSERT(T5_06SEC <= 037777u);
+    if (!AGC_ASSERT(T5_06SEC <= 037777u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_csm_dap_rcsdapon_t5(T5_06SEC);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -181,7 +209,13 @@ agc_status_t agc_csm_dap_rcsdapon(void)
 agc_status_t agc_task_rcsup(void)
 {
     agc_status_t st = agc_csm_dap_rcsdapon();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_RCSATT);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_RCSATT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* RESUME                */
 }

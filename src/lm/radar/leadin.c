@@ -75,16 +75,19 @@ static agc_status_t leadin_varadar(agc_sp_t dex)
         case 1:
             return agc_radar_rrrdot();
         case 2:
-            return agc_radar_lr_velocity_beam(2, 1); /* LRVELX   */
+            agc_radar_lr_velocity_beam(2, 1);
+            return AGC_STATUS_OK; /* LRVELX   */
         case 3:
-            return agc_radar_lr_velocity_beam(1, 1); /* LRVELY   */
+            agc_radar_lr_velocity_beam(1, 1);
+            return AGC_STATUS_OK; /* LRVELY   */
         case 4:
-            return agc_radar_lr_velocity_beam(0, 1); /* LRVELZ   */
+            agc_radar_lr_velocity_beam(0, 1);
+            return AGC_STATUS_OK; /* LRVELZ   */
         case 5:
-            return agc_radar_lralt();
+            agc_radar_lralt();
+            return AGC_STATUS_OK;
         default:
-            (void) AGC_ASSERT(false);
-            return AGC_STATUS_BAD_ARG;
+            return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
     }
 }
 

@@ -58,33 +58,27 @@ void agc_lm_landing_reset(void)
 /* PHASCHNG (PHASE_TABLE_MAINTENANCE.agc): the low octal digit of the code
  * word is the restart group; the full code is handed to the executive so
  * that the restart tables see the same phase the AGC would have stored. */
-agc_status_t agc_lm_phaschng(uint16_t octal_code)
+void agc_lm_phaschng(uint16_t octal_code)
 {
     int group = (int) (octal_code & 7u);
     if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(octal_code <= 077777u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_phase_change(group, octal_code);
-    return AGC_STATUS_OK;
 }
 
 /* FASTCHNG (LUNAR_LANDING_GUIDANCE_EQUATIONS.agc p. 826): specialised
  * PHASCHNG that stores the caller's address as the group 3 restart point.
  * DEVIATION: C cannot restart in the middle of a function, so group 3 is
  * re-armed at the LUNLAND phase; a restart repeats the guidance pass. */
-agc_status_t agc_lm_fastchng(void)
+void agc_lm_fastchng(void)
 {
-    agc_status_t st = agc_phase_change(3, LM_FASTCHNG_CODE);
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
-    {
-        return st;
-    }
-    return AGC_STATUS_OK;
+    agc_phase_change(3, LM_FASTCHNG_CODE);
 }
 
 /* TIME1: low 14 bits of the centisecond clock (wraps every 163.84 s). */
@@ -92,7 +86,10 @@ agc_sp_t agc_lm_time1(void)
 {
     uint32_t t  = agc_time_now_cs();
     agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu);
-    (void) AGC_ASSERT(t1 >= 0);
+    if (!AGC_ASSERT(t1 >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return t1;
 }
 
@@ -119,7 +116,10 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
 {
     int32_t p  = (int32_t) a * (int32_t) b; /* DP product, 2^-28 units   */
     int32_t hi = p / 16384;                 /* truncate toward zero      */
-    (void) AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) hi;
 }
 

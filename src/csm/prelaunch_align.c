@@ -36,8 +36,14 @@ static agc_dp_t  tmark;    /* TMARK: time of the last EARTHR, cs 2^28  */
 
 agc_vec_t agc_csm_prelaunch_ervector(void)
 {
-    (void) AGC_ASSERT(tmark >= 0);
-    (void) AGC_ASSERT(ervector.c[2] == 0);
+    if (!AGC_ASSERT(tmark >= 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ervector.c[2] == 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return ervector;
 }
 
@@ -67,7 +73,11 @@ agc_status_t agc_csm_finetime(uint16_t *hiscalar, uint16_t *loscalar)
     }
     *loscalar = l;
     *hiscalar = agc_chan_read(AGC_CHAN_HISCALAR);
-    (void) AGC_ASSERT(*loscalar <= 077777u);
+    if (!AGC_ASSERT(*loscalar <= 077777u))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -110,7 +120,8 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
     ervector               = agc_vec_scale(ip, v, OMEG_MS);
     tmark                  = agc_rtb_loadtime(); /* LOADTIME     */
     const agc_dp_t zero[3] = {0, 0, 0};
-    return agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, zero); /* ERCOMP1 = 0 */
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, zero);
+    return AGC_STATUS_OK; /* ERCOMP1 = 0 */
 }
 
 /* EARTHR (p.430): ERCOMP1 = ERCOMP1 + XSM (ERVECTOR (t - TMARK) 2^9),
@@ -128,7 +139,10 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
     {
         dt = dt + TIME_WRAP; /* OVERFFIX     */
     }
-    (void) AGC_ASSERT(dt >= 0 && dt <= AGC_DP_MAX);
+    if (!AGC_ASSERT(dt >= 0 && dt <= AGC_DP_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_vec_t    inc = agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, 9));
     agc_dp_t     buf[3];
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
@@ -142,7 +156,7 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
     {
         buf[i] = er.c[i];
     }
-    (void) agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
     tmark = temptime;
     return agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_NONE); /* PULSEIMU */
 }
@@ -156,7 +170,10 @@ static agc_status_t prelaunch_stub(const agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }
 

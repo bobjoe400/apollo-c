@@ -52,16 +52,28 @@ void waitlist_clear_lists(void)
     {
         lst2[k] = AGC_TASK_ENDTASK;
     }
-    (void) AGC_ASSERT(lst1[0] == WL_NEG1_2);
-    (void) AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK);
+    if (!AGC_ASSERT(lst1[0] == WL_NEG1_2))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK))
+    {
+        return;
+    }
 }
 
 /* STARTSUB / STARTSB1: CAF POSMAX / TS TIME3 (T3RUPT 1 cs later).      */
 void waitlist_reset_time3(void)
 {
     time3 = (uint16_t) WL_POSMAX;
-    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
-    (void) AGC_ASSERT(time3 > 0);
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(time3 > 0))
+    {
+        return;
+    }
 }
 
 agc_status_t agc_waitlist_init(void)
@@ -268,7 +280,10 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
  * 5 s.                                                                 */
 static agc_status_t svct3(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!agc_flag_test(AGC_FLAG_DRIFTFLG))
     {
         return AGC_STATUS_OK; /* TCF TASKOVER        */
@@ -278,29 +293,50 @@ static agc_status_t svct3(void)
         return agc_waitlist_fixdelay(WL_SVCT3_DELAY, AGC_TASK_SVCT3);
     }
     agc_status_t st = agc_exec_novac(EXEC_PRIO35, AGC_JOB_NBDONLY);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* The waitlist's own tasks (called from agc_dispatch_task).            */
 agc_status_t agc_task_endtask(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
-    (void) AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(lst2[0] != AGC_TASK_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return svct3();
 }
 
 agc_status_t agc_task_svct3(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
-    (void) AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(lst2[0] != AGC_TASK_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return svct3();
 }
 
 agc_status_t agc_task_longcycl(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
-    (void) AGC_ASSERT(longcadr != AGC_TASK_NONE);
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(longcadr != AGC_TASK_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return longcycl();
 }
 
@@ -308,8 +344,14 @@ agc_status_t agc_task_longcycl(void)
  * "TASKOVER" ends the task at once.                                   */
 agc_status_t agc_task_taskover(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
-    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -318,7 +360,10 @@ agc_status_t agc_task_taskover(void)
  * dispatch never calls itself); this entry exists for completeness.    */
 agc_status_t agc_task_getcadr(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(longcadr != AGC_TASK_NONE && longcadr != AGC_TASK_GETCADR))
     {
         return AGC_STATUS_BAD_ARG;
@@ -334,7 +379,10 @@ agc_status_t agc_waitlist_t3rupt(void)
     agc_status_t result  = AGC_STATUS_OK;
     uint16_t     gen     = exec_restart_generation();
     bool         ruptagn = true;
-    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_inhint();
     for (int pass = 0; pass < AGC_WAITLIST_MAX_TASKS && ruptagn; pass++)
     {
@@ -372,7 +420,10 @@ agc_status_t agc_waitlist_t3rupt(void)
     {
         /* BAILOUT/POODOO in a task: WHIMPER -> ENEMA after the RUPT. */
         agc_status_t st = agc_exec_service_restart();
-        (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     return result;
 }
@@ -406,14 +457,23 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
             }
         }
     }
-    (void) AGC_ASSERT(left == 0);
+    if (!AGC_ASSERT(left == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return result;
 }
 
 uint16_t agc_waitlist_time3(void)
 {
-    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
-    (void) AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE);
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE))
+    {
+        return 0; /* no valid result */
+    }
     return time3;
 }
 

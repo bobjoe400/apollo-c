@@ -47,17 +47,19 @@ agc_status_t csm_dap_needler(void)
     {
         /* first pass: disable IMU error counter to zero the DACs; must
          * wait at least 60 ms before enabling counters.                  */
-        agc_status_t st = agc_chan_and(
+        agc_chan_and(
             AGC_CHAN_CHAN12,
             (uint16_t) (077777u & ~(unsigned) AGC_CH012_ENBIMUERR));
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
         return needle11();
     }
-    agc_status_t st =
-        agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
+    agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
+    agc_status_t st = AGC_STATUS_OK;
     c->rcsflags =
         (uint16_t) (c->rcsflags & ~(unsigned) FLAGS_23); /* NEEDLER2 */
-    (void) AGC_ASSERT((c->rcsflags & FLAGS_23) == 0u);
+    if (!AGC_ASSERT((c->rcsflags & FLAGS_23) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* wait at least 4 ms for relay closure               */
 }
 
@@ -76,7 +78,10 @@ static agc_status_t needle11(void)
     }
     c->rcsflags = (uint16_t) ((c->rcsflags & ~(unsigned) FLAGS_23) |
                               AGC_CSM_RCSF_NEEDLE2);
-    (void) AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_NEEDLE2) != 0u);
+    if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_NEEDLE2) != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* end pass 1             */
 }
 
@@ -85,7 +90,10 @@ static agc_status_t needles3(void)
 {
     agc_csm_dapcom_t *c    = agc_csm_dap_com();
     uint16_t          ch12 = agc_chan_read(AGC_CHAN_CHAN12);
-    (void) AGC_ASSERT(ch12 <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(ch12 <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((ch12 & (uint16_t) AGC_CH012_ENBIMUERR) == 0u)
     {
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
@@ -121,8 +129,12 @@ static agc_status_t needles(void)
         st             = (st == AGC_STATUS_OK) ? s : st;
         c->edrive[i]   = l; /* LXCH EDRIVEX */
     }
-    agc_status_t s2 = agc_chan_or(AGC_CHAN_CHAN14, DAC_BITS);
-    (void) AGC_ASSERT(c->edrive[0] <= DACLIMIT);
+    agc_chan_or(AGC_CHAN_CHAN14, DAC_BITS);
+    agc_status_t s2 = AGC_STATUS_OK;
+    if (!AGC_ASSERT(c->edrive[0] <= DACLIMIT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ? s2 : st;
 }
 

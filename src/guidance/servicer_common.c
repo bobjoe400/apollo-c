@@ -84,7 +84,10 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
     agc_erase_set_delv(agc_vec_make(agc_dp_pack(px, 0), agc_dp_pack(py, 0),
                                     agc_dp_pack(pz, 0)));
     agc_relint();
-    (void) AGC_ASSERT(a->piptime1 >= 0);
+    if (!AGC_ASSERT(a->piptime1 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -98,7 +101,10 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(a->pipage >= 0);
+    if (!AGC_ASSERT(a->pipage >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK;
 }
 
@@ -144,7 +150,10 @@ static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
         t2              = agc_vec_shl(ip, agc_vec_scale(ip, unitz, n),
                                       1); /* VXSC VSL1 UNITZ */
     }
-    (void) AGC_ASSERT(a->rmagsq > 0);
+    if (!AGC_ASSERT(a->rmagsq > 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return agc_vec_add(ip, t2, t1); /* VAD (pop)      */
 }
 
@@ -234,16 +243,16 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
  * restart protection. Comanche's 26-word copy includes GOBL1/2 -> GOBL/2;
  * Luminary's 22-word COPYCYC includes MASS1 -> MASS (NORMLIZ2 copies 20,
  * without MASS).                                                          */
-agc_status_t agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
+void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
 {
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(kind == AGC_COPY_RVT || kind == AGC_COPY_RVTG ||
                     kind == AGC_COPY_ALL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_guid_t *g = agc_guid_state();
     agc_inhint();
@@ -263,5 +272,4 @@ agc_status_t agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
         g->lm.mass = g->lm.mass1;
     }
     agc_relint();
-    return AGC_STATUS_OK;
 }

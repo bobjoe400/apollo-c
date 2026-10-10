@@ -131,8 +131,8 @@ agc_align_refmf(agc_interp_t *ip); /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
 agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
 
 /* ---- prog-rendz: R29/R12 radar helpers (RADAR_LEADIN / R10 lamps) ------- */
-agc_status_t agc_rendz_flip(uint16_t lamp_bit); /* FLIP (R10 LR lamps)  */
-agc_status_t agc_rendz_clradmod(void); /* CLRADMOD (RADMODES for R29) */
+void agc_rendz_flip(uint16_t lamp_bit); /* FLIP (R10 LR lamps)  */
+void agc_rendz_clradmod(void); /* CLRADMOD (RADMODES for R29) */
 
 /* ---- sys-misc (T4RUPT): gimbal-to-pilot matrix elements (R10 meters) ---- */
 agc_sp_t agc_erase_m22(void); /* M22 = sin(AOG), at 1 */

@@ -90,7 +90,7 @@ static void test_throttle_band(void)
     pad->highcrit     = 3070;
     const double mass = 8000.0; /* kg                                   */
     agc_guid_state()->lm.mass = agc_dp_from_double(mass, 16);
-    (void) agc_time_set_cs(50000u);
+    agc_time_set_cs(50000u);
     agc_lm_thr()->tthrot = (agc_sp_t) (agc_lm_time1() - 1000); /* > 3 s ago */
 
     /* Commanded 2.0 m/s^2 (16 kN, ~37% of the 43.9 kN maximum); present

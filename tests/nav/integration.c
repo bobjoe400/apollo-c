@@ -281,10 +281,8 @@ static agc_status_t run_body(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v,
     ctx->sv.rcv = to_agc(r, moon ? 27 : 29);
     ctx->sv.vcv = to_agc(v, moon ? 5 : 7);
     ctx->sv.tet = 0;
-    CHECK((moon ? agc_flag_set(AGC_FLAG_MOONFLAG) :
-                  agc_flag_clear(AGC_FLAG_MOONFLAG)) == AGC_STATUS_OK);
-    CHECK((conic ? agc_flag_set(AGC_FLAG_INTYPFLG) :
-                   agc_flag_clear(AGC_FLAG_INTYPFLG)) == AGC_STATUS_OK);
+    agc_flag_put(AGC_FLAG_MOONFLAG, moon);
+    agc_flag_put(AGC_FLAG_INTYPFLG, conic);
     const agc_status_t st = agc_integ_integrvs(&ip, ctx, (agc_dp_t) t1);
     CHECK(!agc_integ_area_busy(0)); /* INTWAKE released */
     return st;
@@ -431,15 +429,15 @@ static void test_wmatrix(void)
     sv.vcv            = sv.vrect;
     sv.tet            = 0;
     CHECK(agc_integ_perm_set(AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK);
-    CHECK(agc_flag_clear(AGC_FLAG_CMOONFLG) == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_CMOONFLG);
     /* W column 0: 100 m along x at the stored scale (YV SL3: 2^19 m).    */
     ctx->w.blk[0][0] = to_agc(dv(100.0, 0.0, 0.0), 19);
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
-    CHECK(agc_flag_set(AGC_FLAG_VINTFLAG) == AGC_STATUS_OK);
-    CHECK(agc_flag_clear(AGC_FLAG_INTYPFLG) == AGC_STATUS_OK);
-    CHECK(agc_flag_set(AGC_FLAG_DIM0FLAG) == AGC_STATUS_OK);
-    CHECK(agc_flag_clear(AGC_FLAG_D6OR9FLG) == AGC_STATUS_OK);
-    CHECK(agc_flag_set(AGC_FLAG_PRECIFLG) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_VINTFLAG);
+    agc_flag_clear(AGC_FLAG_INTYPFLG);
+    agc_flag_set(AGC_FLAG_DIM0FLAG);
+    agc_flag_clear(AGC_FLAG_D6OR9FLG);
+    agc_flag_set(AGC_FLAG_PRECIFLG);
     CHECK(agc_integ_integrv(&ip, ctx, (agc_dp_t) TEN_MIN_CS) == AGC_STATUS_OK);
     dstate_t a = {r0, v0};
     dstate_t b = a;
@@ -577,7 +575,7 @@ static void test_stateint(void)
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
     set_perm(AGC_VEHICLE_LM, r0, v0, 0);
-    CHECK(agc_time_set_cs(300000u) == AGC_STATUS_OK);
+    agc_time_set_cs(300000u);
     CHECK(agc_job_statint1(&jc) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
@@ -614,7 +612,7 @@ static void test_midtoav(void)
     CHECK(out.rtx2 == 0);
     CHECK(dist(from_agc(out.rn1, 29), r1) < 2000.0);
     CHECK(!agc_flag_test(AGC_FLAG_MIDAVFLG));
-    CHECK(agc_time_set_cs(100000u) == AGC_STATUS_OK);
+    agc_time_set_cs(100000u);
     CHECK(agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), 100500, AGC_JOB_NONE,
                              &out) == AGC_STATUS_OK);
     CHECK(out.slipped);            /* ALARM 1703        */
@@ -643,7 +641,7 @@ static void test_avetomid(void)
     agc_erase_set_vn(to_agc(v1, 7));
     agc_erase_set_piptime(60000);
     ctx->w.blk[0][0] = to_agc(dv(100.0, 0.0, 0.0), 19);
-    CHECK(agc_flag_set(AGC_FLAG_ORBWFLAG) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_ORBWFLAG);
     CHECK(agc_integ_avetomid(&ip, ctx, AGC_JOB_NONE) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);

@@ -201,7 +201,7 @@ agc_status_t agc_rr_zero(void); /* RRZERO: zero the RR CDUs      */
  * ended the job instead (angles rejected, alarm 502; or a job already
  * waits in RADSTALL); then the caller ends without RADSTALL.             */
 agc_status_t agc_rr_designate_gimbal(bool *started);
-agc_status_t agc_rendz_clradmod(void); /* CLRADMOD (RADMODES)           */
+void agc_rendz_clradmod(void); /* CLRADMOD (RADMODES)           */
 agc_status_t agc_radar_lrpos2(void);   /* LRPOS2: LR to position 2      */
 /* ---- requested from prog-align / io-pinball / io-nouns (display buffers) */
 agc_sp_t agc_erase_optionx(int index); /* OPTIONX +index (N12)          */

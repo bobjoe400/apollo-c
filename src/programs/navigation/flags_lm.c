@@ -33,6 +33,9 @@ agc_flag_id_t rz_vflag_lm(rz_vflag_t f)
     {
         return 0U;
     }
-    (void) AGC_ASSERT(ids[f] == 0U || agc_flag_bit(ids[f]) >= 1);
+    if (!AGC_ASSERT(ids[f] == 0U || agc_flag_bit(ids[f]) >= 1))
+    {
+        return 0U;
+    }
     return ids[f];
 }

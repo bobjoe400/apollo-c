@@ -17,9 +17,18 @@
 agc_vec_t agc_vec_make(agc_dp_t x, agc_dp_t y, agc_dp_t z)
 {
     agc_vec_t v;
-    (void) AGC_ASSERT((x >= AGC_DP_MIN) && (x <= AGC_DP_MAX));
-    (void) AGC_ASSERT((y >= AGC_DP_MIN) && (y <= AGC_DP_MAX));
-    (void) AGC_ASSERT((z >= AGC_DP_MIN) && (z <= AGC_DP_MAX));
+    if (!AGC_ASSERT((x >= AGC_DP_MIN) && (x <= AGC_DP_MAX)))
+    {
+        return (agc_vec_t){{0, 0, 0}}; /* no valid result */
+    }
+    if (!AGC_ASSERT((y >= AGC_DP_MIN) && (y <= AGC_DP_MAX)))
+    {
+        return (agc_vec_t){{0, 0, 0}}; /* no valid result */
+    }
+    if (!AGC_ASSERT((z >= AGC_DP_MIN) && (z <= AGC_DP_MAX)))
+    {
+        return (agc_vec_t){{0, 0, 0}}; /* no valid result */
+    }
     v.c[0] = x;
     v.c[1] = y;
     v.c[2] = z;
@@ -28,9 +37,7 @@ agc_vec_t agc_vec_make(agc_dp_t x, agc_dp_t y, agc_dp_t z)
 
 agc_vec_t agc_vec_zero(void)
 {
-    agc_vec_t v = agc_vec_make(0, 0, 0);
-    (void) AGC_ASSERT(v.c[0] == 0);
-    (void) AGC_ASSERT((v.c[1] == 0) && (v.c[2] == 0));
+    const agc_vec_t v = {{0, 0, 0}};
     return v;
 }
 
@@ -54,7 +61,10 @@ agc_vec_t agc_vec_add(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         r.c[k] = agc_w_join(
             agc_w_dad(agc_w_split(u.c[k]), agc_w_split(v.c[k]), &ip->ovfind));
     }
-    (void) AGC_ASSERT(i == AGC_VEC_N);
+    if (!AGC_ASSERT(i == AGC_VEC_N))
+    {
+        return u;
+    }
     return r;
 }
 
@@ -66,7 +76,10 @@ agc_vec_t agc_vec_sub(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     {
         return u;
     }
-    (void) AGC_ASSERT(v.c[0] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN))
+    {
+        return u;
+    }
     return agc_vec_add(ip, u, agc_vec_neg(v));
 }
 
@@ -77,10 +90,16 @@ agc_vec_t agc_vec_neg(agc_vec_t v)
     int       k;
     for (k = 0; k < AGC_VEC_N; k++)
     {
-        (void) AGC_ASSERT((v.c[k] >= AGC_DP_MIN) && (v.c[k] <= AGC_DP_MAX));
+        if (!AGC_ASSERT((v.c[k] >= AGC_DP_MIN) && (v.c[k] <= AGC_DP_MAX)))
+        {
+            return agc_vec_zero(); /* no valid result */
+        }
         r.c[k] = -v.c[k];
     }
-    (void) AGC_ASSERT(k == AGC_VEC_N);
+    if (!AGC_ASSERT(k == AGC_VEC_N))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return r;
 }
 
@@ -102,7 +121,10 @@ agc_vec_t agc_vec_scale(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
         m      = agc_w_roundsub(m, &ip->ovfind); /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
     }
-    (void) AGC_ASSERT(k == AGC_VEC_N);
+    if (!AGC_ASSERT(k == AGC_VEC_N))
+    {
+        return v;
+    }
     return r;
 }
 
@@ -115,7 +137,10 @@ agc_tp_t agc_vec_dot_tp(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         return 0;
     }
     m = agc_w_dotsub(u, v, &ip->ovfind);
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return 0;
+    }
     return agc_w3_value(m);
 }
 
@@ -128,7 +153,10 @@ agc_dp_t agc_vec_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         return 0;
     }
     m = agc_w_dotsub(u, v, &ip->ovfind);
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return 0;
+    }
     return agc_w_join(agc_w3_top(m));
 }
 
@@ -141,7 +169,10 @@ agc_dp_t agc_vec_sq(agc_interp_t *ip, agc_vec_t v)
         return 0;
     }
     m = agc_w_vsqsub(v, &ip->ovfind);
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return 0;
+    }
     return agc_w_join(agc_w3_top(m));
 }
 
@@ -153,7 +184,10 @@ agc_tp_t agc_vec_sq_tp(agc_interp_t *ip, agc_vec_t v)
         return 0;
     }
     m = agc_w_vsqsub(v, &ip->ovfind);
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return 0;
+    }
     return agc_w3_value(m);
 }
 
@@ -166,15 +200,24 @@ agc_dp_t agc_vec_abval(agc_interp_t *ip, agc_vec_t v)
         return 0;
     }
     sq = agc_vec_sq_tp(ip, v);
-    (void) AGC_ASSERT(sq >= 0);
+    if (!AGC_ASSERT(sq >= 0))
+    {
+        return 0;
+    }
     return agc_tp_sqrt(ip, sq);
 }
 
 /* Top two words of DMPSUB(mpac, x).                                         */
 static agc_w2_t mul_top(agc_dp_t mpac, agc_dp_t x)
 {
-    (void) AGC_ASSERT((mpac >= AGC_DP_MIN) && (mpac <= AGC_DP_MAX));
-    (void) AGC_ASSERT((x >= AGC_DP_MIN) && (x <= AGC_DP_MAX));
+    if (!AGC_ASSERT((mpac >= AGC_DP_MIN) && (mpac <= AGC_DP_MAX)))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT((x >= AGC_DP_MIN) && (x <= AGC_DP_MAX)))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return agc_w3_top(agc_w_dmpsub(agc_w_split(mpac), agc_w_split(x)));
 }
 
@@ -196,7 +239,10 @@ agc_vec_t agc_vec_cross(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     y = agc_w_dad(y, mul_top(-u.c[0], v.c[2]), &ip->ovfind); /* - X3M1    */
     x = mul_top(u.c[1], v.c[2]); /* X3M2             */
     x = agc_w_dad(x, mul_top(-u.c[2], v.c[1]), &ip->ovfind); /* - X2M3    */
-    (void) AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(y.hi) && agc_w_ok(z.hi));
+    if (!AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(y.hi) && agc_w_ok(z.hi)))
+    {
+        return agc_vec_zero();
+    }
     r.c[0] = agc_w_join(x);
     r.c[1] = agc_w_join(y);
     r.c[2] = agc_w_join(z);
@@ -222,7 +268,10 @@ agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         m      = agc_w_roundsub(m, &ip->ovfind);       /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
     }
-    (void) AGC_ASSERT(k == AGC_VEC_N);
+    if (!AGC_ASSERT(k == AGC_VEC_N))
+    {
+        return v;
+    }
     return r;
 }
 
@@ -249,7 +298,10 @@ agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
     {
         p[k] = agc_w_split(v.c[k]);
     }
-    (void) AGC_ASSERT(n <= 127); /* 7-bit count      */
+    if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
+    {
+        return v;
+    }
     for (j = 0; (j < n) && (j < VSHIFT_MAX); j++)
     {
         for (k = 0; k < AGC_VEC_N; k++)
@@ -277,7 +329,10 @@ agc_vec_t agc_vec_shr(agc_vec_t v, int n)
     {
         r.c[k] = agc_w_join(agc_w_vright(agc_w_split(v.c[k]), n));
     }
-    (void) AGC_ASSERT(k == AGC_VEC_N);
+    if (!AGC_ASSERT(k == AGC_VEC_N))
+    {
+        return v;
+    }
     return r;
 }
 
@@ -296,8 +351,14 @@ agc_mat_t agc_mat_identity_half(void)
             m.row[i].c[j] = (i == j) ? AGC_DP_HALF : 0;
         }
     }
-    (void) AGC_ASSERT(m.row[0].c[0] == AGC_DP_HALF);
-    (void) AGC_ASSERT(m.row[2].c[1] == 0);
+    if (!AGC_ASSERT(m.row[0].c[0] == AGC_DP_HALF))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.row[2].c[1] == 0))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
     return m;
 }
 
@@ -314,7 +375,10 @@ agc_vec_t agc_mat_vec(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t v)
     {
         r.c[i] = agc_vec_dot(ip, v, m->row[i]);
     }
-    (void) AGC_ASSERT(i == AGC_VEC_N);
+    if (!AGC_ASSERT(i == AGC_VEC_N))
+    {
+        return agc_vec_zero();
+    }
     return r;
 }
 
@@ -334,7 +398,10 @@ agc_mat_t agc_mat_transpose(const agc_mat_t *m)
             t.row[i].c[j] = m->row[j].c[i];
         }
     }
-    (void) AGC_ASSERT(t.row[0].c[1] == m->row[1].c[0]);
+    if (!AGC_ASSERT(t.row[0].c[1] == m->row[1].c[0]))
+    {
+        return agc_mat_identity_half();
+    }
     return t;
 }
 
@@ -354,7 +421,10 @@ agc_vec_t agc_vec_mat(agc_interp_t *ip, agc_vec_t v, const agc_mat_t *m)
     {
         r.c[j] = agc_vec_dot(ip, v, t.row[j]);
     }
-    (void) AGC_ASSERT(j == AGC_VEC_N);
+    if (!AGC_ASSERT(j == AGC_VEC_N))
+    {
+        return agc_vec_zero();
+    }
     return r;
 }
 
@@ -374,6 +444,9 @@ agc_mat_t agc_mat_mul(agc_interp_t *ip, const agc_mat_t *a, const agc_mat_t *b)
     {
         cols.row[j] = agc_mat_vec(ip, a, bt.row[j]);
     }
-    (void) AGC_ASSERT(j == AGC_VEC_N);
+    if (!AGC_ASSERT(j == AGC_VEC_N))
+    {
+        return agc_mat_identity_half();
+    }
     return agc_mat_transpose(&cols);
 }

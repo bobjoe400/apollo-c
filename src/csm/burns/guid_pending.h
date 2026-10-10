@@ -29,7 +29,7 @@ agc_sp_t agc_erase_time5(void);              /* TIME5 counter                */
 void     agc_erase_set_time5(agc_sp_t v);
 
 /* ---- other lanes' routines called from the CSM burn programs ------------- */
-agc_status_t agc_csm_velocity_altitude_rate(
+void agc_csm_velocity_altitude_rate(
     agc_interp_t *ip); /* S11.1 V I, H, HDOT (P11, guid-entry) */
 agc_status_t agc_csm_satstkon(
     const agc_job_ctx_t *ctx); /* SATSTKON (P11 / V46, guid-entry) */

@@ -43,14 +43,20 @@
 static agc_sp_t option2(void)
 {
     const agc_sp_t v = agc_erase_option1(1);
-    (void) AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX));
+    if (!AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
 static agc_status_t p57_phase(void)
 {
     const agc_status_t st = align_phase4(PH_P57);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -173,7 +179,10 @@ static agc_status_t pack_options(agc_job_ctx_t *ctx)
     agc_erase_set_option1(1, 0);
     agc_erase_set_option1(2, bits);
     agc_erase_set_option1(0, OPTION1_CHECK);
-    (void) AGC_ASSERT(bits <= (OPTION3_REFSM + OPTION3_ATT));
+    if (!AGC_ASSERT(bits <= (OPTION3_REFSM + OPTION3_ATT)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_lunar_surface_options_display(ctx);
 }
 
@@ -212,7 +221,10 @@ agc_status_t agc_job_lunar_surface_time_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(option2() >= 0);
+    if (!AGC_ASSERT(option2() >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALIGN_TIME, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_SURFACE_TIME_ENTERED,
                        AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY);
@@ -270,7 +282,10 @@ agc_status_t agc_job_lunar_surface_time_entered(agc_job_ctx_t *ctx)
         agc_erase_set_tig(t); /* STORE TIG */
         ram->talign = t;
     }
-    (void) AGC_ASSERT(ram->talign >= 0);
+    if (!AGC_ASSERT(ram->talign >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return site_orientation(ctx);
 }
 
@@ -281,7 +296,10 @@ agc_status_t agc_job_lunar_surface_site_orientation(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_align_ram()->talign >= 0);
+    if (!AGC_ASSERT(agc_align_ram()->talign >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return site_orientation(ctx);
 }
 
@@ -292,7 +310,10 @@ agc_status_t agc_job_lunar_surface_options_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_erase_option1(0) == OPTION1_CHECK);
+    if (!AGC_ASSERT(agc_erase_option1(0) == OPTION1_CHECK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_OPTIONS, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN,
                        AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY);
@@ -333,7 +354,8 @@ agc_status_t agc_job_lunar_surface_options_chosen(agc_job_ctx_t *ctx)
     {
         return by_lm_attitude(ctx);
     }
-    const agc_status_t alm = agc_alarm(ALM_OPTION);
+    agc_alarm(ALM_OPTION);
+    const agc_status_t alm = AGC_STATUS_ALARM;
     if (alm != AGC_STATUS_OK)
     {
         return alm;
@@ -409,7 +431,10 @@ static agc_status_t gravity_sm(agc_vec_t *g)
     agc_cdutrig_t t;
     *g                    = agc_align_ram()->gsav;
     const agc_status_t st = agc_guid_cdu_nbsm(&t, g);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -535,7 +560,8 @@ agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx)
     agc_status_t    st   = agc_align_fine_solve(&ip, a, b, &ram->xdc);
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -614,7 +640,10 @@ agc_status_t agc_job_lunar_surface_post(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(option2() >= 0);
+    if (!AGC_ASSERT(option2() >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_POST, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_SURFACE_REALIGN,
                        AGC_JOB_LUNAR_SURFACE_POST_ENTER);

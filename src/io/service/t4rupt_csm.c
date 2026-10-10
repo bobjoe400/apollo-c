@@ -74,7 +74,10 @@ static agc_sp_t optcmd[2];           /* CDUTCMD, CDUSCMD out-counters      */
 /* ---- accessors ---------------------------------------------------------- */
 uint16_t agc_erase_optmodes(void)
 {
-    (void) AGC_ASSERT(optmodes <= WORD15);
+    if (!AGC_ASSERT(optmodes <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return optmodes;
 }
 
@@ -88,7 +91,10 @@ void agc_erase_set_optmodes(uint16_t v)
 
 agc_sp_t agc_erase_optind(void)
 {
-    (void) AGC_ASSERT(optind >= AGC_OPTIND_NEG0 && optind <= 1);
+    if (!AGC_ASSERT(optind >= AGC_OPTIND_NEG0 && optind <= 1))
+    {
+        return 0; /* no valid result */
+    }
     return optind;
 }
 
@@ -104,7 +110,10 @@ void agc_erase_set_optind(agc_sp_t v)
  * it): +1 computer (CSC), 0 manual, -1 zero optics.                       */
 agc_sp_t agc_erase_swsample(void)
 {
-    (void) AGC_ASSERT(swsample >= -1 && swsample <= 1);
+    if (!AGC_ASSERT(swsample >= -1 && swsample <= 1))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) swsample;
 }
 
@@ -134,7 +143,10 @@ agc_status_t agc_t4_optics_reset(bool fresh)
     {
         optmodes = (uint16_t) ((optmodes & OPTINITR) + BIT7);
     }
-    (void) AGC_ASSERT(optmodes <= WORD15);
+    if (!AGC_ASSERT(optmodes <= WORD15))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -142,31 +154,43 @@ agc_status_t agc_t4_optics_reset(bool fresh)
 
 static void ch_or(int chan, uint16_t m)
 {
-    agc_status_t st = agc_chan_or(chan, m);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(m <= WORD15);
+    agc_chan_or(chan, m);
+    if (!AGC_ASSERT(m <= WORD15))
+    {
+        return;
+    }
 }
 
 static void ch_clear(int chan, uint16_t bits)
 {
-    agc_status_t st =
-        agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(bits <= WORD15);
+    agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
+    if (!AGC_ASSERT(bits <= WORD15))
+    {
+        return;
+    }
 }
 
 /* A CDU counter word read as the AGC's ones' complement SP value.         */
 static int cdu_ones(uint16_t cdu)
 {
-    (void) AGC_ASSERT(cdu <= WORD15);
+    if (!AGC_ASSERT(cdu <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     int v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu;
-    (void) AGC_ASSERT(v >= -037777 && v <= 037777);
+    if (!AGC_ASSERT(v >= -037777 && v <= 037777))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
 static int iabs(int v)
 {
-    (void) AGC_ASSERT(v > -0100000 && v < 0100000);
+    if (!AGC_ASSERT(v > -0100000 && v < 0100000))
+    {
+        return 0; /* no valid result */
+    }
     return (v < 0) ? -v : v;
 }
 
@@ -174,7 +198,10 @@ static int iabs(int v)
  * 2 = zero optics processing (L+2), 0 = not processing (L+1).            */
 static int t4_zopfini(void)
 {
-    (void) AGC_ASSERT(optmodes <= WORD15);
+    if (!AGC_ASSERT(optmodes <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     if ((optmodes & BIT1) != 0u)
     {
         return 1;
@@ -187,7 +214,10 @@ static void t4_canzopt(void)
 {
     optmodes = (uint16_t) (optmodes & ~(uint32_t) OPT_SIX);
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
-    (void) AGC_ASSERT((optmodes & OPT_SIX) == 0u);
+    if (!AGC_ASSERT((optmodes & OPT_SIX) == 0u))
+    {
+        return;
+    }
 }
 
 /* INITZOPT (p.164): zero optics processing, OCDUFAIL inhibited.          */
@@ -195,14 +225,20 @@ static void t4_initzopt(void)
 {
     wtoption = 0;
     optmodes = (uint16_t) (optmodes | OPT_SIX);
-    (void) AGC_ASSERT((optmodes & OPT_SIX) == OPT_SIX);
+    if (!AGC_ASSERT((optmodes & OPT_SIX) == OPT_SIX))
+    {
+        return;
+    }
 }
 
 /* SETDESMD (p.163).                                                       */
 static agc_status_t t4_setdesmd(void)
 {
     desopmod = swsample;
-    (void) AGC_ASSERT(desopmod >= -1 && desopmod <= 1);
+    if (!AGC_ASSERT(desopmod >= -1 && desopmod <= 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -236,7 +272,10 @@ static agc_status_t t4_setzoend(void)
 {
     ch_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
     agc_status_t st = agc_waitlist_call(ZOPT_HOLD_CS, AGC_TASK_ENDZOPT);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     optmodes = (uint16_t) (optmodes | BIT1); /* ZOPT task working         */
     return t4_setdesmd();
 }
@@ -268,8 +307,7 @@ static agc_status_t t4_zoptdes(void)
         {
             return t4_setdesmd();
         }
-        agc_status_t st = agc_alarm(ALARM_ZOPT_SWITCH); /* ZOPALARM  */
-        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        agc_alarm(ALARM_ZOPT_SWITCH); /* ZOPALARM  */
         wtoption = WTOPT_RETURN;
         t4_canzopt();
         return t4_setdesmd();
@@ -278,8 +316,7 @@ static agc_status_t t4_zoptdes(void)
     { /* ZTOCSC                    */
         return t4_mantocsc(false);
     }
-    agc_status_t st = agc_alarm(ALARM_ZOPT_SWITCH);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    agc_alarm(ALARM_ZOPT_SWITCH);
     t4_canzopt();
     return t4_mantocsc(true);
 }
@@ -287,7 +324,10 @@ static agc_status_t t4_zoptdes(void)
 /* MANUDES / MANTOMAN (p.162): previous setting manual.                   */
 static agc_status_t t4_manudes(void)
 {
-    (void) AGC_ASSERT(wtoption >= 0);
+    if (!AGC_ASSERT(wtoption >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (swsample > 0)
     {
         return t4_mantocsc(true);
@@ -336,7 +376,10 @@ static void t4_ocduftst(void)
     uint16_t w       = agc_erase_dsptab(LAMPWORD);
     bool     lamp_on = (w & BIT8) != 0u;
     bool     want_on;
-    (void) AGC_ASSERT(w <= WORD15);
+    if (!AGC_ASSERT(w <= WORD15))
+    {
+        return;
+    }
     if ((agc_chan_read((int) AGC_CHAN_CHAN30) & BIT7) != 0u)
     {
         if ((agc_erase_imodes33() & BIT1) != 0u)
@@ -355,9 +398,8 @@ static void t4_ocduftst(void)
     }
     if (want_on != lamp_on)
     { /* SETOFF                    */
-        agc_status_t st = agc_erase_set_dsptab(
+        agc_erase_set_dsptab(
             LAMPWORD, (uint16_t) (((w ^ BIT8) & 037777u) + BIT15));
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
     }
 }
 
@@ -436,7 +478,10 @@ static int t4_getopcmd(uint16_t desired, uint16_t actual)
     {
         q--;
     }
-    (void) AGC_ASSERT(q >= -010000 && q <= 010000);
+    if (!AGC_ASSERT(q >= -010000 && q <= 010000))
+    {
+        return 0; /* no valid result */
+    }
     return q;
 }
 
@@ -453,7 +498,10 @@ static void t4_shaft_zone(void)
     {
         zone = cdus;
     }
-    (void) AGC_ASSERT(iabs(zone) <= 037777);
+    if (!AGC_ASSERT(iabs(zone) <= 037777))
+    {
+        return;
+    }
 }
 
 /* OPT2 / TRUNCMD / shaft stop avoidance (pp.167-168): fill COMMANDO.     */
@@ -515,7 +563,10 @@ static void t4_opt_send(void)
     {
         ch_or((int) AGC_CHAN_CHAN14, (uint16_t) OCT11_12);
     }
-    (void) AGC_ASSERT(sends <= 2);
+    if (!AGC_ASSERT(sends <= 2))
+    {
+        return;
+    }
 }
 
 /* OPTDRIVE / CONTDRVE (pp.166-167).                                       */
@@ -532,8 +583,7 @@ agc_status_t agc_t4_optics_drive(void)
     }
     if ((optmodes & BIT10) == 0u)
     {
-        agc_status_t st = agc_alarm(ALARM_OPT_NOT_ZEROED);
-        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        agc_alarm(ALARM_OPT_NOT_ZEROED);
     }
     if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT2) == 0u)
     {

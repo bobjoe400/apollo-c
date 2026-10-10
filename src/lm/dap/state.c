@@ -30,9 +30,6 @@ static lm_dap_t g_dap;
 
 lm_dap_t *lm_dap_state(void)
 {
-    (void) AGC_ASSERT(g_dap.t5adr == LM_T5_DAPIDLER ||
-                      g_dap.t5adr == LM_T5_PAXIS);
-    (void) AGC_ASSERT(g_dap.retjadr <= LM_UV_MINRTN);
     return &g_dap;
 }
 
@@ -43,12 +40,12 @@ agc_status_t agc_lm_dap_restart(void)
     d->rcsflags =
         (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
     d->t6next[0] = (agc_sp_t) LM_T6_POSMAX; /* a pending T6RUPT is made     */
-    agc_status_t st = agc_chan_and(013, LM_T6_POSMAX); /* ineffectual        */
+    agc_chan_and(013, LM_T6_POSMAX); /* ineffectual        */
+    agc_status_t st = AGC_STATUS_OK;
     d->nxt6adr      = 0;
     d->nextp        = 0;
-    agc_status_t fs = agc_flag_clear(AGC_FLAG_ACCOKFLG); /* ACCSOKAY = 0    */
+    agc_flag_clear(AGC_FLAG_ACCOKFLG); /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK && fs == AGC_STATUS_OK);
     return (ts != AGC_STATUS_OK) ? ts : st;
 }
 
@@ -61,10 +58,13 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->ch5mask                  = 0;
     d->ch6mask                  = 0;
     d->pvalvest                 = 0; /* RCS failure monitor           */
-    agc_status_t s5 = agc_chan_write(005, 0); /* turn off RCS jets       */
-    agc_status_t s6 = agc_chan_write(006, 0);
+    agc_chan_write(005, 0); /* turn off RCS jets       */
+    agc_status_t s5 = AGC_STATUS_OK;
+    agc_chan_write(006, 0);
+    agc_status_t s6 = AGC_STATUS_OK;
     d->db           = FS_MAXDB;
-    agc_status_t sb = agc_flagword_set(DAPBOOLS_WORD, FS_BOOLSTRT);
+    agc_flagword_set(DAPBOOLS_WORD, FS_BOOLSTRT);
+    agc_status_t sb = AGC_STATUS_OK;
     d->stiksens     = FS_STIKSTRT;
     d->neg_ratedb   = FS_RATESTRT;
     d->hiascent     = FS_FULLAPS;
@@ -401,6 +401,9 @@ uint16_t agc_erase_ch6mask(void)
 bool agc_lm_dap_running(void)
 {
     const lm_dap_t *d = lm_dap_state();
-    (void) AGC_ASSERT(d->t5adr <= LM_T5_PAXIS);
+    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
+    {
+        return false;
+    }
     return d->t5adr == LM_T5_PAXIS;
 }

@@ -21,7 +21,10 @@
 /* P31 (p.652): P20FLGON; V06N33 (TIG). */
 agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     rz_tracking_flags_on();
     return rz_vnpooh(ctx, 6U, 33U, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE);
 }
@@ -39,7 +42,10 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
     agc_burn_t *b = &agc_guid_state()->burn;
     b->hper = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hperi));
     b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hapo));
-    (void) AGC_ASSERT(b->hper <= RZ_MAXNM);
+    if (!AGC_ASSERT(b->hper <= RZ_MAXNM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -50,7 +56,10 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
  * resumes this job from its start.                                    */
 agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -97,7 +106,10 @@ agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
 /* After V06N81: V06N42 (HAPO, HPER, VGDISP). */
 agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_vnpooh(ctx, 6U, 42U, AGC_JOB_LAMBERT_AIMPOINT_TTOGO);
 }
 
@@ -105,7 +117,10 @@ agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
  * again.                                                               */
 agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_flag_set(AGC_FLAG_FINALFLG);

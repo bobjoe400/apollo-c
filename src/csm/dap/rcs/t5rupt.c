@@ -39,16 +39,15 @@ static agc_status_t rcs_zerot5(void);
 agc_status_t agc_task_redorcs(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    (void) AGC_ASSERT(r->t5phase <= AGC_CSM_T5P_INIT);
+    if (!AGC_ASSERT(r->t5phase <= AGC_CSM_T5P_INIT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (r->t5phase != AGC_CSM_T5P_INIT)
     {
         r->t5phase = AGC_CSM_T5P_RESTART;
     }
-    agc_status_t st = agc_rupt_set_t5_task(AGC_TASK_RCSATT); /* RCSLOC  */
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return st;
-    }
+    agc_rupt_set_t5_task(AGC_TASK_RCSATT); /* RCSLOC  */
     return agc_task_rcsatt(); /* TCF RCSATT +1          */
 }
 
@@ -59,7 +58,10 @@ agc_status_t agc_task_rcsatt(void)
     agc_csm_rcs_t    *r    = agc_csm_dap_rcs();
     agc_csm_dapcom_t *c    = agc_csm_dap_com();
     uint16_t          ch31 = agc_chan_read(AGC_CHAN_CHAN31);
-    (void) AGC_ASSERT(ch31 <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(ch31 <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((ch31 & (uint16_t) AGC_CH031_CMCCONTROL) == 0u)
     {
         return rcs_sett5();
@@ -78,7 +80,8 @@ agc_status_t agc_task_rcsatt(void)
     agc_status_t st = csm_dap_set_time5(T5_100MS); /* FRESHDAP in 100 ms  */
     if (st == AGC_STATUS_OK)
     {
-        st = agc_csm_dap_zerojet(); /* jets off in 14 ms      */
+        agc_csm_dap_zerojet(); /* jets off in 14 ms      */
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -107,8 +110,7 @@ static agc_status_t rcs_sett5(void)
             st = csm_rcs_phase1();
             break; /* -0 */
         default:
-            (void) AGC_ASSERT(false);
-            break;
+            break; /* unreachable: cannot happen */
     }
     return st;
 }
@@ -121,7 +123,10 @@ agc_status_t csm_rcs_phase1(void)
     r->t5time =
         (agc_sp_t) (agc_rupt_time(CSM_DAP_TIME5) & 037777u); /* T5TIME */
     agc_status_t st = csm_dap_set_time5(T5_20MS); /* phase 2 in 20 ms     */
-    (void) AGC_ASSERT(r->t5time >= 0);
+    if (!AGC_ASSERT(r->t5time >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -149,7 +154,10 @@ static agc_status_t rcs_freechk(void)
     c->rcsflags         = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NORATE);
     r->holdflag   = (agc_sp_t) CSM_DAP_BIT14; /* stop automatic steering */
     uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);
-    (void) AGC_ASSERT(r->holdflag > 0);
+    if (!AGC_ASSERT(r->holdflag > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((ch31 & (uint16_t) AGC_CH031_FREE) == 0u)
     {
         return AGC_STATUS_OK; /* KRESUME1: free control */
@@ -161,7 +169,10 @@ static agc_status_t rcs_freechk(void)
 bool csm_rcs_rate_init_pending(void)
 {
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    (void) AGC_ASSERT(c->rcsflags <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(c->rcsflags <= CSM_DAP_NEG0))
+    {
+        return false;
+    }
     return (c->rcsflags & AGC_CSM_RCSF_NORATE) != 0u;
 }
 
@@ -171,7 +182,10 @@ agc_status_t csm_rcs_reinit(void)
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();
     agc_status_t   st = csm_dap_set_time5(T5_200MS);
     r->t5phase        = AGC_CSM_T5P_INIT; /* TS T5PHASE (16364 > 0) */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -194,7 +208,10 @@ agc_status_t csm_rcs_freshdap(bool fresh)
     {
         st = rcs_zerot5();
     }
-    (void) AGC_ASSERT(r->holdflag != 0 || !fresh);
+    if (!AGC_ASSERT(r->holdflag != 0 || !fresh))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -215,7 +232,8 @@ static agc_status_t rcs_zerot5(void)
         r->error[i]  = 0;
     }
     r->attsec       = 0;
-    agc_status_t st = agc_csm_dap_zerojet();
+    agc_csm_dap_zerojet();
+    agc_status_t st = AGC_STATUS_OK;
     r->chantemp     = CSM_DAP_NEG0; /* minimum impulse memory */
     r->ch31temp     = CSM_DAP_NEG0; /* RHC position memory    */
     r->slope        = SLOPE_024;
@@ -235,18 +253,25 @@ static agc_status_t rcs_zerot5(void)
     else
     {
         /* NOVAC returns after scheduling; a 1202 is raised by the exec.  */
-        (void) agc_exec_novac(CSM_DAP_PRIO34, AGC_JOB_AMBGUPDT);
+        agc_status_t sw = agc_exec_novac(CSM_DAP_PRIO34, AGC_JOB_AMBGUPDT);
+        if (sw != AGC_STATUS_OK)
+        {
+            return sw;
+        }
     }
     c->rcsflags      = flags;                      /* RCSSWIT                */
     agc_status_t st2 = csm_dap_set_time5(T5_60MS); /* IMU error counter   */
-    (void) AGC_ASSERT(r->attkalmn >= 0);
+    if (!AGC_ASSERT(r->attkalmn >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : st2;
 }
 
 /* ZEROJET (pp. 1015-1016): zero BLAST2, BLAST1, BLAST, YWORD2 .. RWORD1,
  * restore the branch indices and enable T6RUPT to shut the jets off in
  * 14 ms (T6START writes the zero words to channels 5 and 6).             */
-agc_status_t agc_csm_dap_zerojet(void)
+void agc_csm_dap_zerojet(void)
 {
     agc_csm_rcs_t    *r = agc_csm_dap_rcs();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
@@ -263,17 +288,13 @@ agc_status_t agc_csm_dap_zerojet(void)
     r->blast[2].time    = 0;
     r->blast[2].axis    = AGC_CSM_JET_YAW;
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) AGC_CSM_RCSF_T6INIT);
-    agc_status_t st = agc_rupt_set_t6_task(AGC_TASK_T6START); /* T6ADDR   */
-    if (st == AGC_STATUS_OK)
+    agc_rupt_set_t6_task(AGC_TASK_T6START); /* T6ADDR   */
+    agc_rupt_set_time(CSM_DAP_TIME6, T6_14MS);
+    agc_chan_or(AGC_CHAN_CHAN13, (uint16_t) AGC_CH013_ENBT6RUPT);
+    if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_T6INIT) == 0u))
     {
-        st = agc_rupt_set_time(CSM_DAP_TIME6, T6_14MS);
+        return;
     }
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_chan_or(AGC_CHAN_CHAN13, (uint16_t) AGC_CH013_ENBT6RUPT);
-    }
-    (void) AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_T6INIT) == 0u);
-    return st;
 }
 
 /* T5PHASE2 (p. 1016) and KALUPDT (pp. 1021-1022).                        */
@@ -293,7 +314,10 @@ agc_status_t csm_rcs_t5phase2(void)
     agc_status_t st = csm_dap_set_time5(T5_20MS);   /* phase 3 in 20 ms     */
     r->t5time   = csm_dap_ads(r->t5time, csm_dap_word_sp(old)); /* ADS T5TIME */
     r->attkalmn = ((c->rcsflags & AGC_CSM_RCSF_HIRATE) != 0u) ? -1 : 0;
-    (void) AGC_ASSERT(r->attkalmn <= 0);
+    if (!AGC_ASSERT(r->attkalmn <= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (st != AGC_STATUS_OK)
     {
         return st;

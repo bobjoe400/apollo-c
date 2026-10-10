@@ -108,7 +108,10 @@ void agc_chan_reset(void)
     {
         g_chan[i] = chan_inverted(i) ? (uint16_t) AGC_CHAN_MASK : 0u;
     }
-    (void) AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK);
+    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK))
+    {
+        return;
+    }
 }
 
 uint16_t agc_chan_read(int chan)
@@ -156,7 +159,10 @@ void agc_chan_write(int chan, uint16_t value)
     else
     {
         g_chan[chan] = value;
-        (void) AGC_ASSERT(g_chan[chan] == value);
+        if (!AGC_ASSERT(g_chan[chan] == value))
+        {
+            return;
+        }
     }
 }
 
@@ -181,7 +187,10 @@ void agc_chan_or(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
-        (void) AGC_ASSERT((g_chan[chan] & mask) == mask);
+        if (!AGC_ASSERT((g_chan[chan] & mask) == mask))
+        {
+            return;
+        }
     }
 }
 
@@ -206,7 +215,10 @@ void agc_chan_and(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
-        (void) AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u);
+        if (!AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u))
+        {
+            return;
+        }
     }
 }
 

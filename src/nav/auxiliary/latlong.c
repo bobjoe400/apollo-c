@@ -104,7 +104,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
     {
         return 0;
     }
-    (void) agc_interp_test_ovf(ip); /* BOV CLROVFLW   */
+    agc_interp_clear_ovf(ip); /* BOV CLROVFLW   */
     agc_dp_t r2 = agc_dp_add(ip, agc_dp_sq(ip, sinth), agc_dp_sq(ip, costh));
     if (r2 == 0)
     {

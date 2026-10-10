@@ -286,7 +286,8 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
     if (res == AGC_RR_DESIGNATE_STARTED)
     {
         agc_inhint();
-        st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_BEGIN); /* BEGDES   */
+        agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_BEGIN); /* BEGDES   */
+        st = AGC_STATUS_OK;
         agc_relint();
         if (!agc_flag_test(AGC_FLAG_FSPASFLG))
         {
@@ -304,7 +305,10 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
             ctx); /* R21LEM11 */
     }
     n->repostm = agc_dp_add(&ip, n->repostm, ACQ_TENSEC);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_continue(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION);
 }
 
@@ -344,16 +348,13 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
  * as a PRIO26 job.                                                       */
 agc_status_t agc_task_rendezvous_sighting_mark_redesignate(void)
 {
-    agc_status_t st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_status_t st = AGC_STATUS_OK;
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
-    st = agc_rendz_clradmod();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_rendz_clradmod();
     return agc_exec_findvac(ACQ_PRIO26,
                             AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DESIGNATE_LOS);
 }
@@ -517,17 +518,14 @@ agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();
-    agc_status_t st = agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
-    st = agc_rendz_clradmod();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_rendz_clradmod();
     return agc_job_rendezvous_navigation_range_check(ctx);
 }
 
@@ -541,17 +539,14 @@ agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx)
     }
     rz_phase(2, 04022);
     agc_inhint();
-    agc_status_t st = agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return st;
     }
-    st = agc_rendz_clradmod();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_rendz_clradmod();
     return rz_delayjob(ACQ_DELAY_HALF, AGC_JOB_RADAR_SEARCH_MANEUVER_DONE);
 }
 
@@ -718,7 +713,7 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
     s->rrtarget = acq_search_point(&ip, n); /* CONTDESG */
     s->losvel   = n->savlemv;
     agc_inhint();
-    st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
     rr_radmodes_set(RR_CDESBIT); /* CONTDES2 */
     agc_relint();
     agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB;
@@ -737,7 +732,8 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
         return st;
     }
     agc_inhint();
-    st = agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    st = AGC_STATUS_OK;
     agc_relint();
     return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
 }
@@ -765,7 +761,8 @@ agc_status_t agc_job_radar_search_data_check(agc_job_ctx_t *ctx)
     {
         n->datagood = ACQ_ALL1S; /* STORE1S  */
         agc_inhint();
-        agc_status_t st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+        agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+        agc_status_t st = AGC_STATUS_OK;
         agc_relint();
         return (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
     }

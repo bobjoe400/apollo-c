@@ -48,8 +48,11 @@ static agc_mat_t nb2nb1(void)
     m.row[0] = agc_vec_make(NB_COS, 0, -NB_SIN);
     m.row[1] = agc_vec_make(0, NB_HALF, 0);
     m.row[2] = agc_vec_make(NB_SIN, 0, NB_COS);
-    (void) AGC_ASSERT(m.row[1].c[1] == AGC_DP_HALF);
-    (void) AGC_ASSERT(NB_COS > NB_SIN);
+    if (!AGC_ASSERT(m.row[1].c[1] == AGC_DP_HALF))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
+    _Static_assert(NB_COS > NB_SIN, "AGC constant");
     return m;
 }
 
@@ -57,8 +60,14 @@ static agc_mat_t nb2nb1(void)
 static agc_mat_t nb1nb2(void)
 {
     const agc_mat_t m = nb2nb1();
-    (void) AGC_ASSERT(m.row[0].c[2] == -NB_SIN);
-    (void) AGC_ASSERT(m.row[2].c[0] == NB_SIN);
+    if (!AGC_ASSERT(m.row[0].c[2] == -NB_SIN))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.row[2].c[0] == NB_SIN))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
     return agc_mat_transpose(&m);
 }
 
@@ -69,11 +78,17 @@ static agc_mat_t nb1nb2(void)
  */
 agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
 {
-    (void) AGC_ASSERT(trunnion_cdu <= 077777u);
+    if (!AGC_ASSERT(trunnion_cdu <= 077777u))
+    {
+        return 0; /* no valid result */
+    }
     agc_ovf_t      ovf = 0;
     const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu),
                                         TEN_DEGS_MINUS, &ovf); /* ADS MPAC */
-    (void) AGC_ASSERT(ovf == 0);
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_shr(a, 2); /* x QUARTER */
 }
 
@@ -105,8 +120,14 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
 /* ZNB=S1 (p. 287): the star is along the shaft axis. */
 static void znb_eq_s1(uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    (void) AGC_ASSERT(sac != NULL);
-    (void) AGC_ASSERT(pac != NULL);
+    if (!AGC_ASSERT(sac != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(pac != NULL))
+    {
+        return;
+    }
     *sac  = SHAFT_270DEG;     /* DLOAD 270DEG STODL SAC */
     *pac  = PAC_20DEGS_MINUS; /* 20DEGS- STORE PAC      */
     *cult = false;            /* CLRGO CULTFLAG         */
@@ -125,8 +146,14 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
                             const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac,
                             bool *cult)
 {
-    (void) AGC_ASSERT(nb1 != NULL);
-    (void) AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL));
+    if (!AGC_ASSERT(nb1 != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_vec_t pda = agc_vec_cross(ip, nb1->row[2], star);
     align_clear_ovf(ip); /* BOV +1  */
     pda = agc_vec_unit(ip, pda, NULL, NULL);
@@ -160,11 +187,12 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
 /* Record CULTFLAG as the AGC routine leaves it. */
 static agc_status_t store_cult(bool cult)
 {
-    const agc_status_t st = cult ? agc_flag_set(AGC_FLAG_CULTFLAG) :
-                                   agc_flag_clear(AGC_FLAG_CULTFLAG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_CULTFLAG) == cult);
-    return st;
+    agc_flag_put(AGC_FLAG_CULTFLAG, cult);
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_CULTFLAG) == cult))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return AGC_STATUS_OK;
 }
 
 /*
@@ -183,16 +211,12 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
         return AGC_STATUS_BAD_ARG;
     }
     agc_vec_t    s  = star_sm;
-    agc_status_t st = agc_guid_smnb(t, &s); /* *SMNB*  */
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_guid_smnb(t, &s); /* *SMNB*  */
     const agc_mat_t m = nb2nb1();
     s = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1);  /* MXV VSL1 */
     agc_align_ram()->star = s;                       /* STOVL STAR */
     const agc_mat_t unit  = agc_mat_identity_half(); /* HIUNITX.. */
-    st                    = sxtang1(ip, s, &unit, sac, pac, cult);
+    agc_status_t st = sxtang1(ip, s, &unit, sac, pac, cult);
     if (st == AGC_STATUS_OK)
     {
         st = store_cult(*cult);
@@ -254,7 +278,10 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
     const agc_dp_t k   = agc_dp_mul_int(CLOG2_32, (agc_sp_t) n); /* SHORTMP  */
     agc_ovf_t      ovf = 0;
     *neg_log           = agc_dp_add_raw(p, k, &ovf); /* DAS MPAC */
-    (void) AGC_ASSERT(ovf == 0);
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 

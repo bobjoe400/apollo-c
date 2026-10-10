@@ -71,6 +71,7 @@ agc_dp_t agc_dp_abs(agc_dp_t a);                    /* ABS                   */
 agc_dp_t agc_dp_round(agc_dp_t a);                  /* ROUND -> SP precision */
 agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of); /* SIGN X            */
 agc_dp_t agc_dp_norm(agc_dp_t a, int *shift);       /* NORM: left-justify   */
+int      agc_dp_norm_count(agc_dp_t a);             /* NORM: count only     */
 int      agc_dp_sgn(agc_dp_t a);                    /* -1, 0, +1             */
 
 /* ---- SP transcendental, SINGLE_PRECISION_SUBROUTINES.agc p.1207 -------- */

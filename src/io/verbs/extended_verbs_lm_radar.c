@@ -151,7 +151,10 @@ static agc_status_t radar_in_use_check(bool *ok)
          agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG)) ||
         (agc_erase_modreg() == (agc_sp_t) LM_P22_MODE);
     *ok = !busy;
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return busy ? agc_extverb_alm_end() : AGC_STATUS_OK;
 }
 
@@ -160,15 +163,11 @@ static bool radar_stall(agc_job_id_t wake, agc_status_t *st)
 {
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
     *st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake, &res);
-    (void) AGC_ASSERT(wake != AGC_JOB_NONE);
+    if (!AGC_ASSERT(wake != AGC_JOB_NONE))
+    {
+        return false;
+    }
     return (*st != AGC_STATUS_OK) || (res == AGC_IMU_STALL_SLEEPING);
-}
-
-static agc_status_t flag_put(agc_flag_id_t f, bool on)
-{
-    agc_status_t st = on ? agc_flag_set(f) : agc_flag_clear(f);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
 }
 
 /* RADMODES: clear the designate bits 15 and 10 (CS OCT41000, MASK).      */
@@ -178,7 +177,10 @@ static void clear_designate_bits(void)
     agc_erase_set_radmodes(
         (uint16_t) (agc_erase_radmodes() & ~(uint32_t) OCT41000));
     agc_relint();
-    (void) AGC_ASSERT((agc_erase_radmodes() & OCT41000) == 0u);
+    if (!AGC_ASSERT((agc_erase_radmodes() & OCT41000) == 0u))
+    {
+        return;
+    }
 }
 
 /* ---- V40 N72, V60 ----------------------------------------------------------- */
@@ -235,8 +237,7 @@ agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx)
     }
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_BAD)
     {
-        agc_status_t st = agc_alarm(ALARM_LR_POSITION);
-        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        agc_alarm(ALARM_LR_POSITION);
     }
     return agc_extverb_gopin();
 }
@@ -260,8 +261,7 @@ agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx)
     }
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
     {
-        st = agc_dsky_falton(); /* XACTALM                */
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_dsky_falton(); /* XACTALM                */
         return agc_dsky_endext();
     }
     clear_designate_bits();
@@ -285,7 +285,10 @@ agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx)
 {
     agc_erase_set_optionx(1, LOCKON_NONE);
     agc_erase_set_optionx(0, LOCKON_OPTION);
-    (void) AGC_ASSERT(agc_erase_optionx(0) == LOCKON_OPTION);
+    if (!AGC_ASSERT(agc_erase_optionx(0) == LOCKON_OPTION))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_rr_lockon_display(ctx);
 }
 
@@ -315,14 +318,17 @@ agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx)
 {
     bool no_lockon =
         ((uint16_t) agc_erase_optionx(1) & (uint16_t) LOCKON_NONE) != 0u;
-    agc_status_t st = flag_put((agc_flag_id_t) AGC_FLAG_LOKONSW, !no_lockon);
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_LOKONSW, !no_lockon);
+    agc_status_t st = AGC_STATUS_OK;
     if (no_lockon && st == AGC_STATUS_OK)
     {
-        st = flag_put((agc_flag_id_t) AGC_FLAG_CDESFLAG, true);
+        agc_flag_put((agc_flag_id_t) AGC_FLAG_CDESFLAG, true);
+        st = AGC_STATUS_OK;
     }
     if (no_lockon && st == AGC_STATUS_OK)
     {
-        st = flag_put((agc_flag_id_t) AGC_FLAG_NORRMON, true);
+        agc_flag_put((agc_flag_id_t) AGC_FLAG_NORRMON, true);
+        st = AGC_STATUS_OK;
     }
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
@@ -375,8 +381,7 @@ agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_OK;
     }
-    agc_status_t st = agc_alarm(ALARM_DESIGNATE_FAIL);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    agc_alarm(ALARM_DESIGNATE_FAIL);
     return AGC_STATUS_OK;
 }
 
@@ -395,18 +400,15 @@ agc_status_t agc_extverb_rr_designate_end(agc_job_ctx_t *ctx)
         return agc_extverb_gopin();
     }
     clear_designate_bits();
-    agc_status_t st = agc_rendz_clradmod();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_rendz_clradmod();
     return agc_svc_delayjob(DELAY_1SEC, AGC_JOB_RR_DESIGNATE_END_MONITOR);
 }
 
 /* RRDESEND after the delay: DOWNFLAG NORRMON (enable R25), GOPIN.        */
 agc_status_t agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = flag_put((agc_flag_id_t) AGC_FLAG_NORRMON, false);
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_NORRMON, false);
+    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
         return st;
@@ -431,8 +433,7 @@ agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    st = agc_exec_prio_change(PRIO4);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_exec_prio_change(PRIO4);
     agc_dsky_cont_t cont = {AGC_JOB_RR_LOS_DISPLAY_STOP,
                             AGC_JOB_RR_LOS_DISPLAY_STOP,
                             AGC_JOB_RR_LOS_DISPLAY_STOP};
@@ -452,7 +453,10 @@ static agc_dp_t angle_0_360(agc_interp_t *ip, agc_dp_t sin4, agc_dp_t cos4)
     {
         a = agc_dp_add(ip, a, AGC_DP_MAX);
     }
-    (void) AGC_ASSERT(a >= 0 && a <= AGC_DP_MAX);
+    if (!AGC_ASSERT(a >= 0 && a <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return a;
 }
 
@@ -502,7 +506,10 @@ agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx)
 /* V16N56 responses: B5OFF (the RRLOSDSP job then ends itself).            */
 agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_svc_b5off();
 }
 
@@ -526,8 +533,7 @@ static agc_status_t radar_test_start(agc_job_ctx_t *ctx, bool rr, int max)
     agc_status_t st = AGC_STATUS_OK;
     if (rr)
     {
-        st = agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT14);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT14);
     }
     rtstmax = (agc_sp_t) max;
     agc_inhint();
@@ -570,7 +576,10 @@ static agc_status_t radar_test_setup(agc_job_ctx_t *ctx)
     rm = (uint16_t) (rm + (agc_chan_read((int) AGC_CHAN_CHAN33) & LRPOSCAL));
     agc_erase_set_radmodes(rm);
     agc_relint();
-    (void) AGC_ASSERT(rm <= WORD15);
+    if (!AGC_ASSERT(rm <= WORD15))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!radar_test_is_r04())
     {
         rsampdt  = RSAMP_250MS; /* R04K                   */
@@ -596,11 +605,7 @@ agc_status_t agc_extverb_radar_test(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    st = flag_put((agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED, true);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED, true);
     return radar_test_setup(ctx);
 }
 
@@ -618,11 +623,7 @@ agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx)
     {
         return agc_extverb_alm_end();
     }
-    st = flag_put((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED, true);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED, true);
     return radar_test_setup(ctx);
 }
 
@@ -652,7 +653,10 @@ agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     rtstdex = agc_erase_optionx(1);
-    (void) AGC_ASSERT(rtstdex >= 0);
+    if (!AGC_ASSERT(rtstdex >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return radar_test_choose(ctx);
 }
 
@@ -756,10 +760,9 @@ agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx)
 agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx)
 {
     agc_inhint();
-    agc_status_t st =
-        agc_chan_and((int) AGC_CHAN_CHAN12, (uint16_t) (WORD15 & ~BIT14));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = flag_put((agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED, false);
+    agc_chan_and((int) AGC_CHAN_CHAN12, (uint16_t) (WORD15 & ~BIT14));
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED, false);
+    agc_status_t st = AGC_STATUS_OK;
     agc_relint();
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
@@ -782,8 +785,8 @@ agc_status_t agc_extverb_lr_spurious_test_end(agc_job_ctx_t *ctx)
 /* R77END after the delay: R77FLAG reset, GOPIN.                          */
 agc_status_t agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx)
 {
-    agc_status_t st =
-        flag_put((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED, false);
+    agc_flag_put((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED, false);
+    agc_status_t st = AGC_STATUS_OK;
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
         return st;

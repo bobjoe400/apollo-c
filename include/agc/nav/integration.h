@@ -193,7 +193,7 @@ agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 /* RECTIFY: new conic through RCV + TDELTAV, VCV + TNUV (uses ctx->pbody). */
 agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 /* MINIRECT: VRECT = VCV = v; TDELTAV = TNUV = 0; TC = XKEP = 0.          */
-agc_status_t agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v);
+void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v);
 
 /* ---- transitions (p. 1327-1333) ------------------------------------- */
 /* AVETOMID: thrust -> coast (W through the burn, RN/VN/PIPTIME into the
@@ -214,11 +214,11 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_sp_t *upsvflag);
 /* GRP2PC: PHASCHNG OCT 04022 (group 2).                                  */
-agc_status_t agc_integ_grp2pc(void);
+void agc_integ_grp2pc(void);
 /* SETIFLGS: SET STATEFLG, CLEAR INTYPFLG DIM0FLAG D6OR9FLG.              */
-agc_status_t agc_integ_setiflgs(void);
+void agc_integ_setiflgs(void);
 /* THISVINT: VINTFLAG for this vehicle (CM: set, LM: clear).             */
-agc_status_t agc_integ_thisvint(void);
+void agc_integ_thisvint(void);
 
 /* ---- STATEINT (periodic P00 integration), jobs and tasks ------------- */
 agc_status_t agc_task_stateint(void);                   /* STATEINT task */

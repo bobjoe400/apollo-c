@@ -32,13 +32,13 @@
  * least 40 ms) wait calling ENABL2.                                      */
 static agc_status_t tvcr_enabl1(void)
 {
-    agc_status_t st = agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
-    if (st == AGC_STATUS_OK)
+    agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
+    agc_status_t st = AGC_STATUS_OK;
+    st = csm_dap_set_t5(AGC_TASK_ENABL2, T5_60MS);
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
     {
-        st = csm_dap_set_t5(AGC_TASK_ENABL2, T5_60MS);
+        return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) !=
-                      0u);
     return st; /* RESUME               */
 }
 
@@ -72,8 +72,10 @@ agc_status_t agc_task_redotvc(void)
     }
     else
     {
-        (void) AGC_ASSERT((t->tvcphase == 0) || (t->tvcphase == 2) ||
-                          (t->tvcphase == -2));
+        if (!AGC_ASSERT((t->tvcphase == 0) || (t->tvcphase == 2) || (t->tvcphase == -2)))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     agc_status_t s3 = tvcr_enabl1();
     return (st != AGC_STATUS_OK) ? st : s3;
@@ -83,14 +85,17 @@ agc_status_t agc_task_redotvc(void)
  * wait calling CMDSOUT.                                                  */
 agc_status_t agc_task_enabl2(void)
 {
-    agc_status_t st =
-        agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBOCDUERR);
-    if (st == AGC_STATUS_OK)
+    agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBOCDUERR);
+    agc_status_t st = AGC_STATUS_OK;
+    st = csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS);
+    if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT))
     {
-        st = csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS);
+        return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* NOQRSM               */
 }
 
@@ -104,8 +109,14 @@ static agc_status_t tvcr_chkstrk(void)
         t->stroker = 0; /* TSTINITJ             */
     }
     agc_status_t st = csm_tvc_init4(); /* POSTJUMP TVCINIT4    */
-    (void) AGC_ASSERT(t->stroker == 0);
-    (void) AGC_ASSERT(t->tvcphase == 0);
+    if (!AGC_ASSERT(t->stroker == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(t->tvcphase == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -120,11 +131,8 @@ agc_status_t agc_task_cmdsout(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     agc_erase_set_tvcpitch(t->pcmd);
     agc_erase_set_tvcyaw(t->ycmd);
-    agc_status_t st = agc_chan_or(AGC_CHAN_CHAN14, CH14_RELEASE);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_chan_or(AGC_CHAN_CHAN14, CH14_RELEASE);
+    agc_status_t st = AGC_STATUS_OK;
     if (t->tvcphase == -1)
     {
         return csm_tvc_mrclean(); /* repeat initialisation */
@@ -134,7 +142,10 @@ agc_status_t agc_task_cmdsout(void)
         st = csm_tvc_swichovr_body(); /* repeat switch-over   */
     }
     agc_status_t s2 = tvcr_chkstrk();
-    (void) AGC_ASSERT(t->tvcphase >= 0);
+    if (!AGC_ASSERT(t->tvcphase >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : s2;
 }
 

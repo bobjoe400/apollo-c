@@ -26,12 +26,11 @@ agc_status_t lm_dap_qrminimp(void)
 {
     lm_dap_t *d = lm_dap_state();
     agc_inhint();
-    agc_status_t sz = agc_lm_dap_zatteror();
+    agc_lm_dap_zatteror();
     d->qerror       = 0; /* displays       */
     d->rerror       = 0;
     agc_relint();
     uint16_t t31 = agc_chan_read(031); /* TEMP31         */
-    (void) AGC_ASSERT(sz == AGC_STATUS_OK);
     if (d->oldqrmin > 0)
     { /* CHECKIN        */
         d->oldqrmin = (agc_sp_t) ((uint16_t) ~t31 & QM_OCT63);
@@ -66,7 +65,10 @@ agc_status_t lm_dap_qrminimp(void)
     d->tj[1]    = u; /* MINQR          */
     d->tj[2]    = v;
     d->oldqrmin = 1;
-    (void) AGC_ASSERT(d->oldqrmin == 1);
+    if (!AGC_ASSERT(d->oldqrmin == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_uvloop(LM_UV_MINRTN, 1);
 }
 
@@ -74,19 +76,31 @@ agc_status_t lm_dap_qrminimp(void)
  * counts c: STIKSENS x low word of ((4 (|c| - 1) + LINRAT) c).          */
 static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 {
-    (void) AGC_ASSERT(c >= LM_NEGMAX && c <= LM_POSMAX);
+    if (!AGC_ASSERT(c >= LM_NEGMAX && c <= LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT);
     agc_sp_t lin = lm_dap_mp(k, c).lo; /* CA L           */
     agc_sp_t r   = lm_dap_mphi(lin, stiksens);
-    (void) AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX);
+    if (!AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
 /* Breakout test (ENTERQR): |change| - 1 + (-RATEDB) > 0.               */
 static bool beyond(agc_sp_t x, agc_sp_t negdb)
 {
-    (void) AGC_ASSERT(negdb <= 0);
-    (void) AGC_ASSERT(x >= LM_NEGMAX && x <= LM_POSMAX);
+    if (!AGC_ASSERT(negdb <= 0))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(x >= LM_NEGMAX && x <= LM_POSMAX))
+    {
+        return false;
+    }
     return (int32_t) lm_dap_ccs_dim(x) + negdb > 0;
 }
 
@@ -97,7 +111,8 @@ static bool beyond(agc_sp_t x, agc_sp_t negdb)
 static agc_status_t enteruv(lm_dap_t *d)
 {
     agc_inhint();
-    agc_status_t sz = agc_lm_dap_zatteror();
+    agc_lm_dap_zatteror();
+    agc_status_t sz = AGC_STATUS_OK;
     agc_relint();
     d->qerror     = 0; /* DYERROR        */
     d->dyerror_lo = 0;
@@ -131,7 +146,10 @@ static agc_status_t enteruv(lm_dap_t *d)
     {
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_QRBIT);
     }
-    (void) AGC_ASSERT(sz == AGC_STATUS_OK);
+    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_uvloop(LM_UV_BACKHAND, 1);
 }
 
@@ -183,6 +201,9 @@ agc_status_t lm_dap_chekstik(void)
     d->rcsflags    = (uint16_t) (d->rcsflags & ~LM_RCS_JUSTIN);
     d->savehand[0] = 0; /* DAMPING        */
     d->savehand[1] = 0;
-    (void) AGC_ASSERT(d->cotroler < 0);
+    if (!AGC_ASSERT(d->cotroler < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rhcactiv(d);
 }

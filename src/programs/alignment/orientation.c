@@ -138,12 +138,18 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
 static int32_t ones_value(uint16_t w)
 {
     const uint16_t m = (uint16_t) (w & CDU_WORD_MASK);
-    (void) AGC_ASSERT(w <= CDU_WORD_MASK);
+    if (!AGC_ASSERT(w <= CDU_WORD_MASK))
+    {
+        return 0; /* no valid result */
+    }
     if ((m & CDU_SIGN_BIT) != 0u)
     {
         return (int32_t) m - CDU_ONES_NEG;
     }
-    (void) AGC_ASSERT(m < CDU_SIGN_BIT);
+    if (!AGC_ASSERT(m < CDU_SIGN_BIT))
+    {
+        return 0; /* no valid result */
+    }
     return (int32_t) m;
 }
 

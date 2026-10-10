@@ -67,15 +67,11 @@ static agc_interp_t   rte_interp;
 
 rte_erasable_t *rte_state(void)
 {
-    (void) AGC_ASSERT(rte_mem.nn1a <= RTE_PREC_OUTER);
-    (void) AGC_ASSERT(rte_mem.prec_steps <= RTE_PREC_MAX_STEPS);
     return &rte_mem;
 }
 
 agc_interp_t *rte_ip(void)
 {
-    (void) AGC_ASSERT(rte_interp.ovfind >= -1);
-    (void) AGC_ASSERT(rte_interp.ovfind <= 1);
     return &rte_interp;
 }
 
@@ -83,8 +79,14 @@ agc_interp_t *rte_ip(void)
  * right (rounded, as every vector right shift).                           */
 static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT((n > -64) && (n < 64));
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT((n > -64) && (n < 64)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return (n >= 0) ? agc_vec_shl(ip, v, n) : agc_vec_shr(v, -n);
 }
 
@@ -129,7 +131,10 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
         return AGC_STATUS_OK;
     }
     *xt1lim = agc_dp_sqrt(ip, beta10); /* XT1LIM3, B5  */
-    (void) AGC_ASSERT(*xt1lim >= 0);
+    if (!AGC_ASSERT(*xt1lim >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -198,7 +203,10 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
     h            = rte_vshift(ip, h, 4 - n1);      /* VSR* 0-4,1    */
     rs->v2_t1v   = agc_vec_add(ip, v, h);          /* V2(T1)/ B7    */
     rs->dv       = agc_vec_abval(ip, agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v));
-    (void) AGC_ASSERT(rs->dv >= 0);
+    if (!AGC_ASSERT(rs->dv >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 

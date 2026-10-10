@@ -81,6 +81,12 @@ Language: C11, no extensions. Build flags (Makefile):
 
 ## Tooling
 
+* Uncrustify 0.72 (`uncrustify.cfg`) is the only formatter: `make format`
+  rewrites src include tests (NASA SEL-94-003 layout plus statement
+  paragraphing, docs/STYLE.md), `make format-check` fails on any
+  difference. It changes white space only. Put two or more spaces before a
+  trailing comment you want aligned with its neighbours; one space keeps it
+  out of the group.
 * `spatch` (Coccinelle) for any tree-wide rename: generate a semantic patch,
   never sed identifiers.
 * `ctags -R --c-kinds=+px -x` for symbol inventories.

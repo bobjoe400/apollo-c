@@ -117,13 +117,19 @@ agc_status_t agc_uplink_update_write(int idx, uint16_t word)
 
 int agc_uplink_update_target(void)
 {
-    (void) AGC_ASSERT(load_target >= UP_UPBUFF && load_target <= UP_UPTEMP);
+    if (!AGC_ASSERT(load_target >= UP_UPBUFF && load_target <= UP_UPTEMP))
+    {
+        return 0; /* no valid result */
+    }
     return load_target;
 }
 
 agc_sp_t agc_erase_upsvflag(void)
 {
-    (void) AGC_ASSERT(upsvflag >= -2 && upsvflag <= 2);
+    if (!AGC_ASSERT(upsvflag >= -2 && upsvflag <= 2))
+    {
+        return 0; /* no valid result */
+    }
     return upsvflag;
 }
 
@@ -140,21 +146,30 @@ agc_status_t agc_uplink_update_fresh_start(void)
 {
     upsvflag = 0;
     stage    = UP_COUNT;
-    (void) AGC_ASSERT(upsvflag == 0);
+    if (!AGC_ASSERT(upsvflag == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 /* Signed value of a 15-bit ones'-complement word.                        */
 static int32_t ones_value(uint16_t w)
 {
-    (void) AGC_ASSERT(w <= WORD15);
+    if (!AGC_ASSERT(w <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return ((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w;
 }
 
 /* DP value (cs, 2^28) of UPBUFF +k, +k+1.                                 */
 static int32_t upbuff_dp(int k)
 {
-    (void) AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP);
+    if (!AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP))
+    {
+        return 0; /* no valid result */
+    }
     return ones_value(up[UP_UPBUFF + k]) * 040000 +
            ones_value(up[UP_UPBUFF + k + 1]);
 }
@@ -162,7 +177,10 @@ static int32_t upbuff_dp(int k)
 /* Store a DP value into UPBUFF +k, +k+1 (both words take its sign).      */
 static void set_upbuff_dp(int k, int32_t v)
 {
-    (void) AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP);
+    if (!AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP))
+    {
+        return;
+    }
     int32_t  m            = (v < 0) ? -v : v;
     uint16_t hi           = (uint16_t) ((m >> 14) & 037777);
     uint16_t lo           = (uint16_t) (m & 037777);
@@ -190,7 +208,10 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
 /* OHWELL2: request component UPCOUNT (UPBUFF +UPCOUNT-1).                 */
 static agc_status_t request_component(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(up[UP_UPCOUNT] >= 1u && up[UP_UPCOUNT] <= UP_MAX_COMP);
+    if (!AGC_ASSERT(up[UP_UPCOUNT] >= 1u && up[UP_UPCOUNT] <= UP_MAX_COMP))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     stage       = UP_DATA;
     load_target = UP_UPBUFF + (int) up[UP_UPCOUNT] - 1;
     return up_display(ctx);
@@ -201,24 +222,24 @@ static agc_status_t request_verify(agc_job_ctx_t *ctx)
 {
     stage       = UP_VERIFY;
     load_target = UP_UPTEMP;
-    (void) AGC_ASSERT(up[UP_COMPNUMB] >= 2u);
+    if (!AGC_ASSERT(up[UP_COMPNUMB] >= 2u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return up_display(ctx);
 }
 
 /* UPACTOFF: uplink activity light off (channel 11 bit 3).                 */
 static void upactoff(void)
 {
-    agc_status_t st =
-        agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (WORD15 & ~BIT3));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (WORD15 & ~BIT3));
 }
 
 /* UPERROUT +2: operator error, uplink light off, ENDEXT (no restart group
  * is touched).                                                            */
 static agc_status_t up_error_exit(void)
 {
-    agc_status_t st = agc_dsky_falton();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_dsky_falton();
     upactoff();
     return agc_dsky_endext();
 }
@@ -237,7 +258,10 @@ static bool update_allowed(void)
     {
         return false; /* UPERROR              */
     }
-    (void) AGC_ASSERT(mm > 0);
+    if (!AGC_ASSERT(mm > 0))
+    {
+        return false;
+    }
     /* CS FLAGWRD5, MASK BIT8: COMPUTER flag (set: the computer is the CMC). */
     return (agc_flagword_get(5) & BIT8) != 0u && mm == 2;
 }
@@ -249,15 +273,14 @@ static agc_status_t uppart2(agc_job_ctx_t *ctx)
     agc_phase_var_t v  = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE,
                           AGC_TASK_NONE,   030,
                           false,           0};
-    agc_status_t    st = agc_phase_change_var(UP_PHASE_EXIT, &v);
+    agc_phase_change_var(UP_PHASE_EXIT, &v);
+    agc_status_t st = AGC_STATUS_OK;
+    agc_telem_select_list(UP_DNLIST);
+    st = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return st;
+        return AGC_STATUS_BAD_ARG;
     }
-    st = agc_telem_select_list(UP_DNLIST);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     if (up[UP_UPVERB] == 1u || up[UP_UPVERB] == 2u)
     { /* V71, V72: OHWELL1   */
         stage       = UP_COUNT;
@@ -309,17 +332,12 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
         return up_display(ctx);
     }
     agc_inhint(); /* UPSTORE             */
-    agc_status_t st = agc_flag_invert((agc_flag_id_t) AGC_FLAG_VERIFLAG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_invert((agc_flag_id_t) AGC_FLAG_VERIFLAG);
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_EXECUTE,
                          AGC_TASK_NONE,   030,
                          false,           0};
-    st                = agc_phase_change_var(UP_PHASE_STORE, &v);
+    agc_phase_change_var(UP_PHASE_STORE, &v);
     agc_relint();
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return st;
-    }
     if (up[UP_UPVERB] == 3u)
     { /* UPEND73             */
         return agc_job_timedidr(ctx);
@@ -390,16 +408,20 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
  * ENDEXT.  Also the V34 return and the group 6 restart point.             */
 agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 :
                                                     (agc_sp_t) up[UP_UPOLDMOD];
     agc_status_t st = agc_phase_newmode(mm); /* NEWMODEX +3         */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_telem_select_list(0);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_telem_select_list(0);
     upactoff();
-    st = agc_phase_kill(UP_GROUP); /* -PHASE6 = -0        */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_kill(UP_GROUP); /* -PHASE6 = -0        */
     return agc_dsky_endext();
 }
 
@@ -411,15 +433,17 @@ static agc_status_t upout(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_status_t st =
         agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_uplink_update_terminate(ctx);
 }
 
 /* UPERROUT: operator error, then UPOUT.                                    */
 static agc_status_t up_error_out(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = agc_dsky_falton();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_dsky_falton();
     return upout(ctx);
 }
 
@@ -436,12 +460,10 @@ static bool timedidr(void)
     if (ok)
     { /* DELTATOK, TPAGREE   */
         t = (t + (int64_t) AGC_TIME_MODULUS_CS) % (int64_t) AGC_TIME_MODULUS_CS;
-        agc_status_t st = agc_time_set_cs((uint32_t) t);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_time_set_cs((uint32_t) t);
     }
     agc_relint();
-    agc_status_t sp = agc_phase_change(UP_GROUP, UP_PHASE_STORE);
-    (void) AGC_ASSERT(sp == AGC_STATUS_OK);
+    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
     return ok;
 }
 
@@ -450,8 +472,7 @@ static bool timedidr(void)
 static bool timedidl(void)
 {
     set_upbuff_dp(18, (int32_t) agc_time_now_cs() & (int32_t) 037777777);
-    agc_status_t st = agc_phase_newphase(UP_GROUP, UP_PHASE_CLOCK, false);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_newphase(UP_GROUP, UP_PHASE_CLOCK, false);
     return timedidr();
 }
 
@@ -461,13 +482,15 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
     int32_t  delta = upbuff_dp(0);
     agc_dp_t tc    = agc_erase_tetcsm();
     agc_dp_t tl    = agc_erase_tetlem();
-    (void) AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS);
+    if (!AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_erase_set_tetcsm((agc_dp_t) (tc - delta)); /* DAS TETCSM          */
     agc_erase_set_tetlem((agc_dp_t) (tl - delta)); /* DAS TETLEM          */
     agc_erase_set_tephem(agc_erase_tephem() + (agc_tp_t) delta); /* TEPHEM +1 */
     set_upbuff_dp(0, 0);
-    agc_status_t st = agc_phase_change(UP_GROUP, UP_PHASE_STORE);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
     return upout(ctx);
 }
 
@@ -485,8 +508,7 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
     { /* UPEND73             */
         if (!ok)
         {
-            agc_status_t st = agc_dsky_falton();
-            (void) AGC_ASSERT(st == AGC_STATUS_OK);
+            agc_dsky_falton();
         }
         return agc_job_uplink_update_terminate(ctx);
     }
@@ -527,7 +549,10 @@ static agc_status_t upend72(agc_job_ctx_t *ctx)
         return up_error_out(ctx);
     }
     int pairs = ((int) up[UP_COMPNUMB] - 1) / 2;
-    (void) AGC_ASSERT(pairs >= 1 && pairs <= UP_MAX_COMP / 2);
+    if (!AGC_ASSERT(pairs >= 1 && pairs <= UP_MAX_COMP / 2))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     for (int j = pairs - 1; j >= 0; j--)
     { /* LDLOOP72            */
         agc_status_t st = agc_erase_write_ecadr(up[UP_UPBUFF + 1 + 2 * j],
@@ -558,10 +583,8 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_OK; /* sleeps in INTSTALL  */
     }
-    st = agc_phase_change(UP_GROUP, UP_PHASE_STORE);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_set((agc_flag_id_t) AGC_FLAG_REINTFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
+    agc_flag_set((agc_flag_id_t) AGC_FLAG_REINTFLG);
     if (up[UP_UPVERB] == 0u)
     { /* UPEND70             */
         set_upbuff_dp(8, -upbuff_dp(0));

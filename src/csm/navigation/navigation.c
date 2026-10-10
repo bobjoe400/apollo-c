@@ -60,7 +60,10 @@ agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx)
 /* ---- LANDMARK (P22 landmark code ABCDE, V52 offset) -------------------- */
 agc_sp_t agc_erase_landmark(void)
 {
-    (void) AGC_ASSERT(nc_landmark <= 077777u);
+    if (!AGC_ASSERT(nc_landmark <= 077777u))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) rz_word_value(nc_landmark);
 }
 
@@ -80,7 +83,10 @@ agc_dp_t rz_marktime(void)
 
 void rz_set_marktime(agc_dp_t t)
 {
-    (void) AGC_ASSERT(t >= 0);
+    if (!AGC_ASSERT(t >= 0))
+    {
+        return;
+    }
     nc_marktime = t;
 }
 
@@ -139,7 +145,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
         return AGC_STATUS_OK; /* ENDPLAC  */
     }
     rz_phase(2, 00132); /* REDOR22  */
-    agc_status_t st = agc_exec_prio_change(NC_PRIO26);
+    agc_exec_prio_change(NC_PRIO26);
+    agc_status_t st = AGC_STATUS_OK;
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
         return st;
@@ -226,7 +233,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_exec_prio_change(NC_PRIO14);
+    agc_exec_prio_change(NC_PRIO14);
+    agc_status_t st = AGC_STATUS_OK;
     if (st == AGC_STATUS_BUSY)
     {
         return rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK);
@@ -284,7 +292,10 @@ static void nc_mrkbuf_copy(void)
     { /* GENTRAN  */
         agc_erase_set_mrkbuf(2, i, agc_erase_mrkbuf(1, i));
     }
-    (void) AGC_ASSERT(agc_erase_mrkbuf(2, 0) == agc_erase_mrkbuf(1, 0));
+    if (!AGC_ASSERT(agc_erase_mrkbuf(2, 0) == agc_erase_mrkbuf(1, 0)))
+    {
+        return;
+    }
 }
 
 /* V57: R21MARK on, then R23CSM.                                          */

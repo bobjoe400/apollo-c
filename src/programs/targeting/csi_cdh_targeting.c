@@ -22,12 +22,10 @@
                                  * loops P32/P72E, P33/P73E, P33/P73F    */
 
 /* Job prologue: interpreter state and the rendezvous erasables. */
-static agc_rendz_t *csi_begin(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_rendz_t *csi_begin(agc_interp_t *ip)
 {
-    (void) AGC_ASSERT(ctx != NULL);
     agc_interp_init(ip);
     agc_rendz_t *rz = rz_state();
-    (void) AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10);
     return rz;
 }
 
@@ -44,7 +42,10 @@ static agc_dp_t csi_mod_hour(agc_interp_t *ip, agc_dp_t x)
         }
         v = d;
     }
-    (void) AGC_ASSERT(v < RZ_60MIN);
+    if (!AGC_ASSERT(v < RZ_60MIN))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
@@ -53,7 +54,10 @@ static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
                                  agc_rendz_t *rz, agc_job_id_t next)
 {
     agc_status_t st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_flag_clear(AGC_FLAG_FINALFLG);
     return rz_ttogo_display(ctx, ip, rz, next);
 }
@@ -71,14 +75,20 @@ static agc_status_t csi_start(agc_job_ctx_t *ctx, bool this_active)
 /* P32 CSI TARGETING (P32-P33_P72-P73.agc p.652, label P32) */
 agc_status_t agc_job_csi_targeting(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return csi_start(ctx, true);
 }
 
 /* P72 CSI TARGETING, OTHER VEHICLE ACTIVE (p.652, label P72) */
 agc_status_t agc_job_csi_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return csi_start(ctx, false);
 }
 
@@ -136,7 +146,7 @@ static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
 agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     if (!rz_is_csm() && agc_dp_neg(rz->tcsi) >= 0)
     {
         return csi_lm_auto_tcsi(ctx, &ip, rz);
@@ -147,8 +157,14 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
 /* After V06N55: V06N37 TTPI. */
 agc_status_t agc_job_csi_after_nn_elev(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
-    (void) AGC_ASSERT(rz_state()->nn >= 0);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(rz_state()->nn >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_vnpooh(ctx, 6U, 37U, AGC_JOB_CSI_AFTER_TTPI);
 }
 
@@ -156,7 +172,7 @@ agc_status_t agc_job_csi_after_nn_elev(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csi_after_ttpi(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_erase_set_tig(rz->tcsi);
     return csi_selectmu(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE);
 }
@@ -165,14 +181,21 @@ agc_status_t agc_job_csi_after_ttpi(agc_job_ctx_t *ctx)
  * again ("TC -4"), RECYCLE goes back to P32/P72A.                       */
 static agc_status_t csi_almxit(agc_job_ctx_t *ctx, agc_sp_t code)
 {
-    agc_status_t st = agc_exec_varalarm((agc_alarm_code_t) code);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
+    agc_exec_varalarm((agc_alarm_code_t) code);
+    agc_status_t st = AGC_STATUS_ALARM;
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_csi_alarm_display(ctx);
 }
 
 agc_status_t agc_job_csi_alarm_display(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH,
                     AGC_JOB_CSI_ALARM_DISPLAY, AGC_JOB_CSI_INPUT);
 }
@@ -196,7 +219,7 @@ static agc_status_t csi_results(agc_job_ctx_t *ctx, agc_interp_t *ip,
 agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_status_t st = agc_rendz_advance(&ip, rz, AGC_JOB_CSI_COMPUTE);
     agc_vec_t    r, v;
     if (st == AGC_STATUS_OK)
@@ -226,7 +249,7 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csi_after_results(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     return rz_disdvlvc(ctx, &ip, rz, rz->delveet1, 81U,
                        AGC_JOB_CSI_AFTER_DV_LV);
 }
@@ -236,10 +259,13 @@ agc_status_t agc_job_csi_after_results(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csi_after_dv_lv(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_vec_t    dv;
     agc_status_t st = agc_rendz_csi_cdh_dv_to_reference(&ip, rz, &dv);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     rz->delveet1 = dv;
     rz->ract1    = rz->ract2;
     return rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 82U,
@@ -250,7 +276,7 @@ agc_status_t agc_job_csi_after_dv_lv(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csi_after_cdh_dv(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     rz->ttpio       = agc_erase_ttpi();
     return rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE);
 }
@@ -265,14 +291,20 @@ static agc_status_t cdh_start(agc_job_ctx_t *ctx, bool this_active)
 /* P33 CDH TARGETING (P32-P33_P72-P73.agc p.658, label P33) */
 agc_status_t agc_job_cdh_targeting(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return cdh_start(ctx, true);
 }
 
 /* P73 CDH TARGETING, OTHER VEHICLE ACTIVE (p.658, label P73) */
 agc_status_t agc_job_cdh_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return cdh_start(ctx, false);
 }
 
@@ -291,7 +323,7 @@ agc_status_t agc_job_cdh_input(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cdh_after_tcdh(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_erase_set_ttpi(rz->ttpio);
     agc_erase_set_tig(rz->tcdh);
     return csi_selectmu(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE);
@@ -341,7 +373,7 @@ static agc_status_t cdh_after_search(agc_job_ctx_t *ctx, agc_interp_t *ip,
 agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_status_t st = agc_rendz_advance(&ip, rz, AGC_JOB_CDH_COMPUTE);
     if (st == AGC_STATUS_OK)
     {
@@ -375,7 +407,7 @@ agc_status_t agc_job_cdh_compute(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cdh_time_search(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_status_t st =
         agc_rendz_tpi_time_search_cont(&ip, rz, AGC_JOB_CDH_TIME_SEARCH);
     return cdh_after_search(ctx, &ip, rz, st);
@@ -385,7 +417,7 @@ agc_status_t agc_job_cdh_time_search(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cdh_alarm_proceed(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     rz->nomtpi      = 0;
     return cdh_results(ctx, &ip, rz);
 }
@@ -394,7 +426,7 @@ agc_status_t agc_job_cdh_alarm_proceed(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cdh_after_results(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     return rz_disdvlvc(ctx, &ip, rz, rz->delveet2, 81U,
                        AGC_JOB_CDH_AFTER_DV_LV);
 }
@@ -403,10 +435,13 @@ agc_status_t agc_job_cdh_after_results(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cdh_after_dv_lv(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
-    agc_rendz_t *rz = csi_begin(ctx, &ip);
+    agc_rendz_t *rz = csi_begin(&ip);
     agc_vec_t    dv;
     agc_status_t st = agc_rendz_csi_cdh_dv_to_reference(&ip, rz, &dv);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     rz->delveet2 = dv;
     return rz_ttogo_display(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE);
 }

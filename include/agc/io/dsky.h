@@ -107,7 +107,7 @@ agc_status_t agc_dsky_keyrupt2(void); /* KEYCOM for the nav DSKY ch 16 */
 agc_status_t
 agc_dsky_uprupt(uint16_t inlink);            /* UPRUPT, triple-redundant word */
 agc_status_t agc_dsky_prockey_request(void); /* NOVAC PROCKEY (T4RUPT) */
-agc_status_t agc_dsky_falton(void);          /* FALTON: OPR ERR lamp on */
+void agc_dsky_falton(void);          /* FALTON: OPR ERR lamp on */
 
 /* ---- display output (DSPOUT/DSPOUTSB, T4RUPT_PROGRAM p. 133) ---------- */
 /* Sends the next pending DSPTAB relay word to channel 010 and returns it
@@ -169,7 +169,7 @@ agc_status_t agc_dsky_releasedsp(void); /* RELDSP                     */
 agc_status_t agc_dsky_loadlv(void);
 /* NVWORD1 (set by P30-P47): -0 pastes V97, -0400 pastes V99 on a
  * CLOCPLAY display (raw 15-bit word).                                  */
-agc_status_t agc_dsky_set_nvword1(uint16_t word);
+void agc_dsky_set_nvword1(uint16_t word);
 
 /* ---- display interface routines (DISPLAY_INTERFACE_ROUTINES) --------- */
 /* Astronaut returns of a flashing display (AGC "call CADR +1/+2/+3"):
@@ -234,7 +234,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 agc_status_t agc_dsky_blanket(uint16_t bits); /* BLANKET after an R call  */
 agc_status_t agc_dsky_endmark(void);          /* ENDMARK                   */
 agc_status_t agc_dsky_endext(void);           /* ENDEXT EQUALS ENDMARK     */
-agc_status_t agc_dsky_clearmrk(void);         /* CLEARMRK                  */
+void agc_dsky_clearmrk(void);         /* CLEARMRK                  */
 agc_status_t agc_dsky_pinbrnch(void);         /* PINBRNCH                  */
 agc_status_t agc_dsky_initdsp(void);          /* INITDSP (.1 restarts)     */
 

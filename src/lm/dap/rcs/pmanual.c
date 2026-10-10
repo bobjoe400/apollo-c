@@ -42,9 +42,12 @@ agc_status_t lm_dap_zeroenbl(void)
     agc_erase_set_p_rhcctr(0);
     agc_erase_set_q_rhcctr(0);
     agc_erase_set_r_rhcctr(0);
-    agc_status_t st = agc_chan_or(013, PM_BITS8_9);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_erase_p_rhcctr() == 0);
+    agc_chan_or(013, PM_BITS8_9);
+    agc_status_t st = AGC_STATUS_OK;
+    if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -57,7 +60,10 @@ agc_status_t lm_dap_pminimp(void)
     d->perror     = 0;
     d->cduxd      = agc_erase_cdux();
     uint16_t ch31 = agc_chan_read(031);
-    (void) AGC_ASSERT(d->oldpmin >= 0);
+    if (!AGC_ASSERT(d->oldpmin >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (d->oldpmin > 0)
     { /* CHECKP         */
         d->oldpmin = (agc_sp_t) ((uint16_t) ~ch31 & PM_OCT14);
@@ -76,7 +82,10 @@ agc_status_t lm_dap_pminimp(void)
         return lm_dap_jetsoff();
     }
     d->oldpmin = 1;
-    (void) AGC_ASSERT(d->tj[0] != 0);
+    if (!AGC_ASSERT(d->tj[0] != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_pjetslec_pair();
 }
 
@@ -86,8 +95,14 @@ agc_status_t lm_dap_pminimp(void)
 agc_status_t lm_dap_pstate(void)
 {
     bool atthold = (agc_chan_read(031) & PM_CH31_ATTHOLD) == 0u;
-    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_PULSEFLG));
-    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_XOVINFLG));
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_PULSEFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_XOVINFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!atthold)
     {
         if (agc_flag_test(AGC_FLAG_XOVINFLG))
@@ -109,7 +124,7 @@ agc_status_t lm_dap_pstate(void)
 static agc_status_t justout(lm_dap_t *d)
 {
     d->perror       = 0;
-    agc_status_t sf = agc_flag_set(AGC_FLAG_OURRCFLG);
+    agc_flag_set(AGC_FLAG_OURRCFLG);
     d->dxerror      = 0;
     d->dxerror_lo   = 0;
     d->qerror       = 0; /* DYERROR                        */
@@ -124,8 +139,14 @@ static agc_status_t justout(lm_dap_t *d)
     d->rcsflags     = (uint16_t) (d->rcsflags & PM_PQRBIT);
     d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
     agc_status_t sz = lm_dap_zeroenbl();
-    (void) AGC_ASSERT(sf == AGC_STATUS_OK && sz == AGC_STATUS_OK);
-    (void) AGC_ASSERT((d->rcsflags & LM_RCS_PBIT) == 0u);
+    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((d->rcsflags & LM_RCS_PBIT) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_jetsoff();
 }
 
@@ -135,7 +156,8 @@ static agc_status_t justout(lm_dap_t *d)
 static agc_status_t ratedone(lm_dap_t *d)
 {
     agc_inhint();
-    agc_status_t sf = agc_flag_clear(AGC_FLAG_OURRCFLG);
+    agc_flag_clear(AGC_FLAG_OURRCFLG);
+    agc_status_t sf = AGC_STATUS_OK;
     agc_status_t sz = AGC_STATUS_OK;
     if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
     {
@@ -143,11 +165,18 @@ static agc_status_t ratedone(lm_dap_t *d)
     }
     else
     {
-        sz = agc_lm_dap_zatteror();
+        agc_lm_dap_zatteror();
+        sz = AGC_STATUS_OK;
     }
     agc_relint();
-    (void) AGC_ASSERT(sf == AGC_STATUS_OK && sz == AGC_STATUS_OK);
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG));
+    if (!AGC_ASSERT(sf == AGC_STATUS_OK && sz == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_purgency();
 }
 
@@ -160,8 +189,14 @@ static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
     int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
     agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
     d->tj[0]           = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
-    (void) AGC_ASSERT(d->neg_2jetlim <= 0);
-    (void) AGC_ASSERT(absedotp >= 0);
+    if (!AGC_ASSERT(d->neg_2jetlim <= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(absedotp >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((int32_t) absedotp + d->neg_2jetlim > 0)
     {
         return lm_dap_pjetslec(6); /* four jets      */
@@ -189,8 +224,14 @@ static agc_status_t pegi(lm_dap_t *d)
     { /* LAST           */
         d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_PBIT);
     }
-    (void) AGC_ASSERT(d->neg_ratedb <= 0);
-    (void) AGC_ASSERT(d->tcp >= 0);
+    if (!AGC_ASSERT(d->neg_ratedb <= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->tcp >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return pegi_fire(d, absedotp);
 }
 
@@ -203,7 +244,10 @@ static agc_status_t raterror(lm_dap_t *d)
 {
     d->cduxd     = agc_erase_cdux();
     agc_sp_t cnt = agc_erase_p_rhcctr();
-    (void) AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX);
+    if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
     agc_sp_t lin = lm_dap_mp(k, cnt).lo; /* CA L           */
     agc_sp_t cmd = lm_dap_mphi(lin, d->stiksens);
@@ -211,7 +255,10 @@ static agc_status_t raterror(lm_dap_t *d)
     d->plast        = cmd;
     agc_status_t sz = lm_dap_zeroenbl();
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->plast); /* EDOTP       */
-    (void) AGC_ASSERT(sz == AGC_STATUS_OK);
+    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (change != 0 && (int32_t) lm_dap_ccs_dim(change) + d->neg_ratedb > 0)
     {
         d->tcp = PM_40CYC;
@@ -253,7 +300,13 @@ agc_status_t lm_dap_detentck(void)
         return ratedone(d);
     }
     agc_erase_set_p_rhcctr(0); /* RATEDAMP       */
-    (void) AGC_ASSERT(d->ch31temp <= 077777u);
-    (void) AGC_ASSERT(agc_erase_p_rhcctr() == 0);
+    if (!AGC_ASSERT(d->ch31temp <= 077777u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_erase_p_rhcctr() == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return raterror(d);
 }

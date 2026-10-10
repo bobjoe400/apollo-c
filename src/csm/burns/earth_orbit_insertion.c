@@ -93,7 +93,10 @@ agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
     agc_erase_set_tevent(lifttemp); /* TLIFTOFF            */
     tliftoff_set = true;
     agc_phase_change(3, 000133); /* REP11A-1: 3.13      */
-    (void) AGC_ASSERT(agc_time_now_cs() < 100u);
+    if (!AGC_ASSERT(agc_time_now_cs() < 100u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_earth_orbit_insertion_monitor_ephemeris(ctx);
 }
 
@@ -134,7 +137,10 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
     agc_relint();
     st = agc_guid_preread1_csm(); /* zero PIPs, AVERAGEG */
     agc_phase_change_var(005023, &v);
-    (void) AGC_ASSERT(agc_erase_tephem() == tephem1);
+    if (!AGC_ASSERT(agc_erase_tephem() == tephem1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ?
                agc_job_earth_orbit_insertion_monitor_setup(ctx) :
                st;
@@ -151,14 +157,30 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_waitlist_call(50, AGC_TASK_ATERTASK); /* .5SEC     */
-    (void) agc_phase_newmode(11);
+    agc_status_t sw = agc_waitlist_call(50, AGC_TASK_ATERTASK); /* .5SEC     */
+    if (sw != AGC_STATUS_OK)
+    {
+        return sw;
+    }
+    agc_status_t sj = agc_phase_newmode(11);
+    if (sj != AGC_STATUS_OK)
+    {
+        return sj;
+    }
     agc_flag_set(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION);
-    (void) agc_telem_select_list(INSERTION_POWDNCOD);
-    (void) agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL); /* V75 case  */
+    agc_telem_select_list(INSERTION_POWDNCOD);
+    const agc_status_t sd =
+        agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL); /* V75 case  */
+    if (sd != AGC_STATUS_OK)
+    {
+        return sd; /* PRIOBORT 01502 or exec overflow: job abandoned */
+    }
     agc_phase_change2(040514, 000073, NULL);           /* 4.51, 3.7 */
     st = agc_csm_prelaunch_earthr_at_liftoff(entry_ip(), agc_erase_tevent());
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION));
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st == AGC_STATUS_OK) ? agc_job_matrxjob(ctx) : st;
 }
 
@@ -188,7 +210,10 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
         tliftoff_set = true;
     }
     agc_phase_change(3, 000133); /* ENDREP11: 3.13      */
-    (void) AGC_ASSERT(tliftoff_set);
+    if (!AGC_ASSERT(tliftoff_set))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_earth_orbit_insertion_monitor_ephemeris(ctx);
 }
 
@@ -205,7 +230,10 @@ static agc_mat_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down)
     agc_vec_t east;
     agc_vec_t msouth;
 
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
     m.row[2] = agc_vec_unit(ip, down, NULL, NULL);
     east     = agc_vec_unit(ip, agc_vec_cross(ip, m.row[2], unitw), NULL, NULL);
     msouth   = agc_vec_unit(ip, agc_vec_cross(ip, east, m.row[2]), NULL, NULL);
@@ -215,7 +243,10 @@ static agc_mat_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down)
     m.row[0] = agc_vec_unit(ip, m.row[0], NULL, NULL);
     m.row[1] = agc_vec_neg(
         agc_vec_unit(ip, agc_vec_cross(ip, m.row[0], m.row[2]), NULL, NULL));
-    (void) AGC_ASSERT(m.row[2].c[0] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(m.row[2].c[0] >= AGC_DP_MIN))
+    {
+        return (agc_mat_t){0}; /* no valid result */
+    }
     return m;
 }
 
@@ -228,7 +259,10 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
     agc_vec_t            rp;
     agc_status_t         st = agc_navaux_get_padload(&pad);
 
-    (void) AGC_ASSERT(down != NULL);
+    if (!AGC_ASSERT(down != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -250,7 +284,10 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
         AGC_RESTART_JOB, AGC_JOB_MATRXJOB, AGC_TASK_NONE, 0, false, 0U};
     int32_t dt;
 
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_phase_change_var(004023, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_VHHDOT; /* P11SCADR      */
     agc_imu_set_pipa_interval((agc_sp_t) 031000);   /* PRIO31: 2 s   */
@@ -262,10 +299,18 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
     {
         dt = 1; /* never negative */
     }
-    (void) agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
+    agc_status_t st = agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
+    if (st != AGC_STATUS_OK)
+    {
+        agc_relint();
+        return st;
+    }
     agc_relint();
     agc_phase_change2(000003, 000025, NULL); /* 3 off, 5.2    */
-    (void) AGC_ASSERT(dt > 0);
+    if (!AGC_ASSERT(dt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_normlize_csm(ctx); /* POSTJUMP      */
 }
 
@@ -326,7 +371,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
  * ==================================================================== */
 
 /* S11.1 (p. 546): VMAGI, HDOT, ALTI for N62.                            */
-agc_status_t agc_csm_velocity_altitude_rate(agc_interp_t *ip)
+void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
 {
     agc_vec_t rn = agc_erase_rn();
     agc_vec_t vn = agc_erase_vn();
@@ -336,7 +381,7 @@ agc_status_t agc_csm_velocity_altitude_rate(agc_interp_t *ip)
 
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     insertion_vmagi = agc_vec_abval(ip, vn); /* 2^7 m/cs    */
     ur              = agc_vec_unit(ip, rn, &rmag, NULL);
@@ -346,8 +391,10 @@ agc_status_t agc_csm_velocity_altitude_rate(agc_interp_t *ip)
         base = agc_dp_shr(agc_vec_abval(ip, agc_erase_rls()), 2); /* B27->B29 */
     }
     insertion_alti = agc_dp_sub(ip, rmag, base); /* BDSU 36D     */
-    (void) AGC_ASSERT(rmag >= 0);
-    return AGC_STATUS_OK;
+    if (!AGC_ASSERT(rmag >= 0))
+    {
+        return;
+    }
 }
 
 agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
@@ -368,15 +415,12 @@ agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
  * (which ends the job).                                                  */
 agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx)
 {
-    agc_status_t st;
-
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
     }
-    st = agc_csm_velocity_altitude_rate(entry_ip());
+    agc_csm_velocity_altitude_rate(entry_ip());
     agc_phase_change(5, 000035);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_dsky_display(ctx, AGC_DSKY_REGODSP, agc_dsky_vn(6, 62), NULL);
 }
 
@@ -389,17 +433,27 @@ agc_status_t agc_task_atertask(void)
 {
     agc_status_t st = agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB);
 
-    (void) agc_dap_needler(0, 0, 0, true); /* RCSFLAGS BIT3 */
+    agc_status_t sw = agc_dap_needler(0, 0, 0, true); /* RCSFLAGS BIT3 */
+    if (sw != AGC_STATUS_OK)
+    {
+        return sw;
+    }
     satsw = 1;                             /* display      */
-    (void) AGC_ASSERT(satsw == 1);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(satsw == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* AK = TGSC (DESIRED - CDU) (pp. 544-545), TGSC rows
  * (1, SIN Z, 0), (0, COS X COS Z, SIN X), (0, -SIN X COS Z, COS X), with
  * the errors ordered DTHETA (Y), DPSI (Z), DPHI (X); AK scaled 2 revs.   */
-agc_status_t agc_earth_orbit_insertion_monitor_attitude_errors(
+void agc_earth_orbit_insertion_monitor_attitude_errors(
     const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
 {
     agc_interp_t *ip = entry_ip();
@@ -411,7 +465,7 @@ agc_status_t agc_earth_orbit_insertion_monitor_attitude_errors(
     if (!AGC_ASSERT(desired != NULL && cdu != NULL) ||
         !AGC_ASSERT(ak_out != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     for (i = 0; i < 3; i++)
     {                            /* order Y Z X        */
@@ -437,8 +491,10 @@ agc_status_t agc_earth_orbit_insertion_monitor_attitude_errors(
                    agc_dp_sub(ip, agc_dp_mul(ip, cx, d[1]),
                               agc_dp_shl(ip, agc_dp_mul(ip, p, sx), 1)),
                    1));
-    (void) AGC_ASSERT(ak_out[0] >= AGC_SP_MIN);
-    return AGC_STATUS_OK;
+    if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /* ATTDISP / ATTDISP1 / ATTDISPR (pp. 542-544): desired gimbal angles from
@@ -496,7 +552,7 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     {
         dc.row[t] = agc_vec_unit(ip, dc.row[t], NULL, NULL);
     }
-    (void) agc_imu_calcgta(ip, &dc, desired); /* OGC IGC MGC */
+    agc_imu_calcgta(ip, &dc, desired); /* OGC IGC MGC */
 }
 
 /* ATERJOB (pp. 542-546): one display cycle, then DELAYJOB .25 s.         */
@@ -526,14 +582,18 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
     }
     else if (satsw <= 0)
     {
-        (void) agc_dap_needler(0, 0, 0, true); /* ATRESET             */
+        agc_status_t sw = agc_dap_needler(0, 0, 0, true); /* ATRESET             */
+        if (sw != AGC_STATUS_OK)
+        {
+            return sw;
+        }
         return agc_svc_delayjob(6, AGC_JOB_ATRESET_AFTER_DELAY);
     }
     desired_attitude(entry_ip(), desired);
     cdu[0] = agc_erase_cdux();
     cdu[1] = agc_erase_cduy();
     cdu[2] = agc_erase_cduz();
-    (void) agc_earth_orbit_insertion_monitor_attitude_errors(desired, cdu, ak);
+    agc_earth_orbit_insertion_monitor_attitude_errors(desired, cdu, ak);
     if (satsw <= 0)
     {
         for (i = 0; i < 3; i++)
@@ -549,7 +609,11 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
         }
         satsw = -1; /* steer               */
     }
-    (void) agc_dap_needler(ak[0], ak[1], ak[2], false); /* SATOUT   */
+    agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false); /* SATOUT   */
+    if (st != AGC_STATUS_OK)
+    {
+        return st;
+    }
     return agc_svc_delayjob(INSERTION_ATERTASK_DELAY,
                             AGC_JOB_ATERJOB); /* ATERSET  */
 }
@@ -572,8 +636,15 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
         satsw = 1;
         agc_chan_and(012, (uint16_t)~AGC_CH012_SIVBTAKEOVER);
     }
-    (void) AGC_ASSERT(satsw == 0 || satsw == 1);
-    (void) agc_dap_needler(0, 0, 0, false); /* SATOUT   */
+    if (!AGC_ASSERT(satsw == 0 || satsw == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_status_t st = agc_dap_needler(0, 0, 0, false); /* SATOUT   */
+    if (st != AGC_STATUS_OK)
+    {
+        return st;
+    }
     return agc_svc_delayjob(INSERTION_ATERTASK_DELAY, AGC_JOB_ATERJOB);
 }
 
@@ -594,20 +665,33 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
     agc_rupt_set_time(5, 037777); /* POSMAX   */
     agc_flag_set(AGC_FLAG_DAPBIT1);
     agc_flag_set(AGC_FLAG_DAPBIT2);
-    (void) agc_csm_dap_zerojet();
+    agc_csm_dap_zerojet();
     agc_relint();
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_DAPBIT1));
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_DAPBIT1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_dsky_gopin(ctx);
 }
 
 /* REDOSAT (p. 549): NEEDLER init, S-IVB takeover on, SATSTICK in 100 ms. */
 agc_status_t agc_task_redosat(void)
 {
-    (void) agc_dap_needler(0, 0, 0, true);
+    agc_status_t st = agc_dap_needler(0, 0, 0, true);
+    if (st != AGC_STATUS_OK)
+    {
+        return st;
+    }
     agc_chan_or(012, AGC_CH012_SIVBTAKEOVER);
     agc_rupt_set_t5_task(AGC_TASK_SATSTICK);
-    (void) AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_SATSTICK);
-    (void) AGC_ASSERT((agc_chan_read(012) & AGC_CH012_SIVBTAKEOVER) != 0u);
+    if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_SATSTICK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((agc_chan_read(012) & AGC_CH012_SIVBTAKEOVER) != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_rupt_set_time(5, INSERTION_100MST5);
     return AGC_STATUS_OK; /* 100MST5  */
 }

@@ -35,7 +35,10 @@
 static agc_status_t p57_phase(void)
 {
     const agc_status_t st = align_phase4(PH_P57);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -173,7 +176,8 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         star = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, star), NULL, NULL);
-        st   = agc_guid_cdu_smnb(&t, &star);
+        agc_guid_cdu_smnb(&t, &star);
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -188,7 +192,8 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
             return agc_job_lunar_surface_star_position_display(ctx);
         }
     }
-    const agc_status_t alm = agc_alarm(ALM_NOT_IN_AOT); /* R59ALM   */
+    agc_alarm(ALM_NOT_IN_AOT); /* R59ALM   */
+    const agc_status_t alm = AGC_STATUS_ALARM;
     if (alm != AGC_STATUS_OK)
     {
         return alm;
@@ -205,8 +210,10 @@ agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT((agc_align_ram()->poscode >= 1) &&
-                      (agc_align_ram()->poscode <= POSITIONS));
+    if (!AGC_ASSERT((agc_align_ram()->poscode >= 1) && (agc_align_ram()->poscode <= POSITIONS)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_CURSOR, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED,
                        AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION);

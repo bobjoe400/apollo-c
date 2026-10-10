@@ -54,8 +54,14 @@ typedef enum lambert_next
  * HI ORDER ONES").                                                       */
 static agc_tp_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *it)
 {
-    (void) AGC_ASSERT(ip != NULL && it != NULL);
-    (void) AGC_ASSERT(it->tweekit >= 0);
+    if (!AGC_ASSERT(ip != NULL && it != NULL))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(it->tweekit >= 0))
+    {
+        return 0; /* no valid result */
+    }
     const agc_dp_t tw = agc_dp_pack(it->tweekit, (agc_sp_t) 1);
     const agc_dp_t lo =
         agc_conic_mstore_(agc_conic_mdmp_(agc_conic_mload_(it->min), tw));
@@ -145,12 +151,21 @@ agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
 static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                              const agc_lambert_in_t *in, lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(in != NULL && ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(in != NULL && ls != NULL))
+    {
+        return false;
+    }
     agc_dp_t     csth = 0;
     agc_status_t st =
         agc_conic_geom_(ip, ctx, in->r1vec, in->r2vec, &ctx->snth, &csth);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return false;
+    }
     int            n = 0; /* MAGVEC2 NORM X1 */
     const agc_dp_t r2n =
         agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(ctx->magvec2), &n));
@@ -195,8 +210,14 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static void lambert_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                            const agc_lambert_in_t *in, lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(in != NULL && ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(in != NULL && ls != NULL))
+    {
+        return;
+    }
     agc_tp_t m   = agc_conic_mshift_(ip, agc_conic_mload_(ctx->csth), -6);
     ls->csth_rho = agc_conic_mstore_(agc_conic_mdsu_(ip, m, ls->r1_r2));
     ls->cogamin  = AGC_CONIC_COGLOLIM; /* LOLIM          */
@@ -231,8 +252,14 @@ static void lambert_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static bool lambert_p_r1a(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                           const lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(ls != NULL))
+    {
+        return false;
+    }
     int      n = 0;
     agc_tp_t m = agc_conic_mdmp_(agc_conic_mload_(ctx->coga), ctx->snth);
     m = agc_conic_mdsu_(ip, agc_conic_mshift_(ip, m, -1), ls->csth_rho);
@@ -259,8 +286,14 @@ static bool lambert_p_r1a(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static lambert_next_t lambert_retreat(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                       lambert_state_t *ls, bool high_energy)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
+    if (!AGC_ASSERT(ls != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
     if (high_energy)
     {
         ls->cogamin = ctx->coga; /* HIENERGY       */
@@ -284,8 +317,14 @@ static lambert_next_t lambert_retreat(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static lambert_next_t lambert_step(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                    lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
+    if (!AGC_ASSERT(ls != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
     agc_iterator_t it;
     it.indep    = ctx->coga;
     it.dep      = ctx->t;
@@ -298,7 +337,10 @@ static lambert_next_t lambert_step(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     it.slopesw  = ls->slopesw;
     it.ordersw  = agc_flag_test(AGC_FLAG_ORDERSW); /* never set in Apollo 11 */
     agc_status_t st = agc_conic_iterator(ip, &it);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return LAMB_SUFFCHEK;
+    }
     ls->dcoga   = it.delindep;
     ls->cogamax = it.max;
     ls->cogamin = it.min;
@@ -316,8 +358,14 @@ static lambert_next_t lambert_step(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                    lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
+    if (!AGC_ASSERT(ls != NULL))
+    {
+        return LAMB_SUFFCHEK;
+    }
     if (!lambert_p_r1a(ip, ctx, ls))
     { /* NEGP           */
         return lambert_retreat(ip, ctx, ls, ls->dcoga < 0);
@@ -327,14 +375,20 @@ static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return lambert_retreat(ip, ctx, ls, true);
     }
     agc_status_t st = agc_conic_getx_(ip, ctx);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return LAMB_SUFFCHEK;
+    }
     ls->tprev = ctx->t; /* DLOAD T STODL TPREV */
     if (ctx->infinflg)
     { /* BON INFINFLG NEGP */
         return lambert_retreat(ip, ctx, ls, ls->dcoga < 0);
     }
     st = agc_conic_deltime_(ip, ctx);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return LAMB_SUFFCHEK;
+    }
     if (agc_interp_test_ovf(ip))
     { /* BOV BIGTIME    */
         ctx->t = ls->tprev;
@@ -359,14 +413,20 @@ static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
  * (CSM) or TDESIRED 2^-17 (LM), plus one bit.                            */
 static bool lambert_suffchek(agc_interp_t *ip, const lambert_state_t *ls)
 {
-    (void) AGC_ASSERT(ip != NULL && ls != NULL);
+    if (!AGC_ASSERT(ip != NULL && ls != NULL))
+    {
+        return false;
+    }
     const bool     csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_dp_t err =
         agc_conic_mstore_(agc_conic_mabs_(agc_conic_mload_(ls->terrlamb)));
     agc_tp_t m = agc_conic_mdmp_(agc_conic_mload_(ls->tdesired),
                                  csm ? AGC_CONIC_D1_4 : AGC_CONIC_BEE17);
     m = agc_conic_mdsu_(ip, agc_conic_mdad_(ip, m, AGC_CONIC_ONEBIT), err);
-    (void) AGC_ASSERT(ls->tdesired >= 0);
+    if (!AGC_ASSERT(ls->tdesired >= 0))
+    {
+        return false;
+    }
     return !agc_conic_mbmn_(m); /* BPL INITV      */
 }
 
@@ -374,8 +434,14 @@ static bool lambert_suffchek(agc_interp_t *ip, const lambert_state_t *ls)
  * VTAN = sqrt(MU P / R1), 2^7 / 2^5.                                     */
 static agc_vec_t lambert_initv(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ctx->r1 > 0);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ctx->r1 > 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     int            n = 0;
     const agc_dp_t r1n =
         agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(ctx->r1), &n));
@@ -414,7 +480,7 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     {
         return st;
     }
-    (void) agc_interp_test_ovf(ip); /* SETPD 0D, BOV +1 */
+    agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
     lambert_state_t z = {0};
     *ls               = z;
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
@@ -429,8 +495,7 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
             return AGC_STATUS_BAD_ARG;
         }
         ls->iterctr = in->iterctr; /* set by SETITCTR */
-        (void) agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW,
-                                      false); /* mirror only */
+        agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* mirror only */
     }
     ls->tdesired = in->tdesired;
     ls->epsilonl = agc_conic_mstore_(
@@ -451,8 +516,14 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static void lambert_output(const agc_conic_ctx_t *ctx,
                            const lambert_state_t *ls, agc_lambert_out_t *out)
 {
-    (void) AGC_ASSERT(ctx != NULL && ls != NULL);
-    (void) AGC_ASSERT(out != NULL);
+    if (!AGC_ASSERT(ctx != NULL && ls != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(out != NULL))
+    {
+        return;
+    }
     out->snth       = ctx->snth;
     out->csth       = ctx->csth;
     out->one_m_csth = ls->one_m_csth;
@@ -468,10 +539,12 @@ static void lambert_output(const agc_conic_ctx_t *ctx,
 /* Set SOLNSW (in *out and in the flagword). */
 static void lambert_solnsw(agc_lambert_out_t *out, bool set)
 {
-    (void) AGC_ASSERT(out != NULL);
+    if (!AGC_ASSERT(out != NULL))
+    {
+        return;
+    }
     out->solnsw     = set;
-    agc_status_t st = agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, set);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, set);
 }
 
 /*
@@ -531,7 +604,10 @@ agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in,
     if (in->vtargtag == 0)
     { /* TARGETV        */
         st = agc_conic_lamenter_(ip, &ctx, ctx.magvec2, &out->vtarget);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     return ok ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE;
 }

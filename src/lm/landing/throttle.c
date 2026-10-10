@@ -32,22 +32,34 @@
 /* DP built from a high and low word without touching core semantics.     */
 static agc_dp_t thr_pack(int32_t hi, int32_t lo)
 {
-    (void) AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN);
-    (void) AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN);
+    if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) (hi * 16384 + lo);
 }
 
 static agc_sp_t thr_hi(agc_dp_t v)
 {
     int32_t hi = v / 16384; /* sign-agreeing DP pair     */
-    (void) AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) hi;
 }
 
 static agc_sp_t thr_lo(agc_dp_t v)
 {
     int32_t lo = v % 16384;
-    (void) AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN);
+    if (!AGC_ASSERT(lo <= AGC_SP_MAX && lo >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) lo;
 }
 
@@ -124,11 +136,7 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
     agc_sp_t cmd = agc_lm_ad(thr_hi(t->pif), t->pifpset);
     t->pseudo55  = cmd;
     agc_erase_set_thrust(cmd);
-    agc_status_t st = agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return st;
-    }
+    agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
     t->tthrot = agc_lm_time1();
     return AGC_STATUS_OK;
 }
@@ -163,8 +171,14 @@ static void thr_fweight(agc_lm_thr_t *t)
     agc_dp_t sq     = agc_sp_mul(abspif, pif); /* PIF |PIF|        */
     agc_sp_t second = agc_lm_dv(sq, buf1);
     t->fweight = (agc_dp_t) (t->fweight + (agc_dp_t) second * 16384); /* DAS */
-    (void) AGC_ASSERT(buf1 > 0);
-    (void) AGC_ASSERT(dtp >= 0 && dtp <= THR_LOW8);
+    if (!AGC_ASSERT(buf1 > 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(dtp >= 0 && dtp <= THR_LOW8))
+    {
+        return;
+    }
 }
 
 /* AFDUMP .. THDUMP (pp. 793-796), entered with the present acceleration
@@ -196,14 +210,10 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     t->pifpset = thr_region(t, pad);
 
     /* DOPIF */
-    agc_status_t st = agc_lm_fastchng();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_lm_fastchng();
     t->fcold = thr_hi(t->fcodd);
     t->pif   = (agc_dp_t) (t->fcodd - t->fp); /* PIF = FC - FP       */
-    st       = thr_doit(t);
+    agc_status_t st = thr_doit(t);
     if (st != AGC_STATUS_OK)
     {
         return st;
@@ -255,7 +265,13 @@ agc_status_t agc_lm_throttle_whatout(agc_sp_t pulses)
 agc_status_t agc_lm_throttle_flatout(void)
 {
     agc_status_t st = agc_lm_throttle_whatout((agc_sp_t) AGC_LM_FEXTRA);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_lm_thr()->pifpset == AGC_LM_FEXTRA);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_lm_thr()->pifpset == AGC_LM_FEXTRA))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

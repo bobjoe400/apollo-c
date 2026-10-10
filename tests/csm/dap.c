@@ -227,7 +227,7 @@ static void test_massprop(void)
     agc_erase_set_dapdatr1((uint16_t) 010000); /* 001: CSM alone  */
     agc_erase_set_csmmass(5000);               /* kg, B+16        */
     agc_erase_set_lemmass(0);
-    CHECK(agc_csm_dap_massprop() == AGC_STATUS_OK);
+    agc_csm_dap_massprop();
     /* TEMP333 = 2 (5000 - 3851) = 2298 > 0: slopes VARST3, 4; VARST5.   */
     agc_sp_t d   = 2298;
     agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14));

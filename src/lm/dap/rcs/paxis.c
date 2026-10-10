@@ -74,17 +74,26 @@ agc_status_t lm_dap_jetsoff(void)
     lm_dap_t    *d  = lm_dap_state();
     agc_status_t st = lm_dap_write_next(0);
     d->tj[0]        = 0;
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->tj[0] == 0);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->tj[0] == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* ALTSYST (p.1437): alternate the P-axis jet system (AORBSYST).          */
 static agc_status_t altsyst(void)
 {
-    agc_status_t st = agc_flag_invert(AGC_FLAG_AORBSFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_AORBSFLG));
+    agc_flag_invert(AGC_FLAG_AORBSFLG);
+    agc_status_t st = AGC_STATUS_OK;
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_AORBSFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -124,8 +133,14 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     agc_status_t sj = lm_dap_jtlst();
     d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_PSKIP); /* skip next P   */
     agc_status_t sa = altsyst();
-    (void) AGC_ASSERT(sj == AGC_STATUS_OK && sa == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->abstj >= PX_MINT6);
+    if (!AGC_ASSERT(sj == AGC_STATUS_OK && sa == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->abstj >= PX_MINT6))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -133,8 +148,14 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
 agc_status_t lm_dap_pjetslec_pair(void)
 {
     agc_sp_t n = agc_flag_test(AGC_FLAG_AORBSFLG) ? 5 : 4;
-    (void) AGC_ASSERT(n == 4 || n == 5);
-    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_AORBSFLG));
+    if (!AGC_ASSERT(n == 4 || n == 5))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_AORBSFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_pjetslec(n);
 }
 
@@ -147,8 +168,14 @@ agc_status_t lm_dap_calcperr(void)
     int32_t x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;
     d->e      = lm_dap_wrap((int32_t) e + x); /* ADS E: may wrap */
     d->perror = d->e;                         /* eight-ball     */
-    (void) AGC_ASSERT(d->perror >= LM_NEGMAX && d->perror <= LM_POSMAX);
-    (void) AGC_ASSERT(d->cduxd <= 077777u);
+    if (!AGC_ASSERT(d->perror >= LM_NEGMAX && d->perror <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->cduxd <= 077777u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -161,7 +188,10 @@ agc_status_t lm_dap_purgency_law(void)
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
         agc_status_t ss = lm_dap_spsrcs();
-        (void) AGC_ASSERT(ss == AGC_STATUS_OK);
+        if (!AGC_ASSERT(ss == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         if (d->tj[0] == 0)
         { /* DKALT          */
             agc_status_t sa = altsyst();
@@ -172,7 +202,10 @@ agc_status_t lm_dap_purgency_law(void)
     }
     d->sensetyp     = 0; /* HEADTJET       */
     agc_status_t st = lm_dap_tjetlaw();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((int32_t) -d->firefct - PX_FOURDEG <= 0)
     { /* not 4 deg past */
         return lm_dap_pjetslec_pair();
@@ -194,8 +227,14 @@ agc_status_t lm_dap_purgency(void)
     lm_dap_t    *d  = lm_dap_state();
     agc_status_t st = lm_dap_calcperr();
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->omegapd); /* EDOTP     */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->edot >= LM_NEGMAX && d->edot <= LM_POSMAX);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->edot >= LM_NEGMAX && d->edot <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_purgency_law();
 }
 
@@ -205,8 +244,14 @@ static void alteryz(lm_dap_t *d)
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
     d->rotindex =
         (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
-    (void) AGC_ASSERT(d->rotindex >= 6 && d->rotindex <= 10);
-    (void) AGC_ASSERT(d->rcsflags <= 077777u);
+    if (!AGC_ASSERT(d->rotindex >= 6 && d->rotindex <= 10))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->rcsflags <= 077777u))
+    {
+        return;
+    }
 }
 
 /* CHKVISFZ / TRYUORV / ABORTYZ (pp.1429-1430): Y,Z translation from the
@@ -258,7 +303,10 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
     agc_status_t sa = lm_dap_alarm(AGC_ALARM_02001);
     d->rcsflags     = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
     d->nextp        = 0;
-    (void) AGC_ASSERT(d->nextp == 0u);
+    if (!AGC_ASSERT(d->nextp == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return sa;
 }
 
@@ -277,7 +325,7 @@ agc_status_t lm_dap_pretimck(void)
     { /* TURNOFFQ       */
         d->neguq    = 0;
         d->qaccdot  = 0;
-        st          = agc_chan_and(012, (uint16_t) ~PX_GIMQ & 077777u);
+        agc_chan_and(012, (uint16_t) ~PX_GIMQ & 077777u);
         d->qgimtimr = LM_NEGMAX;
     }
     if (d->rgimtimr > 0)
@@ -288,16 +336,22 @@ agc_status_t lm_dap_pretimck(void)
     { /* TURNOFFR       */
         d->negur    = 0;
         d->raccdot  = 0;
-        st          = agc_chan_and(012, (uint16_t) ~PX_GIMR & 077777u);
+        agc_chan_and(012, (uint16_t) ~PX_GIMR & 077777u);
+        st = AGC_STATUS_OK;
         d->rgimtimr = LM_NEGMAX;
     }
     for (int i = 0; i < 3; i++)
     {
         d->jetctr[i] = lm_dap_dim(d->jetctr[i]); /* DIM PJETCTR..  */
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->qgimtimr != 0 || d->rgimtimr != 0 ||
-                      true == (st == AGC_STATUS_OK));
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->qgimtimr != 0 || d->rgimtimr != 0 || true == (st == AGC_STATUS_OK)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -313,8 +367,14 @@ static void kalcmanu_step(lm_dap_t *d)
         lm_dap_msu(d->cduzd, (uint16_t) ((uint16_t) d->delcduz & 077777u)));
     d->tcp  = lm_dap_dim(d->tcp);
     d->tcqr = lm_dap_dim(d->tcqr);
-    (void) AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u);
-    (void) AGC_ASSERT(d->cduzd <= 077777u);
+    if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->cduzd <= 077777u))
+    {
+        return;
+    }
 }
 
 /* PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.            */
@@ -322,12 +382,8 @@ agc_status_t agc_task_paxis(void)
 {
     lm_dap_t    *d  = lm_dap_state();
     uint16_t     t5 = agc_rupt_time(5);
-    agc_status_t s5 = agc_rupt_set_time(
+    agc_rupt_set_time(
         5, (uint16_t) ((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
-    if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
-    {
-        return s5;
-    }
     if (d->dapzrupt > 0)
     { /* previous jask unfinished */
         return agc_bailout(AGC_ALARM_02000);
@@ -369,6 +425,9 @@ agc_status_t agc_task_paxis(void)
             st = lm_dap_pstate();
         }
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_qraxis();
 }

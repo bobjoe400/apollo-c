@@ -66,8 +66,8 @@ agc_status_t agc_lm_dap_setmaxdb(void); /* DB = 5.0 deg                    */
 agc_status_t agc_lm_dap_setmindb(void); /* DB = 0.3 deg                    */
 agc_status_t agc_lm_dap_restordb(void); /* DB per DBSELECT                 */
 agc_status_t agc_lm_dap_pflitedb(void); /* DB = 1.0 deg, zero errors       */
-agc_status_t agc_lm_dap_zatteror(void); /* CDUxD = CDUx, STOPRATE          */
-agc_status_t agc_lm_dap_stoprate(void); /* zero commanded rates and lags   */
+void agc_lm_dap_zatteror(void); /* CDUxD = CDUx, STOPRATE          */
+void agc_lm_dap_stoprate(void); /* zero commanded rates and lags   */
 agc_status_t agc_lm_dap_allcoast(void); /* coasting-flight DAP init        */
 agc_status_t agc_lm_dap_timegmbl(void); /* TIMEGMBL trim-gimbal null drive */
 agc_status_t

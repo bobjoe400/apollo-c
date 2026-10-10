@@ -89,7 +89,8 @@ agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
     rr_state_t *s        = rr_state();
     agc_vec_t   dv       = agc_vec_sub(ip, o.vatt, lmnav.lmvel);
     agc_inhint(); /* DODES uses these erasables */
-    st = agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
+    st = AGC_STATUS_OK;
     agc_relint();
     s->losvel     = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, dv), 1);
     agc_vec_t los = agc_vec_sub(ip, o.ratt, lmnav.lmpos);
@@ -109,7 +110,10 @@ agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
 bool lmnav_range_ok(void)
 {
     agc_dp_t m = rr_state()->mlosv;
-    (void) AGC_ASSERT(m >= 0);
+    if (!AGC_ASSERT(m >= 0))
+    {
+        return false;
+    }
     return m < NAV_FHNM;
 }
 
@@ -125,8 +129,7 @@ static agc_status_t nav_uppsv_one(agc_interp_t *ip, bool csm, bool with_w,
     {
         return st;
     }
-    agc_status_t sf = agc_integ_setiflgs();
-    (void) AGC_ASSERT(sf == AGC_STATUS_OK);
+    agc_integ_setiflgs();
     if (with_w)
     {
         rz_flag_put(AGC_FLAG_DIM0FLAG, true);
@@ -317,11 +320,9 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
     ctx->sv.tet          = agc_dp_sub(ip, lmnav.lnchtm, o.t); /* TET      */
     ctx->sv.rcv          = o.rnew;
     ctx->sv.rrect        = o.rnew;
-    st                   = agc_integ_minirect(ctx, ncsmvel); /* VRECT    */
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_integ_atopcsm(ip, ctx, 2); /* X2 = 2   */
-    }
+    agc_integ_minirect(ctx, ncsmvel); /* VRECT    */
+    st = AGC_STATUS_OK;
+    st = agc_integ_atopcsm(ip, ctx, 2); /* X2 = 2   */
     agc_status_t sw = agc_integ_intwake0();
     return (st == AGC_STATUS_OK) ? sw : st;
 }
@@ -366,11 +367,7 @@ agc_status_t agc_job_rendezvous_navigation_start(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_ALARM_521_SUPPRESSED, false);
     rz_flag_put(AGC_FLAG_NORRMON, false);
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
-    st = agc_rendz_clradmod();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_rendz_clradmod();
     return agc_job_rendezvous_navigation_range_check(ctx);
 }
 
@@ -454,7 +451,8 @@ agc_status_t agc_job_rendezvous_navigation_acquire(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     rz_phase_job(0U, 05022U, AGC_JOB_RENDEZVOUS_NAVIGATION_ACQUIRE, 010);
-    agc_status_t st = agc_exec_prio_change(NAV_PRIO26); /* PRIOCHNG */
+    agc_exec_prio_change(NAV_PRIO26); /* PRIOCHNG */
+    agc_status_t st = AGC_STATUS_OK;
     if (st == AGC_STATUS_BUSY)
     {
         return rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_ACQUIRE);
@@ -499,11 +497,7 @@ agc_status_t agc_job_rendezvous_navigation_manual_request(agc_job_ctx_t *ctx)
     {
         return agc_job_manual_acquisition(ctx);
     }
-    agc_status_t st = agc_dsky_falton(); /* FALTON   */
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_dsky_falton(); /* FALTON   */
     return agc_job_rendezvous_navigation_acquire(ctx);
 }
 
@@ -573,7 +567,10 @@ agc_status_t agc_job_rendezvous_navigation_designate(agc_job_ctx_t *ctx)
  * phase 2.7 restart point only while the track flag is on.             */
 agc_status_t lmnav_wait(uint16_t delay_cs)
 {
-    (void) AGC_ASSERT(delay_cs > 0U);
+    if (!AGC_ASSERT(delay_cs > 0U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st =
         agc_waitlist_call(delay_cs, AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK);
     if (st == AGC_STATUS_OK && agc_flag_test(AGC_FLAG_TRACKFLG))
@@ -661,7 +658,10 @@ agc_status_t agc_job_preferred_tracking_attitude_check(agc_job_ctx_t *ctx)
 /* P25LEM2 (task): P25LEM1 as a PRIO14 job.                              */
 agc_status_t agc_task_preferred_tracking_attitude_wait(void)
 {
-    (void) AGC_ASSERT(lmnav.r65cntr >= 0);
+    if (!AGC_ASSERT(lmnav.r65cntr >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_exec_findvac(NAV_PRIO14,
                             AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK);
 }

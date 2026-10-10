@@ -33,12 +33,12 @@
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);
 /* KILLTASK (BURN_BABY_BURN p.750, exec lane): remove the first waitlist
  * entry for task; no action if none. Leaves interrupts inhibited.          */
-agc_status_t agc_waitlist_kill(agc_task_id_t task);
+void agc_waitlist_kill(agc_task_id_t task);
 /* CANV37 (FRESH_START_AND_RESTART, exec lane): continue the V37 major-mode
  * change after the average-G loop has been stopped (POSTJUMP CANV37).      */
 agc_status_t agc_exec_change_program_continue(const agc_job_ctx_t *ctx);
 /* TBASEn: CS TIME1 / TS TBASEn without a phase change (exec lane).         */
-agc_status_t agc_phase_set_tbase(int group);
+void agc_phase_set_tbase(int group);
 
 /* ---- navigation glue to nav-integ (src/guidance/guid_nav_glue.c) --------
  * Lane-internal. AGC_STATUS_BUSY: the job sleeps and resumes as `resume`. */
@@ -247,6 +247,12 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
     ((agc_job_id_t) (AGC_JOB_GUID_BASE + 98)) /* LM RUPDATED (store GNUR) */
 #define AGC_JOB_SERV_VUPDATED \
     ((agc_job_id_t) (AGC_JOB_GUID_BASE + 99)) /* LM VUPDATED (store GNUV) */
+/* status-handling: continuations after GODSPRET (CADR GODSPRET returns
+ * to the user's next instruction; in C the job continues as these).     */
+#define AGC_JOB_RCS_BURN_N85_DISPLAYED \
+    ((agc_job_id_t) (AGC_JOB_GUID_BASE + 100)) /* P41 after V16N85 */
+#define AGC_JOB_REDO6_7_N85_DISPLAYED \
+    ((agc_job_id_t) (AGC_JOB_GUID_BASE + 101)) /* REDO6.7 after V16N85 */
 #define AGC_JOB_BURN_DISPLAY_DONE AGC_JOB_ENDOFJOB
 
 #define AGC_TASK_GUID_BASE 0x400

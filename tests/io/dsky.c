@@ -90,7 +90,7 @@ static bool reg_blank(const agc_dsky_state_t *s, int r)
 static void test_display_clock_time(agc_vehicle_t veh)
 {
     fresh(veh);
-    CHECK(agc_time_set_cs(372345u) == AGC_STATUS_OK); /* 1 h 2 min 3.45 s */
+    agc_time_set_cs(372345u); /* 1 h 2 min 3.45 s */
     CHECK(agc_dsky_keys("V06N36E") == AGC_STATUS_OK);
     agc_dsky_state_t s = state();
     CHECK(s.verbreg == 6u && s.nounreg == 36u);
@@ -207,7 +207,7 @@ static void test_alarm(void)
 static void test_monitor(void)
 {
     fresh(AGC_VEHICLE_CSM);
-    CHECK(agc_time_set_cs(6000u) == AGC_STATUS_OK); /* 1 minute */
+    agc_time_set_cs(6000u); /* 1 minute */
     CHECK(agc_dsky_keys("V16N36E") == AGC_STATUS_OK);
     agc_inhint();
     CHECK(agc_task_monreq() == AGC_STATUS_OK);

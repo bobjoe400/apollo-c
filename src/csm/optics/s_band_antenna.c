@@ -25,15 +25,27 @@ static agc_dp_t gammasb; /* GAMMASB (= RHOSB +2) N51 yaw, revs           */
 
 agc_dp_t agc_sband_rhosb(void)
 {
-    (void) AGC_ASSERT(rhosb >= -AGC_DP_HALF);
-    (void) AGC_ASSERT(rhosb <= AGC_DP_HALF);
+    if (!AGC_ASSERT(rhosb >= -AGC_DP_HALF))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(rhosb <= AGC_DP_HALF))
+    {
+        return 0; /* no valid result */
+    }
     return rhosb;
 }
 
 agc_dp_t agc_sband_gammasb(void)
 {
-    (void) AGC_ASSERT(gammasb >= 0);
-    (void) AGC_ASSERT(gammasb <= AGC_DP_MAX);
+    if (!AGC_ASSERT(gammasb >= 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(gammasb <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return gammasb;
 }
 
@@ -80,8 +92,14 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
                                     agc_vec_t *r_sm)
 {
-    (void) AGC_ASSERT(o != NULL);
-    (void) AGC_ASSERT(r_sm != NULL);
+    if (!AGC_ASSERT(o != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(r_sm != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_vec_t r = agc_vec_neg(o->ratt); /* EISOI: -RCM  */
     if (o->x2 != 0)
     { /* moon: LUNPOS */
@@ -111,7 +129,10 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
 /* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
 static agc_status_t display_angles(const agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
         return agc_dsky_endext(); /* BZF ENDEXT   */
@@ -124,7 +145,10 @@ static agc_status_t display_angles(const agc_job_ctx_t *ctx)
         return st;
     }
     st = agc_dsky_blanket(BLANK_R3); /* immediate ret*/
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE);
 }
 
@@ -143,12 +167,10 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     agc_cdutrig_t   trig;
     agc_integ_out_t o;
     const agc_dp_t  now = align_loadtime();
-    agc_status_t    st  = agc_guid_cdutrig(&trig); /* CDUTRIG      */
-    if (st == AGC_STATUS_OK)
-    {
-        st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE,
-                         &o);
-    }
+    agc_guid_cdutrig(&trig); /* CDUTRIG      */
+    agc_status_t st = AGC_STATUS_OK;
+    st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE,
+                     &o);
     agc_vec_t r;
     if (st == AGC_STATUS_OK)
     {
@@ -156,7 +178,8 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     }
     if (st == AGC_STATUS_OK)
     {
-        st = agc_guid_smnb(&trig, &r); /* *SMNB*       */
+        agc_guid_smnb(&trig, &r); /* *SMNB*       */
+        st = AGC_STATUS_OK;
     }
     if (st == AGC_STATUS_OK)
     {
@@ -192,6 +215,9 @@ agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = agc_svc_b5off();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

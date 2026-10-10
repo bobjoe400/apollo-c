@@ -22,6 +22,9 @@ agc_flag_id_t imu_vflag_lm(imu_vflag_t f)
     {
         return 0;
     }
-    (void) AGC_ASSERT(ids[IMU_VF_AUTR1FLG] != 0U);
+    if (!AGC_ASSERT(ids[IMU_VF_AUTR1FLG] != 0U))
+    {
+        return 0;
+    }
     return ids[f];
 }

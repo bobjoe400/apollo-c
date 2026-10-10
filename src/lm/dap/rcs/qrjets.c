@@ -38,8 +38,14 @@ static const uint16_t alljets[QJ_NALL] = {00110, 00022, 00204, 00041, 00125,
 static bool policy_ok(lm_dap_t *d)
 {
     d->polytemp = (agc_sp_t) (alljets[d->rotindex] & alljets[4 + d->numbert]);
-    (void) AGC_ASSERT(d->polytemp >= 0 && d->polytemp <= 0377);
-    (void) AGC_ASSERT(d->ch5mask <= 0377u);
+    if (!AGC_ASSERT(d->polytemp >= 0 && d->polytemp <= 0377))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(d->ch5mask <= 0377u))
+    {
+        return false;
+    }
     return ((uint16_t) d->polytemp & d->ch5mask) == 0u;
 }
 
@@ -71,8 +77,14 @@ agc_status_t lm_dap_closeout(void)
 {
     lm_dap_t *d = lm_dap_state();
     d->dapzrupt = LM_NEGMAX;
-    (void) AGC_ASSERT(d->dapzrupt < 0);
-    (void) AGC_ASSERT(d->t5adr <= LM_T5_PAXIS);
+    if (!AGC_ASSERT(d->dapzrupt < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -95,8 +107,14 @@ agc_status_t lm_dap_xtrans(void)
             st             = (s != AGC_STATUS_OK) ? s : st;
         }
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->skip[0] == QJ_SKIPOFF);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->skip[0] == QJ_SKIPOFF))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t sc = lm_dap_closeout();
     return (st != AGC_STATUS_OK) ? st : sc;
 }
@@ -116,7 +134,10 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
     agc_sp_t cr = lm_dap_mphi(r, d->coeffr);
     *u          = lm_dap_sat((int32_t) cr - cq);
     *v          = lm_dap_sat((int32_t) cq + cr);
-    (void) AGC_ASSERT(*u >= LM_NEGMAX && *v >= LM_NEGMAX);
+    if (!AGC_ASSERT(*u >= LM_NEGMAX && *v >= LM_NEGMAX))
+    {
+        return;
+    }
 }
 
 agc_status_t agc_lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u,
@@ -137,8 +158,14 @@ static agc_status_t norotat(int axis)
     agc_inhint();
     agc_status_t st = lm_dap_write_next(indexes[axis]);
     agc_relint();
-    (void) AGC_ASSERT(axis == 0 || axis == 1);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -147,7 +174,10 @@ static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 {
     d->tj[axis + 1] = 0;
     agc_status_t sa = lm_dap_alarm(AGC_ALARM_02004);
-    (void) AGC_ASSERT(d->tj[axis + 1] == 0);
+    if (!AGC_ASSERT(d->tj[axis + 1] == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t sn = norotat(axis);
     return (sa != AGC_STATUS_OK) ? sa : sn;
 }
@@ -156,8 +186,14 @@ static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 static void feedback(lm_dap_t *d, int axis)
 {
     d->nojets[axis + 1] = (d->numbert - 3 > 0) ? 2 : 1;
-    (void) AGC_ASSERT(axis == 0 || axis == 1);
-    (void) AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4);
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
+    {
+        return;
+    }
 }
 
 /* DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
@@ -192,7 +228,10 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
     agc_relint();
     d->skip[axis] = 0;
     feedback(d, axis);
-    (void) AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK);
+    if (!AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return sw;
 }
 
@@ -227,7 +266,10 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
     agc_status_t st = lm_dap_write(indexes[axis], (uint16_t) d->polytemp);
     agc_relint();
     feedback(d, axis);
-    (void) AGC_ASSERT(d->abstj > QJ_150MS);
+    if (!AGC_ASSERT(d->abstj > QJ_150MS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -235,13 +277,19 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
  * last pass is still being timed; skip this axis once.                  */
 static bool skip_axis(lm_dap_t *d, int axis)
 {
-    (void) AGC_ASSERT(d->skip[axis] == 0 || d->skip[axis] == QJ_SKIPOFF);
+    if (!AGC_ASSERT(d->skip[axis] == 0 || d->skip[axis] == QJ_SKIPOFF))
+    {
+        return false;
+    }
     if (d->skip[axis] == 0)
     {
         d->skip[axis] = QJ_SKIPOFF;
         return true;
     }
-    (void) AGC_ASSERT(axis == 0 || axis == 1);
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return false;
+    }
     return false;
 }
 
@@ -271,7 +319,10 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
         agc_relint();
         d->numbert = 4; /* 2 jets U,V     */
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return aftertj(d, axis, end);
 }
 
@@ -307,7 +358,10 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
             (agc_sp_t) ((tj > 0) ? QJ_60MS : ((tj < 0) ? -QJ_60MS : 0));
     }
     d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
-    (void) AGC_ASSERT(axis == 0 || axis == 1);
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return aftertj(d, axis, end);
 }
 

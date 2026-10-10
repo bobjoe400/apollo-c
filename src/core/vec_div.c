@@ -24,7 +24,10 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
     agc_w2_t w;
     agc_w2_t d = agc_w_split(s_abs);
     agc_dp_t q;
-    (void) AGC_ASSERT((k >= 0) && (k < VDIV_NORM_MAX));
+    if (!AGC_ASSERT((k >= 0) && (k < VDIV_NORM_MAX)))
+    {
+        return false;
+    }
     if (a == 0)
     {
         return true; /* exit on zero     */
@@ -51,7 +54,10 @@ static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
 {
     int      k;
     agc_w2_t w;
-    (void) AGC_ASSERT(s != 0);
+    if (!AGC_ASSERT(s != 0))
+    {
+        return 0; /* no valid result */
+    }
     *s = agc_w_split(*s).lo * AGC_W_ONE;
     for (k = 0; k < AGC_VEC_N; k++)
     {
@@ -62,7 +68,10 @@ static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
             return k; /* BZF +2; DVOVF    */
         }
     }
-    (void) AGC_ASSERT(k == AGC_VEC_N);
+    if (!AGC_ASSERT(k == AGC_VEC_N))
+    {
+        return 0; /* no valid result */
+    }
     return (*s == 0) ? 0 : -1; /* zero divisor     */
 }
 
@@ -72,8 +81,14 @@ static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
     r.c[0] = m0; /* MPAC             */
     r.c[1] = m3; /* MPAC +3          */
     r.c[2] = m5; /* MPAC +5          */
-    (void) AGC_ASSERT((m0 >= AGC_DP_MIN) && (m0 <= AGC_DP_MAX));
-    (void) AGC_ASSERT((m3 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX));
+    if (!AGC_ASSERT((m0 >= AGC_DP_MIN) && (m0 <= AGC_DP_MAX)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return r;
 }
 
@@ -100,7 +115,10 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
             return vsc_result(AGC_DP_MAX, m[1], m[2]);
         }
     }
-    (void) AGC_ASSERT(s != 0);
+    if (!AGC_ASSERT(s != 0))
+    {
+        return v;
+    }
     if (s < 0)
     { /* /BUF-            */
         s    = -s;
@@ -137,11 +155,17 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
     agc_ovf_t o = 0;
     agc_w3_t  acc;
     int32_t   a;
-    (void) AGC_ASSERT(ip != 0);
+    if (!AGC_ASSERT(ip != 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])),
                         agc_w_dsqsub(agc_w_split(v.c[1])), &o);
     a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */
-    (void) AGC_ASSERT(agc_w_ok(a));
+    if (!AGC_ASSERT(agc_w_ok(a)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     ip->ovfind = 1;
     /* DEVIATION: DVSIGN is stale in the AGC; +DPPOSMAX used.               */
     return vsc_result(AGC_DP_MAX, 0, (agc_dp_t) (a * AGC_W_ONE));
@@ -153,8 +177,14 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root)
 {
     agc_dp_t a = (c < 0) ? -c : c;
     agc_dp_t q;
-    (void) AGC_ASSERT((kdiv >= -1) && (kdiv <= 13));
-    (void) AGC_ASSERT(root > AGC_DP_QUARTER); /* normalised root  */
+    if (!AGC_ASSERT((kdiv >= -1) && (kdiv <= 13)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(root > AGC_DP_QUARTER)) /* normalised root  */
+    {
+        return 0; /* no valid result */
+    }
     if (c == 0)
     {
         return 0; /* exit on zero     */
@@ -190,7 +220,10 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
         *vsq = agc_w_join(agc_w3_top(sq)); /* LVSQUARE         */
     }
     root = agc_w_sqrtsub(sq, &shift, &abort);
-    (void) AGC_ASSERT(!abort);
+    if (!AGC_ASSERT(!abort))
+    {
+        return v;
+    }
     if (root.hi == 0)
     { /* input to SQRT 0  */
         if (abval != 0)
@@ -205,7 +238,10 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
         lv.m1 = agc_w_mp((int32_t) 1 << (28 - shift), root.hi).hi;
         for (k = 0; k < AGC_VEC_N; k++)
         {
-            (void) AGC_ASSERT(agc_w_split(v.c[k]).hi == 0);
+            if (!AGC_ASSERT(agc_w_split(v.c[k]).hi == 0))
+            {
+                return v;
+            }
             v.c[k] *= AGC_W_ONE; /* VBUF left 14     */
         }
     }

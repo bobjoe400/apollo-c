@@ -62,7 +62,10 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4,
     w->cozy4 =
         agc_dp_add(ip, agc_vec_dot(ip, rz_unit(ip, w->rtarg1), uri), w->cozy4);
     w->normsw = false;
-    (void) AGC_ASSERT(w->cozy4 >= AGC_DP_MIN);
+    if (!AGC_ASSERT(w->cozy4 >= AGC_DP_MIN))
+    {
+        return;
+    }
 }
 
 /* INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept. */
@@ -77,7 +80,10 @@ static void iv_rotate(agc_interp_t *ip, iv_work_t *w)
     {
         w->rtarg1 = w->r2vec; /* first pass   */
     }
-    (void) AGC_ASSERT(rc >= 0);
+    if (!AGC_ASSERT(rc >= 0))
+    {
+        return;
+    }
 }
 
 /* INITVEL3 .. INITVEL4 (pp.488-489): GEOMSGN. X1 = RTX1 - 8 (when the z
@@ -101,7 +107,10 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz,
     agc_vec_t v = (x1 != 0) ? agc_vec_neg(negn) : negn;
     agc_dp_t  d = agc_vec_dot(ip, agc_vec_cross(ip, v, ur1), ur2);
     agc_dp_t  g = (d >= 0) ? muearth : agc_dp_neg(muearth);
-    (void) AGC_ASSERT(x1 >= -8 && x1 <= 8);
+    if (!AGC_ASSERT(x1 >= -8 && x1 <= 8))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_high(g);
 }
 

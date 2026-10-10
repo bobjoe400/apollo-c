@@ -55,12 +55,18 @@ static bool vec_ok(agc_vec_t v)
 /* BOVB SIGNMPAC: on overflow replace MPAC by DPPOSMAX with its sign.     */
 static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
 {
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return 0; /* no valid result */
+    }
     if (agc_interp_test_ovf(ip))
     {
         v = agc_rtb_signmpac(v);
     }
-    (void) AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX);
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
@@ -112,7 +118,10 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
  * angle is +-.5 - angle (SUHALFA / SUHALFAP).                            */
 static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
 {
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return 0; /* no valid result */
+    }
     if (costerm >= 0)
     {
         return ang; /* OKTHETA / OKPHI    */
@@ -120,7 +129,10 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
     agc_dp_t n = agc_dp_neg(ang);
     agc_dp_t r = (n >= 0) ? agc_dp_sub(ip, n, AGC_DP_HALF) :
                             agc_dp_add(ip, n, AGC_DP_HALF);
-    (void) AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX);
+    if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -168,7 +180,10 @@ static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk,
     agc_dp_t pd8 = agc_dp_mul(ip, uk, sin2); /* $ 4      */
     out[0] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_add(ip, pd8, pd6), 2));
     out[1] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_sub(ip, pd6, pd8), 2));
-    (void) AGC_ASSERT(out[0] >= AGC_DP_MIN && out[1] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(out[0] >= AGC_DP_MIN && out[1] >= AGC_DP_MIN))
+    {
+        return;
+    }
 }
 
 /* DELCOMP (ANGLFIND p.407-409):
@@ -225,7 +240,10 @@ static agc_vec_t altcalc(agc_interp_t *ip, const agc_kalc_setup_t *k,
         agc_dp_t r = agc_dp_div(ip, agc_dp_sub(ip, sym->row[i].c[i], pd0), pd2);
         cof[i]     = agc_dp_sqrt(ip, r); /* $ ROOT 2 */
     }
-    (void) AGC_ASSERT(pd2 >= 0);
+    if (!AGC_ASSERT(pd2 >= 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return agc_vec_unit(ip, agc_vec_make(cof[0], cof[1], cof[2]), NULL, NULL);
 }
 
@@ -243,7 +261,10 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
     {
         mx = (cof.c[0] - cof.c[2] < 0) ? 2 : 0;
     }
-    (void) AGC_ASSERT(mx >= 0 && mx < 3);
+    if (!AGC_ASSERT(mx >= 0 && mx < 3))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     if (skew.c[mx] < 0)
     { /* UnPOS    */
         cof = agc_vec_neg(cof);
@@ -257,16 +278,25 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
             cof.c[j] = agc_dp_neg(cof.c[j]);
         }
     }
-    (void) AGC_ASSERT(vec_ok(cof));
+    if (!AGC_ASSERT(vec_ok(cof)))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return cof;
 }
 
 /* SLOAD of a CDU word: the AGC reads it as a ones'-complement SP.        */
 static agc_dp_t sload_cdu(uint16_t p)
 {
-    (void) AGC_ASSERT(p <= CDU_MASK);
+    if (!AGC_ASSERT(p <= CDU_MASK))
+    {
+        return 0; /* no valid result */
+    }
     long v = (p & 040000u) ? -(long) (~p & 037777u) : (long) p;
-    (void) AGC_ASSERT(v >= -16383L && v <= 16383L);
+    if (!AGC_ASSERT(v >= -16383L && v <= 16383L))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) (v * 16384L);
 }
 
@@ -283,7 +313,10 @@ static void secad(agc_interp_t *ip, agc_kalc_setup_t *k)
     cam          = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
     k->cam       = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
     k->am        = agc_dp_acos(ip, k->cam);             /* revolutions        */
-    (void) AGC_ASSERT(k->am >= 0);
+    if (!AGC_ASSERT(k->am >= 0))
+    {
+        return;
+    }
 }
 
 /* KALCMAN3 .. SECAD .. CHECKMAX / ALTCALC / COFMAXGO (pp.399-403): from

@@ -80,7 +80,11 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
         }
     }
     uint16_t hi = agc_chan_read((int) AGC_CHAN_HISCALAR);
-    (void) AGC_ASSERT(hi <= WORD15 && lo <= WORD15);
+    if (!AGC_ASSERT(hi <= WORD15 && lo <= WORD15))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     *t = agc_dp_pack((agc_sp_t) (hi & POSMAX), (agc_sp_t) (lo & POSMAX));
     return (lo == POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK;
 }
@@ -95,7 +99,10 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
     }
     agc_dp_t s = agc_dp_add(ip, a, AGC_DP_MAX);
     s          = agc_dp_add(ip, s, ONEDPP);
-    (void) AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX);
+    if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
+    {
+        return a;
+    }
     return s;
 }
 
@@ -117,6 +124,9 @@ agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx)
     {
         return agc_csm_prelaunch_imutest(ctx); /* FALL INTO IMUTEST       */
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }

@@ -52,8 +52,14 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
     {
         return 0;
     }
-    (void) AGC_ASSERT(sinth >= AGC_DP_MIN && sinth <= AGC_DP_MAX);
-    (void) AGC_ASSERT(costh >= AGC_DP_MIN && costh <= AGC_DP_MAX);
+    if (!AGC_ASSERT(sinth >= AGC_DP_MIN && sinth <= AGC_DP_MAX))
+    {
+        return 0;
+    }
+    if (!AGC_ASSERT(costh >= AGC_DP_MIN && costh <= AGC_DP_MAX))
+    {
+        return 0;
+    }
     agc_dp_t theta;
     if (agc_dp_sub(ip, agc_dp_abs(sinth), QTSN45) >= 0)
     {
@@ -76,16 +82,16 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
  * are XDC, YDC, ZDC: the desired SM axes referred to the present SM
  * (half-unit).  gyro[] = OGC, IGC, MGC (X, Y, Z gyros), revolutions; the
  * same three words are the OGC gyro buffer IMUPULSE reads.               */
-agc_status_t agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc,
+void agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc,
                              agc_dp_t gyro[3])
 {
     if (!AGC_ASSERT(ip != NULL && dc != NULL && gyro != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(vec_in_range(dc->row[0]) && vec_in_range(dc->row[2])))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_vec_t xdc = dc->row[0];
     /* ZP = UNIT(-XD3, 0, XD1).                                           */
@@ -105,18 +111,19 @@ agc_status_t agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc,
     gyro[0]         = ogc;
     gyro[1]         = igc;
     gyro[2]         = mgc;
-    agc_status_t st = agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, gyro);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, gyro);
 }
 
 /* GIMLOCK1 (p.1360): middle gimbal angle beyond 60 degrees.              */
 static void gimlock1(void)
 {
-    agc_status_t st = agc_alarm(ALARM_GIMBAL_LOCK); /* ALARM 00401  */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
-    st = agc_flag_set(AGC_FLAG_GLOKFAIL); /* UPFLAG       */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_alarm(ALARM_GIMBAL_LOCK); /* ALARM 00401  */
+    agc_status_t st = AGC_STATUS_ALARM;
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+    {
+        return;
+    }
+    agc_flag_set(AGC_FLAG_GLOKFAIL); /* UPFLAG       */
 }
 
 /* CALCGA (INFLIGHT_ALIGNMENT_ROUTINES.agc pp.1359-1360): CDU driving
@@ -164,11 +171,12 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
     if (agc_state_vehicle() == AGC_VEHICLE_CSM &&
         imu_vflag_test(IMU_VF_CPHIFLAG))
     {
-        return imu_vflag_clear(IMU_VF_CPHIFLAG); /* BONCLR      */
+        imu_vflag_clear(IMU_VF_CPHIFLAG);
+        return AGC_STATUS_OK; /* BONCLR      */
     }
     for (int i = 0; i < 3; i++)
     {
-        (void) agc_erase_set_thetad(i, thetad[i]); /* index valid */
+        agc_erase_set_thetad(i, thetad[i]); /* index valid */
     }
     return AGC_STATUS_OK;
 }
@@ -178,11 +186,17 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
 static void axisgen_triad(agc_interp_t *ip, agc_vec_t s1, agc_vec_t s2,
                           agc_vec_t t[3])
 {
-    (void) AGC_ASSERT(vec_in_range(s1) && vec_in_range(s2));
+    if (!AGC_ASSERT(vec_in_range(s1) && vec_in_range(s2)))
+    {
+        return;
+    }
     t[0] = s1;
     t[1] = agc_vec_unit(ip, agc_vec_cross(ip, s1, s2), NULL, NULL);
     t[2] = agc_vec_shl(ip, agc_vec_cross(ip, t[0], t[1]), 1);
-    (void) AGC_ASSERT(vec_in_range(t[2]));
+    if (!AGC_ASSERT(vec_in_range(t[2])))
+    {
+        return;
+    }
 }
 
 /* AXISGEN (INFLIGHT_ALIGNMENT_ROUTINES.agc pp.1361-1362): coordinates of

@@ -64,7 +64,10 @@ static cn_state_t cn;
 
 agc_sp_t agc_erase_trunbias(void)
 {
-    (void) AGC_ASSERT(cn.trunbias >= AGC_SP_MIN);
+    if (!AGC_ASSERT(cn.trunbias >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return cn.trunbias;
 }
 
@@ -196,7 +199,10 @@ static agc_dp_t cn_divide(agc_interp_t *ip, agc_dp_t b, agc_dp_t a, int *x1)
     agc_dp_t bn = agc_dp_shr(rz_norm(b, &nb), 1);
     agc_dp_t an = rz_norm(a, &na);
     *x1         = nb - na; /* XSU,1 S1 */
-    (void) AGC_ASSERT(an != 0);
+    if (!AGC_ASSERT(an != 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_div(ip, bn, an); /* BDDV     */
 }
 
@@ -425,7 +431,10 @@ uint16_t agc_erase_horizon(void)
 
 void agc_erase_set_horizon(uint16_t v)
 {
-    (void) AGC_ASSERT(v <= 077777u);
+    if (!AGC_ASSERT(v <= 077777u))
+    {
+        return;
+    }
     cn_horizon = (uint16_t) (v & 077777u);
 }
 
@@ -486,7 +495,8 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident(agc_job_ctx_t *ctx)
 /* R23.10: operator error, the codes again.                               */
 static agc_status_t cn_ident_error(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = agc_dsky_falton();
+    agc_dsky_falton();
+    agc_status_t st = AGC_STATUS_OK;
     return (st != AGC_STATUS_OK) ?
                st :
                agc_job_cislunar_midcourse_navigation_ident(ctx);
@@ -636,15 +646,13 @@ agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx)
         return st; /* BUSY: asleep in INTSTALL  */
     }
     agc_mat_t refsmmat = agc_erase_refsmmat();
-    st                 = agc_imu_set_pointvsm(
+    agc_imu_set_pointvsm(
                         agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, cn.rcll), NULL, NULL));
-    if (st == AGC_STATUS_OK)
-    {
-        agc_vec_t jc = agc_vec_zero();
-        jc.c[0]      = CN_JC_X;
-        jc.c[2]      = CN_JC_Z;
-        st           = agc_imu_set_scaxis(jc);
-    }
+    st = AGC_STATUS_OK;
+    agc_vec_t jc = agc_vec_zero();
+    jc.c[0]      = CN_JC_X;
+    jc.c[2]      = CN_JC_Z;
+    st           = agc_imu_set_scaxis(jc);
     if (st != AGC_STATUS_OK)
     {
         return st;

@@ -62,14 +62,20 @@ void exec_vac5stor(void)
     for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
     {
         agc_status_t st = agc_exec_core_info(i, &vac5.core[i]);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return;
+        }
     }
     for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
     {
         vac5.phase[g - 1] = phase_word(g);
     }
     vac5.newjob = agc_exec_newjob();
-    (void) AGC_ASSERT(vac5.newjob >= -1);
+    if (!AGC_ASSERT(vac5.newjob >= -1))
+    {
+        return;
+    }
 }
 
 /* PROGLARM (C p.1494 / L p.1382): CS DSPTAB +11D / MASK OCT40400 / ADS --
@@ -77,10 +83,11 @@ void exec_vac5stor(void)
 static void proglarm(void)
 {
     uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS);
-    (void) AGC_ASSERT(w <= 077777u);
-    agc_status_t st =
-        agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(w <= 077777u))
+    {
+        return;
+    }
+    agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
 }
 
 /* LARMENT / CHKFAIL1 / CHKFAIL2 / FAIL3 / MULTFAIL (C p.1493 / L p.1381).*/
@@ -113,7 +120,10 @@ static void store_alarm(agc_alarm_code_t code)
     {
         st = agc_erase_set_failreg(2, code);
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
 }
 
 /* ALARM (C p.1493 / L p.1381): light PROG, record the code, return.    */
@@ -126,22 +136,34 @@ void agc_alarm(agc_alarm_code_t code)
     agc_inhint();
     store_alarm(code);
     agc_relint();
-    (void) AGC_ASSERT(agc_erase_failreg(0) != 0U);
+    if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
+    {
+        return;
+    }
 }
 
 /* VARALARM (C p.1496 / L p.1384): ALARM with the code in A.            */
 void agc_exec_varalarm(agc_alarm_code_t code)
 {
-    (void) AGC_ASSERT(code != 0U);
-    (void) AGC_ASSERT(code <= AL_POSMAX);
+    if (!AGC_ASSERT(code != 0U))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(code <= AL_POSMAX))
+    {
+        return;
+    }
     agc_alarm(code);
 }
 
 /* CURTAINS (C p.1496 / L p.1383): ALARM 217.                           */
 void agc_curtains(void)
 {
-    (void) AGC_ASSERT(AGC_ALARM_00217 <= AL_POSMAX);
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
+    _Static_assert(AGC_ALARM_00217 <= AL_POSMAX, "AGC constant");
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return;
+    }
     agc_alarm(AGC_ALARM_00217);
 }
 
@@ -160,29 +182,50 @@ void agc_prioalarm(agc_alarm_code_t code)
     agc_inhint();
     store_alarm(code);
     agc_relint();
-    (void) AGC_ASSERT(agc_erase_failreg(0) != 0U);
+    if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
+    {
+        return;
+    }
 }
 
 /* WHIMPER (C p.1495 / L p.1383): software restart via ENEMA.           */
 void exec_request_enema(void)
 {
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return;
+    }
     enema_wanted = true;
-    (void) AGC_ASSERT(enema_wanted);
+    if (!AGC_ASSERT(enema_wanted))
+    {
+        return;
+    }
 }
 
 agc_status_t agc_exec_enema(void)
 {
     exec_request_enema();
-    (void) AGC_ASSERT(agc_exec_restart_pending());
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
+    if (!AGC_ASSERT(agc_exec_restart_pending()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 bool agc_exec_restart_pending(void)
 {
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
-    (void) AGC_ASSERT(agc_erase_failreg(2) <= 077777u);
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(agc_erase_failreg(2) <= 077777u))
+    {
+        return false;
+    }
     return enema_wanted;
 }
 
@@ -191,7 +234,10 @@ bool agc_exec_restart_pending(void)
  * service point (the AGC would loop through ENEMA the same way).       */
 agc_status_t agc_exec_service_restart(void)
 {
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!enema_wanted)
     {
         return AGC_STATUS_OK;
@@ -199,9 +245,10 @@ agc_status_t agc_exec_service_restart(void)
     enema_wanted    = false;
     restarts_run    = (uint16_t) (restarts_run + 1U);
     agc_status_t st = fresh_enema();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT ||
-                      st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND ||
-                      st == AGC_STATUS_UNIMPLEMENTED);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -218,8 +265,14 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
     store_alarm(code);
     exec_request_enema(); /* OCT40400+1: WHIMPER */
     agc_relint();
-    (void) AGC_ASSERT(enema_wanted);
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
+    if (!AGC_ASSERT(enema_wanted))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_BAILOUT;
 }
 
@@ -227,11 +280,9 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
  * reset STATEFLG, REINTFLG and NODOFLAG.                              */
 static void poodoo_flags(void)
 {
-    agc_status_t a = agc_flag_clear(AGC_FLAG_STATEFLG);
-    agc_status_t b = agc_flag_clear(AGC_FLAG_REINTFLG);
-    agc_status_t c = agc_flag_clear(AGC_FLAG_NODOFLAG);
-    (void) AGC_ASSERT(a == AGC_STATUS_OK && b == AGC_STATUS_OK);
-    (void) AGC_ASSERT(c == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_STATEFLG);
+    agc_flag_clear(AGC_FLAG_REINTFLG);
+    agc_flag_clear(AGC_FLAG_NODOFLAG);
 }
 
 /* GOPOODOO / STRTIDLE (L p.1383): the Luminary POODOO tail, also the
@@ -246,15 +297,23 @@ static agc_status_t gopoodoo(void)
         agc_relint();
         /* STRTIDLE: SERVICER to its "ground" state, then GOTOPOOH.    */
         agc_status_t s1 = exec_up_servidle();
-        (void) AGC_ASSERT(s1 == AGC_STATUS_OK ||
-                          s1 == AGC_STATUS_UNIMPLEMENTED);
+        if (!AGC_ASSERT(s1 == AGC_STATUS_OK || s1 == AGC_STATUS_UNIMPLEMENTED))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         agc_status_t s2 = agc_exec_gotopooh();
-        (void) AGC_ASSERT(s2 == AGC_STATUS_OK || s2 == AGC_STATUS_BAILOUT);
+        if (!AGC_ASSERT(s2 == AGC_STATUS_OK || s2 == AGC_STATUS_BAILOUT))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         return st;
     }
     agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
     agc_status_t k2 = agc_phase_mr_klean();             /* 2,4,... (4 last)  */
-    (void) AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK);
+    if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     exec_request_enema(); /* TCF WHIMPER       */
     agc_relint();
     return st;
@@ -263,7 +322,10 @@ static agc_status_t gopoodoo(void)
 /* Comanche POODOO after BORTENT (C p.1495).                            */
 static agc_status_t poodoo_csm(void)
 {
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {                         /* average G on      */
         exec_request_enema(); /* TC WHIMPER -1     */
@@ -271,9 +333,15 @@ static agc_status_t poodoo_csm(void)
     }
     poodoo_flags();
     agc_status_t st = agc_phase_mr_klean();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     exec_request_enema(); /* TC WHIMPER        */
-    (void) AGC_ASSERT(phase_word(4) == 0U);
+    if (!AGC_ASSERT(phase_word(4) == 0U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_POODOO;
 }
 
@@ -296,7 +364,10 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
     agc_inhint();
     phase_set_fixed(4, AL_PHASE_4_35); /* DXCH -PHASE4      */
     agc_relint();
-    (void) AGC_ASSERT(phase_group_agrees(4));
+    if (!AGC_ASSERT(phase_group_agrees(4)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return gopoodoo();
 }
 
@@ -314,8 +385,11 @@ agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
 /* CCSHOLE (C p.1496 / L p.1383): POODOO 1103, an "impossible" branch. */
 agc_status_t agc_ccshole(void)
 {
-    (void) AGC_ASSERT(restarts_run < UINT16_MAX);
-    (void) AGC_ASSERT(AGC_ALARM_01103 <= AL_POSMAX);
+    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    _Static_assert(AGC_ALARM_01103 <= AL_POSMAX, "AGC constant");
     return agc_poodoo(AGC_ALARM_01103);
 }
 
@@ -327,6 +401,9 @@ agc_status_t agc_abort_restart(void)
     agc_inhint();
     exec_request_enema();
     agc_relint();
-    (void) AGC_ASSERT(enema_wanted);
+    if (!AGC_ASSERT(enema_wanted))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_BAILOUT;
 }

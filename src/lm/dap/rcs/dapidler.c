@@ -23,9 +23,12 @@
 /* SETTIME5 (p.1412): next T5RUPT in 100 ms (TIME5 = 37766).               */
 static agc_status_t settime5(void)
 {
-    agc_status_t st = agc_rupt_set_time(5, LM_MS100);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(agc_rupt_time(5) == LM_MS100);
+    agc_rupt_set_time(5, LM_MS100);
+    agc_status_t st = AGC_STATUS_OK;
+    if (!AGC_ASSERT(agc_rupt_time(5) == LM_MS100))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -38,9 +41,12 @@ agc_status_t lm_dap_shutdown(void)
     d->nextp         = 0;
     d->nextu         = 0;
     d->nextv         = 0;
-    agc_status_t s5  = agc_chan_write(005, 0); /* command jets off        */
-    agc_status_t s6  = agc_chan_write(006, 0);
-    agc_status_t s12 = agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
+    agc_chan_write(005, 0); /* command jets off        */
+    agc_status_t s5 = AGC_STATUS_OK;
+    agc_chan_write(006, 0);
+    agc_status_t s6 = AGC_STATUS_OK;
+    agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
+    agc_status_t s12 = AGC_STATUS_OK;
     if (!AGC_ASSERT(s5 == AGC_STATUS_OK && s6 == AGC_STATUS_OK) ||
         !AGC_ASSERT(s12 == AGC_STATUS_OK))
     {
@@ -56,8 +62,14 @@ agc_status_t lm_dap_moreidle(void)
 {
     agc_status_t sq = lm_dap_qerrcalc();
     agc_status_t sp = lm_dap_calcperr();
-    (void) AGC_ASSERT(sq == AGC_STATUS_OK);
-    (void) AGC_ASSERT(sp == AGC_STATUS_OK);
+    if (!AGC_ASSERT(sq == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(sp == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_shutdown();
 }
 
@@ -93,7 +105,10 @@ agc_status_t lm_dap_chekbits(bool *on)
     { /* CHEKMORE            */
         return lm_dap_moreidle();
     }
-    (void) AGC_ASSERT(d->t5adr <= LM_T5_PAXIS);
+    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     *on = true;
     return AGC_STATUS_OK;
 }
@@ -132,8 +147,14 @@ static void startdap_zero(lm_dap_t *d)
     d->rgimtimr = 0;
     d->oldpmin  = 0;
     d->oldqrmin = 0;
-    (void) AGC_ASSERT(d->tj[0] == 0 && d->aosq == 0);
-    (void) AGC_ASSERT(d->cotroler == 0);
+    if (!AGC_ASSERT(d->tj[0] == 0 && d->aosq == 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->cotroler == 0))
+    {
+        return;
+    }
 }
 
 /* STARTDAP (pp.1411-1413), second half: old CDUs, skip and T6 list
@@ -141,7 +162,8 @@ static void startdap_zero(lm_dap_t *d)
 agc_status_t lm_dap_startdap(void)
 {
     lm_dap_t    *d  = lm_dap_state();
-    agc_status_t st = agc_lm_dap_zatteror();
+    agc_lm_dap_zatteror();
+    agc_status_t st = AGC_STATUS_OK;
     startdap_zero(d);
     d->rcsflags     = (uint16_t) (d->rcsflags & ~MANFLAG);
     d->oldxforp     = agc_erase_cdux();
@@ -150,7 +172,8 @@ agc_status_t lm_dap_startdap(void)
     d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
     d->skip[0]      = STARTDAP_SKIP;
     d->skip[1]      = STARTDAP_SKIP;
-    agc_status_t s6 = agc_rupt_set_time(6, LM_T6_POSMAX);
+    agc_rupt_set_time(6, LM_T6_POSMAX);
+    agc_status_t s6 = AGC_STATUS_OK;
     d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;
     d->t6furtha[0]  = (agc_sp_t) LM_T6_POSMAX;
     d->t6next[1]    = 0;
@@ -176,7 +199,10 @@ agc_status_t lm_dap_startdap(void)
 agc_status_t agc_task_dapidler(void)
 {
     lm_dap_t *d = lm_dap_state();
-    (void) AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER);
+    if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u)
     { /* 1/ACCSET since restart? */
         d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);

@@ -70,7 +70,10 @@ agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_erase_optionx(0) == OPTION_CODE);
+    if (!AGC_ASSERT(agc_erase_optionx(0) == OPTION_CODE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION,
                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE,
@@ -93,18 +96,17 @@ static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx,
                                  agc_vec_make(AGC_DP_HALF, 0, 0); /* ALINEX */
     uint16_t        gimbal[3];
     uint16_t        fdai[3];
-    agc_status_t    st = agc_imu_set_pointvsm(pointvsm);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_set_scaxis(scaxis);
-    }
+    agc_imu_set_pointvsm(pointvsm);
+    agc_status_t st = AGC_STATUS_OK;
+    st = agc_imu_set_scaxis(scaxis);
     if (st == AGC_STATUS_OK)
     {
         st = agc_imu_vecpoint(&ip, pointvsm, scaxis, gimbal);
     }
     for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
     {
-        st = agc_erase_set_thetad(i, gimbal[i]); /* CPHI     */
+        agc_erase_set_thetad(i, gimbal[i]); /* CPHI     */
+        st = AGC_STATUS_OK;
     }
     if (st == AGC_STATUS_OK)
     {
@@ -178,7 +180,10 @@ agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     tstart82 = agc_dp_add(&ip, align_loadtime(), DP1MIN);
-    (void) AGC_ASSERT(tstart82 >= 0);
+    if (!AGC_ASSERT(tstart82 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return final_attitude_csm(ctx);
 }
 
@@ -189,7 +194,10 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_state(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(tstart82 >= 0);
+    if (!AGC_ASSERT(tstart82 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return final_attitude_csm(ctx);
 }
 
@@ -200,7 +208,10 @@ agc_status_t agc_job_rendezvous_final_attitude_lm_state(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(tstart82 >= 0);
+    if (!AGC_ASSERT(tstart82 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return final_attitude_lm(ctx);
 }
 
@@ -212,7 +223,10 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_flag_clear(AGC_FLAG_3AXISFLG);
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_3AXISFLG));
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_3AXISFLG)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_imu_attitude_maneuver(ctx,
                                      AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END);
 }
@@ -224,6 +238,9 @@ agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_dsky_endext();
 }

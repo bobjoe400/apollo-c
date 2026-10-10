@@ -143,11 +143,7 @@ agc_status_t agc_job_orbital_navigation_code(agc_job_ctx_t *ctx)
 /* S22DSPP: operator error light and the code display again.             */
 static agc_status_t on_code_error(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = agc_dsky_falton();
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_dsky_falton();
     return agc_job_orbital_navigation_code(ctx);
 }
 
@@ -254,7 +250,8 @@ agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx)
     if (agc_dp_abs(a->landlat) > AGC_DP_QUARTER ||
         agc_dp_abs(a->landlong) > AGC_DP_QUARTER)
     {
-        agc_status_t st = agc_dsky_falton();
+        agc_dsky_falton();
+        agc_status_t st = AGC_STATUS_OK;
         return (st != AGC_STATUS_OK) ?
                    st :
                    agc_job_orbital_navigation_landing_site(ctx);

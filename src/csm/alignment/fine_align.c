@@ -57,10 +57,12 @@ agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
     agc_align_ram_t *ram = agc_align_ram();
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     agc_flag_clear(AGC_FLAG_TARG1FLG);
-    const agc_status_t st = align_phase_job(
+    align_phase_job(
         PH_SIGHTING, AGC_JOB_CSM_FINE_ALIGN_STAR_CODE, ALIGN_PRIO13);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT((ram->starind == 0) || (ram->starind == 1));
+    if (!AGC_ASSERT((ram->starind == 0) || (ram->starind == 1)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_csm_fine_align_star_code(ctx);
 }
 
@@ -73,8 +75,10 @@ agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx)
     }
     agc_align_ram_t *ram   = agc_align_ram();
     const agc_sp_t   star6 = (ram->starind == 0) ? ram->besti : ram->bestj;
-    (void) AGC_ASSERT((star6 >= 0) &&
-                      (star6 <= AGC_ALIGN_STAR_CODE_MAX * STAR_WORDS));
+    if (!AGC_ASSERT((star6 >= 0) && (star6 <= AGC_ALIGN_STAR_CODE_MAX * STAR_WORDS)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     ram->starcode = (agc_sp_t) (star6 / STAR_WORDS);
     return agc_job_csm_fine_align_star_display(ctx);
 }
@@ -113,11 +117,7 @@ agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
     }
     if (!agc_align_chkscode(agc_align_ram()->starcode))
     {
-        const agc_status_t alm = agc_dsky_falton();
-        if (alm != AGC_STATUS_OK)
-        {
-            return alm;
-        }
+        agc_dsky_falton();
         return agc_job_csm_fine_align_star_display(ctx);
     }
     return align_planet(ctx, align_loadtime(),
@@ -242,8 +242,7 @@ agc_status_t agc_job_csm_fine_align_torqued(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_status_t st = agc_flag_clear(AGC_FLAG_PFRATFLG);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_PFRATFLG);
     return agc_job_csm_fine_align_recheck(ctx);
 }
 
@@ -257,7 +256,10 @@ agc_status_t agc_job_csm_fine_align_recheck(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK,
                        AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_STAR_SELECTION,
                        AGC_JOB_GOTOPOOH);

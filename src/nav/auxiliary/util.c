@@ -52,7 +52,10 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
     {
         r = agc_dp_shr(a, -n);
     }
-    (void) AGC_ASSERT(agc_navaux_dp_ok(r)); /* post: in range         */
+    if (!AGC_ASSERT(agc_navaux_dp_ok(r))) /* post: in range         */
+    {
+        return 0;
+    }
     return r;
 }
 
@@ -76,7 +79,10 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
     {
         r = agc_vec_shr(v, -n);
     }
-    (void) AGC_ASSERT(agc_navaux_vec_ok(r)); /* post: in range         */
+    if (!AGC_ASSERT(agc_navaux_vec_ok(r))) /* post: in range         */
+    {
+        return agc_vec_zero();
+    }
     return r;
 }
 
@@ -89,7 +95,10 @@ agc_tp_t agc_navaux_tp_from_cs(agc_dp_t t_cs)
         return 0;
     }
     agc_tp_t t = (agc_tp_t) t_cs;
-    (void) AGC_ASSERT(agc_navaux_tp_ok(t));
+    if (!AGC_ASSERT(agc_navaux_tp_ok(t)))
+    {
+        return 0;
+    }
     return t;
 }
 
@@ -105,7 +114,10 @@ agc_dp_t agc_navaux_cs_from_tp(agc_tp_t t_tp)
         return (t_tp > 0) ? AGC_DP_MAX : AGC_DP_MIN;
     }
     agc_dp_t t = (agc_dp_t) t_tp;
-    (void) AGC_ASSERT(agc_navaux_dp_ok(t));
+    if (!AGC_ASSERT(agc_navaux_dp_ok(t)))
+    {
+        return 0;
+    }
     return t;
 }
 
@@ -119,7 +131,10 @@ agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
     }
     int64_t mag = (v < 0) ? -v : v;
     int64_t low = mag % NAVAUX_DP_ONE;
-    (void) AGC_ASSERT(low < NAVAUX_DP_ONE);
+    if (!AGC_ASSERT(low < NAVAUX_DP_ONE))
+    {
+        return 0;
+    }
     return (agc_dp_t) ((v < 0) ? -low : low);
 }
 
@@ -141,7 +156,10 @@ agc_tp_t agc_navaux_tp_norm(agc_tp_t v, int *shift)
         mag *= 2;
         *shift += 1;
     }
-    (void) AGC_ASSERT(mag >= NAVAUX_TP_HALF); /* post: normalized      */
+    if (!AGC_ASSERT(mag >= NAVAUX_TP_HALF)) /* post: normalized      */
+    {
+        return v;
+    }
     return (v < 0) ? -mag : mag;
 }
 
@@ -160,7 +178,10 @@ agc_tp_t agc_navaux_tp_shl2(agc_tp_t v, bool *ovf)
     }
     int64_t mag = (v < 0) ? -v : v;
     *ovf        = (mag * 4) > AGC_TP_MAX;
-    (void) AGC_ASSERT(*ovf || agc_navaux_tp_ok(v * 4));
+    if (!AGC_ASSERT(*ovf || agc_navaux_tp_ok(v * 4)))
+    {
+        return v;
+    }
     return *ovf ? v : v * 4;
 }
 
@@ -179,7 +200,10 @@ agc_dp_t agc_navaux_rev_tp_shl(agc_tp_t v, int n)
     }
     int64_t mag = (v < 0) ? -v : v;
     mag         = (mag * ((int64_t) 1 << n)) % NAVAUX_TP_ONE;
-    (void) AGC_ASSERT(mag < NAVAUX_TP_ONE);
+    if (!AGC_ASSERT(mag < NAVAUX_TP_ONE))
+    {
+        return 0;
+    }
     return agc_tp_round_dp((v < 0) ? -mag : mag);
 }
 
@@ -200,6 +224,9 @@ agc_dp_t agc_navaux_rev_add(agc_dp_t a, agc_dp_t b)
     {
         s += NAVAUX_DP_ONE;
     }
-    (void) AGC_ASSERT((s < NAVAUX_DP_ONE) && (s > -NAVAUX_DP_ONE));
+    if (!AGC_ASSERT((s < NAVAUX_DP_ONE) && (s > -NAVAUX_DP_ONE)))
+    {
+        return 0;
+    }
     return (agc_dp_t) s;
 }

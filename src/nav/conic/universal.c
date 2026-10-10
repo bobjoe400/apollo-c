@@ -95,8 +95,14 @@ agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
  * (R1 - XSQC(XI)) UR1 + (T - X^3 S(XI) / ROOTMU) VVEC, 2^29 / 2^27.       */
 static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_tp_t m = agc_conic_mload_(ctx->r1); /* DLOAD R1, SR4R       */
     m          = agc_conic_mshiftr_(ip, m, -4);
     m = agc_conic_mdsu_(ip, m, ctx->xsqc_xi); /* DSU XSQC(XI)         */
@@ -125,8 +131,14 @@ static agc_vec_t newstate_position(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
 static agc_vec_t lamenter_velocity(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                    agc_dp_t r2n, int n, bool round_xis)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(n >= 0 && n <= AGC_TP_BITS);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(n >= 0 && n <= AGC_TP_BITS))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_tp_t m = agc_conic_mload_(ctx->xi);
     m          = round_xis ? agc_conic_mdmpr_(ip, m, ctx->s_xi) :
                              agc_conic_mdmp_(m, ctx->s_xi); /* XI S(XI) 2^7       */

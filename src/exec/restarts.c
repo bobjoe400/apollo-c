@@ -47,7 +47,10 @@ static uint16_t findtime(int group, int32_t dt)
     {
         left = RS_SOON_CS; /* overdue: in 1 cs  */
     }
-    (void) AGC_ASSERT(left <= (int32_t) RS_TIME1);
+    if (!AGC_ASSERT(left <= (int32_t) RS_TIME1))
+    {
+        return RS_SOON_CS;
+    }
     return (uint16_t) left;
 }
 
@@ -110,7 +113,10 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
     }
     else
     {
-        (void) AGC_ASSERT(e->dtsrc == RST_DT_IMMEDIATE);
+        if (!AGC_ASSERT(e->dtsrc == RST_DT_IMMEDIATE))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     return agc_waitlist_call(delay, e->task);
 }
@@ -143,7 +149,10 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
         default:
             /* DEVIATION: a "DEC 0" placeholder; the AGC would start a job at
          * address 0. Nothing is restarted.                             */
-            (void) AGC_ASSERT(e->kind != AGC_RESTART_NONE);
+            if (!AGC_ASSERT(e->kind != AGC_RESTART_NONE))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             break;
     }
     return st;
@@ -255,6 +264,9 @@ agc_status_t agc_phase_restart_all(void)
             }
         }
     }
-    (void) AGC_ASSERT(result != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(result != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return any ? result : AGC_STATUS_NOT_FOUND;
 }

@@ -64,25 +64,25 @@ typedef enum agc_axisrot_dir
 } agc_axisrot_dir_t;
 
 agc_dp_t     agc_guid_cdulogic(uint16_t cdu); /* CDULOGIC */
-agc_status_t agc_guid_cdtrigs(agc_cdutrig_t *t,
+void agc_guid_cdtrigs(agc_cdutrig_t *t,
                               const uint16_t cdu_yzx[3]); /* CD*TR*GS */
-agc_status_t agc_guid_cdutrig(agc_cdutrig_t *t);          /* CDUTRIG(S) */
-agc_status_t agc_guid_quictrig(agc_cdutrig_t *t,
+void agc_guid_cdutrig(agc_cdutrig_t *t);          /* CDUTRIG(S) */
+void agc_guid_quictrig(agc_cdutrig_t *t,
                                const uint16_t cdu_yzx[3]); /* QUICTRIG */
-agc_status_t agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
+void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
                               agc_vec_t *v);                      /* AX*SR*T  */
-agc_status_t agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v); /* *SMNB*   */
-agc_status_t agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v); /* *NBSM*   */
-agc_status_t agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);   /* CDU*SMNB */
+void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v); /* *SMNB*   */
+void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v); /* *NBSM*   */
+void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);   /* CDU*SMNB */
 agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);   /* CDU*NBSM */
-agc_status_t agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
+void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
                                agc_vec_t *v); /* TRG*SMNB */
 agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
                                agc_vec_t *v); /* TRG*NBSM */
 agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
                                agc_vec_t  dthetasm,
                                agc_vec_t *dcdu); /* SMCDURES (CM) */
-agc_status_t agc_guid_fleshpot(const agc_cdutrig_t *t,
+void agc_guid_fleshpot(const agc_cdutrig_t *t,
                                agc_mat_t           *xnb); /* FLESHPOT (LM) */
 
 /* ======================================================================
@@ -139,7 +139,7 @@ typedef enum agc_copy_kind
     AGC_COPY_ALL   /* LM COPYCYC: + MASS (22 words)                   */
 } agc_copy_kind_t;
 
-agc_status_t agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind);
+void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind);
 
 /* ======================================================================
  * Targeting and steering (P30-P47)
@@ -329,7 +329,7 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
 agc_status_t
 agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip); /* S40.2,3 (LM) */
 /* S41.1: VG (ref, 2^7) to control axes (CM, *10 and QUADROT) or LM body.  */
-agc_status_t agc_guid_reference_to_body(agc_interp_t *ip, agc_vehicle_t veh,
+void agc_guid_reference_to_body(agc_interp_t *ip, agc_vehicle_t veh,
                                         agc_vec_t vg_ref, agc_vec_t *vg_ctl);
 
 /* S40.8 TGOCALC: TGO (cs 2^28) from VG, DELVREF, BDT, 2*Vex, tail-off.    */
@@ -402,8 +402,8 @@ agc_status_t agc_lm_munrvg(agc_interp_t *ip); /* MUNRVG      */
 agc_status_t agc_lm_rvboth(agc_interp_t *ip); /* RVBOTH      */
 agc_vec_t    agc_lm_mungrav(agc_interp_t *ip,
                             agc_vec_t     r); /* MUNGRAV (r SM 2^24) -> GDT1/2 */
-agc_status_t agc_lm_altchk(agc_sp_t index, bool *below); /* ALTCHK      */
-agc_status_t agc_lm_tmptospt(void);                      /* TMPTOSPT    */
+void agc_lm_altchk(agc_sp_t index, bool *below); /* ALTCHK      */
+void agc_lm_tmptospt(void);                      /* TMPTOSPT    */
 agc_status_t agc_lm_lrhtask(void);                       /* LRHTASK     */
 agc_status_t agc_lm_setpos1(void);                       /* SETPOS1     */
 agc_status_t agc_lm_setpos2(void);                       /* SETPOS2     */
@@ -495,10 +495,10 @@ agc_status_t agc_csm_comptgo(void);          /* COMPTGO     */
 agc_status_t agc_csm_cross_product_steering(agc_interp_t *ip); /* S40.8 (CM)  */
 agc_status_t agc_csm_updatevg(agc_interp_t *ip,
                               bool         *vtogain_started);  /* UPDATEVG */
-agc_status_t agc_csm_setmindb(void);                   /* SETMINDB    */
-agc_status_t agc_csm_setmaxdb(void);                   /* SETMAXDB    */
-agc_status_t agc_csm_spsoff(void);                     /* SPSOFF/MASSBACK */
-agc_status_t agc_csm_tvczap(void);                     /* TVCZAP      */
+void agc_csm_setmindb(void);                   /* SETMINDB    */
+void agc_csm_setmaxdb(void);                   /* SETMAXDB    */
+void agc_csm_spsoff(void);                     /* SPSOFF/MASSBACK */
+void agc_csm_tvczap(void);                     /* TVCZAP      */
 agc_status_t agc_task_ttg_0(void);                     /* TTG/0       */
 agc_status_t agc_task_tigblnk(void);                   /* TIGBLNK     */
 agc_status_t agc_task_tigon(void);                     /* TIGON       */
@@ -540,6 +540,10 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx);   /* TIGNOW      */
 agc_status_t agc_job_term40(agc_job_ctx_t *ctx);      /* TERM40      */
 agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx);    /* DYNMDISP    */
 agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx);     /* REDO6.7 / BLNKWAIT */
+agc_status_t
+agc_job_rcs_burn_n85_displayed(agc_job_ctx_t *ctx); /* P41 after GODSPRET */
+agc_status_t
+agc_job_redo6_7_n85_displayed(agc_job_ctx_t *ctx); /* REDO6.7 after GODSPRET */
 agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx);      /* CALCN85     */
 agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx); /* CALCN83     */
 agc_status_t
@@ -564,8 +568,8 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip);               /* UPDATEVG    */
 agc_status_t agc_lm_enginoff(void);                           /* ENGINOFF    */
 agc_status_t agc_lm_enginof1(void);                           /* ENGINOF1    */
 agc_status_t agc_lm_enginof2(void);                           /* ENGINOF2    */
-agc_status_t agc_lm_enginof3(void);                           /* ENGINOF3    */
-agc_status_t agc_lm_enginof4(void);                           /* ENGINOF4    */
+void agc_lm_enginof3(void);                           /* ENGINOF3    */
+void agc_lm_enginof4(void);                           /* ENGINOF4    */
 
 /* ---- LM BURN BABY BURN (src/lm/burns/ignition/) ----------------------------- */
 typedef enum agc_lm_which
@@ -587,9 +591,9 @@ agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx,
 agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
                             agc_job_id_t ret_job); /* STCLOK2     */
 agc_status_t agc_lm_stclok1(void);                 /* STCLOK1     */
-agc_status_t agc_lm_nullclok(void);                /* NULLCLOK    */
-agc_status_t agc_lm_noullage(void);                /* NOULLAGE    */
-agc_status_t agc_lm_onullage(void);                /* ONULLAGE    */
+void agc_lm_nullclok(void);                /* NULLCLOK    */
+void agc_lm_noullage(void);                /* NOULLAGE    */
+void agc_lm_onullage(void);                /* ONULLAGE    */
 agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx); /* BURNBABY as a job */
 agc_status_t agc_job_burnbaby_countdown(
     agc_job_ctx_t *ctx); /* B*RNB*B* as a job (after P40AUTO) */

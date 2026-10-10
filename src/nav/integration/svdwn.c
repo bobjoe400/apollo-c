@@ -66,15 +66,27 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
 /* R-OTHER (downlink): other vehicle position, m B29. */
 agc_vec_t agc_align_r_other(void)
 {
-    (void) AGC_ASSERT(r_other.c[0] >= AGC_DP_MIN);
-    (void) AGC_ASSERT(r_other.c[0] <= AGC_DP_MAX);
+    if (!AGC_ASSERT(r_other.c[0] >= AGC_DP_MIN))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(r_other.c[0] <= AGC_DP_MAX))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return r_other;
 }
 
 /* V-OTHER (downlink): other vehicle velocity, m/cs B7. */
 agc_vec_t agc_align_v_other(void)
 {
-    (void) AGC_ASSERT(v_other.c[0] >= AGC_DP_MIN);
-    (void) AGC_ASSERT(v_other.c[0] <= AGC_DP_MAX);
+    if (!AGC_ASSERT(v_other.c[0] >= AGC_DP_MIN))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(v_other.c[0] <= AGC_DP_MAX))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return v_other;
 }

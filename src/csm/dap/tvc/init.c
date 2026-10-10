@@ -80,8 +80,10 @@ static void tvc_loadcoef(tvc_coef_set_t set)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    (void) AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) ||
-                      (set == TVC_COEF_LB));
+    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) || (set == TVC_COEF_LB)))
+    {
+        return;
+    }
     for (int i = 0; i < AGC_CSM_N10_WORDS; i++)
     {
         if (set == TVC_COEF_HB)
@@ -97,7 +99,10 @@ static void tvc_loadcoef(tvc_coef_set_t set)
             t->n10[i] = csmn10[i];
         }
     }
-    (void) AGC_ASSERT(t->n10[0] != 0);
+    if (!AGC_ASSERT(t->n10[0] != 0))
+    {
+        return;
+    }
 }
 
 /* S40.15 (p. 943): gain computations, entered from TVCINITIALIZE and
@@ -130,7 +135,7 @@ agc_status_t csm_tvc_gains(bool full)
 agc_status_t csm_tvc_mrclean(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    (void) AGC_ASSERT(NZERO % 2 == 1);
+    _Static_assert(NZERO % 2 == 1, "AGC constant");
     t->omegac[1] = 0;
     t->omegac[2] = 0; /* OMEGAYC, OMEGAZC     */
     for (int i = 0; i < AGC_CSM_AXES; i++)
@@ -156,16 +161,25 @@ agc_status_t csm_tvc_mrclean(void)
     t->ttmp1        = 0;
     t->cntr         = 0; /* CNTR (loop counter)  */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_TVCINIT1, T5_POSMAX);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* ENDMRC: RESUME       */
 }
 
 /* TVCDAPON (p. 937): T5 entry from DOTVCON (P40).                        */
 agc_status_t agc_task_tvcdapon(void)
 {
-    (void) AGC_ASSERT(agc_csm_dap_tvc()->tvcphase == -1);
+    if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcphase == -1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = csm_tvc_mrclean();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -185,7 +199,8 @@ static agc_status_t tvc_init2(int lem)
     agc_sp_t half_dt = (lem != 0) ? (agc_sp_t) 4 : (agc_sp_t) 2;
     t->t5tvcdt =
         (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX; AD BIT1 */
-    agc_status_t st = agc_flag_clear(AGC_FLAG_SWTOVER); /* reset SWTOVER   */
+    agc_flag_clear(AGC_FLAG_SWTOVER); /* reset SWTOVER   */
+    agc_status_t st = AGC_STATUS_OK;
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: the LXCH A exchanges the
      * product words, which shifts it 14 places left; scaled pi/8.        */
     agc_sp_t ek = c->ekprime[lem];
@@ -196,7 +211,10 @@ static agc_status_t tvc_init2(int lem)
     t->strktime          = -1;         /* no stroke test yet    */
     t->vcntr             = NINETEEN;   /* gain update in 10 s   */
     t->engine_fail_vcntr = NINETEEN;   /* for ENGFAIL (R41)     */
-    (void) AGC_ASSERT(t->t5tvcdt > 0);
+    if (!AGC_ASSERT(t->t5tvcdt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -212,8 +230,14 @@ static void tvc_init3(void)
     t->ydeloff                = agc_dp_pack(c->yactoff, agc_dp_low(t->ydeloff));
     t->ycmd                   = c->yactoff;
     t->delybar                = agc_dp_pack(c->yactoff, agc_dp_low(t->delybar));
-    (void) AGC_ASSERT(t->pcmd == c->pactoff);
-    (void) AGC_ASSERT(t->ycmd == c->yactoff);
+    if (!AGC_ASSERT(t->pcmd == c->pactoff))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(t->ycmd == c->yactoff))
+    {
+        return;
+    }
 }
 
 /* ATTINIT (pp. 939-940): attitude-error initialisation for the CSM alone
@@ -245,8 +269,10 @@ static void tvc_attinit(void)
     }
     t->perrb = agc_dp_pack(t->errbinit[0], agc_dp_low(t->perrb));
     t->yerrb = agc_dp_pack(t->errbinit[1], agc_dp_low(t->yerrb));
-    (void) AGC_ASSERT((t->errbinit[0] >= -ATTLIM) &&
-                      (t->errbinit[0] <= ATTLIM));
+    if (!AGC_ASSERT((t->errbinit[0] >= -ATTLIM) && (t->errbinit[0] <= ATTLIM)))
+    {
+        return;
+    }
 }
 
 /* TVCINIT1 (p. 938): T5 entry set up by MRCLEAN.                         */
@@ -254,7 +280,8 @@ agc_status_t agc_task_tvcinit1(void)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    agc_status_t st = agc_csm_dap_massprop(); /* IXX, IAVG/TLX        */
+    agc_csm_dap_massprop(); /* IXX, IAVG/TLX        */
+    agc_status_t st = AGC_STATUS_OK;
     /* TENMDOT = EMDOT (kg/cs, B+3) x 1000: 10-s mass loss, kg B+16       */
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
@@ -299,7 +326,10 @@ agc_status_t csm_tvc_init4(void)
     { /* allow time for restart */
         st = csm_dap_set_t5(AGC_TASK_DAPINIT, (uint16_t) t->t5tvcdt);
     }
-    (void) AGC_ASSERT(t->t5tvcdt > 0);
+    if (!AGC_ASSERT(t->t5tvcdt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* ENDTVCIN: RESUME     */
 }
 
@@ -312,13 +342,14 @@ agc_status_t csm_tvc_swichovr_body(void)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    (void) AGC_ASSERT(NZEROJR + 1 == 2 * 6 * 2);
+    _Static_assert(NZEROJR + 1 == 2 * 6 * 2, "AGC constant");
     for (int i = 0; i < 6; i++)
     { /* MCLEANJR             */
         t->ptmp[i] = 0;
         t->ytmp[i] = 0;
     }
-    agc_status_t st = agc_flag_set(AGC_FLAG_SWTOVER);
+    agc_flag_set(AGC_FLAG_SWTOVER);
+    agc_status_t st = AGC_STATUS_OK;
     t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth gains   */
     agc_status_t s2 = csm_tvc_gains(false); /* S40.15 +7: VARK only  */
     t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering */
@@ -327,7 +358,10 @@ agc_status_t csm_tvc_swichovr_body(void)
     t->ydeloff  = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp; /* restore TVCPHASE     */
-    (void) AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3));
+    if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : s2;
 }
 
@@ -342,6 +376,9 @@ agc_status_t agc_csm_tvc_preswtch(void)
     agc_status_t st = csm_tvc_swichovr_body();
     /* exit via PINBRNCH, which does the RELINT                            */
     agc_relint();
-    (void) AGC_ASSERT(t->tvcphase != -2);
+    if (!AGC_ASSERT(t->tvcphase != -2))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

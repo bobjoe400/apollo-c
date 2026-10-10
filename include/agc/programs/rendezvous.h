@@ -470,8 +470,8 @@ typedef enum agc_rr_designate_result
 
 bool agc_rr_limchk(uint16_t cdut, uint16_t cdus); /* RRLIMCHK: in limits */
 agc_status_t agc_rr_settrkf(void);                /* SETTRKF       */
-agc_status_t agc_rendz_flip(uint16_t lamp_bit);   /* FLIP          */
-agc_status_t agc_rendz_clradmod(void);            /* CLRADMOD      */
+void agc_rendz_flip(uint16_t lamp_bit);   /* FLIP          */
+void agc_rendz_clradmod(void);            /* CLRADMOD      */
 agc_status_t agc_rr_zero(void);                   /* RRZERO        */
 /* RRDESSM: designate to RRTARGET (half unit, SM; set by LPS20.1).       */
 agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
@@ -484,15 +484,15 @@ agc_status_t agc_rendz_goto_terminate_tracking(void); /* GOTOV56       */
 /* read lead-ins (one sample; LRVEL five), RADAREAD, SAMPLSUM            */
 agc_status_t agc_radar_rrrange(void);         /* RRRANGE       */
 agc_status_t agc_radar_rrrdot(void);          /* RRRDOT        */
-agc_status_t agc_radar_lralt(void);           /* LRALT         */
-agc_status_t agc_radar_lrvel(agc_sp_t beam2); /* LRVEL 0,2,4 = Z,Y,X */
-agc_status_t agc_radar_lr_velocity_beam(int      beam,
+void agc_radar_lralt(void);           /* LRALT         */
+void agc_radar_lrvel(agc_sp_t beam2); /* LRVEL 0,2,4 = Z,Y,X */
+void agc_radar_lr_velocity_beam(int      beam,
                                         agc_sp_t nsamples); /* LRVELZ/Y/X */
 agc_status_t agc_rendz_radar_read(void);               /* RADAREAD (rupt) */
 agc_dp_t     agc_radar_samplsum(void);                 /* SAMPLSUM counts */
 uint16_t     agc_erase_dnrrange(int index);            /* DNRRANGE +index */
 agc_status_t agc_radar_lrpos2(void);                   /* LRPOS2        */
-agc_status_t agc_radar_landing_radar_lights(void);     /* R12LITES      */
+void agc_radar_landing_radar_lights(void);     /* R12LITES      */
 agc_status_t agc_radar_powered_flight_designate(void); /* R29 (SERVICER) */
 /* waitlist tasks and jobs of the radar routines                         */
 agc_status_t agc_task_rrturnon(void);         /* RRTURNON      */

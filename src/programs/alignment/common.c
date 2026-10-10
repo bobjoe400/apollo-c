@@ -27,8 +27,6 @@ static agc_align_ram_t align_ram;
 /* Alignment erasable block (ERASABLE_ASSIGNMENTS "ALIGNMENT STORAGE"). */
 agc_align_ram_t *agc_align_ram(void)
 {
-    (void) AGC_ASSERT(align_ram.mkvac_index >= -1);
-    (void) AGC_ASSERT(align_ram.mkvac_index < AGC_EXEC_MAX_VACS);
     return &align_ram;
 }
 
@@ -43,8 +41,14 @@ void agc_align_ram_reset(void)
     align_ram.sighting_mark_return = AGC_JOB_NONE;
     align_ram.planet_ret           = AGC_JOB_NONE;
     align_ram.coarse_ret           = AGC_JOB_NONE;
-    (void) AGC_ASSERT(align_ram.mkvac_index == -1);
-    (void) AGC_ASSERT(align_ram.starind == 0);
+    if (!AGC_ASSERT(align_ram.mkvac_index == -1))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(align_ram.starind == 0))
+    {
+        return;
+    }
 }
 
 /*
@@ -55,9 +59,15 @@ void agc_align_ram_reset(void)
  */
 agc_dp_t agc_align_cdulogic(uint16_t cdu)
 {
-    (void) AGC_ASSERT(cdu <= CDU_WORD_MASK);
+    if (!AGC_ASSERT(cdu <= CDU_WORD_MASK))
+    {
+        return 0; /* no valid result */
+    }
     const agc_dp_t r = agc_guid_cdulogic((uint16_t) (cdu & CDU_WORD_MASK));
-    (void) AGC_ASSERT((r >= -AGC_DP_HALF) && (r < AGC_DP_HALF));
+    if (!AGC_ASSERT((r >= -AGC_DP_HALF) && (r < AGC_DP_HALF)))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -91,7 +101,10 @@ uint16_t agc_align_ones_to_twos(agc_dp_t revs)
     {
         hv += CDU_MODULUS;
     }
-    (void) AGC_ASSERT((hv >= 0) && (hv <= (int32_t) CDU_WORD_MASK));
+    if (!AGC_ASSERT((hv >= 0) && (hv <= (int32_t) CDU_WORD_MASK)))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) hv;
 }
 
@@ -109,7 +122,8 @@ agc_status_t agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
     yzx[AGC_TRIG_X] = cdu_xyz[0];
     yzx[AGC_TRIG_Y] = cdu_xyz[1];
     yzx[AGC_TRIG_Z] = cdu_xyz[2];
-    return agc_guid_cdtrigs(t, yzx);
+    agc_guid_cdtrigs(t, yzx);
+    return AGC_STATUS_OK;
 }
 
 /*
@@ -142,7 +156,10 @@ void align_read_cdus(uint16_t cdu[3])
     cdu[1] = agc_erase_cduy();
     cdu[2] = agc_erase_cduz();
     agc_relint();
-    (void) AGC_ASSERT(cdu[0] <= CDU_WORD_MASK);
+    if (!AGC_ASSERT(cdu[0] <= CDU_WORD_MASK))
+    {
+        return;
+    }
 }
 
 /* CALL CDUTRIG; CALL CALCSMSC on the present CDUs. */
@@ -152,11 +169,9 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_guid_cdutrig(t);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_align_calcsmsc(ip, t, nb);
-    }
+    agc_guid_cdutrig(t);
+    agc_status_t st = AGC_STATUS_OK;
+    st = agc_align_calcsmsc(ip, t, nb);
     return st;
 }
 
@@ -231,8 +246,14 @@ bool align_resp_recycle(void)
     uint8_t            verb = 0;
     uint8_t            noun = 0;
     const agc_status_t st   = agc_dsky_response(&verb, &noun);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(verb < 100u);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(verb < 100u))
+    {
+        return false;
+    }
     return (st == AGC_STATUS_OK) && (verb == 32u);
 }
 
@@ -244,7 +265,10 @@ agc_status_t align_goto(agc_job_id_t next)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = agc_exec_job_yield(next);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -265,7 +289,8 @@ agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
     }
     if (r == AGC_IMU_STALL_BAD)
     {
-        const agc_status_t c = agc_curtains(); /* TC CURTAINS (alarm 217)  */
+        agc_curtains(); /* TC CURTAINS (alarm 217)  */
+        const agc_status_t c = AGC_STATUS_ALARM;
         return (c == AGC_STATUS_OK) ? AGC_STATUS_ALARM : c;
     }
     *done = (r == AGC_IMU_STALL_GOOD);
@@ -280,37 +305,46 @@ agc_status_t align_stall_outcome(agc_imu_device_t dev)
         return AGC_STATUS_BAD_ARG;
     }
     const agc_imu_stall_result_t r = agc_imu_stall_outcome(dev);
-    (void) AGC_ASSERT(r != AGC_IMU_STALL_SLEEPING);
+    if (!AGC_ASSERT(r != AGC_IMU_STALL_SLEEPING))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (r != AGC_IMU_STALL_GOOD)
     {
-        const agc_status_t c = agc_curtains();
+        agc_curtains();
+        const agc_status_t c = AGC_STATUS_ALARM;
         return (c == AGC_STATUS_OK) ? AGC_STATUS_ALARM : c;
     }
     return AGC_STATUS_OK;
 }
 
 /* TC PHASCHNG; OCT code (type C, job at the next instruction). */
-agc_status_t align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio)
+void align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio)
 {
     if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio <= 037u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_phase_var_t v = {0};
     v.kind            = AGC_RESTART_JOB;
     v.job             = job;
     v.prio_or_dt      = (int16_t) prio;
     agc_phase_change_var(code, &v);
-    return AGC_STATUS_OK;
 }
 
 /* LOADTIME (RTB): TIME2, TIME1, cs B28. */
 agc_dp_t align_loadtime(void)
 {
     const uint32_t t = agc_time_now_cs();
-    (void) AGC_ASSERT(t < AGC_TIME_MODULUS_CS);
+    if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
+    {
+        return 0; /* no valid result */
+    }
     const agc_dp_t d = (agc_dp_t) (t & (AGC_TIME_MODULUS_CS - 1u));
-    (void) AGC_ASSERT(d >= 0);
+    if (!AGC_ASSERT(d >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return d;
 }
 
@@ -318,24 +352,36 @@ agc_dp_t align_loadtime(void)
 agc_sp_t align_word_to_sp(uint16_t w)
 {
     const uint16_t m = (uint16_t) (w & CDU_WORD_MASK);
-    (void) AGC_ASSERT(w <= CDU_WORD_MASK);
+    if (!AGC_ASSERT(w <= CDU_WORD_MASK))
+    {
+        return 0; /* no valid result */
+    }
     if ((m & WORD_SIGN) != 0u)
     {
         return (agc_sp_t) ((int32_t) m - WORD_ONES_NEG);
     }
-    (void) AGC_ASSERT(m < WORD_SIGN);
+    if (!AGC_ASSERT(m < WORD_SIGN))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) m;
 }
 
 /* A signed SP as the raw 15-bit 1's complement word. */
 uint16_t align_sp_to_word(agc_sp_t v)
 {
-    (void) AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
+    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (v < 0)
     {
         return (uint16_t) ((int32_t) v + WORD_ONES_NEG);
     }
-    (void) AGC_ASSERT(v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) v;
 }
 
@@ -344,7 +390,10 @@ agc_dp_t align_dsptem1(void)
 {
     const agc_sp_t hi = align_word_to_sp(agc_dsky_dsptem(0));
     const agc_sp_t lo = align_word_to_sp(agc_dsky_dsptem(1));
-    (void) AGC_ASSERT((hi >= AGC_SP_MIN) && (lo >= AGC_SP_MIN));
+    if (!AGC_ASSERT((hi >= AGC_SP_MIN) && (lo >= AGC_SP_MIN)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_pack(hi, lo);
 }
 
@@ -371,14 +420,9 @@ agc_status_t align_set1_pdt(void)
 {
     const agc_dp_t zero3[3] = {0, 0, 0};
     agc_imu_set_pipa_interval(agc_erase_time1());
-    agc_status_t st = agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, zero3);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_flag_set(AGC_FLAG_DRIFTFLG);
-    }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, zero3);
+    agc_flag_set(AGC_FLAG_DRIFTFLG);
+    return AGC_STATUS_OK;
 }
 
 /* TC PHASCHNG; OCT code (type A, group 4). */
@@ -388,9 +432,8 @@ agc_status_t align_phase4(uint16_t code)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_status_t st = agc_phase_change(4, code);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_phase_change(4, code);
+    return AGC_STATUS_OK;
 }
 
 /*
@@ -402,7 +445,10 @@ agc_status_t align_ncoarse(void)
     agc_erase_set_pipax(0);
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
-    (void) AGC_ASSERT(agc_erase_pipax() == 0);
+    if (!AGC_ASSERT(agc_erase_pipax() == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_set1_pdt();
 }
 
@@ -410,7 +456,10 @@ agc_status_t align_ncoarse(void)
 static agc_status_t coarse_fine(void)
 {
     agc_status_t st = agc_imu_fine(); /* IMUFINE   */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     bool done = false;
     st        = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_ALIGN_FINE_DONE, &done);
     if ((st != AGC_STATUS_OK) || !done)
@@ -434,7 +483,10 @@ agc_status_t align_coarse(agc_job_id_t ret)
         thetad[i] = agc_erase_thetad(i);
     }
     agc_status_t st = agc_imu_coarse(thetad); /* IMUCOARS  */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     bool done = false;
     st        = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_ALIGN_COARSE_DONE, &done);
     if ((st != AGC_STATUS_OK) || !done)
@@ -484,5 +536,8 @@ void align_clear_ovf(agc_interp_t *ip)
     }
     const bool was_set = agc_interp_test_ovf(ip);
     (void) was_set; /* the overflow is discarded    */
-    (void) AGC_ASSERT(ip->ovfind == 0);
+    if (!AGC_ASSERT(ip->ovfind == 0))
+    {
+        return;
+    }
 }

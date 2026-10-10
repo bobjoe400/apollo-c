@@ -70,13 +70,19 @@ static rd_state_t rd = {0, 0, 0, 0, -1, 0U, 0U, 0U, {0U}};
 
 agc_dp_t agc_radar_samplsum(void)
 {
-    (void) AGC_ASSERT(rd.samplim >= -1);
+    if (!AGC_ASSERT(rd.samplim >= -1))
+    {
+        return 0; /* no valid result */
+    }
     return rd.samplsum;
 }
 
 agc_dp_t rr_timehold(void)
 {
-    (void) AGC_ASSERT(rd.timehold >= 0);
+    if (!AGC_ASSERT(rd.timehold >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return rd.timehold;
 }
 
@@ -95,12 +101,12 @@ uint16_t agc_erase_dnrrange(int index)
  * nominal sampling interval), N tries (the "DOUBLE" for 2N tries is not
  * assembled), data-good bits remembered, radar selected, SAMPLSUM = 0.
  * The caller then waits in RADSTALL.                                    */
-static agc_status_t rd_initread(uint16_t code, agc_sp_t n)
+static void rd_initread(uint16_t code, agc_sp_t n)
 {
     if (!AGC_ASSERT(n >= 1 && n <= 5) ||
         !AGC_ASSERT(code >= RD_RRRANGE && code <= RD_LRALT))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     rd.timehold = (agc_dp_t) (4 * n); /* MP BIT3  */
@@ -113,46 +119,50 @@ static agc_status_t rd_initread(uint16_t code, agc_sp_t n)
                               (uint32_t) AGC_DP_MAX);
     rd.samplsum = 0;
     agc_relint(); /* ROADBACK */
-    return AGC_STATUS_OK;
 }
 
 /* The lead-ins (p.553). One sample each, except LRVEL.                 */
 agc_status_t agc_radar_rrrange(void)
 {
-    return rd_initread(RD_RRRANGE, 1);
+    rd_initread(RD_RRRANGE, 1);
+    return AGC_STATUS_OK;
 }
 
 agc_status_t agc_radar_rrrdot(void)
 {
-    return rd_initread(RD_RRRDOT, 1);
+    rd_initread(RD_RRRDOT, 1);
+    return AGC_STATUS_OK;
 }
 
-agc_status_t agc_radar_lralt(void)
+void agc_radar_lralt(void)
 {
-    return rd_initread(RD_LRALT, 1);
+    rd_initread(RD_LRALT, 1);
+    return;
 }
 
 /* LRVELX / LRVELY / LRVELZ as entered by the radar sampling test
  * (VARADAR: one sample).                                                */
-agc_status_t agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples)
+void agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples)
 {
     if (!AGC_ASSERT(beam >= 0 && beam <= 2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     static const uint16_t codes[3] = {RD_LRVELZ, RD_LRVELY, RD_LRVELX};
-    return rd_initread(codes[beam], nsamples);
+    rd_initread(codes[beam], nsamples);
+    return;
 }
 
 /* LRVEL: five samples of a velocity beam; beam2 = 0, 2, 4 for LRVELZ,
  * LRVELY, LRVELX.                                                      */
-agc_status_t agc_radar_lrvel(agc_sp_t beam2)
+void agc_radar_lrvel(agc_sp_t beam2)
 {
     if (!AGC_ASSERT(beam2 == 0 || beam2 == 2 || beam2 == 4))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return agc_radar_lr_velocity_beam(beam2 / 2, 5);
+    agc_radar_lr_velocity_beam(beam2 / 2, 5);
+    return;
 }
 
 /* ---- lamps (R12LITES, RADLITES, HLIGHT, VLIGHT pp.612-613) -------------
@@ -179,14 +189,20 @@ static void rd_lr_lamp(bool velocity)
         rr_lamp_put(lamp, false); /* LITIT    */
     }
     agc_status_t st = agc_rr_settrkf(); /* RRTRKF   */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
 }
 
 /* RADLITES: after a reading of LR velocity (ITEMP1 = BIT8), LR altitude
  * (BIT5) or RR (BIT4). The AGC tells BIT5 by CS BIT5 + BIT5 = -0.       */
 void rr_radlites(uint16_t itemp1)
 {
-    (void) AGC_ASSERT(itemp1 != 0U);
+    if (!AGC_ASSERT(itemp1 != 0U))
+    {
+        return;
+    }
     if ((agc_erase_imodes33() & 1U) != 0U)
     {
         return; /* lamp test */
@@ -202,21 +218,26 @@ void rr_radlites(uint16_t itemp1)
     else
     {
         agc_status_t st = agc_rr_settrkf();
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return;
+        }
     }
 }
 
 /* R12LITES: both landing radar lamps (from the R10/R12 lamp routine).  */
-agc_status_t agc_radar_landing_radar_lights(void)
+void agc_radar_landing_radar_lights(void)
 {
     if ((agc_erase_imodes33() & 1U) != 0U)
     {
-        return AGC_STATUS_OK; /* ISWRETRN */
+        return; /* ISWRETRN */
     }
     rd_lr_lamp(false);
     rd_lr_lamp(true);
-    (void) AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK);
-    return AGC_STATUS_OK;
+    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
+    {
+        return;
+    }
 }
 
 /* ---- RADAREAD (RADAR RUPT, pp.555-560) -------------------------------- */
@@ -235,7 +256,10 @@ static agc_status_t rd_nomore(void)
         !agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED))
     {
         agc_status_t st = rz_alarm(RD_ALARM_NO_DATA);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     return rd_badrad();
 }
@@ -289,7 +313,10 @@ static agc_dp_t rd_count(int bias)
     uint16_t w  = (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
     int      hi = (int) ((w >> 14) & 1U);
     int      lo = (int) (w & RD_POSMAX) + bias;
-    (void) AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX);
+    if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo);
 }
 
@@ -366,7 +393,10 @@ static agc_status_t rd_landing_radar(void)
          RR_LRPOSBIT) != 0U)
     { /* LRPOSCHK */
         agc_status_t st = rz_alarm(RD_ALARM_LR_POS);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         return rd_badrad();
     }
     if (((agc_chan_read(AGC_CHAN_CHAN13) ^ 3U) & 3U) == 0U)
@@ -455,7 +485,10 @@ agc_status_t agc_task_lr_position_scan(void)
     rd.samplim = RD_POS_TRIES;
     agc_status_t st =
         agc_waitlist_fixdelay(RD_1SEC, AGC_TASK_LR_POSITION_CHECK);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -477,7 +510,10 @@ agc_status_t agc_task_lr_position_check(void)
         rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_LRPOS2); /* time up  */
         return rr_badend();
     }
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -485,6 +521,9 @@ agc_status_t agc_task_lr_position_check(void)
 agc_status_t agc_task_lr_position_settled(void)
 {
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
-    (void) AGC_ASSERT(rr_radmodes_test(RR_LRPOSBIT));
+    if (!AGC_ASSERT(rr_radmodes_test(RR_LRPOSBIT)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rr_goodend();
 }

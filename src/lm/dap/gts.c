@@ -45,14 +45,20 @@ static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
     lm_dp_pair_t hi = lm_dap_mp(x.hi, k);
     lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
     lm_dp_pair_t r  = lm_dap_das(hi, lo);
-    (void) AGC_ASSERT(r.hi >= LM_NEGMAX && r.hi <= LM_POSMAX);
+    if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.hi <= LM_POSMAX))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return r;
 }
 
 static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 {
     lm_dp_pair_t r = {(agc_sp_t) -x.hi, (agc_sp_t) -x.lo};
-    (void) AGC_ASSERT(r.hi >= LM_NEGMAX && r.lo >= LM_NEGMAX);
+    if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.lo >= LM_NEGMAX))
+    {
+        return (lm_dp_pair_t){0}; /* no valid result */
+    }
     return r;
 }
 
@@ -60,7 +66,10 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 static agc_sp_t dp_sign(lm_dp_pair_t x)
 {
     agc_sp_t w = (x.hi != 0) ? x.hi : x.lo;
-    (void) AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX);
+    if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0));
 }
 
@@ -83,9 +92,9 @@ agc_status_t lm_dap_acdt_c12(void)
                                              ((d->negur < 0) ? GT_BIT11 : 0u)));
     uint16_t c12 =
         (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u);
-    agc_status_t st = agc_chan_write(012, (uint16_t) (c12 + bits));
+    agc_chan_write(012, (uint16_t) (c12 + bits));
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
-    return st;
+    return AGC_STATUS_OK;
 }
 
 /* ROOTCYCL (p.1484): one Newton iteration x' = x/2 + (ARG/2)/x.          */
@@ -142,7 +151,10 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
     {
         x = rootcycl(x, half);
     }
-    (void) AGC_ASSERT(*inindex >= 0 && *inindex <= 12);
+    if (!AGC_ASSERT(*inindex >= 0 && *inindex <= 12))
+    {
+        return 0;
+    }
     return x;
 }
 
@@ -168,8 +180,14 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
     w->alpha = (p.hi == 0) ? p.lo : ((p.hi > 0) ? LM_POSMAX : LM_NEGMAX);
     w->omega = (i == 0) ? d->edotq : d->edotr;
     w->k     = (i == 0) ? d->kq : d->krdap;
-    (void) AGC_ASSERT(w->k >= 0);
-    (void) AGC_ASSERT(i == 0 || i == 1);
+    if (!AGC_ASSERT(w->k >= 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(i == 0 || i == 1))
+    {
+        return;
+    }
 }
 
 /* ALGORTHM (pp.1473-1474): K2THETA = K ERROR rescaled to 4 pi^2, and
@@ -195,7 +213,10 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     lm_dp_pair_t rem = {q1.lo, 0}; /* LXCH 7         */
     w->a2.hi         = q1.hi;
     w->a2.lo         = lm_dap_dv(rem, w->k);
-    (void) AGC_ASSERT(w->a2.hi >= 0 && w->a2.lo >= 0);
+    if (!AGC_ASSERT(w->a2.hi >= 0 && w->a2.lo >= 0))
+    {
+        return;
+    }
 }
 
 /* HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
@@ -220,8 +241,14 @@ static void gts_middle_terms(gts_w_t *w)
     w->a2      = dp_x_sp(w->a2, GT_NEG1_3); /* -ALPHA^2/(6K)  */
     w->a2      = lm_dap_das(w->a2, w->k2);
     w->k2theta = lm_dap_das(w->k2theta, dp_x_sp(w->a2, w->alpha));
-    (void) AGC_ASSERT(w->del >= -1 && w->del <= 1);
-    (void) AGC_ASSERT(w->k2theta.hi >= LM_NEGMAX);
+    if (!AGC_ASSERT(w->del >= -1 && w->del <= 1))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(w->k2theta.hi >= LM_NEGMAX))
+    {
+        return;
+    }
 }
 
 /* GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
@@ -272,7 +299,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
     agc_status_t st   = AGC_STATUS_OK;
     if (prod > 0)
     {
-        return st; /* LOUPE          */
+        return AGC_STATUS_OK; /* LOUPE          */
     }
     if (prod < 0)
     { /* REVERSAL       */
@@ -284,11 +311,15 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
         {
             d->raccdot = 0;
         }
-        st = agc_chan_and(
+        agc_chan_and(
             012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
+        st = AGC_STATUS_OK;
     }
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
-    (void) AGC_ASSERT(newneg >= -1 && newneg <= 1);
+    if (!AGC_ASSERT(newneg >= -1 && newneg <= 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -321,7 +352,10 @@ agc_status_t lm_dap_gts(void)
         agc_status_t s = gts_drive(d, i, newneg);
         st             = (s != AGC_STATUS_OK) ? s : st;
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t sc = lm_dap_closeout();
     return (st != AGC_STATUS_OK) ? st : sc;
 }
@@ -370,8 +404,14 @@ static void timegmbl_axis(lm_dap_t *d, int i)
         d->negur    = negu;
         d->rgimtimr = set_timer ? timer : d->rgimtimr;
     }
-    (void) AGC_ASSERT(negu >= -1 && negu <= 1);
-    (void) AGC_ASSERT(timer >= 0);
+    if (!AGC_ASSERT(negu >= -1 && negu <= 1))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(timer >= 0))
+    {
+        return;
+    }
 }
 
 /* TIMEGMBL (Craig Work, pp.1478-1480): null the offset acceleration with
@@ -383,7 +423,13 @@ agc_status_t agc_lm_dap_timegmbl(void)
     d->allowgts = 1;
     timegmbl_axis(d, 1); /* R axis first   */
     timegmbl_axis(d, 0);
-    (void) AGC_ASSERT(d->allowgts == 0 || d->allowgts == 1);
-    (void) AGC_ASSERT(d->neguq >= -1 && d->negur >= -1);
+    if (!AGC_ASSERT(d->allowgts == 0 || d->allowgts == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->neguq >= -1 && d->negur >= -1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_acdt_c12();
 }

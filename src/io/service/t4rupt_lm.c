@@ -48,7 +48,10 @@ static agc_sp_t m11, m21, m22, m31, m32, cosmg; /* scaled at 1           */
 /* ---- accessors ---------------------------------------------------------- */
 uint16_t agc_erase_radmodes(void)
 {
-    (void) AGC_ASSERT(radmodes <= WORD15);
+    if (!AGC_ASSERT(radmodes <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return radmodes;
 }
 
@@ -94,9 +97,15 @@ agc_sp_t agc_erase_cosmg(void)
  * (half-revolutions), the SPSIN/SPCOS argument scaling.                   */
 static agc_sp_t cdu_sp(uint16_t cdu)
 {
-    (void) AGC_ASSERT(cdu <= WORD15);
+    if (!AGC_ASSERT(cdu <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     int v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu;
-    (void) AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) v;
 }
 
@@ -104,7 +113,10 @@ static agc_sp_t cdu_sp(uint16_t cdu)
 static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
 {
     agc_dp_t p = agc_sp_mul(a, b);
-    (void) AGC_ASSERT(p >= AGC_DP_MIN && p <= AGC_DP_MAX);
+    if (!AGC_ASSERT(p >= AGC_DP_MIN && p <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_high(p);
 }
 
@@ -119,16 +131,20 @@ agc_status_t agc_t4_gimbal_matrix(void)
     m31 = mp_hi((agc_sp_t) -m22, cosmg); /* -SIN(OG)COS(MG)               */
     m32 = agc_sp_cos(og);                /* COS(OG), also MR23            */
     m21 = mp_hi(m32, cosmg);             /* COS(OG)COS(MG)                */
-    (void) AGC_ASSERT(m11 >= AGC_SP_MIN && m21 >= AGC_SP_MIN);
+    if (!AGC_ASSERT(m11 >= AGC_SP_MIN && m21 >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* ENDDAPT4 = RESUME             */
 }
 
 static void ch_clear(int chan, uint16_t bits)
 {
-    agc_status_t st =
-        agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(bits <= WORD15);
+    agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
+    if (!AGC_ASSERT(bits <= WORD15))
+    {
+        return;
+    }
 }
 
 /* RRGIMON / MONREPOS (p.186): RR gimbal limit monitor (R25).              */
@@ -154,7 +170,10 @@ static void t4_rrgimon(void)
     radmodes = (uint16_t) (radmodes + BIT11); /* reposition           */
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) OCT20002);
     agc_status_t st = agc_waitlist_call(DORREPOS_DELAY_CS, AGC_TASK_DORREPOS);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return;
+    }
 }
 
 /* RRCDUCHK (p.184): RR CDU fail (channel 30 bit 7).  Returns false when
@@ -175,11 +194,13 @@ static bool t4_rrcduchk(void)
     if ((radmodes & BIT7) == 0u &&
         agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
     {
-        agc_status_t st = agc_alarm(ALARM_RR_CDU_FAIL);
-        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        agc_alarm(ALARM_RR_CDU_FAIL);
     }
     agc_status_t st = agc_rr_settrkf(); /* TRKFLCDU: lamp        */
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -197,7 +218,10 @@ agc_status_t agc_t4_rr_monitor(void)
             radmodes = (uint16_t) (radmodes + OCT10001);
             agc_status_t st =
                 agc_waitlist_call(RRTURNON_DELAY_CS, AGC_TASK_RRTURNON);
-            (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+            if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             return agc_t4_gimbal_matrix();
         }
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT2); /* RRCDUCHK -3    */

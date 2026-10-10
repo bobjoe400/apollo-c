@@ -15,7 +15,10 @@ agc_conic_body_t rz_body(const agc_rendz_t *rz)
     {
         return AGC_CONIC_EARTH;
     }
-    (void) AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10);
+    if (!AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10))
+    {
+        return AGC_CONIC_EARTH;
+    }
     return (rz->body.rtx1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
 }
 
@@ -74,7 +77,10 @@ agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
 static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
 {
     bool csm = rz_is_csm();
-    (void) AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT);
+    if (!AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
+    {
+        return csm ? RZ_CSMPREC : RZ_LEMPREC; /* THISPREC */
+    }
     if (kind == RZ_THISPREC)
     {
         return csm ? RZ_CSMPREC : RZ_LEMPREC;
@@ -157,7 +163,10 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
 agc_vec_t rz_rls(void)
 {
     agc_vec_t rls = agc_erase_rls();
-    (void) AGC_ASSERT(rls.c[0] >= AGC_DP_MIN && rls.c[0] <= AGC_DP_MAX);
+    if (!AGC_ASSERT(rls.c[0] >= AGC_DP_MIN && rls.c[0] <= AGC_DP_MAX))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return rls;
 }
 
@@ -183,7 +192,10 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 agc_status_t rz_gotopooh(void)
 {
     agc_status_t st = agc_exec_gotopooh();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -191,7 +203,10 @@ agc_status_t rz_gotopooh(void)
 agc_status_t rz_endext(void)
 {
     agc_status_t st = agc_dsky_endext();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -209,16 +224,26 @@ agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont)
 agc_dp_t rz_loadtime(void)
 {
     uint32_t t = agc_time_now_cs();
-    (void) AGC_ASSERT(t < AGC_TIME_MODULUS_CS);
+    if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) (t & (uint32_t) AGC_DP_MAX);
 }
 
 /* TC ALARM / OCT code */
 agc_status_t rz_alarm(agc_alarm_code_t code)
 {
-    (void) AGC_ASSERT(code != 0U);
-    agc_status_t st = agc_alarm(code);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
+    if (!AGC_ASSERT(code != 0U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_alarm(code);
+    agc_status_t st = AGC_STATUS_ALARM;
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -255,9 +280,8 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
     v.prio_or_dt     = 013; /* PRIO13          */
     v.immediate      = false;
     v.long_dt_cs     = 0U;
-    agc_status_t st2 = agc_phase_change2(040036U, 05024U, &v);
+    agc_phase_change2(040036U, 05024U, &v);
     agc_relint();
-    (void) AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_BAD_ARG);
     return st;
 }
 
@@ -270,7 +294,10 @@ void rz_dispdex_zero(void)
         return;
     }
     agc_guid_state()->lm.dispdex = 0;
-    (void) AGC_ASSERT(agc_guid_state()->lm.dispdex == 0);
+    if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == 0))
+    {
+        return;
+    }
 }
 
 /* OPTION1 = DSPTEMX = DSPTEM2 +1 (index 4), OPTION2 = +2 (index 5). */
@@ -295,7 +322,10 @@ agc_status_t rz_set_option(int which, uint16_t v)
 /* A raw 15-bit ones' complement word as a signed SP value. */
 static agc_sp_t rz_word_to_sp(uint16_t w)
 {
-    (void) AGC_ASSERT(w <= 077777U);
+    if (!AGC_ASSERT(w <= 077777U))
+    {
+        return 0; /* no valid result */
+    }
     if ((w & 040000U) != 0U)
     {
         return (agc_sp_t) (-(agc_sp_t) ((uint16_t) ~w & 037777U));
@@ -306,7 +336,10 @@ static agc_sp_t rz_word_to_sp(uint16_t w)
 /* A signed SP value as a raw 15-bit ones' complement word. */
 static uint16_t rz_sp_to_word(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     if (v < 0)
     {
         return (uint16_t) (~(uint16_t) (-v) & 077777U);
@@ -344,9 +377,11 @@ agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
 /* PHASCHNG with a type A code: a constant code cannot fail.             */
 void rz_phase(int group, uint16_t code)
 {
-    (void) AGC_ASSERT(group >= 1 && group <= 6);
-    agc_status_t st = agc_phase_change(group, code);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(group >= 1 && group <= 6))
+    {
+        return;
+    }
+    agc_phase_change(group, code);
 }
 
 /* PHASCHNG / 2PHSCHNG with a type C code whose restart point is job
@@ -355,7 +390,10 @@ void rz_phase(int group, uint16_t code)
 void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
                   int16_t prio)
 {
-    (void) AGC_ASSERT(job != AGC_JOB_NONE && prio > 0);
+    if (!AGC_ASSERT(job != AGC_JOB_NONE && prio > 0))
+    {
+        return;
+    }
     agc_phase_var_t v;
     v.kind          = AGC_RESTART_JOB;
     v.job           = job;
@@ -363,9 +401,14 @@ void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
     v.prio_or_dt    = prio;
     v.immediate     = false;
     v.long_dt_cs    = 0U;
-    agc_status_t st = (code_a == 0U) ? agc_phase_change_var(code_c, &v) :
-                                       agc_phase_change2(code_a, code_c, &v);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (code_a == 0U)
+    {
+        agc_phase_change_var(code_c, &v);
+    }
+    else
+    {
+        agc_phase_change2(code_a, code_c, &v);
+    }
 }
 
 /* PRIOLARM (DISPLAY_INTERFACE_ROUTINES): the alarm, then V05N09 as a
@@ -378,7 +421,8 @@ agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_prioalarm(code);
+    agc_prioalarm(code);
+    agc_status_t st = AGC_STATUS_ALARM;
     if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
     {
         return st;

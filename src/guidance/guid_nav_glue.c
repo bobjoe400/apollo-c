@@ -23,20 +23,29 @@ static agc_job_id_t g_resume = AGC_JOB_NONE;
 
 void agc_guid_nav_set_resume(agc_job_id_t job)
 {
-    (void) AGC_ASSERT(job != AGC_JOB_NONE);
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return;
+    }
     g_resume = job;
 }
 
 agc_job_id_t agc_guid_nav_resume(void)
 {
-    (void) AGC_ASSERT(g_resume != AGC_JOB_NONE);
+    if (!AGC_ASSERT(g_resume != AGC_JOB_NONE))
+    {
+        return AGC_JOB_NONE;
+    }
     return g_resume;
 }
 
 static agc_job_id_t resume_or_default(agc_job_id_t resume)
 {
     agc_job_id_t r = (resume != AGC_JOB_NONE) ? resume : g_resume;
-    (void) AGC_ASSERT(r != AGC_JOB_NONE);
+    if (!AGC_ASSERT(r != AGC_JOB_NONE))
+    {
+        return AGC_JOB_NONE;
+    }
     return r;
 }
 
@@ -46,7 +55,10 @@ static void store_body(const agc_integ_out_t *o)
     rz->body.rtx1   = (agc_sp_t) o->x1;
     rz->body.rtx2   = (agc_sp_t) o->x2;
     rz->body.moon   = (o->x2 != 0);
-    (void) AGC_ASSERT(o->x2 == 0 || o->x2 == 2);
+    if (!AGC_ASSERT(o->x2 == 0 || o->x2 == 2))
+    {
+        return;
+    }
 }
 
 /* THISPREC (this vehicle), CSMPREC or LEMPREC to tdec1 (cs 2^28).          */
@@ -137,6 +149,9 @@ agc_status_t agc_guid_avetomid(agc_interp_t *ip, agc_job_id_t resume)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(resume != AGC_JOB_NONE);
+    if (!AGC_ASSERT(resume != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_integ_avetomid(ip, agc_integ_shared_ctx(), resume);
 }

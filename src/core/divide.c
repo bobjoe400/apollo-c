@@ -23,8 +23,14 @@
 /* FINALDV (p.1169): minor part of the quotient, (a,0) / c.                  */
 static int32_t finaldv(int32_t a, int32_t c)
 {
-    (void) AGC_ASSERT(c > 0);
-    (void) AGC_ASSERT((a > -c) && (a < c));
+    if (!AGC_ASSERT(c > 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((a > -c) && (a < c)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_dv(a, 0, c).hi;
 }
 
@@ -35,7 +41,10 @@ static agc_dp_t genddv_words(agc_w2_t ab, agc_w2_t cd)
     agc_w2_t qr  = agc_w_dv(ab.hi, ab.lo, cd.hi); /* DV BUF          */
     int32_t  q   = qr.hi;
     int32_t  acc = qr.lo + agc_w_mp(-q, cd.lo).hi; /* CS; MP; AD      */
-    (void) AGC_ASSERT(ab.hi < cd.hi);
+    if (!AGC_ASSERT(ab.hi < cd.hi))
+    {
+        return 0; /* no valid result */
+    }
     if (acc >= AGC_W_ONE)
     {                 /* OVSK: + overflow */
         acc -= cd.hi; /* SU BUF          */
@@ -60,7 +69,10 @@ static agc_dp_t genddv_words(agc_w2_t ab, agc_w2_t cd)
         acc -= cd.hi;
         q += 1; /* +3: INCR MPAC   */
     }
-    (void) AGC_ASSERT(agc_w_ok(q));
+    if (!AGC_ASSERT(agc_w_ok(q)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_dp_t) (q * AGC_W_ONE + finaldv(acc, cd.hi));
 }
 
@@ -76,7 +88,10 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
     {
         return AGC_DP_MAX;
     }
-    (void) AGC_ASSERT(ab.hi <= cd.hi); /* A <= C (MAXDV)  */
+    if (!AGC_ASSERT(ab.hi <= cd.hi)) /* A <= C (MAXDV)  */
+    {
+        return AGC_DP_MAX;
+    }
     if (!maxdv || (ab.hi != cd.hi))
     { /* MAXDV: BZF +2   */
         return genddv_words(ab, cd);
@@ -103,14 +118,23 @@ static agc_dp_t ddv_overflow(bool negative, int *ovf)
 static agc_dp_t ddv_normalised(agc_dp_t a, agc_dp_t b, bool maxdv)
 {
     int k;
-    (void) AGC_ASSERT((a > 0) && (b > 0));
+    if (!AGC_ASSERT((a > 0) && (b > 0)))
+    {
+        return 0; /* no valid result */
+    }
     for (k = 0; (k < DV_NORM_MAX) && (agc_w_split(b).hi < AGC_W_HALF); k++)
     {
         b *= 2; /* DCA BUF; DAS BUF */
         a *= 2; /* DDOUBL           */
     }
-    (void) AGC_ASSERT(agc_w_split(b).hi >= AGC_W_HALF);
-    (void) AGC_ASSERT(a <= b); /* no DDOUBL overflow */
+    if (!AGC_ASSERT(agc_w_split(b).hi >= AGC_W_HALF))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= b)) /* no DDOUBL overflow */
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_genddv(a, b, maxdv);
 }
 
@@ -162,7 +186,10 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
     }
     /* Equal majors leave -0 in A; CCS turns it into +0 for TS MAXDVSW.    */
     q = ddv_normalised(a, b, d.hi == w.hi);
-    (void) AGC_ASSERT((q >= 0) && (q <= AGC_DP_MAX));
+    if (!AGC_ASSERT((q >= 0) && (q <= AGC_DP_MAX)))
+    {
+        return AGC_DP_MAX;
+    }
     return neg ? -q : q;
 }
 
@@ -172,10 +199,16 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
 static agc_w2_t sqrt_half(agc_w2_t p)
 {
     agc_w2_t r;
-    (void) AGC_ASSERT(p.hi > 0);
+    if (!AGC_ASSERT(p.hi > 0))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     r.hi = agc_w_mp(p.hi, AGC_W_HALF).hi;
     r.lo = agc_w_mp(p.hi, AGC_W_HALF).lo + p.lo / 2; /* SR edits: trunc  */
-    (void) AGC_ASSERT(agc_w_ok(r.lo));
+    if (!AGC_ASSERT(agc_w_ok(r.lo)))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return r;
 }
 
@@ -188,7 +221,10 @@ static agc_w2_t sqrt_newton(agc_w2_t m, int32_t x0h)
     agc_w2_t qr;
     agc_w2_t add;
     int      o = 0;
-    (void) AGC_ASSERT((m.hi > 0) && (m.hi < buf));
+    if (!AGC_ASSERT((m.hi > 0) && (m.hi < buf)))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     q = agc_w_dv(m.hi, 0, buf).hi;      /* (MPAC/2)/(X0/2)  */
     buf += agc_w_mp(q, AGC_W_HALF).hi;  /* X1 = ...         */
     x1h    = agc_w_mp(buf, AGC_W_HALF); /* X1/2 as DP       */
@@ -201,21 +237,36 @@ static agc_w2_t sqrt_newton(agc_w2_t m, int32_t x0h)
         x1h.hi = AGC_W_POSMAX; /* FIXROOT          */
         x1h.lo = AGC_W_POSMAX;
     }
-    (void) AGC_ASSERT(x1h.hi > AGC_W_QUARTER); /* ~.5 (may be 17777) */
+    if (!AGC_ASSERT(x1h.hi > AGC_W_QUARTER)) /* ~.5 (may be 17777) */
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return x1h;
 }
 
 static agc_w2_t sqrt_arghi(agc_w2_t m)
 {
-    (void) AGC_ASSERT(m.hi >= AGC_W_QUARTER);
-    (void) AGC_ASSERT(m.hi < AGC_W_HALF);
+    if (!AGC_ASSERT(m.hi >= AGC_W_QUARTER))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.hi < AGC_W_HALF))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return sqrt_newton(m, agc_w_mp(SQ_SLOPEHI, m.hi).hi + SQ_BIASHI);
 }
 
 static agc_w2_t sqrt_arglo(agc_w2_t m)
 {
-    (void) AGC_ASSERT(m.hi >= AGC_W_QUARTER / 2);
-    (void) AGC_ASSERT(m.hi < AGC_W_QUARTER);
+    if (!AGC_ASSERT(m.hi >= AGC_W_QUARTER / 2))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.hi < AGC_W_QUARTER))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return sqrt_newton(m, agc_w_mp(SQ_SLOPELO, m.hi).hi + SQ_BIASLO);
 }
 
@@ -224,7 +275,10 @@ static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
 {
     int pass;
     int o = 0;
-    (void) AGC_ASSERT((m.m0 > 0) && (shift != 0));
+    if (!AGC_ASSERT((m.m0 > 0) && (shift != 0)))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     if (m.m0 >= AGC_W_HALF)
     { /* >= .5            */
         return sqrt_arghi(sqrt_half(agc_w3_top(m)));
@@ -249,7 +303,10 @@ static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
         *shift += 1;
         m = agc_w_tp_shl1(m, &o);
     }
-    (void) AGC_ASSERT(o == 0);
+    if (!AGC_ASSERT(o == 0))
+    {
+        return (agc_w2_t){0}; /* no valid result */
+    }
     return agc_w3_top(m);
 }
 
@@ -284,6 +341,9 @@ agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
     {
         return zero; /* SQRT(0) = 0      */
     }
-    (void) AGC_ASSERT((*shift == 0) || (*shift == 7) || (*shift == 14));
+    if (!AGC_ASSERT((*shift == 0) || (*shift == 7) || (*shift == 14)))
+    {
+        return zero;
+    }
     return sqrt_positive(m, shift);
 }

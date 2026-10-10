@@ -229,7 +229,7 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
  * ==================================================================== */
 agc_status_t agc_telem_fresh_start(int dnlstcod); /* DNLSTCOD, DNTMGOTO init */
 agc_status_t agc_telem_restart(void);             /* STARTSUB: restart list  */
-agc_status_t agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
+void agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
 int          agc_telem_list_code(void);           /* C(DNLSTCOD)             */
 agc_status_t agc_telem_downrupt(void);            /* DODOWNTM, every 20 ms   */
 agc_status_t agc_telem_start_dump(void);          /* V74: DNTMGOTO = DNDUMPI */
@@ -309,7 +309,7 @@ bool         agc_extverb_busy(void);          /* EXTVBACT != 0   */
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
 uint16_t     agc_erase_extvbact(void);
 void         agc_erase_set_extvbact(uint16_t v);
-agc_status_t agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
+void agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
 /* jobs and tasks (ids in src/io/verbs/pending.h until integration)       */
 agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);         /* LST2FAN   */
 agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx);     /* ENDEXT    */

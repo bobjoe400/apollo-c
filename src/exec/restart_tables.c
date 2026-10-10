@@ -303,7 +303,10 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 static int16_t dp_low_word(agc_dp_t v)
 {
     int32_t lo = v % RST_SP_SCALE;
-    (void) AGC_ASSERT(lo > -RST_SP_SCALE && lo < RST_SP_SCALE);
+    if (!AGC_ASSERT(lo > -RST_SP_SCALE && lo < RST_SP_SCALE))
+    {
+        return 0; /* no valid result */
+    }
     return (int16_t) lo;
 }
 
@@ -334,7 +337,10 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
             break;
         case RST_E_NONE:
         default:
-            (void) AGC_ASSERT(src == RST_E_NONE);
+            if (!AGC_ASSERT(src == RST_E_NONE))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             st = AGC_STATUS_BAD_ARG;
             break;
     }
@@ -365,7 +371,10 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
         case RST_E_CM_GYMDT:
         case RST_E_NONE:
         default:
-            (void) AGC_ASSERT(src == RST_E_NONE); /* not a DP delta time  */
+            if (!AGC_ASSERT(src == RST_E_NONE)) /* not a DP delta time  */
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             st = AGC_STATUS_BAD_ARG;
             break;
     }

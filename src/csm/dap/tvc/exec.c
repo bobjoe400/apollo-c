@@ -48,7 +48,10 @@ static agc_status_t tvcx_rollprep(void)
     t->oganow           = agc_erase_cdux();
     c->ak[0]  = csm_dap_msu(c->ogad, t->oganow); /* AK, fly-to error     */
     t->ogaerr = csm_dap_mp_hi(c->ak[0], NEG_BIT14);
-    (void) AGC_ASSERT(t->oganow <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(t->oganow <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP);
 }
 
@@ -71,15 +74,17 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
     }
     else
     {                                          /* GAINCHNG             */
-        *st             = agc_csm_dap_fixcw(); /* IXX, IAVG, IAVG/TLX  */
-        agc_status_t s2 = csm_tvc_gains(true); /* 1/CONACC, VARK       */
-        *st             = (*st != AGC_STATUS_OK) ? *st : s2;
+        agc_csm_dap_fixcw();          /* IXX, IAVG, IAVG/TLX  */
+        *st = csm_tvc_gains(true);    /* 1/CONACC, VARK       */
         /* update mass for the next 10 s of burn, kg B+16                  */
         t->masstmp  = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
         t->vcntrtmp = NINETEEN; /* reset the counter    */
     }
     t->tvcexphs = 1; /* EXECCOPY: INCR (1)   */
-    (void) AGC_ASSERT(t->vcntrtmp >= 0);
+    if (!AGC_ASSERT(t->vcntrtmp >= 0))
+    {
+        return TVCX_FIN;
+    }
     return TVCX_EXECCOPY1;
 }
 
@@ -87,13 +92,19 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
 static tvcx_step_t tvcx_execcopy(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    (void) AGC_ASSERT(t->tvcexphs == 1);
+    if (!AGC_ASSERT(t->tvcexphs == 1))
+    {
+        return TVCX_FIN;
+    }
     agc_erase_set_csmmass(t->masstmp);
     t->vcntr = t->vcntrtmp;
     t->engine_fail_vcntr =
         t->vcntrtmp; /* for ENGFAIL (R41) updates at SPSOFF  */
     t->tvcexphs = 2; /* copycycle over (2)                   */
-    (void) AGC_ASSERT(t->vcntr >= 0);
+    if (!AGC_ASSERT(t->vcntr >= 0))
+    {
+        return TVCX_FIN;
+    }
     return TVCX_1SHOTCHK;
 }
 
@@ -101,7 +112,10 @@ static tvcx_step_t tvcx_execcopy(void)
 static tvcx_step_t tvcx_1shotchk(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    (void) AGC_ASSERT(t->cntr >= AGC_SP_MIN);
+    if (!AGC_ASSERT(t->cntr >= AGC_SP_MIN))
+    {
+        return TVCX_FIN;
+    }
     if (t->cntr > 0)
     { /* not yet: count down  */
         t->cntrtmp  = (agc_sp_t) (t->cntr - 1);
@@ -125,7 +139,10 @@ static tvcx_step_t tvcx_repchek(void)
     }
     t->tempdap[1] = t->repfrac; /* correction fraction  */
     t->tvcexphs   = 4;          /* entry at CORSETUP    */
-    (void) AGC_ASSERT(t->tempdap[1] > 0);
+    if (!AGC_ASSERT(t->tempdap[1] > 0))
+    {
+        return TVCX_FIN;
+    }
     return TVCX_CORSETUP;
 }
 
@@ -141,7 +158,10 @@ static void tvcx_corsetup(void)
     }
     t->tempdap[0] = f;
     t->cntrtmp    = -1;
-    (void) AGC_ASSERT(t->cntrtmp < 0);
+    if (!AGC_ASSERT(t->cntrtmp < 0))
+    {
+        return;
+    }
 }
 
 /* CG.CORR, one axis (p. 949): ACTTMP = DELOFF + TEMPDAP x hi(4 (DELBAR -
@@ -150,8 +170,14 @@ static agc_dp_t tvcx_cgcorr(agc_dp_t deloff, agc_dp_t delbar, agc_sp_t frac)
 {
     agc_dp_t d = csm_dap_ddoubl(csm_dap_ddoubl(agc_dp_neg(deloff)));
     d = csm_dap_das(d, csm_dap_ddoubl(csm_dap_ddoubl(delbar))); /* TTMP1 */
-    (void) AGC_ASSERT(frac >= 0);
-    (void) AGC_ASSERT(d >= AGC_DP_MIN);
+    if (!AGC_ASSERT(frac >= 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(d >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return csm_dap_das(deloff, agc_sp_mul(agc_dp_high(d), frac));
 }
 
@@ -160,13 +186,19 @@ static void tvcx_corcopy(void)
 {
     agc_csm_tvc_t    *t = agc_csm_dap_tvc();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
-    (void) AGC_ASSERT(t->tvcexphs == 5);
+    if (!AGC_ASSERT(t->tvcexphs == 5))
+    {
+        return;
+    }
     c->pactoff  = agc_dp_high(t->pacttmp);
     t->pdeloff  = t->pacttmp;
     c->yactoff  = agc_dp_high(t->yacttmp);
     t->ydeloff  = t->yacttmp;
     t->tvcexphs = 6; /* (6)                  */
-    (void) AGC_ASSERT(c->pactoff >= AGC_SP_MIN);
+    if (!AGC_ASSERT(c->pactoff >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /* One step of the TVCEXEC .. TVCEXFIN sequence after VARGAINS.          */
@@ -215,7 +247,10 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
         default:
             break;
     }
-    (void) AGC_ASSERT((next >= TVCX_EXECCOPY1) && (next <= TVCX_FIN));
+    if (!AGC_ASSERT((next >= TVCX_EXECCOPY1) && (next <= TVCX_FIN)))
+    {
+        return TVCX_FIN;
+    }
     return next;
 }
 
@@ -244,7 +279,10 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = tvcx_run((tvcx_step_t) tvcexphs);
-    (void) AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0);
+    if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 

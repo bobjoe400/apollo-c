@@ -28,7 +28,10 @@
 static agc_status_t p51_phase(void)
 {
     const agc_status_t st = align_phase4(PH_P51);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -41,7 +44,8 @@ agc_status_t agc_lm_imu_check(void)
 {
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
     {
-        const agc_status_t alm = agc_alarm(ALM_IMU_OFF);
+        agc_alarm(ALM_IMU_OFF);
+        const agc_status_t alm = AGC_STATUS_ALARM;
         if (alm != AGC_STATUS_OK)
         {
             return alm;
@@ -50,7 +54,10 @@ agc_status_t agc_lm_imu_check(void)
         return (st == AGC_STATUS_OK) ? AGC_STATUS_ALARM : st;
     }
     agc_flag_set(AGC_FLAG_IMUSE);
-    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_IMUSE));
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_IMUSE)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -77,7 +84,10 @@ agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_LM_ORIENTATION_MARK_SETUP,
                        AGC_JOB_LM_ORIENTATION_COARSE);
@@ -93,7 +103,8 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
     agc_status_t st = p51_phase();
     for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
     {
-        st = agc_erase_set_thetad(i, 0);
+        agc_erase_set_thetad(i, 0);
+        st = AGC_STATUS_OK;
     }
     if (st != AGC_STATUS_OK)
     {
@@ -111,7 +122,10 @@ agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_erase_thetad(0) == 0u);
+    if (!AGC_ASSERT(agc_erase_thetad(0) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
                        AGC_JOB_LM_ORIENTATION_COARSE_START,
                        AGC_JOB_LM_ORIENTATION_COARSE_START,
@@ -125,7 +139,10 @@ agc_status_t agc_job_lm_orientation_coarse_start(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(agc_erase_thetad(1) == 0u);
+    if (!AGC_ASSERT(agc_erase_thetad(1) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return align_coarse(AGC_JOB_LM_ORIENTATION_COARSE_DONE);
 }
 
@@ -244,7 +261,10 @@ agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
     ram->vac6            = ram->planvec;
     ram->starad[0]       = ram->starsav1;
     ram->starad[1]       = ram->starsav2;
-    (void) AGC_ASSERT(ram->starind == 1);
+    if (!AGC_ASSERT(ram->starind == 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_align_sighting_data_display(ctx,
                                            AGC_JOB_LM_ORIENTATION_DATA_CHECKED);
 }

@@ -10,7 +10,7 @@
 #include "../guid_pending.h"
 
 /* QUIKFAZ5 (p.890): make `resume` the group-5 restart point.             */
-agc_status_t agc_lm_serv_quikfaz5(agc_job_id_t resume);
+void agc_lm_serv_quikfaz5(agc_job_id_t resume);
 /* CONTSERV (p.875): clear the measurement discretes, LR lamps, COPYCYC1. */
 agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx);
 /* COPYCYC1 .. COPYCYC2 (p.876-877), then COPYCYCL.                       */

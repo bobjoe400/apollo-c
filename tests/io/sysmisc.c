@@ -85,7 +85,7 @@ static void test_downrupt_sequence(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     agc_chan_reset();
-    CHECK(agc_time_set_cs(01234567u) == AGC_STATUS_OK);
+    agc_time_set_cs(01234567u);
     CHECK(agc_telem_fresh_start(0) == AGC_STATUS_OK);
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077777u); /* -DNLSTCOD         */
@@ -108,7 +108,7 @@ static void test_downrupt_sequence(void)
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK); /* word 101: next list */
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077777u);
     CHECK(agc_chan_read(AGC_CHAN_DNTM2) == AGC_DN_LOWIDCOD);
-    CHECK(agc_telem_select_list(1) == AGC_STATUS_OK); /* UPDNLIST          */
+    agc_telem_select_list(1); /* UPDNLIST          */
     CHECK(agc_telem_restart() == AGC_STATUS_OK);
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077776u);
@@ -118,7 +118,7 @@ static void test_downrupt_sequence(void)
 static void test_loadtime(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
-    CHECK(agc_time_set_cs(0x0ABCDEFu) == AGC_STATUS_OK);
+    agc_time_set_cs(0x0ABCDEFu);
     CHECK(agc_rtb_loadtime() == (agc_dp_t) 0x0ABCDEF);
     agc_time_advance_cs(5);
     CHECK(agc_rtb_loadtime() == (agc_dp_t) (0x0ABCDEF + 5));
@@ -197,7 +197,7 @@ static void test_service(void)
     CHECK(agc_extverb_busy());
     CHECK(agc_svc_b5off() == AGC_STATUS_OK);
     CHECK(agc_erase_extvbact() == 004u); /* bit 5 cleared          */
-    CHECK(agc_svc_set_extvbact(0) == AGC_STATUS_OK);
+    agc_svc_set_extvbact(0);
     CHECK(!agc_extverb_busy());
 }
 
@@ -241,7 +241,7 @@ static void test_radar_verbs(void)
     agc_job_ctx_t ctx = {AGC_JOB_EXTENDED_VERB, 030, false, -1, 0};
     agc_state_init(AGC_VEHICLE_LM);
     agc_erase_set_radmodes(01000u); /* designate, not continuous */
-    CHECK(agc_flag_set(AGC_FLAG_NORRMON) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_NORRMON);
     CHECK(agc_extverb_rr_designate_end(&ctx) == AGC_STATUS_OK);
     CHECK(agc_erase_radmodes() == 01000u);
     CHECK(agc_flag_test(AGC_FLAG_NORRMON));

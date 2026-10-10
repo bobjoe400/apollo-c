@@ -35,8 +35,14 @@ agc_status_t lm_dap_altdsply(void)
     d->ak[1] = (agc_sp_t) -d->qerror; /* error complements      */
     d->ak[2] = (agc_sp_t) -d->rerror;
     d->ak[0] = (agc_sp_t) -d->perror;
-    (void) AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX);
-    (void) AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX);
+    if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -57,8 +63,14 @@ agc_status_t lm_dap_dsplytot(void)
                           (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
     d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) +
                           (int32_t) xdif);
-    (void) AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX);
-    (void) AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX);
+    if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -75,8 +87,14 @@ static agc_status_t needle11(lm_dap_t *d)
         st             = (s != AGC_STATUS_OK) ? s : st;
     }
     d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
-    (void) AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -103,10 +121,11 @@ static agc_status_t needles(lm_dap_t *d)
         st           = (s != AGC_STATUS_OK) ? s : st;
         d->edrive[i] = (agc_sp_t) l;
     }
-    agc_status_t s14 = agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */
-    (void) AGC_ASSERT(s14 == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX &&
-                      d->edrive[0] <= NDL_DACMAX);
+    agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */
+    if (!AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -119,15 +138,12 @@ agc_status_t lm_dap_needler(void)
     {
         if ((pass & LM_RCS_NEEDLE3) != 0u)
         { /* first pass         */
-            agc_status_t s =
-                agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
-            (void) AGC_ASSERT(s == AGC_STATUS_OK);
+            agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
             return needle11(d);
         }
-        agc_status_t s = agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */
+        agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */
         d->rcsflags    = (uint16_t) (d->rcsflags & ~NDL_PASSBITS);
-        (void) AGC_ASSERT(s == AGC_STATUS_OK);
-        return s;
+        return AGC_STATUS_OK;
     }
     if ((agc_chan_read(012) & NDL_IMUERR) == 0u)
     { /* NEEDLES3           */

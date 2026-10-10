@@ -13,8 +13,14 @@
 /* Copy the PARAM debris to *out. */
 static void apsides_debris(const agc_conic_ctx_t *ctx, agc_apsides_out_t *out)
 {
-    (void) AGC_ASSERT(ctx != NULL);
-    (void) AGC_ASSERT(out != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(out != NULL))
+    {
+        return;
+    }
     out->r1      = ctx->r1;
     out->r1a     = ctx->r1a;
     out->p       = ctx->p;
@@ -42,14 +48,14 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     {
         return st;
     }
-    (void) agc_interp_test_ovf(ip); /* SETPD 0D, BOV +1 */
+    agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
     agc_dp_t sngamma = 0;
     st = agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma); /* CALL PARAM  */
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
-    (void) agc_interp_test_ovf(ip);       /* BOV GETECC     */
+    agc_interp_clear_ovf(ip);       /* BOV GETECC     */
     agc_tp_t m = agc_conic_mload_(ctx.p); /* GETECC: DMP R1A SL4 */
     m          = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.r1a), 4);
     m          = agc_conic_msqrt_(

@@ -92,7 +92,7 @@ static void test_calcgta_identity(void)
     agc_interp_init(&ip);
     agc_mat_t dc      = agc_mat_identity_half(); /* desired = present SM  */
     agc_dp_t  gyro[3] = {1, 1, 1};
-    CHECK(agc_imu_calcgta(&ip, &dc, gyro) == AGC_STATUS_OK);
+    agc_imu_calcgta(&ip, &dc, gyro);
     CHECK(gyro[0] == 0 && gyro[1] == 0 && gyro[2] == 0);
     agc_dp_t buf[3];
     CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf) == AGC_STATUS_OK);
@@ -119,8 +119,8 @@ static void test_calcga_gimbal_lock(void)
     agc_interp_init(&ip);
     agc_mat_t sm = agc_mat_identity_half();
     uint16_t  thetad[3];
-    (void) agc_flag_clear(AGC_FLAG_GLOKFAIL);
-    (void) agc_flag_clear(AGC_FLAG_CPHIFLAG);
+    agc_flag_clear(AGC_FLAG_GLOKFAIL);
+    agc_flag_clear(AGC_FLAG_CPHIFLAG);
     agc_mat_t nb = nb_about_z(30.0); /* MGA 30 deg: no lock  */
     CHECK(agc_imu_calcga(&ip, &nb, &sm, thetad) == AGC_STATUS_OK);
     CHECK(!agc_flag_test(AGC_FLAG_GLOKFAIL));

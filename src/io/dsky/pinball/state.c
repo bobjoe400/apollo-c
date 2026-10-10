@@ -55,7 +55,10 @@ uint16_t agc_dsky_relay_code(int digit)
 /* Inverse of RELTAB for the sim readout. */
 int agc_dsky_relay_digit(uint16_t code)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_DSKY_BLANK;
+    }
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
         return AGC_DSKY_BLANK;
@@ -80,7 +83,10 @@ bool pin_ones_negative(uint16_t w)
 /* Magnitude of a 15-bit ones' complement word (CCS ...; AD ONE). */
 uint16_t pin_ones_mag(uint16_t w)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return 0; /* no valid result */
+    }
     uint16_t v = (uint16_t) (w & PIN_WORD);
     return pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v;
 }
@@ -94,7 +100,10 @@ uint16_t pin_ones_neg(uint16_t mag)
 /* DEVIATION: -0 (077777) maps to 0; agc_sp_t has no negative zero. */
 agc_sp_t pin_sp_from_ones(uint16_t w)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return 0; /* no valid result */
+    }
     uint16_t v = (uint16_t) (w & PIN_WORD);
     if (pin_ones_negative(v))
     {
@@ -206,8 +215,8 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
     }
     agc_inhint();
     uint16_t     old = agc_erase_dsptab(rel);
-    agc_status_t st =
-        agc_erase_set_dsptab(rel, pin_ones_neg((uint16_t) (mag & PIN_POSMAX)));
+    agc_erase_set_dsptab(rel, pin_ones_neg((uint16_t) (mag & PIN_POSMAX)));
+    agc_status_t st = AGC_STATUS_OK;
     if (!pin_ones_negative(old) && old != 0u)
     {
         g_pin.nout++;
@@ -228,7 +237,10 @@ static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
     }
     uint16_t cur = agc_erase_dsptab(rel);
     /* A DSPTAB entry of +0 is a CCSHOLE in the AGC.                     */
-    (void) AGC_ASSERT(cur != 0u);
+    if (!AGC_ASSERT(cur != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     uint16_t mag = pin_ones_mag(cur);
     if ((uint16_t) (mag & k_dsmsk[sel]) == code)
     {
@@ -334,7 +346,7 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
         if (pin_ones_negative(w))
         {
             uint16_t mag = pin_ones_mag(w);
-            (void) agc_erase_set_dsptab(g_pin.dspcnt, mag); /* replace + */
+            agc_erase_set_dsptab(g_pin.dspcnt, mag); /* replace + */
             *relay_word = (uint16_t) (((uint16_t) (g_pin.dspcnt + 1) << 11) |
                                       (mag & PIN_LOW11));
             agc_chan_write((int)AGC_CHAN_OUT0, *relay_word);
@@ -469,13 +481,11 @@ agc_status_t agc_dsky_init(void)
     pin_state_t zero = {0};
     g_pin            = zero;
     /* STARTSB2: turn off uplink acty, temp caution, KR, flash, op. error */
-    agc_status_t st = agc_chan_and((int) AGC_CHAN_DSALMOUT, 077603u);
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, 077603u);
+    agc_status_t st = AGC_STATUS_OK;
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0; i--)
     { /* DSPOFF         */
-        if (st == AGC_STATUS_OK)
-        {
-            st = agc_erase_set_dsptab(i, pin_ones_neg((uint16_t) PIN_BIT12));
-        }
+        agc_erase_set_dsptab(i, pin_ones_neg((uint16_t) PIN_BIT12));
     }
     g_pin.nout     = PIN_DSPTAB_PANEL; /* NOUTCON = ELEVEN       */
     g_pin.entret   = PIN_ENT_ENDOFJOB;
@@ -483,7 +493,8 @@ agc_status_t agc_dsky_init(void)
     pin_block_dspcount(PIN_VD1); /* CS VD1; TS DSPCOUNT    */
     if (st == AGC_STATUS_OK)
     {
-        st = agc_flagword_set(4, 0); /* kill interface displays */
+        agc_flagword_set(4, 0); /* kill interface displays */
+        st = AGC_STATUS_OK;
     }
     if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(g_pin.nout == 11))
     {

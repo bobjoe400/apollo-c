@@ -206,8 +206,8 @@ agc_lm_asc_t *agc_lm_asc(void);
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */
-agc_status_t agc_lm_phaschng(uint16_t octal_code);           /* PHASCHNG  */
-agc_status_t agc_lm_fastchng(void);                          /* FASTCHNG  */
+void agc_lm_phaschng(uint16_t octal_code);           /* PHASCHNG  */
+void agc_lm_fastchng(void);                          /* FASTCHNG  */
 agc_sp_t     agc_lm_time1(void);                             /* TIME1     */
 agc_sp_t     agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor); /* DV        */
 agc_sp_t     agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);           /* MP, high  */
@@ -222,7 +222,7 @@ agc_status_t agc_lm_throttle_whatout(agc_sp_t pulses);
 agc_dp_t     agc_lm_massmult(agc_dp_t accel);
 
 /* ---- FINDCDUW--GUIDAP_INTERFACE (findcduw.c) ---------------------------- */
-agc_status_t agc_lm_initcduw(void);
+void agc_lm_initcduw(void);
 /* FINDCDUW: thrust command (any length) in MPAC; window command is
  * agc_lm_ldg()->unwc_2. FINDCDUW -2: thrust command from UNFC/2
  * (agc_lm_ldg()->unfc_2).                                        */
@@ -316,13 +316,13 @@ agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx);    /* UPTHROT1     */
 agc_status_t
          agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx); /* OLDTIME restart */
 agc_sp_t agc_lm_pipctr1(void);                 /* PIPCTR1 for LANDISP */
-agc_status_t agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
-agc_status_t agc_lm_throtup(void);             /* THROTUP      */
+void agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
+void agc_lm_throtup(void);             /* THROTUP      */
 
 /* ---- P12 and ASCENT_GUIDANCE (ascent.c) --------------------------------- */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);
-agc_status_t agc_lm_powered_ascent_init(agc_interp_t *ip);
-agc_status_t agc_lm_comminit(agc_interp_t *ip);
+void agc_lm_powered_ascent_init(agc_interp_t *ip);
+void agc_lm_comminit(agc_interp_t *ip);
 agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);

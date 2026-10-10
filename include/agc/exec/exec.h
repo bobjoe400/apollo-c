@@ -37,8 +37,11 @@ typedef struct agc_job_ctx
 agc_status_t agc_exec_init(void);
 agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job);   /* NOVAC   */
 agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job); /* FINDVAC */
-agc_status_t agc_exec_job_sleep(agc_job_id_t wake_as);            /* JOBSLEEP*/
+void agc_exec_job_sleep(agc_job_id_t wake_as);            /* JOBSLEEP*/
 agc_status_t agc_exec_job_wake(agc_job_id_t job);                 /* JOBWAKE */
+/* JOBWAKE where the caller does not care whether the job is still asleep:
+ * the AGC's JOBWAKE2 just "EXIT[S] IF SLEEPING JOB NOT FOUND" (LOCCTR -1). */
+void agc_exec_job_wake_if_asleep(agc_job_id_t job);
 void         agc_exec_prio_change(agc_prio_t new_prio);           /* PRIOCHNG*/
 agc_status_t agc_exec_run_one(void); /* run highest-priority ready job  */
 bool         agc_exec_idle(void);    /* DUMMYJOB would run              */

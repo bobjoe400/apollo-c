@@ -35,8 +35,14 @@ agc_status_t csm_tvc_tstinit(void)
     t->n             = (agc_sp_t) -FCADDY;
     t->revs          = FREVS;
     t->card          = (agc_sp_t) -FCARD;
-    (void) AGC_ASSERT(t->caddy < 0);
-    (void) AGC_ASSERT(t->card < 0);
+    if (!AGC_ASSERT(t->caddy < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(t->card < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* TC Q                 */
 }
 
@@ -55,7 +61,10 @@ agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
         agc_csm_dap_tvc()->stroker = agc_csm_dap_com()->estroker;
     }
     agc_relint();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* ENDOFJOB             */
 }
 
@@ -79,7 +88,10 @@ static void stroke_next_set(void)
     t->revs  = fcard_revs[k]; /* reinitialise         */
     t->n     = (agc_sp_t) -fcard_bursts[k];
     t->caddy = t->n;
-    (void) AGC_ASSERT(t->n < 0);
+    if (!AGC_ASSERT(t->n < 0))
+    {
+        return;
+    }
 }
 
 /* HACKWLST +3 .. REVUP (pp. 982-983): one pulse burst into TVCPITCH,
@@ -87,14 +99,17 @@ static void stroke_next_set(void)
 static agc_status_t stroke_burst(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    (void) AGC_ASSERT((t->caddy < 0) || (t->stroker == 0)); /* +0: STROKILL */
+    if (!AGC_ASSERT((t->caddy < 0) || (t->stroker == 0))) /* +0: STROKILL */
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker));
-    agc_status_t st =
-        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
+    agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
+    agc_status_t st = AGC_STATUS_OK;
     t->caddy = (agc_sp_t) (t->caddy + 1); /* INCR CADDY           */
     if (t->caddy < 0)
     {
-        return st; /* exit, on a slope     */
+        return AGC_STATUS_OK; /* exit, on a slope     */
     }
     if (t->revs > 0)
     { /* REVUP                */
@@ -112,7 +127,10 @@ static agc_status_t stroke_burst(void)
         return st;
     }
     t->stroker = (agc_sp_t) -t->stroker; /* change sign of slope */
-    (void) AGC_ASSERT(t->caddy <= 0);
+    if (!AGC_ASSERT(t->caddy <= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* exit at a reversal   */
 }
 
@@ -121,11 +139,17 @@ static agc_status_t stroke_burst(void)
 agc_status_t csm_tvc_hack(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    (void) AGC_ASSERT(t->stroker != 0);
+    if (!AGC_ASSERT(t->stroker != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     t->bunker_task  = false; /* QXCH BUNKER          */
     agc_status_t st = agc_waitlist_call(HACK_DELAY, AGC_TASK_HACKWLST);
     agc_status_t s2 = stroke_burst();
-    (void) AGC_ASSERT(!t->bunker_task);
+    if (!AGC_ASSERT(!t->bunker_task))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : s2;
 }
 
@@ -135,7 +159,13 @@ agc_status_t agc_task_hackwlst(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     t->bunker_task   = true;
     agc_status_t st  = stroke_burst();
-    (void) AGC_ASSERT(t->bunker_task);
-    (void) AGC_ASSERT((t->card >= -FCARD) && (t->card <= 0));
+    if (!AGC_ASSERT(t->bunker_task))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT((t->card >= -FCARD) && (t->card <= 0)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* TASKOVER             */
 }

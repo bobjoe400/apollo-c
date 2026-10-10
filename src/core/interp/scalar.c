@@ -32,7 +32,10 @@ void agc_interp_init(agc_interp_t *ip)
     {
         ip->sw[k] = false;
     }
-    (void) AGC_ASSERT(ip->ovfind == 0);
+    if (!AGC_ASSERT(ip->ovfind == 0))
+    {
+        return;
+    }
 }
 
 /* BOV / BOVB (p.1196 "BOV(B)"): CCS OVFIND; branch and clear if set.       */
@@ -43,7 +46,10 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
     {
         return false;
     }
-    (void) AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1));
+    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
+    {
+        return false;
+    }
     set        = (ip->ovfind != 0);
     ip->ovfind = 0;
     return set;
@@ -57,7 +63,10 @@ void agc_interp_clear_ovf(agc_interp_t *ip)
     {
         return;
     }
-    (void) AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1));
+    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
+    {
+        return;
+    }
     ip->ovfind = 0;
 }
 
@@ -70,8 +79,22 @@ agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     {
         return a;
     }
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return a;
+    }
     return agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(b), &ip->ovfind));
+}
+
+/* DAD then BOV, the sum never read (MPAC is reloaded next): only the
+ * overflow indicator changes.                                            */
+void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
+{
+    const agc_dp_t sum = agc_dp_add(ip, a, b);
+    if (!AGC_ASSERT((sum >= AGC_DP_MIN) && (sum <= AGC_DP_MAX)))
+    {
+        return;
+    }
 }
 
 /* DSU: DCS 0 then ENDVXV. BDSU X is agc_dp_sub(ip, X, mpac).                */
@@ -81,7 +104,10 @@ agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     {
         return a;
     }
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return a;
+    }
     return agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(-b), &ip->ovfind));
 }
 
@@ -109,7 +135,10 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
         m.m0 = top.hi;
         m.m1 = top.lo;
     }
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return a;
+    }
     return agc_w3_value(m);
 }
 
@@ -125,7 +154,10 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     }
     m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
     m = agc_w_roundsub(m, &ip->ovfind);
-    (void) AGC_ASSERT(m.m2 == 0);
+    if (!AGC_ASSERT(m.m2 == 0))
+    {
+        return 0;
+    }
     return agc_w_join(agc_w3_top(m));
 }
 
@@ -133,24 +165,42 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
 {
     agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
-    (void) AGC_ASSERT(agc_w_ok(m.m1));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(agc_w_ok(m.m1)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(agc_w3_top(m));
 }
 
 /* DSQ (p.1180): DSQSUB leaves the TP square; as a DP, MPAC,+1.             */
 agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
 {
-    (void) AGC_ASSERT(ip != 0);
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT(ip != 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a))));
 }
 
 agc_tp_t agc_dp_sq_tp(agc_dp_t a)
 {
     agc_w3_t m = agc_w_dsqsub(agc_w_split(a));
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT(m.m0 >= 0);
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m.m0 >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w3_value(m);
 }
 
@@ -160,7 +210,10 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
     agc_w3_t m = agc_w3_from_tp(v);
     agc_w2_t acc;
     int      o = 0;
-    (void) AGC_ASSERT((k >= AGC_SP_MIN) && (k <= AGC_SP_MAX));
+    if (!AGC_ASSERT((k >= AGC_SP_MIN) && (k <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     acc.hi = 0;                                     /* XCH MPAC +1      */
     acc.lo = agc_w_mp(k, m.m2).hi;                  /* TS MPAC +2       */
     acc    = agc_w_das(acc, agc_w_mp(m.m1, k), &o); /* DAS MPAC +1      */
@@ -171,7 +224,10 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
     acc    = agc_w_das(acc, agc_w_mp(m.m0, k), &o); /* DAS MPAC         */
     m.m0   = acc.hi;
     m.m1   = acc.lo;
-    (void) AGC_ASSERT(o == 0);
+    if (!AGC_ASSERT(o == 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w3_value(m);
 }
 
@@ -182,9 +238,15 @@ agc_dp_t agc_dp_mul_int(agc_dp_t v, agc_sp_t n)
     agc_w2_t lo = agc_w_mp(n, m.lo); /* MP MPAC +1       */
     agc_w2_t hi = agc_w_mp(n, m.hi); /* MP DMPNTEMP      */
     int      o  = 0;
-    (void) AGC_ASSERT(hi.hi == 0);       /* customer's duty  */
+    if (!AGC_ASSERT(hi.hi == 0)) /* customer's duty  */
+    {
+        return 0; /* no valid result */
+    }
     lo.hi = agc_w_ts(lo.hi + hi.lo, &o); /* CA L; ADS MPAC   */
-    (void) AGC_ASSERT(o == 0);
+    if (!AGC_ASSERT(o == 0))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_join(lo);
 }
 
@@ -214,12 +276,26 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         return AGC_DP_MAX;
     }
     q = agc_w_ddv(a, b, &o);
-    (void) AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN));
+    if (!AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN)))
+    {
+        return AGC_DP_MAX;
+    }
     if (o != 0)
     {
         ip->ovfind = 1; /* CAF ONE; TS OVFIND */
     }
     return q;
+}
+
+/* DDV then BOV, the quotient never read: only the overflow indicator
+ * changes (set when |a| >= |b|).                                          */
+void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
+{
+    const agc_dp_t q = agc_dp_div(ip, a, b);
+    if (!AGC_ASSERT((q >= AGC_DP_MIN) && (q <= AGC_DP_MAX)))
+    {
+        return;
+    }
 }
 
 /* ---- shifts and rounding (p.1137, 1152-1161) ----------------------------- */
@@ -236,7 +312,10 @@ agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
     {
         return agc_dp_shr(a, -n);
     }
-    (void) AGC_ASSERT(n <= 127); /* 7-bit count      */
+    if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
+    {
+        return a;
+    }
     return agc_w_join(agc_w3_top(agc_w_tssl(m, n, &ip->ovfind)));
 }
 
@@ -253,7 +332,10 @@ agc_dp_t agc_dp_shl_round(agc_interp_t *ip, agc_dp_t a, int n)
     {
         return agc_dp_shr_round(a, -n);
     }
-    (void) AGC_ASSERT(n <= 127); /* 7-bit count      */
+    if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
+    {
+        return a;
+    }
     m = agc_w_tssl(m, n, &ip->ovfind);
     m = agc_w_roundsub(m, &ip->ovfind);
     return agc_w_join(agc_w3_top(m));
@@ -275,7 +357,10 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
     {
         m = agc_w_genscr(m, -n, false);
     }
-    (void) AGC_ASSERT(agc_w_ok(m.m0));
+    if (!AGC_ASSERT(agc_w_ok(m.m0)))
+    {
+        return v;
+    }
     return agc_w3_value(m);
 }
 
@@ -284,7 +369,10 @@ agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
 {
     int      count = 0;
     agc_w3_t m     = agc_w_tslc(agc_w3_from_tp(v), &count);
-    (void) AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX));
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (AGC_ASSERT(nshift != 0))
     {
         *nshift = count;
@@ -301,6 +389,9 @@ agc_dp_t agc_tp_round(agc_interp_t *ip, agc_tp_t a)
         return agc_tp_round_dp(a);
     }
     m = agc_w_roundsub(m, &ip->ovfind);
-    (void) AGC_ASSERT(m.m2 == 0);
+    if (!AGC_ASSERT(m.m2 == 0))
+    {
+        return agc_tp_round_dp(a);
+    }
     return agc_w_join(agc_w3_top(m));
 }

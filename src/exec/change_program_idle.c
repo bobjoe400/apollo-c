@@ -65,24 +65,43 @@ static uint8_t mmnumber; /* MMNUMBER: the requested major mode    */
 /* ---- up-calls used by fresh_start.c and alarm.c ---------------------- */
 agc_status_t exec_up_stoprate(void)
 {
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
-    (void) AGC_ASSERT(agc_interrupts_inhibited() || mmnumber <= 99U);
-    return agc_kalc_stoprate();
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_interrupts_inhibited() || mmnumber <= 99U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_kalc_stoprate();
+    return AGC_STATUS_OK;
 }
 
 /* SERVIDLE (SERVICER, guid-powered): not yet published.               */
 agc_status_t exec_up_servidle(void)
 {
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM);
-    (void) AGC_ASSERT(mmnumber <= 99U);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(mmnumber <= 99U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
 /* SETCOARS (IMU mode switching, imu): not yet published.              */
 agc_status_t exec_up_setcoars(void)
 {
-    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
-    (void) AGC_ASSERT(mmnumber <= 99U);
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(mmnumber <= 99U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }
 
@@ -95,15 +114,16 @@ static void initsub_csm(void)
     static const uint16_t flagtabl[VP_RAKE_WORDS] = {
         0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0};
     agc_status_t st = exec_up_stoprate();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return;
+    }
     for (int w = VP_RAKE_WORDS - 1; w >= 0; w--)
     { /* RAKE         */
         uint16_t v = (uint16_t) (agc_flagword_get(w) & ~flagtabl[w]);
-        st         = agc_flagword_set(w, v);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_flagword_set(w, v);
     }
-    st = agc_flag_set(AGC_FLAG_IMPULSW);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_IMPULSW);
 }
 
 /* The V37 N99 flash of GOP00FIX: every response re-flashes it
@@ -139,11 +159,9 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
     else
     {
         uint16_t     f13 = (uint16_t) (agc_flagword_get(13) & ~VP_LM_F13_CLR);
-        agc_status_t s   = agc_flagword_set(13, f13); /* XOVINFLG, ULLAGFLG */
-        (void) AGC_ASSERT(s == AGC_STATUS_OK);
+        agc_flagword_set(13, f13); /* XOVINFLG, ULLAGFLG */
     }
-    agc_status_t st = agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
     return flash_program_request(ctx);
 }
 
@@ -153,7 +171,10 @@ agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH);
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return flash_program_request(ctx);
 }
 
@@ -169,8 +190,14 @@ static bool premm_has(uint8_t mm)
     {
         found = t[i].mm == mm;
     }
-    (void) AGC_ASSERT(n > 0);
-    (void) AGC_ASSERT(mm <= 99U);
+    if (!AGC_ASSERT(n > 0))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(mm <= 99U))
+    {
+        return false;
+    }
     return found;
 }
 
@@ -182,12 +209,19 @@ static agc_status_t change_program_refuse(bool alarm_1520)
     agc_status_t result = AGC_STATUS_NOT_FOUND;
     if (alarm_1520)
     {
-        result = agc_alarm(AGC_ALARM_01520);
+        agc_alarm(AGC_ALARM_01520);
+        result = AGC_STATUS_ALARM;
     }
     agc_status_t st = agc_dsky_releasedsp(); /* TC RELDSP         */
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     st = agc_dsky_pinbrnch(); /* CADR PINBRNCH     */
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return result;
 }
 
@@ -245,6 +279,9 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(mmnumber <= 99U);
+    if (!AGC_ASSERT(mmnumber <= 99U))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_UNIMPLEMENTED;
 }

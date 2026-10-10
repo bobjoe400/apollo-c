@@ -71,8 +71,14 @@ static agc_dp_t das(agc_dp_t acc, agc_dp_t x)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  r   = agc_dp_add_raw(acc, x, &ovf);
-    (void) AGC_ASSERT(acc >= AGC_DP_MIN && acc <= AGC_DP_MAX);
-    (void) AGC_ASSERT(ovf >= -1 && ovf <= 1);
+    if (!AGC_ASSERT(acc >= AGC_DP_MIN && acc <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -81,16 +87,28 @@ static agc_dp_t das(agc_dp_t acc, agc_dp_t x)
 static agc_dp_t das_low_of_mp(agc_dp_t acc, agc_sp_t a, agc_sp_t b)
 {
     agc_sp_t hi = agc_dp_high(agc_sp_mul(a, b));
-    (void) AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX);
-    (void) AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX);
+    if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return das(acc, agc_dp_pack(0, hi));
 }
 
 static agc_sp_t sp_neg(agc_sp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX);
+    if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t r = (agc_sp_t) (-a);
-    (void) AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX);
+    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -103,7 +121,10 @@ static bool params_in_range(const agc_imu_comp_params_t *p)
              p->pipascf[i] >= AGC_SP_MIN && p->nbd[i] >= AGC_SP_MIN &&
              p->adia[i] >= AGC_SP_MIN && p->adsra[i] >= AGC_SP_MIN;
     }
-    (void) AGC_ASSERT(ok);
+    if (!AGC_ASSERT(ok))
+    {
+        return false;
+    }
     return ok;
 }
 
@@ -130,13 +151,19 @@ agc_status_t agc_imu_comp_get(agc_imu_comp_params_t *p)
         return AGC_STATUS_BAD_ARG;
     }
     *p = comp;
-    (void) AGC_ASSERT(params_in_range(p));
+    if (!AGC_ASSERT(params_in_range(p)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 agc_sp_t agc_imu_gcompsw(void)
 {
-    (void) AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX);
+    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return gcompsw;
 }
 
@@ -150,7 +177,10 @@ void agc_imu_set_gcompsw(agc_sp_t v)
 
 agc_sp_t agc_imu_pipa_interval(void)
 {
-    (void) AGC_ASSERT(one_pipadt >= AGC_SP_MIN && one_pipadt <= AGC_SP_MAX);
+    if (!AGC_ASSERT(one_pipadt >= AGC_SP_MIN && one_pipadt <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return one_pipadt;
 }
 
@@ -167,26 +197,39 @@ void agc_imu_set_pipa_interval(agc_sp_t v)
 static agc_status_t gcomp_read(agc_dp_t g[3])
 {
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(g != NULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(g != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
-static agc_status_t gcomp_write(const agc_dp_t g[3])
+static void gcomp_write(const agc_dp_t g[3])
 {
-    (void) AGC_ASSERT(g != NULL);
-    agc_status_t st = agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    if (!AGC_ASSERT(g != NULL))
+    {
+        return;
+    }
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
 }
 
 /* GCOMPSW bypass test: "CCS GCOMPSW / TCF +3 / TCF +2 / TCF exit": the
  * compensation is bypassed only when GCOMPSW is negative.                */
 static bool gcomp_bypassed(void)
 {
-    (void) AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX);
+    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
+    {
+        return false;
+    }
     bool bypass = (gcompsw < 0);
-    (void) AGC_ASSERT(bypass || gcompsw >= 0);
+    if (!AGC_ASSERT(bypass || gcompsw >= 0))
+    {
+        return false;
+    }
     return bypass;
 }
 
@@ -196,7 +239,10 @@ static bool gcomp_bypassed(void)
  *   DELV = DELV + DELV*SFE - BIAS*DELTAT, all in PIPA pulses x 2^14.    */
 static agc_dp_t pipa_axis(agc_dp_t delv, int axis)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t pulses = agc_dp_high(delv);
     agc_dp_t p = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
     /* Minor part, shifted right 9: fractional PIPA pulses x 2^14.        */
@@ -207,7 +253,10 @@ static agc_dp_t pipa_axis(agc_dp_t delv, int axis)
     agc_dp_t b     = agc_sp_mul(sp_neg(comp.pipabias[axis]), one_pipadt);
     agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT4 : BIT1;
     d              = das(d, agc_sp_mul(agc_dp_high(b), shift));
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return d;
 }
 
@@ -238,7 +287,10 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
     {
         agc_relint();
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -250,13 +302,19 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
  * x 2^14.                                                                */
 static agc_dp_t gcompsub(agc_dp_t g, agc_dp_t mpac, agc_sp_t coef)
 {
-    (void) AGC_ASSERT(coef >= AGC_SP_MIN && coef <= AGC_SP_MAX);
+    if (!AGC_ASSERT(coef >= AGC_SP_MIN && coef <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     agc_dp_t vbuf  = agc_sp_mul(coef, agc_dp_high(mpac)); /* gyro pls x 2^8 */
     vbuf           = das_low_of_mp(vbuf, agc_dp_low(mpac), coef);
     agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT9 : BIT12;
     g = das(g, agc_sp_mul(agc_dp_high(vbuf), shift)); /* HI(ADIA)(PIPA) */
     g = das_low_of_mp(g, agc_dp_low(vbuf), shift);    /* (ADIA)(PIPAI)  */
-    (void) AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX);
+    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return g;
 }
 
@@ -267,7 +325,10 @@ static void drftsub2(agc_dp_t g)
 {
     int hi  = agc_dp_high(g);
     int mag = (hi < 0) ? -hi : hi;
-    (void) AGC_ASSERT(mag <= AGC_SP_MAX);
+    if (!AGC_ASSERT(mag <= AGC_SP_MAX))
+    {
+        return;
+    }
     if (mag == 0)
     {
         return; /* CCS +0: commands less than 1 pulse */
@@ -277,19 +338,28 @@ static void drftsub2(agc_dp_t g)
     {
         gcompsw = (agc_sp_t) (masked - 1); /* TS GCOMPSW: positive        */
     }
-    (void) AGC_ASSERT(gcompsw >= AGC_SP_MIN);
+    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /* DRIFTSUB (ICP p.332): GCOMP[axis] += NBD * DELTAT where DELTAT is
  * 1/PIPADT (cs x 2^8); NBD arrives with the sign wanted.                 */
 static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
 {
-    (void) AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX);
+    if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     agc_dp_t p = agc_sp_mul(nbd, one_pipadt);     /* gyro pulses x 2^3       */
     g = das(g, agc_sp_mul(agc_dp_high(p), BIT4)); /* shift right 11        */
     g = das_low_of_mp(g, agc_dp_low(p), BIT4);
     drftsub2(g);
-    (void) AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX);
+    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return g;
 }
 
@@ -297,7 +367,10 @@ static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
  * terms for one gyro.  The ADOA terms are commented out in the AGC.      */
 static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return 0; /* no valid result */
+    }
     agc_dp_t nx = agc_dp_neg(delv.c[0]);
     agc_dp_t ny = agc_dp_neg(delv.c[1]);
     agc_dp_t nz = agc_dp_neg(delv.c[2]);
@@ -316,17 +389,26 @@ static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
         g = gcompsub(g, ny, comp.adsra[2]); /* -(ADSRAZ)(PIPAY)  */
         g = gcompsub(g, nz, comp.adia[2]);  /* -(ADIAZ)(PIPAZ)   */
     }
-    (void) AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX);
+    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return g;
 }
 
 /* Bias-drift sign per axis in IRIGCOMP and NBDONLY: -NBDX, -NBDY, +NBDZ. */
 static agc_sp_t nbd_signed(int axis)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t n = comp.nbd[axis];
     agc_sp_t r = (axis == 2) ? n : sp_neg(n);
-    (void) AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX);
+    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -345,13 +427,16 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
         g[axis] = irig_axis(g[axis], axis, delv);
         g[axis] = driftsub(g[axis], nbd_signed(axis));
     }
-    (void) gcomp_write(g); /* buffer id is valid (rule 7)       */
+    gcomp_write(g); /* buffer id is valid (rule 7)       */
     if (gcompsw <= 0)
     {
         return AGC_STATUS_OK; /* TCF IRIG1      */
     }
     agc_status_t st = agc_exec_novac(PRIO21, AGC_JOB_GYRO_COMMAND_PULSE);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -360,8 +445,12 @@ agc_status_t agc_imu_gcompzer(void)
 {
     agc_dp_t zero[3] = {0, 0, 0};
     gcompsw          = 0;
-    agc_status_t st  = gcomp_write(zero);
-    (void) AGC_ASSERT(gcompsw == 0);
+    gcomp_write(zero);
+    agc_status_t st = AGC_STATUS_OK;
+    if (!AGC_ASSERT(gcompsw == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -374,8 +463,14 @@ static agc_dp_t gyro_rescale(agc_dp_t g)
     agc_sp_t lo = agc_dp_high(agc_sp_mul(agc_dp_low(g), BIT8)); /* SR 7   */
     agc_dp_t r  = agc_dp_pack(0, lo);
     r = das(r, agc_sp_mul(agc_dp_high(g), BIT8)); /* add whole pulses   */
-    (void) AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX);
-    (void) AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX);
+    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -387,7 +482,10 @@ static agc_status_t one_gyro_pulse(void)
     if (st != AGC_STATUS_OK)
     {
         /* BUSY: sleeping until the gyros free up; ALARM: IMU caged.      */
-        (void) AGC_ASSERT(st == AGC_STATUS_BUSY || st == AGC_STATUS_ALARM);
+        if (!AGC_ASSERT(st == AGC_STATUS_BUSY || st == AGC_STATUS_ALARM))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         return (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
     }
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
@@ -416,7 +514,7 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
     { /* PIPAZ, Y, X        */
         g[axis] = gyro_rescale(g[axis]);
     }
-    (void) gcomp_write(g);
+    gcomp_write(g);
     return one_gyro_pulse();
 }
 
@@ -427,7 +525,10 @@ agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id == AGC_JOB_GYRO_COMMAND_RETRY);
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_GYRO_COMMAND_RETRY))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return one_gyro_pulse();
 }
 
@@ -454,7 +555,8 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
         agc_sp_t lo = agc_dp_low(agc_sp_mul(agc_dp_low(g[axis]), BIT8));
         g[axis]     = agc_dp_pack(agc_dp_high(g[axis]), lo);
     }
-    return gcomp_write(g);
+    gcomp_write(g);
+    return AGC_STATUS_OK;
 }
 
 /* ---- NBDONLY / FBIASSUB / LASTBIAS -------------------------------------- */
@@ -463,24 +565,36 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
  * twice and drops the overflow; CM uses CCS ... AD POSMAX).              */
 static agc_sp_t elapsed_cs(int now, int prev)
 {
-    (void) AGC_ASSERT(now >= -TIME1_MODULUS && now < TIME1_MODULUS);
+    if (!AGC_ASSERT(now >= -TIME1_MODULUS && now < TIME1_MODULUS))
+    {
+        return 0; /* no valid result */
+    }
     int dt = (now - prev) % TIME1_MODULUS;
     if (dt < 0)
     {
         dt += TIME1_MODULUS;
     }
-    (void) AGC_ASSERT(dt >= 0 && dt < TIME1_MODULUS);
+    if (!AGC_ASSERT(dt >= 0 && dt < TIME1_MODULUS))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) (dt & AGC_SP_MAX);
 }
 
 /* FBIASSUB (ICP p.336): GCOMP[axis] += NBD * DELTAT, DELTAT in cs x 2^19. */
 static agc_dp_t fbiassub(agc_dp_t g, agc_sp_t nbd, agc_dp_t deltat)
 {
-    (void) AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX);
+    if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     g = das(g, agc_sp_mul(nbd, agc_dp_high(deltat))); /* HI(NBD)(DELTAT) */
     g = das_low_of_mp(g, nbd, agc_dp_low(deltat));
     drftsub2(g); /* TCF DRFTSUB2            */
-    (void) AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX);
+    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return g;
 }
 
@@ -488,7 +602,10 @@ static agc_dp_t fbiassub(agc_dp_t g, agc_sp_t nbd, agc_dp_t deltat)
  * surface, the acceleration terms); 1/GYRO if any command > 2 pulses.    */
 static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(dt >= 0);
+    if (!AGC_ASSERT(dt >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_dp_t deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (shift right 5) */
     agc_dp_t g[3];
     if (gcomp_read(g) != AGC_STATUS_OK)
@@ -507,12 +624,15 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
          * the products are -NBDX dt, -NBDY dt, +NBDZ dt.                 */
         g[axis] = fbiassub(g[axis], nbd_signed(axis), deltat);
     }
-    (void) gcomp_write(g);
+    gcomp_write(g);
     if (gcompsw > 0)
     {
         return agc_job_gyro_command_pulse(ctx); /* TCF 1/GYRO              */
     }
-    (void) AGC_ASSERT(gcompsw == 0);
+    if (!AGC_ASSERT(gcompsw == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* ENDOFJOB                */
 }
 
@@ -534,7 +654,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
                    agc_flag_test(AGC_FLAG_SURFFLAG);
     if (surface)
     {
-        (void) agc_pfs_pipasr_noscale(); /* PIPASR +3: no scaling    */
+        agc_pfs_pipasr_noscale(); /* PIPASR +3: no scaling    */
     }
     int now    = (int) (agc_time_now_cs() & (TIME1_MODULUS - 1)); /* TIME1   */
     int prev   = one_pipadt;
@@ -551,7 +671,7 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_imu_pipuse1(); /* BANKCALL PIPUSE1         */
+    agc_imu_pipuse1(); /* BANKCALL PIPUSE1         */
     if (gcomp_bypassed())
     {
         return AGC_STATUS_OK;
@@ -562,6 +682,9 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
     one_pipadt = PRIO31_2SEC; /* 2 seconds, cs x 2^8      */
     /* PIPTIME +1 (LM) / PIPTIME1 +1 (CM): low word of the PIPA time.     */
     int now = agc_dp_low(agc_erase_piptime());
-    (void) AGC_ASSERT(now >= AGC_SP_MIN);
+    if (!AGC_ASSERT(now >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return nbd3(elapsed_cs(now, prev), surface, ctx);
 }

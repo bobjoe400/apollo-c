@@ -54,7 +54,10 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
     m.row[0]     = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
     agc_vec_t dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
     *v_new       = agc_vec_add(ip, dv, vatt);
-    (void) AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN);
+    if (!AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -67,7 +70,10 @@ static void tdv_moonflag(tdv_work_t *w)
         w->x2 = agc_flag_test(AGC_FLAG_CMOONFLG) ? 2 : 0;
     }
     rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
-    (void) AGC_ASSERT(w->x2 == 0 || w->x2 == 2);
+    if (!AGC_ASSERT(w->x2 == 0 || w->x2 == 2))
+    {
+        return;
+    }
 }
 
 /* P76 TARGET DELTA V (P76.agc p.512, label P76): UPFLAG TRACKFLG; LM:
@@ -91,7 +97,10 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
 /* V06N84 (DELVOV) flashing; ENTER ("TC -5") shows it again. */
 agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 84U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_TIG, AGC_JOB_TARGET_DELTA_V_DISPLAY);
 }
@@ -99,7 +108,10 @@ agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
 /* V06N33 (TIG) flashing; PROCEED -> the update. */
 agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_UPDATE, AGC_JOB_TARGET_DELTA_V_TIG);
 }
@@ -108,7 +120,10 @@ agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
  * INTSTALL sleep inside OTHPREC resumes this job from its start.       */
 agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_integ_out_t o;
@@ -122,7 +137,10 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
     tdv_work.x2   = o.x2;
     st = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt, rz_state()->delvov,
                                       &tdv_work.vnew);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_target_delta_v_integrate(ctx);
 }
 
@@ -130,7 +148,10 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
  * 0,2), TET = TIG, CLEAR INTYPFLG, TDEC1 = TETTHIS; INTEGRVS.          */
 agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     tdv_moonflag(&tdv_work);
@@ -160,7 +181,10 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
  * ENDP76.                                                              */
 agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
     if (st != AGC_STATUS_OK)
     {
@@ -176,11 +200,7 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
     ic->sv.rrect        = ic->out.ratt1;
     ic->sv.rcv          = ic->out.ratt1;
     ic->sv.tet          = ic->out.tat;
-    st                  = agc_integ_minirect(ic, ic->out.vatt1);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_integ_minirect(ic, ic->out.vatt1);
     agc_phase_change(4, TDV_PHASE_04024);
     agc_flag_set(AGC_FLAG_REINTFLG);
     st = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2) /* ATOPOTH */
@@ -201,7 +221,10 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
 /* ENDP76: MARKCTR = 0 (CM also VHFCNT = 0, MRKBUF2 = -1), GOTOPOOH. */
 agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_erase_set_trkmkcnt(0); /* MARKCTR       */
     if (rz_is_csm())
     {

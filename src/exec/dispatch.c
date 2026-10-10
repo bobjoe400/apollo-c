@@ -57,7 +57,10 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
             break;
         case AGC_JOB_NONE:
         case AGC_JOB_COUNT_PLACEHOLDER:
-            (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+            if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             st = AGC_STATUS_BAD_ARG;
             break;
         default:
@@ -70,7 +73,10 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 /* The task at the head of LST2 (or T5LOC / T6LOC) is called.          */
 agc_status_t agc_dispatch_task(agc_task_id_t task)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = AGC_STATUS_NOT_FOUND;
     switch (task)
     {
@@ -94,7 +100,10 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
             break;
         case AGC_TASK_NONE:
         case AGC_TASK_COUNT_PLACEHOLDER:
-            (void) AGC_ASSERT(task != AGC_TASK_NONE);
+            if (!AGC_ASSERT(task != AGC_TASK_NONE))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             st = AGC_STATUS_BAD_ARG;
             break;
         default:
@@ -109,7 +118,10 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
     bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_status_t st = AGC_STATUS_UNIMPLEMENTED;
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     switch (rupt)
     {
         case AGC_RUPT_T6: /* LM DOT6RUPT; CSM goes through T6LOC     */
@@ -138,6 +150,9 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
             st = AGC_STATUS_UNIMPLEMENTED;
             break;
     }
-    (void) AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND);
+    if (!AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

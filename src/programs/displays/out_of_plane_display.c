@@ -58,7 +58,10 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
     { /* BPL       */
         rz->rtheta = agc_dp_sub(ip, RZ_DPPOSMAX, rz->rtheta);
     }
-    (void) AGC_ASSERT(rz->rtheta >= 0);
+    if (!AGC_ASSERT(rz->rtheta >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -89,7 +92,10 @@ agc_status_t agc_job_out_of_plane_display(agc_job_ctx_t *ctx)
 /* V04N12 GOXDSPF (CM). */
 agc_status_t agc_job_out_of_plane_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOMARKF, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
                     AGC_JOB_OUT_OF_PLANE_START, AGC_JOB_OUT_OF_PLANE_VEHICLE);
 }
@@ -98,7 +104,10 @@ agc_status_t agc_job_out_of_plane_vehicle(agc_job_ctx_t *ctx)
  * for the first display), R36P3.                                       */
 agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (rz_is_csm())
     {
         oop_work.optiony = rz_option(2); /* LXCH OPTIONY   */
@@ -115,7 +124,10 @@ agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx)
  * compute, RECYCLE -> again.                                           */
 agc_status_t agc_job_out_of_plane_time(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 16U, AGC_JOB_RENDZ_ENDEXT,
                     AGC_JOB_OUT_OF_PLANE_COMPUTE, AGC_JOB_OUT_OF_PLANE_TIME);
 }
@@ -137,7 +149,10 @@ static rz_integ_kind_t oop_kind(bool passive)
  * (DEVIATION: with a zero DSPTEMX the present time is then read again). */
 agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();

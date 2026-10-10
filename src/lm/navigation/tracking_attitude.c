@@ -65,7 +65,8 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
     agc_vec_t    pointvsm = rr_state()->rrtarget;
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_set_pointvsm(pointvsm);
+        agc_imu_set_pointvsm(pointvsm);
+        st = AGC_STATUS_OK;
     }
     agc_inhint();
     uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(),
@@ -77,7 +78,8 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
     }
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        st = agc_erase_set_thetad(i, gimbal[i]); /* CPHI ..  */
+        agc_erase_set_thetad(i, gimbal[i]); /* CPHI ..  */
+        st = AGC_STATUS_OK;
     }
     return st;
 }
@@ -89,11 +91,7 @@ static agc_status_t ta_auto(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 {
     agc_cdutrig_t trig;
     agc_vec_t     v  = rr_state()->rrtarget;
-    agc_status_t  st = agc_guid_cdu_smnb(&trig, &v);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_guid_cdu_smnb(&trig, &v);
     if (agc_dp_sub(ip, v.c[2], TA_COS15DEG) >= 0)
     { /* R61LEM2  */
         agc_inhint();
@@ -104,11 +102,9 @@ static agc_status_t ta_auto(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         return ta_next();
     }
     agc_inhint(); /* R61C+L05 */
-    st = agc_lm_dap_zatteror();
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_lm_dap_setmindb(); /* reduce attitude error */
-    }
+    agc_lm_dap_zatteror();
+    agc_status_t st = AGC_STATUS_OK;
+    st = agc_lm_dap_setmindb(); /* reduce attitude error */
     agc_relint();
     if (st != AGC_STATUS_OK)
     {
@@ -188,6 +184,9 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
 /* R61C+L2 (task): R61C+L01 as a PRIO26 job.                             */
 agc_status_t agc_task_tracking_attitude_wait(void)
 {
-    (void) AGC_ASSERT(lmnav_state()->genret != AGC_JOB_NONE);
+    if (!AGC_ASSERT(lmnav_state()->genret != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_exec_findvac(TA_PRIO26, AGC_JOB_TRACKING_ATTITUDE_COMPUTE);
 }

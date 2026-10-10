@@ -62,7 +62,7 @@ agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as,
 agc_status_t align_stall_outcome(agc_imu_device_t dev);
 
 /* PHASCHNG with a type C code and a job restart point at priority prio. */
-agc_status_t align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio);
+void align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio);
 
 /* PLANET (planet.c): the line of sight of STARCODE at t, left in
  * agc_align_ram()->planet_los; the job continues as ret.                 */

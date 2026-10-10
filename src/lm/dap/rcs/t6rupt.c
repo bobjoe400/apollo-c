@@ -29,13 +29,19 @@
 agc_sp_t lm_dap_time6_value(void)
 {
     uint16_t raw = agc_rupt_time(6);
-    (void) AGC_ASSERT(raw <= LM_T6_NEGZERO);
+    if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
+    {
+        return 0; /* no valid result */
+    }
     if (raw <= LM_T6_POSMAX)
     {
         return (agc_sp_t) raw;
     }
     agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO);
-    (void) AGC_ASSERT(v <= 0);
+    if (!AGC_ASSERT(v <= 0))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
@@ -45,9 +51,8 @@ static agc_status_t set_time6(agc_sp_t v)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_rupt_set_time(6, (uint16_t) v);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_rupt_set_time(6, (uint16_t) v);
+    return AGC_STATUS_OK;
 }
 
 /* WRITEP / WRITEU / WRITEV (pp.1404-1405): P jets to channel 6; U or V
@@ -84,8 +89,10 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
 agc_status_t lm_dap_write_next(agc_sp_t index)
 {
     const lm_dap_t *d = lm_dap_state();
-    (void) AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U ||
-                      index == T6_IDX_V);
+    if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U || index == T6_IDX_V))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     uint16_t jets = (index == T6_IDX_P) ?
                         d->nextp :
                         ((index == T6_IDX_U) ? d->nextu : d->nextv);
@@ -100,7 +107,10 @@ agc_status_t lm_dap_jtlst(void)
     agc_sp_t  t     = d->t6furtha[0];
     agc_sp_t  idx   = d->t6furtha[1];
     agc_sp_t  time6 = lm_dap_time6_value();
-    (void) AGC_ASSERT(t > 0 && t <= LM_POSMAX);
+    if (!AGC_ASSERT(t > 0 && t <= LM_POSMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((int32_t) time6 - t > 0)
     { /* new first entry */
         d->t6furtha[0]  = d->t6next[0];
@@ -109,7 +119,8 @@ agc_status_t lm_dap_jtlst(void)
         d->t6next[1]    = d->nxt6adr;
         d->nxt6adr      = idx;
         agc_status_t st = set_time6(t);
-        agc_status_t so = agc_chan_or(013, T6_ENABLE); /* TURNON         */
+        agc_chan_or(013, T6_ENABLE); /* TURNON         */
+        agc_status_t so = AGC_STATUS_OK;
         return (st != AGC_STATUS_OK) ? st : so;
     }
     int32_t mid = (int32_t) time6 - t + d->t6next[0]; /* MIDORLST       */
@@ -122,7 +133,10 @@ agc_status_t lm_dap_jtlst(void)
         return AGC_STATUS_OK;
     }
     d->t6furtha[0] = lm_dap_sat(-mid); /* LASTCHG        */
-    (void) AGC_ASSERT(d->t6furtha[0] >= 0);
+    if (!AGC_ASSERT(d->t6furtha[0] >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -131,7 +145,8 @@ agc_status_t lm_dap_jtlst(void)
  * jets of the axis whose firing just ended.                              */
 static agc_status_t t6job(lm_dap_t *d)
 {
-    agc_status_t s13  = agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
+    agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
+    agc_status_t s13 = AGC_STATUS_OK;
     agc_sp_t     head = d->t6next[0];                    /* DXCH T6NEXT    */
     agc_sp_t     done = d->nxt6adr;                      /* LXCH NXT6ADR   */
     d->nxt6adr        = d->t6next[1];
@@ -147,14 +162,16 @@ static agc_status_t t6job(lm_dap_t *d)
     else
     {
         st              = set_time6(head); /* ENABLET6       */
-        agc_status_t so = agc_chan_or(013, T6_ENABLE);
-        (void) AGC_ASSERT(so == AGC_STATUS_OK);
+        agc_chan_or(013, T6_ENABLE);
         if ((int32_t) d->t6next[0] + T6_PRIO37 > LM_POSMAX)
         {
             d->t6next[0] = LM_POSMAX;
         }
     }
-    (void) AGC_ASSERT(s13 == AGC_STATUS_OK && st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(s13 == AGC_STATUS_OK && st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lm_dap_write_next(done); /* GOCH56         */
 }
 
@@ -183,8 +200,14 @@ agc_status_t agc_lm_dap_t6jobchk(void)
 agc_status_t agc_lm_dap_t6rupt(void)
 {
     agc_status_t st = agc_lm_dap_t6jobchk();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
-    (void) AGC_ASSERT(agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -200,15 +223,20 @@ void agc_lm_dap_time6_count(uint16_t counts)
     }
     uint16_t next =
         (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts);
-    agc_status_t st = agc_rupt_set_time(6, next);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT(next <= LM_T6_NEGZERO);
+    agc_rupt_set_time(6, next);
+    if (!AGC_ASSERT(next <= LM_T6_NEGZERO))
+    {
+        return;
+    }
 }
 
 /* TIME6 = -0: a T6RUPT is waiting.                                       */
 bool agc_lm_dap_t6_pending(void)
 {
     uint16_t raw = agc_rupt_time(6);
-    (void) AGC_ASSERT(raw <= LM_T6_NEGZERO);
+    if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
+    {
+        return false;
+    }
     return raw == LM_T6_NEGZERO;
 }

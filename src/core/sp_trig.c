@@ -14,16 +14,25 @@
 /* Wrap a 16-bit accumulator value like TS: corrected value, *ovf = +-1.    */
 static int32_t sp_ts(int32_t a16, int *ovf)
 {
-    (void) AGC_ASSERT(ovf != 0);
-    (void) AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE));
+    if (!AGC_ASSERT(ovf != 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_w_ts(a16, ovf);
 }
 
 /* ARG90: INDEX A / CS LIMITS -> +-POSMAX for the +-1 left in A.             */
 static agc_sp_t sp_arg90(int a)
 {
-    (void) AGC_ASSERT((a == 1) || (a == -1));
-    (void) AGC_ASSERT(AGC_K_POSMAX == AGC_W_POSMAX);
+    if (!AGC_ASSERT((a == 1) || (a == -1)))
+    {
+        return 0; /* no valid result */
+    }
+    _Static_assert(AGC_K_POSMAX == AGC_W_POSMAX, "AGC constant");
     return (agc_sp_t) ((a > 0) ? AGC_K_POSMAX : -AGC_K_POSMAX);
 }
 
@@ -35,9 +44,15 @@ static agc_sp_t sp_polley(int32_t x)
     agc_w2_t p;
     agc_w2_t two;
     int      o = 0;
-    (void) AGC_ASSERT(agc_w_ok(x));
+    if (!AGC_ASSERT(agc_w_ok(x)))
+    {
+        return 0; /* no valid result */
+    }
     sq = agc_w_mp(x, x).hi; /* MP TEMK; TS SQ   */
-    (void) AGC_ASSERT(sq >= 0);
+    if (!AGC_ASSERT(sq >= 0))
+    {
+        return 0; /* no valid result */
+    }
     a   = agc_w_mp(sq, AGC_K_C5_2).hi + AGC_K_C3_2; /* MP C5/2; AD C3/2 */
     a   = agc_w_mp(a, sq).hi + AGC_K_C1_2;          /* MP SQ; AD C1/2   */
     p   = agc_w_mp(a, x);                           /* MP TEMK          */
@@ -55,7 +70,10 @@ static agc_sp_t sp_sine(int32_t a16)
     int     o = 0;
     int32_t t = sp_ts(a16, &o); /* SPSIN: TS TEMK   */
     int32_t x;
-    (void) AGC_ASSERT(agc_w_ok(t));
+    if (!AGC_ASSERT(agc_w_ok(t)))
+    {
+        return 0; /* no valid result */
+    }
     if (o != 0)
     {           /* arg beyond +-pi  */
         t = -t; /* CS TEMK          */
@@ -68,7 +86,10 @@ static agc_sp_t sp_sine(int32_t a16)
     /* XCH TEMK; INDEX TEMK; AD LIMITS; COM; AD TEMK: x -> +-1.0 - x       */
     x = (o > 0) ? (x - AGC_K_POSMAX) : (x + AGC_K_POSMAX);
     x = -x + o;
-    (void) AGC_ASSERT((x >= -AGC_W_ONE) && (x <= AGC_W_ONE));
+    if (!AGC_ASSERT((x >= -AGC_W_ONE) && (x <= AGC_W_ONE)))
+    {
+        return 0; /* no valid result */
+    }
     x = sp_ts(x, &o); /* TS TEMK          */
     if (o != 0)
     {
@@ -80,15 +101,27 @@ static agc_sp_t sp_sine(int32_t a16)
 /* SPSIN (p.1207): sin(pi a), a scaled at pi; result scaled at 1.            */
 agc_sp_t agc_sp_sin(agc_sp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_SP_MIN);
-    (void) AGC_ASSERT(a <= AGC_SP_MAX);
+    if (!AGC_ASSERT(a >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return sp_sine((int32_t) a);
 }
 
 /* SPCOS (p.1207): AD HALF then SPSIN, i.e. cos(pi a) = sin(pi (a + 1/2)).  */
 agc_sp_t agc_sp_cos(agc_sp_t a)
 {
-    (void) AGC_ASSERT(a >= AGC_SP_MIN);
-    (void) AGC_ASSERT(a <= AGC_SP_MAX);
+    if (!AGC_ASSERT(a >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(a <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return sp_sine((int32_t) a + AGC_K_HALF);
 }

@@ -39,8 +39,14 @@ static int64_t pin_abs64(int64_t a)
 /* |f| x c (units 2^-56) >> 14 = the TP magnitude in MPAC..MPAC+2. */
 static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
 {
-    (void) AGC_ASSERT(f >= AGC_DP_MIN && f <= AGC_DP_MAX);
-    (void) AGC_ASSERT(c >= 0 && c < PIN_DP_LIM);
+    if (!AGC_ASSERT(f >= AGC_DP_MIN && f <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(c >= 0 && c < PIN_DP_LIM))
+    {
+        return 0; /* no valid result */
+    }
     return (pin_abs64(f) * c) >> AGC_SP_BITS;
 }
 
@@ -67,7 +73,10 @@ static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
  * else too large a load, alarm and recycle.                              */
 static agc_status_t pin_arthinsf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     int64_t tp = pin_dmp_tp(f, sfin);
     if ((tp >> AGC_DP_BITS) != 0)
     {
@@ -80,9 +89,15 @@ static agc_status_t pin_arthinsf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
 /* ARTIN1SF: scales MPAC, +1 by the SF constant and rounds MPAC+1 into MPAC. */
 static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     int64_t dp = pin_dmp_tp(f, sfin) >> AGC_SP_BITS;
-    (void) AGC_ASSERT(dp < PIN_DP_LIM);
+    if (!AGC_ASSERT(dp < PIN_DP_LIM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return pin_binround((f < 0) ? -dp : dp, out);
 }
 
@@ -112,8 +127,14 @@ static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift,
  * to 0, and -0 with underflow is -180 degrees.                           */
 static uint16_t pin_angle_word(bool neg, int64_t m)
 {
-    (void) AGC_ASSERT(pin_invariants());
-    (void) AGC_ASSERT(m >= 0 && m < 0100000);
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m >= 0 && m < 0100000))
+    {
+        return 0; /* no valid result */
+    }
     int64_t w = neg ? (0100000 - m) : m;
     return (uint16_t) (w & PIN_WORD);
 }
@@ -124,7 +145,10 @@ static uint16_t pin_angle_word(bool neg, int64_t m)
  * CDU angle (15 bits, two's complement) in MPAC.                        */
 static agc_status_t pin_deginsf(agc_dp_t f, bool cdu360, agc_dp_t *out)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(out != NULL))
     {
         return AGC_STATUS_BAD_ARG;
@@ -155,7 +179,10 @@ static agc_status_t pin_deginsf(agc_dp_t f, bool cdu360, agc_dp_t *out)
  * differ from this by one LSB.                                           */
 static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(out != NULL))
     {
         return AGC_STATUS_BAD_ARG;
@@ -194,7 +221,10 @@ static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info,
         case PIN_SF_DP4:
             return pin_dpinsf(f, info->sf_in, 3, out); /* DPINSF4 */
         default:
-            (void) AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT);
+            if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
+            {
+                return AGC_STATUS_BAD_ARG;
+            }
             return AGC_STATUS_BAD_ARG;
     }
 }
@@ -202,7 +232,10 @@ static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info,
 agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
                           bool *exited)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_scale_info_t info;
     agc_status_t     st = pin_comp_scale(k, &info);
     if (!AGC_ASSERT(out != NULL && exited != NULL) || st != AGC_STATUS_OK)
@@ -265,10 +298,16 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
  * MPAC+2 into MPAC+1); alarm if MPAC non-zero (G/ 16383).               */
 static bool pin_whole(agc_dp_t f, int64_t *n)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return false;
+    }
     int64_t w =
         (pin_abs64(f) * PIN_WHOLECON + (PIN_DP_LIM >> 1)) >> AGC_DP_BITS;
-    (void) AGC_ASSERT(n != NULL);
+    if (!AGC_ASSERT(n != NULL))
+    {
+        return false;
+    }
     *n = (f < 0) ? -w : w;
     return w < PIN_SP_LIM;
 }
@@ -278,7 +317,10 @@ static bool pin_whole(agc_dp_t f, int64_t *n)
  * erasable. G/ 745 hr, 39 min, 14.59 sec alarms (DAS overflow).         */
 agc_status_t pin_hmsin(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if ((s->decbrnch & PIN_DEC345) != PIN_DEC345)
     {                     /* ALL3DEC    */
@@ -301,7 +343,10 @@ agc_status_t pin_hmsin(void)
     {
         return pin_almcycle();
     }
-    (void) AGC_ASSERT(pin_comp_routine(0) == (uint8_t) PIN_SF_HMS);
+    if (!AGC_ASSERT(pin_comp_routine(0) == (uint8_t) PIN_SF_HMS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = pin_comp_write(0, (agc_dp_t) t); /* TPAGREE, DXCH */
     return (st == AGC_STATUS_OK) ? pin_loadlv() : st;
 }

@@ -18,8 +18,14 @@
 static agc_vec_t timerad_ecc_vector(agc_interp_t          *ip,
                                     const agc_conic_ctx_t *ctx, agc_dp_t *ecc)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ecc != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(ecc != NULL))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     agc_tp_t m =
         agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_32), ctx->r1a);
     m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx->p)); /* DMP P SQRT */
@@ -41,8 +47,14 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                             const agc_timerad_in_t *in, agc_dp_t ecc,
                             agc_dp_t *cosf, agc_dp_t *sinf)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL && in != NULL);
-    (void) AGC_ASSERT(cosf != NULL && sinf != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL && in != NULL))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(cosf != NULL && sinf != NULL))
+    {
+        return false;
+    }
     int            n = 0;
     const agc_dp_t rdn =
         agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(in->rdesired), &n));
@@ -74,8 +86,14 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                              agc_vec_t uecc, agc_dp_t cosf, agc_dp_t sinf)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(cosf >= AGC_DP_MIN && sinf >= AGC_DP_MIN);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(cosf >= AGC_DP_MIN && sinf >= AGC_DP_MIN))
+    {
+        return;
+    }
     agc_vec_t w =
         agc_vec_shl(ip, agc_vec_scale(ip, ctx->un, sinf), 1); /* VXSC UN VSL1 */
     w            = agc_vec_cross(ip, w, uecc); /* VXV 0D, PDVL   */
@@ -84,7 +102,7 @@ static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     agc_tp_t m   = agc_vec_dot_tp(ip, u2, ctx->ur1); /* DOT        */
     m = agc_conic_mddv_(ip, m, AGC_CONIC_DP1_4);     /* DDV DP1/4: limit */
     m = agc_conic_mshift_(ip, m, -1);                /* SR1            */
-    (void) agc_interp_test_ovf(ip);                  /* BOV +1         */
+    agc_interp_clear_ovf(ip);                  /* BOV +1         */
     ctx->csth   = agc_conic_mstore_(m);              /* CSTH 2^1       */
     agc_vec_t c = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, u2), 1);
     m = agc_conic_mshift_(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
@@ -99,8 +117,7 @@ static agc_status_t timerad_circular(agc_conic_ctx_t      *ctx,
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, true);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, true);
     agc_conic_time_out_fill_(ctx, out);
     out->solnsw = true;
     return agc_conic_abtconic_();
@@ -128,7 +145,7 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     {
         return st;
     }
-    (void) agc_interp_test_ovf(ip); /* SETPD 0, BOV +1 */
+    agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     ctx.vvec         = in->vvec;
     agc_dp_t sngamma = 0;
     st               = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma);
@@ -149,18 +166,15 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     agc_dp_t   cosf   = 0;
     agc_dp_t   sinf   = 0;
     const bool apsesw = timerad_anomaly(ip, &ctx, in, ecc, &cosf, &sinf);
-    st                = agc_conic_mirror_flag_(AGC_CONIC_FLAG_APSESW,
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_APSESW,
                                                apsesw); /* SET/CLEAR APSESW */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     timerad_termnvec(ip, &ctx, uecc, cosf, sinf);
     st = agc_conic_getx_(ip, &ctx); /* DLOAD P, CALL GETX */
     if (st != AGC_STATUS_OK)
     {
         return st;
     }
-    st =
-        agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* CLRGO SOLNSW */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* CLRGO SOLNSW */
     st = agc_conic_commnout_(ip, &ctx, in->rvsw, out); /* COMMNOUT       */
     out->apsesw = apsesw;
     out->solnsw = false;

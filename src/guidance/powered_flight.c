@@ -49,8 +49,14 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
 /* DMP / DMPSUB in basic code: TP product, high two words kept.          */
 static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
 {
-    (void) AGC_ASSERT(a >= AGC_DP_MIN && a <= AGC_DP_MAX);
-    (void) AGC_ASSERT(b >= AGC_DP_MIN && b <= AGC_DP_MAX);
+    if (!AGC_ASSERT(a >= AGC_DP_MIN && a <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(b >= AGC_DP_MIN && b <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_tp_to_dp(agc_dp_mul_tp(a, b));
 }
 
@@ -60,7 +66,10 @@ static agc_dp_t ddoubl(agc_dp_t a)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  r   = agc_dp_shl_raw(a, 1, &ovf);
-    (void) AGC_ASSERT(ovf == 0);
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -68,7 +77,10 @@ static agc_dp_t das(agc_dp_t a, agc_dp_t b)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  r   = agc_dp_add_raw(a, b, &ovf);
-    (void) AGC_ASSERT(ovf == 0);
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -93,11 +105,11 @@ agc_dp_t agc_guid_cdulogic(uint16_t cdu)
  * complement DP angles back in CDUSPOT and their half-sines and
  * half-cosines in SINCDU and COSCDU. The AGC loops X, Z, Y (index 4, 2, 0)
  * and leaves MPAC untouched; C locals make the latter automatic.          */
-agc_status_t agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
+void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(cdu_yzx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
@@ -108,25 +120,22 @@ agc_status_t agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
         t->coscdu[k]  = agc_dp_cos(&ip, t->cduspot[k]); /* COSINE, 2^1     */
         t->sincdu[k]  = agc_dp_sin(&ip, t->cduspot[k]); /* SINE +1, 2^1    */
     }
-    return AGC_STATUS_OK;
 }
 
 /* CDUTRIG / CDUTRIGS (CM p.1366, LM p.1260): as CD*TR*GS but from the
  * present CDU counters, loaded CDUY, CDUZ, CDUX into CDUSPOT. CDUTEMP is
  * not touched so it stays consistent with the last PIPA reading.          */
-agc_status_t agc_guid_cdutrig(agc_cdutrig_t *t)
+void agc_guid_cdutrig(agc_cdutrig_t *t)
 {
     if (!AGC_ASSERT(t != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     uint16_t cdu[3];
     cdu[AGC_TRIG_X] = agc_erase_cdux(); /* CA CDUX  TS CDUSPOT +4       */
     cdu[AGC_TRIG_Y] = agc_erase_cduy(); /* CA CDUY  TS CDUSPOT          */
     cdu[AGC_TRIG_Z] = agc_erase_cduz(); /* CA CDUZ  TS CDUSPOT +2       */
-    agc_status_t st = agc_guid_cdtrigs(t, cdu);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_guid_cdtrigs(t, cdu);
 }
 
 /* QUICTRIG (CM p.1367, LM p.1261): fast single-precision version of
@@ -136,11 +145,11 @@ agc_status_t agc_guid_cdutrig(agc_cdutrig_t *t)
  * keeps the 2's-complement angles (no CDULOGIC). Runs under INHINT in the
  * AGC because the DAP shares the temporaries; C locals need no inhibit,
  * but the INHINT/RELINT pair is kept for the shared SINCDU/COSCDU.        */
-agc_status_t agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
+void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(cdu_yzx != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_inhint();
     for (int k = 2; k >= 0; k--)
@@ -151,7 +160,6 @@ agc_status_t agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
         t->coscdu[k] = agc_sp_mul(agc_sp_cos(a), AGC_SP_HALF);
     }
     agc_relint();
-    return AGC_STATUS_OK;
 }
 
 /* One elementary rotation of AX*SR*T (CM pp.1370-1371, LM pp.1263-1264)
@@ -187,16 +195,16 @@ static void axis_step(const agc_cdutrig_t *t, bool nbsm, int d1, int d2,
  * A = -3 transforms SM to NB. The INDEXI table (4, 2, 0, 4) picks the
  * (DEX1, DEX2) pairs; DEXDEX counts 3, 2, 1 (or -3, -2, -1). Guaranteed
  * safe only for vectors of magnitude less than unity.                    */
-agc_status_t agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
+void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
                               agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(dir == AGC_AXISROT_NBSM || dir == AGC_AXISROT_SMNB))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};
@@ -206,46 +214,44 @@ agc_status_t agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
         int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
         if (!AGC_ASSERT(k >= 0 && k <= 2))
         {
-            return AGC_STATUS_BAD_ARG;
+            return;
         }
         axis_step(t, nbsm, indexi[k], indexi[k + 1], v);
     }
-    return AGC_STATUS_OK;
 }
 
 /* *SMNB* (CM p.1369, LM p.1263): SM -> NB with the present SINCDU/COSCDU. */
-agc_status_t agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
+void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return agc_guid_axisrot(t, AGC_AXISROT_SMNB, v); /* C*MM*N1: CS THREE */
+    agc_guid_axisrot(t, AGC_AXISROT_SMNB, v);
+    return; /* C*MM*N1: CS THREE */
 }
 
 /* *NBSM* (CM p.1369, LM p.1263): NB -> SM with the present SINCDU/COSCDU. */
-agc_status_t agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
+void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return agc_guid_axisrot(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
+    agc_guid_axisrot(t, AGC_AXISROT_NBSM, v);
+    return; /* C*MM*N3: CA THREE */
 }
 
 /* CDU*SMNB (CM p.1368, LM p.1262): CDUTRIGS then SM -> NB.                */
-agc_status_t agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
+void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    agc_status_t st = agc_guid_cdutrig(t);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
-    return agc_guid_smnb(t, v);
+    agc_guid_cdutrig(t);
+    agc_guid_smnb(t, v);
+    return;
 }
 
 /* CDU*NBSM (CM p.1368, LM p.1262): CDUTRIGS then NB -> SM.                */
@@ -255,29 +261,23 @@ agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_guid_cdutrig(t);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
-    return agc_guid_nbsm(t, v);
+    agc_guid_cdutrig(t);
+    agc_guid_nbsm(t, v);
+    return AGC_STATUS_OK;
 }
 
 /* TRG*SMNB (CM p.1368, LM p.1262): CD*TR*GS on caller's angles (Y Z X),
  * then SM -> NB.                                                          */
-agc_status_t agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
+void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
                                agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    agc_status_t st = agc_guid_cdtrigs(t, cdu_yzx);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
-    return agc_guid_smnb(t, v);
+    agc_guid_cdtrigs(t, cdu_yzx);
+    agc_guid_smnb(t, v);
+    return;
 }
 
 /* TRG*NBSM (CM p.1368, LM p.1262): CD*TR*GS then NB -> SM. (Comanche's
@@ -289,12 +289,9 @@ agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_guid_cdtrigs(t, cdu_yzx);
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
-    return agc_guid_nbsm(t, v);
+    agc_guid_cdtrigs(t, cdu_yzx);
+    agc_guid_nbsm(t, v);
+    return AGC_STATUS_OK;
 }
 
 /* SMCDURES (Comanche p.1372): CDU increments from SM increments.
@@ -350,11 +347,11 @@ static void fleshpot_rows02(const agc_cdutrig_t *t, agc_mat_t *m)
 /* FLESHPOT / CALCSMSC (Luminary pp.1265-1267): the NB->SM matrix (XNB or
  * XNBPIP, half-unit rows scaled 2^1) from SINCDU/COSCDU. Rows are the NB
  * axes in SM coordinates; row 1 = row 2 x row 0 (TCF VXV), doubled.       */
-agc_status_t agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
+void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(xnb != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     fleshpot_rows02(t, xnb);
     agc_interp_t ip;
@@ -364,6 +361,9 @@ agc_status_t agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
     {
         xnb->row[1].c[i] = ddoubl(y.c[i]); /* DDOUBL */
     }
-    (void) AGC_ASSERT(!agc_interp_test_ovf(&ip));
-    return AGC_STATUS_OK;
+    const bool ovf = agc_interp_test_ovf(&ip); /* VXV must not overflow */
+    if (!AGC_ASSERT(!ovf))
+    {
+        return;
+    }
 }

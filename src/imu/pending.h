@@ -37,7 +37,7 @@ agc_status_t agc_t4_setissw(void); /* SETISSW (IMUFAIL/ICDUFAIL)  */
 void agc_erase_set_optind(agc_sp_t v); /* OPTIND: -1 none, 0, 1       */
 
 /* ==== guid-powered: PIPASR +3 (read PIPAs into DELV without scaling) ===== */
-agc_status_t agc_pfs_pipasr_noscale(void);
+void agc_pfs_pipasr_noscale(void);
 
 /* ==== prog-rendz: GOTOV56 (terminate P20 via V56) ======================== */
 agc_status_t agc_rendz_goto_terminate_tracking(void);

@@ -85,7 +85,10 @@ static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w,
     { /* BON DMENFLG     */
         inc->zi[2] = agc_vec_zero();
     }
-    (void) AGC_ASSERT(agc_navaux_vec_ok(inc->zi[0]));
+    if (!AGC_ASSERT(agc_navaux_vec_ok(inc->zi[0])))
+    {
+        return;
+    }
 }
 
 /* VSQ in TP: sum of the exact component squares.  DEVIATION: the AGC's
@@ -142,7 +145,7 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
     {
         return;
     }
-    (void) agc_interp_test_ovf(ip); /* TLOAD BOV: clear  */
+    agc_interp_clear_ovf(ip); /* TLOAD BOV: clear  */
     agc_tp_t tempvar = inc->variance;
     int      k       = 0;              /* X2 = 0            */
     bool     ovf     = (tempvar == 0); /* BZE INCOR1C       */
@@ -216,8 +219,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
             normzi = mag;
         }
     }
-    int p = 0;
-    (void) agc_dp_norm(normzi, &p); /* NORM X1         */
+    int p = agc_dp_norm_count(normzi); /* NORM X1         */
     int shift = p - 2;              /* INCR,1 2        */
     for (int a = 0; a < 3; a++)
     {
@@ -251,7 +253,10 @@ static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w,
     { /* BON DMENFLG     */
         inc->omega[2] = agc_vec_zero();
     }
-    (void) AGC_ASSERT(agc_navaux_vec_ok(inc->omega[0]));
+    if (!AGC_ASSERT(agc_navaux_vec_ok(inc->omega[0])))
+    {
+        return;
+    }
 }
 
 /* INCOR3 (p. 1255): DELTAX[b] = OMEGA[b] (DELTAQ/A) shifted left -X1;
@@ -399,7 +404,7 @@ agc_status_t agc_incorp2_state(agc_interp_t *ip, const agc_incorp_t *inc,
         return AGC_STATUS_BAD_ARG;
     }
     agc_vec_t tx789 = agc_vec_add(ip, sv->x789, inc->deltax[2]); /* TX789 */
-    (void) agc_interp_test_ovf(ip); /* BOVB TCDANZIG  */
+    agc_interp_clear_ovf(ip); /* BOVB TCDANZIG  */
     int x2      = sv->moon ? 2 : 0; /* MOONTHIS       */
     sv->rectify = false;
     agc_vec_t dv =

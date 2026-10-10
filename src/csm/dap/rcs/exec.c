@@ -37,6 +37,9 @@ agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
     r->amgb4     = csm_dap_mp_hi(r->amgb8, r->capsi);
     r->amgb5     = agc_sp_sin(phi); /* SPSIN1               */
     r->amgb7     = (agc_sp_t) -csm_dap_mp_hi(r->amgb5, r->capsi);
-    (void) AGC_ASSERT(r->capsi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(r->capsi >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* ENDOFJOB             */
 }

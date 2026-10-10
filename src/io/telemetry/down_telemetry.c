@@ -84,16 +84,25 @@ static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
 /* A signed SP value as the 15-bit ones'-complement word the AGC sends.    */
 static uint16_t sp_word(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
-    (void) AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15);
+    if (!AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) w;
 }
 
 /* Word k (0 = high, 1 = low) of a DP value.                               */
 static uint16_t dp_word(agc_dp_t v, int k)
 {
-    (void) AGC_ASSERT(k == 0 || k == 1);
+    if (!AGC_ASSERT(k == 0 || k == 1))
+    {
+        return 0; /* no valid result */
+    }
     return sp_word((k == 0) ? agc_dp_high(v) : agc_dp_low(v));
 }
 
@@ -131,7 +140,10 @@ static uint16_t other_word(agc_dn_item_t item, int k)
  * CDUT CDUS PIPAX PIPAY PIPAZ.                                            */
 static uint16_t counter_word(int k)
 {
-    (void) AGC_ASSERT(k >= 0);
+    if (!AGC_ASSERT(k >= 0))
+    {
+        return 0; /* no valid result */
+    }
     switch (k)
     {
         case 0:
@@ -159,7 +171,10 @@ static uint16_t counter_word(int k)
 /* Items that are plain DP times or vectors from agc_state.h.             */
 static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
 {
-    (void) AGC_ASSERT(w != NULL && k >= 0);
+    if (!AGC_ASSERT(w != NULL && k >= 0))
+    {
+        return false;
+    }
     bool      vec = true;
     agc_vec_t v   = {{0, 0, 0}};
     agc_dp_t  t   = 0;
@@ -231,7 +246,10 @@ static uint16_t refsmmat_word(int k)
 /* Small multi-erasable items: the AGC sends consecutive registers.        */
 static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
 {
-    (void) AGC_ASSERT(w != NULL && k >= 0);
+    if (!AGC_ASSERT(w != NULL && k >= 0))
+    {
+        return false;
+    }
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
     switch ((int) item)
     {
@@ -304,7 +322,10 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
 /* LM DAP downlink words (agc_lm_dap.h).                                   */
 static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
 {
-    (void) AGC_ASSERT(w != NULL && k >= 0);
+    if (!AGC_ASSERT(w != NULL && k >= 0))
+    {
+        return false;
+    }
     if (agc_state_vehicle() != AGC_VEHICLE_LM)
     {
         return false;
@@ -370,30 +391,28 @@ static uint16_t item_word(agc_dn_item_t item, int k)
 /* DNTMEXIT: A to channel 34, L to channel 35.                             */
 static agc_status_t dntmexit(uint16_t a, uint16_t l)
 {
-    agc_status_t st =
-        agc_chan_write((int) AGC_CHAN_DNTM1, (uint16_t) (a & WORD15));
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return st;
-    }
-    st = agc_chan_write((int) AGC_CHAN_DNTM2, (uint16_t) (l & WORD15));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    agc_chan_write((int) AGC_CHAN_DNTM1, (uint16_t) (a & WORD15));
+    agc_chan_write((int) AGC_CHAN_DNTM2, (uint16_t) (l & WORD15));
+    return AGC_STATUS_OK;
 }
 
 /* WOZERO: word order code to zero (CHAN13 bit 7).                         */
 static void wozero(void)
 {
-    agc_status_t st =
-        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (WORD15 & ~BIT7));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    (void) AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN13) & BIT7) == 0u);
+    agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (WORD15 & ~BIT7));
+    if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN13) & BIT7) == 0u))
+    {
+        return;
+    }
 }
 
 /* SENDID: word order zero, then the ID word and LOWIDCOD.                 */
 static agc_status_t sendid(uint16_t id)
 {
-    (void) AGC_ASSERT(id <= WORD15);
+    if (!AGC_ASSERT(id <= WORD15))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     wozero();
     return dntmexit(id, (uint16_t) AGC_DN_LOWIDCOD);
 }
@@ -402,7 +421,10 @@ static agc_status_t sendid(uint16_t id)
 
 static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
 {
-    (void) AGC_ASSERT(out != NULL);
+    if (!AGC_ASSERT(out != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return sub ? agc_dnlist_lm_sublist(ref, out) :
@@ -425,7 +447,10 @@ static agc_dn_entry_t cursor_take(tm_cursor_t *c)
     c->next++;
     if (c->next >= c->list.count)
     {
-        (void) AGC_ASSERT(e.neg); /* -xDNADR ends every list   */
+        if (!AGC_ASSERT(e.neg)) /* -xDNADR ends every list   */
+        {
+            return e;
+        }
         c->active = false;
     }
     return e;
@@ -434,7 +459,10 @@ static agc_dn_entry_t cursor_take(tm_cursor_t *c)
 /* FETCH2WD: send the next two SP words of the nDNADR in progress.         */
 static agc_status_t fetch2wd(void)
 {
-    (void) AGC_ASSERT(dn_left > 0);
+    if (!AGC_ASSERT(dn_left > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     uint16_t a = item_word(dn_item, dn_offset);
     uint16_t l = item_word(dn_item, dn_offset + 1);
     dn_offset += 2; /* ADS DNECADR (74001)      */
@@ -454,7 +482,10 @@ static agc_status_t snapshot(const agc_dn_list_t *sub)
     for (int i = 0; i + 1 < sub->count; i++)
     {
         agc_dn_entry_t e = sub->entry[i];
-        (void) AGC_ASSERT(e.op == 1); /* 1DNADRs only (rule 3)     */
+        if (!AGC_ASSERT(e.op == 1)) /* 1DNADRs only (rule 3)     */
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         dntmbuff[2 * i]     = item_word((agc_dn_item_t) e.ref, e.offset);
         dntmbuff[2 * i + 1] = item_word((agc_dn_item_t) e.ref, e.offset + 1);
     }
@@ -482,7 +513,10 @@ static agc_status_t dodnptr(int ref)
     sublist.next     = 0;
     sublist.active   = true;
     agc_dn_entry_t e = cursor_take(&sublist);
-    (void) AGC_ASSERT(e.op != AGC_DN_OP_PTR); /* sublists do not nest     */
+    if (!AGC_ASSERT(e.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (e.op == AGC_DN_OP_CHAN)
     {
         return dntmexit(agc_chan_read((int) e.ref),
@@ -512,7 +546,10 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
     }
     if (e.op == AGC_DN_OP_CHAN)
     {                                   /* DODNCHAN: channels n,n+1 */
-        (void) AGC_ASSERT(e.ref != 0u); /* 'DNCHAN 0' cannot be used */
+        if (!AGC_ASSERT(e.ref != 0u)) /* 'DNCHAN 0' cannot be used */
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
         return dntmexit(agc_chan_read((int) e.ref),
                         agc_chan_read((int) e.ref + 1));
     }
@@ -561,7 +598,10 @@ static agc_status_t dnphase1(void)
     sublist.active = false;
     dn_left        = 0;
     dntmgoto       = TM_PHASE2;
-    (void) AGC_ASSERT(!sublist.active);
+    if (!AGC_ASSERT(!sublist.active))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return newlist();
 }
 
@@ -572,7 +612,10 @@ static agc_status_t dndump_id(void)
 {
     dntmgoto = TM_DUMP_LOC;
     bool lm  = (agc_state_vehicle() == AGC_VEHICLE_LM);
-    (void) AGC_ASSERT((dumploc & LOW8) == 0u);
+    if (!AGC_ASSERT((dumploc & LOW8) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     wozero();
     return dntmexit(lm ? ERASID_LM : ERASID_CSM, (uint16_t) AGC_DN_LOWIDCOD);
 }
@@ -590,7 +633,10 @@ static agc_status_t dndump(void)
     {
         return dnphase1(); /* resume the downlist      */
     }
-    (void) AGC_ASSERT((dumploc & PRIO34) <= PRIO34);
+    if (!AGC_ASSERT((dumploc & PRIO34) <= PRIO34))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return dndump_id();
 }
 
@@ -600,13 +646,11 @@ static agc_status_t dndump(void)
  * in DNTMGOTO.                                                             */
 agc_status_t agc_telem_downrupt(void)
 {
-    agc_status_t st =
-        agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
+    if (!AGC_ASSERT(dn_left >= 0 && dn_left <= 6))
     {
-        return st;
+        return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(dn_left >= 0 && dn_left <= 6);
     switch (dntmgoto)
     {
         case TM_PHASE1:
@@ -633,11 +677,7 @@ agc_status_t agc_telem_downrupt(void)
  * downlist; LM DUMPCNT = BIT12 (one pass); DNTMGOTO = DNPHASE1.          */
 agc_status_t agc_telem_fresh_start(int code)
 {
-    agc_status_t st = agc_telem_select_list(code);
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return st;
-    }
+    agc_telem_select_list(code);
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         agc_erase_set_agsword((uint16_t) code);
@@ -652,26 +692,31 @@ agc_status_t agc_telem_restart(void)
 {
     dntmgoto = TM_PHASE1;
     dn_left  = 0;
-    (void) AGC_ASSERT(dntmgoto == TM_PHASE1);
+    if (!AGC_ASSERT(dntmgoto == TM_PHASE1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 /* TS DNLSTCOD: select the list sent from the next NEWLIST on.            */
-agc_status_t agc_telem_select_list(int code)
+void agc_telem_select_list(int code)
 {
     int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT :
                                                       AGC_DNLIST_CSM_COUNT;
     if (!AGC_ASSERT(code >= 0 && code < n))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     dnlstcod = code;
-    return AGC_STATUS_OK;
 }
 
 int agc_telem_list_code(void)
 {
-    (void) AGC_ASSERT(dnlstcod >= 0 && dnlstcod < AGC_DNLIST_LM_COUNT);
+    if (!AGC_ASSERT(dnlstcod >= 0 && dnlstcod < AGC_DNLIST_LM_COUNT))
+    {
+        return 0; /* no valid result */
+    }
     return dnlstcod;
 }
 
@@ -680,7 +725,10 @@ agc_status_t agc_telem_start_dump(void)
 {
     dumploc  = 0;
     dntmgoto = TM_DUMP_ID;
-    (void) AGC_ASSERT(dumploc == 0u);
+    if (!AGC_ASSERT(dumploc == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -696,14 +744,20 @@ agc_status_t agc_telem_set_dumpcnt(uint16_t v)
 
 uint16_t agc_telem_dumpcnt(void)
 {
-    (void) AGC_ASSERT(dumpcnt <= WORD15);
+    if (!AGC_ASSERT(dumpcnt <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return dumpcnt;
 }
 
 /* AGSWORD (LM): the downlist to return to after AGS initialization.      */
 uint16_t agc_erase_agsword(void)
 {
-    (void) AGC_ASSERT(agsword < (uint16_t) AGC_DNLIST_LM_COUNT);
+    if (!AGC_ASSERT(agsword < (uint16_t) AGC_DNLIST_LM_COUNT))
+    {
+        return 0; /* no valid result */
+    }
     return agsword;
 }
 
@@ -733,7 +787,10 @@ static int sublist_words(int ref)
     for (int i = 0; i < sub.count; i++)
     {
         uint8_t op = sub.entry[i].op;
-        (void) AGC_ASSERT(op != AGC_DN_OP_PTR);
+        if (!AGC_ASSERT(op != AGC_DN_OP_PTR))
+        {
+            return 0;
+        }
         n += (op == AGC_DN_OP_CHAN) ? 1 : (int) op;
     }
     return n;

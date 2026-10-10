@@ -65,20 +65,29 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
     {
         return 0;
     }
-    (void) AGC_ASSERT(d->block[i] >= LM_NEGMAX);
+    if (!AGC_ASSERT(d->block[i] >= LM_NEGMAX))
+    {
+        return 0;
+    }
     return d->block[i];
 }
 
 /* CHKMINTJ (p.1467): computed times under 20 ms become zero.             */
 static agc_sp_t chkmintj(int32_t a)
 {
-    (void) AGC_ASSERT(a >= -4 * LM_POSMAX && a <= 4 * LM_POSMAX);
+    if (!AGC_ASSERT(a >= -4 * LM_POSMAX && a <= 4 * LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     if (a - TJ_TJMIN <= 0)
     {
         return 0; /* COASTTJ        */
     }
     agc_sp_t r = lm_dap_sat(a);
-    (void) AGC_ASSERT(r > 0);
+    if (!AGC_ASSERT(r > 0))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -88,16 +97,28 @@ static bool z123comp(const lm_dap_t *d, tjl_t *w)
 {
     w->rotsense = (agc_sp_t) -w->rotsense;
     w->ttoaxis  = lm_dap_mphi(d->edot, blk(d, LM_BK_1ANET1, w->adr2));
-    (void) AGC_ASSERT(w->rotsense != 0);
-    (void) AGC_ASSERT(w->ttoaxis >= LM_NEGMAX);
+    if (!AGC_ASSERT(w->rotsense != 0))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(w->ttoaxis >= LM_NEGMAX))
+    {
+        return false;
+    }
     return (int32_t) w->ttoaxis + TJ_MTJMAX > 0;
 }
 
 /* ZONE2,3 (p.1466): fire to the axis, or a minimum impulse when close.   */
 static agc_sp_t zone23(const lm_dap_t *d, const tjl_t *w)
 {
-    (void) AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0);
-    (void) AGC_ASSERT(d->edot >= 0);
+    if (!AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(d->edot >= 0))
+    {
+        return 0; /* no valid result */
+    }
     if ((int32_t) w->ttoaxis - d->block[TJ_ZONE3LIM] > 0)
     {
         return w->ttoaxis; /* ZONE2          */
@@ -118,14 +139,20 @@ static agc_sp_t zone1(const lm_dap_t *d, tjl_t *w)
     {
         return TJ_FULLTIME;
     }
-    (void) AGC_ASSERT(w->hh.hi >= LM_NEGMAX);
+    if (!AGC_ASSERT(w->hh.hi >= LM_NEGMAX))
+    {
+        return 0; /* no valid result */
+    }
     if ((int32_t) w->hh.hi - 2 <= 0)
     { /* FORMULA3       */
         agc_sp_t q3 = lm_dap_dv(w->hh, TJ_025AT2);
         return chkmintj((int32_t) q3 + w->ttoaxis);
     }
     agc_sp_t q = lm_dap_dv(w->hh, TJ_1AT2);
-    (void) AGC_ASSERT(q >= LM_NEGMAX);
+    if (!AGC_ASSERT(q >= LM_NEGMAX))
+    {
+        return 0; /* no valid result */
+    }
     return lm_dap_sat((int32_t) q + w->ttoaxis + TJ_0375AT4);
 }
 
@@ -160,7 +187,10 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
     lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
     w->hh          = lm_dap_das(w->hh, k);
     agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_sat((int32_t) w->ttoaxis + TJ_1AT4));
-    (void) AGC_ASSERT(q2 >= LM_NEGMAX);
+    if (!AGC_ASSERT(q2 >= LM_NEGMAX))
+    {
+        return 0; /* no valid result */
+    }
     return lm_dap_mphi(q2, TJ_BIT14);
 }
 
@@ -174,7 +204,10 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
     {
         return 0; /* COASTTJ        */
     }
-    (void) AGC_ASSERT(d->block[TJ_FLAT] >= 0);
+    if (!AGC_ASSERT(d->block[TJ_FLAT] >= 0))
+    {
+        return 0; /* no valid result */
+    }
     if (d->block[TJ_FLAT] > 0)
     { /* DRIFT/ON       */
         int32_t s = -2 * (int32_t) blk(d, LM_BK_FIREDB, w->adr1) + d->firefct;
@@ -188,7 +221,10 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
     {
         return 0;
     }
-    (void) AGC_ASSERT(w->rotsense != 0);
+    if (!AGC_ASSERT(w->rotsense != 0))
+    {
+        return 0; /* no valid result */
+    }
     return z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone1(d, w);
 }
 
@@ -213,7 +249,10 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
                                        blk(d, LM_BK_1ANET1, w->adr2)) +
                 blk(d, LM_BK_FIREDB, w->adr1) - d->e;
     d->firefct = lm_dap_sat(f); /* -E-.5EDOT^2/ACC-DB */
-    (void) AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4);
+    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
+    {
+        return 0; /* no valid result */
+    }
     if (d->firefct <= 0)
     { /* ZON1,2,3       */
         if (z123comp(d, w))
@@ -229,7 +268,10 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
     int32_t g =
         (int32_t) lm_dap_mphi(blk(d, LM_BK_1ACOAST, w->adr1), w->edotsq) +
         d->e + blk(d, LM_BK_COASTDB, w->adr1); /* ZONE4,5        */
-    (void) AGC_ASSERT(g >= -3 * LM_POSMAX && g <= 3 * LM_POSMAX);
+    if (!AGC_ASSERT(g >= -3 * LM_POSMAX && g <= 3 * LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     return (g <= 0) ? zone5(d, w, lm_dap_sat(g)) : zone4(d, w);
 }
 
@@ -242,8 +284,14 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
     }
     d->numbert = 4;         /* 2 jets U,V     */
     d->firefct = LM_NEGMAX; /* 4 jets P       */
-    (void) AGC_ASSERT(w->rotsense != 0);
-    (void) AGC_ASSERT(d->numbert == 4);
+    if (!AGC_ASSERT(w->rotsense != 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->numbert == 4))
+    {
+        return;
+    }
 }
 
 /* RUFLAW12 (p.1468): TJET = rate change / 2-jet acceleration, at 32 s,
@@ -257,7 +305,10 @@ static agc_sp_t ruflaw12(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
         return TJ_FULLTIME;
     }
     int32_t t = (x + TJ_BIT12) * 8; /* DAS A x 3      */
-    (void) AGC_ASSERT(t >= 0 && t <= LM_POSMAX);
+    if (!AGC_ASSERT(t >= 0 && t <= LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     return chkmintj(t);
 }
 
@@ -282,7 +333,10 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
     w->adr2 =
         (agc_sp_t) (w->adr2 +
                     ((w->rotsense > 0) ? 1 : ((w->rotsense < 0) ? -1 : 0)));
-    (void) AGC_ASSERT(d->edot <= 0);
+    if (!AGC_ASSERT(d->edot <= 0))
+    {
+        return 0; /* no valid result */
+    }
     return ruflaw12(d, w, (agc_sp_t) -d->edot);
 }
 
@@ -297,7 +351,10 @@ static agc_sp_t ruflaw3(lm_dap_t *d, tjl_t *w)
     d->edot       = t; /* XCH EDOT       */
     int32_t s =
         (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w->adr1)) + t;
-    (void) AGC_ASSERT(s >= -2 * LM_POSMAX && s <= 2 * LM_POSMAX);
+    if (!AGC_ASSERT(s >= -2 * LM_POSMAX && s <= 2 * LM_POSMAX))
+    {
+        return 0; /* no valid result */
+    }
     return (s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME;
 }
 
@@ -314,8 +371,14 @@ static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
     {
         d->numbert = 4;
     }
-    (void) AGC_ASSERT(axis >= -1 && axis <= 1);
-    (void) AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4);
+    if (!AGC_ASSERT(axis >= -1 && axis <= 1))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
+    {
+        return;
+    }
 }
 
 /* TJETLAW (pp.1461-1462): entry, half-plane reflection and law choice.   */

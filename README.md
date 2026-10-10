@@ -35,5 +35,5 @@ Per-module working notes: `docs/modules/<module>.md`.
     make            # builds libagc and all modules with -Werror -Wpedantic
     make test       # runs unit tests
     make check      # check_rules.py (Power of Ten), format-check, style
-    make format     # clang-format -i over src include tests (docs/STYLE.md)
+    make format     # uncrustify (uncrustify.cfg) over src include tests (docs/STYLE.md)
     make style      # tools/check_style.py report (NASA SEL-94-003 rules)

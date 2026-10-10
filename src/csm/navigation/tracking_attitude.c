@@ -70,7 +70,10 @@ agc_sp_t agc_erase_r61cntr(void)
 
 void agc_erase_set_r61cntr(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= -1 && v <= 3);
+    if (!AGC_ASSERT(v >= -1 && v <= 3))
+    {
+        return;
+    }
     ta.r61cntr = v;
 }
 
@@ -114,7 +117,8 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
         ta.savedcdu[i] = prftrk ? ta.praxis[i] : ta.cphix[i];
-        st             = agc_erase_set_thetad(i, ta.savedcdu[i]); /* CRSTOR   */
+        agc_erase_set_thetad(i, ta.savedcdu[i]); /* CRSTOR   */
+        st = AGC_STATUS_OK;
     }
     return st;
 }
@@ -137,7 +141,7 @@ static bool ta_gross(void)
             return true;
         }
     }
-    (void) AGC_ASSERT(TA_DEGREE10 > 0);
+    _Static_assert(TA_DEGREE10 > 0, "AGC constant");
     return false;
 }
 
@@ -162,17 +166,16 @@ static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu,
     agc_vec_t om       = agc_vec_shl(
               ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1);
     agc_cdutrig_t trig;
-    agc_status_t  st   = agc_guid_cdutrig(&trig);
+    agc_guid_cdutrig(&trig);
+    agc_status_t st = AGC_STATUS_OK;
     agc_vec_t     dcdu = agc_vec_zero();
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_guid_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH),
-                               &dcdu);
-    }
+    st = agc_guid_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH),
+                           &dcdu);
     *delcdu = rz_vshift(ip, dcdu, -17 - x1); /* VSL* 0-17D,1 */
     if (st == AGC_STATUS_OK)
     {
-        st = agc_guid_smnb(&trig, &om); /* *SMNB*   */
+        agc_guid_smnb(&trig, &om); /* *SMNB*   */
+        st = AGC_STATUS_OK;
     }
     agc_mat_t m;
     m.row[0]    = agc_vec_make(AGC_DP_HALF, 0, 0); /* MBDYTCTL */
@@ -196,7 +199,10 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
     }
     r->holdflag = -1;
     agc_relint();
-    (void) AGC_ASSERT(r->holdflag < 0);
+    if (!AGC_ASSERT(r->holdflag < 0))
+    {
+        return;
+    }
 }
 
 /* CRS61.1 (pp.592-596): desired CDUs now; a gross maneuver (MANUEXIT,
@@ -211,12 +217,8 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
     {
         return st;
     }
-    st = agc_chan_and(AGC_CHAN_DSALMOUT,
+    agc_chan_and(AGC_CHAN_DSALMOUT,
                       (uint16_t) (077777u & ~TA_UPACTY)); /* UPACTOFF */
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
     bool stick = agc_flag_test(AGC_FLAG_STIKFLAG);
     if (ta_gross())
     { /* STKTEST  */

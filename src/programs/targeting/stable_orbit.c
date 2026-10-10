@@ -44,7 +44,10 @@ static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb,
         return st;
     }
     st = agc_dsky_blanket(blank);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* TCF ENDOFJOB     */
 }
 
@@ -94,7 +97,10 @@ agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t  hn = rz_norm(h, &x1);                /* NORM X1        */
     agc_dp_t  d  = agc_dp_div(ip, rz->deltar, hn); /* DDV            */
     rz->delttime = rz_sl_star(ip, d, -7, x1);      /* SL* 0 -7,1     */
-    (void) AGC_ASSERT(hn >= 0);
+    if (!AGC_ASSERT(hn >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -113,28 +119,40 @@ static agc_status_t so_start(agc_job_ctx_t *ctx, bool this_active)
 /* P38 STABLE ORBIT RENDEZVOUS (p.526, label P38): AVFLAGA. */
 agc_status_t agc_job_stable_orbit_rendezvous(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return so_start(ctx, true);
 }
 
 /* P78 STABLE ORBIT RENDEZVOUS, OTHER VEHICLE ACTIVE (label P78). */
 agc_status_t agc_job_stable_orbit_rendezvous_other_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return so_start(ctx, false);
 }
 
 /* After V06N33 (TIG): the same display again (VNDSPLY RECYCLE). */
 agc_status_t agc_job_stable_orbit_tig(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_vnpooh(ctx, 6U, 33U, AGC_JOB_STABLE_ORBIT_CENTANG);
 }
 
 /* V06N55 (CENTANG) GOFLASHR, R1 R2 blanked. */
 agc_status_t agc_job_stable_orbit_centang(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return so_flashr(ctx, 6U, 55U, SO_BLANK_R1R2, AGC_JOB_STABLE_ORBIT_OPTION,
                      AGC_JOB_STABLE_ORBIT_CENTANG);
 }
@@ -142,7 +160,10 @@ agc_status_t agc_job_stable_orbit_centang(agc_job_ctx_t *ctx)
 /* OPTION1 = 5, OPTION2 = 1 (SOI); V04N06 GOFLASHR, R3 blanked. */
 agc_status_t agc_job_stable_orbit_option(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = rz_set_option(1, 5U);
     if (st == AGC_STATUS_OK)
     {
@@ -157,7 +178,10 @@ agc_status_t agc_job_stable_orbit_option(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_stable_orbit_option_display(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return so_flashr(ctx, 4U, 6U, SO_BLANK_R3,
                      AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN,
                      AGC_JOB_STABLE_ORBIT_OPTION_DISPLAY);
@@ -169,7 +193,10 @@ agc_status_t agc_job_stable_orbit_option_display(agc_job_ctx_t *ctx)
  * JUNCTN1. A PREC/TT sleep resumes this job from its start.           */
 agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -208,7 +235,10 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
 /* V06N57 (DELTAR) GOFLASHR, R2 R3 blanked. */
 agc_status_t agc_job_stable_orbit_deltar(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return so_flashr(ctx, 6U, 57U, SO_BLANK_R2R3,
                      AGC_JOB_STABLE_ORBIT_INTERCEPT_TIME,
                      AGC_JOB_STABLE_ORBIT_DELTAR);
@@ -217,7 +247,10 @@ agc_status_t agc_job_stable_orbit_deltar(agc_job_ctx_t *ctx)
 /* LM: DSPTEM1 = TINT; V06N34 (time of intercept), then JUNCTN1. */
 agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!rz_is_csm())
     {
         agc_status_t st =
@@ -234,13 +267,19 @@ agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
  * which returns to RECYCLE.                                            */
 agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, false);
     agc_status_t st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     rz_flag_put(AGC_FLAG_FINALFLG, false);
     return rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE);
 }
@@ -250,7 +289,10 @@ agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx)
  * DELTTIME; MAINRTNE. A sleep resumes this job from its start.        */
 agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -269,7 +311,10 @@ agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
             return st;
         }
         st = agc_rendz_stable_orbit_deltt(&ip, rz, o.ratt, o.vatt);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     else
     {
@@ -284,7 +329,10 @@ agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
  * P38: DELVTPI DELVTPF POSTTPI, V06N58, then DSPLY81.                  */
 agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t    *rz = rz_state();
@@ -326,7 +374,10 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
 /* DSPLY81: V06N81 (DELVLVC). */
 agc_status_t agc_job_stable_orbit_dv_lv(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return rz_vnpooh(ctx, 6U, 81U, AGC_JOB_STABLE_ORBIT_DV_ACCEPTED);
 }
 
@@ -334,7 +385,10 @@ agc_status_t agc_job_stable_orbit_dv_lv(agc_job_ctx_t *ctx)
  * (P39/79SW set) or RECYCLE.                                           */
 agc_status_t agc_job_stable_orbit_dv_accepted(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -370,21 +424,30 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
 /* P39 STABLE ORBIT MIDCOURSE (p.530, label P39): AVFLAGA, ATIGINC. */
 agc_status_t agc_job_stable_orbit_midcourse(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return som_start(ctx, true);
 }
 
 /* P79 STABLE ORBIT MIDCOURSE, OTHER VEHICLE ACTIVE (label P79). */
 agc_status_t agc_job_stable_orbit_midcourse_other_vehicle(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return som_start(ctx, false);
 }
 
 /* P39/P79B (p.530): TIG = now + KT. */
 agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -396,7 +459,10 @@ agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx)
  * (saved by P38). Resumed here after an INTSTALL sleep.                */
 agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -407,6 +473,9 @@ agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx)
         return st;
     }
     st = agc_rendz_los_and_normal(&ip, rz);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_stable_orbit_target(ctx);
 }

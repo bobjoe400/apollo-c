@@ -96,23 +96,35 @@ static agc_prio_t   attprio;     /* ATTPRIO: user's priority                */
 static bool is_lm(void)
 {
     agc_vehicle_t v = agc_state_vehicle();
-    (void) AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM);
+    if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
+    {
+        return false;
+    }
     return v == AGC_VEHICLE_LM;
 }
 
 /* Two's-complement CDU pattern as a signed count at 180 deg (CSM DAP).  */
 static agc_sp_t cdu_signed(uint16_t p)
 {
-    (void) AGC_ASSERT(p <= CDU_MASK);
+    if (!AGC_ASSERT(p <= CDU_MASK))
+    {
+        return 0; /* no valid result */
+    }
     int v = (p & 040000u) ? (int) p - 0100000 : (int) p;
-    (void) AGC_ASSERT(v >= -16384 && v <= 16383);
+    if (!AGC_ASSERT(v >= -16384 && v <= 16383))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) v;
 }
 
 /* "TS CDUXD" (CM): the high word of the DP desired angle.               */
 static void csm_set_cdud(int axis, uint16_t p)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return;
+    }
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
     if (!AGC_ASSERT(rcs != NULL))
     {
@@ -124,7 +136,10 @@ static void csm_set_cdud(int axis, uint16_t p)
 
 static void lm_set_cdud(int axis, uint16_t p)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3 && p <= CDU_MASK);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3 && p <= CDU_MASK))
+    {
+        return;
+    }
     if (axis == 0)
     {
         agc_erase_set_cduxd(p);
@@ -141,8 +156,14 @@ static void lm_set_cdud(int axis, uint16_t p)
 
 static void set_cdud(int axis, uint16_t p)
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
-    (void) AGC_ASSERT(p <= CDU_MASK);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(p <= CDU_MASK))
+    {
+        return;
+    }
     if (is_lm())
     {
         lm_set_cdud(axis, p);
@@ -155,26 +176,44 @@ static void set_cdud(int axis, uint16_t p)
 
 static uint16_t cphi(int axis) /* CPHI, CTHETA, CPSI       */
 {
-    (void) AGC_ASSERT(axis >= 0 && axis < 3);
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return 0; /* no valid result */
+    }
     uint16_t v = agc_erase_thetad(axis);
-    (void) AGC_ASSERT(v <= CDU_MASK);
+    if (!AGC_ASSERT(v <= CDU_MASK))
+    {
+        return 0; /* no valid result */
+    }
     return v;
 }
 
 static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
 {
-    (void) AGC_ASSERT(a <= CDU_MASK && b <= CDU_MASK);
+    if (!AGC_ASSERT(a <= CDU_MASK && b <= CDU_MASK))
+    {
+        return 0; /* no valid result */
+    }
     int d = (int) ((unsigned) (a - b) & CDU_MASK);
     d     = (d >= 040000) ? d - 0100000 : d;
-    (void) AGC_ASSERT(d >= -040000 && d < 040000);
+    if (!AGC_ASSERT(d >= -040000 && d < 040000))
+    {
+        return 0; /* no valid result */
+    }
     return d;
 }
 
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
-    (void) AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY);
+    if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_waitlist_call(dt, task);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -217,13 +256,19 @@ agc_sp_t agc_kalc_rateindx(void)
 
 bool agc_kalc_active(void)
 {
-    (void) AGC_ASSERT(attprio <= 037);
+    if (!AGC_ASSERT(attprio <= 037))
+    {
+        return false;
+    }
     return attcadr != AGC_JOB_NONE;
 }
 
 agc_imu_stall_result_t agc_kalc_outcome(void)
 {
-    (void) AGC_ASSERT(attprio <= 037);
+    if (!AGC_ASSERT(attprio <= 037))
+    {
+        return AGC_IMU_STALL_BAD;
+    }
     /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
      * the user (the AGC's "all returns are now made via GOODEND").       */
     return agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD;
@@ -236,38 +281,47 @@ agc_imu_stall_result_t agc_kalc_outcome(void)
 /* STOPYZ (CM): zero pitch and yaw increments, rates and biases.          */
 static void csm_stopyz(agc_csm_rcs_t *rcs)
 {
-    (void) AGC_ASSERT(rcs != NULL);
+    if (!AGC_ASSERT(rcs != NULL))
+    {
+        return;
+    }
     for (int i = 1; i < 3; i++)
     {
         rcs->delcdu[i] = 0;
         rcs->wbody[i]  = 0;
         rcs->bias[i]   = 0;
     }
-    (void) AGC_ASSERT(rcs->wbody[2] == 0);
+    if (!AGC_ASSERT(rcs->wbody[2] == 0))
+    {
+        return;
+    }
 }
 
 /* STOPRATE: CM zeroes roll then falls into STOPYZ and resets the high-
  * rate flag (RCSFLAGS bit 15); LM calls the DAP's STOPRATE.             */
-agc_status_t agc_kalc_stoprate(void)
+void agc_kalc_stoprate(void)
 {
     if (is_lm())
     {
-        return agc_lm_dap_stoprate();
+        agc_lm_dap_stoprate();
+        return;
     }
     agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
     agc_csm_dapcom_t *com = agc_csm_dap_com();
     if (!AGC_ASSERT(rcs != NULL && com != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     rcs->delcdu[0] = 0;
     rcs->wbody[0]  = 0;
     rcs->bias[0]   = 0;
-    (void) AGC_ASSERT(rcs->wbody[0] == 0);
+    if (!AGC_ASSERT(rcs->wbody[0] == 0))
+    {
+        return;
+    }
     com->rcsflags = (uint16_t) (com->rcsflags &
                                 (~(unsigned) AGC_CSM_RCSF_HIRATE & 077777u));
     csm_stopyz(rcs);
-    return AGC_STATUS_OK;
 }
 
 /* ZEROERROR (CM p.419): CDUXD.. = CDUX..; LM: ZATTEROR in the DAP.      */
@@ -275,25 +329,38 @@ agc_status_t agc_kalc_zeroerror(void)
 {
     if (is_lm())
     {
-        return agc_lm_dap_zatteror();
+        agc_lm_dap_zatteror();
+        return AGC_STATUS_OK;
     }
     set_cdud(0, agc_erase_cdux());
     set_cdud(1, agc_erase_cduy());
     set_cdud(2, agc_erase_cduz());
-    (void) AGC_ASSERT(agc_erase_cduz() <= CDU_MASK);
-    (void) AGC_ASSERT(agc_erase_cdux() <= CDU_MASK);
+    if (!AGC_ASSERT(agc_erase_cduz() <= CDU_MASK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(agc_erase_cdux() <= CDU_MASK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 /* LOADCDUD / LOADYZ (CM p.419): desired angles = CPHI, CTHETA, CPSI.    */
 static void loadcdud(int first_axis)
 {
-    (void) AGC_ASSERT(first_axis == 0 || first_axis == 1);
+    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1))
+    {
+        return;
+    }
     for (int i = first_axis; i < 3; i++)
     {
         set_cdud(i, cphi(i));
     }
-    (void) AGC_ASSERT(cphi(2) <= CDU_MASK);
+    if (!AGC_ASSERT(cphi(2) <= CDU_MASK))
+    {
+        return;
+    }
 }
 
 /* ======================================================================= */
@@ -306,15 +373,19 @@ static agc_status_t nogo(void)
 {
     if (is_lm())
     {
-        (void) agc_kalc_stoprate(); /* BANKCALL STOPRATE         */
+        agc_kalc_stoprate(); /* BANKCALL STOPRATE         */
         agc_inhint();
     }
     else
     {
         agc_inhint();
-        (void) agc_kalc_stoprate();
+        agc_kalc_stoprate();
     }
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = waitlist(2u, AGC_TASK_ENDMANU);
     agc_relint();
     return st; /* ENDOFJOB        */
@@ -326,7 +397,11 @@ static agc_status_t nogom2(void)
 {
     agc_inhint();
     agc_status_t st = agc_kalc_zeroerror();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_relint();
     return nogo();
 }
@@ -344,7 +419,7 @@ agc_status_t agc_task_manustop(void)
         csm_stopyz(rcs);      /* STOPYZ          */
         loadcdud(1);          /* LOADYZ          */
         set_cdud(0, cphi(0)); /* ENDROLL         */
-        (void) agc_kalc_stoprate();
+        agc_kalc_stoprate();
         return agc_task_endmanu();
     }
     agc_erase_set_delcduz(0); /* DELDCDU2        */
@@ -373,7 +448,10 @@ agc_status_t agc_task_endmanu(void)
         return AGC_STATUS_OK; /* nobody waiting  */
     }
     agc_status_t st = agc_exec_findvac(prio, job); /* SPVAC           */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -385,7 +463,10 @@ agc_status_t agc_task_endmanu(void)
  * LM DELDCDU (SP) = (BCDU - NCDU) x .1.  CDUXD = old BCDU, BCDU = NCDU. */
 static void incrdcdu_axis(int i)
 {
-    (void) AGC_ASSERT(i >= 0 && i < 3);
+    if (!AGC_ASSERT(i >= 0 && i < 3))
+    {
+        return;
+    }
     uint16_t old = bcdu[i];
     if (is_lm())
     {
@@ -428,10 +509,16 @@ static void incrdcdu_axis(int i)
 static uint16_t timechk(void)
 {
     long now = (long) agc_time_now_cs();
-    (void) AGC_ASSERT(now >= 0 && now < TIME_MOD);
+    if (!AGC_ASSERT(now >= 0 && now < TIME_MOD))
+    {
+        return 0; /* no valid result */
+    }
     long hi = ((long) tm >> 14) - (now >> 14);
     long lo = ((long) tm & 037777L) - (now & 037777L);
-    (void) AGC_ASSERT(lo > -040000L && lo < 040000L);
+    if (!AGC_ASSERT(lo > -040000L && lo < 040000L))
+    {
+        return 0; /* no valid result */
+    }
     if (hi > 0 || (hi == 0 && lo > 0))
     {
         return 0u; /* TC Q: continue  */
@@ -451,12 +538,20 @@ static uint16_t timechk(void)
 static agc_status_t contmanu(void)
 {
     agc_inhint();
-    (void) AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD);
+    if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     int diff = nextime - (int) agc_erase_time1();
     int dt   = (diff > 0) ? diff : (diff == 0) ? 1 : TIME1_MOD + diff;
     /* DEVIATION: NEXTIME == TIME1 gives the AGC a zero WAITLIST delay;
      * one centisecond is used instead.                                   */
-    (void) AGC_ASSERT(dt > 0 && dt < TIME1_MOD);
+    if (!AGC_ASSERT(dt > 0 && dt < TIME1_MOD))
+    {
+        agc_relint();
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = waitlist((uint16_t) dt, AGC_TASK_UPDTCALL);
     agc_relint();
     nextime = (nextime + ONESEC_CS) & (TIME1_MOD - 1); /* ADS NEXTIME    */
@@ -470,8 +565,14 @@ static agc_status_t incrdcdu_tmanuchk(void)
     { /* CAF TWO: Z, Y, X */
         incrdcdu_axis(i);
     }
-    (void) AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]);
-    (void) AGC_ASSERT(bcdu[2] == ncdu[2]);
+    if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(bcdu[2] == ncdu[2]))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (agc_interrupts_inhibited())
     {
         agc_relint();
@@ -497,7 +598,10 @@ static void manustat_cm(void)
     {
         return;
     }
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return;
+    }
     rcs->holdflag = -1;
     if (6 - agc_kalc_rateindx() <= 0)
     { /* HIGHGAIN         */
@@ -513,7 +617,10 @@ static void manustat_cm(void)
 /* RATEBIAS (LM p.367): OMEGAxD = BRATE, DELxEROR = -|w| w / 16 / 1JACCx. */
 static void manustat_lm(void)
 {
-    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return;
+    }
     for (int i = 2; i >= 0; i--)
     {
         agc_sp_t w    = agc_dp_high(brate.c[i]);
@@ -561,15 +668,26 @@ static void manustat(void)
         manustat_cm();
     }
     nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1);
-    (void) AGC_ASSERT(tm >= 0);
-    (void) AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD);
+    if (!AGC_ASSERT(tm >= 0))
+    {
+        agc_relint();
+        return;
+    }
+    if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
+    {
+        agc_relint();
+        return;
+    }
 }
 
 /* NEWANGL +1 (p.414 / p.365): MIS = MIS DEL; NCDU from MIS; on the first
  * pass (CALCMAN2 set) MANUSTAT; then the DAP increments and time check.  */
 static agc_status_t newangl1(agc_interp_t *ip)
 {
-    (void) AGC_ASSERT(ip != NULL);
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     mis = agc_mat_mul(ip, &mis, &del); /* MXM3             */
     agc_vec_t    ang;
     agc_dp_t     cmga;
@@ -603,7 +721,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
     agc_dp_t ar = lm ? arate_lm[idx] : arate_cm[idx];
     if (lm)
     {
-        (void) imu_vflag_set(IMU_VF_CALCMAN3); /* NOGIMLOC         */
+        imu_vflag_set(IMU_VF_CALCMAN3); /* NOGIMLOC         */
     }
     agc_status_t st = agc_kalc_delcomp(ip, cof, agc_dp_shr(ar, 4), &del);
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -646,7 +764,10 @@ static agc_status_t small_maneuver(void)
     {
         loadcdud(0);
     }
-    (void) AGC_ASSERT(!agc_interrupts_inhibited());
+    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return nogo();
 }
 
@@ -684,8 +805,7 @@ static agc_status_t kalcman3(void)
         default:
             break;
     }
-    (void) AGC_ASSERT(false);
-    return AGC_STATUS_BAD_ARG;
+    return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
 }
 
 agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
@@ -694,7 +814,10 @@ agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return kalcman3();
 }
 
@@ -710,21 +833,29 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
     }
     if (attcadr != AGC_JOB_NONE)
     {
-        (void) agc_poodoo(ALARM_TWO_USERS); /* two users        */
-        return AGC_STATUS_POODOO;
+        return agc_poodoo(ALARM_TWO_USERS); /* two users        */
     }
     attcadr = wake_as;   /* DXCH ATTCADR     */
     attprio = ctx->prio; /* ATTPRIO          */
-    (void) AGC_ASSERT(attprio <= 037);
+    if (!AGC_ASSERT(attprio <= 037))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return kalcman3(); /* POSTJUMP KALCMAN3 */
 }
 
 /* UPDTCALL (task, p.417 / p.368): FINDVAC NEWDELHI at PRIO26.           */
 agc_status_t agc_task_updtcall(void)
 {
-    (void) AGC_ASSERT(attcadr != AGC_JOB_NONE);
+    if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -750,7 +881,10 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
     {
         return nogom2();
     }
-    (void) AGC_ASSERT(attcadr != AGC_JOB_NONE);
+    if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     return newangl1(&ip); /* NEWANGL          */

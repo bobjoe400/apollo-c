@@ -60,7 +60,10 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
     {
         return mutable_tab[0];
     }
-    (void) AGC_ASSERT(mutable_tab[0] > mutable_tab[4]); /* MUE > MUM */
+    if (!AGC_ASSERT(mutable_tab[0] > mutable_tab[4])) /* MUE > MUM */
+    {
+        return mutable_tab[0];
+    }
     return (body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4];
 }
 
@@ -70,24 +73,42 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
 static agc_tp_t mpac_low(agc_tp_t m)
 {
     agc_tp_t lo = m - agc_tp_from_dp(agc_tp_to_dp(m));
-    (void) AGC_ASSERT(lo > -((agc_tp_t) 1 << AGC_SP_BITS));
-    (void) AGC_ASSERT(lo < ((agc_tp_t) 1 << AGC_SP_BITS));
+    if (!AGC_ASSERT(lo > -((agc_tp_t) 1 << AGC_SP_BITS)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(lo < ((agc_tp_t) 1 << AGC_SP_BITS)))
+    {
+        return 0; /* no valid result */
+    }
     return lo;
 }
 
 /* DLOAD X: MPAC,+1 = X, MPAC+2 = 0 (INTERPRETER.agc p. 1107). */
 agc_tp_t agc_conic_mload_(agc_dp_t d)
 {
-    (void) AGC_ASSERT(d >= AGC_DP_MIN);
-    (void) AGC_ASSERT(d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(d <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_tp_from_dp(d);
 }
 
 /* STORE X / PUSH in DP mode: MPAC,+1 only. */
 agc_dp_t agc_conic_mstore_(agc_tp_t m)
 {
-    (void) AGC_ASSERT(m >= AGC_TP_MIN);
-    (void) AGC_ASSERT(m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_tp_to_dp(m);
 }
 
@@ -99,7 +120,10 @@ agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_add(ip, agc_tp_to_dp(m), d)) + mpac_low(m);
 }
 
@@ -110,7 +134,10 @@ agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_sub(ip, agc_tp_to_dp(m), d)) + mpac_low(m);
 }
 
@@ -123,7 +150,10 @@ agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_sub(ip, d, agc_tp_to_dp(m))) + mpac_low(m);
 }
 
@@ -134,15 +164,24 @@ agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t)
     {
         return m;
     }
-    (void) AGC_ASSERT(t >= AGC_TP_MIN && t <= AGC_TP_MAX);
+    if (!AGC_ASSERT(t >= AGC_TP_MIN && t <= AGC_TP_MAX))
+    {
+        return m;
+    }
     return agc_tp_add(ip, m, t);
 }
 
 /* DMP X (DMPSUB p. 1136): MPAC,+1 times X, TP product in MPAC,+1,+2. */
 agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d)
 {
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
-    (void) AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_mul_tp(agc_tp_to_dp(m), d);
 }
 
@@ -153,7 +192,10 @@ agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_mul(ip, agc_tp_to_dp(m), d));
 }
 
@@ -161,8 +203,14 @@ agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
 agc_tp_t agc_conic_mdsq_(agc_tp_t m)
 {
     agc_dp_t d = agc_tp_to_dp(m);
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
-    (void) AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_sq_tp(d);
 }
 
@@ -173,7 +221,10 @@ agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_div(ip, agc_tp_to_dp(m), d));
 }
 
@@ -184,7 +235,10 @@ agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     {
         return m;
     }
-    (void) AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX);
+    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_dp_div(ip, d, agc_tp_to_dp(m)));
 }
 
@@ -199,7 +253,10 @@ agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m)
     {
         return m;
     }
-    (void) AGC_ASSERT(m > -((agc_tp_t) 1 << (AGC_TP_BITS - AGC_SP_BITS)));
+    if (!AGC_ASSERT(m > -((agc_tp_t) 1 << (AGC_TP_BITS - AGC_SP_BITS))))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_tp_sqrt(ip, m));
 }
 
@@ -242,7 +299,10 @@ agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m)
     {
         return m;
     }
-    (void) AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
+    {
+        return m;
+    }
     return agc_tp_from_dp(agc_tp_round(ip, m));
 }
 
@@ -266,24 +326,42 @@ agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift)
 /* ABS (p. 1183). */
 agc_tp_t agc_conic_mabs_(agc_tp_t m)
 {
-    (void) AGC_ASSERT(m >= AGC_TP_MIN);
-    (void) AGC_ASSERT(m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (m < 0) ? -m : m;
 }
 
 /* DCOMP (p. 1151): complement all three words. */
 agc_tp_t agc_conic_mneg_(agc_tp_t m)
 {
-    (void) AGC_ASSERT(m >= AGC_TP_MIN);
-    (void) AGC_ASSERT(m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return -m;
 }
 
 /* SIGN X (p. 1151) with a DP word at X: complement if X is negative. */
 agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s)
 {
-    (void) AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX);
-    (void) AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (s < 0) ? -m : m;
 }
 
@@ -291,24 +369,42 @@ agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s)
  * tag word (non-zero), so the following word never matters.             */
 agc_tp_t agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s)
 {
-    (void) AGC_ASSERT(s != 0);
-    (void) AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(s != 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m >= AGC_TP_MIN && m <= AGC_TP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (s < 0) ? -m : m;
 }
 
 /* BMN: branch if MPAC,+1 is negative (non-zero). */
 bool agc_conic_mbmn_(agc_tp_t m)
 {
-    (void) AGC_ASSERT(m >= AGC_TP_MIN);
-    (void) AGC_ASSERT(m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(m <= AGC_TP_MAX))
+    {
+        return false;
+    }
     return agc_tp_to_dp(m) < 0;
 }
 
 /* BZE: branch if MPAC,+1 is zero. */
 bool agc_conic_mbze_(agc_tp_t m)
 {
-    (void) AGC_ASSERT(m >= AGC_TP_MIN);
-    (void) AGC_ASSERT(m <= AGC_TP_MAX);
+    if (!AGC_ASSERT(m >= AGC_TP_MIN))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(m <= AGC_TP_MAX))
+    {
+        return false;
+    }
     return agc_tp_to_dp(m) == 0;
 }
 
@@ -331,13 +427,19 @@ agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef)
 /* SIGN with vector MPAC: complement the vector if the SP tag is negative. */
 agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s)
 {
-    (void) AGC_ASSERT(s != 0);
-    (void) AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX);
+    if (!AGC_ASSERT(s != 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
+    if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return (s < 0) ? agc_vec_neg(v) : v;
 }
 
 /* Mirror an output switch into its flagword (the AGC keeps it only there). */
-agc_status_t agc_conic_mirror_flag_(agc_conic_flag_t f, bool set)
+void agc_conic_mirror_flag_(agc_conic_flag_t f, bool set)
 {
     agc_flag_id_t id;
     switch (f)
@@ -355,21 +457,23 @@ agc_status_t agc_conic_mirror_flag_(agc_conic_flag_t f, bool set)
             id = AGC_FLAG_APSESW;
             break;
         default:
-            (void) AGC_ASSERT(false);
-            return AGC_STATUS_BAD_ARG;
+            return; /* unreachable: cannot happen */
     }
     if (!AGC_ASSERT(id != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
-    return set ? agc_flag_set(id) : agc_flag_clear(id);
+    agc_flag_put(id, set);
 }
 
 /* ABTCONIC (p. 1304): EXIT, TC POODOO, OCT 00607. */
 agc_status_t agc_conic_abtconic_(void)
 {
     agc_status_t st = agc_poodoo(AGC_CONIC_ALARM_ABTCONIC);
-    (void) AGC_ASSERT(AGC_CONIC_ALARM_ABTCONIC == 0607);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    _Static_assert(AGC_CONIC_ALARM_ABTCONIC == 0607, "AGC constant");
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_POODOO;
 }

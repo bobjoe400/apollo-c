@@ -18,12 +18,12 @@ void     agc_erase_set_thrust(
         agc_sp_t pulses); /* THRUST counter 055 (landing_pending.h) */
 
 /* ---- radar routines (prog-rendz, P20-P25.agc pp. ~2727-3070, 4487, 5115) -- */
-agc_status_t agc_radar_lralt(void); /* LRALT: one LR altitude sample   */
-agc_status_t
+void agc_radar_lralt(void); /* LRALT: one LR altitude sample   */
+void
 agc_radar_lrvel(agc_sp_t beam2); /* LRVEL: 5 velocity samples, A = 2*VSELECT */
 agc_status_t agc_radar_lrpos2(void);   /* LRPOS2: drive LR antenna to POS2 */
 agc_dp_t     agc_radar_samplsum(void); /* SAMPLSUM: last reading (DP)     */
-agc_status_t
+void
 agc_radar_landing_radar_lights(void); /* R12LITES: LR lamps              */
 agc_status_t agc_radar_powered_flight_designate(
     void); /* R29: RR designate (from SERVICER) */

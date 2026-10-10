@@ -26,7 +26,10 @@
 /* MONSAVE1 external monitor bit or DSPLOCK: display system blocked. */
 bool pin_dsp_blocked(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return false;
+    }
     const pin_state_t *s = pin_st();
     return (s->monsave1 & PIN_BIT14) != 0u || s->dsplock;
 }
@@ -43,13 +46,19 @@ bool pin_dsplist_full(void)
 
 pin_sleeper_t pin_take_sleeper(bool dsplist)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return (pin_sleeper_t){0}; /* no valid result */
+    }
     pin_state_t   *s     = pin_st();
     pin_sleeper_t *slot  = dsplist ? &s->dsplist : &s->cadrstor;
     pin_sleeper_t  taken = *slot;
     pin_sleeper_t  empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
     *slot                = empty; /* XCH with 0      */
-    (void) AGC_ASSERT(!slot->used);
+    if (!AGC_ASSERT(!slot->used))
+    {
+        return (pin_sleeper_t){0}; /* no valid result */
+    }
     return taken;
 }
 
@@ -63,7 +72,10 @@ void pin_kilmonon(void)
 /* RELDSP2: turn off key release light, DSPLOCK = +0. */
 static void pin_reldsp2(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return;
+    }
     agc_chan_and((int)AGC_CHAN_DSALMOUT,
                  (uint16_t)(PIN_WORD ^ PIN_CH11_KEYREL));
     pin_st()->dsplock = false;
@@ -72,7 +84,10 @@ static void pin_reldsp2(void)
 /* RELDSP: set DSPLOCK to +0, turn RELDSP light off, search DSPLIST. */
 agc_status_t pin_reldsp(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s  = pin_st();
     agc_status_t st = AGC_STATUS_OK;
     agc_inhint();
@@ -86,7 +101,10 @@ agc_status_t pin_reldsp(void)
     }
     agc_relint();
     pin_reldsp2();
-    (void) AGC_ASSERT(!s->dsplist.used);
+    if (!AGC_ASSERT(!s->dsplist.used))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -94,7 +112,10 @@ agc_status_t pin_reldsp(void)
  * off if DSPLIST is empty; leave it alone if DSPLIST is not empty.      */
 agc_status_t pin_reldsp1(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!s->dsplist.used)
     {
@@ -104,7 +125,10 @@ agc_status_t pin_reldsp1(void)
     {
         s->dsplock = false;
     }
-    (void) AGC_ASSERT(!s->dsplock);
+    if (!AGC_ASSERT(!s->dsplock))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -119,11 +143,13 @@ agc_status_t agc_dsky_releasedsp(void)
  * +0: only one job may wait in each.                                     */
 static agc_status_t pin_check_lists(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (pin_cadrstor_full() || pin_dsplist_full())
     {
-        (void) agc_poodoo(PIN_ALARM_DSPABORT); /* DSPABORT        */
-        return AGC_STATUS_POODOO;
+        return agc_poodoo(PIN_ALARM_DSPABORT); /* DSPABORT        */
     }
     return AGC_STATUS_OK;
 }
@@ -133,7 +159,10 @@ static agc_status_t pin_check_lists(void)
  * is not set, so ENDIDLE can be used with an NVSUB-initiated monitor.   */
 agc_status_t pin_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(t != AGC_JOB_NONE && p != AGC_JOB_NONE &&
                     e != AGC_JOB_NONE))
@@ -149,7 +178,8 @@ agc_status_t pin_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
     s->cadrstor.cont[0] = t;
     s->cadrstor.cont[1] = p;
     s->cadrstor.cont[2] = e;
-    return agc_exec_job_sleep(t); /* TC JOBSLEEP     */
+    agc_exec_job_sleep(t);
+    return AGC_STATUS_OK; /* TC JOBSLEEP     */
 }
 
 agc_status_t agc_dsky_endidle(const agc_job_ctx_t *ctx,
@@ -167,7 +197,10 @@ agc_status_t agc_dsky_endidle(const agc_job_ctx_t *ctx,
  * on; RELDSP wakes it at wake_as.                                        */
 agc_status_t pin_nvsubusy(agc_job_id_t wake_as)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
     {
@@ -181,13 +214,17 @@ agc_status_t pin_nvsubusy(agc_job_id_t wake_as)
     pin_reldspon();
     s->dsplist.used    = true;
     s->dsplist.cont[0] = wake_as;
-    st                 = agc_exec_job_sleep(wake_as); /* ENDNVBSY        */
+    agc_exec_job_sleep(wake_as); /* ENDNVBSY        */
+    st = AGC_STATUS_OK;
     return (st == AGC_STATUS_OK) ? AGC_STATUS_BUSY : st;
 }
 
 agc_status_t agc_dsky_nvsubusy(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
@@ -200,7 +237,10 @@ agc_status_t agc_dsky_nvsubusy(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
  * verb and noun of the response (MPAC, MPAC+1 in the AGC).              */
 agc_status_t pin_recaltst(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!s->cadrstor.used)
     {
@@ -225,7 +265,10 @@ agc_status_t pin_recaltst(void)
     s->resp_verb = s->verbreg;
     s->resp_noun = s->nounreg;
     agc_relint();
-    (void) AGC_ASSERT(which >= 0 && which <= 2);
+    if (!AGC_ASSERT(which >= 0 && which <= 2))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st2 = pin_reldsp(); /* RECAL3          */
     return (st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND) ? st2 : st;
 }
@@ -238,7 +281,10 @@ agc_status_t pin_recaltst(void)
  * against invisible flash) and REQRET zeroed.                            */
 static agc_status_t pin_blankdsp(int code)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     if (!AGC_ASSERT(code >= -4 && code <= -1))
     {
@@ -271,7 +317,10 @@ static agc_status_t pin_blankdsp(int code)
  * just shows the noun, otherwise both are shown and ENTPAS0 executes.  */
 static agc_status_t pin_nvsub1(uint16_t nvtemp)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s    = pin_st();
     uint8_t      noun = (uint8_t) (nvtemp & PIN_LOW7);
     uint8_t      verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7);
@@ -327,8 +376,14 @@ agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options)
 
 uint16_t agc_dsky_vn(uint8_t verb, uint8_t noun)
 {
-    (void) AGC_ASSERT(verb <= 99u);
-    (void) AGC_ASSERT(noun <= 99u);
+    if (!AGC_ASSERT(verb <= 99u))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(noun <= 99u))
+    {
+        return 0; /* no valid result */
+    }
     return (uint16_t) (((uint16_t) (verb & PIN_LOW7) << 7) | (noun & PIN_LOW7));
 }
 
@@ -368,7 +423,10 @@ agc_status_t agc_dsky_nvmonopt(uint8_t verb, uint8_t noun, uint16_t options)
 /* NVSUB with a negative NVTEMP: BLANKDSP. */
 agc_status_t agc_dsky_nvsub_blank(int code)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(code >= -4 && code <= -1))
     {
         return AGC_STATUS_BAD_ARG;
@@ -405,7 +463,10 @@ agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb,
  * DSPCOUNT. BUSY (return to 1+ calling loc) if the display is blocked. */
 agc_status_t pin_blanksub(uint16_t code)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
     pin_state_t         *s       = pin_st();
     uint16_t             nvtemp  = (uint16_t) (code & 7u); /* MASK SEVEN      */
@@ -426,14 +487,23 @@ agc_status_t pin_blanksub(uint16_t code)
     }
     s->dspcount     = save; /* restore DSPCOUNT to state it had */
     s->dspcount_neg = save_neg;
-    (void) AGC_ASSERT(nvtemp <= 7u);
+    if (!AGC_ASSERT(nvtemp <= 7u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 agc_status_t agc_dsky_blanksub(uint16_t code)
 {
-    (void) AGC_ASSERT(pin_invariants());
-    (void) AGC_ASSERT(code <= PIN_WORD);
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(code <= PIN_WORD))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return pin_blanksub(code);
 }
 
@@ -442,12 +512,18 @@ agc_status_t agc_dsky_blanksub(uint16_t code)
 /* JAMTERM / JAMPROC: V34 / V33 by program; leave ENTER set for ENTPAS0. */
 static agc_status_t pin_jam(pin_loadstat_t ls)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     pin_state_t *s = pin_st();
     s->reqret      = PIN_REQ_PASS0; /* REQRET = 34 / 33 (positive)    */
     s->reqret_neg  = false;
     pin_block_dspcount(PIN_VD1);
-    (void) AGC_ASSERT(ls == PIN_LS_TERMINATE || ls == PIN_LS_PROCEED);
+    if (!AGC_ASSERT(ls == PIN_LS_TERMINATE || ls == PIN_LS_PROCEED))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return pin_vbproc_common(ls);
 }
 
@@ -463,7 +539,10 @@ agc_status_t agc_dsky_jamproc(void)
 
 agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(ctx != NULL))
     {
         return AGC_STATUS_BAD_ARG;
@@ -475,10 +554,16 @@ agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx)
 /* DSPMM: display MODREG in the program lights through job DSPMMJB. */
 agc_status_t agc_dsky_dspmm(void)
 {
-    (void) AGC_ASSERT(pin_invariants());
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_inhint();
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_DSPMMJB);
     agc_relint();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }

@@ -69,7 +69,10 @@ agc_status_t agc_rendezvous_parameter_display_compdisp(
     { /* BPL       */
         rz->rtheta = agc_dp_sub(ip, RZ_DPPOSMAX, rz->rtheta);
     }
-    (void) AGC_ASSERT(rz->range >= 0);
+    if (!AGC_ASSERT(rz->range >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -120,11 +123,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
     {
         return rz_endext(); /* YES, DIE  */
     }
-    st = agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
-    if (st != AGC_STATUS_OK)
-    {
-        return st;
-    }
+    agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
     return rz_continue(AGC_JOB_RENDEZVOUS_PARAMS_UPDATE);
 }
 
@@ -149,7 +148,10 @@ static agc_dp_t rpd_getrvn(agc_rendz_t *rz)
     rz->rone   = agc_erase_rn();
     rz->vone   = agc_erase_vn();
     agc_dp_t t = agc_erase_piptime();
-    (void) AGC_ASSERT(t >= 0);
+    if (!AGC_ASSERT(t >= 0))
+    {
+        return 0; /* no valid result */
+    }
     return t;
 }
 
@@ -354,7 +356,10 @@ agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
 /* CM DSPDELAY: bit 12 clear -> DELAYJOB 1 s again; else DISPN5X. */
 agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if ((agc_erase_extvbact() & RPD_EXTVBACT_BIT12) == 0U)
     {
         return rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT);
@@ -377,7 +382,10 @@ agc_status_t agc_task_rendezvous_params_wait(void)
  * RECYCLE -> again.                                                    */
 agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     uint8_t noun = 54U;
     if (rz_is_csm() && !rz_vflag_test(RZ_VF_RENDZ_DISPLAY))
     {
@@ -391,7 +399,10 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
 /* V83CALL: the first pass (CM STATEXTP, LM V83CALL). */
 agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
@@ -401,7 +412,10 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
 /* V83 / REV83: every later pass (CM HAVEBASE, LM REV83). */
 agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();

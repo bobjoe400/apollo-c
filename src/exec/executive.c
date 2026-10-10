@@ -94,8 +94,14 @@ int agc_exec_core_sets(void)
     {
         n = AGC_EXEC_CORE_SETS_LM;
     }
-    (void) AGC_ASSERT(n <= AGC_EXEC_MAX_JOBS);
-    (void) AGC_ASSERT(n > 0);
+    if (!AGC_ASSERT(n <= AGC_EXEC_MAX_JOBS))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(n > 0))
+    {
+        return 0; /* no valid result */
+    }
     return n;
 }
 
@@ -133,18 +139,22 @@ static void activity_light(bool on)
     /* CAF TWO / WOR DSALMOUT (NUDIRECT, NUCHANG2) and CS TWO / WAND
      * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2.        */
     agc_status_t st;
-    (void) AGC_ASSERT(AGC_CH011_COMPACT == 000002);
+    _Static_assert(AGC_CH011_COMPACT == 000002, "AGC constant");
     if (on)
     {
-        st = agc_chan_or(AGC_CHAN_DSALMOUT, (uint16_t) AGC_CH011_COMPACT);
+        agc_chan_or(AGC_CHAN_DSALMOUT, (uint16_t) AGC_CH011_COMPACT);
     }
     else
     {
-        st = agc_chan_and(
+        agc_chan_and(
             AGC_CHAN_DSALMOUT,
             (uint16_t) (AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT));
+        st = AGC_STATUS_OK;
     }
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
 }
 
 /* STARTSB2 (FRESH_START_AND_RESTART, C p.191 / L p.221): make all core
@@ -167,14 +177,26 @@ void exec_clear_tables(void)
     locctr     = -1;
     yielded    = false;
     generation = (uint16_t) (generation + 1U);
-    (void) AGC_ASSERT(core[0].state == AGC_CORE_FREE);
-    (void) AGC_ASSERT(!vac_used[0]);
+    if (!AGC_ASSERT(core[0].state == AGC_CORE_FREE))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(!vac_used[0]))
+    {
+        return;
+    }
 }
 
 uint16_t exec_restart_generation(void)
 {
-    (void) AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE);
-    (void) AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS);
+    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
+    {
+        return 0; /* no valid result */
+    }
     return generation;
 }
 
@@ -188,7 +210,10 @@ int exec_running_job_prio(void)
     {
         return -1;
     }
-    (void) AGC_ASSERT(core[0].prio <= EXEC_PRIO_MAX);
+    if (!AGC_ASSERT(core[0].prio <= EXEC_PRIO_MAX))
+    {
+        return -1;
+    }
     return (int) core[0].prio;
 }
 
@@ -196,7 +221,10 @@ agc_status_t agc_exec_init(void)
 {
     exec_clear_tables();
     activity_light(false);
-    (void) AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE);
+    if (!AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (!AGC_ASSERT(agc_exec_core_sets() <= AGC_EXEC_MAX_JOBS))
     {
         return AGC_STATUS_BAD_ARG;
@@ -229,7 +257,10 @@ static void setloc_compare(int i)
  * change pending it is compared as in SETLOC. +0 is a CCS hole.        */
 static agc_status_t spectest(void)
 {
-    (void) AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE);
+    if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         newjob = 0; /* +0 SHOWS ACTIVE JOB ALREADY SET */
@@ -356,7 +387,10 @@ static void chanjob(int k)
     core[0]        = core[k];
     core[k]        = tmp;
     newjob         = 0;
-    (void) AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE);
+    if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
+    {
+        return;
+    }
 }
 
 /* EJSCAN / EJ1 / EJ2 (C pp.1218-1219 / L pp.1113-1115): find the core set
@@ -380,7 +414,10 @@ static int ejscan(int32_t floor)
             best = i;
         }
     }
-    (void) AGC_ASSERT(best < n);
+    if (!AGC_ASSERT(best < n))
+    {
+        return -1;
+    }
     return best;
 }
 
@@ -388,7 +425,10 @@ static int ejscan(int32_t floor)
 static void ejscan_change(void)
 {
     int best = ejscan(0);
-    (void) AGC_ASSERT(best != 0);
+    if (!AGC_ASSERT(best != 0))
+    {
+        return;
+    }
     if (best < 0)
     {
         newjob = EXEC_NEWJOB_IDLE; /* DUMMYJOB: NEWJOB = -0 */
@@ -398,7 +438,10 @@ static void ejscan_change(void)
     {
         chanjob(best); /* NEWJOB, CHANJOB -2   */
     }
-    (void) AGC_ASSERT(newjob <= 0);
+    if (!AGC_ASSERT(newjob <= 0))
+    {
+        return;
+    }
 }
 
 /* ENDOFJOB / ENDJOB1 (C pp.1210,1218 / L pp.1105,1113): release core set
@@ -422,19 +465,18 @@ static void end_of_job(void)
 /* JOBSLEEP (C p.1210 / L p.1105): the running job goes dormant; it will
  * continue as `wake_as` when JOBWAKE names that id. The EJSCAN that the
  * AGC does at once (JOBSLP1) happens when the job body returns.        */
-agc_status_t agc_exec_job_sleep(agc_job_id_t wake_as)
+void agc_exec_job_sleep(agc_job_id_t wake_as)
 {
     if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
-        return AGC_STATUS_BAD_ARG; /* not called from a job */
+        return; /* not called from a job */
     }
     core[0].loc   = wake_as;           /* TS LOC              */
     core[0].state = AGC_CORE_SLEEPING; /* CS PRIORITY         */
-    return AGC_STATUS_OK;
 }
 
 /* JOBWAKE / JOBWAKE2-4 / WAKETEST (C pp.1210,1216 / L pp.1105,1111): find
@@ -476,8 +518,23 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
         }
     }
     agc_relint();
-    (void) AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0);
+    if (!AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
+}
+
+/* JOBWAKE2 (C p.1216 / L p.1111): "CS ONE / TS LOCCTR -- EXIT IF SLEEPING
+ * JOB NOT FOUND". For callers to whom a job that already went is no
+ * error; any other failure (CCSHOLE) is a programming error.            */
+void agc_exec_job_wake_if_asleep(agc_job_id_t job)
+{
+    const agc_status_t st = agc_exec_job_wake(job);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
+    {
+        return;
+    }
 }
 
 /* PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
@@ -501,7 +558,10 @@ void agc_exec_prio_change(agc_prio_t new_prio)
     int best     = ejscan(prio_word(0));
     newjob       = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
-    (void) AGC_ASSERT(newjob >= 0);
+    if (!AGC_ASSERT(newjob >= 0))
+    {
+        return;
+    }
 }
 
 /* CHANG1 / CHANG2 (C p.1208 / L p.1103): the running job offers the
@@ -524,7 +584,10 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
 /* What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.     */
 static void after_job(void)
 {
-    (void) AGC_ASSERT(!in_job);
+    if (!AGC_ASSERT(!in_job))
+    {
+        return;
+    }
     if (core[0].state == AGC_CORE_SLEEPING)
     {
         ejscan_change(); /* JOBSLP1 -> EJSCAN   */
@@ -540,7 +603,10 @@ static void after_job(void)
     {
         end_of_job(); /* ENDOFJOB            */
     }
-    (void) AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE);
+    if (!AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE))
+    {
+        return;
+    }
 }
 
 /* DUMMYJOB / ADVAN / NUCHANG2 / NUDIRECT (C p.1220 / L p.1116): run the
@@ -581,7 +647,10 @@ agc_status_t agc_exec_run_one(void)
         /* BAILOUT / POODOO / ABORT in the job: WHIMPER -> ENEMA. The
          * job's core set is wiped by STARTSB2, so no ENDOFJOB.        */
         agc_status_t rs = agc_exec_service_restart();
-        (void) AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT);
+        if (!AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT))
+        {
+            return AGC_STATUS_BAD_ARG;
+        }
     }
     else if (gen == generation)
     {
@@ -596,8 +665,14 @@ agc_status_t agc_exec_run_one(void)
 
 bool exec_in_job(void)
 {
-    (void) AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE);
-    (void) AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS);
+    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
+    {
+        return false;
+    }
     return in_job;
 }
 
@@ -607,8 +682,10 @@ agc_job_id_t exec_running_job_loc(void)
     {
         return AGC_JOB_NONE;
     }
-    (void) AGC_ASSERT(core[0].state != AGC_CORE_FREE ||
-                      core[0].loc == AGC_JOB_NONE);
+    if (!AGC_ASSERT(core[0].state != AGC_CORE_FREE || core[0].loc == AGC_JOB_NONE))
+    {
+        return AGC_JOB_NONE;
+    }
     return (core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc;
 }
 
@@ -620,21 +697,36 @@ agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id == AGC_JOB_ENDOFJOB);
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_ENDOFJOB))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
 bool agc_exec_idle(void)
 {
-    (void) AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE);
-    (void) AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS);
+    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
+    {
+        return false;
+    }
     return newjob == EXEC_NEWJOB_IDLE;
 }
 
 int agc_exec_newjob(void)
 {
-    (void) AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE);
-    (void) AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS);
+    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
+    {
+        return 0; /* no valid result */
+    }
     return newjob;
 }
 

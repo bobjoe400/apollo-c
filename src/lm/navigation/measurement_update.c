@@ -65,14 +65,20 @@ static mu_state_t mu;
 /* ---- shifts with an index register (count = addr - C(X)) ----------- */
 static agc_dp_t mu_srr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
-    (void) AGC_ASSERT(count >= -40 && count <= 40);
+    if (!AGC_ASSERT(count >= -40 && count <= 40))
+    {
+        return 0; /* no valid result */
+    }
     return (count >= 0) ? agc_dp_shr_round(a, count) :
                           agc_dp_shl_round(ip, a, -count);
 }
 
 static agc_dp_t mu_slr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
-    (void) AGC_ASSERT(count >= -40 && count <= 40);
+    if (!AGC_ASSERT(count >= -40 && count <= 40))
+    {
+        return 0; /* no valid result */
+    }
     return (count >= 0) ? agc_dp_shl_round(ip, a, count) :
                           agc_dp_shr_round(a, -count);
 }
@@ -80,7 +86,10 @@ static agc_dp_t mu_slr_star(agc_interp_t *ip, agc_dp_t a, int count)
 /* SR* on the TP MPAC: right by count (left when negative).             */
 static agc_tp_t mu_tp_sr(agc_interp_t *ip, agc_tp_t v, int count)
 {
-    (void) AGC_ASSERT(count >= -60 && count <= 60);
+    if (!AGC_ASSERT(count >= -60 && count <= 60))
+    {
+        return 0; /* no valid result */
+    }
     return agc_tp_shift(ip, v, -count);
 }
 
@@ -89,7 +98,10 @@ static agc_tp_t mu_tp_sr(agc_interp_t *ip, agc_tp_t v, int count)
 static agc_vec_t mu_sign(agc_vec_t b, bool comp_if_csm)
 {
     bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG);
-    (void) AGC_ASSERT(b.c[0] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(b.c[0] >= AGC_DP_MIN))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     return (csm == comp_if_csm) ? agc_vec_neg(b) : b;
 }
 
@@ -144,8 +156,7 @@ static agc_status_t mu_integrate(agc_interp_t *ip, agc_job_id_t resume)
         return st;
     }
     rz_flag_put(AGC_FLAG_VINTFLAG, !csm); /* the other vehicle first */
-    agc_status_t sf = agc_integ_setiflgs();
-    (void) AGC_ASSERT(sf == AGC_STATUS_OK);
+    agc_integ_setiflgs();
     st = mu_intgrcal(ip);
     if (st == AGC_STATUS_OK)
     {
@@ -192,8 +203,7 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
     { /* INITWMX6 */
         mu_wlinit();
         rz_flag_put(AGC_FLAG_VINTFLAG, true);
-        agc_status_t sf = agc_integ_setiflgs();
-        (void) AGC_ASSERT(sf == AGC_STATUS_OK);
+        agc_integ_setiflgs();
         return mu_intgrcal(ip);
     }
     rz_flag_put(AGC_FLAG_D6OR9FLG, false);
@@ -307,10 +317,8 @@ static agc_status_t mu_rate(agc_interp_t *ip)
     b0 = rz_vshift(ip, mu_sign(b0, false), 2 + mu.x2); /* VSR* 0-2,2 */
     mu.inc.bvector[0] = b0;
     mu.inc.bvector[2] = agc_vec_zero();
-    int s0            = 0;
-    int s1            = 0;
-    (void) rz_norm(agc_vec_abval(ip, b0), &s0);                /* 20D      */
-    (void) rz_norm(agc_vec_abval(ip, mu.inc.bvector[1]), &s1); /* 22D      */
+    int s0            = rz_norm_xreg(agc_vec_abval(ip, b0)); /* 20D      */
+    int s1 = rz_norm_xreg(agc_vec_abval(ip, mu.inc.bvector[1])); /* 22D   */
     int x1            = (s1 - s0 < 0) ? s0 : s1;               /* VOK1/VOK2 */
     mu.inc.bvector[0] = rz_vshift(ip, b0, -x1);                /* VSL* 0,1 */
     mu.inc.bvector[1] = rz_vshift(ip, mu.inc.bvector[1], -x1);
@@ -335,7 +343,8 @@ static agc_status_t mu_mxmymz(agc_interp_t *ip)
     agc_status_t   st     = agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
     for (int i = 1; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        st = agc_guid_nbsm(&trig, &ax[i]); /* *NBSM* */
+        agc_guid_nbsm(&trig, &ax[i]); /* *NBSM* */
+        st = AGC_STATUS_OK;
     }
     mu.mx = agc_vec_shl(ip, agc_vec_mat(ip, ax[0], &refsmmat), 1);
     mu.my = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);
@@ -448,8 +457,7 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             return mu_trunnion(ip);
         case MU_END:
         default:
-            (void) AGC_ASSERT(false);
-            return AGC_STATUS_BAD_ARG;
+            return AGC_STATUS_BAD_ARG; /* unreachable: cannot happen */
     }
 }
 
@@ -497,8 +505,7 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
         rz_phase(2, 04022);
         mu.step = mu_next(mu.step);
     }
-    (void) AGC_ASSERT(false);
-    return AGC_STATUS_NO_CONVERGE;
+    return AGC_STATUS_NO_CONVERGE; /* step bound exhausted */
 }
 
 /* ASTOK after the crew accepted the noun 49 display (R22LEM7): INCORP2

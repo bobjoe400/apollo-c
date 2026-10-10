@@ -98,7 +98,10 @@ agc_status_t csm_rcs_ratefilt(void)
         r->adot[i]   = csm_dap_das(r->adot[i], agc_sp_mul(d, gain2[g]));
         r->adot[i] = csm_dap_das(r->adot[i], agc_sp_mul(r->kmj[i], r->dft[i]));
     }
-    (void) AGC_ASSERT(g < GAIN_N);
+    if (!AGC_ASSERT(g < GAIN_N))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -124,7 +127,10 @@ static agc_status_t rcs_delrho(agc_dp_t deltemp[AGC_CSM_AXES])
     deltemp[2] = agc_sp_mul(r->amgb7, dx[1]);
     deltemp[1] = csm_dap_das(deltemp[1], agc_sp_mul(dx[2], r->amgb5));
     deltemp[2] = csm_dap_das(deltemp[2], agc_sp_mul(r->amgb8, dx[2]));
-    (void) AGC_ASSERT(r->rho[2] <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(r->rho[2] <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -142,10 +148,17 @@ agc_status_t csm_rcs_kmatrix(void)
     else
     {
         /* NOVAC returns after scheduling; a 1202 is raised by the exec.  */
-        (void) agc_exec_novac(CSM_DAP_PRIO34, AGC_JOB_AMBGUPDT);
+        agc_status_t sw = agc_exec_novac(CSM_DAP_PRIO34, AGC_JOB_AMBGUPDT);
+        if (sw != AGC_STATUS_OK)
+        {
+            return sw;
+        }
         r->attsec = NINE;
     }
-    (void) AGC_ASSERT((r->attsec >= 0) && (r->attsec <= NINE));
+    if (!AGC_ASSERT((r->attsec >= 0) && (r->attsec <= NINE)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = AGC_STATUS_OK;
     if (r->holdflag < 0)
     { /* HOLDFLAG +0,-0,+: bypass auto cmds */
@@ -163,14 +176,20 @@ agc_status_t csm_rcs_kmatrix(void)
 static agc_status_t rcs_dcduincr(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    (void) AGC_ASSERT(r->holdflag < 0);
+    if (!AGC_ASSERT(r->holdflag < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
         agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]);
         r->thetad[i]   = csm_dap_sp_word(agc_dp_high(kmpac));
         r->cdud[i]     = kmpac;
     }
-    (void) AGC_ASSERT(r->thetad[0] <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(r->thetad[0] <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -195,7 +214,10 @@ static agc_status_t rcs_dacndls(void)
     {
         c->ak[i] = (agc_sp_t) -r->error[i]; /* DCS ERRORX; DXCH AK    */
     }
-    (void) AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u);
+    if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* end phase 1            */
 }
 
@@ -222,6 +244,9 @@ static agc_status_t rcs_fdaitotl(void)
     t          = csm_dap_msu(ref[2], agc_erase_cduz());
     c->ak[1]   = csm_dap_ads(c->ak[1], csm_dap_mp_hi(t, r->amgb5));
     c->ak[2]   = csm_dap_ads(c->ak[2], csm_dap_mp_hi(t, r->amgb8));
-    (void) AGC_ASSERT(c->ak[2] >= AGC_SP_MIN);
+    if (!AGC_ASSERT(c->ak[2] >= AGC_SP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK; /* end phase 1 of RCS DAP */
 }

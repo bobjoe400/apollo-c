@@ -50,10 +50,16 @@ typedef enum tvcd_axis
 /* RLIMTEST (p. 964): zero a CDU difference over 2.33 deg per sample.     */
 static agc_sp_t tvcd_rlimtest(agc_sp_t d)
 {
-    (void) AGC_ASSERT(d >= AGC_SP_MIN);
+    if (!AGC_ASSERT(d >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t q = csm_dap_mp_hi(d, RECIP_RTLIM);
     agc_sp_t r = (q != 0) ? (agc_sp_t) 0 : d;
-    (void) AGC_ASSERT((r == 0) || (r == d));
+    if (!AGC_ASSERT((r == 0) || (r == d)))
+    {
+        return 0; /* no valid result */
+    }
     return r;
 }
 
@@ -68,8 +74,14 @@ static void tvcd_pcdudots(void)
     t->pcduypst      = y;
     t->mcduzdot      = tvcd_rlimtest(csm_dap_msu(t->pcduzpst, z));
     t->pcduzpst      = z;
-    (void) AGC_ASSERT(t->pcduypst == y);
-    (void) AGC_ASSERT(t->pcduzpst == z);
+    if (!AGC_ASSERT(t->pcduypst == y))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(t->pcduzpst == z))
+    {
+        return;
+    }
 }
 
 /* Body-axis pitch rate OMEGAYB (PINTEGRL, p. 964) or yaw rate OMEGAZB
@@ -88,8 +100,14 @@ static agc_dp_t tvcd_body_rate(tvcd_axis_t ax)
     agc_sp_t             k    = agc_dp_high(csm_dap_ddoubl(agc_sp_mul(a, b)));
     agc_dp_t             w    = csm_dap_ddoubl(agc_sp_mul(k, t->mcduydot));
     w = csm_dap_das(w, csm_dap_ddoubl(agc_sp_mul((agc_sp_t) -t->mcduzdot, c)));
-    (void) AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
-    (void) AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX));
+    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return w;
 }
 
@@ -103,8 +121,14 @@ static void tvcd_errorlim(void)
         agc_sp_t lim = (hi > 0) ? ERRLIM : (agc_sp_t) -ERRLIM;
         t->errbtmp   = agc_dp_pack(lim, agc_dp_low(t->errbtmp));
     }
-    (void) AGC_ASSERT(agc_dp_high(t->errbtmp) <= ERRLIM);
-    (void) AGC_ASSERT(agc_dp_high(t->errbtmp) >= -ERRLIM);
+    if (!AGC_ASSERT(agc_dp_high(t->errbtmp) <= ERRLIM))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(agc_dp_high(t->errbtmp) >= -ERRLIM))
+    {
+        return;
+    }
 }
 
 /* ACTLIM (p. 970): the command is rounded for the limit test (DOUBLE of
@@ -125,8 +149,14 @@ static void tvcd_actlim(void)
         agc_sp_t lim = (hi > 0) ? ACTSAT : (agc_sp_t) -ACTSAT; /* CCS CMDTMP */
         t->cmdtmp    = agc_dp_pack(lim, lo);
     }
-    (void) AGC_ASSERT(agc_dp_high(t->cmdtmp) <= ACTSAT);
-    (void) AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT);
+    if (!AGC_ASSERT(agc_dp_high(t->cmdtmp) <= ACTSAT))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT))
+    {
+        return;
+    }
 }
 
 /* One cascade output (1DAPCAS .. 3DAPCAS, pp. 970-971): DAPn = N x input
@@ -141,7 +171,10 @@ static agc_dp_t tvcd_cascade_out(agc_dp_t in, agc_sp_t n, int k)
     }
     agc_dp_t out = csm_dap_das(csm_dap_smallmp(in, n), t->tmp[k]);
     t->tmp[k]    = 0;
-    (void) AGC_ASSERT(t->tmp[k] == 0);
+    if (!AGC_ASSERT(t->tmp[k] == 0))
+    {
+        return 0;
+    }
     return out;
 }
 
@@ -164,8 +197,14 @@ static void tvcd_fwdfltr(void)
     }
     agc_dp_t c = csm_dap_smallmp(agc_dp_neg(t->dap3), t->vark);
     t->cmdtmp  = csm_dap_ddoubl(csm_dap_ddoubl(c));
-    (void) AGC_ASSERT(t->vark >= 0);
-    (void) AGC_ASSERT(t->delbrtmp == 0);
+    if (!AGC_ASSERT(t->vark >= 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(t->delbrtmp == 0))
+    {
+        return;
+    }
 }
 
 /* One cascade's storage for the next pass (PRECOMP, 2CASFLTR, 3CASFLTR,
@@ -186,7 +225,10 @@ static void tvcd_cascade_pre(agc_dp_t in, agc_dp_t out, int j, int k)
     t->tmp[k]     = csm_dap_das(t->tmp[k + 1], csm_dap_ddoubl(a));
     t->tmp[k + 1] = csm_dap_das(csm_dap_smallmp(nout, t->n10[j + 3]),
                                 csm_dap_smallmp(in, t->n10[j + 1]));
-    (void) AGC_ASSERT((t->tmp[k] >= AGC_DP_MIN) && (t->tmp[k] <= AGC_DP_MAX));
+    if (!AGC_ASSERT((t->tmp[k] >= AGC_DP_MIN) && (t->tmp[k] <= AGC_DP_MAX)))
+    {
+        return;
+    }
 }
 
 /* PRECOMP (pp. 972-976): the third cascade only for CSM/LM (bit 13 off). */
@@ -199,8 +241,14 @@ static void tvcd_precomp(void)
     {
         tvcd_cascade_pre(t->dap2, t->dap3, 11, 4); /* 3CASFLTR  */
     }
-    (void) AGC_ASSERT(t->n10[0] != 0);
-    (void) AGC_ASSERT(t->vark >= 0);
+    if (!AGC_ASSERT(t->n10[0] != 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(t->vark >= 0))
+    {
+        return;
+    }
 }
 
 /* DELBARP / DELBARY (pp. 966, 969): offset-tracker filter
@@ -210,8 +258,11 @@ static void tvcd_delbar(agc_dp_t delbar)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     agc_dp_t       d = csm_dap_smallmp(delbar, E_AT);
     t->delbrtmp = csm_dap_das(d, agc_sp_mul(agc_dp_high(t->cmdtmp), ONE_M_EAT));
-    (void) AGC_ASSERT(E_AT + ONE_M_EAT == 16384);
-    (void) AGC_ASSERT(t->delbrtmp >= AGC_DP_MIN);
+    _Static_assert(E_AT + ONE_M_EAT == 16384, "AGC constant");
+    if (!AGC_ASSERT(t->delbrtmp >= AGC_DP_MIN))
+    {
+        return;
+    }
 }
 
 /* PCOPY (p. 966): pitch copycycle, called by the pitch DAP or (restart =
@@ -236,7 +287,10 @@ agc_status_t csm_tvc_pcopy(bool restart)
     t->pcmd     = agc_dp_high(t->cmdtmp);  /* actuator command     */
     t->delpbar  = t->delbrtmp;             /* offset tracker       */
     t->tvcphase = 2;                       /* completed (2)        */
-    (void) AGC_ASSERT(t->pcmd == agc_dp_high(t->cmdtmp));
+    if (!AGC_ASSERT(t->pcmd == agc_dp_high(t->cmdtmp)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -261,7 +315,10 @@ agc_status_t csm_tvc_ycopy(bool restart)
     t->ycmd                  = agc_dp_high(t->cmdtmp);
     t->delybar               = t->delbrtmp;
     t->tvcphase              = 0; /* reset TVCPHASE       */
-    (void) AGC_ASSERT(t->ycmd == agc_dp_high(t->cmdtmp));
+    if (!AGC_ASSERT(t->ycmd == agc_dp_high(t->cmdtmp)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -273,7 +330,10 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     bool           p = (ax == TVCD_PITCH);
     int            a = p ? 1 : 2; /* OMEGAYC / OMEGAZC    */
-    (void) AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
+    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     /* xINTEGRL: body-axis rate error integral, B-1 rev                   */
     t->errbtmp   = csm_dap_das(p ? t->perrb : t->yerrb, t->omegac[a]);
     t->omegab[a] = tvcd_body_rate(ax);
@@ -286,7 +346,10 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     tvcd_fwdfltr();
     t->cmdtmp = csm_dap_das(t->cmdtmp, p ? t->pdeloff : t->ydeloff); /* B+0 */
     tvcd_actlim();
-    (void) AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT); /* limited     */
+    if (!AGC_ASSERT(agc_dp_high(t->cmdtmp) >= -ACTSAT)) /* limited     */
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     /* xOUT: incremental command to the error counter and count release */
     agc_sp_t     inc = csm_dap_ads((agc_sp_t) - (p ? t->pcmd : t->ycmd),
                                    agc_dp_high(t->cmdtmp));
@@ -294,12 +357,13 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     if (p)
     {
         agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), inc));
-        st = agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
+        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);
     }
     else
     {
         agc_erase_set_tvcyaw(csm_dap_ads(agc_erase_tvcyaw(), inc));
-        st = agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUT);
+        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUT);
+        st = AGC_STATUS_OK;
     }
     for (int i = 1; i < 6; i += 2)
     { /* xPRECOMP             */
@@ -318,7 +382,10 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     agc_task_id_t  next =
         (ax == TVCD_PITCH) ? AGC_TASK_YAWDAP : AGC_TASK_PITCHDAP;
-    (void) AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW));
+    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt);
     if ((st == AGC_STATUS_OK) && (t->stroker != 0))
     { /* (STRKFLG)    */
@@ -335,18 +402,30 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 /* PITCHDAP (p. 963): T5 entry, normal or via DAPINIT.                    */
 agc_status_t agc_task_pitchdap(void)
 {
-    (void) AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0);
+    if (!AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = tvcd_entry(TVCD_PITCH);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* YAWDAP (p. 967): T5 entry.                                             */
 agc_status_t agc_task_yawdap(void)
 {
-    (void) AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0);
+    if (!AGC_ASSERT(agc_csm_dap_tvc()->t5tvcdt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = tvcd_entry(TVCD_YAW);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -364,6 +443,9 @@ agc_status_t agc_task_dapinit(void)
     agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w);
     t->pcduypst     = agc_erase_cduy();
     t->pcduzpst     = agc_erase_cduz();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st; /* NOQRSM               */
 }

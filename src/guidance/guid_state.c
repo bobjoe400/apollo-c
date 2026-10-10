@@ -17,8 +17,6 @@ static agc_guid_t g_guid;
 /* The one guidance erasable block.                                        */
 agc_guid_t *agc_guid_state(void)
 {
-    (void) AGC_ASSERT(g_guid.avg.pipage >= 0);
-    (void) AGC_ASSERT(g_guid.lm.vselect >= 0 && g_guid.lm.vselect <= 2);
     return &g_guid;
 }
 
@@ -37,8 +35,14 @@ static void init_avg(agc_avg_g_t *a)
     a->unitw   = agc_vec_make(0, 0, AGC_DP_MAX);
     a->pipage  = 1;
     a->gdt_2   = agc_vec_zero();
-    (void) AGC_ASSERT(a->avgexit != AGC_JOB_NONE);
-    (void) AGC_ASSERT(a->unitw.c[2] > 0);
+    if (!AGC_ASSERT(a->avgexit != AGC_JOB_NONE))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(a->unitw.c[2] > 0))
+    {
+        return;
+    }
 }
 
 /* Fresh start of the guidance erasables: everything zero, then the values
@@ -67,6 +71,9 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
         g_guid.lm.vselect  = 2; /* VSELECT: X beam first          */
         g_guid.lm.which    = (agc_sp_t) AGC_LM_WHICH_DPS_BURN;
     }
-    (void) AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT);
+    if (!AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }

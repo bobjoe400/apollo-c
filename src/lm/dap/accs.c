@@ -67,8 +67,14 @@ static const uint16_t gimblbts[4] = {001400u, 001000u, 006000u, 004000u};
 static agc_sp_t mass_hi(void)
 {
     agc_dp_t m = agc_guid_state()->lm.mass;
-    (void) AGC_ASSERT(m >= 0);
-    (void) AGC_ASSERT(m <= AGC_DP_MAX);
+    if (!AGC_ASSERT(m >= 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(m <= AGC_DP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) (m / 16384); /* major word of MASS          */
 }
 
@@ -98,7 +104,10 @@ static bool lem_mass(lm_dap_t *d, bool docked)
     }
     agc_erase_set_lemmass(lem);
     agc_guid_state()->lm.mass = (agc_dp_t) ((int32_t) (csm + lem) * 16384);
-    (void) AGC_ASSERT(lem > 0);
+    if (!AGC_ASSERT(lem > 0))
+    {
+        return false;
+    }
     return !ascent;
 }
 
@@ -140,8 +149,14 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
             lm_dap_sat((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
         d->coeffr = lm_dap_mphi((agc_sp_t) (-neps + LM_NEGMAX), d->coeffq);
     }
-    (void) AGC_ASSERT(d->coeffq <= 0);
-    (void) AGC_ASSERT(d->coeffr >= 0);
+    if (!AGC_ASSERT(d->coeffq <= 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->coeffr >= 0))
+    {
+        return;
+    }
 }
 
 /* JACCUV (p.1489): 1JACCU = 1JACCV = -COEFFQ 1JACCQ + COEFFR 1JACCR,
@@ -152,8 +167,14 @@ static void jaccuv(lm_dap_t *d)
     agc_sp_t a = lm_dap_sat((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u);
     d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
     d->jacc[4] = d->jacc[3];
-    (void) AGC_ASSERT(d->jacc[3] >= 0);
-    (void) AGC_ASSERT(d->jacc[4] == d->jacc[3]);
+    if (!AGC_ASSERT(d->jacc[3] >= 0))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(d->jacc[4] == d->jacc[3]))
+    {
+        return;
+    }
 }
 
 /* SPSCONT .. DOCKTEST (pp.1490-1491): gimbal gains KQ, KRDAP = .3 ACCDOT,
@@ -193,8 +214,14 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     {
         st = agc_lm_dap_timegmbl(); /* null offset    */
     }
-    (void) AGC_ASSERT(d->kq >= 0 || d->accdotq < 0);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(d->kq >= 0 || d->accdotq < 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -208,8 +235,14 @@ static agc_status_t lresc(lm_dap_t *d)
     agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);
     d->accdotr      = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
     agc_sp_t q      = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1);
-    (void) AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX);
-    (void) AGC_ASSERT(abdelv >= 0);
+    if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    if (!AGC_ASSERT(abdelv >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return spscont(d, q);
 }
 
@@ -232,7 +265,10 @@ static agc_sp_t docked_fit(int base)
     agc_sp_t ly =
         lm_dap_sat((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));
-    (void) AGC_ASSERT(x >= 0 && y >= 0);
+    if (!AGC_ASSERT(x >= 0 && y >= 0))
+    {
+        return 0;
+    }
     return m;
 }
 
@@ -255,12 +291,18 @@ static agc_status_t docked(lm_dap_t *d)
     d->block[LM_BLK_U + 18] = LM_POSMAX; /* +17D, +18D     */
     d->block[LM_BLK_U + 19] = LM_POSMAX;
     lm_dp_pair_t torq       = {0, AC_TORQ_LO};
-    (void) AGC_ASSERT(inertia > 0);
+    if (!AGC_ASSERT(inertia > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     d->jacc[1] = lm_dap_dv(torq, inertia);
     d->jacc[2] = d->jacc[1];
     d->coeffq  = (agc_sp_t) -AC_07071;
     d->coeffr  = AC_07071;
-    (void) AGC_ASSERT(d->jacc[1] >= 0);
+    if (!AGC_ASSERT(d->jacc[1] >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg);
     d->accdotr =
         lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
@@ -273,7 +315,10 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
 {
     agc_sp_t rem  = 0;
     int      base = descent ? 1 : 4;
-    (void) AGC_ASSERT(agc_erase_lemmass() > 0);
+    if (!AGC_ASSERT(agc_erase_lemmass() > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     for (int j = 2; j >= 0; j--)
     { /* R, Q, P        */
         d->jacc[j] = fit_row(base + j, &rem);
@@ -290,7 +335,10 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
         return AGC_STATUS_OK;
     }
     d->l_pvt_cg = fit_row(0, &rem);
-    (void) AGC_ASSERT(d->jacc[3] > 0);
+    if (!AGC_ASSERT(d->jacc[3] > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return lresc(d);
 }
 
@@ -309,10 +357,13 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
         st              = (st != AGC_STATUS_OK) ? st : sc;
     }
     agc_inhint();                                      /* 1/ACCRET       */
-    agc_status_t fs = agc_flag_set(AGC_FLAG_ACCOKFLG); /* data good      */
+    agc_flag_set(AGC_FLAG_ACCOKFLG); /* data good      */
+    agc_status_t fs = AGC_STATUS_OK;
     agc_relint();
-    (void) AGC_ASSERT(fs == AGC_STATUS_OK);
-    (void) AGC_ASSERT(d->jacc[0] >= 0);
+    if (!AGC_ASSERT(d->jacc[0] >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return (st != AGC_STATUS_OK) ? st : fs;
 }
 
@@ -323,7 +374,10 @@ agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_UPDATE);
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_UPDATE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_lm_dap_jet_accel_update(); /* then ENDOFJOB  */
 }
 
@@ -341,7 +395,10 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
     d->aosr     = 0;
     d->alphaq   = 0;
     d->alphar   = 0;
-    (void) AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_RESET);
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_RESET))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_lm_dap_jet_accel_update();
 }
 
@@ -349,7 +406,10 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
 agc_status_t lm_dap_accfix(void)
 {
     agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE);
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
-    (void) AGC_ASSERT(AC_PRIO27 == 027);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    _Static_assert(AC_PRIO27 == 027, "AGC constant");
     return st;
 }

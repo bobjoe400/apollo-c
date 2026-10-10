@@ -104,8 +104,7 @@ agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
     ctx->normsw   = false; /* CLEAR NORMSW         */
     ctx->cogaflag = false; /* CLEAR COGAFLAG       */
-    (void) agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG,
-                                  false);     /* mirror only */
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, false);     /* mirror only */
     ctx->geomsgn     = AGC_CONIC_GEOMSGN_POS; /* gamma < 180 deg      */
     agc_dp_t     sng = 0;
     agc_dp_t     csg = 0;
@@ -139,10 +138,9 @@ static agc_status_t getx_infinity(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) agc_interp_test_ovf(ip); /* BOV: clear OVFIND    */
+    agc_interp_clear_ovf(ip); /* BOV: clear OVFIND    */
     ctx->infinflg   = true;
-    agc_status_t st = agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, true);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, true);
     return AGC_STATUS_OK;
 }
 
@@ -151,8 +149,6 @@ static agc_status_t getx_infinity(agc_interp_t *ip, agc_conic_ctx_t *ctx)
 static getx_next_t getx_first_w(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                 agc_tp_t *mpac)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(mpac != NULL);
     agc_tp_t m = agc_conic_msqrt_(ip, agc_conic_mload_(ctx->p)); /* SQRT    */
     const agc_dp_t sqrtp = agc_conic_mstore_(m);                 /* 0D 2^2  */
     m = agc_conic_mshift_(ip, agc_conic_mload_(ctx->csth), -1);  /* SR1     */
@@ -214,8 +210,14 @@ static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static agc_dp_t getx_invrseqn(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                               agc_dp_t *inv_w_sq)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(inv_w_sq != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(inv_w_sq != NULL))
+    {
+        return 0; /* no valid result */
+    }
     agc_tp_t       m     = agc_conic_msqrt_(ip, agc_conic_mload_(ctx->p));
     const agc_dp_t sqrtp = agc_conic_mstore_(m);                 /* 0D 2^2  */
     m = agc_conic_mdmp_(agc_conic_mload_(ctx->snth), ctx->coga); /* DMP SL1 */
@@ -274,8 +276,14 @@ static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                           agc_tp_t m_in, agc_tp_t *xprime)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(xprime != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(xprime != NULL))
+    {
+        return false;
+    }
     if (agc_conic_mbmn_(m_in))
     {
         return false;
@@ -310,8 +318,14 @@ static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                          agc_tp_t xprime)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(xprime >= AGC_TP_MIN && xprime <= AGC_TP_MAX);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(xprime >= AGC_TP_MIN && xprime <= AGC_TP_MAX))
+    {
+        return;
+    }
     int      n = 0;
     agc_tp_t m = agc_conic_mnorm_(agc_conic_mdsq_(xprime), &n); /* DSQ NORM */
     m          = agc_conic_mdmp_(m, ctx->r1a);
@@ -331,8 +345,7 @@ static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         agc_conic_mstore_(agc_conic_mshiftr_(ip, m, 3)); /* SL3R 2^17 */
     m = agc_conic_mbdsu_(ip, agc_conic_mload_(ctx->r1a), AGC_CONIC_D1_64);
     ctx->infinflg = false; /* CLEAR INFINFLG */
-    (void) agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG,
-                                  false); /* mirror only */
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, false); /* mirror only */
     ctx->kepc2 = agc_conic_mstore_(m);    /* KEPC2 2^6 */
 }
 

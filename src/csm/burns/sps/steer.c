@@ -38,7 +38,10 @@ static void phase_b(agc_job_id_t job)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB,      job,   AGC_TASK_NONE,
                          (int16_t) AGC_PRIO20, false, 0U};
-    (void) AGC_ASSERT(job != AGC_JOB_NONE);
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return;
+    }
     agc_phase_change_var(PH_5_3_B, &v);
 }
 
@@ -49,7 +52,10 @@ agc_status_t agc_csm_servxt(agc_job_ctx_t *ctx)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_servexit(ctx);
 }
 
@@ -61,7 +67,10 @@ static agc_status_t short_burn_cutoff(agc_csm_tvc_t *tvc)
     agc_flag_set(AGC_FLAG_IMPULSW);
     tvc->omegac[0] = tvc->omegac[1] = tvc->omegac[2] = 0; /* RATEZRO         */
     tvc->cntr                                        = AGC_SP_MAX;
-    (void) AGC_ASSERT(tvc->cntr == AGC_SP_MAX);
+    if (!AGC_ASSERT(tvc->cntr == AGC_SP_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_flag_clear(AGC_FLAG_STEERSW);
     return AGC_STATUS_OK;
 }
@@ -81,7 +90,10 @@ static agc_status_t lothrust(agc_csm_tvc_t *tvc)
     tvc->repfrac  = 0;
     agc_guid_state()->csm.nvword1 =
         AGC_CSM_NV_ENGINE_FAIL_PROCEDURE; /* ENGINE-FAIL V97 FLASH  */
-    (void) AGC_ASSERT(tvc->vcntr == 0);
+    if (!AGC_ASSERT(tvc->vcntr == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_flag_clear(AGC_FLAG_STEERSW);
     return AGC_STATUS_OK;
 }
@@ -162,7 +174,10 @@ static agc_status_t surely9_restart(agc_interp_t *ip)
     g->burn.delvsum  = agc_vec_zero();
     g->burn.nbrcycls = 0;
     g->burn.nbrcyclp = 0;
-    (void) AGC_ASSERT(g->burn.tnit >= 0);
+    if (!AGC_ASSERT(g->burn.tnit >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_csm_cross_product_steering(ip);
 }
 
@@ -192,7 +207,10 @@ static agc_status_t setup_9(agc_interp_t *ip)
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
     agc_phase_change2((uint16_t)000051, PH_5_3_B, &v);
-    (void) AGC_ASSERT(g->burn.nbrcyclp >= 0);
+    if (!AGC_ASSERT(g->burn.nbrcyclp >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return surely9_restart(ip);
 }
 
@@ -238,13 +256,21 @@ static agc_status_t steering_tail(agc_job_ctx_t *ctx)
     agc_sp_t lo = agc_dp_low(t);
     agc_sp_t dt = (agc_dp_high(t) == 0 && lo > 0) ? lo : 1; /* CCS: >= 1 */
     agc_erase_set_tgo((agc_dp_t) dt);
-    (void) agc_waitlist_call((uint16_t) dt, AGC_TASK_ENGINOFF);
+    agc_status_t st = agc_waitlist_call((uint16_t) dt, AGC_TASK_ENGINOFF);
+    if (st != AGC_STATUS_OK)
+    {
+        agc_relint();
+        return st;
+    }
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STEERING_RESTART,
                          AGC_TASK_NONE,   (int16_t) AGC_PRIO20,
                          false,           0U};
     agc_phase_change2((uint16_t)040153, PH_5_3_B, &v);
     agc_relint();
-    (void) AGC_ASSERT(dt >= 1);
+    if (!AGC_ASSERT(dt >= 1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_job_steering_restart(ctx);
 }
 
@@ -275,21 +301,28 @@ agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx)
         return AGC_STATUS_BAD_ARG;
     }
     agc_flag_clear(AGC_FLAG_IMPULSW);
-    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW));
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW)))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_csm_servxt(ctx);
 }
 
 /* P40CNV85 (p.697): VGBODY = S41.1(VGPREV), VG in control axes for N85.   */
-agc_status_t agc_csm_convert_vg_body(agc_interp_t *ip)
+void agc_csm_convert_vg_body(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     agc_burn_t *b = &agc_guid_state()->burn;
-    (void) AGC_ASSERT(b != NULL);
-    return agc_guid_reference_to_body(ip, AGC_VEHICLE_CSM, agc_erase_vgtig(),
-                                      &b->vgbody);
+    if (!AGC_ASSERT(b != NULL))
+    {
+        return;
+    }
+    agc_guid_reference_to_body(ip, AGC_VEHICLE_CSM, agc_erase_vgtig(),
+                               &b->vgbody);
+    return;
 }
 
 /* CALCN85 (p.697): AVEGEXIT of P41 / post-burn: UPDATEVG, N85, SERVEXIT.  */
@@ -303,8 +336,12 @@ agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     bool vtogain_started = false;
-    (void) agc_csm_updatevg(&ip, &vtogain_started);
-    (void) agc_csm_convert_vg_body(&ip);
+    agc_status_t st = agc_csm_updatevg(&ip, &vtogain_started);
+    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
+    {
+        return st;
+    }
+    agc_csm_convert_vg_body(&ip);
     return agc_csm_servxt(ctx);
 }
 
@@ -313,10 +350,13 @@ static agc_status_t caller_tail(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (agc_guid_state()->csm.updcaller == CALLER_CALC_VG_BODY)
     {
-        (void) agc_csm_convert_vg_body(ip);
+        agc_csm_convert_vg_body(ip);
         return agc_csm_servxt(ctx);
     }
-    (void) AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING);
+    if (!AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return steering_tail(ctx);
 }
 
@@ -334,15 +374,27 @@ agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
     {
         g->burn.nbrcycls = g->burn.nbrcyclp;
         g->burn.delvsum  = g->burn.delvsump;
-        (void) agc_csm_cross_product_steering(&ip);
+        agc_status_t st = agc_csm_cross_product_steering(&ip);
+        if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
+        {
+            return st;
+        }
     }
     else if (ctx->id == AGC_JOB_SURELY9_RESTART)
     {
-        (void) surely9_restart(&ip);
+        agc_status_t sj = surely9_restart(&ip);
+        if (sj != AGC_STATUS_OK && sj != AGC_STATUS_ALARM)
+        {
+            return sj;
+        }
     }
     else
     {
-        (void) steering_after_vg_update(&ip); /* AGC_JOB_S40_8B         */
+        agc_status_t sw = steering_after_vg_update(&ip); /* AGC_JOB_S40_8B         */
+        if (sw != AGC_STATUS_OK && sw != AGC_STATUS_ALARM)
+        {
+            return sw;
+        }
     }
     return caller_tail(ctx, &ip);
 }
@@ -360,9 +412,9 @@ agc_status_t agc_job_calc_delta_v_body_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_interp_init(&ip);
     g->burn.vg = agc_vec_add(&ip, g->burn.delvctl, g->avg.delvref);
-    (void) agc_guid_reference_to_body(&ip, AGC_VEHICLE_CSM, g->burn.vg,
-                                      &g->burn.delvimu);
-    (void) agc_csm_velocity_altitude_rate(&ip);
+    agc_guid_reference_to_body(&ip, AGC_VEHICLE_CSM, g->burn.vg,
+                               &g->burn.delvimu);
+    agc_csm_velocity_altitude_rate(&ip);
     phase_b(AGC_JOB_CALC_DELTA_V_RESTART);
     return agc_job_calc_delta_v_restart(ctx);
 }
@@ -428,8 +480,8 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
     }
     if (rz->body.rtx2 == 0)
     { /* NOT MOONCASE */
-        agc_dp_t rsq = 0;
-        (void) agc_vec_unit(&ip, agc_erase_rn(), NULL, &rsq); /* 34D          */
+        /* UNIT RN leaves |RN|^2 at 34D (LVSQUARE, the VSQ of RN).      */
+        agc_dp_t rsq = agc_vec_sq(&ip, agc_erase_rn());
         agc_dp_t s = agc_dp_mul(
             &ip, agc_dp_sub(&ip, agc_erase_piptime(), g->burn.nomtig), EARTHMU);
         s            = agc_dp_div(&ip, s, rsq);
@@ -456,7 +508,10 @@ agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
     g->burn.vrprev   = agc_rendz_erasable()->viprime;
     agc_flag_clear(AGC_FLAG_FIRSTFLG);
     g->burn.nbrcycls = -1;
-    (void) AGC_ASSERT(g->burn.nbrcycls == -1);
+    if (!AGC_ASSERT(g->burn.nbrcycls == -1))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_phase_kill(1);
     return AGC_STATUS_OK;
 }
@@ -473,7 +528,10 @@ agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
     g->burn.nbrcyclp               = 0;
     agc_rendz_erasable()->delveet3 = agc_erase_vgtig(); /* VGTEMP      */
     g->burn.nbrcycls               = -1;                /* ENDS40.9 -2 */
-    (void) AGC_ASSERT(g->burn.nbrcyclp == 0);
+    if (!AGC_ASSERT(g->burn.nbrcyclp == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_phase_kill(1);
     return AGC_STATUS_OK;
 }

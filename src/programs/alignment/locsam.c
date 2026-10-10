@@ -51,8 +51,14 @@
  */
 static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
 {
-    (void) AGC_ASSERT(rmag > 0);
-    (void) AGC_ASSERT(radius > 0);
+    if (!AGC_ASSERT(rmag > 0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(radius > 0))
+    {
+        return 0; /* no valid result */
+    }
     agc_dp_t a = agc_dp_shr(agc_dp_div(ip, radius, rmag), 1);
     a          = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
     return agc_dp_shr(agc_dp_cos(ip, a), 1);
@@ -63,8 +69,14 @@ static void locsam_csm(agc_interp_t *ip, const agc_state_vector_t *sv,
                        agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
 {
     agc_dp_t rmag = 0;
-    (void) AGC_ASSERT(sv != NULL);
-    (void) AGC_ASSERT(o != NULL);
+    if (!AGC_ASSERT(sv != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(o != NULL))
+    {
+        return;
+    }
     if (!sv->moon)
     { /* EARTCNTR   */
         o->vmoon  = agc_vec_unit(ip, agc_vec_sub(ip, moon, sv->r), NULL, NULL);
@@ -96,8 +108,14 @@ static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
                       agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
 {
     agc_dp_t rmag = 0;
-    (void) AGC_ASSERT(sv != NULL);
-    (void) AGC_ASSERT(o != NULL);
+    if (!AGC_ASSERT(sv != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(o != NULL))
+    {
+        return;
+    }
     o->vsun = sun;
     if (!sv->moon)
     { /* EARTCNTR   */
@@ -213,7 +231,10 @@ bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls,
 static agc_vec_t catlog(int star6)
 {
     agc_vec_t v = agc_vec_zero();
-    (void) AGC_ASSERT((star6 % 6) == 0);
+    if (!AGC_ASSERT((star6 % 6) == 0))
+    {
+        return agc_vec_zero(); /* no valid result */
+    }
     if (AGC_ASSERT((star6 >= 6) && (star6 <= 6 * AGC_ALIGN_NSTARS)))
     {
         if (agc_star_vector(star6 / 6, &v) != AGC_STATUS_OK)
@@ -238,8 +259,14 @@ typedef struct picapar_search
  * pair with the smaller dot product (larger separation). */
 static void picapar_strategy(picapar_search_t *s, int i6, int j6)
 {
-    (void) AGC_ASSERT(s != NULL);
-    (void) AGC_ASSERT((i6 > j6) && (j6 >= 6));
+    if (!AGC_ASSERT(s != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT((i6 > j6) && (j6 >= 6)))
+    {
+        return;
+    }
     if (s->vflag)
     { /* BONCLR VFLAG    */
         s->vflag = false;
@@ -261,8 +288,14 @@ static void picapar_strategy(picapar_search_t *s, int i6, int j6)
 /* PIC1-PIC4 for the CSM (Comanche pp. 753-754). */
 static void picapar_search_csm(picapar_search_t *s)
 {
-    (void) AGC_ASSERT(s != NULL);
-    (void) AGC_ASSERT(s->ip != NULL);
+    if (!AGC_ASSERT(s != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(s->ip != NULL))
+    {
+        return;
+    }
     for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
     { /* PIC1 */
         const agc_vec_t si = catlog(i6);
@@ -304,8 +337,14 @@ static void picapar_search_csm(picapar_search_t *s)
 /* PIC1-PIC4 for the LM (Luminary pp. 938-939): cone tests first. */
 static void picapar_search_lm(picapar_search_t *s)
 {
-    (void) AGC_ASSERT(s != NULL);
-    (void) AGC_ASSERT(s->ip != NULL);
+    if (!AGC_ASSERT(s != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(s->ip != NULL))
+    {
+        return;
+    }
     for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
     { /* PIC1 */
         const agc_vec_t si = catlog(i6);
@@ -397,9 +436,8 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
     *besti = (agc_sp_t) s.besti;
     *bestj = (agc_sp_t) s.bestj;
     *found = !s.vflag;
-    return (agc_flag_set(AGC_FLAG_VFLAG) == AGC_STATUS_OK) && !s.vflag ?
-               agc_flag_clear(AGC_FLAG_VFLAG) :
-               AGC_STATUS_OK;
+    agc_flag_put(AGC_FLAG_VFLAG, s.vflag); /* SET VFLAG; CLEAR if a pair found */
+    return AGC_STATUS_OK;
 }
 
 /*
@@ -523,7 +561,13 @@ agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2],
  */
 bool agc_align_chkscode(agc_sp_t starcode)
 {
-    (void) AGC_ASSERT(starcode >= AGC_SP_MIN);
-    (void) AGC_ASSERT(starcode <= AGC_SP_MAX);
+    if (!AGC_ASSERT(starcode >= AGC_SP_MIN))
+    {
+        return false;
+    }
+    if (!AGC_ASSERT(starcode <= AGC_SP_MAX))
+    {
+        return false;
+    }
     return (starcode >= 0) && (starcode <= AGC_ALIGN_STAR_CODE_MAX);
 }

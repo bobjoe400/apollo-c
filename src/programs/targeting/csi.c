@@ -63,13 +63,19 @@ typedef struct csi_work
 /* ---- flag helpers ------------------------------------------------------- */
 static bool csi_f(rz_vflag_t f)
 {
-    (void) AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B);
+    if (!AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B))
+    {
+        return false;
+    }
     return rz_vflag_test(f);
 }
 
 static void csi_set(rz_vflag_t f, bool on)
 {
-    (void) AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B);
+    if (!AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B))
+    {
+        return;
+    }
     rz_vflag_set(f, on);
 }
 
@@ -97,7 +103,10 @@ agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
     agc_vec_t u       = rz_unit(ip, inplane);
     agc_dp_t  mag     = rz_abval(ip, v);
     *out              = agc_vec_shl(ip, agc_vec_scale(ip, u, mag), 1);
-    (void) AGC_ASSERT(mag >= 0);
+    if (!AGC_ASSERT(mag >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -159,13 +168,19 @@ static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
     agc_dp_t vh = agc_dp_shl(ip, agc_vec_dot(ip, uh1, rz->vact1), 1);
     rz->delvcsi = agc_dp_sub(ip, vr, vh); /* BDSU       */
     rz->deldv   = CSI_INITST;
-    (void) AGC_ASSERT(rz->deldv > 0);
+    if (!AGC_ASSERT(rz->deldv > 0))
+    {
+        return;
+    }
 }
 
 /* ---- CSI/B1 (p.666): LOOPCT + 1; 16 passes -> SCNDSOL with X2 = 6 ------- */
 static csi_label_t csi_b1(agc_rendz_t *rz, csi_work_t *w)
 {
-    (void) AGC_ASSERT(rz->loopct >= 0);
+    if (!AGC_ASSERT(rz->loopct >= 0))
+    {
+        return CSI_L_ALMXIT;
+    }
     rz->loopct = (agc_sp_t) (rz->loopct + 1); /* + 1DPB28   */
     if ((agc_dp_t) rz->loopct - CSI_LOOPMX >= 0)
     {
@@ -195,7 +210,10 @@ static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     }
     csi_set(RZ_VF_CSI_F1, true); /* CSI/B22    */
     rz->delvcsi = agc_dp_sign(CSI_DVMAX2, rz->delvcsi);
-    (void) AGC_ASSERT(rz->delvcsi != 0);
+    if (!AGC_ASSERT(rz->delvcsi != 0))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -207,7 +225,10 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
     agc_status_t         st =
         rz_timethet_rv(ip, rz, rz->ract1, v, snth, csth, true, &o);
     *t = o.t;
-    (void) AGC_ASSERT(st != AGC_STATUS_OK || o.t >= AGC_DP_MIN);
+    if (!AGC_ASSERT(st != AGC_STATUS_OK || o.t >= AGC_DP_MIN))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -257,7 +278,10 @@ static agc_dp_t csi_sqrt_p_mu(agc_interp_t *ip, const agc_rendz_t *rz,
     {
         b = agc_dp_shl(ip, b, 3); /* SL3        */
     }
-    (void) AGC_ASSERT(b >= AGC_DP_MIN);
+    if (!AGC_ASSERT(b >= AGC_DP_MIN))
+    {
+        return 0; /* no valid result */
+    }
     return b;
 }
 
@@ -306,7 +330,10 @@ static bool csi_ntp2(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
     t           = agc_dp_add(ip, agc_dp_sub(ip, t, pop), rz->tcsi);
     rz->tcdh    = t;
     w->x2       = 5;
-    (void) AGC_ASSERT(rz->tcdh >= AGC_DP_MIN);
+    if (!AGC_ASSERT(rz->tcdh >= AGC_DP_MIN))
+    {
+        return false;
+    }
     return agc_dp_sub(ip, agc_erase_ttpi(), rz->tcdh) >= 0;
 }
 
@@ -406,7 +433,10 @@ static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u,
     agc_dp_t  temp = agc_vec_dot(ip, agc_vec_cross(ip, urp3, uv), a);
     agc_dp_t  c    = agc_dp_shl(ip, agc_vec_dot(ip, urp3, uv), 1);
     agc_dp_t  g    = agc_dp_sign(agc_dp_acos(ip, c), temp);
-    (void) AGC_ASSERT(g >= -AGC_DP_HALF && g <= AGC_DP_HALF);
+    if (!AGC_ASSERT(g >= -AGC_DP_HALF && g <= AGC_DP_HALF))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_shr(g, 1); /* SR1 */
 }
 
@@ -418,7 +448,10 @@ static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
     rz->dvprev  = rz->delvcsi;
     rz->delvcsi = agc_dp_sub(ip, rz->delvcsi, rz->deldv); /* CSINEXT3   */
     csi_set(RZ_VF_CSI_F2, false);
-    (void) AGC_ASSERT(!csi_f(RZ_VF_CSI_F2));
+    if (!AGC_ASSERT(!csi_f(RZ_VF_CSI_F2)))
+    {
+        return CSI_L_ALMXIT;
+    }
     return CSI_L_B1;
 }
 
@@ -534,7 +567,10 @@ static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
     rz->csialrm = (agc_sp_t) w->x2;
     csi_set_cycle(false);
     rz->loopct = 0;
-    (void) AGC_ASSERT(rz->csialrm >= 1 && rz->csialrm <= 7);
+    if (!AGC_ASSERT(rz->csialrm >= 1 && rz->csialrm <= 7))
+    {
+        return CSI_L_ALMXIT;
+    }
     return CSI_L_B;
 }
 
@@ -647,7 +683,10 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t  snth = agc_dp_sign(sn, agc_vec_dot(ip, n, rz->up1));
     agc_status_t st =
         rz_timethet_rv(ip, rz, rz->rpass2, rz->vpass2, snth, csth, false, o);
-    (void) AGC_ASSERT(st != AGC_STATUS_OK || o->r1 >= 0);
+    if (!AGC_ASSERT(st != AGC_STATUS_OK || o->r1 >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 

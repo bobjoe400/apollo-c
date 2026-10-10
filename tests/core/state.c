@@ -84,30 +84,30 @@ static void test_flag_ops(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(!agc_flag_test(AGC_FLAG_MOONFLAG));
-    CHECK(agc_flag_set(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_MOONFLAG);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(agc_flagword_get(0) == 0x0800u);
     CHECK(!agc_flag_test(AGC_FLAG_JSWITCH)); /* neighbours untouched */
-    CHECK(agc_flag_invert(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
+    agc_flag_invert(AGC_FLAG_MOONFLAG);
     CHECK(!agc_flag_test(AGC_FLAG_MOONFLAG));
-    CHECK(agc_flag_invert(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
+    agc_flag_invert(AGC_FLAG_MOONFLAG);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
-    CHECK(agc_flag_clear(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_MOONFLAG);
     CHECK(!agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(agc_flagword_get(0) == 0u);
 
     /* highest CSM flagword, FLGWRD11 */
-    CHECK(agc_flag_set(AGC_FLAG_S32_1F3B) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_S32_1F3B);
     CHECK(agc_flagword_get(11) == 0x0800u);
-    CHECK(agc_flagword_set(11, 077777u) == AGC_STATUS_OK);
+    agc_flagword_set(11, 077777u);
     CHECK(agc_flag_test(AGC_FLAG_S32_1F1));
-    CHECK(agc_flagword_set(11, 0u) == AGC_STATUS_OK);
+    agc_flagword_set(11, 0u);
     CHECK(!agc_flag_test(AGC_FLAG_S32_1F1));
 
     /* every flag set/cleared individually leaves exactly one bit */
-    CHECK(agc_flag_set(AGC_FLAG_REFSMFLG) == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_REFSMFLG);
     CHECK(agc_flagword_get(3) == agc_flag_mask(AGC_FLAG_REFSMFLG));
-    CHECK(agc_flag_clear(AGC_FLAG_REFSMFLG) == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_REFSMFLG);
     CHECK(agc_flagword_get(3) == 0u);
 }
 
@@ -115,14 +115,13 @@ static void test_flag_errors(void)
 {
     const int before = g_assert_reports;
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(agc_flag_set((agc_flag_id_t) 0x00) == AGC_STATUS_BAD_ARG); /* bit 0 */
-    CHECK(agc_flag_set((agc_flag_id_t) 0xC1) ==
-          AGC_STATUS_BAD_ARG); /* word 12 is LM-only */
-    CHECK(agc_flag_clear((agc_flag_id_t) 0xFF) == AGC_STATUS_BAD_ARG);
+    agc_flag_set((agc_flag_id_t) 0x00); /* rejected by AGC_ASSERT */ /* bit 0 */
+    agc_flag_set((agc_flag_id_t) 0xC1); /* rejected by AGC_ASSERT */ /* word 12 is LM-only */
+    agc_flag_clear((agc_flag_id_t) 0xFF); /* rejected by AGC_ASSERT */
     CHECK(!agc_flag_test((agc_flag_id_t) 0x10));
-    CHECK(agc_flagword_set(0, 0100000u) == AGC_STATUS_BAD_ARG); /* > 15 bits */
-    CHECK(agc_flagword_set(12, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_flagword_set(-1, 1u) == AGC_STATUS_BAD_ARG);
+    agc_flagword_set(0, 0100000u); /* rejected by AGC_ASSERT */ /* > 15 bits */
+    agc_flagword_set(12, 1u); /* rejected by AGC_ASSERT */
+    agc_flagword_set(-1, 1u); /* rejected by AGC_ASSERT */
     CHECK(agc_flagword_get(0) == 0u);
     CHECK(!agc_flag_valid((agc_flag_id_t) 0x0F0));
     CHECK(agc_flag_valid(AGC_FLAG_CPHIFLAG));
@@ -135,19 +134,19 @@ static void test_time(void)
     CHECK(agc_time_now_cs() == 0u);
     agc_time_advance_cs(100u);
     CHECK(agc_time_now_cs() == 100u);
-    CHECK(agc_time_set_cs(AGC_TIME_MODULUS_CS - 1u) == AGC_STATUS_OK);
+    agc_time_set_cs(AGC_TIME_MODULUS_CS - 1u);
     agc_time_advance_cs(1u); /* TIME2 overflow */
     CHECK(agc_time_now_cs() == 0u);
-    CHECK(agc_time_set_cs(AGC_TIME_MODULUS_CS - 2u) == AGC_STATUS_OK);
+    agc_time_set_cs(AGC_TIME_MODULUS_CS - 2u);
     agc_time_advance_cs(10u);
     CHECK(agc_time_now_cs() == 8u);
-    CHECK(agc_time_set_cs(AGC_TIME_MODULUS_CS) == AGC_STATUS_BAD_ARG);
+    agc_time_set_cs(AGC_TIME_MODULUS_CS); /* rejected by AGC_ASSERT */
     CHECK(agc_time_now_cs() == 8u);
     /* TIME2 = high 14 bits, TIME1 = low 14 bits of the 28-bit count */
-    CHECK(agc_time_set_cs((5u << 14) | 7u) == AGC_STATUS_OK);
+    agc_time_set_cs((5u << 14) | 7u);
     CHECK(agc_erase_time2() == 5);
     CHECK(agc_erase_time1() == 7);
-    CHECK(agc_time_set_cs(0x0FFFFFFFu) == AGC_STATUS_OK);
+    agc_time_set_cs(0x0FFFFFFFu);
     CHECK(agc_erase_time1() == AGC_SP_MAX);
     CHECK(agc_erase_time2() == AGC_SP_MAX);
 }
@@ -160,12 +159,11 @@ static void test_channels(void)
           077777u); /* inverted: nothing present */
     CHECK(agc_chan_read(AGC_CHAN_CHAN33) == 077777u);
 
-    CHECK(agc_chan_write(AGC_CHAN_DSALMOUT, 0123u) == AGC_STATUS_OK);
+    agc_chan_write(AGC_CHAN_DSALMOUT, 0123u);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
-    CHECK(agc_chan_or(AGC_CHAN_DSALMOUT, AGC_CH011_ENGINEON) == AGC_STATUS_OK);
+    agc_chan_or(AGC_CHAN_DSALMOUT, AGC_CH011_ENGINEON);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == (0123u | 010000u));
-    CHECK(agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t) ~AGC_CH011_ENGINEON &
-                                              AGC_CHAN_MASK) == AGC_STATUS_OK);
+    agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t) ~AGC_CH011_ENGINEON & AGC_CHAN_MASK);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
 
     /* bit constants: bit n has value 1 << (n - 1) */
@@ -181,12 +179,12 @@ static void test_channels(void)
     CHECK(AGC_CH014_DRIVECDUX == 040000);
 
     /* output channels reject the 16th bit; inputs and invalid channels are errors */
-    CHECK(agc_chan_write(AGC_CHAN_CHAN12, 0100000u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_chan_write(AGC_CHAN_CHAN30, 0u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_chan_write(AGC_CHAN_MNKEYIN, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_chan_write(0, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_chan_write(AGC_CHAN_COUNT, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_chan_or(AGC_CHAN_HISCALAR, 1u) == AGC_STATUS_BAD_ARG);
+    agc_chan_write(AGC_CHAN_CHAN12, 0100000u); /* rejected by AGC_ASSERT */
+    agc_chan_write(AGC_CHAN_CHAN30, 0u); /* rejected by AGC_ASSERT */
+    agc_chan_write(AGC_CHAN_MNKEYIN, 1u); /* rejected by AGC_ASSERT */
+    agc_chan_write(0, 1u); /* rejected by AGC_ASSERT */
+    agc_chan_write(AGC_CHAN_COUNT, 1u); /* rejected by AGC_ASSERT */
+    agc_chan_or(AGC_CHAN_HISCALAR, 1u); /* rejected by AGC_ASSERT */
     CHECK(agc_chan_read(-1) == 0u);
 
     /* simulator side */
@@ -222,8 +220,7 @@ static void test_inverted_inputs(void)
                               AGC_CH033_PIPAFAIL | AGC_CH033_VHFRANGEGOOD,
                               true) == AGC_STATUS_OK);
     CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_PIPAFAIL) == 0u);
-    CHECK(agc_chan_and(AGC_CHAN_CHAN33, AGC_CH033_FLIPFLOP_MASK) ==
-          AGC_STATUS_OK); /* T4RUPT style WAND */
+    agc_chan_and(AGC_CHAN_CHAN33, AGC_CH033_FLIPFLOP_MASK); /* T4RUPT style WAND */
     CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_PIPAFAIL) !=
           0u); /* flip-flop reset */
     CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_VHFRANGEGOOD) ==
@@ -332,13 +329,13 @@ static void test_erasables(void)
     CHECK(agc_erase_refsmmat().row[2].c[2] == -AGC_DP_HALF);
     CHECK(agc_erase_refsmmat().row[0].c[1] == 0);
 
-    CHECK(agc_erase_set_dsptab(11, 040010u) == AGC_STATUS_OK);
+    agc_erase_set_dsptab(11, 040010u);
     CHECK(agc_erase_dsptab(11) == 040010u);
-    CHECK(agc_erase_set_dsptab(12, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_erase_set_dsptab(-1, 1u) == AGC_STATUS_BAD_ARG);
+    agc_erase_set_dsptab(12, 1u); /* rejected by AGC_ASSERT */
+    agc_erase_set_dsptab(-1, 1u); /* rejected by AGC_ASSERT */
     CHECK(agc_erase_set_failreg(2, 01201u) == AGC_STATUS_OK);
     CHECK(agc_erase_failreg(2) == 01201u);
-    CHECK(agc_erase_set_thetad(0, 0100000u) == AGC_STATUS_BAD_ARG);
+    agc_erase_set_thetad(0, 0100000u); /* rejected by AGC_ASSERT */
     CHECK(agc_erase_thetad(3) == 0u);
 }
 

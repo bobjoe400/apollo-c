@@ -21,7 +21,10 @@
 agc_sp_t csm_dap_word_sp(uint16_t w)
 {
     uint16_t v = (uint16_t) (w & CSM_DAP_NEG0);
-    (void) AGC_ASSERT(v <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(v <= CSM_DAP_NEG0))
+    {
+        return 0; /* no valid result */
+    }
     if ((v & CSM_DAP_BIT15) != 0u)
     {
         return (agc_sp_t) (-(int) ((~(unsigned) v) & 037777u));
@@ -32,8 +35,14 @@ agc_sp_t csm_dap_word_sp(uint16_t w)
 /* Value -> ones' complement 15-bit word (0 -> +0).                       */
 uint16_t csm_dap_sp_word(agc_sp_t v)
 {
-    (void) AGC_ASSERT(v >= AGC_SP_MIN);
-    (void) AGC_ASSERT(v <= AGC_SP_MAX);
+    if (!AGC_ASSERT(v >= AGC_SP_MIN))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(v <= AGC_SP_MAX))
+    {
+        return 0; /* no valid result */
+    }
     if (v < 0)
     {
         return (uint16_t) (077777 + (int) v);
@@ -45,8 +54,14 @@ uint16_t csm_dap_sp_word(agc_sp_t v)
  * counter words, converted to ones' complement by the hardware.          */
 agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
 {
-    (void) AGC_ASSERT(a <= CSM_DAP_NEG0);
-    (void) AGC_ASSERT(b <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(a <= CSM_DAP_NEG0))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(b <= CSM_DAP_NEG0))
+    {
+        return 0; /* no valid result */
+    }
     unsigned d = ((unsigned) a - (unsigned) b) & 077777u;
     if ((d & 040000u) != 0u)
     {
@@ -59,7 +74,10 @@ agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
 agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 {
     int s = (int) a + (int) b;
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
+    {
+        return 0; /* no valid result */
+    }
     if (s > AGC_SP_MAX)
     {
         s -= W_ONE;
@@ -72,7 +90,10 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
     {
         /* no overflow */
     }
-    (void) AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
+    if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) s;
 }
 
@@ -80,7 +101,10 @@ agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 {
     int s = (int) a + (int) b;
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
+    {
+        return 0; /* no valid result */
+    }
     if (s > AGC_SP_MAX)
     {
         s = AGC_SP_MAX;
@@ -93,7 +117,10 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
     {
         /* no overflow */
     }
-    (void) AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
+    if (!AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return (agc_sp_t) s;
 }
 
@@ -101,8 +128,14 @@ agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
 {
     int64_t s = (int64_t) a + (int64_t) b;
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     if (s > AGC_DP_MAX)
     {
         s -= W_DP_ONE;
@@ -121,21 +154,36 @@ agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
 /* DDOUBL: A,L doubled (overflow-corrected).                             */
 agc_dp_t csm_dap_ddoubl(agc_dp_t a)
 {
-    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return csm_dap_das(a, a);
 }
 
 agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b)
 {
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_high(agc_sp_mul(a, b));
 }
 
 agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
 {
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     return agc_dp_low(agc_sp_mul(a, b));
 }
 
@@ -144,8 +192,14 @@ agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
  * here it is limited to +-POSMAX with the sign of the quotient.           */
 agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
 {
-    (void) AGC_ASSERT((num >= AGC_DP_MIN) && (num <= AGC_DP_MAX));
-    (void) AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX));
+    if (!AGC_ASSERT((num >= AGC_DP_MIN) && (num <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     bool    neg = ((num < 0) != (den < 0)) && (num != 0);
     int64_t an  = (num < 0) ? -(int64_t) num : (int64_t) num;
     int64_t ad  = (den < 0) ? -(int64_t) den : (int64_t) den;
@@ -161,8 +215,14 @@ agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
  * truncated to its upper word ("ONE AND ONE HALF PRECISION").            */
 agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
 {
-    (void) AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
-    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    if (!AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac)); /* AY (KMPAC +1) */
     agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));   /* AX            */
     return csm_dap_das(ax, (agc_dp_t) ay);             /* AX + AY       */
@@ -174,8 +234,14 @@ agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
  * branches (DPADD2+) is value-equivalent and not modelled bit for bit.   */
 agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
 {
-    (void) AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
-    (void) AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX));
+    if (!AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX)))
+    {
+        return 0; /* no valid result */
+    }
     int64_t s = (int64_t) kmpac + (int64_t) al;
     if (s > AGC_DP_MAX)
     {
@@ -195,7 +261,10 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
 /* CDUX (axis 0), CDUY (1), CDUZ (2): raw counter words.                  */
 uint16_t csm_dap_cdu(int axis)
 {
-    (void) AGC_ASSERT((axis >= 0) && (axis < AGC_CSM_AXES));
+    if (!AGC_ASSERT((axis >= 0) && (axis < AGC_CSM_AXES)))
+    {
+        return 0; /* no valid result */
+    }
     if (axis == 1)
     {
         return agc_erase_cduy();
@@ -215,27 +284,29 @@ agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
     {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_rupt_set_t5_task(task);
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
-    }
-    return st;
+    agc_rupt_set_t5_task(task);
+    agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
+    return AGC_STATUS_OK;
 }
 
 agc_status_t csm_dap_set_time5(uint16_t time5_word)
 {
-    (void) AGC_ASSERT(time5_word <= CSM_DAP_NEG0);
-    agc_status_t st = agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
-    return st;
+    if (!AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
+    agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
+    return AGC_STATUS_OK;
 }
 
 /* CAF BIT13; EXTEND; RAND DSALMOUT: SPS engine-on output bit 11.13.      */
 bool csm_dap_engine_on(void)
 {
     uint16_t ch11 = agc_chan_read(AGC_CHAN_DSALMOUT);
-    (void) AGC_ASSERT(ch11 <= CSM_DAP_NEG0);
+    if (!AGC_ASSERT(ch11 <= CSM_DAP_NEG0))
+    {
+        return false;
+    }
     return (ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u;
 }
 
@@ -244,6 +315,9 @@ bool csm_tvc_dap_is_tvc(void)
 {
     bool b1 = agc_flag_test(AGC_FLAG_DAPBIT1);
     bool b2 = agc_flag_test(AGC_FLAG_DAPBIT2);
-    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1));
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1)))
+    {
+        return false;
+    }
     return b1 && !b2;
 }

@@ -149,7 +149,10 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,
     }
     rs->uh = agc_vec_unit(ip, agc_vec_cross(ip, n, rs->ur1), NULL,
                           NULL); /* INVC125 */
-    (void) AGC_ASSERT(rs->r_t1 > 0);
+    if (!AGC_ASSERT(rs->r_t1 > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 

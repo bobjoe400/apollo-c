@@ -133,7 +133,7 @@ typedef struct agc_conic_ctx
 /* ---- common.c: MUTABLE and switches ------------------------------ */
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
 agc_dp_t     agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
-agc_status_t agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
+void agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
 agc_status_t agc_conic_abtconic_(void); /* ABTCONIC     */
 
 /* ---- common.c: interpretive MPAC (TP) one instruction each -------- */

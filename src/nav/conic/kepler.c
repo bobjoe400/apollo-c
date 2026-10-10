@@ -46,8 +46,14 @@ typedef enum kepler_step
 static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                          const agc_kepler_in_t *in, kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(in != NULL && ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(in != NULL && ks != NULL))
+    {
+        return;
+    }
     agc_dp_t r1 = 0;
     ctx->ur1    = agc_vec_unit(ip, in->rrect, &r1, NULL); /* UNIT, URRECT   */
     ctx->r1     = r1;                                     /* STOVL R1       */
@@ -68,7 +74,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     { /* BPL 1REV       */
         m = agc_conic_msqrt_(ip, m);
         m = agc_conic_mbddv_(ip, m, AGC_CONIC_2PISC); /* BDDV 2PISC     */
-        (void) agc_interp_test_ovf(ip);               /* BOV STOREMAX   */
+        agc_interp_clear_ovf(ip);               /* BOV STOREMAX   */
     }
     else
     {
@@ -87,8 +93,14 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                           kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(ks != NULL))
+    {
+        return;
+    }
     const agc_dp_t p0 = agc_conic_mstore_(
         agc_conic_mdmp_(agc_conic_mload_(ks->xmax), ctx->inv_root_mu));
     int            n = 0; /* ALPHA NORM X1  */
@@ -113,7 +125,10 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         }
         ks->tau = agc_conic_mstore_(agc_conic_msign_(m, ks->tau));
     }
-    (void) AGC_ASSERT(pass < AGC_CONIC_PERIOD_MAX_PASSES);
+    if (!AGC_ASSERT(pass < AGC_CONIC_PERIOD_MAX_PASSES))
+    {
+        return;
+    }
 }
 
 /* MODDONE, BADX, STORBNDS, STOREMIN, DXCOMP, XDIFF (pp. 1278-1279):
@@ -122,8 +137,14 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                           const agc_kepler_in_t *in, kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(in != NULL && ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(in != NULL && ks != NULL))
+    {
+        return;
+    }
     ctx->x        = in->xkepnew; /* STORE X        */
     agc_tp_t m    = agc_conic_msign_(agc_conic_mload_(in->xkepnew), ks->tau);
     bool     badx = agc_conic_mbze_(m) || agc_conic_mbmn_(m);
@@ -159,8 +180,14 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(ks != NULL))
+    {
+        return 0; /* no valid result */
+    }
     int      n1 = 0;
     int      n2 = 0;
     agc_tp_t m  = agc_conic_mnorm_(
@@ -199,8 +226,14 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                      kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return KEPLER_KEPRTN;
+    }
+    if (!AGC_ASSERT(ks != NULL))
+    {
+        return KEPLER_KEPRTN;
+    }
     if (ctx->x < 0)
     { /* NEGTOVFL       */
         ks->xmin = ctx->x;
@@ -225,8 +258,14 @@ static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  kepler_state_t *ks)
 {
-    (void) AGC_ASSERT(ip != NULL && ctx != NULL);
-    (void) AGC_ASSERT(ks != NULL);
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return KEPLER_KEPRTN;
+    }
+    if (!AGC_ASSERT(ks != NULL))
+    {
+        return KEPLER_KEPRTN;
+    }
     int      n1 = 0; /* DSQ NORM X1    */
     agc_tp_t m =
         agc_conic_mnorm_(agc_conic_mdsq_(agc_conic_mload_(ctx->x)), &n1);
@@ -236,7 +275,10 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                          6 - n1); /* SRR* 0 -6,1 */
     ctx->xi         = agc_conic_mstore_(m);       /* XI 2^6         */
     agc_status_t st = agc_conic_deltime_(ip, ctx);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return KEPLER_KEPRTN;
+    }
     if (agc_interp_test_ovf(ip))
     { /* BOV TIMEOVFL   */
         return kepler_timeovfl(ip, ctx, ks);
@@ -263,8 +305,14 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 static void kepler_output(const agc_conic_ctx_t *ctx, const kepler_state_t *ks,
                           const agc_kepler_in_t *in, agc_kepler_out_t *out)
 {
-    (void) AGC_ASSERT(ctx != NULL && ks != NULL);
-    (void) AGC_ASSERT(in != NULL && out != NULL);
+    if (!AGC_ASSERT(ctx != NULL && ks != NULL))
+    {
+        return;
+    }
+    if (!AGC_ASSERT(in != NULL && out != NULL))
+    {
+        return;
+    }
     agc_ovf_t ovf = 0;
     out->urrect   = ctx->ur1;
     out->r1       = ctx->r1;
@@ -296,7 +344,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
     {
         return st;
     }
-    (void) agc_interp_test_ovf(ip); /* SETPD 0, BOV +1 */
+    agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     kepler_state_t ks = {in->tau, 0, 0, 0, 0, 0, 0, in->tc};
     kepler_setup(ip, &ctx, in, &ks);
     kepler_period(ip, &ctx, &ks);
@@ -335,8 +383,14 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 static agc_tp_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in,
                                const agc_dp_t cell[6], int n1, int n2)
 {
-    (void) AGC_ASSERT(ip != NULL && in != NULL);
-    (void) AGC_ASSERT(cell != NULL);
+    if (!AGC_ASSERT(ip != NULL && in != NULL))
+    {
+        return 0; /* no valid result */
+    }
+    if (!AGC_ASSERT(cell != NULL))
+    {
+        return 0; /* no valid result */
+    }
     /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
     const agc_dp_t fs_sq =
         agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[4])));
@@ -406,7 +460,7 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
     const agc_dp_t sum = agc_conic_mstore_(m); /* DAD XKEP, PDDL */
     m = agc_conic_mdmp_(agc_conic_mload_(cell[3]), cell[0]); /* DMP 0D   */
     m = agc_conic_mshift_(ip, m, 1 + n1 - n2); /* SL* 1,1        */
-    (void) agc_interp_test_ovf(ip);            /* BOVB TCDANZIG  */
+    agc_interp_clear_ovf(ip);            /* BOVB TCDANZIG  */
     *xkepnew = agc_conic_mstore_(agc_conic_mdad_(ip, m, sum)); /* XKEPNEW */
     return AGC_STATUS_OK;
 }
@@ -478,7 +532,10 @@ agc_status_t agc_conic_csmconic(agc_interp_t *ip, agc_dp_t tdec1,
     sv.v    = agc_erase_vrectcsm();
     sv.t    = agc_erase_tetcsm();
     sv.moon = agc_flag_test(AGC_FLAG_CMOONFLG);
-    (void) AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX);
+    if (!AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_conic_rvcon(ip, &sv, tdec1, out, NULL);
 }
 
@@ -504,6 +561,9 @@ agc_status_t agc_conic_lemconic(agc_interp_t *ip, agc_dp_t tdec1,
     sv.v    = agc_erase_vrectlem();
     sv.t    = agc_erase_tetlem();
     sv.moon = agc_flag_test(AGC_FLAG_LMOONFLG);
-    (void) AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX);
+    if (!AGC_ASSERT(tdec1 >= AGC_DP_MIN && tdec1 <= AGC_DP_MAX))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_conic_rvcon(ip, &sv, tdec1, out, NULL);
 }

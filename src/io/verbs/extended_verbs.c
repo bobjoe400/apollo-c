@@ -60,7 +60,10 @@ static int      xv_noun;       /* NOUNREG at GOEXTVB                 */
 
 uint16_t agc_erase_extvbact(void)
 {
-    (void) AGC_ASSERT(extvbact <= WORD15);
+    if (!AGC_ASSERT(extvbact <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return extvbact;
 }
 
@@ -73,31 +76,39 @@ void agc_erase_set_extvbact(uint16_t v)
 }
 
 /* TS EXTVBACT by another program (P61 locks out the extended verbs).     */
-agc_status_t agc_svc_set_extvbact(uint16_t v)
+void agc_svc_set_extvbact(uint16_t v)
 {
     if (!AGC_ASSERT(v <= WORD15))
     {
-        return AGC_STATUS_BAD_ARG;
+        return;
     }
     extvbact = v;
-    return AGC_STATUS_OK;
 }
 
 bool agc_extverb_busy(void)
 {
-    (void) AGC_ASSERT(extvbact <= WORD15);
+    if (!AGC_ASSERT(extvbact <= WORD15))
+    {
+        return false;
+    }
     return extvbact != 0u;
 }
 
 int agc_extverb_verb(void)
 {
-    (void) AGC_ASSERT(xv_verb == 0 || (xv_verb >= 40 && xv_verb <= 99));
+    if (!AGC_ASSERT(xv_verb == 0 || (xv_verb >= 40 && xv_verb <= 99)))
+    {
+        return 0; /* no valid result */
+    }
     return xv_verb;
 }
 
 int agc_extverb_noun(void)
 {
-    (void) AGC_ASSERT(xv_noun >= 0 && xv_noun <= 99);
+    if (!AGC_ASSERT(xv_noun >= 0 && xv_noun <= 99))
+    {
+        return 0; /* no valid result */
+    }
     return xv_noun;
 }
 
@@ -107,15 +118,17 @@ int agc_extverb_noun(void)
 agc_status_t agc_extverb_gopin(void)
 {
     agc_status_t st = agc_dsky_pinbrnch();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* ALM/END: operator error light, then GOPIN.                              */
 agc_status_t agc_extverb_alm_end(void)
 {
-    agc_status_t st = agc_dsky_falton();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_dsky_falton();
     return agc_extverb_gopin();
 }
 
@@ -135,7 +148,10 @@ agc_status_t agc_extverb_testxact(bool *ok)
     }
     extvbact        = OCT24; /* SETXTACT        */
     agc_status_t st = agc_dsky_nvsub_blank(NVSUB_BLANK_BUT_MODE_VERB);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     *ok = true;
     return AGC_STATUS_OK;
 }
@@ -148,7 +164,10 @@ bool agc_extverb_chkpooh(void)
         return true;
     }
     agc_status_t st = agc_extverb_alm_end();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return false;
+    }
     return false;
 }
 
@@ -161,7 +180,10 @@ bool agc_extverb_ckmodcad(void)
         return true;
     }
     agc_status_t st = agc_extverb_alm_end();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return false;
+    }
     return false;
 }
 
@@ -169,9 +191,7 @@ bool agc_extverb_ckmodcad(void)
  * same recall as a completed load (LOADLV1).                              */
 agc_status_t agc_extverb_goloadlv(void)
 {
-    agc_status_t st =
-        agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (WORD15 & ~BIT6));
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (WORD15 & ~BIT6));
     return agc_dsky_loadlv();
 }
 
@@ -183,7 +203,10 @@ agc_status_t agc_extverb_upflag(agc_flag_id_t f)
         return AGC_STATUS_BAD_ARG;
     }
     uint16_t w = agc_svc_upflag(f); /* the new flagword        */
-    (void) AGC_ASSERT((w & agc_flag_mask(f)) != 0u);
+    if (!AGC_ASSERT((w & agc_flag_mask(f)) != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_extverb_gopin();
 }
 
@@ -194,7 +217,10 @@ agc_status_t agc_extverb_downflag(agc_flag_id_t f)
         return AGC_STATUS_BAD_ARG;
     }
     uint16_t w = agc_svc_downflag(f); /* the new flagword        */
-    (void) AGC_ASSERT((w & agc_flag_mask(f)) == 0u);
+    if (!AGC_ASSERT((w & agc_flag_mask(f)) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_extverb_gopin();
 }
 
@@ -338,8 +364,7 @@ static agc_status_t verb_clock_align(agc_job_ctx_t *ctx)
     }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        st = agc_exec_prio_change(PRIO7);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_exec_prio_change(PRIO7);
     }
     return agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END,
                              AGC_JOB_CLOCK_ALIGN_UPDATE);
@@ -359,7 +384,10 @@ static agc_status_t xact_and_schedule(bool pooh, agc_prio_t prio,
     {
         return st;
     }
-    (void) AGC_ASSERT(job != AGC_JOB_NONE);
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_extverb_schedule(prio, job, true); /* FINDVAC         */
 }
 
@@ -373,8 +401,7 @@ static agc_status_t verb_orbit_parameters(agc_job_ctx_t *ctx)
     {
         return st;
     }
-    st = agc_exec_prio_change(PRIO7);
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_exec_prio_change(PRIO7);
     return agc_job_orbit_parameter_display(ctx); /* POSTJUMP V82CALL */
 }
 
@@ -382,7 +409,10 @@ static agc_status_t verb_orbit_parameters(agc_job_ctx_t *ctx)
 static agc_status_t verb_hardware_restart(void)
 {
     agc_status_t st = agc_rupt_go();
-    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
@@ -390,7 +420,10 @@ static agc_status_t verb_hardware_restart(void)
 static agc_status_t verb_erasable_dump(void)
 {
     agc_status_t st = agc_telem_start_dump();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_extverb_gopin();
 }
 
@@ -423,11 +456,13 @@ static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
     }
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        st = agc_exec_prio_change(PRIO7);
-        (void) AGC_ASSERT(st == AGC_STATUS_OK);
+        agc_exec_prio_change(PRIO7);
     }
     st = agc_selfcheck_showsum_start(); /* SKEEP6 = +1, SMODE = 0 */
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return banksum_display(ctx);
 }
 
@@ -435,7 +470,10 @@ static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
 static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
 {
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     switch (verb)
     {
         case 40:
@@ -511,16 +549,25 @@ agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx)
 /* ENDEXT (TERMEXTV, ENDEXTVB) as a job: release the display systems.     */
 agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_dsky_endext();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return st;
 }
 
 /* GOPIN as a job (after an IMUSTALL in V40).                              */
 agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_extverb_gopin();
 }
 
@@ -602,7 +649,10 @@ agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx)
 /* Signed value of a 15-bit ones'-complement word.                        */
 static int32_t ones_value(uint16_t w)
 {
-    (void) AGC_ASSERT(w <= WORD15);
+    if (!AGC_ASSERT(w <= WORD15))
+    {
+        return 0; /* no valid result */
+    }
     return ((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w;
 }
 
@@ -621,21 +671,27 @@ agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
     }
     int32_t delta = ones_value(agc_dsky_dsptem(CLOCK_DELTA_WORD)) * 040000 +
                     ones_value(agc_dsky_dsptem(CLOCK_DELTA_WORD + 1));
-    (void) AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS);
+    if (!AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_inhint();
     int64_t t = (int64_t) agc_time_now_cs() + (int64_t) delta;
     t = ((t % (int64_t) AGC_TIME_MODULUS_CS) + (int64_t) AGC_TIME_MODULUS_CS) %
         (int64_t) AGC_TIME_MODULUS_CS;
-    st = agc_time_set_cs((uint32_t) t);
+    agc_time_set_cs((uint32_t) t);
+    st = AGC_STATUS_OK;
     agc_relint();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_dsky_endext(); /* UPDTMEND                */
 }
 
 /* NOKILL (ENTER on the V05N01): show the same bank again.                 */
 agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return banksum_display(ctx);
 }
 
@@ -654,16 +710,25 @@ agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
 /* V34: SKEEP1 = SELFADRS (self-check restarts from SELFCHK), ENDEXT.     */
 agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
 {
-    (void) AGC_ASSERT(ctx != NULL);
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     agc_status_t st = agc_selfcheck_showsum_end();
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     return agc_dsky_endext();
 }
 
 /* ATTACHED (V66) / LMTOCMSV (CSM V47): FINDVAC the copy at priority 10. */
 agc_status_t agc_extverb_state_vector_copy(bool from_other)
 {
-    (void) AGC_ASSERT(!from_other || agc_state_vehicle() == AGC_VEHICLE_CSM);
+    if (!AGC_ASSERT(!from_other || agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
     sv_from_other = from_other;
     return agc_extverb_schedule(PRIO10, AGC_JOB_STATE_VECTOR_COPY, true);
 }
@@ -697,8 +762,7 @@ agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx)
         (agc_flag_id_t) (lm ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG);
     bool          moon = agc_flag_test(sv_from_other ? moth : mself);
     agc_flag_id_t dst  = sv_from_other ? mself : moth;
-    agc_status_t  sf   = moon ? agc_flag_set(dst) : agc_flag_clear(dst);
-    (void) AGC_ASSERT(sf == AGC_STATUS_OK);
+    agc_flag_put(dst, moon);
     agc_interp_t ip;
     agc_interp_init(&ip);
     bool         surface = false;

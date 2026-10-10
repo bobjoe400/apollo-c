@@ -119,7 +119,7 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
     agc_dp_t part2 =
         agc_navaux_rev_tp_shl(agc_dp_mul_tp(t_hi9, xdot), 10 - xdot_shift);
     *x = agc_navaux_rev_add(part2, part);
-    (void) agc_interp_test_ovf(ip); /* BOV +1: leave OVFIND clear      */
+    agc_interp_clear_ovf(ip); /* BOV +1: leave OVFIND clear      */
     return AGC_STATUS_OK;
 }
 

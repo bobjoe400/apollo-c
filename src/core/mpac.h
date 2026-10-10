@@ -51,6 +51,7 @@ agc_w2_t agc_w3_top(agc_w3_t m); /* MPAC, MPAC+1           */
 /* ---- single instructions ------------------------------------------------ */
 agc_w2_t agc_w_mp(int32_t a, int32_t b);              /* MP            */
 int32_t  agc_w_ts(int32_t a16, int *ovf);             /* TS correction */
+int      agc_w_ovf(int32_t a16); /* TS: overflow indication only */
 agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf); /* DAS / DDOUBL  */
 agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k);   /* DV: {q, r}    */
 agc_w2_t agc_w_dcs(agc_w2_t p);                       /* DCS           */
