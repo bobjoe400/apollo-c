@@ -66,3 +66,10 @@
             one); BUG exec-sched executive.c activity_light() passes 0177775 to
             agc_chan_and (mask > 077777 assertion); sim must drain GYROCMD /
             CDU?CMD via agc_imu_hw_set_*. Launching batch B lane guid-entry.
+2026-10-09  core-numeric DONE (0 stubs), bit-exact vs yaAGC on 20,720
+            interpreter runs and all 65,534 SPSIN/SPCOS inputs; 287 oracle
+            cases committed with tests/oracle_core_numeric.c. Translation guide
+            corrected (wrap-not-saturate; DMP/DMPR mapping). Found a yaAGC DV
+            bug (SpToDecent sign-extension) -> patch note for oracle owner.
+            Known deviation: stale DVSIGN on V/SC & UNIT overflow not modelled.
+            Launching batch B lane dap-lm.
