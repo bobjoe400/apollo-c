@@ -22,43 +22,48 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
-#include "agc/core/interp.h"
 #include "agc/exec/exec.h"
-#include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 
 /* ---- sizes ---------------------------------------------------------------- */
-#define AGC_ALIGN_NSTARS        37   /* catalogue stars 1..37 (STAR_TABLES)     */
-#define AGC_ALIGN_STAR_CODE_MAX 050  /* star codes 0..50 octal (CHKSCODE)       */
-#define AGC_ALIGN_SXT_MARKS     6    /* SXTMARK marks that fit in a VAC (7 wd)  */
-#define AGC_ALIGN_AOT_PAIRS     5    /* AOTMARK mark pairs (MARKCNTR 0..4)      */
-#define AGC_ALIGN_AGSBUFF_WORDS 14   /* AGSBUFF (14D)                           */
+#define AGC_ALIGN_NSTARS 37 /* catalogue stars 1..37 (STAR_TABLES)     */
+#define AGC_ALIGN_STAR_CODE_MAX \
+    050                            /* star codes 0..50 octal (CHKSCODE)       */
+#define AGC_ALIGN_SXT_MARKS     6  /* SXTMARK marks that fit in a VAC (7 wd)  */
+#define AGC_ALIGN_AOT_PAIRS     5  /* AOTMARK mark pairs (MARKCNTR 0..4)      */
+#define AGC_ALIGN_AGSBUFF_WORDS 14 /* AGSBUFF (14D)                           */
 
 /* ---- LOCSAM outputs (S50, P51-P53) -------------------------------------- */
-typedef struct agc_align_locsam {
-    agc_vec_t vearth;            /* half-unit LOS to earth centre (ref)        */
-    agc_vec_t vsun;              /* half-unit LOS to sun (ref)                 */
-    agc_vec_t vmoon;             /* half-unit LOS to moon centre (ref)         */
-    agc_dp_t  cearth;            /* occultation cone cosines, cos/4: CEARTH    */
-    agc_dp_t  csun;              /*   CSUN                                     */
-    agc_dp_t  cmoon;             /*   CMOON                                    */
-    agc_vec_t vel_c;             /* VEL/C aberration vector, B-1 (CSM only)    */
+typedef struct agc_align_locsam
+{
+    agc_vec_t vearth; /* half-unit LOS to earth centre (ref)        */
+    agc_vec_t vsun;   /* half-unit LOS to sun (ref)                 */
+    agc_vec_t vmoon;  /* half-unit LOS to moon centre (ref)         */
+    agc_dp_t  cearth; /* occultation cone cosines, cos/4: CEARTH    */
+    agc_dp_t  csun;   /*   CSUN                                     */
+    agc_dp_t  cmoon;  /*   CMOON                                    */
+    agc_vec_t vel_c;  /* VEL/C aberration vector, B-1 (CSM only)    */
 } agc_align_locsam_t;
 
 /* One SXTMARK mark (7 words in the mark VAC: MKT2T1, CDUY, CDUS, CDUZ,
  * CDUT, CDUX), CSM.                                                        */
-typedef struct agc_align_sxt_mark {
-    agc_dp_t t;                  /* MKT2T1 time of mark, cs B28                */
-    uint16_t cduy, cdus, cduz, cdut, cdux;   /* raw CDU words (cdu)           */
+typedef struct agc_align_sxt_mark
+{
+    agc_dp_t t; /* MKT2T1 time of mark, cs B28                */
+    uint16_t cduy, cdus, cduz, cdut, cdux; /* raw CDU words (cdu)           */
 } agc_align_sxt_mark_t;
 
 /* One AOTMARK mark pair (6 words: X-mark CDUY,Z,X at +0,+2,+4 and Y-mark
  * CDUY,Z,X at +1,+3,+5; a surface mark keeps CURSOR at +1, SPIRAL at +3).  */
-typedef struct agc_align_aot_pair {
-    uint16_t xcdu[3];            /* X mark: CDUY, CDUZ, CDUX (cdu)             */
-    uint16_t ycdu[3];            /* Y mark (flight) or CURSOR, -, SPIRAL       */
+typedef struct agc_align_aot_pair
+{
+    uint16_t xcdu[3]; /* X mark: CDUY, CDUZ, CDUX (cdu)             */
+    uint16_t ycdu[3]; /* Y mark (flight) or CURSOR, -, SPIRAL       */
 } agc_align_aot_pair_t;
 
 /*
@@ -69,85 +74,92 @@ typedef struct agc_align_aot_pair {
  * alignment/marking code and the noun tables (N06 N05 N22 N70 N71 N79 N87
  * N88 N89 N93 N94).
  */
-typedef struct agc_align_ram {
+typedef struct agc_align_ram
+{
     /* orientation matrices, rows are half-unit vectors */
-    agc_mat_t xsmd;              /* XSMD,YSMD,ZSMD desired SM (ref)            */
-    agc_mat_t xsm;               /* XSM,YSM,ZSM   desired SM (S52.2 output)    */
-    agc_mat_t xnb;               /* XNB,YNB,ZNB   nav base wrt SM or ref       */
-    agc_mat_t xdc;               /* XDC,YDC,ZDC   desired SM wrt present SM    */
-    agc_dp_t  ogc[3];            /* OGC,IGC,MGC   gyro torque angles, revs     */
-    agc_dp_t  ogct[3];           /* OGCT  saved torque angles (P57), revs      */
+    agc_mat_t xsmd;    /* XSMD,YSMD,ZSMD desired SM (ref)            */
+    agc_mat_t xsm;     /* XSM,YSM,ZSM   desired SM (S52.2 output)    */
+    agc_mat_t xnb;     /* XNB,YNB,ZNB   nav base wrt SM or ref       */
+    agc_mat_t xdc;     /* XDC,YDC,ZDC   desired SM wrt present SM    */
+    agc_dp_t  ogc[3];  /* OGC,IGC,MGC   gyro torque angles, revs     */
+    agc_dp_t  ogct[3]; /* OGCT  saved torque angles (P57), revs      */
     /* star data */
-    agc_vec_t starad[3];         /* STARAD, +6, +12D  half-unit                */
-    agc_vec_t starsav1;          /* STARSAV1  1st observed LOS, half-unit      */
-    agc_vec_t starsav2;          /* STARSAV2  2nd observed LOS, half-unit      */
-    agc_vec_t starsav3;          /* STARSAV3  planet vector (N88), half-unit   */
-    agc_vec_t planvec;           /* PLANVEC   1st catalogue LOS, half-unit     */
-    agc_vec_t vac6;              /* VAC 6D  (R54 second pair, star 1)          */
-    agc_vec_t vac12;             /* VAC 12D (R54 second pair, star 2)          */
-    agc_vec_t star;              /* STAR      LOS (CALCSXA input / temp)       */
-    agc_vec_t sax;               /* SAX       optics shaft axis (ref)          */
-    agc_vec_t vec1, vec2;        /* VEC1, VEC2 P57 reference vectors           */
-    agc_vec_t gsav;              /* GSAV  gravity, NB, half-unit (P57)         */
-    agc_vec_t gout;              /* GOUT  gravity sample, NB (P57)             */
-    agc_vec_t gacc;              /* GACC  accumulated DELV (P57)               */
-    agc_vec_t ynbsav, znbsav;    /* YNBSAV ZNBSAV attitude, moon fixed (P57)   */
-    agc_vec_t scaxis;            /* SCAXIS  AOT optic axis (NB), half-unit     */
-    agc_vec_t pointvsm;          /* POINTVSM  LOS for VECPOINT (SM)            */
-    agc_vec_t xpnb;              /* VAC 18D X-mark plane 1/4 vec (NB) (LM)     */
-    agc_vec_t ypnb;              /* VAC 12D Y-mark plane 1/4 vec (NB) (LM)     */
-    agc_vec_t uxp;               /* VAC 24D UXP (OANB) half-unit (LM)          */
-    agc_vec_t uyp;               /* VAC 18D UYP (OANB) half-unit (LM)          */
-    agc_align_locsam_t locsam;   /* VEARTH VSUN VMOON (STARAD overlay), CSS    */
-    agc_sp_t  besti, bestj;      /* BESTI BESTJ  star number * 6               */
-    agc_sp_t  starind;           /* STARIND 0 = 1st star, 1 = 2nd             */
-    agc_sp_t  markindx;          /* MARKINDX number of marks wanted (CM)       */
-    agc_sp_t  starcode;          /* STARCODE (N70) / AOTCODE (N71): bits 1-6
+    agc_vec_t starad[3];       /* STARAD, +6, +12D  half-unit                */
+    agc_vec_t starsav1;        /* STARSAV1  1st observed LOS, half-unit      */
+    agc_vec_t starsav2;        /* STARSAV2  2nd observed LOS, half-unit      */
+    agc_vec_t starsav3;        /* STARSAV3  planet vector (N88), half-unit   */
+    agc_vec_t planvec;         /* PLANVEC   1st catalogue LOS, half-unit     */
+    agc_vec_t vac6;            /* VAC 6D  (R54 second pair, star 1)          */
+    agc_vec_t vac12;           /* VAC 12D (R54 second pair, star 2)          */
+    agc_vec_t star;            /* STAR      LOS (CALCSXA input / temp)       */
+    agc_vec_t sax;             /* SAX       optics shaft axis (ref)          */
+    agc_vec_t vec1, vec2;      /* VEC1, VEC2 P57 reference vectors           */
+    agc_vec_t gsav;            /* GSAV  gravity, NB, half-unit (P57)         */
+    agc_vec_t gout;            /* GOUT  gravity sample, NB (P57)             */
+    agc_vec_t gacc;            /* GACC  accumulated DELV (P57)               */
+    agc_vec_t ynbsav, znbsav;  /* YNBSAV ZNBSAV attitude, moon fixed (P57)   */
+    agc_vec_t scaxis;          /* SCAXIS  AOT optic axis (NB), half-unit     */
+    agc_vec_t pointvsm;        /* POINTVSM  LOS for VECPOINT (SM)            */
+    agc_vec_t xpnb;            /* VAC 18D X-mark plane 1/4 vec (NB) (LM)     */
+    agc_vec_t ypnb;            /* VAC 12D Y-mark plane 1/4 vec (NB) (LM)     */
+    agc_vec_t uxp;             /* VAC 24D UXP (OANB) half-unit (LM)          */
+    agc_vec_t uyp;             /* VAC 18D UYP (OANB) half-unit (LM)          */
+    agc_align_locsam_t locsam; /* VEARTH VSUN VMOON (STARAD overlay), CSS    */
+    agc_sp_t besti, bestj;     /* BESTI BESTJ  star number * 6               */
+    agc_sp_t starind;          /* STARIND 0 = 1st star, 1 = 2nd             */
+    agc_sp_t markindx;         /* MARKINDX number of marks wanted (CM)       */
+    agc_sp_t starcode;         /* STARCODE (N70) / AOTCODE (N71): bits 1-6
                                     star, 7-9 AOT detent (LM)                  */
-    agc_dp_t  tsight;            /* TSIGHT  time of sighting, cs B28           */
-    agc_dp_t  talign;            /* TALIGN  alignment time, cs B28 (LM)        */
-    agc_dp_t  theta;             /* THETA   angle of marked pair, revs         */
-    agc_dp_t  theta18;           /* VAC 18D angle of catalogue pair, revs      */
-    agc_dp_t  normtem1;          /* NORMTEM1 star angle difference, revs (N05) */
-    agc_dp_t  aoptime;           /* AOPTIME  cs B28 (SR52.1) / angle (ROTA)    */
-    agc_dp_t  landlat, landlong, landalt; /* N89: LAT revs, LONG/2 revs, ALT m B29 */
+    agc_dp_t tsight;           /* TSIGHT  time of sighting, cs B28           */
+    agc_dp_t talign;           /* TALIGN  alignment time, cs B28 (LM)        */
+    agc_dp_t theta;            /* THETA   angle of marked pair, revs         */
+    agc_dp_t theta18;          /* VAC 18D angle of catalogue pair, revs      */
+    agc_dp_t normtem1;         /* NORMTEM1 star angle difference, revs (N05) */
+    agc_dp_t aoptime;          /* AOPTIME  cs B28 (SR52.1) / angle (ROTA)    */
+    agc_dp_t landlat, landlong,
+        landalt; /* N89: LAT revs, LONG/2 revs, ALT m B29 */
     /* optics (CM) */
-    uint16_t  sac, pac;          /* SAC PAC desired shaft / trunnion, cdu      */
-    uint16_t  desoptt, desopts;  /* DESOPTT DESOPTS desired optics (T4 drive)  */
+    uint16_t sac, pac;         /* SAC PAC desired shaft / trunnion, cdu      */
+    uint16_t desoptt, desopts; /* DESOPTT DESOPTS desired optics (T4 drive)  */
     /* AOT (LM) */
-    uint16_t  az, el;            /* AZ EL keyed-in optic axis (N87), cdu       */
-    uint16_t  cursor, spiral;    /* CURSOR SPIRAL (N79), cdu                   */
-    uint16_t  rotang;            /* VAC 10D AOT apparent rotation, cdu         */
-    agc_sp_t  poscode;           /* POSCODE AOT detent position 1..6           */
-    agc_sp_t  xymark;            /* XYMARK  mark kind / detent                 */
-    agc_sp_t  markcntr;          /* MARKCNTR mark pair counter (0..4)          */
-    agc_sp_t  mkdex;             /* MKDEX                                      */
-    agc_sp_t  gctr;              /* GCTR gravity sample counter (P57)          */
+    uint16_t az, el;         /* AZ EL keyed-in optic axis (N87), cdu       */
+    uint16_t cursor, spiral; /* CURSOR SPIRAL (N79), cdu                   */
+    uint16_t rotang;         /* VAC 10D AOT apparent rotation, cdu         */
+    agc_sp_t poscode;        /* POSCODE AOT detent position 1..6           */
+    agc_sp_t xymark;         /* XYMARK  mark kind / detent                 */
+    agc_sp_t markcntr;       /* MARKCNTR mark pair counter (0..4)          */
+    agc_sp_t mkdex;          /* MKDEX                                      */
+    agc_sp_t gctr;           /* GCTR gravity sample counter (P57)          */
     /* mark storage (the mark VAC area) */
-    agc_align_sxt_mark_t sxt[AGC_ALIGN_SXT_MARKS]; /* SXTMARK marks             */
-    agc_sp_t  qpret;             /* QPRET next mark slot / marks made (CM)     */
-    agc_align_aot_pair_t aot[AGC_ALIGN_AOT_PAIRS]; /* AOTMARK mark pairs        */
-    int       mkvac_index;       /* VAC area held by the mark system, -1 none  */
+    agc_align_sxt_mark_t
+             sxt[AGC_ALIGN_SXT_MARKS]; /* SXTMARK marks             */
+    agc_sp_t qpret; /* QPRET next mark slot / marks made (CM)     */
+    agc_align_aot_pair_t
+        aot[AGC_ALIGN_AOT_PAIRS]; /* AOTMARK mark pairs        */
+    int mkvac_index; /* VAC area held by the mark system, -1 none  */
     /* return points (QMIN, QMAJ, SAVQR52, R53EXIT, QPRET held a return
      * address in the AGC; here the continuation job)                        */
-    agc_job_id_t qmin;           /* QMIN                                       */
-    agc_job_id_t qmaj;           /* QMAJ                                       */
-    agc_job_id_t auto_optics_return;        /* SAVQR52                                    */
-    agc_job_id_t sighting_mark_return;        /* R53EXIT                                    */
-    agc_job_id_t planet_ret;     /* return of PLANET when it flashes V06N88    */
-    agc_job_id_t coarse_ret;     /* return of COARSE (QPRET of CALL COARSE)    */
-    agc_vec_t    planet_los;     /* PLANET result (MPAC): half-unit, reference */
-    agc_dp_t     landing_site_time;        /* GDT/2 +4: N89DISP time, cs B28 (LM)        */
-    agc_vec_t    alphav;         /* ALPHAV  landing site / LALOTORV result, m B29 */
-    agc_job_id_t lunar_gravity_return; /* QMIN of LUNG / GYROTRIM (P57)        */
+    agc_job_id_t qmin; /* QMIN                                       */
+    agc_job_id_t qmaj; /* QMAJ                                       */
+    agc_job_id_t
+        auto_optics_return; /* SAVQR52                                    */
+    agc_job_id_t
+        sighting_mark_return;   /* R53EXIT                                    */
+    agc_job_id_t planet_ret;    /* return of PLANET when it flashes V06N88    */
+    agc_job_id_t coarse_ret;    /* return of COARSE (QPRET of CALL COARSE)    */
+    agc_vec_t    planet_los;    /* PLANET result (MPAC): half-unit, reference */
+    agc_dp_t landing_site_time; /* GDT/2 +4: N89DISP time, cs B28 (LM)        */
+    agc_vec_t alphav; /* ALPHAV  landing site / LALOTORV result, m B29 */
+    agc_job_id_t
+        lunar_gravity_return; /* QMIN of LUNG / GYROTRIM (P57)        */
 } agc_align_ram_t;
 
 agc_align_ram_t *agc_align_ram(void);
 void             agc_align_ram_reset(void);
 
 /* ---- word-format helpers (RTB op equivalents) ----------------------------- */
-agc_dp_t agc_align_cdulogic(uint16_t cdu);          /* CDULOGIC cdu -> revs  */
-uint16_t agc_align_ones_to_twos(agc_dp_t revs);           /* 1STO2S revs -> cdu    */
+agc_dp_t agc_align_cdulogic(uint16_t cdu);      /* CDULOGIC cdu -> revs  */
+uint16_t agc_align_ones_to_twos(agc_dp_t revs); /* 1STO2S revs -> cdu    */
 
 /* CD*TR*GS of explicit X, Y, Z CDU words (CDUTRIG with a CDUSPOT).        */
 agc_status_t agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t);
@@ -157,25 +169,27 @@ agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t,
 
 /* ---- shared alignment math (src/programs/) ------------------------------- */
 agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
-                             const agc_mat_t *refsmmat, const uint16_t cdu[3],
-                             agc_mat_t *xsm, agc_mat_t *xnb, uint16_t thetad[3]);
+                                     const agc_mat_t *refsmmat,
+                                     const uint16_t cdu[3], agc_mat_t *xsm,
+                                     agc_mat_t *xnb, uint16_t thetad[3]);
 /* S52.3 axes from a state (r m, v m/cs, any common scale).                */
-agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
-                                  agc_mat_t *smd);
+agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
+                                                agc_vec_t v, agc_mat_t *smd);
 /* S52.3 with the CSMPREC (CM) / LEMCONIC (LM) call; BUSY = job asleep in
  * INTSTALL and resumed as resume_job.                                     */
 agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
-                             agc_job_id_t resume_job, agc_mat_t *smd);
+                                           agc_job_id_t resume_job,
+                                           agc_mat_t   *smd);
 agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
                                 agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd);
-bool         agc_align_coarse_needed(const uint16_t thetad[3],
-                                          const uint16_t cdu[3]);
+bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3]);
 agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
-                                      const agc_mat_t *refsmmat, agc_mat_t *xdc);
+                                      const agc_mat_t *refsmmat,
+                                      agc_mat_t       *xdc);
 /* LOCSAM from an integrated state and LSPOS output (pure).               */
-agc_status_t agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv,
-                                   agc_vec_t moon, agc_vec_t sun,
-                                   agc_align_locsam_t *out);
+agc_status_t agc_align_locsam_from(agc_interp_t             *ip,
+                                   const agc_state_vector_t *sv, agc_vec_t moon,
+                                   agc_vec_t sun, agc_align_locsam_t *out);
 agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs,
                               agc_job_id_t resume_job, agc_align_locsam_t *out);
 bool         agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls,
@@ -191,9 +205,9 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6,
 agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
                                       const agc_vec_t obs[2], agc_dp_t *diff);
 agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2],
-                                 const agc_vec_t b[2], agc_mat_t *xdc);
+                                  const agc_vec_t b[2], agc_mat_t *xdc);
 /* CHKSCODE: true when 0 <= STARCODE <= 50 octal.                          */
-bool         agc_align_chkscode(agc_sp_t starcode);
+bool agc_align_chkscode(agc_sp_t starcode);
 
 /* SVDWN1/SVDWN2 (CSM_GEOMETRY / LEM_GEOMETRY), implemented in src/nav/
  * svdwn.c because the integration package (nav) calls it from ATOPCSM /
@@ -202,14 +216,16 @@ bool         agc_align_chkscode(agc_sp_t starcode);
 agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
                              agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
                              agc_vec_t tnuv, agc_dp_t tet);
-agc_vec_t    agc_align_r_other(void);    /* R-OTHER  m B29 (downlink)      */
-agc_vec_t    agc_align_v_other(void);    /* V-OTHER  m/cs B7 (downlink)    */
+agc_vec_t    agc_align_r_other(void); /* R-OTHER  m B29 (downlink)      */
+agc_vec_t    agc_align_v_other(void); /* V-OTHER  m/cs B7 (downlink)    */
 
 /* ---- COARSE (both vehicles, src/programs/alignment/common.c) ---------------- */
 
 /* ---- shared alignment jobs: R54 (CHKSDATA) and R55 (src/programs/) ------ */
-agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
-agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
+agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
+                                             agc_job_id_t         qmin_return);
+agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx,
+                                     agc_job_id_t         qmin_return);
 
 /* ---- CSM geometry (src/csm/optics/geometry.c) ------------------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
@@ -219,17 +235,20 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
                              const agc_cdutrig_t *t, uint16_t *sac,
                              uint16_t *pac, bool *cult);
 agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star,
-                            const agc_mat_t *nb, uint16_t *sac,
-                            uint16_t *pac, bool *cult);
+                            const agc_mat_t *nb, uint16_t *sac, uint16_t *pac,
+                            bool *cult);
 agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log);
-typedef struct agc_csm_earrot {
-    agc_vec_t rtinit;            /* RTINIT  half-unit                          */
-    agc_vec_t unitw;             /* UNITW   full unit (earth rotation axis)    */
-    agc_vec_t rteast;            /* RTEAST  half-unit                          */
-    agc_vec_t rtnorm;            /* RTNORM  half-unit                          */
-    agc_dp_t  dtearot;           /* DTEAROT cs B28                             */
-    agc_vec_t rt;                /* RT      half-unit target vector            */
+
+typedef struct agc_csm_earrot
+{
+    agc_vec_t rtinit;  /* RTINIT  half-unit                          */
+    agc_vec_t unitw;   /* UNITW   full unit (earth rotation axis)    */
+    agc_vec_t rteast;  /* RTEAST  half-unit                          */
+    agc_vec_t rtnorm;  /* RTNORM  half-unit                          */
+    agc_dp_t  dtearot; /* DTEAROT cs B28                             */
+    agc_vec_t rt;      /* RT      half-unit target vector            */
 } agc_csm_earrot_t;
+
 agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e);
 agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
 
@@ -238,7 +257,8 @@ agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
  * mode 1 and mode 2 (swapped when RADMODES antenna bit says mode 2);
  * *along_y when the LOS is along Y (the AGC's BOVB LUNDESCH).             */
 agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
-                             uint16_t modea[2], uint16_t modeb[2], bool *along_y);
+                             uint16_t modea[2], uint16_t modeb[2],
+                             bool *along_y);
 agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu,
                          uint16_t shaft_cdu, agc_vec_t *los_nb);
 
@@ -249,42 +269,45 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
                                  agc_dp_t *pitch, agc_dp_t *yaw);
 agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
                                  agc_dp_t *pitch, agc_dp_t *yaw);
-agc_dp_t     agc_sband_rhosb(void);     /* RHOSB  (CM N51 pitch), revs    */
-agc_dp_t     agc_sband_gammasb(void);   /* GAMMASB (CM N51 yaw), revs     */
-agc_dp_t     agc_sband_pitchang(void);  /* PITCHANG (LM N51), revs        */
-agc_dp_t     agc_sband_yawang(void);    /* YAWANG   (LM N51), revs        */
+agc_dp_t     agc_sband_rhosb(void);    /* RHOSB  (CM N51 pitch), revs    */
+agc_dp_t     agc_sband_gammasb(void);  /* GAMMASB (CM N51 yaw), revs     */
+agc_dp_t     agc_sband_pitchang(void); /* PITCHANG (LM N51), revs        */
+agc_dp_t     agc_sband_yawang(void);   /* YAWANG   (LM N51), revs        */
 
 /* ---- R63 (LM) ------------------------------------------------------------ */
-agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem,
-                         const agc_mat_t *refsmmat, agc_vec_t *pointvsm);
+agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
+                                               agc_vec_t        rlem,
+                                               const agc_mat_t *refsmmat,
+                                               agc_vec_t       *pointvsm);
 
 /* ---- R47 AGS initialisation (LM) ----------------------------------------- */
 /* SCALEVEC: RATT1/VATT1 (moon sphere m B27, m/cs B5) -> SM axes (half-
  * unit REFSMMAT), AEA words of 512 ft and 0.5 ft/s, rounded for the AEA's
  * 2's complement; out = RX, VX, RY, VY, RZ, VZ (high words).              */
-agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1,
-                              const agc_mat_t *refsmmat, uint16_t out[6]);
-agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk,
-                          agc_dp_t *out);
-const uint16_t *agc_ags_buffer(void);    /* AGSBUFF, 14 raw words           */
-agc_dp_t     agc_ags_agsk(void);         /* AGSK cs B28                     */
-agc_status_t agc_ags_set_agsk(agc_dp_t t);
+agc_status_t    agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1,
+                                 agc_vec_t vatt1, const agc_mat_t *refsmmat,
+                                 uint16_t out[6]);
+agc_status_t    agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk,
+                             agc_dp_t *out);
+const uint16_t *agc_ags_buffer(void); /* AGSBUFF, 14 raw words           */
+agc_dp_t        agc_ags_agsk(void);   /* AGSK cs B28                     */
+agc_status_t    agc_ags_set_agsk(agc_dp_t t);
 
 /* ---- SXTMARK (CSM, src/csm/optics/sxtmark.c) ------------------------------------ */
-agc_status_t agc_sxtmark(agc_sp_t nmarks);                /* SXTMARK       */
-agc_status_t agc_sxtmark_reserve(void);                   /* SXTMARK +2    */
-agc_status_t agc_sxtmark_mkreleas(void);                  /* MKRELEAS      */
-agc_status_t agc_sxtmark_free_vac(void);                  /* MARKSTAT = 0  */
-agc_status_t agc_sxtmark_markrupt(void);                  /* MARKRUPT      */
-agc_status_t agc_sxtmark_markcont(void);                  /* MARKCONT      */
-agc_status_t agc_sxtmark_mark2(void);                     /* MARK2/VACSTOR */
-agc_status_t agc_sxtmark_mkreject(void);                  /* MKREJECT      */
-agc_sp_t     agc_sxtmark_marks_made(void);                /* QPRET count   */
+agc_status_t agc_sxtmark(agc_sp_t nmarks); /* SXTMARK       */
+agc_status_t agc_sxtmark_reserve(void);    /* SXTMARK +2    */
+agc_status_t agc_sxtmark_mkreleas(void);   /* MKRELEAS      */
+agc_status_t agc_sxtmark_free_vac(void);   /* MARKSTAT = 0  */
+agc_status_t agc_sxtmark_markrupt(void);   /* MARKRUPT      */
+agc_status_t agc_sxtmark_markcont(void);   /* MARKCONT      */
+agc_status_t agc_sxtmark_mark2(void);      /* MARK2/VACSTOR */
+agc_status_t agc_sxtmark_mkreject(void);   /* MKREJECT      */
+agc_sp_t     agc_sxtmark_marks_made(void); /* QPRET count   */
 agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
 
 /* ---- AOTMARK (LM, src/lm/optics/aotmark.c) -------------------------------------- */
-agc_status_t agc_aotmark(void);                           /* AOTMARK       */
-agc_status_t agc_aotmark_markrupt(void);                  /* MARKRUPT      */
+agc_status_t agc_aotmark(void);          /* AOTMARK       */
+agc_status_t agc_aotmark_markrupt(void); /* MARKRUPT      */
 agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el,
                           agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
 agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp,
@@ -301,28 +324,28 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star,
 /* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
 /* SXTSM line of sight of one mark (half-unit, SM axes).                   */
 agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m,
-                           agc_vec_t *los_sm);            /* SXTSM         */
+                           agc_vec_t *los_sm); /* SXTSM         */
 /* SXTSM as called: TSIGHT = first mark time, MARKDOWN / MARK2DWN, LOS.     */
 agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm);
 /* SR52.1: AOPTIME = now + 1.3 s unless resumed after an integration wait;
  * SAC/PAC for the target; result 0 = trunnion > 90 deg, 1 = > 50 deg,
  * 2 = < 50 deg (the AGC's three returns).                                 */
 agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed,
-                            agc_job_id_t resume_job, int *result);
+                                          agc_job_id_t resume_job, int *result);
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job,
-                              agc_vec_t *los);            /* ADVTRACK      */
+                              agc_vec_t *los); /* ADVTRACK      */
 agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los,
-                          agc_dp_t angle);                /* ROTA          */
+                          agc_dp_t angle); /* ROTA          */
 /* Interpretive subroutines entered from a job: ret is the job continued
  * as on return (SAVQR52 / R53EXIT).                                       */
 agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx,
-                                             agc_job_id_t ret);         /* R52    */
+                                             agc_job_id_t ret); /* R52    */
 agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx,
-                                                agc_job_id_t ret);      /* ADVORB */
+                                                agc_job_id_t ret); /* ADVORB */
 agc_status_t agc_csm_sighting_mark(const agc_job_ctx_t *ctx,
-                                   agc_job_id_t ret);                   /* R53    */
+                                   agc_job_id_t         ret); /* R53    */
 agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
-                                                 agc_job_id_t ret);     /* R56    */
+                                                 agc_job_id_t ret); /* R56    */
 
 /* ---- LM P51/P52/P57, R51, R52, R59 (src/lm/) ------------------------------ */
 /* IMUCHK: OK with the IMU on (IMUSE set); AGC_STATUS_ALARM after alarm 210
@@ -333,18 +356,20 @@ agc_status_t agc_lm_imu_check(void);
 agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t,
                                          agc_job_id_t ret);
 /* R52 (LM): point the AOT detent at the star; continues as ret.          */
-agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id_t ret);
+agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx,
+                                            agc_job_id_t         ret);
 /* MFREF / REFMF (P57): VEC1, VEC2 moon fixed -> reference; YNBSAV, ZNBSAV
  * (moon fixed) from the present attitude, SET ATTFLAG.                    */
 agc_status_t agc_align_mfref(agc_interp_t *ip);
 agc_status_t agc_align_refmf(agc_interp_t *ip);
 /* P57 pieces entered from more than one file (src/lm/alignment/).        */
-agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx);      /* GVDETER  */
-agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx);    /* JUSTTRIM */
-agc_status_t agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx);  /* COATRIM  */
-agc_status_t agc_lm_lunar_surface_two_stars(agc_job_ctx_t *ctx);    /* 2STARS   */
-agc_status_t agc_lm_lunar_surface_one_star(agc_job_ctx_t *ctx);     /* 1STAR    */
-agc_status_t agc_lm_lunar_surface_surfline(agc_job_ctx_t *ctx);     /* SURFLINE */
+agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx);   /* GVDETER  */
+agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx); /* JUSTTRIM */
+agc_status_t
+agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx);            /* COATRIM  */
+agc_status_t agc_lm_lunar_surface_two_stars(agc_job_ctx_t *ctx); /* 2STARS   */
+agc_status_t agc_lm_lunar_surface_one_star(agc_job_ctx_t *ctx);  /* 1STAR    */
+agc_status_t agc_lm_lunar_surface_surfline(agc_job_ctx_t *ctx);  /* SURFLINE */
 
 /* ==== job and task entry points (BEGIN generated list) ==== */
 /* src/csm/alignment/fine_align.c */

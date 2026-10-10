@@ -15,16 +15,19 @@
 #define LM_DAP_PENDING_H
 
 #include <stdint.h>
-#include "agc/core/word.h"
-#include "agc/core/state.h"
-#include "agc/exec/jobs.h"
+
 #include "agc/core/flags_lm.h"
+#include "agc/core/state.h"
+#include "agc/core/word.h"
+#include "agc/exec/jobs.h"
 
 /* ---- job and task ids (agc_jobs.h, integrated by the lead) ------------- */
-#define AGC_JOB_JET_ACCEL_UPDATE  ((agc_job_id_t)0x0D01)   /* 1/ACCJOB, PRIO27 NOVAC  */
-#define AGC_JOB_JET_ACCEL_RESET  ((agc_job_id_t)0x0D02)   /* 1/ACCSET, PRIO27 NOVAC  */
-#define AGC_TASK_DAPIDLER ((agc_task_id_t)0x0D81)  /* T5ADR = DAPIDLER        */
-#define AGC_TASK_PAXIS    ((agc_task_id_t)0x0D82)  /* T5ADR = PAXIS           */
+#define AGC_JOB_JET_ACCEL_UPDATE \
+    ((agc_job_id_t) 0x0D01) /* 1/ACCJOB, PRIO27 NOVAC  */
+#define AGC_JOB_JET_ACCEL_RESET \
+    ((agc_job_id_t) 0x0D02)                        /* 1/ACCSET, PRIO27 NOVAC  */
+#define AGC_TASK_DAPIDLER ((agc_task_id_t) 0x0D81) /* T5ADR = DAPIDLER        */
+#define AGC_TASK_PAXIS    ((agc_task_id_t) 0x0D82) /* T5ADR = PAXIS           */
 
 /* ---- erasables owned by other lanes ------------------------------------ */
 /* Gimbal-to-pilot-axis matrix, SP scaled at 1, written by T4RUPT (sys-misc,

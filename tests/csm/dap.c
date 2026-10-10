@@ -22,11 +22,13 @@
  *     (CSMMASS + NEGBPW) VARST5 x 2.
  */
 #include <stdio.h>
+
 #include <stdint.h>
+
 #include "agc/core/assert.h"
-#include "agc/csm/dap.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
+#include "agc/csm/dap.h"
 
 static int g_checks;
 static int g_failures;
@@ -34,9 +36,9 @@ static int g_assert_reports;
 
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
-    (void)file;
-    (void)line;
-    (void)expr;
+    (void) file;
+    (void) line;
+    (void) expr;
     g_assert_reports++;
     return false;
 }
@@ -46,89 +48,91 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
-    if (!ok) {
+    if (!ok)
+    {
         g_failures++;
-        (void)printf("FAIL line %d: %s\n", line, text);
+        (void) printf("FAIL line %d: %s\n", line, text);
     }
 }
 
 static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
 {
     agc_csm_jet_in_t in;
-    in.chan31 = (uint16_t)077777;   /* THC in detent: bits read 1 (inactive) */
-    in.lem_on = false;
-    in.tau[0] = roll;
-    in.tau[1] = pitch;
-    in.tau[2] = yaw;
+    in.chan31  = (uint16_t) 077777; /* THC in detent: bits read 1 (inactive) */
+    in.lem_on  = false;
+    in.tau[0]  = roll;
+    in.tau[1]  = pitch;
+    in.tau[2]  = yaw;
     in.racfail = 0;
     in.rbdfail = 0;
-    in.acorbd = 1;                  /* BD roll                              */
-    in.xtrans = 0;
+    in.acorbd  = 1; /* BD roll                              */
+    in.xtrans  = 0;
     return in;
 }
 
 static void test_jet_select(void)
 {
     agc_csm_jet_out_t out;
-    agc_csm_jet_in_t in = jet_in(0, 100, 0);
+    agc_csm_jet_in_t  in = jet_in(0, 100, 0);
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
-    CHECK(out.pword1 == 01005u);                         /* 2 jets + count  */
+    CHECK(out.pword1 == 01005u); /* 2 jets + count  */
     CHECK((out.pword1 & 017u) == (AGC_CH005_PYJET1 | AGC_CH005_PYJET3));
     CHECK(out.yword1 == 0u);
-    CHECK(out.pword2 == 0u);                             /* off afterwards  */
-    CHECK(out.blast[2].axis == AGC_CSM_JET_PITCH);       /* sorted last     */
-    CHECK(out.blast[2].time == 50);                      /* TAU / 2 jets    */
+    CHECK(out.pword2 == 0u);                       /* off afterwards  */
+    CHECK(out.blast[2].axis == AGC_CSM_JET_PITCH); /* sorted last     */
+    CHECK(out.blast[2].time == 50);                /* TAU / 2 jets    */
     CHECK(out.dft[1] == 100);
     CHECK(out.tau[1] == 0);
-    CHECK(out.attkalmn_xln == 0x7FFF);                   /* no translation  */
+    CHECK(out.attkalmn_xln == 0x7FFF); /* no translation  */
 
     in = jet_in(0, -100, 0);
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
     CHECK((out.pword1 & 017u) == (AGC_CH005_PYJET2 | AGC_CH005_PYJET4));
     CHECK(out.dft[1] == -100);
 
-    in = jet_in(0, 100, 0);
-    in.racfail = 1;                                      /* quad A failed   */
+    in         = jet_in(0, 100, 0);
+    in.racfail = 1; /* quad A failed   */
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
-    CHECK(out.pword1 == 0401u);                          /* one jet         */
-    CHECK(out.blast[2].time == 99);                      /* TAU x .99999    */
+    CHECK(out.pword1 == 0401u);     /* one jet         */
+    CHECK(out.blast[2].time == 99); /* TAU x .99999    */
 
     in = jet_in(0, 1000, 0);
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
-    CHECK(out.blast[2].time == 160);                     /* limited to .1 s */
-    CHECK(out.dft[1] == 320);                            /* DFTMAX, 2 jets  */
+    CHECK(out.blast[2].time == 160); /* limited to .1 s */
+    CHECK(out.dft[1] == 320);        /* DFTMAX, 2 jets  */
     CHECK(out.tau[1] == 680);
 
-    in = jet_in(0, 0, 0);
-    in.chan31 = (uint16_t)(077777u & ~0100u);            /* +X: bit 7 low   */
+    in        = jet_in(0, 0, 0);
+    in.chan31 = (uint16_t) (077777u & ~0100u); /* +X: bit 7 low   */
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
-    CHECK((uint16_t)(out.pword1 | out.yword1) == 0231u);
-    CHECK(out.attkalmn_xln == -2);                       /* LM off          */
+    CHECK((uint16_t) (out.pword1 | out.yword1) == 0231u);
+    CHECK(out.attkalmn_xln == -2); /* LM off          */
 }
 
 /* CSM/LM low-bandwidth pitch DAP (V46 switch-over coefficients).         */
 static void tvc_setup(agc_sp_t perrb_hi)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    agc_csm_tvc_t    *t = agc_csm_dap_tvc();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
-    agc_erase_set_dapdatr1((uint16_t)020000);            /* 010: CSM/LM     */
+    agc_erase_set_dapdatr1((uint16_t) 020000); /* 010: CSM/LM     */
     c->ektlx_i[2] = 8000;
-    c->iavg_tlx = 4000;
-    c->pactoff = 0;
-    c->yactoff = 0;
-    t->tvcphase = 0;
-    t->delpbar = 0;
-    CHECK(agc_csm_tvc_preswtch() == AGC_STATUS_OK);      /* LBN10, VARK     */
-    CHECK(t->vark == 7812);                              /* 8000 x 4000 x 4 */
-    CHECK(t->n10[5] == 512);                             /* N20 = .03125    */
-    t->t5tvcdt = 16380;
-    t->perrb = agc_dp_from_sp(perrb_hi);
+    c->iavg_tlx   = 4000;
+    c->pactoff    = 0;
+    c->yactoff    = 0;
+    t->tvcphase   = 0;
+    t->delpbar    = 0;
+    CHECK(agc_csm_tvc_preswtch() == AGC_STATUS_OK); /* LBN10, VARK     */
+    CHECK(t->vark == 7812);                         /* 8000 x 4000 x 4 */
+    CHECK(t->n10[5] == 512);                        /* N20 = .03125    */
+    t->t5tvcdt   = 16380;
+    t->perrb     = agc_dp_from_sp(perrb_hi);
     t->omegac[1] = 0;
-    t->pcmd = 0;
-    t->stroker = 0;
-    t->pcduypst = agc_erase_cduy();                      /* zero CDU rates  */
-    t->pcduzpst = agc_erase_cduz();
-    for (int i = 0; i < 6; i++) {                        /* filter memory   */
+    t->pcmd      = 0;
+    t->stroker   = 0;
+    t->pcduypst  = agc_erase_cduy(); /* zero CDU rates  */
+    t->pcduzpst  = agc_erase_cduz();
+    for (int i = 0; i < 6; i++)
+    { /* filter memory   */
         t->ptmp[i] = 0;
     }
 }
@@ -138,10 +142,10 @@ static void test_tvc_step(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
     tvc_setup(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
-    CHECK(t->pcmd < 0);                                  /* sign change     */
+    CHECK(t->pcmd < 0); /* sign change     */
     CHECK(t->pcmd > -253);
-    CHECK(t->tvcphase == 2);                             /* pitch copycycle */
-    CHECK(agc_dp_high(t->perrb) == 1000);                /* integrator held */
+    CHECK(t->tvcphase == 2);              /* pitch copycycle */
+    CHECK(agc_dp_high(t->perrb) == 1000); /* integrator held */
     CHECK(agc_rupt_t5_task() != AGC_TASK_NONE);
 
     tvc_setup(-1000);
@@ -152,20 +156,21 @@ static void test_tvc_step(void)
      * 4096 x N10 x N20 x N30 x VARK x 4 = 122 < ACTSAT. TMP3 (second
      * cascade) = 1000 -> DAP2 = 1125, DAP3 = 562, CMDTMP = -1072. A large
      * TMP1 would overflow DAP1 (DAS wraps as in the AGC), so use TMP3.   */
-    tvc_setup(4000);                                     /* large error     */
+    tvc_setup(4000); /* large error     */
     agc_csm_dap_tvc()->ptmp[2] = agc_dp_from_sp(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
-    CHECK(t->pcmd == -253);                              /* ACTSAT limit    */
+    CHECK(t->pcmd == -253); /* ACTSAT limit    */
 }
 
 /* One HACKWLST burst; the waveform position follows STROKER's sign.    */
 static int stroke_bursts(int count, int pos)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    for (int i = 0; (i < count) && (t->stroker != 0); i++) {
+    for (int i = 0; (i < count) && (t->stroker != 0); i++)
+    {
         pos += t->stroker;
         CHECK(agc_task_hackwlst() == AGC_STATUS_OK);
-        CHECK((pos >= -50) && (pos <= 50));              /* 10 x ESTROKER   */
+        CHECK((pos >= -50) && (pos <= 50)); /* 10 x ESTROKER   */
     }
     return pos;
 }
@@ -173,59 +178,59 @@ static int stroke_bursts(int count, int pos)
 static void test_stroke(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->caddy = -10;                                      /* TSTINIT: -FCADDY */
-    t->n = -10;
-    t->revs = 3;                                         /* FREVS           */
-    t->card = -4;                                        /* -FCARD          */
-    t->stroker = 5;                                      /* ESTROKER        */
-    int pos = stroke_bursts(80, 0);                      /* set 1           */
+    t->caddy         = -10; /* TSTINIT: -FCADDY */
+    t->n             = -10;
+    t->revs          = 3;                    /* FREVS           */
+    t->card          = -4;                   /* -FCARD          */
+    t->stroker       = 5;                    /* ESTROKER        */
+    int pos          = stroke_bursts(80, 0); /* set 1           */
     CHECK(pos == 0);
     CHECK(t->card == -3);
     CHECK(t->revs == 5);
     CHECK(t->caddy == -6);
-    CHECK(t->stroker == 5);                              /* no sign change  */
-    pos = stroke_bursts(72 + 100 + 111, pos);            /* sets 2, 3, 4    */
+    CHECK(t->stroker == 5);                   /* no sign change  */
+    pos = stroke_bursts(72 + 100 + 111, pos); /* sets 2, 3, 4    */
     CHECK(t->stroker == 5);
     pos = stroke_bursts(1, pos);
     CHECK(pos == 0);
-    CHECK(t->stroker == 0);                              /* STROKILL        */
+    CHECK(t->stroker == 0); /* STROKILL        */
 }
 
 static void test_rolldap(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    t->oganow = 0;
-    t->ogapast = 0;                                      /* OGARATE 0       */
-    t->one_conacc = 1000;
-    t->rollfire = 0;
-    t->temreg = 0;
-    t->rollword = 0;
-    t->ogaerr = 455;                                     /* 10 deg, B+0 rev */
+    t->oganow        = 0;
+    t->ogapast       = 0; /* OGARATE 0       */
+    t->one_conacc    = 1000;
+    t->rollfire      = 0;
+    t->temreg        = 0;
+    t->rollword      = 0;
+    t->ogaerr        = 455; /* 10 deg, B+0 rev */
     CHECK(agc_task_rolldap() == AGC_STATUS_OK);
-    CHECK(t->rollfire < 0);                              /* -TORQUE         */
-    CHECK(t->temreg > 24);                               /* > TMINFIRE      */
-    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 012u);     /* jets 12, 10     */
+    CHECK(t->rollfire < 0);                          /* -TORQUE         */
+    CHECK(t->temreg > 24);                           /* > TMINFIRE      */
+    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 012u); /* jets 12, 10     */
     CHECK(t->rollword == 2u);
     CHECK(agc_task_noroll1() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 
     t->temreg = 0;
-    t->ogaerr = 100;                                     /* inside 5 deg DB */
+    t->ogaerr = 100; /* inside 5 deg DB */
     CHECK(agc_task_rolldap() == AGC_STATUS_OK);
-    CHECK(t->rollfire == 0);                             /* coast           */
+    CHECK(t->rollfire == 0); /* coast           */
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 }
 
 static void test_massprop(void)
 {
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
-    agc_erase_set_dapdatr1((uint16_t)010000);            /* 001: CSM alone  */
-    agc_erase_set_csmmass(5000);                         /* kg, B+16        */
+    agc_erase_set_dapdatr1((uint16_t) 010000); /* 001: CSM alone  */
+    agc_erase_set_csmmass(5000);               /* kg, B+16        */
     agc_erase_set_lemmass(0);
     CHECK(agc_csm_dap_massprop() == AGC_STATUS_OK);
     /* TEMP333 = 2 (5000 - 3851) = 2298 > 0: slopes VARST3, 4; VARST5.   */
-    agc_sp_t d = 2298;
-    agc_sp_t ixx = (agc_sp_t)(398 + 2 * ((394 * d) >> 14));
+    agc_sp_t d   = 2298;
+    agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14));
     CHECK(c->ixx == ixx);
     CHECK(c->weight_g == 5000);
 }
@@ -237,7 +242,8 @@ int main(void)
     test_stroke();
     test_rolldap();
     test_massprop();
-    (void)printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n",
-                 g_checks, g_failures, g_assert_reports);
+    (void) printf(
+        "test_csm_dap: %d checks, %d failures, %d assertion reports\n",
+        g_checks, g_failures, g_assert_reports);
     return (g_failures == 0) ? 0 : 1;
 }

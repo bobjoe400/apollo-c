@@ -20,19 +20,20 @@
  * Scales: DELVOV m/cs 2^7 (local vertical: x along the horizontal, z
  * down), RATT m 2^29, VATT m/cs 2^7, RCV VCV body scale.
  */
+#include "../navigation/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
-#include "../navigation/internal.h"
 
 /* PHASCHNG OCT 04024: group 4, phase 2, type A. */
-#define TDV_PHASE_04024  ((uint16_t)04024)
+#define TDV_PHASE_04024 ((uint16_t) 04024)
 
 /* The other-vehicle state at TIG between the jobs of P76 (the AGC keeps
  * it in the push list across the INTSTALL sleeps).                      */
-typedef struct tdv_work {
-    agc_vec_t ratt;      /* RATT at TIG, m 2^29                            */
-    agc_vec_t vnew;      /* VATT + DELTA V (push cell 6), m/cs 2^7         */
-    int       x2;        /* X2: 0 earth, 2 moon                            */
+typedef struct tdv_work
+{
+    agc_vec_t ratt; /* RATT at TIG, m 2^29                            */
+    agc_vec_t vnew; /* VATT + DELTA V (push cell 6), m/cs 2^7         */
+    int       x2;   /* X2: 0 earth, 2 moon                            */
 } tdv_work_t;
 
 static tdv_work_t tdv_work;
@@ -43,16 +44,17 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
                                           agc_vec_t vatt, agc_vec_t dv_lv,
                                           agc_vec_t *v_new)
 {
-    if (!AGC_ASSERT(ip != NULL && v_new != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && v_new != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_mat_t m;
-    m.row[2] = agc_vec_neg(rz_unit(ip, ratt));                   /* 24D */
-    m.row[1] = rz_unit(ip, agc_vec_cross(ip, m.row[2], vatt));   /* 18D */
-    m.row[0] = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
-    agc_vec_t dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1);  /* VSL1 */
-    *v_new = agc_vec_add(ip, dv, vatt);
-    (void)AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN);
+    m.row[2]     = agc_vec_neg(rz_unit(ip, ratt));                     /* 24D */
+    m.row[1]     = rz_unit(ip, agc_vec_cross(ip, m.row[2], vatt));     /* 18D */
+    m.row[0]     = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
+    agc_vec_t dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
+    *v_new       = agc_vec_add(ip, dv, vatt);
+    (void) AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN);
     return AGC_STATUS_OK;
 }
 
@@ -60,11 +62,12 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
  * X2 = 2 and MOONFLAG set when CMOONFLG is set, else X2 = 0, clear.    */
 static void tdv_moonflag(tdv_work_t *w)
 {
-    if (!rz_is_csm()) {
+    if (!rz_is_csm())
+    {
         w->x2 = agc_flag_test(AGC_FLAG_CMOONFLG) ? 2 : 0;
     }
     rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
-    (void)AGC_ASSERT(w->x2 == 0 || w->x2 == 2);
+    (void) AGC_ASSERT(w->x2 == 0 || w->x2 == 2);
 }
 
 /* P76 TARGET DELTA V (P76.agc p.512, label P76): UPFLAG TRACKFLG; LM:
@@ -72,13 +75,15 @@ static void tdv_moonflag(tdv_work_t *w)
  * V06N33, ENTER -> the display again).                                 */
 agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_flag_set(AGC_FLAG_TRACKFLG);
-    if (!rz_is_csm()) {
+    if (!rz_is_csm())
+    {
         agc_rendz_t *rz = rz_state();
-        rz->delvov = rz->delvlvc;
+        rz->delvov      = rz->delvlvc;
     }
     return agc_job_target_delta_v_display(ctx);
 }
@@ -86,7 +91,7 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
 /* V06N84 (DELVOV) flashing; ENTER ("TC -5") shows it again. */
 agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 84U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_TIG, AGC_JOB_TARGET_DELTA_V_DISPLAY);
 }
@@ -94,7 +99,7 @@ agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
 /* V06N33 (TIG) flashing; PROCEED -> the update. */
 agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     return rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U, AGC_JOB_TARGET_DELTA_V_END,
                     AGC_JOB_TARGET_DELTA_V_UPDATE, AGC_JOB_TARGET_DELTA_V_TIG);
 }
@@ -103,20 +108,21 @@ agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
  * INTSTALL sleep inside OTHPREC resumes this job from its start.       */
 agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t st = rz_integ(&ip, RZ_OTHPREC, agc_erase_tig(),
-                               AGC_JOB_TARGET_DELTA_V_UPDATE, &o);
-    if (st != AGC_STATUS_OK) {
+    agc_status_t    st = rz_integ(&ip, RZ_OTHPREC, agc_erase_tig(),
+                                  AGC_JOB_TARGET_DELTA_V_UPDATE, &o);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     tdv_work.ratt = o.ratt;
-    tdv_work.x2 = o.x2;
+    tdv_work.x2   = o.x2;
     st = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt, rz_state()->delvov,
                                       &tdv_work.vnew);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_target_delta_v_integrate(ctx);
 }
 
@@ -124,7 +130,7 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
  * 0,2), TET = TIG, CLEAR INTYPFLG, TDEC1 = TETTHIS; INTEGRVS.          */
 agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     agc_interp_t ip;
     agc_interp_init(&ip);
     tdv_moonflag(&tdv_work);
@@ -132,18 +138,19 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
     in.moon = (tdv_work.x2 != 0);
     /* VSR* 0,2: count 0 - X2, i.e. shift left 2 about the moon (2^29 ->
      * 2^27, 2^7 -> 2^5).                                                */
-    in.vcv = agc_vec_shl(&ip, tdv_work.vnew, tdv_work.x2);
-    in.rcv = agc_vec_shl(&ip, tdv_work.ratt, tdv_work.x2);
-    in.tet = agc_erase_tig();
+    in.vcv   = agc_vec_shl(&ip, tdv_work.vnew, tdv_work.x2);
+    in.rcv   = agc_vec_shl(&ip, tdv_work.ratt, tdv_work.x2);
+    in.tet   = agc_erase_tig();
     in.conic = false;
     in.tdec1 = rz_is_csm() ? agc_erase_tetcsm() : agc_erase_tetlem();
     agc_integ_out_t o;
-    agc_status_t st = rz_integrvs(&ip, &in, AGC_JOB_TARGET_DELTA_V_INTEGRATE,
-                                  &o);
-    if (st != AGC_STATUS_OK) {
+    agc_status_t    st =
+        rz_integrvs(&ip, &in, AGC_JOB_TARGET_DELTA_V_INTEGRATE, &o);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    tdv_work.x2 = o.x2;     /* RATT1 VATT1 TAT stay in the integration
+    tdv_work.x2 = o.x2; /* RATT1 VATT1 TAT stay in the integration
                              * output, as in the AGC erasables         */
     return agc_job_target_delta_v_store(ctx);
 }
@@ -153,33 +160,39 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
  * ENDP76.                                                              */
 agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     agc_status_t st = agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
-    if (st != AGC_STATUS_OK) {
-        return st;                                         /* asleep        */
+    if (st != AGC_STATUS_OK)
+    {
+        return st; /* asleep        */
     }
-    if (rz_is_csm()) {
+    if (rz_is_csm())
+    {
         tdv_moonflag(&tdv_work);
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
-    ic->sv.rrect = ic->out.ratt1;
-    ic->sv.rcv = ic->out.ratt1;
-    ic->sv.tet = ic->out.tat;
-    st = agc_integ_minirect(ic, ic->out.vatt1);
-    if (st != AGC_STATUS_OK) {
+    ic->sv.rrect        = ic->out.ratt1;
+    ic->sv.rcv          = ic->out.ratt1;
+    ic->sv.tet          = ic->out.tat;
+    st                  = agc_integ_minirect(ic, ic->out.vatt1);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     agc_phase_change(4, TDV_PHASE_04024);
     agc_flag_set(AGC_FLAG_REINTFLG);
-    st = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2)   /* ATOPOTH */
-                     : agc_integ_atopcsm(&ip, ic, tdv_work.x2);
-    if (st != AGC_STATUS_OK) {
+    st = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2) /* ATOPOTH */
+                       :
+                       agc_integ_atopcsm(&ip, ic, tdv_work.x2);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    st = agc_integ_intwake0();                             /* INTWAKE1      */
-    if (st != AGC_STATUS_OK) {
+    st = agc_integ_intwake0(); /* INTWAKE1      */
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return agc_job_target_delta_v_end(ctx);
@@ -188,11 +201,12 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
 /* ENDP76: MARKCTR = 0 (CM also VHFCNT = 0, MRKBUF2 = -1), GOTOPOOH. */
 agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
-    agc_erase_set_trkmkcnt(0);                             /* MARKCTR       */
-    if (rz_is_csm()) {
+    (void) AGC_ASSERT(ctx != NULL);
+    agc_erase_set_trkmkcnt(0); /* MARKCTR       */
+    if (rz_is_csm())
+    {
         agc_erase_set_vhfcnt(0);
-        agc_erase_set_mrkbuf2(0, -1);                      /* NEGONE        */
+        agc_erase_set_mrkbuf2(0, -1); /* NEGONE        */
     }
     return rz_gotopooh();
 }

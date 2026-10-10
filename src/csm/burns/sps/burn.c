@@ -12,6 +12,7 @@
  * S40.14 and RCSDAPON are the DAP lane's (agc_csm_dap.h). DAPFIG (V46).
  */
 #include <stddef.h>
+
 #include "agc/core/assert.h"
 #include "agc/guidance/guidance.h"
 #include "internal.h"
@@ -22,25 +23,24 @@ static const agc_dp_t FENG = 19123624;
 static const agc_dp_t FRCS2 = 183370;
 /* SEC29.96 2DEC 2996, SEC24.96 DEC 2496, 18SEC, 5SEC: centiseconds.        */
 static const agc_dp_t SEC29_96 = 2996;
-#define SEC24_96      2496
-#define SEC18         1800
-#define SEC5          500
-#define GIMBAL_TEST_CHECKLIST      0204          /* V50N25 R1 00204: gimbal drive test   */
-
+#define SEC24_96              2496
+#define SEC18                 1800
+#define SEC5                  500
+#define GIMBAL_TEST_CHECKLIST 0204 /* V50N25 R1 00204: gimbal drive test   */
 
 /* NVWORD1 values that display V06N40, V16N40, V06N85, V16N85, V16N83.     */
 agc_sp_t agc_csm_vn(uint8_t verb, uint8_t noun)
 {
-    (void)AGC_ASSERT(verb < 100U);
-    (void)AGC_ASSERT(noun < 100U);
-    return (agc_sp_t)agc_dsky_vn(verb, noun);
+    (void) AGC_ASSERT(verb < 100U);
+    (void) AGC_ASSERT(noun < 100U);
+    return (agc_sp_t) agc_dsky_vn(verb, noun);
 }
 
 /* P41/P40 (p.696): MODREG odd (41) takes the P41 exit.                    */
 bool agc_csm_is_rcs_burn(void)
 {
     agc_sp_t mm = agc_erase_modreg();
-    (void)AGC_ASSERT(mm >= 0);
+    (void) AGC_ASSERT(mm >= 0);
     return (mm & 1) != 0;
 }
 
@@ -49,15 +49,16 @@ bool agc_csm_is_rcs_burn(void)
 agc_status_t agc_csm_setmindb(void)
 {
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-    if (!AGC_ASSERT(rcs != NULL)) {
+    if (!AGC_ASSERT(rcs != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     rcs->thetad[0] = agc_erase_cdux();
     rcs->thetad[1] = agc_erase_cduy();
     rcs->thetad[2] = agc_erase_cduz();
-    rcs->adb = 46;                                    /* MINDB DEC 46           */
-    agc_erase_set_dapdatr1((uint16_t)(agc_erase_dapdatr1() & ~(uint16_t)010));
-    (void)AGC_ASSERT(rcs->adb == 46);
+    rcs->adb       = 46; /* MINDB DEC 46           */
+    agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() & ~(uint16_t) 010));
+    (void) AGC_ASSERT(rcs->adb == 46);
     return AGC_STATUS_OK;
 }
 
@@ -65,12 +66,13 @@ agc_status_t agc_csm_setmindb(void)
 agc_status_t agc_csm_setmaxdb(void)
 {
     agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-    if (!AGC_ASSERT(rcs != NULL)) {
+    if (!AGC_ASSERT(rcs != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    rcs->adb = 455;                                   /* MAXDB DEC 455          */
-    agc_erase_set_dapdatr1((uint16_t)(agc_erase_dapdatr1() | (uint16_t)010));
-    (void)AGC_ASSERT(rcs->adb == 455);
+    rcs->adb = 455; /* MAXDB DEC 455          */
+    agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() | (uint16_t) 010));
+    (void) AGC_ASSERT(rcs->adb == 455);
     return AGC_STATUS_OK;
 }
 
@@ -78,56 +80,62 @@ agc_status_t agc_csm_setmaxdb(void)
  * direction and preferred attitude, narrow deadband, attitude maneuver.   */
 static agc_status_t burn_setup_with_thrust(agc_job_ctx_t *ctx, agc_dp_t f)
 {
-    agc_guid_t *g = agc_guid_state();
-    g->burn.f = f;
-    g->burn.nomtig = agc_erase_tig();                 /* ORIGINAL TIG FOR S40.9 */
-    (void)agc_imu_status_check();                          /* IMU STATUS CHECK       */
+    agc_guid_t *g  = agc_guid_state();
+    g->burn.f      = f;
+    g->burn.nomtig = agc_erase_tig(); /* ORIGINAL TIG FOR S40.9 */
+    (void) agc_imu_status_check();    /* IMU STATUS CHECK       */
     g->burn.weight_g = agc_dp_from_sp(agc_csm_dap_com()->weight_g);
-    (void)agc_flag_set(AGC_FLAG_FIRSTFLG);            /* S40.1: SET FIRSTFLG    */
+    (void) agc_flag_set(AGC_FLAG_FIRSTFLG); /* S40.1: SET FIRSTFLG    */
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = agc_guid_initial_velocity_to_gain(&ip, AGC_VEHICLE_CSM);  /* VGTIG, UT       */
-    if (st == AGC_STATUS_OK) {
+    agc_status_t st = agc_guid_initial_velocity_to_gain(
+        &ip, AGC_VEHICLE_CSM); /* VGTIG, UT       */
+    if (st == AGC_STATUS_OK)
+    {
         const agc_csm_dapcom_t *com = agc_csm_dap_com();
-        st = agc_guid_preferred_thrust_attitude_csm(&ip, agc_flag_test(AGC_FLAG_ENG2FLAG),
-                                 com->pactoff, com->yactoff);
+        st                          = agc_guid_preferred_thrust_attitude_csm(
+                                     &ip, agc_flag_test(AGC_FLAG_ENG2FLAG), com->pactoff, com->yactoff);
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    (void)agc_flag_set(AGC_FLAG_PFRATFLG);
+    (void) agc_flag_set(AGC_FLAG_PFRATFLG);
     agc_inhint();
-    (void)agc_csm_setmindb();                         /* NARROW DEADBAND        */
+    (void) agc_csm_setmindb(); /* NARROW DEADBAND        */
     agc_relint();
-    return agc_imu_attitude_maneuver(ctx, AGC_JOB_SPS_BURN_AFTER_MANEUVER);   /* R60CSM                 */
+    return agc_imu_attitude_maneuver(
+        ctx, AGC_JOB_SPS_BURN_AFTER_MANEUVER); /* R60CSM                 */
 }
 
 /* P40CSM (p.693): SPS. CSTEER = 0 for an external delta-V burn, else
  * ECSTEER; F = FENG.                                                      */
 agc_status_t agc_job_sps_burn(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_guid_t *g = agc_guid_state();
-    (void)agc_flag_clear(AGC_FLAG_ENG2FLAG);
+    (void) agc_flag_clear(AGC_FLAG_ENG2FLAG);
     g->burn.csteer = agc_flag_test(AGC_FLAG_XDELVFLG) ? 0 : g->burn.ecsteer;
-    (void)AGC_ASSERT(FENG > 0);
+    (void) AGC_ASSERT(FENG > 0);
     return burn_setup_with_thrust(ctx, FENG);
 }
 
 /* P41CSM (p.696): RCS. CSTEER = 0; F = 2-jet (NJETSFLG) or 4-jet thrust.  */
 agc_status_t agc_job_rcs_burn_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_guid_t *g = agc_guid_state();
-    (void)agc_flag_set(AGC_FLAG_ENG2FLAG);            /* SET FOR RCS            */
+    (void) agc_flag_set(AGC_FLAG_ENG2FLAG); /* SET FOR RCS            */
     g->burn.csteer = 0;
-    agc_dp_t f = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : 2 * FRCS2;
-    (void)AGC_ASSERT(f > 0);
+    agc_dp_t f     = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : 2 * FRCS2;
+    (void) AGC_ASSERT(f > 0);
     return burn_setup_with_thrust(ctx, f);
 }
 
@@ -135,23 +143,27 @@ agc_status_t agc_job_rcs_burn_csm(agc_job_ctx_t *ctx)
  * P40 to P40TTOG and the gimbal test question (V50N25 204).               */
 agc_status_t agc_job_sps_burn_after_maneuver(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_guid_t *g = agc_guid_state();
-    g->burn.nbrcycls = -1;                            /* FOR UPDATEVG           */
-    (void)agc_flag_set(AGC_FLAG_TIMRFLAG);            /* ALLOW CLOCKTASK        */
-    if (agc_csm_is_rcs_burn()) {
+    agc_guid_t *g    = agc_guid_state();
+    g->burn.nbrcycls = -1;                  /* FOR UPDATEVG           */
+    (void) agc_flag_set(AGC_FLAG_TIMRFLAG); /* ALLOW CLOCKTASK        */
+    if (agc_csm_is_rcs_burn())
+    {
         return agc_csm_rcs_burn_display(ctx);
     }
-    g->csm.nvword1 = agc_csm_vn(6, 40);               /* P40TTOG                */
+    g->csm.nvword1 = agc_csm_vn(6, 40); /* P40TTOG                */
     agc_interp_t ip;
     agc_interp_init(&ip);
-    g->burn.vgdisp = agc_vec_abval(&ip, agc_erase_vgtig());
-    g->avg.dvtotal = 0;
-    g->avg.avgexit = AGC_JOB_STEERING;                /* STEERADS               */
-    agc_dsky_cont_t cont = { AGC_JOB_POST41, AGC_JOB_GIMBAL_TEST_AND_TRIM, AGC_JOB_GIMBAL_TRIM_ONLY };
-    return agc_dsky_display(ctx, AGC_DSKY_GOPERF1, GIMBAL_TEST_CHECKLIST, &cont); /* P40GMB  */
+    g->burn.vgdisp       = agc_vec_abval(&ip, agc_erase_vgtig());
+    g->avg.dvtotal       = 0;
+    g->avg.avgexit       = AGC_JOB_STEERING; /* STEERADS               */
+    agc_dsky_cont_t cont = {AGC_JOB_POST41, AGC_JOB_GIMBAL_TEST_AND_TRIM,
+                            AGC_JOB_GIMBAL_TRIM_ONLY};
+    return agc_dsky_display(ctx, AGC_DSKY_GOPERF1, GIMBAL_TEST_CHECKLIST,
+                            &cont); /* P40GMB  */
 }
 
 /* TRIMONLY / TST,TRIM (p.694): S40.6 in 10 ms (MRKRTMP -1 trim only, +1
@@ -159,58 +171,65 @@ agc_status_t agc_job_sps_burn_after_maneuver(agc_job_ctx_t *ctx)
 static agc_status_t trim_common(agc_job_ctx_t *ctx, agc_sp_t mrkrtmp)
 {
     agc_guid_t *g = agc_guid_state();
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    g->csm.mrkrtmp = mrkrtmp;
-    agc_csm_dap_tvc()->cntr = 0;                      /* +0 SAYS NORMAL ENTRY   */
-    agc_status_t st = agc_waitlist_call(1, AGC_TASK_GIMBAL_TEST_TRIM);
-    if (st != AGC_STATUS_OK) {
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    g->csm.mrkrtmp          = mrkrtmp;
+    agc_csm_dap_tvc()->cntr = 0; /* +0 SAYS NORMAL ENTRY   */
+    agc_status_t st         = agc_waitlist_call(1, AGC_TASK_GIMBAL_TEST_TRIM);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    (void)AGC_ASSERT(mrkrtmp != 0);
-    return agc_svc_delayjob((mrkrtmp > 0) ? SEC18 : SEC5, AGC_JOB_PREBURN_START_CLOCK);
+    (void) AGC_ASSERT(mrkrtmp != 0);
+    return agc_svc_delayjob((mrkrtmp > 0) ? SEC18 : SEC5,
+                            AGC_JOB_PREBURN_START_CLOCK);
 }
 
 agc_status_t agc_job_gimbal_trim_only(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return trim_common(ctx, -1);                      /* CS BIT1                */
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    return trim_common(ctx, -1); /* CS BIT1                */
 }
 
 agc_status_t agc_job_gimbal_test_and_trim(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
-    return trim_common(ctx, 1);                       /* CAF BIT1               */
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    return trim_common(ctx, 1); /* CAF BIT1               */
 }
 
 /* After the DELAYJOB (p.694): 6.2 (PRE40.6 -0 cs, CLOKTASK 1 s) and 4.23
  * (P40S/SV, PRIO12), then P40S/RS.                                        */
 agc_status_t agc_job_preburn_start_clock(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)agc_phase_change2((uint16_t)040026, (uint16_t)000234, NULL);
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    (void) agc_phase_change2((uint16_t) 040026, (uint16_t) 000234, NULL);
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     return agc_csm_preburn_start_clock(ctx);
 }
 
 /* P40S/RS (p.694): CLOKTASK in 10 ms, then P40S/SV.                        */
 agc_status_t agc_csm_preburn_start_clock(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_waitlist_call(1, AGC_TASK_CLOKTASK);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     return agc_job_preburn_state_vector(ctx);
 }
 
@@ -219,39 +238,47 @@ agc_status_t agc_csm_preburn_start_clock(agc_job_ctx_t *ctx)
  * the integrated time. TIGBLNK by LONGCALL 5 s before TIG-30 (4.21).      */
 agc_status_t agc_job_preburn_state_vector(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_guid_t *g = agc_guid_state();
-    agc_dp_t dt = 0;
-    bool late = false;
+    agc_guid_t  *g    = agc_guid_state();
+    agc_dp_t     dt   = 0;
+    bool         late = false;
     agc_interp_t ip;
     agc_interp_init(&ip);
-    agc_status_t st = agc_guid_midtoav1(&ip, agc_erase_tig() - SEC29_96, ctx->id, &dt, &late);
-    if (st != AGC_STATUS_OK) {
+    agc_status_t st =
+        agc_guid_midtoav1(&ip, agc_erase_tig() - SEC29_96, ctx->id, &dt, &late);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    if (late) {                                       /* P40SNEWM               */
+    if (late)
+    { /* P40SNEWM               */
         agc_erase_set_tig(g->avg.piptime1 + SEC29_96);
     }
-    g->csm.preread_delay = dt - SEC5;                        /* DELTA T TO PREREAD - 5 S */
-    if (!AGC_ASSERT(g->csm.preread_delay >= 0)) {
+    g->csm.preread_delay = dt - SEC5; /* DELTA T TO PREREAD - 5 S */
+    if (!AGC_ASSERT(g->csm.preread_delay >= 0))
+    {
         g->csm.preread_delay = 1;
     }
-    st = agc_waitlist_longcall((uint32_t)g->csm.preread_delay, AGC_TASK_TIGBLNK);
-    if (st != AGC_STATUS_OK) {
+    st = agc_waitlist_longcall((uint32_t) g->csm.preread_delay,
+                               AGC_TASK_TIGBLNK);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    return agc_phase_change(4, (uint16_t)020214);     /* 4.21 = TIGBLNK         */
+    return agc_phase_change(4, (uint16_t) 020214); /* 4.21 = TIGBLNK         */
 }
 
 /* P40BLNKR (p.695): blank the DSKY (not restart protected).               */
 agc_status_t agc_job_preburn_blank_dsky(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(ctx->id != AGC_JOB_NONE);
+    (void) AGC_ASSERT(ctx->id != AGC_JOB_NONE);
     return agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0U, NULL);
 }
 
@@ -260,43 +287,49 @@ agc_status_t agc_job_preburn_blank_dsky(agc_job_ctx_t *ctx)
 agc_status_t agc_task_tigblnk(void)
 {
     agc_status_t st = agc_waitlist_call(SEC5, AGC_TASK_TIGAVEG);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    agc_guid_state()->csm.nvword1 = 0;               /* DISABLE HERE           */
-    (void)agc_exec_novac(AGC_PRIO14, AGC_JOB_PREBURN_BLANK_DSKY);
-    (void)AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
-    return agc_phase_newphase(4, 037, true);          /* 4.37 = TIGAVEG         */
+    agc_guid_state()->csm.nvword1 = 0; /* DISABLE HERE           */
+    (void) agc_exec_novac(AGC_PRIO14, AGC_JOB_PREBURN_BLANK_DSKY);
+    (void) AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0);
+    return agc_phase_newphase(4, 037, true); /* 4.37 = TIGAVEG         */
 }
 
 /* PRECHECK (p.699): start the average-G loop (PREREAD) unless SERVICER is
  * already running (restart).                                              */
 agc_status_t agc_task_precheck(void)
 {
-    if (agc_phase_get(5) != 0U) {
-        return AGC_STATUS_OK;                         /* DON'T START ANOTHER    */
+    if (agc_phase_get(5) != 0U)
+    {
+        return AGC_STATUS_OK; /* DON'T START ANOTHER    */
     }
-    (void)AGC_ASSERT(agc_phase_get(5) == 0U);
-    return (agc_state_vehicle() == AGC_VEHICLE_CSM) ? agc_task_preread_csm()
-                                                    : agc_task_preread_lm();
+    (void) AGC_ASSERT(agc_phase_get(5) == 0U);
+    return (agc_state_vehicle() == AGC_VEHICLE_CSM) ? agc_task_preread_csm() :
+                                                      agc_task_preread_lm();
 }
 
 /* TIGAVEG = TIG-30 (p.699): P40: V06N40 back on, TIG-5 in 24.96 s, 4.6;
  * P41 (P41REDSP): V16N85, TTG/0 in 29.96 s, 4.4. Then PRECHECK.          */
 agc_status_t agc_task_tigaveg(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t  *g = agc_guid_state();
     agc_status_t st;
-    if (agc_csm_is_rcs_burn()) {
-        g->csm.nvword1 = agc_csm_vn(16, 85);          /* REDISPLAY NONFLASHING  */
-        st = agc_waitlist_call((uint16_t)SEC29_96, AGC_TASK_TTG_0);
-        (void)agc_phase_newphase(4, 4, true);
-    } else {
-        g->csm.nvword1 = agc_csm_vn(6, 40);           /* UNBLANK DISPLAY        */
-        st = agc_waitlist_call(SEC24_96, AGC_TASK_TIG_5);
-        (void)agc_phase_newphase(4, 6, true);         /* 4.6 = TIG-5, PRECHECK  */
+    if (agc_csm_is_rcs_burn())
+    {
+        g->csm.nvword1 = agc_csm_vn(16, 85); /* REDISPLAY NONFLASHING  */
+        st             = agc_waitlist_call((uint16_t) SEC29_96, AGC_TASK_TTG_0);
+        (void) agc_phase_newphase(4, 4, true);
     }
-    if (st != AGC_STATUS_OK) {
+    else
+    {
+        g->csm.nvword1 = agc_csm_vn(6, 40); /* UNBLANK DISPLAY        */
+        st             = agc_waitlist_call(SEC24_96, AGC_TASK_TIG_5);
+        (void) agc_phase_newphase(4, 6, true); /* 4.6 = TIG-5, PRECHECK  */
+    }
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return agc_task_precheck();
@@ -306,8 +339,8 @@ agc_status_t agc_task_tigaveg(void)
 agc_status_t agc_task_ttg_0(void)
 {
     agc_status_t st = agc_exec_novac(AGC_PRIO20, AGC_JOB_TIGNOW);
-    (void)agc_flag_clear(AGC_FLAG_TIMRFLAG);          /* P40CLK                 */
-    (void)AGC_ASSERT(!agc_flag_test(AGC_FLAG_TIMRFLAG));
+    (void) agc_flag_clear(AGC_FLAG_TIMRFLAG); /* P40CLK                 */
+    (void) AGC_ASSERT(!agc_flag_test(AGC_FLAG_TIMRFLAG));
     return st;
 }
 
@@ -315,12 +348,15 @@ agc_status_t agc_task_ttg_0(void)
 agc_status_t agc_task_tig_5_csm(void)
 {
     agc_status_t st = agc_waitlist_call(SEC5, AGC_TASK_TIG_0);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    agc_guid_state()->csm.nvword1 = AGC_CSM_NV_ENGINE_ENABLE_REQUEST;           /* WILL CAUSE V99 FLASH   */
-    (void)agc_phase_change2((uint16_t)040074, (uint16_t)000033, NULL);
-    (void)AGC_ASSERT(agc_guid_state()->csm.nvword1 == AGC_CSM_NV_ENGINE_ENABLE_REQUEST);
+    agc_guid_state()->csm.nvword1 =
+        AGC_CSM_NV_ENGINE_ENABLE_REQUEST; /* WILL CAUSE V99 FLASH   */
+    (void) agc_phase_change2((uint16_t) 040074, (uint16_t) 000033, NULL);
+    (void) AGC_ASSERT(agc_guid_state()->csm.nvword1 ==
+                      AGC_CSM_NV_ENGINE_ENABLE_REQUEST);
     return agc_exec_findvac(AGC_PRIO20, AGC_JOB_TIMEBURN);
 }
 
@@ -328,12 +364,14 @@ agc_status_t agc_task_tig_5_csm(void)
  * the V99 (ASTNFLAG), else wait for V99P.                                 */
 agc_status_t agc_task_tig_0_csm(void)
 {
-    (void)agc_flag_set(AGC_FLAG_IGNFLAG);
-    if (!agc_flag_test(AGC_FLAG_ASTNFLAG)) {
-        return AGC_STATUS_OK;                         /* WAIT FOR V99P          */
+    (void) agc_flag_set(AGC_FLAG_IGNFLAG);
+    if (!agc_flag_test(AGC_FLAG_ASTNFLAG))
+    {
+        return AGC_STATUS_OK; /* WAIT FOR V99P          */
     }
-    agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40); /* CLEAR THE V99         */
-    (void)agc_phase_change(4, (uint16_t)000614);      /* 4.61 = IGNITION        */
-    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_IGNFLAG));
+    agc_guid_state()->csm.nvword1 =
+        agc_csm_vn(6, 40);                         /* CLEAR THE V99         */
+    (void) agc_phase_change(4, (uint16_t) 000614); /* 4.61 = IGNITION        */
+    (void) AGC_ASSERT(agc_flag_test(AGC_FLAG_IGNFLAG));
     return agc_task_ignition_csm();
 }

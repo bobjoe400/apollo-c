@@ -21,7 +21,8 @@
  * C name: AGC_FLAG_<AGCNAME>, AGCNAME upper case, '/', '-' and '.' -> '_'.
  */
 
-enum agc_flag_csm_id {
+enum agc_flag_csm_id
+{
     /* KFLAG  FLAGWRD0 bit 1 (014D)
      * SET: SEARCH SECTOR MORE THAN 180 DEGREES  RESET: SEARCH SECTOR LESS THAN
      * 180 DEGREES */

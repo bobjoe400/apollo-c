@@ -6,40 +6,51 @@
 #ifndef GUID_PENDING_LM_H
 #define GUID_PENDING_LM_H
 
-#include "agc/guidance/pending.h"
 #include "agc/core/flags_lm.h"
+#include "agc/guidance/pending.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
 
 /* ---- counters (state-flags / exec) ---------------------------------------- */
-agc_sp_t agc_erase_time5(void);              /* TIME5 counter (T5RUPT)       */
+agc_sp_t agc_erase_time5(void); /* TIME5 counter (T5RUPT)       */
 void     agc_erase_set_time5(agc_sp_t v);
-void     agc_erase_set_thrust(agc_sp_t pulses); /* THRUST counter 055 (landing_pending.h) */
+void     agc_erase_set_thrust(
+        agc_sp_t pulses); /* THRUST counter 055 (landing_pending.h) */
 
 /* ---- radar routines (prog-rendz, P20-P25.agc pp. ~2727-3070, 4487, 5115) -- */
-agc_status_t agc_radar_lralt(void);          /* LRALT: one LR altitude sample   */
-agc_status_t agc_radar_lrvel(agc_sp_t beam2);/* LRVEL: 5 velocity samples, A = 2*VSELECT */
-agc_status_t agc_radar_lrpos2(void);         /* LRPOS2: drive LR antenna to POS2 */
-agc_dp_t     agc_radar_samplsum(void);       /* SAMPLSUM: last reading (DP)     */
-agc_status_t agc_radar_landing_radar_lights(void);       /* R12LITES: LR lamps              */
-agc_status_t agc_radar_powered_flight_designate(void);            /* R29: RR designate (from SERVICER) */
+agc_status_t agc_radar_lralt(void); /* LRALT: one LR altitude sample   */
+agc_status_t
+agc_radar_lrvel(agc_sp_t beam2); /* LRVEL: 5 velocity samples, A = 2*VSELECT */
+agc_status_t agc_radar_lrpos2(void);   /* LRPOS2: drive LR antenna to POS2 */
+agc_dp_t     agc_radar_samplsum(void); /* SAMPLSUM: last reading (DP)     */
+agc_status_t
+agc_radar_landing_radar_lights(void); /* R12LITES: LR lamps              */
+agc_status_t agc_radar_powered_flight_designate(
+    void); /* R29: RR designate (from SERVICER) */
 
 /* ---- landing (guid-landing, P70-P71.agc p. ~829) -------------------------- */
-agc_status_t agc_lm_abort_monitor_resume(void);           /* R10,R11A (LRHTASK continues there) */
+agc_status_t
+agc_lm_abort_monitor_resume(void); /* R10,R11A (LRHTASK continues there) */
 
 /* ---- LAMBERT / INITVEL erasables RASTEER1 reads (nav-conic / prog-rendz).
  * RTMAG, MU/A, MUASTEER are already agc_rendz_t fields.                     */
-agc_sp_t  agc_erase_geomsgn(void);   /* GEOMSGN SP +.5 short way, -.5 long way */
-agc_vec_t agc_erase_un(void);        /* UN unit normal to the transfer plane 2^1 */
+agc_sp_t  agc_erase_geomsgn(void); /* GEOMSGN SP +.5 short way, -.5 long way */
+agc_vec_t agc_erase_un(void); /* UN unit normal to the transfer plane 2^1 */
 
 /* ---- LM continuation jobs (lead adds to agc_jobs.h) --------------------- */
-#define AGC_JOB_APS_BURN_STAGE_CHECKED   ((agc_job_id_t)(AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
-#define AGC_JOB_BURNBABY_COUNTDOWN ((agc_job_id_t)(AGC_JOB_GUID_BASE + 117)) /* B*RNB*B* after P40AUTO */
-#define AGC_TASK_IGNITION_IF_ENABLED ((agc_task_id_t)(AGC_TASK_GUID_BASE + 64)) /* IGNYET? (TIG-0 restart) */
-#define AGC_TASK_IGNITION_FINISH ((agc_task_id_t)(AGC_TASK_GUID_BASE + 65)) /* P42IGN (P40IGN 4.1 restart) */
+#define AGC_JOB_APS_BURN_STAGE_CHECKED \
+    ((agc_job_id_t) (AGC_JOB_GUID_BASE + 110)) /* P42STAGE (REP40ALM PROCEED) */
+#define AGC_JOB_BURNBABY_COUNTDOWN \
+    ((agc_job_id_t) (AGC_JOB_GUID_BASE + 117)) /* B*RNB*B* after P40AUTO */
+#define AGC_TASK_IGNITION_IF_ENABLED \
+    ((agc_task_id_t) (AGC_TASK_GUID_BASE + 64)) /* IGNYET? (TIG-0 restart) */
+#define AGC_TASK_IGNITION_FINISH           \
+    ((agc_task_id_t) (AGC_TASK_GUID_BASE + \
+                      65)) /* P42IGN (P40IGN 4.1 restart) */
 /* Copied token-for-token from src/exec/pending.h (the restart
  * tables use these values) so either header may be included.              */
-#define AGC_TASK_ZOOM      ((agc_task_id_t)0x0EC4) /* 3.3                         */
-#define AGC_TASK_REDO4_2   ((agc_task_id_t)0x0EC5) /* 4.2 second part             */
+#define AGC_TASK_ZOOM ((agc_task_id_t) 0x0EC4) /* 3.3                         */
+#define AGC_TASK_REDO4_2 \
+    ((agc_task_id_t) 0x0EC5) /* 4.2 second part             */
 
 #endif /* GUID_PENDING_LM_H */

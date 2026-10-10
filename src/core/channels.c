@@ -22,6 +22,7 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 
@@ -34,81 +35,93 @@ static bool chan_valid(int chan)
 
 static bool chan_inverted(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0)) {
+    if (!AGC_ASSERT(chan >= 0))
+    {
         return false;
     }
-    return (chan >= AGC_CHAN_FIRST_INVERTED) && (chan <= AGC_CHAN_LAST_INVERTED);
+    return (chan >= AGC_CHAN_FIRST_INVERTED) &&
+           (chan <= AGC_CHAN_LAST_INVERTED);
 }
 
 /* Channels a program may write: L, Q, outputs, and 033 (flip-flop reset). */
 static bool chan_writable(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0)) {
+    if (!AGC_ASSERT(chan >= 0))
+    {
         return false;
     }
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT)) {
+    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
+    {
         return false;
     }
-    switch (chan) {
-    case AGC_CHAN_L:
-    case AGC_CHAN_Q:
-    case AGC_CHAN_PYJETS:
-    case AGC_CHAN_ROLLJETS:
-    case AGC_CHAN_SUPERBNK:
-    case AGC_CHAN_OUT0:
-    case AGC_CHAN_DSALMOUT:
-    case AGC_CHAN_CHAN12:
-    case AGC_CHAN_CHAN13:
-    case AGC_CHAN_CHAN14:
-    case AGC_CHAN_CHAN33:
-    case AGC_CHAN_DNTM1:
-    case AGC_CHAN_DNTM2:
-        return true;
-    default:
-        return false;
+    switch (chan)
+    {
+        case AGC_CHAN_L:
+        case AGC_CHAN_Q:
+        case AGC_CHAN_PYJETS:
+        case AGC_CHAN_ROLLJETS:
+        case AGC_CHAN_SUPERBNK:
+        case AGC_CHAN_OUT0:
+        case AGC_CHAN_DSALMOUT:
+        case AGC_CHAN_CHAN12:
+        case AGC_CHAN_CHAN13:
+        case AGC_CHAN_CHAN14:
+        case AGC_CHAN_CHAN33:
+        case AGC_CHAN_DNTM1:
+        case AGC_CHAN_DNTM2:
+            return true;
+        default:
+            return false;
     }
 }
 
 /* Inputs the simulator may drive. */
 static bool chan_input(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0)) {
+    if (!AGC_ASSERT(chan >= 0))
+    {
         return false;
     }
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT)) {
+    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
+    {
         return false;
     }
-    switch (chan) {
-    case AGC_CHAN_HISCALAR:
-    case AGC_CHAN_LOSCALAR:
-    case AGC_CHAN_MNKEYIN:
-    case AGC_CHAN_NAVKEYIN:
-    case AGC_CHAN_CHAN30:
-    case AGC_CHAN_CHAN31:
-    case AGC_CHAN_CHAN32:
-    case AGC_CHAN_CHAN33:
-        return true;
-    default:
-        return false;
+    switch (chan)
+    {
+        case AGC_CHAN_HISCALAR:
+        case AGC_CHAN_LOSCALAR:
+        case AGC_CHAN_MNKEYIN:
+        case AGC_CHAN_NAVKEYIN:
+        case AGC_CHAN_CHAN30:
+        case AGC_CHAN_CHAN31:
+        case AGC_CHAN_CHAN32:
+        case AGC_CHAN_CHAN33:
+            return true;
+        default:
+            return false;
     }
 }
 
 void agc_chan_reset(void)
 {
-    for (int i = 0; i < AGC_CHAN_COUNT; i++) {
-        g_chan[i] = chan_inverted(i) ? (uint16_t)AGC_CHAN_MASK : 0u;
+    for (int i = 0; i < AGC_CHAN_COUNT; i++)
+    {
+        g_chan[i] = chan_inverted(i) ? (uint16_t) AGC_CHAN_MASK : 0u;
     }
-    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK))
+    {
         return;
     }
 }
 
 uint16_t agc_chan_read(int chan)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return 0;
     }
-    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
+    {
         return 0;
     }
     return g_chan[chan];
@@ -117,28 +130,37 @@ uint16_t agc_chan_read(int chan)
 /* Channel 033 write pulse: flip-flop bits 11-15 return to inactive (1). */
 static void reset_flipflops(void)
 {
-    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN33] <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN33] <= AGC_CHAN_MASK))
+    {
         return;
     }
-    g_chan[AGC_CHAN_CHAN33] = (uint16_t)(g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
+    g_chan[AGC_CHAN_CHAN33] =
+        (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
 }
 
 agc_status_t agc_chan_write(int chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(value <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!chan_writable(chan)) {
+    if (!chan_writable(chan))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (chan == AGC_CHAN_CHAN33) {
+    if (chan == AGC_CHAN_CHAN33)
+    {
         reset_flipflops();
-    } else {
+    }
+    else
+    {
         g_chan[chan] = value;
-        if (!AGC_ASSERT(g_chan[chan] == value)) {
+        if (!AGC_ASSERT(g_chan[chan] == value))
+        {
             return AGC_STATUS_BAD_ARG;
         }
     }
@@ -147,20 +169,27 @@ agc_status_t agc_chan_write(int chan, uint16_t value)
 
 agc_status_t agc_chan_or(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!chan_writable(chan)) {
+    if (!chan_writable(chan))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (chan == AGC_CHAN_CHAN33) {
+    if (chan == AGC_CHAN_CHAN33)
+    {
         reset_flipflops();
-    } else {
-        g_chan[chan] = (uint16_t)(g_chan[chan] | mask);
-        if (!AGC_ASSERT((g_chan[chan] & mask) == mask)) {
+    }
+    else
+    {
+        g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
+        if (!AGC_ASSERT((g_chan[chan] & mask) == mask))
+        {
             return AGC_STATUS_BAD_ARG;
         }
     }
@@ -169,20 +198,27 @@ agc_status_t agc_chan_or(int chan, uint16_t mask)
 
 agc_status_t agc_chan_and(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!chan_writable(chan)) {
+    if (!chan_writable(chan))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (chan == AGC_CHAN_CHAN33) {
+    if (chan == AGC_CHAN_CHAN33)
+    {
         reset_flipflops();
-    } else {
-        g_chan[chan] = (uint16_t)(g_chan[chan] & mask);
-        if (!AGC_ASSERT((g_chan[chan] & (uint16_t)~mask) == 0u)) {
+    }
+    else
+    {
+        g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
+        if (!AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u))
+        {
             return AGC_STATUS_BAD_ARG;
         }
     }
@@ -191,17 +227,21 @@ agc_status_t agc_chan_and(int chan, uint16_t mask)
 
 agc_status_t agc_chan_set_input(int chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(value <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!chan_input(chan)) {
+    if (!chan_input(chan))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     g_chan[chan] = value;
-    if (!AGC_ASSERT(g_chan[chan] == value)) {
+    if (!AGC_ASSERT(g_chan[chan] == value))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return AGC_STATUS_OK;
@@ -209,22 +249,29 @@ agc_status_t agc_chan_set_input(int chan, uint16_t value)
 
 agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present)
 {
-    if (!AGC_ASSERT(chan_valid(chan))) {
+    if (!AGC_ASSERT(chan_valid(chan)))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK)) {
+    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!chan_input(chan)) {
+    if (!chan_input(chan))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     /* Inverted channels: signal present = bit cleared. */
-    if (present == chan_inverted(chan)) {
-        g_chan[chan] = (uint16_t)(g_chan[chan] & ~mask);
-    } else {
-        g_chan[chan] = (uint16_t)(g_chan[chan] | mask);
+    if (present == chan_inverted(chan))
+    {
+        g_chan[chan] = (uint16_t) (g_chan[chan] & ~mask);
     }
-    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK)) {
+    else
+    {
+        g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
+    }
+    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return AGC_STATUS_OK;

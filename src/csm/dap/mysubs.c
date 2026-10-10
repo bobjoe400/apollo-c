@@ -14,110 +14,128 @@
  */
 #include "internal.h"
 
-#define W_ONE      16384     /* 2^14: 1.0 in SP units                     */
-#define W_DP_ONE   (1L << 28) /* 1.0 in DP units                          */
+#define W_ONE    16384      /* 2^14: 1.0 in SP units                     */
+#define W_DP_ONE (1L << 28) /* 1.0 in DP units                          */
 
 /* Ones' complement 15-bit word -> value. Both zeros read as 0.           */
 agc_sp_t csm_dap_word_sp(uint16_t w)
 {
-    uint16_t v = (uint16_t)(w & CSM_DAP_NEG0);
-    (void)AGC_ASSERT(v <= CSM_DAP_NEG0);
-    if ((v & CSM_DAP_BIT15) != 0u) {
-        return (agc_sp_t)(-(int)((~(unsigned)v) & 037777u));
+    uint16_t v = (uint16_t) (w & CSM_DAP_NEG0);
+    (void) AGC_ASSERT(v <= CSM_DAP_NEG0);
+    if ((v & CSM_DAP_BIT15) != 0u)
+    {
+        return (agc_sp_t) (-(int) ((~(unsigned) v) & 037777u));
     }
-    return (agc_sp_t)v;
+    return (agc_sp_t) v;
 }
 
 /* Value -> ones' complement 15-bit word (0 -> +0).                       */
 uint16_t csm_dap_sp_word(agc_sp_t v)
 {
-    (void)AGC_ASSERT(v >= AGC_SP_MIN);
-    (void)AGC_ASSERT(v <= AGC_SP_MAX);
-    if (v < 0) {
-        return (uint16_t)(077777 + (int)v);
+    (void) AGC_ASSERT(v >= AGC_SP_MIN);
+    (void) AGC_ASSERT(v <= AGC_SP_MAX);
+    if (v < 0)
+    {
+        return (uint16_t) (077777 + (int) v);
     }
-    return (uint16_t)v;
+    return (uint16_t) v;
 }
 
 /* MSU (modular subtract): the two's complement difference of two 15-bit
  * counter words, converted to ones' complement by the hardware.          */
 agc_sp_t csm_dap_msu(uint16_t a, uint16_t b)
 {
-    (void)AGC_ASSERT(a <= CSM_DAP_NEG0);
-    (void)AGC_ASSERT(b <= CSM_DAP_NEG0);
-    unsigned d = ((unsigned)a - (unsigned)b) & 077777u;
-    if ((d & 040000u) != 0u) {
-        d -= 1u;                     /* two's -> ones' complement          */
+    (void) AGC_ASSERT(a <= CSM_DAP_NEG0);
+    (void) AGC_ASSERT(b <= CSM_DAP_NEG0);
+    unsigned d = ((unsigned) a - (unsigned) b) & 077777u;
+    if ((d & 040000u) != 0u)
+    {
+        d -= 1u; /* two's -> ones' complement          */
     }
-    return csm_dap_word_sp((uint16_t)d);
+    return csm_dap_word_sp((uint16_t) d);
 }
 
 /* AD / ADS: on overflow the stored word is the sum -+ 1.0.               */
 agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b)
 {
-    int s = (int)a + (int)b;
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
-    if (s > AGC_SP_MAX) {
+    int s = (int) a + (int) b;
+    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    if (s > AGC_SP_MAX)
+    {
         s -= W_ONE;
-    } else if (s < AGC_SP_MIN) {
+    }
+    else if (s < AGC_SP_MIN)
+    {
         s += W_ONE;
-    } else {
+    }
+    else
+    {
         /* no overflow */
     }
-    (void)AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
-    return (agc_sp_t)s;
+    (void) AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
+    return (agc_sp_t) s;
 }
 
 /* AD; TS X; TCF +3; INDEX A; CS LIMITS: overflow limits to +-POSMAX.     */
 agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b)
 {
-    int s = (int)a + (int)b;
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
-    if (s > AGC_SP_MAX) {
+    int s = (int) a + (int) b;
+    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN));
+    if (s > AGC_SP_MAX)
+    {
         s = AGC_SP_MAX;
-    } else if (s < AGC_SP_MIN) {
+    }
+    else if (s < AGC_SP_MIN)
+    {
         s = AGC_SP_MIN;
-    } else {
+    }
+    else
+    {
         /* no overflow */
     }
-    (void)AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
-    return (agc_sp_t)s;
+    (void) AGC_ASSERT((s >= AGC_SP_MIN) && (s <= AGC_SP_MAX));
+    return (agc_sp_t) s;
 }
 
 /* DAS: double precision add, overflow-corrected like the AGC.            */
 agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b)
 {
-    int64_t s = (int64_t)a + (int64_t)b;
-    (void)AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
-    (void)AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
-    if (s > AGC_DP_MAX) {
+    int64_t s = (int64_t) a + (int64_t) b;
+    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    (void) AGC_ASSERT((b >= AGC_DP_MIN) && (b <= AGC_DP_MAX));
+    if (s > AGC_DP_MAX)
+    {
         s -= W_DP_ONE;
-    } else if (s < AGC_DP_MIN) {
+    }
+    else if (s < AGC_DP_MIN)
+    {
         s += W_DP_ONE;
-    } else {
+    }
+    else
+    {
         /* no overflow */
     }
-    return (agc_dp_t)s;
+    return (agc_dp_t) s;
 }
 
 /* DDOUBL: A,L doubled (overflow-corrected).                             */
 agc_dp_t csm_dap_ddoubl(agc_dp_t a)
 {
-    (void)AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
+    (void) AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX));
     return csm_dap_das(a, a);
 }
 
 agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b)
 {
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void)AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
     return agc_dp_high(agc_sp_mul(a, b));
 }
 
 agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
 {
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    (void)AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
+    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    (void) AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX));
     return agc_dp_low(agc_sp_mul(a, b));
 }
 
@@ -126,27 +144,28 @@ agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
  * here it is limited to +-POSMAX with the sign of the quotient.           */
 agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
 {
-    (void)AGC_ASSERT((num >= AGC_DP_MIN) && (num <= AGC_DP_MAX));
-    (void)AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX));
-    bool neg = ((num < 0) != (den < 0)) && (num != 0);
-    int64_t an = (num < 0) ? -(int64_t)num : (int64_t)num;
-    int64_t ad = (den < 0) ? -(int64_t)den : (int64_t)den;
-    if ((ad == 0) || (an >= ad * W_ONE)) {
+    (void) AGC_ASSERT((num >= AGC_DP_MIN) && (num <= AGC_DP_MAX));
+    (void) AGC_ASSERT((den >= AGC_SP_MIN) && (den <= AGC_SP_MAX));
+    bool    neg = ((num < 0) != (den < 0)) && (num != 0);
+    int64_t an  = (num < 0) ? -(int64_t) num : (int64_t) num;
+    int64_t ad  = (den < 0) ? -(int64_t) den : (int64_t) den;
+    if ((ad == 0) || (an >= ad * W_ONE))
+    {
         return neg ? AGC_SP_MIN : AGC_SP_MAX;
     }
     int64_t q = an / ad;
-    return (agc_sp_t)(neg ? -q : q);
+    return (agc_sp_t) (neg ? -q : q);
 }
 
 /* SMALLMP (MYSUBS p. 999): KMPAC = A (KMPAC, KMPAC+1), the low product
  * truncated to its upper word ("ONE AND ONE HALF PRECISION").            */
 agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
 {
-    (void)AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
-    (void)AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
-    agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac));    /* AY (KMPAC +1) */
-    agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));      /* AX            */
-    return csm_dap_das(ax, (agc_dp_t)ay);                 /* AX + AY       */
+    (void) AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
+    (void) AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX));
+    agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac)); /* AY (KMPAC +1) */
+    agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));   /* AX            */
+    return csm_dap_das(ax, (agc_dp_t) ay);             /* AX + AY       */
 }
 
 /* DPADD (MYSUBS pp. 999-1000): add the DP angle A,L (scaled 180 deg) to
@@ -155,27 +174,34 @@ agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
  * branches (DPADD2+) is value-equivalent and not modelled bit for bit.   */
 agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
 {
-    (void)AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
-    (void)AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX));
-    int64_t s = (int64_t)kmpac + (int64_t)al;
-    if (s > AGC_DP_MAX) {
-        s -= 2 * W_DP_ONE;           /* + overflow: subtract 360 deg       */
-    } else if (s < AGC_DP_MIN) {
-        s += 2 * W_DP_ONE;           /* - overflow: add 360 deg            */
-    } else {
+    (void) AGC_ASSERT((kmpac >= AGC_DP_MIN) && (kmpac <= AGC_DP_MAX));
+    (void) AGC_ASSERT((al >= AGC_DP_MIN) && (al <= AGC_DP_MAX));
+    int64_t s = (int64_t) kmpac + (int64_t) al;
+    if (s > AGC_DP_MAX)
+    {
+        s -= 2 * W_DP_ONE; /* + overflow: subtract 360 deg       */
+    }
+    else if (s < AGC_DP_MIN)
+    {
+        s += 2 * W_DP_ONE; /* - overflow: add 360 deg            */
+    }
+    else
+    {
         /* no overflow */
     }
-    return (agc_dp_t)s;
+    return (agc_dp_t) s;
 }
 
 /* CDUX (axis 0), CDUY (1), CDUZ (2): raw counter words.                  */
 uint16_t csm_dap_cdu(int axis)
 {
-    (void)AGC_ASSERT((axis >= 0) && (axis < AGC_CSM_AXES));
-    if (axis == 1) {
+    (void) AGC_ASSERT((axis >= 0) && (axis < AGC_CSM_AXES));
+    if (axis == 1)
+    {
         return agc_erase_cduy();
     }
-    if (axis == 2) {
+    if (axis == 2)
+    {
         return agc_erase_cduz();
     }
     return agc_erase_cdux();
@@ -185,11 +211,13 @@ uint16_t csm_dap_cdu(int axis)
 agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
 {
     if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
-        !AGC_ASSERT(time5_word <= CSM_DAP_NEG0)) {
+        !AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_rupt_set_t5_task(task);
-    if (st == AGC_STATUS_OK) {
+    if (st == AGC_STATUS_OK)
+    {
         st = agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
     }
     return st;
@@ -197,9 +225,9 @@ agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
 
 agc_status_t csm_dap_set_time5(uint16_t time5_word)
 {
-    (void)AGC_ASSERT(time5_word <= CSM_DAP_NEG0);
+    (void) AGC_ASSERT(time5_word <= CSM_DAP_NEG0);
     agc_status_t st = agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return st;
 }
 
@@ -207,8 +235,8 @@ agc_status_t csm_dap_set_time5(uint16_t time5_word)
 bool csm_dap_engine_on(void)
 {
     uint16_t ch11 = agc_chan_read(AGC_CHAN_DSALMOUT);
-    (void)AGC_ASSERT(ch11 <= CSM_DAP_NEG0);
-    return (ch11 & (uint16_t)AGC_CH011_ENGINEON) != 0u;
+    (void) AGC_ASSERT(ch11 <= CSM_DAP_NEG0);
+    return (ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u;
 }
 
 /* FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2) = 1,0: T5 belongs to the TVC DAP. */
@@ -216,6 +244,6 @@ bool csm_tvc_dap_is_tvc(void)
 {
     bool b1 = agc_flag_test(AGC_FLAG_DAPBIT1);
     bool b2 = agc_flag_test(AGC_FLAG_DAPBIT2);
-    (void)AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1));
+    (void) AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1));
     return b1 && !b2;
 }

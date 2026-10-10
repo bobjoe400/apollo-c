@@ -25,38 +25,41 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "agc/core/status.h"
 
-#define AGC_CHAN_COUNT 040           /* channels 0..037                     */
-#define AGC_CHAN_MASK  077777u       /* channels are 15 bits wide           */
-#define AGC_CHAN_FIRST_INVERTED 030  /* channels 030..033 read inverted     */
+#define AGC_CHAN_COUNT          040 /* channels 0..037                     */
+#define AGC_CHAN_MASK           077777u /* channels are 15 bits wide           */
+#define AGC_CHAN_FIRST_INVERTED 030 /* channels 030..033 read inverted     */
 #define AGC_CHAN_LAST_INVERTED  033
 
-enum agc_channel_number {
+enum agc_channel_number
+{
     AGC_CHAN_L        = 001,
     AGC_CHAN_Q        = 002,
-    AGC_CHAN_HISCALAR = 003,         /* input: TIME counter bits (B23 cs)   */
-    AGC_CHAN_LOSCALAR = 004,         /* input: TIME counter bits (B9 cs)    */
+    AGC_CHAN_HISCALAR = 003, /* input: TIME counter bits (B23 cs)   */
+    AGC_CHAN_LOSCALAR = 004, /* input: TIME counter bits (B9 cs)    */
     AGC_CHAN_PYJETS   = 005,
     AGC_CHAN_ROLLJETS = 006,
     AGC_CHAN_SUPERBNK = 007,
-    AGC_CHAN_OUT0     = 010,         /* DSKY display relays               */
-    AGC_CHAN_DSALMOUT = 011,         /* DSKY lamps                        */
-    AGC_CHAN_CHAN12   = 012,         /* IMU / optics moding               */
+    AGC_CHAN_OUT0     = 010, /* DSKY display relays               */
+    AGC_CHAN_DSALMOUT = 011, /* DSKY lamps                        */
+    AGC_CHAN_CHAN12   = 012, /* IMU / optics moding               */
     AGC_CHAN_CHAN13   = 013,
-    AGC_CHAN_CHAN14   = 014,         /* CDU drive, gyro, thrust           */
-    AGC_CHAN_MNKEYIN  = 015,         /* main DSKY keycode                 */
-    AGC_CHAN_NAVKEYIN = 016,         /* nav DSKY keycode / mark buttons   */
+    AGC_CHAN_CHAN14   = 014, /* CDU drive, gyro, thrust           */
+    AGC_CHAN_MNKEYIN  = 015, /* main DSKY keycode                 */
+    AGC_CHAN_NAVKEYIN = 016, /* nav DSKY keycode / mark buttons   */
     AGC_CHAN_CHAN30   = 030,
     AGC_CHAN_CHAN31   = 031,
     AGC_CHAN_CHAN32   = 032,
     AGC_CHAN_CHAN33   = 033,
-    AGC_CHAN_DNTM1    = 034,         /* downlink word 1                   */
+    AGC_CHAN_DNTM1    = 034, /* downlink word 1                   */
     AGC_CHAN_DNTM2    = 035
 };
 
 /* Channel bit masks (see the header comment for naming and polarity).     */
-enum agc_channel_bits {
+enum agc_channel_bits
+{
     /* ---- channel 005 ---- */
     /* bit  1: PYJETS jet-driver bit 1 (pitch/yaw RCS jets) */
     AGC_CH005_PYJET1 = 000001,
@@ -406,12 +409,14 @@ enum agc_channel_bits {
     AGC_CH033_FLIPFLOP_MASK = 076000,
 };
 
-uint16_t     agc_chan_read(int chan);                   /* READ          */
-agc_status_t agc_chan_write(int chan, uint16_t value);  /* WRITE         */
-agc_status_t agc_chan_or(int chan, uint16_t mask);      /* WOR           */
-agc_status_t agc_chan_and(int chan, uint16_t mask);     /* WAND          */
-agc_status_t agc_chan_set_input(int chan, uint16_t value); /* sim: raw sensed value */
-agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present); /* sim: signal on/off */
-void         agc_chan_reset(void);                      /* power-up image */
+uint16_t     agc_chan_read(int chan);                  /* READ          */
+agc_status_t agc_chan_write(int chan, uint16_t value); /* WRITE         */
+agc_status_t agc_chan_or(int chan, uint16_t mask);     /* WOR           */
+agc_status_t agc_chan_and(int chan, uint16_t mask);    /* WAND          */
+agc_status_t agc_chan_set_input(int      chan,
+                                uint16_t value); /* sim: raw sensed value */
+agc_status_t agc_chan_set_signal(int chan, uint16_t mask,
+                                 bool present); /* sim: signal on/off */
+void         agc_chan_reset(void);              /* power-up image */
 
 #endif /* AGC_CHANNELS_H */

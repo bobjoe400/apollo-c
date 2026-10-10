@@ -13,104 +13,114 @@
  *   integration.  Spares and illegal nouns end in ALM/END.
  */
 #include <stddef.h>
+
 #include "agc/core/assert.h"
-#include "agc/core/state.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/exec/exec.h"
-#include "agc/io/dsky.h"
-#include "agc/imu/imu.h"
+#include "agc/core/state.h"
 #include "agc/csm/dap.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service_internal.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/alignment_pending.h"
-#include "agc/io/service_internal.h"
 #include "pending.h"
 
-#define WORD15     077777u
-#define BIT4       000010u
-#define BIT5       000020u
-#define BIT14      020000u
-#define OCT30      000030u   /* CHAN12 bits 4,5: coarse align, zero ICDU   */
-#define OCT50      000050u   /* CHAN12 bits 4,6: coarse align, ECTR enable */
-#define OCT60000   060000u   /* FLAGWRD6 DAPBITS 1 and 2                   */
-#define TVC_BITS   040000u   /* DAPBITS = 10: TVC autopilot               */
-#define PRIO30BITS 030000u   /* DAPDATR1 configuration bits 13,12         */
-#define PRIO7BITS  007000u
-#define PRIO5BITS  005000u
-#define NOUN_OCDU  91        /* N91 optics CDUs                            */
-#define ALARM_NO_REND_TRACK ((agc_alarm_code_t)00406)
-#define ALARM_NO_P07       ((agc_alarm_code_t)01521)
-#define ALARM_OPTICS_SWITCH   ((agc_alarm_code_t)00115) /* optics not at computer */
-#define ALARM_OPTICS_RESERVED ((agc_alarm_code_t)00117) /* OPTIND = -0          */
-#define MRKBUF_REJECT      077776u   /* NEGONE                             */
-#define PHASE_R64          0112u     /* group 2: do R64                     */
-#define PHASE_AZIMUTH      0174u     /* group 4 phase 15                    */
-#define PRIO5      ((agc_prio_t)005)
-#define PRIO10     ((agc_prio_t)010)
-#define PRIO16     ((agc_prio_t)016)
-#define PRIO20     ((agc_prio_t)020)
-#define PRIO30     ((agc_prio_t)030)
-#define ATTCK_DELAY_CS 2u            /* CAF TWO, WAITLIST                  */
+#define WORD15              077777u
+#define BIT4                000010u
+#define BIT5                000020u
+#define BIT14               020000u
+#define OCT30               000030u /* CHAN12 bits 4,5: coarse align, zero ICDU   */
+#define OCT50               000050u /* CHAN12 bits 4,6: coarse align, ECTR enable */
+#define OCT60000            060000u /* FLAGWRD6 DAPBITS 1 and 2                   */
+#define TVC_BITS            040000u /* DAPBITS = 10: TVC autopilot               */
+#define PRIO30BITS          030000u /* DAPDATR1 configuration bits 13,12         */
+#define PRIO7BITS           007000u
+#define PRIO5BITS           005000u
+#define NOUN_OCDU           91 /* N91 optics CDUs                            */
+#define ALARM_NO_REND_TRACK ((agc_alarm_code_t) 00406)
+#define ALARM_NO_P07        ((agc_alarm_code_t) 01521)
+#define ALARM_OPTICS_SWITCH \
+    ((agc_alarm_code_t) 00115) /* optics not at computer */
+#define ALARM_OPTICS_RESERVED \
+    ((agc_alarm_code_t) 00117) /* OPTIND = -0          */
+#define MRKBUF_REJECT  077776u /* NEGONE                             */
+#define PHASE_R64      0112u   /* group 2: do R64                     */
+#define PHASE_AZIMUTH  0174u   /* group 4 phase 15                    */
+#define PRIO5          ((agc_prio_t) 005)
+#define PRIO10         ((agc_prio_t) 010)
+#define PRIO16         ((agc_prio_t) 016)
+#define PRIO20         ((agc_prio_t) 020)
+#define PRIO30         ((agc_prio_t) 030)
+#define ATTCK_DELAY_CS 2u /* CAF TWO, WAITLIST                  */
 
 /* FLAGWRD6 DAPBITS = 10: the TVC autopilot is on.                         */
 static bool tvc_on(void)
 {
     uint16_t f6 = agc_flagword_get(6);
-    (void)AGC_ASSERT(f6 <= WORD15);
+    (void) AGC_ASSERT(f6 <= WORD15);
     return (f6 & OCT60000) == TVC_BITS;
 }
 
 /* CKLFTBTS: true after liftoff (GRRBKFLG, or channel 30 bit 5 clear).    */
 static bool after_liftoff(void)
 {
-    if (agc_flag_test((agc_flag_id_t)AGC_FLAG_GRRBKFLG)) {
+    if (agc_flag_test((agc_flag_id_t) AGC_FLAG_GRRBKFLG))
+    {
         return true;
     }
-    uint16_t c30 = agc_chan_read((int)AGC_CHAN_CHAN30);
-    (void)AGC_ASSERT(c30 <= WORD15);
+    uint16_t c30 = agc_chan_read((int) AGC_CHAN_CHAN30);
+    (void) AGC_ASSERT(c30 <= WORD15);
     return (c30 & BIT5) == 0u;
 }
 
 /* Signed value of a two's-complement CDU word (half-revolutions, 2^14). */
 static agc_sp_t cdu_signed(uint16_t w)
 {
-    (void)AGC_ASSERT(w <= WORD15);
-    int v = ((w & 040000u) != 0u) ? (int)w - 0100000 : (int)w;
-    (void)AGC_ASSERT(v >= -040000 && v < 040000);
-    return (agc_sp_t)((v < AGC_SP_MIN) ? AGC_SP_MIN : v);
+    (void) AGC_ASSERT(w <= WORD15);
+    int v = ((w & 040000u) != 0u) ? (int) w - 0100000 : (int) w;
+    (void) AGC_ASSERT(v >= -040000 && v < 040000);
+    return (agc_sp_t) ((v < AGC_SP_MIN) ? AGC_SP_MIN : v);
 }
 
 /* IMUATTCK (V43, p.243): P00 only, not while coarse align or zero ICDU;
  * after liftoff the extended-verb display must be free.                   */
 static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_chkpooh()) {
+    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_chkpooh())
+    {
         return AGC_STATUS_OK;
     }
-    if ((agc_chan_read((int)AGC_CHAN_CHAN12) & OCT30) != 0u) {
+    if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u)
+    {
         return agc_extverb_alm_end();
     }
-    if (after_liftoff()) {
-        bool ok = false;
+    if (after_liftoff())
+    {
+        bool         ok = false;
         agc_status_t st = agc_extverb_testxact(&ok);
-        if (!ok) {
+        if (!ok)
+        {
             return st;
         }
     }
-    agc_status_t st = agc_chan_and((int)AGC_CHAN_CHAN12, (uint16_t)(WORD15 & ~OCT50));
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    agc_dsky_cont_t cont = { AGC_JOB_ATTITUDE_ERROR_TERMINATE, AGC_JOB_ATTITUDE_ERROR_LOAD,
-                             AGC_JOB_ATTITUDE_ERROR_LOAD };
+    agc_status_t st =
+        agc_chan_and((int) AGC_CHAN_CHAN12, (uint16_t) (WORD15 & ~OCT50));
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_dsky_cont_t cont = {AGC_JOB_ATTITUDE_ERROR_TERMINATE,
+                            AGC_JOB_ATTITUDE_ERROR_LOAD,
+                            AGC_JOB_ATTITUDE_ERROR_LOAD};
     return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont);
 }
 
 /* TRMATTCK: after liftoff ENDEXT, before liftoff GOPIN.                   */
 agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     return after_liftoff() ? agc_dsky_endext() : agc_extverb_gopin();
 }
 
@@ -118,16 +128,19 @@ agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
  * the error counters), ATTCK1 in 20 ms, then TRMATTCK.                   */
 agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_dap_needler(0, 0, 0, true);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     st = agc_waitlist_call(ATTCK_DELAY_CS, AGC_TASK_ATTITUDE_ERROR_OUTPUT);
-    if (st != AGC_STATUS_OK) {
-        return st;                              /* WAITLIST did its alarm  */
+    if (st != AGC_STATUS_OK)
+    {
+        return st; /* WAITLIST did its alarm  */
     }
     return agc_job_attitude_error_terminate(ctx);
 }
@@ -137,11 +150,12 @@ agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
 static agc_status_t attck1(void)
 {
     agc_sp_t ak[3];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
+    {
         ak[i] = cdu_signed(agc_erase_thetad(i));
     }
     agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false);
-    (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
     return st;
 }
 
@@ -149,20 +163,24 @@ static agc_status_t attck1(void)
  * only the CSM/LM switch-over to low bandwidth (else ALM/END).            */
 static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!tvc_on()) {
-        return agc_job_dapfig(ctx);              /* POSTJUMP DAPFIG         */
+    if (!tvc_on())
+    {
+        return agc_job_dapfig(ctx); /* POSTJUMP DAPFIG         */
     }
-    if ((agc_erase_dapdatr1() & BIT14) == 0u) {
-        return agc_extverb_alm_end();            /* CSM alone               */
+    if ((agc_erase_dapdatr1() & BIT14) == 0u)
+    {
+        return agc_extverb_alm_end(); /* CSM alone               */
     }
     agc_status_t st = agc_csm_tvc_preswtch();
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    return agc_extverb_gopin();                  /* PRESWTCH exits via PINBRNCH */
+    return agc_extverb_gopin(); /* PRESWTCH exits via PINBRNCH */
 }
 
 /* ---- V48 load autopilot data (R03, DAPDISP pp.246-247) ----------------- */
@@ -171,26 +189,30 @@ static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 static agc_status_t r03_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
                                 agc_job_id_t next, agc_job_id_t again)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_dsky_cont_t cont = { AGC_JOB_EXTENDED_VERB_END, next, again };
-    return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun), &cont);
+    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, next, again};
+    return agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun),
+                            &cont);
 }
 
 /* DAPDISP: not with TVC; TESTXACT; priority 10; V04N46.                   */
 static agc_status_t verb_dap_data_load(agc_job_ctx_t *ctx)
 {
     bool ok = false;
-    if (!AGC_ASSERT(ctx != NULL) || tvc_on()) {
+    if (!AGC_ASSERT(ctx != NULL) || tvc_on())
+    {
         return agc_extverb_alm_end();
     }
     agc_status_t st = agc_extverb_testxact(&ok);
-    if (!ok) {
+    if (!ok)
+    {
         return st;
     }
     st = agc_exec_prio_change(PRIO10);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_dap_data_load_noun46_csm(ctx);
 }
 
@@ -204,12 +226,13 @@ agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx)
 /* N46 proceed: MAXDBFLG from DAPDATR1 bit 4, S41.2, then V06N47.          */
 agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx)
 {
-    agc_flag_id_t f = (agc_flag_id_t)AGC_FLAG_MAXDBFLG;
-    agc_status_t st = ((agc_erase_dapdatr1() & BIT4) != 0u) ? agc_flag_set(f)
-                                                            : agc_flag_clear(f);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_csm_dap_decode_dap_data();          /* S41.2 (MAXOUT)          */
-    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK) {
+    agc_flag_id_t f  = (agc_flag_id_t) AGC_FLAG_MAXDBFLG;
+    agc_status_t  st = ((agc_erase_dapdatr1() & BIT4) != 0u) ? agc_flag_set(f) :
+                                                               agc_flag_clear(f);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_csm_dap_decode_dap_data(); /* S41.2 (MAXOUT)          */
+    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
+    {
         return (st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG;
     }
     return agc_job_dap_data_load_noun47_csm(ctx);
@@ -226,19 +249,22 @@ agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx)
  * (DAPDATR1 bits 13,12 neither 00 nor 11); then V06N48.                    */
 agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
 {
-    uint16_t cfg = (uint16_t)(agc_erase_dapdatr1() & PRIO30BITS);
-    if (cfg != 0u && cfg != PRIO30BITS) {
+    uint16_t cfg = (uint16_t) (agc_erase_dapdatr1() & PRIO30BITS);
+    if (cfg != 0u && cfg != PRIO30BITS)
+    {
         agc_inhint();
-        agc_status_t st = agc_csm_dap_massprop();     /* IXX, IAVG, IAVG/TLX */
+        agc_status_t st = agc_csm_dap_massprop(); /* IXX, IAVG, IAVG/TLX */
         agc_relint();
-        if (st == AGC_STATUS_OK) {
-            st = agc_csm_dap_rcs_gains();             /* S40.14              */
+        if (st == AGC_STATUS_OK)
+        {
+            st = agc_csm_dap_rcs_gains(); /* S40.14              */
         }
-        if (st != AGC_STATUS_OK) {
+        if (st != AGC_STATUS_OK)
+        {
             return st;
         }
     }
-    (void)AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(ctx != NULL);
     return agc_job_dap_data_load_noun48_csm(ctx);
 }
 
@@ -255,22 +281,25 @@ agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx)
  * and tracking are on (else alarm 406 and ENDEXT).                         */
 static agc_status_t verb_marking(bool backup)
 {
-    agc_flag_id_t r23 = (agc_flag_id_t)AGC_FLAG_BACKUP_MARKING;
-    agc_status_t st = backup ? agc_flag_set(r23) : agc_flag_clear(r23);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_id_t r23 = (agc_flag_id_t) AGC_FLAG_BACKUP_MARKING;
+    agc_status_t  st  = backup ? agc_flag_set(r23) : agc_flag_clear(r23);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     bool ok = false;
-    st = agc_extverb_testxact(&ok);
-    if (!ok) {
+    st      = agc_extverb_testxact(&ok);
+    if (!ok)
+    {
         return st;
     }
-    if (!agc_flag_test((agc_flag_id_t)AGC_FLAG_RNDVZFLG)
-        || !agc_flag_test((agc_flag_id_t)AGC_FLAG_TRACKFLG)) {
-        st = agc_alarm(ALARM_NO_REND_TRACK);           /* R22ALARM           */
-        (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) ||
+        !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
+    {
+        st = agc_alarm(ALARM_NO_REND_TRACK); /* R22ALARM           */
+        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
         return agc_dsky_endext();
     }
-    return agc_extverb_schedule(PRIO16, backup ? AGC_JOB_BACKUP_SIGHTING_MARK
-                                               : AGC_JOB_SIGHTING_MARK, false);
+    return agc_extverb_schedule(
+        PRIO16, backup ? AGC_JOB_BACKUP_SIGHTING_MARK : AGC_JOB_SIGHTING_MARK,
+        false);
 }
 
 /* TRACKTRM (V56, p.251): knock down the rendezvous, track, update and
@@ -278,24 +307,28 @@ static agc_status_t verb_marking(bool backup)
  * integration, kill groups 2 and 1 and restart (ENEMA).                    */
 static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !agc_flag_test((agc_flag_id_t)AGC_FLAG_RNDVZFLG)) {
+    if (!AGC_ASSERT(ctx != NULL) ||
+        !agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
+    {
         return agc_extverb_gopin();
     }
-    agc_status_t st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_RNDVZFLG);
-    if (!agc_flag_test((agc_flag_id_t)AGC_FLAG_TRACKFLG)) {
+    agc_status_t st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
+    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
+    {
         return agc_extverb_gopin();
     }
-    st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_TRACKFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_UPDATFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_IMUSE);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_TRACKFLG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPDATFLG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     agc_inhint();
-    st = agc_kalc_stoprate();                          /* STOPRATE           */
-    agc_erase_set_optind(-1);                          /* OPTIND = NEGONE    */
+    st = agc_kalc_stoprate(); /* STOPRATE           */
+    agc_erase_set_optind(-1); /* OPTIND = NEGONE    */
     agc_relint();
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return agc_job_tracking_terminate_csm(ctx);
@@ -305,14 +338,15 @@ static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
 agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_integ_install(0, AGC_JOB_TRACKING_TERMINATE);
-    if (!AGC_ASSERT(ctx != NULL) || st == AGC_STATUS_BUSY) {
-        return AGC_STATUS_OK;                          /* sleeps in INTSTALL */
+    if (!AGC_ASSERT(ctx != NULL) || st == AGC_STATUS_BUSY)
+    {
+        return AGC_STATUS_OK; /* sleeps in INTSTALL */
     }
-    st = agc_phase_change(2, 02);                      /* 2PHSCHNG OCT 2, 1  */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_phase_change(2, 02); /* 2PHSCHNG OCT 2, 1  */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_phase_change(1, 01);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    agc_inhint();                                      /* CLEANOUT           */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_inhint(); /* CLEANOUT           */
     return agc_exec_enema();
 }
 
@@ -322,14 +356,16 @@ agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx)
  * MARKSTAT (the shifted bits 14-12), the offset number.                    */
 static agc_status_t verb_landmark_offset(void)
 {
-    if (!agc_phase_checkmm(22)) {
+    if (!agc_phase_checkmm(22))
+    {
         return agc_extverb_alm_end();
     }
-    int lm = (int)agc_erase_landmark() & ~(int)PRIO7BITS;   /* CS PRIO7 MASK */
-    int mark = (int)((agc_erase_markstat() >> 1) & PRIO7BITS); /* TS SR, CA SR */
-    int v = lm + ((int)PRIO5BITS - mark);                   /* CS A, AD PRIO5, ADS */
-    (void)AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
-    agc_erase_set_landmark((agc_sp_t)v);
+    int lm = (int) agc_erase_landmark() & ~(int) PRIO7BITS; /* CS PRIO7 MASK */
+    int mark =
+        (int) ((agc_erase_markstat() >> 1) & PRIO7BITS); /* TS SR, CA SR */
+    int v = lm + ((int) PRIO5BITS - mark); /* CS A, AD PRIO5, ADS */
+    (void) AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    agc_erase_set_landmark((agc_sp_t) v);
     return agc_extverb_gopin();
 }
 
@@ -337,7 +373,8 @@ static agc_status_t verb_landmark_offset(void)
 static agc_status_t verb_attitude_to_cdus(void)
 {
     agc_csm_dapcom_t *c = agc_csm_dap_com();
-    if (!AGC_ASSERT(c != NULL)) {
+    if (!AGC_ASSERT(c != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     c->cphix[0] = agc_erase_cdux();
@@ -350,26 +387,30 @@ static agc_status_t verb_attitude_to_cdus(void)
  * or clear (wrt N17).                                                      */
 static agc_status_t verb_total_error(bool wrt_n22)
 {
-    agc_status_t st = agc_flag_set((agc_flag_id_t)AGC_FLAG_NEEDLFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    agc_flag_id_t f = (agc_flag_id_t)AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES;
+    agc_status_t st = agc_flag_set((agc_flag_id_t) AGC_FLAG_NEEDLFLG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES;
     return wrt_n22 ? agc_extverb_upflag(f) : agc_extverb_downflag(f);
 }
 
 /* CKOPTVB (V65) / CHAZFOGC (V78): only in P02 (prelaunch).               */
 static agc_status_t verb_prelaunch(bool azimuth)
 {
-    if (!agc_phase_checkmm(2)) {
+    if (!agc_phase_checkmm(2))
+    {
         return agc_extverb_alm_end();
     }
-    agc_status_t st = agc_extverb_schedule(PRIO16, azimuth ? AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE
-                                                           : AGC_JOB_COMPVER, true);
-    if (st != AGC_STATUS_OK) {
+    agc_status_t st = agc_extverb_schedule(
+        PRIO16, azimuth ? AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE : AGC_JOB_COMPVER,
+        true);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    if (azimuth) {
+    if (azimuth)
+    {
         st = agc_phase_change(4, PHASE_AZIMUTH);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        (void) AGC_ASSERT(st == AGC_STATUS_OK);
     }
     return agc_extverb_gopin();
 }
@@ -377,7 +418,8 @@ static agc_status_t verb_prelaunch(bool azimuth)
 /* STROKON (V68): TVC only; NOVAC STRKTSTI at priority 30.                 */
 static agc_status_t verb_stroke_test(void)
 {
-    if (!tvc_on()) {
+    if (!tvc_on())
+    {
         return agc_extverb_alm_end();
     }
     agc_status_t st = agc_extverb_schedule(PRIO30, AGC_JOB_STRKTSTI, false);
@@ -387,32 +429,34 @@ static agc_status_t verb_stroke_test(void)
 /* V83PERF / V85PERF: R31 (R31FLAG set) or R34 (clear), NOVAC priority 5.  */
 static agc_status_t verb_rendezvous_display(bool r31)
 {
-    bool ok = false;
+    bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
-    if (!ok) {
+    if (!ok)
+    {
         return st;
     }
-    agc_flag_id_t f = (agc_flag_id_t)AGC_FLAG_RENDEZVOUS_DISPLAY_THETA;
-    st = r31 ? agc_flag_set(f) : agc_flag_clear(f);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_extverb_schedule(PRIO5, AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY, false);
+    agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_RENDEZVOUS_DISPLAY_THETA;
+    st              = r31 ? agc_flag_set(f) : agc_flag_clear(f);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_extverb_schedule(PRIO5, AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY,
+                                false);
 }
 
 /* V86PERF: R23 mark reject (MRKBUF1 = -1).                                 */
 static agc_status_t verb_mark_reject(void)
 {
     agc_erase_set_mrkbuf(1, 0, MRKBUF_REJECT);
-    (void)AGC_ASSERT(agc_erase_mrkbuf(1, 0) == MRKBUF_REJECT);
+    (void) AGC_ASSERT(agc_erase_mrkbuf(1, 0) == MRKBUF_REJECT);
     return agc_extverb_gopin();
 }
 
 /* V88: VHFRFLAG clear, tracker fail light off.                             */
 static agc_status_t verb_vhf_off(void)
 {
-    agc_status_t st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_VHFRFLAG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_svc_trfailof();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_extverb_gopin();
 }
 
@@ -420,16 +464,18 @@ static agc_status_t verb_vhf_off(void)
  * the DAP off (EXDAPOFF) and FINDVAC REDO at priority 20.                  */
 static agc_status_t verb_systems_test(void)
 {
-    if (!agc_extverb_chkpooh()) {
+    if (!agc_extverb_chkpooh())
+    {
         return AGC_STATUS_OK;
     }
-    if (agc_flag_test((agc_flag_id_t)AGC_FLAG_NO_PRELAUNCH_INITIALIZATION)) {
+    if (agc_flag_test((agc_flag_id_t) AGC_FLAG_NO_PRELAUNCH_INITIALIZATION))
+    {
         return agc_poodoo(ALARM_NO_P07);
     }
-    agc_status_t st = agc_rupt_set_t5_task(AGC_TASK_T5IDLOC);   /* EXDAPOFF */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flagword_set(6, (uint16_t)(agc_flagword_get(6) & ~OCT60000));
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t st = agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* EXDAPOFF */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_flagword_set(6, (uint16_t) (agc_flagword_get(6) & ~OCT60000));
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_extverb_schedule(PRIO20, AGC_JOB_SYSTEMS_TEST, true);
     return (st == AGC_STATUS_OK) ? agc_extverb_gopin() : st;
 }
@@ -437,36 +483,38 @@ static agc_status_t verb_systems_test(void)
 /* VERB94: R64 in P23 if V94FLAG allows it (restart via group 2).          */
 static agc_status_t verb_r64(void)
 {
-    agc_flag_id_t f = (agc_flag_id_t)AGC_FLAG_ALTERNATE_LOS_ALLOWED;
-    if (!agc_flag_test(f)) {
+    agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_ALTERNATE_LOS_ALLOWED;
+    if (!agc_flag_test(f))
+    {
         return agc_extverb_alm_end();
     }
     agc_status_t st = agc_flag_clear(f);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    if (!agc_phase_checkmm(23)) {
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!agc_phase_checkmm(23))
+    {
         return agc_extverb_alm_end();
     }
     st = agc_phase_change(2, PHASE_R64);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    agc_inhint();                                      /* CLEANOUT           */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_inhint(); /* CLEANOUT           */
     return agc_exec_enema();
 }
 
 /* V93 (WMATRXNG): reset RENDWFLG and ORBWFLAG.                             */
 static agc_status_t verb_w_matrix_reset(void)
 {
-    agc_status_t st = agc_flag_clear((agc_flag_id_t)AGC_FLAG_RENDWFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_ORBWFLAG);
+    agc_status_t st = agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_ORBWFLAG);
 }
 
 /* VERB96: QUITFLAG, V96ONFLG, then V37 to P00.                             */
 static agc_status_t verb_quit_integration(void)
 {
-    agc_status_t st = agc_flag_set((agc_flag_id_t)AGC_FLAG_QUITFLAG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    st = agc_flag_set((agc_flag_id_t)AGC_FLAG_IDLE_INTEGRATION_INHIBITED);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t st = agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_flag_set((agc_flag_id_t) AGC_FLAG_IDLE_INTEGRATION_INHIBITED);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_change_program(0);
 }
 
@@ -476,29 +524,35 @@ static agc_status_t verb_quit_integration(void)
  * (optics reserved) -> alarm 117, ENDEXT; else load V24N92.              */
 static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU)) {
+    if (!AGC_ASSERT(ctx != NULL) ||
+        !AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (agc_erase_modecadr((int)AGC_IMU_DEV_OPTICS) != 0) {
-        return agc_extverb_alm_end();             /* CKMODCAD +1            */
+    if (agc_erase_modecadr((int) AGC_IMU_DEV_OPTICS) != 0)
+    {
+        return agc_extverb_alm_end(); /* CKMODCAD +1            */
     }
-    bool ok = false;
+    bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
-    if (!ok) {
+    if (!ok)
+    {
         return st;
     }
-    if (agc_erase_swsample() <= 0) {              /* not at computer        */
-        st = agc_dsky_falton();
+    if (agc_erase_swsample() <= 0)
+    { /* not at computer        */
+        st              = agc_dsky_falton();
         agc_status_t sa = agc_alarm(ALARM_OPTICS_SWITCH);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK && sa != AGC_STATUS_BAD_ARG);
+        (void) AGC_ASSERT(st == AGC_STATUS_OK && sa != AGC_STATUS_BAD_ARG);
     }
-    if (agc_erase_optind() == AGC_OPTIND_NEG0) {
+    if (agc_erase_optind() == AGC_OPTIND_NEG0)
+    {
         st = agc_alarm(ALARM_OPTICS_RESERVED);
-        (void)AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
+        (void) AGC_ASSERT(st != AGC_STATUS_BAD_ARG);
         return agc_dsky_endext();
     }
     return agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE,
-                             AGC_JOB_OPTICS_COARSE_DRIVE);  /* OPTC1        */
+                             AGC_JOB_OPTICS_COARSE_DRIVE); /* OPTC1        */
 }
 
 /* OPTC1 after the load (V33 or ENTER): DESOPTS = SAC, DESOPTT = PAC; show
@@ -506,7 +560,8 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ar = agc_align_ram();
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ar != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ar != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     ar->desopts = ar->sac;
@@ -518,51 +573,78 @@ agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
  * OPTDRIVE takes it from here), ENDEXT.                                   */
 agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_erase_set_optind(1);
-    (void)AGC_ASSERT(agc_erase_optind() == 1);
+    (void) AGC_ASSERT(agc_erase_optind() == 1);
     return agc_dsky_endext();
 }
 
 /* Verbs 40-47.                                                             */
 static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
 {
-    switch (verb) {
-    case 40: return agc_extverb_alm_end();       /* N91 "not in use yet"    */
-    case 41: return (agc_extverb_noun() == NOUN_OCDU) ? verb_optics_coarse(ctx)
-                                                      : agc_extverb_alm_end();
-    case 43: return verb_attitude_error(ctx);
-    case 44: return agc_extverb_upflag((agc_flag_id_t)AGC_FLAG_SURFFLAG);
-    case 45: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_SURFFLAG);
-    case 46: return verb_establish_dap(ctx);
-    case 47: return agc_extverb_state_vector_copy(true);
-    case 48: return verb_dap_data_load(ctx);
-    default: break;
+    switch (verb)
+    {
+        case 40:
+            return agc_extverb_alm_end(); /* N91 "not in use yet"    */
+        case 41:
+            return (agc_extverb_noun() == NOUN_OCDU) ? verb_optics_coarse(ctx) :
+                                                       agc_extverb_alm_end();
+        case 43:
+            return verb_attitude_error(ctx);
+        case 44:
+            return agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_SURFFLAG);
+        case 45:
+            return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_SURFFLAG);
+        case 46:
+            return verb_establish_dap(ctx);
+        case 47:
+            return agc_extverb_state_vector_copy(true);
+        case 48:
+            return verb_dap_data_load(ctx);
+        default:
+            break;
     }
-    (void)AGC_ASSERT(verb >= 40 && verb < 50);
+    (void) AGC_ASSERT(verb >= 40 && verb < 50);
     return agc_extverb_alm_end();
 }
 
 /* Verbs 51-68.                                                             */
 static agc_status_t fan_50s_60s(agc_job_ctx_t *ctx, int verb)
 {
-    (void)AGC_ASSERT(ctx != NULL);
-    switch (verb) {
-    case 51: case 53: case 59: return agc_extverb_goloadlv();
-    case 52: return verb_landmark_offset();
-    case 54: return verb_marking(true);
-    case 56: return verb_terminate_tracking(ctx);
-    case 57: return verb_marking(false);
-    case 58: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_STIKFLAG);
-    case 60: return verb_attitude_to_cdus();
-    case 61: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_NEEDLFLG);
-    case 62: return verb_total_error(true);
-    case 63: return verb_total_error(false);
-    case 65: return verb_prelaunch(false);
-    case 68: return verb_stroke_test();
-    default: break;
+    (void) AGC_ASSERT(ctx != NULL);
+    switch (verb)
+    {
+        case 51:
+        case 53:
+        case 59:
+            return agc_extverb_goloadlv();
+        case 52:
+            return verb_landmark_offset();
+        case 54:
+            return verb_marking(true);
+        case 56:
+            return verb_terminate_tracking(ctx);
+        case 57:
+            return verb_marking(false);
+        case 58:
+            return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_STIKFLAG);
+        case 60:
+            return verb_attitude_to_cdus();
+        case 61:
+            return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_NEEDLFLG);
+        case 62:
+            return verb_total_error(true);
+        case 63:
+            return verb_total_error(false);
+        case 65:
+            return verb_prelaunch(false);
+        case 68:
+            return verb_stroke_test();
+        default:
+            break;
     }
     return agc_extverb_alm_end();
 }
@@ -570,38 +652,58 @@ static agc_status_t fan_50s_60s(agc_job_ctx_t *ctx, int verb)
 /* Verbs 75-98.                                                             */
 static agc_status_t fan_70s_90s(int verb)
 {
-    switch (verb) {
-    case 75: return agc_extverb_upflag((agc_flag_id_t)AGC_FLAG_GRRBKFLG);
-    case 76: return agc_extverb_upflag((agc_flag_id_t)AGC_FLAG_PRFTRKAT);
-    case 77: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_PRFTRKAT);
-    case 78: return verb_prelaunch(true);
-    case 80: return agc_extverb_downflag((agc_flag_id_t)AGC_FLAG_VEHUPFLG);
-    case 81: return agc_extverb_upflag((agc_flag_id_t)AGC_FLAG_VEHUPFLG);
-    case 83: return verb_rendezvous_display(true);
-    case 85: return verb_rendezvous_display(false);
-    case 86: return verb_mark_reject();
-    case 87: return agc_extverb_upflag((agc_flag_id_t)AGC_FLAG_VHFRFLAG);
-    case 88: return verb_vhf_off();
-    case 92: return verb_systems_test();
-    case 93: return verb_w_matrix_reset();
-    case 94: return verb_r64();
-    case 96: return verb_quit_integration();
-    default: break;
+    switch (verb)
+    {
+        case 75:
+            return agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_GRRBKFLG);
+        case 76:
+            return agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_PRFTRKAT);
+        case 77:
+            return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_PRFTRKAT);
+        case 78:
+            return verb_prelaunch(true);
+        case 80:
+            return agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_VEHUPFLG);
+        case 81:
+            return agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_VEHUPFLG);
+        case 83:
+            return verb_rendezvous_display(true);
+        case 85:
+            return verb_rendezvous_display(false);
+        case 86:
+            return verb_mark_reject();
+        case 87:
+            return agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
+        case 88:
+            return verb_vhf_off();
+        case 92:
+            return verb_systems_test();
+        case 93:
+            return verb_w_matrix_reset();
+        case 94:
+            return verb_r64();
+        case 96:
+            return verb_quit_integration();
+        default:
+            break;
     }
-    (void)AGC_ASSERT(verb >= 70 && verb <= 99);
-    return agc_extverb_alm_end();                  /* V79, V84, V95, V98     */
+    (void) AGC_ASSERT(verb >= 70 && verb <= 99);
+    return agc_extverb_alm_end(); /* V79, V84, V95, V98     */
 }
 
 /* LST2FAN, CMC entries not shared with the LGC.                            */
 agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 40 && verb <= 99)) {
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 40 && verb <= 99))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (verb < 50) {
+    if (verb < 50)
+    {
         return fan_40s(ctx, verb);
     }
-    if (verb < 70) {
+    if (verb < 70)
+    {
         return fan_50s_60s(ctx, verb);
     }
     return fan_70s_90s(verb);
@@ -610,7 +712,8 @@ agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb)
 /* Tasks of the extended verbs (dispatch).                                 */
 agc_status_t agc_task_attitude_error_output(void)
 {
-    if (agc_state_vehicle() == AGC_VEHICLE_LM) {
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
         return agc_extverb_lm_attck2();
     }
     return attck1();

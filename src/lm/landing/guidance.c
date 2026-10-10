@@ -22,26 +22,27 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/io/service_internal.h"
 #include "agc/lm/landing.h"
 #include "pending.h"
-#include "agc/io/service_internal.h"
 
 /* ---- constants (pp. 827-828; CONTROLLED_CONSTANTS) -------------------- */
-#define LDG_HIGHESTF   ((agc_dp_t)284785)    /* 2DEC 4.34546769 B-12: max DPS
+#define LDG_HIGHESTF \
+    ((agc_dp_t) 284785)                       /* 2DEC 4.34546769 B-12: max DPS
                                                 thrust, 10^4 N             */
-#define LDG_GSCALE     ((agc_dp_t)13107200)  /* 2DEC 100 B-11              */
-#define LDG_3_8DP      ((agc_dp_t)100663296) /* 2DEC .375                  */
-#define LDG_3_4DP      ((agc_dp_t)201326592) /* 2DEC .750                  */
-#define LDG_TRIMACCL   ((agc_dp_t)2406094)   /* 2DEC* 3.50132708E-5 B+8    */
-#define LDG_PROJMAX    866       /* DEC .42262 B-3: sin(25 deg)/8          */
-#define LDG_PROJMIN    530       /* DEC .25882 B-3: sin(15 deg)/8          */
-#define LDG_HALFDEG    46        /* 1/2DEG DEC .00278                      */
-#define LDG_180DEGS    180       /* 180DEGS DEC +180                       */
-#define LDG_TSCALINV   8         /* TSCALINV = BIT4                        */
-#define LDG_TREDESCL   (-1311)   /* TREDESCL DEC -.08                      */
-#define LDG_DEC103     103       /* -DEC103                                */
-#define LDG_DEC99      99        /* +DEC99                                 */
-#define LDG_BIT8       128       /* fractional precision for TTF (2^-7)    */
+#define LDG_GSCALE     ((agc_dp_t) 13107200)  /* 2DEC 100 B-11              */
+#define LDG_3_8DP      ((agc_dp_t) 100663296) /* 2DEC .375                  */
+#define LDG_3_4DP      ((agc_dp_t) 201326592) /* 2DEC .750                  */
+#define LDG_TRIMACCL   ((agc_dp_t) 2406094)   /* 2DEC* 3.50132708E-5 B+8    */
+#define LDG_PROJMAX    866     /* DEC .42262 B-3: sin(25 deg)/8          */
+#define LDG_PROJMIN    530     /* DEC .25882 B-3: sin(15 deg)/8          */
+#define LDG_HALFDEG    46      /* 1/2DEG DEC .00278                      */
+#define LDG_180DEGS    180     /* 180DEGS DEC +180                       */
+#define LDG_TSCALINV   8       /* TSCALINV = BIT4                        */
+#define LDG_TREDESCL   (-1311) /* TREDESCL DEC -.08                      */
+#define LDG_DEC103     103     /* -DEC103                                */
+#define LDG_DEC99      99      /* +DEC99                                 */
+#define LDG_BIT8       128     /* fractional precision for TTF (2^-7)    */
 #define LDG_POSMAX     16383
 #define LDG_TTF_DEGREE 3
 
@@ -53,30 +54,32 @@ static agc_dp_t ldg_tabl_ttf[LDG_TTF_DEGREE + 1];
 static int ldg_tgt(void)
 {
     agc_sp_t ph = agc_lm_ldg()->wchphase;
-    (void)AGC_ASSERT(ph >= AGC_LM_PHASE_IGNALG && ph <= AGC_LM_PHASE_VERTICAL);
+    (void) AGC_ASSERT(ph >= AGC_LM_PHASE_IGNALG && ph <= AGC_LM_PHASE_VERTICAL);
     return (ph == AGC_LM_PHASE_APPRQUAD) ? 1 : 0;
 }
 
 /* AD POSMAX / TS / CS / AD idiom: max(x, 0) (overflow on TS skips CS). */
 static agc_sp_t ldg_posonly(int32_t x)
 {
-    (void)AGC_ASSERT(x >= -2 * LDG_POSMAX && x <= 2 * LDG_POSMAX);
+    (void) AGC_ASSERT(x >= -2 * LDG_POSMAX && x <= 2 * LDG_POSMAX);
     int32_t r = (x > 0) ? x : 0;
-    if (r > LDG_POSMAX) {
+    if (r > LDG_POSMAX)
+    {
         r = LDG_POSMAX;
     }
-    return (agc_sp_t)r;
+    return (agc_sp_t) r;
 }
 
 /* A word sum kept in the 16-bit A register, saturated when stored. */
 static agc_sp_t ldg_sat(int32_t x)
 {
     int32_t r = x;
-    if (!AGC_ASSERT(r <= LDG_POSMAX && r >= -LDG_POSMAX)) {
+    if (!AGC_ASSERT(r <= LDG_POSMAX && r >= -LDG_POSMAX))
+    {
         r = (r > 0) ? LDG_POSMAX : -LDG_POSMAX;
     }
-    (void)AGC_ASSERT(r >= AGC_SP_MIN);
-    return (agc_sp_t)r;
+    (void) AGC_ASSERT(r >= AGC_SP_MIN);
+    return (agc_sp_t) r;
 }
 
 /* TDISPSET (pp. 825-826): TTFDISP = TTF, and TREDES, the seconds left for
@@ -84,15 +87,15 @@ static agc_sp_t ldg_sat(int32_t x)
  * TREDES = max(0, min(99, -.08 (TCGFAPPR + TTF/8) - 4)).                */
 void agc_lm_tdispset(void)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_sp_t t8 = agc_dp_high(l->ttf_8);
-    l->ttfdisp = (agc_dp_t)t8 * LDG_TSCALINV;           /* MP TSCALINV  */
-    agc_sp_t a = agc_lm_ad(agc_lm_pad()->target[1].tcgf, t8);
-    int32_t x = (int32_t)agc_lm_mp_hi(a, LDG_TREDESCL) - LDG_DEC103;
-    int32_t y = (x < 0) ? x : 0;                        /* AD NEGMAX    */
-    l->tredes = ldg_posonly(y + LDG_DEC99);
-    (void)AGC_ASSERT(l->tredes >= 0 && l->tredes <= LDG_DEC99);
-    (void)AGC_ASSERT(l->ttfdisp <= 0 || t8 > 0);
+    agc_lm_ldg_t *l  = agc_lm_ldg();
+    agc_sp_t      t8 = agc_dp_high(l->ttf_8);
+    l->ttfdisp       = (agc_dp_t) t8 * LDG_TSCALINV; /* MP TSCALINV  */
+    agc_sp_t a       = agc_lm_ad(agc_lm_pad()->target[1].tcgf, t8);
+    int32_t  x       = (int32_t) agc_lm_mp_hi(a, LDG_TREDESCL) - LDG_DEC103;
+    int32_t  y       = (x < 0) ? x : 0; /* AD NEGMAX    */
+    l->tredes        = ldg_posonly(y + LDG_DEC99);
+    (void) AGC_ASSERT(l->tredes >= 0 && l->tredes <= LDG_DEC99);
+    (void) AGC_ASSERT(l->ttfdisp <= 0 || t8 > 0);
 }
 
 /* TTFINCR (pp. 802-804): TTF/8 += (TPIP - TPIPOLD)/8, and the landing site
@@ -100,22 +103,23 @@ void agc_lm_tdispset(void)
  *   LAND = /LAND/ UNIT(LAND - LAND (TPIP - TPIPOLD) x WM).              */
 agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_ldg_t *l = agc_lm_ldg();
     agc_dp_t dt = agc_dp_shl_round(ip, agc_dp_sub(ip, l->tpip, l->tpipold), 11);
     agc_vec_t w = agc_vec_cross(ip, agc_vec_scale(ip, l->land, dt), l->wm);
-    int sh = 0;
+    int       sh = 0;
     w = agc_rtb_normunit(ip, agc_vec_sub(ip, l->land, w), &sh, NULL, NULL);
-    l->landtemp = agc_vec_shl(ip, agc_vec_scale(ip, w, l->land_mag), 1);
-    l->ttf_8tmp = (agc_dp_t)(l->ttf_8tmp + dt);         /* DAS TTF/8TMP */
+    l->landtemp     = agc_vec_shl(ip, agc_vec_scale(ip, w, l->land_mag), 1);
+    l->ttf_8tmp     = (agc_dp_t) (l->ttf_8tmp + dt); /* DAS TTF/8TMP */
     agc_status_t st = agc_lm_fastchng();
-    l->ttf_8 = l->ttf_8tmp;
-    l->land = l->landtemp;
+    l->ttf_8        = l->ttf_8tmp;
+    l->land         = l->landtemp;
     agc_lm_tdispset();
-    (void)agc_lm_fastchng();          /* since REDESIG may change LANDTEMP */
-    (void)AGC_ASSERT(sh >= 0);
+    (void) agc_lm_fastchng(); /* since REDESIG may change LANDTEMP */
+    (void) AGC_ASSERT(sh >= 0);
     return st;
 }
 
@@ -123,14 +127,15 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
  * trim correction term computed last pass and left in UNFC/2.          */
 agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_vec_t vatt1 = agc_integ_shared_ctx()->out.vatt1;   /* 2^5 m/cs   */
-    agc_vec_t v = agc_vec_shr(agc_mat_vec(ip, &refsmmat, vatt1), 1);
+    agc_mat_t refsmmat     = agc_erase_refsmmat();
+    agc_vec_t vatt1        = agc_integ_shared_ctx()->out.vatt1; /* 2^5 m/cs   */
+    agc_vec_t v            = agc_vec_shr(agc_mat_vec(ip, &refsmmat, vatt1), 1);
     agc_guid_state()->lm.v = agc_vec_add(ip, v, agc_lm_ldg()->unfc_2);
-    (void)AGC_ASSERT(agc_integ_shared_ctx() != NULL);
+    (void) AGC_ASSERT(agc_integ_shared_ctx() != NULL);
     return agc_lm_rgvgcalc(ip);
 }
 
@@ -140,26 +145,28 @@ agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
  *   LOOKANGL = ARCSIN(UNIT(R - LAND) . XNBPIP).                         */
 agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_lm_ldg_t *l = agc_lm_ldg();
+    agc_lm_ldg_t        *l = agc_lm_ldg();
     const agc_guid_lm_t *g = &agc_guid_state()->lm;
-    l->angterm = agc_vec_shr(agc_vec_add(ip, agc_vec_cross(ip, g->r, l->wm),
-                                         g->v), 2);
+    l->angterm =
+        agc_vec_shr(agc_vec_add(ip, agc_vec_cross(ip, g->r, l->wm), g->v), 2);
     l->vgu = agc_mat_vec(ip, &l->cg, l->angterm); /* ANGTERM double sized */
     agc_vec_t hz = agc_vec_make(0, l->vgu.c[2], l->vgu.c[1]);
-    l->vhoriz = agc_dp_shl(ip, agc_vec_abval(ip, hz), 3);    /* 2^7 m/cs */
+    l->vhoriz    = agc_dp_shl(ip, agc_vec_abval(ip, hz), 3); /* 2^7 m/cs */
     agc_vec_t rl = agc_vec_sub(ip, g->r, l->land);
-    l->rgu = agc_vec_shl(ip, agc_mat_vec(ip, &l->cg, rl), 1);
-    l->rangedsp = agc_vec_abval(ip, l->rgu);
-    int sh = 0;
-    agc_vec_t u = agc_rtb_normunit(ip, rl, &sh, NULL, NULL);
-    agc_dp_t s4 = agc_vec_dot(ip, u, g->xnbpip.row[0]);    /* sin/4     */
-    agc_sp_t s2 = agc_lm_ad(agc_dp_high(s4), agc_dp_high(s4)); /* DOUBLE */
-    agc_sp_t a = agc_lm_sparcsin_m1(s2);                    /* SPARCSIN -1 */
-    l->lookangl = agc_lm_mp_hi(agc_lm_ad(a, LDG_HALFDEG), LDG_180DEGS);
-    (void)AGC_ASSERT(l->lookangl >= -LDG_180DEGS && l->lookangl <= LDG_180DEGS);
+    l->rgu       = agc_vec_shl(ip, agc_mat_vec(ip, &l->cg, rl), 1);
+    l->rangedsp  = agc_vec_abval(ip, l->rgu);
+    int       sh = 0;
+    agc_vec_t u  = agc_rtb_normunit(ip, rl, &sh, NULL, NULL);
+    agc_dp_t  s4 = agc_vec_dot(ip, u, g->xnbpip.row[0]);        /* sin/4     */
+    agc_sp_t  s2 = agc_lm_ad(agc_dp_high(s4), agc_dp_high(s4)); /* DOUBLE */
+    agc_sp_t  a  = agc_lm_sparcsin_m1(s2); /* SPARCSIN -1 */
+    l->lookangl  = agc_lm_mp_hi(agc_lm_ad(a, LDG_HALFDEG), LDG_180DEGS);
+    (void) AGC_ASSERT(l->lookangl >= -LDG_180DEGS &&
+                      l->lookangl <= LDG_180DEGS);
     return AGC_STATUS_OK;
 }
 
@@ -171,33 +178,38 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
                              agc_sp_t precroot, agc_dp_t *root, int *passes)
 {
     if (!AGC_ASSERT(coef != NULL && root != NULL && passes != NULL) ||
-        !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE)) {
+        !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_dp_t dxcrit = agc_dp_abs(agc_tp_to_dp(
-        agc_tp_mul_sp(agc_tp_from_dp(guess), precroot)));   /* SHORTMP, ABS */
-    agc_dp_t der[AGC_LM_ROOT_MAX_DEGREE];                     /* DERCOFN    */
-    for (int i = 1; i <= degree; i++) {                        /* DERCLOOP   */
-        der[i - 1] = agc_dp_mul_int(coef[i], (agc_sp_t)i);    /* DMPNSUB    */
+        agc_tp_mul_sp(agc_tp_from_dp(guess), precroot))); /* SHORTMP, ABS */
+    agc_dp_t der[AGC_LM_ROOT_MAX_DEGREE];                 /* DERCOFN    */
+    for (int i = 1; i <= degree; i++)
+    {                                                       /* DERCLOOP   */
+        der[i - 1] = agc_dp_mul_int(coef[i], (agc_sp_t) i); /* DMPNSUB    */
     }
-    agc_dp_t x = guess;                                        /* ROOTPS     */
-    for (int mode = 0; mode <= AGC_LM_ROOT_MAX_PASSES; mode++) {
-        agc_dp_t d = agc_dp_poly(x, der, degree - 1);          /* POWRSERS   */
-        agc_dp_t f = agc_dp_poly(x, coef, degree);
-        agc_dp_t mdx = agc_dp_div(&ip, f, d);                  /* -DX        */
-        x = agc_dp_sub(&ip, x, mdx);                           /* DAS ROOTPS */
-        if (mode == AGC_LM_ROOT_MAX_PASSES) {
-            break;                                             /* BADROOT    */
+    agc_dp_t x = guess; /* ROOTPS     */
+    for (int mode = 0; mode <= AGC_LM_ROOT_MAX_PASSES; mode++)
+    {
+        agc_dp_t d   = agc_dp_poly(x, der, degree - 1); /* POWRSERS   */
+        agc_dp_t f   = agc_dp_poly(x, coef, degree);
+        agc_dp_t mdx = agc_dp_div(&ip, f, d);   /* -DX        */
+        x            = agc_dp_sub(&ip, x, mdx); /* DAS ROOTPS */
+        if (mode == AGC_LM_ROOT_MAX_PASSES)
+        {
+            break; /* BADROOT    */
         }
-        if (agc_dp_abs(mdx) <= dxcrit) {                       /* ROOTSTOR   */
-            *root = x;
+        if (agc_dp_abs(mdx) <= dxcrit)
+        { /* ROOTSTOR   */
+            *root   = x;
             *passes = mode + 1;
             return AGC_STATUS_OK;
         }
     }
-    *root = x;
+    *root   = x;
     *passes = AGC_LM_ROOT_MAX_PASSES;
     return AGC_STATUS_NO_CONVERGE;
 }
@@ -207,27 +219,29 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
  *   + 3/8 (RDG z - RGU z) = 0, solved for TTF/8 from last pass's value. */
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_lm_ldg_t *l = agc_lm_ldg();
+    agc_lm_ldg_t          *l = agc_lm_ldg();
     const agc_lm_target_t *t = &agc_lm_pad()->target[ldg_tgt()];
-    ldg_tabl_ttf[3] = t->jfg_star;                    /* A(3) = 8 JDG z   */
-    ldg_tabl_ttf[2] = t->afg_star;                    /* A(2) = 6 ADG z   */
-    ldg_tabl_ttf[1] = agc_dp_add(ip, agc_dp_mul_trunc(l->vgu.c[2], LDG_3_4DP),
-                                 t->vfg_star);
-    ldg_tabl_ttf[0] = agc_dp_mul_trunc(agc_dp_sub(ip, t->rfg.c[2], l->rgu.c[2]),
-                                       LDG_3_8DP);
-    agc_dp_t root = 0;
-    int passes = 0;
+    ldg_tabl_ttf[3]          = t->jfg_star; /* A(3) = 8 JDG z   */
+    ldg_tabl_ttf[2]          = t->afg_star; /* A(2) = 6 ADG z   */
+    ldg_tabl_ttf[1] =
+        agc_dp_add(ip, agc_dp_mul_trunc(l->vgu.c[2], LDG_3_4DP), t->vfg_star);
+    ldg_tabl_ttf[0] =
+        agc_dp_mul_trunc(agc_dp_sub(ip, t->rfg.c[2], l->rgu.c[2]), LDG_3_8DP);
+    agc_dp_t     root   = 0;
+    int          passes = 0;
     agc_status_t st = agc_lm_rootpsrs(ldg_tabl_ttf, LDG_TTF_DEGREE, l->ttf_8,
                                       LDG_BIT8, &root, &passes);
-    if (st != AGC_STATUS_OK) {
-        return AGC_STATUS_NO_CONVERGE;                /* WHATALM          */
+    if (st != AGC_STATUS_OK)
+    {
+        return AGC_STATUS_NO_CONVERGE; /* WHATALM          */
     }
-    l->ttf_8 = root;                                  /* corrected TTF/8  */
+    l->ttf_8 = root; /* corrected TTF/8  */
     agc_lm_tdispset();
-    (void)AGC_ASSERT(passes >= 1 && passes <= AGC_LM_ROOT_MAX_PASSES);
+    (void) AGC_ASSERT(passes >= 1 && passes <= AGC_LM_ROOT_MAX_PASSES);
     return AGC_STATUS_OK;
 }
 
@@ -239,22 +253,23 @@ agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
 static void ldg_quadcoef(agc_sp_t c[4])
 {
     agc_sp_t t8 = agc_dp_high(agc_lm_ldg()->ttf_8);
-    if (!AGC_ASSERT(t8 < 0)) {
+    if (!AGC_ASSERT(t8 < 0))
+    {
         t8 = -1;
     }
-    agc_sp_t x = ldg_posonly(-(int32_t)t8 + agc_lm_pad()->leadtime);
-    agc_sp_t buf = agc_lm_dv((agc_dp_t)x * 16384, t8);    /* ZL, DV TTF/8 */
-    agc_sp_t sq = agc_lm_mp_hi(buf, buf);                 /* SQUARE       */
-    int32_t b1 = (int32_t)sq + buf;                       /* BUF^2 - ratio */
-    int32_t cv = (int32_t)sq + b1;                        /* VGU          */
-    int32_t cr = cv + b1;                                 /* RDG - RGU    */
-    int32_t cd = cr + b1;                                 /* VDG          */
-    int32_t ca = cd + buf + LDG_POSMAX + b1 + b1;         /* ADG          */
-    c[0] = ldg_sat(cv);
-    c[1] = ldg_sat(cr);
-    c[2] = ldg_sat(cd);
-    c[3] = ldg_sat(ca);
-    (void)AGC_ASSERT(buf <= 0);
+    agc_sp_t x   = ldg_posonly(-(int32_t) t8 + agc_lm_pad()->leadtime);
+    agc_sp_t buf = agc_lm_dv((agc_dp_t) x * 16384, t8); /* ZL, DV TTF/8 */
+    agc_sp_t sq  = agc_lm_mp_hi(buf, buf);              /* SQUARE       */
+    int32_t  b1  = (int32_t) sq + buf;                  /* BUF^2 - ratio */
+    int32_t  cv  = (int32_t) sq + b1;                   /* VGU          */
+    int32_t  cr  = cv + b1;                             /* RDG - RGU    */
+    int32_t  cd  = cr + b1;                             /* VDG          */
+    int32_t  ca  = cd + buf + LDG_POSMAX + b1 + b1;     /* ADG          */
+    c[0]         = ldg_sat(cv);
+    c[1]         = ldg_sat(cr);
+    c[2]         = ldg_sat(cd);
+    c[3]         = ldg_sat(ca);
+    (void) AGC_ASSERT(buf <= 0);
 }
 
 /* QUADGUID (pp. 808-809), the main guidance equation as programmed:
@@ -262,21 +277,22 @@ static void ldg_quadcoef(agc_sp_t c[4])
  * with each term weighted by its lag coefficient.                      */
 agc_status_t agc_lm_quadguid(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_lm_ldg_t *l = agc_lm_ldg();
+    agc_lm_ldg_t          *l = agc_lm_ldg();
     const agc_lm_target_t *t = &agc_lm_pad()->target[ldg_tgt()];
-    agc_sp_t c[4];
+    agc_sp_t               c[4];
     ldg_quadcoef(c);
     agc_vec_t v1 = agc_vec_scale(ip, l->vgu, agc_dp_from_sp(c[0]));
     agc_vec_t v2 = agc_vec_scale(ip, t->vfg, agc_dp_from_sp(c[2]));
-    agc_vec_t a = agc_vec_div(ip, agc_vec_sub(ip, t->rfg, l->rgu), l->ttf_8);
-    a = agc_vec_scale(ip, agc_vec_shr(a, 2), agc_dp_from_sp(c[1]));
-    a = agc_vec_add(ip, agc_vec_add(ip, a, v2), v1);
-    a = agc_vec_scale(ip, agc_vec_div(ip, a, l->ttf_8), LDG_3_4DP);
+    agc_vec_t a  = agc_vec_div(ip, agc_vec_sub(ip, t->rfg, l->rgu), l->ttf_8);
+    a            = agc_vec_scale(ip, agc_vec_shr(a, 2), agc_dp_from_sp(c[1]));
+    a            = agc_vec_add(ip, agc_vec_add(ip, a, v2), v1);
+    a            = agc_vec_scale(ip, agc_vec_div(ip, a, l->ttf_8), LDG_3_4DP);
     a = agc_vec_add(ip, agc_vec_scale(ip, t->afg, agc_dp_from_sp(c[3])), a);
-    (void)AGC_ASSERT(l->ttf_8 != 0);
+    (void) AGC_ASSERT(l->ttf_8 != 0);
     return agc_lm_afccalc(ip, a);
 }
 
@@ -285,21 +301,24 @@ agc_status_t agc_lm_quadguid(agc_interp_t *ip)
  *   AMAXHORIZ = SQRT((HIGHESTF/MASS)^2 - A1^2 - A0^2), UNFC z >= -AMAXHORIZ. */
 static void ldg_afclimit(agc_interp_t *ip, agc_lm_ldg_t *l)
 {
-    agc_dp_t mass = agc_guid_state()->lm.mass;            /* 2^16 kg      */
-    if (!AGC_ASSERT(mass > 0)) {
+    agc_dp_t mass = agc_guid_state()->lm.mass; /* 2^16 kg      */
+    if (!AGC_ASSERT(mass > 0))
+    {
         return;
     }
     agc_dp_t amax = agc_dp_sq(ip, agc_dp_div(ip, LDG_HIGHESTF, mass));
     amax = agc_dp_sub(ip, agc_dp_sub(ip, amax, agc_dp_sq(ip, l->unfc_2.c[1])),
                       agc_dp_sq(ip, l->unfc_2.c[0]));
-    if (amax < 0) {
-        amax = 0;                                         /* ZEROVECS     */
+    if (amax < 0)
+    {
+        amax = 0; /* ZEROVECS     */
     }
     agc_dp_t s = agc_dp_add(ip, agc_dp_sqrt(ip, amax), l->unfc_2.c[2]);
-    if (s < 0) {
-        l->unfc_2.c[2] = agc_dp_sub(ip, l->unfc_2.c[2], s);   /* BDSU    */
+    if (s < 0)
+    {
+        l->unfc_2.c[2] = agc_dp_sub(ip, l->unfc_2.c[2], s); /* BDSU    */
     }
-    (void)AGC_ASSERT(l->unfc_2.c[2] >= AGC_DP_MIN);
+    (void) AGC_ASSERT(l->unfc_2.c[2] >= AGC_DP_MIN);
 }
 
 /* AFCCALC1 .. AFCCLEND (pp. 809-810): thrust acceleration command
@@ -307,19 +326,20 @@ static void ldg_afclimit(agc_interp_t *ip, agc_lm_ldg_t *l)
  * throttle; then the pass counter. VERTGUID enters here too.          */
 agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_vec_t a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1);  /* VXM */
+    agc_vec_t a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1); /* VXM */
     agc_vec_t g = agc_vec_div(ip, agc_guid_state()->avg.gdt_2, LDG_GSCALE);
-    l->unfc_2 = agc_vec_sub(ip, a, g);       /* need not be unitized       */
-    l->afc = agc_vec_abval(ip, l->unfc_2);   /* AFCCALC2: |AFC| for THROTTLE */
+    l->unfc_2   = agc_vec_sub(ip, a, g);   /* need not be unitized       */
+    l->afc = agc_vec_abval(ip, l->unfc_2); /* AFCCALC2: |AFC| for THROTTLE */
     ldg_afclimit(ip, l);
     agc_status_t st = agc_lm_fastchng();
-    l->wchphold = l->wchphase;               /* for phase switching logic  */
-    l->flpass0 = agc_lm_ad(l->flpass0, 1);   /* INCR FLPASS0               */
-    (void)AGC_ASSERT(l->afc >= 0);
+    l->wchphold     = l->wchphase;              /* for phase switching logic  */
+    l->flpass0      = agc_lm_ad(l->flpass0, 1); /* INCR FLPASS0               */
+    (void) AGC_ASSERT(l->afc >= 0);
     return st;
 }
 
@@ -329,27 +349,29 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
  * ahead point LAND + TTF/8 GAIN ANGTERM - R ("numero mysterioso").    */
 agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) {
+    if (!AGC_ASSERT(ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    const agc_lm_target_t *t = &agc_lm_pad()->target[ldg_tgt()];
-    agc_sp_t t8 = agc_dp_high(l->ttf_8);
-    int32_t ai = (int32_t)t->tcgi + t8;
-    int32_t af = (int32_t)t->tcgf + t8;
-    if (!(ai > 0 && af < 0)) {
-        return AGC_STATUS_OK;                         /* TCF EXTLOGIC     */
+    agc_lm_ldg_t          *l  = agc_lm_ldg();
+    const agc_lm_target_t *t  = &agc_lm_pad()->target[ldg_tgt()];
+    agc_sp_t               t8 = agc_dp_high(l->ttf_8);
+    int32_t                ai = (int32_t) t->tcgi + t8;
+    int32_t                af = (int32_t) t->tcgf + t8;
+    if (!(ai > 0 && af < 0))
+    {
+        return AGC_STATUS_OK; /* TCF EXTLOGIC     */
     }
     const agc_guid_lm_t *g = &agc_guid_state()->lm;
-    l->cg.row[0] = agc_vec_unit(ip, l->land, NULL, NULL);
-    agc_dp_t k = agc_dp_mul_trunc(l->ttf_8, t->gain);  /* DMP* GAINBRAK  */
-    agc_vec_t w = agc_vec_add(ip, agc_vec_scale(ip, l->angterm, k), l->land);
-    int sh = 0;
+    l->cg.row[0]           = agc_vec_unit(ip, l->land, NULL, NULL);
+    agc_dp_t  k  = agc_dp_mul_trunc(l->ttf_8, t->gain); /* DMP* GAINBRAK  */
+    agc_vec_t w  = agc_vec_add(ip, agc_vec_scale(ip, l->angterm, k), l->land);
+    int       sh = 0;
     w = agc_rtb_normunit(ip, agc_vec_sub(ip, w, g->r), &sh, NULL, NULL);
     w = agc_rtb_normunit(ip, agc_vec_cross(ip, w, l->land), &sh, NULL, NULL);
     l->cg.row[1] = w;
     l->cg.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, l->cg.row[0], w), 1);
-    (void)AGC_ASSERT(sh >= 0);
+    (void) AGC_ASSERT(sh >= 0);
     return AGC_STATUS_OK;
 }
 
@@ -359,22 +381,26 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
  * whose WHATEXIT entry is taken.                                       */
 static agc_sp_t ldg_extlogic(void)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    const agc_lm_pad_t *p = agc_lm_pad();
-    agc_sp_t tend = agc_guid_state()->lm.zoomtime;
-    if (l->wchphase == AGC_LM_PHASE_BRAKQUAD) {
+    agc_lm_ldg_t       *l    = agc_lm_ldg();
+    const agc_lm_pad_t *p    = agc_lm_pad();
+    agc_sp_t            tend = agc_guid_state()->lm.zoomtime;
+    if (l->wchphase == AGC_LM_PHASE_BRAKQUAD)
+    {
         tend = p->tendbrak;
-    } else if (l->wchphase == AGC_LM_PHASE_APPRQUAD) {
+    }
+    else if (l->wchphase == AGC_LM_PHASE_APPRQUAD)
+    {
         tend = p->tendappr;
     }
-    (void)AGC_ASSERT(l->wchphase < AGC_LM_PHASE_VERTICAL);
-    if ((int32_t)tend + agc_dp_high(l->ttf_8) <= 0) {
-        return l->wchphase;                           /* BZMF WHATEXIT    */
+    (void) AGC_ASSERT(l->wchphase < AGC_LM_PHASE_VERTICAL);
+    if ((int32_t) tend + agc_dp_high(l->ttf_8) <= 0)
+    {
+        return l->wchphase; /* BZMF WHATEXIT    */
     }
-    (void)agc_lm_fastchng();
-    l->wchphase = (agc_sp_t)(l->wchphold + 1);       /* next phase       */
-    l->flpass0 = 0;
-    (void)AGC_ASSERT(l->wchphase <= AGC_LM_PHASE_VERTICAL);
+    (void) agc_lm_fastchng();
+    l->wchphase = (agc_sp_t) (l->wchphold + 1); /* next phase       */
+    l->flpass0  = 0;
+    (void) AGC_ASSERT(l->wchphase <= AGC_LM_PHASE_VERTICAL);
     return l->wchphold;
 }
 
@@ -382,15 +408,15 @@ static agc_sp_t ldg_extlogic(void)
  * UNFC/2 = UNIT(UNFC/2) ZOOMTIME TRIMACCL (2^7 m/cs), used by CALCRGVG. */
 static agc_status_t ldg_exgsub(agc_interp_t *ip)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    int sh = 0;
-    agc_vec_t u = agc_rtb_normunit(ip, l->unfc_2, &sh, NULL, NULL);
+    agc_lm_ldg_t *l  = agc_lm_ldg();
+    int           sh = 0;
+    agc_vec_t     u  = agc_rtb_normunit(ip, l->unfc_2, &sh, NULL, NULL);
     /* VXSC ZOOMTIME takes the DP (ZOOMTIME, TENDBRAK).                  */
-    agc_dp_t zt = agc_dp_pack(agc_guid_state()->lm.zoomtime,
-                              agc_lm_pad()->tendbrak);
+    agc_dp_t zt =
+        agc_dp_pack(agc_guid_state()->lm.zoomtime, agc_lm_pad()->tendbrak);
     l->unfc_2 = agc_vec_scale(ip, agc_vec_scale(ip, u, zt), LDG_TRIMACCL);
-    (void)AGC_ASSERT(sh >= 0);
-    (void)AGC_ASSERT(zt >= 0);
+    (void) AGC_ASSERT(sh >= 0);
+    (void) AGC_ASSERT(zt >= 0);
     return AGC_STATUS_OK;
 }
 
@@ -400,33 +426,36 @@ static agc_status_t ldg_exgsub(agc_interp_t *ip)
  *          + max(PROJ - PROJMIN, 0) UNIT(LAND - R).                    */
 static void ldg_exnorm(agc_interp_t *ip)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    const agc_guid_lm_t *g = &agc_guid_state()->lm;
-    int sh = 0;
-    l->unwc_2 = agc_rtb_normunit(ip, agc_vec_sub(ip, l->land, g->r), &sh,
-                                 NULL, NULL);
-    agc_dp_t proj = agc_vec_dot(ip, agc_vec_cross(ip, l->unwc_2, g->xnbpip.row[0]),
-                                l->cg.row[1]);
-    agc_sp_t ph = agc_dp_high(proj);
-    agc_sp_t buf = ldg_posonly((int32_t)LDG_PROJMAX - ph);
-    agc_sp_t buf1 = ldg_posonly((int32_t)ph - LDG_PROJMIN);
-    for (int i = 2; i >= 0; i--) {                    /* UNWCLOOP, bound 3 */
-        agc_dp_t a = agc_sp_mul(buf, agc_dp_high(l->cg.row[2].c[i]));
-        agc_dp_t b = agc_sp_mul(agc_dp_high(l->unwc_2.c[i]), buf1);
-        l->unwc_2.c[i] = (agc_dp_t)(a + b);           /* DXCH, MP, DAS    */
+    agc_lm_ldg_t        *l  = agc_lm_ldg();
+    const agc_guid_lm_t *g  = &agc_guid_state()->lm;
+    int                  sh = 0;
+    l->unwc_2 =
+        agc_rtb_normunit(ip, agc_vec_sub(ip, l->land, g->r), &sh, NULL, NULL);
+    agc_dp_t proj = agc_vec_dot(
+        ip, agc_vec_cross(ip, l->unwc_2, g->xnbpip.row[0]), l->cg.row[1]);
+    agc_sp_t ph   = agc_dp_high(proj);
+    agc_sp_t buf  = ldg_posonly((int32_t) LDG_PROJMAX - ph);
+    agc_sp_t buf1 = ldg_posonly((int32_t) ph - LDG_PROJMIN);
+    for (int i = 2; i >= 0; i--)
+    { /* UNWCLOOP, bound 3 */
+        agc_dp_t a     = agc_sp_mul(buf, agc_dp_high(l->cg.row[2].c[i]));
+        agc_dp_t b     = agc_sp_mul(agc_dp_high(l->unwc_2.c[i]), buf1);
+        l->unwc_2.c[i] = (agc_dp_t) (a + b); /* DXCH, MP, DAS    */
     }
-    (void)AGC_ASSERT(buf >= 0 && buf1 >= 0);
-    (void)AGC_ASSERT(sh >= 0);
+    (void) AGC_ASSERT(buf >= 0 && buf1 >= 0);
+    (void) AGC_ASSERT(sh >= 0);
 }
 
 /* RATESTOP (p. 813): unless in attitude hold, a STOPRATE. */
 static void ldg_ratestop(void)
 {
-    if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD)) {
+    if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
+    {
         agc_status_t st = agc_lm_dap_stoprate();
-        (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
+        (void) AGC_ASSERT(st == AGC_STATUS_OK ||
+                          st == AGC_STATUS_UNIMPLEMENTED);
     }
-    (void)AGC_ASSERT(agc_lm_ldg()->wchphold >= AGC_LM_PHASE_IGNALG);
+    (void) AGC_ASSERT(agc_lm_ldg()->wchphold >= AGC_LM_PHASE_IGNALG);
 }
 
 /* STEER? / EXVERT / EXOVFLOW / RATESTOP / GDUMP1 (pp. 813-814): with
@@ -434,19 +463,25 @@ static void ldg_ratestop(void)
  * then the guidance loop displays.                                      */
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!agc_flag_test(AGC_FLAG_STEERSW)) {
-        ldg_ratestop();                               /* no outputs       */
-    } else if (ip->ovfind != 0) {
-        (void)agc_alarm(AGC_ALARM_01410);             /* non-abortive     */
+    if (!agc_flag_test(AGC_FLAG_STEERSW))
+    {
+        ldg_ratestop(); /* no outputs       */
+    }
+    else if (ip->ovfind != 0)
+    {
+        (void) agc_alarm(AGC_ALARM_01410); /* non-abortive     */
         ldg_ratestop();
-    } else {
-        agc_status_t st = agc_lm_throttle();          /* GDUMP1           */
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    }
+    else
+    {
+        agc_status_t st = agc_lm_throttle(); /* GDUMP1           */
+        (void) AGC_ASSERT(st == AGC_STATUS_OK);
         st = agc_lm_findcduw_m2(ip);
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+        (void) AGC_ASSERT(st == AGC_STATUS_OK);
     }
     return agc_lm_dispexit(ctx, true);
 }
@@ -455,10 +490,11 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                                 uint8_t noun)
 {
-    const agc_dsky_cont_t cont = { AGC_JOB_GOTOPOOH, AGC_JOB_APPROACH_PHASE_PROCEED,
-                                   AGC_JOB_APPROACH_PHASE_DISPLAY };
-    (void)AGC_ASSERT(ctx != NULL);
-    (void)AGC_ASSERT(noun == 60 || noun == 63 || noun == 64);
+    const agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH,
+                                  AGC_JOB_APPROACH_PHASE_PROCEED,
+                                  AGC_JOB_APPROACH_PHASE_DISPLAY};
+    (void) AGC_ASSERT(ctx != NULL);
+    (void) AGC_ASSERT(noun == 60 || noun == 63 || noun == 64);
     return agc_dsky_display(ctx, kind, agc_dsky_vn(6, noun), &cont);
 }
 
@@ -467,32 +503,36 @@ static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
  * has run out (RED-OVER clears REDFLAG).                               */
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (agc_lm_ldg()->tredes == 0) {
-        (void)agc_flag_clear(AGC_FLAG_REDFLAG);       /* RED-OVER         */
+    if (agc_lm_ldg()->tredes == 0)
+    {
+        (void) agc_flag_clear(AGC_FLAG_REDFLAG); /* RED-OVER         */
         return ldg_display(ctx, AGC_DSKY_REGODSPR, 64);
     }
-    if (agc_flag_test(AGC_FLAG_REDFLAG)) {
-        return ldg_display(ctx, AGC_DSKY_REGODSPR, 64);   /* REDES-OK     */
+    if (agc_flag_test(AGC_FLAG_REDFLAG))
+    {
+        return ldg_display(ctx, AGC_DSKY_REGODSPR, 64); /* REDES-OK     */
     }
     agc_status_t st = ldg_display(ctx, AGC_DSKY_REFLASHR, 64);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
-    return st;                       /* TCF ENDLLJOB; answers start jobs */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+    return st; /* TCF ENDLLJOB; answers start jobs */
 }
 
 /* P64CEED (p. 815): PROCEED on V06N64 enables the redesignation logic. */
 agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_ldg_t *l = agc_lm_ldg();
-    l->elincr1 = 0;
-    l->azincr1 = 0;
+    l->elincr1      = 0;
+    l->azincr1      = 0;
     agc_status_t st = agc_flag_set(AGC_FLAG_REDFLAG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return AGC_STATUS_OK;
 }
 
@@ -501,33 +541,38 @@ agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
  * V06N60 (P65-P67). DISPEXIT +3 enters with kill_group3 false.         */
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (kill_group3) {
-        (void)agc_phase_kill(3);                      /* DXCH -PHASE3     */
+    if (kill_group3)
+    {
+        (void) agc_phase_kill(3); /* DXCH -PHASE3     */
     }
-    if (agc_flag_test(AGC_FLAG_FLUNDISP)) {
-        return AGC_STATUS_OK;                         /* ENDLLJOB         */
+    if (agc_flag_test(AGC_FLAG_FLUNDISP))
+    {
+        return AGC_STATUS_OK; /* ENDLLJOB         */
     }
     agc_sp_t ph = agc_lm_ldg()->wchphold;
-    (void)AGC_ASSERT(ph >= AGC_LM_PHASE_BRAKQUAD);
-    if (ph == AGC_LM_PHASE_APPRQUAD) {
+    (void) AGC_ASSERT(ph >= AGC_LM_PHASE_BRAKQUAD);
+    if (ph == AGC_LM_PHASE_APPRQUAD)
+    {
         agc_job_ctx_t c = *ctx;
         return agc_lm_job_approach_phase_display(&c);
     }
-    uint8_t noun = (ph == AGC_LM_PHASE_VERTICAL) ? 60 : 63;  /* VERTDISP */
+    uint8_t noun = (ph == AGC_LM_PHASE_VERTICAL) ? 60 : 63; /* VERTDISP */
     return ldg_display(ctx, AGC_DSKY_REGODSPR, noun);
 }
 
 /* P63DISPS -2 (p. 814): restart point that kills group 5, then V06N63. */
 agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_lm_phaschng(00035);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return ldg_display(ctx, AGC_DSKY_REGODSPR, 63);
 }
 
@@ -535,47 +580,54 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
  *   ACG = (V2FG - VGU) / TAUVERT, then AFCCALC1 and STEER?.            */
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_lm_ldg_t *l = agc_lm_ldg();
-    if (l->wchvert > 0) {
+    if (l->wchvert > 0)
+    {
         return agc_lm_manual_landing_vertical(ctx, ip);
     }
-    if (l->wchvert == 0) {
-        return agc_lm_rate_of_descent_vertical(ctx);                  /* POSTJUMP         */
+    if (l->wchvert == 0)
+    {
+        return agc_lm_rate_of_descent_vertical(ctx); /* POSTJUMP         */
     }
-    const agc_lm_pad_t *p = agc_lm_pad();             /* P65VERT          */
-    agc_vec_t acg = agc_vec_div(ip, agc_vec_sub(ip, p->v2fg, l->vgu), p->tauvert);
+    const agc_lm_pad_t *p = agc_lm_pad(); /* P65VERT          */
+    agc_vec_t           acg =
+        agc_vec_div(ip, agc_vec_sub(ip, p->v2fg, l->vgu), p->tauvert);
     agc_status_t st = agc_lm_afccalc(ip, acg);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    return agc_lm_steer_exit(ctx, ip);                /* AFTRGUID: STEER? */
+    return agc_lm_steer_exit(ctx, ip); /* AFTRGUID: STEER? */
 }
 
 /* STARTP64 (p. 802): P64, TTF/8 augmented by DELTTFAP, RUPT10 enabled,
  * redesignation flag initialised; continues to TTFINCR.               */
 agc_status_t agc_lm_start_approach_phase(void)
 {
-    agc_status_t st = agc_phase_newmode(64);          /* NEWMODEX         */
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    l->ttf_8tmp = (agc_dp_t)(l->ttf_8tmp + (agc_dp_t)agc_lm_pad()->delttfap * 16384);
-    agc_status_t s2 = agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A); /* BIT12 */
-    (void)AGC_ASSERT(s2 == AGC_STATUS_OK);
-    (void)agc_flag_clear(AGC_FLAG_REDFLAG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
+    agc_status_t  st = agc_phase_newmode(64); /* NEWMODEX         */
+    agc_lm_ldg_t *l  = agc_lm_ldg();
+    l->ttf_8tmp =
+        (agc_dp_t) (l->ttf_8tmp + (agc_dp_t) agc_lm_pad()->delttfap * 16384);
+    agc_status_t s2 =
+        agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A); /* BIT12 */
+    (void) AGC_ASSERT(s2 == AGC_STATUS_OK);
+    (void) agc_flag_clear(AGC_FLAG_REDFLAG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
     return AGC_STATUS_OK;
 }
 
 /* P65START (p. 802): P65, WCHVERT = -2, X-axis override permitted. */
 agc_status_t agc_lm_start_velocity_nulling(void)
 {
-    agc_status_t st = agc_phase_newmode(65);
+    agc_status_t st       = agc_phase_newmode(65);
     agc_lm_ldg()->wchvert = -2;
-    (void)agc_flag_clear(AGC_FLAG_XOVINFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
-    (void)AGC_ASSERT(agc_lm_ldg()->wchvert < 0);
+    (void) agc_flag_clear(AGC_FLAG_XOVINFLG);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
+    (void) AGC_ASSERT(agc_lm_ldg()->wchvert < 0);
     return AGC_STATUS_OK;
 }
 
@@ -584,27 +636,34 @@ agc_status_t agc_lm_start_velocity_nulling(void)
 static agc_status_t ldg_front(agc_interp_t *ip)
 {
     agc_lm_ldg_t *l = agc_lm_ldg();
-    l->tpipold = l->tpip;
-    (void)agc_lm_fastchng();
-    l->tpip = agc_guid_state()->avg.piptime1;
-    l->ttf_8tmp = l->ttf_8;
+    l->tpipold      = l->tpip;
+    (void) agc_lm_fastchng();
+    l->tpip         = agc_guid_state()->avg.piptime1;
+    l->ttf_8tmp     = l->ttf_8;
     agc_status_t st = AGC_STATUS_OK;
-    if (l->flpass0 <= 0) {                            /* BRSPOT1 NEWPHASE */
-        if (l->wchphase == AGC_LM_PHASE_APPRQUAD) {
+    if (l->flpass0 <= 0)
+    { /* BRSPOT1 NEWPHASE */
+        if (l->wchphase == AGC_LM_PHASE_APPRQUAD)
+        {
             st = agc_lm_start_approach_phase();
-        } else if (l->wchphase == AGC_LM_PHASE_VERTICAL) {
+        }
+        else if (l->wchphase == AGC_LM_PHASE_VERTICAL)
+        {
             st = agc_lm_start_velocity_nulling();
         }
     }
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = agc_lm_ttfincr(ip);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    if (l->wchphase == AGC_LM_PHASE_IGNALG) {         /* BRSPOT2 PREGUIDE */
+    if (l->wchphase == AGC_LM_PHASE_IGNALG)
+    { /* BRSPOT2 PREGUIDE */
         return agc_lm_calcrgvg(ip);
     }
-    if (l->wchphase == AGC_LM_PHASE_APPRQUAD) {
+    if (l->wchphase == AGC_LM_PHASE_APPRQUAD)
+    {
         return agc_lm_redesig(ip);
     }
     return agc_lm_rgvgcalc(ip);
@@ -613,30 +672,37 @@ static agc_status_t ldg_front(agc_interp_t *ip)
 /* WHATGUID .. WHATEXIT for the quadratic phases (pp. 807-813). */
 static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_status_t st = agc_lm_ttf8cl(ip);
-    if (st == AGC_STATUS_NO_CONVERGE) {               /* WHATALM          */
-        if (l->wchphase == AGC_LM_PHASE_IGNALG) {
-            (void)agc_poodoo(AGC_ALARM_01406);        /* 1406P00          */
+    agc_lm_ldg_t *l  = agc_lm_ldg();
+    agc_status_t  st = agc_lm_ttf8cl(ip);
+    if (st == AGC_STATUS_NO_CONVERGE)
+    { /* WHATALM          */
+        if (l->wchphase == AGC_LM_PHASE_IGNALG)
+        {
+            (void) agc_poodoo(AGC_ALARM_01406); /* 1406P00          */
             return AGC_STATUS_POODOO;
         }
-        (void)agc_alarm(AGC_ALARM_01406);             /* 1406ALM          */
+        (void) agc_alarm(AGC_ALARM_01406); /* 1406ALM          */
         ldg_ratestop();
         return agc_lm_dispexit(ctx, true);
     }
     st = agc_lm_quadguid(ip);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    st = agc_lm_cgcalc(ip);                           /* AFTRGUID         */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    st = agc_lm_cgcalc(ip); /* AFTRGUID         */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     agc_sp_t ex = ldg_extlogic();
-    if (ex == AGC_LM_PHASE_IGNALG) {
-        return ldg_exgsub(ip);                        /* back to IGNALG   */
+    if (ex == AGC_LM_PHASE_IGNALG)
+    {
+        return ldg_exgsub(ip); /* back to IGNALG   */
     }
-    if (ex == AGC_LM_PHASE_BRAKQUAD) {
-        l->unwc_2 = agc_guid_state()->avg.unitr;      /* EXBRAK: UNIT/R/  */
-    } else {
+    if (ex == AGC_LM_PHASE_BRAKQUAD)
+    {
+        l->unwc_2 = agc_guid_state()->avg.unitr; /* EXBRAK: UNIT/R/  */
+    }
+    else
+    {
         ldg_exnorm(ip);
     }
     return agc_lm_steer_exit(ctx, ip);
@@ -648,28 +714,37 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry)
 {
     if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(entry >= AGC_LM_ENTRY_GUILDRET && entry <= AGC_LM_ENTRY_VERTGUID)) {
+        !AGC_ASSERT(entry >= AGC_LM_ENTRY_GUILDRET &&
+                    entry <= AGC_LM_ENTRY_VERTGUID))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_interp_t ip;
     agc_interp_init(&ip);
     agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_status_t st;
-    if (entry == AGC_LM_ENTRY_VERTGUID) {
+    agc_status_t  st;
+    if (entry == AGC_LM_ENTRY_VERTGUID)
+    {
         return agc_lm_vertguid(ctx, &ip);
     }
-    if (entry == AGC_LM_ENTRY_GUIDSUB) {
-        st = agc_lm_calcrgvg(&ip);                    /* skip TTFINCR     */
-    } else {
-        if (entry == AGC_LM_ENTRY_GUILDRET) {
+    if (entry == AGC_LM_ENTRY_GUIDSUB)
+    {
+        st = agc_lm_calcrgvg(&ip); /* skip TTFINCR     */
+    }
+    else
+    {
+        if (entry == AGC_LM_ENTRY_GUILDRET)
+        {
             l->rodcount = 0;
         }
         st = ldg_front(&ip);
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    if (l->wchphase == AGC_LM_PHASE_VERTICAL) {       /* BRSPOT3 WHATGUID */
+    if (l->wchphase == AGC_LM_PHASE_VERTICAL)
+    { /* BRSPOT3 WHATGUID */
         return agc_lm_vertguid(ctx, &ip);
     }
     return ldg_quadratic(ctx, &ip);
@@ -680,18 +755,20 @@ agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry)
  * just higher than SERVICER's. Then R13 decides the path.             */
 agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_lm_phaschng(00035);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE,
-                                021, false, 0U };
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    const agc_phase_var_t v = {
+        AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE, 021, false, 0U};
     st = agc_phase_change_var(05023, &v);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     int entry = AGC_LM_ENTRY_GUILDRET;
-    st = agc_lm_guildenstern(ctx, &entry);
-    if (st != AGC_STATUS_OK) {
+    st        = agc_lm_guildenstern(ctx, &entry);
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return agc_lm_guidpass(ctx, entry);

@@ -22,7 +22,8 @@
  * C name: AGC_FLAG_<AGCNAME>, AGCNAME upper case, '/', '-' and '.' -> '_'.
  */
 
-enum agc_flag_lm_id {
+enum agc_flag_lm_id
+{
     /* OLDESFLG  FLAGWRD0 bit 1 (014D)
      * SET: R29 GYRO CMD LOOP REQUESTED  RESET: R29 GYRO CMD LOOP NOT REQUESTED */
     AGC_FLAG_OLDESFLG = 0x01,

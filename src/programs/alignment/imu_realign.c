@@ -14,20 +14,23 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment_internal.h"
 
-#define PH_REALIGN   ((uint16_t)00254)   /* PROG52 (CM): group 4 phase 25    */
-#define PH_OPTION_RETURN     ((uint16_t)00014)   /* P52B display return: phase 1     */
-#define VN_ALIGN_TIME      ALIGN_VN(6, 34)     /* VN 0634: TALIGN / time           */
-#define VN_GIMBAL_ANGLES      ALIGN_VN(6, 22)     /* VN 00622: gimbal angles THETAD   */
-#define VN_MONITOR_GIMBALS      ALIGN_VN(16, 20)    /* VN 1620: monitor the gimbals     */
-#define OPT_CODE_1  ((uint16_t)1)       /* GOPERF4R with BIT1: V04N06       */
-#define CHK_OCT13   ((uint16_t)013)     /* OCT13: coarse align checklist    */
-#define OPTION2_PREF ((agc_sp_t)1)      /* BIT1: preferred                  */
-#define OPTION2_NOM  ((agc_sp_t)2)      /* BIT2: nominal                    */
-#define OPTION_MASK3 3                  /* MASK THREE                       */
+#define PH_REALIGN ((uint16_t) 00254) /* PROG52 (CM): group 4 phase 25    */
+#define PH_OPTION_RETURN \
+    ((uint16_t) 00014)                   /* P52B display return: phase 1     */
+#define VN_ALIGN_TIME    ALIGN_VN(6, 34) /* VN 0634: TALIGN / time           */
+#define VN_GIMBAL_ANGLES ALIGN_VN(6, 22) /* VN 00622: gimbal angles THETAD   */
+#define VN_MONITOR_GIMBALS \
+    ALIGN_VN(16, 20)                  /* VN 1620: monitor the gimbals     */
+#define OPT_CODE_1   ((uint16_t) 1)   /* GOPERF4R with BIT1: V04N06       */
+#define CHK_OCT13    ((uint16_t) 013) /* OCT13: coarse align checklist    */
+#define OPTION2_PREF ((agc_sp_t) 1)   /* BIT1: preferred                  */
+#define OPTION2_NOM  ((agc_sp_t) 2)   /* BIT2: nominal                    */
+#define OPTION_MASK3 3                /* MASK THREE                       */
 
 static bool is_csm(void)
 {
@@ -38,7 +41,7 @@ static bool is_csm(void)
 static agc_sp_t option2(void)
 {
     const agc_sp_t v = agc_erase_option1(1);
-    (void)AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX));
+    (void) AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX));
     return v;
 }
 
@@ -49,22 +52,25 @@ static agc_sp_t option2(void)
  */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = AGC_STATUS_OK;
-    if (is_csm()) {
+    if (is_csm())
+    {
         st = align_phase4(PH_REALIGN);
-        agc_flag_clear(AGC_FLAG_UPDATFLG);  /* status needs no check */
+        agc_flag_clear(AGC_FLAG_UPDATFLG); /* status needs no check */
         agc_flag_clear(AGC_FLAG_TRACKFLG);
     }
-    st = agc_imu_status_check();                                   /* R02BOTH   */
-    if (st != AGC_STATUS_OK) {
-        return AGC_STATUS_OK;               /* alarm 210/220, GOTOPOOH done */
+    st = agc_imu_status_check(); /* R02BOTH   */
+    if (st != AGC_STATUS_OK)
+    {
+        return AGC_STATUS_OK; /* alarm 210/220, GOTOPOOH done */
     }
-    agc_erase_set_option1(1, agc_flag_test(AGC_FLAG_PFRATFLG) ? OPTION2_PREF
-                                                              : OPTION2_NOM);
-    (void)AGC_ASSERT(option2() != 0);
+    agc_erase_set_option1(1, agc_flag_test(AGC_FLAG_PFRATFLG) ? OPTION2_PREF :
+                                                                OPTION2_NOM);
+    (void) AGC_ASSERT(option2() != 0);
     return agc_job_imu_realign_option_display(ctx);
 }
 
@@ -75,16 +81,18 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF4R, OPT_CODE_1,
                                   AGC_JOB_GOTOPOOH, AGC_JOB_IMU_REALIGN_OPTION,
                                   AGC_JOB_IMU_REALIGN_OPTION_DISPLAY);
-    if (st == AGC_STATUS_OK) {
+    if (st == AGC_STATUS_OK)
+    {
         st = align_phase4(PH_OPTION_RETURN);
     }
-    return st;                                               /* ENDOFJOB  */
+    return st; /* ENDOFJOB  */
 }
 
 /*
@@ -95,48 +103,57 @@ agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    const int opt = (int)(option2() & OPTION_MASK3);
-    (void)AGC_ASSERT((opt >= 0) && (opt <= OPTION_MASK3));
-    if (opt == 1) {
-        return agc_job_realign_gimbal_display(ctx);                       /* P52J / P52H    */
+    const int opt = (int) (option2() & OPTION_MASK3);
+    (void) AGC_ASSERT((opt >= 0) && (opt <= OPTION_MASK3));
+    if (opt == 1)
+    {
+        return agc_job_realign_gimbal_display(ctx); /* P52J / P52H    */
     }
-    if (opt == 2) {
+    if (opt == 2)
+    {
         return agc_job_realign_time(ctx);
     }
-    if (is_csm()) {
-        return (opt == 0) ? agc_job_realign_time(ctx) : agc_job_csm_realign_star_selection(ctx);
+    if (is_csm())
+    {
+        return (opt == 0) ? agc_job_realign_time(ctx) :
+                            agc_job_csm_realign_star_selection(ctx);
     }
-    if (opt == 0) {                                     /* OPT4           */
+    if (opt == 0)
+    { /* OPT4           */
         const agc_status_t st = align_set_dsptem1(agc_erase_tland());
         return (st == AGC_STATUS_OK) ? agc_job_realign_time_flash(ctx) : st;
     }
-    agc_align_ram()->qmaj = AGC_JOB_GOTOPOOH;           /* P52OUT         */
-    return agc_job_lm_fine_align(ctx);                         /* P52E, P52F     */
+    agc_align_ram()->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT         */
+    return agc_job_lm_fine_align(ctx);        /* P52E, P52F     */
 }
 
 /* P52T: DSPTEM1 = -0 (0 here: both tests treat +-0 alike), then VN_ALIGN_TIME. */
 agc_status_t agc_job_realign_time(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = align_set_dsptem1(0);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_realign_time_flash(ctx);
 }
 
 /* P52T +3: flash VN_ALIGN_TIME (time of alignment); ENTER re-flashes. */
 agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(option2() >= 0);
+    (void) AGC_ASSERT(option2() >= 0);
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALIGN_TIME, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_REALIGN_TIME_PROCEED, AGC_JOB_REALIGN_TIME_FLASH);
+                       AGC_JOB_REALIGN_TIME_PROCEED,
+                       AGC_JOB_REALIGN_TIME_FLASH);
 }
 
 /*
@@ -146,21 +163,26 @@ agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    const agc_dp_t t = align_dsptem1();
-    const bool nominal = (option2() & OPTION2_NOM) != 0;
-    if (is_csm()) {
-        if (t == 0) {                                       /* BZF       */
+    const agc_dp_t t       = align_dsptem1();
+    const bool     nominal = (option2() & OPTION2_NOM) != 0;
+    if (is_csm())
+    {
+        if (t == 0)
+        { /* BZF       */
             const agc_status_t st = align_set_dsptem1(align_loadtime());
-            (void)AGC_ASSERT(st == AGC_STATUS_OK);
+            (void) AGC_ASSERT(st == AGC_STATUS_OK);
         }
-        return nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_csm_imu_realign_landing_site(ctx);
+        return nominal ? agc_job_realign_nominal_orientation(ctx) :
+                         agc_job_csm_imu_realign_landing_site(ctx);
     }
     agc_align_ram()->talign = (t <= 0) ? align_loadtime() : t; /* BZMF   */
-    (void)AGC_ASSERT(agc_align_ram()->talign >= 0);
-    return nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_lm_imu_realign_landing_site(ctx);
+    (void) AGC_ASSERT(agc_align_ram()->talign >= 0);
+    return nominal ? agc_job_realign_nominal_orientation(ctx) :
+                     agc_job_lm_imu_realign_landing_site(ctx);
 }
 
 /*
@@ -170,18 +192,22 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    const agc_dp_t t = is_csm() ? align_dsptem1() : ram->talign;
-    agc_interp_t ip;
+    const agc_dp_t   t   = is_csm() ? align_dsptem1() : ram->talign;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
-    const agc_status_t st = agc_align_nominal_orientation(&ip, t, AGC_JOB_REALIGN_NOMINAL_ORIENTATION, &ram->xsmd);
-    if (st == AGC_STATUS_BUSY) {
-        return AGC_STATUS_OK;                         /* INTSTALL sleep   */
+    const agc_status_t st = agc_align_nominal_orientation(
+        &ip, t, AGC_JOB_REALIGN_NOMINAL_ORIENTATION, &ram->xsmd);
+    if (st == AGC_STATUS_BUSY)
+    {
+        return AGC_STATUS_OK; /* INTSTALL sleep   */
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return agc_job_realign_gimbal_display(ctx);
@@ -191,39 +217,43 @@ agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
 static agc_status_t realign_gimbal_angles(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
     uint16_t cdu[3];
     align_read_cdus(cdu);
-    const agc_mat_t refsmmat = agc_erase_refsmmat();
-    uint16_t thetad[3];
-    const agc_status_t st = agc_align_gimbal_angles(&ip, &ram->xsmd, &refsmmat, cdu,
-                                            &ram->xsm, &ram->xnb, thetad);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    const agc_mat_t    refsmmat = agc_erase_refsmmat();
+    uint16_t           thetad[3];
+    const agc_status_t st = agc_align_gimbal_angles(
+        &ip, &ram->xsmd, &refsmmat, cdu, &ram->xsm, &ram->xnb, thetad);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return st;
 }
 
 /* P52D: S52.2, flash VN_GIMBAL_ANGLES; V33 COARSTYP, ENTER (vehicle moved) P52D. */
 agc_status_t agc_job_realign_gimbal_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = realign_gimbal_angles();
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GIMBAL_ANGLES, AGC_JOB_GOTOPOOH,
-                       AGC_JOB_COARSTYP, AGC_JOB_REALIGN_GIMBAL_DISPLAY);
+    return align_flash(ctx, AGC_DSKY_GOFLASH, VN_GIMBAL_ANGLES,
+                       AGC_JOB_GOTOPOOH, AGC_JOB_COARSTYP,
+                       AGC_JOB_REALIGN_GIMBAL_DISPLAY);
 }
 
 /* COARSTYP: V50N25 R1 00013; V33 normal coarse (CAL53A), V32 gyro torque. */
 agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(option2() >= 0);
+    (void) AGC_ASSERT(option2() >= 0);
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_OCT13, AGC_JOB_GOTOPOOH,
                        AGC_JOB_COARSE_ALIGN, AGC_JOB_GYCRS);
 }
@@ -236,35 +266,41 @@ agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = realign_gimbal_angles();
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     uint16_t cdu[3];
     uint16_t thetad[3];
-    align_read_cdus(cdu);                                     /* RDCDUS    */
-    for (int i = 0; i < 3; i++) {
+    align_read_cdus(cdu); /* RDCDUS    */
+    for (int i = 0; i < 3; i++)
+    {
         thetad[i] = agc_erase_thetad(i);
     }
-    if (!agc_align_coarse_needed(thetad, cdu)) {
-        return agc_job_coarse_align_fineonly(ctx);                  /* CALOOP1   */
+    if (!agc_align_coarse_needed(thetad, cdu))
+    {
+        return agc_job_coarse_align_fineonly(ctx); /* CALOOP1   */
     }
-    st = align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN, ctx->prio); /* COARFINE */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    st = align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN,
+                         ctx->prio); /* COARFINE */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return align_coarse(AGC_JOB_COARSE_ALIGN_COARSED);
 }
 
 /* After COARSE in CAL53A: drift compensation restarted, then FINEONLY. */
 agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     const agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_coarse_align_fineonly(ctx);
 }
 
@@ -274,19 +310,21 @@ agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_erase_set_refsmmat(ram->xsm);                         /* MATMOVE   */
+    agc_erase_set_refsmmat(ram->xsm); /* MATMOVE   */
     agc_status_t st = agc_flag_set(AGC_FLAG_REFSMFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    if (is_csm()) {
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (is_csm())
+    {
         return agc_job_csm_realign_star_selection(ctx);
     }
     st = agc_flag_clear(AGC_FLAG_PFRATFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    ram->qmaj = AGC_JOB_GOTOPOOH;                             /* P52OUT    */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    ram->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT    */
     return agc_job_lm_fine_align(ctx);
 }
 
@@ -297,43 +335,51 @@ agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_status_t st = agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
-    if (st == AGC_STATUS_OK) {
-        st = agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);        /* CALCGTA   */
+    agc_status_t    st =
+        agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA   */
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    agc_flag_clear(AGC_FLAG_DRIFTFLG);        /* flag ids are valid  */
+    agc_flag_clear(AGC_FLAG_DRIFTFLG); /* flag ids are valid  */
     agc_flag_clear(AGC_FLAG_REFSMFLG);
-    st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS);             /* GODSPR    */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_gycrs_pulse(ctx);
 }
 
 /* GYCRS: IMUPULSE (R55CDR = OGC) and IMUSTALL; resumed if gyros busy. */
 agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_GYCRS_PULSE);
-    if (st == AGC_STATUS_BUSY) {
+    if (st == AGC_STATUS_BUSY)
+    {
         return AGC_STATUS_OK;
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     bool done = false;
-    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_GYCRS_PULSED, &done);
-    if ((st != AGC_STATUS_OK) || !done) {
+    st        = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_GYCRS_PULSED, &done);
+    if ((st != AGC_STATUS_OK) || !done)
+    {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
     return agc_job_gycrs_torqued(ctx);
@@ -342,11 +388,13 @@ agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx)
 /* GYCRS: woken from the IMUSTALL. */
 agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
-        return AGC_STATUS_OK;                                 /* CURTAINS  */
+    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
+    {
+        return AGC_STATUS_OK; /* CURTAINS  */
     }
     return agc_job_gycrs_torqued(ctx);
 }
@@ -358,20 +406,23 @@ agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_status_t st = align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);
-    agc_erase_set_refsmmat(ram->xsmd);                        /* MATMOVE   */
-    agc_flag_clear(AGC_FLAG_PFRATFLG);        /* flag ids are valid  */
+    agc_status_t     st =
+        align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);
+    agc_erase_set_refsmmat(ram->xsmd); /* MATMOVE   */
+    agc_flag_clear(AGC_FLAG_PFRATFLG); /* flag ids are valid  */
     st = agc_flag_set(AGC_FLAG_REFSMFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     st = is_csm() ? align_set1_pdt() : align_ncoarse();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    if (is_csm()) {
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (is_csm())
+    {
         return agc_job_csm_fine_align_recheck(ctx);
     }
-    ram->qmaj = AGC_JOB_GOTOPOOH;                             /* P52OUT    */
+    ram->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT    */
     return agc_job_lm_fine_align_recheck(ctx);
 }

@@ -26,13 +26,15 @@
  *     quantity gives +U and -V.
  */
 #include <stdio.h>
+
 #include <stdint.h>
+
+#include "../../src/lm/dap/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/lm/dap.h"
-#include "../../src/lm/dap/internal.h"
 
 static int g_checks;
 static int g_failures;
@@ -40,7 +42,7 @@ static int g_assert_reports;
 
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
-    (void)printf("assert %s:%d %s\n", file, line, expr);
+    (void) printf("assert %s:%d %s\n", file, line, expr);
     g_assert_reports++;
     return false;
 }
@@ -50,13 +52,14 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
-    if (!ok) {
+    if (!ok)
+    {
         g_failures++;
-        (void)printf("FAIL line %d: %s\n", line, text);
+        (void) printf("FAIL line %d: %s\n", line, text);
     }
 }
 
-#define KG(x) ((agc_sp_t)((x) / 4))          /* kg -> B16 SP (2^16 kg)   */
+#define KG(x) ((agc_sp_t) ((x) / 4)) /* kg -> B16 SP (2^16 kg)   */
 
 /* Fresh start, LM alone, descent stage, given mass; then 1/ACCS.        */
 static agc_status_t setup_descent(int32_t kg)
@@ -66,15 +69,15 @@ static agc_status_t setup_descent(int32_t kg)
     agc_flag_clear(AGC_FLAG_APSFLAG);
     agc_flag_set(AGC_FLAG_DRIFTDFL);
     agc_erase_set_csmmass(0);
-    agc_guid_state()->lm.mass = (agc_dp_t)(KG(kg) * 16384);
+    agc_guid_state()->lm.mass   = (agc_dp_t) (KG(kg) * 16384);
     agc_guid_state()->lm.abdelv = 0;
     return agc_lm_dap_jet_accel_update();
 }
 
 static void test_accs(void)
 {
-    agc_status_t st = setup_descent(15000);
-    const lm_dap_t *d = lm_dap_state();
+    agc_status_t    st = setup_descent(15000);
+    const lm_dap_t *d  = lm_dap_state();
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_erase_lemmass() == KG(15000));
     CHECK(d->jacc[0] > 0 && d->jacc[1] > 0 && d->jacc[2] > 0);
@@ -82,24 +85,24 @@ static void test_accs(void)
     CHECK(d->coeffq < 0 && d->coeffr > 0);
     CHECK(d->neg_2jetlim == -512);
     CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
-    CHECK(d->block[2] > 0);                    /* 1/ANETP                  */
+    CHECK(d->block[2] > 0); /* 1/ANETP                  */
     CHECK(d->block[LM_BLK_U + LM_BK_1ANET1 + 2] > 0);
-    CHECK(d->block[6] > 0);                    /* drifting: FLAT = .8 deg  */
+    CHECK(d->block[6] > 0); /* drifting: FLAT = .8 deg  */
     CHECK(d->block[LM_BLK_U + LM_BK_FIREDB] == d->db);
-    CHECK(d->l_pvt_cg > 0);                    /* engine arm, descent      */
+    CHECK(d->l_pvt_cg > 0); /* engine arm, descent      */
 
-    st = setup_descent(16000);                 /* above HIDESCNT           */
+    st = setup_descent(16000); /* above HIDESCNT           */
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_erase_lemmass() == 3825);
-    CHECK(agc_guid_state()->lm.mass == (agc_dp_t)3825 * 16384);
+    CHECK(agc_guid_state()->lm.mass == (agc_dp_t) 3825 * 16384);
 }
 
 static void set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot)
 {
-    d->axisctr = axis;
-    d->e = e;
-    d->edot = edot;
-    d->sensetyp = 0;
+    d->axisctr      = axis;
+    d->e            = e;
+    d->edot         = edot;
+    d->sensetyp     = 0;
     d->tj[axis + 1] = 0;
 }
 
@@ -107,17 +110,19 @@ static void test_tjetlaw(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
-    for (agc_sp_t axis = -1; axis <= 1; axis++) {
+    for (agc_sp_t axis = -1; axis <= 1; axis++)
+    {
         set_axis(d, axis, 0, 0);
         CHECK(lm_dap_tjetlaw() == AGC_STATUS_OK);
         CHECK(d->tj[axis + 1] == 0);
     }
-    agc_sp_t ten_deg = (agc_sp_t)(16384 * 10 / 180);   /* at pi            */
-    for (agc_sp_t axis = 0; axis <= 1; axis++) {
+    agc_sp_t ten_deg = (agc_sp_t) (16384 * 10 / 180); /* at pi            */
+    for (agc_sp_t axis = 0; axis <= 1; axis++)
+    {
         set_axis(d, axis, ten_deg, 0);
         CHECK(lm_dap_tjetlaw() == AGC_STATUS_OK);
         CHECK(d->tj[axis + 1] < 0);
-        set_axis(d, axis, (agc_sp_t)-ten_deg, 0);
+        set_axis(d, axis, (agc_sp_t) -ten_deg, 0);
         CHECK(lm_dap_tjetlaw() == AGC_STATUS_OK);
         CHECK(d->tj[axis + 1] > 0);
     }
@@ -127,26 +132,29 @@ static void test_rate_estimator(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
     lm_dap_t *d = lm_dap_state();
-    d->nptraps = 2;                            /* STARTDAP                 */
-    d->nqtraps = 2;
-    d->nrtraps = 2;
-    d->omegap = 0;
-    d->trapedp = 0;
-    d->plast = 0;
-    for (int i = 0; i < 3; i++) {
-        d->tj[i] = 0;
+    d->nptraps  = 2; /* STARTDAP                 */
+    d->nqtraps  = 2;
+    d->nrtraps  = 2;
+    d->omegap   = 0;
+    d->trapedp  = 0;
+    d->plast    = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        d->tj[i]     = 0;
         d->dapcdu[i] = 0;
     }
-    d->oldxforp = 0;
-    d->oldyforp = 0;
-    d->oldzforq = 0;
+    d->oldxforp      = 0;
+    d->oldyforp      = 0;
+    d->oldzforq      = 0;
     int converged_at = -1;
-    for (int pass = 1; pass <= 30; pass++) {
-        d->dapcdu[0] = (uint16_t)((d->dapcdu[0] + 10u) & 077777u);
+    for (int pass = 1; pass <= 30; pass++)
+    {
+        d->dapcdu[0] = (uint16_t) ((d->dapcdu[0] + 10u) & 077777u);
         CHECK(lm_dap_rateloop() == AGC_STATUS_OK);
         CHECK(lm_dap_backp() == AGC_STATUS_OK);
-        int32_t err = (int32_t)d->omegap - 400;
-        if (converged_at < 0 && err >= -8 && err <= 8) {
+        int32_t err = (int32_t) d->omegap - 400;
+        if (converged_at < 0 && err >= -8 && err <= 8)
+        {
             converged_at = pass;
         }
     }
@@ -159,10 +167,10 @@ static void test_rcsmon(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     const lm_dap_t *d = lm_dap_state();
-    agc_chan_set_input(032, 077777u);    /* all valves open (inverted) */
+    agc_chan_set_input(032, 077777u); /* all valves open (inverted) */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u);
-    agc_chan_set_input(032, 077776u);    /* bit 1 low: valve closed  */
+    agc_chan_set_input(032, 077776u); /* bit 1 low: valve closed  */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
     CHECK(d->ch5mask == 000002u);
     CHECK(d->ch6mask == 000100u);
@@ -178,28 +186,28 @@ static void test_spsrcs(void)
     lm_dap_t *d = lm_dap_state();
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
-    set_axis(d, 0, 0, 700);                    /* 1.92 deg/s               */
+    set_axis(d, 0, 0, 700); /* 1.92 deg/s               */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == -8192);
-    d->edot = 0;                               /* target is -0.1 deg/s     */
+    d->edot = 0; /* target is -0.1 deg/s     */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
-    CHECK(d->tj[1] == -8192);                  /* keep firing              */
-    d->edot = -50;                             /* past target: stop        */
+    CHECK(d->tj[1] == -8192); /* keep firing              */
+    d->edot = -50;            /* past target: stop        */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == 0);
     CHECK(d->jetctr[1] == 10);
-    d->e = (agc_sp_t)(16384 * 10 / 180);       /* outside deadband        */
+    d->e = (agc_sp_t) (16384 * 10 / 180); /* outside deadband        */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
-    CHECK(d->tj[1] == 0);                      /* inhibited by counter     */
+    CHECK(d->tj[1] == 0); /* inhibited by counter     */
 }
 
 static void test_rot_touv(void)
 {
     lm_dap_t *d = lm_dap_state();
-    d->coeffq = -11585;
-    d->coeffr = 11585;
-    agc_sp_t u = 0;
-    agc_sp_t v = 0;
+    d->coeffq   = -11585;
+    d->coeffr   = 11585;
+    agc_sp_t u  = 0;
+    agc_sp_t v  = 0;
     CHECK(agc_lm_dap_rot_touv(1000, 0, &u, &v) == AGC_STATUS_OK);
     CHECK(u > 0 && v < 0);
     CHECK(u == -v);
@@ -214,7 +222,7 @@ int main(void)
     test_rcsmon();
     test_spsrcs();
     test_rot_touv();
-    (void)printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
-                 g_checks, g_failures, g_assert_reports);
+    (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
+                  g_checks, g_failures, g_assert_reports);
     return (g_failures == 0) ? 0 : 1;
 }

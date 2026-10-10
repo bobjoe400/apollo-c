@@ -11,10 +11,11 @@
 /* Conic body from RTX1: the AGC passes X1 = -2 (earth) or -10 (moon). */
 agc_conic_body_t rz_body(const agc_rendz_t *rz)
 {
-    if (!AGC_ASSERT(rz != NULL)) {
+    if (!AGC_ASSERT(rz != NULL))
+    {
         return AGC_CONIC_EARTH;
     }
-    (void)AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10);
+    (void) AGC_ASSERT(rz->body.rtx1 == -2 || rz->body.rtx1 == -10);
     return (rz->body.rtx1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
 }
 
@@ -22,7 +23,8 @@ agc_conic_body_t rz_body(const agc_rendz_t *rz)
 agc_status_t rz_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
                          agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_conic_timethet(ip, in, out);
@@ -32,7 +34,8 @@ agc_status_t rz_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 agc_status_t rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
                         agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_conic_timerad(ip, in, out);
@@ -43,10 +46,12 @@ agc_status_t rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
                         agc_lambert_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (rz_is_csm()) {
+    if (rz_is_csm())
+    {
         in->iterctr = AGC_CONIC_LAMBERT_ITERCTR;
         return agc_conic_lambert(ip, in, out);
     }
@@ -57,8 +62,9 @@ agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
 agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
                         agc_conic_body_t body, agc_apsides_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL)
-        || !AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON)) {
+    if (!AGC_ASSERT(ip != NULL && out != NULL) ||
+        !AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_conic_apsides(ip, r, v, body, out);
@@ -68,11 +74,13 @@ agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
 static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
 {
     bool csm = rz_is_csm();
-    (void)AGC_ASSERT((int)kind >= 0 && kind < RZ_INTEG_KIND_COUNT);
-    if (kind == RZ_THISPREC) {
+    (void) AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT);
+    if (kind == RZ_THISPREC)
+    {
         return csm ? RZ_CSMPREC : RZ_LEMPREC;
     }
-    if (kind == RZ_OTHPREC) {
+    if (kind == RZ_OTHPREC)
+    {
         return csm ? RZ_LEMPREC : RZ_CSMPREC;
     }
     return kind;
@@ -83,23 +91,36 @@ static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
 agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
                       agc_job_id_t resume, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL)
-        || !AGC_ASSERT((int)kind >= 0 && kind < RZ_INTEG_KIND_COUNT)) {
+    if (!AGC_ASSERT(ip != NULL && out != NULL) ||
+        !AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
-    agc_status_t st;
-    switch (rz_resolve_kind(kind)) {
-    case RZ_CSMPREC:  st = agc_integ_csmprec(ip, ctx, tdec1, resume);  break;
-    case RZ_LEMPREC:  st = agc_integ_lemprec(ip, ctx, tdec1, resume);  break;
-    case RZ_CSMCONIC: st = agc_integ_csmconic(ip, ctx, tdec1, resume); break;
-    case RZ_LEMCONIC: st = agc_integ_lemconic(ip, ctx, tdec1, resume); break;
-    case RZ_THISPREC:
-    case RZ_OTHPREC:
-    case RZ_INTEG_KIND_COUNT:
-    default:          st = AGC_STATUS_BAD_ARG;                          break;
+    agc_status_t     st;
+    switch (rz_resolve_kind(kind))
+    {
+        case RZ_CSMPREC:
+            st = agc_integ_csmprec(ip, ctx, tdec1, resume);
+            break;
+        case RZ_LEMPREC:
+            st = agc_integ_lemprec(ip, ctx, tdec1, resume);
+            break;
+        case RZ_CSMCONIC:
+            st = agc_integ_csmconic(ip, ctx, tdec1, resume);
+            break;
+        case RZ_LEMCONIC:
+            st = agc_integ_lemconic(ip, ctx, tdec1, resume);
+            break;
+        case RZ_THISPREC:
+        case RZ_OTHPREC:
+        case RZ_INTEG_KIND_COUNT:
+        default:
+            st = AGC_STATUS_BAD_ARG;
+            break;
     }
-    if (st == AGC_STATUS_OK) {
+    if (st == AGC_STATUS_OK)
+    {
         *out = ctx->out;
     }
     return st;
@@ -109,11 +130,13 @@ agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
 agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
                          agc_job_id_t resume, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL)) {
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_integ_install(0, resume);              /* INTSTALL */
-    if (st != AGC_STATUS_OK) {
+    agc_status_t st = agc_integ_install(0, resume); /* INTSTALL */
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
@@ -122,8 +145,9 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
     ctx->sv.rcv = in->rcv;
     ctx->sv.vcv = in->vcv;
     ctx->sv.tet = in->tet;
-    st = agc_integ_integrvs(ip, ctx, in->tdec1);
-    if (st == AGC_STATUS_OK) {
+    st          = agc_integ_integrvs(ip, ctx, in->tdec1);
+    if (st == AGC_STATUS_OK)
+    {
         *out = ctx->out;
     }
     return st;
@@ -133,7 +157,7 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
 agc_vec_t rz_rls(void)
 {
     agc_vec_t rls = agc_erase_rls();
-    (void)AGC_ASSERT(rls.c[0] >= AGC_DP_MIN && rls.c[0] <= AGC_DP_MAX);
+    (void) AGC_ASSERT(rls.c[0] >= AGC_DP_MIN && rls.c[0] <= AGC_DP_MAX);
     return rls;
 }
 
@@ -143,14 +167,15 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                       uint8_t verb, uint8_t noun, agc_job_id_t term,
                       agc_job_id_t proceed, agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(verb < 100U && noun < 100U)
-        || !AGC_ASSERT((int)kind >= 0 && kind < AGC_DSKY_DISP_COUNT)) {
+    if (!AGC_ASSERT(verb < 100U && noun < 100U) ||
+        !AGC_ASSERT((int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_dsky_cont_t cont;
     cont.terminate = term;
-    cont.proceed = proceed;
-    cont.enter = enter;
+    cont.proceed   = proceed;
+    cont.enter     = enter;
     return agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont);
 }
 
@@ -158,7 +183,7 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 agc_status_t rz_gotopooh(void)
 {
     agc_status_t st = agc_exec_gotopooh();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO);
     return st;
 }
 
@@ -166,14 +191,15 @@ agc_status_t rz_gotopooh(void)
 agc_status_t rz_endext(void)
 {
     agc_status_t st = agc_dsky_endext();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
     return st;
 }
 
 /* DELAYJOB: sleep delay_cs, resume as cont */
 agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont)
 {
-    if (!AGC_ASSERT(delay_cs > 0U) || !AGC_ASSERT(cont != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(delay_cs > 0U) || !AGC_ASSERT(cont != AGC_JOB_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_svc_delayjob(delay_cs, cont);
@@ -183,16 +209,16 @@ agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont)
 agc_dp_t rz_loadtime(void)
 {
     uint32_t t = agc_time_now_cs();
-    (void)AGC_ASSERT(t < AGC_TIME_MODULUS_CS);
-    return (agc_dp_t)(t & (uint32_t)AGC_DP_MAX);
+    (void) AGC_ASSERT(t < AGC_TIME_MODULUS_CS);
+    return (agc_dp_t) (t & (uint32_t) AGC_DP_MAX);
 }
 
 /* TC ALARM / OCT code */
 agc_status_t rz_alarm(agc_alarm_code_t code)
 {
-    (void)AGC_ASSERT(code != 0U);
+    (void) AGC_ASSERT(code != 0U);
     agc_status_t st = agc_alarm(code);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM);
     return st;
 }
 
@@ -205,29 +231,33 @@ agc_status_t rz_alarm(agc_alarm_code_t code)
  * programs use this copy with their own return job `cont`.             */
 agc_status_t rz_comptgo(agc_job_id_t cont)
 {
-    if (!AGC_ASSERT(cont != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(cont != AGC_JOB_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     uint16_t delay = 2U;
-    if (rz_is_csm()) {
+    if (rz_is_csm())
+    {
         rz_vflag_set(RZ_VF_TIMRFLAG, true);
         agc_guid_state()->csm.nvword1 = 0;
-        delay = 1U;
-    } else {
+        delay                         = 1U;
+    }
+    else
+    {
         agc_guid_state()->lm.dispdex = 0;
     }
     agc_inhint();
-    agc_status_t st = agc_waitlist_call(delay, AGC_TASK_CLOKTASK_RZ);
+    agc_status_t    st = agc_waitlist_call(delay, AGC_TASK_CLOKTASK_RZ);
     agc_phase_var_t v;
-    v.kind = AGC_RESTART_JOB;
-    v.job = cont;
-    v.task = AGC_TASK_NONE;
-    v.prio_or_dt = 013;                                 /* PRIO13          */
-    v.immediate = false;
-    v.long_dt_cs = 0U;
+    v.kind           = AGC_RESTART_JOB;
+    v.job            = cont;
+    v.task           = AGC_TASK_NONE;
+    v.prio_or_dt     = 013; /* PRIO13          */
+    v.immediate      = false;
+    v.long_dt_cs     = 0U;
     agc_status_t st2 = agc_phase_change2(040036U, 05024U, &v);
     agc_relint();
-    (void)AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_BAD_ARG);
+    (void) AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_BAD_ARG);
     return st;
 }
 
@@ -235,17 +265,19 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
  * (ERASABLE_ASSIGNMENTS p.~), so "TS DISPDEX" stores nothing.        */
 void rz_dispdex_zero(void)
 {
-    if (rz_is_csm()) {
+    if (rz_is_csm())
+    {
         return;
     }
     agc_guid_state()->lm.dispdex = 0;
-    (void)AGC_ASSERT(agc_guid_state()->lm.dispdex == 0);
+    (void) AGC_ASSERT(agc_guid_state()->lm.dispdex == 0);
 }
 
 /* OPTION1 = DSPTEMX = DSPTEM2 +1 (index 4), OPTION2 = +2 (index 5). */
 uint16_t rz_option(int which)
 {
-    if (!AGC_ASSERT(which == 1 || which == 2)) {
+    if (!AGC_ASSERT(which == 1 || which == 2))
+    {
         return 0U;
     }
     return agc_dsky_dsptem(3 + which);
@@ -253,7 +285,8 @@ uint16_t rz_option(int which)
 
 agc_status_t rz_set_option(int which, uint16_t v)
 {
-    if (!AGC_ASSERT(which == 1 || which == 2) || !AGC_ASSERT(v <= 077777U)) {
+    if (!AGC_ASSERT(which == 1 || which == 2) || !AGC_ASSERT(v <= 077777U))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_dsky_set_dsptem(3 + which, v);
@@ -262,27 +295,30 @@ agc_status_t rz_set_option(int which, uint16_t v)
 /* A raw 15-bit ones' complement word as a signed SP value. */
 static agc_sp_t rz_word_to_sp(uint16_t w)
 {
-    (void)AGC_ASSERT(w <= 077777U);
-    if ((w & 040000U) != 0U) {
-        return (agc_sp_t)(-(agc_sp_t)((uint16_t)~w & 037777U));
+    (void) AGC_ASSERT(w <= 077777U);
+    if ((w & 040000U) != 0U)
+    {
+        return (agc_sp_t) (-(agc_sp_t) ((uint16_t) ~w & 037777U));
     }
-    return (agc_sp_t)w;
+    return (agc_sp_t) w;
 }
 
 /* A signed SP value as a raw 15-bit ones' complement word. */
 static uint16_t rz_sp_to_word(agc_sp_t v)
 {
-    (void)AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
-    if (v < 0) {
-        return (uint16_t)(~(uint16_t)(-v) & 077777U);
+    (void) AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX);
+    if (v < 0)
+    {
+        return (uint16_t) (~(uint16_t) (-v) & 077777U);
     }
-    return (uint16_t)v;
+    return (uint16_t) v;
 }
 
 /* A DP in the display temporaries: index 0 = DSPTEM1, 4 = DSPTEMX. */
 agc_dp_t rz_dsptem_dp(int index)
 {
-    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX)) {
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX))
+    {
         return 0;
     }
     agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(index));
@@ -292,13 +328,14 @@ agc_dp_t rz_dsptem_dp(int index)
 
 agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
 {
-    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX)
-        || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)) {
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX) ||
+        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_dsky_set_dsptem(index,
-                                          rz_sp_to_word(agc_dp_high(v)));
-    if (st == AGC_STATUS_OK) {
+    agc_status_t st = agc_dsky_set_dsptem(index, rz_sp_to_word(agc_dp_high(v)));
+    if (st == AGC_STATUS_OK)
+    {
         st = agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
     }
     return st;
@@ -307,9 +344,9 @@ agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
 /* PHASCHNG with a type A code: a constant code cannot fail.             */
 void rz_phase(int group, uint16_t code)
 {
-    (void)AGC_ASSERT(group >= 1 && group <= 6);
+    (void) AGC_ASSERT(group >= 1 && group <= 6);
     agc_status_t st = agc_phase_change(group, code);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
 }
 
 /* PHASCHNG / 2PHSCHNG with a type C code whose restart point is job
@@ -318,17 +355,17 @@ void rz_phase(int group, uint16_t code)
 void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
                   int16_t prio)
 {
-    (void)AGC_ASSERT(job != AGC_JOB_NONE && prio > 0);
+    (void) AGC_ASSERT(job != AGC_JOB_NONE && prio > 0);
     agc_phase_var_t v;
-    v.kind = AGC_RESTART_JOB;
-    v.job = job;
-    v.task = AGC_TASK_NONE;
-    v.prio_or_dt = prio;
-    v.immediate = false;
-    v.long_dt_cs = 0U;
-    agc_status_t st = (code_a == 0U) ? agc_phase_change_var(code_c, &v)
-                                     : agc_phase_change2(code_a, code_c, &v);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    v.kind          = AGC_RESTART_JOB;
+    v.job           = job;
+    v.task          = AGC_TASK_NONE;
+    v.prio_or_dt    = prio;
+    v.immediate     = false;
+    v.long_dt_cs    = 0U;
+    agc_status_t st = (code_a == 0U) ? agc_phase_change_var(code_c, &v) :
+                                       agc_phase_change2(code_a, code_c, &v);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
 }
 
 /* PRIOLARM (DISPLAY_INTERFACE_ROUTINES): the alarm, then V05N09 as a
@@ -337,11 +374,13 @@ agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
                            agc_job_id_t term, agc_job_id_t proceed,
                            agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U)) {
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_prioalarm(code);
-    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM) {
+    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
+    {
         return st;
     }
     return rz_flash(ctx, AGC_DSKY_PRIODSP, 5U, 9U, term, proceed, enter);

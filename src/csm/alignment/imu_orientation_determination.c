@@ -13,24 +13,25 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/programs/alignment_internal.h"
 
-#define IMODES30_IMU_OFF ((uint16_t)0400)  /* BIT9: IMU not operating        */
-#define ALM_IMU_OFF      ((agc_alarm_code_t)0210)
-#define CHK_ACQUIRE      ((uint16_t)015)   /* PRFMSTAQ = OCT15               */
-#define PH_P51           ((uint16_t)05024) /* OCT 05024, OCT 13000           */
-#define PH_P51B          ((uint16_t)00014) /* OCT 00014                      */
-#define VN_GIMBALS       ALIGN_VN(6, 22)   /* V6N22  VN 0622                 */
-#define VN_COARSE_VERB   ALIGN_VN(41, 0)   /* V41K   VN 4100                 */
-#define MM_BACKUP_ORIENT ((agc_sp_t)53)    /* CHECKMM 53                     */
+#define IMODES30_IMU_OFF ((uint16_t) 0400) /* BIT9: IMU not operating        */
+#define ALM_IMU_OFF      ((agc_alarm_code_t) 0210)
+#define CHK_ACQUIRE      ((uint16_t) 015)   /* PRFMSTAQ = OCT15               */
+#define PH_P51           ((uint16_t) 05024) /* OCT 05024, OCT 13000           */
+#define PH_P51B          ((uint16_t) 00014) /* OCT 00014                      */
+#define VN_GIMBALS       ALIGN_VN(6, 22)    /* V6N22  VN 0622                 */
+#define VN_COARSE_VERB   ALIGN_VN(41, 0)    /* V41K   VN 4100                 */
+#define MM_BACKUP_ORIENT ((agc_sp_t) 53)    /* CHECKMM 53                     */
 
 static agc_status_t p51_phase(agc_job_id_t restart_at)
 {
     const agc_status_t st = align_phase_job(PH_P51, restart_at, ALIGN_PRIO13);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return st;
 }
 
@@ -41,28 +42,32 @@ static agc_status_t p51_phase(agc_job_id_t restart_at)
 agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM)) {
+        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u) {
+    if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
+    {
         const agc_status_t alm = agc_alarm(ALM_IMU_OFF);
-        if (alm != AGC_STATUS_OK) {
+        if (alm != AGC_STATUS_OK)
+        {
             return alm;
         }
         return agc_exec_gotopooh();
     }
-    const agc_status_t st = agc_imu_set_in_use();               /* R02ZERO  */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    const agc_status_t st = agc_imu_set_in_use(); /* R02ZERO  */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     return agc_job_csm_orientation_acquire_display(ctx);
 }
 
 /* P51AA: V50N25 R1 00015; V34 P00, V33 P51B (mark), ENTER coarse align. */
 agc_status_t agc_job_csm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
+    (void) AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM);
     return align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
                        AGC_JOB_CSM_ORIENTATION_MARK_SETUP,
                        AGC_JOB_CSM_ORIENTATION_COARSE);
@@ -71,13 +76,15 @@ agc_status_t agc_job_csm_orientation_acquire_display(agc_job_ctx_t *ctx)
 /* P51AA ENTER: PHASCHNG, THETAD = 0, GODSPRET V06N22 (job continues). */
 agc_status_t agc_job_csm_orientation_coarse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = p51_phase(AGC_JOB_CSM_ORIENTATION_COARSE);
-    for (int i = 0; i < 3; i++) {
-        st = agc_erase_set_thetad(i, 0);                        /* P51ZERO  */
-        (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    for (int i = 0; i < 3; i++)
+    {
+        st = agc_erase_set_thetad(i, 0); /* P51ZERO  */
+        (void) AGC_ASSERT(st == AGC_STATUS_OK);
     }
     return align_flash(ctx, AGC_DSKY_GODSPRET, VN_GIMBALS,
                        AGC_JOB_CSM_ORIENTATION_COARSE_VERB,
@@ -88,10 +95,11 @@ agc_status_t agc_job_csm_orientation_coarse(agc_job_ctx_t *ctx)
 /* GODSPRET V41 (coarse align verb); then IMUCOARS and IMUSTALL. */
 agc_status_t agc_job_csm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(agc_erase_thetad(0) == 0u);
+    (void) AGC_ASSERT(agc_erase_thetad(0) == 0u);
     return align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
                        AGC_JOB_CSM_ORIENTATION_COARSE_START,
                        AGC_JOB_CSM_ORIENTATION_COARSE_START,
@@ -101,18 +109,22 @@ agc_status_t agc_job_csm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 /* IMUCOARS to THETAD (all zero) and IMUSTALL (CURTAINS on a bad end). */
 agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     uint16_t thetad[3];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
+    {
         thetad[i] = agc_erase_thetad(i);
     }
-    agc_status_t st = agc_imu_coarse(thetad);                   /* IMUCOARS */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t st = agc_imu_coarse(thetad); /* IMUCOARS */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     bool done = false;
-    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_CSM_ORIENTATION_COARSE_DONE, &done);
-    if ((st != AGC_STATUS_OK) || !done) {
+    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_CSM_ORIENTATION_COARSE_DONE,
+                     &done);
+    if ((st != AGC_STATUS_OK) || !done)
+    {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
     return align_goto(AGC_JOB_CSM_ORIENTATION_COARSE_DONE);
@@ -121,17 +133,20 @@ agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx)
 /* After the coarse align: IMUFIN20 and IMUSTALL. */
 agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
-        return AGC_STATUS_OK;                                   /* CURTAINS */
+    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
+    {
+        return AGC_STATUS_OK; /* CURTAINS */
     }
-    agc_status_t st = agc_imu_fin20();                          /* IMUFIN20 */
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t st = agc_imu_fin20(); /* IMUFIN20 */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     bool done = false;
     st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_CSM_ORIENTATION_FINE_DONE, &done);
-    if ((st != AGC_STATUS_OK) || !done) {
+    if ((st != AGC_STATUS_OK) || !done)
+    {
         return (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
     }
     return align_goto(AGC_JOB_CSM_ORIENTATION_FINE_DONE);
@@ -140,13 +155,15 @@ agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx)
 /* Coarse align done: PHASCHNG, recycle to P51AA for the fine align. */
 agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK) {
+    if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
+    {
         return AGC_STATUS_OK;
     }
-    (void)p51_phase(AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY);
+    (void) p51_phase(AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY);
     return agc_job_csm_orientation_acquire_display(ctx);
 }
 
@@ -156,14 +173,15 @@ agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_status_t st = align_phase4(PH_P51B);
-    ram->starind = 0;
-    st = align_set1_pdt();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
+    agc_status_t     st  = align_phase4(PH_P51B);
+    ram->starind         = 0;
+    st                   = align_set1_pdt();
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     ram->markindx = 1;
     return agc_job_csm_orientation_mark_star(ctx);
@@ -172,12 +190,15 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
 /* P51C: PHASCHNG; P53 marks with R56, P51 with R53; both to P51C.2. */
 agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
-    if (agc_phase_checkmm(MM_BACKUP_ORIENT)) {
-        return agc_csm_alternate_los_sighting_mark(ctx, AGC_JOB_CSM_ORIENTATION_MARKED);
+    (void) p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
+    if (agc_phase_checkmm(MM_BACKUP_ORIENT))
+    {
+        return agc_csm_alternate_los_sighting_mark(
+            ctx, AGC_JOB_CSM_ORIENTATION_MARKED);
     }
     return agc_csm_sighting_mark(ctx, AGC_JOB_CSM_ORIENTATION_MARKED);
 }
@@ -189,14 +210,15 @@ agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx)
 static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    (void)p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
+    (void) p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     const agc_status_t st = agc_sxtmark_mkreleas();
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    if (ram->starind == 0) {
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (ram->starind == 0)
+    {
         ram->starind = 1;
         return align_goto(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     }
-    (void)p51_phase(AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
+    (void) p51_phase(AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
     return align_planet(ctx, ram->tsight, AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
 }
 
@@ -206,34 +228,38 @@ static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_orientation_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
-    agc_vec_t los;
+    agc_vec_t          los;
     const agc_status_t st = agc_csm_sxtsm_marks(&ip, &los);
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
-    if (ram->starind != 0) {
+    if (ram->starind != 0)
+    {
         ram->starsav2 = los;
         return orientation_after_mark(ctx);
     }
-    ram->starsav1 = los;                                        /* P51D     */
+    ram->starsav1 = los; /* P51D     */
     return align_planet(ctx, ram->tsight, AGC_JOB_CSM_ORIENTATION_FIRST_STAR);
 }
 
 /* P51D after PLANET: PLANVEC = the first catalogue LOS; P51E. */
 agc_status_t agc_job_csm_orientation_first_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    ram->planvec = ram->planet_los;
-    (void)AGC_ASSERT(ram->starind == 0);
+    ram->planvec         = ram->planet_los;
+    (void) AGC_ASSERT(ram->starind == 0);
     return orientation_after_mark(ctx);
 }
 
@@ -243,16 +269,18 @@ agc_status_t agc_job_csm_orientation_first_star(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_orientation_second_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    ram->vac12 = ram->planet_los;
-    ram->vac6 = ram->planvec;
-    ram->starad[0] = ram->starsav1;
-    ram->starad[1] = ram->starsav2;
-    (void)AGC_ASSERT(ram->starind == 1);
-    return agc_align_sighting_data_display(ctx, AGC_JOB_CSM_ORIENTATION_DATA_CHECKED);
+    ram->vac12           = ram->planet_los;
+    ram->vac6            = ram->planvec;
+    ram->starad[0]       = ram->starsav1;
+    ram->starad[1]       = ram->starsav2;
+    (void) AGC_ASSERT(ram->starind == 1);
+    return agc_align_sighting_data_display(
+        ctx, AGC_JOB_CSM_ORIENTATION_DATA_CHECKED);
 }
 
 /*
@@ -261,24 +289,27 @@ agc_status_t agc_job_csm_orientation_second_star(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_orientation_data_checked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!agc_flag_test(AGC_FLAG_FREEFLAG)) {
+    if (!agc_flag_test(AGC_FLAG_FREEFLAG))
+    {
         return agc_job_csm_orientation_acquire_display(ctx);
     }
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
-    const agc_vec_t a[2] = { ram->starad[0], ram->starad[1] };
-    const agc_vec_t b[2] = { ram->vac6, ram->vac12 };
-    agc_status_t st = agc_align_fine_solve(&ip, a, b, &ram->xdc);   /* AXISGEN */
-    if (st != AGC_STATUS_OK) {
+    const agc_vec_t a[2] = {ram->starad[0], ram->starad[1]};
+    const agc_vec_t b[2] = {ram->vac6, ram->vac12};
+    agc_status_t st = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     agc_flag_clear(AGC_FLAG_REFSMFLG);
-    agc_erase_set_refsmmat(ram->xdc);                           /* MATMOVE  */
+    agc_erase_set_refsmmat(ram->xdc); /* MATMOVE  */
     st = agc_flag_set(AGC_FLAG_REFSMFLG);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK);
-    return agc_exec_gotopooh();                                 /* ENDP50S  */
+    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    return agc_exec_gotopooh(); /* ENDP50S  */
 }

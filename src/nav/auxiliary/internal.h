@@ -10,15 +10,16 @@
 #define NAVAUX_INTERNAL_H
 
 #include <stdbool.h>
-#include "agc/core/word.h"
+
 #include "agc/core/interp.h"
+#include "agc/core/word.h"
 
 /* Largest shift count the AGC encodes in a shift address (7 bits).       */
 #define NAVAUX_MAX_SHIFT 60
 
-bool agc_navaux_dp_ok(agc_dp_t a);      /* |a| <= DPPOSMAX              */
-bool agc_navaux_vec_ok(agc_vec_t v);    /* every component in range      */
-bool agc_navaux_tp_ok(agc_tp_t a);      /* |a| <= TP max                 */
+bool agc_navaux_dp_ok(agc_dp_t a);   /* |a| <= DPPOSMAX              */
+bool agc_navaux_vec_ok(agc_vec_t v); /* every component in range      */
+bool agc_navaux_tp_ok(agc_tp_t a);   /* |a| <= TP max                 */
 
 /* SL* / SR* with an indexed count: n > 0 shifts left (SL, overflow sets
  * OVFIND), n < 0 shifts right by -n (SR, truncating).                     */
@@ -38,7 +39,7 @@ agc_tp_t agc_navaux_tp_shl2(agc_tp_t v, bool *ovf);
 
 /* Angle arithmetic in revolutions (scale 2^0) with the AGC's overflow
  * correction, i.e. modulo one revolution with the sign kept.              */
-agc_dp_t agc_navaux_rev_tp_shl(agc_tp_t v, int n);  /* SL n of a TP, round */
-agc_dp_t agc_navaux_rev_add(agc_dp_t a, agc_dp_t b);/* DAD, wrap           */
+agc_dp_t agc_navaux_rev_tp_shl(agc_tp_t v, int n);   /* SL n of a TP, round */
+agc_dp_t agc_navaux_rev_add(agc_dp_t a, agc_dp_t b); /* DAD, wrap           */
 
 #endif /* NAVAUX_INTERNAL_H */

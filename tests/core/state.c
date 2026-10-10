@@ -10,7 +10,9 @@
  * its own agc_assert_report() that counts them instead of printing.
  */
 #include <stdio.h>
+
 #include <stdint.h>
+
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_csm.h"
@@ -22,9 +24,9 @@ static int g_assert_reports;
 
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
-    (void)file;
-    (void)line;
-    (void)expr;
+    (void) file;
+    (void) line;
+    (void) expr;
     g_assert_reports++;
     return false;
 }
@@ -34,9 +36,10 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
-    if (!ok) {
+    if (!ok)
+    {
         g_failures++;
-        (void)printf("FAIL line %d: %s\n", line, text);
+        (void) printf("FAIL line %d: %s\n", line, text);
     }
 }
 
@@ -66,12 +69,12 @@ static void test_flag_ids(void)
     CHECK(agc_dnum(AGC_FLAG_CM_DSTBY) == 103);
     CHECK(agc_dnum(AGC_FLAG_S32_1F1) == 165);
     /* aliases share one bit */
-    CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_FIRSTFLG);
-    CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_OPTNSW);
-    CHECK((int)AGC_FLAG_EGSW == (int)AGC_FLAG_TRUNNION_BIAS_KNOWN);
-    CHECK((int)AGC_FLAG_TARG2FLG == (int)AGC_FLAG_BACKUP_MARKING);
+    CHECK((int) AGC_FLAG_ETPIFLAG == (int) AGC_FLAG_FIRSTFLG);
+    CHECK((int) AGC_FLAG_ETPIFLAG == (int) AGC_FLAG_OPTNSW);
+    CHECK((int) AGC_FLAG_EGSW == (int) AGC_FLAG_TRUNNION_BIAS_KNOWN);
+    CHECK((int) AGC_FLAG_TARG2FLG == (int) AGC_FLAG_BACKUP_MARKING);
     /* encoding (word << 4) | bit: MOONFLAG = FLAGWRD0 bit 12 */
-    CHECK((int)AGC_FLAG_MOONFLAG == 0x0C);
+    CHECK((int) AGC_FLAG_MOONFLAG == 0x0C);
     CHECK(agc_flag_mask(AGC_FLAG_MOONFLAG) == 0x0800u);
     CHECK(agc_flag_mask(AGC_FLAG_KFLAG) == 0x0001u);
     CHECK(agc_flag_mask(AGC_FLAG_CPHIFLAG) == 0x4000u);
@@ -84,7 +87,7 @@ static void test_flag_ops(void)
     CHECK(agc_flag_set(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(agc_flagword_get(0) == 0x0800u);
-    CHECK(!agc_flag_test(AGC_FLAG_JSWITCH));      /* neighbours untouched */
+    CHECK(!agc_flag_test(AGC_FLAG_JSWITCH)); /* neighbours untouched */
     CHECK(agc_flag_invert(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
     CHECK(!agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(agc_flag_invert(AGC_FLAG_MOONFLAG) == AGC_STATUS_OK);
@@ -112,17 +115,18 @@ static void test_flag_errors(void)
 {
     const int before = g_assert_reports;
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(agc_flag_set((agc_flag_id_t)0x00) == AGC_STATUS_BAD_ARG);   /* bit 0 */
-    CHECK(agc_flag_set((agc_flag_id_t)0xC1) == AGC_STATUS_BAD_ARG);   /* word 12 is LM-only */
-    CHECK(agc_flag_clear((agc_flag_id_t)0xFF) == AGC_STATUS_BAD_ARG);
-    CHECK(!agc_flag_test((agc_flag_id_t)0x10));
-    CHECK(agc_flagword_set(0, 0100000u) == AGC_STATUS_BAD_ARG);       /* > 15 bits */
+    CHECK(agc_flag_set((agc_flag_id_t) 0x00) == AGC_STATUS_BAD_ARG); /* bit 0 */
+    CHECK(agc_flag_set((agc_flag_id_t) 0xC1) ==
+          AGC_STATUS_BAD_ARG); /* word 12 is LM-only */
+    CHECK(agc_flag_clear((agc_flag_id_t) 0xFF) == AGC_STATUS_BAD_ARG);
+    CHECK(!agc_flag_test((agc_flag_id_t) 0x10));
+    CHECK(agc_flagword_set(0, 0100000u) == AGC_STATUS_BAD_ARG); /* > 15 bits */
     CHECK(agc_flagword_set(12, 1u) == AGC_STATUS_BAD_ARG);
     CHECK(agc_flagword_set(-1, 1u) == AGC_STATUS_BAD_ARG);
     CHECK(agc_flagword_get(0) == 0u);
-    CHECK(!agc_flag_valid((agc_flag_id_t)0x0F0));
+    CHECK(!agc_flag_valid((agc_flag_id_t) 0x0F0));
     CHECK(agc_flag_valid(AGC_FLAG_CPHIFLAG));
-    CHECK(g_assert_reports > before);       /* the failures above were reported */
+    CHECK(g_assert_reports > before); /* the failures above were reported */
 }
 
 static void test_time(void)
@@ -132,7 +136,7 @@ static void test_time(void)
     agc_time_advance_cs(100u);
     CHECK(agc_time_now_cs() == 100u);
     CHECK(agc_time_set_cs(AGC_TIME_MODULUS_CS - 1u) == AGC_STATUS_OK);
-    agc_time_advance_cs(1u);                         /* TIME2 overflow */
+    agc_time_advance_cs(1u); /* TIME2 overflow */
     CHECK(agc_time_now_cs() == 0u);
     CHECK(agc_time_set_cs(AGC_TIME_MODULUS_CS - 2u) == AGC_STATUS_OK);
     agc_time_advance_cs(10u);
@@ -152,14 +156,16 @@ static void test_channels(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0u);
-    CHECK(agc_chan_read(AGC_CHAN_CHAN30) == 077777u);        /* inverted: nothing present */
+    CHECK(agc_chan_read(AGC_CHAN_CHAN30) ==
+          077777u); /* inverted: nothing present */
     CHECK(agc_chan_read(AGC_CHAN_CHAN33) == 077777u);
 
     CHECK(agc_chan_write(AGC_CHAN_DSALMOUT, 0123u) == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
     CHECK(agc_chan_or(AGC_CHAN_DSALMOUT, AGC_CH011_ENGINEON) == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == (0123u | 010000u));
-    CHECK(agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t)~AGC_CH011_ENGINEON & AGC_CHAN_MASK) == AGC_STATUS_OK);
+    CHECK(agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t) ~AGC_CH011_ENGINEON &
+                                              AGC_CHAN_MASK) == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0123u);
 
     /* bit constants: bit n has value 1 << (n - 1) */
@@ -188,29 +194,40 @@ static void test_channels(void)
     CHECK(agc_chan_read(AGC_CHAN_MNKEYIN) == 031u);
     CHECK(agc_chan_set_input(AGC_CHAN_DSALMOUT, 1u) == AGC_STATUS_BAD_ARG);
     CHECK(agc_chan_set_signal(AGC_CHAN_MNKEYIN, 004u, true) == AGC_STATUS_OK);
-    CHECK(agc_chan_read(AGC_CHAN_MNKEYIN) == 035u);          /* normal: signal = bit set */
+    CHECK(agc_chan_read(AGC_CHAN_MNKEYIN) ==
+          035u); /* normal: signal = bit set */
 }
 
 static void test_inverted_inputs(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     /* signal present => bit reads 0 on channels 030-033 */
-    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_IMUOPER, true) == AGC_STATUS_OK);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_IMUOPER, true) ==
+          AGC_STATUS_OK);
     CHECK((agc_chan_read(AGC_CHAN_CHAN30) & AGC_CH030_IMUOPER) == 0u);
     CHECK((agc_chan_read(AGC_CHAN_CHAN30) | AGC_CH030_IMUOPER) == 077777u);
-    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_IMUOPER, false) == AGC_STATUS_OK);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_IMUOPER, false) ==
+          AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_CHAN30) == 077777u);
-    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN32, AGC_CH032_PROCEED, true) == AGC_STATUS_OK);
-    CHECK(agc_chan_read(AGC_CHAN_CHAN32) == (077777u & ~(unsigned)AGC_CH032_PROCEED));
-    CHECK(agc_chan_set_input(AGC_CHAN_CHAN31, 0u) == AGC_STATUS_OK);   /* raw: all present */
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN32, AGC_CH032_PROCEED, true) ==
+          AGC_STATUS_OK);
+    CHECK(agc_chan_read(AGC_CHAN_CHAN32) ==
+          (077777u & ~(unsigned) AGC_CH032_PROCEED));
+    CHECK(agc_chan_set_input(AGC_CHAN_CHAN31, 0u) ==
+          AGC_STATUS_OK); /* raw: all present */
     CHECK(agc_chan_read(AGC_CHAN_CHAN31) == 0u);
 
     /* channel 033 flip-flops (bits 11-15) reset by a write pulse, others kept */
-    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN33, AGC_CH033_PIPAFAIL | AGC_CH033_VHFRANGEGOOD, true) == AGC_STATUS_OK);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN33,
+                              AGC_CH033_PIPAFAIL | AGC_CH033_VHFRANGEGOOD,
+                              true) == AGC_STATUS_OK);
     CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_PIPAFAIL) == 0u);
-    CHECK(agc_chan_and(AGC_CHAN_CHAN33, AGC_CH033_FLIPFLOP_MASK) == AGC_STATUS_OK);   /* T4RUPT style WAND */
-    CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_PIPAFAIL) != 0u);               /* flip-flop reset */
-    CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_VHFRANGEGOOD) == 0u);           /* plain input untouched */
+    CHECK(agc_chan_and(AGC_CHAN_CHAN33, AGC_CH033_FLIPFLOP_MASK) ==
+          AGC_STATUS_OK); /* T4RUPT style WAND */
+    CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_PIPAFAIL) !=
+          0u); /* flip-flop reset */
+    CHECK((agc_chan_read(AGC_CHAN_CHAN33) & AGC_CH033_VHFRANGEGOOD) ==
+          0u); /* plain input untouched */
 
     agc_chan_reset();
     CHECK(agc_chan_read(AGC_CHAN_CHAN33) == 077777u);
@@ -237,13 +254,14 @@ static void test_state_vectors(void)
     agc_state_vector_t out;
     agc_state_init(AGC_VEHICLE_CSM);
 
-    in.r = vec3(1000, -2000, 3000);
-    in.v = vec3(-1, 2, -3);
-    in.t = 123456;
+    in.r    = vec3(1000, -2000, 3000);
+    in.v    = vec3(-1, 2, -3);
+    in.t    = 123456;
     in.moon = true;
     CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
     CHECK(agc_sv_get(AGC_SV_THIS, &out) == AGC_STATUS_OK);
-    CHECK(vec_eq(out.r, in.r) && vec_eq(out.v, in.v) && (out.t == in.t) && out.moon);
+    CHECK(vec_eq(out.r, in.r) && vec_eq(out.v, in.v) && (out.t == in.t) &&
+          out.moon);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(vec_eq(agc_erase_rn(), in.r));
     CHECK(vec_eq(agc_erase_vn(), in.v));
@@ -252,16 +270,16 @@ static void test_state_vectors(void)
     /* the other vehicle's set is independent; CSM build -> LM set */
     CHECK(agc_sv_get(AGC_SV_OTHER, &out) == AGC_STATUS_OK);
     CHECK(vec_eq(out.r, vec3(0, 0, 0)) && !out.moon);
-    in.r = vec3(7, 8, 9);
-    in.v = vec3(10, 11, 12);
-    in.t = 99;
+    in.r    = vec3(7, 8, 9);
+    in.v    = vec3(10, 11, 12);
+    in.t    = 99;
     in.moon = false;
     CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
     CHECK(vec_eq(agc_erase_rrectlem(), in.r));
     CHECK(vec_eq(agc_erase_vrectlem(), in.v));
     CHECK(agc_erase_tetlem() == 99);
     CHECK(vec_eq(agc_erase_rrectcsm(), vec3(0, 0, 0)));
-    CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));       /* THIS flag untouched */
+    CHECK(agc_flag_test(AGC_FLAG_MOONFLAG)); /* THIS flag untouched */
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
     in.moon = true;
     CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
@@ -271,9 +289,9 @@ static void test_state_vectors(void)
     /* argument and range errors */
     CHECK(agc_sv_get(AGC_SV_THIS, NULL) == AGC_STATUS_BAD_ARG);
     CHECK(agc_sv_set(AGC_SV_THIS, NULL) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_sv_get((agc_vehicle_sv_t)7, &out) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_sv_get((agc_vehicle_sv_t) 7, &out) == AGC_STATUS_BAD_ARG);
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(vec_eq(agc_erase_rn(), vec3(0, 0, 0)));       /* init clears everything */
+    CHECK(vec_eq(agc_erase_rn(), vec3(0, 0, 0))); /* init clears everything */
 }
 
 static void test_erasables(void)
@@ -286,7 +304,7 @@ static void test_erasables(void)
     CHECK(agc_erase_tig() == 0x0ABCDEF);
     agc_erase_set_ttogo(-5);
     CHECK(agc_erase_ttogo() == -5);
-    agc_erase_set_tig(AGC_DP_MAX + 1);                    /* out of range: ignored */
+    agc_erase_set_tig(AGC_DP_MAX + 1); /* out of range: ignored */
     CHECK(agc_erase_tig() == 0x0ABCDEF);
     CHECK(g_assert_reports > before);
 
@@ -296,14 +314,14 @@ static void test_erasables(void)
     CHECK(agc_erase_csmmass() == 12000);
     agc_erase_set_cdux(077777u);
     CHECK(agc_erase_cdux() == 077777u);
-    agc_erase_set_cduy(0100000u);                         /* 16 bits: ignored */
+    agc_erase_set_cduy(0100000u); /* 16 bits: ignored */
     CHECK(agc_erase_cduy() == 0u);
     agc_erase_set_markstat(0123u);
     CHECK(agc_erase_markstat() == 0123u);
     agc_erase_set_pipax(-7);
     CHECK(agc_erase_pipax() == -7);
-    agc_erase_set_tephem((agc_tp_t)1 << 40);
-    CHECK(agc_erase_tephem() == ((agc_tp_t)1 << 40));
+    agc_erase_set_tephem((agc_tp_t) 1 << 40);
+    CHECK(agc_erase_tephem() == ((agc_tp_t) 1 << 40));
 
     m = agc_erase_refsmmat();
     CHECK(m.row[1].c[1] == 0);
@@ -334,6 +352,6 @@ int main(void)
     test_inverted_inputs();
     test_state_vectors();
     test_erasables();
-    (void)printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
+    (void) printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
     return (g_failures == 0) ? 0 : 1;
 }

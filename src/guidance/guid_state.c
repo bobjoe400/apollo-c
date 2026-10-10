@@ -7,6 +7,7 @@
  * both vehicles share them the way the AGC routines share erasable.
  */
 #include <stddef.h>
+
 #include "agc/core/assert.h"
 #include "agc/guidance/guidance.h"
 #include "agc/guidance/pending.h"
@@ -16,8 +17,8 @@ static agc_guid_t g_guid;
 /* The one guidance erasable block.                                        */
 agc_guid_t *agc_guid_state(void)
 {
-    (void)AGC_ASSERT(g_guid.avg.pipage >= 0);
-    (void)AGC_ASSERT(g_guid.lm.vselect >= 0 && g_guid.lm.vselect <= 2);
+    (void) AGC_ASSERT(g_guid.avg.pipage >= 0);
+    (void) AGC_ASSERT(g_guid.lm.vselect >= 0 && g_guid.lm.vselect <= 2);
     return &g_guid;
 }
 
@@ -28,15 +29,16 @@ agc_guid_t *agc_guid_state(void)
  * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
 static void init_avg(agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(a != NULL)) {
+    if (!AGC_ASSERT(a != NULL))
+    {
         return;
     }
     a->avgexit = AGC_JOB_SERVEXIT;
-    a->unitw = agc_vec_make(0, 0, AGC_DP_MAX);
-    a->pipage = 1;
-    a->gdt_2 = agc_vec_zero();
-    (void)AGC_ASSERT(a->avgexit != AGC_JOB_NONE);
-    (void)AGC_ASSERT(a->unitw.c[2] > 0);
+    a->unitw   = agc_vec_make(0, 0, AGC_DP_MAX);
+    a->pipage  = 1;
+    a->gdt_2   = agc_vec_zero();
+    (void) AGC_ASSERT(a->avgexit != AGC_JOB_NONE);
+    (void) AGC_ASSERT(a->unitw.c[2] > 0);
 }
 
 /* Fresh start of the guidance erasables: everything zero, then the values
@@ -45,22 +47,26 @@ static void init_avg(agc_avg_g_t *a)
  * harness overwrites them with a real pad load.                           */
 agc_status_t agc_guid_init(agc_vehicle_t veh)
 {
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM)) {
+    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_guid_t zero = { 0 };
-    g_guid = zero;
+    agc_guid_t zero = {0};
+    g_guid          = zero;
     init_avg(&g_guid.avg);
-    g_guid.burn.nbrcycls = -1;              /* no S40.9 cycle under way      */
-    if (veh == AGC_VEHICLE_CSM) {
-        g_guid.csm.etdecay = 0;            /* ETDECAY pad load (cs, 2^14)    */
-        g_guid.csm.dvthresh = 0;           /* DVTHRESH pad load (2^-2 m/cs)  */
-    } else {
-        g_guid.lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD: SERVEXIT +2 */
-        g_guid.lm.dispdex = 1;             /* positive: CLOKTASK not running */
-        g_guid.lm.vselect = 2;             /* VSELECT: X beam first          */
-        g_guid.lm.which = (agc_sp_t)AGC_LM_WHICH_DPS_BURN;
+    g_guid.burn.nbrcycls = -1; /* no S40.9 cycle under way      */
+    if (veh == AGC_VEHICLE_CSM)
+    {
+        g_guid.csm.etdecay  = 0; /* ETDECAY pad load (cs, 2^14)    */
+        g_guid.csm.dvthresh = 0; /* DVTHRESH pad load (2^-2 m/cs)  */
     }
-    (void)AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT);
+    else
+    {
+        g_guid.lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD: SERVEXIT +2 */
+        g_guid.lm.dispdex  = 1; /* positive: CLOKTASK not running */
+        g_guid.lm.vselect  = 2; /* VSELECT: X beam first          */
+        g_guid.lm.which    = (agc_sp_t) AGC_LM_WHICH_DPS_BURN;
+    }
+    (void) AGC_ASSERT(g_guid.avg.avgexit == AGC_JOB_SERVEXIT);
     return AGC_STATUS_OK;
 }

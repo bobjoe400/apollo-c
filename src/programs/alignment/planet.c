@@ -12,35 +12,39 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "agc/core/assert.h"
 #include "agc/programs/alignment_internal.h"
 
-#define VN_PLANET_VECTOR ALIGN_VN(6, 88)    /* VNPLANV VN 0688              */
-#define STAR_CODE_MASK   ((agc_sp_t)077)    /* CS HIGH9: bits 1-6           */
-#define STAR_WORDS       6                  /* SIGHTSIX / REVCNT            */
+#define VN_PLANET_VECTOR ALIGN_VN(6, 88)  /* VNPLANV VN 0688              */
+#define STAR_CODE_MASK   ((agc_sp_t) 077) /* CS HIGH9: bits 1-6           */
+#define STAR_WORDS       6                /* SIGHTSIX / REVCNT            */
 
 /* Star code x 6 (the CATLOG index) from STARCODE / AOTCODE bits 1-6. */
 static agc_sp_t star6_of_code(void)
 {
-    const agc_sp_t code = (agc_sp_t)(agc_align_ram()->starcode & STAR_CODE_MASK);
-    (void)AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX));
-    return (agc_sp_t)(code * STAR_WORDS);
+    const agc_sp_t code =
+        (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
+    (void) AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX));
+    return (agc_sp_t) (code * STAR_WORDS);
 }
 
 /* NOSAM .. CORPLAN: the vector, then continue as the caller asked. */
 static agc_status_t planet_compute(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
     agc_interp_init(&ip);
-    (void)AGC_ASSERT((ram->starind == 0) || (ram->starind == 1));
-    const agc_status_t st = agc_align_planet_vector(&ip, star6_of_code(), ram->starind,
-                                                    ram->tsight, AGC_JOB_PLANET_RESUME,
-                                                    &ram->planet_los);
-    if (st == AGC_STATUS_BUSY) {
-        return AGC_STATUS_OK;                         /* INTSTALL sleep  */
+    (void) AGC_ASSERT((ram->starind == 0) || (ram->starind == 1));
+    const agc_status_t st =
+        agc_align_planet_vector(&ip, star6_of_code(), ram->starind, ram->tsight,
+                                AGC_JOB_PLANET_RESUME, &ram->planet_los);
+    if (st == AGC_STATUS_BUSY)
+    {
+        return AGC_STATUS_OK; /* INTSTALL sleep  */
     }
-    if (st != AGC_STATUS_OK) {
+    if (st != AGC_STATUS_OK)
+    {
         return st;
     }
     return align_goto(ram->planet_ret);
@@ -50,9 +54,10 @@ static agc_status_t planet_compute(void)
  * V34) shows it again.                                                    */
 static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
 {
-    (void)AGC_ASSERT(ctx != NULL);
-    const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM)
-                                  ? AGC_JOB_GOTOPOOH : AGC_JOB_PLANET_FLASH;
+    (void) AGC_ASSERT(ctx != NULL);
+    const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ?
+                                  AGC_JOB_GOTOPOOH :
+                                  AGC_JOB_PLANET_FLASH;
     return align_flash(ctx, AGC_DSKY_GOFLASH, VN_PLANET_VECTOR, term,
                        AGC_JOB_PLANET_LOADED, AGC_JOB_PLANET_FLASH);
 }
@@ -61,19 +66,23 @@ static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
  * PLANET entry: TSIGHT = t; (LM) STARAD = 0 for the N88 load; BESTI or
  * BESTJ = code x 6 (set by the vector routine); code 00 flashes V06N88.
  */
-agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret)
+agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t,
+                          agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_align_ram_t *ram = agc_align_ram();
-    ram->tsight = t;
-    ram->planet_ret = ret;
-    if (star6_of_code() != 0) {
-        return planet_compute();                      /* NOTPLAN        */
+    ram->tsight          = t;
+    ram->planet_ret      = ret;
+    if (star6_of_code() != 0)
+    {
+        return planet_compute(); /* NOTPLAN        */
     }
-    if (agc_state_vehicle() == AGC_VEHICLE_LM) {
-        ram->starad[0] = agc_vec_zero();              /* STORE STARAD   */
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        ram->starad[0] = agc_vec_zero(); /* STORE STARAD   */
     }
     return planet_flash(ctx);
 }
@@ -81,7 +90,8 @@ agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret
 /* PLANET: V06N88 shown again. */
 agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return planet_flash(ctx);
@@ -90,19 +100,21 @@ agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx)
 /* PLANET: V33 on V06N88 (vector loaded in STARSAV3 / STARAD). */
 agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
+    (void) AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
     return planet_compute();
 }
 
 /* PLANET: resumed after waiting for the integration (LOCSAM). */
 agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL)) {
+    if (!AGC_ASSERT(ctx != NULL))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    (void)AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
+    (void) AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE);
     return planet_compute();
 }

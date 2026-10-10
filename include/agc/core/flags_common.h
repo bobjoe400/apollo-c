@@ -21,7 +21,8 @@
  * C name: AGC_FLAG_<AGCNAME>, AGCNAME upper case, '/', '-' and '.' -> '_'.
  */
 
-enum agc_flag_common_id {
+enum agc_flag_common_id
+{
     /* FREEFLAG  FLAGWRD0 bit 3 (012D)
      * CSM: (TEMPORARY FLAG USED IN MANY ROUTINES)  LM: (USED BY P51-53 TEMP IN
      * MANY DIFFERENT ROUTINES & BY LUNAR + SOLAR EPHEMERIDES) */

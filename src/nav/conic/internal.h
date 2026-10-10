@@ -23,47 +23,60 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "agc/core/word.h"
+
 #include "agc/core/interp.h"
 #include "agc/core/status.h"
+#include "agc/core/word.h"
 #include "agc/nav/conic.h"
 
 /* ---- constants, CONIC_SUBROUTINES.agc p. 1288 (assembled octal) ------- */
-#define AGC_CONIC_D1_8     ((agc_dp_t)33554432)  /* D1/8   04000 00000 1.0 B-3 */
-#define AGC_CONIC_D1_128   ((agc_dp_t)2097152)   /* D1/128 00200 00000 1.0 B-7 */
-#define AGC_CONIC_D1_64    ((agc_dp_t)4194304)   /* D1/64  00400 00000 1.0 B-6 */
-#define AGC_CONIC_D1_4     ((agc_dp_t)67108864)  /* D1/4   10000 00000 1.0 B-2 */
-#define AGC_CONIC_D1_16    ((agc_dp_t)16777216)  /* D1/16  02000 00000 1.0 B-4 */
-#define AGC_CONIC_D1_32    ((agc_dp_t)8388608)   /* D1/32  01000 00000 1.0 B-5 */
-#define AGC_CONIC_D1_1024  ((agc_dp_t)262144)    /* D1/1024 00020 00000 1.0 B-10 */
-#define AGC_CONIC_D1_256   ((agc_dp_t)1048576)   /* D1/256 00100 00000 1.0 B-8 */
-#define AGC_CONIC_DP9_10   ((agc_dp_t)241591910) /* DP9/10 34631 23146 .9      */
-#define AGC_CONIC_M50SC    ((agc_dp_t)-3276800)  /* -50SC  77467 77777 -50 B-12 */
-#define AGC_CONIC_2PISC    ((agc_dp_t)26353589)  /* 2PISC  03110 17665 6.2831853 B-6 */
-#define AGC_CONIC_BEE17    ((agc_dp_t)2048)      /* BEE17  00000 04000 1.0 B-17 (overlay) */
-#define AGC_CONIC_BEE19    ((agc_dp_t)512)       /* BEE19  00000 01000 1.0 B-19 (overlay) */
-#define AGC_CONIC_BEE22    ((agc_dp_t)64)        /* BEE22  00000 00100 1.0 B-22 (overlay) */
-#define AGC_CONIC_ONEBIT   ((agc_dp_t)1)         /* ONEBIT 00000 00001 1.0 B-28 */
-#define AGC_CONIC_COGUPLIM ((agc_dp_t)268304351) /* COGUPLIM 37767 37737 .999511597 */
-#define AGC_CONIC_COGLOLIM ((agc_dp_t)-268304351)/* COGLOLIM 40010 40040 -.999511597 */
-#define AGC_CONIC_DP1_4    ((agc_dp_t)67108864)  /* DP1/4 (fixed-fixed pool) .25   */
-#define AGC_CONIC_LODPHALF ((agc_dp_t)134217728) /* LODPHALF = XUNIT 20000 00000 .5 */
-#define AGC_CONIC_LDPOSMAX ((agc_dp_t)268435455) /* LDPOSMAX = LODPMAX 37777 37777 */
-#define AGC_CONIC_DP2_3    ((agc_dp_t)178956971) /* DP2/3 25252 25253 .6666666667 */
-#define AGC_CONIC_KEPZERO  ((agc_dp_t)0)         /* KEPZERO = LO6ZEROS         */
+#define AGC_CONIC_D1_8    ((agc_dp_t) 33554432) /* D1/8   04000 00000 1.0 B-3 */
+#define AGC_CONIC_D1_128  ((agc_dp_t) 2097152)  /* D1/128 00200 00000 1.0 B-7 */
+#define AGC_CONIC_D1_64   ((agc_dp_t) 4194304)  /* D1/64  00400 00000 1.0 B-6 */
+#define AGC_CONIC_D1_4    ((agc_dp_t) 67108864) /* D1/4   10000 00000 1.0 B-2 */
+#define AGC_CONIC_D1_16   ((agc_dp_t) 16777216) /* D1/16  02000 00000 1.0 B-4 */
+#define AGC_CONIC_D1_32   ((agc_dp_t) 8388608)  /* D1/32  01000 00000 1.0 B-5 */
+#define AGC_CONIC_D1_1024 ((agc_dp_t) 262144) /* D1/1024 00020 00000 1.0 B-10 */
+#define AGC_CONIC_D1_256  ((agc_dp_t) 1048576) /* D1/256 00100 00000 1.0 B-8 */
+#define AGC_CONIC_DP9_10  ((agc_dp_t) 241591910) /* DP9/10 34631 23146 .9      */
+#define AGC_CONIC_M50SC   ((agc_dp_t) -3276800) /* -50SC  77467 77777 -50 B-12 */
+#define AGC_CONIC_2PISC \
+    ((agc_dp_t) 26353589) /* 2PISC  03110 17665 6.2831853 B-6 */
+#define AGC_CONIC_BEE17 \
+    ((agc_dp_t) 2048) /* BEE17  00000 04000 1.0 B-17 (overlay) */
+#define AGC_CONIC_BEE19 \
+    ((agc_dp_t) 512) /* BEE19  00000 01000 1.0 B-19 (overlay) */
+#define AGC_CONIC_BEE22 \
+    ((agc_dp_t) 64) /* BEE22  00000 00100 1.0 B-22 (overlay) */
+#define AGC_CONIC_ONEBIT ((agc_dp_t) 1) /* ONEBIT 00000 00001 1.0 B-28 */
+#define AGC_CONIC_COGUPLIM \
+    ((agc_dp_t) 268304351) /* COGUPLIM 37767 37737 .999511597 */
+#define AGC_CONIC_COGLOLIM \
+    ((agc_dp_t) -268304351) /* COGLOLIM 40010 40040 -.999511597 */
+#define AGC_CONIC_DP1_4 \
+    ((agc_dp_t) 67108864) /* DP1/4 (fixed-fixed pool) .25   */
+#define AGC_CONIC_LODPHALF \
+    ((agc_dp_t) 134217728) /* LODPHALF = XUNIT 20000 00000 .5 */
+#define AGC_CONIC_LDPOSMAX \
+    ((agc_dp_t) 268435455) /* LDPOSMAX = LODPMAX 37777 37777 */
+#define AGC_CONIC_DP2_3 \
+    ((agc_dp_t) 178956971)               /* DP2/3 25252 25253 .6666666667 */
+#define AGC_CONIC_KEPZERO ((agc_dp_t) 0) /* KEPZERO = LO6ZEROS         */
 /* SSP constants: the assembler stores an octal operand of 10000 or more
  * less 10000 (the rope has 27777 for "37777" and 10000 for "20000"; the
  * Comanche055 / Luminary099 ropes are checksum-verified). The assembled
  * words are what the flight code used.                                   */
-#define AGC_CONIC_GEOMSGN_POS ((agc_sp_t)0x2FFF) /* SSP GEOMSGN 37777 -> 27777 */
-#define AGC_CONIC_TWEEKIT_GUESS   ((agc_sp_t)1)      /* SSP TWEEKIT 00001      */
-#define AGC_CONIC_TWEEKIT_NOGUESS ((agc_sp_t)0x1000) /* SSP TWEEKIT 20000 -> 10000 (.25) */
+#define AGC_CONIC_GEOMSGN_POS \
+    ((agc_sp_t) 0x2FFF)                        /* SSP GEOMSGN 37777 -> 27777 */
+#define AGC_CONIC_TWEEKIT_GUESS ((agc_sp_t) 1) /* SSP TWEEKIT 00001      */
+#define AGC_CONIC_TWEEKIT_NOGUESS \
+    ((agc_sp_t) 0x1000) /* SSP TWEEKIT 20000 -> 10000 (.25) */
 
 /* TIX,2 with X2 = 3, S2 = 1 (GETX): WLOOP and 1/WLOOP run three passes.  */
 #define AGC_CONIC_GETX_PASSES 3
 /* POLY coefficient counts: "DEC N" in the listing is the count minus 2.  */
-#define AGC_CONIC_DELTIME_NCOEF 10   /* DEC 8 */
-#define AGC_CONIC_POLYCOEF_NCOEF 7   /* DEC 5 */
+#define AGC_CONIC_DELTIME_NCOEF  10 /* DEC 8 */
+#define AGC_CONIC_POLYCOEF_NCOEF 7  /* DEC 5 */
 
 /* Bound on LAMBLOOP passes. Passes through NEGP/HIENERGY/LOENERGY do not
  * decrement ITERCTR; each halves DCOGA, which reaches zero within 28
@@ -75,14 +88,16 @@
 #define AGC_CONIC_PERIOD_MAX_PASSES 4096
 
 /* Output switches mirrored into the flagwords. */
-typedef enum agc_conic_flag {
+typedef enum agc_conic_flag
+{
     AGC_CONIC_FLAG_SOLNSW = 0,
     AGC_CONIC_FLAG_INFINFLG,
     AGC_CONIC_FLAG_COGAFLAG,
     AGC_CONIC_FLAG_APSESW
 } agc_conic_flag_t;
 
-typedef struct agc_conic_ctx {
+typedef struct agc_conic_ctx
+{
     agc_conic_body_t body;
     agc_dp_t  inv_mu;      /* 1/MU (14D)      2^-34 / 2^-28                  */
     agc_dp_t  root_mu;     /* ROOTMU (16D)    2^18 / 2^15                    */
@@ -117,35 +132,38 @@ typedef struct agc_conic_ctx {
 
 /* ---- common.c: MUTABLE and switches ------------------------------ */
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
-agc_dp_t agc_conic_mu_(agc_conic_body_t body);              /* MUEARTH / MUM */
+agc_dp_t     agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
 agc_status_t agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
-agc_status_t agc_conic_abtconic_(void);                      /* ABTCONIC     */
+agc_status_t agc_conic_abtconic_(void); /* ABTCONIC     */
 
 /* ---- common.c: interpretive MPAC (TP) one instruction each -------- */
-agc_tp_t agc_conic_mload_(agc_dp_t d);                       /* DLOAD        */
-agc_dp_t agc_conic_mstore_(agc_tp_t m);                      /* STORE / PUSH */
-agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
-agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
-agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
-agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
-agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
-agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
-agc_tp_t agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
-agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
-agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
-agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
-agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n);     /* SL n / SR -n */
-agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n);    /* SLR n / SRR -n */
-agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m);            /* ROUND */
-agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift);                  /* NORM: X = -nshift */
-agc_tp_t agc_conic_mabs_(agc_tp_t m);                                /* ABS  */
-agc_tp_t agc_conic_mneg_(agc_tp_t m);                                /* DCOMP */
-agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s);           /* SIGN, DP word */
-agc_tp_t agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s);        /* SIGN, SP tag  */
-bool     agc_conic_mbmn_(agc_tp_t m);                        /* BMN taken     */
-bool     agc_conic_mbze_(agc_tp_t m);                        /* BZE taken     */
-agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s);      /* vector SIGN   */
-agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef); /* POLY */
+agc_tp_t  agc_conic_mload_(agc_dp_t d);  /* DLOAD        */
+agc_dp_t  agc_conic_mstore_(agc_tp_t m); /* STORE / PUSH */
+agc_tp_t  agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
+agc_tp_t  agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
+agc_tp_t  agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
+agc_tp_t  agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
+agc_tp_t  agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
+agc_tp_t  agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
+agc_tp_t  agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
+agc_tp_t  agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
+agc_tp_t  agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
+agc_tp_t  agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
+agc_tp_t  agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m,
+                            int n); /* SL n / SR -n */
+agc_tp_t  agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m,
+                             int n);                       /* SLR n / SRR -n */
+agc_tp_t  agc_conic_mround_(agc_interp_t *ip, agc_tp_t m); /* ROUND */
+agc_tp_t  agc_conic_mnorm_(agc_tp_t m, int *nshift);    /* NORM: X = -nshift */
+agc_tp_t  agc_conic_mabs_(agc_tp_t m);                  /* ABS  */
+agc_tp_t  agc_conic_mneg_(agc_tp_t m);                  /* DCOMP */
+agc_tp_t  agc_conic_msign_(agc_tp_t m, agc_dp_t s);     /* SIGN, DP word */
+agc_tp_t  agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s);  /* SIGN, SP tag  */
+bool      agc_conic_mbmn_(agc_tp_t m);                  /* BMN taken     */
+bool      agc_conic_mbze_(agc_tp_t m);                  /* BZE taken     */
+agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s); /* vector SIGN   */
+agc_dp_t  agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef,
+                          int ncoef); /* POLY */
 
 /* ---- universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */
 agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
@@ -158,17 +176,20 @@ agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
 /* ---- geom.c: GEOM, PARAM, GETX ------------------------------------ */
 agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
-                             agc_vec_t r1vec, agc_vec_t v2vec,
-                             agc_dp_t *snth, agc_dp_t *csth);
+                             agc_vec_t r1vec, agc_vec_t v2vec, agc_dp_t *snth,
+                             agc_dp_t *csth);
 agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
-                              agc_vec_t rvec, agc_vec_t vvec, agc_dp_t *sngamma);
+                              agc_vec_t rvec, agc_vec_t vvec,
+                              agc_dp_t *sngamma);
 agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
 
 /* ---- timetheta.c: COMMNOUT (shared with TIMERAD) ------------------ */
 agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  bool rvsw, agc_conic_time_out_t *out);
-agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t *ctx, agc_conic_time_out_t *out);
-void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out);
-void agc_conic_time_out_clear_(agc_conic_time_out_t *out);
+agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
+                                 agc_conic_time_out_t *out);
+void         agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
+                                      agc_conic_time_out_t  *out);
+void         agc_conic_time_out_clear_(agc_conic_time_out_t *out);
 
 #endif /* AGC_CONIC_INTERNAL_H */

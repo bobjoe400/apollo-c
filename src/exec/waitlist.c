@@ -19,47 +19,49 @@
  * TIME3 is a 14-bit counter that overflows at 16384 cs; the overflow is
  * T3RUPT. TIME1/TIME2 are not advanced here (the sim harness owns them).
  */
-#include "agc/exec/exec.h"
 #include "agc/core/assert.h"
-#include "agc/core/state.h"
 #include "agc/core/flags_common.h"
-#include "internal.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/exec/pending.h"
+#include "internal.h"
 
-#define WL_TIME3_OVF   16384      /* TIME3 overflow, 2^14 cs = 163.84 s   */
-#define WL_POSMAX      16383      /* POSMAX, octal 37777                  */
-#define WL_NEG1_2      (-8192)    /* NEG1/2: empty LST1 slot              */
-#define WL_LST1_N      8          /* LST1 to LST1 +7                      */
-#define WL_BIT14       8192       /* BIT14 / DPBIT14 low word, 81.92 s    */
-#define WL_SVCT3_DELAY 500        /* SVCT3X: DEC 500 (5 s)                */
-#define WL_TICK_LIMIT  65536      /* bound for agc_waitlist_tick loop     */
+#define WL_TIME3_OVF   16384   /* TIME3 overflow, 2^14 cs = 163.84 s   */
+#define WL_POSMAX      16383   /* POSMAX, octal 37777                  */
+#define WL_NEG1_2      (-8192) /* NEG1/2: empty LST1 slot              */
+#define WL_LST1_N      8       /* LST1 to LST1 +7                      */
+#define WL_BIT14       8192    /* BIT14 / DPBIT14 low word, 81.92 s    */
+#define WL_SVCT3_DELAY 500     /* SVCT3X: DEC 500 (5 s)                */
+#define WL_TICK_LIMIT  65536   /* bound for agc_waitlist_tick loop     */
 
-static uint16_t      time3;                       /* TIME3              */
-static int16_t       lst1[WL_LST1_N];             /* LST1               */
-static agc_task_id_t lst2[AGC_WAITLIST_MAX_TASKS];/* LST2 (task ids)    */
-static uint32_t      longtime;                    /* LONGTIME B(2) cs   */
-static agc_task_id_t longcadr = AGC_TASK_NONE;    /* LONGCADR           */
+static uint16_t      time3;                        /* TIME3              */
+static int16_t       lst1[WL_LST1_N];              /* LST1               */
+static agc_task_id_t lst2[AGC_WAITLIST_MAX_TASKS]; /* LST2 (task ids)    */
+static uint32_t      longtime;                     /* LONGTIME B(2) cs   */
+static agc_task_id_t longcadr = AGC_TASK_NONE;     /* LONGCADR           */
 
 /* STARTSB2 (FRESH_START_AND_RESTART C p.190 / L p.220): initialise the
  * waitlist delta-Ts to NEG1/2 and every LST2 entry to ENDTASK.          */
 void waitlist_clear_lists(void)
 {
-    for (int k = 0; k < WL_LST1_N; k++) {
-        lst1[k] = (int16_t)WL_NEG1_2;
+    for (int k = 0; k < WL_LST1_N; k++)
+    {
+        lst1[k] = (int16_t) WL_NEG1_2;
     }
-    for (int k = 0; k < AGC_WAITLIST_MAX_TASKS; k++) {
+    for (int k = 0; k < AGC_WAITLIST_MAX_TASKS; k++)
+    {
         lst2[k] = AGC_TASK_ENDTASK;
     }
-    (void)AGC_ASSERT(lst1[0] == WL_NEG1_2);
-    (void)AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK);
+    (void) AGC_ASSERT(lst1[0] == WL_NEG1_2);
+    (void) AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK);
 }
 
 /* STARTSUB / STARTSB1: CAF POSMAX / TS TIME3 (T3RUPT 1 cs later).      */
 void waitlist_reset_time3(void)
 {
-    time3 = (uint16_t)WL_POSMAX;
-    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
-    (void)AGC_ASSERT(time3 > 0);
+    time3 = (uint16_t) WL_POSMAX;
+    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
+    (void) AGC_ASSERT(time3 > 0);
 }
 
 agc_status_t agc_waitlist_init(void)
@@ -68,7 +70,8 @@ agc_status_t agc_waitlist_init(void)
     waitlist_clear_lists();
     longtime = 0;
     longcadr = AGC_TASK_NONE;
-    if (!AGC_ASSERT(lst2[0] == AGC_TASK_ENDTASK)) {
+    if (!AGC_ASSERT(lst2[0] == AGC_TASK_ENDTASK))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return AGC_STATUS_OK;
@@ -80,26 +83,32 @@ agc_status_t agc_waitlist_init(void)
  * otherwise the list is full (WTABORT -> 1203).                       */
 static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(n >= 0 && n < AGC_WAITLIST_MAX_TASKS)) {
+    if (!AGC_ASSERT(n >= 0 && n < AGC_WAITLIST_MAX_TASKS))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     /* DEVIATION: the AGC shifts first and checks the ejected LST2 word
      * afterwards; checking first is equivalent because the BAILOUT that
      * follows re-initialises both lists in STARTSB2.                   */
-    if (lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_ENDTASK) {
-        return agc_bailout(AGC_ALARM_01203);    /* NO ROOM IN THE INN  */
+    if (lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_ENDTASK)
+    {
+        return agc_bailout(AGC_ALARM_01203); /* NO ROOM IN THE INN  */
     }
-    if (n < WL_LST1_N) {                         /* INDEX Q / TCF WTLST4 */
-        if (!AGC_ASSERT(delta >= -WL_POSMAX && delta <= 1)) {
+    if (n < WL_LST1_N)
+    { /* INDEX Q / TCF WTLST4 */
+        if (!AGC_ASSERT(delta >= -WL_POSMAX && delta <= 1))
+        {
             return AGC_STATUS_BAD_ARG;
         }
-        for (int k = WL_LST1_N - 1; k > n; k--) {
-            lst1[k] = lst1[k - 1];               /* XCH LST1 +k chain   */
+        for (int k = WL_LST1_N - 1; k > n; k--)
+        {
+            lst1[k] = lst1[k - 1]; /* XCH LST1 +k chain   */
         }
-        lst1[n] = (int16_t)delta;
+        lst1[n] = (int16_t) delta;
     }
-    for (int k = AGC_WAITLIST_MAX_TASKS - 1; k > n; k--) {
-        lst2[k] = lst2[k - 1];                   /* DXCH LST2 +2k chain */
+    for (int k = AGC_WAITLIST_MAX_TASKS - 1; k > n; k--)
+    {
+        lst2[k] = lst2[k - 1]; /* DXCH LST2 +2k chain */
     }
     lst2[n] = task;
     return AGC_STATUS_OK;
@@ -110,51 +119,62 @@ static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
 static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
 {
     if (!AGC_ASSERT(dt >= 1 && dt <= AGC_WAITLIST_MAX_DELAY) ||
-        !AGC_ASSERT(time3 < WL_TIME3_OVF)) {
+        !AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     /* DEVIATION: the "TIME3 overflow already happened" branch (C(TIME3)
      * < 200 octal) cannot arise: T3RUPT runs synchronously at overflow.  */
-    int32_t a = (int32_t)dt - (WL_TIME3_OVF - (int32_t)time3) + 1; /* TD-T1+1 */
-    if (a <= 0) {
+    int32_t a =
+        (int32_t) dt - (WL_TIME3_OVF - (int32_t) time3) + 1; /* TD-T1+1 */
+    if (a <= 0)
+    {
         /* TD before T1: new task 1. TIME3 = 1.0 - DELTA T, and the old
          * task 1 gets LST1 = -(T1 - TD) + 1, which equals a.             */
-        time3 = (uint16_t)(WL_TIME3_OVF - (int32_t)dt);
+        time3 = (uint16_t) (WL_TIME3_OVF - (int32_t) dt);
         return wtlst4(0, a, task);
     }
-    a = a - 1 + lst1[0];                         /* TD - T2 + 1         */
-    for (int n = 1; n < AGC_WAITLIST_MAX_TASKS; n++) {
-        if (a <= 0) {
+    a = a - 1 + lst1[0]; /* TD - T2 + 1         */
+    for (int n = 1; n < AGC_WAITLIST_MAX_TASKS; n++)
+    {
+        if (a <= 0)
+        {
             /* WTLST2: T(n) <= TD < T(n+1). LST1 +n-1 becomes
              * -(TD - T(n)) + 1 and -(T(n+1) - TD) + 1 = a is inserted.  */
-            int32_t prev = (int32_t)lst1[n - 1] - a + 1;
-            if (!AGC_ASSERT(prev <= 1 && prev >= -WL_POSMAX)) {
+            int32_t prev = (int32_t) lst1[n - 1] - a + 1;
+            if (!AGC_ASSERT(prev <= 1 && prev >= -WL_POSMAX))
+            {
                 return AGC_STATUS_BAD_ARG;
             }
             agc_status_t st = wtlst4(n, a, task);
-            if (st == AGC_STATUS_OK) {
-                lst1[n - 1] = (int16_t)prev;
+            if (st == AGC_STATUS_OK)
+            {
+                lst1[n - 1] = (int16_t) prev;
             }
             return st;
         }
-        if (n < WL_LST1_N) {
-            a = a - 1 + lst1[n];                 /* TD - T(n+2) + 1     */
+        if (n < WL_LST1_N)
+        {
+            a = a - 1 + lst1[n]; /* TD - T(n+2) + 1     */
         }
     }
-    return agc_bailout(AGC_ALARM_01203);         /* WTABORT              */
+    return agc_bailout(AGC_ALARM_01203); /* WTABORT              */
 }
 
 /* WAITLIST / TWIDDLE (C p.1223 / L p.1119): call `task` in dt centiseconds
  * (1 <= dt <= 16250). dt = 0 is POODOO 1204 (WATLST0- / WAITPOOH).     */
 agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE)) {
+    if (!AGC_ASSERT(task != AGC_TASK_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (delay_cs == 0) {
+    if (delay_cs == 0)
+    {
         return agc_poodoo(AGC_ALARM_01204);
     }
-    if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY)) {
+    if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();
@@ -170,11 +190,13 @@ agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
  * behaviour); in Comanche it would corrupt TIME3.                      */
 agc_status_t agc_waitlist_vardelay(uint16_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE)) {
+    if (!AGC_ASSERT(task != AGC_TASK_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(agc_interrupts_inhibited())) {
-        return AGC_STATUS_BAD_ARG;              /* must be in a task    */
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return AGC_STATUS_BAD_ARG; /* must be in a task    */
     }
     return agc_waitlist_call(delay_cs, task);
 }
@@ -183,10 +205,12 @@ agc_status_t agc_waitlist_vardelay(uint16_t delay_cs, agc_task_id_t task)
  * after the call; in C the caller passes it.                           */
 agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE)) {
+    if (!AGC_ASSERT(task != AGC_TASK_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY)) {
+    if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return agc_waitlist_vardelay(delay_cs, task);
@@ -197,20 +221,23 @@ agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
  * schedule GETCADR for the remainder.                                  */
 static agc_status_t longcycl(void)
 {
-    if (!AGC_ASSERT(longcadr != AGC_TASK_NONE)) {
+    if (!AGC_ASSERT(longcadr != AGC_TASK_NONE))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    int64_t rem = (int64_t)longtime - WL_BIT14;  /* DCS DPBIT14 / DAS    */
-    if (rem > 0) {
-        longtime = (uint32_t)rem;
-        return agc_waitlist_call((uint16_t)WL_BIT14, AGC_TASK_LONGCYCL);
+    int64_t rem = (int64_t) longtime - WL_BIT14; /* DCS DPBIT14 / DAS    */
+    if (rem > 0)
+    {
+        longtime = (uint32_t) rem;
+        return agc_waitlist_call((uint16_t) WL_BIT14, AGC_TASK_LONGCYCL);
     }
-    rem += WL_BIT14;                             /* LASTTIME: ADS BIT14 */
-    if (!AGC_ASSERT(rem >= 0 && rem <= WL_BIT14)) {
+    rem += WL_BIT14; /* LASTTIME: ADS BIT14 */
+    if (!AGC_ASSERT(rem >= 0 && rem <= WL_BIT14))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    longtime = (uint32_t)rem;
-    return agc_waitlist_call((uint16_t)rem, AGC_TASK_GETCADR);
+    longtime = (uint32_t) rem;
+    return agc_waitlist_call((uint16_t) rem, AGC_TASK_GETCADR);
 }
 
 /* LONGCALL / LNGCALL2 (C pp.1233-1234 / L pp.1130-1131): call `task` after
@@ -219,15 +246,17 @@ static agc_status_t longcycl(void)
 agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
 {
     if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
-        !AGC_ASSERT(delay_cs < AGC_TIME_MODULUS_CS)) {
+        !AGC_ASSERT(delay_cs < AGC_TIME_MODULUS_CS))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (delay_cs == 0 && agc_state_vehicle() == AGC_VEHICLE_LM) {
-        return agc_poodoo(AGC_ALARM_01204);      /* LONGPOOH            */
+    if (delay_cs == 0 && agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        return agc_poodoo(AGC_ALARM_01204); /* LONGPOOH            */
     }
     agc_inhint();
-    longtime = delay_cs;                         /* DXCH LONGTIME       */
-    longcadr = task;                             /* DXCH LONGCADR       */
+    longtime        = delay_cs; /* DXCH LONGTIME       */
+    longcadr        = task;     /* DXCH LONGCADR       */
     agc_status_t st = longcycl();
     agc_relint();
     return st;
@@ -239,37 +268,39 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
  * 5 s.                                                                 */
 static agc_status_t svct3(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    if (!agc_flag_test(AGC_FLAG_DRIFTFLG)) {
-        return AGC_STATUS_OK;                    /* TCF TASKOVER        */
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!agc_flag_test(AGC_FLAG_DRIFTFLG))
+    {
+        return AGC_STATUS_OK; /* TCF TASKOVER        */
     }
-    if (agc_erase_imucadr() != 0) {              /* CCS IMUCADR         */
+    if (agc_erase_imucadr() != 0)
+    { /* CCS IMUCADR         */
         return agc_waitlist_fixdelay(WL_SVCT3_DELAY, AGC_TASK_SVCT3);
     }
     agc_status_t st = agc_exec_novac(EXEC_PRIO35, AGC_JOB_NBDONLY);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
+    (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
     return st;
 }
 
 /* The waitlist's own tasks (called from agc_dispatch_task).            */
 agc_status_t agc_task_endtask(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    (void)AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    (void) AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
     return svct3();
 }
 
 agc_status_t agc_task_svct3(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    (void)AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    (void) AGC_ASSERT(lst2[0] != AGC_TASK_NONE);
     return svct3();
 }
 
 agc_status_t agc_task_longcycl(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    (void)AGC_ASSERT(longcadr != AGC_TASK_NONE);
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    (void) AGC_ASSERT(longcadr != AGC_TASK_NONE);
     return longcycl();
 }
 
@@ -277,8 +308,8 @@ agc_status_t agc_task_longcycl(void)
  * "TASKOVER" ends the task at once.                                   */
 agc_status_t agc_task_taskover(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
     return AGC_STATUS_OK;
 }
 
@@ -287,8 +318,9 @@ agc_status_t agc_task_taskover(void)
  * dispatch never calls itself); this entry exists for completeness.    */
 agc_status_t agc_task_getcadr(void)
 {
-    (void)AGC_ASSERT(agc_interrupts_inhibited());
-    if (!AGC_ASSERT(longcadr != AGC_TASK_NONE && longcadr != AGC_TASK_GETCADR)) {
+    (void) AGC_ASSERT(agc_interrupts_inhibited());
+    if (!AGC_ASSERT(longcadr != AGC_TASK_NONE && longcadr != AGC_TASK_GETCADR))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     return AGC_STATUS_OK;
@@ -299,41 +331,48 @@ agc_status_t agc_task_getcadr(void)
  * and repeat while the next task is due at the same time (RUPTAGN).    */
 agc_status_t agc_waitlist_t3rupt(void)
 {
-    agc_status_t result = AGC_STATUS_OK;
-    uint16_t gen = exec_restart_generation();
-    bool ruptagn = true;
-    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
+    agc_status_t result  = AGC_STATUS_OK;
+    uint16_t     gen     = exec_restart_generation();
+    bool         ruptagn = true;
+    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
     agc_inhint();
-    for (int pass = 0; pass < AGC_WAITLIST_MAX_TASKS && ruptagn; pass++) {
+    for (int pass = 0; pass < AGC_WAITLIST_MAX_TASKS && ruptagn; pass++)
+    {
         int32_t a = lst1[0];
-        for (int k = 0; k < WL_LST1_N - 1; k++) {
+        for (int k = 0; k < WL_LST1_N - 1; k++)
+        {
             lst1[k] = lst1[k + 1];
         }
-        lst1[WL_LST1_N - 1] = (int16_t)WL_NEG1_2;   /* 81.91 s for ENDTASK */
-        int32_t sum = (int32_t)time3 + a + WL_POSMAX; /* ADS TIME3      */
-        ruptagn = sum >= WL_TIME3_OVF;               /* RUPTAGN = +1     */
-        time3 = (uint16_t)(ruptagn ? sum - WL_TIME3_OVF : sum);
+        lst1[WL_LST1_N - 1] = (int16_t) WL_NEG1_2;     /* 81.91 s for ENDTASK */
+        int32_t sum = (int32_t) time3 + a + WL_POSMAX; /* ADS TIME3      */
+        ruptagn     = sum >= WL_TIME3_OVF;             /* RUPTAGN = +1     */
+        time3       = (uint16_t) (ruptagn ? sum - WL_TIME3_OVF : sum);
         agc_task_id_t task = lst2[0];
-        for (int k = 0; k < AGC_WAITLIST_MAX_TASKS - 1; k++) {
+        for (int k = 0; k < AGC_WAITLIST_MAX_TASKS - 1; k++)
+        {
             lst2[k] = lst2[k + 1];
         }
         lst2[AGC_WAITLIST_MAX_TASKS - 1] = AGC_TASK_ENDTASK;
-        if (task == AGC_TASK_GETCADR) {
-            task = longcadr;                         /* GETCADR: DXCH LONGCADR */
+        if (task == AGC_TASK_GETCADR)
+        {
+            task = longcadr; /* GETCADR: DXCH LONGCADR */
         }
         agc_status_t st = agc_dispatch_task(task);
-        if (st != AGC_STATUS_OK && result == AGC_STATUS_OK) {
+        if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
+        {
             result = st;
         }
-        if (exec_restart_generation() != gen || agc_exec_restart_pending()) {
-            ruptagn = false;     /* restart: the RUPTAGN chain is gone */
+        if (exec_restart_generation() != gen || agc_exec_restart_pending())
+        {
+            ruptagn = false; /* restart: the RUPTAGN chain is gone */
         }
     }
     agc_relint();
-    if (agc_exec_restart_pending()) {
+    if (agc_exec_restart_pending())
+    {
         /* BAILOUT/POODOO in a task: WHIMPER -> ENEMA after the RUPT. */
         agc_status_t st = agc_exec_service_restart();
-        (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
+        (void) AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT);
     }
     return result;
 }
@@ -342,47 +381,58 @@ agc_status_t agc_waitlist_t3rupt(void)
  * that falls due. Returns the first non-OK task status.                */
 agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
 {
-    if (!AGC_ASSERT(time3 < WL_TIME3_OVF)) {
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t result = AGC_STATUS_OK;
-    int32_t left = (int32_t)elapsed_cs;
-    for (int i = 0; i < WL_TICK_LIMIT && left > 0; i++) {
-        int32_t to_ovf = WL_TIME3_OVF - (int32_t)time3;
-        if (left < to_ovf) {
-            time3 = (uint16_t)((int32_t)time3 + left);
-            left = 0;
-        } else {
+    int32_t      left   = (int32_t) elapsed_cs;
+    for (int i = 0; i < WL_TICK_LIMIT && left > 0; i++)
+    {
+        int32_t to_ovf = WL_TIME3_OVF - (int32_t) time3;
+        if (left < to_ovf)
+        {
+            time3 = (uint16_t) ((int32_t) time3 + left);
+            left  = 0;
+        }
+        else
+        {
             left -= to_ovf;
-            time3 = 0;                               /* overflow -> T3RUPT */
+            time3           = 0; /* overflow -> T3RUPT */
             agc_status_t st = agc_waitlist_t3rupt();
-            if (st != AGC_STATUS_OK && result == AGC_STATUS_OK) {
+            if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
+            {
                 result = st;
             }
         }
     }
-    (void)AGC_ASSERT(left == 0);
+    (void) AGC_ASSERT(left == 0);
     return result;
 }
 
 uint16_t agc_waitlist_time3(void)
 {
-    (void)AGC_ASSERT(time3 < WL_TIME3_OVF);
-    (void)AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE);
+    (void) AGC_ASSERT(time3 < WL_TIME3_OVF);
+    (void) AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE);
     return time3;
 }
 
 /* Inspection: entry i (0..8) of the list. *lst1 receives LST1 +i-1, the
  * delta that precedes task i+1 (for i = 0, -(T1 - T) + 1 from TIME3).   */
-agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_out)
+agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out,
+                                agc_task_id_t *lst2_out)
 {
     if (!AGC_ASSERT(i >= 0 && i < AGC_WAITLIST_MAX_TASKS) ||
-        !AGC_ASSERT(lst1_out != 0 && lst2_out != 0)) {
+        !AGC_ASSERT(lst1_out != 0 && lst2_out != 0))
+    {
         return AGC_STATUS_BAD_ARG;
     }
-    if (i == 0) {
-        *lst1_out = (int16_t)((int32_t)time3 - WL_TIME3_OVF + 1);
-    } else {
+    if (i == 0)
+    {
+        *lst1_out = (int16_t) ((int32_t) time3 - WL_TIME3_OVF + 1);
+    }
+    else
+    {
         *lst1_out = lst1[i - 1];
     }
     *lst2_out = lst2[i];
