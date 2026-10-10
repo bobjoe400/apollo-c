@@ -140,6 +140,11 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz,
 #define AGC_JOB_ATMAG         ((agc_job_id_t)(AGC_JOB_GUID_BASE + 83)) /* ATMAG (guid-landing) */
 #define AGC_JOB_POSECADR      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 84)) /* CM/POSE (guid-entry) */
 #define AGC_JOB_P11SC         ((agc_job_id_t)(AGC_JOB_GUID_BASE + 85)) /* P11 AVGEXIT (guid-entry) */
+#define AGC_JOB_SERV_DVTOTUP  ((agc_job_id_t)(AGC_JOB_GUID_BASE + 86)) /* CM DVTOTUP / LM GETABVAL restart */
+#define AGC_JOB_SERV_AVERAGEG ((agc_job_id_t)(AGC_JOB_GUID_BASE + 87)) /* AVERAGEG restart (redo CALCRVG) */
+#define AGC_JOB_SERV_COPY     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 88)) /* copy cycle restart  */
+#define AGC_JOB_SERV_EXIT     ((agc_job_id_t)(AGC_JOB_GUID_BASE + 89)) /* go to AVGEXIT restart */
+#define AGC_JOB_AVETOMID      ((agc_job_id_t)(AGC_JOB_GUID_BASE + 90)) /* AVGEND 2.2 restart (AVETOMID) */
 #define AGC_JOB_P40_DSKY_DONE AGC_JOB_ENDOFJOB
 
 #define AGC_TASK_GUID_BASE 0x400

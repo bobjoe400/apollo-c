@@ -96,10 +96,12 @@ Design notes:
 * design: DONE (this note)
 * agc_integ.h: DONE include/agc/agc_integ.h
 * integ_internal.h / integ_pending.h: DONE src/nav/
-* integration_init.c (INTSTALL/INTWAKE, entries, PTOA/ATOP, TESTLOOP, A-PCHK, RECTOUT, INTEXIT, RVCON, driver): TODO
-* integration_jobs.c (STATEINT..ENDINT, AVETOMID, MIDTOAV, INTWAKEU, GRP2PC): TODO
+* integration_init.c: DONE (compiles) -- INTSTALL/ERASTAL1/2/OKTOGRAB agc_integ_install, INTWAKE agc_integ_intwake, INTWAKE0/1 agc_integ_intwake0, ERASWAK1/2 agc_integ_eraswake, WAKE wake, CSMPREC/LEMPREC/CSMCONIC/LEMCONIC special_entry, INTEGRVS agc_integ_integrvs, INTEGRV agc_integ_integrv, INTEGRV1 agc_integ_integrv1, INTEGRV2 integrv2, ALOADED aloaded, ATOPCSM/ATOPLEM atop, PTOACSM/PTOALEM agc_integ_ptoacsm/ptoalem, USEPIOS usepios, TESTLOOP testloop, NORFINAL norfinal, DT/2COMP..USEMAXDT dt2comp, POOHCHK poohchk, A-PCHK/ANDOUT/PHEXIT a_pchk, RECTOUT rectout, INTEXIT intexit, RVCON rvcon, ENDSTATE W part wmatrix, RELOADSV reload, driver agc_integ_run, SETIFLGS, THISVINT, GRP2PC, permanent SV agc_integ_perm_get/set
+* integration_jobs.c: DONE (compiles) -- STATEINT agc_task_stateint, STATINT1 agc_job_statint1(+_stall), STATEUP stateup/stateup_lm(+agc_job_stateup_stall), ENDINT endint, NOINT (in statint1), AVETOMID agc_integ_avetomid (INT/W int_w, SETCOAST setcoast_csm, OTHERS others_lm, MOVATHIS move_this), MIDTOAV1/2 agc_integ_midtoav1/2, ENTMID1 entmid1, NOTIME notime, CKMID2/MID2 agc_integ_ckmid2, TIMEINC timeinc, INTWAKEU agc_integ_intwakeu
 * orbital_integration.c: DONE (compiles) -- KEPPREP wrapper agc_integ_kepprep, FBR3 fbr3, GOBAQUE gobaque, GAMCOMP gamcomp/gamcomp_rho, ACCOMP accomp/third_body, OBLATE oblate/moon_axes/legendre_terms/comterm_tvec, QUALITY1-3 quality2/quality3, DOW.. dow/dow1, DIFEQ0/+0/+1/+2/DIFEQCOM difeq0/difeq01/difeq2, ENDSTATE state_step, AMOVED/NEXTCOL/WMATEND agc_integ_wcolumns/wmatend, RECTEST rectest, TIMESTEP agc_integ_timestep (+ LM lm_sphere), CHKSWTCH agc_integ_chkswtch, ORIGCHNG agc_integ_origchng, RECTIFY/MINIRECT agc_integ_rectify/minirect, SETMOON/CLRMOON agc_integ_setmoon
-* integration_csm.c / integration_lm.c: TODO
+* integration_csm.c / integration_lm.c: DONE (SETITCTR agc_integ_setitctr)
+* assertion density top-up: TODO
+* scratch run of the test against a host shim of the numeric core: TODO
 * tests/test_integration.c: TODO
 
 ## Deviations
