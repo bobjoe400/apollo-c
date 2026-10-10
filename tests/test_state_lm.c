@@ -1,0 +1,121 @@
+/*
+ * test_state_lm.c -- state-flags unit tests, LM build (Luminary099 flag names).
+ * The CSM and LM flag headers cannot share a translation unit, hence this
+ * second test binary. See test_state.c for the conventions.
+ */
+#include <stdio.h>
+#include <stdint.h>
+#include "agc/agc_assert.h"
+#include "agc/agc_channels.h"
+#include "agc/agc_flags_lm.h"
+#include "agc/agc_state.h"
+
+static int g_checks;
+static int g_failures;
+
+bool agc_assert_report(const char *file, int line, const char *expr)
+{
+    (void)file;
+    (void)line;
+    (void)expr;
+    return false;
+}
+
+#define CHECK(c) check((c), __LINE__, #c)
+
+static void check(bool ok, int line, const char *text)
+{
+    g_checks++;
+    if (!ok) {
+        g_failures++;
+        (void)printf("FAIL line %d: %s\n", line, text);
+    }
+}
+
+static int agc_dnum(agc_flag_id_t f)
+{
+    return (15 * agc_flag_word(f)) + (15 - agc_flag_bit(f));
+}
+
+static void test_lm_flag_ids(void)
+{
+    /* Numbers from Luminary099/FLAGWORD_ASSIGNMENTS.agc */
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_dnum(AGC_FLAG_MOONFLAG) == 3);
+    CHECK(agc_dnum(AGC_FLAG_P21FLAG) == 4);          /* differs from CSM (033) */
+    CHECK(agc_dnum(AGC_FLAG_NEEDLFLG) == 11);        /* differs from CSM (006) */
+    CHECK(agc_dnum(AGC_FLAG_AVEGFLAG) == 115);       /* differs from CSM (029) */
+    CHECK(agc_dnum(AGC_FLAG_ITSWICH) == 105);        /* differs from CSM (106) */
+    CHECK(agc_dnum(AGC_FLAG_V82EMFLG) == 118);       /* differs from CSM (137) */
+    CHECK(agc_dnum(AGC_FLAG_IDLEFLAG) == 113);
+    CHECK(agc_dnum(AGC_FLAG_APSFLAG) == 152);
+    CHECK(agc_dnum(AGC_FLAG_LRBYPASS) == 165);
+    CHECK(agc_dnum(AGC_FLAG_CDESFLAG) == 180);       /* FLGWRD12 (was RADMODES) */
+    CHECK(agc_dnum(AGC_FLAG_PULSEFLG) == 195);       /* FLGWRD13 (was DAPBOOLS) */
+    CHECK(agc_dnum(AGC_FLAG_AUTR1FLG) == 209);
+    CHECK((int)AGC_FLAG_PULSEFLG == 0xDF);
+    CHECK((int)AGC_FLAG_ETPIFLAG == (int)AGC_FLAG_OPTNSW);
+    CHECK((int)AGC_FLAG_R04FLAG == (int)AGC_FLAG_READRFLG);
+    CHECK((int)AGC_FLAG_CMOONFLG == 0x8C);                /* common header, FLAGWRD8 bit 12 */
+}
+
+static void test_lm_flag_ops(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_state_vehicle() == AGC_VEHICLE_LM);
+    CHECK(agc_flag_set(AGC_FLAG_PULSEFLG) == AGC_STATUS_OK);       /* word 13 exists on LM */
+    CHECK(agc_flag_test(AGC_FLAG_PULSEFLG));
+    CHECK(agc_flagword_get(13) == 0x4000u);
+    CHECK(agc_flag_invert(AGC_FLAG_PULSEFLG) == AGC_STATUS_OK);
+    CHECK(!agc_flag_test(AGC_FLAG_PULSEFLG));
+    CHECK(agc_flag_set(AGC_FLAG_TURNONFL) == AGC_STATUS_OK);
+    CHECK(agc_flagword_get(12) == 0x0001u);
+    CHECK(agc_flag_clear(AGC_FLAG_TURNONFL) == AGC_STATUS_OK);
+    CHECK(agc_flagword_set(13, 077777u) == AGC_STATUS_OK);
+    CHECK(agc_flag_test(AGC_FLAG_AUTR1FLG));
+    CHECK(agc_flag_valid(AGC_FLAG_AUTR1FLG));
+    agc_state_init(AGC_VEHICLE_CSM);                               /* same id invalid on CSM */
+    CHECK(!agc_flag_valid(AGC_FLAG_AUTR1FLG));
+    CHECK(agc_flag_set(AGC_FLAG_AUTR1FLG) == AGC_STATUS_BAD_ARG);
+}
+
+static void test_lm_state(void)
+{
+    agc_state_vector_t in;
+    agc_state_vector_t out;
+    agc_state_init(AGC_VEHICLE_LM);
+    in.r.c[0] = 11; in.r.c[1] = 22; in.r.c[2] = 33;
+    in.v.c[0] = -1; in.v.c[1] = -2; in.v.c[2] = -3;
+    in.t = 4242;
+    in.moon = true;
+    /* LM build: the OTHER vehicle is the CSM */
+    CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
+    CHECK(agc_erase_rrectcsm().c[2] == 33);
+    CHECK(agc_erase_vrectcsm().c[0] == -1);
+    CHECK(agc_erase_tetcsm() == 4242);
+    CHECK(agc_flag_test(AGC_FLAG_CMOONFLG));
+    CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
+    CHECK(agc_sv_get(AGC_SV_OTHER, &out) == AGC_STATUS_OK);
+    CHECK(out.moon && (out.t == 4242) && (out.r.c[1] == 22));
+    CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
+    CHECK(agc_erase_rn().c[0] == 11);
+    CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
+
+    /* LM channel bit names */
+    CHECK(AGC_CH030_ABORTDPS == 000001);
+    CHECK(AGC_CH030_ENGARMED == 000004);
+    CHECK(AGC_CH031_ATTOUTDETENT == 040000);
+    CHECK(AGC_CH033_RRDATAGOOD == 000010);
+    CHECK(AGC_CH012_TRIMPITCHM == 000400);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_ABORTDPS, true) == AGC_STATUS_OK);
+    CHECK((agc_chan_read(AGC_CHAN_CHAN30) & AGC_CH030_ABORTDPS) == 0u);
+}
+
+int main(void)
+{
+    test_lm_flag_ids();
+    test_lm_flag_ops();
+    test_lm_state();
+    (void)printf("test_state_lm: %d checks, %d failures\n", g_checks, g_failures);
+    return (g_failures == 0) ? 0 : 1;
+}

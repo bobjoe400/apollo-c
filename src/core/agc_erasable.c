@@ -77,6 +77,7 @@ static agc_vec_t g_vrectlem;
 static agc_vec_t g_delv;
 static agc_vec_t g_delvslv;
 static agc_vec_t g_vgtig;
+static agc_vec_t g_rls;
 static agc_mat_t g_refsmmat;
 static agc_tp_t g_tephem;
 static agc_sp_t g_csmmass;
@@ -117,6 +118,9 @@ void agc_erase_set_modreg(agc_sp_t v)
         return;
     }
     g_modreg = v;
+    if (!AGC_ASSERT(g_modreg == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_piptime(void)
@@ -139,6 +143,9 @@ void agc_erase_set_piptime(agc_dp_t v)
         return;
     }
     g_piptime = v;
+    if (!AGC_ASSERT(g_piptime == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_tig(void)
@@ -161,6 +168,9 @@ void agc_erase_set_tig(agc_dp_t v)
         return;
     }
     g_tig = v;
+    if (!AGC_ASSERT(g_tig == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_ttogo(void)
@@ -183,6 +193,9 @@ void agc_erase_set_ttogo(agc_dp_t v)
         return;
     }
     g_ttogo = v;
+    if (!AGC_ASSERT(g_ttogo == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_tgo(void)
@@ -205,6 +218,9 @@ void agc_erase_set_tgo(agc_dp_t v)
         return;
     }
     g_tgo = v;
+    if (!AGC_ASSERT(g_tgo == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_ttpi(void)
@@ -227,6 +243,9 @@ void agc_erase_set_ttpi(agc_dp_t v)
         return;
     }
     g_ttpi = v;
+    if (!AGC_ASSERT(g_ttpi == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_tevent(void)
@@ -249,6 +268,9 @@ void agc_erase_set_tevent(agc_dp_t v)
         return;
     }
     g_tevent = v;
+    if (!AGC_ASSERT(g_tevent == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_tetcsm(void)
@@ -271,6 +293,9 @@ void agc_erase_set_tetcsm(agc_dp_t v)
         return;
     }
     g_tetcsm = v;
+    if (!AGC_ASSERT(g_tetcsm == v)) {
+        return;
+    }
 }
 
 agc_dp_t agc_erase_tetlem(void)
@@ -293,6 +318,9 @@ void agc_erase_set_tetlem(agc_dp_t v)
         return;
     }
     g_tetlem = v;
+    if (!AGC_ASSERT(g_tetlem == v)) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_rn(void)
@@ -316,6 +344,9 @@ void agc_erase_set_rn(agc_vec_t v)
         return;
     }
     g_rn = v;
+    if (!AGC_ASSERT(vec_ok(&g_rn))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_vn(void)
@@ -339,6 +370,9 @@ void agc_erase_set_vn(agc_vec_t v)
         return;
     }
     g_vn = v;
+    if (!AGC_ASSERT(vec_ok(&g_vn))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_rrectcsm(void)
@@ -362,6 +396,9 @@ void agc_erase_set_rrectcsm(agc_vec_t v)
         return;
     }
     g_rrectcsm = v;
+    if (!AGC_ASSERT(vec_ok(&g_rrectcsm))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_vrectcsm(void)
@@ -385,6 +422,9 @@ void agc_erase_set_vrectcsm(agc_vec_t v)
         return;
     }
     g_vrectcsm = v;
+    if (!AGC_ASSERT(vec_ok(&g_vrectcsm))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_rrectlem(void)
@@ -408,6 +448,9 @@ void agc_erase_set_rrectlem(agc_vec_t v)
         return;
     }
     g_rrectlem = v;
+    if (!AGC_ASSERT(vec_ok(&g_rrectlem))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_vrectlem(void)
@@ -431,6 +474,9 @@ void agc_erase_set_vrectlem(agc_vec_t v)
         return;
     }
     g_vrectlem = v;
+    if (!AGC_ASSERT(vec_ok(&g_vrectlem))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_delv(void)
@@ -454,6 +500,9 @@ void agc_erase_set_delv(agc_vec_t v)
         return;
     }
     g_delv = v;
+    if (!AGC_ASSERT(vec_ok(&g_delv))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_delvslv(void)
@@ -477,6 +526,9 @@ void agc_erase_set_delvslv(agc_vec_t v)
         return;
     }
     g_delvslv = v;
+    if (!AGC_ASSERT(vec_ok(&g_delvslv))) {
+        return;
+    }
 }
 
 agc_vec_t agc_erase_vgtig(void)
@@ -500,6 +552,35 @@ void agc_erase_set_vgtig(agc_vec_t v)
         return;
     }
     g_vgtig = v;
+    if (!AGC_ASSERT(vec_ok(&g_vgtig))) {
+        return;
+    }
+}
+
+agc_vec_t agc_erase_rls(void)
+{
+    agc_vec_t zero = {{0, 0, 0}};
+    if (!AGC_ASSERT(vec_ok(&g_rls))) {
+        return zero;
+    }
+    if (!AGC_ASSERT(sane())) {
+        return zero;
+    }
+    return g_rls;
+}
+
+void agc_erase_set_rls(agc_vec_t v)
+{
+    if (!AGC_ASSERT(vec_ok(&v))) {
+        return;
+    }
+    if (!AGC_ASSERT(sane())) {
+        return;
+    }
+    g_rls = v;
+    if (!AGC_ASSERT(vec_ok(&g_rls))) {
+        return;
+    }
 }
 
 agc_mat_t agc_erase_refsmmat(void)
@@ -523,6 +604,9 @@ void agc_erase_set_refsmmat(agc_mat_t v)
         return;
     }
     g_refsmmat = v;
+    if (!AGC_ASSERT(mat_ok(&g_refsmmat))) {
+        return;
+    }
 }
 
 agc_tp_t agc_erase_tephem(void)
@@ -545,6 +629,9 @@ void agc_erase_set_tephem(agc_tp_t v)
         return;
     }
     g_tephem = v;
+    if (!AGC_ASSERT(g_tephem == v)) {
+        return;
+    }
 }
 
 agc_sp_t agc_erase_csmmass(void)
@@ -567,6 +654,9 @@ void agc_erase_set_csmmass(agc_sp_t v)
         return;
     }
     g_csmmass = v;
+    if (!AGC_ASSERT(g_csmmass == v)) {
+        return;
+    }
 }
 
 agc_sp_t agc_erase_lemmass(void)
@@ -589,6 +679,9 @@ void agc_erase_set_lemmass(agc_sp_t v)
         return;
     }
     g_lemmass = v;
+    if (!AGC_ASSERT(g_lemmass == v)) {
+        return;
+    }
 }
 
 agc_sp_t agc_erase_pipax(void)
@@ -611,6 +704,9 @@ void agc_erase_set_pipax(agc_sp_t v)
         return;
     }
     g_pipax = v;
+    if (!AGC_ASSERT(g_pipax == v)) {
+        return;
+    }
 }
 
 agc_sp_t agc_erase_pipay(void)
@@ -633,6 +729,9 @@ void agc_erase_set_pipay(agc_sp_t v)
         return;
     }
     g_pipay = v;
+    if (!AGC_ASSERT(g_pipay == v)) {
+        return;
+    }
 }
 
 agc_sp_t agc_erase_pipaz(void)
@@ -655,6 +754,9 @@ void agc_erase_set_pipaz(agc_sp_t v)
         return;
     }
     g_pipaz = v;
+    if (!AGC_ASSERT(g_pipaz == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_cdux(void)
@@ -677,6 +779,9 @@ void agc_erase_set_cdux(uint16_t v)
         return;
     }
     g_cdux = v;
+    if (!AGC_ASSERT(g_cdux == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_cduy(void)
@@ -699,6 +804,9 @@ void agc_erase_set_cduy(uint16_t v)
         return;
     }
     g_cduy = v;
+    if (!AGC_ASSERT(g_cduy == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_cduz(void)
@@ -721,6 +829,9 @@ void agc_erase_set_cduz(uint16_t v)
         return;
     }
     g_cduz = v;
+    if (!AGC_ASSERT(g_cduz == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_cdut(void)
@@ -743,6 +854,9 @@ void agc_erase_set_cdut(uint16_t v)
         return;
     }
     g_cdut = v;
+    if (!AGC_ASSERT(g_cdut == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_cdus(void)
@@ -765,6 +879,9 @@ void agc_erase_set_cdus(uint16_t v)
         return;
     }
     g_cdus = v;
+    if (!AGC_ASSERT(g_cdus == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_markstat(void)
@@ -787,6 +904,9 @@ void agc_erase_set_markstat(uint16_t v)
         return;
     }
     g_markstat = v;
+    if (!AGC_ASSERT(g_markstat == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_imodes30(void)
@@ -809,6 +929,9 @@ void agc_erase_set_imodes30(uint16_t v)
         return;
     }
     g_imodes30 = v;
+    if (!AGC_ASSERT(g_imodes30 == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_imodes33(void)
@@ -831,6 +954,9 @@ void agc_erase_set_imodes33(uint16_t v)
         return;
     }
     g_imodes33 = v;
+    if (!AGC_ASSERT(g_imodes33 == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_dapdatr1(void)
@@ -853,6 +979,9 @@ void agc_erase_set_dapdatr1(uint16_t v)
         return;
     }
     g_dapdatr1 = v;
+    if (!AGC_ASSERT(g_dapdatr1 == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_dapdatr2(void)
@@ -875,6 +1004,9 @@ void agc_erase_set_dapdatr2(uint16_t v)
         return;
     }
     g_dapdatr2 = v;
+    if (!AGC_ASSERT(g_dapdatr2 == v)) {
+        return;
+    }
 }
 
 uint16_t agc_erase_dsptab(int index)
@@ -897,6 +1029,9 @@ agc_status_t agc_erase_set_dsptab(int index, uint16_t v)
         return AGC_STATUS_BAD_ARG;
     }
     g_dsptab[index] = v;
+    if (!AGC_ASSERT(g_dsptab[index] == v)) {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -920,6 +1055,9 @@ agc_status_t agc_erase_set_failreg(int index, uint16_t v)
         return AGC_STATUS_BAD_ARG;
     }
     g_failreg[index] = v;
+    if (!AGC_ASSERT(g_failreg[index] == v)) {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -943,6 +1081,9 @@ agc_status_t agc_erase_set_thetad(int index, uint16_t v)
         return AGC_STATUS_BAD_ARG;
     }
     g_thetad[index] = v;
+    if (!AGC_ASSERT(g_thetad[index] == v)) {
+        return AGC_STATUS_BAD_ARG;
+    }
     return AGC_STATUS_OK;
 }
 
@@ -969,6 +1110,7 @@ void agc_erase_reset(void)
     g_delv = (agc_vec_t){{0, 0, 0}};
     g_delvslv = (agc_vec_t){{0, 0, 0}};
     g_vgtig = (agc_vec_t){{0, 0, 0}};
+    g_rls = (agc_vec_t){{0, 0, 0}};
     for (int i = 0; i < AGC_VEC_N; i++) {
         g_refsmmat.row[i] = (agc_vec_t){{0, 0, 0}};
     }

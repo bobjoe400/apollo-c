@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include "agc/agc_assert.h"
 #include "agc/agc_state.h"
+#include "agc/agc_imu.h"
 #include "sysmisc.h"
 #include "sysmisc_ext.h"
 
@@ -46,7 +47,7 @@ static int32_t cdu_pattern_value(uint16_t pattern)
 {
     uint16_t p = (uint16_t)(pattern & CDU_MASK);
     int32_t  v = (int32_t)p;
-    (void)AGC_ASSERT(pattern <= 0xFFFFu);
+    (void)AGC_ASSERT((pattern & (uint16_t)~CDU_MASK) == 0u);  /* 15-bit */
     if ((p & CDU_SIGN) != 0u) {
         v -= (int32_t)CDU_MODULUS;
     }
@@ -255,7 +256,7 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
             return AGC_STATUS_BAD_ARG;
         }
     }
-    agc_status_t st = agc_imu_imupulse(gyro_cmds);
+    agc_status_t st = agc_imu_pulse(gyro_cmds.c);     /* OGC buffer */
     (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY);
     return st;
 }

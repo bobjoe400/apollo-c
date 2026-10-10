@@ -157,6 +157,11 @@ void         agc_erase_set_delvslv(agc_vec_t v);
 agc_vec_t    agc_erase_vgtig(void);
 void         agc_erase_set_vgtig(agc_vec_t v);
 
+/* landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30
+ * 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing */
+agc_vec_t    agc_erase_rls(void);
+void         agc_erase_set_rls(agc_vec_t v);
+
 /* reference-to-stable-member matrix, row-major, DP elements, scale 2^1
  * (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') */
 agc_mat_t    agc_erase_refsmmat(void);

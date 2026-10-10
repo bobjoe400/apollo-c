@@ -57,3 +57,41 @@ output, B-1). Angles: "revs" = DP fraction of one revolution (B0);
 | AOTMARK, MKRELEAS, GETDAT, DODAT, OPTAXIS, OANB, SURFSTAR, GETMKS, MARKCHEX, AVESTAR, AVEIT, MARKRUPT, MKREJ, MARKTYPE, VACSTOR, REMARK, CHANGEVB, DSPV6N79 (AOTMARK.agc) | | | src/lm/aotmark.c |
 | R52 (CM AOP), SR52.1, ADVTRACK, ROTA, ADVORB, TERM52, R53, CHKSCODE, R56 (CM alt LOS), SXTSM | | | src/csm/r52_r53_csm.c |
 | R52 (LM), R59, P57, GVDETER, GRAVEL, LUNG, GYROTRIM, 2STARS, SURFLINE, COATRIM, MFREF, REFMF, IMUCHK | | | src/lm/p57.c, src/lm/r59_r52_lm.c |
+
+## Progress
+
+| item | status |
+|---|---|
+| include/agc/agc_align.h (public API, alignment erasable block) | PARTIAL (job prototypes finalised at end) |
+| src/programs/align_pending.h (assumed external interfaces, provisional job ids) | DONE |
+| align util: CDULOGIC/1STO2S/CDUTRIG-equiv/CALCSMSC/RAM | TODO |
+| S52.2, S52.3, P52LS, LSORIENT, CAL53A compare, GYCRS math | TODO |
+| LOCSAM, OCCOS, OCCULT, PICAPAR/R56, PLANET, CHKSDATA math, R51 solve, SVDWN | TODO |
+| R54/R55 shared jobs | TODO |
+| CSM P52/P54, P51/P53, R51, R52, SR52.1, ADVTRACK, R53, R56, SXTSM | TODO |
+| SXTMARK.agc | TODO |
+| CSM_GEOMETRY.agc | TODO |
+| S-band CM / LM | TODO |
+| LM P52, P51, R51, R52, R59, P57 family | TODO |
+| AOTMARK.agc | TODO |
+| LEM_GEOMETRY.agc | TODO |
+| R63.agc | TODO |
+| AGS_INITIALIZATION.agc | TODO |
+| LUNAR_LANDMARK_SELECTION_FOR_CM.agc | DONE (file is empty in Comanche 055) |
+| tests/test_align.c | TODO |
+
+## Requested core additions
+
+All assumed interfaces are declared, with owner, in
+src/programs/align_pending.h (state-flags accessors beyond agc_erasable.c,
+io-pinball display calls with continuation job + response code in
+ctx->arg, exec GOTOPOOH/DELAYJOB/VAC claim/RESUME, imu CALCGTA/CALCGA/
+AXISGEN/ARCTRIG/IMUCOARS/IMUFINE/IMUPULSE/IMUSTALL/OPTSTALL/VECPOINT/
+BALLANGS/R60LEM/1/PIPA/GCOMPZER, guid-powered *SMNB* / *NBSM* / PIPASR,
+nav-integ CSM/LEM CONIC/PREC, nav-aux LSPOS/star table/RP-TO-R/R-TO-RP/
+LAT-LONG/LALOTORV, prog-rendz LLASRD/LLASRDA/R61CSM, guid-landing DESCBITS).
+
+## Requested jobs-tasks
+
+Provisional AGC_JOB_* / AGC_TASK_* constants in src/programs/align_pending.h
+(0x0A01..); each maps to an agc_job_<label>() in this module.

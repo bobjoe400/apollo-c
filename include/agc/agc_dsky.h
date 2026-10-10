@@ -108,17 +108,24 @@ agc_status_t agc_dsky_prockey_request(void);   /* NOVAC PROCKEY (T4RUPT) */
  * in *relay_word. AGC_STATUS_NOT_FOUND when nothing is pending (the
  * caller then turns the relays off as NODSPOUT does).                  */
 agc_status_t agc_dsky_dspout(uint16_t *relay_word);
-uint16_t     agc_dsky_dsptab(int index);   /* raw DSPTAB word 0..13      */
-agc_status_t agc_dsky_set_dsptab11(uint16_t word); /* C relays (DSPTAB+11D) */
+/* DSPTAB itself is the shared erasable agc_erase_dsptab(0..11) in
+ * agc_state.h (+11D = C/S lamp relays, written by T4RUPT/IMU/alarms).  */
 int16_t      agc_dsky_nout(void);          /* NOUT                        */
 agc_status_t agc_dsky_get_state(agc_dsky_state_t *out);
 
 /* ---- pinball erasables other modules / noun data read ----------------- */
-/* DSPTEM1 +0..+2 = index 0..2, DSPTEM2 +0..+2 = index 3..5.            */
-agc_sp_t     agc_dsky_dsptem(int index);
-agc_status_t agc_dsky_set_dsptem(int index, agc_sp_t value);
+/* DSPTEM1 +0..+2 = index 0..2, DSPTEM2 +0..+2 = index 3..5, index 6 =
+ * the word after DSPTEM2 +2 (DSPTEMX +2). Raw 15-bit AGC words.
+ * DSPTEMX = OPTIONX = DSPTEM2 +1, NORMTEM1 = DSPTEM1.                   */
+uint16_t     agc_dsky_dsptem(int index);
+agc_status_t agc_dsky_set_dsptem(int index, uint16_t word);
 /* XREG YREG ZREG as the AGC keeps them for noun 07 (octal words).      */
 uint16_t     agc_dsky_xyzreg(int index);
+/* Pinball resolves the noun data ids that name its own erasables
+ * (DSPTEM1.., DSPTEM2.., DSPTEMX.., OPTIONX.., XREG/YREG/ZREG).
+ * NOT_FOUND when the id is not one of them.                            */
+agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value);
+agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value);
 /* Verb and noun at the time the operator answered ENDIDLE (the AGC left
  * them in the woken job's MPAC, MPAC+1).                               */
 agc_status_t agc_dsky_response(uint8_t *verb, uint8_t *noun);

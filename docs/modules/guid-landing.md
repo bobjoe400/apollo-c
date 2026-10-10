@@ -89,3 +89,40 @@ Scale notation: "2^N u" = fraction * 2^N in unit u. cs = centiseconds.
 | YCOMP, LOGSUB | agc_lm_ycomp, agc_lm_logsub |
 | LANDISP .. ABORTON | agc_lm_landisp and helpers, agc_lm_task_intlze, agc_lm_task_speedrun2 |
 | INITCDUW, FINDCDUW, FLTRSUB, UNWCTEST, DCMCL, NB2CDUSP, DVBYCOSM, ARCTRGSP, SPARCSIN, LIMITSUB, ONESTO2S, NOATTCNT, ALARMMGA | agc_lm_initcduw, agc_lm_findcduw, static helpers, agc_lm_sparcsin, agc_lm_limitsub |
+
+## Progress
+
+Infrastructure:
+- DONE src/lm/landing_pending.h (all not-yet-existing shared symbols, one place)
+- DONE include/agc/agc_lm_landing.h (lane API + state structs; may grow)
+- TODO src/lm/landing_state.c (state, PHASCHNG/FASTCHNG/DV/MP helpers)
+
+Per file (TODO unless marked):
+- TODO throttle.c: THROTTLE, AFDUMP, WHERETO..FLATOUT2, DOPIF, DOIT, FWEIGHT, FLATOUT, WHATOUT, MASSMULT
+- TODO findcduw.c: INITCDUW, FINDCDUW, FLTRSUB, UNWCTEST, DCMCL, NB2CDUSP, DVBYCOSM, ARCTRGSP, SPARCSIN, LIMITSUB, ONESTO2S, NOATTCNT, ALARMMGA
+- TODO landing_guidance.c: LUNLAND/GUILDRET, TTFINCR, CALCRGVG, RGVGCALC, TTF/8CL, ROOTPSRS, QUADGUID, AFCCALC, CGCALC, EXTLOGIC, EXGSUB/EXBRAK/EXNORM, STEER?, DISPEXIT, P65VERT, TDISPSET
+- TODO lunar_landing.c: P63LM, IGNALG, DDUMCALC, ASTNRET..P63SPOT4, GUILDEN (R13), STARTP64/66/67, REDESIG, P64DISPS, RODTASK/RODCOMP, PITFALL/REDESMON, DESCBITS, P68
+- TODO p70_p71.c: R10,R11, P70/P71, ABRTJASK, GOABORT, P70INIT, BOTHPOLY, P71RET, TGOCOMP, THROTUP
+- TODO ascent.c: P12LM, P12INIT, COMMINIT, GUIDINIT, ATMAG, ASCENT (all labels), ENGOFF, CUTOFF*, TERMASC, YCOMP, LOGSUB
+- TODO landing_displays.c: LANDISP .. ABORTON, VMONITOR
+- TODO tests/test_landing.c
+
+## Requested core additions
+
+All are declared (provisionally) in src/lm/landing_pending.h, grouped by
+owning lane: LM flags (AGC_FLAG_*), channel bits (AGC_CH0nn_*), DAPBOOLS bits,
+shared erasable accessors (agc_erase_*), exec (newmodex, gotopooh, enema),
+DSKY (godspr, regodspr, goflash, goperf1, falton, reldsp, pinbrnch), nav
+(rp_to_r, r_to_rp, lat_long, lemprec, intstall, integrvs), guid-powered
+(mungrav, quictrig, smnb, cdu_nbsm, servicer avgexit/setpos1/lrhtask,
+burnbaby, stclok2, enginof2, p40auto), dap-lm (stoprate, zatteror,
+set/restore deadbands, pflitedb), imu/align (r02both, r60lem, r51, refmf).
+Final exact list is that header.
+
+## Requested jobs-tasks
+
+Placeholder enums in landing_pending.h (lm_pending_job / lm_pending_task):
+jobs P63LM IGNALGRT ASTNRET P63SPOT3 P63SPOT4 P64CEED P64DISPS RODCOMP
+LANDJUNK LANDJUNK2 GOABORT P12LM P12LM2 NEWLOAD NEWLOAD2 CUTOFF CUTOFF1
+CUTOFF2 TERMASC LUNLAND ATMAG; tasks RODTASK REDESMON ENGOFF1 R10_R11 INTLZE
+SPEEDRUN2.

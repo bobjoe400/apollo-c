@@ -17,12 +17,18 @@
  *  - HMS nouns (scale AGC_SCALE_HMS) are a single DP centisecond word shown
  *    across R1,R2,R3: scale_type[0..2] are all AGC_SCALE_HMS but only
  *    data_id[0] is set; data_id[1], data_id[2] are AGC_DATA_NONE.
- *  - A single-precision (SP) erasable is returned by agc_noun_read() in the
- *    high word of the agc_dp_t (agc_dp_from_sp) and agc_noun_write() takes
- *    the same form; a DP erasable is returned as the agc_dp_t itself. Which
- *    kind a data id is, is given in the comment next to the id and by
- *    agc_scale_info().is_dp of the component's scale type.
- *  - Octal (AGC_SCALE_OCTAL) components are SP words.
+ *  - Value convention of agc_noun_read()/agc_noun_write(), by data kind
+ *    (the id's comment in agc_noun_data_t and agc_scale_info_t.is_dp/is_raw):
+ *      DP    the DP erasable as the agc_dp_t itself;
+ *      SP    one SP word in the high word of the agc_dp_t (agc_dp_from_sp /
+ *            agc_dp_high);
+ *      SP raw  a scale whose AGC word uses all 15 bits (octal words, CDU
+ *            angles, 360-CDU, Y optics, channel images -- OCTAL, CDU_DEG,
+ *            CDU360, Y_OPTICS_DEG, LR_POSITION): the unsigned word 0..0x7FFF
+ *            as a plain integer in the agc_dp_t (no ones'-complement
+ *            interpretation, so 0o77777 stays 0o77777). An id used by both
+ *            a raw and a signed scale (CSM OPTION2: octal, and WHOLE in noun
+ *            72) is raw; the two agree for words 0..0x3FFF.
  *  - Nouns 01-03, 10, 15 do not name a fixed erasable: their data ids are
  *    AGC_DATA_SPECIFY_ADDR / _SPECIFY_CHANNEL / _INCREMENT_ADDR and the
  *    pinball module resolves them itself (agc_noun_read returns NOT_FOUND).
@@ -140,31 +146,31 @@ typedef enum agc_noun_data {
     AGC_DATA_CHANNEL33,       /* SP: I/O channel 33 image (LM noun 66 LR pos)*/
     AGC_DATA_ABVEL,                             /* DP VEL3; LM:62,63 */
     AGC_DATA_ACTCENT,                           /* DP DP_DEG360; CSM:52 LM:52 */
-    AGC_DATA_ALMCADR,                           /* SP OCTAL; CSM:08 LM:08 */
-    AGC_DATA_ALMCADR_P1,                        /* SP OCTAL; CSM:08 LM:08 */
-    AGC_DATA_ALMCADR_P2,                        /* SP OCTAL; CSM:08 LM:08 */
+    AGC_DATA_ALMCADR,                           /* SP raw OCTAL; CSM:08 LM:08 */
+    AGC_DATA_ALMCADR_P1,                        /* SP raw OCTAL; CSM:08 LM:08 */
+    AGC_DATA_ALMCADR_P2,                        /* SP raw OCTAL; CSM:08 LM:08 */
     AGC_DATA_ALPHASB,                           /* DP DP_DEG360; LM:51 */
     AGC_DATA_ALT,                               /* DP POS4; CSM:43 LM:43 */
     AGC_DATA_ALTI,                              /* DP POS4; CSM:62 */
-    AGC_DATA_AOTCODE,                           /* SP OCTAL; LM:70,71 */
-    AGC_DATA_AOTCODE_P1,                        /* SP OCTAL; LM:70,71 */
-    AGC_DATA_AOTCODE_P2,                        /* SP OCTAL; LM:70,71 */
-    AGC_DATA_AZ,                                /* SP CDU_DEG; LM:87 */
+    AGC_DATA_AOTCODE,                           /* SP raw OCTAL; LM:70,71 */
+    AGC_DATA_AOTCODE_P1,                        /* SP raw OCTAL; LM:70,71 */
+    AGC_DATA_AOTCODE_P2,                        /* SP raw OCTAL; LM:70,71 */
+    AGC_DATA_AZ,                                /* SP raw CDU_DEG; LM:87 */
     AGC_DATA_BETASB,                            /* DP DP_DEG360; LM:51 */
-    AGC_DATA_CDUS,                              /* SP CDU_DEG; CSM:91 LM:72 */
-    AGC_DATA_CDUT,                              /* SP Y_OPTICS_DEG,CDU360; CSM:91 LM:72 */
-    AGC_DATA_CDUX,                              /* SP CDU_DEG; CSM:20 LM:20 */
-    AGC_DATA_CDUY,                              /* SP CDU_DEG; CSM:20 LM:20 */
-    AGC_DATA_CDUZ,                              /* SP CDU_DEG; CSM:20 LM:20 */
+    AGC_DATA_CDUS,                              /* SP raw CDU_DEG; CSM:91 LM:72 */
+    AGC_DATA_CDUT,                              /* SP raw Y_OPTICS_DEG,CDU360; CSM:91 LM:72 */
+    AGC_DATA_CDUX,                              /* SP raw CDU_DEG; CSM:20 LM:20 */
+    AGC_DATA_CDUY,                              /* SP raw CDU_DEG; CSM:20 LM:20 */
+    AGC_DATA_CDUZ,                              /* SP raw CDU_DEG; CSM:20 LM:20 */
     AGC_DATA_CENTANG,                           /* DP DP_DEG360; CSM:55 LM:55 */
-    AGC_DATA_CPHIX,                             /* SP CDU_DEG; CSM:17,96 */
-    AGC_DATA_CPHIX_P1,                          /* SP CDU_DEG; CSM:17,96 */
-    AGC_DATA_CPHIX_P2,                          /* SP CDU_DEG; CSM:17,96 */
+    AGC_DATA_CPHIX,                             /* SP raw CDU_DEG; CSM:17,96 */
+    AGC_DATA_CPHIX_P1,                          /* SP raw CDU_DEG; CSM:17,96 */
+    AGC_DATA_CPHIX_P2,                          /* SP raw CDU_DEG; CSM:17,96 */
     AGC_DATA_CSMMASS,                           /* SP WEIGHT2; CSM:47 LM:47 */
-    AGC_DATA_CURSOR,                            /* SP CDU_DEG; LM:79 */
+    AGC_DATA_CURSOR,                            /* SP raw CDU_DEG; LM:79 */
     AGC_DATA_D,                                 /* DP DRAG_ACCEL; CSM:64,74 */
-    AGC_DATA_DAPDATR1,                          /* SP OCTAL; CSM:46 LM:46 */
-    AGC_DATA_DAPDATR2,                          /* SP OCTAL; CSM:46 */
+    AGC_DATA_DAPDATR1,                          /* SP raw OCTAL; CSM:46 LM:46 */
+    AGC_DATA_DAPDATR2,                          /* SP raw OCTAL; CSM:46 */
     AGC_DATA_DATAGOOD,                          /* SP WHOLE; LM:80 */
     AGC_DATA_DELHITE,                           /* DP POS4; CSM:72 */
     AGC_DATA_DELTAH,                            /* DP COMP_ALT; LM:68 */
@@ -182,10 +188,10 @@ typedef enum agc_noun_data {
     AGC_DATA_DELVTPI,                           /* DP VEL3; CSM:58 LM:58 */
     AGC_DATA_DIFFALT,                           /* DP POS4; CSM:75 LM:75 */
     AGC_DATA_DNRNGERR,                          /* DP POS6; CSM:66 */
-    AGC_DATA_DSPTEM1,                           /* SP WHOLE,OCTAL,CDU_DEG; CSM:25,26,29,30,41,97 LM:25,26,41,97 */
+    AGC_DATA_DSPTEM1,                           /* SP raw WHOLE,OCTAL,CDU_DEG; CSM:25,26,29,30,41,97 LM:25,26,41,97 */
     AGC_DATA_DSPTEM1_DP,                        /* DP DP_DEG360,HMS; CSM:05,31,34 LM:04,05,34 */
-    AGC_DATA_DSPTEM1_P1,                        /* SP WHOLE,OCTAL,ELEV_DEG; CSM:25,26,30,41,97 LM:25,26,41,97 */
-    AGC_DATA_DSPTEM1_P2,                        /* SP WHOLE,OCTAL; CSM:25,26,30,97 LM:25,26,97 */
+    AGC_DATA_DSPTEM1_P1,                        /* SP raw WHOLE,OCTAL,ELEV_DEG; CSM:25,26,30,41,97 LM:25,26,41,97 */
+    AGC_DATA_DSPTEM1_P2,                        /* SP raw WHOLE,OCTAL; CSM:25,26,30,97 LM:25,26,97 */
     AGC_DATA_DSPTEM2,                           /* SP WHOLE; CSM:98 LM:98 */
     AGC_DATA_DSPTEM2_P1,                        /* SP FRACTION; CSM:98 LM:98 */
     AGC_DATA_DSPTEM2_P1_DP,                     /* DP HMS; CSM:24 LM:24 */
@@ -198,14 +204,14 @@ typedef enum agc_noun_data {
     AGC_DATA_DVLOS_P2,                          /* DP VEL3; CSM:59 LM:59 */
     AGC_DATA_DVLOS_P4,                          /* DP VEL3; CSM:59 LM:59 */
     AGC_DATA_DVTOTAL,                           /* DP VEL3,VEL2; CSM:40,80 LM:40,62 */
-    AGC_DATA_EL,                                /* SP CDU_DEG; LM:87 */
+    AGC_DATA_EL,                                /* SP raw CDU_DEG; LM:87 */
     AGC_DATA_ELEV,                              /* DP DP_DEG360; CSM:55 LM:55 */
-    AGC_DATA_FAILREG,                           /* SP OCTAL; CSM:09 LM:09 */
-    AGC_DATA_FAILREG_P1,                        /* SP OCTAL; CSM:09 LM:09 */
-    AGC_DATA_FAILREG_P2,                        /* SP OCTAL; CSM:09 LM:09 */
-    AGC_DATA_FDAIX,                             /* SP CDU_DEG; LM:18 */
-    AGC_DATA_FDAIY,                             /* SP CDU_DEG; LM:18 */
-    AGC_DATA_FDAIZ,                             /* SP CDU_DEG; LM:18 */
+    AGC_DATA_FAILREG,                           /* SP raw OCTAL; CSM:09 LM:09 */
+    AGC_DATA_FAILREG_P1,                        /* SP raw OCTAL; CSM:09 LM:09 */
+    AGC_DATA_FAILREG_P2,                        /* SP raw OCTAL; CSM:09 LM:09 */
+    AGC_DATA_FDAIX,                             /* SP raw CDU_DEG; LM:18 */
+    AGC_DATA_FDAIY,                             /* SP raw CDU_DEG; LM:18 */
+    AGC_DATA_FDAIZ,                             /* SP raw CDU_DEG; LM:18 */
     AGC_DATA_FUNNYDSP,                          /* DP TWO_INT; LM:64 */
     AGC_DATA_GAMMAEI,                           /* DP DP_DEG360; CSM:60 */
     AGC_DATA_GAMMASB,                           /* DP DP_DEG360; CSM:51 */
@@ -217,20 +223,20 @@ typedef enum agc_noun_data {
     AGC_DATA_HDOT,                              /* DP VEL2; CSM:62 */
     AGC_DATA_HDOTDISP,                          /* DP VEL3; LM:60,63,64 */
     AGC_DATA_HEADSUP,                           /* SP WHOLE; CSM:61 */
-    AGC_DATA_HORIZON,                           /* SP OCTAL; CSM:70,71 */
+    AGC_DATA_HORIZON,                           /* SP raw OCTAL; CSM:70,71 */
     AGC_DATA_HPER,                              /* DP POS4; CSM:42 LM:42 */
     AGC_DATA_HPERX,                             /* DP POS4; CSM:44,50 LM:44 */
     AGC_DATA_LANDALT,                           /* DP POS5; CSM:89 LM:89 */
     AGC_DATA_LANDLAT,                           /* DP DP_DEG90; CSM:89 LM:89 */
     AGC_DATA_LANDLONG,                          /* DP DP_DEG90; CSM:89 LM:89 */
-    AGC_DATA_LANDMARK,                          /* SP OCTAL; CSM:70,71 */
+    AGC_DATA_LANDMARK,                          /* SP raw OCTAL; CSM:70,71 */
     AGC_DATA_LAT,                               /* DP DP_DEG360; CSM:43,67 LM:43 */
     AGC_DATA_LAT_SPL,                           /* DP DP_DEG360; CSM:61 */
     AGC_DATA_LEMMASS,                           /* SP WEIGHT2; CSM:47 LM:47 */
     AGC_DATA_LNG_SPL,                           /* DP DP_DEG360; CSM:61 */
     AGC_DATA_LONG,                              /* DP DP_DEG360; CSM:43,67 LM:43 */
-    AGC_DATA_MRKBUF1_P3,                        /* SP CDU_DEG; CSM:87,94 */
-    AGC_DATA_MRKBUF1_P5,                        /* SP Y_OPTICS_DEG; CSM:87,94 */
+    AGC_DATA_MRKBUF1_P3,                        /* SP raw CDU_DEG; CSM:87,94 */
+    AGC_DATA_MRKBUF1_P5,                        /* SP raw Y_OPTICS_DEG; CSM:87,94 */
     AGC_DATA_N49DISP,                           /* DP POS4; CSM:49 */
     AGC_DATA_N49DISP_P2,                        /* DP VEL3; CSM:49 */
     AGC_DATA_N49DISP_P4,                        /* SP WHOLE; CSM:49 */
@@ -241,16 +247,16 @@ typedef enum agc_noun_data {
     AGC_DATA_OGC_P2,                            /* DP DP_DEG90; CSM:93 LM:93 */
     AGC_DATA_OGC_P4,                            /* DP DP_DEG90; CSM:93 LM:93 */
     AGC_DATA_OMEGAD,                            /* DP DP_DEG360; LM:80 */
-    AGC_DATA_OPTION1,                           /* SP OCTAL; CSM:06 LM:06 */
-    AGC_DATA_OPTION2,                           /* SP OCTAL,WHOLE; CSM:06,72 LM:06 */
-    AGC_DATA_OPTION3,                           /* SP OCTAL; LM:06 */
-    AGC_DATA_OPTIONX,                           /* SP OCTAL; CSM:12 LM:12 */
-    AGC_DATA_OPTIONX_P1,                        /* SP OCTAL; CSM:12 LM:12 */
+    AGC_DATA_OPTION1,                           /* SP raw OCTAL; CSM:06 LM:06 */
+    AGC_DATA_OPTION2,                           /* SP raw OCTAL,WHOLE; CSM:06,72 LM:06 */
+    AGC_DATA_OPTION3,                           /* SP raw OCTAL; LM:06 */
+    AGC_DATA_OPTIONX,                           /* SP raw OCTAL; CSM:12 LM:12 */
+    AGC_DATA_OPTIONX_P1,                        /* SP raw OCTAL; CSM:12 LM:12 */
     AGC_DATA_OUTOFPLN,                          /* DP POS7; LM:61 */
     AGC_DATA_P21ALT,                            /* DP POS4; CSM:73 LM:91 */
     AGC_DATA_P21GAM,                            /* DP DP_DEG360; CSM:73 LM:91 */
     AGC_DATA_P21VEL,                            /* DP VEL2; CSM:73 LM:91 */
-    AGC_DATA_PAC,                               /* SP Y_OPTICS_DEG; CSM:92 */
+    AGC_DATA_PAC,                               /* SP raw Y_OPTICS_DEG; CSM:92 */
     AGC_DATA_PACTOFF,                           /* SP TRIM_DEG; CSM:48 */
     AGC_DATA_PIPAX,                             /* SP WHOLE; CSM:21 LM:21 */
     AGC_DATA_PIPAY,                             /* SP WHOLE; CSM:21 LM:21 */
@@ -260,9 +266,9 @@ typedef enum agc_noun_data {
     AGC_DATA_PLUS_MGA,                          /* DP DP_DEG360; CSM:45 LM:45 */
     AGC_DATA_POSCODE,                           /* SP WHOLE; LM:79 */
     AGC_DATA_POSTTPI,                           /* DP POS4; CSM:58 LM:58 */
-    AGC_DATA_PRAXIS,                            /* SP CDU_DEG; CSM:95 */
-    AGC_DATA_PRAXIS_P1,                         /* SP CDU_DEG; CSM:95 */
-    AGC_DATA_PRAXIS_P2,                         /* SP CDU_DEG; CSM:95 */
+    AGC_DATA_PRAXIS,                            /* SP raw CDU_DEG; CSM:95 */
+    AGC_DATA_PRAXIS_P1,                         /* SP raw CDU_DEG; CSM:95 */
+    AGC_DATA_PRAXIS_P2,                         /* SP raw CDU_DEG; CSM:95 */
     AGC_DATA_Q7,                                /* DP DRAG_ACCEL; CSM:69 */
     AGC_DATA_R22DISP,                           /* DP POS4; LM:49 */
     AGC_DATA_R22DISP_P2,                        /* DP VEL3; LM:49 */
@@ -287,29 +293,29 @@ typedef enum agc_noun_data {
     AGC_DATA_RTGON64,                           /* DP POS6; CSM:64 */
     AGC_DATA_RTGON67,                           /* DP POS6; CSM:67 */
     AGC_DATA_RTHETA,                            /* DP DP_DEG360; CSM:53,54,90 LM:54,90 */
-    AGC_DATA_SAC,                               /* SP CDU_DEG; CSM:92 */
+    AGC_DATA_SAC,                               /* SP raw CDU_DEG; CSM:92 */
     AGC_DATA_SAMPTIME,                          /* DP HMS; CSM:65 LM:65 */
     AGC_DATA_SMODE,                             /* SP WHOLE; CSM:27 LM:27 */
-    AGC_DATA_SPIRAL,                            /* SP CDU_DEG; LM:79 */
+    AGC_DATA_SPIRAL,                            /* SP raw CDU_DEG; LM:79 */
     AGC_DATA_STARAD,                            /* SP FRACTION; LM:88 */
     AGC_DATA_STARAD_P2,                         /* SP FRACTION; LM:88 */
     AGC_DATA_STARAD_P4,                         /* SP FRACTION; LM:88 */
-    AGC_DATA_STARCODE,                          /* SP OCTAL; CSM:70,71 */
+    AGC_DATA_STARCODE,                          /* SP raw OCTAL; CSM:70,71 */
     AGC_DATA_STARSAV3,                          /* DP DP_FRACTION; CSM:88 */
     AGC_DATA_STARSAV3_P2,                       /* DP DP_FRACTION; CSM:88 */
     AGC_DATA_STARSAV3_P4,                       /* DP DP_FRACTION; CSM:88 */
     AGC_DATA_T1TOT2,                            /* DP MIN_SEC; CSM:75 LM:75 */
     AGC_DATA_T2TOT3,                            /* DP MIN_SEC; CSM:75 LM:75 */
     AGC_DATA_T3TOT4,                            /* DP HMS; CSM:39 */
-    AGC_DATA_TANG,                              /* SP CDU360; LM:73 */
-    AGC_DATA_TANG_P1,                           /* SP CDU_DEG; LM:73 */
+    AGC_DATA_TANG,                              /* SP raw CDU360; LM:73 */
+    AGC_DATA_TANG_P1,                           /* SP raw CDU_DEG; LM:73 */
     AGC_DATA_TCDH,                              /* DP HMS; CSM:13 LM:13 */
     AGC_DATA_TCSI,                              /* DP HMS; CSM:11 LM:11 */
     AGC_DATA_TET,                               /* DP HMS; CSM:38 LM:38 */
     AGC_DATA_TFF,                               /* DP MIN_SEC; CSM:44,50 LM:44 */
-    AGC_DATA_THETAD,                            /* SP CDU_DEG; CSM:18,19,22 LM:22 */
-    AGC_DATA_THETAD_P1,                         /* SP CDU_DEG; CSM:18,19,22 LM:22 */
-    AGC_DATA_THETAD_P2,                         /* SP CDU_DEG; CSM:18,19,22 LM:22 */
+    AGC_DATA_THETAD,                            /* SP raw CDU_DEG; CSM:18,19,22 LM:22 */
+    AGC_DATA_THETAD_P1,                         /* SP raw CDU_DEG; CSM:18,19,22 LM:22 */
+    AGC_DATA_THETAD_P2,                         /* SP raw CDU_DEG; CSM:18,19,22 LM:22 */
     AGC_DATA_THETZERO,                          /* DP DP_DEG360; CSM:72 */
     AGC_DATA_TIG,                               /* DP HMS; CSM:33 LM:33 */
     AGC_DATA_TIME2,                             /* DP HMS; CSM:36 LM:36 */
@@ -334,14 +340,14 @@ typedef enum agc_noun_data {
     AGC_DATA_WWPOS,                             /* DP POS9; CSM:99 LM:99 */
     AGC_DATA_WWVEL,                             /* DP VEL4; CSM:99 LM:99 */
     AGC_DATA_XRANGE,                            /* DP POS4; LM:76 */
-    AGC_DATA_XREG,                              /* SP OCTAL; CSM:07 LM:07 */
+    AGC_DATA_XREG,                              /* SP raw OCTAL; CSM:07 LM:07 */
     AGC_DATA_XRNGERR,                           /* DP POS8; CSM:66 */
     AGC_DATA_YACTOFF,                           /* SP TRIM_DEG; CSM:48 */
     AGC_DATA_YAW,                               /* DP DP_DEG360; LM:74 */
     AGC_DATA_YDOT,                              /* DP VEL3; LM:77 */
-    AGC_DATA_YREG,                              /* SP OCTAL; CSM:07 LM:07 */
+    AGC_DATA_YREG,                              /* SP raw OCTAL; CSM:07 LM:07 */
     AGC_DATA_ZDOTD,                             /* DP VEL3; LM:76 */
-    AGC_DATA_ZREG,                              /* SP OCTAL; CSM:07 LM:07 */
+    AGC_DATA_ZREG,                              /* SP raw OCTAL; CSM:07 LM:07 */
     AGC_DATA_COUNT
 } agc_noun_data_t;
 
@@ -386,6 +392,7 @@ typedef struct agc_scale_info {
     uint8_t     routine;      /* agc_sf_routine_t code for this vehicle     */
     uint8_t     sf_code;      /* SF constant code number (SFINTAB index)    */
     bool        is_dp;        /* erasable is a DP pair (else one SP word)   */
+    bool        is_raw;       /* SP word passed raw, 15 bits (see top)      */
     agc_dp_t    sf_in;        /* SFINTAB entry for loads (2DEC, scale 2^28) */
     agc_dp_t    sf_out;       /* SFOUTAB entry for displays                 */
 } agc_scale_info_t;

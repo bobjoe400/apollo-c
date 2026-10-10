@@ -130,6 +130,9 @@ bool agc_flag_valid(agc_flag_id_t f)
 {
     const int word = (int)(f >> 4);
     const int bit = (int)(f & 0xFu);
+    if (!AGC_ASSERT(f <= 0xFFu)) {
+        return false;
+    }
     if (!AGC_ASSERT(bit >= 0)) {
         return false;
     }
@@ -251,8 +254,12 @@ static agc_flag_id_t other_moon_flag(void)
     if (!AGC_ASSERT(vehicle_ok())) {
         return (agc_flag_id_t)AGC_FLAG_LMOONFLG;
     }
-    return (g_vehicle == AGC_VEHICLE_CSM) ? (agc_flag_id_t)AGC_FLAG_LMOONFLG
-                                          : (agc_flag_id_t)AGC_FLAG_CMOONFLG;
+    const agc_flag_id_t f = (g_vehicle == AGC_VEHICLE_CSM) ? (agc_flag_id_t)AGC_FLAG_LMOONFLG
+                                                           : (agc_flag_id_t)AGC_FLAG_CMOONFLG;
+    if (!AGC_ASSERT(agc_flag_valid(f))) {
+        return (agc_flag_id_t)AGC_FLAG_LMOONFLG;
+    }
+    return f;
 }
 
 agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)

@@ -67,4 +67,128 @@ agc_status_t agc_phase_change(int group, uint16_t phase_code);   /* PHASCHNG */
 agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio); /* NEWPHASE */
 agc_status_t agc_phase_restart_all(void);                        /* RESTART  */
 
+/* ======================================================================
+ * Additions by exec-sched (see docs/modules/exec-sched.md).
+ * ====================================================================== */
+
+/* Executive core sets: Comanche055 has 7 (NO.CORES = 6), Luminary099 has
+ * 8 (NO.CORES = 7, EJSCAN also tests PRIORITY +84D). DUMMYJOB uses none.  */
+#define AGC_EXEC_CORE_SETS_CSM 7
+#define AGC_EXEC_CORE_SETS_LM  8
+
+/* Alarm / abort codes raised by the exec lane (octal, as in the listing). */
+#define AGC_ALARM_00217 ((agc_alarm_code_t)00217) /* CURTAINS                 */
+#define AGC_ALARM_01103 ((agc_alarm_code_t)01103) /* unused CCS branch (POODOO)*/
+#define AGC_ALARM_01107 ((agc_alarm_code_t)01107) /* phase table failure      */
+#define AGC_ALARM_01201 ((agc_alarm_code_t)01201) /* exec overflow: no VAC    */
+#define AGC_ALARM_01202 ((agc_alarm_code_t)01202) /* exec overflow: no core set */
+#define AGC_ALARM_01203 ((agc_alarm_code_t)01203) /* waitlist overflow        */
+#define AGC_ALARM_01204 ((agc_alarm_code_t)01204) /* waitlist dt <= 0 (POODOO)*/
+#define AGC_ALARM_01520 ((agc_alarm_code_t)01520) /* V37 not permitted now    */
+
+/* Executive: pre-emption point and job-creation details.                  */
+agc_status_t agc_exec_job_yield(agc_job_id_t resume_as);  /* CHANG1/CHANG2 */
+agc_status_t agc_exec_set_new_job_arg(agc_sp_t arg); /* INDEX LOCCTR / TS MPAC */
+agc_status_t agc_exec_gotopooh(void);   /* GOTOPOOH from inside a job      */
+
+typedef enum agc_core_state {
+    AGC_CORE_FREE = 0,          /* PRIORITY = -0                            */
+    AGC_CORE_ACTIVE,            /* PRIORITY positive                        */
+    AGC_CORE_SLEEPING           /* PRIORITY negative (JOBSLEEP)             */
+} agc_core_state_t;
+
+typedef struct agc_exec_core_info {
+    agc_core_state_t state;
+    agc_prio_t       prio;      /* priority number (PRIOnn >> 9)            */
+    int              vac_index; /* 0..4, or -1 for a NOVAC job              */
+    agc_job_id_t     loc;       /* LOC: where the job starts / resumes      */
+} agc_exec_core_info_t;
+int          agc_exec_core_sets(void);             /* 7 CSM, 8 LM            */
+agc_status_t agc_exec_core_info(int core_set, agc_exec_core_info_t *out);
+int          agc_exec_newjob(void);  /* NEWJOB: -1 idle (-0), 0 run set 0, k change */
+
+/* Job/task dispatch (src/exec/dispatch.c, the one switch each).          */
+agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx);
+agc_status_t agc_dispatch_task(agc_task_id_t task);
+
+/* Waitlist: T3RUPT entry for the interrupt lead-in (TIME3 just overflowed).*/
+agc_status_t agc_waitlist_t3rupt(void);
+uint16_t     agc_waitlist_time3(void);            /* C(TIME3)             */
+agc_status_t agc_waitlist_entry(int i, int16_t *lst1, agc_task_id_t *lst2); /* LST1+i-1 (i>=1) / LST2+2i */
+
+/* Phase tables. Codes are the AGC octal words that follow TC PHASCHNG:
+ *   type A  TL0 00P PPP PPP GGG    type B  TL1 DAP PPP PPP GGG
+ *   type C  TL0 1AD XXX CJW GGG                                           */
+typedef enum agc_restart_kind {
+    AGC_RESTART_NONE = 0,
+    AGC_RESTART_JOB,            /* NOVAC (priority < 0) or FINDVAC (> 0)    */
+    AGC_RESTART_TASK,           /* WAITLIST                                 */
+    AGC_RESTART_LONGCALL        /* LONGCALL from LONGBASE                   */
+} agc_restart_kind_t;
+
+/* The restart point of a variable (type B/C) phase. The AGC takes it from
+ * the return address of PHASCHNG or a 2CADR after the code word; in C it is
+ * named explicitly.                                                       */
+typedef struct agc_phase_var {
+    agc_restart_kind_t kind;
+    agc_job_id_t  job;          /* kind == JOB                              */
+    agc_task_id_t task;         /* kind == TASK or LONGCALL                 */
+    int16_t       prio_or_dt;   /* D bit set: job +prio FINDVAC / -prio NOVAC
+                                   (priority number); task delta time cs   */
+    bool          immediate;    /* task: PHSPRDT = -0, restart immediately  */
+    uint32_t      long_dt_cs;   /* longcall: DP delta time, cs              */
+} agc_phase_var_t;
+agc_status_t agc_phase_change_var(uint16_t code, const agc_phase_var_t *v); /* PHASCHNG type B/C */
+agc_status_t agc_phase_change2(uint16_t code_a, uint16_t code_b,
+                               const agc_phase_var_t *v);                  /* 2PHSCHNG */
+agc_status_t agc_phase_newphase(int group, uint16_t phase, bool set_tbase); /* NEWPHASE */
+uint16_t     agc_phase_get(int group);            /* C(PHASEn)            */
+agc_status_t agc_phase_mr_klean(void);            /* MR.KLEAN             */
+agc_status_t agc_phase_p00_klean(void);           /* P00KLEAN             */
+agc_status_t agc_phase_v37_klean(void);           /* V37KLEAN             */
+agc_status_t agc_phase_newmode(agc_sp_t mode);    /* NEWMODEA/NEWMODEX    */
+bool         agc_phase_checkmm(agc_sp_t mode);    /* CHECKMM              */
+agc_status_t agc_restart_group(int group);        /* RESTARTS (one group) */
+
+/* Alarms.                                                                 */
+agc_status_t agc_curtains(void);                   /* CURTAINS: ALARM 217  */
+agc_status_t agc_ccshole(void);                    /* CCSHOLE: POODOO 1103 */
+
+/* Fresh start and restart (FRESH_START_AND_RESTART.agc).                  */
+agc_status_t agc_fresh_start_slap1(void);          /* SLAP1 (V36)          */
+agc_status_t agc_fresh_dofstart(void);             /* DOFSTART             */
+agc_status_t agc_restart_goprog(void);             /* GOPROG (GOJAM)       */
+uint16_t     agc_restart_redoctr(void);            /* REDOCTR              */
+agc_status_t agc_v37_change_program(uint8_t new_mm); /* V37 (MMCHANG)      */
+
+/* Interrupt lead-ins (INTERRUPT_LEAD_INS.agc), one per vector, for the sim
+ * harness. Each runs with interrupts inhibited, like the AGC's RUPT.       */
+typedef enum agc_rupt_id {
+    AGC_RUPT_T6 = 1,            /* T6RUPT   -> T6ADR / T6LOC               */
+    AGC_RUPT_T5,                /* T5RUPT   -> T5ADR / T5LOC (autopilot)   */
+    AGC_RUPT_T3,                /* T3RUPT   -> waitlist                    */
+    AGC_RUPT_T4,                /* T4RUPT                                  */
+    AGC_RUPT_KEY1,              /* KEYRUPT1 (main DSKY)                    */
+    AGC_RUPT_KEY2,              /* KEYRUPT2 (MARKRUPT / nav DSKY)          */
+    AGC_RUPT_UPRUPT,            /* UPRUPT                                  */
+    AGC_RUPT_DOWNRUPT,          /* DOWNRUPT (DODOWNTM)                     */
+    AGC_RUPT_RADAR,             /* RADAR RUPT (LM RADAREAD, CSM VHFREAD)   */
+    AGC_RUPT_HAND               /* RUPT10 (LM PITFALL, CSM RESUME)         */
+} agc_rupt_id_t;
+agc_status_t agc_rupt_go(void);                    /* GOJAM -> GOPROG      */
+agc_status_t agc_rupt_t6(void);
+agc_status_t agc_rupt_t5(void);
+agc_status_t agc_rupt_t3(void);
+agc_status_t agc_rupt_t4(void);
+agc_status_t agc_rupt_keyrupt1(void);
+agc_status_t agc_rupt_keyrupt2(void);
+agc_status_t agc_rupt_uprupt(void);
+agc_status_t agc_rupt_downrupt(void);
+agc_status_t agc_rupt_radarupt(void);
+agc_status_t agc_rupt_rupt10(void);
+agc_status_t agc_rupt_set_t5_task(agc_task_id_t task); /* DXCH T5ADR/T5LOC */
+agc_status_t agc_rupt_set_t6_task(agc_task_id_t task); /* T6LOC (CSM)      */
+agc_task_id_t agc_rupt_t5_task(void);
+agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt); /* dispatch.c: handlers in other lanes */
+
 #endif /* AGC_EXEC_H */
