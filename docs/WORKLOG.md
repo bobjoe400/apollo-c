@@ -221,3 +221,11 @@
             in src/io/verbs/pending.h. Note: library built without
             AGC_HOST_DEBUG so library asserts don't report in tests
             (integration: consider a debug lib target for tests).
+2026-10-10  User: apply the NASA SEL-94-003 C Style Guide with an automated
+            formatter (clang-format). Lead only skimmed the guide; user
+            objected. Guide stored in docs/reference/; `style` lane (Opus)
+            reads all 100 pages and derives docs/STYLE.md (every rule with
+            its enforcement: clang-format / check_rules / review / n-a),
+            .clang-format, tools/check_style.py, prolog templates, make
+            targets. Tree-wide `make format` runs after prog-rendz finishes,
+            before status-handling. clang-format needs install (sudo).

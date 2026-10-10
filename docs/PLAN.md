@@ -85,7 +85,8 @@ bits), split that part off to a Sonnet agent.
 2. Builds clean: `make` builds libagc.a + sim with the full -Werror set; one
    flat job/task registry; no *_pending.h shims; no duplicates; layering kept.
 3. Rules pass: `make check` zero hard violations AND assertion-density
-   warnings cleared.
+   warnings cleared; `make format-check` and `make style` clean (NASA
+   SEL-94-003 C Style Guide via .clang-format + tools/check_style.py).
 4. Naming: docs/NAMING.md applied everywhere; docs/RENAMES.md fully done.
 5. Tests: `make test` green through the real library (no scratch stand-ins).
 6. Oracle: every numeric module has committed yaAGC cases passing within a
@@ -116,8 +117,9 @@ bits), split that part off to a Sonnet agent.
    e. docs/TIPS.md consolidated from every lane's "Lessons" section: the
       tips and tricks for translating AGC into C, organised by topic.
 
-Waves: 1-2 translation (done/in progress) -> 2b status-handling (rule 7, whole
-tree) -> 3 integrate + sim (items 2-5,7)
+Waves: 1-2 translation (done/in progress) -> 2a style (NASA SEL-94-003:
+STYLE.md, .clang-format, check_style.py; then `make format` tree-wide)
+-> 2b status-handling (rule 7, whole tree) -> 3 integrate + sim (items 2-5,7)
 -> 4 oracle cases for guidance/DAP/entry/landing (item 6) -> 5 review (8)
 -> 6 documentation (9).
 
