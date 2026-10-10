@@ -15,7 +15,7 @@ Phase 1 -- inventory and map (STOP after this phase and report):
    (as a token or token part: p65_1b, V97E, r51k, n61, P63SPOT2, pg1234,
    _p40_, p30, canv37, v37_, noun36), plus the bad names from the first
    attempt (grep for `_entry_entry`, `_E\b`, `_P\b`, `_T\b`, `_1B`, `_1\b`,
-   `TASK2`, `EJOB`, `TJOB` in identifiers). Write the raw inventory to
+   `TASK2`, `EJOB`, `TJOB`, `TTASK`, `PTASK`, `ETASK`, `E40_6`, `TRCS` in identifiers; any label fragment pasted onto the prefix). Write the raw inventory to
    docs/RENAMES_inventory.txt (one per line with file).
 2. For EACH, read the AGC label's comment/code (SRC/Apollo-11/...) and
    derive the name per the rules. Write docs/RENAMES.md as a table:

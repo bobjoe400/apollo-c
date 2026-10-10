@@ -33,6 +33,8 @@ satisfy ALL of the following:
    engine-fail variants for different engine states -> name those states.
    Sequential job segments become `_start`, `_after_display`, `_resume`,
    `_second_pass`, chosen from what the segment does, never `_1`/`_1b`.
+   A label fragment that repeats the prefix (`AGC_TASK_..._TTASK`,
+   `AGC_JOB_..._EJOB`) is a sure sign the source was not read.
 3. **No stutter.** If the prefix already says `entry`, the stem does not
    repeat it: `agc_entry_final_phase_latlong`, not
    `agc_entry_entry_final_phase_2_latlong`. Collapse repeated words.
