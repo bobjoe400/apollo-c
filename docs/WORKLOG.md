@@ -273,3 +273,12 @@
             >80-col trailing comments (920 lines) left for the review wave
             to shorten (check_style reports them); long-block check counts
             blank lines. Tree-wide `make format` runs after status-handling.
+2026-10-10  status-handling DONE: 0 hard violations (was 713 + 3,233 after
+            widening); 105 APIs made void; assertions given recovery by
+            return type (tools/assert_recover.cocci, status_void.cocci);
+            bugs fixed: agc_vec_zero/agc_vec_make mutual recursion, two
+            GODSPRET calls with NULL continuation (V16N85 never shown).
+            Open: CLEANDSP can sleep a job without continuation; core
+            sqrt/asin/acos cannot raise 1301/1302 (callers must). Lead set
+            mod_paren_on_return=add; reformatted (238 files). make lib OK.
+            Launching integrate.
