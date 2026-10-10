@@ -17,7 +17,7 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | guid-landing | DONE (0 stubs) | src/lm/landing/{throttle,findcduw,landing_guidance,lunar_landing,landing_aborts,landing_displays,landing_state}.c, src/lm/ascent.c, include/agc/agc_landing_pending.h (promoted), include/agc/lm/landing.h, tests/test_landing.c | test compiles; links only after integration (pending symbols in landing_pending.h); see docs/modules/guid-landing.md |
 | guid-entry   | DONE (1 stub: P37 program) | include/agc/csm/entry.h; src/csm/entry/{lexicon.c,reentry.c,programs.c,cm_body_attitude.c,dap.c}, entry_lexicon.h, src/csm/burns/{return_to_earth,earth_orbit_insertion}.c, include/agc/agc_entry_{lexicon,internal,pending}.h (promoted); tests/test_entry.c | P61-P67, entry DAP, CM body attitude, P11 done; P37 only XT1LIM; test 23 checks pass (needs full lib link); see docs/modules/guid-entry.md |
 | dap-lm       | IN-PROGRESS | src/lm/dap/{rcs,common}/, src/lm/dap/gts.c, include/agc/agc_lm_dap_{internal,pending}.h (promoted) | see docs/modules/dap-lm.md |
-| dap-csm      | IN-PROGRESS | src/csm/dap/{rcs,tvc}/, src/csm/dap/{mysubs,dap_state}.c, include/agc/csm/dap.h, agc_csm_dap_{internal,pending}.h (promoted) | see docs/modules/dap-csm.md |
+| dap-csm      | DONE (0 stubs) | src/csm/dap/{rcs,tvc}/, src/csm/dap/{mysubs,state}.c, src/csm/dap/{internal,pending}.h, include/agc/csm/dap.h | all Comanche RCS+TVC DAP files translated, no stubs; test_csm_dap 791 checks 0 fail; needs TVCPITCH/TVCYAW accessors (docs/modules/dap-csm.md) |
 | prog-rendz   | IN-PROGRESS | include/agc/programs/rendezvous.h, src/programs/rendezvous/ | see docs/modules/prog-rendz.md |
 | prog-align   | TODO | | |
 | sys-misc     | IN-PROGRESS | src/io/service/rtb_ops.c | see docs/modules/sys-misc.md |

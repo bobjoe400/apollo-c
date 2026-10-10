@@ -57,7 +57,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 | TVCEXEC .. TVCEXFIN (946-949) | CDUX, OGAD, engine-on, VCNTR, CNTR, REPFRAC | OGAERR, AK, CSMMASS, PACTOFF/YACTOFF | agc_task_tvcexec, csm_tvc_exec_from (exec.c) |
 | MASSPROP/FIXCW (951-955) | CSMMASS, LEMMASS (2^16 kg), DAPDATR1 | IXX, IAVG (2^20 kg m^2), IAVG/TLX (2^2 s^2), WEIGHT/G | agc_csm_dap_massprop, agc_csm_dap_fixcw (massprop.c) |
 | REDOTVC/ENABL1/ENABL2/CMDSOUT/PHSCHK2/CHKSTRK/FINCOPY/TRIM/CMD/EXRSTRT (958-960) | TVCPHASE, TVCEXPHS, STROKER | restart sequencing | agc_task_redotvc, agc_task_enabl2, agc_task_cmdsout, agc_task_exrstrt (restarts.c) |
-| PITCHDAP/YAWDAP/PCDUDOTS/RLIMTEST/ERRORLIM/ACTLIM/FWDFLTR/OPTVARK/PRECOMP/PCOPY/YCOPY/DAPINIT (963-977) | CDUY/Z, SIN/COSCDU (2), OMEGAYC/ZC, N10.. | TVCPITCH/TVCYAW (85.41 arcsec/bit), PCMD, YCMD, filter nodes | agc_task_pitchdap, agc_task_yawdap, agc_task_dapinit, csm_tvc_fwdfltr, csm_tvc_precomp (daps.c) |
+| PITCHDAP/YAWDAP/PCDUDOTS/RLIMTEST/ERRORLIM/ACTLIM/FWDFLTR/OPTVARK/PRECOMP/PCOPY/YCOPY/DAPINIT (963-977) | CDUY/Z, SIN/COSCDU (2), OMEGAYC/ZC, N10.. | TVCPITCH/TVCYAW (85.41 arcsec/bit), PCMD, YCMD, filter nodes | agc_task_pitchdap, agc_task_yawdap, agc_task_dapinit, csm_tvc_pcopy, csm_tvc_ycopy; static tvcd_fwdfltr, tvcd_precomp (daps.c) |
 | STRKTSTI/TSTINIT/HACK/HACKWLST (981-983) | ESTROKER, FCARD tables | TVCPITCH bursts | agc_job_strktsti, csm_tvc_hack, agc_task_hackwlst (stroke.c) |
 | ROLLDAP/NOROLL1 (989-997) | OGANOW/OGAPAST/OGAERR (rev), 1/CONACC | CHAN6 roll jets, TIME6 | agc_task_rolldap, agc_task_noroll1 (rolldap.c) |
 
