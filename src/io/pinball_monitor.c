@@ -153,7 +153,8 @@ agc_status_t pin_vbrqexec(void)
     agc_prio_t prio = (agc_prio_t)((w & ~PIN_BIT1) >> 9);   /* PRIO into MPAC+4 */
     agc_job_id_t job = (agc_job_id_t)s->dsptem[1];
     agc_status_t st = pin_reldsp();                          /* REQUESTC    */
-    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) || !AGC_ASSERT(job != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(prio >= 1u && prio <= 037u)
+        || !AGC_ASSERT(job != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();
@@ -173,7 +174,8 @@ agc_status_t pin_vbrqwait(void)
     uint16_t delay = s->dsptem[0];
     agc_task_id_t task = (agc_task_id_t)s->dsptem[1];
     agc_status_t st = pin_reldsp();
-    if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE)) {
+    if (!AGC_ASSERT(delay >= 1u)
+        || !AGC_ASSERT(task != AGC_TASK_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_inhint();

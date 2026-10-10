@@ -120,7 +120,8 @@ agc_status_t pin_entexit(void)
 bool pin_comptest(int verb_comp)
 {
     const pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) || !AGC_ASSERT(s->noun.ncomp >= 1u)) {
+    if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2)
+        || !AGC_ASSERT(s->noun.ncomp >= 1u)) {
         return false;
     }
     return (int)s->noun.ncomp - 1 >= verb_comp;

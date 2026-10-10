@@ -134,7 +134,8 @@ static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 {
     const pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(info != NULL)) {
+    if (!AGC_ASSERT(k >= 0 && k < 3)
+        || !AGC_ASSERT(info != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = agc_scale_info((agc_scale_t)s->noun.scale_type[k], info);
@@ -353,7 +354,8 @@ static agc_status_t pin_arout1(agc_sp_t sp, agc_dp_t sfout)
  * DP3 left 7, DP2 takes MPAC, MPAC+1.                                    */
 static agc_status_t pin_dpout(uint8_t rout, agc_dp_t v, agc_dp_t sfout)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX) || !AGC_ASSERT(sfout >= 0)) {
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX)
+        || !AGC_ASSERT(sfout >= 0)) {
         return AGC_STATUS_BAD_ARG;
     }
     int64_t tp = pin_mag(pin_mul_shift(v, sfout, PIN_TP_DP_SHIFT));   /* DMP  */
@@ -374,7 +376,8 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
 {
     agc_sp_t hi = agc_dp_high(v);
     agc_sp_t lo = agc_dp_low(v);
-    if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3)) {
+    if (!AGC_ASSERT(hi >= 0 && lo >= 0)
+        || !AGC_ASSERT(k >= 0 && k < 3)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = pin_5blank_rel(PIN_INREL_X + k);     /* to blank RXD3   */
@@ -420,7 +423,8 @@ static agc_status_t pin_hmsout(agc_dp_t t)
  * which case it is forced to +-59M59.5S (M/SLIMIT) without rounding.    */
 static agc_status_t pin_msout(int k, agc_dp_t t)
 {
-    if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX)) {
+    if (!AGC_ASSERT(k >= 0 && k < 3)
+        || !AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX)) {
         return AGC_STATUS_BAD_ARG;
     }
     bool neg = t < 0;

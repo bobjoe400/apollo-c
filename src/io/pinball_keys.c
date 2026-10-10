@@ -54,7 +54,8 @@ static void pin_decend(int inrel)
 static agc_status_t pin_endnmtst(int inrel)
 {
     pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(!s->dspcount_neg)) {
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z)
+        || !AGC_ASSERT(!s->dspcount_neg)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (s->dspcount != k_critcon[inrel]) {             /* MORNUM            */
@@ -76,7 +77,8 @@ static agc_status_t pin_endnmtst(int inrel)
 static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
 {
     pin_state_t *s = pin_st();
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(chr >= 0 && chr <= 9)) {
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z)
+        || !AGC_ASSERT(chr >= 0 && chr <= 9)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (inrel == PIN_INREL_VERB || inrel == PIN_INREL_NOUN) {
@@ -108,7 +110,8 @@ static agc_status_t pin_num(void)
         return AGC_STATUS_OK;            /* block data in if DSPCOUNT is - or -0 */
     }
     int inrel = pin_getinrel();
-    if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(s->chr <= 9)) {
+    if (!AGC_ASSERT(inrel >= 0)
+        || !AGC_ASSERT(s->chr <= 9)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (s->clpass >= 0) {
@@ -412,7 +415,8 @@ agc_status_t pin_charin(uint8_t code)
 /* CHARIN as an executive job: the key code arrives in MPAC. */
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t)PIN_LOW5)) {
+    if (!AGC_ASSERT(ctx != NULL)
+        || !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t)PIN_LOW5)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = pin_charin((uint8_t)ctx->arg);
@@ -509,7 +513,8 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 /* One key: KEYRUPT1 bookkeeping, then CHARIN at once (no executive). */
 agc_status_t agc_dsky_key(uint8_t code)
 {
-    if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u)) {
+    if (!AGC_ASSERT(code <= PIN_LOW5)
+        || !AGC_ASSERT(code != 0u)) {
         return AGC_STATUS_BAD_ARG;
     }
     pin_lodsampt();

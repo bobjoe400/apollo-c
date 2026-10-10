@@ -137,7 +137,8 @@ agc_status_t pin_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
 agc_status_t agc_dsky_endidle(const agc_job_ctx_t *ctx, agc_job_id_t on_terminate,
                               agc_job_id_t on_proceed, agc_job_id_t on_enter)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->id != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(ctx != NULL)
+        || !AGC_ASSERT(ctx->id != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
     return pin_endidle(on_terminate, on_proceed, on_enter);
@@ -269,7 +270,8 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
  * paste after a monitor display, bits 1-3 registers to blank.            */
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options)
 {
-    if (!AGC_ASSERT(nvtemp <= PIN_POSMAX) || !AGC_ASSERT(options <= PIN_WORD)) {
+    if (!AGC_ASSERT(nvtemp <= PIN_POSMAX)
+        || !AGC_ASSERT(options <= PIN_WORD)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (pin_dsp_blocked()) {
@@ -289,7 +291,8 @@ uint16_t agc_dsky_vn(uint8_t verb, uint8_t noun)
 
 agc_status_t agc_dsky_nvsub(uint8_t verb, uint8_t noun)
 {
-    if (!AGC_ASSERT(verb <= 99u) || !AGC_ASSERT(noun <= 99u)) {
+    if (!AGC_ASSERT(verb <= 99u)
+        || !AGC_ASSERT(noun <= 99u)) {
         return AGC_STATUS_BAD_ARG;
     }
     return pin_nvmonopt(agc_dsky_vn(verb, noun), 0);   /* LXCH 7: zero options */
@@ -298,7 +301,8 @@ agc_status_t agc_dsky_nvsub(uint8_t verb, uint8_t noun)
 /* NVSUB with the machine address to be specified in MPAC+2. */
 agc_status_t agc_dsky_nvsub_mctbs(uint8_t verb, uint8_t noun, uint16_t ecadr)
 {
-    if (!AGC_ASSERT(ecadr <= PIN_WORD) || !AGC_ASSERT(noun <= 99u)) {
+    if (!AGC_ASSERT(ecadr <= PIN_WORD)
+        || !AGC_ASSERT(noun <= 99u)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (pin_dsp_blocked()) {
@@ -310,7 +314,8 @@ agc_status_t agc_dsky_nvsub_mctbs(uint8_t verb, uint8_t noun, uint16_t ecadr)
 
 agc_status_t agc_dsky_nvmonopt(uint8_t verb, uint8_t noun, uint16_t options)
 {
-    if (!AGC_ASSERT(verb <= 99u) || !AGC_ASSERT(noun <= 99u)) {
+    if (!AGC_ASSERT(verb <= 99u)
+        || !AGC_ASSERT(noun <= 99u)) {
         return AGC_STATUS_BAD_ARG;
     }
     return pin_nvmonopt(agc_dsky_vn(verb, noun), options);
@@ -336,7 +341,8 @@ agc_status_t agc_dsky_nvsub_blank(int code)
 agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb,
                                uint8_t noun, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(wake_as != AGC_JOB_NONE)) {
+    if (!AGC_ASSERT(ctx != NULL)
+        || !AGC_ASSERT(wake_as != AGC_JOB_NONE)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (pin_dsp_blocked()) {

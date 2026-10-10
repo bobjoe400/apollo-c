@@ -183,7 +183,8 @@ static agc_status_t pin_noun7_bits(void)
 /* PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store. */
 static agc_status_t pin_putn(int first, int ncomp)
 {
-    if (!AGC_ASSERT(first >= 0 && first < 3) || !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3)) {
+    if (!AGC_ASSERT(first >= 0 && first < 3)
+        || !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3)) {
         return AGC_STATUS_BAD_ARG;
     }
     agc_status_t st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK;

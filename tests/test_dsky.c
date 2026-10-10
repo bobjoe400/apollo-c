@@ -266,7 +266,8 @@ static void test_mctbs(void)
     CHECK(agc_dsky_keys("V21N01E1000E12345E") == AGC_STATUS_OK);
     CHECK(agc_dsky_keys("V01N01E1000E") == AGC_STATUS_OK);
     agc_dsky_state_t s = state();
-    CHECK(reg_is(&s, 0, 12345, 0) && reg_is(&s, 2, 1000, 0));
+    CHECK(reg_is(&s, 0, 12345, 0));
+    CHECK(s.r[2][0] == 1 && s.r[2][3] == 0 && s.r[2][4] == AGC_DSKY_BLANK); /* as keyed */
     CHECK(agc_dsky_keys("V25N07E1000E70E1E") == AGC_STATUS_OK);   /* set   */
     uint16_t w = 0;
     CHECK(agc_erase_read_ecadr(01000u, &w) == AGC_STATUS_OK && w == 012375u);

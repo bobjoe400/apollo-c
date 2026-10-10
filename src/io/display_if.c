@@ -170,7 +170,8 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
 /* COPIES / COPIES2: copy the request into class c. */
 static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) || !AGC_ASSERT(rq != NULL)) {
+    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC)
+        || !AGC_ASSERT(rq != NULL)) {
         return;
     }
     agc_inhint();
@@ -186,7 +187,8 @@ static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
 /* ENDIT: return to the user's priority and to his CADR. */
 static agc_status_t dif_endit(agc_prio_t userprio, agc_job_id_t cont)
 {
-    if (!AGC_ASSERT(cont != AGC_JOB_NONE) || !AGC_ASSERT(userprio >= 1u && userprio <= 037u)) {
+    if (!AGC_ASSERT(cont != AGC_JOB_NONE)
+        || !AGC_ASSERT(userprio >= 1u && userprio <= 037u)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)agc_exec_prio_change(userprio);    /* BUSY only means: yield, done next */
@@ -380,7 +382,8 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
  * fast jobs after wake.                                                  */
 static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(rq != NULL) || !AGC_ASSERT(userprio >= 1u && userprio <= 037u)) {
+    if (!AGC_ASSERT(rq != NULL)
+        || !AGC_ASSERT(userprio >= 1u && userprio <= 037u)) {
         return AGC_STATUS_BAD_ARG;
     }
     (void)agc_exec_prio_change(PIN_PRIO33);    /* raising: never pre-empted */
@@ -536,7 +539,8 @@ static agc_status_t dif_endret(int outhere)
     if (outhere < 0) {
         return AGC_STATUS_OK;                       /* ENDOFJOB (MARKOVER)    */
     }
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) || !AGC_ASSERT(outhere <= 2)) {
+    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC)
+        || !AGC_ASSERT(outhere <= 2)) {
         return AGC_STATUS_BAD_ARG;
     }
     const agc_dsky_cont_t *k = &g_cls[c].cadr;
@@ -692,7 +696,8 @@ agc_status_t agc_dsky_endmark(void)
 /* MAKEPLAY as the job an R routine started; its request is in slot arg. */
 agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->arg >= 1 && ctx->arg <= DIF_RQ_LEN)) {
+    if (!AGC_ASSERT(ctx != NULL)
+        || !AGC_ASSERT(ctx->arg >= 1 && ctx->arg <= DIF_RQ_LEN)) {
         return AGC_STATUS_BAD_ARG;
     }
     dif_req_t rq = g_rq[ctx->arg - 1];
@@ -773,7 +778,8 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
             slot = i;
         }
     }
-    if (!AGC_ASSERT(slot >= 0) || !AGC_ASSERT(prio >= 1u && prio <= 037u)) {
+    if (!AGC_ASSERT(slot >= 0)
+        || !AGC_ASSERT(prio >= 1u && prio <= 037u)) {
         return AGC_STATUS_FULL;
     }
     agc_inhint();
@@ -792,7 +798,8 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                               uint16_t vn_or_value, const agc_dsky_cont_t *cont)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(kind >= AGC_DSKY_GODSP && kind < AGC_DSKY_DISP_COUNT)) {
+    if (!AGC_ASSERT(ctx != NULL)
+        || !AGC_ASSERT(kind >= AGC_DSKY_GODSP && kind < AGC_DSKY_DISP_COUNT)) {
         return AGC_STATUS_BAD_ARG;
     }
     const dif_kind_t *k = &k_kinds[kind];
@@ -828,7 +835,8 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
  * last R routine started (e.g. blank bits).                             */
 agc_status_t agc_dsky_blanket(uint16_t bits)
 {
-    if (!AGC_ASSERT(g_rq_last >= 0 && g_rq_last < DIF_RQ_LEN) || !AGC_ASSERT(bits <= PIN_WORD)) {
+    if (!AGC_ASSERT(g_rq_last >= 0 && g_rq_last < DIF_RQ_LEN)
+        || !AGC_ASSERT(bits <= PIN_WORD)) {
         return AGC_STATUS_BAD_ARG;
     }
     if (!g_rq[g_rq_last].used) {

@@ -47,7 +47,8 @@ static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
  * the high word of *out. Overflow alarms and recycles.                   */
 static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM)) {
+    if (!AGC_ASSERT(out != NULL)
+        || !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM)) {
         return AGC_STATUS_BAD_ARG;
     }
     int64_t mag = pin_abs64(dp);
@@ -85,7 +86,8 @@ static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
  * 3): round MPAC+2 into MPAC+1; the low part goes to E+1 (DPFRACIN).    */
 static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(shift == 0 || shift == 3 || shift == 7) || !AGC_ASSERT(out != NULL)) {
+    if (!AGC_ASSERT(shift == 0 || shift == 3 || shift == 7)
+        || !AGC_ASSERT(out != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
     int64_t tp = pin_dmp_tp(f, sfin) << shift;               /* TPLEFTN    */
