@@ -248,3 +248,13 @@
             count 712 (all rule-7 void-casts; status-handling lane next).
             Known upward dependency to fix at integration:
             programs/navigation/noun_data.c includes lm/radar/radar.h.
+2026-10-10  style DONE: docs/STYLE.md (173 rules w/ enforcement), .clang-format
+            (69 options verified on 14.0.6), tools/check_style.py (30 rules;
+            29,455 findings, mostly `return x;` without parens and
+            uncommented declarations), templates, make format/format-check/
+            style. Rule 4 now ignores brace-only lines (Allman). `make
+            format` applied: 297 files, 0 compile failures, idempotent.
+            check_rules: 713 hard (rule 7). Launching status-handling lane.
+            Style follow-ups for integration/review: include/agc/core/assert.h
+            shadows <assert.h> name (guide 3.4) -> consider rename;
+            check_style findings to be worked down in review wave.
