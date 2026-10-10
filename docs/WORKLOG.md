@@ -130,3 +130,11 @@
 2026-10-10  Installed coccinelle 1.1.1, universal-ctags 5.9, clangd 14
             (user ran apt). Renames now applied via Coccinelle semantic patch
             (identifiers only; comments keep AGC labels); inventory via ctags.
+2026-10-10  Naming phase 1 reviewed and approved: 783-entry inventory
+            (ctags + regex), 551 renames, 66 keeps, 3 file moves; every row
+            cites the AGC comment. Key findings: V97/V99 T/P/E = crew
+            Terminate/Proceed/Enter responses; several first-pass names had
+            wrong meanings (R10/R11 abort monitor, N61 event-timer reset,
+            CANV37 continues V37). Phase 2 (Coccinelle apply) running.
+            Baseline: 156 files compile, 21 fail (paused lanes vs changed
+            headers). After phase 2: resume the 7 lanes.
