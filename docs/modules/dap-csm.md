@@ -62,7 +62,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 | ROLLDAP/NOROLL1 (989-997) | OGANOW/OGAPAST/OGAERR (rev), 1/CONACC | CHAN6 roll jets, TIME6 | agc_task_rolldap, agc_task_noroll1 (rolldap.c) |
 
 ## Progress
-- DONE include/agc/csm/dap.h (resume: thetad/rho/ogad/oganow/pcdu*pst now raw uint16_t words, tempdap[2], errbinit[2], cphix[3], setmaxdb/setmindb/rcsdapon_t5/rcsup), include/agc/agc_csm_dap_pending.h, csm_dap_internal.h, state.c
+- DONE include/agc/csm/dap.h (resume: thetad/rho/ogad/oganow/pcdu*pst now raw uint16_t words, tempdap[2], errbinit[2], cphix[3], setmaxdb/setmindb/rcsdapon_t5/rcsup), src/csm/dap/pending.h, src/csm/dap/internal.h, state.c (paths after the header-layout change; include lines fixed in include/agc/csm/dap.h)
 - NOTE constants verified against tools/oracle/ropes/Comanche055.bin (scratchpad rope.py reads banked fixed words via agc_probe whatis)
 - DONE MYSUBS csm_dap_smallmp, csm_dap_dpadd + word helpers (MSU, ADS, DAS, MP, DV) mysubs.c
 - DONE RCS-CSM_DIGITAL_AUTOPILOT: t5rupt.c (REDORCS RCSATT SETT5 FREECHK REINIT FRESHDAP/REDAP ZEROJET T5PHASE2/KALUPDT), filter.c (RATEFILT KMATRIX DCDUINCR DACNDLS FDAIDSP1/2 GETAKS), manual.c (manual rotation, SETWBODY, FREEFUNC, STICKCHK), needles.c (NEEDLER..DACLOOP, agc_dap_needler)
@@ -74,14 +74,53 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE TVCEXECUTIVE exec.c (agc_task_tvcexec, csm_tvc_exec_restart; step machine over the TVCEXPHS restart points)
 - DONE TVCMASSPROP massprop.c (agc_csm_dap_massprop, agc_csm_dap_fixcw)
 - DONE TVCRESTARTS restarts.c (agc_task_redotvc, agc_task_enabl2, agc_task_cmdsout, agc_task_exrstrt)
-- TODO TVCDAPS daps.c
-- TODO TVCSTROKETEST stroke.c
-- TODO TVCROLLDAP rolldap.c
-- TODO tests/test_csm_dap.c
+- DONE TVCDAPS daps.c (agc_task_pitchdap, agc_task_yawdap, agc_task_dapinit, csm_tvc_pcopy, csm_tvc_ycopy; ERRORLIM ACTLIM FWDFLTR OPTVARK PRECOMP 2/3CASFLTR DELBARP/Y) re-verified vs source on resume
+- DONE TVCSTROKETEST stroke.c (agc_job_strktsti, csm_tvc_tstinit, csm_tvc_hack, agc_task_hackwlst) re-verified
+- DONE TVCROLLDAP rolldap.c (agc_task_rolldap, agc_task_noroll1; all regions, ROLLSET, MOREROLL/NEWROLL/FIREPLUG, +-TORQUE) re-verified, constants checked
+- DONE tests/test_csm_dap.c: 791 checks, 0 failures (see Tests written)
+- DONE check_rules: 0 hard; density >= 2 in daps.c, rolldap.c, stroke.c; the earlier RCS/TVC files still warn (1.1-1.7)
 
 ## Deviations
+- daps.c (whole file): DP filter quantities are agc_dp_t (sign-agreed). Where the AGC reads or overwrites only the upper word of a DP pair (ERRORLIM, ACTLIM, PCMD/YCMD, AK1/AK2), C can differ by one unit of the low word carried into the upper word.
+- daps.c ACTLIM: the rounding (DOUBLE of the low word overflowing into TS L) is used only for the limit test, as in the AGC; the unrounded upper word is the output.
+- rolldap.c ROLLSET: the AGC doubles twice in A (one overflow bit) and the TS limits on overflow. C computes the exact product x4 and limits it with its true sign.
+- rolldap.c: register I (a CA or CS instruction word built for INDEX I; 0 X) is held as +1 / -1 / 0 (0 = MOREROLL).
+- stroke.c: after STROKILL the pending HACKWLST still runs once. The AGC's CARD/REVS bookkeeping on that pass (INCR CARD from -0) is not reproduced bit for bit; STROKER stays +0 and nothing else is affected.
+- restarts.c CMDSOUT: the AGC writes -0 + PCMD to avoid a +0 command word. -0 is not represented.
+- mysubs.c DV: overflow (|dividend| >= |divisor|) is limited to +-POSMAX. The AGC result is undefined.
+- mysubs.c DPADD: the ones' complement +-0 handling in the "upper = 0" branches has the same value but is not modelled bit for bit.
+- DAS/DDOUBL (mysubs.c) wrap on overflow like the AGC's overflow-corrected DAS. A large filter memory can therefore wrap DAP1 instead of saturating (see Lessons).
+
 ## Stubs
+None. Every routine in scope is translated.
+
 ## Requested core additions
+- Erasable accessors (declared in src/csm/dap/pending.h until published; guid-powered asks for the same setters in src/csm/burns/guid_pending.h):
+  `agc_sp_t agc_erase_tvcpitch(void); void agc_erase_set_tvcpitch(agc_sp_t v);` (TVCPITCH = CDUSCMD 054)
+  `agc_sp_t agc_erase_tvcyaw(void);   void agc_erase_set_tvcyaw(agc_sp_t v);`   (TVCYAW = CDUTCMD 053), 85.41 arcsec/bit.
+  The library has no definitions yet, so any binary that links the TVC DAP fails to link without them.
+- TIME5/TIME6 raw-word access: now provided by agc_rupt_time / agc_rupt_set_time (exec.h). Resolved.
+
 ## Requested jobs-tasks
+All in src/csm/dap/pending.h (provisional 0x0D00 range; REDORCS, REDOTVC, TVCEXEC match exec_pending.h): T5 AGC_TASK_RCSATT, JETSLECT, TVCDAPON, TVCINIT1, DAPINIT, PITCHDAP, YAWDAP, ENABL2, CMDSOUT, RCSUP, REDORCS, REDOTVC; T6 AGC_TASK_T6START, NOROLL1; waitlist AGC_TASK_ROLLDAP, HACKWLST, EXRSTRT, TVCEXEC; jobs AGC_JOB_AMBGUPDT (PRIO34), AGC_JOB_STRKTSTI (V68). Dispatch cases are needed for each.
+
 ## Tests written
+tests/test_csm_dap.c (791 checks, 0 failures; linked with scratch stubs for the missing symbols of other lanes):
+1. Jet selection: +pitch with all quads good gives channel 5 bits 1 and 3 (PYTABLE masked by PJETS, OCT 1005) for TAU/2. Also checked: -pitch, quad A failed (one jet, full TAU), the 0.1 s limit with DFTMAX, and +X translation.
+2. TVC pitch DAP step response, CSM/LM: a positive error gives a negative PCMD (sign change in OPTVARK) and a negative error gives a positive one. TVCPHASE ends at 2 and T5 is re-armed. With filter memory in TMP3, PCMD is limited to ACTSAT = -253. The earlier failure (line 144) was the test, not the TVC erasables: it put 16000 into TMP1, which overflows DAP1 (DAS wraps, as in the AGC), so the command came out at -107. setup now clears PTMP and saturates through TMP3.
+3. Stroke test: set 1 is 80 bursts (10 in 1/2 amplitude, 4 reversals) and returns to zero. Set 2 is then loaded (REVS 5, N -6). After 364 bursts STROKER is +0. These checks do not depend on the TVCPITCH accessor.
+4. Roll DAP: a +10 deg OGA error at rest is region 6 and fires -TORQUE jets 12/10 (chan 6 OCT 12). NOROLL1 clears the jets. Inside the deadband the DAP coasts.
+5. MASSPROP: CSM alone, IXX from VARST0/VARST5.
+
 ## Open questions
+- Names with label digits remain in the DONE files (agc_task_noroll1, agc_task_tvcinit1, agc_task_enabl2, csm_tvc_init4, csm_rcs_phase1, csm_rcs_t5phase2, csm_rcs_t6progm, agc_csm_dap_rcsdapon_t5). The naming phase-2 map did not rename them. T5/T6 are hardware timer names, but NAMING.md rule 2 may want the others spelled out. I left them for the naming owner, because renaming touches pending.h ids and other lanes.
+- The header-layout change left old-style includes ("agc_status.h" etc.) in include/agc/core/*.h, exec/exec.h, guidance, imu, io/nouns.h, nav/*, lm/*, csm/entry.h, programs/rendezvous.h. Nothing compiles until those are fixed. I fixed csm/dap.h (mine) and verified the lane with a scratch include shim.
+- FWDFLTR tests DAPDATR1 bit 14 (LM on) and PRECOMP tests bit 13 (LM off) exactly as the AGC does. A config with neither bit set therefore runs the third cascade's precompute without its output.
+
+## Lessons
+- DAS/DDOUBL overflow wraps (overflow-corrected), so filter states near 1.0 wrap instead of saturating. To test a limiter, drive it through a stage with headroom, not by putting a huge value in the first node.
+- After DAS, A holds the overflow indicator and L is +0. "DXCH TMPn" right after a DAS therefore stores (overflow, 0) into TMPn. That is how the TVC filter clears its node and makes PRECOMP's rewrite necessary.
+- ACTLIM rounds only for the limit test. Read which register a TS actually writes before assuming a rounded value is stored.
+- INDEX I; 0 X with I = CA/CS instruction words is a runtime sign selector. An int +1/-1 (0 for a "same jets" switch) translates it cleanly.
+- TS L with overflow skips the next instruction. Look for the "TS x; TCF +3; INDEX A; CS LIMITS" overflow-protect idiom (ROLLSET) and the TS L skip in ACTLIM.
+- When the build is broken by other lanes, link the test against an archive of whatever compiles plus generated zero-return stubs (scratch only). This tells your own failures apart from link noise.

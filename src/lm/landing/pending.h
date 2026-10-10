@@ -112,4 +112,11 @@ agc_status_t agc_rendz_clradmod(void);              /* CLRADMOD (RADMODES for R2
 agc_sp_t agc_erase_m22(void);                       /* M22 = sin(AOG), at 1 */
 agc_sp_t agc_erase_m32(void);                       /* M32 = cos(AOG), at 1 */
 
+/* Restart entry for the abort monitor (R10,R11 restart in RESTART_TABLES).
+ * Same value as include/agc/exec/pending.h; the naming pass removed the
+ * duplicate here. Integration merges both into agc/exec/jobs.h. */
+#ifndef AGC_TASK_ABORT_MONITOR_RESTART
+#define AGC_TASK_ABORT_MONITOR_RESTART   ((agc_task_id_t)0x0EC3)
+#endif
+
 #endif /* LANDING_PENDING_H */
