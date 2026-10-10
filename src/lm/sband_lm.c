@@ -16,7 +16,7 @@
 
 #define REMDIST    ((agc_dp_t)192201000) /* mean earth-moon distance B-29 m */
 #define ONEOVSQRT2 ((agc_dp_t)189812531) /* 1OVSQRT2 .7071067815            */
-#define V06N51     ((uint16_t)0651)
+#define V06N51    ALIGN_VN(6, 51)        /* VN 0651                         */
 #define BLANK_R3   ((uint16_t)04)        /* BIT3                            */
 #define EXTVB_BIT5 ((uint16_t)020)
 #define PRIO5      ((agc_prio_t)05)

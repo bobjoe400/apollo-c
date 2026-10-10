@@ -83,7 +83,9 @@ land); assumed signatures are in src/programs/rendz_ext.h.
   agc_rendz_periapo1/agc_rendz_periapo, PRECSET/LEMSTORE/CSMSTORE/ACTIVE/
   PASSIVE rz_precset/rz_store_*, INTINT rz_intint, S34/35.1, LOMAT,
   GET.LVC, GET+MGA, AVFLAGA/P rz_avflag, P20FLGON, TRKMKCNT accessors
-* TODO rendz_csi.c (CSI/A.., CDHMVR, ADVANCE, ROTATE, S32/33.1, S32/33.X)
+* DONE rendz_csi.c: ROTATE agc_rendz_rotate, ADVANCE agc_rendz_advance,
+  CSI/A..SCNDSOL agc_rendz_csi_a, CDHMVR agc_rendz_cdhmvr, S32/33.X
+  agc_rendz_s32_33_x, S32/33.1 agc_rendz_s32_33_1
 * TODO rendz_tpi.c (S33/34.1, S34/35.2-.4), rendz_initvel.c (INITVEL)
 * TODO rendz_display.c (VNPOOH, VN1645, DISPLAYE, S34/35.5, DISDVLVC)
 * TODO rendz_p32_p33.c, rendz_p34_p35.c drivers

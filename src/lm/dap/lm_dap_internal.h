@@ -203,7 +203,7 @@ agc_status_t lm_dap_rateloop(void);           /* RATELOOP + ROTORQUE       */
 agc_status_t lm_dap_backp(void);              /* BACKP rate derivation     */
 agc_status_t lm_dap_offset_est(void);         /* offset estimator          */
 agc_status_t lm_dap_pretimck(void);           /* PRETIMCK .. SKIPPAXS test */
-agc_status_t lm_dap_chkvisfz(void);           /* CHKVISFZ (Y,Z translation)*/
+bool         lm_dap_chkvisfz(void);           /* CHKVISFZ: false = no policy */
 agc_status_t lm_dap_pstate(void);             /* P state logic             */
 agc_status_t lm_dap_purgency(void);           /* PURGENCY                  */
 agc_status_t lm_dap_purgency4(void);          /* PURGENCY +4               */

@@ -76,6 +76,19 @@ static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
     return ld_sat(p / 16384);
 }
 
+/* DCA x, DDOUBL, DDOUBL: the high word of 4x (DP doubling carries the
+ * low word up). DEVIATION: an overflow of A is kept wrapped, as the
+ * following MP / ADS would see the overflow-corrected word.          */
+static agc_sp_t ld_ddoubl2(agc_dp_t x)
+{
+    agc_ovf_t ovf = 0;
+    agc_dp_t d = agc_dp_shl_raw(x, 2, &ovf);
+    (void)AGC_ASSERT(ovf >= -1 && ovf <= 1);
+    agc_sp_t hi = agc_dp_high(d);
+    (void)AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX);
+    return hi;
+}
+
 /* DISPRSET / ABORTON (p. 907): remove the inertial data display (and in
  * the descent the RR error counter enable), reset the R10 flags.      */
 static agc_status_t ld_disprset(void)
@@ -185,9 +198,9 @@ static agc_status_t ld_speedrun(void)
     const agc_sp_t pipa[3] = { agc_erase_pipax(), agc_erase_pipay(),
                                agc_erase_pipaz() };
     for (int i = 0; i < 3; i++) {
-        agc_sp_t g4 = ld_sat(agc_dp_high(g->avg.gdt_2.c[i]) * 4); /* DDOUBL x2 */
+        agc_sp_t g4 = ld_ddoubl2(g->avg.gdt_2.c[i]);     /* DCA, DDOUBL x2 */
         agc_sp_t gt = agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);
-        agc_sp_t v4 = ld_sat(agc_dp_high(g->lm.v.c[i]) * 4);
+        agc_sp_t v4 = ld_ddoubl2(g->lm.v.c[i]);          /* m/cs 2^5       */
         agc_sp_t dv = agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]), LD_KPIP1_5);
         ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
     }

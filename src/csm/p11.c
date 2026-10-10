@@ -36,6 +36,9 @@
 #define P11_POWDNCOD   3                     /* POWDNCOD = THREE           */
 #define P11_2SECS      200                   /* 2SECS, cs                  */
 #define P11_ATER_DT    25                    /* OCT31: .25 s DELAYJOB      */
+#define P11_100MST5    16374                 /* 100MST5 DEC 16374: TIME5
+                                                preset for a 100 ms T5RUPT */
+#define P11_STIKBITS   00077u                /* STIKBITS: RHC rotation bits */
 
 /* P11 erasables (P11 STORAGE, P11 SATURN I/F; module-private).          */
 static agc_p11_padload_t p11_pad;
@@ -515,18 +518,34 @@ agc_status_t agc_task_redosat(void)
     (void)agc_rupt_set_t5_task(AGC_TASK_SATSTICK);
     (void)AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_SATSTICK);
     (void)AGC_ASSERT((agc_chan_read(012) & AGC_CH012_SIVBTAKEOVER) != 0u);
-    return agc_rupt_set_time(5, 16374);                      /* 100MST5  */
+    return agc_rupt_set_time(5, P11_100MST5);                /* 100MST5  */
 }
 
-/* SATSTICK (p. 550): every 100 ms, RHC (channel 31) -> Saturn rate
- * commands SATRATE in AK..AK2 through NEEDLER.
- * STUB: STICKCHK (dap-csm) and the SATRATE pad load are not available;
- * the T5 cycle is kept and UNIMPLEMENTED returned.                       */
+/* SATSTICK (p. 550): every 100 ms (T5): the RHC rotation bits of channel
+ * 31 (inverted logic: STIKBITS RXOR CHAN31, MASK STIKBITS) set RMANNDX,
+ * PMANNDX, YMANNDX (STICKCHK, dap-csm); the indexed SATRATE pad loads
+ * go to AK (roll), AK1 (pitch), AK2 (yaw) and out through NEEDLER.        */
 agc_status_t agc_task_satstick(void)
 {
-    (void)agc_rupt_set_t5_task(AGC_TASK_SATSTICK);
-    (void)agc_rupt_set_time(5, 16374);
-    (void)AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_SATSTICK);
-    (void)AGC_ASSERT(agc_flag_test(AGC_FLAG_DAPBIT1) || true);
-    return AGC_STATUS_UNIMPLEMENTED;
+    const agc_csm_rcs_t *r;
+    uint16_t             bits;
+    agc_status_t         st;
+
+    (void)agc_rupt_set_t5_task(AGC_TASK_SATSTICK);         /* 2SATSTCK */
+    (void)agc_rupt_set_time(5, P11_100MST5);               /* 100MST5  */
+    bits = (uint16_t)((P11_STIKBITS ^ agc_chan_read(031)) & P11_STIKBITS);
+    st = agc_csm_dap_stickchk(bits);
+    if (st != AGC_STATUS_OK) {
+        return st;
+    }
+    r = agc_csm_dap_rcs();
+    if (!AGC_ASSERT(r->manndx[0] >= 0 && r->manndx[0] <= 3) ||
+        !AGC_ASSERT(r->manndx[1] >= 0 && r->manndx[1] <= 3) ||
+        !AGC_ASSERT(r->manndx[2] >= 0 && r->manndx[2] <= 3)) {
+        return AGC_STATUS_BAD_ARG;
+    }
+    return agc_dap_needler(p11_pad.satrate[r->manndx[0]],  /* AK  roll  */
+                           p11_pad.satrate[r->manndx[1]],  /* AK1 pitch */
+                           p11_pad.satrate[r->manndx[2]],  /* AK2 yaw   */
+                           false);
 }

@@ -472,18 +472,17 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
 static agc_status_t s40_8_steer(agc_interp_t *ip)
 {
     agc_guid_t *g = agc_guid_state();
-    agc_lm_ldg_t *ldg = agc_lm_ldg();
     agc_tgo_in_t in = { g->burn.vg, agc_vec_neg(g->avg.delvref), g->lm.vex, g->lm.tdecay };
     agc_dp_t tgo = 0;
     agc_status_t st = agc_guid_s40_8_tgo_lm(ip, &in, &tgo);
     if (st == AGC_STATUS_ALARM) {
         (void)agc_alarm(AGC_ALARM_01407);             /* ALARMIT                */
-        return agc_lm_findcduw(ldg->unfc_2, ldg->unwc_2);
+        return agc_lm_findcduw_m2(ip);
     }
     agc_erase_set_tgo(tgo);
     agc_erase_set_tig(agc_dp_add(ip, tgo, agc_erase_piptime()));
     if (agc_dp_sub(ip, tgo, FOURSECS) >= 0) {
-        return agc_lm_findcduw(ldg->unfc_2, ldg->unwc_2);  /* FINDCDUW -2      */
+        return agc_lm_findcduw_m2(ip);                     /* FINDCDUW -2      */
     }
     (void)agc_flag_set(AGC_FLAG_IMPULSW);
     return agc_flag_clear(AGC_FLAG_STEERSW);

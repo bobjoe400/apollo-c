@@ -15,6 +15,7 @@
 #include "agc/agc_word.h"
 #include "agc/agc_interp.h"
 #include "agc/agc_exec.h"
+#include "agc/agc_state.h"
 
 /* ======================================================================
  * RTB op codes (rtb_ops.c; RTB_OP_CODES.agc LM pp.1397-1402, RT8_OP_CODES.agc CM)

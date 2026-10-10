@@ -14,7 +14,7 @@
 #include "../programs/align_internal.h"
 
 #define HIDP1_4   AGC_DP_QUARTER          /* HIDP1/4 .25 rev = 90 deg      */
-#define V06N51    ((uint16_t)0651)        /* VN 0651                        */
+#define V06N51    ALIGN_VN(6, 51)        /* VN 0651                         */
 #define BLANK_R3  ((uint16_t)04)          /* BIT3                           */
 #define DELAY_1CS ((uint16_t)1)           /* BIT1: minimum DELAYJOB         */
 #define EXTVB_BIT5 ((uint16_t)020)        /* EXTVBACT bit 5: R05 running    */

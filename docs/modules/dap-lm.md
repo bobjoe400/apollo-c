@@ -78,7 +78,10 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 * DONE lm_dap_internal.h, lm_dap_pending.h (updated: flags now real), arith.c, state.c
   (accessors, agc_lm_dap_fresh_start/restart), dapif.c (SETMAXDB..ALLCOAST, CALLACCS),
   dapidler.c (CHEKBITS, DAPIDLER, STARTDAP, MOREIDLE, SHUTDOWN, t5rupt), needles.c
-* TODO rate.c, paxis.c, pmanual.c, qraxis.c, qrmanual.c, qrjets.c, t6rupt.c, tjetlaw.c,
+* DONE rate.c (RATELOOP/ROTORQUE, BACKP, offset estimator), paxis.c (PAXIS, PRETIMCK, CHKVISFZ,
+  PJETSLEC, SELECTP, ALTSYST, CALCPERR, PURGENCY, JETSOFF) -- session 3 fixed chkvisfz prototype
+* DONE pmanual.c (state logic, min impulse, DETENTCK, RATERROR, PEGI, JUSTOUT, RATEDONE, ZEROENBL)
+* TODO qraxis.c, qrmanual.c, qrjets.c, t6rupt.c, tjetlaw.c,
   gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c, tests/test_lm_dap.c
 
 ## Deviations

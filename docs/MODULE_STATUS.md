@@ -15,7 +15,7 @@ Legend: TODO / IN-PROGRESS / DONE (n stubs) / BLOCKED (reason)
 | imu          | DONE (13 stubs: P06, POSTAND, 11 CM prelaunch) | src/imu, src/csm/prelaunch_align.c, include/agc/agc_imu.h | tests/test_imu.c 65 checks pass |
 | guid-powered | IN-PROGRESS | | design note written |
 | guid-landing | IN-PROGRESS | src/lm/ | translating |
-| guid-entry   | IN-PROGRESS | src/csm/*entry*, reentry.c, p61_p67.c, cm_body_attitude.c, entry_dap.c, p37.c, p11.c | see docs/modules/guid-entry.md |
+| guid-entry   | DONE (1 stub: P37 program) | include/agc/agc_csm_entry.h; src/csm/entry_lexicon.{c,h}, entry_internal.h, entry_pending.h, reentry.c, p61_p67.c, cm_body_attitude.c, entry_dap.c, p37.c, p11.c; tests/test_entry.c | P61-P67, entry DAP, CM body attitude, P11 done; P37 only XT1LIM; test 23 checks pass (needs full lib link); see docs/modules/guid-entry.md |
 | dap-lm       | IN-PROGRESS | src/lm/dap/ | see docs/modules/dap-lm.md |
 | dap-csm      | IN-PROGRESS | src/csm/dap/, include/agc/agc_csm_dap.h | see docs/modules/dap-csm.md |
 | prog-rendz   | IN-PROGRESS | include/agc/agc_programs.h, src/programs/ | see docs/modules/prog-rendz.md |

@@ -307,6 +307,8 @@ typedef struct agc_p11_padload {
     agc_sp_t polynum;     /* POLYNUM  polynomial degree N (<= 6)             */
     agc_dp_t poly[AGC_P11_POLY_MAX + 1]; /* A0..A6 pitch, 32 revs (B5)      */
     agc_sp_t satscale;    /* SATSCALE Saturn steering scale factor           */
+    agc_sp_t satrate[4];  /* SATRATE  Saturn stick rates (AK units) indexed by
+                             the STICKCHK index 0 none, 1 +, 2 -, 3 both     */
 } agc_p11_padload_t;
 agc_status_t agc_p11_set_padload(const agc_p11_padload_t *pad);
 /* ATERJOB attitude-error kernel (pp. 543-545): desired gimbal angles

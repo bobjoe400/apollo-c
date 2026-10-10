@@ -51,7 +51,8 @@ include/agc are declared in `src/io/sysmisc_ext.h` (temporary shim, see
 ## Progress
 
 - DONE  RTB op codes (all LM + CM extras incl. QUALITY1/2)  src/io/rtb_ops.c  (compile pending)
-- TODO  downlink lists CM / LM
+- DONE  CM downlink lists  agc_dnlist_csm_control/sublist  src/csm/downlink_lists_csm.c
+- DONE  LM downlink lists  agc_dnlist_lm_control/sublist  src/lm/downlink_lists_lm.c
 - TODO  telemetry.c
 - TODO  service.c
 - TODO  t4rupt.c / t4rupt_csm.c / t4rupt_lm.c

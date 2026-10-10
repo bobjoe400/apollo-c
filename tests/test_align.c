@@ -213,9 +213,13 @@ static void test_misc(void)
     agc_interp_init(&ip);
     agc_dp_t l = 0;
     CHECK(agc_csm_log(&ip, agc_dp_from_double(0.5, 0), &l) == AGC_STATUS_OK);
-    CHECK(near(agc_dp_to_double(l, 5), log(2.0), 2e-6));
+    /* LOG is a 3-term fit, good to ~1.5e-3 in ln x; the AGC model values
+     * (same polynomial in double) are .69178 for x = .5 and 1.20506 for .3. */
+    CHECK(near(agc_dp_to_double(l, 5), 0.6917797, 2e-6));
+    CHECK(near(agc_dp_to_double(l, 5), log(2.0), 2e-3));
     CHECK(agc_csm_log(&ip, agc_dp_from_double(0.3, 0), &l) == AGC_STATUS_OK);
-    CHECK(near(agc_dp_to_double(l, 5), -log(0.3), 1e-4));
+    CHECK(near(agc_dp_to_double(l, 5), 1.2050592, 2e-6));
+    CHECK(near(agc_dp_to_double(l, 5), -log(0.3), 2e-3));
     CHECK(agc_align_chkscode(0));
     CHECK(agc_align_chkscode(050));
     CHECK(!agc_align_chkscode(051));

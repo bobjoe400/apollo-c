@@ -78,9 +78,11 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - CM_BODY_ATTITUDE: DONE cm_body_attitude.c (CM/POSE triad, CM/TRIO, CM/ATUP, REDOPOSE, POSEXIT, SERVNOUT, REFAZE10 job)
 - CM_ENTRY_DIGITAL_AUTOPILOT: DONE entry_dap.c (READGYMB, BODYRATE, ATTRATES, atm/ext-atm DAP, CM/RCS phase plane, TIMETST, JETCALL, DZCALL, CM/FDAI+TM, SETJTAG, CM/DAPON, CM/DAPIC)
 - P61-P67: DONE p61_p67.c (P61..P67 jobs, P64-P67 mode changes, KILLGRP4, WAKEP62, S61.1/S61.1A/S61.1C, S61.2 with TFF/TRIG FISHCALC VGAMCALC GMAX DISPTARG VRCALC, S62.3, P67.2)
-- P37_P70: PARTIAL p37.c (XT1LIM done; P37 program stub)
-- P11: TODO
-- tests/test_entry.c: TODO
+- P37_P70: PARTIAL p37.c (XT1LIM done; P37 program and its conic/precision
+  subroutines are a documented stub -- assignment asked "read and describe")
+- P11: DONE p11.c (P11, REP11, REP11A, MATRXJOB+GETDOWN, VHHDOT, S11.1,
+  ATERTASK, ATERJOB/ATTDISP/attitude errors, ATRESET, SATSTKON, REDOSAT, SATSTICK)
+- tests/test_entry.c: DONE (23 checks; see Tests written)
 - entry_pending.h: DONE rewritten against the now-available core headers (resume 2)
 
 ## Deviations
@@ -88,27 +90,34 @@ Scales: /2VS = /51532.3946 fps; /805 = /25 g; revs = angle/360 = range/21600 NM.
 - -0 in CMDAPMOD modelled as AGC_ENTRY_DAPMOD_MINUS0.
 
 ## Stubs
-(filled as found)
+- agc_job_p37 (P37_P70.agc pp. 891-930): returns AGC_STATUS_UNIMPLEMENTED.
+  Not translated: P37/RTE299..RTE390 conic iteration, P37E/RTEVN/RTEDISP
+  displays, TMRAD100, INVC100, PREC100..PRECX precision trajectory,
+  RTENCK1-3, V2T100..V2T1X, GAMDV10..GAMDVX, DVCALC, P37G..P37W targeting
+  and the P370 alarms (605, 612, 613). Only XT1LIM (agc_p37_xt1lim) is done.
+  About 1500 lines of interpretive code; suggest a sibling agent (needs
+  INTEGRVS, CSMPREC, TIMERAD, PARAM, GETERAD, TIMETHET, LAT-LONG).
 
 ## Requested core additions
 All are declared (not defined) in src/csm/entry_pending.h; delete that file
-at integration once the owners provide them.
-- Flags (agc_flags_csm.h): CPHIFLAG AMOONFLG NJETSFLG ERADFLAG NODOP01 AVEGFLAG
-  XDELVFLG FINALFLG NODOFLAG REFSMFLG LUNAFLAG RETROFLG SLOWFLG DAPBIT1 DAPBIT2
-  ENTRYDSP CMDAPARM GAMDIFSW GONEPAST RELVELSW EGSW NOSWITCH HIND INRLSW LATSW
-  .05GSW(AGC_FLAG__05GSW) CM/DSTBY(AGC_FLAG_CM_DSTBY) GYMDIFSW NORMSW RVSW GONEBY.
-- Channel bits: AGC_CH030_SCCONTROL_OF_SATURN (ch30 BIT10), AGC_CH012_SIVB_TAKEOVER (ch12 BIT9).
-- agc_state.h accessors: agc_erase_unitw, _unitr, _delv, _delvref, _refsmmat,
-  _set_refsmmat, _cdux/_cduy/_cduz, _imodes33, _tephem/_set_tephem,
-  _tliftoff/_set_tliftoff, _set_avegexit(agc_job_id_t), _set_dnlstcod.
-- agc_dsky.h: agc_dsky_display(verb, noun, flash, on_terminate, on_proceed, on_enter),
-  agc_dsky_clean (CLEANDSP), agc_dsky_blank (BLANKET).
-- agc_nav.h: agc_nav_lalotorv, agc_nav_latlong, agc_nav_geterad.
-- agc_imu.h: agc_imu_calcga, agc_imu_calcgta.
-- dap-csm: agc_dap_needler.
+at integration once the owners provide them. Flags, channel bits, DSKY
+(agc_dsky_display/clearmrk/vn), lat/long, CALCGA/CALCGTA, NEEDLER and the
+AVERAGEG state now come from the published headers.
+- sys-misc: `agc_status_t agc_svc_set_extvbact(uint16_t v);` (TS EXTVBACT, P61).
+- guid-powered: `agc_status_t agc_guid_preread1_csm(void);` (PREREAD1, P11).
+- imu/prelaunch: `agc_status_t agc_csm_prelaunch_p11_earthr(agc_interp_t *ip,
+  agc_dp_t tliftoff);` (P11 tail of the prelaunch ERCOMP/EARTHR).
+- dap-csm: `agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);` -- public
+  wrapper for csm_rcs_stickchk (rcs_manual.c), used by SATSTICK.
+- io-pinball: `agc_status_t agc_dsky_gopin(const agc_job_ctx_t *ctx);` (GOPIN,
+  also requested by guid-powered).
+- Provisional job/task ids AGC_JOB_SERVEXIT..AGC_JOB_ATRESET2 (0x0C00..0x0C1D),
+  AGC_TASK_JETCALL ATTRATES READACCS SATSTICK (0x0C80..0x0C83), entry
+  priorities, DNLSTCOD codes: move to agc_jobs.h / sysmisc.
 - Shared math kept as local static copies until exported: LOG, EARROT1/2
   (CSM_GEOMETRY), ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES), CDULOGIC, SIGNMPAC
   (RT8_OP_CODES), POLY (INTERPRETER). Suggest agc_interp.h/agc_nav.h exports.
+- agc_csm_entry.h: agc_p11_padload_t gained `satrate[4]` (SATRATE pad load).
 
 ## Requested jobs-tasks
 Jobs: GOTOPOOH SERVEXIT CM_POSE P61 P61_4 P61_1 P61_2 P61_3 P62 P62_1 P62_2 P62_2B
@@ -117,8 +126,19 @@ ATERJOB NORMLIZE. Tasks: READGYMB SETJTAG JETCALL WAKEP62 S61_1C ATERTASK
 READACCS. (Temporary values in entry_pending.h.)
 
 ## Tests written
-(TODO)
+tests/test_entry.c (compiles with -Werror; links only once the whole
+library links -- verified locally with abort stubs for other lanes'
+missing symbols: 23 checks, 0 failures, 0 assert reports):
+- HUNTEST/RANGER for a nominal up-control state (V 32000 fps, RDOT -300
+  fps, D 4 g, LAD .3, LEWD .15, THETAH 1300 NM): result RANGER, NEGAMA
+  path (GAMMAL = 0), VL and GAMMAL within 1e-5 of a double-precision model
+  of the AGC equations, predicted range 1304.0 NM (model 1304.0, < 1 NM).
+- Entry DAP roll phase plane: +20 deg error -> JNDX -1 (positive roll
+  jets), TON1 > 0; -20 deg -> JNDX +1; 1 deg -> dead zone.
+- XT1LIM: MA = 2 RCON = 2 R(T1), BETA5 = 5 -> X(T1)LIM = 2.
 
 ## Open questions
 - REENTRY_CONTROL p. 860 references label GETLEWD which is not defined;
   GETDLEWD is assumed (transcription typo).
+- CH1 is 2DEC .32 B1, i.e. machine value .64 (= 16 CH1/25); the lexicon
+  constant uses .64, confirmed by the test model.

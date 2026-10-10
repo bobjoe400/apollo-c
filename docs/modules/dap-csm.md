@@ -67,9 +67,9 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE MYSUBS csm_dap_smallmp, csm_dap_dpadd + word helpers (MSU, ADS, DAS, MP, DV) mysubs.c
 - DONE RCS-CSM_DIGITAL_AUTOPILOT: rcs_dap.c (REDORCS RCSATT SETT5 FREECHK REINIT FRESHDAP/REDAP ZEROJET T5PHASE2/KALUPDT), rcs_filter.c (RATEFILT KMATRIX DCDUINCR DACNDLS FDAIDSP1/2 GETAKS), rcs_manual.c (manual rotation, SETWBODY, FREEFUNC, STICKCHK), needles.c (NEEDLER..DACLOOP, agc_dap_needler)
 - DONE AUTOMATIC_MANEUVERS rcs_attitude.c (AHFNOROT FREECONT ATTHOLD HOLDFUNC GRABANG JETS J6..J24 JTIME T6PROG T6PROGM)
-- TODO RCS-CSM_DAP_EXECUTIVE_PROGRAMS rcs_dap_exec.c
-- TODO JET_SELECTION_LOGIC jet_select.c
-- TODO S41.2/S40.14/RCSDAPON rcs_dapdata.c
+- DONE AMBGUPDT agc_job_ambgupdt rcs_dap_exec.c
+- DONE JET_SELECTION_LOGIC agc_csm_jet_select, agc_task_jetslect, agc_task_t6start jet_select.c (re-verified vs source on resume)
+- DONE SETMINDB/SETMAXDB/S41.2/S40.14/RCSDAPON/RCSUP rcs_dapdata.c
 - TODO TVCINITIALIZE tvc_init.c
 - TODO TVCEXECUTIVE tvc_exec.c
 - TODO TVCMASSPROP tvc_massprop.c

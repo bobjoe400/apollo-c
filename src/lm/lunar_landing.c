@@ -302,9 +302,9 @@ agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL)) {
         return AGC_STATUS_BAD_ARG;
     }
-    agc_status_t st = agc_align_r51p63(ctx, AGC_JOB_P63SPOT2);
-    (void)AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED);
-    return st;
+    agc_align_ram()->qmaj = AGC_JOB_P63SPOT2;            /* SSP QMAJ    */
+    (void)AGC_ASSERT(agc_align_ram()->qmaj == AGC_JOB_P63SPOT2);
+    return agc_job_lm_r51k(ctx);                         /* RTB R51P63  */
 }
 
 /* P63SPOT2 (pp. 788-789): KALCMANU set for the burn attitude (+X along

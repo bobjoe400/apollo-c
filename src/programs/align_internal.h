@@ -79,6 +79,10 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
  * DRIFTFLG set.                                                          */
 agc_status_t align_set1_pdt(void);
 
+/* The VN pseudo-op: verb and noun as decimal pairs packed 0VVVVVVVNNNNNNN
+ * (same packing as agc_dsky_vn(), usable in constant expressions).       */
+#define ALIGN_VN(verb, noun) ((uint16_t)(((verb) << 7) | (noun)))
+
 /* Priorities used by the mark system and the jobs it creates.            */
 #define ALIGN_PRIO13 ((agc_prio_t)013)
 #define ALIGN_PRIO15 ((agc_prio_t)015)

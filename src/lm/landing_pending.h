@@ -1,8 +1,7 @@
 /*
  * landing_pending.h -- guid-landing lane: the shared symbols this lane uses
- * that NO header in include/agc provides yet (checked 2026-10-09 against
- * agc_state.h, agc_exec.h, agc_flags_lm.h, agc_channels.h, agc_dsky.h,
- * agc_guid.h, agc_imu.h, agc_navaux.h, agc_align.h).
+ * that NO header in include/agc provides yet (re-checked 2026-10-10, all
+ * wave-1 lanes landed, against every include/agc header).
  *
  * Names follow docs/agents/_common.md; where another lane's pending header
  * already declares the same symbol (src/imu/imu_pending.h) the identical
@@ -30,6 +29,7 @@
 #include "agc/agc_align.h"
 #include "agc/agc_lm_dap.h"
 #include "agc/agc_lm_landing.h"
+#include "agc/agc_programs.h"
 
 /* ---- jobs / tasks (lead registers them in agc_jobs.h + dispatch.c) ------
  * GOABORT, P70A, P71A, R10,R11, ZOOM come from src/exec/exec_pending.h
@@ -90,23 +90,19 @@
  * counter cells 053-060), TEMX/Y/Z (guid-powered, SERVICER temporaries
  * reused by R10).                                                        */
 void     agc_erase_set_thrust(agc_sp_t pulses);     /* THRUST counter 055   */
-void     agc_erase_set_altm(agc_sp_t v);            /* ALTM counter 060     */
+void     agc_erase_set_altm(uint16_t word);         /* ALTM counter 060, raw 15-bit word (bit 15 = sign/hi) */
 void     agc_erase_set_cdutcmd(int which, agc_sp_t v); /* 0 CDUTCMD 053, 1 CDUSCMD 054 */
 
 /* ---- guid-powered: TEMX, TEMY, TEMZ (PIPA counts READACCS left for P66) - */
 agc_sp_t agc_erase_tem(int axis);                   /* TEMX/Y/Z, axis 0..2  */
 void     agc_erase_set_tem(int axis, agc_sp_t v);
 
-/* ---- prog-align: R51 from P63, REFMF for P57 after P68 ------------------ */
-agc_status_t agc_align_r51p63(const agc_job_ctx_t *ctx, agc_job_id_t qmaj); /* R51P63 */
+/* ---- prog-align: REFMF for P57 after P68 (R51P63 is agc_job_lm_r51k in
+ * agc_align.h, entered with agc_align_ram()->qmaj set) ------------------ */
 agc_status_t agc_align_refmf(agc_interp_t *ip);     /* REFMF (YNBSAV, ZNBSAV, ATTFLAG) */
 
 /* ---- nav-aux / io-nouns: LAT, LONG, ALT erasables (noun 43) ------------- */
 agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
-
-/* ---- dap-lm: the other two 1-jet accelerations (agc_lm_dap.h has P) ---- */
-agc_sp_t agc_erase_1jaccq(void);                    /* 1JACCQ pi/4 r/s^2    */
-agc_sp_t agc_erase_1jaccr(void);                    /* 1JACCR pi/4 r/s^2    */
 
 /* ---- prog-rendz: R29/R12 radar helpers (RADAR_LEADIN / R10 lamps) ------- */
 agc_status_t agc_rendz_flip(uint16_t lamp_bit);     /* FLIP (R10 LR lamps)  */
@@ -115,6 +111,5 @@ agc_status_t agc_rendz_clradmod(void);              /* CLRADMOD (RADMODES for R2
 /* ---- sys-misc (T4RUPT): gimbal-to-pilot matrix elements (R10 meters) ---- */
 agc_sp_t agc_erase_m22(void);                       /* M22 = sin(AOG), at 1 */
 agc_sp_t agc_erase_m32(void);                       /* M32 = cos(AOG), at 1 */
-void     agc_erase_set_trkmkcnt(agc_sp_t v);        /* TRKMKCNT (guid-powered) */
 
 #endif /* LANDING_PENDING_H */
