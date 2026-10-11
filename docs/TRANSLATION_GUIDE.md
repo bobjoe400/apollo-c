@@ -25,6 +25,18 @@ AGC scale factor** and write it in a comment. Helpers:
 Use the double helpers only in tests, the sim harness, and DSKY conversion,
 never inside flight algorithms (they must run on the fixed-point ops).
 
+**Word-level values (added 2026-10-11).** The AGC stores a DP/TP value as
+two or three 15-bit words whose signs may disagree (e.g. R1A = (00001,
+40057)); `agc_dp_t` collapses that to one integer and loses up to a few LSB
+where the AGC later shifts, divides, square-roots or arc-sines the stored
+words. Where an oracle case shows such a residual, keep the value as
+`agc_dp_words_t` / `agc_tp_words_t` (include/agc/core/word.h) and use the
+per-instruction `agc_mpac_*` functions in include/agc/core/interp_words.h
+(DLOAD STORE DAD DSU BDSU TAD DMP DMPR DSQ DDV BDDV SQRT ROUND SL SR SLR
+SRR NORM DCOMP ABS SIGN SIN COS ASIN ACOS DOT VSQ, plus DAS). Convert at
+the boundary with the value API. Default to `agc_dp_t`; go word-level only
+where the AGC's behaviour depends on the split.
+
 ## 2. Interpreter (include/agc/core/interp.h)
 
 The interpretive language is not emulated. Each interpretive instruction

@@ -29,3 +29,12 @@
   for overflow stores: wrap modulo 1 where the AGC does, do not saturate.
 
 - sim: nothing calls agc_lm_dap_time6_count / agc_lm_dap_t6_pending, so TIME6 never counts and no T6RUPT ends a jet firing in scenarios (review-dap-lm request); wire TIME6 into the clock driver.
+
+## Word-level API adoption (review-core-numeric, 2026-10-11)
+Lanes with documented word-split residuals move those sites onto
+agc_dp_words_t / agc_mpac_* (docs/TRANSLATION_GUIDE.md section 1) and
+tighten the oracle tolerance to 0: nav-conic (R1A in GETX/PARAM/LAMBERT,
+COGA, X, KEPC2), imu (DELCOMP 1-cos A; replace word_pair_t), guid-landing
+(TBUP/TGO; replace agc_lm_words_t), guid-entry (A0/V1/LEWD words -> L/D),
+nav-aux (NODI COS, SR1 ASIN), prog-align (word_forms.c), dap-csm / dap-lm
+(their pair types). Lanes already reviewed get this in the follow-up pass.

@@ -100,26 +100,20 @@ typedef struct rte_kfit
     agc_dp_t c;     /* CK1K2.. value at VREF, scale of K          */
 } rte_kfit_t;
 
-static const rte_kfit_t K1_BELOW_21K   = {2556848, 0,
-                                        189866};    /* V(400), 0, 5500 */
-static const rte_kfit_t K1_21K_28K     = {178979340, -642218,
-                                      82850};       /* V(28K), -.443, 2400 */
-static const rte_kfit_t K1_ABOVE_28K   = {19176358, 0,
-                                        82850};     /* V(3K), 0, 2400 */
-static const rte_kfit_t K2_BELOW_24K   = {153410863, 38359106,
-                                        -2386093};  /* V(24K), .001225, -3.2 */
-static const rte_kfit_t K2_24K_28_4K   = {178979340, 32879233,
-                                        745654};    /* 28K, .00105, 1 */
-static const rte_kfit_t K2_ABOVE_28_4K = {204547817, 8924363,
-                                          1789570}; /* V(32K), .000285, 2.4 */
-static const agc_dp_t   V21K           = 134217728; /* V(21K)   64.000 B-7 m/cs  */
-static const agc_dp_t   V3K            = 19176358;  /* V(3K)    9.144 B-7        */
-static const agc_dp_t   V4K            = 25568477;  /* V(4K)    12.192 B-7       */
-static const agc_dp_t   V400           = 2556848;   /* V(400)   1.2192 B-7       */
-static const agc_dp_t   V26K           = 166195102; /* V(26K)   79.248 B-7       */
-static const agc_dp_t   MAXPHIC        = 24855239;  /* MAXPHIC .09259298 rev, B0 */
-static const agc_dp_t   TLESS26        = 445427;    /* TLESS26  5.70146688 E7 B-35 (8660 PHI/V) */
-static const agc_dp_t   TGR26CON       = 720000;    /* TGR26CON 7.2 E5 B-28 cs/rev (PHI/3) */
+static const rte_kfit_t K1_BELOW_21K   = {2556848, 0, 189866};            /* V(400), 0, 5500 */
+static const rte_kfit_t K1_21K_28K     = {178979340, -642218, 82850};     /* V(28K), -.443, 2400 */
+static const rte_kfit_t K1_ABOVE_28K   = {19176358, 0, 82850};            /* V(3K), 0, 2400 */
+static const rte_kfit_t K2_BELOW_24K   = {153410863, 38359106, -2386093}; /* V(24K), .001225, -3.2 */
+static const rte_kfit_t K2_24K_28_4K   = {178979340, 32879233, 745654};   /* 28K, .00105, 1 */
+static const rte_kfit_t K2_ABOVE_28_4K = {204547817, 8924363, 1789570};   /* V(32K), .000285, 2.4 */
+static const agc_dp_t   V21K           = 134217728;                       /* V(21K)   64.000 B-7 m/cs  */
+static const agc_dp_t   V3K            = 19176358;                        /* V(3K)    9.144 B-7        */
+static const agc_dp_t   V4K            = 25568477;                        /* V(4K)    12.192 B-7       */
+static const agc_dp_t   V400           = 2556848;                         /* V(400)   1.2192 B-7       */
+static const agc_dp_t   V26K           = 166195102;                       /* V(26K)   79.248 B-7       */
+static const agc_dp_t   MAXPHIC        = 24855239;                        /* MAXPHIC .09259298 rev, B0 */
+static const agc_dp_t   TLESS26        = 445427;                          /* TLESS26  5.70146688 E7 B-35 (8660 PHI/V) */
+static const agc_dp_t   TGR26CON       = 720000;                          /* TGR26CON 7.2 E5 B-28 cs/rev (PHI/3) */
 
 /**********************************************************************
  * INVC100 after CSMPREC .. INVC125 (P37_P70.agc pp. 905-906): R(T1)/ V(T1)/

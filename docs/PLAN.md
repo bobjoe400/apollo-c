@@ -167,13 +167,14 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 7. review-dap-csm      (ROLLSET; digit-suffixed names)
 8. review-nav-conic    (PAUSED: R1A word-pair plan in note; needs core word API first -> run review-core-numeric BEFORE resuming)
 9. review-nav-integ    (PAUSED: fidelity done, 439 oracle checks; DMP audit + style left)
-10. review-core-numeric (UNIT B27; stale DVSIGN; test prologs in progress)
+10. review-core-numeric DONE (word-level API landed)
 11. review-exec-sched   (prologs in progress)
 12. review-imu          (gyrocompass file in progress)
 13. review-prog-align   (oracle test additions in progress)
 14. review-sys-misc     (t4rupt_csm.c rewrite in progress)
 15. review-guid-powered (ZOOM; style debt; prologs in progress)
 16. sim                 (pad.c; scenarios)
-17. dmp-audit-done-lanes (nav-aux, io-dsky, state-flags: the DMP/DMPR +
-    shift-rounding audit from review_items.md, since they finished before it)
+17. follow-up-done-lanes (nav-aux, io-dsky, state-flags, guid-entry, imu,
+    guid-landing, prog-rendz, dap-lm: DMP/DMPR audit where missed, and
+    word-level API adoption per review_items.md)
 Then: lead assert.h rename; document wave (1 agent).

@@ -455,3 +455,6 @@
             tolerance 0, style 714->0, 18 unused accessors removed. Routed:
             R12 exec restart must call agc_lm_dap_restart(); sim must count
             TIME6. Launching format3 (brace initializers).
+2026-10-11  review-core-numeric DONE: word-level MPAC API; 2021 oracle checks
+            0 failures; reproduces WLOOP/ECC=0. Guide section 1 updated;
+            adoption items routed. Resuming review-nav-conic.
