@@ -30,7 +30,15 @@ Language: C11, no extensions. Build flags (Makefile):
    the switch. A file claims the exemption only with the marker
    `/* GENERATED-DISPATCH: rule 4 exempt */` in its first 5 lines, and
    check_rules.py accepts the marker only for src/exec/dispatch.c.
-5. **Assertions.** Average >= 2 assertions per function. Use `AGC_ASSERT(cond)`
+5. **Assertions.** Average >= 2 assertions per function, measured as the
+   rule states: an AVERAGE over the project, reported by check_rules as a
+   hard target; the per-file figure is a warning only. A file of pure
+   fixed-point arithmetic whose preconditions are guaranteed by
+   construction may sit below 2.0, but it must carry the real
+   postconditions a bug could break (overflow flag consistent, iteration
+   count within its bound, |unit| within bounds, sign agreement after
+   NORM). Never add an assertion that cannot fail to raise the number.
+   Use `AGC_ASSERT(cond)`
    from `include/agc/core/assert.h`: it is side-effect free, evaluates to a
    `bool`, and callers recover by returning `AGC_STATUS_*` error codes. Never
    use `<assert.h>`. Assertions that cannot fail do not count.

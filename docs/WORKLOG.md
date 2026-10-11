@@ -472,3 +472,9 @@
             hard). Lane status-handling-2 queued to run alone after the two
             current lanes: delete guaranteed guards, convert fallible ones to
             agc_status_t + out-param with callers checking.
+2026-10-11  review-nav-conic DONE: whole lane word-level; oracle exact at
+            tolerance 0 (524 checks, 55 cases); CDH DIFFALT exact. Decision:
+            rule-5 density is a PROJECT average (hard), per-file is a
+            warning; no assertions that cannot fail. prog-rendz follow-up:
+            tighten targeting tolerances. Waiting for dap-csm, then
+            status-handling-2 alone.

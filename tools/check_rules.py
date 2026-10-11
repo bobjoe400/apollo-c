@@ -21,6 +21,8 @@ FUNC_RE = re.compile(r'^[A-Za-z_][\w\s\*]*\s\**([A-Za-z_]\w*)\s*\([^;]*\)\s*\{?\
 C_KEYWORDS = {'if', 'while', 'for', 'switch', 'return', 'sizeof', 'else', 'do'}
 HARD = []
 WARN = []
+TOTAL_FUNCS = 0
+TOTAL_ASSERTS = 0
 
 
 def check_file(path):
@@ -99,6 +101,9 @@ def check_file(path):
                 in_func = None
     if ifs > 1 + (1 if path.endswith('agc_assert.h') else 0):
         WARN.append(f'{path}: rule 8: {ifs} conditional-compilation directives')
+    global TOTAL_FUNCS, TOTAL_ASSERTS
+    TOTAL_FUNCS += n_funcs
+    TOTAL_ASSERTS += n_asserts
     if n_funcs and n_asserts / n_funcs < 2.0:
         WARN.append(f'{path}: rule 5: assertion density {n_asserts}/{n_funcs} functions = {n_asserts / n_funcs:.2f} (< 2.0)')
 
@@ -114,6 +119,10 @@ def main(argv):
                     if any(k in low for k in ('glue', 'shim', '_ext.', 'pending', 'adapter', 'wrapper')) or low == 'ext.h':
                         WARN.append(f'{os.path.join(dp, f)}: scaffolding file (glue/shim/ext/pending); must be gone after integration')
                     check_file(os.path.join(dp, f))
+    if TOTAL_FUNCS and TOTAL_ASSERTS / TOTAL_FUNCS < 2.0:
+        HARD.append(f'rule 5: project assertion density {TOTAL_ASSERTS}/{TOTAL_FUNCS} = {TOTAL_ASSERTS / TOTAL_FUNCS:.2f} (< 2.0 average)')
+    else:
+        print(f'rule 5: project assertion density {TOTAL_ASSERTS}/{max(TOTAL_FUNCS,1)} = {TOTAL_ASSERTS / max(TOTAL_FUNCS,1):.2f}')
     for w in WARN:
         print('WARN', w)
     for h in HARD:
