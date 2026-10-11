@@ -416,3 +416,14 @@
             word-level API should exist first -> next session order:
             review-core-numeric, then nav-conic, then dap-lm. guid-landing
             still running.
+2026-10-11  review-guid-landing DONE: 0 DMP errors but 15 TP-accumulator
+            sites (DOT/DMP then SL, DSQ then SQRT) fixed; RODCOMP exact
+            (148 LSB /AFC/ error gone); ascent exact through TGO, residuals
+            after are word-pair storage (core R1 request). Bug: RDOT noun
+            points at unwritten rdot; should be HDOTDISP (exec/nouns.c:155)
+            -> review-exec-sched item. State: make/test green; make check
+            fails only in paused dap-lm (rule 4 accont.c) and dap-csm (rule 7
+            tvc/daps.c). NO AGENTS RUNNING. Next session: review-core-numeric
+            (word-level API), then nav-conic, dap-lm, dap-csm, nav-integ,
+            exec-sched, prog-align, sys-misc, guid-powered, sim, DMP follow-
+            up, assert.h rename, document.
