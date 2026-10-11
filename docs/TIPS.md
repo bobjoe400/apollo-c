@@ -136,3 +136,10 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   silently changes results by hundreds of LSB over an entry trajectory.
   Audit every multiply against the listing before blaming the emulator for
   oracle mismatches.
+* **Scale comments belong above the statement, never inside it.** Lanes
+  annotated at the point of use (`th = /* theta/2 */ agc_dp_div(...)`),
+  which no formatter can repair. State the placement rule in the brief and
+  enforce it with a token-level script from the first commit.
+* **Never align continuation lines to the open paren** when the code is
+  chains of nested calls; use a fixed continuation indent, and split
+  statements with more than two continuation lines into named temporaries.

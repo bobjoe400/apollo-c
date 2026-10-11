@@ -427,3 +427,10 @@
             (word-level API), then nav-conic, dap-lm, dap-csm, nav-integ,
             exec-sched, prog-align, sys-misc, guid-powered, sim, DMP follow-
             up, assert.h rename, document.
+2026-10-11  User: formatted code unreadable -- comments inside expressions
+            (`x = /* scale */ call(...)`, `/* UP */` inside arg lists) and
+            paren-aligned continuation staircases. Standard updated; lane
+            format2 (Opus, alone): tools/fix_comments.py (libclang, moves
+            in-expression comments above the statement), uncrustify.cfg
+            fixed 8-space continuation, tree-wide run, long-statement
+            inventory for the review wave. All other work waits.

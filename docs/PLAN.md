@@ -154,7 +154,9 @@ Run at most 3 agents at a time. Wide parallel waves kept hitting usage
 limits mid-work and the resume overhead was slowing progress. Queue order
 for the remaining review lanes (fidelity-bearing first, style-debt last):
 
-1. review-io-dsky      (build-breaking header; F15; 64 KNOWN mismatches)
+0. format2 (comment relocation + fixed continuation indent) -- BEFORE any
+   further lane work (user, 2026-10-11)
+1. review-io-dsky      DONE
 2. review-guid-entry   (F14 fix in progress)
 3. review-nav-aux      (INCORP1 fixes in progress)
 4. review-prog-rendz   (F13 CDH 62 m)
