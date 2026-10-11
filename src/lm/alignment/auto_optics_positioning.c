@@ -27,20 +27,6 @@
 #define DETENT_BITS  ((agc_sp_t) 0700)   /* HIGH9 & a star code < 01000    */
 #define ELEVATION_45 ((uint16_t) 010000) /* BIT13: 45 degrees              */
 
-/* Detent code (bits 7-9 of STARCODE / AOTCODE). */
-static agc_sp_t detent_code(void)
-{
-    const agc_sp_t d =
-        (agc_sp_t) ((agc_align_ram()->starcode >> DETENT_SHIFT) & DETENT_MASK);
-
-    if (!AGC_ASSERT((d >= 0) && (d <= DETENT_COAS)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (d);
-}
-
 /*
  * R52 (Luminary p. 955): STQ SAVQR52; STARCODE = BESTI +STARIND / 6 +
  * detent 2; then R52A.
@@ -123,7 +109,14 @@ agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx)
     }
 
     agc_flag_clear(AGC_FLAG_3AXISFLG);
-    const agc_sp_t d = detent_code();
+    /* Detent code (bits 7-9 of STARCODE / AOTCODE). */
+    const agc_sp_t d =
+        (agc_sp_t) ((agc_align_ram()->starcode >> DETENT_SHIFT) & DETENT_MASK);
+
+    if (!AGC_ASSERT((d >= 0) && (d <= DETENT_COAS)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if ((d <= 0) || (d == DETENT_COAS))
     {

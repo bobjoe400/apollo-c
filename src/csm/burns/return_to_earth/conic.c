@@ -228,39 +228,6 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs,
     return (AGC_STATUS_OK);
 }
 
-/* RTE317 .. RTE350 (pp. 892-893): MAMAX2 from R(T1), NN1A = -9, RCON = K2,
- * and the first X(T2): COT(90 deg - GAMMA) of the input angle, else K3RTE
- * (R(T1) < K1RTE) or K4RTE.                                               */
-static agc_status_t conic_start(agc_interp_t *ip, rte_erasable_t *rs)
-{
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->r_t1 > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    rs->mamax2 = agc_dp_shl(ip, agc_dp_poly(rs->r_t1, MAMAX2_POLY, 3), 1);
-    rs->nn1a   = -RTE_CONIC_PASSES; /* M9RTEB28      */
-    rs->rcon   = K2RTE;             /* RTE320        */
-
-    if (rs->rtegam2d != 0)
-    {
-        agc_dp_t a = agc_dp_sub(ip, ONE_B2, rs->rtegam2d); /* 1RTEB2 BDSU   */
-
-        rs->x_t2 =
-            agc_dp_div(ip, agc_dp_cos(ip, a), agc_dp_sin(ip, a)); /* BDDV  */
-    }
-    else if (agc_dp_sub(ip, rs->r_t1, K1RTE) < 0)
-    {                     /* RTE340        */
-        rs->x_t2 = K3RTE; /* RTE350        */
-    }
-    else
-    {
-        rs->x_t2 = K4RTE;
-    }
-
-    return (AGC_STATUS_OK);
-}
-
 /* RTE373 .. RTE390 (pp. 893-895): one correction of RCON and X(T2).
  * NOT_FOUND: converged (P37E). xd is the X(T2) wanted for this conic.     */
 static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs,
@@ -334,7 +301,35 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = conic_start(ip, rs); /* RTE317        */
+    /* RTE317 .. RTE350 (pp. 892-893): MAMAX2 from R(T1), NN1A = -9, RCON = K2,
+     * and the first X(T2): COT(90 deg - GAMMA) of the input angle, else K3RTE
+     * (R(T1) < K1RTE) or K4RTE.                                               */
+    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->r_t1 > 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    rs->mamax2 = agc_dp_shl(ip, agc_dp_poly(rs->r_t1, MAMAX2_POLY, 3), 1);
+    rs->nn1a   = -RTE_CONIC_PASSES; /* M9RTEB28      */
+    rs->rcon   = K2RTE;             /* RTE320        */
+
+    if (rs->rtegam2d != 0)
+    {
+        agc_dp_t a = agc_dp_sub(ip, ONE_B2, rs->rtegam2d); /* 1RTEB2 BDSU   */
+
+        rs->x_t2 =
+            agc_dp_div(ip, agc_dp_cos(ip, a), agc_dp_sin(ip, a)); /* BDDV  */
+    }
+    else if (agc_dp_sub(ip, rs->r_t1, K1RTE) < 0)
+    {                     /* RTE340        */
+        rs->x_t2 = K3RTE; /* RTE350        */
+    }
+    else
+    {
+        rs->x_t2 = K4RTE;
+    }
+
+    agc_status_t st = AGC_STATUS_OK; /* RTE317        */
 
     for (int pass = 0; (st == AGC_STATUS_OK) && (pass <= RTE_CONIC_PASSES);
          pass++)
@@ -506,30 +501,40 @@ static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs,
     return (AGC_STATUS_OK);
 }
 
-/* RTEDISP landing site (pp. 903-904): TMRAD100 down to 300,000 ft (R3, V3,
- * T23), GAMMAE = ARCSIN(UR3.UV3), AUGEKUGL (PHIE, TE), T(LS) = T2 + T23 +
- * TE; PHIE replaced by the P37RANGE pad load if non-zero (PCR 261);
- * ALPHAV = UR3 COS(PHIE) + UH3 SIN(PHIE), UH3 = UNIT(UR3 X UV3 X UR3);
- * LAT-LONG (ERADFLAG, LUNAFLAG clear) at T(LS).                           */
-static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
-                                         agc_sp_t range_override,
-                                         rte_display_t *out)
+/* RTEDISP (P37_P70.agc pp. 902-904): "OUTPUT FOR DISPLAY IS CONVERTED TO
+ * PROPER UNITS ... LANDING SITE COMPUTATION ... IS INCLUDED". Leaves
+ * R(T2)/ V(T2)/ T12 at 300,000 ft, as the AGC does.                      */
+agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs,
+                                agc_dp_t tig, agc_sp_t range_override,
+                                rte_display_t *out)
 {
-    agc_dp_t phie = 0;
-    agc_dp_t te   = 0;
-    agc_dp_t v3   = 0;
-
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t     rdes = agc_dp_sub(ip, agc_vec_abval(ip, rs->r_t2v), M30480);
-    agc_status_t st   = rte_time_radius(ip, rs, rs->r_t2v, rs->v_t2v, rdes);
+    agc_status_t st = display_entry(ip, rs, tig, out);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
+    }
+
+    /* RTEDISP landing site (pp. 903-904): TMRAD100 down to 300,000 ft (R3, V3,
+     * T23), GAMMAE = ARCSIN(UR3.UV3), AUGEKUGL (PHIE, TE), T(LS) = T2 + T23 +
+     * TE; PHIE replaced by the P37RANGE pad load if non-zero (PCR 261);
+     * ALPHAV = UR3 COS(PHIE) + UH3 SIN(PHIE), UH3 = UNIT(UR3 X UV3 X UR3);
+     * LAT-LONG (ERADFLAG, LUNAFLAG clear) at T(LS).                           */
+    agc_dp_t phie = 0;
+    agc_dp_t te   = 0;
+    agc_dp_t v3   = 0;
+
+    agc_dp_t     rdes    = agc_dp_sub(ip, agc_vec_abval(ip, rs->r_t2v), M30480);
+    agc_status_t st_site = rte_time_radius(ip, rs, rs->r_t2v, rs->v_t2v, rdes);
+
+    if (st_site != AGC_STATUS_OK)
+    {
+        return (st_site);
     }
 
     agc_vec_t ur3    = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);
@@ -537,11 +542,11 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
     agc_dp_t  gammae =
         agc_dp_asin(ip, agc_dp_shl(ip, agc_vec_dot(ip, ur3, uv3), 1));
 
-    st = rte_augekugl(ip, v3, agc_dp_abs(gammae), &phie, &te);
+    st_site = rte_augekugl(ip, v3, agc_dp_abs(gammae), &phie, &te);
 
-    if (st != AGC_STATUS_OK)
+    if (st_site != AGC_STATUS_OK)
     {
-        return (st);
+        return (st_site);
     }
 
     agc_dp_t tls =
@@ -565,41 +570,19 @@ static agc_status_t display_landing_site(agc_interp_t *ip, rte_erasable_t *rs,
     agc_latlong_t           ll;
     const agc_latlong_opt_t opt = {false, false};
 
-    st = agc_navaux_get_padload(&pad);
+    st_site = agc_navaux_get_padload(&pad);
 
-    if (st == AGC_STATUS_OK)
+    if (st_site == AGC_STATUS_OK)
     {
-        st = agc_latlong_from_r(ip, &pad, opt, alphav, tls,
-                                &ll); /* LAT-LONG      */
+        st_site = agc_latlong_from_r(ip, &pad, opt, alphav, tls,
+                                     &ll); /* LAT-LONG      */
     }
 
-    if (st == AGC_STATUS_OK)
+    if (st_site == AGC_STATUS_OK)
     {
         out->lat_spl = ll.lat;
         out->lng_spl = ll.lon;
     }
 
-    return (st);
-}
-
-/* RTEDISP (P37_P70.agc pp. 902-904): "OUTPUT FOR DISPLAY IS CONVERTED TO
- * PROPER UNITS ... LANDING SITE COMPUTATION ... IS INCLUDED". Leaves
- * R(T2)/ V(T2)/ T12 at 300,000 ft, as the AGC does.                      */
-agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs,
-                                agc_dp_t tig, agc_sp_t range_override,
-                                rte_display_t *out)
-{
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = display_entry(ip, rs, tig, out);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (display_landing_site(ip, rs, range_override, out));
+    return (st_site);
 }

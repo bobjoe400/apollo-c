@@ -96,21 +96,6 @@ agc_status_t agc_ground_track_determination_flight_path(
     return (AGC_STATUS_OK);
 }
 
-/* First pass (P21FLAG clear): INTEGRV of the chosen vehicle's permanent
- * state, precision, VINTFLAG = integrate the CSM.                       */
-static agc_status_t gtd_first_pass(agc_interp_t *ip, agc_integ_ctx_t *ic,
-                                   agc_dp_t tdec1)
-{
-    bool other = ((rz_option(2) >> 1) != 0U); /* SR1 BHIZ      */
-    bool csm   = rz_is_csm() ? !other : other;
-
-    rz_flag_put(AGC_FLAG_VINTFLAG, csm);
-    rz_flag_put(AGC_FLAG_DIM0FLAG, false);
-    rz_flag_put(AGC_FLAG_INTYPFLG, false); /* PRECISION     */
-
-    return (agc_integ_integrv(ip, ic, tdec1));
-}
-
 /* P21CONT (p.457-458): INTEGRVS from the saved base vector. */
 static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic,
                                   const agc_rendz_t *rz, agc_dp_t tdec1)
@@ -217,7 +202,15 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     }
     else
     {
-        st = gtd_first_pass(&ip, ic, tdec1);
+        /* First pass (P21FLAG clear): INTEGRV of the chosen vehicle's permanent
+         * state, precision, VINTFLAG = integrate the CSM.                       */
+        bool other = ((rz_option(2) >> 1) != 0U); /* SR1 BHIZ      */
+        bool csm   = rz_is_csm() ? !other : other;
+
+        rz_flag_put(AGC_FLAG_VINTFLAG, csm);
+        rz_flag_put(AGC_FLAG_DIM0FLAG, false);
+        rz_flag_put(AGC_FLAG_INTYPFLG, false); /* PRECISION     */
+        st = agc_integ_integrv(&ip, ic, tdec1);
     }
 
     if (st != AGC_STATUS_OK)

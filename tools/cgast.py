@@ -494,8 +494,14 @@ def header_comment(src_lines, first_line):
     j = i
     while j >= 0 and '/*' not in src_lines[j]:
         j -= 1
-    if j < 0:
+    # a block comment of its own: it opens its line, and the lines after the
+    # opener are comment text (a trailing comment on code is not one)
+    if j < 0 or not src_lines[j].lstrip().startswith('/*'):
         return ''
+    for k in range(j + 1, i + 1):
+        t = src_lines[k].lstrip()
+        if '/*' in t and not t.startswith(('*', '/*')):
+            return ''
     return ''.join(src_lines[j:i + 1])
 
 

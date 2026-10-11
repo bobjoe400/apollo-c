@@ -233,64 +233,6 @@ static void tvcx_corcopy(void)
     }
 }
 
-/* One step of the TVCEXEC .. TVCEXFIN sequence after VARGAINS.          */
-static tvcx_step_t tvcx_step(tvcx_step_t s)
-{
-    agc_csm_tvc_t *t    = agc_csm_dap_tvc();
-    tvcx_step_t    next = TVCX_FIN;
-
-    switch (s)
-    {
-        case TVCX_EXECCOPY1:
-            next = tvcx_execcopy();
-            break;
-        case TVCX_1SHOTCHK:
-            next = tvcx_1shotchk();
-            break;
-        case TVCX_REPCHEK:
-            next = tvcx_repchek();
-            break;
-        case TVCX_1SHOTOK: /* not permitted during engine shutdown          */
-
-            if (csm_dap_engine_on())
-            {
-                t->tvcexphs = 3;
-                next        = TVCX_TEMPSET;
-            }
-
-            break;
-        case TVCX_TEMPSET: /* correction fraction  */
-            t->tempdap[1] = FCORFRAC;
-            t->tvcexphs   = 4;
-            next          = TVCX_CORSETUP;
-            break;
-        case TVCX_CORSETUP: /* .. CG.CORR           */
-            tvcx_corsetup();
-            t->pacttmp  = tvcx_cgcorr(t->pdeloff, t->delpbar, t->tempdap[0]);
-            t->yacttmp  = tvcx_cgcorr(t->ydeloff, t->delybar, t->tempdap[0]);
-            t->tvcexphs = 5; /* CORCOPY: INCR (5)    */
-            next        = TVCX_CORCOPY1;
-            break;
-        case TVCX_CORCOPY1:
-            tvcx_corcopy();
-            next = TVCX_CNTRCOPY;
-            break;
-        case TVCX_CNTRCOPY: /* restarts OK here     */
-            t->cntr = t->cntrtmp;
-            break;
-        case TVCX_FIN:
-        default:
-            break;
-    }
-
-    if (!AGC_ASSERT((next >= TVCX_EXECCOPY1) && (next <= TVCX_FIN)))
-    {
-        return (TVCX_FIN);
-    }
-
-    return (next);
-}
-
 /* Run the sequence from a restart point to TVCEXFIN (reset TVCEXPHS).    */
 static agc_status_t tvcx_run(tvcx_step_t from)
 {
@@ -299,7 +241,62 @@ static agc_status_t tvcx_run(tvcx_step_t from)
 
     for (int i = 0; (i < TVCX_MAX_STEPS) && (s != TVCX_FIN); i++)
     {
-        s = tvcx_step(s);
+        /* One step of the TVCEXEC .. TVCEXFIN sequence after VARGAINS.          */
+        agc_csm_tvc_t *t_step = agc_csm_dap_tvc();
+        tvcx_step_t    next   = TVCX_FIN;
+
+        switch (s)
+        {
+            case TVCX_EXECCOPY1:
+                next = tvcx_execcopy();
+                break;
+            case TVCX_1SHOTCHK:
+                next = tvcx_1shotchk();
+                break;
+            case TVCX_REPCHEK:
+                next = tvcx_repchek();
+                break;
+            case TVCX_1SHOTOK: /* not permitted during engine shutdown          */
+
+                if (csm_dap_engine_on())
+                {
+                    t_step->tvcexphs = 3;
+                    next             = TVCX_TEMPSET;
+                }
+
+                break;
+            case TVCX_TEMPSET: /* correction fraction  */
+                t_step->tempdap[1] = FCORFRAC;
+                t_step->tvcexphs   = 4;
+                next               = TVCX_CORSETUP;
+                break;
+            case TVCX_CORSETUP: /* .. CG.CORR           */
+                tvcx_corsetup();
+                t_step->pacttmp = tvcx_cgcorr(t_step->pdeloff, t_step->delpbar,
+                                              t_step->tempdap[0]);
+                t_step->yacttmp = tvcx_cgcorr(t_step->ydeloff, t_step->delybar,
+                                              t_step->tempdap[0]);
+                t_step->tvcexphs = 5; /* CORCOPY: INCR (5)    */
+                next             = TVCX_CORCOPY1;
+                break;
+            case TVCX_CORCOPY1:
+                tvcx_corcopy();
+                next = TVCX_CNTRCOPY;
+                break;
+            case TVCX_CNTRCOPY: /* restarts OK here     */
+                t_step->cntr = t_step->cntrtmp;
+                break;
+            case TVCX_FIN:
+            default:
+                break;
+        }
+
+        if (!AGC_ASSERT((next >= TVCX_EXECCOPY1) && (next <= TVCX_FIN)))
+        {
+            return (AGC_STATUS_NO_CONVERGE);
+        }
+
+        s = next;
     }
 
     if (!AGC_ASSERT(s == TVCX_FIN))
@@ -334,7 +331,16 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
  * itself; terminates when FLAGWRD6 bits 15,14 no longer read 10.         */
 agc_status_t agc_task_tvcexec(void)
 {
-    if (!csm_tvc_dap_is_tvc())
+    /* FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2) = 1,0: T5 belongs to the TVC DAP. */
+    bool b1 = agc_flag_test(AGC_FLAG_DAPBIT1);
+    bool b2 = agc_flag_test(AGC_FLAG_DAPBIT2);
+
+    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!(b1 && !b2))
     {
         return (tvcx_run(TVCX_FIN)); /* TVCEXFIN: terminate  */
     }

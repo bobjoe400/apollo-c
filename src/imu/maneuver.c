@@ -123,46 +123,6 @@ static agc_sp_t cdu_signed(uint16_t p)
     return ((agc_sp_t) v);
 }
 
-/* "TS CDUXD" (CM): the high word of the DP desired angle.               */
-static void csm_set_cdud(int axis, uint16_t p)
-{
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return;
-    }
-
-    agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-
-    if (!AGC_ASSERT(rcs != NULL))
-    {
-        return;
-    }
-
-    rcs->cdud[axis] =
-        (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
-}
-
-static void lm_set_cdud(int axis, uint16_t p)
-{
-    if (!AGC_ASSERT(axis >= 0 && axis < 3 && p <= CDU_MASK))
-    {
-        return;
-    }
-
-    if (axis == 0)
-    {
-        agc_erase_set_cduxd(p);
-    }
-    else if (axis == 1)
-    {
-        agc_erase_set_cduyd(p);
-    }
-    else
-    {
-        agc_erase_set_cduzd(p);
-    }
-}
-
 static void set_cdud(int axis, uint16_t p)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -177,11 +137,36 @@ static void set_cdud(int axis, uint16_t p)
 
     if (is_lm())
     {
-        lm_set_cdud(axis, p);
+        if (!AGC_ASSERT(axis >= 0 && axis < 3 && p <= CDU_MASK))
+        {
+            return;
+        }
+
+        if (axis == 0)
+        {
+            agc_erase_set_cduxd(p);
+        }
+        else if (axis == 1)
+        {
+            agc_erase_set_cduyd(p);
+        }
+        else
+        {
+            agc_erase_set_cduzd(p);
+        }
     }
     else
     {
-        csm_set_cdud(axis, p);
+        /* "TS CDUXD" (CM): the high word of the DP desired angle.               */
+        agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
+        if (!AGC_ASSERT(rcs != NULL))
+        {
+            return;
+        }
+
+        rcs->cdud[axis] =
+            (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
     }
 }
 
@@ -526,56 +511,6 @@ agc_status_t agc_task_endmanu(void)
 /* Steering updates (KALCMANU_STEERING CM pp.414-417, LM pp.365-368)       */
 /* ======================================================================= */
 
-/* INCRDCDU (one axis): CM DELCDUX (DP) = (NCDU - BCDU) x .1;
- * LM DELDCDU (SP) = (BCDU - NCDU) x .1.  CDUXD = old BCDU, BCDU = NCDU. */
-static void incrdcdu_axis(int i)
-{
-    if (!AGC_ASSERT(i >= 0 && i < 3))
-    {
-        return;
-    }
-
-    uint16_t old = bcdu[i];
-
-    if (is_lm())
-    {
-        int d = msu(bcdu[i], ncdu[i]);
-
-        d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
-        agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH));
-
-        /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
-        if (i == 0)
-        {
-            agc_erase_set_delcdux(inc);
-        }
-        else if (i == 1)
-        {
-            agc_erase_set_delcduy(inc);
-        }
-        else
-        {
-            agc_erase_set_delcduz(inc);
-        }
-    }
-    else
-    {
-        int d = msu(ncdu[i], bcdu[i]);
-
-        d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
-        agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-
-        if (AGC_ASSERT(rcs != NULL))
-        {
-            rcs->delcdu[i] =
-                agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
-        }
-    }
-
-    bcdu[i] = ncdu[i];
-    set_cdud(i, old);
-}
-
 /* TIMECHK + MANUSTAL (p.415 / p.366): time left = TM - TIME2,TIME1 word
  * by word, as the DAS leaves it.  More than a second left: 0 (go on to
  * CONTMANU).  Otherwise the MANUSTOP delay in cs: the remainder of the
@@ -652,7 +587,52 @@ static agc_status_t incrdcdu_tmanuchk(void)
 {
     for (int i = 2; i >= 0; i--)
     { /* CAF TWO: Z, Y, X */
-        incrdcdu_axis(i);
+        /* INCRDCDU (one axis): CM DELCDUX (DP) = (NCDU - BCDU) x .1;
+         * LM DELDCDU (SP) = (BCDU - NCDU) x .1.  CDUXD = old BCDU, BCDU = NCDU. */
+        if (!AGC_ASSERT(i >= 0 && i < 3))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        uint16_t old = bcdu[i];
+
+        if (is_lm())
+        {
+            int d = msu(bcdu[i], ncdu[i]);
+
+            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
+            agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH));
+
+            /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
+            if (i == 0)
+            {
+                agc_erase_set_delcdux(inc);
+            }
+            else if (i == 1)
+            {
+                agc_erase_set_delcduy(inc);
+            }
+            else
+            {
+                agc_erase_set_delcduz(inc);
+            }
+        }
+        else
+        {
+            int d = msu(ncdu[i], bcdu[i]);
+
+            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
+            agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
+            if (AGC_ASSERT(rcs != NULL))
+            {
+                rcs->delcdu[i] =
+                    agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
+            }
+        }
+
+        bcdu[i] = ncdu[i];
+        set_cdud(i, old);
     }
 
     if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
@@ -683,37 +663,6 @@ static agc_status_t incrdcdu_tmanuchk(void)
     agc_relint();
 
     return (st); /* ENDOFJOB         */
-}
-
-/* MANUSTAT (CM p.416): completion time, enable auto maneuvers in the DAP
- * (HOLDFLAG -1), rates, biases and the high-rate flag.                   */
-static void manustat_cm(void)
-{
-    agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
-    agc_csm_dapcom_t *com = agc_csm_dap_com();
-
-    if (!AGC_ASSERT(rcs != NULL && com != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
-    rcs->holdflag = -1;
-
-    if (6 - agc_kalc_rateindx() <= 0)
-    { /* HIGHGAIN         */
-        com->rcsflags = (uint16_t) (com->rcsflags | AGC_CSM_RCSF_HIRATE);
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        rcs->wbody[i] = brate.c[i];                /* WBODY, 1, 2      */
-        rcs->bias[i]  = agc_dp_low(biastemp.c[i]); /* BIASTEMP +1,3,5  */
-    }
 }
 
 /* RATEBIAS (LM p.367): OMEGAxD = BRATE, DELxEROR = -|w| w / 16 / 1JACCx. */
@@ -772,7 +721,33 @@ static void manustat(void)
     }
     else
     {
-        manustat_cm();
+        /* MANUSTAT (CM p.416): completion time, enable auto maneuvers in the DAP
+         * (HOLDFLAG -1), rates, biases and the high-rate flag.                   */
+        agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
+        agc_csm_dapcom_t *com = agc_csm_dap_com();
+
+        if (!AGC_ASSERT(rcs != NULL && com != NULL))
+        {
+            return;
+        }
+
+        if (!AGC_ASSERT(agc_interrupts_inhibited()))
+        {
+            return;
+        }
+
+        rcs->holdflag = -1;
+
+        if (6 - agc_kalc_rateindx() <= 0)
+        { /* HIGHGAIN         */
+            com->rcsflags = (uint16_t) (com->rcsflags | AGC_CSM_RCSF_HIRATE);
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            rcs->wbody[i] = brate.c[i];                /* WBODY, 1, 2      */
+            rcs->bias[i]  = agc_dp_low(biastemp.c[i]); /* BIASTEMP +1,3,5  */
+        }
     }
 
     nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1);
@@ -870,38 +845,6 @@ static agc_status_t wcalc(agc_interp_t *ip)
 /* Entry points                                                            */
 /* ======================================================================= */
 
-/* Small maneuver (< .25 deg): go directly into attitude hold about the
- * commanded angles.  CM: HOLDFLAG = -1, LOADCDUD.  LM: CDUXD.. = CPHI..
- * (TLOAD CPHI, STCALL CDUXD, TOOBADI).                                  */
-static agc_status_t small_maneuver(void)
-{
-    if (!is_lm())
-    {
-        agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-
-        if (!AGC_ASSERT(rcs != NULL))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        agc_inhint();
-        rcs->holdflag = -1;
-        loadcdud(0);
-        agc_relint();
-    }
-    else
-    {
-        loadcdud(0);
-    }
-
-    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (nogo());
-}
-
 /* KALCMAN3 (ANGLFIND p.399 / AMR p.351): set up and start the maneuver
  * to CPHI, CTHETA, CPSI from the present CDU angles (READCDUK).          */
 static agc_status_t kalcman3(void)
@@ -934,7 +877,36 @@ static agc_status_t kalcman3(void)
 
             return (nogo());
         case AGC_KALC_SMALL:
-            return (small_maneuver());
+            /* Small maneuver (< .25 deg): go directly into attitude hold about the
+             * commanded angles.  CM: HOLDFLAG = -1, LOADCDUD.  LM: CDUXD.. = CPHI..
+             * (TLOAD CPHI, STCALL CDUXD, TOOBADI).                                  */
+        {
+            if (!is_lm())
+            {
+                agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+
+                if (!AGC_ASSERT(rcs != NULL))
+                {
+                    return (AGC_STATUS_BAD_ARG);
+                }
+
+                agc_inhint();
+                rcs->holdflag = -1;
+                loadcdud(0);
+                agc_relint();
+            }
+            else
+            {
+                loadcdud(0);
+            }
+
+            if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (nogo());
+        }
         case AGC_KALC_NORMAL:
         case AGC_KALC_LARGE:
             return (wcalc(&ip)); /* LOCSKIRT         */

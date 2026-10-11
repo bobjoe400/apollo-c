@@ -470,45 +470,6 @@ agc_status_t pin_entpas0(void)
 
 /* ---- VERBFAN / VBFANDIR (pp. 325-326) --------------------------------- */
 
-/* VERBTAB VB21-VB39 part of the fan. */
-static agc_status_t pin_vbfandir_hi(uint8_t verb)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    switch (verb)
-    {
-        case 21:
-        case 22:
-        case 23:
-        case 24:
-        case 25:
-            return (pin_load_verb(verb)); /* ALOAD..ABCLOAD         */
-        case 27:
-            return (pin_dspfmem()); /* fixed memory display   */
-        case 30:
-            return (pin_vbrqexec()); /* request executive      */
-        case 31:
-            return (pin_vbrqwait()); /* request waitlist       */
-        case 32:
-            return (pin_vbproc_common(PIN_LS_DATAIN)); /* VBRESEQ        */
-        case 33:
-            return (pin_vbproc_common(PIN_LS_PROCEED)); /* VBPROC         */
-        case 34:
-            return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM         */
-        case 35:
-            return (pin_vbtstlts()); /* test lights            */
-        case 36:
-            return (agc_fresh_start_slap1()); /* SLAP1 fresh start      */
-        case 37:
-            return (pin_reqmm()); /* MMCHANG: TC REQMM      */
-        default:
-            return (pin_dspalarm()); /* spare                  */
-    }
-}
-
 /* VBFANDIR: INDEX VERBREG, CAF VERBTAB. */
 static agc_status_t pin_vbfandir(uint8_t verb)
 {
@@ -548,7 +509,41 @@ static agc_status_t pin_vbfandir(uint8_t verb)
 
     if (verb >= 21u)
     {
-        return (pin_vbfandir_hi(verb));
+        /* VERBTAB VB21-VB39 part of the fan. */
+        if (!AGC_ASSERT(pin_invariants()))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        switch (verb)
+        {
+            case 21:
+            case 22:
+            case 23:
+            case 24:
+            case 25:
+                return (pin_load_verb(verb)); /* ALOAD..ABCLOAD         */
+            case 27:
+                return (pin_dspfmem()); /* fixed memory display   */
+            case 30:
+                return (pin_vbrqexec()); /* request executive      */
+            case 31:
+                return (pin_vbrqwait()); /* request waitlist       */
+            case 32:
+                return (pin_vbproc_common(PIN_LS_DATAIN)); /* VBRESEQ        */
+            case 33:
+                return (pin_vbproc_common(PIN_LS_PROCEED)); /* VBPROC         */
+            case 34:
+                return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM         */
+            case 35:
+                return (pin_vbtstlts()); /* test lights            */
+            case 36:
+                return (agc_fresh_start_slap1()); /* SLAP1 fresh start      */
+            case 37:
+                return (pin_reqmm()); /* MMCHANG: TC REQMM      */
+            default:
+                return (pin_dspalarm()); /* spare                  */
+        }
     }
 
     return (pin_dspalarm()); /* VB00 illegal, spares   */

@@ -735,36 +735,6 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
     return (AGC_STATUS_OK);
 }
 
-/* What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.     */
-static void after_job(void)
-{
-    if (!AGC_ASSERT(!in_job))
-    {
-        return;
-    }
-
-    if (core[0].state == AGC_CORE_SLEEPING)
-    {
-        ejscan_change(); /* JOBSLP1 -> EJSCAN   */
-    }
-    else if (yielded)
-    {
-        if (newjob > 0)
-        {
-            chanjob(newjob); /* CHANG1 -> CHANJOB   */
-        }
-    }
-    else
-    {
-        end_of_job(); /* ENDOFJOB            */
-    }
-
-    if (!AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE))
-    {
-        return;
-    }
-}
-
 /* DUMMYJOB / ADVAN / NUCHANG2 / NUDIRECT (C p.1220 / L p.1116): run the
  * highest-priority ready job once. Returns NOT_FOUND when idle (the AGC
  * would sit in DUMMYJOB / SELFCHK), otherwise the job's own status.    */
@@ -820,7 +790,32 @@ agc_status_t agc_exec_run_one(void)
     }
     else if (gen == generation)
     {
-        after_job();
+        /* What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.     */
+        if (!AGC_ASSERT(!in_job))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (core[0].state == AGC_CORE_SLEEPING)
+        {
+            ejscan_change(); /* JOBSLP1 -> EJSCAN   */
+        }
+        else if (yielded)
+        {
+            if (newjob > 0)
+            {
+                chanjob(newjob); /* CHANG1 -> CHANJOB   */
+            }
+        }
+        else
+        {
+            end_of_job(); /* ENDOFJOB            */
+        }
+
+        if (!AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
     else
     {

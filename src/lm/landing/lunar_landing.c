@@ -100,44 +100,6 @@ static agc_status_t ll_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
  * TLAND - GUIDDURN (LEMPREC; may wait for the integration lock).       */
 static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip);
 
-static agc_status_t ll_ignalg_start(agc_job_ctx_t *ctx)
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_lm_ldg_t        *l = agc_lm_ldg();
-    const agc_lm_pad_t  *p = agc_lm_pad();
-    agc_navaux_padload_t nav;
-    agc_status_t         st = agc_navaux_get_padload(&nav);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    agc_vec_t r = agc_vec_zero();
-
-    st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    l->tpip = p->tland; /* TPIP for first guidance pass  */
-    agc_mat_t m = agc_erase_refsmmat();
-
-    l->land = agc_vec_shl(&ip, agc_mat_vec(&ip, &m, r), 4); /* 2^24 m */
-    st      = agc_lm_guidinit(&ip);     /* WM and /LAND/                 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (ll_ignalg_prec(ctx, &ip));
-}
-
 /* IGNALOOP (pp. 786-788) with DDUMCALC; on convergence DDUMGOOD/R60INIT
  * and IGNALGRT. from_install: resuming after INTSTALL was busy.        */
 static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install);
@@ -353,7 +315,40 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE); /* terminate P25 if running   */
     agc_flag_clear(AGC_FLAG_RNDVZFLG); /* terminate P20 if running   */
 
-    return (ll_ignalg_start(ctx));
+    agc_interp_t ip;
+
+    agc_interp_init(&ip);
+    agc_lm_ldg_t        *l = agc_lm_ldg();
+    const agc_lm_pad_t  *p = agc_lm_pad();
+    agc_navaux_padload_t nav;
+    agc_status_t         st = agc_navaux_get_padload(&nav);
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
+
+    agc_vec_t r = agc_vec_zero();
+
+    st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r);
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
+
+    l->tpip = p->tland; /* TPIP for first guidance pass  */
+    agc_mat_t m = agc_erase_refsmmat();
+
+    l->land = agc_vec_shl(&ip, agc_mat_vec(&ip, &m, r), 4); /* 2^24 m */
+    st      = agc_lm_guidinit(&ip);     /* WM and /LAND/                 */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return (ll_ignalg_prec(ctx, &ip));
 }
 
 /* LEMPREC was busy: try again (same job, resumed by INTWAKE). */
@@ -764,82 +759,6 @@ static agc_status_t ll_vhorcomp(const agc_job_ctx_t *ctx, agc_interp_t *ip,
     return (agc_lm_dispexit(ctx, false)); /* avoid the PHASCHNG        */
 }
 
-/* RODCOMP first part (pp. 816-817): ROD clicks into VDGVERT, PIPA
- * snapshot at THISTPIP, DELVROD = counts since the last snapshot.
- * Returns PIPA + PIPATMP, the counts since PIPTIME (high words).     */
-static agc_vec_t ll_rod_pipas(void)
-{
-    agc_lm_ldg_t *l = agc_lm_ldg();
-
-    agc_inhint();
-    agc_sp_t clicks = l->rodcount;
-
-    l->rodcount = 0;
-    l->vdgvert  = (agc_dp_t) (l->vdgvert + agc_sp_mul(clicks, l->rodscal1));
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
-                              agc_erase_pipaz()};
-    agc_sp_t       rupt[3];
-
-    for (int i = 0; i < 3; i++)
-    {
-        rupt[i]       = l->oldpipa[i]; /* RUPTREG1..3 = old OLDPIPA */
-        l->oldpipa[i] = pipa[i];
-    }
-
-    l->thistpip = (agc_dp_t) agc_time_now_cs();
-    const agc_sp_t *tmp = agc_guid_state()->avg.pipatmp;
-    agc_vec_t       m;
-
-    for (int i = 0; i < 3; i++)
-    {
-        m.c[i]          = agc_dp_from_sp(agc_lm_ad(pipa[i], tmp[i]));
-        l->delvrod.c[i] = agc_dp_from_sp(agc_lm_ad(
-                                             agc_lm_ad((agc_sp_t) -pipa[i],
-                                                       agc_erase_tem(i)),
-                                             rupt[i]));
-        agc_erase_set_tem(i, 0); /* know when READACCS changes */
-    }
-
-    agc_relint();
-
-    if (!AGC_ASSERT(clicks >= -AGC_SP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return (m);
-}
-
-/* RODCOMP velocity and altitude (pp. 817-818): V propagated to THISTPIP,
- * HDOTDISP and HCALC1 for noun 63. Returns the updated velocity.     */
-static agc_vec_t ll_rod_state(agc_interp_t *ip, agc_vec_t pip, agc_dp_t *dt)
-{
-    agc_lm_ldg_t *l   = agc_lm_ldg();
-    agc_guid_t   *g   = agc_guid_state();
-    agc_vec_t     dvp = agc_vec_scale(ip, pip, LL_KPIP1);   /* 2^7 m/cs  */
-
-    *dt = agc_dp_sub(ip, l->thistpip, agc_erase_piptime()); /* 30D       */
-    agc_dp_t  ratio = agc_dp_div(ip, *dt, LL_4SEC28);
-    agc_vec_t v     =
-        agc_vec_scale(ip, agc_vec_sub(ip, g->avg.gdt_2, l->vbias), ratio);
-
-    v = agc_vec_add(ip, agc_vec_add(ip, agc_vec_shl(ip, v, 2), g->lm.v), dvp);
-    agc_dp_t  rmag = 0;
-    agc_vec_t ur   = agc_vec_unit(ip, g->lm.r, &rmag, NULL);
-
-    g->lm.hdotdisp = agc_dp_shl(ip, agc_vec_dot(ip, ur, v), 1);
-    agc_dp_t h = agc_dp_mul_trunc(agc_dp_shl(ip, *dt, 11), g->lm.hdotdisp);
-
-    l->hcalc1 = agc_dp_sub(ip, agc_dp_add(ip, h, rmag), l->land_mag);
-
-    if (!AGC_ASSERT(*dt >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return (v);
-}
-
 /* RODCOMP acceleration command (pp. 818-819):
  *   /AFC/ = ((VDGVERT - HDOTDISP)/TAUROD + |G|) / (X.UR), then corrected
  *   by LAG/TAU for the measured acceleration and limited to MINFORCE/MASS
@@ -898,9 +817,76 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_vec_t    pip  = ll_rod_pipas();
-    agc_dp_t     dt   = 0;
-    agc_vec_t    v    = ll_rod_state(&ip, pip, &dt);
+    /* RODCOMP first part (pp. 816-817): ROD clicks into VDGVERT, PIPA
+     * snapshot at THISTPIP, DELVROD = counts since the last snapshot.
+     * Returns PIPA + PIPATMP, the counts since PIPTIME (high words).     */
+    agc_lm_ldg_t *l_pipas = agc_lm_ldg();
+
+    agc_inhint();
+    agc_sp_t clicks = l_pipas->rodcount;
+
+    l_pipas->rodcount = 0;
+    l_pipas->vdgvert  =
+        (agc_dp_t) (l_pipas->vdgvert + agc_sp_mul(clicks, l_pipas->rodscal1));
+    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
+                              agc_erase_pipaz()};
+    agc_sp_t       rupt[3];
+
+    for (int i = 0; i < 3; i++)
+    {
+        rupt[i]             = l_pipas->oldpipa[i]; /* RUPTREG1..3 = old OLDPIPA */
+        l_pipas->oldpipa[i] = pipa[i];
+    }
+
+    l_pipas->thistpip = (agc_dp_t) agc_time_now_cs();
+    const agc_sp_t *tmp = agc_guid_state()->avg.pipatmp;
+    agc_vec_t       pip;
+
+    for (int i = 0; i < 3; i++)
+    {
+        pip.c[i]              = agc_dp_from_sp(agc_lm_ad(pipa[i], tmp[i]));
+        l_pipas->delvrod.c[i] = agc_dp_from_sp(agc_lm_ad(
+                                                   agc_lm_ad((agc_sp_t) -pipa[i],
+                                                             agc_erase_tem(i)),
+                                                   rupt[i]));
+        agc_erase_set_tem(i, 0); /* know when READACCS changes */
+    }
+
+    agc_relint();
+
+    if (!AGC_ASSERT(clicks >= -AGC_SP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dp_t dt = 0;
+    /* RODCOMP velocity and altitude (pp. 817-818): V propagated to THISTPIP,
+     * HDOTDISP and HCALC1 for noun 63. Returns the updated velocity.     */
+    agc_lm_ldg_t *l   = agc_lm_ldg();
+    agc_guid_t   *g   = agc_guid_state();
+    agc_vec_t     dvp = agc_vec_scale(&ip, pip, LL_KPIP1);   /* 2^7 m/cs  */
+
+    dt = agc_dp_sub(&ip, l->thistpip, agc_erase_piptime()); /* 30D       */
+    agc_dp_t  ratio = agc_dp_div(&ip, dt, LL_4SEC28);
+    agc_vec_t v     =
+        agc_vec_scale(&ip, agc_vec_sub(&ip, g->avg.gdt_2, l->vbias), ratio);
+
+    v =
+        agc_vec_add(&ip, agc_vec_add(&ip, agc_vec_shl(&ip, v, 2), g->lm.v),
+                    dvp);
+    agc_dp_t  rmag     = 0;
+    agc_vec_t ur_state = agc_vec_unit(&ip, g->lm.r, &rmag, NULL);
+
+    g->lm.hdotdisp = agc_dp_shl(&ip, agc_vec_dot(&ip, ur_state, v), 1);
+    agc_dp_t h = agc_dp_mul_trunc(agc_dp_shl(&ip, dt, 11), g->lm.hdotdisp);
+
+    l->hcalc1 = agc_dp_sub(&ip, agc_dp_add(&ip, h, rmag), l->land_mag);
+
+    if (!AGC_ASSERT(dt >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_vec_t    ur   = agc_vec_unit(&ip, agc_guid_state()->lm.r, NULL, NULL);
     agc_dp_t     meas = ll_rod_afc(&ip, ur);
     agc_status_t st   = agc_lm_throttle_measured(meas); /* THROTTLE +3   */
@@ -1041,45 +1027,6 @@ static agc_status_t ll_resetrpt(void)
     return (AGC_STATUS_OK); /* TASKOVER     */
 }
 
-/* COUNT'EM (p. 821): each released LPD click moves AZINCR1 by 2 degrees
- * or ELINCR1 by 1/2 degree, unless in attitude hold.                */
-static agc_status_t ll_countem(uint16_t bits)
-{
-    agc_lm_ldg_t *l = agc_lm_ldg();
-
-    if (agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
-    {
-        return (ll_resetrpt());
-    }
-
-    if ((bits & LL_MINUSAZBIT) != 0u)
-    {
-        l->azincr1 = agc_lm_ad(l->azincr1, (agc_sp_t) -LL_AZEACH);
-    }
-
-    if ((bits & LL_PLUSAZBIT) != 0u)
-    {
-        l->azincr1 = agc_lm_ad(l->azincr1, LL_AZEACH);
-    }
-
-    if ((bits & LL_MINUSELBIT) != 0u)
-    {
-        l->elincr1 = agc_lm_ad(l->elincr1, (agc_sp_t) -LL_ELEACH);
-    }
-
-    if ((bits & LL_PLUSELBIT) != 0u)
-    {
-        l->elincr1 = agc_lm_ad(l->elincr1, LL_ELEACH);
-    }
-
-    if (!AGC_ASSERT(bits <= LL_ALL4BITS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (ll_resetrpt());
-}
-
 /* REDESMON (pp. 820-821): every 70 ms while bits are present; count them
  * when released; give up when ZERLINA runs out.                     */
 agc_status_t agc_lm_task_redesmon(void)
@@ -1096,7 +1043,43 @@ agc_status_t agc_lm_task_redesmon(void)
 
     if (last != 0u)
     {
-        return (ll_countem(last));
+        /* COUNT'EM (p. 821): each released LPD click moves AZINCR1 by 2 degrees
+         * or ELINCR1 by 1/2 degree, unless in attitude hold.                */
+        agc_lm_ldg_t *l_countem = agc_lm_ldg();
+
+        if (agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
+        {
+            return (ll_resetrpt());
+        }
+
+        if ((last & LL_MINUSAZBIT) != 0u)
+        {
+            l_countem->azincr1 = agc_lm_ad(l_countem->azincr1,
+                                           (agc_sp_t) -LL_AZEACH);
+        }
+
+        if ((last & LL_PLUSAZBIT) != 0u)
+        {
+            l_countem->azincr1 = agc_lm_ad(l_countem->azincr1, LL_AZEACH);
+        }
+
+        if ((last & LL_MINUSELBIT) != 0u)
+        {
+            l_countem->elincr1 = agc_lm_ad(l_countem->elincr1,
+                                           (agc_sp_t) -LL_ELEACH);
+        }
+
+        if ((last & LL_PLUSELBIT) != 0u)
+        {
+            l_countem->elincr1 = agc_lm_ad(l_countem->elincr1, LL_ELEACH);
+        }
+
+        if (!AGC_ASSERT(last <= LL_ALL4BITS))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (ll_resetrpt());
     }
 
     if (l->zerlina > 0)

@@ -67,36 +67,6 @@ static uint16_t pfd_offset(void)
     return ((uint16_t) dt);
 }
 
-/* R29 first pass (p.596): designate on, tracker off, LOSCMFLG and
- * OLDESFLG off, error counters on; mode 2: preposition the trunnion,
- * mode 1: remode (in its own job, which can RADSTALL).                 */
-static agc_status_t pfd_start(void)
-{
-    agc_inhint();
-    rr_radmodes_set(RR_DESIGBIT);
-    rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_TRACK);
-    rz_flag_put(AGC_FLAG_LOSCMFLG, false);
-    rz_flag_put(AGC_FLAG_OLDESFLG, false);
-    rr_setrrecr();
-    agc_status_t st;
-
-    if (rr_mode2())
-    { /* SETPRPOS */
-        st = agc_waitlist_call(1U, AGC_TASK_POWERED_FLIGHT_PREPOSITION);
-        rr_radmodes_set(RR_REPOSBIT);
-    }
-    else
-    {
-        st = agc_exec_novac(PFD_PRIO21, AGC_JOB_POWERED_FLIGHT_REMODE);
-        rr_radmodes_clear(RR_DESIGBIT);
-        rr_radmodes_set(RR_REMODBIT);
-    }
-
-    agc_relint(); /* NOR29NOW */
-
-    return (st);
-}
-
 /* R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
  * PIPTIME), handed to the designate loop when it is ready for new data
  * (LOSCMFLG off); start the loop (BEGDES29) if it is not requested.    */
@@ -156,7 +126,32 @@ agc_status_t agc_radar_powered_flight_designate(void)
 
     if (!rr_radmodes_test(RR_DESIGBIT))
     {
-        return (pfd_start());
+        /* R29 first pass (p.596): designate on, tracker off, LOSCMFLG and
+         * OLDESFLG off, error counters on; mode 2: preposition the trunnion,
+         * mode 1: remode (in its own job, which can RADSTALL).                 */
+        agc_inhint();
+        rr_radmodes_set(RR_DESIGBIT);
+        rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_TRACK);
+        rz_flag_put(AGC_FLAG_LOSCMFLG, false);
+        rz_flag_put(AGC_FLAG_OLDESFLG, false);
+        rr_setrrecr();
+        agc_status_t st;
+
+        if (rr_mode2())
+        { /* SETPRPOS */
+            st = agc_waitlist_call(1U, AGC_TASK_POWERED_FLIGHT_PREPOSITION);
+            rr_radmodes_set(RR_REPOSBIT);
+        }
+        else
+        {
+            st = agc_exec_novac(PFD_PRIO21, AGC_JOB_POWERED_FLIGHT_REMODE);
+            rr_radmodes_clear(RR_DESIGBIT);
+            rr_radmodes_set(RR_REMODBIT);
+        }
+
+        agc_relint(); /* NOR29NOW */
+
+        return (st);
     }
 
     return (pfd_los());

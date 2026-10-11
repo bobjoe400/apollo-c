@@ -192,7 +192,19 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb,
     if (agc_state_vehicle() == AGC_VEHICLE_CSM &&
         imu_vflag_test(IMU_VF_CPHIFLAG))
     {
-        imu_vflag_clear(IMU_VF_CPHIFLAG);
+        agc_flag_id_t id = imu_vflag(IMU_VF_CPHIFLAG);
+
+        if (!AGC_ASSERT(id != 0U))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (!AGC_ASSERT(agc_flag_valid(id)))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_flag_clear(id);
 
         return (AGC_STATUS_OK); /* BONCLR      */
     }

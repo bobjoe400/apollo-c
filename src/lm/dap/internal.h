@@ -220,7 +220,6 @@ agc_status_t lm_dap_pjetslec_pair(void);        /* PJETSLEC -6               */
 agc_status_t lm_dap_jetsoff(void);              /* JETSOFF                   */
 agc_status_t lm_dap_calcperr(void);             /* CALCPERR                  */
 agc_status_t lm_dap_detentck(void);             /* DETENTCK                  */
-agc_status_t lm_dap_pminimp(void);              /* P minimum impulse         */
 agc_status_t lm_dap_zeroenbl(void);             /* ZEROENBL                  */
 
 /* ---- Q,R axes (qraxis.c, qrmanual.c, qrjets.c) -------------------------- */

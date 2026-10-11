@@ -144,37 +144,6 @@ static agc_status_t engine_enable_display(const agc_job_ctx_t *ctx)
                              agc_dsky_vn(99, ign_table()->noun), &c99));
 }
 
-/* -35 (p.745): V97Nxx engine fail (NVWORD1 = -0 pastes V97).
- * DEVIATION: the AGC shows NVWORD +2 (the last V06 noun); the table's
- * countdown noun is the same noun in every case that reaches COMFAIL.     */
-static agc_status_t engine_fail_display(const agc_job_ctx_t *ctx)
-{
-    const agc_dsky_cont_t c97 = {AGC_JOB_STOPCLOK, AGC_JOB_CLOKJOB_ENGINE_FAIL,
-                                 AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN};
-
-    agc_dsky_set_nvword1((uint16_t) 077777U); /* CS ZERO                */
-
-    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
-                             agc_dsky_vn(97, ign_table()->noun), &c97));
-}
-
-/* -25 (p.745): V06N61 by ASTNCLOK, used by the crew in P63 to set the
- * event timer to TIG. ENTER (TCF -6) shows it again.
- * DEVIATION: ENTER restarts CLOKJOB, which recomputes TTOGO first.       */
-static agc_status_t event_timer_display(const agc_job_ctx_t *ctx)
-{
-    const agc_dsky_cont_t c61 = {AGC_JOB_STOPCLOK,
-                                 AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED,
-                                 AGC_JOB_CLOCKJOB};
-
-    if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == -IGN_ASTNDEX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61), &c61));
-}
-
 /* CLOKJOB (p.744-746): TTOGO = TIME - TIG; DISPDEX >= 0: no display (a
  * task or higher-priority job changed it); otherwise the display -DISPDEX
  * selects: 35 V97, 25 V06N61, 17 countdown V06Nxx, 13 V99, 2 blank.     */
@@ -194,9 +163,36 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
     switch (-dispdex)
     {
         case IGN_VB97DEX:
-            return (engine_fail_display(ctx));
+            /* -35 (p.745): V97Nxx engine fail (NVWORD1 = -0 pastes V97).
+             * DEVIATION: the AGC shows NVWORD +2 (the last V06 noun); the table's
+             * countdown noun is the same noun in every case that reaches COMFAIL.     */
+        {
+            const agc_dsky_cont_t c97 =
+            {AGC_JOB_STOPCLOK, AGC_JOB_CLOKJOB_ENGINE_FAIL,
+             AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN};
+
+            agc_dsky_set_nvword1((uint16_t) 077777U);     /* CS ZERO                */
+
+            return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
+                                     agc_dsky_vn(97, ign_table()->noun), &c97));
+        }
         case IGN_ASTNDEX:
-            return (event_timer_display(ctx));
+            /* -25 (p.745): V06N61 by ASTNCLOK, used by the crew in P63 to set the
+             * event timer to TIG. ENTER (TCF -6) shows it again.
+             * DEVIATION: ENTER restarts CLOKJOB, which recomputes TTOGO first.       */
+        {
+            const agc_dsky_cont_t c61 = {AGC_JOB_STOPCLOK,
+                                         AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED,
+                                         AGC_JOB_CLOCKJOB};
+
+            if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == -IGN_ASTNDEX))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61),
+                                     &c61));
+        }
         case IGN_CNTDNDEX: /* ONE-SECOND COUNTDOWN   */
             return (agc_dsky_display(ctx, AGC_DSKY_REGODSP,
                                      agc_dsky_vn(6, ign_table()->noun), NULL));

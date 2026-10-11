@@ -420,10 +420,49 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
     return (rd_dgcheck() ? rd_goodrad() : rd_resample()); /* DGCHECK2 */
 }
 
-/* Landing radar sample (LRPOSCHK, VELCHK, LRHEIGHT pp.556-557). R77
- * ignores data fails: it only copies the LR data-good bits.            */
-static agc_status_t rd_landing_radar(void)
+/* RADAREAD: the RADAR RUPT handler. The raw reading is kept for the
+ * downlink; a rupt nobody asked for is alarm 520.                       */
+agc_status_t agc_rendz_radar_read(void)
 {
+    rd.dnindex = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN13) & 7U);
+
+    if (rd.dnindex != 0U)
+    {
+        rd.dnradar[rd.dnindex - 1U] =
+            (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
+    }
+
+    if (rd.samplim < 0)
+    { /* TRYCOUNT */
+        agc_alarm(RD_ALARM_UNEXPECTED);
+
+        return (AGC_STATUS_OK); /* RESUME  */
+    }
+
+    if (rd.samplim == 0)
+    {
+        return (rd_nomore());
+    }
+
+    rd.samplim--; /* PLENTY   */
+
+    if ((agc_chan_read(AGC_CHAN_CHAN13) & RD_LR_SELECT) == 0U)
+    {
+        /* Rendezvous radar sample (RENDRAD p.557): rejected during a reposition
+         * or after an RR CDU fail.                                              */
+        if (rr_radmodes_test(RR_REPOSBIT) || !rr_radmodes_test(RR_RCDUFBIT))
+        {
+            return (rd_badrad());
+        }
+
+        rd.itemp1 = RR_RRDATABT;
+        bool range = (agc_chan_read(AGC_CHAN_CHAN13) & 1U) != 0U;
+
+        return (rd_scaled(range ? RR_RRRSBIT : 0U, false));
+    }
+
+    /* Landing radar sample (LRPOSCHK, VELCHK, LRHEIGHT pp.556-557). R77
+     * ignores data fails: it only copies the LR data-good bits.            */
     if (agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED))
     { /* R77CHECK */
         uint16_t m = (uint16_t) (agc_erase_radmodes() & ~RD_BITS5_8);
@@ -465,55 +504,6 @@ static agc_status_t rd_landing_radar(void)
     }
 
     return (rd_goodrad());
-}
-
-/* Rendezvous radar sample (RENDRAD p.557): rejected during a reposition
- * or after an RR CDU fail.                                              */
-static agc_status_t rd_rendezvous_radar(void)
-{
-    if (rr_radmodes_test(RR_REPOSBIT) || !rr_radmodes_test(RR_RCDUFBIT))
-    {
-        return (rd_badrad());
-    }
-
-    rd.itemp1 = RR_RRDATABT;
-    bool range = (agc_chan_read(AGC_CHAN_CHAN13) & 1U) != 0U;
-
-    return (rd_scaled(range ? RR_RRRSBIT : 0U, false));
-}
-
-/* RADAREAD: the RADAR RUPT handler. The raw reading is kept for the
- * downlink; a rupt nobody asked for is alarm 520.                       */
-agc_status_t agc_rendz_radar_read(void)
-{
-    rd.dnindex = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN13) & 7U);
-
-    if (rd.dnindex != 0U)
-    {
-        rd.dnradar[rd.dnindex - 1U] =
-            (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
-    }
-
-    if (rd.samplim < 0)
-    { /* TRYCOUNT */
-        agc_alarm(RD_ALARM_UNEXPECTED);
-
-        return (AGC_STATUS_OK); /* RESUME  */
-    }
-
-    if (rd.samplim == 0)
-    {
-        return (rd_nomore());
-    }
-
-    rd.samplim--; /* PLENTY   */
-
-    if ((agc_chan_read(AGC_CHAN_CHAN13) & RD_LR_SELECT) == 0U)
-    {
-        return (rd_rendezvous_radar());
-    }
-
-    return (rd_landing_radar());
 }
 
 /* ---- LRPOS2 (pp.561-562): command the landing radar to position 2 and

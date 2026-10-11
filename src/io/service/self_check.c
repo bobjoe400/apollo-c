@@ -135,17 +135,6 @@ static uint16_t adsum(uint16_t sum, uint16_t word)
     return ((uint16_t) ((r & 037777u) | ((r >> 1) & SIGN15)));
 }
 
-/* First address of bank b as the self-check forms it.                     */
-static uint16_t bank_base(int bank)
-{
-    if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((bank == 2) ? BANK2_ADDR : (bank == 3) ? BANK3_ADDR : BANK_ADDR);
-}
-
 /* COMADRS/FXADRS .. ADRSCHK: sum bank b up to the second of two
  * consecutive TC SELF words and the bugger word after them (or the last
  * word).                                                                   */
@@ -171,7 +160,17 @@ agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
             break; /* SOPTION             */
         }
 
-        uint16_t addr = (uint16_t) (bank_base(bank) + (uint16_t) rel);
+        /* First address of bank b as the self-check forms it.                     */
+        if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        uint16_t addr =
+            (uint16_t) (((bank == 2) ? BANK2_ADDR : (bank ==
+                                                     3) ? BANK3_ADDR : BANK_ADDR)
+                        +
+                        (uint16_t) rel);
 
         if (word == addr)
         { /* L = -0: a TC SELF   */

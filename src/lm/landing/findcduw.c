@@ -108,28 +108,6 @@ static agc_sp_t fc_wrap15(int32_t d)
     return ((agc_sp_t) w);
 }
 
-/* Value of a two's complement word when the AGC reads it as ones'. */
-static agc_sp_t fc_ones_of_twos(agc_sp_t v)
-{
-    if (!AGC_ASSERT(v >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((agc_sp_t) ((v < 0) ? v + 1 : v));
-}
-
-/* Value of a ones' complement word when the AGC reads it as two's. */
-static agc_sp_t fc_twos_of_ones(agc_sp_t v)
-{
-    if (!AGC_ASSERT(v >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((agc_sp_t) ((v < 0) ? v - 1 : v));
-}
-
 /* 15-bit word of a ones' complement value (what MSU sees as two's). */
 static int32_t fc_word1(agc_sp_t v)
 {
@@ -146,33 +124,6 @@ static int32_t fc_word1(agc_sp_t v)
     }
 
     return (w);
-}
-
-/* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
-static void fc_set_delcdu(int i, agc_sp_t v)
-{
-    if (!AGC_ASSERT(i >= 0 && i <= 2))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
-    if (i == 0)
-    {
-        agc_erase_set_delcdux(v);
-    }
-    else if (i == 1)
-    {
-        agc_erase_set_delcduy(v);
-    }
-    else
-    {
-        agc_erase_set_delcduz(v);
-    }
 }
 
 /* MP followed by DDOUBL: high word of twice the DP product. */
@@ -554,8 +505,23 @@ static agc_status_t fc_noattcnt(bool alarm)
  * unlimited -DELGMB = CDUxD - required angle (pp. 914-915, MGARET loop). */
 static void fc_gimbal_changes(agc_sp_t cdu[3])
 {
-    agc_sp_t lim     = agc_lm_limitsub(fc_ones_of_twos(cdu[2]), FC_CDUZDLIM);
-    agc_sp_t limited = fc_twos_of_ones(lim);
+    /* Value of a two's complement word when the AGC reads it as ones'. */
+    if (!AGC_ASSERT(cdu[2] >= -16384))
+    {
+        return;
+    }
+
+    agc_sp_t lim =
+        agc_lm_limitsub((agc_sp_t) ((cdu[2] < 0) ? cdu[2] + 1 : cdu[2]),
+                        FC_CDUZDLIM);
+
+    /* Value of a ones' complement word when the AGC reads it as two's. */
+    if (!AGC_ASSERT(lim >= AGC_SP_MIN))
+    {
+        return;
+    }
+
+    agc_sp_t limited = (agc_sp_t) ((lim < 0) ? lim - 1 : lim);
 
     if (fc_wrap15((int32_t) cdu[2] - limited) != 0)
     {
@@ -589,45 +555,6 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
 
         return;
     }
-}
-
-/* Limit the attitude angle changes about X, Y', Z' (p. 916).            */
-static void fc_limit_attitude(const agc_cdutrig_t *trig)
-{
-    agc_sp_t sinz = agc_dp_high(trig->sincdu[AGC_TRIG_Z]);
-    agc_sp_t cosz = agc_dp_high(trig->coscdu[AGC_TRIG_Z]);
-    int      n    = fc_ndxcduw;
-
-    if (!AGC_ASSERT(n == 0 || n == 1))
-    {
-        return;
-    }
-
-    fc_delgmb[2] = agc_lm_limitsub(fc_delgmb[2], fc_daxmax[n]); /* DAZMAX */
-    agc_sp_t y2 = agc_lm_mp_hi(fc_delgmb[1], cosz); /* -DELATTY'/2       */
-
-    y2 = agc_lm_limitsub(y2, fc_day2max[n]);
-    /* DEVIATION: DV takes (A,L); L after LIMITSUB is modelled as A (true
-     * unless the value was limited negative, where L is a DV remainder). */
-    agc_sp_t newy = AGC_SP_MAX;
-
-    if (cosz != 0 && ((y2 < 0) ? -y2 : y2) < ((cosz < 0) ? -cosz : cosz))
-    {
-        newy = agc_lm_dv(agc_dp_pack(y2, y2), cosz);
-    }
-
-    agc_sp_t oldy = fc_delgmb[1];
-
-    fc_delgmb[1] = newy; /* -DELGMBY          */
-    agc_sp_t t = (agc_sp_t) -fc_mp_dbl(oldy, sinz);
-    /* MSU on ones' complement operands: one bit error if signs mixed.   */
-    agc_sp_t datx = fc_wrap15(fc_word1(t) - fc_word1(fc_delgmb[0]));
-
-    datx         = agc_lm_limitsub(datx, fc_daxmax[n]);  /* +DELATTX limited  */
-    fc_delgmb[0] = (fc_flagoodw != 0) ? (agc_sp_t) -datx : 0;
-    agc_sp_t c = fc_mp_dbl((agc_sp_t) -fc_delgmb[1], sinz);
-
-    fc_delgmb[0] = agc_lm_ad(fc_delgmb[0], c); /* ADS: -DELGMBX     */
 }
 
 /* Commanded attitude rates (p. 917), pi/4 rad/s, for a 2 s period. */
@@ -677,7 +604,31 @@ static void fc_transfer(void)
     { /* bound 3          */
         agc_sp_t inc = agc_lm_mp_hi(fc_delgmb[i], FC_DT_DELT);
 
-        fc_set_delcdu(i, inc); /* ONESTO2S         */
+        /* ONESTO2S         */
+        /* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
+        if (!AGC_ASSERT(i >= 0 && i <= 2))
+        {
+            return;
+        }
+
+        if (!AGC_ASSERT(inc >= AGC_SP_MIN && inc <= AGC_SP_MAX))
+        {
+            return;
+        }
+
+        if (i == 0)
+        {
+            agc_erase_set_delcdux(inc);
+        }
+        else if (i == 1)
+        {
+            agc_erase_set_delcduy(inc);
+        }
+        else
+        {
+            agc_erase_set_delcduz(inc);
+        }
+
         agc_sp_t aw  = (agc_sp_t) ((omega[i] < 0) ? -omega[i] : omega[i]);
         agc_dp_t num = agc_sp_mul(agc_lm_mp_hi(aw, omega[i]), FC_BIT11);
         agc_sp_t j   = jacc[i];
@@ -813,7 +764,41 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
         return (fc_noattcnt(false)); /* not PNGCS auto / engine off  */
     }
 
-    fc_limit_attitude(trig);
+    /* Limit the attitude angle changes about X, Y', Z' (p. 916).            */
+    agc_sp_t sinz = agc_dp_high(trig->sincdu[AGC_TRIG_Z]);
+    agc_sp_t cosz = agc_dp_high(trig->coscdu[AGC_TRIG_Z]);
+    int      n    = fc_ndxcduw;
+
+    if (!AGC_ASSERT(n == 0 || n == 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    fc_delgmb[2] = agc_lm_limitsub(fc_delgmb[2], fc_daxmax[n]); /* DAZMAX */
+    agc_sp_t y2 = agc_lm_mp_hi(fc_delgmb[1], cosz); /* -DELATTY'/2       */
+
+    y2 = agc_lm_limitsub(y2, fc_day2max[n]);
+    /* DEVIATION: DV takes (A,L); L after LIMITSUB is modelled as A (true
+     * unless the value was limited negative, where L is a DV remainder). */
+    agc_sp_t newy = AGC_SP_MAX;
+
+    if (cosz != 0 && ((y2 < 0) ? -y2 : y2) < ((cosz < 0) ? -cosz : cosz))
+    {
+        newy = agc_lm_dv(agc_dp_pack(y2, y2), cosz);
+    }
+
+    agc_sp_t oldy = fc_delgmb[1];
+
+    fc_delgmb[1] = newy; /* -DELGMBY          */
+    agc_sp_t t = (agc_sp_t) -fc_mp_dbl(oldy, sinz);
+    /* MSU on ones' complement operands: one bit error if signs mixed.   */
+    agc_sp_t datx = fc_wrap15(fc_word1(t) - fc_word1(fc_delgmb[0]));
+
+    datx         = agc_lm_limitsub(datx, fc_daxmax[n]);  /* +DELATTX limited  */
+    fc_delgmb[0] = (fc_flagoodw != 0) ? (agc_sp_t) -datx : 0;
+    agc_sp_t c = fc_mp_dbl((agc_sp_t) -fc_delgmb[1], sinz);
+
+    fc_delgmb[0] = agc_lm_ad(fc_delgmb[0], c); /* ADS: -DELGMBX     */
     fc_rates(trig);
     fc_transfer();
     agc_relint(); /* TC INTPRET after TCQCDUW     */

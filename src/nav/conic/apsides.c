@@ -10,29 +10,6 @@
 #include "agc/core/assert.h"
 #include "internal.h"
 
-/* Copy the PARAM debris to *out. */
-static void apsides_debris(const agc_conic_ctx_t *ctx, agc_apsides_out_t *out)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
-    out->r1      = ctx->r1;
-    out->r1a     = ctx->r1a;
-    out->p       = ctx->p;
-    out->coga    = ctx->coga;
-    out->magvec2 = ctx->magvec2;
-    out->ur1     = ctx->ur1;
-    out->u2      = ctx->u2;
-    out->un      = ctx->un;
-}
-
 /*
  * APSIDES (CONIC_SUBROUTINES.agc p. 1303, label APSIDES).
  * out->rapo (MPAC) and out->rperi (0D) 2^29 / 2^27 m, out->ecc 2^3.
@@ -94,7 +71,15 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
         out->rapo = agc_conic_mstore_(m);
     }
 
-    apsides_debris(&ctx, out);
+    /* Copy the PARAM debris to *out. */
+    out->r1      = ctx.r1;
+    out->r1a     = ctx.r1a;
+    out->p       = ctx.p;
+    out->coga    = ctx.coga;
+    out->magvec2 = ctx.magvec2;
+    out->ur1     = ctx.ur1;
+    out->u2      = ctx.u2;
+    out->un      = ctx.un;
 
     return (AGC_STATUS_OK);
 }

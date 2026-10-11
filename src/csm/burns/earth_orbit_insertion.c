@@ -248,38 +248,6 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
  * MATRXJOB (pp. 537-539)
  * ==================================================================== */
 
-/* REFSMMAT at liftoff (p. 538): Z = UNIT(down), X = UNIT(SIN(AZ) EAST
- * - COS(AZ) SOUTH), Y = Z x X; all half-unit.                            */
-static agc_mat_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down)
-{
-    agc_vec_t unitw = agc_guid_state()->avg.unitw;
-    agc_mat_t m;
-    agc_vec_t east;
-    agc_vec_t msouth;
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
-    m.row[2] = agc_vec_unit(ip, down, NULL, NULL);
-    east     = agc_vec_unit(ip, agc_vec_cross(ip, m.row[2], unitw), NULL, NULL);
-    msouth   = agc_vec_unit(ip, agc_vec_cross(ip, east, m.row[2]), NULL, NULL);
-    m.row[0] = agc_vec_add(
-        ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)),
-        agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
-    m.row[0] = agc_vec_unit(ip, m.row[0], NULL, NULL);
-    m.row[1] = agc_vec_neg(
-        agc_vec_unit(ip, agc_vec_cross(ip, m.row[0], m.row[2]), NULL, NULL));
-
-    if (!AGC_ASSERT(m.row[2].c[0] >= AGC_DP_MIN))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
-    return (m);
-}
-
 /* GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
  * vertical at the pad, negated (VCOMP).                                  */
 static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
@@ -397,7 +365,40 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    m        = launch_refsmmat(ip, down);
+    /* REFSMMAT at liftoff (p. 538): Z = UNIT(down), X = UNIT(SIN(AZ) EAST
+     * - COS(AZ) SOUTH), Y = Z x X; all half-unit.                            */
+    agc_vec_t unitw = agc_guid_state()->avg.unitw;
+    agc_mat_t m_refsmmat;
+    agc_vec_t east;
+    agc_vec_t msouth;
+
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    m_refsmmat.row[2] = agc_vec_unit(ip, down, NULL, NULL);
+    east              =
+        agc_vec_unit(ip, agc_vec_cross(ip, m_refsmmat.row[2], unitw), NULL,
+                     NULL);
+    msouth =
+        agc_vec_unit(ip, agc_vec_cross(ip, east, m_refsmmat.row[2]), NULL,
+                     NULL);
+    m_refsmmat.row[0] = agc_vec_add(
+        ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)),
+        agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
+    m_refsmmat.row[0] = agc_vec_unit(ip, m_refsmmat.row[0], NULL, NULL);
+    m_refsmmat.row[1] = agc_vec_neg(
+        agc_vec_unit(ip,
+                     agc_vec_cross(ip, m_refsmmat.row[0], m_refsmmat.row[2]),
+                     NULL, NULL));
+
+    if (!AGC_ASSERT(m_refsmmat.row[2].c[0] >= AGC_DP_MIN))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    m        = m_refsmmat;
     avg->vn1 =
         agc_vec_shl(ip,
                     agc_vec_scale(ip, agc_vec_cross(ip, avg->rn1, avg->unitw),

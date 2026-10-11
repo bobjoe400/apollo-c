@@ -213,43 +213,6 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
  * Ascent guidance equations (ASCENT_GUIDANCE pp. 845-849)
  * ====================================================================== */
 
-/* ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
- * the velocity to be gained (compensated for GEFF over TGO) and VGBODY
- * for N85. Returns |VGVECT|.                                        */
-static agc_dp_t as_vgvect(agc_interp_t *ip)
-{
-    agc_lm_asc_t   *a  = agc_lm_asc();
-    agc_guid_t     *g  = agc_guid_state();
-    const agc_vec_t ur = g->avg.unitr;
-
-    a->r_mag = agc_vec_abval(ip, g->lm.r);
-    a->zdot  = agc_dp_shl(ip, agc_vec_dot(ip, a->zaxis1, g->lm.v), 1);
-    a->laxis = agc_vec_shl(ip, agc_vec_cross(ip, a->zaxis1, ur), 1);
-    a->ydot  = agc_dp_shl(ip, agc_vec_dot(ip, a->laxis, g->lm.v), 1);
-    a->y     = agc_lm_ycomp(ip); /* YCOMP: Y */
-    agc_dp_t gr =
-        agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur);
-    agc_dp_t h2 = agc_dp_div(ip, agc_vec_sq(ip, agc_vec_cross(ip, ur, g->lm.v)),
-                             a->r_mag);
-
-    a->geff  = agc_dp_add(ip, agc_dp_shl(ip, h2, 1), gr);
-    a->dzdot = agc_dp_sub(ip, a->zdotd, a->zdot);
-    a->dydot = agc_dp_sub(ip, a->ydotd, a->ydot);
-    a->drdot = agc_dp_sub(ip, a->rdotd, g->lm.hdotdisp); /* RDOT */
-    agc_vec_t vg = agc_vec_add(ip, agc_vec_scale(ip, ur, a->drdot),
-                               agc_vec_scale(ip, a->laxis, a->dydot));
-
-    vg = agc_vec_shl(
-        ip, agc_vec_add(ip, vg, agc_vec_scale(ip, a->zaxis1, a->dzdot)), 1);
-    agc_dp_t tg = agc_dp_mul_trunc(a->tgo, a->geff);
-
-    a->vgvect =
-        agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
-    a->vgbody = agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a->vgvect), 1);
-
-    return (agc_vec_abval(ip, a->vgvect));
-}
-
 /* MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO. */
 static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
 {
@@ -267,48 +230,6 @@ static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
     }
 
     if (!AGC_ASSERT(a->tbup >= 0))
-    {
-        return;
-    }
-}
-
-/* RATES .. PROK (pp. 846-848): PRATE (B) and YRATE (D) from the radius
- * and cross-range errors at TGO; B > 0 is not permitted and B/TBUP is
- * limited to PRLIMIT. d12 = TBUP + TGO/L.                           */
-static void as_rates(agc_interp_t *ip, agc_dp_t d12)
-{
-    agc_lm_asc_t *a   = agc_lm_asc();
-    agc_guid_t   *g   = agc_guid_state();
-    agc_dp_t      d21 = agc_dp_sub(ip, a->tgo, d12); /* 4D */
-    agc_dp_t      e   =
-        agc_dp_shl(ip, agc_dp_sub(ip, a->tgo, agc_dp_shl(ip, d21, 1)), 3);
-    agc_dp_t mdr = agc_dp_mul_trunc(a->tgo, g->lm.hdotdisp);
-
-    mdr = agc_dp_sub(ip, agc_dp_add(ip, mdr, a->r_mag), a->rco); /* -DR */
-    agc_dp_t b =
-        agc_dp_shl(ip, agc_dp_add(ip, agc_dp_mul_trunc(a->drdot, d21), mdr), 2);
-
-    a->prate = agc_dp_div(ip, agc_dp_div(ip, b, e), a->tgo);
-
-    if (a->prate >= 0)
-    {
-        a->prate = 0; /* B > 0 not allowed */
-    }
-    else if (agc_dp_sub(ip, agc_dp_div(ip, agc_dp_shr(a->prate, 4), a->tbup),
-                        AS_PRLIMIT) < 0)
-    {
-        a->prate = agc_dp_shl(ip, agc_dp_mul_trunc(AS_PRLIMIT, a->tbup), 4);
-    }
-
-    agc_dp_t mdy = agc_dp_add(ip, agc_dp_mul_trunc(a->tgo, a->ydot), a->y);
-
-    mdy = agc_dp_sub(ip, mdy, a->yco); /* -DY */
-    agc_dp_t d =
-        agc_dp_shl(ip, agc_dp_add(ip, agc_dp_mul_trunc(a->dydot, d21), mdy), 2);
-
-    a->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a->tgo);
-
-    if (!AGC_ASSERT(a->tgo > 0))
     {
         return;
     }
@@ -344,7 +265,54 @@ static void as_t2test(agc_interp_t *ip)
     }
     else
     {
-        as_rates(ip, d12);
+        /* RATES .. PROK (pp. 846-848): PRATE (B) and YRATE (D) from the radius
+         * and cross-range errors at TGO; B > 0 is not permitted and B/TBUP is
+         * limited to PRLIMIT. d12 = TBUP + TGO/L.                           */
+        agc_lm_asc_t *a_rates = agc_lm_asc();
+        agc_guid_t   *g       = agc_guid_state();
+        agc_dp_t      d21     = agc_dp_sub(ip, a_rates->tgo, d12); /* 4D */
+        agc_dp_t      e       =
+            agc_dp_shl(ip, agc_dp_sub(ip, a_rates->tgo, agc_dp_shl(ip, d21,
+                                                                   1)), 3);
+        agc_dp_t mdr = agc_dp_mul_trunc(a_rates->tgo, g->lm.hdotdisp);
+
+        mdr = agc_dp_sub(ip, agc_dp_add(ip, mdr, a_rates->r_mag), a_rates->rco); /* -DR */
+        agc_dp_t b =
+            agc_dp_shl(ip,
+                       agc_dp_add(ip, agc_dp_mul_trunc(a_rates->drdot,
+                                                       d21), mdr), 2);
+
+        a_rates->prate = agc_dp_div(ip, agc_dp_div(ip, b, e), a_rates->tgo);
+
+        if (a_rates->prate >= 0)
+        {
+            a_rates->prate = 0; /* B > 0 not allowed */
+        }
+        else if (agc_dp_sub(ip,
+                            agc_dp_div(ip, agc_dp_shr(a_rates->prate, 4),
+                                       a_rates->tbup),
+                            AS_PRLIMIT) < 0)
+        {
+            a_rates->prate =
+                agc_dp_shl(ip, agc_dp_mul_trunc(AS_PRLIMIT, a_rates->tbup), 4);
+        }
+
+        agc_dp_t mdy =
+            agc_dp_add(ip, agc_dp_mul_trunc(a_rates->tgo, a_rates->ydot),
+                       a_rates->y);
+
+        mdy = agc_dp_sub(ip, mdy, a_rates->yco); /* -DY */
+        agc_dp_t d =
+            agc_dp_shl(ip,
+                       agc_dp_add(ip, agc_dp_mul_trunc(a_rates->dydot,
+                                                       d21), mdy), 2);
+
+        a_rates->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a_rates->tgo);
+
+        if (!AGC_ASSERT(a_rates->tgo > 0))
+        {
+            return;
+        }
     }
 
     agc_dp_t bd = agc_dp_mul_trunc(a->prate, d12); /* CONST */
@@ -585,8 +553,47 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_lm_asc_t *a     = agc_lm_asc();
-    agc_dp_t      vgmag = as_vgvect(ip);
+    agc_lm_asc_t *a = agc_lm_asc();
+    /* ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
+     * the velocity to be gained (compensated for GEFF over TGO) and VGBODY
+     * for N85. Returns |VGVECT|.                                        */
+    agc_lm_asc_t   *a_vgvect = agc_lm_asc();
+    agc_guid_t     *g        = agc_guid_state();
+    const agc_vec_t ur       = g->avg.unitr;
+
+    a_vgvect->r_mag = agc_vec_abval(ip, g->lm.r);
+    a_vgvect->zdot  = agc_dp_shl(ip, agc_vec_dot(ip, a_vgvect->zaxis1,
+                                                 g->lm.v), 1);
+    a_vgvect->laxis =
+        agc_vec_shl(ip, agc_vec_cross(ip, a_vgvect->zaxis1, ur), 1);
+    a_vgvect->ydot = agc_dp_shl(ip, agc_vec_dot(ip, a_vgvect->laxis,
+                                                g->lm.v), 1);
+    a_vgvect->y = agc_lm_ycomp(ip);     /* YCOMP: Y */
+    agc_dp_t gr =
+        agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur);
+    agc_dp_t h2 = agc_dp_div(ip, agc_vec_sq(ip, agc_vec_cross(ip, ur, g->lm.v)),
+                             a_vgvect->r_mag);
+
+    a_vgvect->geff  = agc_dp_add(ip, agc_dp_shl(ip, h2, 1), gr);
+    a_vgvect->dzdot = agc_dp_sub(ip, a_vgvect->zdotd, a_vgvect->zdot);
+    a_vgvect->dydot = agc_dp_sub(ip, a_vgvect->ydotd, a_vgvect->ydot);
+    a_vgvect->drdot = agc_dp_sub(ip, a_vgvect->rdotd, g->lm.hdotdisp); /* RDOT */
+    agc_vec_t vg = agc_vec_add(ip, agc_vec_scale(ip, ur, a_vgvect->drdot),
+                               agc_vec_scale(ip, a_vgvect->laxis,
+                                             a_vgvect->dydot));
+
+    vg = agc_vec_shl(
+        ip,
+        agc_vec_add(ip, vg, agc_vec_scale(ip, a_vgvect->zaxis1,
+                                          a_vgvect->dzdot)),
+        1);
+    agc_dp_t tg = agc_dp_mul_trunc(a_vgvect->tgo, a_vgvect->geff);
+
+    a_vgvect->vgvect =
+        agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
+    a_vgvect->vgbody =
+        agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a_vgvect->vgvect), 1);
+    agc_dp_t vgmag = agc_vec_abval(ip, a_vgvect->vgvect);
 
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {

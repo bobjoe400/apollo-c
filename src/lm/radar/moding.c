@@ -678,21 +678,6 @@ static bool rr_reposrpt(agc_status_t *st)
     return (rr_axis_target(RR_AXIS_REMODE, 0, &rr_axis.rrindex, &rr_axis.rdes));
 }
 
-/* End of REMODE (p.532): new mode, remode flag off; back to the
- * designate (STDESIG) or to the caller waiting in RADSTALL.             */
-static agc_status_t rr_remode_done(void)
-{
-    rr_mode_invert(); /* RMODINV  */
-    rr_radmodes_clear(RR_REMODBIT);
-
-    if (rr_radmodes_test(RR_DESIGBIT))
-    {
-        return (rr_stdesig());
-    }
-
-    return (rr_goodend());
-}
-
 /* A client's single-axis drive is done: next target, or the client's
  * own ending. True when another axis must run.                          */
 static bool rr_axis_advance(agc_status_t *st)
@@ -711,7 +696,11 @@ static bool rr_axis_advance(agc_status_t *st)
         case RR_AXIS_REPOSITION:
             return (rr_reposrpt(st));
         case RR_AXIS_REMODE:
-            *st = rr_remode_done();
+            /* End of REMODE (p.532): new mode, remode flag off; back to the
+             * designate (STDESIG) or to the caller waiting in RADSTALL.     */
+            rr_mode_invert(); /* RMODINV  */
+            rr_radmodes_clear(RR_REMODBIT);
+            *st = rr_radmodes_test(RR_DESIGBIT) ? rr_stdesig() : rr_goodend();
 
             return (false);
         case RR_AXIS_PREPOSITION_POWERED: /* PREPOS29: repositioning off */

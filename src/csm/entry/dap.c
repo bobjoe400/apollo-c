@@ -193,33 +193,6 @@ static int dap_dz2(agc_sp_t rate)
     return (dap_dz(rate, AGC_ENTRY_YDOTLIM));
 }
 
-/* EXTEND / ROR LCHAN of two ones' complement tags (+1, -1, 0): opposite
- * tags OR to -0, which indexes the zero (no jet) entry.                 */
-static int dap_tag_or(int rate_tag, int err_tag)
-{
-    if (!AGC_ASSERT(rate_tag >= -1 && rate_tag <= 1))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(err_tag >= -1 && err_tag <= 1))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (rate_tag == 0)
-    {
-        return (err_tag);
-    }
-
-    if (err_tag == 0 || err_tag == rate_tag)
-    {
-        return (rate_tag);
-    }
-
-    return (0);
-}
-
 /* BIASEDZ / 3DDZ / 4D/SDZ / 2D/SDZ (p. 1076): extra-atmospheric dead
  * zone. The error is biased by -SGN(rate) CM/BIAS and tested against the
  * 3.6 deg YAWLIM; a rate above 4 deg/s overrides the error bit.          */
@@ -249,7 +222,31 @@ static int dap_biasedz(agc_sp_t rate, agc_sp_t err)
         etag = 0; /* ZL         */
     }
 
-    return (dap_tag_or(dap_dz2(rate), etag));
+    /* EXTEND / ROR LCHAN of two ones' complement tags (+1, -1, 0): opposite
+     * tags OR to -0, which indexes the zero (no jet) entry.                 */
+    int rate_tag = dap_dz2(rate);
+
+    if (!AGC_ASSERT(rate_tag >= -1 && rate_tag <= 1))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(etag >= -1 && etag <= 1))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (rate_tag == 0)
+    {
+        return (etag);
+    }
+
+    if (etag == 0 || etag == rate_tag)
+    {
+        return (rate_tag);
+    }
+
+    return (0);
 }
 
 /* YJETCODE / P/RJCODE tables (p. 1080), index -1, 0, +1.                */
@@ -373,41 +370,6 @@ static agc_sp_t dap_rateavg(agc_sp_t old, agc_sp_t now)
                                                AGC_SP_HALF) + (int32_t) now));
 }
 
-/* BODYRATE pitch and yaw (pp. 1070-1071):
- *   Q = IDOT CO CM + MDOT SO,   R = -IDOT CM SO + MDOT CO.               */
-static void dap_bodyrate_qr(void)
-{
-    agc_sp_t  cosm = agc_sp_cos(amg);
-    agc_sp_t  sino = agc_sp_sin(aog);
-    agc_sp_t  coso = agc_sp_cos(aog);
-    agc_dp_t  j;
-    agc_sp_t  jet;
-    agc_ovf_t ovf = 0;
-
-    if (!AGC_ASSERT(amg >= -16384 && aog >= -16384))
-    {
-        return;
-    }
-
-    j = agc_sp_mul((agc_sp_t) (-m_delamg), sino);
-    j = agc_dp_add_raw(
-        j, agc_sp_mul((agc_sp_t) (-m_delaig), entry_sp_mp(coso, cosm)), &ovf);
-    jet    = agc_dp_high(j);
-    qrel   = dap_rateavg(oldelq, jet);
-    oldelq = jet;
-    j      = agc_sp_mul((agc_sp_t) (-m_delamg), coso);
-    j      = agc_dp_add_raw(j, agc_sp_mul(m_delaig, entry_sp_mp(sino,
-                                                                cosm)), &ovf);
-    jet    = agc_dp_high(j);
-    rrel   = dap_rateavg(oldelr, jet);
-    oldelr = jet;
-
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
-    {
-        return;
-    }
-}
-
 /* BODYRATE roll and the GAMDOT correction (pp. 1071-1072):
  *   P = ODOT + IDOT SM; with GAMDOT: P -= SR GAMDOT SIN(TRIM),
  *   Q -= CR GAMDOT, R += SR GAMDOT COS(TRIM).                             */
@@ -453,7 +415,38 @@ static void dap_bodyrate_p(void)
 /* BODYRATE end (p. 1072): with CMDAPARM set, ATTRATES via T5RUPT soon.  */
 static agc_status_t dap_bodyrate(void)
 {
-    dap_bodyrate_qr();
+    /* BODYRATE pitch and yaw (pp. 1070-1071):
+     *   Q = IDOT CO CM + MDOT SO,   R = -IDOT CM SO + MDOT CO.               */
+    agc_sp_t  cosm = agc_sp_cos(amg);
+    agc_sp_t  sino = agc_sp_sin(aog);
+    agc_sp_t  coso = agc_sp_cos(aog);
+    agc_dp_t  j;
+    agc_sp_t  jet;
+    agc_ovf_t ovf = 0;
+
+    if (!AGC_ASSERT(amg >= -16384 && aog >= -16384))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    j = agc_sp_mul((agc_sp_t) (-m_delamg), sino);
+    j = agc_dp_add_raw(
+        j, agc_sp_mul((agc_sp_t) (-m_delaig), entry_sp_mp(coso, cosm)), &ovf);
+    jet    = agc_dp_high(j);
+    qrel   = dap_rateavg(oldelq, jet);
+    oldelq = jet;
+    j      = agc_sp_mul((agc_sp_t) (-m_delamg), coso);
+    j      = agc_dp_add_raw(j, agc_sp_mul(m_delaig, entry_sp_mp(sino,
+                                                                cosm)), &ovf);
+    jet    = agc_dp_high(j);
+    rrel   = dap_rateavg(oldelr, jet);
+    oldelr = jet;
+
+    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     dap_bodyrate_p();
 
     if (!agc_flag_test(AGC_FLAG_CMDAPARM))
@@ -532,72 +525,6 @@ agc_status_t agc_task_readgymb(void)
 /* ======================================================================
  * ATTRATES and the pitch/yaw DAPs (pp. 1073-1079)
  * ==================================================================== */
-
-/* ATTRATES (p. 1073-1074): integrate ALFA, BETA, ROLL:
- *   CB PHIDOT = CA P + SA R, BETADOT = -SA P + CA R,
- *   ALFADOT = Q + SB PHIDOT.                                              */
-static void dap_attrates_integrate(agc_entry_state_t *es)
-{
-    agc_sp_t ca;
-    agc_sp_t sa;
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return;
-    }
-
-    es->alfa_180 = entry_angle_wrap((int32_t) qrel + (int32_t) es->alfa_180);
-    ca           = agc_sp_cos(es->alfa_180);
-    sa           = agc_sp_sin(es->alfa_180);
-    es->calfa    = ca;
-    es->salfa    = sa;
-    phidot       =
-        entry_sp_sat((int32_t) entry_sp_mp(ca, prel) + entry_sp_mp(sa, rrel));
-    betadot = entry_sp_sat((int32_t) entry_sp_mp(ca, rrel) +
-                           entry_sp_mp((agc_sp_t) (-sa), prel));
-    es->beta_180 = entry_sp_sat((int32_t) es->beta_180 + betadot);
-    es->alfa_180 = entry_angle_wrap(
-        (int32_t) entry_sp_mp(agc_sp_sin(es->beta_180), phidot) + es->alfa_180);
-    ak1 = entry_angle_wrap(
-        (int32_t) es->alfacom - (int32_t) es->alfa_180);
-    qaxerr       = ak1;
-    es->roll_180 = entry_angle_wrap((int32_t) phidot + es->roll_180);
-    es->rolltm   = es->roll_180;
-    raxerr       = entry_sp_sat((int32_t) es->betacom - (int32_t) es->beta_180);
-
-    if (!AGC_ASSERT(es->calfa >= -16384))
-    {
-        return;
-    }
-}
-
-/* Atmospheric DAP (p. 1074): rate damping, yaw coordinated with roll:
- * yaw rate error = R - P TAN(ALFA) ~ R - P SIN(-20 deg).                 */
-static uint16_t dap_atm_pitch_yaw(agc_entry_state_t *es)
-{
-    agc_sp_t yerr;
-    uint16_t bits;
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    es->cmdapmod = AGC_ENTRY_DAPMOD_MINUS1;
-    ak1          = -1; /* zero pitch, yaw needles    */
-    ak2          = -1;
-    yerr         = entry_sp_sat(
-        (int32_t) entry_sp_mp((agc_sp_t) (-prel), AGC_ENTRY_SINTRIM) + rrel);
-    bits = agc_entry_dap_yaw_jet_bits(dap_dz2(yerr));
-    bits = (uint16_t) (bits + agc_entry_dap_roll_jet_bits(dap_dz2(qrel)));
-
-    if (!AGC_ASSERT(bits <= 0377u))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (bits);
-}
 
 /* EXDAP1 (p. 1078): yaw axis with the error in RAXERR (sign set by the
  * caller), rate RREL or (mode +0) BETADOT; pitch on QAXERR, QREL.        */
@@ -1089,47 +1016,6 @@ agc_status_t agc_task_jetcall(void)
     return (dap_jetlist(1)); /* JETCALL3         */
 }
 
-/* GETLCX / TRTAGXPI (p. 1082): X/360 = RCOM/360 - R/360 in (-1, 1), then
- * the shortest angular path for a single-jet stop from rate -VT/180.     */
-static agc_sp_t rcs_getlcx(agc_sp_t rollc, agc_sp_t sr, agc_sp_t mvt2,
-                           agc_sp_t calfa)
-{
-    int32_t  rcom = (rollc >= 0) ? rollc : (int32_t) rollc + 16384;
-    int32_t  rneg = (sr > 0) ? (int32_t) sr - 16384 : sr;
-    int32_t  lcx  = rcom + rneg;
-    agc_dp_t p    =
-        agc_sp_mul(entry_sp_sat(mvt2 < 0 ? -(int32_t) mvt2 : mvt2), mvt2);
-    agc_dp_t p2 = agc_sp_mul(agc_dp_high(p), AGC_ENTRY_180_8ATT); /* 1/16A1 */
-    int32_t  q;
-    int32_t  t;
-
-    if (!AGC_ASSERT(calfa != 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    q = (int32_t) (((int64_t) agc_dp_high(p2) * 16384 + agc_dp_low(p2)) /
-                   calfa);
-    q = entry_sp_sat(q); /* DV CALFA    */
-    t = ((lcx > 0) ? 8192 : ((lcx < 0) ? -8192 : 0)) + lcx + q;
-
-    if (t >= 16384)
-    {
-        lcx -= 16384; /* shift -2 pi */
-    }
-    else if (t <= -16384)
-    {
-        lcx += 16384;
-    }
-
-    if (!AGC_ASSERT(lcx > -32768 && lcx < 32768))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (entry_sp_sat(lcx));
-}
-
 /* DZCALL (p. 1089): in the dead zone: ROLLHOLD = ROLL (mode -0) or the
  * roll command, roll jets off.                                           */
 static void rcs_dzcall(agc_entry_state_t *es)
@@ -1175,7 +1061,46 @@ static agc_status_t dap_cm_rcs(agc_entry_state_t *es)
     }
     else
     {
-        lcx = rcs_getlcx(rollc, sr, mvt2, es->calfa);
+        /* GETLCX / TRTAGXPI (p. 1082): X/360 = RCOM/360 - R/360 in (-1, 1), then
+         * the shortest angular path for a single-jet stop from rate -VT/180.     */
+        agc_sp_t calfa = es->calfa;
+
+        int32_t  rcom       = (rollc >= 0) ? rollc : (int32_t) rollc + 16384;
+        int32_t  rneg       = (sr > 0) ? (int32_t) sr - 16384 : sr;
+        int32_t  lcx_getlcx = rcom + rneg;
+        agc_dp_t p          =
+            agc_sp_mul(entry_sp_sat(mvt2 < 0 ? -(int32_t) mvt2 : mvt2), mvt2);
+        agc_dp_t p2 = agc_sp_mul(agc_dp_high(p), AGC_ENTRY_180_8ATT); /* 1/16A1 */
+        int32_t  q;
+        int32_t  t;
+
+        if (!AGC_ASSERT(calfa != 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        q = (int32_t) (((int64_t) agc_dp_high(p2) * 16384 + agc_dp_low(p2)) /
+                       calfa);
+        q = entry_sp_sat(q); /* DV CALFA    */
+        t =
+            ((lcx_getlcx >
+              0) ? 8192 : ((lcx_getlcx < 0) ? -8192 : 0)) + lcx_getlcx + q;
+
+        if (t >= 16384)
+        {
+            lcx_getlcx -= 16384; /* shift -2 pi */
+        }
+        else if (t <= -16384)
+        {
+            lcx_getlcx += 16384;
+        }
+
+        if (!AGC_ASSERT(lcx_getlcx > -32768 && lcx_getlcx < 32768))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        lcx = entry_sp_sat(lcx_getlcx);
     }
 
     lcx = entry_sp_mp(lcx, es->calfa); /* COMPAT     */
@@ -1232,11 +1157,59 @@ agc_status_t agc_task_attrates(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    dap_attrates_integrate(es);
+    /* ATTRATES (p. 1073-1074): integrate ALFA, BETA, ROLL:
+     *   CB PHIDOT = CA P + SA R, BETADOT = -SA P + CA R,
+     *   ALFADOT = Q + SB PHIDOT.                                              */
+    agc_sp_t ca;
+    agc_sp_t sa;
+
+    es->alfa_180 = entry_angle_wrap((int32_t) qrel + (int32_t) es->alfa_180);
+    ca           = agc_sp_cos(es->alfa_180);
+    sa           = agc_sp_sin(es->alfa_180);
+    es->calfa    = ca;
+    es->salfa    = sa;
+    phidot       =
+        entry_sp_sat((int32_t) entry_sp_mp(ca, prel) + entry_sp_mp(sa, rrel));
+    betadot = entry_sp_sat((int32_t) entry_sp_mp(ca, rrel) +
+                           entry_sp_mp((agc_sp_t) (-sa), prel));
+    es->beta_180 = entry_sp_sat((int32_t) es->beta_180 + betadot);
+    es->alfa_180 = entry_angle_wrap(
+        (int32_t) entry_sp_mp(agc_sp_sin(es->beta_180), phidot) + es->alfa_180);
+    ak1 = entry_angle_wrap(
+        (int32_t) es->alfacom - (int32_t) es->alfa_180);
+    qaxerr       = ak1;
+    es->roll_180 = entry_angle_wrap((int32_t) phidot + es->roll_180);
+    es->rolltm   = es->roll_180;
+    raxerr       = entry_sp_sat((int32_t) es->betacom - (int32_t) es->beta_180);
+
+    if (!AGC_ASSERT(es->calfa >= -16384))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (agc_flag_test(AGC_FLAG__05GSW))
     {
-        bits = dap_atm_pitch_yaw(es);
+        /* Atmospheric DAP (p. 1074): rate damping, yaw coordinated with roll:
+         * yaw rate error = R - P TAN(ALFA) ~ R - P SIN(-20 deg).                 */
+        agc_sp_t yerr;
+        uint16_t bits_yaw;
+
+        es->cmdapmod = AGC_ENTRY_DAPMOD_MINUS1;
+        ak1          = -1; /* zero pitch, yaw needles    */
+        ak2          = -1;
+        yerr         = entry_sp_sat(
+            (int32_t) entry_sp_mp((agc_sp_t) (-prel),
+                                  AGC_ENTRY_SINTRIM) + rrel);
+        bits_yaw = agc_entry_dap_yaw_jet_bits(dap_dz2(yerr));
+        bits_yaw =
+            (uint16_t) (bits_yaw + agc_entry_dap_roll_jet_bits(dap_dz2(qrel)));
+
+        if (!AGC_ASSERT(bits_yaw <= 0377u))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        bits = bits_yaw;
     }
     else
     {

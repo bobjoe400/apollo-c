@@ -262,36 +262,6 @@ static bool gcomp_bypassed(void)
 
 /* ---- 1/PIPA ------------------------------------------------------------- */
 
-/* 1/PIPA1 body for one axis (ICP p.326):
- *   DELV = DELV + DELV*SFE - BIAS*DELTAT, all in PIPA pulses x 2^14.    */
-static agc_dp_t pipa_axis(agc_dp_t delv, int axis)
-{
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (0); /* no valid result */
-    }
-
-    agc_sp_t pulses = agc_dp_high(delv);
-    agc_dp_t p      = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
-    /* Minor part, shifted right 9: fractional PIPA pulses x 2^14.        */
-    agc_sp_t frac = agc_dp_high(agc_sp_mul(agc_dp_low(p), BIT6));
-    agc_dp_t d    = agc_dp_pack(pulses, frac);    /* TS DELVX +1    */
-
-    d = das(d, agc_sp_mul(agc_dp_high(p), BIT6)); /* (PIPAI)(SFE)   */
-    /* -(BIAS)(DELTAT): CS PIPABIAS, MP 1/PIPADT, MP BIT4 (LM) / BIT1 (CM). */
-    agc_dp_t b     = agc_sp_mul(sp_neg(comp.pipabias[axis]), one_pipadt);
-    agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT4 : BIT1;
-
-    d = das(d, agc_sp_mul(agc_dp_high(b), shift));
-
-    if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (d);
-}
-
 /* 1/PIPA (ICP p.326, label 1/PIPA): compensate the PIPA counts in DELV for
  * scale factor and bias, then fall into IRIGCOMP.  Order Z, Y, X as the
  * AGC's 4, 2, -0 index loop.                                             */
@@ -316,7 +286,34 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
 
     for (int axis = 2; axis >= 0; axis--)
     {
-        delv->c[axis] = pipa_axis(delv->c[axis], axis);
+        /* 1/PIPA1 body for one axis (ICP p.326):
+         *   DELV = DELV + DELV*SFE - BIAS*DELTAT, all in PIPA pulses x 2^14.    */
+        agc_dp_t delv_axis = delv->c[axis];
+
+        if (!AGC_ASSERT(axis >= 0 && axis < 3))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_sp_t pulses = agc_dp_high(delv_axis);
+        agc_dp_t p      = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
+        /* Minor part, shifted right 9: fractional PIPA pulses x 2^14.        */
+        agc_sp_t frac = agc_dp_high(agc_sp_mul(agc_dp_low(p), BIT6));
+        agc_dp_t d    = agc_dp_pack(pulses, frac);    /* TS DELVX +1    */
+
+        d = das(d, agc_sp_mul(agc_dp_high(p), BIT6)); /* (PIPAI)(SFE)   */
+        /* -(BIAS)(DELTAT): CS PIPABIAS, MP 1/PIPADT, MP BIT4 (LM) / BIT1 (CM). */
+        agc_dp_t b     = agc_sp_mul(sp_neg(comp.pipabias[axis]), one_pipadt);
+        agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT4 : BIT1;
+
+        d = das(d, agc_sp_mul(agc_dp_high(b), shift));
+
+        if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        delv->c[axis] = d;
     }
 
     agc_status_t st = agc_imu_comp_irig(*delv);
@@ -527,28 +524,6 @@ agc_status_t agc_imu_gcompzer(void)
 
 /* ---- 1/GYRO and GCOMP1 --------------------------------------------------- */
 
-/* 1/GYRO scaling (ICP p.333): GCOMP (gyro pulses x 2^14) shifted right 7
- * into the IMUPULSE scale (revolutions, 2^21 pulses per revolution).     */
-static agc_dp_t gyro_rescale(agc_dp_t g)
-{
-    agc_sp_t lo = agc_dp_high(agc_sp_mul(agc_dp_low(g), BIT8)); /* SR 7   */
-    agc_dp_t r  = agc_dp_pack(0, lo);
-
-    r = das(r, agc_sp_mul(agc_dp_high(g), BIT8)); /* add whole pulses   */
-
-    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (r);
-}
-
 /* Common tail of 1/GYRO: IMUPULSE on GCOMP, then IMUSTALL.               */
 static agc_status_t one_gyro_pulse(void)
 {
@@ -597,7 +572,26 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
 
     for (int axis = 2; axis >= 0; axis--)
     { /* PIPAZ, Y, X        */
-        g[axis] = gyro_rescale(g[axis]);
+        /* 1/GYRO scaling (ICP p.333): GCOMP (gyro pulses x 2^14) shifted right 7
+         * into the IMUPULSE scale (revolutions, 2^21 pulses per revolution).     */
+        agc_dp_t g_rescale = g[axis];
+
+        agc_sp_t lo = agc_dp_high(agc_sp_mul(agc_dp_low(g_rescale), BIT8)); /* SR 7   */
+        agc_dp_t r  = agc_dp_pack(0, lo);
+
+        r = das(r, agc_sp_mul(agc_dp_high(g_rescale), BIT8)); /* add whole pulses   */
+
+        if (!AGC_ASSERT(g_rescale >= AGC_DP_MIN && g_rescale <= AGC_DP_MAX))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        g[axis] = r;
     }
 
     gcomp_write(g);

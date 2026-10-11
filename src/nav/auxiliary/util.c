@@ -115,29 +115,6 @@ agc_tp_t agc_navaux_tp_from_cs(agc_dp_t t_cs)
     return (t);
 }
 
-/* Inverse of agc_navaux_tp_from_cs (SL 14 of a TP time into DP). */
-agc_dp_t agc_navaux_cs_from_tp(agc_tp_t t_tp)
-{
-    if (!AGC_ASSERT(agc_navaux_tp_ok(t_tp)))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT((t_tp <= AGC_DP_MAX) && (t_tp >= AGC_DP_MIN)))
-    {
-        return ((t_tp > 0) ? AGC_DP_MAX : AGC_DP_MIN);
-    }
-
-    agc_dp_t t = (agc_dp_t) t_tp;
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(t)))
-    {
-        return (0);
-    }
-
-    return (t);
-}
-
 /* DLOAD X+1 of a TP X: the two low-order words as a DP fraction (the TP
  * is taken as sign-agreed, so the low words carry the sign of the whole). */
 agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)

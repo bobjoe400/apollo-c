@@ -366,18 +366,6 @@ static tps_label_t tps_rngetest(agc_interp_t *ip, agc_rendz_t *rz)
     return (TPS_L_ENDEN);
 }
 
-/* SRR* by a signed count (negative: shift left). */
-static agc_dp_t tps_srr_star(agc_interp_t *ip, agc_dp_t a, int count)
-{
-    if (!AGC_ASSERT(count >= -60 && count <= 60))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((count >= 0) ? agc_dp_shr_round(a, count) : rz_shift(ip, a,
-                                                                 -count));
-}
-
 /* ---- TRANSANG (XANG pp.558-559): central angle of the passive vehicle
  * during the transfer, CENTANG = SQRT(MU/A^3) TF / 2PI revolutions,
  * A = R/(2 - R V^2/MU) of the passive state at TPF (RPASS4 VPASS4).    */
@@ -397,7 +385,19 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
     int       x1     = 0;
     agc_dp_t  q      = agc_dp_mul(ip, rz_norm(agc_vec_sq(ip, v), &x1), invmu);
 
-    q = tps_srr_star(ip, agc_dp_mul_trunc(q, r), -3 - x1); /* RV2/MU   */
+    /* SRR* by a signed count (negative: shift left). */
+    {
+        agc_dp_t a     = agc_dp_mul_trunc(q, r);
+        int      count = -3 - x1;
+
+        if (!AGC_ASSERT(count >= -60 && count <= 60))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        q = (count >= 0) ? agc_dp_shr_round(a, count) : rz_shift(ip, a,
+                                                                 -count); /* RV2/MU   */
+    }
     q = rz_norm(agc_dp_sub(ip, TPS_D1_32, q), &x1);        /* 2-RV2/MU */
     agc_dp_t a = agc_dp_div(ip, agc_dp_shr_round(r, 1), q);
 

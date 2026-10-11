@@ -122,10 +122,16 @@ agc_status_t lm_dap_chekbits(bool *on)
     return (AGC_STATUS_OK);
 }
 
-/* STARTDAP (pp.1411-1412), first half: zero attitude error, rates, offset
- * estimates, trim-gimbal and minimum-impulse state.                      */
-static void startdap_zero(lm_dap_t *d)
+/* STARTDAP (pp.1411-1413), second half: old CDUs, skip and T6 list
+ * initialisation, then T5ADR = PAXIS.                                    */
+agc_status_t lm_dap_startdap(void)
 {
+    lm_dap_t *d = lm_dap_state();
+
+    agc_lm_dap_zatteror();
+
+    /* STARTDAP (pp.1411-1412), first half: zero attitude error, rates, offset
+     * estimates, trim-gimbal and minimum-impulse state.                      */
     for (int i = 0; i < 3; i++)
     {
         d->tj[i]     = 0;
@@ -160,23 +166,14 @@ static void startdap_zero(lm_dap_t *d)
 
     if (!AGC_ASSERT(d->tj[0] == 0 && d->aosq == 0))
     {
-        return;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(d->cotroler == 0))
     {
-        return;
+        return (AGC_STATUS_BAD_ARG);
     }
-}
 
-/* STARTDAP (pp.1411-1413), second half: old CDUs, skip and T6 list
- * initialisation, then T5ADR = PAXIS.                                    */
-agc_status_t lm_dap_startdap(void)
-{
-    lm_dap_t *d = lm_dap_state();
-
-    agc_lm_dap_zatteror();
-    startdap_zero(d);
     d->rcsflags = (uint16_t) (d->rcsflags & ~MANFLAG);
     d->oldxforp = agc_erase_cdux();
     d->oldyforp = agc_erase_cduy();

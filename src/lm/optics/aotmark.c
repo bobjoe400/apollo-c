@@ -436,32 +436,6 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az,
     return (request_more_marks(ctx));
 }
 
-/* MSU: the 1's complement difference of two CDU words. */
-static uint16_t cdu_msu(uint16_t a, uint16_t b)
-{
-    int32_t d = (int32_t) (a & 077777u) - (int32_t) (b & 077777u);
-
-    if (d >= CDU_HALF)
-    {
-        d -= CDU_MOD;
-    }
-    else if (d < -CDU_HALF)
-    {
-        d += CDU_MOD;
-    }
-    else
-    {
-        /* in range */
-    }
-
-    if (!AGC_ASSERT((d >= -CDU_HALF) && (d < CDU_HALF)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (align_sp_to_word((agc_sp_t) ((d < 0) ? (d + 1) : d)));
-}
-
 /*
  * DODAT: detent = AOTCODE bits 7-9 (XYMARK); 0 (COAS calibration) is not
  * valid here (GETDAT); 7 is the COAS (CODE7, AZ and EL keyed in, no
@@ -494,7 +468,33 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
     const uint16_t az = agc_erase_aotaz((int) d);
     const uint16_t el = agc_erase_aotel((int) d);
 
-    return (optic_axis(ctx, az, el, cdu_msu(agc_erase_aotaz(2), az)));
+    /* MSU: the 1's complement difference of two CDU words. */
+    uint16_t a = agc_erase_aotaz(2);
+
+    int32_t d_msu = (int32_t) (a & 077777u) - (int32_t) (az & 077777u);
+
+    if (d_msu >= CDU_HALF)
+    {
+        d_msu -= CDU_MOD;
+    }
+    else if (d_msu < -CDU_HALF)
+    {
+        d_msu += CDU_MOD;
+    }
+    else
+    {
+        /* in range */
+    }
+
+    if (!AGC_ASSERT((d_msu >= -CDU_HALF) && (d_msu < CDU_HALF)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (optic_axis(ctx, az, el,
+                       align_sp_to_word((agc_sp_t) ((d_msu <
+                                                     0) ? (d_msu +
+                                                           1) : d_msu))));
 }
 
 /* CODE7: GOMARKF V06N87 (AZ, EL of the COAS). */

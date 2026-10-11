@@ -187,39 +187,6 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     agc_relint();
 }
 
-/* One elementary rotation of AX*SR*T (CM pp.1370-1371, LM pp.1263-1264)
- * about the gimbal axis whose half-sine/half-cosine sit at index d1,
- * mixing vector components d2 and d1 (component index = word offset / 2):
- *   NBSM: v[d2]' = 2(v[d2] c - v[d1] s),  v[d1]' = 2(v[d1] c + v[d2] s)
- *   SMNB: v[d2]' = 2(v[d2] c + v[d1] s),  v[d1]' = 2(v[d1] c - v[d2] s)
- * The AGC forms the sine term first (TERM1TMP), then DAS adds the cosine
- * term and DDOUBL restores the scale lost by the half sine/cosine.        */
-static void axis_step(const agc_cdutrig_t *t, bool nbsm, int d1, int d2,
-                      agc_vec_t *v)
-{
-    agc_dp_t s    = t->sincdu[d1];
-    agc_dp_t c    = t->coscdu[d1];
-    agc_dp_t old2 = v->c[d2];
-    /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
-    agc_dp_t term = dmpsub(agc_dp_neg(v->c[d1]), s);
-
-    if (!nbsm)
-    {
-        term = agc_dp_neg(term); /* SMNB case: DCS MPAC          */
-    }
-
-    v->c[d2] = ddoubl(das(term, dmpsub(v->c[d2], c)));
-    /* second pass, BUF = 0: old VBUF(D2) times sine                      */
-    term = dmpsub(old2, s);
-
-    if (!nbsm)
-    {
-        term = agc_dp_neg(term);
-    }
-
-    v->c[d1] = ddoubl(das(term, dmpsub(v->c[d1], c)));
-}
-
 /* AX*SR*T (CM pp.1369-1371, LM pp.1262-1264): A = +3 transforms NB to SM,
  * A = -3 transforms SM to NB. The INDEXI table (4, 2, 0, 4) picks the
  * (DEX1, DEX2) pairs; DEXDEX counts 3, 2, 1 (or -3, -2, -1). Guaranteed
@@ -250,7 +217,37 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
             return;
         }
 
-        axis_step(t, nbsm, indexi[k], indexi[k + 1], v);
+        /* One elementary rotation of AX*SR*T (CM pp.1370-1371, LM pp.1263-1264)
+         * about the gimbal axis whose half-sine/half-cosine sit at index d1,
+         * mixing vector components d2 and d1 (component index = word offset / 2):
+         *   NBSM: v[d2]' = 2(v[d2] c - v[d1] s),  v[d1]' = 2(v[d1] c + v[d2] s)
+         *   SMNB: v[d2]' = 2(v[d2] c + v[d1] s),  v[d1]' = 2(v[d1] c - v[d2] s)
+         * The AGC forms the sine term first (TERM1TMP), then DAS adds the cosine
+         * term and DDOUBL restores the scale lost by the half sine/cosine.        */
+        int d1 = indexi[k];
+        int d2 = indexi[k + 1];
+
+        agc_dp_t s    = t->sincdu[d1];
+        agc_dp_t c    = t->coscdu[d1];
+        agc_dp_t old2 = v->c[d2];
+        /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
+        agc_dp_t term = dmpsub(agc_dp_neg(v->c[d1]), s);
+
+        if (!nbsm)
+        {
+            term = agc_dp_neg(term); /* SMNB case: DCS MPAC          */
+        }
+
+        v->c[d2] = ddoubl(das(term, dmpsub(v->c[d2], c)));
+        /* second pass, BUF = 0: old VBUF(D2) times sine                      */
+        term = dmpsub(old2, s);
+
+        if (!nbsm)
+        {
+            term = agc_dp_neg(term);
+        }
+
+        v->c[d1] = ddoubl(das(term, dmpsub(v->c[d1], c)));
     }
 }
 
@@ -373,28 +370,6 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
     return (AGC_STATUS_OK);
 }
 
-/* Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).          */
-static void fleshpot_rows02(const agc_cdutrig_t *t, agc_mat_t *m)
-{
-    const agc_dp_t sx = t->sincdu[AGC_TRIG_X], cx = t->coscdu[AGC_TRIG_X];
-    const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
-    const agc_dp_t sz = t->sincdu[AGC_TRIG_Z], cz = t->coscdu[AGC_TRIG_Z];
-
-    m->row[0].c[0] = ddoubl(dmpsub(cy, cz));                  /* COSY COSZ  */
-    m->row[0].c[1] = sz;                                      /* SINZ       */
-    m->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));      /* -SINY COSZ */
-    m->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));      /* -SINX COSZ */
-    agc_dp_t mxz = dmpsub(agc_dp_neg(sx), sz);                /* -SX SZ /4  */
-    agc_dp_t t5  = ddoubl(ddoubl(dmpsub(mxz, sy)));           /* -SX SY SZ  */
-    agc_dp_t buf = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY  */
-
-    m->row[2].c[2] = das(t5, ddoubl(dmpsub(cy, cx))); /* CX CY - SX SY SZ */
-    /* The listing's comment reads "- SINY COSX + SINX SINZ COSY" but the
-     * code loads +SINCDUY (DCA, not DCS): the element is +SY CX + SX SZ CY,
-     * the correct Z_NB component. The code is translated, not the comment. */
-    m->row[2].c[0] = das(buf, ddoubl(dmpsub(sy, cx)));
-}
-
 /* FLESHPOT / CALCSMSC (Luminary pp.1265-1267): the NB->SM matrix (XNB or
  * XNBPIP, half-unit rows scaled 2^1) from SINCDU/COSCDU. Rows are the NB
  * axes in SM coordinates; row 1 = row 2 x row 0 (TCF VXV), doubled.       */
@@ -405,7 +380,24 @@ void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
         return;
     }
 
-    fleshpot_rows02(t, xnb);
+    /* Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).          */
+    const agc_dp_t sx = t->sincdu[AGC_TRIG_X], cx = t->coscdu[AGC_TRIG_X];
+    const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
+    const agc_dp_t sz = t->sincdu[AGC_TRIG_Z], cz = t->coscdu[AGC_TRIG_Z];
+
+    xnb->row[0].c[0] = ddoubl(dmpsub(cy, cz));                /* COSY COSZ  */
+    xnb->row[0].c[1] = sz;                                    /* SINZ       */
+    xnb->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));    /* -SINY COSZ */
+    xnb->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));    /* -SINX COSZ */
+    agc_dp_t mxz = dmpsub(agc_dp_neg(sx), sz);                /* -SX SZ /4  */
+    agc_dp_t t5  = ddoubl(ddoubl(dmpsub(mxz, sy)));           /* -SX SY SZ  */
+    agc_dp_t buf = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY  */
+
+    xnb->row[2].c[2] = das(t5, ddoubl(dmpsub(cy, cx))); /* CX CY - SX SY SZ */
+    /* The listing's comment reads "- SINY COSX + SINX SINZ COSY" but the
+     * code loads +SINCDUY (DCA, not DCS): the element is +SY CX + SX SZ CY,
+     * the correct Z_NB component. The code is translated, not the comment. */
+    xnb->row[2].c[0] = das(buf, ddoubl(dmpsub(sy, cx)));
     agc_interp_t ip;
 
     agc_interp_init(&ip);

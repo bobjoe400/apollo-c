@@ -439,38 +439,6 @@ typedef struct gam_work
     int      xs;    /* X2 = S1 - n2 + n3 (ASCALE word 1 + norm counts)   */
 } gam_work_t;
 
-/* GAMCOMP first half (p. 1338-1339): normalised B^2, BETAV -> unit,
- * BETAM = |BETAV|, rho = ALPHAM / BETAM.                                */
-static void gamcomp_rho(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1,
-                        gam_work_t *g)
-{
-    int      n2 = 0;
-    int      n3 = 0;
-    agc_tp_t b2 = tp_norm(ip, vsq_tp(ip, agc_vec_shr(ctx->betav, 1)), &g->n1);
-
-    g->bsq = agc_tp_round_dp(b2); /* NORM ROUND 31D */
-    agc_dp_t am =
-        agc_dp_shr(agc_dp_norm(ctx->alpham, &n2), 1); /* NORM 32D SR1 */
-    agc_dp_t bm = 0;
-
-    ctx->betav = agc_vec_unit(ip, ctx->betav, &bm, NULL);     /* UNIT, 36D   */
-    ctx->betam = bm;                                          /* BETAM       */
-    bm         = agc_dp_norm(bm, &n3);                        /* NORM 33D    */
-    g->rho_q   = agc_dp_shr_round(agc_dp_div(ip, am, bm), 1); /* BDDV SR1R  */
-    g->xs      = ASCALE_S1[x1 / 2] - n2 + n3; /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
-    g->rho     = agc_integ_dshift(ip, g->rho_q, 1 + g->xs); /* SR* 0 -1,2  */
-
-    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(ctx->betam >= 0))
-    {
-        return;
-    }
-}
-
 /*
  * GAMCOMP (ORBITAL_INTEGRATION p. 1338-1340): add to FV the acceleration
  * difference -MU [f(q) B + A] / |B|^3 for a body at BETAV (Battin's f(q)
@@ -488,7 +456,34 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
         return (true);
     }
 
-    gamcomp_rho(ip, ctx, x1, &g);
+    /* GAMCOMP first half (p. 1338-1339): normalised B^2, BETAV -> unit,
+     * BETAM = |BETAV|, rho = ALPHAM / BETAM.                                */
+    int      n2 = 0;
+    int      n3 = 0;
+    agc_tp_t b2 = tp_norm(ip, vsq_tp(ip, agc_vec_shr(ctx->betav, 1)), &g.n1);
+
+    g.bsq = agc_tp_round_dp(b2); /* NORM ROUND 31D */
+    agc_dp_t am =
+        agc_dp_shr(agc_dp_norm(ctx->alpham, &n2), 1); /* NORM 32D SR1 */
+    agc_dp_t bm = 0;
+
+    ctx->betav = agc_vec_unit(ip, ctx->betav, &bm, NULL);     /* UNIT, 36D   */
+    ctx->betam = bm;                                          /* BETAM       */
+    bm         = agc_dp_norm(bm, &n3);                        /* NORM 33D    */
+    g.rho_q    = agc_dp_shr_round(agc_dp_div(ip, am, bm), 1); /* BDDV SR1R  */
+    g.xs       = ASCALE_S1[x1 / 2] - n2 + n3; /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
+    g.rho      = agc_integ_dshift(ip, g.rho_q, 1 + g.xs); /* SR* 0 -1,2  */
+
+    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N)))
+    {
+        return (true);
+    }
+
+    if (!AGC_ASSERT(ctx->betam >= 0))
+    {
+        return (true);
+    }
+
     agc_dp_t       pd6 = agc_dp_shr_round(g.rho, 1); /* 6D   */
     const agc_dp_t dot =
         agc_dp_shl_round(ip, agc_vec_dot(ip, ctx->alphav, ctx->betav), 1);
@@ -1170,34 +1165,6 @@ static agc_integ_next_t wmatend(void)
     return (INTEG_NEXT_TESTLOOP);
 }
 
-/* One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2. */
-static void wcolumn_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT((ctx->colreg >= 0) && (ctx->colreg < AGC_INTEG_W_COLUMNS)))
-    {
-        return;
-    }
-
-    difeq0(ctx);
-
-    for (int k = 0; k < 3; k++)
-    {
-        dow(ip, ctx); /* NBRANCH -> DIFEQ+k    */
-
-        if (k < 2)
-        {
-            difeq01(ip, ctx); /* DIFEQCOM -> DOW..     */
-        }
-    }
-
-    difeq2(ip, ctx);
-}
-
 /*
  * AMOVED, NEXTCOL, DIFEQ+2 (JSWITCH), RELOADSV (p. 1348-1350): integrate
  * the W columns COLREG = -30 (6x6, D6OR9FLG clear) or -48 (9x9) up to 0,
@@ -1221,7 +1188,32 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         agc_integ_grp2pc(); /* NEXTCOL  */
         ctx->yv = agc_vec_shr(ctx->w.blk[0][col], 3);
         ctx->zv = agc_vec_shr(ctx->w.blk[1][col], 3);
-        wcolumn_step(ip, ctx);
+
+        /* One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2. */
+        if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH)))
+        {
+            return (INTEG_NEXT_FAIL);
+        }
+
+        if (!AGC_ASSERT((ctx->colreg >= 0) &&
+                        (ctx->colreg < AGC_INTEG_W_COLUMNS)))
+        {
+            return (INTEG_NEXT_FAIL);
+        }
+
+        difeq0(ctx);
+
+        for (int k = 0; k < 3; k++)
+        {
+            dow(ip, ctx); /* NBRANCH -> DIFEQ+k    */
+
+            if (k < 2)
+            {
+                difeq01(ip, ctx); /* DIFEQCOM -> DOW..     */
+            }
+        }
+
+        difeq2(ip, ctx);
         agc_integ_grp2pc();                        /* DIFEQ+2  */
         ctx->w.blk[1][col] = agc_vec_shl(ip, ctx->zv, 3); /* W +54D,2 */
         const agc_vec_t y = agc_vec_shl(ip, ctx->yv, 3);

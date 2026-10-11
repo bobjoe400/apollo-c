@@ -162,7 +162,6 @@ uint16_t  rz_word_of(int v);        /* the word of v     */
 agc_dp_t  rz_mutable_mu(bool moon); /* MUE 2^36 / MUM 2^30            */
 agc_vec_t rz_unit(agc_interp_t *ip, agc_vec_t v);
 agc_dp_t  rz_abval(agc_interp_t *ip, agc_vec_t v);
-agc_vec_t rz_vsign(agc_vec_t v, agc_dp_t s); /* vector SIGN   */
 /* NORM: left-justify a; returns the AGC index register value (-shifts).  */
 agc_dp_t rz_norm(agc_dp_t a, int *xreg);
 int      rz_norm_xreg(agc_dp_t a); /* NORM: index register only */

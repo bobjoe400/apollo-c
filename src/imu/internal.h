@@ -34,8 +34,6 @@ agc_flag_id_t imu_vflag_csm(imu_vflag_t f);
 agc_flag_id_t imu_vflag_lm(imu_vflag_t f);
 bool          imu_vflag_test(imu_vflag_t f); /* false if not in vehicle */
 void          imu_vflag_set(imu_vflag_t f);
-void          imu_vflag_clear(imu_vflag_t f);
-
 /* IMODES30 bits used by mode switching (IMU_MODE_SWITCHING_ROUTINES).    */
 #define IM30_PIPNOTUSED  0x0001u /* BIT1: program not using PIPAs (PIPFREE) */
 #define IM30_ICDUFAILINH 0x0004u /* BIT3: ICDU fail inhibit                 */

@@ -198,11 +198,22 @@ agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
     return (agc_rendz_get_mga(ip, dv, &refsmmat, &rz->plus_mga));
 }
 
-/* AGAIN (Comanche P40-P47 p.711): THISPREC to TDEC1, RTIG = RINIT = RATT,
- * VTIG = VINIT = VATT, then INITVEL with NUMIT 0 and EPSILON4 45 degrees
- * (NORMSW: 165-195 degree transfer) or 10 degrees.                        */
-static agc_status_t again_at(agc_interp_t *ip, agc_dp_t tdec1)
+/* AGAIN with TDEC1 as set by the caller (S31.1: TIG; S40.1B: TIG - 2 s). */
+agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
 {
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(tdec1 >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    /* AGAIN (Comanche P40-P47 p.711): THISPREC to TDEC1, RTIG = RINIT = RATT,
+     * VTIG = VINIT = VATT, then INITVEL with NUMIT 0 and EPSILON4 45 degrees
+     * (NORMSW: 165-195 degree transfer) or 10 degrees.                        */
     agc_rendz_t           *rz = agc_rendz_erasable();
     agc_status_t           st = prec_to(ip, false, tdec1, rz);
     const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;
@@ -224,22 +235,6 @@ static agc_status_t again_at(agc_interp_t *ip, agc_dp_t tdec1)
     }
 
     return (agc_rendz_initvel(ip, rz, 0, e4, agc_guid_nav_resume()));
-}
-
-/* AGAIN with TDEC1 as set by the caller (S31.1: TIG; S40.1B: TIG - 2 s). */
-agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(tdec1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (again_at(ip, tdec1));
 }
 
 /* S31.1 (Comanche p.641-642): Lambert to RTARG from TIG; apogee/perigee of

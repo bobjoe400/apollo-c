@@ -780,39 +780,6 @@ agc_status_t agc_task_coastset(void)
     return (agc_lm_dap_allcoast());
 }
 
-/* The steering part of S40.8 (p.771): TGDCALC with VEX and TDECAY; TIG =
- * PIPTIME + TGO; FINDCDUW while TGO >= 4 s, else IMPULSW set, STEERSW
- * reset. A VG more than 90 degrees from the thrust gives alarm 1407 and
- * goes straight to FINDCDUW.                                               */
-static agc_status_t steering_commands(agc_interp_t *ip)
-{
-    agc_guid_t  *g  = agc_guid_state();
-    agc_tgo_in_t in = {g->burn.vg, agc_vec_neg(g->avg.delvref), g->lm.vex,
-                       g->lm.tdecay};
-    agc_dp_t     tgo = 0;
-    agc_status_t st  = agc_guid_steering_tgo_lm(ip, &in, &tgo);
-
-    if (st == AGC_STATUS_ALARM)
-    {
-        agc_alarm(AGC_ALARM_01407); /* ALARMIT                */
-
-        return (agc_lm_findcduw_m2(ip));
-    }
-
-    agc_erase_set_tgo(tgo);
-    agc_erase_set_tig(agc_dp_add(ip, tgo, agc_erase_piptime()));
-
-    if (agc_dp_sub(ip, tgo, FOURSECS) >= 0)
-    {
-        return (agc_lm_findcduw_m2(ip)); /* FINDCDUW -2      */
-    }
-
-    agc_flag_set(AGC_FLAG_IMPULSW);
-    agc_flag_clear(AGC_FLAG_STEERSW);
-
-    return (AGC_STATUS_OK);
-}
-
 /* S40.8 Luminary (p.770-771): VG = VGPREV - DELVREF (external delta-V) or
  * from RASTEER1 (aimpoint); UNFC/2 = REFSMMAT VG VSL1; VGDISP; VGPREV =
  * VG; with STEERSW, TGO and FINDCDUW.                                     */
@@ -853,7 +820,36 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
         return (AGC_STATUS_OK);
     }
 
-    return (steering_commands(ip));
+    /* The steering part of S40.8 (p.771): TGDCALC with VEX and TDECAY; TIG =
+     * PIPTIME + TGO; FINDCDUW while TGO >= 4 s, else IMPULSW set, STEERSW
+     * reset. A VG more than 90 degrees from the thrust gives alarm 1407 and
+     * goes straight to FINDCDUW.                                               */
+    agc_guid_t  *g_commands = agc_guid_state();
+    agc_tgo_in_t in         = {g_commands->burn.vg, agc_vec_neg(
+                                   g_commands->avg.delvref), g_commands->lm.vex,
+                               g_commands->lm.tdecay};
+    agc_dp_t     tgo         = 0;
+    agc_status_t st_commands = agc_guid_steering_tgo_lm(ip, &in, &tgo);
+
+    if (st_commands == AGC_STATUS_ALARM)
+    {
+        agc_alarm(AGC_ALARM_01407); /* ALARMIT                */
+
+        return (agc_lm_findcduw_m2(ip));
+    }
+
+    agc_erase_set_tgo(tgo);
+    agc_erase_set_tig(agc_dp_add(ip, tgo, agc_erase_piptime()));
+
+    if (agc_dp_sub(ip, tgo, FOURSECS) >= 0)
+    {
+        return (agc_lm_findcduw_m2(ip)); /* FINDCDUW -2      */
+    }
+
+    agc_flag_set(AGC_FLAG_IMPULSW);
+    agc_flag_clear(AGC_FLAG_STEERSW);
+
+    return (AGC_STATUS_OK);
 }
 
 /* UPDATEVG Luminary (p.761-762): S40.8; for aimpoint burns a new Lambert

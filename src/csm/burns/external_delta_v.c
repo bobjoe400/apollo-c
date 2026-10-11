@@ -25,21 +25,6 @@
 /* MARSDP OCT 00000, OCT 35100: 0.01 degree in the low word (rev 2^0).     */
 static const agc_dp_t MARSDP = (agc_dp_t) 035100;
 
-/* A flashing display whose terminate goes to P00 (GOTOPOOH).             */
-static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                          uint8_t verb, uint8_t noun, agc_job_id_t proceed,
-                          agc_job_id_t enter)
-{
-    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter};
-
-    if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
-}
-
 /* COMPTGO (CM p.636): start CLOKTASK (TTOGO), group 6.3 and group 4 type C
  * at PRIO13 continuing at DISP45.                                         */
 agc_status_t agc_csm_comptgo(void)
@@ -126,9 +111,18 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
+    /* A flashing display whose terminate goes to P00 (GOTOPOOH).             */
+    agc_dsky_cont_t cont =
+    {AGC_JOB_GOTOPOOH, AGC_JOB_MARKS_TFI_MGA_DONE,
+     AGC_JOB_MARKS_TFI_MGA_DISPLAY};
+
+    if (!AGC_ASSERT(AGC_JOB_MARKS_TFI_MGA_DONE != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st =
-        flash(ctx, AGC_DSKY_GOFLASHR, 16, 45, AGC_JOB_MARKS_TFI_MGA_DONE,
-              AGC_JOB_MARKS_TFI_MGA_DISPLAY);
+        agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 45), &cont);
 
     if (st != AGC_STATUS_OK)
     {

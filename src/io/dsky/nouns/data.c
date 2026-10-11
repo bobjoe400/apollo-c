@@ -64,20 +64,6 @@ agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
     return (agc_noun_lookup_vehicle(agc_state_vehicle(), noun, out));
 }
 
-/* Channel 33 (LM noun 66 component 2, scale TT): input only, no load. The
- * 15-bit image is passed raw (the LR position routine tests bits 6 and 7). */
-static agc_status_t noun_access_chan33(bool write, agc_dp_t *value)
-{
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(!write))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    *value = (agc_dp_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & 077777u);
-
-    return (AGC_STATUS_OK);
-}
-
 /* DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI. */
 static agc_status_t noun_access_time(uint16_t data_id, bool write,
                                      agc_dp_t *value)
@@ -364,27 +350,6 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
     }
 }
 
-/* OPTION1-3 (noun 06, raw octal words; OPTION1 +k).                       */
-static agc_status_t noun_access_option(uint16_t id, bool write, agc_dp_t *v)
-{
-    if (!AGC_ASSERT(v != NULL) ||
-        !AGC_ASSERT(id >= AGC_DATA_OPTION1 && id <= AGC_DATA_OPTION3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    int k = (int) id - (int) AGC_DATA_OPTION1;
-
-    if (write)
-    {
-        agc_erase_set_option1(k, (agc_sp_t) (*v & 037777));
-    }
-
-    *v = (agc_dp_t) ((uint16_t) agc_erase_option1(k) & 077777u);
-
-    return (AGC_STATUS_OK);
-}
-
 /* Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
  * RR-AZ, RR-ELEV (revs); SMODE (self-check mode, raw word).               */
 static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
@@ -466,7 +431,19 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_INCREMENT_ADDR:
             return (AGC_STATUS_NOT_FOUND);
         case AGC_DATA_CHANNEL33:
-            return (noun_access_chan33(write, value));
+            /* Channel 33 (LM noun 66 component 2, scale TT): input only, no load. The
+             * 15-bit image is passed raw (the LR position routine tests bits 6 and 7). */
+        {
+            if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(!write))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            *value =
+                (agc_dp_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & 077777u);
+
+            return (AGC_STATUS_OK);
+        }
         case AGC_DATA_TIME2:
         case AGC_DATA_TIG:
         case AGC_DATA_TTOGO:
@@ -496,7 +473,26 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_OPTION1:
         case AGC_DATA_OPTION2:
         case AGC_DATA_OPTION3:
-            return (noun_access_option(data_id, write, value));
+            /* OPTION1-3 (noun 06, raw octal words; OPTION1 +k).                       */
+        {
+            if (!AGC_ASSERT(value != NULL) ||
+                !AGC_ASSERT(data_id >= AGC_DATA_OPTION1 &&
+                            data_id <= AGC_DATA_OPTION3))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            int k = (int) data_id - (int) AGC_DATA_OPTION1;
+
+            if (write)
+            {
+                agc_erase_set_option1(k, (agc_sp_t) (*value & 037777));
+            }
+
+            *value = (agc_dp_t) ((uint16_t) agc_erase_option1(k) & 077777u);
+
+            return (AGC_STATUS_OK);
+        }
         case AGC_DATA_SAMPTIME:
         case AGC_DATA_T3TOT4:
         case AGC_DATA_RR_AZ:

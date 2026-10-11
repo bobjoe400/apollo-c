@@ -101,7 +101,27 @@ static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
     }
 
     /* SL 16: 2^42 cs -> 2^26 cs; done as TP -> DP (2^28 cs), SL 2.       */
-    *t26 = agc_dp_shl(ip, agc_navaux_cs_from_tp(t), 2);
+    /* Inverse of agc_navaux_tp_from_cs (SL 14 of a TP time into DP). */
+    agc_tp_t t_tp = t;
+
+    if (!AGC_ASSERT(agc_navaux_tp_ok(t_tp)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((t_tp <= AGC_DP_MAX) && (t_tp >= AGC_DP_MIN)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dp_t t_from_tp = (agc_dp_t) t_tp;
+
+    if (!AGC_ASSERT(agc_navaux_dp_ok(t_from_tp)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    *t26 = agc_dp_shl(ip, t_from_tp, 2);
 
     return (AGC_STATUS_OK);
 }

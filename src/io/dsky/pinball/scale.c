@@ -651,35 +651,6 @@ static agc_status_t pin_dpout(uint8_t rout, agc_dp_t v, agc_dp_t sfout)
     return (pin_dspdecwd((agc_dp_t) ((v < 0) ? -f : f), false));
 }
 
-/* 2INTOUT: blank the register, + sign, the high word as 2 decimal chars in
- * D1D2 and the low word in D4D5 (like verb and noun).                    */
-static agc_status_t pin_2intout(int k, agc_dp_t v)
-{
-    agc_sp_t hi = agc_dp_high(v);
-    agc_sp_t lo = agc_dp_low(v);
-
-    if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = pin_5blank_rel(PIN_INREL_X + k); /* to blank RXD3   */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_plus_on(); /* turn on + sign  */
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_dspdecvn(hi); /* 1st integer     */
-    }
-
-    pin_set_dspcount((int16_t) (k_rnd1[k] - 3));          /* RXD4            */
-
-    return ((st == AGC_STATUS_OK) ? pin_dspdecvn(lo) : st); /* 2nd integer     */
-}
-
 /* Fraction F with exactly the 5 (or 2) digits n when shown truncated. */
 static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
 {
@@ -804,51 +775,6 @@ uint16_t pin_360_cdu(uint16_t w)
                         PIN_WORD)); /* CS MPAC, AD ONE */
 }
 
-/* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
-static agc_status_t pin_sfout_word(uint8_t rout, const agc_scale_info_t *info,
-                                   agc_dp_t v)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
-    uint16_t w  = info->is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) :
-                  pin_ones_from_sp(agc_dp_high(v));
-    agc_sp_t sp = pin_sp_from_ones(w);
-
-    switch (rout)
-    {
-        case PIN_SF_FRACT:
-            return (pin_dspdecwd(agc_dp_from_sp(sp), false));
-        case PIN_SF_DEG:
-            return (pin_degout(w, false));
-        case PIN_SF_ARITH:
-            return (pin_artout(sp, info->sf_out));
-        case PIN_SF_ARITH1:
-            return (pin_arout1(sp, info->sf_out));
-        case PIN_SF_OPDEG:
-            return (lm ? pin_lrposout(info->sf_out) : pin_opdegout(w));
-        case PIN_SF_DPFRAC:
-            return (lm ? pin_degout(pin_360_cdu(w), false) :
-                    pin_dspdecwd(v, false));
-        case PIN_SF_DP1:
-        case PIN_SF_DP2:
-        case PIN_SF_DP3:
-        case PIN_SF_DP4:
-            return (pin_dpout(rout, v, info->sf_out));
-        default:
-
-            if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            return (pin_predspal());
-    }
-}
-
 /* DSPDCPUT for component k: R(k+1), then the SF routine. *exited is set
  * when the routine left through ENTEXIT itself (HMSOUT) or alarmed.     */
 static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
@@ -882,11 +808,77 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
         case PIN_SF_2INT:
             *exited = false;
 
-            return (pin_2intout(k, v));
+            /* 2INTOUT: blank the register, + sign, the high word as 2 decimal chars in
+             * D1D2 and the low word in D4D5 (like verb and noun).                    */
+            agc_sp_t hi = agc_dp_high(v);
+            agc_sp_t lo = agc_dp_low(v);
+
+            if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            agc_status_t st_2intout = pin_5blank_rel(PIN_INREL_X + k); /* to blank RXD3   */
+
+            if (st_2intout == AGC_STATUS_OK)
+            {
+                st_2intout = pin_plus_on(); /* turn on + sign  */
+            }
+
+            if (st_2intout == AGC_STATUS_OK)
+            {
+                st_2intout = pin_dspdecvn(hi); /* 1st integer     */
+            }
+
+            pin_set_dspcount((int16_t) (k_rnd1[k] - 3));          /* RXD4            */
+
+            return ((st_2intout ==
+                     AGC_STATUS_OK) ? pin_dspdecvn(lo) : st_2intout);               /* 2nd integer     */
         default:
             *exited = false;
 
-            return (pin_sfout_word(info.routine, &info, v));
+            /* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
+            uint8_t rout = info.routine;
+
+            if (!AGC_ASSERT(pin_invariants()))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+            uint16_t w  = info.is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) :
+                          pin_ones_from_sp(agc_dp_high(v));
+            agc_sp_t sp = pin_sp_from_ones(w);
+
+            switch (rout)
+            {
+                case PIN_SF_FRACT:
+                    return (pin_dspdecwd(agc_dp_from_sp(sp), false));
+                case PIN_SF_DEG:
+                    return (pin_degout(w, false));
+                case PIN_SF_ARITH:
+                    return (pin_artout(sp, info.sf_out));
+                case PIN_SF_ARITH1:
+                    return (pin_arout1(sp, info.sf_out));
+                case PIN_SF_OPDEG:
+                    return (lm ? pin_lrposout(info.sf_out) : pin_opdegout(w));
+                case PIN_SF_DPFRAC:
+                    return (lm ? pin_degout(pin_360_cdu(w), false) :
+                            pin_dspdecwd(v, false));
+                case PIN_SF_DP1:
+                case PIN_SF_DP2:
+                case PIN_SF_DP3:
+                case PIN_SF_DP4:
+                    return (pin_dpout(rout, v, info.sf_out));
+                default:
+
+                    if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
+                    {
+                        return (AGC_STATUS_BAD_ARG);
+                    }
+
+                    return (pin_predspal());
+            }
     }
 }
 

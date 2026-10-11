@@ -357,17 +357,3 @@ bool csm_dap_engine_on(void)
 
     return ((ch11 & (uint16_t) AGC_CH011_ENGINEON) != 0u);
 }
-
-/* FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2) = 1,0: T5 belongs to the TVC DAP. */
-bool csm_tvc_dap_is_tvc(void)
-{
-    bool b1 = agc_flag_test(AGC_FLAG_DAPBIT1);
-    bool b2 = agc_flag_test(AGC_FLAG_DAPBIT2);
-
-    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DAPBIT1)))
-    {
-        return (false);
-    }
-
-    return (b1 && !b2);
-}

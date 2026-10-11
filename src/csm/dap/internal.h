@@ -89,6 +89,4 @@ agc_status_t csm_tvc_ycopy(bool restart); /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */
 agc_status_t csm_tvc_tstinit(void);    /* TSTINIT                     */
 agc_status_t csm_tvc_hack(void);       /* HACK (entry from the DAPs)  */
-bool         csm_tvc_dap_is_tvc(void); /* FLAGWRD6 bits 15,14 = 10    */
-
 #endif /* CSM_DAP_INTERNAL_H */

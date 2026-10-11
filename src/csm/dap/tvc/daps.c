@@ -90,37 +90,6 @@ static void tvcd_pcdudots(void)
     }
 }
 
-/* Body-axis pitch rate OMEGAYB (PINTEGRL, p. 964) or yaw rate OMEGAZB
- * (YINTEGRL, p. 968), scaled 1/2 TVCDT revs, from SIN/COSCDUX, COSCDUZ
- * (QUICTRIG, scale 2) and the minus CDU rates.                           */
-static agc_dp_t tvcd_body_rate(tvcd_axis_t ax)
-{
-    const agc_csm_tvc_t *t    = agc_csm_dap_tvc();
-    const agc_cdutrig_t *g    = &agc_guid_state()->trig;
-    agc_sp_t             cosz = agc_dp_high(g->coscdu[AGC_TRIG_Z]);
-    agc_sp_t             cosx = agc_dp_high(g->coscdu[AGC_TRIG_X]);
-    agc_sp_t             sinx = agc_dp_high(g->sincdu[AGC_TRIG_X]);
-    agc_sp_t             a    = (ax == TVCD_PITCH) ? (agc_sp_t) -cosz : cosz;
-    agc_sp_t             b    = (ax == TVCD_PITCH) ? cosx : sinx;
-    agc_sp_t             c    = (ax == TVCD_PITCH) ? sinx : cosx;
-    agc_sp_t             k    = agc_dp_high(csm_dap_ddoubl(agc_sp_mul(a, b)));
-    agc_dp_t             w    = csm_dap_ddoubl(agc_sp_mul(k, t->mcduydot));
-
-    w = csm_dap_das(w, csm_dap_ddoubl(agc_sp_mul((agc_sp_t) -t->mcduzdot, c)));
-
-    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (w);
-}
-
 /* ERRORLIM (p. 970): limit the upper word of ERRBTMP to +-45 deg.        */
 static void tvcd_errorlim(void)
 {
@@ -388,8 +357,34 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     }
 
     /* xINTEGRL: body-axis rate error integral, B-1 rev                   */
-    t->errbtmp   = csm_dap_das(p ? t->perrb : t->yerrb, t->omegac[a]);
-    t->omegab[a] = tvcd_body_rate(ax);
+    t->errbtmp = csm_dap_das(p ? t->perrb : t->yerrb, t->omegac[a]);
+    /* Body-axis pitch rate OMEGAYB (PINTEGRL, p. 964) or yaw rate OMEGAZB
+     * (YINTEGRL, p. 968), scaled 1/2 TVCDT revs, from SIN/COSCDUX, COSCDUZ
+     * (QUICTRIG, scale 2) and the minus CDU rates.                           */
+    const agc_csm_tvc_t *t_rate = agc_csm_dap_tvc();
+    const agc_cdutrig_t *g      = &agc_guid_state()->trig;
+    agc_sp_t             cosz   = agc_dp_high(g->coscdu[AGC_TRIG_Z]);
+    agc_sp_t             cosx   = agc_dp_high(g->coscdu[AGC_TRIG_X]);
+    agc_sp_t             sinx   = agc_dp_high(g->sincdu[AGC_TRIG_X]);
+    agc_sp_t             a_rate = (ax == TVCD_PITCH) ? (agc_sp_t) -cosz : cosz;
+    agc_sp_t             b      = (ax == TVCD_PITCH) ? cosx : sinx;
+    agc_sp_t             c      = (ax == TVCD_PITCH) ? sinx : cosx;
+    agc_sp_t             k      =
+        agc_dp_high(csm_dap_ddoubl(agc_sp_mul(a_rate, b)));
+    agc_dp_t w =
+        csm_dap_ddoubl(agc_sp_mul(k, t_rate->mcduydot));
+
+    w =
+        csm_dap_das(w,
+                    csm_dap_ddoubl(agc_sp_mul((agc_sp_t) -t_rate->mcduzdot,
+                                              c)));
+
+    if (!AGC_ASSERT((w >= AGC_DP_MIN) && (w <= AGC_DP_MAX)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    t->omegab[a] = w;
     t->errbtmp   = csm_dap_das(t->errbtmp, agc_dp_neg(t->omegab[a]));
     tvcd_errorlim();
 

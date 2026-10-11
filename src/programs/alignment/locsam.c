@@ -68,95 +68,6 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
     return (agc_dp_shr(agc_dp_cos(ip, a), 1));
 }
 
-/* LOCSAM earth/moon centred branches for the CSM (Comanche p. 749-750). */
-static void locsam_csm(agc_interp_t *ip, const agc_state_vector_t *sv,
-                       agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
-{
-    agc_dp_t rmag = 0;
-
-    if (!AGC_ASSERT(sv != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return;
-    }
-
-    if (!sv->moon)
-    { /* EARTCNTR   */
-        o->vmoon  = agc_vec_unit(ip, agc_vec_sub(ip, moon, sv->r), NULL, NULL);
-        o->vearth = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
-        o->cearth = occos(ip, RSUBE, rmag);
-        o->cmoon  = CSS5;
-        o->vsun   = agc_vec_unit(ip, sun, NULL, NULL);
-    }
-    else
-    { /* MOONCNTR   */
-        o->vsun = agc_vec_unit(
-            ip, agc_vec_sub(ip, sun, agc_vec_shr(moon, LOCSAM_EARTH_SHIFT)),
-            NULL, NULL);
-        o->vearth = agc_vec_neg(
-            agc_vec_unit(ip, agc_vec_add(ip, moon, sv->r), NULL, NULL));
-        o->vmoon  = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
-        o->cmoon  = occos(ip, RSUBM, rmag);
-        o->cearth = CSS5;
-    }
-
-    /* ENDSAM: VEL/C = VSUN x ECLIPOL + VATT (1/C)                         */
-    const agc_vec_t eclipol = agc_vec_make(0, ECLIPOL_Y, ECLIPOL_Z);
-    const agc_vec_t aber    = agc_vec_cross(ip, o->vsun, eclipol);
-
-    o->vel_c = agc_vec_add(ip, agc_vec_scale(ip, sv->v, ONE_OVER_C), aber);
-    o->csun  = CSSUN_CSM;
-}
-
-/* LOCSAM earth/moon centred branches for the LM (Luminary p. 935-936). */
-static void locsam_lm(agc_interp_t *ip, const agc_state_vector_t *sv,
-                      agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *o)
-{
-    agc_dp_t rmag = 0;
-
-    if (!AGC_ASSERT(sv != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return;
-    }
-
-    o->vsun = sun;
-
-    if (!sv->moon)
-    { /* EARTCNTR   */
-        const agc_vec_t rem =
-            agc_vec_shl(ip, agc_vec_scale(ip, moon, RSUBEM), 1);
-
-        o->vmoon  = agc_vec_unit(ip, agc_vec_sub(ip, rem, sv->r), NULL, NULL);
-        o->vearth = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
-        o->cearth = occos(ip, RSUBE, rmag);
-        o->cmoon  = CSS5;
-    }
-    else
-    { /* MOONCNTR   */
-        o->vsun = agc_vec_unit(
-            ip, agc_vec_sub(ip, sun, agc_vec_scale(ip, moon, ROE)), NULL, NULL);
-        const agc_vec_t rem = agc_vec_scale(ip, moon, RSUBEM);
-
-        o->vearth = agc_vec_neg(
-            agc_vec_unit(ip, agc_vec_add(ip, rem, sv->r), NULL, NULL));
-        o->vmoon  = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
-        o->cmoon  = occos(ip, RSUBM, rmag);
-        o->cearth = CSS5;
-    }
-
-    o->vel_c = agc_vec_zero();
-    o->csun  = CSSUN_LM; /* ENDSAM     */
-}
-
 /*
  * LOCSAM tail (Comanche pp. 749-750, Luminary pp. 935-936): the lines of
  * sight and cones from the integrated state sv (RATT 2^29 m, VATT 2^7
@@ -174,11 +85,74 @@ agc_status_t agc_align_locsam_from(agc_interp_t *ip,
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        locsam_csm(ip, sv, moon, sun, out);
+        /* LOCSAM earth/moon centred branches for the CSM (Comanche p. 749-750). */
+        agc_dp_t rmag = 0;
+
+        if (!sv->moon)
+        { /* EARTCNTR   */
+            out->vmoon = agc_vec_unit(ip, agc_vec_sub(ip, moon,
+                                                      sv->r), NULL, NULL);
+            out->vearth = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
+            out->cearth = occos(ip, RSUBE, rmag);
+            out->cmoon  = CSS5;
+            out->vsun   = agc_vec_unit(ip, sun, NULL, NULL);
+        }
+        else
+        { /* MOONCNTR   */
+            out->vsun = agc_vec_unit(
+                ip, agc_vec_sub(ip, sun, agc_vec_shr(moon, LOCSAM_EARTH_SHIFT)),
+                NULL, NULL);
+            out->vearth = agc_vec_neg(
+                agc_vec_unit(ip, agc_vec_add(ip, moon, sv->r), NULL, NULL));
+            out->vmoon  = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
+            out->cmoon  = occos(ip, RSUBM, rmag);
+            out->cearth = CSS5;
+        }
+
+        /* ENDSAM: VEL/C = VSUN x ECLIPOL + VATT (1/C)                         */
+        const agc_vec_t eclipol = agc_vec_make(0, ECLIPOL_Y, ECLIPOL_Z);
+        const agc_vec_t aber    = agc_vec_cross(ip, out->vsun, eclipol);
+
+        out->vel_c =
+            agc_vec_add(ip, agc_vec_scale(ip, sv->v, ONE_OVER_C), aber);
+        out->csun = CSSUN_CSM;
     }
     else
     {
-        locsam_lm(ip, sv, moon, sun, out);
+        /* LOCSAM earth/moon centred branches for the LM (Luminary p. 935-936). */
+        {
+            agc_dp_t rmag = 0;
+
+            out->vsun = sun;
+
+            if (!sv->moon)
+            { /* EARTCNTR   */
+                const agc_vec_t rem =
+                    agc_vec_shl(ip, agc_vec_scale(ip, moon, RSUBEM), 1);
+
+                out->vmoon = agc_vec_unit(ip, agc_vec_sub(ip, rem,
+                                                          sv->r), NULL, NULL);
+                out->vearth = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
+                out->cearth = occos(ip, RSUBE, rmag);
+                out->cmoon  = CSS5;
+            }
+            else
+            { /* MOONCNTR   */
+                out->vsun = agc_vec_unit(
+                    ip, agc_vec_sub(ip, sun, agc_vec_scale(ip, moon,
+                                                           ROE)), NULL, NULL);
+                const agc_vec_t rem = agc_vec_scale(ip, moon, RSUBEM);
+
+                out->vearth = agc_vec_neg(
+                    agc_vec_unit(ip, agc_vec_add(ip, rem, sv->r), NULL, NULL));
+                out->vmoon  = agc_vec_neg(agc_vec_unit(ip, sv->r, &rmag, NULL));
+                out->cmoon  = occos(ip, RSUBM, rmag);
+                out->cearth = CSS5;
+            }
+
+            out->vel_c = agc_vec_zero();
+            out->csun  = CSSUN_LM; /* ENDSAM     */
+        }
     }
 
     return (AGC_STATUS_OK);
@@ -385,57 +359,6 @@ static void picapar_search_csm(picapar_search_t *s)
     }
 }
 
-/* PIC1-PIC4 for the LM (Luminary pp. 938-939): cone tests first. */
-static void picapar_search_lm(picapar_search_t *s)
-{
-    if (!AGC_ASSERT(s != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(s->ip != NULL))
-    {
-        return;
-    }
-
-    for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
-    { /* PIC1 */
-        const agc_vec_t si = catlog(i6);
-
-        if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, s->sax), CSS40_LM) < 0)
-        {
-            continue; /* PIC2 */
-        }
-
-        for (int j6 = i6 - 6; j6 >= 6; j6 -= 6)
-        { /* PIC3 */
-            const agc_vec_t sj = catlog(j6);
-
-            if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, sj, s->sax), CSS40_LM) < 0)
-            {
-                continue; /* PIC4 */
-            }
-
-            if (agc_dp_sub(s->ip, agc_vec_dot(s->ip, si, sj), CSS40_LM) >= 0)
-            {
-                continue; /* separation less than 50 degrees     */
-            }
-
-            if (agc_align_occult(s->ip, s->ls, si))
-            {
-                break; /* major star occulted: PIC1           */
-            }
-
-            if (agc_align_occult(s->ip, s->ls, sj))
-            {
-                continue;
-            }
-
-            picapar_strategy(s, i6, j6); /* STRATGY */
-        }
-    }
-}
-
 /*
  * PICAPAR (Comanche pp. 752-755) / R56 alias PICAPAR (Luminary pp.
  * 937-940) -- choose the pair of catalogue stars with the largest
@@ -487,7 +410,49 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls,
     }
     else
     {
-        picapar_search_lm(&s);
+        /* PIC1-PIC4 for the LM (Luminary pp. 938-939): cone tests first. */
+        if (!AGC_ASSERT(s.ip != NULL))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
+        { /* PIC1 */
+            const agc_vec_t si = catlog(i6);
+
+            if (agc_dp_sub(s.ip, agc_vec_dot(s.ip, si, s.sax), CSS40_LM) < 0)
+            {
+                continue; /* PIC2 */
+            }
+
+            for (int j6 = i6 - 6; j6 >= 6; j6 -= 6)
+            { /* PIC3 */
+                const agc_vec_t sj = catlog(j6);
+
+                if (agc_dp_sub(s.ip, agc_vec_dot(s.ip, sj, s.sax),
+                               CSS40_LM) < 0)
+                {
+                    continue; /* PIC4 */
+                }
+
+                if (agc_dp_sub(s.ip, agc_vec_dot(s.ip, si, sj), CSS40_LM) >= 0)
+                {
+                    continue; /* separation less than 50 degrees     */
+                }
+
+                if (agc_align_occult(s.ip, s.ls, si))
+                {
+                    break; /* major star occulted: PIC1           */
+                }
+
+                if (agc_align_occult(s.ip, s.ls, sj))
+                {
+                    continue;
+                }
+
+                picapar_strategy(&s, i6, j6); /* STRATGY */
+            }
+        }
 
         if (!s.vflag)
         { /* PICGXT */

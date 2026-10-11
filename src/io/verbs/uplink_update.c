@@ -286,38 +286,6 @@ static bool update_allowed(void)
     return ((agc_flagword_get(5) & BIT8) != 0u && mm == 2);
 }
 
-/* UPPART2: protect group 6 (a restart restores the old mode and exits),
- * select the P27 downlist, MM 27, then ask for II or the first word.     */
-static agc_status_t uppart2(agc_job_ctx_t *ctx)
-{
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE,
-                         AGC_TASK_NONE, 030,
-                         false, 0};
-
-    agc_phase_change_var(UP_PHASE_EXIT, &v);
-    agc_status_t st = AGC_STATUS_OK;
-
-    agc_telem_select_list(UP_DNLIST);
-    st = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (up[UP_UPVERB] == 1u || up[UP_UPVERB] == 2u)
-    { /* V71, V72: OHWELL1   */
-        stage       = UP_COUNT;
-        load_target = UP_UPBUFF;
-
-        return (up_display(ctx));
-    }
-
-    up[UP_COMPNUMB] = 2; /* V70, V73            */
-
-    return (request_component(ctx));
-}
-
 /* V70UPDAT .. V73UPDAT (C p.1491): UPVERB = verb - 70.                    */
 agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 {
@@ -347,7 +315,34 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
     up[UP_UPVERB]  = upverbsv;
     up[UP_UPCOUNT] = 1;
 
-    return (uppart2(ctx));
+    /* UPPART2: protect group 6 (a restart restores the old mode and exits),
+     * select the P27 downlist, MM 27, then ask for II or the first word.     */
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE,
+                         AGC_TASK_NONE, 030,
+                         false, 0};
+
+    agc_phase_change_var(UP_PHASE_EXIT, &v);
+    agc_status_t st_uppart2 = AGC_STATUS_OK;
+
+    agc_telem_select_list(UP_DNLIST);
+    st_uppart2 = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
+
+    if (!AGC_ASSERT(st_uppart2 == AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (up[UP_UPVERB] == 1u || up[UP_UPVERB] == 2u)
+    { /* V71, V72: OHWELL1   */
+        stage       = UP_COUNT;
+        load_target = UP_UPBUFF;
+
+        return (up_display(ctx));
+    }
+
+    up[UP_COMPNUMB] = 2; /* V70, V73            */
+
+    return (request_component(ctx));
 }
 
 /* ---- operator responses ------------------------------------------------- */
@@ -384,38 +379,6 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
                                  true)); /* UPFNDVAC */
 }
 
-/* Data on the V21N01 (count): 3 <= II <= 20D, else ask again.            */
-static agc_status_t got_count(agc_job_ctx_t *ctx)
-{
-    int32_t ii = ones_value(up[UP_UPBUFF]);
-
-    if (ii < UP_MIN_COMP || ii > UP_MAX_COMP)
-    {
-        return (up_display(ctx)); /* OHWELL1 +2          */
-    }
-
-    up[UP_COMPNUMB] = (uint16_t) ii;
-    up[UP_UPCOUNT]++; /* INCR UPCOUNT        */
-
-    return (request_component(ctx));
-}
-
-/* Data on the V21N02: a legal component index -> reload that component. */
-static agc_status_t got_index(agc_job_ctx_t *ctx)
-{
-    int32_t k = ones_value(uptemp);
-
-    if (k <= 0 || k > (int32_t) up[UP_COMPNUMB])
-    {
-        return (request_verify(ctx));
-    }
-
-    stage       = UP_DATA;
-    load_target = UP_UPBUFF + (int) k - 1; /* OHWELL2 +2          */
-
-    return (up_display(ctx));
-}
-
 /* Data or V32 on a load (CK4V32 and the branch after it).                */
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 {
@@ -435,12 +398,34 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 
     if (stage == UP_COUNT)
     {
-        return (got_count(ctx));
+        /* Data on the V21N01 (count): 3 <= II <= 20D, else ask again.            */
+        int32_t ii = ones_value(up[UP_UPBUFF]);
+
+        if (ii < UP_MIN_COMP || ii > UP_MAX_COMP)
+        {
+            return (up_display(ctx)); /* OHWELL1 +2          */
+        }
+
+        up[UP_COMPNUMB] = (uint16_t) ii;
+        up[UP_UPCOUNT]++; /* INCR UPCOUNT        */
+
+        return (request_component(ctx));
     }
 
     if (stage == UP_VERIFY)
     {
-        return (got_index(ctx));
+        /* Data on the V21N02: a legal component index -> reload that component. */
+        int32_t k = ones_value(uptemp);
+
+        if (k <= 0 || k > (int32_t) up[UP_COMPNUMB])
+        {
+            return (request_verify(ctx));
+        }
+
+        stage       = UP_DATA;
+        load_target = UP_UPBUFF + (int) k - 1; /* OHWELL2 +2          */
+
+        return (up_display(ctx));
     }
 
     if ((int32_t) up[UP_COMPNUMB] - (int32_t) up[UP_UPCOUNT] <= 0)

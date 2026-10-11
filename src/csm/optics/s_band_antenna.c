@@ -150,38 +150,6 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
     return (AGC_STATUS_OK);
 }
 
-/* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
-static agc_status_t display_angles(const agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
-    {
-        return (agc_dsky_endext()); /* BZF ENDEXT   */
-    }
-
-    agc_status_t st =
-        align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
-                    AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st = agc_dsky_blanket(BLANK_R3); /* immediate ret*/
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE));
-}
-
 /*
  * SBANDANT +2 (p. 934): LOADTIME, CDUTRIG, CSMCONIC to now; the earth
  * vector in SM, *SMNB*, the angles; then the display loop.
@@ -228,7 +196,29 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
         return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
     }
 
-    return (display_angles(ctx));
+    /* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
+    if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
+    {
+        return (agc_dsky_endext()); /* BZF ENDEXT   */
+    }
+
+    agc_status_t st_angles =
+        align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
+                    AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
+
+    if (st_angles != AGC_STATUS_OK)
+    {
+        return (st_angles);
+    }
+
+    st_angles = agc_dsky_blanket(BLANK_R3); /* immediate ret*/
+
+    if (!AGC_ASSERT(st_angles == AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE));
 }
 
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */

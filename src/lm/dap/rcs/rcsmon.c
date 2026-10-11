@@ -27,34 +27,6 @@ static const uint16_t fail5[RM_NBITS] = {000040u, 000020u, 000100u, 000200u,
 static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u,
                                          000001u, 000002u, 000040u, 000100u};
 
-/* The DOUBLE / OVSK loop: index (0 = bit 8 .. 7 = bit 1) of the highest
- * set bit of a nonzero 8-bit change word.                                */
-static int highest_change(uint16_t change)
-{
-    int idx = 0;
-
-    for (int i = 0; i < RM_NBITS; i++)
-    {
-        if ((change & (uint16_t) (0200u >> i)) != 0u)
-        {
-            idx = i;
-            break;
-        }
-    }
-
-    if (!AGC_ASSERT(change != 0u && change <= RM_LOW8))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(idx >= 0 && idx < RM_NBITS))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (idx);
-}
-
 /* RCSMON (pp.191-192). Called from T4RUPT (RCSMONIT), exits by RESUME.   */
 agc_status_t agc_lm_dap_rcsmon(void)
 {
@@ -67,7 +39,28 @@ agc_status_t agc_lm_dap_rcsmon(void)
         return (AGC_STATUS_OK); /* no action required */
     }
 
-    int l = highest_change(change);
+    /* The DOUBLE / OVSK loop: index (0 = bit 8 .. 7 = bit 1) of the highest
+     * set bit of a nonzero 8-bit change word.                                */
+    int l = 0;
+
+    for (int i = 0; i < RM_NBITS; i++)
+    {
+        if ((change & (uint16_t) (0200u >> i)) != 0u)
+        {
+            l = i;
+            break;
+        }
+    }
+
+    if (!AGC_ASSERT(change != 0u && change <= RM_LOW8))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(l >= 0 && l < RM_NBITS))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
     {

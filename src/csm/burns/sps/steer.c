@@ -415,24 +415,6 @@ agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
     return (agc_csm_servxt(ctx));
 }
 
-/* The caller's tail after a restart inside UPDATEVG / S40.8.               */
-static agc_status_t caller_tail(agc_job_ctx_t *ctx, agc_interp_t *ip)
-{
-    if (agc_guid_state()->csm.updcaller == CALLER_CALC_VG_BODY)
-    {
-        agc_csm_convert_vg_body(ip);
-
-        return (agc_csm_servxt(ctx));
-    }
-
-    if (!AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (steering_tail(ctx));
-}
-
 /* Restart entries inside the cycle: S40.8B, UPDATEVG_B, SURELY9_B.        */
 agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
 {
@@ -476,7 +458,20 @@ agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
         }
     }
 
-    return (caller_tail(ctx, &ip));
+    /* The caller's tail after a restart inside UPDATEVG / S40.8.               */
+    if (agc_guid_state()->csm.updcaller == CALLER_CALC_VG_BODY)
+    {
+        agc_csm_convert_vg_body(&ip);
+
+        return (agc_csm_servxt(ctx));
+    }
+
+    if (!AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (steering_tail(ctx));
 }
 
 /* CALCN83 (p.698): P47 thrust monitor: DV47TEMP (= VG) = DELVCTL +

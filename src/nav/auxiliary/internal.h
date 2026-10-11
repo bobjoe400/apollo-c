@@ -28,8 +28,6 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n);
 
 /* DP time in cs at scale 2^28 shifted SR 14 into a TP at scale 2^42.     */
 agc_tp_t agc_navaux_tp_from_cs(agc_dp_t t_cs);
-/* TP at scale 2^42 cs back to DP at scale 2^28 cs (|t| < 2^28 cs).      */
-agc_dp_t agc_navaux_cs_from_tp(agc_tp_t t_tp);
 /* Low two words (MPAC+1, MPAC+2) of a TP as a DP fraction.               */
 agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v);
 /* TSLC on a TP: normalize to |v| >= 1/2, *shift = number of left shifts. */

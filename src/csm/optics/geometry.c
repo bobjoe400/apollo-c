@@ -60,24 +60,6 @@ static agc_mat_t nb2nb1(void)
     return (m);
 }
 
-/* NB1NB2 (optics base NB1 -> NB), the transpose of NB2NB1. */
-static agc_mat_t nb1nb2(void)
-{
-    const agc_mat_t m = nb2nb1();
-
-    if (!AGC_ASSERT(m.row[0].c[2] == -NB_SIN))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(m.row[2].c[0] == NB_SIN))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
-    return (agc_mat_transpose(&m));
-}
-
 /*
  * SXTLOGIC (CSM_GEOMETRY.agc p. 285) -- the trunnion angle in revs from
  * the trunnion CDU: (CDULOGIC(TA) + 10DEGS-) x 1/4 (SHORTMP by QUARTER;
@@ -124,29 +106,24 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
     starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(ip, sa), sin_ta); /* DMP */
     starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(ip, sa), sin_ta);
     starm.c[2] = agc_dp_cos(ip, ta);
-    const agc_mat_t m = nb1nb2();
+    /* NB1NB2 (optics base NB1 -> NB), the transpose of NB2NB1. */
+    const agc_mat_t m_nb1nb2 = nb2nb1();
+
+    if (!AGC_ASSERT(m_nb1nb2.row[0].c[2] == -NB_SIN))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(m_nb1nb2.row[2].c[0] == NB_SIN))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    const agc_mat_t m = agc_mat_transpose(&m_nb1nb2);
 
     *starm_nb = agc_vec_shl(ip, agc_mat_vec(ip, &m, starm), 1); /* MXV VSL1 */
 
     return (AGC_STATUS_OK);
-}
-
-/* ZNB=S1 (p. 287): the star is along the shaft axis. */
-static void znb_eq_s1(uint16_t *sac, uint16_t *pac, bool *cult)
-{
-    if (!AGC_ASSERT(sac != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(pac != NULL))
-    {
-        return;
-    }
-
-    *sac  = SHAFT_270DEG;     /* DLOAD 270DEG STODL SAC */
-    *pac  = PAC_20DEGS_MINUS; /* 20DEGS- STORE PAC      */
-    *cult = false;            /* CLRGO CULTFLAG         */
 }
 
 /*
@@ -179,7 +156,10 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
 
     if (agc_interp_test_ovf(ip))
     { /* BOV     */
-        znb_eq_s1(sac, pac, cult);
+        /* ZNB=S1 (p. 287): the star is along the shaft axis. */
+        *sac  = SHAFT_270DEG;     /* DLOAD 270DEG STODL SAC */
+        *pac  = PAC_20DEGS_MINUS; /* 20DEGS- STORE PAC      */
+        *cult = false;            /* CLRGO CULTFLAG         */
 
         return (AGC_STATUS_OK);
     }

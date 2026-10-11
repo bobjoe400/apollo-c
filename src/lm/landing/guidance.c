@@ -396,16 +396,30 @@ agc_status_t agc_lm_quadguid(agc_interp_t *ip)
     return (agc_lm_afccalc(ip, a));
 }
 
-/* AFCCALC2 / AFCCALC3 (pp. 809-810): limit the downrange component so the
- * horizontal demand fits within the maximum thrust:
- *   AMAXHORIZ = SQRT((HIGHESTF/MASS)^2 - A1^2 - A0^2), UNFC z >= -AMAXHORIZ. */
-static void ldg_afclimit(agc_interp_t *ip, agc_lm_ldg_t *l)
+/* AFCCALC1 .. AFCCLEND (pp. 809-810): thrust acceleration command
+ * UNFC/2 = CG^T ACG - GDT/2 / GSCALE (stable member) and /AFC/ for the
+ * throttle; then the pass counter. VERTGUID enters here too.          */
+agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
 {
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_lm_ldg_t *l = agc_lm_ldg();
+    agc_vec_t     a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1); /* VXM */
+    agc_vec_t     g = agc_vec_div(ip, agc_guid_state()->avg.gdt_2, LDG_GSCALE);
+
+    l->unfc_2 = agc_vec_sub(ip, a, g);   /* need not be unitized       */
+    l->afc    = agc_vec_abval(ip, l->unfc_2); /* AFCCALC2: |AFC| for THROTTLE */
+    /* AFCCALC2 / AFCCALC3 (pp. 809-810): limit the downrange component so the
+     * horizontal demand fits within the maximum thrust:
+     *   AMAXHORIZ = SQRT((HIGHESTF/MASS)^2 - A1^2 - A0^2), UNFC z >= -AMAXHORIZ. */
     agc_dp_t mass = agc_guid_state()->lm.mass; /* 2^16 kg      */
 
     if (!AGC_ASSERT(mass > 0))
     {
-        return;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t amax = agc_dp_sq(ip, agc_dp_div(ip, LDG_HIGHESTF, mass));
@@ -427,27 +441,9 @@ static void ldg_afclimit(agc_interp_t *ip, agc_lm_ldg_t *l)
 
     if (!AGC_ASSERT(l->unfc_2.c[2] >= AGC_DP_MIN))
     {
-        return;
-    }
-}
-
-/* AFCCALC1 .. AFCCLEND (pp. 809-810): thrust acceleration command
- * UNFC/2 = CG^T ACG - GDT/2 / GSCALE (stable member) and /AFC/ for the
- * throttle; then the pass counter. VERTGUID enters here too.          */
-agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_vec_t     a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1); /* VXM */
-    agc_vec_t     g = agc_vec_div(ip, agc_guid_state()->avg.gdt_2, LDG_GSCALE);
-
-    l->unfc_2 = agc_vec_sub(ip, a, g);   /* need not be unitized       */
-    l->afc    = agc_vec_abval(ip, l->unfc_2); /* AFCCALC2: |AFC| for THROTTLE */
-    ldg_afclimit(ip, l);
     agc_lm_fastchng();
     l->wchphold = l->wchphase;              /* for phase switching logic  */
     l->flpass0  = agc_lm_ad(l->flpass0, 1); /* INCR FLPASS0               */

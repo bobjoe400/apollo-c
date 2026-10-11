@@ -58,52 +58,6 @@ agc_status_t lm_dap_zeroenbl(void)
     return (AGC_STATUS_OK);
 }
 
-/* Minimum impulse mode, P axis (p.1431): one 14 ms pulse per deflection of
- * the THC X-axis (+X/-X bits 3,4 of channel 31). OLDPMIN holds the gate
- * until the controller is released.                                       */
-agc_status_t lm_dap_pminimp(void)
-{
-    lm_dap_t *d = lm_dap_state();
-
-    d->perror = 0;
-    d->cduxd  = agc_erase_cdux();
-    uint16_t ch31 = agc_chan_read(031);
-
-    if (!AGC_ASSERT(d->oldpmin >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (d->oldpmin > 0)
-    { /* CHECKP         */
-        d->oldpmin = (agc_sp_t) ((uint16_t) ~ch31 & PM_OCT14);
-
-        return (lm_dap_jetsoff());
-    }
-
-    if ((ch31 & PM_CH31_PLUSX) == 0u)
-    { /* FIREP: +XMIN   */
-        d->tj[0] = PM_MINTJ;
-    }
-    else if ((ch31 & PM_CH31_MINUSX) == 0u)
-    { /* -XMIN          */
-        d->tj[0] = (agc_sp_t) -PM_MINTJ;
-    }
-    else
-    {
-        return (lm_dap_jetsoff());
-    }
-
-    d->oldpmin = 1;
-
-    if (!AGC_ASSERT(d->tj[0] != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (lm_dap_pjetslec_pair());
-}
-
 /* STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
  * or rate command; auto uses PURGENCY when X-axis override is inhibited
  * (XOVINHIB, visibility phase), otherwise checks the stick (DETENTCK).   */
@@ -133,7 +87,48 @@ agc_status_t lm_dap_pstate(void)
 
     if (agc_flag_test(AGC_FLAG_PULSEFLG))
     { /* MANMODE        */
-        return (lm_dap_pminimp());
+        /* Minimum impulse mode, P axis (p.1431): one 14 ms pulse per deflection of
+         * the THC X-axis (+X/-X bits 3,4 of channel 31). OLDPMIN holds the gate
+         * until the controller is released.                                       */
+        lm_dap_t *d = lm_dap_state();
+
+        d->perror = 0;
+        d->cduxd  = agc_erase_cdux();
+        uint16_t ch31 = agc_chan_read(031);
+
+        if (!AGC_ASSERT(d->oldpmin >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (d->oldpmin > 0)
+        { /* CHECKP         */
+            d->oldpmin = (agc_sp_t) ((uint16_t) ~ch31 & PM_OCT14);
+
+            return (lm_dap_jetsoff());
+        }
+
+        if ((ch31 & PM_CH31_PLUSX) == 0u)
+        { /* FIREP: +XMIN   */
+            d->tj[0] = PM_MINTJ;
+        }
+        else if ((ch31 & PM_CH31_MINUSX) == 0u)
+        { /* -XMIN          */
+            d->tj[0] = (agc_sp_t) -PM_MINTJ;
+        }
+        else
+        {
+            return (lm_dap_jetsoff());
+        }
+
+        d->oldpmin = 1;
+
+        if (!AGC_ASSERT(d->tj[0] != 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (lm_dap_pjetslec_pair());
     }
 
     return (lm_dap_detentck());
@@ -206,37 +201,6 @@ static agc_status_t ratedone(lm_dap_t *d)
     return (lm_dap_purgency());
 }
 
-/* PEGI tail (pp.1435-1436): direct-rate jet time. TJP = 25/32 x 2 x
- * (-EDOTP x 1/ANETP), OVERSUB-limited; 4 jets if the rate error exceeds
- * the 2-jet limit, otherwise 2 jets for twice the time.                 */
-static agc_status_t pegi_fire(lm_dap_t *d, agc_sp_t absedotp)
-{
-    lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]);
-    int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
-    agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
-
-    d->tj[0] = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
-
-    if (!AGC_ASSERT(d->neg_2jetlim <= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(absedotp >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if ((int32_t) absedotp + d->neg_2jetlim > 0)
-    {
-        return (lm_dap_pjetslec(6)); /* four jets      */
-    }
-
-    d->tj[0] = lm_dap_wrap(2 * (int32_t) d->tj[0]); /* ADS TJP        */
-
-    return (lm_dap_pjetslec_pair());
-}
-
 /* PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
  * direct rate (PBIT) while the rate error is outside the target deadband
  * and TCP has not run out, then fire against the rate error.            */
@@ -269,7 +233,33 @@ static agc_status_t pegi(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (pegi_fire(d, absedotp));
+    /* PEGI tail (pp.1435-1436): direct-rate jet time. TJP = 25/32 x 2 x
+     * (-EDOTP x 1/ANETP), OVERSUB-limited; 4 jets if the rate error exceeds
+     * the 2-jet limit, otherwise 2 jets for twice the time.                 */
+    lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]);
+    int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
+    agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
+
+    d->tj[0] = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
+
+    if (!AGC_ASSERT(d->neg_2jetlim <= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(absedotp >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if ((int32_t) absedotp + d->neg_2jetlim > 0)
+    {
+        return (lm_dap_pjetslec(6)); /* four jets      */
+    }
+
+    d->tj[0] = lm_dap_wrap(2 * (int32_t) d->tj[0]); /* ADS TJP        */
+
+    return (lm_dap_pjetslec_pair());
 }
 
 /* RATERROR (pp.1434-1435): linear/quadratic stick scaling of P-RHCCTR to

@@ -23,57 +23,6 @@
 #define RT_CALLCODE ((agc_sp_t) 26)   /* 00032: .1 at 2^6                    */
 #define RT_200MS    ((agc_sp_t) 3277) /* 200MS = DEC .2 (06315)              */
 
-/* RATELOOP (p.1470): the torque each axis' jets applied during the last
- * 100 ms, signed, at 1 jet-second (DAPTEMP1..3), and the downlink torque
- * sums. Long firings are reduced by 100 ms; short ones are zeroed.       */
-static agc_status_t rateloop_axis(lm_dap_t *d, int i)
-{
-    agc_sp_t tj     = d->tj[i];
-    agc_sp_t torque = 0;
-
-    if (tj != 0)
-    {
-        if ((int32_t) lm_dap_ccs_dim(tj) - RT_100MST6 > 0)
-        { /* > 100 ms */
-            tj =
-                (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6);
-            d->tj[i] = tj;
-            torque   = (tj > 0) ? RT_100MS : (agc_sp_t) -RT_100MS;
-        }
-        else
-        { /* SMALLTJU */
-            d->tj[i] = 0;
-            torque   = lm_dap_mp(tj, RT_ELEVEN).lo; /* CA L      */
-        }
-    }
-
-    torque       = lm_dap_mp(torque, d->nojets[i]).lo; /* LOOPRATE: x NO.xJETS */
-    d->torque[i] = torque;
-    agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10); /* 32 jet-s, ~2 jet-ms/bit */
-    int      slot = 2 * i;
-
-    if (t32 <= 0)
-    { /* NEGTORK               */
-        t32 = (agc_sp_t) -t32;
-        slot++;
-    }
-
-    d->downtork[slot] =
-        lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
-
-    if (!AGC_ASSERT(slot >= 0 && slot < 6))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(t32 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
-}
-
 /* RATELOOP + ROTORQUE (pp.1470-1471): JETRATEQ, JETRATER from the U,V
  * torques; BACKP then forms JETRATE for P. Rates at pi/4 rad/s.          */
 agc_status_t lm_dap_rateloop(void)
@@ -82,7 +31,53 @@ agc_status_t lm_dap_rateloop(void)
 
     for (int i = 2; i >= 0; i--)
     { /* DAPTEMP6 = 2, 1, 0     */
-        agc_status_t st = rateloop_axis(d, i);
+        /* RATELOOP (p.1470): the torque each axis' jets applied during the last
+         * 100 ms, signed, at 1 jet-second (DAPTEMP1..3), and the downlink torque
+         * sums. Long firings are reduced by 100 ms; short ones are zeroed.       */
+        agc_sp_t tj     = d->tj[i];
+        agc_sp_t torque = 0;
+
+        if (tj != 0)
+        {
+            if ((int32_t) lm_dap_ccs_dim(tj) - RT_100MST6 > 0)
+            { /* > 100 ms */
+                tj =
+                    (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6);
+                d->tj[i] = tj;
+                torque   = (tj > 0) ? RT_100MS : (agc_sp_t) -RT_100MS;
+            }
+            else
+            { /* SMALLTJU */
+                d->tj[i] = 0;
+                torque   = lm_dap_mp(tj, RT_ELEVEN).lo; /* CA L      */
+            }
+        }
+
+        torque       = lm_dap_mp(torque, d->nojets[i]).lo; /* LOOPRATE: x NO.xJETS */
+        d->torque[i] = torque;
+        agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10); /* 32 jet-s, ~2 jet-ms/bit */
+        int      slot = 2 * i;
+
+        if (t32 <= 0)
+        { /* NEGTORK               */
+            t32 = (agc_sp_t) -t32;
+            slot++;
+        }
+
+        d->downtork[slot] =
+            lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
+
+        if (!AGC_ASSERT(slot >= 0 && slot < 6))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (!AGC_ASSERT(t32 >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_status_t st = AGC_STATUS_OK;
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
@@ -151,54 +146,6 @@ static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
     }
 }
 
-/* BACKP (pp.1423-1425), first part: JETRATE, the jet terms of TRAPED and
- * the CDU-measured increments for P, Q, R.                               */
-static void backp_measure(lm_dap_t *d)
-{
-    d->jetrate[0] = lm_dap_mphi(d->torque[0], d->jacc[0]); /* JETRATE */
-    agc_sp_t xdif = lm_dap_msu(d->dapcdu[0], d->oldxforp); /* at pi   */
-
-    d->oldxforp = d->dapcdu[0];
-    d->trapedp  = lm_dap_wrap((int32_t) d->trapedp +
-                              lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
-    agc_sp_t jq = lm_dap_sat((int32_t) d->jetrate[1] + d->aosqterm);
-    agc_sp_t jr = lm_dap_sat((int32_t) d->jetrate[2] + d->aosrterm);
-
-    d->trapedq = lm_dap_wrap((int32_t) d->trapedq +
-                             lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
-    d->trapedr = lm_dap_wrap((int32_t) d->trapedr +
-                             lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
-    agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp);
-
-    d->oldyforp = d->dapcdu[1];
-    lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11());
-
-    inc.hi = lm_dap_wrap((int32_t) inc.hi + xdif); /* M13 = 1 */
-    derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo,
-                d->plast);
-    agc_sp_t zdif = lm_dap_msu(d->dapcdu[2], d->oldzforq);
-
-    d->oldzforq = d->dapcdu[2];
-    inc         = lm_dap_das(lm_dap_mp(agc_erase_m21(), ydif),
-                             lm_dap_mp(agc_erase_m22(), zdif));
-    derive_axis(inc, d->omegaq, &d->trapedq, &d->qerror, &d->dyerror_lo,
-                d->qlast);
-    inc = lm_dap_das(lm_dap_mp(agc_erase_m31(), ydif),
-                     lm_dap_mp(agc_erase_m32(), zdif));
-    derive_axis(inc, d->omegar, &d->trapedr, &d->rerror, &d->dzerror_lo,
-                d->rlast);
-
-    if (!AGC_ASSERT(d->oldxforp <= 077777u && d->oldzforq <= 077777u))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->jetrate[0] >= LM_NEGMAX))
-    {
-        return;
-    }
-}
-
 /* Trap correction for one axis (pp.1425-1427): when |TRAPED| exceeds the
  * trap size, OMEGA += TRAPED/NTRAPS and NTRAPS restarts at OMEGAN. Returns
  * the correction (DAPTEMP1/2) and the old count, or false if no trap.     */
@@ -260,7 +207,51 @@ agc_status_t lm_dap_backp(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    backp_measure(d);
+    /* BACKP (pp.1423-1425), first part: JETRATE, the jet terms of TRAPED and
+     * the CDU-measured increments for P, Q, R.                               */
+    d->jetrate[0] = lm_dap_mphi(d->torque[0], d->jacc[0]); /* JETRATE */
+    agc_sp_t xdif = lm_dap_msu(d->dapcdu[0], d->oldxforp); /* at pi   */
+
+    d->oldxforp = d->dapcdu[0];
+    d->trapedp  = lm_dap_wrap((int32_t) d->trapedp +
+                              lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
+    agc_sp_t jq = lm_dap_sat((int32_t) d->jetrate[1] + d->aosqterm);
+    agc_sp_t jr = lm_dap_sat((int32_t) d->jetrate[2] + d->aosrterm);
+
+    d->trapedq = lm_dap_wrap((int32_t) d->trapedq +
+                             lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
+    d->trapedr = lm_dap_wrap((int32_t) d->trapedr +
+                             lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
+    agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp);
+
+    d->oldyforp = d->dapcdu[1];
+    lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11());
+
+    inc.hi = lm_dap_wrap((int32_t) inc.hi + xdif); /* M13 = 1 */
+    derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo,
+                d->plast);
+    agc_sp_t zdif = lm_dap_msu(d->dapcdu[2], d->oldzforq);
+
+    d->oldzforq = d->dapcdu[2];
+    inc         = lm_dap_das(lm_dap_mp(agc_erase_m21(), ydif),
+                             lm_dap_mp(agc_erase_m22(), zdif));
+    derive_axis(inc, d->omegaq, &d->trapedq, &d->qerror, &d->dyerror_lo,
+                d->qlast);
+    inc = lm_dap_das(lm_dap_mp(agc_erase_m31(), ydif),
+                     lm_dap_mp(agc_erase_m32(), zdif));
+    derive_axis(inc, d->omegar, &d->trapedr, &d->rerror, &d->dzerror_lo,
+                d->rlast);
+
+    if (!AGC_ASSERT(d->oldxforp <= 077777u && d->oldzforq <= 077777u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(d->jetrate[0] >= LM_NEGMAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     bool     docked = agc_flag_test(AGC_FLAG_CSMDKFLG);
     agc_sp_t omegan = docked ? d->dkomegan : d->lmomegan; /* DAPTREG4     */
     agc_sp_t kaosn  = docked ? d->dkkaosn : d->lmkaosn;   /* DAPTREG5     */

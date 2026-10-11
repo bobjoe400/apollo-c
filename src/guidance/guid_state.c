@@ -28,32 +28,6 @@ agc_guid_t *agc_guid_state(void)
 
 /* Zero a vector (no interpreter needed).                                  */
 
-/* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
- * rotation axis along reference Z as a full unit vector (CM pad load,
- * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
-static void init_avg(agc_avg_g_t *a)
-{
-    if (!AGC_ASSERT(a != NULL))
-    {
-        return;
-    }
-
-    a->avgexit = AGC_JOB_SERVEXIT;
-    a->unitw   = agc_vec_make(0, 0, AGC_DP_MAX);
-    a->pipage  = 1;
-    a->gdt_2   = agc_vec_zero();
-
-    if (!AGC_ASSERT(a->avgexit != AGC_JOB_NONE))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(a->unitw.c[2] > 0))
-    {
-        return;
-    }
-}
-
 /* Fresh start of the guidance erasables: everything zero, then the values
  * the AGC fresh start or the pad loads put there. The pad loads below are
  * the nominal Apollo 11 values quoted in the listings' comments; the sim
@@ -68,7 +42,26 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
     agc_guid_t zero = {0};
 
     g_guid = zero;
-    init_avg(&g_guid.avg);
+    /* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
+     * rotation axis along reference Z as a full unit vector (CM pad load,
+     * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
+    agc_avg_g_t *a = &g_guid.avg;
+
+    a->avgexit = AGC_JOB_SERVEXIT;
+    a->unitw   = agc_vec_make(0, 0, AGC_DP_MAX);
+    a->pipage  = 1;
+    a->gdt_2   = agc_vec_zero();
+
+    if (!AGC_ASSERT(a->avgexit != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(a->unitw.c[2] > 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     g_guid.burn.nbrcycls = -1; /* no S40.9 cycle under way      */
 
     if (veh == AGC_VEHICLE_CSM)

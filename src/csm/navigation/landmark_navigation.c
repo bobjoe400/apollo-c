@@ -146,70 +146,6 @@ static agc_mat_t ln_outer(agc_interp_t *ip, agc_vec_t a, agc_vec_t b)
     return (m);
 }
 
-/* W72 .. W78 (pp.602-603): the landmark rows 6-8 of W (column block 2)
- * as the lower triangular square root of E (E0..E5 = (0,0) (1,0) (1,1)
- * (2,0) (2,1) (2,2)); a negative or zero radicand, or an overflowing
- * quotient, leaves the element(s) zero; then the rows SR1 (B-19).      */
-static void ln_cholesky(agc_interp_t *ip, const agc_mat_t *e)
-{
-    rz_clear_ovf(ip);
-
-    if (e->row[2].c[2] >= 0)
-    {
-        agc_dp_t w74 = agc_dp_sqrt(ip, e->row[2].c[2]);
-
-        if (w74 != 0)
-        {
-            *ln_w(148) = w74;
-            agc_dp_t w73 = agc_dp_div(ip, e->row[2].c[1], w74);
-
-            if (!agc_interp_test_ovf(ip))
-            {
-                *ln_w(146) = w73; /* W73      */
-            }
-
-            agc_dp_t w72 = agc_dp_div(ip, e->row[2].c[0], w74); /* S22W72X */
-
-            if (!agc_interp_test_ovf(ip))
-            {
-                *ln_w(144) = w72;
-            }
-        }
-    }
-
-    agc_dp_t r76 = agc_dp_sub(ip, e->row[1].c[1], agc_dp_sq(ip, *ln_w(146)));
-    agc_dp_t w76 = (r76 >= 0) ? agc_dp_sqrt(ip, r76) : 0; /* S22W76X  */
-
-    if (w76 != 0)
-    {
-        *ln_w(152) = w76;
-        agc_dp_t num = agc_dp_sub(ip, e->row[1].c[0],
-                                  agc_dp_mul_trunc(*ln_w(144), *ln_w(146)));
-        agc_dp_t w75 = agc_dp_div(ip, num, w76);
-
-        if (!agc_interp_test_ovf(ip))
-        {
-            *ln_w(150) = w75;
-        }
-    }
-
-    agc_dp_t r78 = agc_dp_sub(
-        ip, e->row[0].c[0], /* S22W78X  */
-        agc_dp_add(ip, agc_dp_sq(ip, *ln_w(144)), agc_dp_sq(ip, *ln_w(150))));
-
-    if (r78 >= 0)
-    {
-        *ln_w(156) = agc_dp_sqrt(ip, r78);
-    }
-
-    agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* S22SCLW  */
-
-    for (int m = 6; m < LN_ROWS; m++)
-    {
-        w->blk[2][m] = agc_vec_shr(w->blk[2][m], 1);
-    }
-}
-
 /* The small E matrix (pp.601-602): 1/2 RHO^2 VARSCT (U U T) (RHO NORM,
  * X2 doubled, VSR* 0-12D,2) + RPVAR (R0 SR3 / D)^2 (UM UM T); the
  * landmark rows of W cleared, then W72 .. W78.                          */
@@ -245,7 +181,66 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u,
     }
 
     rz_clear_ovf(ip); /* BOV +1   */
-    ln_cholesky(ip, &e);
+    /* W72 .. W78 (pp.602-603): the landmark rows 6-8 of W (column block 2)
+     * as the lower triangular square root of E (E0..E5 = (0,0) (1,0) (1,1)
+     * (2,0) (2,1) (2,2)); a negative or zero radicand, or an overflowing
+     * quotient, leaves the element(s) zero; then the rows SR1 (B-19).      */
+    rz_clear_ovf(ip);
+
+    if (e.row[2].c[2] >= 0)
+    {
+        agc_dp_t w74 = agc_dp_sqrt(ip, e.row[2].c[2]);
+
+        if (w74 != 0)
+        {
+            *ln_w(148) = w74;
+            agc_dp_t w73 = agc_dp_div(ip, e.row[2].c[1], w74);
+
+            if (!agc_interp_test_ovf(ip))
+            {
+                *ln_w(146) = w73; /* W73      */
+            }
+
+            agc_dp_t w72 = agc_dp_div(ip, e.row[2].c[0], w74); /* S22W72X */
+
+            if (!agc_interp_test_ovf(ip))
+            {
+                *ln_w(144) = w72;
+            }
+        }
+    }
+
+    agc_dp_t r76 = agc_dp_sub(ip, e.row[1].c[1], agc_dp_sq(ip, *ln_w(146)));
+    agc_dp_t w76 = (r76 >= 0) ? agc_dp_sqrt(ip, r76) : 0; /* S22W76X  */
+
+    if (w76 != 0)
+    {
+        *ln_w(152) = w76;
+        agc_dp_t num = agc_dp_sub(ip, e.row[1].c[0],
+                                  agc_dp_mul_trunc(*ln_w(144), *ln_w(146)));
+        agc_dp_t w75 = agc_dp_div(ip, num, w76);
+
+        if (!agc_interp_test_ovf(ip))
+        {
+            *ln_w(150) = w75;
+        }
+    }
+
+    agc_dp_t r78 = agc_dp_sub(
+        ip, e.row[0].c[0], /* S22W78X  */
+        agc_dp_add(ip, agc_dp_sq(ip, *ln_w(144)), agc_dp_sq(ip, *ln_w(150))));
+
+    if (r78 >= 0)
+    {
+        *ln_w(156) = agc_dp_sqrt(ip, r78);
+    }
+
+    agc_incorp_w_t *w_cholesky = &agc_integ_shared_ctx()->w; /* S22SCLW  */
+
+    for (int m = 6; m < LN_ROWS; m++)
+    {
+        w_cholesky->blk[2][m] = agc_vec_shr(w_cholesky->blk[2][m], 1);
+    }
 
     return (AGC_STATUS_OK);
 }

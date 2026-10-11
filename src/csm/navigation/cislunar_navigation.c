@@ -319,36 +319,6 @@ static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
     return (st);
 }
 
-/* ZMEASURE (p.624): RZC from the primary to the measured body: + the
- * moon (LUNPOS) with the moon primary, - the moon with the earth.        */
-static agc_status_t cn_moon_shift(agc_interp_t *ip)
-{
-    agc_ephem_csm_t      eph;
-    agc_navaux_padload_t pad;
-    agc_status_t         st = agc_ephem_get_csm_data(&eph);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_get_padload(&pad);
-    }
-
-    agc_vec_t moon = agc_vec_zero();
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime, &moon);
-    }
-
-    if (!agc_flag_test(AGC_FLAG_CMOONFLG))
-    {
-        moon = agc_vec_neg(moon); /* VCOMP    */
-    }
-
-    cn.rzc = agc_vec_add(ip, moon, cn.rzc);
-
-    return (st);
-}
-
 /* R23.3: a landmark: ERADFLAG, LALOTORV of LAT LONG ALT at MARKTIME.     */
 static agc_status_t cn_landmark(agc_interp_t *ip, agc_vec_t *r)
 {
@@ -416,7 +386,32 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st == AGC_STATUS_OK && agc_flag_test(AGC_FLAG_ZMEASURE))
     {
-        st = cn_moon_shift(ip);
+        /* ZMEASURE (p.624): RZC from the primary to the measured body: + the
+         * moon (LUNPOS) with the moon primary, - the moon with the earth.        */
+        agc_ephem_csm_t      eph;
+        agc_navaux_padload_t pad;
+        agc_status_t         st_shift = agc_ephem_get_csm_data(&eph);
+
+        if (st_shift == AGC_STATUS_OK)
+        {
+            st_shift = agc_navaux_get_padload(&pad);
+        }
+
+        agc_vec_t moon = agc_vec_zero();
+
+        if (st_shift == AGC_STATUS_OK)
+        {
+            st_shift = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime,
+                                            &moon);
+        }
+
+        if (!agc_flag_test(AGC_FLAG_CMOONFLG))
+        {
+            moon = agc_vec_neg(moon); /* VCOMP    */
+        }
+
+        cn.rzc = agc_vec_add(ip, moon, cn.rzc);
+        st     = st_shift;
     }
 
     agc_vec_t r = agc_vec_zero();

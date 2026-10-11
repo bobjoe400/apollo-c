@@ -550,27 +550,6 @@ static int t4_getopcmd(uint16_t desired, uint16_t actual)
     return (q);
 }
 
-/* OPTDRIVE zone update (p.166): ZONE = CDUS when the shaft first passes
- * 45 deg, 0 inside 45 deg.                                               */
-static void t4_shaft_zone(void)
-{
-    int cdus = cdu_ones(agc_erase_cdus());
-
-    if (iabs(cdus) <= DEG45_CDU)
-    {
-        zone = 0;
-    }
-    else if (zone == 0)
-    {
-        zone = cdus;
-    }
-
-    if (!AGC_ASSERT(iabs(zone) <= 037777))
-    {
-        return;
-    }
-}
-
 /* OPT2 / TRUNCMD / shaft stop avoidance (pp.167-168): fill COMMANDO.     */
 static void t4_opt_commands(void)
 {
@@ -653,7 +632,23 @@ static void t4_opt_send(void)
 /* OPTDRIVE / CONTDRVE (pp.166-167).                                       */
 agc_status_t agc_t4_optics_drive(void)
 {
-    t4_shaft_zone();
+    /* OPTDRIVE zone update (p.166): ZONE = CDUS when the shaft first passes
+     * 45 deg, 0 inside 45 deg.                                               */
+    int cdus = cdu_ones(agc_erase_cdus());
+
+    if (iabs(cdus) <= DEG45_CDU)
+    {
+        zone = 0;
+    }
+    else if (zone == 0)
+    {
+        zone = cdus;
+    }
+
+    if (!AGC_ASSERT(iabs(zone) <= 037777))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (optind < 0)
     {

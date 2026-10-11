@@ -306,40 +306,6 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
                             NULL, NULL)));
 }
 
-/* The SPS bell axes of S40.2,3 (Comanche p.715): pitch p = PACTOFF*TRIMSCAL
- * SL1 + PBIAS, yaw y = YACTOFF*TRIMSCAL SL1 + YBIAS (rev). VDEF takes X
- * from MPAC and Y, Z from the push-down list:
- *   XSC = (cp cy, -cp sy, sp)  ZSC = (-sp cy, sp sy, cp)  YSC = (sy, cy, 0)
- * (all halves, sin/cos SL1); SCAXIS = (XSC.x, YSC.x, ZSC.x).            */
-static void bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff,
-                      agc_burn_t *b)
-{
-    agc_dp_t y = agc_dp_add(
-        ip,
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(yactoff), TRIMSCAL), 1),
-        YBIAS);
-    agc_dp_t p = agc_dp_add(
-        ip,
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(pactoff), TRIMSCAL), 1),
-        PBIAS);
-    agc_dp_t cy = agc_dp_cos(ip, y), sy = agc_dp_sin(ip, y);
-    agc_dp_t cp = agc_dp_cos(ip, p), sp = agc_dp_sin(ip, p);
-
-    b->xscref =
-        agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cp, cy), 1),
-                     agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, cp, sy), 1)), sp);
-    b->zscref =
-        agc_vec_make(agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, sp, cy), 1)),
-                     agc_dp_shl(ip, agc_dp_mul(ip, sp, sy), 1), cp);
-    b->yscref = agc_vec_make(sy, cy, 0);
-    b->scaxis = agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
-
-    if (!AGC_ASSERT(cp > 0))
-    {
-        return;
-    }
-}
-
 /* S40.2,3 Comanche (p.714-716): POINTVSM = REFSMMAT UT VSL1; for the SPS
  * the bell axes give SCAXIS and, rotated into the frame X = UT, Y = UNIT(
  * UT x R), Z = UT x Y, the preferred orientation XSCREF..ZSCREF; for the
@@ -374,7 +340,40 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
     }
     else
     {
-        bell_axes(ip, pactoff, yactoff, b);
+        /* The SPS bell axes of S40.2,3 (Comanche p.715): pitch p = PACTOFF*TRIMSCAL
+         * SL1 + PBIAS, yaw y = YACTOFF*TRIMSCAL SL1 + YBIAS (rev). VDEF takes X
+         * from MPAC and Y, Z from the push-down list:
+         *   XSC = (cp cy, -cp sy, sp)  ZSC = (-sp cy, sp sy, cp)  YSC = (sy, cy, 0)
+         * (all halves, sin/cos SL1); SCAXIS = (XSC.x, YSC.x, ZSC.x).            */
+        agc_dp_t y_axes = agc_dp_add(
+            ip,
+            agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(
+                                          yactoff), TRIMSCAL), 1),
+            YBIAS);
+        agc_dp_t p = agc_dp_add(
+            ip,
+            agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(
+                                          pactoff), TRIMSCAL), 1),
+            PBIAS);
+        agc_dp_t cy = agc_dp_cos(ip, y_axes), sy = agc_dp_sin(ip, y_axes);
+        agc_dp_t cp = agc_dp_cos(ip, p), sp = agc_dp_sin(ip, p);
+
+        b->xscref =
+            agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cp, cy), 1),
+                         agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, cp,
+                                                              sy), 1)), sp);
+        b->zscref =
+            agc_vec_make(agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, sp, cy), 1)),
+                         agc_dp_shl(ip, agc_dp_mul(ip, sp, sy), 1), cp);
+        b->yscref = agc_vec_make(sy, cy, 0);
+        b->scaxis =
+            agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
+
+        if (!AGC_ASSERT(cp > 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
         agc_mat_t m;
 
         m.row[0]  = b->ut; /* 2 RF/SC     */

@@ -196,51 +196,6 @@ void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first)
  * TARGETING (pp. 848-852)
  * ==================================================================== */
 
-/* TARGETNG part 1: GETVEL / GETUNITV / DSTORE (p. 848). Velocity
- * (inertial, or relative once RELVELSW is set), VSQUARE, LEQ, V, RDOT, D
- * and UNI.                                                                 */
-static agc_status_t targ_velocity(agc_interp_t *ip, agc_entry_state_t *es,
-                                  const agc_state_vector_t *sv)
-{
-    agc_vec_t unitr = agc_guid_state()->avg.unitr;
-    agc_dp_t  abval = 0;
-    agc_dp_t  vsq   = 0;
-    agc_dp_t  dmag;
-
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(sv != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (agc_flag_test(AGC_FLAG_RELVELSW))
-    {
-        es->vel = agc_vec_neg(es->mvrel); /* -VREL left by CM/POSE */
-    }
-    else
-    {
-        es->vel = agc_vec_scale(ip, sv->v, AGC_ENTRY_KVSCALE); /* V/2VS   */
-    }
-
-    es->unitv   = agc_vec_unit(ip, es->vel, &abval, &vsq); /* GETUNITV  */
-    es->vsquare = vsq;                                     /* VSQ/4, 34D    */
-    es->leq     = agc_dp_sub(ip, vsq, AGC_ENTRY_FOURTH);   /* LEQ/4       */
-    es->v       = abval;                                   /* V/2VS, 36D    */
-    es->rdot    = agc_dp_shl(ip, agc_vec_dot(ip, es->vel, unitr), 1);
-    dmag        =
-        agc_dp_mul(ip, agc_vec_abval(ip, agc_erase_delv()), AGC_ENTRY_KASCALE);
-    dmag    = agc_dp_shl(ip, dmag, 1);
-    es->d   = (dmag == 0) ? AGC_ENTRY_ONEBIT_DP : dmag; /* SETMIND        */
-    es->uni = agc_vec_unit(ip, agc_vec_cross(ip, es->vel, unitr), NULL,
-                           NULL); /* UNI = UNIT(VxR) */
-
-    if (!AGC_ASSERT(es->v >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
-}
-
 /* GETETA / SUBETA / SUBETA2 (p. 851): D predicted half a cycle ahead,
  *   D = D + D (-RDOT/HS - 2D/V) DT/2,
  * then the time-of-flight estimate to the target in MPAC (cs B28).        */
@@ -313,34 +268,6 @@ static void targ_range_angle(agc_interp_t *ip, agc_entry_state_t *es)
         agc_flag_test(AGC_FLAG_GONEBY) ? es->thetah : agc_dp_neg(es->thetah);
 }
 
-/* L/DCALC (p. 850): measured lift-to-drag from DELVREF and UXA,
- *   L/D = SQRT((|DV|^2 - (DV.UXA)^2) / (DV.UXA)^2), skipped on overflow
- * (OVFIND last cleared in EARROT2, as in the AGC).                        */
-static void targ_ldcalc(agc_interp_t *ip, agc_entry_state_t *es)
-{
-    agc_vec_t dv  = agc_guid_state()->avg.delvref;
-    agc_dp_t  du  = agc_dp_shl(ip, agc_vec_dot(ip, dv, es->uxa), 1);
-    agc_dp_t  dsq = agc_dp_sq(ip, du);
-    agc_dp_t  r;
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(dsq >= 0))
-    {
-        return;
-    }
-
-    r = agc_dp_div(ip, agc_dp_sub(ip, agc_vec_sq(ip, dv), dsq), dsq);
-
-    if (!agc_interp_test_ovf(ip))
-    {
-        es->l_dcalc = agc_dp_sqrt(ip, r);
-    }
-}
-
 /* TARGETNG (pp. 848-850): called each pass by SCALEPOP (and by P61).
  * Updates the velocity data, D, the rotated target RT, LATANG, GONEBY,
  * THETAH, RTGON67, .05GSW and L/DCALC.                                    */
@@ -359,7 +286,46 @@ agc_status_t agc_entry_targeting(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    st = targ_velocity(ip, es, &sv);
+    /* TARGETNG part 1: GETVEL / GETUNITV / DSTORE (p. 848). Velocity
+     * (inertial, or relative once RELVELSW is set), VSQUARE, LEQ, V, RDOT, D
+     * and UNI.                                                                 */
+    agc_vec_t unitr_velocity = agc_guid_state()->avg.unitr;
+    agc_dp_t  abval          = 0;
+    agc_dp_t  vsq            = 0;
+    agc_dp_t  dmag;
+
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(&sv != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (agc_flag_test(AGC_FLAG_RELVELSW))
+    {
+        es->vel = agc_vec_neg(es->mvrel); /* -VREL left by CM/POSE */
+    }
+    else
+    {
+        es->vel = agc_vec_scale(ip, sv.v, AGC_ENTRY_KVSCALE); /* V/2VS   */
+    }
+
+    es->unitv   = agc_vec_unit(ip, es->vel, &abval, &vsq); /* GETUNITV  */
+    es->vsquare = vsq;                                     /* VSQ/4, 34D    */
+    es->leq     = agc_dp_sub(ip, vsq, AGC_ENTRY_FOURTH);   /* LEQ/4       */
+    es->v       = abval;                                   /* V/2VS, 36D    */
+    es->rdot    = agc_dp_shl(ip, agc_vec_dot(ip, es->vel, unitr_velocity), 1);
+    dmag        =
+        agc_dp_mul(ip, agc_vec_abval(ip, agc_erase_delv()), AGC_ENTRY_KASCALE);
+    dmag    = agc_dp_shl(ip, dmag, 1);
+    es->d   = (dmag == 0) ? AGC_ENTRY_ONEBIT_DP : dmag; /* SETMIND        */
+    es->uni = agc_vec_unit(ip, agc_vec_cross(ip, es->vel, unitr_velocity), NULL,
+                           NULL); /* UNI = UNIT(VxR) */
+
+    if (!AGC_ASSERT(es->v >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    st = AGC_STATUS_OK;
 
     if (st != AGC_STATUS_OK)
     {
@@ -392,7 +358,30 @@ agc_status_t agc_entry_targeting(void)
     }
 
     agc_flag_set(AGC_FLAG__05GSW);
-    targ_ldcalc(ip, es);
+    /* L/DCALC (p. 850): measured lift-to-drag from DELVREF and UXA,
+     *   L/D = SQRT((|DV|^2 - (DV.UXA)^2) / (DV.UXA)^2), skipped on overflow
+     * (OVFIND last cleared in EARROT2, as in the AGC).                        */
+    agc_vec_t dv  = agc_guid_state()->avg.delvref;
+    agc_dp_t  du  = agc_dp_shl(ip, agc_vec_dot(ip, dv, es->uxa), 1);
+    agc_dp_t  dsq = agc_dp_sq(ip, du);
+    agc_dp_t  r;
+
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(dsq >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    r = agc_dp_div(ip, agc_dp_sub(ip, agc_vec_sq(ip, dv), dsq), dsq);
+
+    if (!agc_interp_test_ovf(ip))
+    {
+        es->l_dcalc = agc_dp_sqrt(ip, r);
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -452,11 +441,26 @@ agc_status_t entry_starten1(agc_interp_t *ip, agc_entry_state_t *es)
     return (AGC_STATUS_OK);
 }
 
-/* STARTENT entry-switch initialisation (p. 844): clear ENTMASK = 011774
- * (ENTRYDSP GONEPAST RELVELSW EGSW NOSWITCH HIND INRLSW LATSW .05GSW), then
- * set ENTRYSW = 011010 (ENTRYDSP, GONEPAST, LATSW). INHINT'ed in the AGC. */
-static void entry_init_switches(void)
+/* STARTENT (pp. 844-845), MM 63: first pass of entry guidance, entered from
+ * CM/POSE. Ends with SERVNOUT (no display on the first pass); the caller
+ * (CM/POSE) does the SERVNOUT.                                             */
+agc_status_t agc_entry_startent(void)
 {
+    agc_interp_t      *ip = entry_ip();
+    agc_entry_state_t *es = agc_entry_state();
+    agc_state_vector_t sv;
+    agc_status_t       st;
+    agc_dp_t           m;
+
+    if (!AGC_ASSERT(es != NULL) ||
+        agc_sv_get(AGC_SV_THIS, &sv) != AGC_STATUS_OK)
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    /* STARTENT entry-switch initialisation (p. 844): clear ENTMASK = 011774
+     * (ENTRYDSP GONEPAST RELVELSW EGSW NOSWITCH HIND INRLSW LATSW .05GSW), then
+     * set ENTRYSW = 011010 (ENTRYDSP, GONEPAST, LATSW). INHINT'ed in the AGC. */
     static const agc_flag_id_t clr[] = {
         AGC_FLAG_ENTRYDSP, AGC_FLAG_GONEPAST, AGC_FLAG_RELVELSW,
         AGC_FLAG_EGSW, AGC_FLAG_NOSWITCH, AGC_FLAG_HIND,
@@ -478,33 +482,14 @@ static void entry_init_switches(void)
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_LATSW)))
     {
-        return;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_HIND)))
     {
-        return;
-    }
-}
-
-/* STARTENT (pp. 844-845), MM 63: first pass of entry guidance, entered from
- * CM/POSE. Ends with SERVNOUT (no display on the first pass); the caller
- * (CM/POSE) does the SERVNOUT.                                             */
-agc_status_t agc_entry_startent(void)
-{
-    agc_interp_t      *ip = entry_ip();
-    agc_entry_state_t *es = agc_entry_state();
-    agc_state_vector_t sv;
-    agc_status_t       st;
-    agc_dp_t           m;
-
-    if (!AGC_ASSERT(es != NULL) ||
-        agc_sv_get(AGC_SV_THIS, &sv) != AGC_STATUS_OK)
-    {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    entry_init_switches();
     es->lod      = agc_dp_from_sp(es->lodpad); /* SLOAD LODPAD */
     es->lad      = agc_dp_from_sp(es->ladpad);
     es->l_dcminr = agc_dp_mul(ip, es->lad, AGC_ENTRY_COS15);
@@ -1674,39 +1659,6 @@ static void predict_interp(agc_entry_state_t *es, agc_sp_t tem1b)
     }
 }
 
-/* PREDICT3 table part (pp. 870-871): PREDANG = RTOGO + F1 (D - DREF)
- * + F2 (RDOTREF - RDOT) 8, as SP fixed-point (MP / DAS); returns the DP
- * MPAC the AGC passes on to the interpreter.                              */
-static agc_dp_t predict_predang(agc_entry_state_t *es)
-{
-    agc_ovf_t ovf = 0;
-    agc_dp_t  mpac;
-    agc_dp_t  r;
-    agc_sp_t  a;
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    a           = (agc_sp_t) (es->fx[1] + agc_dp_high(es->d)); /* D - DREF     */
-    es->fx[1]   = 0;                                             /* XCH FX +1    */
-    mpac        = agc_sp_mul(a, es->fx[5]);                      /* F1 (D-DREF)  */
-    r           = agc_dp_shl_raw(agc_dp_neg(es->rdot), 3, &ovf); /* DCS, DDOUBLx3 */
-    a           = (agc_sp_t) (agc_dp_high(r) + es->fx[3]);       /* + RDOTREF    */
-    r           = agc_sp_mul(a, es->fx[4]);                      /* x F2         */
-    r           = agc_dp_add_raw(r, agc_dp_from_sp(es->fx[2]), &ovf); /* + RTOGO   */
-    mpac        = agc_dp_add_raw(mpac, r, &ovf); /* DAS MPAC     */
-    es->predang = agc_dp_high(mpac);
-
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (mpac);
-}
-
 /* PREDICT3 (pp. 870-871): stop steering below VQUIT, else range error
  * DNRNGERR = PREDANG - THETAH (revs), or GONEGLAD once past the target.  */
 static entry_step_t step_predict3(entry_pass_t *p)
@@ -1726,7 +1678,35 @@ static entry_step_t step_predict3(entry_pass_t *p)
     }
 
     predict_interp(es, predict_find_jj(es, agc_dp_high(es->v)));
-    m = predict_predang(es);
+    /* PREDICT3 table part (pp. 870-871): PREDANG = RTOGO + F1 (D - DREF)
+     * + F2 (RDOTREF - RDOT) 8, as SP fixed-point (MP / DAS); returns the DP
+     * MPAC the AGC passes on to the interpreter.                              */
+    agc_ovf_t ovf = 0;
+    agc_dp_t  mpac;
+    agc_dp_t  r;
+    agc_sp_t  a;
+
+    if (!AGC_ASSERT(es != NULL))
+    {
+        return (ST_ERROR);
+    }
+
+    a           = (agc_sp_t) (es->fx[1] + agc_dp_high(es->d)); /* D - DREF     */
+    es->fx[1]   = 0;                                             /* XCH FX +1    */
+    mpac        = agc_sp_mul(a, es->fx[5]);                      /* F1 (D-DREF)  */
+    r           = agc_dp_shl_raw(agc_dp_neg(es->rdot), 3, &ovf); /* DCS, DDOUBLx3 */
+    a           = (agc_sp_t) (agc_dp_high(r) + es->fx[3]);       /* + RDOTREF    */
+    r           = agc_sp_mul(a, es->fx[4]);                      /* x F2         */
+    r           = agc_dp_add_raw(r, agc_dp_from_sp(es->fx[2]), &ovf); /* + RTOGO   */
+    mpac        = agc_dp_add_raw(mpac, r, &ovf); /* DAS MPAC     */
+    es->predang = agc_dp_high(mpac);
+
+    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
+    {
+        return (ST_ERROR);
+    }
+
+    m = mpac;
     m = agc_dp_sub(ip, agc_dp_shr(m, 3), es->thetah); /* SR3 DSU      */
 
     if (agc_flag_test(AGC_FLAG_GONEPAST))
@@ -2061,12 +2041,18 @@ static entry_step_t step_final_phase_latlong(entry_pass_t *p)
  * SEQUENCER (p. 847)
  * ==================================================================== */
 
-/* One labelled section; returns the next. Split in two switches to keep
- * each function short: this half takes the steps below ST_KEP (the
- * caller sends the rest to entry_step_b), so it switches on the int value
- * and lists only its own range.                                           */
-static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
+/* One labelled section of the sequencer; returns the next.  Split along
+ * the AGC's own sections ("* START ..." in REENTRY_CONTROL.agc).
+ *
+ * Dispatch within the INITIAL ROLL section (p. 853), the roll held until
+ * KAT and then VRTHRESH are exceeded: steps INITROLL .. INITRL1. */
+static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
 {
+    if (!AGC_ASSERT(p != NULL && s >= ST_INITROLL && s < ST_HUNTEST))
+    {
+        return (ST_ERROR);
+    }
+
     switch ((int) s)
     {
         case ST_INITROLL:
@@ -2079,6 +2065,25 @@ static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
             return (step_katest(p));
         case ST_INITRL1:
             return (step_initrl1(p));
+        default:
+            break;
+    }
+
+    return (ST_ERROR); /* unreachable: the range was asserted */
+}
+
+/* Dispatch within the HUNT TEST and RANGE PREDICTION sections (pp.
+ * 855-863), the predicted range at nominal L/D against the desired
+ * range: steps HUNTEST .. GOTOUPSY. */
+static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
+{
+    if (!AGC_ASSERT(p != NULL && s >= ST_HUNTEST && s < ST_UPCONTRL))
+    {
+        return (ST_ERROR);
+    }
+
+    switch ((int) s)
+    {
         case ST_HUNTEST:
             return (step_huntest(p));
         case ST_RANGER:
@@ -2089,6 +2094,24 @@ static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
             return (step_sidetrak(p));
         case ST_GOTOUPSY:
             return (step_gotoupsy(p));
+        default:
+            break;
+    }
+
+    return (ST_ERROR); /* unreachable: the range was asserted */
+}
+
+/* Dispatch within the UP CONTROL section (pp. 864-868), roll during the
+ * super-circular phase: steps UPCONTRL .. DOWNCNTL. */
+static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
+{
+    if (!AGC_ASSERT(p != NULL && s >= ST_UPCONTRL && s < ST_KEP))
+    {
+        return (ST_ERROR);
+    }
+
+    switch ((int) s)
+    {
         case ST_UPCONTRL:
             return (step_upcontrl(p));
         case ST_CONT1:
@@ -2115,17 +2138,43 @@ static entry_step_t entry_step_a(entry_pass_t *p, entry_step_t s)
             break;
     }
 
-    return (ST_ERROR); /* not a step of this half: the caller's error */
+    return (ST_ERROR); /* unreachable: the range was asserted */
 }
 
-static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
+/* Dispatch within the BALLISTIC PHASE section (p. 869), drag monitored
+ * until Q7 + 0.5: steps KEP, KEP2. */
+static entry_step_t entry_ballistic_step(entry_pass_t *p, entry_step_t s)
 {
-    switch (s)
+    if (!AGC_ASSERT(p != NULL && s >= ST_KEP && s < ST_PREFINAL))
+    {
+        return (ST_ERROR);
+    }
+
+    switch ((int) s)
     {
         case ST_KEP:
             return (step_kep(p));
         case ST_KEP2:
             return (step_kep2(p));
+        default:
+            break;
+    }
+
+    return (ST_ERROR); /* unreachable: the range was asserted */
+}
+
+/* Dispatch within the FINAL PHASE section (pp. 870-875) with the
+ * G-limiter and lateral logic, then P67.1 latitude/longitude: steps
+ * PREFINAL .. STEEROFF. */
+static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
+{
+    if (!AGC_ASSERT(p != NULL && s >= ST_PREFINAL && s < ST_ENDEXIT))
+    {
+        return (ST_ERROR);
+    }
+
+    switch ((int) s)
+    {
         case ST_PREFINAL:
             return (step_prefinal(p));
         case ST_PREDICT3:
@@ -2152,40 +2201,11 @@ static entry_step_t entry_step_b(entry_pass_t *p, entry_step_t s)
             return (step_steeroff(p));
         case ST_FINAL_PHASE_LATLONG:
             return (step_final_phase_latlong(p));
-        case ST_INITROLL:
-        case ST_D0EQ:
-        case ST_INROLOUT:
-        case ST_KATEST:
-        case ST_INITRL1:
-        case ST_HUNTEST:
-        case ST_RANGER:
-        case ST_GETDLEWD:
-        case ST_SIDETRAK:
-        case ST_GOTOUPSY:
-        case ST_UPCONTRL:
-        case ST_CONT1:
-        case ST_CONT3:
-        case ST_CONTINU2:
-        case ST_UPCNTRL3:
-        case ST_NEGTESTS:
-        case ST_DCONSTD:
-        case ST_BECONSTD:
-        case ST_CONSTD:
-        case ST_CONSTD1:
-        case ST_DOWNCNTL:
-        case ST_ENDEXIT:
-        case ST_SERVNOUT:
-        case ST_ERROR:
         default:
             break;
     }
 
-    if (!AGC_ASSERT(s < ST_KEP))
-    {
-        return (ST_ERROR);
-    }
-
-    return (ST_ERROR);
+    return (ST_ERROR); /* unreachable: the range was asserted */
 }
 
 /* GOTO GOTOADDR (p. 847): first step of the pass.                        */
@@ -2226,7 +2246,26 @@ static entry_step_t entry_sequencer(entry_pass_t *p, entry_step_t s)
             return (s);
         }
 
-        s = (s < ST_KEP) ? entry_step_a(p, s) : entry_step_b(p, s);
+        if (s < ST_HUNTEST)
+        {
+            s = entry_initial_roll_step(p, s);
+        }
+        else if (s < ST_UPCONTRL)
+        {
+            s = entry_huntest_step(p, s);
+        }
+        else if (s < ST_KEP)
+        {
+            s = entry_upcontrol_step(p, s);
+        }
+        else if (s < ST_PREFINAL)
+        {
+            s = entry_ballistic_step(p, s);
+        }
+        else
+        {
+            s = entry_final_phase_step(p, s);
+        }
     }
 
     return (ST_ERROR); /* unreachable: step bound exhausted */

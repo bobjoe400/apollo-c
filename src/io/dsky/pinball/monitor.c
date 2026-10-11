@@ -438,16 +438,24 @@ agc_status_t agc_task_tstlts2(void)
     return (st);
 }
 
-/* TSTLTS3, lamp part: turn off uplink activity, temp, operator error and
- * the test alarm outbit; make NO ATT follow bit 4 of channel 12 (no att
- * light on if in coarse align); set bits to indicate all lamps out.     */
-static agc_status_t pin_tstlts3_lamps(void)
+/* TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash
+ * off, then TSTLTS4 (RELDSP, and PINBRNCH if ENDIDLE is awaiting operator
+ * response).                                                            */
+agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    /* TSTLTS3, lamp part: turn off uplink activity, temp, operator error and
+     * the test alarm outbit; make NO ATT follow bit 4 of channel 12 (no att
+     * light on if in coarse align); set bits to indicate all lamps out.     */
     agc_inhint();
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_TSTCON3));
     agc_chan_and((int) AGC_CHAN_CHAN13,
@@ -479,25 +487,7 @@ static agc_status_t pin_tstlts3_lamps(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (AGC_STATUS_OK);
-}
-
-/* TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash
- * off, then TSTLTS4 (RELDSP, and PINBRNCH if ENDIDLE is awaiting operator
- * response).                                                            */
-agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = pin_tstlts3_lamps();
+    agc_status_t st = AGC_STATUS_OK;
 
     if (st == AGC_STATUS_OK)
     {

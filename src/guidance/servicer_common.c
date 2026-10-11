@@ -115,63 +115,6 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
     return ((a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
 }
 
-/* The oblateness term of CALCGRAV (CM p.835, LM p.880), entered with
- * UNITR/UNIT/R/ (half unit) and |R|^2 (34D, scale 2^58):
- *   s     = UNITR . UNITW  (CM)   or  (UNITZ . UNIT/R/) SL1  (LM),  = sinL/2
- *   GOBL  = UNITR ((RE/R)^2 * 20J * (0.05 - s^2))
- *         + UNITW ((s * 2J) * (RE/R)^2)          [LM: UNITZ, then VSL1]
- * In Comanche, RESQ is B-59 and the J terms are B1, so (RE/R)^2 and J are
- * held at half the Luminary values: the Comanche GOBL1/2 is 1/4 of the
- * Luminary UNITGOBL. Translated as coded (see the module note).           */
-static agc_vec_t oblateness(agc_interp_t *ip, agc_vehicle_t veh, agc_avg_g_t *a)
-{
-    const bool cm = (veh == AGC_VEHICLE_CSM);
-    agc_dp_t   s;
-
-    if (cm)
-    {
-        s = agc_vec_dot(ip, a->unitr, a->unitw); /* DOT UNITW      */
-    }
-    else
-    {
-        agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ          */
-
-        s = agc_dp_shl(ip, agc_vec_dot(ip, unitz, a->unitr), 1); /* SL1      */
-    }
-
-    agc_dp_t fact =
-        agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* DSQ BDSU DP1/20 */
-
-    a->resq_rsq =
-        agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq); /* -> 32D */
-    agc_dp_t m =
-        agc_dp_mul(ip, agc_dp_mul(ip, a->resq_rsq, cm ? J20_CM : J20_LM),
-                   fact);                          /* DMP 20J, DMP   */
-    agc_vec_t t1 = agc_vec_scale(ip, a->unitr, m); /* VXSC UNITR     */
-    agc_dp_t  n  = agc_dp_mul(ip, agc_dp_mul(ip, s, cm ? J2_CM : J2_LM),
-                              a->resq_rsq); /* DMP 2J, DMP 32D */
-    agc_vec_t t2;
-
-    if (cm)
-    {
-        t2 = agc_vec_scale(ip, a->unitw, n); /* VXSC UNITW     */
-    }
-    else
-    {
-        agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);
-
-        t2 = agc_vec_shl(ip, agc_vec_scale(ip, unitz, n),
-                         1);              /* VXSC VSL1 UNITZ */
-    }
-
-    if (!AGC_ASSERT(a->rmagsq > 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return (agc_vec_add(ip, t2, t1)); /* VAD (pop)      */
-}
-
 /* CALCGRAV (CM pp.835-836, LM p.880): unit vector, magnitude and gravity.
  * UNIT leaves |R| (36D, 2^29) and |R|^2 (34D, 2^58). About the earth the
  * oblateness vector is stored in GOBL1/2 (CM) / UNITGOBL (LM) and added to
@@ -197,8 +140,63 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
 
     if (!moon)
     {
-        a->gobl1_2 = oblateness(ip, veh, a);                /* STORE GOBL1/2  */
-        dir        = agc_vec_add(ip, a->gobl1_2, a->unitr); /* VAD PUSH UNITR */
+        /* The oblateness term of CALCGRAV (CM p.835, LM p.880), entered with
+         * UNITR/UNIT/R/ (half unit) and |R|^2 (34D, scale 2^58):
+         *   s     = UNITR . UNITW  (CM)   or  (UNITZ . UNIT/R/) SL1  (LM),  = sinL/2
+         *   GOBL  = UNITR ((RE/R)^2 * 20J * (0.05 - s^2))
+         *         + UNITW ((s * 2J) * (RE/R)^2)          [LM: UNITZ, then VSL1]
+         * In Comanche, RESQ is B-59 and the J terms are B1, so (RE/R)^2 and J are
+         * held at half the Luminary values: the Comanche GOBL1/2 is 1/4 of the
+         * Luminary UNITGOBL. Translated as coded (see the module note).           */
+        {
+            const bool cm = (veh == AGC_VEHICLE_CSM);
+            agc_dp_t   s;
+
+            if (cm)
+            {
+                s = agc_vec_dot(ip, a->unitr, a->unitw); /* DOT UNITW      */
+            }
+            else
+            {
+                agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ          */
+
+                s = agc_dp_shl(ip, agc_vec_dot(ip, unitz, a->unitr), 1); /* SL1      */
+            }
+
+            agc_dp_t fact =
+                agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* DSQ BDSU DP1/20 */
+
+            a->resq_rsq =
+                agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq); /* -> 32D */
+            agc_dp_t m =
+                agc_dp_mul(ip, agc_dp_mul(ip, a->resq_rsq,
+                                          cm ? J20_CM : J20_LM),
+                           fact);                          /* DMP 20J, DMP   */
+            agc_vec_t t1 = agc_vec_scale(ip, a->unitr, m); /* VXSC UNITR     */
+            agc_dp_t  n  = agc_dp_mul(ip, agc_dp_mul(ip, s, cm ? J2_CM : J2_LM),
+                                      a->resq_rsq); /* DMP 2J, DMP 32D */
+            agc_vec_t t2;
+
+            if (cm)
+            {
+                t2 = agc_vec_scale(ip, a->unitw, n); /* VXSC UNITW     */
+            }
+            else
+            {
+                agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);
+
+                t2 = agc_vec_shl(ip, agc_vec_scale(ip, unitz, n),
+                                 1);              /* VXSC VSL1 UNITZ */
+            }
+
+            if (!AGC_ASSERT(a->rmagsq > 0))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            a->gobl1_2 = agc_vec_add(ip, t2, t1); /* STORE GOBL1/2  */
+        }
+        dir = agc_vec_add(ip, a->gobl1_2, a->unitr); /* VAD PUSH UNITR */
     }
 
     int      n = 0;

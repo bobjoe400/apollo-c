@@ -57,20 +57,3 @@ void imu_vflag_set(imu_vflag_t f)
 
     agc_flag_set(id);
 }
-
-void imu_vflag_clear(imu_vflag_t f)
-{
-    agc_flag_id_t id = imu_vflag(f);
-
-    if (!AGC_ASSERT(id != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_flag_valid(id)))
-    {
-        return;
-    }
-
-    agc_flag_clear(id);
-}

@@ -136,41 +136,6 @@ agc_status_t agc_task_bibibias(void)
     return (agc_waitlist_vardelay(TWO_SECS, AGC_TASK_READACCS));
 }
 
-/* The READACCS-to-DAP synchronisation (p.858): nudge TIME5 by one count
- * toward OCT 37771 so that a PAXIS rupt comes about 70 ms after READACCS,
- * clear of the R10/R11 interrupts and of the downrupts.                    */
-static void time5_sync(void)
-{
-    agc_sp_t t5   = (agc_sp_t) (agc_rupt_time(5) & 037777u); /* CA TIME5  */
-    agc_sp_t d    = (agc_sp_t) (t5 - TIME5_SYNC);
-    agc_sp_t step =
-        (d > 0) ? -1 : ((d < 0) ? 1 : 0); /* CCS: CS ONE / CA ONE   */
-
-    agc_rupt_set_time(5, (uint16_t) (t5 + step)); /* ADS TIME5              */
-
-    if (!AGC_ASSERT(step >= -1 && step <= 1))
-    {
-        return;
-    }
-}
-
-/* R10,R11 set-up of REDO5.5 (p.858-859): 4x/s rate, group 2 at 2.21.
- * DEVIATION: TBASE2 is set ".05 seconds in the past" (-TIME1 + 5 - 1.0)
- * in the AGC; the exec API bases it on TIME1.                              */
-static agc_status_t abort_monitor_setup(agc_avg_g_t *a)
-{
-    a->pipctr = 7; /* PIPCTR FOR 4X/SEC RATE */
-    agc_phase_set_tbase(GRP2);
-    agc_phase_newphase(GRP2, 021, false); /* 2.21SPOT FOR R10,R11   */
-
-    if (!AGC_ASSERT(a->pipctr == 7))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_waitlist_call(ABORT_MONITOR_FIRST_CS, AGC_TASK_ABORT_MONITOR));
-}
-
 /* REDO5.5 / MAKEACCS / AVEGOUT (p.858-859): restart 5.5 enters here.      */
 static agc_status_t redo5_5(agc_avg_g_t *a)
 {
@@ -194,7 +159,19 @@ static agc_status_t redo5_5(agc_avg_g_t *a)
 
     if (agc_flag_test(AGC_FLAG_MUNFLAG) && agc_phase_get(GRP2) == 0U)
     {
-        st = abort_monitor_setup(a); /* not if PHASE2 active   */
+        /* R10,R11 set-up of REDO5.5 (p.858-859): 4x/s rate, group 2 at 2.21.
+         * DEVIATION: TBASE2 is set ".05 seconds in the past" (-TIME1 + 5 - 1.0)
+         * in the AGC; the exec API bases it on TIME1.                              */
+        a->pipctr = 7; /* PIPCTR FOR 4X/SEC RATE */
+        agc_phase_set_tbase(GRP2);
+        agc_phase_newphase(GRP2, 021, false); /* 2.21SPOT FOR R10,R11   */
+
+        if (!AGC_ASSERT(a->pipctr == 7))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        st = agc_waitlist_call(ABORT_MONITOR_FIRST_CS, AGC_TASK_ABORT_MONITOR); /* not if PHASE2 active   */
 
         if (st != AGC_STATUS_OK)
         {
@@ -236,7 +213,21 @@ agc_status_t agc_task_readaccs_lm(void)
 {
     agc_guid_t *g = agc_guid_state();
 
-    time5_sync();
+    /* The READACCS-to-DAP synchronisation (p.858): nudge TIME5 by one count
+     * toward OCT 37771 so that a PAXIS rupt comes about 70 ms after READACCS,
+     * clear of the R10/R11 interrupts and of the downrupts.                    */
+    agc_sp_t t5   = (agc_sp_t) (agc_rupt_time(5) & 037777u); /* CA TIME5  */
+    agc_sp_t d    = (agc_sp_t) (t5 - TIME5_SYNC);
+    agc_sp_t step =
+        (d > 0) ? -1 : ((d < 0) ? 1 : 0); /* CCS: CS ONE / CA ONE   */
+
+    agc_rupt_set_time(5, (uint16_t) (t5 + step)); /* ADS TIME5              */
+
+    if (!AGC_ASSERT(step >= -1 && step <= 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st = agc_guid_pipasr(&g->avg, true);
 
     if (st != AGC_STATUS_OK)
@@ -298,31 +289,6 @@ static void massmon(agc_guid_lm_t *lm)
     {
         return;
     }
-
-    if (!AGC_ASSERT(ovf == 0))
-    {
-        return;
-    }
-}
-
-/* GETABVAL / MASSMON / MOONSPOT (p.860-861): |DELV| for the DV monitor
- * and mass, DVTOTAL += |DELV| * KPIP1 (SHORTMP with the SP KPIP1).        */
-static void getabval_math(agc_guid_t *g)
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_dp_t abv = agc_vec_abval(&ip, agc_erase_delv()); /* VLOAD ABVAL DELV */
-
-    g->lm.abdelv   = agc_dp_high(abv);                   /* ABDELV cm/s 2^14 */
-    g->lm.abdvconv = agc_sp_mul(g->lm.abdelv, KPIP_LM);  /* MP KPIP: 2^5     */
-    g->lm.mass1    = g->lm.mass;                         /* INITIALIZE MASS1 */
-    massmon(&g->lm);
-    agc_dp_t dv = agc_tp_to_dp(
-        agc_dp_mul_tp(abv, agc_dp_from_sp(KPIP1_HI))); /* SHORTMP */
-    agc_ovf_t ovf = 0;
-
-    g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */
 
     if (!AGC_ASSERT(ovf == 0))
     {
@@ -497,7 +463,29 @@ static agc_status_t getabval(agc_job_ctx_t *ctx)
 {
     agc_guid_t *g = agc_guid_state();
 
-    getabval_math(g);
+    /* GETABVAL / MASSMON / MOONSPOT (p.860-861): |DELV| for the DV monitor
+     * and mass, DVTOTAL += |DELV| * KPIP1 (SHORTMP with the SP KPIP1).        */
+    {
+        agc_interp_t ip;
+
+        agc_interp_init(&ip);
+        agc_dp_t abv = agc_vec_abval(&ip, agc_erase_delv()); /* VLOAD ABVAL DELV */
+
+        g->lm.abdelv   = agc_dp_high(abv);                   /* ABDELV cm/s 2^14 */
+        g->lm.abdvconv = agc_sp_mul(g->lm.abdelv, KPIP_LM);  /* MP KPIP: 2^5     */
+        g->lm.mass1    = g->lm.mass;                         /* INITIALIZE MASS1 */
+        massmon(&g->lm);
+        agc_dp_t dv = agc_tp_to_dp(
+            agc_dp_mul_tp(abv, agc_dp_from_sp(KPIP1_HI))); /* SHORTMP */
+        agc_ovf_t ovf = 0;
+
+        g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */
+
+        if (!AGC_ASSERT(ovf == 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+    }
     agc_lm_tmptospt();
     const uint16_t cdu[3] = {(uint16_t) g->trig.cduraw[0],
                              (uint16_t) g->trig.cduraw[1],

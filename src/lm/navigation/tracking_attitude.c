@@ -95,46 +95,6 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
     return (st);
 }
 
-/* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
- * maneuver at minimum deadband; else the desired CDUs directly.        */
-static agc_status_t ta_auto(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                            const uint16_t gimbal[3])
-{
-    agc_cdutrig_t trig;
-    agc_vec_t     v = rr_state()->rrtarget;
-
-    agc_guid_cdu_smnb(&trig, &v);
-
-    if (agc_dp_sub(ip, v.c[2], TA_COS15DEG) >= 0)
-    { /* R61LEM2  */
-        agc_inhint();
-        agc_erase_set_cduxd(gimbal[0]);
-        agc_erase_set_cduyd(gimbal[1]);
-        agc_erase_set_cduzd(gimbal[2]);
-        agc_relint();
-
-        return (ta_next());
-    }
-
-    agc_inhint(); /* R61C+L05 */
-    agc_lm_dap_zatteror();
-    agc_status_t st = AGC_STATUS_OK;
-
-    st = agc_lm_dap_setmindb(); /* reduce attitude error */
-    agc_relint();
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    rz_flag_put(AGC_FLAG_3AXISFLG, false);
-    rz_flag_put(AGC_FLAG_PDSPFLAG, true);
-
-    return (agc_imu_attitude_maneuver(ctx,
-                                      AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
-}
-
 /* R61C+L01 .. R61LEM1 (p.518): LOS 3 s ahead (LPS20.1), final angles,
  * then the maneuver or the FDAI angles (not in auto: BALLANGS).        */
 agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
@@ -192,7 +152,41 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return ((st != AGC_STATUS_OK) ? st : ta_next());
     }
 
-    return (ta_auto(ctx, &ip, gimbal));
+    /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
+     * maneuver at minimum deadband; else the desired CDUs directly.        */
+    agc_cdutrig_t trig;
+    agc_vec_t     v = rr_state()->rrtarget;
+
+    agc_guid_cdu_smnb(&trig, &v);
+
+    if (agc_dp_sub(&ip, v.c[2], TA_COS15DEG) >= 0)
+    { /* R61LEM2  */
+        agc_inhint();
+        agc_erase_set_cduxd(gimbal[0]);
+        agc_erase_set_cduyd(gimbal[1]);
+        agc_erase_set_cduzd(gimbal[2]);
+        agc_relint();
+
+        return (ta_next());
+    }
+
+    agc_inhint(); /* R61C+L05 */
+    agc_lm_dap_zatteror();
+    agc_status_t st_auto = AGC_STATUS_OK;
+
+    st_auto = agc_lm_dap_setmindb(); /* reduce attitude error */
+    agc_relint();
+
+    if (st_auto != AGC_STATUS_OK)
+    {
+        return (st_auto);
+    }
+
+    rz_flag_put(AGC_FLAG_3AXISFLG, false);
+    rz_flag_put(AGC_FLAG_PDSPFLAG, true);
+
+    return (agc_imu_attitude_maneuver(ctx,
+                                      AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
 }
 
 /* After R60LEM: deadband back to the astronaut's value, priority display

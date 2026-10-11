@@ -481,22 +481,6 @@ agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef, int ncoef)
     return (agc_dp_poly(x, coef, ncoef - 1));
 }
 
-/* SIGN with vector MPAC: complement the vector if the SP tag is negative. */
-agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s)
-{
-    if (!AGC_ASSERT(s != 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return ((s < 0) ? agc_vec_neg(v) : v);
-}
-
 /* Mirror an output switch into its flagword (the AGC keeps it only there). */
 void agc_conic_mirror_flag_(agc_conic_flag_t f, bool set)
 {

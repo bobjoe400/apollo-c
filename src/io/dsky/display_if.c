@@ -251,22 +251,6 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio);
 
 /* ---- sleeping displays (GOSLEEPS, XCHSLEEP) --------------------------- */
 
-/* WAKECADR: where a sleeping mark or normal display job wakes. */
-static agc_job_id_t dif_wakecadr(int c)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_JOB_NONE);
-    }
-
-    if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
-    {
-        return (AGC_JOB_NONE);
-    }
-
-    return ((c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1);
-}
-
 /* XCHSLEEP: a newer display of the class replaces any older one asleep at
  * its WAKECADR (that job is woken to ENDOFJOB); then this job sleeps. */
 static agc_status_t dif_xchsleep(int c)
@@ -276,7 +260,13 @@ static agc_status_t dif_xchsleep(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_job_id_t wake = dif_wakecadr(c);
+    /* WAKECADR: where a sleeping mark or normal display job wakes. */
+    if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_job_id_t wake = (c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1;
 
     agc_inhint();
     agc_status_t st = agc_exec_job_wake_as(wake, AGC_JOB_ENDOFJOB);

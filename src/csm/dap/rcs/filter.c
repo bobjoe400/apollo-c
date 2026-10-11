@@ -64,23 +64,16 @@ static agc_status_t rcs_dcduincr(void);
 static agc_status_t rcs_dacndls(void);
 static agc_status_t rcs_fdaitotl(void);
 
-static int gain_index(agc_sp_t attkalmn)
+/* RATEFILT .. ADOTLOOP (pp. 1004-1006).                                  */
+agc_status_t csm_rcs_ratefilt(void)
 {
-    int g = (int) attkalmn + GAIN_BIAS;
+    agc_csm_rcs_t *r = agc_csm_dap_rcs();
+    int            g = (int) r->attkalmn + GAIN_BIAS;
 
     if (!AGC_ASSERT((g >= 0) && (g < GAIN_N)))
     {
         g = GAIN_BIAS; /* ATTKALMN out of table: use +0  */
     }
-
-    return (g);
-}
-
-/* RATEFILT .. ADOTLOOP (pp. 1004-1006).                                  */
-agc_status_t csm_rcs_ratefilt(void)
-{
-    agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    int            g = gain_index(r->attkalmn);
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {                                                         /* DRHOLOOP   */

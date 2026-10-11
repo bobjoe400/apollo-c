@@ -226,66 +226,6 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     return (tff_end(ip, tff, s, t_cs));
 }
 
-/* Orbital-period correction for a negative TFF on an ellipse:
- * TFF + 2 pi / (ALFA sqrt(ALFA)), result scale 2^45 (E) / 2^42 (M).      */
-static agc_dp_t tff_add_period(agc_interp_t *ip, const agc_tff_t *tff,
-                               agc_dp_t tsm)
-{
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
-    {
-        return (tsm);
-    }
-
-    if (!AGC_ASSERT(tff->tffrtalf != 0))
-    {
-        return (tsm);
-    }
-
-    agc_dp_t per =
-        agc_dp_div(ip, agc_dp_mul(ip, tff->tff1_alf, PI_16), tff->tffrtalf);
-
-    per = agc_navaux_dp_shift(ip, per, tff->na - 4);
-    per = agc_navaux_dp_shift(ip, per, tff->na - 4);
-    per = agc_navaux_dp_shift(ip, per, tff->na);
-
-    return (agc_dp_add(ip, per, tsm));
-}
-
-/* General conic (TFFXTEST continuation, p. 1383-1384), alfa Z Z < 1:
- * X = ALFA Z^2, TFF = (RTERM + RN - 2 Z^2 T(X)) Z / sqrt(MU).            */
-static agc_status_t tff_general(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
-                                agc_dp_t den, agc_dp_t *t_cs)
-{
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_dp_t z   = agc_dp_div(ip, num, den); /* Z (-13)  */
-    agc_dp_t zsq = agc_dp_sq(ip, z);         /* (-26)    */
-
-    tff->tfftem =
-        agc_dp_sign(agc_dp_shl(ip, agc_dp_mul(ip, zsq, tff->tffnp), 5), z);
-    tff->tffx =
-        agc_navaux_dp_shift(ip, agc_dp_mul(ip, zsq, tff->tffalfa), tff->nr);
-    agc_dp_t tz =
-        agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, tff->tffx), zsq), 2);
-    agc_dp_t s   = agc_dp_add(ip, agc_dp_sub(ip, tff->rterm, tz), tff->rmag1);
-    agc_dp_t tsm = agc_dp_shr(agc_dp_mul(ip, s, z), 3); /* TFF sqrt(MU) */
-
-    if (tsm < 0)
-    {                                                       /* BPL ENDTFF   */
-        bool gone_past = agc_dp_sign(tsm, tff->tffq1) >= 0; /* SIGN TFFQ1 */
-
-        if (!gone_past && (tff->tff1_alf > 0))
-        { /* ellipse      */
-            tsm = tff_add_period(ip, tff, tsm);
-        } /* else NEGTFF  */
-    }
-
-    return (tff_end(ip, tff, tsm, t_cs));
-}
-
 /* SAVEDEN .. TFFXTEST (p. 1383): indeterminacy test, choice of equation. */
 static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
                           agc_dp_t den, agc_dp_t q2, agc_dp_t *t_cs)
@@ -330,7 +270,45 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
         return (tff_el1(ip, tff, dn, q2, t_cs));
     }
 
-    return (tff_general(ip, tff, num, den, t_cs));
+    /* General conic (TFFXTEST continuation, p. 1383-1384), alfa Z Z < 1:
+     * X = ALFA Z^2, TFF = (RTERM + RN - 2 Z^2 T(X)) Z / sqrt(MU).            */
+    agc_dp_t z   = agc_dp_div(ip, num, den); /* Z (-13)  */
+    agc_dp_t zsq = agc_dp_sq(ip, z);         /* (-26)    */
+
+    tff->tfftem =
+        agc_dp_sign(agc_dp_shl(ip, agc_dp_mul(ip, zsq, tff->tffnp), 5), z);
+    tff->tffx =
+        agc_navaux_dp_shift(ip, agc_dp_mul(ip, zsq, tff->tffalfa), tff->nr);
+    agc_dp_t tz =
+        agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, tff->tffx), zsq), 2);
+    agc_dp_t s   = agc_dp_add(ip, agc_dp_sub(ip, tff->rterm, tz), tff->rmag1);
+    agc_dp_t tsm = agc_dp_shr(agc_dp_mul(ip, s, z), 3); /* TFF sqrt(MU) */
+
+    if (tsm < 0)
+    {                                                       /* BPL ENDTFF   */
+        bool gone_past = agc_dp_sign(tsm, tff->tffq1) >= 0; /* SIGN TFFQ1 */
+
+        if (!gone_past && (tff->tff1_alf > 0))
+        { /* ellipse      */
+            /* Orbital-period correction for a negative TFF on an ellipse:
+             * TFF + 2 pi / (ALFA sqrt(ALFA)), result scale 2^45 (E) / 2^42 (M).      */
+            if (!AGC_ASSERT(tff->tffrtalf != 0))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            agc_dp_t per =
+                agc_dp_div(ip, agc_dp_mul(ip, tff->tff1_alf,
+                                          PI_16), tff->tffrtalf);
+
+            per = agc_navaux_dp_shift(ip, per, tff->na - 4);
+            per = agc_navaux_dp_shift(ip, per, tff->na - 4);
+            per = agc_navaux_dp_shift(ip, per, tff->na);
+            tsm = agc_dp_add(ip, per, tsm);
+        } /* else NEGTFF  */
+    }
+
+    return (tff_end(ip, tff, tsm, t_cs));
 }
 
 /*

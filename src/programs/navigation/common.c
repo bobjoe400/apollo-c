@@ -243,22 +243,6 @@ agc_vec_t rz_unit(agc_interp_t *ip, agc_vec_t v)
     return (agc_vec_unit(ip, v, NULL, NULL));
 }
 
-/* SIGN on a vector: complement v when s is negative. */
-agc_vec_t rz_vsign(agc_vec_t v, agc_dp_t s)
-{
-    if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return ((s < 0) ? agc_vec_neg(v) : v);
-}
-
 /* ABVAL */
 agc_dp_t rz_abval(agc_interp_t *ip, agc_vec_t v)
 {

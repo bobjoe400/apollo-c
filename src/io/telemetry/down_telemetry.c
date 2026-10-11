@@ -121,30 +121,6 @@ static uint16_t vec_word(agc_vec_t v, int k)
     return (dp_word(v.c[k / 2], k % 2));
 }
 
-/* The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).     */
-static uint16_t other_word(agc_dn_item_t item, int k)
-{
-    agc_state_vector_t sv;
-    agc_status_t       st = agc_sv_get(AGC_SV_OTHER, &sv);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (0);
-    }
-
-    if (item == AGC_DN_R_OTHER)
-    {
-        return (vec_word(sv.r, k));
-    }
-
-    if (item == AGC_DN_V_OTHER)
-    {
-        return (vec_word(sv.v, k));
-    }
-
-    return ((k < 2) ? dp_word(sv.t, k) : 0u);
-}
-
 /* CDU and PIPA counter block, registers 032-042 in order: CDUX CDUY CDUZ
  * CDUT CDUS PIPAX PIPAY PIPAZ.                                            */
 static uint16_t counter_word(int k)
@@ -245,19 +221,6 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
     }
 
     return (true);
-}
-
-/* REFSMMAT: 9 DP elements row by row = 18 words.                          */
-static uint16_t refsmmat_word(int k)
-{
-    if (!AGC_ASSERT(k >= 0) || k >= 6 * AGC_VEC_N)
-    {
-        return (0);
-    }
-
-    agc_mat_t m = agc_erase_refsmmat();
-
-    return (vec_word(m.row[k / 6], k % 6));
 }
 
 /* Small multi-erasable items: the AGC sends consecutive registers.        */
@@ -397,12 +360,39 @@ static uint16_t item_word(agc_dn_item_t item, int k)
     if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER ||
         item == AGC_DN_T_OTHER)
     {
-        return (other_word(item, k));
+        /* The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).     */
+        agc_state_vector_t sv;
+        agc_status_t       st = agc_sv_get(AGC_SV_OTHER, &sv);
+
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (0);
+        }
+
+        if (item == AGC_DN_R_OTHER)
+        {
+            return (vec_word(sv.r, k));
+        }
+
+        if (item == AGC_DN_V_OTHER)
+        {
+            return (vec_word(sv.v, k));
+        }
+
+        return ((k < 2) ? dp_word(sv.t, k) : 0u);
     }
 
     if (item == AGC_DN_REFSMMAT)
     {
-        return (refsmmat_word(k));
+        /* REFSMMAT: 9 DP elements row by row = 18 words.                          */
+        if (!AGC_ASSERT(k >= 0) || k >= 6 * AGC_VEC_N)
+        {
+            return (0);
+        }
+
+        agc_mat_t m = agc_erase_refsmmat();
+
+        return (vec_word(m.row[k / 6], k % 6));
     }
 
     if (item_word_state(item, k, &w) || item_word_block(item, k, &w) ||

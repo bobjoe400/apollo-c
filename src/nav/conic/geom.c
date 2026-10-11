@@ -79,7 +79,20 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (AGC_STATUS_OK);
     }
 
-    n = agc_conic_vsign_sp_(n, ctx->geomsgn); /* SIGN GEOMSGN, UNIT   */
+    /* SIGN with vector MPAC: complement the vector if the SP tag is negative. */
+    agc_sp_t s = ctx->geomsgn;
+
+    if (!AGC_ASSERT(s != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(n.c[0] >= AGC_DP_MIN && n.c[0] <= AGC_DP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    n = (s < 0) ? agc_vec_neg(n) : n; /* SIGN GEOMSGN, UNIT   */
     agc_dp_t  sn = 0;
     agc_vec_t un = agc_vec_unit(ip, n, &sn, NULL);
 

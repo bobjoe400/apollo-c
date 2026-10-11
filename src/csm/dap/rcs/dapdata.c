@@ -66,10 +66,12 @@ void agc_csm_dap_setmaxdb(void)
     }
 }
 
-/* S41.2 (pp. 731-732), part 1: rates, docked flag, deadband, quad
- * management for X-translation and the ullage jet flag.                  */
-static agc_status_t s41_2_datr1(void)
+/* S41.2 (pp. 731-733): decode DAPDATR1, DAPDATR2. Called by DONOUN46
+ * (V48) or directly by FRESHDAP.                                         */
+agc_status_t agc_csm_dap_decode_dap_data(void)
 {
+    /* S41.2 (pp. 731-732), part 1: rates, docked flag, deadband, quad
+     * management for X-translation and the ullage jet flag.                  */
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();
     uint16_t       d1 = agc_erase_dapdatr1();
 
@@ -95,57 +97,45 @@ static agc_status_t s41_2_datr1(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (AGC_STATUS_OK);
-}
-
-/* S41.2 (pp. 732-733), part 2: AC/BD roll and the quad failure flags.   */
-static agc_status_t s41_2_datr2(void)
-{
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();
-    uint16_t       d2 = agc_erase_dapdatr2();
+    agc_status_t st = AGC_STATUS_OK;
+    /* S41.2 (pp. 732-733), part 2: AC/BD roll and the quad failure flags.   */
+    agc_csm_rcs_t *r_datr2 = agc_csm_dap_rcs();
+    uint16_t       d2      = agc_erase_dapdatr2();
 
     /* minus for A-C (COM of BIT13), plus for B-D                         */
-    r->acorbd = ((d2 & CSM_DAP_BIT13) != 0u) ?
-                (agc_sp_t) -(agc_sp_t) CSM_DAP_BIT13 :
-                1;
+    r_datr2->acorbd = ((d2 & CSM_DAP_BIT13) != 0u) ?
+                      (agc_sp_t) -(agc_sp_t) CSM_DAP_BIT13 :
+                      1;
 
     if ((d2 & CSM_DAP_BIT10) == 0u)
     {
-        r->racfail = 1; /* A failed             */
+        r_datr2->racfail = 1; /* A failed             */
     }
     else
     {
-        r->racfail = ((d2 & CSM_DAP_BIT4) == 0u) ? -1 : 0; /* C failed     */
+        r_datr2->racfail = ((d2 & CSM_DAP_BIT4) == 0u) ? -1 : 0; /* C failed     */
     }
 
     if ((d2 & CSM_DAP_BIT7) == 0u)
     {                   /* BDFAIL               */
-        r->rbdfail = 1; /* B failed             */
+        r_datr2->rbdfail = 1; /* B failed             */
     }
     else
     {
-        r->rbdfail = ((d2 & CSM_DAP_BIT1) == 0u) ? -1 : 0; /* D failed     */
+        r_datr2->rbdfail = ((d2 & CSM_DAP_BIT1) == 0u) ? -1 : 0; /* D failed     */
     }
 
-    if (!AGC_ASSERT((r->racfail >= -1) && (r->racfail <= 1)))
+    if (!AGC_ASSERT((r_datr2->racfail >= -1) && (r_datr2->racfail <= 1)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((r->rbdfail >= -1) && (r->rbdfail <= 1)))
+    if (!AGC_ASSERT((r_datr2->rbdfail >= -1) && (r_datr2->rbdfail <= 1)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (AGC_STATUS_OK);
-}
-
-/* S41.2 (pp. 731-733): decode DAPDATR1, DAPDATR2. Called by DONOUN46
- * (V48) or directly by FRESHDAP.                                         */
-agc_status_t agc_csm_dap_decode_dap_data(void)
-{
-    agc_status_t st  = s41_2_datr1();
-    agc_status_t st2 = s41_2_datr2();
+    agc_status_t st2 = AGC_STATUS_OK;
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

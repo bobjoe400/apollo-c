@@ -371,50 +371,6 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s,
     return (AGC_STATUS_OK);
 }
 
-/* Shaft and trunnion commands for the LOS (32D), and the cosine of the
- * angle between the RR boresight and RRTARGET minus cos(.5 deg) (B-2).
- *   shaft    = LOS . (cos S, 0, -sin S)
- *   -trunnion = LOS . (sin T sin S, cos T, sin T cos S)
- *   URR      = (sin S cos T, -sin T, cos S cos T)  (NB, then *NBSM*)  */
-static agc_status_t rr_dodes_commands(agc_interp_t *ip, rr_state_t *s,
-                                      const agc_cdutrig_t *trig, agc_vec_t los,
-                                      uint16_t cdut, uint16_t cdus,
-                                      agc_dp_t *cos_err)
-{
-    agc_dp_t sa    = agc_guid_cdulogic(cdus);
-    agc_dp_t sn_s  = agc_dp_sin(ip, sa);  /* 0D      */
-    agc_dp_t cs_s  = agc_dp_cos(ip, sa);  /* 2D      */
-    agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]),
-                                agc_dp_mul_trunc(los.c[2], sn_s));
-    agc_dp_t  ta   = agc_guid_cdulogic(cdut);
-    agc_dp_t  cs_t = agc_dp_cos(ip, ta);  /* 4D      */
-    agc_dp_t  sn_t = agc_dp_sin(ip, ta);  /* 6D      */
-    agc_vec_t u    =
-        agc_vec_make(agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1), cs_t,
-                     agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, cs_s), 1));
-    agc_dp_t trun = agc_vec_dot(ip, u, los);
-
-    s->tang[0] = (agc_sp_t) agc_dp_high(
-        agc_sp_mul((agc_sp_t) -agc_dp_high(trun), RR_RDESGAIN));
-    agc_sp_t sh = agc_dp_high(shaft);
-
-    sh         = rr_mode2() ? (agc_sp_t) -sh : sh; /* relay reverses in mode 2 */
-    s->tang[1] = agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN));
-    agc_vec_t urr = agc_vec_make(
-        agc_dp_shl(ip, agc_dp_mul_trunc(sn_s, cs_t), 1), agc_dp_neg(sn_t),
-        agc_dp_shl(ip, agc_dp_mul_trunc(cs_s, cs_t), 1));
-
-    if (!agc_flag_test(AGC_FLAG_RRNBSW))
-    {
-        agc_guid_nbsm(trig, &urr);
-    }
-
-    *cos_err =
-        agc_dp_sub(ip, agc_vec_dot(ip, urr, s->rrtarget), RR_COS_HALFDEG);
-
-    return (AGC_STATUS_OK);
-}
-
 /* RRDESDUN (p.551): designate over; the next DESLOOP pass ends it.      */
 static agc_status_t rr_desdun(void)
 {
@@ -502,7 +458,42 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = rr_dodes_commands(&ip, s, &trig, los, cdut, cdus, &cos_err);
+        /* Shaft and trunnion commands for the LOS (32D), and the cosine of the
+         * angle between the RR boresight and RRTARGET minus cos(.5 deg) (B-2).
+         *   shaft    = LOS . (cos S, 0, -sin S)
+         *   -trunnion = LOS . (sin T sin S, cos T, sin T cos S)
+         *   URR      = (sin S cos T, -sin T, cos S cos T)  (NB, then *NBSM*)  */
+        agc_dp_t sa    = agc_guid_cdulogic(cdus);
+        agc_dp_t sn_s  = agc_dp_sin(&ip, sa);  /* 0D      */
+        agc_dp_t cs_s  = agc_dp_cos(&ip, sa);  /* 2D      */
+        agc_dp_t shaft = agc_dp_sub(&ip, agc_dp_mul_trunc(cs_s, los.c[0]),
+                                    agc_dp_mul_trunc(los.c[2], sn_s));
+        agc_dp_t  ta   = agc_guid_cdulogic(cdut);
+        agc_dp_t  cs_t = agc_dp_cos(&ip, ta);  /* 4D      */
+        agc_dp_t  sn_t = agc_dp_sin(&ip, ta);  /* 6D      */
+        agc_vec_t u    =
+            agc_vec_make(agc_dp_shl(&ip, agc_dp_mul_trunc(sn_t, sn_s), 1), cs_t,
+                         agc_dp_shl(&ip, agc_dp_mul_trunc(sn_t, cs_s), 1));
+        agc_dp_t trun = agc_vec_dot(&ip, u, los);
+
+        s->tang[0] = (agc_sp_t) agc_dp_high(
+            agc_sp_mul((agc_sp_t) -agc_dp_high(trun), RR_RDESGAIN));
+        agc_sp_t sh = agc_dp_high(shaft);
+
+        sh         = rr_mode2() ? (agc_sp_t) -sh : sh; /* relay reverses in mode 2 */
+        s->tang[1] = agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN));
+        agc_vec_t urr = agc_vec_make(
+            agc_dp_shl(&ip, agc_dp_mul_trunc(sn_s, cs_t), 1), agc_dp_neg(sn_t),
+            agc_dp_shl(&ip, agc_dp_mul_trunc(cs_s, cs_t), 1));
+
+        if (!agc_flag_test(AGC_FLAG_RRNBSW))
+        {
+            agc_guid_nbsm(&trig, &urr);
+        }
+
+        cos_err =
+            agc_dp_sub(&ip, agc_vec_dot(&ip, urr, s->rrtarget), RR_COS_HALFDEG);
+        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)

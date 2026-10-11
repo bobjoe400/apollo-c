@@ -91,71 +91,6 @@ agc_status_t agc_entry_cm_pose_triad(void)
     return (AGC_STATUS_OK);
 }
 
-/* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
- * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI).                      */
-static agc_vec_t trio_uby_sm(agc_interp_t *ip, agc_dp_t ci, agc_dp_t si,
-                             agc_dp_t sm, agc_dp_t cm, agc_dp_t so, agc_dp_t co)
-{
-    agc_vec_t uby;
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    /* (-SM CI, noise, SM SI)/2 with CM/2 replacing the noise              */
-    uby = agc_vec_make(
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), agc_dp_neg(si)), 1));
-    uby      = agc_vec_scale(ip, uby, co); /* x CO/2 -> /4 */
-    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul(ip, so, agc_dp_neg(si))),
-                          uby.c[0]);
-    uby.c[2] = agc_dp_add(ip, agc_dp_mul(ip, so, ci), uby.c[2]);
-
-    return (uby);
-}
-
-/* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
- * from the PIP-time gimbal angles and REFSMMAT.                           */
-static void trio_body_axes(agc_interp_t *ip, agc_entry_state_t *es)
-{
-    agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_dp_t  aig      = agc_guid_cdulogic(cdu_pattern(es->aig_pip));
-    agc_dp_t  amg      = agc_guid_cdulogic(cdu_pattern(es->amg_pip));
-    agc_dp_t  aog      = agc_guid_cdulogic(cdu_pattern(es->aog_pip));
-    agc_dp_t  ci       = agc_dp_cos(ip, aig);
-    agc_dp_t  si       = agc_dp_sin(ip, aig);
-    agc_dp_t  sm       = agc_dp_sin(ip, amg);
-    agc_dp_t  cm       = agc_dp_cos(ip, amg);
-    agc_vec_t ubx;
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return;
-    }
-
-    es->uby = trio_uby_sm(ip, ci, si, sm, cm, agc_dp_sin(ip, aog),
-                          agc_dp_cos(ip, aog));
-    es->uby =
-        agc_vec_shl(ip, agc_vec_mat(ip, es->uby, &refsmmat), 2); /* VXM VSL2 */
-    /* XB = (CM CI, SM, -CM SI)/2                                          */
-    ubx = agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cm, ci), 1), sm,
-                       agc_dp_shl(ip, agc_dp_mul(ip, cm, agc_dp_neg(si)), 1));
-    es->ubx =
-        agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
-    es->ubz = agc_vec_shl(ip, agc_vec_cross(ip, es->ubx, es->uby), 1);
-
-    if (!AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF))
-    {
-        return;
-    }
-}
-
 /* CM/TRIO (pp. 884-886): body triad, then
  *   angles[0] = -(ROLL/180)/2  from ARCTRIG(UL.UYA, UL.UZA)
  *   angles[1] = -(BETA/180)/2  from ARCSIN(-UVA.UBY)
@@ -175,7 +110,58 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
         return (AGC_STATUS_BAD_ARG);
     }
 
-    trio_body_axes(ip, es);
+    /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
+     * from the PIP-time gimbal angles and REFSMMAT.                           */
+    agc_mat_t refsmmat = agc_erase_refsmmat();
+    agc_dp_t  aig      = agc_guid_cdulogic(cdu_pattern(es->aig_pip));
+    agc_dp_t  amg      = agc_guid_cdulogic(cdu_pattern(es->amg_pip));
+    agc_dp_t  aog      = agc_guid_cdulogic(cdu_pattern(es->aog_pip));
+    agc_dp_t  ci       = agc_dp_cos(ip, aig);
+    agc_dp_t  si       = agc_dp_sin(ip, aig);
+    agc_dp_t  sm       = agc_dp_sin(ip, amg);
+    agc_dp_t  cm       = agc_dp_cos(ip, amg);
+    agc_vec_t ubx;
+
+    /* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
+     * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI).                      */
+    agc_dp_t so = agc_dp_sin(ip, aog);
+    agc_dp_t co = agc_dp_cos(ip, aog);
+
+    agc_vec_t uby;
+
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    /* (-SM CI, noise, SM SI)/2 with CM/2 replacing the noise              */
+    uby = agc_vec_make(
+        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
+        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), agc_dp_neg(si)), 1));
+    uby      = agc_vec_scale(ip, uby, co); /* x CO/2 -> /4 */
+    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul(ip, so, agc_dp_neg(si))),
+                          uby.c[0]);
+    uby.c[2] = agc_dp_add(ip, agc_dp_mul(ip, so, ci), uby.c[2]);
+    es->uby  = uby;
+    es->uby  =
+        agc_vec_shl(ip, agc_vec_mat(ip, es->uby, &refsmmat), 2); /* VXM VSL2 */
+    /* XB = (CM CI, SM, -CM SI)/2                                          */
+    ubx = agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cm, ci), 1), sm,
+                       agc_dp_shl(ip, agc_dp_mul(ip, cm, agc_dp_neg(si)), 1));
+    es->ubx =
+        agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
+    es->ubz = agc_vec_shl(ip, agc_vec_cross(ip, es->ubx, es->uby), 1);
+
+    if (!AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     ul =
         agc_vec_unit(ip, agc_vec_cross(ip, es->uxa, es->uby), NULL, NULL);
     c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */

@@ -122,26 +122,6 @@ static agc_sp_t net_min(acc_work_t *w)
     return (do1net_plus(w, a));
 }
 
-/* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
- * (NETNEG); then 1/NETMIN.                                                */
-static agc_sp_t anet_minus(acc_work_t *w, agc_sp_t a)
-{
-    w->accsw = 0;
-    w->anet  = a;
-
-    if ((int32_t) a - AA_BIT9 <= 0)
-    {
-        w->anet = AA_BIT9; /* NETNEG         */
-    }
-
-    if (!AGC_ASSERT(w->anet >= AA_BIT9))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (net_min(w));
-}
-
 /* DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.         */
 static void p_axis(lm_dap_t *d)
 {
@@ -165,42 +145,6 @@ static void p_axis(lm_dap_t *d)
     }
 
     if (!AGC_ASSERT(d->block[4] == LM_POSMAX))
-    {
-        return;
-    }
-}
-
-/* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered flight: deadbands.       */
-static void db_bigaos(const lm_dap_t *d, acc_work_t *w)
-{
-    agc_sp_t db = d->db;
-
-    /* ADS leaves the sum in A, so DB4(3) receives 2 DB (the listing's
-     * comment says 1 DB); the code is followed.                          */
-    w->t[T_DBB2 + w->ns] = lm_dap_sat((int32_t) w->t[T_DBB2 + w->ns] + db);
-    w->t[T_DBB4 + w->s]  = w->t[T_DBB2 + w->ns];
-    agc_sp_t db1;
-
-    if ((int32_t) AA_M1875 + w->absaos > 0)
-    {
-        db1 = (agc_sp_t) -w->dbval3; /* -.5 DB         */
-    }
-    else
-    {
-        int32_t f = 2 * ((int32_t) -4 * w->absaos + AA_BIT14); /* 1 - 8|AOS| */
-
-        db1 = lm_dap_mphi(lm_dap_sat(f), db);
-    }
-
-    w->t[T_DBB1 + w->s]  = db1;       /* DBONE          */
-    w->t[T_DBB3 + w->ns] = w->dbval2; /* -.75 DB        */
-
-    if (!AGC_ASSERT(w->absaos > AA_BIT9))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(w->t[T_FLAT] == 0))
     {
         return;
     }
@@ -240,28 +184,6 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
     }
 }
 
-/* SKIPDB1 overflow branch (p.1500): ANET rescaled to pi.                 */
-static agc_sp_t max_rescaled(acc_work_t *w, agc_sp_t jaccu)
-{
-    agc_sp_t anet_pi =
-        lm_dap_sat((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
-
-    w->anet = lm_dap_sat((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
-    w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);  /* at 2^7/pi      */
-
-    if (!AGC_ASSERT(w->anet > 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(anet_pi > 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT8, w->inv), w->anet));
-}
-
 /* BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,
  * deadbands, 1/ACOAST, then the maximum- and minimum-jet functions for
  * the sense the offset aids (POS(NEG)).                                  */
@@ -295,7 +217,39 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     {
         if (w->t[T_FLAT] == 0)
         {
-            db_bigaos(d, w);
+            /* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered flight: deadbands.       */
+            agc_sp_t db = d->db;
+
+            /* ADS leaves the sum in A, so DB4(3) receives 2 DB (the listing's
+             * comment says 1 DB); the code is followed.                          */
+            w->t[T_DBB2 + w->ns] = lm_dap_sat(
+                (int32_t) w->t[T_DBB2 + w->ns] + db);
+            w->t[T_DBB4 + w->s] = w->t[T_DBB2 + w->ns];
+            agc_sp_t db1;
+
+            if ((int32_t) AA_M1875 + w->absaos > 0)
+            {
+                db1 = (agc_sp_t) -w->dbval3; /* -.5 DB         */
+            }
+            else
+            {
+                int32_t f = 2 * ((int32_t) -4 * w->absaos + AA_BIT14); /* 1 - 8|AOS| */
+
+                db1 = lm_dap_mphi(lm_dap_sat(f), db);
+            }
+
+            w->t[T_DBB1 + w->s]  = db1;       /* DBONE          */
+            w->t[T_DBB3 + w->ns] = w->dbval2; /* -.75 DB        */
+
+            if (!AGC_ASSERT(w->absaos > AA_BIT9))
+            {
+                return;
+            }
+
+            if (!AGC_ASSERT(w->t[T_FLAT] == 0))
+            {
+                return;
+            }
         }
 
         agc_sp_t nine8 =
@@ -309,7 +263,24 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 
     if (w->absaos > AA_BIT9 && lm_dap_ovf(top))
     {
-        acc = max_rescaled(w, jaccu);
+        /* SKIPDB1 overflow branch (p.1500): ANET rescaled to pi.                 */
+        agc_sp_t anet_pi =
+            lm_dap_sat((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
+
+        w->anet = lm_dap_sat((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
+        w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);  /* at 2^7/pi      */
+
+        if (!AGC_ASSERT(w->anet > 0))
+        {
+            return;
+        }
+
+        if (!AGC_ASSERT(anet_pi > 0))
+        {
+            return;
+        }
+
+        acc = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT8, w->inv), w->anet);
     }
     else
     { /* SKIPDB2        */
@@ -326,53 +297,6 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     acc                   = do1net_plus(w, w->anet);
     w->t[T_Z5 + w->ns]    = acc;
     w->t[T_ATEM2 + w->ns] = w->inv;
-}
-
-/* NEG(POS) cases, FIXMIN, STMIN- (pp.1501-1502, 1505): the sense the
- * offset opposes. If one jet cannot beat the offset (ANET < AMIN) the
- * two-jet values are used and ACCSW demands max jets, unless that pair
- * has failed, when AMIN is assumed.                                      */
-static void axis_against_aos(const lm_dap_t *d, acc_work_t *w)
-{
-    agc_sp_t jaccu = d->jacc[3];
-    agc_sp_t acc   = anet_minus(w, lm_dap_sat(2 * (int32_t) jaccu - w->absaos));
-    agc_sp_t lsave = acc; /* TS L           */
-
-    if (!AGC_ASSERT(w->s == -w->ns))
-    {
-        return;
-    }
-
-    w->t[T_Z1 + 2 + w->s]    = acc;
-    w->t[T_ATEM1 + 2 + w->s] = w->inv;
-    w->anet                  = lm_dap_sat((int32_t) jaccu - w->absaos);
-
-    if ((int32_t) w->anet - AA_BIT9 > 0)
-    {
-        acc = net_min(w);
-    }
-    else
-    { /* FIXMIN         */
-        w->accsw = (agc_sp_t) ((w->s != 0) ? 1 : -1);
-
-        if ((uvmask[w->accsw + 1 + w->uv] & d->ch5mask) != 0u)
-        {
-            w->anet = AA_BIT9; /* failed: AMIN   */
-            acc     = net_min(w);
-        }
-        else
-        {
-            acc = lsave; /* max-jet values */
-        }
-    }
-
-    w->t[T_Z1 + w->s]    = acc; /* STMIN-         */
-    w->t[T_ATEM1 + w->s] = w->inv;
-
-    if (!AGC_ASSERT(w->accsw >= -1 && w->accsw <= 1))
-    {
-        return;
-    }
 }
 
 /* FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
@@ -522,7 +446,67 @@ agc_status_t lm_dap_switch_curves(void)
     { /* UAXIS, V axis  */
         w.uv = uv;
         axis_with_aos(d, &w);
-        axis_against_aos(d, &w);
+        /* NEG(POS) cases, FIXMIN, STMIN- (pp.1501-1502, 1505): the sense the
+         * offset opposes. If one jet cannot beat the offset (ANET < AMIN) the
+         * two-jet values are used and ACCSW demands max jets, unless that pair
+         * has failed, when AMIN is assumed.                                      */
+        agc_sp_t jaccu = d->jacc[3];
+        /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
+         * (NETNEG); then 1/NETMIN.                                                */
+        agc_sp_t a = lm_dap_sat(2 * (int32_t) jaccu - w.absaos);
+
+        w.accsw = 0;
+        w.anet  = a;
+
+        if ((int32_t) a - AA_BIT9 <= 0)
+        {
+            w.anet = AA_BIT9; /* NETNEG         */
+        }
+
+        if (!AGC_ASSERT(w.anet >= AA_BIT9))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_sp_t acc   = net_min(&w);
+        agc_sp_t lsave = acc; /* TS L           */
+
+        if (!AGC_ASSERT(w.s == -w.ns))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        w.t[T_Z1 + 2 + w.s]    = acc;
+        w.t[T_ATEM1 + 2 + w.s] = w.inv;
+        w.anet                 = lm_dap_sat((int32_t) jaccu - w.absaos);
+
+        if ((int32_t) w.anet - AA_BIT9 > 0)
+        {
+            acc = net_min(&w);
+        }
+        else
+        { /* FIXMIN         */
+            w.accsw = (agc_sp_t) ((w.s != 0) ? 1 : -1);
+
+            if ((uvmask[w.accsw + 1 + w.uv] & d->ch5mask) != 0u)
+            {
+                w.anet = AA_BIT9; /* failed: AMIN   */
+                acc    = net_min(&w);
+            }
+            else
+            {
+                acc = lsave; /* max-jet values */
+            }
+        }
+
+        w.t[T_Z1 + w.s]    = acc; /* STMIN-         */
+        w.t[T_ATEM1 + w.s] = w.inv;
+
+        if (!AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
         axis_fail_dist(d, &w);
         store_axis(d, &w);
     }

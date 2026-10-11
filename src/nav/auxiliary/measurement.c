@@ -366,42 +366,6 @@ agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
     return (AGC_STATUS_OK);
 }
 
-/* One element of FAZA1 (p. 1256): blk[b][m] - ZI_m OMEGAM_b, with the
- * scale restored: VXSC by the normalized -ZI_m (NORM S2), VSL* by
- * -(s + NORMGAM), VAD* the old W row.                                     */
-static agc_vec_t incorp_wrow(agc_interp_t *ip, agc_vec_t wrow, agc_dp_t zim,
-                             agc_vec_t omegam, int normgam)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (wrow);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(zim) && (normgam <= NAVAUX_MAX_SHIFT) &&
-                    (normgam >= -NAVAUX_MAX_SHIFT)))
-    {
-        return (wrow);
-    }
-
-    int       s  = 0;
-    agc_dp_t  nz = agc_dp_norm(agc_dp_neg(zim), &s); /* DCOMP NORM S2  */
-    agc_vec_t d  = agc_vec_scale(ip, omegam, nz);    /* VXSC OMEGAMb   */
-    int       sh = -(s + normgam);                   /* LXC,2 XAD,2    */
-
-    if (sh > NAVAUX_MAX_SHIFT)
-    { /* zero ZI_m only */
-        sh = NAVAUX_MAX_SHIFT;
-    }
-    else if (sh < -NAVAUX_MAX_SHIFT)
-    {
-        sh = -NAVAUX_MAX_SHIFT;
-    }
-
-    d = agc_navaux_vec_shift(ip, d, sh); /* VSL* 0,2       */
-
-    return (agc_vec_add(ip, d, wrow));     /* VAD* W         */
-}
-
 /*
  * INCORP2 phases 1-2, FAZA..FAZB5 (MEASUREMENT_INCORPORATION.agc
  * pp. 1256-1258): W' = W - GAMMA OMEGA Z^T, one row m (ZI component m)
@@ -439,8 +403,37 @@ agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
 
         for (int b = 0; b < blks; b++)
         {
+            /* One element of FAZA1 (p. 1256): blk[b][m] - ZI_m OMEGAM_b, with the
+             * scale restored: VXSC by the normalized -ZI_m (NORM S2), VSL* by
+             * -(s + NORMGAM), VAD* the old W row.                                     */
+            agc_vec_t wrow        = w->blk[b][m];
+            agc_vec_t omegam_wrow = omegam[b];
+            int       normgam     = inc->normgam;
+
+            if (!AGC_ASSERT(agc_navaux_dp_ok(zim) &&
+                            (normgam <= NAVAUX_MAX_SHIFT) &&
+                            (normgam >= -NAVAUX_MAX_SHIFT)))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            int       s  = 0;
+            agc_dp_t  nz = agc_dp_norm(agc_dp_neg(zim), &s); /* DCOMP NORM S2  */
+            agc_vec_t d  = agc_vec_scale(ip, omegam_wrow, nz); /* VXSC OMEGAMb   */
+            int       sh = -(s + normgam);                     /* LXC,2 XAD,2    */
+
+            if (sh > NAVAUX_MAX_SHIFT)
+            { /* zero ZI_m only */
+                sh = NAVAUX_MAX_SHIFT;
+            }
+            else if (sh < -NAVAUX_MAX_SHIFT)
+            {
+                sh = -NAVAUX_MAX_SHIFT;
+            }
+
+            d            = agc_navaux_vec_shift(ip, d, sh); /* VSL* 0,2       */
             w->blk[b][m] =
-                incorp_wrow(ip, w->blk[b][m], zim, omegam[b], inc->normgam);
+                agc_vec_add(ip, d, wrow);
         }
     }
 

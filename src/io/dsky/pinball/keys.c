@@ -92,54 +92,6 @@ static agc_status_t pin_endnmtst(int inrel)
     return (AGC_STATUS_OK);
 }
 
-/* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
- * CYL x3 + CHAR, decimal by DECTOBIN (sum x 10 + CHAR).                 */
-static agc_status_t pin_accumulate(int inrel, bool decimal, int chr)
-{
-    pin_state_t *s = pin_st();
-
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(chr >= 0 && chr <= 9))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (inrel == PIN_INREL_VERB || inrel == PIN_INREL_NOUN)
-    {
-        /* VERB/NOUN set DECBRNCH = 1, so these are always decimal.        */
-        if (!AGC_ASSERT(decimal))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        uint8_t *reg = (inrel == PIN_INREL_VERB) ? &s->verbreg : &s->nounreg;
-        int      v   = (int) *reg * 10 + chr;
-
-        if (!AGC_ASSERT(v <= 99))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        *reg = (uint8_t) v;
-    }
-    else if (decimal)
-    {
-        int k = inrel - PIN_INREL_X;
-
-        s->xyz_dec[k] = s->xyz_dec[k] * 10 + chr; /* DECTOBIN          */
-    }
-    else
-    {
-        int k = inrel - PIN_INREL_X;
-
-        s->xyz_oct[k] =
-            (uint16_t) (((uint32_t) s->xyz_oct[k] << 3 | (uint32_t) chr) &
-                        PIN_WORD);
-    }
-
-    return (pin_endnmtst(inrel));
-}
-
 /* NUM (p. 316): numerical character in CHAR. */
 static agc_status_t pin_num(void)
 {
@@ -170,7 +122,56 @@ static agc_status_t pin_num(void)
     }
 
     /* +0 octal, +1 + decimal, +2 - decimal.                                */
-    return (pin_accumulate(inrel, (s->decbrnch & 3u) != 0u, s->chr));
+    /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
+     * CYL x3 + CHAR, decimal by DECTOBIN (sum x 10 + CHAR).                 */
+    bool decimal = (s->decbrnch & 3u) != 0u;
+    int  chr     = s->chr;
+
+    pin_state_t *s_accumulate = pin_st();
+
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
+        !AGC_ASSERT(chr >= 0 && chr <= 9))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (inrel == PIN_INREL_VERB || inrel == PIN_INREL_NOUN)
+    {
+        /* VERB/NOUN set DECBRNCH = 1, so these are always decimal.        */
+        if (!AGC_ASSERT(decimal))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        uint8_t *reg =
+            (inrel ==
+             PIN_INREL_VERB) ? &s_accumulate->verbreg : &s_accumulate->nounreg;
+        int v = (int) *reg * 10 + chr;
+
+        if (!AGC_ASSERT(v <= 99))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        *reg = (uint8_t) v;
+    }
+    else if (decimal)
+    {
+        int k = inrel - PIN_INREL_X;
+
+        s_accumulate->xyz_dec[k] = s_accumulate->xyz_dec[k] * 10 + chr; /* DECTOBIN          */
+    }
+    else
+    {
+        int k = inrel - PIN_INREL_X;
+
+        s_accumulate->xyz_oct[k] =
+            (uint16_t) (((uint32_t) s_accumulate->xyz_oct[k] <<
+                         3 | (uint32_t) chr) &
+                        PIN_WORD);
+    }
+
+    return (pin_endnmtst(inrel));
 }
 
 /* 89TEST (p. 316): 8 or 9 is accepted only in decimal. */
@@ -311,59 +312,6 @@ static agc_status_t pin_sign_key(bool minus)
 static bool pin_legaltst(int inrel)
 {
     return (inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z);
-}
-
-/* CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
- * the load up one register (CLPASHI: REQRET +3, verb - 1).              */
-static agc_status_t pin_clear_key(void)
-{
-    pin_state_t *s = pin_st();
-    /* Do not change DSPCOUNT because may later fail LEGALTST.            */
-    int inrel = pin_inrel_of(s->dspcount);
-
-    if (!AGC_ASSERT(inrel >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (s->clpass > 0)
-    { /* CLPASHI      */
-        inrel = (inrel > 0) ? inrel - 1 : 0;
-
-        if (!pin_legaltst(inrel))
-        {
-            return (AGC_STATUS_OK);
-        }
-
-        s->reqret = pin_reqret_backup(s->reqret); /* backs data requests */
-
-        if (s->verbreg > 0)
-        {
-            s->verbreg--; /* DIM VERBREG  */
-        }
-
-        agc_status_t st = pin_updatvb(s->verbreg);
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-    }
-    else if (!pin_legaltst(inrel))
-    {
-        return (AGC_STATUS_OK); /* illegal      */
-    }
-
-    agc_status_t st = pin_5blank_rel(inrel); /* CLEAR1, CLR5 */
-
-    s->clpass++;                             /* set for higher pass */
-
-    if (!AGC_ASSERT(s->clpass != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
 }
 
 /* ---- ENTER (pp. 323-324) ---------------------------------------------- */
@@ -613,7 +561,58 @@ static agc_status_t pin_charin2(uint8_t code)
         case 034:
             return (pin_enter()); /* ENTER                  */
         case 036:
-            return (pin_clear_key()); /* CLEAR                  */
+            /* CLEAR                  */
+            /* CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
+             * the load up one register (CLPASHI: REQRET +3, verb - 1).              */
+        {
+            pin_state_t *s_key = pin_st();
+            /* Do not change DSPCOUNT because may later fail LEGALTST.            */
+            int inrel = pin_inrel_of(s_key->dspcount);
+
+            if (!AGC_ASSERT(inrel >= 0))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            if (s_key->clpass > 0)
+            {     /* CLPASHI      */
+                inrel = (inrel > 0) ? inrel - 1 : 0;
+
+                if (!pin_legaltst(inrel))
+                {
+                    return (AGC_STATUS_OK);
+                }
+
+                s_key->reqret = pin_reqret_backup(s_key->reqret);     /* backs data requests */
+
+                if (s_key->verbreg > 0)
+                {
+                    s_key->verbreg--;     /* DIM VERBREG  */
+                }
+
+                agc_status_t st = pin_updatvb(s_key->verbreg);
+
+                if (st != AGC_STATUS_OK)
+                {
+                    return (st);
+                }
+            }
+            else if (!pin_legaltst(inrel))
+            {
+                return (AGC_STATUS_OK);     /* illegal      */
+            }
+
+            agc_status_t st = pin_5blank_rel(inrel);     /* CLEAR1, CLR5 */
+
+            s_key->clpass++;                                 /* set for higher pass */
+
+            if (!AGC_ASSERT(s_key->clpass != 0))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (st);
+        }
         case 037:
             return (pin_nvcom(false)); /* NOUN                   */
         default:
@@ -876,19 +875,6 @@ static uint8_t pin_key_of_char(char c)
     }
 }
 
-/* PRO for the sim: PROCKEY run at once. */
-static agc_status_t pin_pro_now(void)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_job_ctx_t ctx = {AGC_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
-
-    return (agc_job_prockey(&ctx));
-}
-
 agc_status_t agc_dsky_keys(const char *seq)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -908,7 +894,15 @@ agc_status_t agc_dsky_keys(const char *seq)
     {
         if (seq[i] == 'P')
         {
-            st = pin_pro_now();
+            /* PRO for the sim: PROCKEY run at once. */
+            if (!AGC_ASSERT(pin_invariants()))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            agc_job_ctx_t ctx = {AGC_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
+
+            st = agc_job_prockey(&ctx);
             continue;
         }
 

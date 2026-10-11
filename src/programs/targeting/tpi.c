@@ -32,16 +32,104 @@
 #define TPI_TITER1   AGC_SP_MAX /* OCT 37777 after the 1st pass  */
 #define TPI_MAX_LOOP (AGC_RENDZ_TPI_MAXITER + 2)
 
-/* ---- ELCALC (p.469): LOS elevation EA of the passive vehicle seen from
- * the active one, revolutions; > .5 rev when the LOS is below the local
- * horizontal (EA = DPPOSMAX - angle).                                   */
-static agc_dp_t tpi_elcalc(agc_interp_t *ip, agc_rendz_t *rz)
+/* FIGTIME .. OKMAX (pp.470-471): time step dt = angle 2pi / (WA - WP),
+ * limited to SECMAX. Returns false when there is no solution.          */
+static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 {
+    agc_dp_t  rp  = 0;
+    agc_dp_t  ra  = 0;
+    agc_vec_t urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL); /* 36D -> 12D */
+    agc_vec_t ura = agc_vec_unit(ip, rz->ract3, &ra, NULL);  /* 36D -> 14D */
+
+    if (!AGC_ASSERT(urp.c[0] >= AGC_DP_MIN && ura.c[0] >= AGC_DP_MIN))
+    {
+        return (false);
+    }
+
+    bool fail = false;
+    /* FIGTIME angle part (pp.470-471): the central angle the active vehicle
+     * must gain on the passive one, revolutions. *fail when the geometry has
+     * no solution (the AGC's BMN NORMEX with a negative MPAC).             */
+    agc_dp_t d30 = agc_dp_sub(ip, rp, ra); /* 30D RP-RA */
+    agc_dp_t m   = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, rz->elev), d30);
+
+    fail = (m < 0);
+    agc_dp_t c28 = agc_dp_mul_trunc(
+        agc_dp_cos(ip, agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra);
+
+    c28 = agc_dp_neg(agc_dp_div(ip, c28, rp)); /* COS(180-A) = -COS A */
+
+    if (agc_dp_sub(ip, RZ_DPHALF, agc_dp_abs(c28)) < 0)
+    {
+        fail = true;
+    }
+
+    agc_vec_t urp_angle = rz_unit(ip, rz->rpass3); /* 0D        */
+    agc_vec_t ura_angle = rz_unit(ip, rz->ract3);  /* 6D        */
+    agc_dp_t  s         = agc_vec_dot(ip, agc_vec_cross(ip, ura_angle,
+                                                        urp_angle), rz->unrm);
+    agc_dp_t ang_angle =
+        agc_dp_acos(ip,
+                    agc_dp_shl(ip, agc_vec_dot(ip, urp_angle, ura_angle), 1));
+    agc_dp_t a1 =
+        agc_dp_add(ip, agc_dp_sub(ip, agc_dp_sign(ang_angle, s), RZ_DPHALF),
+                   rz->elev);
+    agc_dp_t a2 =
+        agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip, c28)), d30);
+
+    if (!AGC_ASSERT(a1 >= AGC_DP_MIN && a2 >= AGC_DP_MIN))
+    {
+        return (false);
+    }
+
+    agc_dp_t ang = agc_dp_add(ip, a2, a1);
+
+    if (fail)
+    {
+        return (false);
+    }
+
+    int x1 = 0;
+    /* FIGTIME rate part (pp.470-471): WA - WP, both angular rates times
+     * RA RP, normalized; *x1 = the NORM index.                             */
+    agc_vec_t ura_rate = rz_unit(ip, rz->ract3);
+    agc_vec_t urp_rate = rz_unit(ip, rz->rpass3);
+    agc_vec_t ha       = rz_unit(ip, agc_vec_cross(ip, rz->unrm, ura_rate)); /* UN*RA */
+    agc_dp_t  wa       = agc_dp_mul_trunc(agc_vec_dot(ip, ha, rz->vact3), rp);
+    agc_vec_t hp       =
+        rz_unit(ip, agc_vec_cross(ip, agc_vec_cross(ip, urp_rate, rz->vpass3),
+                                  urp_rate)); /* (RP*VP)*RP */
+    agc_dp_t wp = agc_dp_mul_trunc(agc_vec_dot(ip, hp, rz->vpass3), ra);
+    agc_dp_t w  = rz_norm(agc_dp_sub(ip, wa, wp), &x1);
+    agc_dp_t t  = agc_dp_div(ip, agc_dp_mul_trunc(ang, RZ_TWOPI_B4), w);
+
+    t = rz_sl_star(ip, agc_dp_mul_trunc(t, ra), -3, x1); /* SL* 0-3,1 */
+    t = agc_dp_mul_trunc(t, rp);
+
+    if (agc_dp_sub(ip, agc_dp_abs(t), rz->secmax) >= 0)
+    {
+        t = agc_dp_sign(rz->secmax, t); /* max time, signed like dt */
+    }
+
+    *dt = t;
+
+    return (true);
+}
+
+/* One pass ELCALC .. ADTIME. *done: the search has exited (OK = the AGC
+ * zero MPAC: converged, elevation computed, or out of iterations).     */
+static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
+                                    bool *done)
+{
+    *done = true;
+    /* ---- ELCALC (p.469): LOS elevation EA of the passive vehicle seen from
+     * the active one, revolutions; > .5 rev when the LOS is below the local
+     * horizontal (EA = DPPOSMAX - angle).                                   */
     agc_status_t st = agc_rendz_los_and_normal(ip, rz); /* S34/35.1 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return (0); /* no valid result */
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_vec_t h    = agc_vec_cross(ip, rz->unrm, rz->ract3); /* 0D       */
@@ -60,159 +148,8 @@ static agc_dp_t tpi_elcalc(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!AGC_ASSERT(ea >= 0))
     {
-        return (0); /* no valid result */
+        return (AGC_STATUS_BAD_ARG);
     }
-
-    return (ea);
-}
-
-/* FIGTIME angle part (pp.470-471): the central angle the active vehicle
- * must gain on the passive one, revolutions. *fail when the geometry has
- * no solution (the AGC's BMN NORMEX with a negative MPAC).             */
-static agc_dp_t tpi_figtime_angle(agc_interp_t *ip, const agc_rendz_t *rz,
-                                  agc_dp_t rp, agc_dp_t ra, bool *fail)
-{
-    agc_dp_t d30 = agc_dp_sub(ip, rp, ra); /* 30D RP-RA */
-    agc_dp_t m   = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, rz->elev), d30);
-
-    *fail = (m < 0);
-    agc_dp_t c28 = agc_dp_mul_trunc(
-        agc_dp_cos(ip, agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra);
-
-    c28 = agc_dp_neg(agc_dp_div(ip, c28, rp)); /* COS(180-A) = -COS A */
-
-    if (agc_dp_sub(ip, RZ_DPHALF, agc_dp_abs(c28)) < 0)
-    {
-        *fail = true;
-    }
-
-    agc_vec_t urp = rz_unit(ip, rz->rpass3); /* 0D        */
-    agc_vec_t ura = rz_unit(ip, rz->ract3);  /* 6D        */
-    agc_dp_t  s   = agc_vec_dot(ip, agc_vec_cross(ip, ura, urp), rz->unrm);
-    agc_dp_t  ang =
-        agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, urp, ura), 1));
-    agc_dp_t a1 = agc_dp_add(ip, agc_dp_sub(ip, agc_dp_sign(ang, s), RZ_DPHALF),
-                             rz->elev);
-    agc_dp_t a2 =
-        agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip, c28)), d30);
-
-    if (!AGC_ASSERT(a1 >= AGC_DP_MIN && a2 >= AGC_DP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_dp_add(ip, a2, a1)); /* ALPHA PI  */
-}
-
-/* FIGTIME rate part (pp.470-471): WA - WP, both angular rates times
- * RA RP, normalized; *x1 = the NORM index.                             */
-static agc_dp_t tpi_figtime_rate(agc_interp_t *ip, const agc_rendz_t *rz,
-                                 agc_dp_t rp, agc_dp_t ra, int *x1)
-{
-    agc_vec_t ura = rz_unit(ip, rz->ract3);
-    agc_vec_t urp = rz_unit(ip, rz->rpass3);
-    agc_vec_t ha  = rz_unit(ip, agc_vec_cross(ip, rz->unrm, ura)); /* UN*RA */
-    agc_dp_t  wa  = agc_dp_mul_trunc(agc_vec_dot(ip, ha, rz->vact3), rp);
-    agc_vec_t hp  =
-        rz_unit(ip, agc_vec_cross(ip, agc_vec_cross(ip, urp, rz->vpass3),
-                                  urp)); /* (RP*VP)*RP */
-    agc_dp_t wp = agc_dp_mul_trunc(agc_vec_dot(ip, hp, rz->vpass3), ra);
-
-    if (!AGC_ASSERT(x1 != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (rz_norm(agc_dp_sub(ip, wa, wp), x1)); /* NORM X1   */
-}
-
-/* FIGTIME .. OKMAX (pp.470-471): time step dt = angle 2pi / (WA - WP),
- * limited to SECMAX. Returns false when there is no solution.          */
-static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
-{
-    agc_dp_t  rp  = 0;
-    agc_dp_t  ra  = 0;
-    agc_vec_t urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL); /* 36D -> 12D */
-    agc_vec_t ura = agc_vec_unit(ip, rz->ract3, &ra, NULL);  /* 36D -> 14D */
-
-    if (!AGC_ASSERT(urp.c[0] >= AGC_DP_MIN && ura.c[0] >= AGC_DP_MIN))
-    {
-        return (false);
-    }
-
-    bool     fail = false;
-    agc_dp_t ang  = tpi_figtime_angle(ip, rz, rp, ra, &fail);
-
-    if (fail)
-    {
-        return (false);
-    }
-
-    int      x1 = 0;
-    agc_dp_t w  = tpi_figtime_rate(ip, rz, rp, ra, &x1);
-    agc_dp_t t  = agc_dp_div(ip, agc_dp_mul_trunc(ang, RZ_TWOPI_B4), w);
-
-    t = rz_sl_star(ip, agc_dp_mul_trunc(t, ra), -3, x1); /* SL* 0-3,1 */
-    t = agc_dp_mul_trunc(t, rp);
-
-    if (agc_dp_sub(ip, agc_dp_abs(t), rz->secmax) >= 0)
-    {
-        t = agc_dp_sign(rz->secmax, t); /* max time, signed like dt */
-    }
-
-    *dt = t;
-
-    return (true);
-}
-
-/* OKMAX .. ADTIME (pp.471-472): choose the step from the history of the
- * elevation error (halve and reverse when the solution was crossed or
- * the error grew) and add it to NOMTPI.                                */
-static void tpi_step(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t dt)
-{
-    agc_dp_t step;
-
-    if (rz->titer < 0)
-    { /* first pass    */
-        rz->titer   = TPI_TITER1;
-        step        = dt;
-        rz->delteeo = step; /* STORDELT      */
-    }
-    else if (agc_dp_mul_trunc(rz->delel, rz->delelo) < 0)
-    {
-        rz->secmax = agc_dp_mul_trunc(rz->secmax, TPI_THIRD); /* crossed */
-        step       = agc_dp_sign(agc_dp_neg(agc_dp_shr(agc_dp_abs(dt), 1)),
-                                 rz->delteeo);  /* RESIGN        */
-        rz->delteeo = step;
-    }
-    else if (agc_dp_sub(ip, agc_dp_abs(rz->delelo), agc_dp_abs(rz->delel)) < 0)
-    { /* REVERS        */
-        agc_dp_t back = agc_dp_neg(rz->delteeo);
-
-        rz->delteeo = agc_dp_shr(back, 1);
-        step        = agc_dp_add(ip, rz->delteeo, back);
-    }
-    else
-    { /* NEXTES        */
-        step        = agc_dp_sign(agc_dp_abs(dt), rz->delteeo);
-        rz->delteeo = step;
-    }
-
-    rz->nomtpi = agc_dp_add(ip, step, rz->nomtpi); /* ADTIME        */
-
-    if (!AGC_ASSERT(rz->titer >= 0))
-    {
-        return;
-    }
-}
-
-/* One pass ELCALC .. ADTIME. *done: the search has exited (OK = the AGC
- * zero MPAC: converged, elevation computed, or out of iterations).     */
-static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
-                                    bool *done)
-{
-    *done = true;
-    agc_dp_t ea = tpi_elcalc(ip, rz);
 
     if (!rz_vflag_test(RZ_VF_ITSWICH))
     { /* ELEX      */
@@ -249,7 +186,44 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
         return (AGC_STATUS_ALARM); /* BMN NORMEX     */
     }
 
-    tpi_step(ip, rz, dt);
+    /* OKMAX .. ADTIME (pp.471-472): choose the step from the history of the
+     * elevation error (halve and reverse when the solution was crossed or
+     * the error grew) and add it to NOMTPI.                                */
+    agc_dp_t step;
+
+    if (rz->titer < 0)
+    { /* first pass    */
+        rz->titer   = TPI_TITER1;
+        step        = dt;
+        rz->delteeo = step; /* STORDELT      */
+    }
+    else if (agc_dp_mul_trunc(rz->delel, rz->delelo) < 0)
+    {
+        rz->secmax = agc_dp_mul_trunc(rz->secmax, TPI_THIRD); /* crossed */
+        step       = agc_dp_sign(agc_dp_neg(agc_dp_shr(agc_dp_abs(dt), 1)),
+                                 rz->delteeo);  /* RESIGN        */
+        rz->delteeo = step;
+    }
+    else if (agc_dp_sub(ip, agc_dp_abs(rz->delelo), agc_dp_abs(rz->delel)) < 0)
+    { /* REVERS        */
+        agc_dp_t back = agc_dp_neg(rz->delteeo);
+
+        rz->delteeo = agc_dp_shr(back, 1);
+        step        = agc_dp_add(ip, rz->delteeo, back);
+    }
+    else
+    { /* NEXTES        */
+        step        = agc_dp_sign(agc_dp_abs(dt), rz->delteeo);
+        rz->delteeo = step;
+    }
+
+    rz->nomtpi = agc_dp_add(ip, step, rz->nomtpi); /* ADTIME        */
+
+    if (!AGC_ASSERT(rz->titer >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     *done = false;
 
     return (AGC_STATUS_OK);

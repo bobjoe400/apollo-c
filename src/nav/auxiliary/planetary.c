@@ -205,41 +205,6 @@ typedef struct moon_angles
     agc_dp_t nodi; /* NODI revs 2^0                                     */
 } moon_angles_t;
 
-static agc_status_t moonmx_angles(agc_interp_t *ip, agc_tp_t tsubo,
-                                  agc_dp_t t_cs, moon_angles_t *a)
-{
-    if (!AGC_ASSERT((ip != NULL) && (a != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_dp_t     b  = 0;
-    agc_status_t st =
-        agc_planet_newangle(ip, tsubo, t_cs, BSUBO, BDOT, XDOT_SHIFT_NODE, &b);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_newangle(ip, tsubo, t_cs, FSUBO, FDOT, XDOT_SHIFT_F,
-                                 &a->f);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_newangle(ip, tsubo, t_cs, NODIO, NODDOT,
-                                 XDOT_SHIFT_NODE, &a->nodi);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    a->cob = agc_dp_cos(ip, b);
-    a->sob = agc_dp_sin(ip, b);
-
-    return (AGC_STATUS_OK);
-}
-
 /* DMP SL1R: product of two half-scaled quantities, back to scale 2^1. */
 static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
@@ -285,7 +250,33 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip,
     }
 
     moon_angles_t ang;
-    agc_status_t  st = moonmx_angles(ip, pad->tephem, t_cs, &ang);
+    agc_tp_t      tsubo = pad->tephem;
+
+    agc_dp_t     b         = 0;
+    agc_status_t st_angles =
+        agc_planet_newangle(ip, tsubo, t_cs, BSUBO, BDOT, XDOT_SHIFT_NODE, &b);
+
+    if (st_angles == AGC_STATUS_OK)
+    {
+        st_angles = agc_planet_newangle(ip, tsubo, t_cs, FSUBO, FDOT,
+                                        XDOT_SHIFT_F,
+                                        &ang.f);
+    }
+
+    if (st_angles == AGC_STATUS_OK)
+    {
+        st_angles = agc_planet_newangle(ip, tsubo, t_cs, NODIO, NODDOT,
+                                        XDOT_SHIFT_NODE, &ang.nodi);
+    }
+
+    if (!AGC_ASSERT(st_angles == AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    ang.cob = agc_dp_cos(ip, b);
+    ang.sob = agc_dp_sin(ip, b);
+    agc_status_t st = AGC_STATUS_OK;
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

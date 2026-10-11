@@ -255,38 +255,6 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a,
     return (AGC_STATUS_OK);
 }
 
-/* ALTCALC (p.400-401): for AM > 170 deg the axis comes from the
- * symmetric part MFISYM = (MFI + TMFI)/2 (scale 4):
- *   COFi = SQRT((MFISYMii - CAM/2) / (1/2 - CAM)), then UNIT.            */
-static agc_vec_t altcalc(agc_interp_t *ip, const agc_kalc_setup_t *k,
-                         agc_mat_t *sym)
-{
-    agc_mat_t t = agc_mat_transpose(&k->mfi);
-
-    for (int i = 0; i < 3; i++)
-    {
-        sym->row[i] = agc_vec_shr(agc_vec_add(ip, k->mfi.row[i], t.row[i]), 1);
-    }
-
-    agc_dp_t pd0 = agc_dp_shr(k->cam, 1); /* CAM $4   */
-    agc_dp_t pd2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, k->cam));
-    agc_dp_t cof[3];
-
-    for (int i = 2; i >= 0; i--)
-    { /* Z, Y, X  */
-        agc_dp_t r = agc_dp_div(ip, agc_dp_sub(ip, sym->row[i].c[i], pd0), pd2);
-
-        cof[i] = agc_dp_sqrt(ip, r); /* $ ROOT 2 */
-    }
-
-    if (!AGC_ASSERT(pd2 >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return (agc_vec_unit(ip, agc_vec_make(cof[0], cof[1], cof[2]), NULL, NULL));
-}
-
 /* COFMAXGO / METHOD1-3 (p.401-403): fix the signs of the ALTCALC axis
  * from the largest component: its sign from COFSKEW, the others from the
  * off-diagonal terms of MFISYM.                                          */
@@ -350,29 +318,6 @@ static agc_dp_t sload_cdu(uint16_t p)
     return ((agc_dp_t) (v * 16384L));
 }
 
-/* MFI, its transpose, COFSKEW and CAM (SECAD, p.399-400).                */
-static void secad(agc_interp_t *ip, agc_kalc_setup_t *k)
-{
-    agc_mat_t tmis = agc_mat_transpose(&k->mis);      /* TRANSPOS */
-
-    k->mfi = agc_mat_mul(ip, &tmis, &k->mfs); /* MXM3 $4  */
-    const agc_mat_t *f = &k->mfi;
-
-    k->cofskew = agc_vec_make(agc_dp_sub(ip, f->row[2].c[1], f->row[1].c[2]),
-                              agc_dp_sub(ip, f->row[0].c[2], f->row[2].c[0]),
-                              agc_dp_sub(ip, f->row[1].c[0], f->row[0].c[1]));
-    agc_dp_t cam = agc_dp_add(ip, f->row[0].c[0], f->row[2].c[2]);
-
-    cam    = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
-    k->cam = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
-    k->am  = agc_dp_acos(ip, k->cam);                   /* revolutions        */
-
-    if (!AGC_ASSERT(k->am >= 0))
-    {
-        return;
-    }
-}
-
 /* KALCMAN3 .. SECAD .. CHECKMAX / ALTCALC / COFMAXGO (pp.399-403): from
  * the initial CDU angles bcdu and the final CPHI, CTHETA, CPSI compute
  * MIS, MFS, MFI, the maneuver angle AM and axis COF.                     */
@@ -407,7 +352,26 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
         return (st);
     }
 
-    secad(ip, out);
+    /* MFI, its transpose, COFSKEW and CAM (SECAD, p.399-400).                */
+    agc_mat_t tmis = agc_mat_transpose(&out->mis);      /* TRANSPOS */
+
+    out->mfi = agc_mat_mul(ip, &tmis, &out->mfs); /* MXM3 $4  */
+    const agc_mat_t *f = &out->mfi;
+
+    out->cofskew = agc_vec_make(agc_dp_sub(ip, f->row[2].c[1], f->row[1].c[2]),
+                                agc_dp_sub(ip, f->row[0].c[2], f->row[2].c[0]),
+                                agc_dp_sub(ip, f->row[1].c[0], f->row[0].c[1]));
+    agc_dp_t cam = agc_dp_add(ip, f->row[0].c[0], f->row[2].c[2]);
+
+    cam      = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
+    out->cam = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
+    out->am  = agc_dp_acos(ip, out->cam);                   /* revolutions        */
+
+    if (!AGC_ASSERT(out->am >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
 
     if (agc_dp_sub(ip, out->am, lm ? MINANG_LM : MINANG_CM) < 0)
@@ -426,7 +390,35 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
 
     out->kcase = AGC_KALC_LARGE; /* ALTCALC  */
     agc_mat_t sym;
-    agc_vec_t cof = altcalc(ip, out, &sym);
+    /* ALTCALC (p.400-401): for AM > 170 deg the axis comes from the
+     * symmetric part MFISYM = (MFI + TMFI)/2 (scale 4):
+     *   COFi = SQRT((MFISYMii - CAM/2) / (1/2 - CAM)), then UNIT.            */
+    agc_mat_t t = agc_mat_transpose(&out->mfi);
+
+    for (int i = 0; i < 3; i++)
+    {
+        sym.row[i] = agc_vec_shr(agc_vec_add(ip, out->mfi.row[i], t.row[i]), 1);
+    }
+
+    agc_dp_t pd0 = agc_dp_shr(out->cam, 1); /* CAM $4   */
+    agc_dp_t pd2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, out->cam));
+    agc_dp_t cof_altcalc[3];
+
+    for (int i = 2; i >= 0; i--)
+    { /* Z, Y, X  */
+        agc_dp_t r = agc_dp_div(ip, agc_dp_sub(ip, sym.row[i].c[i], pd0), pd2);
+
+        cof_altcalc[i] = agc_dp_sqrt(ip, r); /* $ ROOT 2 */
+    }
+
+    if (!AGC_ASSERT(pd2 >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_vec_t cof =
+        agc_vec_unit(ip, agc_vec_make(cof_altcalc[0], cof_altcalc[1],
+                                      cof_altcalc[2]), NULL, NULL);
 
     out->cof = cofmaxgo(cof, out->cofskew, &sym);
 

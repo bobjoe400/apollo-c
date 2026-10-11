@@ -802,24 +802,6 @@ static agc_vec_t acq_search_point(agc_interp_t *ip, lmnav_state_t *n)
     return (agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, p), 1));
 }
 
-/* OMEGCALC: OMEGA, the angle between the RR boresight (RRNB of the RR
- * CDUs) and the +Z axis, for R2 of noun 80.                             */
-static agc_status_t acq_omega(agc_interp_t *ip, lmnav_state_t *n)
-{
-    rr_state_t *s = rr_state();
-
-    agc_inhint();
-    s->tangnb[0] = agc_erase_cdut();
-    s->tangnb[1] = agc_erase_cdus();
-    agc_relint();
-    agc_vec_t    b  = agc_vec_zero();
-    agc_status_t st = agc_lm_rrnb(ip, s->tangnb[0], s->tangnb[1], &b);
-
-    n->omegad = agc_dp_acos(ip, b.c[2]);
-
-    return (st);
-}
-
 /* LRS24.11 .. CONTDES2 / OMEGCALC: continuous designate to the point;
  * out of coverage or a maneuver needed: alarm 527 and the pattern stops
  * (LIMALARM).                                                            */
@@ -859,7 +841,22 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
 
     if (res == AGC_RR_DESIGNATE_STARTED)
     {
-        return (acq_omega(&ip, n)); /* ENDOFJOB */
+        /* ENDOFJOB */
+        /* OMEGCALC: OMEGA, the angle between the RR boresight (RRNB of the RR
+         * CDUs) and the +Z axis, for R2 of noun 80.                             */
+        rr_state_t *s_omega = rr_state();
+
+        agc_inhint();
+        s_omega->tangnb[0] = agc_erase_cdut();
+        s_omega->tangnb[1] = agc_erase_cdus();
+        agc_relint();
+        agc_vec_t    b        = agc_vec_zero();
+        agc_status_t st_omega = agc_lm_rrnb(&ip, s_omega->tangnb[0],
+                                            s_omega->tangnb[1], &b);
+
+        n->omegad = agc_dp_acos(&ip, b.c[2]);
+
+        return (st_omega);
     }
 
     agc_alarm(ACQ_ALARM_SEARCH); /* LIMALARM */

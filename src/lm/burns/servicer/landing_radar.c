@@ -132,46 +132,6 @@ agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
     return (agc_lm_serv_contserv(ctx));
 }
 
-/* The antenna-position checks of MUNRETRN (p.874-875): HITEST, POS2CHK,
- * HIGATCHK, POS1CHK, LRPOSALM. Channel 33 is inverted (0 = in position). */
-static agc_status_t lr_position(agc_job_ctx_t *ctx)
-{
-    agc_guid_lm_t *lm   = &agc_guid_state()->lm;
-    uint16_t       ch33 = agc_chan_read(033);
-
-    if (agc_flag_test(AGC_FLAG_PSTHIGAT))
-    { /* POS2CHK                */
-        if ((ch33 & (uint16_t) AGC_CH033_LRPOS2) == 0U)
-        {
-            return (agc_lm_serv_updatchk(ctx));
-        }
-
-        if ((agc_chan_read(012) & (uint16_t) AGC_CH012_LRPOS2CMD) != 0U)
-        {
-            return (agc_lm_serv_contserv(ctx)); /* BEING REPOSITIONED     */
-        }
-    }
-    else
-    { /* HIGATCHK               */
-        agc_dp_t ttf8 = agc_lm_ldg()->ttf_8;
-
-        if ((int) agc_dp_high(ttf8) + lm->rpcrtime > 0 &&
-            (int) lm->rpcrtqsw - (int) agc_dp_high(lm->xnbpip.row[0].c[0]) <= 0)
-        {
-            return (agc_lm_serv_higatask(ctx)); /* UXBXP > QSW: REPOSITION */
-        }
-
-        if ((ch33 & (uint16_t) AGC_CH033_LRPOS1) == 0U)
-        { /* POS1CHK         */
-            return (agc_lm_serv_updatchk(ctx));
-        }
-    }
-
-    agc_alarm(AGC_ALARM_00511); /* LRPOSALM               */
-
-    return (agc_lm_serv_contserv(ctx));
-}
-
 /* MUNRETRN (p.874) with XORCHK and 35KCHK (p.878-879): LR reading enabled
  * below 50 000 ft (the code's 35KCHK uses ALTCRIT +2 = 50KFT), X-axis
  * override inhibited below 30 000 ft.                                     */
@@ -217,7 +177,43 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (lr_position(ctx)); /* HITEST                 */
+    /* HITEST                 */
+    /* The antenna-position checks of MUNRETRN (p.874-875): HITEST, POS2CHK,
+     * HIGATCHK, POS1CHK, LRPOSALM. Channel 33 is inverted (0 = in position). */
+    agc_guid_lm_t *lm   = &agc_guid_state()->lm;
+    uint16_t       ch33 = agc_chan_read(033);
+
+    if (agc_flag_test(AGC_FLAG_PSTHIGAT))
+    { /* POS2CHK                */
+        if ((ch33 & (uint16_t) AGC_CH033_LRPOS2) == 0U)
+        {
+            return (agc_lm_serv_updatchk(ctx));
+        }
+
+        if ((agc_chan_read(012) & (uint16_t) AGC_CH012_LRPOS2CMD) != 0U)
+        {
+            return (agc_lm_serv_contserv(ctx)); /* BEING REPOSITIONED     */
+        }
+    }
+    else
+    { /* HIGATCHK               */
+        agc_dp_t ttf8 = agc_lm_ldg()->ttf_8;
+
+        if ((int) agc_dp_high(ttf8) + lm->rpcrtime > 0 &&
+            (int) lm->rpcrtqsw - (int) agc_dp_high(lm->xnbpip.row[0].c[0]) <= 0)
+        {
+            return (agc_lm_serv_higatask(ctx)); /* UXBXP > QSW: REPOSITION */
+        }
+
+        if ((ch33 & (uint16_t) AGC_CH033_LRPOS1) == 0U)
+        { /* POS1CHK         */
+            return (agc_lm_serv_updatchk(ctx));
+        }
+    }
+
+    agc_alarm(AGC_ALARM_00511); /* LRPOSALM               */
+
+    return (agc_lm_serv_contserv(ctx));
 }
 
 /* NOR29NOW .. COPYCYC2 (p.876-877): HCALC, ALTBITS and UHZP for R10, the
@@ -333,65 +329,6 @@ static agc_status_t hfail(agc_job_ctx_t *ctx)
     return (agc_lm_serv_vmeaschk(ctx));
 }
 
-/* The altitude measurement of POSUPDAT (p.884): DELTAH = (corrected slant
- * range along the beam) . UNIT/R/ - HCALC, m 2^24. The doppler correction
- * (V relative to the surface along the beam times RADSKAL, times SKALSKAL
- * on the low scale) is added to HMEAS before scaling by HSCAL.            */
-static agc_dp_t lr_deltah(agc_interp_t *ip, agc_guid_t *g)
-{
-    agc_vec_t hbsm = agc_vec_mat(ip, g->lm.hbeamnb, &g->lm.xnbpip); /* 2^2   */
-    agc_vec_t vrel =
-        agc_vec_add(ip, agc_vec_shl(ip, g->lm.v1s, 2), g->lm.delvs);
-    agc_dp_t dop = agc_dp_mul(ip, agc_vec_dot(ip, vrel, hbsm), g->lm.radskal);
-
-    if (!agc_flag_test(AGC_FLAG_ALTSCALE))
-    { /* LOW SCALE: RESCALE     */
-        dop = agc_tp_to_dp(agc_dp_mul_tp(dop, agc_dp_from_sp(g->lm.skalskal)));
-    }
-
-    agc_dp_t  slant = agc_dp_shl(ip, agc_dp_add(ip, dop, g->lm.hmeas), 7);
-    agc_vec_t sv    =
-        agc_vec_scale(ip, hbsm, agc_dp_mul(ip, slant, HSCAL)); /* 2^23 */
-
-    if (!AGC_ASSERT(g->lm.hmeas >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_dp_sub(ip, agc_vec_dot(ip, sv, g->avg.unitr), g->lm.hcalc));
-}
-
-/* NOREASON position update (p.885): below HMAX,
- *   GNUR = R1S + DELTAH * WH * (1 - H/HMAX) * UNIT/R/ (SL1), then MUNGRAV. */
-static agc_status_t lr_rupdate(agc_job_ctx_t *ctx, agc_interp_t *ip,
-                               agc_guid_t *g)
-{
-    agc_dp_t h28 = agc_dp_shr(g->lm.hcalc, 4); /* RESCALE H TO 2(28)M    */
-    agc_sp_t hhi = agc_dp_high(h28);
-    agc_sp_t hlo = agc_dp_low(h28); /* H AT 2(14) M           */
-    int      d   = (int) g->lm.lrhmax - (int) hlo;
-
-    if (hhi != 0 || d <= 0 || !AGC_ASSERT(g->lm.lrhmax > 0))
-    {
-        return (agc_lm_serv_vmeaschk(ctx)); /* H > HMAX: BYPASS       */
-    }
-
-    agc_ovf_t ovf = 0;
-    agc_dp_t  wq  =
-        agc_dp_div_raw(agc_sp_mul((agc_sp_t) d, g->lm.lrwh),
-                       agc_dp_from_sp(g->lm.lrhmax), &ovf); /* MP DV */
-    agc_dp_t dh = agc_tp_to_dp(agc_dp_mul_tp(
-                                   agc_lm_ldg()->deltah,
-                                   agc_dp_from_sp(agc_dp_high(wq)))); /* SHORTMP2 */
-    agc_vec_t dr = agc_vec_scale(ip, g->avg.unitr, agc_dp_shl(ip, dh, 1));
-
-    g->lm.gnur    = agc_vec_add(ip, dr, g->lm.r1s);
-    g->avg.gdt1_2 = agc_lm_mungrav(ip, g->lm.gnur); /* GDT1/2 */
-    agc_lm_serv_quikfaz5(AGC_JOB_SERV_RUPDATED);
-
-    return (agc_lm_serv_rupdated(ctx));
-}
-
 /* RUPDATED (p.886): R1S = GNUR, then VMEASCHK.                            */
 agc_status_t agc_lm_serv_rupdated(agc_job_ctx_t *ctx)
 {
@@ -438,7 +375,31 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_dp_t dh = lr_deltah(&ip, g);
+    /* The altitude measurement of POSUPDAT (p.884): DELTAH = (corrected slant
+     * range along the beam) . UNIT/R/ - HCALC, m 2^24. The doppler correction
+     * (V relative to the surface along the beam times RADSKAL, times SKALSKAL
+     * on the low scale) is added to HMEAS before scaling by HSCAL.            */
+    agc_vec_t hbsm = agc_vec_mat(&ip, g->lm.hbeamnb, &g->lm.xnbpip); /* 2^2   */
+    agc_vec_t vrel =
+        agc_vec_add(&ip, agc_vec_shl(&ip, g->lm.v1s, 2), g->lm.delvs);
+    agc_dp_t dop = agc_dp_mul(&ip, agc_vec_dot(&ip, vrel, hbsm), g->lm.radskal);
+
+    if (!agc_flag_test(AGC_FLAG_ALTSCALE))
+    { /* LOW SCALE: RESCALE     */
+        dop = agc_tp_to_dp(agc_dp_mul_tp(dop, agc_dp_from_sp(g->lm.skalskal)));
+    }
+
+    agc_dp_t  slant = agc_dp_shl(&ip, agc_dp_add(&ip, dop, g->lm.hmeas), 7);
+    agc_vec_t sv    =
+        agc_vec_scale(&ip, hbsm, agc_dp_mul(&ip, slant, HSCAL)); /* 2^23 */
+
+    if (!AGC_ASSERT(g->lm.hmeas >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dp_t dh = agc_dp_sub(&ip, agc_vec_dot(&ip, sv,
+                                              g->avg.unitr), g->lm.hcalc);
 
     agc_lm_ldg()->deltah = dh; /* STORE DELTAH           */
 
@@ -464,7 +425,33 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
         return (agc_lm_serv_vmeaschk(ctx)); /* UPDATE INHIBITED       */
     }
 
-    return (lr_rupdate(ctx, &ip, g));
+    /* NOREASON position update (p.885): below HMAX,
+     *   GNUR = R1S + DELTAH * WH * (1 - H/HMAX) * UNIT/R/ (SL1), then MUNGRAV. */
+    agc_dp_t h28 = agc_dp_shr(g->lm.hcalc, 4); /* RESCALE H TO 2(28)M    */
+    agc_sp_t hhi = agc_dp_high(h28);
+    agc_sp_t hlo = agc_dp_low(h28); /* H AT 2(14) M           */
+    int      d   = (int) g->lm.lrhmax - (int) hlo;
+
+    if (hhi != 0 || d <= 0 || !AGC_ASSERT(g->lm.lrhmax > 0))
+    {
+        return (agc_lm_serv_vmeaschk(ctx)); /* H > HMAX: BYPASS       */
+    }
+
+    agc_ovf_t ovf = 0;
+    agc_dp_t  wq  =
+        agc_dp_div_raw(agc_sp_mul((agc_sp_t) d, g->lm.lrwh),
+                       agc_dp_from_sp(g->lm.lrhmax), &ovf); /* MP DV */
+    agc_dp_t dh_rupdate = agc_tp_to_dp(agc_dp_mul_tp(
+                                           agc_lm_ldg()->deltah,
+                                           agc_dp_from_sp(agc_dp_high(wq)))); /* SHORTMP2 */
+    agc_vec_t dr =
+        agc_vec_scale(&ip, g->avg.unitr, agc_dp_shl(&ip, dh_rupdate, 1));
+
+    g->lm.gnur    = agc_vec_add(&ip, dr, g->lm.r1s);
+    g->avg.gdt1_2 = agc_lm_mungrav(&ip, g->lm.gnur); /* GDT1/2 */
+    agc_lm_serv_quikfaz5(AGC_JOB_SERV_RUPDATED);
+
+    return (agc_lm_serv_rupdated(ctx));
 }
 
 /* VFAIL / NOLITE (p.890-891): a bad velocity reading.                     */
@@ -490,45 +477,6 @@ static agc_status_t vfail(agc_job_ctx_t *ctx)
     }
 
     return (agc_lm_serv_valtchk(ctx)); /* ENDVDAT                */
-}
-
-/* The velocity weight of VUPDAT (p.888-889): WVF below VF, 0 above VMAX,
- * else WV (1 - V/VMAX); the P65-P67 constant LRWVFF in modes above 64.     */
-static agc_sp_t lr_vweight(const agc_guid_lm_t *lm)
-{
-    agc_sp_t v = agc_dp_high(lm->abvel); /* ABVEL*                 */
-    int      s = lm->vselect;
-    agc_sp_t w;
-
-    if (v - lm->lrvf <= 0)
-    {
-        w = lm->lrwvf[s]; /* USEVF                  */
-    }
-    else if (lm->lrvmax - v <= 0)
-    {
-        w = 0; /* V > VMAX: W = 0        */
-    }
-    else
-    {
-        agc_ovf_t ovf = 0;
-        agc_dp_t  q   =
-            agc_dp_div_raw(agc_sp_mul((agc_sp_t) (lm->lrvmax - v), lm->lrwv[s]),
-                           agc_dp_from_sp(lm->lrvmax), &ovf);
-
-        w = agc_dp_high(q); /* WV (1 - V/VMAX)        */
-    }
-
-    if (agc_erase_modreg() - 64 > 0)
-    {
-        w = lm->lrwvff; /* P65, P66, P67          */
-    }
-
-    if (!AGC_ASSERT(s >= 0 && s <= 2))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (w);
 }
 
 /* VELUPDAT (p.886-887): the measured velocity along the beam (VMEAS SL 12
@@ -620,7 +568,43 @@ agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx)
         return (agc_lm_serv_valtchk(ctx)); /* UPDATE INHIBITED       */
     }
 
-    agc_dp_t wdv = agc_dp_mul(&ip, agc_dp_from_sp(lr_vweight(&g->lm)), dv);
+    /* The velocity weight of VUPDAT (p.888-889): WVF below VF, 0 above VMAX,
+     * else WV (1 - V/VMAX); the P65-P67 constant LRWVFF in modes above 64.     */
+    const agc_guid_lm_t *lm = &g->lm;
+
+    agc_sp_t v = agc_dp_high(lm->abvel); /* ABVEL*                 */
+    int      s = lm->vselect;
+    agc_sp_t w;
+
+    if (v - lm->lrvf <= 0)
+    {
+        w = lm->lrwvf[s]; /* USEVF                  */
+    }
+    else if (lm->lrvmax - v <= 0)
+    {
+        w = 0; /* V > VMAX: W = 0        */
+    }
+    else
+    {
+        agc_ovf_t ovf = 0;
+        agc_dp_t  q   =
+            agc_dp_div_raw(agc_sp_mul((agc_sp_t) (lm->lrvmax - v), lm->lrwv[s]),
+                           agc_dp_from_sp(lm->lrvmax), &ovf);
+
+        w = agc_dp_high(q); /* WV (1 - V/VMAX)        */
+    }
+
+    if (agc_erase_modreg() - 64 > 0)
+    {
+        w = lm->lrwvff; /* P65, P66, P67          */
+    }
+
+    if (!AGC_ASSERT(s >= 0 && s <= 2))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dp_t wdv = agc_dp_mul(&ip, agc_dp_from_sp(w), dv);
 
     g->lm.gnur =
         agc_vec_add(&ip, agc_vec_scale(&ip, vbsm, wdv), g->lm.v1s); /* GNUV */

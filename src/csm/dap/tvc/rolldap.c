@@ -57,26 +57,6 @@ static agc_sp_t sgn_mul(int i, agc_sp_t v) /* INDEX I; 0 v: CA or CS v */
     return ((i < 0) ? (agc_sp_t) -v : v);
 }
 
-/* ROLLDAP (p. 989): OGA rate, first-order difference over 1/2 s; the low
- * product word of (OGANOW - OGAPAST) x BIT5 (LXCH A), B-4 rev/s.         */
-static void roll_rate(void)
-{
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
-    agc_sp_t       d = csm_dap_msu(t->oganow, t->ogapast);
-
-    t->ogarate = csm_dap_mp_lo(d, BIT5_SP);
-
-    if (!AGC_ASSERT(t->ogarate >= AGC_SP_MIN))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->oganow <= CSM_DAP_NEG0))
-    {
-        return;
-    }
-}
-
 /* ROLLON / REGION6 .. ONROLL .. DVOK (pp. 992-994): desired OGA rate at
  * the intersection of the tangent to the control parabola with the
  * straight switch line: DOGADOT = NUM / DEN, limited to +-POSMAX.       */
@@ -396,7 +376,22 @@ agc_status_t agc_task_rolldap(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    roll_rate();
+    /* ROLLDAP (p. 989): OGA rate, first-order difference over 1/2 s; the low
+     * product word of (OGANOW - OGAPAST) x BIT5 (LXCH A), B-4 rev/s.         */
+    agc_csm_tvc_t *t_rate = agc_csm_dap_tvc();
+    agc_sp_t       d      = csm_dap_msu(t_rate->oganow, t_rate->ogapast);
+
+    t_rate->ogarate = csm_dap_mp_lo(d, BIT5_SP);
+
+    if (!AGC_ASSERT(t_rate->ogarate >= AGC_SP_MIN))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(t_rate->oganow <= CSM_DAP_NEG0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if ((t->rollfire == 0) && (t->temreg != 0))
     {

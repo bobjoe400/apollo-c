@@ -139,7 +139,12 @@ class Text:
     def render(self, lo, hi, edits):
         """Bytes [lo, hi) with the edits (start, end, bytes) inside applied."""
         out, pos = [], lo
-        for a, b, rep in sorted(e for e in edits if lo <= e[0] and e[1] <= hi):
+        sel = [e for e in edits if lo <= e[0] and e[1] <= hi]
+        # an edit inside a deleted / replaced span (a parameter use inside a
+        # dropped guard) goes with it
+        sel = [e for e in sel if not any(o is not e and o[0] <= e[0] and e[1] <= o[1]
+                                         and (o[0], o[1]) != (e[0], e[1]) for o in sel)]
+        for a, b, rep in sorted(sel):
             if a < pos:
                 raise Refuse('layout: overlapping edits')
             out.append(self.b[pos:a])
@@ -163,7 +168,8 @@ def stmt_span(t, s):
     """[start, end) of a statement including its ';' and trailing comment."""
     a = s.extent.start.offset
     b = s.extent.end.offset
-    if s.kind not in (K.IF_STMT, K.COMPOUND_STMT, K.SWITCH_STMT, K.FOR_STMT, K.WHILE_STMT):
+    if s.kind not in (K.IF_STMT, K.COMPOUND_STMT, K.SWITCH_STMT, K.FOR_STMT, K.WHILE_STMT) \
+            and t.b[b - 1:b] != b';':
         b = t.semi_after(b)
     return a, b
 
@@ -225,6 +231,10 @@ def recovery(ct, cfn):
     for s in cgast.kids(cgast.body(cfn)):
         if cgast.is_guard(s) is not None:
             r = [c for c in s.walk_preorder() if c.kind == K.RETURN_STMT][0]
+            # only a value that means the same anywhere (no locals, no params)
+            if any(c.kind == K.DECL_REF_EXPR and c.referenced is not None
+                   and cgast.ref_class(c.referenced) in ('L', 'P') for c in r.walk_preorder()):
+                continue
             a, b = r.extent.start.offset, ct.semi_after(r.extent.end.offset)
             return ct.b[a:b].decode()
     rt = cfn.result_type.spelling
@@ -235,6 +245,44 @@ def recovery(ct, cfn):
     if rt == 'bool':
         return 'return (false);'
     raise Refuse(f'guard-recovery: no caller guard to copy for return type {rt}')
+
+
+def is_pure(n):
+    """A postfix lvalue chain with no calls: v, v.m, p->m, a[i], a[2].m ..."""
+    n = cgast.strip(n)
+    if n.kind == K.DECL_REF_EXPR:
+        return True
+    if n.kind == K.MEMBER_REF_EXPR:
+        ch = cgast.kids(n)
+        return bool(ch) and is_pure(ch[0])
+    if n.kind == K.ARRAY_SUBSCRIPT_EXPR:
+        a, i = cgast.kids(n)
+        i = cgast.strip(i)
+        return is_pure(a) and (i.kind in (K.DECL_REF_EXPR, K.INTEGER_LITERAL))
+    return False
+
+
+def refs_of(n):
+    return {c.spelling for c in n.walk_preorder() if c.kind == K.DECL_REF_EXPR}
+
+
+def dead_after(cfn, call, stmt, ref):
+    """The caller's variable `ref` (a local or parameter) is not read after
+    the statement holding the call, and the call is not inside a loop, so the
+    helper's assignments to its copy may land on the variable itself."""
+    r = ref.referenced
+    if r is None or cgast.ref_class(r) not in ('L', 'P'):
+        return False
+    chain = cgast.path_to(cgast.body(cfn), call)
+    if any(n.kind in cgast.LOOPS for n in chain):
+        return False
+    end = stmt.extent.end.offset
+    key = cgast.ref_key(r)
+    for n in cgast.body(cfn).walk_preorder():
+        if n.kind == K.DECL_REF_EXPR and n.referenced is not None \
+                and cgast.ref_key(n.referenced) == key and n.extent.start.offset > end:
+            return False
+    return True
 
 
 def value_statement(cfn, call):
@@ -298,6 +346,13 @@ def build(hfile, cfile, helper, caller, max_lines=60):
         clines = fh.readlines()
     h = callgraph.helper_summary(hfn, hlines)
     s = callgraph.site_info(cfn, call, clines)
+    # an argument &v is never NULL: `p != NULL` holds for it
+    for ac in s['args']:
+        if isinstance(ac, tuple) and ac[:2] == ('un', '&'):
+            for null in (('cast', 'void *', ('lit', 'NULL')), ('lit', '0'),
+                         ('cast', 'void *', ('lit', '0')), ('lit', 'NULL')):
+                s['est'].append(('bin', '!=', ac, null))
+                s['est'].append(('bin', '!=', null, ac))
     m = callgraph.merge(h, s, 1)
     shape = s['shape']
     if shape == 'stmt' and h['ret'] != 'void':
@@ -346,57 +401,138 @@ def build(hfile, cfile, helper, caller, max_lines=60):
         a, b = stmt_span(ht, last)
         hedits.append(full_lines(ht, a, b) + (b'',))
 
-    # ---- arguments ------------------------------------------------------------
     hctx = cgast.Ctx(hfn)
     params = cgast.params(hfn)
     args = cgast.kids(call)[1:]
     writes = cgast.summarize(cgast.body(hfn), hctx)['writes']
     hlocals = set(h['locals'])
-    decls, subst = [], {}
-    for i, (p, a) in enumerate(zip(params, args)):
-        kind, name = callgraph.classify_arg(a)
-        written = ('param', i) in writes
-        atext = ct.b[a.extent.start.offset:a.extent.end.offset].decode()
-        if kind == 'ident' and name == p.spelling:
-            if written:
-                raise Refuse(f'param-written: {p.spelling} is assigned in the helper')
-            continue
-        if not written and (kind == 'const' or (kind == 'ident' and name not in hlocals)):
-            subst[i] = cgast.spelled(cgast.strip(a)) if kind == 'const' else name
-            continue
-        ptext = ht.b[p.extent.start.offset:p.extent.end.offset].decode()
-        if '[' in ptext:
-            ty = p.type.spelling
-            ptext = (ty if ty.endswith('*') else ty + ' ') + p.spelling
-        decls.append(f'{ptext} = {atext};\n')
-        hlocals.add(p.spelling)
-    if subst:
-        def walk(n):
-            if n.kind == K.DECL_REF_EXPR and n.referenced is not None:
-                i = hctx.pmap.get(cgast.ref_key(n.referenced))
-                if i in subst:
-                    hedits.append((n.extent.start.offset, n.extent.end.offset, subst[i].encode()))
-            for c in cgast.kids(n):
-                walk(c)
-        walk(cgast.body(hfn))
-
-    # ---- names ------------------------------------------------------------------
+    # ---- names visible at the call ------------------------------------------------
     if value:
         stmt, parens, braces = value_statement(cfn, call)
     else:
         stmt, parens, braces = s['stmt'], False, s['braces']
     vis = visible_names(cfn, stmt)
-    clash_any = hlocals & all_names(cfn)
-    clash_vis = hlocals & vis
+    cnames = all_names(cfn)
+    # `T x = helper(..)` where the helper returns its local L of type T: L
+    # becomes x and the declaration goes (no `T x = L;` copy)
+    merge_into = None
+    if value and stmt.kind == K.DECL_STMT and trailing and cgast.kids(last):
+        vds = [c for c in cgast.kids(stmt) if c.kind == K.VAR_DECL]
+        rex = cgast.strip(cgast.kids(last)[0])
+        L = rex.referenced if rex.kind == K.DECL_REF_EXPR else None
+        if len(vds) == 1 and L is not None and L.kind == K.VAR_DECL \
+                and cgast.ref_class(L) == 'L' and L.type.spelling == vds[0].type.spelling \
+                and sum(1 for d in cgast.body(cfn).walk_preorder()
+                        if d.kind == K.VAR_DECL and d.spelling == vds[0].spelling) == 1 \
+                and vds[0].spelling not in (hlocals - {L.spelling}):
+            merge_into = (cgast.ref_key(L), L.spelling, vds[0].spelling)
+            hlocals = (hlocals - {L.spelling}) | {vds[0].spelling}
+            cnames = cnames - {vds[0].spelling}
     if h['globals'] & (vis - {p.spelling for p in cgast.params(cfn)}):
         raise Refuse('collision: a caller local hides a file-scope name the helper uses')
-    if clash_vis:
-        raise Refuse('collision:' + ','.join(sorted(clash_vis)))
-    if clash_any:
-        if value and stmt.kind == K.DECL_STMT:
-            raise Refuse('collision:' + ','.join(sorted(clash_any))
-                         + ' (the declaration needs the value outside a block)')
+
+    # ---- arguments ------------------------------------------------------------------
+    decls, subst, addr = [], {}, {}
+    heff = cgast.summarize(cgast.body(hfn), hctx)
+    hcalls = [c for c in cgast.body(hfn).walk_preorder()
+              if c.kind == K.CALL_EXPR and c.spelling != 'AGC_ASSERT']
+    pure_helper = not heff['memwrite'] and not hcalls
+    for i, (p, a) in enumerate(zip(params, args)):
+        kind, name = callgraph.classify_arg(a)
+        written = ('param', i) in writes
+        atext = ct.b[a.extent.start.offset:a.extent.end.offset].decode()
+        if kind == 'ident' and name == p.spelling:
+            if written and not dead_after(cfn, call, stmt, cgast.strip(a)):
+                raise Refuse(f'param-written: {p.spelling} is assigned in the helper '
+                             'and the caller reads it afterwards')
+            continue
+        if not written and (kind == 'const' or (kind == 'ident' and name not in hlocals)):
+            subst[i] = cgast.spelled(cgast.strip(a)) if kind == 'const' else name
+            continue
+        sa_ = cgast.strip(a)
+        if not written and pure_helper and is_pure(sa_) and not (refs_of(sa_) & hlocals):
+            subst[i] = atext  # a postfix expression read in a helper that changes nothing
+            continue
+        if not written and sa_.kind == K.UNARY_OPERATOR and cgast.op_of(sa_) == '&':
+            v = cgast.strip(cgast.kids(sa_)[0])
+            if v.kind == K.DECL_REF_EXPR and v.spelling not in hlocals:
+                addr[i] = v.spelling  # &v: p->m becomes v.m, *p becomes v, p becomes &v
+                continue
+        decls.append([p, atext])
+        hlocals.add(p.spelling)
+
+    # ---- clashes: a braced block when nothing visible clashes, else rename -------
+    rename = {}
+    clash_vis = hlocals & vis
+    clash_any = hlocals & cnames
+    if clash_any and not clash_vis and not (value and stmt.kind == K.DECL_STMT):
         braces = True
+    else:
+        taken = cnames | hlocals | set(h['globals'])
+        words = [w for w in helper.split('_') if w and w not in ('agc', 'csm', 'lm')]
+        for nm in sorted(clash_any):
+            for k in range(1, len(words) + 1):
+                cand = nm + '_' + '_'.join(words[-k:])
+                if cand not in taken:
+                    break
+            else:
+                raise Refuse(f'collision:{nm}')
+            rename[nm] = cand
+            taken.add(cand)
+    pidx = {cgast.ref_key(p): i for i, p in enumerate(params)}
+    hbody = cgast.body(hfn)
+    local_keys = {}
+    if merge_into:
+        rename.pop(merge_into[2], None)
+    for d in hbody.walk_preorder():
+        if merge_into and d.kind == K.VAR_DECL and cgast.ref_key(d) == merge_into[0]:
+            local_keys[merge_into[0]] = merge_into[2]
+            if merge_into[1] != merge_into[2]:
+                o = d.location.offset
+                hedits.append((o, o + len(d.spelling), merge_into[2].encode()))
+            continue
+        if d.kind == K.VAR_DECL and d.spelling in rename:
+            local_keys[cgast.ref_key(d)] = rename[d.spelling]
+            o = d.location.offset
+            hedits.append((o, o + len(d.spelling), rename[d.spelling].encode()))
+    for p, _ in decls:
+        if p.spelling in rename:
+            local_keys[cgast.ref_key(p)] = rename[p.spelling]
+
+    def walk(n, parent):
+        if n.kind == K.DECL_REF_EXPR and n.referenced is not None:
+            key = cgast.ref_key(n.referenced)
+            i = pidx.get(key)
+            a0, a1 = n.extent.start.offset, n.extent.end.offset
+            if key in local_keys:
+                hedits.append((a0, a1, local_keys[key].encode()))
+            elif i in subst:
+                hedits.append((a0, a1, subst[i].encode()))
+            elif i in addr:
+                v = addr[i]
+                if parent is not None and parent.kind == K.MEMBER_REF_EXPR \
+                        and cgast.is_arrow(parent, n):
+                    hedits.append((a0, parent.location.offset, (v + '.').encode()))
+                elif parent is not None and parent.kind == K.UNARY_OPERATOR \
+                        and cgast.op_of(parent) == '*':
+                    hedits.append((parent.extent.start.offset, a1, v.encode()))
+                else:
+                    hedits.append((a0, a1, ('&' + v).encode()))
+        for c in cgast.kids(n):
+            # implicit conversions sit between a use and its real parent
+            walk(c, parent if n.kind == K.UNEXPOSED_EXPR else n)
+
+    walk(hbody, None)
+    decl_lines = []
+    for p, atext in decls:
+        ptext = ht.b[p.extent.start.offset:p.extent.end.offset].decode()
+        if '[' in ptext:
+            ty = p.type.spelling
+            ptext = (ty if ty.endswith('*') else ty + ' ') + p.spelling
+        if p.spelling in rename:
+            ptext = re.sub(r'\b' + re.escape(p.spelling) + r'$', rename[p.spelling], ptext)
+        decl_lines.append(f'{ptext} = {atext};\n')
+    decls = decl_lines
 
     if value and braces and stmt.kind == K.DECL_STMT:
         raise Refuse('layout: a declaration under a case label would lose its scope')
@@ -446,6 +582,8 @@ def build(hfile, cfile, helper, caller, max_lines=60):
         if trail:
             stmt_text += ' ' + trail
         stmt_text = ' ' * inner + stmt_text + '\n'
+        if merge_into:
+            stmt_text = (' ' * inner + trail + '\n') if trail else ''
         new = comment + (' ' * ind + '{\n' if braces else '') + block + stmt_text \
             + (' ' * ind + '}\n' if braces else '')
     else:
@@ -518,6 +656,21 @@ def prototypes(htu, ctu, helper):
     return edits, comments
 
 
+def includers(header):
+    out = []
+    for dp, _, fs in os.walk('src'):
+        for f in fs:
+            if not f.endswith('.c'):
+                continue
+            c = os.path.join(dp, f)
+            with open(c, encoding='utf-8', errors='replace') as fh:
+                for m in re.finditer(r'#include "([^"]+)"', fh.read()):
+                    if os.path.normpath(os.path.join(dp, m.group(1))) == os.path.normpath(header):
+                        out.append(c)
+                        break
+    return out
+
+
 def compile_file(path):
     r = subprocess.run(['gcc'] + CFLAGS + ['-c', '-o', os.devnull, path],
                        capture_output=True, text=True)
@@ -552,8 +705,12 @@ def main(argv):
     for fp, (_, new) in changes.items():
         with open(fp, 'w', encoding='utf-8') as fh:
             fh.write(new)
+    todo = [fp for fp in changes if fp.endswith('.c')]
     for fp in changes:
-        if fp.endswith('.c'):
+        if fp.endswith('.h'):
+            todo += includers(fp)  # every TU that includes a changed private header
+    for fp in sorted(set(todo)):
+        if True:
             ok, err = compile_file(fp)
             if not ok:
                 for fp2, (old, _) in changes.items():

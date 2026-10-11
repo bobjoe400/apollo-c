@@ -110,16 +110,6 @@ static bool t4_quick_wrote; /* last quick pass wrote a relay word        */
 
 /* ---- small helpers -------------------------------------------------- */
 
-static uint16_t w15(uint32_t v)
-{
-    if (!AGC_ASSERT(v <= 0xFFFFFFu))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((uint16_t) (v & WORD15));
-}
-
 static void chan_or(int chan, uint16_t mask)
 {
     agc_chan_or(chan, mask);
@@ -132,7 +122,14 @@ static void chan_or(int chan, uint16_t mask)
 
 static void chan_clear(int chan, uint16_t bits) /* WAND with ~bits  */
 {
-    agc_chan_and(chan, w15(~(uint32_t) bits));
+    uint32_t v = ~(uint32_t) bits;
+
+    if (!AGC_ASSERT(v <= 0xFFFFFFu))
+    {
+        return;
+    }
+
+    agc_chan_and(chan, (uint16_t) (v & WORD15));
 
     if (!AGC_ASSERT(bits <= WORD15))
     {
@@ -610,24 +607,6 @@ static void t4_isszero(void)
     call_wait(UNZ2_DELAY_CS, AGC_TASK_UNZ2);
 }
 
-/* Engine off on an IMU cage: CM WAND DSALMOUT bit 13; LM clears ENGONFLG
- * and forces channel 11 bit 14 = 1, bit 13 = 0.                           */
-static void t4_cage_engine_off(void)
-{
-    if (agc_state_vehicle() == AGC_VEHICLE_CSM)
-    {
-        chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT13);
-
-        return;
-    }
-
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_ENGONFLG);
-    uint16_t ch11 = agc_chan_read((int) AGC_CHAN_DSALMOUT);
-
-    agc_chan_write((int) AGC_CHAN_DSALMOUT,
-                   (uint16_t) ((ch11 & ~(uint32_t) PRIO30) + BIT14));
-}
-
 /* IMUCAGE (p.152): channel 30 bit 11 changed.  Returns true when the
  * remaining channel 30 changes are abandoned (ISSZERO exits to C33TEST).   */
 static bool t4_imucage(uint16_t newbit)
@@ -641,7 +620,22 @@ static bool t4_imucage(uint16_t newbit)
 
     chan_clear((int) AGC_CHAN_CHAN14, (uint16_t) OCT77000); /* pulse trains */
     chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) OCT272);
-    t4_cage_engine_off();
+
+    /* Engine off on an IMU cage: CM WAND DSALMOUT bit 13; LM clears ENGONFLG
+     * and forces channel 11 bit 14 = 1, bit 13 = 0.                       */
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM)
+    {
+        chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT13);
+    }
+    else
+    {
+        agc_flag_clear((agc_flag_id_t) AGC_FLAG_ENGONFLG);
+        uint16_t ch11 = agc_chan_read((int) AGC_CHAN_DSALMOUT);
+
+        agc_chan_write((int) AGC_CHAN_DSALMOUT,
+                       (uint16_t) ((ch11 & ~(uint32_t) PRIO30) + BIT14));
+    }
+
     agc_status_t st = t4_cagesub1();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -910,24 +904,6 @@ agc_status_t agc_t4_c33test(void)
     return (agc_t4_glockmon());
 }
 
-/* Magnitude of a CDU counter word as CCS sees it (ones' complement).     */
-static int cdu_ones_magnitude(uint16_t cdu)
-{
-    if (!AGC_ASSERT(cdu <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
-    int v = ((cdu & CDU_SIGN) != 0u) ? (int) (WORD15 - cdu) : (int) cdu;
-
-    if (!AGC_ASSERT(v >= 0 && v <= 037777))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (v);
-}
-
 /* SETGLOCK / GLINVERT / GLAMPTST (p.148): make the gimbal lock lamp
  * (DSPTAB +11D bit 6) agree with want_on.                                 */
 static void t4_setglock(bool want_on)
@@ -962,7 +938,21 @@ static void t4_setglock(bool want_on)
  * lamp; above 85 deg -> coarse align (SETCOARS) to stop gimbal runaway.   */
 agc_status_t agc_t4_glockmon(void)
 {
-    int  mag  = cdu_ones_magnitude(agc_erase_cduz());
+    /* Magnitude of a CDU counter word as CCS sees it (ones' complement).     */
+    uint16_t cdu = agc_erase_cduz();
+
+    if (!AGC_ASSERT(cdu <= WORD15))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    int mag = ((cdu & CDU_SIGN) != 0u) ? (int) (WORD15 - cdu) : (int) cdu;
+
+    if (!AGC_ASSERT(mag >= 0 && mag <= 037777))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     bool lamp = false;
 
     if (mag > 0 && (mag - 1) - MINUS_70DEG > 0)

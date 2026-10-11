@@ -88,24 +88,6 @@ static bool after_liftoff(void)
     return ((c30 & BIT5) == 0u);
 }
 
-/* Signed value of a two's-complement CDU word (half-revolutions, 2^14). */
-static agc_sp_t cdu_signed(uint16_t w)
-{
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
-    int v = ((w & 040000u) != 0u) ? (int) w - 0100000 : (int) w;
-
-    if (!AGC_ASSERT(v >= -040000 && v < 040000))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((agc_sp_t) ((v < AGC_SP_MIN) ? AGC_SP_MIN : v));
-}
-
 /* IMUATTCK (V43, p.243): P00 only, not while coarse align or zero ICDU;
  * after liftoff the extended-verb display must be free.                   */
 static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
@@ -185,7 +167,22 @@ static agc_status_t attck1(void)
 
     for (int i = 0; i < 3; i++)
     {
-        ak[i] = cdu_signed(agc_erase_thetad(i));
+        /* Signed value of a two's-complement CDU word (half-revolutions, 2^14). */
+        uint16_t w = agc_erase_thetad(i);
+
+        if (!AGC_ASSERT(w <= WORD15))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        int v = ((w & 040000u) != 0u) ? (int) w - 0100000 : (int) w;
+
+        if (!AGC_ASSERT(v >= -040000 && v < 040000))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        ak[i] = (agc_sp_t) ((v < AGC_SP_MIN) ? AGC_SP_MIN : v);
     }
 
     agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false);
@@ -534,20 +531,6 @@ static agc_status_t verb_mark_reject(void)
     return (agc_extverb_gopin());
 }
 
-/* V88: VHFRFLAG clear, tracker fail light off.                             */
-static agc_status_t verb_vhf_off(void)
-{
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
-    agc_status_t st = agc_svc_trfailof();
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_extverb_gopin());
-}
-
 /* SYSTEST (V92, p.240): P00, not after P11 (NODOP01: POODOO 1521); turn
  * the DAP off (EXDAPOFF) and FINDVAC REDO at priority 20.                  */
 static agc_status_t verb_systems_test(void)
@@ -590,14 +573,6 @@ static agc_status_t verb_r64(void)
     agc_inhint(); /* CLEANOUT           */
 
     return (agc_exec_enema());
-}
-
-/* V93 (WMATRXNG): reset RENDWFLG and ORBWFLAG.                             */
-static agc_status_t verb_w_matrix_reset(void)
-{
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
-
-    return (agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_ORBWFLAG));
 }
 
 /* VERB96: QUITFLAG, V96ONFLG, then V37 to P00.                             */
@@ -798,11 +773,27 @@ static agc_status_t fan_70s_90s(int verb)
         case 87:
             return (agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_VHFRFLAG));
         case 88:
-            return (verb_vhf_off());
+            /* V88: VHFRFLAG clear, tracker fail light off.                             */
+        {
+            agc_flag_clear((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
+            agc_status_t st = agc_svc_trfailof();
+
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (agc_extverb_gopin());
+        }
         case 92:
             return (verb_systems_test());
         case 93:
-            return (verb_w_matrix_reset());
+            /* V93 (WMATRXNG): reset RENDWFLG and ORBWFLAG.                             */
+        {
+            agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
+
+            return (agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_ORBWFLAG));
+        }
         case 94:
             return (verb_r64());
         case 96:

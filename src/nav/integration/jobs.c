@@ -79,44 +79,6 @@ static agc_status_t endint(void)
     return (sl);
 }
 
-/* STATEUP second half (CM p. 210 / LM p. 236) after the INTSTALL for the
- * LM: LM permanent state (and LM W if valid) to TETCSM with PRECIFLG set
- * (4-time-step logic off), then STATEND / NO-INT: CLEAR NODOFLAG, ENDINT. */
-static agc_status_t stateup_lm(agc_interp_t *ip, agc_dp_t tdec1)
-{
-    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_integ_flag(AGC_FLAG_VINTFLAG, false);
-    agc_integ_setiflgs(); /* always OK       */
-
-    if (agc_flag_test(AGC_FLAG_RENDWFLG))
-    {
-        agc_integ_flag(AGC_FLAG_DIM0FLAG, true);
-
-        if (agc_state_vehicle() == AGC_VEHICLE_LM)
-        {
-            agc_integ_flag(AGC_FLAG_D6OR9FLG, true); /* LM: 9x9 W       */
-        }
-    }
-
-    agc_integ_flag(AGC_FLAG_PRECIFLG, true);
-    const agc_status_t st = agc_integ_integrv(ip, ctx, tdec1);
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_integ_flag(AGC_FLAG_NODOFLAG, false); /* STATEND         */
-
-    return (endint());
-}
-
 /* STATEUP second INTSTALL (+1 on resumption).                            */
 static agc_status_t stateup_grab_lm(void)
 {
@@ -141,7 +103,35 @@ static agc_status_t stateup_grab_lm(void)
         return (st);
     }
 
-    return (stateup_lm(&ip, stateup_tdec1));
+    /* STATEUP second half (CM p. 210 / LM p. 236) after the INTSTALL for the
+     * LM: LM permanent state (and LM W if valid) to TETCSM with PRECIFLG set
+     * (4-time-step logic off), then STATEND / NO-INT: CLEAR NODOFLAG, ENDINT. */
+    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
+
+    agc_integ_flag(AGC_FLAG_VINTFLAG, false);
+    agc_integ_setiflgs(); /* always OK       */
+
+    if (agc_flag_test(AGC_FLAG_RENDWFLG))
+    {
+        agc_integ_flag(AGC_FLAG_DIM0FLAG, true);
+
+        if (agc_state_vehicle() == AGC_VEHICLE_LM)
+        {
+            agc_integ_flag(AGC_FLAG_D6OR9FLG, true); /* LM: 9x9 W       */
+        }
+    }
+
+    agc_integ_flag(AGC_FLAG_PRECIFLG, true);
+    const agc_status_t st_stateup = agc_integ_integrv(&ip, ctx, stateup_tdec1);
+
+    if (!AGC_ASSERT(st_stateup != AGC_STATUS_BAD_ARG))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_integ_flag(AGC_FLAG_NODOFLAG, false); /* STATEND         */
+
+    return (endint());
 }
 
 /* STATEUP first half: CSM permanent state (and W when valid: CM ORBWFLAG

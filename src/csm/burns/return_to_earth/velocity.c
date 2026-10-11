@@ -520,32 +520,6 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
     return (AGC_STATUS_OK);
 }
 
-/* V2T175 .. V2T179 (p. 922): time critical: F2RTE set; X(T1) becomes the
- * lower (SLOWFLG) or upper bound and the iterator steps away from it.     */
-static agc_status_t v2t_time_critical(agc_interp_t *ip, rte_erasable_t *rs,
-                                      rte_v2t_t *pl)
-{
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    rs->f2rte = true;
-
-    if (agc_flag_test(AGC_FLAG_SLOWFLG))
-    {
-        pl->x_t1min = rs->x_t1;
-        pl->dx_t1   = pl->dx_t1max;
-    }
-    else
-    { /* V2T177        */
-        pl->x_t1max = rs->x_t1;
-        pl->dx_t1   = agc_dp_neg(pl->dx_t1max);
-    }
-
-    return (rte_min_dv_search(ip, rs, pl)); /* V2T179        */
-}
-
 /* V2T185 .. V2T205 (pp. 922-923): "PREVENT A LARGE CHANGE IN INDEPENDENT
  * VARIABLE DURING AN ITERATION FOR A PRECISION TRAJECTORY".               */
 static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs,
@@ -611,7 +585,22 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
         }
     }
 
-    st = v2t_time_critical(ip, rs, pl); /* V2T175        */
+    /* V2T175 .. V2T179 (p. 922): time critical: F2RTE set; X(T1) becomes the
+     * lower (SLOWFLG) or upper bound and the iterator steps away from it.     */
+    rs->f2rte = true;
+
+    if (agc_flag_test(AGC_FLAG_SLOWFLG))
+    {
+        pl->x_t1min = rs->x_t1;
+        pl->dx_t1   = pl->dx_t1max;
+    }
+    else
+    { /* V2T177        */
+        pl->x_t1max = rs->x_t1;
+        pl->dx_t1   = agc_dp_neg(pl->dx_t1max);
+    }
+
+    st = rte_min_dv_search(ip, rs, pl); /* V2T175        */
 
     if ((st != AGC_STATUS_OK) || (rs->nn1a < 0))
     {

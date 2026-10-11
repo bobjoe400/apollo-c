@@ -14,20 +14,16 @@
 #define SHIFT_MAX_LEFT  43 /* 42 TP bits: further shifts leave 0     */
 #define SHIFT_MAX_WORDS 4  /* GENSCR word-shift passes (count < 127) */
 
-static int32_t shift_bit(int n) /* BIT14 indexed by n-1: 2^(14-n)          */
-{
-    if (!AGC_ASSERT((n >= 1) && (n <= 14)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((int32_t) 1 << (14 - n));
-}
-
 /* MPACSHR (p.1152-1153) or MPACSRND/VSHR2 (p.1153) for 1 <= n <= 14.        */
 agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 {
-    int32_t  t = shift_bit(n);
+    /* BIT14 indexed by n-1: 2^(14-n)          */
+    if (!AGC_ASSERT((n >= 1) && (n <= 14)))
+    {
+        return ((agc_w3_t){0});
+    }
+
+    int32_t  t = (int32_t) 1 << (14 - n);
     agc_w2_t lo2;
 
     if (!AGC_ASSERT(t > 0))

@@ -370,39 +370,6 @@ static agc_status_t gopoodoo(void)
     return (st);
 }
 
-/* Comanche POODOO after BORTENT (C p.1495).                            */
-static agc_status_t poodoo_csm(void)
-{
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
-    {                         /* average G on      */
-        exec_request_enema(); /* TC WHIMPER -1     */
-
-        return (AGC_STATUS_BAILOUT);
-    }
-
-    poodoo_flags();
-    agc_status_t st = agc_phase_mr_klean();
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    exec_request_enema(); /* TC WHIMPER        */
-
-    if (!AGC_ASSERT(phase_word(4) == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_POODOO);
-}
-
 /* The interpreter alarms of the job or task that just returned: ALARM
  * 01301 (ARCSIN/ARCCOS out of range) or ABORT 01302 (SQRT of a negative,
  * POODOO). DEVIATION: the AGC raises them at the instruction; core cannot
@@ -446,7 +413,35 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        return (poodoo_csm());
+        /* Comanche POODOO after BORTENT (C p.1495).                            */
+        if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
+        {                         /* average G on      */
+            exec_request_enema(); /* TC WHIMPER -1     */
+
+            return (AGC_STATUS_BAILOUT);
+        }
+
+        poodoo_flags();
+        agc_status_t st = agc_phase_mr_klean();
+
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        exec_request_enema(); /* TC WHIMPER        */
+
+        if (!AGC_ASSERT(phase_word(4) == 0U))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (AGC_STATUS_POODOO);
     }
 
     agc_inhint();

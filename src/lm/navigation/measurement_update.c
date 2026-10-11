@@ -284,40 +284,13 @@ static agc_status_t mu_radarang(agc_interp_t *ip)
 }
 
 /* ---- the measurements (RANGEBQ .. TRUNBQ pp.576-582) ------------------ */
-/* Range: B0 = ULC (complemented if the LM is corrected), DELTAQ = RM -
- * RLC, VARIANCE = max(RLC^2 RANGEVAR, RVARMIN) (TP B-40).              */
-static agc_status_t mu_range(agc_interp_t *ip)
+static agc_status_t mu_rate(agc_interp_t *ip)
 {
-    const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad();
-    agc_tp_t                   vmin = (agc_tp_t) p->rvarmin; /* SR 28, TPMODE: B-40 */
-    agc_status_t               st   = mu_getulc(ip);
-
-    mu.inc.bvector[0] = mu_sign(mu.ulc, false);
-    mu.inc.bvector[1] = agc_vec_zero();
-    mu.inc.bvector[2] = agc_vec_zero();
-    agc_dp_t r =
-        agc_dp_sub(ip, lmnav_state()->rm, mu_srr_star(ip, mu.rlc, 2 - mu.x2));
-
-    mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2); /* B-29/B-27 */
-    int      x1 = 0;
-    agc_dp_t n  = rz_norm(mu.rlc, &x1);
-    agc_tp_t v  = agc_dp_mul_tp(agc_dp_sq(ip, n), p->rangevar);
-
-    v               = mu_tp_sr(ip, v, -2 - x1); /* SR* 0-2,1 */
-    v               = mu_tp_sr(ip, v, 0 - x1);
-    v               = mu_tp_sr(ip, v, 0 - mu.x2);
-    v               = mu_tp_sr(ip, v, 0 - mu.x2);
-    mu.inc.variance = (vmin - v < 0) ? v : vmin; /* QOK      */
-
-    return (st);
-}
-
-/* Range rate: B1 = ULC RLC (B-24/B-22), B0 = (ULC x VLC) x ULC (B-5),
- * DELTAQ = (RDOTM - ULC . VLC) RLC (B-33), VARIANCE = max(RDOT^2 RATEVAR,
- * VVARMIN) RLC^2; B0, B1, DELTAQ normalized together (the smaller shift
- * of B0 and B1).                                                       */
-static agc_status_t mu_rate_vectors(agc_interp_t *ip, agc_vec_t *vlc)
-{
+    agc_vec_t vlc;
+    /* Range rate: B1 = ULC RLC (B-24/B-22), B0 = (ULC x VLC) x ULC (B-5),
+     * DELTAQ = (RDOTM - ULC . VLC) RLC (B-33), VARIANCE = max(RDOT^2 RATEVAR,
+     * VVARMIN) RLC^2; B0, B1, DELTAQ normalized together (the smaller shift
+     * of B0 and B1).                                                       */
     agc_integ_sv_t l;
     agc_integ_sv_t c;
     agc_status_t   st = mu_getulc(ip);
@@ -338,15 +311,7 @@ static agc_status_t mu_rate_vectors(agc_interp_t *ip, agc_vec_t *vlc)
     agc_vec_t vl = agc_vec_add(ip, agc_vec_shr(l.nuv, k), l.vcv);
     agc_vec_t vc = agc_vec_add(ip, agc_vec_shr(c.nuv, k), c.vcv);
 
-    *vlc = agc_vec_sub(ip, vc, vl);
-
-    return (st);
-}
-
-static agc_status_t mu_rate(agc_interp_t *ip)
-{
-    agc_vec_t                  vlc;
-    agc_status_t               st   = mu_rate_vectors(ip, &vlc);
+    vlc = agc_vec_sub(ip, vc, vl);
     const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad();
     agc_dp_t                   rdot = agc_vec_dot(ip, mu.ulc, vlc); /* B-8/B-6  */
     agc_dp_t                   r8   = mu_srr_star(ip, rdot, 2 - mu.x2); /* B-8      */
@@ -435,49 +400,6 @@ static void mu_angle(agc_interp_t *ip, int bias, agc_sp_t var, agc_dp_t dangle)
     mu.inc.deltaq = agc_tp_round(ip, agc_tp_shift(ip, dq, -nx)); /* SRR* 0,1 */
 }
 
-/* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ); B0 =
- * UNIT(ULC x MY), complemented if the CSM is corrected.                */
-static agc_status_t mu_shaft(agc_interp_t *ip)
-{
-    agc_status_t st = mu_mxmymz(ip);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = mu_radarang(ip);
-    }
-
-    agc_dp_t sinth = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mx), 1);
-    agc_dp_t costh = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mz), 1);
-    agc_dp_t a     = agc_latlong_arctan(ip, sinth, costh);
-    agc_dp_t d     = agc_dp_sub(ip, lmnav_state()->rrshaft, a);
-
-    d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3); /* SL3R */
-    agc_vec_t b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc, mu.my), 1);
-
-    mu.inc.bvector[0] = mu_sign(agc_vec_unit(ip, b0, NULL, NULL), true);
-    mu_angle(ip, 0, agc_rendz_nav_pad()->shaftvar, d);
-
-    return (st);
-}
-
-/* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 = (ULC x MY) x
- * ULC, complemented if the CSM is corrected.                           */
-static agc_status_t mu_trunnion(agc_interp_t *ip)
-{
-    agc_status_t st = mu_radarang(ip);
-    agc_vec_t    b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc, mu.my), 1);
-
-    b0                = agc_vec_shl(ip, agc_vec_cross(ip, b0, mu.ulc), 1);
-    mu.inc.bvector[0] = mu_sign(b0, true);
-    agc_dp_t d =
-        agc_dp_sub(ip, lmnav_state()->rrtrun, agc_dp_asin(ip, mu.sintheta));
-
-    d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3);
-    mu_angle(ip, 1, agc_rendz_nav_pad()->trunvar, d);
-
-    return (st);
-}
-
 /* ---- LGCUPDTE / ASTOK (p.586) ------------------------------------------ */
 /* INCORP1, then the deviations for noun 49 (R22DISP: |dR| B-29, |dV|
  * B-7). True when they exceed RMAX or VMAX (R22LEM96).                 */
@@ -519,13 +441,79 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
     switch (step)
     {
         case MU_RANGE:
-            return (mu_range(ip));
+            /* Range: B0 = ULC (complemented if the LM is corrected), DELTAQ = RM -
+             * RLC, VARIANCE = max(RLC^2 RANGEVAR, RVARMIN) (TP B-40).              */
+        {
+            const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad();
+            agc_tp_t                   vmin = (agc_tp_t) p->rvarmin;     /* SR 28, TPMODE: B-40 */
+            agc_status_t               st   = mu_getulc(ip);
+
+            mu.inc.bvector[0] = mu_sign(mu.ulc, false);
+            mu.inc.bvector[1] = agc_vec_zero();
+            mu.inc.bvector[2] = agc_vec_zero();
+            agc_dp_t r =
+                agc_dp_sub(ip, lmnav_state()->rm,
+                           mu_srr_star(ip, mu.rlc, 2 - mu.x2));
+
+            mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2);     /* B-29/B-27 */
+            int      x1 = 0;
+            agc_dp_t n  = rz_norm(mu.rlc, &x1);
+            agc_tp_t v  = agc_dp_mul_tp(agc_dp_sq(ip, n), p->rangevar);
+
+            v               = mu_tp_sr(ip, v, -2 - x1);     /* SR* 0-2,1 */
+            v               = mu_tp_sr(ip, v, 0 - x1);
+            v               = mu_tp_sr(ip, v, 0 - mu.x2);
+            v               = mu_tp_sr(ip, v, 0 - mu.x2);
+            mu.inc.variance = (vmin - v < 0) ? v : vmin;     /* QOK      */
+
+            return (st);
+        }
         case MU_RATE:
             return (mu_rate(ip));
         case MU_SHAFT:
-            return (mu_shaft(ip));
+            /* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ); B0 =
+             * UNIT(ULC x MY), complemented if the CSM is corrected.                */
+        {
+            agc_status_t st = mu_mxmymz(ip);
+
+            if (st == AGC_STATUS_OK)
+            {
+                st = mu_radarang(ip);
+            }
+
+            agc_dp_t sinth = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mx), 1);
+            agc_dp_t costh = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mz), 1);
+            agc_dp_t a     = agc_latlong_arctan(ip, sinth, costh);
+            agc_dp_t d     = agc_dp_sub(ip, lmnav_state()->rrshaft, a);
+
+            d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3);     /* SL3R */
+            agc_vec_t b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc, mu.my), 1);
+
+            mu.inc.bvector[0] = mu_sign(agc_vec_unit(ip, b0, NULL, NULL), true);
+            mu_angle(ip, 0, agc_rendz_nav_pad()->shaftvar, d);
+
+            return (st);
+        }
         case MU_TRUNNION:
-            return (mu_trunnion(ip));
+            /* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 = (ULC x MY) x
+             * ULC, complemented if the CSM is corrected.                           */
+        {
+            agc_status_t st = mu_radarang(ip);
+            agc_vec_t    b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc,
+                                                            mu.my), 1);
+
+            b0 =
+                agc_vec_shl(ip, agc_vec_cross(ip, b0, mu.ulc), 1);
+            mu.inc.bvector[0] = mu_sign(b0, true);
+            agc_dp_t d =
+                agc_dp_sub(ip, lmnav_state()->rrtrun,
+                           agc_dp_asin(ip, mu.sintheta));
+
+            d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3);
+            mu_angle(ip, 1, agc_rendz_nav_pad()->trunvar, d);
+
+            return (st);
+        }
         case MU_END:
         default:
             return (AGC_STATUS_BAD_ARG); /* unreachable: cannot happen */

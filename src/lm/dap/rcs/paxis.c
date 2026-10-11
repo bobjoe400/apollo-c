@@ -433,30 +433,6 @@ agc_status_t lm_dap_pretimck(void)
     return (st);
 }
 
-/* KALCMANU interface (pp.1421-1422): CDUxD = CDUxD - DELCDUx (modular, 2's
- * complement); then count down the direct-rate timers TCP, TCQR.         */
-static void kalcmanu_step(lm_dap_t *d)
-{
-    d->cduxd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduxd, (uint16_t) ((uint16_t) d->delcdux & 077777u)));
-    d->cduyd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduyd, (uint16_t) ((uint16_t) d->delcduy & 077777u)));
-    d->cduzd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduzd, (uint16_t) ((uint16_t) d->delcduz & 077777u)));
-    d->tcp  = lm_dap_dim(d->tcp);
-    d->tcqr = lm_dap_dim(d->tcqr);
-
-    if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->cduzd <= 077777u))
-    {
-        return;
-    }
-}
-
 /* PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.            */
 agc_status_t agc_task_paxis(void)
 {
@@ -482,7 +458,27 @@ agc_status_t agc_task_paxis(void)
     d->dapcdu[0] = agc_erase_cdux(); /* DAPTREG4..6              */
     d->dapcdu[1] = agc_erase_cduy();
     d->dapcdu[2] = agc_erase_cduz();
-    kalcmanu_step(d);
+    /* KALCMANU interface (pp.1421-1422): CDUxD = CDUxD - DELCDUx (modular, 2's
+     * complement); then count down the direct-rate timers TCP, TCQR.         */
+    d->cduxd = lm_dap_ones_to_twos(
+        lm_dap_msu(d->cduxd, (uint16_t) ((uint16_t) d->delcdux & 077777u)));
+    d->cduyd = lm_dap_ones_to_twos(
+        lm_dap_msu(d->cduyd, (uint16_t) ((uint16_t) d->delcduy & 077777u)));
+    d->cduzd = lm_dap_ones_to_twos(
+        lm_dap_msu(d->cduzd, (uint16_t) ((uint16_t) d->delcduz & 077777u)));
+    d->tcp  = lm_dap_dim(d->tcp);
+    d->tcqr = lm_dap_dim(d->tcqr);
+
+    if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(d->cduzd <= 077777u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st = AGC_STATUS_OK;
 
     if ((d->rcsflags & LM_RCS_CALLGMBL) != 0u)

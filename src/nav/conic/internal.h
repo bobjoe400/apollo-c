@@ -153,17 +153,16 @@ agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m,
                            int n);  /* SL n / SR -n */
 agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m,
                             int n);                        /* SLR n / SRR -n */
-agc_tp_t  agc_conic_mround_(agc_interp_t *ip, agc_tp_t m); /* ROUND */
-agc_tp_t  agc_conic_mnorm_(agc_tp_t m, int *nshift);    /* NORM: X = -nshift */
-agc_tp_t  agc_conic_mabs_(agc_tp_t m);                  /* ABS  */
-agc_tp_t  agc_conic_mneg_(agc_tp_t m);                  /* DCOMP */
-agc_tp_t  agc_conic_msign_(agc_tp_t m, agc_dp_t s);     /* SIGN, DP word */
-agc_tp_t  agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s);  /* SIGN, SP tag  */
-bool      agc_conic_mbmn_(agc_tp_t m);                  /* BMN taken     */
-bool      agc_conic_mbze_(agc_tp_t m);                  /* BZE taken     */
-agc_vec_t agc_conic_vsign_sp_(agc_vec_t v, agc_sp_t s); /* vector SIGN   */
-agc_dp_t  agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef,
-                          int ncoef); /* POLY */
+agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m); /* ROUND */
+agc_tp_t agc_conic_mnorm_(agc_tp_t m, int *nshift);    /* NORM: X = -nshift */
+agc_tp_t agc_conic_mabs_(agc_tp_t m);                  /* ABS  */
+agc_tp_t agc_conic_mneg_(agc_tp_t m);                  /* DCOMP */
+agc_tp_t agc_conic_msign_(agc_tp_t m, agc_dp_t s);     /* SIGN, DP word */
+agc_tp_t agc_conic_msign_sp_(agc_tp_t m, agc_sp_t s);  /* SIGN, SP tag  */
+bool     agc_conic_mbmn_(agc_tp_t m);                  /* BMN taken     */
+bool     agc_conic_mbze_(agc_tp_t m);                  /* BZE taken     */
+agc_dp_t agc_conic_poly_(agc_dp_t x, const agc_dp_t *coef,
+                         int ncoef);  /* POLY */
 
 /* ---- universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */
 agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);

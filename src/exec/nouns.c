@@ -307,94 +307,6 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
     }
 }
 
-/* VMAGI, HDOT, ALTI of the P11 monitor (N62).                           */
-static agc_status_t noun_insertion(uint16_t id, agc_dp_t *v)
-{
-    agc_dp_t vmagi = 0;
-    agc_dp_t hdot  = 0;
-    agc_dp_t alti  = 0;
-
-    if (!AGC_ASSERT(v != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st =
-        agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    *v = (id == AGC_DATA_HDOT) ? hdot :
-         (id == AGC_DATA_ALTI) ? alti : vmagi;
-
-    return (AGC_STATUS_OK);
-}
-
-/* LAT, LONG, ALT (noun 43): the nav-aux store.                          */
-static agc_status_t noun_latlong(uint16_t id, bool write, agc_dp_t *v)
-{
-    agc_latlong_t ll;
-    agc_status_t  st = agc_navaux_get_latlong(&ll);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_dp_t *f = (id == AGC_DATA_LAT) ? &ll.lat :
-                  (id == AGC_DATA_LONG) ? &ll.lon : &ll.alt;
-
-    if (!write)
-    {
-        *v = *f;
-
-        return (AGC_STATUS_OK);
-    }
-
-    *f = *v;
-
-    return (agc_navaux_set_latlong(&ll));
-}
-
-/* Ids resolved through functions: the P11 readout, LAT/LONG/ALT, P37,
- * the rendezvous programs.                                              */
-static agc_status_t noun_by_function(uint16_t id, bool write, bool lm,
-                                     agc_dp_t *v)
-{
-    bool p11 = !lm && agc_erase_modreg() == 11;
-
-    if ((id == AGC_DATA_HDOT || id == AGC_DATA_ALTI ||
-         (id == AGC_DATA_VMAGI && p11)) && !write)
-    {
-        return (noun_insertion(id, v));
-    }
-
-    if (id == AGC_DATA_LAT || id == AGC_DATA_LONG || id == AGC_DATA_ALT)
-    {
-        return (noun_latlong(id, write, v));
-    }
-
-    agc_status_t st = lm ? AGC_STATUS_NOT_FOUND :
-                      agc_return_to_earth_noun(id, write, v);
-
-    if (st == AGC_STATUS_NOT_FOUND)
-    {
-        st = write ? agc_rendz_noun_write(id, *v) : agc_rendz_noun_read(id, v);
-    }
-
-    if (st == AGC_STATUS_NOT_FOUND && !write)
-    {
-        st =
-            lm ? agc_lm_rendz_noun_read(id, v) : agc_csm_rendz_noun_read(id, v);
-    }
-
-    return ((st == AGC_STATUS_NOT_FOUND && !write) ?
-            noun_derived(id, lm, v) : st);
-}
-
 /* Read (write = false) or store the erasable behind a data id that core
  * does not hold. NOT_FOUND: no owner; BAD_ARG: bad arguments.           */
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
@@ -432,7 +344,85 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
     }
     else
     {
-        return (noun_by_function(data_id, write, lm, value));
+        /* Ids resolved through functions: the P11 readout, LAT/LONG/ALT, P37,
+         * the rendezvous programs.                                              */
+        bool p11 = !lm && agc_erase_modreg() == 11;
+
+        if ((data_id == AGC_DATA_HDOT || data_id == AGC_DATA_ALTI ||
+             (data_id == AGC_DATA_VMAGI && p11)) && !write)
+        {
+            /* VMAGI, HDOT, ALTI of the P11 monitor (N62).                           */
+            {
+                agc_dp_t vmagi = 0;
+                agc_dp_t hdot  = 0;
+                agc_dp_t alti  = 0;
+
+                agc_status_t st =
+                    agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot,
+                                                              &alti);
+
+                if (st != AGC_STATUS_OK)
+                {
+                    return (st);
+                }
+
+                *value = (data_id == AGC_DATA_HDOT) ? hdot :
+                         (data_id == AGC_DATA_ALTI) ? alti : vmagi;
+
+                return (AGC_STATUS_OK);
+            }
+        }
+
+        if (data_id == AGC_DATA_LAT || data_id == AGC_DATA_LONG ||
+            data_id == AGC_DATA_ALT)
+        {
+            /* LAT, LONG, ALT (noun 43): the nav-aux store.                          */
+            {
+                agc_latlong_t ll;
+                agc_status_t  st = agc_navaux_get_latlong(&ll);
+
+                if (st != AGC_STATUS_OK)
+                {
+                    return (st);
+                }
+
+                agc_dp_t *f = (data_id == AGC_DATA_LAT) ? &ll.lat :
+                              (data_id == AGC_DATA_LONG) ? &ll.lon : &ll.alt;
+
+                if (!write)
+                {
+                    *value = *f;
+
+                    return (AGC_STATUS_OK);
+                }
+
+                *f = *value;
+
+                return (agc_navaux_set_latlong(&ll));
+            }
+        }
+
+        agc_status_t st = lm ? AGC_STATUS_NOT_FOUND :
+                          agc_return_to_earth_noun(data_id, write, value);
+
+        if (st == AGC_STATUS_NOT_FOUND)
+        {
+            st =
+                write ? agc_rendz_noun_write(data_id,
+                                             *value) : agc_rendz_noun_read(
+                    data_id, value);
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && !write)
+        {
+            st =
+                lm ? agc_lm_rendz_noun_read(data_id,
+                                            value) : agc_csm_rendz_noun_read(
+                    data_id, value);
+        }
+
+        return ((st == AGC_STATUS_NOT_FOUND && !write) ?
+                noun_derived(data_id, lm, value) : st);
     }
 
     return (AGC_STATUS_OK);

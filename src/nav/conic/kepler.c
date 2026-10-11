@@ -355,30 +355,6 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     return (KEPLER_CONTINUE);
 }
 
-/* Copy the KEPLER results and debris to *out. */
-static void kepler_output(const agc_conic_ctx_t *ctx, const kepler_state_t *ks,
-                          const agc_kepler_in_t *in, agc_kepler_out_t *out)
-{
-    if (!AGC_ASSERT(ctx != NULL && ks != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(in != NULL && out != NULL))
-    {
-        return;
-    }
-
-    agc_ovf_t ovf = 0;
-
-    out->urrect  = ctx->ur1;
-    out->r1      = ctx->r1;
-    out->alpha   = ks->alpha;
-    out->tau     = ks->tau;
-    out->tmodulo = agc_dp_sub_raw(in->tau, ks->tau, &ovf);
-    (void) ovf; /* |reduced TAU.| <= |TAU.|: cannot overflow */
-}
-
 /*
  * KEPLER (CONIC_SUBROUTINES.agc pp. 1263-1265 description, code
  * pp. 1277-1282, label KEPLERN). See agc_nav.h for the status contract.
@@ -420,7 +396,15 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
         pass++;                            /* CHECKCTR       */
     }
 
-    kepler_output(&ctx, &ks, in, out);
+    /* Copy the KEPLER results and debris to *out. */
+    agc_ovf_t ovf = 0;
+
+    out->urrect  = ctx.ur1;
+    out->r1      = ctx.r1;
+    out->alpha   = ks.alpha;
+    out->tau     = ks.tau;
+    out->tmodulo = agc_dp_sub_raw(in->tau, ks.tau, &ovf);
+    (void) ovf; /* |reduced TAU.| <= |TAU.|: cannot overflow */
     out->iterations = pass;
 
     if (step == KEPLER_KEPRTN)
@@ -444,51 +428,6 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 
     return ((step ==
              KEPLER_CONVERGED) ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE);
-}
-
-/* KEPPREP second-order term (ORBITAL_INTEGRATION.agc p. 1334, from
- * "DSQ PDDL* MUEARTH,2" to "SL* SL* 8D,1 0,1"):
- * S (-FS + 2 (FS)^2 - (2/3)(1/R - ALPHA) MU S^2 ...) sqrt(MU), 2^18.
- * n1 = NORM count of |R|, n2 = NORM count of TAU. - TC (S1).            */
-static agc_tp_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in,
-                               const agc_dp_t cell[6], int n1, int n2)
-{
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(cell != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
-    const agc_dp_t fs_sq =
-        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[4])));
-    const agc_dp_t s_sq =
-        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[3])));
-    const agc_dp_t mu43 =
-        agc_conic_mstore_( /* SR3 SR4: 12D */
-            agc_conic_mshift_(
-                ip,
-                agc_conic_mshift_(ip, agc_conic_mload_(cell[5]),
-                                  -3),
-                -4));
-    agc_tp_t m = agc_conic_mload_(agc_vec_sq(ip, in->vrect)); /* VSQ VCV  */
-
-    m = agc_conic_mbdsu_(ip, agc_conic_mdmp_(m, cell[1]),
-                         mu43);          /* DMP 36D BDSU */
-    m = agc_conic_mdmp_(agc_conic_mddv_(ip, m, cell[2]), s_sq); /* DDV 2D DMP */
-    m = agc_conic_mdmp_(m, AGC_CONIC_DP2_3);   /* DMP DP2/3      */
-    m = agc_conic_mshift_(ip, m, n1 - 3);      /* SL* 0 -3,1     */
-    m = agc_conic_mdad_(ip, m, fs_sq);         /* XSU,1 S1; DAD  */
-    m = agc_conic_mshift_(ip, m, 8 + n1 - n2); /* SL* 8D,1       */
-    m = agc_conic_mdsu_(ip, m, cell[4]);       /* DSU (FS)       */
-    m = agc_conic_mdmp_(agc_conic_mdmp_(m, cell[0]), cell[3]); /* DMP 0D, 4D */
-    m = agc_conic_mshift_(ip, m, 8 + n1 - n2); /* SL* 8D,1       */
-
-    return (agc_conic_mshift_(ip, m, n1 - n2));  /* SL* 0,1        */
 }
 
 /*
@@ -537,7 +476,42 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
         agc_conic_mstore_(agc_conic_mddv_(ip, m, cell[2])); /* S: DDV 2D */
     cell[4] =
         agc_conic_mstore_(agc_conic_mdmp_(agc_conic_mload_(fsmu), cell[3]));
-    m = agc_conic_mdad_(ip, kepprep_series(ip, in, cell, n1, n2), in->xprev);
+
+    /* KEPPREP second-order term (ORBITAL_INTEGRATION.agc p. 1334, from
+     * "DSQ PDDL* MUEARTH,2" to "SL* SL* 8D,1 0,1"):
+     * S (-FS + 2 (FS)^2 - (2/3)(1/R - ALPHA) MU S^2 ...) sqrt(MU), 2^18.
+     * n1 = NORM count of |R|, n2 = NORM count of TAU. - TC (S1).            */
+    if (!AGC_ASSERT(cell != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
+    const agc_dp_t fs_sq =
+        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[4])));
+    const agc_dp_t s_sq =
+        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[3])));
+    const agc_dp_t mu43 =
+        agc_conic_mstore_( /* SR3 SR4: 12D */
+            agc_conic_mshift_(
+                ip,
+                agc_conic_mshift_(ip, agc_conic_mload_(cell[5]),
+                                  -3),
+                -4));
+    agc_tp_t m_series = agc_conic_mload_(agc_vec_sq(ip, in->vrect)); /* VSQ VCV  */
+
+    m_series = agc_conic_mbdsu_(ip, agc_conic_mdmp_(m_series, cell[1]),
+                                mu43);   /* DMP 36D BDSU */
+    m_series = agc_conic_mdmp_(agc_conic_mddv_(ip, m_series, cell[2]), s_sq); /* DDV 2D DMP */
+    m_series = agc_conic_mdmp_(m_series, AGC_CONIC_DP2_3);   /* DMP DP2/3      */
+    m_series = agc_conic_mshift_(ip, m_series, n1 - 3);      /* SL* 0 -3,1     */
+    m_series = agc_conic_mdad_(ip, m_series, fs_sq);         /* XSU,1 S1; DAD  */
+    m_series = agc_conic_mshift_(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
+    m_series = agc_conic_mdsu_(ip, m_series, cell[4]);       /* DSU (FS)       */
+    m_series = agc_conic_mdmp_(agc_conic_mdmp_(m_series, cell[0]), cell[3]); /* DMP 0D, 4D */
+    m_series = agc_conic_mshift_(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
+    m        = agc_conic_mdad_(ip, agc_conic_mshift_(ip, m_series,
+                                                     n1 - n2), in->xprev);
     const agc_dp_t sum = agc_conic_mstore_(m); /* DAD XKEP, PDDL */
 
     m = agc_conic_mdmp_(agc_conic_mload_(cell[3]), cell[0]); /* DMP 0D   */

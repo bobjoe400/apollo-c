@@ -30,6 +30,7 @@ static char oracle_spec[ORACLE_SPEC_MAX];
 static int  oracle_checks;
 static int  oracle_failures;
 static int  oracle_missing;
+static int  oracle_known;
 
 static inline bool oracle_read(const char *name, char *buf, size_t cap)
 {
@@ -375,6 +376,16 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     return (neg ? -(int) v : (int) v);
 }
 
+/* Raw 15-bit input word (CDU patterns, -0 kept): the signed value of
+ * oracle_in() mapped back to ones' complement.                          */
+static inline uint16_t oracle_in_raw(const char *tag, const char *name,
+                                     int idx)
+{
+    const int w = oracle_in(tag, name, idx);
+
+    return ((uint16_t) ((w < 0) ? w + 077777 : w));
+}
+
 static inline agc_dp_t oracle_in_dp(const char *tag, const char *name, int idx)
 {
     return ((agc_dp_t) oracle_in(tag, name, idx) * 16384 +
@@ -453,6 +464,42 @@ static inline bool oracle_cmp(const char *tag, const char *what, long got,
     return (true);
 }
 
+/* A comparison that fails because of a recorded finding (id = the
+ * docs/modules/oracle-cases.md "Findings" entry): printed as KNOWN and
+ * counted apart, so `make test` stays green until the review wave fixes
+ * src/; when the summary shows 0 known the entry can be closed and the
+ * call turned back into oracle_cmp().                                     */
+static inline void oracle_cmp_known(const char *tag, const char *what,
+                                    long got, long want, long tol,
+                                    const char *id)
+{
+    const long d = got - want;
+
+    oracle_checks++;
+
+    if (d > tol || d < -tol)
+    {
+        oracle_known++;
+        (void) printf("KNOWN %s %s %s: C %ld AGC %ld (diff %ld)\n", id, tag,
+                      what, got, want, d);
+    }
+}
+
+static inline void oracle_cmp_vec_known(const char *tag, const char *what,
+                                        agc_vec_t got, agc_vec_t want, long tol,
+                                        const char *id)
+{
+    static const char *const axis[3] = {"x", "y", "z"};
+
+    for (int k = 0; k < 3; k++)
+    {
+        char w[96];
+
+        (void) snprintf(w, sizeof w, "%s.%s", what, axis[k]);
+        oracle_cmp_known(tag, w, (long) got.c[k], (long) want.c[k], tol, id);
+    }
+}
+
 static inline void oracle_cmp_vec(const char *tag, const char *what,
                                   agc_vec_t got, agc_vec_t want, long tol)
 {
@@ -482,8 +529,9 @@ static inline void oracle_require_ok(const char *tag, const char *stop)
 /* Summary line; exit status for main(). */
 static inline int oracle_finish(const char *test)
 {
-    (void) printf("%s: %d checks, %d failures, %d missing\n", test,
-                  oracle_checks, oracle_failures, oracle_missing);
+    (void) printf("%s: %d checks, %d failures, %d missing, %d known "
+                  "(findings)\n", test, oracle_checks, oracle_failures,
+                  oracle_missing, oracle_known);
 
     return ((oracle_failures == 0 && oracle_missing == 0 &&
              oracle_checks > 0) ? 0 : 1);

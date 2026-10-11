@@ -12,40 +12,6 @@
 #include "agc/core/assert.h"
 #include "internal.h"
 
-/* TIMERAD from PARAM to UNIT (p. 1301): eccentricity vector
- * ((1 - R1A) UR1 - sqrt(P (2 - R1A)) COGA U2), 2^3. Its unit vector is
- * returned, |ECC| (36D) in *ecc.                                         */
-static agc_vec_t timerad_ecc_vector(agc_interp_t *ip,
-                                    const agc_conic_ctx_t *ctx, agc_dp_t *ecc)
-{
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(ecc != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    agc_tp_t m =
-        agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_32), ctx->r1a);
-
-    m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx->p)); /* DMP P SQRT */
-    m = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx->coga),
-                          4); /* DMP COGA SL4 */
-    const agc_vec_t a =
-        agc_vec_scale(ip, ctx->u2, agc_conic_mstore_(m)); /* 0D */
-
-    m = agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_64), ctx->r1a);
-    agc_vec_t e =
-        agc_vec_scale(ip, ctx->ur1, agc_conic_mstore_(m)); /* VXSC UR1 */
-
-    e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4);         /* VSU VSL4   */
-
-    return (agc_vec_unit(ip, e, ecc, NULL));                 /* UNIT       */
-}
-
 /* TIMERAD from PDDL RDESIRED to CLEAR APSESW (p. 1301), with BADR2:
  * COSF and SINF (2^1) of the true anomaly at RDESIRED. Returns true when
  * RDESIRED is outside the apsides (APSESW): COSF = +-1, SINF = 0.        */
@@ -187,8 +153,25 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
         return (agc_conic_cogaovfl_(&ctx, out));
     }
 
-    agc_dp_t        ecc  = 0;
-    const agc_vec_t uecc = timerad_ecc_vector(ip, &ctx, &ecc);
+    agc_dp_t ecc = 0;
+    /* TIMERAD from PARAM to UNIT (p. 1301): eccentricity vector
+     * ((1 - R1A) UR1 - sqrt(P (2 - R1A)) COGA U2), 2^3. Its unit vector is
+     * returned, |ECC| (36D) in *ecc.                                         */
+    agc_tp_t m =
+        agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_32), ctx.r1a);
+
+    m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx.p)); /* DMP P SQRT */
+    m = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.coga),
+                          4); /* DMP COGA SL4 */
+    const agc_vec_t a =
+        agc_vec_scale(ip, ctx.u2, agc_conic_mstore_(m)); /* 0D */
+
+    m = agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_64), ctx.r1a);
+    agc_vec_t e =
+        agc_vec_scale(ip, ctx.ur1, agc_conic_mstore_(m)); /* VXSC UR1 */
+
+    e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4);         /* VSU VSL4   */
+    const agc_vec_t uecc = agc_vec_unit(ip, e, &ecc, NULL);
 
     if (agc_interp_test_ovf(ip))
     { /* BOV CIRCULAR   */

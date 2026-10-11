@@ -65,29 +65,6 @@ static const agc_sp_t slopeval[VARST_N] = {
     1342  /* DEC 2 E-5 B+12       */
 };
 
-/* DAS VARST0 +1 with A,L = VARST8, VARST9 (DXTEST): two separate SP
- * quantities added as a word pair, the low-word carry going up.          */
-static void das_words(agc_sp_t *hi, agc_sp_t *lo, agc_sp_t ahi, agc_sp_t alo)
-{
-    int l     = (int) *lo + (int) alo;
-    int carry = (l > AGC_SP_MAX) ? 1 : ((l < AGC_SP_MIN) ? -1 : 0);
-
-    l -= carry * W_ONE_SP;
-
-    if (!AGC_ASSERT((l >= AGC_SP_MIN) && (l <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
-    *lo = (agc_sp_t) l;
-    *hi = csm_dap_ads(csm_dap_ads(*hi, ahi), (agc_sp_t) carry);
-
-    if (!AGC_ASSERT(*hi >= AGC_SP_MIN))
-    {
-        return;
-    }
-}
-
 /* MASSPROP, LEMTEST, LEMNO, LEMYES, STOINST, DXTEST (pp. 953-954).       */
 void agc_csm_dap_massprop(void)
 {
@@ -117,7 +94,31 @@ void agc_csm_dap_massprop(void)
 
     if ((d1 & CSM_DAP_BIT15) != 0u)
     { /* LM descent stage off */
-        das_words(&t->varst[1], &t->varst[2], t->varst[8], t->varst[9]);
+        /* DAS VARST0 +1 with A,L = VARST8, VARST9 (DXTEST): two separate SP
+         * quantities added as a word pair, the low-word carry going up.          */
+        agc_sp_t *hi  = &t->varst[1];
+        agc_sp_t *lo  = &t->varst[2];
+        agc_sp_t  ahi = t->varst[8];
+        agc_sp_t  alo = t->varst[9];
+
+        int l     = (int) *lo + (int) alo;
+        int carry = (l > AGC_SP_MAX) ? 1 : ((l < AGC_SP_MIN) ? -1 : 0);
+
+        l -= carry * W_ONE_SP;
+
+        if (!AGC_ASSERT((l >= AGC_SP_MIN) && (l <= AGC_SP_MAX)))
+        {
+            return;
+        }
+
+        *lo = (agc_sp_t) l;
+        *hi = csm_dap_ads(csm_dap_ads(*hi, ahi), (agc_sp_t) carry);
+
+        if (!AGC_ASSERT(*hi >= AGC_SP_MIN))
+        {
+            return;
+        }
+
         t->varst[7] = csm_dap_ads(t->varst[7], DXITFIX);
     }
 

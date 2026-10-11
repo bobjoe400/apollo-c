@@ -158,71 +158,6 @@ static void set_lampword(uint16_t v)
     agc_erase_set_dsptab(FS_LAMPWORD, v);
 }
 
-/* DOFSTART flagword initialisation from SWINIT (C p.193 / L p.225).
- * Kept through a fresh start: CSM NODOP01, REFSMFLG, CMOONFLG,
- * LMOONFLG, SURFFLAG; LM REFSMFLG, SURFFLAG, CMOONFLG, LMOONFLG, APSFLAG.
- * SWINIT sets CSM FLAGWRD5 0200 (COMPUTER); LM FLAGWRD3 02000
- * (NOR29FLG), FLAGWRD7 0100, FLAGWRD11 40000 (LRBYPASS).              */
-static void swinit_flags(void)
-{
-    uint16_t moons = (uint16_t) (agc_flag_mask(AGC_FLAG_CMOONFLG) |
-                                 agc_flag_mask(AGC_FLAG_LMOONFLG) |
-                                 agc_flag_mask(AGC_FLAG_SURFFLAG));
-    uint16_t refsm = agc_flag_mask(AGC_FLAG_REFSMFLG);
-
-    for (int w = 0; w < FS_FLAGWORDS_SWINIT; w++)
-    {
-        uint16_t keep = 0;
-        uint16_t init = 0;
-
-        if (w == 3)
-        {
-            keep = refsm;
-            init = is_lm() ? 002000u : 0u;
-        }
-        else if (w == 8)
-        {
-            keep = moons; /* OCT6200            */
-        }
-        else if (w == 1 && !is_lm())
-        {
-            keep = 004000u; /* NOP01BIT (CSM)     */
-        }
-        else if (w == 5 && !is_lm())
-        {
-            init = 000200u; /* COMPUTER (CSM)     */
-        }
-        else if (w == 7 && is_lm())
-        {
-            init = 000100u;
-        }
-        else if (w == 10 && is_lm())
-        {
-            keep = 010000u; /* APSFLBIT (LM)      */
-        }
-        else if (w == 11 && is_lm())
-        {
-            init = 040000u; /* LRBYPASS (LM)      */
-        }
-        else
-        {
-            /* SWINIT word is 0 and nothing is kept */
-        }
-
-        flagword_init(w, keep, init);
-    }
-
-    if (!AGC_ASSERT(refsm != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(moons != 0U))
-    {
-        return;
-    }
-}
-
 /* STARTSB2, channel and flag part (C p.190 / L p.220).                */
 static void startsb2_outbits(void)
 {
@@ -338,10 +273,11 @@ static void startsub(void)
     }
 }
 
-/* "The IMU was in coarse align in gimbal lock, so put it back"
- * (DOFSTART C p.184 / L p.212).                                       */
-static void dofstart_coarse(void)
+/* DOFSTART tail common to both vehicles: groups, MODREG, IMU words.   */
+static void dofstart_common(void)
 {
+    /* "The IMU was in coarse align in gimbal lock, so put it back"
+     * (DOFSTART C p.184 / L p.212).                                       */
     uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
 
     if (!AGC_ASSERT(lamps <= 077777u))
@@ -358,12 +294,7 @@ static void dofstart_coarse(void)
     {
         return;
     }
-}
 
-/* DOFSTART tail common to both vehicles: groups, MODREG, IMU words.   */
-static void dofstart_common(void)
-{
-    dofstart_coarse();
     agc_status_t st = agc_phase_mr_klean(); /* TC MR.KLEAN          */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -389,7 +320,67 @@ static void dofstart_common(void)
         agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* let T5 idle   */
     }
 
-    swinit_flags();
+    /* DOFSTART flagword initialisation from SWINIT (C p.193 / L p.225).
+     * Kept through a fresh start: CSM NODOP01, REFSMFLG, CMOONFLG,
+     * LMOONFLG, SURFFLAG; LM REFSMFLG, SURFFLAG, CMOONFLG, LMOONFLG, APSFLAG.
+     * SWINIT sets CSM FLAGWRD5 0200 (COMPUTER); LM FLAGWRD3 02000
+     * (NOR29FLG), FLAGWRD7 0100, FLAGWRD11 40000 (LRBYPASS).              */
+    uint16_t moons = (uint16_t) (agc_flag_mask(AGC_FLAG_CMOONFLG) |
+                                 agc_flag_mask(AGC_FLAG_LMOONFLG) |
+                                 agc_flag_mask(AGC_FLAG_SURFFLAG));
+    uint16_t refsm = agc_flag_mask(AGC_FLAG_REFSMFLG);
+
+    for (int w = 0; w < FS_FLAGWORDS_SWINIT; w++)
+    {
+        uint16_t keep = 0;
+        uint16_t init = 0;
+
+        if (w == 3)
+        {
+            keep = refsm;
+            init = is_lm() ? 002000u : 0u;
+        }
+        else if (w == 8)
+        {
+            keep = moons; /* OCT6200            */
+        }
+        else if (w == 1 && !is_lm())
+        {
+            keep = 004000u; /* NOP01BIT (CSM)     */
+        }
+        else if (w == 5 && !is_lm())
+        {
+            init = 000200u; /* COMPUTER (CSM)     */
+        }
+        else if (w == 7 && is_lm())
+        {
+            init = 000100u;
+        }
+        else if (w == 10 && is_lm())
+        {
+            keep = 010000u; /* APSFLBIT (LM)      */
+        }
+        else if (w == 11 && is_lm())
+        {
+            init = 040000u; /* LRBYPASS (LM)      */
+        }
+        else
+        {
+            /* SWINIT word is 0 and nothing is kept */
+        }
+
+        flagword_init(w, keep, init);
+    }
+
+    if (!AGC_ASSERT(refsm != 0U))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(moons != 0U))
+    {
+        return;
+    }
 
     /* ENDRSTRT: on to DUMMYJOB +2 (RELINT, NEWJOB untouched).          */
     if (!AGC_ASSERT(restreg == FS_PRIO30))

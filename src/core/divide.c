@@ -36,55 +36,6 @@ static int32_t finaldv(int32_t a, int32_t c)
     return (agc_w_dv(a, 0, c).hi);
 }
 
-/* GENDDV (p.1167-1168): (A + sB)/(C + sD) = Q + s(R - QD)/C, s = 2^-14.
- * Dividend (A,B) positive with A < C; divisor (C,D) positive, C >= HALF.  */
-static agc_dp_t genddv_words(agc_w2_t ab, agc_w2_t cd)
-{
-    agc_w2_t qr  = agc_w_dv(ab.hi, ab.lo, cd.hi); /* DV BUF          */
-    int32_t  q   = qr.hi;
-    int32_t  acc = qr.lo + agc_w_mp(-q, cd.lo).hi; /* CS; MP; AD      */
-
-    if (!AGC_ASSERT(ab.hi < cd.hi))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (acc >= AGC_W_ONE)
-    {                 /* OVSK: + overflow */
-        acc -= cd.hi; /* SU BUF          */
-        q   += 1;     /* INCR MPAC       */
-    }
-    else if (acc <= 0)
-    { /* BZMF -UP        */
-        if (acc == 0)
-        {
-            return ((agc_dp_t) (q * AGC_W_ONE)); /* FINALDV +3      */
-        }
-
-        q   -= 1;     /* DIM MPAC        */
-        acc += cd.hi; /* ENDMAXDV AD BUF */
-
-        return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc, cd.hi)));
-    }
-    else
-    {
-        /* fall into +DOWN */
-    }
-
-    if (acc - cd.hi >= 0)
-    { /* +DOWN: SU BUF   */
-        acc -= cd.hi;
-        q   += 1; /* +3: INCR MPAC   */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(q)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc, cd.hi)));
-}
-
 /* GENDDV entry with the MAXDV test of MAXTEST (p.1166, 1170).               */
 agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
 {
@@ -106,7 +57,51 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
 
     if (!maxdv || (ab.hi != cd.hi))
     { /* MAXDV: BZF +2   */
-        return (genddv_words(ab, cd));
+        /* GENDDV (p.1167-1168): (A + sB)/(C + sD) = Q + s(R - QD)/C, s = 2^-14.
+         * Dividend (A,B) positive with A < C; divisor (C,D) positive, C >= HALF.  */
+        agc_w2_t qr        = agc_w_dv(ab.hi, ab.lo, cd.hi); /* DV BUF          */
+        int32_t  q         = qr.hi;
+        int32_t  acc_words = qr.lo + agc_w_mp(-q, cd.lo).hi; /* CS; MP; AD      */
+
+        if (!AGC_ASSERT(ab.hi < cd.hi))
+        {
+            return (0); /* no valid result */
+        }
+
+        if (acc_words >= AGC_W_ONE)
+        {                 /* OVSK: + overflow */
+            acc_words -= cd.hi; /* SU BUF          */
+            q         += 1; /* INCR MPAC       */
+        }
+        else if (acc_words <= 0)
+        { /* BZMF -UP        */
+            if (acc_words == 0)
+            {
+                return ((agc_dp_t) (q * AGC_W_ONE)); /* FINALDV +3      */
+            }
+
+            q         -= 1; /* DIM MPAC        */
+            acc_words += cd.hi; /* ENDMAXDV AD BUF */
+
+            return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc_words, cd.hi)));
+        }
+        else
+        {
+            /* fall into +DOWN */
+        }
+
+        if (acc_words - cd.hi >= 0)
+        { /* +DOWN: SU BUF   */
+            acc_words -= cd.hi;
+            q         += 1; /* +3: INCR MPAC   */
+        }
+
+        if (!AGC_ASSERT(agc_w_ok(q)))
+        {
+            return (0); /* no valid result */
+        }
+
+        return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc_words, cd.hi)));
     }
 
     /* MAXDV: (C + sB)/(C + sD) = 37777 + s(C + B - D)/C, B < D.             */
@@ -127,36 +122,6 @@ static agc_dp_t ddv_overflow(bool negative, int *ovf)
     *ovf = 1;                                  /* CAF ONE; TS OVFIND */
 
     return (negative ? AGC_DP_MIN : AGC_DP_MAX); /* DVOVF: DPPOSMAX */
-}
-
-/* Normalise the divisor (BUFNORM/DVNORM) and the dividend by the same count
- * (the DDOUBL prologue indexed by DVNORMCT), then GENDDV/MAXDV.            */
-static agc_dp_t ddv_normalised(agc_dp_t a, agc_dp_t b, bool maxdv)
-{
-    int k;
-
-    if (!AGC_ASSERT((a > 0) && (b > 0)))
-    {
-        return (0); /* no valid result */
-    }
-
-    for (k = 0; (k < DV_NORM_MAX) && (agc_w_split(b).hi < AGC_W_HALF); k++)
-    {
-        b *= 2; /* DCA BUF; DAS BUF */
-        a *= 2; /* DDOUBL           */
-    }
-
-    if (!AGC_ASSERT(agc_w_split(b).hi >= AGC_W_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(a <= b)) /* no DDOUBL overflow */
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_w_genddv(a, b, maxdv));
 }
 
 /* DDV/BDDV (p.1162-1165): a / b with both scaled alike; quotient at 2^0.
@@ -217,7 +182,34 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
     }
 
     /* Equal majors leave -0 in A; CCS turns it into +0 for TS MAXDVSW.    */
-    q = ddv_normalised(a, b, d.hi == w.hi);
+    /* Normalise the divisor (BUFNORM/DVNORM) and the dividend by the same count
+     * (the DDOUBL prologue indexed by DVNORMCT), then GENDDV/MAXDV.            */
+    bool maxdv = d.hi == w.hi;
+
+    int k;
+
+    if (!AGC_ASSERT((a > 0) && (b > 0)))
+    {
+        return (AGC_DP_MAX);
+    }
+
+    for (k = 0; (k < DV_NORM_MAX) && (agc_w_split(b).hi < AGC_W_HALF); k++)
+    {
+        b *= 2; /* DCA BUF; DAS BUF */
+        a *= 2; /* DDOUBL           */
+    }
+
+    if (!AGC_ASSERT(agc_w_split(b).hi >= AGC_W_HALF))
+    {
+        return (AGC_DP_MAX);
+    }
+
+    if (!AGC_ASSERT(a <= b)) /* no DDOUBL overflow */
+    {
+        return (AGC_DP_MAX);
+    }
+
+    q = agc_w_genddv(a, b, maxdv);
 
     if (!AGC_ASSERT((q >= 0) && (q <= AGC_DP_MAX)))
     {
