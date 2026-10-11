@@ -86,7 +86,8 @@ typedef struct agc_kepler_out
  * Returns AGC_STATUS_NO_CONVERGE when ITERCTR ran out: the AGC treats that
  * as converged (BHIZ KEPCONVG) and sets no flag or alarm, and all outputs
  * are filled exactly as the AGC leaves them, so callers that want the AGC's
- * behaviour accept this status.
+ * behaviour accept this status. The same status, with *out not filled,
+ * when PERIODCH reaches its C pass bound (AGC_CONIC_PERIOD_MAX_PASSES).
  * Returns AGC_STATUS_OVERFLOW on the TIMEOVFL path when DELX halves to zero:
  * the AGC then returns through KEPRTN WITHOUT computing RCV/VCV (they keep
  * their previous contents, which after RECTIFY are RRECT/VRECT); here
