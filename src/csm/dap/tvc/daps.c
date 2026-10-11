@@ -139,7 +139,10 @@ static void tvcd_pcdudots(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->pcduzpst == z);
+    if (!AGC_ASSERT(t->pcduzpst == z))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -163,7 +166,10 @@ static void tvcd_errorlim(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->errbtmp.hi >= -ERRLIM);
+    if (!AGC_ASSERT(t->errbtmp.hi >= -ERRLIM))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -205,7 +211,10 @@ static void tvcd_actlim(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT);
+    if (!AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -279,7 +288,10 @@ static void tvcd_fwdfltr(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->delbrtmp.hi == 0);
+    if (!AGC_ASSERT(t->delbrtmp.hi == 0))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -320,7 +332,10 @@ static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out, int j,
     t->tmp[k + 1] = csm_dap_pair_smallmp(nout, t->n10[j + 3]);
     (void) csm_dap_pair_das(&t->tmp[k + 1], csm_dap_pair_smallmp(in, t->n10[j + 1]));
 
-    (void) AGC_ASSERT(t->tmp[k].hi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(t->tmp[k].hi >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -347,7 +362,10 @@ static void tvcd_precomp(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->vark >= 0);
+    if (!AGC_ASSERT(t->vark >= 0))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -370,7 +388,10 @@ static void tvcd_delbar(agc_csm_dp_pair_t delbar)
     (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(delbar.hi, E_AT));
     (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(t->cmdtmp.hi, ONE_M_EAT));
 
-    (void) AGC_ASSERT(t->delbrtmp.hi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(t->delbrtmp.hi >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -499,7 +520,10 @@ static void tvcd_integrate(tvcd_axis_t ax)
     /* DCS OMEGAxB; DAS ERRBTMP                                           */
     (void) csm_dap_pair_das(&t->errbtmp, csm_dap_pair_neg(t->omegab[a]));
 
-    (void) AGC_ASSERT(t->errbtmp.hi >= AGC_SP_MIN);
+    if (!AGC_ASSERT(t->errbtmp.hi >= AGC_SP_MIN))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -538,7 +562,10 @@ static void tvcd_output(tvcd_axis_t ax)
         return;
     }
 
-    (void) AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT);
+    if (!AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -644,7 +671,10 @@ agc_status_t agc_task_pitchdap(void)
 
     agc_status_t st = tvcd_entry(TVCD_PITCH); /* one pitch pass        */
 
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
 
     return (st);
 }
@@ -666,7 +696,10 @@ agc_status_t agc_task_yawdap(void)
 
     agc_status_t st = tvcd_entry(TVCD_YAW); /* one yaw pass            */
 
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
 
     return (st);
 }
@@ -696,7 +729,10 @@ agc_status_t agc_task_dapinit(void)
     t->pcduypst = agc_erase_cduy();
     t->pcduzpst = agc_erase_cduz();
 
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
 
     return (st); /* NOQRSM                                              */
 }

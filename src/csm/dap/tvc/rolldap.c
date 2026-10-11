@@ -440,7 +440,10 @@ static agc_status_t roll_noroll(void)
     t->rollfire = 0; /* CS ZERO: -0                                    */
     t->temreg   = 0; /* -0, 625 us/bit                                 */
 
-    (void) AGC_ASSERT(t->i_sign != 0);
+    if (!AGC_ASSERT(t->i_sign != 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (roll_jetroll(CSM_DAP_NEG0));
 }
@@ -572,7 +575,10 @@ agc_status_t agc_task_roll_jets_off(void)
     t->rollfire = 0;
     agc_chan_write(AGC_CHAN_ROLLJETS, 0u); /* WRITE CHAN6              */
 
-    (void) AGC_ASSERT(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
+    if (!AGC_ASSERT(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (AGC_STATUS_OK);
 }

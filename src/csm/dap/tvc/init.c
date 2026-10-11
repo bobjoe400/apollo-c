@@ -154,7 +154,10 @@ static void tvc_loadcoef(tvc_coef_set_t set)
         }
     }
 
-    (void) AGC_ASSERT(t->n10[0] != 0);
+    if (!AGC_ASSERT(t->n10[0] != 0))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -268,7 +271,10 @@ agc_status_t agc_task_tvcdapon(void)
 
     agc_status_t st = csm_tvc_mrclean(); /* MRCLEAN                    */
 
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
 
     return (st);
 }
@@ -312,7 +318,10 @@ static agc_status_t tvc_init_filter_timing(int lem)
     t->vcntr             = NINETEEN;         /* gain update in 10 s      */
     t->engine_fail_vcntr = NINETEEN;         /* V97VCNTR for ENGFAIL     */
 
-    (void) AGC_ASSERT(t->t5tvcdt > 0);
+    if (!AGC_ASSERT(t->t5tvcdt > 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -341,7 +350,10 @@ static void tvc_init_trims(void)
         return;
     }
 
-    (void) AGC_ASSERT(t->ycmd == c->yactoff);
+    if (!AGC_ASSERT(t->ycmd == c->yactoff))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -387,7 +399,10 @@ static void tvc_attinit(void)
     t->perrb.hi = t->errbtmp.hi; /* CA ERRBTMP; TS PERRB                 */
     t->yerrb.hi = t->errbtmp.lo; /* CA ERRBTMP +1; TS YERRB              */
 
-    (void) AGC_ASSERT((t->perrb.hi >= -ATTLIM) && (t->perrb.hi <= ATTLIM));
+    if (!AGC_ASSERT((t->perrb.hi >= -ATTLIM) && (t->perrb.hi <= ATTLIM)))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -548,7 +563,10 @@ agc_status_t agc_csm_tvc_preswtch(void)
 
     agc_relint(); /* POSTJUMP PINBRNCH                                 */
 
-    (void) AGC_ASSERT(t->tvcphase != -2);
+    if (!AGC_ASSERT(t->tvcphase != -2))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (st);
 }

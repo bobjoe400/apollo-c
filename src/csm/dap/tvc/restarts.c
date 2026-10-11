@@ -83,7 +83,10 @@ static agc_status_t tvcr_tvc_enable(void)
     agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
     agc_status_t st = csm_dap_set_t5(AGC_TASK_OPTICS_COUNTER_ENABLE, T5_60MS); /* T5   */
 
-    (void) AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u);
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (st);
 }
@@ -163,7 +166,10 @@ agc_status_t agc_task_optics_counter_enable(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    (void) AGC_ASSERT(st == AGC_STATUS_OK);
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
 
     return (st);
 }
@@ -193,7 +199,10 @@ static agc_status_t tvcr_chkstrk(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    (void) AGC_ASSERT(t->tvcphase == 0);
+    if (!AGC_ASSERT(t->tvcphase == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (st);
 }
@@ -231,7 +240,10 @@ agc_status_t agc_task_cmdsout(void)
 
     agc_status_t s2 = tvcr_chkstrk(); /* CHKSTRK                       */
 
-    (void) AGC_ASSERT(t->tvcphase >= 0);
+    if (!AGC_ASSERT(t->tvcphase >= 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return ((st != AGC_STATUS_OK) ? st : s2); /* first failure          */
 }

@@ -268,7 +268,10 @@ static void tvcx_corsetup(void)
     t->tempdap[0] = f;
     t->cntrtmp    = -1;
 
-    (void) AGC_ASSERT(t->cntrtmp < 0);
+    if (!AGC_ASSERT(t->cntrtmp < 0))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -329,7 +332,10 @@ static void tvcx_correction_copy(void)
     t->ydeloff  = t->yacttmp;
     t->tvcexphs = 6;             /* INCR (6)                         */
 
-    (void) AGC_ASSERT(c->pactoff == t->pdeloff.hi);
+    if (!AGC_ASSERT(c->pactoff == t->pdeloff.hi))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -450,7 +456,10 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
 
     agc_status_t st = tvcx_run((tvcx_step_t) tvcexphs); /* to TVCEXFIN  */
 
-    (void) AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0);
+    if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0))
+    {
+        return AGC_STATUS_BAD_ARG;
+    }
 
     return (st);
 }
