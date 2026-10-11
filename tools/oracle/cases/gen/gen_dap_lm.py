@@ -40,15 +40,37 @@ def main():
                  'KRDAP', 'QACCDOT', 'RACCDOT', '-2JETLIM', 'ALLOWGTS', 'MASS:dp'] +
                 ['E6,%04o' % (BLOCK + k) for k in range(48)])
     accs = {}
-    for tag, mass, csm, docked, aps, abdelv, db in (
-            ('accs_dps', 15000.0, 28000.0, False, False, 500, 0o144),
-            ('accs_aps', 4800.0, 28000.0, False, True, 900, 0o144),
-            ('accs_docked', 43000.0, 28000.0, True, False, 0, 0o1000),
-            ('accs_dps_wide', 12000.0, 28000.0, False, False, 300, 0o2000)):
+    # The accs_aos_* cases (review-dap-lm) put an offset acceleration
+    # AOSQ, AOSR (DP at pi/2, LSB of the major word) into 1/ACCONT: NOAOS,
+    # SOMEAOS, BIGAOS (DB4(3) = 2 DB), DB1 = -.5 DB above .1875 pi/2,
+    # NETNEG / FIXMIN, the SKIPDB1 overflow rescale, failed jet pairs
+    # (CH5MASK -U,+V = 0151; +U,-V = 0226), drift and ascent.
+    for tag, mass, csm, docked, aps, abdelv, db, aos, ch5, drift in (
+            ('accs_dps', 15000.0, 28000.0, False, False, 500, 0o144, None, 0, False),
+            ('accs_aps', 4800.0, 28000.0, False, True, 900, 0o144, None, 0, False),
+            ('accs_docked', 43000.0, 28000.0, True, False, 0, 0o1000, None, 0, False),
+            ('accs_dps_wide', 12000.0, 28000.0, False, False, 300, 0o2000, None, 0, False),
+            ('accs_aos_small', 15000.0, 28000.0, False, False, 500, 0o144, (60, 30), 0, False),
+            ('accs_aos_some', 15000.0, 28000.0, False, False, 500, 0o144, (200, 0), 0, False),
+            ('accs_aos_big', 15000.0, 28000.0, False, False, 500, 0o144, (300, 100), 0, False),
+            ('accs_aos_bigneg', 15000.0, 28000.0, False, False, 500, 0o144, (-250, -200), 0, False),
+            ('accs_aos_netneg', 15000.0, 28000.0, False, False, 500, 0o144, (500, 200), 0, False),
+            ('accs_aos_vbig', 15000.0, 28000.0, False, False, 500, 0o144, (3500, 1000), 0, False),
+            ('accs_aos_ovf', 15000.0, 28000.0, False, False, 500, 0o144, (16000, 6000), 0, False),
+            ('accs_aos_fail1', 15000.0, 28000.0, False, False, 500, 0o144, (300, 100), 0o151, False),
+            ('accs_aos_fail2', 15000.0, 28000.0, False, False, 500, 0o144, (-300, 100), 0o226, False),
+            ('accs_aos_drift', 15000.0, 28000.0, False, False, 0, 0o144, (300, 100), 0, True),
+            ('accs_aos_aps', 4800.0, 28000.0, False, True, 900, 0o144, (300, -100), 0, False),
+            ('accs_aos_wide', 12000.0, 28000.0, False, False, 300, 0o2000, (-150, 400), 0, False)):
+        boolw = (0o10000 if docked else 0) | (0o200 if drift else 0)
         sets = [('MASS', dp(mass, 16)), ('CSMMASS', sp(csm, 16)),
                 ('HIASCENT', sp(5500.0, 16)), ('ABDELV', _w(abdelv)), ('DB', _w(db)),
-                ('DAPBOOLS', '10000' if docked else '00000'),
+                ('DAPBOOLS', '%05o' % boolw),
                 ('FLGWRD10', '10000' if aps else '00000')]
+        if aos is not None:
+            sets.append(('AOSQ', w([aos[0], 0, aos[1], 0])))
+        if ch5:
+            sets.append(('CH5MASK', '%05o' % ch5))
         s.run(tag, None, 0o20, 'ENDOFJOB', sets, accs_out, ebank=6, entry='20,2454')
         accs[tag] = probe(s.l)[tag]
     # ---- TJETLAW ----

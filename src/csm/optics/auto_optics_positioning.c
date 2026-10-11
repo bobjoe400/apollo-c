@@ -358,12 +358,6 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
     {
         agc_svc_downflag(AGC_FLAG_TRUNFLAG); /* R52J     */
         agc_alarm(ALM_TRUNNION_50);
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
     }
 
     return (auto_optics_drive(ctx));

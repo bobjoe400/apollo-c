@@ -126,14 +126,14 @@ static agc_dp_t ddv_overflow(bool negative, int *ovf)
 
 /* DDV/BDDV (p.1162-1165): a / b with both scaled alike; quotient at 2^0.
  * Overflow (|a| >= |b|, b = 0) gives +-DPPOSMAX and *ovf = 1.             */
-agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
+agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf, bool *dvsign_neg)
 {
     agc_w2_t w   = agc_w_split(a);
     agc_w2_t d   = agc_w_split(b);
     bool     neg = false; /* DVSIGN = -1      */
     agc_dp_t q;
 
-    if (!AGC_ASSERT(ovf != 0))
+    if (!AGC_ASSERT((ovf != 0) && (dvsign_neg != 0)))
     {
         return (AGC_DP_MAX);
     }
@@ -144,7 +144,9 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
     { /* BUFZERO          */
         if (w.hi != 0)
         { /* OVF+ / SGNDVOVF  */
-            return (ddv_overflow((w.hi < 0) != (d.lo < 0), ovf));
+            *dvsign_neg = (w.hi < 0) != (d.lo < 0);
+
+            return (ddv_overflow(*dvsign_neg, ovf));
         }
 
         a *= AGC_W_ONE; /* shift both 14    */
@@ -152,6 +154,8 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
 
         if (b == 0)
         { /* zero divisor     */
+            *dvsign_neg = a < 0;
+
             return (ddv_overflow(a < 0, ovf));
         }
     }
@@ -162,6 +166,8 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
         neg = !neg;
     }
 
+    *dvsign_neg = neg; /* -1, or -0 after BUF- */
+
     if (a == 0)
     { /* exit on zero     */
         return (0);
@@ -169,8 +175,9 @@ agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf)
 
     if (a < 0)
     { /* MPAC-            */
-        a   = -a;
-        neg = !neg;
+        a           = -a;
+        neg         = !neg;
+        *dvsign_neg = neg; /* INCR DVSIGN */
     }
 
     w = agc_w_split(a);

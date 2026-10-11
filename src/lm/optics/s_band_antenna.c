@@ -196,13 +196,7 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_exec_prio_change(PRIO4);
-    st = AGC_STATUS_OK;
-
-    if (st == AGC_STATUS_BUSY)
-    {
-        return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* CHANG1       */
-    }
+    agc_exec_prio_change(PRIO4); /* PRIOCHNG: on to SBANDANT +2 */
 
     return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* TC SBANDANT+2 */
 }
@@ -232,7 +226,6 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         agc_guid_cdutrig(&trig); /* CDUTRIG      */
-        st = AGC_STATUS_OK;
     }
 
     if (st == AGC_STATUS_OK)
@@ -241,7 +234,6 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 
         ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &refsmmat, ue), 1);
         agc_guid_smnb(&trig, &ue); /* *SMNB*       */
-        st = AGC_STATUS_OK;
     }
 
     if (st == AGC_STATUS_OK)

@@ -15,6 +15,7 @@
 
 #include <string.h>
 
+#include "../../src/lm/dap/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
@@ -22,7 +23,6 @@
 #include "agc/guidance/guidance.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
-#include "../../src/lm/dap/internal.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
@@ -63,6 +63,11 @@ static void accs(const char *t, long tol)
     agc_erase_set_csmmass((agc_sp_t) oracle_in(t, "CSMMASS", 0));
     d->hiascent = (agc_sp_t) oracle_in(t, "HIASCENT", 0);
     d->db       = (agc_sp_t) oracle_in(t, "DB", 0);
+    d->aosq     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
+    d->aosq_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
+    d->aosr     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
+    d->aosr_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
+    d->ch5mask  = oracle_in_raw(t, "CH5MASK", 0);
     agc_flagword_set(DAPBOOLS_WORD, oracle_in_raw(t, "DAPBOOLS", 0));
     agc_flagword_set(FLGWRD10, oracle_in_raw(t, "FLGWRD10", 0));
     (void) agc_lm_dap_jet_accel_update();
@@ -91,24 +96,14 @@ static void accs(const char *t, long tol)
     (void) oracle_cmp(t, "MASS", agc_guid_state()->lm.mass,
                       oracle_out_dp(t, "MASS"), 0);
 
-    /* -0 deviation: ROT-TOUV of a zero AOSQ/AOSR leaves AOSV = -0, which
-     * 1/ACCONT's CCS takes as a negative offset (SIGNAOS = 1), so the
-     * AGC stores the V-axis (ACOAST, ACCFCT) pairs the other way round.
-     * A pair is accepted when it matches exactly swapped.                */
+    /* AOSQ = AOSR = 0 leaves AOSV = -0 in the AGC; 1/ACCONT models that
+     * sign (SIGNAOS = 1), so the V-axis pairs are compared as stored.    */
     for (int k = 0; k < LM_BLOCK_N; k++)
     {
         char n[16];
-        char m[16];
 
         (void) snprintf(n, sizeof n, "E6,%04o", 01547 + k);
-        (void) snprintf(m, sizeof m, "E6,%04o", 01547 + (k ^ 1));
-        const int want = oracle_out_sp(t, n);
-        const int swap = oracle_out_sp(t, m);
-        const bool swapped =
-            (want != d->block[k]) && (d->block[k] == swap) &&
-            (d->block[k ^ 1] == want);
-
-        cmp_sp(t, n, swapped ? want : d->block[k], n, tol);
+        cmp_sp(t, n, d->block[k], n, tol);
     }
 }
 
@@ -276,6 +271,18 @@ int main(void)
     accs("accs_aps", 0);
     accs("accs_docked", 0);
     accs("accs_dps_wide", 0);
+    accs("accs_aos_small", 0);
+    accs("accs_aos_some", 0);
+    accs("accs_aos_big", 0);
+    accs("accs_aos_bigneg", 0);
+    accs("accs_aos_netneg", 0);
+    accs("accs_aos_vbig", 0);
+    accs("accs_aos_ovf", 0);
+    accs("accs_aos_fail1", 0);
+    accs("accs_aos_fail2", 0);
+    accs("accs_aos_drift", 0);
+    accs("accs_aos_aps", 0);
+    accs("accs_aos_wide", 0);
     tjetlaw("tjet_p_small", 0);
     tjetlaw("tjet_p_neg", 0);
     tjetlaw("tjet_u_mid", 0);

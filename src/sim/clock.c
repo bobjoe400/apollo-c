@@ -63,8 +63,8 @@ agc_status_t sim_clock_init(void)
 
     for (int i = 0; i < (int) SIM_IRQ_COUNT; i++)
     {
-        g_irq[i]          = false;
-        g_stats.rupts[i]  = 0;
+        g_irq[i]         = false;
+        g_stats.rupts[i] = 0;
     }
 
     for (int i = 0; i < 3; i++)
@@ -172,7 +172,8 @@ static void time6_dinc(void)
         if (v == 0u || v == SIM_NEG0)
         {
             sim_irq_request(SIM_IRQ_T6);
-            agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_T6ENB & SIM_WORD_MASK));
+            agc_chan_and((int) AGC_CHAN_CHAN13,
+                         (uint16_t) (~SIM_CH13_T6ENB & SIM_WORD_MASK));
 
             return;
         }
@@ -205,7 +206,8 @@ static void radar_gate(void)
     if (g_radar_gate >= SIM_RADAR_GATES)
     { /* cycle complete: RNRAD holds what the radar shifted in    */
         g_radar_gate = 0;
-        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
+        agc_chan_and((int) AGC_CHAN_CHAN13,
+                     (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
         sim_irq_request(SIM_IRQ_RADAR);
     }
 
@@ -225,7 +227,8 @@ static void hand_traps(void)
         g_trap[0] = g_trap[0] || ((c13 & SIM_CH13_T31A) != 0u);
         g_trap[1] = g_trap[1] || ((c13 & SIM_CH13_T31B) != 0u);
         g_trap[2] = g_trap[2] || ((c13 & SIM_CH13_T32) != 0u);
-        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_TRAPS & SIM_WORD_MASK));
+        agc_chan_and((int) AGC_CHAN_CHAN13,
+                     (uint16_t) (~SIM_CH13_TRAPS & SIM_WORD_MASK));
     }
 
     uint16_t c31  = agc_chan_read((int) AGC_CHAN_CHAN31);
@@ -408,8 +411,9 @@ static void clock_exec(void)
 
         agc_exec_core_info_t job;
         int                  set = agc_exec_newjob(); /* NEWJOB: the next */
-        agc_status_t         ci  = agc_exec_core_info((set > 0) ? set : 0, &job);
-        agc_status_t         st  = agc_exec_run_one();
+        agc_status_t         ci  =
+            agc_exec_core_info((set > 0) ? set : 0, &job);
+        agc_status_t st = agc_exec_run_one();
 
         if (st == AGC_STATUS_NOT_FOUND)
         {
@@ -425,6 +429,7 @@ static void clock_exec(void)
                            (unsigned long) g_cs,
                            (ci == AGC_STATUS_OK) ? (int) job.loc : -1); /* diagnostic */
         }
+
         sim_channels_sync();
     }
 

@@ -43,7 +43,7 @@ static bool script_read(void)
 
     for (int i = 0; i < SCRIPT_PER_CS && g_file != NULL; i++)
     {
-        if (fgets(buf, (int) sizeof(buf), g_file) == NULL)
+        if (fgets(buf, (int) sizeof (buf), g_file) == NULL)
         {
             return (false);
         }

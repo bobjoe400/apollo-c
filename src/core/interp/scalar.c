@@ -30,6 +30,8 @@ void agc_interp_init(agc_interp_t *ip)
     ip->x2     = 0;
     ip->s1     = 0;
     ip->s2     = 0;
+    /* DVSIGN as a zeroed erasable leaves it (+0): DVOVF gives +DPPOSMAX.  */
+    ip->dvsign_neg = false;
 
     for (k = 0; k < AGC_INTERP_SWITCHES; k++)
     {
@@ -325,7 +327,7 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         return (AGC_DP_MAX);
     }
 
-    q = agc_w_ddv(a, b, &o);
+    q = agc_w_ddv(a, b, &o, &ip->dvsign_neg);
 
     if (!AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN)))
     {

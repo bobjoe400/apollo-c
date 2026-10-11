@@ -95,6 +95,8 @@ typedef struct agc_lm_ldg
     agc_vec_t wm;    /* WM lunar rotation vector (SM), 2^-17 rad/cs (derived) */
     agc_dp_t  ttf_8; /* TTF/8 time-to-go/8 (negative), 2^14 cs         */
     agc_dp_t  ttf_8tmp; /* TTF/8TMP                                       */
+    agc_sp_t  ttf_8_hi; /* TTF/8 high word as the last DAS left it        */
+    agc_sp_t  ttf_8tmp_hi; /* TTF/8TMP high word, likewise                */
     agc_dp_t  tpip;     /* TPIP time of PIPA reading, 2^28 cs             */
     agc_dp_t  tpipold;  /* TPIPOLD                                        */
     agc_mat_t cg;       /* CG guidance->SM rows (half unit)               */
@@ -239,7 +241,8 @@ uint16_t     agc_lm_onesto2s(agc_sp_t a); /* -> 15-bit 2's comp word    */
 #define AGC_LM_ROOT_MAX_DEGREE 5 /* ROOTPSRS erasables allow N <= 5      */
 #define AGC_LM_ROOT_MAX_PASSES 8 /* "Klumpp says give up after 8 passes" */
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
-                             agc_sp_t precroot, agc_dp_t *root, int *passes);
+                             agc_sp_t precroot, agc_dp_t *root,
+                             agc_sp_t *root_hi, int *passes);
 #define AGC_LM_ENTRY_GUILDRET 0 /* normal pass via LUNLAND/GUILDEN     */
 #define AGC_LM_ENTRY_GUIDSUB  1 /* IGNALG passes after the first       */
 #define AGC_LM_ENTRY_QGUIDSUB 2 /* ?GUIDSUB first IGNALG pass          */
@@ -262,6 +265,7 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx); /* P63DISPS -
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx); /* P64DISPS     */
 agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx); /* P64CEED      */
 void         agc_lm_tdispset(void);                         /* TDISPSET     */
+agc_sp_t     agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
 agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx); /* P63LM        */

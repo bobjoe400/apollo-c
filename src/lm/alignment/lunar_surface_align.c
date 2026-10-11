@@ -414,12 +414,6 @@ agc_status_t agc_job_lunar_surface_options_chosen(agc_job_ctx_t *ctx)
     }
 
     agc_alarm(ALM_OPTION);
-    const agc_status_t alm = AGC_STATUS_ALARM;
-
-    if (alm != AGC_STATUS_OK)
-    {
-        return (alm);
-    }
 
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
                         AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY,
@@ -660,7 +654,6 @@ agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
-        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)

@@ -148,6 +148,15 @@ def cm():
                                (raw(), raw(), raw())]):
             c.run('cm_n%02d_%d' % (noun, k), 6, noun, [('E7,1700', ','.join(w))],
                   mctbs=0o3700)
+    # review-io-dsky: -0 and small negatives through DSPSIGN and PRSHRTMP
+    # (ARTOUTSF / AROUT1SF), appended so the runs above keep their inputs
+    for noun in (1, 2):
+        c.run('cm_n%02d_neg' % noun, 6, noun,
+              [('E7,1700', '77776,77777,77775')], mctbs=0o3700)
+    c.run('cm_n47_neg', 6, 47, [('CSMMASS', '77776'), ('LEMMASS', '77775')])
+    c.run('cm_n48_neg', 6, 48, [('PACTOFF', '77776'), ('YACTOFF', '77774')])
+    c.run('cm_n21_neg', 6, 21, [('PIPAX', '77776'), ('PIPAY', '77775'),
+                                 ('PIPAZ', '00001')])
     return c
 
 def lm():

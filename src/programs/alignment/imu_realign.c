@@ -441,7 +441,6 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA   */
-        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)

@@ -581,12 +581,6 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
         if (ram->markcntr <= 0)
         {
             agc_alarm(ALM_NO_PAIR); /* MKALARM  */
-            const agc_status_t alm = AGC_STATUS_ALARM;
-
-            if (alm != AGC_STATUS_OK)
-            {
-                return (alm);
-            }
 
             ram->xymark   = 0;
             ram->markcntr = 0;
@@ -691,12 +685,6 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
     if ((ram->markcntr + 1) >= AGC_ALIGN_AOT_PAIRS)
     {
         agc_alarm(ALM_FIVE); /* 5MKALARM */
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (agc_job_aot_mark_surface_display(ctx));
     }

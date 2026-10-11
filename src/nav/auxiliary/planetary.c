@@ -122,19 +122,19 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
         return (AGC_STATUS_BAD_ARG); /* times before the epoch: not used */
     }
 
-    /* DLOAD TIMSUBM +1, DMP XDOT, SL* 5,1, DAD X0.                        */
+    /* DLOAD TIMSUBM +1, DMP XDOT, SL* 5,1 (on the TP MPAC), DAD X0 (on its
+     * top two words).                                                      */
     agc_dp_t t_low = agc_navaux_tp_low_dp(tsum);
-    agc_dp_t part  =
-        agc_navaux_rev_tp_shl(agc_dp_mul_tp(t_low, xdot), 5 - xdot_shift);
+    agc_tp_t prod  =
+        agc_tp_shift(ip, agc_dp_mul_tp(t_low, xdot), 5 - xdot_shift);
+    agc_dp_t part = agc_dp_add(ip, agc_tp_to_dp(prod), x0);
 
-    part = agc_navaux_rev_add(part, x0);
     /* SLOAD TIMSUBM, SL 9 (cs 2^33), DMP XDOT, SL* 10D,1, DAD partial.     */
     agc_sp_t t_high = agc_dp_high(agc_tp_to_dp(tsum)); /* TIMSUBM  */
     agc_dp_t t_hi9  = agc_dp_shl(ip, agc_dp_from_sp(t_high), 9);
-    agc_dp_t part2  =
-        agc_navaux_rev_tp_shl(agc_dp_mul_tp(t_hi9, xdot), 10 - xdot_shift);
 
-    *x = agc_navaux_rev_add(part2, part);
+    prod = agc_tp_shift(ip, agc_dp_mul_tp(t_hi9, xdot), 10 - xdot_shift);
+    *x   = agc_dp_add(ip, agc_tp_to_dp(prod), part);
     agc_interp_clear_ovf(ip); /* BOV +1: leave OVFIND clear      */
 
     return (AGC_STATUS_OK);
@@ -213,7 +213,7 @@ static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         return (0);
     }
 
-    return (agc_dp_shl_round(ip, agc_dp_mul(ip, a, b), 1));
+    return (agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1)));
 }
 
 /* VXSC of two vectors by two scalars, VSU/VAD, VSL1 (MOONMX second half). */

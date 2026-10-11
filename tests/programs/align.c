@@ -24,7 +24,9 @@
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
+#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
+#include "agc/io/nouns.h"
 #include "agc/programs/alignment.h"
 
 #define PI_D 3.14159265358979323846
@@ -336,23 +338,86 @@ static void test_ags_scalevec(void)
     CHECK(near(agc_dp_to_double(t, 18), 3600.0, 0.01));
 }
 
-/* R63: CSM 50 km along +X of the LM, identity REFSMMAT -> LOS +X (half
- * unit).  (UNIT loses precision for vectors of a few km at B27.)        */
+/*
+ * R63 at the ranges it is flown (a few hundred metres to tens of km): the
+ * CSM along (3, 4, 12)/13 from the LM in lunar orbit (B27), REFSMMAT a
+ * 30 deg rotation about Z (half unit).  POINTVSM must equal REFSMMAT LOS
+ * to within the input quantisation (MXV leaves a 1 m LSB per component):
+ * tolerance 1 m / range.  Plain UNIT (no NORMUNIT pre-shift) misses this
+ * by 15x at 1 km.
+ */
 static void test_final_attitude_los(void)
 {
-    agc_interp_t ip;
+    static const double range_m[] = {300.0, 1000.0, 3000.0, 10000.0,
+                                     50000.0};
+    const double        c30       = cos(PI_D / 6.0);
+    const double        s30       = sin(PI_D / 6.0);
+    const double        dir[3]    = {3.0 / 13.0, 4.0 / 13.0, 12.0 / 13.0};
+    const double        rot[3][3] = {{c30, s30, 0.0}, {-s30, c30, 0.0},
+                                     {0.0, 0.0, 1.0}};
+    agc_mat_t           refsmmat;
 
-    agc_interp_init(&ip);
-    const agc_mat_t ident = agc_mat_identity_half();
-    const agc_vec_t rlem  = agc_vec_make(agc_dp_from_double(1.8e6, 27), 0, 0);
-    const agc_vec_t rcsm  = agc_vec_make(agc_dp_from_double(1.85e6, 27), 0, 0);
-    agc_vec_t       los   = agc_vec_zero();
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            refsmmat.row[i].c[j] = agc_dp_from_double(rot[i][j], 1);
+        }
+    }
 
-    CHECK(agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &ident, &los) ==
+    for (int k = 0; k < 5; k++)
+    {
+        agc_interp_t ip;
+
+        agc_interp_init(&ip);
+        const double    rl[3] = {1.80e6, 2.0e5, -3.0e5}; /* LM, m  */
+        const agc_vec_t rlem  = agc_vec_make(agc_dp_from_double(rl[0], 27),
+                                             agc_dp_from_double(rl[1], 27),
+                                             agc_dp_from_double(rl[2], 27));
+        const agc_vec_t rcsm = agc_vec_make(
+            agc_dp_from_double(rl[0] + range_m[k] * dir[0], 27),
+            agc_dp_from_double(rl[1] + range_m[k] * dir[1], 27),
+            agc_dp_from_double(rl[2] + range_m[k] * dir[2], 27));
+        agc_vec_t    los = agc_vec_zero();
+        const double tol = 1.0 / range_m[k];
+
+        CHECK(agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &refsmmat,
+                                                &los) == AGC_STATUS_OK);
+
+        for (int i = 0; i < 3; i++)
+        {
+            const double want = rot[i][0] * dir[0] + rot[i][1] * dir[1] +
+                                rot[i][2] * dir[2];
+
+            CHECK(near(agc_dp_to_double(los.c[i], 1), want, tol));
+        }
+    }
+}
+
+/*
+ * N70/N71 star code: V21 loads R1 into STARCODE (CSM) / AOTCODE (LM); the
+ * LM's R2/R3 (AOTCODE +1/+2) are the two words of SINCDUY, shown as raw
+ * ones'-complement octal.
+ */
+static void test_star_code_nouns(bool lm)
+{
+    agc_dp_t v = 0;
+
+    CHECK(agc_noun_write(lm ? AGC_DATA_AOTCODE : AGC_DATA_STARCODE, 0225) ==
           AGC_STATUS_OK);
-    CHECK(near(agc_dp_to_double(los.c[0], 1), 1.0, 1e-5));
-    CHECK(near(agc_dp_to_double(los.c[1], 1), 0.0, 1e-5));
-    CHECK(near(agc_dp_to_double(los.c[2], 1), 0.0, 1e-5));
+    CHECK(agc_align_ram()->starcode == 0225);
+    CHECK(agc_noun_read(lm ? AGC_DATA_AOTCODE : AGC_DATA_STARCODE, &v) ==
+          AGC_STATUS_OK);
+    CHECK(v == 0225);
+
+    if (lm)
+    {
+        agc_guid_state()->trig.sincdu[AGC_TRIG_Y] = agc_dp_pack(-3, -5);
+        CHECK(agc_noun_read(AGC_DATA_AOTCODE_P1, &v) == AGC_STATUS_OK);
+        CHECK(v == 077774); /* -3 in ones' complement */
+        CHECK(agc_noun_read(AGC_DATA_AOTCODE_P2, &v) == AGC_STATUS_OK);
+        CHECK(v == 077772); /* -5                      */
+    }
 }
 
 int main(void)
@@ -364,12 +429,14 @@ int main(void)
     test_sextant_round_trip();
     test_misc();
     test_nominal_orientation_axes();
+    test_star_code_nouns(false);
     agc_state_init(AGC_VEHICLE_LM);
     agc_align_ram_reset();
     test_rr_round_trip();
     test_realign_refsmmat_option_identity();
     test_ags_scalevec();
     test_final_attitude_los();
+    test_star_code_nouns(true);
     (void) printf("test_align: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 

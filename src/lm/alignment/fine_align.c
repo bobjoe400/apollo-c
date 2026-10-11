@@ -133,12 +133,6 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
     }
 
     agc_alarm(ALM_NO_STARS); /* R51I     */
-    const agc_status_t alm = AGC_STATUS_ALARM;
-
-    if (alm != AGC_STATUS_OK)
-    {
-        return (alm);
-    }
 
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
                         AGC_JOB_LM_FINE_ALIGN_FIRST_STAR,

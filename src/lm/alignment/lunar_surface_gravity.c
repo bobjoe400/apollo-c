@@ -180,7 +180,6 @@ agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
     agc_vec_t g = ram->star;
 
     agc_guid_cdutrig(&lung_trig);
-    st = AGC_STATUS_OK;
     agc_guid_smnb(&lung_trig, &g); /* *SMNB*   */
     ram->gout = g;
     st        = surface_align_phase();
@@ -496,7 +495,6 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
     if (st == AGC_STATUS_OK)
     {
         agc_guid_nbsm(&t, &y);
-        st = AGC_STATUS_OK;
     }
 
     agc_interp_t ip;
@@ -519,7 +517,6 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
     if (st == AGC_STATUS_OK)
     {
         agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
-        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)

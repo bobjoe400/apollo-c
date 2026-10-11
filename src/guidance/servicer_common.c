@@ -43,10 +43,11 @@ static const agc_dp_t RESQ_CM =
     (agc_dp_t) 18944; /* 4.06809913e13 / 2^59 * 2^28 */
 static const agc_dp_t RESQ_LM =
     (agc_dp_t) 37887; /* 4.06809913e13 / 2^58 * 2^28 */
-/* 20J, 2J (J = 1.5 J2 = 1.62346005e-3): CM B1, LM B0.                     */
+/* 20J, 2J (J = 1.5 J2 = 1.62346005e-3): CM 2DEC* ... B1* (stored as twice
+ * the value: rope 37,3464 = 02047 36332, 37,3466 = 00152 14511), LM B0.   */
 static const agc_dp_t J20_CM =
-    (agc_dp_t) 4357942;                           /* 3.24692010e-2 / 2 * 2^28 */
-static const agc_dp_t J2_CM  = (agc_dp_t) 435794; /* 3.24692010e-3 / 2 * 2^28 */
+    (agc_dp_t) 17431770;                           /* 3.24692010e-2*2 * 2^28 */
+static const agc_dp_t J2_CM  = (agc_dp_t) 1743177; /* 3.24692010e-3*2 * 2^28 */
 static const agc_dp_t J20_LM = (agc_dp_t) 8715885; /* 3.24692010e-2 * 2^28 */
 static const agc_dp_t J2_LM  = (agc_dp_t) 871588;  /* 3.24692010e-3 * 2^28 */
 /* KPIP1: PIPA pulse to m/cs 2^7. CM 2DEC 0.074880 (1 pulse = 5.85 cm/s);
@@ -145,9 +146,9 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
          *   s     = UNITR . UNITW  (CM)   or  (UNITZ . UNIT/R/) SL1  (LM),  = sinL/2
          *   GOBL  = UNITR ((RE/R)^2 * 20J * (0.05 - s^2))
          *         + UNITW ((s * 2J) * (RE/R)^2)          [LM: UNITZ, then VSL1]
-         * In Comanche, RESQ is B-59 and the J terms are B1, so (RE/R)^2 and J are
-         * held at half the Luminary values: the Comanche GOBL1/2 is 1/4 of the
-         * Luminary UNITGOBL. Translated as coded (see the module note).           */
+         * In Comanche, RESQ is B-59 (so (RE/R)^2 is held at half the Luminary
+         * value) and the J terms are B1 (twice the Luminary words): the
+         * products, and so GOBL1/2 and UNITGOBL, carry the same scale.      */
         {
             const bool cm = (veh == AGC_VEHICLE_CSM);
             agc_dp_t   s;
@@ -169,12 +170,13 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
             a->resq_rsq =
                 agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq); /* -> 32D */
             agc_dp_t m =
-                agc_dp_mul(ip, agc_dp_mul(ip, a->resq_rsq,
-                                          cm ? J20_CM : J20_LM),
-                           fact);                          /* DMP 20J, DMP   */
+                agc_dp_mul_trunc(agc_dp_mul_trunc(a->resq_rsq,
+                                                  cm ? J20_CM : J20_LM),
+                                 fact);                    /* DMP 20J, DMP   */
             agc_vec_t t1 = agc_vec_scale(ip, a->unitr, m); /* VXSC UNITR     */
-            agc_dp_t  n  = agc_dp_mul(ip, agc_dp_mul(ip, s, cm ? J2_CM : J2_LM),
-                                      a->resq_rsq); /* DMP 2J, DMP 32D */
+            agc_dp_t  n  =
+                agc_dp_mul_trunc(agc_dp_mul_trunc(s, cm ? J2_CM : J2_LM),
+                                 a->resq_rsq);      /* DMP 2J, DMP 32D */
             agc_vec_t t2;
 
             if (cm)

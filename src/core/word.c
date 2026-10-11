@@ -421,8 +421,9 @@ agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
  * (the AGC sets OVFIND to +1 whatever the quotient sign).                   */
 agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
-    int      o = 0;
-    agc_dp_t q = agc_w_ddv(a, b, &o);
+    int      o      = 0;
+    bool     dvsign = false; /* DVSIGN, not kept by the raw utility */
+    agc_dp_t q      = agc_w_ddv(a, b, &o, &dvsign);
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {

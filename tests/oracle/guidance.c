@@ -12,13 +12,13 @@
  */
 #include <stdio.h>
 
+#include "../../src/nav/conic/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/programs/rendezvous.h"
-#include "../../src/nav/conic/internal.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
@@ -50,12 +50,12 @@ static void calcrvg(const char *t, long tol)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_interp_init(&ip);
-    sv.r     = oracle_in_vec(t, "RN");
-    sv.v     = oracle_in_vec(t, "VN");
-    sv.t     = 0;
-    sv.moon  = moon;
-    a.gdt_2  = oracle_in_vec(t, "GDT/2");
-    a.unitw  = oracle_in_vec(t, "UNITW");
+    sv.r    = oracle_in_vec(t, "RN");
+    sv.v    = oracle_in_vec(t, "VN");
+    sv.t    = 0;
+    sv.moon = moon;
+    a.gdt_2 = oracle_in_vec(t, "GDT/2");
+    a.unitw = oracle_in_vec(t, "UNITW");
     (void) agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM, moon, &ref,
                             oracle_in_vec(t, "DELV"), &sv, &a);
     oracle_require_ok(t, "POODOO");
@@ -72,13 +72,11 @@ static void calcrvg(const char *t, long tol)
         return;
     }
 
-    /* F7: the Comanche 20J / 2J constants in C are 1/4 of the assembled
-     * words, so GOBL1/2 is 4x small and GDT1/2, VN1 differ by ~200 LSB.  */
-    oracle_cmp_vec_known(t, "VN1", a.vn1, oracle_out_vec(t, "VN1"), tol, "F7");
-    oracle_cmp_vec_known(t, "GDT1/2", a.gdt1_2, oracle_out_vec(t, "GDT1/2"),
-                         tol, "F7");
-    oracle_cmp_vec_known(t, "GOBL1/2", a.gobl1_2,
-                         oracle_out_vec(t, "GOBL1/2"), tol, "F7");
+    /* F7 (fixed in review): the Comanche 20J / 2J words are B1.         */
+    oracle_cmp_vec(t, "VN1", a.vn1, oracle_out_vec(t, "VN1"), tol);
+    oracle_cmp_vec(t, "GDT1/2", a.gdt1_2, oracle_out_vec(t, "GDT1/2"), tol);
+    oracle_cmp_vec(t, "GOBL1/2", a.gobl1_2, oracle_out_vec(t, "GOBL1/2"),
+                   tol);
 }
 
 static void s40_1(const char *t, long tol)
@@ -179,10 +177,10 @@ int main(void)
     s40_1("s40_1_posigrade", 64);
     s40_1("s40_1_plane", 64);
     s40_1("s40_1_large", 64);
-    s40_2("s40_2_sps", 128);
-    s40_2("s40_2_sps_b", 128);
+    s40_2("s40_2_sps", 16);
+    s40_2("s40_2_sps_b", 16);
     s40_2("s40_2_rcs", 0);
-    s40_2("s40_2_radial", 128);
+    s40_2("s40_2_radial", 16);
     deltime("deltime_ell", 0);
     deltime("deltime_hyp", 0);
     deltime("deltime_small", 0);

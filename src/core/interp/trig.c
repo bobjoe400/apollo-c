@@ -389,7 +389,8 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    *out = agc_w_join(arc_words(a, false, &alarm));
+    ip->dvsign_neg = false; /* TS ESCAPE (= DVSIGN): a return address */
+    *out           = agc_w_join(arc_words(a, false, &alarm));
 
     if (!AGC_ASSERT((*out >= 0) && (*out <= AGC_DP_HALF)))
     {
@@ -408,7 +409,8 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    *out = agc_w_join(arc_words(a, true, &alarm));
+    ip->dvsign_neg = false; /* TS ESCAPE (= DVSIGN): a return address */
+    *out           = agc_w_join(arc_words(a, true, &alarm));
 
     if (!AGC_ASSERT((*out >= -AGC_DP_QUARTER) && (*out <= AGC_DP_QUARTER)))
     {

@@ -9,7 +9,8 @@
  * UPDATVB -> DSPDECVN). The noun's erasables are written through the
  * noun data layer (agc_noun_write) or, for the machine-address nouns
  * 01-03, the ECADR image; the eleven DSPTAB words, NOUT, VERBREG and
- * NOUNREG are compared bit-exact.
+ * NOUNREG are compared bit-exact. Negative TIG/TTOGO and the two-integer
+ * words of nouns 45/64 (no load in the AGC) go through agc_noun_write too.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,8 +22,6 @@
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"
-#include "agc/lm/landing.h"
-#include "agc/programs/rendezvous.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
@@ -66,75 +65,10 @@ static const dsky_noun_t k_lm[] = {
 
 #define DSKY_MCTBS_NAME "E7,1700"
 
-/* Documented deviation (docs/modules/io-pinball.md "Deviations": SP -0
- * is not representable and displays as +0): the register's sign relay
- * bit (bit 11 of its two sign words) is not compared.                    */
-typedef struct dsky_negzero
-{
-    const char *tag;
-    int         reg; /* 1..3 */
-} dsky_negzero_t;
-
-static const dsky_negzero_t k_negzero[] = {
-    {"cm_n01_1", 1}, /* N01 fraction 77777: AGC -00000, C +00000 */
-    {"cm_n02_1", 1}, /* N02 whole    77777: AGC -00000, C +00000 */
-};
-
-/* Findings (docs/modules/oracle-cases.md "Findings"). */
-typedef struct dsky_known
-{
-    const char *tag;
-    const char *id;
-} dsky_known_t;
-
-static const dsky_known_t k_known[] = {
-    {"cm_n91_3", "F15"}, /* OPDEGOUT CDUT = -20BIAS: C CCSHOLE */
-};
-
-static const char *known_id(const char *t)
-{
-    for (size_t i = 0; i < sizeof k_known / sizeof k_known[0]; i++)
-    {
-        if (strcmp(k_known[i].tag, t) == 0)
-        {
-            return (k_known[i].id);
-        }
-    }
-
-    return (NULL);
-}
-
-/* Sign-relay bit mask for DSPTAB word k under a -0 deviation of t. */
-static uint16_t sign_mask(const char *t, int k)
-{
-    static const int k_sign_word[3][2] = {{5, 6}, {3, 4}, {0, 1}};
-
-    for (size_t i = 0; i < sizeof k_negzero / sizeof k_negzero[0]; i++)
-    {
-        const int r = k_negzero[i].reg - 1;
-
-        if (strcmp(k_negzero[i].tag, t) == 0 &&
-            (k == k_sign_word[r][0] || k == k_sign_word[r][1]))
-        {
-            return ((uint16_t) 075777u);
-        }
-    }
-
-    return ((uint16_t) 077777u);
-}
-
+/* Bit-exact comparison (all findings closed; F15 fixed in review-io-dsky). */
 static void check(const char *t, const char *what, long got, long want)
 {
-    const char *id = known_id(t);
-
-    if (id != NULL)
-    {
-        oracle_cmp_known(t, what, got, want, 0, id);
-    }
-    else
-    {
-        (void) oracle_cmp(t, what, got, want, 0);
-    }
+    (void) oracle_cmp(t, what, got, want, 0);
 }
 
 static const dsky_noun_t *find_noun(bool lm, int noun)
@@ -173,38 +107,6 @@ static agc_status_t write_comp(const char *t, uint16_t id,
         v = agc_dp_from_sp((agc_sp_t) oracle_in(t, name, idx));
     }
 
-    if (id == (uint16_t) AGC_DATA_TIG)
-    {
-        agc_erase_set_tig(v); /* the noun layer refuses negative times */
-
-        return (AGC_STATUS_OK);
-    }
-
-    if (id == (uint16_t) AGC_DATA_TTOGO)
-    {
-        agc_erase_set_ttogo(v);
-
-        return (AGC_STATUS_OK);
-    }
-
-    /* two-integer words the noun layer only reads (VHFCNT, TRKMKCNT and
-     * FUNNYDSP = TREDES, LOOKANGL)                                       */
-    if (id == (uint16_t) AGC_DATA_VHFCNT)
-    {
-        agc_erase_set_vhfcnt(agc_dp_high(v));
-        agc_erase_set_trkmkcnt(agc_dp_low(v));
-
-        return (AGC_STATUS_OK);
-    }
-
-    if (id == (uint16_t) AGC_DATA_FUNNYDSP)
-    {
-        agc_lm_ldg()->tredes   = agc_dp_high(v);
-        agc_lm_ldg()->lookangl = agc_dp_low(v);
-
-        return (AGC_STATUS_OK);
-    }
-
     agc_status_t st = agc_dsky_noun_write(id, v);
 
     return ((st == AGC_STATUS_NOT_FOUND) ? agc_noun_write(id, v) : st);
@@ -228,11 +130,9 @@ static void compare(const char *t)
 
     for (int k = 0; k < PIN_DSPTAB_PANEL; k++)
     {
-        const uint16_t m = sign_mask(t, k);
-
         (void) snprintf(name, sizeof name, "DSPTAB+%d", k);
-        check(t, name, (long) (agc_erase_dsptab(k) & m),
-              (long) (oracle_out_raw(t, name) & m));
+        check(t, name, (long) agc_erase_dsptab(k),
+              (long) oracle_out_raw(t, name));
     }
 
     check(t, "NOUT", pin_st()->nout, oracle_out_sp(t, "NOUT"));
@@ -274,7 +174,8 @@ static void one(const char *t, bool lm)
         const dsky_noun_t *dn = find_noun(lm, noun);
         agc_noun_t         row;
 
-        if (dn == NULL || agc_noun_lookup((uint8_t) noun, &row) != AGC_STATUS_OK)
+        if (dn == NULL ||
+            agc_noun_lookup((uint8_t) noun, &row) != AGC_STATUS_OK)
         {
             (void) oracle_cmp(t, "noun table", 1, 0, 0);
 

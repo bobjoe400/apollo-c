@@ -68,6 +68,8 @@ typedef struct agc_interp
     agc_ovf_t ovfind;         /* OVFIND                              */
     agc_sp_t  x1, x2, s1, s2; /* X1 X2 S1 S2 index/step registers    */
     bool      sw[AGC_INTERP_SWITCHES];
+    bool      dvsign_neg; /* DVSIGN (= DOTINC) holds -0: last divide
+                             gave a negative quotient (see DVOVF)    */
 } agc_interp_t;
 
 void agc_interp_init(agc_interp_t *ip);

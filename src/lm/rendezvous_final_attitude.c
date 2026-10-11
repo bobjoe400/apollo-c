@@ -12,6 +12,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
 #define VN_AXIS_OPTION ALIGN_VN(4, 12)   /* VB04N12 VN 412                 */
@@ -39,9 +40,19 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_vec_t los = agc_vec_sub(ip, rcsm, rlem);
+    const agc_vec_t los   = agc_vec_sub(ip, rcsm, rlem); /* RONE - RATT, B27 m */
+    int             shift = 0; /* NORMUNIT pre-shift: 13 or 0 */
 
-    *pointvsm = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, los), NULL, NULL);
+    /* MXV RTB NORMUNIT: a LOS of a few km has zero high words at B27 (and
+     * MXV halves it once more), so NORMUNIT shifts it left 13 before UNIT;
+     * plain UNIT would lose ~15 mrad at 1 km. */
+    *pointvsm = agc_rtb_normunit(ip, agc_mat_vec(ip, refsmmat, los), &shift,
+                                 NULL, NULL);
+
+    if (!AGC_ASSERT((shift == 0) || (shift == 13)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -119,7 +130,6 @@ static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx,
     for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
     {
         agc_erase_set_thetad(i, gimbal[i]); /* CPHI     */
-        st = AGC_STATUS_OK;
     }
 
     if (st == AGC_STATUS_OK)

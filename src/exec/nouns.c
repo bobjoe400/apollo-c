@@ -16,8 +16,9 @@
  * angles) as the 15-bit word. A vector component is one DP.
  *
  * Erasables with no owner in the C translation (ALMCADR +0..+2: the AGC
- * alarm return address, bank and ERCOUNT; AOTCODE +1/+2 (N70/N71 R2, R3:
- * the AOT mark data words) stay NOT_FOUND; see docs/modules/integrate.md.
+ * alarm return address, bank and ERCOUNT) stay NOT_FOUND; see
+ * docs/modules/integrate.md.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
+ * SINCDUY (docs/modules/review-prog-align.md).
  */
 #include <stdbool.h>
 #include <stddef.h>
@@ -268,6 +269,32 @@ static uint16_t *noun_word(uint16_t id)
     }
 }
 
+/* Two-integer words (scale TWO_INT: high word XX, low word YY). Nouns 45
+ * (CM) and 64 (LM) are "no load" (SFINTABR: 2INTOUT CANT BE LOADED), so
+ * only the sim and tests store them: VHFCNT,+1 (TRKMKCNT) and FUNNYDSP =
+ * TREDES, LOOKANGL.                                                       */
+static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
+{
+    if (!AGC_ASSERT(id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP) ||
+        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (id == AGC_DATA_VHFCNT)
+    {
+        agc_erase_set_vhfcnt(agc_dp_high(v));
+        agc_erase_set_trkmkcnt(agc_dp_low(v));
+    }
+    else
+    {
+        agc_lm_ldg()->tredes   = agc_dp_high(v);
+        agc_lm_ldg()->lookangl = agc_dp_low(v);
+    }
+
+    return (AGC_STATUS_OK);
+}
+
 /* Read-only values computed by functions of their owners.               */
 static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
 {
@@ -297,9 +324,61 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
             *v = agc_dp_pack(agc_lm_ldg()->tredes, agc_lm_ldg()->lookangl);
 
             return (AGC_STATUS_OK);
+        default:
+            return (AGC_STATUS_NOT_FOUND);
+    }
+}
+
+/* A signed SP word as the raw 15-bit ones'-complement word (SP raw).    */
+static agc_dp_t noun_raw_word(agc_sp_t w)
+{
+    return ((agc_dp_t) ((w >= 0) ? w : (077777 + w)));
+}
+
+/* The raw 15-bit word back as a signed SP (07777x negative).            */
+static agc_sp_t noun_signed_word(agc_dp_t raw)
+{
+    const agc_sp_t w = (agc_sp_t) (raw & 077777); /* raw word, unsigned */
+
+    return ((w > AGC_SP_MAX) ? (agc_sp_t) (w - 077777) : w);
+}
+
+/*
+ * STARCODE (CSM N70/N71 R1), AOTCODE = STARCODE (LM N70/N71 R1), and the
+ * LM's AOTCODE +1/+2 (R2, R3).  Luminary ERASABLE_ASSIGNMENTS p. 37:
+ * AOTCODE = STARCODE, and STARALGN follows it, so AOTCODE +1/+2 are the
+ * two words of SINCDU = SINCDUY (sin(CDUY)/2, CDUTRIG scratch); the C home
+ * of SINCDU is the guidance block.  NOT_FOUND for any other id.
+ */
+static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
+{
+    agc_sp_t *code  = &agc_align_ram()->starcode; /* STARCODE/AOTCODE */
+    agc_dp_t *sin_y =
+        &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
+
+    if (!AGC_ASSERT(value != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    switch (id)
+    {
         case AGC_DATA_STARCODE:
-        case AGC_DATA_AOTCODE: /* STARCODE (N70) / AOTCODE (N71)  */
-            *v = (agc_dp_t) ((uint16_t) agc_align_ram()->starcode & 077777u);
+        case AGC_DATA_AOTCODE:
+            *code  = write ? noun_signed_word(*value) : *code;
+            *value = noun_raw_word(*code);
+
+            return (AGC_STATUS_OK);
+        case AGC_DATA_AOTCODE_P1: /* AOTCODE +1: SINCDUY high word     */
+            *sin_y = write ? agc_dp_pack(noun_signed_word(*value),
+                                         agc_dp_low(*sin_y)) : *sin_y;
+            *value = noun_raw_word(agc_dp_high(*sin_y));
+
+            return (AGC_STATUS_OK);
+        case AGC_DATA_AOTCODE_P2: /* AOTCODE +2: SINCDUY low word      */
+            *sin_y = write ? agc_dp_pack(agc_dp_high(*sin_y),
+                                         noun_signed_word(*value)) : *sin_y;
+            *value = noun_raw_word(agc_dp_low(*sin_y));
 
             return (AGC_STATUS_OK);
         default:
@@ -402,8 +481,15 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
             }
         }
 
-        agc_status_t st = lm ? AGC_STATUS_NOT_FOUND :
-                          agc_return_to_earth_noun(data_id, write, value);
+        agc_status_t st = noun_star_code(data_id, write, value);
+
+        if (st != AGC_STATUS_NOT_FOUND)
+        {
+            return (st);
+        }
+
+        st = lm ? AGC_STATUS_NOT_FOUND :
+             agc_return_to_earth_noun(data_id, write, value);
 
         if (st == AGC_STATUS_NOT_FOUND)
         {
@@ -419,6 +505,12 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
                 lm ? agc_lm_rendz_noun_read(data_id,
                                             value) : agc_csm_rendz_noun_read(
                     data_id, value);
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && write &&
+            (data_id == AGC_DATA_VHFCNT || data_id == AGC_DATA_FUNNYDSP))
+        {
+            st = noun_two_int_write(data_id, *value);
         }
 
         return ((st == AGC_STATUS_NOT_FOUND && !write) ?

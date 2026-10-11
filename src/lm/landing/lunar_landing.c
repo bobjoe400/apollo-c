@@ -127,6 +127,7 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
     l->deltah   = LL_99999CON;             /* for the V16N68 display        */
     l->unfc_2   = agc_vec_zero();          /* trim velocity correction term */
     l->ttf_8    = 0;
+    l->ttf_8_hi = 0;
 
     return (ll_ignaloop(ctx, false));
 }

@@ -34,8 +34,8 @@
 #define SIM_CH_GYRO       0177u /* out: gyro torque pulses           */
 #define SIM_CH_COUNTER    0200u /* in: 0200 | counter address        */
 /* Sim-only lockstep channels (not used by any Virtual AGC peripheral).    */
-#define SIM_CH_STEP       0150u /* in: run N centiseconds            */
-#define SIM_CH_STEP_ACK   0151u /* out: N centiseconds done          */
+#define SIM_CH_STEP     0150u   /* in: run N centiseconds            */
+#define SIM_CH_STEP_ACK 0151u   /* out: N centiseconds done          */
 
 /* Interrupt requests, in AGC priority order (INTERRUPT_LEAD_INS).         */
 typedef enum sim_irq

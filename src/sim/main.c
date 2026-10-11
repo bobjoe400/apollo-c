@@ -34,13 +34,13 @@
 #include "agc/exec/exec.h"
 #include "internal.h"
 
-#define SIM_PORT_CSM     19697 /* Virtual AGC: CM peripherals 19697-19706 */
-#define SIM_PORT_LM      19797 /* LM peripherals 19797-19806              */
-#define SIM_DEFAULT_CS   1000ul /* headless default run              */
-#define SIM_MAX_RUN_CS   0x0FFFFFFFul
-#define SIM_TICK_NS      10000000L /* 10 ms                           */
-#define SIM_WAIT_MS      20
-#define SIM_LAG_TICKS    100 /* resynchronise after 1 s behind    */
+#define SIM_PORT_CSM   19697   /* Virtual AGC: CM peripherals 19697-19706 */
+#define SIM_PORT_LM    19797   /* LM peripherals 19797-19806              */
+#define SIM_DEFAULT_CS 1000ul  /* headless default run              */
+#define SIM_MAX_RUN_CS 0x0FFFFFFFul
+#define SIM_TICK_NS    10000000L   /* 10 ms                           */
+#define SIM_WAIT_MS    20
+#define SIM_LAG_TICKS  100   /* resynchronise after 1 s behind    */
 
 typedef enum sim_mode
 {
@@ -88,7 +88,8 @@ static const char *opt_value(const char *arg, const char *name,
 }
 
 /* One argument (and maybe the next); false when it is not understood.  */
-static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *used)
+static bool parse_one(sim_opts_t *o, const char *arg, const char *next,
+                      int *used)
 {
     const char *v = NULL;
 
@@ -131,7 +132,8 @@ static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *use
                   (strcmp(arg, "--lockstep") == 0) ? SIM_MODE_LOCKSTEP :
                   (strcmp(arg, "--fast") == 0) ? SIM_MODE_FAST : o->mode;
 
-        return (strcmp(arg, "--headless") == 0 || strcmp(arg, "--lockstep") == 0 ||
+        return (strcmp(arg,
+                       "--headless") == 0 || strcmp(arg, "--lockstep") == 0 ||
                 strcmp(arg, "--fast") == 0);
     }
 
@@ -300,7 +302,8 @@ static void print_summary(const sim_opts_t *o)
                   (unsigned long) s.cs, (unsigned long) s.jobs,
                   (unsigned long) s.restarts, (unsigned long) s.busy_ticks,
                   (unsigned long) s.errors, (int) agc_erase_modreg(),
-                  (unsigned) agc_erase_failreg(0), (unsigned) agc_erase_failreg(1),
+                  (unsigned) agc_erase_failreg(0),
+                  (unsigned) agc_erase_failreg(1),
                   (unsigned) agc_erase_failreg(2));
     (void) printf("agc_sim rupts: T6 %lu T5 %lu T3 %lu T4 %lu KEY1 %lu KEY2 %lu "
                   "UP %lu DOWN %lu RADAR %lu HAND %lu\n",
@@ -308,7 +311,8 @@ static void print_summary(const sim_opts_t *o)
                   (unsigned long) s.rupts[2], (unsigned long) s.rupts[3],
                   (unsigned long) s.rupts[4], (unsigned long) s.rupts[5],
                   (unsigned long) s.rupts[6], (unsigned long) s.rupts[7],
-                  (unsigned long) s.rupts[8], (unsigned long) s.rupts[9]);
+                  (unsigned long) s.rupts[8],
+                  (unsigned long) s.rupts[9]);
 }
 
 static agc_status_t start(const sim_opts_t *o)
@@ -364,7 +368,8 @@ int main(int argc, char *argv[])
 
     if (st != AGC_STATUS_OK)
     {
-        (void) fprintf(stderr, "agc_sim: start-up failed (status %d)\n", (int) st);
+        (void) fprintf(stderr, "agc_sim: start-up failed (status %d)\n",
+                       (int) st);
 
         return (2); /* fprintf result irrelevant: exiting */
     }

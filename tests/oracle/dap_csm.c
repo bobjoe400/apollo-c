@@ -15,13 +15,13 @@
 
 #include <string.h>
 
+#include "../../src/csm/dap/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "../../src/csm/dap/internal.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
@@ -58,8 +58,8 @@ static void fresh(void)
 
 static void jets(const char *t)
 {
-    agc_csm_jet_in_t  in;
-    agc_csm_jet_out_t o;
+    agc_csm_jet_in_t         in;
+    agc_csm_jet_out_t        o;
     static const char *const bl[3] = {"BLAST", "BLAST1", "BLAST2"};
 
     in.chan31 = 077777; /* yaAGC power-up: no THC command */
@@ -112,13 +112,16 @@ static void pitch(const char *t, long tol)
     g = &agc_guid_state()->trig;
     agc_erase_set_cduy(oracle_in_raw(t, "CDUY", 0));
     agc_erase_set_cduz(oracle_in_raw(t, "CDUY", 1));
-    v->pcduypst  = oracle_in_raw(t, "PCDUYPST", 0);
-    v->pcduzpst  = oracle_in_raw(t, "PCDUYPST", 1);
-    v->perrb     = oracle_in_dp(t, "PERRB", 0);
-    v->omegac[1] = oracle_in_dp(t, "OMEGAYC", 0);
-    g->sincdu[AGC_TRIG_X] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "SINCDUX", 0));
-    g->coscdu[AGC_TRIG_X] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUX", 0));
-    g->coscdu[AGC_TRIG_Z] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUZ", 0));
+    v->pcduypst           = oracle_in_raw(t, "PCDUYPST", 0);
+    v->pcduzpst           = oracle_in_raw(t, "PCDUYPST", 1);
+    v->perrb              = oracle_in_dp(t, "PERRB", 0);
+    v->omegac[1]          = oracle_in_dp(t, "OMEGAYC", 0);
+    g->sincdu[AGC_TRIG_X] =
+        agc_dp_from_sp((agc_sp_t) oracle_in(t, "SINCDUX", 0));
+    g->coscdu[AGC_TRIG_X] =
+        agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUX", 0));
+    g->coscdu[AGC_TRIG_Z] =
+        agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUZ", 0));
 
     for (int k = 0; k < 6; k++)
     {

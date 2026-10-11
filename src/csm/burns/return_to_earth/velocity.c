@@ -75,6 +75,24 @@ agc_interp_t *rte_ip(void)
     return (&rte_interp);
 }
 
+/* DSU X on a TP MPAC (INTERPRETER p. 1133, DSU -> ENDVXV): DCS X and DAS
+ * into MPAC,+1 only; MPAC+2 (the low word of the preceding DMP/SL*) is
+ * left as it was. THETA1 and BETA10 are small differences of nearly equal
+ * terms, so that word carries most of their precision (finding F14).     */
+static agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x)
+{
+    const agc_dp_t hi = agc_tp_to_dp(m);
+    const agc_tp_t lo  = m - agc_tp_from_dp(hi); /* MPAC+2         */
+    const agc_tp_t one = (agc_tp_t) 1 << AGC_SP_BITS;
+
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((lo > -one) && (lo < one)))
+    {
+        return (m); /* no valid result */
+    }
+
+    return (agc_tp_from_dp(agc_dp_sub(ip, hi, x)) + lo);
+}
+
 /* VSL* / VSR* with a computed count: n > 0 left (wraps, OVFIND), n < 0
  * right (rounded, as every vector right shift).                           */
 static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
@@ -125,23 +143,22 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
     agc_tp_t t = agc_dp_mul_tp(q, pl->beta5);        /* DMP 28D      */
 
     t = agc_tp_shift(ip, t, -6 - pl->x1);            /* SL* 0-6,1    */
-    agc_dp_t beta10 =
-        agc_dp_sub(ip, agc_tp_to_dp(t), ONE_B11); /* B11          */
+    agc_tp_t beta10 = rte_tp_dsu(ip, t, ONE_B11);    /* DSU: B11     */
 
-    beta10 = agc_dp_shl(ip, beta10, 1);           /* SL1 -> B10   */
+    beta10 = agc_tp_shift(ip, beta10, 1);            /* SL1 -> B10   */
 
     if (agc_interp_test_ovf(ip))
     {
-        beta10 = TWO_B1; /* XT1LIM2      */
+        beta10 = agc_tp_from_dp(TWO_B1); /* XT1LIM2      */
     }
-    else if (beta10 < 0)
+    else if (agc_tp_to_dp(beta10) < 0)
     {
-        *xt1lim = 0; /* XT1LIM5      */
+        *xt1lim = 0; /* BMN XT1LIM5  */
 
         return (AGC_STATUS_OK);
     }
 
-    *xt1lim = agc_dp_sqrt(ip, beta10); /* XT1LIM3, B5  */
+    *xt1lim = agc_tp_sqrt(ip, beta10); /* XT1LIM3, B5  */
 
     if (!AGC_ASSERT(*xt1lim >= 0))
     {
@@ -438,7 +455,7 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs,
 
     t          = agc_tp_shift(ip, t, -7 - pl->x1);        /* SL* 0-7,1     */
     t          = agc_tp_shift(ip, t, -7 - pl->x1);        /* SL* 0-7,1     */
-    pl->theta1 = agc_tp_from_dp(agc_dp_sub(ip, agc_tp_to_dp(t), ONE_B17));
+    pl->theta1 = rte_tp_dsu(ip, t, ONE_B17);              /* DSU; TPMODE   */
     agc_dp_t a = agc_dp_neg(agc_dp_shl(ip, ONE_B1, pl->x1)); /* SR* 0,1 DCOMP */
 
     a          = agc_dp_add(ip, a, pl->lambda);              /* LAMBDA - 1    */

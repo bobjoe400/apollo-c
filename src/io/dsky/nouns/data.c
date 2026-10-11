@@ -64,12 +64,14 @@ agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
     return (agc_noun_lookup_vehicle(agc_state_vehicle(), noun, out));
 }
 
-/* DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI. */
+/* DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI. TIME2 is
+ * the clock (0 .. modulus); TIG, TTOGO and TTPI are signed DP erasables
+ * (TTOGO = TIME2 - TIG is negative before ignition, shown "-" by M/SOUT). */
 static agc_status_t noun_access_time(uint16_t data_id, bool write,
                                      agc_dp_t *value)
 {
     if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
-        !AGC_ASSERT(!write ||
+        !AGC_ASSERT(!write || data_id != AGC_DATA_TIME2 ||
                     (*value >= 0 && *value < (agc_dp_t) AGC_TIME_MODULUS_CS)))
     {
         return (AGC_STATUS_BAD_ARG);

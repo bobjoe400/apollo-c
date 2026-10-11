@@ -24,9 +24,11 @@
 #define LAGSLIST        1                 /* LAGSLIST = ONE (AGS downlist) */
 #define DT_DOWNLIST     ((uint16_t) 2000) /* 20SEC DEC 2000                */
 #define DT_RETRY        ((uint16_t) 10)   /* TEN cs                        */
-/* RSCALE 2DEC 3.280839 B-3 (m -> ft), VSCALE 2DEC 3.280839 E2 B-9.       */
-#define RSCALE ((agc_dp_t) 110086719)
-#define VSCALE ((agc_dp_t) 172010437)
+/* RSCALE 2DEC 3.280839 B-3 (m -> ft) and VSCALE 2DEC 3.280839 E2 B-9
+ * (m/cs -> ft/s): the words assembled in the Luminary 099 rope (15077 05041,
+ * 24402 25724), 30 and 15 LSB from the exact decimal conversion.          */
+#define RSCALE ((agc_dp_t) 110086689) /* 3.280839 B-3, ft/m              */
+#define VSCALE ((agc_dp_t) 172010452) /* 328.0839 B-9, (ft/s)/(m/cs)     */
 #define TSCALE ((agc_dp_t) 26214400) /* TSCALE 2DEC 100 B-10          */
 /* AGSRND1 (2OCT 0000060000) + AGSRND2 (2OCT 0000037777): half a high-word
  * LSB, added in two steps; here as one DP addend.                        */
@@ -161,9 +163,8 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
         agc_alarm(ALM_NO_REFSMMAT);
-        const agc_status_t alm = AGC_STATUS_ALARM;
 
-        return ((alm == AGC_STATUS_OK) ? agc_dsky_endext() : alm);
+        return (agc_dsky_endext()); /* TC ALARM returns; TC ENDEXT */
     }
 
     return (show_agsk(ctx));
@@ -288,7 +289,6 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
         agsbuff[AGSBUFF_TIME]     = align_sp_to_word(agc_dp_high(t));
         agsbuff[AGSBUFF_TIME + 1] = align_sp_to_word(agc_dp_low(t));
         agc_telem_select_list(LAGSLIST); /* DNLSTCOD */
-        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)

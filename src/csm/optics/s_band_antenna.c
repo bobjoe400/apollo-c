@@ -169,9 +169,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     const agc_dp_t  now = align_loadtime();
 
     agc_guid_cdutrig(&trig); /* CDUTRIG      */
-    agc_status_t st = AGC_STATUS_OK;
-
-    st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE,
+    agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE,
                      &o);
     agc_vec_t r;
 
@@ -183,7 +181,6 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         agc_guid_smnb(&trig, &r); /* *SMNB*       */
-        st = AGC_STATUS_OK;
     }
 
     if (st == AGC_STATUS_OK)

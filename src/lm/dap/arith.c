@@ -97,7 +97,10 @@ agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 
 /* DV: (A,L) / d -> quotient in A, remainder (dividend sign) in L. The AGC
  * requires |dividend| < |d| (as fractions); an improper division gives an
- * undefined result there, here it is limited to +-POSMAX and reported.    */
+ * undefined result there, here it is limited to +-POSMAX and reported.
+ * A dividend exactly equal in magnitude to the divisor (A = +-d, L = 0)
+ * is defined: A = POSMAX (signs agree) or NEGMAX, L = the dividend's
+ * major word. 1/ACCONT's INVERT relies on it (BIT9 / AMIN = 1/.03).     */
 lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r   = {0, 0};
@@ -106,6 +109,14 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
     if (!AGC_ASSERT(d != 0))
     {
         r.hi = (num >= 0) ? ARITH_MAXMAG : -ARITH_MAXMAG;
+
+        return (r);
+    }
+
+    if (num == (int32_t) d * ARITH_WORD || num == -(int32_t) d * ARITH_WORD)
+    { /* |dividend| = |divisor| */
+        r.hi = ((num > 0) == (d > 0)) ? ARITH_MAXMAG : -ARITH_MAXMAG;
+        r.lo = (agc_sp_t) (num / ARITH_WORD);
 
         return (r);
     }

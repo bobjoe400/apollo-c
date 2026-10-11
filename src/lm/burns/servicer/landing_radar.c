@@ -197,9 +197,9 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
     }
     else
     { /* HIGATCHK               */
-        agc_dp_t ttf8 = agc_lm_ldg()->ttf_8;
+        agc_sp_t ttf8 = agc_lm_ttf8_high(); /* CA TTF/8               */
 
-        if ((int) agc_dp_high(ttf8) + lm->rpcrtime > 0 &&
+        if ((int) ttf8 + lm->rpcrtime > 0 &&
             (int) lm->rpcrtqsw - (int) agc_dp_high(lm->xnbpip.row[0].c[0]) <= 0)
         {
             return (agc_lm_serv_higatask(ctx)); /* UXBXP > QSW: REPOSITION */

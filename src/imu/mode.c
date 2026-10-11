@@ -1297,35 +1297,218 @@ agc_status_t agc_imu_set_in_use(void)
     return (AGC_STATUS_OK);
 }
 
-/* P06 / PRESTAND / SCALPREP (pp.1445-1447): GNCS to standby.  Needs the
- * scaler channels and FINETIME, GOPERF1, and a restart to POSTAND.       */
-agc_status_t agc_imu_standby(agc_job_ctx_t *ctx)
+/* ======================================================================= */
+/* P06 standby and time recovery (pp.1445-1448 CM, pp.1334-1337 LM)        */
+/* ======================================================================= */
+
+#define STANDBY_CHECKLIST  062u       /* OCT62 = .5SEC: V50N25 R1 code      */
+#define STANDBY_PHASE      07024u     /* PHASCHNG 4: job POSTAND, PRIO20    */
+#define STANDBY_PRIO       020        /* OCT 20000: PRIO20, FINDVAC         */
+#define SCALER_5MS         020u       /* BIT5 of LOSCALAR: 5 ms (1/3200 s)  */
+#define SCALER_LOW5        037u       /* LOW5: scaler bits below 10 ms      */
+#define SCALER_MOD         0x10000000u /* 2^28: HISCALAR,LOSCALAR wrap      */
+#define SCALER_TO_CS_SHIFT 5          /* SHORTMP BIT10: 2^-5, scaler -> cs  */
+#define SCALAR_TRIES       4          /* bound on the SCALPREP retries      */
+
+static uint32_t time2sav; /* TIME2SAV: TIME2,TIME1 before standby, cs   */
+static uint32_t scalsave; /* SCALSAVE: scaler before standby, 2^-5 cs   */
+
+/**********************************************************************
+ * SCALPREP (IMU_MODE_SWITCHING_ROUTINES.agc p.1447 CM / p.1336 LM) --
+ * snapshot the scaler and make it agree with TIME1
+ *
+ * FINETIME +1 reads HISCALAR,LOSCALAR.  The 10 ms bit (bit 6) of the
+ * scaler counts 5 ms out of phase with TIME1, so 5 ms (bit 5) is added
+ * and the low 5 bits are dropped; if they are then zero the reading fell
+ * in the first interval after a TIME1 increment and does not agree with
+ * TIME1,TIME2 (the AGC returns to L+1 to read again).
+ *
+ * ARGUMENTS:
+ *   scaler  uint32_t *  O  scaler + 5 ms, low 5 bits zeroed, units
+ *                          2^-5 cs (1/3200 s), modulo 2^28
+ *
+ * RETURNS: AGC_STATUS_OK when the reading agrees with TIME1 (L+2),
+ *          AGC_STATUS_BUSY when it must be read again (L+1)
+ **********************************************************************/
+static agc_status_t scalprep(uint32_t *scaler)
 {
-    if (!AGC_ASSERT(ctx != NULL))
+    agc_dp_t raw = 0; /* HISCALAR,LOSCALAR, 2^-5 cs (packed DP)       */
+
+    if (!AGC_ASSERT(scaler != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    agc_status_t st = agc_systems_test_finetime(&raw); /* FINETIME +1 */
+
+    agc_relint(); /* RELINT    */
+
+    if (!AGC_ASSERT(raw >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (AGC_STATUS_UNIMPLEMENTED);
+    /* DAS MPAC with (0, BIT5): a carry out of HISCALAR is lost.        */
+    uint32_t sum = ((uint32_t) raw + SCALER_5MS) % SCALER_MOD; /* 2^-5 cs */
+
+    *scaler = sum & ~SCALER_LOW5;
+
+    if ((st != AGC_STATUS_OK) || ((sum & SCALER_LOW5) == 0u))
+    {
+        return (AGC_STATUS_BUSY); /* CCS A = +0: not compatible  */
+    }
+
+    return (AGC_STATUS_OK);
 }
 
-/* POSTAND (pp.1447-1448): recover TIME1/TIME2 after standby.             */
-agc_status_t agc_imu_postand(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * P06 / PRESTAND (IMU_MODE_SWITCHING_ROUTINES.agc pp.1445-1446 CM,
+ * pp.1334-1335 LM) -- GNCS from operate to standby
+ *
+ * Sets NODOFLAG (no V37), snapshots TIME2,TIME1 and the scaler until the
+ * two agree, knocks down REFSMFLG/DRIFTFLG/TRACKFLG (RNDREFDR), IMUSE and
+ * RNDVZFLG, sets the standby enable bit (channel 13 bit 11), makes
+ * POSTAND the group 4 restart point, then asks the crew for standby
+ * (V50N25 R1 = 00062) until the computer goes down.
+ * DEVIATION: the AGC retries PRESTAND without limit; the scaler does not
+ * move while a C job runs, so after SCALAR_TRIES the job yields and runs
+ * P06 again (setting NODOFLAG twice is harmless).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I  the P06 job (AGC_JOB_STANDBY)
+ *
+ * RETURNS: agc_status_t from the display request, or BUSY after a yield
+ **********************************************************************/
+agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
 {
+    uint32_t     scaler = 0;               /* scaler snapshot, 2^-5 cs */
+    agc_status_t st     = AGC_STATUS_BUSY; /* SCALPREP outcome         */
+
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->id == AGC_JOB_STANDBY))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_flag_set(AGC_FLAG_NODOFLAG); /* UPFLAG NODOFLAG (no V37) */
+
+    for (int k = 0; (k < SCALAR_TRIES) && (st == AGC_STATUS_BUSY); k++)
+    {
+        agc_inhint(); /* PRESTAND        */
+        time2sav = agc_time_now_cs();
+        st       = scalprep(&scaler);
+    }
+
+    if (st == AGC_STATUS_BUSY)
+    {
+        return (agc_exec_job_yield(AGC_JOB_STANDBY)); /* read again    */
+    }
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
+
+    scalsave = scaler;
+    agc_imu_rndrefdr();
+    agc_flag_clear(AGC_FLAG_IMUSE);
+    agc_flag_clear(AGC_FLAG_RNDVZFLG);
+    agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_STANDBYENB);
+
+    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STANDBY_RECOVERY,
+                               AGC_TASK_NONE, STANDBY_PRIO, false, 0U};
+
+    agc_phase_change_var(STANDBY_PHASE, &v);
+
+    return (agc_job_standby_request(ctx));
+}
+
+/**********************************************************************
+ * P06 (IMU_MODE_SWITCHING_ROUTINES.agc p.1446 CM / p.1335 LM) -- the
+ * GOPERF1 loop: V50N25 with R1 = 00062 ("go to standby"); every answer
+ * (V34, V33, ENTER) puts the request up again (TCF -3, -4, -5).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I  the P06 job
+ *
+ * RETURNS: agc_status_t from agc_dsky_display
+ **********************************************************************/
+agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
+{
+    const agc_dsky_cont_t again = {AGC_JOB_STANDBY_REQUEST, /* -3 V34   */
+                                   AGC_JOB_STANDBY_REQUEST, /* -4 V33   */
+                                   AGC_JOB_STANDBY_REQUEST}; /* -5 ENTER */
+
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_NODOFLAG)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (AGC_STATUS_UNIMPLEMENTED);
+    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, STANDBY_CHECKLIST, &again));
+}
+
+/**********************************************************************
+ * POSTAND / POSTCOM (IMU_MODE_SWITCHING_ROUTINES.agc pp.1447-1448 CM,
+ * pp.1336-1337 LM) -- recover TIME1,TIME2 after standby
+ *
+ * Clears the standby enable bit and TIME2,TIME1, snapshots the scaler
+ * (SCALPREP, retried until it agrees with the cleared clock), and adds
+ * the scaler advance since PRESTAND plus TIME2SAV into TIME2,TIME1.  The
+ * scaler difference (SHORTMP by BIT10 = 2^-5: scaler -> cs) is made
+ * positive by adding BIT10 to its high word, i.e. 2^23 cs, when the
+ * scaler wrapped during standby.  Then NODOFLAG down and GOTOPOOH.
+ * DEVIATION: bounded retries, then the job yields and runs POSTAND again
+ * (the AGC's TC POSTAND +3 clears TIME2,TIME1 again the same way).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I  the restart job (group 4, PRIO20)
+ *
+ * RETURNS: agc_status_t from GOTOPOOH, or BUSY after a yield
+ **********************************************************************/
+agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
+{
+    uint32_t     scaler = 0;               /* scaler snapshot, 2^-5 cs */
+    agc_status_t st     = AGC_STATUS_BUSY; /* SCALPREP outcome         */
+
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(scalsave < SCALER_MOD))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_chan_and(AGC_CHAN_CHAN13, (uint16_t) (077777u & ~AGC_CH013_STANDBYENB));
+
+    for (int k = 0; (k < SCALAR_TRIES) && (st == AGC_STATUS_BUSY); k++)
+    {
+        agc_inhint();
+        agc_time_set_cs(0); /* DXCH TIME2 with +0,+0          */
+        st = scalprep(&scaler);
+    }
+
+    if (st == AGC_STATUS_BUSY)
+    {
+        return (agc_exec_job_yield(AGC_JOB_STANDBY_RECOVERY));
+    }
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
+
+    /* DCS SCALSAVE, DAS, SHORTMP BIT10, TPAGREE, CCS: + BIT10 if < 0.  */
+    uint32_t dt_cs = ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT;
+    uint32_t now   = agc_time_now_cs(); /* counted since the clear, cs */
+
+    agc_time_set_cs((now + dt_cs + time2sav) % AGC_TIME_MODULUS_CS); /* DAS */
+    agc_flag_clear(AGC_FLAG_NODOFLAG);
+
+    if (!AGC_ASSERT(dt_cs < (SCALER_MOD >> SCALER_TO_CS_SHIFT)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_exec_gotopooh());
 }

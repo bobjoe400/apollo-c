@@ -251,11 +251,11 @@ int main(void)
     agc_entry_lexicon_reset();
     agc_entry_state_t *e = agc_entry_state();
 
-    e->ladpad  = (agc_sp_t) oracle_in(t, "LADPAD", 0);
-    e->lodpad  = (agc_sp_t) oracle_in(t, "LODPAD", 0);
-    e->headsup = (agc_sp_t) oracle_in(t, "HEADSUP", 0);
-    e->lat_spl = oracle_in_dp(t, "LAT(SPL)", 0);
-    e->lng_spl = oracle_in_dp(t, "LNG(SPL)", 0);
+    e->ladpad                   = (agc_sp_t) oracle_in(t, "LADPAD", 0);
+    e->lodpad                   = (agc_sp_t) oracle_in(t, "LODPAD", 0);
+    e->headsup                  = (agc_sp_t) oracle_in(t, "HEADSUP", 0);
+    e->lat_spl                  = oracle_in_dp(t, "LAT(SPL)", 0);
+    e->lng_spl                  = oracle_in_dp(t, "LNG(SPL)", 0);
     agc_guid_state()->avg.unitw = oracle_in_vec(t, "UNITW");
     avg_in(t);
     (void) agc_entry_startent();

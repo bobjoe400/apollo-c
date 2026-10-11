@@ -115,7 +115,7 @@ static void send_if_changed(uint16_t chan, uint16_t value)
 
 void sim_channels_sync(void)
 {
-    int n = (int) (sizeof(k_outputs) / sizeof(k_outputs[0]));
+    int n = (int) (sizeof (k_outputs) / sizeof (k_outputs[0]));
 
     for (int i = 0; i < n; i++)
     {
@@ -233,7 +233,8 @@ static void cdu_drive(uint16_t c14)
         int32_t left = (cmd < 0) ? -(mag - part) : (mag - part);
 
         sim_socket_send((uint16_t) (SIM_CH_CDUX_DRV + (uint16_t) axis),
-                        (uint16_t) (((cmd < 0) ? SIGN15 : 0u) | (uint16_t) part));
+                        (uint16_t) (((cmd <
+                                      0) ? SIGN15 : 0u) | (uint16_t) part));
         agc_status_t st = agc_imu_hw_set_cducmd(axis, (agc_sp_t) left);
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -287,7 +288,8 @@ static void optics_drive(uint16_t c14)
         }
 
         uint16_t word = (cmd < 0) ?
-                        (uint16_t) (~(uint16_t) (-(int32_t) cmd) & SIM_WORD_MASK) :
+                        (uint16_t) (~(uint16_t) (-(int32_t) cmd) &
+                                    SIM_WORD_MASK) :
                         (uint16_t) cmd; /* ones' complement, as yaAGC sends */
 
         sim_socket_send(chan[which], word);
@@ -373,7 +375,8 @@ static void input_channel(uint16_t chan, uint16_t value, uint16_t mask)
     uint16_t old = agc_chan_read((int) chan);
     uint16_t v   = (uint16_t) ((value & mask) | (old & (uint16_t) ~mask));
 
-    agc_status_t st = agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK));
+    agc_status_t st =
+        agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK));
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAD_ARG))
     {

@@ -281,6 +281,22 @@ agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip,
     return (calcthet(ip, veh));
 }
 
+/* DMP then SL1 on the TP MPAC: the third word of the product shifts into
+ * the DP result (AGC DMP leaves MPAC+2; SL shifts all three words).      */
+static agc_dp_t dmp_sl1(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
+{
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (0);
+    }
+
+    agc_dp_t r = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1));
+
+    AGC_ASSERT(r == 0 || ((r < 0) == ((a < 0) != (b < 0))));
+
+    return (r);
+}
+
 /* TSTRXUT / BADVCTOR (Comanche p.716): if UT x R was null (36D = 0) use
  * Y = -UNIT((UNIT(R) + UNIT(V)/8) x UT) instead.                          */
 static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
@@ -325,9 +341,12 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
 
     b->pointvsm =
         agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, b->ut), 1); /* SM AT 2 */
-    agc_dp_t  mag = 0;
-    agc_vec_t y   =
-        agc_vec_unit(ip, agc_vec_cross(ip, b->ut, rz->rtig), &mag, NULL);
+    /* Y = UNIT(UT x RTIG). The SPS path (p.716, PDVL UNIT RTIG / VXV VCOMP)
+     * crosses with UNIT(RTIG); S40.2,3B crosses with RTIG itself.        */
+    agc_dp_t  mag  = 0;
+    agc_vec_t rdir = rcs ? rz->rtig : agc_vec_unit(ip, rz->rtig, NULL, NULL);
+    agc_vec_t y    =
+        agc_vec_unit(ip, agc_vec_cross(ip, b->ut, rdir), &mag, NULL);
 
     y = tstrxut(ip, y, mag);
 
@@ -347,24 +366,23 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs,
          * (all halves, sin/cos SL1); SCAXIS = (XSC.x, YSC.x, ZSC.x).            */
         agc_dp_t y_axes = agc_dp_add(
             ip,
-            agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(
-                                          yactoff), TRIMSCAL), 1),
+            dmp_sl1(ip, agc_dp_from_sp(
+                        yactoff), TRIMSCAL),
             YBIAS);
         agc_dp_t p = agc_dp_add(
             ip,
-            agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_from_sp(
-                                          pactoff), TRIMSCAL), 1),
+            dmp_sl1(ip, agc_dp_from_sp(
+                        pactoff), TRIMSCAL),
             PBIAS);
         agc_dp_t cy = agc_dp_cos(ip, y_axes), sy = agc_dp_sin(ip, y_axes);
         agc_dp_t cp = agc_dp_cos(ip, p), sp = agc_dp_sin(ip, p);
 
         b->xscref =
-            agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cp, cy), 1),
-                         agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, cp,
-                                                              sy), 1)), sp);
+            agc_vec_make(dmp_sl1(ip, cp, cy),
+                         agc_dp_neg(dmp_sl1(ip, cp, sy)), sp);
         b->zscref =
-            agc_vec_make(agc_dp_neg(agc_dp_shl(ip, agc_dp_mul(ip, sp, cy), 1)),
-                         agc_dp_shl(ip, agc_dp_mul(ip, sp, sy), 1), cp);
+            agc_vec_make(agc_dp_neg(dmp_sl1(ip, sp, cy)),
+                         dmp_sl1(ip, sp, sy), cp);
         b->yscref = agc_vec_make(sy, cy, 0);
         b->scaxis =
             agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);

@@ -6,7 +6,10 @@
  * normalising the divisor. On divide overflow the AGC exits through DVOVF,
  * which writes +-DPPOSMAX into MPAC (the component slot being processed)
  * and leaves the other MPAC slots as they are at that moment; the C code
- * returns exactly that arrangement (see DEVIATION notes for the sign).
+ * returns exactly that arrangement. The sign of DPPOSMAX is DVSIGN, which
+ * is not reset by V/SC or UNIT before their early DVOVF exits: it is
+ * carried in agc_interp_t (dvsign_neg) from the previous DDV/BDDV, V/SC,
+ * UNIT, DOT/MXV/VXM/VPROJ or ARCSIN/ARCCOS on the same interpreter state.
  */
 #include "agc/core/assert.h"
 #include "mpac.h"
@@ -15,9 +18,9 @@
 
 /* V/SCDV (p.1173): one component c by the scalar; s_abs = BUF2 (|s|, not
  * normalised), s_norm = BUF (normalised by k doublings). Returns false on
- * DVOVF, leaving +-DPPOSMAX in *c.                                         */
+ * DVOVF, leaving +-DPPOSMAX in *c. *dvsign = DVSIGN is -0 on exit.        */
 static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
-                   bool sneg)
+                   bool sneg, bool *dvsign)
 {
     bool     neg = sneg; /* DVSIGN = VBUF+5  */
     agc_dp_t a   = *c;
@@ -30,6 +33,8 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
         return (false);
     }
 
+    *dvsign = neg;
+
     if (a == 0)
     {
         return (true); /* exit on zero     */
@@ -37,8 +42,9 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
 
     if (a < 0)
     { /* /MPAC-           */
-        a   = -a;
-        neg = !neg;
+        a       = -a;
+        neg     = !neg;
+        *dvsign = neg; /* INCR DVSIGN      */
     }
 
     w = agc_w_split(a);
@@ -133,8 +139,10 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
         {
             ip->ovfind = 1;
 
-            /* DEVIATION: DVSIGN is stale here in the AGC; +DPPOSMAX used.  */
-            return (vsc_result(AGC_DP_MAX, m[1], m[2]));
+            /* DVOVF before any V/SCDV: the sign is the DVSIGN left by the
+             * previous divide, DOT or ARCSIN/ARCCOS (FINALDV +3).          */
+            return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, m[1],
+                               m[2]));
         }
     }
 
@@ -154,21 +162,21 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
         s_norm *= 2; /* /NORM2           */
     }
 
-    if (!vsc_dv(&m[0], s, s_norm, k, sneg))
+    if (!vsc_dv(&m[0], s, s_norm, k, sneg, &ip->dvsign_neg))
     {
         ip->ovfind = 1;
 
         return (vsc_result(m[0], m[1], m[2]));
     }
 
-    if (!vsc_dv(&m[1], s, s_norm, k, sneg))
+    if (!vsc_dv(&m[1], s, s_norm, k, sneg, &ip->dvsign_neg))
     { /* MPAC = y, +3 = x */
         ip->ovfind = 1;
 
         return (vsc_result(m[1], m[0], m[2]));
     }
 
-    if (!vsc_dv(&m[2], s, s_norm, k, sneg))
+    if (!vsc_dv(&m[2], s, s_norm, k, sneg, &ip->dvsign_neg))
     { /* MPAC = z, +5 = y */
         ip->ovfind = 1;
 
@@ -204,13 +212,17 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
 
     ip->ovfind = 1;
 
-    /* DEVIATION: DVSIGN is stale in the AGC; +DPPOSMAX used.               */
-    return (vsc_result(AGC_DP_MAX, 0, (agc_dp_t) (a * AGC_W_ONE)));
+    /* DVOVF before any UNITDV: the sign is the DVSIGN left by the previous
+     * divide, DOT or ARCSIN/ARCCOS (FINALDV +3).                          */
+    return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, 0,
+                       (agc_dp_t) (a * AGC_W_ONE)));
 }
 
 /* UNITDV (p.1179) for one component: |c| shifted by the pre-divide count
- * (kdiv < 0: the "-21D" prologue, shift right 1), divided by the root.    */
-static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root)
+ * (kdiv < 0: the "-21D" prologue, shift right 1), divided by the root.
+ * DVSIGN: -0 for a negative component, positive otherwise; a zero
+ * component exits before DVSIGN is written.                               */
+static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
 {
     agc_dp_t a = (c < 0) ? -c : c;
     agc_dp_t q;
@@ -230,8 +242,9 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root)
         return (0); /* exit on zero     */
     }
 
-    a = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));
-    q = agc_w_genddv(a, root, false); /* MAXDVSW = -1     */
+    *dvsign = (c < 0); /* UMPAC- / UMPAC+  */
+    a       = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));
+    q       = agc_w_genddv(a, root, false); /* MAXDVSW = -1     */
 
     return ((c < 0) ? -q : q);
 }
@@ -324,7 +337,7 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
-        v.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root));
+        v.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root), &ip->dvsign_neg);
     }
 
     return (v);

@@ -244,7 +244,8 @@ static inline agc_vec_t oracle_out_vec(const char *tag, const char *name)
     agc_vec_t   v;
     const char *plus = strrchr(name, '+');
     const long  base = (plus != NULL) ? strtol(plus + 1, NULL, 10) : 0;
-    const int   len  = (plus != NULL) ? (int) (plus - name) : (int) strlen(name);
+    const int   len  =
+        (plus != NULL) ? (int) (plus - name) : (int) strlen(name);
 
     for (int k = 0; k < 3; k++)
     {
@@ -277,8 +278,8 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     const char *plus  = strrchr(name, '+');
     const long  base  = (plus != NULL && plus != name) ?
                         strtol(plus + 1, NULL, 10) : 0;
-    const int   len   = (plus != NULL && plus != name) ?
-                        (int) (plus - name) & 63 : (int) strlen(name) & 63;
+    const int len = (plus != NULL && plus != name) ?
+                    (int) (plus - name) & 63 : (int) strlen(name) & 63;
 
     idx -= chunk;
     (void) snprintf(run, sizeof run, "run %s", tag);
@@ -356,10 +357,10 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
         return (0);
     }
 
-    char      *stop = NULL;
-    const bool neg  = (*hit == '-');
-    const char *num = neg ? hit + 1 : hit;
-    long        v   = strtol(num, &stop, 8);
+    char       *stop = NULL;
+    const bool  neg  = (*hit == '-');
+    const char *num  = neg ? hit + 1 : hit;
+    long        v    = strtol(num, &stop, 8);
 
     if (stop != NULL && (*stop == 'd' || *stop == '8' || *stop == '9'))
     {

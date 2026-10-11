@@ -216,7 +216,6 @@ agc_status_t agc_sxtmark_mkreleas(void)
         (uint16_t) (agc_erase_optmodes() & ~OPTM_COARSE_RET));
     agc_erase_set_optind(OPT_NONE);
     agc_chan_and(012, (uint16_t) ~AGC_CH012_ENBOCDUERR);
-    st = AGC_STATUS_OK;
     agc_relint();
 
     return (AGC_STATUS_OK);
@@ -263,12 +262,6 @@ agc_status_t agc_sxtmark_markrupt(void)
     }
 
     agc_alarm(ALM_NO_INBITS);
-    const agc_status_t alm = AGC_STATUS_ALARM;
-
-    if (alm != AGC_STATUS_OK)
-    {
-        return (alm);
-    }
 
     return (AGC_STATUS_OK); /* RESUME   */
 }
@@ -316,12 +309,6 @@ agc_status_t agc_task_markdif(void)
         if (!ok)
         {
             agc_alarm(ALM_MOVED);
-            const agc_status_t alm = AGC_STATUS_ALARM;
-
-            if (alm != AGC_STATUS_OK)
-            {
-                return (alm);
-            }
 
             return (AGC_STATUS_OK); /* TASKOVER */
         }
@@ -377,12 +364,6 @@ agc_status_t agc_sxtmark_markcont(void)
         !agc_flag_test(AGC_FLAG_CALIBRATION_MARKING))
     {
         agc_alarm(ALM_UNCALLED); /* MARKET3  */
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (AGC_STATUS_OK);
     }
@@ -416,12 +397,6 @@ agc_status_t agc_sxtmark_mark2(void)
     if ((ms & MS_WANTED_MASK) == 0u)
     {
         agc_alarm(ALM_UNWANTED); /* 114ALM   */
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (AGC_STATUS_OK);
     }
@@ -467,12 +442,6 @@ agc_status_t agc_sxtmark_mkreject(void)
     if (ms == 0u)
     {
         agc_alarm(ALM_NO_REJECT);
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (AGC_STATUS_OK);
     }
@@ -482,12 +451,6 @@ agc_status_t agc_sxtmark_mkreject(void)
     if ((ms & MS_REJECT_OK) == 0u)
     {
         agc_alarm(ALM_REJECT2);
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (AGC_STATUS_OK);
     }

@@ -47,12 +47,6 @@ agc_status_t agc_lm_imu_check(void)
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
     {
         agc_alarm(ALM_IMU_OFF);
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         const agc_status_t st = agc_exec_gotopooh();
 
@@ -114,13 +108,7 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = orientation_phase();
-
-    for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
-    {
-        agc_erase_set_thetad(i, 0);
-        st = AGC_STATUS_OK;
-    }
+    const agc_status_t st = orientation_phase(); /* PHASCHNG */
 
     if (st != AGC_STATUS_OK)
     {

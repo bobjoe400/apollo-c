@@ -85,16 +85,17 @@ static void guid_pass(const char *t, long tol)
 
     common_in(t);
     agc_interp_init(&ip);
-    g->r             = oracle_in_vec(t, "R");
-    g->v             = oracle_in_vec(t, "V");
-    g->xnbpip.row[0] = oracle_in_vec(t, "XNBPIP");
-    g->xnbpip.row[2] = oracle_in_vec(t, "ZNBPIP");
+    g->r                        = oracle_in_vec(t, "R");
+    g->v                        = oracle_in_vec(t, "V");
+    g->xnbpip.row[0]            = oracle_in_vec(t, "XNBPIP");
+    g->xnbpip.row[2]            = oracle_in_vec(t, "ZNBPIP");
     agc_guid_state()->avg.gdt_2 = oracle_in_vec(t, "GDT/2");
-    l->land     = oracle_in_vec(t, "LAND");
-    l->cg       = mat_in(t, "CG");
-    l->ttf_8    = oracle_in_dp(t, "TTF/8", 0);
-    l->wchphase = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
-    l->flpass0  = (agc_sp_t) oracle_in(t, "FLPASS0", 0);
+    l->land                     = oracle_in_vec(t, "LAND");
+    l->cg                       = mat_in(t, "CG");
+    l->ttf_8                    = oracle_in_dp(t, "TTF/8", 0);
+    l->ttf_8_hi                 = (agc_sp_t) oracle_in(t, "TTF/8", 0);
+    l->wchphase                 = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
+    l->flpass0                  = (agc_sp_t) oracle_in(t, "FLPASS0", 0);
     (void) agc_lm_rgvgcalc(&ip);
     (void) agc_lm_ttf8cl(&ip);
     (void) agc_lm_quadguid(&ip);
@@ -110,9 +111,9 @@ static void guid_pass(const char *t, long tol)
     /* ROOTPSRS stops at |DX| <= TTF/8 * 2^-7: last-pass rounding moves the
      * root by a few hundred LSB. TTFDISP = 8 * high word of a DAS result
      * the AGC leaves sign-disagreeing (F9): one high-word LSB = 8.       */
-    (void) oracle_cmp(t, "TTF/8", l->ttf_8, oracle_out_dp(t, "TTF/8"), 256);
+    (void) oracle_cmp(t, "TTF/8", l->ttf_8, oracle_out_dp(t, "TTF/8"), 0);
     (void) oracle_cmp(t, "TTFDISP", l->ttfdisp, oracle_out_dp(t, "TTFDISP"),
-                      8);
+                      0);
     (void) oracle_cmp(t, "TREDES", l->tredes, oracle_out_sp(t, "TREDES"), 0);
     /* QUADGUID coefficients: the AGC stores them as single words over
      * stale low words of the push list (guidance.c DEVIATION).           */
@@ -132,11 +133,12 @@ static void cgcalc(const char *t, long tol)
     common_in(t);
     agc_interp_init(&ip);
     agc_guid_state()->lm.r = oracle_in_vec(t, "R");
-    l->land     = oracle_in_vec(t, "LAND");
-    l->angterm  = oracle_in_vec(t, "ANGTERM");
-    l->ttf_8    = oracle_in_dp(t, "TTF/8", 0);
-    l->wchphase = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
-    l->cg       = mat_in(t, "CG");
+    l->land                = oracle_in_vec(t, "LAND");
+    l->angterm             = oracle_in_vec(t, "ANGTERM");
+    l->ttf_8               = oracle_in_dp(t, "TTF/8", 0);
+    l->ttf_8_hi            = (agc_sp_t) oracle_in(t, "TTF/8", 0);
+    l->wchphase            = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
+    l->cg                  = mat_in(t, "CG");
     (void) agc_lm_cgcalc(&ip);
     oracle_require_ok(t, "EXTLOGIC");
 
@@ -160,11 +162,11 @@ static void throttle(const char *t)
     agc_lm_pad()->lowcrit       = (agc_sp_t) oracle_in(t, "LOWCRIT", 0);
     agc_lm_pad()->highcrit      = (agc_sp_t) oracle_in(t, "LOWCRIT", 1);
     agc_guid_state()->lm.abdelv = (agc_sp_t) oracle_in(t, "ABDELV", 0);
-    l->afc      = oracle_in_dp(t, "/AFC/", 0);
-    l->thistpip = oracle_in_dp(t, "THISTPIP", 0);
-    h->tthrot   = (agc_sp_t) oracle_in(t, "TTHROT", 0);
-    h->fweight  = oracle_in_dp(t, "FWEIGHT", 0);
-    h->fcold    = (agc_sp_t) oracle_in(t, "FCOLD", 0);
+    l->afc                      = oracle_in_dp(t, "/AFC/", 0);
+    l->thistpip                 = oracle_in_dp(t, "THISTPIP", 0);
+    h->tthrot                   = (agc_sp_t) oracle_in(t, "TTHROT", 0);
+    h->fweight                  = oracle_in_dp(t, "FWEIGHT", 0);
+    h->fcold                    = (agc_sp_t) oracle_in(t, "FCOLD", 0);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
     agc_erase_set_piptime(oracle_in_dp(t, "PIPTIME", 0));
     /* TIME1 as the AGC read it at DOIT (the emulated counter ticks once

@@ -135,7 +135,8 @@ static void pipa(const char *t)
     }
 
     (void) agc_imu_comp_load(&p);
-    agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074", 0) /* 1/PIPADT */);
+    agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074",
+                                                   0) /* 1/PIPADT */);
     agc_imu_set_gcompsw((agc_sp_t) oracle_in(t, "GCOMPSW", 0));
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
     delv = oracle_in_vec(t, "DELVX"); /* DELVX DELVY DELVZ contiguous */
@@ -154,7 +155,8 @@ static void pipa(const char *t)
     const int gsw = oracle_out_sp(t, "GCOMPSW");
 
     (void) oracle_cmp(t, "GCOMPSW", agc_imu_gcompsw(), gsw, 2);
-    (void) oracle_cmp(t, "GCOMPSW sign", (agc_imu_gcompsw() > 0) - (agc_imu_gcompsw() < 0),
+    (void) oracle_cmp(t, "GCOMPSW sign",
+                      (agc_imu_gcompsw() > 0) - (agc_imu_gcompsw() < 0),
                       (gsw > 0) - (gsw < 0), 0);
 }
 
@@ -189,7 +191,7 @@ static void kalc(const char *t, long tol, long tol_am)
     agc_interp_init(&ip);
     cdus_in(t, "CDUX", b);
     cdus_in(t, "CPHI", c);
-    const agc_status_t st = agc_kalc_compute(&ip, b, c, &k);
+    const agc_status_t st    = agc_kalc_compute(&ip, b, c, &k);
     const bool         small = oracle_ok(t, "NOGO");
 
     oracle_require_ok(t, NULL);

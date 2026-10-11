@@ -110,13 +110,90 @@ static agc_sp_t ldg_sat(int32_t x)
     return ((agc_sp_t) r);
 }
 
+/* A DP held as its value and the high word the AGC actually stores: DAS
+ * adds the low and the high words separately, carrying the low-word
+ * overflow, and never re-signs the pair, so the high word a later CA,
+ * AD or DV reads can be one off the canonical split (oracle finding F9).
+ * A high word that cannot belong to v (|low| >= 2^14) is ignored.       */
+static agc_sp_t ldg_raw_high(agc_dp_t v, agc_sp_t hi)
+{
+    int32_t lo = v - (int32_t) hi * 16384;
+
+    if (lo >= 16384 || lo <= -16384)
+    {
+        return (agc_dp_high(v)); /* not a split of v: canonical    */
+    }
+
+    if (!AGC_ASSERT(hi >= AGC_SP_MIN))
+    {
+        return (agc_dp_high(v));
+    }
+
+    return (hi);
+}
+
+/* DAS b into the pair (a, *a_hi); returns the new value, *a_hi the new
+ * high word. b is a canonical (sign-agreeing) DP.                        */
+static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
+{
+    if (!AGC_ASSERT(a_hi != NULL))
+    {
+        return ((agc_dp_t) (a + b));
+    }
+
+    agc_sp_t hi = ldg_raw_high(a, *a_hi);
+    int32_t  lo = (a - (int32_t) hi * 16384) + (b % 16384);
+    int32_t  h  = (int32_t) hi + b / 16384;
+
+    if (lo >= 16384)
+    { /* low-word overflow carries into the high word */
+        lo -= 16384;
+        h++;
+    }
+    else if (lo <= -16384)
+    {
+        lo += 16384;
+        h--;
+    }
+
+    if (!AGC_ASSERT(h >= AGC_SP_MIN && h <= -AGC_SP_MIN))
+    {
+        *a_hi = agc_dp_high((agc_dp_t) (a + b));
+        return ((agc_dp_t) (a + b));
+    }
+
+    *a_hi = (agc_sp_t) h;
+
+    return ((agc_dp_t) (h * 16384 + lo));
+}
+
+/* CA TTF/8: the high word of TTF/8 as stored (see ldg_raw_high).       */
+agc_sp_t agc_lm_ttf8_high(void)
+{
+    const agc_lm_ldg_t *l = agc_lm_ldg();
+
+    if (!AGC_ASSERT(l != NULL))
+    {
+        return (0);
+    }
+
+    agc_sp_t hi = ldg_raw_high(l->ttf_8, l->ttf_8_hi);
+
+    if (!AGC_ASSERT(hi <= 0 || l->ttf_8 > 0))
+    {
+        return (agc_dp_high(l->ttf_8));
+    }
+
+    return (hi);
+}
+
 /* TDISPSET (pp. 825-826): TTFDISP = TTF, and TREDES, the seconds left for
  * redesignation, which reaches zero two passes before TCGFAPPR:
  * TREDES = max(0, min(99, -.08 (TCGFAPPR + TTF/8) - 4)).                */
 void agc_lm_tdispset(void)
 {
     agc_lm_ldg_t *l  = agc_lm_ldg();
-    agc_sp_t      t8 = agc_dp_high(l->ttf_8);
+    agc_sp_t      t8 = agc_lm_ttf8_high(); /* CA TTF/8        */
 
     l->ttfdisp = (agc_dp_t) t8 * LDG_TSCALINV; /* MP TSCALINV  */
     agc_sp_t a = agc_lm_ad(agc_lm_pad()->target[1].tcgf, t8);
@@ -155,9 +232,10 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
     w = agc_rtb_normunit(ip, agc_vec_sub(ip, l->land,
                                          w), &sh, NULL, NULL);
     l->landtemp = agc_vec_shl(ip, agc_vec_scale(ip, w, l->land_mag), 1);
-    l->ttf_8tmp = (agc_dp_t) (l->ttf_8tmp + dt); /* DAS TTF/8TMP */
+    l->ttf_8tmp = ldg_das(l->ttf_8tmp, &l->ttf_8tmp_hi, dt); /* DAS     */
     agc_lm_fastchng();
-    l->ttf_8 = l->ttf_8tmp;
+    l->ttf_8    = l->ttf_8tmp;
+    l->ttf_8_hi = l->ttf_8tmp_hi;
     l->land  = l->landtemp;
     agc_lm_tdispset();
     agc_lm_fastchng(); /* since REDESIG may change LANDTEMP */
@@ -236,11 +314,15 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
 /* ROOTPSRS (pp. 822-825, Allan Klumpp): one root of the power series
  * coef[degree] x^degree + ... + coef[0] by Newton's method from `guess`.
  * Stops when |DX| <= |precroot * guess|; "Klumpp says give up after eight
- * passes": NO_CONVERGE then, outputs not to be trusted. *passes = MODE. */
+ * passes": NO_CONVERGE then, outputs not to be trusted. *passes = MODE.
+ * *root_hi: on entry the guess's stored high word, on exit the root's as
+ * the DAS ROOTPS chain leaves it (TDISPSET and QUADGUID read it alone). */
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
-                             agc_sp_t precroot, agc_dp_t *root, int *passes)
+                             agc_sp_t precroot, agc_dp_t *root,
+                             agc_sp_t *root_hi, int *passes)
 {
     if (!AGC_ASSERT(coef != NULL && root != NULL && passes != NULL) ||
+        !AGC_ASSERT(root_hi != NULL) ||
         !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -267,14 +349,14 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
         agc_dp_t f   = agc_dp_poly(x, coef, degree);
         agc_dp_t mdx = agc_dp_div(&ip, f, d);   /* -DX        */
 
-        x = agc_dp_sub(&ip, x, mdx); /* DAS ROOTPS */
+        x = ldg_das(x, root_hi, -mdx); /* DCS MPAC, DAS ROOTPS */
 
         if (mode == AGC_LM_ROOT_MAX_PASSES)
         {
             break; /* BADROOT    */
         }
 
-        if (agc_dp_abs(mdx) <= dxcrit)
+        if (agc_dp_high(agc_dp_abs(mdx)) <= agc_dp_high(dxcrit))
         { /* ROOTSTOR   */
             *root   = x;
             *passes = mode + 1;
@@ -308,18 +390,20 @@ agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
         agc_dp_add(ip, agc_dp_mul_trunc(l->vgu.c[2], LDG_3_4DP), t->vfg_star);
     ldg_tabl_ttf[0] =
         agc_dp_mul_trunc(agc_dp_sub(ip, t->rfg.c[2], l->rgu.c[2]), LDG_3_8DP);
-    agc_dp_t     root   = 0;
-    int          passes = 0;
-    agc_status_t st     = agc_lm_rootpsrs(ldg_tabl_ttf, LDG_TTF_DEGREE,
-                                          l->ttf_8,
-                                          LDG_BIT8, &root, &passes);
+    agc_dp_t     root    = 0;
+    agc_sp_t     root_hi = agc_lm_ttf8_high(); /* DCA TTF/8 keeps the pair */
+    int          passes  = 0;
+    agc_status_t st      = agc_lm_rootpsrs(ldg_tabl_ttf, LDG_TTF_DEGREE,
+                                           l->ttf_8, LDG_BIT8, &root,
+                                           &root_hi, &passes);
 
     if (st != AGC_STATUS_OK)
     {
         return (AGC_STATUS_NO_CONVERGE); /* WHATALM          */
     }
 
-    l->ttf_8 = root; /* corrected TTF/8  */
+    l->ttf_8    = root; /* corrected TTF/8  */
+    l->ttf_8_hi = root_hi;
     agc_lm_tdispset();
 
     if (!AGC_ASSERT(passes >= 1 && passes <= AGC_LM_ROOT_MAX_PASSES))
@@ -337,7 +421,7 @@ agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
  * (MPAC+1, 27D, 29D, 31D); here the low words are zero.               */
 static void ldg_quadcoef(agc_sp_t c[4])
 {
-    agc_sp_t t8 = agc_dp_high(agc_lm_ldg()->ttf_8);
+    agc_sp_t t8 = agc_lm_ttf8_high(); /* CS TTF/8 */
 
     if (!AGC_ASSERT(t8 < 0))
     {
@@ -469,7 +553,7 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
 
     agc_lm_ldg_t          *l  = agc_lm_ldg();
     const agc_lm_target_t *t  = &agc_lm_pad()->target[ldg_tgt()];
-    agc_sp_t               t8 = agc_dp_high(l->ttf_8);
+    agc_sp_t               t8 = agc_lm_ttf8_high();
     int32_t                ai = (int32_t) t->tcgi + t8;
     int32_t                af = (int32_t) t->tcgf + t8;
 
@@ -525,7 +609,7 @@ static agc_sp_t ldg_extlogic(void)
         return (0); /* no valid result */
     }
 
-    if ((int32_t) tend + agc_dp_high(l->ttf_8) <= 0)
+    if ((int32_t) tend + agc_lm_ttf8_high() <= 0)
     {
         return (l->wchphase); /* BZMF WHATEXIT    */
     }
@@ -831,8 +915,11 @@ agc_status_t agc_lm_start_approach_phase(void)
     agc_status_t  st = agc_phase_newmode(64); /* NEWMODEX         */
     agc_lm_ldg_t *l  = agc_lm_ldg();
 
-    l->ttf_8tmp =
-        (agc_dp_t) (l->ttf_8tmp + (agc_dp_t) agc_lm_pad()->delttfap * 16384);
+    l->ttf_8tmp_hi = ldg_raw_high(l->ttf_8tmp, l->ttf_8tmp_hi);
+    l->ttf_8tmp    = (agc_dp_t) (l->ttf_8tmp +
+                                 (agc_dp_t) agc_lm_pad()->delttfap * 16384);
+    l->ttf_8tmp_hi = (agc_sp_t) (l->ttf_8tmp_hi + agc_lm_pad()->delttfap);
+    /* CA DELTTFAP, ADS TTF/8TMP: the high word only                     */
     agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A); /* BIT12 */
     agc_flag_clear(AGC_FLAG_REDFLAG);
 
@@ -879,7 +966,8 @@ static agc_status_t ldg_front(agc_interp_t *ip)
     l->tpipold = l->tpip;
     agc_lm_fastchng();
     l->tpip     = agc_guid_state()->avg.piptime1;
-    l->ttf_8tmp = l->ttf_8;
+    l->ttf_8tmp    = l->ttf_8; /* DCA TTF/8, DXCH TTF/8TMP */
+    l->ttf_8tmp_hi = l->ttf_8_hi;
     agc_status_t st = AGC_STATUS_OK;
 
     if (l->flpass0 <= 0)

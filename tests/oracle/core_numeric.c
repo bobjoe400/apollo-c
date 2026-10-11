@@ -63,6 +63,58 @@ static long long dpv(long long hi, long long lo)
     return (hi * 16384 + lo);
 }
 
+static agc_vec_t vec_at(const long long *in)
+{
+    return (agc_vec_make((agc_dp_t) in[0], (agc_dp_t) in[1], (agc_dp_t) in[2]));
+}
+
+/* Multi-instruction tags ("DDV+UNIT", "V/SC+UNIT", "DDV+DOT+UNIT", ...):
+ * run every instruction before the last on the same interpreter state, so
+ * DVSIGN carries over as in the AGC, consuming its inputs (DDV a,b; V/SC
+ * x,y,z,s; UNIT x,y,z; DOT dots the next vector with itself; ACOS takes
+ * the DDV quotient). Copies the last op name to *last and returns the
+ * number of inputs used.                                                   */
+static int run_prefix(agc_interp_t *ip, const ocase_t *c, char *last,
+                      size_t n)
+{
+    const char      *p    = c->op;
+    const char      *plus = NULL;
+    const long long *in   = c->in;
+    int              used = 0;
+    agc_dp_t         q    = 0;
+
+    while ((plus = strchr(p, '+')) != NULL && used < c->nin)
+    {
+        size_t len = (size_t) (plus - p);
+
+        if (len == 3 && !strncmp(p, "DDV", len))
+        {
+            q     = agc_dp_div(ip, (agc_dp_t) in[used], (agc_dp_t) in[used + 1]);
+            used += 2;
+        }
+        else if (len == 3 && !strncmp(p, "DOT", len))
+            (void) agc_vec_dot(ip, vec_at(in + used), vec_at(in + used));
+        else if (len == 4 && !strncmp(p, "ACOS", len))
+            q = agc_dp_acos(ip, q);
+        else if (len == 4 && !strncmp(p, "V/SC", len))
+        {
+            (void) agc_vec_div(ip, vec_at(in + used), (agc_dp_t) in[used + 3]);
+            used += 4;
+        }
+        else if (len == 4 && !strncmp(p, "UNIT", len))
+        {
+            (void) agc_vec_unit(ip, vec_at(in + used), NULL, NULL);
+            used += 3;
+        }
+
+        p = plus + 1;
+    }
+
+    (void) snprintf(last, n, "%s", p);
+
+    return (used);
+}
+
 /* Run one case through the C library; returns 1 when everything matches. */
 static int run_case(const ocase_t *c)
 {
@@ -74,17 +126,19 @@ static int run_case(const ocase_t *c)
     agc_vec_t        u = agc_vec_zero(), v = agc_vec_zero(), r = agc_vec_zero();
     agc_mat_t        m;
     agc_dp_t         t = 0, lv = 0, lvsq = 0;
-    int              isvec = 0, k, ovf_checked = 1;
-    const long long *in = c->in;
-    const char      *op = c->op;
+    int              isvec = 0, k, ovf_checked = 1, skip;
+    char             op[sizeof c->op];
+    const long long *in;
 
     agc_interp_init(&ip);
+    skip = run_prefix(&ip, c, op, sizeof op);
+    in   = c->in + skip;
 
-    if (c->nin >= 3)
-        u = agc_vec_make((agc_dp_t) in[0], (agc_dp_t) in[1], (agc_dp_t) in[2]);
+    if (c->nin - skip >= 3)
+        u = vec_at(in);
 
-    if (c->nin >= 6)
-        v = agc_vec_make((agc_dp_t) in[3], (agc_dp_t) in[4], (agc_dp_t) in[5]);
+    if (c->nin - skip >= 6)
+        v = vec_at(in + 3);
 
     if (!strcmp(op, "DMP"))
     {

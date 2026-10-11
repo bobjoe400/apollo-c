@@ -64,19 +64,83 @@ typedef struct acc_work
     agc_sp_t anet;           /* ANET / FUNTEM                              */
     agc_sp_t inv;            /* 1/ANET at 2^7/pi                           */
     agc_sp_t accsw;          /* ACCSW                                      */
+    bool     negzero[2];     /* AOSU, AOSV are -0 in the AGC (value 0 here) */
 } acc_work_t;
 
-/* INVERT (p.1504): 1/x, x at pi/2 -> 2^7/pi (BIT9, 0 DV x).               */
-static agc_sp_t invert(agc_sp_t x)
+/* The sign of a zero MP major word (yaAGC MP): +0 when the memory operand
+ * k is 0, else the product sign (a = +0 counts as positive). a is AOSQ or
+ * AOSR, taken as +0 when zero (1/ACCSET and fresh start store +0).        */
+static bool mp_negzero(agc_sp_t a, agc_sp_t k)
+{
+    int32_t p = (int32_t) a * k;
+
+    if (!AGC_ASSERT(a >= LM_NEGMAX && a <= LM_POSMAX))
+    {
+        return (false);
+    }
+
+    if (!AGC_ASSERT(k >= LM_NEGMAX && k <= LM_POSMAX))
+    {
+        return (false);
+    }
+
+    return ((k != 0) && ((a == 0) ? (k < 0) : ((p < 0) && (p > -16384))));
+}
+
+/* GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
+ * AGC leaves as -0. A ones'-complement sum of zero is -0 unless both terms
+ * are +0: V = COEFFQ AOSQ + COEFFR AOSR, U = -COEFFQ AOSQ + COEFFR AOSR.
+ * With AOSQ = AOSR = +0 (COEFFQ < 0) this makes AOSV = -0, which BOTHAXES
+ * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).           */
+static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
+{
+    agc_sp_t tq  = lm_dap_mphi(d->aosq, d->coeffq);
+    agc_sp_t tr  = lm_dap_mphi(d->aosr, d->coeffr);
+    bool     nq  = (tq == 0) && mp_negzero(d->aosq, d->coeffq);
+    bool     nr  = (tr == 0) && mp_negzero(d->aosr, d->coeffr);
+    bool     pq  = (tq == 0) && !nq;                 /* COEFFQ AOSQ = +0  */
+    bool     pr  = (tr == 0) && !nr;                 /* COEFFR AOSR = +0  */
+
+    w->negzero[0] = (d->aosu == 0) && !(nq && pr);   /* -(-0) + +0 = +0   */
+    w->negzero[1] = (d->aosv == 0) && !(pq && pr);
+
+    if (!AGC_ASSERT(!w->negzero[0] || d->aosu == 0))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(!w->negzero[1] || d->aosv == 0))
+    {
+        return;
+    }
+}
+
+/* INVERT (p.1504): 1/x, x at pi/2 -> 2^7/pi (BIT9, 0 DV x). x = AMIN
+ * (BIT9, from NETNEG or a failed jet pair in FIXMIN) gives POSMAX. x is
+ * the unlimited sum in A: when it has overflowed (9/8 |AOS| near pi/2),
+ * TS HOLD stores the overflow-corrected word and skips CA BIT9, so the
+ * AGC divides +-1 (the TS overflow indicator), not BIT9, by that word.  */
+static agc_sp_t invert(int32_t x)
 {
     lm_dp_pair_t one = {AA_BIT9, 0};
+    agc_sp_t     hold;
 
-    if (!AGC_ASSERT(x > AA_BIT9 || x < -AA_BIT9))
+    if (lm_dap_ovf(x))
+    {
+        hold   = lm_dap_wrap(x);
+        one.hi = (agc_sp_t) ((x > 0) ? 1 : -1);
+    }
+    else
+    {
+        hold = (agc_sp_t) x;
+    }
+
+    if (!AGC_ASSERT(hold >= one.hi || hold <= -one.hi))
     {
         return (0); /* no valid result */
     }
 
-    agc_sp_t r = lm_dap_dv(one, x);
+    agc_sp_t r = lm_dap_dv(one, hold);
 
     if (!AGC_ASSERT(r >= LM_NEGMAX))
     {
@@ -201,7 +265,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         return;
     }
 
-    w->s         = (aos < 0) ? 1 : 0;
+    w->s         = ((aos < 0) || w->negzero[w->uv]) ? 1 : 0;
     w->ns        = -w->s;
     w->absaos    = (agc_sp_t) ((aos < 0) ? -aos : aos);
     w->t[T_DBB1] = d->db;
@@ -252,8 +316,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
             }
         }
 
-        agc_sp_t nine8 =
-            lm_dap_sat((int32_t) lm_dap_mphi(w->absaos, AA_BIT12) + w->absaos);
+        int32_t nine8 = (int32_t) lm_dap_mphi(w->absaos, AA_BIT12) + w->absaos;
 
         w->t[T_ACOSTT + 1 + w->ns] = invert(nine8); /* 1/(9/8 |AOS|)  */
         w->t[T_ACOSTT + w->s]      = LM_POSMAX;     /* 1/AMIN         */
@@ -414,7 +477,7 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 agc_status_t lm_dap_switch_curves(void)
 {
     lm_dap_t  *d       = lm_dap_state();
-    acc_work_t w       = {{0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    acc_work_t w       = {{0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {false, false}};
     agc_sp_t   quarter = lm_dap_mphi(d->db, AA_BIT13);      /* .25 DB         */
 
     w.dbval3 = lm_dap_sat(2 * (int32_t) quarter); /* .50 DB         */
@@ -422,6 +485,7 @@ agc_status_t lm_dap_switch_curves(void)
     agc_inhint();                                           /* GETAOSUV       */
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
+    aos_negzero(d, &w);
     w.drifter   = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 1 : 0;
     w.t[T_FLAT] = ((int32_t) w.drifter + d->allowgts > 0) ? AA_FLATVAL : 0;
     /* DEVIATION: in powered flight without GTS the AGC leaves Z3TEM (a
@@ -438,8 +502,10 @@ agc_status_t lm_dap_switch_curves(void)
 
     if (w.drifter != 0)
     {
-        d->aosu = 0; /* just to be sure */
+        d->aosu = 0; /* just to be sure (+0) */
         d->aosv = 0;
+        w.negzero[0] = false;
+        w.negzero[1] = false;
     }
 
     for (int uv = 0; uv < 2; uv++)

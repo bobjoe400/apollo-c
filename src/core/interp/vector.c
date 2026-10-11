@@ -158,7 +158,8 @@ agc_tp_t agc_vec_dot_tp(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         return (0);
     }
 
-    m = agc_w_dotsub(u, v, &ip->ovfind);
+    ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
+    m              = agc_w_dotsub(u, v, &ip->ovfind);
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
@@ -178,7 +179,8 @@ agc_dp_t agc_vec_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         return (0);
     }
 
-    m = agc_w_dotsub(u, v, &ip->ovfind);
+    ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
+    m              = agc_w_dotsub(u, v, &ip->ovfind);
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
@@ -310,7 +312,8 @@ agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
         return (v);
     }
 
-    d = agc_w3_top(agc_w_dotsub(u, v, &ip->ovfind));
+    ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
+    d              = agc_w3_top(agc_w_dotsub(u, v, &ip->ovfind));
 
     for (k = 0; k < AGC_VEC_N; k++)
     {

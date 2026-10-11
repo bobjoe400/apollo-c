@@ -48,12 +48,6 @@ agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
     {
         agc_alarm(ALM_IMU_OFF);
-        const agc_status_t alm = AGC_STATUS_ALARM;
-
-        if (alm != AGC_STATUS_OK)
-        {
-            return (alm);
-        }
 
         return (agc_exec_gotopooh());
     }

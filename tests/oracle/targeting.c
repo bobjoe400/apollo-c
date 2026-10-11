@@ -30,7 +30,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 static agc_rendz_t *fresh(const char *t)
 {
-    agc_navaux_padload_t pad = {0};
+    agc_navaux_padload_t pad  = {0};
     const bool           moon = oracle_in(t, "RTX1", 0) == -10;
 
     agc_state_init(AGC_VEHICLE_CSM);

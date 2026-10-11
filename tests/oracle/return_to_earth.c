@@ -12,13 +12,13 @@
  */
 #include <stdio.h>
 
+#include "../../src/csm/burns/return_to_earth/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/nav/auxiliary.h"
-#include "../../src/csm/burns/return_to_earth/internal.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)

@@ -37,14 +37,14 @@
 #define CTR_INLINK 045u
 #define CTR_RNRAD  046u
 
-#define INC_PINC   0u
-#define INC_PCDU   1u
-#define INC_MINC   2u
-#define INC_MCDU   3u
-#define INC_DINC   4u
-#define INC_SHINC  5u
-#define INC_SHANC  6u
-#define INC_FAST   020u /* yaAGC 021 / 023: fast CDU rate          */
+#define INC_PINC  0u
+#define INC_PCDU  1u
+#define INC_MINC  2u
+#define INC_MCDU  3u
+#define INC_DINC  4u
+#define INC_SHINC 5u
+#define INC_SHANC 6u
+#define INC_FAST  020u  /* yaAGC 021 / 023: fast CDU rate          */
 
 /* +1 / -1 / toward zero for a signed SP counter; PINC past POSMAX wraps
  * to +0 (the overflow the hardware would turn into a fail bit).        */

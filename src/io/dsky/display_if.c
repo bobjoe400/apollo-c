@@ -1310,12 +1310,19 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
         rq.vn = 0; /* CAF ZERO       */
 
         if (cont == NULL)
-        { /* CLEANDSP / KLEENEX: if a priority or mark display makes the
-           * job sleep (GOSLEEPS), it ends when woken (the C caller has
-           * already gone on: DEVIATION, the AGC returns after the wait). */
+        { /* DEVIATION: CLEANDSP / KLEENEX without a continuation run in a
+           * MAKEPLAY job of their own (as the R entries do), which ends
+           * when JAMTERM (or, after GOSLEEPS, the wake) lets it out of
+           * ENDIDLE. The C caller goes on at once and its job is never
+           * left asleep; the AGC returns to the user only after that.
+           * Exact for callers that end the job next (P40BLNKR, P41BLANK,
+           * BLANKDEX); P11 and P61-P67 STARTENT do their next steps
+           * before the clean-out instead of after it.                    */
             rq.cadr.terminate = AGC_JOB_ENDOFJOB;
             rq.cadr.proceed   = AGC_JOB_ENDOFJOB;
             rq.cadr.enter     = AGC_JOB_ENDOFJOB;
+
+            return (dif_start_makeplay(&rq, ctx->prio));
         }
     }
     else if (k->src == 2u)

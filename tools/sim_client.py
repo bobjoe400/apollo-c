@@ -34,6 +34,12 @@ Scenario language (one command per line, `#` comments; times in cs):
   input CH VALUE [MASK]       input channel (octal), through a u-bit mask
   counter ADDR TYPE [COUNT]   counter increments (octal addr; TYPE PINC
                               MINC PCDU MCDU DINC SHINC SHANC or number)
+  cdu ADDR COUNTS             drive a CDU counter (octal addr, e.g. 36 =
+                              CDUS) to COUNTS (decimal, signed) with PCDU /
+                              MCDU increments from the value the client
+                              last drove it to (0 at power-on)
+  mark [reject]               CSM MARK / MARK REJECT button (channel 16
+                              bit 6 / 7, KEYRUPT2), held 0.2 s
   expect FIELD VALUE [~TOL]   check now; FIELD: PROG VERB NOUN R1 R2 R3
                               (value like 00, +00123, blank), FLASH on|off,
                               LAMP name on|off, CH ch value (octal), CLOCK
@@ -254,6 +260,7 @@ class Scenario:
         self.strict = False
         self.enter_cs = None
         self.clock_base = 0                # AGC TIME minus client cs
+        self.cdu = {}                      # counter addr -> driven counts
         self.last_text = ''
 
     def say(self, msg):
@@ -405,6 +412,20 @@ class Scenario:
             typ = int(w[2], 8) if typ is None else typ
             for _ in range(int(w[3]) if len(w) > 3 else 1):
                 self.l.send(0o200 | addr, typ)
+        elif op == 'cdu':
+            addr, want = int(w[1], 8), int(w[2])
+            have = self.cdu.get(addr, 0)
+            typ = INC_TYPE['PCDU'] if want > have else INC_TYPE['MCDU']
+            for _ in range(abs(want - have)):
+                self.l.send(0o200 | addr, typ)
+            self.cdu[addr] = want
+            self.run(1)
+        elif op == 'mark':
+            bit = 0o100 if len(w) > 1 and w[1].lower() == 'reject' else 0o40
+            self.l.send(0o16, bit)
+            self.run(20)
+            self.l.send(0o16, 0)
+            self.run(self.keygap)
         elif op == 'expect':
             self.check(w[1:])
         elif op == 'until':

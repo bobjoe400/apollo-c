@@ -233,7 +233,9 @@ static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 }
 
 /* Scale information of component k, with is_raw describing the value
- * convention of the component's data id.                                */
+ * convention of the component's data id. Machine-address and channel
+ * nouns (01-03, 10, 15) read and store the 15-bit word itself, so a -0
+ * word keeps its sign through DSPSIGN, PRSHRTMP and V01 (SP scales).     */
 agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 {
     const pin_state_t *s = pin_st();
@@ -248,6 +250,15 @@ agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
     if (st == AGC_STATUS_OK && s->nntype == PIN_NNTYPE_NORMAL)
     {
         info->is_raw = pin_id_is_raw(s->noun.data_id[k], info->is_raw);
+    }
+    else if (st == AGC_STATUS_OK)
+    {
+        if (!AGC_ASSERT(!info->is_dp))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        info->is_raw = true; /* MCTBS / AUGMENT / CHAN: the machine word */
     }
 
     return (st);
@@ -541,7 +552,10 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
 
 /* OPDEGOUT (CM): optics range is 90 deg. Add the 19.775 deg bias, the
  * ones' complement word taken as two's complement (-0 = -1), and fix up
- * an overflow by putting it into bit 15; then DEGOUTSF with .45.        */
+ * an overflow by putting it into bit 15; then DEGOUTSF with .45.
+ * NEGOPT: a negative word plus 20BIAS is a ones' complement AD, so
+ * -20BIAS + 20BIAS gives -0 (never +0: its CCSHOLE is unreachable) and
+ * COM leaves -0, which DEGOUTSF shows as +89.997 deg (oracle F15).      */
 static agc_status_t pin_opdegout(uint16_t w)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -565,7 +579,7 @@ static agc_status_t pin_opdegout(uint16_t w)
 
         if (sum == 0)
         {
-            return (agc_ccshole());
+            return (pin_degout(PIN_NEGZERO, true)); /* -0: COM keeps -0 */
         }
 
         if (sum > 0)
@@ -586,11 +600,13 @@ static agc_status_t pin_opdegout(uint16_t w)
     return (pin_degout(u, true));
 }
 
-/* ARTOUTSF: point at left of the DP SF constant. SHORTMP of the constant
- * by the SP datum, result MPAC, MPAC+1.                                  */
-static agc_status_t pin_artout(agc_sp_t sp, agc_dp_t sfout)
+/* ARTOUTSF: point at left of the DP SF constant. PRSHRTMP (p. 380):
+ * SHORTMP of the constant by the SP datum, result MPAC, MPAC+1; a -0
+ * datum forces a -0 result (SHORTMP alone would give +0), shown "-".   */
+static agc_status_t pin_artout(agc_sp_t sp, bool negzero, agc_dp_t sfout)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(sp >= AGC_SP_MIN && sp <= AGC_SP_MAX) ||
+        !AGC_ASSERT(!negzero || sp == 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -602,14 +618,15 @@ static agc_status_t pin_artout(agc_sp_t sp, agc_dp_t sfout)
 
     agc_dp_t f = (agc_dp_t) pin_mul_shift(sp, sfout, PIN_TP_DP_SHIFT);
 
-    return (pin_dspdecwd(f, false));
+    return (pin_dspdecwd(f, negzero));
 }
 
-/* AROUT1SF: point between hi and lo parts of the SF constant; the result
- * is shifted left 14 by taking it from MPAC+1, MPAC+2.                   */
-static agc_status_t pin_arout1(agc_sp_t sp, agc_dp_t sfout)
+/* AROUT1SF: point between hi and lo parts of the SF constant; PRSHRTMP,
+ * then the result is shifted left 14 by taking it from MPAC+1, MPAC+2. */
+static agc_status_t pin_arout1(agc_sp_t sp, bool negzero, agc_dp_t sfout)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(sp >= AGC_SP_MIN && sp <= AGC_SP_MAX) ||
+        !AGC_ASSERT(!negzero || sp == 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -618,7 +635,7 @@ static agc_status_t pin_arout1(agc_sp_t sp, agc_dp_t sfout)
     agc_dp_t f  = (agc_dp_t) ((tp < 0) ? -(pin_mag(tp) & PIN_DP_MASK) :
                               (tp & PIN_DP_MASK));
 
-    return (pin_dspdecwd(f, false));
+    return (pin_dspdecwd(f, negzero));
 }
 
 /* DPOUT and DP1OUTSF / DP2OUTSF (also DP4) / DP3OUTSF: DMP of the fresh DP
@@ -750,7 +767,7 @@ static agc_status_t pin_lrposout(agc_dp_t sfout)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (pin_artout((agc_sp_t) pos, sfout));
+    return (pin_artout((agc_sp_t) pos, false, sfout));
 }
 
 /* 360-CDU (LM): if the angle is not 0 or 180 degrees, 360 minus it. */
@@ -775,25 +792,95 @@ uint16_t pin_360_cdu(uint16_t w)
                         PIN_WORD)); /* CS MPAC, AD ONE */
 }
 
-/* DSPDCPUT for component k: R(k+1), then the SF routine. *exited is set
- * when the routine left through ENTEXIT itself (HMSOUT) or alarmed.     */
-static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
+/* 2INTOUT (p. 339): blank the register, + sign, the high word as two
+ * decimal chars in D1D2 and the low word in D4D5 (as verb and noun).    */
+static agc_status_t pin_2intout(int k, agc_dp_t v)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    agc_sp_t hi = agc_dp_high(v);
+    agc_sp_t lo = agc_dp_low(v);
+
+    if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
+    agc_status_t st = pin_5blank_rel(PIN_INREL_X + k); /* to blank RXD3   */
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = pin_plus_on(); /* turn on + sign  */
+    }
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = pin_dspdecvn(hi); /* 1st integer     */
+    }
+
+    pin_set_dspcount((int16_t) (k_rnd1[k] - 3)); /* RXD4            */
+
+    return ((st == AGC_STATUS_OK) ? pin_dspdecvn(lo) : st); /* 2nd integer */
+}
+
+/* SFOUTABR, the routines that end in DSPDCEND (DSPDECWD). The datum is
+ * taken as the 15-bit word MPAC holds, so a raw -0 (machine-address nouns
+ * 01-03) keeps its "-" sign in DSPSIGN and PRSHRTMP.                     */
+static agc_status_t pin_sfout_dspdcend(const agc_scale_info_t *info,
+                                       agc_dp_t                v)
+{
+    if (!AGC_ASSERT(info != NULL) ||
+        !AGC_ASSERT(info->routine < (uint8_t) PIN_SF_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    uint16_t w  = info->is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) :
+                  pin_ones_from_sp(agc_dp_high(v));
+    agc_sp_t sp = pin_sp_from_ones(w);
+    bool     nz = (w == PIN_NEGZERO);
+
+    switch (info->routine)
+    {
+        case PIN_SF_FRACT:
+            return (pin_dspdecwd(agc_dp_from_sp(sp), nz));
+        case PIN_SF_DEG:
+            return (pin_degout(w, false));
+        case PIN_SF_ARITH:
+            return (pin_artout(sp, nz, info->sf_out));
+        case PIN_SF_ARITH1:
+            return (pin_arout1(sp, nz, info->sf_out));
+        case PIN_SF_OPDEG:
+            return (lm ? pin_lrposout(info->sf_out) : pin_opdegout(w));
+        case PIN_SF_DPFRAC:
+            return (lm ? pin_degout(pin_360_cdu(w), false) :
+                    pin_dspdecwd(v, false));
+        case PIN_SF_DP1:
+        case PIN_SF_DP2:
+        case PIN_SF_DP3:
+        case PIN_SF_DP4:
+            return (pin_dpout(info->routine, v, info->sf_out));
+        default:
+            return (pin_predspal());
+    }
+}
+
+/* DSPDCPUT for component k: R(k+1), then the SF routine of SFOUTABR.
+ * *exited is set when the routine left through ENTEXIT itself (HMSOUT)
+ * or alarmed (octal-only noun).                                          */
+static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
+{
     agc_scale_info_t info;
     agc_status_t     st = pin_comp_scale(k, &info);
 
-    if (!AGC_ASSERT(exited != NULL) || st != AGC_STATUS_OK)
+    if (!AGC_ASSERT(exited != NULL) || !AGC_ASSERT(k >= 0 && k < 3) ||
+        st != AGC_STATUS_OK)
     {
         return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
     }
 
     pin_set_dspcount(k_rnd1[k]);
-    *exited = true;
+    *exited = (info.routine == (uint8_t) PIN_SF_OCTAL ||
+               info.routine == (uint8_t) PIN_SF_HMS);
 
     switch (info.routine)
     {
@@ -802,83 +889,11 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
         case PIN_SF_HMS:
             return (pin_hmsout(v));
         case PIN_SF_MS:
-            *exited = false;
-
             return (pin_msout(k, v));
         case PIN_SF_2INT:
-            *exited = false;
-
-            /* 2INTOUT: blank the register, + sign, the high word as 2 decimal chars in
-             * D1D2 and the low word in D4D5 (like verb and noun).                    */
-            agc_sp_t hi = agc_dp_high(v);
-            agc_sp_t lo = agc_dp_low(v);
-
-            if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            agc_status_t st_2intout = pin_5blank_rel(PIN_INREL_X + k); /* to blank RXD3   */
-
-            if (st_2intout == AGC_STATUS_OK)
-            {
-                st_2intout = pin_plus_on(); /* turn on + sign  */
-            }
-
-            if (st_2intout == AGC_STATUS_OK)
-            {
-                st_2intout = pin_dspdecvn(hi); /* 1st integer     */
-            }
-
-            pin_set_dspcount((int16_t) (k_rnd1[k] - 3));          /* RXD4            */
-
-            return ((st_2intout ==
-                     AGC_STATUS_OK) ? pin_dspdecvn(lo) : st_2intout);               /* 2nd integer     */
+            return (pin_2intout(k, v));
         default:
-            *exited = false;
-
-            /* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
-            uint8_t rout = info.routine;
-
-            if (!AGC_ASSERT(pin_invariants()))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
-            uint16_t w  = info.is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) :
-                          pin_ones_from_sp(agc_dp_high(v));
-            agc_sp_t sp = pin_sp_from_ones(w);
-
-            switch (rout)
-            {
-                case PIN_SF_FRACT:
-                    return (pin_dspdecwd(agc_dp_from_sp(sp), false));
-                case PIN_SF_DEG:
-                    return (pin_degout(w, false));
-                case PIN_SF_ARITH:
-                    return (pin_artout(sp, info.sf_out));
-                case PIN_SF_ARITH1:
-                    return (pin_arout1(sp, info.sf_out));
-                case PIN_SF_OPDEG:
-                    return (lm ? pin_lrposout(info.sf_out) : pin_opdegout(w));
-                case PIN_SF_DPFRAC:
-                    return (lm ? pin_degout(pin_360_cdu(w), false) :
-                            pin_dspdecwd(v, false));
-                case PIN_SF_DP1:
-                case PIN_SF_DP2:
-                case PIN_SF_DP3:
-                case PIN_SF_DP4:
-                    return (pin_dpout(rout, v, info.sf_out));
-                default:
-
-                    if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
-                    {
-                        return (AGC_STATUS_BAD_ARG);
-                    }
-
-                    return (pin_predspal());
-            }
+            return (pin_sfout_dspdcend(&info, v));
     }
 }
 

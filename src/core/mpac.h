@@ -75,8 +75,10 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree); /* POLY  */
  * 01302 (argument < -2^-14). */
 agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort);
 
-/* DDV/BDDV core: a / b, overflow -> +-DPPOSMAX and *ovf = +1.          */
-agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf);
+/* DDV/BDDV core: a / b, overflow -> +-DPPOSMAX and *ovf = +1;
+ * *dvsign_neg = DVSIGN left at -0 (quotient sign negative, also for a
+ * zero dividend over a negative divisor).                              */
+agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf, bool *dvsign_neg);
 /* GENDDV/MAXDV: positive normalised operands (divisor hi >= HALF).      */
 agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv);
 
