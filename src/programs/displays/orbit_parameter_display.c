@@ -171,7 +171,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
 
 /* SR30.1 on the rendezvous erasables (RONE VONE TFF/RTMU HPERMIN RPADTEM
  * V82EMFLG -> HAPOX HPERX TFF -TPER).                                  */
-static agc_status_t opd_sr30_1(agc_interp_t *ip, agc_rendz_t *rz,
+static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz,
                                const agc_orbit_params_in_t *in)
 {
     agc_orbit_params_out_t o;
@@ -400,7 +400,7 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    st = opd_sr30_1(&ip, rz, &in);
+    st = opd_orbit_params(&ip, rz, &in);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
@@ -435,7 +435,7 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    st = opd_sr30_1(&ip, rz, &in);
+    st = opd_orbit_params(&ip, rz, &in);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
@@ -462,7 +462,7 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
 
     if (opd_terminated())
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G));
@@ -567,5 +567,5 @@ agc_status_t agc_job_rendz_endext(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }

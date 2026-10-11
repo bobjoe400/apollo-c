@@ -526,7 +526,7 @@ agc_status_t agc_task_jetslect(void)
     }
 
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) AGC_CSM_RCSF_T6INIT);
-    r->t5phase  = AGC_CSM_T5P_PHASE1;             /* reset for phase 1     */
+    r->t5phase  = AGC_CSM_T5P_RATE_FILTER;             /* reset for phase 1     */
     agc_rupt_set_t5_task(AGC_TASK_RCSATT);
 
     return (AGC_STATUS_OK); /* RCS2CADR             */

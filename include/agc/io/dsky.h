@@ -1,27 +1,40 @@
-/*
- * agc_dsky.h -- DSKY / PINBALL interface (io-pinball agent).
+/**********************************************************************
+ * FILE NAME: dsky.h
  *
- * Translates PINBALL_GAME_BUTTONS_AND_LIGHTS.agc (CM pp. 307-389,
- * LM pp. 390-471), DISPLAY_INTERFACE_ROUTINES.agc (CM pp. 1452-1484,
- * LM pp. 1341-1373) and KEYRUPT_UPRUPT.agc (CM pp. 1449-1451,
- * LM pp. 1338-1340). The noun tables themselves are in agc_nouns.h
- * (io-nouns agent).
+ * PURPOSE:
+ *   DSKY / PINBALL interface: keyboard and uplink entries, DSPOUT, the
+ *   internal program interface (NVSUB, ENDIDLE, ...), the display
+ *   interface (agc_dsky_display), pinball's jobs and tasks, and the sim
+ *   readout of the DSKY.
  *
- * "THE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS
- *  KNOWN AS VERB AND NOUN."
+ * AGC SOURCE:
+ *   PINBALL_GAME_BUTTONS_AND_LIGHTS.agc (CM pp. 307-389, LM pp. 390-471),
+ *   DISPLAY_INTERFACE_ROUTINES.agc (CM pp. 1452-1484, LM pp. 1341-1373),
+ *   KEYRUPT_UPRUPT.agc (CM pp. 1449-1451, LM pp. 1338-1340). The noun
+ *   tables are in nouns.h.
  *
- * Panel layout and DSPCOUNT numbers (all octal, from the AGC listing):
- *     MD1 25  MD2 24                       (major mode = PROG)
- *     VD1 23  VD2 22      ND1 21  ND2 20   (VERB, NOUN)
- *     R1D1 16 R1D2 15 R1D3 14 R1D4 13 R1D5 12
- *     R2D1 11 R2D2 10 R2D3  7 R2D4  6 R2D5  5
- *     R3D1  4 R3D2  3 R3D3  2 R3D4  1 R3D5  0
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
  *
- * DSPTAB (11 words) feeds output channel 010 as AAAABCCCCCDDDDD:
- * AAAA relay word = DSPTAB index + 1, B sign relay, CCCCC left char,
- * DDDDD right char. A DSPTAB word that is negative (bit 15 set, ones'
- * complement) still has to be sent by DSPOUT.
- */
+ * GLOBAL VARIABLES:
+ *   none (pinball erasables are private to src/io/dsky)
+ *
+ * NOTES:
+ *   "THE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS
+ *    KNOWN AS VERB AND NOUN."
+ *
+ *   Panel layout and DSPCOUNT numbers (all octal, from the AGC listing):
+ *       MD1 25  MD2 24                       (major mode = PROG)
+ *       VD1 23  VD2 22      ND1 21  ND2 20   (VERB, NOUN)
+ *       R1D1 16 R1D2 15 R1D3 14 R1D4 13 R1D5 12
+ *       R2D1 11 R2D2 10 R2D3  7 R2D4  6 R2D5  5
+ *       R3D1  4 R3D2  3 R3D3  2 R3D4  1 R3D5  0
+ *
+ *   DSPTAB (11 words) feeds output channel 010 as AAAABCCCCCDDDDD: AAAA
+ *   relay word = DSPTAB index + 1, B sign relay, CCCCC left char, DDDDD
+ *   right char. A DSPTAB word that is negative (bit 15 set, ones'
+ *   complement) still has to be sent by DSPOUT.
+ **********************************************************************/
 #ifndef AGC_DSKY_H
 #define AGC_DSKY_H
 
@@ -104,7 +117,8 @@ agc_status_t agc_dsky_key(uint8_t code);
 agc_status_t agc_dsky_keys(const char *seq);
 agc_status_t agc_dsky_keyrupt1(void); /* KEYRUPT1, main DSKY ch 15  */
 agc_status_t agc_dsky_keyrupt2(void); /* KEYCOM for the nav DSKY ch 16 */
-agc_status_t agc_dsky_uprupt(uint16_t inlink);            /* UPRUPT, triple-redundant word */
+/* UPRUPT, triple-redundant word */
+agc_status_t agc_dsky_uprupt(uint16_t inlink);
 agc_status_t agc_dsky_prockey_request(void); /* NOVAC PROCKEY (T4RUPT) */
 void         agc_dsky_falton(void);  /* FALTON: OPR ERR lamp on */
 
@@ -157,15 +171,16 @@ agc_status_t agc_dsky_nvsub_blank(int code);
  * job must return, and wake_as re-issues the call).                   */
 agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb,
                                uint8_t noun, agc_job_id_t wake_as);
-agc_status_t agc_dsky_nvsubusy(const agc_job_ctx_t *ctx, agc_job_id_t wake_as);
+/* NVSUBUSY: sleep in DSPLIST (KEY REL on) until RELDSP wakes the job as
+ * wake_as; BUSY. POODOO (abort 01206) if CADRSTOR or DSPLIST is taken. */
+agc_status_t agc_dsky_nvsubusy(agc_job_id_t wake_as);
 agc_status_t agc_dsky_blanksub(uint16_t code); /* bit1 R1 bit2 R2 bit3 R3 */
 /* ENDIDLE: puts the calling job to sleep (it must return right after an
  * OK); the operator's answer wakes it at one continuation: V34
  * terminate, V33 proceed, data load / V32 recycle. agc_dsky_response()
  * then gives the verb and noun of the answer. POODOO (abort 01206) if a
  * job already waits in CADRSTOR or DSPLIST.                           */
-agc_status_t agc_dsky_endidle(const agc_job_ctx_t *ctx,
-                              agc_job_id_t on_terminate,
+agc_status_t agc_dsky_endidle(agc_job_id_t on_terminate,
                               agc_job_id_t on_proceed, agc_job_id_t on_enter);
 agc_status_t agc_dsky_jamterm(void);    /* JAMTERM (V34 by program)   */
 agc_status_t agc_dsky_jamproc(void);    /* JAMPROC (V33 by program)   */
@@ -184,9 +199,9 @@ void agc_dsky_set_nvword1(uint16_t word);
  * GODSPRET / EXDSPRET continue at .terminate (call CADR +1).           */
 typedef struct agc_dsky_cont
 {
-    agc_job_id_t terminate;
-    agc_job_id_t proceed;
-    agc_job_id_t enter;
+    agc_job_id_t terminate; /* V34: call CADR +1 */
+    agc_job_id_t proceed; /* V33: call CADR +2 */
+    agc_job_id_t enter; /* data in / V32: CADR +3 */
 } agc_dsky_cont_t;
 
 typedef enum agc_dsky_disp
@@ -239,8 +254,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                               uint16_t vn_or_value,
                               const agc_dsky_cont_t *cont);
 agc_status_t agc_dsky_blanket(uint16_t bits); /* BLANKET after an R call  */
-agc_status_t agc_dsky_endmark(void);  /* ENDMARK                   */
-agc_status_t agc_dsky_endext(void);   /* ENDEXT EQUALS ENDMARK     */
+agc_status_t agc_dsky_endmark(void);  /* ENDMARK (ENDEXT EQUALS it) */
 void         agc_dsky_clearmrk(void); /* CLEARMRK                  */
 agc_status_t agc_dsky_pinbrnch(void); /* PINBRNCH                  */
 agc_status_t agc_dsky_initdsp(void);  /* INITDSP (.1 restarts)     */
@@ -259,8 +273,10 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx);  /* TERMATE  (ENDIDLE+1) */
 agc_status_t agc_job_proceed(agc_job_ctx_t *ctx);  /* PROCEED  (ENDIDLE+2) */
 agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx); /* IDLERET1+2 (ENDIDLE+3) */
 agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx);  /* JAMTERM via FINDVAC */
-agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx); /* XCHSLEEP, FACEREG 0 (mark)   */
-agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx); /* XCHSLEEP, FACEREG 1 (normal) */
+/* XCHSLEEP, FACEREG 0 (mark) */
+agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx);
+/* XCHSLEEP, FACEREG 1 (normal) */
+agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx);
 agc_status_t agc_task_monreq(void);    /* MONREQ  (waitlist)  */
 agc_status_t agc_task_tstlts2(void);   /* TSTLTS2 (waitlist)  */
 

@@ -88,7 +88,7 @@ INT_BASE_TYPES = {'int', 'short', 'long', 'unsigned', 'signed', 'char',
 SCALED_TYPES = {'agc_sp_t', 'agc_dp_t', 'agc_tp_t', 'agc_vec_t'}
 
 TYPE_WORD = (r'(?:struct\s+\w+|enum\s+\w+|union\s+\w+|bool|_Bool|char|short|'
-             r'int|long|float|double|signed|unsigned|void|\w+_t)')
+             r'int|long|float|double|signed|unsigned|void|\w+_t\b)')
 DECL_RE = re.compile(
     r'^(?P<type>(?:(?:static|const|volatile|register|extern)\s+)*'
     + TYPE_WORD + r'(?:\s+(?:const|volatile|' + TYPE_WORD[3:-1] + r'))*)'

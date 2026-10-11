@@ -234,27 +234,6 @@ static void test_timethet_timerad(void)
     CHECK(!out.apsesw && !out.solnsw);
 }
 
-static void test_rvcon(void)
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_state_vector_t sv;
-    agc_state_vector_t out;
-
-    sv.r    = pos(R0, 0.0, 0.0);
-    sv.v    = vel(0.0, circ_speed(), 0.0);
-    sv.t    = agc_dp_from_double(100000.0, 28);
-    sv.moon = false;
-    const double q = circ_period() / 4.0;
-
-    CHECK(agc_conic_rvcon(&ip, &sv, agc_dp_from_double(100000.0 + q, 28), &out,
-                          NULL) == AGC_STATUS_OK);
-    CHECK(near_vec(out.r, 29, 0.0, R0, 0.0, 300.0));
-    CHECK(fabs(agc_dp_to_double(out.t, 28) - (100000.0 + q)) < 1.0);
-    CHECK(!out.moon);
-}
-
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -262,7 +241,6 @@ int main(void)
     test_lambert();
     test_apsides();
     test_timethet_timerad();
-    test_rvcon();
     (void) printf("test_conic: %d checks, %d failures, %d assert reports\n",
                   g_checks, g_failures, g_assert_reports);
 

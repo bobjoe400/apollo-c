@@ -1,18 +1,55 @@
-/*
- * keys.c -- PINBALL keyboard handling and the keyboard/uplink
- * interrupts.
+/**********************************************************************
+ * FILE NAME: keys.c
  *
- * PINBALL_GAME_BUTTONS_AND_LIGHTS.agc (CM pp. 315-324, 366-368, 388-389;
- * LM pp. 398-406, 448-450, 470-471): CHARIN, NUM, 89TEST, DECTOBIN,
- * ENDNMTST, DECEND, MORNUM, VERB, NOUN, NVCOM, POSGN, NEGSGN, SIGNTEST,
- * CLEAR, CLPASHI, LEGALTST, ENTER, ENTPASHI, ACCEPTWD, VBRELDSP, UNSUSPEN,
- * TSTLTS4, PROCKEY, ERROR.
- * KEYRUPT_UPRUPT.agc (CM pp. 1449-1451, LM pp. 1338-1340): KEYRUPT1,
- * KEYCOM, ACCEPTUP, UPRUPT, UPTEST, UPOK, TMFAIL2.
+ * PURPOSE:
+ *   PINBALL keyboard handling and the keyboard / uplink interrupts:
+ *   CHARIN and the key routines (NUM, VERB, NOUN, signs, CLEAR, ENTER, KEY
+ *   REL, ERROR RESET), PROCKEY, KEYRUPT1/2, UPRUPT, and the host key
+ *   entry points used by the sim and the tests.
  *
- * "THE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS
- *  KNOWN AS VERB AND NOUN."
- */
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_GAME_BUTTONS_AND_LIGHTS.agc pp. 315-324, 366-368,
+ *     388-389 (CHARIN, NUM, 89TEST, DECTOBIN, ENDNMTST, DECEND, MORNUM,
+ *     VERB, NOUN, NVCOM, POSGN, NEGSGN, SIGNTEST, CLEAR, CLPASHI, LEGALTST,
+ *     ENTER, ENTPASHI, ACCEPTWD, VBRELDSP, UNSUSPEN, TSTLTS4, PROCKEY,
+ *     ERROR)
+ *   Comanche055 KEYRUPT_UPRUPT.agc pp. 1449-1451 (KEYRUPT1, KEYCOM,
+ *     ACCEPTUP, UPRUPT, UPTEST, UPOK, TMFAIL2)
+ *   Luminary099 pp. 398-406, 448-450, 470-471 and 1338-1340 (differs:
+ *     ERROR resets RADMODES instead of OPTMODES)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale  Description
+ *   ------------  --------  ---  -----  ------------------------------
+ *   DSPTAB        uint16_t  I/O  bits   relay words (TSTAB, ERROR)
+ *   IMODES30/33   uint16_t  I/O  bits   fail bits reset by ERROR
+ *   OPTMODES      uint16_t  I/O  bits   CM: ERROR resets bit 7
+ *   RADMODES      uint16_t  I/O  bits   LM: ERROR resets RFAILS, RCDUFBIT
+ *   FAILREG,+1,+2 uint16_t  O    octal  zeroed by ERROR
+ *   SFAIL         uint16_t  O    bits   zeroed by ERROR
+ *   channels 11,13,15,16,INLINK         lamps, test alarm, key codes
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  --------------------------------------------
+ *   agc_exec_novac        start CHARIN / PROCKEY jobs (CHRPRIO)
+ *   agc_flag_set/clear    DSKYFLAG, UPLOCKFL
+ *   agc_chan_*            lamps (channel 11), test alarm (channel 13)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   OPR ERR lamp (CHARALRM) on an illegal key; uplink lock-out (UPLOCKFL)
+ *   on a bad uplink triple; AGC_STATUS_BAD_ARG on a failed precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   KEYRUPT1/2 and UPRUPT run as interrupts and only NOVAC CHARIN; the
+ *   key routines run in the CHARIN job. agc_dsky_key / agc_dsky_keys run
+ *   CHARIN at once (sim convenience, see io-pinball.md). Both vehicles.
+ *
+ * NOTES:
+ *   "THE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS
+ *    KNOWN AS VERB AND NOUN."
+ *   ALMCYCLE's POSTJUMP ENTER is the bounded loop in pin_enter.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "internal.h"
@@ -32,21 +69,28 @@ static const int16_t k_critcon[5] = {022, 020, 012, 005, 000};
 
 /* ---- numerical characters (pp. 315-318) ------------------------------- */
 
-/* DECEND (p. 317): for R1-R3 convert the 5-digit integer N to N/10^5 by DMP
+/**********************************************************************
+ * DECEND (p. 317): for R1-R3 convert the 5-digit integer N to N/10^5 by DMP
  * with DECON (2^14/10^5): (N x 2^-28)(DECON) = (N/10^5) x 2^-14 in MPAC,
  * +1, +2; MPAC+1, +2 go to XREG, XREGLP. A minus sign complements it
- * (DCS), so -00000 is ones' complement -0.                               */
+ * (DCS), so -00000 is ones' complement -0.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   inrel     int   I    INREL: 0 verb, 1 noun, 2..4 R1..R3
+ **********************************************************************/
 static void pin_decend(int inrel)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z))
     {
         return;
     }
 
-    int     k = inrel - PIN_INREL_X;
-    int64_t n = s->xyz_dec[k];
+    int     k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
+    int64_t n = s->xyz_dec[k]; /* decimal integer keyed so far */
 
     if (!AGC_ASSERT(n >= 0 && n <= 99999))
     {
@@ -54,16 +98,25 @@ static void pin_decend(int inrel)
     }
 
     agc_dp_t frac  = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* DMP     */
-    bool     minus = (s->decbrnch & 3u) == 2u;
+    bool     minus = (s->decbrnch & 3u) == 2u; /* minus sign keyed */
 
     s->xyz_frac[k]    = minus ? -frac : frac; /* DCS     */
     s->xyz_negzero[k] = minus && frac == 0;
 }
 
-/* ENDNMTST / ENDNUM / ENDALL / MORNUM (pp. 317-318). */
+/**********************************************************************
+ * ENDNMTST / ENDNUM / ENDALL / MORNUM (pp. 317-318).
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   inrel     int   I    INREL: 0 verb, 1 noun, 2..4 R1..R3
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t pin_endnmtst(int inrel)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(!s->dspcount_neg))
@@ -92,17 +145,24 @@ static agc_status_t pin_endnmtst(int inrel)
     return (AGC_STATUS_OK);
 }
 
-/* NUM (p. 316): numerical character in CHAR. */
+/**********************************************************************
+ * NUM (p. 316): numerical character in CHAR.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_num(void)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (s->dspcount_neg)
     {
         return (AGC_STATUS_OK); /* block data in if DSPCOUNT is - or -0 */
     }
 
-    int inrel = pin_getinrel();
+    int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
     if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(s->chr <= 9))
     {
@@ -114,7 +174,9 @@ static agc_status_t pin_num(void)
         s->clpass = 0; /* if CLPASS is + or +0, make it +0 */
     }
 
-    agc_status_t st = pin_dspin(s->dspcount, agc_dsky_relay_code(s->chr));
+    agc_status_t st; /* status so far */
+
+    st = pin_dspin(s->dspcount, agc_dsky_relay_code(s->chr));
 
     if (st != AGC_STATUS_OK)
     {
@@ -124,10 +186,10 @@ static agc_status_t pin_num(void)
     /* +0 octal, +1 + decimal, +2 - decimal.                                */
     /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
      * CYL x3 + CHAR, decimal by DECTOBIN (sum x 10 + CHAR).                 */
-    bool decimal = (s->decbrnch & 3u) != 0u;
-    int  chr     = s->chr;
+    bool decimal = (s->decbrnch & 3u) != 0u; /* a sign made the entry decimal */
+    int  chr     = s->chr; /* the digit keyed (CHAR) */
 
-    pin_state_t *s_accumulate = pin_st();
+    pin_state_t *s_accumulate = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(chr >= 0 && chr <= 9))
@@ -143,10 +205,10 @@ static agc_status_t pin_num(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        uint8_t *reg =
-            (inrel ==
-             PIN_INREL_VERB) ? &s_accumulate->verbreg : &s_accumulate->nounreg;
-        int v = (int) *reg * 10 + chr;
+        uint8_t *reg; /* VERBREG or NOUNREG */
+
+        reg = (inrel == PIN_INREL_VERB) ? &s_accumulate->verbreg : &s_accumulate->nounreg;
+        int v = (int) *reg * 10 + chr; /* new two-digit value */
 
         if (!AGC_ASSERT(v <= 99))
         {
@@ -157,13 +219,14 @@ static agc_status_t pin_num(void)
     }
     else if (decimal)
     {
-        int k = inrel - PIN_INREL_X;
+        int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
 
-        s_accumulate->xyz_dec[k] = s_accumulate->xyz_dec[k] * 10 + chr; /* DECTOBIN          */
+        /* DECTOBIN */
+        s_accumulate->xyz_dec[k] = s_accumulate->xyz_dec[k] * 10 + chr;
     }
     else
     {
-        int k = inrel - PIN_INREL_X;
+        int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
 
         s_accumulate->xyz_oct[k] =
             (uint16_t) (((uint32_t) s_accumulate->xyz_oct[k] <<
@@ -174,7 +237,14 @@ static agc_status_t pin_num(void)
     return (pin_endnmtst(inrel));
 }
 
-/* 89TEST (p. 316): 8 or 9 is accepted only in decimal. */
+/**********************************************************************
+ * 89TEST (p. 316): 8 or 9 is accepted only in decimal.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_89test(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -182,7 +252,7 @@ static agc_status_t pin_89test(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->chr == 8 || s->chr == 9))
     {
@@ -204,7 +274,19 @@ static agc_status_t pin_89test(void)
 
 /* ---- VERB, NOUN (p. 319) ---------------------------------------------- */
 
-/* NVCOM: blank the verb or noun lights and get ready for 2 decimal chars. */
+/**********************************************************************
+ * AGC: NVCOM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 319)
+ *
+ * NVCOM: blank the verb or noun lights and get ready for 2 decimal chars.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   verb      bool  I    true for the verb key, false for the noun key
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_nvcom(bool verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -212,7 +294,7 @@ static agc_status_t pin_nvcom(bool verb)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (verb)
     {
@@ -225,7 +307,7 @@ static agc_status_t pin_nvcom(bool verb)
         pin_set_dspcount(PIN_ND1); /* ND1, OCT 21 (DEC 17)              */
     }
 
-    agc_status_t st = pin_2blank();
+    agc_status_t st = pin_2blank(); /* status so far */
 
     s->decbrnch   = 1u;              /* set for dec V/N code              */
     s->reqret     = PIN_REQ_PASS0;   /* set for ENTPAS0                   */
@@ -244,8 +326,16 @@ static agc_status_t pin_nvcom(bool verb)
 
 /* ---- + and - (pp. 319-320) -------------------------------------------- */
 
-/* SIGNTEST: allows +,- only when DSPCOUNT = R1D1, R2D1 or R3D1, and only
- * the first of consecutive +/- characters.                              */
+/**********************************************************************
+ * AGC: SIGNTEST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 320)
+ *
+ * SIGNTEST: allows +,- only when DSPCOUNT = R1D1, R2D1 or R3D1, and only
+ * the first of consecutive +/- characters.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when the sign key is accepted
+ **********************************************************************/
 static bool pin_signtest(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -253,7 +343,7 @@ static bool pin_signtest(void)
         return (false);
     }
 
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if ((s->decbrnch & 3u) != 0u)
     {
@@ -269,7 +359,20 @@ static bool pin_signtest(void)
             s->dspcount == PIN_R3D1);
 }
 
-/* POSGN / NEGSGN / BOTHSGN / FIXCLPAS. */
+/**********************************************************************
+ * AGC: POSGN, NEGSGN, BOTHSGN
+ *      (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 319)
+ *
+ * POSGN / NEGSGN / BOTHSGN / FIXCLPAS.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   minus     bool  I    true for the - key, false for +
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_sign_key(bool minus)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -277,24 +380,25 @@ static agc_status_t pin_sign_key(bool minus)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!pin_signtest())
     {
         return (AGC_STATUS_OK); /* sign illegal: ENDOFJOB           */
     }
 
-    int inrel = pin_getinrel();
+    int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = minus ? pin_minus_on() : pin_plus_on();
+    agc_status_t st = minus ? pin_minus_on() : pin_plus_on(); /* status */
 
     /* Set dec comp bit to 1: bit 5 for R1, bit 4 for R2, bit 3 for R3;
      * low bits 1 (+) or 2 (-).                                          */
+
     s->decbrnch =
         (uint16_t) (s->decbrnch + (PIN_BIT7 >> inrel) + (minus ? 2u : 1u));
 
@@ -308,7 +412,18 @@ static agc_status_t pin_sign_key(bool minus)
 
 /* ---- CLEAR (pp. 321-322) ---------------------------------------------- */
 
-/* LEGALTST: INREL 0, 1 (verb, noun) cannot be cleared. */
+/**********************************************************************
+ * AGC: LEGALTST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 321)
+ *
+ * LEGALTST: INREL 0, 1 (verb, noun) cannot be cleared.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   inrel     int   I    INREL: 0 verb, 1 noun, 2..4 R1..R3
+ *
+ * RETURNS: bool -- true when the register may be cleared
+ **********************************************************************/
 static bool pin_legaltst(int inrel)
 {
     return (inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z);
@@ -316,7 +431,17 @@ static bool pin_legaltst(int inrel)
 
 /* ---- ENTER (pp. 323-324) ---------------------------------------------- */
 
-/* ENTER, ENTPASHI, ACCEPTWD: one pass. */
+/**********************************************************************
+ * AGC: ENTER, ENTPASHI, ACCEPTWD
+ *      (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 323)
+ *
+ * ENTER, ENTPASHI, ACCEPTWD: one pass.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_enter_once(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -324,7 +449,7 @@ static agc_status_t pin_enter_once(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->clpass = 0;
     s->entret = PIN_ENT_ENDOFJOB;
@@ -355,7 +480,16 @@ static agc_status_t pin_enter_once(void)
     return (pin_load_resume(s->reqret)); /* TC REQRET              */
 }
 
-/* ENTER. ALMCYCLE ends in POSTJUMP ENTER; that re-entry is this loop.   */
+/**********************************************************************
+ * AGC: ENTER (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 323)
+ *
+ * ENTER. ALMCYCLE ends in POSTJUMP ENTER; that re-entry is this loop.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          PIN_STATUS_RECYCLE; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_enter(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -363,7 +497,7 @@ agc_status_t pin_enter(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = PIN_STATUS_RECYCLE;
+    agc_status_t st = PIN_STATUS_RECYCLE; /* status so far */
 
     for (int pass = 0; pass < PIN_RECYCLE_MAX && st == PIN_STATUS_RECYCLE;
          pass++)
@@ -381,7 +515,16 @@ agc_status_t pin_enter(void)
 
 /* ---- KEY RELEASE (pp. 367-368) ---------------------------------------- */
 
-/* TSTLTS4: release display system and re-establish if CADRSTOR is full. */
+/**********************************************************************
+ * AGC: TSTLTS4 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 368)
+ *
+ * TSTLTS4: release display system and re-establish if CADRSTOR is full.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_tstlts4(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -389,7 +532,7 @@ agc_status_t pin_tstlts4(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_reldsp();
+    agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     if (st != AGC_STATUS_OK || !pin_cadrstor_full())
     {
@@ -399,9 +542,18 @@ agc_status_t pin_tstlts4(void)
     return (pin_pinbrnch());
 }
 
-/* VBRELDSP. Key release: an external monitor suspended by the operator
+/**********************************************************************
+ * AGC: VBRELDSP (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 368)
+ *
+ * VBRELDSP. Key release: an external monitor suspended by the operator
  * (DSPLOCK was 1 and MONSAVE1 bit 14 set) is just unsuspended; otherwise
- * the display system is released.                                        */
+ * the display system is released.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_vbreldsp(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -409,7 +561,7 @@ agc_status_t pin_vbreldsp(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     agc_chan_and((int) AGC_CHAN_DSALMOUT,
                  (uint16_t) (PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
@@ -436,9 +588,18 @@ agc_status_t pin_vbreldsp(void)
 
 /* ---- ERROR LIGHT RESET (pp. 388-389) ---------------------------------- */
 
-/* TSTAB: set BIT12 in every DSPTAB magnitude, keeping its sign (and so
+/**********************************************************************
+ * AGC: TSTAB (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 388)
+ *
+ * TSTAB: set BIT12 in every DSPTAB magnitude, keeping its sign (and so
  * its "to be sent" state). The AGC comment: "might want to reset CLPASS,
- * DECBRNCH, etc."                                                        */
+ * DECBRNCH, etc."
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_tstab(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -446,13 +607,13 @@ static agc_status_t pin_tstab(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     {
         agc_inhint();
-        uint16_t w   = agc_erase_dsptab(i);
-        uint16_t mag = (uint16_t) (pin_ones_mag(w) | PIN_BIT12);
+        uint16_t w   = agc_erase_dsptab(i); /* DSPTAB word */
+        uint16_t mag = (uint16_t) (pin_ones_mag(w) | PIN_BIT12); /* magnitude */
 
         agc_erase_set_dsptab(i, pin_ones_negative(w) ? pin_ones_neg(mag) :
                              mag);
@@ -463,8 +624,17 @@ static agc_status_t pin_tstab(void)
     return (st);
 }
 
-/* ERROR: restore the original C(DSPLOCK) -- thus error light reset leaves
- * DSPLOCK unchanged -- and reset the caution/alarm lamps.               */
+/**********************************************************************
+ * AGC: ERROR (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 388)
+ *
+ * ERROR: restore the original C(DSPLOCK) -- thus error light reset leaves
+ * DSPLOCK unchanged -- and reset the caution/alarm lamps.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_error_key(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -472,20 +642,23 @@ agc_status_t pin_error_key(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->dsplock = s->old_dsplock; /* XCH 21/22REG           */
     agc_inhint();
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_CAUTRST); /* caution reset */
     /* Leave gimbal lock and no att intact, turning off auto, hold, free,
      * prog alarm and tracker.                                           */
-    uint16_t c = (uint16_t) ((agc_erase_dsptab(11) & PIN_GLNOATT) | PIN_BIT15);
+    uint16_t c; /* new DSPTAB +11D lamp word */
+
+    c = (uint16_t) ((agc_erase_dsptab(11) & PIN_GLNOATT) | PIN_BIT15);
 
     agc_erase_set_dsptab(11, c);
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     /* Reset fail bits which generate prog alarm so that if the failure
      * still exists, the alarm will come back.                           */
+
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_PRIO16_BITS));
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() | PIN_BIT10));
 
@@ -517,7 +690,19 @@ agc_status_t pin_error_key(void)
 
 /* ---- CHARIN (p. 315) -------------------------------------------------- */
 
-/* CHARIN2 fan on the 5-bit input code. */
+/**********************************************************************
+ * AGC: CHARIN2 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
+ *
+ * CHARIN2 fan on the 5-bit input code.
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   code      uint8_t  I    5-bit key code
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_charin2(uint8_t code)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -525,7 +710,7 @@ static agc_status_t pin_charin2(uint8_t code)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->chr = (code <= 7u) ? code : 0u;
 
@@ -565,9 +750,9 @@ static agc_status_t pin_charin2(uint8_t code)
             /* CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
              * the load up one register (CLPASHI: REQRET +3, verb - 1).              */
         {
-            pin_state_t *s_key = pin_st();
+            pin_state_t *s_key = pin_st(); /* pinball erasables */
             /* Do not change DSPCOUNT because may later fail LEGALTST.            */
-            int inrel = pin_inrel_of(s_key->dspcount);
+            int inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
 
             if (!AGC_ASSERT(inrel >= 0))
             {
@@ -583,14 +768,15 @@ static agc_status_t pin_charin2(uint8_t code)
                     return (AGC_STATUS_OK);
                 }
 
-                s_key->reqret = pin_reqret_backup(s_key->reqret);     /* backs data requests */
+                /* backs data requests */
+                s_key->reqret = pin_reqret_backup(s_key->reqret);
 
                 if (s_key->verbreg > 0)
                 {
                     s_key->verbreg--;     /* DIM VERBREG  */
                 }
 
-                agc_status_t st = pin_updatvb(s_key->verbreg);
+                agc_status_t st = pin_updatvb(s_key->verbreg); /* status */
 
                 if (st != AGC_STATUS_OK)
                 {
@@ -604,7 +790,7 @@ static agc_status_t pin_charin2(uint8_t code)
 
             agc_status_t st = pin_5blank_rel(inrel);     /* CLEAR1, CLR5 */
 
-            s_key->clpass++;                                 /* set for higher pass */
+            s_key->clpass++; /* set for higher pass */
 
             if (!AGC_ASSERT(s_key->clpass != 0))
             {
@@ -620,13 +806,25 @@ static agc_status_t pin_charin2(uint8_t code)
     }
 }
 
-/* CHARIN: block display system, but save old C(DSPLOCK) for error light
+/**********************************************************************
+ * AGC: CHARIN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
+ *
+ * CHARIN: block display system, but save old C(DSPLOCK) for error light
  * reset. All keys except ER turn on KR lite if CADRSTOR is full; this
  * reminds the operator to re-establish a flashing display which he has
- * obscured with displays of his own.                                     */
+ * obscured with displays of his own.
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   code      uint8_t  I    5-bit key code
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition,
+ *          PIN_STATUS_RECYCLE; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_charin(uint8_t code)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
@@ -641,7 +839,7 @@ agc_status_t pin_charin(uint8_t code)
         pin_reldspon();
     }
 
-    agc_status_t st = pin_charin2(code);
+    agc_status_t st = pin_charin2(code); /* status so far */
 
     if (!AGC_ASSERT(st != PIN_STATUS_RECYCLE))
     {
@@ -651,7 +849,20 @@ agc_status_t pin_charin(uint8_t code)
     return (st);
 }
 
-/* CHARIN as an executive job: the key code arrives in MPAC. */
+/**********************************************************************
+ * AGC: CHARIN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
+ *
+ * CHARIN as an executive job: the key code arrives in MPAC.
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, POODOO;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) ||
@@ -660,12 +871,23 @@ agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_charin((uint8_t) ctx->arg);
+    agc_status_t st = pin_charin((uint8_t) ctx->arg); /* status so far */
 
     return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK); /* ENDOFJOB    */
 }
 
-/* PROCKEY (p. 367): the PRO key (sampled in T4RUPT). */
+/**********************************************************************
+ * PROCKEY (p. 367): the PRO key (sampled in T4RUPT).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -673,7 +895,7 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->reqret     = PIN_REQ_PASS0;  /* set REQRET for ENTER pass 0 */
     s->reqret_neg = false;
@@ -687,6 +909,16 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
     return (pin_vbproc_common(PIN_LS_PROCEED));
 }
 
+/**********************************************************************
+ * AGC: PROCKEY (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 367)
+ *
+ * T4RUPT found the PRO key pressed: start the PROCKEY job (prio 30).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_prockey_request(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -694,7 +926,7 @@ agc_status_t agc_dsky_prockey_request(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_PROCKEY);
+    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_PROCKEY); /* status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -706,8 +938,20 @@ agc_status_t agc_dsky_prockey_request(void)
 
 /* ---- KEYRUPT / UPRUPT (KEYRUPT_UPRUPT.agc pp. 1449-1451) -------------- */
 
-/* KEYCOM / ACCEPTUP: set DSKYFLAG and leave the 5-bit key code in MPAC of
- * a new CHARIN job.                                                      */
+/**********************************************************************
+ * AGC: KEYCOM, ACCEPTUP (KEYRUPT_UPRUPT.agc, CM p. 1449)
+ *
+ * KEYCOM / ACCEPTUP: set DSKYFLAG and leave the 5-bit key code in MPAC of
+ * a new CHARIN job.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   code      uint16_t  I    5-bit key code
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_keycom(uint16_t code)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -721,7 +965,7 @@ static agc_status_t pin_keycom(uint16_t code)
     }
 
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_CHARIN);
 
@@ -734,7 +978,16 @@ static agc_status_t pin_keycom(uint16_t code)
     return (st);
 }
 
-/* KEYRUPT1: main DSKY, key code in channel 15. */
+/**********************************************************************
+ * AGC: KEYRUPT1 (KEYRUPT_UPRUPT.agc, CM p. 1449)
+ *
+ * KEYRUPT1: main DSKY, key code in channel 15.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_keyrupt1(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -743,8 +996,9 @@ agc_status_t agc_dsky_keyrupt1(void)
     }
 
     pin_lodsampt(); /* time snatched for N65  */
-    uint16_t code =
-        (uint16_t) (agc_chan_read((int) AGC_CHAN_MNKEYIN) & PIN_LOW5);
+    uint16_t code; /* 5-bit key code */
+
+    code = (uint16_t) (agc_chan_read((int) AGC_CHAN_MNKEYIN) & PIN_LOW5);
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
@@ -754,7 +1008,16 @@ agc_status_t agc_dsky_keyrupt1(void)
     return (pin_keycom(code));
 }
 
-/* KEYRUPT2 (CSM: via MARKRUPT): navigation DSKY, key code in channel 16. */
+/**********************************************************************
+ * AGC: KEYCOM (KEYRUPT_UPRUPT.agc, CM p. 1449)
+ *
+ * KEYRUPT2 (CSM: via MARKRUPT): navigation DSKY, key code in channel 16.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_keyrupt2(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -762,8 +1025,9 @@ agc_status_t agc_dsky_keyrupt2(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t code =
-        (uint16_t) (agc_chan_read((int) AGC_CHAN_NAVKEYIN) & PIN_LOW5);
+    uint16_t code; /* 5-bit key code */
+
+    code = (uint16_t) (agc_chan_read((int) AGC_CHAN_NAVKEYIN) & PIN_LOW5);
 
     if (!AGC_ASSERT(code <= PIN_LOW5))
     {
@@ -773,9 +1037,22 @@ agc_status_t agc_dsky_keyrupt2(void)
     return (pin_keycom(code));
 }
 
-/* UPRUPT: INLINK carries the character three times, C, NOT-C, C (bits
+/**********************************************************************
+ * AGC: UPRUPT (KEYRUPT_UPRUPT.agc, CM p. 1450)
+ *
+ * UPRUPT: INLINK carries the character three times, C, NOT-C, C (bits
  * 1-5, 6-10, 11-15). A bad word locks out further uplink (UPLOCKFL) until
- * 'error reset' is sent via uplink.                                      */
+ * 'error reset' is sent via uplink.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   inlink    uint16_t  I    INLINK word: C, NOT-C, C in bits 1-5, 6-10,
+ *                            11-15
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_uprupt(uint16_t inlink)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -790,9 +1067,9 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 
     pin_lodsampt();
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT); /* UPACT on */
-    uint16_t low  = (uint16_t) (inlink & PIN_LOW5);
-    uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5);
-    uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5);
+    uint16_t low = (uint16_t) (inlink & PIN_LOW5); /* C, bits 1-5 */
+    uint16_t mid = (uint16_t) ((inlink >> 5) & PIN_LOW5); /* NOT-C, bits 6-10 */
+    uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5); /* C, bits 11-15 */
 
     if (mid != (uint16_t) (~low & PIN_LOW5) || high != low)
     {                                                           /* UPTEST */
@@ -806,7 +1083,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
     if (low == PIN_ELRCODE)
     {
         agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* CLUPLOCK */
-        agc_status_t st = AGC_STATUS_OK;
+        agc_status_t st = AGC_STATUS_OK; /* status so far */
 
         return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st);
     }
@@ -821,7 +1098,21 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 
 /* ---- sim conveniences ------------------------------------------------- */
 
-/* One key: KEYRUPT1 bookkeeping, then CHARIN at once (no executive). */
+/**********************************************************************
+ * AGC: KEYRUPT1, CHARIN
+ *      (KEYRUPT_UPRUPT.agc, CM p. 1449;
+ *      PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
+ *
+ * One key: KEYRUPT1 bookkeeping, then CHARIN at once (no executive).
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   code      uint8_t  I    5-bit key code
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_key(uint8_t code)
 {
     if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u))
@@ -831,12 +1122,24 @@ agc_status_t agc_dsky_key(uint8_t code)
 
     pin_lodsampt();
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     return ((st == AGC_STATUS_OK) ? pin_charin(code) : st);
 }
 
-/* Key code for one character of a key string; 0 for none. */
+/**********************************************************************
+ * AGC: none (host key string)
+ *
+ * Key code for one character of a key string; 0 for none.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   c         char  I    key character ('V', 'N', '0'..'9', '+', '-',
+ *                        'E', 'C', 'K', 'R', 'P')
+ *
+ * RETURNS: uint8_t -- key code, 0 for an unknown character
+ **********************************************************************/
 static uint8_t pin_key_of_char(char c)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -875,6 +1178,20 @@ static uint8_t pin_key_of_char(char c)
     }
 }
 
+/**********************************************************************
+ * AGC: none (host entry)
+ *
+ * Feed a string of keys, each as KEYRUPT1 + CHARIN, PRO as PROCKEY.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   seq       const char *  I    NUL-terminated key string (characters as
+ *                                for one key)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_keys(const char *seq)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -887,7 +1204,7 @@ agc_status_t agc_dsky_keys(const char *seq)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     for (int i = 0; i < PIN_KEYS_MAX && seq[i] != '\0' && st == AGC_STATUS_OK;
          i++)
@@ -906,21 +1223,10 @@ agc_status_t agc_dsky_keys(const char *seq)
             continue;
         }
 
-        uint8_t code = pin_key_of_char(seq[i]);
+        uint8_t code = pin_key_of_char(seq[i]); /* 5-bit key code */
 
         st = (code != 0u) ? agc_dsky_key(code) : AGC_STATUS_BAD_ARG;
     }
 
     return (st);
-}
-
-/* FALTON for other modules (requested by sys-misc). */
-void agc_dsky_falton(void)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
-    pin_falton();
 }

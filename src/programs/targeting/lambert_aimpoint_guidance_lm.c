@@ -36,7 +36,7 @@ agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
 static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 {
     agc_rendz_periapo_t pa;
-    agc_status_t        st = agc_rendz_periapo1(ip, rz, rz->rtig, rz->viprime,
+    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, rz->rtig, rz->viprime,
                                                 &pa);
 
     if (st != AGC_STATUS_OK)
@@ -46,8 +46,8 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 
     agc_burn_t *b = &agc_guid_state()->burn;
 
-    b->hper = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hperi));
-    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_shiftr1(rz, pa.hapo));
+    b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi));
+    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));
 
     if (!AGC_ASSERT(b->hper <= RZ_MAXNM))
     {

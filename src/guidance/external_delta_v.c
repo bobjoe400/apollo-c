@@ -69,7 +69,7 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
 {
     agc_burn_t         *b = &agc_guid_state()->burn;
     agc_rendz_periapo_t pa;
-    agc_status_t        st = agc_rendz_periapo1(ip, rz, r, v, &pa);
+    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, r, v, &pa);
 
     if (st != AGC_STATUS_OK)
     {
@@ -77,9 +77,9 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
     }
 
     b->hper = agc_orbit_params_maxchk(
-        ip, agc_rendz_shiftr1(rz, pa.hperi)); /* HPER B+29 */
+        ip, agc_rendz_scalar_from_body(rz, pa.hperi)); /* HPER B+29 */
     b->hapo = agc_orbit_params_maxchk(
-        ip, agc_rendz_shiftr1(rz, pa.hapo)); /* HAPO B+29 */
+        ip, agc_rendz_scalar_from_body(rz, pa.hapo)); /* HAPO B+29 */
 
     if (!AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2))
     {
@@ -117,8 +117,8 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
         return (st);
     }
 
-    rz->delvsin =
-        agc_vec_shl(ip, agc_vec_mat(ip, agc_erase_delvslv(), &m), 1);
+    rz->delvsin = /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
+                  agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     agc_guid_state()->burn.vgdisp =
         agc_vec_abval(ip, rz->delvsin); /* MAG DELV */
 
@@ -147,7 +147,8 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip,
     m.row[1] =
         agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
     m.row[0]    = agc_vec_shl(ip, agc_vec_cross(ip, m.row[1], m.row[2]), 1);
-    rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, agc_erase_delvslv(), &m), 1);
+    rz->delvsin = /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
+                  agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     rz->delvsab = agc_vec_abval(ip, rz->delvsin); /* DELTA V MAG. */
 
     return (apo_peri(ip, rz, rz->rtig, agc_vec_add(ip, rz->vtig, rz->delvsin)));

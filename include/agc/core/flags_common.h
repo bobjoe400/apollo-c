@@ -1,10 +1,24 @@
-/*
- * agc_flags_common.h -- flagword bits with the same AGC name and the same position in both
- * Comanche055 (CSM) and Luminary099 (LM). Source: Comanche055/ERASABLE_ASSIGNMENTS.agc
- * and Luminary099/FLAGWORD_ASSIGNMENTS.agc. Where the two vehicles word the
- * description differently both texts are given.
- * Use these from code shared by both vehicles.
- */
+/**********************************************************************
+ * FILE NAME: flags_common.h
+ *
+ * PURPOSE:
+ *   Flagword bits with the same AGC name and the same position in both
+ *   Comanche055 (CSM) and Luminary099 (LM). Code shared by both vehicles
+ *   includes this header; where the vehicles word a description
+ *   differently both texts are given.
+ *
+ * AGC SOURCE:
+ *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 46-68 (FLAGWRD0..FLGWRD11)
+ *   Luminary099 FLAGWORD_ASSIGNMENTS.agc pp. 61-88 (FLAGWRD0..FLGWRD13)
+ *   Every enumerator value was checked against the assembled symbol
+ *   tables of both ropes (docs/modules/review-state-flags.md).
+ *
+ * REQUIRES:
+ *   none (includes agc/core/state.h for agc_flag_id_t)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the flagwords are static in src/core/state.c)
+ **********************************************************************/
 #ifndef AGC_FLAGS_COMMON_H
 #define AGC_FLAGS_COMMON_H
 

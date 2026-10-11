@@ -389,11 +389,18 @@ static void dofstrt1_lm(void)
     }
 }
 
-static void dofstart(bool slap1)
+/* DOFSTART (engine_off) or, LM only, DOFSTRT1 (!engine_off: PTBAD and a
+ * bad ERESTORE leave the engine alone), then the other modules' resets. */
+static void dofstart(bool slap1, bool engine_off)
 {
     if (is_lm())
     {
-        agc_chan_write(AGC_CHAN_DSALMOUT, FS_BIT14); /* insure engine is off */
+        if (engine_off)
+        {
+            agc_chan_write(AGC_CHAN_DSALMOUT, FS_BIT14); /* engine off  */
+            agc_erase_set_thrust(0); /* CS ZERO / TS THRUST (-0)      */
+        }
+
         dofstrt1_lm();
     }
     else
@@ -445,7 +452,7 @@ static bool lightset(void)
     }
 
     startsub();
-    dofstart(false);
+    dofstart(false, true);
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
     {
@@ -469,15 +476,7 @@ static bool phase_tables_ok(void)
     if (!ok)
     {
         agc_alarm(AGC_ALARM_01107); /* PTBAD        */
-
-        if (is_lm())
-        {
-            dofstrt1_lm();
-        }
-        else
-        {
-            dofstart_csm();
-        }
+        dofstart(false, false);     /* LM DOFSTRT1, CSM DOFSTART */
     }
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -647,7 +646,7 @@ agc_status_t agc_restart_goprog(void)
         if ((ch33 & FS_BIT15) != 0U && (ch33 & FS_BIT14) == 0U)
         {
             startsub();
-            dofstart(false);
+            dofstart(false, true);
             agc_relint();
 
             return (AGC_STATUS_OK);
@@ -772,7 +771,7 @@ agc_status_t agc_fresh_start_slap1(void)
     }
 
     redoctr = 0;
-    dofstart(true);
+    dofstart(true, true);
     agc_relint();
 
     if (!AGC_ASSERT(ercount == 0U))
@@ -792,7 +791,7 @@ agc_status_t agc_fresh_dofstart(void)
     }
 
     agc_inhint();
-    dofstart(false);
+    dofstart(false, true);
     agc_relint();
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))

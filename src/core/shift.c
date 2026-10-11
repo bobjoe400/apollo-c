@@ -1,38 +1,71 @@
-/*
- * agc_shift.c -- interpretive shift routines at word level
- * (INTERPRETER.agc, Comanche055 pp.1152-1161 "GENERAL SHIFT", TSSL, TSLC,
- * VSSR, VSSL, VRIGHT2, GENSCR; Luminary099 pp.1047-1056).
+/**********************************************************************
+ * FILE NAME: shift.c
  *
- * A right shift by n <= 13 multiplies each word by 2^(14-n) (the BIT14 table
- * entry selected with INDEX) and keeps major/minor halves: every word is
- * truncated toward zero separately. Counts of 14 and more first move whole
- * words (losing MPAC+2), as GENSCR does.
- */
+ * PURPOSE:
+ *   Interpretive shifts at word level: right shifts with and without
+ *   rounding (MPACSHR, MPACSRND, VSHRRND, GENSCR, VRIGHT2), the TP left
+ *   shift TSSL and the normalising shift TSLC (NORM).
+ *
+ * AGC SOURCE:
+ *   Comanche055 INTERPRETER.agc pp.1152-1161 ("GENERAL SHIFT": MPACSHR,
+ *   MPACSRND, VSHRRND, TSSL, TSLC, VSSR, VSSL, VRIGHT2, GENSCR)
+ *   Luminary099 INTERPRETER.agc pp.1047-1056 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name            Description
+ *   --------------  ----------------------------------------------
+ *   agc_w_mp        MP on words (mpac.c)
+ *   agc_w_das       DAS on word pairs (mpac.c)
+ *   agc_w_roundsub  ROUNDSUB (mpac.c)
+ *   agc_w_tp_shl1   one TP left shift (mpac.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; TSSL sets OVFIND on each overflowing step.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Shift counts >= 1 for right shifts, >= 0 for TSSL; loops bounded by
+ *   SHIFT_MAX_WORDS and SHIFT_MAX_LEFT.
+ *
+ * ALGORITHM:
+ *   A right shift by n <= 13 multiplies each word by 2^(14-n) (the BIT14
+ *   table entry selected with INDEX) and keeps major/minor halves: every
+ *   word is truncated toward zero separately. Counts of 14 and more first
+ *   move whole words (losing MPAC+2), as GENSCR does.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "mpac.h"
 
 #define SHIFT_MAX_LEFT  43 /* 42 TP bits: further shifts leave 0     */
 #define SHIFT_MAX_WORDS 4  /* GENSCR word-shift passes (count < 127) */
 
-/* MPACSHR (p.1152-1153) or MPACSRND/VSHR2 (p.1153) for 1 <= n <= 14.        */
+/**********************************************************************
+ * MPACSHR (INTERPRETER.agc pp.1152-1153), or MPACSRND / VSHR2 (p.1153)
+ * when rounding -- shift the TP MPAC right 1..14 places.
+ *
+ * ARGUMENTS:
+ *   m      agc_w3_t  I  TP MPAC
+ *   n      int       I  shift count, 1..14
+ *   round  bool      I  true: MPACSRND (round half away from zero into
+ *                       MPAC+1, MPAC+2 cleared); false: truncate
+ *
+ * RETURNS: agc_w3_t -- the shifted MPAC (scale +n)
+ **********************************************************************/
 agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 {
-    /* BIT14 indexed by n-1: 2^(14-n)          */
+    int32_t  t;     /* BIT14 indexed by n-1: 2^(14-n), unscaled  */
+    agc_w2_t lo2;   /* MPAC+1, MPAC+2 of the truncating shift    */
+    agc_w2_t p;     /* MPAC, MPAC+1 of the rounding shift        */
+    int      o = 0; /* DAS overflow / rounding carry, +-1 or 0   */
+
     if (!AGC_ASSERT((n >= 1) && (n <= 14)))
-    {
-        return ((agc_w3_t){0});
-    }
-
-    int32_t  t = (int32_t) 1 << (14 - n);
-    agc_w2_t lo2;
-
-    if (!AGC_ASSERT(t > 0))
     {
         return ((agc_w3_t){0}); /* no valid result */
     }
 
-    agc_w2_t p;
-    int      o = 0;
+    t = (int32_t) 1 << (14 - n);
 
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
     {
@@ -62,12 +95,21 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
     m.m2  = 0;
 
     return (m);
-}
+} /* agc_w_mpacshr */
 
-/* VSHRRND (p.1153): DP vector component, shift right n and round.           */
+/**********************************************************************
+ * VSHRRND (INTERPRETER.agc p.1153) -- one DP vector component shifted
+ * right n places and rounded.
+ *
+ * ARGUMENTS:
+ *   p  agc_w2_t  I  component pair
+ *   n  int       I  shift count, 1..14
+ *
+ * RETURNS: agc_w2_t -- the rounded component (scale +n)
+ **********************************************************************/
 agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n)
 {
-    agc_w3_t m;
+    agc_w3_t m; /* MPAC, MPAC+1 of the component (MPAC+2 unused) */
 
     if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
     {
@@ -86,12 +128,22 @@ agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n)
     return (agc_w3_top(agc_w_mpacshr(m, n, true)));
 }
 
-/* GENSCR (p.1160) + DOSSHFT: scalar SR/SRR by any count n >= 1.             */
+/**********************************************************************
+ * GENSCR + DOSSHFT (INTERPRETER.agc p.1160) -- scalar SR / SRR by any
+ * count: whole words move first (14 places per pass), then MPACSHR.
+ *
+ * ARGUMENTS:
+ *   m      agc_w3_t  I  TP MPAC
+ *   n      int       I  shift count, >= 1
+ *   round  bool      I  true for SRR (rounds), false for SR
+ *
+ * RETURNS: agc_w3_t -- the shifted MPAC (scale +n); 0 beyond 55 places
+ **********************************************************************/
 agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 {
-    int       pass;
-    int       left   = n; /* MPTEMP + 1       */
-    agc_ovf_t unused = 0;
+    int       pass; /* whole-word passes done */
+    int       left   = n; /* MPTEMP + 1       */ /* still to shift */
+    agc_ovf_t unused = 0; /* ROUNDSUB OVFIND (cannot overflow here) */
 
     if (!AGC_ASSERT(n >= 1))
     {
@@ -112,7 +164,7 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 
         if (left == 0)
         { /* MPTEMP = -0      */
-            return (round ? agc_w_roundsub(m, &unused) : m);
+            return (round ? agc_w_roundsub(m, &unused) : m); /* SRR rounds */
         }
     }
 
@@ -127,13 +179,22 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
     return (m);
 }
 
-/* RIGHT/VRIGHT2 (p.1159) + VSSR: one vector component, VSR n (rounds).      */
+/**********************************************************************
+ * RIGHT / VRIGHT2 + VSSR (INTERPRETER.agc p.1159) -- one vector
+ * component VSR n: each whole-word step rounds (SETROUND), then VSHRRND.
+ *
+ * ARGUMENTS:
+ *   p  agc_w2_t  I  component pair
+ *   n  int       I  shift count, >= 1
+ *
+ * RETURNS: agc_w2_t -- the shifted, rounded component (scale +n)
+ **********************************************************************/
 agc_w2_t agc_w_vright(agc_w2_t p, int n)
 {
-    int      pass;
-    int      left = n;
-    int      o    = 0;
-    agc_w2_t rnd  = {0, 0};
+    int      pass; /* whole-word passes done */
+    int      left = n; /* places still to shift */
+    int      o    = 0; /* SETROUND carry, then DAS overflow */
+    agc_w2_t rnd  = {0, 0}; /* rounding carry as a pair */
 
     if (!AGC_ASSERT(n >= 1))
     {
@@ -171,13 +232,22 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
     return (p);
 }
 
-/* TSSL (p.1154): shift the TP MPAC left n places one at a time; OVFIND is
- * set on each overflowing step and the overflow-corrected (wrapped) result
- * is kept, as the AGC does.                                                 */
+/**********************************************************************
+ * TSSL (INTERPRETER.agc p.1154) -- shift the TP MPAC left n places one at
+ * a time; OVFIND is set on each overflowing step and the
+ * overflow-corrected (wrapped) result is kept, as the AGC does.
+ *
+ * ARGUMENTS:
+ *   m       agc_w3_t     I  TP MPAC
+ *   n       int          I  shift count, >= 0
+ *   ovfind  agc_ovf_t *  O  OVFIND, set to +-1 on overflow
+ *
+ * RETURNS: agc_w3_t -- the shifted MPAC (scale -n)
+ **********************************************************************/
 agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
 {
-    int k;
-    int o = 0;
+    int k; /* steps done */
+    int o = 0; /* overflow of one step, +-1 or 0 */
 
     if (!AGC_ASSERT(ovfind != 0))
     {
@@ -209,13 +279,22 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
     return (m);
 }
 
-/* TSLC / NORM (p.1157): shift left until the major word is >= .5 in
- * magnitude; zero gives no shift. (TPAGREE first: inputs here already have
- * agreeing signs, so it changes nothing.)                                  */
+/**********************************************************************
+ * TSLC / NORM (INTERPRETER.agc p.1157) -- shift left until the major
+ * word is >= .5 in magnitude; zero gives no shift. TPAGREE comes first
+ * in the AGC: inputs here already agree in sign, so it changes nothing.
+ *
+ * ARGUMENTS:
+ *   m      agc_w3_t  I  TP MPAC
+ *   count  int *     O  left shifts done, 0..42 (the AGC stores the
+ *                       complement in the index register)
+ *
+ * RETURNS: agc_w3_t -- the normalised MPAC
+ **********************************************************************/
 agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 {
-    int k;
-    int o = 0;
+    int k; /* steps done */
+    int o = 0; /* overflow of one step (never: |m0| < 1/2) */
 
     if (!AGC_ASSERT(count != 0))
     {

@@ -1,39 +1,54 @@
-/*
- * agc_nouns.h -- PINBALL noun tables, scale types and noun data resolution.
+/**********************************************************************
+ * FILE NAME: nouns.h
  *
- * Source: PINBALL_NOUN_TABLES.agc (Comanche055 pp. 268-284, Luminary099
- * pp. 301-319). The AGC keeps four parallel tables (NNADTAB, NNTYPTAB,
- * IDADDTAB, RUTMXTAB) plus the SFINTAB/SFOUTAB scale-factor constants; here
- * each noun is resolved into one flat agc_noun_t.
+ * PURPOSE:
+ *   PINBALL noun tables, scale types and noun data resolution. Consumed
+ *   by pinball (src/io/dsky/pinball); implemented in
+ *   src/io/dsky/nouns/tables_csm.c, tables_lm.c, scales.c and data.c.
  *
- * Consumed by io-pinball (src/io). Implemented in src/io/dsky/noun_tables_csm.c,
- * noun_tables_lm.c, noun_scales.c and noun_data.c (agent io-nouns).
+ * AGC SOURCE:
+ *   PINBALL_NOUN_TABLES.agc (Comanche055 pp. 268-284, Luminary099
+ *   pp. 301-319): the four parallel tables NNADTAB, NNTYPTAB, IDADDTAB,
+ *   RUTMXTAB and the SFINTAB/SFOUTAB constants; here each noun is one flat
+ *   agc_noun_t.
  *
- * Component conventions
- * ---------------------
- *  - ncomp is the number of display registers used (0 for a spare noun).
- *  - scale_type[k] / data_id[k] describe component k (R1..R3). Unused
- *    components hold AGC_SCALE_NONE / AGC_DATA_NONE.
- *  - HMS nouns (scale AGC_SCALE_HMS) are a single DP centisecond word shown
- *    across R1,R2,R3: scale_type[0..2] are all AGC_SCALE_HMS but only
- *    data_id[0] is set; data_id[1], data_id[2] are AGC_DATA_NONE.
- *  - Value convention of agc_noun_read()/agc_noun_write(), by data kind
- *    (the id's comment in agc_noun_data_t and agc_scale_info_t.is_dp/is_raw):
- *      DP    the DP erasable as the agc_dp_t itself;
- *      SP    one SP word in the high word of the agc_dp_t (agc_dp_from_sp /
- *            agc_dp_high);
- *      SP raw  a scale whose AGC word uses all 15 bits (octal words, CDU
- *            angles, 360-CDU, Y optics, channel images -- OCTAL, CDU_DEG,
- *            CDU360, Y_OPTICS_DEG, LR_POSITION): the unsigned word 0..0x7FFF
- *            as a plain integer in the agc_dp_t (no ones'-complement
- *            interpretation, so 0o77777 stays 0o77777). An id used by both
- *            a raw and a signed scale (CSM OPTION2: octal, and WHOLE in noun
- *            72) is raw; the two agree for words 0..0x3FFF.
- *  - Nouns 01-03, 10, 15 do not name a fixed erasable: their data ids are
- *    AGC_DATA_SPECIFY_ADDR / _SPECIFY_CHANNEL / _INCREMENT_ADDR and the
- *    pinball module resolves them itself (agc_noun_read returns NOT_FOUND).
- *  - dec_only / no_load are bits 4 and 5 of the AGC component code.
- */
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   Name                 Type               Description
+ *   -------------------  -----------------  ------------------------
+ *   agc_noun_table_csm   const agc_noun_t[] CSM noun table (constant)
+ *   agc_noun_table_lm    const agc_noun_t[] LM noun table (constant)
+ *
+ * NOTES:
+ *   Component conventions
+ *    - ncomp is the number of display registers used (0 for a spare noun).
+ *    - scale_type[k] / data_id[k] describe component k (R1..R3). Unused
+ *      components hold AGC_SCALE_NONE / AGC_DATA_NONE.
+ *    - HMS nouns (scale AGC_SCALE_HMS) are a single DP centisecond word
+ *      shown across R1,R2,R3: scale_type[0..2] are all AGC_SCALE_HMS but
+ *      only data_id[0] is set; data_id[1], data_id[2] are AGC_DATA_NONE.
+ *    - Value convention of agc_noun_read()/agc_noun_write(), by data kind
+ *      (the id's comment in agc_noun_data_t and agc_scale_info_t.is_dp /
+ *      is_raw):
+ *        DP      the DP erasable as the agc_dp_t itself;
+ *        SP      one SP word in the high word of the agc_dp_t
+ *                (agc_dp_from_sp / agc_dp_high);
+ *        SP raw  a scale whose AGC word uses all 15 bits (octal words, CDU
+ *                angles, 360-CDU, Y optics, channel images -- OCTAL,
+ *                CDU_DEG, CDU360, Y_OPTICS_DEG, LR_POSITION): the unsigned
+ *                word 0..0x7FFF as a plain integer in the agc_dp_t (no
+ *                ones'-complement interpretation, so 0o77777 stays
+ *                0o77777). An id used by both a raw and a signed scale (CSM
+ *                OPTION2: octal, and WHOLE in noun 72) is raw; the two agree
+ *                for words 0..0x3FFF.
+ *    - Nouns 01-03, 10, 15 do not name a fixed erasable: their data ids are
+ *      AGC_DATA_SPECIFY_ADDR / _SPECIFY_CHANNEL / _INCREMENT_ADDR and the
+ *      pinball module resolves them itself (agc_noun_read returns
+ *      NOT_FOUND).
+ *    - dec_only / no_load are bits 4 and 5 of the AGC component code.
+ **********************************************************************/
 #ifndef AGC_NOUNS_H
 #define AGC_NOUNS_H
 
@@ -55,11 +70,12 @@
  */
 typedef enum agc_sf_routine
 {
-    AGC_SFR_OCTAL       = 0, /* octal only */
-    AGC_SFR_FRACTION    = 1, /* straight fractional */
-    AGC_SFR_CDU_DEG     = 2, /* CDU degrees (xxx.xx) */
-    AGC_SFR_ARITH       = 3, /* arithmetic SF */
-    AGC_SFR_DP1         = 4, /* ARITH DP1: out multiply by 2^14 at end, in straight */
+    AGC_SFR_OCTAL    = 0,    /* octal only */
+    AGC_SFR_FRACTION = 1, /* straight fractional */
+    AGC_SFR_CDU_DEG  = 2,    /* CDU degrees (xxx.xx) */
+    AGC_SFR_ARITH    = 3,    /* arithmetic SF */
+    /* ARITH DP1: out multiply by 2^14 at end, in straight */
+    AGC_SFR_DP1         = 4,
     AGC_SFR_DP2         = 5, /* ARITH DP2: out straight, in SL 7 at end */
     AGC_SFR_Y_OPTICS    = 6, /* CSM: Y optics degrees (xx.xxx max 89.999) */
     AGC_SFR_LR_POSITION = 6, /* LM: landing radar position (+0000x) */
@@ -94,9 +110,11 @@ typedef enum agc_scale
     AGC_SCALE_DEG180,       /* F   CSM+LM xxx.xx deg (180) */
     AGC_SCALE_DP_DEG90,     /* G   CSM+LM xx.xxx deg (DP, 90) */
     AGC_SCALE_DP_DEG360,    /* H   CSM+LM xxx.xx deg (DP, 360) */
-    AGC_SCALE_Y_OPTICS_DEG, /* J   CSM    xx.xxx deg (optics Y; +19.775 deg bias on display, no negative load) */
-    AGC_SCALE_HMS, /* K   CSM+LM hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only, all 3 loaded) */
-    AGC_SCALE_MIN_SEC, /* L   CSM+LM xxBxx min/sec (display only, caps at 59B59) */
+    /* J   CSM    xx.xxx deg (optics Y; +19.775 deg bias on display, no negative load) */
+    AGC_SCALE_Y_OPTICS_DEG,
+    /* K   CSM+LM hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only, all 3 loaded) */
+    AGC_SCALE_HMS, /* L   CSM+LM xxBxx min/sec (display only, caps at 59B59) */
+    AGC_SCALE_MIN_SEC,
     AGC_SCALE_TIME_SEC_DP,   /* N   CSM+LM xxx.xx sec (DP) */
     AGC_SCALE_VEL2,          /* P   CSM+LM xxxxx. ft/sec */
     AGC_SCALE_POS4,          /* Q   CSM+LM xxxx.x nautical miles */
@@ -114,16 +132,21 @@ typedef enum agc_scale
     AGC_SCALE_DRAG_ACCEL,    /* MM  CSM    xxx.xx g (max 24.99) */
     AGC_SCALE_POS8,          /* VV  CSM    xxxx.x nautical miles */
     AGC_SCALE_DP_FRACTION,   /* ZZ  CSM    .xxxxx DP fractional */
-    AGC_SCALE_LR_POSITION, /* TT  LM     +0000x landing radar position 1/2 (display only; reads channel 33 bits 6,7) */
+    /* TT  LM     +0000x landing radar position 1/2 (display only; reads channel 33 bits 6,7) */
+    AGC_SCALE_LR_POSITION, /* EE  LM     xxx.xx deg (optical tracker azimuth) */
     AGC_SCALE_CDU360,      /* WW  LM     xxx.xx deg (360 - CDU) */
-    AGC_SCALE_TRACKER_AZ_DEG, /* EE  LM     xxx.xx deg (optical tracker azimuth) */
-    AGC_SCALE_RR_RANGE, /* U   LM     xxx.xx nautical miles (rendezvous radar range) */
-    AGC_SCALE_RR_RATE, /* V   LM     xxxxx. ft/sec (rendezvous radar range rate) */
+    AGC_SCALE_TRACKER_AZ_DEG,
+    /* U   LM     xxx.xx nautical miles (rendezvous radar range) */
+    AGC_SCALE_RR_RANGE,
+    /* V   LM     xxxxx. ft/sec (rendezvous radar range rate) */
+    AGC_SCALE_RR_RATE, /* AA  LM     xxxxx. feet (initial/final altitude) */
     AGC_SCALE_LR_ALT, /* W   LM     xxxxx. feet (landing radar altitude) */
-    AGC_SCALE_INIT_FINAL_ALT, /* AA  LM     xxxxx. feet (initial/final altitude) */
+    AGC_SCALE_INIT_FINAL_ALT,
     AGC_SCALE_ALT_RATE, /* BB  LM     xxxxx. ft/sec (altitude rate, max 8191) */
-    AGC_SCALE_FWD_LAT_VEL, /* CC  LM     xxxxx. ft/sec (forward/lateral velocity, max 9126) */
-    AGC_SCALE_RHC_RATE, /* DD  LM     xxxxx. deg/sec (rotational hand controller rates, max 44) */
+    /* CC  LM     xxxxx. ft/sec (forward/lateral velocity, max 9126) */
+    AGC_SCALE_FWD_LAT_VEL,
+    /* DD  LM     xxxxx. deg/sec (rotational hand controller rates, max 44) */
+    AGC_SCALE_RHC_RATE,
     AGC_SCALE_LR_VELX,    /* X   LM     xxxxx. ft/sec (landing radar VELX) */
     AGC_SCALE_LR_VELY,    /* Y   LM     xxxxx. ft/sec (landing radar VELY) */
     AGC_SCALE_LR_VELZ,    /* Z   LM     xxxxx. ft/sec (landing radar VELZ) */
@@ -195,9 +218,11 @@ typedef enum agc_noun_data
     AGC_DATA_DELVTPI,         /* DP VEL3; CSM:58 LM:58 */
     AGC_DATA_DIFFALT,         /* DP POS4; CSM:75 LM:75 */
     AGC_DATA_DNRNGERR,        /* DP POS6; CSM:66 */
-    AGC_DATA_DSPTEM1, /* SP raw WHOLE,OCTAL,CDU_DEG; CSM:25,26,29,30,41,97 LM:25,26,41,97 */
+    /* SP raw WHOLE,OCTAL,CDU_DEG; CSM:25,26,29,30,41,97 LM:25,26,41,97 */
+    AGC_DATA_DSPTEM1,
     AGC_DATA_DSPTEM1_DP, /* DP DP_DEG360,HMS; CSM:05,31,34 LM:04,05,34 */
-    AGC_DATA_DSPTEM1_P1, /* SP raw WHOLE,OCTAL,ELEV_DEG; CSM:25,26,30,41,97 LM:25,26,41,97 */
+    /* SP raw WHOLE,OCTAL,ELEV_DEG; CSM:25,26,30,41,97 LM:25,26,41,97 */
+    AGC_DATA_DSPTEM1_P1,
     AGC_DATA_DSPTEM1_P2, /* SP raw WHOLE,OCTAL; CSM:25,26,30,97 LM:25,26,97 */
     AGC_DATA_DSPTEM2,    /* SP WHOLE; CSM:98 LM:98 */
     AGC_DATA_DSPTEM2_P1, /* SP FRACTION; CSM:98 LM:98 */
@@ -329,7 +354,8 @@ typedef enum agc_noun_data
     AGC_DATA_TRKMKCNT,        /* SP WHOLE; LM:45 */
     AGC_DATA_TTE,             /* DP MIN_SEC; CSM:63 */
     AGC_DATA_TTFDISP,         /* DP MIN_SEC; LM:61,68 */
-    AGC_DATA_TTOGO, /* DP HMS,MIN_SEC; CSM:35,40,45,80 LM:35,40,45,61,62,74,77 */
+    /* DP HMS,MIN_SEC; CSM:35,40,45,80 LM:35,40,45,61,62,74,77 */
+    AGC_DATA_TTOGO,
     AGC_DATA_TTPI,   /* DP HMS; CSM:37 LM:37 */
     AGC_DATA_VGBODY, /* DP VEL3; CSM:85 LM:85 */
     AGC_DATA_VGBODY_P2, /* DP VEL3; CSM:85 LM:85 */
@@ -373,8 +399,8 @@ typedef struct agc_noun
 } agc_noun_t;
 
 /* Static tables, indexed by noun number (entry n has .noun == n).         */
-extern const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT];
-extern const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT];
+extern const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT]; /* CSM noun table */
+extern const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT]; /* LM noun table */
 
 /*
  * LODNNTAB: fetch the table row for a noun of the vehicle selected by
@@ -397,7 +423,7 @@ agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value);
 /* ---- scale types: SFRUTAB codes and SFINTAB / SFOUTAB constants -------- */
 typedef struct agc_scale_info
 {
-    agc_scale_t scale;
+    agc_scale_t scale; /* scale type looked up */
     uint8_t     routine; /* agc_sf_routine_t code for this vehicle     */
     uint8_t     sf_code; /* SF constant code number (SFINTAB index)    */
     bool        is_dp;   /* erasable is a DP pair (else one SP word)   */

@@ -185,20 +185,21 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
     agc_dp_t beta2 = agc_tp_to_dp(agc_tp_shift(ip, t, 1));   /* BETA2 B2      */
 
     t = agc_dp_mul_tp(agc_dp_shl(ip, rs->r_apre, 4), beta2); /* SL4 DMP 00D   */
-    agc_dp_t beta3 =
-        agc_dp_sub(ip, ONE_B4, agc_tp_to_dp(t)); /* BETA3 B4      */
+    agc_tp_t beta3 = rte_tp_bdsu(ip, ONE_B4, t);             /* BETA3 B4      */
 
-    if (beta3 < 0)
+    if (agc_tp_to_dp(beta3) < 0)
     { /* PREC160       */
         agc_dp_t rn = agc_dp_norm(rs->r_apre, &n1);
 
         return (agc_dp_shl(ip, agc_dp_div(ip, ONE_B1, rn), n1 - 6));
     }
 
-    agc_dp_t s   = agc_dp_sqrt(ip, agc_dp_shl(ip, beta3, 2)); /* PREC155 B1    */
-    agc_dp_t den = agc_dp_sub(ip, ONE_B3, agc_dp_mul_trunc(s, rs->phi2));
-
-    den = agc_dp_norm(den, &n1); /* NORM X1       */
+    /* PREC155: SL2 SQRT DMP BDSU NORM stay on the TP MPAC; the NORM
+     * brings MPAC+2 into the pushed divisor (1 - PHI2 SQRT(BETA3) can be
+     * a small difference).                                               */
+    agc_dp_t s   = agc_tp_sqrt(ip, agc_tp_shift(ip, beta3, 2)); /* B1     */
+    agc_dp_t den = agc_tp_to_dp(agc_tp_norm(
+        rte_tp_bdsu(ip, ONE_B3, agc_dp_mul_tp(s, rs->phi2)), &n1)); /* X1 */
 
     return (agc_dp_shl(ip, agc_dp_div(ip, agc_dp_shr(beta2, 1), den), n1 - 1));
 }

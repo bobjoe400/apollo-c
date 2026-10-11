@@ -108,7 +108,7 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
         return (AGC_STATUS_OK); /* SKIP TGO AND XPRODUCT  */
     }
 
-    agc_dp_t thr = agc_dp_mul(ip, agc_dp_from_sp(g->csm.dvthresh), DPB_9);
+    agc_dp_t thr = agc_dp_mul_trunc(agc_dp_from_sp(g->csm.dvthresh), DPB_9);
 
     if (agc_dp_sub(ip, agc_vec_abval(ip, g->avg.delvref), thr) < 0)
     {
@@ -559,8 +559,8 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
     { /* NOT MOONCASE */
         /* UNIT RN leaves |RN|^2 at 34D (LVSQUARE, the VSQ of RN).      */
         agc_dp_t rsq = agc_vec_sq(&ip, agc_erase_rn());
-        agc_dp_t s   = agc_dp_mul(
-            &ip, agc_dp_sub(&ip, agc_erase_piptime(), g->burn.nomtig), EARTHMU);
+        agc_dp_t s   = agc_dp_mul_trunc(
+            agc_dp_sub(&ip, agc_erase_piptime(), g->burn.nomtig), EARTHMU);
 
         s            = agc_dp_div(&ip, s, rsq);
         rz->delveet3 = agc_vec_add(&ip, agc_vec_scale(&ip, g->avg.gobl_2, s),

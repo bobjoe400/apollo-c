@@ -74,9 +74,9 @@ typedef struct modecadr_word
 /* MODECADR words live in exec (agc_exec.h; STARTSB2 clears them, SVCT3
  * tests IMUCADR).  Encoding of the SP word: +0 free, -1 good, a positive
  * job id for a stalled job, and -2 standing in for -0 (failed).
- * DEVIATION: agc_sp_t has no -0.                                         */
-#define MC_WORD_GOOD ((agc_sp_t) -1)
-#define MC_WORD_BAD  ((agc_sp_t) -2)
+ * DEVIATION: agc_sp_t has no -0 (see AGC_MODECADR_BAD in imu.h).         */
+#define MC_WORD_GOOD AGC_MODECADR_GOOD
+#define MC_WORD_BAD  AGC_MODECADR_BAD
 
 static modecadr_word_t mc_get(int dev)
 {
@@ -110,6 +110,33 @@ static modecadr_word_t mc_get(int dev)
     }
 
     return (w);
+}
+
+/**********************************************************************
+ * MODECADR test by BZF (CKMODCAD p.243 CM, DESRETRN LM p.541): true when
+ * the word is +0 or -0, i.e. free or complete-but-failed.  With the -2
+ * stand-in for -0 (DEVIATION above) a plain "== 0" would miss -0.
+ *
+ * ARGUMENTS:
+ *   dev  agc_imu_device_t  I  IMUCADR, OPTCADR or RADCADR
+ *
+ * RETURNS: true if C(MODECADR + dev) is +0 or -0
+ **********************************************************************/
+bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
+{
+    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
+    {
+        return (false);
+    }
+
+    agc_sp_t v = agc_erase_modecadr((int) dev);
+
+    if (!AGC_ASSERT(v >= MC_WORD_BAD))
+    {
+        return (false);
+    }
+
+    return ((v == AGC_MODECADR_FREE) || (v == MC_WORD_BAD));
 }
 
 static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)

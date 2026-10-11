@@ -580,7 +580,7 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rs->rtarg = rs->r_t2v; /* pushed R(T2)/ */
+    rs->rtarg = rs->r_t2v; /* RATT, 0D      */
     agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);
     agc_vec_t k   = agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5),
                                 agc_vec_scale(ip, rs->uh, MSIN7_5));
@@ -616,9 +616,11 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
 /* P37W (p. 898): CLEAR XDELVFLG (Lambert aim point), NORMSW; SET FINALFLG;
  * RTARG, TPASS4 = T + T1, DELVSIN = V2(T1)/ - V(T1)/; VN1645 (V16N45),
  * which returns here on recycle.
- * DEVIATION: the AGC takes RTARG from the push-down list (VLOAD with no
- * address), so a recycle pops a lower, stale, cell; here the vector saved
- * by the targeting step is used each time.                                */
+ * DEVIATION: the AGC takes RTARG from the push-down list (VLOAD STADR):
+ * 0D holds R(T2)/ (PDDL in RTENCK3D) or TIMETHET's new R, but a recycle
+ * pops again with PL at 0 and reads the six words below the VAC area
+ * (checked on the rope). The vector saved by the targeting step is used
+ * each time.                                                              */
 agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
 {
     agc_interp_t         *ip = rte_ip();

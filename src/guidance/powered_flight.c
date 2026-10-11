@@ -354,18 +354,22 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
 
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y], cy = t->coscdu[AGC_TRIG_Y];
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z], cz = t->coscdu[AGC_TRIG_Z];
-    /* DLOAD DMP DTHETASM COSCDUY ; PDDL DMP DTHETASM+4 SINCDUY ; BDSU ; DDV */
-    agc_dp_t pd0 = agc_dp_mul(ip, dthetasm.c[0], cy);
-    agc_dp_t a   = agc_dp_sub(ip, pd0, agc_dp_mul(ip, dthetasm.c[2], sy));
+    /* DLOAD DMP DTHETASM COSCDUY ; PDDL DMP DTHETASM+4 SINCDUY ; BDSU ; DDV.
+     * DMP keeps the third product word in MPAC+2: PDDL and DDV use the top
+     * two (truncation), SL1 shifts all three, and DAD leaves MPAC+2 alone. */
+    agc_dp_t pd0 = agc_dp_mul_trunc(dthetasm.c[0], cy);
+    agc_dp_t a   = agc_dp_sub(ip, pd0, agc_dp_mul_trunc(dthetasm.c[2], sy));
 
     a          = agc_dp_div(ip, a, cz);
-    dcdu->c[0] = a;                                      /* STORE DCDU     */
-    a          = agc_dp_shl(ip, agc_dp_mul(ip, a, sz), 1); /* DMP SL1 SINCDUZ */
-    dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a);         /* BDSU DTHETASM+2 */
+    dcdu->c[0] = a; /* STORE DCDU     */
+    a = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, sz), 1)); /* DMP SL1 */
+    dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a); /* BDSU DTHETASM+2 */
     /* DLOAD DTHETASM ; DMP PDDL SINCDUY DTHETASM+4 ; DMP DAD COSCDUY ; SL1 */
-    pd0        = agc_dp_mul(ip, dthetasm.c[0], sy);
-    a          = agc_dp_add(ip, agc_dp_mul(ip, dthetasm.c[2], cy), pd0);
-    dcdu->c[2] = agc_dp_shl(ip, a, 1); /* STORE DCDU +4  */
+    pd0 = agc_dp_mul_trunc(dthetasm.c[0], sy);
+    agc_tp_t z = agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy),
+                            agc_tp_from_dp(pd0));
+
+    dcdu->c[2] = agc_tp_to_dp(agc_tp_shift(ip, z, 1)); /* STORE DCDU +4  */
 
     return (AGC_STATUS_OK);
 }

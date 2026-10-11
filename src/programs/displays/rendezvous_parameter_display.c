@@ -141,7 +141,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
 
     if ((x & RPD_EXTVBACT_BIT5) == 0U)
     {
-        return (agc_dsky_endext()); /* YES, DIE  */
+        return (agc_dsky_endmark()); /* YES, DIE  */
     }
 
     agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
@@ -308,7 +308,7 @@ static agc_status_t rpd_lm_getrvn(agc_interp_t *ip, agc_rendz_t *rz)
  * Average G on: GETRVN. Landed (R31SURF): LM by LEMPREC, the CSM conic
  * from its base vector (OTHCONIC). Otherwise both conic from their base
  * vectors. An INTSTALL sleep resumes the update job from its start.   */
-static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
+static agc_status_t rpd_lm_update_states(agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (rz_vflag_test(RZ_VF_AVEGFLAG))
     {
@@ -389,7 +389,7 @@ static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
     rz->baseotp = o.ratt1; /* CM base       */
     rz->baseotv = o.vatt1;
 
-    return (rpd_lm_rev83(ip, rz));
+    return (rpd_lm_update_states(ip, rz));
 }
 
 /* ============================ jobs and task ============================== */
@@ -524,5 +524,5 @@ agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable();
 
-    return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_rev83(&ip, rz));
+    return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_update_states(&ip, rz));
 }

@@ -1,24 +1,55 @@
-/*
- * agc_interp_scalar.c -- scalar interpretive arithmetic
- * (INTERPRETER.agc, Comanche055 pp.1131-1142, 1149, 1152-1161, 1180, 1192;
- * Luminary099 pp.1026-1037, 1044, 1047-1056, 1075, 1087).
+/**********************************************************************
+ * FILE NAME: scalar.c
  *
- * Each function loads its agc_dp_t / agc_tp_t operands into AGC words
- * (agc_w_split), runs the AGC routine on the words (agc_mpac.c, agc_shift.c,
- * agc_divide.c) and returns the value of the resulting MPAC words.
- * OVFIND is set exactly where the AGC sets it and is never cleared here;
- * BOV (agc_interp_test_ovf) clears it.
- */
+ * PURPOSE:
+ *   Scalar interpretive arithmetic: interpreter state (OVFIND, BOV),
+ *   DAD/DSU/TAD, DMP/DMPR/DSQ, SHORTMP, DMPNSUB, POLY, DDV/BDDV, SL/SLR,
+ *   TP shifts, NORM and ROUND, each on the AGC's own word arithmetic.
+ *
+ * AGC SOURCE:
+ *   Comanche055 INTERPRETER.agc pp.1131-1142, 1149, 1152-1161, 1180,
+ *   1196 (DAD, DSU, BDSU, TAD, DMPSUB, ROUNDSUB, DMP, DMPR, SHORTMP,
+ *   DMPNSUB, POLY, DDV, BDDV, SL, SLR, SR, TSSL, TSLC, ROUND, DSQ, BOV)
+ *   Luminary099 INTERPRETER.agc pp.1026-1037, 1044, 1047-1056, 1075,
+ *   1091 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (OVFIND and DVSIGN live in the caller's agc_interp_t)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                Description
+ *   ------------------  --------------------------------------------
+ *   agc_w_*             word-level MPAC model (mpac.c, shift.c,
+ *                       divide.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; overflow sets OVFIND exactly where the AGC sets it and is
+ *   never cleared here (BOV, agc_interp_test_ovf, clears it).
+ *
+ * NOTES:
+ *   Each function loads its agc_dp_t / agc_tp_t operands into AGC words
+ *   (agc_w_split), runs the AGC routine on the words and returns the
+ *   value of the resulting MPAC words. Every function here is checked
+ *   bit for bit against yaAGC (tests/oracle/core_numeric.c).
+ **********************************************************************/
 #include "../mpac.h"
 #include "agc/core/assert.h"
 
-#define POLY_MAX_DEGREE 15
+#define POLY_MAX_DEGREE 15 /* loop bound on N; the ropes use N <= 9 */
 
 /* ---- interpreter state --------------------------------------------------- */
 
+/**********************************************************************
+ * AGC: none (C state) -- interpreter state at fresh start: OVFIND,
+ * index registers and switches clear; DVSIGN as a zeroed erasable (+0,
+ * so an early DVOVF gives +DPPOSMAX).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  O  state to initialise
+ **********************************************************************/
 void agc_interp_init(agc_interp_t *ip)
 {
-    int k;
+    int k; /* switch index */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -44,10 +75,18 @@ void agc_interp_init(agc_interp_t *ip)
     }
 }
 
-/* BOV / BOVB (p.1196 "BOV(B)"): CCS OVFIND; branch and clear if set.       */
+/**********************************************************************
+ * BOV / BOVB (INTERPRETER.agc p.1196 "BOV(B)") -- CCS OVFIND; branch
+ * and clear if set.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, cleared
+ *
+ * RETURNS: bool -- true when OVFIND was set (the branch is taken)
+ **********************************************************************/
 bool agc_interp_test_ovf(agc_interp_t *ip)
 {
-    bool set;
+    bool set; /* OVFIND was set */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -65,8 +104,13 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
     return (set);
 }
 
-/* BOV used only to reset OVFIND (the AGC idiom "BOV +1" or a BOV whose
- * branch target is the next instruction): clear the indicator.            */
+/**********************************************************************
+ * BOV (INTERPRETER.agc p.1196) used only to reset OVFIND (the AGC idiom
+ * "BOV +1", or a BOV whose target is the next instruction).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, cleared
+ **********************************************************************/
 void agc_interp_clear_ovf(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != 0))
@@ -84,7 +128,17 @@ void agc_interp_clear_ovf(agc_interp_t *ip)
 
 /* ---- add / subtract (p.1131-1135) ---------------------------------------- */
 
-/* DAD: DAS MPAC; OVERFLOW if A non-zero (ENDVXV). Wraps on overflow.       */
+/**********************************************************************
+ * DAD (INTERPRETER.agc pp.1131-1133) -- DAS MPAC; OVERFLOW if A is
+ * non-zero (ENDVXV). Wraps on overflow (value -+ 1.0).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set to +-1 on overflow
+ *   a   agc_dp_t        I  MPAC
+ *   b   agc_dp_t        I  operand, same scale
+ *
+ * RETURNS: agc_dp_t -- a + b, overflow-corrected
+ **********************************************************************/
 agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(ip != 0))
@@ -100,16 +154,25 @@ agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     return (agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(b), &ip->ovfind)));
 }
 
-/* DAD then BOV, the sum never read (MPAC is reloaded next): only the
- * overflow indicator changes.                                            */
+/**********************************************************************
+ * DAD then BOV (INTERPRETER.agc pp.1131-1133) with the sum never read
+ * (MPAC is reloaded next): only OVFIND changes.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set to +-1 on overflow
+ *   a   agc_dp_t        I  MPAC
+ *   b   agc_dp_t        I  operand, same scale
+ **********************************************************************/
 void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
+    agc_dp_t sum; /* DAD result, discarded (scale of a)      */
+
     if (!AGC_ASSERT(ip != 0))
     {
         return;
     }
 
-    const agc_dp_t sum = agc_dp_add(ip, a, b);
+    sum = agc_dp_add(ip, a, b);
 
     if (!AGC_ASSERT((sum >= AGC_DP_MIN) && (sum <= AGC_DP_MAX)))
     {
@@ -117,7 +180,17 @@ void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     }
 }
 
-/* DSU: DCS 0 then ENDVXV. BDSU X is agc_dp_sub(ip, X, mpac).                */
+/**********************************************************************
+ * DSU (INTERPRETER.agc pp.1131-1133) -- DCS 0 then ENDVXV. BDSU X is
+ * agc_dp_sub(ip, X, mpac).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set to +-1 on overflow
+ *   a   agc_dp_t        I  minuend (MPAC)
+ *   b   agc_dp_t        I  subtrahend, same scale
+ *
+ * RETURNS: agc_dp_t -- a - b, overflow-corrected
+ **********************************************************************/
 agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     if (!AGC_ASSERT(ip != 0))
@@ -134,16 +207,26 @@ agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
                                  &ip->ovfind)));
 }
 
-/* TAD (p.1135): minor parts by DAS, then AD AD TS on MPAC; SETOVF ->
- * OVERFLOW on MPAC,+1 when the major word overflows.                       */
+/**********************************************************************
+ * TAD (INTERPRETER.agc p.1135) -- minor parts by DAS, then AD AD TS on
+ * MPAC; SETOVF -> OVERFLOW on MPAC, MPAC+1 when the major word
+ * overflows.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set to +-1 on overflow
+ *   a   agc_tp_t        I  TP MPAC
+ *   b   agc_tp_t        I  TP operand, same scale
+ *
+ * RETURNS: agc_tp_t -- a + b, overflow-corrected
+ **********************************************************************/
 agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
 {
-    agc_w3_t m   = agc_w3_from_tp(a);
-    agc_w3_t x   = agc_w3_from_tp(b);
+    agc_w3_t m   = agc_w3_from_tp(a); /* TP MPAC of a */
+    agc_w3_t x   = agc_w3_from_tp(b); /* TP operand words */
     agc_w2_t lo2 = {m.m1, m.m2};
     agc_w2_t add = {x.m1, x.m2};
-    agc_w2_t top;
-    int      o = 0;
+    agc_w2_t top; /* MPAC, MPAC+1 after OVERFLOW */
+    int      o = 0; /* DAS / TS overflow, +-1 or 0 */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -172,10 +255,20 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
 
 /* ---- multiply (p.1136-1137, 1141-1142, 1149, 1183) ----------------------- */
 
-/* DMPR (p.1149): DMPSUB; ROUNDSUB (OVFIND on the rare carry out).          */
+/**********************************************************************
+ * DMPR (INTERPRETER.agc p.1149) -- DMPSUB; ROUNDSUB (OVFIND on the rare
+ * carry out).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set on a rounding carry out
+ *   a   agc_dp_t        I  MPAC
+ *   b   agc_dp_t        I  operand; scales add
+ *
+ * RETURNS: agc_dp_t -- a b rounded half away from zero
+ **********************************************************************/
 agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    agc_w3_t m;
+    agc_w3_t m; /* DMPSUB product, then rounded */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -193,10 +286,19 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     return (agc_w_join(agc_w3_top(m)));
 }
 
-/* DMP (DMP1 p.1149) used as a DP: MPAC,+1 of the DMPSUB product.           */
+/**********************************************************************
+ * DMP (DMP1, INTERPRETER.agc p.1149) used as a DP -- MPAC, MPAC+1 of
+ * the DMPSUB product (MPAC+2 dropped by the store).
+ *
+ * ARGUMENTS:
+ *   a  agc_dp_t  I  MPAC
+ *   b  agc_dp_t  I  operand; scales add
+ *
+ * RETURNS: agc_dp_t -- a b truncated to DP
+ **********************************************************************/
 agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
 {
-    agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
+    agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
 
     if (!AGC_ASSERT(agc_w_ok(m.m0)))
     {
@@ -211,7 +313,16 @@ agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
     return (agc_w_join(agc_w3_top(m)));
 }
 
-/* DSQ (p.1180): DSQSUB leaves the TP square; as a DP, MPAC,+1.             */
+/**********************************************************************
+ * DSQ (INTERPRETER.agc p.1180) -- DSQSUB leaves the TP square; as a DP,
+ * MPAC, MPAC+1.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I  interpreter state (DSQ sets no OVFIND)
+ *   a   agc_dp_t        I  MPAC
+ *
+ * RETURNS: agc_dp_t -- a^2 truncated, at twice the scale of a
+ **********************************************************************/
 agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
 {
     if (!AGC_ASSERT(ip != 0))
@@ -227,9 +338,17 @@ agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
     return (agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a)))));
 }
 
+/**********************************************************************
+ * DSQ (DSQSUB, INTERPRETER.agc p.1183) as the full TP MPAC.
+ *
+ * ARGUMENTS:
+ *   a  agc_dp_t  I  MPAC
+ *
+ * RETURNS: agc_tp_t -- a^2, at twice the scale of a
+ **********************************************************************/
 agc_tp_t agc_dp_sq_tp(agc_dp_t a)
 {
-    agc_w3_t m = agc_w_dsqsub(agc_w_split(a));
+    agc_w3_t m = agc_w_dsqsub(agc_w_split(a)); /* DSQSUB TP square */
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
@@ -244,12 +363,21 @@ agc_tp_t agc_dp_sq_tp(agc_dp_t a)
     return (agc_w3_value(m));
 }
 
-/* SHORTMP / SHORTMP2 / DMPSUB2 (p.1141, 1136): TP x SP -> TP.              */
+/**********************************************************************
+ * SHORTMP / SHORTMP2 / DMPSUB2 (INTERPRETER.agc pp.1141, 1136) -- TP
+ * MPAC times an SP fraction.
+ *
+ * ARGUMENTS:
+ *   v  agc_tp_t  I  TP MPAC
+ *   k  agc_sp_t  I  SP multiplier (A); scales add
+ *
+ * RETURNS: agc_tp_t -- v k (MPAC+2 keeps the major half of k m2)
+ **********************************************************************/
 agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
 {
-    agc_w3_t m = agc_w3_from_tp(v);
-    agc_w2_t acc;
-    int      o = 0;
+    agc_w3_t m = agc_w3_from_tp(v); /* TP MPAC of v */
+    agc_w2_t acc; /* DAS accumulator pair */
+    int      o = 0; /* DAS overflow, the carry into MPAC */
 
     if (!AGC_ASSERT((k >= AGC_SP_MIN) && (k <= AGC_SP_MAX)))
     {
@@ -275,13 +403,22 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
     return (agc_w3_value(m));
 }
 
-/* DMPNSUB (p.1142): MPAC = (major(n m1) + minor(n m0), minor(n m1)).        */
+/**********************************************************************
+ * DMPNSUB (INTERPRETER.agc p.1142) -- DP fraction times an SP integer:
+ * MPAC = (major(n m1) + minor(n m0), minor(n m1)).
+ *
+ * ARGUMENTS:
+ *   v  agc_dp_t  I  MPAC
+ *   n  agc_sp_t  I  integer multiplier (A); the customer keeps |n v| < 1
+ *
+ * RETURNS: agc_dp_t -- n v, same scale as v
+ **********************************************************************/
 agc_dp_t agc_dp_mul_int(agc_dp_t v, agc_sp_t n)
 {
-    agc_w2_t m  = agc_w_split(v);
+    agc_w2_t m  = agc_w_split(v); /* MPAC words of v */
     agc_w2_t lo = agc_w_mp(n, m.lo); /* MP MPAC +1       */
     agc_w2_t hi = agc_w_mp(n, m.hi); /* MP DMPNTEMP      */
-    int      o  = 0;
+    int      o  = 0; /* TS overflow (none: |n v| < 1) */
 
     if (!AGC_ASSERT(hi.hi == 0)) /* customer's duty  */
     {
@@ -298,7 +435,17 @@ agc_dp_t agc_dp_mul_int(agc_dp_t v, agc_sp_t n)
     return (agc_w_join(lo));
 }
 
-/* POLY / POWRSERS (p.1139-1140). x keeps only MPAC,+1.                      */
+/**********************************************************************
+ * POLY / POWRSERS (INTERPRETER.agc pp.1139-1140) -- Horner evaluation
+ * coef[degree] x^degree + ... + coef[0]; x keeps only MPAC, MPAC+1.
+ *
+ * ARGUMENTS:
+ *   x       agc_dp_t          I  argument
+ *   coef    const agc_dp_t *  I  A(0) .. A(degree), at the result scale
+ *   degree  int               I  N, 1..POLY_MAX_DEGREE
+ *
+ * RETURNS: agc_dp_t -- the polynomial value (MPAC, MPAC+1)
+ **********************************************************************/
 agc_dp_t agc_dp_poly(agc_dp_t x, const agc_dp_t *coef, int degree)
 {
     if (!AGC_ASSERT(coef != 0))
@@ -316,11 +463,21 @@ agc_dp_t agc_dp_poly(agc_dp_t x, const agc_dp_t *coef, int degree)
 
 /* ---- divide (p.1149, 1162-1170) ------------------------------------------ */
 
-/* DDV: MPAC / X. BDDV X is agc_dp_div(ip, X, mpac).                         */
+/**********************************************************************
+ * DDV (INTERPRETER.agc pp.1149, 1162-1170) -- MPAC / X. BDDV X is
+ * agc_dp_div(ip, X, mpac).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND (1 on overflow), DVSIGN
+ *   a   agc_dp_t        I  dividend
+ *   b   agc_dp_t        I  divisor, same scale
+ *
+ * RETURNS: agc_dp_t -- a / b scaled 2^0; +-DPPOSMAX on overflow
+ **********************************************************************/
 agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    int      o = 0;
-    agc_dp_t q;
+    int      o = 0; /* OVFIND of DDV: 1 on overflow */
+    agc_dp_t q; /* quotient, scaled 2^0 */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -342,16 +499,25 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     return (q);
 }
 
-/* DDV then BOV, the quotient never read: only the overflow indicator
- * changes (set when |a| >= |b|).                                          */
+/**********************************************************************
+ * DDV then BOV (INTERPRETER.agc pp.1162-1170) with the quotient never
+ * read: only OVFIND (and DVSIGN) change (OVFIND set when |a| >= |b|).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, DVSIGN
+ *   a   agc_dp_t        I  dividend
+ *   b   agc_dp_t        I  divisor, same scale
+ **********************************************************************/
 void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
+    agc_dp_t q; /* DDV quotient, discarded (scaled 2^0)       */
+
     if (!AGC_ASSERT(ip != 0))
     {
         return;
     }
 
-    const agc_dp_t q = agc_dp_div(ip, a, b);
+    q = agc_dp_div(ip, a, b);
 
     if (!AGC_ASSERT((q >= AGC_DP_MIN) && (q <= AGC_DP_MAX)))
     {
@@ -361,10 +527,20 @@ void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 
 /* ---- shifts and rounding (p.1137, 1152-1161) ----------------------------- */
 
-/* SL n (TSSL p.1154). A negative count shifts right (RIGHT- p.1161).        */
+/**********************************************************************
+ * SL n (TSSL, INTERPRETER.agc p.1154) -- a negative count shifts right
+ * (RIGHT-, p.1161).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set on each overflowing step
+ *   a   agc_dp_t        I  MPAC
+ *   n   int             I  shift count, -127..127
+ *
+ * RETURNS: agc_dp_t -- a 2^n, wrapped on overflow (scale -n)
+ **********************************************************************/
 agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
 {
-    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a));
+    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -384,11 +560,21 @@ agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
     return (agc_w_join(agc_w3_top(agc_w_tssl(m, n, &ip->ovfind))));
 }
 
-/* SLR n: TSSL then ROUNDSUB. For a DP MPAC (MPAC+2 = 0 after DLOAD) the
- * round adds nothing, so this equals SL; kept separate for fidelity.       */
+/**********************************************************************
+ * SLR n (TSSL then ROUNDSUB, INTERPRETER.agc pp.1154, 1137). For a DP
+ * MPAC (MPAC+2 = 0 after DLOAD) the round adds nothing, so this equals
+ * SL; kept separate for fidelity.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set on each overflowing step
+ *   a   agc_dp_t        I  MPAC
+ *   n   int             I  shift count, -127..127 (negative: SRR)
+ *
+ * RETURNS: agc_dp_t -- a 2^n rounded (scale -n)
+ **********************************************************************/
 agc_dp_t agc_dp_shl_round(agc_interp_t *ip, agc_dp_t a, int n)
 {
-    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a));
+    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -411,10 +597,19 @@ agc_dp_t agc_dp_shl_round(agc_interp_t *ip, agc_dp_t a, int n)
     return (agc_w_join(agc_w3_top(m)));
 }
 
-/* SL n / SR -n on the TP MPAC (TSSL, GENSCR/MPACSHR).                       */
+/**********************************************************************
+ * SL n / SR -n on the TP MPAC (TSSL p.1154, GENSCR / MPACSHR p.1160).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set on an overflowing left step
+ *   v   agc_tp_t        I  TP MPAC
+ *   n   int             I  shift count, -127..127 (> 0 left)
+ *
+ * RETURNS: agc_tp_t -- v 2^n (right shifts truncate)
+ **********************************************************************/
 agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
 {
-    agc_w3_t m = agc_w3_from_tp(v);
+    agc_w3_t m = agc_w3_from_tp(v); /* TP MPAC of v */
 
     if (!AGC_ASSERT(ip != 0) || (n == 0))
     {
@@ -443,11 +638,19 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
     return (agc_w3_value(m));
 }
 
-/* NORM (TSLC p.1157) on the TP MPAC.                                       */
+/**********************************************************************
+ * NORM (TSLC, INTERPRETER.agc p.1157) on the TP MPAC.
+ *
+ * ARGUMENTS:
+ *   v       agc_tp_t  I  TP MPAC
+ *   nshift  int *     O  left shifts done (the AGC stores -nshift)
+ *
+ * RETURNS: agc_tp_t -- v left-justified (|major word| >= 1/2), or 0
+ **********************************************************************/
 agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
 {
-    int      count = 0;
-    agc_w3_t m     = agc_w_tslc(agc_w3_from_tp(v), &count);
+    int      count = 0; /* left shifts done */
+    agc_w3_t m     = agc_w_tslc(agc_w3_from_tp(v), &count); /* normalised TP MPAC */
 
     if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
     {
@@ -462,10 +665,18 @@ agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
     return (agc_w3_value(m));
 }
 
-/* ROUND (unary op 07 -> ROUND: TC ROUNDSUB, p.1154/1137).                   */
+/**********************************************************************
+ * ROUND (unary op 07: TC ROUNDSUB, INTERPRETER.agc pp.1154, 1137).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND, set on a carry out of MPAC
+ *   a   agc_tp_t        I  TP MPAC
+ *
+ * RETURNS: agc_dp_t -- a rounded half away from zero to DP
+ **********************************************************************/
 agc_dp_t agc_tp_round(agc_interp_t *ip, agc_tp_t a)
 {
-    agc_w3_t m = agc_w3_from_tp(a);
+    agc_w3_t m = agc_w3_from_tp(a); /* TP MPAC of a */
 
     if (!AGC_ASSERT(ip != 0))
     {

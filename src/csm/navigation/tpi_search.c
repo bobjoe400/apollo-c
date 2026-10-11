@@ -59,11 +59,8 @@ typedef struct tps_work
 
 static tps_work_t tps_work;
 
-/* KFLAG: off = passive higher (K positive), on = passive lower. */
-static bool tps_kflag(void)
-{
-    return (agc_flag_test(AGC_FLAG_KFLAG));
-}
+/* KFLAG (agc_flag_test(AGC_FLAG_KFLAG)): off = passive higher (K
+ * positive), on = passive lower.                                       */
 
 /* LEMSTORE / CSMSTORE: an integration result as active (AVFLAG matches
  * the vehicle) or passive state.                                       */
@@ -159,7 +156,7 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
 
     x = agc_dp_add(ip, agc_dp_shl(ip, agc_dp_sqrt(ip, x), 1), TPS_DP002);
 
-    if (!tps_kflag())
+    if (!agc_flag_test(AGC_FLAG_KFLAG))
     {
         x = agc_dp_neg(x); /* BON DCOMP KFLAG    */
     }
@@ -189,7 +186,7 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
     rz_flag_put(AGC_FLAG_ITSWICH, false);
     rz->delvee     = RZ_DPPOSMAX;
     rz->hp         = TPS_MANYFEET;
-    tps_work.thetl = tps_kflag() ? TPS_SEC1THET : TPS_SEC2THET;
+    tps_work.thetl = agc_flag_test(AGC_FLAG_KFLAG) ? TPS_SEC1THET : TPS_SEC2THET;
 
     return (AGC_STATUS_OK);
 }
@@ -232,8 +229,8 @@ static agc_status_t tps_trial(agc_interp_t *ip, agc_rendz_t *rz,
     rz->delvee  = agc_dp_add(ip, rz->magvtpi, rz->reldelv);
     agc_rendz_periapo_t pa;
 
-    st     = agc_rendz_periapo1(ip, rz, rz->ract3, rz->viprime, &pa);
-    rz->hp = agc_rendz_shiftr1(rz, pa.hperi); /* SL* 0,2 */
+    st     = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
+    rz->hp = agc_rendz_scalar_from_body(rz, pa.hperi); /* SL* 0,2 */
 
     return (st);
 }
@@ -254,7 +251,7 @@ static tps_label_t tps_step(agc_interp_t *ip, agc_rendz_t *rz, bool set,
 {
     if (set)
     {
-        tps_work.deltee = tps_kflag() ? agc_dp_neg(step) : step; /* JUNCT1 */
+        tps_work.deltee = agc_flag_test(AGC_FLAG_KFLAG) ? agc_dp_neg(step) : step; /* JUNCT1 */
     }
 
     rz->tf = agc_dp_add(ip, tps_work.deltee, rz->tf); /* JUNCT2   */
@@ -434,7 +431,7 @@ static agc_status_t tps_enden(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (sg1 >= 0)
     { /* USEKAY   */
-        nn1 = tps_kflag() ? 2 : 1;
+        nn1 = agc_flag_test(AGC_FLAG_KFLAG) ? 2 : 1;
     }
     else
     {
@@ -507,7 +504,7 @@ static tps_display_t tps_display = {6U, 72U, AGC_JOB_TPI_SEARCH_COMPUTE};
 
 /* VNCOMP17: flash; TERMINATE is illegal ("TC -3": the same display),
  * PROCEED -> proceed, V32 -> P17.1, other data loads -> the display. */
-static agc_status_t tps_vncomp17(const agc_job_ctx_t *ctx, uint8_t verb,
+static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb,
                                  uint8_t noun, agc_job_id_t proceed)
 {
     if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
@@ -532,7 +529,7 @@ agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (tps_vncomp17(ctx, tps_display.verb, tps_display.noun,
+    return (tps_compute_display(ctx, tps_display.verb, tps_display.noun,
                          tps_display.proceed));
 }
 
@@ -625,14 +622,14 @@ agc_status_t agc_job_tpi_search_start(agc_job_ctx_t *ctx)
     }
 
     agc_flag_set(AGC_FLAG_UPDATFLG);
-    st = rz_set_option(2, tps_kflag() ? 1U : 2U); /* SXA,1 OPTION2 */
+    st = rz_set_option(2, agc_flag_test(AGC_FLAG_KFLAG) ? 1U : 2U); /* SXA,1 OPTION2 */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    return (tps_vncomp17(ctx, 6U, 72U, AGC_JOB_TPI_SEARCH_COMPUTE));
+    return (tps_compute_display(ctx, 6U, 72U, AGC_JOB_TPI_SEARCH_COMPUTE));
 }
 
 /* PROCEED on V06N72 (p.560): KFLAG from the option (1: on, 2: off);
@@ -662,7 +659,7 @@ agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
     { /* ALARUMS      */
         agc_alarm((agc_alarm_code_t) AGC_ALARM_00124);
 
-        return (tps_vncomp17(ctx, 5U, 9U, AGC_JOB_GOTOPOOH));
+        return (tps_compute_display(ctx, 5U, 9U, AGC_JOB_GOTOPOOH));
     }
 
     if (st != AGC_STATUS_OK)
@@ -670,7 +667,7 @@ agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (tps_vncomp17(ctx, 6U, 58U, AGC_JOB_TPI_SEARCH_RESULTS)); /* P17.3 */
+    return (tps_compute_display(ctx, 6U, 58U, AGC_JOB_TPI_SEARCH_RESULTS)); /* P17.3 */
 }
 
 /* After V06N58: V06N55 (pericenter code, central angle) GOFLASHR, R2

@@ -655,6 +655,39 @@ agc_status_t align_set_dsptem1(agc_dp_t v);
 agc_sp_t align_word_to_sp(uint16_t w);
 uint16_t align_sp_to_word(agc_sp_t v);
 
+/* ---- MPAC word forms (src/programs/alignment/word_forms.c) ----------- */
+
+/* An interpretive DP result as the AGC leaves it in MPAC, MPAC +1: the two
+ * words may disagree in sign (AD/DAS results) and the major word may be
+ * -0.  1STO2S reads the major word (after DDOUBL), so an angle with the
+ * same value converts one count differently in these forms:
+ * (+, -) rounds up, (-, +) rounds down, agreeing words truncate.       */
+typedef struct
+{
+    agc_sp_t hi;          /* MPAC: major word, 2^-14 of the DP scale       */
+    agc_sp_t lo;          /* MPAC +1: minor word, 2^-28 of the DP scale    */
+    bool     hi_neg_zero; /* hi is -0 (77777)                              */
+} align_words_t;
+
+/* The sign-agreeing words of a value (what DLOAD of a stored DP gives). */
+align_words_t align_words_of(agc_dp_t v);
+/* DAD (b) / DSU (-b): DAS of the minor words, carry into the major word,
+ * overflow-corrected major word (OVFIND not touched).                    */
+align_words_t align_words_add(align_words_t a, align_words_t b);
+/* DCS / SIGN with a negative operand: both words complemented.          */
+align_words_t align_words_neg(align_words_t a);
+/* The words ASIN (ASINEX) and ACOS (DMPSUB, or SUBTR for a negative
+ * argument) leave for a result of value v (revs).                        */
+align_words_t align_asin_words(agc_dp_t v);
+align_words_t align_acos_words(agc_dp_t v, bool arg_negative);
+/* ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES p. 1349) words for its inputs and
+ * its value theta = agc_imu_arctrig(ip, sinth, costh).                   */
+align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth,
+                                  agc_dp_t costh, agc_dp_t theta);
+/* 1STO2S / 1TO2SUB on the actual words: DDOUBL, major word to a 2's
+ * complement CDU pattern (-0 -> 77777).                                  */
+uint16_t align_words_to_cdu(align_words_t w);
+
 /* The present IMU CDUs X, Y, Z (raw words).                               */
 void align_read_cdus(uint16_t cdu[3]);
 /* CDUTRIG + CALCSMSC of the present CDUs: rows XNB.. wrt the present SM.  */

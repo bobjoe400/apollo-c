@@ -53,8 +53,6 @@ typedef struct ta_csm
     agc_vec_t    vlem;        /* DCDU (temp): LM velocity, m/cs 2^7       */
     agc_dp_t     abslos;      /* P21TIME (temp): |LOS|, m 2^29            */
     uint16_t     savedcdu[3]; /* SAVEDCDU: desired CDUs (THETAD)          */
-    uint16_t     cphix[3];    /* CPHIX: X-axis tracking attitude (N96)    */
-    uint16_t     praxis[3];   /* PRAXIS: preferred tracking attitude (N95) */
     agc_sp_t     r61cntr;     /* R61CNTR: + passes to skip, - KALCMANU    */
     agc_job_id_t genret;      /* GENRET                                   */
 } ta_csm_t;
@@ -114,11 +112,11 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
     agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);
     agc_vec_t prf   = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z);
 
-    st = agc_imu_vecpoint(ip, pointvsm, unitx, ta.cphix);
+    st = agc_imu_vecpoint(ip, pointvsm, unitx, rz_tracking_angles(false));
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_vecpoint(ip, pointvsm, prf, ta.praxis);
+        st = agc_imu_vecpoint(ip, pointvsm, prf, rz_tracking_angles(true));
     }
 
     bool prftrk = agc_flag_test(AGC_FLAG_PRFTRKAT);
@@ -130,7 +128,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
 
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        ta.savedcdu[i] = prftrk ? ta.praxis[i] : ta.cphix[i];
+        ta.savedcdu[i] = prftrk ? rz_tracking_angles(true)[i] : rz_tracking_angles(false)[i];
         agc_erase_set_thetad(i, ta.savedcdu[i]); /* CRSTOR   */
         st = AGC_STATUS_OK;
     }
@@ -241,7 +239,7 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
 /* CRS61.1 (pp.592-596): desired CDUs now; a gross maneuver (MANUEXIT,
  * CPHI.. = SAVEDCDU) unless someone is on the stick (then the UPLINK
  * ACTY lamp); in auto with the stick free, CRS61.2 and the DAP inputs. */
-static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
+static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
                              ta_result_t *res)
 {
     *res = TA_FED_DAP;
@@ -331,7 +329,7 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     ta_result_t  res = TA_FED_DAP;
-    agc_status_t st  = ta_crs61(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res);
+    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res);
 
     if (st != AGC_STATUS_OK)
     {
@@ -366,17 +364,6 @@ agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
     ta.r61cntr = 0;
 
     return (rz_continue(ta.genret));
-}
-
-/* CPHIX (noun 96) and PRAXIS (noun 95) for the displays.                */
-uint16_t agc_rendz_tracking_angles(bool preferred, int axis)
-{
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (0U);
-    }
-
-    return (preferred ? ta.praxis[axis] : ta.cphix[axis]);
 }
 
 /* ---- V89CALL (R63, CSM, pp.616-618) -------------------------------------

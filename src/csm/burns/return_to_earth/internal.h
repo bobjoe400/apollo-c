@@ -147,6 +147,9 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
                          const rte_v2t_t *pl);    /* DVCALC */
 agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
                         const rte_v2t_t *pl, agc_dp_t *xt1lim); /* XT1LIM */
+/* DSU X / BDSU X on a TP MPAC: MPAC+2 is left as it was (ENDVXV).         */
+agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x);  /* m - x  */
+agc_tp_t rte_tp_bdsu(agc_interp_t *ip, agc_dp_t x, agc_tp_t m); /* x - m  */
 
 /* conic.c */
 agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs,

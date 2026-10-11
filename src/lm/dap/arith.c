@@ -95,9 +95,136 @@ agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
     return (p.hi);
 }
 
+/* A value as a sign-extended 16-bit ones'-complement register word.     */
+static uint16_t arith_reg16(int32_t v)
+{
+    uint16_t r = (v >= 0) ? (uint16_t) v : (uint16_t) ~(uint16_t) (-v);
+
+    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (r);
+}
+
+/* A 16-bit register word read back as its overflow-corrected value
+ * (bit 16 is the sign, bits 14-1 the magnitude; -0 folds to 0).          */
+static agc_sp_t arith_val16(uint16_t w)
+{
+    agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u)
+                                       : (agc_sp_t) (w & 037777u);
+
+    if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (r);
+}
+
+/* 16-bit ones'-complement add with end-around carry (the adder).         */
+static uint16_t arith_add16(uint16_t a, uint16_t b)
+{
+    uint32_t s = (uint32_t) a + b;
+
+    if ((s & 0x10000u) != 0u)
+    {
+        s = (s + 1u) & 0xFFFFu;
+    }
+
+    if (!AGC_ASSERT(s <= 0xFFFFu))
+    {
+        return (0); /* no valid result */
+    }
+
+    return ((uint16_t) s);
+}
+
+/* DV with an improper quotient (|dividend| > |divisor|, or a zero
+ * divisor): the AGC hardware's divide sequence, which yields what Savage
+ * and Drake call "total nonsense" but deterministically. Register-level
+ * model after yaAGC SimulateDV (tools/oracle/yaAGC-src/agc_engine.c),
+ * which matches the hardware for these cases.                           */
+static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
+{
+    uint16_t a       = arith_reg16(n.hi);
+    uint16_t l       = arith_reg16(n.lo);
+    uint16_t div     = arith_reg16(d);
+    uint16_t dvdsign = a & 0x8000u;
+
+    if (dvdsign == 0u)
+    {
+        a = (uint16_t) ~a;              /* -|A|                        */
+    }
+
+    if (a == 0xFFFFu)
+    {
+        dvdsign = l & 0x8000u;          /* A was 0: sign from L        */
+    }
+
+    if (dvdsign != 0u)
+    {
+        l = (uint16_t) ~l;
+    }
+
+    l = arith_add16(l, 040000u);
+
+    if ((l & 0140000u) != 040000u)
+    {
+        a = arith_add16(a, 1u);         /* no positive overflow in L   */
+    }
+
+    uint16_t rem     = a;
+    uint16_t divsign = div & 0x8000u;
+
+    if (divsign != 0u)
+    {
+        div = (uint16_t) ~div;          /* |divisor|                   */
+    }
+
+    uint16_t qsign = l & 0x8000u;
+    uint16_t q     = (uint16_t) (qsign | ((l & 037777u) << 1) | (qsign >> 15));
+
+    for (int i = 0; i < 14; i++)
+    {
+        q = (uint16_t) (q << 1);
+        uint16_t rsign = rem & 0x8000u;
+
+        rem = (uint16_t) (rsign | ((rem & 037777u) << 1));
+
+        if ((q & 0x8000u) == 0u)
+        {
+            rem |= (uint16_t) (rsign >> 15);
+        }
+
+        uint16_t sum = arith_add16(rem, div);
+
+        if ((sum & 0x8000u) != 0u)
+        {
+            q  |= 1u;
+            rem = sum;
+        }
+    }
+
+    a = (uint16_t) (qsign | (q & 077777u));
+    lm_dp_pair_t r;
+
+    r.hi = arith_val16((dvdsign != divsign) ? (uint16_t) ~a : a);
+    r.lo = arith_val16((dvdsign != 0u) ? rem : (uint16_t) ~rem);
+
+    if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG))
+    {
+        return ((lm_dp_pair_t){0}); /* no valid result */
+    }
+
+    return (r);
+}
+
 /* DV: (A,L) / d -> quotient in A, remainder (dividend sign) in L. The AGC
- * requires |dividend| < |d| (as fractions); an improper division gives an
- * undefined result there, here it is limited to +-POSMAX and reported.
+ * requires |dividend| < |d| (as fractions); an improper division (or a
+ * zero divisor) gives the hardware's nonsense result (dv_improper), as
+ * 1/ACCS does with the zero erasable before the pad load.
  * A dividend exactly equal in magnitude to the divisor (A = +-d, L = 0)
  * is defined: A = POSMAX (signs agree) or NEGMAX, L = the dividend's
  * major word. 1/ACCONT's INVERT relies on it (BIT9 / AMIN = 1/.03).     */
@@ -105,18 +232,26 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r   = {0, 0};
     int32_t      num = lm_dap_dpval(n);
+    lm_dp_pair_t nn  = lm_dap_dpmake(num); /* sign-agreeing form  */
+    int32_t      ah  = (nn.hi >= 0) ? nn.hi : -(int32_t) nn.hi;
+    int32_t      ad  = (d >= 0) ? d : -(int32_t) d;
 
-    if (!AGC_ASSERT(d != 0))
+    if (num == 0)
     {
-        r.hi = (num >= 0) ? ARITH_MAXMAG : -ARITH_MAXMAG;
+        r.hi = (d == 0) ? ARITH_MAXMAG : 0; /* 0/0: max, sign rules  */
 
         return (r);
     }
 
-    if (num == (int32_t) d * ARITH_WORD || num == -(int32_t) d * ARITH_WORD)
+    if (ah > ad || (ah == ad && nn.lo != 0))
+    {
+        return (dv_improper(n, d)); /* the registers as they are */
+    }
+
+    if (ah == ad)
     { /* |dividend| = |divisor| */
-        r.hi = ((num > 0) == (d > 0)) ? ARITH_MAXMAG : -ARITH_MAXMAG;
-        r.lo = (agc_sp_t) (num / ARITH_WORD);
+        r.hi = ((nn.hi > 0) == (d > 0)) ? ARITH_MAXMAG : -ARITH_MAXMAG;
+        r.lo = nn.hi;
 
         return (r);
     }

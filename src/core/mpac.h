@@ -1,18 +1,31 @@
-/*
- * agc_mpac.h -- private word-level model of the interpreter's MPAC
- * (core-numeric lane only; not part of the public include/agc contract).
+/**********************************************************************
+ * FILE NAME: mpac.h
  *
- * The AGC keeps a DP number as two 15-bit ones'-complement words whose signs
- * may disagree (e.g. hi = +3, lo = -100 means 3*2^-14 - 100*2^-28). The
- * interpretive arithmetic in INTERPRETER.agc works on those words with MP,
- * DAS, DV, TS ... and its low-order bits depend on how the words split. To
- * be bit-exact we reproduce that word arithmetic here: each word is an
- * int32_t in (-2^14, +2^14), a DP pair is agc_w2_t, the triple-precision
- * MPAC, MPAC+1, MPAC+2 is agc_w3_t. Negative zero is not modelled.
+ * PURPOSE:
+ *   Private word-level model of the interpreter's MPAC for the
+ *   core-numeric sources only (not part of the public include/agc
+ *   contract). The AGC keeps a DP number as two 15-bit ones'-complement
+ *   words whose signs may disagree (hi = +3, lo = -100 means
+ *   3*2^-14 - 100*2^-28); INTERPRETER.agc works on those words with MP,
+ *   DAS, DV, TS ... and its low-order bits depend on how the words
+ *   split, so that word arithmetic is reproduced here: each word is an
+ *   int32_t in (-2^14, +2^14), a DP pair is agc_w2_t, the TP MPAC,
+ *   MPAC+1, MPAC+2 is agc_w3_t. Negative zero is not modelled.
  *
- * Conventions: "A" values returned through int out-parameters are the AGC
- * accumulator overflow indication (+1, 0, -1).
- */
+ * AGC SOURCE:
+ *   INTERPRETER.agc (Comanche055 pp.1131-1191): DMPSUB, ROUNDSUB,
+ *   DOTSUB, DSQSUB, VSQSUB, POLY, SQRTSUB, GENDDV, MAXDV, GENSCR, TSLC
+ *
+ * REQUIRES:
+ *   agc/core/interp.h, agc/core/word.h
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ *
+ * NOTES:
+ *   "A" values returned through int out-parameters are the AGC
+ *   accumulator overflow indication (+1, 0, -1).
+ **********************************************************************/
 #ifndef AGC_MPAC_H
 #define AGC_MPAC_H
 

@@ -59,7 +59,7 @@ static const agc_sp_t fc_daxmax[2] = {
     1820, /* DEC .11111111111  20 deg in 2 s                          */
     182   /* DEC .0111111111   2 deg when CSM docked                  */
 };
-static const agc_sp_t fc_day2max[2] = {
+static const agc_sp_t fc_day_half_max[2] = {
     /* DAY/2MAX, 1's, pi            */
     910, /* DEC .05555555555                                         */
     91   /* DEC .0055555555                                          */
@@ -109,7 +109,7 @@ static agc_sp_t fc_wrap15(int32_t d)
 }
 
 /* 15-bit word of a ones' complement value (what MSU sees as two's). */
-static int32_t fc_word1(agc_sp_t v)
+static int32_t fc_ones_word(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
@@ -216,7 +216,7 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 
 /* SPARCSIN -1: argument scaled 2; DOUBLE, and on overflow TS SR skips and
  * INDEX A / CS LIMITS picks +-POSMAX (LIMITS-1 = POSMAX, LIMITS+1 = BIT15). */
-agc_sp_t agc_lm_sparcsin_m1(agc_sp_t x2)
+agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x2)
 {
     int32_t d = 2 * (int32_t) x2;
 
@@ -257,7 +257,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 
     if (ac < as)
     { /* USECOS            */
-        agc_sp_t a = agc_lm_ad(agc_lm_sparcsin_m1((agc_sp_t) -c), FC_HALF);
+        agc_sp_t a = agc_lm_ad(agc_lm_sparcsin_doubled((agc_sp_t) -c), FC_HALF);
 
         return ((s > 0) ? a : (agc_sp_t) -a); /* 1TO2&TCQ          */
     }
@@ -271,7 +271,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
         base = FC_NEGMAX_2S;
     }
 
-    agc_sp_t a = agc_lm_sparcsin_m1(sn);
+    agc_sp_t a = agc_lm_sparcsin_doubled(sn);
     agc_sp_t r = fc_wrap15((int32_t) a - base); /* MSU TEM3          */
 
     if (!AGC_ASSERT(r >= -16384 && r <= 16383))
@@ -777,7 +777,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     fc_delgmb[2] = agc_lm_limitsub(fc_delgmb[2], fc_daxmax[n]); /* DAZMAX */
     agc_sp_t y2 = agc_lm_mp_hi(fc_delgmb[1], cosz); /* -DELATTY'/2       */
 
-    y2 = agc_lm_limitsub(y2, fc_day2max[n]);
+    y2 = agc_lm_limitsub(y2, fc_day_half_max[n]);
     /* DEVIATION: DV takes (A,L); L after LIMITSUB is modelled as A (true
      * unless the value was limited negative, where L is a DV remainder). */
     agc_sp_t newy = AGC_SP_MAX;
@@ -792,7 +792,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     fc_delgmb[1] = newy; /* -DELGMBY          */
     agc_sp_t t = (agc_sp_t) -fc_mp_dbl(oldy, sinz);
     /* MSU on ones' complement operands: one bit error if signs mixed.   */
-    agc_sp_t datx = fc_wrap15(fc_word1(t) - fc_word1(fc_delgmb[0]));
+    agc_sp_t datx = fc_wrap15(fc_ones_word(t) - fc_ones_word(fc_delgmb[0]));
 
     datx         = agc_lm_limitsub(datx, fc_daxmax[n]);  /* +DELATTX limited  */
     fc_delgmb[0] = (fc_flagoodw != 0) ? (agc_sp_t) -datx : 0;
@@ -807,7 +807,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 }
 
 /* FINDCDUW -2: the thrust command is already in UNFC/2. */
-agc_status_t agc_lm_findcduw_m2(agc_interp_t *ip)
+agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {

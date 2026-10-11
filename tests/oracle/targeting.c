@@ -87,8 +87,13 @@ static void cdh(const char *t, long tol)
     rz->up1    = oracle_in_vec(t, "UP1");
     (void) agc_rendz_cdhmvr(&ip, rz);
     oracle_require_ok(t, "POODOO");
-    /* F13: DIFFALT 31 LSB (62 m) off for an exactly circular passive
-     * orbit (the AGC gets the exact 100 km): TIMETHET's RNEW in C.      */
+    /* F13: DIFFALT 31 LSB (62 m) for cdh_earth_ell. Traced (review-
+     * prog-rendz): PARAM leaves R1A as the sign-disagreeing pair
+     * (00401, 40000); GETX's SR4/TAD keep that form and SQRTSUB reads
+     * only MPAC, MPAC+1, so each WLOOP pass differs by 1 LSB (W 20827918
+     * vs 20827920) -> X, XI, XSQC(XI) -> NEWSTATE R2 off 2 LSB at its
+     * own 2^33 scale (32 m per LSB) -> DIFFALT. Same ones'-complement
+     * class as F9/F14; a word-level WLOOP removes it (nav-conic).      */
     (void) oracle_cmp(t, "DIFFALT", rz->diffalt, oracle_out_dp(t, "DIFFALT"),
                       64);
     oracle_cmp_vec(t, "VACT3", rz->vact3, oracle_out_vec(t, "VACT3"), tol);

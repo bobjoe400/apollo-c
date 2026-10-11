@@ -118,7 +118,7 @@ agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* ATTCK2 (task): CDUXCMD..CDUZCMD = THETAD x 0.1 (the CDU limits excess
@@ -310,7 +310,7 @@ agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* DAPDAT2 (N47 proceed): the masses must exceed an empty LM (descent stage
@@ -349,7 +349,7 @@ agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx)
 
     if (staged)
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (agc_job_dap_data_load_noun48_lm(ctx));

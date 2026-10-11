@@ -331,6 +331,30 @@ static void test_lights(void)
     CHECK(!s.flash && !s.opr_err && !s.key_rel);
 }
 
+/* CLEANDSP with no continuation (P40BLNKR, BLANKDEX): the clean-out runs
+ * in a MAKEPLAY job of its own and the caller's job goes on (no sleep). */
+static void test_cleandsp_no_continuation(void)
+{
+    fresh(AGC_VEHICLE_LM);
+    agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 020, false, -1, 0};
+
+    CHECK(agc_dsky_display(&ctx, AGC_DSKY_CLEANDSP, 0u, NULL) ==
+          AGC_STATUS_OK);
+    int makeplay = 0;
+
+    for (int c = 0; c < agc_exec_core_sets(); c++)
+    {
+        agc_exec_core_info_t ci;
+
+        CHECK(agc_exec_core_info(c, &ci) == AGC_STATUS_OK);
+        CHECK(ci.state != AGC_CORE_SLEEPING);
+        makeplay += (ci.state == AGC_CORE_ACTIVE &&
+                     ci.loc == AGC_JOB_MAKEPLAY) ? 1 : 0; /* count jobs */
+    }
+
+    CHECK(makeplay == 1);
+}
+
 int main(void)
 {
     test_display_clock_time(AGC_VEHICLE_CSM);
@@ -346,6 +370,7 @@ int main(void)
     test_hmsin();
     test_mctbs();
     test_lights();
+    test_cleandsp_no_continuation();
     (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_asserts);
 

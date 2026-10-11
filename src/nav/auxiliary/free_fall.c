@@ -104,18 +104,30 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
     tff->tffnp = agc_vec_sq(ip, agc_vec_shl(ip, h, 1)); /* VSL1 VSQ   */
     agc_dp_t two_r = agc_dp_div(ip, AGC_DP_QUARTER, tff->nrmag); /* 2/RMAG */
 
-    tff->tffvsq = agc_dp_neg(agc_vec_sq(ip, tff->vone_p)); /* VSQ DCOMP  */
-    agc_dp_t vsq =
-        agc_navaux_dp_shift(ip, tff->tffvsq, 6 - tff->nr); /* SR* 0-6,1 */
+    /* VSQ DCOMP keeps the TP ("KEEP MPAC+2 HONEST FOR SQRT"); the SR*,
+     * DAD, SL* and ABS SQRT that follow all work on the TP MPAC.          */
+    agc_tp_t vsq = -agc_vec_sq_tp(ip, tff->vone_p); /* -V^2/MU, TP  */
 
-    tff->tffalfa = agc_dp_add(ip, vsq, two_r);          /* ALFA       */
-    agc_dp_t alfa20 = agc_navaux_dp_shift(ip, tff->tffalfa, tff->nr - 6);
+    tff->tffvsq = agc_tp_to_dp(vsq);                       /* STORE    */
+    vsq         = agc_tp_shift(ip, vsq, 6 - tff->nr);      /* SR* 0-6,1 */
+    agc_tp_t alfa = agc_tp_add(ip, vsq, agc_tp_from_dp(two_r)); /* DAD */
 
-    tff->tffrtalf = agc_dp_norm(agc_dp_sqrt(ip, agc_dp_abs(alfa20)), &tff->na);
-    agc_dp_t a =
-        agc_dp_sign(agc_dp_sq(ip, tff->tffrtalf), alfa20); /* DSQ SIGN */
+    tff->tffalfa = agc_tp_to_dp(alfa);                     /* ALFA     */
+    alfa         = agc_tp_shift(ip, alfa, tff->nr - 6);    /* SL* 0-6,1 */
+    agc_dp_t alfa20 = agc_tp_to_dp(alfa);                  /* PUSH     */
+    agc_tp_t abs_alfa = (alfa < 0) ? -alfa : alfa;         /* ABS: TP  */
 
-    tff->tff1_alf = (a == 0) ? 0 : agc_dp_div(ip, AGC_DP_QUARTER, a);
+    tff->tffrtalf = agc_dp_norm(agc_tp_sqrt(ip, abs_alfa), &tff->na);
+    agc_tp_t a = agc_dp_sq_tp(tff->tffrtalf); /* DSQ: TP          */
+
+    if (alfa20 < 0)
+    {
+        a = -a; /* SIGN (ALFA from the push list) */
+    }
+
+    /* BZE tests all three words; BDDV divides by the top two.            */
+    tff->tff1_alf =
+        (a == 0) ? 0 : agc_dp_div(ip, AGC_DP_QUARTER, agc_tp_to_dp(a));
 
     return (AGC_STATUS_OK);
 }
@@ -138,29 +150,32 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t ap = agc_dp_mul(ip, tff->tffalfa, tff->tffnp); /* (-12+NR) */
+    /* DMP, SR* and DCOMP on the TP; DAD adds to its top two words; ABS
+     * and SQRT see MPAC+2 ("DCOMP GIVES VALID TP RESULT FOR SQRT").       */
+    agc_tp_t ap = agc_dp_mul_tp(tff->tffalfa, tff->tffnp); /* (-12+NR) */
 
-    ap = agc_navaux_dp_shift(ip, ap, 8 - tff->nr); /* -> 2^4   */
-    agc_dp_t e2    = agc_dp_abs(agc_dp_add(ip, agc_dp_neg(ap), DP2_M4));
+    ap = agc_tp_shift(ip, ap, 8 - tff->nr);                /* -> 2^4   */
+    agc_tp_t e2 = agc_tp_add(ip, -ap, agc_tp_from_dp(DP2_M4));
     agc_dp_t onepe =
-        agc_dp_add(ip, agc_dp_sqrt(ip, e2), AGC_DP_QUARTER); /* 1+E 2^2 */
-    agc_dp_t rp = agc_dp_div(ip, tff->tffnp, onepe);
+        agc_dp_add(ip, agc_tp_sqrt(ip, (e2 < 0) ? -e2 : e2),
+                   AGC_DP_QUARTER);                        /* 1+E 2^2  */
+    agc_tp_t rp = agc_tp_from_dp(agc_dp_div(ip, tff->tffnp, onepe));
 
-    rp        = agc_navaux_dp_shift(ip, rp, -tff->nr);      /* SR* 0,1  */
-    tff->rper = agc_navaux_dp_shift(ip, rp, 7 - tff->nr); /* SR* 0-7,1 */
-    agc_dp_t ra = agc_dp_mul(ip, onepe, tff->tff1_alf);
+    rp        = agc_tp_shift(ip, rp, -tff->nr);            /* SR* 0,1  */
+    tff->rper = agc_tp_to_dp(agc_tp_shift(ip, rp, 7 - tff->nr)); /* 0-7,1 */
+    agc_tp_t ra = agc_dp_mul_tp(onepe, tff->tff1_alf);     /* DMP      */
 
-    agc_interp_clear_ovf(ip); /* BOVB TCDANZIG */
-    tff->rapo = AGC_TFF_NEARONE;    /* MAXRA    */
+    agc_interp_clear_ovf(ip);    /* BOVB TCDANZIG */
+    tff->rapo = AGC_TFF_NEARONE; /* MAXRA    */
 
     if (ra != 0)
-    {
-        ra = agc_navaux_dp_shift(ip, ra, tff->na - 5); /* SL* 0-5,2 */
-        ra = agc_navaux_dp_shift(ip, ra, tff->na);     /* SL* 0,2  */
+    {                                           /* BZE MAXRA */
+        ra = agc_tp_shift(ip, ra, tff->na - 5); /* SL* 0-5,2 */
+        ra = agc_tp_shift(ip, ra, tff->na);     /* SL* 0,2   */
 
         if (!agc_interp_test_ovf(ip) && (ra >= 0))
         {
-            tff->rapo = ra;
+            tff->rapo = agc_tp_to_dp(ra);
         }
     }
 
@@ -176,7 +191,8 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t t = agc_dp_mul(ip, tff_rtmu, tff->rtmu); /* DMP TFF/RTMU      */
+    /* DMP TFF/RTMU: the caller takes the top two words (truncation).     */
+    agc_dp_t t = agc_dp_mul_trunc(tff_rtmu, tff->rtmu);
 
     *t_cs = agc_interp_test_ovf(ip) ? AGC_TFF_NEARONE : t; /* BOV MAXTFF  */
 
@@ -200,28 +216,51 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     int na = tff->na;
 
     tff->tffdelq = agc_dp_sub(ip, q2, tff->tffq1); /* Q2-Q1    */
+    /* DMP SL* 0,2 / PUSH: 1/(ALFA Z), TP shifted, pushed as DP.           */
     agc_dp_t inv_az =
-        agc_navaux_dp_shift(ip, agc_dp_mul(ip, dn, tff->tff1_alf), na);
-    agc_dp_t x = agc_navaux_dp_shift(ip, agc_dp_mul(ip, inv_az, dn), na);
+        agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(dn, tff->tff1_alf), na));
+    /* DMP SL* 0,2 BOVB SIGNMPAC: X = 1/(ALFA Z^2); on overflow (X = 1.0)
+     * SIGNMPAC loads +-DPPOSMAX with the sign of the overflow.            */
+    agc_tp_t xp = agc_dp_mul_tp(inv_az, dn);
 
-    /* DEVIATION: BOVB SIGNMPAC is the saturation agc_dp_shl already gives. */
     agc_interp_clear_ovf(ip);
+    agc_tp_t xs = agc_tp_shift(ip, xp, na);
+    agc_dp_t x  = agc_tp_to_dp(xs);
+
+    if (agc_interp_test_ovf(ip))
+    {
+        x = (xp < 0) ? -AGC_DP_MAX : AGC_DP_MAX; /* SIGNMPAC        */
+    }
+
     tff->tffx = x;
-    agc_dp_t xt   = agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, x), x), 3);
-    agc_dp_t term = agc_dp_mul(ip, agc_dp_sub(ip, xt, DP2_M3), inv_az);
-    agc_dp_t sg   =
-        agc_dp_add(ip, agc_dp_shl(ip, agc_dp_mul(ip, dn, tff->rmag1), 2),
-                   tff->tffq1); /* sign SDELF */
-    agc_dp_t pa = agc_navaux_dp_shift(
-        ip, agc_dp_mul(ip, tff->tffnp, tff->tff1_alf), 1 + na);
+    /* RTB DMP T(X) X, SR3 DSU DP2(-3), DMP (1/ALFA Z), PUSH.               */
+    agc_tp_t xt = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, x), x), -3);
+    agc_dp_t term =
+        agc_dp_mul_trunc(agc_dp_sub(ip, agc_tp_to_dp(xt), DP2_M3), inv_az);
+    /* DLOAD DMP D/N RMAG1, SL2, DAD TFFQ1: sign of SDELF.                 */
+    agc_tp_t sgt = agc_tp_shift(ip, agc_dp_mul_tp(dn, tff->rmag1), 2);
+    agc_dp_t sg  = agc_dp_add(ip, agc_tp_to_dp(sgt), tff->tffq1);
+    /* DLOAD TFFNP, DMP SL* 1,2, SIGN, SL* 0,2: P/ALFA for TFF/TRIG.       */
+    agc_tp_t pa =
+        agc_tp_shift(ip, agc_dp_mul_tp(tff->tffnp, tff->tff1_alf), 1 + na);
 
-    tff->tfftem = agc_navaux_dp_shift(ip, agc_dp_sign(pa, sg), na); /* P/ALFA */
-    agc_dp_t s = agc_dp_add(
-        ip, agc_dp_mul(ip, agc_dp_sqrt(ip, tff->tff1_alf), PI_16), term);
+    if (sg < 0)
+    {
+        pa = -pa; /* SIGN TFFTEM                       */
+    }
 
-    s = agc_dp_sub(ip, agc_navaux_dp_shift(ip, s, na - 1), tff->tffdelq);
-    s = agc_navaux_dp_shift(ip, agc_dp_mul(ip, s, tff->tff1_alf), na - 3);
-    s = agc_navaux_dp_shift(ip, s, na - 4); /* TFF sqrt(MU) 2^45   */
+    tff->tfftem = agc_tp_to_dp(agc_tp_shift(ip, pa, na)); /* P/ALFA   */
+    /* DLOAD 1/ALFA, SQRT DMP PI/16, DAD term, SL* 0-1,2, DSU Q2-Q1,
+     * DMP 1/ALFA SL* 0-3,2 SL* 0-4,2: TFF sqrt(MU) scale 2^45 (E).        */
+    agc_tp_t st = agc_dp_mul_tp(agc_dp_sqrt(ip, tff->tff1_alf), PI_16);
+
+    st = agc_tp_add(ip, st, agc_tp_from_dp(term));
+    st = agc_tp_shift(ip, st, na - 1);
+    agc_dp_t s = agc_dp_sub(ip, agc_tp_to_dp(st), tff->tffdelq);
+
+    st = agc_dp_mul_tp(s, tff->tff1_alf);
+    st = agc_tp_shift(ip, st, na - 3);
+    s  = agc_tp_to_dp(agc_tp_shift(ip, st, na - 4));
 
     return (tff_end(ip, tff, s, t_cs));
 }
@@ -258,10 +297,11 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
         return (AGC_STATUS_OK);
     }
 
-    agc_dp_t zra = agc_dp_mul(ip, num, tff->tffrtalf);        /* TFFXTEST */
+    /* TFFXTEST: DMP SR* 0-3,2 on the TP, DDV takes its top two words.     */
+    agc_tp_t zra = agc_dp_mul_tp(num, tff->tffrtalf);
 
-    zra = agc_navaux_dp_shift(ip, zra, 3 - tff->na); /* SR* 0-3,2 */
-    agc_dp_div_ovf_only(ip, zra, absden); /* Z sqrt(ALFA): only OVFIND matters */
+    zra = agc_tp_shift(ip, zra, 3 - tff->na);
+    agc_dp_div_ovf_only(ip, agc_tp_to_dp(zra), absden); /* only OVFIND  */
 
     if (agc_interp_test_ovf(ip))
     { /* BOV TFFELL                       */
@@ -273,18 +313,23 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     /* General conic (TFFXTEST continuation, p. 1383-1384), alfa Z Z < 1:
      * X = ALFA Z^2, TFF = (RTERM + RN - 2 Z^2 T(X)) Z / sqrt(MU).            */
     agc_dp_t z   = agc_dp_div(ip, num, den); /* Z (-13)  */
-    agc_dp_t zsq = agc_dp_sq(ip, z);         /* (-26)    */
+    agc_dp_t zsq = agc_dp_sq(ip, z);         /* (-26), pushed as DP */
+    /* DMP TFFNP, SL 5, SIGN Z: P Z^2 for TFF/TRIG, TP shifted.            */
+    agc_tp_t pz = agc_tp_shift(ip, agc_dp_mul_tp(zsq, tff->tffnp), 5);
 
-    tff->tfftem =
-        agc_dp_sign(agc_dp_shl(ip, agc_dp_mul(ip, zsq, tff->tffnp), 5), z);
-    tff->tffx =
-        agc_navaux_dp_shift(ip, agc_dp_mul(ip, zsq, tff->tffalfa), tff->nr);
-    agc_dp_t tz =
-        agc_dp_shr(agc_dp_mul(ip, agc_tff_poly(ip, tff->tffx), zsq), 2);
-    agc_dp_t s   = agc_dp_add(ip, agc_dp_sub(ip, tff->rterm, tz), tff->rmag1);
-    agc_dp_t tsm = agc_dp_shr(agc_dp_mul(ip, s, z), 3); /* TFF sqrt(MU) */
+    tff->tfftem = agc_tp_to_dp((z < 0) ? -pz : pz);
+    /* DMP TFFALFA, SL* 0,1: X = ALFA Z^2.                                  */
+    tff->tffx = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_dp_mul_tp(zsq, tff->tffalfa), tff->nr));
+    /* RTB DMP T(X) Z^2, SR2, BDSU RTERM, DAD RMAG1, DMP Z, SR3.            */
+    agc_tp_t tz =
+        agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, tff->tffx), zsq), -2);
+    agc_dp_t s = agc_dp_add(ip, agc_dp_sub(ip, tff->rterm, agc_tp_to_dp(tz)),
+                            tff->rmag1);
+    agc_tp_t tsm_tp = agc_tp_shift(ip, agc_dp_mul_tp(s, z), -3);
+    agc_dp_t tsm    = agc_tp_to_dp(tsm_tp); /* TFF sqrt(MU), top words */
 
-    if (tsm < 0)
+    if (tsm_tp < 0)
     {                                                       /* BPL ENDTFF   */
         bool gone_past = agc_dp_sign(tsm, tff->tffq1) >= 0; /* SIGN TFFQ1 */
 
@@ -297,14 +342,14 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            agc_dp_t per =
-                agc_dp_div(ip, agc_dp_mul(ip, tff->tff1_alf,
-                                          PI_16), tff->tffrtalf);
+            /* DMP PI/16 DDV TFFRTALF (top words), SL* SL* SL* on the TP. */
+            agc_tp_t per = agc_tp_from_dp(agc_dp_div(
+                ip, agc_dp_mul_trunc(tff->tff1_alf, PI_16), tff->tffrtalf));
 
-            per = agc_navaux_dp_shift(ip, per, tff->na - 4);
-            per = agc_navaux_dp_shift(ip, per, tff->na - 4);
-            per = agc_navaux_dp_shift(ip, per, tff->na);
-            tsm = agc_dp_add(ip, per, tsm);
+            per = agc_tp_shift(ip, per, tff->na - 4);
+            per = agc_tp_shift(ip, per, tff->na - 4);
+            per = agc_tp_shift(ip, per, tff->na);
+            tsm = agc_dp_add(ip, agc_tp_to_dp(per), tsm); /* DAD PDL+0 */
         } /* else NEGTFF  */
     }
 
@@ -336,13 +381,18 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 
     tff->rterm  = rterm;
     tff->nrterm = agc_navaux_dp_shift(ip, rterm, nr); /* SL* 0,1 */
+    /* DMP BDSU: the products below are used by DP instructions (BDSU,
+     * PUSH), i.e. truncated to the top two words.                         */
     agc_dp_t two_m = agc_dp_sub(
         ip, AGC_DP_QUARTER,
-        agc_dp_mul(ip, tff->nrterm, tff->tffalfa)); /* 2-ALFA RT, 2^3 */
-    agc_dp_t rt2  = agc_dp_mul(ip, two_m, tff->nrterm);
-    agc_dp_t p    = agc_navaux_dp_shift(ip, tff->tffnp, 6 - nr); /* SR* 0-6,1 */
-    agc_dp_t q2sq =
-        agc_navaux_dp_shift(ip, agc_dp_add(ip, agc_dp_neg(p), rt2), -nr);
+        agc_dp_mul_trunc(tff->nrterm, tff->tffalfa)); /* 2-ALFA RT, 2^3 */
+    agc_dp_t rt2 = agc_dp_mul_trunc(two_m, tff->nrterm);
+    /* DLOAD TFFNP SR* 0-6,1, DCOMP, DAD, SR* 0,1 on the TP ("DUE TO
+     * SHIFTS, KEEP PRECISION FOR SQRT"); BMN and SQRT see all three words. */
+    agc_tp_t q2sq = agc_tp_shift(ip, agc_tp_from_dp(tff->tffnp), 6 - nr);
+
+    q2sq = agc_tp_add(ip, -q2sq, agc_tp_from_dp(rt2));
+    q2sq = agc_tp_shift(ip, q2sq, -nr);
 
     if (tper)
     {
@@ -356,11 +406,13 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
         return (AGC_STATUS_OK);
     }
 
-    agc_dp_t q2 = agc_dp_neg(agc_dp_sqrt(ip, q2sq)); /* Q2 (-16), inbound */
+    agc_dp_t q2 = agc_dp_neg(agc_tp_sqrt(ip, q2sq)); /* Q2 (-16), inbound */
 
-    agc_interp_clear_ovf(ip);                  /* BOVB TCDANZIG     */
+    agc_interp_clear_ovf(ip); /* BOVB TCDANZIG     */
     tff->tfftem = q2;
-    tff->tffq1  = agc_dp_shl(ip, agc_vec_dot(ip, tff->vone_p, tff->rone), 3);
+    /* VLOAD VONE' DOT RONE SL3: the TP dot product shifted, then stored. */
+    tff->tffq1 = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_vec_dot_tp(ip, tff->vone_p, tff->rone), 3));
 
     if (tff->tffq1 < 0)
     { /* INBOUND           */
@@ -369,7 +421,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
     }
 
     agc_dp_t den =
-        agc_dp_sub(ip, two_m, agc_dp_mul(ip, tff->tffalfa, tff->nrmag));
+        agc_dp_sub(ip, two_m, agc_dp_mul_trunc(tff->tffalfa, tff->nrmag));
 
     return (tff_z(ip, tff, agc_dp_sub(ip, q2, tff->tffq1), den, q2, t_cs));
 }

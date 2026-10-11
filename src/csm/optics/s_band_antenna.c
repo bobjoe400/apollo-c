@@ -197,7 +197,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     /* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
-        return (agc_dsky_endext()); /* BZF ENDEXT   */
+        return (agc_dsky_endmark()); /* BZF ENDEXT   */
     }
 
     agc_status_t st_angles =

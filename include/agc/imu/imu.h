@@ -118,8 +118,15 @@ void         agc_imu_setcoars(void); /* SETCOARS                       */
 agc_status_t agc_imu_fin20(void);    /* IMUFIN20 (= IMUFINE)           */
 agc_status_t agc_imu_clear_cmds(void); /* -0 into CDUXCMD..Z, GYROCMD    */
 /* MODECADR storage is exec's (agc_erase_modecadr in agc_exec.h); the
- * IMU lane's encoding: +0 free, -1 complete good, -2 complete failed
- * (stands in for -0), positive = id of the stalled job.                  */
+ * IMU lane's encoding: +0 free, -1 complete good, -2 complete failed,
+ * positive = id of the stalled job.  DEVIATION: the AGC stores -0 for
+ * "complete, failed"; agc_sp_t has no -0, so -2 stands in.  Code that
+ * tests the word with BZF (CKMODCAD, OPTCOARK, LM DESRETRN) treats +0
+ * and -0 alike and must use agc_imu_modecadr_bzf, not "== 0".            */
+#define AGC_MODECADR_FREE ((agc_sp_t) 0)  /* +0: free / in progress  */
+#define AGC_MODECADR_GOOD ((agc_sp_t) -1) /* -1: complete, good      */
+#define AGC_MODECADR_BAD  ((agc_sp_t) -2) /* -0: complete, failed    */
+bool agc_imu_modecadr_bzf(agc_imu_device_t dev); /* C(MODECADR) = +-0  */
 /* Simulator side of the hardware command counters: the harness drains
  * GYROCMD and CDUXCMD..CDUZCMD as it emits the pulses.                    */
 void         agc_imu_hw_set_gyrocmd(uint16_t pulses);

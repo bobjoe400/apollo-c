@@ -177,7 +177,7 @@ static agc_status_t rcs_freefunc(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (csm_rcs_t6progm());
+    return (csm_rcs_t6prog_manual());
 }
 
 /* STICKCHK (p. 1021): RMANNDX, PMANNDX, YMANNDX = 0, 1, 2 (or 3) for no,

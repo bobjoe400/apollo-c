@@ -6,14 +6,19 @@
  * V37XEQC, FCADRMM1, PREMM1, DNLADMM1), Luminary099 pp. 227-236.
  * Vehicle-specific steps are in csm.c and lm.c beside this file.
  *
- * The AGC changes program by a software restart: NOUVEAU sets TEMPFLSH =
- * V37QCAD (V37XEQ +3) and goes to GOPROG2; the restart of group 4 (phase
- * 4.1 set by CANV37) restarts the last display, which is that address.
- * DEVIATION: here group 4 gets a type C phase whose restart job is V37XEQ
- * (AGC_JOB_CHANGE_PROGRAM_START) at the new program's priority, and ENEMA
- * is requested: the software restart that follows starts V37XEQ, which
- * starts the program (FCADRMM1) and sets MODREG (NEWMODEA). P00 sets
- * MODREG and restarts with no group 4.
+ * The AGC changes program by a software restart: CANV37 sets TEMPFLSH =
+ * R00AD and phase 4.1, NOUVEAU sets TEMPFLSH = V37QCAD (V37XEQ +3) and
+ * goes to GOPROG2; the 4.1 restart is INITDSP (FINDVAC PRIO14, PRIOCHNG
+ * to RESTREG = PRIO30), which jumps to TEMPFLSH -3: ROC (CANV37 again)
+ * or V37XEQ.
+ * DEVIATION: the C INITDSP re-issues the last display and cannot be
+ * pointed at TEMPFLSH, so group 4 gets type C job phases instead: CANV37
+ * restarts as itself (AGC_JOB_CHANGE_PROGRAM_CONTINUE), NOUVEAU as V37XEQ
+ * (AGC_JOB_CHANGE_PROGRAM_START), both at PRIO30, and ENEMA is requested:
+ * the software restart that follows starts V37XEQ, which starts the
+ * program (FCADRMM1), presets PHSPRDT4 and sets MODREG (NEWMODEA). P00
+ * sets MODREG and restarts with no group 4. PHASE4 therefore reads
+ * 05024 (type C) where the AGC shows 4.1.
  *
  * LAYERING: as the rest of change_program/, exec calling up (pinball,
  * integration, telemetry, the DAPs and SERVICER); see ARCHITECTURE.md.
@@ -33,8 +38,8 @@
 #define CP_BIT6       000040u /* IMODES30 bit 6: IMU being initialised */
 #define CP_DPS_ABORT  70U
 #define CP_APS_ABORT  71U
-#define CP_PHASE_4_1  ((uint16_t) 000014) /* PHASCHNG OCT 14: 4.1       */
 #define CP_GROUP4_JOB ((uint16_t) 005024) /* type C, D, J, group 4      */
+#define CP_PRIO5      ((agc_prio_t) 05)   /* PHSPRDT2 for P00 (POOH)    */
 
 static uint8_t mmnumber; /* MMNUMBER: the requested major mode       */
 static int     mindex;   /* MINDEX: its index in the mode tables       */
@@ -216,21 +221,20 @@ agc_status_t exec_cp_after_engine_off(void)
 }
 
 /* GOGOPROG: the software restart; for a new program, with group 4 set to
- * restart V37XEQ at the program's priority (see the file header).      */
+ * restart V37XEQ at PRIO30 (see the file header).                      */
 static agc_status_t cp_gogoprog(bool v37xeq)
 {
     if (v37xeq)
     {
-        int                   n = 0;
-        const exec_cp_mode_t *t = cp_modes(&n);
+        int n = 0;
 
-        if (!AGC_ASSERT(mindex >= 0 && mindex < n))
+        if (!AGC_ASSERT(cp_modes(&n) != NULL && mindex >= 0 && mindex < n))
         {
             return (AGC_STATUS_BAD_ARG);
         }
 
         agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_START,
-                             AGC_TASK_NONE, (int16_t) t[mindex].prio, false,
+                             AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false,
                              0U};
 
         agc_phase_change_var(CP_GROUP4_JOB, &v); /* TEMPFLSH = V37QCAD */
@@ -250,9 +254,10 @@ static agc_status_t cp_pooh(void)
         return (st);
     }
 
+    agc_phase_set_priority(2, CP_PRIO5); /* CAF PRIO5 / TS PHSPRDT2 */
     agc_inhint();
     agc_flag_clear(AGC_FLAG_NODOFLAG);
-    agc_phase_newphase(2, 5, false); /* 2.5 STATINT1 at PRIO5 */
+    agc_phase_newphase(2, 5, false); /* 2.5: STATINT1 restart  */
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
@@ -315,6 +320,12 @@ static agc_status_t cp_nouveau(void)
     }
 
     agc_telem_select_list(t[mindex].dnlist); /* SEUDOP00: TS DNLSTCOD */
+
+    if (lm)
+    {
+        agc_erase_set_agsword((uint16_t) t[mindex].dnlist); /* TS AGSWORD */
+    }
+
     agc_relint();
     bool statquo = false;
 
@@ -362,7 +373,10 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(4, CP_PHASE_4_1); /* PHASCHNG OCT 14     */
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_CONTINUE,
+                         AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
+
+    agc_phase_change_var(CP_GROUP4_JOB, &v); /* R00AD; PHASCHNG OCT 14 */
     agc_status_t st = agc_integ_install(0, AGC_JOB_CHANGE_PROGRAM_CONTINUE);
 
     if (st != AGC_STATUS_OK)
@@ -388,8 +402,10 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
 }
 
 /* V37XEQ / V37XEQC (C p.202 / L p.232): after the software restart,
- * start the program's first job at its priority (SPVAC), MODREG = the
- * new major mode (NEWMODEA), RELDSP, ENDOFJOB.                          */
+ * preset PHSPRDT4, start the program's first job at its priority
+ * (SPVAC), MODREG = the new major mode (NEWMODEA), RELDSP, ENDOFJOB.
+ * (MMTEMP and BASETEMP are PHSPRDT3 and TBASE4 in the AGC; that debris
+ * is not reproduced.)                                                   */
 agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx)
 {
     int                   n = 0;
@@ -405,6 +421,7 @@ agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
+    agc_phase_set_priority(4, t[mindex].prio); /* TS PHSPRDT4      */
     agc_status_t st = agc_exec_findvac(t[mindex].prio, t[mindex].job);
 
     if (st != AGC_STATUS_OK)

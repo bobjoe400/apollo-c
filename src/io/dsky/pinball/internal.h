@@ -1,24 +1,36 @@
-/*
- * internal.h -- private state and helpers shared by the pinball
- * translation units (src/io/dsky/pinball_*.c, src/io/dsky/display_if*.c).
+/**********************************************************************
+ * FILE NAME: internal.h
  *
- * The AGC keeps pinball's erasables in fixed locations (PINBALL p. 310-312).
- * Here they live in ONE static struct in state.c, reached through
- * pin_st() so that the module's several .c files share it without extern
- * globals (rule 6).
+ * PURPOSE:
+ *   Private state (pin_state_t) and helpers shared by the pinball
+ *   translation units (src/io/dsky/pinball/*.c, src/io/dsky/display_if.c).
  *
- * Control flow model. PINBALL jumps freely between labels; here every
- * routine is a function returning agc_status_t:
- *   AGC_STATUS_OK          the AGC path ended in ENDOFJOB, TC ENTEXIT or a
- *                          plain return -- the caller goes on to its own
- *                          end (job end, NVSUBEND, PASTEVB);
- *   PIN_STATUS_RECYCLE     ALMCYCLE ran: the AGC re-enters ENTER with the
- *                          original verb; pin_enter() loops on it (no
- *                          recursion, rule 1);
- *   AGC_STATUS_POODOO      DSPALARM from an internal NVSUB (abort 01501) or
- *                          DSPABORT (01206);
- *   other                  a parameter/assertion failure.
- */
+ * AGC SOURCE:
+ *   PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 310-312 (the pinball
+ *   erasables), LM pp. 393-395
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none: the AGC keeps pinball's erasables in fixed locations; here
+ *   they live in ONE static struct in state.c, reached through pin_st(),
+ *   so the module's .c files share it without extern globals (rule 6).
+ *   Struct members carry their AGC name and scale in a short comment.
+ *
+ * NOTES:
+ *   Control flow model. PINBALL jumps freely between labels; here every
+ *   routine is a function returning agc_status_t:
+ *     AGC_STATUS_OK       the AGC path ended in ENDOFJOB, TC ENTEXIT or a
+ *                         plain return -- the caller goes on to its own
+ *                         end (job end, NVSUBEND, PASTEVB);
+ *     PIN_STATUS_RECYCLE  ALMCYCLE ran: the AGC re-enters ENTER with the
+ *                         original verb; pin_enter() loops on it (no
+ *                         recursion, rule 1);
+ *     AGC_STATUS_POODOO   DSPALARM from an internal NVSUB (abort 01501) or
+ *                         DSPABORT (01206);
+ *     other               a parameter/assertion failure.
+ **********************************************************************/
 #ifndef PINBALL_INTERNAL_H
 #define PINBALL_INTERNAL_H
 
@@ -81,12 +93,12 @@
 #define PIN_POSMAX         037777u
 #define PIN_WORD           077777u /* 15-bit word mask                      */
 #define PIN_NEGZERO        077777u /* ones' complement -0                   */
-#define PIN_CHRPRIO        ((agc_prio_t) 030) /* CHRPRIO OCT 30000 (>> 9)            */
+#define PIN_CHRPRIO        ((agc_prio_t) 030) /* CHRPRIO OCT 30000 (>> 9) */
 #define PIN_PRIO15         ((agc_prio_t) 015)
 #define PIN_PRIO32         ((agc_prio_t) 032)
 #define PIN_PRIO33         ((agc_prio_t) 033)
-#define PIN_MONDEL_CS      ((uint16_t) 0144) /* MONDEL OCT 144 = 100 cs = 1 s      */
-#define PIN_SHOLTS_CS      ((uint16_t) 0764) /* SHOLTS OCT 764 = 500 cs = 5 s      */
+#define PIN_MONDEL_CS      ((uint16_t) 0144) /* MONDEL OCT 144 = 100 cs = 1 s */
+#define PIN_SHOLTS_CS      ((uint16_t) 0764) /* SHOLTS OCT 764 = 500 cs = 5 s */
 #define PIN_ALARM_DSPALARM ((agc_alarm_code_t) 01501) /* bad NVSUB V/N       */
 #define PIN_ALARM_DSPABORT ((agc_alarm_code_t) 01206) /* 2nd sleeper         */
 #define PIN_ALARM_PRIOBORT ((agc_alarm_code_t) 01502) /* display conflict    */
@@ -170,8 +182,8 @@ typedef enum pin_loadstat
  * RECAL2 reaches by adding 1 or 2 to LOC.                              */
 typedef struct pin_sleeper
 {
-    bool         used;
-    agc_job_id_t cont[3];
+    bool         used; /* a job waits here */
+    agc_job_id_t cont[3]; /* terminate, proceed, data in */
 } pin_sleeper_t;
 
 typedef struct pin_state
@@ -227,7 +239,6 @@ uint16_t pin_ones_from_sp(agc_sp_t v);
 uint16_t pin_ones_neg(uint16_t mag);
 
 /* ---- lamps (state.c) ------------------------------------------- */
-void pin_falton(void);   /* FALTON   */
 void pin_flashon(void);  /* FLASHON  */
 void pin_flashoff(void); /* FLASHOFF */
 void pin_reldspon(void); /* RELDSPON */
@@ -299,7 +310,6 @@ agc_status_t pin_dspfmem(void);                    /* DSPFMEM  (V27)   */
 agc_status_t pin_load_verb(uint8_t verb);              /* ALOAD..ABCLOAD   */
 agc_status_t pin_load_resume(pin_reqret_t step);       /* TC REQRET        */
 agc_status_t pin_reqdat(int inrel, pin_reqret_t step); /* REQDATX/Y/Z      */
-agc_status_t pin_loadlv(void);                         /* LOADLV           */
 pin_reqret_t pin_reqret_backup(pin_reqret_t step);     /* REQRET +3        */
 
 /* ---- scaling (scale.c) ----------------------------------------- */
@@ -321,17 +331,12 @@ agc_status_t pin_hmsin(void); /* HMSIN            */
 
 /* ---- NVSUB family (nvsub.c) ------------------------------------ */
 agc_status_t pin_recaltst(void); /* RECALTST         */
-agc_status_t pin_reldsp(void);   /* RELDSP           */
 agc_status_t pin_reldsp1(void);  /* RELDSP1          */
 void         pin_kilmonon(void); /* KILMONON         */
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options); /* NVMONOPT   */
 bool         pin_dsp_blocked(void);       /* MONSAVE1 EMB + DSPLOCK */
-agc_status_t pin_blanksub(uint16_t code); /* BLANKSUB: BUSY = L+1 */
-agc_status_t pin_endidle(agc_job_id_t t, agc_job_id_t p,
-                         agc_job_id_t e);        /* ENDIDLE */
-agc_status_t pin_nvsubusy(agc_job_id_t wake_as); /* NVSUBUSY         */
-bool         pin_cadrstor_full(void);            /* CCS CADRSTOR     */
-bool         pin_dsplist_full(void);             /* CCS DSPLIST      */
+bool         pin_cadrstor_full(void);     /* CCS CADRSTOR     */
+bool         pin_dsplist_full(void);      /* CCS DSPLIST      */
 /* WITCHONE's XCH CADRSTOR/DSPLIST: empty the slot, return its sleeper.   */
 pin_sleeper_t pin_take_sleeper(bool dsplist);
 

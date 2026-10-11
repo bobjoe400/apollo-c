@@ -261,7 +261,7 @@ agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
 agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg);
 agc_vec_t    agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz,
                                    agc_vec_t v); /* VSR* 0,2      */
-agc_dp_t agc_rendz_shiftr1(const agc_rendz_t *rz, agc_dp_t a); /* SHIFTR1 */
+agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a); /* SHIFTR1 */
 
 typedef struct agc_rendz_periapo
 {
@@ -276,7 +276,7 @@ typedef struct agc_rendz_periapo
 } agc_rendz_periapo_t;
 
 /* PERIAPO1: r, v at earth scale (shifted to body scale first).             */
-agc_status_t agc_rendz_periapo1(agc_interp_t *ip, const agc_rendz_t *rz,
+agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_vec_t r, agc_vec_t v,
                                 agc_rendz_periapo_t *out);
 /* PERIAPO: r, v already at body scale (RVEC, VVEC).                        */
@@ -517,6 +517,7 @@ agc_status_t agc_task_radsamp(void);                   /* RADSAMP       */
 agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx); /* DORSAMP       */
 agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx);
 agc_dp_t     agc_erase_rstack(int index); /* RSTACK, 0..3  */
+void         agc_erase_set_rstack(int index, agc_dp_t v);
 /* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
  * job ended instead (angles rejected, or a job already in RADSTALL).    */
 agc_status_t agc_rr_designate_gimbal(bool *started);

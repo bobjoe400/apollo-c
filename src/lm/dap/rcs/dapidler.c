@@ -122,16 +122,15 @@ agc_status_t lm_dap_chekbits(bool *on)
     return (AGC_STATUS_OK);
 }
 
-/* STARTDAP (pp.1411-1413), second half: old CDUs, skip and T6 list
- * initialisation, then T5ADR = PAXIS.                                    */
+/* STARTDAP (pp.1411-1413): zero the attitude errors, rates, offset
+ * estimates, trim-gimbal and minimum-impulse state; old CDUs, skip and
+ * T6 list initialisation; then T5ADR = PAXIS.                            */
 agc_status_t lm_dap_startdap(void)
 {
     lm_dap_t *d = lm_dap_state();
 
     agc_lm_dap_zatteror();
 
-    /* STARTDAP (pp.1411-1412), first half: zero attitude error, rates, offset
-     * estimates, trim-gimbal and minimum-impulse state.                      */
     for (int i = 0; i < 3; i++)
     {
         d->tj[i]     = 0;

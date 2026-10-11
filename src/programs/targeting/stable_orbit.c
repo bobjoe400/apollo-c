@@ -429,14 +429,14 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
     rz->delvtpf = rz_abval(&ip, agc_vec_sub(&ip, rz->vpass4, rz->vtprime));
     agc_rendz_periapo_t pa;
 
-    st = agc_rendz_periapo1(&ip, rz, rz->ract3, rz->viprime, &pa);
+    st = agc_rendz_periapo_body_scale(&ip, rz, rz->ract3, rz->viprime, &pa);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    rz->posttpi = agc_rendz_shiftr1(rz, pa.hperi);
+    rz->posttpi = agc_rendz_scalar_from_body(rz, pa.hperi);
 
     return (rz_vnpooh(ctx, 6U, 58U, AGC_JOB_STABLE_ORBIT_DV_LV)); /* DSPLY58 */
 }

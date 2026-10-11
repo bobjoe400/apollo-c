@@ -1,19 +1,49 @@
-/*
- * kepler.c -- KEPLER (entry KEPLERN), its first guess KEPPREP, and
- * the conic path of CSMCONIC / LEMCONIC (RVCON).
+/**********************************************************************
+ * FILE NAME: kepler.c
  *
- * KEPLERN: CONIC_SUBROUTINES.agc Comanche 055 pp. 1277-1282 (Luminary 099
- * pp. 1173-1178, identical code). KEPPREP: ORBITAL_INTEGRATION.agc
- * pp. 1334-1335 (both programs, identical). RVCON / CSMCONIC / LEMCONIC:
- * INTEGRATION_INITIALIZATION.agc pp. 1318-1322.
+ * PURPOSE:
+ *   KEPLER (entry KEPLERN): the position and velocity after a transfer
+ *   time TAU. on the conic through a state, and KEPPREP, the first guess
+ *   of the universal variable x that the integration package gives it.
  *
- * KEPLER solves the universal Kepler equation sqrt(mu) TAU = f(x) for x by
- * a secant iteration bounded by XMIN/XMAX (the bounds move in after every
- * step; a step that would cross a bound is cut to 9/10 of the way to it),
- * converging when |TAU - T| <= EPSILONT = |TAU| 2^-22, and at most ITERCTR
- * = 20 passes. Elliptic TAU beyond one period is first reduced modulo the
- * period.
- */
+ * AGC SOURCE:
+ *   Comanche055 CONIC_SUBROUTINES.agc pp. 1263-1265 (description),
+ *   pp. 1277-1282 (code: KEPLERN, STOREMAX, PERIODCH, MODDONE, BADX,
+ *   STORBNDS, STOREMIN, DXCOMP, XDIFF, KEPLOOP, NDXCHNGE, POSDELX,
+ *   NEWDELX, BRNCHCTR, PDXCHNGE, TIMEOVFL, CMNTOVFL, NEGTOVFL);
+ *   ORBITAL_INTEGRATION.agc pp. 1334-1335 (KEPPREP)
+ *   Luminary099 CONIC_SUBROUTINES.agc pp. 1173-1178 and
+ *   ORBITAL_INTEGRATION.agc (identical code)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (the conic erasables are fields of agc_conic_ctx_t and of the
+ *   file-local kepler_state_t)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_conic_deltime_    DELTIME (universal.c)
+ *   agc_conic_kepconvg_   KEPCONVG (universal.c)
+ *   agc_conic_m*_         one interpretive op on the TP MPAC (common.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none in the AGC. AGC_STATUS_OVERFLOW when T overflows until DELX
+ *   halves to zero (KEPRTN without a new state); AGC_STATUS_NO_CONVERGE
+ *   when the 20 passes run out (the state is still computed, as in the
+ *   AGC); AGC_STATUS_BAD_ARG for a NULL pointer or an unknown body.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the caller's job, both vehicles. KEPLOOP is bounded by
+ *   ITERCTR = 20; PERIODCH by AGC_CONIC_PERIOD_MAX_PASSES (DEVIATION:
+ *   unbounded in the AGC).
+ *
+ * ALGORITHM:
+ *   KEPLER solves sqrt(mu) TAU = f(x) for x by a secant iteration bounded
+ *   by XMIN/XMAX (the bounds move in after every step; a step that would
+ *   cross a bound is cut to 9/10 of the way to it), converging when
+ *   |TAU - T| <= EPSILONT = |TAU| 2^-22. Elliptic TAU beyond one period
+ *   is first reduced modulo the period.
+ *********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
@@ -40,9 +70,37 @@ typedef enum kepler_step
     KEPLER_KEPRTN        /* CMNTOVFL with DELX = 0: return, no new state   */
 } kepler_step_t;
 
-/* KEPLERN to STOREMAX (p. 1277-1278): URRECT, R1, KEPC1 = R.V/ROOTMU
- * (2^17), KEPC2 = R V^2/MU - 1 (2^6), ALPHA = (1 - KEPC2)/R1, XMAX =
- * 2 pi / sqrt(ALPHA) (ellipse) or sqrt(-50 / ALPHA) (hyperbola), 2^17.   */
+/* KEPPREP push-down cells (ORBITAL_INTEGRATION.agc p. 1334). */
+enum kepprep_cell
+{
+    KEPPREP_ROOTMU = 0, /* 0D  SQRT(MU), 2^18 / 2^15                     */
+    KEPPREP_R,          /* 36D |R|, 2^29 / 2^27 m                        */
+    KEPPREP_RN,         /* 2D  |R| normalized, 2^(29-n1) / 2^(27-n1)     */
+    KEPPREP_S,          /* 4D  S = (TAU. - TC)/R, normalized             */
+    KEPPREP_FS,         /* 6D  F S, 2^(6+n1-n2)                          */
+    KEPPREP_MU,         /* MUEARTH / MUMOON, 2^36 / 2^30                 */
+    KEPPREP_CELLS       /* number of cells                               */
+};
+
+/**********************************************************************
+ * KEPLERN to STOREMAX (CONIC_SUBROUTINES.agc pp. 1277-1278) -- URRECT,
+ * R1, KEPC1 = R.V/ROOTMU, KEPC2 = R V^2/MU - 1, ALPHA = (1 - KEPC2)/R1
+ * and the x bound XMAX = 2 pi/sqrt(ALPHA) (ellipse) or sqrt(-50/ALPHA)
+ * (hyperbola)
+ *
+ * FUNCTION NAME: kepler_setup
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *        I/O  out: UR1 (URRECT) 2^1, R1
+ *                                           2^29 / 2^27 m, VVEC, KEPC1
+ *                                           2^17 / 2^16, KEPC2 2^6
+ *   in        const agc_kepler_in_t *  I    RRECT, VRECT
+ *   ks        kepler_state_t *         O    ALPHA 2^-22 / 2^-20 1/m,
+ *                                           XMAX 2^17 / 2^16 sqrt(m)
+ *********************************************************************/
 static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                          const agc_kepler_in_t *in, kepler_state_t *ks)
 {
@@ -56,12 +114,13 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return;
     }
 
-    agc_dp_t r1 = 0;
+    agc_dp_t r1 = 0; /* R1 = |RRECT|, 2^29 / 2^27 m */
 
     ctx->ur1  = agc_vec_unit(ip, in->rrect, &r1, NULL);   /* UNIT, URRECT   */
     ctx->r1   = r1;                                       /* STOVL R1       */
     ctx->vvec = in->vrect;
-    agc_tp_t m = agc_vec_dot_tp(ip, in->rrect, in->vrect); /* DOT: TP MPAC */
+    agc_tp_t m = agc_vec_dot_tp(
+        ip, in->rrect, in->vrect); /* DOT: TP MPAC, 2^36 / 2^32 */
 
     m = agc_conic_mshiftr_(ip, m, 1);                       /* DOT SL1R       */
     m =
@@ -94,11 +153,24 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
 
     ks->xmax = agc_tp_to_dp(m); /* STOREMAX       */
-}
+} /* kepler_setup */
 
-/* STOREMAX to MODDONE (p. 1278): PERIOD = XMAX / (ROOTMU ALPHA) (2^28)
- * and PERIODCH, which removes whole periods from TAU. keeping its sign.
- * No reduction when the period overflows or is negative (hyperbola).     */
+/**********************************************************************
+ * STOREMAX to MODDONE (CONIC_SUBROUTINES.agc p. 1278) -- PERIOD = XMAX /
+ * (ROOTMU ALPHA) and PERIODCH, which removes whole periods from TAU.
+ * keeping its sign; no reduction when the period overflows or is
+ * negative (hyperbola)
+ *
+ * FUNCTION NAME: kepler_period
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    1/ROOTMU
+ *   ks        kepler_state_t *         I/O  XMAX, ALPHA in; TAU. 2^28 cs
+ *                                           reduced modulo the period
+ *********************************************************************/
 static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                           kepler_state_t *ks)
 {
@@ -112,13 +184,15 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return;
     }
 
-    const agc_dp_t p0 = agc_tp_to_dp(
-        agc_conic_mdmp_(agc_tp_from_dp(ks->xmax), ctx->inv_root_mu));
-    int            n       = 0; /* ALPHA NORM X1  */
-    const agc_dp_t alpha_n =
-        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(ks->alpha), &n));
-    agc_tp_t m =
-        agc_tp_shift(ip, agc_tp_from_dp(p0), n - 6); /* SL* 0 -6,1 */
+    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(ks->xmax),
+                                 ctx->inv_root_mu); /* DMP 1/ROOTMU, 2^0 */
+    const agc_dp_t p0 = agc_tp_to_dp(m); /* 0D XMAX/ROOTMU, 2^0 / 2^2 */
+    int            n  = 0;               /* ALPHA NORM X1 count       */
+
+    m = agc_conic_mnorm_(agc_tp_from_dp(ks->alpha), &n);
+    const agc_dp_t alpha_n = agc_tp_to_dp(m); /* 2^(-22-n) / 2^(-20-n) */
+
+    m = agc_tp_shift(ip, agc_tp_from_dp(p0), n - 6); /* SL* 0 -6,1 */
 
     m = agc_conic_mddv_(ip, m, alpha_n);
 
@@ -127,8 +201,8 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return;
     }
 
-    const agc_dp_t period = agc_tp_to_dp(m); /* 0D = PERIOD    */
-    int            pass   = 0;
+    const agc_dp_t period = agc_tp_to_dp(m); /* 0D = PERIOD, 2^28 cs */
+    int            pass   = 0; /* PERIODCH passes */
 
     for (pass = 0; pass < AGC_CONIC_PERIOD_MAX_PASSES; pass++)
     { /* PERIODCH */
@@ -147,11 +221,25 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     {
         return;
     }
-}
+} /* kepler_period */
 
-/* MODDONE, BADX, STORBNDS, STOREMIN, DXCOMP, XDIFF (pp. 1278-1279):
- * X from XKEPNEW (or XMAX/2 with the sign of TAU. if the guess is zero,
- * of the wrong sign or beyond XMAX), the bounds, EPSILONT and DELX.      */
+/**********************************************************************
+ * MODDONE, BADX, STORBNDS, STOREMIN, DXCOMP, XDIFF (CONIC_SUBROUTINES.agc
+ * pp. 1278-1279) -- first x (XKEPNEW, or XMAX/2 with the sign of TAU. if
+ * the guess is zero, of the wrong sign or beyond XMAX), the bounds,
+ * EPSILONT and DELX
+ *
+ * FUNCTION NAME: kepler_bounds
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *        O    X 2^17 / 2^16 sqrt(m)
+ *   in        const agc_kepler_in_t *  I    XKEPNEW, XPREV
+ *   ks        kepler_state_t *         I/O  XMIN, XMAX, EPSILONT 2^28 cs,
+ *                                           DELX 2^17 / 2^16
+ *********************************************************************/
 static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                           const agc_kepler_in_t *in, kepler_state_t *ks)
 {
@@ -166,8 +254,9 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
 
     ctx->x = in->xkepnew; /* STORE X        */
-    agc_tp_t m    = agc_conic_msign_(agc_tp_from_dp(in->xkepnew), ks->tau);
-    bool     badx = agc_conic_mbze_(m) || agc_conic_mbmn_(m);
+    agc_tp_t m = agc_conic_msign_(
+        agc_tp_from_dp(in->xkepnew), ks->tau); /* X, 2^17 / 2^16 */
+    bool badx = agc_conic_mbze_(m) || agc_conic_mbmn_(m); /* BADX taken */
 
     if (!badx)
     { /* ABS DSU XMAX   */
@@ -197,11 +286,26 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ks->delx     = agc_tp_to_dp(                     /* XDIFF        */
         agc_conic_mbdsu_(
             ip, agc_tp_from_dp(in->xprev), ctx->x));
-}
+} /* kepler_bounds */
 
-/* Secant step of KEPLOOP (p. 1279): trial DELX = DELX DELT / (T - TC),
- * then cut to 9/10 of the distance to the bound it would cross
- * (NDXCHNGE / PDXCHNGE) after moving the opposite bound in to X.         */
+/**********************************************************************
+ * KEPLOOP secant step, NDXCHNGE, POSDELX, PDXCHNGE (CONIC_SUBROUTINES.agc
+ * pp. 1279-1280) -- trial DELX = DELX DELT / (T - TC), cut to 9/10 of
+ * the distance to the bound it would cross after moving the opposite
+ * bound in to X
+ *
+ * FUNCTION NAME: kepler_newdelx
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    X, T
+ *   ks        kepler_state_t *         I/O  TC, DELX, DELT in; XMIN or
+ *                                           XMAX moved in to X
+ *
+ * RETURNS: agc_dp_t -- the new DELX, 2^17 / 2^16 sqrt(m)
+ *********************************************************************/
 static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                kepler_state_t *ks)
 {
@@ -215,17 +319,18 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (0); /* no valid result */
     }
 
-    int      n1 = 0;
-    int      n2 = 0;
+    int      n1 = 0; /* NORM X1 count of T - TC */
+    int      n2 = 0; /* NORM X2 count of DELX */
     agc_tp_t m  = agc_conic_mnorm_(
-        agc_conic_mdsu_(ip, agc_tp_from_dp(ctx->t), ks->tc), &n1);
-    const agc_dp_t dt_n = agc_tp_to_dp(m);            /* PDDL: 0D       */
+        agc_conic_mdsu_(
+            ip, agc_tp_from_dp(ctx->t), ks->tc), &n1); /* T - TC, 2^(28-n1) */
+    const agc_dp_t dt_n = agc_tp_to_dp(m); /* PDDL: 0D, 2^(28-n1) */
 
     m = agc_conic_mnorm_(agc_tp_from_dp(ks->delx), &n2); /* NORM X2    */
     m = agc_conic_mdmp_(m, ks->delt);                      /* XSU,1 X2; DMP  */
     m = agc_conic_mshiftr_(ip, m, 1 + n1 - n2);            /* SLR* 1,1       */
     m = agc_tp_shift(ip, agc_conic_mddv_(ip, m, dt_n), -1); /* DDV SR1 */
-    const agc_dp_t trial = agc_tp_to_dp(m); /* PUSH 0D        */
+    const agc_dp_t trial = agc_tp_to_dp(m); /* PUSH 0D: trial DELX, 2^17 */
 
     if (!agc_conic_mbmn_(m))
     { /* POSDELX        */
@@ -256,10 +361,25 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     }
 
     return (trial);
-}
+} /* kepler_newdelx */
 
-/* TIMEOVFL / NEGTOVFL / CMNTOVFL (p. 1281): T overflowed, X was too big:
- * make X a bound, halve DELX and back X off by it.                       */
+/**********************************************************************
+ * TIMEOVFL, NEGTOVFL, CMNTOVFL (CONIC_SUBROUTINES.agc p. 1281) -- T
+ * overflowed, so X was too big: make X a bound, halve DELX and back X
+ * off by it
+ *
+ * FUNCTION NAME: kepler_timeovfl
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *  I/O  X backed off; T = TC
+ *   ks        kepler_state_t *   I/O  XMIN or XMAX, DELX halved
+ *
+ * RETURNS: kepler_step_t -- KEPLER_CONTINUE (to BRNCHCTR), or
+ *          KEPLER_KEPRTN when DELX has halved to zero
+ *********************************************************************/
 static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                      kepler_state_t *ks)
 {
@@ -297,7 +417,24 @@ static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     return (KEPLER_CONTINUE);
 }
 
-/* One pass of KEPLOOP (pp. 1279-1280) up to BRNCHCTR. */
+/**********************************************************************
+ * KEPLOOP to BRNCHCTR (CONIC_SUBROUTINES.agc pp. 1279-1280) -- one pass
+ * of the Kepler iteration: XI, DELTIME, the convergence test and the
+ * secant step
+ *
+ * FUNCTION NAME: kepler_pass
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *  I/O  X, XSQ, XI, T and the DELTIME
+ *                                     results
+ *   ks        kepler_state_t *   I/O  bounds, DELX, DELT, TC
+ *
+ * RETURNS: kepler_step_t -- KEPLER_CONTINUE, KEPLER_CONVERGED (to
+ *          KEPCONVG) or KEPLER_KEPRTN (no new state)
+ *********************************************************************/
 static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                                  kepler_state_t *ks)
 {
@@ -311,16 +448,17 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (KEPLER_KEPRTN);
     }
 
-    int      n1 = 0; /* DSQ NORM X1    */
-    agc_tp_t m  =
-        agc_conic_mnorm_(agc_conic_mdsq_(agc_tp_from_dp(ctx->x)), &n1);
+    int      n1 = 0;                                   /* DSQ NORM X1 */
+    agc_tp_t m  = agc_conic_mdsq_(agc_tp_from_dp(ctx->x)); /* X^2, 2^34 */
+
+    m = agc_conic_mnorm_(m, &n1); /* XSQ, 2^(34-n1) / 2^(32-n1) */
 
     ctx->xsq    = agc_tp_to_dp(m);     /* PUSH 0D        */
     ctx->xsq_n1 = n1;
     m           = agc_conic_mshiftr_(ip, agc_conic_mdmp_(m, ks->alpha),
                                      6 - n1); /* SRR* 0 -6,1 */
     ctx->xi = agc_tp_to_dp(m);           /* XI 2^6         */
-    agc_status_t st = agc_conic_deltime_(ip, ctx);
+    agc_status_t st = agc_conic_deltime_(ip, ctx); /* CALL DELTIME */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -332,7 +470,8 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (kepler_timeovfl(ip, ctx, ks));
     }
 
-    m        = agc_conic_mbdsu_(ip, agc_tp_from_dp(ctx->t), ks->tau); /* BDSU TAU. */
+    m = agc_conic_mbdsu_(
+        ip, agc_tp_from_dp(ctx->t), ks->tau); /* BDSU TAU. */
     ks->delt = agc_tp_to_dp(m);
     m        = agc_conic_mbdsu_(ip, agc_conic_mabs_(m), ks->epsilont);
 
@@ -353,12 +492,28 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ks->tc = ctx->t; /* STODL X / T; STORE TC */
 
     return (KEPLER_CONTINUE);
-}
+} /* kepler_pass */
 
-/*
- * KEPLER (CONIC_SUBROUTINES.agc pp. 1263-1265 description, code
- * pp. 1277-1282, label KEPLERN). See agc_nav.h for the status contract.
- */
+/**********************************************************************
+ * KEPLER (CONIC_SUBROUTINES.agc pp. 1277-1282, label KEPLERN) -- state
+ * after TAU. on the conic through RRECT, VRECT
+ *
+ * FUNCTION NAME: agc_conic_kepler
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   in        const agc_kepler_in_t *  I    RRECT, VRECT, TAU., XKEPNEW,
+ *                                           TC, XPREV, body
+ *   out       agc_kepler_out_t *       O    RCV, VCV, TC, XPREV and the
+ *                                           debris (see conic.h)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NO_CONVERGE after 20
+ *          passes (state still computed); AGC_STATUS_OVERFLOW for KEPRTN
+ *          from TIMEOVFL (RCV/VCV = RRECT/VRECT); AGC_STATUS_BAD_ARG for a
+ *          NULL pointer or an unknown body
+ *********************************************************************/
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
                               agc_kepler_out_t *out)
 {
@@ -372,7 +527,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_conic_ctx_t ctx;
+    agc_conic_ctx_t ctx; /* conic erasables */
     agc_status_t    st =
         agc_conic_ctx_init_(&ctx, in->body); /* VLOAD* MUTABLE,1 */
 
@@ -387,8 +542,8 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
     kepler_setup(ip, &ctx, in, &ks);
     kepler_period(ip, &ctx, &ks);
     kepler_bounds(ip, &ctx, in, &ks);
-    kepler_step_t step = KEPLER_CONTINUE;
-    int           pass = 0;
+    kepler_step_t step = KEPLER_CONTINUE; /* outcome of the last pass */
+    int           pass = 0; /* KEPLOOP passes (ITERCTR) */
 
     while (pass < AGC_CONIC_KEPLER_ITERCTR && step == KEPLER_CONTINUE)
     {
@@ -397,7 +552,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
     }
 
     /* Copy the KEPLER results and debris to *out. */
-    agc_ovf_t ovf = 0;
+    agc_ovf_t ovf = 0; /* overflow (cannot occur) */
 
     out->urrect  = ctx.ur1;
     out->r1      = ctx.r1;
@@ -417,7 +572,8 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
         return (AGC_STATUS_OVERFLOW);
     }
 
-    st         = agc_conic_kepconvg_(ip, &ctx, &out->rcv, &out->vcv); /* KEPCONVG */
+    st = agc_conic_kepconvg_(
+        ip, &ctx, &out->rcv, &out->vcv); /* KEPCONVG */
     out->tc    = ctx.t; /* STODL TC       */
     out->xprev = ctx.x; /* STCALL XPREV   */
 
@@ -426,27 +582,99 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
         return (st);
     }
 
-    return ((step ==
-             KEPLER_CONVERGED) ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE);
-}
+    return ((step == KEPLER_CONVERGED) ? /* KEPCONVG or ITERCTR out */
+            AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE);
+} /* agc_conic_kepler */
 
-/*
- * KEPPREP (ORBITAL_INTEGRATION.agc pp. 1334-1335, label KEPPREP)
- * First guess of x for KEPLER by a Taylor series in the time step:
- *   XKEPNEW = XKEP + sqrt(MU) S (1 - FS + 2 (FS)^2 + ...),  S = (TAU-TC)/R,
- * from RCV (in->rrect), VCV (in->vrect), TAU., TC and XKEP (in->xprev).
+/**********************************************************************
+ * KEPPREP from "DSQ PDDL" to "DAD XKEP" (ORBITAL_INTEGRATION.agc
+ * pp. 1334-1335) -- the series term of the first guess,
+ * S (-FS + 2 (FS)^2 - (2/3)(1/R - ALPHA) MU S^2 ...) sqrt(MU), plus XKEP
+ *
+ * FUNCTION NAME: kepprep_series
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   in        const agc_kepler_in_t *  I    VRECT (= VCV), XPREV (= XKEP)
+ *   cell      const agc_dp_t []        I    push-down cells, see enum
+ *                                           kepprep_cell
+ *   n1        int                      I    NORM X1 count of |R|
+ *   n2        int                      I    NORM S1 count of TAU. - TC
+ *
+ * RETURNS: agc_dp_t -- series + XKEP, 2^17 / 2^16 sqrt(m)
+ *********************************************************************/
+static agc_dp_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in,
+                               const agc_dp_t cell[KEPPREP_CELLS], int n1,
+                               int n2)
+{
+    if (!AGC_ASSERT(ip != NULL && in != NULL && cell != NULL))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(n1 >= 0 && n1 <= AGC_TP_BITS && n2 >= 0 &&
+                    n2 <= AGC_TP_BITS))
+    {
+        return (0); /* no valid result */
+    }
+
+    agc_tp_t m = agc_conic_mdsq_(
+        agc_tp_from_dp(cell[KEPPREP_FS])); /* DSQ (FS), 2^(12+2(n1-n2)) */
+    const agc_dp_t fs_sq = agc_tp_to_dp(m); /* 8D (FS)^2, 2^(12+2(n1-n2)) */
+
+    m = agc_conic_mdsq_(agc_tp_from_dp(cell[KEPPREP_S])); /* DSQ S */
+    const agc_dp_t s_sq = agc_tp_to_dp(m); /* 10D S^2, 2^(2(n1-n2)-2) */
+
+    m = agc_tp_shift(ip, agc_tp_from_dp(cell[KEPPREP_MU]), -3); /* SR3 */
+    const agc_dp_t mu43 = agc_tp_to_dp(
+        agc_tp_shift(ip, m, -4)); /* 12D SR4: MU 2^43 / 2^37 */
+
+    m = agc_tp_from_dp(agc_vec_sq(ip, in->vrect));   /* VSQ VCV      */
+    m = agc_conic_mdmp_(m, cell[KEPPREP_R]);         /* DMP 36D      */
+    m = agc_conic_mbdsu_(ip, m, mu43);               /* BDSU         */
+    m = agc_conic_mddv_(ip, m, cell[KEPPREP_RN]);    /* DDV 2D       */
+    m = agc_conic_mdmp_(m, s_sq);                    /* DMP 10D      */
+    m = agc_conic_mdmp_(m, AGC_CONIC_DP2_3);         /* DMP DP2/3    */
+    m = agc_tp_shift(ip, m, n1 - 3);                 /* SL* 0 -3,1   */
+    m = agc_conic_mdad_(ip, m, fs_sq);               /* XSU,1 S1 DAD */
+    m = agc_tp_shift(ip, m, 8 + n1 - n2);            /* SL* 8D,1     */
+    m = agc_conic_mdsu_(ip, m, cell[KEPPREP_FS]);    /* DSU 6D (FS)  */
+    m = agc_conic_mdmp_(m, cell[KEPPREP_ROOTMU]);    /* DMP 0D       */
+    m = agc_conic_mdmp_(m, cell[KEPPREP_S]);         /* DMP 4D       */
+    m = agc_tp_shift(ip, m, 8 + n1 - n2);            /* SL* 8D,1     */
+    m = agc_tp_shift(ip, m, n1 - n2);                /* SL* 0,1      */
+    m = agc_conic_mdad_(ip, m, in->xprev);           /* DAD XKEP     */
+
+    return (agc_tp_to_dp(m));
+} /* kepprep_series */
+
+/**********************************************************************
+ * KEPPREP (ORBITAL_INTEGRATION.agc pp. 1334-1335, label KEPPREP) -- first
+ * guess of x for KEPLER by a series in the time step:
+ * XKEPNEW = XKEP + sqrt(MU) S (1 - FS + 2 (FS)^2 + ...), S = (TAU-TC)/R.
  * The AGC then calls KEPLERN itself with X1 from MOONFLAG; here the caller
- * calls agc_conic_kepler (see agc_conic_rvcon).
- */
+ * calls agc_conic_kepler (nav-integ agc_integ_kepprep does both).
+ *
+ * FUNCTION NAME: agc_conic_kepprep
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND
+ *                                           cleared, BOVB TCDANZIG)
+ *   in        const agc_kepler_in_t *  I    RCV (rrect), VCV (vrect),
+ *                                           TAU., TC, XKEP (xprev), body
+ *   xkepnew   agc_dp_t *               O    XKEPNEW, 2^17 / 2^16 sqrt(m)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
+ *          NULL pointer or an unknown body
+ *********************************************************************/
 agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
                                agc_dp_t *xkepnew)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(xkepnew != NULL))
+    if (!AGC_ASSERT(ip != NULL && in != NULL && xkepnew != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -456,128 +684,37 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t cell[6];                  /* see kepprep_series */
+    agc_dp_t cell[KEPPREP_CELLS]; /* push-down cells, 2^N per kepprep_cell */
 
-    cell[5] = agc_conic_mu_(in->body); /* DLOAD* MUEARTH,2 */
-    cell[0] =
-        agc_tp_to_dp(agc_conic_msqrt_(ip, agc_tp_from_dp(cell[5])));
-    agc_vec_t ur = agc_vec_unit(ip, in->rrect, &cell[1], NULL); /* UNIT RCV */
-    int       n1 = 0;
-    int       n2 = 0;
+    cell[KEPPREP_MU]     = agc_conic_mu_(in->body); /* DLOAD* MUEARTH,2 */
+    cell[KEPPREP_ROOTMU] = agc_tp_to_dp(
+        agc_conic_msqrt_(ip, agc_tp_from_dp(cell[KEPPREP_MU]))); /* SQRT */
+    agc_vec_t ur = agc_vec_unit(ip, in->rrect, &cell[KEPPREP_R],
+                                NULL); /* UNIT RCV, 2^1 */
+    int n1 = 0;                        /* NORM X1 count of |R| */
+    int n2 = 0;                        /* NORM S1 count of TAU.-TC */
 
-    cell[2] =
-        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(cell[1]), &n1));
-    const agc_dp_t fsmu = agc_vec_dot(ip, ur, in->vrect); /* DOT VCV: 4D  */
-    agc_tp_t       m    =
-        agc_conic_mdsu_(ip, agc_tp_from_dp(in->tau), in->tc);
+    cell[KEPPREP_RN] = agc_tp_to_dp(
+        agc_conic_mnorm_(agc_tp_from_dp(cell[KEPPREP_R]), &n1)); /* 2D */
+    const agc_dp_t fsmu = agc_vec_dot(
+        ip, ur, in->vrect); /* 4D F sqrt(MU), 2^7 / 2^5 */
+    agc_tp_t m = agc_conic_mdsu_(ip, agc_tp_from_dp(in->tau),
+                                 in->tc); /* TAU. - TC, 2^28 */
 
-    m       = agc_tp_shift(ip, agc_conic_mnorm_(m, &n2), -1); /* NORM S1 SR1 */
-    cell[3] =
-        agc_tp_to_dp(agc_conic_mddv_(ip, m, cell[2])); /* S: DDV 2D */
-    cell[4] =
-        agc_tp_to_dp(agc_conic_mdmp_(agc_tp_from_dp(fsmu), cell[3]));
+    m = agc_tp_shift(ip, agc_conic_mnorm_(m, &n2), -1); /* NORM S1 SR1 */
+    m = agc_conic_mddv_(ip, m, cell[KEPPREP_RN]);       /* DDV 2D      */
 
-    /* KEPPREP second-order term (ORBITAL_INTEGRATION.agc p. 1334, from
-     * "DSQ PDDL* MUEARTH,2" to "SL* SL* 8D,1 0,1"):
-     * S (-FS + 2 (FS)^2 - (2/3)(1/R - ALPHA) MU S^2 ...) sqrt(MU), 2^18.
-     * n1 = NORM count of |R|, n2 = NORM count of TAU. - TC (S1).            */
-    if (!AGC_ASSERT(cell != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    cell[KEPPREP_S]  = agc_tp_to_dp(m); /* 4D S, 2^(n1-n2-1) */
+    m                = agc_conic_mdmp_(agc_tp_from_dp(fsmu), cell[KEPPREP_S]);
+    cell[KEPPREP_FS] = agc_tp_to_dp(m); /* 6D FS, 2^(6+n1-n2) */
+    const agc_dp_t sum = kepprep_series(ip, in, cell, n1,
+                                        n2); /* PDDL: series + XKEP, 2^17 */
 
-    /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
-    const agc_dp_t fs_sq =
-        agc_tp_to_dp(agc_conic_mdsq_(agc_tp_from_dp(cell[4])));
-    const agc_dp_t s_sq =
-        agc_tp_to_dp(agc_conic_mdsq_(agc_tp_from_dp(cell[3])));
-    const agc_dp_t mu43 =
-        agc_tp_to_dp( /* SR3 SR4: 12D */
-            agc_tp_shift(
-                ip,
-                agc_tp_shift(ip, agc_tp_from_dp(cell[5]),
-                             -3),
-                -4));
-    agc_tp_t m_series = agc_tp_from_dp(agc_vec_sq(ip, in->vrect)); /* VSQ VCV  */
-
-    m_series = agc_conic_mbdsu_(ip, agc_conic_mdmp_(m_series, cell[1]),
-                                mu43);   /* DMP 36D BDSU */
-    m_series = agc_conic_mdmp_(agc_conic_mddv_(ip, m_series, cell[2]), s_sq); /* DDV 2D DMP */
-    m_series = agc_conic_mdmp_(m_series, AGC_CONIC_DP2_3); /* DMP DP2/3      */
-    m_series = agc_tp_shift(ip, m_series, n1 - 3);         /* SL* 0 -3,1     */
-    m_series = agc_conic_mdad_(ip, m_series, fs_sq);       /* XSU,1 S1; DAD  */
-    m_series = agc_tp_shift(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
-    m_series = agc_conic_mdsu_(ip, m_series, cell[4]);       /* DSU (FS)       */
-    m_series = agc_conic_mdmp_(agc_conic_mdmp_(m_series, cell[0]), cell[3]); /* DMP 0D, 4D */
-    m_series = agc_tp_shift(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
-    m        = agc_conic_mdad_(ip, agc_tp_shift(ip, m_series,
-                                                n1 - n2), in->xprev);
-    const agc_dp_t sum = agc_tp_to_dp(m); /* DAD XKEP, PDDL */
-
-    m = agc_conic_mdmp_(agc_tp_from_dp(cell[3]), cell[0]); /* DMP 0D   */
-    m = agc_tp_shift(ip, m, 1 + n1 - n2); /* SL* 1,1        */
-    agc_interp_clear_ovf(ip);            /* BOVB TCDANZIG  */
+    m = agc_conic_mdmp_(agc_tp_from_dp(cell[KEPPREP_S]),
+                        cell[KEPPREP_ROOTMU]); /* DMP 0D   */
+    m = agc_tp_shift(ip, m, 1 + n1 - n2);      /* SL* 1,1  */
+    agc_interp_clear_ovf(ip);                  /* BOVB TCDANZIG */
     *xkepnew = agc_tp_to_dp(agc_conic_mdad_(ip, m, sum)); /* XKEPNEW */
 
     return (AGC_STATUS_OK);
-}
-
-/*
- * RVCON (INTEGRATION_INITIALIZATION.agc pp. 1321-1322, label RVCON) with
- * the RECTIFY and RECTOUT arithmetic: TAU. = TDEC - TET; RECTIFY (RRECT =
- * RCV, TC = XKEP = 0); KEPPREP; KEPLERN; TET = TC + TET.
- * DEVIATION: the state vector carries no TDELTAV/TNUV, so it is taken as
- * already rectified (RCV = RRECT); the RATT/VATT rescaling to earth scale
- * and the INTEXIT bookkeeping are left to nav-integ.
- */
-agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
-                             agc_dp_t tdec, agc_state_vector_t *out,
-                             agc_kepler_out_t *kout)
-{
-    if (!AGC_ASSERT(ip != NULL && sv != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_kepler_in_t kin;
-
-    kin.rrect   = sv->r;
-    kin.vrect   = sv->v;
-    kin.tau     = agc_dp_sub(ip, tdec, sv->t);     /* DLOAD TDEC DSU TET */
-    kin.xkepnew = 0;
-    kin.tc      = 0;     /* RECTIFY        */
-    kin.xprev   = 0;     /* XKEP = XPREV   */
-    kin.body    = sv->moon ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
-    agc_status_t st = agc_conic_kepprep(ip, &kin, &kin.xkepnew);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_kepler_out_t ko;
-
-    st = agc_conic_kepler(ip, &kin, &ko);
-
-    if (st == AGC_STATUS_BAD_ARG)
-    {
-        return (st);
-    }
-
-    out->r    = ko.rcv; /* RECTOUT: RRECT = RCV */
-    out->v    = ko.vcv;
-    out->t    = agc_dp_add(ip, ko.tc, sv->t); /* DLOAD TC DAD TET */
-    out->moon = sv->moon;
-
-    if (kout != NULL)
-    {
-        *kout = ko;
-    }
-
-    return (st);
-}
+} /* agc_conic_kepprep */

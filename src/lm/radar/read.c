@@ -310,7 +310,7 @@ static agc_status_t rd_goodrad(void)
     rr_radmodes_clear(rd.itemp1);
     rr_radlites(rd.itemp1);
 
-    return (rr_goodend());
+    return (agc_task_rr_goodend());
 }
 
 /* DGCHECK: the data-good bit must be present (0 in chan 33) before and
@@ -470,7 +470,7 @@ agc_status_t agc_rendz_radar_read(void)
         m = (uint16_t) (m | (agc_chan_read(AGC_CHAN_CHAN33) & RD_BITS5_8));
         agc_erase_set_radmodes((uint16_t) (m & RR_WORD_MASK));
 
-        return (rr_goodend());
+        return (agc_task_rr_goodend());
     }
 
     if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) &
@@ -584,5 +584,5 @@ agc_status_t agc_task_lr_position_settled(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rr_goodend());
+    return (agc_task_rr_goodend());
 }

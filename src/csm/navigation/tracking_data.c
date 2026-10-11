@@ -301,14 +301,14 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
 
 /* REND1 / REND3 as a job: GRP2PC, WAITONE, then look for a mark (REND1)
  * or the VHF (REND3).                                                    */
-static agc_status_t td_rend1(void)
+static agc_status_t td_wait_for_mark(void)
 {
     agc_phase_change(2, 04022);
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
 
-static agc_status_t td_rend3(void)
+static agc_status_t td_wait_for_vhf(void)
 {
     agc_phase_change(2, 04022);
 
@@ -326,7 +326,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
 
     if (agc_erase_mrkbuf2(0) < 0)
     {
-        return (td_rend3()); /* REND3A   */
+        return (td_wait_for_vhf()); /* REND3A   */
     }
 
     agc_inhint();
@@ -406,7 +406,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
         st         = (td.vhfrange != 0) ? agc_svc_trfailon() : AGC_STATUS_OK;
         td.vhftime = rz_marktime(); /* LIGHTON  */
 
-        return ((st != AGC_STATUS_OK) ? st : td_rend1());
+        return ((st != AGC_STATUS_OK) ? st : td_wait_for_mark());
     }
 
     st = agc_svc_trfailof();
@@ -420,7 +420,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
     {
         td.vhftime = rz_marktime(); /* LIGHTON +4 */
 
-        return (td_rend1());
+        return (td_wait_for_mark());
     }
 
     agc_interp_t ip;
@@ -543,7 +543,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
             }
             else if (!td_optics_mark(ip, &st))
             {
-                return ((st != AGC_STATUS_OK) ? st : td_rend3());
+                return ((st != AGC_STATUS_OK) ? st : td_wait_for_vhf());
             }
 
             bool big = (st == AGC_STATUS_OK) && td_incorp1(ip, &st);
@@ -572,14 +572,14 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
         { /* REND16   */
             agc_erase_set_vhfcnt((agc_sp_t) (agc_erase_vhfcnt() + 1));
 
-            return (td_rend1());
+            return (td_wait_for_mark());
         }
 
         if (!agc_flag_test(AGC_FLAG_INCORFLG))
         { /* REND17   */
             agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
-            return (td_rend3());
+            return (td_wait_for_vhf());
         }
 
         td.x2 = td_shiftndx();
@@ -728,7 +728,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(
 
     if (agc_flag_test(AGC_FLAG_SOURCFLG))
     {
-        return (td_rend1());
+        return (td_wait_for_mark());
     }
 
     agc_inhint();
@@ -736,7 +736,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(
     agc_erase_set_mrkbuf(2, 0, TD_EMPTY);
     agc_relint();
 
-    return (td_rend3()); /* RENDISP4 */
+    return (td_wait_for_vhf()); /* RENDISP4 */
 }
 
 /* N49DISP +index (index 0 |dR|, 1 |dV|, 2 source code) for noun 49.     */

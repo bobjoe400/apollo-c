@@ -1,11 +1,27 @@
-/*
- * agc_interp.h -- the interpretive language as a C library.
+/**********************************************************************
+ * FILE NAME: interp.h
  *
- * Each interpretive instruction of INTERPRETER.agc (pp. 1107-1199 Comanche,
- * 1002-1094 Luminary) becomes one function here. The only interpreter state
- * that survives translation is agc_interp_t: the overflow indicator OVFIND,
- * the index registers X1 X2 S1 S2 (when used as data), and the ten
- * interpretive switches not covered by a named flagword.
+ * PURPOSE:
+ *   The interpretive language as a C library: one function per
+ *   interpretive instruction of INTERPRETER.agc, plus the agc_interp_t
+ *   state (OVFIND, index registers, switches, DVSIGN).
+ *
+ * AGC SOURCE:
+ *   INTERPRETER.agc pp.1107-1199 (Comanche055), pp.1002-1094
+ *   (Luminary099); the arithmetic sections pp.1131-1191.
+ *
+ * REQUIRES:
+ *   agc/core/status.h, agc/core/word.h
+ *
+ * GLOBAL VARIABLES:
+ *   none (agc_interp_t is passed by the caller)
+ *
+ * NOTES:
+ * The only interpreter state that survives translation is agc_interp_t:
+ * the overflow indicator OVFIND, the index registers X1 X2 S1 S2 (when
+ * used as data), the ten interpretive switches not covered by a named
+ * flagword, and DVSIGN (= DOTINC), whose stale value signs the DPPOSMAX
+ * of an early V/SC or UNIT overflow exit (docs/modules/core-numeric.md).
  *
  * The arithmetic reproduces the AGC word by word (DMPSUB, ROUNDSUB, DDV,
  * SQRTSUB, POLY, ...), so results match the flight computer to the bit for
@@ -38,10 +54,14 @@
  *             shift round half away from zero.
  *   UNIT    : half-unit vector v/(2|v|); *abval = |v| (LV, scaled as v),
  *             *vsq = |v|^2 (LVSQUARE, scaled as v^2). |v|^2 >= 1 or v = 0
- *             -> (DPPOSMAX, ...) and OVFIND = 1 (see module note).
+ *             -> (+-DPPOSMAX, ...) and OVFIND = 1 (see module note).
+ *             The square root sees only the significant words of |v|^2,
+ *             so a short vector (|v| below ~2^-14 of its scale, e.g. a
+ *             few km at 2^27 m) gives a coarse direction, as in the AGC;
+ *             flight code normalises first there (RTB NORMUNIT).
  *   DOT/VSQ/DSQ/VXV/MXV/VXM: TP products truncated to the top two words.
  *   VXSC/VPROJ: each component rounded (VROUND). VPROJ = (u.v) v.
- */
+ **********************************************************************/
 #ifndef AGC_INTERP_H
 #define AGC_INTERP_H
 
@@ -50,8 +70,8 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 
-#define AGC_VEC_N           3
-#define AGC_INTERP_SWITCHES 16
+#define AGC_VEC_N           3  /* components per vector (x, y, z) */
+#define AGC_INTERP_SWITCHES 16 /* switch bits kept in sw[]        */
 
 typedef struct agc_vec
 {
@@ -65,9 +85,12 @@ typedef struct agc_mat
 
 typedef struct agc_interp
 {
-    agc_ovf_t ovfind;         /* OVFIND                              */
-    agc_sp_t  x1, x2, s1, s2; /* X1 X2 S1 S2 index/step registers    */
-    bool      sw[AGC_INTERP_SWITCHES];
+    agc_ovf_t ovfind; /* OVFIND: 0, or +-1 (sign of the overflow)    */
+    agc_sp_t  x1;     /* X1 index register, unscaled (as data)       */
+    agc_sp_t  x2;     /* X2 index register, unscaled                 */
+    agc_sp_t  s1;     /* S1 step register, unscaled                  */
+    agc_sp_t  s2;     /* S2 step register, unscaled                  */
+    bool      sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
     bool      dvsign_neg; /* DVSIGN (= DOTINC) holds -0: last divide
                              gave a negative quotient (see DVOVF)    */
 } agc_interp_t;

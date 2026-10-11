@@ -176,7 +176,7 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     agc_exec_prio_change(PRIO5); /* PRIOCHNG       */

@@ -493,7 +493,7 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_dp_t dv =
-        agc_dp_mul(&ip, agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
+        agc_dp_mul_trunc(agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
     agc_ovf_t ovf = 0;
 
     g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */

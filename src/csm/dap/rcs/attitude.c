@@ -129,7 +129,7 @@ static agc_status_t rcs_freecont(void)
         r->tau[i] = mintau[m]; /* TAU, TAU1, TAU2                   */
     }
 
-    return (csm_rcs_t6progm());
+    return (csm_rcs_t6prog_manual());
 }
 
 /* HOLDFUNC (p. 1028): +0 holds; anything else grabs new references.      */
@@ -384,7 +384,7 @@ static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 }
 
 /* T6PROGM (p. 1020): zero the errors for manual rotations; T6PROG.       */
-agc_status_t csm_rcs_t6progm(void)
+agc_status_t csm_rcs_t6prog_manual(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
 

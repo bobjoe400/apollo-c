@@ -1,24 +1,38 @@
-/*
- * noun_tables_csm.c -- PINBALL noun tables for the Command Module (Comanche 055).
+/**********************************************************************
+ * FILE NAME: tables_csm.c
  *
- * Translated from Comanche055/PINBALL_NOUN_TABLES.agc (pp. 268-284). NNADTAB / NNTYPTAB /
- * IDADDTAB / RUTMXTAB are resolved here into one flat agc_noun_t per noun:
+ * PURPOSE:
+ *   PINBALL noun tables for the Command Module: NNADTAB / NNTYPTAB /
+ *   IDADDTAB / RUTMXTAB resolved into one flat agc_noun_t per noun.
  *
- *   normal nouns 00-39: NNTYPTAB gives component count, DEC-only / NO-LOAD
- *     bits, and ONE (SF routine, SF constant) pair shared by every component;
- *     NNADTAB gives the address of the first component, so components 1..2
- *     are the following erasable words (CDUX,CDUY,CDUZ ...).
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_NOUN_TABLES.agc pp. 268-284 (NNADTAB, NNTYPTAB,
+ *   IDADDTAB, RUTMXTAB)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (constant table)
+ *
+ * EXTERNAL REFERENCES:
+ *   none
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none
+ *
+ * NOTES:
+ *   normal nouns 00-39: NNTYPTAB gives component count, DEC-only /
+ *     NO-LOAD bits, and ONE (SF routine, SF constant) pair shared by every
+ *     component; NNADTAB gives the address of the first component, so
+ *     components 1..2 are the following erasable words (CDUX,CDUY,CDUZ ...).
  *   mixed nouns 40-99: NNADTAB gives the component code and the IDADDTAB
  *     index (3 words per noun); NNTYPTAB carries three 5-bit SF constant
  *     codes and RUTMXTAB three 5-bit SF routine codes (component 1 in the
  *     low field); IDADDTAB gives one erasable per component.
- *
- * Every (routine, constant) pair is mapped to an agc_scale_t (the letter in
- * ASSEMBLY_AND_OPERATION_INFORMATION "NOUN SCALES AND FORMATS"). The octal
- * words quoted in the comments were verified against the assembled core
- * rope. The table is indexed by noun number (entry n has .noun == n); spare
- * nouns have ncomp == 0.
- */
+ *   Every (routine, constant) pair is mapped to an agc_scale_t (the letter
+ *   in ASSEMBLY_AND_OPERATION_INFORMATION "NOUN SCALES AND FORMATS"). The
+ *   octal words quoted in the comments were verified against the assembled
+ *   core rope. The table is indexed by noun number (entry n has .noun ==
+ *   n); spare nouns have ncomp == 0.
+ **********************************************************************/
 #include "agc/io/nouns.h"
 
 const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {

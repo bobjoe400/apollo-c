@@ -114,14 +114,14 @@ static agc_status_t rcs_sett5(void)
         case AGC_CSM_T5P_INIT:
             st = csm_rcs_freshdap(true);
             break; /* +  */
-        case AGC_CSM_T5P_PHASE2:
-            st = csm_rcs_t5phase2();
+        case AGC_CSM_T5P_ATTITUDE_CONTROL:
+            st = csm_rcs_attitude_control_phase();
             break; /* +0 */
         case AGC_CSM_T5P_RESTART:
             st = csm_rcs_freshdap(false);
             break; /* -  */
-        case AGC_CSM_T5P_PHASE1:
-            st = csm_rcs_phase1();
+        case AGC_CSM_T5P_RATE_FILTER:
+            st = csm_rcs_rate_filter_phase();
             break; /* -0 */
         default:
             break; /* unreachable: cannot happen */
@@ -131,11 +131,11 @@ static agc_status_t rcs_sett5(void)
 }
 
 /* SETT5 -0 branch and IMU STATUS CHECK (pp. 1003-1004): phase 1.         */
-agc_status_t csm_rcs_phase1(void)
+agc_status_t csm_rcs_rate_filter_phase(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
 
-    r->t5phase = AGC_CSM_T5P_PHASE2; /* phase 1 reset for 2    */
+    r->t5phase = AGC_CSM_T5P_ATTITUDE_CONTROL; /* phase 1 reset for 2    */
     r->t5time  =
         (agc_sp_t) (agc_rupt_time(CSM_DAP_TIME5) & 037777u); /* T5TIME */
     agc_status_t st = csm_dap_set_time5(T5_20MS); /* phase 2 in 20 ms     */
@@ -283,7 +283,7 @@ static agc_status_t rcs_zerot5(void)
         r->rho[i] = csm_dap_cdu(i); /* RHO, RHO1, RHO2        */
     }
 
-    r->t5phase = AGC_CSM_T5P_PHASE2;
+    r->t5phase = AGC_CSM_T5P_ATTITUDE_CONTROL;
     uint16_t flags = RCSINIT; /* IMUAOK                 */
 
     if ((agc_erase_imodes33() & CSM_DAP_BIT6) != 0u)
@@ -346,7 +346,7 @@ void agc_csm_dap_zerojet(void)
 }
 
 /* T5PHASE2 (p. 1016) and KALUPDT (pp. 1021-1022).                        */
-agc_status_t csm_rcs_t5phase2(void)
+agc_status_t csm_rcs_attitude_control_phase(void)
 {
     agc_csm_rcs_t          *r = agc_csm_dap_rcs();
     const agc_csm_dapcom_t *c = agc_csm_dap_com();
@@ -357,7 +357,7 @@ agc_status_t csm_rcs_t5phase2(void)
         int      t = (int) T5_80MS + (int) r->t5time; /* + delays               */
         uint16_t w = (t > AGC_SP_MAX) ? T5_20MS : (uint16_t) t; /* safety  */
 
-        r->t5phase = AGC_CSM_T5P_PHASE1; /* KRESUME2               */
+        r->t5phase = AGC_CSM_T5P_RATE_FILTER; /* KRESUME2               */
 
         return (csm_dap_set_time5(w));
     }

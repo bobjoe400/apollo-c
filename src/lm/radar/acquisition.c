@@ -99,8 +99,8 @@ agc_status_t agc_job_rendezvous_sighting_mark(agc_job_ctx_t *ctx)
         s = ACQ_W_M90;
     }
 
-    rr_state()->tang[0] = (agc_sp_t) rr_ones(t);
-    rr_state()->tang[1] = (agc_sp_t) rr_ones(s);
+    agc_erase_set_tang(0, (agc_sp_t) rr_ones(t));
+    agc_erase_set_tang(1, (agc_sp_t) rr_ones(s));
     rz_flag_put(AGC_FLAG_LOKONSW, false); /* R21LEM6  */
     agc_interp_t ip;
 
@@ -370,7 +370,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
     }
 
     lmnav_state_t *n = lmnav_state();
-    rr_state_t    *s = rr_state();
 
     rr_radmodes_set(RR_CDESBIT); /* CDESFLAG (RADMODES) */
     rz_flag_put(AGC_FLAG_LOKONSW, false);
@@ -380,9 +379,9 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB;
     agc_status_t              st  = agc_rr_designate_nb(&ip, rr_word(
-                                                            s->tang[0]),
+                                                            agc_erase_tang(0)),
                                                         rr_word(
-                                                            s->tang[1]), &res);
+                                                            agc_erase_tang(1)), &res);
 
     if (st != AGC_STATUS_OK || res != AGC_RR_DESIGNATE_STARTED)
     {
@@ -488,7 +487,7 @@ agc_status_t agc_job_manual_acquisition_check(agc_job_ctx_t *ctx)
 
     agc_inhint();
 
-    if (!rr_limits_ok(agc_erase_cdut(), agc_erase_cdus()))
+    if (!agc_rr_limchk(agc_erase_cdut(), agc_erase_cdus()))
     {
         agc_relint();
 

@@ -93,7 +93,7 @@ agc_status_t exec_up_setcoars(void)
 
 /* INITSUB / RAKE (C p.203): STOPRATE, restore the deadband (FLAGWRD9
  * MAXDBFLG: SETMAXDB, else SETMINDB), clear the FLAGTABL bits of
- * FLAGWRD0..11, set IMPULSW. OPTIND = -1 is the optics owner's (T4RUPT). */
+ * FLAGWRD0..11, set IMPULSW, OPTIND = -1.                              */
 void exec_initsub_csm(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
@@ -128,6 +128,12 @@ void exec_initsub_csm(void)
     }
 
     agc_flag_set(AGC_FLAG_IMPULSW);
+    agc_erase_set_optind(-1); /* CA NEGONE / TS OPTIND (kill CDU optics) */
+
+    if (!AGC_ASSERT(agc_erase_optind() == -1))
+    {
+        return;
+    }
 }
 
 /* The V37 N99 flash of GOP00FIX: every response re-flashes it
@@ -180,7 +186,18 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
         agc_flagword_set(13, f13); /* XOVINFLG, ULLAGFLG */
     }
 
-    agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
+    /* TC CLEARMRK +2: XDSPFLAG down but EXTVBACT kept (CLEARMRK +0 and
+     * +1 zero it). io-dsky has one CLEARMRK entry, so EXTVBACT is saved
+     * around it.                                                       */
+    uint16_t extvbact = agc_erase_extvbact();
+
+    agc_dsky_clearmrk();
+    agc_erase_set_extvbact(extvbact);
+
+    if (!AGC_ASSERT(agc_erase_extvbact() == extvbact))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (flash_program_request(ctx));
 }
@@ -232,7 +249,7 @@ agc_status_t exec_up_startsb2(void)
  * L p.211-212): self-check (SMODE; ERCOUNT on SLAP1), the uplink
  * (UPSVFLAG), the downlist (DNLSTCOD, DNTMGOTO), T4RUPT DSRUPTSW (SLAP1),
  * the mark counters; CSM optics (OPTIND = -1, OPTMODES = OPTINITF); LM
- * DAP erasables, THRUST = -0.                                            */
+ * DAP erasables (DOFSTRT1; THRUST = -0 is DOFSTART's, in fresh_start.c). */
 agc_status_t exec_up_dofstart(bool slap1)
 {
     agc_status_t st = agc_selfcheck_fresh_start(slap1);
@@ -261,8 +278,6 @@ agc_status_t exec_up_dofstart(bool slap1)
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        agc_erase_set_thrust(0); /* THRUST = -0       */
-
         return (agc_lm_dap_fresh_start());
     }
 

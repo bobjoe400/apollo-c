@@ -355,11 +355,11 @@ job	AGC_JOB_AGS_INITIALIZATION_SENT	-	agc_job_ags_initialization_sent	lm
 job	AGC_JOB_AGS_INITIALIZATION_ZERO_IMU	-	agc_job_ags_initialization_zero_imu	lm	
 job	AGC_JOB_ATMAG	-	agc_lm_job_atmag	lm	ATMAG (AVGEXIT)
 job	AGC_JOB_CUTOFF	-	agc_lm_job_cutoff	lm	CUTOFF (FINDVAC PRIO17)
-job	AGC_JOB_CUTOFF1	-	agc_lm_job_cutoff1	lm	CUTOFF1 (V16N63 PROCEED)
-job	AGC_JOB_CUTOFF2	-	agc_lm_job_cutoff2	lm	CUTOFF2
-job	AGC_JOB_CUTOFF5	-	agc_lm_job_cutoff5	lm	CUTOFF -5 (V16N63 again)
+job	AGC_JOB_CUTOFF_PROCEED	-	agc_lm_job_cutoff_proceed	lm	CUTOFF1 (V16N63 PROCEED)
+job	AGC_JOB_CUTOFF_TRIM_DISPLAY	-	agc_lm_job_cutoff_trim_display	lm	CUTOFF2
+job	AGC_JOB_CUTOFF_DISPLAY	-	agc_lm_job_cutoff_display	lm	CUTOFF -5 (V16N63 again)
 job	AGC_JOB_NEWLOAD	-	agc_lm_job_newload	lm	NEWLOAD (V06N76 flash)
-job	AGC_JOB_NEWLOAD2	-	agc_lm_job_newload2	lm	NEWLOAD PROCEED
+job	AGC_JOB_NEWLOAD_PROCEED	-	agc_lm_job_newload_proceed	lm	NEWLOAD PROCEED
 job	AGC_JOB_POWERED_ASCENT	-	agc_lm_job_powered_ascent	lm	P12LM
 job	AGC_JOB_POWERED_ASCENT_AT_IGNITION	-	agc_lm_job_powered_ascent_at_ignition	lm	
 job	AGC_JOB_POWERED_ASCENT_BURN	-	agc_lm_job_powered_ascent_burn	lm	
@@ -500,7 +500,7 @@ job	AGC_JOB_LANDING_CONFIRMATION_FLASH	-	agc_lm_job_landing_confirmation_flash	l
 job	AGC_JOB_LANDING_CONFIRMATION_PROCEED	-	agc_lm_job_landing_confirmation_proceed	lm/landing	
 job	AGC_JOB_LUNLAND	-	agc_lm_job_lunland	lm/landing	LUNLAND (AVGEXIT)
 job	AGC_JOB_RODCOMP	-	agc_lm_job_rodcomp	lm/landing	RODCOMP (FINDVAC PRIO22)
-job	AGC_JOB_UPTHROT1	-	agc_lm_job_upthrot1	lm/landing	THROTUP, UPTHROT1
+job	AGC_JOB_ABORT_TO_ASCENT_GUIDANCE	-	agc_lm_job_abort_to_ascent_guidance	lm/landing	THROTUP, UPTHROT1
 job	AGC_JOB_PREFERRED_TRACKING_ATTITUDE	-	agc_job_preferred_tracking_attitude	lm/navigation	PROG25
 job	AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK	-	agc_job_preferred_tracking_attitude_check	lm/navigation	
 job	AGC_JOB_RENDEZVOUS_NAVIGATION_ACQUIRE	-	agc_job_rendezvous_navigation_acquire	lm/navigation	P20LEMB
@@ -753,11 +753,11 @@ task	AGC_TASK_TIG_5	agc_task_tig_5_csm	agc_task_tig_5_lm	csm/burns	TIG-5
 task	AGC_TASK_TTG_0	agc_task_ttg_0	-	csm/burns	4.4 TTG/0
 task	AGC_TASK_CMDSOUT	agc_task_cmdsout	-	csm/dap	T5: TVC restart, step 3
 task	AGC_TASK_DAPINIT	agc_task_dapinit	-	csm/dap	T5: TVC CDU rate init
-task	AGC_TASK_ENABL2	agc_task_enabl2	-	csm/dap	T5: TVC restart, step 2
+task	AGC_TASK_OPTICS_COUNTER_ENABLE	agc_task_optics_counter_enable	-	csm/dap	T5: TVC restart, step 2
 task	AGC_TASK_EXRSTRT	agc_task_exrstrt	-	csm/dap	waitlist: TVCEXEC restart
 task	AGC_TASK_HACKWLST	agc_task_hackwlst	-	csm/dap	waitlist: stroke test burst
 task	AGC_TASK_JETSLECT	agc_task_jetslect	-	csm/dap	T5: RCS jet selection
-task	AGC_TASK_NOROLL1	agc_task_noroll1	-	csm/dap	T6: TVC roll jets off
+task	AGC_TASK_ROLL_JETS_OFF	agc_task_roll_jets_off	-	csm/dap	T6: TVC roll jets off
 task	AGC_TASK_PITCHDAP	agc_task_pitchdap	-	csm/dap	T5: TVC pitch DAP
 task	AGC_TASK_RCSATT	agc_task_rcsatt	-	csm/dap	T5: RCS DAP phases 1,2
 task	AGC_TASK_RCSUP	agc_task_rcsup	-	csm/dap	T5: RCSUP (P40 TVC -> RCS)
@@ -767,7 +767,7 @@ task	AGC_TASK_ROLLDAP	agc_task_rolldap	-	csm/dap	waitlist: TVC roll DAP
 task	AGC_TASK_T6START	agc_task_t6start	-	csm/dap	T6: RCS jet channel timing
 task	AGC_TASK_TVCDAPON	agc_task_tvcdapon	-	csm/dap	T5: TVC DAP start (DOTVCON)
 task	AGC_TASK_TVCEXEC	agc_task_tvcexec	-	csm/dap	ENEMA, TVC on (dap-csm)
-task	AGC_TASK_TVCINIT1	agc_task_tvcinit1	-	csm/dap	T5: TVC initialisation pt 2
+task	AGC_TASK_TVC_INITIALIZE	agc_task_tvc_initialize	-	csm/dap	T5: TVC initialisation pt 2
 task	AGC_TASK_YAWDAP	agc_task_yawdap	-	csm/dap	T5: TVC yaw DAP
 task	AGC_TASK_ATTRATES	agc_task_attrates	-	csm/entry	ATTRATES (T5RUPT)
 task	AGC_TASK_ENTRY_START_AVERAGE_G	agc_task_entry_start_average_g	-	csm/entry	4.43 S61.1C
@@ -806,7 +806,7 @@ task	AGC_TASK_ISSUP	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4R
 task	AGC_TASK_UNZ2	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4RUPT UNZ2
 task	AGC_TASK_WAKER	expr:agc_svc_delay_wake(-1)	expr:agc_svc_delay_wake(-1)	io/service	DELAYJOB WAKER
 task	AGC_TASK_ATTITUDE_ERROR_OUTPUT	agc_task_attitude_error_output	agc_task_attitude_error_output	io/verbs	V43 ATTCK1 / ATTCK2
-task	AGC_TASK_ENGOFF1	-	agc_lm_task_engoff1	lm	ENGOFF1
+task	AGC_TASK_ASCENT_ENGINE_OFF	-	agc_lm_task_ascent_engine_off	lm	ENGOFF1
 task	AGC_TASK_LUNAR_GRAVITY_SAMPLE	-	agc_task_lunar_gravity_sample	lm/alignment	
 task	AGC_TASK_BIBIBIAS	-	agc_task_bibibias	lm/burns	5.7
 task	AGC_TASK_BRAKING_PHASE_ZOOM	-	agc_task_braking_phase_zoom	lm/burns	P63ZOOM
@@ -836,7 +836,7 @@ task	AGC_TASK_ABORT_MONITOR	-	agc_lm_task_abort_monitor	lm/landing
 task	AGC_TASK_INTLZE	-	agc_lm_task_intlze	lm/landing	INTLZE (R10)
 task	AGC_TASK_REDESMON	-	agc_lm_task_redesmon	lm/landing	
 task	AGC_TASK_RODTASK	-	agc_lm_task_rodtask	lm/landing	RODTASK
-task	AGC_TASK_SPEEDRUN2	-	agc_lm_task_speedrun2	lm/landing	
+task	AGC_TASK_SPEEDRUN_RESUME	-	agc_lm_task_speedrun_resume	lm/landing	
 task	AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT	-	agc_task_preferred_tracking_attitude_wait	lm/navigation	
 task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK	-	agc_task_rendezvous_navigation_track_check	lm/navigation	P20LEMC1
 task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_WAIT	-	agc_task_rendezvous_navigation_track_wait	lm/navigation	P20LEMD1

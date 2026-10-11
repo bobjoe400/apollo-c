@@ -1,20 +1,67 @@
-/*
- * timeradius.c -- TIME-RADIUS (TIMERAD, TERMNVEC, CIRCULAR, BADR2)
- * (CONIC_SUBROUTINES.agc, Comanche 055 pp. 1272-1274 description, code
- * pp. 1301-1302; Luminary 099 pp. 1168-1170, 1197-1198; identical).
+/**********************************************************************
+ * FILE NAME: timeradius.c
  *
- * Given a state and a radius RDESIRED (with the sign of the radial
- * velocity there, SGNRDOT), TIMERAD finds the true anomaly f at that
- * radius from the eccentricity vector (cos f = (R1 P / RDESIRED - 1)/ECC),
- * builds the terminal unit vector U2 = cos f UECC + sin f (UN x UECC), and
- * then proceeds as TIME-THETA with the angle between UR1 and U2.
- */
+ * PURPOSE:
+ *   TIME-RADIUS (TIMERAD with TERMNVEC, CIRCULAR and BADR2): time of
+ *   flight from a state to a given radius. TIMERAD finds the true anomaly
+ *   at RDESIRED from the eccentricity vector, cos f = (R1 P / RDESIRED -
+ *   1)/ECC, builds the terminal unit vector U2 = cos f UECC + sin f (UN x
+ *   UECC), and then proceeds as TIME-THETA with the angle from UR1 to U2.
+ *
+ * AGC SOURCE:
+ *   Comanche055 CONIC_SUBROUTINES.agc pp. 1272-1274 (description),
+ *   pp. 1301-1302 (code: TIMERAD, TERMNVEC, CIRCULAR, BADR2)
+ *   Luminary099 CONIC_SUBROUTINES.agc pp. 1168-1170, 1197-1198 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name      Type  I/O  Scale  Description
+ *   --------  ----  ---  -----  ------------------------------------
+ *   APSESW    flag  O    -      RDESIRED outside the apsides (BADR2)
+ *   SOLNSW    flag  O    -      set for a circular orbit (CIRCULAR)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_conic_param_      PARAM (geom.c)
+ *   agc_conic_getx_       GETX (geom.c)
+ *   agc_conic_commnout_   COMMNOUT (timetheta.c)
+ *   agc_conic_cogaovfl_   COGAOVFL (timetheta.c)
+ *   agc_conic_abtconic_   ABTCONIC, POODOO 00607 (common.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   ABTCONIC (POODOO 00607, AGC_STATUS_POODOO) for a circular orbit
+ *   (UNIT of the eccentricity vector overflows; SOLNSW), for COGA
+ *   overflow (COGAFLAG) and for INFINFLG from GETX. RDESIRED beyond the
+ *   apsides is not an abort: APSESW is set and the apsis is used.
+ *
+ * ALGORITHM:
+ *   See PURPOSE; the conic is then solved by GETX, DELTIME and (unless
+ *   RVSW) NEWSTATE through COMMNOUT.
+ *********************************************************************/
 #include "agc/core/assert.h"
 #include "internal.h"
 
-/* TIMERAD from PDDL RDESIRED to CLEAR APSESW (p. 1301), with BADR2:
- * COSF and SINF (2^1) of the true anomaly at RDESIRED. Returns true when
- * RDESIRED is outside the apsides (APSESW): COSF = +-1, SINF = 0.        */
+/**********************************************************************
+ * TIMERAD from "PDDL NORM RDESIRED" to "CLEAR APSESW", and BADR2
+ * (CONIC_SUBROUTINES.agc p. 1301) -- cosine and sine of the true anomaly
+ * at RDESIRED
+ *
+ * FUNCTION NAME: timerad_anomaly
+ *
+ * ARGUMENTS:
+ *   Argument  Type                      I/O  Description (scale)
+ *   --------  ------------------------  ---  ------------------------
+ *   ip        agc_interp_t *            I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *   I    R1, P from PARAM
+ *   in        const agc_timerad_in_t *  I    RDESIRED, SGNRDOT
+ *   ecc       agc_dp_t                  I    36D |ECC|, 2^3
+ *   cosf      agc_dp_t *                O    COSF, 2^1
+ *   sinf      agc_dp_t *                O    sin f with the sign of
+ *                                            SGNRDOT, 2^1
+ *
+ * RETURNS: bool -- true when RDESIRED is outside the apsides (APSESW):
+ *          COSF = +-.5 (LODPHALF), SINF = 0
+ *********************************************************************/
 static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                             const agc_timerad_in_t *in, agc_dp_t ecc,
                             agc_dp_t *cosf, agc_dp_t *sinf)
@@ -29,10 +76,11 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (false);
     }
 
-    int            n   = 0;
-    const agc_dp_t rdn =
-        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(in->rdesired), &n));
-    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(ctx->r1), ctx->p);
+    int            n   = 0; /* NORM X1 shift count */
+    const agc_dp_t rdn = agc_tp_to_dp(
+        agc_conic_mnorm_(agc_tp_from_dp(in->rdesired), &n)); /* 2^(29-n) */
+    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(ctx->r1),
+                                 ctx->p); /* R1 P, 2^33 / 2^31 */
 
     m     = agc_conic_mddv_(ip, agc_tp_shift(ip, m, n), rdn); /* SL* 0,1 DDV */
     m     = agc_conic_mddv_(ip, agc_conic_mdsu_(ip, m, AGC_CONIC_D1_16), ecc);
@@ -59,10 +107,23 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     *sinf = agc_tp_to_dp(m);
 
     return (false);
-}
+} /* timerad_anomaly */
 
-/* TERMNVEC (p. 1302): terminal unit vector, CSTH and SNTH of the transfer
- * angle from UR1 into ctx.                                               */
+/**********************************************************************
+ * TERMNVEC (CONIC_SUBROUTINES.agc p. 1302) -- terminal unit vector and
+ * the CSTH, SNTH of the transfer angle from UR1
+ *
+ * FUNCTION NAME: timerad_termnvec
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND cleared)
+ *   ctx       agc_conic_ctx_t *  I/O  UN, UR1 in; CSTH, SNTH 2^1 out
+ *   uecc      agc_vec_t          I    unit eccentricity vector, 2^1
+ *   cosf      agc_dp_t           I    COSF, 2^1
+ *   sinf      agc_dp_t           I    sin f, 2^1
+ *********************************************************************/
 static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                              agc_vec_t uecc, agc_dp_t cosf, agc_dp_t sinf)
 {
@@ -76,26 +137,92 @@ static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return;
     }
 
-    agc_vec_t w =
-        agc_vec_shl(ip, agc_vec_scale(ip, ctx->un, sinf), 1); /* VXSC UN VSL1 */
+    agc_vec_t w = agc_vec_shl(
+        ip, agc_vec_scale(ip, ctx->un, sinf), 1); /* VXSC UN VSL1, 2^1 */
 
-    w = agc_vec_cross(ip, w, uecc); /* VXV 0D, PDVL   */
-    agc_vec_t u2 = agc_vec_add(ip, agc_vec_scale(ip, uecc, cosf), w);
+    w = agc_vec_cross(ip, w, uecc); /* VXV 0D, PDVL: 2^2 */
+    agc_vec_t u2 = agc_vec_add(
+        ip, agc_vec_scale(ip, uecc, cosf), w); /* VXSC COSF VAD, 2^2 */
 
-    u2 = agc_vec_shl(ip, u2, 1);           /* VSL1 PUSH: U2  */
-    agc_tp_t m = agc_vec_dot_tp(ip, u2, ctx->ur1); /* DOT        */
+    u2 = agc_vec_shl(ip, u2, 1);                   /* VSL1 PUSH: U2 2^1 */
+    agc_tp_t m = agc_vec_dot_tp(ip, u2, ctx->ur1); /* DOT UR1, 2^2      */
 
     m = agc_conic_mddv_(ip, m, AGC_CONIC_DP1_4); /* DDV DP1/4: limit */
-    m = agc_tp_shift(ip, m, -1);       /* SR1            */
-    agc_interp_clear_ovf(ip);          /* BOV +1         */
-    ctx->csth = agc_tp_to_dp(m);       /* CSTH 2^1       */
-    agc_vec_t c = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, u2), 1);
+    m = agc_tp_shift(ip, m, -1);                 /* SR1               */
+    agc_interp_clear_ovf(ip);                    /* BOV +1            */
+    ctx->csth = agc_tp_to_dp(m);                 /* CSTH 2^1          */
+    agc_vec_t c = agc_vec_shl(
+        ip, agc_vec_cross(ip, ctx->ur1, u2), 1); /* VXV VSL1, 2^1 */
 
-    m         = agc_tp_shift(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
-    ctx->snth = agc_tp_to_dp(m); /* SNTH 2^1       */
+    m = agc_tp_shift(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
+
+    ctx->snth = agc_tp_to_dp(m); /* SNTH 2^1 */
 }
 
-/* CIRCULAR (p. 1302): SETPD 0, SETGO SOLNSW ABTCONIC. */
+/**********************************************************************
+ * TIMERAD from "DLOAD D1/32" to "VSL4 UNIT" (CONIC_SUBROUTINES.agc
+ * p. 1301) -- eccentricity vector ((1 - R1A) UR1 - sqrt(P (2 - R1A))
+ * COGA U2) and its unit vector
+ *
+ * FUNCTION NAME: timerad_eccvec
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state; OVFIND
+ *                                           set when UNIT overflows
+ *                                           (circular orbit)
+ *   ctx       const agc_conic_ctx_t *  I    P, R1A, COGA, UR1, U2
+ *   ecc       agc_dp_t *               O    36D |ECC|, 2^3
+ *
+ * RETURNS: agc_vec_t -- UNIT(ECC), 2^1
+ *********************************************************************/
+static agc_vec_t timerad_eccvec(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
+                                agc_dp_t *ecc)
+{
+    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
+    {
+        return (agc_vec_zero()); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(ecc != NULL))
+    {
+        return (agc_vec_zero()); /* no valid result */
+    }
+
+    agc_tp_t m = agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_32),
+                                 ctx->r1a); /* MPAC, 2^6 */
+
+    m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx->p)); /* DMP P SQRT */
+    m = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx->coga),
+                     4);                                   /* DMP COGA SL4 */
+    const agc_vec_t a = agc_vec_scale(ip, ctx->u2,
+                                      agc_tp_to_dp(m)); /* 0D, 2^7 */
+
+    m = agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_64), ctx->r1a);
+    agc_vec_t e = agc_vec_scale(ip, ctx->ur1,
+                                agc_tp_to_dp(m)); /* VXSC UR1, 2^7 */
+
+    e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4); /* VSU VSL4: ECC 2^3 */
+
+    return (agc_vec_unit(ip, e, ecc, NULL)); /* UNIT */
+}
+
+/**********************************************************************
+ * CIRCULAR (CONIC_SUBROUTINES.agc p. 1302) -- SETPD 0, SETGO SOLNSW
+ * ABTCONIC: the eccentricity vector is too short to define the apsides
+ *
+ * FUNCTION NAME: timerad_circular
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description (scale)
+ *   --------  ----------------------  ---  ----------------------------
+ *   ctx       agc_conic_ctx_t *       I    conic erasables (debris)
+ *   out       agc_conic_time_out_t *  O    debris, solnsw set
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_POODOO (ABTCONIC), or
+ *          AGC_STATUS_BAD_ARG for a NULL pointer
+ *********************************************************************/
 static agc_status_t timerad_circular(agc_conic_ctx_t      *ctx,
                                      agc_conic_time_out_t *out)
 {
@@ -111,10 +238,27 @@ static agc_status_t timerad_circular(agc_conic_ctx_t      *ctx,
     return (agc_conic_abtconic_());
 }
 
-/*
- * TIMERAD (CONIC_SUBROUTINES.agc pp. 1301-1302, label TIMERAD).
- * See agc_nav.h for the status contract.
- */
+/**********************************************************************
+ * TIMERAD (CONIC_SUBROUTINES.agc pp. 1301-1302, label TIMERAD) -- time of
+ * flight from a state to a radius, and the state there
+ *
+ * FUNCTION NAME: agc_conic_timerad
+ *
+ * ARGUMENTS:
+ *   Argument  Type                      I/O  Description (scale)
+ *   --------  ------------------------  ---  --------------------------
+ *   ip        agc_interp_t *            I/O  interpreter state (OVFIND)
+ *   in        const agc_timerad_in_t *  I    RVEC, VVEC, RDESIRED
+ *                                            2^29 / 2^27 m, SGNRDOT,
+ *                                            RVSW, central body
+ *   out       agc_conic_time_out_t *    O    T 2^28 cs, RNEW, VNEW,
+ *                                            APSESW, SOLNSW, flags and
+ *                                            conic debris
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_POODOO for ABTCONIC
+ *          (CIRCULAR, COGAFLAG, INFINFLG); AGC_STATUS_BAD_ARG for a NULL
+ *          pointer, SGNRDOT = 0 or an unknown body
+ *********************************************************************/
 agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
                                agc_conic_time_out_t *out)
 {
@@ -129,8 +273,8 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     }
 
     agc_conic_time_out_clear_(out);
-    agc_conic_ctx_t ctx;
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body);
+    agc_conic_ctx_t ctx; /* conic erasables */
+    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* MUTABLE,1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -139,7 +283,7 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     ctx.vvec = in->vvec;
-    agc_dp_t sngamma = 0;
+    agc_dp_t sngamma = 0; /* 36D sin(gamma), 2^1 (unused) */
 
     st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma);
 
@@ -153,37 +297,20 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
         return (agc_conic_cogaovfl_(&ctx, out));
     }
 
-    agc_dp_t ecc = 0;
-    /* TIMERAD from PARAM to UNIT (p. 1301): eccentricity vector
-     * ((1 - R1A) UR1 - sqrt(P (2 - R1A)) COGA U2), 2^3. Its unit vector is
-     * returned, |ECC| (36D) in *ecc.                                         */
-    agc_tp_t m =
-        agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_32), ctx.r1a);
-
-    m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx.p)); /* DMP P SQRT */
-    m = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx.coga),
-                     4);      /* DMP COGA SL4 */
-    const agc_vec_t a =
-        agc_vec_scale(ip, ctx.u2, agc_tp_to_dp(m)); /* 0D */
-
-    m = agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_64), ctx.r1a);
-    agc_vec_t e =
-        agc_vec_scale(ip, ctx.ur1, agc_tp_to_dp(m)); /* VXSC UR1 */
-
-    e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4);         /* VSU VSL4   */
-    const agc_vec_t uecc = agc_vec_unit(ip, e, &ecc, NULL);
+    agc_dp_t        ecc  = 0;                             /* 36D |ECC| 2^3 */
+    const agc_vec_t uecc = timerad_eccvec(ip, &ctx, &ecc); /* UNIT(ECC) 2^1 */
 
     if (agc_interp_test_ovf(ip))
     { /* BOV CIRCULAR   */
         return (timerad_circular(&ctx, out));
     }
 
-    agc_dp_t   cosf   = 0;
-    agc_dp_t   sinf   = 0;
-    const bool apsesw = timerad_anomaly(ip, &ctx, in, ecc, &cosf, &sinf);
+    agc_dp_t   cosf   = 0; /* COSF, 2^1 */
+    agc_dp_t   sinf   = 0; /* sin f, 2^1 */
+    const bool apsesw = timerad_anomaly(ip, &ctx, in, ecc, &cosf,
+                                        &sinf); /* BADR2 taken */
 
-    agc_conic_mirror_flag_(AGC_CONIC_FLAG_APSESW,
-                           apsesw);                     /* SET/CLEAR APSESW */
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_APSESW, apsesw); /* SET/CLEAR */
     timerad_termnvec(ip, &ctx, uecc, cosf, sinf);
     st = agc_conic_getx_(ip, &ctx); /* DLOAD P, CALL GETX */
 
@@ -193,9 +320,9 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
     }
 
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* CLRGO SOLNSW */
-    st          = agc_conic_commnout_(ip, &ctx, in->rvsw, out); /* COMMNOUT       */
+    st          = agc_conic_commnout_(ip, &ctx, in->rvsw, out); /* COMMNOUT */
     out->apsesw = apsesw;
     out->solnsw = false;
 
     return (st);
-}
+} /* agc_conic_timerad */

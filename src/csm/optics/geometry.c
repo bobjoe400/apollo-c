@@ -167,10 +167,14 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0]));
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);
 
-    *sac = agc_align_ones_to_twos(agc_imu_arctrig(ip, sinth, costh));
+    const agc_dp_t sa = agc_imu_arctrig(ip, sinth, costh); /* revs */
+
+    /* 1STO2S of ARCTRIG's words (word_forms.c), not of the value. */
+    *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
     align_clear_ovf(ip); /* BOV +1  */
-    const agc_dp_t ta =
-        agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star, nb1->row[2]), 1));
+    const agc_dp_t cos_ta = agc_dp_shl(ip, agc_vec_dot(ip, star, nb1->row[2]),
+                                       1); /* DOT SL1, cos TA B1 */
+    const agc_dp_t ta = agc_dp_acos(ip, cos_ta); /* revs */
 
     if (ta < 0)
     {
@@ -188,7 +192,16 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
         return (AGC_STATUS_OK);
     }
 
-    *pac  = agc_align_ones_to_twos(agc_dp_sub(ip, ta4, TWENTY_DEG_MINUS));
+    /* SL2, DSU 20DEG-, 1STO2S on ACOS's words (word_forms.c); the SL2's
+     * bits from MPAC +2 are not modelled.                               */
+    const align_words_t taw  = align_acos_words(ta, cos_ta < 0);
+    const align_words_t ta2w = align_words_add(taw, taw);
+    const align_words_t ta4w = align_words_add(ta2w, ta2w);
+
+    *pac = align_words_to_cdu(align_words_add(
+                                  ta4w,
+                                  align_words_neg(align_words_of(TWENTY_DEG_MINUS))));
+    (void) AGC_ASSERT(ta4 >= 0);
     *cult = false; /* CLRGO CULTFLAG            */
 
     return (AGC_STATUS_OK);

@@ -249,7 +249,7 @@ static agc_status_t roll_jetroll(uint16_t time6)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rupt_set_t6_task(AGC_TASK_NOROLL1);
+    agc_rupt_set_t6_task(AGC_TASK_ROLL_JETS_OFF);
     agc_status_t st = AGC_STATUS_OK;
 
     agc_rupt_set_time(CSM_DAP_TIME6, time6);
@@ -421,7 +421,7 @@ agc_status_t agc_task_rolldap(void)
 }
 
 /* NOROLL1 (p. 997): T6 task called by JETROLL; shut off all roll jets.   */
-agc_status_t agc_task_noroll1(void)
+agc_status_t agc_task_roll_jets_off(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
 

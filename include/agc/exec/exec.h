@@ -111,6 +111,9 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job,
                            agc_prio_t prio); /* NEWPHASE */
 /* CS TIME1 / TS TBASEn without a phase change (e.g. TBASE2 for R10,R11). */
 void         agc_phase_set_tbase(int group);
+/* CAF PRIOnn / TS PHSPRDTn without a phase change: the priority a later
+ * type B/C PHASCHNG of `group` with D clear keeps (FINDVAC restart).     */
+void         agc_phase_set_priority(int group, agc_prio_t prio);
 agc_status_t agc_phase_restart_all(void);    /* RESTART  */
 
 /* ======================================================================

@@ -292,5 +292,5 @@ agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }

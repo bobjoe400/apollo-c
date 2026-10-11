@@ -1,17 +1,33 @@
-/*
- * agc_state.h -- shared erasable memory and flagwords.
+/**********************************************************************
+ * FILE NAME: state.h
  *
- * The state-flags agent owns src/core/agc_state.c, src/core/agc_erasable.c,
- * agc_flags_*.h and agc_channels.h, and may extend THIS header with further
- * accessors for erasables that are shared by more than one module.
- * Module-private erasables stay static inside their module.
+ * PURPOSE:
+ *   Shared erasable memory: vehicle selection, the TIME2/TIME1 clock,
+ *   the flagwords and the accessors agc_erase_<name>() /
+ *   agc_erase_set_<name>() for erasables read or written by more than
+ *   one module. Module-private erasables stay static in their module.
  *
- * Flag API: a flag is an agc_flag_id_t = (flagword << 4) | bit, where bit is
- * the AGC bit number 1..15 (bit 1 = least significant). The enum constants
- * AGC_FLAG_<AGCNAME> are in agc_flags_common.h (same name+position in CSM and
- * LM), agc_flags_csm.h and agc_flags_lm.h (vehicle-specific; include only the
- * one for the build, never both).
- */
+ * AGC SOURCE:
+ *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 39-124 (registers, STATE,
+ *   PRM/DSP erasables); Luminary099 ERASABLE_ASSIGNMENTS.agc pp. 92-147
+ *   and FLAGWORD_ASSIGNMENTS.agc pp. 61-88. Each accessor comment gives
+ *   the AGC name and its scale.
+ *
+ * REQUIRES:
+ *   none (includes interp.h, status.h, word.h)
+ *
+ * GLOBAL VARIABLES:
+ *   none (storage is static in src/core/state.c, erasable.c and the
+ *   files named in the section headings below)
+ *
+ * NOTES:
+ *   Flag API: a flag is an agc_flag_id_t = (flagword << 4) | bit, where
+ *   bit is the AGC bit number 1..15 (bit 1 = least significant). The
+ *   constants AGC_FLAG_<AGCNAME> are in flags_common.h (same name and
+ *   position in CSM and LM), flags_csm.h and flags_lm.h (include only
+ *   the one for the vehicle, never both). The name -> accessor/owner
+ *   table for every AGC erasable is in docs/modules/state-flags.md.
+ **********************************************************************/
 #ifndef AGC_STATE_H
 #define AGC_STATE_H
 
@@ -39,7 +55,7 @@ void          agc_erase_reset(
 #define AGC_TIME_MODULUS_CS \
     0x10000000u /* TIME2,TIME1 wrap at 2^28 cs (about 745.7 h) */
 uint32_t agc_time_now_cs(void);          /* C(TIME2,TIME1) as 28-bit  */
-void     agc_time_set_cs(uint32_t t_cs); /* t_cs < 2^28 */
+void     agc_time_set_cs(uint32_t t_cs); /* t_cs < 2^28, else ignored */
 void     agc_time_advance_cs(
     uint16_t dt_cs);         /* wraps modulo 2^28 like TIME2 overflow */
 agc_sp_t agc_erase_time1(void); /* TIME1: low 14 bits of the count (register 025) */
@@ -48,8 +64,8 @@ agc_sp_t agc_erase_time2(void); /* TIME2: high 14 bits of the count (register 02
 /* ---- flagwords: FLAGWRD0..FLAGWRD13, bit names in agc_flags_*.h --------- */
 typedef uint16_t agc_flag_id_t; /* (flagword << 4) | bitindex  */
 #define AGC_FLAGWORDS     14 /* LM has FLGWRD0..13 (STATE+0..+13D); CSM has 0..11 */
-#define AGC_FLAGWORDS_CSM 12
-#define AGC_FLAGWORDS_LM  14
+#define AGC_FLAGWORDS_CSM 12 /* Comanche055: FLAGWRD0..FLGWRD11     */
+#define AGC_FLAGWORDS_LM  14 /* Luminary099: FLAGWRD0..FLGWRD13     */
 bool     agc_flag_valid(agc_flag_id_t f); /* word/bit exist for this vehicle */
 int      agc_flag_word(agc_flag_id_t f);  /* flagword index of f   */
 int      agc_flag_bit(agc_flag_id_t f);   /* AGC bit number 1..15  */
@@ -162,15 +178,14 @@ void      agc_erase_set_rrectlem(agc_vec_t v);
 agc_vec_t agc_erase_vrectlem(void);
 void      agc_erase_set_vrectlem(agc_vec_t v);
 
-/* accumulated PIPA delta-V, stable-member axes (DELV; SERVICER207: scaled like
- * PIPAX,Y,Z via KPIP1 to 2^4 m/cs) */
+/* accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses
+ * scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM.
+ * KPIP1 rescales it to 2^7 m/cs (SERVICER207 p. 821, LM CONTROLLED_CONSTANTS) */
 agc_vec_t agc_erase_delv(void);
 void      agc_erase_set_delv(agc_vec_t v);
 
-/* delta-V vector in local-vertical coordinates (DELVSLV, I(6)); P40 uses it as
- * the VG input */
-agc_vec_t agc_erase_delvslv(void);
-void      agc_erase_set_delvslv(agc_vec_t v);
+/* DELVSLV has no accessor: DELVSLV = DELVLVC (same six words in both
+ * ropes), held in agc_rendz_erasable()->delvlvc, m/cs scale 2^7. */
 
 /* velocity to be gained at TIG, m/cs, scale 2^7 (VGTIG, P40-P47: 'VG IGNITION
  * SCALED AT 2(+7) M/CS') */
@@ -187,12 +202,12 @@ void      agc_erase_set_rls(agc_vec_t v);
 agc_mat_t agc_erase_refsmmat(void);
 void      agc_erase_set_refsmmat(agc_mat_t v);
 
-/* time of the ephemeris epoch (TEPHEM, 3 words, TP; P11 sets it at liftoff).
- * Scale: centiseconds, see LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES */
+/* time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale
+ * 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) */
 agc_tp_t agc_erase_tephem(void);
 void     agc_erase_set_tephem(agc_tp_t v);
 
-/* CSM mass, kg, scale 2^16 (CSMMASS 'B+16 KILOGRAMS'; DSP noun 47 R1) */
+/* CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) */
 agc_sp_t agc_erase_csmmass(void);
 void     agc_erase_set_csmmass(agc_sp_t v);
 
@@ -200,8 +215,8 @@ void     agc_erase_set_csmmass(agc_sp_t v);
 agc_sp_t agc_erase_lemmass(void);
 void     agc_erase_set_lemmass(agc_sp_t v);
 
-/* PIPA X pulse count since last read (register PIPAX, address 037); 1 pulse =
- * 5.85 cm/s in SERVICER207 */
+/* PIPA X pulse count since last read (register PIPAX, 037), unscaled
+ * pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) */
 agc_sp_t agc_erase_pipax(void);
 void     agc_erase_set_pipax(agc_sp_t v);
 

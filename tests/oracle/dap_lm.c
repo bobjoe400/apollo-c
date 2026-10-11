@@ -258,6 +258,71 @@ static void kalman(const char *t, const char *gp, long tol)
     }
 }
 
+/* GTS / TIMEGMBL inputs common to both entries.                          */
+static void gts_inputs(const char *t, lm_dap_t *d)
+{
+    d->aosq     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
+    d->aosq_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
+    d->aosr     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
+    d->aosr_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
+    d->neguq    = (agc_sp_t) oracle_in(t, "NEGUQ", 0);
+    d->negur    = (agc_sp_t) oracle_in(t, "NEGUQ", 2);
+    d->accdotq  = (agc_sp_t) oracle_in(t, "ACCDOTQ", 0);
+    d->qaccdot  = (agc_sp_t) oracle_in(t, "ACCDOTQ", 1);
+    d->accdotr  = (agc_sp_t) oracle_in(t, "ACCDOTQ", 2);
+    d->raccdot  = (agc_sp_t) oracle_in(t, "ACCDOTQ", 3);
+    d->rcsflags = oracle_in_raw(t, "RCSFLAGS", 0);
+}
+
+static void gts_outputs(const char *t, const lm_dap_t *d)
+{
+    cmp_sp(t, "NEGUQ", d->neguq, "NEGUQ", 0);
+    cmp_sp(t, "NEGUR", d->negur, "NEGUQ+2", 0);
+    cmp_sp(t, "QACCDOT", d->qaccdot, "QACCDOT", 0);
+    cmp_sp(t, "RACCDOT", d->raccdot, "RACCDOT", 0);
+    (void) oracle_cmp(t, "RCSFLAGS", d->rcsflags,
+                      (long) oracle_out_raw(t, "RCSFLAGS"), 0);
+    cmp_sp(t, "QGIMTIMR", d->qgimtimr, "QGIMTIMR", 0);
+    cmp_sp(t, "RGIMTIMR", d->rgimtimr, "QGIMTIMR+2", 0);
+    cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);
+}
+
+/* GTS (trim gimbal control law): AOS, rates, K, errors, old drives.      */
+static void gts(const char *t)
+{
+    lm_dap_t *d = lm_dap_state();
+
+    fresh();
+    gts_inputs(t, d);
+    d->edotq  = (agc_sp_t) oracle_in(t, "EDOTQ", 0);
+    d->edotr  = (agc_sp_t) oracle_in(t, "EDOTQ", 1);
+    d->kq     = (agc_sp_t) oracle_in(t, "KQ", 0);
+    d->krdap  = (agc_sp_t) oracle_in(t, "KQ", 2);
+    d->qerror = (agc_sp_t) oracle_in(t, "DXERROR", 2);
+    d->rerror = (agc_sp_t) oracle_in(t, "DXERROR", 4);
+    (void) lm_dap_gts();
+    oracle_require_ok(t, "CLOSEOUT");
+    gts_outputs(t, d);
+    cmp_sp(t, "COTROLER", d->cotroler, "COTROLER", 0);
+    cmp_sp(t, "SKIPU", d->skip[0], "SKIPU", 0);
+    cmp_sp(t, "SKIPV", d->skip[1], "SKIPV", 0);
+    cmp_sp(t, "INGTS", d->ingts, "INGTS", 0);
+}
+
+/* TIMEGMBL (timed nulling drive) and its ACDT+C12.                       */
+static void timegmbl(const char *t)
+{
+    lm_dap_t *d = lm_dap_state();
+
+    fresh();
+    gts_inputs(t, d);
+    d->qgimtimr = (agc_sp_t) oracle_in(t, "QGIMTIMR", 0);
+    d->rgimtimr = (agc_sp_t) oracle_in(t, "QGIMTIMR", 2);
+    (void) agc_lm_dap_timegmbl();
+    oracle_require_ok(t, "ENDOFJOB");
+    gts_outputs(t, d);
+}
+
 int main(void)
 {
     if (!oracle_load("dap_lm"))
@@ -270,6 +335,9 @@ int main(void)
     accs("accs_dps", 0);
     accs("accs_aps", 0);
     accs("accs_docked", 0);
+    accs("accs_docked_thrust", 0);
+    accs("accs_docked_aps", 0);
+    accs("accs_docked_fix", 0);
     accs("accs_dps_wide", 0);
     accs("accs_aos_small", 0);
     accs("accs_aos_some", 0);
@@ -298,6 +366,17 @@ int main(void)
     kalman("kal_jets", "gpm_a", 0);
     kalman("kal_powered", "gpm_b", 0);
     kalman("kal_bigtrap", "gpm_c", 0);
+
+    gts("gts_a");
+    gts("gts_b");
+    gts("gts_c");
+    gts("gts_d");
+    gts("gts_e");
+    gts("gts_f");
+    timegmbl("tg_a");
+    timegmbl("tg_b");
+    timegmbl("tg_c");
+    timegmbl("tg_d");
 
     return (oracle_finish("oracle_dap_lm"));
 }

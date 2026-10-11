@@ -165,7 +165,8 @@ static void throttle(const char *t)
     l->afc                      = oracle_in_dp(t, "/AFC/", 0);
     l->thistpip                 = oracle_in_dp(t, "THISTPIP", 0);
     h->tthrot                   = (agc_sp_t) oracle_in(t, "TTHROT", 0);
-    h->fweight                  = oracle_in_dp(t, "FWEIGHT", 0);
+    h->fweight.hi               = (agc_sp_t) oracle_in(t, "FWEIGHT", 0);
+    h->fweight.lo               = (agc_sp_t) oracle_in(t, "FWEIGHT", 1);
     h->fcold                    = (agc_sp_t) oracle_in(t, "FCOLD", 0);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
     agc_erase_set_piptime(oracle_in_dp(t, "PIPTIME", 0));
@@ -174,20 +175,27 @@ static void throttle(const char *t)
     agc_time_set_cs((uint32_t) oracle_out_sp(t, "TTHROT"));
     (void) agc_lm_throttle();
     oracle_require_ok(t, "ENDOFJOB");
-    (void) oracle_cmp(t, "FP", h->fp, oracle_out_dp(t, "FP"), 0);
+    /* FP, FCODD, PIF, FWEIGHT: both words as the AGC stores them (a DAS
+     * leaves them sign-disagreeing; THROTTLE reads the high word alone). */
+    (void) oracle_cmp(t, "FP", agc_lm_words_value(h->fp),
+                      oracle_out_dp(t, "FP"), 0);
+    (void) oracle_cmp(t, "FP hi", h->fp.hi, oracle_out_sp(t, "FP"), 0);
     (void) oracle_cmp(t, "FC", agc_dp_high(h->fc), oracle_out_sp(t, "FC"), 0);
-    (void) oracle_cmp(t, "FCODD", h->fcodd, oracle_out_dp(t, "FCODD"), 0);
+    (void) oracle_cmp(t, "FCODD", agc_lm_words_value(h->fcodd),
+                      oracle_out_dp(t, "FCODD"), 0);
     (void) oracle_cmp(t, "FCOLD", h->fcold, oracle_out_sp(t, "FCOLD"), 0);
-    (void) oracle_cmp(t, "PIF", h->pif, oracle_out_dp(t, "PIF"), 0);
+    (void) oracle_cmp(t, "PIF", agc_lm_words_value(h->pif),
+                      oracle_out_dp(t, "PIF"), 0);
+    (void) oracle_cmp(t, "PIF hi", h->pif.hi, oracle_out_sp(t, "PIF"), 0);
     (void) oracle_cmp(t, "PIFPSET", h->pifpset, oracle_out_sp(t, "PIFPSET"), 0);
-    /* F9: PIF = FC - FP by DAS is left sign-disagreeing by the AGC, which
-     * then uses its high word alone (CA PIF, MP PIF).                    */
-    oracle_cmp_known(t, "PSEUDO55", h->pseudo55, oracle_out_sp(t, "PSEUDO55"),
-                     0, "F9");
-    oracle_cmp_known(t, "THRUST", agc_erase_thrust(),
-                     oracle_out_sp(t, "THRUST"), 0, "F9");
-    oracle_cmp_known(t, "FWEIGHT", h->fweight, oracle_out_dp(t, "FWEIGHT"), 0,
-                     "F9");
+    (void) oracle_cmp(t, "PSEUDO55", h->pseudo55, oracle_out_sp(t, "PSEUDO55"),
+                      0);
+    (void) oracle_cmp(t, "THRUST", agc_erase_thrust(),
+                      oracle_out_sp(t, "THRUST"), 0);
+    (void) oracle_cmp(t, "FWEIGHT", agc_lm_words_value(h->fweight),
+                      oracle_out_dp(t, "FWEIGHT"), 0);
+    (void) oracle_cmp(t, "FWEIGHT hi", h->fweight.hi,
+                      oracle_out_sp(t, "FWEIGHT"), 0);
 }
 
 static void findcduw(const char *t, long tol)

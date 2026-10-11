@@ -18,11 +18,11 @@
 #include "agc/nav/integration.h"
 #include "internal.h"
 
-/* RME 2DEC 7178165 B-29 (oct 00333 01732), 800 km above the equatorial
+/* RME 2DEC 7178165 B-29 (oct 00333 01733), 800 km above the equatorial
  * radius; RMM 2DEC 2538.09 E3 B-27 (oct 00465 32324), 800 km above the
  * lunar surface (CM FRESH_START_AND_RESTART p. 210). LM: both = LODPMAX,
  * 2OCT 3777737777 (DPPOSMAX). Indexed RME - PBODY: [0] earth, [1] moon. */
-static const agc_dp_t RME_CSM[2] = {3589082, 5076180};
+static const agc_dp_t RME_CSM[2] = {3589083, 5076180};
 static const agc_dp_t RME_LM[2]  = {AGC_DP_MAX, AGC_DP_MAX};
 /* .3D 2DEC .3 B-2 (oct 02314 31463).                                     */
 static const agc_dp_t K_P3D = 20132659;
@@ -347,8 +347,8 @@ agc_status_t agc_integ_eraswake(int area)
 /* ATOPCSM / ATOPLEM (p. 1314-1316): MOVEACSM/MOVEALEM (42 words), set the
  * permanent moon flag from MOONFLAG, SVDWN1/SVDWN2 downlink copy.  SVDWN1
  * is the CSM in both programs (this vehicle in the CM, the other in the
- * LM).  DEVIATION: after ORIGCHNG the AGC reaches ANDOUT with X2 = ORIGEX
- * (a return address); x2 here is always 0 or 2.                          */
+ * LM).  x2: PBODY, or AGC_INTEG_X2_ORIGEX after an A-PCHK origin change
+ * (ORIGCHNG leaves X2 = its return address; SVDWN then stores zeros).    */
 static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2,
                          agc_vehicle_t veh)
 {
@@ -357,7 +357,8 @@ static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -679,6 +680,7 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     const bool   csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     agc_status_t st  = AGC_STATUS_OK;
+    int          x2  = ctx->pbody; /* X2 seen by ATOPCSM/ATOPLEM     */
 
     if (csm && agc_flag_test(AGC_FLAG_MIDFLAG))
     {
@@ -689,6 +691,7 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         if ((st == AGC_STATUS_OK) && (test < 0))
         {
             st = agc_integ_origchng(ip, ctx); /* BPL ANDOUT  */
+            x2 = AGC_INTEG_X2_ORIGEX;         /* LXA,2 ORIGEX */
         }
     }
 
@@ -702,8 +705,8 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         agc_integ_grp2pc(); /* OCT 04022   */
         agc_flag_put(AGC_FLAG_REINTFLG, true);
         st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-             agc_integ_atopcsm(ip, ctx, ctx->pbody) :
-             agc_integ_atoplem(ip, ctx, ctx->pbody);
+             agc_integ_atopcsm(ip, ctx, x2) :
+             agc_integ_atoplem(ip, ctx, x2);
         agc_integ_grp2pc(); /* PHEXIT      */
     }
 

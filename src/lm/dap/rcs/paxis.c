@@ -133,10 +133,9 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
 
     if (!selectp(d))
     {
-        agc_status_t sa = lm_dap_alarm(AGC_ALARM_02003); /* ALARMJET       */
-        agc_status_t so = lm_dap_jetsoff();
+        agc_alarm(AGC_ALARM_02003); /* ALARMJET       */
 
-        return ((sa != AGC_STATUS_OK) ? sa : so);
+        return (lm_dap_jetsoff());
     }
 
     d->nojets[0] = (d->numbert == 6) ? 4 : 2;
@@ -348,10 +347,9 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
         if (!selectp(d))
         {
             *policy = false;
-            agc_status_t sa = lm_dap_alarm(AGC_ALARM_02003);
-            agc_status_t so = lm_dap_jetsoff();
+            agc_alarm(AGC_ALARM_02003);
 
-            return ((sa != AGC_STATUS_OK) ? sa : so);
+            return (lm_dap_jetsoff());
         }
 
         if (d->numbert == 6 || (d->rotindex > 5 && d->numbert >= 4))
@@ -369,7 +367,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
         alteryz(d);
     }
 
-    agc_status_t sa = lm_dap_alarm(AGC_ALARM_02001);
+    agc_alarm(AGC_ALARM_02001);
 
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
     d->nextp    = 0;
@@ -379,7 +377,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (sa);
+    return (AGC_STATUS_OK);
 }
 
 /* PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
@@ -392,8 +390,7 @@ agc_status_t lm_dap_pretimck(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t    *d  = lm_dap_state();
-    agc_status_t st = AGC_STATUS_OK;
+    lm_dap_t *d = lm_dap_state();
 
     if (d->qgimtimr > 0)
     {
@@ -424,13 +421,13 @@ agc_status_t lm_dap_pretimck(void)
         d->jetctr[i] = lm_dap_dim(d->jetctr[i]); /* DIM PJETCTR..  */
     }
 
-    if (!AGC_ASSERT(d->qgimtimr != 0 || d->rgimtimr != 0 ||
-                    true == (st == AGC_STATUS_OK)))
+    if (!AGC_ASSERT(d->jetctr[0] >= 0 && d->jetctr[1] >= 0 &&
+                    d->jetctr[2] >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /* PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.            */

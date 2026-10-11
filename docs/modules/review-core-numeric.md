@@ -19,8 +19,8 @@ build.sh compiles the eleven core-numeric sources with both tests.
 |---|---|
 | stale DVSIGN (V/SC, UNIT early DVOVF) | DONE: modelled (agc_interp_t.dvsign_neg), 20 oracle snippets |
 | UNIT short vectors at B27 (R63) | DONE: AGC UNIT is equally coarse; C bit-exact; R63 uses NORMUNIT (prog-align A1) |
-| oracle F1-F6 | TODO |
-| fidelity pass per AGC routine | TODO |
-| forwarding wrappers in lane | TODO |
-| style findings to zero (777 at start) | TODO |
+| oracle F1-F6 | DONE (analysis below) |
+| fidelity pass per AGC routine | IN PROGRESS: constants vs ropes DONE; +44 oracle cases (SLR, TP SL/SR/NORM, SHORTMP, DMPNSUB, POWRSERS) bit-exact; per-file read: sp_trig mpac shift divide vec_div word DONE |
+| forwarding wrappers in lane | DONE: one (agc_sp_sin), kept with reason |
+| style findings to zero (777 at start) | DONE: sp_trig.c constants.c mpac.c mpac.h shift.c divide.c, word.h interp.h constants.h; TODO vec_div.c word.c interp/*.c tests |
 | rule-5 density (trig.c 1.88, vector.c 1.95) | TODO |

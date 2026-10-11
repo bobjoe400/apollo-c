@@ -205,7 +205,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
     {
         if (agc_dp_high(rz->rtheta) == 0)
         { /* BHIZ     */
-            return (agc_dsky_endext());
+            return (agc_dsky_endmark());
         }
 
         wm_load_csm(rz, p);
@@ -220,7 +220,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 
         if (!agc_flag_test(AGC_FLAG_W_MATRIX_OVERWRITE))
         {
-            return (agc_dsky_endext());
+            return (agc_dsky_endmark());
         }
 
         wm_load_lm(&ip, rz, p);
@@ -228,5 +228,5 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }

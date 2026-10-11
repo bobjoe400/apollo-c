@@ -30,7 +30,8 @@ static agc_vec_t v_other;
  *   R = (TDELTAV SR(7+X2) + RCV) SR X2     -> m B29
  *   V = (TNUV    SR(4+X2) + VCV) SR X2     -> m/cs B7
  * x2 = X2: 0 for an earth-centred state (B29/B7 inputs), 2 for the moon
- * (B27/B5).  This vehicle: RN, VN and PIPTIME = TET, unless AVEMIDSW is
+ * (B27/B5); AGC_INTEG_X2_ORIGEX after an A-PCHK origin change gives zero
+ * vectors (shift counts of ~27200).  This vehicle: RN, VN and PIPTIME = TET, unless AVEMIDSW is
  * set (AVETOMID doing the W-matrix integration: BOF AVEMIDSW +1, RVQ).
  * The other vehicle: R-OTHER, V-OTHER.  VSL* by a negative count is a
  * rounding right shift, as agc_vec_shr is.
@@ -39,7 +40,8 @@ agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
                              agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
                              agc_vec_t tnuv, agc_dp_t tet)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
+    if (!AGC_ASSERT(ip != NULL) ||
+        !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -49,10 +51,17 @@ agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
         return (AGC_STATUS_OK); /* BOF AVEMIDSW; RVQ */
     }
 
-    const agc_vec_t r = agc_vec_shr(
-        agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv), x2);
-    const agc_vec_t v = agc_vec_shr(
-        agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
+    agc_vec_t r = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m B29    */
+    agc_vec_t v = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m/cs B7  */
+
+    if (x2 != AGC_INTEG_X2_ORIGEX)
+    {
+        r = agc_vec_shr(
+            agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv),
+            x2);
+        v = agc_vec_shr(
+            agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
+    }
 
     if (this_vehicle)
     {

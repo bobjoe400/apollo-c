@@ -367,7 +367,7 @@ agc_vec_t agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r)
     }
 
     agc_dp_t k =
-        agc_dp_mul(ip, agc_dp_div(ip, MUDTMUN, x), SHIFT11); /* BDDV DMP */
+        agc_dp_mul_trunc(agc_dp_div(ip, MUDTMUN, x), SHIFT11); /* BDDV DMP */
 
     a->gdt1_2 = agc_vec_scale(ip, a->unitr, k);              /* VXSC UNIT/R/  */
 

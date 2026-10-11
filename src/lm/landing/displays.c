@@ -13,7 +13,7 @@
  * Task structure: DISINDAT is a subroutine of ALTROUT/ALTOUT that pauses
  * 40 ms (VARDELAY) in SPEEDRUN; the AGC keeps the return in LADQSAVE.
  * Here the pending path is the static ld_altpath and the task after the
- * pause is SPEEDRN2 (agc_lm_task_speedrun2).
+ * pause is SPEEDRN2 (agc_lm_task_speedrun_resume).
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -114,7 +114,7 @@ static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
 /* DCA x, DDOUBL, DDOUBL: the high word of 4x (DP doubling carries the
  * low word up). DEVIATION: an overflow of A is kept wrapped, as the
  * following MP / ADS would see the overflow-corrected word.          */
-static agc_sp_t ld_ddoubl2(agc_dp_t x)
+static agc_sp_t ld_quadruple_high(agc_dp_t x)
 {
     agc_ovf_t ovf = 0;
     agc_dp_t  d   = agc_dp_shl_raw(x, 2, &ovf);
@@ -298,16 +298,16 @@ static agc_status_t ld_speedrun(void)
 
     for (int i = 0; i < 3; i++)
     {
-        agc_sp_t g4 = ld_ddoubl2(g->avg.gdt_2.c[i]); /* DCA, DDOUBL x2 */
+        agc_sp_t g4 = ld_quadruple_high(g->avg.gdt_2.c[i]); /* DCA, DDOUBL x2 */
         agc_sp_t gt = agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);
-        agc_sp_t v4 = ld_ddoubl2(g->lm.v.c[i]); /* m/cs 2^5       */
+        agc_sp_t v4 = ld_quadruple_high(g->lm.v.c[i]); /* m/cs 2^5       */
         agc_sp_t dv =
             agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]), LD_KPIP1_5);
 
         ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
     }
 
-    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN2); /* VARDELAY */
+    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -488,7 +488,7 @@ agc_status_t agc_lm_vmonitor(void)
 /* SPEEDRUN after the pause (pp. 902-904): in the descent, VHY and VHZ
  * along UHYP, UHZP; lateral and forward velocity through the outer
  * gimbal angle (M22 = sin AOG, M32 = cos AOG); the cross-pointers. */
-agc_status_t agc_lm_task_speedrun2(void)
+agc_status_t agc_lm_task_speedrun_resume(void)
 {
     if (agc_flag_test(AGC_FLAG_ALTITUDE_METERS_ONLY))
     {

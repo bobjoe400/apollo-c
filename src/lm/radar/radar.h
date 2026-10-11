@@ -80,8 +80,6 @@ typedef struct rr_state
                           * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
     agc_sp_t loscount;   /* LOSCOUNT: DODES passes before a new LOS       */
     agc_sp_t descount;   /* DESCOUNT: designate passes left (.5 s each)   */
-    agc_sp_t tang[2];    /* TANG, TANG +1: trunnion, shaft gyro command,
-                          * pulses (RRDESNB input: desired CDU words)     */
     uint16_t tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
     uint16_t modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
     uint16_t modeb[2];   /* MODEB: (T, S) for the other mode              */
@@ -104,7 +102,6 @@ void rr_mode_invert(void);            /* RMODINV                   */
 
 /* ---- moding routines (lm/radar/moding.c) -------------------------------- */
 /* RRLIMCHK on (T, S) words, the present mode's limits.                  */
-bool rr_limits_ok(uint16_t t, uint16_t s);
 void rr_setrrecr(void); /* SETRRECR      */
 void rr_rrout(void);    /* RROUT (TANG)  */
 /* RRTONLY / RRSONLY for a client and its step; runs RR1AX2 now.         */
@@ -112,7 +109,6 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
                            uint16_t rdes);
 agc_status_t rr_remode_start(void); /* REMODE        */
 agc_status_t rr_endradar(void);     /* ENDRADAR      */
-agc_status_t rr_goodend(void);      /* RGOODEND      */
 agc_status_t rr_badend(void);       /* RDBADEND      */
 agc_status_t rr_radnoop(void);      /* RADNOOP       */
 /* Turn the lamp `lamp` (DSPTAB +11D bit) on or off (TRKFLON +1).       */

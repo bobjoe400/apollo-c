@@ -12,7 +12,8 @@
  * RSAMPDT, RTSTDEX, RTSTBASE, RTSTMAX, RTSTLOC and RFAILCNT belong to the
  * extended verbs (sys-misc, src/io/verbs/extended_verbs_lm_radar.c).
  * DEVIATION: RSTACK EQUALS RANGE in the AGC (eight words over RANGE,
- * RRATE, RTHETA); here it has its own storage.
+ * RRATE, RTHETA); here it has its own storage (agc_erase_rstack,
+ * src/programs/navigation/common.c).
  */
 #include <stddef.h>
 
@@ -26,19 +27,6 @@
 
 #define LEADIN_PRIO25   ((agc_prio_t) 025)
 #define LEADIN_RSTACK_N 4 /* RSTACK: B(8), four DP readings          */
-
-static agc_dp_t rstack[LEADIN_RSTACK_N];
-
-/* RSTACK +2 index (index 0..3: DP readings for nouns 66, 67, 78).        */
-agc_dp_t agc_erase_rstack(int index)
-{
-    if (!AGC_ASSERT(index >= 0 && index < LEADIN_RSTACK_N))
-    {
-        return (0);
-    }
-
-    return (rstack[index]);
-}
 
 /* RADSAMP (p.490): recall in RSAMPDT - 1 cs, start DORSAMP, and for
  * cyclic sampling RTSTDEX = RTSTLOC / 2 + RTSTBASE (0 for RR, 2 for LR). */
@@ -152,7 +140,7 @@ agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx)
     if (!agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED) &&
         AGC_ASSERT(loc >= 0 && loc / 2 < LEADIN_RSTACK_N))
     {
-        rstack[loc / 2] = agc_radar_samplsum();
+        agc_erase_set_rstack(loc / 2, agc_radar_samplsum());
     }
 
     agc_erase_set_rtstloc((loc == agc_erase_rtstmax()) ? 0 :

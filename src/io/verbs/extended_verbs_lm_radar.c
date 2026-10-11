@@ -287,7 +287,7 @@ agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx)
     {
         agc_dsky_falton(); /* XACTALM                */
 
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     clear_designate_bits();
@@ -388,7 +388,7 @@ agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* RRDESK2 (p.269): RRDESNB, then RADSTALL for the designate to finish.   */
@@ -572,7 +572,7 @@ agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx)
         return (agc_job_rr_los_display(ctx));
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* V16N56 responses: B5OFF (the RRLOSDSP job then ends itself).            */
@@ -889,7 +889,7 @@ agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* R77END (V79, p.279): stop sampling, wait 320 ms for a pending RUPT.    */

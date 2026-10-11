@@ -1,11 +1,26 @@
-/*
- * agc_flags_lm.h -- Luminary099 (LM) flagword bits that are NOT in agc_flags_common.h.
- * Source: Luminary099/FLAGWORD_ASSIGNMENTS.agc, FLAGWRD0..FLGWRD13 (STATE+0..+13D;
- * words 12 and 13 were RADMODES and DAPBOOLS).
- * Includes agc_flags_common.h. Do not include together with agc_flags_csm.h:
- * names whose position differs between vehicles would collide (by design,
- * the compiler rejects it). Code needing both uses agc_state_vehicle().
- */
+/**********************************************************************
+ * FILE NAME: flags_lm.h
+ *
+ * PURPOSE:
+ *   Luminary099 (LM) flagword bits that are not in flags_common.h:
+ *   LM-only flags and flags whose position differs from the CSM.
+ *   Includes flags_common.h. Never include together with flags_csm.h:
+ *   the names whose position differs would collide (by design, the
+ *   compiler rejects it); code needing both tests agc_state_vehicle().
+ *
+ * AGC SOURCE:
+ *   Luminary099 FLAGWORD_ASSIGNMENTS.agc pp. 61-88 (FLAGWRD0..FLGWRD13,
+ *   STATE +0..+13D). Words 12 and 13 are RADMODES and DAPBOOLS
+ *   (RADMODES EQUALS FLGWRD12, DAPBOOLS EQUALS FLGWRD13, p. 85 and p. 86:
+ *   one storage word each). Values checked against the assembled
+ *   symbol table.
+ *
+ * REQUIRES:
+ *   none (includes agc/core/flags_common.h)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the flagwords are static in src/core/state.c)
+ **********************************************************************/
 #ifndef AGC_FLAGS_LM_H
 #define AGC_FLAGS_LM_H
 
@@ -21,6 +36,11 @@
  * SET / RESET text is the AGC listing's own description of the two states.
  * C name: AGC_FLAG_<AGCNAME>, AGCNAME upper case, '/', '-' and '.' -> '_'.
  */
+
+/* Whole-word flagwords with their own AGC names (FLAGWORD_ASSIGNMENTS
+ * pp. 85-86): use with agc_flagword_get/set.                            */
+#define AGC_FLAGWORD_RADMODES 12 /* RADMODES EQUALS FLGWRD12 (radar)    */
+#define AGC_FLAGWORD_DAPBOOLS 13 /* DAPBOOLS EQUALS FLGWRD13 (LM DAP)   */
 
 enum agc_flag_lm_id
 {

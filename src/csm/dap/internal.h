@@ -59,6 +59,15 @@ agc_sp_t     csm_dap_mp_lo(agc_sp_t a, agc_sp_t b); /* MP, lower word (L)      *
 agc_sp_t     csm_dap_dv(agc_dp_t num, agc_sp_t den); /* DV, limited to +-POSMAX */
 agc_dp_t     csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a); /* SMALLMP            */
 agc_dp_t     csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al); /* DPADD (mod 360 deg) */
+
+/* ---- DP word pairs as stored (TVC filter; mysubs.c) -------------------- */
+agc_csm_dp_pair_t csm_dap_pair(agc_dp_t v);        /* sign-agreed split */
+agc_dp_t     csm_dap_pair_value(agc_csm_dp_pair_t p); /* hi 2^14 + lo   */
+agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p); /* DCS          */
+agc_csm_dp_pair_t csm_dap_pair_mp(agc_sp_t a, agc_sp_t b); /* MP -> A,L  */
+agc_sp_t     csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al);
+agc_csm_dp_pair_t csm_dap_pair_ddoubl(agc_csm_dp_pair_t p); /* DDOUBL    */
+agc_csm_dp_pair_t csm_dap_pair_smallmp(agc_csm_dp_pair_t in, agc_sp_t n);
 uint16_t     csm_dap_cdu(int axis); /* CDUX, CDUY, CDUZ raw    */
 agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
 agc_status_t csm_dap_set_time5(uint16_t time5_word);
@@ -68,20 +77,20 @@ agc_status_t csm_dap_needler(void);   /* NEEDLER on AK..AK2      */
 /* ---- RCS DAP (t5rupt.c, filter.c, manual.c, attitude.c) ---- */
 agc_status_t csm_rcs_freshdap(bool fresh);    /* FRESHDAP (true) / REDAP     */
 agc_status_t csm_rcs_reinit(void);            /* REINIT ("TILT")             */
-agc_status_t csm_rcs_phase1(void);            /* SETT5 -0 branch .. RESUME   */
+agc_status_t csm_rcs_rate_filter_phase(void);            /* SETT5 -0 branch .. RESUME   */
 agc_status_t csm_rcs_kmatrix(void);           /* KMATRIX .. DACNDLS .. RESUME*/
 agc_status_t csm_rcs_ratefilt(void);          /* DRHOLOOP, ADOTLOOP          */
-agc_status_t csm_rcs_t5phase2(void);          /* T5PHASE2 .. T6PROG          */
+agc_status_t csm_rcs_attitude_control_phase(void);          /* T5PHASE2 .. T6PROG          */
 agc_status_t csm_rcs_manual(void);            /* MANUAL ROTATION COMMANDS    */
 agc_status_t csm_rcs_ahfnorot(void);          /* AHFNOROT                    */
 agc_status_t csm_rcs_jets(void);              /* JETS .. JTIME .. T6PROG     */
-agc_status_t csm_rcs_t6progm(void);           /* T6PROGM: zero errors, T6PROG*/
+agc_status_t csm_rcs_t6prog_manual(void);           /* T6PROGM: zero errors, T6PROG*/
 agc_status_t csm_rcs_stickchk(uint16_t bits); /* STICKCHK                    */
 bool         csm_rcs_rate_init_pending(void); /* RCSFLAGS BIT14 (NORATE)     */
 
 /* ---- TVC DAP (tvc_*.c) -------------------------------------------------- */
 agc_status_t csm_tvc_mrclean(void);       /* MRCLEAN .. ENDMRC           */
-agc_status_t csm_tvc_init4(void);         /* TVCINIT4 .. ENDTVCIN        */
+agc_status_t csm_tvc_init_complete(void);         /* TVCINIT4 .. ENDTVCIN        */
 agc_status_t csm_tvc_swichovr_body(void); /* SWICHOVR +5 .. TC RTRNLOC   */
 agc_status_t csm_tvc_gains(bool full);    /* S40.15 (full) or S40.15 +7  */
 agc_status_t csm_tvc_pcopy(bool restart); /* PCOPY (restart: PCOPY +1)   */

@@ -74,24 +74,27 @@ static void rte(const char *t, long tol)
      * (e.g. 00232 76635); the next VXV and UNIT round differently, UH/ by
      * up to ~80 LSB for a near-radial state.                             */
     oracle_cmp_vec(t, "UH/", rs->uh, oracle_out_vec(t, "UH/"), tol);
-    /* F14: from that start the X(T2)/RCON search converges inside its
-     * tolerance to a slightly different solution: T2 up to 17 s, the
-     * landing longitude up to 0.07 deg (~8 km) apart.                    */
-    oracle_cmp_known(t, "RCON", rs->rcon, oracle_out_dp(t, "RCON"), tol, "F14");
+    /* F14 (review-guid-entry): the C now matches the AGC word for word
+     * through V2T100/GAMDV/DVCALC from the same start. What is left comes
+     * from outside the lane: UH/ above (INVC115, core VXV on disagreeing
+     * words), V(T2)/ from TIMERAD (nav-conic, a few high-word LSB) and
+     * the GAMDV X(T1) steps whose words disagree (core). The X(T2)/RCON
+     * search then converges inside its tolerance to a slightly different
+     * solution; the flat DV minimum moves X(T1) most.                    */
+    (void) oracle_cmp(t, "RCON", rs->rcon, oracle_out_dp(t, "RCON"), tol);
     oracle_cmp_known(t, "X(T2)", rs->x_t2, oracle_out_dp(t, "X(T2)"), tol,
                      "F14");
     oracle_cmp_known(t, "X(T1)", rs->x_t1, oracle_out_dp(t, "X(T1)"), tol,
                      "F14");
-    oracle_cmp_known(t, "PCON", rs->pcon, oracle_out_dp(t, "PCON"), tol, "F14");
+    (void) oracle_cmp(t, "PCON", rs->pcon, oracle_out_dp(t, "PCON"), tol);
     oracle_cmp_vec_known(t, "V2(T1)/", rs->v2_t1v,
                          oracle_out_vec(t, "V2(T1)/"), tol, "F14");
-    oracle_cmp_known(t, "DV", rs->dv, oracle_out_dp(t, "DV"), tol, "F14");
-    oracle_cmp_vec_known(t, "R(T2)/", rs->r_t2v, oracle_out_vec(t, "R(T2)/"),
-                         tol, "F14");
+    (void) oracle_cmp(t, "DV", rs->dv, oracle_out_dp(t, "DV"), tol);
+    oracle_cmp_vec(t, "R(T2)/", rs->r_t2v, oracle_out_vec(t, "R(T2)/"), tol);
     oracle_cmp_vec_known(t, "V(T2)/", rs->v_t2v, oracle_out_vec(t, "V(T2)/"),
                          tol, "F14");
     oracle_cmp_known(t, "T2", rs->t2, oracle_out_dp(t, "T2"), tol, "F14");
-    oracle_cmp_known(t, "T12", rs->t12, oracle_out_dp(t, "T12"), tol, "F14");
+    (void) oracle_cmp(t, "T12", rs->t12, oracle_out_dp(t, "T12"), tol);
     (void) oracle_cmp(t, "NN1A", rs->nn1a, oracle_out_dp(t, "NN1A"), 2);
     oracle_cmp_known(t, "VPRED", d.vpred, oracle_out_dp(t, "VPRED"), tol,
                      "F14");

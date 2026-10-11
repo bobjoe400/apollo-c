@@ -222,9 +222,16 @@ void rr_mode_invert(void)
 
 /* ---- RRLIMCHK (pp.522-523) ---------------------------------------------
  * Mode 1: |T| <= 55 and |S + 5.5| <= 64.5 degrees (S from -70 to +59).
- * Mode 2: |S + 82| <= 57 (S from -139 to -25) and |T| > 125 degrees.   */
-bool rr_limits_ok(uint16_t t, uint16_t s)
+ * Mode 2: |S + 82| <= 57 (S from -139 to -25) and |T| > 125 degrees.
+ * True = within the limits of the present mode (L+3). Also called by
+ * the T4RUPT gimbal monitor (sys-misc) on CDUT, CDUS.                  */
+bool agc_rr_limchk(uint16_t t, uint16_t s)
 {
+    if (!AGC_ASSERT(t <= RR_WORD_MASK && s <= RR_WORD_MASK))
+    {
+        return (false);
+    }
+
     int tv = rr_ones(t);
     int sv = rr_ones(s);
 
@@ -240,18 +247,6 @@ bool rr_limits_ok(uint16_t t, uint16_t s)
     }
 
     return (!rr_magsub(tv, RR_LIM_T2));
-}
-
-/* RRLIMCHK as called by the T4RUPT gimbal monitor (sys-misc) on CDUT,
- * CDUS: true = within the limits of the present mode (L+3).            */
-bool agc_rr_limchk(uint16_t cdut, uint16_t cdus)
-{
-    if (!AGC_ASSERT(cdut <= RR_WORD_MASK && cdus <= RR_WORD_MASK))
-    {
-        return (false);
-    }
-
-    return (rr_limits_ok(cdut, cdus));
 }
 
 /* ---- lamps (SETTRKF, TRKFLON, FLIP pp.524-525) ------------------------ */
@@ -314,9 +309,10 @@ agc_status_t agc_rr_settrkf(void)
 }
 
 /* ---- end of a radar operation (ENDRADAR p.563) ------------------------
+ * RGOODEND: also a waitlist task (RADNOOP's 1 cs call).
  * DEVIATION: the "-2" entries that set RUPTAGN for a caller outside
  * waitlist control are the same as the plain entries here.            */
-agc_status_t rr_goodend(void)
+agc_status_t agc_task_rr_goodend(void)
 {
     agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_RADAR);
 
@@ -343,13 +339,7 @@ agc_status_t rr_badend(void)
 /* ENDRADAR: good end unless the RR CDU failed.                         */
 agc_status_t rr_endradar(void)
 {
-    return (rr_radmodes_test(RR_RCDUFBIT) ? rr_goodend() : rr_badend());
-}
-
-/* RGOODEND as a waitlist task (RADNOOP's 1 cs call).                    */
-agc_status_t agc_task_rr_goodend(void)
-{
-    return (rr_goodend());
+    return (rr_radmodes_test(RR_RCDUFBIT) ? agc_task_rr_goodend() : rr_badend());
 }
 
 /* RADNOOP (p.561): no further action requested; good end in 10 ms.     */
@@ -405,7 +395,7 @@ void rr_rrout(void)
 
     for (int i = 1; i >= 0; i--)
     { /* shaft, then trunnion   */
-        int cmd = s->tang[i];
+        int cmd = agc_erase_tang(i);
 
         if (!rr_magsub(cmd, RR_LIMIT))
         {
@@ -632,8 +622,8 @@ static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
         return (RR_AXIS_DONE);
     }
 
-    rr_designate_state.tang[0] = (agc_sp_t) ((rr_axis.rrindex == 0) ? cmd : 0);
-    rr_designate_state.tang[1] = (agc_sp_t) ((rr_axis.rrindex == 0) ? 0 : cmd);
+    agc_erase_set_tang(0, (agc_sp_t) ((rr_axis.rrindex == 0) ? cmd : 0));
+    agc_erase_set_tang(1, (agc_sp_t) ((rr_axis.rrindex == 0) ? 0 : cmd));
     rr_rrout();
     *st = agc_waitlist_fixdelay(RR_DT_HALFSEC, AGC_TASK_RR_ONE_AXIS);
 
@@ -690,7 +680,7 @@ static bool rr_axis_advance(agc_status_t *st)
              * designate (STDESIG) or to the caller waiting in RADSTALL.     */
             rr_mode_invert(); /* RMODINV  */
             rr_radmodes_clear(RR_REMODBIT);
-            *st = rr_radmodes_test(RR_DESIGBIT) ? rr_stdesig() : rr_goodend();
+            *st = rr_radmodes_test(RR_DESIGBIT) ? rr_stdesig() : agc_task_rr_goodend();
 
             return (false);
         case RR_AXIS_PREPOSITION_POWERED: /* PREPOS29: repositioning off */

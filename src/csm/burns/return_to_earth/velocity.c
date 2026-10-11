@@ -75,11 +75,14 @@ agc_interp_t *rte_ip(void)
     return (&rte_interp);
 }
 
-/* DSU X on a TP MPAC (INTERPRETER p. 1133, DSU -> ENDVXV): DCS X and DAS
- * into MPAC,+1 only; MPAC+2 (the low word of the preceding DMP/SL*) is
- * left as it was. THETA1 and BETA10 are small differences of nearly equal
- * terms, so that word carries most of their precision (finding F14).     */
-static agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x)
+/* DSU X / BDSU X on a TP MPAC (INTERPRETER p. 1133-1134, both end in
+ * ENDVXV): DCS (or DCOM) and DAS on MPAC,+1 only; MPAC+2, the low word of
+ * the preceding DMP, SL* or SQRT, is left as it was, so for BDSU it keeps its
+ * sign: X - (hi + lo) becomes X - hi + lo. THETA1, BETA10 and the PREC155
+ * terms are small differences of nearly equal terms, so that word carries
+ * much of their precision (finding F14).                                 */
+static agc_tp_t rte_tp_minus(agc_interp_t *ip, agc_tp_t m, agc_dp_t x,
+                             bool reverse)
 {
     const agc_dp_t hi  = agc_tp_to_dp(m);
     const agc_tp_t lo  = m - agc_tp_from_dp(hi); /* MPAC+2         */
@@ -90,7 +93,19 @@ static agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x)
         return (m); /* no valid result */
     }
 
-    return (agc_tp_from_dp(agc_dp_sub(ip, hi, x)) + lo);
+    const agc_dp_t top = reverse ? agc_dp_sub(ip, x, hi) : agc_dp_sub(ip, hi, x);
+
+    return (agc_tp_from_dp(top) + lo);
+}
+
+agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x)
+{
+    return (rte_tp_minus(ip, m, x, false));
+}
+
+agc_tp_t rte_tp_bdsu(agc_interp_t *ip, agc_dp_t x, agc_tp_t m)
+{
+    return (rte_tp_minus(ip, m, x, true));
 }
 
 /* VSL* / VSR* with a computed count: n > 0 left (wraps, OVFIND), n < 0
@@ -196,10 +211,10 @@ agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
  *   PCON = THETA2 / (THETA1 - X(T1)^2)                             m B28
  *   V2(T1)/ = THETA3 PCON^.5 (X(T1) UR1/ + UH/)                    m/cs B7
  *   DV = ABVAL(V2(T1)/ - V(T1)/)                                   m/cs B7
- * DEVIATION: THETA1 - X^2 and THETA2 are normalised as TP and used as DP
- * (the AGC divides the normalised push-list words; the third word only
- * affects the last bit). SQRT of a negative PCON aborts (POODOO 01302) as
- * in the interpreter.                                                     */
+ * THETA1 - X^2 is PUSHed (DP) after NORM and THETA2 is cut to DP by RTB
+ * DPMODE, so DDV sees DP words as here; but PCON's SR* leaves bits in
+ * MPAC+2 and SQRT reads them (verified word for word against the rope).
+ * SQRT of a negative PCON aborts (POODOO 01302) as in the interpreter.   */
 agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
                          const rte_v2t_t *pl)
 {

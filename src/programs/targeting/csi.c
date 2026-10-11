@@ -170,7 +170,7 @@ static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
 }
 
 /* ---- CSI/B1 (p.666): LOOPCT + 1; 16 passes -> SCNDSOL with X2 = 6 ------- */
-static csi_label_t csi_b1(agc_rendz_t *rz, csi_work_t *w)
+static csi_label_t csi_count_pass(agc_rendz_t *rz, csi_work_t *w)
 {
     if (!AGC_ASSERT(rz->loopct >= 0))
     {
@@ -192,7 +192,7 @@ static csi_label_t csi_b1(agc_rendz_t *rz, csi_work_t *w)
 /* ---- CSI/B2, CSI/B22 (p.666): limit |DELVCSI| to 989 fps once -----------
  * Returns false (SCNDSOL, X2 = 7) when the limit was already applied or
  * in the 50 fps stage of the second cycle.                                */
-static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
+static bool csi_limit_delta_v(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
     if (agc_dp_sub(ip, agc_dp_abs(rz->delvcsi), CSI_DVMAX1) < 0)
     {
@@ -243,7 +243,7 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
 /* CSI/B23 .. CSI/B23D (p.667): DELVEET1 = DELVCSI UH1, VACT4, HAFPA1 =
  * half period (TIMETHET through 359.99 deg), POSTCSI; *ellipse is true
  * when the post-CSI orbit is not to be treated as circular.              */
-static agc_status_t csi_b23(agc_interp_t *ip, agc_rendz_t *rz,
+static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
                             agc_rendz_periapo_t *pa, bool *ellipse)
 {
     agc_vec_t uh1 =
@@ -267,14 +267,14 @@ static agc_status_t csi_b23(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     rz->hafpa1 = agc_dp_shr(t, 1); /* SR1        */
-    st         = agc_rendz_periapo1(ip, rz, rz->ract1, rz->vact4, pa);
+    st         = agc_rendz_periapo_body_scale(ip, rz, rz->ract1, rz->vact4, pa);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    rz->postcsi = agc_rendz_shiftr1(rz, pa->hperi);
+    rz->postcsi = agc_rendz_scalar_from_body(rz, pa->hperi);
     *ellipse    =
         (rz->centang == 0) && (agc_dp_sub(ip, pa->ecc, CSI_ONETHTH) >= 0);
 
@@ -289,7 +289,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
                               agc_dp_t *pop)
 {
     int      x1  = 0;
-    agc_dp_t r1n = rz_norm(agc_rendz_shiftr1(rz, pa->r1), &x1); /* 2D */
+    agc_dp_t r1n = rz_norm(agc_rendz_scalar_from_body(rz, pa->r1), &x1); /* 2D */
     agc_dp_t rdv = agc_vec_dot(ip, rz->ract1, rz->vact4);
     agc_dp_t q   = agc_dp_div(ip, agc_dp_abs(rdv), r1n); /* B7         */
 
@@ -305,7 +305,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
     /* (P/MU)^.5 / R1 part of the apsis-angle computation (p.668), B-31 (moon
      * SL3 more).                                                             */
     agc_dp_t a = agc_dp_div(ip, agc_dp_shr(rz->body.rtsr1mu, 1), r1n); /* 2D */
-    agc_dp_t s = agc_rendz_shiftr1(rz, agc_dp_mul_trunc(pa->p, pa->r1));
+    agc_dp_t s = agc_rendz_scalar_from_body(rz, agc_dp_mul_trunc(pa->p, pa->r1));
 
     s = agc_dp_shl(ip, agc_dp_shl(ip, s, 4), 1); /* SL4 SL1    */
     s = agc_dp_mul_trunc(agc_dp_sqrt(ip, s), a); /* SQRT DMP   */
@@ -358,7 +358,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
 
 /* NTP/2 (p.669): TCDH = NN HAFPA1 - pop + TCSI; TTPI - TCDH < 0 ->
  * SCNDSOL with X2 = 5 (returns false).                                  */
-static bool csi_ntp2(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
+static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
                      csi_work_t *w)
 {
     agc_dp_t nn = agc_dp_from_sp(rz->nn); /* DLOAD NN   */
@@ -408,7 +408,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_rendz_periapo1(ip, rz, rz->ract2, rz->vact3, &pa);
+        st = agc_rendz_periapo_body_scale(ip, rz, rz->ract2, rz->vact3, &pa);
     }
 
     if (st != AGC_STATUS_OK)
@@ -416,7 +416,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
         return (st);
     }
 
-    rz->postcdh = agc_rendz_shiftr1(rz, pa.hperi);
+    rz->postcdh = agc_rendz_scalar_from_body(rz, pa.hperi);
     st          = rz_intint(ip, rz, rz->ract2, rz->vact3, rz->tcdh,
                             agc_erase_ttpi(),
                             true, resume, &r, &v);
@@ -656,7 +656,7 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     agc_rendz_periapo_t pa;
     bool                ellipse = false;
 
-    w->st = csi_b23(ip, rz, &pa, &ellipse);
+    w->st = csi_post_csi_orbit(ip, rz, &pa, &ellipse);
     bool     circl = !ellipse;
     agc_dp_t pop   = 0;              /* CIRCL: 0D  */
 
@@ -675,7 +675,7 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
         return (CSI_L_ERROR);
     }
 
-    if (!csi_ntp2(ip, rz, pop, w))
+    if (!csi_cdh_time(ip, rz, pop, w))
     {
         return (CSI_L_SCNDSOL);
     }
@@ -738,10 +738,10 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
                 l = CSI_L_B1;
                 break;
             case CSI_L_B1:
-                l = csi_b1(rz, &w);
+                l = csi_count_pass(rz, &w);
                 break;
             case CSI_L_B2:
-                l = csi_b2(ip, rz, &w) ? csi_trial(ip, rz, &w) : CSI_L_SCNDSOL;
+                l = csi_limit_delta_v(ip, rz, &w) ? csi_trial(ip, rz, &w) : CSI_L_SCNDSOL;
                 break;
             case CSI_L_SCNDSOL:
                 l = csi_scndsol(rz, &w);
@@ -815,7 +815,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
     rz->diffalt = agc_dp_sub(ip, rp, ra);
     int      x1   = 0;
     agc_dp_t r1an = rz_norm(o.r1a, &x1); /* 4D         */
-    agc_dp_t r1   = agc_dp_shr_round(agc_rendz_shiftr1(rz, o.r1), 1);
+    agc_dp_t r1   = agc_dp_shr_round(agc_rendz_scalar_from_body(rz, o.r1), 1);
     agc_dp_t a_p  = rz_sl_star(ip, agc_dp_div(ip, r1, r1an), -5, x1);
     agc_dp_t a_a  = agc_dp_sub(ip, a_p, rz->diffalt); /* 4D A SUB A */
     agc_dp_t vav  = 0;

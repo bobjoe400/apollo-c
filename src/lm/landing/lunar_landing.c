@@ -544,7 +544,7 @@ static void ll_rate_of_descent_setup(void)
     l->rodscal1           = agc_lm_pad()->rodscale;
     l->lasttpip           = agc_erase_piptime();
     agc_lm_thr()->fcold   = 0;
-    agc_lm_thr()->fweight = 0;
+    agc_lm_thr()->fweight = agc_lm_words(0);
 
     if (!AGC_ASSERT(l->rodscal1 == agc_lm_pad()->rodscale))
     {
@@ -666,7 +666,7 @@ agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
 
 /* REDES1 (p. 805): the new site where the perturbed line of sight W
  * (half size) meets the plane of the old site's X coordinate.        */
-static agc_vec_t ll_redes1(agc_interp_t *ip, agc_vec_t w)
+static agc_vec_t ll_redesignated_site(agc_interp_t *ip, agc_vec_t w)
 {
     agc_lm_ldg_t   *l = agc_lm_ldg();
     const agc_vec_t r = agc_guid_state()->lm.r;
@@ -723,7 +723,7 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
         w.c[0] = LL_DEPRCRIT; /* not too close to horizon  */
     }
 
-    l->landtemp = ll_redes1(ip, w);
+    l->landtemp = ll_redesignated_site(ip, w);
     agc_lm_fastchng();
     l->land = l->landtemp;
 
@@ -792,7 +792,8 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
     l->lasttpip = l->thistpip;
     agc_dp_t meas =
         agc_dp_div(ip, agc_vec_abval(ip, dv), agc_dp_div(ip, dt2, LL_SHFTFACT));
-    agc_dp_t fw = agc_dp_mul_trunc(agc_lm_thr()->fweight, LL_BIT1H);
+    agc_dp_t fw = agc_dp_mul_trunc(agc_lm_words_value(agc_lm_thr()->fweight),
+                                   LL_BIT1H);
 
     fw = agc_dp_div(ip, agc_dp_div(ip, fw, g->lm.mass), LL_SCALEFAC);
     agc_dp_t e =

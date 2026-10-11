@@ -114,6 +114,128 @@ void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
     agc_erase_set_mrkbuf(2, index, w);
 }
 
+/* TANG, TANG +1 (LM, noun 72): RR gimbal command or, for RRDESNB, the
+ * desired trunnion and shaft CDU words, as ones' complement SP numbers.
+ * RSTACK (LM, R04/R77 nouns 66, 67, 78): four DP radar samples, m or
+ * m/cs at the radar scale. Owned here so the noun tables (this layer)
+ * need not reach up into src/lm/radar; the radar code uses the accessors. */
+#define RZ_TANG_WORDS   2
+#define RZ_RSTACK_WORDS 4
+static agc_sp_t tang[RZ_TANG_WORDS];
+static agc_dp_t rstack[RZ_RSTACK_WORDS];
+
+agc_sp_t agc_erase_tang(int index)
+{
+    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS))
+    {
+        return (0);
+    }
+
+    return (tang[index]);
+}
+
+void agc_erase_set_tang(int index, agc_sp_t v)
+{
+    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS) ||
+        !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return;
+    }
+
+    tang[index] = v;
+}
+
+agc_dp_t agc_erase_rstack(int index)
+{
+    if (!AGC_ASSERT(index >= 0 && index < RZ_RSTACK_WORDS))
+    {
+        return (0);
+    }
+
+    return (rstack[index]);
+}
+
+void agc_erase_set_rstack(int index, agc_dp_t v)
+{
+    if (!AGC_ASSERT(index >= 0 && index < RZ_RSTACK_WORDS) ||
+        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return;
+    }
+
+    rstack[index] = v;
+}
+
+/* LANDMARK (CM P22 code ABCDE, V52), HORIZON (CM noun 70/71 R3) and
+ * the CM R63 results CPHIX (noun 96, X axis) and PRAXIS (noun 95,
+ * preferred axis), CDU words. Owned here, with the noun tables, so this
+ * layer does not reach up into src/csm/navigation.                     */
+static uint16_t landmark;
+static uint16_t horizon;
+static uint16_t trk_angles[2][3]; /* [0] CPHIX, [1] PRAXIS               */
+
+agc_sp_t agc_erase_landmark(void)
+{
+    if (!AGC_ASSERT(landmark <= 077777u))
+    {
+        return (0); /* no valid result */
+    }
+
+    return ((agc_sp_t) rz_word_value(landmark));
+}
+
+void agc_erase_set_landmark(agc_sp_t v)
+{
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return;
+    }
+
+    landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v);
+}
+
+uint16_t agc_erase_horizon(void)
+{
+    if (!AGC_ASSERT(horizon <= 077777u))
+    {
+        return (0U); /* no valid result */
+    }
+
+    return (horizon);
+}
+
+void agc_erase_set_horizon(uint16_t v)
+{
+    if (!AGC_ASSERT(v <= 077777u))
+    {
+        return;
+    }
+
+    horizon = (uint16_t) (v & 077777u);
+}
+
+uint16_t agc_rendz_tracking_angles(bool preferred, int axis)
+{
+    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    {
+        return (0U);
+    }
+
+    return (trk_angles[preferred ? 1 : 0][axis]);
+}
+
+uint16_t *rz_tracking_angles(bool preferred)
+{
+    uint16_t *p = trk_angles[preferred ? 1 : 0];
+
+    if (!AGC_ASSERT(p != NULL))
+    {
+        return (trk_angles[0]);
+    }
+
+    return (p);
+}
+
 /* Fresh start: all rendezvous erasables zero, earth selected. */
 void agc_rendz_reset(agc_rendz_t *rz)
 {
@@ -410,7 +532,7 @@ agc_vec_t rz_vec_from_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v)
 }
 
 /* SHIFTR1 (P34-35 p.500): SL* 0,2 -- a body-scale scalar to 2^29. */
-agc_dp_t agc_rendz_shiftr1(const agc_rendz_t *rz, agc_dp_t a)
+agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a)
 {
     if (!AGC_ASSERT(rz != NULL))
     {
@@ -647,7 +769,7 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
  * SETRAD gives XXXALT = RPAD (2^29) about the earth, |RLS| (2^27) about
  * the moon; APSIDES gives the apsides. Altitudes = radii - XXXALT, all at
  * body scale (callers apply SHIFTR1).                                    */
-agc_status_t agc_rendz_periapo1(agc_interp_t *ip, const agc_rendz_t *rz,
+agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz,
                                 agc_vec_t r, agc_vec_t v,
                                 agc_rendz_periapo_t *out)
 {

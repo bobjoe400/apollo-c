@@ -61,8 +61,12 @@ agc_sp_t agc_lm_pipctr1(void)
     return (ab_pipctr1);
 }
 
-/* R10,R11 (p. 829), every 0.25 s while SERVICER runs; on the last pass of
- * the cycle LRHTASK (which continues at R10,R11A).                   */
+/* R10,R11 (P70-P71.agc p. 829): the quarter-second task SERVICER starts.
+ * Each pass flashes the landing radar lamps, watches the ABORT and ABORT
+ * STAGE discretes (R11, "is an abort (stage) commanded?") and goes on to
+ * the landing analog displays (R10, LANDISP). On the last pass of the
+ * two-second cycle (PIPCTR = 0) it calls LRHTASK, which continues at
+ * R10,R11A (agc_lm_abort_monitor_resume).                             */
 agc_status_t agc_lm_task_abort_monitor(void)
 {
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG))
@@ -71,6 +75,11 @@ agc_status_t agc_lm_task_abort_monitor(void)
     }
 
     agc_sp_t pipctr = agc_guid_state()->avg.pipctr; /* = PHSPRDT2     */
+
+    if (!AGC_ASSERT(pipctr >= 0))
+    { /* CCS would store |PIPCTR| - 1; SERVICER never sets it < 0   */
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (pipctr <= 0)
     {
@@ -126,8 +135,10 @@ static agc_status_t ab_abrtjask(bool aps_abort)
     return (agc_exec_enema());
 }
 
-/* R10,R11A .. P70NOW? (pp. 829-830): flash the LR lamps, then (with
- * aborts enabled) look for the ABORT STAGE or ABORT discretes. */
+/* R10,R11A .. P70NOW? (P70-P71.agc pp. 829-830): flash the LR lamps
+ * (not during a lamp test), then, with aborts enabled (LETABORT), look
+ * for ABORT STAGE (P71A) unless in P71, or ABORT (P70A) unless in P70;
+ * otherwise on to R10 (LANDISP). Also entered from LRHTASK.          */
 agc_status_t agc_lm_abort_monitor_resume(void)
 {
     if ((agc_erase_imodes33() & 1u) == 0u)
@@ -366,12 +377,12 @@ agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_lm_check_auto_control(ctx, AGC_JOB_UPTHROT1));
+    return (agc_lm_check_auto_control(ctx, AGC_JOB_ABORT_TO_ASCENT_GUIDANCE));
 }
 
 /* THROTUP / UPTHROT1 / GRP4OFF (pp. 834-835): SERVICER now calls the
  * ascent guidance; group 4 is no longer used.                       */
-agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {

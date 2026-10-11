@@ -10,6 +10,11 @@
  *    and the measured delta-V (DELVREF) along the velocity to be gained
  *    (thrust along VG), the commanded rate OMEGAC is zero; with VG at 90
  *    degrees to the thrust it is not.
+ * 3. DELRSPL (P30-P37.agc pp.643-647, V82 splash error in P11): with the
+ *    target under RONE, the CANTDO path (TFF >= 0) gives RSP-RREC = 0;
+ *    on a descending 200-km trajectory (perigee below 300 kft) the error
+ *    is the free-fall angle plus the AUGEKUGL entry range, a positive
+ *    overshoot of a few degrees to a few tens of degrees.
  *
  * AGC_ASSERT failures are counted by this file's agc_assert_report().
  */
@@ -23,7 +28,11 @@
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
+#include "agc/core/flags_common.h"
+#include "agc/csm/entry.h"
 #include "agc/guidance/guidance.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/programs/rendezvous.h"
 
 #define MU_MOON 4.9027779e12 /* m^3/s^2 (MUM in the AGC)               */
 
@@ -167,10 +176,57 @@ static void test_cross_product_steering(void)
     CHECK(mag > 1000L * (long) tol);
 }
 
+/* DELRSPL on an earth trajectory: RONE (m 2^29), VONE (m/cs 2^7).       */
+static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
+                         double hi)
+{
+    agc_interp_t ip;
+    agc_tff_t    tff = {0};
+    agc_dp_t     t   = 0;
+    agc_latlong_t        ll;
+    agc_navaux_padload_t pad;
+    agc_latlong_opt_t    opt = {false, false};
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    agc_interp_init(&ip);
+    CHECK(agc_guid_init(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
+    agc_rendz_erasable()->rone         = r;
+    agc_rendz_erasable()->tstart_orbit = 0;
+    tff.rone = r;
+    tff.vone = v;
+    tff.rtmu = (agc_dp_t) 176229826; /* 1/RTMUE, 2^17 (R30)             */
+    CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
+    CHECK(agc_tff_calctff(&ip, &tff,
+                          agc_dp_from_double(6373338.0 + 91440.0, 29),
+                          &t) == AGC_STATUS_OK);
+    CHECK(agc_navaux_get_padload(&pad) == AGC_STATUS_OK);
+    CHECK(agc_latlong_from_r(&ip, &pad, opt, r, 0, &ll) == AGC_STATUS_OK);
+    agc_entry_state()->lat_spl = ll.lat; /* target under RONE at TIME 0 */
+    agc_entry_state()->lng_spl = ll.lon;
+    CHECK(agc_guid_delrspl(&ip, &tff, past ? 0 : agc_dp_neg(t)) ==
+          AGC_STATUS_OK);
+    double e = agc_dp_to_double(agc_guid_state()->csm.rsp_rrec, 0);
+
+    CHECK(e >= lo && e <= hi);
+    CHECK(!agc_flag_test(AGC_FLAG_ERADFLAG));
+}
+
+static void test_splash_error(void)
+{
+    agc_vec_t r = agc_vec_make(agc_dp_from_double(6578000.0, 29), 0, 0);
+    agc_vec_t v = agc_vec_make(agc_dp_from_double(-1.0, 7),
+                               agc_dp_from_double(76.0, 7), 0);
+
+    delrspl_case(r, v, true, -2e-4, 2e-4); /* CANTDO: -angle to target  */
+    delrspl_case(r, v, false, 0.005, 0.3); /* free fall + entry range   */
+}
+
 int main(void)
 {
     test_average_g_coast();
     test_cross_product_steering();
+    test_splash_error();
     (void) printf(
         "test_guidance: %d checks, %d failures, %d assertion reports\n",
         g_checks, g_failures, g_assert_reports);

@@ -1,10 +1,23 @@
-/*
- * agc_flags_csm.h -- Comanche055 (CSM) flagword bits that are NOT in agc_flags_common.h.
- * Source: Comanche055/ERASABLE_ASSIGNMENTS.agc, FLAGWRD0..FLGWRD11 (STATE+0..+11D).
- * Includes agc_flags_common.h. Do not include together with agc_flags_lm.h:
- * names whose position differs between vehicles would collide (by design,
- * the compiler rejects it). Code needing both uses agc_state_vehicle().
- */
+/**********************************************************************
+ * FILE NAME: flags_csm.h
+ *
+ * PURPOSE:
+ *   Comanche055 (CSM) flagword bits that are not in flags_common.h:
+ *   CSM-only flags and flags whose position differs from the LM.
+ *   Includes flags_common.h. Never include together with flags_lm.h:
+ *   the names whose position differs would collide (by design, the
+ *   compiler rejects it); code needing both tests agc_state_vehicle().
+ *
+ * AGC SOURCE:
+ *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 46-68 (FLAGWRD0..FLGWRD11,
+ *   STATE +0..+11D). Values checked against the assembled symbol table.
+ *
+ * REQUIRES:
+ *   none (includes agc/core/flags_common.h)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the flagwords are static in src/core/state.c)
+ **********************************************************************/
 #ifndef AGC_FLAGS_CSM_H
 #define AGC_FLAGS_CSM_H
 

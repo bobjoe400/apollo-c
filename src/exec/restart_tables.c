@@ -145,7 +145,7 @@ static const rst_entry_t csm_odd5[] = {
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ALLOOP1},    /* 5.11 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_WTLISTNT, RST_TN},  /* 5.13 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_RESTEST1, RST_TN},  /* 5.15 */
-    {RST_J, 020, RST_D, RST_E0, AGC_JOB_ENDOFJOB, RST_TN},  /* 5.17 */
+    {RST_J, 020, RST_D, RST_E0, AGC_JOB_ENDOFJOB, RST_TN},  /* 5.17 GEOSTRT4 */
     {RST_J, 022, RST_D, RST_E0, AGC_JOB_ALFLT1, RST_TN},    /* 5.21 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_SPECSTS},    /* 5.23 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_RESTEST3, RST_TN},  /* 5.25 */
@@ -320,8 +320,11 @@ static int16_t dp_low_word(agc_dp_t v)
     return ((int16_t) lo);
 }
 
-/* ITSINDIR (C p.1415): NDX A / CA 1 -- the single word at GENADR.
- * The delay erasables live in core (src/core/restart_delays.c).        */
+/* ITSINDIR (C p.1415): NDX A / CA 1 -- the single word at GENADR. For
+ * SAVET-30 and P40TMP that is the first word of the B(2) pair, which
+ * TIG-30 (L p.735) and P47CSM (C p.691) write with a TS: the writers in
+ * C store that SP delta time as the whole DP (src/core/restart_delays.c),
+ * so the value read here is the low part of the C DP.                  */
 agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 {
     if (!AGC_ASSERT(out != 0))
@@ -339,13 +342,13 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
         case RST_E_600SECS: /* high word of 2DEC 60000              */
             *out = (int16_t) (RST_600SECS_CS / RST_SP_SCALE);
             break;
-        case RST_E_SAVET_30: /* LM SAVET-30 +1: low word, cs          */
+        case RST_E_SAVET_30: /* LM -GENADR SAVET-30: TIG-30 TS, cs     */
             *out = dp_low_word(agc_erase_savet_30());
             break;
         case RST_E_ZOOMTIME: /* LM ZOOMTIME (pad load), cs             */
             *out = agc_erase_zoomtime();
             break;
-        case RST_E_PREREAD_DELAY: /* CSM P40TMP +1: low word, cs        */
+        case RST_E_PREREAD_DELAY: /* CSM -GENADR P40TMP: P47CSM TS, cs  */
             *out = dp_low_word(agc_erase_p40tmp());
             break;
         case RST_E_S61DT: /* CSM S61DT, cs                             */

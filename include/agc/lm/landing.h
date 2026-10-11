@@ -140,17 +140,27 @@ typedef struct agc_lm_ldg
 } agc_lm_ldg_t;
 
 /* ---- throttle erasables (THROTTLE, p. 793) ------------------------------ */
+/* A DP as the AGC stores it: two words whose signs may disagree after a
+ * DAS (oracle finding F9). Basic-language code that reads the high word
+ * alone (CA, AD, MP, CCS) sees `hi`, not the high word of the value.
+ * Value = hi * 2^14 + lo.                                                */
+typedef struct agc_lm_words
+{
+    agc_sp_t hi; /* major word                                        */
+    agc_sp_t lo; /* minor word                                        */
+} agc_lm_words_t;
+
 typedef struct agc_lm_thr
 {
-    agc_dp_t fp;       /* FP present thrust, high word = pulses          */
-    agc_dp_t fc;       /* FC thrust desired by guidance (high word used) */
-    agc_dp_t fcodd;    /* FCODD what it is going to get                  */
-    agc_sp_t fcold;    /* FCOLD previous FCODD, pulses                   */
-    agc_dp_t pif;      /* PIF throttle increment, high word = pulses     */
-    agc_sp_t pifpset;  /* PIFPSET pulse offset (FMAXODD-FP or FEXTRA)    */
-    agc_dp_t fweight;  /* FWEIGHT thrust lag weighting, pulses           */
-    agc_sp_t tthrot;   /* TTHROT TIME1 of last throttling, cs            */
-    agc_sp_t pseudo55; /* PSEUDO55 throttle command for downlink         */
+    agc_lm_words_t fp;    /* FP present thrust, hi = pulses (2^14 pulses) */
+    agc_dp_t       fc;    /* FC thrust desired, hi = pulses (TS FC: hi)   */
+    agc_lm_words_t fcodd; /* FCODD what it is going to get, 2^14 pulses   */
+    agc_sp_t       fcold; /* FCOLD previous FCODD, pulses                 */
+    agc_lm_words_t pif;     /* PIF = FCODD - FP by DAS, hi = pulses         */
+    agc_sp_t       pifpset; /* PIFPSET pulse offset (FMAXODD-FP or FEXTRA)  */
+    agc_lm_words_t fweight; /* FWEIGHT thrust lag weighting, 2^14 pulses  */
+    agc_sp_t       tthrot; /* TTHROT TIME1 of last throttling, cs            */
+    agc_sp_t       pseudo55; /* PSEUDO55 throttle command for downlink         */
 } agc_lm_thr_t;
 
 /* ---- ascent / abort guidance erasables (ASCENT_GUIDANCE, P12, P70) ------ */
@@ -207,20 +217,23 @@ agc_lm_asc_t *agc_lm_asc(void);
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */
-void     agc_lm_phaschng(uint16_t octal_code);       /* PHASCHNG  */
-void     agc_lm_fastchng(void);                      /* FASTCHNG  */
-agc_sp_t agc_lm_time1(void);                         /* TIME1     */
-agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor); /* DV        */
-agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);           /* MP, high  */
-agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b);              /* AD, sat.  */
-bool     agc_lm_chan_bit_present(int chan, uint16_t bit); /* inverted ch30-33 */
+void           agc_lm_phaschng(uint16_t octal_code); /* PHASCHNG  */
+void           agc_lm_fastchng(void);                /* FASTCHNG  */
+agc_sp_t       agc_lm_time1(void);                   /* TIME1     */
+agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor); /* DV        */
+agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b); /* MP, high  */
+agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);    /* AD, sat.  */
+agc_lm_words_t agc_lm_words(agc_dp_t v);             /* sign-agreeing split */
+agc_dp_t       agc_lm_words_value(agc_lm_words_t w); /* hi * 2^14 + lo    */
+agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y); /* DAS     */
+agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y,
+                              int *ovf); /* DAS, A = net overflow    */
+bool agc_lm_chan_bit_present(int chan, uint16_t bit); /* inverted ch30-33 */
 
 /* ---- THROTTLE_CONTROL_ROUTINES (throttle.c) ----------------------------- */
 agc_status_t agc_lm_throttle(void);
 agc_status_t agc_lm_throttle_measured(agc_dp_t accel);
 agc_status_t agc_lm_throttle_flatout(void);
-agc_status_t agc_lm_throttle_whatout(agc_sp_t pulses);
-agc_dp_t     agc_lm_massmult(agc_dp_t accel);
 
 /* ---- FINDCDUW--GUIDAP_INTERFACE (findcduw.c) ---------------------------- */
 void agc_lm_initcduw(void);
@@ -228,9 +241,9 @@ void agc_lm_initcduw(void);
  * agc_lm_ldg()->unwc_2. FINDCDUW -2: thrust command from UNFC/2
  * (agc_lm_ldg()->unfc_2).                                        */
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
-agc_status_t agc_lm_findcduw_m2(agc_interp_t *ip);
+agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip);
 agc_sp_t     agc_lm_sparcsin(agc_sp_t x);    /* arg scale 1, angle 180 deg */
-agc_sp_t     agc_lm_sparcsin_m1(agc_sp_t x); /* SPARCSIN -1: arg scale 2  */
+agc_sp_t     agc_lm_sparcsin_doubled(agc_sp_t x); /* SPARCSIN -1: arg scale 2  */
 agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t     agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
 uint16_t     agc_lm_onesto2s(agc_sp_t a); /* -> 15-bit 2's comp word    */
@@ -301,7 +314,7 @@ agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx); /* P70A restart
 agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);  /* P71A restart */
 agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx); /* GOABORT      */
 agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx); /* UPTHROT1 -3  */
-agc_status_t agc_lm_job_upthrot1(agc_job_ctx_t *ctx);    /* UPTHROT1     */
+agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx);    /* UPTHROT1     */
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx); /* OLDTIME restart */
 agc_sp_t     agc_lm_pipctr1(void);             /* PIPCTR1 for LANDISP */
 void         agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
@@ -314,7 +327,7 @@ void         agc_lm_comminit(agc_interp_t *ip);
 agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx); /* V06N33 flash */
 agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx); /* P12LMB       */
 agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
@@ -324,17 +337,17 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);  /* ATMAG (AVGEXIT) */
 agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_dp_t     agc_lm_ycomp(agc_interp_t *ip);
 agc_dp_t     agc_lm_logsub(agc_interp_t *ip, agc_dp_t x);
-agc_status_t agc_lm_task_engoff1(void);
+agc_status_t agc_lm_task_ascent_engine_off(void);
 agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_cutoff5(agc_job_ctx_t *ctx); /* CUTOFF -5    */
-agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx); /* CUTOFF -5    */
+agc_status_t agc_lm_job_cutoff_proceed(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx);
 
 /* ---- LANDING_ANALOG_DISPLAYS (displays.c) ----------------------- */
 agc_status_t agc_lm_landisp(void);
 agc_status_t agc_lm_task_intlze(void);
-agc_status_t agc_lm_task_speedrun2(void);
+agc_status_t agc_lm_task_speedrun_resume(void);
 agc_status_t agc_lm_vmonitor(void);
 
 /* ---- alarm codes raised by the landing programs (octal) ---------------------------- */

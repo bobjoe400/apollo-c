@@ -538,11 +538,11 @@ typedef enum agc_job_id
     AGC_JOB_AGS_INITIALIZATION_ZERO_IMU,         /* LM */
     AGC_JOB_ATMAG,                               /* LM: ATMAG (AVGEXIT) */
     AGC_JOB_CUTOFF,                              /* LM: CUTOFF (FINDVAC PRIO17) */
-    AGC_JOB_CUTOFF1,                             /* LM: CUTOFF1 (V16N63 PROCEED) */
-    AGC_JOB_CUTOFF2,                             /* LM: CUTOFF2 */
-    AGC_JOB_CUTOFF5,                             /* LM: CUTOFF -5 (V16N63 again) */
+    AGC_JOB_CUTOFF_DISPLAY,                      /* LM: CUTOFF -5 (V16N63 again) */
+    AGC_JOB_CUTOFF_PROCEED,                      /* LM: CUTOFF1 (V16N63 PROCEED) */
+    AGC_JOB_CUTOFF_TRIM_DISPLAY,                 /* LM: CUTOFF2 */
     AGC_JOB_NEWLOAD,                             /* LM: NEWLOAD (V06N76 flash) */
-    AGC_JOB_NEWLOAD2,                            /* LM: NEWLOAD PROCEED */
+    AGC_JOB_NEWLOAD_PROCEED,                     /* LM: NEWLOAD PROCEED */
     AGC_JOB_POWERED_ASCENT,                      /* LM: P12LM */
     AGC_JOB_POWERED_ASCENT_AT_IGNITION,          /* LM */
     AGC_JOB_POWERED_ASCENT_BURN,                 /* LM */
@@ -670,6 +670,7 @@ typedef enum agc_job_id
 
     /* ---- src/lm/landing */
     AGC_JOB_ABORT_AUTO_CONTROL_CHECK,     /* LM */
+    AGC_JOB_ABORT_TO_ASCENT_GUIDANCE,     /* LM: THROTUP, UPTHROT1 */
     AGC_JOB_APPROACH_PHASE_DISPLAY,       /* LM */
     AGC_JOB_APPROACH_PHASE_PROCEED,       /* LM: P64CEED (V06N64 PROCEED) */
     AGC_JOB_APS_ABORT,                    /* LM */
@@ -692,7 +693,6 @@ typedef enum agc_job_id
     AGC_JOB_LANDING_CONFIRMATION_PROCEED, /* LM */
     AGC_JOB_LUNLAND,                      /* LM: LUNLAND (AVGEXIT) */
     AGC_JOB_RODCOMP,                      /* LM: RODCOMP (FINDVAC PRIO22) */
-    AGC_JOB_UPTHROT1,                     /* LM: THROTUP, UPTHROT1 */
 
     /* ---- src/lm/navigation */
     AGC_JOB_PREFERRED_TRACKING_ATTITUDE,                /* LM: PROG25 */
@@ -878,24 +878,24 @@ typedef enum agc_task_id
     AGC_TASK_TTG_0,                        /* CSM: 4.4 TTG/0 */
 
     /* ---- src/csm/dap */
-    AGC_TASK_CMDSOUT,  /* CSM: T5: TVC restart, step 3 */
-    AGC_TASK_DAPINIT,  /* CSM: T5: TVC CDU rate init */
-    AGC_TASK_ENABL2,   /* CSM: T5: TVC restart, step 2 */
-    AGC_TASK_EXRSTRT,  /* CSM: waitlist: TVCEXEC restart */
-    AGC_TASK_HACKWLST, /* CSM: waitlist: stroke test burst */
-    AGC_TASK_JETSLECT, /* CSM: T5: RCS jet selection */
-    AGC_TASK_NOROLL1,  /* CSM: T6: TVC roll jets off */
-    AGC_TASK_PITCHDAP, /* CSM: T5: TVC pitch DAP */
-    AGC_TASK_RCSATT,   /* CSM: T5: RCS DAP phases 1,2 */
-    AGC_TASK_RCSUP,    /* CSM: T5: RCSUP (P40 TVC -> RCS) */
-    AGC_TASK_REDORCS,  /* CSM: T5LOC: RCS DAP (dap-csm) */
-    AGC_TASK_REDOTVC,  /* CSM: T5LOC: TVC DAP (dap-csm) */
-    AGC_TASK_ROLLDAP,  /* CSM: waitlist: TVC roll DAP */
-    AGC_TASK_T6START,  /* CSM: T6: RCS jet channel timing */
-    AGC_TASK_TVCDAPON, /* CSM: T5: TVC DAP start (DOTVCON) */
-    AGC_TASK_TVCEXEC,  /* CSM: ENEMA, TVC on (dap-csm) */
-    AGC_TASK_TVCINIT1, /* CSM: T5: TVC initialisation pt 2 */
-    AGC_TASK_YAWDAP,   /* CSM: T5: TVC yaw DAP */
+    AGC_TASK_CMDSOUT,               /* CSM: T5: TVC restart, step 3 */
+    AGC_TASK_DAPINIT,               /* CSM: T5: TVC CDU rate init */
+    AGC_TASK_EXRSTRT,               /* CSM: waitlist: TVCEXEC restart */
+    AGC_TASK_HACKWLST,              /* CSM: waitlist: stroke test burst */
+    AGC_TASK_JETSLECT,              /* CSM: T5: RCS jet selection */
+    AGC_TASK_OPTICS_COUNTER_ENABLE, /* CSM: T5: TVC restart, step 2 */
+    AGC_TASK_PITCHDAP,              /* CSM: T5: TVC pitch DAP */
+    AGC_TASK_RCSATT,                /* CSM: T5: RCS DAP phases 1,2 */
+    AGC_TASK_RCSUP,                 /* CSM: T5: RCSUP (P40 TVC -> RCS) */
+    AGC_TASK_REDORCS,               /* CSM: T5LOC: RCS DAP (dap-csm) */
+    AGC_TASK_REDOTVC,               /* CSM: T5LOC: TVC DAP (dap-csm) */
+    AGC_TASK_ROLLDAP,               /* CSM: waitlist: TVC roll DAP */
+    AGC_TASK_ROLL_JETS_OFF,         /* CSM: T6: TVC roll jets off */
+    AGC_TASK_T6START,               /* CSM: T6: RCS jet channel timing */
+    AGC_TASK_TVCDAPON,              /* CSM: T5: TVC DAP start (DOTVCON) */
+    AGC_TASK_TVCEXEC,               /* CSM: ENEMA, TVC on (dap-csm) */
+    AGC_TASK_TVC_INITIALIZE,        /* CSM: T5: TVC initialisation pt 2 */
+    AGC_TASK_YAWDAP,                /* CSM: T5: TVC yaw DAP */
 
     /* ---- src/csm/entry */
     AGC_TASK_ATTRATES,              /* CSM: ATTRATES (T5RUPT) */
@@ -910,7 +910,7 @@ typedef enum agc_task_id
     AGC_TASK_MARKDIF,  /* CSM */
 
     /* ---- src/lm */
-    AGC_TASK_ENGOFF1,  /* LM: ENGOFF1 */
+    AGC_TASK_ASCENT_ENGINE_OFF,  /* LM: ENGOFF1 */
 
     /* ---- src/lm/alignment */
     AGC_TASK_LUNAR_GRAVITY_SAMPLE,  /* LM */
@@ -944,11 +944,11 @@ typedef enum agc_task_id
     AGC_TASK_PAXIS,    /* LM: T5ADR = PAXIS */
 
     /* ---- src/lm/landing */
-    AGC_TASK_ABORT_MONITOR, /* LM */
-    AGC_TASK_INTLZE,        /* LM: INTLZE (R10) */
-    AGC_TASK_REDESMON,      /* LM */
-    AGC_TASK_RODTASK,       /* LM: RODTASK */
-    AGC_TASK_SPEEDRUN2,     /* LM */
+    AGC_TASK_ABORT_MONITOR,   /* LM */
+    AGC_TASK_INTLZE,          /* LM: INTLZE (R10) */
+    AGC_TASK_REDESMON,        /* LM */
+    AGC_TASK_RODTASK,         /* LM: RODTASK */
+    AGC_TASK_SPEEDRUN_RESUME, /* LM */
 
     /* ---- src/lm/navigation */
     AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT,  /* LM */

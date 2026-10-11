@@ -49,6 +49,11 @@ def main():
             ('accs_dps', 15000.0, 28000.0, False, False, 500, 0o144, None, 0, False),
             ('accs_aps', 4800.0, 28000.0, False, True, 900, 0o144, None, 0, False),
             ('accs_docked', 43000.0, 28000.0, True, False, 0, 0o1000, None, 0, False),
+            # review-dap-lm: docked with thrust (ACCDOTQ/R from the CG fit),
+            # docked ascent, docked MASSFIX (LEMMASS above HIDESCNT).
+            ('accs_docked_thrust', 43000.0, 28000.0, True, False, 400, 0o144, None, 0, False),
+            ('accs_docked_aps', 33000.0, 28000.0, True, True, 600, 0o144, None, 0, False),
+            ('accs_docked_fix', 46500.0, 30000.0, True, False, 200, 0o144, None, 0, False),
             ('accs_dps_wide', 12000.0, 28000.0, False, False, 300, 0o2000, None, 0, False),
             ('accs_aos_small', 15000.0, 28000.0, False, False, 500, 0o144, (60, 30), 0, False),
             ('accs_aos_some', 15000.0, 28000.0, False, False, 500, 0o144, (200, 0), 0, False),
@@ -124,6 +129,32 @@ def main():
                 ('LMTRAP', w([-200, 10, 60])), ('DAPBOOLS', '00200' if drift else '00000'),
                 ('QACCDOT', _w(acc[0])), ('RACCDOT', _w(acc[1]))]
         s.run(tag, None, 0o16, 'PRETIMCK', sets, k_out, ebank=6, entry='16,3641')
+    # ---- GTS and TIMEGMBL (review-dap-lm) ----
+    s.comment('GTS 21 (trim gimbal control law, both axes): stop CLOSEOUT.')
+    s.comment('TIMEGMBL 21 (Q = ENDOFJOB): stop ENDOFJOB.')
+    g_out = ['NEGUQ', 'NEGUQ+2', 'QACCDOT', 'RACCDOT', 'RCSFLAGS', 'COTROLER',
+             'SKIPU', 'SKIPV', 'INGTS', 'QGIMTIMR', 'QGIMTIMR+2', 'ALLOWGTS']
+    for tag, aos, edot, k, err, negu, acc in (
+            ('gts_a', (200, -150), (30, -20), (1342, 1328), (-100, 80), (0, 0), (2238, 2214)),
+            ('gts_b', (3000, -2600), (-400, 350), (1342, 1328), (900, -700), (1, -1), (2238, 2214)),
+            ('gts_c', (40, 25), (5, -3), (700, 0), (12, -9), (-1, 1), (1200, 1100)),
+            ('gts_d', (0, 0), (0, 0), (1342, 1328), (0, 3), (1, 1), (2238, 2214)),
+            ('gts_e', (-60, 90), (-2, 1), (3000, 2500), (-2, 1), (0, -1), (3000, 2500)),
+            ('gts_f', (1000, -800), (250, -200), (400, 300), (4000, -3000), (-1, 0), (900, 800))):
+        sets = [('AOSQ', w([aos[0], 0, aos[1], 0])), ('EDOTQ', w(list(edot))),
+                ('KQ', w([k[0], 0, k[1]])), ('DXERROR', w([0, 0, err[0], 0, err[1], 0])),
+                ('NEGUQ', w([negu[0], 0, negu[1]])),
+                ('ACCDOTQ', w([acc[0], 0, acc[1], 0])), ('RCSFLAGS', '00000')]
+        s.run(tag, None, 0o21, 'CLOSEOUT', sets, g_out, ebank=6, entry='GTS')
+    for tag, aos, acc, negu in (
+            ('tg_a', (300, -100), (2238, 2214), (0, 0)),
+            ('tg_b', (12000, -3000), (2238, 2214), (1, 1)),
+            ('tg_c', (0, 500), (0, 2214), (-1, 1)),
+            ('tg_d', (-40, 7), (3000, 9000), (0, 0))):
+        sets = [('AOSQ', w([aos[0], 0, aos[1], 0])), ('ACCDOTQ', w([acc[0], 0, acc[1], 0])),
+                ('NEGUQ', w([negu[0], 0, negu[1]])), ('QGIMTIMR', w([-16383, 0, -16383])),
+                ('RCSFLAGS', '00020')]
+        s.run(tag, 'ENDOFJOB', 0o21, 'ENDOFJOB', sets, g_out, ebank=6, entry='TIMEGMBL')
     s.write(os.path.join(OUT, 'dap_lm.spec'))
 
 if __name__ == '__main__':

@@ -37,7 +37,6 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
     }
 
     const agc_dp_t t1 = agc_dp_asin(ip, agc_dp_neg(los_nb.c[1])); /* PD0 */
-    const agc_dp_t t2 = agc_dp_sub(ip, LODPHALF, t1);             /* PD4 */
     agc_vec_t      p  = los_nb;
 
     p.c[1]   = 0;          /* LO6ZEROS -> 34D */
@@ -52,11 +51,18 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2,
     const agc_dp_t sinth = agc_dp_shr(p.c[0], 1); /* SR1 -> SINTH    */
     const agc_dp_t costh = agc_dp_shr(p.c[2], 1); /* SR1 -> COSTH    */
     const agc_dp_t s1    = agc_imu_arctrig(ip, sinth, costh); /* PD2 */
-    const agc_dp_t s2    = agc_dp_add(ip, s1, LODPHALF);      /* PD6 */
 
-    align_clear_ovf(ip); /* wraps one rev   */
-    uint16_t a[2] = {agc_align_ones_to_twos(t1), agc_align_ones_to_twos(s1)};
-    uint16_t b[2] = {agc_align_ones_to_twos(t2), agc_align_ones_to_twos(s2)};
+    /* 2V1STO2S converts the words the angles were left in (ASIN's and
+     * ARCTRIG's disagree in sign), not their values: see word_forms.c. */
+    const align_words_t half = align_words_of(LODPHALF);
+    const align_words_t t1w  = align_asin_words(t1);
+    const align_words_t s1w  = align_arctrig_words(ip, sinth, costh, s1);
+    const align_words_t t2w  = align_words_add(half, align_words_neg(t1w)); /* PD4 BDSU */
+    const align_words_t s2w  = align_words_add(s1w, half); /* DAD     */
+    uint16_t            a[2] = {align_words_to_cdu(t1w),
+                                align_words_to_cdu(s1w)};
+    uint16_t            b[2] = {align_words_to_cdu(t2w),
+                                align_words_to_cdu(s2w)};
 
     for (int k = 0; k < 2; k++)
     {
@@ -85,10 +91,12 @@ agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu,
     const agc_dp_t y     = agc_dp_neg(agc_dp_sin(ip, t)); /* 34D      */
     const agc_dp_t cos_t = agc_dp_cos(ip, t);             /* PD0      */
     const agc_dp_t s     = agc_align_cdulogic(shaft_cdu); /* RRNB1    */
-    const agc_dp_t z     =
-        agc_dp_shl(ip, agc_dp_mul_trunc(agc_dp_cos(ip, s), cos_t), 1);
-    const agc_dp_t x =
-        agc_dp_shl(ip, agc_dp_mul_trunc(agc_dp_sin(ip, s), cos_t), 1);
+    /* DMP SL1 then STORE: the SL1 acts on the TP product, so MPAC+2's top
+     * bit becomes the stored low word's LSB (no rounding).              */
+    const agc_dp_t z = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_cos(ip, s), cos_t), 1));
+    const agc_dp_t x = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_sin(ip, s), cos_t), 1));
 
     *los_nb = agc_vec_make(x, y, z);
 

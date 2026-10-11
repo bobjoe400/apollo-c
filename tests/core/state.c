@@ -1,14 +1,29 @@
-/*
- * state.c -- state-flags unit tests, CSM build (Comanche055 flag names).
+/**********************************************************************
+ * FILE NAME: state.c
  *
- * Covers: flags set/clear/invert/test, flag id decoding against the AGC
- * decimal numbers, channel write/or/and/read masks and the inverted inputs
- * 030-033, time (TIME1/TIME2), state-vector round trips, shared erasable
- * accessors. The LM build is tested in state_lm.c.
+ * PURPOSE:
+ *   state-flags unit tests, CSM build (Comanche055 flag names): flag
+ *   set/clear/invert/test, flag ids against the AGC decimal numbers,
+ *   channel write/or/and/read and the inverted inputs 030-033, CSM
+ *   channel bit names, TIME1/TIME2, state-vector round trips and the
+ *   shared erasable accessors. The LM build is tested in state_lm.c.
  *
- * AGC_ASSERT failures are expected in the negative tests; this file supplies
- * its own agc_assert_report() that counts them instead of printing.
- */
+ * AGC SOURCE:
+ *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 39-124 (flag numbers nnnD,
+ *   channel names); T4RUPT_PROGRAM.agc p. 160 (OPTMON channel 33 bits)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (test counters are file-static)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_state_init ...    the state, channel and erasable API under test
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when any check fails. AGC_ASSERT failures are expected
+ *   in the negative tests; agc_assert_report() here counts them.
+ **********************************************************************/
 #include <stdio.h>
 
 #include <stdint.h>
@@ -18,10 +33,60 @@
 #include "agc/core/flags_csm.h"
 #include "agc/core/state.h"
 
-static int g_checks;
-static int g_failures;
-static int g_assert_reports;
+static int g_checks;         /* checks run                        */
+static int g_failures;       /* checks failed                     */
+static int g_assert_reports; /* AGC_ASSERT failures reported      */
 
+/* Prototypes: main() comes first (STYLE 4.6). */
+static void      check(bool ok, int line, const char *text);
+static int       agc_dnum(agc_flag_id_t f);
+static void      test_flag_ids(void);
+static void      test_flag_ops(void);
+static void      test_flag_errors(void);
+static void      test_time(void);
+static void      test_channels(void);
+static void      test_inverted_inputs(void);
+static agc_vec_t vec3(agc_dp_t a, agc_dp_t b, agc_dp_t c);
+static bool      vec_eq(agc_vec_t a, agc_vec_t b);
+static void      test_state_vectors(void);
+static void      test_erasables(void);
+
+/**********************************************************************
+ * AGC: none (test driver) -- run every test of this file
+ *
+ * FUNCTION NAME: main
+ *
+ * RETURNS: int -- 0 when all checks pass, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    test_flag_ids();
+    test_flag_ops();
+    test_flag_errors();
+    test_time();
+    test_channels();
+    test_inverted_inputs();
+    test_state_vectors();
+    test_erasables();
+    (void) printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
+
+    return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
+}
+
+/**********************************************************************
+ * AGC: none (test hook replacing core/assert.c)
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   file      const char *   I    source file of the failed assertion
+ *   line      int            I    source line
+ *   expr      const char *   I    assertion text
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) file;
@@ -34,6 +99,18 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 #define CHECK(c) check((c), __LINE__, #c)
 
+/**********************************************************************
+ * AGC: none (test helper) -- count one check, print a failure
+ *
+ * FUNCTION NAME: check
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   ok        bool           I    check result
+ *   line      int            I    source line of the check
+ *   text      const char *   I    check expression text
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -45,12 +122,30 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
-/* AGC decimal flag number nnnD = 15 * flagword + (15 - bit). */
+/**********************************************************************
+ * AGC: none (test helper) -- AGC decimal flag number nnnD = 15 * flagword
+ *      + (15 - bit)
+ *
+ * FUNCTION NAME: agc_dnum
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   f         agc_flag_id_t  I    flag id
+ *
+ * RETURNS: int -- nnnD as printed in the AGC listing
+ **********************************************************************/
 static int agc_dnum(agc_flag_id_t f)
 {
     return ((15 * agc_flag_word(f)) + (15 - agc_flag_bit(f)));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- flag ids against the AGC decimal numbers
+ *      (ERASABLE_ASSIGNMENTS.agc C pp. 46-68)
+ *
+ * FUNCTION NAME: test_flag_ids
+ **********************************************************************/
 static void test_flag_ids(void)
 {
     /* Numbers taken from the AGC listing (ERASABLE_ASSIGNMENTS.agc, pp. 46-66). */
@@ -82,6 +177,12 @@ static void test_flag_ids(void)
     CHECK(agc_flag_mask(AGC_FLAG_CPHIFLAG) == 0x4000u);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- SET, CLEAR, INVERT, BON on flags and whole
+ *      flagwords
+ *
+ * FUNCTION NAME: test_flag_ops
+ **********************************************************************/
 static void test_flag_ops(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -113,9 +214,14 @@ static void test_flag_ops(void)
     CHECK(agc_flagword_get(3) == 0u);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- invalid flag ids and flagword indices are rejected
+ *
+ * FUNCTION NAME: test_flag_errors
+ **********************************************************************/
 static void test_flag_errors(void)
 {
-    const int before = g_assert_reports;
+    const int before = g_assert_reports; /* reports before this test */
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_flag_set((agc_flag_id_t) 0x00); /* rejected by AGC_ASSERT */ /* bit 0 */
@@ -131,6 +237,12 @@ static void test_flag_errors(void)
     CHECK(g_assert_reports > before); /* the failures above were reported */
 }
 
+/**********************************************************************
+ * AGC: none (test) -- TIME2/TIME1 split and the 2^28 cs wrap
+ *      (ERASABLE_ASSIGNMENTS.agc C p. 39)
+ *
+ * FUNCTION NAME: test_time
+ **********************************************************************/
 static void test_time(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -154,6 +266,12 @@ static void test_time(void)
     CHECK(agc_erase_time2() == AGC_SP_MAX);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- channel WRITE/WOR/WAND/READ, bit constants,
+ *      simulator inputs
+ *
+ * FUNCTION NAME: test_channels
+ **********************************************************************/
 static void test_channels(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -182,6 +300,18 @@ static void test_channels(void)
     CHECK(AGC_CH013_ENBT6RUPT == 040000);
     CHECK(AGC_CH014_DRIVECDUX == 040000);
 
+    /* CSM bit names (CM channel list; OPTMON reads 033 bits 4, 5) */
+    CHECK(AGC_CH033_ZEROOPTICS == 000010);
+    CHECK(AGC_CH033_CMCOPTICS == 000020);
+    CHECK(AGC_CH032_MINIMP_MASK == 000077);
+    CHECK(AGC_CH032_MINIMPROLLM == 000040);
+    CHECK(AGC_CH032_LMATTACHED == 002000);
+    CHECK(AGC_CH030_ULLAGETHRUST == 000001);
+    CHECK(AGC_CH030_GRR == 000040);
+    CHECK(AGC_CH030_SIVBSEPABORT == 000010);
+    CHECK(AGC_CH012_ZEROOPTICS == 001000);
+    CHECK(AGC_CH012_SIVBINJECT == 010000);
+
     /* output channels reject the 16th bit; inputs and invalid channels are errors */
     agc_chan_write(AGC_CHAN_CHAN12, 0100000u); /* rejected by AGC_ASSERT */
     agc_chan_write(AGC_CHAN_CHAN30, 0u); /* rejected by AGC_ASSERT */
@@ -198,8 +328,14 @@ static void test_channels(void)
     CHECK(agc_chan_set_signal(AGC_CHAN_MNKEYIN, 004u, true) == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_MNKEYIN) ==
           035u); /* normal: signal = bit set */
-}
+} /* test_channels */
 
+/**********************************************************************
+ * AGC: none (test) -- inverted inputs 030-033 and the channel 33
+ *      flip-flops (T4RUPT_PROGRAM.agc C p. 145)
+ *
+ * FUNCTION NAME: test_inverted_inputs
+ **********************************************************************/
 static void test_inverted_inputs(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -214,7 +350,7 @@ static void test_inverted_inputs(void)
     CHECK(agc_chan_set_signal(AGC_CHAN_CHAN32, AGC_CH032_PROCEED, true) ==
           AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_CHAN32) ==
-          (077777u & ~(unsigned) AGC_CH032_PROCEED));
+          (077777u & ~(unsigned int) AGC_CH032_PROCEED));
     CHECK(agc_chan_set_input(AGC_CHAN_CHAN31, 0u) ==
           AGC_STATUS_OK); /* raw: all present */
     CHECK(agc_chan_read(AGC_CHAN_CHAN31) == 0u);
@@ -233,11 +369,25 @@ static void test_inverted_inputs(void)
     agc_chan_reset();
     CHECK(agc_chan_read(AGC_CHAN_CHAN33) == 077777u);
     CHECK(agc_chan_read(AGC_CHAN_DSALMOUT) == 0u);
-}
+} /* test_inverted_inputs */
 
+/**********************************************************************
+ * AGC: none (test helper) -- build a vector
+ *
+ * FUNCTION NAME: vec3
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   a         agc_dp_t       I    x component (any scale)
+ *   b         agc_dp_t       I    y component
+ *   c         agc_dp_t       I    z component
+ *
+ * RETURNS: agc_vec_t -- (a, b, c)
+ **********************************************************************/
 static agc_vec_t vec3(agc_dp_t a, agc_dp_t b, agc_dp_t c)
 {
-    agc_vec_t v;
+    agc_vec_t v; /* result, scale of the inputs */
 
     v.c[0] = a;
     v.c[1] = b;
@@ -246,15 +396,33 @@ static agc_vec_t vec3(agc_dp_t a, agc_dp_t b, agc_dp_t c)
     return (v);
 }
 
+/**********************************************************************
+ * AGC: none (test helper) -- exact vector equality
+ *
+ * FUNCTION NAME: vec_eq
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   a         agc_vec_t      I    first vector
+ *   b         agc_vec_t      I    second vector
+ *
+ * RETURNS: bool -- true when all components are equal
+ **********************************************************************/
 static bool vec_eq(agc_vec_t a, agc_vec_t b)
 {
     return ((a.c[0] == b.c[0]) && (a.c[1] == b.c[1]) && (a.c[2] == b.c[2]));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- THIS/OTHER state vectors and their moon flags
+ *
+ * FUNCTION NAME: test_state_vectors
+ **********************************************************************/
 static void test_state_vectors(void)
 {
-    agc_state_vector_t in;
-    agc_state_vector_t out;
+    agc_state_vector_t in;  /* vector stored */
+    agc_state_vector_t out; /* vector read back */
 
     agc_state_init(AGC_VEHICLE_CSM);
 
@@ -296,12 +464,18 @@ static void test_state_vectors(void)
     CHECK(agc_sv_get((agc_vehicle_sv_t) 7, &out) == AGC_STATUS_BAD_ARG);
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(vec_eq(agc_erase_rn(), vec3(0, 0, 0))); /* init clears everything */
-}
+} /* test_state_vectors */
 
+/**********************************************************************
+ * AGC: none (test) -- shared erasable accessors, range checks and
+ *      fresh-start zeroing
+ *
+ * FUNCTION NAME: test_erasables
+ **********************************************************************/
 static void test_erasables(void)
 {
-    agc_mat_t m;
-    const int before = g_assert_reports;
+    agc_mat_t m;                         /* REFSMMAT, scale 2^1       */
+    const int before = g_assert_reports; /* reports before this test  */
 
     agc_state_init(AGC_VEHICLE_CSM);
 
@@ -345,19 +519,15 @@ static void test_erasables(void)
     CHECK(agc_erase_failreg(2) == 01201u);
     agc_erase_set_thetad(0, 0100000u); /* rejected by AGC_ASSERT */
     CHECK(agc_erase_thetad(3) == 0u);
-}
+    CHECK(agc_erase_set_failreg(3, 1u) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_erase_set_failreg(0, 0100000u) == AGC_STATUS_BAD_ARG);
 
-int main(void)
-{
-    test_flag_ids();
-    test_flag_ops();
-    test_flag_errors();
-    test_time();
-    test_channels();
-    test_inverted_inputs();
-    test_state_vectors();
-    test_erasables();
-    (void) printf("test_state: %d checks, %d failures\n", g_checks, g_failures);
-
-    return ((g_failures == 0) ? 0 : 1);
-}
+    /* fresh-start zeroing reaches every storage class */
+    agc_erase_set_rls(vec3(1, 2, 3));
+    agc_erase_reset();
+    CHECK(agc_erase_dsptab(11) == 0u);
+    CHECK(agc_erase_failreg(2) == 0u);
+    CHECK(agc_erase_tig() == 0);
+    CHECK(agc_erase_refsmmat().row[2].c[2] == 0);
+    CHECK(vec_eq(agc_erase_rls(), vec3(0, 0, 0)));
+} /* test_erasables */

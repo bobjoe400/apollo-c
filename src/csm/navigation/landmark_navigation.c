@@ -112,7 +112,7 @@ static agc_status_t ln_calrc(agc_interp_t *ip)
 /* S22F2410 (formula 2.4.10): RHO = |RC| (COSA - SQRT((R0/RC)^2 - SINA^2)),
  * COSA = -UM . UNIT(RC); RL = RC + RHO UM (X789). R0 = ERADM (B-29; SL2
  * in the moon's sphere).                                                 */
-static void ln_f2410(agc_interp_t *ip, agc_dp_t eradm)
+static void ln_landmark_on_surface(agc_interp_t *ip, agc_dp_t eradm)
 {
     agc_dp_t  rc   = 0;
     agc_vec_t u    = agc_vec_unit(ip, ln.csmpos, &rc, NULL);
@@ -269,7 +269,7 @@ static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
         return (st);
     }
 
-    ln_f2410(ip, eradm);
+    ln_landmark_on_surface(ip, eradm);
     agc_vec_t rl = agc_erase_x789();
 
     rl   = (ln.eorm != 0) ? agc_vec_shr(rl, 2) : rl;           /* S22RL B-29 */
@@ -321,7 +321,7 @@ static agc_dp_t ln_rowdot(agc_interp_t *ip, int wi, int wj)
 
 /* The next lower column word offset of the 6x6 part: 58 56 54 4 2 0
  * (TEST I=26: 52 becomes 4).                                             */
-static int ln_9dw_next(int x)
+static int ln_next_lower_column(int x)
 {
     int n = x - 2; /* 9DWID    */
 
@@ -336,14 +336,14 @@ static int ln_9dw_next(int x)
 /* 9DWTO6DW: E = the 21 dot products of the six position and velocity
  * columns of W (lower triangle, EMATRIX), then the new 6x6 W by a
  * column-wise square root of E; the landmark block cleared.           */
-static void ln_9dw_to_6dw(agc_interp_t *ip)
+static void ln_reduce_w_to_six(agc_interp_t *ip)
 {
     agc_dp_t e[LN_EMATRIX];
     int      p = 0;
 
-    for (int j = 58; p < LN_EMATRIX; j = ln_9dw_next(j))
+    for (int j = 58; p < LN_EMATRIX; j = ln_next_lower_column(j))
     { /* 9DWI=J   */
-        for (int i = j; p < LN_EMATRIX; i = ln_9dw_next(i))
+        for (int i = j; p < LN_EMATRIX; i = ln_next_lower_column(i))
         {
             e[LN_EMATRIX - 1 - p++] = ln_rowdot(ip, i, j); /* 9DWEPCAL */
 
@@ -371,7 +371,7 @@ static void ln_9dw_to_6dw(agc_interp_t *ip)
     p = 0;
     int n = 0;
 
-    for (int j = 58; p < LN_EMATRIX; j = ln_9dw_next(j), n += 6)
+    for (int j = 58; p < LN_EMATRIX; j = ln_next_lower_column(j), n += 6)
     {
         agc_dp_t wsq =
             agc_dp_sub(ip, e[LN_EMATRIX - 1 - p++], ln_rowdot(ip, j, j));
@@ -381,7 +381,7 @@ static void ln_9dw_to_6dw(agc_interp_t *ip)
 
         for (int i = j; i != 0 && p < LN_EMATRIX;)
         { /* TST2I=0  */
-            i = ln_9dw_next(i);
+            i = ln_next_lower_column(i);
             agc_interp_clear_ovf(ip);
             agc_dp_t v = agc_dp_div(
                 ip,
@@ -540,7 +540,7 @@ static agc_status_t ln_getum(agc_interp_t *ip)
 /* S22BOX12: (for the CSM, 9x9) VARIANCE = (SCTVAR + IMUVARR) |RCLP|^2
  * (NORM, X1 doubled + 2 S22EORM, SR* 0,1; TP); BVECTORS with B2 = -B0;
  * INCORP1. True when the first incorporation wants the noun 49 display. */
-static bool ln_box12(agc_interp_t *ip, agc_status_t *st)
+static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
 {
     rz_flag_put(AGC_FLAG_DMENFLG, true);
     rz_flag_put(AGC_FLAG_VEHUPFLG, true);
@@ -572,7 +572,7 @@ static bool ln_box12(agc_interp_t *ip, agc_status_t *st)
 
 /* S22BOX32: X789 = RL; first pass; RCLP = RL - RC; USTAR =
  * UNIT(UNIT(RCLP) x UM). False on an overflow (the mark is skipped).    */
-static bool ln_box32(agc_interp_t *ip, agc_vec_t rl)
+static bool ln_landmark_first_pass(agc_interp_t *ip, agc_vec_t rl)
 {
     agc_erase_set_x789(rl);
     rz_flag_put(AGC_FLAG_INCORFLG, true);
@@ -615,7 +615,7 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip,
     {
         agc_status_t st = AGC_STATUS_OK;
 
-        if (!at_box42 && ln_box12(ip, &st))
+        if (!at_box42 && ln_variance_and_incorporate(ip, &st))
         {
             return (rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 49U, AGC_JOB_GOTOPOOH,
                              AGC_JOB_ORBITAL_NAVIGATION_DELTA_ACCEPT,
@@ -752,7 +752,7 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (st);
     }
 
-    if (!ln_box32(ip, rl))
+    if (!ln_landmark_first_pass(ip, rl))
     {
         return (ln_next()); /* S22SAVET */
     }
@@ -873,7 +873,7 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
         ln.um     = ln.uoff;
         agc_dp_t r0 = agc_vec_abval(&ip, agc_erase_x789());
 
-        ln_f2410(&ip, moon ? agc_dp_shr(r0, 2) : r0);
+        ln_landmark_on_surface(&ip, moon ? agc_dp_shr(r0, 2) : r0);
     }
     else
     {
@@ -960,7 +960,7 @@ agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    ln_9dw_to_6dw(&ip);
+    ln_reduce_w_to_six(&ip);
 
     return (rz_continue(ln.ret));
 }
@@ -976,7 +976,7 @@ agc_status_t agc_job_orbital_navigation_site_terminate(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    ln_9dw_to_6dw(&ip);
+    ln_reduce_w_to_six(&ip);
 
     return (agc_exec_gotopooh());
 }

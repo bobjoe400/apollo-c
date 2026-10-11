@@ -130,7 +130,7 @@ agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (after_liftoff() ? agc_dsky_endext() : agc_extverb_gopin());
+    return (after_liftoff() ? agc_dsky_endmark() : agc_extverb_gopin());
 }
 
 /* V43 after the load: NEEDLE11 / NEEDLER2 (initialise the DACs, enable
@@ -352,7 +352,7 @@ static agc_status_t verb_marking(bool backup)
     {
         agc_alarm(ALARM_NO_REND_TRACK); /* R22ALARM           */
 
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (agc_extverb_schedule(
@@ -626,7 +626,7 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
     {
         agc_alarm(ALARM_OPTICS_RESERVED);
 
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE,
@@ -666,7 +666,7 @@ agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* Verbs 40-47.                                                             */

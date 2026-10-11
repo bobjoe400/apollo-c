@@ -2098,7 +2098,7 @@ static agc_status_t job_csm(agc_job_ctx_t *ctx)
     return (job_csm_16(ctx));
 }
 
-/* AGC_JOB_AGS_INITIALIZATION .. AGC_JOB_POWERED_ASCENT */
+/* AGC_JOB_AGS_INITIALIZATION .. AGC_JOB_NEWLOAD */
 static agc_status_t job_lm_0(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2107,7 +2107,7 @@ static agc_status_t job_lm_0(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id >= AGC_JOB_AGS_INITIALIZATION &&
-                    ctx->id <= AGC_JOB_POWERED_ASCENT))
+                    ctx->id <= AGC_JOB_NEWLOAD))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2146,18 +2146,15 @@ static agc_status_t job_lm_0(agc_job_ctx_t *ctx)
             return (lm ? agc_lm_job_atmag(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_CUTOFF:
             return (lm ? agc_lm_job_cutoff(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_CUTOFF1:
-            return (lm ? agc_lm_job_cutoff1(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_CUTOFF2:
-            return (lm ? agc_lm_job_cutoff2(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_CUTOFF5:
-            return (lm ? agc_lm_job_cutoff5(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_CUTOFF_DISPLAY:
+            return (lm ? agc_lm_job_cutoff_display(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_CUTOFF_PROCEED:
+            return (lm ? agc_lm_job_cutoff_proceed(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_CUTOFF_TRIM_DISPLAY:
+            return (lm ? agc_lm_job_cutoff_trim_display(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_NEWLOAD:
             return (lm ? agc_lm_job_newload(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_NEWLOAD2:
-            return (lm ? agc_lm_job_newload2(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_POWERED_ASCENT:
-            return (lm ? agc_lm_job_powered_ascent(ctx) : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2165,7 +2162,7 @@ static agc_status_t job_lm_0(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_POWERED_ASCENT_AT_IGNITION .. AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED */
+/* AGC_JOB_NEWLOAD_PROCEED .. AGC_JOB_TERMASC */
 static agc_status_t job_lm_1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2173,8 +2170,8 @@ static agc_status_t job_lm_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_POWERED_ASCENT_AT_IGNITION &&
-                    ctx->id <= AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_NEWLOAD_PROCEED &&
+                    ctx->id <= AGC_JOB_TERMASC))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2183,6 +2180,10 @@ static agc_status_t job_lm_1(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_NEWLOAD_PROCEED:
+            return (lm ? agc_lm_job_newload_proceed(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_POWERED_ASCENT:
+            return (lm ? agc_lm_job_powered_ascent(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_POWERED_ASCENT_AT_IGNITION:
             return (lm ? agc_lm_job_powered_ascent_at_ignition(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2220,12 +2221,6 @@ static agc_status_t job_lm_1(agc_job_ctx_t *ctx)
             return (lm ? agc_job_systems_test(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_TERMASC:
             return (lm ? agc_lm_job_termasc(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY:
-            return (lm ? agc_job_lm_auto_optics_az_el_display(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED:
-            return (lm ? agc_job_lm_auto_optics_az_el_loaded(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2233,7 +2228,7 @@ static agc_status_t job_lm_1(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_LM_AUTO_OPTICS_MANEUVERED .. AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE */
+/* AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY .. AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED */
 static agc_status_t job_lm_2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2241,8 +2236,8 @@ static agc_status_t job_lm_2(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LM_AUTO_OPTICS_MANEUVERED &&
-                    ctx->id <= AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY &&
+                    ctx->id <= AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2251,6 +2246,12 @@ static agc_status_t job_lm_2(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY:
+            return (lm ? agc_job_lm_auto_optics_az_el_display(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED:
+            return (lm ? agc_job_lm_auto_optics_az_el_loaded(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_LM_AUTO_OPTICS_MANEUVERED:
             return (lm ? agc_job_lm_auto_optics_maneuvered(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2286,12 +2287,6 @@ static agc_status_t job_lm_2(agc_job_ctx_t *ctx)
         case AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED:
             return (lm ? agc_job_lm_fine_align_second_located(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED:
-            return (lm ? agc_job_lm_fine_align_stars_located(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE:
-            return (lm ? agc_job_lm_fine_align_star_acquire(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2299,7 +2294,7 @@ static agc_status_t job_lm_2(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_LM_FINE_ALIGN_TORQUED .. AGC_JOB_LUNAR_GRAVITY_ACCEPTED */
+/* AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED .. AGC_JOB_LM_ORIENTATION_SECOND_STAR */
 static agc_status_t job_lm_3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2307,8 +2302,8 @@ static agc_status_t job_lm_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LM_FINE_ALIGN_TORQUED &&
-                    ctx->id <= AGC_JOB_LUNAR_GRAVITY_ACCEPTED))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED &&
+                    ctx->id <= AGC_JOB_LM_ORIENTATION_SECOND_STAR))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2317,6 +2312,12 @@ static agc_status_t job_lm_3(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED:
+            return (lm ? agc_job_lm_fine_align_stars_located(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE:
+            return (lm ? agc_job_lm_fine_align_star_acquire(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_LM_FINE_ALIGN_TORQUED:
             return (lm ? agc_job_lm_fine_align_torqued(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2353,12 +2354,6 @@ static agc_status_t job_lm_3(agc_job_ctx_t *ctx)
         case AGC_JOB_LM_ORIENTATION_SECOND_STAR:
             return (lm ? agc_job_lm_orientation_second_star(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LM_REALIGN_SITE_ORIENTATION:
-            return (lm ? agc_job_lm_realign_site_orientation(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LUNAR_GRAVITY_ACCEPTED:
-            return (lm ? agc_job_lunar_gravity_accepted(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2366,7 +2361,7 @@ static agc_status_t job_lm_3(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_LUNAR_GRAVITY_ACCUMULATE .. AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN */
+/* AGC_JOB_LM_REALIGN_SITE_ORIENTATION .. AGC_JOB_LUNAR_SURFACE_FIRST_STAR */
 static agc_status_t job_lm_4(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2374,8 +2369,8 @@ static agc_status_t job_lm_4(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LUNAR_GRAVITY_ACCUMULATE &&
-                    ctx->id <= AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LM_REALIGN_SITE_ORIENTATION &&
+                    ctx->id <= AGC_JOB_LUNAR_SURFACE_FIRST_STAR))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2384,6 +2379,12 @@ static agc_status_t job_lm_4(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_LM_REALIGN_SITE_ORIENTATION:
+            return (lm ? agc_job_lm_realign_site_orientation(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_LUNAR_GRAVITY_ACCEPTED:
+            return (lm ? agc_job_lunar_gravity_accepted(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_LUNAR_GRAVITY_ACCUMULATE:
             return (lm ? agc_job_lunar_gravity_accumulate(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2419,12 +2420,6 @@ static agc_status_t job_lm_4(agc_job_ctx_t *ctx)
         case AGC_JOB_LUNAR_SURFACE_FIRST_STAR:
             return (lm ? agc_job_lunar_surface_first_star(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LUNAR_SURFACE_OPTION:
-            return (lm ? agc_job_lunar_surface_option(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN:
-            return (lm ? agc_job_lunar_surface_options_chosen(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2432,7 +2427,7 @@ static agc_status_t job_lm_4(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY .. AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY */
+/* AGC_JOB_LUNAR_SURFACE_OPTION .. AGC_JOB_LUNAR_SURFACE_STAR_MARKED */
 static agc_status_t job_lm_5(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2440,8 +2435,8 @@ static agc_status_t job_lm_5(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY &&
-                    ctx->id <= AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LUNAR_SURFACE_OPTION &&
+                    ctx->id <= AGC_JOB_LUNAR_SURFACE_STAR_MARKED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2450,6 +2445,12 @@ static agc_status_t job_lm_5(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_LUNAR_SURFACE_OPTION:
+            return (lm ? agc_job_lunar_surface_option(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN:
+            return (lm ? agc_job_lunar_surface_options_chosen(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY:
             return (lm ? agc_job_lunar_surface_options_display(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2485,12 +2486,6 @@ static agc_status_t job_lm_5(agc_job_ctx_t *ctx)
         case AGC_JOB_LUNAR_SURFACE_STAR_MARKED:
             return (lm ? agc_job_lunar_surface_star_marked(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED:
-            return (lm ? agc_job_lunar_surface_star_positioned(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY:
-            return (lm ? agc_job_lunar_surface_time_display(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2498,7 +2493,7 @@ static agc_status_t job_lm_5(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_LUNAR_SURFACE_TIME_ENTERED .. AGC_JOB_COMFAIL */
+/* AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED .. AGC_JOB_CLOKJOB_ENGINE_FAIL */
 static agc_status_t job_lm_6(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2506,8 +2501,8 @@ static agc_status_t job_lm_6(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LUNAR_SURFACE_TIME_ENTERED &&
-                    ctx->id <= AGC_JOB_COMFAIL))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED &&
+                    ctx->id <= AGC_JOB_CLOKJOB_ENGINE_FAIL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2516,6 +2511,12 @@ static agc_status_t job_lm_6(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED:
+            return (lm ? agc_job_lunar_surface_star_positioned(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY:
+            return (lm ? agc_job_lunar_surface_time_display(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_LUNAR_SURFACE_TIME_ENTERED:
             return (lm ? agc_job_lunar_surface_time_entered(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2550,14 +2551,6 @@ static agc_status_t job_lm_6(agc_job_ctx_t *ctx)
                     AGC_STATUS_NOT_FOUND);
         case AGC_JOB_CLOKJOB_ENGINE_FAIL:
             return (lm ? agc_job_clokjob_engine_fail(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN:
-            return (lm ? agc_job_clokjob_engine_fail_shutdown(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED:
-            return (lm ? agc_job_clokjob_event_timer_proceed(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_COMFAIL:
-            return (lm ? agc_job_comfail(ctx) : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2565,7 +2558,7 @@ static agc_status_t job_lm_6(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_DPS_BURN .. AGC_JOB_SERV_LOTHRUST */
+/* AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN .. AGC_JOB_SERVIDLE */
 static agc_status_t job_lm_7(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2573,8 +2566,8 @@ static agc_status_t job_lm_7(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_DPS_BURN &&
-                    ctx->id <= AGC_JOB_SERV_LOTHRUST))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN &&
+                    ctx->id <= AGC_JOB_SERVIDLE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2583,6 +2576,14 @@ static agc_status_t job_lm_7(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN:
+            return (lm ? agc_job_clokjob_engine_fail_shutdown(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED:
+            return (lm ? agc_job_clokjob_event_timer_proceed(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_COMFAIL:
+            return (lm ? agc_job_comfail(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_DPS_BURN:
             return (lm ? agc_job_dps_burn(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_HIGATJOB:
@@ -2617,12 +2618,6 @@ static agc_status_t job_lm_7(agc_job_ctx_t *ctx)
                     AGC_STATUS_NOT_FOUND);
         case AGC_JOB_SERVIDLE:
             return (lm ? agc_job_servidle(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_SERV_COPYCYC1:
-            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_SERV_DECCNTR:
-            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_SERV_LOTHRUST:
-            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2630,7 +2625,7 @@ static agc_status_t job_lm_7(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_SERV_MUNRVG .. AGC_JOB_APPROACH_PHASE_PROCEED */
+/* AGC_JOB_SERV_COPYCYC1 .. AGC_JOB_JET_ACCEL_UPDATE */
 static agc_status_t job_lm_8(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2638,8 +2633,8 @@ static agc_status_t job_lm_8(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_SERV_MUNRVG &&
-                    ctx->id <= AGC_JOB_APPROACH_PHASE_PROCEED))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_SERV_COPYCYC1 &&
+                    ctx->id <= AGC_JOB_JET_ACCEL_UPDATE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2648,6 +2643,12 @@ static agc_status_t job_lm_8(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_SERV_COPYCYC1:
+            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_SERV_DECCNTR:
+            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_SERV_LOTHRUST:
+            return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_SERV_MUNRVG:
             return (lm ? agc_job_serv_resume_lm(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_SERV_RUPDATED:
@@ -2672,15 +2673,6 @@ static agc_status_t job_lm_8(agc_job_ctx_t *ctx)
             return (lm ? agc_job_jet_accel_reset(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_JET_ACCEL_UPDATE:
             return (lm ? agc_job_jet_accel_update(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_ABORT_AUTO_CONTROL_CHECK:
-            return (lm ? agc_lm_job_abort_auto_control_check(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_APPROACH_PHASE_DISPLAY:
-            return (lm ? agc_lm_job_approach_phase_display(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_APPROACH_PHASE_PROCEED:
-            return (lm ? agc_lm_job_approach_phase_proceed(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2688,7 +2680,7 @@ static agc_status_t job_lm_8(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_APS_ABORT .. AGC_JOB_LANDING_CONFIRMATION */
+/* AGC_JOB_ABORT_AUTO_CONTROL_CHECK .. AGC_JOB_GOABORT */
 static agc_status_t job_lm_9(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2696,8 +2688,8 @@ static agc_status_t job_lm_9(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_APS_ABORT &&
-                    ctx->id <= AGC_JOB_LANDING_CONFIRMATION))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_ABORT_AUTO_CONTROL_CHECK &&
+                    ctx->id <= AGC_JOB_GOABORT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2706,6 +2698,18 @@ static agc_status_t job_lm_9(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_ABORT_AUTO_CONTROL_CHECK:
+            return (lm ? agc_lm_job_abort_auto_control_check(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_ABORT_TO_ASCENT_GUIDANCE:
+            return (lm ? agc_lm_job_abort_to_ascent_guidance(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_APPROACH_PHASE_DISPLAY:
+            return (lm ? agc_lm_job_approach_phase_display(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_APPROACH_PHASE_PROCEED:
+            return (lm ? agc_lm_job_approach_phase_proceed(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_APS_ABORT:
             return (lm ? agc_lm_job_aps_abort(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_APS_ABORT_COMMANDED:
@@ -2737,6 +2741,31 @@ static agc_status_t job_lm_9(agc_job_ctx_t *ctx)
                     AGC_STATUS_NOT_FOUND);
         case AGC_JOB_GOABORT:
             return (lm ? agc_lm_job_goabort(ctx) : AGC_STATUS_NOT_FOUND);
+        default:
+            break;
+    }
+
+    return (AGC_STATUS_NOT_FOUND);
+}
+
+/* AGC_JOB_IGNALGRT .. AGC_JOB_RENDEZVOUS_NAVIGATION_MANUAL_REQUEST */
+static agc_status_t job_lm_10(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_IGNALGRT &&
+                    ctx->id <= AGC_JOB_RENDEZVOUS_NAVIGATION_MANUAL_REQUEST))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+
+    switch ((int) ctx->id)
+    {
         case AGC_JOB_IGNALGRT:
             return (lm ? agc_lm_job_ignalgrt(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_IGNALG_PREC:
@@ -2746,31 +2775,6 @@ static agc_status_t job_lm_9(agc_job_ctx_t *ctx)
         case AGC_JOB_LANDING_CONFIRMATION:
             return (lm ? agc_lm_job_landing_confirmation(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        default:
-            break;
-    }
-
-    return (AGC_STATUS_NOT_FOUND);
-}
-
-/* AGC_JOB_LANDING_CONFIRMATION_FLASH .. AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN */
-static agc_status_t job_lm_10(agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_LANDING_CONFIRMATION_FLASH &&
-                    ctx->id <= AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
-
-    switch ((int) ctx->id)
-    {
         case AGC_JOB_LANDING_CONFIRMATION_FLASH:
             return (lm ? agc_lm_job_landing_confirmation_flash(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2781,8 +2785,6 @@ static agc_status_t job_lm_10(agc_job_ctx_t *ctx)
             return (lm ? agc_lm_job_lunland(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_RODCOMP:
             return (lm ? agc_lm_job_rodcomp(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_UPTHROT1:
-            return (lm ? agc_lm_job_upthrot1(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_PREFERRED_TRACKING_ATTITUDE:
             return (lm ? agc_job_preferred_tracking_attitude(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2807,12 +2809,6 @@ static agc_status_t job_lm_10(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDEZVOUS_NAVIGATION_MANUAL_REQUEST:
             return (lm ? agc_job_rendezvous_navigation_manual_request(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE:
-            return (lm ? agc_job_rendezvous_navigation_orbit_change(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN:
-            return (lm ? agc_job_rendezvous_navigation_orbit_chosen(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2820,7 +2816,7 @@ static agc_status_t job_lm_10(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION .. AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT */
+/* AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE .. AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK */
 static agc_status_t job_lm_11(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2828,8 +2824,8 @@ static agc_status_t job_lm_11(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION &&
-                    ctx->id <= AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE &&
+                    ctx->id <= AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2838,6 +2834,12 @@ static agc_status_t job_lm_11(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE:
+            return (lm ? agc_job_rendezvous_navigation_orbit_change(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN:
+            return (lm ? agc_job_rendezvous_navigation_orbit_chosen(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION:
             return (lm ? agc_job_rendezvous_navigation_orbit_option(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2874,12 +2876,6 @@ static agc_status_t job_lm_11(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK:
             return (lm ? agc_job_rendezvous_tracking_data_mark(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE:
-            return (lm ? agc_job_rendezvous_tracking_data_measure(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT:
-            return (lm ? agc_job_rendezvous_tracking_data_next(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2887,7 +2883,7 @@ static agc_status_t job_lm_11(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE .. AGC_JOB_AOT_MARK_COAS_LOADED */
+/* AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE .. AGC_JOB_AOT_MARK_CHECK */
 static agc_status_t job_lm_12(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2895,8 +2891,8 @@ static agc_status_t job_lm_12(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE &&
-                    ctx->id <= AGC_JOB_AOT_MARK_COAS_LOADED))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE &&
+                    ctx->id <= AGC_JOB_AOT_MARK_CHECK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2905,6 +2901,12 @@ static agc_status_t job_lm_12(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE:
+            return (lm ? agc_job_rendezvous_tracking_data_measure(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT:
+            return (lm ? agc_job_rendezvous_tracking_data_next(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE:
             return (lm ? agc_job_rendezvous_tracking_data_range(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -2942,12 +2944,6 @@ static agc_status_t job_lm_12(agc_job_ctx_t *ctx)
                     AGC_STATUS_NOT_FOUND);
         case AGC_JOB_AOT_MARK_CHECK:
             return (lm ? agc_job_aot_mark_check(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_AOT_MARK_COAS_DISPLAY:
-            return (lm ? agc_job_aot_mark_coas_display(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_AOT_MARK_COAS_LOADED:
-            return (lm ? agc_job_aot_mark_coas_loaded(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -2955,7 +2951,7 @@ static agc_status_t job_lm_12(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_AOT_MARK_DETENT .. AGC_JOB_POWERED_FLIGHT_DESIGNATE */
+/* AGC_JOB_AOT_MARK_COAS_DISPLAY .. AGC_JOB_MANUAL_ACQUISITION_MANEUVER */
 static agc_status_t job_lm_13(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -2963,8 +2959,8 @@ static agc_status_t job_lm_13(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_AOT_MARK_DETENT &&
-                    ctx->id <= AGC_JOB_POWERED_FLIGHT_DESIGNATE))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_AOT_MARK_COAS_DISPLAY &&
+                    ctx->id <= AGC_JOB_MANUAL_ACQUISITION_MANEUVER))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2973,6 +2969,12 @@ static agc_status_t job_lm_13(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_AOT_MARK_COAS_DISPLAY:
+            return (lm ? agc_job_aot_mark_coas_display(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_AOT_MARK_COAS_LOADED:
+            return (lm ? agc_job_aot_mark_coas_loaded(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_AOT_MARK_DETENT:
             return (lm ? agc_job_aot_mark_detent(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_AOT_MARK_KILL:
@@ -3007,12 +3009,6 @@ static agc_status_t job_lm_13(agc_job_ctx_t *ctx)
         case AGC_JOB_MANUAL_ACQUISITION_MANEUVER:
             return (lm ? agc_job_manual_acquisition_maneuver(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_MANUAL_ACQUISITION_TERMINATE:
-            return (lm ? agc_job_manual_acquisition_terminate(ctx) :
-                    AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_POWERED_FLIGHT_DESIGNATE:
-            return (lm ? agc_job_powered_flight_designate(ctx) :
-                    AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -3020,7 +3016,7 @@ static agc_status_t job_lm_13(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_POWERED_FLIGHT_READ .. AGC_JOB_RADAR_SEARCH_RESUME */
+/* AGC_JOB_MANUAL_ACQUISITION_TERMINATE .. AGC_JOB_RADAR_SEARCH_MANEUVER_DONE */
 static agc_status_t job_lm_14(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -3028,8 +3024,8 @@ static agc_status_t job_lm_14(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_POWERED_FLIGHT_READ &&
-                    ctx->id <= AGC_JOB_RADAR_SEARCH_RESUME))
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_MANUAL_ACQUISITION_TERMINATE &&
+                    ctx->id <= AGC_JOB_RADAR_SEARCH_MANEUVER_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3038,6 +3034,12 @@ static agc_status_t job_lm_14(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_MANUAL_ACQUISITION_TERMINATE:
+            return (lm ? agc_job_manual_acquisition_terminate(ctx) :
+                    AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_POWERED_FLIGHT_DESIGNATE:
+            return (lm ? agc_job_powered_flight_designate(ctx) :
+                    AGC_STATUS_NOT_FOUND);
         case AGC_JOB_POWERED_FLIGHT_READ:
             return (lm ? agc_job_powered_flight_read(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_POWERED_FLIGHT_READ_DONE:
@@ -3071,10 +3073,6 @@ static agc_status_t job_lm_14(agc_job_ctx_t *ctx)
         case AGC_JOB_RADAR_SEARCH_MANEUVER_DONE:
             return (lm ? agc_job_radar_search_maneuver_done(ctx) :
                     AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RADAR_SEARCH_POINT:
-            return (lm ? agc_job_radar_search_point(ctx) : AGC_STATUS_NOT_FOUND);
-        case AGC_JOB_RADAR_SEARCH_RESUME:
-            return (lm ? agc_job_radar_search_resume(ctx) : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -3082,7 +3080,7 @@ static agc_status_t job_lm_14(agc_job_ctx_t *ctx)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_JOB_RENDEZVOUS_SIGHTING_MARK .. AGC_JOB_RR_DESIGNATE_COMMAND */
+/* AGC_JOB_RADAR_SEARCH_POINT .. AGC_JOB_RR_DESIGNATE_COMMAND */
 static agc_status_t job_lm_15(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -3090,7 +3088,7 @@ static agc_status_t job_lm_15(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RENDEZVOUS_SIGHTING_MARK &&
+    if (!AGC_ASSERT(ctx->id >= AGC_JOB_RADAR_SEARCH_POINT &&
                     ctx->id <= AGC_JOB_RR_DESIGNATE_COMMAND))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -3100,6 +3098,10 @@ static agc_status_t job_lm_15(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
+        case AGC_JOB_RADAR_SEARCH_POINT:
+            return (lm ? agc_job_radar_search_point(ctx) : AGC_STATUS_NOT_FOUND);
+        case AGC_JOB_RADAR_SEARCH_RESUME:
+            return (lm ? agc_job_radar_search_resume(ctx) : AGC_STATUS_NOT_FOUND);
         case AGC_JOB_RENDEZVOUS_SIGHTING_MARK:
             return (lm ? agc_job_rendezvous_sighting_mark(ctx) :
                     AGC_STATUS_NOT_FOUND);
@@ -3157,77 +3159,77 @@ static agc_status_t job_lm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (ctx->id < AGC_JOB_POWERED_ASCENT_AT_IGNITION)
+    if (ctx->id < AGC_JOB_NEWLOAD_PROCEED)
     {
         return (job_lm_0(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LM_AUTO_OPTICS_MANEUVERED)
+    if (ctx->id < AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY)
     {
         return (job_lm_1(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LM_FINE_ALIGN_TORQUED)
+    if (ctx->id < AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED)
     {
         return (job_lm_2(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LUNAR_GRAVITY_ACCUMULATE)
+    if (ctx->id < AGC_JOB_LM_REALIGN_SITE_ORIENTATION)
     {
         return (job_lm_3(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY)
+    if (ctx->id < AGC_JOB_LUNAR_SURFACE_OPTION)
     {
         return (job_lm_4(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LUNAR_SURFACE_TIME_ENTERED)
+    if (ctx->id < AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED)
     {
         return (job_lm_5(ctx));
     }
 
-    if (ctx->id < AGC_JOB_DPS_BURN)
+    if (ctx->id < AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN)
     {
         return (job_lm_6(ctx));
     }
 
-    if (ctx->id < AGC_JOB_SERV_MUNRVG)
+    if (ctx->id < AGC_JOB_SERV_COPYCYC1)
     {
         return (job_lm_7(ctx));
     }
 
-    if (ctx->id < AGC_JOB_APS_ABORT)
+    if (ctx->id < AGC_JOB_ABORT_AUTO_CONTROL_CHECK)
     {
         return (job_lm_8(ctx));
     }
 
-    if (ctx->id < AGC_JOB_LANDING_CONFIRMATION_FLASH)
+    if (ctx->id < AGC_JOB_IGNALGRT)
     {
         return (job_lm_9(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION)
+    if (ctx->id < AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE)
     {
         return (job_lm_10(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE)
+    if (ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE)
     {
         return (job_lm_11(ctx));
     }
 
-    if (ctx->id < AGC_JOB_AOT_MARK_DETENT)
+    if (ctx->id < AGC_JOB_AOT_MARK_COAS_DISPLAY)
     {
         return (job_lm_12(ctx));
     }
 
-    if (ctx->id < AGC_JOB_POWERED_FLIGHT_READ)
+    if (ctx->id < AGC_JOB_MANUAL_ACQUISITION_TERMINATE)
     {
         return (job_lm_13(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK)
+    if (ctx->id < AGC_JOB_RADAR_SEARCH_POINT)
     {
         return (job_lm_14(ctx));
     }
@@ -3577,16 +3579,14 @@ static agc_status_t task_csm_2(agc_task_id_t task)
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_cmdsout());
         case AGC_TASK_DAPINIT:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_dapinit());
-        case AGC_TASK_ENABL2:
-            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_enabl2());
         case AGC_TASK_EXRSTRT:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_exrstrt());
         case AGC_TASK_HACKWLST:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_hackwlst());
         case AGC_TASK_JETSLECT:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_jetslect());
-        case AGC_TASK_NOROLL1:
-            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_noroll1());
+        case AGC_TASK_OPTICS_COUNTER_ENABLE:
+            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_optics_counter_enable());
         case AGC_TASK_PITCHDAP:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_pitchdap());
         case AGC_TASK_RCSATT:
@@ -3599,6 +3599,8 @@ static agc_status_t task_csm_2(agc_task_id_t task)
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_redotvc());
         case AGC_TASK_ROLLDAP:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_rolldap());
+        case AGC_TASK_ROLL_JETS_OFF:
+            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_roll_jets_off());
         case AGC_TASK_T6START:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_t6start());
         case AGC_TASK_TVCDAPON:
@@ -3629,8 +3631,8 @@ static agc_status_t task_csm_3(agc_task_id_t task)
     {
         case AGC_TASK_TVCEXEC:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_tvcexec());
-        case AGC_TASK_TVCINIT1:
-            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_tvcinit1());
+        case AGC_TASK_TVC_INITIALIZE:
+            return (lm ? AGC_STATUS_NOT_FOUND : agc_task_tvc_initialize());
         case AGC_TASK_YAWDAP:
             return (lm ? AGC_STATUS_NOT_FOUND : agc_task_yawdap());
         case AGC_TASK_ATTRATES:
@@ -3687,7 +3689,7 @@ static agc_status_t task_csm(agc_task_id_t task)
     return (task_csm_3(task));
 }
 
-/* AGC_TASK_ENGOFF1 .. AGC_TASK_TRIMGIMB */
+/* AGC_TASK_ASCENT_ENGINE_OFF .. AGC_TASK_TIG_35 */
 static agc_status_t task_lm_0(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -3695,7 +3697,8 @@ static agc_status_t task_lm_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task >= AGC_TASK_ENGOFF1 && task <= AGC_TASK_TRIMGIMB))
+    if (!AGC_ASSERT(task >= AGC_TASK_ASCENT_ENGINE_OFF &&
+                    task <= AGC_TASK_TIG_35))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3704,8 +3707,8 @@ static agc_status_t task_lm_0(agc_task_id_t task)
 
     switch ((int) task)
     {
-        case AGC_TASK_ENGOFF1:
-            return (lm ? agc_lm_task_engoff1() : AGC_STATUS_NOT_FOUND);
+        case AGC_TASK_ASCENT_ENGINE_OFF:
+            return (lm ? agc_lm_task_ascent_engine_off() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_LUNAR_GRAVITY_SAMPLE:
             return (lm ? agc_task_lunar_gravity_sample() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_BIBIBIAS:
@@ -3742,8 +3745,6 @@ static agc_status_t task_lm_0(agc_task_id_t task)
             return (lm ? agc_task_tig_30() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_TIG_35:
             return (lm ? agc_task_tig_35() : AGC_STATUS_NOT_FOUND);
-        case AGC_TASK_TRIMGIMB:
-            return (lm ? agc_task_trimgimb() : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -3751,7 +3752,7 @@ static agc_status_t task_lm_0(agc_task_id_t task)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_TASK_TRIMGIMB2 .. AGC_TASK_LR_POSITION_CHECK */
+/* AGC_TASK_TRIMGIMB .. AGC_TASK_DORREPOS */
 static agc_status_t task_lm_1(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -3759,8 +3760,7 @@ static agc_status_t task_lm_1(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task >= AGC_TASK_TRIMGIMB2 &&
-                    task <= AGC_TASK_LR_POSITION_CHECK))
+    if (!AGC_ASSERT(task >= AGC_TASK_TRIMGIMB && task <= AGC_TASK_DORREPOS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3769,6 +3769,8 @@ static agc_status_t task_lm_1(agc_task_id_t task)
 
     switch ((int) task)
     {
+        case AGC_TASK_TRIMGIMB:
+            return (lm ? agc_task_trimgimb() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_TRIMGIMB2:
             return (lm ? agc_task_trimgimb2() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_ULLAGOFF:
@@ -3789,8 +3791,8 @@ static agc_status_t task_lm_1(agc_task_id_t task)
             return (lm ? agc_lm_task_redesmon() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_RODTASK:
             return (lm ? agc_lm_task_rodtask() : AGC_STATUS_NOT_FOUND);
-        case AGC_TASK_SPEEDRUN2:
-            return (lm ? agc_lm_task_speedrun2() : AGC_STATUS_NOT_FOUND);
+        case AGC_TASK_SPEEDRUN_RESUME:
+            return (lm ? agc_lm_task_speedrun_resume() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT:
             return (lm ? agc_task_preferred_tracking_attitude_wait() :
                     AGC_STATUS_NOT_FOUND);
@@ -3807,8 +3809,6 @@ static agc_status_t task_lm_1(agc_task_id_t task)
             return (lm ? agc_task_aot_mark_release() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_DORREPOS:
             return (lm ? agc_task_dorrepos() : AGC_STATUS_NOT_FOUND);
-        case AGC_TASK_LR_POSITION_CHECK:
-            return (lm ? agc_task_lr_position_check() : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -3816,7 +3816,7 @@ static agc_status_t task_lm_1(agc_task_id_t task)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_TASK_LR_POSITION_SCAN .. AGC_TASK_RR_REMODE */
+/* AGC_TASK_LR_POSITION_CHECK .. AGC_TASK_RR_ONE_AXIS */
 static agc_status_t task_lm_2(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -3824,8 +3824,8 @@ static agc_status_t task_lm_2(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task >= AGC_TASK_LR_POSITION_SCAN &&
-                    task <= AGC_TASK_RR_REMODE))
+    if (!AGC_ASSERT(task >= AGC_TASK_LR_POSITION_CHECK &&
+                    task <= AGC_TASK_RR_ONE_AXIS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3834,6 +3834,8 @@ static agc_status_t task_lm_2(agc_task_id_t task)
 
     switch ((int) task)
     {
+        case AGC_TASK_LR_POSITION_CHECK:
+            return (lm ? agc_task_lr_position_check() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_LR_POSITION_SCAN:
             return (lm ? agc_task_lr_position_scan() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_LR_POSITION_SETTLED:
@@ -3870,8 +3872,6 @@ static agc_status_t task_lm_2(agc_task_id_t task)
             return (lm ? agc_task_rr_goodend() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_RR_ONE_AXIS:
             return (lm ? agc_task_rr_one_axis() : AGC_STATUS_NOT_FOUND);
-        case AGC_TASK_RR_REMODE:
-            return (lm ? agc_task_rr_remode() : AGC_STATUS_NOT_FOUND);
         default:
             break;
     }
@@ -3879,7 +3879,7 @@ static agc_status_t task_lm_2(agc_task_id_t task)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* AGC_TASK_RR_REPOSITION_DRIVE .. AGC_TASK_RR_ZERO_SETTLED */
+/* AGC_TASK_RR_REMODE .. AGC_TASK_RR_ZERO_SETTLED */
 static agc_status_t task_lm_3(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -3887,7 +3887,7 @@ static agc_status_t task_lm_3(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task >= AGC_TASK_RR_REPOSITION_DRIVE &&
+    if (!AGC_ASSERT(task >= AGC_TASK_RR_REMODE &&
                     task <= AGC_TASK_RR_ZERO_SETTLED))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -3897,6 +3897,8 @@ static agc_status_t task_lm_3(agc_task_id_t task)
 
     switch ((int) task)
     {
+        case AGC_TASK_RR_REMODE:
+            return (lm ? agc_task_rr_remode() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_RR_REPOSITION_DRIVE:
             return (lm ? agc_task_rr_reposition_drive() : AGC_STATUS_NOT_FOUND);
         case AGC_TASK_RR_TURNON_DONE:
@@ -3914,7 +3916,7 @@ static agc_status_t task_lm_3(agc_task_id_t task)
     return (AGC_STATUS_NOT_FOUND);
 }
 
-/* src/lm: AGC_TASK_ENGOFF1 .. AGC_TASK_RR_ZERO_SETTLED */
+/* src/lm: AGC_TASK_ASCENT_ENGINE_OFF .. AGC_TASK_RR_ZERO_SETTLED */
 static agc_status_t task_lm(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -3922,23 +3924,23 @@ static agc_status_t task_lm(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(
-            task >= AGC_TASK_ENGOFF1 && task <= AGC_TASK_RR_ZERO_SETTLED))
+    if (!AGC_ASSERT(task >= AGC_TASK_ASCENT_ENGINE_OFF &&
+                    task <= AGC_TASK_RR_ZERO_SETTLED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (task < AGC_TASK_TRIMGIMB2)
+    if (task < AGC_TASK_TRIMGIMB)
     {
         return (task_lm_0(task));
     }
 
-    if (task < AGC_TASK_LR_POSITION_SCAN)
+    if (task < AGC_TASK_LR_POSITION_CHECK)
     {
         return (task_lm_1(task));
     }
 
-    if (task < AGC_TASK_RR_REPOSITION_DRIVE)
+    if (task < AGC_TASK_RR_REMODE)
     {
         return (task_lm_2(task));
     }
@@ -4033,7 +4035,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
         return (task_programs_0(task));
     }
 
-    if (task < AGC_TASK_ENGOFF1)
+    if (task < AGC_TASK_ASCENT_ENGINE_OFF)
     {
         return (task_csm(task));
     }

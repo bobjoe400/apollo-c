@@ -489,23 +489,6 @@ static agc_status_t cn_measure(agc_interp_t *ip)
 }
 
 /* ---- P23 program flow (pp.619-623, 626-627, 631) ----------------------- */
-static uint16_t cn_horizon; /* HORIZON (noun 70/71 R3)    */
-
-uint16_t agc_erase_horizon(void)
-{
-    return (cn_horizon);
-}
-
-void agc_erase_set_horizon(uint16_t v)
-{
-    if (!AGC_ASSERT(v <= 077777u))
-    {
-        return;
-    }
-
-    cn_horizon = (uint16_t) (v & 077777u);
-}
-
 /* P23: rendezvous off; group 4 off, group 2 on; one mark; star and
  * landmark target flags off; STARIND, BESTI zero; R57 to be done; V94 not
  * allowed. Without REFSMMAT: R57 and R53 now (P23.00). DEVIATION:
@@ -592,12 +575,12 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
 
     uint16_t lm = rz_word_of(agc_erase_landmark());
 
-    if ((lm == 0U) == (cn_horizon == 0U))
+    if ((lm == 0U) == (agc_erase_horizon() == 0U))
     {
         return (cn_ident_error(ctx)); /* P23.151  */
     }
 
-    uint16_t c = (uint16_t) (((lm != 0U) ? lm : cn_horizon) & CN_BITS7_9);
+    uint16_t c = (uint16_t) (((lm != 0U) ? lm : agc_erase_horizon()) & CN_BITS7_9);
 
     if (c != 0100U && c != 0200U)
     {
@@ -624,13 +607,13 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
         }
     }
 
-    if (cn_horizon == 0U)
+    if (agc_erase_horizon() == 0U)
     { /* P23.20   */
         return (rz_landing_site_display(
                     ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
     }
 
-    uint16_t d = (uint16_t) (cn_horizon & CN_BITS4_6);
+    uint16_t d = (uint16_t) (agc_erase_horizon() & CN_BITS4_6);
 
     if (d != 010U && d != 020U)
     {

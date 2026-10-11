@@ -115,8 +115,8 @@ agc_status_t agc_task_dotvcon(void)
     agc_flag_set(AGC_FLAG_DAPBIT1); /* BITS 15,14 = 10        */
     agc_flag_clear(AGC_FLAG_DAPBIT2);
     agc_phase_newphase(6, 3, false); /* 6.3 = CLOKTASK         */
-    tvc->errbtmp =
-        agc_dp_neg(agc_dp_pack(rcs->error[1], rcs->error[2])); /* DCS ERRORY */
+    tvc->errbtmp.hi = (agc_sp_t) -rcs->error[1]; /* DCS ERRORY: each word */
+    tvc->errbtmp.lo = (agc_sp_t) -rcs->error[2]; /* complemented as is    */
     agc_phase_newphase(4, 5, true);          /* 4.5 = DOSTRULL         */
     agc_rupt_set_time(5, (uint16_t) AGC_SP_MAX); /* START RIGHT AWAY   */
     agc_rupt_set_t5_task(AGC_TASK_TVCDAPON); /* KILLS RCS DAP          */
@@ -228,8 +228,8 @@ static void massback(void)
         return; /* BTRIMR                 */
     }
 
-    com->pactoff = agc_dp_high(tvc->delpbar); /* BESTTRIM               */
-    com->yactoff = agc_dp_high(tvc->delybar);
+    com->pactoff = tvc->delpbar.hi; /* CA DELPBAR (high word) BESTTRIM */
+    com->yactoff = tvc->delybar.hi;
 
     if (!AGC_ASSERT(corr >= -CS_PER_SEC && corr <= CS_PER_SEC))
     {

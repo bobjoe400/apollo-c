@@ -93,13 +93,6 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in,
 agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
                                agc_dp_t *xkepnew);
 
-/* RVCON conic path: RECTIFY (TC = XKEP = 0), KEPPREP, KEPLERN, TET += TC.
- * sv->r/v/t/moon are the state at TET; out gets RCV, VCV and the new TET.
- * kout (may be NULL) receives the Kepler outputs.                        */
-agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
-                             agc_dp_t tdec, agc_state_vector_t *out,
-                             agc_kepler_out_t *kout);
-
 /* ---- LAMBERT, p. 1266-1268 ------------------------------------------- */
 typedef struct agc_lambert_in
 {

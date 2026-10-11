@@ -135,7 +135,7 @@ static agc_sp_t invert(int32_t x)
         hold = (agc_sp_t) x;
     }
 
-    if (!AGC_ASSERT(hold >= one.hi || hold <= -one.hi))
+    if (!AGC_ASSERT(hold >= LM_NEGMAX && hold <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -155,17 +155,17 @@ static agc_sp_t invert(int32_t x)
  * value ACCFUN = -1/ANET / FUNTEM at 2^7/pi.                             */
 static agc_sp_t do1net_plus(acc_work_t *w, agc_sp_t a)
 {
-    agc_sp_t funtem = lm_dap_sat((int32_t) a + AA_BIT9); /* XCH ANET       */
+    agc_sp_t funtem = lm_dap_wrap((int32_t) a + AA_BIT9); /* XCH ANET      */
 
     w->inv  = invert(w->anet);
     w->anet = funtem;
 
-    if (!AGC_ASSERT(funtem > 0))
+    if (!AGC_ASSERT(funtem >= LM_NEGMAX && funtem <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(w->inv >= 0))
+    if (!AGC_ASSERT(w->inv >= LM_NEGMAX && w->inv <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -281,11 +281,11 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     {
         if (w->t[T_FLAT] == 0)
         {
-            /* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered flight: deadbands.       */
+            /* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered: deadbands */
             agc_sp_t db = d->db;
 
-            /* ADS leaves the sum in A, so DB4(3) receives 2 DB (the listing's
-             * comment says 1 DB); the code is followed.                          */
+            /* ADS leaves the sum in A, so DB4(3) gets 2 DB, not the 1 DB
+             * of the listing's comment (rope: accs_aos_big COASTDB).    */
             w->t[T_DBB2 + w->ns] = lm_dap_sat(
                 (int32_t) w->t[T_DBB2 + w->ns] + db);
             w->t[T_DBB4 + w->s] = w->t[T_DBB2 + w->ns];

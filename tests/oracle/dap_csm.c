@@ -114,7 +114,7 @@ static void pitch(const char *t, long tol)
     agc_erase_set_cduz(oracle_in_raw(t, "CDUY", 1));
     v->pcduypst           = oracle_in_raw(t, "PCDUYPST", 0);
     v->pcduzpst           = oracle_in_raw(t, "PCDUYPST", 1);
-    v->perrb              = oracle_in_dp(t, "PERRB", 0);
+    v->perrb              = csm_dap_pair(oracle_in_dp(t, "PERRB", 0));
     v->omegac[1]          = oracle_in_dp(t, "OMEGAYC", 0);
     g->sincdu[AGC_TRIG_X] =
         agc_dp_from_sp((agc_sp_t) oracle_in(t, "SINCDUX", 0));
@@ -125,7 +125,7 @@ static void pitch(const char *t, long tol)
 
     for (int k = 0; k < 6; k++)
     {
-        v->ptmp[k] = oracle_in_dp(t, "PTMP1", 2 * k);
+        v->ptmp[k] = csm_dap_pair(oracle_in_dp(t, "PTMP1", 2 * k));
     }
 
     for (int k = 0; k < AGC_CSM_N10_WORDS; k++)
@@ -134,9 +134,9 @@ static void pitch(const char *t, long tol)
     }
 
     v->vark     = (agc_sp_t) oracle_in(t, "VARK", 0);
-    v->pdeloff  = oracle_in_dp(t, "PDELOFF", 0);
+    v->pdeloff  = csm_dap_pair(oracle_in_dp(t, "PDELOFF", 0));
     v->pcmd     = (agc_sp_t) oracle_in(t, "PCMD", 0);
-    v->delpbar  = oracle_in_dp(t, "DELPBAR", 0);
+    v->delpbar  = csm_dap_pair(oracle_in_dp(t, "DELPBAR", 0));
     v->stroker  = 0;
     v->t5tvcdt  = (agc_sp_t) oracle_in(t, "T5TVCDT", 0);
     v->tvcphase = 0;
@@ -146,16 +146,16 @@ static void pitch(const char *t, long tol)
     oracle_require_ok(t, "RESUME");
     cmp_sp(t, "MCDUYDOT", v->mcduydot, "MCDUYDOT", 0);
     cmp_sp(t, "MCDUZDOT", v->mcduzdot, "MCDUZDOT", 0);
-    (void) oracle_cmp(t, "OMEGAYB", v->omegab[1], oracle_out_dp(t, "OMEGAYB"),
+    (void) oracle_cmp(t, "OMEGAYB", csm_dap_pair_value(v->omegab[1]), oracle_out_dp(t, "OMEGAYB"),
                       tol);
-    (void) oracle_cmp(t, "PERRB", v->perrb, oracle_out_dp(t, "PERRB"), tol);
+    (void) oracle_cmp(t, "PERRB", csm_dap_pair_value(v->perrb), oracle_out_dp(t, "PERRB"), tol);
 
     for (int k = 0; k < 6; k++)
     {
         char n[16];
 
         (void) snprintf(n, sizeof n, (k == 0) ? "PTMP1" : "PTMP1+%d", 2 * k);
-        (void) oracle_cmp(t, n, v->ptmp[k], oracle_out_dp(t, n), tol);
+        (void) oracle_cmp(t, n, csm_dap_pair_value(v->ptmp[k]), oracle_out_dp(t, n), tol);
     }
 
     /* F9: CMDTMP and ERRBTMP are DAS results the AGC leaves sign-
@@ -163,7 +163,7 @@ static void pitch(const char *t, long tol)
      * PCMD, the TVCPITCH increment and AK1 differ by one high-word LSB,
      * DELPBAR by (1 - E(-AT)) of that.                                   */
     oracle_cmp_known(t, "PCMD", v->pcmd, oracle_out_sp(t, "PCMD"), 0, "F9");
-    oracle_cmp_known(t, "DELPBAR", v->delpbar, oracle_out_dp(t, "DELPBAR"),
+    oracle_cmp_known(t, "DELPBAR", csm_dap_pair_value(v->delpbar), oracle_out_dp(t, "DELPBAR"),
                      tol, "F9");
     oracle_cmp_known(t, "TVCPITCH", agc_erase_tvcpitch(),
                      oracle_out_sp(t, "TVCPITCH"), 0, "F9");

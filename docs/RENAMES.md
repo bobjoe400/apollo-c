@@ -858,3 +858,20 @@ src/programs/rendz_flags_lm.c.
 | agc_job_1_accjob / AGC_JOB_1_ACCJOB | agc_job_jet_accel_update / AGC_JOB_JET_ACCEL_UPDATE | dispatch.c (when registered) |
 | agc_job_1_accset / AGC_JOB_1_ACCSET | agc_job_jet_accel_reset / AGC_JOB_JET_ACCEL_RESET | dispatch.c (when registered) |
 | lm_dap_1_accont, lm_dap_1sto2s, lm_dap_pjetslec6, lm_dap_purgency4 (lane-private) | lm_dap_switch_curves, lm_dap_ones_to_twos, lm_dap_pjetslec_pair, lm_dap_purgency_law | none |
+
+## review-guid-landing (2026-10-10, applied)
+
+| old | new | AGC comment used |
+|---|---|---|
+| agc_lm_job_upthrot1 / AGC_JOB_UPTHROT1 | agc_lm_job_abort_to_ascent_guidance / AGC_JOB_ABORT_TO_ASCENT_GUIDANCE | UPTHROT1 "SET SERVICER TO CALL ASCENT GUIDANCE", GRP4OFF |
+| agc_lm_job_cutoff5 / AGC_JOB_CUTOFF5 | agc_lm_job_cutoff_display / AGC_JOB_CUTOFF_DISPLAY | CUTOFF -5: flash V16N63 |
+| agc_lm_job_cutoff1 / AGC_JOB_CUTOFF1 | agc_lm_job_cutoff_proceed / AGC_JOB_CUTOFF_PROCEED | CUTOFF1: V16N63 PROCEED, zero attitude errors, SETMINDB |
+| agc_lm_job_cutoff2 / AGC_JOB_CUTOFF2 | agc_lm_job_cutoff_trim_display / AGC_JOB_CUTOFF_TRIM_DISPLAY | CUTOFF2: flash V16N85 (RCS trim residuals) |
+| agc_lm_job_newload2 / AGC_JOB_NEWLOAD2 | agc_lm_job_newload_proceed / AGC_JOB_NEWLOAD_PROCEED | NEWLOAD "+2 PROCEED" |
+| agc_lm_task_engoff1 / AGC_TASK_ENGOFF1 | agc_lm_task_ascent_engine_off / AGC_TASK_ASCENT_ENGINE_OFF | ENGOFF1 "SHUT OFF THE ENGINE" |
+| agc_lm_task_speedrun2 / AGC_TASK_SPEEDRUN2 | agc_lm_task_speedrun_resume / AGC_TASK_SPEEDRUN_RESUME | SPEEDRN2: SPEEDRUN after the VARDELAY pause |
+| agc_lm_findcduw_m2 | agc_lm_findcduw_from_unfc | FINDCDUW -2: thrust command from UNFC/2 |
+| agc_lm_sparcsin_m1 | agc_lm_sparcsin_doubled | SPARCSIN -1: DOUBLE, then SPARCSIN |
+| as_keepvr1, as_ascterm1, as_flash00 (ascent.c) | as_keepvr_radial_thrust, as_ascterm_display, as_flash_or_terminate | KEEPVR1 UNFC/2 = UNIT/R/; ASCTERM1 N63 display |
+| ll_redes1 (lunar_landing.c), ld_ddoubl2 (displays.c), fc_word1, fc_day2max (findcduw.c) | ll_redesignated_site, ld_quadruple_high, fc_ones_word, fc_day_half_max | REDES1 new LANDTEMP; DDOUBL twice; DAY/2MAX |
+| agc_lm_massmult, agc_lm_throttle_whatout | static thr_massmult, thr_whatout | only used inside THROTTLE_CONTROL_ROUTINES |

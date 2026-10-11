@@ -24,10 +24,16 @@
  *     10 passes for U), which then inhibits a new firing.
  *  7. ROT-TOUV: with the docked orthogonal coefficients a pure +Q
  *     quantity gives +U and -V.
+ *  8. 1/ACCS on the zero erasable of power-on (sim finding B2) runs to
+ *     the end (status OK, ACCSOKAY set, no assertion), LEMMASS limited to
+ *     LODESCNT + HIASCENT; an improper DV gives the hardware's result
+ *     (the rope's BIGIQ divide in that run: 77470,00000 / 77652 ->
+ *     A = 37777, L = 77652).
  */
 #include <stdio.h>
 
 #include <stdint.h>
+#include <string.h>
 
 #include "../../src/lm/dap/internal.h"
 #include "agc/core/assert.h"
@@ -230,6 +236,26 @@ static void test_rot_touv(void)
     CHECK(u == -v);
 }
 
+static void test_zero_erasable(void)
+{
+    int reports = g_assert_reports;
+
+    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
+    agc_flag_clear(AGC_FLAG_CSMDKFLG);
+    agc_flag_clear(AGC_FLAG_APSFLAG);
+    agc_flag_clear(AGC_FLAG_ACCOKFLG);
+    agc_guid_state()->lm.mass   = 0;
+    agc_guid_state()->lm.abdelv = 0;
+    CHECK(agc_lm_dap_jet_accel_update() == AGC_STATUS_OK);
+    CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
+    CHECK(agc_erase_lemmass() == 438); /* DEC 1750 B-16    */
+    CHECK(g_assert_reports == reports);
+    lm_dp_pair_t q = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85);
+
+    CHECK(q.hi == 16383 && q.lo == -85);
+}
+
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
@@ -239,6 +265,7 @@ int main(void)
     test_rcsmon();
     test_spsrcs();
     test_rot_touv();
+    test_zero_erasable();
     (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 

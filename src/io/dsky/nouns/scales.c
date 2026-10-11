@@ -1,29 +1,40 @@
-/*
- * noun_scales.c -- SF routine / SF constant tables for the PINBALL nouns.
+/**********************************************************************
+ * FILE NAME: scales.c
  *
- * Transcribed from PINBALL_NOUN_TABLES.agc: SFINTAB / SFOUTAB (the DP scale
- * factor constants used by the load and display scaling routines, indexed by
- * the SF constant code number; GTSFIN / GTSFOUT fetch entry 2*code) and the
- * SF routine / SF constant code number lists. Comanche055 (CSM) and
- * Luminary099 (LM) share code numbers for most constants but differ from
- * code 12 up, so each vehicle has its own pair of tables.
+ * PURPOSE:
+ *   SF routine / SF constant tables for the PINBALL nouns (SFINTAB,
+ *   SFOUTAB) and the scale-type lookup agc_scale_info().
  *
- * Every entry is the AGC's two 15-bit words (high, low), written as the
- * octal words of the listing and checked against the assembled core rope
- * (the 2DEC entries are the rope words of the assembler's conversion of the
- * 2DEC literal quoted in the comment). The trailing "DP" number in each
- * comment is the pair read as a signed DP fraction (value / 2^28); the
- * constant's physical meaning is "multiply the DP quantity by this, then
- * shift/format per the SF routine" (ARITH DP1..DP4 etc., see
- * agc_sf_routine_t in agc_nouns.h). Entries whose constants live in the SF
- * routine itself (CDU degrees: DEGINSF, DEGOUTSF, OPTDEGIN/OUT, 360 CDUO)
- * are zero here.
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_NOUN_TABLES.agc pp. 271, 277-278 (GTSFIN, GTSFOUT,
+ *     SFINTAB, SFOUTAB)
+ *   Luminary099 PINBALL_NOUN_TABLES.agc pp. 304-305, 311-312 (differs from
+ *     code 12 up: each vehicle has its own pair of tables)
  *
- * Scale types (agc_scale_t) are mapped to their (SF routine, SF constant)
- * pair per vehicle in scale_defs[]; the comment on each row is the AGC
- * scale-type letter, the decimal display format and the erasable's AGC
- * scale from ASSEMBLY_AND_OPERATION_INFORMATION "NOUN SCALES AND FORMATS".
- */
+ * EXTERNAL VARIABLES:
+ *   none (constant tables)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name               Description
+ *   -----------------  -----------------------------------------------
+ *   agc_state_vehicle  vehicle for agc_scale_info()
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   AGC_STATUS_BAD_ARG for an unknown scale or SF code.
+ *
+ * NOTES:
+ *   Every entry is the AGC's two 15-bit words (high, low), written as the
+ *   octal words of the listing and checked against the assembled core rope
+ *   (the 2DEC entries are the rope words of the assembler's conversion of
+ *   the 2DEC literal quoted in the comment). The trailing "DP" number in
+ *   each comment is the pair read as a signed DP fraction (value / 2^28).
+ *   Entries whose constants live in the SF routine itself (CDU degrees:
+ *   DEGINSF, DEGOUTSF, OPTDEGIN/OUT, 360 CDUO) are zero here. Scale types
+ *   (agc_scale_t) map to their (SF routine, SF constant) pair per vehicle
+ *   in scale_defs[]; each row's comment gives the AGC scale-type letter,
+ *   the display format and the erasable's scale from
+ *   ASSEMBLY_AND_OPERATION_INFORMATION "NOUN SCALES AND FORMATS".
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -43,7 +54,7 @@ typedef struct scale_def
     int8_t csm_routine; /* SF routine code, -1: not in Comanche     */
     int8_t csm_code;    /* SF constant code                         */
     int8_t lm_routine;  /* -1: not in Luminary                      */
-    int8_t lm_code;
+    int8_t lm_code; /* LM SF constant code, -1 none */
     bool   is_dp;  /* DP pair (else one SP word)               */
     bool   is_raw; /* full 15-bit SP word, passed raw          */
 } scale_def_t;
@@ -551,7 +562,18 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
     [AGC_SCALE_RADIANS] = {-1, -1, 10, 28, true, false},
 };
 
-/* Ones' complement 15-bit AGC word -> signed value (-0 maps to 0). */
+/**********************************************************************
+ * AGC: none (table decode)
+ *
+ * Ones' complement 15-bit AGC word -> signed value (-0 maps to 0).
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   w         uint16_t  I    15-bit ones' complement word
+ *
+ * RETURNS: int32_t -- signed value of the word (-0 gives 0)
+ **********************************************************************/
 static int32_t sf_word_value(uint16_t w)
 {
     if (!AGC_ASSERT(w <= 077777u))
@@ -567,7 +589,19 @@ static int32_t sf_word_value(uint16_t w)
     return ((int32_t) w);
 }
 
-/* A DP pair as the agc_dp_t fraction value (high * 2^14 + low). */
+/**********************************************************************
+ * AGC: GTSFIN, GTSFOUT (PINBALL_NOUN_TABLES.agc, CM p. 271)
+ *
+ * A DP pair as the agc_dp_t fraction value (high * 2^14 + low).
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   p         const sf_pair_t *  I    SFINTAB/SFOUTAB word pair (high,
+ *                                     low)
+ *
+ * RETURNS: agc_dp_t -- high x 2^14 + low
+ **********************************************************************/
 static agc_dp_t sf_pair_value(const sf_pair_t *p)
 {
     if (!AGC_ASSERT(p != NULL))
@@ -578,7 +612,20 @@ static agc_dp_t sf_pair_value(const sf_pair_t *p)
     return ((agc_dp_t) (sf_word_value(p->hi) * 16384 + sf_word_value(p->lo)));
 }
 
-/* GTSFIN / GTSFOUT (PINBALL_NOUN_TABLES.agc p. 271 / 305): table fetch. */
+/**********************************************************************
+ * GTSFIN / GTSFOUT (PINBALL_NOUN_TABLES.agc p. 271 / 305): table fetch.
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  -------------------
+ *   veh       agc_vehicle_t  I    vehicle whose tables are used (CSM or
+ *                                 LM)
+ *   sf_code   uint8_t        I    SF constant code (agc_sfconst_t)
+ *   sf_in     agc_dp_t *     O    input constant (SFINTAB), DP
+ *   sf_out    agc_dp_t *     O    output constant (SFOUTAB), DP
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code,
                                agc_dp_t *sf_in, agc_dp_t *sf_out)
 {
@@ -612,7 +659,22 @@ agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code,
     return (AGC_STATUS_OK);
 }
 
-/* SF routine / constant codes and constants for a scale type, per vehicle. */
+/**********************************************************************
+ * AGC: GTSFIN, GTSFOUT (PINBALL_NOUN_TABLES.agc, CM p. 271)
+ *
+ * SF routine / constant codes and constants for a scale type, per vehicle.
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------
+ *   veh       agc_vehicle_t       I    vehicle whose tables are used (CSM
+ *                                      or LM)
+ *   scale     agc_scale_t         I    scale type of a noun component
+ *   out       agc_scale_info_t *  O    routine and constants of the scale
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
                                     agc_scale_info_t *out)
 {
@@ -627,18 +689,22 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const scale_def_t *def     = &scale_defs[scale];
-    const int          routine =
-        (veh == AGC_VEHICLE_CSM) ? def->csm_routine : def->lm_routine;
-    const int code = (veh == AGC_VEHICLE_CSM) ? def->csm_code : def->lm_code;
+    const scale_def_t *def     = &scale_defs[scale]; /* scale definition row */
+    const int          routine = /* SF routine of the vehicle */
+                                 (veh ==
+                                  AGC_VEHICLE_CSM) ? def->csm_routine : def->
+                                 lm_routine;
+    const int code = /* SF constant code of the vehicle */
+                     (veh == AGC_VEHICLE_CSM) ? def->csm_code : def->lm_code;
 
     if (routine < 0)
     {
         return (AGC_STATUS_NOT_FOUND); /* not defined in this program */
     }
 
-    agc_status_t st =
-        agc_scale_sfconst(veh, (uint8_t) code, &out->sf_in, &out->sf_out);
+    agc_status_t st; /* status so far */
+
+    st = agc_scale_sfconst(veh, (uint8_t) code, &out->sf_in, &out->sf_out);
 
     if (st != AGC_STATUS_OK)
     {
@@ -654,7 +720,20 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
     return (AGC_STATUS_OK);
 }
 
-/* Same, for the vehicle selected by agc_state_init(). */
+/**********************************************************************
+ * AGC: GTSFIN, GTSFOUT (PINBALL_NOUN_TABLES.agc, CM p. 271)
+ *
+ * Same, for the vehicle selected by agc_state_init().
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------
+ *   scale     agc_scale_t         I    scale type of a noun component
+ *   out       agc_scale_info_t *  O    routine and constants of the scale
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_scale_info(agc_scale_t scale, agc_scale_info_t *out)
 {
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(scale < AGC_SCALE_COUNT))

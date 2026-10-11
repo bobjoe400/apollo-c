@@ -1,0 +1,105 @@
+# Scenario d (CSM): P52 IMU realign, option 3 (REFSMMAT), two star marks.
+#
+# AGC behaviour checked (Comanche055, P51-P53.agc):
+# * PROG52 (p.738-739): V04N06 flashing, R1 00001 (option code), R2 =
+#   OPTION2 = 00002 (PFRATFLG clear); V22 loads option 3 (REFSMMAT).
+# * P52C (p.740): V50N25 R1 00015 "perform celestial body acquisition";
+#   PRO runs LOCSAM and PICAPAR (p.752), which picks the star pair.
+# * R51 (p.756-758): V01N70 star code (BESTJ first, then BESTI); R52
+#   (p.744) / R53 (p.772-773): V51 "please mark", SXTMARK takes the mark
+#   on the MARK button (channel 16 bit 6, KEYRUPT2), V50N25 R1 00016
+#   "terminate mark sequence", V01N71 star-code check.
+# * R54 = CHKSDATA (p.759-760): V06N05 star angle difference, here 0.00
+#   deg because the marks are the catalogue directions.
+# * R55 (p.759): V06N93 gyro torquing angles (XXX.XXX deg), near zero
+#   because the IMU already holds REFSMMAT; PRO torques the gyros.
+# * R51K (p.758): V50N25 R1 00014 fine-align check; ENTER ends P52
+#   (ENDP50S -> GOTOPOOH): GOP00FIX (FRESH_START_AND_RESTART p.194)
+#   flashes V37 for the next program, PROG 52 stays up until then (same
+#   on yaAGC + Comanche055).
+#
+# Set-up: pad REFSMMAT = identity and a 185 km circular CSM orbit (pad.c),
+# IMU operate on (channel 30 bit 9 low) and the 90 s IMU turn-on
+# (T4RUPT_PROGRAM IMU monitor p.141, ITURNON), then V25N07 sets REFSMFLG
+# (FLAGWRD3 bit 13, ECADR 77) as the crew would after a turn-on. IMU CDUs
+# stay at zero, so stable member = navigation base = reference frame.
+#
+# Star marks: no optics physics. The sextant CDUs are driven to the
+# catalogue line of sight of each star (STAR_TABLES.agc) through the NB ->
+# SXT rotation of 32.523 deg about Y (SXTNB, CSM_GEOMETRY p.285):
+# trunnion counts = angle x 2^17 / 360 deg - 7200 (19.775 deg bias),
+# shaft counts = angle x 2^15 / 360 deg.
+#   star 8 (Mirfak, code 10):    TA 30.19 SA  97.33 -> CDUT 3793 CDUS  8860
+#   star 35 (Rasalhague, 43):   TA 32.63 SA 270.17 -> CDUT 4681 CDUS -8177
+vehicle csm
+pad refsmmat 1 0 0  0 1 0  0 0 1
+pad sv csm 6563000 0 0  0 7793.3 0  0
+run 300                          # power-on
+keys R V37E00E
+until PROG 00 within 300
+input 30 0 0400                  # IMU operate
+run 11000                        # IMU turn-on (90 s)
+keys V25N07E 77E 10000E 1E       # REFSMFLG on
+run 100
+keys V37E52E
+until PROG 52 within 300
+until NOUN 06 within 300
+expect VERB 04
+expect FLASH on
+until R1 00001 within 100
+until R2 00002 within 100
+keys V22E3E                      # option 3: REFSMMAT
+until R2 00003 within 200
+pro
+until NOUN 25 within 500
+expect VERB 50
+expect R1 00015
+pro                              # celestial body acquisition: PICAPAR
+until NOUN 70 within 2000
+expect VERB 01
+until R1 00010 within 100        # first star: 8 (BESTJ)
+pro
+until VERB 51 within 2000        # please mark
+cdu 35 3793
+cdu 36 8860
+run 100
+mark
+until NOUN 25 within 500
+until R1 00016 within 100        # terminate mark sequence
+pro
+until NOUN 71 within 500
+until R1 00010 within 100
+pro
+until NOUN 70 within 1000
+until R1 00043 within 100        # second star: 35 (BESTI)
+pro
+until VERB 51 within 2000
+cdu 35 4681
+cdu 36 -8177
+run 100
+mark
+until NOUN 25 within 500
+until R1 00016 within 100
+pro
+until NOUN 71 within 500
+until R1 00043 within 100
+pro
+until NOUN 05 within 1000        # R54 star angle difference
+expect VERB 06
+until R1 +00000 ~2 within 100    # 0.00 deg (+-0.02)
+pro
+until NOUN 93 within 1000        # R55 gyro torquing angles
+run 50
+expect R1 +00000 ~20             # +-0.020 deg
+expect R2 +00000 ~20
+expect R3 +00000 ~20
+pro
+until R1 00014 within 2000       # R51K fine align check
+expect VERB 50
+expect NOUN 25
+keys E                           # done
+until VERB 37 within 500
+expect FLASH on
+expect PROG 52
+keys 00E
+until PROG 00 within 300

@@ -50,6 +50,12 @@ static const integ_case_t CASES[] = {
     {"integ_earth_multi", false, 64, 8192, 1024},
     {"integ_moon_1step", true, 2, 2, 8},
     {"integ_moon_multi", true, 64, 4096, 1024},
+    /* TDEC1 - TET > 2^20 cs (DT/2COMP overflow, SIGNMPAC): TET, TAT and
+     * MU(P) exact.  Against this yaAGC the state drifts ~12 km in 3 h
+     * (F1); against the DV-patched probe (gen/dvcheck.sh) 1 LSB / 33 LSB
+     * at 3 h; 2.5 km / 3 m/s at 8.8 h from KEPPREP's 1-LSB XKEPNEW
+     * difference fixed in at a rectification (review-nav-integ N4).     */
+    {"integ_earth_long", false, 8192, 1L << 19, 1L << 22},
 };
 
 typedef struct step_case
@@ -186,6 +192,96 @@ static void run_rectify(const char *t)
     (void) oracle_cmp(t, "XKEP", ctx.sv.xkep, oracle_out_dp(t, "XKEP"), 0);
 }
 
+/* Origin change with STATEFLG + VINTFLAG (zero ephemeris: the moon at the
+ * origin).  origchng_timestep: switched in TIMESTEP, SVDWN1 sees X2 = 2.
+ * origchng_apchk: switched in A-PCHK, SVDWN1 sees X2 = ORIGEX and stores
+ * RN = VN = 0.  RN / VN are preset to a pattern so a missing store shows. */
+static void run_origchng(const char *t)
+{
+    agc_interp_t    ip;
+    agc_integ_ctx_t ctx;
+    agc_vec_t       pattern = agc_vec_zero();
+
+    fresh();
+    agc_interp_init(&ip);
+    (void) agc_integ_ctx_init(&ctx);
+    (void) agc_integ_install(0, AGC_JOB_NONE);
+    pattern = oracle_in_vec(t, "RN");
+    agc_erase_set_rn(pattern);
+    agc_erase_set_vn(pattern);
+    ctx.sv.rcv = oracle_in_vec(t, "RCV");
+    ctx.sv.vcv = oracle_in_vec(t, "VCV");
+    ctx.sv.tet = oracle_in_dp(t, "TET", 0);
+    agc_flag_put(AGC_FLAG_STATEFLG, true);
+    agc_flag_put(AGC_FLAG_VINTFLAG, true);
+    const agc_status_t st =
+        agc_integ_integrvs(&ip, &ctx, oracle_in_dp(t, "VAC1+32", 0));
+
+    oracle_require_ok(t, "INTWAKE");
+    (void) oracle_cmp(t, "status", (long) st, (long) AGC_STATUS_OK, 0);
+    oracle_cmp_vec(t, "RN", agc_erase_rn(), oracle_out_vec(t, "RN"), 0);
+    oracle_cmp_vec(t, "VN", agc_erase_vn(), oracle_out_vec(t, "VN"), 0);
+    (void) oracle_cmp(t, "PIPTIME", agc_erase_piptime(),
+                      oracle_out_dp(t, "PIPTIME"), 0);
+    (void) oracle_cmp(t, "PBODY", ctx.pbody, oracle_out_sp(t, "PBODY"), 0);
+    (void) oracle_cmp(t, "MOONFLAG", agc_flag_test(AGC_FLAG_MOONFLAG),
+                      (oracle_out_sp(t, "FLAGWRD0") & 04000) != 0, 0);
+    (void) oracle_cmp(t, "STATEFLG", agc_flag_test(AGC_FLAG_STATEFLG),
+                      (oracle_out_sp(t, "FLAGWRD3") & 00020) != 0, 0);
+    oracle_cmp_vec(t, "RRECT", ctx.sv.rrect, oracle_out_vec(t, "RRECT"), 2);
+    oracle_cmp_vec(t, "VRECT", ctx.sv.vrect, oracle_out_vec(t, "VRECT"), 2);
+    (void) oracle_cmp(t, "TET", ctx.sv.tet, oracle_out_dp(t, "TET"), 0);
+}
+
+/* Third bodies (MIDFLAG): ephemeris pad loads as nav_aux.spec, LSPOS in
+ * every ACCOMP stage, CHKSWTCH at each TIMESTEP and in A-PCHK.          */
+static void run_third(const char *t, bool moon, long tol_r, long tol_v,
+                      long tol_fv)
+{
+    agc_interp_t    ip;
+    agc_integ_ctx_t ctx;
+    agc_ephem_csm_t e;
+
+    fresh();
+    e.timemo = oracle_in_tp(t, "TIMEMO", 0);
+
+    for (int k = 0; k < AGC_EPHEM_NCOEF; k++)
+    {
+        e.vecoem[k] = oracle_in_vec_at(t, "VECOEM", k);
+    }
+
+    e.reso    = oracle_in_vec(t, "RESO");
+    e.veso    = oracle_in_vec(t, "VESO");
+    e.omegaes = oracle_in_dp(t, "OMEGAES", 0);
+    (void) agc_ephem_set_csm_data(&e);
+    agc_erase_set_tephem(oracle_in_tp(t, "TEPHEM", 0));
+    agc_interp_init(&ip);
+    (void) agc_integ_ctx_init(&ctx);
+    (void) agc_integ_install(0, AGC_JOB_NONE);
+    (void) agc_integ_set_lunar_coeffs((agc_sp_t) oracle_in(t, "E3J22R2M", 0),
+                                      (agc_sp_t) oracle_in(t, "E32C31RM", 0));
+    ctx.sv.rcv = oracle_in_vec(t, "RCV");
+    ctx.sv.vcv = oracle_in_vec(t, "VCV");
+    ctx.sv.tet = oracle_in_dp(t, "TET", 0);
+    agc_flag_put(AGC_FLAG_MOONFLAG, moon);
+    const agc_status_t st =
+        agc_integ_integrvs(&ip, &ctx, oracle_in_dp(t, "VAC1+32", 0));
+
+    oracle_require_ok(t, "INTWAKE");
+    (void) oracle_cmp(t, "status", (long) st, (long) AGC_STATUS_OK, 0);
+    oracle_cmp_vec(t, "RATT", ctx.out.ratt, oracle_out_vec(t, "VAC1"), tol_r);
+    oracle_cmp_vec(t, "VATT", ctx.out.vatt, oracle_out_vec(t, "VAC1+6"),
+                   tol_v);
+    (void) oracle_cmp(t, "TAT", ctx.out.tat, oracle_out_dp(t, "VAC1+12"), 0);
+    (void) oracle_cmp(t, "MU(P)", ctx.out.mu_p, oracle_out_dp(t, "VAC1+26"),
+                      0);
+    (void) oracle_cmp(t, "TET", ctx.sv.tet, oracle_out_dp(t, "TET"), 0);
+    oracle_cmp_vec(t, "FV", ctx.fv, oracle_out_vec(t, "FV"), tol_fv);
+    (void) oracle_cmp(t, "PBODY", ctx.pbody, oracle_out_sp(t, "PBODY"), 0);
+    (void) oracle_cmp(t, "MIDFLAG", agc_flag_test(AGC_FLAG_MIDFLAG),
+                      (oracle_out_sp(t, "FLAGWRD0") & 010000) != 0, 0);
+}
+
 int main(void)
 {
     if (!oracle_load("nav_integ"))
@@ -208,6 +304,13 @@ int main(void)
     run_rectify("rectify_earth");
     run_rectify("rectify_moon");
     run_rectify("rectify_earth_neg");
+    run_origchng("origchng_timestep");
+    run_origchng("origchng_apchk");
+    run_third("third_earth_1step", false, 2, 2, 8);
+    run_third("third_earth_multi", false, 2, 2, 8);
+    run_third("third_moon_1step", true, 2, 2, 8);
+    run_third("third_moon_multi", true, 2, 2, 8);
+    run_third("third_sphere_entry", false, 2, 2, 8);
 
     return (oracle_finish("oracle_nav_integ"));
 }

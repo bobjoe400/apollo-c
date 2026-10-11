@@ -1,18 +1,43 @@
-/*
- * load.c -- PINBALL load verbs V21-V25 and the data request /
- * store sequence.
+/**********************************************************************
+ * FILE NAME: load.c
  *
- * PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 328, 343-348 (LM pp. 410,
- * 425-430): REQDATX, REQDATY, REQDATZ, REQCOM, ABCLOAD, PUTXYZ (with the
- * noun 07 flag-bit set/reset), ABLOAD, PUTXY, ALOAD, BLOAD, CLOAD, LOADLV,
- * ALLDC/OC, PUTCOM, PUTNORM, PUTDPCOM, PUTCOM2, CHANLOAD.
+ * PURPOSE:
+ *   PINBALL load verbs V21-V25 and the data request / store sequence.
  *
- * The AGC routine waits for each data word by leaving its return address,
- * negated, in REQRET and ending the job (REQDATX..Z then TC ENTEXIT); the
- * operator's ENTER does TC REQRET (ACCEPTWD). Here REQRET holds a
- * pin_reqret_t naming the point after the REQDAT call and
- * pin_load_resume() continues from it.
- */
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_GAME_BUTTONS_AND_LIGHTS.agc pp. 328, 343-348
+ *     (REQDATX, REQDATY, REQDATZ, REQCOM, ABCLOAD, PUTXYZ with the noun 07
+ *     flag-bit set/reset, ABLOAD, PUTXY, ALOAD, BLOAD, CLOAD, LOADLV,
+ *     ALLDC/OC, PUTCOM, PUTNORM, PUTDPCOM, PUTCOM2, CHANLOAD)
+ *   Luminary099 pp. 410, 425-430 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale     Description
+ *   ------------  --------  ---  --------  ---------------------------
+ *   ECADR words   uint16_t  I/O  unscaled  noun 07 flag bits, nouns 01-03
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                   Description
+ *   ---------------------  -------------------------------------------
+ *   agc_erase_read_ecadr   noun 07 bit set/reset (state-flags)
+ *   agc_erase_write_ecadr  noun 07 bit set/reset (state-flags)
+ *   pin_comp_write         store a component (scale.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Mixed octal/decimal loads alarm and recycle (ALLDC/OC); scale
+ *   overflow alarms and recycles (sfin.c). BAD_ARG on a failed
+ *   precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the CHARIN job. Both vehicles.
+ *
+ * ALGORITHM:
+ *   The AGC routine waits for each data word by leaving its return
+ *   address, negated, in REQRET and ending the job (REQDATX..Z then TC
+ *   ENTEXIT); the operator's ENTER does TC REQRET (ACCEPTWD). Here REQRET
+ *   holds a pin_reqret_t naming the point after the REQDAT call and
+ *   pin_load_resume() continues from it.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "internal.h"
@@ -24,12 +49,25 @@
 
 /* ---- REQDATX / REQDATY / REQDATZ (p. 328) ----------------------------- */
 
-/* REQCOM: DSPCOUNT to the register's first digit, REQRET = -(return),
- * blank the register, flash on, and exit through ENTEXIT to wait.       */
+/**********************************************************************
+ * AGC: REQCOM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 328)
+ *
+ * REQCOM: DSPCOUNT to the register's first digit, REQRET = -(return),
+ * blank the register, flash on, and exit through ENTEXIT to wait.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   inrel     int           I    register requested (INREL 2..4)
+ *   step      pin_reqret_t  I    REQRET resume point of the load verb
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
 {
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
-    pin_state_t         *s       = pin_st();
+    pin_state_t         *s       = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z) ||
         !AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
@@ -40,15 +78,26 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
     pin_set_dspcount(rnd1[inrel - PIN_INREL_X]);
     s->reqret     = step;
     s->reqret_neg = true;
-    agc_status_t st = pin_5blank();
+    agc_status_t st = pin_5blank(); /* status so far */
 
     pin_flashon();
 
     return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* ENDRQDAT    */
 }
 
-/* CLPASHI's "+3 to - number, backs data requests": the request for the
- * previous register of the same load verb.                               */
+/**********************************************************************
+ * AGC: CLPASHI (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 321)
+ *
+ * CLPASHI's "+3 to - number, backs data requests": the request for the
+ * previous register of the same load verb.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   step      pin_reqret_t  I    REQRET resume point of the load verb
+ *
+ * RETURNS: pin_reqret_t -- the resume point of the previous request
+ **********************************************************************/
 pin_reqret_t pin_reqret_backup(pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -80,21 +129,30 @@ pin_reqret_t pin_reqret_backup(pin_reqret_t step)
 
 /* ---- LOADLV (p. 346) -------------------------------------------------- */
 
-/* LOADLV: after a completed load, release the display for the priority
+/**********************************************************************
+ * AGC: LOADLV (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 345)
+ *
+ * LOADLV: after a completed load, release the display for the priority
  * display problem, block numerical characters and clears, and go to
- * RECALTST to see if there is recall from ENDIDLE.                       */
-agc_status_t pin_loadlv(void)
+ * RECALTST to see if there is recall from ENDIDLE.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
+agc_status_t agc_dsky_loadlv(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->decbrnch = 0;
     s->loadstat = PIN_LS_DATAIN; /* CS ZERO TS LOADSTAT      */
-    agc_status_t st = pin_reldsp();
+    agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     pin_block_dspcount(PIN_VD1);
 
@@ -106,21 +164,25 @@ agc_status_t pin_loadlv(void)
     return ((st == AGC_STATUS_OK) ? pin_recaltst() : st);
 }
 
-agc_status_t agc_dsky_loadlv(void)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (pin_loadlv());
-}
-
 /* ---- PUTCOM (pp. 347-348) --------------------------------------------- */
 
-/* PUTCOM: store component k from XREG.. (octal) or XREG,XREGLP.. (decimal
+/**********************************************************************
+ * AGC: PUTCOM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 347)
+ *
+ * PUTCOM: store component k from XREG.. (octal) or XREG,XREGLP.. (decimal
  * via PUTDECSF). *finished when the load ended inside (alarm, HMSIN or
- * CHANLOAD going on to LOADLV).                                          */
+ * CHANLOAD going on to LOADLV).
+ *
+ * ARGUMENTS:
+ *   Argument  Type    I/O  Description (scale)
+ *   --------  ------  ---  -------------------
+ *   k         int     I    noun component 0..2 (R1..R3)
+ *   finished  bool *  O    true when the load ended inside (alarm, HMSIN,
+ *                          CHANLOAD)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_putcom(int k, bool *finished)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -128,9 +190,9 @@ static agc_status_t pin_putcom(int k, bool *finished)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t     *s = pin_st();
-    agc_scale_info_t info;
-    agc_status_t     st = pin_comp_scale(k, &info);
+    pin_state_t     *s = pin_st(); /* pinball erasables */
+    agc_scale_info_t info; /* scale of the component */
+    agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
     if (!AGC_ASSERT(finished != NULL) || st != AGC_STATUS_OK)
     {
@@ -149,7 +211,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        pin_state_t *s_octal = pin_st();
+        pin_state_t *s_octal = pin_st(); /* pinball erasables */
 
         if (!pin_dectest())
         { /* DCTSTCYC  */
@@ -158,8 +220,8 @@ static agc_status_t pin_putcom(int k, bool *finished)
             return (pin_almcycle());
         }
 
-        agc_status_t st_octal = AGC_STATUS_OK;
-        uint16_t     word     = s_octal->xyz_oct[k];
+        agc_status_t st_octal = AGC_STATUS_OK; /* status of the octal store */
+        uint16_t word = s_octal->xyz_oct[k]; /* octal word keyed / ECADR word */
 
         if (s_octal->nntype == PIN_NNTYPE_CHAN)
         { /* CHANLOAD  */
@@ -170,10 +232,10 @@ static agc_status_t pin_putcom(int k, bool *finished)
                 st_octal = pin_comp_write(k, (agc_dp_t) word);
             }
 
-            return ((st_octal == AGC_STATUS_OK) ? pin_loadlv() : st_octal);
+            return ((st_octal == AGC_STATUS_OK) ? agc_dsky_loadlv() : st_octal);
         }
 
-        agc_dp_t v_octal;
+        agc_dp_t v_octal; /* octal word as a value */
 
         if (info.is_raw)
         {
@@ -211,7 +273,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
         return (pin_hmsin()); /* stores all three, LOADLV */
     }
 
-    agc_dp_t v = 0;
+    agc_dp_t v = 0; /* value to store */
 
     st = pin_putdecsf(k, s->xyz_frac[k], s->xyz_negzero[k], &v, finished);
 
@@ -223,8 +285,20 @@ static agc_status_t pin_putcom(int k, bool *finished)
     return (pin_comp_write(k, v));
 }
 
-/* ALLDC/OC: tests that the data words loaded are either all decimal or
- * all octal; alarms (and recycles) if not.                               */
+/**********************************************************************
+ * AGC: ALLDC/OC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 345)
+ *
+ * ALLDC/OC: tests that the data words loaded are either all decimal or
+ * all octal; alarms (and recycles) if not.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   ncomp     int   I    number of components loaded 2..3
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_alldc_oc(int ncomp)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -232,7 +306,7 @@ static agc_status_t pin_alldc_oc(int ncomp)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(ncomp == 2 || ncomp == 3))
     {
@@ -240,7 +314,7 @@ static agc_status_t pin_alldc_oc(int ncomp)
     }
 
     uint16_t dec = (uint16_t) ((s->decbrnch >> 2) & 7u); /* dec comp bits */
-    uint16_t all = (ncomp == 3) ? 7u : 6u;
+    uint16_t all = (ncomp == 3) ? 7u : 6u; /* DECBRNCH bits of all comps */
 
     if (dec == 0u || dec == all)
     {
@@ -250,7 +324,20 @@ static agc_status_t pin_alldc_oc(int ncomp)
     return (pin_almcycle());
 }
 
-/* PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store. */
+/**********************************************************************
+ * AGC: PUTXYZ, PUTXY (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM pp. 343-344)
+ *
+ * PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   first     int   I    first component 0..2
+ *   ncomp     int   I    number of components to store 1..3
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_putn(int first, int ncomp)
 {
     if (!AGC_ASSERT(first >= 0 && first < 3) ||
@@ -259,8 +346,10 @@ static agc_status_t pin_putn(int first, int ncomp)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st       = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK;
-    bool         finished = false;
+    agc_status_t st; /* status so far */
+
+    st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK;
+    bool finished = false; /* load ended inside PUTCOM */
 
     for (int k = first; k < first + ncomp && st == AGC_STATUS_OK && !finished;
          k++)
@@ -283,10 +372,10 @@ static agc_status_t pin_putn(int first, int ncomp)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        const pin_state_t *s     = pin_st();
-        uint16_t           ecadr = s->xyz_oct[0];
-        uint16_t           bits  = s->xyz_oct[1];
-        uint16_t           word  = 0;
+        const pin_state_t *s     = pin_st(); /* pinball erasables */
+        uint16_t           ecadr = s->xyz_oct[0]; /* flag word ECADR (XREG) */
+        uint16_t bits = s->xyz_oct[1]; /* bit numbers to change (YREG) */
+        uint16_t word = 0; /* octal word keyed / ECADR word */
 
         if (!AGC_ASSERT(s->nounreg == 7u))
         {
@@ -294,7 +383,7 @@ static agc_status_t pin_putn(int first, int ncomp)
         }
 
         agc_inhint();
-        agc_status_t st_bits = agc_erase_read_ecadr(ecadr, &word);
+        agc_status_t st_bits = agc_erase_read_ecadr(ecadr, &word); /* status */
 
         if (st_bits == AGC_STATUS_OK)
         {
@@ -309,13 +398,26 @@ static agc_status_t pin_putn(int first, int ncomp)
         st = st_bits;
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_loadlv() : st);
+    return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st);
 }
 
 /* ---- the load verbs (pp. 343-346) ------------------------------------- */
 
-/* ALOAD (V21), BLOAD (V22), CLOAD (V23), ABLOAD (V24), ABCLOAD (V25):
- * component tests, then the first data request.                          */
+/**********************************************************************
+ * AGC: ALOAD, BLOAD, CLOAD
+ *      (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM pp. 344-345)
+ *
+ * ALOAD (V21), BLOAD (V22), CLOAD (V23), ABLOAD (V24), ABCLOAD (V25):
+ * component tests, then the first data request.
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   verb      uint8_t  I    load verb 21..25
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_load_verb(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -323,7 +425,7 @@ agc_status_t pin_load_verb(uint8_t verb)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(verb >= 21u && verb <= 25u))
     {
@@ -335,7 +437,7 @@ agc_status_t pin_load_verb(uint8_t verb)
         return (pin_reqdat(PIN_INREL_X, PIN_REQ_A_X)); /* ALOAD     */
     }
 
-    int comp = (verb == 22u || verb == 24u) ? 1 : 2;
+    int comp = (verb == 22u || verb == 24u) ? 1 : 2; /* COMPTEST code */
 
     if (!pin_comptest(comp))
     {
@@ -355,7 +457,7 @@ agc_status_t pin_load_verb(uint8_t verb)
         return (pin_dspalarm());
     }
 
-    agc_status_t st = pin_updatvb(PIN_VBSP1LD);
+    agc_status_t st = pin_updatvb(PIN_VBSP1LD); /* status so far */
 
     if (st != AGC_STATUS_OK)
     {
@@ -366,7 +468,22 @@ agc_status_t pin_load_verb(uint8_t verb)
                        (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X));
 }
 
-/* Show the next load verb and request the next register. */
+/**********************************************************************
+ * AGC: ABLOAD, ABCLOAD
+ *      (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM pp. 343-344)
+ *
+ * Show the next load verb and request the next register.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   verb      uint8_t       I    load verb shown for the next request
+ *   inrel     int           I    register requested next (INREL 2..4)
+ *   step      pin_reqret_t  I    REQRET resume point of the load verb
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -379,12 +496,24 @@ static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_updatvb(verb);
+    agc_status_t st = pin_updatvb(verb); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st);
 }
 
-/* TC REQRET from ACCEPTWD: continue the load verb after its data word. */
+/**********************************************************************
+ * AGC: ACCEPTWD (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 323)
+ *
+ * TC REQRET from ACCEPTWD: continue the load verb after its data word.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   step      pin_reqret_t  I    REQRET resume point of the load verb
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_load_resume(pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))

@@ -21,7 +21,7 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 - DONE agc_channels.c (15-bit image, read/write/or/and, sim input side, inverted 030-033)
 - DONE agc_state.h / agc_state.c (vehicle, TIME1/2, flagwords, state vectors)
 - DONE agc_erasable.c (36 scalar/vector/matrix + 3 array erasables, generated)
-- DONE tests: test_state (163 checks), test_state_lm (48 checks), both pass, -Werror clean
+- DONE tests: test_state (146 checks after review), test_state_lm (44), both pass, -Werror clean
 - DONE lookup table (below). `tools/check_rules.py`: 0 violations, density >= 2.0 in all my files
 - DONE MODULE_STATUS row
 - Nothing TODO. Generated pieces came from throw-away scripts parsing the AGC text; the
@@ -81,9 +81,12 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
   channel 31), SXTMARK (MARK/MARK REJECT on channel 16), P20-P25 (VHF range data good on
   channel 33 bit 2). Where the vehicles differ the same bit has two constants (e.g.
   `AGC_CH012_ZEROOCDU` CSM / `AGC_CH012_ZERORRCDU` LM, both 000001); the comment starts "CSM:" or "LM:".
-* Bits I could not confirm for the CSM from the Comanche text are left with LM names only
-  (channel 12 bits 10,12,13; channel 30 bits 1,3,4,6; channel 32 bits 1-10; channel 33
-  bits 3,6-9). The Block II CM hardware may assign them; see Open questions.
+* Review (2026-10-10): the bits Comanche does not touch now carry CSM names from the Block II
+  CM channel list (virtualagc piPeripheral/humanizeScript.py): channel 12 bits 10 (ZERO OPTICS),
+  13 (S-IVB injection sequence start); channel 30 bits 1-4, 6 (ullage thrust, CM/SM separate,
+  SPS ready, S-IVB separate/abort, guidance reference release); channel 32 bits 1-6 (minimum
+  impulse, read by FREECONT) and 11 (LM attached); channel 33 bits 4/5 renamed ZEROOPTICS /
+  CMCOPTICS (OPTMON). CSM-unused bits say so. See docs/modules/review-state-flags.md.
 * Inverted logic: channels 030-033 read ZERO when a signal is present. The image stores what
   READ returns (power-up 077777). `agc_chan_set_input` takes the raw sensed value;
   `agc_chan_set_signal(chan, mask, present)` does the inversion (requested addition, now in the header).
@@ -100,7 +103,7 @@ Everything else stays module-private in its owner.
 
 * Time-of-state/event: PIPTIME, TIG, TTOGO, TGO, TTPI, TEVENT, TETCSM, TETLEM (all DP cs, scale 2^28).
 * Vectors: RN, VN, RRECTCSM, VRECTCSM, RRECTLEM, VRECTLEM (state vectors, nav/guidance/programs/downlink),
-  DELV, DELVSLV, VGTIG (burn programs and SERVICER), RLS (landing site; nav-aux, prog-rendz,
+  DELV, VGTIG (burn programs and SERVICER), RLS (landing site; nav-aux, prog-rendz,
   R30, landing).
 * REFSMMAT (18 DP, scale 2^1), TEPHEM (TP), CSMMASS/LEMMASS (kg, 2^16), MODREG.
 * Hardware-register images: CDUX/Y/Z/T/S (raw 15-bit, 2^15 counts = 1 rev), PIPAX/Y/Z.
@@ -146,8 +149,7 @@ I own the headers below, so these were made directly; other lanes should know:
 * `agc_state.h`: `AGC_FLAGWORDS` raised 12 -> 14 (LM has FLGWRD12/13); added
   `AGC_FLAGWORDS_CSM/LM`; `agc_flag_valid/word/bit/mask`; `agc_erase_reset`;
   `AGC_TIME_MODULUS_CS`; `agc_erase_time1/2`; all `agc_erase_*` accessors listed above.
-  **`agc_time_set_cs` now returns `agc_status_t`** (was `void`; BAD_ARG if t >= 2^28). Call sites that
-  ignored the result should use `(void)` or check it.
+  `agc_time_set_cs` is `void` (status-handling lane); t >= 2^28 is an assertion report and ignored.
 * `agc_channels.h`: bit constants, `AGC_CHAN_MASK`, `AGC_CHAN_FIRST/LAST_INVERTED`,
   `agc_chan_set_signal`; `agc_chan_set_input` now returns BAD_ARG for non-input channels.
 * No requests for lead-owned headers.
@@ -174,13 +176,11 @@ None.
 
 ## Open questions
 
-* CSM channel bits not documented in the Comanche source (listed above): confirm against the Block II
-  CM channel list if CSM lanes (sys-misc, dap-csm) need more names.
-* Which of the module-private multi-reader erasables should be promoted? Candidates in the
-  "Which erasables" section.
-* PIPA scaling: `agc_erase_delv` says "scaled like PIPAX,Y,Z via KPIP1 to 2^4 m/cs" quoting
-  SERVICER207; guid-powered should confirm the stored scale when it translates SERVICER.
-* TEPHEM scale quoted only as TIMSUBO "CSEC B-14 (triple precision)".
+Resolved in review (docs/modules/review-state-flags.md): CSM channel bits; DELV is PIPA pulses
+at 2^14 (5.85 cm/s per pulse CSM, 1 cm/s LM; KPIP1 -> 2^7 m/cs); TEPHEM is TP cs at 2^42
+(L "CSEC B-42"); DELVSLV = DELVLVC is one vector (accessor removed, use
+`agc_rendz_erasable()->delvlvc`). Promotion of further erasables: other lanes have since added
+the accessors they needed to state.h (counters, display, pad loads, restart delays).
 
 ## Lookup table: AGC erasable name -> C accessor or owner
 
@@ -609,7 +609,7 @@ Special registers and channels (not in the erasable log sections above):
 | DELVS | LM | eq UHZP +6 | module-private (guid-landing; also guid-powered) | LANDING ANALOGS DISPLAY STORAGE. (40D) |
 | DELVSAB | CSM+LM | eq DELVSIN +6 | module-private (guid-powered; also prog-rendz) | P30, P40 INTERFACE. (20D) |
 | DELVSIN | CSM+LM | eq VTIG +6 | module-private (prog-rendz; also guid-powered, guid-entry) | P30, P40 INTERFACE. (20D) |
-| DELVSLV | CSM+LM | eq LNG(SPL) +2 | `agc_erase_delvslv()` / `agc_erase_set_delvslv()` | EXTERNAL DELTA-V UPDATE. (21D) |
+| DELVSLV | CSM+LM | eq LNG(SPL) +2 | = DELVLVC: `agc_rendz_erasable()->delvlvc` (prog-rendz) | EXTERNAL DELTA-V UPDATE. (21D) |
 | DELVSUM | CSM | eq NBRCYCLP +1 | module-private (guid-powered) | OVERLAYS WITHIN TVC DAP |
 | DELVSUMP | CSM | eq DELVSUM +6 | module-private (guid-powered) | OVERLAYS WITHIN TVC DAP |
 | DELVTPF | CSM+LM | eq DELVTPI +2 | module-private (prog-rendz; also io-nouns, sys-misc) | RENDEZVOUS -P34-35 (26D) |

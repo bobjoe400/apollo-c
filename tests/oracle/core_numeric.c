@@ -220,6 +220,39 @@ static int run_case(const ocase_t *c)
         got = agc_dp_shr_round((agc_dp_t) in[0], (int) in[1]);
     else if (!strcmp(op, "SL"))
         got = agc_dp_shl(&ip, (agc_dp_t) in[0], (int) in[1]);
+    else if (!strcmp(op, "SLR"))
+        got = agc_dp_shl_round(&ip, (agc_dp_t) in[0], (int) in[1]);
+    else if (!strcmp(op, "TSL") || !strcmp(op, "TSR"))
+    {
+        got = agc_tp_shift(&ip, in[0], !strcmp(op, "TSL") ? (int) in[1] :
+                           -(int) in[1]);
+        exp = mp;
+    }
+    else if (!strcmp(op, "TNORM"))
+    {
+        int sh = 0;
+
+        got  = agc_tp_norm(in[0], &sh);
+        exp  = mp;
+        got2 = -sh;
+        exp2 = w[8];
+    }
+    else if (!strcmp(op, "SHORTMP"))
+    {
+        got = agc_tp_mul_sp(in[0], (agc_sp_t) in[1]);
+        exp = mp;
+    }
+    else if (!strcmp(op, "DMPNSUB"))
+        got = agc_dp_mul_int((agc_dp_t) in[0], (agc_sp_t) in[1]);
+    else if (!strcmp(op, "POLY"))
+    {
+        agc_dp_t coef[MAX_IN];
+
+        for (k = 0; k <= (int) in[1] && k + 2 < c->nin; k++)
+            coef[k] = (agc_dp_t) in[2 + k];
+
+        got = agc_dp_poly((agc_dp_t) in[0], coef, (int) in[1]);
+    }
     else if (!strcmp(op, "ABVAL"))
         got = agc_vec_abval(&ip, u);
     else if (!strcmp(op, "VSQ"))

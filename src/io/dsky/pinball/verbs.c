@@ -1,36 +1,70 @@
-/*
- * verbs.c -- PINBALL verb execution: ENTPAS0, TESTVB, TESTNN,
- * REQADD, USEADD, INTMCTBS, VERBFAN, VBFANDIR (VERBTAB), the octal display
- * verbs DSPA..DSPABC with COMPTEST, DCOMPTST, DECTEST, DCTSTCYC, NOUNTEST,
- * TSTFORDP, CHANDSP, and the alarm exits DSPALARM, PREDSPAL, CHARALRM,
- * ALMCYCLE; plus LODNNTAB (PINBALL_NOUN_TABLES.agc) on the agc_noun_t
- * tables.
+/**********************************************************************
+ * FILE NAME: verbs.c
  *
- * PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 324-333, 364; LM pp. 406-415,
- * 446.
- */
+ * PURPOSE:
+ *   PINBALL verb execution: ENTPAS0, TESTVB, TESTNN, REQADD, USEADD,
+ *   INTMCTBS, VERBFAN, VBFANDIR (VERBTAB), the octal display verbs
+ *   DSPA..DSPABC with their component tests, LODNNTAB on the agc_noun_t
+ *   tables, and the alarm exits DSPALARM, PREDSPAL, CHARALRM, ALMCYCLE.
+ *
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_GAME_BUTTONS_AND_LIGHTS.agc pp. 324-333, 364
+ *   Comanche055 PINBALL_NOUN_TABLES.agc p. 270 (LODNNTAB)
+ *   Luminary099 pp. 406-415, 446 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (pinball state only)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                   Description
+ *   ---------------------  -------------------------------------------
+ *   agc_noun_lookup        LODNNTAB: the noun table row
+ *   agc_extverb            GOEXTVB: verbs 40-99 (sys-misc)
+ *   agc_fresh_start_slap1  V36 fresh start (SLAP1)
+ *   agc_poodoo             abort 01501 (DSPALARM from an internal NVSUB)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   POODOO 01501 for an illegal verb/noun from an internal NVSUB; OPR ERR
+ *   for a keyed one (CHARALRM); ALMCYCLE recycles (PIN_STATUS_RECYCLE).
+ *   BAD_ARG on a failed precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the CHARIN job (ENTER) or the NVSUB caller's job. V27
+ *   (DSPFMEM) is a stub: see monitor.c. Both vehicles.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "internal.h"
 
 /* ---- LODNNTAB (PINBALL_NOUN_TABLES p. 270) ---------------------------- */
 
-/* Load the noun table row for NOUNREG and classify NNADTEM: +0 not in use,
+/**********************************************************************
+ * AGC: LODNNTAB, TESTNN
+ *      (PINBALL_NOUN_TABLES.agc, CM p. 270;
+ *      PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
+ *
+ * Load the noun table row for NOUNREG and classify NNADTEM: +0 not in use,
  * - specify machine address (01-03) or channel (10), -0 increment machine
  * address (15), + normal.
  * DEVIATION: the C noun tables carry data ids, not ECADRs, so NOUNCADR is
  * only meaningful for nouns 01-03, 10, 15; it is zeroed for the others
- * (the AGC loaded the noun's ECADR, used only for the MCTBS cases).      */
+ * (the AGC loaded the noun's ECADR, used only for the MCTBS cases).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_noun_load(void)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->nounreg <= 99))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun);
+    agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun); /* status so far */
 
     if (st == AGC_STATUS_NOT_FOUND || s->noun.ncomp == 0u)
     {
@@ -67,7 +101,15 @@ agc_status_t pin_noun_load(void)
 
 /* ---- alarm exits (p. 364) --------------------------------------------- */
 
-/* CHARALRM: not NVSUB initiated, turn on OPR ERROR; ENDOFJOB. */
+/**********************************************************************
+ * AGC: CHARALRM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 364)
+ *
+ * CHARALRM: not NVSUB initiated, turn on OPR ERROR; ENDOFJOB.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t pin_charalrm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -75,13 +117,22 @@ agc_status_t pin_charalrm(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_falton();
+    agc_dsky_falton();
 
     return (AGC_STATUS_OK);
 }
 
-/* DSPALARM: an illegal verb/noun. From an internal NVSUB this is abort
- * 01501; from a monitor, the monitor is killed and its verb pasted back. */
+/**********************************************************************
+ * AGC: DSPALARM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 364)
+ *
+ * DSPALARM: an illegal verb/noun. From an internal NVSUB this is abort
+ * 01501; from a monitor, the monitor is killed and its verb pasted back.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_dspalarm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -89,7 +140,7 @@ agc_status_t pin_dspalarm(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
@@ -104,7 +155,7 @@ agc_status_t pin_dspalarm(void)
     if (s->entret == PIN_ENT_PASTEVB)
     { /* if this is a monitor, kill it */
         pin_kilmonon();
-        pin_falton();
+        agc_dsky_falton();
 
         return (pin_pastevb()); /* put monitor verb back  */
     }
@@ -112,7 +163,16 @@ agc_status_t pin_dspalarm(void)
     return (pin_charalrm());
 }
 
-/* PREDSPAL: alarm if decimal display with an octal-only noun. */
+/**********************************************************************
+ * AGC: PREDSPAL (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 364)
+ *
+ * PREDSPAL: alarm if decimal display with an octal-only noun.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_predspal(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -130,9 +190,18 @@ agc_status_t pin_predspal(void)
     return (pin_dspalarm());
 }
 
-/* ALMCYCLE: turn on check fail light, put the original verb that was
+/**********************************************************************
+ * AGC: ALMCYCLE (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 364)
+ *
+ * ALMCYCLE: turn on check fail light, put the original verb that was
  * executed back into VERBREG and the verb lights, and re-enter ENTER
- * (the caller's pin_enter loop does the POSTJUMP ENTER).                */
+ * (the caller's pin_enter loop does the POSTJUMP ENTER).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          PIN_STATUS_RECYCLE; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_almcycle(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -140,22 +209,31 @@ agc_status_t pin_almcycle(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->verbsave <= 99))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_falton();
+    agc_dsky_falton();
     s->reqret     = PIN_REQ_PASS0;   /* set for ENTPAS0        */
     s->reqret_neg = false;
-    agc_status_t st = pin_updatvb(s->verbsave);
+    agc_status_t st = pin_updatvb(s->verbsave); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st);
 }
 
-/* TC ENTEXIT: the exit chosen by ENTRET. */
+/**********************************************************************
+ * AGC: ENTEXIT (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 323)
+ *
+ * TC ENTEXIT: the exit chosen by ENTRET.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_entexit(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -163,7 +241,7 @@ agc_status_t pin_entexit(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
     {
@@ -180,11 +258,23 @@ agc_status_t pin_entexit(void)
 
 /* ---- component tests (pp. 331-332) ------------------------------------ */
 
-/* COMPTEST: noun comp G/E verb comp (comp numbers 0, 1, 2); else the
- * caller alarms (noun comp L/ verb comp).                               */
+/**********************************************************************
+ * AGC: COMPTEST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 331)
+ *
+ * COMPTEST: noun comp G/E verb comp (comp numbers 0, 1, 2); else the
+ * caller alarms (noun comp L/ verb comp).
+ *
+ * ARGUMENTS:
+ *   Argument   Type  I/O  Description (scale)
+ *   ---------  ----  ---  -------------------
+ *   verb_comp  int   I    components the verb uses: 0, 1 or 2 (one to
+ *                         three)
+ *
+ * RETURNS: bool -- true when the noun has enough components
+ **********************************************************************/
 bool pin_comptest(int verb_comp)
 {
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) ||
         !AGC_ASSERT(s->noun.ncomp >= 1u))
@@ -195,11 +285,19 @@ bool pin_comptest(int verb_comp)
     return ((int) s->noun.ncomp - 1 >= verb_comp);
 }
 
-/* DECTEST / DCTSTCYC: the decimal-only bit (bit 4 of the comp code) is 0;
- * else DECTEST alarms, DCTSTCYC (load verbs) alarms and recycles.       */
+/**********************************************************************
+ * AGC: DECTEST, DCTSTCYC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 332)
+ *
+ * DECTEST / DCTSTCYC: the decimal-only bit (bit 4 of the comp code) is 0;
+ * else DECTEST alarms, DCTSTCYC (load verbs) alarms and recycles.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when the noun is not decimal only
+ **********************************************************************/
 bool pin_dectest(void)
 {
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
     {
@@ -214,10 +312,18 @@ bool pin_dectest(void)
     return (!s->noun.dec_only);
 }
 
-/* NOUNTEST: the noun can be loaded (no-load bit, bit 5 of the comp code). */
+/**********************************************************************
+ * AGC: NOUNTEST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 332)
+ *
+ * NOUNTEST: the noun can be loaded (no-load bit, bit 5 of the comp code).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when the noun may be loaded
+ **********************************************************************/
 bool pin_nountest(void)
 {
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->noun.ncomp >= 1u))
     {
@@ -234,9 +340,21 @@ bool pin_nountest(void)
 
 /* ---- octal display verbs V01-V05 (pp. 330-332) ------------------------ */
 
-/* DSPA, DSPB, DSPC, DSPAB, DSPABC with DSPCOM1/2/3. V01-V03 show one
+/**********************************************************************
+ * AGC: DSPA, DSPB, DSPC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 331)
+ *
+ * DSPA, DSPB, DSPC, DSPAB, DSPABC with DSPCOM1/2/3. V01-V03 show one
  * component (1, 2 or 3) in R1; V04 components 1, 2 in R1, R2; V05 all
- * three. The tests run in the AGC's order before anything is shown.     */
+ * three. The tests run in the AGC's order before anything is shown.
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   verb      uint8_t  I    display verb 01..05
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_dsp_octal(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -261,7 +379,7 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
         return (pin_dspalarm());
     }
 
-    agc_status_t st     = AGC_STATUS_OK;
+    agc_status_t st     = AGC_STATUS_OK; /* status so far */
     uint16_t     buf[3] = {0, 0, 0};
 
     for (int i = 0; i < count && st == AGC_STATUS_OK; i++)
@@ -280,18 +398,31 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
 
 /* ---- noun test and machine address (pp. 324-325) --------------------- */
 
-/* USEADD: ECADR into NOUNCADR, reread the noun table, go to VERBFAN. */
+/**********************************************************************
+ * AGC: USEADD (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
+ *
+ * USEADD: ECADR into NOUNCADR, reread the noun table, go to VERBFAN.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   ecadr     uint16_t  I    machine address (ECADR) supplied by the
+ *                            caller
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_usead(uint16_t ecadr)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(ecadr <= PIN_WORD))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t     keep = ecadr;
-    agc_status_t st   = pin_noun_load();
+    uint16_t     keep = ecadr; /* ECADR to keep in NOUNCADR */
+    agc_status_t st   = pin_noun_load(); /* status so far */
 
     s->nouncadr = keep; /* SETNCADR               */
 
@@ -303,9 +434,21 @@ agc_status_t pin_usead(uint16_t ecadr)
     return (pin_verbfan());
 }
 
-/* INTMCTBS: internal machine address to be specified, left in MPAC+2 by
+/**********************************************************************
+ * AGC: INTMCTBS (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 325)
+ *
+ * INTMCTBS: internal machine address to be specified, left in MPAC+2 by
  * the NVSUB caller (or MONSAVE1 by MONDO). INTMCTBS +2 is also the noun
- * 15 (increment) entry. Don't display the CADR if verb = 05.            */
+ * 15 (increment) entry. Don't display the CADR if verb = 05.
+ *
+ * ARGUMENTS:
+ *   Argument    Type  I/O  Description (scale)
+ *   ----------  ----  ---  -------------------
+ *   from_mpac2  bool  I    true when the ECADR is taken from MPAC+2
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_intmctbs(bool from_mpac2)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -313,7 +456,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (from_mpac2)
     {
@@ -328,7 +471,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
     if (s->verbreg != 5u)
     {
         pin_set_dspcount(PIN_R3D1); /* VB not = 05: display CADR */
-        agc_status_t st = pin_dspoctwo(s->nouncadr);
+        agc_status_t st = pin_dspoctwo(s->nouncadr); /* status so far */
 
         if (st != AGC_STATUS_OK)
         {
@@ -339,8 +482,17 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
     return (pin_verbfan());
 }
 
-/* REQADD: machine address (or channel) to be specified. External (keyed)
- * requests ask for it in R3; internal ones take it from MPAC+2.          */
+/**********************************************************************
+ * AGC: REQADD (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
+ *
+ * REQADD: machine address (or channel) to be specified. External (keyed)
+ * requests ask for it in R3; internal ones take it from MPAC+2.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_reqadd(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -348,7 +500,7 @@ static agc_status_t pin_reqadd(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
 
@@ -366,9 +518,18 @@ static agc_status_t pin_reqadd(void)
     return (pin_reqdat(PIN_INREL_Z, PIN_REQ_MCTBS)); /* REQDATZ   */
 }
 
-/* REQADD continued after the operator's ENTER: alarm and recycle if
+/**********************************************************************
+ * AGC: REQADD, ENTER (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM pp. 323-324)
+ *
+ * REQADD continued after the operator's ENTER: alarm and recycle if
  * decimal was used for the MCTBS. An external MCTBS display will leave
- * flash on if ENDIDLE is not +0.                                         */
+ * flash on if ENDIDLE is not +0.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_reqadd_resume(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -376,7 +537,7 @@ agc_status_t pin_reqadd_resume(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (s->decbrnch != 0u)
     {
@@ -398,7 +559,16 @@ agc_status_t pin_reqadd_resume(void)
     return (pin_usead(s->xyz_oct[2])); /* XCH ZREG               */
 }
 
-/* TESTNN: noun test for verbs below LOWVERB. */
+/**********************************************************************
+ * AGC: TESTNN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
+ *
+ * TESTNN: noun test for verbs below LOWVERB.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_testnn(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -406,8 +576,8 @@ agc_status_t pin_testnn(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s  = pin_st();
-    agc_status_t st = pin_noun_load();
+    pin_state_t *s  = pin_st(); /* pinball erasables */
+    agc_status_t st = pin_noun_load(); /* status so far */
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
@@ -438,9 +608,18 @@ agc_status_t pin_testnn(void)
     }
 }
 
-/* ENTPAS0: noun verb sub enters here. Block further numerical characters
+/**********************************************************************
+ * AGC: ENTPAS0 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
+ *
+ * ENTPAS0: noun verb sub enters here. Block further numerical characters
  * so that stray chars do not get into verb or noun lights. TESTVB: if
- * the verb is G/E LOWVERB, skip the noun test.                           */
+ * the verb is G/E LOWVERB, skip the noun test.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_entpas0(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -448,7 +627,7 @@ agc_status_t pin_entpas0(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->decbrnch = 0;
     pin_block_dspcount(PIN_VD1);
@@ -470,7 +649,19 @@ agc_status_t pin_entpas0(void)
 
 /* ---- VERBFAN / VBFANDIR (pp. 325-326) --------------------------------- */
 
-/* VBFANDIR: INDEX VERBREG, CAF VERBTAB. */
+/**********************************************************************
+ * AGC: VBFANDIR (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 325)
+ *
+ * VBFANDIR: INDEX VERBREG, CAF VERBTAB.
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------
+ *   verb      uint8_t  I    verb 00..39
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t pin_vbfandir(uint8_t verb)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -534,7 +725,7 @@ static agc_status_t pin_vbfandir(uint8_t verb)
             case 33:
                 return (pin_vbproc_common(PIN_LS_PROCEED)); /* VBPROC         */
             case 34:
-                return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM         */
+                return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM */
             case 35:
                 return (pin_vbtstlts()); /* test lights            */
             case 36:
@@ -549,8 +740,17 @@ static agc_status_t pin_vbfandir(uint8_t verb)
     return (pin_dspalarm()); /* VB00 illegal, spares   */
 }
 
-/* VERBFAN: verbs 40 and up are extended verbs: release the display
- * system and go to GOEXTVB.                                              */
+/**********************************************************************
+ * AGC: VERBFAN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 325)
+ *
+ * VERBFAN: verbs 40 and up are extended verbs: release the display
+ * system and go to GOEXTVB.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_verbfan(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -558,7 +758,7 @@ agc_status_t pin_verbfan(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->verbreg <= 99))
     {
@@ -567,7 +767,7 @@ agc_status_t pin_verbfan(void)
 
     if (s->verbreg >= PIN_LST2CON)
     {
-        agc_status_t st = pin_reldsp(); /* release display syst   */
+        agc_status_t st = agc_dsky_releasedsp(); /* release display syst   */
 
         return ((st == AGC_STATUS_OK) ?
                 agc_extverb((int) s->verbreg, (int) s->nounreg) :

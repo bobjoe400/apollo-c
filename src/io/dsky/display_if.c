@@ -1,30 +1,74 @@
-/*
- * display_if.c -- DISPLAY_INTERFACE_ROUTINES.agc (CM pp. 1452-1484, LM pp.
- * 1341-1373): the interface between mission programs and PINBALL.
+/**********************************************************************
+ * FILE NAME: display_if.c
  *
- * "DISPLAYS CAN BE CLASSIFIED INTO THE FOLLOWING CATEGORIES-
- *  1. PRIORITY DISPLAYS ... 2. EXTENDED VERB DISPLAYS ... (MARK) ...
- *  3. NORMAL DISPLAYS ..."  Priority displays interrupt all other internal
- * displays; a mark display interrupts any normal display; the astronaut
- * can interrupt any display with an external display request. Order of
- * waiting displays: astronaut, priority, interrupted mark, interrupted
- * normal, mark to be requested, mark waiting, normal waiting.
+ * PURPOSE:
+ *   The display interface between mission programs and PINBALL: the GO*
+ *   entries (GODSP, GOFLASH, GOPERF1..4, GOMARK*, PRIODSP, CLEANDSP,
+ *   KLEENEX, their R forms), MAKEPLAY / MAKEPRIO / MAKEMARK, the sleeping
+ *   and waking of the three display classes, ENDIDLE returns, PINBRNCH.
  *
- * The three display classes are indexed by COPINDEX: 0 priority, 1 mark,
- * 2 normal. Their state is in FLAGWRD4 (idle, waiting, NV-busy and
- * interrupted bits) and in the per-class copies NVWORD/MARKNV/NVSAVE,
- * CADRFLSH/CADRMARK/TEMPFLSH, EBANKSAV/MARKEBAN/EBANKTEM (the display
- * flags, DSPFLG). Routines not ending in R run in the user's job; R
- * routines start job MAKEPLAY at the user's priority and return at once.
+ * AGC SOURCE:
+ *   Comanche055 DISPLAY_INTERFACE_ROUTINES.agc pp. 1452-1484
+ *   Luminary099 DISPLAY_INTERFACE_ROUTINES.agc pp. 1341-1373 (differs:
+ *   REFLASHR, and LM names XDSPBIT/MRKNVBIT/MKOVBIT/PRIODBIT for the same
+ *   bits)
  *
- * C model: a job that the AGC JOBSLEEPs or JOBWAKEs at another CADR is put
- * to sleep / woken with the continuation job ids of internal.h;
- * the user's returns (call CADR +1/+2/+3) are the agc_dsky_cont_t ids,
- * reached by agc_exec_job_yield() after PRIOCHNG to the user's priority
- * (ENDIT). The job temporaries the AGC keeps in the sleeping job's MPAC
- * and MODE across ENDIDLE (COPMPAC, GENMASK, USERPRIO) are kept here in
- * g_idle, since only one job can be in ENDIDLE.
- */
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale     Description
+ *   ------------  --------  ---  --------  ---------------------------
+ *   FLAGWRD4      uint16_t  I/O  bits      display class state (idle,
+ *                                          waiting, NV-busy, interrupted)
+ *   TIME1         uint16_t  I    cs        TIMECHEK (agc_erase_time1)
+ *   OPTION1       agc_sp_t  O    unscaled  GOPERF4 PURRS4 option word
+ *   EXTVBACT      uint16_t  O    bits      CLEARMRK (sys-misc accessor)
+ *   DSALMOUT      chan 11   O    bits      V/N flash off
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                     Description
+ *   -----------------------  ------------------------------------------
+ *   agc_exec_novac/findvac   start MAKEPLAY / JAMTERM jobs
+ *   agc_exec_job_sleep/wake  JOBSLEEP / JOBWAKE of display users
+ *   agc_exec_job_wake_as     wake a sleeper at another continuation
+ *   agc_exec_job_yield       ENDIT: PRIOCHNG back to the user's CADR
+ *   agc_poodoo               PRIOBORT abort 01502
+ *   pinball (internal.h)     NVSUB, ENDIDLE, NVSUBUSY, BLANKSUB, RELDSP
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   POODOO 01502 (PRIOBORT: display conflict); POODOO 01206 via ENDIDLE /
+ *   NVSUBUSY when CADRSTOR or DSPLIST is taken; AGC_STATUS_BAD_ARG on a
+ *   failed precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the user's job (non-R entries) or in MAKEPLAY jobs (R entries
+ *   and, DEVIATION, CLEANDSP / KLEENEX without a continuation). Both
+ *   vehicles; one translation with agc_state_vehicle() tests.
+ *
+ * NOTES:
+ *   "DISPLAYS CAN BE CLASSIFIED INTO THE FOLLOWING CATEGORIES-
+ *    1. PRIORITY DISPLAYS ... 2. EXTENDED VERB DISPLAYS ... (MARK) ...
+ *    3. NORMAL DISPLAYS ..."  Priority displays interrupt all other internal
+ *   displays; a mark display interrupts any normal display; the astronaut
+ *   can interrupt any display with an external display request. Order of
+ *   waiting displays: astronaut, priority, interrupted mark, interrupted
+ *   normal, mark to be requested, mark waiting, normal waiting.
+ *
+ *   The three display classes are indexed by COPINDEX: 0 priority, 1 mark,
+ *   2 normal. Their state is in FLAGWRD4 (idle, waiting, NV-busy and
+ *   interrupted bits) and in the per-class copies NVWORD/MARKNV/NVSAVE,
+ *   CADRFLSH/CADRMARK/TEMPFLSH, EBANKSAV/MARKEBAN/EBANKTEM (the display
+ *   flags, DSPFLG). Routines not ending in R run in the user's job; R
+ *   routines start job MAKEPLAY at the user's priority and return at once.
+ *   Deviations: docs/modules/io-pinball.md "Deviations".
+ *
+ * ALGORITHM:
+ *   A job that the AGC JOBSLEEPs or JOBWAKEs at another CADR is put to
+ *   sleep / woken with the continuation job ids of internal.h; the user's
+ *   returns (call CADR +1/+2/+3) are the agc_dsky_cont_t ids, reached by
+ *   agc_exec_job_yield() after PRIOCHNG to the user's priority (ENDIT). The
+ *   job temporaries the AGC keeps in the sleeping job's MPAC and MODE
+ *   across ENDIDLE (COPMPAC, GENMASK, USERPRIO) are kept in g_idle, since
+ *   only one job can be in ENDIDLE.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "pinball/internal.h"
@@ -102,10 +146,10 @@ typedef struct dif_class
 
 typedef struct dif_req
 { /* PLAYTEM1, PLAYTEM3, PLAYTEM4             */
-    bool            used;
-    uint16_t        vn;
-    uint16_t        flags;
-    agc_dsky_cont_t cadr;
+    bool            used; /* slot holds a request */
+    uint16_t        vn; /* VN: verb x 2^7 + noun */
+    uint16_t        flags; /* PLAYTEM3 display flags */
+    agc_dsky_cont_t cadr; /* PLAYTEM4 user returns */
 } dif_req_t;
 
 typedef struct dif_job
@@ -116,8 +160,8 @@ typedef struct dif_job
     int        outhere;  /* OUTHERE: 0 term, 1 proceed, 2 enter, -1 end */
 } dif_job_t;
 
-static dif_class_t g_cls[3];
-static dif_req_t   g_rq[DIF_RQ_LEN];
+static dif_class_t g_cls[3]; /* per-class copies (COPINDEX) */
+static dif_req_t   g_rq[DIF_RQ_LEN]; /* requests of R-started jobs */
 static int         g_rq_last = -1; /* MPAC+5 of the last R request      */
 static uint16_t    g_priotime;     /* PRIOTIME (TIME1)                  */
 static uint16_t    g_nvword1 = PIN_NEGZERO; /* NVWORD1                     */
@@ -125,18 +169,36 @@ static agc_prio_t  g_restreg; /* RESTREG: normal user's priority   */
 
 static struct
 {
-    int        copmpac;
-    agc_prio_t userprio;
+    int        copmpac; /* COPMPAC: class in ENDIDLE */
+    agc_prio_t userprio; /* USERPRIO of the ENDIDLE user */
 } g_idle;
 
 /* ---- helpers ---------------------------------------------------------- */
 
+/**********************************************************************
+ * AGC: none (helper)
+ *
+ * C(FLAGWRD4), the display-interface flag word.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- C(FLAGWRD4)
+ **********************************************************************/
 static uint16_t f4(void)
 {
     return (agc_flagword_get(DIF_F4));
 }
 
-/* UPENT2 / DOWNENT2 on FLAGWRD4 (UPFLAG / DOWNFLAG for one bit). */
+/**********************************************************************
+ * AGC: UPENT2, DOWNENT2, UPFLAG (SERVICE_ROUTINES.agc, CM pp. 1485-1486)
+ *
+ * UPENT2 / DOWNENT2 on FLAGWRD4 (UPFLAG / DOWNFLAG for one bit).
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   bits      uint16_t  I    FLAGWRD4 bit mask
+ **********************************************************************/
 static void f4_up(uint16_t bits)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -145,10 +207,21 @@ static void f4_up(uint16_t bits)
     }
 
     agc_inhint();
-    agc_flagword_set(DIF_F4, (uint16_t) (f4() | bits)); /* cannot fail for word 4 */
+    /* cannot fail for word 4 */
+    agc_flagword_set(DIF_F4, (uint16_t) (f4() | bits));
     agc_relint();
 }
 
+/**********************************************************************
+ * AGC: DOWNENT2 (SERVICE_ROUTINES.agc, CM p. 1485)
+ *
+ * Clear FLAGWRD4 bits.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   bits      uint16_t  I    FLAGWRD4 bit mask
+ **********************************************************************/
 static void f4_down(uint16_t bits)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -161,13 +234,35 @@ static void f4_down(uint16_t bits)
     agc_relint();
 }
 
+/**********************************************************************
+ * AGC: none (helper)
+ *
+ * All three astronaut returns of a flashing display are set.
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  -------------------
+ *   c         const agc_dsky_cont_t *  I    continuations (terminate,
+ *                                           proceed, enter)
+ *
+ * RETURNS: bool -- true when all three continuations are set
+ **********************************************************************/
 static bool dif_cont_valid(const agc_dsky_cont_t *c)
 {
     return (c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE &&
             c->enter != AGC_JOB_NONE);
 }
 
-/* PRIOBORT: abort 01502, display conflict. */
+/**********************************************************************
+ * AGC: PRIOBORT (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * PRIOBORT: abort 01502, display conflict.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_priobort(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -178,9 +273,22 @@ static agc_status_t dif_priobort(void)
     return (agc_poodoo(PIN_ALARM_PRIOBORT));
 }
 
-/* WITCHONE: turn off key release light and empty CADRSTOR (or DSPLIST if
+/**********************************************************************
+ * AGC: WITCHONE (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
+ *
+ * WITCHONE: turn off key release light and empty CADRSTOR (or DSPLIST if
  * an NVSUB is asleep); the job there is woken at new_loc (XCHTOEND:
- * ENDINST, i.e. it ends; JOBXCHS: XCHSLEEP).                            */
+ * ENDINST, i.e. it ends; JOBXCHS: XCHSLEEP).
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   new_loc   agc_job_id_t  I    continuation the woken sleeper resumes
+ *                                as
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_witchone(agc_job_id_t new_loc)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -190,8 +298,10 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
 
     agc_chan_and((int) AGC_CHAN_DSALMOUT,
                  (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
-    pin_sleeper_t sl = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
-    agc_status_t  st = AGC_STATUS_OK;
+    pin_sleeper_t sl; /* the emptied sleeper slot */
+
+    sl = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     agc_inhint();
 
@@ -211,7 +321,21 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
     return (st);
 }
 
-/* COPIES / COPIES2: copy the request into class c. */
+/**********************************************************************
+ * AGC: COPIES, COPIES2 (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1473)
+ *
+ * COPIES / COPIES2: copy the request into class c.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   c         int                I    display class (COPINDEX):
+ *                                     DIF_PRIOC, DIF_MARKC or DIF_NORMC
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ **********************************************************************/
 static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) ||
@@ -233,7 +357,21 @@ static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
     agc_relint();
 }
 
-/* ENDIT: return to the user's priority and to his CADR. */
+/**********************************************************************
+ * AGC: ENDIT (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1480)
+ *
+ * ENDIT: return to the user's priority and to his CADR.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   userprio  agc_prio_t    I    USERPRIO: the display user's job
+ *                                priority
+ *   cont      agc_job_id_t  I    continuation of the user (his CADR)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_endit(agc_prio_t userprio, agc_job_id_t cont)
 {
     if (!AGC_ASSERT(cont != AGC_JOB_NONE) ||
@@ -251,8 +389,21 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio);
 
 /* ---- sleeping displays (GOSLEEPS, XCHSLEEP) --------------------------- */
 
-/* XCHSLEEP: a newer display of the class replaces any older one asleep at
- * its WAKECADR (that job is woken to ENDOFJOB); then this job sleeps. */
+/**********************************************************************
+ * AGC: XCHSLEEP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1474)
+ *
+ * XCHSLEEP: a newer display of the class replaces any older one asleep at
+ * its WAKECADR (that job is woken to ENDOFJOB); then this job sleeps.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   c         int   I    display class (COPINDEX): DIF_PRIOC, DIF_MARKC
+ *                        or DIF_NORMC
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_xchsleep(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -266,10 +417,12 @@ static agc_status_t dif_xchsleep(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_job_id_t wake = (c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1;
+    agc_job_id_t wake; /* wake point of the class */
+
+    wake = (c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1;
 
     agc_inhint();
-    agc_status_t st = agc_exec_job_wake_as(wake, AGC_JOB_ENDOFJOB);
+    agc_status_t st = agc_exec_job_wake_as(wake, AGC_JOB_ENDOFJOB); /* status */
 
     agc_relint();
 
@@ -283,7 +436,20 @@ static agc_status_t dif_xchsleep(int c)
     return (AGC_STATUS_OK); /* JOBSLEEP   */
 }
 
-/* GOSLEEPS: set the class's waiting bit, then XCHSLEEP. */
+/**********************************************************************
+ * AGC: GOSLEEPS (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1474)
+ *
+ * GOSLEEPS: set the class's waiting bit, then XCHSLEEP.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   c         int   I    display class (COPINDEX): DIF_PRIOC, DIF_MARKC
+ *                        or DIF_NORMC
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_gosleeps(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -301,6 +467,20 @@ static agc_status_t dif_gosleeps(int c)
     return (dif_xchsleep(c));
 }
 
+/**********************************************************************
+ * AGC: XCHSLEEP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1474)
+ *
+ * Job entry: XCHSLEEP for the mark class (FACEREG 0).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -316,6 +496,20 @@ agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
     return (dif_xchsleep(DIF_MARKC));
 }
 
+/**********************************************************************
+ * AGC: XCHSLEEP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1474)
+ *
+ * Job entry: XCHSLEEP for the normal class (FACEREG 1).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -333,7 +527,19 @@ agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
 
 /* ---- the three display classes (MAKEPRIO, MAKEMARK, IFLEGAL) ---------- */
 
-/* REDOPRIO / KEEPPRIO: start up the priority display. */
+/**********************************************************************
+ * AGC: REDOPRIO, KEEPPRIO (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * REDOPRIO / KEEPPRIO: start up the priority display.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   userprio  agc_prio_t  I    USERPRIO: the display user's job priority
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_redoprio(agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -346,8 +552,23 @@ static agc_status_t dif_redoprio(agc_prio_t userprio)
     return (dif_nvdsp(DIF_PRIOC, userprio));
 }
 
-/* OKTOCOPY: copy into the priority class, end whatever display job sits
- * in CADRSTOR/DSPLIST, and go to REDOPRIO.                              */
+/**********************************************************************
+ * AGC: OKTOCOPY (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * OKTOCOPY: copy into the priority class, end whatever display job sits
+ * in CADRSTOR/DSPLIST, and go to REDOPRIO.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -360,14 +581,23 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
         dif_copies(DIF_PRIOC, rq, userprio); /* COPYNORM               */
     }
 
-    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB);
+    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB); /* status so far */
 
     return ((st ==
              AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st);
 }
 
-/* MARKPLAY: reset mark over norm, set mark (XDSPFLAG); for a mark perform
- * the first display is V05/V06 (MARKNV complemented as the marker).     */
+/**********************************************************************
+ * AGC: MARKPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1467)
+ *
+ * MARKPLAY: reset mark over norm, set mark (XDSPFLAG); for a mark perform
+ * the first display is V05/V06 (MARKNV complemented as the marker).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_markplay(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -392,9 +622,25 @@ static agc_status_t dif_markplay(void)
     return (dif_nvdsp(DIF_MARKC, g_cls[DIF_MARKC].userprio)); /* MARKCOP */
 }
 
-/* JOBXCHS: a priority (or mark) display interrupts the active mark (face
+/**********************************************************************
+ * AGC: JOBXCHS (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1474)
+ *
+ * JOBXCHS: a priority (or mark) display interrupts the active mark (face
  * 0) or normal (face 1) display: its job is moved from CADRSTOR/DSPLIST
- * to sleep at its WAKECADR, its idle/NV-busy bits become interrupted.  */
+ * to sleep at its WAKECADR, its idle/NV-busy bits become interrupted.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   face      int                I    interrupted class: 0 mark, 1 normal
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
                                 agc_prio_t userprio)
 {
@@ -408,8 +654,9 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        dif_witchone((face == 0) ? AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN);
+    agc_status_t st; /* status so far */
+
+    st = dif_witchone((face == 0) ? AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN);
 
     f4_down((uint16_t) (k_genmask[face + 1] & DIF_IDLESLEP));
     f4_up((face == 0) ? DIF_MRUPTFLG : DIF_NRUPTFLG);
@@ -427,9 +674,24 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
     return (dif_oktocopy(rq, userprio));
 }
 
-/* LINUSCHR: a request with bit 14 replaces the active display directly
+/**********************************************************************
+ * AGC: LINUSCHR (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1481)
+ *
+ * LINUSCHR: a request with bit 14 replaces the active display directly
  * (LINUS return, *linus). If it is the display already in ENDIDLE and the
- * astronaut is busy, the new display just ends (*end).                  */
+ * astronaut is busy, the new display just ends (*end).
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   c         int                I    display class (COPINDEX):
+ *                                     DIF_PRIOC, DIF_MARKC or DIF_NORMC
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   linus     bool *             O    true when the request replaces the
+ *                                     display (LINUS)
+ *   end       bool *             O    true when the new display just ends
+ **********************************************************************/
 static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -458,8 +720,23 @@ static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
     }
 }
 
-/* MAKEPRIO: a priority display interrupting another priority display
- * aborts (01502) unless bit 14 is set for the LINUS routine.            */
+/**********************************************************************
+ * AGC: MAKEPRIO (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1469)
+ *
+ * MAKEPRIO: a priority display interrupting another priority display
+ * aborts (01502) unless bit 14 is set for the LINUS routine.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -467,8 +744,8 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool linus = false;
-    bool end   = false;
+    bool linus = false; /* LINUS: replaces the display */
+    bool end   = false; /* new display just ends */
 
     dif_linuschr(DIF_PRIOC, rq, &linus, &end);
 
@@ -495,7 +772,23 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
     return (dif_oktocopy(rq, userprio));
 }
 
-/* MAKEMARK / CHKPRIO / MARSLEEP. */
+/**********************************************************************
+ * AGC: MAKEMARK, CHKPRIO, MARSLEEP
+ *      (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1466, 1467, 1482)
+ *
+ * MAKEMARK / CHKPRIO / MARSLEEP.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -504,7 +797,7 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
     }
 
     dif_copies(DIF_MARKC, rq, userprio);
-    uint16_t f = f4();
+    uint16_t f = f4(); /* C(FLAGWRD4) */
 
     if ((f & DIF_OCT34300) == 0u)
     { /* norm or prio busy/waiting? */
@@ -531,8 +824,23 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
     return (dif_jobxchs(1, NULL, userprio)); /* SETNORM                */
 }
 
-/* IFLEGAL / OKTOPLAY: a normal display. A new one while the previous
- * flashing normal display is still asleep aborts (01502).              */
+/**********************************************************************
+ * AGC: IFLEGAL, OKTOPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1470-1471)
+ *
+ * IFLEGAL / OKTOPLAY: a normal display. A new one while the previous
+ * flashing normal display is still asleep aborts (01502).
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -540,8 +848,8 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool linus = false;
-    bool end   = false;
+    bool linus = false; /* LINUS: replaces the display */
+    bool end   = false; /* new display just ends */
 
     dif_linuschr(DIF_NORMC, rq, &linus, &end);
 
@@ -564,14 +872,29 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
         return (dif_gosleeps(DIF_NORMC));
     }
 
-    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB);
+    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
             st);                       /* PLAYJUM1 */
 }
 
-/* MAKEPLAY: is it mark or prio or norm. The priority is raised to 33 for
- * fast jobs after wake.                                                  */
+/**********************************************************************
+ * AGC: MAKEPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * MAKEPLAY: is it mark or prio or norm. The priority is raised to 33 for
+ * fast jobs after wake.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   userprio  agc_prio_t         I    USERPRIO: the display user's job
+ *                                     priority
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(rq != NULL) ||
@@ -597,8 +920,17 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
 
 /* ---- NVDSP / PERFCHEK / FLASHSUB (pp. 1472-1477) ---------------------- */
 
-/* CLEANEND: a display with VN +0 (CLEANDSP, KLEENEX) ends any ENDIDLE
- * through JAMTERM, one priority lower than the displays sleeping. */
+/**********************************************************************
+ * AGC: CLEANEND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
+ *
+ * CLEANEND: a display with VN +0 (CLEANDSP, KLEENEX) ends any ENDIDLE
+ * through JAMTERM, one priority lower than the displays sleeping.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
+ *          else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_cleanend(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -606,7 +938,9 @@ static agc_status_t dif_cleanend(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_findvac(PIN_PRIO32, AGC_JOB_JAMTERM);
+    agc_status_t st; /* status so far */
+
+    st = agc_exec_findvac(PIN_PRIO32, AGC_JOB_JAMTERM);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -616,9 +950,24 @@ static agc_status_t dif_cleanend(void)
     return (st);
 }
 
-/* FLASHSUB: flash on (unless +1), set the class's ENDIDLE bit and wait in
+/**********************************************************************
+ * AGC: FLASHSUB (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1479)
+ *
+ * FLASHSUB: flash on (unless +1), set the class's ENDIDLE bit and wait in
  * ENDIDLE for the astronaut. If someone already is in ENDIDLE, only a
- * pinbranch or mark condition may get here; anything else aborts 01502.*/
+ * pinbranch or mark condition may get here; anything else aborts 01502.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   c         int         I    display class (COPINDEX): DIF_PRIOC,
+ *                              DIF_MARKC or DIF_NORMC
+ *   userprio  agc_prio_t  I    USERPRIO: the display user's job priority
+ *   flash     bool        I    true to turn the flash on (VN not +1)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -649,12 +998,26 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
     g_idle.copmpac  = c; /* COPMPAC                */
     g_idle.userprio = userprio;
 
-    return (pin_endidle(AGC_JOB_TERMATE, AGC_JOB_PROCEED, AGC_JOB_IDLERET3));
+    return (agc_dsky_endidle(AGC_JOB_TERMATE, AGC_JOB_PROCEED,
+                             AGC_JOB_IDLERET3));
 }
 
-/* REST: the display system is busy. If someone is in ENDIDLE the display
+/**********************************************************************
+ * AGC: REST (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
+ *
+ * REST: the display system is busy. If someone is in ENDIDLE the display
  * is dropped (it is saved for PINBRNCH); else RESTSLEP: NV-busy bit and
- * sleep in DSPLIST, to wake at REDOPRIO / MARKPLAY / PLAYJUM1 (NVCADR). */
+ * sleep in DSPLIST, to wake at REDOPRIO / MARKPLAY / PLAYJUM1 (NVCADR).
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   c         int   I    display class (COPINDEX): DIF_PRIOC, DIF_MARKC
+ *                        or DIF_NORMC
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, BUSY;
+ *          else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_rest(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -676,13 +1039,26 @@ static agc_status_t dif_rest(int c)
     }
 
     f4_up((uint16_t) (k_genmask[c] & DIF_ASTROMSK));
-    agc_status_t st = pin_nvsubusy(nvcadr[c]); /* busy or abort if illegal */
+    agc_status_t st = agc_dsky_nvsubusy(nvcadr[c]); /* NVSUBUSY */
 
     return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
 }
 
-/* GOANIDLE: flash -> FLASHSUB; GODSPRET -> back to the user's CADR; a
- * paste (noun 00) is assumed always on flash; else ENDOFJOB.             */
+/**********************************************************************
+ * AGC: GOANIDLE (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
+ *
+ * GOANIDLE: flash -> FLASHSUB; GODSPRET -> back to the user's CADR; a
+ * paste (noun 00) is assumed always on flash; else ENDOFJOB.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   j         const dif_job_t *  I    display job temporaries (class,
+ *                                     flags copy, VN)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_goanidle(const dif_job_t *j)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -713,8 +1089,20 @@ static agc_status_t dif_goanidle(const dif_job_t *j)
     return (AGC_STATUS_OK); /* not flash, not GOPERF: exit      */
 }
 
-/* 1STOR2ND: the VN of the second part of a please perform: the mark's
- * please verb, V97/V99 (NVWORD1 -0 / -400) for CLOCPLAY, else V50 N00. */
+/**********************************************************************
+ * AGC: 1STOR2ND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
+ *
+ * 1STOR2ND: the VN of the second part of a please perform: the mark's
+ * please verb, V97/V99 (NVWORD1 -0 / -400) for CLOCPLAY, else V50 N00.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   j         const dif_job_t *  I    display job temporaries (class,
+ *                                     flags copy, VN)
+ *
+ * RETURNS: uint16_t -- VN of the second display part
+ **********************************************************************/
 static uint16_t dif_second_vn(const dif_job_t *j)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -724,12 +1112,14 @@ static uint16_t dif_second_vn(const dif_job_t *j)
 
     if ((j->tempor2 & DIF_MARK) != 0u)
     {
-        return ((uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7)); /* MARKPERF  */
+        return ((uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7)); /* MARKPERF */
     }
 
     if ((j->tempor2 & DIF_CLOCK) != 0u)
     {
-        int vn = (int) agc_dsky_vn(97, 0) - (int) pin_sp_from_ones(g_nvword1);
+        int vn; /* VN: verb x 2^7 + noun */
+
+        vn = (int) agc_dsky_vn(97, 0) - (int) pin_sp_from_ones(g_nvword1);
 
         if (!AGC_ASSERT(vn > 0 && vn <= (int) PIN_POSMAX))
         {
@@ -742,8 +1132,20 @@ static uint16_t dif_second_vn(const dif_job_t *j)
     return (agc_dsky_vn(50, 0)); /* V50PASTE  */
 }
 
-/* First VN of NVDSP for class c; 0 for CLEANEND. A negative MARKNV is
- * the first part of a mark perform: V05 (V06 if decimal) and its noun. */
+/**********************************************************************
+ * AGC: NVDSP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1476)
+ *
+ * First VN of NVDSP for class c; 0 for CLEANEND. A negative MARKNV is
+ * the first part of a mark perform: V05 (V06 if decimal) and its noun.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   c         int   I    display class (COPINDEX): DIF_PRIOC, DIF_MARKC
+ *                        or DIF_NORMC
+ *
+ * RETURNS: uint16_t -- VN of the first display part (0 for CLEANEND)
+ **********************************************************************/
 static uint16_t dif_first_vn(int c)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -751,7 +1153,7 @@ static uint16_t dif_first_vn(int c)
         return (0); /* no valid result */
     }
 
-    uint16_t nv = g_cls[c].nvword;
+    uint16_t nv = g_cls[c].nvword; /* class VN word */
 
     if (!pin_ones_negative(nv))
     {
@@ -760,14 +1162,30 @@ static uint16_t dif_first_vn(int c)
 
     g_cls[c].nvword =
         pin_ones_neg(nv); /* in case MARKPLAY awakened after sleeping */
-    uint16_t dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u;
+    uint16_t dec; /* 1: mark display is decimal */
+
+    dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u;
 
     return ((uint16_t) ((g_cls[c].nvword & PIN_LOW7) +
                         agc_dsky_vn((uint8_t) (5u + dec), 0)));
 }
 
-/* NVDSP (GOPLAY): send the display of class c through NVMONOPT, then the
- * second part of a perform, then GOANIDLE.                              */
+/**********************************************************************
+ * AGC: NVDSP, GOPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1476, 1483)
+ *
+ * NVDSP (GOPLAY): send the display of class c through NVMONOPT, then the
+ * second part of a perform, then GOANIDLE.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   c         int         I    display class (COPINDEX): DIF_PRIOC,
+ *                              DIF_MARKC or DIF_NORMC
+ *   userprio  agc_prio_t  I    USERPRIO: the display user's job priority
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, BUSY;
+ *          else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 {
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
@@ -780,11 +1198,11 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         (uint16_t) (j.tempor2 & DIF_BLANKS); /* blank bits for NVMONOPT */
 
     g_cls[c].flags = (uint16_t) (g_cls[c].flags & ~DIF_SECOND);
-    uint16_t vn = dif_first_vn(c);
+    uint16_t vn = dif_first_vn(c); /* VN: verb x 2^7 + noun */
 
     if (vn == 0u)
     {
-        agc_status_t st = dif_cleanend();
+        agc_status_t st = dif_cleanend(); /* status so far */
 
         return ((st == AGC_STATUS_OK) ? dif_flashsub(c, userprio, false) :
                 st);                       /* FLASHSUB +1 */
@@ -792,7 +1210,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 
     for (int part = 0; part < 2; part++)
     { /* NV50DSP  */
-        agc_status_t st = pin_nvmonopt(vn, opts);
+        agc_status_t st = pin_nvmonopt(vn, opts); /* status so far */
 
         if (st == AGC_STATUS_BUSY)
         {
@@ -808,7 +1226,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         j.tempor2 = g_cls[c].flags; /* COPYTOGO: MPACS destroyed by NVSUB */
         f4_down(DIF_MRKNVFLG | DIF_NRMNVFLG |
                 DIF_PRONVFLG);        /* unset sleeping bits */
-        st = pin_blanksub(j.tempor2); /* BLANKCHK                      */
+        st = agc_dsky_blanksub(j.tempor2); /* BLANKCHK                      */
 
         if (!AGC_ASSERT(st != AGC_STATUS_BUSY))
         {
@@ -830,11 +1248,24 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 
 /* ---- ENDIDLE returns (pp. 1477-1481) ---------------------------------- */
 
-/* ENDRET: return to the user's CADR +OUTHERE after removing the ENDIDLE
- * and pinbranch bits and blanking everything except MM (NVSUB -3).      */
+/**********************************************************************
+ * AGC: ENDRET (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1480)
+ *
+ * ENDRET: return to the user's CADR +OUTHERE after removing the ENDIDLE
+ * and pinbranch bits and blanking everything except MM (NVSUB -3).
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   outhere   int   I    OUTHERE: return offset to the user (-1 end, 0
+ *                        terminate, 1 proceed, 2 enter)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, BUSY;
+ *          else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_endret(int outhere)
 {
-    int c = g_idle.copmpac;
+    int c = g_idle.copmpac; /* COPMPAC: class in ENDIDLE */
 
     if (outhere < 0)
     {
@@ -847,13 +1278,13 @@ static agc_status_t dif_endret(int outhere)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dsky_cont_t *k    = &g_cls[c].cadr;
-    agc_job_id_t           cont = (outhere == 0) ?
+    const agc_dsky_cont_t *k    = &g_cls[c].cadr; /* component 0..2 (R1..R3) */
+    agc_job_id_t           cont = (outhere == 0) ? /* user return for OUTHERE */
                                   k->terminate :
                                   ((outhere == 1) ? k->proceed : k->enter);
 
     f4_down((uint16_t) (k_genmask[c] & DIF_PINIDMSK));
-    agc_status_t st = agc_dsky_nvsub_blank(-3);
+    agc_status_t st = agc_dsky_nvsub_blank(-3); /* status so far */
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
     {
@@ -863,8 +1294,21 @@ static agc_status_t dif_endret(int outhere)
     return (dif_endit(g_idle.userprio, cont));
 }
 
-/* NORMRET: wake a mark or normal display that is asleep (interrupted or
- * waiting), or redisplay the last non-flashing normal display. */
+/**********************************************************************
+ * AGC: NORMRET (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1482)
+ *
+ * NORMRET: wake a mark or normal display that is asleep (interrupted or
+ * waiting), or redisplay the last non-flashing normal display.
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   outhere   int   I    OUTHERE: return offset to the user (-1 end, 0
+ *                        terminate, 1 proceed, 2 enter)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_normret(int outhere)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -872,8 +1316,8 @@ static agc_status_t dif_normret(int outhere)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t     f  = f4();
-    agc_status_t st = AGC_STATUS_OK;
+    uint16_t     f  = f4(); /* C(FLAGWRD4) */
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     if ((f & DIF_BITS5_11) != 0u)
     { /* MARKWAKE       */
@@ -906,8 +1350,21 @@ static agc_status_t dif_normret(int outhere)
     return (dif_endret(outhere));
 }
 
-/* ENDOUT: check nature of ENDIDLE return. A priority display answered
- * within 2 s of being sent out is redisplayed (TIMECHEK / KEEPPRIO).    */
+/**********************************************************************
+ * AGC: ENDOUT (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1479)
+ *
+ * ENDOUT: check nature of ENDIDLE return. A priority display answered
+ * within 2 s of being sent out is redisplayed (TIMECHEK / KEEPPRIO).
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------
+ *   outhere   int   I    OUTHERE: return offset to the user (-1 end, 0
+ *                        terminate, 1 proceed, 2 enter)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_endout(int outhere)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -915,7 +1372,7 @@ static agc_status_t dif_endout(int outhere)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t m = (uint16_t) (f4() & DIF_OCT60000);
+    uint16_t m = (uint16_t) (f4() & DIF_OCT60000); /* flags */
 
     if ((m & DIF_MRKIDFLG) != 0u)
     { /* MARKRET        */
@@ -927,7 +1384,9 @@ static agc_status_t dif_endout(int outhere)
     if (m != 0u)
     { /* TIMECHEK       */
         /* CS TIME1, AD PRIOTIME: equal times give -0, i.e. no time.     */
-        int d       = (int) g_priotime - (int) agc_erase_time1();
+        int d; /* TIME1 since PRIOTIME, cs */
+
+        d = (int) g_priotime - (int) agc_erase_time1();
         int elapsed = (d > 0) ? 040000 - d : -d; /* TIME1 wraps at 2^14 */
 
         if (elapsed <= DIF_2SEC)
@@ -944,7 +1403,20 @@ static agc_status_t dif_endout(int outhere)
     return (dif_normret(outhere));
 }
 
-/* TERMATE: astronaut terminate (V34) returns to call CADR +1. */
+/**********************************************************************
+ * AGC: TERMATE (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1481)
+ *
+ * TERMATE: astronaut terminate (V34) returns to call CADR +1.
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -960,7 +1432,20 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
     return (dif_endout(0));
 }
 
-/* PROCEED: astronaut proceed (V33) returns to call CADR +2. */
+/**********************************************************************
+ * AGC: PROCEED (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1481)
+ *
+ * PROCEED: astronaut proceed (V33) returns to call CADR +2.
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -976,13 +1461,26 @@ agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
     return (dif_endout(1));
 }
 
-/* IDLERET1 +2: enter or recycle. A V21-V23 load of a noun other than the
+/**********************************************************************
+ * AGC: IDLERET1 (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1479)
+ *
+ * IDLERET1 +2: enter or recycle. A V21-V23 load of a noun other than the
  * one displayed is accepted but the display is asked for again
- * (LOADITIS -> PINBRNCH).                                                */
+ * (LOADITIS -> PINBRNCH).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
 {
-    uint8_t verb = 0;
-    uint8_t noun = 0;
+    uint8_t verb = 0; /* verb of the response */
+    uint8_t noun = 0; /* noun of the response */
 
     if (!AGC_ASSERT(ctx != NULL) ||
         agc_dsky_response(&verb, &noun) != AGC_STATUS_OK)
@@ -990,11 +1488,11 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int d = (int) verb - PIN_LOWLOAD;
+    int d = (int) verb - PIN_LOWLOAD; /* TIME1 since PRIOTIME, cs */
 
     if (d >= -1 && d <= 1)
     { /* V21, V22, V23   */
-        int c = g_idle.copmpac;
+        int c = g_idle.copmpac; /* COPMPAC: class in ENDIDLE */
 
         if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
         {
@@ -1012,8 +1510,17 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
 
 /* ---- PINBRNCH, MARKOVER (pp. 1468-1470, 1480) ------------------------- */
 
-/* NORMBNCH: set the pinbranch bit and redisplay the priority display (if
- * one was interrupted) or the normal one.                               */
+/**********************************************************************
+ * AGC: NORMBNCH (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1476)
+ *
+ * NORMBNCH: set the pinbranch bit and redisplay the priority display (if
+ * one was interrupted) or the normal one.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t dif_normbnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1031,8 +1538,17 @@ static agc_status_t dif_normbnch(void)
     return (dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio)); /* PLAYJUM1   */
 }
 
-/* PINBRNCH (GOAGIN): re-establish the display in ENDIDLE after the
- * astronaut used the DSKY; nothing in ENDIDLE blanks all but MM.       */
+/**********************************************************************
+ * AGC: PINBRNCH, GOAGIN (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1475, 1483)
+ *
+ * PINBRNCH (GOAGIN): re-establish the display in ENDIDLE after the
+ * astronaut used the DSKY; nothing in ENDIDLE blanks all but MM.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, BUSY,
+ *          POODOO; else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_pinbrnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1040,7 +1556,7 @@ agc_status_t pin_pinbrnch(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t m = (uint16_t) (f4() & DIF_PINMASK);
+    uint16_t m = (uint16_t) (f4() & DIF_PINMASK); /* FLAGWRD4 bits under test */
 
     if ((m & DIF_MRKIDFLG) != 0u)
     {
@@ -1063,6 +1579,16 @@ agc_status_t pin_pinbrnch(void)
     return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
 }
 
+/**********************************************************************
+ * AGC: PINBRNCH (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1475)
+ *
+ * Public entry of PINBRNCH for GOPIN (ALM/END).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_pinbrnch(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1078,7 +1604,13 @@ agc_status_t agc_dsky_pinbrnch(void)
     return (pin_pinbrnch());
 }
 
-/* CLEARMRK: release the mark / extended verb display system. */
+/**********************************************************************
+ * AGC: CLEARMRK (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1465)
+ *
+ * CLEARMRK: release the mark / extended verb display system.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void agc_dsky_clearmrk(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1095,8 +1627,18 @@ void agc_dsky_clearmrk(void)
     }
 }
 
-/* ENDMARK / ENDEXT -> MARKEND: CLEARMRK, then MARKOVER: wake the next
- * display; the extended verb's job ends (OUTHERE -1).                  */
+/**********************************************************************
+ * AGC: ENDMARK, ENDEXT, MARKEND
+ *      (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1465, 1483)
+ *
+ * ENDMARK / ENDEXT -> MARKEND: CLEARMRK, then MARKOVER: wake the next
+ * display; the extended verb's job ends (OUTHERE -1).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_endmark(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1114,20 +1656,22 @@ agc_status_t agc_dsky_endmark(void)
     return (dif_normret(-1));
 }
 
-/* ENDEXT EQUALS ENDMARK (end of an extended verb). */
-agc_status_t agc_dsky_endext(void)
-{
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_dsky_endmark());
-}
-
 /* ---- jobs ------------------------------------------------------------- */
 
-/* MAKEPLAY as the job an R routine started; its request is in slot arg. */
+/**********************************************************************
+ * AGC: MAKEPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * MAKEPLAY as the job an R routine started; its request is in slot arg.
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL) ||
@@ -1136,7 +1680,7 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    dif_req_t rq = g_rq[ctx->arg - 1];
+    dif_req_t rq = g_rq[ctx->arg - 1]; /* the R routine's request */
 
     g_rq[ctx->arg - 1].used = false;
 
@@ -1148,7 +1692,20 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
     return (dif_makeplay(&rq, ctx->prio));
 }
 
-/* PLAYJUM1: (re)display the normal class (wake point of a normal display). */
+/**********************************************************************
+ * AGC: PLAYJUM1 (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1471)
+ *
+ * PLAYJUM1: (re)display the normal class (wake point of a normal display).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1164,6 +1721,20 @@ agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
     return (dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio));
 }
 
+/**********************************************************************
+ * AGC: MARKPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1467)
+ *
+ * Job entry: wake point of a mark display (calls MARKPLAY).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1179,6 +1750,20 @@ agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
     return (dif_markplay());
 }
 
+/**********************************************************************
+ * AGC: REDOPRIO (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1470)
+ *
+ * Job entry: wake point of a priority display (REDOPRIO).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -1236,11 +1821,25 @@ static const dif_kind_t k_kinds[AGC_DSKY_DISP_COUNT] = {
     {024030u, false, 0}, /* CLOCPLAY: CLOCKCON                        */
 };
 
-/* GODSPRS1 / BOTHJOBS: start MAKEPLAY at the user's priority (a VAC job
- * for a flashing display) with the request copied into its MPAC.        */
+/**********************************************************************
+ * AGC: GODSPRS1, BOTHJOBS (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1472)
+ *
+ * GODSPRS1 / BOTHJOBS: start MAKEPLAY at the user's priority (a VAC job
+ * for a flashing display) with the request copied into its MPAC.
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------
+ *   rq        const dif_req_t *  I    display request (PLAYTEM1 VN,
+ *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
+ *   prio      agc_prio_t         I    user's job priority
+ *
+ * RETURNS: agc_status_t -- OK, FULL; else the status of the routine it
+ *          calls
+ **********************************************************************/
 static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 {
-    int slot = -1;
+    int slot = -1; /* free request slot, -1 none */
 
     for (int i = 0; i < DIF_RQ_LEN && slot < 0; i++)
     {
@@ -1256,7 +1855,7 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
     }
 
     agc_inhint();
-    agc_status_t st = ((rq->flags & DIF_FLASH) != 0u) ?
+    agc_status_t st = ((rq->flags & DIF_FLASH) != 0u) ? /* status so far */
                       agc_exec_findvac(prio, AGC_JOB_MAKEPLAY) :
                       agc_exec_novac(prio, AGC_JOB_MAKEPLAY);
 
@@ -1273,6 +1872,30 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
     return (st);
 }
 
+/**********************************************************************
+ * AGC: GODSP, GOMARK4 (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1466, 1468)
+ *
+ * The display-interface entries: build the request (PLAYTEM1/3/4) for the
+ * entry kind and start MAKEPLAY, or (R entries) a MAKEPLAY job.
+ *
+ * ARGUMENTS:
+ *   Argument     Type                     I/O  Description (scale)
+ *   -----------  -----------------------  ---  -------------------
+ *   ctx          const agc_job_ctx_t *    I    calling job's context
+ *                                              (priority used for the
+ *                                              display job)
+ *   kind         agc_dsky_disp_t          I    entry used (GODSP,
+ *                                              GOFLASH, GOPERF1, ...)
+ *   vn_or_value  uint16_t                 I    VN (verb x 2^7 + noun) or,
+ *                                              for GOPERF1/4, the datum
+ *                                              word
+ *   cont         const agc_dsky_cont_t *  I    continuations of a
+ *                                              flashing display; NULL
+ *                                              when none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                               uint16_t vn_or_value, const agc_dsky_cont_t *cont)
 {
@@ -1282,7 +1905,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const dif_kind_t *k  = &k_kinds[kind];
+    const dif_kind_t *k  = &k_kinds[kind]; /* component 0..2 (R1..R3) */
     dif_req_t         rq = {true,
                             vn_or_value,
                             k->flags,
@@ -1339,9 +1962,9 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     }
     else if (k->src == 3u)
     {
-        agc_erase_set_option1(0,
+        agc_erase_set_option1(0, /* PURRS4 */
                               pin_sp_from_ones((uint16_t) (vn_or_value &
-                                                           PIN_WORD))); /* PURRS4 */
+                                                           PIN_WORD)));
         rq.vn = agc_dsky_vn(4, 6); /* V04N06         */
     }
 
@@ -1353,8 +1976,20 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     return (dif_makeplay(&rq, ctx->prio)); /* GOFLASH2: SAVELOCS, MAKEPLAY */
 }
 
-/* BLANKET (LINUS): OR flag bits into the PLAYTEM4 of the MAKEPLAY job the
- * last R routine started (e.g. blank bits).                             */
+/**********************************************************************
+ * AGC: BLANKET, LINUS (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1465, 1484)
+ *
+ * BLANKET (LINUS): OR flag bits into the PLAYTEM4 of the MAKEPLAY job the
+ * last R routine started (e.g. blank bits).
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   bits      uint16_t  I    PLAYTEM4 flag bits to OR in
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND
+ **********************************************************************/
 agc_status_t agc_dsky_blanket(uint16_t bits)
 {
     if (!AGC_ASSERT(g_rq_last >= 0 && g_rq_last < DIF_RQ_LEN) ||
@@ -1373,11 +2008,20 @@ agc_status_t agc_dsky_blanket(uint16_t bits)
     return (AGC_STATUS_OK);
 }
 
-/* INITDSP: restore the most recent normal user's priority and redo his
+/**********************************************************************
+ * AGC: INITDSP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1475)
+ *
+ * INITDSP: restore the most recent normal user's priority and redo his
  * display request.
  * DEVIATION: the AGC jumps back to the user's CAF VXXNYY / TC BANKCALL
  * (TEMPFLSH -3); here the saved normal request (NVSAVE, EBANKTEM,
- * TEMPFLSH) is re-issued through MAKEPLAY from the current job.        */
+ * TEMPFLSH) is re-issued through MAKEPLAY from the current job.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_dsky_initdsp(void)
 {
     if (!AGC_ASSERT(g_restreg >= 1u && g_restreg <= 037u))
@@ -1399,6 +2043,16 @@ agc_status_t agc_dsky_initdsp(void)
     return (dif_makeplay(&rq, g_restreg));
 }
 
+/**********************************************************************
+ * AGC: none (erasable store)
+ *
+ * Set NVWORD1: -0 pastes V97, -0400 pastes V99 on a CLOCPLAY display.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   word      uint16_t  I    NVWORD1, 15-bit word
+ **********************************************************************/
 void agc_dsky_set_nvword1(uint16_t word)
 {
     if (!AGC_ASSERT(pin_invariants()))

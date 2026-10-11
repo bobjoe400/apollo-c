@@ -136,7 +136,7 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
 
     *rem = q.lo;
 
-    return (lm_dap_sat((int32_t) q.hi + inerconb[k]));
+    return (lm_dap_wrap((int32_t) q.hi + inerconb[k])); /* TS 1JACC */
 }
 
 /* COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
@@ -153,8 +153,8 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
 
         eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
         d->coeffr =
-            lm_dap_sat((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
-        d->coeffq = lm_dap_mphi((agc_sp_t) (eps - LM_POSMAX), d->coeffr);
+            lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
+        d->coeffq = lm_dap_mphi(lm_dap_wrap((int32_t) eps - LM_POSMAX), d->coeffr);
     }
     else
     { /* BIGIQ    */
@@ -163,8 +163,8 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
         neps =
             ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps;
         d->coeffq =
-            lm_dap_sat((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
-        d->coeffr = lm_dap_mphi((agc_sp_t) (-neps + LM_NEGMAX), d->coeffq);
+            lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
+        d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
     }
 
     if (!AGC_ASSERT(d->coeffq <= 0))
@@ -183,12 +183,12 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
 static void jaccuv(lm_dap_t *d)
 {
     agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);
-    agc_sp_t a = lm_dap_sat((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u);
+    agc_sp_t a = lm_dap_wrap((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u);
 
     d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
     d->jacc[4] = d->jacc[3];
 
-    if (!AGC_ASSERT(d->jacc[3] >= 0))
+    if (!AGC_ASSERT(d->jacc[3] >= LM_NEGMAX && d->jacc[3] <= LM_POSMAX))
     {
         return;
     }
@@ -317,9 +317,10 @@ static agc_sp_t docked_fit(int base)
  * inverse net accelerations set to POSMAX (1.4 deg/s^2).                 */
 static agc_status_t docked(lm_dap_t *d)
 {
-    /* DEVIATION: read literally, CCS COEFCTR after the inertia pass (+0)
-     * lands on the TORQCONS constant; the comments' intent (save the
-     * inertia in MPAC +1, then do the CG pass) is translated.            */
+    /* The inertia pass ends with DIM COEFCTR taking 1 to -0 (ones'
+     * complement 1 + -1), so CCS COEFCTR takes its fourth branch over
+     * the TORQCONS words to CA MPAC (saves the inertia in MPAC +1); the
+     * CG pass leaves COEFCTR = 6 and exits. Traced in the rope.          */
     agc_sp_t     inertia = docked_fit(0);
     agc_sp_t     cg      = docked_fit(6);
     lm_dp_pair_t con     = {AC_1JACCCON, 0};
@@ -386,9 +387,14 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
         return (AGC_STATUS_OK);
     }
 
+    /* DEVIATION: with a LEMMASS far below the descent range (only the
+     * zero erasable before the pad load) this row overflows, and TS
+     * 1JACC -1 skips back into STCTR with the index running below the
+     * tables; the AGC's values are then meaningless anyway (a later
+     * 1/ACCS with real masses replaces them). The C stores the row.     */
     d->l_pvt_cg = fit_row(0, &rem);
 
-    if (!AGC_ASSERT(d->jacc[3] > 0))
+    if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX && d->l_pvt_cg <= LM_POSMAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }

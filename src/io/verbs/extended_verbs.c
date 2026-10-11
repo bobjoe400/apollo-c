@@ -320,7 +320,7 @@ static agc_status_t stall_then(agc_job_ctx_t *ctx, agc_job_id_t wake)
         return (agc_extverb_gopin());
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* ---- GOEXTVB ----------------------------------------------------------- */
@@ -636,7 +636,7 @@ agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_dsky_endext();
+    agc_status_t st = agc_dsky_endmark();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -682,7 +682,7 @@ agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (stall_then(ctx, AGC_JOB_EXTENDED_VERB_END));
@@ -706,7 +706,7 @@ agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
@@ -728,7 +728,7 @@ agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) ||
         agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_BAD)
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     agc_status_t st =
@@ -741,7 +741,7 @@ agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK)
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (stall_then(ctx, AGC_JOB_EXTENDED_VERB_END));
@@ -770,7 +770,7 @@ agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK ||
         verb != TIME_UPDATE_VERB)
     {
-        return (agc_dsky_endext()); /* not a V23 data load     */
+        return (agc_dsky_endmark()); /* not a V23 data load     */
     }
 
     int32_t delta = ones_value(agc_dsky_dsptem(CLOCK_DELTA_WORD)) * 040000 +
@@ -790,7 +790,7 @@ agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
     st = AGC_STATUS_OK;
     agc_relint();
 
-    return (agc_dsky_endext()); /* UPDTMEND                */
+    return (agc_dsky_endmark()); /* UPDTMEND                */
 }
 
 /* NOKILL (ENTER on the V05N01): show the same bank again.                 */
@@ -812,7 +812,7 @@ agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK))
     {
-        return (agc_dsky_endext());
+        return (agc_dsky_endmark());
     }
 
     return (banksum_display(ctx));
@@ -833,7 +833,7 @@ agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* ATTACHED (V66) / LMTOCMSV (CSM V47): FINDVAC the copy at priority 10. */

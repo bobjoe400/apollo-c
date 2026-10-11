@@ -40,10 +40,12 @@
 #define AGC_INTEG_AREAS_CSM 3 /* INTSTALL, ERASTAL1, ERASTAL2 (CM)     */
 #define AGC_INTEG_AREAS_LM  1 /* INTSTALL only (LM)                    */
 #define AGC_INTEG_AREAS_MAX 3
-#define AGC_INTEG_MAX_PASSES \
-    60000                     /* bound on the TESTLOOP state machine:
-                               * > 2^28 cs / 128 cs-steps x 3 states.
-                               * The AGC has no bound (DEVIATION).  */
+/* Bound on the TESTLOOP state machine (DEVIATION: the AGC has none).  A
+ * step is 2 passes (TESTLOOP, TIMESTEP), 4 with W (WMATRIX, RELOAD).
+ * The shortest step (NORFINAL at the earth's surface: .3 sqrt(R^3/MU) =
+ * 24192 cs) over the whole TDEC range, 2^28 cs, is 11096 steps = 44384
+ * passes with W.                                                         */
+#define AGC_INTEG_MAX_PASSES 60000
 #define AGC_INTEG_W_COLUMNS 9 /* W columns (6 for 6x6, 9 for 9x9)      */
 #define AGC_INTEG_VECTAB    6 /* VECTAB: 3 stages x (R, R - RPQ)       */
 
@@ -185,7 +187,8 @@ agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
 /* ---- state vector moves (p. 1314-1317, 1347) ------------------------ */
 /* ATOPCSM/ATOPLEM: temporary -> permanent, C/LMOONFLG from MOONFLAG,
- * SVDWN downlink copy. x2 = the AGC X2 used by SVDWN (0 or 2).          */
+ * SVDWN downlink copy. x2 = the AGC X2 used by SVDWN: 0 or 2 (PBODY), or
+ * AGC_INTEG_X2_ORIGEX right after an origin change in A-PCHK.           */
 agc_status_t agc_integ_atopcsm(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
 agc_status_t agc_integ_atoplem(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
 /* PTOACSM/PTOALEM: permanent -> temporary, MOONFLAG and PBODY set. For
@@ -245,9 +248,18 @@ agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
 agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
                             agc_vec_t *moon_pos, agc_vec_t *sun_pos);
 
+/* X2 left by ORIGCHNG (LXA,2 ORIGEX): the interpretive return address of
+ * CALL ORIGCHNG in A-PCHK, Comanche055 27205 (ANDOUT; yaAGC oracle case
+ * origchng_apchk).  ANDOUT -> ATOPCSM -> SVDWN1 runs before RECTIFY
+ * reloads X2 from PBODY, so its indexed shifts VSL* 0-7,2 / 0,2 become
+ * right shifts of ~27200 places: RN = VN = 0 (R-OTHER = V-OTHER = 0).     */
+#define AGC_INTEG_X2_ORIGEX 027205
+
 /* SVDWN1/SVDWN2 (CSM_GEOMETRY / LEM_GEOMETRY) (src/nav/integration/
- * svdwn.c): the integration package calls it from ATOPCSM / ATOPLEM.  this_vehicle: RN, VN, PIPTIME (skipped while AVEMIDSW);
- * otherwise R-OTHER, V-OTHER.  x2: 0 earth (B29/B7), 2 moon (B27/B5).    */
+ * svdwn.c): the integration package calls it from ATOPCSM / ATOPLEM.
+ * this_vehicle: RN, VN, PIPTIME (skipped while AVEMIDSW); otherwise
+ * R-OTHER, V-OTHER.  x2: 0 earth (B29/B7), 2 moon (B27/B5), or
+ * AGC_INTEG_X2_ORIGEX (vectors zeroed).                                  */
 agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
                              agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
                              agc_vec_t tnuv, agc_dp_t tet);

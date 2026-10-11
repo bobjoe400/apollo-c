@@ -193,7 +193,6 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v);     /* sign-agreeing pair */
 
 /* ---- DAP interface (dapif.c) -------------------------------------------- */
 agc_status_t lm_dap_callaccs(void); /* CALLACCS: NOVAC 1/ACCJOB  */
-agc_status_t lm_dap_alarm(agc_alarm_code_t code); /* TC ALARM, pass goes on */
 agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a);  /* DXCH T5ADR             */
 
 /* ---- idler and display (dapidler.c, needles.c) ------------------------- */

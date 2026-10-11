@@ -141,31 +141,56 @@ static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
         return ((agc_dp_t) (a + b));
     }
 
-    agc_sp_t hi = ldg_raw_high(a, *a_hi);
-    int32_t  lo = (a - (int32_t) hi * 16384) + (b % 16384);
-    int32_t  h  = (int32_t) hi + b / 16384;
+    agc_sp_t       hi = ldg_raw_high(a, *a_hi); /* stored major word */
+    agc_lm_words_t w  = {hi, (agc_sp_t) (a - (int32_t) hi * 16384)};
 
-    if (lo >= 16384)
-    { /* low-word overflow carries into the high word */
-        lo -= 16384;
-        h++;
-    }
-    else if (lo <= -16384)
+    w     = agc_lm_das(w, agc_lm_words(b));
+    *a_hi = w.hi;
+
+    return (agc_lm_words_value(w));
+}
+
+/* DMPSUB (INTERPRETER.agc p. 1031) on the stored words: MPAC (a, b) times
+ * the DP (c, d) as the AGC forms it, minor x minor (high word only),
+ * major x minor, minor x major, then major x major plus the net overflow.
+ * Returns (MPAC, MPAC+1); POLY never reads the MPAC+2 left behind.      */
+static agc_lm_words_t ldg_dmpsub(agc_lm_words_t m, agc_lm_words_t x)
+{
+    int            ovf = 0; /* net overflow of the middle sums (A)    */
+    agc_lm_words_t mid = {0, agc_dp_high(agc_sp_mul(m.lo, x.lo))};
+
+    mid = agc_lm_das(mid, agc_lm_words(agc_sp_mul(m.hi, x.lo))); /* AD */
+    mid = agc_lm_das_ovf(mid, agc_lm_words(agc_sp_mul(m.lo, x.hi)), &ovf);
+    agc_lm_words_t top = {(agc_sp_t) ovf, mid.hi}; /* XCH MPAC       */
+
+    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
     {
-        lo += 16384;
-        h--;
+        return (top);
     }
 
-    if (!AGC_ASSERT(h >= AGC_SP_MIN && h <= -AGC_SP_MIN))
+    return (agc_lm_das(top, agc_lm_words(agc_sp_mul(m.hi, x.hi))));
+}
+
+/* POWRSERS (INTERPRETER.agc p. 1035): coef[degree] x^degree + ... +
+ * coef[0] by Horner's rule, DMPSUB by the stored words of x and DAS of
+ * each coefficient ("user's responsibility to assure no overflow").    */
+static agc_dp_t ldg_powrsers(agc_lm_words_t x, const agc_dp_t *coef,
+                             int degree)
+{
+    if (!AGC_ASSERT(coef != NULL) ||
+        !AGC_ASSERT(degree >= 1 && degree <= AGC_LM_ROOT_MAX_DEGREE))
     {
-        *a_hi = agc_dp_high((agc_dp_t) (a + b));
-
-        return ((agc_dp_t) (a + b));
+        return (0);
     }
 
-    *a_hi = (agc_sp_t) h;
+    agc_lm_words_t m = agc_lm_words(coef[degree]); /* A(N) to MPAC   */
 
-    return ((agc_dp_t) (h * 16384 + lo));
+    for (int i = degree - 1; i >= 0; i--)
+    { /* POLY2 / POLYLOOP                                            */
+        m = agc_lm_das(ldg_dmpsub(m, x), agc_lm_words(coef[i]));
+    }
+
+    return (agc_lm_words_value(m));
 }
 
 /* CA TTF/8: the high word of TTF/8 as stored (see ldg_raw_high).       */
@@ -300,7 +325,7 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
     agc_vec_t u  = agc_rtb_normunit(ip, rl, &sh, NULL, NULL);
     agc_dp_t  s4 = agc_vec_dot(ip, u, g->xnbpip.row[0]);        /* sin/4     */
     agc_sp_t  s2 = agc_lm_ad(agc_dp_high(s4), agc_dp_high(s4)); /* DOUBLE */
-    agc_sp_t  a  = agc_lm_sparcsin_m1(s2); /* SPARCSIN -1 */
+    agc_sp_t  a  = agc_lm_sparcsin_doubled(s2); /* SPARCSIN -1 */
 
     l->lookangl = agc_lm_mp_hi(agc_lm_ad(a, LDG_HALFDEG), LDG_180DEGS);
 
@@ -332,9 +357,15 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_dp_t dxcrit = agc_dp_abs(agc_tp_to_dp(
-                                     agc_tp_mul_sp(agc_tp_from_dp(guess),
-                                                   precroot))); /* SHORTMP, ABS */
+    /* ROOTPS = the guess as stored (DCA MPAC); SHORTMP by PRECROOT keeps
+     * MPAC, MPAC+1 of the words' products. DEVIATION: the stale MPAC+2
+     * product, which can only carry one LSB into DXCRIT, is ignored.   */
+    agc_lm_words_t x = {ldg_raw_high(guess, *root_hi), 0}; /* ROOTPS */
+
+    x.lo = (agc_sp_t) (guess - (int32_t) x.hi * 16384);
+    agc_dp_t dxcrit = agc_dp_abs(
+        (agc_dp_t) (agc_sp_mul(x.hi, precroot) +
+                    agc_dp_high(agc_sp_mul(x.lo, precroot)))); /* ABS */
     agc_dp_t der[AGC_LM_ROOT_MAX_DEGREE];                 /* DERCOFN    */
 
     for (int i = 1; i <= degree; i++)
@@ -342,32 +373,32 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
         der[i - 1] = agc_dp_mul_int(coef[i], (agc_sp_t) i); /* DMPNSUB    */
     }
 
-    agc_dp_t x = guess; /* ROOTPS     */
-
     for (int mode = 0; mode <= AGC_LM_ROOT_MAX_PASSES; mode++)
-    {
-        agc_dp_t d   = agc_dp_poly(x, der, degree - 1); /* POWRSERS   */
-        agc_dp_t f   = agc_dp_poly(x, coef, degree);
-        agc_dp_t mdx = agc_dp_div(&ip, f, d);   /* -DX        */
+    {                                                    /* ROOTLOOP   */
+        agc_dp_t d   = ldg_powrsers(x, der, degree - 1); /* derivative */
+        agc_dp_t f   = ldg_powrsers(x, coef, degree);    /* residual   */
+        agc_dp_t mdx = agc_dp_div(&ip, f, d);            /* -DX        */
 
-        x = ldg_das(x, root_hi, -mdx); /* DCS MPAC, DAS ROOTPS */
+        x = agc_lm_das(x, agc_lm_words(-mdx)); /* DCS MPAC, DAS ROOTPS */
 
         if (mode == AGC_LM_ROOT_MAX_PASSES)
         {
-            break; /* BADROOT    */
+            break; /* BADROOT: MODE has reached BIT4 (8)               */
         }
 
-        if (agc_dp_high(agc_dp_abs(mdx)) <= agc_dp_high(dxcrit))
-        { /* ROOTSTOR   */
-            *root   = x;
-            *passes = mode + 1;
+        if (agc_dp_abs(mdx) <= dxcrit)
+        { /* CCS on ABS(DX) - DXCRIT: not positive -> ROOTSTOR          */
+            *root    = agc_lm_words_value(x);
+            *root_hi = x.hi;
+            *passes  = mode + 1;
 
             return (AGC_STATUS_OK);
         }
     }
 
-    *root   = x;
-    *passes = AGC_LM_ROOT_MAX_PASSES;
+    *root    = agc_lm_words_value(x);
+    *root_hi = x.hi;
+    *passes  = AGC_LM_ROOT_MAX_PASSES;
 
     return (AGC_STATUS_NO_CONVERGE);
 }
@@ -732,7 +763,7 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        const agc_status_t st_cduw = agc_lm_findcduw_m2(ip);
+        const agc_status_t st_cduw = agc_lm_findcduw_from_unfc(ip);
 
         if (!AGC_ASSERT(st_cduw == AGC_STATUS_OK))
         {

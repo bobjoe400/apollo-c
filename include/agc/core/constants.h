@@ -1,18 +1,34 @@
-/*
- * agc_constants.h -- AGC constant pools as C constants.
+/**********************************************************************
+ * FILE NAME: constants.h
  *
- * FIXED_FIXED_CONSTANT_POOL.agc (Comanche055 pp.1200-1204, Luminary099
- * pp.1095-1099) and INTERPRETIVE_CONSTANTS.agc (Comanche055 pp.1205-1206;
- * Luminary099 file INTERPRETIVE_CONSTANT.agc pp.1100-1101). Names are the
- * AGC labels upper-cased with '/', '-', '&', '+' and ',' mapped to '_' or
- * 'P' ("plus"), a leading '-' spelled MINUS_ and a leading '.' spelled PT.
- * Every SP value is the 15-bit ones'-complement word read as a signed
- * integer (value / 2^14 as a fraction); the octal word is in the comment.
- * -0 (NEG0, octal 77777) is not representable and is omitted.
+ * PURPOSE:
+ *   The AGC constant pools as C constants: every SP word of the
+ *   fixed-fixed pool and the DP / vector constants of the interpretive
+ *   pool, for any lane that needs an AGC constant by its label.
  *
- * The pool is identical for CM and LM except that Luminary099 adds OCT33
- * (DEC27) and OCT35 (DEC29) and spells DEC-6/DEC-12 as DFC-6/DFC-12.
- */
+ * AGC SOURCE:
+ *   FIXED_FIXED_CONSTANT_POOL.agc (Comanche055 pp.1200-1204, Luminary099
+ *   pp.1095-1099); INTERPRETIVE_CONSTANTS.agc (Comanche055 pp.1205-1206;
+ *   Luminary099 INTERPRETIVE_CONSTANT.agc pp.1100-1101).
+ *
+ * REQUIRES:
+ *   agc/core/interp.h (agc_vec_t), agc/core/word.h
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ *
+ * NOTES:
+ *   Names are the AGC labels upper-cased with '/', '-', '&', '+' and ','
+ *   mapped to '_' or 'P' ("plus"), a leading '-' spelled MINUS_ and a
+ *   leading '.' spelled PT. Every SP value is the 15-bit ones'-complement
+ *   word read as a signed integer (value / 2^14 as a fraction); the octal
+ *   word is in the comment. -0 (NEG0, octal 77777) is not representable
+ *   and is omitted. The pool is identical for CM and LM except that
+ *   Luminary099 adds OCT33 (DEC27) and OCT35 (DEC29) and spells
+ *   DEC-6/DEC-12 as DFC-6/DFC-12. Every SP value and octal comment was
+ *   checked against the assembled words of both ropes (review-core-
+ *   numeric: 265 label/rope pairs, 0 mismatches).
+ **********************************************************************/
 #ifndef AGC_CONSTANTS_H
 #define AGC_CONSTANTS_H
 

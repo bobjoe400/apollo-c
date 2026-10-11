@@ -151,11 +151,11 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
         return (rr_lundesch(res));
     }
 
-    s->tang[0] = (agc_sp_t) rr_ones(s->modea[0]); /* MODEA EQUALS TANG */
-    s->tang[1] = (agc_sp_t) rr_ones(s->modea[1]);
+    agc_erase_set_tang(0, (agc_sp_t) rr_ones(s->modea[0])); /* MODEA = TANG */
+    agc_erase_set_tang(1, (agc_sp_t) rr_ones(s->modea[1]));
     agc_inhint();
 
-    if (rr_limits_ok(s->modea[0], s->modea[1]))
+    if (agc_rr_limchk(s->modea[0], s->modea[1]))
     {
         return (rr_startdes(res)); /* OKDESSM */
     }
@@ -169,7 +169,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
     }
 
     rr_mode_invert(); /* TRYSWS  */
-    bool other = rr_limits_ok(s->modeb[0], s->modeb[1]);
+    bool other = agc_rr_limchk(s->modeb[0], s->modeb[1]);
 
     rr_mode_invert();
 
@@ -192,7 +192,7 @@ static bool rr_limnb(uint16_t t, uint16_t s)
 {
     if (rr_mode2())
     {
-        return (rr_limits_ok(t, s)); /* MODE2CHK      */
+        return (agc_rr_limchk(t, s)); /* MODE2CHK      */
     }
 
     int sv = rr_ones(s);
@@ -476,12 +476,12 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
                          agc_dp_shl(&ip, agc_dp_mul_trunc(sn_t, cs_s), 1));
         agc_dp_t trun = agc_vec_dot(&ip, u, los);
 
-        s->tang[0] = (agc_sp_t) agc_dp_high(
-            agc_sp_mul((agc_sp_t) -agc_dp_high(trun), RR_RDESGAIN));
+        agc_erase_set_tang(0, (agc_sp_t) agc_dp_high(
+            agc_sp_mul((agc_sp_t) -agc_dp_high(trun), RR_RDESGAIN)));
         agc_sp_t sh = agc_dp_high(shaft);
 
         sh         = rr_mode2() ? (agc_sp_t) -sh : sh; /* relay reverses in mode 2 */
-        s->tang[1] = agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN));
+        agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN)));
         agc_vec_t urr = agc_vec_make(
             agc_dp_shl(&ip, agc_dp_mul_trunc(sn_s, cs_t), 1), agc_dp_neg(sn_t),
             agc_dp_shl(&ip, agc_dp_mul_trunc(cs_s, cs_t), 1));
@@ -542,27 +542,7 @@ agc_status_t agc_rendz_goto_terminate_tracking(void)
     return (st);
 }
 
-/* ---- TANG (noun 72) and RRDESNB for verb 41 ----------------------------
- * TANG, TANG +1 hold the gimbal command or, for RRDESNB, the desired
- * trunnion and shaft CDU words (kept as ones' complement SP numbers).  */
-agc_sp_t agc_erase_tang(int index)
-{
-    if (!AGC_ASSERT(index == 0 || index == 1))
-    {
-        return (0);
-    }
-
-    return (rr_state()->tang[index]);
-}
-
-void agc_erase_set_tang(int index, agc_sp_t v)
-{
-    if (AGC_ASSERT(index == 0 || index == 1))
-    {
-        rr_state()->tang[index] = v;
-    }
-}
-
+/* ---- RRDESNB for verb 41 (TANG, noun 72) ---------------------------- */
 agc_status_t agc_rr_designate_gimbal(bool *started)
 {
     if (!AGC_ASSERT(started != NULL))
@@ -570,15 +550,14 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rr_state_t  *s = rr_state();
     agc_interp_t ip;
 
     agc_interp_init(&ip);
     agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB;
     agc_status_t              st  = agc_rr_designate_nb(&ip, rr_word(
-                                                            s->tang[0]),
+                                                            agc_erase_tang(0)),
                                                         rr_word(
-                                                            s->tang[1]), &res);
+                                                            agc_erase_tang(1)), &res);
 
     *started = (res == AGC_RR_DESIGNATE_STARTED);
 

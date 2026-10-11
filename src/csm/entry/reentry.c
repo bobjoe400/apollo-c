@@ -2074,10 +2074,10 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
 
 /* Dispatch within the HUNT TEST and RANGE PREDICTION sections (pp.
  * 855-863), the predicted range at nominal L/D against the desired
- * range: steps HUNTEST .. GOTOUPSY. */
+ * range: steps HUNTEST .. SIDETRAK. */
 static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
 {
-    if (!AGC_ASSERT(p != NULL && s >= ST_HUNTEST && s < ST_UPCONTRL))
+    if (!AGC_ASSERT(p != NULL && s >= ST_HUNTEST && s < ST_GOTOUPSY))
     {
         return (ST_ERROR);
     }
@@ -2092,8 +2092,6 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
             return (step_getdlewd(p));
         case ST_SIDETRAK:
             return (step_sidetrak(p));
-        case ST_GOTOUPSY:
-            return (step_gotoupsy(p));
         default:
             break;
     }
@@ -2102,16 +2100,18 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
 }
 
 /* Dispatch within the UP CONTROL section (pp. 864-868), roll during the
- * super-circular phase: steps UPCONTRL .. DOWNCNTL. */
+ * super-circular phase: steps GOTOUPSY .. DOWNCNTL. */
 static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
 {
-    if (!AGC_ASSERT(p != NULL && s >= ST_UPCONTRL && s < ST_KEP))
+    if (!AGC_ASSERT(p != NULL && s >= ST_GOTOUPSY && s < ST_KEP))
     {
         return (ST_ERROR);
     }
 
     switch ((int) s)
     {
+        case ST_GOTOUPSY:
+            return (step_gotoupsy(p));
         case ST_UPCONTRL:
             return (step_upcontrl(p));
         case ST_CONT1:
@@ -2250,7 +2250,7 @@ static entry_step_t entry_sequencer(entry_pass_t *p, entry_step_t s)
         {
             s = entry_initial_roll_step(p, s);
         }
-        else if (s < ST_UPCONTRL)
+        else if (s < ST_GOTOUPSY)
         {
             s = entry_huntest_step(p, s);
         }

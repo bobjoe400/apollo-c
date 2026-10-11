@@ -126,12 +126,14 @@ static void tvc_setup(agc_sp_t perrb_hi)
     c->pactoff    = 0;
     c->yactoff    = 0;
     t->tvcphase   = 0;
-    t->delpbar    = 0;
+    t->delpbar.hi = 0;
+    t->delpbar.lo = 0;
     CHECK(agc_csm_tvc_preswtch() == AGC_STATUS_OK); /* LBN10, VARK     */
     CHECK(t->vark == 7812);                         /* 8000 x 4000 x 4 */
     CHECK(t->n10[5] == 512);                        /* N20 = .03125    */
     t->t5tvcdt   = 16380;
-    t->perrb     = agc_dp_from_sp(perrb_hi);
+    t->perrb.hi  = perrb_hi;
+    t->perrb.lo  = 0;
     t->omegac[1] = 0;
     t->pcmd      = 0;
     t->stroker   = 0;
@@ -140,7 +142,8 @@ static void tvc_setup(agc_sp_t perrb_hi)
 
     for (int i = 0; i < 6; i++)
     { /* filter memory   */
-        t->ptmp[i] = 0;
+        t->ptmp[i].hi = 0;
+        t->ptmp[i].lo = 0;
     }
 }
 
@@ -153,7 +156,7 @@ static void test_tvc_step(void)
     CHECK(t->pcmd < 0); /* sign change     */
     CHECK(t->pcmd > -253);
     CHECK(t->tvcphase == 2);              /* pitch copycycle */
-    CHECK(agc_dp_high(t->perrb) == 1000); /* integrator held */
+    CHECK(t->perrb.hi == 1000); /* integrator held */
     CHECK(agc_rupt_t5_task() != AGC_TASK_NONE);
 
     tvc_setup(-1000);
@@ -165,7 +168,7 @@ static void test_tvc_step(void)
      * cascade) = 1000 -> DAP2 = 1125, DAP3 = 562, CMDTMP = -1072. A large
      * TMP1 would overflow DAP1 (DAS wraps as in the AGC), so use TMP3.   */
     tvc_setup(4000); /* large error     */
-    agc_csm_dap_tvc()->ptmp[2] = agc_dp_from_sp(1000);
+    agc_csm_dap_tvc()->ptmp[2].hi = 1000;
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
     CHECK(t->pcmd == -253); /* ACTSAT limit    */
 }
@@ -224,7 +227,7 @@ static void test_rolldap(void)
     CHECK(t->temreg > 24);                           /* > TMINFIRE      */
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 012u); /* jets 12, 10     */
     CHECK(t->rollword == 2u);
-    CHECK(agc_task_noroll1() == AGC_STATUS_OK);
+    CHECK(agc_task_roll_jets_off() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 
     t->temreg = 0;

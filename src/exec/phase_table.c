@@ -171,6 +171,19 @@ void agc_phase_set_tbase(int group)
     set_tbase(group);
 }
 
+/* TS PHSPRDTn (V37 POOH: PRIO5 in group 2, C p.200 / L p.229; V37XEQ:
+ * the new program's priority in group 4, C p.202 / L p.232).           */
+void agc_phase_set_priority(int group, agc_prio_t prio)
+{
+    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(prio >= 1U && prio <= 037U))
+    {
+        return;
+    }
+
+    var[group].prdt      = (int16_t) prio;
+    var[group].immediate = false;
+}
+
 /* PHSCHNG2 decoding (C p.1410 / L p.1299): TEMPG, TEMPP, TEMPSW.      */
 static bool decode(uint16_t code, ph_code_t *out)
 {
@@ -384,7 +397,7 @@ void agc_phase_change2(uint16_t code_a, uint16_t code_b,
     phaschng_common(code_b, v, &two);
 }
 
-/* NEWPHASE (RESTART_TABLES C p.221 / L p.243): quick fixed phase change
+/* NEWPHASE (RESTART_TABLES C p.220; Comanche only): quick fixed phase change
  * of `group` to `phase`, optionally setting TBASE (the AGC passes the
  * phase negative in A to ask for that).                                */
 void agc_phase_newphase(int group, uint16_t phase, bool set_tb)

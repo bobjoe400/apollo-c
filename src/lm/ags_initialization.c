@@ -34,6 +34,7 @@
  * LSB, added in two steps; here as one DP addend.                        */
 #define AGS_ROUND    ((agc_dp_t) 8192)
 #define AGSBUFF_TIME 12 /* AGSBUFF +12D: the DP time     */
+#define AGS_MINUS_ZERO ((uint16_t) 077777) /* -0 high word (AEA: -1)  */
 
 static uint16_t agsbuff[AGC_ALIGN_AGSBUFF_WORDS];
 static agc_dp_t agsk; /* AGSK: AGS clock zero, cs B28  */
@@ -73,14 +74,25 @@ agc_status_t agc_ags_set_agsk(agc_dp_t t)
 }
 
 /* VECSGNAG and the high words: v + half an LSB, the high word of each
- * component as the raw 15-bit word the AGS reads (2's complement).      */
+ * component as the raw 15-bit word the AGS reads (2's complement).  The
+ * AGC's two-step add (AGSRND1 then AGSRND2) leaves a negative sum smaller
+ * than one high-word LSB as (-1, +low), which VECSGNAG turns into -0
+ * (77777): the AEA reads -1, i.e. the sum rounded down.  A single add
+ * would leave (+0, -low) and read 0; that is what the comment on p. 209
+ * ("defeat ALSIGNAG") is about.                                          */
 static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
 {
     for (int i = 0; i < 3; i++)
     {
-        const agc_dp_t r = agc_dp_add(ip, v.c[i], AGS_ROUND);
+        const agc_dp_t r  = agc_dp_add(ip, v.c[i], AGS_ROUND); /* B as v */
+        const agc_sp_t hi = agc_dp_high(r); /* sign-agreed high word */
 
-        w[i] = align_sp_to_word(agc_dp_high(r));
+        w[i] = align_sp_to_word(hi);
+
+        if ((r < 0) && (hi == 0))
+        {
+            w[i] = AGS_MINUS_ZERO;
+        }
     }
 
     if (!AGC_ASSERT(w[0] <= 077777u))
@@ -164,7 +176,7 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
     {
         agc_alarm(ALM_NO_REFSMMAT);
 
-        return (agc_dsky_endext()); /* TC ALARM returns; TC ENDEXT */
+        return (agc_dsky_endmark()); /* TC ALARM returns; TC ENDEXT */
     }
 
     return (show_agsk(ctx));
@@ -399,5 +411,5 @@ agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }

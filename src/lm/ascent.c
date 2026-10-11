@@ -377,7 +377,7 @@ static void as_cmponent(agc_interp_t *ip)
 }
 
 /* ASCTERM1 +1 (p. 850): N63 display unless RCS trimming or engine fail. */
-static agc_status_t as_ascterm1(const agc_job_ctx_t *ctx)
+static agc_status_t as_ascterm_display(const agc_job_ctx_t *ctx)
 {
     if (agc_flag_test(AGC_FLAG_FLRCS) || agc_flag_test(AGC_FLAG_FLUNDISP))
     {
@@ -403,18 +403,19 @@ static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_OK);
     }
 
-    agc_status_t st = agc_lm_findcduw_m2(ip);
+    agc_status_t st = agc_lm_findcduw_from_unfc(ip);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_ascterm1(ctx));
+    return (as_ascterm_display(ctx));
 }
 
 /* KEEPVR1 (p. 852): stay vertical, UNFC/2 = UNIT/R/. */
-static agc_status_t as_keepvr1(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t as_keepvr_radial_thrust(const agc_job_ctx_t *ctx,
+                                            agc_interp_t        *ip)
 {
     agc_lm_ldg()->unfc_2 = agc_guid_state()->avg.unitr;
 
@@ -449,7 +450,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             agc_dp_sub(ip, agc_vec_dot(ip, xnb, g->avg.unitr),
                        agc_lm_pad()->costhet2) < 0)
         {
-            return (as_keepvr1(ctx, ip));
+            return (as_keepvr_radial_thrust(ctx, ip));
         }
 
         agc_flag_clear(AGC_FLAG_ROTFLAG); /* OFFROT */
@@ -512,7 +513,7 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     agc_lm_ldg()->unwc_2 = los; /* KEEPVR */
 
-    return (as_keepvr1(ctx, ip));
+    return (as_keepvr_radial_thrust(ctx, ip));
 }
 
 /* ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
@@ -528,7 +529,7 @@ static void as_engoff(agc_interp_t *ip)
     a->engoffdt = (agc_sp_t) ((lo > 0) ? lo : 1); /* at least 1 bit */
     agc_inhint();
     agc_status_t st =
-        agc_waitlist_call((uint16_t) a->engoffdt, AGC_TASK_ENGOFF1);
+        agc_waitlist_call((uint16_t) a->engoffdt, AGC_TASK_ASCENT_ENGINE_OFF);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -537,8 +538,9 @@ static void as_engoff(agc_interp_t *ip)
         return;
     }
 
-    const agc_phase_var_t v = {AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ENGOFF1,
-                               a->engoffdt, false, 0U};
+    const agc_phase_var_t v =
+    {AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ASCENT_ENGINE_OFF,
+     a->engoffdt, false, 0U};
 
     agc_phase_change_var(047014, &v);
     agc_relint();
@@ -652,7 +654,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
             agc_lm_dap_zatteror(); /* ASCTERM4      */
             agc_relint();
 
-            return (as_ascterm1(ctx));
+            return (as_ascterm_display(ctx));
         }
 
         agc_flag_clear(AGC_FLAG_SURFFLAG);
@@ -682,7 +684,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
  * ====================================================================== */
 
 /* ENGOFF1 (p. 853): shut off the engine; ascent post-burn job CUTOFF. */
-agc_status_t agc_lm_task_engoff1(void)
+agc_status_t agc_lm_task_ascent_engine_off(void)
 {
     agc_status_t st = agc_lm_enginof2();
 
@@ -737,11 +739,11 @@ agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_FLRCS);
 
-    return (agc_lm_job_cutoff5(ctx));
+    return (agc_lm_job_cutoff_display(ctx));
 }
 
 /* CUTOFF -5: the V16N63 flash itself (ENTER repeats it). */
-agc_status_t agc_lm_job_cutoff5(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -753,11 +755,12 @@ agc_status_t agc_lm_job_cutoff5(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash(ctx, 16, 63, AGC_JOB_CUTOFF1, AGC_JOB_CUTOFF5));
+    return (as_flash(ctx, 16, 63, AGC_JOB_CUTOFF_PROCEED,
+                     AGC_JOB_CUTOFF_DISPLAY));
 }
 
 /* CUTOFF1 (p. 853): zero attitude errors before reducing the deadband. */
-agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_cutoff_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -777,11 +780,11 @@ agc_status_t agc_lm_job_cutoff1(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return (agc_lm_job_cutoff2(ctx));
+    return (agc_lm_job_cutoff_trim_display(ctx));
 }
 
 /* CUTOFF2 (p. 854): V16N85 (VGBODY) until PROCEED or terminate. */
-agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -789,12 +792,14 @@ agc_status_t agc_lm_job_cutoff2(agc_job_ctx_t *ctx)
     }
 
     const agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_CUTOFF2, AGC_TASK_NONE, 0, false, 0U
+        AGC_RESTART_JOB, AGC_JOB_CUTOFF_TRIM_DISPLAY, AGC_TASK_NONE, 0, false,
+        0U
     };
 
     agc_phase_change_var(04024, &v);
 
-    return (as_flash(ctx, 16, 85, AGC_JOB_TERMASC, AGC_JOB_CUTOFF2));
+    return (as_flash(ctx, 16, 85, AGC_JOB_TERMASC,
+                     AGC_JOB_CUTOFF_TRIM_DISPLAY));
 }
 
 /* TERMASC (p. 854): restore the astronaut's deadband, disallow aborts,
@@ -846,8 +851,10 @@ static void as_restart_here(agc_job_id_t job)
 }
 
 /* Flash with terminate -> GOTOPOOH. */
-static agc_status_t as_flash00(const agc_job_ctx_t *ctx, uint8_t noun,
-                               agc_job_id_t proceed, agc_job_id_t enter)
+static agc_status_t as_flash_or_terminate(const agc_job_ctx_t *ctx,
+                                          uint8_t              noun,
+                                          agc_job_id_t         proceed,
+                                          agc_job_id_t         enter)
 {
     const agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter};
 
@@ -907,8 +914,8 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash00(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED,
-                       AGC_JOB_POWERED_ASCENT_FLASH));
+    return (as_flash_or_terminate(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED,
+                                  AGC_JOB_POWERED_ASCENT_FLASH));
 }
 
 /* After PROCEED (pp. 838-839): WM, /LAND/, engine data, TGO, and the LM
@@ -993,12 +1000,13 @@ agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash00(ctx, 76, AGC_JOB_NEWLOAD2, AGC_JOB_NEWLOAD));
+    return (as_flash_or_terminate(ctx, 76, AGC_JOB_NEWLOAD_PROCEED,
+                                  AGC_JOB_NEWLOAD));
 }
 
 /* After PROCEED on N76 (pp. 839-840): YCO, the velocity at tip-over
  * (V(IGN) + 49 fps UNIT/R/), RDOT, ZAXIS1, then one ASCENT pass. */
-agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1012,7 +1020,7 @@ agc_status_t agc_lm_job_newload2(agc_job_ctx_t *ctx)
     agc_lm_asc_t *a = agc_lm_asc();
 
     g->lm.which = AGC_LM_WHICH_POWERED_ASCENT;
-    as_restart_here(AGC_JOB_NEWLOAD2);
+    as_restart_here(AGC_JOB_NEWLOAD_PROCEED);
     a->yco = agc_dp_add(&ip, agc_dp_shl(&ip, a->xrange, 5), a->y);
     const agc_vec_t ur = g->avg.unitr;
 

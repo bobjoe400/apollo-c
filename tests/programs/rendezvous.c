@@ -173,7 +173,7 @@ static void test_periapo_circular(void)
 
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
     agc_rendz_periapo_t pa;
-    agc_status_t        st = agc_rendz_periapo1(&ip, rz, pos(R0, 0.0, 0.0),
+    agc_status_t        st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0),
                                                 vel(0.0, sqrt(
                                                         MU / R0), 0.0), &pa);
 

@@ -29,7 +29,6 @@
 #define NC_MRKBUF_EMPTY 077776u /* -1: no mark in the buffer  */
 #define NC_MRK_WORDS    7
 
-static uint16_t     nc_landmark; /* LANDMARK (P22, V52)        */
 static agc_dp_t     nc_marktime; /* MARKTIME: cs 2^28          */
 static agc_job_id_t nc_pointex;  /* POINTEX: WAITONE return    */
 
@@ -57,27 +56,6 @@ agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx)
 
     return (rz_is_csm() ? agc_job_orbital_navigation_csm(ctx) :
             agc_job_rendezvous_navigation_lm(ctx));
-}
-
-/* ---- LANDMARK (P22 landmark code ABCDE, V52 offset) -------------------- */
-agc_sp_t agc_erase_landmark(void)
-{
-    if (!AGC_ASSERT(nc_landmark <= 077777u))
-    {
-        return (0); /* no valid result */
-    }
-
-    return ((agc_sp_t) rz_word_value(nc_landmark));
-}
-
-void agc_erase_set_landmark(agc_sp_t v)
-{
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
-    nc_landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v);
 }
 
 agc_dp_t rz_marktime(void)

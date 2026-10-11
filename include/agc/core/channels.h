@@ -1,25 +1,37 @@
-/*
- * agc_channels.h -- I/O channel image.
+/**********************************************************************
+ * FILE NAME: channels.h
  *
- * The AGC has 15-bit I/O channels 1..35 (octal). READ/WRITE/ROR/WOR/WAND/
- * RXOR map onto the functions below. Bit-name constants come from
- * Luminary099/INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS.agc (LM) and, for the
- * CSM, from the usage comments in Comanche055 (T4RUPT_PROGRAM, P11, P20-P25,
- * P40-P47, RCS-CSM_DIGITAL_AUTOPILOT, SXTMARK, AUTOMATIC_MANEUVERS):
- * Comanche055/ERASABLE_ASSIGNMENTS.agc itself only names the channels and
- * has no per-bit comments.
+ * PURPOSE:
+ *   I/O channel image. The AGC has 15-bit I/O channels 1..35 (octal);
+ *   READ/WRITE/ROR/WOR/WAND/RXOR map onto the functions below.
  *
- * Bit constants: AGC_CH<octal channel>_<NAME>, e.g. AGC_CH030_IMUOPER.
- * Each value is the single-bit mask (bit 1 = 000001 ... bit 15 = 040000).
- * Where the vehicles assign different functions to one bit, both names
- * exist with the same value; the comment starts "CSM:" or "LM:".
+ * AGC SOURCE:
+ *   Luminary099 INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS.agc pp. 54-59 (LM
+ *   bit names). Comanche055 has no bit table (ERASABLE_ASSIGNMENTS.agc
+ *   p. 41 only names the channels); CSM names follow the Block II CM
+ *   channel list in virtualagc piPeripheral/humanizeScript.py (from the
+ *   CM ICD), cross-checked against Comanche055 code: T4RUPT_PROGRAM
+ *   (IMUMON, C33TEST, OPTMON pp. 133-165), P11, P40-P47, SXTMARK,
+ *   AUTOMATIC_MANEUVERS (FREECONT), RCS-CSM_DIGITAL_AUTOPILOT.
  *
- * Inverted-logic inputs: all bits of channels 030-033 are inverted as
- * sensed by the program: a value of ZERO means the signal is present.
- * The channel image holds exactly what a READ returns, i.e. the inverted
- * sense. agc_chan_set_input() therefore takes the raw sensed value;
- * agc_chan_set_signal() takes "signal present" and does the inversion.
- */
+ * REQUIRES:
+ *   none (self-contained: includes <stdbool.h>, <stdint.h>, status.h)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the image is static in src/core/channels.c)
+ *
+ * NOTES:
+ *   Bit constants: AGC_CH<octal channel>_<NAME>, each the single-bit mask
+ *   (bit 1 = 000001 ... bit 15 = 040000). Where the vehicles assign
+ *   different functions to one bit, both names exist with the same value
+ *   and the comment starts "CSM:" or "LM:". "(not driven by Comanche055)"
+ *   marks a CSM hardware bit that the flight program never touches.
+ *
+ *   Inverted-logic inputs: all bits of channels 030-033 read ZERO when
+ *   the signal is present. The image holds exactly what a READ returns;
+ *   agc_chan_set_input() takes that raw sensed value and
+ *   agc_chan_set_signal() takes "signal present" and does the inversion.
+ **********************************************************************/
 #ifndef AGC_CHANNELS_H
 #define AGC_CHANNELS_H
 
@@ -31,7 +43,7 @@
 #define AGC_CHAN_COUNT          040 /* channels 0..037                     */
 #define AGC_CHAN_MASK           077777u /* channels are 15 bits wide           */
 #define AGC_CHAN_FIRST_INVERTED 030 /* channels 030..033 read inverted     */
-#define AGC_CHAN_LAST_INVERTED  033
+#define AGC_CHAN_LAST_INVERTED  033 /* last inverted-logic input channel  */
 
 enum agc_channel_number
 {
@@ -128,9 +140,9 @@ enum agc_channel_bits
     AGC_CH011_SPARE11 = 002000,
     /* bit 12: spare */
     AGC_CH011_SPARE12 = 004000,
-    /* bit 13: engine on */
+    /* bit 13: engine on (CSM: SPS engine on/off, 1 = on, 0 = off) */
     AGC_CH011_ENGINEON = 010000,
-    /* bit 14: engine off */
+    /* bit 14: LM: engine off (CSM: unused) */
     AGC_CH011_ENGINEOFF = 020000,
     /* bit 15: spare */
     AGC_CH011_SPARE15 = 040000,
@@ -161,14 +173,18 @@ enum agc_channel_bits
     AGC_CH012_SIVBTAKEOVER = 000400,
     /* bit  9: LM: -pitch gimbal trim (bell motion) descent engine */
     AGC_CH012_TRIMPITCHM = 000400,
+    /* bit 10: CSM: zero optics (not driven by Comanche055) */
+    AGC_CH012_ZEROOPTICS = 001000,
     /* bit 10: LM: +pitch gimbal trim (bell motion) descent engine */
     AGC_CH012_TRIMPITCHP = 001000,
     /* bit 11: CSM: disengage optics DAC */
     AGC_CH012_DISOPTDAC = 002000,
     /* bit 11: LM: -roll gimbal trim (bell motion) descent engine */
     AGC_CH012_TRIMROLLM = 002000,
-    /* bit 12: LM: +roll gimbal trim (bell motion) descent engine */
+    /* bit 12: LM: +roll gimbal trim (bell motion) descent engine; CSM: unused */
     AGC_CH012_TRIMROLLP = 004000,
+    /* bit 13: CSM: S-IVB injection sequence start (not driven by Comanche055) */
+    AGC_CH012_SIVBINJECT = 010000,
     /* bit 13: LM: LR position 2 command */
     AGC_CH012_LRPOS2CMD = 010000,
     /* bit 14: CSM: S-IVB cutoff command (backup use) */
@@ -192,9 +208,9 @@ enum agc_channel_bits
     AGC_CH013_ULKBLOCK = 000040,
     /* bit  7: downlink telemetry word order code bit */
     AGC_CH013_DNTMWORD = 000100,
-    /* bit  8: RHC counter enable (read hand controller angles) */
+    /* bit  8: LM: RHC counter enable (read hand controller angles); CSM: unused */
     AGC_CH013_RHCCNTENB = 000200,
-    /* bit  9: start RHC read into counters if bit 8 set */
+    /* bit  9: LM: start RHC read into counters if bit 8 set; CSM: unused */
     AGC_CH013_RHCSTART = 000400,
     /* bit 10: test alarms, test DSKY lights */
     AGC_CH013_TESTALM = 001000,
@@ -257,18 +273,28 @@ enum agc_channel_bits
     /* CSM: navigation DSKY key code (bits 5-1) */
     AGC_CH016_NAVKEY_MASK = 000037,
     /* ---- channel 030 ---- */
+    /* bit  1: CSM: ullage thrust present (not read by Comanche055) */
+    AGC_CH030_ULLAGETHRUST = 000001,
     /* bit  1: LM: abort with descent stage */
     AGC_CH030_ABORTDPS = 000001,
-    /* bit  2: unused */
+    /* bit  2: CSM: CM/SM separate (not read by Comanche055) */
+    AGC_CH030_CMSMSEP = 000002,
+    /* bit  2: LM: unused */
     AGC_CH030_UNUSED2 = 000002,
+    /* bit  3: CSM: SPS ready (not read by Comanche055) */
+    AGC_CH030_SPSREADY = 000004,
     /* bit  3: LM: engine armed signal */
     AGC_CH030_ENGARMED = 000004,
+    /* bit  4: CSM: S-IVB separate / abort (not read by Comanche055) */
+    AGC_CH030_SIVBSEPABORT = 000010,
     /* bit  4: LM: abort with ascent engine stage */
     AGC_CH030_ABORTAPS = 000010,
     /* bit  5: CSM: liftoff discrete (Comanche CKLFTBTS tests it) */
     AGC_CH030_LIFTOFF = 000020,
     /* bit  5: LM: auto throttle; computer control of descent engine */
     AGC_CH030_AUTOTHROT = 000020,
+    /* bit  6: CSM: guidance reference release (not read by Comanche055) */
+    AGC_CH030_GRR = 000040,
     /* bit  6: LM: display inertial data */
     AGC_CH030_DISPINERT = 000040,
     /* bit  7: CSM: optics CDU fail (T4RUPT OPTMON) */
@@ -335,16 +361,28 @@ enum agc_channel_bits
     /* THC translation command bits 7-12 (Comanche XLNMASK) */
     AGC_CH031_XLATE_MASK = 007700,
     /* ---- channel 032 ---- */
+    /* bit  1: CSM: +pitch minimum impulse (FREECONT reads bits 1-6) */
+    AGC_CH032_MINIMPPITCHP = 000001,
     /* bit  1: LM: thrusters 2 & 4 disabled by crew */
     AGC_CH032_THR24DIS = 000001,
+    /* bit  2: CSM: -pitch minimum impulse */
+    AGC_CH032_MINIMPPITCHM = 000002,
     /* bit  2: LM: thrusters 5 & 8 disabled by crew */
     AGC_CH032_THR58DIS = 000002,
+    /* bit  3: CSM: +yaw minimum impulse */
+    AGC_CH032_MINIMPYAWP = 000004,
     /* bit  3: LM: thrusters 1 & 3 disabled by crew */
     AGC_CH032_THR13DIS = 000004,
+    /* bit  4: CSM: -yaw minimum impulse */
+    AGC_CH032_MINIMPYAWM = 000010,
     /* bit  4: LM: thrusters 6 & 7 disabled by crew */
     AGC_CH032_THR67DIS = 000010,
+    /* bit  5: CSM: +roll minimum impulse */
+    AGC_CH032_MINIMPROLLP = 000020,
     /* bit  5: LM: thrusters 14 & 16 disabled by crew */
     AGC_CH032_THR1416DIS = 000020,
+    /* bit  6: CSM: -roll minimum impulse */
+    AGC_CH032_MINIMPROLLM = 000040,
     /* bit  6: LM: thrusters 13 & 15 disabled by crew */
     AGC_CH032_THR1315DIS = 000040,
     /* bit  7: LM: thrusters 9 & 12 disabled by crew */
@@ -355,8 +393,12 @@ enum agc_channel_bits
     AGC_CH032_DPSGIMBDIS = 000400,
     /* bit 10: LM: apparent descent engine gimbal failure */
     AGC_CH032_DPSGIMBFAIL = 001000,
-    /* bit 14: proceed key is depressed */
+    /* bit 11: CSM: LM attached (not read by Comanche055; DAPDATR1 is used) */
+    AGC_CH032_LMATTACHED = 002000,
+    /* bit 14: proceed (standby) key is depressed */
     AGC_CH032_PROCEED = 020000,
+    /* CSM: minimum-impulse bits 1-6 (Comanche MANROT mask in FREECONT) */
+    AGC_CH032_MINIMP_MASK = 000077,
     /* ---- channel 033 ---- */
     /* bit  1: spare */
     AGC_CH033_SPARE1 = 000001,
@@ -364,16 +406,17 @@ enum agc_channel_bits
     AGC_CH033_VHFRANGEGOOD = 000002,
     /* bit  2: LM: RR auto-power on */
     AGC_CH033_RRAUTOPWR = 000002,
-    /* bit  3: LM: RR range low scale */
+    /* bit  3: LM: RR range low scale; CSM: unused */
     AGC_CH033_RRRANGELOW = 000004,
-    /* bit  4: CSM: optics mode switch sense bit (OPTMON, with bit 5) */
-    AGC_CH033_OPTMODE1 = 000010,
+    /* bit  4: CSM: optics mode switch at ZERO OPTICS (OPTMON) */
+    AGC_CH033_ZEROOPTICS = 000010,
     /* bit  4: LM: RR data good */
     AGC_CH033_RRDATAGOOD = 000010,
-    /* bit  5: CSM: optics mode switch sense bit (OPTMON, set = CSC after inversion) */
-    AGC_CH033_OPTMODE2 = 000020,
+    /* bit  5: CSM: optics mode switch at CMC (OPTMON "CSC"); neither bit = MANUAL */
+    AGC_CH033_CMCOPTICS = 000020,
     /* bit  5: LM: LR range data good */
     AGC_CH033_LRRANGEGOOD = 000020,
+    /* bits 6-9: LM landing radar status; CSM: unused */
     /* bit  6: LM: LR position 1 */
     AGC_CH033_LRPOS1 = 000040,
     /* bit  7: LM: LR position 2 */
@@ -390,9 +433,9 @@ enum agc_channel_bits
     AGC_CH033_DOWNLINKFAST = 004000,
     /* bit 13: PIPA fail (flip-flop) */
     AGC_CH033_PIPAFAIL = 010000,
-    /* bit 14: warning of repeated alarms: restart, counter fail, voltage fail, scaler double (flip-flop) */
+    /* bit 14: repeated-alarm warning (CSM "AGC WARNING") (flip-flop) */
     AGC_CH033_REPEATEDALM = 020000,
-    /* bit 15: LGC oscillator stopped (flip-flop) */
+    /* bit 15: oscillator stopped (CSM "AGC OSCILLATOR ALARM") (flip-flop) */
     AGC_CH033_OSCSTOPPED = 040000,
     /* flip-flop bits 11-15, reset by a channel write pulse */
     AGC_CH033_FLIPFLOP_MASK = 076000,

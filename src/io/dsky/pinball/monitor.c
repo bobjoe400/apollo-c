@@ -1,13 +1,48 @@
-/*
- * monitor.c -- PINBALL monitor verbs, proceed/terminate/
- * resequence, request executive/waitlist, test lights, major mode change.
+/**********************************************************************
+ * FILE NAME: monitor.c
  *
- * PINBALL_GAME_BUTTONS_AND_LIGHTS.agc (CM pp. 355-358, 365-367, 385-387;
- * LM pp. 437-440, 447-449, 467-469): MONITOR, MONIT1, MONIT2, MONREQ,
- * KILLMON, MONDO, MONBUSY, PASTEVB, PASTEOPT, DSPFMEM, MMCHANG, REQMM,
- * VBRQEXEC, VBRQWAIT, REQUESTC, VBPROC, VBTERM, VBRESEQ, VBTSTLTS,
- * TSTLTS1, TSTLTS2, TSTLTS3.
- */
+ * PURPOSE:
+ *   PINBALL monitor verbs (V11-V17), proceed / terminate / resequence
+ *   (V32-V34), request executive / waitlist (V30, V31), test lights (V35),
+ *   major mode change (V37) and the V27 fixed memory display stub.
+ *
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_GAME_BUTTONS_AND_LIGHTS.agc pp. 355-358, 365-367,
+ *     385-387 (MONITOR, MONIT1, MONIT2, MONREQ, KILLMON, MONDO, MONBUSY,
+ *     PASTEVB, PASTEOPT, DSPFMEM, MMCHANG, REQMM, VBRQEXEC, VBRQWAIT,
+ *     REQUESTC, VBPROC, VBTERM, VBRESEQ, VBTSTLTS, TSTLTS1, TSTLTS2,
+ *     TSTLTS3)
+ *   Luminary099 pp. 437-440, 447-449, 467-469 (differs: VBTSTLTS TSTCON2,
+ *     RADMODES for OPTMODES; CM calls CHKPOOH)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale     Description
+ *   ------------  --------  ---  --------  ---------------------------
+ *   MODREG        agc_sp_t  I    unscaled  TSTLTS3 redisplay
+ *   IMODES30/33   uint16_t  I/O  bits      VBTSTLTS / TSTLTS3 lamp bits
+ *   OPTMODES      uint16_t  I/O  bits      CM lamp bits
+ *   RADMODES      uint16_t  I/O  bits      LM lamp bits
+ *   channels 11, 13         O    bits      lamps, test alarm outbit
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                   Description
+ *   ---------------------  -------------------------------------------
+ *   agc_waitlist_call      MONREQ every second, TSTLTS2 after 5 s
+ *   agc_exec_novac/findvac MONDO, TSTLTS3, V30 jobs
+ *   agc_change_program     V37 (MMCHANG)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   V27 returns AGC_STATUS_UNIMPLEMENTED (no rope image, see DSPFMEM);
+ *   OPR ERR / alarm exits via DSPALARM; BAD_ARG on a failed precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   MONREQ is a waitlist task (1 s, MONDEL); MONDO and TSTLTS3 are jobs.
+ *   Both vehicles.
+ *
+ * NOTES:
+ *   DEVIATION (V30, V31): DSPTEM1 +1 holds an agc_job_id_t /
+ *   agc_task_id_t number instead of an ADRES; BBCON is ignored.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "internal.h"
@@ -34,9 +69,18 @@
 
 /* ---- MONITOR (pp. 355-357) -------------------------------------------- */
 
-/* MONITOR: verbs 11-17. MONSAVE gets the monitor verb and noun, MONSAVE1
+/**********************************************************************
+ * AGC: MONITOR (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 355)
+ *
+ * MONITOR: verbs 11-17. MONSAVE gets the monitor verb and noun, MONSAVE1
  * the NOUNCADR with the kill bit (15) off and, for a keyed monitor, the
- * external monitor bit (14) on.                                          */
+ * external monitor bit (14) on.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_monitor(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -44,14 +88,16 @@ agc_status_t pin_monitor(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t m1 = (uint16_t) (s->nouncadr & ~(PIN_BIT15 | PIN_BIT14));
+    uint16_t m1; /* NOUNCADR, kill/ext bits off */
+
+    m1 = (uint16_t) (s->nouncadr & ~(PIN_BIT15 | PIN_BIT14));
 
     if (s->entret == PIN_ENT_ENDOFJOB)
     {
@@ -59,14 +105,16 @@ agc_status_t pin_monitor(void)
         s->monsave2 = 0; /* zero NVMONOPT options         */
     }
 
-    uint16_t m =
-        (uint16_t) (((uint16_t) (s->verbreg & PIN_LOW7) << 7) | s->nounreg);
+    uint16_t m; /* MONSAVE1 word */
+
+    m = (uint16_t) (((uint16_t) (s->verbreg & PIN_LOW7) << 7) | s->nounreg);
 
     s->dsplock = false; /* +0 into DSPLOCK so monitor can run */
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     /* Turn off KR lite if CADRSTOR and DSPLIST are both empty. (Lite comes
      * on if new monitor is keyed in over old monitor.)                   */
+
     if (!pin_cadrstor_full())
     {
         st = pin_reldsp1();
@@ -86,7 +134,16 @@ agc_status_t pin_monitor(void)
     return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* TC ENTRET   */
 }
 
-/* MONREQ: called by waitlist every second while the monitor lives. */
+/**********************************************************************
+ * AGC: MONREQ (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 356)
+ *
+ * MONREQ: called by waitlist every second while the monitor lives.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_task_monreq(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -94,7 +151,7 @@ agc_status_t agc_task_monreq(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     pin_lodsampt(); /* time is snatched in rupt for N65 */
 
@@ -106,8 +163,12 @@ agc_status_t agc_task_monreq(void)
         return (AGC_STATUS_OK);
     }
 
-    agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, AGC_TASK_MONREQ);
-    agc_status_t st2 = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_MONDO);
+    agc_status_t st; /* status so far */
+
+    st = agc_waitlist_call(PIN_MONDEL_CS, AGC_TASK_MONREQ);
+    agc_status_t st2; /* status of the second step */
+
+    st2 = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_MONDO);
 
     if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
     {
@@ -117,12 +178,25 @@ agc_status_t agc_task_monreq(void)
     return ((st == AGC_STATUS_OK) ? st2 : st);
 }
 
-/* MONDO: called by exec. Change the monitor verb to the display verb
+/**********************************************************************
+ * AGC: MONDO (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 356)
+ *
+ * MONDO: called by exec. Change the monitor verb to the display verb
  * (V11-V17 -> V01-V07), set ENTRET to PASTEVB and run the noun test; the
- * ECADR (MCTBS) comes from MONSAVE1 through MPAC+2.                      */
+ * ECADR (MCTBS) comes from MONSAVE1 through MPAC+2.
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, POODOO;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 {
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -141,8 +215,10 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK);
     }
 
-    agc_status_t st    = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
-    int          dverb = (int) ((s->monsave & PIN_MID7) >> 7) - PIN_MONREF;
+    agc_status_t st; /* status so far */
+
+    st = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
+    int dverb = (int) ((s->monsave & PIN_MID7) >> 7) - PIN_MONREF; /* V01-V07 */
 
     if (st != AGC_STATUS_OK || !AGC_ASSERT(dverb >= 1 && dverb <= 7))
     {
@@ -157,29 +233,39 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
     return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK);
 }
 
-/* PASTEVB: put the monitor verb (or the NVMONOPT please verb) back into
+/**********************************************************************
+ * AGC: PASTEVB (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 357)
+ *
+ * PASTEVB: put the monitor verb (or the NVMONOPT please verb) back into
  * VERBREG and the verb lights; zero REQRET so that pasted verbs can be
- * executed by the operator; process the NVMONOPT blank option.          */
+ * executed by the operator; process the NVMONOPT blank option.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, BUSY;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_pastevb(void)
 {
-    pin_state_t *s     = pin_st();
+    pin_state_t *s     = pin_st(); /* pinball erasables */
     uint16_t     paste = (uint16_t) (s->monsave2 & PIN_MID7); /* paste option */
-    uint16_t     verb  =
-        (paste != 0u) ? (uint16_t) (paste >> 7) : (uint16_t) (s->monsave >> 7);
+    uint16_t verb; /* verb to paste back */
+
+    verb = (paste != 0u) ? (uint16_t) (paste >> 7) : (uint16_t) (s->monsave >> 7);
 
     if (!AGC_ASSERT(verb <= 99u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_updatvb((uint8_t) verb);
+    agc_status_t st = pin_updatvb((uint8_t) verb); /* status so far */
 
     s->reqret     = PIN_REQ_PASS0;
     s->reqret_neg = false;
 
     if (st == AGC_STATUS_OK)
     {
-        st = pin_blanksub(s->monsave2); /* either return goes on (TC +1) */
+        st = agc_dsky_blanksub(s->monsave2); /* either return goes on (TC +1) */
         st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
     }
 
@@ -193,11 +279,20 @@ agc_status_t pin_pastevb(void)
 
 /* ---- V27 (p. 358) ----------------------------------------------------- */
 
-/* DSPFMEM: fixed memory display (V27 N02 with the FCADR and superbank bits
- * loaded in noun 26). The fixed rope is not modelled in apollo-c.        */
+/**********************************************************************
+ * AGC: DSPFMEM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 358)
+ *
+ * DSPFMEM: fixed memory display (V27 N02 with the FCADR and superbank bits
+ * loaded in noun 26). The fixed rope is not modelled in apollo-c.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition,
+ *          UNIMPLEMENTED
+ **********************************************************************/
 agc_status_t pin_dspfmem(void)
 {
-    const pin_state_t *s = pin_st();
+    const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->verbreg == 27u))
     {
@@ -214,18 +309,27 @@ agc_status_t pin_dspfmem(void)
 
 /* ---- V30 / V31 (pp. 365-366) ------------------------------------------ */
 
-/* VBRQEXEC: request executive, from noun 26 in DSPTEM1: +0 priority word
+/**********************************************************************
+ * AGC: VBRQEXEC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 366)
+ *
+ * VBRQEXEC: request executive, from noun 26 in DSPTEM1: +0 priority word
  * (bit 1 = 1 for FINDVAC), +1 job, +2 BBCON.
  * DEVIATION: the job is an agc_job_id_t number in DSPTEM1 +1 (there are no
- * fixed-memory addresses); BBCON is ignored.                             */
+ * fixed-memory addresses); BBCON is ignored.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_vbrqexec(void)
 {
-    pin_state_t *s    = pin_st();
-    uint16_t     w    = s->dsptem[0];
+    pin_state_t *s    = pin_st(); /* pinball erasables */
+    uint16_t     w    = s->dsptem[0]; /* DSPTEM1: priority word */
     agc_prio_t   prio =
         (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
-    agc_job_id_t job = (agc_job_id_t) s->dsptem[1];
-    agc_status_t st  = pin_reldsp(); /* REQUESTC    */
+    agc_job_id_t job = (agc_job_id_t) s->dsptem[1]; /* job */
+    agc_status_t st = agc_dsky_releasedsp(); /* REQUESTC    */
 
     if (!AGC_ASSERT(prio >= 1u && prio <= 037u) ||
         !AGC_ASSERT(job != AGC_JOB_NONE))
@@ -247,14 +351,23 @@ agc_status_t pin_vbrqexec(void)
     return (st); /* ENDOFJOB    */
 }
 
-/* VBRQWAIT: request waitlist, DSPTEM1 = time delay (cs), +1 the task.
- * DEVIATION: the task is an agc_task_id_t number in DSPTEM1 +1.          */
+/**********************************************************************
+ * AGC: VBRQWAIT (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 366)
+ *
+ * VBRQWAIT: request waitlist, DSPTEM1 = time delay (cs), +1 the task.
+ * DEVIATION: the task is an agc_task_id_t number in DSPTEM1 +1.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_vbrqwait(void)
 {
-    pin_state_t  *s     = pin_st();
-    uint16_t      delay = s->dsptem[0];
-    agc_task_id_t task  = (agc_task_id_t) s->dsptem[1];
-    agc_status_t  st    = pin_reldsp();
+    pin_state_t  *s     = pin_st(); /* pinball erasables */
+    uint16_t      delay = s->dsptem[0]; /* DSPTEM1: delay, cs */
+    agc_task_id_t task = (agc_task_id_t) s->dsptem[1]; /* task */
+    agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
     {
@@ -275,9 +388,22 @@ agc_status_t pin_vbrqwait(void)
 
 /* ---- V32 / V33 / V34 (pp. 366-367) ------------------------------------ */
 
-/* VBPROC +1: LOADSTAT = +1 proceed without data (V33), -1 terminate
+/**********************************************************************
+ * AGC: VBPROC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 366)
+ *
+ * VBPROC +1: LOADSTAT = +1 proceed without data (V33), -1 terminate
  * (V34), -0 data in or resequence (V32). Kill the monitor, release the
- * display, flash off and see if there is any recall from ENDIDLE.       */
+ * display, flash off and see if there is any recall from ENDIDLE.
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -------------------
+ *   ls        pin_loadstat_t  I    LOADSTAT: proceed (V33), terminate
+ *                                  (V34), data in (V32)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -285,7 +411,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN))
     {
@@ -294,7 +420,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 
     s->loadstat = ls;
     pin_kilmonon(); /* turn on kill monitor bit      */
-    agc_status_t st = pin_reldsp();
+    agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     pin_flashoff();
 
@@ -303,8 +429,17 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 
 /* ---- V37 (p. 365) ----------------------------------------------------- */
 
-/* REQMM: request two decimal characters for the major mode in the noun
- * lights (ENTPASHI assumes the TC REQMM at MMCHANG).                    */
+/**********************************************************************
+ * AGC: REQMM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 365)
+ *
+ * REQMM: request two decimal characters for the major mode in the noun
+ * lights (ENTPASHI assumes the TC REQMM at MMCHANG).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_reqmm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -312,13 +447,13 @@ agc_status_t pin_reqmm(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->reqret     = PIN_REQ_MM;
     s->reqret_neg = true;
     pin_set_dspcount(PIN_ND1);
     s->nounreg = 0;
-    agc_status_t st = pin_2blank();
+    agc_status_t st = pin_2blank(); /* status so far */
 
     pin_flashon();
     s->decbrnch = 1u; /* set for dec                   */
@@ -331,8 +466,17 @@ agc_status_t pin_reqmm(void)
     return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
 }
 
-/* MMCHANG +1: demand that 2 numerical characters were punched in
- * (DSPCOUNT = -ND2), blank the noun lights and go to V37 (MODROUTB).    */
+/**********************************************************************
+ * AGC: MMCHANG (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 365)
+ *
+ * MMCHANG +1: demand that 2 numerical characters were punched in
+ * (DSPCOUNT = -ND2), blank the noun lights and go to V37 (MODROUTB).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_mmchang_resume(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -340,18 +484,18 @@ agc_status_t pin_mmchang_resume(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s = pin_st();
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!s->dspcount_neg || s->dspcount != PIN_ND2)
     {
         return (pin_almcycle()); /* DSPCOUNT not = -ND2           */
     }
 
-    uint8_t mm = s->nounreg;
+    uint8_t mm = s->nounreg; /* major mode keyed */
 
     s->nounreg = 0;
     pin_set_dspcount(PIN_ND1);
-    agc_status_t st = pin_2blank();
+    agc_status_t st = pin_2blank(); /* status so far */
 
     pin_block_dspcount(PIN_VD1); /* block num char in             */
 
@@ -365,9 +509,18 @@ agc_status_t pin_mmchang_resume(void)
 
 /* ---- V35 test lights (pp. 385-387) ------------------------------------ */
 
-/* VBTSTLTS: all 8's and the + signs, every lamp on, test alarm outbit on;
+/**********************************************************************
+ * AGC: VBTSTLTS (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 385)
+ *
+ * VBTSTLTS: all 8's and the + signs, every lamp on, test alarm outbit on;
  * TSTLTS2 runs 5 s later. DSPLOCK is left busy (from keyboard action)
- * until TSTLTS3 to insure that the lights test will be seen.            */
+ * until TSTLTS3 to insure that the lights test will be seen.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t pin_vbtstlts(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -375,12 +528,12 @@ agc_status_t pin_vbtstlts(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s   = pin_st();
-    bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
+    pin_state_t *s   = pin_st(); /* pinball erasables */
+    bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* true on the CSM */
 
     if (csm && agc_erase_modreg() != 0)
     {                 /* CHKPOOH (CM only)   */
-        pin_falton(); /* ALM/END             */
+        agc_dsky_falton(); /* ALM/END             */
 
         return (pin_pinbrnch());
     }
@@ -390,7 +543,7 @@ agc_status_t pin_vbtstlts(void)
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_BIT1));
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_TSTCON1);
     agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     agc_chan_or((int) AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
 
@@ -420,7 +573,16 @@ agc_status_t pin_vbtstlts(void)
     return (st);
 }
 
-/* TSTLTS2: called by waitlist. */
+/**********************************************************************
+ * AGC: TSTLTS2 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 386)
+ *
+ * TSTLTS2: called by waitlist.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
+ *          else the status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_task_tstlts2(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -428,7 +590,7 @@ agc_status_t agc_task_tstlts2(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_TSTLTS3);
+    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_TSTLTS3); /* status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -438,9 +600,22 @@ agc_status_t agc_task_tstlts2(void)
     return (st);
 }
 
-/* TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash
+/**********************************************************************
+ * AGC: TSTLTS3 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 386)
+ *
+ * TSTLTS3: called by executive. Redisplay C(MODREG), kill monitor, flash
  * off, then TSTLTS4 (RELDSP, and PINBRNCH if ENDIDLE is awaiting operator
- * response).                                                            */
+ * response).
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------
+ *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
+ *                                   priority, VAC; MPAC word in arg)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
@@ -462,7 +637,7 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
                  (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
     uint16_t c =
         (uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN12) & PIN_CH12_COARSE) |
-                    PIN_BIT15);
+                    PIN_BIT15); /* lamp word */
 
     agc_erase_set_dsptab(11, c);
     agc_erase_set_imodes33(
@@ -487,7 +662,7 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     if (st == AGC_STATUS_OK)
     {
@@ -496,7 +671,7 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 
     pin_kilmonon();
     pin_flashoff();
-    agc_status_t st4 = pin_tstlts4();
+    agc_status_t st4 = pin_tstlts4(); /* status of TSTLTS4 */
 
     return ((st == AGC_STATUS_OK) ? st4 : st);
 }

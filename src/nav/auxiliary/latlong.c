@@ -28,6 +28,18 @@ static const agc_dp_t ERAD = 3186669;
 static const agc_dp_t RM504 = 869045;
 
 /*
+ * DLOAD DSQ a / PDDL DSQ b / DAD: the first square is pushed as DP (top two
+ * words), the second stays a TP in MPAC and DAD adds the DP to its top two
+ * words, so the SQRT that follows sees MPAC+2 of b^2 only.
+ */
+static agc_tp_t sum_of_squares(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
+{
+    agc_tp_t a2 = agc_tp_from_dp(agc_dp_sq(ip, a)); /* pushed: DP  */
+
+    return (agc_tp_add(ip, agc_dp_sq_tp(b), a2));
+}
+
+/*
  * SETGAMMA (LATITUDE_LONGITUDE_SUBROUTINES.agc p. 1241, label SETGAMMA)
  * GAMRP = B^2/A^2 for the earth, 1 (1B1 = DP1/2 at scale 2^1) for the moon.
  */
@@ -53,8 +65,10 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
         return (ERAD);
     }
 
-    agc_dp_t sin2 =
-        agc_dp_shl(ip, agc_dp_sq(ip, half_sin_lat), 1); /* sin^2/2 */
+    /* DSQ leaves the TP square in MPAC; SL1 shifts all three words and
+     * BDSU then uses the top two (truncation after the shift).            */
+    agc_dp_t sin2 = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2 */
     agc_dp_t cos2 = agc_dp_sub(ip, AGC_DP_HALF, sin2);  /* BDSU DP1/2     */
     agc_dp_t den  = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));
     agc_dp_t q    = agc_dp_div(ip, B2XSC, den);     /* BDDV B2XSC     */
@@ -113,14 +127,14 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
     }
 
     agc_interp_clear_ovf(ip); /* BOV CLROVFLW   */
-    agc_dp_t r2 = agc_dp_add(ip, agc_dp_sq(ip, sinth), agc_dp_sq(ip, costh));
+    agc_tp_t r2 = sum_of_squares(ip, sinth, costh);
 
-    if (r2 == 0)
+    if (agc_tp_to_dp(r2) == 0)
     {
         return (0); /* ARCTANXX: 0/0  */
     }
 
-    agc_dp_t q = agc_dp_div(ip, sinth, agc_dp_sqrt(ip, r2)); /* sin, 2^0  */
+    agc_dp_t q = agc_dp_div(ip, sinth, agc_tp_sqrt(ip, r2)); /* sin, 2^0  */
 
     if (agc_interp_test_ovf(ip))
     {
@@ -184,11 +198,11 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip,
         return (st);
     }
 
-    agc_dp_t costh = agc_dp_sqrt(ip, agc_dp_add(ip, agc_dp_sq(ip, alphav.c[0]),
-                                                agc_dp_sq(ip, alphav.c[1])));
+    agc_dp_t costh =
+        agc_tp_sqrt(ip, sum_of_squares(ip, alphav.c[0], alphav.c[1]));
 
-    costh =
-        agc_dp_shl_round(ip, agc_dp_mul(ip, costh, gamrp), 1); /* DMP SL1R */
+    /* DMP SL1R: shift the TP product, then round once.                     */
+    costh = agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(costh, gamrp), 1));
     out->lat = agc_latlong_arctan(ip, alphav.c[2], costh);
     out->lon = agc_latlong_arctan(ip, alphav.c[1], alphav.c[0]);
     out->alt = agc_dp_sub(ip, alpham, out->eradm);

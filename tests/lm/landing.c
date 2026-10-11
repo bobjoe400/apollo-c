@@ -80,7 +80,7 @@ static void test_throttle_band(void)
 
     agc_guid_state()->lm.mass = agc_dp_from_double(mass, 16);
     agc_time_set_cs(50000u);
-    agc_lm_thr()->tthrot = (agc_sp_t) (agc_lm_time1() - 1000); /* > 3 s ago */
+    agc_lm_thr()->tthrot = (agc_sp_t) ((agc_lm_time1() + 16384 - 1000) % 16384); /* > 3 s ago */
 
     /* Commanded 2.0 m/s^2 (16 kN, ~37% of the 43.9 kN maximum); present
      * 1.5 m/s^2 (12 kN, ~27%): both inside the 10%-60% band.          */
@@ -95,8 +95,10 @@ static void test_throttle_band(void)
     const double        fc     = mass * a_cmd * BITPERF; /* 1276.7 pulses        */
     const double        fp     = mass * a_now * BITPERF; /*  957.6 pulses        */
     const agc_lm_thr_t *t      = agc_lm_thr();
-    double              fc_got = agc_dp_to_double(t->fcodd, 14);
-    double              fp_got = agc_dp_to_double(t->fp, 14);
+    double              fc_got = agc_dp_to_double(agc_lm_words_value(
+                                                      t->fcodd), 14);
+    double fp_got =
+        agc_dp_to_double(agc_lm_words_value(t->fp), 14);
 
     CHECK(fabs(fc_got - fc) < 1.0);
     CHECK(fabs(fp_got - fp) < 1.0);
@@ -106,18 +108,18 @@ static void test_throttle_band(void)
 
     CHECK(abs((int) t->pseudo55 - expected) <= 1);
     CHECK(agc_erase_thrust() == t->pseudo55);
-    CHECK(t->fcold == agc_dp_high(t->fcodd));
+    CHECK(t->fcold == t->fcodd.hi);
     (void) printf("throttle: FC %.1f FP %.1f -> %d pulses (expect %d)\n",
                   fc_got, fp_got, (int) t->pseudo55, expected);
 
     /* Above HIGHCRIT from the throttleable region: throttle-up to the
      * fixed region (FCODD = FMAXPOS, PIFPSET = FEXTRA).                */
-    agc_lm_thr()->tthrot = (agc_sp_t) (agc_lm_time1() - 1000);
+    agc_lm_thr()->tthrot = (agc_sp_t) ((agc_lm_time1() + 16384 - 1000) % 16384);
     agc_lm_thr()->fcold  = 1000;
     agc_lm_ldg()->afc    = accel_dp(5.0); /* 3192 pulses > HIGHCRIT */
     st                   = agc_lm_throttle_measured(accel_dp(a_now));
     CHECK(st == AGC_STATUS_OK);
-    CHECK(agc_dp_high(agc_lm_thr()->fcodd) == AGC_LM_FMAXPOS);
+    CHECK(agc_lm_thr()->fcodd.hi == AGC_LM_FMAXPOS);
     CHECK(agc_lm_thr()->pifpset == AGC_LM_FEXTRA);
 }
 

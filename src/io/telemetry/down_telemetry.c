@@ -36,6 +36,7 @@
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
+#include "agc/programs/rendezvous.h"
 
 #define WORD15         077777u
 #define BIT7           000100u /* CHAN13 bit 7: downlink word order code   */
@@ -182,7 +183,7 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
             v = agc_erase_vgtig();
             break;
         case AGC_DN_DELVSLV:
-            v = agc_erase_delvslv();
+            v = agc_rendz_erasable()->delvlvc; /* DELVSLV = DELVLVC */
             break;
         case AGC_DN_RLS:
             v = agc_erase_rls();

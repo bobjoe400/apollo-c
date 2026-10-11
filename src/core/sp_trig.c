@@ -1,17 +1,54 @@
-/*
- * agc_sp_trig.c -- SPSIN / SPCOS, SINGLE_PRECISION_SUBROUTINES.agc p.1207
- * (identical in Comanche055 and Luminary099).
+/**********************************************************************
+ * FILE NAME: sp_trig.c
  *
- * Argument in A scaled at pi (v / 2^14 * pi radians, i.e. half-revolutions);
- * result scaled at 1. The polynomial is
- *     sin(pi/2 x) ~ 2 x (C1/2 + C3/2 x^2 + C5/2 x^4),  x scaled at pi/2,
- * evaluated with single-precision MP (major halves only) exactly as the AGC.
- */
+ * PURPOSE:
+ *   Single-precision sine and cosine (SPSIN, SPCOS, with their tails
+ *   SPT, POLLEY and ARG90), the basic-language trig used by the DAPs and
+ *   the IMU routines.
+ *
+ * AGC SOURCE:
+ *   Comanche055 SINGLE_PRECISION_SUBROUTINES.agc p.1207 (SPCOS, SPSIN,
+ *   SPT, POLLEY, ARG90)
+ *   Luminary099 SINGLE_PRECISION_SUBROUTINES.agc p.1207 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (TEMK and SQ are locals here)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name          Description
+ *   ------------  ------------------------------------------------
+ *   agc_w_mp      MP: SP x SP -> two words (mpac.h)
+ *   agc_w_ts      TS with overflow skip (mpac.h)
+ *   agc_w_das     DAS / DDOUBL on a word pair (mpac.h)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; an argument of exactly +-1 (pi/2 after DOUBLE) gives
+ *   +-POSMAX through ARG90.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Argument in A scaled at pi (v / 2^14 * pi rad, half-revolutions);
+ *   result scaled at 1. Both vehicles. Bit-exact with the AGC for all
+ *   32,767 SP arguments (scratch oracle run, docs/modules/core-numeric.md).
+ *
+ * ALGORITHM:
+ *   SPCOS adds HALF (pi/2) and falls into SPSIN. An argument beyond
+ *   +-pi/2 is reflected (pi - x) using the overflow of DOUBLE, then
+ *   sin(pi/2 x) ~ 2 x (C1/2 + C3/2 x^2 + C5/2 x^4) is evaluated with SP
+ *   MP keeping only the major word of each product, exactly as the AGC.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/constants.h"
 #include "mpac.h"
 
-/* ARG90: INDEX A / CS LIMITS -> +-POSMAX for the +-1 left in A.             */
+/**********************************************************************
+ * ARG90 (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- INDEX A / CS LIMITS
+ * for the +-1 the overflowing TS left in A: +-POSMAX (sin = +-1).
+ *
+ * ARGUMENTS:
+ *   a  int  I  overflow indicator left in A, +1 or -1
+ *
+ * RETURNS: agc_sp_t -- +POSMAX for +1, -POSMAX for -1 (scaled at 1)
+ **********************************************************************/
 static agc_sp_t sp_arg90(int a)
 {
     if (!AGC_ASSERT((a == 1) || (a == -1)))
@@ -21,17 +58,27 @@ static agc_sp_t sp_arg90(int a)
 
     _Static_assert(AGC_K_POSMAX == AGC_W_POSMAX, "AGC constant");
 
-    return ((agc_sp_t) ((a > 0) ? AGC_K_POSMAX : -AGC_K_POSMAX));
+    /* LIMITS-1 = POSMAX, LIMITS+1 = BIT15 (NEGMAX)                      */
+    return ((agc_sp_t) ((a > 0) ? AGC_K_POSMAX : -AGC_K_POSMAX)); /* CS  */
 }
 
-/* POLLEY: x scaled at pi/2 in TEMK.                                         */
+/**********************************************************************
+ * POLLEY (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- the odd polynomial
+ * 2 x (C1/2 + C3/2 x^2 + C5/2 x^4), each MP keeping its major word.
+ *
+ * ARGUMENTS:
+ *   x  int32_t  I  angle in TEMK, scaled at pi/2, a valid 15-bit word
+ *
+ * RETURNS: agc_sp_t -- sin(pi/2 x) scaled at 1; +-POSMAX when DDOUBL
+ *          overflows (ARG90)
+ **********************************************************************/
 static agc_sp_t sp_polley(int32_t x)
 {
-    int32_t  sq;
-    int32_t  a;
-    agc_w2_t p;
-    agc_w2_t two;
-    int      o = 0;
+    int32_t  sq;    /* SQ: x^2, scaled at (pi/2)^2              */
+    int32_t  a;     /* accumulator, scaled at 1                 */
+    agc_w2_t p;     /* MP TEMK product (A, L), scaled at 1/2    */
+    agc_w2_t two;   /* DDOUBL of p, scaled at 1                 */
+    int      o = 0; /* DDOUBL overflow, +-1 or 0                */
 
     if (!AGC_ASSERT(agc_w_ok(x)))
     {
@@ -63,12 +110,21 @@ static agc_sp_t sp_polley(int32_t x)
     return ((agc_sp_t) two.hi);
 }
 
-/* SPSIN body from "TS TEMK" with the (possibly overflowed) accumulator.   */
+/**********************************************************************
+ * SPSIN from "TS TEMK", SPT (SINGLE_PRECISION_SUBROUTINES.agc p.1207) --
+ * the shared body of SPSIN and SPCOS, entered with the accumulator as
+ * SPCOS's AD HALF may leave it (overflowed, 16 bits).
+ *
+ * ARGUMENTS:
+ *   a16  int32_t  I  accumulator, scaled at pi, |a16| < 2 (16-bit A)
+ *
+ * RETURNS: agc_sp_t -- sin(pi a16) scaled at 1
+ **********************************************************************/
 static agc_sp_t sp_sine(int32_t a16)
 {
-    int     o = 0;
-    int32_t t = agc_w_ts(a16, &o); /* SPSIN: TS TEMK   */
-    int32_t x;
+    int     o = 0;                 /* overflow of the last TS, +-1 or 0 */
+    int32_t t = agc_w_ts(a16, &o); /* TEMK, scaled at pi                */
+    int32_t x;                     /* TEMK after SPT, scaled at pi/2    */
 
     if (!AGC_ASSERT(agc_w_ok(t)))
     {
@@ -88,7 +144,7 @@ static agc_sp_t sp_sine(int32_t a16)
     }
 
     /* XCH TEMK; INDEX TEMK; AD LIMITS; COM; AD TEMK: x -> +-1.0 - x       */
-    x = (o > 0) ? (x - AGC_K_POSMAX) : (x + AGC_K_POSMAX);
+    x = (o > 0) ? (x - AGC_K_POSMAX) : (x + AGC_K_POSMAX); /* AD LIMITS+-1 */
     x = -x + o;
 
     if (!AGC_ASSERT((x >= -AGC_W_ONE) && (x <= AGC_W_ONE)))
@@ -106,7 +162,16 @@ static agc_sp_t sp_sine(int32_t a16)
     return (sp_polley(x));
 }
 
-/* SPSIN (p.1207): sin(pi a), a scaled at pi; result scaled at 1.            */
+/**********************************************************************
+ * SPSIN (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- sin(pi a).
+ * Kept as the public name over sp_sine: sp_sine also takes the 16-bit
+ * accumulator SPCOS forms, which an agc_sp_t cannot hold.
+ *
+ * ARGUMENTS:
+ *   a  agc_sp_t  I  angle scaled at pi (half-revolutions), any SP word
+ *
+ * RETURNS: agc_sp_t -- sin(pi a) scaled at 1 (|err| <= 4.2 LSB)
+ **********************************************************************/
 agc_sp_t agc_sp_sin(agc_sp_t a)
 {
     if (!AGC_ASSERT(a >= AGC_SP_MIN))
@@ -122,7 +187,15 @@ agc_sp_t agc_sp_sin(agc_sp_t a)
     return (sp_sine((int32_t) a));
 }
 
-/* SPCOS (p.1207): AD HALF then SPSIN, i.e. cos(pi a) = sin(pi (a + 1/2)).  */
+/**********************************************************************
+ * SPCOS (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- AD HALF, then SPSIN:
+ * cos(pi a) = sin(pi (a + 1/2)); the sum may overflow (16-bit A).
+ *
+ * ARGUMENTS:
+ *   a  agc_sp_t  I  angle scaled at pi (half-revolutions), any SP word
+ *
+ * RETURNS: agc_sp_t -- cos(pi a) scaled at 1 (|err| <= 4.2 LSB)
+ **********************************************************************/
 agc_sp_t agc_sp_cos(agc_sp_t a)
 {
     if (!AGC_ASSERT(a >= AGC_SP_MIN))

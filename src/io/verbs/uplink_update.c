@@ -257,7 +257,7 @@ static agc_status_t up_error_exit(void)
     agc_dsky_falton();
     upactoff();
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* ---- entry --------------------------------------------------------------- */
@@ -462,7 +462,7 @@ agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
     upactoff();
     agc_phase_kill(UP_GROUP); /* -PHASE6 = -0        */
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /* UPOUT: release INTSTALL (INTWAKEU, which also finishes a state vector

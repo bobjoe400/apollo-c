@@ -55,8 +55,8 @@
  * Ones' complement +0/-0 are distinct states, so an enum stands in.       */
 typedef enum agc_csm_t5phase
 {
-    AGC_CSM_T5P_PHASE1 = 0, /* -0 */
-    AGC_CSM_T5P_PHASE2,     /* +0 */
+    AGC_CSM_T5P_RATE_FILTER = 0, /* -0 */
+    AGC_CSM_T5P_ATTITUDE_CONTROL,     /* +0 */
     AGC_CSM_T5P_RESTART,    /* -  */
     AGC_CSM_T5P_INIT        /* +  */
 } agc_csm_t5phase_t;
@@ -138,22 +138,39 @@ typedef struct agc_csm_dapcom
     uint16_t cphix[AGC_CSM_AXES]; /* CPHIX N17 attitude (V60/V25N17), raw */
 } agc_csm_dapcom_t;
 
+/* An AGC double-precision erasable B(2) as its two words are stored.
+ * DAS adds the low words (carrying into the high word) but never makes
+ * the two signs agree, and the TVC DAP later reads or overwrites the high
+ * word alone (ERRORLIM, ACTLIM, PCMD, AK1): the split, not just the
+ * value hi * 2^14 + lo, decides the result (oracle finding F9).          */
+typedef struct agc_csm_dp_pair
+{
+    agc_sp_t hi; /* upper word (the DP's scale)                   */
+    agc_sp_t lo; /* lower word, 2^-14 of the upper word's scale   */
+} agc_csm_dp_pair_t;
+
 /* ---- TVC DAP erasables ------------------------------------------------ */
 typedef struct agc_csm_tvc
 {
     agc_dp_t omegac[AGC_CSM_AXES]; /* OMEGAXC.. steering rate cmd (S40.8)  */
-    agc_dp_t
-             omegab[AGC_CSM_AXES]; /* OMEGAXB.. body rate (Y,Z), 1/2 TVCDT revs */
-    agc_dp_t ptmp[6], ytmp[6]; /* PTMP1-6, YTMP1-6 filter nodes        */
+    agc_csm_dp_pair_t omegab[AGC_CSM_AXES]; /* OMEGAXB.. body rate (Y,Z),
+                                               1/2 TVCDT revs              */
+    agc_csm_dp_pair_t ptmp[6];    /* PTMP1-6 pitch filter nodes, scale 1    */
+    agc_csm_dp_pair_t ytmp[6];    /* YTMP1-6 yaw filter nodes, scale 1      */
     agc_sp_t rollfire;         /* ROLLFIRE: +-POSMAX on, 0 off         */
     uint16_t rollword;         /* ROLLWORD alternation bits 1,2        */
     agc_sp_t temreg;           /* TEMREG roll firing time (1/1600 s)   */
     agc_sp_t stroker;          /* STROKER stroke burst, 0 = no test    */
-    agc_dp_t perrb, yerrb;     /* PERRB/YERRB error integrators, B-1 rev */
-    agc_dp_t delpbar, delybar; /* DELPBAR/DELYBAR offset trackers      */
-    agc_dp_t pdeloff, ydeloff; /* PDELOFF/YDELOFF trim estimates       */
+    agc_csm_dp_pair_t perrb;   /* PERRB pitch error integrator, B-1 rev */
+    agc_csm_dp_pair_t yerrb;   /* YERRB yaw error integrator, B-1 rev   */
+    agc_csm_dp_pair_t delpbar; /* DELPBAR pitch offset tracker, 1 ascrev */
+    agc_csm_dp_pair_t delybar; /* DELYBAR yaw offset tracker, 1 ascrev  */
+    agc_csm_dp_pair_t pdeloff; /* PDELOFF pitch trim estimate, 1 ascrev */
+    agc_csm_dp_pair_t ydeloff; /* YDELOFF yaw trim estimate, 1 ascrev   */
     agc_dp_t ttmp1, ttmp2;     /* TTMP1/TTMP2 (PHASETMP / RTRNLOC)     */
-    agc_dp_t dap1, dap2, dap3; /* DAP1..3 cascade outputs              */
+    agc_csm_dp_pair_t dap1;    /* DAP1 first cascade output, B-1 rev    */
+    agc_csm_dp_pair_t dap2;    /* DAP2 second cascade output, B-1 rev   */
+    agc_csm_dp_pair_t dap3;    /* DAP3 third cascade output, B-1 rev    */
     agc_sp_t pcmd, ycmd;       /* PCMD/YCMD last actuator commands     */
     agc_sp_t t5tvcdt;          /* T5TVCDT TIME5 word for TVCDT/2       */
     agc_dp_t kprimedt;         /* KPRIMEDT steering gain, pi/8         */
@@ -177,13 +194,15 @@ typedef struct agc_csm_tvc
     agc_sp_t ogarate;         /* OGARATE rev/s, scale 2^-4            */
     agc_sp_t delogart, sgnrt, deloga, iogarate; /* roll logic temporaries   */
     int      i_sign;           /* I: +1 (CA), -1 (CS), 0 (MOREROLL)    */
-    agc_dp_t pacttmp, yacttmp; /* PACTTMP/YACTTMP                      */
+    agc_csm_dp_pair_t pacttmp; /* PACTTMP pitch trim (CG.CORR), 1 ascrev */
+    agc_csm_dp_pair_t yacttmp; /* YACTTMP yaw trim (CG.CORR), 1 ascrev  */
     agc_sp_t cntr, cntrtmp;    /* CNTR/CNTRTMP one-shot counter        */
-    agc_dp_t delbrtmp, errbtmp, cmdtmp; /* restart temporaries              */
-    agc_sp_t errbinit[2];            /* ERRBTMP, +1 as two SP words: ERRORY,
-                                        ERRORZ (180 deg) stored by P40 DOTVCON
-                                        for ATTINIT (overlay of errbtmp)    */
-    agc_dp_t tmp[6];                 /* TMP1..TMP6                           */
+    agc_csm_dp_pair_t delbrtmp; /* DELBRTMP offset tracker, 1 ascrev   */
+    agc_csm_dp_pair_t errbtmp;  /* ERRBTMP body error, B-1 rev; before
+                                   ATTINIT the two words hold -ERRORY,
+                                   -ERRORZ (180 deg) from P40 DOTVCON   */
+    agc_csm_dp_pair_t cmdtmp;   /* CMDTMP actuator command, 1 ascrev    */
+    agc_csm_dp_pair_t tmp[6];   /* TMP1..TMP6 working filter nodes      */
     agc_sp_t n10[AGC_CSM_N10_WORDS]; /* N10..D32 active filter coefficients  */
     agc_sp_t tempdap[2];             /* TEMPDAP, TEMPDAP+1 correction fraction*/
     agc_sp_t phasetmp;               /* PHASETMP (V46 switch-over)           */
@@ -245,14 +264,14 @@ agc_status_t agc_task_rcsatt(void);
 agc_status_t agc_task_jetslect(void);
 agc_status_t agc_task_t6start(void);
 agc_status_t agc_task_tvcdapon(void);
-agc_status_t agc_task_tvcinit1(void);
+agc_status_t agc_task_tvc_initialize(void);
 agc_status_t agc_task_dapinit(void);
 agc_status_t agc_task_pitchdap(void);
 agc_status_t agc_task_yawdap(void);
 agc_status_t agc_task_redotvc(void);
-agc_status_t agc_task_enabl2(void);
+agc_status_t agc_task_optics_counter_enable(void);
 agc_status_t agc_task_cmdsout(void);
-agc_status_t agc_task_noroll1(void);
+agc_status_t agc_task_roll_jets_off(void);
 agc_status_t agc_task_rcsup(void); /* RCSUP (P40-P47 p.736)     */
 /* ---- waitlist tasks and jobs ------------------------------------------ */
 agc_status_t agc_task_tvcexec(void);

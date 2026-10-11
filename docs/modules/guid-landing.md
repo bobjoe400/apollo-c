@@ -112,7 +112,8 @@ Per file (TODO unless marked):
 ## Deviations
 
 - FASTCHNG (state.c): group 3 re-armed at the LUNLAND phase; a restart repeats the whole guidance pass (C cannot restart mid-function).
-- THROTTLE (throttle.c): -0 values (PIFPSET initial, WHATOUT FCOLD/PIF) modelled as +0; MASSMULT overflow and FLATOUT1 low words returned as 0 (AGC leaves stale L).
+- THROTTLE (throttle.c): -0 values (PIFPSET initial, WHATOUT FCOLD/PIF) modelled as +0 (same pulses, FWEIGHT 0); FLATOUT1/LOWFCOLD FCODD low word = L = BUF+1 (scratch shared with ROOTPSRS etc.), modelled as 0. (MASSMULT overflow is exact since review: L = 02410.)
+- ROOTPSRS (guidance.c): DXCRIT ignores the stale MPAC+2 product SHORTMP adds (at most a 1-LSB carry).
 - guidance.c QUADGUID coefficients: stored SP over stale low words in the AGC, here as clean DP (low word 0).
 - IGNALG (lunar_landing.c): loop bounded; on exhaustion alarm 01412 and NIGNLOOP left 0; returns AGC_STATUS_NO_CONVERGE.
 - FINDCDUW (findcduw.c): DV's L after LIMITSUB modelled as A.
@@ -127,23 +128,20 @@ None in this lane. Calls into other lanes that may still return AGC_STATUS_UNIMP
 tests/lm/landing.c (LM). Compiles with the project flags + -DAGC_HOST_DEBUG.
 1. Throttle law in the 10%-60% band: MASS 8000 kg, commanded 2.0 m/s^2 (FC 1276.7 pulses), measured 1.5 m/s^2 (FP 957.6) -> 319 pulses to THRUST (PIFPSET 0); above HIGHCRIT -> FCODD = FMAXPOS, PIFPSET = FEXTRA.
 2. QUADGUID with the vehicle exactly on r = RDG + VDG T + ADG T^2/2 (T = -400 s, LEADTIME -1 cs) -> ACG = ADG to 1e-4 relative (zero correction); 10 m x offset -> correction -12 dx/T^2 = -0.00075 m/s^2 exactly as expected.
-Link status: libagc does not link yet (other lanes' pending symbols: radar, DSKY ecadr, exec wake_as, etc.), so `make test` cannot build it until integration. Verified in scratch by linking with --unresolved-symbols=ignore-all: 17 checks, 0 failures. The test defines agc_erase_set_thrust itself under LANDING_TEST_FAKE_THRUST (set to 0 once state-flags provides it).
+`make test` builds and runs it (17 checks). The oracle differential test
+tests/oracle/landing.c (oracle-cases lane) checks one guidance pass,
+CGCALC, six THROTTLE cases and FINDCDUW against Luminary099 in yaAGC:
+172 checks, no KNOWN entries since review-guid-landing (F9 fixed).
 
 ## Open questions
 
-- THRUST / ALTM / CDUTCMD / CDUSCMD counters: state-flags should own accessors (declared provisionally below); ALTM takes a raw 15-bit word (bit 15 = output sign/high bit), not an agc_sp_t.
-- TBASE2 setter for LANDISP (exec-sched), if exact TBASE2 = -TIME1 semantics are wanted.
+Resolved by review-guid-landing (2026-10-10):
+- THRUST / ALTM / CDUTCMD / CDUSCMD: accessors exist in include/agc/core/state.h (ALTM as a raw uint16_t word, as asked).
+- TBASE2 for LANDISP: no setter needed; agc_phase_newphase(2, current phase, true) sets TBASE2 to the present time, which is what CS TIME1 / DXCH TBASE2 encodes in the exec's TBASE model (DEVIATION note kept in displays.c).
 
 ## Requested core additions
 
-Exact list = include/agc/agc_landing_pending.h (re-checked 2026-10-10 against every include/agc header; everything else it used to hold now comes from real headers):
-- state-flags: `void agc_erase_set_thrust(agc_sp_t pulses);` (THRUST 055), `void agc_erase_set_altm(uint16_t word);` (ALTM 060, raw word), `void agc_erase_set_cdutcmd(int which, agc_sp_t v);` (0 CDUTCMD 053, 1 CDUSCMD 054)
-- guid-powered: `agc_sp_t agc_erase_tem(int axis); void agc_erase_set_tem(int axis, agc_sp_t v);` (TEMX/Y/Z)
-- prog-align: `agc_status_t agc_align_refmf(agc_interp_t *ip);` (REFMF)
-- nav-aux / io-nouns: `agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);` (LAT/LONG/ALT for N43)
-- prog-rendz: `agc_status_t agc_rendz_flip(uint16_t lamp_bit); agc_status_t agc_rendz_clradmod(void);`
-- sys-misc / dap-lm: `agc_sp_t agc_erase_m22(void); agc_sp_t agc_erase_m32(void);` (also in include/agc/agc_lm_dap_pending.h)
-- alarms 00401 00402 01406 01410 01412 as AGC_ALARM_* constants.
+All satisfied (checked 2026-10-10 by review-guid-landing): agc_erase_set_thrust / _altm / _cdutcmd and agc_erase_tem (core/state.h), agc_align_refmf (programs/alignment.h), agc_navaux_set_latlong (nav/auxiliary.h), agc_rendz_flip / agc_rendz_clradmod (programs/rendezvous.h), agc_erase_m22 / _m32 (io/service.h); alarms 01406/01410/01412 are lane constants in include/agc/lm/landing.h. include/agc/agc_landing_pending.h no longer exists.
 
 ## Requested jobs-tasks
 

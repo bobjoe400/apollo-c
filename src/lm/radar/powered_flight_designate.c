@@ -250,7 +250,7 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
 }
 
 /* MP chains: high word of a*b, then times c as a DP.                    */
-static agc_dp_t pfd_mp3(agc_sp_t a, agc_sp_t b, agc_sp_t c)
+static agc_dp_t pfd_mp_chain(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 {
     agc_dp_t ab = agc_sp_mul(a, b);
 
@@ -293,8 +293,8 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
     t->sin_s = agc_sp_sin(sv);
     t->cos_s = agc_sp_cos(sv);
     int64_t c = (int64_t) agc_sp_mul((agc_sp_t) -t->sin_t, u[1]) +
-                pfd_mp3(t->sin_s, t->cos_t, u[0]) +
-                pfd_mp3(t->cos_s, t->cos_t, u[2]);
+                pfd_mp_chain(t->sin_s, t->cos_t, u[0]) +
+                pfd_mp_chain(t->cos_s, t->cos_t, u[2]);
 
     if (2 * c > (int64_t) AGC_DP_MAX)
     { /* TESTCOS  */
@@ -311,9 +311,9 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
 {
     agc_dp_t shaft =
         agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
-    agc_dp_t trun = pfd_mp3(t->sin_t, t->sin_s, u[0]) +
+    agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) +
                     agc_sp_mul(t->cos_t, u[1]) +
-                    pfd_mp3(t->sin_t, t->cos_s, u[2]);
+                    pfd_mp_chain(t->sin_t, t->cos_s, u[2]);
 
     if (!AGC_ASSERT(shaft >= AGC_DP_MIN && shaft <= AGC_DP_MAX))
     {
@@ -325,10 +325,9 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
         return;
     }
 
-    rr_state_t *s = rr_state();
-
-    s->tang[0] = agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN));
-    s->tang[1] = agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN));
+    agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
+    agc_erase_set_tang(1,
+                       agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
 }
 
 /* DGOOD? / R29LOKON / END29DOD (p.604): on RR data good stop designating

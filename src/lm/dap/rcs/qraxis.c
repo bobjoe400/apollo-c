@@ -110,19 +110,17 @@ static agc_status_t senseget(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
-
     if (!found || d->polytemp == 0)
     {
         d->polytemp = 0;
-        st          = lm_dap_alarm(AGC_ALARM_02002);
+        agc_alarm(AGC_ALARM_02002);
     }
 
     d->nextu = (uint16_t) ((uint16_t) d->polytemp & QR_UBITS); /* TSNEXTS */
     d->nextv =
         (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /* RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V

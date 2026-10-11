@@ -1,20 +1,46 @@
-/*
- * noun_data.c -- noun table lookup (LODNNTAB) and data id resolution.
+/**********************************************************************
+ * FILE NAME: data.c
  *
- * agc_noun_lookup*() fetch one row of the flat noun tables generated from
- * PINBALL_NOUN_TABLES.agc (noun_tables_csm.c / noun_tables_lm.c).
+ * PURPOSE:
+ *   Noun table lookup (LODNNTAB) and the data id -> erasable resolution
+ *   behind agc_noun_read() / agc_noun_write().
  *
- * agc_noun_read() / agc_noun_write() resolve a data id to the erasable it
- * names through ONE dispatch switch (noun_data_access); the per-family helpers
- * above it hold the calls to the accessors in agc_state.h / agc_channels.h
- * (split only to keep every function within the 60-line rule). Erasables core does not expose
- * yet return AGC_STATUS_UNIMPLEMENTED; the full list, with AGC scales and the
- * accessors requested, is in docs/modules/io-nouns.md "Requested core
- * additions". To wire one up, add a case here -- nothing else changes.
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_NOUN_TABLES.agc p. 270 (LODNNTAB; the NNADTAB and
+ *   IDADDTAB ECADRs become data ids)
+ *   Luminary099 PINBALL_NOUN_TABLES.agc p. 304 (identical)
  *
- * Value convention (see agc_nouns.h): an SP erasable travels in the high word
- * of the agc_dp_t, a DP erasable as the agc_dp_t itself.
- */
+ * EXTERNAL VARIABLES:
+ *   Name             Type      I/O  Scale        Description
+ *   ---------------  --------  ---  -----------  ------------------------
+ *   TIME2,TIME1      agc_dp_t  I/O  cs 2^28      clock (noun 36, 65)
+ *   TIG, TTOGO, TTPI agc_dp_t  I/O  cs 2^28      signed DP times
+ *   PIPAX..Z         agc_sp_t  I/O  pulses       noun 21
+ *   CSMMASS, LEMMASS agc_sp_t  I/O  2^16 kg      noun 47
+ *   CDUX..Z, CDUS/T  uint16_t  I/O  2^-15 rev    raw angle words
+ *   DAPDATR1/2, FAILREG, THETAD  uint16_t  I/O   raw words
+ *   SAMPTIME, T3TOT4 agc_dp_t  I/O  cs 2^28
+ *   RR-AZ, RR-ELEV   agc_dp_t  I/O  rev
+ *   OPTION1..3       agc_sp_t  I/O  octal        noun 06
+ *   channel 33       uint16_t  I    bits         LM noun 66
+ *
+ * EXTERNAL REFERENCES:
+ *   Name               Description
+ *   -----------------  -----------------------------------------------
+ *   agc_erase_*        core erasable accessors (state.h)
+ *   agc_dispatch_noun  every other id (src/exec/nouns.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   NOT_FOUND for the pinball-resolved ids (nouns 01-03, 10, 15) and ids
+ *   no layer holds; BAD_ARG on a failed precondition.
+ *
+ * NOTES:
+ *   One dispatch switch (noun_data_access); per-family helpers hold the
+ *   accessor calls only to keep every function within the 60-line rule.
+ *   Value convention (nouns.h): an SP erasable travels in the high word of
+ *   the agc_dp_t, a DP erasable as the agc_dp_t itself, a raw word as the
+ *   unsigned 15-bit integer.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -24,7 +50,20 @@
 #include "agc/io/nouns.h"
 #include "agc/io/service.h"
 
-/* LODNNTAB (PINBALL_NOUN_TABLES.agc p. 270): row for one noun of one vehicle. */
+/**********************************************************************
+ * LODNNTAB (PINBALL_NOUN_TABLES.agc p. 270): row for one noun of one vehicle.
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  -------------------
+ *   veh       agc_vehicle_t  I    vehicle whose tables are used (CSM or
+ *                                 LM)
+ *   noun      uint8_t        I    noun number 00..99 (NOUNREG)
+ *   out       agc_noun_t *   O    the noun table row
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND
+ **********************************************************************/
 agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
                                      agc_noun_t *out)
 {
@@ -40,6 +79,7 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
 
     const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ?
                             &agc_noun_table_csm[noun] :
+                            /* the vehicle's table row */
                             &agc_noun_table_lm[noun];
 
     if (!AGC_ASSERT(row->noun == noun) ||
@@ -53,7 +93,20 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
     return ((row->ncomp == 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
 }
 
-/* Row for a noun of the vehicle selected by agc_state_init(). */
+/**********************************************************************
+ * AGC: LODNNTAB (PINBALL_NOUN_TABLES.agc, CM p. 270)
+ *
+ * Row for a noun of the vehicle selected by agc_state_init().
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   noun      uint8_t       I    noun number 00..99 (NOUNREG)
+ *   out       agc_noun_t *  O    the noun table row
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
 {
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(noun < AGC_NOUN_COUNT))
@@ -64,9 +117,25 @@ agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
     return (agc_noun_lookup_vehicle(agc_state_vehicle(), noun, out));
 }
 
-/* DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI. TIME2 is
+/**********************************************************************
+ * AGC: none (data layer: TIME2, TIG, TTOGO, TTPI)
+ *
+ * DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI. TIME2 is
  * the clock (0 .. modulus); TIG, TTOGO and TTPI are signed DP erasables
- * (TTOGO = TIME2 - TIG is negative before ignition, shown "-" by M/SOUT). */
+ * (TTOGO = TIME2 - TIG is negative before ignition, shown "-" by M/SOUT).
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   data_id   uint16_t    I    agc_noun_data_t id of the erasable
+ *                              (nouns.h)
+ *   write     bool        I    true to store *value, false to read into
+ *                              it
+ *   value     agc_dp_t *  I/O  value read or written (nouns.h value
+ *                              convention)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t noun_access_time(uint16_t data_id, bool write,
                                      agc_dp_t *value)
 {
@@ -132,7 +201,23 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
     }
 }
 
-/* SP words (ones' complement, SP in the high word): PIPAs, masses. */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * SP words (ones' complement, SP in the high word): PIPAs, masses.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   data_id   uint16_t    I    agc_noun_data_t id of the erasable
+ *                              (nouns.h)
+ *   write     bool        I    true to store *value, false to read into
+ *                              it
+ *   value     agc_dp_t *  I/O  value read or written (nouns.h value
+ *                              convention)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t noun_access_sp(uint16_t data_id, bool write,
                                    agc_dp_t *value)
 {
@@ -141,8 +226,8 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_sp_t w = write ? agc_dp_high(*value) : 0;
-    agc_sp_t       r = 0;
+    const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* word to store */
+    agc_sp_t r = 0; /* SP word read, ones' complement */
 
     switch (data_id)
     {
@@ -223,10 +308,24 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
     return (AGC_STATUS_OK);
 }
 
-/* Raw 15-bit words, read side: CDUs, DAP words, alarm codes, THETAD. */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * Raw 15-bit words, read side: CDUs, DAP words, alarm codes, THETAD.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   data_id   uint16_t    I    agc_noun_data_t id of the erasable
+ *                              (nouns.h)
+ *   value     agc_dp_t *  I/O  value read or written (nouns.h value
+ *                              convention)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
 {
-    uint16_t w = 0;
+    uint16_t w = 0; /* word to store, unscaled */
 
     if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
@@ -288,7 +387,20 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
     return (AGC_STATUS_OK);
 }
 
-/* Raw 15-bit words, write side. */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * Raw 15-bit words, write side.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   data_id   uint16_t  I    agc_noun_data_t id of the erasable (nouns.h)
+ *   value     agc_dp_t  I    value to store (nouns.h value convention)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
 {
     if (!AGC_ASSERT(value >= 0 && value <= 077777) ||
@@ -297,7 +409,7 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const uint16_t w = (uint16_t) value;
+    const uint16_t w = (uint16_t) value; /* word to store, unscaled */
 
     switch (data_id)
     {
@@ -352,8 +464,23 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
     }
 }
 
-/* Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
- * RR-AZ, RR-ELEV (revs); SMODE (self-check mode, raw word).               */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
+ * RR-AZ, RR-ELEV (revs); SMODE (self-check mode, raw word).
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   id        uint16_t    I    agc_noun_data_t id
+ *   write     bool        I    true to store *value, false to read into
+ *                              it
+ *   v         agc_dp_t *  I/O  value read or written
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
 {
     if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(id < AGC_DATA_COUNT))
@@ -415,8 +542,25 @@ static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
     return (AGC_STATUS_OK);
 }
 
-/* The one data id -> erasable dispatch: core erasables here, the rest
- * through agc_dispatch_noun (src/exec/nouns.c).                          */
+/**********************************************************************
+ * AGC: none (data layer: NNADTAB / IDADDTAB ECADRs)
+ *
+ * The one data id -> erasable dispatch: core erasables here, the rest
+ * through agc_dispatch_noun (src/exec/nouns.c).
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   data_id   uint16_t    I    agc_noun_data_t id of the erasable
+ *                              (nouns.h)
+ *   write     bool        I    true to store *value, false to read into
+ *                              it
+ *   value     agc_dp_t *  I/O  value read or written (nouns.h value
+ *                              convention)
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
+ *          NOT_FOUND; else the status of the routine it calls
+ **********************************************************************/
 static agc_status_t noun_data_access(uint16_t data_id, bool write,
                                      agc_dp_t *value)
 {
@@ -484,7 +628,7 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            int k = (int) data_id - (int) AGC_DATA_OPTION1;
+            int k = (int) data_id - (int) AGC_DATA_OPTION1; /* component */
 
             if (write)
             {
@@ -506,7 +650,22 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
     }
 }
 
-/* Read the erasable behind a data id. */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * Read the erasable behind a data id.
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------
+ *   data_id   uint16_t    I    agc_noun_data_t id of the erasable
+ *                              (nouns.h)
+ *   value     agc_dp_t *  I/O  value read or written (nouns.h value
+ *                              convention)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
 {
     if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
@@ -517,10 +676,23 @@ agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
     return (noun_data_access(data_id, false, value));
 }
 
-/* Store a value into the erasable behind a data id. */
+/**********************************************************************
+ * AGC: none (data layer)
+ *
+ * Store a value into the erasable behind a data id.
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------
+ *   data_id   uint16_t  I    agc_noun_data_t id of the erasable (nouns.h)
+ *   value     agc_dp_t  I    value to store (nouns.h value convention)
+ *
+ * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
+ *          status of the routine it calls
+ **********************************************************************/
 agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value)
 {
-    agc_dp_t v = value;
+    agc_dp_t v = value; /* value, nouns.h convention */
 
     if (!AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
         !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))

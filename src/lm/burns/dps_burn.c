@@ -835,7 +835,7 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
     {
         agc_alarm(AGC_ALARM_01407); /* ALARMIT                */
 
-        return (agc_lm_findcduw_m2(ip));
+        return (agc_lm_findcduw_from_unfc(ip));
     }
 
     agc_erase_set_tgo(tgo);
@@ -843,7 +843,7 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 
     if (agc_dp_sub(ip, tgo, FOURSECS) >= 0)
     {
-        return (agc_lm_findcduw_m2(ip)); /* FINDCDUW -2      */
+        return (agc_lm_findcduw_from_unfc(ip)); /* FINDCDUW -2      */
     }
 
     agc_flag_set(AGC_FLAG_IMPULSW);
