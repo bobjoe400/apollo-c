@@ -118,8 +118,12 @@ Language: C11, no extensions. Build flags (Makefile):
 * Within a paragraph (consecutive non-blank lines) declarations line up as
   columns: type, name, `=`, expression; trailing comments align to one
   column just past the longest statement in the paragraph.
-* A single call with many long arguments MAY be wrapped by hand with each
-  argument under the first (reviewer's judgment, e.g. the CALCGRAV call);
-  the formatter never introduces wraps itself.
+* Wrapping is allowed in exactly one shape: the OUTERMOST call of a
+  statement may have its arguments one per line, each aligned under the
+  first argument, with the statement's trailing comment on the first line
+  (the CALCGRAV call). A wrap is never placed inside a nested call: an
+  inner call stays whole on whichever line it is on. The formatter keeps
+  outer-call wraps that already have this shape, joins every other wrap
+  back onto one line, and never introduces wraps itself.
 * A statement that is unreadable on one line because of nesting is split
   with named temporaries (review item), not wrapped.

@@ -176,12 +176,12 @@ static agc_status_t calcthet(agc_interp_t *ip, agc_vehicle_t veh)
     th              = agc_dp_mul_trunc(agc_dp_mul_trunc(th, rz->delvsab), b->weight_g);
     th              = agc_dp_div(ip, th, b->f);                                         /* 14D         */
 
-    agc_vec_t dvup      = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)),2);  /* PDL 0 (DV.UP) UP, m/cs 2^7 */
-    agc_vec_t dvp       = agc_vec_sub(ip, rz->delvsin, dvup);                                                 /* PDL 6, m/cs 2^7 */
-    agc_dp_t  sn        = agc_dp_sin(ip, th);                                                                 /* PDL 12, scale 2^1 */
-    agc_vec_t vg        = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn); /* VGTIG, m/cs 2^7 */ 
-    agc_dp_t  dvpmag    = 0;                                                                               /* |DVP|, m/cs 2^7 */
-    agc_vec_t udvp      = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                            /* PDL 6, scale 2^1 */
+    agc_vec_t dvup      = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)),2);     /* PDL 0 (DV.UP) UP, m/cs 2^7 */
+    agc_vec_t dvp       = agc_vec_sub(ip, rz->delvsin, dvup);                                                   /* PDL 6, m/cs 2^7 */
+    agc_dp_t  sn        = agc_dp_sin(ip, th);                                                                   /* PDL 12, scale 2^1 */
+    agc_vec_t vg        = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn);   /* VGTIG, m/cs 2^7 */ 
+    agc_dp_t  dvpmag    = 0;                                                                                    /* |DVP|, m/cs 2^7 */
+    agc_vec_t udvp      = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                                 /* PDL 6, scale 2^1 */
 
     vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(ip, th)), vg);
     vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2), dvup);
