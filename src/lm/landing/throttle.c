@@ -77,7 +77,12 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 {
     int32_t sum = (int32_t) a - (int32_t) b + (int32_t) c; /* cs     */
 
-    if (!AGC_ASSERT(a >= 0 && b >= 0) || !AGC_ASSERT(c >= 0))
+    if (!AGC_ASSERT(a >= 0 && b >= 0))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(c >= 0))
     {
         return (0); /* no valid result */
     }
@@ -102,7 +107,12 @@ static agc_lm_words_t thr_massmult(agc_dp_t accel)
     agc_dp_t       mass  = /* MASS, 2^16 kg          */
                            agc_guid_state()->lm.mass;
 
-    if (!AGC_ASSERT(mass >= 0) || !AGC_ASSERT(accel >= 0))
+    if (!AGC_ASSERT(mass >= 0))
+    {
+        return (agc_lm_words(0));
+    }
+
+    if (!AGC_ASSERT(accel >= 0))
     {
         return (agc_lm_words(0));
     }
@@ -228,7 +238,12 @@ static void thr_fweight(agc_lm_thr_t *t)
     int32_t  dtp  = thr_csad(agc_lm_time1(), buf, AGC_LM_THROTLAG) &
                     THR_LOW8; /* PPROCESS + TL, cs ("small and positive")  */
 
-    if (!AGC_ASSERT(buf1 > 0) || !AGC_ASSERT(dtp >= 0 && dtp <= THR_LOW8))
+    if (!AGC_ASSERT(buf1 > 0))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(dtp >= 0 && dtp <= THR_LOW8))
     {
         return;
     }
@@ -264,7 +279,12 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     agc_lm_thr_t       *t   = agc_lm_thr(); /* throttle erasables  */
     const agc_lm_pad_t *pad = agc_lm_pad(); /* LOWCRIT, HIGHCRIT   */
 
-    if (!AGC_ASSERT(accel >= 0) || !AGC_ASSERT(agc_lm_ldg()->afc >= 0))
+    if (!AGC_ASSERT(accel >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_lm_ldg()->afc >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }

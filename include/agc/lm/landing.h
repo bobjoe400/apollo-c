@@ -1,20 +1,33 @@
-/*
- * agc_lm_landing.h -- Luminary 099 lunar landing, landing aborts, lunar
- * ascent, DPS throttle, landing analog displays and the guidance/DAP
- * interface FINDCDUW.  Owned by the guid-landing lane (src/lm/).
+/**********************************************************************
+ * FILE NAME: landing.h
  *
- * AGC sources: THE_LUNAR_LANDING.agc (pp. 785-792), THROTTLE_CONTROL_
- * ROUTINES.agc (793-797), LUNAR_LANDING_GUIDANCE_EQUATIONS.agc (798-828),
- * P70-P71.agc (829-837), P12.agc (838-842), ASCENT_GUIDANCE.agc (843-856),
- * LANDING_ANALOG_DISPLAYS.agc (898-907), FINDCDUW--GUIDAP_INTERFACE.agc
- * (908-925).
+ * PURPOSE:
+ *   Luminary 099 lunar landing, landing aborts, lunar ascent, DPS
+ *   throttle, landing analog displays and the guidance/DAP interface
+ *   FINDCDUW. Owned by the guid-landing lane (src/lm/landing,
+ *   src/lm/ascent.c).
  *
- * Scale notation: "2^N u" means the stored fraction times 2^N gives the
- * quantity in unit u (cs = centiseconds). "pulses" are DPS throttle
- * command pulses (BITPERF = 0.0797959872 pulse/N). Where the AGC text does
- * not state a scale, the value given was derived from the code and is
- * marked "(derived)".
- */
+ *   Scale notation: "2^N u" means the stored fraction times 2^N gives the
+ *   quantity in unit u (cs = centiseconds). "pulses" are DPS throttle
+ *   command pulses (BITPERF = 0.0797959872 pulse/N). Where the AGC text
+ *   does not state a scale, the value given was derived from the code
+ *   and is marked "(derived)".
+ *
+ * AGC SOURCE:
+ *   Luminary099 THE_LUNAR_LANDING.agc (pp. 785-792), THROTTLE_CONTROL_
+ *   ROUTINES.agc (793-797), LUNAR_LANDING_GUIDANCE_EQUATIONS.agc
+ *   (798-828), P70-P71.agc (829-837), P12.agc (838-842),
+ *   ASCENT_GUIDANCE.agc (843-856), LANDING_ANALOG_DISPLAYS.agc (898-907),
+ *   FINDCDUW--GUIDAP_INTERFACE.agc (908-925)
+ *
+ * REQUIRES:
+ *   agc/core/interp.h, agc/core/status.h, agc/core/word.h,
+ *   agc/exec/exec.h
+ *
+ * GLOBAL VARIABLES:
+ *   none (the lane erasables are reached through agc_lm_pad(),
+ *   agc_lm_ldg(), agc_lm_thr(), agc_lm_asc())
+ **********************************************************************/
 #ifndef AGC_LM_LANDING_H
 #define AGC_LM_LANDING_H
 
@@ -49,7 +62,7 @@ typedef struct agc_lm_target
     agc_dp_t  vfg_star; /* VBRFG* = 18 VDG(z)/8, 2^10 m/cs (TTF cubic)    */
     agc_dp_t  afg_star; /* ABRFG* = 6 ADG(z), 2^-4 m/cs^2 (TTF cubic)     */
     agc_dp_t  jfg_star; /* JBRFG* = 8 JDG(z), 2^-18 m/cs^3 (derived)      */
-    agc_dp_t  gain;     /* GAINBRAK, CG look-ahead gain ("numero mysterioso") */
+    agc_dp_t  gain;     /* GAINBRAK "numero mysterioso", 2^0 */
     agc_sp_t  tcgf;     /* TCGFBRAK, TTF/8 bound for CG update, 2^14 cs   */
     agc_sp_t  tcgi;     /* TCGIBRAK, TTF/8 bound for CG update, 2^14 cs   */
 } agc_lm_target_t;
@@ -62,27 +75,27 @@ typedef struct agc_lm_pad
     agc_dp_t        vign;      /* VIGN desired ignition speed, 2^10 m/cs   */
     agc_dp_t        rignx;     /* RIGNX desired ignition "altitude", 2^24 m */
     agc_dp_t        rignz;     /* RIGNZ desired ignition ground range, 2^24 m */
-    agc_dp_t        kignx_b4;  /* KIGNX/B4 (negative)                      */
-    agc_dp_t        kigny_b8;  /* KIGNY/B8 (negative)                      */
-    agc_dp_t        kignv_b4;  /* KIGNV/B4 (negative)                      */
-    agc_sp_t        lowcrit;   /* LOWCRIT throttle region bound, pulses    */
-    agc_sp_t        highcrit;  /* HIGHCRIT throttle region bound, pulses   */
+    agc_dp_t        kignx_b4;  /* KIGNX/B4 (negative), scaled B4 (2^4)    */
+    agc_dp_t        kigny_b8;  /* KIGNY/B8 (negative), scaled B8 (2^8)    */
+    agc_dp_t        kignv_b4;  /* KIGNV/B4 (negative), scaled B4 (2^4)    */
+    agc_sp_t        lowcrit;   /* LOWCRIT throttle region bound, pulses 2^14 */
+    agc_sp_t        highcrit;  /* HIGHCRIT region bound, pulses 2^14      */
     agc_vec_t       v2fg;      /* V2FG P65 desired velocity, 2^10 m/cs     */
     agc_dp_t        tauvert;   /* TAUVERT P65 time constant, 2^14 cs       */
-    agc_sp_t        rodscale;  /* RODSCALE click scale factor for ROD      */
-    agc_dp_t        taurod;    /* TAUROD ROD time constant                 */
-    agc_dp_t        lag_tau;   /* LAG/TAU                                  */
-    agc_dp_t        minforce;  /* MINFORCE P66 min force                   */
-    agc_dp_t        maxforce;  /* MAXFORCE P66 max force                   */
-    agc_dp_t        abtcof[8]; /* ABTCOF D,C,B,A (DPS) then D,C,B,A (APS)  */
+    agc_sp_t        rodscale;  /* RODSCALE m/cs per click, 2^7 (derived)  */
+    agc_dp_t        taurod;    /* TAUROD ROD time constant, 2^9 cs        */
+    agc_dp_t        lag_tau;   /* LAG/TAU, scale 2^0                       */
+    agc_dp_t        minforce;  /* MINFORCE P66 min force, 2^12 kg m/cs^2  */
+    agc_dp_t        maxforce;  /* MAXFORCE P66 max force, 2^12 kg m/cs^2  */
+    agc_dp_t        abtcof[8]; /* ABTCOF D,C,B,A DPS, APS; 2^7 m/cs */
     agc_dp_t        vmin;      /* VMIN min abort injection velocity, 2^7 m/cs */
     agc_dp_t        ylim;      /* YLIM max abort cross-range, 2^24 m       */
     agc_dp_t        abtrdot;   /* ABTRDOT desired abort RDOT, 2^7 m/cs     */
-    agc_dp_t        costhet1;  /* COSTHET1 cos(cone 1) for aborts          */
-    agc_dp_t        costhet2;  /* COSTHET2 cos(cone 2) for aborts          */
+    agc_dp_t        costhet1;  /* COSTHET1 cos(cone 1) for aborts, 2^2    */
+    agc_dp_t        costhet2;  /* COSTHET2 cos(cone 2) for aborts, 2^2    */
     agc_sp_t        tendbrak;  /* TENDBRAK phase switch criterion, 2^14 cs */
-    agc_sp_t        tendappr;  /* TENDAPPR                                 */
-    agc_sp_t        delttfap;  /* DELTTFAP TTF/8 increment at P63->P64     */
+    agc_sp_t        tendappr;  /* TENDAPPR phase switch criterion, 2^14 cs */
+    agc_sp_t        delttfap;  /* DELTTFAP TTF/8 increment at P64, 2^14 cs */
     agc_sp_t        leadtime;  /* LEADTIME (negative), 2^14 cs            */
 } agc_lm_pad_t;
 
@@ -90,53 +103,52 @@ typedef struct agc_lm_pad
 typedef struct agc_lm_ldg
 {
     agc_vec_t land;     /* LAND landing site, SM, 2^24 m                  */
-    agc_vec_t landtemp; /* LANDTEMP                                       */
+    agc_vec_t landtemp; /* LANDTEMP redesignated site, SM, 2^24 m        */
     agc_dp_t  land_mag; /* /LAND/ lunar radius at site, 2^24 m            */
     agc_vec_t wm;    /* WM lunar rotation vector (SM), 2^-17 rad/cs (derived) */
     agc_dp_t  ttf_8; /* TTF/8 time-to-go/8 (negative), 2^14 cs         */
-    agc_dp_t  ttf_8tmp; /* TTF/8TMP                                       */
-    agc_sp_t  ttf_8_hi; /* TTF/8 high word as the last DAS left it        */
-    agc_sp_t  ttf_8tmp_hi; /* TTF/8TMP high word, likewise                */
+    agc_dp_t  ttf_8tmp; /* TTF/8TMP TTF/8 at the last pass, 2^14 cs      */
+    agc_sp_t  ttf_8_hi; /* TTF/8 high word as DAS left it, cs 2^14       */
+    agc_sp_t  ttf_8tmp_hi; /* TTF/8TMP high word, likewise, cs 2^14     */
     agc_dp_t  tpip;     /* TPIP time of PIPA reading, 2^28 cs             */
-    agc_dp_t  tpipold;  /* TPIPOLD                                        */
+    agc_dp_t  tpipold;  /* TPIPOLD TPIP of the last pass, 2^28 cs        */
     agc_mat_t cg;       /* CG guidance->SM rows (half unit)               */
     agc_vec_t rgu;      /* RGU position, guidance frame, 2^24 m           */
     agc_vec_t vgu;      /* VGU velocity, guidance frame, 2^10 m/cs        */
     agc_vec_t angterm;  /* ANGTERM V + R x WM, 2^9 m/cs                   */
     agc_dp_t  vhoriz;   /* VHORIZ horizontal velocity, 2^7 m/cs           */
     agc_dp_t  rangedsp; /* RANGEDSP slant range, 2^24 m                   */
-    agc_sp_t  lookangl; /* LOOKANGL LPD angle, degrees (integer)          */
+    agc_sp_t  lookangl; /* LOOKANGL LPD angle, degrees, unscaled         */
     agc_vec_t unfc_2;   /* UNFC/2 thrust command, 2^-4 m/cs^2 (any length;
                              FINDCDUW -2 input, also used by P40 / ascent) */
-    agc_vec_t unwc_2;   /* UNWC/2 window command (half unit)              */
+    agc_vec_t unwc_2;   /* UNWC/2 window command, half unit 2^1          */
     agc_dp_t  afc;      /* /AFC/ commanded acceleration, 2^-4 m/cs^2      */
-    agc_sp_t  wchphase; /* WCHPHASE  -1..2                                */
-    agc_sp_t  wchphold; /* WCHPHOLD                                       */
-    agc_sp_t  flpass0;  /* FLPASS0 pass counter in phase                  */
-    agc_sp_t  nguidsub; /* NGUIDSUB IGNALG guidance passes left           */
-    agc_sp_t  nignloop; /* NIGNLOOP IGNALG iterations left                */
-    agc_sp_t  wchvert;  /* WCHVERT -2 P65, 0 P66, 10 P67                  */
-    agc_sp_t  rodcount; /* RODCOUNT ROD switch clicks                     */
+    agc_sp_t  wchphase; /* WCHPHASE -1..2, unscaled                      */
+    agc_sp_t  wchphold; /* WCHPHOLD WCHPHASE of the last pass, unscaled  */
+    agc_sp_t  flpass0;  /* FLPASS0 pass counter in phase, unscaled       */
+    agc_sp_t  nguidsub; /* NGUIDSUB IGNALG passes left, unscaled         */
+    agc_sp_t  nignloop; /* NIGNLOOP IGNALG iterations left, unscaled     */
+    agc_sp_t  wchvert;  /* WCHVERT -2 P65, 0 P66, 10 P67, unscaled       */
+    agc_sp_t  rodcount; /* RODCOUNT ROD switch clicks, unscaled          */
     agc_dp_t  vdgvert;  /* VDGVERT desired altitude rate, 2^7 m/cs        */
     agc_dp_t  ttfdisp;  /* TTFDISP 2^28 cs                                */
-    agc_sp_t  tredes;   /* TREDES redesignation time left, s              */
+    agc_sp_t  tredes;   /* TREDES redesignation time left, s, unscaled   */
     agc_dp_t  elincr;   /* ELINCR elevation increment (pi rad scale)      */
-    agc_dp_t  azincr;   /* AZINCR azimuth increment                       */
-    agc_sp_t  elincr1;  /* ELINCR1 accumulating increments (PITFALL)      */
-    agc_sp_t  azincr1;  /* AZINCR1                                        */
-    agc_sp_t  elvira;   /* ELVIRA LPD bits last pass                      */
-    agc_sp_t  zerlina;  /* ZERLINA monitor countdown                      */
+    agc_dp_t  azincr;   /* AZINCR azimuth increment, scale pi rad       */
+    agc_sp_t  elincr1;  /* ELINCR1 accumulating (COUNT'EM), scale pi rad */
+    agc_sp_t  azincr1;  /* AZINCR1 accumulating, scale pi rad           */
+    agc_sp_t  elvira;   /* ELVIRA LPD bits last pass, unscaled          */
+    agc_sp_t  zerlina;  /* ZERLINA monitor countdown, unscaled          */
     agc_dp_t  outofpln; /* OUTOFPLN out-of-plane distance, 2^24 m (derived) */
-    agc_vec_t
-              pointvsm_save; /* R60VSAVE                                       */
+    agc_vec_t pointvsm_save; /* R60VSAVE: UNFC/2 for R60, 2^-4 m/cs^2  */
     agc_dp_t  deltah;       /* DELTAH display init, 2^24 m                    */
     agc_dp_t  hcalc1;       /* HCALC1 P66 altitude, 2^24 m                    */
-    agc_vec_t delvrod;      /* DELVROD P66 PIPA delta, PIPA counts            */
-    agc_vec_t vbias;        /* VBIAS PIPA bias velocity                       */
-    agc_sp_t  oldpipa[3];   /* OLDPIPAX/Y/Z                                   */
+    agc_vec_t delvrod;      /* DELVROD P66 PIPA delta, counts 2^14          */
+    agc_vec_t vbias;        /* VBIAS PIPA bias velocity, 2^7 m/cs           */
+    agc_sp_t  oldpipa[3];   /* OLDPIPAX/Y/Z, counts 2^14                     */
     agc_dp_t  lasttpip;     /* LASTTPIP 2^28 cs                               */
     agc_dp_t  thistpip;     /* THISTPIP 2^28 cs                               */
-    agc_sp_t  rodscal1;     /* RODSCAL1                                       */
+    agc_sp_t  rodscal1;     /* RODSCAL1 m/cs per click, 2^7 (derived)        */
 } agc_lm_ldg_t;
 
 /* ---- throttle erasables (THROTTLE, p. 793) ------------------------------ */
@@ -146,41 +158,41 @@ typedef struct agc_lm_ldg
  * Value = hi * 2^14 + lo.                                                */
 typedef struct agc_lm_words
 {
-    agc_sp_t hi; /* major word                                        */
-    agc_sp_t lo; /* minor word                                        */
+    agc_sp_t hi; /* major word, scale 2^S                             */
+    agc_sp_t lo; /* minor word, scale 2^(S-14)                        */
 } agc_lm_words_t;
 
 typedef struct agc_lm_thr
 {
     agc_lm_words_t fp;    /* FP present thrust, hi = pulses (2^14 pulses) */
-    agc_dp_t       fc;    /* FC thrust desired, hi = pulses (TS FC: hi)   */
+    agc_dp_t       fc;    /* FC thrust desired, hi = pulses 2^14 (TS FC) */
     agc_lm_words_t fcodd; /* FCODD what it is going to get, 2^14 pulses   */
-    agc_sp_t       fcold; /* FCOLD previous FCODD, pulses                 */
+    agc_sp_t       fcold; /* FCOLD previous FCODD, pulses 2^14           */
     agc_lm_words_t pif;     /* PIF = FCODD - FP by DAS, hi = pulses         */
-    agc_sp_t       pifpset; /* PIFPSET pulse offset (FMAXODD-FP or FEXTRA)  */
+    agc_sp_t       pifpset; /* PIFPSET offset (FMAXODD-FP, FEXTRA), 2^14   */
     agc_lm_words_t fweight; /* FWEIGHT thrust lag weighting, 2^14 pulses  */
-    agc_sp_t       tthrot; /* TTHROT TIME1 of last throttling, cs            */
-    agc_sp_t       pseudo55; /* PSEUDO55 throttle command for downlink         */
+    agc_sp_t       tthrot; /* TTHROT TIME1 of last throttling, cs 2^14       */
+    agc_sp_t       pseudo55; /* PSEUDO55 downlink, pulses 2^14 */
 } agc_lm_thr_t;
 
 /* ---- ascent / abort guidance erasables (ASCENT_GUIDANCE, P12, P70) ------ */
 typedef struct agc_lm_asc
 {
     agc_dp_t  tgo;      /* TGO time to go, 2^17 cs                        */
-    agc_dp_t  tgo1;     /* TGO1 (=VGBODY) saved TGO for P71 after P70     */
+    agc_dp_t  tgo1;     /* TGO1 (=VGBODY) TGO for P71 after P70, 2^17 cs */
     agc_dp_t  rco;      /* RCO injection radius, 2^24 m                   */
     agc_dp_t  txo;      /* TXO end of vertical rise, 2^28 cs              */
     agc_dp_t  yco;      /* YCO desired cross range, 2^24 m                */
     agc_dp_t  rdotd;    /* RDOTD desired radial rate, 2^7 m/cs            */
     agc_dp_t  ydotd;    /* YDOTD desired cross-range rate, 2^7 m/cs       */
     agc_dp_t  zdotd;    /* ZDOTD desired downrange rate, 2^7 m/cs         */
-    agc_vec_t qaxis;    /* QAXIS unit normal to CSM orbit (half unit)     */
-    agc_vec_t zaxis1;   /* ZAXIS1 downrange axis (half unit)              */
+    agc_vec_t qaxis;    /* QAXIS unit normal to CSM orbit, half unit 2^1 */
+    agc_vec_t zaxis1;   /* ZAXIS1 downrange axis, half unit 2^1          */
     agc_vec_t laxis;    /* LAXIS cross-range axis, 2^1                    */
     agc_dp_t  y;        /* Y cross range, 2^24 m                          */
     agc_dp_t  ydot;     /* YDOT 2^7 m/cs                                  */
     agc_dp_t  zdot;     /* ZDOT 2^7 m/cs                                  */
-    agc_dp_t  rdot;     /* RDOT 2^7 m/cs                                  */
+    agc_dp_t  rdot;     /* RDOT 2^7 m/cs (AGC: = HDOTDISP; unused here) */
     agc_dp_t  r_mag;    /* /R/MAG 2^24 m                                  */
     agc_dp_t  geff;     /* GEFF effective gravity, 2^-10 m/cs^2           */
     agc_dp_t  dzdot;    /* DZDOT 2^7 m/cs                                 */
@@ -200,13 +212,12 @@ typedef struct agc_lm_asc
     agc_dp_t  tbup;     /* TBUP burn-up time, 2^17 cs                     */
     agc_dp_t  ve;       /* VE exhaust velocity, 2^7 m/cs                  */
     agc_dp_t  tto;      /* TTO tail-off time, 2^17 cs                     */
-    agc_dp_t  dv[4];    /* 1/DV0..1/DV3 (1/DV0 = MASS1)                   */
+    agc_dp_t  dv[4];    /* 1/DV1..1/DV3 (1/DV0 = MASS1), 2^7 cs/m */
     agc_dp_t  xrange;   /* XRANGE cross range for N76, 2^29 m             */
     agc_vec_t v1s;      /* V1S velocity at TIG, 2^7 m/cs                  */
-    agc_dp_t  yaw;      /* YAW revolutions                                */
-    agc_dp_t  pitch;    /* PITCH revolutions                              */
-    agc_sp_t  engoffdt; /* ENGOFFDT delay to engine cut-off, cs           */
-    agc_dp_t  rdotv;    /* RDOT used by P12 (alias of RDOT)               */
+    agc_dp_t  yaw;      /* YAW revolutions, scale 2^0                    */
+    agc_dp_t  pitch;    /* PITCH revolutions, scale 2^0                  */
+    agc_sp_t  engoffdt; /* ENGOFFDT delay to engine cut-off, cs 2^14     */
 } agc_lm_asc_t;
 
 /* ---- lane state accessors (state.c) ----------------------------- */
@@ -243,10 +254,11 @@ void agc_lm_initcduw(void);
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
 agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip);
 agc_sp_t     agc_lm_sparcsin(agc_sp_t x);    /* arg scale 1, angle 180 deg */
-agc_sp_t     agc_lm_sparcsin_doubled(agc_sp_t x); /* SPARCSIN -1: arg scale 2  */
-agc_sp_t     agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
-agc_sp_t     agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
-uint16_t     agc_lm_onesto2s(agc_sp_t a); /* -> 15-bit 2's comp word    */
+/* SPARCSIN -1: arg scale 2 */
+agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x);
+agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
+agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
+uint16_t agc_lm_onesto2s(agc_sp_t a); /* -> 15-bit 2's comp word    */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
  * Job functions take the executive's job context (dispatch.c calls them);
@@ -274,25 +286,34 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip);                 /* CGCALC       */
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
-agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx); /* P63DISPS -2  */
-agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx); /* P64DISPS     */
-agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx); /* P64CEED      */
+/* P63DISPS -2 */
+agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);
+/* P64DISPS */
+agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);
+/* P64CEED */
+agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx);
 void         agc_lm_tdispset(void);                         /* TDISPSET     */
 agc_sp_t     agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
 agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx); /* P63LM        */
-agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx); /* IGNALG LEMPREC retry */
-agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx); /* IGNALOOP (INTSTALL retry) */
+/* IGNALG LEMPREC retry */
+agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx);
+/* IGNALOOP (INTSTALL retry) */
+agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx); /* IGNALGRT     */
 agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx);  /* ASTNRET      */
-agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx); /* P63SPOT2     */
-agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx); /* P63SPOT3     */
-agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx); /* P63SPOT4     */
+/* P63SPOT2 */
+agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx);
+/* P63SPOT3 */
+agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx);
+/* P63SPOT4 */
+agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx,
                                  int                 *entry);  /* R13 */
 agc_status_t agc_lm_redesig(agc_interp_t *ip); /* REDESIG      */
-agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx); /* P66VERTA     */
+/* P66VERTA */
+agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx);
 agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx,
                                             agc_interp_t        *ip);
 agc_status_t agc_lm_task_rodtask(void);              /* RODTASK      */
@@ -300,8 +321,10 @@ agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx); /* RODCOMP      */
 agc_status_t agc_lm_pitfall(void);                   /* PITFALL (RUPT10) */
 agc_status_t agc_lm_task_redesmon(void);             /* REDESMON     */
 agc_status_t agc_lm_descbits(void);                  /* DESCBITS (ch 16) */
-agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx); /* LANDJUNK     */
-agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx); /* V06N43 flash */
+/* LANDJUNK */
+agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx);
+/* V06N43 flash */
+agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_landing_confirmation_proceed(
     agc_job_ctx_t *ctx); /* after V06N43 PROCEED */
 
@@ -310,12 +333,17 @@ agc_status_t agc_lm_task_abort_monitor(void);          /* R10,R11      */
 agc_status_t agc_lm_abort_monitor_resume(void);        /* R10,R11A     */
 agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx); /* P70          */
 agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx); /* P71          */
-agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx); /* P70A restart */
-agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);  /* P71A restart */
+/* P70A restart */
+agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx);
+/* P71A restart */
+agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx); /* GOABORT      */
-agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx); /* UPTHROT1 -3  */
-agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx);    /* UPTHROT1     */
-agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx); /* OLDTIME restart */
+/* UPTHROT1 -3 */
+agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx);
+/* UPTHROT1 */
+agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx);
+/* OLDTIME restart */
+agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);
 agc_sp_t     agc_lm_pipctr1(void);             /* PIPCTR1 for LANDISP */
 void         agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
 void         agc_lm_throtup(void);     /* THROTUP      */
@@ -328,11 +356,14 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx); /* V06N33 flash */
-agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx); /* P12LMB       */
+/* V06N33 flash */
+agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx);
+/* P12LMB */
+agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
                                           agc_interp_t        *ip);
-agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx); /* P12RET tail  */
+/* P12RET tail */
+agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);  /* ATMAG (AVGEXIT) */
 agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_dp_t     agc_lm_ycomp(agc_interp_t *ip);
@@ -350,7 +381,7 @@ agc_status_t agc_lm_task_intlze(void);
 agc_status_t agc_lm_task_speedrun_resume(void);
 agc_status_t agc_lm_vmonitor(void);
 
-/* ---- alarm codes raised by the landing programs (octal) ---------------------------- */
+/* ---- alarm codes raised by the landing programs (octal) ------------ */
 #define AGC_ALARM_00401 \
     ((agc_alarm_code_t) 00401) /* FINDCDUW: gimbal lock     */
 #define AGC_ALARM_00402 \

@@ -46,6 +46,16 @@ static agc_lm_asc_t lm_asc; /* ascent guidance erasables, EBANK 7      */
  **********************************************************************/
 agc_lm_pad_t *agc_lm_pad(void)
 {
+    if (!AGC_ASSERT(lm_pad.leadtime <= 0)) /* LEADTIME is a lead, cs  */
+    {
+        return (&lm_pad);
+    }
+
+    if (!AGC_ASSERT(lm_pad.taurod >= 0)) /* TAUROD time constant     */
+    {
+        return (&lm_pad);
+    }
+
     return (&lm_pad);
 }
 
@@ -56,6 +66,17 @@ agc_lm_pad_t *agc_lm_pad(void)
  **********************************************************************/
 agc_lm_ldg_t *agc_lm_ldg(void)
 {
+    if (!AGC_ASSERT(lm_ldg.wchphase >= AGC_LM_PHASE_IGNALG &&
+                    lm_ldg.wchphase <= AGC_LM_PHASE_VERTICAL)) /* WCHPHASE */
+    {
+        return (&lm_ldg);
+    }
+
+    if (!AGC_ASSERT(lm_ldg.flpass0 >= 0)) /* FLPASS0 counts passes      */
+    {
+        return (&lm_ldg);
+    }
+
     return (&lm_ldg);
 }
 
@@ -66,6 +87,17 @@ agc_lm_ldg_t *agc_lm_ldg(void)
  **********************************************************************/
 agc_lm_thr_t *agc_lm_thr(void)
 {
+    if (!AGC_ASSERT(lm_thr.fcold >= AGC_SP_MIN)) /* FCOLD is a word      */
+    {
+        return (&lm_thr);
+    }
+
+    if (!AGC_ASSERT(lm_thr.fweight.hi >= AGC_SP_MIN &&
+                    lm_thr.fweight.lo >= AGC_SP_MIN)) /* FWEIGHT words */
+    {
+        return (&lm_thr);
+    }
+
     return (&lm_thr);
 }
 
@@ -76,6 +108,16 @@ agc_lm_thr_t *agc_lm_thr(void)
  **********************************************************************/
 agc_lm_asc_t *agc_lm_asc(void)
 {
+    if (!AGC_ASSERT(lm_asc.tbup >= 0)) /* TBUP, burn-up time, never < 0 */
+    {
+        return (&lm_asc);
+    }
+
+    if (!AGC_ASSERT(lm_asc.ve >= 0)) /* VE = -APSVEX/-DPSVEX, positive */
+    {
+        return (&lm_asc);
+    }
+
     return (&lm_asc);
 }
 
@@ -90,6 +132,16 @@ void agc_lm_landing_reset(void)
     (void) memset(&lm_thr, 0, sizeof (lm_thr));
     (void) memset(&lm_asc, 0, sizeof (lm_asc));
     lm_ldg.wchphase = AGC_LM_PHASE_IGNALG;
+
+    if (!AGC_ASSERT(lm_ldg.ttf_8 == 0 && lm_thr.tthrot == 0)) /* cleared */
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(lm_asc.tbup == 0 && lm_pad.leadtime == 0))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -104,8 +156,12 @@ void agc_lm_phaschng(uint16_t octal_code)
 {
     int group = (int) (octal_code & 7u); /* restart group 1..6         */
 
-    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS) ||
-        !AGC_ASSERT(octal_code <= 077777u))
+    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(octal_code <= 077777u))
     {
         return;
     }
@@ -122,6 +178,11 @@ void agc_lm_phaschng(uint16_t octal_code)
  **********************************************************************/
 void agc_lm_fastchng(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only */
+    {
+        return;
+    }
+
     if (!AGC_ASSERT((LM_FASTCHNG_CODE & 7u) == 3u))
     {
         return; /* not a group 3 code */
@@ -141,8 +202,12 @@ agc_sp_t agc_lm_time1(void)
     uint32_t t  = agc_time_now_cs();             /* TIME2,TIME1, cs */
     agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu); /* TIME1, cs, unscaled */
 
-    if (!AGC_ASSERT(t1 >= 0) ||
-        !AGC_ASSERT(t1 <= AGC_SP_MAX))
+    if (!AGC_ASSERT(t1 >= 0))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(t1 <= AGC_SP_MAX))
     {
         return (0); /* no valid result */
     }
@@ -229,6 +294,11 @@ agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
         s = (s > 0) ? s - LM_WORD : s + LM_WORD; /* by overflow sign */
     }
 
+    if (!AGC_ASSERT(s >= AGC_SP_MIN && s <= AGC_SP_MAX)) /* one word */
+    {
+        return (0); /* not reached: one correction fits a word */
+    }
+
     return ((agc_sp_t) s);
 }
 
@@ -268,8 +338,12 @@ agc_lm_words_t agc_lm_words(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_lm_words_value(agc_lm_words_t w)
 {
-    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.lo >= AGC_SP_MIN) ||
-        !AGC_ASSERT(w.hi <= AGC_SP_MAX && w.lo <= AGC_SP_MAX))
+    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.lo >= AGC_SP_MIN))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(w.hi <= AGC_SP_MAX && w.lo <= AGC_SP_MAX))
     {
         return (0); /* no valid result */
     }
@@ -374,9 +448,12 @@ agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
  **********************************************************************/
 bool agc_lm_chan_bit_present(int chan, uint16_t bit)
 {
-    if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30) ||
-        !AGC_ASSERT(chan <= AGC_CHAN_CHAN33) ||
-        !AGC_ASSERT(bit != 0u))
+    if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30 && chan <= AGC_CHAN_CHAN33))
+    {
+        return (false);
+    }
+
+    if (!AGC_ASSERT(bit != 0u))
     {
         return (false);
     }

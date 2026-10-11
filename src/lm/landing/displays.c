@@ -92,6 +92,11 @@ static agc_sp_t  ld_trak[2]; /* TRAKLATV, TRAKFWDV stop, -1/0/+1, 2^14    */
  **********************************************************************/
 static void ld_imodes33_bits(uint16_t set, uint16_t clear)
 {
+    if (!AGC_ASSERT((set & clear) == 0u)) /* a bit is set or cleared  */
+    {
+        return;
+    }
+
     uint16_t w = /* new IMODES33 */
                  (uint16_t) ((agc_erase_imodes33() | set) &
                              ~(unsigned int) clear);
@@ -145,6 +150,11 @@ static agc_sp_t ld_wrap(int32_t x)
 static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
 {
     if (!AGC_ASSERT(n >= 0 && n <= 2))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(a >= AGC_SP_MIN && b >= AGC_SP_MIN)) /* words, not -2^14 */
     {
         return (0); /* no valid result */
     }
@@ -211,6 +221,16 @@ static agc_status_t ld_disprset(void)
     agc_flag_clear(AGC_FLAG_DIDFLAG);
     ld_altpath = LD_NONE;
 
+    if (!AGC_ASSERT((agc_erase_imodes33() & LD_BITS8_7) == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_DIDFLAG)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK); /* TASKOVER       */
 }
 
@@ -234,6 +254,11 @@ static agc_status_t ld_dataout(uint16_t word)
     }
 
     ld_altpath = LD_NONE;
+
+    if (!AGC_ASSERT(agc_erase_altm() == word)) /* the meter got the word */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (AGC_STATUS_OK); /* TASKOVER       */
 }
@@ -267,6 +292,11 @@ static agc_status_t ld_altrout(void)
                  (uint16_t) ((uint16_t) ld_altrate | LD_BIT15W); /* not +0 */
 
     if (!AGC_ASSERT(w != 0u || ld_altrate < 0)) /* never +0       */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) != 0u)) /* ALT next */
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -332,6 +362,11 @@ static agc_status_t ld_altout(void)
                  (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
+    if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) == 0u)) /* rate next */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (agc_dp_high(g->altbits) < 0)
     {
         return (ld_extrapolate(LD_ARTOA)); /* OLDDATA        */
@@ -359,6 +394,11 @@ static agc_status_t ld_altout(void)
  **********************************************************************/
 static agc_status_t ld_continue(void)
 {
+    if (!AGC_ASSERT(ld_altpath >= LD_NONE && ld_altpath <= LD_ALTOUT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (ld_altpath == LD_ALTROUT)
     {
         return (ld_altrout());
@@ -448,6 +488,11 @@ static agc_status_t ld_disindat(void)
     ld_imodes33_bits(0u, LD_BIT7); /* altrate first, then alt.   */
     ld_altpath = LD_NONE;
 
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_DIDFLAG)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (agc_flag_test(AGC_FLAG_ALTITUDE_METERS_ONLY))
     {
         return (AGC_STATUS_OK); /* not in the descent         */
@@ -472,6 +517,11 @@ static agc_status_t ld_disindat(void)
  **********************************************************************/
 agc_status_t agc_lm_landisp(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* R10: LM only */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_guid_state()->avg.pipctr = agc_lm_pipctr1(); /* PHSPRDT2       */
     /* DEVIATION: TBASE2 = TIME1 via NEWPHASE of the current group 2 phase */
     agc_phase_newphase(2, agc_phase_get(2), true);
@@ -491,7 +541,7 @@ agc_status_t agc_lm_landisp(void)
         return (st);
     }
 
-    if (!AGC_ASSERT(ld_altpath != LD_NONE))
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_DIDFLAG))) /* SPEEDRUN ran */
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -512,6 +562,12 @@ agc_status_t agc_lm_task_intlze(void)
     uint16_t w = agc_erase_imodes33(); /* IMODES33 after the set */
 
     if (!AGC_ASSERT((w & LD_BIT8) != 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) &
+                     AGC_CH012_ENBRRCDUERR) != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -537,6 +593,16 @@ static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak,
                               agc_sp_t *trak_new)
 {
     const int32_t mx = LD_MAXVBITS; /* MAXVBITS meter stop, bits */
+
+    if (!AGC_ASSERT(trak_new != NULL))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(trak >= -1 && trak <= 1)) /* TRAK is -1, 0 or +1 */
+    {
+        return (0); /* no valid result */
+    }
 
     *trak_new = 0;
 
