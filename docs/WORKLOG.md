@@ -490,3 +490,7 @@
             scan fix, word pairs in TVC/RCS, oracle 533/0 at tol 0, 63 void
             casts + 106 guaranteed guards removed. Lane density 0.43.
             Launching status-handling-2 ALONE.
+2026-10-11  User: we followed the letter of rule 5, not its spirit. Rule 5
+            rewritten as where-assertions-belong; density is now report-only
+            (no hard/warn thresholds); brief and review template updated.
+            status-handling-2 told not to add assertions to chase 2.0.

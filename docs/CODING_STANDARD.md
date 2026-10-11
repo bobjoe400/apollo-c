@@ -30,18 +30,22 @@ Language: C11, no extensions. Build flags (Makefile):
    the switch. A file claims the exemption only with the marker
    `/* GENERATED-DISPATCH: rule 4 exempt */` in its first 5 lines, and
    check_rules.py accepts the marker only for src/exec/dispatch.c.
-5. **Assertions.** Average >= 2 assertions per function, measured as the
-   rule states: an AVERAGE over the project, reported by check_rules as a
-   hard target; the per-file figure is a warning only. A file of pure
-   fixed-point arithmetic whose preconditions are guaranteed by
-   construction may sit below 2.0, but it must carry the real
-   postconditions a bug could break (overflow flag consistent, iteration
-   count within its bound, |unit| within bounds, sign agreement after
-   NORM). Never add an assertion that cannot fail to raise the number.
-   Use `AGC_ASSERT(cond)`
-   from `include/agc/core/assert.h`: it is side-effect free, evaluates to a
-   `bool`, and callers recover by returning `AGC_STATUS_*` error codes. Never
-   use `<assert.h>`. Assertions that cannot fail do not count.
+5. **Assertions (spirit, not count).** An assertion states a fact that
+   must hold and that a real execution could violate: a value arriving
+   from erasable memory, a channel, a pad load or the sim is in range; an
+   iteration ended within its bound; a computed scale stayed in range; the
+   overflow flag is consistent after an operation that should not
+   overflow. Each one has an explicit recovery through a status return.
+   Assertions that cannot fail do not count and are not written; a fact
+   established at the entry boundary is not re-checked downstream (see
+   rule 7). Holzmann's "two per function on average" is a diagnostic of
+   whether a codebase is checking its invariants, not a quota:
+   `tools/check_rules.py` REPORTS the project density and never fails or
+   warns on it. The quota reading of this rule produced 3,233 void-cast
+   assertions and thousands of redundant guards in this project; do not
+   repeat it. Use `AGC_ASSERT(cond)` from `include/agc/core/assert.h`: it
+   is side-effect free, evaluates to a `bool`, and callers recover by
+   returning `AGC_STATUS_*` error codes. Never use `<assert.h>`.
 6. **Smallest scope.** Declare variables where used. Module-private state is
    `static` in its `.c` file. Shared AGC erasables are accessed through the
    accessor API in the core headers, not via `extern` globals.

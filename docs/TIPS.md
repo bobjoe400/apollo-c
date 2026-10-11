@@ -151,3 +151,8 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   cannot happen (then delete the guard) or can (then the function returns a
   status and the caller acts). "void functions just return, value
   functions return 0" produced 2,400 silent failures in one sweep.
+* **Rule 5 is a diagnostic, not a quota.** Telling agents "two assertions
+  per function" produced void-cast no-ops, redundant guards and then
+  silent-return dodges. State where assertions belong (boundary inputs,
+  loop bounds, scale ranges, overflow consistency, each with recovery) and
+  only report the density.

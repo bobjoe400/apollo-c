@@ -22,7 +22,7 @@ its lane's AGC source files side by side with the C and checks:
 4. **Style debt.** Work the check_style findings for the lane to zero:
    shorten >80-column trailing comments, add missing declaration comments,
    closing-brace comments on long blocks, prologs per docs/templates.
-   Rule-5 density >= 2.0 per file with real pre/postconditions.
+   Rule 5 is spirit not count: no assertions added to reach a number.
 5. Fix what you find; run `make`, `make test`, `make check` clean. Report
    <= 15 lines; findings table in the note; Lessons section.
 

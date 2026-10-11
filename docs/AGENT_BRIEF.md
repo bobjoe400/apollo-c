@@ -34,7 +34,7 @@ inside your lane and put your findings in files, not in your final report.
    alarm codes, and the AGC's order of operations where it affects rounding.
    Where you must deviate (bank tricks, self-modifying code, -0 behaviour),
    leave a `/* DEVIATION: ... */` comment and list it in your note.
-4. Each function <= 60 lines, >= 2 AGC_ASSERTs on average, bounded loops,
+4. Each function <= 60 lines; assertions only where a real execution could violate a fact (boundary inputs, iteration bounds, scale ranges), each with a status recovery, never as a quota; bounded loops,
    no heap, no goto, no recursion, no function pointers.
 5. Compile your files as you go:
        gcc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion \
