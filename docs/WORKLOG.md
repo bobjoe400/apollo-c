@@ -319,3 +319,8 @@
             per-section dispatchers of REENTRY_CONTROL. make/test unchanged;
             2 hard violations remain in src/sim (paused lane). Behaviour
             change only on assertion-failure paths (caller's failure value).
+2026-10-10  User flagged forwarding wrappers (static chan_write -> agc_chan_write
+            with duplicated guards). Collapse pass 3: delete every function
+            whose body is only guards + one forwarding call, regardless of
+            caller count; move any genuinely new assertion into the callee
+            once. Running.
