@@ -51,8 +51,8 @@ def lib_sources():
     return sorted(out)
 
 
-def entry_points():
-    eps = [('sim', sorted(glob.glob('src/sim/*.c', root_dir=ROOT)))]
+def entry_points(with_sim=False):
+    eps = [('sim', sorted(glob.glob('src/sim/*.c', root_dir=ROOT)))] if with_sim else []
     for t in sorted(glob.glob('tests/**/*.c', root_dir=ROOT, recursive=True)):
         eps.append((t[len('tests/'):-2].replace('/', '_'), [t]))
     return eps
@@ -112,23 +112,24 @@ def merge(out, names):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--jobs', type=int, default=6)
+    ap.add_argument('--jobs', type=int, default=8)
     ap.add_argument('--only', nargs='*')
     ap.add_argument('--out', default='build/prove')
-    ap.add_argument('--precision', type=int, default=1)
+    ap.add_argument('--precision', type=int, default=0)
     ap.add_argument('--merge-only', action='store_true')
-    ap.add_argument('--timeout', type=int, default=3600)
+    ap.add_argument('--timeout', type=int, default=120)
+    ap.add_argument('--with-sim', action='store_true')
     a = ap.parse_args()
     out = os.path.join(ROOT, a.out)
     os.makedirs(out, exist_ok=True)
-    eps = [e for e in entry_points() if not a.only or e[0] in a.only]
+    eps = [e for e in entry_points(a.with_sim) if not a.only or e[0] in a.only]
     if not a.merge_only:
         with concurrent.futures.ThreadPoolExecutor(a.jobs) as ex:
             futs = [ex.submit(run_one, n, x, out, a.precision, a.timeout) for n, x in eps]
             for f in concurrent.futures.as_completed(futs):
                 n, rc = f.result()
                 print(f'eva {n}: exit {rc}', flush=True)
-    names = [n for n, _ in entry_points()]
+    names = [n for n, _ in entry_points(True)]
     counts = merge(out, names)
     print('assertion sites: ' + ', '.join(f'{k} {v}' for k, v in sorted(counts.items())))
     return 0

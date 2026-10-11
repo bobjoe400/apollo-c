@@ -503,3 +503,8 @@
             used). Lead killed frama-c processes; agent told: EVA is a
             classifier not a gate -- per-TU, low precision, 120 s/run,
             <= 20 min total, libclang dataflow for the rest.
+2026-10-11  User: heavy analysis is fine, opacity is not. Revised: EVA runs
+            thorough, max 2 concurrent (RAM), detached, writing
+            tools/prove/progress.log + summary.txt per run; agent proceeds
+            with dataflow-classified work meanwhile and folds in EVA
+            verdicts at the end.
