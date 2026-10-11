@@ -1,22 +1,39 @@
-/*
- * radar.h -- private interface between the LM radar files of the
- * rendezvous programs (P20-P25.agc, Luminary099 pp.520-563, 594-613):
- *   lm/radar/moding.c          RR limits, lamps, turn-on, CDU zero, reposition,
- *                           remode, single-axis drive, RROUT
- *   lm/radar/designate.c       RRDESSM, RRDESNB, STARTDES, BEGDES, DODES
- *   lm/radar/read.c         radar read lead-ins, RADAREAD, LRPOS2, R12 lamps
- *   lm/radar/powered_flight_designate.c   R29 (RR designate in powered flight)
- *   lm/radar/leadin.c       RADSAMP / DORSAMP (radar sampling test)
+/**********************************************************************
+ * FILE NAME: radar.h
  *
- * RADMODES is the radar flagword FLGWRD12 (owned by sys-misc,
- * agc_erase_radmodes); its bits are named below as in
- * FLAGWORD_ASSIGNMENTS.agc (p.85-86).
+ * PURPOSE:
+ *   Private interface between the LM radar files of the rendezvous
+ *   programs and the LM navigation files that drive them:
+ *     lm/radar/moding.c      RR limits, lamps, turn-on, CDU zero,
+ *                            reposition, remode, single-axis drive, RROUT
+ *     lm/radar/designate.c   RRDESSM, RRDESNB, STARTDES, BEGDES, DODES
+ *     lm/radar/read.c        radar read lead-ins, RADAREAD, LRPOS2, R12
+ *                            lamps
+ *     lm/radar/powered_flight_designate.c   R29 (powered flight)
+ *     lm/radar/leadin.c      RADSAMP / DORSAMP (radar sampling test)
+ *     lm/navigation          the LM rendezvous navigation erasables
+ *   RADMODES is the radar flagword FLGWRD12 (owned by sys-misc,
+ *   agc_erase_radmodes); its bits are named below as in
+ *   FLAGWORD_ASSIGNMENTS.agc (pp.85-86).
  *
- * Angles: CDU words are 15-bit counter words (two's complement, one bit =
- * 360/2^15 degrees). The AGC reads them with CA and treats them as ones'
- * complement SP numbers scaled in half revolutions (1.0 = 180 degrees);
- * rr_ones() does the same. Gyro commands TANG, TANG +1 are SP pulses.
- */
+ * AGC SOURCE:
+ *   Luminary099 P20-P25.agc pp. 520-563, 594-613; LM only
+ *
+ * REQUIRES:
+ *   agc/programs/rendezvous.h (job and status types)
+ *
+ * GLOBAL VARIABLES:
+ *   Name          Type      Scale          Description
+ *   ------------  --------  -------------  -------------------------
+ *   none (rr_state() and lmnav_state() return the file-static radar and
+ *   navigation erasables; struct members carry their scale)
+ *
+ * Angles: CDU words are 15-bit counter words (two's complement, one bit
+ * = 360/2^15 degrees). The AGC reads them with CA and treats them as
+ * ones' complement SP numbers scaled in half revolutions (1.0 = 180
+ * degrees); rr_ones() does the same. Gyro commands TANG, TANG +1 are SP
+ * pulses.
+ **********************************************************************/
 #ifndef RENDZ_RADAR_LM_H
 #define RENDZ_RADAR_LM_H
 
@@ -55,7 +72,7 @@
 #define RR_CH33_RR_DGOOD 000010u /* chan 33 bit 4: RR data good (0=good) */
 #define RR_CH33_LR_POS2  000100u /* chan 33 bit 7: LR in position 2      */
 
-#define RR_WORD_MASK 077777u
+#define RR_WORD_MASK 077777u /* 15-bit word */
 
 /* RR1AXIS clients: the routine that called RRTONLY/RRSONLY, whose next
  * step runs when the single-axis drive ends (the AGC kept the return
@@ -78,12 +95,12 @@ typedef struct rr_state
                           * the LOS 9 places)                             */
     agc_vec_t losvel;    /* LOSVEL: relative velocity V(CSM) - V(LM) in SM
                           * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
-    agc_sp_t loscount;   /* LOSCOUNT: DODES passes before a new LOS       */
-    agc_sp_t descount;   /* DESCOUNT: designate passes left (.5 s each)   */
+    agc_sp_t loscount;   /* LOSCOUNT: passes to a new LOS, unscaled */
+    agc_sp_t descount;   /* DESCOUNT: designate passes left, unscaled    */
     uint16_t tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
     uint16_t modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
     uint16_t modeb[2];   /* MODEB: (T, S) for the other mode              */
-    agc_sp_t lastcmd[2]; /* LASTYCMD (trunnion), LASTXCMD (shaft)         */
+    agc_sp_t lastcmd[2]; /* LASTYCMD (T), LASTXCMD (S), pulses unscaled  */
 } rr_state_t;
 
 rr_state_t *rr_state(void);
@@ -115,7 +132,6 @@ agc_status_t rr_radnoop(void);      /* RADNOOP       */
 void rr_lamp_put(uint16_t lamp, bool on);
 
 /* ---- designate (lm/radar/designate.c) ----------------------------------- */
-agc_status_t rr_begdes(void);  /* BEGDES (task body)            */
 agc_status_t rr_stdesig(void); /* STDESIG (task body)           */
 
 /* ---- radar read (lm/radar/read.c) ------------------------------------ */
@@ -131,34 +147,36 @@ typedef struct lmnav_state
     agc_vec_t lmpos; /* LMPOS: LM position at TDEC1, m 2^29           */
     agc_vec_t lmvel; /* LMVEL: LM velocity, m/cs 2^7                  */
     /* LRS22.1 mark data */
-    agc_dp_t  rm;            /* RM: RR range, m 2^29                          */
-    agc_dp_t  rdotm;         /* RDOTM: RR range rate, m/cs 2^7                */
-    agc_dp_t  rrtrun;        /* RRTRUN: RR trunnion, revolutions              */
-    agc_dp_t  rrshaft;       /* RRSHAFT: RR shaft, revolutions                */
-    agc_dp_t  mktime;        /* MKTIME: mark time (mid range-rate read), cs   */
-    agc_dp_t  cdutime;       /* 20D: time of the CDU readings, cs 2^28        */
-    uint16_t  aig, amg, aog; /* AIG AMG AOG: IMU CDU words at the mark      */
-    uint16_t  tang[2];     /* TANG: RR CDU words at the mark                */
-    agc_dp_t  rdotmsav;    /* RDOTMSAV: raw range-rate count                */
-    agc_vec_t rrborsit;    /* RRBORSIT: RR boresight, NB, half unit         */
-    agc_dp_t  dtheta;      /* DSPTEM1: radar vs state-vector LOS, revs (N05) */
+    agc_dp_t  rm;      /* RM: RR range, m 2^29                          */
+    agc_dp_t  rdotm;   /* RDOTM: RR range rate, m/cs 2^7                */
+    agc_dp_t  rrtrun;  /* RRTRUN: RR trunnion, revolutions 2^0           */
+    agc_dp_t  rrshaft; /* RRSHAFT: RR shaft, revolutions 2^0             */
+    agc_dp_t  mktime;   /* MKTIME: mark time (range-rate read), cs 2^28   */
+    agc_dp_t  cdutime;  /* 20D: time of the CDU readings, cs 2^28        */
+    uint16_t  aig;      /* AIG: IMU inner gimbal CDU word at the mark     */
+    uint16_t  amg;      /* AMG: IMU middle gimbal CDU word                */
+    uint16_t  aog;      /* AOG: IMU outer gimbal CDU word                 */
+    uint16_t  tang[2];  /* TANG: RR CDU words at the mark                */
+    agc_dp_t  rdotmsav; /* RDOTMSAV: raw range-rate count, unscaled      */
+    agc_vec_t rrborsit; /* RRBORSIT: RR boresight, NB, half unit 2^1     */
+    agc_dp_t  dtheta;   /* DSPTEM1: radar vs SV LOS, rev 2^0 (N05)       */
     uint16_t  rangrdot[2]; /* RANGRDOT: raw range, range rate (downlink)    */
     /* R22 */
     agc_dp_t r22disp[2]; /* R22DISP: |dR| m 2^29, |dV| m/cs 2^7 (noun 49) */
-    agc_sp_t n49flag;    /* N49FLAG: 0 open, -1 proceed, + recycle        */
-    agc_sp_t whchread;   /* WHCHREAD: 1 range, 2 rate, 3 shaft, 4 trunnion */
-    agc_sp_t r65cntr;    /* R65CNTR: R65 passes left                      */
+    agc_sp_t n49flag;    /* N49FLAG: 0 open, -1 PRO, + V32, unscaled  */
+    agc_sp_t whchread;   /* WHCHREAD: 1 R, 2 RDOT, 3 S, 4 T, unscaled     */
+    agc_sp_t r65cntr;    /* R65CNTR: R65 passes left, unscaled            */
     /* R21 */
-    agc_sp_t reposcnt; /* REPOSCNT: 10 s retries left                   */
+    agc_sp_t reposcnt; /* REPOSCNT: 10 s retries left, unscaled         */
     agc_dp_t repostm;  /* REPOSTM: time of the LOS, cs 2^28             */
     /* R24 */
-    agc_sp_t  nsrchpnt; /* NSRCHPNT: search pattern point 0..6           */
-    agc_sp_t  datagood; /* DATAGOOD: 11111 lock-on, 0 none (noun 80)     */
-    agc_dp_t  omegad;   /* OMEGDISP: RR boresight to +Z, revs (noun 80)  */
-    agc_vec_t losdesrd; /* LOSDESRD: desired LOS, reference, half unit   */
-    agc_vec_t vxrcm;    /* VXRCM: unit(V(CSM) x R(CSM))                   */
-    agc_vec_t uxvect;   /* UXVECT, UYVECT: search pattern axes           */
-    agc_vec_t uyvect;
+    agc_sp_t  nsrchpnt; /* NSRCHPNT: search pattern point 0..6, unscaled */
+    agc_sp_t  datagood; /* DATAGOOD: 11111 lock-on (N80), unscaled  */
+    agc_dp_t  omegad;   /* OMEGDISP: boresight to +Z, rev 2^0 (N80)      */
+    agc_vec_t losdesrd; /* LOSDESRD: desired LOS, reference, 2^1         */
+    agc_vec_t vxrcm;    /* VXRCM: unit(V(CSM) x R(CSM)), 2^1              */
+    agc_vec_t uxvect;   /* UXVECT: search pattern X axis, 2^1            */
+    agc_vec_t uyvect;   /* UYVECT: search pattern Y axis, 2^1            */
     agc_vec_t savlemv; /* SAVLEMV: V(CSM) - V(LM), SM, m/cs 2^7         */
     /* R61 / R65 */
     agc_job_id_t genret; /* GENRET: where R61LEM / R65LEM return          */

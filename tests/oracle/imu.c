@@ -146,15 +146,15 @@ static void pipa(const char *t)
     (void) oracle_cmp(t, "DELVX", delv.c[0], oracle_out_dp(t, "DELVX"), 0);
     (void) oracle_cmp(t, "DELVY", delv.c[1], oracle_out_dp(t, "DELVY"), 0);
     (void) oracle_cmp(t, "DELVZ", delv.c[2], oracle_out_dp(t, "DELVZ"), 0);
-    (void) oracle_cmp(t, "GCOMPX", g[0], oracle_out_dp(t, "GCOMP"), 1);
-    (void) oracle_cmp(t, "GCOMPY", g[1], oracle_out_dp(t, "GCOMP+2"), 1);
-    (void) oracle_cmp(t, "GCOMPZ", g[2], oracle_out_dp(t, "GCOMP+4"), 1);
-    /* GCOMPSW = (|GCOMP hi| - 1) masked - 1 from a DAS-built pair that the
-     * AGC may leave sign-disagreeing ((49, -14827) for 48.09 pulses), so
-     * the value can differ by 2; its sign (torque needed) must agree.    */
+    (void) oracle_cmp(t, "GCOMPX", g[0], oracle_out_dp(t, "GCOMP"), 0);
+    (void) oracle_cmp(t, "GCOMPY", g[1], oracle_out_dp(t, "GCOMP+2"), 0);
+    (void) oracle_cmp(t, "GCOMPZ", g[2], oracle_out_dp(t, "GCOMP+4"), 0);
+    /* GCOMPSW = (|GCOMP hi| - 1) masked - 1 from the DAS-built pair, which
+     * the AGC may leave sign-disagreeing ((49, -14827) for 48.09 pulses);
+     * compensation.c keeps the words (F6 fixed), so it is exact.         */
     const int gsw = oracle_out_sp(t, "GCOMPSW");
 
-    (void) oracle_cmp(t, "GCOMPSW", agc_imu_gcompsw(), gsw, 2);
+    (void) oracle_cmp(t, "GCOMPSW", agc_imu_gcompsw(), gsw, 0);
     (void) oracle_cmp(t, "GCOMPSW sign",
                       (agc_imu_gcompsw() > 0) - (agc_imu_gcompsw() < 0),
                       (gsw > 0) - (gsw < 0), 0);
@@ -271,16 +271,19 @@ int main(void)
     pipa("pipa_burn");
     pipa("pipa_bypass");
     pipa("pipa_carry");
-    kalc("kalc_normal", 8, 8);
-    kalc("kalc_large", 32, 8);
-    kalc("kalc_neg", 8, 8);
-    kalc("kalc_small", 8, 512);
-    delcomp("delcomp_a", 8);
-    delcomp("delcomp_b", 8);
-    delcomp("delcomp_c", 8);
-    dcmtocdu("dcmtocdu_a", 4);
-    dcmtocdu("dcmtocdu_b", 4);
-    dcmtocdu("dcmtocdu_c", 4);
+    /* F5 residuals (review-imu): DELCOMP's 1 - cos A is the word pair
+     * (1, -16336) that DMPSUB truncates by its words, DCMTOCDU shifts the
+     * TP COS result, CDUTODCM's BDSU keeps MPAC+2; agc_dp_t holds values. */
+    kalc("kalc_normal", 4, 0);
+    kalc("kalc_large", 1, 0);
+    kalc("kalc_neg", 4, 0);
+    kalc("kalc_small", 2, 5);
+    delcomp("delcomp_a", 4);
+    delcomp("delcomp_b", 4);
+    delcomp("delcomp_c", 4);
+    dcmtocdu("dcmtocdu_a", 3);
+    dcmtocdu("dcmtocdu_b", 3);
+    dcmtocdu("dcmtocdu_c", 3);
 
     return (oracle_finish("oracle_imu"));
 }

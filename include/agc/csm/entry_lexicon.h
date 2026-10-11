@@ -1,13 +1,27 @@
-/*
- * entry_lexicon.h -- entry constants and gains (ENTRY_LEXICON.agc pp.
- * 837-843 for the meanings; values from REENTRY_CONTROL.agc pp. 879-881,
- * P61-P67.agc pp. 805-811, CM_BODY_ATTITUDE.agc p. 889, CSM_GEOMETRY.agc
- * pp. 291-294 and CM_ENTRY_DIGITAL_AUTOPILOT.agc pp. 1079-1092).
+/**********************************************************************
+ * FILE NAME: entry_lexicon.h
+ *
+ * PURPOSE:
+ *   Entry constants and gains, each the raw agc_dp_t / agc_sp_t word of
+ *   the rope with the AGC text and the engineering meaning in its comment.
+ *
+ * AGC SOURCE:
+ *   Comanche055 ENTRY_LEXICON.agc pp. 837-843 (meanings);
+ *   REENTRY_CONTROL.agc pp. 879-881, P61-P67.agc pp. 805-811,
+ *   CM_BODY_ATTITUDE.agc p. 889, CSM_GEOMETRY.agc pp. 291-294,
+ *   CM_ENTRY_DIGITAL_AUTOPILOT.agc pp. 1079-1092 (values)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (constants only)
  *
  * Each DP constant is the raw agc_dp_t (value x 2^28 after the AGC's own
- * B-scaling); the comment gives the AGC text and the engineering meaning.
- * Units: /2VS = /51532.3946 fps, /805 = /25 g, revs = /360 deg = /21600 NM.
- */
+ * B-scaling). Units: /2VS = /51532.3946 fps, /805 = /25 g, revs = /360
+ * deg = /21600 NM. Values were checked word for word against the rope
+ * (review-guid-entry).
+ **********************************************************************/
 #ifndef AGC_ENTRY_LEXICON_H
 #define AGC_ENTRY_LEXICON_H
 
@@ -27,7 +41,7 @@
 #define AGC_ENTRY_Q7FKDMIN \
     ((agc_dp_t) 2167491) /* 2DEC .0080745342: (Q7F+KDMIN)/805 = 6.5/805 */
 #define AGC_ENTRY_Q3  ((agc_dp_t) 44829562) /* 2DEC .167003132: .07 2VS/21600 */
-#define AGC_ENTRY_Q5  ((agc_dp_t) 87614350) /* 2DEC .326388889: .3 23500/21600 */
+#define AGC_ENTRY_Q5  ((agc_dp_t) 87614350) /* 2DEC .326388889 .3x23500/21600 */
 #define AGC_ENTRY_Q6  ((agc_dp_t) 9368397)  /* 2DEC .0349: 2 deg approx, rad */
 #define AGC_ENTRY_Q7F ((agc_dp_t) 2000761)  /* 2DEC .0074534161: 6/805 fpss */
 #define AGC_ENTRY_Q21 ((agc_dp_t) 6213784)  /* 2DEC .0231481481: 500/21600 NM */
@@ -59,7 +73,7 @@
 #define AGC_ENTRY_KTETA \
     ((agc_dp_t) 628319) /* 2DEC* .383495203 E2 B-14*: 1000 2PI/16384 (163.84) */
 #define AGC_ENTRY_KT1 \
-    ((agc_dp_t) 258520) /* 2DEC* .157788327 E2 B-14*: RE(2PI)/2VS(16384) 163.84 */
+    ((agc_dp_t) 258520) /* 2DEC* .157788327 E2 B-14*: RE 2PI/2VS/16384 163.84 */
 #define AGC_ENTRY_G05 ((agc_dp_t) 536871) /* 2DEC .002: .05 g/25 g */
 #define AGC_ENTRY_LATBIAS \
     ((agc_dp_t) 8053) /* 2DEC .00003: approx .5 NM / 4(21600/2PI) */
@@ -78,7 +92,7 @@
 #define AGC_ENTRY_TWO_HS \
     ((agc_dp_t) 4638205) /* 2DEC .0172786611: 2HS: 2 28500 25 32.2/(4 VS VS) */
 #define AGC_ENTRY_TWO_HS_GMAX_SQ \
-    ((agc_dp_t) 8207) /* 2DEC .0000305717: 2HSGMXSQ: (2 28500 8 32.2/4 VS VS)^2 */
+    ((agc_dp_t) 8207) /* 2DEC .0000305717 2HSGMXSQ: (2 28500 8 32.2/4VS^2)^2 */
 #define AGC_ENTRY_C001 \
     ((agc_dp_t) -167772) /* 2DEC -.000625: -(4/25)/256  LEQ/D0 const */
 #define AGC_ENTRY_TWO_C1_HS \
@@ -148,7 +162,7 @@
 #define AGC_ENTRY_VEMSCON \
     ((agc_dp_t) -638) /* 2DEC -.0389676 B-14: -HS D/2PI, m^2/cs^2 */
 #define AGC_ENTRY_RTMU_INV_EARTH \
-    ((agc_dp_t) 176124180) /* 2DEC* .5005750271 E-5 B17*: 1/RTMU (modified earth mu) */
+    ((agc_dp_t) 176124180) /* 2DEC* .5005750271 E-5 B17*: 1/RTMU (earth) */
 #define AGC_ENTRY_RTMU_INV_LUNENT \
     ((agc_dp_t) 176229826) /* 2DEC* .50087529 E-5 B17*: 1/RTMUE */
 #define AGC_ENTRY_HALVE \

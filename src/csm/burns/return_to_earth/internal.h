@@ -1,13 +1,26 @@
-/*
- * internal.h -- shared between the P37 files of src/csm/burns/return_to_earth/
- * (program.c, conic.c, velocity.c,
- * precision.c). Not part of the public API.
+/**********************************************************************
+ * FILE NAME: internal.h
  *
- * The P37 erasables (ERASABLE_ASSIGNMENTS.agc, EBANK7 "RTE" block from
- * RTEDVD to BETA12) are module storage: P37 is the only user. P37 refuses
- * a state in the moon's sphere (alarm 612), so every "B29/B27" pair of the
- * listing is the earth scale B29 here (CONICX1 = 2, X1 = -2).
- */
+ * PURPOSE:
+ *   Shared between the P37 files of src/csm/burns/return_to_earth/
+ *   (program.c, conic.c, velocity.c, precision.c); not part of the public
+ *   API. The P37 erasables (ERASABLE_ASSIGNMENTS.agc, EBANK7 "RTE" block
+ *   from RTEDVD to BETA12) are module storage: P37 is the only user.
+ *
+ * AGC SOURCE:
+ *   Comanche055 P37_P70.agc pp. 890-933; ERASABLE_ASSIGNMENTS.agc (RTE
+ *   block)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (rte_state() and rte_ip() reach the module erasables)
+ *
+ * P37 refuses a state in the moon's sphere (alarm 612), so every
+ * "B29/B27" pair of the listing is the earth scale B29 here (CONICX1 = 2,
+ * X1 = -2).
+ **********************************************************************/
 #ifndef RETURN_TO_EARTH_INTERNAL_H
 #define RETURN_TO_EARTH_INTERNAL_H
 
@@ -26,7 +39,7 @@
 #define RTE_GAMDV_PASSES 144 /* M144RTE: X(T1)-DV iterator passes       */
 /* Bound on precision integrations: NN1A can be reset to 10 once (V2T115),
  * so at most 2 x 11 outer passes of at most 16 integrations each.          */
-#define RTE_PREC_MAX_STEPS 400
+#define RTE_PREC_MAX_STEPS 400 /* loop bound, see above (not in AGC) */
 
 /* Alarm codes (octal, as in the listing).                                  */
 #define RTE_ALARM_ITERATIONS \
@@ -59,7 +72,7 @@ typedef struct rte_erasable
     agc_dp_t  r_t1;  /* R(T1)    |R(T1)/|, m B29                             */
     agc_vec_t v_t1v; /* V(T1)/   velocity at TIG (pre impulse), m/cs B7      */
     agc_dp_t  t1;    /* T1       time of R(T1)/ (TIG), cs B28                */
-    agc_sp_t  p_t1;  /* P(T1)    primary body index X2: 0 earth, 2 moon      */
+    agc_sp_t  p_t1;  /* P(T1)    body index X2: 0 earth, 2 moon, unscaled  */
     agc_vec_t ur1;   /* UR1/     unit R(T1)/, B1                             */
     agc_vec_t uv1;   /* UV1/     unit V(T1)/, B1 (UH/ overlays it)           */
     agc_vec_t uh;    /* UH/      unit horizontal vector, B1                  */
@@ -79,11 +92,11 @@ typedef struct rte_erasable
     agc_vec_t v_t2v;  /* V(T2)/   final velocity, m/cs B7                     */
     agc_dp_t  t2;     /* T2       final time, cs B28                          */
     agc_dp_t  t12;    /* T12      transfer time (TMRAD100), cs B28            */
-    agc_dp_t  conic_t; /* T (30D)  time left by the last conic routine, cs B28 */
+    agc_dp_t  conic_t; /* T (30D)  time of the last conic routine, cs B28 */
     agc_dp_t  drcon;  /* DRCON    conic: previous X(T2)ERR B0; precision:
                        *          RCON step, m B29                            */
     agc_dp_t rpre_prev; /* RPRE'    conic: previous X(T2) B0; precision:
-                         *          previous RPRE, m B29                        */
+                         *          previous RPRE, m B29                  */
     int      nn1a;  /* NN1A     iteration counter 1 (DP B28 integer)        */
     int      nn2;   /* NN2      iteration counter 2 (DP B28 integer)        */
     agc_dp_t phi2;  /* PHI2     -1 perigee / +1 apogee entry, B2            */
@@ -101,7 +114,7 @@ typedef struct rte_erasable
         prec_step;  /* where PREC100 resumes after INTSTALL           */
     int prec_steps; /* integrations done (bound RTE_PREC_MAX_STEPS)        */
     /* program bookkeeping */
-    agc_vec_t rtarg; /* target position kept for P37W (popped vector)        */
+    agc_vec_t rtarg; /* target position kept for P37W, m B29                */
     agc_job_id_t
         vnstore; /* VNSTORE  where RTEVN returns                         */
     agc_alarm_code_t
@@ -120,21 +133,20 @@ typedef struct rte_v2t
     agc_dp_t dx_t1max; /* 12D  largest step of X(T1), B5                     */
     agc_dp_t x_t1max;  /* 14D  upper bound on X(T1), B5                      */
     agc_dp_t dx_t1;    /* 16D  iterator step of X(T1), B5                    */
-    agc_dp_t beta5;    /* 28D  BETA1 LAMBDA, B(2 - x1)                       */
+    agc_dp_t beta5;    /* 28D  BETA1 LAMBDA, scale 2^(2 - x1)                */
     int      x1;       /* X1   normalisation difference of R(T1) and RCON    */
 } rte_v2t_t;
 
 /* RTEDISP output (stored by the job layer into the shared erasables).     */
 typedef struct rte_display
 {
-    agc_dp_t vpred;   /* VPRED    speed at 400,000 ft, m/cs B7                */
-    agc_dp_t t3tot4;  /* T3TOT4   TIG to 400,000 ft, cs B28                   */
-    agc_dp_t gammaei; /* GAMMAEI  flight path angle at 400,000 ft, revs B0    */
-    agc_vec_t
-             delvlvc; /* DELVLVC  delta V, local vertical coordinates, m/cs B7 */
-    agc_dp_t vgdisp; /* VGDISP   |DELVLVC|, m/cs B7                          */
-    agc_dp_t lat_spl; /* LAT(SPL) landing site latitude, revs B0              */
-    agc_dp_t lng_spl; /* LNG(SPL) landing site longitude, revs B0             */
+    agc_dp_t  vpred;  /* VPRED    speed at 400,000 ft, m/cs B7                */
+    agc_dp_t  t3tot4; /* T3TOT4   TIG to 400,000 ft, cs B28                   */
+    agc_dp_t  gammaei; /* GAMMAEI  flight path angle at 400,000 ft, revs B0 */
+    agc_vec_t delvlvc; /* DELVLVC  delta V, local vertical, m/cs B7       */
+    agc_dp_t  vgdisp; /* VGDISP   |DELVLVC|, m/cs B7                          */
+    agc_dp_t  lat_spl; /* LAT(SPL) landing site latitude, revs B0 */
+    agc_dp_t  lng_spl; /* LNG(SPL) landing site longitude, revs B0 */
 } rte_display_t;
 
 /* velocity.c (module storage lives here so the arithmetic

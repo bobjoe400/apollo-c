@@ -1,13 +1,55 @@
-/*
- * earth_orbit_insertion.c -- P11.agc (Comanche055, pp. 533-550): earth orbit insertion
- * monitor, and the Saturn takeover function (SATSTKON, SATSTICK).
+/**********************************************************************
+ * FILE NAME: earth_orbit_insertion.c
  *
- * At liftoff (or V75 backup) P11 zeroes the CMC clock, moves TEPHEM to
- * the liftoff time, starts AVERAGEG (PREREAD1), computes the launch
- * REFSMMAT and RN, VN at liftoff (MATRXJOB), displays N62 (VI, HDOT, H)
- * each 2 s (VHHDOT as AVGEXIT) and drives the FDAI attitude-error needles
- * from the Saturn pitch/roll programme (ATERJOB, every ~.5 s).
- */
+ * PURPOSE:
+ *   P11, the earth orbit insertion monitor, and the Saturn takeover
+ *   function (SATSTKON, REDOSAT, SATSTICK). At liftoff (or V75 backup)
+ *   P11 zeroes the CMC clock, moves TEPHEM to the liftoff time, starts
+ *   AVERAGEG (PREREAD1), computes the launch REFSMMAT and RN, VN at
+ *   liftoff (MATRXJOB), displays N62 (VI, HDOT, H) each 2 s (VHHDOT as
+ *   AVGEXIT) and drives the FDAI attitude-error needles from the Saturn
+ *   pitch/roll programme (ATERJOB, every ~.5 s).
+ *
+ * AGC SOURCE:
+ *   Comanche055 P11.agc pp. 533-550 (P11 .. REP11, MATRXJOB, GETDOWN,
+ *   VHHDOT, ATERTASK, ATERJOB .. ATTDISP2, STEERSAT .. TAKEON, S11.1,
+ *   DELSTOR, RLTST, NOPOLY, RESCALES, SATSTKON, REDOSAT, SATSTICK)
+ *   Luminary099: none (CM only)
+ *
+ * EXTERNAL VARIABLES:  (through accessors)
+ *   Name          Type       I/O  Scale          Description
+ *   ------------  ---------  ---  -------------  ----------------------
+ *   TIME2/TIME1   clock      IO   cs             zeroed at liftoff
+ *   TEPHEM        agc_tp_t   IO   cs B42         ephemeris time
+ *   TLIFTOFF      agc_dp_t   O    cs B28         clock at liftoff
+ *   REFSMMAT      agc_mat_t  O    half-unit      launch REFSMMAT
+ *   RN1, VN1      agc_vec_t  O    m B29, m/cs B7 state at liftoff
+ *   CDUX..CDUZ    uint16_t   I    CDU pattern    gimbal angles
+ *   channels 12, 30, 31     IO   -              S-IVB takeover, RHC
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_guid_preread1_csm PREREAD1: zero PIPs, start AVERAGEG
+ *   agc_latlong_to_r      LALOTORV (pad position at T = 0)
+ *   agc_imu_calcgta       CALCGTA: desired gimbal angles
+ *   agc_dap_needler       NEEDLER: FDAI attitude-error needles
+ *   agc_csm_dap_stickchk  STICKCHK: RHC rate indices
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none raised here; display and executive statuses are passed up.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   CSM only. Restart protected through groups 3, 4 and 5 as in the AGC
+ *   (REP11, REP11A, 4.51, 5.2/5.3).
+ *
+ * NOTES:
+ *   The pad loads arrive through agc_earth_orbit_insertion_monitor_set_
+ *   padload; POLYNUM there is the polynomial degree (the AGC POLYNUM is
+ *   one less, for POWRSERS). DMP SL / DOT SL1 / POWRSERS keep the TP MPAC
+ *   (review-guid-entry); TAD BIASAK and RESCALES model the word-level
+ *   carries and the TS overflow skip.
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -29,35 +71,49 @@
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 
-#define INSERTION_RPAD ((agc_dp_t) 3186669) /* RPAD 2DEC 6373338 B-29, m  */
-#define INSERTION_MERTHRAT \
-    ((agc_dp_t) -51313698) /* -ERTHRAT 2DEC* -7.292115138
-                                                E-7 B18*: -earth rate rad/cs */
-#define INSERTION_HALFREV \
-    ((agc_dp_t) AGC_DP_HALF)         /* DPHALF                   */
-#define INSERTION_POWDNCOD       3   /* POWDNCOD = THREE           */
-#define INSERTION_2SECS          200 /* 2SECS, cs                  */
-#define INSERTION_ATERTASK_DELAY 25  /* OCT31: .25 s DELAYJOB      */
-#define INSERTION_100MST5 \
-    16374                         /* 100MST5 DEC 16374: TIME5
-                                                preset for a 100 ms T5RUPT */
-#define INSERTION_STIKBITS 00077u /* STIKBITS: RHC rotation bits */
+#define INSERTION_RPAD     ((agc_dp_t) 3186669)     /* RPAD 6373338 m, B29 */
+#define INSERTION_MERTHRAT ((agc_dp_t) -51313698)   /* -ERTHRAT rad/cs B18 */
+#define INSERTION_HALFREV  ((agc_dp_t) AGC_DP_HALF) /* DPHALF, B0          */
+#define INSERTION_POWDNCOD 3                        /* POWDNCOD = THREE    */
+#define INSERTION_2SECS    200                      /* 2SECS, cs           */
+#define INSERTION_100MST5  16374                    /* TIME5 for 100 ms    */
+
+#define INSERTION_ATERTASK_DELAY 25 /* OCT31: .25 s DELAYJOB              */
+#define INSERTION_STIKBITS       00077u /* STIKBITS: RHC rotation bits        */
 
 /* P11 erasables (P11 STORAGE, P11 SATURN I/F; module-private).          */
-static agc_earth_orbit_insertion_monitor_padload_t insertion_pad;
-static agc_dp_t                                    lifttemp; /* LIFTTEMP TIME2,1 at liftoff, cs    */
-static bool                                        lifttemp_set; /* LIFTTEMP != -0                     */
-static bool                                        tliftoff_set; /* TLIFTOFF holds the time (not the
-                                                                          REP11SA phase words)               */
-static agc_tp_t tephem1;      /* TEPHEM1 new ephemeris time, TP     */
-static agc_dp_t ogc_lo[3];    /* OGC IGC MGC at liftoff, revs       */
-static agc_dp_t insertion_vmagi, insertion_hdot,
-                insertion_alti; /* N62 display data     */
-static agc_sp_t satsw;          /* SATSW boost takeover status        */
-static agc_sp_t biasak[3]; /* BIASAK stored AK bias              */
-static agc_sp_t insertion_ak[3]; /* AK AK1 AK2 last needle commands  */
-static agc_sp_t spolyarg;  /* SPOLYARG TIME1 - RPSTART, cs       */
+static agc_earth_orbit_insertion_monitor_padload_t
+                insertion_pad;   /* pad loads, scales per member      */
+static agc_dp_t lifttemp;        /* LIFTTEMP TIME2,1 at liftoff, cs B28 */
+static bool     lifttemp_set;    /* LIFTTEMP != -0                    */
+static bool     tliftoff_set;    /* TLIFTOFF holds the time           */
+static agc_tp_t tephem1;         /* TEPHEM1 ephemeris time, cs B42    */
+static agc_dp_t ogc_lo[3];       /* OGC IGC MGC at liftoff, revs B0   */
+static agc_dp_t insertion_vmagi; /* N62 VI, m/cs B7                   */
+static agc_dp_t insertion_hdot;  /* N62 HDOT, m/cs B7                 */
+static agc_dp_t insertion_alti;  /* N62 H, m B29                      */
+static agc_sp_t satsw;           /* SATSW takeover status, unscaled   */
+static agc_sp_t biasak[3];       /* BIASAK stored AK bias, B0         */
+static agc_sp_t insertion_ak[3]; /* AK AK1 AK2 needle commands, B0    */
+static agc_sp_t spolyarg;        /* SPOLYARG TIME1 - RPSTART, cs B14  */
 
+/**********************************************************************
+ * AGC: none (pad loads used by P11.agc pp. 542-550) -- store the P11 pad
+ * loads (pitch polynomial, roll programme, launch azimuth, Saturn scale and
+ * rates).
+ *
+ * FUNCTION NAME: agc_earth_orbit_insertion_monitor_set_padload
+ *
+ * ARGUMENTS:
+ *   Argument  Type (I/O)  Description (scale)
+ *   --------  ----------  --------------------------------------------
+ *   pad       const agc_earth_orbit_insertion_monitor_padload_t * (I)
+ *                         the pad loads; polynum is the polynomial
+ *                         degree, 1..POLY_MAX; scales per member
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when pad is
+ *          NULL or polynum is out of range
+ **********************************************************************/
 agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
     const agc_earth_orbit_insertion_monitor_padload_t *pad)
 {
@@ -77,8 +133,22 @@ agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
  * Liftoff (pp. 535-537)
  * ==================================================================== */
 
-/* P11 / P11+7 (p. 535): restarts to REP11 (3.11), group 5 off; TLIFTOFF
- * = clock at liftoff, the clock zeroed, restarts to REP11A (3.13).      */
+/**********************************************************************
+ * P11 / P11+7 (p. 535): restarts to REP11 (3.11), group 5 off; TLIFTOFF =
+ * clock at liftoff, the clock zeroed, restarts to REP11A (3.13).
+ *
+ * FUNCTION NAME: agc_job_earth_orbit_insertion_monitor
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -105,7 +175,21 @@ agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
     return (agc_job_earth_orbit_insertion_monitor_ephemeris(ctx));
 }
 
-/* REP11A (pp. 535-536): TEPHEM1 = TEPHEM + TLIFTOFF, restart there.     */
+/**********************************************************************
+ * REP11A (pp. 535-536): TEPHEM1 = TEPHEM + TLIFTOFF, restart there.
+ *
+ * FUNCTION NAME: agc_job_earth_orbit_insertion_monitor_ephemeris
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
 {
     agc_phase_var_t v = {
@@ -127,7 +211,21 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
     return (agc_job_earth_orbit_insertion_monitor_preread(ctx));
 }
 
-/* After the 05023 PHASCHNG (p. 536): TEPHEM = TEPHEM1, PREREAD1.        */
+/**********************************************************************
+ * After the 05023 PHASCHNG (p. 536): TEPHEM = TEPHEM1, PREREAD1.
+ *
+ * FUNCTION NAME: agc_job_earth_orbit_insertion_monitor_preread
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
 {
     agc_phase_var_t v = {
@@ -135,7 +233,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
         AGC_TASK_NONE, (int16_t) 022,
         false, 0U
     };
-    agc_status_t    st;
+    agc_status_t    st; /* PREREAD1 status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -153,17 +251,31 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ?
+    return ((st == AGC_STATUS_OK) ? /* go on if OK */
             agc_job_earth_orbit_insertion_monitor_setup(ctx) :
             st);
 }
 
-/* (p. 536-537): ATERTASK in .5 s, MM 11, NODOP01, powered-flight
- * downlist, CLEANDSP, restarts 4.51 / 3.7, then EARTHR (exit P11OUT ->
- * MATRXJOB in this job).                                                 */
+/**********************************************************************
+ * (p. 536-537): ATERTASK in .5 s, MM 11, NODOP01, powered-flight downlist,
+ * CLEANDSP, restarts 4.51 / 3.7, then EARTHR (exit P11OUT -> MATRXJOB in
+ * this job).
+ *
+ * FUNCTION NAME: agc_job_earth_orbit_insertion_monitor_setup
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
 {
-    agc_status_t st;
+    agc_status_t st; /* EARTHR status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -177,7 +289,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
         return (sw);
     }
 
-    agc_status_t sj = agc_phase_newmode(11);
+    agc_status_t sj = agc_phase_newmode(11); /* NEWMODEX status */
 
     if (sj != AGC_STATUS_OK)
     {
@@ -202,10 +314,25 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_matrxjob(ctx) : st);
-}
+    return ((st == AGC_STATUS_OK) ? /* go on if OK */
+            agc_job_matrxjob(ctx) : st);
+} /* agc_job_earth_orbit_insertion_monitor_setup */
 
-/* REP11 (p. 539): restart of group 3 at 3.11.                           */
+/**********************************************************************
+ * REP11 (p. 539): restart of group 3 at 3.11.
+ *
+ * FUNCTION NAME: agc_job_earth_orbit_insertion_monitor_restart
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -226,7 +353,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
 
     if (!tliftoff_set)
     {
-        agc_dp_t liftoff = lifttemp; /* clock zeroed: DCA LIFTTEMP */
+        agc_dp_t liftoff = lifttemp; /* TLIFTOFF, cs B28 */
 
         if (agc_time_now_cs() >= 16384u)
         { /* CCS TIME2 > 0: REP11A -5 zeroes the clock and the DXCH
@@ -253,14 +380,30 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
  * MATRXJOB (pp. 537-539)
  * ==================================================================== */
 
-/* GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
- * vertical at the pad, negated (VCOMP).                                  */
+/**********************************************************************
+ * GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
+ * vertical at the pad, negated (VCOMP).
+ *
+ * FUNCTION NAME: getdown
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   ip        agc_interp_t *  IO   interpreter state of the job: OVFIND,
+ *                                  DVSIGN, alarms
+ *   down      agc_vec_t *     O    the negated pad position at T = 0 (down
+ *                                  direction), m B29
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG on a failed
+ *          assertion; else the pad load or RP-TO-R status
+ **********************************************************************/
 static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
 {
-    agc_navaux_padload_t pad;
-    agc_dp_t             cl = agc_dp_cos(ip, insertion_pad.latitude);
-    agc_vec_t            rp;
-    agc_status_t         st = agc_navaux_get_padload(&pad);
+    agc_navaux_padload_t pad; /* pad loads (earth radius) */
+    agc_dp_t             cl = /* COS LAT /2, B1 */
+                              agc_dp_cos(ip, insertion_pad.latitude);
+    agc_vec_t    rp;         /* unit RP, B2 */
+    agc_status_t st = agc_navaux_get_padload(&pad); /* status */
 
     if (!AGC_ASSERT(down != NULL))
     {
@@ -284,14 +427,28 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
     return (st);
 }
 
-/* MATRXJOB tail (pp. 538-539): restart 3.x here, AVGEXIT = VHHDOT,
- * 1/PIPADT = 2 s, READACCS 2 s after liftoff, NORMLIZE.                  */
+/**********************************************************************
+ * MATRXJOB tail (pp. 538-539): restart 3.x here, AVGEXIT = VHHDOT, 1/PIPADT
+ * = 2 s, READACCS 2 s after liftoff, NORMLIZE.
+ *
+ * FUNCTION NAME: matrx_tail
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
 {
     agc_phase_var_t v = {
         AGC_RESTART_JOB, AGC_JOB_MATRXJOB, AGC_TASK_NONE, 0, false, 0U
     };
-    int32_t         dt;
+    int32_t         dt; /* READACCS delay, cs */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -311,7 +468,8 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
         dt = 1; /* never negative */
     }
 
-    agc_status_t st = agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
+    agc_status_t st = /* WAITLIST status */
+                      agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
 
     if (st != AGC_STATUS_OK)
     {
@@ -329,22 +487,86 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
     }
 
     return (agc_job_normlize_csm(ctx)); /* POSTJUMP      */
+} /* matrx_tail */
+
+/**********************************************************************
+ * MATRXJOB REFSMMAT (P11.agc p. 538): the launch REFSMMAT. Z = UNIT(down),
+ * X = UNIT(SIN(AZ) EAST - COS(AZ) SOUTH), Y = -UNIT(X x Z); all half-unit.
+ *
+ * FUNCTION NAME: launch_refsmmat
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   ip        agc_interp_t *  IO   interpreter state of the job
+ *   down      agc_vec_t       I    down direction at the pad, m B29
+ *   m         agc_mat_t *     O    REFSMMAT rows, half-unit (B1)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a
+ *          failed assertion
+ **********************************************************************/
+static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down,
+                                    agc_mat_t *m)
+{
+    agc_vec_t unitw = agc_guid_state()->avg.unitw; /* UNITW polar axis, B0 */
+    agc_vec_t east;   /* EAST, B1   */
+    agc_vec_t msouth; /* -SOUTH, B1 */
+
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(m != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    m->row[2] = agc_vec_unit(ip, down, NULL, NULL);
+    east      = agc_vec_unit(ip, agc_vec_cross(ip, m->row[2], unitw), NULL,
+                             NULL);
+    msouth =
+        agc_vec_unit(ip, agc_vec_cross(ip, east, m->row[2]), NULL, NULL);
+    m->row[0] = agc_vec_add(
+        ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)),
+        agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
+    m->row[0] = agc_vec_unit(ip, m->row[0], NULL, NULL);
+    m->row[1] = agc_vec_neg(agc_vec_unit(
+                                ip, agc_vec_cross(ip, m->row[0], m->row[2]),
+                                NULL, NULL));
+
+    if (!AGC_ASSERT(m->row[2].c[0] >= AGC_DP_MIN))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (AGC_STATUS_OK);
 }
 
-/* MATRXJOB (pp. 537-539): liftoff CDUs for the attitude-error display,
- * RN1 (LALOTORV of the pad at T = 0), VN1 = WE x RN1, REFSMMAT, SATRLRT
- * sign, REFSMFLG; AVGEXIT = VHHDOT; READACCS 2 s after liftoff; NORMLIZE. */
+/**********************************************************************
+ * MATRXJOB (pp. 537-539): liftoff CDUs for the attitude-error display, RN1
+ * (LALOTORV of the pad at T = 0), VN1 = WE x RN1, REFSMMAT, SATRLRT sign,
+ * REFSMFLG; AVGEXIT = VHHDOT; READACCS 2 s after liftoff; NORMLIZE.
+ *
+ * FUNCTION NAME: agc_job_matrxjob
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
 {
     const agc_latlong_opt_t opt = {false, false};
-    agc_interp_t           *ip  = entry_ip();
-    agc_avg_g_t            *avg = &agc_guid_state()->avg;
-    agc_navaux_padload_t    pad;
-    agc_latlong_t           ll = {insertion_pad.latitude, insertion_pad.padlong,
-                                  insertion_pad.pgncsalt, 0};
-    agc_vec_t               down;
-    agc_mat_t               m;
-    agc_status_t            st;
+    agc_interp_t           *ip  = entry_ip(); /* entry job interpreter state */
+    agc_avg_g_t            *avg = /* average-G data (RN1, VN1, UNITW) */
+                                  &agc_guid_state()->avg;
+    agc_navaux_padload_t pad; /* pad loads (earth radius) */
+    agc_latlong_t        ll = {insertion_pad.latitude, insertion_pad.padlong,
+                               insertion_pad.pgncsalt, 0};
+    agc_vec_t            down; /* down at the pad, m B29 */
+    agc_mat_t            m;    /* REFSMMAT to store, half-unit */
+    agc_status_t         st;   /* status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -372,40 +594,13 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    /* REFSMMAT at liftoff (p. 538): Z = UNIT(down), X = UNIT(SIN(AZ) EAST
-     * - COS(AZ) SOUTH), Y = Z x X; all half-unit.                            */
-    agc_vec_t unitw = agc_guid_state()->avg.unitw;
-    agc_mat_t m_refsmmat;
-    agc_vec_t east;
-    agc_vec_t msouth;
+    st = launch_refsmmat(ip, down, &m); /* REFSMMAT at liftoff */
 
-    if (!AGC_ASSERT(ip != NULL))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
-    m_refsmmat.row[2] = agc_vec_unit(ip, down, NULL, NULL);
-    east              =
-        agc_vec_unit(ip, agc_vec_cross(ip, m_refsmmat.row[2], unitw), NULL,
-                     NULL);
-    msouth =
-        agc_vec_unit(ip, agc_vec_cross(ip, east, m_refsmmat.row[2]), NULL,
-                     NULL);
-    m_refsmmat.row[0] = agc_vec_add(
-        ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)),
-        agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
-    m_refsmmat.row[0] = agc_vec_unit(ip, m_refsmmat.row[0], NULL, NULL);
-    m_refsmmat.row[1] = agc_vec_neg(
-        agc_vec_unit(ip,
-                     agc_vec_cross(ip, m_refsmmat.row[0], m_refsmmat.row[2]),
-                     NULL, NULL));
-
-    if (!AGC_ASSERT(m_refsmmat.row[2].c[0] >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    m        = m_refsmmat;
     avg->vn1 =
         agc_vec_shl(ip,
                     agc_vec_scale(ip, agc_vec_cross(ip, avg->rn1, avg->unitw),
@@ -420,20 +615,32 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_REFSMFLG);
 
     return (matrx_tail(ctx));
-}
+} /* agc_job_matrxjob */
 
 /* ======================================================================
  * N62 display (pp. 540, 546)
  * ==================================================================== */
 
-/* S11.1 (p. 546): VMAGI, HDOT, ALTI for N62.                            */
+/**********************************************************************
+ * S11.1 (p. 546): VMAGI, HDOT, ALTI for N62.
+ *
+ * FUNCTION NAME: agc_csm_velocity_altitude_rate
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   ip        agc_interp_t *  IO   interpreter state of the job: OVFIND,
+ *                                  DVSIGN, alarms
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
 {
-    agc_vec_t rn = agc_erase_rn();
-    agc_vec_t vn = agc_erase_vn();
-    agc_vec_t ur;
-    agc_dp_t  rmag = 0;
-    agc_dp_t  base = INSERTION_RPAD;
+    agc_vec_t rn = agc_erase_rn(); /* RN, m B29 */
+    agc_vec_t vn = agc_erase_vn(); /* VN, m/cs B7 */
+    agc_vec_t ur; /* UNIT(RN), B1 */
+    agc_dp_t  rmag = 0; /* |RN|, m B29 */
+    agc_dp_t  base = INSERTION_RPAD; /* pad or landing radius, m B29 */
 
     if (!AGC_ASSERT(ip != NULL))
     {
@@ -457,6 +664,22 @@ void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
     }
 }
 
+/**********************************************************************
+ * AGC: none (N62 data, P11.agc p. 546) -- the S11.1 values for display or
+ * test.
+ *
+ * FUNCTION NAME: agc_earth_orbit_insertion_monitor_readout
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------------
+ *   vmagi     agc_dp_t *  O    VI, inertial speed, m/cs B7
+ *   hdot      agc_dp_t *  O    HDOT, rate of change of altitude, m/cs B7
+ *   alti      agc_dp_t *  O    H, altitude above the pad radius, m B29
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when a
+ *          pointer is NULL
+ **********************************************************************/
 agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
                                                        agc_dp_t *hdot,
                                                        agc_dp_t *alti)
@@ -473,8 +696,22 @@ agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
     return (AGC_STATUS_OK);
 }
 
-/* VHHDOT (p. 540): AVGEXIT each 2 s: S11.1, restart 5.3, REGODSP V06N62
- * (which ends the job).                                                  */
+/**********************************************************************
+ * VHHDOT (p. 540): AVGEXIT each 2 s: S11.1, restart 5.3, REGODSP V06N62
+ * (which ends the job).
+ *
+ * FUNCTION NAME: agc_job_vhhdot
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -492,10 +729,21 @@ agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx)
  * Attitude error display (pp. 540-546)
  * ==================================================================== */
 
-/* ATERTASK (p. 540): start ATERJOB, initialise NEEDLER, SATSW = 1.     */
+/**********************************************************************
+ * ATERTASK (p. 540): start ATERJOB, initialise NEEDLER, SATSW = 1.
+ *
+ * FUNCTION NAME: agc_task_atertask
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_task_atertask(void)
 {
-    agc_status_t st = agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB);
+    agc_status_t st = /* FINDVAC status */
+                      agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB);
 
     agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
                                       insertion_ak[2],
@@ -521,17 +769,36 @@ agc_status_t agc_task_atertask(void)
     return (st);
 }
 
-/* AK = TGSC (DESIRED - CDU) (pp. 544-545), TGSC rows
- * (1, SIN Z, 0), (0, COS X COS Z, SIN X), (0, -SIN X COS Z, COS X), with
- * the errors ordered DTHETA (Y), DPSI (Z), DPHI (X); AK scaled 2 revs.   */
+/**********************************************************************
+ * AK = TGSC (DESIRED - CDU) (pp. 544-545), TGSC rows (1, SIN Z, 0), (0, COS
+ * X COS Z, SIN X), (0, -SIN X COS Z, COS X), with the errors ordered DTHETA
+ * (Y), DPSI (Z), DPHI (X); AK scaled 2 revs.
+ *
+ * FUNCTION NAME: agc_earth_orbit_insertion_monitor_attitude_errors
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   desired   const agc_dp_t  I    desired OGC IGC MGC (X Y Z), revs B0
+ *   cdu       const uint16_t  I    CDUX CDUY CDUZ patterns
+ *   ak_out    agc_sp_t        O    AK AK1 AK2 attitude errors, 2 revs (SP
+ *                                  high words)
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_earth_orbit_insertion_monitor_attitude_errors(
     const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
 {
-    agc_interp_t *ip = entry_ip();
-    agc_dp_t      d[3]; /* DTHETA (Y), DPSI (Z), DPHI (X): SP /180 hi */
-    agc_dp_t      sx, cx, sz, cz;
-    agc_dp_t      p;
-    int           i;
+    agc_interp_t *ip = entry_ip(); /* entry job interpreter state */
+    agc_dp_t      d[3]; /* DTHETA DPSI DPHI, revs B0 */
+    agc_dp_t      sx; /* SIN CDUX /2, B1 */
+    agc_dp_t      cx; /* COS CDUX /2, B1 */
+    agc_dp_t      sz; /* SIN CDUZ /2, B1 */
+    agc_dp_t      cz; /* COS CDUZ /2, B1 */
+    agc_dp_t      p; /* DMP PUSH: COS CDUZ DTHETA, B1 */
+    agc_dp_t      q; /* pushed product SL1, B1 */
+    agc_tp_t      t; /* TP MPAC, B1 */
+    int           i; /* loop index */
 
     if (!AGC_ASSERT(desired != NULL && cdu != NULL) ||
         !AGC_ASSERT(ak_out != NULL))
@@ -542,8 +809,9 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
     for (i = 0; i < 3; i++)
     {                            /* order Y Z X        */
         int     k = (i + 1) % 3; /* desired/cdu: X Y Z */
-        int32_t w =
-            (int32_t) agc_rtb_1sto2s(desired[k]) - (int32_t) (cdu[k] & 077777u);
+        int32_t w = /* desired - CDU (MSU), /180 */
+                    (int32_t) agc_rtb_1sto2s(desired[k]) -
+                    (int32_t) (cdu[k] & 077777u);
 
         d[i] = agc_dp_from_sp(entry_angle_wrap(w)); /* DELSTOR (MSU)  */
     }
@@ -552,53 +820,54 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
     cx = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
     sz = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
     cz = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
-    /* DMP SL1, DAD, SR2 (truncating) on the TP MPAC; the PUSHes and the
-     * stores keep two words.                                             */
-    ak_out[0] = agc_dp_high(agc_tp_to_dp(agc_tp_shift(
-                                             ip,
-                                             agc_tp_add(ip,
-                                                        agc_tp_shift(ip,
-                                                                     agc_dp_mul_tp(
-                                                                         sz,
-                                                                         d[0]),
-                                                                     1),
-                                                        agc_tp_from_dp(d[2])),
-                                             -2)));
+    /* NOPOLYM: .5(DPHI + DTHETA SIN(CDUZ)): DMP SL1, DAD, SR2 (truncating)
+     * on the TP MPAC.                                                    */
+    t         = agc_tp_shift(ip, agc_dp_mul_tp(sz, d[0]), 1);
+    t         = agc_tp_add(ip, t, agc_tp_from_dp(d[2]));
+    ak_out[0] = agc_dp_high(agc_tp_to_dp(agc_tp_shift(ip, t, -2)));
+    /* ATTDISP2: COS(CDUZ) DTHETA is PUSHed (two words); each product with
+     * COS/SIN(CDUX) is shifted on the TP and PUSHed; the DPSI product
+     * keeps its MPAC+2 through the DAD / DSU and the last SL1.           */
     p         = agc_dp_mul_trunc(cz, d[0]); /* DMP PUSH          */
-    ak_out[1] = agc_dp_high(entry_tp_shl(
-                                ip, agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]),
-                                               agc_tp_from_dp(entry_tp_shl(
-                                                                  ip,
-                                                                  agc_dp_mul_tp(
-                                                                      p, cx),
-                                                                  1))), 1));
-    ak_out[2] = agc_dp_high(entry_tp_shl(
-                                ip, agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]),
-                                               agc_tp_from_dp(agc_dp_neg(
-                                                                  entry_tp_shl(
-                                                                      ip,
-                                                                      agc_dp_mul_tp(
-                                                                          p,
-                                                                          sx),
-                                                                      1)))),
-                                1));
+    q         = entry_tp_shl(ip, agc_dp_mul_tp(p, cx), 1);
+    t         = agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]), agc_tp_from_dp(q));
+    ak_out[1] = agc_dp_high(entry_tp_shl(ip, t, 1)); /* 17D       */
+    q         = entry_tp_shl(ip, agc_dp_mul_tp(p, sx), 1);
+    t         =
+        agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]), agc_tp_from_dp(agc_dp_neg(q)));
+    ak_out[2] = agc_dp_high(entry_tp_shl(ip, t, 1)); /* 18D       */
 
     if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
     {
         return;
     }
-}
+} /* agc_earth_orbit_insertion_monitor_attitude_errors */
 
-/* ATTDISP / ATTDISP1 / ATTDISPR (pp. 542-544): desired gimbal angles from
+/**********************************************************************
+ * ATTDISP / ATTDISP1 / ATTDISPR (pp. 542-544): desired gimbal angles from
  * the pitch polynomial and the roll programme (CALCGTA), or the liftoff
- * attitude (NOPOLY).                                                     */
+ * attitude (NOPOLY).
+ *
+ * FUNCTION NAME: desired_attitude
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   ip        agc_interp_t *  IO   interpreter state of the job: OVFIND,
+ *                                  DVSIGN, alarms
+ *   desired   agc_dp_t        O    OGC IGC MGC from CALCGTA, or the liftoff
+ *                                  angles (NOPOLY), revs B0
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
 {
-    int32_t   t = (int32_t) agc_erase_time1() - insertion_pad.rpstart;
-    agc_dp_t  pitch;
-    agc_dp_t  x1; /* A1 + A2 T + ..., 32 revs (POWRSERS) */
-    agc_dp_t  roll;
-    agc_mat_t dc;
+    int32_t t = /* TIME1 - RPSTART, cs B14 */
+                (int32_t) agc_erase_time1() - insertion_pad.rpstart;
+    agc_dp_t  pitch; /* PITCH, revs B0 */
+    agc_dp_t  x1; /* A1 + A2 T + ..., 32 revs B5 */
+    agc_dp_t  roll; /* ROLL, revs B0 */
+    agc_mat_t dc; /* TSMV rows XDC YDC ZDC, B1 */
 
     desired[0] = ogc_lo[0]; /* NOPOLY    */
     desired[1] = ogc_lo[1];
@@ -612,7 +881,7 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     spolyarg = (agc_sp_t) t;
     /* POWRSERS leaves the last DMPSUB's MPAC+2 (the DAS of A0 adds to
      * MPAC, MPAC+1 only); SL 5 shifts it up. Horner to A1, then x, A0.   */
-    x1 = (insertion_pad.polynum > 1) ?
+    x1 = (insertion_pad.polynum > 1) ? /* degree 1: A1 */
          agc_dp_poly(agc_dp_from_sp(spolyarg), &insertion_pad.poly[1],
                      insertion_pad.polynum - 1) :
          insertion_pad.poly[1];
@@ -656,15 +925,30 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     }
 
     agc_imu_calcgta(ip, &dc, desired); /* OGC IGC MGC */
-}
+} /* desired_attitude */
 
-/* TLOAD BIASAK, TAD AK (p. 545): the three SP words added as one TP
- * number (DAS on the minor pair, carries into the next word up).       */
+/**********************************************************************
+ * TLOAD BIASAK, TAD AK (p. 545): the three SP words added as one TP number
+ * (DAS on the minor pair, carries into the next word up).
+ *
+ * FUNCTION NAME: insertion_tad
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   m         const agc_sp_t  I    TP MPAC words (BIASAK), B0
+ *   x         const agc_sp_t  I    TP operand words (AK), B0
+ *   out       agc_sp_t        O    sum words (overflow kept modulo 1 in
+ *                                  each), B0
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
                           agc_sp_t out[3])
 {
     int32_t sum   = (int32_t) m[2] + (int32_t) x[2]; /* word 2, 2^-28  */
-    int32_t carry = (sum >= 16384) - (sum <= -16384);
+    int32_t carry = /* carry into the next word */
+                    (sum >= 16384) - (sum <= -16384);
 
     if (!AGC_ASSERT(m != NULL && x != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -679,15 +963,27 @@ static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
                                 carry); /* TS: OVFIND only  */
 }
 
-/* RESCALES with the TS AKn after it (p. 545): AK x SATSCALE x 4 (MP,
+/**********************************************************************
+ * RESCALES with the TS AKn after it (p. 545): AK x SATSCALE x 4 (MP,
  * DDOUBL, DDOUBL). A result past +-1 is stored modulo 1 and the TS skips
- * the next CA AKn+1, so the next word is rescaled from A = +-1.
- * DEVIATION: a skip after TS AK2 would execute the CADR NEEDLER word;
- * that third overflow is stored modulo 1 without the skip.            */
+ * the next CA AKn+1, so the next word is rescaled from A = +-1. DEVIATION:
+ * a skip after TS AK2 would execute the CADR NEEDLER word; that third
+ * overflow is stored modulo 1 without the skip.
+ *
+ * FUNCTION NAME: insertion_rescales
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------------
+ *   ak        agc_sp_t  IO   AK AK1 AK2 before and after RESCALES, B0
+ *   satscale  agc_sp_t  I    SATSCALE pad load, B0
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
 {
     int32_t a = ak[0]; /* A for the next RESCALES    */
-    int     i;
+    int     i; /* word index */
 
     if (!AGC_ASSERT(ak != NULL))
     {
@@ -696,7 +992,8 @@ static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
 
     for (i = 0; i < 3; i++)
     {
-        int32_t h = (int32_t) (((int64_t) 4 * a * satscale) / 16384);
+        int32_t h = /* A after MP, DDOUBL, DDOUBL, SP units */
+                    (int32_t) (((int64_t) 4 * a * satscale) / 16384);
 
         if (h > 32767)
         { /* DDOUBL past the 16-bit A: end-around */
@@ -715,7 +1012,7 @@ static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
         }
         else
         {
-            a = (i < 2) ? (int32_t) ak[i + 1] : 0;
+            a = (i < 2) ? (int32_t) ak[i + 1] : 0; /* CA AKn+1 */
         }
     }
 
@@ -725,11 +1022,21 @@ static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
     }
 }
 
-/* ATERJOB, STRSAT, ATRESET (pp. 541, 546): which way this cycle goes.
- * Returns true when the needles are re-initialised (ATRESET).           */
+/**********************************************************************
+ * ATERJOB, STRSAT, ATRESET (pp. 541, 546): which way this cycle goes.
+ * Returns true when the needles are re-initialised (ATRESET).
+ *
+ * FUNCTION NAME: aterjob_needs_reset
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- bool -- true when this cycle goes to ATRESET (NEEDLER
+ *          init and 60 ms)
+ **********************************************************************/
 static bool aterjob_needs_reset(void)
 {
-    bool switch_on = (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u;
+    bool switch_on = /* S/C control of Saturn switch on */
+                     (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u;
 
     if (!AGC_ASSERT(satsw >= -1 && satsw <= 1))
     {
@@ -738,15 +1045,29 @@ static bool aterjob_needs_reset(void)
 
     /* STRSAT: SATSW <= 0 -> ATTDISP, else ATRESET. Switch off: CCS
      * SATSW: > 0 -> ATTDISP, +0 or < 0 -> ATRESET.                       */
-    return (switch_on ? (satsw > 0) : (satsw <= 0));
+    return (switch_on ? (satsw > 0) : (satsw <= 0)); /* STRSAT : CCS */
 }
 
-/* ATERJOB (pp. 542-546): one display cycle, then DELAYJOB .25 s.         */
+/**********************************************************************
+ * ATERJOB (pp. 542-546): one display cycle, then DELAYJOB .25 s.
+ *
+ * FUNCTION NAME: agc_job_aterjob
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
 {
-    agc_dp_t desired[3];
-    uint16_t cdu[3];
-    agc_sp_t ak[3];
+    agc_dp_t desired[3]; /* desired gimbal angles, revs B0 */
+    uint16_t cdu[3]; /* CDUX..CDUZ patterns */
+    agc_sp_t ak[3]; /* AK AK1 AK2, B0 */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -762,7 +1083,7 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
     {   /* ATRESET: NEEDLER init, 60 ms        */
         agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
                                           insertion_ak[2],
-                                          true);
+                                          true); /* NEEDLER status */
 
         if (sw != AGC_STATUS_OK)
         {
@@ -804,10 +1125,24 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
 
     return (agc_svc_delayjob(INSERTION_ATERTASK_DELAY,
                              AGC_JOB_ATERJOB)); /* ATERSET  */
-}
+} /* agc_job_aterjob */
 
-/* ATRESET +5 (p. 546): after the 60 ms wait, SATSW > 0: enable S-IVB
- * takeover (TAKEON) and SATSW = 0; else SATSW = 1 and takeover off.     */
+/**********************************************************************
+ * ATRESET +5 (p. 546): after the 60 ms wait, SATSW > 0: enable S-IVB
+ * takeover (TAKEON) and SATSW = 0; else SATSW = 1 and takeover off.
+ *
+ * FUNCTION NAME: agc_job_atreset_after_delay
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -832,7 +1167,8 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
     }
 
     /* SATOUT: NEEDLER with the AK words as they stand.                  */
-    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+    agc_status_t st = /* NEEDLER status */
+                      agc_dap_needler(insertion_ak[0], insertion_ak[1],
                                       insertion_ak[2], false);
 
     if (st != AGC_STATUS_OK)
@@ -847,8 +1183,21 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
  * Saturn takeover (pp. 547-550)
  * ==================================================================== */
 
-/* SATSTKON (p. 549): V46 with DAPDATR1 bits 13,14: T5 to REDOSAT now,
- * FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2), ZEROJET, exit via GOPIN.       */
+/**********************************************************************
+ * SATSTKON (p. 549): V46 with DAPDATR1 bits 13,14: T5 to REDOSAT now,
+ * FLAGWRD6 bits 15,14 (DAPBIT1, DAPBIT2), ZEROJET, exit via GOPIN.
+ *
+ * FUNCTION NAME: agc_csm_satstkon
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -872,12 +1221,22 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
     return (agc_extverb_gopin());
 }
 
-/* REDOSAT (p. 549): NEEDLER init, S-IVB takeover on, SATSTICK in 100 ms. */
+/**********************************************************************
+ * REDOSAT (p. 549): NEEDLER init, S-IVB takeover on, SATSTICK in 100 ms.
+ *
+ * FUNCTION NAME: agc_task_redosat
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_task_redosat(void)
 {
     agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1],
                                       insertion_ak[2],
-                                      true);
+                                      true); /* NEEDLER status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -902,15 +1261,25 @@ agc_status_t agc_task_redosat(void)
     return (AGC_STATUS_OK); /* 100MST5  */
 }
 
-/* SATSTICK (p. 550): every 100 ms (T5): the RHC rotation bits of channel
- * 31 (inverted logic: STIKBITS RXOR CHAN31, MASK STIKBITS) set RMANNDX,
- * PMANNDX, YMANNDX (STICKCHK, dap-csm); the indexed SATRATE pad loads
- * go to AK (roll), AK1 (pitch), AK2 (yaw) and out through NEEDLER.        */
+/**********************************************************************
+ * SATSTICK (p. 550): every 100 ms (T5): the RHC rotation bits of channel 31
+ * (inverted logic: STIKBITS RXOR CHAN31, MASK STIKBITS) set RMANNDX,
+ * PMANNDX, YMANNDX (STICKCHK, dap-csm); the indexed SATRATE pad loads go to
+ * AK (roll), AK1 (pitch), AK2 (yaw) and out through NEEDLER.
+ *
+ * FUNCTION NAME: agc_task_satstick
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_task_satstick(void)
 {
-    const agc_csm_rcs_t *r;
-    uint16_t             bits;
-    agc_status_t         st;
+    const agc_csm_rcs_t *r; /* RCS DAP data (MANNDX) */
+    uint16_t             bits; /* RHC bits, inverted */
+    agc_status_t         st; /* STICKCHK status */
 
     agc_rupt_set_t5_task(AGC_TASK_SATSTICK); /* 2SATSTCK */
     agc_rupt_set_time(5, INSERTION_100MST5); /* 100MST5  */

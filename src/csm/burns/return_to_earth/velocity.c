@@ -1,32 +1,56 @@
-/*
- * velocity.c -- P37_P70.agc (Comanche055, pp. 917-930): the
- * post-impulse velocity of the return-to-earth conic.
+/**********************************************************************
+ * FILE NAME: velocity.c
  *
- *   V2T100 .. V2T1X  (pp. 917-923) "A POST IMPULSE VELOCITY VECTOR (V2(T1))
- *                    IS COMPUTED WHICH EITHER (1) MEETS THE INPUT VELOCITY
- *                    CHANGE DESIRED (RTEDVD) IN A MINIMUM TIME OR (2) IF A
- *                    VELOCITY CHANGE ISN'T SPECIFIED (RTEDVD = 0), ... WHICH
- *                    MINIMIZES THE IMPULSE (DV) AND CONSEQUENTLY FUEL."
- *   GAMDV10 .. GAMDVX (pp. 924-927) the X(T1)-DV iterator
- *   DVCALC           (pp. 928-929) V2(T1)/, DV, PCON for a given X(T1)
- *   XT1LIM           (p. 930) bounds on the independent variable X(T1)
+ * PURPOSE:
+ *   The post-impulse velocity of the P37 return-to-earth conic. V2T100 ..
+ *   V2T1X: "A POST IMPULSE VELOCITY VECTOR (V2(T1)) IS COMPUTED WHICH
+ *   EITHER (1) MEETS THE INPUT VELOCITY CHANGE DESIRED (RTEDVD) IN A
+ *   MINIMUM TIME OR (2) IF A VELOCITY CHANGE ISN'T SPECIFIED (RTEDVD = 0),
+ *   ... WHICH MINIMIZES THE IMPULSE (DV) AND CONSEQUENTLY FUEL." Also the
+ *   X(T1)-DV iterator GAMDV, DVCALC, XT1LIM, the TP DSU/BDSU helpers and
+ *   the module erasables of P37.
  *
- * The independent variable X(T1) is the cotangent of the post-impulse flight
- * path angle measured from the vertical (B5); X(T2) the same at RCON (B0).
- * The conic through R(T1) and RCON with entry cotangent X(T2) has
- *   PCON = 2 R1 (LAMBDA - 1) / (BETA1 LAMBDA^2 - 1 - X(T1)^2),
- *   LAMBDA = R1/RCON, BETA1 = 1 + X(T2)^2,
- *   V2(T1) = sqrt(MU PCON)/R1 (X(T1) UR1 + UH).
+ * AGC SOURCE:
+ *   Comanche055 P37_P70.agc pp. 917-923 (V2T100 .. V2T1X)
+ *   Comanche055 P37_P70.agc pp. 924-927 (GAMDV10 .. GAMDVX)
+ *   Comanche055 P37_P70.agc pp. 928-930 (DVCALC, XT1LIM)
+ *   Comanche055 INTERPRETER.agc pp. 1133-1134 (DSU/BDSU on a TP MPAC)
+ *   Luminary099: P37 not in the LM rope
  *
- * The push-down list of V2T100 (00D..28D) is the struct rte_v2t_t. The AGC
- * normalises R(T1) and RCON and carries the difference of the two NORM
- * counts in X1 (pl->x1); every "SL* 0-7,1" etc. below uses it exactly as the
- * listing does: the count of an SL* or SR* "a,j" is a - C(Xj), and NORM leaves minus
- * the shift count in the index register.
+ * EXTERNAL VARIABLES:
+ *   Name          Type            I/O  Scale          Description
+ *   ------------  --------------  ---  -------------  ------------------
+ *   SLOWFLG       flag            I    -              transearth slow-down
+ *   (rte_mem, rte_interp are this file's module erasables)
  *
- * The module erasables (rte_state) live in this file so that the arithmetic
- * files link without the job layer (return_to_earth.c).
- */
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_tp_sqrt / agc_tp_norm / agc_tp_shift  TP MPAC SQRT, NORM, SL*
+ *   agc_poodoo            POODOO 00610 / 01302
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   POODOO 00610 when RCON is negative or not below R(T1) ("NO SOLUTION
+ *   IF LAMBDA LESS THAN 1"); POODOO 01302 on SQRT of a negative PCON;
+ *   AGC_STATUS_ALARM with rs->alarm_code 605 after 143 iterator steps.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the P37 job (CSM only). The iterator is bounded by NN2
+ *   (-144 .. 0).
+ *
+ * NOTES:
+ *   The independent variable X(T1) is the cotangent of the post-impulse
+ *   flight path angle measured from the vertical (B5); X(T2) the same at
+ *   RCON (B0). The conic through R(T1) and RCON with entry cotangent X(T2)
+ *   has PCON = 2 R1 (LAMBDA - 1) / (BETA1 LAMBDA^2 - 1 - X(T1)^2),
+ *   LAMBDA = R1/RCON, BETA1 = 1 + X(T2)^2, V2(T1) = sqrt(MU PCON)/R1
+ *   (X(T1) UR1 + UH). The push-down list of V2T100 (00D..28D) is
+ *   rte_v2t_t. The AGC normalises R(T1) and RCON and carries the
+ *   difference of the two NORM counts in X1 (pl->x1); every "SL* 0-7,1"
+ *   uses it exactly as the listing does: the count of an SL* or SR* "a,j"
+ *   is a - C(Xj), and NORM leaves minus the shift count in the index
+ *   register. TP MPAC words are kept where the AGC keeps them (F14).
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -51,8 +75,8 @@ static const agc_dp_t ONE_B17 =
 static const agc_dp_t TWO_B1 =
     268435455; /* 2RTEB1   37777 37777   POSMAX (2.0 B1)  */
 static const agc_dp_t RTMURTE =
-    204442113; /* RTMURTE  30276 05001   199650.501 B-18,
-                                                sqrt(mu earth), m^1.5/cs        */
+    204442113; /* RTMURTE 30276 05001 199650.501 B-18, sqrt(mu),
+                                              m^1.5/cs                   */
 static const agc_dp_t EPC9RTE =
     8; /* EPC9RTE  00000 00010   1. B-25 (X(T1) B5) */
 static const agc_dp_t EPC10RTE =
@@ -128,7 +152,7 @@ static agc_tp_t rte_tp_minus(agc_interp_t *ip, agc_tp_t m, agc_dp_t x,
         return (m); /* no valid result */
     }
 
-    const agc_dp_t top = reverse ? /* BDSU : DSU */
+    const agc_dp_t top = reverse ? /* BDSU : DSU, x scale */
                          agc_dp_sub(ip, x, hi) : agc_dp_sub(ip, hi, x);
 
     return (agc_tp_from_dp(top) + lo);
@@ -776,7 +800,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs,
 
     t          = agc_tp_shift(ip, t, -7 - pl->x1);
     t          = agc_tp_shift(ip, t, -7 - pl->x1);
-    t          = agc_tp_add(ip, t, agc_tp_from_dp(-ONE_B17)); /* TAD: BETA6 B17*/
+    t          = agc_tp_add(ip, t, agc_tp_from_dp(-ONE_B17)); /* BETA6 B17 */
     pl->x_t1pp = rs->x_t1;                           /* X(T1),, 00D   */
 
     if (t <= 0)
@@ -917,7 +941,7 @@ static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs,
     }
 
     /* V2T175 .. V2T179 (p. 922): time critical: F2RTE set; X(T1) becomes the
-     * lower (SLOWFLG) or upper bound and the iterator steps away from it.     */
+     * lower (SLOWFLG) or upper bound and the iterator steps away from it.*/
     rs->f2rte = true;
 
     if (agc_flag_test(AGC_FLAG_SLOWFLG))

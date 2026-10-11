@@ -102,11 +102,11 @@ matrices with half-unit rows built from three angles.
 | calcga_a/_b/_c | CALCGA 23,3311; XNB.., XSM.. -> THETAD (CDU patterns) | 1 CDU LSB (1); FAILREG, GLOKFAIL exact |
 | calcga_lock | middle gimbal > 60 deg: ALARM 00401, GLOKFAIL | as above |
 | axisgen_a/_b | AXISGEN 23,3401; STARAD, STARAD+6, VAC1+6, VAC1+12 -> XDC YDC ZDC | bit-exact |
-| pipa_small/_burn/_bypass/_carry | 1/PIPA 06,3262 (basic) -> stop SWRETURN; DELVX..Z, PIPA bias/scale, NBD, ADIA, ADSRA, 1/PIPADT, GCOMP, GCOMPSW -> DELV, GCOMP, GCOMPSW | DELV 0, GCOMP 1 (1), GCOMPSW 2 with equal sign (F6) |
-| kalc_normal/_large/_neg | KALCMAN3 22,2000 (basic) through WCALC/NEWANGL to MANUSTAT+1 (20,2066): CDUX..Z, CPHI.., RATEINDX -> AM, COF, DEL | 8 (normal/neg 6), large (ALTCALC, AM > 170 deg) COF 32 (17) |
-| kalc_small | < .25 deg -> NOGO; MIS MFI CAM AM COFSKEW | 8 (5); AM 512 (323: ARCCOS of CAM = 1/2 - 2 LSB) |
-| delcomp_a/_b/_c | DELCOMP 22,2530; MPAC = A, COF -> DEL | 8 (4) |
-| dcmtocdu_a/_b/_c | DCMTOCDU 22,2655; X1 = -addr(MIS), MIS -> MPAC angles, S1 | 4 (3); S1 exact |
+| pipa_small/_burn/_bypass/_carry | 1/PIPA 06,3262 (basic) -> stop SWRETURN; DELVX..Z, PIPA bias/scale, NBD, ADIA, ADSRA, 1/PIPADT, GCOMP, GCOMPSW -> DELV, GCOMP, GCOMPSW | DELV 0, GCOMP 0, GCOMPSW 0 (F6 fixed by review-imu: word pairs) |
+| kalc_normal/_large/_neg | KALCMAN3 22,2000 (basic) through WCALC/NEWANGL to MANUSTAT+1 (20,2066): CDUX..Z, CPHI.., RATEINDX -> AM, COF, DEL | normal/neg 4 (DEL 4, COF 1), AM 0; large 1, AM 0 (review-imu: DMP not DMPR) |
+| kalc_small | < .25 deg -> NOGO; MIS MFI CAM AM COFSKEW | 2; AM 5 (was 323; ARCCOS amplifies CAM) |
+| delcomp_a/_b/_c | DELCOMP 22,2530; MPAC = A, COF -> DEL | 4 (F5: 1-cos A word pair) |
+| dcmtocdu_a/_b/_c | DCMTOCDU 22,2655; X1 = -addr(MIS), MIS -> MPAC angles, S1 | 3; S1 exact (F5: COS TP SL1) |
 
 KALCMAN3 overlays: MFS = MFI = DEL (E7,1425), COFSKEW = BRATE, CAM = TM,
 and NEWANGL advances MIS, so a run that reaches MANUSTAT is compared on
@@ -175,10 +175,12 @@ CPU. The C test carries its own agc_entry_state() from pass to pass.
 Compared each pass: D V VSQUARE LEQ RDOT THETAH LATANG ROLLC L/D L/D1
 K2ROLL GOTOADDR A1 VL GAMMAL LEWD DIFF Q7 DTEAROT L/DCALC Q2 KLAT LAD LOD
 UNI RT RTINIT and the flags .05GSW INRLSW HIND NOSWITCH EGSW RELVELSW
-GONEPAST GONEBY. Tolerances: 4 LSB in general (observed <= 3); D 256 (84;
-the INITROLL and KEP2 passes hit yaAGC's DV bug, dvcheck.sh); ROLLC 4096
-(2159 in PREDICT3, DV bug: ARCCOS of L/D/LAD); L/D, L/D1 512 (373); VL 64
-(57); RT, THETAH 128 (99, EARROT2, not isolated); body attitude 8 (7).
+GONEPAST GONEBY. Tolerances: 4 LSB in general (observed <= 3); D 256 (156;
+the INITROLL and KEP2 passes hit yaAGC's DV bug, dvcheck.sh); ROLLC 16
+(6); L/D, L/D1 320 (256 in entry_pass_next, from the HUNTEST1 DDV chain);
+VL 64 (38); RT, THETAH 8 (3); body attitude 8 (7). The former ROLLC
+2159 / RT 99 / THETAH 32 were C rounding (DMPR for DMP), fixed by
+review-guid-entry (finding E1).
 
 ## dap-lm (dap_lm.spec, tests/oracle/dap_lm.c)
 
@@ -311,8 +313,8 @@ oracle_cmp_known calls for that id turn back into oracle_cmp.
 | F2 | src/nav (R-TO-RP moon, 2^29 scale) | MOONMX, LAT-LONG | MOONMX <= 2 LSB -> LAT 23, LONG 202 LSB | minor, within tolerance |
 | F3 | src/nav/aux TFF | TFFCONIC TFFRP/RA CALCTFF | TFF1/ALF 11, TFFX 144 LSB | minor |
 | F4 | src/nav LSPOS (LM) | LSPOS | <= 5 LSB | minor |
-| F5 | src/imu | CDUTODCM DELCOMP DCMTOCDU (kalc_small) | <= 5 LSB; AM 323 via ARCCOS | minor |
-| F6 | src/imu/compensation.c (IRIGCOMP) | IRIGCOMP / GCOMP | GCOMP kept as a sign-disagreeing pair (49, -14827) -> GCOMPSW 45 vs 47 (same sign) | minor |
+| F5 | src/imu | CDUTODCM DELCOMP DCMTOCDU (kalc_small) | <= 5 LSB; AM 323 via ARCCOS | partly fixed (review-imu: DMP truncation; AM 5); residual <= 4 LSB is the ones'-complement word-split class (F9): BDSU leaves 1-cos A = (00001, 40057), DMPSUB truncates by words |
+| F6 | src/imu/compensation.c (IRIGCOMP) | IRIGCOMP / GCOMP | GCOMP kept as a sign-disagreeing pair (49, -14827) -> GCOMPSW 45 vs 47 (same sign) | fixed (review-imu): GCOMP/DELV kept as word pairs; exact |
 | F7 | src/guidance/servicer_common.c:47-49 | CALCGRAV (J2REQSQ) | J20_CM = 4357942 and J2_CM = 435794 are 1/4 of the assembled Comanche words (2DEC* ... B1*: 17431770, 1743177) -> CM GOBL1/2 4x too small, GDT1/2, VN1 up to 208 LSB | bug; 27 KNOWN in guidance.c |
 | F8 | src/guidance/burn_steering.c:329-330 | S40.2,3 (PDVL UNIT RTIG / VXV VCOMP) | crosses UT with raw RTIG instead of UNIT(RTIG) before UNIT: YSCREF/ZSCREF up to 66 LSB | bug (small) |
 | F9 | src/lm/landing/throttle.c:~168, src/lm/landing/guidance.c:121, src/csm/dap/tvc/daps.c:~124 | THROTTLE (PIF -> PSEUDO55), TDISPSET, PITCHDAP (CMDTMP) | a sign-disagreeing DAS result whose high word the AGC then uses alone: THRUST/PSEUDO55 1 pulse, FWEIGHT up to 23388 LSB, TTFDISP 8, CMDTMP (77765,00356) -> PCMD TVCPITCH AK1 1, DELPBAR 163 | ones'-complement class; 12 + 8 KNOWN |

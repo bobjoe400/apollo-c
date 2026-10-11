@@ -168,7 +168,7 @@ agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* CURTAINS */
     }
 
-    agc_status_t st = agc_imu_fin20(); /* IMUFIN20 */
+    agc_status_t st = agc_imu_fine(); /* IMUFIN20 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

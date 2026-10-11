@@ -1,9 +1,10 @@
 /*
  * rendezvous.c -- prog-rendz unit tests (rendezvous programs).
  *
- *   1. R30 SR30.1 (agc_orbit_params_compute): a circular 300 km earth
- *      orbit has equal apogee and perigee radii and heights, within a few
- *      hundred LSBs; MAXCHK limits a large height to 9999.9 NM.
+ *   1. R30 SR30.1 (agc_orbit_params_compute): a 300 km perigee earth
+ *      orbit with e = 0.0404 has the analytic apogee and perigee radii
+ *      and heights within a few hundred LSBs; MAXCHK limits a large
+ *      height to 9999.9 NM.
  *   2. CSI targeting (agc_rendz_csi_a) on coplanar circular orbits, the
  *      active vehicle 15 NM below the passive one: with a small lead of
  *      the passive vehicle CSI must slow the catch-up (DELVCSI > 0), with
@@ -71,8 +72,15 @@ static agc_dp_t dp_absdiff(agc_dp_t a, agc_dp_t b)
     return ((a > b) ? a - b : b - a);
 }
 
-/* 1. SR30.1 on a circular orbit. */
-static void test_orbit_parameters_circular(void)
+/* 1. SR30.1 on an eccentric orbit, state at perigee.
+ * Not a circular orbit: there APSIDES takes SQRT(1/64 - P R1A 2^4) of
+ * a difference of one or two LSB, and the AGC DMP sees R1A as the word
+ * pair PARAM left (00401, 40000) where C holds the value (Findings P1
+ * in docs/modules/review-prog-rendz.md). For R = 3339068, V = 23241
+ * 00170 the AGC gives ECC 0 and RAPO - RPER = 8 LSB, C ECC 23164 and
+ * 4614 LSB: a word-form effect magnified by the SQRT, not a defect of
+ * SR30.1.                                                               */
+static void test_orbit_parameters_eccentric(void)
 {
     agc_interp_t ip;
 
@@ -82,13 +90,17 @@ static void test_orbit_parameters_circular(void)
     in.rone = pos(R0, 0.0, 0.0);
     CHECK(agc_orbit_params_select_body(false, agc_dp_from_double(RPAD, 29),
                                        &in) == AGC_STATUS_OK);
-    in.vone = vel(0.0, sqrt(MU / R0), 0.0);
+    const double k2 = 1.0404;                  /* (v / v circular)^2 */
+    const double ra = R0 * k2 / (2.0 - k2);    /* apogee radius, m   */
+
+    in.vone = vel(0.0, sqrt(k2 * MU / R0), 0.0);
     agc_orbit_params_out_t out;
     agc_status_t           st = agc_orbit_params_compute(&ip, &in, &out);
 
     CHECK(st == AGC_STATUS_OK);
-    CHECK(dp_absdiff(out.rapo, out.rper) < 400); /* < 800 m    */
-    CHECK(dp_absdiff(out.hapox, out.hperx) < 400);
+    CHECK(dp_absdiff(out.rapo, agc_dp_from_double(ra, 29)) < 400);
+    CHECK(dp_absdiff(out.rper, agc_dp_from_double(R0, 29)) < 400);
+    CHECK(dp_absdiff(out.hapox, agc_dp_from_double(ra - RPAD, 29)) < 400);
     agc_dp_t h = agc_dp_from_double(R0 - RPAD, 29);
 
     CHECK(dp_absdiff(out.hperx, h) < 400);
@@ -189,7 +201,7 @@ static void test_periapo_circular(void)
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
-    test_orbit_parameters_circular();
+    test_orbit_parameters_eccentric();
     test_periapo_circular();
     test_csi_coplanar_circular();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,

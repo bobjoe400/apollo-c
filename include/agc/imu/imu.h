@@ -69,7 +69,7 @@ agc_status_t agc_imu_zero(void);                       /* IMUZERO        */
 agc_status_t agc_imu_coarse(const uint16_t thetad[3]); /* IMUCOARS       */
 agc_status_t agc_imu_fine(void);               /* IMUFINE/IMUFIN20 */
 agc_status_t agc_imu_pipuse(void);             /* PIPUSE         */
-void         agc_imu_pipuse1(void);            /* PIPUSE1        */
+void         agc_imu_pipa_fail_enable(void);   /* PIPUSE1        */
 void         agc_imu_pipfree(void);            /* PIPFREE        */
 void         agc_imu_rndrefdr(void);           /* RNDREFDR       */
 
@@ -115,7 +115,6 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx); /* POSTAND      */
 void         agc_imu_zeroicdu(void); /* ZEROICDU: CDUX/Y/Z = 0         */
 void         agc_imu_noattoff(void); /* NOATTOFF: NO ATT lamp off      */
 void         agc_imu_setcoars(void); /* SETCOARS                       */
-agc_status_t agc_imu_fin20(void);    /* IMUFIN20 (= IMUFINE)           */
 agc_status_t agc_imu_clear_cmds(void); /* -0 into CDUXCMD..Z, GYROCMD    */
 /* MODECADR storage is exec's (agc_erase_modecadr in agc_exec.h); the
  * IMU lane's encoding: +0 free, -1 complete good, -2 complete failed,
@@ -133,16 +132,16 @@ void         agc_imu_hw_set_gyrocmd(uint16_t pulses);
 agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses);
 
 /* Waitlist tasks of the mode-switching routines (dispatch.c).             */
-agc_status_t agc_task_imuzero2(void);
-agc_status_t agc_task_imuzero3(void);
-agc_status_t agc_task_coars(void);
-agc_status_t agc_task_coars2(void);
-agc_status_t agc_task_chkcors(void);
+agc_status_t agc_task_imu_zero_release(void);
+agc_status_t agc_task_imu_zero_done(void);
+agc_status_t agc_task_coarse_align_commands(void);
+agc_status_t agc_task_coarse_align_pulses(void);
+agc_status_t agc_task_coarse_align_check(void);
 agc_status_t agc_task_imufined(void);
 agc_status_t agc_task_ifailok(void);
 agc_status_t agc_task_pfailok(void);
 agc_status_t agc_task_strtgyro(void);
-agc_status_t agc_task_8192aug(void);
+agc_status_t agc_task_gyro_augment(void);
 agc_status_t agc_task_ca_ece(void); /* CA+ECE (T4RUPT)                */
 
 /* ======================================================================= */

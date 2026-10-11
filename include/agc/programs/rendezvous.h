@@ -76,83 +76,116 @@
 /* ---- primary-body selection, set by SELECTMU ---------------------------- */
 typedef struct agc_rendz_body
 {
-    bool     moon; /* CMOONFLG at SELECTMU time                          */
-    agc_sp_t rtx1; /* RTX1: -2 earth, -10 moon (MUTABLE index, X1 of conics) */
-    agc_sp_t rtx2; /* RTX2: 0 earth, 2 moon (VSR* 0,2 shift count)       */
-    agc_dp_t rtmu; /* RTMU: mu, m^3/cs^2, scale 2^36 (moon value SR 6)   */
-    agc_dp_t rtsr1mu; /* RTSR1/MU: 1/sqrt(mu), scale 2^17 earth, 2^14 moon  */
+    bool     moon;    /* CMOONFLG at SELECTMU time                         */
+    agc_sp_t rtx1;    /* RTX1: -2 earth, -10 moon (X1 of conics), unscaled */
+    agc_sp_t rtx2;    /* RTX2: 0 earth, 2 moon (VSR* 0,2 shift), unscaled  */
+    agc_dp_t rtmu;    /* RTMU: mu, m^3/cs^2, scale 2^36 (moon value SR 6)  */
+    agc_dp_t rtsr1mu; /* RTSR1/MU: 1/sqrt(mu), scale 2^17 earth, 2^14 moon */
 } agc_rendz_body_t;
 
 /* ---- rendezvous erasables (Comanche/Luminary ERASABLE_ASSIGNMENTS) ------ */
 typedef struct agc_rendz
 {
-    agc_rendz_body_t body;
+    agc_rendz_body_t body; /* primary body (SELECTMU)                   */
 
     /* active / passive states at the CSI (1), CDH (2), TPI (3) points,
      * position meters 2^29, velocity m/cs 2^7 */
-    agc_vec_t ract1, ract2, ract3;
-    agc_vec_t vact1, vact2, vact3, vact4; /* VACT4: post-CSI velocity    */
-    agc_vec_t rpass1, rpass2, rpass3, rpass4;
-    agc_vec_t vpass1, vpass2, vpass3, vpass4;
-    agc_vec_t up1;        /* UP1: unit normal, passive orbit plane, 2^1    */
-    agc_vec_t unvec;      /* UNVEC: unit(RACT2), 2^1                       */
-    agc_vec_t rtig, vtig; /* RTIG/VTIG: active state at TIG, 2^29 / 2^7    */
+    agc_vec_t ract1;  /* RACT1: active at CSI, m 2^29                     */
+    agc_vec_t ract2;  /* RACT2: active at CDH, m 2^29                     */
+    agc_vec_t ract3;  /* RACT3: active at TPI, m 2^29                     */
+    agc_vec_t vact1;  /* VACT1: active at CSI, m/cs 2^7                   */
+    agc_vec_t vact2;  /* VACT2: active at CDH, m/cs 2^7                   */
+    agc_vec_t vact3;  /* VACT3: active at TPI, m/cs 2^7                   */
+    agc_vec_t vact4;  /* VACT4: post-CSI velocity, m/cs 2^7               */
+    agc_vec_t rpass1; /* RPASS1: passive at CSI, m 2^29                   */
+    agc_vec_t rpass2; /* RPASS2: passive at CDH, m 2^29                   */
+    agc_vec_t rpass3; /* RPASS3: passive at TPI, m 2^29                   */
+    agc_vec_t rpass4; /* RPASS4: passive at the intercept, m 2^29         */
+    agc_vec_t vpass1; /* VPASS1: passive at CSI, m/cs 2^7                 */
+    agc_vec_t vpass2; /* VPASS2: passive at CDH, m/cs 2^7                 */
+    agc_vec_t vpass3; /* VPASS3: passive at TPI, m/cs 2^7                 */
+    agc_vec_t vpass4; /* VPASS4: passive at the intercept, m/cs 2^7       */
+    agc_vec_t up1;    /* UP1: unit normal, passive orbit plane, 2^1       */
+    agc_vec_t unvec;  /* UNVEC: unit(RACT2), 2^1                          */
+    agc_vec_t rtig;   /* RTIG: active position at TIG, m 2^29             */
+    agc_vec_t vtig;   /* VTIG: active velocity at TIG, m/cs 2^7           */
 
     /* maneuver results */
-    agc_vec_t delveet1;     /* DELVEET1: CSI delta V, reference, m/cs 2^7    */
-    agc_vec_t delveet2;     /* DELVEET2: CDH delta V, reference, m/cs 2^7    */
-    agc_vec_t delveet3;     /* DELVEET3: TPI/TPM delta V, reference, 2^7     */
-    agc_vec_t delvsin;      /* DELVSIN: delta V for thrust program, 2^7      */
-    agc_dp_t  delvsab;      /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
-    agc_vec_t delvlvc;      /* DELVLVC: delta V local vertical, m/cs 2^7     */
-    agc_vec_t dvlos;        /* DVLOS: delta V along LOS frame, m/cs 2^7      */
-    agc_vec_t gdt_2;        /* GDT/2 (LM S34/35.5 overwrite copy), m/cs 2^7  */
-    agc_vec_t ulos;         /* ULOS: unit line of sight active->passive 2^1  */
-    agc_vec_t unrm;         /* UNRM: unit(RACT3 x VACT3), 2^1                */
-    agc_vec_t rtarg;        /* RTARG: (offset) target position, m 2^29       */
-    agc_vec_t viprime;      /* VIPRIME: required initial velocity, 2^7       */
-    agc_vec_t vtprime;      /* VTPRIME: velocity at target after burn, 2^7   */
-    agc_vec_t rinit, vinit; /* RINIT/VINIT: INITVEL input state 2^29 / 2^7   */
-    agc_vec_t raprec, vaprec, rpprec, vpprec; /* S33/34.1 saved states       */
+    agc_vec_t delveet1; /* DELVEET1: CSI delta V, reference, m/cs 2^7    */
+    agc_vec_t delveet2; /* DELVEET2: CDH delta V, reference, m/cs 2^7    */
+    agc_vec_t delveet3; /* DELVEET3: TPI/TPM delta V, reference, 2^7     */
+    agc_vec_t delvsin;  /* DELVSIN: delta V for thrust program, 2^7      */
+    agc_dp_t  delvsab;  /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
+    agc_vec_t delvlvc;  /* DELVLVC: delta V local vertical, m/cs 2^7     */
+    agc_vec_t dvlos;    /* DVLOS: delta V along LOS frame, m/cs 2^7      */
+    agc_vec_t gdt_2;    /* GDT/2 (LM S34/35.5 overwrite copy), m/cs 2^7  */
+    agc_vec_t ulos;     /* ULOS: unit line of sight active->passive 2^1  */
+    agc_vec_t unrm;     /* UNRM: unit(RACT3 x VACT3), 2^1                */
+    agc_vec_t rtarg;    /* RTARG: (offset) target position, m 2^29       */
+    agc_vec_t viprime;  /* VIPRIME: required initial velocity, 2^7       */
+    agc_vec_t vtprime;  /* VTPRIME: velocity at target after burn, 2^7   */
+    agc_vec_t rinit;    /* RINIT: INITVEL initial position, m 2^29       */
+    agc_vec_t vinit;    /* VINIT: INITVEL initial velocity, m/cs 2^7     */
+    agc_vec_t raprec;   /* S33/34.1 saved active position, m 2^29        */
+    agc_vec_t vaprec;   /* S33/34.1 saved active velocity, m/cs 2^7      */
+    agc_vec_t rpprec;   /* S33/34.1 saved passive position, m 2^29       */
+    agc_vec_t vpprec;   /* S33/34.1 saved passive velocity, m/cs 2^7     */
 
     /* times, centiseconds 2^28 */
-    agc_dp_t tcsi, tcdh, ttpio, tpass4, intime, tstrt, dellt4, nomtpi;
-    agc_dp_t t1tot2, t2tot3; /* CSI->CDH and CDH->TPI intervals            */
-    agc_dp_t kt;             /* KT: ATIGINC/PTIGINC preparation time       */
-    agc_dp_t atiginc;        /* ATIGINC: P35 TIG increment, this vehicle
-                              * active (pad loaded), cs 2^28               */
-    agc_dp_t ptiginc;        /* PTIGINC: P75 TIG increment, other vehicle
-                              * active (pad loaded), cs 2^28               */
-    agc_dp_t hafpa1;         /* HAFPA1: half period after CSI (2^28)       */
+    agc_dp_t tcsi;    /* TCSI: CSI time, cs 2^28                          */
+    agc_dp_t tcdh;    /* TCDH: CDH time, cs 2^28                          */
+    agc_dp_t ttpio;   /* TTPIO: TPI time of the CSI solution, cs 2^28     */
+    agc_dp_t tpass4;  /* TPASS4 (= TINT): intercept time, cs 2^28         */
+    agc_dp_t intime;  /* INTIME: time of RINIT, VINIT, cs 2^28            */
+    agc_dp_t tstrt;   /* TSTRT: P35 start time, cs 2^28                   */
+    agc_dp_t dellt4;  /* DELLT4: transfer time, cs 2^28                   */
+    agc_dp_t nomtpi;  /* NOMTPI: TPI time step, cs 2^28                   */
+    agc_dp_t t1tot2;  /* T1TOT2: CSI to CDH interval, cs 2^28             */
+    agc_dp_t t2tot3;  /* T2TOT3: CDH to TPI interval, cs 2^28             */
+    agc_dp_t kt;      /* KT: ATIGINC/PTIGINC preparation time, cs 2^28    */
+    agc_dp_t atiginc; /* ATIGINC: P35 TIG increment, this vehicle
+                       * active (pad loaded), cs 2^28                     */
+    agc_dp_t ptiginc; /* PTIGINC: P75 TIG increment, other vehicle
+                       * active (pad loaded), cs 2^28                     */
+    agc_dp_t hafpa1;  /* HAFPA1: half period after CSI, cs 2^28           */
 
     /* angles, revolutions 2^0 */
-    agc_dp_t elev;     /* ELEV: desired LOS elevation at TPI         */
-    agc_dp_t centang;  /* CENTANG: transfer central angle            */
-    agc_dp_t actcent;  /* ACTCENT: active vehicle central angle      */
-    agc_dp_t plus_mga; /* +MGA: middle gimbal angle (-.01/-.02 flags)*/
+    agc_dp_t elev;     /* ELEV: desired LOS elevation at TPI, rev 2^0     */
+    agc_dp_t centang;  /* CENTANG: transfer central angle, rev 2^0        */
+    agc_dp_t actcent;  /* ACTCENT: active central angle, rev 2^0          */
+    agc_dp_t plus_mga; /* +MGA: middle gimbal angle (-.01/-.02 flags),
+                        * rev 2^0                                         */
 
-    agc_sp_t nn;      /* NN: apsidal crossings / number of offsets  */
-    agc_dp_t diffalt; /* DIFFALT: delta altitude at CDH, m 2^29     */
-    agc_dp_t postcsi, postcdh, posttpi; /* perigee altitudes, m 2^29       */
-    agc_dp_t delvtpi, delvtpf; /* |dV| at TPI / TPF, m/cs 2^7      */
-    agc_dp_t delvcsi;          /* DELVCSI: CSI horizontal delta V, m/cs 2^7  */
-    agc_dp_t deldv, dvprev; /* CSI iteration step / previous dV, 2^7      */
-    agc_dp_t gamprev;       /* GAMPREV: previous gamma, revolutions 2^1   */
-    agc_dp_t rdotv;         /* RDOTV: RACT1.VACT4, m^2/cs 2^36            */
-    agc_sp_t csialrm;       /* CSIALRM: CSI failure index 1..7            */
-    agc_sp_t loopct;        /* LOOPCT: CSI iteration counter              */
-    agc_dp_t delel, delelo; /* S33/34.1 elevation errors, revs 2^0        */
-    agc_dp_t delteeo;       /* DELTEEO: last time step, cs 2^28           */
-    agc_dp_t secmax;        /* SECMAX: maximum time step, cs 2^28         */
-    agc_sp_t titer;         /* TITER: S33/34.1 iteration bit              */
-    agc_sp_t vhfcnt;        /* VHFCNT (CM): VHF range marks               */
+    agc_sp_t nn;      /* NN: apsidal crossings / offsets, unscaled (B14) */
+    agc_dp_t diffalt; /* DIFFALT: delta altitude at CDH, m 2^29          */
+    agc_dp_t postcsi; /* POSTCSI: perigee altitude after CSI, m 2^29     */
+    agc_dp_t postcdh; /* POSTCDH: perigee altitude after CDH, m 2^29     */
+    agc_dp_t posttpi; /* POSTTPI: perigee altitude after TPI, m 2^29     */
+    agc_dp_t delvtpi; /* DELVTPI: |dV| at TPI, m/cs 2^7                  */
+    agc_dp_t delvtpf; /* DELVTPF: |dV| at TPF, m/cs 2^7                  */
+    agc_dp_t delvcsi; /* DELVCSI: CSI horizontal delta V, m/cs 2^7       */
+    agc_dp_t deldv;   /* DELDV: CSI iteration step, m/cs 2^7             */
+    agc_dp_t dvprev;  /* DVPREV: previous DELVCSI, m/cs 2^7              */
+    agc_dp_t gamprev; /* GAMPREV: previous gamma, revolutions 2^1        */
+    agc_dp_t rdotv;   /* RDOTV: RACT1.VACT4, m^2/cs 2^36                 */
+    agc_sp_t csialrm; /* CSIALRM: CSI failure index 1..7, unscaled       */
+    agc_sp_t loopct;  /* LOOPCT: CSI iteration counter, unscaled         */
+    agc_dp_t delel;   /* DELEL: S33/34.1 elevation error, rev 2^0        */
+    agc_dp_t delelo;  /* DELELO: previous elevation error, rev 2^0       */
+    agc_dp_t delteeo; /* DELTEEO: last time step, cs 2^28                */
+    agc_dp_t secmax;  /* SECMAX: maximum time step, cs 2^28              */
+    agc_sp_t titer;   /* TITER: S33/34.1 iteration bit, unscaled         */
+    agc_sp_t vhfcnt;  /* VHFCNT (CM): VHF range marks, unscaled          */
 
     /* R36 / R31 / R34 displays */
-    agc_dp_t  range;  /* RANGE: m 2^29 (R36: Y out of plane)        */
-    agc_dp_t  rrate;  /* RRATE: m/cs 2^7 (R36: YDOT)                */
-    agc_dp_t  rtheta; /* RTHETA: revolutions 2^0 (R36: PSI)         */
-    agc_vec_t basethp, basethv, baseotp, baseotv; /* R31 base vectors       */
-    agc_dp_t  basetime;
+    agc_dp_t  range;    /* RANGE: m 2^29 (R36: Y out of plane)           */
+    agc_dp_t  rrate;    /* RRATE: m/cs 2^7 (R36: YDOT)                   */
+    agc_dp_t  rtheta;   /* RTHETA: revolutions 2^0 (R36: PSI)            */
+    agc_vec_t basethp;  /* BASETHP: this base position, body scale */
+    agc_vec_t basethv;  /* BASETHV: this base velocity, body scale */
+    agc_vec_t baseotp;  /* BASEOTP: other base position, body scale */
+    agc_vec_t baseotv;  /* BASEOTV: other base velocity, body scale */
+    agc_dp_t  basetime; /* BASETIME: time of the base vectors, cs 2^28   */
 
     /* P38/P39 stable orbit */
     agc_dp_t deltar;   /* DELTAR: desired separation, m 2^29         */
@@ -163,25 +196,27 @@ typedef struct agc_rendz
                         * rz->deltar)                                */
 
     /* P17 TPI search (Comanche) */
-    agc_dp_t  delhite;          /* DELHITE: |RP| - |RA|, m 2^29               */
-    agc_vec_t e2;               /* E2: unit passive orbit normal, 2^1         */
-    agc_dp_t  thetzero;         /* THETZERO: phase angle, revolutions         */
-    agc_dp_t  tf;               /* TF: transfer time, cs 2^28                 */
-    agc_dp_t  hp;               /* HP: pericenter altitude, m 2^29            */
-    agc_dp_t  hpermin;          /* HPERMIN: minimum pericenter, m 2^29        */
-    agc_dp_t  delvee;           /* DELVEE: total delta V, m/cs 2^7            */
-    agc_dp_t  magvtpi, reldelv; /* m/cs 2^7                                   */
-    agc_sp_t  nn1;              /* NN1: pericenter code for display           */
-    agc_dp_t  csth, snth;       /* CSTH SNTH: cos, sin of the last Lambert
-                                 * transfer angle (INITVEL debris), 2^1        */
+    agc_dp_t  delhite;  /* DELHITE: |RP| - |RA|, m 2^29                   */
+    agc_vec_t e2;       /* E2: unit passive orbit normal, 2^1             */
+    agc_dp_t  thetzero; /* THETZERO: phase angle, revolutions 2^0         */
+    agc_dp_t  tf;      /* TF: transfer time, cs 2^28                     */
+    agc_dp_t  hp;      /* HP: pericenter altitude, m 2^29                */
+    agc_dp_t  hpermin; /* HPERMIN: minimum pericenter, m 2^29            */
+    agc_dp_t  delvee;  /* DELVEE: total delta V, m/cs 2^7                */
+    agc_dp_t  magvtpi; /* MAGVTPI: |dV| at TPI, m/cs 2^7                 */
+    agc_dp_t  reldelv; /* RELDELV: |dV| at TPF, m/cs 2^7                 */
+    agc_sp_t  nn1;     /* NN1: pericenter code for display, unscaled     */
+    agc_dp_t  csth;    /* CSTH: cos of the last Lambert transfer angle
+                        * (INITVEL debris), 2^1                          */
+    agc_dp_t snth;     /* SNTH: sin of that angle, 2^1                   */
 
     /* P21 ground track determination (P21TIME .. P21ALT) */
     agc_dp_t  ground_track_time;   /* P21TIME: base vector time, cs 2^28   */
     agc_vec_t ground_track_base_r; /* P21BASER: m 2^29 earth / 2^27 moon   */
     agc_vec_t ground_track_base_v; /* P21BASEV: m/cs 2^7 earth / 2^5 moon  */
-    agc_sp_t  ground_track_origin; /* P21ORIG: 0 earth, 2 moon             */
+    agc_sp_t  ground_track_origin; /* P21ORIG: 0 earth, 2 moon, unscaled   */
     agc_dp_t  ground_track_vel;    /* P21VEL: |V| m/cs 2^7 (noun 73)       */
-    agc_dp_t  ground_track_gamma;  /* P21GAM: flight path angle, revs      */
+    agc_dp_t  ground_track_gamma;  /* P21GAM: flight path angle, rev 2^0   */
     agc_dp_t  ground_track_alt;    /* P21ALT: altitude / 100, m 2^29       */
 
     /* P76 */
@@ -193,21 +228,21 @@ typedef struct agc_rendz
     agc_job_id_t normex;   /* NORMEX/SUBEXIT: S34/35.5, DISDVLVC return  */
     agc_dp_t     rtmag;    /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
     agc_dp_t     mu_a;     /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
-    agc_dp_t     muasteer; /* MUASTEER (LM INITVEL exit)                 */
-    agc_sp_t     numit;    /* ITCTR: INITVEL offset iterations done      */
+    agc_dp_t     muasteer; /* MUASTEER: MU/A SR 6 (LM INITVEL), MU/A 2^6 */
+    agc_sp_t     numit;    /* ITCTR: INITVEL offsets done, unscaled      */
 
     /* R30 (V82) */
-    agc_vec_t rone, vone;   /* RONE m 2^29, VONE m/cs 2^7 (moon: SL2)     */
-    agc_dp_t  hapox, hperx; /* HAPOX HPERX: m 2^29                        */
+    agc_vec_t rone;         /* RONE: m 2^29 (moon: SL2)                   */
+    agc_vec_t vone;         /* VONE: m/cs 2^7 (moon: SL2)                 */
+    agc_dp_t  hapox;        /* HAPOX: apogee height, m 2^29               */
+    agc_dp_t  hperx;        /* HPERX: perigee height, m 2^29              */
     agc_dp_t  tff;          /* TFF: cs 2^28 (negative)                    */
     agc_dp_t  neg_tper;     /* -TPER: cs 2^28                             */
     agc_dp_t  tstart_orbit; /* TSTART82: cs 2^28                          */
-    agc_dp_t  rpadtem;      /* RPADTEM: pad / landing site radius         */
-    agc_dp_t
-             orbit_parameter_display_hpermin; /* HPERMIN (R30 use): m 2^29 / 2^27           */
-    agc_dp_t tff_rtmu; /* TFF/RTMU: 1/sqrt(mu)                       */
-    agc_sp_t
-        orbit_display_flags; /* V82FLAGS: bit1 tick -TPER, bit2 tick TFF   */
+    agc_dp_t  rpadtem;      /* RPADTEM: pad / site radius, m 2^29 / 2^27  */
+    agc_dp_t  orbit_parameter_display_hpermin; /* HPERMIN (R30), m 2^29  */
+    agc_dp_t  tff_rtmu;     /* TFF/RTMU: 1/sqrt(mu), 2^17 / 2^14          */
+    agc_sp_t  orbit_display_flags; /* V82FLAGS: tick bits, unscaled      */
 } agc_rendz_t;
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
@@ -412,8 +447,8 @@ typedef struct agc_rendz_nav_pad
                              * 2^11, CM m/cs 2^0)                            */
     agc_sp_t wshaft;        /* WSHAFT (LM): RR shaft bias W, km 2^-7         */
     agc_sp_t wtrun;         /* WTRUN (LM): RR trunnion bias W, km 2^-7       */
-    agc_sp_t wsurfpos;      /* WSURFPOS (LM): surface W position             */
-    agc_sp_t wsurfvel;      /* WSURFVEL (LM): surface W velocity             */
+    agc_sp_t wsurfpos;      /* WSURFPOS (LM): W position, scale as WRENDPOS */
+    agc_sp_t wsurfvel;      /* WSURFVEL (LM): W velocity, scale as WRENDVEL */
     agc_sp_t rmax;          /* RMAX: max position change, m 2^19             */
     agc_sp_t vmax;          /* VMAX: max velocity change, m/cs 2^7           */
     agc_sp_t shaftvar;      /* SHAFTVAR (LM): rad^2 2^12                     */
@@ -423,15 +458,20 @@ typedef struct agc_rendz_nav_pad
     agc_sp_t rvarmin;       /* RVARMIN: min range variance (LM 2^-12)        */
     agc_sp_t vvarmin;       /* VVARMIN (LM): min range-rate variance 2^12    */
     agc_sp_t worbpos;       /* WORBPOS (CM): orbit nav W position, m 2^-14   */
-    agc_sp_t worbvel;       /* WORBVEL (CM): orbit nav W velocity, m/cs      */
+    agc_sp_t worbvel;       /* WORBVEL (CM): orbit nav W velocity, m/cs 2^0  */
     agc_sp_t s22wsubl;      /* S22WSUBL (CM): landmark W, m 2^-14            */
-    agc_dp_t rpvar;         /* RPVAR (CM, DP): landmark radius variance       */
+    agc_dp_t rpvar;         /* RPVAR (CM, DP): landmark radius variance,
+                             * scale not stated (B(2)PL)                   */
     agc_dp_t horizalt;      /* HORIZALT (CM, DP): horizon altitude, m 2^29    */
-    agc_sp_t wmidpos;       /* WMIDPOS (CM): cislunar W position             */
-    agc_sp_t wmidvel;       /* WMIDVEL (CM): cislunar W velocity             */
+    agc_sp_t wmidpos;       /* WMIDPOS (CM): cislunar W position, scale
+                             * not stated (I(1)PL)                         */
+    agc_sp_t wmidvel;       /* WMIDVEL (CM): cislunar W velocity, scale
+                             * not stated (I(1)PL)                         */
     agc_sp_t rvarmin_cm[3]; /* RVARMIN +0..+2 (CM, VHF radar): the minimum
-                             * variance, TP, stored negative               */
-    agc_dp_t rvar;          /* RVAR (CM, DP): VHF radar range variance       */
+                             * variance, TP, stored negative; scale not
+                             * stated (I(3)PL)                             */
+    agc_dp_t rvar;          /* RVAR (CM, DP): VHF range variance, scale
+                             * not stated (I(2)PL)                         */
     agc_sp_t altvar;        /* ALTVAR (CM): COAS (R23) sighting variance,
                              * milliradians squared 2^-16                   */
     agc_sp_t intvar;        /* INTVAR (CM): expected integration variance
@@ -533,7 +573,9 @@ typedef struct agc_rr_downlink
     uint16_t rdotm;         /* RDOTM: RR range rate, raw count              */
     agc_dp_t mktime;        /* MKTIME: time of the reading, cs 2^28         */
     uint16_t tangnb[2];     /* TANGNB: RR trunnion, shaft CDU words         */
-    uint16_t aig, amg, aog; /* IMU CDU Y, Z, X words at the reading       */
+    uint16_t aig;           /* AIG: IMU CDUY word at the reading            */
+    uint16_t amg;           /* AMG: IMU CDUZ word                           */
+    uint16_t aog;           /* AOG: IMU CDUX word                           */
 } agc_rr_downlink_t;
 
 const agc_rr_downlink_t *agc_rendz_rr_downlink(void);

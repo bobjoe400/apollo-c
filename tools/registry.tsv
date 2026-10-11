@@ -805,16 +805,16 @@ task	AGC_TASK_LONGCYCL	agc_task_longcycl	agc_task_longcycl	exec
 task	AGC_TASK_SVCT3	agc_task_svct3	agc_task_svct3	exec	
 task	AGC_TASK_T5IDLOC	agc_task_t5idloc	-	exec	
 task	AGC_TASK_TASKOVER	agc_task_taskover	agc_task_taskover	exec	
-task	AGC_TASK_8192AUG	agc_task_8192aug	agc_task_8192aug	imu	
+task	AGC_TASK_GYRO_AUGMENT	agc_task_gyro_augment	agc_task_gyro_augment	imu	
 task	AGC_TASK_CA_ECE	agc_task_ca_ece	agc_task_ca_ece	imu	imu: CA+ECE
-task	AGC_TASK_CHKCORS	agc_task_chkcors	agc_task_chkcors	imu	
-task	AGC_TASK_COARS	agc_task_coars	agc_task_coars	imu	
-task	AGC_TASK_COARS2	agc_task_coars2	agc_task_coars2	imu	
+task	AGC_TASK_COARSE_ALIGN_CHECK	agc_task_coarse_align_check	agc_task_coarse_align_check	imu	
+task	AGC_TASK_COARSE_ALIGN_COMMANDS	agc_task_coarse_align_commands	agc_task_coarse_align_commands	imu	
+task	AGC_TASK_COARSE_ALIGN_PULSES	agc_task_coarse_align_pulses	agc_task_coarse_align_pulses	imu	
 task	AGC_TASK_ENDMANU	agc_task_endmanu	agc_task_endmanu	imu	ENDMANU / GOODMANU
 task	AGC_TASK_IFAILOK	agc_task_ifailok	agc_task_ifailok	imu	
 task	AGC_TASK_IMUFINED	agc_task_imufined	agc_task_imufined	imu	
-task	AGC_TASK_IMUZERO2	agc_task_imuzero2	agc_task_imuzero2	imu	
-task	AGC_TASK_IMUZERO3	agc_task_imuzero3	agc_task_imuzero3	imu	
+task	AGC_TASK_IMU_ZERO_RELEASE	agc_task_imu_zero_release	agc_task_imu_zero_release	imu	
+task	AGC_TASK_IMU_ZERO_DONE	agc_task_imu_zero_done	agc_task_imu_zero_done	imu	
 task	AGC_TASK_MANUSTOP	agc_task_manustop	agc_task_manustop	imu	
 task	AGC_TASK_PFAILOK	agc_task_pfailok	agc_task_pfailok	imu	imu: PFAILOK
 task	AGC_TASK_STRTGYRO	agc_task_strtgyro	agc_task_strtgyro	imu	

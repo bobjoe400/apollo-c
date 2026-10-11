@@ -1,8 +1,27 @@
-/*
- * internal.h -- private interface between the files of the
- * rendezvous programs (src/programs/{navigation,targeting,displays},
- * src/csm/navigation, src/lm/navigation, src/lm/radar).
- */
+/**********************************************************************
+ * FILE NAME: internal.h
+ *
+ * PURPOSE:
+ *   Private interface between the files of the rendezvous programs
+ *   (src/programs/{navigation,targeting,displays}, src/csm/navigation,
+ *   src/lm/navigation, src/lm/radar): shared constants, the vehicle
+ *   flag mapping, the numeric helpers (UNIT, ABVAL, NORM, SL*, SR*),
+ *   the state-vector helpers (PRECSET, INTINT, TIMETHET set-up) and the
+ *   display subroutines (VNPOOH, VN1645, DISDVLVC ...).
+ *
+ * AGC SOURCE:
+ *   Comanche055 / Luminary099 P34-35_P74-75.agc pp. 469-500 (shared
+ *   rendezvous subroutines), P32-P33_P72-P73.agc p. 662 (DISDVLVC)
+ *
+ * REQUIRES:
+ *   the agc/ public headers included below
+ *
+ * GLOBAL VARIABLES:
+ *   Name          Type      Scale          Description
+ *   ------------  --------  -------------  -------------------------
+ *   none (the rendezvous erasables are reached through
+ *   agc_rendz_erasable(); struct members carry their scale)
+ **********************************************************************/
 #ifndef RENDZ_INTERNAL_H
 #define RENDZ_INTERNAL_H
 
@@ -25,28 +44,28 @@
 /* ---- fixed constants shared by several files ---------------------------- */
 /* TWOPI 2DEC 6.283185307 B-4 (P34-35 p.485), radians scale 2^4; the CM
  * P32 "2PISC SL2" (6.28318530 B-6 shifted left 2) is the same value.    */
-#define RZ_TWOPI_B4 ((agc_dp_t) 105414357)
+#define RZ_TWOPI_B4 ((agc_dp_t) 105414357) /* 2 pi, 2^4 */
 /* DP-.01: OCT 77777, 61337 = -.01 degree in revolutions (2^0); the +MGA
  * "not computed" display value (-.02 deg for FINALFLG)                    */
-#define RZ_DP_MINUS_01 ((agc_dp_t) -7456)
+#define RZ_DP_MINUS_01 ((agc_dp_t) -7456) /* -.01 deg, rev 2^0 */
 /* DPPOSMAX: OCT 37777 37777, the largest DP fraction                      */
-#define RZ_DPPOSMAX AGC_DP_MAX
+#define RZ_DPPOSMAX AGC_DP_MAX /* DPPOSMAX */
 /* DPHALF 2DEC .5                                                          */
-#define RZ_DPHALF AGC_DP_HALF
+#define RZ_DPHALF AGC_DP_HALF /* .5 */
 /* MAXNM 2OCT 0106505603: 9999.9 NM, m 2^29 (R30 p.523)                    */
-#define RZ_MAXNM ((agc_dp_t) 9259907)
+#define RZ_MAXNM ((agc_dp_t) 9259907) /* 9999.9 NM, m 2^29 */
 /* 600SEC / TMIN 2DEC 60000 (cs, 2^28)                                     */
-#define RZ_600SEC ((agc_dp_t) 60000)
+#define RZ_600SEC ((agc_dp_t) 60000) /* 600 s, cs 2^28 */
 /* 60MIN 2DEC 360000                                                       */
-#define RZ_60MIN ((agc_dp_t) 360000)
+#define RZ_60MIN ((agc_dp_t) 360000) /* 60 min, cs 2^28 */
 /* 1SEC: DELAYJOB / WAITLIST delay 100 cs                                  */
-#define RZ_1SEC_CS ((uint16_t) 100)
+#define RZ_1SEC_CS ((uint16_t) 100) /* 1 s, cs */
 /* RPAD 2DEC 6373338 B-29: standard radius of pad 37-B (P34-35 p.496)     */
-#define RZ_RPAD_B29 ((agc_dp_t) 3186669)
+#define RZ_RPAD_B29 ((agc_dp_t) 3186669) /* RPAD, m 2^29 */
 /* SN359+ 2DEC -.000086601 / CS359+ 2DEC +.499999992: sin, cos of 359.99
  * degrees at scale 2^1 (P32-P33 p.668)                                     */
-#define RZ_SN359 ((agc_dp_t) -23247)
-#define RZ_CS359 ((agc_dp_t) 134217726)
+#define RZ_SN359 ((agc_dp_t) -23247)     /* SN359+, 2^1 */
+#define RZ_CS359 ((agc_dp_t) 134217726) /* CS359+, 2^1 */
 
 /* ---- vehicle-dependent flags -------------------------------------------- */
 /* agc_flags_csm.h and agc_flags_lm.h cannot be included together; these
@@ -54,11 +73,11 @@
  * Each vehicle's id comes from flags_csm.c / flags_lm.c.     */
 typedef enum rz_vflag
 {
-    RZ_VF_ITSWICH = 0, /* CSM 106D, LM 105D                               */
-    RZ_VF_AVEGFLAG,    /* CSM 029D, LM 115D                               */
-    RZ_VF_ORBIT_DISPLAY_MOON, /* CSM 137D, LM 118D                               */
-    RZ_VF_GROUND_TRACK, /* CSM 033D, LM 004D                               */
-    RZ_VF_CSI_F1,       /* CSI indicators, both vehicles, other positions  */
+    RZ_VF_ITSWICH = 0,        /* CSM 106D, LM 105D                     */
+    RZ_VF_AVEGFLAG,           /* CSM 029D, LM 115D                     */
+    RZ_VF_ORBIT_DISPLAY_MOON, /* CSM 137D, LM 118D                     */
+    RZ_VF_GROUND_TRACK,       /* CSM 033D, LM 004D                     */
+    RZ_VF_CSI_F1,             /* CSI indicators, both, other positions */
     RZ_VF_CSI_F2,
     RZ_VF_CSI_F3A,
     RZ_VF_CSI_F3B,
@@ -129,8 +148,8 @@ void rz_dispdex_zero(void);
 uint16_t rz_option(int which);
 /* A DP in the display temporaries (a time loaded on noun 34 or 16):
  * DSPTEM1, DSPTEM1 +1 or DSPTEMX, DSPTEMX +1 (= OPTION1, OPTION2).      */
-#define RZ_DSPTEM1 0
-#define RZ_DSPTEMX 4
+#define RZ_DSPTEM1 0 /* DSPTEM1: DSPTEM1 +0 */
+#define RZ_DSPTEMX 4 /* DSPTEMX: DSPTEM2 +1 */
 agc_dp_t     rz_dsptem_dp(int index);
 agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v);
 agc_status_t rz_set_option(int which, uint16_t v);
@@ -235,7 +254,7 @@ agc_status_t rz_waitone(agc_job_id_t pointex);
 agc_dp_t rz_csm_residuals(int index);
 void     rz_set_csm_residuals(int index, agc_dp_t v); /* P23 R23.53 */
 /* S22.1 (csm/navigation/landmark_navigation.c): nmarks marks of the
- * sighting, the caller continues as ret; CXOFF of the landmark code.                  */
+ * sighting, the caller continues as ret; CXOFF of the landmark code.  */
 agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret);
 void         rz_landmark_set_offset(agc_sp_t cxoff);
 /* P22SUBRB (noun 89 landmark coordinates); continue as ret.              */

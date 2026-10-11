@@ -142,3 +142,6 @@ missing symbols: 23 checks, 0 failures, 0 assert reports):
   GETDLEWD is assumed (transcription typo).
 - CH1 is 2DEC .32 B1, i.e. machine value .64 (= 16 CH1/25); the lexicon
   constant uses .64, confirmed by the test model.
+- RESOLVED (review-guid-entry): GETLEWD is a typo of the transcription
+  only; the assembled rope defines GETLEWD at 25,2677 (the code jumps
+  there). CH1 = .64 confirmed against the rope words (24365 30244).

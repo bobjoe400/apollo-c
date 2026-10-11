@@ -1,7 +1,25 @@
-/*
- * internal.h -- declarations shared between the imu lane's own files
- * (the .c files in src/imu and src/csm/prelaunch_align.c).  Not part of the public API.
- */
+/**********************************************************************
+ * FILE NAME: internal.h
+ *
+ * PURPOSE:
+ *   Declarations shared between the imu lane's own files (the .c files
+ *   in src/imu): the vehicle-dependent flag map, the IMODES30/IMODES33
+ *   and ISS lamp bits, and the mode-switching helpers gyro.c uses.  Not
+ *   part of the public API.
+ *
+ * AGC SOURCE:
+ *   IMU_MODE_SWITCHING_ROUTINES.agc pp. 1420-1442 (bit assignments,
+ *   CAGETEST, CAGETSTJ, MODEEXIT); ERASABLE_ASSIGNMENTS.agc (IMODES30,
+ *   IMODES33, DSPTAB)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   Name          Type      Scale          Description
+ *   ------------  --------  -------------  -------------------------
+ *   none (the IMODES words are reached through accessors)
+ **********************************************************************/
 #ifndef IMU_INTERNAL_H
 #define IMU_INTERNAL_H
 
@@ -48,9 +66,9 @@ void          imu_vflag_set(imu_vflag_t f);
 #define IM33_DAPDIS6 0x0020u /* BIT6: DAP auto/hold off (coarse align)  */
 #define IM33_PIPOK   0x1000u /* BIT13: 0 = PIPA fail present            */
 /* DSPTAB +11D lamp bits.                                                  */
-#define DSP11_NOATT   0x0008u /* BIT4: NO ATT lamp                       */
-#define DSP11_GLOCK   0x0020u /* BIT6: gimbal lock lamp                  */
-#define DSP11_CHANGED 0x4000u /* BIT15: word changed / to be sent        */
+#define ISS_LAMP_NO_ATT      0x0008u /* BIT4: NO ATT lamp                       */
+#define ISS_LAMP_GIMBAL_LOCK 0x0020u   /* BIT6: gimbal lock lamp                  */
+#define ISS_LAMPS_CHANGED    0x4000u /* BIT15: word changed / to be sent        */
 
 /* Mode-switching helpers shared by mode.c and gyro.c.             */
 bool         imu_caged(void);    /* IMODES30 BIT6                     */
@@ -58,6 +76,6 @@ agc_status_t imu_cagetstj(void); /* CAGETSTJ: OK, or BUSY if caged    */
 void         imu_modeexit(void); /* MODEEXIT: RELINT                  */
 
 /* One gyro pulse = 2^-21 revolution = 128 LSB of an agc_dp_t (2^28/rev). */
-#define IMU_DP_PER_GYRO_PULSE 128
+#define IMU_DP_PER_GYRO_PULSE 128 /* 2^28 / 2^21: DP LSB per pulse */
 
 #endif /* IMU_INTERNAL_H */

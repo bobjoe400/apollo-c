@@ -1,12 +1,48 @@
-/*
- * mode.c -- IMU mode switching: zero, coarse align, fine align, PIPA
- * use, the generalized end-of-operation and stall routines, and R02.
+/**********************************************************************
+ * FILE NAME: mode.c
  *
- * Source: IMU_MODE_SWITCHING_ROUTINES.agc, Comanche055 pp.1420-1448 and
- *         Luminary099 pp.1309-1337.  Gyro torquing (IMUPULSE and its
- *         tasks) is in gyro.c.
+ * PURPOSE:
+ *   IMU mode switching: zero (IMUZERO), coarse align (IMUCOARS, COARS,
+ *   COARS2, CHKCORS), fine align (IMUFINE), PIPA use (PIPUSE, PIPFREE),
+ *   the generalized end-of-operation and stall routines (GOODEND,
+ *   BADEND, STALL), R02 (R02BOTH) and P06 standby / POSTAND.  Gyro
+ *   torquing (IMUPULSE and its tasks) is in gyro.c.
  *
- * CM vs LM differences (the files are otherwise identical):
+ * AGC SOURCE:
+ *   Comanche055 IMU_MODE_SWITCHING_ROUTINES.agc pp. 1420-1448
+ *   Luminary099 IMU_MODE_SWITCHING_ROUTINES.agc pp. 1309-1337 (differs:
+ *   see NOTES)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type       I/O  Scale          Description
+ *   ------------  ---------  ---  -------------  ----------------------
+ *   MODECADR      agc_sp_t   I/O  B0             agc_erase_modecadr()
+ *   IMODES30/33   uint16_t   I/O  bits           agc_erase_imodes30/33()
+ *   DSPTAB +11D   uint16_t   I/O  bits           ISS lamp word
+ *   THETAD        uint16_t   I/O  CDU            agc_erase_thetad()
+ *   CDUX..Z       uint16_t   I/O  CDU            agc_erase_cdux() ..
+ *   PIPAX..Z      agc_sp_t   O    pulses B0      agc_erase_pipax() ..
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_waitlist_call     WAITLIST / VARDELAY / FIXDELAY
+ *   agc_exec_job_wake     JOBWAKE (GOODEND), JOBSLEEP (STALL)
+ *   agc_t4_setissw        SETISSW (ISS warning)
+ *   agc_alarm             ALARM, VARALARM; agc_poodoo, agc_bailout
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   ALARM 00206 (zero in coarse align and gimbal lock), 00210 (IMU not
+ *   operating), 00211 (coarse align error), 00212 (PIPA fail at
+ *   PIPFREE), 00220 (REFSMMAT not known, R02); POODOO (CM) / BAILOUT
+ *   (LM) 01210 for two users of one device (MODABORT).
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Both vehicles.  The mode switches run under INHINT and end at
+ *   MODEEXIT; their tasks run from the waitlist.
+ *
+ * NOTES:
+ *   CM vs LM differences (the files are otherwise identical):
  *   * GOODEND: when MODECADR is already negative (a completed operation
  *     nobody has stalled on yet) Luminary resets it to +0; Comanche would
  *     JOBWAKE the negative word.  Modelled the Luminary way for both
@@ -15,13 +51,18 @@
  *     01210 (BAILOUT1).
  *   * RNDREFDR / R02BOTH: LM uses the named masks TRACKBIT, DRFTBIT,
  *     REFSMBIT; same bits.
+ *   MODECADR model.  Each device word holds +0 (free or operation in
+ *   progress), -1 (complete, good), -0 (complete, failed) or the CADR of
+ *   a stalled job.  Here: +0, -1, -2 (DEVIATION: -0 has no agc_sp_t) or
+ *   the job id to wake.  The "advance LOC if successful" of GOODEND
+ *   becomes a per-device outcome the woken job reads with
+ *   agc_imu_stall_outcome().
  *
- * MODECADR model.  Each device word holds +0 (free or operation in
- * progress), -1 (complete, good), -0 (complete, failed) or the CADR of a
- * stalled job.  Here: an enum plus the job id to wake.  The "advance LOC
- * if successful" of GOODEND becomes a per-device outcome the woken job
- * reads with agc_imu_stall_outcome().
- */
+ * ALGORITHM:
+ *   As the AGC listing; each mode switch sets the hardware discretes,
+ *   schedules its tasks and returns; the last task ends the operation
+ *   with GOODEND or BADEND, which wakes the job stalled on the device.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -44,18 +85,18 @@
 #define ALARM_REFSMMAT      ((agc_alarm_code_t) 00220) /* REFSMMAT not known  */
 #define ALARM_TWO_USERS     ((agc_alarm_code_t) 01210) /* two users, 1 device */
 
-#define DT_IMUZERO2 32u   /* BIT6: 320 ms for the AGS pulse train, cs  */
-#define DT_IMUZERO3 1024u /* BIT11: 10.24 s for the CDUs to find gimbals */
-#define DT_COARS    6u    /* CAF SIX                                  */
-#define DT_COARS2   2u    /* "minimum of 4 ms wait"                   */
-#define DT_600MS    60u   /* 600MS DEC 60                             */
-#define DT_SETTLE   150u  /* FIXDELAY DEC 150                         */
-#define DT_IFAILOK  512u  /* BIT10: 5.12 s                            */
-#define DT_2SECS    200u  /* 2SECS                                    */
-#define COMMAX      191   /* -COMMAX  DEC -191 (max pulses minus one)  */
-#define COMMAX_     192   /* -COMMAX- DEC -192                         */
-#define COARSTOL    182   /* DEC -.01111 at half-rev = 2 deg, counts   */
-#define CDU_MASK    077777u
+#define DT_ZERO_RELEASE 32u   /* BIT6: 320 ms for the AGS pulse train, cs  */
+#define DT_ZERO_SETTLE  1024u /* BIT11: 10.24 s for the CDUs to find gimbals */
+#define DT_COARS        6u   /* CAF SIX                                  */
+#define DT_PULSES_START 2u   /* "minimum of 4 ms wait"                   */
+#define DT_600MS        60u  /* 600MS DEC 60                             */
+#define DT_SETTLE       150u /* FIXDELAY DEC 150                         */
+#define DT_IFAILOK      512u /* BIT10: 5.12 s                            */
+#define DT_2SECS        200u /* 2SECS                                    */
+#define COMMAX          191  /* -COMMAX  DEC -191 (max pulses minus one)  */
+#define COMMAX_         192  /* -COMMAX- DEC -192                         */
+#define COARSTOL        182  /* DEC -.01111 at half-rev = 2 deg, counts   */
+#define CDU_MASK        077777u /* 15-bit CDU / channel word            */
 
 typedef enum modecadr_state
 {
@@ -67,7 +108,7 @@ typedef enum modecadr_state
 
 typedef struct modecadr_word
 {
-    modecadr_state_t state;
+    modecadr_state_t state; /* +0, -1, -0 or a stalled job         */
     agc_job_id_t     job; /* MC_STALLED: job to wake                   */
 } modecadr_word_t;
 
@@ -75,9 +116,20 @@ typedef struct modecadr_word
  * tests IMUCADR).  Encoding of the SP word: +0 free, -1 good, a positive
  * job id for a stalled job, and -2 standing in for -0 (failed).
  * DEVIATION: agc_sp_t has no -0 (see AGC_MODECADR_BAD in imu.h).         */
-#define MC_WORD_GOOD AGC_MODECADR_GOOD
-#define MC_WORD_BAD  AGC_MODECADR_BAD
+#define MC_WORD_GOOD AGC_MODECADR_GOOD /* -1: complete and good    */
+#define MC_WORD_BAD  AGC_MODECADR_BAD  /* -2 for -0: complete, bad */
 
+/**********************************************************************
+ * AGC: none (MODECADR word decoder) -- the state of one MODECADR word
+ *
+ * +0 free or in progress, -1 good, -2 (for -0) bad, > 0 the job id of a
+ * stalled job.
+ *
+ * ARGUMENTS:
+ *   dev  int  I    device index 0 IMU, 1 optics, 2 radar
+ *
+ * RETURNS: modecadr_word_t -- the decoded word; MC_FREE on a bad index
+ **********************************************************************/
 static modecadr_word_t mc_get(int dev)
 {
     if (!AGC_ASSERT(dev >= 0 && dev < AGC_MODECADR_N))
@@ -85,7 +137,7 @@ static modecadr_word_t mc_get(int dev)
         return ((modecadr_word_t){0}); /* no valid result */
     }
 
-    agc_sp_t        v = agc_erase_modecadr(dev);
+    agc_sp_t        v = agc_erase_modecadr(dev); /* MODECADR +dev, B0 */
     modecadr_word_t w = {MC_FREE, AGC_JOB_NONE};
 
     if (v == MC_WORD_GOOD)
@@ -113,14 +165,16 @@ static modecadr_word_t mc_get(int dev)
 }
 
 /**********************************************************************
- * MODECADR test by BZF (CKMODCAD p.243 CM, DESRETRN LM p.541): true when
- * the word is +0 or -0, i.e. free or complete-but-failed.  With the -2
- * stand-in for -0 (DEVIATION above) a plain "== 0" would miss -0.
+ * CKMODCAD (EXTENDED_VERBS.agc p.243 CM), DESRETRN (LM p.541) -- the
+ * MODECADR test by BZF
+ *
+ * True when the word is +0 or -0, i.e. free or complete-but-failed.  With
+ * the -2 stand-in for -0 (DEVIATION above) a plain "== 0" would miss -0.
  *
  * ARGUMENTS:
- *   dev  agc_imu_device_t  I  IMUCADR, OPTCADR or RADCADR
+ *   dev  agc_imu_device_t  I    IMUCADR, OPTCADR or RADCADR
  *
- * RETURNS: true if C(MODECADR + dev) is +0 or -0
+ * RETURNS: bool -- true if C(MODECADR + dev) is +0 or -0
  **********************************************************************/
 bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
 {
@@ -129,7 +183,7 @@ bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
         return (false);
     }
 
-    agc_sp_t v = agc_erase_modecadr((int) dev);
+    agc_sp_t v = agc_erase_modecadr((int) dev); /* MODECADR, B0 */
 
     if (!AGC_ASSERT(v >= MC_WORD_BAD))
     {
@@ -139,6 +193,14 @@ bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
     return ((v == AGC_MODECADR_FREE) || (v == MC_WORD_BAD));
 }
 
+/**********************************************************************
+ * AGC: none (MODECADR word encoder) -- TS MODECADR +dev
+ *
+ * ARGUMENTS:
+ *   dev  int               I    device index 0..2
+ *   s    modecadr_state_t  I    new state
+ *   job  agc_job_id_t      I    job to wake (MC_STALLED only)
+ **********************************************************************/
 static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
 {
     if (!AGC_ASSERT((int) job >= 0 && (int) job <= AGC_SP_MAX))
@@ -146,11 +208,26 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
         return;
     }
 
-    agc_sp_t v = (s == MC_DONE_GOOD) ? MC_WORD_GOOD :
-                 (s == MC_DONE_BAD) ? MC_WORD_BAD :
-                 (s == MC_STALLED) ? (agc_sp_t) job :
-                 0;
-    agc_status_t st = agc_erase_set_modecadr(dev, v);
+    agc_sp_t v = 0; /* MODECADR word: +0 free (ENDMODE/MG2), B0      */
+
+    if (s == MC_DONE_GOOD)
+    {
+        v = MC_WORD_GOOD; /* -1 */
+    }
+    else if (s == MC_DONE_BAD)
+    {
+        v = MC_WORD_BAD; /* -0 */
+    }
+    else if (s == MC_STALLED)
+    {
+        v = (agc_sp_t) job; /* CADR of the sleeping job */
+    }
+    else
+    {
+        v = 0; /* +0 */
+    }
+
+    agc_status_t st = agc_erase_set_modecadr(dev, v); /* TS MODECADR */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -158,12 +235,20 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
     }
 }
 
-static agc_imu_stall_result_t outcome[AGC_IMU_DEV_COUNT];
-static agc_sp_t               command[3]; /* COMMAND: coarse-align pulses to go, 1:S   */
-static agc_sp_t               cducmd[3]; /* CDUXCMD..CDUZCMD hardware counters        */
+static agc_imu_stall_result_t outcome[AGC_IMU_DEV_COUNT]; /* L+2/L+3 */
+static agc_sp_t               command[3]; /* COMMAND: pulses to go, B0  */
+static agc_sp_t               cducmd[3]; /* CDUXCMD..: pulses, B0       */
 
 /* ---- small helpers ------------------------------------------------------ */
 
+/**********************************************************************
+ * AGC: none (CS/MASK helper) -- the 15-bit complement of a mask
+ *
+ * ARGUMENTS:
+ *   m  uint16_t  I    mask, 15 bits
+ *
+ * RETURNS: uint16_t -- ~m within 15 bits
+ **********************************************************************/
 static uint16_t notmask(uint16_t m)
 {
     if (!AGC_ASSERT(m <= CDU_MASK))
@@ -171,7 +256,7 @@ static uint16_t notmask(uint16_t m)
         return (0); /* no valid result */
     }
 
-    uint16_t r = (uint16_t) (~(unsigned) m & CDU_MASK);
+    uint16_t r = (uint16_t) (~(unsigned int) m & CDU_MASK); /* CS  */
 
     if (!AGC_ASSERT((r & m) == 0u))
     {
@@ -181,6 +266,12 @@ static uint16_t notmask(uint16_t m)
     return (r);
 }
 
+/**********************************************************************
+ * AGC: none (CS IMODES30, MASK, ADS IMODES30) -- set IMODES30 bits
+ *
+ * ARGUMENTS:
+ *   bits  uint16_t  I    bits to set
+ **********************************************************************/
 static void imodes30_or(uint16_t bits)
 {
     if (!AGC_ASSERT(bits <= CDU_MASK))
@@ -196,6 +287,12 @@ static void imodes30_or(uint16_t bits)
     }
 }
 
+/**********************************************************************
+ * AGC: none (CS bits, MASK IMODES30, TS) -- clear IMODES30 bits
+ *
+ * ARGUMENTS:
+ *   bits  uint16_t  I    bits to clear
+ **********************************************************************/
 static void imodes30_clear(uint16_t bits)
 {
     if (!AGC_ASSERT(bits <= CDU_MASK))
@@ -211,6 +308,13 @@ static void imodes30_clear(uint16_t bits)
     }
 }
 
+/**********************************************************************
+ * AGC: none (IMODES33 ADS / MASK) -- set or clear IMODES33 bits
+ *
+ * ARGUMENTS:
+ *   bits  uint16_t  I    bits to change
+ *   on    bool      I    true: set, false: clear
+ **********************************************************************/
 static void imodes33_set(uint16_t bits, bool on)
 {
     if (!AGC_ASSERT(bits <= CDU_MASK))
@@ -218,9 +322,9 @@ static void imodes33_set(uint16_t bits, bool on)
         return;
     }
 
-    uint16_t v = agc_erase_imodes33();
+    uint16_t v = agc_erase_imodes33(); /* IMODES33 bits */
 
-    v = on ? (uint16_t) (v | bits) : (uint16_t) (v & notmask(bits));
+    v = on ? (uint16_t) (v | bits) : (uint16_t) (v & notmask(bits)); /* ADS / MASK */
     agc_erase_set_imodes33(v);
 
     if (!AGC_ASSERT(((agc_erase_imodes33() & bits) != 0u) == on))
@@ -229,7 +333,13 @@ static void imodes33_set(uint16_t bits, bool on)
     }
 }
 
-static void dsp11_write(uint16_t v)
+/**********************************************************************
+ * AGC: none (TS DSPTAB +11D) -- store the ISS lamp word
+ *
+ * ARGUMENTS:
+ *   v  uint16_t  I    new DSPTAB +11D word (bit 15 = changed)
+ **********************************************************************/
+static void iss_lamps_write(uint16_t v)
 {
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
@@ -239,6 +349,13 @@ static void dsp11_write(uint16_t v)
     agc_erase_set_dsptab(11, v);
 }
 
+/**********************************************************************
+ * AGC: none (CS bits, EXTEND, WAND chan) -- clear channel bits
+ *
+ * ARGUMENTS:
+ *   chan  int       I    channel 12, 13 or 14
+ *   bits  uint16_t  I    bits to clear
+ **********************************************************************/
 static void chan_clear(int chan, uint16_t bits)
 {
     if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN13 ||
@@ -250,11 +367,18 @@ static void chan_clear(int chan, uint16_t bits)
     agc_chan_and(chan, notmask(bits));
 }
 
+/**********************************************************************
+ * SETISSW (T4RUPT_PROGRAM.agc, IBNKCALL) -- set or reset the ISS
+ * warning from IMODES30
+ **********************************************************************/
 static void setissw(void)
 {
     agc_status_t st = agc_t4_setissw(); /* IBNKCALL SETISSW      */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    /* ALARM: an ISS failure lit the warning (ISSWON, VARALARM); the AGC
+     * returns normally in both cases.                                  */
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
     {
         return;
     }
@@ -265,6 +389,16 @@ static void setissw(void)
     }
 }
 
+/**********************************************************************
+ * AGC: none (TC WAITLIST, 2CADR task) -- schedule a mode-switch task
+ *
+ * ARGUMENTS:
+ *   dt    uint16_t       I    delay, cs, 1..AGC_WAITLIST_MAX_DELAY
+ *   task  agc_task_id_t  I    task to start
+ *
+ * RETURNS: agc_status_t -- OK, FULL when the waitlist is full, BAD_ARG
+ *          on a bad delay
+ **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
     if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
@@ -272,7 +406,7 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_waitlist_call(dt, task);
+    agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -282,8 +416,18 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
     return (st);
 }
 
-/* Two's-complement 15-bit CDU difference a - b as a signed count
- * (MSU: result in ones' complement, range -16383..+16383).              */
+/**********************************************************************
+ * AGC: none (EXTEND, MSU) -- CDU difference a - b
+ *
+ * 15-bit two's-complement difference as a signed count (MSU leaves it in
+ * ones' complement, range -16383..+16383).
+ *
+ * ARGUMENTS:
+ *   a  uint16_t  I    minuend, CDU
+ *   b  uint16_t  I    subtrahend, CDU
+ *
+ * RETURNS: int -- a - b in CDU counts
+ **********************************************************************/
 static int cdu_msu(uint16_t a, uint16_t b)
 {
     if (!AGC_ASSERT(a <= CDU_MASK && b <= CDU_MASK))
@@ -291,7 +435,7 @@ static int cdu_msu(uint16_t a, uint16_t b)
         return (0); /* no valid result */
     }
 
-    int d = (int) ((unsigned) (a - b) & CDU_MASK);
+    int d = (int) ((unsigned int) (a - b) & CDU_MASK); /* MSU, CDU */
 
     if (d >= 040000)
     {
@@ -306,6 +450,14 @@ static int cdu_msu(uint16_t a, uint16_t b)
     return (d);
 }
 
+/**********************************************************************
+ * AGC: none (INDEX CDUIND, CA CDUX) -- one IMU CDU
+ *
+ * ARGUMENTS:
+ *   axis  int  I    0 X, 1 Y, 2 Z
+ *
+ * RETURNS: uint16_t -- CDUX, CDUY or CDUZ, CDU
+ **********************************************************************/
 static uint16_t cdu_read(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -313,9 +465,20 @@ static uint16_t cdu_read(int axis)
         return (0); /* no valid result */
     }
 
-    uint16_t v = (axis == 0) ? agc_erase_cdux() :
-                 (axis == 1) ? agc_erase_cduy() :
-                 agc_erase_cduz();
+    uint16_t v = agc_erase_cdux(); /* INDEX CDUIND: CDUX, Y, Z, CDU */
+
+    if (axis == 1)
+    {
+        v = agc_erase_cduy();
+    }
+    else if (axis == 2)
+    {
+        v = agc_erase_cduz();
+    }
+    else
+    {
+        v = agc_erase_cdux();
+    }
 
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
@@ -327,9 +490,15 @@ static uint16_t cdu_read(int axis)
 
 /* ---- shared helpers (internal.h) ----------------------------------- */
 
+/**********************************************************************
+ * CAGETEST (IMU_MODE_SWITCHING_ROUTINES.agc p.1438) -- CAF BIT6, MASK
+ * IMODES30: IMU being caged
+ *
+ * RETURNS: bool -- true when IMODES30 bit 6 (cage) is set
+ **********************************************************************/
 bool imu_caged(void)
 {
-    uint16_t m = agc_erase_imodes30();
+    uint16_t m = agc_erase_imodes30(); /* IMODES30 bits */
 
     if (!AGC_ASSERT(m <= CDU_MASK))
     {
@@ -339,6 +508,13 @@ bool imu_caged(void)
     return ((m & IM30_CAGE) != 0u);
 }
 
+/**********************************************************************
+ * MODEEXIT (IMU_MODE_SWITCHING_ROUTINES.agc p.1422) -- RELINT, TCF
+ * SWRETURN
+ *
+ * IMUPULSE reaches MODEEXIT without an INHINT; RELINT is harmless there,
+ * but the C inhibit is counted, so only a held one is released.
+ **********************************************************************/
 void imu_modeexit(void)
 {
     /* IMUPULSE reaches MODEEXIT without an INHINT; RELINT is harmless
@@ -356,8 +532,16 @@ void imu_modeexit(void)
     return; /* TCF SWRETURN     */
 }
 
-/* CAGETSTJ (p.1438): during mode-switch initialization, if the IMU is
- * being caged set IMUCADR to -0 (complete but failed) and return.        */
+/**********************************************************************
+ * CAGETSTJ (IMU_MODE_SWITCHING_ROUTINES.agc p.1438) -- caged during
+ * mode-switch initialization
+ *
+ * If the IMU is being caged, IMUCADR = -0 (complete but failed) and
+ * MODEEXIT.
+ *
+ * RETURNS: agc_status_t -- OK to go on, BUSY when the caller must
+ *          return at once (MODEEXIT done)
+ **********************************************************************/
 agc_status_t imu_cagetstj(void)
 {
     if (!imu_caged())
@@ -378,8 +562,12 @@ agc_status_t imu_cagetstj(void)
     return (AGC_STATUS_BUSY);
 }
 
-/* CAGETEST (p.1438): in a task, terminate the mode switch (IMUBAD) if the
- * IMU has been caged.  Returns true when the task must end.              */
+/**********************************************************************
+ * CAGETEST (IMU_MODE_SWITCHING_ROUTINES.agc p.1438) -- in a task,
+ * IMUBAD if the IMU has been caged
+ *
+ * RETURNS: bool -- true when the task must end (IMUBAD done)
+ **********************************************************************/
 static bool cagetest(void)
 {
     if (!imu_caged())
@@ -387,7 +575,7 @@ static bool cagetest(void)
         return (false);
     }
 
-    agc_status_t st = agc_imu_imubad();
+    agc_status_t st = agc_imu_imubad(); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -397,6 +585,11 @@ static bool cagetest(void)
     return (true);
 }
 
+/**********************************************************************
+ * AGC: none (fresh start) -- MODECADR words +0, no pulses outstanding
+ *
+ * RETURNS: agc_status_t -- OK
+ **********************************************************************/
 agc_status_t agc_imu_mode_init(void)
 {
     for (int d = 0; d < AGC_IMU_DEV_COUNT; d++)
@@ -419,7 +612,10 @@ agc_status_t agc_imu_mode_init(void)
     return (AGC_STATUS_OK);
 }
 
-/* ZEROICDU (p.1420): zero the ICDU counters.                             */
+/**********************************************************************
+ * ZEROICDU (IMU_MODE_SWITCHING_ROUTINES.agc p.1420) -- zero the ICDU
+ * counters
+ **********************************************************************/
 void agc_imu_zeroicdu(void)
 {
     agc_erase_set_cdux(0);
@@ -437,21 +633,30 @@ void agc_imu_zeroicdu(void)
     }
 }
 
-/* NOATTOFF (p.1428): turn off the NO ATT lamp (DSPTAB +11D bit 4), mark
- * the word changed (bit 15).                                             */
+/**********************************************************************
+ * NOATTOFF (IMU_MODE_SWITCHING_ROUTINES.agc p.1428) -- NO ATT lamp off
+ * (DSPTAB +11D bit 4), bit 15 set
+ **********************************************************************/
 void agc_imu_noattoff(void)
 {
-    uint16_t v = agc_erase_dsptab(11);
+    uint16_t v = agc_erase_dsptab(11); /* DSPTAB +11D lamps */
 
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
         return;
     }
 
-    v = (uint16_t) ((v & notmask(DSP11_NOATT | DSP11_CHANGED)) | DSP11_CHANGED);
-    dsp11_write(v);
+    v =
+        (uint16_t) ((v & notmask(ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED)) |
+                    ISS_LAMPS_CHANGED);
+    iss_lamps_write(v);
 }
 
+/**********************************************************************
+ * AGC: none (fresh start) -- CDUXCMD..CDUZCMD and GYROCMD = -0
+ *
+ * RETURNS: agc_status_t -- OK
+ **********************************************************************/
 agc_status_t agc_imu_clear_cmds(void)
 {
     for (int i = 0; i < 3; i++)
@@ -469,6 +674,14 @@ agc_status_t agc_imu_clear_cmds(void)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * AGC: none (accessor) -- CDUXCMD, CDUYCMD or CDUZCMD
+ *
+ * ARGUMENTS:
+ *   axis  int  I    0 X, 1 Y, 2 Z
+ *
+ * RETURNS: agc_sp_t -- coarse-align pulses outstanding, B0
+ **********************************************************************/
 agc_sp_t agc_imu_cducmd(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -484,6 +697,15 @@ agc_sp_t agc_imu_cducmd(int axis)
     return (cducmd[axis]);
 }
 
+/**********************************************************************
+ * AGC: none (sim hook) -- the counter as the CDU hardware left it
+ *
+ * ARGUMENTS:
+ *   axis    int       I    0 X, 1 Y, 2 Z
+ *   pulses  agc_sp_t  I    pulses still to send, |p| <= 192, B0
+ *
+ * RETURNS: agc_status_t -- OK, BAD_ARG for a bad axis or count
+ **********************************************************************/
 agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -505,12 +727,22 @@ agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
 /* IMU zeroing (p.1421-1422)                                               */
 /* ======================================================================= */
 
-/* IMUZERO: zero the ICDUs.  Refused (alarm 00206, immediate failure) when
- * the IMU is both in coarse align and gimbal lock (runaway protection).  */
+/**********************************************************************
+ * IMUZERO / IMUZEROA (IMU_MODE_SWITCHING_ROUTINES.agc pp.1421-1422) --
+ * zero the ICDUs
+ *
+ * Refused (ALARM 00206, immediate failure) when the IMU is in coarse
+ * align and gimbal lock (runaway protection).  Otherwise DAP auto and hold
+ * off, IMU and ICDU fail inhibited, ZERO ICDU on, IMUZERO2 in 320 ms;
+ * ALARM 00210 if the IMU is not operating.
+ *
+ * RETURNS: agc_status_t -- OK (the outcome is reported through
+ *          IMUCADR), or the waitlist status
+ **********************************************************************/
 agc_status_t agc_imu_zero(void)
 {
     agc_inhint();
-    uint16_t lamps = agc_erase_dsptab(11);
+    uint16_t lamps = agc_erase_dsptab(11); /* DSPTAB +11D */
 
     if (!AGC_ASSERT(lamps <= CDU_MASK))
     {
@@ -519,7 +751,7 @@ agc_status_t agc_imu_zero(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if ((notmask(lamps) & (DSP11_NOATT | DSP11_GLOCK)) == 0u)
+    if ((notmask(lamps) & (ISS_LAMP_NO_ATT | ISS_LAMP_GIMBAL_LOCK)) == 0u)
     {
         agc_alarm(ALARM_ZERO_IN_GLOCK);
         mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD, AGC_JOB_NONE); /* CAGETSTJ +4 */
@@ -547,7 +779,7 @@ agc_status_t agc_imu_zero(void)
     }
 
     agc_imu_zeroicdu();
-    agc_status_t st = waitlist(DT_IMUZERO2, AGC_TASK_IMUZERO2);
+    agc_status_t st = waitlist(DT_ZERO_RELEASE, AGC_TASK_IMU_ZERO_RELEASE); /* status of the call */
 
     if (st != AGC_STATUS_OK)
     {
@@ -564,10 +796,18 @@ agc_status_t agc_imu_zero(void)
     imu_modeexit();
 
     return (AGC_STATUS_OK);
-}
+} /* agc_imu_zero */
 
-/* IMUZERO2 (task): remove the zero discrete, wait 10 s for the counters. */
-agc_status_t agc_task_imuzero2(void)
+/**********************************************************************
+ * IMUZERO2 (IMU_MODE_SWITCHING_ROUTINES.agc p.1422) -- task: remove the
+ * zero discrete
+ *
+ * Zero CDUX..Z again, drop channel 12 bit 5, VARDELAY 10.24 s for the
+ * counters to find the gimbals.
+ *
+ * RETURNS: agc_status_t -- VARDELAY status
+ **********************************************************************/
+agc_status_t agc_task_imu_zero_release(void)
 {
     if (cagetest())
     {
@@ -576,7 +816,8 @@ agc_status_t agc_task_imuzero2(void)
 
     agc_imu_zeroicdu();
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
-    agc_status_t st = agc_waitlist_vardelay(DT_IMUZERO3, AGC_TASK_IMUZERO3);
+    agc_status_t st = agc_waitlist_vardelay(DT_ZERO_SETTLE,
+                                            AGC_TASK_IMU_ZERO_DONE);                 /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -586,8 +827,13 @@ agc_status_t agc_task_imuzero2(void)
     return (st);
 }
 
-/* IMUZERO3 (task): remove the fail inhibits, re-enable DAP, ENDIMU.     */
-agc_status_t agc_task_imuzero3(void)
+/**********************************************************************
+ * IMUZERO3 (IMU_MODE_SWITCHING_ROUTINES.agc p.1422) -- task: remove the
+ * fail inhibits, DAP on, ENDIMU
+ *
+ * RETURNS: agc_status_t -- ENDIMU status
+ **********************************************************************/
+agc_status_t agc_task_imu_zero_done(void)
 {
     if (cagetest())
     {
@@ -616,7 +862,16 @@ agc_status_t agc_task_imuzero3(void)
 /* Coarse align (p.1423-1426)                                              */
 /* ======================================================================= */
 
-/* IMUCOARS: coarse align to THETAD (CDU patterns X, Y, Z).               */
+/**********************************************************************
+ * IMUCOARS (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- coarse align to
+ * THETAD
+ *
+ * ARGUMENTS:
+ *   thetad  const uint16_t [3]  I    THETAD X, Y, Z, CDU patterns
+ *
+ * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the
+ *          waitlist status
+ **********************************************************************/
 agc_status_t agc_imu_coarse(const uint16_t thetad[3])
 {
     if (!AGC_ASSERT(thetad != NULL))
@@ -642,7 +897,7 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
     }
 
     agc_imu_setcoars();
-    agc_status_t st = waitlist(DT_COARS, AGC_TASK_COARS);
+    agc_status_t st = waitlist(DT_COARS, AGC_TASK_COARSE_ALIGN_COMMANDS); /* status of the call */
 
     if (st != AGC_STATUS_OK)
     {
@@ -656,14 +911,25 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
     return (AGC_STATUS_OK);
 }
 
-/* COARS1 body: THETAD - THETAA, shifted right 2 and rounded (pulses).   */
+/**********************************************************************
+ * COARS1 (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- COMMAND for one
+ * CDU
+ *
+ * (THETAD - CDU) MP BIT13 (shift right 2) and rounded: pulses at 4 per
+ * CDU count.
+ *
+ * ARGUMENTS:
+ *   axis  int  I    CDUIND 0..2
+ *
+ * RETURNS: agc_sp_t -- COMMAND, pulses B0
+ **********************************************************************/
 static agc_sp_t coarse_command(int axis)
 {
-    int diff = cdu_msu(agc_erase_thetad(axis), cdu_read(axis));
-    int mag  = (diff < 0) ? -diff : diff;
+    int diff = cdu_msu(agc_erase_thetad(axis), cdu_read(axis)); /* CDU */
+    int mag  = (diff < 0) ? -diff : diff; /* |THETAD - CDU|, CDU    */
     int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0); /* MP BIT13, round */
 
-    cmd = (diff < 0) ? -cmd : cmd;
+    cmd = (diff < 0) ? -cmd : cmd; /* sign of the difference */
 
     if (!AGC_ASSERT(cmd >= -4096 && cmd <= 4096))
     {
@@ -673,8 +939,13 @@ static agc_sp_t coarse_command(int axis)
     return ((agc_sp_t) cmd);
 }
 
-/* COARS (task): enable the ISS CDU error counters and compute COMMAND.   */
-agc_status_t agc_task_coars(void)
+/**********************************************************************
+ * COARS (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- task: enable the
+ * CDU error counters, COMMAND
+ *
+ * RETURNS: agc_status_t -- VARDELAY status
+ **********************************************************************/
+agc_status_t agc_task_coarse_align_commands(void)
 {
     if (cagetest())
     {
@@ -688,7 +959,8 @@ agc_status_t agc_task_coars(void)
         command[cduind] = coarse_command(cduind);
     }
 
-    agc_status_t st = agc_waitlist_vardelay(DT_COARS2, AGC_TASK_COARS2);
+    agc_status_t st = agc_waitlist_vardelay(DT_PULSES_START,
+                                            AGC_TASK_COARSE_ALIGN_PULSES);                  /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -698,8 +970,17 @@ agc_status_t agc_task_coars(void)
     return (st);
 }
 
-/* COMPOS / COMNEG / COMZERO for one CDU: the pulses to send this cycle
- * (at most 192) and the remainder left in COMMAND.                       */
+/**********************************************************************
+ * COMPOS / COMNEG / COMZERO (IMU_MODE_SWITCHING_ROUTINES.agc
+ * pp.1424-1425) -- one 600 ms slice
+ *
+ * At most 192 pulses per CDU; the remainder stays in COMMAND.
+ *
+ * ARGUMENTS:
+ *   axis  int  I    CDUIND 0..2
+ *
+ * RETURNS: agc_sp_t -- pulses to send now (CDUXCMD), B0
+ **********************************************************************/
 static agc_sp_t coarse_slice(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -707,8 +988,8 @@ static agc_sp_t coarse_slice(int axis)
         return (0); /* no valid result */
     }
 
-    int c   = command[axis];
-    int mag = (c < 0) ? -c : c;
+    int c   = command[axis];      /* COMMAND, pulses             */
+    int mag = (c < 0) ? -c : c; /* CCS COMMAND magnitude       */
 
     if (mag - 1 - COMMAX <= 0)
     { /* COMZERO          */
@@ -717,19 +998,26 @@ static agc_sp_t coarse_slice(int axis)
         return ((agc_sp_t) c);
     }
 
-    command[axis] = (agc_sp_t) ((c < 0) ? c + COMMAX_ : c - COMMAX_);
+    command[axis] = (agc_sp_t) ((c < 0) ? c + COMMAX_ : c - COMMAX_); /* COMNEG/COMPOS */
 
     if (!AGC_ASSERT(command[axis] != 0))
     {
         return (0); /* no valid result */
     }
 
-    return ((agc_sp_t) ((c < 0) ? -COMMAX_ : COMMAX_));
+    return ((agc_sp_t) ((c < 0) ? -COMMAX_ : COMMAX_)); /* -COMMAX- */
 }
 
-/* COARS2 (task): send up to 192 pulses per CDU every 600 ms until the
- * commands are exhausted, then let the gimbals settle 1.5 s.             */
-agc_status_t agc_task_coars2(void)
+/**********************************************************************
+ * COARS2 / NEXTCDU / SENDPULS (IMU_MODE_SWITCHING_ROUTINES.agc p.1424)
+ * -- task: send the coarse-align pulses
+ *
+ * Every 600 ms until the commands are used up, then FIXDELAY 1.5 s for
+ * the gimbals to settle and CHKCORS.
+ *
+ * RETURNS: agc_status_t -- VARDELAY / FIXDELAY status
+ **********************************************************************/
+agc_status_t agc_task_coarse_align_pulses(void)
 {
     if (cagetest())
     {
@@ -740,23 +1028,23 @@ agc_status_t agc_task_coars2(void)
 
     for (int cduind = 2; cduind >= 0; cduind--)
     {
-        agc_sp_t slice = (command[cduind] == 0) ? 0 : coarse_slice(cduind);
+        agc_sp_t slice = (command[cduind] == 0) ? 0 : coarse_slice(cduind); /* CCS COMMAND, pulses B0 */
 
         itemp1        += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
         cducmd[cduind] = slice;         /* TS CDUXCMD       */
     }
 
-    agc_status_t st;
+    agc_status_t st; /* status of the call */
 
     if (itemp1 > 0)
     { /* SENDPULS         */
         agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY |
                     AGC_CH014_DRIVECDUZ);
-        st = agc_waitlist_vardelay(DT_600MS, AGC_TASK_COARS2);
+        st = agc_waitlist_vardelay(DT_600MS, AGC_TASK_COARSE_ALIGN_PULSES);
     }
     else
     {
-        st = agc_waitlist_fixdelay(DT_SETTLE, AGC_TASK_CHKCORS);
+        st = agc_waitlist_fixdelay(DT_SETTLE, AGC_TASK_COARSE_ALIGN_CHECK);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
@@ -767,8 +1055,16 @@ agc_status_t agc_task_coars2(void)
     return (st);
 }
 
-/* CHKCORS (task): check each gimbal is within 2 degrees of THETAD.       */
-agc_status_t agc_task_chkcors(void)
+/**********************************************************************
+ * CHKCORS / CORSCHK2 / COARSERR (IMU_MODE_SWITCHING_ROUTINES.agc
+ * pp.1424-1425) -- task: gimbals within 2 deg
+ *
+ * ALARM 00211 and IMUBAD when a gimbal is more than COARSTOL from
+ * THETAD, else ENDIMU.
+ *
+ * RETURNS: agc_status_t -- IMUBAD or ENDIMU status
+ **********************************************************************/
+agc_status_t agc_task_coarse_align_check(void)
 {
     if (!AGC_ASSERT(command[0] == 0 && command[1] == 0 && command[2] == 0))
     {
@@ -782,8 +1078,8 @@ agc_status_t agc_task_chkcors(void)
 
     for (int i = 2; i >= 0; i--)
     {
-        int diff = cdu_msu(cdu_read(i), agc_erase_thetad(i));
-        int mag  = (diff < 0) ? -diff : diff;
+        int diff = cdu_msu(cdu_read(i), agc_erase_thetad(i)); /* CDU   */
+        int mag  = (diff < 0) ? -diff : diff; /* CCS magnitude, CDU  */
 
         if (mag != 0 && (mag - 1) - COARSTOL > 0)
         { /* COARSERR         */
@@ -796,7 +1092,12 @@ agc_status_t agc_task_chkcors(void)
     return (agc_imu_endimu()); /* end of coarse    */
 }
 
-/* CA+ECE (task, p.1425): enable the three ISS CDU error counters.        */
+/**********************************************************************
+ * CA+ECE (IMU_MODE_SWITCHING_ROUTINES.agc p.1425) -- task: enable the
+ * three ISS CDU error counters
+ *
+ * RETURNS: agc_status_t -- OK (TASKOVER)
+ **********************************************************************/
 agc_status_t agc_task_ca_ece(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
@@ -810,7 +1111,13 @@ agc_status_t agc_task_ca_ece(void)
     return (AGC_STATUS_OK); /* TASKOVER         */
 }
 
-/* SETCOARS (p.1426): put the ISS in coarse align (bypassed if already). */
+/**********************************************************************
+ * SETCOARS (IMU_MODE_SWITCHING_ROUTINES.agc p.1426) -- put the ISS in
+ * coarse align (bypassed if already)
+ *
+ * Error counters off, gyro activity off, GYROCMD -0, coarse on, NO ATT
+ * lamp on, DAP auto/hold off, IMU fail inhibited, then RNDREFDR.
+ **********************************************************************/
 void agc_imu_setcoars(void)
 {
     if ((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) != 0u)
@@ -822,8 +1129,9 @@ void agc_imu_setcoars(void)
     chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT); /* gyro activity   */
     agc_imu_hw_set_gyrocmd(0);                      /* CS ZERO: -0     */
     agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_COARSE);
-    dsp11_write(
-        (uint16_t) (agc_erase_dsptab(11) | DSP11_NOATT | DSP11_CHANGED));
+    iss_lamps_write(
+        (uint16_t) (agc_erase_dsptab(11) | ISS_LAMP_NO_ATT |
+                    ISS_LAMPS_CHANGED));
     imodes33_set(IM33_DAPDIS6, true);
     imodes30_or(IM30_IMUFAILINH);
 
@@ -832,7 +1140,7 @@ void agc_imu_setcoars(void)
         return;
     }
 
-    if (!AGC_ASSERT((agc_erase_dsptab(11) & DSP11_NOATT) != 0u))
+    if (!AGC_ASSERT((agc_erase_dsptab(11) & ISS_LAMP_NO_ATT) != 0u))
     {
         return;
     }
@@ -842,7 +1150,10 @@ void agc_imu_setcoars(void)
     return;
 }
 
-/* RNDREFDR (p.1426): knock down TRACKFLG, DRIFTFLG and REFSMFLG.         */
+/**********************************************************************
+ * RNDREFDR (IMU_MODE_SWITCHING_ROUTINES.agc p.1426) -- knock down
+ * TRACKFLG, DRIFTFLG, REFSMFLG
+ **********************************************************************/
 void agc_imu_rndrefdr(void)
 {
     agc_flag_clear(AGC_FLAG_TRACKFLG);
@@ -854,8 +1165,16 @@ void agc_imu_rndrefdr(void)
 /* Fine align (p.1427-1428)                                                */
 /* ======================================================================= */
 
-/* IMUFINE / IMUFIN20: reset zero and coarse, IMU fail stays inhibited
- * for the first 5 s of fine align; ENDIMU after 2 s.                     */
+/**********************************************************************
+ * IMUFINE = IMUFIN20 (IMU_MODE_SWITCHING_ROUTINES.agc p.1427) -- fine
+ * align mode switch
+ *
+ * Zero and coarse off, DAP auto/hold on, NO ATT off; IFAILOK in 5.12 s
+ * (IMU fail stays inhibited), IMUFINED (ENDIMU) in 2 s.
+ *
+ * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the
+ *          waitlist status
+ **********************************************************************/
 agc_status_t agc_imu_fine(void)
 {
     agc_inhint();
@@ -876,14 +1195,14 @@ agc_status_t agc_imu_fine(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((agc_erase_dsptab(11) & DSP11_NOATT) == 0u))
+    if (!AGC_ASSERT((agc_erase_dsptab(11) & ISS_LAMP_NO_ATT) == 0u))
     {
         agc_relint();
 
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t sw = waitlist(DT_IFAILOK, AGC_TASK_IFAILOK);
+    agc_status_t sw = waitlist(DT_IFAILOK, AGC_TASK_IFAILOK); /* status of the IFAILOK call */
 
     if (sw != AGC_STATUS_OK)
     {
@@ -892,7 +1211,7 @@ agc_status_t agc_imu_fine(void)
         return (sw);
     }
 
-    agc_status_t st = waitlist(DT_2SECS, AGC_TASK_IMUFINED);
+    agc_status_t st = waitlist(DT_2SECS, AGC_TASK_IMUFINED); /* status of the call */
 
     if (st != AGC_STATUS_OK)
     {
@@ -904,22 +1223,14 @@ agc_status_t agc_imu_fine(void)
     imu_modeexit();
 
     return (AGC_STATUS_OK);
-}
+} /* agc_imu_fine */
 
-agc_status_t agc_imu_fin20(void)
-{
-    _Static_assert(AGC_TASK_IMUFINED != AGC_TASK_NONE, "AGC constant");
-    agc_status_t st = agc_imu_fine(); /* IMUFIN20 = IMUFINE */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
-
-/* IMUFINED (task): see that no one has caged the IMU, then ENDIMU.       */
+/**********************************************************************
+ * IMUFINED (IMU_MODE_SWITCHING_ROUTINES.agc p.1427) -- task: not caged,
+ * then ENDIMU
+ *
+ * RETURNS: agc_status_t -- ENDIMU status
+ **********************************************************************/
 agc_status_t agc_task_imufined(void)
 {
     if (cagetest())
@@ -932,16 +1243,19 @@ agc_status_t agc_task_imufined(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(!agc_imu_gyros_busy()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_imu_endimu());
 }
 
-/* PFAILOK2 tail shared by IFAILOK and PFAILOK.                           */
-static agc_status_t pfailok2(uint16_t clear_bits)
+/**********************************************************************
+ * PFAILOK2 (IMU_MODE_SWITCHING_ROUTINES.agc p.1428) -- clear a fail
+ * inhibit, SETISSW, TASKOVER
+ *
+ * ARGUMENTS:
+ *   clear_bits  uint16_t  I    IMODES30 bit 4 (IMU) or bit 5 (PIPA)
+ *
+ * RETURNS: agc_status_t -- OK (TASKOVER)
+ **********************************************************************/
+static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
 {
     if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH ||
                     clear_bits == IM30_PIPFAILINH))
@@ -961,7 +1275,14 @@ static agc_status_t pfailok2(uint16_t clear_bits)
     return (AGC_STATUS_OK); /* TASKOVER         */
 }
 
-/* IFAILOK (task): enable IMU fail unless caged or back in coarse align.  */
+/**********************************************************************
+ * IFAILOK (IMU_MODE_SWITCHING_ROUTINES.agc p.1428) -- task: enable IMU
+ * fail
+ *
+ * Not when caged or when someone has gone into coarse align again.
+ *
+ * RETURNS: agc_status_t -- OK (TASKOVER)
+ **********************************************************************/
 agc_status_t agc_task_ifailok(void)
 {
     if (imu_caged())
@@ -981,10 +1302,15 @@ agc_status_t agc_task_ifailok(void)
 
     imodes30_or(IM30_IMUOK); /* reset IMUFAIL    */
 
-    return (pfailok2(IM30_IMUFAILINH));
+    return (fail_inhibit_remove(IM30_IMUFAILINH));
 }
 
-/* PFAILOK (task): enable the PIPA fail program alarm.                    */
+/**********************************************************************
+ * PFAILOK (IMU_MODE_SWITCHING_ROUTINES.agc p.1428) -- task: enable the
+ * PIPA fail program alarm
+ *
+ * RETURNS: agc_status_t -- OK (TASKOVER)
+ **********************************************************************/
 agc_status_t agc_task_pfailok(void)
 {
     if (imu_caged())
@@ -1000,14 +1326,19 @@ agc_status_t agc_task_pfailok(void)
     imodes30_or(IM30_PIPOK); /* reset fail bits  */
     imodes33_set(IM33_PIPOK, true);
 
-    return (pfailok2(IM30_PIPFAILINH));
+    return (fail_inhibit_remove(IM30_PIPFAILINH));
 }
 
 /* ======================================================================= */
 /* PIPA use (p.1429)                                                       */
 /* ======================================================================= */
 
-/* PIPUSE: zero the PIPA counters, then PIPUSE1.                          */
+/**********************************************************************
+ * PIPUSE (IMU_MODE_SWITCHING_ROUTINES.agc p.1429) -- PIPAX..Z = -0,
+ * then PIPUSE1
+ *
+ * RETURNS: agc_status_t -- OK
+ **********************************************************************/
 agc_status_t agc_imu_pipuse(void)
 {
     agc_erase_set_pipax(0); /* CS ZERO: -0      */
@@ -1019,13 +1350,18 @@ agc_status_t agc_imu_pipuse(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_imu_pipuse1();
+    agc_imu_pipa_fail_enable();
 
     return (AGC_STATUS_OK);
 }
 
-/* PIPUSE1: from now until PIPFREE, a PIPA fail lights ISS warning.       */
-void agc_imu_pipuse1(void)
+/**********************************************************************
+ * PIPUSE1 / PIPFREE2 (IMU_MODE_SWITCHING_ROUTINES.agc p.1429) -- PIPA
+ * fail lights the ISS warning from now on
+ *
+ * Until PIPFREE; not when the IMU is caged.
+ **********************************************************************/
+void agc_imu_pipa_fail_enable(void)
 {
     if (imu_caged())
     { /* do not enable PIPA fail     */
@@ -1048,8 +1384,12 @@ void agc_imu_pipuse1(void)
     return;
 }
 
-/* PIPFREE: program done with the PIPAs.  If PIPA fail is on, alarm 00212
- * and reset the ISS warning.                                             */
+/**********************************************************************
+ * PIPFREE (IMU_MODE_SWITCHING_ROUTINES.agc p.1429) -- program done with
+ * the PIPAs
+ *
+ * Set "PIPAs not in use"; if PIPA fail is on, ALARM 00212 and SETISSW.
+ **********************************************************************/
 void agc_imu_pipfree(void)
 {
     agc_inhint();
@@ -1069,8 +1409,10 @@ void agc_imu_pipfree(void)
         return;
     }
 
+    /* ALARM 212.  The AGC's ALARM ends with RELINT, so PIPFREE does
+     * INHINT again; agc_alarm() leaves this routine's inhibit in place,
+     * so a second agc_inhint() here would leave interrupts off.       */
     agc_alarm(ALARM_PIP_FAIL);
-    agc_inhint();
     setissw(); /* PIPFREE2         */
     imu_modeexit();
 
@@ -1081,9 +1423,22 @@ void agc_imu_pipfree(void)
 /* End of operation and stall (p.1438-1441)                                */
 /* ======================================================================= */
 
-/* GOODEND / BADEND common part (p.1439).  good: C(RUPTREG3) = -1, else -0.
+/**********************************************************************
+ * GOODEND / BADEND / ENDMODE (IMU_MODE_SWITCHING_ROUTINES.agc p.1439)
+ * -- end of an I/O operation
+ *
+ * +0: nobody stalled yet, MODECADR = -1 (good) or -0 (bad).  A stalled
+ * job: MODECADR = +0, its outcome kept, JOBWAKE.
  * DEVIATION: Comanche would JOBWAKE a negative MODECADR word; Luminary
- * resets it to +0 ("BZF = TCF IF MODECADR = -0").  Both do the latter.  */
+ * resets it to +0 ("BZF = TCF IF MODECADR = -0").  Both do the latter.
+ *
+ * ARGUMENTS:
+ *   dev   agc_imu_device_t  I    device index (C(A) on arrival)
+ *   good  bool              I    true at GOODEND (RUPTREG3 = -1), false
+ *                                at BADEND (-0)
+ *
+ * RETURNS: agc_status_t -- OK, or the JOBWAKE status
+ **********************************************************************/
 static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
 {
     if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
@@ -1091,12 +1446,14 @@ static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    modecadr_word_t        w   = mc_get((int) dev);
-    agc_imu_stall_result_t res = good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD;
+    modecadr_word_t        w   = mc_get((int) dev); /* MODECADR +dev */
+    agc_imu_stall_result_t res =
+        good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* RUPTREG3 */
 
     if (w.state == MC_FREE)
     { /* ENDMODE          */
-        mc_set((int) dev, good ? MC_DONE_GOOD : MC_DONE_BAD, AGC_JOB_NONE);
+        mc_set((int) dev, good ? MC_DONE_GOOD : MC_DONE_BAD, /* -1 / -0 */
+               AGC_JOB_NONE);
 
         return (AGC_STATUS_OK);
     }
@@ -1119,6 +1476,15 @@ static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
     return (agc_exec_job_wake(w.job)); /* JOBWAKE          */
 }
 
+/**********************************************************************
+ * GOODEND (IMU_MODE_SWITCHING_ROUTINES.agc p.1439) -- successful end of
+ * an I/O operation
+ *
+ * ARGUMENTS:
+ *   dev  agc_imu_device_t  I    device index
+ *
+ * RETURNS: agc_status_t -- OK or NOT_FOUND (no such job to wake)
+ **********************************************************************/
 agc_status_t agc_imu_goodend(agc_imu_device_t dev)
 {
     if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
@@ -1126,7 +1492,7 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = goodend_common(dev, true);
+    agc_status_t st = goodend_common(dev, true); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
@@ -1136,6 +1502,15 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev)
     return (st);
 }
 
+/**********************************************************************
+ * BADEND (IMU_MODE_SWITCHING_ROUTINES.agc p.1439) -- failed end of an
+ * I/O operation
+ *
+ * ARGUMENTS:
+ *   dev  agc_imu_device_t  I    device index
+ *
+ * RETURNS: agc_status_t -- OK or NOT_FOUND (no such job to wake)
+ **********************************************************************/
 agc_status_t agc_imu_badend(agc_imu_device_t dev)
 {
     if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
@@ -1143,7 +1518,7 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = goodend_common(dev, false);
+    agc_status_t st = goodend_common(dev, false); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
@@ -1153,21 +1528,32 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev)
     return (st);
 }
 
-/* IMUBAD (p.1438): BADEND with C(A) = 0 (the IMU).                       */
+/**********************************************************************
+ * IMUBAD (IMU_MODE_SWITCHING_ROUTINES.agc p.1438) -- BADEND with C(A) =
+ * 0 (the IMU)
+ *
+ * RETURNS: agc_status_t -- OK, or BAD_ARG
+ **********************************************************************/
 agc_status_t agc_imu_imubad(void)
 {
-    agc_status_t st = agc_imu_badend(AGC_IMU_DEV_IMU);
+    agc_status_t st = agc_imu_badend(AGC_IMU_DEV_IMU); /* status of the call */
 
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* no job woken */
 }
 
-/* ENDIMU (p.1438): the mode is bad if the ISS warning (channel 11 bit 1)
- * is on, otherwise IMUGOOD -> GOODEND.                                   */
+/**********************************************************************
+ * ENDIMU / IMUGOOD (IMU_MODE_SWITCHING_ROUTINES.agc p.1438) -- end of
+ * an IMU mode switch
+ *
+ * Bad (IMUBAD) if the ISS warning (channel 11 bit 1) is on, else GOODEND.
+ *
+ * RETURNS: agc_status_t -- OK, or BAD_ARG
+ **********************************************************************/
 agc_status_t agc_imu_endimu(void)
 {
     if ((agc_chan_read(AGC_CHAN_DSALMOUT) & AGC_CH011_ISSWARN) != 0u)
@@ -1175,17 +1561,24 @@ agc_status_t agc_imu_endimu(void)
         return (agc_imu_imubad());
     }
 
-    agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_IMU);
+    agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_IMU); /* status of the call */
 
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* no job woken */
 }
 
-/* MODABORT (p.1441): two programs using the same device.                 */
+/**********************************************************************
+ * MODABORT (IMU_MODE_SWITCHING_ROUTINES.agc p.1441) -- two programs
+ * using the same device
+ *
+ * CM POODOO 01210, LM BAILOUT1 01210.
+ *
+ * RETURNS: agc_status_t -- POODOO or BAILOUT status
+ **********************************************************************/
 static agc_status_t modabort(void)
 {
     _Static_assert(ALARM_TWO_USERS == 01210, "AGC constant");
@@ -1198,11 +1591,23 @@ static agc_status_t modabort(void)
     return (agc_poodoo(ALARM_TWO_USERS)); /* POODOO 01210     */
 }
 
-/* STALL / IMUSTALL / OPTSTALL / AOTSTALL / RADSTALL (pp.1440-1441):
- *   +0  operation incomplete: MODECADR = caller, JOBSLEEP (SLEEPING);
- *   -1  complete and good: MODECADR = +0, return L+3 (GOOD);
- *   -0  complete but failed: MODECADR = +0, return L+2 (BAD);
- *   CADR: a second user -> MODABORT.                                     */
+/**********************************************************************
+ * STALL / IMUSTALL / OPTSTALL / AOTSTALL / RADSTALL
+ * (IMU_MODE_SWITCHING_ROUTINES.agc pp.1440-1441)
+ *
+ * +0 operation incomplete: MODECADR = caller, JOBSLEEP (SLEEPING);
+ * -1 complete and good: MODECADR = +0, return L+3 (GOOD);
+ * -0 complete but failed: MODECADR = +0, return L+2 (BAD);
+ * CADR: a second user -> MODABORT.
+ *
+ * ARGUMENTS:
+ *   dev      agc_imu_device_t          I    device index
+ *   wake_as  agc_job_id_t              I    job to wake when the
+ *                                           operation ends
+ *   result   agc_imu_stall_result_t *  O    SLEEPING, GOOD or BAD
+ *
+ * RETURNS: agc_status_t -- OK, or MODABORT status
+ **********************************************************************/
 agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
                                agc_imu_stall_result_t *result)
 {
@@ -1213,7 +1618,7 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
     }
 
     agc_inhint();
-    modecadr_word_t w = mc_get((int) dev);
+    modecadr_word_t w = mc_get((int) dev); /* INDEX A, CCS MODECADR */
 
     if (w.state == MC_STALLED)
     {
@@ -1241,14 +1646,24 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
     }
 
     *result =
-        (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD;
+        (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* -1 / -0 */
     outcome[dev] = *result;
     mc_set((int) dev, MC_FREE, AGC_JOB_NONE); /* MG2: reset to +0 */
     imu_modeexit();
 
     return (AGC_STATUS_OK);
-}
+} /* agc_imu_stall_dev */
 
+/**********************************************************************
+ * IMUSTALL (IMU_MODE_SWITCHING_ROUTINES.agc p.1441) -- STALL on the IMU
+ *
+ * ARGUMENTS:
+ *   wake_as  agc_job_id_t              I    job to wake when the
+ *                                           operation ends
+ *   result   agc_imu_stall_result_t *  O    SLEEPING, GOOD or BAD
+ *
+ * RETURNS: agc_status_t -- OK, or MODABORT status
+ **********************************************************************/
 agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
     if (!AGC_ASSERT(result != NULL))
@@ -1256,7 +1671,7 @@ agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, wake_as, result);
+    agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, wake_as, result); /* status of the call */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
@@ -1266,6 +1681,15 @@ agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
     return (st);
 }
 
+/**********************************************************************
+ * AGC: none (BUF2 L+2 / L+3) -- the outcome seen by the woken job
+ *
+ * ARGUMENTS:
+ *   dev  agc_imu_device_t  I    device index
+ *
+ * RETURNS: agc_imu_stall_result_t -- GOOD or BAD (SLEEPING before the
+ *          end)
+ **********************************************************************/
 agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
 {
     if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
@@ -1285,9 +1709,14 @@ agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
 /* R02 IMU status check (p.1443-1444)                                      */
 /* ======================================================================= */
 
-/* R02BOTH: if REFSMMAT is known set IMUSE and return OK.  Otherwise alarm
- * 00220 (REFSMMAT unknown) or 00210 (IMU not operating) via VARALARM and
- * GOTOPOOH; returns AGC_STATUS_POODOO.                                   */
+/**********************************************************************
+ * R02BOTH (IMU_MODE_SWITCHING_ROUTINES.agc p.1443) -- IMU status check
+ *
+ * REFSMMAT known: R02ZERO.  Otherwise ALARM 00220 (REFSMMAT unknown) or
+ * 00210 (IMU not operating) by VARALARM, then GOTOPOOH.
+ *
+ * RETURNS: agc_status_t -- R02ZERO status, or POODOO after GOTOPOOH
+ **********************************************************************/
 agc_status_t agc_imu_status_check(void)
 {
     if (agc_flag_test(AGC_FLAG_REFSMFLG))
@@ -1308,12 +1737,16 @@ agc_status_t agc_imu_status_check(void)
     }
 
     agc_exec_varalarm(code);
-    const agc_status_t gs = agc_exec_gotopooh();
+    const agc_status_t gs = agc_exec_gotopooh(); /* TC GOTOPOOH */
 
-    return ((gs != AGC_STATUS_OK) ? gs : AGC_STATUS_POODOO);
+    return ((gs != AGC_STATUS_OK) ? gs : AGC_STATUS_POODOO); /* P00 */
 }
 
-/* R02ZERO: UPFLAG IMUSE.                                                 */
+/**********************************************************************
+ * R02ZERO (IMU_MODE_SWITCHING_ROUTINES.agc p.1444) -- UPFLAG IMUSE
+ *
+ * RETURNS: agc_status_t -- OK
+ **********************************************************************/
 agc_status_t agc_imu_set_in_use(void)
 {
     agc_flag_set(AGC_FLAG_IMUSE);
@@ -1363,7 +1796,7 @@ static uint32_t scalsave; /* SCALSAVE: scaler at PRESTAND, 1/3200 s B28    */
  **********************************************************************/
 static agc_status_t scalprep(uint32_t *scaler)
 {
-    agc_dp_t raw = 0; /* HISCALAR,LOSCALAR, 1/3200 s (packed DP)       */
+    agc_dp_t raw = 0; /* HISCALAR,LOSCALAR, 1/3200 s B28 */
 
     if (!AGC_ASSERT(scaler != NULL) || !AGC_ASSERT(agc_interrupts_inhibited()))
     {
@@ -1381,7 +1814,7 @@ static agc_status_t scalprep(uint32_t *scaler)
     }
 
     /* DAS MPAC with (0, BIT5): a carry out of HISCALAR is lost.        */
-    uint32_t sum = ((uint32_t) raw + SCALER_5MS) % SCALER_MOD;
+    uint32_t sum = ((uint32_t) raw + SCALER_5MS) % SCALER_MOD; /* +5 ms */
 
     *scaler = sum & ~SCALER_LOW5; /* CS LOW5, MASK MPAC +1      */
 
@@ -1533,8 +1966,9 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
     }
 
     /* DCS SCALSAVE, DAS MPAC, SHORTMP BIT10; + BIT10 if negative.      */
-    uint32_t dt_cs = ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT;
-    uint32_t now   = agc_time_now_cs(); /* counted since the clear, cs */
+    uint32_t dt_cs = /* scaler advance since PRESTAND, cs B28 */
+                     ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT;
+    uint32_t now = agc_time_now_cs(); /* counted since the clear, cs */
 
     if (!AGC_ASSERT(dt_cs < (SCALER_MOD >> SCALER_TO_CS_SHIFT)))
     {
@@ -1546,4 +1980,4 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_NODOFLAG);
 
     return (agc_exec_gotopooh());
-}
+} /* agc_job_standby_recovery */

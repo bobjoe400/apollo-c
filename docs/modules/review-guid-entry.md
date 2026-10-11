@@ -2,7 +2,7 @@
 
 Lane files: src/csm/entry/{lexicon.c,reentry.c,programs.c,cm_body_attitude.c,dap.c},
 src/csm/burns/earth_orbit_insertion.c, src/csm/burns/return_to_earth/*,
-include/agc/csm/entry*.h, tests/csm/{entry,dap,return_to_earth}.c,
+include/agc/csm/entry*.h, tests/csm/{entry,return_to_earth}.c,
 tests/oracle/{entry,return_to_earth}.c.
 AGC: ENTRY_LEXICON, REENTRY_CONTROL, P61-P67, CM_BODY_ATTITUDE,
 CM_ENTRY_DIGITAL_AUTOPILOT, P11, P37_P70 (Comanche055).
@@ -97,13 +97,66 @@ red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
       kept for SATOUT.
   P11 pad POLYNUM is taken as the degree (the AGC POLYNUM is N-1 for
   POWRSERS); whoever loads it from erasable must add 1 (Request).
-  NOTE another agent has uncommitted edits in programs.c / entry.h
-  (agc_entry_tff_trig, agc_entry_vgamcalc exports) - edit around them.
 * STYLE (scratch tool style/apply.py + per-file .spec: boxed prologs,
   decl/scale comments, ternary and long-block comments): DONE lexicon.c,
-  return_to_earth/precision.c (0 findings, rule-5 ok). TODO the rest.
-* TODO naming / style debt (1599 check_style findings in lane files) /
-  rule-5 density / make check; findings table, Requests, Lessons below.
+  return_to_earth/{precision,conic,velocity,program}.c + internal.h
+  (0 findings, rule-5 ok, no line > 80). conic.c CFPA / GAMMAEI / GAMMAE
+  DOT SL1 now on the TP MPAC (oracle unchanged); cm_body_attitude.c
+  (CMTR2 BETA store now modulo 1 like XCH TEMPBETA, was saturating);
+  earth_orbit_insertion.c; programs.c (VGAMCALC SL* 0-8D,1 with a
+  negative count is a truncating TP shift - was rounded; rule 5 now 2.02).
+  dap.c (nested ternaries replaced by dap_signed / dap_low_carry; rule 5
+  2.00); reentry.c (agc_entry_targeting split into targ_velocity /
+  targ_ldcalc, dead "st" code removed; rule 5 2.00); P11 launch_refsmmat
+  split out (rule 4). All lane .c files: 0 style findings, 0 rule
+  violations/warnings; entry.h (struct members one per line with
+  scales), entry_lexicon.h; tests/csm/{entry,return_to_earth}.c and
+  tests/oracle/{entry,return_to_earth}.c (main first, prologs). All 17
+  lane files: 0 check_style findings, uncrustify --check clean, no line
+  > 80 columns.
+* DONE naming (item 3): digit-suffixed label identifiers spelled out from
+  the AGC comments: INITRL1 -> step_hunt_trigger, CONT1 ->
+  step_upcontrol_drag_test, CONT3 -> step_upcontrol_reference, CONTINU2
+  -> step_upcontrol_q7min_test, CONSTD1 -> step_constant_drag_ld,
+  UPCNTRL3 -> step_upcontrol_ld, L353 -> step_lateral_switch, L355 ->
+  step_roll_command, L357 -> step_lateral_min_ld, KEP2 ->
+  step_kepler_test (AGC_ENTRY_GOTO_KEPLER), PREDICT3 ->
+  step_final_predict (AGC_ENTRY_GOTO_FINAL_PREDICT), HUNTEST1 ->
+  hunt_exit_velocity, STARTEN1 -> entry_initial_target, KILLGRP4 ->
+  entry_disable_restart_group, REFAZE10 -> agc_entry_reestablish_
+  sequencer, EXDAP1/2 -> dap_exdap_yaw_pitch_jets / _beta_roll_hold,
+  2D/SDZ -> dap_rate_deadzone. AGC_JOB_REFAZE10 / agc_job_refaze10 kept
+  (exec jobs.h, dispatch.c: Request).
+* DONE lane open questions answered in guid-entry.md and p37.md.
+* DONE verification: make, make test (all pass), make scenarios (7/7);
+  make check: 0 rule violations/warnings, uncrustify clean and 0 style
+  findings in every lane file (the remaining check-rules FAILs are in
+  other lanes: word_forms.c, noun_data.c, imu/mode.c).
+* DONE entry residual traced: entry_pass_next VL -38 / L/D 256 come from
+  HUNTEST1's DDV chain (ALP = A0 2C1HS / V1 / V1 / LEWD): exact 13571593,
+  AGC 13571567, C 13571613 with identical inputs -> core DDV (Request).
+
+## Findings
+| # | Where | What | Fix |
+|---|---|---|---|
+| E1 | reentry.c, cm_body_attitude.c, programs.c, earth_orbit_insertion.c (92 sites) | every DMP translated as agc_dp_mul (DMPR, rounded); the listings have no DMPR | agc_dp_mul_trunc; VXSC sites stay rounded; DTEAROT/RT exact, ROLLC 2159 -> 1 LSB |
+| E2 | same files | DMP/DOT followed by SL, SQRT, ACOS or DAD+SQRT used the DP top only | TP MPAC kept (entry_tp_shl, agc_tp_sqrt/add/shift): RDOT, D, L/DCALC, THETAH, BETA/GAMA, FISHCALC, VRCALC, VL, VREF, E, CONSTD1, P11 roll/pitch/needles, conic.c CFPA/GAMMAEI/GAMMAE |
+| E3 | programs.c VGAMCALC | SL* 0-8D,1 with a negative count rounded | truncating (GENSCR/MPACSHR) |
+| E4 | earth_orbit_insertion.c NOPOLYM | SR2 rounded | truncating TP shift |
+| E5 | earth_orbit_insertion.c ATERJOB | switch-on + SATSW > 0 skipped NEEDLER init and the 60 ms wait | ATRESET path shared |
+| E6 | earth_orbit_insertion.c STEERSAT/RESCALES | per-word saturating add, 4 x high word | TAD with word carries; MP DDOUBL DDOUBL incl. low-word carry; TS overflow stores mod 1 and skips CA AKn+1 |
+| E7 | earth_orbit_insertion.c RLTST | sign(roll) sign(SATRLRT) | MP of MPAC by SATRLRT +1, high word > 0 |
+| E8 | earth_orbit_insertion.c REP11 | TLIFTOFF from LIFTTEMP when TIME2 not yet zeroed | clock read at the DXCH TIME2 |
+| E9 | cm_body_attitude.c CMTR2 | BETA saturated | XCH TEMPBETA stores modulo 1 |
+| E10 | dap.c (from the earlier session) | READGYM1/EXDAP2 MSU saturating; SR re-edit; PAXERR1 OVFL OK | modular / -VT/360 / mod-1 store |
+| E11 | reentry.c LOG | Horner by DMPR | agc_dp_poly (POLY) |
+| F14 | return_to_earth (earlier session) | DSU/BDSU and SR* on the TP MPAC | rte_tp_dsu/bdsu, DVCALC TP; 58 -> 45 KNOWN, rest other lanes |
+
+Deviations kept (commented in the code): TUSED holds +TIME1 (TIMETST
+forms the same difference); RTARG on V32 recycle uses the saved vector
+(the AGC pops garbage); RESCALES overflow after TS AK2 is stored without
+the skip into CADR NEEDLER; GMAX keeps its own low word (the AGC overlays
+VPRED); DUMPP61 retries at most 4 times.
 
 ## Requests (to other lanes)
 * nav-conic: TIMERAD V(T2)/ differs by 1-3 high-word LSB (R(T2)/ exact).
@@ -115,3 +168,35 @@ red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
   SQRT is what is left of F14/AUGEKUGL/PREC155 (same class as F9).
 * guid-powered: export AUGEKUGL (external_delta_v.c has a static copy);
   then drop the local copy in return_to_earth/conic.c.
+* core-numeric: DDV with a small dividend: HUNTEST1 ALP chain, DLOAD A0
+  (35781135) DMP 2C1HS (5797757) DDV V1 (165392454) DDV V1 DDV LEWD
+  (40265318): exact 13571593, yaAGC 13571567, C 13571613. Also DOT's
+  MPAC+2 (sign-disagreeing accumulation) shows as +-1 LSB in RDOT once
+  SL1 shifts it in.
+* exec / registry: AGC_JOB_REFAZE10 / agc_job_refaze10 keep a digit label
+  (jobs.h, dispatch.c); suggested stem reestablish_entry_sequencer (the
+  entry-side function is now agc_entry_reestablish_sequencer).
+* whoever loads the P11 pad from erasable: POLYNUM in the AGC is degree-1
+  (POWRSERS count); agc_earth_orbit_insertion_monitor_set_padload takes
+  the degree.
+* oracle-cases: the "D 256 (yaAGC DV bug)" entry tolerance stays (KEP2
+  156, INITROLL 84); the ROLLC 4096 and RT/THETAH 128 tolerances were not
+  yaAGC: they came from E1 (now 16 and 8).
+
+## Lessons
+* grep the listing for DMPR before writing agc_dp_mul: the interpreter
+  DMP truncates and most guidance code never rounds. One systematic
+  rounding error per multiply showed up as hundreds of LSB downstream
+  (DTEAROT one cs -> RT.y 98 LSB) and was blamed on the emulator.
+* "DMP SL1", "DOT SL1", "DMP DAD SQRT" and "POLY ... SL n" read MPAC+2:
+  shift or root the TP, not the stored DP. SR of a scalar (and SL* with a
+  negative count) truncates; only SRR, VSR and vector shifts round.
+* Basic-code TS of an overflowed A skips the next instruction: in
+  RESCALES the skipped CA changes which word the next rescale uses.
+* Test assertions should state facts the AGC guarantees (limits, ranges,
+  flag postconditions), not restate the store just made; dispatchers can
+  assert the pass state they hand on.
+* A per-file spec (function args, local comments with scales, ternary
+  comments) applied by a script that knows the checker's parser turns
+  style debt into a writing task; keep trailing comments short enough
+  for 80 columns or split after '='.

@@ -44,9 +44,9 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
-#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
@@ -127,8 +127,7 @@ static agc_status_t job_csm_io_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_DAP_DATA_LOAD_MASS))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_DAP_DATA_LOAD_MASS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -205,8 +204,7 @@ static agc_status_t job_csm_io_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RADAR_TEST_OPTION_DISPLAY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RADAR_TEST_OPTION_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -360,8 +358,7 @@ static agc_status_t job_csm_io_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ATTITUDE_MANEUVER_ENTER))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ATTITUDE_MANEUVER_ENTER))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -473,8 +470,7 @@ static agc_status_t job_csm_nav_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(
-            ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_EXTERNAL_DELTA_V))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_EXTERNAL_DELTA_V))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -513,8 +509,7 @@ static agc_status_t job_csm_guidance_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -563,8 +558,7 @@ static agc_status_t job_csm_programs_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_REALIGN_NOMINAL_ORIENTATION))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_REALIGN_NOMINAL_ORIENTATION))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -641,8 +635,7 @@ static agc_status_t job_csm_programs_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_PARAMS_WAIT))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_PARAMS_WAIT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -796,8 +789,7 @@ static agc_status_t job_csm_programs_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_STABLE_ORBIT_MIDCOURSE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_STABLE_ORBIT_MIDCOURSE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -874,8 +866,7 @@ static agc_status_t job_csm_programs_4(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_TPI_AFTER_RESULTS))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_TPI_AFTER_RESULTS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1015,8 +1006,7 @@ static agc_status_t job_csm_csm_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_PRELAUNCH_IMU_ZEROED))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_PRELAUNCH_IMU_ZEROED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1093,8 +1083,7 @@ static agc_status_t job_csm_csm_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1325,8 +1314,7 @@ static agc_status_t job_csm_csm_4(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1480,8 +1468,7 @@ static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1558,8 +1545,7 @@ static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1634,8 +1620,7 @@ static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1712,8 +1697,7 @@ static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1790,8 +1774,7 @@ static agc_status_t job_csm_csm_10(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_TPI_SEARCH_RESULTS))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_TPI_SEARCH_RESULTS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1941,8 +1924,7 @@ static agc_status_t job_csm_csm_12(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2021,8 +2003,7 @@ static agc_status_t job_csm_0_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2083,8 +2064,7 @@ static agc_status_t job_csm_0_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2145,8 +2125,7 @@ static agc_status_t job_csm_0_2(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2341,8 +2320,7 @@ static agc_status_t job_lm_io_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_DAP_DATA_LOAD_MASS))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_DAP_DATA_LOAD_MASS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2419,8 +2397,7 @@ static agc_status_t job_lm_io_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RADAR_TEST_OPTION_DISPLAY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RADAR_TEST_OPTION_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2574,8 +2551,7 @@ static agc_status_t job_lm_io_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ATTITUDE_MANEUVER_ENTER))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ATTITUDE_MANEUVER_ENTER))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2687,8 +2663,7 @@ static agc_status_t job_lm_nav_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(
-            ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_EXTERNAL_DELTA_V))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_EXTERNAL_DELTA_V))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2727,8 +2702,7 @@ static agc_status_t job_lm_guidance_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2777,8 +2751,7 @@ static agc_status_t job_lm_programs_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_REALIGN_NOMINAL_ORIENTATION))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_REALIGN_NOMINAL_ORIENTATION))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2855,8 +2828,7 @@ static agc_status_t job_lm_programs_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_PARAMS_WAIT))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_PARAMS_WAIT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3010,8 +2982,7 @@ static agc_status_t job_lm_programs_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_STABLE_ORBIT_MIDCOURSE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_STABLE_ORBIT_MIDCOURSE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3088,8 +3059,7 @@ static agc_status_t job_lm_programs_4(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_TPI_AFTER_RESULTS))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_TPI_AFTER_RESULTS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3166,8 +3136,7 @@ static agc_status_t job_lm_programs_5(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_IMU_ORIENTATION_DETERMINATION))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_IMU_ORIENTATION_DETERMINATION))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3307,8 +3276,7 @@ static agc_status_t job_lm_csm_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_AGS_INITIALIZATION))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_AGS_INITIALIZATION))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3347,8 +3315,7 @@ static agc_status_t job_lm_lm_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3425,8 +3392,7 @@ static agc_status_t job_lm_lm_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3503,8 +3469,7 @@ static agc_status_t job_lm_lm_2(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_LUNAR_SURFACE_ALIGNED))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_LUNAR_SURFACE_ALIGNED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3581,8 +3546,7 @@ static agc_status_t job_lm_lm_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_LUNAR_SURFACE_TIME_ENTERED))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_LUNAR_SURFACE_TIME_ENTERED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3736,8 +3700,7 @@ static agc_status_t job_lm_lm_5(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_JET_ACCEL_RESET))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_JET_ACCEL_RESET))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3814,8 +3777,7 @@ static agc_status_t job_lm_lm_6(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_LANDING_CONFIRMATION_FLASH))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_LANDING_CONFIRMATION_FLASH))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -3892,8 +3854,7 @@ static agc_status_t job_lm_lm_7(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4045,8 +4006,7 @@ static agc_status_t job_lm_lm_9(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RADAR_SEARCH_DATA_CHECK))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RADAR_SEARCH_DATA_CHECK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4193,8 +4153,7 @@ static agc_status_t job_lm_0_0(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_ALIGN_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4255,8 +4214,7 @@ static agc_status_t job_lm_0_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_AGS_INITIALIZATION))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_AGS_INITIALIZATION))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4317,8 +4275,7 @@ static agc_status_t job_lm_0_2(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4502,7 +4459,7 @@ static agc_status_t task_csm_io_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_8192AUG))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_CA_ECE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4536,7 +4493,7 @@ static agc_status_t task_csm_io_0(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      CSM tasks AGC_TASK_8192AUG .. AGC_TASK_UPDTCALL
+ *      CSM tasks AGC_TASK_CA_ECE .. AGC_TASK_UPDTCALL
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -4560,26 +4517,26 @@ static agc_status_t task_csm_imu_0(agc_task_id_t task)
 
     switch ((int) task)
     {
-        case AGC_TASK_8192AUG:
-            return (agc_task_8192aug());
         case AGC_TASK_CA_ECE:
             return (agc_task_ca_ece());
-        case AGC_TASK_CHKCORS:
-            return (agc_task_chkcors());
-        case AGC_TASK_COARS:
-            return (agc_task_coars());
-        case AGC_TASK_COARS2:
-            return (agc_task_coars2());
+        case AGC_TASK_COARSE_ALIGN_CHECK:
+            return (agc_task_coarse_align_check());
+        case AGC_TASK_COARSE_ALIGN_COMMANDS:
+            return (agc_task_coarse_align_commands());
+        case AGC_TASK_COARSE_ALIGN_PULSES:
+            return (agc_task_coarse_align_pulses());
         case AGC_TASK_ENDMANU:
             return (agc_task_endmanu());
+        case AGC_TASK_GYRO_AUGMENT:
+            return (agc_task_gyro_augment());
         case AGC_TASK_IFAILOK:
             return (agc_task_ifailok());
         case AGC_TASK_IMUFINED:
             return (agc_task_imufined());
-        case AGC_TASK_IMUZERO2:
-            return (agc_task_imuzero2());
-        case AGC_TASK_IMUZERO3:
-            return (agc_task_imuzero3());
+        case AGC_TASK_IMU_ZERO_DONE:
+            return (agc_task_imu_zero_done());
+        case AGC_TASK_IMU_ZERO_RELEASE:
+            return (agc_task_imu_zero_release());
         case AGC_TASK_MANUSTOP:
             return (agc_task_manustop());
         case AGC_TASK_PFAILOK:
@@ -4614,8 +4571,7 @@ static agc_status_t task_csm_nav_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE &&
-                    task < AGC_TASK_RENDEZVOUS_PARAMS_WAIT))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_RENDEZVOUS_PARAMS_WAIT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4968,7 +4924,7 @@ static agc_status_t task_csm_0_0(agc_task_id_t task)
         return (task_csm_exec_0(task));
     }
 
-    if (task < AGC_TASK_8192AUG)
+    if (task < AGC_TASK_CA_ECE)
     {
         return (task_csm_io_0(task));
     }
@@ -5094,7 +5050,7 @@ static agc_status_t task_lm_io_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_8192AUG))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_CA_ECE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -5124,7 +5080,7 @@ static agc_status_t task_lm_io_0(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      LM tasks AGC_TASK_8192AUG .. AGC_TASK_UPDTCALL
+ *      LM tasks AGC_TASK_CA_ECE .. AGC_TASK_UPDTCALL
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -5148,26 +5104,26 @@ static agc_status_t task_lm_imu_0(agc_task_id_t task)
 
     switch ((int) task)
     {
-        case AGC_TASK_8192AUG:
-            return (agc_task_8192aug());
         case AGC_TASK_CA_ECE:
             return (agc_task_ca_ece());
-        case AGC_TASK_CHKCORS:
-            return (agc_task_chkcors());
-        case AGC_TASK_COARS:
-            return (agc_task_coars());
-        case AGC_TASK_COARS2:
-            return (agc_task_coars2());
+        case AGC_TASK_COARSE_ALIGN_CHECK:
+            return (agc_task_coarse_align_check());
+        case AGC_TASK_COARSE_ALIGN_COMMANDS:
+            return (agc_task_coarse_align_commands());
+        case AGC_TASK_COARSE_ALIGN_PULSES:
+            return (agc_task_coarse_align_pulses());
         case AGC_TASK_ENDMANU:
             return (agc_task_endmanu());
+        case AGC_TASK_GYRO_AUGMENT:
+            return (agc_task_gyro_augment());
         case AGC_TASK_IFAILOK:
             return (agc_task_ifailok());
         case AGC_TASK_IMUFINED:
             return (agc_task_imufined());
-        case AGC_TASK_IMUZERO2:
-            return (agc_task_imuzero2());
-        case AGC_TASK_IMUZERO3:
-            return (agc_task_imuzero3());
+        case AGC_TASK_IMU_ZERO_DONE:
+            return (agc_task_imu_zero_done());
+        case AGC_TASK_IMU_ZERO_RELEASE:
+            return (agc_task_imu_zero_release());
         case AGC_TASK_MANUSTOP:
             return (agc_task_manustop());
         case AGC_TASK_PFAILOK:
@@ -5202,8 +5158,7 @@ static agc_status_t task_lm_nav_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE &&
-                    task < AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -5407,8 +5362,7 @@ static agc_status_t task_lm_lm_1(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE &&
-                    task < AGC_TASK_POWERED_FLIGHT_READ_LOOP))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_POWERED_FLIGHT_READ_LOOP))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -5547,8 +5501,7 @@ static agc_status_t task_lm_0_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE &&
-                    task < AGC_TASK_POWERED_FLIGHT_READ_LOOP))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_POWERED_FLIGHT_READ_LOOP))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -5558,7 +5511,7 @@ static agc_status_t task_lm_0_0(agc_task_id_t task)
         return (task_lm_exec_0(task));
     }
 
-    if (task < AGC_TASK_8192AUG)
+    if (task < AGC_TASK_CA_ECE)
     {
         return (task_lm_io_0(task));
     }

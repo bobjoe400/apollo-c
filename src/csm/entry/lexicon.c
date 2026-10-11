@@ -95,9 +95,15 @@ agc_entry_state_t *agc_entry_state(void)
 {
     agc_entry_state_t *es = &entry_state; /* the one erasable set     */
 
-    (void) AGC_ASSERT(es != NULL);
-    (void) AGC_ASSERT((int) es->gotoaddr >= 0 &&
-                      es->gotoaddr < AGC_ENTRY_GOTO_COUNT);
+    if (!AGC_ASSERT((int) es->gotoaddr >= 0))
+    {
+        es->gotoaddr = AGC_ENTRY_GOTO_INITROLL; /* recover: restart seq. */
+    }
+
+    if (!AGC_ASSERT(es->gotoaddr < AGC_ENTRY_GOTO_COUNT))
+    {
+        es->gotoaddr = AGC_ENTRY_GOTO_INITROLL;
+    }
 
     return (es);
 }

@@ -31,10 +31,36 @@ ANGLFIND / ATTITUDE_MANEUVER_ROUTINE, R60_62, IMU_CALIBRATION_AND_ALIGNMENT.
 * DONE rule 7: (void) AGC_ASSERT in prelaunch_align.c / prelaunch_gyrocompass.c made checked
   asserts with recovery; check_rules on lane files: 0 hard violations (density warns remain:
   attitude_maneuver 1.62, compensation 1.73, gyro 1.88, mode 1.57).
-* TODO oracle findings F5 / F6
-* TODO fidelity pass per file (note: CALCGA CPHIFLAG branch stores nothing -- check AGC)
+* DONE test: tests/imu/imu.c test_optical_verification (P03 end to end: V33 loads, two
+  marks on an aligned IMU via MARKRUPT/MARK2/ENTANSWR/ENDMARKS, OGC < 5e-5 rev, ERCOMP1 += OGC,
+  MM back to 02).  TAR/EREF uses align_dmp_shl (DMP SL1 on the TP product).
+* DONE F6: compensation.c keeps GCOMP and DELV as AGC word pairs (word_pair_t, DAS with
+  low-word carry, no sign normalisation; GCOMP words shadowed beside the gyro buffer and
+  resynced when the buffer value changes).  oracle pipa_*: GCOMP and GCOMPSW now tol 0 (were
+  1 / 2+sign).  The old code could differ in the >2-pulse torque decision near threshold.
+* DONE F5 (partly fixed, residual explained): CDUTODCM and DELCOMP used DMPR (rounded) where
+  ANGLFIND has DMP (TP product, MPAC+2 shifted by SL, STORE truncates): now dmp_dad_shl /
+  agc_dp_mul_tp.  kalc_small AM 323 -> 5 LSB, kalc_large COF 17 -> 0.  Residual <= 4 LSB is the
+  word-split class (yaAGC trace: BDSU leaves 1-cos A = (00001,40057) = 48 and DMPSUB truncates
+  by words; DCMTOCDU's COS..SL1 needs the TP COS; C1's BDSU keeps MPAC+2).  Oracle tolerances
+  tightened to the measured residuals (tests/oracle/imu.c, oracle-cases.md rows).
+* DONE mode.c fidelity (IMUZERO..IMUZERO3, IMUCOARS/COARS/COARS2/COMPOS/COMNEG/COMZERO/CHKCORS,
+  SETCOARS/RNDREFDR, IMUFINE/IMUFINED/IFAILOK/PFAILOK/PFAILOK2, NOATTOFF, PIPUSE/PIPUSE1/PIPFREE,
+  ENDIMU/IMUBAD/CAGETEST/CAGETSTQ/CAGETSTJ, GOODEND/BADEND/ENDMODE, STALL/MODEGOOD/MG2/MODESLP/
+  MODABORT, R02BOTH/R02ZERO) vs Comanche pp.1420-1444.  Fixed: PIPFREE alarm path re-INHINTed
+  (interrupts left off; test_pipfree_alarm); setissw() asserted OK but SETISSW returns ALARM when
+  it lights the ISS warning; IMUFINED asserted gyros idle (not an AGC invariant).  Renamed
+  IMUZERO2/3, COARS/COARS2/CHKCORS tasks, DSP11_*, dsp11_write, pfailok2, agc_imu_pipuse1;
+  removed agc_imu_fin20 (IMUFIN20 = IMUFINE alias; caller in csm/alignment uses agc_imu_fine).
+* NOTE: src/lm/radar/read.c (other lane) is mid-edit and breaks `make`; lane tests are built with
+  SCRATCH/review-imu/tbuild.sh (re-archives the last good objects) until it compiles again.
+* TODO fidelity pass per file (gyro, compensation, alignment, attitude_maneuver, maneuver,
+  maneuver_calc, vflags*) (note: CALCGA CPHIFLAG branch stores nothing -- check AGC)
 * TODO naming (digit-suffixed labels)
-* TODO style debt (984 findings at start in lane files)
+* DONE style mode.c, internal.h, prelaunch_*.c/h: 0 check_style findings (prologs via
+  SCRATCH/review-imu/prolog.py + spec_*.py; decl comments via declfix.py).
+* TODO style debt (984 findings at start in lane files; remaining: gyro, compensation, alignment,
+  attitude_maneuver, maneuver, maneuver_calc, vflags*, imu.h)
 * Note: other lanes' files were reformatted once by a full `make format` (formatting only);
   from now on format only lane files with uncrustify directly.
 

@@ -1,13 +1,47 @@
-/*
- * cm_body_attitude.c -- CM_BODY_ATTITUDE.agc (Comanche055, pp. 883-889).
+/**********************************************************************
+ * FILE NAME: cm_body_attitude.c
  *
- * CM/POSE runs every 2 s during entry as the AVEGEXIT of SERVICER: it forms
- * the trajectory triad (UXA = -UNIT(VREL), UYA, UZA), the CM body triad
- * from the gimbal angles saved at PIPA time, the body attitude angles
- * ROLL, BETA, ALFA (/180) and GAMA, and then continues at POSEXIT
- * (P62.3, STARTENT, SCALEPOP or ENDEXIT). All vectors are half-unit in
- * reference coordinates unless noted.
- */
+ * PURPOSE:
+ *   CM/POSE, run every 2 s during entry as the AVEGEXIT of SERVICER: the
+ *   trajectory triad (UXA = -UNIT(VREL), UYA, UZA), the CM body triad from
+ *   the gimbal angles saved at PIPA time, the body attitude angles ROLL,
+ *   BETA, ALFA (/180) and GAMA, GAMDOT, then the continuation at POSEXIT
+ *   (P62.3, STARTENT, SCALEPOP or ENDEXIT) and SERVNOUT.
+ *
+ * AGC SOURCE:
+ *   Comanche055 CM_BODY_ATTITUDE.agc pp. 883-889 (CM/POSE, CM/TRIO,
+ *   CM/ATUP, CMTR1, CMTR2, REDOPOSE, CM/POSE3)
+ *   Comanche055 REENTRY_CONTROL.agc pp. 847, 874 (REFAZE10, SERVNOUT)
+ *   Luminary099: none (CM only)
+ *
+ * EXTERNAL VARIABLES:  (through accessors)
+ *   Name          Type       I/O  Scale          Description
+ *   ------------  ---------  ---  -------------  ----------------------
+ *   VN            agc_vec_t  I    m/cs B7        SERVICER velocity
+ *   UNITR, UNITW  agc_vec_t  I    B1, B0         average-G unit vectors
+ *   REFSMMAT      agc_mat_t  I    half-unit      stable member matrix
+ *   GAMDIFSW      flag       IO   -              first GAMDOT pass
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_guid_cdulogic     CDULOGIC: CDU pattern to revs
+ *   agc_imu_arctrig       ARCTRIG (ROLL, ALFA)
+ *   agc_entry_scalepop    entry guidance pass (reentry.c)
+ *   agc_job_servexit      SERVEXIT (SERVICER)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none of its own; a BAILOUT asked for by SERVNOUT outranks the status
+ *   of the guidance pass.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   CSM only; runs in the SERVICER job. Restart group 5 at REDOPOSE once
+ *   the updated angles are in TEMPROLL..TEMPBETA.
+ *
+ * NOTES:
+ *   All vectors are half-unit in reference coordinates unless noted.
+ *   DOT SL1 (BETA, GAMA) keeps the TP MPAC (entry_tp_shl).
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -28,11 +62,25 @@
 
 /* Restart storage TEMPROLL, TEMPALFA, TEMPBETA (ENTRY RESTART PROTECTION
  * STORAGE): the updated angles /180, SP 2s complement.                    */
-static agc_sp_t temproll;
-static agc_sp_t tempalfa;
-static agc_sp_t tempbeta;
+static agc_sp_t temproll; /* TEMPROLL ROLL/180, B0 */
+static agc_sp_t tempalfa; /* TEMPALFA ALFA/180, B0 */
+static agc_sp_t tempbeta; /* TEMPBETA BETA/180, B0 */
 
-/* SP angle of a gimbal saved at PIP time as the 15-bit CDU pattern.       */
+/**********************************************************************
+ * AGC: none (CM_BODY_ATTITUDE.agc p. 884 AOG/PIP words) -- the 15-bit CDU
+ * pattern of an SP angle saved at PIP time (2s complement /180).
+ *
+ * FUNCTION NAME: cdu_pattern
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------------
+ *   a         agc_sp_t  I    gimbal angle /180 at PIP time, SP 2s
+ *                            complement, B0
+ *
+ * RETURNS: uint16_t -- uint16_t -- the CDU counter pattern (bits 1-15) for
+ *          CDULOGIC
+ **********************************************************************/
 static uint16_t cdu_pattern(agc_sp_t a)
 {
     if (!AGC_ASSERT(a >= -16384))
@@ -48,17 +96,27 @@ static uint16_t cdu_pattern(agc_sp_t a)
     return ((uint16_t) ((uint16_t) a & 077777u));
 }
 
-/* CM/POSE, CM/POSE2 (p. 883): -VREL = -V KVSCALE + KWE (UNITW x UNITR),
- * UXA = UNIT(-VREL), UYA = UNIT(UNITR x UXA) while |VREL| > VQUIT (else
- * OLDUYA), UZA = UXA x UYA.                                               */
+/**********************************************************************
+ * CM/POSE, CM/POSE2 (p. 883): -VREL = -V KVSCALE + KWE (UNITW x UNITR), UXA
+ * = UNIT(-VREL), UYA = UNIT(UNITR x UXA) while |VREL| > VQUIT (else
+ * OLDUYA), UZA = UXA x UYA.
+ *
+ * FUNCTION NAME: agc_entry_cm_pose_triad
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
+ *          assertion
+ **********************************************************************/
 agc_status_t agc_entry_cm_pose_triad(void)
 {
-    agc_interp_t      *ip  = entry_ip();
-    agc_entry_state_t *es  = agc_entry_state();
-    agc_avg_g_t       *avg = &agc_guid_state()->avg;
-    agc_vec_t          w;
-    agc_vec_t          uy;
-    agc_dp_t           vmag = 0;
+    agc_interp_t      *ip  = entry_ip(); /* entry job interpreter state */
+    agc_entry_state_t *es  = agc_entry_state(); /* entry erasables */
+    agc_avg_g_t       *avg = /* average-G data (UNITW, UNITR) */
+                             &agc_guid_state()->avg;
+    agc_vec_t w; /* KWE (UNITW x UNITR), m/cs B7 */
+    agc_vec_t uy; /* UNIT(UNITR x UXA), B1 */
+    agc_dp_t  vmag = 0;          /* |VREL|, 2VS B1 */
 
     if (!AGC_ASSERT(es != NULL) || !AGC_ASSERT(avg != NULL))
     {
@@ -91,19 +149,31 @@ agc_status_t agc_entry_cm_pose_triad(void)
     return (AGC_STATUS_OK);
 }
 
-/* CM/TRIO (pp. 884-886): body triad, then
- *   angles[0] = -(ROLL/180)/2  from ARCTRIG(UL.UYA, UL.UZA)
- *   angles[1] = -(BETA/180)/2  from ARCSIN(-UVA.UBY)
- *   angles[2] = -(ALFA/180)/2  from ARCTRIG(UL.UBX, UL.UBZ)
- *   angles[3] = (-GAMA/180)/2  from ARCCOS(UR.UZA)
- * with UL = UNIT(UXA x UBY), all valid at PIPA time.                      */
+/**********************************************************************
+ * CM/TRIO (pp. 884-886): body triad, then angles[0] = -(ROLL/180)/2  from
+ * ARCTRIG(UL.UYA, UL.UZA) angles[1] = -(BETA/180)/2  from ARCSIN(-UVA.UBY)
+ * angles[2] = -(ALFA/180)/2  from ARCTRIG(UL.UBX, UL.UBZ) angles[3] =
+ * (-GAMA/180)/2  from ARCCOS(UR.UZA) with UL = UNIT(UXA x UBY), all valid
+ * at PIPA time.
+ *
+ * FUNCTION NAME: agc_entry_cm_trio
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------------
+ *   angles    agc_dp_t  O    -(ROLL, BETA, ALFA)/180/2 and (-GAMA/180)/2 at
+ *                            PIPA time, revs B0
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
+ *          assertion
+ **********************************************************************/
 agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
 {
-    agc_interp_t      *ip = entry_ip();
-    agc_entry_state_t *es = agc_entry_state();
-    agc_vec_t          ul;
-    agc_dp_t           s;
-    agc_dp_t           c;
+    agc_interp_t      *ip = entry_ip(); /* entry job interpreter state */
+    agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
+    agc_vec_t          ul; /* UL = UNIT(UXA x UBY), B1 */
+    agc_dp_t           s; /* sine term, B2 */
+    agc_dp_t           c; /* cosine term, B2 */
 
     if (!AGC_ASSERT(angles != NULL) || !AGC_ASSERT(es != NULL))
     {
@@ -111,23 +181,26 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     }
 
     /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
-     * from the PIP-time gimbal angles and REFSMMAT.                           */
-    agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_dp_t  aig      = agc_guid_cdulogic(cdu_pattern(es->aig_pip));
-    agc_dp_t  amg      = agc_guid_cdulogic(cdu_pattern(es->amg_pip));
-    agc_dp_t  aog      = agc_guid_cdulogic(cdu_pattern(es->aog_pip));
-    agc_dp_t  ci       = agc_dp_cos(ip, aig);
-    agc_dp_t  si       = agc_dp_sin(ip, aig);
-    agc_dp_t  sm       = agc_dp_sin(ip, amg);
-    agc_dp_t  cm       = agc_dp_cos(ip, amg);
-    agc_vec_t ubx;
+     * from the PIP-time gimbal angles and REFSMMAT. */
+    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
+    agc_dp_t  aig      = /* AIG/PIP, revs B0 */
+                         agc_guid_cdulogic(cdu_pattern(es->aig_pip));
+    agc_dp_t amg = /* AMG/PIP, revs B0 */
+                   agc_guid_cdulogic(cdu_pattern(es->amg_pip));
+    agc_dp_t aog = /* AOG/PIP, revs B0 */
+                   agc_guid_cdulogic(cdu_pattern(es->aog_pip));
+    agc_dp_t  ci = agc_dp_cos(ip, aig);       /* COS AIG /2, B1 */
+    agc_dp_t  si = agc_dp_sin(ip, aig);       /* SIN AIG /2, B1 */
+    agc_dp_t  sm = agc_dp_sin(ip, amg);       /* SIN AMG /2, B1 */
+    agc_dp_t  cm = agc_dp_cos(ip, amg);       /* COS AMG /2, B1 */
+    agc_vec_t ubx; /* XB/2 platform, B1 */
 
     /* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
-     * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI).                      */
-    agc_dp_t so = agc_dp_sin(ip, aog);
-    agc_dp_t co = agc_dp_cos(ip, aog);
+     * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI). */
+    agc_dp_t so = agc_dp_sin(ip, aog); /* SIN AOG /2, B1 */
+    agc_dp_t co = agc_dp_cos(ip, aog); /* COS AOG /2, B1 */
 
-    agc_vec_t uby;
+    agc_vec_t uby; /* YB/4 platform, B2 */
 
     if (!AGC_ASSERT(ip != NULL))
     {
@@ -167,7 +240,7 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
     s         = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
     angles[0] = agc_imu_arctrig(ip, s, c);
-    s         = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->uby, es->uxa), 1); /* DOT SL1 */
+    s         = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->uby, es->uxa), 1);
     angles[1] = agc_dp_asin(ip, s);
     s         = agc_vec_dot(ip, ul, es->ubx); /* -SIN(ALFA)/4 */
     c         = agc_vec_dot(ip, ul, es->ubz); /* COS(ALFA)/4  */
@@ -177,15 +250,29 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     angles[3] = agc_dp_acos(ip, c);
 
     return (AGC_STATUS_OK);
-}
+} /* agc_entry_cm_trio */
 
-/* CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT =
- * (GAMA - old GAMA) TCDU, set to +0 on the first pass (GAMDIFSW clear,
- * then set) or when below 5 bits (about .5 deg/s).                       */
+/**********************************************************************
+ * CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT = (GAMA
+ * - old GAMA) TCDU, set to +0 on the first pass (GAMDIFSW clear, then set)
+ * or when below 5 bits (about .5 deg/s).
+ *
+ * FUNCTION NAME: atup_gamdot
+ *
+ * ARGUMENTS:
+ *   Argument  Type                 I/O  Description (scale)
+ *   --------  -------------------  ---  ---------------------------------
+ *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
+ *                                       names)
+ *   gama_new  agc_sp_t             I    new flight path angle (GAMA/180)/2,
+ *                                       B0
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
 {
-    agc_sp_t old = es->gama;
-    int32_t  g;
+    agc_sp_t old = es->gama; /* old GAMA, B0 */
+    int32_t  g; /* -|GAMDOT|, SP units */
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
@@ -204,7 +291,8 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
 
     es->gamdot = entry_sp_mp(entry_sp_sat((int32_t) es->gama - (int32_t) old),
                              AGC_ENTRY_TCDU);
-    g = (es->gamdot > 0) ? -(int32_t) es->gamdot : (int32_t) es->gamdot;
+    g = (es->gamdot > 0) ? /* -|GAMDOT| */
+        -(int32_t) es->gamdot : (int32_t) es->gamdot;
 
     if (g + 5 > 0)
     { /* |GAMDOT| < 5 bits     */
@@ -217,12 +305,30 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     }
 }
 
-/* One Euler angle: (EUL/180) = -2 MPAC, + (NOW - PIP) increment since
- * PIPA time, each sum corrected by CORANGOV.                              */
+/**********************************************************************
+ * AGC: none (CM/ATUP angle step, CM_BODY_ATTITUDE.agc pp. 887-888) -- one
+ * Euler angle: (EUL/180) = -2 MPAC, + (NOW - PIP) increment since PIPA
+ * time, each sum corrected by CORANGOV.
+ *
+ * FUNCTION NAME: atup_angle
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------------
+ *   mpac      agc_dp_t  I    -(EUL/180)/2 from CM/TRIO (high word used),
+ *                            revs B0
+ *   pip       agc_sp_t  I    the body angle /180 saved at PIPA time, B0
+ *   now       agc_sp_t  I    the body angle /180 now, B0
+ *   wrap      bool      I    true: CORANGOV after each add (ROLL, ALFA);
+ *                            false: BETA
+ *
+ * RETURNS: agc_sp_t -- agc_sp_t -- the angle /180 brought to now, B0 (SP 2s
+ *          complement)
+ **********************************************************************/
 static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
 {
     int32_t eul = -2 * (int32_t) agc_dp_high(mpac); /* CS MPAC, DOUBLE      */
-    int32_t sum;
+    int32_t sum; /* EUL - PIP + NOW, /180 */
 
     if (!AGC_ASSERT(eul >= -32768 && eul <= 32768))
     {
@@ -241,15 +347,27 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
         return (entry_angle_wrap(sum));
     }
 
-    return (entry_sp_sat(eul - (int32_t) pip +
-                         (int32_t) now)); /* BETA: no ovfl */
+    /* CMTR2: XCH TEMPBETA keeps SG and bits 1-14 ("OVFL NOT EXPECTED"). */
+    return (entry_sp_store_ovf(eul - (int32_t) pip + (int32_t) now));
 }
 
-/* CM/ATUP, CMTR1, CMTR2 (pp. 887-888): GAMA, GAMDOT, and the body angles
- * brought from PIPA time to now; restart group 5 at REDOPOSE.             */
+/**********************************************************************
+ * CM/ATUP, CMTR1, CMTR2 (pp. 887-888): GAMA, GAMDOT, and the body angles
+ * brought from PIPA time to now; restart group 5 at REDOPOSE.
+ *
+ * FUNCTION NAME: entry_cm_atup
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------------
+ *   angles    const agc_dp_t  I    CM/TRIO angles (see agc_entry_cm_trio),
+ *                                  revs B0
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void entry_cm_atup(const agc_dp_t angles[4])
 {
-    agc_entry_state_t *es = agc_entry_state();
+    agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
     agc_phase_var_t    v  = {
         AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U
     };
@@ -274,11 +392,25 @@ static void entry_cm_atup(const agc_dp_t angles[4])
     }
 }
 
-/* SERVNOUT / NODISKY (REENTRY_CONTROL p. 874): CHANG1 if a higher job
- * waits (resume at SERVEXIT), else POSTJUMP SERVEXIT.                     */
+/**********************************************************************
+ * SERVNOUT / NODISKY (REENTRY_CONTROL p. 874): CHANG1 if a higher job waits
+ * (resume at SERVEXIT), else POSTJUMP SERVEXIT.
+ *
+ * FUNCTION NAME: entry_servnout
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t entry_servnout(agc_job_ctx_t *ctx)
 {
-    int nj;
+    int nj; /* NEWJOB: priority waiting */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -302,12 +434,26 @@ agc_status_t entry_servnout(agc_job_ctx_t *ctx)
     return (agc_job_servexit(ctx));
 }
 
-/* GOTO POSEXIT (p. 888): continue the pass where the program asked.       */
+/**********************************************************************
+ * GOTO POSEXIT (p. 888): continue the pass where the program asked.
+ *
+ * FUNCTION NAME: entry_posexit
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
 {
-    agc_entry_state_t *es   = agc_entry_state();
-    agc_status_t       st   = AGC_STATUS_OK;
-    bool               disp = true;
+    agc_entry_state_t *es   = agc_entry_state(); /* entry erasables */
+    agc_status_t       st   = AGC_STATUS_OK; /* status of the POSEXIT step */
+    bool               disp = true; /* OVERNOUT display wanted */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -318,7 +464,7 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     {
         case AGC_ENTRY_POSEXIT_DESIRED_GIMBALS:
             st =
-                agc_entry_desired_gimbal_angles(); /* QPRET = ENDEXIT             */
+                agc_entry_desired_gimbal_angles(); /* QPRET = ENDEXIT */
             break;
         case AGC_ENTRY_POSEXIT_STARTENT:
             st   = agc_entry_startent();
@@ -347,19 +493,33 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK)
     {
         /* end the SERVICER job anyway; a restart it asks for outranks st */
-        const agc_status_t sn = entry_servnout(ctx);
+        const agc_status_t sn = entry_servnout(ctx); /* SERVNOUT status */
 
-        return ((sn == AGC_STATUS_BAILOUT) ? sn : st);
+        return ((sn == AGC_STATUS_BAILOUT) ? sn : st); /* restart wins */
     }
 
     return (entry_servnout(ctx));
-}
+} /* entry_posexit */
 
-/* REDOPOSE, CM/POSE3 (p. 888): store the updated angles, VMAGI = |VN|,
- * GOTO POSEXIT.                                                           */
+/**********************************************************************
+ * REDOPOSE, CM/POSE3 (p. 888): store the updated angles, VMAGI = |VN|, GOTO
+ * POSEXIT.
+ *
+ * FUNCTION NAME: entry_redopose_tail
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 static agc_status_t entry_redopose_tail(agc_job_ctx_t *ctx)
 {
-    agc_entry_state_t *es = agc_entry_state();
+    agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL))
     {
@@ -376,11 +536,25 @@ static agc_status_t entry_redopose_tail(agc_job_ctx_t *ctx)
     return (entry_posexit(ctx));
 }
 
-/* CM/POSE (pp. 883-888): the entry AVEGEXIT job.                          */
+/**********************************************************************
+ * CM/POSE (pp. 883-888): the entry AVEGEXIT job.
+ *
+ * FUNCTION NAME: agc_job_cm_pose
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
 {
     agc_dp_t     angles[4] = {0, 0, 0, 0};
-    agc_status_t st;
+    agc_status_t st; /* step status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -409,7 +583,21 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
     return (entry_redopose_tail(ctx));
 }
 
-/* REDOPOSE as the group 5 restart job (p. 888).                          */
+/**********************************************************************
+ * REDOPOSE as the group 5 restart job (p. 888).
+ *
+ * FUNCTION NAME: agc_job_redopose
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -425,18 +613,32 @@ agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
     return (entry_redopose_tail(ctx));
 }
 
-/* REFAZE10 as the group 5 restart job (REENTRY_CONTROL p. 847).          */
+/**********************************************************************
+ * REFAZE10 as the group 5 restart job (REENTRY_CONTROL p. 847).
+ *
+ * FUNCTION NAME: agc_job_refaze10
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
 {
-    bool         disp = false;
-    agc_status_t st;
+    bool         disp = false; /* OVERNOUT display wanted */
+    agc_status_t st; /* REFAZE10 status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    st = agc_entry_refaze10(&disp);
+    st = agc_entry_reestablish_sequencer(&disp);
 
     if (st == AGC_STATUS_OK && disp)
     {
@@ -448,5 +650,5 @@ agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? entry_servnout(ctx) : st);
+    return ((st == AGC_STATUS_OK) ? entry_servnout(ctx) : st); /* SERVNOUT */
 }

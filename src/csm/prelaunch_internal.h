@@ -56,7 +56,7 @@ typedef struct prelaunch_ram
     agc_dp_t           dpipa[2];  /* DPIPAY, DPIPAZ: level PIPA, B14      */
     agc_dp_t           wango;     /* WANGO: sin LAT (perf test), 2^0      */
     agc_dp_t           wangi;     /* WANGI: -cos LAT (perf test), 2^0     */
-    agc_vec_t          losvec;    /* LOSVEC: marked target 1, half-unit   */
+    agc_vec_t          losvec;    /* LOSVEC: marked target 1, B1         */
     agc_sp_t           geocomp1;  /* GEOCOMP1: 1 compass, 0 IMU test, B0  */
     agc_sp_t           lengthot;  /* LENGTHOT: passes left, count B0      */
     agc_sp_t           onesecxt1; /* 1SECXT1: sample period, cs B0        */

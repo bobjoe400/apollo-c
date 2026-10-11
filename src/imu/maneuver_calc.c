@@ -76,6 +76,24 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
     return (v);
 }
 
+/* DMP then DAD then SL n, then STORE: the TP product keeps MPAC+2, the
+ * DAD adds to MPAC, MPAC+1 only, the shift moves MPAC+2's top bits up,
+ * and the STORE truncates to two words.                                 */
+static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b,
+                            agc_dp_t add, int n)
+{
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(n >= 0 && n <= 3))
+    {
+        return (0); /* no valid result */
+    }
+
+    agc_tp_t m = agc_dp_mul_tp(a, b);              /* DMP: TP MPAC      */
+
+    m = agc_tp_add(ip, m, agc_tp_from_dp(add));    /* DAD: MPAC+2 kept  */
+
+    return (agc_tp_to_dp(agc_tp_shift(ip, m, n))); /* SLn, STORE        */
+}
+
 /* CDUTODCM (ANGLFIND p.405-407): S/C to SM direction cosines from the CDU
  * angles PHI = OGA (X), THETA = IGA (Y), PSI = MGA (Z); scale 2.         */
 agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
@@ -104,27 +122,36 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
 
     const agc_dp_t sph = s[0], cph = c[0], sth = s[1], cth = c[1];
     const agc_dp_t sps = s[2], cps = c[2];
-    agc_dp_t       pd6 = agc_dp_mul(ip, sth, sph); /* sin(th)sin(ph) /4   */
-    agc_dp_t       pd7 = agc_dp_mul(ip, cph, sth); /* cos(ph)sin(th) /4   */
+    /* PD12 = sin(th)sin(ph), PD14 = cos(ph)sin(th): DMP then PDDL keeps
+     * two words; scale 4.                                                */
+    const agc_dp_t pd12 = agc_dp_mul_trunc(sth, sph);
+    const agc_dp_t pd14 = agc_dp_mul_trunc(cph, sth);
 
-    m->row[0].c[0] = agc_dp_shl(ip, agc_dp_mul(ip, cth, cps), 1);
-    agc_dp_t t =
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_mul(ip, cth, sps), cph), 1);
+    m->row[0].c[0] = dmp_dad_shl(ip, cth, cps, 0, 1); /* C0: DMP SL1    */
+    /* C1: cos(th) DMP sin(ps) DMP cos(ph) SL1, BDSU PD12, SL1.  The BDSU
+     * leaves MPAC+2 of the product; its top bit is lost here (DEVIATION:
+     * see docs/modules/review-imu.md F5).                               */
+    agc_dp_t t = dmp_dad_shl(ip, agc_dp_mul_trunc(cth, sps), cph, 0, 1);
 
-    m->row[0].c[1] = agc_dp_shl(ip, agc_dp_sub(ip, pd6, t), 1);
-    t              = agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_mul(ip, cth,
-                                                              sps), sph), 1);
-    m->row[0].c[2] = agc_dp_shl(ip, agc_dp_add(ip, t, pd7), 1);
-    m->row[1].c[0] = sps;
-    m->row[1].c[1] = agc_dp_shl(ip, agc_dp_mul(ip, cps, cph), 1);
-    m->row[1].c[2] = agc_dp_shl(ip, agc_dp_neg(agc_dp_mul(ip, cps, sph)), 1);
-    m->row[2].c[0] = agc_dp_shl(ip, agc_dp_neg(agc_dp_mul(ip, sth, cps)), 1);
-    t              = agc_dp_shl(ip, agc_dp_mul(ip, pd7, sps), 1); /* C7       */
-    m->row[2].c[1] =
-        agc_dp_shl(ip, agc_dp_add(ip, t, agc_dp_mul(ip, cth, sph)), 1);
-    t              = agc_dp_shl(ip, agc_dp_mul(ip, pd6, sps), 1); /* C8       */
-    m->row[2].c[2] =
-        agc_dp_shl(ip, agc_dp_sub(ip, agc_dp_mul(ip, cth, cph), t), 1);
+    m->row[0].c[1] = agc_dp_shl(ip, agc_dp_sub(ip, pd12, t), 1);
+    /* C2: cos(th) DMP sin(ps) DMP sin(ph) SL1, DAD PD14, SL1            */
+    agc_tp_t tp = agc_tp_shift(
+        ip, agc_dp_mul_tp(agc_dp_mul_trunc(cth, sps), sph), 1);
+
+    tp             = agc_tp_add(ip, tp, agc_tp_from_dp(pd14));
+    m->row[0].c[2] = agc_tp_to_dp(agc_tp_shift(ip, tp, 1));
+    m->row[1].c[0] = sps;                              /* C3: DLOAD 8D  */
+    m->row[1].c[1] = dmp_dad_shl(ip, cps, cph, 0, 1); /* C4: DMP SL1   */
+    m->row[1].c[2] =
+        agc_dp_neg(dmp_dad_shl(ip, cps, sph, 0, 1)); /* C5: DMP DCOMP SL1 */
+    m->row[2].c[0] =
+        agc_dp_neg(dmp_dad_shl(ip, sth, cps, 0, 1)); /* C6: DMP DCOMP SL1 */
+    /* C7: (PD14 DMP sin(ps) SL1) pushed; cos(th) DMP sin(ph), DAD, SL1  */
+    t              = dmp_dad_shl(ip, pd14, sps, 0, 1);
+    m->row[2].c[1] = dmp_dad_shl(ip, cth, sph, t, 1);
+    /* C8: (PD12 DMP sin(ps) SL1) pushed; cos(th) DMP cos(ph), DSU, SL1  */
+    t              = dmp_dad_shl(ip, pd12, sps, 0, 1);
+    m->row[2].c[2] = dmp_dad_shl(ip, cth, cph, agc_dp_neg(t), 1);
 
     return (AGC_STATUS_OK);
 }
@@ -187,26 +214,29 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
     return (AGC_STATUS_OK);
 }
 
-/* One diagonal element of DEL: u u (1 - cos A) + cos A, scale 1.         */
+/* One diagonal element of DEL: u u (1 - cos A) + cos A, scale 1.
+ * PDDL COF, DSQ, DMP 4, DAD 2, SL3, BOVB SIGNMPAC (p.407).              */
 static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2,
                          agc_dp_t cos8)
 {
-    agc_dp_t d = agc_dp_mul(ip, agc_dp_sq(ip, u), omc2);
+    agc_dp_t uu = agc_tp_to_dp(agc_dp_sq_tp(u)); /* DSQ, then DMP reads 2 words */
 
-    d = agc_dp_shl(ip, agc_dp_add(ip, d, cos8), 3); /* SL3      */
-
-    return (bovb_signmpac(ip, d));
+    return (bovb_signmpac(ip, dmp_dad_shl(ip, uu, omc2, cos8, 3)));
 }
 
-/* A pair of off-diagonal elements: (ui uj (1-cos A) +- uk sin A), scale 1. */
+/* A pair of off-diagonal elements (p.408-409):
+ *   DLOAD ui, DMP uj, DMP 4, SL1, PDDL uk  -> PD6 = ui uj (1-cos A)  $4
+ *   DMP 0, PUSH, DAD 6, SL2, BOVB, STODL   -> out[0] = (PD8 + PD6) SL2
+ *   (pop PD8), BDSU (pop PD6), SL2, BOVB   -> out[1] = (PD6 - PD8) SL2
+ * PD8 = uk sin A $4.  Scale 1.                                          */
 static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk,
                      agc_dp_t omc2, agc_dp_t sin2, agc_dp_t out[2])
 {
-    agc_dp_t pd6 =
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_mul(ip, ui, uj), omc2), 1);
-    agc_dp_t pd8 = agc_dp_mul(ip, uk, sin2); /* $ 4      */
+    agc_dp_t uij = agc_dp_mul_trunc(ui, uj); /* DMP, next DMP reads 2 words */
+    agc_dp_t pd6 = dmp_dad_shl(ip, uij, omc2, 0, 1);         /* SL1, PDDL */
+    agc_dp_t pd8 = agc_dp_mul_trunc(uk, sin2);                /* PUSH      */
 
-    out[0] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_add(ip, pd8, pd6), 2));
+    out[0] = bovb_signmpac(ip, dmp_dad_shl(ip, uk, sin2, pd6, 2));
     out[1] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_sub(ip, pd6, pd8), 2));
 
     if (!AGC_ASSERT(out[0] >= AGC_DP_MIN && out[1] >= AGC_DP_MIN))

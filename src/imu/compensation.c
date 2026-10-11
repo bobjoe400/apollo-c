@@ -65,40 +65,89 @@ static agc_sp_t              one_pipadt; /* 1/PIPADT cs x 2^8, or TIME1 snapshot
 
 /* ---- small word-level helpers ------------------------------------------ */
 
-/* DAS: acc = acc + x (DP).  The overflow out of a DAS is not used by the
- * compensation code.                                                     */
-static agc_dp_t das(agc_dp_t acc, agc_dp_t x)
+/* An AGC double-precision word pair as the two words hold it.  A DAS
+ * adds the words separately (the low-word overflow carries into the high
+ * word) and never makes their signs agree, so GCOMP and DELV can be, e.g.,
+ * (49, -14827): 48.09 pulses whose high word reads 49.  DRFTSUB2 tests
+ * that high word, and every MP takes one word at a time, so the pair is
+ * kept as such here (agc_dp_t would normalise it, see oracle finding F6). */
+typedef struct word_pair
 {
-    agc_ovf_t ovf = 0;
-    agc_dp_t  r   = agc_dp_add_raw(acc, x, &ovf);
+    agc_sp_t hi; /* major word: whole pulses x 2^0             */
+    agc_sp_t lo; /* minor word: fractional pulses x 2^14       */
+} word_pair_t;
 
-    if (!AGC_ASSERT(acc >= AGC_DP_MIN && acc <= AGC_DP_MAX))
+/* DP value of a pair (hi 2^14 + lo), for the buffers outside this file. */
+static agc_dp_t pair_value(word_pair_t w)
+{
+    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.hi <= AGC_SP_MAX) ||
+        !AGC_ASSERT(w.lo >= AGC_SP_MIN && w.lo <= AGC_SP_MAX))
     {
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
+    return (agc_dp_pack(w.hi, w.lo));
+}
+
+/* The words of a DP whose signs agree (an MP product, a loaded value).   */
+static word_pair_t pair_of(agc_dp_t v)
+{
+    word_pair_t w = {agc_dp_high(v), agc_dp_low(v)}; /* A, L of v     */
+
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        return (0); /* no valid result */
+        w.hi = 0;
+        w.lo = 0;
     }
+
+    return (w);
+}
+
+/* DAS: acc = acc + x word by word; a low-word overflow carries +-1 into
+ * the high word, whose own overflow is not used by the compensation.     */
+static word_pair_t das(word_pair_t acc, agc_dp_t x)
+{
+    const word_pair_t xw    = pair_of(x);     /* words of the addend    */
+    int               lo    = acc.lo + xw.lo; /* low-word sum           */
+    int               carry = 0;              /* overflow of the low sum */
+
+    if (lo > AGC_SP_MAX)
+    {
+        lo   -= AGC_SP_MAX + 1;
+        carry = 1;
+    }
+    else if (lo < AGC_SP_MIN)
+    {
+        lo   += AGC_SP_MAX + 1;
+        carry = -1;
+    }
+
+    const int hi = acc.hi + xw.hi + carry; /* high-word sum          */
+
+    if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
+    {
+        return (acc); /* no valid result */
+    }
+
+    word_pair_t r = {(agc_sp_t) hi, (agc_sp_t) lo}; /* the sum      */
 
     return (r);
 }
 
 /* "MP X; TS L; CAF ZERO; DAS acc": add the high half of a*b into the low
  * word of the accumulator.                                               */
-static agc_dp_t das_low_of_mp(agc_dp_t acc, agc_sp_t a, agc_sp_t b)
+static word_pair_t das_low_of_mp(word_pair_t acc, agc_sp_t a, agc_sp_t b)
 {
-    agc_sp_t hi = agc_dp_high(agc_sp_mul(a, b));
+    agc_sp_t hi = agc_dp_high(agc_sp_mul(a, b)); /* A of the product   */
 
     if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (acc); /* no valid result */
     }
 
     if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (acc); /* no valid result */
     }
 
     return (das(acc, agc_dp_pack(0, hi)));
@@ -214,31 +263,49 @@ void agc_imu_set_pipa_interval(agc_sp_t v)
 
 /* ---- GCOMP access (the GCOMP gyro buffer lives in mode.c) ----------- */
 
-static agc_status_t gcomp_read(agc_dp_t g[3])
-{
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
+/* GCOMP as its words.  The buffer holds the value; when something else
+ * changed it (IMUPULSE, a load) the words restart from that value.      */
+static word_pair_t gcomp_words[3];
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+static agc_status_t gcomp_read(word_pair_t g[3])
+{
+    agc_dp_t     v[3]; /* GCOMP buffer, gyro pulses x 2^14     */
+    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, v);
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(g != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(g != NULL))
+    for (int k = 0; k < 3; k++)
     {
-        return (AGC_STATUS_BAD_ARG);
+        if (pair_value(gcomp_words[k]) != v[k])
+        {
+            gcomp_words[k] = pair_of(v[k]);
+        }
+
+        g[k] = gcomp_words[k];
     }
 
     return (st);
 }
 
-static void gcomp_write(const agc_dp_t g[3])
+static void gcomp_write(const word_pair_t g[3])
 {
+    agc_dp_t v[3]; /* GCOMP buffer, gyro pulses x 2^14             */
+
     if (!AGC_ASSERT(g != NULL))
     {
         return;
     }
 
-    agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
+    for (int k = 0; k < 3; k++)
+    {
+        gcomp_words[k] = g[k];
+        v[k]           = pair_value(g[k]);
+    }
+
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, v);
 }
 
 /* GCOMPSW bypass test: "CCS GCOMPSW / TCF +3 / TCF +2 / TCF exit": the
@@ -262,6 +329,8 @@ static bool gcomp_bypassed(void)
 
 /* ---- 1/PIPA ------------------------------------------------------------- */
 
+static agc_status_t comp_irig_words(const word_pair_t delv[3]);
+
 /* 1/PIPA (ICP p.326, label 1/PIPA): compensate the PIPA counts in DELV for
  * scale factor and bias, then fall into IRIGCOMP.  Order Z, Y, X as the
  * AGC's 4, 2, -0 index loop.                                             */
@@ -277,7 +346,8 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
         return (AGC_STATUS_OK); /* TCF IRIG1      */
     }
 
-    bool cm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
+    bool        cm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
+    word_pair_t dw[3]; /* DELVX..Z as words, PIPA pulses x 2^14  */
 
     if (cm)
     {
@@ -299,7 +369,7 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
         agc_dp_t p      = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
         /* Minor part, shifted right 9: fractional PIPA pulses x 2^14.        */
         agc_sp_t frac = agc_dp_high(agc_sp_mul(agc_dp_low(p), BIT6));
-        agc_dp_t d    = agc_dp_pack(pulses, frac);    /* TS DELVX +1    */
+        word_pair_t d = {pulses, frac};               /* TS DELVX +1    */
 
         d = das(d, agc_sp_mul(agc_dp_high(p), BIT6)); /* (PIPAI)(SFE)   */
         /* -(BIAS)(DELTAT): CS PIPABIAS, MP 1/PIPADT, MP BIT4 (LM) / BIT1 (CM). */
@@ -308,15 +378,11 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
 
         d = das(d, agc_sp_mul(agc_dp_high(b), shift));
 
-        if (!AGC_ASSERT(d >= AGC_DP_MIN && d <= AGC_DP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        delv->c[axis] = d;
+        dw[axis]      = d;
+        delv->c[axis] = pair_value(d);
     }
 
-    agc_status_t st = agc_imu_comp_irig(*delv);
+    agc_status_t st = comp_irig_words(dw);
 
     if (cm)
     {
@@ -337,24 +403,25 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
  * pulses x 2^14 and coef the ADIA/ADSRA coefficient.  The product is
  * shifted right 6 (LM, MP BIT9) or 3 (CM, MP BIT12) into gyro pulses
  * x 2^14.                                                                */
-static agc_dp_t gcompsub(agc_dp_t g, agc_dp_t mpac, agc_sp_t coef)
+static word_pair_t gcompsub(word_pair_t g, word_pair_t mpac, agc_sp_t coef)
 {
     if (!AGC_ASSERT(coef >= AGC_SP_MIN && coef <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
-    agc_dp_t vbuf = agc_sp_mul(coef, agc_dp_high(mpac)); /* gyro pls x 2^8 */
+    /* VBUF: gyro pulses x 2^11                                         */
+    word_pair_t vbuf = pair_of(agc_sp_mul(coef, mpac.hi));
 
-    vbuf = das_low_of_mp(vbuf, agc_dp_low(mpac), coef);
+    vbuf = das_low_of_mp(vbuf, mpac.lo, coef);
     agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT9 : BIT12;
 
-    g = das(g, agc_sp_mul(agc_dp_high(vbuf), shift)); /* HI(ADIA)(PIPA) */
-    g = das_low_of_mp(g, agc_dp_low(vbuf), shift);    /* (ADIA)(PIPAI)  */
+    g = das(g, agc_sp_mul(vbuf.hi, shift)); /* HI(ADIA)(PIPA)         */
+    g = das_low_of_mp(g, vbuf.lo, shift);    /* (ADIA)(PIPAI)          */
 
-    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    if (!AGC_ASSERT(g.hi >= AGC_SP_MIN && g.hi <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     return (g);
@@ -363,9 +430,9 @@ static agc_dp_t gcompsub(agc_dp_t g, agc_dp_t mpac, agc_sp_t coef)
 /* DRFTSUB2 magnitude test (ICP p.332): set GCOMPSW positive when the high
  * word of GCOMP for this axis is 3 pulses or more ("MASK COMPCHK" drops
  * bit 1 of |GCOMP|-1).                                                   */
-static void drftsub2(agc_dp_t g)
+static void drftsub2(word_pair_t g)
 {
-    int hi  = agc_dp_high(g);
+    int hi  = g.hi; /* CCS GCOMP: the major word as it stands     */
     int mag = (hi < 0) ? -hi : hi;
 
     if (!AGC_ASSERT(mag <= AGC_SP_MAX))
@@ -393,11 +460,11 @@ static void drftsub2(agc_dp_t g)
 
 /* DRIFTSUB (ICP p.332): GCOMP[axis] += NBD * DELTAT where DELTAT is
  * 1/PIPADT (cs x 2^8); NBD arrives with the sign wanted.                 */
-static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
+static word_pair_t driftsub(word_pair_t g, agc_sp_t nbd)
 {
     if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     agc_dp_t p = agc_sp_mul(nbd, one_pipadt);     /* gyro pulses x 2^3       */
@@ -406,9 +473,9 @@ static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
     g = das_low_of_mp(g, agc_dp_low(p), BIT4);
     drftsub2(g);
 
-    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    if (!AGC_ASSERT(g.lo >= AGC_SP_MIN && g.lo <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     return (g);
@@ -416,16 +483,17 @@ static agc_dp_t driftsub(agc_dp_t g, agc_sp_t nbd)
 
 /* IRIGX / IRIGY / IRIGZ (ICP p.329-330): acceleration-sensitive drift
  * terms for one gyro.  The ADOA terms are commented out in the AGC.      */
-static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
+static word_pair_t irig_axis(word_pair_t g, int axis, const word_pair_t dv[3])
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
+    if (!AGC_ASSERT(axis >= 0 && axis < 3) || !AGC_ASSERT(dv != NULL))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
-    agc_dp_t nx = agc_dp_neg(delv.c[0]);
-    agc_dp_t ny = agc_dp_neg(delv.c[1]);
-    agc_dp_t nz = agc_dp_neg(delv.c[2]);
+    /* DCS DELVX/Y/Z: both words complemented, PIPA pulses x 2^14       */
+    const word_pair_t nx = {sp_neg(dv[0].hi), sp_neg(dv[0].lo)};
+    const word_pair_t ny = {sp_neg(dv[1].hi), sp_neg(dv[1].lo)};
+    const word_pair_t nz = {sp_neg(dv[2].hi), sp_neg(dv[2].lo)};
 
     if (axis == 0)
     {
@@ -443,9 +511,9 @@ static agc_dp_t irig_axis(agc_dp_t g, int axis, agc_vec_t delv)
         g = gcompsub(g, nz, comp.adia[2]);  /* -(ADIAZ)(PIPAZ)   */
     }
 
-    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    if (!AGC_ASSERT(g.hi >= AGC_SP_MIN && g.hi <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     return (g);
@@ -471,12 +539,13 @@ static agc_sp_t nbd_signed(int axis)
 }
 
 /* IRIGCOMP (ICP p.328): GCOMPSW = 0; for X, Y, Z: acceleration terms then
- * bias drift; if any command exceeds 2 pulses, NOVAC 1/GYRO at PRIO21.   */
-agc_status_t agc_imu_comp_irig(agc_vec_t delv)
+ * bias drift; if any command exceeds 2 pulses, NOVAC 1/GYRO at PRIO21.
+ * delv: DELVX..Z as the words 1/PIPA left, PIPA pulses x 2^14.           */
+static agc_status_t comp_irig_words(const word_pair_t delv[3])
 {
-    agc_dp_t g[3];
+    word_pair_t g[3]; /* GCOMP words, gyro pulses x 2^14           */
 
-    if (gcomp_read(g) != AGC_STATUS_OK)
+    if (!AGC_ASSERT(delv != NULL) || (gcomp_read(g) != AGC_STATUS_OK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -489,7 +558,7 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
         g[axis] = driftsub(g[axis], nbd_signed(axis));
     }
 
-    gcomp_write(g); /* buffer id is valid (rule 7)       */
+    gcomp_write(g);
 
     if (gcompsw <= 0)
     {
@@ -506,10 +575,24 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
     return (st);
 }
 
+/* IRIGCOMP on a DELV given as values (words agreeing in sign).           */
+agc_status_t agc_imu_comp_irig(agc_vec_t delv)
+{
+    const word_pair_t dw[3] = {pair_of(delv.c[0]), pair_of(delv.c[1]),
+                               pair_of(delv.c[2])}; /* PIPA pulses x 2^14 */
+
+    if (!AGC_ASSERT(dw[0].hi >= AGC_SP_MIN && dw[2].hi <= AGC_SP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (comp_irig_words(dw));
+}
+
 /* GCOMPZER (ICP p.337): zero GCOMP and GCOMPSW before the first 1/PIPA.  */
 agc_status_t agc_imu_gcompzer(void)
 {
-    agc_dp_t zero[3] = {0, 0, 0};
+    const word_pair_t zero[3] = {{0, 0}, {0, 0}, {0, 0}}; /* GCOMP = 0 */
 
     gcompsw = 0;
     gcomp_write(zero);
@@ -563,7 +646,7 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t g[3];
+    word_pair_t g[3]; /* GCOMP words, gyro pulses x 2^14           */
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
@@ -574,19 +657,12 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
     { /* PIPAZ, Y, X        */
         /* 1/GYRO scaling (ICP p.333): GCOMP (gyro pulses x 2^14) shifted right 7
          * into the IMUPULSE scale (revolutions, 2^21 pulses per revolution).     */
-        agc_dp_t g_rescale = g[axis];
+        const word_pair_t gw = g[axis]; /* GCOMP +2axis, pulses x 2^14 */
+        word_pair_t       r  = {0, agc_dp_high(agc_sp_mul(gw.lo, BIT8))};
 
-        agc_sp_t lo = agc_dp_high(agc_sp_mul(agc_dp_low(g_rescale), BIT8)); /* SR 7   */
-        agc_dp_t r  = agc_dp_pack(0, lo);
+        r = das(r, agc_sp_mul(gw.hi, BIT8)); /* XCH GCOMP, MP BIT8, DAS */
 
-        r = das(r, agc_sp_mul(agc_dp_high(g_rescale), BIT8)); /* add whole pulses   */
-
-        if (!AGC_ASSERT(g_rescale >= AGC_DP_MIN && g_rescale <= AGC_DP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
+        if (!AGC_ASSERT(r.hi >= AGC_SP_MIN && r.hi <= AGC_SP_MAX))
         {
             return (AGC_STATUS_BAD_ARG);
         }
@@ -629,7 +705,7 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* L+2: TCF ENDOFJOB      */
     }
 
-    agc_dp_t g[3];
+    word_pair_t g[3]; /* GCOMP words after IMUPULSE                */
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
@@ -639,9 +715,7 @@ agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx)
     for (int axis = 2; axis >= 0; axis--)
     {
         /* Bits 8-14 of the minor part were zero, so L holds it all.      */
-        agc_sp_t lo = agc_dp_low(agc_sp_mul(agc_dp_low(g[axis]), BIT8));
-
-        g[axis] = agc_dp_pack(agc_dp_high(g[axis]), lo);
+        g[axis].lo = agc_dp_low(agc_sp_mul(g[axis].lo, BIT8));
     }
 
     gcomp_write(g);
@@ -675,21 +749,34 @@ static agc_sp_t elapsed_cs(int now, int prev)
     return ((agc_sp_t) (dt & AGC_SP_MAX));
 }
 
+/* NBD2, CM (Comanche p.304): COM prev, AD now, CCS -- equal readings give
+ * -0 and the job ends with no compensation (GCOMPSW untouched).  The LM's
+ * AD HALF, AD HALF instead turns -0 into a zero DELTAT and goes on.      */
+static bool cm_no_time_elapsed(int now, int prev)
+{
+    if (!AGC_ASSERT(now >= 0 && now < TIME1_MODULUS))
+    {
+        return (false);
+    }
+
+    return ((agc_state_vehicle() == AGC_VEHICLE_CSM) && (now == prev));
+}
+
 /* FBIASSUB (ICP p.336): GCOMP[axis] += NBD * DELTAT, DELTAT in cs x 2^19. */
-static agc_dp_t fbiassub(agc_dp_t g, agc_sp_t nbd, agc_dp_t deltat)
+static word_pair_t fbiassub(word_pair_t g, agc_sp_t nbd, agc_dp_t deltat)
 {
     if (!AGC_ASSERT(nbd >= AGC_SP_MIN && nbd <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     g = das(g, agc_sp_mul(nbd, agc_dp_high(deltat))); /* HI(NBD)(DELTAT) */
     g = das_low_of_mp(g, nbd, agc_dp_low(deltat));
     drftsub2(g); /* TCF DRFTSUB2            */
 
-    if (!AGC_ASSERT(g >= AGC_DP_MIN && g <= AGC_DP_MAX))
+    if (!AGC_ASSERT(g.lo >= AGC_SP_MIN && g.lo <= AGC_SP_MAX))
     {
-        return (0); /* no valid result */
+        return (g); /* no valid result */
     }
 
     return (g);
@@ -704,15 +791,17 @@ static agc_status_t nbd3(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (shift right 5) */
-    agc_dp_t g[3];
+    agc_dp_t    deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
+    word_pair_t g[3]; /* GCOMP words, gyro pulses x 2^14           */
 
     if (gcomp_read(g) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t delv = agc_erase_delv();
+    const agc_vec_t   dv      = agc_erase_delv(); /* PIPA pulses x 2^14 */
+    const word_pair_t delv[3] = {pair_of(dv.c[0]), pair_of(dv.c[1]),
+                                 pair_of(dv.c[2])}; /* DELVX..Z words */
 
     gcompsw = 0; /* indicate commands 2 pulses or less */
 
@@ -775,6 +864,11 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
     one_pipadt = (agc_sp_t) now; /* XCH 1/PIPADT             */
     agc_relint();
 
+    if (cm_no_time_elapsed(now, prev))
+    {
+        return (AGC_STATUS_OK); /* NBD2: difference -0, ENDOFJOB */
+    }
+
     return (nbd3(elapsed_cs(now, prev), surface, ctx));
 }
 
@@ -787,7 +881,19 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_imu_pipuse1(); /* BANKCALL PIPUSE1         */
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM)
+    {
+        agc_status_t pu = agc_imu_pipuse(); /* CM: BANKCALL PIPUSE */
+
+        if (!AGC_ASSERT(pu == AGC_STATUS_OK))
+        {
+            return (pu);
+        }
+    }
+    else
+    {
+        agc_imu_pipa_fail_enable(); /* LM: BANKCALL PIPUSE1   */
+    }
 
     if (gcomp_bypassed())
     {
@@ -805,6 +911,11 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
     if (!AGC_ASSERT(now >= AGC_SP_MIN))
     {
         return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (cm_no_time_elapsed(now, prev))
+    {
+        return (AGC_STATUS_OK); /* TCF NBD2: difference -0, ENDOFJOB */
     }
 
     return (nbd3(elapsed_cs(now, prev), surface, ctx));

@@ -5,7 +5,10 @@
  * gyro torquing angles; CALCGA gimbal-lock check (alarm 00401 / GLOKFAIL)
  * on a known attitude and its absence on a benign one; 1/PIPA with zero
  * bias and scale factor leaves DELV unchanged; CDUTODCM/DCMTOCDU round
- * trip; DELCOMP of a zero angle is the identity.
+ * trip; DELCOMP of a zero angle is the identity; P03 optical verification
+ * (V65) end to end with marks taken on a perfectly aligned IMU gives gyro
+ * angles near zero and adds them to ERCOMP1; PIPFREE's alarm path
+ * releases its interrupt inhibit.
  *
  * AGC_ASSERT failures are counted by this file's agc_assert_report().
  */
@@ -16,12 +19,16 @@
 
 #define PI_D 3.14159265358979323846
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/alignment.h"
 
 static int g_checks;
 static int g_failures;
@@ -274,6 +281,100 @@ static void test_vecpoint(void)
     CHECK(near(cdu_to_deg(g[2]), 0.0, 0.05));
 }
 
+/* LASTBIAS, CM: BANKCALL PIPUSE (Comanche p.306) zeroes the PIPAs before
+ * the last bias compensation (the LM calls PIPUSE1 and keeps them).     */
+static void test_lastbias_pipuse(void)
+{
+    agc_job_ctx_t ctx = {AGC_JOB_LASTBIAS, AGC_PRIO5, false, -1, 0};
+
+    agc_erase_set_pipax(5);
+    agc_erase_set_pipaz(-3);
+    agc_imu_set_gcompsw(0);
+    (void) agc_job_lastbias(&ctx);
+    CHECK(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0);
+}
+
+/* PIPFREE with PIPA fail present (IMODES30 bit 10 = 0): ALARM 212, and
+ * the routine's INHINT is released (the AGC's second INHINT after ALARM
+ * must not leave interrupts off in C).                                  */
+static void test_pipfree_alarm(void)
+{
+    agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & ~01000u));
+    (void) agc_erase_set_failreg(0, 0);
+    agc_imu_pipfree();
+    CHECK(!agc_interrupts_inhibited());
+    CHECK(agc_erase_failreg(0) == 00212u);
+    CHECK((agc_erase_imodes30() & 1u) != 0u); /* PIPAs not in use */
+}
+
+/* P03 mark on the aligned IMU: optics at the commanded angles. */
+static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
+{
+    const agc_align_ram_t *ar   = agc_align_ram();
+    agc_job_ctx_t          crew = {AGC_JOB_ENTANSWR, AGC_PRIO5, false, -1, 0};
+
+    agc_erase_set_cduy(imu[1]);
+    agc_erase_set_cduz(imu[2]);
+    agc_erase_set_cdux(imu[0]);
+    agc_erase_set_cdus(ar->desopts);
+    agc_erase_set_cdut(ar->desoptt);
+    CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, true) == AGC_STATUS_OK);
+    CHECK(agc_sxtmark_markrupt() == AGC_STATUS_OK);
+    CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, false) == AGC_STATUS_OK);
+    (void) agc_sxtmark_mark2();
+    CHECK(agc_sxtmark_marks_made() == 1);
+    CHECK(agc_job_entanswr(&crew) == AGC_STATUS_OK); /* V33 on V50N25 */
+    CHECK(agc_task_endmarks() == AGC_STATUS_OK);      /* GOODEND        */
+    CHECK(agc_job_optical_verification_marked(ctx) == AGC_STATUS_OK);
+}
+
+/* P03 (GCOMPVER .. GCOMP5) with the SM at the earth-reference frame. */
+static void test_optical_verification(void)
+{
+    agc_job_ctx_t  ctx = {AGC_JOB_COMPVER, AGC_PRIO5, false, -1, 0};
+    agc_interp_t   ip;
+    uint16_t       imu[3];
+    agc_dp_t       erc[3] = {0, 0, 0};
+    const agc_dp_t az     = agc_dp_from_double(0.1, 0); /* 36 deg     */
+
+    agc_interp_init(&ip);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    CHECK(agc_csm_prelaunch_set_pad(agc_dp_from_double(0.08, 0), az, az) ==
+          AGC_STATUS_OK);
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, erc);
+    CHECK(agc_job_optical_verification(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_phase_checkmm(3));
+    CHECK(agc_dsky_dsptem(2) == 1u); /* target 1 shown */
+    CHECK(agc_dsky_set_dsptem(0, cdu_deg(20.0)) == AGC_STATUS_OK);
+    CHECK(agc_dsky_set_dsptem(1, 0546u) == AGC_STATUS_OK); /* EL 2 deg */
+    CHECK(agc_job_optical_verification_target_loaded(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_dsky_dsptem(2) == 2u); /* target 2 shown */
+    CHECK(agc_dsky_set_dsptem(0, cdu_deg(60.0)) == AGC_STATUS_OK);
+    CHECK(agc_dsky_set_dsptem(1, 01326u) == AGC_STATUS_OK); /* EL 5 deg */
+
+    agc_align_ram_t *ar = agc_align_ram();
+
+    ar->xsm = agc_mat_identity_half(); /* SM = earth reference         */
+    CHECK(agc_imu_calcga(&ip, &ar->xnb, &ar->xsm, imu) == AGC_STATUS_OK);
+    CHECK(agc_job_optical_verification_target_loaded(&ctx) == AGC_STATUS_OK);
+    CHECK(ar->starcode == 1);
+    p03_mark(imu, &ctx); /* target 1: then drives to target 2 */
+    CHECK(ar->starcode == 2);
+    p03_mark(imu, &ctx); /* target 2: AXISGEN, CALCGTA, V06N93 */
+
+    for (int k = 0; k < 3; k++)
+    {
+        /* the marks carry the CDU quantisation: 2^-15 rev = 40 arcsec */
+        CHECK(near(rev(ar->ogc[k]), 0.0, 5e-5));
+    }
+
+    CHECK(agc_job_optical_verification_torque_accepted(&ctx) ==
+          AGC_STATUS_OK);
+    CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc) == AGC_STATUS_OK);
+    CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
+    CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */
+}
+
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -289,6 +390,9 @@ int main(void)
     test_gyro_pulse();
     test_kalc_compute();
     test_vecpoint();
+    test_pipfree_alarm();
+    test_lastbias_pipuse();
+    test_optical_verification();
     (void) printf("test_imu: %d checks, %d failures, %d assertion reports\n",
                   g_checks, g_failures, g_assert_reports);
 

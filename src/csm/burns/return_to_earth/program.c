@@ -1,35 +1,60 @@
-/*
- * program.c -- P37_P70.agc (Comanche055, pp. 890-933): P37, RETURN
- * TO EARTH, the program and its displays.
+/**********************************************************************
+ * FILE NAME: program.c
  *
- * "A RETURN TO EARTH TRAJECTORY IS COMPUTED PROVIDED THE CSM IS OUTSIDE THE
- *  LUNAR SPHERE OF INFLUENCE AT THE TIME OF IGNITION. INITIALLY A CONIC
- *  TRAJECTORY IS DETERMINED AND RESULTING IGNITION AND REENTRY PARAMETERS
- *  ARE DISPLAYED TO THE ASTRONAUT. THEN IF THE ASTRONAUT SO DESIRES, A
- *  PRECISION TRAJECTORY IS DETERMINED WITH THE RESULTING IGNITION AND
- *  REENTRY PARAMETERS DISPLAYED. UPON FINAL ACCEPTANCE BY THE ASTRONAUT, THE
- *  PROGRAM COMPUTES AND STORES THE TARGET PARAMETERS FOR RETURN TO EARTH FOR
- *  USE BY SPS PROGRAM (P40) OR RCS PROGRAM (P41)."
+ * PURPOSE:
+ *   P37, RETURN TO EARTH: the program flow and its displays. "A RETURN TO
+ *   EARTH TRAJECTORY IS COMPUTED PROVIDED THE CSM IS OUTSIDE THE LUNAR
+ *   SPHERE OF INFLUENCE AT THE TIME OF IGNITION. INITIALLY A CONIC
+ *   TRAJECTORY IS DETERMINED AND RESULTING IGNITION AND REENTRY PARAMETERS
+ *   ARE DISPLAYED TO THE ASTRONAUT. THEN IF THE ASTRONAUT SO DESIRES, A
+ *   PRECISION TRAJECTORY IS DETERMINED ... UPON FINAL ACCEPTANCE BY THE
+ *   ASTRONAUT, THE PROGRAM COMPUTES AND STORES THE TARGET PARAMETERS FOR
+ *   RETURN TO EARTH FOR USE BY SPS PROGRAM (P40) OR RCS PROGRAM (P41)."
  *
- * In Comanche the file holds only P37 (the "P70" of the title is the LM
- * abort program of Luminary; there is no Saturn-abort code here).
+ * AGC SOURCE:
+ *   Comanche055 P37_P70.agc pp. 890-933:
+ *     P37 .. RTE299     (pp. 891-892) V06N33 TIG, V06N60 GAMMAEI and DV
+ *     RTE299 .. P37E    (pp. 891-895) INVC100 and the conic search
+ *                       (conic.c, velocity.c)
+ *     RTEVN, RTEDISP    (pp. 895-896, 902-904) N61 N39 N60 N81
+ *     RTE505 .. RTE625  (p. 895) precision trajectory (precision.c)
+ *     P37G .. P37W      (pp. 896-898) N06 SPS/RCS option, biased TIG
+ *                       (N33), RTENCK1, aim point rotation, RTARG TPASS4
+ *                       DELVSIN, VN1645 (V16N45), then P40/P41.
+ *     P370ALRM/RTEALRM  (pp. 895, 900) alarm, V05N09, recycle to P37.
+ *     P370GOF, P370GOFR, P37GFRB1, 37BLANK (pp. 898-899) display returns.
+ *   Luminary099: none (the "P70" of the title is the LM abort program).
  *
- *   P37 .. RTE299     (pp. 891-892) V06N33 TIG, V06N60 GAMMAEI and DV
- *   RTE299 .. P37E    (pp. 891-895) INVC100 and the conic search
- *                     (conic.c, velocity.c)
- *   RTEVN, RTEDISP    (pp. 895-896, 902-904) N61 N39 N60 N81
- *   RTE505 .. RTE625  (p. 895) precision trajectory (precision.c)
- *   P37G .. P37W      (pp. 896-898) N06 SPS/RCS option, biased TIG (N33),
- *                     RTENCK1, aim point rotation, RTARG TPASS4 DELVSIN,
- *                     VN1645 (V16N45), then the crew selects P40/P41.
- *   P370ALRM/RTEALRM  (pp. 895, 900) alarm, V05N09, recycle to P37.
- *   P370GOF, P370GOFR, P37GFRB1, 37BLANK (pp. 898-899) display returns.
+ * EXTERNAL VARIABLES:  (through accessors)
+ *   Name          Type            I/O  Scale          Description
+ *   ------------  --------------  ---  -------------  ------------------
+ *   TIG           agc_dp_t        IO   cs B28         time of ignition
+ *   VPRED,GAMMAEI agc_dp_t        IO   m/cs B7, revs  crew inputs (N60)
+ *   OPTION1/2     agc_sp_t        IO   unscaled       N06 propulsion option
+ *   RTARG, TPASS4, DELVSIN  (rendezvous erasables)  O  P40/P41 targets
+ *   EMDOT, WEIGHT/G (DAP erasables)                 I  burn time
  *
- * Every flashing display is a job boundary (docs/TRANSLATION_GUIDE.md
- * section 4): its PROCEED, ENTER (or V32 recycle) and V34 returns are job
- * ids. Integrations (CSMPREC, RTENCK) may sleep in INTSTALL; the job then
- * returns and is resumed as the job named in the call.
- */
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_dsky_display      GOFLASH / GOFLASHR job-boundary displays
+ *   agc_integ_csmprec     CSMPREC to TIG (INVC100)
+ *   agc_conic_timethet    TIMETHET for the aim point rotation (P37V)
+ *   agc_rendz_ttogo_display_start  VN1645 (V16N45)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Alarms 605, 612, 613 shown by RTEALRM (VARALARM, V05N09, V32 recycles
+ *   to P37); POODOO statuses (00607, 00610, 01302) are passed up.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   CSM only. Not restartable (PHASCHNG 4.0, as in the AGC).
+ *
+ * NOTES:
+ *   Every flashing display is a job boundary (docs/TRANSLATION_GUIDE.md
+ *   section 4): its PROCEED, ENTER (or V32 recycle) and V34 returns are
+ *   job ids. Integrations (CSMPREC, RTENCK) may sleep in INTSTALL; the job
+ *   then returns and is resumed as the job named in the call.
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -56,12 +81,12 @@
 
 #define RTE_PHASE_NOT_RESTARTABLE \
     ((uint16_t) 04)                        /* PHASCHNG OCT 4: group 4 off */
-#define RTE_ECSTEER                 ((agc_sp_t) 04000) /* AXT,1 OCT 04000; SXA,1 ECSTEER */
-#define RTE_OPTION1_RETURN_TO_EARTH ((agc_sp_t) 7) /* CAF SEVEN TS OPTION1          */
-#define RTE_OPTION2_SPS             ((agc_sp_t) 1) /* OPTION2 1 = SPS, 2 = RCS      */
-#define RTE_OPTION2_RCS             ((agc_sp_t) 2)
-#define RTE_BLANK_R1                ((uint16_t) 1) /* CAF ONE  TCR BLANKET          */
-#define RTE_BLANK_R3                ((uint16_t) 4) /* CAF FOUR TCR 37BLANK +1       */
+#define RTE_ECSTEER                 ((agc_sp_t) 04000) /* SXA,1 ECSTEER  */
+#define RTE_OPTION1_RETURN_TO_EARTH ((agc_sp_t) 7)     /* TS OPTION1     */
+#define RTE_OPTION2_SPS             ((agc_sp_t) 1)     /* OPTION2: SPS   */
+#define RTE_OPTION2_RCS             ((agc_sp_t) 2)     /* OPTION2: RCS   */
+#define RTE_BLANK_R1                ((uint16_t) 1)     /* TCR BLANKET R1 */
+#define RTE_BLANK_R3                ((uint16_t) 4)     /* 37BLANK +1: R3 */
 
 /* Constants (P37_P70.agc pp. 931-932, words from the Comanche055 rope).   */
 static const agc_dp_t VCSPS =
@@ -71,17 +96,17 @@ static const agc_dp_t VCRCS =
 static const agc_dp_t MDOTRCS =
     54945; /* MDOTRCS  00003 13241  .0016375 B-3 kg/cs */
 static const agc_dp_t CSUBT =
-    134217728; /* CSUBT    20000 00000  .5                 */
+    134217728; /* CSUBT 20000 00000 .5, B0 */
 static const agc_dp_t MCOS7_5 =
-    -266138953; /* MCOS7.5  40214 45266  -.99144486         */
+    -266138953; /* MCOS7.5 40214 45266 -.99144486, B0 */
 static const agc_dp_t MSIN7_5 =
-    -35037857; /* MSIN7.5  73645 56536  -.13052619         */
+    -35037857; /* MSIN7.5 73645 56536 -.13052619, B0 */
 static const agc_dp_t MCOS22_5 =
     -62000506; /* MCOS22.5 70467 71205  -.92387953 B-2     */
 static const agc_dp_t THETA165 =
-    123032917; /* THETA165 16525 12525  .4583333333 rev    */
+    123032917; /* THETA165 16525 12525 .4583333 rev, B0 */
 static const agc_dp_t THETA210 =
-    156587349; /* THETA210 22525 12525  .5833333333 rev    */
+    156587349; /* THETA210 22525 12525 .5833333 rev, B0 */
 /* P37T POLY: A = (1 - E^(-DV/VC)) (B3) in x = DV/VC (B2).                  */
 static const agc_dp_t BURN_POLY[3] = {
     19000,     /* 00001 05070  5.66240507 E-4 B-3   */
@@ -89,7 +114,25 @@ static const agc_dp_t BURN_POLY[3] = {
     -208457287 /* 47114 70670  -.388281955 B1       */
 };
 
-/* P370GOF / P370GOFR (pp. 898-899): flashing display, V34 -> GOTOPOOH.    */
+/**********************************************************************
+ * P370GOF / P370GOFR (pp. 898-899): flashing display, V34 -> GOTOPOOH.
+ *
+ * FUNCTION NAME: rte_flash
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the running job
+ *   kind      agc_dsky_disp_t        I    display kind (GOFLASH or
+ *                                         GOFLASHR)
+ *   verb      uint8_t                I    verb, decimal 0..99
+ *   noun      uint8_t                I    noun, decimal 0..99
+ *   proceed   agc_job_id_t           I    job for PROCEED (V33)
+ *   enter     agc_job_id_t           I    job for ENTER / V32 recycle
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a failed
+ *          assertion, else the agc_dsky_display status
+ **********************************************************************/
 static agc_status_t rte_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                               uint8_t verb, uint8_t noun, agc_job_id_t proceed,
                               agc_job_id_t enter)
@@ -109,14 +152,33 @@ static agc_status_t rte_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
-/* P37GFRB1 / 37BLANK (p. 898): GOFLASHR, then on the immediate return blank
- * the given registers and ENDOFJOB.                                       */
+/**********************************************************************
+ * P37GFRB1 / 37BLANK (p. 898): GOFLASHR, then on the immediate return blank
+ * the given registers and ENDOFJOB.
+ *
+ * FUNCTION NAME: rte_flash_blank
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the running job
+ *   verb      uint8_t                I    verb, decimal 0..99
+ *   noun      uint8_t                I    noun, decimal 0..99
+ *   blank     uint16_t               I    registers to blank (RTE_BLANK_R1
+ *                                         or RTE_BLANK_R3)
+ *   proceed   agc_job_id_t           I    job for PROCEED (V33)
+ *   enter     agc_job_id_t           I    job for ENTER / V32 recycle
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a failed
+ *          assertion, else the display or BLANKET status
+ **********************************************************************/
 static agc_status_t rte_flash_blank(const agc_job_ctx_t *ctx, uint8_t verb,
                                     uint8_t noun, uint16_t blank,
                                     agc_job_id_t proceed, agc_job_id_t enter)
 {
-    agc_status_t st =
-        rte_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun, proceed, enter);
+    agc_status_t st = /* GOFLASHR status */
+                      rte_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun, proceed,
+                                enter);
 
     if (!AGC_ASSERT((blank == RTE_BLANK_R1) || (blank == RTE_BLANK_R3)))
     {
@@ -131,7 +193,21 @@ static agc_status_t rte_flash_blank(const agc_job_ctx_t *ctx, uint8_t verb,
     return (agc_dsky_blanket(blank)); /* TCF ENDOFJOB  */
 }
 
-/* RTEALRM / P370ALRM (pp. 895, 900): VARALARM with the code, then V05N09. */
+/**********************************************************************
+ * RTEALRM / P370ALRM (pp. 895, 900): VARALARM with the code, then V05N09.
+ *
+ * FUNCTION NAME: rte_alarm
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description (scale)
+ *   --------  ----------------------  ---  ------------------------------
+ *   ctx       const agc_job_ctx_t *   I    job context of the running job
+ *   rs        const rte_erasable_t *  I    P37 erasables (RTE names, scales
+ *                                          in internal.h)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a failed
+ *          assertion, else the display status
+ **********************************************************************/
 static agc_status_t rte_alarm(const agc_job_ctx_t  *ctx,
                               const rte_erasable_t *rs)
 {
@@ -148,7 +224,25 @@ static agc_status_t rte_alarm(const agc_job_ctx_t  *ctx,
                       AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* The result of a computation step: alarm display, or the abort status. */
+/**********************************************************************
+ * AGC: none (P370ALRM / RTEALRM dispatch, P37_P70.agc p. 900) -- the result
+ * of a failed computation step: the alarm display, or the abort status
+ * passed up.
+ *
+ * FUNCTION NAME: rte_failed
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description (scale)
+ *   --------  ----------------------  ---  ------------------------------
+ *   ctx       const agc_job_ctx_t *   I    job context of the running job
+ *   rs        const rte_erasable_t *  I    P37 erasables (RTE names, scales
+ *                                          in internal.h)
+ *   st        agc_status_t            I    status of the failed step (not
+ *                                          AGC_STATUS_OK)
+ *
+ * RETURNS: agc_status_t -- the V05N09 display status after an ALARM; st
+ *          itself otherwise (POODOO, BUSY)
+ **********************************************************************/
 static agc_status_t rte_failed(const agc_job_ctx_t *ctx,
                                const rte_erasable_t *rs, agc_status_t st)
 {
@@ -162,11 +256,26 @@ static agc_status_t rte_failed(const agc_job_ctx_t *ctx,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_ALARM) ? rte_alarm(ctx, rs) : st);
+    return ((st == AGC_STATUS_ALARM) ? /* ALARM: V05N09 */
+            rte_alarm(ctx, rs) : st);
 }
 
-/* P370ALRM after PROCEED (p. 900, TCF -4): show V05N09 again; V32 recycles
- * to P37, V34 terminates.                                                 */
+/**********************************************************************
+ * P370ALRM after PROCEED (p. 900, TCF -4): show V05N09 again; V32 recycles
+ * to P37, V34 terminates.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_alarm_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -184,12 +293,28 @@ agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* P37 (p. 891): not restartable (PHASCHNG 4.0); ECSTEER = 04000 (SXA
- * stores the high word only); VPRED = GAMMAEI = 0; V06N33.               */
+/**********************************************************************
+ * P37 (p. 891): not restartable (PHASCHNG 4.0); ECSTEER = 04000 (SXA stores
+ * the high word only); VPRED = GAMMAEI = 0; V06N33.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
 {
-    agc_guid_t        *g  = agc_guid_state();
-    agc_entry_state_t *es = agc_entry_state();
+    agc_guid_t *g = /* guidance erasables (TIG, ECSTEER) */
+                    agc_guid_state();
+    agc_entry_state_t *es = /* entry erasables (VPRED, GAMMAEI) */
+                            agc_entry_state();
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((g != NULL) && (es != NULL)))
     {
@@ -204,7 +329,21 @@ agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
     return (agc_job_return_to_earth_tig_display(ctx));
 }
 
-/* P37 (p. 891): V06N33, TIG (SPRTETIG overlays TIG). ENTER shows it again. */
+/**********************************************************************
+ * P37 (p. 891): V06N33, TIG (SPRTETIG overlays TIG). ENTER shows it again.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_tig_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -222,8 +361,22 @@ agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY));
 }
 
-/* P37 (p. 891): V06N60 with R1 blank: "INPUT REENTRY ANGLE IN GAMMAEI AND
- * DESIRED DELTA V" (VPRED register). PROCEED: RTE299.                    */
+/**********************************************************************
+ * P37 (p. 891): V06N60 with R1 blank: "INPUT REENTRY ANGLE IN GAMMAEI AND
+ * DESIRED DELTA V" (VPRED register). PROCEED: RTE299.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_entry_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -241,9 +394,28 @@ agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx)
                             AGC_JOB_RETURN_TO_EARTH_ENTRY_DISPLAY));
 }
 
-/* RTEVN with RTEDISP (pp. 895, 902-904): compute and store the display
+/**********************************************************************
+ * RTEVN with RTEDISP (pp. 895, 902-904): compute and store the display
  * values, then V06N61 (LAT(SPL), LNG(SPL), R3 blank). VNSTORE = where the
- * last display (N81) proceeds to.                                          */
+ * last display (N81) proceeds to.
+ *
+ * FUNCTION NAME: rte_show_solution
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the running job
+ *   ip        agc_interp_t *         IO   interpreter state of the job:
+ *                                         OVFIND, DVSIGN, alarms
+ *   rs        rte_erasable_t *       IO   P37 erasables (RTE names, scales
+ *                                         in internal.h)
+ *   vnstore   agc_job_id_t           I    VNSTORE: where the N81 display
+ *                                         proceeds to
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx,
                                       agc_interp_t *ip, rte_erasable_t *rs,
                                       agc_job_id_t vnstore)
@@ -261,7 +433,8 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx,
     }
 
     rs->vnstore = vnstore; /* STQ VNSTORE   */
-    agc_status_t st = rte_display_values(ip, rs, agc_erase_tig(),
+    agc_status_t st = /* RTEDISP / display status */
+                      rte_display_values(ip, rs, agc_erase_tig(),
                                          agc_erase_return_to_earth_range(), &d);
 
     if (st != AGC_STATUS_OK)
@@ -269,7 +442,8 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx,
         return (st);
     }
 
-    agc_entry_state_t *es = agc_entry_state();
+    agc_entry_state_t *es = /* entry erasables (LAT/LNG(SPL)) */
+                            agc_entry_state();
 
     es->vpred   = d.vpred;
     es->gammaei = d.gammaei;
@@ -284,14 +458,28 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx,
                             AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* RTE299 (pp. 891-895): RTEDVD = VPRED, RTEGAM2D = GAMMAEI, INVC100
- * (CSMPREC to TIG), the conic search, then P37E: RTEVN, returning to
- * RTE505 (precision). An INTSTALL sleep resumes this job from its start. */
+/**********************************************************************
+ * RTE299 (pp. 891-895): RTEDVD = VPRED, RTEGAM2D = GAMMAEI, INVC100
+ * (CSMPREC to TIG), the conic search, then P37E: RTEVN, returning to RTE505
+ * (precision). An INTSTALL sleep resumes this job from its start.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_conic_search
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
 {
-    agc_interp_t    *ip = rte_ip();
-    rte_erasable_t  *rs = rte_state();
-    agc_integ_ctx_t *ic = agc_integ_shared_ctx();
+    agc_interp_t    *ip = rte_ip(); /* P37 interpreter state */
+    rte_erasable_t  *rs = rte_state(); /* P37 erasables */
+    agc_integ_ctx_t *ic = agc_integ_shared_ctx(); /* INTSTALL area (CSMPREC) */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ic != NULL))
     {
@@ -301,7 +489,8 @@ agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
     ip->ovfind   = 0;    /* SSP OVFIND 0  */
     rs->rtedvd   = agc_entry_state()->vpred;
     rs->rtegam2d = agc_entry_state()->gammaei;
-    agc_status_t st = agc_integ_csmprec(ip, ic, agc_erase_tig(),
+    agc_status_t st = /* step status */
+                      agc_integ_csmprec(ip, ic, agc_erase_tig(),
                                         AGC_JOB_RETURN_TO_EARTH_CONIC_SEARCH);
 
     if (st == AGC_STATUS_BUSY)
@@ -332,9 +521,23 @@ agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
 
     return (rte_show_solution(ctx, ip, rs,
                               AGC_JOB_RETURN_TO_EARTH_PRECISION)); /* P37E */
-}
+} /* agc_job_return_to_earth_conic_search */
 
-/* RTEVN (p. 895): V06N39 T3TOT4 (TIG to 400,000 ft). V32: P37.            */
+/**********************************************************************
+ * RTEVN (p. 895): V06N39 T3TOT4 (TIG to 400,000 ft). V32: P37.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_transit_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -352,7 +555,21 @@ agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* RTEVN (p. 895): V06N60, R1 blank, VPRED and GAMMAEI. V32: P37.          */
+/**********************************************************************
+ * RTEVN (p. 895): V06N60, R1 blank, VPRED and GAMMAEI. V32: P37.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_entry_conditions_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_entry_conditions_display(
     agc_job_ctx_t *ctx)
 {
@@ -366,10 +583,24 @@ agc_status_t agc_job_return_to_earth_entry_conditions_display(
                             AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* RTEVN (p. 896): V06N81 DELVLVC; PROCEED returns to VNSTORE. V32: P37.   */
+/**********************************************************************
+ * RTEVN (p. 896): V06N81 DELVLVC; PROCEED returns to VNSTORE. V32: P37.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_delta_v_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx)
 {
-    const rte_erasable_t *rs = rte_state();
+    const rte_erasable_t *rs = rte_state(); /* P37 erasables (VNSTORE) */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -385,17 +616,31 @@ agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH));
 }
 
-/* RTE505 .. RTE515 (p. 895): PHI2, then PREC100.                          */
+/**********************************************************************
+ * RTE505 .. RTE515 (p. 895): PHI2, then PREC100.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_precision
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx)
 {
-    rte_erasable_t *rs = rte_state();
+    rte_erasable_t *rs = rte_state(); /* P37 erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rs->rcon > 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = rte_entry_side(rte_ip(), rs);
+    agc_status_t st = rte_entry_side(rte_ip(), rs); /* step status */
 
     if (st == AGC_STATUS_OK)
     {
@@ -410,21 +655,36 @@ agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx)
     return (agc_job_return_to_earth_precision_resume(ctx));
 }
 
-/* PREC120 .. PRECX and RTE625 (pp. 895, 908-913): run (or resume after an
+/**********************************************************************
+ * PREC120 .. PRECX and RTE625 (pp. 895, 908-913): run (or resume after an
  * INTSTALL sleep) the precision iteration; success: P37G, RTEVN returning
- * to P37N; failure: RTEALRM.                                              */
+ * to P37N; failure: RTEALRM.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_precision_resume
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
 {
-    agc_interp_t   *ip = rte_ip();
-    rte_erasable_t *rs = rte_state();
+    agc_interp_t   *ip = rte_ip(); /* P37 interpreter state */
+    rte_erasable_t *rs = rte_state(); /* P37 erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rs->nn1a >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        rte_precision_run(ip, rs, AGC_JOB_RETURN_TO_EARTH_PRECISION_RESUME);
+    const agc_job_id_t resume = /* job INTSTALL wakes */
+                                AGC_JOB_RETURN_TO_EARTH_PRECISION_RESUME;
+    agc_status_t st = rte_precision_run(ip, rs, resume); /* PREC120 */
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -436,11 +696,26 @@ agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
         return (rte_failed(ctx, rs, st));
     }
 
-    return (rte_show_solution(
-                ctx, ip, rs, AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION)); /* P37G */
+    /* P37G: RTEVN, returning to P37N                                     */
+    return (rte_show_solution(ctx, ip, rs,
+                              AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION));
 }
 
-/* P37N (p. 896): OPTION1 = 7, OPTION2 = 1 (SPS assumed), V04N06.          */
+/**********************************************************************
+ * P37N (p. 896): OPTION1 = 7, OPTION2 = 1 (SPS assumed), V04N06.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_propulsion_option
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -459,7 +734,21 @@ agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
     return (agc_job_return_to_earth_option_display(ctx));
 }
 
-/* P37N (p. 896): V04N06 "DISPLAY RCS OR SPS OPTION"; ENTER shows it again. */
+/**********************************************************************
+ * P37N (p. 896): V04N06 "DISPLAY RCS OR SPS OPTION"; ENTER shows it again.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_option_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -477,19 +766,33 @@ agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH_OPTION_DISPLAY));
 }
 
-/* P37N PROCEED .. P37T (pp. 896-897): the burn is centred on T1:
- *   A = 1 - E^(-DV/VC) (POLY, B3), DTB = (M0/MDOT) A (cs B28),
- *   TIG = T1 - CSUBT DTB.
- * SPS: MDOT = EMDOT, VC = VCSPS; RCS: MDOT = 2 or 4 x MDOTRCS (NJETSFLG
- * set = 2 jets), VC = VCRCS.                                              */
+/**********************************************************************
+ * P37N PROCEED .. P37T (pp. 896-897): the burn is centred on T1: A = 1 -
+ * E^(-DV/VC) (POLY, B3), DTB = (M0/MDOT) A (cs B28), TIG = T1 - CSUBT DTB.
+ * SPS: MDOT = EMDOT, VC = VCSPS; RCS: MDOT = 2 or 4 x MDOTRCS (NJETSFLG set
+ * = 2 jets), VC = VCRCS.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_ignition_time
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
 {
-    agc_interp_t     *ip = rte_ip();
-    rte_erasable_t   *rs = rte_state();
-    agc_csm_dapcom_t *dc = agc_csm_dap_com();
-    agc_dp_t          mdot;
-    agc_dp_t          vc = VCSPS;
-    int               n1 = 0;
+    agc_interp_t     *ip = rte_ip(); /* P37 interpreter state */
+    rte_erasable_t   *rs = rte_state(); /* P37 erasables */
+    agc_csm_dapcom_t *dc = /* DAP erasables (EMDOT, WEIGHT/G) */
+                           agc_csm_dap_com();
+    agc_dp_t mdot; /* MDOT, kg/cs B3 x 2^n1 */
+    agc_dp_t vc = VCSPS; /* VC exhaust speed, m/cs B7 */
+    int      n1 = 0;          /* NORM shift count of MDOT */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(dc != NULL))
     {
@@ -498,7 +801,7 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
 
     if (agc_erase_option1(1) == RTE_OPTION2_RCS)
     { /* P37Q          */
-        mdot = agc_flag_test(AGC_FLAG_NJETSFLG) ? MDOTRCS :
+        mdot = agc_flag_test(AGC_FLAG_NJETSFLG) ? MDOTRCS : /* 2 jets : 4 */
                agc_dp_shl(ip, MDOTRCS, 1);
         mdot = agc_dp_shl(ip, mdot, 1); /* P37R SL1      */
         vc   = VCRCS;
@@ -520,19 +823,33 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t a =
-        agc_dp_poly(agc_dp_div(ip, rs->dv, vc), BURN_POLY, 2); /* P37T  */
-    agc_dp_t w =
-        agc_dp_mul_trunc(agc_dp_from_sp(dc->weight_g), a); /* DMP     */
+    agc_dp_t a = /* P37T POLY: 1 - E^(-DV/VC), B3 */
+                 agc_dp_poly(agc_dp_div(ip, rs->dv, vc), BURN_POLY, 2);
+    agc_dp_t w = /* DMP: WEIGHT/G A, B17 */
+                 agc_dp_mul_trunc(agc_dp_from_sp(dc->weight_g), a);
     agc_dp_t dtb =
         agc_dp_shl(ip, agc_dp_div(ip, w, mdot), n1 - 12); /* SL* B28 */
 
     agc_erase_set_tig(agc_dp_sub(ip, rs->t1, agc_dp_mul_trunc(dtb, CSUBT)));
 
     return (agc_job_return_to_earth_biased_tig_display(ctx));
-}
+} /* agc_job_return_to_earth_ignition_time */
 
-/* P37T (p. 897): V06N33 "DISPLAY BIASED TIG"; ENTER shows it again.       */
+/**********************************************************************
+ * P37T (p. 897): V06N33 "DISPLAY BIASED TIG"; ENTER shows it again.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_biased_tig_display
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -550,14 +867,28 @@ agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx)
                       AGC_JOB_RETURN_TO_EARTH_BIASED_TIG_DISPLAY));
 }
 
-/* P37 after N33 .. P37V (pp. 897-898): VHFCNT = TRKMKCNT = 0; RTENCK1
+/**********************************************************************
+ * P37 after N33 .. P37V (pp. 897-898): VHFCNT = TRKMKCNT = 0; RTENCK1
  * (conic R(T1)/, V2(T1)/ to T2). If the entry point is more than 22.5 deg
  * past K/ = -UR1 cos 7.5 - UH sin 7.5, the Lambert aim point is moved to
- * 165 deg (UH.R(T2) >= 0) or 210 deg from R(T1) (TIMETHET).               */
+ * 165 deg (UH.R(T2) >= 0) or 210 deg from R(T1) (TIMETHET).
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_targeting
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
 {
-    agc_interp_t   *ip = rte_ip();
-    rte_erasable_t *rs = rte_state();
+    agc_interp_t   *ip = rte_ip(); /* P37 interpreter state */
+    rte_erasable_t *rs = rte_state(); /* P37 erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rs->t2 != rs->t1))
     {
@@ -566,9 +897,10 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
 
     agc_erase_set_vhfcnt(0);
     agc_erase_set_trkmkcnt(0);
-    agc_status_t st =
-        rte_integrate(ip, rs, rs->r_t1v, rs->v2_t1v, rs->t1, rs->t2, true,
-                      AGC_JOB_RETURN_TO_EARTH_TARGETING);
+    agc_status_t st = /* RTENCK1 / TIMETHET status */
+                      rte_integrate(ip, rs, rs->r_t1v, rs->v2_t1v, rs->t1,
+                                    rs->t2, true,
+                                    AGC_JOB_RETURN_TO_EARTH_TARGETING);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -581,16 +913,21 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
     }
 
     rs->rtarg = rs->r_t2v; /* RATT, 0D      */
-    agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);
-    agc_vec_t k   = agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5),
+    agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL); /* UR(T2), B1 */
+    agc_vec_t k   = /* K/ aim direction, B1 */
+                    agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5),
                                 agc_vec_scale(ip, rs->uh, MSIN7_5));
 
     if (agc_dp_add(ip, agc_vec_dot(ip, k, ur2), MCOS22_5) >= 0)
     {
-        agc_timetheta_in_t   in;
-        agc_conic_time_out_t out;
-        agc_dp_t             th =
-            (agc_vec_dot(ip, rs->uh, rs->r_t2v) < 0) ? THETA210 : THETA165;
+        agc_timetheta_in_t   in; /* TIMETHET inputs */
+        agc_conic_time_out_t out; /* TIMETHET outputs */
+        agc_dp_t             th = THETA165; /* aim angle, revs B0  */
+
+        if (agc_vec_dot(ip, rs->uh, rs->r_t2v) < 0)
+        {
+            th = THETA210; /* UH.R(T2) < 0: 210 deg         */
+        }
 
         in.snth = agc_dp_sin(ip, th); /* P37V          */
         in.csth = agc_dp_cos(ip, th);
@@ -611,21 +948,35 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
     }
 
     return (agc_job_return_to_earth_target_store(ctx));
-}
+} /* agc_job_return_to_earth_targeting */
 
-/* P37W (p. 898): CLEAR XDELVFLG (Lambert aim point), NORMSW; SET FINALFLG;
+/**********************************************************************
+ * P37W (p. 898): CLEAR XDELVFLG (Lambert aim point), NORMSW; SET FINALFLG;
  * RTARG, TPASS4 = T + T1, DELVSIN = V2(T1)/ - V(T1)/; VN1645 (V16N45),
- * which returns here on recycle.
- * DEVIATION: the AGC takes RTARG from the push-down list (VLOAD STADR):
- * 0D holds R(T2)/ (PDDL in RTENCK3D) or TIMETHET's new R, but a recycle
- * pops again with PL at 0 and reads the six words below the VAC area
- * (checked on the rope). The vector saved by the targeting step is used
- * each time.                                                              */
+ * which returns here on recycle. DEVIATION: the AGC takes RTARG from the
+ * push-down list (VLOAD STADR): 0D holds R(T2)/ (PDDL in RTENCK3D) or
+ * TIMETHET's new R, but a recycle pops again with PL at 0 and reads the six
+ * words below the VAC area (checked on the rope). The vector saved by the
+ * targeting step is used each time.
+ *
+ * FUNCTION NAME: agc_job_return_to_earth_target_store
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context of the running job (display
+ *                                   and DELAYJOB continuations)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
+ *          or state assertion fails; otherwise the status of the first
+ *          service call that failed
+ **********************************************************************/
 agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
 {
-    agc_interp_t         *ip = rte_ip();
-    const rte_erasable_t *rs = rte_state();
-    agc_rendz_t          *rz = agc_rendz_erasable();
+    agc_interp_t         *ip = rte_ip(); /* P37 interpreter state */
+    const rte_erasable_t *rs = rte_state(); /* P37 erasables */
+    agc_rendz_t          *rz = /* rendezvous targets (RTARG ..) */
+                               agc_rendz_erasable();
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rz != NULL))
     {
@@ -645,12 +996,29 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
     rz->tpass4  = agc_dp_add(ip, rs->conic_t, rs->t1);
     rz->delvsin = agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v);
 
-    return (agc_rendz_ttogo_display_start(ctx, ip,
-                                          AGC_JOB_RETURN_TO_EARTH_TARGET_STORE));
+    const agc_job_id_t again = AGC_JOB_RETURN_TO_EARTH_TARGET_STORE; /* V32 */
+
+    return (agc_rendz_ttogo_display_start(ctx, ip, again));
 }
 
-/* Noun 56 data (RTEDVD, RTEGAM2D: the P37 crew inputs), for the noun
- * dispatcher. NOT_FOUND: not a P37 erasable.                             */
+/**********************************************************************
+ * AGC: none (noun 56 access for PINBALL, P37_P70.agc p. 891) -- noun 56
+ * data (RTEDVD, RTEGAM2D: the P37 crew inputs) for the noun dispatcher.
+ *
+ * FUNCTION NAME: agc_return_to_earth_noun
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------------
+ *   data_id   uint16_t    I    noun data identifier (AGC_DATA_RTEDVD or
+ *                              AGC_DATA_RTEGAM2D)
+ *   write     bool        I    true: store *value; false: read into *value
+ *   value     agc_dp_t *  IO   the DP word, scale of the erasable (m/cs B7
+ *                              or revs B0)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when data_id
+ *          is not a P37 erasable; AGC_STATUS_BAD_ARG on a failed assertion
+ **********************************************************************/
 agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write,
                                       agc_dp_t *value)
 {
@@ -659,8 +1027,8 @@ agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rte_erasable_t *rs = rte_state();
-    agc_dp_t       *p  = NULL;
+    rte_erasable_t *rs = rte_state(); /* P37 erasables */
+    agc_dp_t       *p  = NULL; /* the erasable addressed */
 
     if (data_id == AGC_DATA_RTEDVD)
     {
