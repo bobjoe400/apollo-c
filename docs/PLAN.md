@@ -147,3 +147,27 @@ lane count to avoid limits. The run continues until the definition of done.
 | 4    | oracle-cases.md          | DONE (15 findings -> review)        |
 | 5    | review.md (one per lane) | RUNNING (16 agents)                 |
 | 6    | document.md              | queued last                         |
+
+## Concurrency (user direction, 2026-10-11)
+
+Run at most 3 agents at a time. Wide parallel waves kept hitting usage
+limits mid-work and the resume overhead was slowing progress. Queue order
+for the remaining review lanes (fidelity-bearing first, style-debt last):
+
+1. review-io-dsky      (build-breaking header; F15; 64 KNOWN mismatches)
+2. review-guid-entry   (F14 fix in progress)
+3. review-nav-aux      (INCORP1 fixes in progress)
+4. review-prog-rendz   (F13 CDH 62 m)
+5. review-guid-landing (F9 THROTTLE)
+6. review-dap-lm       (docked 1/ACCS, BIGAOS, F9 PITCHDAP)
+7. review-dap-csm      (ROLLSET; digit-suffixed names)
+8. review-nav-conic    (-0 modelling; kepler.c hand fixes in progress)
+9. review-nav-integ    (spec generator in progress)
+10. review-core-numeric (UNIT B27; stale DVSIGN; test prologs in progress)
+11. review-exec-sched   (prologs in progress)
+12. review-imu          (gyrocompass file in progress)
+13. review-prog-align   (oracle test additions in progress)
+14. review-sys-misc     (t4rupt_csm.c rewrite in progress)
+15. review-guid-powered (ZOOM; style debt; prologs in progress)
+16. sim                 (pad.c; scenarios)
+Then: lead assert.h rename; document wave (1 agent).

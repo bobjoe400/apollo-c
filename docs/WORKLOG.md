@@ -372,3 +372,6 @@
             (15 reviews + sim) told to bring their Progress sections current
             and leave touched files compiling before continuing. On cutoff:
             commit, ListAgents, relaunch only the dead ones with resume.
+2026-10-11  Cutoff killed all 16 remaining agents again. User: cap at 2-3
+            concurrent lanes. Policy recorded in PLAN.md with a queue order.
+            Relaunching 3: review-io-dsky, review-guid-entry, review-nav-aux.
