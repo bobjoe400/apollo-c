@@ -80,9 +80,9 @@ typedef struct lambert_state
     agc_dp_words_t dcoga;      /* DCOGA = DELINDEP (12D) 2^5                     */
     agc_dp_words_t tprev;      /* TPREV = DEPREV 2^28                            */
     agc_dp_words_t terrlamb;   /* TERRLAMB = DELDEP 2^28                         */
-    agc_sp_t tweekit;    /* TWEEKIT (40D), SP 2^0 */
-    agc_sp_t iterctr;    /* ITERCTR (22D), count (unscaled) */
-    bool     slopesw;    /* SLOPESW                                        */
+    agc_sp_t       tweekit;    /* TWEEKIT (40D), SP 2^0 */
+    agc_sp_t       iterctr;    /* ITERCTR (22D), count (unscaled) */
+    bool           slopesw;    /* SLOPESW                                        */
 } lambert_state_t;
 
 /* Where a LAMBLOOP pass goes next. */
@@ -111,19 +111,9 @@ typedef enum lambert_next
  *********************************************************************/
 static agc_tp_words_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *it)
 {
-    if (!AGC_ASSERT(ip != NULL && it != NULL))
-    {
-        return (agc_mpac_dload(AGC_CONIC_KEPZERO)); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(it->tweekit >= 0))
-    {
-        return (agc_mpac_dload(AGC_CONIC_KEPZERO)); /* no valid result */
-    }
-
-    const agc_dp_words_t tw = {it->tweekit, 1};                       /* (TWEEKIT, S2), 2^0 */
+    const agc_dp_words_t tw = {it->tweekit, 1};                          /* (TWEEKIT, S2), 2^0 */
     agc_tp_words_t       m  = agc_mpac_dmp(agc_mpac_dload(it->min), tw); /* DMP: scale of INDEP */
-    const agc_dp_words_t lo = agc_mpac_store(m);                              /* 0D MIN TWEEKIT, scale of INDEP */
+    const agc_dp_words_t lo = agc_mpac_store(m);                         /* 0D MIN TWEEKIT, scale of INDEP */
 
     m = agc_mpac_dmp(agc_mpac_dload(it->max), tw); /* MAX TWEEKIT */
 
@@ -139,7 +129,7 @@ static agc_tp_words_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *
  * moving the bound behind INDEP in, and cutting a step that would pass
  * the other bound to 9/10 of the distance to it
  *
- * FUNCTION NAME: agc_conic_iterator
+ * FUNCTION NAME: iterator_run
  *
  * ARGUMENTS:
  *   Argument  Type              I/O  Description (scale)
@@ -149,22 +139,9 @@ static agc_tp_words_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *
  *                                    MIN, TWEEKIT, SLOPESW, ORDERSW in;
  *                                    DELINDEP, MAX/MIN, SLOPESW out
  *                                    (scales of the caller's variables)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL pointer or MAX < MIN
  *********************************************************************/
-agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
+static void iterator_run(agc_interp_t *ip, agc_iterator_t *it)
 {
-    if (!AGC_ASSERT(ip != NULL && it != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_conic_value_(it->max) >= agc_conic_value_(it->min)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_tp_words_t m; /* MPAC, scale of INDEP */
 
     if (it->slopesw)
@@ -177,7 +154,7 @@ agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
         int n1 = 0; /* NORM X1 count of DEP - DEPREV */
         int n2 = 0; /* NORM X2 count of DELINDEP */
 
-        m                   = agc_mpac_norm(agc_mpac_dsu(ip, agc_mpac_dload(it->dep), it->deprev), &n1);
+        m                         = agc_mpac_norm(agc_mpac_dsu(ip, agc_mpac_dload(it->dep), it->deprev), &n1);
         const agc_dp_words_t ddep = agc_mpac_store(m); /* PDDL: DEP - DEPREV, scale of DEP */
 
         m = agc_mpac_norm(agc_mpac_dload(it->delindep), &n2);
@@ -207,7 +184,7 @@ agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
             m            = agc_mpac_dsu(ip, agc_mpac_dload(it->max), it->indep);
             it->delindep = agc_mpac_store(agc_mpac_dmp(m, AGC_CONIC_DP9_10));
 
-            return (AGC_STATUS_OK);
+            return;
         }
     }
     else
@@ -225,14 +202,39 @@ agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
             m            = agc_mpac_dsu(ip, agc_mpac_dload(it->min), it->indep);
             it->delindep = agc_mpac_store(agc_mpac_dmp(m, AGC_CONIC_DP9_10));
 
-            return (AGC_STATUS_OK);
+            return;
         }
     }
 
     it->delindep = trial; /* DELOK NEWDEL   */
+} /* iterator_run */
+
+/**********************************************************************
+ * ITERATOR (CONIC_SUBROUTINES.agc pp. 1285-1286) -- public entry: checks
+ * the caller's pointers and runs iterator_run
+ *
+ * FUNCTION NAME: agc_conic_iterator
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -----------------------------------
+ *   ip        agc_interp_t *    I/O  interpreter state (OVFIND)
+ *   it        agc_iterator_t *  I/O  as iterator_run
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
+ *          NULL pointer
+ *********************************************************************/
+agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
+{
+    if (!AGC_ASSERT(ip != NULL && it != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    iterator_run(ip, it);
 
     return (AGC_STATUS_OK);
-} /* agc_conic_iterator */
+}
 
 /**********************************************************************
  * LAMBERT entry to MAXCOGA (CONIC_SUBROUTINES.agc pp. 1296-1297) --
@@ -254,35 +256,21 @@ agc_status_t agc_conic_iterator(agc_interp_t *ip, agc_iterator_t *it)
  *********************************************************************/
 static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_lambert_in_t *in, lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (false);
-    }
+    agc_dp_words_t csth = AGC_CONIC_KEPZERO; /* 0D CSTH, 2^1 */
 
-    if (!AGC_ASSERT(in != NULL && ls != NULL))
-    {
-        return (false);
-    }
+    agc_conic_geom_(ip, ctx, in->r1vec, in->r2vec, &ctx->snth, &csth); /* CALL GEOM */
 
-    agc_dp_words_t csth = AGC_CONIC_KEPZERO;                                                 /* 0D CSTH, 2^1 */
-    agc_status_t st   = agc_conic_geom_(ip, ctx, in->r1vec, in->r2vec, &ctx->snth, &csth); /* CALL GEOM */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (false);
-    }
-
-    int            n   = 0;                                                  /* MAGVEC2 NORM X1 */
+    int                  n   = 0;                                               /* MAGVEC2 NORM X1 */
     agc_tp_words_t       m   = agc_mpac_norm(agc_mpac_dload(ctx->magvec2), &n); /* NORM: 2^(29-n) */
-    const agc_dp_words_t r2n = agc_mpac_store(m);                                    /* PDDL: R2, 2^(29-n) */
+    const agc_dp_words_t r2n = agc_mpac_store(m);                               /* PDDL: R2, 2^(29-n) */
 
     m = agc_mpac_shift(ip, agc_mpac_dload(ctx->r1), -1); /* R1 SR1, 2^30 */
 
     m              = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, r2n), n - 6); /* SL* 0 -6,1 */
-    ls->r1_r2      = agc_mpac_store(m);                                      /* 0D R1/R2 2^7   */
-    ctx->csth      = csth;                                                 /* STORE CSTH     */
+    ls->r1_r2      = agc_mpac_store(m);                                   /* 0D R1/R2 2^7   */
+    ctx->csth      = csth;                                                /* STORE CSTH     */
     m              = agc_mpac_bdsu(ip, agc_mpac_shift(ip, agc_mpac_dload(csth), -1), AGC_CONIC_D1_4);
-    ls->one_m_csth = agc_mpac_store(m);                                      /* 1-CSTH 2^2     */
+    ls->one_m_csth = agc_mpac_store(m);                                   /* 1-CSTH 2^2     */
     m              = agc_mpac_round(ip, m);
 
     if (agc_conic_mbze_(m))
@@ -290,11 +278,11 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_l
         return (false);
     }
 
-    m                    = agc_mpac_norm(m, &n);
+    m                          = agc_mpac_norm(m, &n);
     const agc_dp_words_t omc_n = agc_mpac_store(m); /* 1-CSTH normalized, 2^(2-n) */
 
-    m                   = agc_mpac_shift(ip, agc_mpac_dload(ls->r1_r2), -1);
-    m                   = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, omc_n), n - 3); /* SL* 0 -3,1 */
+    m                         = agc_mpac_shift(ip, agc_mpac_dload(ls->r1_r2), -1);
+    m                         = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, omc_n), n - 3); /* SL* 0 -3,1 */
     const agc_dp_words_t root = agc_mpac_store(agc_mpac_sqrt(ip, m));                  /* 2D 2^5 */
 
     m           = agc_mpac_shift(ip, agc_mpac_dload(ctx->snth), -6);
@@ -332,16 +320,6 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_l
  *********************************************************************/
 static void lambert_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_lambert_in_t *in, lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(in != NULL && ls != NULL))
-    {
-        return;
-    }
-
     agc_tp_words_t m = agc_mpac_shift(ip, agc_mpac_dload(ctx->csth), -6); /* CSTH SR 6, 2^7 */
 
     ls->csth_rho = agc_mpac_store(agc_mpac_dsu(ip, m, ls->r1_r2));
@@ -360,7 +338,7 @@ static void lambert_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_lam
 
     if (in->guessw)
     { /* NOGUESS        */
-        ls->tweekit             = AGC_CONIC_TWEEKIT_NOGUESS;
+        ls->tweekit                   = AGC_CONIC_TWEEKIT_NOGUESS;
         const agc_dp_words_t half_min = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dload(ls->cogamin), -1)); /* COGAMIN SR1, 2^6 */
 
         m         = agc_mpac_shift(ip, agc_mpac_dload(ls->cogamax), -1);
@@ -392,20 +370,10 @@ static void lambert_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_lam
  *********************************************************************/
 static bool lambert_p_r1a(agc_interp_t *ip, agc_conic_ctx_t *ctx, const lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(ls != NULL))
-    {
-        return (false);
-    }
-
-    int      n = 0;                                                     /* NORM X1 count */
+    int            n = 0;                                                  /* NORM X1 count */
     agc_tp_words_t m = agc_mpac_dmp(agc_mpac_dload(ctx->coga), ctx->snth); /* COGA SNTH, 2^6 */
 
-    m                  = agc_mpac_dsu(ip, agc_mpac_shift(ip, m, -1), ls->csth_rho);
+    m                        = agc_mpac_dsu(ip, agc_mpac_shift(ip, m, -1), ls->csth_rho);
     const agc_dp_words_t den = agc_mpac_store(agc_mpac_norm(m, &n)); /* 0D, 2^(7-n) */
 
     m = agc_mpac_shift(ip, agc_mpac_dload(ls->one_m_csth), n - 9); /* SL* 0 -9D,1 */
@@ -445,16 +413,6 @@ static bool lambert_p_r1a(agc_interp_t *ip, agc_conic_ctx_t *ctx, const lambert_
  *********************************************************************/
 static lambert_next_t lambert_retreat(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambert_state_t *ls, bool high_energy)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
-    if (!AGC_ASSERT(ls != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
     if (high_energy)
     {
         ls->cogamin = ctx->coga; /* HIENERGY       */
@@ -496,34 +454,19 @@ static lambert_next_t lambert_retreat(agc_interp_t *ip, agc_conic_ctx_t *ctx, la
  *********************************************************************/
 static lambert_next_t lambert_step(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
-    if (!AGC_ASSERT(ls != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
     agc_iterator_t it; /* ITERATOR arguments: COGA 2^5, T 2^28 cs */
 
-    it.indep        = ctx->coga;
-    it.dep          = ctx->t;
-    it.deprev       = ls->tprev;
-    it.deldep       = ls->terrlamb;
-    it.delindep     = ls->dcoga;
-    it.max          = ls->cogamax;
-    it.min          = ls->cogamin;
-    it.tweekit      = ls->tweekit;
-    it.slopesw      = ls->slopesw;
-    it.ordersw      = agc_flag_test(AGC_FLAG_ORDERSW); /* never set in Apollo 11 */
-    agc_status_t st = agc_conic_iterator(ip, &it);     /* CALL ITERATOR */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (LAMB_SUFFCHEK);
-    }
+    it.indep    = ctx->coga;
+    it.dep      = ctx->t;
+    it.deprev   = ls->tprev;
+    it.deldep   = ls->terrlamb;
+    it.delindep = ls->dcoga;
+    it.max      = ls->cogamax;
+    it.min      = ls->cogamin;
+    it.tweekit  = ls->tweekit;
+    it.slopesw  = ls->slopesw;
+    it.ordersw  = agc_flag_test(AGC_FLAG_ORDERSW); /* never set in Apollo 11 */
+    iterator_run(ip, &it);                         /* CALL ITERATOR */
 
     ls->dcoga   = it.delindep;
     ls->cogamax = it.max;
@@ -560,16 +503,6 @@ static lambert_next_t lambert_step(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambe
  *********************************************************************/
 static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
-    if (!AGC_ASSERT(ls != NULL))
-    {
-        return (LAMB_SUFFCHEK);
-    }
-
     if (!lambert_p_r1a(ip, ctx, ls))
     { /* NEGP           */
         return (lambert_retreat(ip, ctx, ls, agc_conic_mbmn_(agc_mpac_dload(ls->dcoga))));
@@ -580,12 +513,7 @@ static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambe
         return (lambert_retreat(ip, ctx, ls, true));
     }
 
-    agc_status_t st = agc_conic_getx_(ip, ctx, agc_mpac_dload(ctx->p)); /* DLOAD P, CALL GETX */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (LAMB_SUFFCHEK);
-    }
+    agc_conic_getx_(ip, ctx, agc_mpac_dload(ctx->p)); /* DLOAD P, CALL GETX */
 
     ls->tprev = ctx->t; /* DLOAD T STODL TPREV */
 
@@ -594,12 +522,7 @@ static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambe
         return (lambert_retreat(ip, ctx, ls, agc_conic_mbmn_(agc_mpac_dload(ls->dcoga))));
     }
 
-    st = agc_conic_deltime_(ip, ctx);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (LAMB_SUFFCHEK);
-    }
+    agc_conic_deltime_(ip, ctx);
 
     if (agc_interp_test_ovf(ip))
     { /* BOV BIGTIME    */
@@ -644,23 +567,13 @@ static lambert_next_t lambert_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, lambe
  *********************************************************************/
 static bool lambert_suffchek(agc_interp_t *ip, const lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ls != NULL))
-    {
-        return (false);
-    }
-
-    const bool     csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);      /* Comanche tolerance */
+    const bool           csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);   /* Comanche tolerance */
     agc_tp_words_t       m   = agc_mpac_abs(agc_mpac_dload(ls->terrlamb)); /* ABS TERRLAMB, 2^28 cs */
-    const agc_dp_words_t err = agc_mpac_store(m);                               /* PDDL: |TERRLAMB| 2^28 cs */
+    const agc_dp_words_t err = agc_mpac_store(m);                          /* PDDL: |TERRLAMB| 2^28 cs */
 
     m = agc_mpac_dmp(agc_mpac_dload(ls->tdesired), csm ? AGC_CONIC_D1_4 : AGC_CONIC_BEE17); /* CSM .25; LM 2^-17 */
 
     m = agc_mpac_dsu(ip, agc_mpac_dad(ip, m, AGC_CONIC_ONEBIT), err);
-
-    if (!AGC_ASSERT(!agc_conic_mbmn_(agc_mpac_dload(ls->tdesired))))
-    {
-        return (false);
-    }
 
     return (!agc_conic_mbmn_(m)); /* BPL INITV      */
 }
@@ -681,29 +594,19 @@ static bool lambert_suffchek(agc_interp_t *ip, const lambert_state_t *ls)
  *********************************************************************/
 static agc_vec_t lambert_initv(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(!agc_conic_mbmn_(agc_mpac_dload(ctx->r1))))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    int            n   = 0;                                             /* NORM X1 count of R1 */
+    int                  n   = 0;                                          /* NORM X1 count of R1 */
     agc_tp_words_t       m   = agc_mpac_norm(agc_mpac_dload(ctx->r1), &n); /* NORM: 2^(29-n) */
-    const agc_dp_words_t r1n = agc_mpac_store(m);                               /* PDDL: R1, 2^(29-n) */
+    const agc_dp_words_t r1n = agc_mpac_store(m);                          /* PDDL: R1, 2^(29-n) */
 
     m = agc_mpac_shift(ip, agc_mpac_dload(ctx->p), -1); /* P SR1, 2^5 */
 
-    m                   = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, r1n), n - 4); /* SL* 0 -4,1 */
-    m                   = agc_mpac_dmp(agc_mpac_sqrt(ip, m), ctx->root_mu);
-    m                   = agc_mpac_shift(ip, m, 1);
-    const agc_dp_words_t vtan = agc_mpac_store(m);                                      /* 0D VTAN 2^7    */
+    m                         = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, r1n), n - 4); /* SL* 0 -4,1 */
+    m                         = agc_mpac_dmp(agc_mpac_sqrt(ip, m), ctx->root_mu);
+    m                         = agc_mpac_shift(ip, m, 1);
+    const agc_dp_words_t vtan = agc_mpac_store(m);                                   /* 0D VTAN 2^7    */
 
     m                    = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx->coga), 5);
-    const agc_vec_t vrad = agc_conic_vxsc_(ip, m, ctx->ur1);                                  /* SL 5 VXSC UR1: VTAN COGA UR1, 2^8 */
+    const agc_vec_t vrad = agc_conic_vxsc_(ip, m, ctx->ur1);                                       /* SL 5 VXSC UR1: VTAN COGA UR1, 2^8 */
     agc_vec_t       v    = agc_vec_shl(ip, agc_conic_vxsc_(ip, agc_mpac_dload(vtan), ctx->un), 1); /* PDDL VXSC UN VSL1: 2^7 */
 
     v = agc_vec_add(ip, agc_vec_cross(ip, v, ctx->ur1), vrad);
@@ -776,7 +679,7 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const 
 
     ls->tdesired = agc_dp_to_words(in->tdesired);
     ls->epsilonl = agc_mpac_store(agc_mpac_dmpr(ip, agc_mpac_dload(ls->tdesired), AGC_CONIC_BEE19)); /* DLOAD TDESIRED DMPR BEE19 */
-    ls->slopesw  = true; /* SET SLOPESW    */
+    ls->slopesw  = true;                                                                             /* SET SLOPESW    */
 
     /* DEVIATION: TERRLAMB (an erasable) and DCOGA (push-down 12D) are not
      * set by LAMBERT before an early NEGP/SUFFCHEK can read them; the AGC
@@ -810,10 +713,6 @@ agc_vec_t agc_erase_un(void)
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        if (!AGC_ASSERT(g_un.c[i] >= AGC_DP_MIN && g_un.c[i] <= AGC_DP_MAX))
-        {
-            return (agc_vec_zero());
-        }
     }
 
     return (g_un);
@@ -832,11 +731,6 @@ agc_vec_t agc_erase_un(void)
  *********************************************************************/
 agc_sp_t agc_erase_geomsgn(void)
 {
-    if (!AGC_ASSERT(g_geomsgn >= AGC_SP_MIN && g_geomsgn <= AGC_SP_MAX))
-    {
-        return (0);
-    }
-
     return (g_geomsgn);
 }
 
@@ -855,16 +749,6 @@ agc_sp_t agc_erase_geomsgn(void)
  *********************************************************************/
 static void lambert_output(const agc_conic_ctx_t *ctx, const lambert_state_t *ls, agc_lambert_out_t *out)
 {
-    if (!AGC_ASSERT(ctx != NULL && ls != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
     out->snth       = agc_conic_value_(ctx->snth);
     out->csth       = agc_conic_value_(ctx->csth);
     out->one_m_csth = agc_conic_value_(ls->one_m_csth);
@@ -893,11 +777,6 @@ static void lambert_output(const agc_conic_ctx_t *ctx, const lambert_state_t *ls
  *********************************************************************/
 static void lambert_solnsw(agc_lambert_out_t *out, bool set)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
     out->solnsw = set;
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, set);
 }
@@ -988,12 +867,7 @@ agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in, agc
 
     if (in->vtargtag == 0)
     { /* TARGETV        */
-        st = agc_conic_lamenter_(ip, &ctx, agc_mpac_dload(ctx.magvec2), &out->vtarget); /* DLOAD MAGVEC2 CALL LAMENTER */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        agc_conic_lamenter_(ip, &ctx, agc_mpac_dload(ctx.magvec2), &out->vtarget); /* DLOAD MAGVEC2 CALL LAMENTER */
     }
 
     return (ok ? AGC_STATUS_OK : AGC_STATUS_NO_CONVERGE); /* SOLNSW clear / set */

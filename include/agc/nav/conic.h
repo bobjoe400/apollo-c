@@ -151,9 +151,9 @@ typedef struct agc_iterator
     agc_dp_words_t delindep; /* DELINDEP in/out step (DCOGA, 2^5)           */
     agc_dp_words_t max;      /* MAX upper bound (COGAMAX, 2^5)              */
     agc_dp_words_t min;      /* MIN lower bound (COGAMIN, 2^5)              */
-    agc_sp_t tweekit;  /* TWEEKIT (40D) first-step fraction of MAX-MIN, SP 2^0; DMP reads 40D,41D as DP and 41D is S2 = 1 (set by GETX) */
-    bool     slopesw;  /* SLOPESW set: first pass (cleared here)      */
-    bool     ordersw;  /* ORDERSW set: 2nd order (never in Apollo 11) */
+    agc_sp_t       tweekit;  /* TWEEKIT (40D) first-step fraction of MAX-MIN, SP 2^0; DMP reads 40D,41D as DP and 41D is S2 = 1 (set by GETX) */
+    bool           slopesw;  /* SLOPESW set: first pass (cleared here)      */
+    bool           ordersw;  /* ORDERSW set: 2nd order (never in Apollo 11) */
 } agc_iterator_t;
 
 /* ITERATOR: new DELINDEP (and MAX/MIN, SLOPESW) in *it. */

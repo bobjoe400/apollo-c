@@ -71,16 +71,11 @@ static const agc_dp_words_t mutable_tab[8] = {
  *   ctx       agc_conic_ctx_t *  O    zeroed; 1/MU, ROOTMU, 1/ROOTMU
  *   body      agc_conic_body_t   I    AGC_CONIC_EARTH or AGC_CONIC_MOON
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL pointer or an unknown body
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for an
+ *          unknown body (the caller's input)
  *********************************************************************/
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -117,16 +112,6 @@ agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
  *********************************************************************/
 agc_dp_words_t agc_conic_mu_(agc_conic_body_t body)
 {
-    if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
-    {
-        return (mutable_tab[0]);
-    }
-
-    if (!AGC_ASSERT(mutable_tab[0].hi > mutable_tab[4].hi)) /* MUE > MUM */
-    {
-        return (mutable_tab[0]);
-    }
-
     return ((body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4]); /* MUEARTH, else MUM */
 }
 
@@ -149,17 +134,7 @@ agc_dp_words_t agc_conic_mu_(agc_conic_body_t body)
  *********************************************************************/
 agc_tp_words_t agc_conic_msign_sp_(agc_tp_words_t m, agc_sp_t s)
 {
-    if (!AGC_ASSERT(s != 0))
-    {
-        return (m);
-    }
-
     agc_dp_words_t tag = {s, 0}; /* the tag word; its successor is not read */
-
-    if (!AGC_ASSERT(tag.hi == s))
-    {
-        return (m);
-    }
 
     return (agc_mpac_sign(m, tag));
 }
@@ -179,16 +154,6 @@ agc_tp_words_t agc_conic_msign_sp_(agc_tp_words_t m, agc_sp_t s)
  *********************************************************************/
 bool agc_conic_mbmn_(agc_tp_words_t m)
 {
-    if (!AGC_ASSERT(m.hi >= AGC_SP_MIN && m.hi <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(m.mid >= AGC_SP_MIN && m.mid <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
     return ((m.hi < 0) || ((m.hi == 0) && (m.mid < 0)));
 }
 
@@ -206,16 +171,6 @@ bool agc_conic_mbmn_(agc_tp_words_t m)
  *********************************************************************/
 bool agc_conic_mbze_(agc_tp_words_t m)
 {
-    if (!AGC_ASSERT(m.hi >= AGC_SP_MIN && m.hi <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(m.mid >= AGC_SP_MIN && m.mid <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
     return ((m.hi == 0) && (m.mid == 0));
 }
 
@@ -241,18 +196,8 @@ bool agc_conic_mbze_(agc_tp_words_t m)
  *********************************************************************/
 agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef)
 {
-    if (!AGC_ASSERT(coef != NULL))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT(ncoef >= 2 && ncoef <= 16))
-    {
-        return (m);
-    }
-
-    agc_interp_t         scratch; /* POLY's DAS leaves OVFIND alone */
-    const agc_dp_words_t vbuf = agc_mpac_store(m);                            /* DXCH MPAC VBUF: x */
+    agc_interp_t         scratch;                                                 /* POLY's DAS leaves OVFIND alone */
+    const agc_dp_words_t vbuf = agc_mpac_store(m);                                /* DXCH MPAC VBUF: x */
     agc_tp_words_t       acc  = agc_mpac_dload(agc_dp_to_words(coef[ncoef - 1])); /* A(N) */
 
     agc_interp_init(&scratch);
@@ -281,16 +226,6 @@ agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef
  *********************************************************************/
 agc_dp_t agc_conic_value_(agc_dp_words_t w)
 {
-    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.hi <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(w.lo >= AGC_SP_MIN && w.lo <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_from_words(w));
 }
 
@@ -311,24 +246,14 @@ agc_dp_t agc_conic_value_(agc_dp_words_t w)
  *********************************************************************/
 agc_vec_t agc_conic_vxsc_(agc_interp_t *ip, agc_tp_words_t m, agc_vec_t v)
 {
-    agc_vec_t r = v; /* result */
-    int       k = 0; /* component */
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (v);
-    }
+    agc_vec_t r = v; /* result, scales of the operands added */
+    int       k = 0; /* component index (unscaled) */
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
         agc_tp_words_t c = agc_mpac_dmpr(ip, m, agc_dp_to_words(v.c[k])); /* DMPSUB, VROUND */
 
         r.c[k] = agc_dp_from_words(agc_mpac_store(c));
-    }
-
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (v);
     }
 
     return (r);
@@ -369,17 +294,7 @@ void agc_conic_mirror_flag_(agc_conic_flag_t f, bool set)
             return; /* unreachable: cannot happen */
     }
 
-    if (!AGC_ASSERT(id != 0))
-    {
-        return;
-    }
-
     agc_flag_put(id, set);
-
-    if (!AGC_ASSERT(agc_flag_test(id) == set))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -433,17 +348,7 @@ agc_status_t agc_conic_abtconic_(void)
  *********************************************************************/
 agc_conic_body_t agc_conic_body_of_x1(int x1)
 {
-    if (!AGC_ASSERT(x1 == -2 || x1 == -10))
-    {
-        return (AGC_CONIC_EARTH);
-    }
-
     agc_conic_body_t b = (x1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH; /* MUTABLE index -10D: moon */
-
-    if (!AGC_ASSERT(b == AGC_CONIC_EARTH || b == AGC_CONIC_MOON))
-    {
-        return (AGC_CONIC_EARTH);
-    }
 
     return (b);
 }

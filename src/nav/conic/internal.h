@@ -47,28 +47,28 @@
 
 /* ---- constants, CONIC_SUBROUTINES.agc p. 1288, as the assembled words
  * (major, minor; octal) ---------------------------------------------- */
-#define AGC_CONIC_D1_4     ((agc_dp_words_t){010000, 0})            /* D1/4   1.0 B-2              */
-#define AGC_CONIC_D1_8     ((agc_dp_words_t){04000, 0})             /* D1/8   1.0 B-3              */
-#define AGC_CONIC_D1_16    ((agc_dp_words_t){02000, 0})             /* D1/16  1.0 B-4              */
-#define AGC_CONIC_D1_32    ((agc_dp_words_t){01000, 0})             /* D1/32  1.0 B-5              */
-#define AGC_CONIC_D1_64    ((agc_dp_words_t){0400, 0})              /* D1/64  1.0 B-6              */
-#define AGC_CONIC_D1_128   ((agc_dp_words_t){0200, 0})              /* D1/128 1.0 B-7              */
-#define AGC_CONIC_D1_256   ((agc_dp_words_t){0100, 0})              /* D1/256 1.0 B-8              */
-#define AGC_CONIC_D1_1024  ((agc_dp_words_t){020, 0})               /* D1/1024 1.0 B-10            */
-#define AGC_CONIC_DP9_10   ((agc_dp_words_t){034631, 023146})       /* DP9/10 .9                   */
-#define AGC_CONIC_M50SC    ((agc_dp_words_t){-0310, 0})             /* -50SC 77467 77777, B-12     */
-#define AGC_CONIC_2PISC    ((agc_dp_words_t){03110, 017665})        /* 2PISC 6.2831853 B-6         */
-#define AGC_CONIC_BEE17    ((agc_dp_words_t){0, 04000})             /* BEE17 1.0 B-17 (overlay)    */
-#define AGC_CONIC_BEE19    ((agc_dp_words_t){0, 01000})             /* BEE19 1.0 B-19 (overlay)    */
-#define AGC_CONIC_BEE22    ((agc_dp_words_t){0, 0100})              /* BEE22 1.0 B-22 (overlay)    */
-#define AGC_CONIC_ONEBIT   ((agc_dp_words_t){0, 1})                 /* ONEBIT 1.0 B-28             */
-#define AGC_CONIC_COGUPLIM ((agc_dp_words_t){037767, 037737})       /* COGUPLIM .999511597         */
-#define AGC_CONIC_COGLOLIM ((agc_dp_words_t){-037767, -037737})     /* COGLOLIM 40010 40040        */
-#define AGC_CONIC_DP2_3    ((agc_dp_words_t){025252, 025253})       /* DP2/3 .6666666667           */
-#define AGC_CONIC_KEPZERO  ((agc_dp_words_t){0, 0})                 /* KEPZERO = LO6ZEROS          */
-#define AGC_CONIC_DP1_4    ((agc_dp_words_t){010000, 0})            /* DP1/4 (fixed-fixed pool) .25 */
-#define AGC_CONIC_LODPHALF ((agc_dp_words_t){020000, 0})            /* LODPHALF = XUNIT .5         */
-#define AGC_CONIC_LDPOSMAX ((agc_dp_words_t){037777, 037777})       /* LDPOSMAX = LODPMAX          */
+#define AGC_CONIC_D1_4     ((agc_dp_words_t){010000, 0})        /* D1/4   1.0 B-2              */
+#define AGC_CONIC_D1_8     ((agc_dp_words_t){04000, 0})         /* D1/8   1.0 B-3              */
+#define AGC_CONIC_D1_16    ((agc_dp_words_t){02000, 0})         /* D1/16  1.0 B-4              */
+#define AGC_CONIC_D1_32    ((agc_dp_words_t){01000, 0})         /* D1/32  1.0 B-5              */
+#define AGC_CONIC_D1_64    ((agc_dp_words_t){0400, 0})          /* D1/64  1.0 B-6              */
+#define AGC_CONIC_D1_128   ((agc_dp_words_t){0200, 0})          /* D1/128 1.0 B-7              */
+#define AGC_CONIC_D1_256   ((agc_dp_words_t){0100, 0})          /* D1/256 1.0 B-8              */
+#define AGC_CONIC_D1_1024  ((agc_dp_words_t){020, 0})           /* D1/1024 1.0 B-10            */
+#define AGC_CONIC_DP9_10   ((agc_dp_words_t){034631, 023146})   /* DP9/10 .9                   */
+#define AGC_CONIC_M50SC    ((agc_dp_words_t){-0310, 0})         /* -50SC 77467 77777, B-12     */
+#define AGC_CONIC_2PISC    ((agc_dp_words_t){03110, 017665})    /* 2PISC 6.2831853 B-6         */
+#define AGC_CONIC_BEE17    ((agc_dp_words_t){0, 04000})         /* BEE17 1.0 B-17 (overlay)    */
+#define AGC_CONIC_BEE19    ((agc_dp_words_t){0, 01000})         /* BEE19 1.0 B-19 (overlay)    */
+#define AGC_CONIC_BEE22    ((agc_dp_words_t){0, 0100})          /* BEE22 1.0 B-22 (overlay)    */
+#define AGC_CONIC_ONEBIT   ((agc_dp_words_t){0, 1})             /* ONEBIT 1.0 B-28             */
+#define AGC_CONIC_COGUPLIM ((agc_dp_words_t){037767, 037737})   /* COGUPLIM .999511597         */
+#define AGC_CONIC_COGLOLIM ((agc_dp_words_t){-037767, -037737}) /* COGLOLIM 40010 40040        */
+#define AGC_CONIC_DP2_3    ((agc_dp_words_t){025252, 025253})   /* DP2/3 .6666666667           */
+#define AGC_CONIC_KEPZERO  ((agc_dp_words_t){0, 0})             /* KEPZERO = LO6ZEROS          */
+#define AGC_CONIC_DP1_4    ((agc_dp_words_t){010000, 0})        /* DP1/4 (fixed-fixed pool) .25 */
+#define AGC_CONIC_LODPHALF ((agc_dp_words_t){020000, 0})        /* LODPHALF = XUNIT .5         */
+#define AGC_CONIC_LDPOSMAX ((agc_dp_words_t){037777, 037777})   /* LDPOSMAX = LODPMAX          */
 
 /* SSP constants: YUL assembled an interpretive octal operand of 10000 or
  * more as the operand less 10000 (an address-constant encoding): the
@@ -145,23 +145,23 @@ agc_dp_words_t agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
 void           agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
 agc_status_t   agc_conic_abtconic_(void);            /* ABTCONIC     */
 
-agc_tp_words_t agc_conic_msign_sp_(agc_tp_words_t m, agc_sp_t s);                         /* SIGN, SP tag   */
-bool           agc_conic_mbmn_(agc_tp_words_t m);                                         /* BMN taken      */
-bool           agc_conic_mbze_(agc_tp_words_t m);                                         /* BZE taken      */
-agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef);        /* TC POLY        */
-agc_dp_t       agc_conic_value_(agc_dp_words_t w);                                        /* words -> value */
-agc_vec_t      agc_conic_vxsc_(agc_interp_t *ip, agc_tp_words_t m, agc_vec_t v);          /* DVXSC          */
+agc_tp_words_t agc_conic_msign_sp_(agc_tp_words_t m, agc_sp_t s);                  /* SIGN, SP tag   */
+bool           agc_conic_mbmn_(agc_tp_words_t m);                                  /* BMN taken      */
+bool           agc_conic_mbze_(agc_tp_words_t m);                                  /* BZE taken      */
+agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef); /* TC POLY        */
+agc_dp_t       agc_conic_value_(agc_dp_words_t w);                                 /* words -> value */
+agc_vec_t      agc_conic_vxsc_(agc_interp_t *ip, agc_tp_words_t m, agc_vec_t v);   /* DVXSC          */
 
 /* ---- universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */
-agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
-agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *r2vec, agc_vec_t *v2vec);
-agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t r2mag, agc_vec_t *v2vec);
-agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *rcv, agc_vec_t *vcv);
+void agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
+void agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *r2vec, agc_vec_t *v2vec);
+void agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t r2mag, agc_vec_t *v2vec);
+void agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *rcv, agc_vec_t *vcv);
 
 /* ---- geom.c: GEOM, PARAM, GETX ------------------------------------ */
-agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t r1vec, agc_vec_t v2vec, agc_dp_words_t *snth, agc_dp_words_t *csth);
-agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t rvec, agc_vec_t vvec, agc_dp_words_t *sngamma, agc_tp_words_t *mpac);
-agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac);
+void agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t r1vec, agc_vec_t v2vec, agc_dp_words_t *snth, agc_dp_words_t *csth);
+void agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t rvec, agc_vec_t vvec, agc_dp_words_t *sngamma, agc_tp_words_t *mpac);
+void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac);
 
 /* ---- timetheta.c: COMMNOUT (shared with TIMERAD) ------------------ */
 agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rvsw, agc_conic_time_out_t *out);

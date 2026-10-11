@@ -48,7 +48,6 @@
 #include "agc/core/state.h"
 #include "agc/nav/conic.h"
 
-
 typedef struct oracle_row
 {
     char        kind;    /* K N C L T R A (see PURPOSE)       */
@@ -544,7 +543,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
  **********************************************************************/
 static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want)
 {
-    agc_dp_t d = got - want; /* C - AGC, DP LSB */
+    agc_dp_t d = got - want; /* C - AGC, DP LSB (2^-28 of the output scale) */
 
     g_checks++;
 

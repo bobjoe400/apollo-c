@@ -65,31 +65,26 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
         return (st);
     }
 
-    agc_interp_clear_ovf(ip);   /* SETPD 0D, BOV +1 */
-    agc_dp_words_t sngamma;     /* 36D sin(gamma), 2^1 (unused) */
-    agc_tp_words_t m;           /* MPAC: P 2^4 as PARAM leaves it */
+    agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
+    agc_dp_words_t sngamma;   /* 36D sin(gamma), 2^1 (unused) */
+    agc_tp_words_t m;         /* MPAC: P 2^4 as PARAM leaves it */
 
-    st = agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma, &m); /* CALL PARAM  */
+    agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma, &m); /* CALL PARAM  */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_interp_clear_ovf(ip);                                     /* BOV GETECC     */
+    m = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx.r1a), 4);          /* DMP R1A SL4: 2^6 */
+    m = agc_mpac_sqrt(ip, agc_mpac_bdsu(ip, m, AGC_CONIC_D1_64)); /* BDSU D1/64 SQRT */
 
-    agc_interp_clear_ovf(ip); /* BOV GETECC     */
-    m = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx.r1a), 4);              /* DMP R1A SL4: 2^6 */
-    m = agc_mpac_sqrt(ip, agc_mpac_bdsu(ip, m, AGC_CONIC_D1_64));     /* BDSU D1/64 SQRT */
-
-    const agc_dp_words_t ecc     = agc_mpac_store(m);                                 /* STORE ECC, 2^3 */
+    const agc_dp_words_t ecc     = agc_mpac_store(m);                                   /* STORE ECC, 2^3 */
     const agc_dp_words_t one_p_e = agc_mpac_store(agc_mpac_dad(ip, m, AGC_CONIC_D1_8)); /* DAD PDDL: 1 + ECC, 2^3 */
 
     m = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(ctx.r1), ctx.p), 1); /* R1 DMP P SL1 */
 
-    const agc_dp_words_t rperi = agc_mpac_store(agc_mpac_ddv(ip, m, one_p_e)); /* DDV PDDL: 0D = RP */
-    int                  n     = 0;                                           /* NORM X1 shift count */
+    const agc_dp_words_t rperi = agc_mpac_store(agc_mpac_ddv(ip, m, one_p_e));               /* DDV PDDL: 0D = RP */
+    int                  n     = 0;                                                          /* NORM X1 shift count */
     const agc_dp_words_t r1an  = agc_mpac_store(agc_mpac_norm(agc_mpac_dload(ctx.r1a), &n)); /* R1A 2^(6-n) */
 
-    m = agc_mpac_shift(ip, agc_mpac_dload(ctx.r1), n - 5);   /* SL* 0 -5,1 */
+    m = agc_mpac_shift(ip, agc_mpac_dload(ctx.r1), n - 5);  /* SL* 0 -5,1 */
     m = agc_mpac_dsu(ip, agc_mpac_ddv(ip, m, r1an), rperi); /* DDV DSU */
 
     if (agc_interp_test_ovf(ip) || agc_conic_mbmn_(m))

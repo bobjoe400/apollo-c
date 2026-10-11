@@ -54,16 +54,6 @@
  *********************************************************************/
 void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
     out->t        = agc_conic_value_(ctx->t);
     out->infinflg = ctx->infinflg;
     out->cogaflag = ctx->cogaflag;
@@ -91,21 +81,11 @@ void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *
  *********************************************************************/
 void agc_conic_time_out_clear_(agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
     agc_conic_time_out_t z = {0}; /* all-zero record */
 
     *out      = z;
     out->rnew = agc_vec_zero();
     out->vnew = agc_vec_zero();
-
-    if (!AGC_ASSERT(out->t == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -121,16 +101,11 @@ void agc_conic_time_out_clear_(agc_conic_time_out_t *out)
  *   ctx       agc_conic_ctx_t *       I/O  conic erasables; COGAFLAG set
  *   out       agc_conic_time_out_t *  O    debris as ABTCONIC leaves it
  *
- * RETURNS: agc_status_t -- AGC_STATUS_POODOO (ABTCONIC), or
- *          AGC_STATUS_BAD_ARG for a NULL pointer
+ * RETURNS: agc_status_t -- AGC_STATUS_POODOO or AGC_STATUS_BAILOUT
+ *          (ABTCONIC)
  *********************************************************************/
 agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ctx != NULL && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     ctx->cogaflag = true;
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, true);
     agc_conic_time_out_fill_(ctx, out);
@@ -154,21 +129,11 @@ agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t *ctx, agc_conic_time_out_t *out
  *   out       agc_conic_time_out_t *  O    T 2^28 cs; RNEW 2^29 / 2^27 m,
  *                                          VNEW 2^7 / 2^5 m/cs (not RVSW)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_POODOO (INFINFLG,
- *          ABTCONIC), or the status of DELTIME / NEWSTATE
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_POODOO /
+ *          AGC_STATUS_BAILOUT (INFINFLG, ABTCONIC)
  *********************************************************************/
 agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rvsw, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (ctx->infinflg)
     { /* BON INFINFLG ABTCONIC */
         agc_conic_time_out_fill_(ctx, out);
@@ -176,23 +141,13 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rv
         return (agc_conic_abtconic_());
     }
 
-    ctx->cogaflag   = false;                                /* CLEAR COGAFLAG */
+    ctx->cogaflag = false;                                  /* CLEAR COGAFLAG */
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, false); /* mirror only */
-    agc_status_t st = agc_conic_deltime_(ip, ctx);          /* CALL DELTIME */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_deltime_(ip, ctx);                            /* CALL DELTIME */
 
     if (!rvsw)
     { /* BON RVSW RTNTT */
-        st = agc_conic_newstate_(ip, ctx, &out->rnew, &out->vnew);
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_conic_newstate_(ip, ctx, &out->rnew, &out->vnew);
     }
 
     agc_conic_time_out_fill_(ctx, out);
@@ -241,16 +196,11 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, 
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
-    ctx.vvec         = in->vvec;
+    ctx.vvec = in->vvec;
     agc_dp_words_t sngamma;   /* 36D sin(gamma), 2^1 (unused) */
     agc_tp_words_t m;         /* MPAC: P as PARAM leaves it */
 
-    st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma, &m); /* CALL PARAM */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma, &m); /* CALL PARAM */
 
     if (agc_interp_test_ovf(ip))
     { /* BOV COGAOVFL   */
@@ -259,12 +209,7 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, 
 
     ctx.snth = agc_dp_to_words(in->snth);
     ctx.csth = agc_dp_to_words(in->csth);
-    st       = agc_conic_getx_(ip, &ctx, m); /* CALL GETX      */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_getx_(ip, &ctx, m); /* CALL GETX      */
 
     return (agc_conic_commnout_(ip, &ctx, in->rvsw, out));
 } /* agc_conic_timethet */
