@@ -157,7 +157,7 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 0. format2 (comment relocation + fixed continuation indent) -- BEFORE any
    further lane work (user, 2026-10-11)
 0b. dispatch DONE
-0c. format3 (join partially-wrapped brace initializers) -- next free slot
+0c. format3 (join partially-wrapped brace initializers) -- DONE (core pending make format)
 1. review-io-dsky      DONE
 2. review-guid-entry   (F14 fix in progress)
 3. review-nav-aux      (INCORP1 fixes in progress)
