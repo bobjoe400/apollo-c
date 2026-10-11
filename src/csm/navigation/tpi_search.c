@@ -613,7 +613,7 @@ agc_status_t agc_job_tpi_search_start(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_status_t st =
@@ -648,7 +648,7 @@ agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     rz_flag_put(AGC_FLAG_KFLAG, rz_option(2) == 1U);

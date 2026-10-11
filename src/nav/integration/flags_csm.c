@@ -16,7 +16,7 @@ void agc_integ_csm_resume_idle_integration(void)
         return;
     }
 
-    agc_integ_flag(AGC_FLAG_IDLE_INTEGRATION_INHIBITED, false);
+    agc_flag_put(AGC_FLAG_IDLE_INTEGRATION_INHIBITED, false);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLE_INTEGRATION_INHIBITED)))
     {
@@ -46,7 +46,7 @@ void agc_integ_csm_set_amoonflg(bool on)
         return;
     }
 
-    agc_integ_flag(AGC_FLAG_AMOONFLG, on);
+    agc_flag_put(AGC_FLAG_AMOONFLG, on);
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_AMOONFLG) == on))
     {

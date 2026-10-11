@@ -93,38 +93,6 @@ static agc_tp_t mpac_low(agc_tp_t m)
     return (lo);
 }
 
-/* DLOAD X: MPAC,+1 = X, MPAC+2 = 0 (INTERPRETER.agc p. 1107). */
-agc_tp_t agc_conic_mload_(agc_dp_t d)
-{
-    if (!AGC_ASSERT(d >= AGC_DP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(d <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_tp_from_dp(d));
-}
-
-/* STORE X / PUSH in DP mode: MPAC,+1 only. */
-agc_dp_t agc_conic_mstore_(agc_tp_t m)
-{
-    if (!AGC_ASSERT(m >= AGC_TP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(m <= AGC_TP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_tp_to_dp(m));
-}
-
 /* DAD X (p. 1131): DAS into MPAC,+1 (overflow-corrected result, OVFIND);
  * MPAC+2 kept. */
 agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
@@ -174,22 +142,6 @@ agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d)
     }
 
     return (agc_tp_from_dp(agc_dp_sub(ip, d, agc_tp_to_dp(m))) + mpac_low(m));
-}
-
-/* TAD X (p. 1135): triple precision add. */
-agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT(t >= AGC_TP_MIN && t <= AGC_TP_MAX))
-    {
-        return (m);
-    }
-
-    return (agc_tp_add(ip, m, t));
 }
 
 /* DMP X (DMPSUB p. 1136): MPAC,+1 times X, TP product in MPAC,+1,+2. */
@@ -294,25 +246,6 @@ agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m)
     return (agc_tp_from_dp(agc_tp_sqrt(ip, m)));
 }
 
-/* SL n (n > 0) / SR -n (n < 0) on the TP MPAC (GENSHIFT p. 1158, TSSL
- * p. 1154). Left shifts go one place at a time; a place that overflows sets
- * OVFIND and "leaves the overflow-corrected result anyway" (wrapped, true
- * sign). Right shifts truncate the magnitude. Core agc_tp_shift.         */
-agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m, int n)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT(n > -128 && n < 128))
-    {
-        return (m);
-    }
-
-    return (agc_tp_shift(ip, m, n));
-}
-
 /* SLR n / SRR -n: shift, then ROUNDSUB on the result (p. 1160-1161). */
 agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n)
 {
@@ -326,7 +259,7 @@ agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m, int n)
         return (m);
     }
 
-    return (agc_conic_mround_(ip, agc_conic_mshift_(ip, m, n)));
+    return (agc_conic_mround_(ip, agc_tp_shift(ip, m, n)));
 }
 
 /* ROUND (ROUNDSUB p. 1137): round MPAC+2 into MPAC,+1 and clear it;

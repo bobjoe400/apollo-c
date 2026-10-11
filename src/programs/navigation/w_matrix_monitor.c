@@ -61,7 +61,7 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
         return (st);
     }
 
-    rz_clear_ovf(ip); /* BOV +1   */
+    agc_interp_clear_ovf(ip); /* BOV +1   */
     const agc_incorp_w_t *w    = &agc_integ_shared_ctx()->w;
     bool                  csm  = rz_is_csm();
     int                   rows = csm ? 6 : 9; /* X1 36/54 */
@@ -97,7 +97,7 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -195,7 +195,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t         *rz = rz_state();
+    agc_rendz_t         *rz = agc_rendz_erasable();
     agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad();
     agc_interp_t         ip;
 

@@ -73,7 +73,7 @@ void exec_vac5stor(void)
 
     for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
     {
-        vac5.phase[g - 1] = phase_word(g);
+        vac5.phase[g - 1] = agc_phase_get(g);
     }
 
     vac5.newjob = agc_exec_newjob();
@@ -436,7 +436,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 
         exec_request_enema(); /* TC WHIMPER        */
 
-        if (!AGC_ASSERT(phase_word(4) == 0U))
+        if (!AGC_ASSERT(agc_phase_get(4) == 0U))
         {
             return (AGC_STATUS_BAD_ARG);
         }

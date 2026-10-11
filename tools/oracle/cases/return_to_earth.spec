@@ -6,7 +6,8 @@
 # RTE317..RTE390 (V2T100, TMRAD100, the X(T2)/RCON iteration) -> P37E ->
 # RTEVN -> RTEDISP -> stop P370GOFR (the V06N61 display); an alarm ends
 # at P370GOF.  Inputs RRECTCSM VRECTCSM TETCSM TIG, VPRED (-> RTEDVD),
-# GAMMAEI (-> RTEGAM2D), RTED1; executive core sets freed.  Outputs
+# GAMMAEI (-> RTEGAM2D), RTED1 (pad, 1351: .205, which with the RTE369
+# polynomial gives a -6.5 deg entry angle); core sets freed.  Outputs
 # R(T1) UR1/ UH/ CFPA MAMAX2 RCON X(T2) BETA1 X(T1) PCON V2(T1)/ DV R(T2)/
 # V(T2)/ T2 T12 NN1A, RTEDISP: VPRED T3TOT4 GAMMAEI LAT(SPL) LNG(SPL)
 # DELVLVC.
@@ -75,7 +76,7 @@ set RRECTCSM+40=00000,00000
 set TIG=02304,26400
 set VPRED=00000,00000
 set GAMMAEI=00000,00000
-set 1351=00000,00000
+set 1351=06436,27024
 run rte_transearth
 clearstops
 stop P370GOFR
@@ -139,7 +140,7 @@ set RRECTCSM+40=00000,00000
 set TIG=02304,26400
 set VPRED=00000,00000
 set GAMMAEI=77334,67245
-set 1351=00000,00000
+set 1351=06436,27024
 run rte_transearth_gam
 clearstops
 stop P370GOFR
@@ -203,7 +204,7 @@ set RRECTCSM+40=00000,00000
 set TIG=02304,26400
 set VPRED=00000,00000
 set GAMMAEI=00000,00000
-set 1351=00000,00000
+set 1351=06436,27024
 run rte_midcourse
 clearstops
 stop P370GOFR
@@ -267,5 +268,5 @@ set RRECTCSM+40=00000,00000
 set TIG=02304,26400
 set VPRED=00000,00000
 set GAMMAEI=00000,00000
-set 1351=00000,00000
+set 1351=06436,27024
 run rte_leo

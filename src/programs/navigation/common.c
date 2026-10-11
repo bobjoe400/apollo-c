@@ -46,11 +46,6 @@ agc_rendz_t *agc_rendz_erasable(void)
     return (&rendz_erasable);
 }
 
-agc_rendz_t *rz_state(void)
-{
-    return (agc_rendz_erasable());
-}
-
 /* VHFCNT (CM): VHF range mark count. */
 agc_sp_t agc_erase_vhfcnt(void)
 {
@@ -818,18 +813,6 @@ void agc_erase_set_x789(agc_vec_t v)
     }
 
     x789 = v;
-}
-
-/* BOVB TCDANZIG / BOV +1: clear the overflow indicator (its state is not
- * wanted here).                                                          */
-void rz_clear_ovf(agc_interp_t *ip)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
-    agc_interp_clear_ovf(ip);
 }
 
 int rz_word_value(uint16_t w)

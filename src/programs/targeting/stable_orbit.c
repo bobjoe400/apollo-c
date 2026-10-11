@@ -127,7 +127,7 @@ static agc_status_t so_start(agc_job_ctx_t *ctx, bool this_active)
 
     if (!rz_is_csm())
     {
-        rz_state()->nn = SO_NN_OFFSETS; /* CAF DECTWO     */
+        agc_rendz_erasable()->nn = SO_NN_OFFSETS; /* CAF DECTWO     */
     }
 
     return (rz_vnpooh(ctx, 6U, 33U, AGC_JOB_STABLE_ORBIT_CENTANG)); /* TIG  */
@@ -227,7 +227,7 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     if (rz_is_csm())
     {
@@ -293,7 +293,7 @@ agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
     if (!rz_is_csm())
     {
         agc_status_t st =
-            rz_set_dsptem_dp(RZ_DSPTEM1, rz_state()->tpass4); /* TINT */
+            rz_set_dsptem_dp(RZ_DSPTEM1, agc_rendz_erasable()->tpass4); /* TINT */
 
         if (st != AGC_STATUS_OK)
         {
@@ -316,7 +316,7 @@ agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, false);
     agc_status_t st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
@@ -344,7 +344,7 @@ agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
     agc_dp_t     t  = 0;
     agc_status_t st = so_prec_tt(&ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE, &t);
 
@@ -394,7 +394,7 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t    *rz = rz_state();
+    agc_rendz_t    *rz = agc_rendz_erasable();
     agc_integ_out_t o;
     agc_status_t    st =
         so_intrpvp(&ip, rz->targtime, AGC_JOB_STABLE_ORBIT_TARGET, &o);
@@ -464,7 +464,7 @@ agc_status_t agc_job_stable_orbit_dv_accepted(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     rz_flag_put(AGC_FLAG_XDELVFLG, false);
     rz->delvsin = rz->delveet3;
@@ -482,7 +482,7 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     rz_avflag(this_active);
     rz->kt = this_active ? rz->atiginc : rz->ptiginc;
@@ -534,7 +534,7 @@ agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     agc_erase_set_tig(agc_dp_add(&ip, agc_rtb_loadtime(), rz->kt));
 
@@ -553,7 +553,7 @@ agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
     agc_status_t st = rz_precset(&ip, rz, agc_erase_tig(),
                                  AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE);
 

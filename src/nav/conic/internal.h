@@ -136,21 +136,15 @@ agc_dp_t     agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
 void         agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
 agc_status_t agc_conic_abtconic_(void); /* ABTCONIC     */
 
-/* ---- common.c: interpretive MPAC (TP) one instruction each -------- */
-agc_tp_t agc_conic_mload_(agc_dp_t d);  /* DLOAD        */
-agc_dp_t agc_conic_mstore_(agc_tp_t m); /* STORE / PUSH */
 agc_tp_t agc_conic_mdad_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DAD  */
 agc_tp_t agc_conic_mdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DSU  */
 agc_tp_t agc_conic_mbdsu_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDSU */
-agc_tp_t agc_conic_mtad_(agc_interp_t *ip, agc_tp_t m, agc_tp_t t);  /* TAD  */
 agc_tp_t agc_conic_mdmp_(agc_tp_t m, agc_dp_t d);                    /* DMP  */
 agc_tp_t agc_conic_mdmpr_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* DMPR */
 agc_tp_t agc_conic_mdsq_(agc_tp_t m);                                /* DSQ  */
 agc_tp_t agc_conic_mddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d);  /* DDV  */
 agc_tp_t agc_conic_mbddv_(agc_interp_t *ip, agc_tp_t m, agc_dp_t d); /* BDDV */
 agc_tp_t agc_conic_msqrt_(agc_interp_t *ip, agc_tp_t m);             /* SQRT */
-agc_tp_t agc_conic_mshift_(agc_interp_t *ip, agc_tp_t m,
-                           int n);  /* SL n / SR -n */
 agc_tp_t agc_conic_mshiftr_(agc_interp_t *ip, agc_tp_t m,
                             int n);                        /* SLR n / SRR -n */
 agc_tp_t agc_conic_mround_(agc_interp_t *ip, agc_tp_t m); /* ROUND */

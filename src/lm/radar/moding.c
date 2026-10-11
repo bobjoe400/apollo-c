@@ -161,16 +161,6 @@ static int rr_mp(int a, int b)
     return (agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b)));
 }
 
-void rr_chan_or(int chan, uint16_t bits)
-{
-    agc_chan_or(chan, bits);
-
-    if (!AGC_ASSERT(bits <= RR_WORD_MASK))
-    {
-        return;
-    }
-}
-
 void rr_chan_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & RR_WORD_MASK));
@@ -402,7 +392,7 @@ void rr_setrrecr(void)
 
     rr_designate_state.lastcmd[0] = 0;
     rr_designate_state.lastcmd[1] = 0;
-    rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
+    agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
 }
 
 /* RROUT (pp.535-536): limit TANG (trunnion), TANG +1 (shaft) to 384
@@ -428,7 +418,7 @@ void rr_rrout(void)
         agc_erase_set_cdutcmd(i, (agc_sp_t) delta);
     }
 
-    rr_chan_or(AGC_CHAN_CHAN14, RR_CH14_DRIVE_TS);
+    agc_chan_or(AGC_CHAN_CHAN14, RR_CH14_DRIVE_TS);
 }
 
 /* ---- RRTURNON / RRZEROSB (pp.526-528) ----------------------------------
@@ -439,7 +429,7 @@ void rr_rrout(void)
 static agc_status_t rr_zero_begin(rr_zero_return_t ret)
 {
     rr_zero_ret = ret;
-    rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
+    agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
     agc_status_t st =
         agc_waitlist_fixdelay(RR_DT_20MS, AGC_TASK_RR_ZERO_COUNTERS);
 

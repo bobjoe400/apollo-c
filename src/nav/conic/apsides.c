@@ -41,24 +41,24 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     }
 
     agc_interp_clear_ovf(ip);       /* BOV GETECC     */
-    agc_tp_t m = agc_conic_mload_(ctx.p); /* GETECC: DMP R1A SL4 */
+    agc_tp_t m = agc_tp_from_dp(ctx.p); /* GETECC: DMP R1A SL4 */
 
-    m = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.r1a), 4);
+    m = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx.r1a), 4);
     m = agc_conic_msqrt_(
         ip, agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_64));          /* BDSU SQRT */
-    out->ecc = agc_conic_mstore_(m); /* ECC 2^3        */
+    out->ecc = agc_tp_to_dp(m); /* ECC 2^3        */
     const agc_dp_t one_p_e =
-        agc_conic_mstore_(agc_conic_mdad_(ip, m, AGC_CONIC_D1_8));
+        agc_tp_to_dp(agc_conic_mdad_(ip, m, AGC_CONIC_D1_8));
 
-    m = agc_conic_mshift_(ip, agc_conic_mdmp_(agc_conic_mload_(ctx.r1), ctx.p),
-                          1);
+    m = agc_tp_shift(ip, agc_conic_mdmp_(agc_tp_from_dp(ctx.r1), ctx.p),
+                     1);
     out->rperi =
-        agc_conic_mstore_(agc_conic_mddv_(ip, m, one_p_e)); /* 0D = RP */
+        agc_tp_to_dp(agc_conic_mddv_(ip, m, one_p_e)); /* 0D = RP */
     int            n    = 0;
     const agc_dp_t r1an =
-        agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(ctx.r1a), &n));
+        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(ctx.r1a), &n));
 
-    m = agc_conic_mshift_(ip, agc_conic_mload_(ctx.r1), n - 5); /* SL* 0 -5,1 */
+    m = agc_tp_shift(ip, agc_tp_from_dp(ctx.r1), n - 5); /* SL* 0 -5,1 */
     m = agc_conic_mdsu_(ip, agc_conic_mddv_(ip, m, r1an),
                         out->rperi); /* DDV DSU */
 
@@ -68,7 +68,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     }
     else
     {
-        out->rapo = agc_conic_mstore_(m);
+        out->rapo = agc_tp_to_dp(m);
     }
 
     /* Copy the PARAM debris to *out. */

@@ -26,7 +26,7 @@ static agc_rendz_t *tpi_begin(agc_interp_t *ip)
 {
     agc_interp_init(ip);
 
-    return (rz_state());
+    return (agc_rendz_erasable());
 }
 
 /* SELECTMU (p.494): primary body, CLEAR FINALFLG, GOTO VN1645, which
@@ -94,7 +94,7 @@ agc_status_t agc_job_tpi_after_ttpi(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     if (!rz_is_csm())
     {
@@ -139,7 +139,7 @@ agc_status_t agc_job_tpi_cycle(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     rz_vflag_set(RZ_VF_ITSWICH, true);
 

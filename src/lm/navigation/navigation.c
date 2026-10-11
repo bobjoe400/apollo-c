@@ -106,7 +106,7 @@ agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
 
     if (agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
-        rz_clear_ovf(ip); /* BOVB     */
+        agc_interp_clear_ovf(ip); /* BOVB     */
         los = agc_vec_shl(ip, los, 9);
     }
 

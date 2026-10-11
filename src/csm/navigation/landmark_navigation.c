@@ -180,12 +180,12 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u,
         w->blk[2][6 + r] = agc_vec_zero();
     }
 
-    rz_clear_ovf(ip); /* BOV +1   */
+    agc_interp_clear_ovf(ip); /* BOV +1   */
     /* W72 .. W78 (pp.602-603): the landmark rows 6-8 of W (column block 2)
      * as the lower triangular square root of E (E0..E5 = (0,0) (1,0) (1,1)
      * (2,0) (2,1) (2,2)); a negative or zero radicand, or an overflowing
      * quotient, leaves the element(s) zero; then the rows SR1 (B-19).      */
-    rz_clear_ovf(ip);
+    agc_interp_clear_ovf(ip);
 
     if (e.row[2].c[2] >= 0)
     {
@@ -301,7 +301,7 @@ static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
  * overflow invalidates W (ORBWFLAG off) and ends the sum.               */
 static agc_dp_t ln_rowdot(agc_interp_t *ip, int wi, int wj)
 {
-    rz_clear_ovf(ip);
+    agc_interp_clear_ovf(ip);
     agc_dp_t sum = 0;
 
     for (int k = 0; k < LN_ROWS; k++)
@@ -382,7 +382,7 @@ static void ln_9dw_to_6dw(agc_interp_t *ip)
         for (int i = j; i != 0 && p < LN_EMATRIX;)
         { /* TST2I=0  */
             i = ln_9dw_next(i);
-            rz_clear_ovf(ip);
+            agc_interp_clear_ovf(ip);
             agc_dp_t v = agc_dp_div(
                 ip,
                 agc_dp_sub(ip, e[LN_EMATRIX - 1 - p++], ln_rowdot(ip, i, j)),
@@ -576,7 +576,7 @@ static bool ln_box32(agc_interp_t *ip, agc_vec_t rl)
 {
     agc_erase_set_x789(rl);
     rz_flag_put(AGC_FLAG_INCORFLG, true);
-    rz_clear_ovf(ip);
+    agc_interp_clear_ovf(ip);
     ln.rclp = agc_vec_sub(ip, rl, ln.csmpos);
     agc_vec_t u = agc_vec_unit(ip, ln.rclp, NULL, NULL);
 

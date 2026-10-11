@@ -76,11 +76,6 @@ typedef struct aot_sample
     uint16_t cdu_yzx[3];
 } aot_sample_t;
 
-static uint16_t markstat(void)
-{
-    return (agc_erase_markstat());
-}
-
 static void set_markstat(uint16_t v)
 {
     if (!AGC_ASSERT((v & MS_VAC) != 0u))
@@ -277,7 +272,7 @@ agc_status_t agc_aotmark(void)
 {
     agc_inhint();
 
-    if (markstat() != 0u)
+    if (agc_erase_markstat() != 0u)
     {
         agc_relint();
         const agc_status_t pd = agc_poodoo(ALM_BUSY);
@@ -369,7 +364,7 @@ agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    set_markstat((uint16_t) (markstat() | MS_NOT_WANTED));
+    set_markstat((uint16_t) (agc_erase_markstat() | MS_NOT_WANTED));
 
     return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_STAR_CODE,
                         AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_DETENT,
@@ -397,7 +392,7 @@ static agc_status_t request_marks(const agc_job_ctx_t *ctx, uint16_t vn)
 /* GETMKS +3: MARKSTAT keeps only its VAC area; V54N71. */
 static agc_status_t request_more_marks(const agc_job_ctx_t *ctx)
 {
-    set_markstat((uint16_t) (markstat() & MS_VAC));
+    set_markstat((uint16_t) (agc_erase_markstat() & MS_VAC));
 
     return (request_marks(ctx, VN_MARK_XY));
 }
@@ -578,10 +573,10 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 
     agc_align_ram_t *ram = agc_align_ram();
 
-    set_markstat((uint16_t) (markstat() | MS_NOT_WANTED));
+    set_markstat((uint16_t) (agc_erase_markstat() | MS_NOT_WANTED));
     ram->mkdex = 0;
 
-    if ((markstat() & MS_XY) != MS_XY)
+    if ((agc_erase_markstat() & MS_XY) != MS_XY)
     { /* CNTCHK   */
         if (ram->markcntr <= 0)
         {
@@ -688,7 +683,7 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
     ram->aot[pair].ycdu[0] = ram->cursor;
     ram->aot[pair].ycdu[1] = ram->spiral;
 
-    if ((markstat() & MS_PAIR) != 0u)
+    if ((agc_erase_markstat() & MS_PAIR) != 0u)
     {
         return (agc_job_aot_mark_check(ctx));
     }
@@ -719,7 +714,7 @@ agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    set_markstat((uint16_t) (markstat() | MS_PAIR));
+    set_markstat((uint16_t) (agc_erase_markstat() | MS_PAIR));
 
     return (surface_again(ctx));
 }
@@ -779,7 +774,8 @@ static agc_status_t vacstor(const aot_sample_t *s, bool y_mark,
     else
     {
         uint16_t ms =
-            (uint16_t) ((markstat() & ~(uint16_t) (MS_REJECTED | mark_bit)) |
+            (uint16_t) ((agc_erase_markstat() &
+                         ~(uint16_t) (MS_REJECTED | mark_bit)) |
                         mark_bit);
 
         if ((ms & MS_XY) == MS_XY)
@@ -810,12 +806,12 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
 
     if (surface_marks())
     { /* SURFSTOR */
-        set_markstat((uint16_t) (markstat() | MS_XY));
+        set_markstat((uint16_t) (agc_erase_markstat() | MS_XY));
 
         return (vacstor(s, false, bit));
     }
 
-    if ((markstat() & MS_PAIR) != 0u)
+    if ((agc_erase_markstat() & MS_PAIR) != 0u)
     {
         if ((MAX_PAIR - ram->markcntr) <= 0)
         {
@@ -825,10 +821,10 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
         }
 
         ram->markcntr = (agc_sp_t) (ram->markcntr + 1);
-        set_markstat((uint16_t) (markstat() & ~MS_PAIR_CLR));
+        set_markstat((uint16_t) (agc_erase_markstat() & ~MS_PAIR_CLR));
     }
 
-    if ((markstat() & bit) != 0u)
+    if ((agc_erase_markstat() & bit) != 0u)
     { /* VERIFYMK */
         agc_alarm(ALM_UNWANTED);
 
@@ -862,7 +858,7 @@ static agc_status_t mark_reject(void)
         return (AGC_STATUS_OK);
     }
 
-    const uint16_t old = markstat();
+    const uint16_t old = agc_erase_markstat();
 
     if ((old & MS_XY) == 0u)
     {
@@ -916,7 +912,7 @@ agc_status_t agc_aotmark_markrupt(void)
         return (other_key(in));
     }
 
-    const uint16_t ms = markstat();
+    const uint16_t ms = agc_erase_markstat();
 
     if ((ms & MS_NOT_WANTED) != 0u)
     {

@@ -118,7 +118,7 @@ static void rd_initread(uint16_t code, agc_sp_t n)
     rd.samplim  = n;
     rd.oldatagd = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
     rr_chan_clear(AGC_CHAN_CHAN13, RD_ALLREAD);
-    rr_chan_or(AGC_CHAN_CHAN13, code);
+    agc_chan_or(AGC_CHAN_CHAN13, code);
     rd.timehold = (agc_dp_t) (((uint32_t) rd.timehold + agc_time_now_cs()) &
                               (uint32_t) AGC_DP_MAX);
     rd.samplsum = 0;
@@ -291,7 +291,7 @@ static agc_status_t rd_resample(void)
 {
     if (rd.samplim > 0)
     {
-        rr_chan_or(AGC_CHAN_CHAN13, RD_ACTIVITY);
+        agc_chan_or(AGC_CHAN_CHAN13, RD_ACTIVITY);
 
         return (AGC_STATUS_OK); /* RESUME   */
     }
@@ -521,7 +521,7 @@ agc_status_t agc_radar_lrpos2(void)
     }
     else
     {
-        rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
+        agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
         st = agc_waitlist_call(RD_LR_POS2_WAIT, AGC_TASK_LR_POSITION_SCAN);
     }
 

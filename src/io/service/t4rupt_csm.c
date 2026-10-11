@@ -158,16 +158,6 @@ agc_status_t agc_t4_optics_reset(bool fresh)
 
 /* ---- helpers ----------------------------------------------------------- */
 
-static void ch_or(int chan, uint16_t m)
-{
-    agc_chan_or(chan, m);
-
-    if (!AGC_ASSERT(m <= WORD15))
-    {
-        return;
-    }
-}
-
 static void ch_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
@@ -272,7 +262,7 @@ static agc_status_t t4_mantocsc(bool full)
     if ((optmodes & BIT9) != 0u)
     {               /* COARSLOK: coarse since fstart */
         optind = 1; /* set coarse optics working     */
-        ch_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT2);
+        agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT2);
     }
 
     return (t4_setdesmd());
@@ -291,7 +281,7 @@ static agc_status_t t4_cancoars(void)
 /* SETZOEND (p.163): send ZERO OCDU for 200 ms (task ENDZOPT).            */
 static agc_status_t t4_setzoend(void)
 {
-    ch_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
+    agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
     agc_status_t st = agc_waitlist_call(ZOPT_HOLD_CS, AGC_TASK_ENDZOPT);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
@@ -620,7 +610,7 @@ static void t4_opt_send(void)
 
     if (sends > 0)
     {
-        ch_or((int) AGC_CHAN_CHAN14, (uint16_t) OCT11_12);
+        agc_chan_or((int) AGC_CHAN_CHAN14, (uint16_t) OCT11_12);
     }
 
     if (!AGC_ASSERT(sends <= 2))
@@ -667,7 +657,7 @@ agc_status_t agc_t4_optics_drive(void)
 
     if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT2) == 0u)
     {
-        ch_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT2); /* SETBIT           */
+        agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT2); /* SETBIT           */
 
         return (AGC_STATUS_OK);
     }

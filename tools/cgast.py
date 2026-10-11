@@ -101,10 +101,53 @@ def ref_key(r):
     return u if u else f'{r.spelling}@{r.location.line}:{r.location.column}'
 
 
-class Ctx:
-    """Canonicalisation context: maps a function's parameters to indices."""
+_MACROS = {}
 
-    def __init__(self, fn=None):
+
+def macros_of(path):
+    """Object-like macros visible in path (gcc -dM), name -> replacement."""
+    if path not in _MACROS:
+        import subprocess
+        r = subprocess.run(['gcc', '-std=c11', '-Iinclude', '-dM', '-E', path],
+                           capture_output=True, text=True)
+        m = {}
+        for ln in r.stdout.splitlines():
+            parts = ln.split(None, 2)
+            if len(parts) >= 2 and parts[0] == '#define' and '(' not in parts[1]:
+                m[parts[1]] = parts[2] if len(parts) > 2 else ''
+        _MACROS[path] = m
+    return _MACROS[path]
+
+
+def norm_lit(text, macros):
+    """A literal or object-like macro as its integer value ('#32767') when it
+    has one, so WORD15, 077777u and 32767 compare equal; NULL is 0."""
+    t = text
+    for _ in range(8):
+        t = t.strip()
+        while t.startswith('(') and t.endswith(')'):
+            t = t[1:-1].strip()
+        # a cast to a plain type name: ((agc_dp_t) -0x0FFFFFFF), (void *) 0
+        t = re.sub(r'^\(\s*(?:const\s+)?[A-Za-z_]\w*\s*\*?\s*\)\s*', '', t)
+        if macros and t in macros:
+            t = macros[t]
+            continue
+        break
+    t = re.sub(r'(?<=[0-9a-fA-F])[uUlL]+$', '', t.strip())
+    try:
+        if re.fullmatch(r'0[0-7]+', t):
+            return '#' + str(int(t, 8))
+        return '#' + str(int(t, 0))
+    except ValueError:
+        return text
+
+
+class Ctx:
+    """Canonicalisation context: maps a function's parameters to indices;
+    `macros` (macros_of) lets literals compare by value."""
+
+    def __init__(self, fn=None, macros=None):
+        self.macros = macros
         self.pmap = {}
         if fn is not None:
             for i, p in enumerate(params(fn)):
@@ -149,8 +192,8 @@ def spelled(n):
     """Token text of a leaf; falls back to the source at its location (a
     literal that comes from a macro such as `true` has no tokens)."""
     t = toks(n)
-    if t:
-        return ' '.join(t)
+    if len(t) == 1:
+        return t[0]
     f = n.extent.start.file
     if f is not None:
         m = re.match(rb'[A-Za-z_0-9.]+', _src(f.name)[n.extent.start.offset:])
@@ -189,6 +232,18 @@ def canon(n, ctx):
     n = strip(n)
     k = n.kind
     ch = kids(n)
+    macros = getattr(ctx, 'macros', None)
+    if ch and k not in (K.CALL_EXPR, K.DECL_REF_EXPR) and n.extent.start.file is not None:
+        # a whole expression from one object-like macro (AGC_DP_MIN): by value
+        a, b = n.extent.start.offset, n.extent.end.offset
+        m = re.match(rb'[A-Za-z_]\w*', _src(n.extent.start.file.name)[a:a + 64])
+        if m and (b == a or b == a + len(m.group(0))) and (
+                macros is None or m.group(0).decode() in macros):
+            return ('lit', norm_lit(m.group(0).decode(), macros))
+    if k == K.CSTYLE_CAST_EXPR and n.type.spelling == 'void *':
+        inner = canon(ch[-1], ctx)
+        if inner[0] == 'lit':
+            return inner  # (void *) 0 is NULL is 0
     if k == K.DECL_REF_EXPR:
         r = n.referenced
         if r is None:
@@ -199,7 +254,7 @@ def canon(n, ctx):
         return ('ref', key, ref_class(r), n.spelling)
     if k in (K.INTEGER_LITERAL, K.FLOATING_LITERAL, K.CHARACTER_LITERAL, K.STRING_LITERAL,
              K.CXX_BOOL_LITERAL_EXPR):
-        return ('lit', spelled(n))
+        return ('lit', norm_lit(spelled(n), getattr(ctx, 'macros', None)))
     if k in (K.BINARY_OPERATOR, K.COMPOUND_ASSIGNMENT_OPERATOR) and len(ch) == 2:
         return ('bin', op_of(n), canon(ch[0], ctx), canon(ch[1], ctx))
     if k == K.UNARY_OPERATOR and len(ch) == 1:

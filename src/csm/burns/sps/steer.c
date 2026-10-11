@@ -47,22 +47,6 @@ static void phase_b(agc_job_id_t job)
     agc_phase_change_var(PH_5_3_B, &v);
 }
 
-/* SERVXT (p.704): POSTJUMP SERVEXIT.                                       */
-agc_status_t agc_csm_servxt(agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_job_servexit(ctx));
-}
-
 /* S40.81 (p.722): TGO < 4 s: IMPULSW set (engine-off call), OMEGAC = 0
  * (TVC attitude hold), CNTR = POSMAX (no switch-over/CG tracking),
  * STEERSW reset.                                                          */
@@ -295,7 +279,7 @@ static agc_status_t steering_tail(agc_job_ctx_t *ctx)
     if (!agc_flag_test(AGC_FLAG_IMPULSW) ||
         (agc_chan_read(011) & AGC_CSM_SPSON) == 0U)
     {
-        return (agc_csm_servxt(ctx)); /* PRE-IGNITE / POST-OFF  */
+        return (agc_job_servexit(ctx)); /* PRE-IGNITE / POST-OFF  */
     }
 
     agc_inhint();
@@ -366,7 +350,7 @@ agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_csm_servxt(ctx));
+    return (agc_job_servexit(ctx));
 }
 
 /* P40CNV85 (p.697): VGBODY = S41.1(VGPREV), VG in control axes for N85.   */
@@ -412,7 +396,7 @@ agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
 
     agc_csm_convert_vg_body(&ip);
 
-    return (agc_csm_servxt(ctx));
+    return (agc_job_servexit(ctx));
 }
 
 /* Restart entries inside the cycle: S40.8B, UPDATEVG_B, SURELY9_B.        */
@@ -463,7 +447,7 @@ agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
     {
         agc_csm_convert_vg_body(&ip);
 
-        return (agc_csm_servxt(ctx));
+        return (agc_job_servexit(ctx));
     }
 
     if (!AGC_ASSERT(agc_guid_state()->csm.updcaller == CALLER_STEERING))
@@ -510,7 +494,7 @@ agc_status_t agc_job_calc_delta_v_restart(agc_job_ctx_t *ctx)
     g->burn.delvctl = g->burn.vg; /* GENTRAN DV47TEMP       */
     agc_relint();
 
-    return (agc_csm_servxt(ctx));
+    return (agc_job_servexit(ctx));
 }
 
 /* S40.9 (p.723-724): HAVEGUES (GUESSW reset: use the last COGA) with

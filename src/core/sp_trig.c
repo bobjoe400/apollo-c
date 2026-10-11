@@ -11,22 +11,6 @@
 #include "agc/core/constants.h"
 #include "mpac.h"
 
-/* Wrap a 16-bit accumulator value like TS: corrected value, *ovf = +-1.    */
-static int32_t sp_ts(int32_t a16, int *ovf)
-{
-    if (!AGC_ASSERT(ovf != 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_w_ts(a16, ovf));
-}
-
 /* ARG90: INDEX A / CS LIMITS -> +-POSMAX for the +-1 left in A.             */
 static agc_sp_t sp_arg90(int a)
 {
@@ -83,7 +67,7 @@ static agc_sp_t sp_polley(int32_t x)
 static agc_sp_t sp_sine(int32_t a16)
 {
     int     o = 0;
-    int32_t t = sp_ts(a16, &o); /* SPSIN: TS TEMK   */
+    int32_t t = agc_w_ts(a16, &o); /* SPSIN: TS TEMK   */
     int32_t x;
 
     if (!AGC_ASSERT(agc_w_ok(t)))
@@ -96,7 +80,7 @@ static agc_sp_t sp_sine(int32_t a16)
         t = -t; /* CS TEMK          */
     }
 
-    x = sp_ts(2 * t, &o); /* SPT: DOUBLE; TS  */
+    x = agc_w_ts(2 * t, &o); /* SPT: DOUBLE; TS  */
 
     if (o == 0)
     {
@@ -112,7 +96,7 @@ static agc_sp_t sp_sine(int32_t a16)
         return (0); /* no valid result */
     }
 
-    x = sp_ts(x, &o); /* TS TEMK          */
+    x = agc_w_ts(x, &o); /* TS TEMK          */
 
     if (o != 0)
     {

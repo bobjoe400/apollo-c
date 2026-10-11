@@ -206,7 +206,7 @@ agc_status_t agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_integ_flag(AGC_FLAG_MOONFLAG, moon);
+    agc_flag_put(AGC_FLAG_MOONFLAG, moon);
     ctx->pbody = moon ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH;
 
     return (AGC_STATUS_OK);
@@ -370,7 +370,7 @@ static agc_integ_next_t gobaque(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (INTEG_NEXT_FAIL);
     }
 
-    agc_integ_flag(AGC_FLAG_RPQFLAG, true);
+    agc_flag_put(AGC_FLAG_RPQFLAG, true);
 
     return (INTEG_NEXT_TESTLOOP);
 }
@@ -622,7 +622,7 @@ static acc_result_t third_body(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         }
     }
 
-    agc_integ_flag(AGC_FLAG_RPQFLAG, false); /* GETRPSV                */
+    agc_flag_put(AGC_FLAG_RPQFLAG, false); /* GETRPSV                */
 
     if (agc_flag_test(AGC_FLAG_MOONFLAG))
     {
@@ -1151,10 +1151,10 @@ static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * pick up a permanent state vector update instead; ALARM 421.            */
 static agc_integ_next_t wmatend(void)
 {
-    agc_integ_flag(AGC_FLAG_DIM0FLAG, false);
-    agc_integ_flag(AGC_FLAG_ORBWFLAG, false);
-    agc_integ_flag(AGC_FLAG_RENDWFLG, false);
-    agc_integ_flag(AGC_FLAG_STATEFLG, true);
+    agc_flag_put(AGC_FLAG_DIM0FLAG, false);
+    agc_flag_put(AGC_FLAG_ORBWFLAG, false);
+    agc_flag_put(AGC_FLAG_RENDWFLG, false);
+    agc_flag_put(AGC_FLAG_STATEFLG, true);
     agc_alarm(AGC_INTEG_ALARM_WMATEND);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_DIM0FLAG)))
@@ -1179,7 +1179,7 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (INTEG_NEXT_FAIL);
     }
 
-    agc_integ_flag(AGC_FLAG_JSWITCH, true); /* AMOVED   */
+    agc_flag_put(AGC_FLAG_JSWITCH, true); /* AMOVED   */
     const int first = agc_flag_test(AGC_FLAG_D6OR9FLG) ? 8 : 5;
 
     for (int col = first; col >= 0; col--)
@@ -1392,7 +1392,7 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     ctx->zv = ctx->sv.nuv; /* INTGRATE */
     ctx->yv = ctx->sv.deltav;
-    agc_integ_flag(AGC_FLAG_JSWITCH, false);
+    agc_flag_put(AGC_FLAG_JSWITCH, false);
 
     return (state_step(ip, ctx));
 }

@@ -31,3 +31,25 @@ the same protocol.
 - DONE yaDSKY2 (virtualagc, built against Debian wx 3.2 unpacked in the scratchpad) connected to agc_sim in real time, keys clicked on yaDSKY2 via XTest: P00, V06N36 clock, V35 lights, V16N36 monitor, both vehicles: docs/modules/sim/yadsky2_{csm,lm}.png
 - DONE Makefile: sim, sim-debug (debug lib, assertions reported), scenarios
 - DONE yaTelemetry (built the same way) on LM port 19800 decodes agc_sim's downlink: Coast and Align list (ID 77777, SYNC 77340): docs/modules/sim/yatelemetry_lm.png; default ports by vehicle (CSM 19697, LM 19797)
+- DONE check_rules hard violations: internal.h comment "..." (rule 8 regex), main.c opt_value double pointer -> returns the value (0 hard)
+- DONE tools/sim_client.py `xexpect BUG ...` / `xuntil BUG ...` (known flight-code bug: XFAIL does not fail the run, XPASS reported; --strict fails on XPASS)
+- DONE sim/scenarios/fresh_start_{csm,lm}.txt (scenario a); both also run against yaAGC (XPASS on B1 there)
+
+## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
+Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
+- B1 src/io/service/t4rupt.c t4_quikdsp() calls agc_dsky_dspout(), which
+  tests DSKYFLAG (src/io/dsky/pinball/state.c agc_dsky_dspout). The AGC's
+  QUIKDSP (T4RUPT_PROGRAM C p.137 / L p.160) is `CCS NOUT / TC DSPOUTSB`
+  with no FLAGWRD5 test; only the slow path DSPOUT (C p.135) tests it.
+  After V36 SWINIT leaves DSKYFLAG off, so the DSPOFF blanks of STARTSB2
+  are not sent by the 20 quick passes: VERB 36 / PROG 00 stay lit until the
+  next key press. yaAGC blanks them within 0.3 s. Fix: QUIKDSP should call
+  the DSPOUTSB part without the DSKYFLAG test.
+- B2 LM power-on: job AGC_JOB_JET_ACCEL_RESET (1/ACCS, src/lm/dap/accs.c
+  :191,:391, accont.c:74,:99, arith.c:116 assertions) returns BAD_ARG at
+  3 cs with the zero erasable of agc_power_on (mass, inertia 0). The AGC
+  would compute with overflowed values and carry on; the job just ends
+  here. Harmless for the DSKY scenarios; matters for any LM DAP scenario.
+- B3 src/io/service/t4rupt.c:127 chan_clear(): `AGC_ASSERT(v <= 0xFFFFFFu)`
+  with v = ~(uint32_t)bits is always false (debug builds print it every
+  IMU-monitor pass). Intended `bits <= WORD15`.

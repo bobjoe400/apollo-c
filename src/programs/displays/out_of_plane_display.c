@@ -176,7 +176,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
     agc_dp_t     t  = rz_dsptem_dp(RZ_DSPTEMX);
 
     if (t == 0)

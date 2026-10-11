@@ -23,7 +23,7 @@
 #define SIM_WORD_MASK    077777u
 
 /* Fictitious channels (yaAGC conventions).                                */
-#define SIM_CH_DSKY_LAMPS 0163u /* KEY REL, OPR ERR, V/N flash, ...   */
+#define SIM_CH_DSKY_LAMPS 0163u /* KEY REL, OPR ERR, V/N flash, etc. */
 #define SIM_CH_RHC_PITCH  0166u /* in: RHC angles, latched into the  */
 #define SIM_CH_RHC_YAW    0167u /*     RHC counters on ch13 b8+b9    */
 #define SIM_CH_RHC_ROLL   0170u

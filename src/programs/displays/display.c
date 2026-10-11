@@ -193,7 +193,7 @@ agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(rz_state()->qsaved != AGC_JOB_NONE))
+    if (!AGC_ASSERT(agc_rendz_erasable()->qsaved != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -234,7 +234,7 @@ agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
     agc_phase_change(4, RZ_PHASE_04024);
     agc_flag_clear(AGC_FLAG_UPDATFLG);
 
-    return (rz_continue(rz_state()->qsaved));
+    return (rz_continue(agc_rendz_erasable()->qsaved));
 }
 
 /* N45PROC (p.482): FINALFLG already set -> KILCLOCK (await a new
@@ -357,7 +357,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
     bool         overwrite;
 
     if (rz_is_csm())
@@ -422,7 +422,7 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_ttogo_display(ctx, ip, rz_state(), resume_as));
+    return (rz_ttogo_display(ctx, ip, agc_rendz_erasable(), resume_as));
 }
 
 /* GOFLASH / GOFLASHR / GOMARKF / GOXDSPF ... with the three astronaut

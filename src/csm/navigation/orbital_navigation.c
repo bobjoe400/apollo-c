@@ -82,7 +82,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
         agc_vec_unit(&ip, agc_vec_cross(&ip, o.vatt, o.ratt), NULL, NULL);
     agc_dp_t c = agc_dp_abs(agc_vec_dot(&ip, n, refsmmat.row[1]));
 
-    rz_state()->plus_mga = agc_dp_acos(&ip, agc_dp_shl(&ip, c, 1));
+    agc_rendz_erasable()->plus_mga = agc_dp_acos(&ip, agc_dp_shl(&ip, c, 1));
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
 
     return (agc_job_orbital_navigation_orbit_display(ctx));

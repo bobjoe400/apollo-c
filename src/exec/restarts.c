@@ -255,7 +255,7 @@ agc_status_t agc_restart_group(int group)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t tempphs = phase_word(group);
+    uint16_t tempphs = agc_phase_get(group);
 
     if (tempphs == 0U)
     {
@@ -296,7 +296,7 @@ agc_status_t agc_phase_restart_all(void)
 
     for (int g = AGC_RESTART_GROUPS; g >= 1; g--)
     {
-        if (phase_word(g) != 0U)
+        if (agc_phase_get(g) != 0U)
         {                           /* CCS PHASEn: PNZ   */
             any = true; /* INCR MPAC +6      */
             agc_status_t st = agc_restart_group(g);

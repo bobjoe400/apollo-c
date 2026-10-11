@@ -97,7 +97,7 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
 
     if (!rz_is_csm())
     {
-        agc_rendz_t *rz = rz_state();
+        agc_rendz_t *rz = agc_rendz_erasable();
 
         rz->delvov = rz->delvlvc;
     }
@@ -155,7 +155,7 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
     tdv_work.ratt = o.ratt;
     tdv_work.x2   = o.x2;
     st            = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt,
-                                                 rz_state()->delvov,
+                                                 agc_rendz_erasable()->delvov,
                                                  &tdv_work.vnew);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

@@ -25,7 +25,7 @@
 static agc_rendz_t *csi_begin(agc_interp_t *ip)
 {
     agc_interp_init(ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     return (rz);
 }
@@ -77,7 +77,7 @@ static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 static agc_status_t csi_start(agc_job_ctx_t *ctx, bool this_active)
 {
     rz_avflag(this_active);
-    rz_state()->centang = 0;
+    agc_rendz_erasable()->centang = 0;
 
     return (agc_job_csi_input(ctx));
 }
@@ -113,7 +113,7 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     rz_tracking_flags_on();
 
@@ -187,7 +187,7 @@ agc_status_t agc_job_csi_after_nn_elev(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(rz_state()->nn >= 0))
+    if (!AGC_ASSERT(agc_rendz_erasable()->nn >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }

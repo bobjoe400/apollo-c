@@ -515,7 +515,7 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
             return (rr_desdun());
         }
 
-        rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK); /* tracker */
+        agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK); /* tracker */
     }
 
     if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_RR_DGOOD) == 0U)

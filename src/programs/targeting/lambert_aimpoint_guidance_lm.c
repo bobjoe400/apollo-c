@@ -72,7 +72,7 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_dp_t        tig = agc_erase_tig();
@@ -147,6 +147,6 @@ agc_status_t agc_job_marks_tfi_mga_monitor(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_flag_set(AGC_FLAG_FINALFLG);
 
-    return (rz_ttogo_display(ctx, &ip, rz_state(),
+    return (rz_ttogo_display(ctx, &ip, agc_rendz_erasable(),
                              AGC_JOB_MARKS_TFI_MGA_MONITOR));
 }

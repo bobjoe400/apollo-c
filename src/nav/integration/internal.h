@@ -43,9 +43,6 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 agc_status_t agc_integ_integrv1(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 agc_dp_t     agc_integ_loadtime(void); /* LOADTIME  */
 bool         agc_integ_valid_ctx(const agc_integ_ctx_t *ctx);
-/* SET / CLEAR a flag; the status is asserted (flag ids are constants).   */
-void agc_integ_flag(agc_flag_id_t f, bool on);
-
 /* ---- jobs.c --------------------------------------------- */
 agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 

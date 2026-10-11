@@ -185,7 +185,7 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz    = rz_state();
+    agc_rendz_t *rz    = agc_rendz_erasable();
     agc_dp_t     tdec1 = rz_dsptem_dp(RZ_DSPTEM1);
     agc_status_t st    = agc_integ_install(0, AGC_JOB_GROUND_TRACK_COMPUTE);
 
@@ -236,7 +236,8 @@ agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_dp_t     t  = agc_dp_add(&ip, rz_state()->ground_track_time, RZ_600SEC);
+    agc_dp_t t = agc_dp_add(&ip,
+                            agc_rendz_erasable()->ground_track_time, RZ_600SEC);
     agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, t);
 
     if (st != AGC_STATUS_OK)

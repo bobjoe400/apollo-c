@@ -60,35 +60,14 @@ typedef struct csi_work
     agc_status_t st;     /* status when CSI_L_ERROR                       */
 } csi_work_t;
 
-/* ---- flag helpers ------------------------------------------------------- */
-static bool csi_f(rz_vflag_t f)
-{
-    if (!AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B))
-    {
-        return (false);
-    }
-
-    return (rz_vflag_test(f));
-}
-
-static void csi_set(rz_vflag_t f, bool on)
-{
-    if (!AGC_ASSERT(f >= RZ_VF_CSI_F1 && f <= RZ_VF_CSI_F3B))
-    {
-        return;
-    }
-
-    rz_vflag_set(f, on);
-}
-
 /* CSI/A first lines and SCNDSOL: F1 = 0, F2 = 1, F3A F3B = 0 1 (first
  * cycle) or 0 0 (second cycle).                                           */
 static void csi_set_cycle(bool first_cycle)
 {
-    csi_set(RZ_VF_CSI_F1, false);
-    csi_set(RZ_VF_CSI_F2, true);
-    csi_set(RZ_VF_CSI_F3A, false);
-    csi_set(RZ_VF_CSI_F3B, first_cycle);
+    rz_vflag_set(RZ_VF_CSI_F1, false);
+    rz_vflag_set(RZ_VF_CSI_F2, true);
+    rz_vflag_set(RZ_VF_CSI_F3A, false);
+    rz_vflag_set(RZ_VF_CSI_F3B, first_cycle);
 }
 
 /* ---- ROTATE (p.676): project v into the passive orbit plane, keep |v| --- */
@@ -222,17 +201,17 @@ static bool csi_b2(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     w->x2 = 7;
 
-    if (csi_f(RZ_VF_CSI_F1))
+    if (rz_vflag_test(RZ_VF_CSI_F1))
     {
         return (false);
     }
 
-    if (csi_f(RZ_VF_CSI_F3A) && csi_f(RZ_VF_CSI_F3B))
+    if (rz_vflag_test(RZ_VF_CSI_F3A) && rz_vflag_test(RZ_VF_CSI_F3B))
     {
         return (false);
     }
 
-    csi_set(RZ_VF_CSI_F1, true); /* CSI/B22    */
+    rz_vflag_set(RZ_VF_CSI_F1, true); /* CSI/B22    */
     rz->delvcsi = agc_dp_sign(CSI_DVMAX2, rz->delvcsi);
 
     if (!AGC_ASSERT(rz->delvcsi != 0))
@@ -516,9 +495,9 @@ static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
     rz->gamprev = w->gamma;
     rz->dvprev  = rz->delvcsi;
     rz->delvcsi = agc_dp_sub(ip, rz->delvcsi, rz->deldv); /* CSINEXT3   */
-    csi_set(RZ_VF_CSI_F2, false);
+    rz_vflag_set(RZ_VF_CSI_F2, false);
 
-    if (!AGC_ASSERT(!csi_f(RZ_VF_CSI_F2)))
+    if (!AGC_ASSERT(!rz_vflag_test(RZ_VF_CSI_F2)))
     {
         return (CSI_L_ALMXIT);
     }
@@ -535,8 +514,8 @@ static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz,
 
     rz->deldv   = d;
     rz->delvcsi = agc_dp_add(ip, agc_dp_neg(d), rz->delvcsi);
-    csi_set(RZ_VF_CSI_F3B, true);
-    csi_set(RZ_VF_CSI_F3A, true);
+    rz_vflag_set(RZ_VF_CSI_F3B, true);
+    rz_vflag_set(RZ_VF_CSI_F3A, true);
     rz->gamprev = w->gamma;
 
     return (CSI_L_B2);
@@ -575,7 +554,7 @@ static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz,
  * slope, the cycle stage logic (F3A F3B), Newton iteration.             */
 static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
-    if (csi_f(RZ_VF_CSI_F2))
+    if (rz_vflag_test(RZ_VF_CSI_F2))
     {
         return (csi_frstpas(ip, rz, w));
     }
@@ -586,8 +565,8 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 
     w->slope   = agc_dp_div(ip, dg, ddv);   /* 4D         */
     rz->dvprev = rz->delvcsi;
-    bool f3a = csi_f(RZ_VF_CSI_F3A);
-    bool f3b = csi_f(RZ_VF_CSI_F3B);
+    bool f3a = rz_vflag_test(RZ_VF_CSI_F3A);
+    bool f3b = rz_vflag_test(RZ_VF_CSI_F3B);
 
     if (f3a && f3b)
     { /* "11": end of the 50 fps stage */
@@ -597,8 +576,8 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
         }
 
         rz->deldv = agc_dp_sign(CSI_INITST, rz->deldv); /* INITST1   */
-        csi_set(RZ_VF_CSI_F3A, true);
-        csi_set(RZ_VF_CSI_F3B, false);
+        rz_vflag_set(RZ_VF_CSI_F3A, true);
+        rz_vflag_set(RZ_VF_CSI_F3B, false);
 
         return (csi_frstpas(ip, rz, w));
     }
@@ -654,7 +633,7 @@ static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  * CSI/B with CSIALRM = X2; otherwise ALMXIT.                            */
 static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
 {
-    if (csi_f(RZ_VF_CSI_F3A) || !csi_f(RZ_VF_CSI_F3B))
+    if (rz_vflag_test(RZ_VF_CSI_F3A) || !rz_vflag_test(RZ_VF_CSI_F3B))
     {
         return (CSI_L_ALMXIT);
     }

@@ -12,7 +12,8 @@
 #include "internal.h"
 
 /* Copy the shared outputs and debris into *out. */
-static void time_out_fill(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
+void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
+                              agc_conic_time_out_t  *out)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -39,7 +40,7 @@ static void time_out_fill(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 }
 
 /* Clear the outputs that a call may not reach. */
-static void time_out_clear(agc_conic_time_out_t *out)
+void agc_conic_time_out_clear_(agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(out != NULL))
     {
@@ -61,8 +62,8 @@ static void time_out_clear(agc_conic_time_out_t *out)
 /*
  * COGAOVFL (p. 1289): SETGO COGAFLAG ABTCONIC. Also used by TIMERAD.
  */
-static agc_status_t time_cogaovfl(agc_conic_ctx_t      *ctx,
-                                  agc_conic_time_out_t *out)
+agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
+                                 agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ctx != NULL && out != NULL))
     {
@@ -71,7 +72,7 @@ static agc_status_t time_cogaovfl(agc_conic_ctx_t      *ctx,
 
     ctx->cogaflag = true;
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, true);
-    time_out_fill(ctx, out);
+    agc_conic_time_out_fill_(ctx, out);
 
     return (agc_conic_abtconic_());
 }
@@ -96,7 +97,7 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (ctx->infinflg)
     { /* BON INFINFLG ABTCONIC */
-        time_out_fill(ctx, out);
+        agc_conic_time_out_fill_(ctx, out);
 
         return (agc_conic_abtconic_());
     }
@@ -120,7 +121,7 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         }
     }
 
-    time_out_fill(ctx, out);
+    agc_conic_time_out_fill_(ctx, out);
 
     return (AGC_STATUS_OK);
 }
@@ -142,7 +143,7 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    time_out_clear(out);
+    agc_conic_time_out_clear_(out);
     agc_conic_ctx_t ctx;
     agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body);
 
@@ -165,7 +166,7 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
 
     if (agc_interp_test_ovf(ip))
     { /* BOV COGAOVFL   */
-        return (time_cogaovfl(&ctx, out));
+        return (agc_conic_cogaovfl_(&ctx, out));
     }
 
     ctx.snth = in->snth;
@@ -178,54 +179,4 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
     }
 
     return (agc_conic_commnout_(ip, &ctx, in->rvsw, out));
-}
-
-/* COGAOVFL entry for TIMERAD (timeradius.c). */
-agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
-                                 agc_conic_time_out_t *out)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (time_cogaovfl(ctx, out));
-}
-
-/* Debris fill for TIMERAD (timeradius.c). */
-void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
-                              agc_conic_time_out_t  *out)
-{
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
-    time_out_fill(ctx, out);
-}
-
-/* Output reset for TIMERAD (timeradius.c). */
-void agc_conic_time_out_clear_(agc_conic_time_out_t *out)
-{
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(sizeof (*out) > 0))
-    {
-        return;
-    }
-
-    time_out_clear(out);
 }

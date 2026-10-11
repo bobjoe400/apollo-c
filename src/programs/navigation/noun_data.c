@@ -18,7 +18,7 @@
 /* The DP erasables of agc_rendz_t (and DSPTEM-free values).             */
 static agc_dp_t *nd_dp(uint16_t id)
 {
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     switch (id)
     {
@@ -86,7 +86,7 @@ static agc_dp_t *nd_dp(uint16_t id)
 /* Vector erasables: (id of the first component) -> vector, component.  */
 static agc_vec_t *nd_vec(uint16_t id, int *k)
 {
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     *k = 0;
 
@@ -149,15 +149,15 @@ static bool nd_other(uint16_t id, agc_dp_t *v)
 
             return (true);
         case AGC_DATA_NN:
-            *v = agc_dp_from_sp(rz_state()->nn);
+            *v = agc_dp_from_sp(agc_rendz_erasable()->nn);
 
             return (true);
         case AGC_DATA_NN1:
-            *v = agc_dp_from_sp(rz_state()->nn1);
+            *v = agc_dp_from_sp(agc_rendz_erasable()->nn1);
 
             return (true);
         case AGC_DATA_WWOPT: /* WWOPT EQUALS RTHETA (high word)       */
-            *v = agc_dp_from_sp(agc_dp_high(rz_state()->rtheta));
+            *v = agc_dp_from_sp(agc_dp_high(agc_rendz_erasable()->rtheta));
 
             return (true);
         case AGC_DATA_TRKMKCNT:
@@ -285,7 +285,7 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     }
     else if (data_id == AGC_DATA_WWOPT)
     {
-        rz_state()->rtheta = agc_dp_from_sp(agc_dp_high(value));
+        agc_rendz_erasable()->rtheta = agc_dp_from_sp(agc_dp_high(value));
     }
     else if (data_id == AGC_DATA_LANDMARK)
     {

@@ -506,7 +506,7 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     return (rz_is_csm() ? rpd_csm_statextp(&ip, rz) : rpd_lm_compute(&ip, rz));
 }
@@ -522,7 +522,7 @@ agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = rz_state();
+    agc_rendz_t *rz = agc_rendz_erasable();
 
     return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_rev83(&ip, rz));
 }

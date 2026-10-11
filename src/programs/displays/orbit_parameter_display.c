@@ -190,7 +190,7 @@ static agc_rendz_t *opd_begin(agc_interp_t *ip)
 {
     agc_interp_init(ip);
 
-    return (rz_state());
+    return (agc_rendz_erasable());
 }
 
 /* GOXDSPF (= GOMARKF) with the extended-verb returns. */
@@ -289,7 +289,7 @@ agc_status_t agc_job_orbit_display_recycle(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_state()->orbit_display_flags = 0;
+    agc_rendz_erasable()->orbit_display_flags = 0;
     agc_status_t st = agc_exec_findvac(OPD_PRIO7, AGC_JOB_ORBIT_DISPLAY_UPDATE);
 
     if (st != AGC_STATUS_OK)
@@ -310,7 +310,7 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if ((rz_state()->orbit_display_flags & OPD_TICK_MASK) == 0)
+    if ((agc_rendz_erasable()->orbit_display_flags & OPD_TICK_MASK) == 0)
     {
         return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL));
     }
@@ -508,7 +508,7 @@ agc_status_t agc_task_ticktest(void)
     }
 
     agc_status_t st   = agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_TICKTEST);
-    agc_rendz_t *rz   = rz_state();
+    agc_rendz_t *rz   = agc_rendz_erasable();
     agc_sp_t     bits = (agc_sp_t) (rz->orbit_display_flags & OPD_TICK_MASK);
 
     if (!AGC_ASSERT(bits != OPD_TICK_MASK)) /* never both (INDEX A)   */

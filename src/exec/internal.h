@@ -42,7 +42,6 @@ typedef struct phase_var_store
 } phase_var_store_t;
 
 bool         phase_group_agrees(int group); /* PHASEn vs -PHASEn       */
-uint16_t     phase_word(int group);         /* PHASEn (with type bits) */
 agc_status_t phase_var_get(int group, phase_var_store_t *out);
 uint16_t     phase_tbase(int group); /* TIME1 at TBASEn set     */
 uint32_t     phase_longbase(void);   /* TIME2,TIME1 at LONGBASE */

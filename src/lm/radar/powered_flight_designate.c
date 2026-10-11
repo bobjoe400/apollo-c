@@ -298,7 +298,7 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
 
     if (2 * c > (int64_t) AGC_DP_MAX)
     { /* TESTCOS  */
-        rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
+        agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
     }
 
     return (AGC_STATUS_OK);

@@ -1,0 +1,62 @@
+# Scenario b (LM): V35 lights test.
+#
+# AGC behaviour checked (Luminary099 PINBALL_GAME_BUTTONS_AND_LIGHTS):
+# * VBTSTLTS (p.467): channel 11 |= TSTCON1 00175 (UPLINK
+#   ACTY, TEMP, KEY REL, V/N FLASH, OPR ERR), DSPTAB+11D = TSTCON2 40674
+#   (VEL, NO ATT, ALT, GIMBAL LOCK, TRACKER, PROG), channel 13 bit 10 TEST ALARM
+#   (yaAGC/yaDSKY2 light RESTART and STBY from it), all digits 8 and the
+#   three + signs (FULLDSP 05675, FULLDSP1 07675), NOUT = 11, and TSTLTS2
+#   on the waitlist SHOLTS = 764 octal = 500 cs later.
+# * TSTLTS3 (p.468): channel 11 &= ~TSTCON3 (UPLINK, TEMP, OPR ERR off),
+#   TEST ALARM off, lamp word = BIT15 + NO ATT from channel 12 bit 4 (off),
+#   DSPMM re-displays MODREG (PROG 00), FLASHOFF, TSTLTS4 does RELDSP
+#   (KEY REL off). The 8s in VERB, NOUN and R1-R3 stay.
+# Validated against yaAGC + Luminary099 (tools/oracle/bin/yaAGC).
+vehicle lm
+run 300                         # power-on
+keys R                          # RSET
+keys V37E00E                    # P00
+until PROG 00 within 300
+keys V35E
+until PROG 88 within 200        # one relay word per T4RUPT pass,
+until VERB 88 within 50         # order depends on DSPCNT
+expect R3 +88888
+expect VERB 88
+expect NOUN 88
+expect R1 +88888
+expect R2 +88888
+expect FLASH on
+expect LAMP UPLINK on
+expect LAMP TEMP on
+expect LAMP KEYREL on
+expect LAMP OPRERR on
+expect LAMP NOATT on
+expect LAMP GIMBAL on
+expect LAMP TRACKER on
+expect LAMP PROG on
+expect LAMP RESTART on
+expect LAMP STBY on
+expect LAMP VEL on              # LM landing-radar lamps
+expect LAMP ALT on
+run 350                         # about 4 s into the 5 s test
+expect FLASH on
+expect LAMP PROG on
+until FLASH off within 200      # TSTLTS2 -> TSTLTS3
+until PROG 00 within 50         # DSPMM
+expect LAMP UPLINK off
+expect LAMP TEMP off
+expect LAMP KEYREL off
+expect LAMP OPRERR off
+expect LAMP NOATT off
+expect LAMP GIMBAL off
+expect LAMP TRACKER off
+expect LAMP PROG off
+expect LAMP RESTART off
+expect LAMP STBY off
+expect VERB 88
+expect NOUN 88
+expect R1 +88888
+expect R2 +88888
+expect R3 +88888
+expect LAMP VEL off
+expect LAMP ALT off

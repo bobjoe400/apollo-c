@@ -196,7 +196,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
     if (agc_flag_test(AGC_FLAG_INCORFLG))
     {
         *st = td_getum(ip, &td.um);
-        rz_clear_ovf(ip);
+        agc_interp_clear_ovf(ip);
         agc_vec_t c = agc_vec_cross(ip, td.ucl, td.um); /* REND8    */
 
         td.ustar = agc_vec_unit(ip, c, NULL, NULL);

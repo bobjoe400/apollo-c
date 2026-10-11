@@ -1,0 +1,47 @@
+# Scenario c (CSM): V06N36 shows the AGC clock; V16N36 monitors it;
+# V25N36 loads it.
+#
+# AGC behaviour checked (Comanche055):
+# * Noun 36 = ECADR TIME2, 3 components HMS, decimal only
+#   (PINBALL_NOUN_TABLES p.272): R1 hours, R2 minutes, R3 seconds
+#   (xxx.xx). TIME2/TIME1 count centiseconds from power-on (the sim
+#   clock, which this client steps).
+# * V06: HMSOUT (PINBALL p.338) reads TIME2/TIME1 once, at ENTER.
+# * V16: MONITOR (p.355) re-displays through MONREQ (p.356) once per
+#   second, so the display trails the clock by up to 1 s.
+# * V25N36 with three ENTERs: HMSIN (p.352) converts hours, minutes,
+#   seconds and stores TIME2/TIME1; the clock keeps counting from there.
+# Validated against yaAGC + Comanche055 (tools/oracle/bin/yaAGC).
+vehicle csm
+run 300                         # power-on
+keys R V37E00E                  # RSET, P00
+until PROG 00 within 300
+keys V06N36E
+until R3 +_ within 100          # wait for the sign to arrive
+run 50
+expect VERB 06
+expect NOUN 36
+expect CLOCK ~5                 # TIME at the ENTER
+keys V16N36E
+run 500
+expect CLOCK now ~110           # monitor: updated every second
+run 1000
+expect CLOCK now ~110
+keys V25N36E                    # load the clock: 1 h 2 min 30.00 s
+until FLASH on within 100
+expect VERB 21                  # R1 load request
+keys +00001E
+until VERB 22 within 100
+keys +00002E
+until VERB 23 within 100
+keys +03000E
+clockref 1 2 30.00
+until FLASH off within 100
+keys V16N36E
+run 300
+expect R1 +00001
+expect R2 +00002
+expect CLOCK now ~110
+run 6000                        # one minute later
+expect R2 +00003
+expect CLOCK now ~110

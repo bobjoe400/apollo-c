@@ -1,0 +1,47 @@
+# Scenario a (CSM): V36 fresh start.
+#
+# AGC behaviour checked (Comanche055):
+# * PINBALL VBFRESH: V36 ENTER -> SLAP1 (FRESH_START_AND_RESTART p.183):
+#   STARTSUB, FAILREG/ERCOUNT/REDOCTR = 0, lamp word keeps only NO ATT and
+#   GIMBAL LOCK, DSRUPTSW = -PRIO12 (20 quick T4RUPT display passes).
+# * DOFSTART (p.183-185): channels 11-14 zeroed, MODREG = -0 (PROG blank).
+# * STARTSB2 (p.190-192): DSPOFF writes -BIT12 (blank) into DSPTAB 0..10,
+#   NOUT = 11, VERBREG/NOUNREG cleared, FLAGWRD4 = 0.
+# * T4RUPT QUIKDSP (p.137) sends those blanks without testing DSKYFLAG,
+#   which SWINIT (p.193) leaves off -- see "Bugs found" B1.
+# * V37E00E afterwards selects P00 (GOTOPOOH, p.194): PROG 00.
+# Validated against yaAGC + Comanche055 (tools/oracle/bin/yaAGC).
+vehicle csm
+run 300                         # power-on: GOJAM -> GOPROG
+keys R                          # RSET: ERROR resets the RESTART lamp
+expect LAMP RESTART off
+keys V37E00E                    # P00
+until PROG 00 within 300
+keys V05N09E                    # alarm codes
+until VERB 05 within 100
+keys V36E                       # fresh start
+run 100
+xexpect B1 VERB blank           # DSPOFF blanks flushed by QUIKDSP
+xexpect B1 PROG blank
+expect FLASH off
+expect LAMP KEYREL off
+expect LAMP OPRERR off
+expect LAMP PROG off
+expect CH 11 00000              # DOFSTART: WRITE DSALMOUT (+0)
+expect CH 12 00000
+expect CH 14 00000
+keys V                          # a key turns DSKYFLAG on: blanks go out
+until R3 blank within 200       # one relay word per T4RUPT pass
+expect PROG blank               # MODREG -0
+expect NOUN blank
+expect R1 blank
+expect R2 blank
+keys 05N09E                     # FAILREG cleared by SLAP1
+until R3 00000 within 200
+expect R1 00000
+expect R2 00000
+keys V37E00E                    # P00 after the fresh start
+until PROG 00 within 300
+expect VERB blank
+expect NOUN blank
+expect LAMP PROG off

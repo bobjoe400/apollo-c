@@ -439,16 +439,6 @@ uint16_t agc_phase_get(int group)
     return (phase_w[group]);
 }
 
-uint16_t phase_word(int group)
-{
-    if (!AGC_ASSERT(group_ok(group)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (agc_phase_get(group));
-}
-
 /* PCLOOP test (FRESH_START C p.188 / L p.218): -PHASEn RXOR PHASEn must
  * be -0, i.e. the two words are complements.                           */
 bool phase_group_agrees(int group)

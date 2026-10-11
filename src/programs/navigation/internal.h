@@ -144,9 +144,6 @@ agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
                            agc_job_id_t term, agc_job_id_t proceed,
                            agc_job_id_t enter);
 
-/* ---- common helpers (common.c) ------------------------------------ */
-agc_rendz_t *rz_state(void);
-void         rz_clear_ovf(agc_interp_t *ip); /* BOVB TCDANZIG     */
 /* INCORP2 (MEASUREMENT_INCORPORATION FAZA..FAZAB5): W update, the
  * deviation into the permanent state of the vehicle being corrected
  * (VEHUPFLG: CSM), RECTIFY on overflow, X789 when 9x9, INTWAKE.        */

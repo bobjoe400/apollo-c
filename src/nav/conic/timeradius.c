@@ -31,12 +31,12 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 
     int            n   = 0;
     const agc_dp_t rdn =
-        agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(in->rdesired), &n));
-    agc_tp_t m = agc_conic_mdmp_(agc_conic_mload_(ctx->r1), ctx->p);
+        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(in->rdesired), &n));
+    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(ctx->r1), ctx->p);
 
-    m     = agc_conic_mddv_(ip, agc_conic_mshift_(ip, m, n), rdn); /* SL* 0,1 DDV */
+    m     = agc_conic_mddv_(ip, agc_tp_shift(ip, m, n), rdn); /* SL* 0,1 DDV */
     m     = agc_conic_mddv_(ip, agc_conic_mdsu_(ip, m, AGC_CONIC_D1_16), ecc);
-    *cosf = agc_conic_mstore_(m);    /* STORE COSF     */
+    *cosf = agc_tp_to_dp(m);    /* STORE COSF     */
     bool bad = agc_interp_test_ovf(ip); /* BOV BADR2      */
 
     if (!bad)
@@ -47,8 +47,8 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 
     if (bad)
     { /* BADR2          */
-        *cosf = agc_conic_mstore_(
-            agc_conic_msign_(agc_conic_mload_(AGC_CONIC_LODPHALF), *cosf));
+        *cosf = agc_tp_to_dp(
+            agc_conic_msign_(agc_tp_from_dp(AGC_CONIC_LODPHALF), *cosf));
         *sinf = AGC_CONIC_KEPZERO;
 
         return (true);
@@ -56,7 +56,7 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 
     m = agc_conic_msign_sp_(agc_conic_msqrt_(ip, m),
                             in->sgnrdot);     /* SQRT SIGN */
-    *sinf = agc_conic_mstore_(m);
+    *sinf = agc_tp_to_dp(m);
 
     return (false);
 }
@@ -86,13 +86,13 @@ static void timerad_termnvec(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     agc_tp_t m = agc_vec_dot_tp(ip, u2, ctx->ur1); /* DOT        */
 
     m = agc_conic_mddv_(ip, m, AGC_CONIC_DP1_4); /* DDV DP1/4: limit */
-    m = agc_conic_mshift_(ip, m, -1);            /* SR1            */
-    agc_interp_clear_ovf(ip);                    /* BOV +1         */
-    ctx->csth = agc_conic_mstore_(m);            /* CSTH 2^1       */
+    m = agc_tp_shift(ip, m, -1);       /* SR1            */
+    agc_interp_clear_ovf(ip);          /* BOV +1         */
+    ctx->csth = agc_tp_to_dp(m);       /* CSTH 2^1       */
     agc_vec_t c = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, u2), 1);
 
-    m         = agc_conic_mshift_(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
-    ctx->snth = agc_conic_mstore_(m); /* SNTH 2^1       */
+    m         = agc_tp_shift(ip, agc_vec_dot_tp(ip, c, ctx->un), 1); /* DOT SL1 */
+    ctx->snth = agc_tp_to_dp(m); /* SNTH 2^1       */
 }
 
 /* CIRCULAR (p. 1302): SETPD 0, SETGO SOLNSW ABTCONIC. */
@@ -158,17 +158,17 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
      * ((1 - R1A) UR1 - sqrt(P (2 - R1A)) COGA U2), 2^3. Its unit vector is
      * returned, |ECC| (36D) in *ecc.                                         */
     agc_tp_t m =
-        agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_32), ctx.r1a);
+        agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_32), ctx.r1a);
 
     m = agc_conic_msqrt_(ip, agc_conic_mdmp_(m, ctx.p)); /* DMP P SQRT */
-    m = agc_conic_mshift_(ip, agc_conic_mdmp_(m, ctx.coga),
-                          4); /* DMP COGA SL4 */
+    m = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx.coga),
+                     4);      /* DMP COGA SL4 */
     const agc_vec_t a =
-        agc_vec_scale(ip, ctx.u2, agc_conic_mstore_(m)); /* 0D */
+        agc_vec_scale(ip, ctx.u2, agc_tp_to_dp(m)); /* 0D */
 
-    m = agc_conic_mdsu_(ip, agc_conic_mload_(AGC_CONIC_D1_64), ctx.r1a);
+    m = agc_conic_mdsu_(ip, agc_tp_from_dp(AGC_CONIC_D1_64), ctx.r1a);
     agc_vec_t e =
-        agc_vec_scale(ip, ctx.ur1, agc_conic_mstore_(m)); /* VXSC UR1 */
+        agc_vec_scale(ip, ctx.ur1, agc_tp_to_dp(m)); /* VXSC UR1 */
 
     e = agc_vec_shl(ip, agc_vec_sub(ip, e, a), 4);         /* VSU VSL4   */
     const agc_vec_t uecc = agc_vec_unit(ip, e, &ecc, NULL);

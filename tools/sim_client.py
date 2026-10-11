@@ -33,8 +33,17 @@ Scenario language (one command per line, `#` comments; times in cs):
   expect FIELD VALUE [~TOL]   check now; FIELD: PROG VERB NOUN R1 R2 R3
                               (value like 00, +00123, blank), FLASH on|off,
                               LAMP name on|off, CH ch value (octal), CLOCK
-                              (R1-R3 show TIME at the last ENTER, ~TOL cs)
+                              [now] (R1-R3 = N36 hours, minutes, seconds
+                              show TIME at the last ENTER, or now; ~TOL cs)
+  clockref H M S.SS           the AGC clock read H:M:S.SS at the last ENTER
+                              (after a V25N36 load); CLOCK checks follow it
   until FIELD VALUE [within N] run until the check holds (default 1000 cs)
+  xexpect BUG FIELD VALUE ... known flight-code bug (docs/modules/sim.md,
+  xuntil BUG FIELD VALUE ...  "Bugs found", id BUG): the AGC-correct
+                              expectation, expected to FAIL today. A failure
+                              is reported XFAIL and does not fail the run; a
+                              pass is reported XPASS (bug fixed: turn it
+                              into expect) and fails the run under --strict
   show                        print the display
 Exit status 0 if every expectation held, 1 otherwise.
 """
@@ -235,7 +244,11 @@ class Scenario:
         self.keygap = 20
         self.fail = 0
         self.checks = 0
+        self.xfail = 0
+        self.xpass = 0
+        self.strict = False
         self.enter_cs = None
+        self.clock_base = 0                # AGC TIME minus client cs
         self.last_text = ''
 
     def say(self, msg):
@@ -299,7 +312,7 @@ class Scenario:
             got = d.chan.get(ch, 0)
             return got == v, '%05o' % got
         if f == 'CLOCK':
-            return self.clock_ok(tol)
+            return self.clock_ok(tol, want.strip().lower() == 'now')
         got = d.field(f)
         w = want.replace('_', ' ')
         if w.lower() == 'blank':
@@ -311,32 +324,42 @@ class Scenario:
                 return False, got
         return got.strip() == w.strip() and len(got) >= len(w.strip()), got
 
-    def clock_ok(self, tol):
+    def clock_ok(self, tol, now=False):
         d = self.l.dsky
         try:
             h, m, s = (int(d.field(r).replace(' ', '')) for r in ('R1', 'R2', 'R3'))
         except ValueError:
             return False, d.text()
         shown = (h * 3600 + m * 60) * 100 + s
-        ref = self.enter_cs if self.enter_cs is not None else self.l.cs
-        return abs(shown - ref) <= (tol or 50), '%d cs (ENTER at %d cs)' % (shown, ref)
+        at = self.l.cs if now or self.enter_cs is None else self.enter_cs
+        ref = at + self.clock_base
+        return abs(shown - ref) <= (tol or 50), '%d cs (want %d cs)' % (shown, ref)
 
-    def check(self, args, quiet=False):
+    def check(self, args, quiet=False, bug=None):
         tol = None
         if args and args[-1].startswith('~'):
             tol = int(args[-1][1:])
             args = args[:-1]
         field, want = args[0], ' '.join(args[1:])
         ok, got = self.value_ok(field, want, tol)
-        if not quiet:
-            self.checks += 1
-            if not ok:
-                self.fail += 1
-            self.say('%s expect %s %s: %s' % ('ok  ' if ok else 'FAIL', field,
-                                             want, got))
+        if quiet:
+            return ok
+        self.checks += 1
+        if bug is None:
+            self.fail += 0 if ok else 1
+            tag = 'ok  ' if ok else 'FAIL'
+            self.say('%s expect %s %s: %s' % (tag, field, want, got))
+            return ok
+        if ok:
+            self.xpass += 1
+            self.fail += 1 if self.strict else 0
+        else:
+            self.xfail += 1
+        self.say('%s xexpect [%s] %s %s: %s' % ('XPASS' if ok else 'XFAIL',
+                                                bug, field, want, got))
         return ok
 
-    def until(self, args):
+    def until(self, args, bug=None):
         within = 1000
         if 'within' in args:
             i = args.index('within')
@@ -347,7 +370,7 @@ class Scenario:
             if self.check(args, quiet=True):
                 break
             self.run(5)
-        self.check(args)
+        self.check(args, bug=bug)
 
     def command(self, line):
         w = line.split()
@@ -379,6 +402,14 @@ class Scenario:
             self.check(w[1:])
         elif op == 'until':
             self.until(w[1:])
+        elif op == 'xexpect':
+            self.check(w[2:], bug=w[1])
+        elif op == 'xuntil':
+            self.until(w[2:], bug=w[1])
+        elif op == 'clockref':
+            h, m, sec = int(w[1]), int(w[2]), float(w[3])
+            value = (h * 3600 + m * 60) * 100 + int(round(sec * 100))
+            self.clock_base = value - (self.enter_cs or 0)
         elif op == 'show':
             self.say(self.l.dsky.text())
         else:
@@ -423,6 +454,8 @@ def main(argv):
     ap.add_argument('--realtime', action='store_true')
     ap.add_argument('--verbose', '-v', action='store_true')
     ap.add_argument('--trace', action='store_true')
+    ap.add_argument('--strict', action='store_true',
+                    help='an XPASS (known bug no longer seen) fails the run')
     a = ap.parse_args(argv[1:])
     vehicle = a.vehicle or (scenario_vehicle(a.scenario) if a.scenario else None) or 'csm'
     proc = None
@@ -435,6 +468,7 @@ def main(argv):
                                  '--port', str(port)], stdout=subprocess.PIPE)
         link = Link('127.0.0.1', port, lockstep=True, trace=a.trace)
     sc = Scenario(link, vehicle, a.max_cs, a.verbose)
+    sc.strict = a.strict
     try:
         if a.scenario:
             with open(a.scenario) as fh:
@@ -449,9 +483,10 @@ def main(argv):
         if proc:
             out, _ = proc.communicate(timeout=30)
             sys.stdout.write(out.decode())
-    print('sim_client: %s %s: %d checks, %d failed, %.2f s of AGC time' % (
-        os.path.basename(a.scenario or 'interactive'), vehicle, sc.checks,
-        sc.fail, link.cs / 100.0))
+    print('sim_client: %s %s: %d checks, %d failed, %d xfail, %d xpass, '
+          '%.2f s of AGC time' % (
+              os.path.basename(a.scenario or 'interactive'), vehicle,
+              sc.checks, sc.fail, sc.xfail, sc.xpass, link.cs / 100.0))
     return 1 if sc.fail else 0
 
 

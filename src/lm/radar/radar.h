@@ -95,7 +95,6 @@ int      rr_ones(uint16_t w); /* 15-bit word as ones' complement  */
 uint16_t rr_word(int v);      /* ones' complement word of v       */
 /* MAGSUB: true ("L+3") when |a| <= -k, k a negative constant.           */
 bool rr_magsub(int a, int k);
-void rr_chan_or(int chan, uint16_t bits);
 void rr_chan_clear(int chan, uint16_t bits);
 void rr_radmodes_set(uint16_t bits);
 void rr_radmodes_clear(uint16_t bits);

@@ -211,16 +211,6 @@ static void dsp11_write(uint16_t v)
     agc_erase_set_dsptab(11, v);
 }
 
-static void chan_or(int chan, uint16_t bits)
-{
-    if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN14))
-    {
-        return;
-    }
-
-    agc_chan_or(chan, bits);
-}
-
 static void chan_clear(int chan, uint16_t bits)
 {
     if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN14))
@@ -518,7 +508,7 @@ agc_status_t agc_imu_zero(void)
     imodes30_or(IM30_ICDUFAILINH | IM30_IMUFAILINH);
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_COARSE | AGC_CH012_ENBIMUERR);
     agc_imu_noattoff();
-    chan_or(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
+    agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
 
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) == 0u))
     {
@@ -662,7 +652,7 @@ agc_status_t agc_task_coars(void)
         return (AGC_STATUS_OK);
     }
 
-    chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
+    agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
 
     for (int cduind = 2; cduind >= 0; cduind--)
     { /* CDUIND 2, 1, 0  */
@@ -731,8 +721,8 @@ agc_status_t agc_task_coars2(void)
 
     if (itemp1 > 0)
     { /* SENDPULS         */
-        chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY |
-                AGC_CH014_DRIVECDUZ);
+        agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY |
+                    AGC_CH014_DRIVECDUZ);
         st = agc_waitlist_vardelay(DT_600MS, AGC_TASK_COARS2);
     }
     else
@@ -780,7 +770,7 @@ agc_status_t agc_task_chkcors(void)
 /* CA+ECE (task, p.1425): enable the three ISS CDU error counters.        */
 agc_status_t agc_task_ca_ece(void)
 {
-    chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
+    agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
 
     if (!AGC_ASSERT((agc_chan_read(
                          AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
@@ -802,7 +792,7 @@ void agc_imu_setcoars(void)
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR); /* clear error ctrs */
     chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT); /* gyro activity   */
     agc_imu_hw_set_gyrocmd(0);                      /* CS ZERO: -0     */
-    chan_or(AGC_CHAN_CHAN12, AGC_CH012_COARSE);
+    agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_COARSE);
     dsp11_write(
         (uint16_t) (agc_erase_dsptab(11) | DSP11_NOATT | DSP11_CHANGED));
     imodes33_set(IM33_DAPDIS6, true);

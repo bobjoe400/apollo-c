@@ -419,6 +419,11 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
         return (v);
     }
 
+    if (!AGC_ASSERT(n > -128 && n < 128)) /* shift counts of SL, SR: 7 bits */
+    {
+        return (v);
+    }
+
     if (n > 0)
     {
         m = agc_w_tssl(m, n, &ip->ovfind);

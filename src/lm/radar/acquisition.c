@@ -465,7 +465,7 @@ agc_status_t agc_job_manual_acquisition_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
+    agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
     agc_dsky_cont_t cont;
 
     cont.terminate = AGC_JOB_MANUAL_ACQUISITION_TERMINATE;
@@ -697,7 +697,7 @@ agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rr_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
+    agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
 
     if (!agc_flag_test(AGC_FLAG_SRCHOPTN))
     {

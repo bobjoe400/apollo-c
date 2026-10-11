@@ -66,16 +66,16 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     m = agc_conic_mshiftr_(ip, m, 1);                       /* DOT SL1R       */
     m =
         agc_conic_mshiftr_(ip, agc_conic_mdmp_(m, ctx->inv_root_mu), 1);
-    ctx->kepc1 = agc_conic_mstore_(m);               /* KEPC1 2^17     */
-    m          = agc_conic_mload_(agc_vec_sq(ip, in->vrect)); /* VSQ DMPR 1/MU  */
+    ctx->kepc1 = agc_tp_to_dp(m);               /* KEPC1 2^17     */
+    m          = agc_tp_from_dp(agc_vec_sq(ip, in->vrect)); /* VSQ DMPR 1/MU  */
     m          = agc_conic_mdmpr_(ip, m, ctx->inv_mu);
-    m          = agc_conic_mshift_(ip, agc_conic_mdmp_(m, r1), 3); /* DMP R1 SL3  */
+    m          = agc_tp_shift(ip, agc_conic_mdmp_(m, r1), 3); /* DMP R1 SL3  */
     m          = agc_conic_mround_(ip, agc_conic_mdsu_(ip, m, AGC_CONIC_D1_64));
-    ctx->kepc2 = agc_conic_mstore_(m); /* KEPC2 2^6      */
+    ctx->kepc2 = agc_tp_to_dp(m); /* KEPC2 2^6      */
     m          = agc_conic_mshiftr_(ip, agc_conic_mbdsu_(ip, m,
                                                          AGC_CONIC_D1_64), -1);
     m         = agc_conic_mddv_(ip, m, r1); /* DDV R1         */
-    ks->alpha = agc_conic_mstore_(m); /* ALPHA          */
+    ks->alpha = agc_tp_to_dp(m); /* ALPHA          */
 
     if (!agc_conic_mbmn_(m))
     { /* BPL 1REV       */
@@ -85,7 +85,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
     else
     {
-        m = agc_conic_mddv_(ip, agc_conic_mload_(AGC_CONIC_M50SC), ks->alpha);
+        m = agc_conic_mddv_(ip, agc_tp_from_dp(AGC_CONIC_M50SC), ks->alpha);
 
         if (!agc_interp_test_ovf(ip))
         { /* BOV STOREMAX   */
@@ -93,7 +93,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         }
     }
 
-    ks->xmax = agc_conic_mstore_(m); /* STOREMAX       */
+    ks->xmax = agc_tp_to_dp(m); /* STOREMAX       */
 }
 
 /* STOREMAX to MODDONE (p. 1278): PERIOD = XMAX / (ROOTMU ALPHA) (2^28)
@@ -112,13 +112,13 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return;
     }
 
-    const agc_dp_t p0 = agc_conic_mstore_(
-        agc_conic_mdmp_(agc_conic_mload_(ks->xmax), ctx->inv_root_mu));
+    const agc_dp_t p0 = agc_tp_to_dp(
+        agc_conic_mdmp_(agc_tp_from_dp(ks->xmax), ctx->inv_root_mu));
     int            n       = 0; /* ALPHA NORM X1  */
     const agc_dp_t alpha_n =
-        agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(ks->alpha), &n));
+        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(ks->alpha), &n));
     agc_tp_t m =
-        agc_conic_mshift_(ip, agc_conic_mload_(p0), n - 6); /* SL* 0 -6,1 */
+        agc_tp_shift(ip, agc_tp_from_dp(p0), n - 6); /* SL* 0 -6,1 */
 
     m = agc_conic_mddv_(ip, m, alpha_n);
 
@@ -127,12 +127,12 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return;
     }
 
-    const agc_dp_t period = agc_conic_mstore_(m); /* 0D = PERIOD    */
+    const agc_dp_t period = agc_tp_to_dp(m); /* 0D = PERIOD    */
     int            pass   = 0;
 
     for (pass = 0; pass < AGC_CONIC_PERIOD_MAX_PASSES; pass++)
     { /* PERIODCH */
-        m = agc_conic_mabs_(agc_conic_mload_(ks->tau));
+        m = agc_conic_mabs_(agc_tp_from_dp(ks->tau));
         m = agc_conic_mdsu_(ip, m, period);
 
         if (agc_conic_mbmn_(m))
@@ -140,7 +140,7 @@ static void kepler_period(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
             break;
         }
 
-        ks->tau = agc_conic_mstore_(agc_conic_msign_(m, ks->tau));
+        ks->tau = agc_tp_to_dp(agc_conic_msign_(m, ks->tau));
     }
 
     if (!AGC_ASSERT(pass < AGC_CONIC_PERIOD_MAX_PASSES))
@@ -166,7 +166,7 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
 
     ctx->x = in->xkepnew; /* STORE X        */
-    agc_tp_t m    = agc_conic_msign_(agc_conic_mload_(in->xkepnew), ks->tau);
+    agc_tp_t m    = agc_conic_msign_(agc_tp_from_dp(in->xkepnew), ks->tau);
     bool     badx = agc_conic_mbze_(m) || agc_conic_mbmn_(m);
 
     if (!badx)
@@ -177,8 +177,8 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     if (badx)
     { /* BADX           */
-        m      = agc_conic_mshift_(ip, agc_conic_mload_(ks->xmax), -1);
-        ctx->x = agc_conic_mstore_(agc_conic_msign_(m, ks->tau));
+        m      = agc_tp_shift(ip, agc_tp_from_dp(ks->xmax), -1);
+        ctx->x = agc_tp_to_dp(agc_conic_msign_(m, ks->tau));
     }
 
     if (ks->tau >= 0)
@@ -191,12 +191,12 @@ static void kepler_bounds(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         ks->xmax = AGC_CONIC_KEPZERO;
     }
 
-    m = agc_conic_mdmpr_(ip, agc_conic_mload_(
+    m = agc_conic_mdmpr_(ip, agc_tp_from_dp(
                              ks->tau), AGC_CONIC_BEE22);
-    ks->epsilont = agc_conic_mstore_(agc_conic_mabs_(m)); /* DXCOMP     */
-    ks->delx     = agc_conic_mstore_(                     /* XDIFF        */
+    ks->epsilont = agc_tp_to_dp(agc_conic_mabs_(m)); /* DXCOMP     */
+    ks->delx     = agc_tp_to_dp(                     /* XDIFF        */
         agc_conic_mbdsu_(
-            ip, agc_conic_mload_(in->xprev), ctx->x));
+            ip, agc_tp_from_dp(in->xprev), ctx->x));
 }
 
 /* Secant step of KEPLOOP (p. 1279): trial DELX = DELX DELT / (T - TC),
@@ -218,41 +218,41 @@ static agc_dp_t kepler_newdelx(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     int      n1 = 0;
     int      n2 = 0;
     agc_tp_t m  = agc_conic_mnorm_(
-        agc_conic_mdsu_(ip, agc_conic_mload_(ctx->t), ks->tc), &n1);
-    const agc_dp_t dt_n = agc_conic_mstore_(m);            /* PDDL: 0D       */
+        agc_conic_mdsu_(ip, agc_tp_from_dp(ctx->t), ks->tc), &n1);
+    const agc_dp_t dt_n = agc_tp_to_dp(m);            /* PDDL: 0D       */
 
-    m = agc_conic_mnorm_(agc_conic_mload_(ks->delx), &n2); /* NORM X2    */
+    m = agc_conic_mnorm_(agc_tp_from_dp(ks->delx), &n2); /* NORM X2    */
     m = agc_conic_mdmp_(m, ks->delt);                      /* XSU,1 X2; DMP  */
     m = agc_conic_mshiftr_(ip, m, 1 + n1 - n2);            /* SLR* 1,1       */
-    m = agc_conic_mshift_(ip, agc_conic_mddv_(ip, m, dt_n), -1); /* DDV SR1 */
-    const agc_dp_t trial = agc_conic_mstore_(m); /* PUSH 0D        */
+    m = agc_tp_shift(ip, agc_conic_mddv_(ip, m, dt_n), -1); /* DDV SR1 */
+    const agc_dp_t trial = agc_tp_to_dp(m); /* PUSH 0D        */
 
     if (!agc_conic_mbmn_(m))
     { /* POSDELX        */
         ks->xmin = ctx->x;
-        m        = agc_conic_mbdsu_(ip, agc_conic_mload_(ctx->x), ks->xmax);
+        m        = agc_conic_mbdsu_(ip, agc_tp_from_dp(ctx->x), ks->xmax);
         m        = agc_conic_mdsu_(ip, m, trial);
 
         if (agc_interp_test_ovf(ip) || agc_conic_mbmn_(m))
         { /* PDXCHNGE */
-            m = agc_conic_mdsu_(ip, agc_conic_mload_(ks->xmax), ctx->x);
+            m = agc_conic_mdsu_(ip, agc_tp_from_dp(ks->xmax), ctx->x);
 
-            return (agc_conic_mstore_(agc_conic_mdmpr_(ip, m,
-                                                       AGC_CONIC_DP9_10)));
+            return (agc_tp_to_dp(agc_conic_mdmpr_(ip, m,
+                                                  AGC_CONIC_DP9_10)));
         }
 
         return (trial);
     }
 
     ks->xmax = ctx->x; /* move max in    */
-    m        = agc_conic_mbdsu_(ip, agc_conic_mload_(ctx->x), ks->xmin);
+    m        = agc_conic_mbdsu_(ip, agc_tp_from_dp(ctx->x), ks->xmin);
     m        = agc_conic_mdsu_(ip, m, trial);
 
     if (agc_interp_test_ovf(ip) || !agc_conic_mbmn_(m))
     { /* NDXCHNGE */
-        m = agc_conic_mdsu_(ip, agc_conic_mload_(ks->xmin), ctx->x);
+        m = agc_conic_mdsu_(ip, agc_tp_from_dp(ks->xmin), ctx->x);
 
-        return (agc_conic_mstore_(agc_conic_mdmpr_(ip, m, AGC_CONIC_DP9_10)));
+        return (agc_tp_to_dp(agc_conic_mdmpr_(ip, m, AGC_CONIC_DP9_10)));
     }
 
     return (trial);
@@ -282,16 +282,16 @@ static kepler_step_t kepler_timeovfl(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         ks->xmax = ctx->x;
     }
 
-    ks->delx = agc_conic_mstore_(
-        agc_conic_mshift_(ip, agc_conic_mload_(ks->delx), -1));
+    ks->delx = agc_tp_to_dp(
+        agc_tp_shift(ip, agc_tp_from_dp(ks->delx), -1));
 
     if (ks->delx == 0)
     { /* BZE KEPRTN     */
         return (KEPLER_KEPRTN);
     }
 
-    ctx->x = agc_conic_mstore_(
-        agc_conic_mbdsu_(ip, agc_conic_mload_(ks->delx), ctx->x));
+    ctx->x = agc_tp_to_dp(
+        agc_conic_mbdsu_(ip, agc_tp_from_dp(ks->delx), ctx->x));
     ctx->t = ks->tc; /* DLOAD TC STORE T */
 
     return (KEPLER_CONTINUE);
@@ -313,13 +313,13 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     int      n1 = 0; /* DSQ NORM X1    */
     agc_tp_t m  =
-        agc_conic_mnorm_(agc_conic_mdsq_(agc_conic_mload_(ctx->x)), &n1);
+        agc_conic_mnorm_(agc_conic_mdsq_(agc_tp_from_dp(ctx->x)), &n1);
 
-    ctx->xsq    = agc_conic_mstore_(m);     /* PUSH 0D        */
+    ctx->xsq    = agc_tp_to_dp(m);     /* PUSH 0D        */
     ctx->xsq_n1 = n1;
     m           = agc_conic_mshiftr_(ip, agc_conic_mdmp_(m, ks->alpha),
                                      6 - n1); /* SRR* 0 -6,1 */
-    ctx->xi = agc_conic_mstore_(m);           /* XI 2^6         */
+    ctx->xi = agc_tp_to_dp(m);           /* XI 2^6         */
     agc_status_t st = agc_conic_deltime_(ip, ctx);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -332,8 +332,8 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (kepler_timeovfl(ip, ctx, ks));
     }
 
-    m        = agc_conic_mbdsu_(ip, agc_conic_mload_(ctx->t), ks->tau); /* BDSU TAU. */
-    ks->delt = agc_conic_mstore_(m);
+    m        = agc_conic_mbdsu_(ip, agc_tp_from_dp(ctx->t), ks->tau); /* BDSU TAU. */
+    ks->delt = agc_tp_to_dp(m);
     m        = agc_conic_mbdsu_(ip, agc_conic_mabs_(m), ks->epsilont);
 
     if (!agc_conic_mbmn_(m))
@@ -348,8 +348,8 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (KEPLER_CONVERGED);
     }
 
-    ctx->x = agc_conic_mstore_(
-        agc_conic_mdad_(ip, agc_conic_mload_(ks->delx), ctx->x));
+    ctx->x = agc_tp_to_dp(
+        agc_conic_mdad_(ip, agc_tp_from_dp(ks->delx), ctx->x));
     ks->tc = ctx->t; /* STODL X / T; STORE TC */
 
     return (KEPLER_CONTINUE);
@@ -460,22 +460,22 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
 
     cell[5] = agc_conic_mu_(in->body); /* DLOAD* MUEARTH,2 */
     cell[0] =
-        agc_conic_mstore_(agc_conic_msqrt_(ip, agc_conic_mload_(cell[5])));
+        agc_tp_to_dp(agc_conic_msqrt_(ip, agc_tp_from_dp(cell[5])));
     agc_vec_t ur = agc_vec_unit(ip, in->rrect, &cell[1], NULL); /* UNIT RCV */
     int       n1 = 0;
     int       n2 = 0;
 
     cell[2] =
-        agc_conic_mstore_(agc_conic_mnorm_(agc_conic_mload_(cell[1]), &n1));
+        agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(cell[1]), &n1));
     const agc_dp_t fsmu = agc_vec_dot(ip, ur, in->vrect); /* DOT VCV: 4D  */
     agc_tp_t       m    =
-        agc_conic_mdsu_(ip, agc_conic_mload_(in->tau), in->tc);
+        agc_conic_mdsu_(ip, agc_tp_from_dp(in->tau), in->tc);
 
-    m       = agc_conic_mshift_(ip, agc_conic_mnorm_(m, &n2), -1); /* NORM S1 SR1 */
+    m       = agc_tp_shift(ip, agc_conic_mnorm_(m, &n2), -1); /* NORM S1 SR1 */
     cell[3] =
-        agc_conic_mstore_(agc_conic_mddv_(ip, m, cell[2])); /* S: DDV 2D */
+        agc_tp_to_dp(agc_conic_mddv_(ip, m, cell[2])); /* S: DDV 2D */
     cell[4] =
-        agc_conic_mstore_(agc_conic_mdmp_(agc_conic_mload_(fsmu), cell[3]));
+        agc_tp_to_dp(agc_conic_mdmp_(agc_tp_from_dp(fsmu), cell[3]));
 
     /* KEPPREP second-order term (ORBITAL_INTEGRATION.agc p. 1334, from
      * "DSQ PDDL* MUEARTH,2" to "SL* SL* 8D,1 0,1"):
@@ -488,36 +488,36 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in,
 
     /* cell[]: 0 SQRT MU, 1 |R| (36D), 2 R normalized, 3 S, 4 FS, 5 MU */
     const agc_dp_t fs_sq =
-        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[4])));
+        agc_tp_to_dp(agc_conic_mdsq_(agc_tp_from_dp(cell[4])));
     const agc_dp_t s_sq =
-        agc_conic_mstore_(agc_conic_mdsq_(agc_conic_mload_(cell[3])));
+        agc_tp_to_dp(agc_conic_mdsq_(agc_tp_from_dp(cell[3])));
     const agc_dp_t mu43 =
-        agc_conic_mstore_( /* SR3 SR4: 12D */
-            agc_conic_mshift_(
+        agc_tp_to_dp( /* SR3 SR4: 12D */
+            agc_tp_shift(
                 ip,
-                agc_conic_mshift_(ip, agc_conic_mload_(cell[5]),
-                                  -3),
+                agc_tp_shift(ip, agc_tp_from_dp(cell[5]),
+                             -3),
                 -4));
-    agc_tp_t m_series = agc_conic_mload_(agc_vec_sq(ip, in->vrect)); /* VSQ VCV  */
+    agc_tp_t m_series = agc_tp_from_dp(agc_vec_sq(ip, in->vrect)); /* VSQ VCV  */
 
     m_series = agc_conic_mbdsu_(ip, agc_conic_mdmp_(m_series, cell[1]),
                                 mu43);   /* DMP 36D BDSU */
     m_series = agc_conic_mdmp_(agc_conic_mddv_(ip, m_series, cell[2]), s_sq); /* DDV 2D DMP */
-    m_series = agc_conic_mdmp_(m_series, AGC_CONIC_DP2_3);   /* DMP DP2/3      */
-    m_series = agc_conic_mshift_(ip, m_series, n1 - 3);      /* SL* 0 -3,1     */
-    m_series = agc_conic_mdad_(ip, m_series, fs_sq);         /* XSU,1 S1; DAD  */
-    m_series = agc_conic_mshift_(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
+    m_series = agc_conic_mdmp_(m_series, AGC_CONIC_DP2_3); /* DMP DP2/3      */
+    m_series = agc_tp_shift(ip, m_series, n1 - 3);         /* SL* 0 -3,1     */
+    m_series = agc_conic_mdad_(ip, m_series, fs_sq);       /* XSU,1 S1; DAD  */
+    m_series = agc_tp_shift(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
     m_series = agc_conic_mdsu_(ip, m_series, cell[4]);       /* DSU (FS)       */
     m_series = agc_conic_mdmp_(agc_conic_mdmp_(m_series, cell[0]), cell[3]); /* DMP 0D, 4D */
-    m_series = agc_conic_mshift_(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
-    m        = agc_conic_mdad_(ip, agc_conic_mshift_(ip, m_series,
-                                                     n1 - n2), in->xprev);
-    const agc_dp_t sum = agc_conic_mstore_(m); /* DAD XKEP, PDDL */
+    m_series = agc_tp_shift(ip, m_series, 8 + n1 - n2); /* SL* 8D,1       */
+    m        = agc_conic_mdad_(ip, agc_tp_shift(ip, m_series,
+                                                n1 - n2), in->xprev);
+    const agc_dp_t sum = agc_tp_to_dp(m); /* DAD XKEP, PDDL */
 
-    m = agc_conic_mdmp_(agc_conic_mload_(cell[3]), cell[0]); /* DMP 0D   */
-    m = agc_conic_mshift_(ip, m, 1 + n1 - n2); /* SL* 1,1        */
+    m = agc_conic_mdmp_(agc_tp_from_dp(cell[3]), cell[0]); /* DMP 0D   */
+    m = agc_tp_shift(ip, m, 1 + n1 - n2); /* SL* 1,1        */
     agc_interp_clear_ovf(ip);            /* BOVB TCDANZIG  */
-    *xkepnew = agc_conic_mstore_(agc_conic_mdad_(ip, m, sum)); /* XKEPNEW */
+    *xkepnew = agc_tp_to_dp(agc_conic_mdad_(ip, m, sum)); /* XKEPNEW */
 
     return (AGC_STATUS_OK);
 }

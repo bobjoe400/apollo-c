@@ -58,32 +58,31 @@ typedef struct sim_opts
     const char   *script;
 } sim_opts_t;
 
-static bool opt_value(const char *arg, const char *name, const char *next,
-                      const char **value, int *used)
+/* The value of option `name` given as `--name=V` or `--name V` (then
+ * *used = 1); NULL when `arg` is not that option.                       */
+static const char *opt_value(const char *arg, const char *name,
+                             const char *next, int *used)
 {
     size_t n = strlen(name);
 
-    if (!AGC_ASSERT(arg != NULL && value != NULL) || strncmp(arg, name, n) != 0)
+    if (!AGC_ASSERT(arg != NULL && used != NULL) || strncmp(arg, name, n) != 0)
     {
-        return (false);
+        return (NULL);
     }
 
     if (arg[n] == '=')
     {
-        *value = &arg[n + 1];
-
-        return (true);
+        return (&arg[n + 1]);
     }
 
     if (arg[n] == '\0' && next != NULL)
     {
-        *value = next;
-        *used  = 1;
+        *used = 1;
 
-        return (true);
+        return (next);
     }
 
-    return (false);
+    return (NULL);
 }
 
 /* One argument (and maybe the next); false when it is not understood.  */
@@ -100,19 +99,19 @@ static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *use
     {
         o->vehicle = (arg[0] == 'l') ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
     }
-    else if (opt_value(arg, "--vehicle", next, &v, used))
+    else if ((v = opt_value(arg, "--vehicle", next, used)) != NULL)
     {
         o->vehicle = (strcmp(v, "lm") == 0) ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
     }
-    else if (opt_value(arg, "--port", next, &v, used))
+    else if ((v = opt_value(arg, "--port", next, used)) != NULL)
     {
         o->port = (int) strtol(v, NULL, 10);
     }
-    else if (opt_value(arg, "--max-cs", next, &v, used))
+    else if ((v = opt_value(arg, "--max-cs", next, used)) != NULL)
     {
         o->max_cs = strtoul(v, NULL, 10);
     }
-    else if (opt_value(arg, "--script", next, &v, used))
+    else if ((v = opt_value(arg, "--script", next, used)) != NULL)
     {
         o->script = v;
     }

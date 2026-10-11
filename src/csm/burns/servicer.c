@@ -667,6 +667,11 @@ agc_status_t agc_job_servexit(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
+    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_phase_change(GRP5, PH_5_3_A);
 
     return (AGC_STATUS_OK);
