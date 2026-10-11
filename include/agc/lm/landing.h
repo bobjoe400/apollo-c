@@ -222,7 +222,7 @@ void           agc_lm_fastchng(void);                /* FASTCHNG  */
 agc_sp_t       agc_lm_time1(void);                   /* TIME1     */
 agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor); /* DV        */
 agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b); /* MP, high  */
-agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);    /* AD, sat.  */
+agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);    /* AD, wraps */
 agc_lm_words_t agc_lm_words(agc_dp_t v);             /* sign-agreeing split */
 agc_dp_t       agc_lm_words_value(agc_lm_words_t w); /* hi * 2^14 + lo    */
 agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y); /* DAS     */

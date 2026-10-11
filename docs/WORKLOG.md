@@ -408,3 +408,6 @@
             Recurring request now from 4 lanes: core word-level MPAC API
             (ones'-complement word pairs) -> review-core-numeric must do it.
             Launching review-dap-lm (#6).
+2026-10-11  User paused review-nav-conic and review-dap-lm (checkpoint-and-
+            stop requested; resume from their notes later). review-guid-
+            landing continues alone.

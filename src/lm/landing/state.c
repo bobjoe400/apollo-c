@@ -209,23 +209,24 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
 }
 
 /**********************************************************************
- * AGC: none (AD instruction) -- word sum with the overflow saturated
- * (the callers in this lane never overflow on valid data; the assertion
- * flags it if they do)
+ * AGC: none (AD instruction, then TS/XCH/ADS of A) -- word sum as the
+ * AGC stores it: an overflowing 16-bit A is overflow-corrected, i.e.
+ * the sum wraps modulo 2^14 (16383 + 1 -> +0). The callers in this lane
+ * never overflow on valid data; the assertion flags it if they do.
  *
  * ARGUMENTS:
  *   a  agc_sp_t  I  augend, any scale 2^S
  *   b  agc_sp_t  I  addend, same scale 2^S
  *
- * RETURNS: agc_sp_t -- a + b, scale 2^S, saturated at +-POSMAX
+ * RETURNS: agc_sp_t -- a + b, scale 2^S, wrapped like the AGC
  **********************************************************************/
 agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
 {
     int32_t s = (int32_t) a + (int32_t) b; /* sum in the 16-bit A, 2^S */
 
     if (!AGC_ASSERT(s <= AGC_SP_MAX && s >= AGC_SP_MIN))
-    {
-        s = (s > 0) ? AGC_SP_MAX : AGC_SP_MIN; /* saturate by sign    */
+    { /* overflow-corrected store: drop the overflow bit           */
+        s = (s > 0) ? s - LM_WORD : s + LM_WORD; /* by overflow sign */
     }
 
     return ((agc_sp_t) s);
