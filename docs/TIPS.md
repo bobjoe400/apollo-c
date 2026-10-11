@@ -132,3 +132,7 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
 * **After a cutoff, list live agents before relaunching.** One reviewer
   survived a usage-limit kill; a blind relaunch put two agents on the same
   files. The surviving agent caught it; the lead should have.
+* **DMP is not DMPR.** A guide that maps "multiply" to the rounded product
+  silently changes results by hundreds of LSB over an entry trajectory.
+  Audit every multiply against the listing before blaming the emulator for
+  oracle mismatches.

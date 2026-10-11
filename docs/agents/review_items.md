@@ -16,3 +16,14 @@
 - prog-rendz: F13 CDH DIFFALT 62 m (trace); targeting findings; P23/R22LEM restart priority with exec review; programs/navigation/noun_data.c -> lm/radar upward dependency (fix layering).
 - prog-align: UNIT-at-B27 for R63 with core review (call-site scaling per AGC); alignment tests at realistic ranges; N70/N71 AOTCODE orphan components.
 - sys-misc: LM P07 REDO stub (document what the rope lacks, translate the fixed-memory part fully); N08 ALMCADR orphans; RADMODES one word; sysmisc test free of scratch stand-ins.
+
+## ALL remaining lanes (added 2026-10-11 after review-guid-entry finding E1)
+- **DMP vs DMPR audit.** The original translation guide mapped DMP to the
+  rounded multiply; core-numeric corrected it later (DMP = agc_dp_mul_trunc
+  / TP product, DMPR = agc_dp_mul). Entry had 92 wrong sites and the error
+  had been blamed on yaAGC. For every multiply in your lane, check the AGC
+  listing: DMP -> truncating (keep the TP accumulator where the AGC shifts,
+  square-roots or arc-cosines the product), DMPR -> rounded. Fix and
+  re-tighten your oracle tolerances. Report the count changed.
+- **Shift rounding.** Same check for SR/SRR and VSR (truncate vs round) and
+  for overflow stores: wrap modulo 1 where the AGC does, do not saturate.

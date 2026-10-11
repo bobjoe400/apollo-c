@@ -387,3 +387,10 @@
             agc_chan_and mask to 15 bits (WAND semantics). Open: loadable
             noun components without write path (list in review-io-dsky.md).
             Launching review-prog-rendz (queue #4).
+2026-10-11  review-guid-entry DONE. FINDING E1: 92 DMPR-for-DMP sites in
+            entry/P11; residuals that had been attributed to yaAGC vanished
+            (ROLLC 2159 LSB -> <=6). Tree-wide DMP/DMPR + shift-rounding
+            audit added to review_items.md for all remaining lanes. P11
+            fixes (ATERJOB, BIASAK TP add, RESCALES). Requests: exec rename
+            AGC_JOB_REFAZE10; guid-powered export AUGEKUGL; POLYNUM+1 on
+            P11 pad load. Launching review-guid-landing (#5).
