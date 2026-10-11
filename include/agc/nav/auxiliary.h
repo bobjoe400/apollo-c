@@ -26,9 +26,11 @@
 
 /* ======================================================================
  * Launch-time pad load used by planetary orientation, lat/long and the
- * ephemerides.  Kept by planetary.c (set with agc_navaux_set_padload) for
- * agc_lsposition, whose signature is fixed; all other functions take it
- * explicitly.
+ * ephemerides.  agc_navaux_set_padload stores TEPHEM and RLS in the core
+ * erasables (agc_erase_tephem / agc_erase_rls, their only store) and AZO,
+ * AXO, -AYO, 504LM in planetary.c; agc_navaux_get_padload reads them back
+ * the same way.  Functions take the pad explicitly; agc_lsposition, whose
+ * signature is fixed, reads agc_erase_tephem.
  * ==================================================================== */
 typedef struct agc_navaux_padload
 {

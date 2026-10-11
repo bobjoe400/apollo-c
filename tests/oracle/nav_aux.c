@@ -181,7 +181,7 @@ static void tff(const char *base, long tol)
 
     if (x_out != oracle_in_dp(tt, "VAC1", 34))
     {
-        (void) oracle_cmp(tt, "TFFX", g.tffx, x_out, 256);
+        (void) oracle_cmp(tt, "TFFX", g.tffx, x_out, 32);
     }
 
     if (m_out != oracle_in_dp(tt, "VAC1", 36))
@@ -333,10 +333,10 @@ int main(void)
     rp_r("rptor_moon", true, 4);
     rp_r("rtorp_earth", false, 0);
     rp_r("rtorp_moon", false, 4);
-    tff("tff_earth_entry", 16);
-    tff("tff_earth_high", 16);
-    tff("tff_earth_hyp", 16);
-    tff("tff_moon", 16);
+    tff("tff_earth_entry", 12);
+    tff("tff_earth_high", 12);
+    tff("tff_earth_hyp", 12);
+    tff("tff_moon", 12);
     lspos_cm("lspos_cm_t0", 0);
     lspos_cm("lspos_cm_t1", 0);
     lspos_cm("lspos_cm_t2", 0);
@@ -353,9 +353,9 @@ int main(void)
     }
 
     agc_state_init(AGC_VEHICLE_LM);
-    lspos_lm("lspos_lm_t0", 8);
-    lspos_lm("lspos_lm_t1", 8);
-    lspos_lm("lspos_lm_t2", 8);
+    lspos_lm("lspos_lm_t0", 2);
+    lspos_lm("lspos_lm_t1", 2);
+    lspos_lm("lspos_lm_t2", 2);
 
     return (oracle_finish("oracle_nav_aux"));
 }

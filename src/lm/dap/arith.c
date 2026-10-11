@@ -20,7 +20,19 @@
 #define ARITH_MASK15 0x7FFF
 #define ARITH_SIGN15 0x4000
 
-/* hi * 2^14 + lo: the value of a word pair in minor-word units.           */
+/**********************************************************************
+ * hi * 2^14 + lo: the value of a word pair in minor-word units.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_dpval
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    word pair (major, minor), unscaled
+ *
+ * RETURNS: int32_t -- hi x 2^14 + lo, minor-word units
+ **********************************************************************/
 int32_t lm_dap_dpval(lm_dp_pair_t x)
 {
     if (!AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG))
@@ -36,7 +48,20 @@ int32_t lm_dap_dpval(lm_dp_pair_t x)
     return ((int32_t) x.hi * ARITH_WORD + (int32_t) x.lo);
 }
 
-/* Split a value into a sign-agreeing pair (what MP and DV leave).         */
+/**********************************************************************
+ * Split a value into a sign-agreeing pair (what MP and DV leave).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_dpmake
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    value in minor-word units (2^-14 of the major
+ *                           word)
+ *
+ * RETURNS: lm_dp_pair_t -- sign-agreeing pair
+ **********************************************************************/
 lm_dp_pair_t lm_dap_dpmake(int32_t v)
 {
     lm_dp_pair_t r;
@@ -67,7 +92,20 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
     return (r);
 }
 
-/* MP: A,L = a * b (14 x 14 bits, exact), both words with the product sign. */
+/**********************************************************************
+ * MP: A,L = a * b (14 x 14 bits, exact), both words with the product sign.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_mp
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   a         agc_sp_t  I    multiplicand (A), unscaled word
+ *   b         agc_sp_t  I    multiplier (memory), unscaled word
+ *
+ * RETURNS: lm_dp_pair_t -- product A,L
+ **********************************************************************/
 lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
 {
     if (!AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG))
@@ -83,6 +121,19 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
     return (lm_dap_dpmake((int32_t) a * (int32_t) b));
 }
 
+/**********************************************************************
+ * MP, major word only (CA x / MP y / TS z).  AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_mphi
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   a         agc_sp_t  I    multiplicand (A), unscaled word
+ *   b         agc_sp_t  I    multiplier (memory), unscaled word
+ *
+ * RETURNS: agc_sp_t -- major word of the product
+ **********************************************************************/
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
     lm_dp_pair_t p = lm_dap_mp(a, b);
@@ -95,7 +146,19 @@ agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
     return (p.hi);
 }
 
-/* A value as a sign-extended 16-bit ones'-complement register word.     */
+/**********************************************************************
+ * A value as a sign-extended 16-bit ones'-complement register word.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: arith_reg16
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    value, -POSMAX..POSMAX
+ *
+ * RETURNS: uint16_t -- register word
+ **********************************************************************/
 static uint16_t arith_reg16(int32_t v)
 {
     uint16_t r = (v >= 0) ? (uint16_t) v : (uint16_t) ~(uint16_t) (-v);
@@ -108,8 +171,20 @@ static uint16_t arith_reg16(int32_t v)
     return (r);
 }
 
-/* A 16-bit register word read back as its overflow-corrected value
- * (bit 16 is the sign, bits 14-1 the magnitude; -0 folds to 0).          */
+/**********************************************************************
+ * A 16-bit register word read back as its overflow-corrected value
+ * (bit 16 is the sign, bits 14-1 the magnitude; -0 folds to 0).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: arith_val16
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   w         uint16_t  I    16-bit register word
+ *
+ * RETURNS: agc_sp_t -- value of the word
+ **********************************************************************/
 static agc_sp_t arith_val16(uint16_t w)
 {
     agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u)
@@ -123,7 +198,20 @@ static agc_sp_t arith_val16(uint16_t w)
     return (r);
 }
 
-/* 16-bit ones'-complement add with end-around carry (the adder).         */
+/**********************************************************************
+ * 16-bit ones'-complement add with end-around carry (the adder).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: arith_add16
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   a         uint16_t  I    16-bit register word
+ *   b         uint16_t  I    16-bit register word
+ *
+ * RETURNS: uint16_t -- sum word
+ **********************************************************************/
 static uint16_t arith_add16(uint16_t a, uint16_t b)
 {
     uint32_t s = (uint32_t) a + b;
@@ -141,11 +229,24 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
     return ((uint16_t) s);
 }
 
-/* DV with an improper quotient (|dividend| > |divisor|, or a zero
+/**********************************************************************
+ * DV with an improper quotient (|dividend| > |divisor|, or a zero
  * divisor): the AGC hardware's divide sequence, which yields what Savage
  * and Drake call "total nonsense" but deterministically. Register-level
  * model after yaAGC SimulateDV (tools/oracle/yaAGC-src/agc_engine.c),
- * which matches the hardware for these cases.                           */
+ * which matches the hardware for these cases.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: dv_improper
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   n         lm_dp_pair_t  I    dividend A,L as the registers hold it
+ *   d         agc_sp_t      I    divisor word
+ *
+ * RETURNS: lm_dp_pair_t -- A (quotient word), L (remainder word)
+ **********************************************************************/
 static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 {
     uint16_t a       = arith_reg16(n.hi);
@@ -221,13 +322,26 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
     return (r);
 }
 
-/* DV: (A,L) / d -> quotient in A, remainder (dividend sign) in L. The AGC
+/**********************************************************************
+ * DV: (A,L) / d -> quotient in A, remainder (dividend sign) in L. The AGC
  * requires |dividend| < |d| (as fractions); an improper division (or a
  * zero divisor) gives the hardware's nonsense result (dv_improper), as
  * 1/ACCS does with the zero erasable before the pad load.
  * A dividend exactly equal in magnitude to the divisor (A = +-d, L = 0)
  * is defined: A = POSMAX (signs agree) or NEGMAX, L = the dividend's
- * major word. 1/ACCONT's INVERT relies on it (BIT9 / AMIN = 1/.03).     */
+ * major word. 1/ACCONT's INVERT relies on it (BIT9 / AMIN = 1/.03).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_dvqr
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   d         agc_sp_t      I    divisor word
+ *
+ * RETURNS: lm_dp_pair_t -- quotient (A) and remainder (L)
+ **********************************************************************/
 lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r   = {0, 0};
@@ -270,6 +384,19 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
     return (r);
 }
 
+/**********************************************************************
+ * DV, quotient only (A).  AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_dv
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   d         agc_sp_t      I    divisor word
+ *
+ * RETURNS: agc_sp_t -- quotient (A)
+ **********************************************************************/
 agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r = lm_dap_dvqr(n, d);
@@ -282,8 +409,20 @@ agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
     return (r.hi);
 }
 
-/* The word stored by TS/XCH/ADS when A holds an overflowed sum: the
- * overflow-corrected value (sum -+ 2^14).                                 */
+/**********************************************************************
+ * The word stored by TS/XCH/ADS when A holds an overflowed sum: the
+ * overflow-corrected value (sum -+ 2^14).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_wrap
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    unlimited sum, |v| <= 3 POSMAX
+ *
+ * RETURNS: agc_sp_t -- overflow-corrected word
+ **********************************************************************/
 agc_sp_t lm_dap_wrap(int32_t v)
 {
     if (!AGC_ASSERT(v >= -3 * ARITH_MAXMAG && v <= 3 * ARITH_MAXMAG))
@@ -311,7 +450,19 @@ agc_sp_t lm_dap_wrap(int32_t v)
     return (lm_dap_sat(v));
 }
 
-/* OVERSUB / "INDEX A, CS LIMITS": an overflowed A becomes POSMAX/NEGMAX.  */
+/**********************************************************************
+ * OVERSUB / "INDEX A, CS LIMITS": an overflowed A becomes POSMAX/NEGMAX.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_sat
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    unlimited sum
+ *
+ * RETURNS: agc_sp_t -- v limited to POSMAX / NEGMAX
+ **********************************************************************/
 agc_sp_t lm_dap_sat(int32_t v)
 {
     agc_sp_t r;
@@ -337,7 +488,19 @@ agc_sp_t lm_dap_sat(int32_t v)
     return (r);
 }
 
-/* "TS A" / "TS 7" skip test: does A hold an overflowed value?              */
+/**********************************************************************
+ * "TS A" / "TS 7" skip test: does A hold an overflowed value?
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_ovf
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    unlimited sum in A
+ *
+ * RETURNS: bool -- true when v exceeds one word
+ **********************************************************************/
 bool lm_dap_ovf(int32_t v)
 {
     if (!AGC_ASSERT(v >= -4 * ARITH_WORD && v <= 4 * ARITH_WORD))
@@ -348,8 +511,22 @@ bool lm_dap_ovf(int32_t v)
     return ((v > ARITH_MAXMAG) || (v < -ARITH_MAXMAG));
 }
 
-/* DAS: (x) + (y) with the minor-word carry; the major word is stored
- * overflow-corrected (the AGC leaves the overflow indication in A).      */
+/**********************************************************************
+ * DAS: (x) + (y) with the minor-word carry; the major word is stored
+ * overflow-corrected (the AGC leaves the overflow indication in A).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_das
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    augend pair
+ *   y         lm_dp_pair_t  I    addend pair
+ *
+ * RETURNS: lm_dp_pair_t -- sum pair (major word overflow-
+ *          corrected)
+ **********************************************************************/
 lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
 {
     int32_t lo    = (int32_t) x.lo + (int32_t) y.lo;
@@ -379,7 +556,19 @@ lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
     return (r);
 }
 
-/* DDOUBL (DAS A).                                                          */
+/**********************************************************************
+ * DDOUBL (DAS A).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_ddoubl
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    pair to double
+ *
+ * RETURNS: lm_dp_pair_t -- 2 x
+ **********************************************************************/
 lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
 {
     if (!AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG))
@@ -395,9 +584,22 @@ lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
     return (lm_dap_das(x, x));
 }
 
-/* MSU: a - b of two 15-bit two's-complement words (CDU angles at pi),
+/**********************************************************************
+ * MSU: a - b of two 15-bit two's-complement words (CDU angles at pi),
  * result as a ones'-complement value. A difference of exactly half a
- * revolution (two's 40000) comes out +POSMAX, as on the AGC.             */
+ * revolution (two's 40000) comes out +POSMAX, as on the AGC.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_msu
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   a         uint16_t  I    minuend, 15-bit two's complement (CDU at pi)
+ *   b         uint16_t  I    subtrahend, 15-bit two's complement
+ *
+ * RETURNS: agc_sp_t -- a - b, ones' complement at the same scale
+ **********************************************************************/
 agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
 {
     if (!AGC_ASSERT(a <= ARITH_MASK15))
@@ -429,8 +631,19 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
     return ((agc_sp_t) v);
 }
 
-/* 1STOTWOS (p.1422): a ones'-complement value back to a 15-bit two's-
- * complement word (CCS A, AD ONE / CS A).                                 */
+/**********************************************************************
+ * 1STOTWOS (p.1422): a ones'-complement value back to a 15-bit two's-
+ * complement word (CCS A, AD ONE / CS A).
+ *
+ * FUNCTION NAME: lm_dap_ones_to_twos
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   v         int32_t  I    ones'-complement value
+ *
+ * RETURNS: uint16_t -- 15-bit two's-complement word
+ **********************************************************************/
 uint16_t lm_dap_ones_to_twos(int32_t v)
 {
     if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
@@ -448,7 +661,19 @@ uint16_t lm_dap_ones_to_twos(int32_t v)
     return ((uint16_t) w);
 }
 
-/* CCS: the diminished absolute value |v| - 1 (0 for 0).                    */
+/**********************************************************************
+ * CCS: the diminished absolute value |v| - 1 (0 for 0).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_ccs_dim
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    word tested by CCS
+ *
+ * RETURNS: agc_sp_t -- |v| - 1, or 0
+ **********************************************************************/
 agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
@@ -467,7 +692,19 @@ agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
     return (r);
 }
 
-/* DIM: decrement the magnitude, stopping at zero.                          */
+/**********************************************************************
+ * DIM: decrement the magnitude, stopping at zero.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_dim
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    counter word
+ *
+ * RETURNS: agc_sp_t -- v moved one count toward zero
+ **********************************************************************/
 agc_sp_t lm_dap_dim(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
@@ -486,9 +723,21 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
     return (r);
 }
 
-/* DVOVSUB (AOSTASK_AND_AOSJOB.agc pp.1492-1493): DV with overflow
+/**********************************************************************
+ * DVOVSUB (AOSTASK_AND_AOSJOB.agc pp.1492-1493): DV with overflow
  * protection. Zero divisor -> POSMAX; |dividend major| >= |divisor| ->
- * POSMAX if the quotient would be positive, NEGMAX if negative.          */
+ * POSMAX if the quotient would be positive, NEGMAX if negative.
+ *
+ * FUNCTION NAME: lm_dap_dvovsub
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   d         agc_sp_t      I    divisor word
+ *
+ * RETURNS: agc_sp_t -- quotient, or POSMAX / NEGMAX
+ **********************************************************************/
 agc_sp_t lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d)
 {
     if (!AGC_ASSERT(n.hi >= -ARITH_MAXMAG && n.hi <= ARITH_MAXMAG))

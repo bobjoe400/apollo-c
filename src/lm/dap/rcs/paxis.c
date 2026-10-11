@@ -43,8 +43,19 @@ static const agc_sp_t indxyz[16] = {
     PX_BADINDEX, PX_BADINDEX, PX_BADINDEX, PX_BADINDEX
 };
 
-/* SELECTP (p.1440): POLYTEMP = TYPEP(NUMBERT) & JETSALL(ROTINDEX); on a
- * failed jet try NUMBERT = 5, 4, ... 0. False if no policy is left.      */
+/**********************************************************************
+ * SELECTP (p.1440): POLYTEMP = TYPEP(NUMBERT) & JETSALL(ROTINDEX); on a
+ * failed jet try NUMBERT = 5, 4, ... 0. False if no policy is left.
+ *
+ * FUNCTION NAME: selectp
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: bool -- false when no unfailed policy is left
+ **********************************************************************/
 static bool selectp(lm_dap_t *d)
 {
     for (int tempnum = 6; tempnum >= -1; tempnum--)
@@ -74,7 +85,17 @@ static bool selectp(lm_dap_t *d)
     return (false);
 }
 
-/* JETSOFF (p.1437): write NEXTP to channel 6, TJP = 0.                    */
+/**********************************************************************
+ * JETSOFF (p.1437): write NEXTP to channel 6, TJP = 0.
+ *
+ * FUNCTION NAME: lm_dap_jetsoff
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_jetsoff(void)
 {
     lm_dap_t    *d  = lm_dap_state();
@@ -95,7 +116,17 @@ agc_status_t lm_dap_jetsoff(void)
     return (st);
 }
 
-/* ALTSYST (p.1437): alternate the P-axis jet system (AORBSYST).          */
+/**********************************************************************
+ * ALTSYST (p.1437): alternate the P-axis jet system (AORBSYST).
+ *
+ * FUNCTION NAME: altsyst
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t altsyst(void)
 {
     agc_flag_invert(AGC_FLAG_AORBSFLG);
@@ -108,10 +139,24 @@ static agc_status_t altsyst(void)
     return (AGC_STATUS_OK);
 }
 
-/* PJETSLEC (pp.1436-1437), entered at PJETSLEC -1 with NUMBERT = 4, 5
+/**********************************************************************
+ * PJETSLEC (pp.1436-1437), entered at PJETSLEC -1 with NUMBERT = 4, 5
  * (two jets, system A or B) or 6 (four jets): select and fire the P jets;
  * firings under 150 ms are ended by a T6RUPT (JTLST) and the next P pass
- * is skipped (RCSFLAGS bit 12).                                          */
+ * is skipped (RCSFLAGS bit 12).
+ *
+ * FUNCTION NAME: lm_dap_pjetslec
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   numbert   agc_sp_t  I    NUMBERT: 4, 5 (2 jets, system A, B) or 6 (4
+ *                            jets)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
 {
     if (!AGC_ASSERT((numbert >= 4) && (numbert <= 6)))
@@ -172,7 +217,17 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     return (st);
 }
 
-/* PJETSLEC -6 (p.1436): two jets of the system named by AORBSYST.        */
+/**********************************************************************
+ * PJETSLEC -6 (p.1436): two jets of the system named by AORBSYST.
+ *
+ * FUNCTION NAME: lm_dap_pjetslec_pair
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_pjetslec_pair(void)
 {
     agc_sp_t n = agc_flag_test(AGC_FLAG_AORBSFLG) ? 5 : 4;
@@ -190,7 +245,17 @@ agc_status_t lm_dap_pjetslec_pair(void)
     return (lm_dap_pjetslec(n));
 }
 
-/* CALCPERR (pp.1437-1438): P attitude error at pi, into E and PERROR.    */
+/**********************************************************************
+ * CALCPERR (pp.1437-1438): P attitude error at pi, into E and PERROR.
+ *
+ * FUNCTION NAME: lm_dap_calcperr
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_calcperr(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -214,8 +279,18 @@ agc_status_t lm_dap_calcperr(void)
     return (AGC_STATUS_OK);
 }
 
-/* PURGENCY +4 (p.1438): P control with E, EDOT set; docked: SPSRCS,
- * otherwise TJETLAW and the 2-jet / 4-jet choice (HEADTJET).             */
+/**********************************************************************
+ * PURGENCY +4 (p.1438): P control with E, EDOT set; docked: SPSRCS,
+ * otherwise TJETLAW and the 2-jet / 4-jet choice (HEADTJET).
+ *
+ * FUNCTION NAME: lm_dap_purgency_law
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_purgency_law(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -268,7 +343,17 @@ agc_status_t lm_dap_purgency_law(void)
     return (lm_dap_pjetslec(6)); /* four jets      */
 }
 
-/* PURGENCY (p.1438): P error and rate error, then the control law.        */
+/**********************************************************************
+ * PURGENCY (p.1438): P error and rate error, then the control law.
+ *
+ * FUNCTION NAME: lm_dap_purgency
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_purgency(void)
 {
     lm_dap_t    *d  = lm_dap_state();
@@ -289,7 +374,18 @@ agc_status_t lm_dap_purgency(void)
     return (lm_dap_purgency_law());
 }
 
-/* ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.    */
+/**********************************************************************
+ * ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.
+ *
+ * FUNCTION NAME: alteryz
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void alteryz(lm_dap_t *d)
 {
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
@@ -307,9 +403,22 @@ static void alteryz(lm_dap_t *d)
     }
 }
 
-/* CHKVISFZ / TRYUORV / ABORTYZ (pp.1429-1430): Y,Z translation from the
+/**********************************************************************
+ * CHKVISFZ / TRYUORV / ABORTYZ (pp.1429-1430): Y,Z translation from the
  * THC into NEXTP. *policy = false if SELECTP found no policy (ALARM 02003,
- * JETSOFF done): the pass then goes straight to QRAXIS.                  */
+ * JETSOFF done): the pass then goes straight to QRAXIS.
+ *
+ * FUNCTION NAME: lm_dap_chkvisfz
+ *
+ * ARGUMENTS:
+ *   Argument  Type    I/O  Description (scale)
+ *   --------  ------  ---  --------------------
+ *   policy    bool *  O    false when SELECTP found no policy
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_chkvisfz(bool *policy)
 {
     lm_dap_t *d = lm_dap_state();
@@ -380,9 +489,19 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
     return (AGC_STATUS_OK);
 }
 
-/* PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
+/**********************************************************************
+ * PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
  * down (0.1 s per pass) and end a drive at zero; decrement the docked
- * jet-inhibition counters.                                               */
+ * jet-inhibition counters.
+ *
+ * FUNCTION NAME: lm_dap_pretimck
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_pretimck(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
@@ -430,7 +549,17 @@ agc_status_t lm_dap_pretimck(void)
     return (AGC_STATUS_OK);
 }
 
-/* PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.            */
+/**********************************************************************
+ * PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.
+ *
+ * FUNCTION NAME: agc_task_paxis
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_task_paxis(void)
 {
     lm_dap_t *d  = lm_dap_state();

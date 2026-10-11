@@ -57,7 +57,22 @@ typedef struct tjl
     lm_dp_pair_t hh;       /* HH, DP at 8 s^2                            */
 } tjl_t;
 
-/* A BLOCKTOP parameter: base label offset (from 1/ANET1) + indexer.      */
+/**********************************************************************
+ * A BLOCKTOP parameter: base label offset (from 1/ANET1) + indexer.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: blk
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   label     int               I    BLOCKTOP label offset from 1/ANET1
+ *                                    (LM_BK_*)
+ *   idx       agc_sp_t          I    ADRSDIF indexer: axis and sense
+ *
+ * RETURNS: agc_sp_t -- the BLOCKTOP word
+ **********************************************************************/
 static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
 {
     int i = LM_BLK_U + label + (int) idx;
@@ -75,7 +90,18 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
     return (d->block[i]);
 }
 
-/* CHKMINTJ (p.1467): computed times under 20 ms become zero.             */
+/**********************************************************************
+ * CHKMINTJ (p.1467): computed times under 20 ms become zero.
+ *
+ * FUNCTION NAME: chkmintj
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   a         int32_t  I    computed jet time, scaled 4 s
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s (0 below TJMIN)
+ **********************************************************************/
 static agc_sp_t chkmintj(int32_t a)
 {
     if (!AGC_ASSERT(a >= -4 * LM_POSMAX && a <= 4 * LM_POSMAX))
@@ -98,8 +124,20 @@ static agc_sp_t chkmintj(int32_t a)
     return (r);
 }
 
-/* Z123COMP (p.1465): reverse ROTSENSE, time to axis at 4 s. True if it
- * exceeds 150 ms (go to FULLTIME).                                       */
+/**********************************************************************
+ * Z123COMP (p.1465): reverse ROTSENSE, time to axis at 4 s. True if it
+ * exceeds 150 ms (go to FULLTIME).
+ *
+ * FUNCTION NAME: zone_axis_time
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *           I/O  working cells of this computation
+ *
+ * RETURNS: bool -- true for full-time firing
+ **********************************************************************/
 static bool zone_axis_time(const lm_dap_t *d, tjl_t *w)
 {
     w->rotsense = (agc_sp_t) -w->rotsense;
@@ -118,7 +156,19 @@ static bool zone_axis_time(const lm_dap_t *d, tjl_t *w)
     return ((int32_t) w->ttoaxis + TJ_MTJMAX > 0);
 }
 
-/* ZONE2,3 (p.1466): fire to the axis, or a minimum impulse when close.   */
+/**********************************************************************
+ * ZONE2,3 (p.1466): fire to the axis, or a minimum impulse when close.
+ *
+ * FUNCTION NAME: zone_fire_to_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         const tjl_t *     I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
 {
     if (!AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0))
@@ -139,8 +189,20 @@ static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
     return ((d->edot > 0) ? (agc_sp_t) TJ_MINIMP : 0); /* ZONE3          */
 }
 
-/* ZONE1 (pp.1466-1467): beyond the switch curve. H = 4 (FIREFCT -
- * AXISDIST) ACCFCTZ1; TJET = H/.1 + TTOAXIS + .0375 or H/.025 + TTOAXIS. */
+/**********************************************************************
+ * ZONE1 (pp.1466-1467): beyond the switch curve. H = 4 (FIREFCT -
+ * AXISDIST) ACCFCTZ1; TJET = H/.1 + TTOAXIS + .0375 or H/.025 + TTOAXIS.
+ *
+ * FUNCTION NAME: zone_beyond_switch
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *           I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 {
     agc_sp_t x =
@@ -177,8 +239,22 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
     return (lm_dap_sat((int32_t) q + w->ttoaxis + TJ_0375AT4));
 }
 
-/* ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
- * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME. */
+/**********************************************************************
+ * ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
+ * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME.
+ *
+ * FUNCTION NAME: zone_between_curves
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *           I/O  working cells of this computation
+ *   f         agc_sp_t          I    distance below the coast curve, scaled
+ *                                    pi/4
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 {
     if (!AGC_ASSERT(w->rotsense != 0))
@@ -225,9 +301,21 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
     return (lm_dap_mphi(q2, TJ_BIT14));
 }
 
-/* ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
+/**********************************************************************
+ * ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
  * firing toward the target stay on if the target (axis strip when
- * drifting, parabola when powered) can still be reached.                 */
+ * drifting, parabola when powered) can still be reached.
+ *
+ * FUNCTION NAME: zone_coast_jets_on
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *           I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
 {
     agc_sp_t tj = d->tj[d->axisctr + 1];
@@ -267,7 +355,19 @@ static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
     return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w));
 }
 
-/* FINELAW (pp.1462-1466): EDOTSQ, max-jet decision, FIREFCT and zones.   */
+/**********************************************************************
+ * FINELAW (pp.1462-1466): EDOTSQ, max-jet decision, FIREFCT and zones.
+ *
+ * FUNCTION NAME: finelaw
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *     I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 {
     w->edotsq = lm_dap_mphi(lm_dap_mphi(d->edot, d->edot), TJ_BIT13);
@@ -324,7 +424,21 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
     return ((g <= 0) ? zone_between_curves(d, w, lm_dap_sat(g)) : zone_coast_jets_on(d, w));
 }
 
-/* RUFSETUP (p.1469): optionally reverse ROTSENSE; require max jets.      */
+/**********************************************************************
+ * RUFSETUP (p.1469): optionally reverse ROTSENSE; require max jets.
+ *
+ * FUNCTION NAME: rufsetup
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *     I/O  working cells of this computation
+ *   reverse   bool        I    true at RUFSETUP (reverse ROTSENSE), false at
+ *                              +2
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
 {
     if (reverse)
@@ -346,9 +460,22 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
     }
 }
 
-/* RUFLAW12 (p.1468): TJET = rate change / 2-jet acceleration, at 32 s,
+/**********************************************************************
+ * RUFLAW12 (p.1468): TJET = rate change / 2-jet acceleration, at 32 s,
  * FULLTIME beyond 4 s, then rescaled to 4 s (x 8). The three DAS A
- * double the whole A,L product, so carries from the minor word count.  */
+ * double the whole A,L product, so carries from the minor word count.
+ *
+ * FUNCTION NAME: rough_law_jet_time
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         const tjl_t *     I/O  working cells of this computation
+ *   a         agc_sp_t          I    desired rate change, scaled pi/4 rad/s
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
     lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2));
@@ -369,8 +496,21 @@ static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a
     return (chkmintj(t));
 }
 
-/* RUFLAW1 / SMALRATE / RUFLAW2 (p.1468): |E| >= pi/16. Fire to (or
- * against) a 6.5 deg/s target rate.                                       */
+/**********************************************************************
+ * RUFLAW1 / SMALRATE / RUFLAW2 (p.1468): |E| >= pi/16. Fire to (or
+ * against) a 6.5 deg/s target rate.
+ *
+ * FUNCTION NAME: rough_law_large_error
+ *
+ * ARGUMENTS:
+ *   Argument        Type        I/O  Description (scale)
+ *   --------------  ----------  ---  --------------------
+ *   d               lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w               tjl_t *     I/O  working cells of this computation
+ *   negative_error  bool        I    E more negative than -pi/16 (RUFLAW1)
+ *
+ * RETURNS: agc_sp_t -- jet time, scaled 4 s
+ **********************************************************************/
 static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error)
 {
     if (!negative_error)
@@ -404,8 +544,20 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
     return (rough_law_jet_time(d, w, (agc_sp_t) -d->edot));
 }
 
-/* RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
- * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.    */
+/**********************************************************************
+ * RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
+ * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.
+ *
+ * FUNCTION NAME: rough_law_large_rate
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         tjl_t *     I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- jet time: FULLTIME or 0, scaled 4 s
+ **********************************************************************/
 static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
 {
     rufsetup(d, w, true);
@@ -425,8 +577,21 @@ static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
     return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME);
 }
 
-/* RETURNTJ (pp.1464-1465): apply ROTSENSE (sign, 4 s -> 10.24 s); call
- * for max jets if 1/ACCS forced them for this sense (ACCSWU, ACCSWV).  */
+/**********************************************************************
+ * RETURNTJ (pp.1464-1465): apply ROTSENSE (sign, 4 s -> 10.24 s); call
+ * for max jets if 1/ACCS forced them for this sense (ACCSWU, ACCSWV).
+ *
+ * FUNCTION NAME: returntj
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  --------------------
+ *   d         lm_dap_t *     I/O  DAP erasables (lm_dap_state())
+ *   w         const tjl_t *  I/O  working cells of this computation
+ *   a         agc_sp_t       I    jet time, scaled 4 s
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
     int axis = d->axisctr;
@@ -452,7 +617,17 @@ static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
     }
 }
 
-/* TJETLAW (pp.1461-1462): entry, half-plane reflection and law choice.   */
+/**********************************************************************
+ * TJETLAW (pp.1461-1462): entry, half-plane reflection and law choice.
+ *
+ * FUNCTION NAME: lm_dap_tjetlaw
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_tjetlaw(void)
 {
     lm_dap_t *d = lm_dap_state();

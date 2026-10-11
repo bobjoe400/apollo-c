@@ -24,8 +24,12 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
 | fidelity: constants vs rope | DONE: 72 lane constants read from the ropes, all match |
 | fidelity: DMP vs DMPR | DONE: 25 agc_dp_mul (DMPR) sites checked; 22 were DMP -> agc_dp_mul_trunc / TP (R7); S40.1 oracle now bit-exact (tol 64 -> 0) |
 | fidelity: label coverage | DONE: every label of the 9 lane AGC files is named in the C or is data/internal (list in Findings R9) |
-| style: guid_state.c, servicer_common.c, burn_steering.c | DONE (0 findings) |
-| style: remaining lane files | IN PROGRESS |
+| style: guid_state.c, servicer_common.c, burn_steering.c, powered_flight.c, guidance/external_delta_v.c, csm/burns/external_delta_v.c | DONE (0 check_style findings each) |
+| style: csm/burns/servicer.c | PARTIAL: prologs converted (tools: SCRATCH/review-guid-powered/prolog.py, blocks.py, annot.py); left: decl comments, GRP defines, file prolog, pipas_saturated RETURNS TODO, serv_phase "AGC: none (TODO)" line |
+| fidelity: CALCGRAV moon test | IN PROGRESS: CM servicer.c NORMLIZE/AVERAGEG and LM average_g.c CALCRVG/MUNRVG pass MOONFLAG; the AGC tests RTX2 (LXC,1 SLOAD RTX2) -> use agc_rendz_erasable()->body.rtx2 != 0 (R10, not yet edited) |
+| style: sps/{burn,clock,ignition,steer}.c, lm/burns/{dps_burn,dps_burn_rasteer}.c, lm/burns/servicer/*.c, lm/burns/ignition/*.c, tests/guidance/guidance.c, include/agc/guidance/guidance.h | TODO (run prolog.py -w, blocks.py, then hand-fix TODO lines + decl comments) |
+| rule-5 density warnings (sps/*, dps_burn*, servicer/*, ignition/*) | TODO |
+| make / make test / make check | PARTIAL: all touched files compile; the shared tree's lib currently fails on other lanes' WIP (pinball/internal.h "/*" in comment, dap-csm tvc); a private copy (HEAD header patched) passes oracle guidance 203/0, landing 172/0, imu 211/0, tests/guidance 29/0 |
 
 ## Findings
 
@@ -41,4 +45,39 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
 | R8 | src/csm/burns/sps/ignition.c DOTVCON, MASSBACK | DCS ERRORY; CAE DELPBAR | build break after dap-csm made ERRBTMP/DELPBAR word pairs | each word complemented; high word read |
 | R9 | coverage | P30-P37 AVFLAGA/P, P20FLGON | implemented in prog-rendz (rz_avflag) / P30 flag set-up; S41.2/BDFAIL/TOGETHER are dap-csm's; MDOTFAIL is unreferenced in Comanche | none |
 
+## Open questions (resolved)
+
+* ZOOM / P40ZOOMA (lane note; exec review routed item): the rope gives ZOOM
+  and P40ZOOMA the same address (17,2022); 3.3SPOT is 76355 75755 41710
+  (-GENADR ZOOMTIME, -2CADR 17,2022). So the 3.3 restart reschedules only
+  P40ZOOMA (PHASCHNG 3 off), and COMFAIL2's KILLTASK ZOOM removes only a
+  task scheduled under that address: a restart between ignition and
+  ZOOMTIME loses the throttle-up (P40ZOOM / P63ZOOM), as flown in
+  Luminary 099. The C (restart_tables.c 3.3 -> AGC_TASK_ZOOM,
+  clock.c KILLTASK AGC_TASK_ZOOM, burnbaby.c agc_task_zoom) matches; no
+  change. Exec review: nothing to do in restart_tables.c.
+* ABRTABLE (5)-(7) NOOPs: P70/P71 never enter BURNBABY (left as is).
+
+## Requests to other lanes
+
+* oracle-cases: docs/modules/oracle-cases.md rows s40_1 (tol now 0) and
+  s40_2 (tol 16, residual <= 10 LSB) and the F7/F8/F9-TDISPSET findings are
+  closed by this review.
+* guid-entry: agc_entry_vgamcalc / agc_entry_tff_trig (made public for
+  DELRSPL) use agc_dp_mul (DMPR) where VGAMCALC and TFF/TRIG have DMP;
+  same R7 class.
+* dap-csm: sps/ignition.c adapted to the agc_csm_dp_pair_t ERRBTMP,
+  DELPBAR, DELYBAR (R8).
+
 ## Lessons
+
+* "B1" in a 2DEC* means the stored value is TWICE the number (B-n halves).
+  The F7 constants were read as B-1. Always read the word from the rope.
+* agc_dp_mul is DMPR. Interpretive DMP truncates and leaves the third
+  word in MPAC+2, which NORM, SL, SR (and SIN/COS via DAD not touching it)
+  see. Check every multiply against the listing's opcode.
+* DAS never re-signs a DP: a later CA of the high word can read hi+-1 of
+  the canonical split (TTF/8, F9). Carry the raw high word where a CA/AD/DV
+  of it follows.
+* A rope reader is 20 lines of Python (whatis via agc_probe + .bin offset,
+  banks 02/03 first); use it for every constant, table and alias question.

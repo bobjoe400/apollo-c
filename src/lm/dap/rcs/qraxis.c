@@ -18,9 +18,19 @@
 #define QR_CH31_MINUSX 0x0080u /* BIT8 of 31 = 0: -X translation       */
 #define QR_UBITS       000314u /* 00314OCT: U-axis jets of channel 5   */
 
-/* QERRCALC / RERRCALC (p.1451): Q,R attitude errors at pi from the Y,Z
+/**********************************************************************
+ * QERRCALC / RERRCALC (p.1451): Q,R attitude errors at pi from the Y,Z
  * gimbal-angle errors through M21..M32, plus the KALCMANU lags. Used by
- * the RCS and GTS laws and the eight-ball.                              */
+ * the RCS and GTS laws and the eight-ball.
+ *
+ * FUNCTION NAME: lm_dap_qerrcalc
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_qerrcalc(void)
 {
     lm_dap_t *d    = lm_dap_state();
@@ -47,8 +57,18 @@ agc_status_t lm_dap_qerrcalc(void)
     return (AGC_STATUS_OK);
 }
 
-/* STILLRCS = ATTSTEER (p.1452): U,V attitude errors, then the TJLAW body
- * of the U,V loop.                                                       */
+/**********************************************************************
+ * STILLRCS = ATTSTEER (p.1452): U,V attitude errors, then the TJLAW body
+ * of the U,V loop.
+ *
+ * FUNCTION NAME: lm_dap_stillrcs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_stillrcs(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -68,9 +88,22 @@ agc_status_t lm_dap_stillrcs(void)
     return (lm_dap_uvloop(LM_UV_TJLAW, 1));
 }
 
-/* SENSEGET (pp.1442-1444): X translation from the THC (bits 7,8 of
+/**********************************************************************
+ * SENSEGET (pp.1442-1444): X translation from the THC (bits 7,8 of
  * channel 31) or the ullage request, into NEXTU/NEXTV; SENSETYP tells the
- * rotation logic which X sense to favour (0 none, 1 -X, 2 +X).          */
+ * rotation logic which X sense to favour (0 none, 1 -X, 2 +X).
+ *
+ * FUNCTION NAME: senseget
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t senseget(lm_dap_t *d)
 {
     uint16_t ch31 = agc_chan_read(031);
@@ -123,9 +156,19 @@ static agc_status_t senseget(lm_dap_t *d)
     return (AGC_STATUS_OK);
 }
 
-/* RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V
+/**********************************************************************
+ * RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V
  * rate errors, X translation, then the mode: auto -> ATTSTEER; minimum
- * impulse (PULSES); otherwise rate command / attitude hold (CHEKSTIK).  */
+ * impulse (PULSES); otherwise rate command / attitude hold (CHEKSTIK).
+ *
+ * FUNCTION NAME: lm_dap_rcs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_rcs(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -157,9 +200,22 @@ agc_status_t lm_dap_rcs(void)
     return (lm_dap_chekstik());
 }
 
-/* TRYGTS / CHKINGTS (pp.1449-1450): use the trim gimbal unless jets are
+/**********************************************************************
+ * TRYGTS / CHKINGTS (pp.1449-1450): use the trim gimbal unless jets are
  * mandatory (USEQRJTS), 1/ACCS has not allowed it (ALLOWGTS) or Q,R jets
- * are firing (channel 5). Leaving GTS sets up a damped nulling drive.  */
+ * are firing (channel 5). Leaving GTS sets up a damped nulling drive.
+ *
+ * FUNCTION NAME: trygts
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t trygts(lm_dap_t *d)
 {
     if (agc_flag_test(AGC_FLAG_USEQRFLG) || d->allowgts == 0)
@@ -194,9 +250,19 @@ static agc_status_t trygts(lm_dap_t *d)
     return (lm_dap_rcs());
 }
 
-/* QRAXIS / CALLQERR / Q,RORGTS (pp.1441-1442): Q,R rate errors; attitude
+/**********************************************************************
+ * QRAXIS / CALLQERR / Q,RORGTS (pp.1441-1442): Q,R rate errors; attitude
  * errors unless in manual rate command; then GTS, TRYGTS or RCS by
- * COTROLER (> 0 GTS, 0 try GTS, < 0 RCS).                               */
+ * COTROLER (> 0 GTS, 0 try GTS, < 0 RCS).
+ *
+ * FUNCTION NAME: lm_dap_qraxis
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_qraxis(void)
 {
     lm_dap_t *d = lm_dap_state();

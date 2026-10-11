@@ -470,9 +470,8 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
  * LSPOS contract for nav-integ: dispatches on agc_state_vehicle().
  *   CSM: *moon_pos 2^29 m, *sun_pos 2^38 m (earth-centred, LUNPOS/SOLPOS)
  *   LM:  *moon_pos = VMOON, *sun_pos = VSUN, unit vectors scale 2^1
- * TEPHEM comes from the shared erasable (agc_erase_tephem, set by P11).
- * DEVIATION: the other nav-aux entry points take TEPHEM from
- * agc_navaux_padload_t; the two must be kept in step (see module note).
+ * TEPHEM comes from the shared erasable (agc_erase_tephem, set by P11 or
+ * agc_navaux_set_padload; agc_navaux_get_padload reads the same store).
  */
 agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
                             agc_vec_t *moon_pos, agc_vec_t *sun_pos)

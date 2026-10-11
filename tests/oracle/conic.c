@@ -1,24 +1,44 @@
-/*
- * conic.c -- nav-conic against the real AGC code (yaAGC oracle).
+/**********************************************************************
+ * FILE NAME: conic.c
  *
- * Expected values are the dumps in tools/oracle/cases/nav_conic.txt
- * (Comanche055) and nav_conic_lm.txt (Luminary099), produced from
- * nav_conic.spec / nav_conic_lm.spec by tools/oracle/bin/agc_probe; the
- * inputs below are the same DP words the specs poke. Each row:
- *   kind K = KEPPREP + KEPLER, N = KEPLER (KEPLERN entry), C / L = LAMBERT
- *   on the CSM / LM build (C: in[10] NORMSW, in[11..13] UN; L: in[10]
- *   ITERCTR), T = TIMETHET, R = TIMERAD, A = APSIDES;
- *   in[]  inputs (see run_case), exp[] AGC outputs, fl5/fl8 FLAGWRD5/8.
+ * PURPOSE:
+ *   nav-conic against the real AGC code (yaAGC oracle). Expected values
+ *   are the dumps in tools/oracle/cases/nav_conic.txt (Comanche055) and
+ *   nav_conic_lm.txt (Luminary099), produced from nav_conic.spec /
+ *   nav_conic_lm.spec by tools/oracle/bin/agc_probe; the inputs below
+ *   are the same DP words the specs poke. Each row:
+ *     kind K = KEPPREP + KEPLER, N = KEPLER (KEPLERN entry), C / L =
+ *     LAMBERT on the CSM / LM build (C: in[10] NORMSW, in[11..13] UN;
+ *     L: in[10] ITERCTR), T = TIMETHET, R = TIMERAD, A = APSIDES;
+ *     in[] inputs (see run_kepler etc.), exp[] AGC outputs, fl5/fl8
+ *     FLAGWRD5/8.
  *
- * Tolerance: 16384 LSB (one single-precision LSB of the DP word). The C
- * model has no ones' complement -0; the AGC's DDV of a dividend whose minor
- * word is -0 (KEPLERN ALPHA for an exactly circular orbit, 00200 77777)
- * comes out 2^-14 low, which moves the KEPLER results of the circular
- * cases by up to ~12000 LSB and the 2.25-period case (period modulo uses
- * ALPHA) much more; that row gets 2^19 LSB.
- */
+ * AGC SOURCE:
+ *   Comanche055 / Luminary099 CONIC_SUBROUTINES.agc (KEPLERN, LAMBERT,
+ *   TIMETHET, TIMERAD, APSIDES), ORBITAL_INTEGRATION.agc (KEPPREP)
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                Description
+ *   ------------------  --------------------------------------------
+ *   agc_conic_*         the routines under test (agc/nav/conic.h)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   exit status 1 when any check fails
+ *
+ * NOTES:
+ *   Tolerance 1024 LSB of the DP word (observed max 768: the C MPAC
+ *   model has no sign-mixed words, review-nav-conic.md). kep_leo_2p25
+ *   gets 8192: a sign-mixed SR1R tie in ALPHA (1 LSB of the dividend,
+ *   80 LSB of ALPHA) moves the period by 2 cs and TC by 4 cs.
+ *   The rows kep_leo_q, kep_leo_mq, kep_leo_2p25, kepn_leo_badx and
+ *   lam_leo_q take their values from nav_conic_dvfix.txt, the same spec
+ *   run on the DV-patched probe (oracle finding F1: yaAGC's DV fast path
+ *   reads a -0 minor word as a borrow; the real AGC does not).
+ **********************************************************************/
 #include <stdio.h>
-
 #include <string.h>
 
 #include "agc/core/assert.h"
@@ -26,24 +46,20 @@
 #include "agc/core/state.h"
 #include "agc/nav/conic.h"
 
-bool agc_assert_report(const char *file, int line, const char *expr)
-{
-    (void) printf("assert %s:%d %s\n", file, line, expr);
-
-    return (false);
-}
+#define TOL_DEFAULT ((agc_dp_t) 1024) /* DP LSB, all rows          */
+#define TOL_2P25    ((agc_dp_t) 8192) /* DP LSB, kep_leo_2p25 only */
 
 typedef struct oracle_row
 {
-    char        kind;
-    const char *tag;
-    agc_dp_t    in[16];
-    agc_dp_t    exp[10];
-    int         fl5;
-    int         fl8;
+    char        kind;    /* K N C L T R A (see PURPOSE)       */
+    const char *tag;     /* case name in the dump             */
+    agc_dp_t    in[16];  /* input DP words, scales per kind   */
+    agc_dp_t    exp[10]; /* AGC output DP words, same scales  */
+    int         fl5;     /* FLAGWRD5 after the run            */
+    int         fl8;     /* FLAGWRD8 after the run            */
 } oracle_row_t;
 
-static const oracle_row_t ROWS[] = {
+static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
     {'K',
      "kep_leo_q",
      {0, 3339068, 0, 0, 0, 162021496, 0, 135779, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -291,212 +307,34 @@ static const oracle_row_t ROWS[] = {
      0},
 };
 
-static int g_checks;
-static int g_failures;
+static int g_checks;   /* checks made    */
+static int g_failures; /* checks failed  */
 
 static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want,
-                agc_dp_t tol)
-{
-    g_checks++;
-    agc_dp_t d = got - want;
-
-    if (d > tol || d < -tol)
-    {
-        g_failures++;
-        (void) printf("FAIL %s[%d]: C %ld AGC %ld (diff %ld)\n", tag, idx,
-                      (long) got, (long) want, (long) d);
-    }
-}
-
-static void cmp_flag(const char *tag, const char *name, bool got, bool want)
-{
-    g_checks++;
-
-    if (got != want)
-    {
-        g_failures++;
-        (void) printf("FAIL %s: %s C %d AGC %d\n", tag, name, (int) got,
-                      (int) want);
-    }
-}
-
-static agc_vec_t vec3(const agc_dp_t *a)
-{
-    return (agc_vec_make(a[0], a[1], a[2]));
-}
-
-static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_kepler_in_t  in;
-    agc_kepler_out_t o;
-    const bool       prep = (r->kind == 'K');
-    const agc_dp_t  *p    = prep ? &r->in[1] : &r->in[0];
-
-    in.rrect   = vec3(&p[0]);
-    in.vrect   = vec3(&p[3]);
-    in.tau     = p[6];
-    in.tc      = 0;
-    in.xprev   = 0;
-    in.xkepnew = prep ? 0 : p[7];
-    in.body    = (prep && r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
-
-    if (prep)
-    {
-        (void) agc_conic_kepprep(&ip, &in, &in.xkepnew);
-    }
-
-    (void) agc_conic_kepler(&ip, &in, &o);
-    agc_dp_t v[10] = {in.xkepnew, o.rcv.c[0], o.rcv.c[1], o.rcv.c[2],
-                      o.vcv.c[0], o.vcv.c[1], o.vcv.c[2], o.tc,
-                      o.xprev, o.tau};
-
-    memcpy(got, v, sizeof (v));
-
-    return (prep ? 10 : 9);
-}
-
-static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_lambert_in_t  in;
-    agc_lambert_out_t o;
-
-    in.r1vec    = vec3(&r->in[0]);
-    in.r2vec    = vec3(&r->in[3]);
-    in.tdesired = r->in[6];
-    in.geomsgn  = (agc_sp_t) r->in[7];
-    in.guessw   = (r->in[8] != 0);
-    in.coga     = r->in[9];
-    in.normsw   = (r->kind == 'C') && (r->in[10] != 0); /* C: in[10] NORMSW */
-    in.un       = (r->kind == 'C') ? vec3(&r->in[11]) : agc_vec_zero();
-    in.vtargtag = 0;
-    in.iterctr  = (r->kind == 'L') ? (agc_sp_t) r->in[10] :
-                  (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR;
-    in.body = AGC_CONIC_EARTH;
-    (void) agc_conic_lambert(&ip, &in, &o);
-    agc_dp_t v[10] = {o.vvec.c[0], o.vvec.c[1],
-                      o.vvec.c[2], o.vtarget.c[0],
-                      o.vtarget.c[1], o.vtarget.c[2],
-                      o.coga, o.p,
-                      o.r1a, 0};
-
-    memcpy(got, v, sizeof (v));
-    *solnsw = o.solnsw;
-}
-
+                agc_dp_t tol);
+static void cmp_flag(const char *tag, const char *name, bool got,
+                     bool want);
+static agc_vec_t vec3(const agc_dp_t *a);
+static int       run_kepler(const oracle_row_t *r, agc_dp_t got[10]);
+static void      run_lambert(const oracle_row_t *r, agc_dp_t got[10],
+                             bool *solnsw);
 static void run_time(const oracle_row_t *r, agc_dp_t got[10],
-                     agc_conic_time_out_t *o)
-{
-    agc_interp_t ip;
+                     agc_conic_time_out_t *o);
+static void check_time(const oracle_row_t *r, agc_dp_t got[10],
+                       agc_dp_t tol, int *n);
+static void check_row(const oracle_row_t *r);
 
-    agc_interp_init(&ip);
-
-    if (r->kind == 'T')
-    {
-        agc_timetheta_in_t in;
-
-        in.rvec = vec3(&r->in[0]);
-        in.vvec = vec3(&r->in[3]);
-        in.snth = r->in[6];
-        in.csth = r->in[7];
-        in.rvsw = (r->in[8] != 0);
-        in.body = AGC_CONIC_EARTH;
-        (void) agc_conic_timethet(&ip, &in, o);
-    }
-    else
-    {
-        agc_timerad_in_t in;
-
-        in.rvec     = vec3(&r->in[0]);
-        in.vvec     = vec3(&r->in[3]);
-        in.rdesired = r->in[6];
-        in.sgnrdot  = (agc_sp_t) r->in[7];
-        in.rvsw     = (r->in[8] != 0);
-        in.body     = AGC_CONIC_EARTH;
-        (void) agc_conic_timerad(&ip, &in, o);
-    }
-
-    agc_dp_t v[10] = {
-        o->t, o->rnew.c[0], o->rnew.c[1], o->rnew.c[2], o->vnew.c[0],
-        o->vnew.c[1], o->vnew.c[2], o->csth, o->snth, 0
-    };
-
-    memcpy(got, v, sizeof (v));
-}
-
-static void check_row(const oracle_row_t *r)
-{
-    agc_dp_t       got[10] = {0};
-    const agc_dp_t tol     =
-        (strcmp(r->tag, "kep_leo_2p25") == 0) ? 524288 : 16384;
-    int n     = 0;
-    int first = 0;
-
-    if (r->kind == 'K' || r->kind == 'N')
-    {
-        n     = run_kepler(r, got);
-        first = (r->kind == 'K') ? 0 : 1;
-    }
-    else if (r->kind == 'C' || r->kind == 'L')
-    {
-        bool solnsw = false;
-
-        run_lambert(r, got, &solnsw);
-        n = 9;
-        cmp_flag(r->tag, "SOLNSW", solnsw, (r->fl5 & 004) != 0);
-    }
-    else if (r->kind == 'T' || r->kind == 'R')
-    {
-        agc_conic_time_out_t o;
-
-        run_time(r, got, &o);
-        const bool rvsw  = (r->in[8] != 0);
-        const bool abort = (r->fl8 & 0110) != 0 || (r->fl5 & 004) != 0;
-
-        cmp_flag(r->tag, "INFINFLG", o.infinflg, (r->fl8 & 0100) != 0);
-        cmp_flag(r->tag, "COGAFLAG", o.cogaflag, (r->fl8 & 010) != 0);
-
-        if (r->kind == 'R')
-        {
-            cmp_flag(r->tag, "APSESW", o.apsesw, (r->fl8 & 020) != 0);
-            cmp_flag(r->tag, "SOLNSW", o.solnsw, (r->fl5 & 004) != 0);
-        }
-
-        n = abort ? 0 : (rvsw ? 1 : 7);
-
-        if (!abort && r->kind == 'R')
-        {
-            cmp(r->tag, 7, got[7], r->exp[7], tol);
-            cmp(r->tag, 8, got[8], r->exp[8], tol);
-        }
-    }
-    else
-    {
-        agc_interp_t ip;
-
-        agc_interp_init(&ip);
-        agc_apsides_out_t o;
-
-        (void) agc_conic_apsides(
-            &ip, vec3(&r->in[1]), vec3(&r->in[4]),
-            (r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH, &o);
-        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p, o.r1a};
-
-        memcpy(got, v, sizeof (v));
-        n = 5;
-    }
-
-    for (int i = first; i < n; i++)
-    {
-        cmp(r->tag, i, got[i], r->exp[i], tol);
-    }
-}
-
+/**********************************************************************
+ * AGC: none (test driver) -- run every row, CSM rows on the CSM build
+ * and L rows on the LM build
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS:
+ *   none
+ *
+ * RETURNS: int -- 0 when every check passed, 1 otherwise
+ **********************************************************************/
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
@@ -522,5 +360,352 @@ int main(void)
     (void) printf("oracle_conic: %d checks, %d failures\n", g_checks,
                   g_failures);
 
-    return ((g_failures == 0) ? 0 : 1);
+    return ((g_failures == 0) ? 0 : 1); /* exit status */
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- the host assert hook: print and go on
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description
+ *   --------  ------------  ---  ---------------------------------
+ *   file      const char *  I    source file of the failed assert
+ *   line      int           I    its line
+ *   expr      const char *  I    its expression text
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
+bool agc_assert_report(const char *file, int line, const char *expr)
+{
+    (void) printf("assert %s:%d %s\n", file, line, expr);
+
+    return (false);
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- compare one DP output with the AGC's
+ *
+ * FUNCTION NAME: cmp
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description
+ *   --------  ------------  ---  ---------------------------------
+ *   tag       const char *  I    case name
+ *   idx       int           I    output index in exp[]
+ *   got       agc_dp_t      I    C value
+ *   want      agc_dp_t      I    AGC value
+ *   tol       agc_dp_t      I    allowed |got - want|, DP LSB
+ **********************************************************************/
+static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want,
+                agc_dp_t tol)
+{
+    agc_dp_t d = got - want; /* C - AGC, DP LSB */
+
+    g_checks++;
+
+    if ((d > tol) || (d < -tol))
+    {
+        g_failures++;
+        (void) printf("FAIL %s[%d]: C %ld AGC %ld (diff %ld)\n", tag, idx,
+                      (long int) got, (long int) want, (long int) d);
+    }
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- compare one output switch
+ *
+ * FUNCTION NAME: cmp_flag
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description
+ *   --------  ------------  ---  ---------------------------------
+ *   tag       const char *  I    case name
+ *   name      const char *  I    switch name
+ *   got       bool          I    C value
+ *   want      bool          I    AGC value
+ **********************************************************************/
+static void cmp_flag(const char *tag, const char *name, bool got, bool want)
+{
+    g_checks++;
+
+    if (got != want)
+    {
+        g_failures++;
+        (void) printf("FAIL %s: %s C %d AGC %d\n", tag, name, (int) got,
+                      (int) want);
+    }
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- three DP words as a vector
+ *
+ * FUNCTION NAME: vec3
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description
+ *   --------  ----------------  ---  ---------------------------------
+ *   a         const agc_dp_t *  I    x, y, z words (scale of the row)
+ *
+ * RETURNS: agc_vec_t -- the vector, same scale
+ **********************************************************************/
+static agc_vec_t vec3(const agc_dp_t *a)
+{
+    return (agc_vec_make(a[0], a[1], a[2]));
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- KEPPREP + KEPLER (K) or KEPLERN (N) for
+ * one row; K: in[0] body, in[1..6] RRECT/VRECT, in[7] TAU.; N: in[0..5]
+ * RRECT/VRECT, in[6] TAU., in[7] XKEPNEW
+ *
+ * FUNCTION NAME: run_kepler
+ *
+ * ARGUMENTS:
+ *   Argument  Type                  I/O  Description
+ *   --------  --------------------  ---  ----------------------------
+ *   r         const oracle_row_t *  I    the row
+ *   got       agc_dp_t []           O    XKEPNEW, RCV, VCV, TC, XPREV,
+ *                                        TAU. (AGC scales)
+ *
+ * RETURNS: int -- number of outputs to compare (10 K, 9 N)
+ **********************************************************************/
+static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
+{
+    agc_interp_t     ip;                      /* interpreter state */
+    agc_kepler_in_t  in;                      /* KEPLER inputs     */
+    agc_kepler_out_t o;                       /* KEPLER outputs    */
+    const bool       prep = (r->kind == 'K'); /* KEPPREP first     */
+    const agc_dp_t  *p    = prep ? &r->in[1] : /* skip body word   */
+                            &r->in[0];
+
+    agc_interp_init(&ip);
+    in.rrect   = vec3(&p[0]);
+    in.vrect   = vec3(&p[3]);
+    in.tau     = p[6];
+    in.tc      = 0;
+    in.xprev   = 0;
+    in.xkepnew = prep ? 0 : p[7]; /* KEPPREP computes it */
+    in.body    = (prep && (r->in[0] != 0)) ? /* moon row */
+                 AGC_CONIC_MOON : AGC_CONIC_EARTH;
+
+    if (prep)
+    {
+        (void) agc_conic_kepprep(&ip, &in, &in.xkepnew);
+    }
+
+    (void) agc_conic_kepler(&ip, &in, &o);
+    agc_dp_t v[10] = {in.xkepnew, o.rcv.c[0], o.rcv.c[1], o.rcv.c[2],
+                      o.vcv.c[0], o.vcv.c[1], o.vcv.c[2], o.tc,
+                      o.xprev, o.tau}; /* outputs in exp[] order */
+
+    memcpy(got, v, sizeof (v));
+
+    return (prep ? 10 : 9); /* N rows have no XKEPNEW */
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- LAMBERT for one C or L row
+ *
+ * FUNCTION NAME: run_lambert
+ *
+ * ARGUMENTS:
+ *   Argument  Type                  I/O  Description
+ *   --------  --------------------  ---  ----------------------------
+ *   r         const oracle_row_t *  I    the row
+ *   got       agc_dp_t []           O    VVEC, VTARGET, COGA, P, R1A
+ *   solnsw    bool *                O    SOLNSW
+ **********************************************************************/
+static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
+{
+    agc_interp_t      ip;                     /* interpreter state */
+    agc_lambert_in_t  in;                     /* LAMBERT inputs    */
+    agc_lambert_out_t o;                      /* LAMBERT outputs   */
+    const bool        csm = (r->kind == 'C'); /* CSM row           */
+
+    agc_interp_init(&ip);
+    in.r1vec    = vec3(&r->in[0]);
+    in.r2vec    = vec3(&r->in[3]);
+    in.tdesired = r->in[6];
+    in.geomsgn  = (agc_sp_t) r->in[7];
+    in.guessw   = (r->in[8] != 0);
+    in.coga     = r->in[9];
+    in.normsw   = csm && (r->in[10] != 0); /* C: in[10] NORMSW */
+    in.un       = csm ? vec3(&r->in[11]) : /* C: in[11..13] UN */
+                  agc_vec_zero();
+    in.vtargtag = 0;
+    in.iterctr  = csm ? (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR : /* L: in[10] */
+                  (agc_sp_t) r->in[10];
+    in.body = AGC_CONIC_EARTH;
+    (void) agc_conic_lambert(&ip, &in, &o);
+    agc_dp_t v[10] = {o.vvec.c[0], o.vvec.c[1], o.vvec.c[2],
+                      o.vtarget.c[0], o.vtarget.c[1], o.vtarget.c[2],
+                      o.coga, o.p, o.r1a, 0}; /* outputs in exp[] order */
+
+    memcpy(got, v, sizeof (v));
+    *solnsw = o.solnsw;
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- TIMETHET (T) or TIMERAD (R) for one row
+ *
+ * FUNCTION NAME: run_time
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description
+ *   --------  ----------------------  ---  --------------------------
+ *   r         const oracle_row_t *    I    the row
+ *   got       agc_dp_t []             O    T, RNEW, VNEW, CSTH, SNTH
+ *   o         agc_conic_time_out_t *  O    full output record
+ **********************************************************************/
+static void run_time(const oracle_row_t *r, agc_dp_t got[10],
+                     agc_conic_time_out_t *o)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+
+    if (r->kind == 'T')
+    {
+        agc_timetheta_in_t in; /* TIMETHET inputs */
+
+        in.rvec = vec3(&r->in[0]);
+        in.vvec = vec3(&r->in[3]);
+        in.snth = r->in[6];
+        in.csth = r->in[7];
+        in.rvsw = (r->in[8] != 0);
+        in.body = AGC_CONIC_EARTH;
+        (void) agc_conic_timethet(&ip, &in, o);
+    }
+    else
+    {
+        agc_timerad_in_t in; /* TIMERAD inputs */
+
+        in.rvec     = vec3(&r->in[0]);
+        in.vvec     = vec3(&r->in[3]);
+        in.rdesired = r->in[6];
+        in.sgnrdot  = (agc_sp_t) r->in[7];
+        in.rvsw     = (r->in[8] != 0);
+        in.body     = AGC_CONIC_EARTH;
+        (void) agc_conic_timerad(&ip, &in, o);
+    }
+
+    agc_dp_t v[10] = {
+        o->t, o->rnew.c[0], o->rnew.c[1], o->rnew.c[2], o->vnew.c[0],
+        o->vnew.c[1], o->vnew.c[2], o->csth, o->snth, 0
+    }; /* outputs in exp[] order */
+
+    memcpy(got, v, sizeof (v));
+}
+
+/**********************************************************************
+ * AGC: none (test support) -- flags of a T or R row, CSTH/SNTH of an R
+ * row, and how many leading outputs to compare
+ *
+ * FUNCTION NAME: check_time
+ *
+ * ARGUMENTS:
+ *   Argument  Type                  I/O  Description
+ *   --------  --------------------  ---  ----------------------------
+ *   r         const oracle_row_t *  I    the row
+ *   got       agc_dp_t []           O    outputs (filled by run_time)
+ *   tol       agc_dp_t              I    tolerance, DP LSB
+ *   n         int *                 O    outputs to compare: 0 after an
+ *                                        abort, 1 with RVSW, else 7
+ **********************************************************************/
+static void check_time(const oracle_row_t *r, agc_dp_t got[10],
+                       agc_dp_t tol, int *n)
+{
+    agc_conic_time_out_t o;                     /* routine outputs    */
+    const bool           rvsw  = (r->in[8] != 0); /* time only        */
+    const bool           abort = ((r->fl8 & 0110) != 0) ||
+                                 ((r->fl5 & 004) != 0); /* ABTCONIC   */
+
+    run_time(r, got, &o);
+    cmp_flag(r->tag, "INFINFLG", o.infinflg, (r->fl8 & 0100) != 0);
+    cmp_flag(r->tag, "COGAFLAG", o.cogaflag, (r->fl8 & 010) != 0);
+
+    if (r->kind == 'R')
+    {
+        cmp_flag(r->tag, "APSESW", o.apsesw, (r->fl8 & 020) != 0);
+        cmp_flag(r->tag, "SOLNSW", o.solnsw, (r->fl5 & 004) != 0);
+    }
+
+    if (abort)
+    {
+        *n = 0;
+    }
+    else
+    {
+        *n = rvsw ? 1 : 7; /* T only, or T and the state */
+    }
+
+    if (!abort && (r->kind == 'R'))
+    {
+        cmp(r->tag, 7, got[7], r->exp[7], tol);
+        cmp(r->tag, 8, got[8], r->exp[8], tol);
+    }
+}
+
+/**********************************************************************
+ * AGC: none (test driver) -- run one row and compare its outputs
+ *
+ * FUNCTION NAME: check_row
+ *
+ * ARGUMENTS:
+ *   Argument  Type                  I/O  Description
+ *   --------  --------------------  ---  ----------------------------
+ *   r         const oracle_row_t *  I    the row
+ **********************************************************************/
+static void check_row(const oracle_row_t *r)
+{
+    agc_dp_t got[10] = {0}; /* C outputs, exp[] scales  */
+    agc_dp_t tol     = TOL_DEFAULT; /* DP LSB           */
+    int      n       = 0;   /* outputs to compare       */
+    int      first   = 0;   /* first output to compare  */
+
+    if (strcmp(r->tag, "kep_leo_2p25") == 0)
+    {
+        tol = TOL_2P25;
+    }
+
+    if ((r->kind == 'K') || (r->kind == 'N'))
+    {
+        n     = run_kepler(r, got);
+        first = (r->kind == 'K') ? 0 : 1; /* N: no XKEPNEW */
+    }
+    else if ((r->kind == 'C') || (r->kind == 'L'))
+    {
+        bool solnsw = false; /* SOLNSW from LAMBERT */
+
+        run_lambert(r, got, &solnsw);
+        n = 9;
+        cmp_flag(r->tag, "SOLNSW", solnsw, (r->fl5 & 004) != 0);
+    }
+    else if ((r->kind == 'T') || (r->kind == 'R'))
+    {
+        check_time(r, got, tol, &n);
+    }
+    else
+    {
+        agc_interp_t      ip; /* interpreter state */
+        agc_apsides_out_t o;  /* APSIDES outputs   */
+
+        agc_interp_init(&ip);
+        (void) agc_conic_apsides(
+            &ip, vec3(&r->in[1]), vec3(&r->in[4]),
+            (r->in[0] != 0) ? AGC_CONIC_MOON : /* moon row */
+            AGC_CONIC_EARTH, &o);
+        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p,
+                         o.r1a}; /* outputs in exp[] order */
+
+        memcpy(got, v, sizeof (v));
+        n = 5;
+    }
+
+    for (int i = first; i < n; i++)
+    {
+        cmp(r->tag, i, got[i], r->exp[i], tol);
+    }
 }

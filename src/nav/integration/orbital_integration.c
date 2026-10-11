@@ -314,7 +314,7 @@ agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* FBR3 (p. 1336): advance the conic by DT/2.  TIX,1 skips the ROUND on
  * the mid-step entry (DIFEQCNT -12), so DT/2 SR 9 is truncated there and
  * rounded at the end of the step (DIFEQCNT -24).  DT/2 2^19 -> 2^28 cs. */
-static agc_status_t fbr3(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static agc_status_t advance_conic_half_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT((ctx->stage == 1) || (ctx->stage == 2)))
     {
@@ -758,7 +758,7 @@ static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
 
 /* QUALITY1 / QUALITY2 (CM RT8_OP_CODES p. 1516, LM p. 1248): the lunar
  * J22 term x R^4, B61:  E3J22R2M ( 5 (Y^2 - X^2) UR + (X, -Y, 0) ) / 2.  */
-static agc_vec_t quality2(agc_interp_t *ip, const obl_work_t *w)
+static agc_vec_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
 {
     const agc_vec_t u = w->urpv;
 
@@ -785,7 +785,7 @@ static agc_vec_t quality2(agc_interp_t *ip, const obl_work_t *w)
 
 /* QUALITY3 (p. 1342-1343): the C31 term, added to the J22 term, scaled
  * by 1/R^4, rotated to reference axes (RP-TO-R) and added to FV.        */
-static acc_result_t quality3(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                              const obl_work_t *w, agc_vec_t j22)
 {
     const agc_vec_t u  = w->urpv;
@@ -889,7 +889,7 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (ACC_OK); /* QUALITY1 BOF   */
     }
 
-    return (quality3(ip, ctx, &w, quality2(ip, &w)));
+    return (lunar_c31_term(ip, ctx, &w, lunar_j22_term(ip, &w)));
 }
 
 /* ACCOMP (p. 1337): FV = disturbing acceleration at ALPHAV (deviation).
@@ -941,7 +941,7 @@ static acc_result_t accomp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
 /* DOW..1 (p. 1352): gravity-gradient derivative of a W column,
  * BETAM [3 (A.UR) UR - A] / |R|^3 for R = VECTAB entry, A = ALPHAV.      */
-static agc_vec_t dow1(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_vec_t r)
+static agc_vec_t body_gravity_gradient(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_vec_t r)
 {
     const agc_vec_t a16  = agc_vec_shr(ctx->alphav, 4); /* 0D */
     agc_dp_t        rmag = 0;
@@ -988,7 +988,7 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     }
 
     ctx->betam = agc_integ_mu(p); /* MUEARTH,2   */
-    ctx->fv    = dow1(ip, ctx, ctx->vectab[2 * k]);
+    ctx->fv    = body_gravity_gradient(ip, ctx, ctx->vectab[2 * k]);
 
     if (!agc_flag_test(AGC_FLAG_MIDFLAG))
     {
@@ -996,7 +996,7 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     }
 
     ctx->betam = agc_integ_mu(2 - p); /* MUEARTH -2,2, X2 = -PBODY */
-    agc_vec_t f2 = dow1(ip, ctx, ctx->vectab[(2 * k) + 1]);
+    agc_vec_t f2 = body_gravity_gradient(ip, ctx, ctx->vectab[(2 * k) + 1]);
 
     if (!agc_flag_test(AGC_FLAG_MOONFLAG))
     {
@@ -1011,7 +1011,7 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * ==================================================================== */
 
 /* DIFEQ0 (p. 1345): ALPHAV = YV, DIFEQCNT = 0, H = 0.                    */
-static void difeq0(agc_integ_ctx_t *ctx)
+static void nystrom_start(agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1030,7 +1030,7 @@ static void difeq0(agc_integ_ctx_t *ctx)
 
 /* DIFEQ+0 / DIFEQ+1 (p. 1348) and DIFEQCOM (p. 1350): accumulate PHIV,
  * PSIV, advance H by DT/2 and predict ALPHAV = YV + H (ZV + H FV / 2).   */
-static void difeq01(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static void nystrom_stage(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT((ctx->stage == 0) || (ctx->stage == 1)))
     {
@@ -1063,7 +1063,7 @@ static void difeq01(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 }
 
 /* DIFEQ+2 (p. 1348): end of the step, YV and ZV updated.                */
-static void difeq2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static void nystrom_end(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx->stage == 2))
     {
@@ -1095,7 +1095,7 @@ static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (INTEG_NEXT_FAIL);
     }
 
-    difeq0(ctx);
+    nystrom_start(ctx);
 
     for (int k = 0; k < 3; k++)
     { /* NBRANCH stages        */
@@ -1116,15 +1116,15 @@ static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
             break;
         }
 
-        difeq01(ip, ctx);
+        nystrom_stage(ip, ctx);
 
-        if (fbr3(ip, ctx) != AGC_STATUS_OK)
+        if (advance_conic_half_step(ip, ctx) != AGC_STATUS_OK)
         {
             return (INTEG_NEXT_FAIL);
         }
     }
 
-    difeq2(ip, ctx);
+    nystrom_end(ip, ctx);
 
     if (agc_interp_test_ovf(ip))
     { /* ENDSTATE BOV GOBAQUE  */
@@ -1136,7 +1136,7 @@ static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     if (agc_flag_test(AGC_FLAG_MIDAVFLG))
     {
-        return (INTEG_NEXT_CKMID2);
+        return (INTEG_NEXT_MIDTOAV_CHECK);
     }
 
     if (!agc_flag_test(AGC_FLAG_DIM0FLAG))
@@ -1201,7 +1201,7 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
             return (INTEG_NEXT_FAIL);
         }
 
-        difeq0(ctx);
+        nystrom_start(ctx);
 
         for (int k = 0; k < 3; k++)
         {
@@ -1209,11 +1209,11 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
             if (k < 2)
             {
-                difeq01(ip, ctx); /* DIFEQCOM -> DOW..     */
+                nystrom_stage(ip, ctx); /* DIFEQCOM -> DOW..     */
             }
         }
 
-        difeq2(ip, ctx);
+        nystrom_end(ip, ctx);
         agc_integ_grp2pc();                        /* DIFEQ+2  */
         ctx->w.blk[1][col] = agc_vec_shl(ip, ctx->zv, 3); /* W +54D,2 */
         const agc_vec_t y = agc_vec_shl(ip, ctx->yv, 3);

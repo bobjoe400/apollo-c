@@ -697,6 +697,75 @@ agc_status_t pin_error_key(void)
 /* ---- CHARIN (p. 315) -------------------------------------------------- */
 
 /**********************************************************************
+ * AGC: CLEAR, CLPASHI, LEGALTST
+ *      (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 321)
+ *
+ * CLEAR. Pass 0 blanks the register being loaded; a higher pass backs the
+ * load up one register (CLPASHI: REQRET +3, verb - 1). DSPCOUNT is not
+ * changed here because LEGALTST may still fail.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK (also for an illegal clear), BAD_ARG on a
+ *          failed precondition; else the status of the routine it calls
+ **********************************************************************/
+static agc_status_t pin_clear_key(void)
+{
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    pin_state_t *s_key = pin_st(); /* pinball erasables */
+    int          inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
+
+    if (!AGC_ASSERT(inrel >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (s_key->clpass > 0)
+    {     /* CLPASHI      */
+        inrel = (inrel > 0) ? inrel - 1 : 0; /* previous register */
+
+        if (!pin_legaltst(inrel))
+        {
+            return (AGC_STATUS_OK);
+        }
+
+        /* backs data requests */
+        s_key->reqret = pin_reqret_backup(s_key->reqret);
+
+        if (s_key->verbreg > 0)
+        {
+            s_key->verbreg--;     /* DIM VERBREG  */
+        }
+
+        agc_status_t st = pin_updatvb(s_key->verbreg); /* status */
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+    }
+    else if (!pin_legaltst(inrel))
+    {
+        return (AGC_STATUS_OK);     /* illegal      */
+    }
+
+    agc_status_t st = pin_5blank_rel(inrel);     /* CLEAR1, CLR5 */
+
+    s_key->clpass++; /* set for higher pass */
+
+    if (!AGC_ASSERT(s_key->clpass != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
+} /* pin_clear_key */
+
+/**********************************************************************
  * AGC: CHARIN2 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
  *
  * CHARIN2 fan on the 5-bit input code.
@@ -752,59 +821,7 @@ static agc_status_t pin_charin2(uint8_t code)
         case 034:
             return (pin_enter()); /* ENTER                  */
         case 036:
-            /* CLEAR                  */
-            /* CLEAR. Pass 0 blanks the register being loaded; a higher pass
-             * backs the load up one register (CLPASHI: REQRET +3, verb - 1). */
-        {
-            pin_state_t *s_key = pin_st(); /* pinball erasables */
-            /* Do not change DSPCOUNT because may later fail LEGALTST. */
-            int inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
-
-            if (!AGC_ASSERT(inrel >= 0))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            if (s_key->clpass > 0)
-            {     /* CLPASHI      */
-                inrel = (inrel > 0) ? inrel - 1 : 0; /* previous register */
-
-                if (!pin_legaltst(inrel))
-                {
-                    return (AGC_STATUS_OK);
-                }
-
-                /* backs data requests */
-                s_key->reqret = pin_reqret_backup(s_key->reqret);
-
-                if (s_key->verbreg > 0)
-                {
-                    s_key->verbreg--;     /* DIM VERBREG  */
-                }
-
-                agc_status_t st = pin_updatvb(s_key->verbreg); /* status */
-
-                if (st != AGC_STATUS_OK)
-                {
-                    return (st);
-                }
-            }
-            else if (!pin_legaltst(inrel))
-            {
-                return (AGC_STATUS_OK);     /* illegal      */
-            }
-
-            agc_status_t st = pin_5blank_rel(inrel);     /* CLEAR1, CLR5 */
-
-            s_key->clpass++; /* set for higher pass */
-
-            if (!AGC_ASSERT(s_key->clpass != 0))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            return (st);
-        } /* end case 036 (CLEAR) */
+            return (pin_clear_key()); /* CLEAR */
         case 037:
             return (pin_nvcom(false)); /* NOUN                   */
         default:

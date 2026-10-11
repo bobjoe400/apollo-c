@@ -17,12 +17,25 @@ word-level WLOOP experiment diff and the oracle specs).
 
 | item | status |
 |---|---|
-| F13 CDH DIFFALT | DONE: traced to the word (see Findings P1); fix belongs to nav-conic/core (request) |
-| targeting oracle findings | DONE: cdh velocities (748 LSB) are the same cause as F13; initvel/tpi within the Lambert tolerances of nav-conic |
-| noun_data.c -> lm/radar layering | DONE: TANG, RSTACK, LANDMARK, HORIZON, CPHIX/PRAXIS storage moved to programs/navigation/common.c |
-| P23/R22LEM restart priority | request to exec (P3) |
-| fidelity pass | in progress |
-| style debt | TODO |
+| F13 CDH DIFFALT | DONE: traced to the word (Findings P1); fix belongs to nav-conic/core (Requests); tests/oracle/targeting.c comment explains it |
+| targeting oracle findings | DONE: cdh velocities (748 LSB) are the F13 cause; initvel/tpi within nav-conic's Lambert tolerances |
+| noun_data.c -> lm/radar, csm/navigation layering | DONE: TANG, RSTACK, LANDMARK, HORIZON, CPHIX/PRAXIS storage moved to programs/navigation/common.c (P4) |
+| P23/R22LEM restart priority | DONE as request to exec (P3); deviation comments stay |
+| constants vs rope | DONE: all ~100 DP/SP constants of the lane checked against both ropes (rope2.py), all match |
+| alarm codes vs AGC | DONE: 00124 00600/601 01211 502 510 520 521 522 526 527 611 all present |
+| P31 fidelity | DONE: removed the extra INTIME = TIG store (AGC P31 does not set INTIME; NUMIT = 0) |
+| forwarding wrappers | DONE: agc_rr_limchk now holds RRLIMCHK (rr_limits_ok removed), agc_task_rr_goodend holds RGOODEND (rr_goodend removed), tps_kflag inlined; others add arguments/state and stay |
+| digit-suffixed names | DONE: 18 renames (opd_sr30_1 -> opd_orbit_params, ta_crs61 -> ta_point_at_target, rpd_lm_rev83, tps_vncomp17, td_rend1/3, pfd_mp3, ln_9dw_*, ln_f2410, ln_box12/32, csi_ntp2, csi_b1/b2/b23, agc_rendz_periapo1 -> agc_rendz_periapo_body_scale, agc_rendz_shiftr1 -> agc_rendz_scalar_from_body; src/guidance/external_delta_v.c caller updated) |
+| style debt | PARTIAL: zero findings in src/lm/radar/leadin.c, src/programs/targeting/lambert_aimpoint_guidance_lm.c, src/programs/navigation/{flags_csm,flags_lm,noun_data}.c; src/lm/navigation/tracking_attitude.c 1 finding left (TA_250DEC define comment) + 1 line > 80 (ternary comment at ~240, shorten) -- compiles. TODO: the other 30 lane files + rendezvous.h, internal.h, radar.h |
+| fidelity pass per routine | PARTIAL: P31, R61LEM/R65LEM re-read against the source (match); rest relies on the prog-rendz lane + oracle |
+| make / make test / make check | TODO at the end. Full tree builds only with -Wno-error=comment (io-dsky pinball/internal.h mid-edit). tests/programs/rendezvous: 3 failures in test_orbit_parameters_circular caused by the in-flight nav-conic APSIDES change (C rapo/rper differ by 1246 LSB on a circular orbit; AGC APSIDES gives 8 LSB, oracle SCRATCH/review-prog-rendz/aps.spec) -- recheck before finishing, report to nav-conic if it persists |
+
+All lane files compile (-fsyntax-only with the project flags) as of this update.
+
+Style tooling (SCRATCH/review-prog-rendz/style/): run.sh FILE [--write] applies
+specs/<dir>_<file>.spec (file prolog, function prolog args/returns/AGC
+citation) and .decl (decl/ternary/define comments); .orig = the file before
+the style pass.
 
 ## Findings
 

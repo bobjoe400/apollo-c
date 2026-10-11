@@ -521,7 +521,8 @@ static agc_status_t getabval(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM,
-                              agc_flag_test(AGC_FLAG_MOONFLAG), &refsmmat,
+                              agc_rendz_erasable()->body.rtx2 != 0, /* RTX2 */
+                              &refsmmat,
                               agc_erase_delv(), &sv, &g->avg);
     }
 
@@ -922,9 +923,10 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx)
     }
     else
     {
-        agc_status_t st = agc_guid_calcgrav(&ip, AGC_VEHICLE_LM,
-                                            agc_flag_test(AGC_FLAG_MOONFLAG),
-                                            g->avg.rn1, &g->avg);
+        agc_status_t st = /* CALCGRAV (moon: RTX2 = 2, SLOAD RTX2) */
+            agc_guid_calcgrav(&ip, AGC_VEHICLE_LM,
+                              agc_rendz_erasable()->body.rtx2 != 0, g->avg.rn1,
+                              &g->avg);
 
         if (st != AGC_STATUS_OK)
         {

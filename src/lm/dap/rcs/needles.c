@@ -18,8 +18,18 @@
 #define NDL_DACBITS  070000u            /* 13,14,15: CHAN14 DAC activity  */
 #define NDL_PASSBITS 6u                 /* SIX: RCSFLAGS bits 2,3         */
 
-/* ALTDSPLY (pp.1414-1415): invert DSPLYALT; display (NEEDLER) or compute
- * the errors for the next pass.                                           */
+/**********************************************************************
+ * ALTDSPLY (pp.1414-1415): invert DSPLYALT; display (NEEDLER) or compute
+ * the errors for the next pass.
+ *
+ * FUNCTION NAME: lm_dap_altdsply
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_altdsply(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -53,8 +63,18 @@ agc_status_t lm_dap_altdsply(void)
     return (AGC_STATUS_OK);
 }
 
-/* DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
- * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.        */
+/**********************************************************************
+ * DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
+ * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.
+ *
+ * FUNCTION NAME: lm_dap_dsplytot
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_dsplytot(void)
 {
     lm_dap_t *d    = lm_dap_state();
@@ -85,8 +105,21 @@ agc_status_t lm_dap_dsplytot(void)
     return (AGC_STATUS_OK);
 }
 
-/* NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
- * the error counters; next pass enables the counters.                    */
+/**********************************************************************
+ * NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
+ * the error counters; next pass enables the counters.
+ *
+ * FUNCTION NAME: needles_first_pass
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t needles_first_pass(lm_dap_t *d)
 {
     agc_status_t st = AGC_STATUS_OK;
@@ -115,8 +148,21 @@ static agc_status_t needles_first_pass(lm_dap_t *d)
     return (st);
 }
 
-/* NEEDLES / DACLOOP (p.1419): meter the change of each display into the
- * IMU error counter, limited to +-384 bits.                              */
+/**********************************************************************
+ * NEEDLES / DACLOOP (p.1419): meter the change of each display into the
+ * IMU error counter, limited to +-384 bits.
+ *
+ * FUNCTION NAME: needles
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t needles(lm_dap_t *d)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
@@ -164,7 +210,17 @@ static agc_status_t needles(lm_dap_t *d)
     return (st);
 }
 
-/* NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.            */
+/**********************************************************************
+ * NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.
+ *
+ * FUNCTION NAME: lm_dap_needler
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_needler(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))

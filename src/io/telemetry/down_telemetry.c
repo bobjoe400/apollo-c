@@ -267,7 +267,8 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
             *w = (k == 0 && !lm) ? agc_erase_optmodes() : 0u;
             break;
         case AGC_DN_RADMODES:
-            *w = (k == 0 && lm) ? agc_erase_radmodes() : 0u;
+            /* RADMODES,DAPBOOLS = FLGWRD12,FLGWRD13 (LM only) */
+            *w = (lm && k < 2) ? agc_flagword_get(12 + k) : 0u;
             break;
         case AGC_DN_LEMMASS:
             *w = (k == 0) ? sp_word(agc_erase_lemmass()) :

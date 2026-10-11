@@ -1,33 +1,60 @@
-/*
- * phase_table.c -- PHASE TABLE MAINTENANCE: PHASCHNG, 2PHSCHNG, NEWPHASE,
- *                  MR.KLEAN / P00KLEAN / V37KLEAN, NEWMODEX / NEWMODEA /
- *                  MMDSPLAY / SETUPDSP / CHECKMM.
+/**********************************************************************
+ * FILE NAME: phase_table.c
  *
- * Source: PHASE_TABLE_MAINTENANCE.agc, Comanche055 pp. 1404-1413,
- * Luminary099 pp. 1294-1302; NEWPHASE from RESTART_TABLES.agc (C p.220,
- * L p.243); the KLEANs from FRESH_START_AND_RESTART.agc (C p.185, L p.213).
- * The two PHASE_TABLE_MAINTENANCE listings are the same program; Luminary
- * adds the entry PHSCHNGA (code word in A, used by V37RET), which is
- * agc_phase_change_var() with the code passed explicitly. The KLEANs
- * differ: Comanche's P00KLEAN kills group 1 and V37KLEAN does not;
- * Luminary's V37KLEAN kills group 1 (see agc_phase_change_program_klean).
+ * PURPOSE:
+ *   PHASE TABLE MAINTENANCE: the restart-group phase words and their
+ *   variable restart points (PHASCHNG, PHSCHNGA, 2PHSCHNG, NEWPHASE), the
+ *   group kills (MR.KLEAN, P00KLEAN, V37KLEAN), and the major-mode register
+ *   (NEWMODEX, NEWMODEA, MMDSPLAY, SETUPDSP, CHECKMM).
  *
- * Each of the six restart groups n has the erasable pair -PHASEn, PHASEn
- * (they must stay complements; GOPROG3 checks this before restarting),
- * TBASEn (TIME1 when the phase was set, for timed task restarts), and the
- * variable restart point PHSNAMEn / PHSPRDTn. LONGBASE (TIME2,TIME1) is
- * shared by every LONGCALL restart.
+ * AGC SOURCE:
+ *   Comanche055 PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413;
+ *   RESTART_TABLES.agc p. 220 (NEWPHASE); FRESH_START_AND_RESTART.agc
+ *   p. 185 (KLEANs)
+ *   Luminary099 PHASE_TABLE_MAINTENANCE.agc pp. 1294-1302 (differs: adds
+ *   PHSCHNGA); FRESH_START_AND_RESTART.agc p. 213 (KLEANs differ)
  *
- * The code word after TC PHASCHNG (15 bits, octal):
- *   type A  TL0 00P PPP PPP GGG   fixed phase P of group G
- *   type B  TL1 DAP PPP PPP GGG   variable job + the fixed phase P
- *   type C  TL0 1AD XXX CJW GGG   variable job (J), task (W) or LONGCALL (C)
- * T: set TBASEG, L: set LONGBASE, D: a new priority / delta time is given,
- * A: a restart 2CADR is given. PHASEn receives bits 13-4 of the code word
- * shifted down 3 (MP BIT12), so the type bits stay visible to RESTARTS:
- *   type A  phase 0..127, type B  01000 + D 0400 + A 0200 + phase,
- *   type C  0400 + A 0200 + D 0100 + XXX 070 + CJW.
- */
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   MODREG        agc_sp_t  I/O  B0 integer     agc_erase_modreg()
+ *   TIME1, TIME2  uint32_t  I    cs             agc_time_now_cs() (TBASE)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_exec_novac        SETUPDSP: NOVAC PRIO30 DSPMMJOB (executive.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   BAILOUT 1202 through NOVAC (SETUPDSP); BAD_ARG on a failed
+ *   precondition (bad group, code or mode).
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Every update runs with interrupts inhibited. Both vehicles.
+ *
+ * NOTES:
+ *   The two PHASE_TABLE_MAINTENANCE listings are the same program; Luminary
+ *   adds the entry PHSCHNGA (code word in A, used by V37RET), which is
+ *   agc_phase_change_var() with the code passed explicitly. The KLEANs
+ *   differ: Comanche's P00KLEAN kills group 1 and V37KLEAN does not;
+ *   Luminary's V37KLEAN kills group 1 (see agc_phase_change_program_klean).
+ *
+ *   Each of the six restart groups n has the erasable pair -PHASEn, PHASEn
+ *   (they must stay complements; GOPROG3 checks this before restarting),
+ *   TBASEn (TIME1 when the phase was set, for timed task restarts), and the
+ *   variable restart point PHSNAMEn / PHSPRDTn. LONGBASE (TIME2,TIME1) is
+ *   shared by every LONGCALL restart.
+ *
+ *   The code word after TC PHASCHNG (15 bits, octal):
+ *     type A  TL0 00P PPP PPP GGG   fixed phase P of group G
+ *     type B  TL1 DAP PPP PPP GGG   variable job + the fixed phase P
+ *     type C  TL0 1AD XXX CJW GGG   variable job (J), task (W) or LONGCALL (C)
+ *   T: set TBASEG, L: set LONGBASE, D: a new priority / delta time is given,
+ *   A: a restart 2CADR is given. PHASEn receives bits 13-4 of the code word
+ *   shifted down 3 (MP BIT12), so the type bits stay visible to RESTARTS:
+ *     type A  phase 0..127, type B  01000 + D 0400 + A 0200 + phase,
+ *     type C  0400 + A 0200 + D 0100 + XXX 070 + CJW.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
@@ -46,7 +73,7 @@
 #define PH_DBIT_C 001000u /* D in type C (bit 10)                     */
 #define PH_PMASK  017770u /* OCT17770, bits 13-4                      */
 #define PH_PSHIFT 3       /* MP BIT12 = shift right 3                 */
-#define PH_PRIO30 ((agc_prio_t) 030)
+#define PH_PRIO30 ((agc_prio_t) 030) /* PRIO30: SETUPDSP */
 
 typedef enum ph_type
 {
@@ -59,10 +86,10 @@ typedef struct ph_code
 {
     int       group; /* 1..6 (GGG)                                  */
     uint16_t  tempp; /* TEMPP: what goes into PHASEn                */
-    ph_type_t type;
-    bool      tbit;
-    bool      lbit;
-    bool      dbit;
+    ph_type_t type; /* A, B or C */
+    bool      tbit; /* T: set TBASEG (bit 15) */
+    bool      lbit; /* L: set LONGBASE (bit 14) */
+    bool      dbit; /* D: new priority / delta time given */
 } ph_code_t;
 
 /* Group n is index n; index 0 is unused. A fresh AGC's DOFSTART kills
@@ -77,6 +104,15 @@ static uint16_t          tbase[AGC_RESTART_GROUPS + 1]; /* TIME1 at set, cs     
 static phase_var_store_t var[AGC_RESTART_GROUPS + 1]; /* PHSNAMEn/PRDTn */
 static uint32_t          longbase; /* TIME2,TIME1 at set cs */
 
+/**********************************************************************
+ * Group number check for the PHASEn tables (PHASE_TABLE_MAINTENANCE.agc
+ * C p.1410 / L p.1299: TEMPG = 2 x (GGG)).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *
+ * RETURNS: bool -- true for a group 1..6
+ **********************************************************************/
 static bool group_ok(int group)
 {
     if (!AGC_ASSERT(phase_w[0] == 0U))
@@ -92,7 +128,14 @@ static bool group_ok(int group)
     return (group >= 1 && group <= AGC_RESTART_GROUPS);
 }
 
-/* DXCH -PHASEn with (-phase, phase): both words of the pair at once. */
+/**********************************************************************
+ * DXCH -PHASEn (PHASE_TABLE_MAINTENANCE.agc C p.1412 / L p.1301) with
+ * (-phase, phase): both words of the pair at once.
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   phase -- the PHASEn word (type A: the phase number, octal)
+ **********************************************************************/
 void phase_set_fixed(int group, uint16_t phase)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(phase <= PH_WORD15))
@@ -109,7 +152,13 @@ void phase_set_fixed(int group, uint16_t phase)
     }
 }
 
-/* EXTEND / DCA NEG0 / DXCH -PHASEn: -PHASEn = -0, PHASEn = +0.        */
+/**********************************************************************
+ * EXTEND / DCA NEG0 / DXCH -PHASEn (FRESH_START_AND_RESTART.agc C p.185
+ * / L p.213): -PHASEn = -0, PHASEn = +0, the group is inactive.
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ **********************************************************************/
 void phase_kill(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -126,6 +175,13 @@ void phase_kill(int group)
     }
 }
 
+/**********************************************************************
+ * Kill restart group `group` with interrupts inhibited (MR.KLEAN form,
+ * FRESH_START_AND_RESTART.agc C p.185 / L p.213).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ **********************************************************************/
 void agc_phase_kill(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -143,8 +199,14 @@ void agc_phase_kill(int group)
     }
 }
 
-/* CS TIME1 / TS TBASEn. DEVIATION: the AGC stores -TIME1 and RESTARTS
- * adds it back; TIME1 itself is stored here (same elapsed time).      */
+/**********************************************************************
+ * CS TIME1 / TS TBASEn (PHASE_TABLE_MAINTENANCE.agc C p.1411 / L p.1300).
+ * DEVIATION: the AGC stores -TIME1 and RESTARTS adds it back; TIME1
+ * itself is stored here (same elapsed time).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ **********************************************************************/
 static void set_tbase(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -160,7 +222,13 @@ static void set_tbase(int group)
     }
 }
 
-/* CS TIME1 / TS TBASEn by itself (LM SERVICER R10,R11 set-up: TBASE2).  */
+/**********************************************************************
+ * CS TIME1 / TS TBASEn by itself (LM SERVICER R10,R11 set-up: TBASE2;
+ * PHASE_TABLE_MAINTENANCE.agc L p.1300 form).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ **********************************************************************/
 void agc_phase_set_tbase(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -171,8 +239,14 @@ void agc_phase_set_tbase(int group)
     set_tbase(group);
 }
 
-/* TS PHSPRDTn (V37 POOH: PRIO5 in group 2, C p.200 / L p.229; V37XEQ:
- * the new program's priority in group 4, C p.202 / L p.232).           */
+/**********************************************************************
+ * TS PHSPRDTn (V37 POOH: PRIO5 in group 2, C p.200 / L p.229; V37XEQ:
+ * the new program's priority in group 4, C p.202 / L p.232).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   prio -- priority number, 1..037 (PRIOnn >> 9)
+ **********************************************************************/
 void agc_phase_set_priority(int group, agc_prio_t prio)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(prio >= 1U && prio <= 037U))
@@ -184,7 +258,15 @@ void agc_phase_set_priority(int group, agc_prio_t prio)
     var[group].immediate = false;
 }
 
-/* PHSCHNG2 decoding (C p.1410 / L p.1299): TEMPG, TEMPP, TEMPSW.      */
+/**********************************************************************
+ * PHSCHNG2 decoding (C p.1410 / L p.1299): TEMPG, TEMPP, TEMPSW.
+ *
+ * ARGUMENTS:
+ *   code -- PHASCHNG code word (octal, see the file prolog)
+ *   out -- receives the decoded fields / the stored restart point
+ *
+ * RETURNS: bool -- true when the code word names a group 1..6
+ **********************************************************************/
 static bool decode(uint16_t code, ph_code_t *out)
 {
     if (!AGC_ASSERT(out != 0) || !AGC_ASSERT(code <= PH_WORD15))
@@ -216,12 +298,21 @@ static bool decode(uint16_t code, ph_code_t *out)
     return (AGC_ASSERT(group_ok(out->group)));
 }
 
-/* The restart kind a type C phase names by its CJW bits, as RESTARTS
- * decodes it ((CJW) - 2: > 0 LONGCALL, -0 job, < 0 task).             */
+/**********************************************************************
+ * The restart kind a type C phase names by its CJW bits, as RESTARTS
+ * (RESTARTS_ROUTINE.agc C p.1414 / L p.1303) decodes it: (CJW) - 2 > 0
+ * LONGCALL, 0 job, < 0 task.
+ *
+ * ARGUMENTS:
+ *   tempp -- TEMPP: bits 13-4 of the code word shifted down 3
+ *
+ * RETURNS: agc_restart_kind_t -- AGC_RESTART_LONGCALL, _JOB or _TASK; NONE on a failed
+ *          postcondition
+ **********************************************************************/
 static agc_restart_kind_t cjw_kind(uint16_t tempp)
 {
-    int                cjw = (int) (tempp & PH_GROUP) - 2;
-    agc_restart_kind_t k   = AGC_RESTART_TASK;
+    int                cjw = (int) (tempp & PH_GROUP) - 2; /* (CJW) - 2: > 0 LONGCALL, 0 job, < 0 task */
+    agc_restart_kind_t k   = AGC_RESTART_TASK; /* W: waitlist task unless CJW says else */
 
     if (cjw > 0)
     {
@@ -244,13 +335,20 @@ static agc_restart_kind_t cjw_kind(uint16_t tempp)
     return (k);
 }
 
-/* GETPRIO / OLDPRIO / GETNEWNM / CON2 (C pp.1410-1412 / L pp.1299-1301):
+/**********************************************************************
+ * GETPRIO / OLDPRIO / GETNEWNM / CON2 (C pp.1410-1412 / L pp.1299-1301):
  * store the variable restart point of a type B or C phase. With D clear
  * the old PHSPRDTn is kept; v == NULL keeps the old PHSNAMEn as well.
  * DEVIATION: the AGC takes the restart point from the return address
  * when A is clear; C cannot name a return address, so the caller always
  * names it in v (and an indirect delta time is resolved by the caller,
- * at the time of the phase change, into v->prio_or_dt / long_dt_cs).   */
+ * at the time of the phase change, into v->prio_or_dt / long_dt_cs).
+ *
+ * ARGUMENTS:
+ *   c -- the decoded code word
+ *   v -- the variable restart point (job, task or LONGCALL); NULL keeps
+     the stored one
+ **********************************************************************/
 static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
 {
     if (!AGC_ASSERT(c != 0) || !AGC_ASSERT(c->type != PH_TYPE_A))
@@ -258,9 +356,13 @@ static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
         return;
     }
 
-    phase_var_store_t *s = &var[c->group];
-    agc_restart_kind_t k =
-        (c->type == PH_TYPE_B) ? AGC_RESTART_JOB : cjw_kind(c->tempp);
+    phase_var_store_t *s = &var[c->group]; /* PHSNAMEn / PHSPRDTn of the group */
+    agc_restart_kind_t k = AGC_RESTART_JOB; /* type B: always a job */
+
+    if (c->type == PH_TYPE_C)
+    {
+        k = cjw_kind(c->tempp); /* type C: CJW names it */
+    }
 
     if (v == 0)
     {
@@ -287,13 +389,19 @@ static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
 /* BELOW1 for 2PHSCHNG: the type A phase of the second group.          */
 typedef struct ph_second
 {
-    bool     present;
+    bool     present; /* 2PHSCHNG: a second group is set */
     int      group; /* TEMPG2 / 2                                  */
     uint16_t phase; /* TEMPP2                                      */
     bool     tbit;  /* TEMPSW2 = BIT15 of the first code word      */
 } ph_second_t;
 
-/* BELOW1 .. BELOW4 (C pp.1411-1412 / L pp.1300-1301).                 */
+/**********************************************************************
+ * BELOW1 .. BELOW4 (C pp.1411-1412 / L pp.1300-1301).
+ *
+ * ARGUMENTS:
+ *   c -- the decoded code word
+ *   two -- the second group of a 2PHSCHNG (present = false for PHASCHNG)
+ **********************************************************************/
 static void below1_4(const ph_code_t *c, const ph_second_t *two)
 {
     if (!AGC_ASSERT(c != 0) || !AGC_ASSERT(two != 0))
@@ -329,10 +437,21 @@ static void below1_4(const ph_code_t *c, const ph_second_t *two)
     }
 }
 
+/**********************************************************************
+ * PHASCHNG / PHSCHNGA / 2PHSCHNG common part (PHASE_TABLE_MAINTENANCE.agc
+ * C pp.1409-1412 / L pp.1298-1301): decode, store the variable part of
+ * a type B/C phase, then BELOW1 .. BELOW4, all with interrupts inhibited.
+ *
+ * ARGUMENTS:
+ *   code -- PHASCHNG code word (octal, see the file prolog)
+ *   v -- the variable restart point (job, task or LONGCALL); NULL keeps
+     the stored one
+ *   two -- the second group of a 2PHSCHNG (present = false for PHASCHNG)
+ **********************************************************************/
 static void phaschng_common(uint16_t code, const agc_phase_var_t *v,
                             const ph_second_t *two)
 {
-    ph_code_t c;
+    ph_code_t c; /* the decoded code word */
 
     if (!AGC_ASSERT(decode(code, &c)))
     {
@@ -350,9 +469,15 @@ static void phaschng_common(uint16_t code, const agc_phase_var_t *v,
     agc_relint();
 }
 
-/* PHASCHNG (C p.1409 / L p.1298), fixed form: `group` must be the GGG of
+/**********************************************************************
+ * PHASCHNG (C p.1409 / L p.1298), fixed form: `group` must be the GGG of
  * the code word. A type B/C code given here keeps the stored restart
- * point and priority (as if D = 0 and the old 2CADR were still right). */
+ * point and priority (as if D = 0 and the old 2CADR were still right).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   phase_code -- PHASCHNG code word (octal) whose GGG is `group`
+ **********************************************************************/
 void agc_phase_change(int group, uint16_t phase_code)
 {
     if (!AGC_ASSERT(group_ok(group)) ||
@@ -366,7 +491,15 @@ void agc_phase_change(int group, uint16_t phase_code)
     phaschng_common(phase_code, 0, &none);
 }
 
-/* PHASCHNG / PHSCHNGA type B or C with the variable restart point.    */
+/**********************************************************************
+ * PHASCHNG / PHSCHNGA (PHASE_TABLE_MAINTENANCE.agc C p.1409 / L p.1298)
+ * type B or C with the variable restart point.
+ *
+ * ARGUMENTS:
+ *   code -- PHASCHNG code word (octal, see the file prolog)
+ *   v -- the variable restart point (job, task or LONGCALL); NULL keeps
+     the stored one
+ **********************************************************************/
 void agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
 {
     if (!AGC_ASSERT(v != 0) || !AGC_ASSERT(v->kind != AGC_RESTART_NONE))
@@ -379,13 +512,21 @@ void agc_phase_change_var(uint16_t code, const agc_phase_var_t *v)
     phaschng_common(code, v, &none);
 }
 
-/* 2PHSCHNG (C p.1409 / L p.1298): code_a (type A only; its L bit is
+/**********************************************************************
+ * 2PHSCHNG (C p.1409 / L p.1298): code_a (type A only; its L bit is
  * disregarded) for one group, code_b (A, B or C) for another. v may be
- * NULL when code_b is type A.                                          */
+ * NULL when code_b is type A.
+ *
+ * ARGUMENTS:
+ *   code_a -- type A code word of the second group (the first inline word)
+ *   code_b -- code word of the main group (A, B or C)
+ *   v -- the variable restart point (job, task or LONGCALL); NULL keeps
+     the stored one
+ **********************************************************************/
 void agc_phase_change2(uint16_t code_a, uint16_t code_b,
                        const agc_phase_var_t *v)
 {
-    ph_code_t a;
+    ph_code_t a; /* the second group's code word */
 
     if (!AGC_ASSERT(decode(code_a, &a)) || !AGC_ASSERT(a.type == PH_TYPE_A))
     {
@@ -397,9 +538,16 @@ void agc_phase_change2(uint16_t code_a, uint16_t code_b,
     phaschng_common(code_b, v, &two);
 }
 
-/* NEWPHASE (RESTART_TABLES C p.220; Comanche only): quick fixed phase change
+/**********************************************************************
+ * NEWPHASE (RESTART_TABLES C p.220; Comanche only): quick fixed phase change
  * of `group` to `phase`, optionally setting TBASE (the AGC passes the
- * phase negative in A to ask for that).                                */
+ * phase negative in A to ask for that).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   phase -- the PHASEn word (type A: the phase number, octal)
+ *   set_tb -- true: also CS TIME1 / TS TBASEn (A negative in the AGC)
+ **********************************************************************/
 void agc_phase_newphase(int group, uint16_t phase, bool set_tb)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(phase <= 0177U))
@@ -418,9 +566,19 @@ void agc_phase_newphase(int group, uint16_t phase, bool set_tb)
     agc_relint();
 }
 
-/* Contract helper: make `group` restart `job` as a FINDVAC job of
- * priority `prio`, i.e. TC PHASCHNG / OCT 07020+G / OCT prio / 2CADR job
- * (type C, A, D, J).                                                   */
+/**********************************************************************
+ * Contract helper for PHASCHNG (PHASE_TABLE_MAINTENANCE.agc C p.1409 /
+ * L p.1298): make `group` restart `job` as a FINDVAC job of priority
+ * `prio`, i.e. TC PHASCHNG / OCT 07020+G / OCT prio / 2CADR job (type C,
+ * A, D, J).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   job -- job id the group restarts (AGC_JOB_*)
+ *   prio -- priority number, 1..037 (PRIOnn >> 9)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(job != AGC_JOB_NONE) ||
@@ -437,6 +595,14 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * C(PHASEn) (PHASE_TABLE_MAINTENANCE.agc C p.1412 / L p.1301).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *
+ * RETURNS: uint16_t -- the PHASEn word (0 = inactive); 0 on a bad group
+ **********************************************************************/
 uint16_t agc_phase_get(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -452,8 +618,15 @@ uint16_t agc_phase_get(int group)
     return (phase_w[group]);
 }
 
-/* PCLOOP test (FRESH_START C p.188 / L p.218): -PHASEn RXOR PHASEn must
- * be -0, i.e. the two words are complements.                           */
+/**********************************************************************
+ * PCLOOP test (FRESH_START C p.188 / L p.218): -PHASEn RXOR PHASEn must
+ * be -0, i.e. the two words are complements.
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *
+ * RETURNS: bool -- true when -PHASEn and PHASEn are complements
+ **********************************************************************/
 bool phase_group_agrees(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -469,6 +642,16 @@ bool phase_group_agrees(int group)
     return ((uint16_t) (nphase_w[group] ^ phase_w[group]) == PH_NEG0);
 }
 
+/**********************************************************************
+ * PHSNAMEn / PHSPRDTn (RESTARTS_ROUTINE.agc C p.1414 / L p.1303 reads
+ * them): the stored variable restart point of `group`.
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   out -- receives the decoded fields / the stored restart point
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a bad group or NULL out
+ **********************************************************************/
 agc_status_t phase_var_get(int group, phase_var_store_t *out)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(out != 0))
@@ -481,6 +664,14 @@ agc_status_t phase_var_get(int group, phase_var_store_t *out)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * TBASEn (FINDTIME, RESTARTS_ROUTINE.agc C p.1415 / L p.1304).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *
+ * RETURNS: uint16_t -- TIME1 when TBASEn was set, cs (14 bits); 0 on a bad group
+ **********************************************************************/
 uint16_t phase_tbase(int group)
 {
     if (!AGC_ASSERT(group_ok(group)))
@@ -496,6 +687,13 @@ uint16_t phase_tbase(int group)
     return (tbase[group]);
 }
 
+/**********************************************************************
+ * LONGBASE (ITSLGCL2, RESTARTS_ROUTINE.agc C p.1417 / L p.1306).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint32_t -- TIME2,TIME1 when LONGBASE was set, cs; 0 on a failed check
+ **********************************************************************/
 uint32_t phase_longbase(void)
 {
     if (!AGC_ASSERT(longbase < AGC_TIME_MODULUS_CS))
@@ -511,8 +709,14 @@ uint32_t phase_longbase(void)
     return (longbase);
 }
 
-/* Test hook: corrupt -PHASEn (as a restart between the two stores of a
- * PHASCHNG would leave it) so the GOPROG3 table check can be exercised. */
+/**********************************************************************
+ * AGC: none (test hook) -- Test hook: corrupt -PHASEn (as a restart between the two stores of a
+ * PHASCHNG would leave it) so the GOPROG3 table check can be exercised.
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6
+ *   neg_word -- the word to put in -PHASEn
+ **********************************************************************/
 void phase_debug_set_negative(int group, uint16_t neg_word)
 {
     if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(neg_word <= PH_WORD15))
@@ -523,8 +727,14 @@ void phase_debug_set_negative(int group, uint16_t neg_word)
     nphase_w[group] = neg_word;
 }
 
-/* V37KLEAN (FRESH_START C p.185 / L p.213): kill groups 3, 5, 6, and in
- * Luminary also group 1.                                               */
+/**********************************************************************
+ * V37KLEAN (FRESH_START C p.185 / L p.213): kill groups 3, 5, 6, and in
+ * Luminary also group 1.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
+ **********************************************************************/
 agc_status_t agc_phase_change_program_klean(void)
 {
     agc_inhint();
@@ -547,7 +757,14 @@ agc_status_t agc_phase_change_program_klean(void)
     return (AGC_STATUS_OK);
 }
 
-/* P00KLEAN: kill group 4 (Comanche also group 1), then V37KLEAN.       */
+/**********************************************************************
+ * P00KLEAN (FRESH_START_AND_RESTART.agc C p.185 / L p.213): kill group 4
+ * (Comanche also group 1), then V37KLEAN.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the V37KLEAN status; BAD_ARG on a failed postcondition
+ **********************************************************************/
 agc_status_t agc_phase_idle_klean(void)
 {
     agc_inhint();
@@ -568,13 +785,20 @@ agc_status_t agc_phase_idle_klean(void)
     return (agc_phase_change_program_klean());
 }
 
-/* MR.KLEAN: kill group 2, then P00KLEAN -- every group is inactive.    */
+/**********************************************************************
+ * MR.KLEAN (FRESH_START_AND_RESTART.agc C p.185 / L p.213): kill group 2,
+ * then P00KLEAN -- every group is inactive.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the P00KLEAN status; BAD_ARG on a failed postcondition
+ **********************************************************************/
 agc_status_t agc_phase_mr_klean(void)
 {
     agc_inhint();
     phase_kill(2);
     agc_relint();
-    agc_status_t st = agc_phase_idle_klean();
+    agc_status_t st = agc_phase_idle_klean(); /* P00KLEAN outcome */
 
     if (!AGC_ASSERT(phase_w[1] == 0U && phase_w[6] == 0U))
     {
@@ -584,12 +808,19 @@ agc_status_t agc_phase_mr_klean(void)
     return (st);
 }
 
-/* MMDSPLAY -> SETUPDSP (C p.1404 / L p.1294): NOVAC PRIO30 DSPMMJOB to
- * show MODREG in the PROG lights.                                      */
+/**********************************************************************
+ * MMDSPLAY -> SETUPDSP (C p.1404 / L p.1294): NOVAC PRIO30 DSPMMJOB to
+ * show MODREG in the PROG lights.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAILOUT (1202) from NOVAC; BAD_ARG
+ *          otherwise
+ **********************************************************************/
 agc_status_t fresh_mmdsplay(void)
 {
     agc_inhint();
-    agc_status_t st = agc_exec_novac(PH_PRIO30, AGC_JOB_DSPMMJB);
+    agc_status_t st = agc_exec_novac(PH_PRIO30, AGC_JOB_DSPMMJB); /* NOVAC DSPMMJOB outcome */
 
     agc_relint();
 
@@ -601,8 +832,15 @@ agc_status_t fresh_mmdsplay(void)
     return (st);
 }
 
-/* NEWMODEX / NEWMODEA (C p.1404 / L p.1294): store the major mode in
- * MODREG and display it.                                               */
+/**********************************************************************
+ * NEWMODEX / NEWMODEA (C p.1404 / L p.1294): store the major mode in
+ * MODREG and display it.
+ *
+ * ARGUMENTS:
+ *   mode -- major mode number (0..0177; EXEC_MODREG_NEG0 for -0)
+ *
+ * RETURNS: agc_status_t -- the MMDSPLAY status; BAD_ARG on a bad mode
+ **********************************************************************/
 agc_status_t agc_phase_newmode(agc_sp_t mode)
 {
     if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
@@ -615,7 +853,14 @@ agc_status_t agc_phase_newmode(agc_sp_t mode)
     return (fresh_mmdsplay());
 }
 
-/* CHECKMM (C p.1404 / L p.1294): does MODREG equal `mode`?             */
+/**********************************************************************
+ * CHECKMM (C p.1404 / L p.1294): does MODREG equal `mode`?
+ *
+ * ARGUMENTS:
+ *   mode -- major mode number (0..0177; EXEC_MODREG_NEG0 for -0)
+ *
+ * RETURNS: bool -- true when MODREG = mode
+ **********************************************************************/
 bool agc_phase_checkmm(agc_sp_t mode)
 {
     if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
@@ -623,7 +868,7 @@ bool agc_phase_checkmm(agc_sp_t mode)
         return (false);
     }
 
-    agc_sp_t mm = agc_erase_modreg();
+    agc_sp_t mm = agc_erase_modreg(); /* C(MODREG), B0 integer */
 
     if (!AGC_ASSERT(mm >= EXEC_MODREG_NEG0))
     {

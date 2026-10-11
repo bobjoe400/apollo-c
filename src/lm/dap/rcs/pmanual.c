@@ -32,8 +32,18 @@
 #define PM_1ANETP       2     /* 1/ANETP = BLOCKTOP +2                 */
 #define PM_DPWORD       16384 /* 2^14                                  */
 
-/* ZEROENBL (p.1434): save the Q,R hand-controller counts in SAVEHAND,
- * zero the three counters and enable them (channel 13 bits 8,9).         */
+/**********************************************************************
+ * ZEROENBL (p.1434): save the Q,R hand-controller counts in SAVEHAND,
+ * zero the three counters and enable them (channel 13 bits 8,9).
+ *
+ * FUNCTION NAME: lm_dap_zeroenbl
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_zeroenbl(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
@@ -58,9 +68,19 @@ agc_status_t lm_dap_zeroenbl(void)
     return (AGC_STATUS_OK);
 }
 
-/* STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
+/**********************************************************************
+ * STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
  * or rate command; auto uses PURGENCY when X-axis override is inhibited
- * (XOVINHIB, visibility phase), otherwise checks the stick (DETENTCK).   */
+ * (XOVINHIB, visibility phase), otherwise checks the stick (DETENTCK).
+ *
+ * FUNCTION NAME: lm_dap_pstate
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_pstate(void)
 {
     bool atthold = (agc_chan_read(031) & PM_CH31_ATTHOLD) == 0u;
@@ -134,9 +154,22 @@ agc_status_t lm_dap_pstate(void)
     return (lm_dap_detentck());
 }
 
-/* JUSTOUT -1 / JUSTOUT (pp.1433-1434): first manual pass. Rate command on
+/**********************************************************************
+ * JUSTOUT -1 / JUSTOUT (pp.1433-1434): first manual pass. Rate command on
  * (OURRCBIT), zero the DP attitude errors, the commanded rates and the
- * Q,R counters, clear PBIT/QRBIT, set the just-in bit, enable counters.  */
+ * Q,R counters, clear PBIT/QRBIT, set the just-in bit, enable counters.
+ *
+ * FUNCTION NAME: justout
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t justout(lm_dap_t *d)
 {
     d->perror = 0;
@@ -169,9 +202,22 @@ static agc_status_t justout(lm_dap_t *d)
     return (lm_dap_jetsoff());
 }
 
-/* RATEDONE (p.1433): manual command and damping finished in all axes.
+/**********************************************************************
+ * RATEDONE (p.1433): manual command and damping finished in all axes.
  * Rate command off; desired attitude = present (CDUXD only in auto,
- * X-axis override; all three via ZATTEROR in attitude hold).            */
+ * X-axis override; all three via ZATTEROR in attitude hold).
+ *
+ * FUNCTION NAME: ratedone
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t ratedone(lm_dap_t *d)
 {
     if (!AGC_ASSERT(d != 0))
@@ -201,9 +247,22 @@ static agc_status_t ratedone(lm_dap_t *d)
     return (lm_dap_purgency());
 }
 
-/* PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
+/**********************************************************************
+ * PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
  * direct rate (PBIT) while the rate error is outside the target deadband
- * and TCP has not run out, then fire against the rate error.            */
+ * and TCP has not run out, then fire against the rate error.
+ *
+ * FUNCTION NAME: pegi
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t pegi(lm_dap_t *d)
 {
     d->cduxd      = agc_erase_cdux();
@@ -262,11 +321,24 @@ static agc_status_t pegi(lm_dap_t *d)
     return (lm_dap_pjetslec_pair());
 }
 
-/* RATERROR (pp.1434-1435): linear/quadratic stick scaling of P-RHCCTR to
+/**********************************************************************
+ * RATERROR (pp.1434-1435): linear/quadratic stick scaling of P-RHCCTR to
  * the commanded rate PLAST (at 45 deg/s), EDOTP = OMEGAP - PLAST. A
  * command change beyond the breakout level starts direct rate (TCP = 4 s);
  * otherwise direct rate continues (PBIT) or pseudo-auto runs TJETLAW on
- * DXERROR.                                                               */
+ * DXERROR.
+ *
+ * FUNCTION NAME: raterror
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t raterror(lm_dap_t *d)
 {
     d->cduxd = agc_erase_cdux();
@@ -311,8 +383,18 @@ static agc_status_t raterror(lm_dap_t *d)
     return (lm_dap_purgency_law());
 }
 
-/* DETENTCK / RUTH / RATEDAMP / RHCMOVED (pp.1432-1434): the rate-command
- * mode logic driven by the RHC detent switch (channel 31 bit 15).        */
+/**********************************************************************
+ * DETENTCK / RUTH / RATEDAMP / RHCMOVED (pp.1432-1434): the rate-command
+ * mode logic driven by the RHC detent switch (channel 31 bit 15).
+ *
+ * FUNCTION NAME: lm_dap_detentck
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_detentck(void)
 {
     lm_dap_t *d = lm_dap_state();

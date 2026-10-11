@@ -64,6 +64,15 @@ static const agc_sp_t coeff[12] = {
  * any motion, positive rotation.                                          */
 static const uint16_t gimblbts[4] = {001400u, 001000u, 006000u, 004000u};
 
+/**********************************************************************
+ * AGC: none (helper) -- major word of MASS (1/ACCS reads it).
+ *
+ * FUNCTION NAME: mass_hi
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- MASS major word, scaled 2^16 kg
+ **********************************************************************/
 static agc_sp_t mass_hi(void)
 {
     agc_dp_t m = agc_guid_state()->lm.mass;
@@ -81,9 +90,21 @@ static agc_sp_t mass_hi(void)
     return ((agc_sp_t) (m / 16384)); /* major word of MASS          */
 }
 
-/* 1/ACCS entry .. MASSFIX (pp.1486-1487): LEMMASS from MASS, kept inside
+/**********************************************************************
+ * 1/ACCS entry .. MASSFIX (pp.1486-1487): LEMMASS from MASS, kept inside
  * the ascent / descent limits (which catches staging); a violated limit
- * also corrects MASS (low word zeroed). Sets -2JETLIM. Returns descent.  */
+ * also corrects MASS (low word zeroed). Sets -2JETLIM. Returns descent.
+ *
+ * FUNCTION NAME: lem_mass
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   docked    bool        I    CSMDOCKD: subtract CSMMASS from MASS
+ *
+ * RETURNS: bool -- true in descent (APSFLAG clear)
+ **********************************************************************/
 static bool lem_mass(lm_dap_t *d, bool docked)
 {
     agc_sp_t csm    = docked ? agc_erase_csmmass() : 0;
@@ -121,8 +142,22 @@ static bool lem_mass(lm_dap_t *d, bool docked)
     return (!ascent);
 }
 
-/* STCTR1 (p.1488): one row of the inertia fit; the DV remainder is left
- * in *rem (the AGC's L, read again by COMMEQS).                          */
+/**********************************************************************
+ * STCTR1 (p.1488): one row of the inertia fit; the DV remainder is left
+ * in *rem (the AGC's L, read again by COMMEQS).
+ *
+ * FUNCTION NAME: fit_row
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   k         int         I    row of INERCONA..C: 0 L,PVT-CG, 1-3 descent
+ *                              P,Q,R, 4-6 ascent
+ *   rem       agc_sp_t *  O    DV remainder (the AGC L register)
+ *
+ * RETURNS: agc_sp_t -- 1JACCx (scaled pi/4 rad/s^2) or L,PVT-CG
+ *          (scaled 8 ft)
+ **********************************************************************/
 static agc_sp_t fit_row(int k, agc_sp_t *rem)
 {
     if (!AGC_ASSERT(k >= 0 && k < 7) || !AGC_ASSERT(rem != NULL))
@@ -139,10 +174,22 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
     return (lm_dap_wrap((int32_t) q.hi + inerconb[k])); /* TS 1JACC */
 }
 
-/* COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
+/**********************************************************************
+ * COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
  * .42265, and the U,V resolution coefficients
  *   IR > IQ: COEFFR = .707(1 + .5 EPS), COEFFQ = -(1 - EPS) COEFFR
- *   IQ > IR: COEFFQ = -.707(1 + .5 EPS), COEFFR = (1 - EPS)(-COEFFQ).    */
+ *   IQ > IR: COEFFQ = -.707(1 + .5 EPS), COEFFR = (1 - EPS)(-COEFFQ).
+ *
+ * FUNCTION NAME: commeqs
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   rem       agc_sp_t    I    remainder left in L by the last fit row
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void commeqs(lm_dap_t *d, agc_sp_t rem)
 {
     lm_dp_pair_t diff = {lm_dap_sat((int32_t) d->jacc[1] - d->jacc[2]), rem};
@@ -178,8 +225,19 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
     }
 }
 
-/* JACCUV (p.1489): 1JACCU = 1JACCV = -COEFFQ 1JACCQ + COEFFR 1JACCR,
- * rescaled from pi/4 to pi/2.                                             */
+/**********************************************************************
+ * JACCUV (p.1489): 1JACCU = 1JACCV = -COEFFQ 1JACCQ + COEFFR 1JACCR,
+ * rescaled from pi/4 to pi/2.
+ *
+ * FUNCTION NAME: jaccuv
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void jaccuv(lm_dap_t *d)
 {
     agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);
@@ -199,10 +257,24 @@ static void jaccuv(lm_dap_t *d)
     }
 }
 
-/* SPSCONT .. DOCKTEST (pp.1490-1491): gimbal gains KQ, KRDAP = .3 ACCDOT,
+/**********************************************************************
+ * SPSCONT .. DOCKTEST (pp.1490-1491): gimbal gains KQ, KRDAP = .3 ACCDOT,
  * the signed jerk terms from the channel 12 gimbal drive bits, and the
  * GTS permission (TIMEGMBL when the DAP runs, GTS is usable and not in
- * control). The docked case then bypasses 1/ACCONT.                     */
+ * control). The docked case then bypasses 1/ACCONT.
+ *
+ * FUNCTION NAME: spscont
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   accdotq   agc_sp_t    I    ACCDOTQ, scaled pi/2^7 rad/s^3
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
 {
     d->accdotq = accdotq;
@@ -255,9 +327,22 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     return (st);
 }
 
-/* LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
+/**********************************************************************
+ * LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
  * L,PVT-CG 1JACCx / TORKJET1, i.e. engine thrust x moment arm divided by
- * the jet torque, times the jet acceleration.                            */
+ * the jet torque, times the jet acceleration.
+ *
+ * FUNCTION NAME: lresc
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t lresc(lm_dap_t *d)
 {
     agc_sp_t abdelv = agc_guid_state()->lm.abdelv;
@@ -280,8 +365,20 @@ static agc_status_t lresc(lm_dap_t *d)
     return (spscont(d, q));
 }
 
-/* SPSLOOP1/2 (pp.1494-1495): the docked quadratic fit in X = CSMMASS,
- * Y = LEMMASS starting at COEFF row `base` (0 inertia, 6 CG).          */
+/**********************************************************************
+ * SPSLOOP1/2 (pp.1494-1495): the docked quadratic fit in X = CSMMASS,
+ * Y = LEMMASS starting at COEFF row `base` (0 inertia, 6 CG).
+ *
+ * FUNCTION NAME: docked_fit
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  --------------------
+ *   base      int   I    first COEFF row: 0 inertia, 6 CG
+ *
+ * RETURNS: agc_sp_t -- inertia (scaled 2^38 kg cm^2) or CG x
+ *          DELDOT (scaled 4 pi rad cm/s)
+ **********************************************************************/
 static agc_sp_t docked_fit(int base)
 {
     if (!AGC_ASSERT(base == 0 || base == 6))
@@ -311,10 +408,23 @@ static agc_sp_t docked_fit(int base)
     return (m);
 }
 
-/* DOCKED (pp.1494-1496): CSM-docked jet accelerations. Inertia at
+/**********************************************************************
+ * DOCKED (pp.1494-1496): CSM-docked jet accelerations. Inertia at
  * 2^38 kg cm^2, CG x DELDOT at 4 pi rad-cm/s; 1JACC = 1JACCCON/MASS;
  * 1JACCQ = 1JACCR = TORQCONS / inertia; U,V axes made orthogonal; the
- * inverse net accelerations set to POSMAX (1.4 deg/s^2).                 */
+ * inverse net accelerations set to POSMAX (1.4 deg/s^2).
+ *
+ * FUNCTION NAME: docked
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t docked(lm_dap_t *d)
 {
     /* The inertia pass ends with DIM COEFCTR taking 1 to -0 (ones'
@@ -356,8 +466,22 @@ static agc_status_t docked(lm_dap_t *d)
     return (spscont(d, d->accdotr)); /* TCF SPSCONT    */
 }
 
-/* F(MASS) .. COMMEQS for the LM alone (pp.1487-1489): the jet
- * accelerations, then (descent) L,PVT-CG and LRESC, or (ascent) GTS off. */
+/**********************************************************************
+ * F(MASS) .. COMMEQS for the LM alone (pp.1487-1489): the jet
+ * accelerations, then (descent) L,PVT-CG and LRESC, or (ascent) GTS off.
+ *
+ * FUNCTION NAME: lm_alone
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   descent   bool        I    true for the descent coefficient set
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t lm_alone(lm_dap_t *d, bool descent)
 {
     agc_sp_t rem  = 0;
@@ -402,7 +526,17 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
     return (lresc(d));
 }
 
-/* 1/ACCS (pp.1486-1491), called by BANKCALL or from the NOVAC jobs.      */
+/**********************************************************************
+ * 1/ACCS (pp.1486-1491), called by BANKCALL or from the NOVAC jobs.
+ *
+ * FUNCTION NAME: agc_lm_dap_jet_accel_update
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_jet_accel_update(void)
 {
     lm_dap_t *d    = lm_dap_state();
@@ -433,7 +567,20 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
     return (st);
 }
 
-/* 1/ACCJOB (p.1486): NOVAC job form of 1/ACCS (CALLACCS, RCSMONIT).      */
+/**********************************************************************
+ * 1/ACCJOB (p.1486): NOVAC job form of 1/ACCS (CALLACCS, RCSMONIT).
+ *
+ * FUNCTION NAME: agc_job_jet_accel_update
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  --------------------
+ *   ctx       agc_job_ctx_t *  I    job context from the executive
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -449,9 +596,22 @@ agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
     return (agc_lm_dap_jet_accel_update()); /* then ENDOFJOB  */
 }
 
-/* 1/ACCSET (p.1486): entry from fresh start / restart (DAPIDLER): null
+/**********************************************************************
+ * 1/ACCSET (p.1486): entry from fresh start / restart (DAPIDLER): null
  * the offset estimates for 1/ACCS and the downlist, then 1/ACCJOB. Only
- * the major words of AOSQ, AOSR are zeroed (TS AOSQ, TS AOSR).          */
+ * the major words of AOSQ, AOSR are zeroed (TS AOSQ, TS AOSR).
+ *
+ * FUNCTION NAME: agc_job_jet_accel_reset
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  --------------------
+ *   ctx       agc_job_ctx_t *  I    job context from the executive
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -474,7 +634,17 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
     return (agc_lm_dap_jet_accel_update());
 }
 
-/* RCSMONIT / CALLACCS helper: set up 1/ACCJOB (1/ACCFIX, p.192).         */
+/**********************************************************************
+ * RCSMONIT / CALLACCS helper: set up 1/ACCJOB (1/ACCFIX, p.192).
+ *
+ * FUNCTION NAME: lm_dap_accfix
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_accfix(void)
 {
     agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE);

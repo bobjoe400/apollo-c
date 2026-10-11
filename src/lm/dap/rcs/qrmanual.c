@@ -20,8 +20,18 @@
 #define QM_LINRAT 46              /* LINRAT DEC 46                      */
 #define QM_40CYCL ((agc_sp_t) 40) /* 40CYCL OCT 50: 4 s                 */
 
-/* Minimum impulse (pp.1444-1446): one 14 ms U,V pulse pair per RHC
- * deflection (channel 31 bits 1,2 = +-pitch Q, 5,6 = +-roll R).          */
+/**********************************************************************
+ * Minimum impulse (pp.1444-1446): one 14 ms U,V pulse pair per RHC
+ * deflection (channel 31 bits 1,2 = +-pitch Q, 5,6 = +-roll R).
+ *
+ * FUNCTION NAME: lm_dap_qrminimp
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_qrminimp(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -80,8 +90,20 @@ agc_status_t lm_dap_qrminimp(void)
     return (lm_dap_uvloop(LM_UV_MINRTN, 1));
 }
 
-/* Stick scaling (RHCACTIV, p.1446): commanded rate at 45 deg/s from
- * counts c: STIKSENS x low word of ((4 (|c| - 1) + LINRAT) c).          */
+/**********************************************************************
+ * Stick scaling (RHCACTIV, p.1446): commanded rate at 45 deg/s from
+ * counts c: STIKSENS x low word of ((4 (|c| - 1) + LINRAT) c).
+ *
+ * FUNCTION NAME: stick_rate
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   c         agc_sp_t  I    hand-controller counts
+ *   stiksens  agc_sp_t  I    STIKSENS, quadratic sensitivity, scaled 1
+ *
+ * RETURNS: agc_sp_t -- commanded rate, scaled 45 deg/s
+ **********************************************************************/
 static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 {
     if (!AGC_ASSERT(c >= LM_NEGMAX && c <= LM_POSMAX))
@@ -101,7 +123,20 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
     return (r);
 }
 
-/* Breakout test (ENTERQR): |change| - 1 + (-RATEDB) > 0.               */
+/**********************************************************************
+ * Breakout test (ENTERQR): |change| - 1 + (-RATEDB) > 0.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: beyond
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   x         agc_sp_t  I    command or rate change, scaled 45 deg/s
+ *   negdb     agc_sp_t  I    -RATEDB (TARGETDB), scaled 45 deg/s, <= 0
+ *
+ * RETURNS: bool -- true beyond the breakout level
+ **********************************************************************/
 static bool beyond(agc_sp_t x, agc_sp_t negdb)
 {
     if (!AGC_ASSERT(negdb <= 0))
@@ -117,10 +152,23 @@ static bool beyond(agc_sp_t x, agc_sp_t negdb)
     return ((int32_t) lm_dap_ccs_dim(x) + negdb > 0);
 }
 
-/* ENTERUV / VDB / QRTIME / TOPSEUDO (pp.1448-1449): direct rate. Zero the
+/**********************************************************************
+ * ENTERUV / VDB / QRTIME / TOPSEUDO (pp.1448-1449): direct rate. Zero the
  * attitude errors; an axis already inside the target deadband gets no
  * rate command; stay in direct rate (QRBIT) while TCQR runs, unless both
- * are inside (fire once, then pseudo-auto). Then the BACKHAND loop.    */
+ * are inside (fire once, then pseudo-auto). Then the BACKHAND loop.
+ *
+ * FUNCTION NAME: enteruv
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t enteruv(lm_dap_t *d)
 {
     agc_inhint();
@@ -165,10 +213,23 @@ static agc_status_t enteruv(lm_dap_t *d)
     return (lm_dap_uvloop(LM_UV_BACKHAND, 1));
 }
 
-/* RHCACTIV / ENTERQR (pp.1446-1447): commanded Q,R rates from SAVEHAND,
+/**********************************************************************
+ * RHCACTIV / ENTERQR (pp.1446-1447): commanded Q,R rates from SAVEHAND,
  * rate differences into U,V; a command change beyond the breakout level
  * starts direct rate (TCQR = 4 s); otherwise direct rate continues
- * (QRBIT) or pseudo-auto (STILLRCS) runs.                               */
+ * (QRBIT) or pseudo-auto (STILLRCS) runs.
+ *
+ * FUNCTION NAME: rhcactiv
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t rhcactiv(lm_dap_t *d)
 {
     agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens);
@@ -200,9 +261,19 @@ static agc_status_t rhcactiv(lm_dap_t *d)
     return (lm_dap_stillrcs());
 }
 
-/* CHEKSTIK / DAMPING (p.1446): rate command. Not in GTS while in
+/**********************************************************************
+ * CHEKSTIK / DAMPING (p.1446): rate command. Not in GTS while in
  * attitude hold (COTROLER = -1: RCS next pass; 1/ACCS does the nulling
- * drives). In detent after manual control: damp to zero command rates. */
+ * drives). In detent after manual control: damp to zero command rates.
+ *
+ * FUNCTION NAME: lm_dap_chekstik
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_chekstik(void)
 {
     lm_dap_t *d = lm_dap_state();

@@ -51,6 +51,64 @@ LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
 * [x] renames: agc_incorp1 -> agc_incorp_state_deviation,
       agc_incorp2_wupdate -> agc_incorp_update_w, agc_incorp2_state ->
       agc_incorp_update_state (callers updated; NAMING.md rows added).
-* [ ] pad-load accessor unification
-* [ ] fidelity pass per file
-* [ ] style debt to zero
+* [x] pad-load accessor unification: TEPHEM and RLS have one store (core
+      agc_erase_tephem/rls); agc_navaux_set_padload writes them there and
+      agc_navaux_get_padload reads them back, so agc_lsposition and the
+      pad-taking functions agree. AZO, AXO, -AYO, 504LM stay module-static
+      in planetary.c (no core accessors; request below). Stale comments
+      fixed (auxiliary.h pad-load block, agc_lsposition).
+* [x] fidelity pass: latlong, planetary, free_fall, measurement (INCORP1;
+      INCORP2 oracle bit-exact), ephemerides CM+LM, star_tables (rope-
+      verified by nav-aux). Findings table: TODO write below.
+* [x] oracle tolerances tightened in tests/oracle/nav_aux.c: LM LSPOS
+      8 -> 2, TFF 16 -> 12, TFFX 256 -> 32 (484/0). No KNOWN entries exist
+      for this lane (F2-F4 were tolerances).
+* [ ] style debt: TODO, ~600 check_style findings in lane files (prologs,
+      decl comments, scale comments, long-block comments); none started.
+* [x] note: Findings table, Requests, Lessons (below).
+
+State of files: all lane files and the five renamed callers
+(src/lm/navigation/measurement_update.c, src/csm/navigation/{landmark_
+navigation,tracking_data,cislunar_navigation}.c, src/programs/navigation/
+common.c) compile with -Werror; test_navaux 143/0, oracle_nav_aux 484/0
+(private build: full `make` is blocked by other lanes' in-progress files).
+No file is mid-edit.
+
+## Findings
+
+| # | where | AGC | finding | status |
+|---|---|---|---|---|
+| 1 | planetary.c NEWANGLE | NEWANGLE p.1248 | TP product rounded after SL; AGC truncates (DAD on top words) | fixed, 40/40 bit-exact |
+| 2 | planetary.c MOONMX mul_half | DMP SL1R | rounded before the shift | fixed (148 -> 45 of 270 off) |
+| 3 | planetary.c MOONMX (F2) | NEWANGLE -> COS | NODI/F leave NEWANGLE as sign-disagreeing words; SIN/COS of them differ 1 LSB from the joined value; <= 4 LSB in M, -> LAT/LONG moon 23/202 LSB | explained, accepted (needs word-level MPAC in core) |
+| 4 | latlong.c GETERAD, LAT-LONG, ARCTAN | DSQ SL1, DSQ/DAD/SQRT, DMP SL1R | DSQ TP and SL1R order lost MPAC+2 | fixed (no observed change in the 8 cases) |
+| 5 | latlong.c ARCTAN -> ASIN | SR1 ASIN / ACOSST2 | ARCSIN's SQRTSUB takes the stale, un-complemented MPAC+2 left by SR1: earth LAT 1 LSB | explained; needs TP-input ASIN in core |
+| 6 | free_fall.c (F3) | TFFCONIC TFFRP/RA CALCTFF TFFEL1 | DMPR used where the AGC DMPs into a TP shift / DP truncation; DP shifts where the AGC shifts the TP | fixed: ALFA RPER RAPO TFF Q1 exact; TFFX 144 -> 26 |
+| 7 | free_fall.c TFFCONIC | DAD / ABS SQRT | SQRT of the sign-disagreeing TP DAD leaves: TFFRTALF <= 3, TFF1/ALF <= 11 LSB | explained, accepted |
+| 8 | ephemerides.c LM LSPOS (F4) | POSITB/POSITD | TP rounded after SL; DMP* rounded | fixed: t0/t1 exact, t2 <= 2 LSB (class 3) |
+| 9 | ephemerides.c CM RES | PUSH DMP OMEGAES | angle rounded, AGC truncates | fixed (oracle was already exact) |
+| 10 | measurement.c INCORP1 | VSQ RTB TPMODE, INCOR1C | own exact VSQ (deviation) and DMPR/DP SQRT | fixed with agc_vec_sq_tp, TP SQRT/shift |
+| 11 | measurement.c | INCORP1/INCORP2 | digit-suffixed names | renamed (incorp_state_deviation, incorp_update_w, incorp_update_state) |
+
+Open questions from docs/modules/nav-aux.md: VGAMCALC / TFF/TRIG belong
+to guid-entry (P61-P67.agc) -- unchanged; the pad-load duplication is
+resolved (one TEPHEM/RLS store).
+
+## Requests (core-numeric)
+
+* TP-input ASIN/ACOS (agc_tp_asin/acos): ARCSIN/ARCCOS feed the stale
+  MPAC+2 into SQRTSUB (finding 5).
+* A word-level MPAC (sign-disagreeing pairs) through DAD -> SIN/COS/SQRT
+  would make findings 3, 7 and the LM t2 residue exact; today agc_dp_t /
+  agc_tp_t are values and lose the split.
+* Shared accessors for AZO, AXO, -AYO, 504LM (and the CM ephemeris
+  uplink TIMEMO/VECOEM/RESO/VESO/OMEGAES) to retire the module statics.
+
+## Lessons
+
+* Before trusting a "<= n LSB" tolerance, probe the intermediates: the
+  agc_probe "stop <basic label>" trick (stop DVXSC / ARCSIN inside an
+  interpretive routine) dumps the push list mid-routine.
+* Interpretive DMP never rounds and DAD/DSU touch only the top two
+  words; most residues were DMPR/DP-shift substitutions for TP chains.
+* The remaining residues are ones'-complement word splits, not logic.

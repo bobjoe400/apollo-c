@@ -25,6 +25,20 @@
 #include "agc/lm/dap.h"
 #include "oracle_txt.h"
 
+/**********************************************************************
+ * AGC: none -- assertion hook: print and count.
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   file      const char *  I    source file of the failed assertion
+ *   line      int           I    source line
+ *   expr      const char *  I    text of the failed expression
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
@@ -35,6 +49,15 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 #define DAPBOOLS_WORD 13
 #define FLGWRD10      10
 
+/**********************************************************************
+ * AGC: none -- C state as the AGC runs start (zeroed erasable).
+ *
+ * FUNCTION NAME: fresh
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void fresh(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
@@ -47,12 +70,41 @@ static void fresh(void)
     (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
 }
 
+/**********************************************************************
+ * AGC: none -- compare one SP output.
+ *
+ * FUNCTION NAME: cmp_sp
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *   what      const char *  I    name printed on a mismatch
+ *   got       long          I    value from the C
+ *   n         const char *  I    output name in the case file
+ *   tol       long          I    tolerance, LSB of the AGC word
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void cmp_sp(const char *t, const char *what, long got, const char *n,
                    long tol)
 {
     (void) oracle_cmp(t, what, got, oracle_out_sp(t, n), tol);
 }
 
+/**********************************************************************
+ * AGC: none -- one 1/ACCS + 1/ACCONT case.
+ *
+ * FUNCTION NAME: accs
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *   tol       long          I    tolerance, LSB of the AGC word
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void accs(const char *t, long tol)
 {
     lm_dap_t *d = lm_dap_state();
@@ -107,6 +159,19 @@ static void accs(const char *t, long tol)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- one TJETLAW case.
+ *
+ * FUNCTION NAME: tjetlaw
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *   tol       long          I    tolerance, LSB of the AGC word
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void tjetlaw(const char *t, long tol)
 {
     lm_dap_t *d = lm_dap_state();
@@ -134,7 +199,19 @@ static void tjetlaw(const char *t, long tol)
     cmp_sp(t, "FIREFCT", d->firefct, "FIREFCT", tol);
 }
 
-/* GPMATRIX from CDUX, CDUZ (the run's set CDUX=x,y,z words 0 and 2). */
+/**********************************************************************
+ * GPMATRIX from CDUX, CDUZ (the run's set CDUX=x,y,z words 0 and 2).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: gimbal_matrix
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gimbal_matrix(const char *t)
 {
     agc_erase_set_cdux(oracle_in_raw(t, "CDUX", 0));
@@ -142,6 +219,18 @@ static void gimbal_matrix(const char *t)
     (void) agc_t4_gimbal_matrix();
 }
 
+/**********************************************************************
+ * AGC: none -- one GPMATRIX case.
+ *
+ * FUNCTION NAME: gpm
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gpm(const char *t)
 {
     fresh();
@@ -155,6 +244,20 @@ static void gpm(const char *t)
     cmp_sp(t, "COSMG", agc_erase_cosmg(), "COSMG", 0);
 }
 
+/**********************************************************************
+ * AGC: none -- one RATELOOP / BACKP / offset estimator case.
+ *
+ * FUNCTION NAME: kalman
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *   gp        const char *  I    GPMATRIX case whose CDUs give M11..M32
+ *   tol       long          I    tolerance, LSB of the AGC word
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void kalman(const char *t, const char *gp, long tol)
 {
     lm_dap_t *d = lm_dap_state();
@@ -261,7 +364,20 @@ static void kalman(const char *t, const char *gp, long tol)
     }
 }
 
-/* GTS / TIMEGMBL inputs common to both entries.                          */
+/**********************************************************************
+ * GTS / TIMEGMBL inputs common to both entries.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: gts_inputs
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *   d         lm_dap_t *    I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_inputs(const char *t, lm_dap_t *d)
 {
     d->aosq     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
@@ -277,6 +393,19 @@ static void gts_inputs(const char *t, lm_dap_t *d)
     d->rcsflags = oracle_in_raw(t, "RCSFLAGS", 0);
 }
 
+/**********************************************************************
+ * AGC: none -- GTS / TIMEGMBL outputs common to both entries.
+ *
+ * FUNCTION NAME: gts_outputs
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   t         const char *      I    oracle case tag
+ *   d         const lm_dap_t *  I    DAP erasables after the run
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_outputs(const char *t, const lm_dap_t *d)
 {
     cmp_sp(t, "NEGUQ", d->neguq, "NEGUQ", 0);
@@ -290,7 +419,19 @@ static void gts_outputs(const char *t, const lm_dap_t *d)
     cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);
 }
 
-/* GTS (trim gimbal control law): AOS, rates, K, errors, old drives.      */
+/**********************************************************************
+ * GTS (trim gimbal control law): AOS, rates, K, errors, old drives.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: gts
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts(const char *t)
 {
     lm_dap_t *d = lm_dap_state();
@@ -312,7 +453,19 @@ static void gts(const char *t)
     cmp_sp(t, "INGTS", d->ingts, "INGTS", 0);
 }
 
-/* TIMEGMBL (timed nulling drive) and its ACDT+C12.                       */
+/**********************************************************************
+ * TIMEGMBL (timed nulling drive) and its ACDT+C12.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: timegmbl
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   t         const char *  I    oracle case tag
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void timegmbl(const char *t)
 {
     lm_dap_t *d = lm_dap_state();
@@ -350,6 +503,15 @@ static const char *const tjs[] = {
     "tjs_v_hugeerr",
 };
 
+/**********************************************************************
+ * AGC: none -- run the tests.
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passed, else 1
+ **********************************************************************/
 int main(void)
 {
     if (!oracle_load("dap_lm"))

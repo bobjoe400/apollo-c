@@ -15,18 +15,31 @@ from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
 
 ## Progress
 
+State at checkpoint: every touched file compiles and the lane tests pass
+in the scratch tree (SCRATCH/review-nav-integ/tree = 3f9ede8 + lane files
++ current src/nav/conic; script SCRATCH/review-nav-integ/sync.sh copies
+the lane files over, builds, runs both tests): unit 158 checks 0 fail,
+oracle 439 checks 0 fail.  No file is mid-edit.
+
 | item | status |
 |---|---|
 | baseline (unit 158 checks, oracle 247, 0 known) | DONE |
-| review items: oracle findings / TEPHEM / X2-after-ORIGCHNG / state machine vs sleep | DONE (N2-N5, Q1-Q4) |
-| constants vs assembled rope (both ropes) | DONE (N1) |
-| fidelity: orbital_integration.c | DONE (oracle: one/multi step earth+moon, third bodies, sphere entry, W, RECTIFY, long run; constants) |
-| fidelity: init.c | DONE (entries, TESTLOOP/NORFINAL/DT2COMP/POOHCHK, A-PCHK, RECTOUT, INTEXIT, RVCON, INTSTALL/INTWAKE, USEPIOS) |
-| fidelity: jobs.c | DONE (STATEINT/STATINT1/NOINT/STATEUP both ropes, AVETOMID CM+LM, MIDTOAV1/2, CKMID2/MID2/TIMEINC/NOTIME, INTWAKEU) -- no discrepancy |
+| constants vs assembled rope (both ropes) | DONE (N1 fixed) |
+| review items Q1-Q4 (oracle / TEPHEM / X2 / state machine) | DONE |
+| X2 after A-PCHK origin change | DONE (N2: include/agc/nav/integration.h AGC_INTEG_X2_ORIGEX, init.c a_pchk/atop, svdwn.c) |
+| new oracle cases (spec+txt regenerated, tests/oracle/nav_integ.c) | DONE: origchng_timestep/_apchk, integ_earth_long, third_earth_1step/_multi, third_moon_1step/_multi, third_sphere_entry, wmatrix_6x6 |
+| AGC_INTEG_MAX_PASSES comment | DONE (header) |
+| fidelity: orbital_integration.c | DONE (oracle-verified) |
+| fidelity: init.c | DONE, no further discrepancy |
+| fidelity: jobs.c | DONE (both ropes), no discrepancy |
 | fidelity: svdwn.c, setitctr_lm.c, flags_csm.c | DONE |
-| naming / clarity | TODO |
-| style debt (827 findings at start) | TODO |
-| rule-5 density (orbital_integration.c 1.91) | TODO |
+| N4 KEPPREP 1-LSB (nav-conic code) | reported, not fixed (request) |
+| naming: lane-internal digit-suffixed names | DONE: fbr3->advance_conic_half_step, quality2/3->lunar_j22_term/lunar_c31_term, dow1->body_gravity_gradient, difeq0/01/2->nystrom_start/stage/end, entmid1->midtoav_integrate, integrv2->load_permanent_state, agc_integ_integrv1->agc_integ_integrate_permanent, agc_integ_ckmid2->agc_integ_midtoav_check, statint1_grab/tdec1->state_integration_*, stateup_grab_lm->stateup_lm_state |
+| naming: public names (agc_integ_midtoav1/2, agc_integ_intwake0, agc_job_statint1*, AGC_JOB_STATINT1*) | TODO: request only (callers / registry in other lanes) |
+| style debt (860 findings) | TODO: prolog tool SCRATCH/review-nav-integ/pro.py written (draft/apply); draft specs *.spec generated, not yet edited/applied |
+| rule-5 density orbital_integration.c 1.91 | TODO |
+| nav-integ.md deviation list update (X2 deviation gone) | DONE |
+| make / make test / make check in the real tree | TODO (HEAD broken by other lanes; verify at end) |
 
 ## Findings
 

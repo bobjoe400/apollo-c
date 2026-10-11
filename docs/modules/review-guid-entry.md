@@ -14,23 +14,51 @@ from a case; rt.sh builds a test against fresh lane objects + a private
 snapshot library (mylib.sh) because the shared tree is mid-edit.
 
 ## Progress
-* [x] F14 cause 1: DSU on a TP MPAC (V2T100 THETA1, XT1LIM BETA10) keeps
-  MPAC+2 (rte_tp_dsu, velocity.c). leo X(T2) 38927 -> 221 LSB.
-* [x] F14 cause 2: DVCALC SR* 6,2 truncates into MPAC+2 and SQRT reads the TP
-  MPAC (agc_tp_sqrt). First DVCALC now bit-exact (DV 12541 36655), GAMDV
-  X(T1) path identical to the AGC for rte_leo pass 1. KNOWN 58 -> 45.
-* [x] F14 remainder traced, outside the lane (see Requests): INVC115
-  sign-disagreeing N (core), GAMDV X(T1) sign-disagreeing after DAD (core),
-  TIMERAD V(T2) (nav-conic). With the AGC's UH/ injected, rte_transearth
-  pass 1 GAMDV (64 steps) is word-exact. RCON PCON DV R(T2)/ T12 flipped to
-  hard checks (tests/oracle/return_to_earth.c).
-* [ ] fidelity pass p37 files
-* [ ] fidelity pass entry files, five dispatchers vs "* START" sections
-* [x] RTARG push-list: probed (scratch p37w.spec). RTENCK3D leaves RATT at
-  0D (PDDL), so the first P37W pops R(T2)/ (BMN path) or TIMETHET's R (PL 6);
-  a V16N45 recycle pops the 6 words below the VAC area (garbage). C keeps
-  RTARG: deviation stands, comment fixed.
-* [x] AUGEKUGL: probed 30 (V, gamma) pairs 20-40 kfps: band selection
-  identical, TE exact (1 LSB once), PHI within 62 LSB (0.005 NM) from the
-  DSU-then-DMP* sign-disagreeing words (core class, as F9).
-* [ ] naming / style debt / check
+(state at checkpoint: every touched file compiles with -Werror; oracle
+return_to_earth 0 failures / 45 KNOWN (was 58), oracle entry 521/0,
+tests/csm/entry 23/0, tests/csm/return_to_earth 21/0. Shared `make` is
+red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
+* DONE F14 cause 1: DSU on a TP MPAC keeps MPAC+2 (rte_tp_dsu; now
+  rte_tp_dsu/rte_tp_bdsu exported in return_to_earth/internal.h, velocity.c).
+* DONE F14 cause 2: DVCALC SR* 6,2 into MPAC+2, SQRT on the TP MPAC
+  (velocity.c rte_dv_calc). First DVCALC word-exact; GAMDV path exact.
+* DONE F14 remainder traced to other lanes (Requests): INVC115 VXV on
+  disagreeing words (core), GAMDV X(T1) disagreeing words (core), TIMERAD
+  V(T2) (nav-conic). RCON PCON DV R(T2)/ T12 flipped to hard checks.
+* DONE RTARG push-list (probe): deviation kept, comment fixed (program.c).
+* DONE AUGEKUGL (probe, 30 pairs): bands identical, PHI <= 62 LSB (core class).
+* DONE PREC150/155 (probe, 40 cases): BDSU keeps MPAC+2, SL2 SQRT DMP BDSU
+  NORM on TP (precision.c prec_radius_ratio): mismatches 17 -> 4 (rest =
+  SQRT of disagreeing TP words, core class). PREC162/160 exact.
+* DONE PREC205-207 (probe, 40 cases): exact except 1 LSB DRCON (DSU words).
+* DONE precision constants vs rope; entry lexicon/DAP constants vs rope
+  (54 auto + 13 by hand, 0 mismatches).
+* DONE five dispatchers vs "* START" sections: GOTOUPSY moved from the
+  HUNT TEST dispatcher to UP CONTROL (reentry.c). Others match.
+* DONE GETLEWD open question: label typo in the transcription only; the
+  assembled rope defines GETLEWD at 25,2677. CH1 = .64 confirmed (24365 30244).
+* DONE dap.c bugs fixed: (a) READGYM1 MSU is modular -> entry_angle_wrap
+  (was saturating: gimbal through 180 deg); (b) EXDAP2 ROLLHOLD MSU same;
+  (c) phase plane SR: CA SR re-edits SR, so SR = -VT/360 (was -VT/180)
+  for the DZ2 test; (d) CM/FDAI ADS PAXERR1 "OVFL OK" wraps by 1.0 (new
+  entry_sp_store_ovf in dap.c, declared in include/agc/csm/entry.h).
+* PARTIAL dap.c fidelity: READGYMB, DOBRATE?, BODYRATE, ATTRATES, EXDAP*,
+  BIASEDZ/3DDZ/4D/SDZ/2D/SDZ, CM/RCS..COMPAT, WHICHALF..TIMSCAL, TIMETST,
+  JETCALL*, DZCALL, CM/FDAI(R) confirmed. TODO: CM/DUMPR/CMTMFILE index,
+  CM/DAPON, CM/DAPIC, SETJTAG sign; add a tests/csm test for gimbal wrap.
+* TODO programs.c (P61-P67, S61.x) and earth_orbit_insertion.c (P11) read.
+  NOTE another agent has uncommitted edits in programs.c / entry.h
+  (agc_entry_tff_trig, agc_entry_vgamcalc exports) - edit around them.
+* TODO naming / style debt (1599 check_style findings in lane files) /
+  rule-5 density / make check; findings table, Requests, Lessons below.
+
+## Requests (to other lanes)
+* nav-conic: TIMERAD V(T2)/ differs by 1-3 high-word LSB (R(T2)/ exact).
+  Reproducer (rte_leo pass 1): RVEC (3000000, 1600000, 0) B29, VVEC
+  (-73597833, 136552611, 10197486) B7, RDESIRED 3247500, SGNRDOT -.5,
+  earth, RVSW clear -> AGC V (-160229376, -30080768, 3212032), R (-398528,
+  3216800, 198912), T 106847; C V (-160229120, -30081536, 3212032).
+* core-numeric: a word-level MPAC (disagreeing signs) through VXV, DMP,
+  SQRT is what is left of F14/AUGEKUGL/PREC155 (same class as F9).
+* guid-powered: export AUGEKUGL (external_delta_v.c has a static copy);
+  then drop the local copy in return_to_earth/conic.c.

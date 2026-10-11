@@ -11,7 +11,8 @@
  *
  * Tolerances are in LSB of the AGC word (0 = bit exact).  RRANGLES and
  * SXTANG convert the words ASIN/ACOS/ARCTRIG leave (word_forms.c), which
- * 12 random cases each confirm; KNOWN PA-W2: SXTNB (SIN's MPAC +2).
+ * 12 random cases each confirm; KNOWN PA-W2: SXTNB (SIN's MPAC +2),
+ * PA-W3: LM S-band pitch (ABVAL's MPAC +2 reaches ASIN).
  */
 #include <stdio.h>
 
@@ -132,8 +133,12 @@ static void sband_lm(const char *t, long tol)
 
     ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &ref, ue), 1);
     (void) agc_sband_lm_angles(&ip, ue, &pitch, &yaw);
+    /* ABVAL leaves MPAC +2 (e.g. 20000) and ASIN's SQRTSUB sees it; the
+     * C ASIN takes a DP (review-prog-align.md W3): KNOWN at 0, hard at 1. */
+    oracle_cmp_known(t, "PITCHANG", (long) pitch,
+                     (long) oracle_out_dp(t, "PITCHANG"), tol, "PA-W3");
     (void) oracle_cmp(t, "PITCHANG", (long) pitch,
-                      (long) oracle_out_dp(t, "PITCHANG"), tol);
+                      (long) oracle_out_dp(t, "PITCHANG"), tol + 1);
     (void) oracle_cmp(t, "YAWANG", (long) yaw,
                       (long) oracle_out_dp(t, "YAWANG"), tol);
 }

@@ -37,7 +37,10 @@ the same protocol.
 - DONE sim/scenarios/lights_test_{csm,lm}.txt (b), clock_{csm,lm}.txt (c; client `clockref`, `CLOCK now`); all pass, also against yaAGC
 - DONE src/sim/pad.c (`--pad`: refsmmat, flagword, sv csm|lm), client `pad` lines
 - DONE sim/scenarios/p52_realign_csm.txt (d): option 3, PICAPAR picks stars 8 and 35, sextant CDUs driven to the catalogue LOS, N05 = 0.00 deg, N93 within 0.01 deg, R51K ENTER -> V37 flash (GOP00FIX, same as yaAGC)
-- NEXT scenario e (P30 + P40), then f (P63, decide), then GUI re-check
+- PARTIAL scenario e (P30 + P40): P30 explored in scratch (sim/e1.txt), no file in sim/scenarios yet. P30 works through V06N33 (TIG load), V06N81 (DV load), V06N42 (HAPO/HPER right; R3 VGDISP shows 0, DELVSIN = 0 in S30.1 -- investigating, maybe a flight bug), V16N45 blank (B4, xexpect). Left: write sim/scenarios/p30_p40_csm.txt; P40 needs a client feed of PIPA counts gated on the engine-on bit (ch 11 bit 13) -- not started
+- TODO scenario f (P63): decide run vs. documented skip (no radar/PIPA physics)
+- TODO GUI re-check of yaDSKY2 with the current build (windows closed after), final note Lessons, MODULE_STATUS row
+- State: src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
 Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.

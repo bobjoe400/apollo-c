@@ -27,7 +27,17 @@ static const uint16_t fail5[RM_NBITS] = {000040u, 000020u, 000100u, 000200u,
 static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u,
                                          000001u, 000002u, 000040u, 000100u};
 
-/* RCSMON (pp.191-192). Called from T4RUPT (RCSMONIT), exits by RESUME.   */
+/**********************************************************************
+ * RCSMON (pp.191-192). Called from T4RUPT (RCSMONIT), exits by RESUME.
+ *
+ * FUNCTION NAME: agc_lm_dap_rcsmon
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_rcsmon(void)
 {
     lm_dap_t *d      = lm_dap_state();

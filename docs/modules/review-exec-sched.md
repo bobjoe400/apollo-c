@@ -15,12 +15,29 @@ restart priority; ZOOM/P40ZOOMA group-3 question.
 - DONE fidelity: phase_table.c (R2 comment)
 - DONE fidelity: restarts.c, restart_tables.c (all entries of both ropes vs source; 600SECS and LM 1.2SPOT words read from the rope; R3 comments)
 - DONE fidelity: alarm.c
-- TODO fidelity: interrupts.c, erasable.c
+- DONE fidelity: interrupts.c, erasable.c (T5RUPT .5SEC test, T6LOC/T6ADR, lead-ins match; nouns.c and dispatch.c are glue, no AGC routine)
 - DONE fidelity: fresh_start.c (R4; SWINIT, IM30INIF/IM30INIR/IM33INIT/IFAILINH/9,6,4 read from both ropes)
 - DONE fidelity: change_program/{v37,csm,lm,idle}.c (R5-R9; PREMM1/FCADRMM1/DNLADMM1 both ropes, 3.1SEC and OCT44571 from the rope)
 - DONE routed items (5), see "Routed items"
-- TODO style debt (1917 findings at start; dispatch.c 1026 is generated)
-- TODO make / make test / make check
+- PARTIAL style debt (1917 findings at start). DONE (0 findings): dispatch.c
+  + jobs.h (tools/gen_registry.py rewritten: per-vehicle switch trees, no
+  ternaries, boxed prologs; mapping verified identical to the old file),
+  executive.c, waitlist.c (LONGTIME/LONGCADR statics renamed
+  pending_longtime/pending_longcadr: check_style's `long` type regex
+  matched `longtime = ...` as a declaration), alarm.c.
+  PARTIAL phase_table.c: prologs done; left: file prolog, scale comment
+  on `mm` (line ~840), ternary comment (line ~334).
+  TODO: restarts.c, restart_tables.c, fresh_start.c, interrupts.c
+  (nested ternary in agc_rupt_time), erasable.c, nouns.c, internal.h,
+  change_program/{v37,csm,lm,idle}.c (rule-5 density < 2 in all four,
+  nouns.c, interrupts.c, phase_table.c, restarts.c), exec.h,
+  tests/exec/exec.c.
+  Tools (scratch, review-exec-sched/): prolog.py FILE OV.py (boxed
+  prologs from existing comments + overrides), annot.py FILE MAP (append
+  decl comments by line), fp.py FILE SPEC.py (file prolog template).
+  All src/exec files compile (-Werror) as of this checkpoint.
+- TODO make / make test / make check (run uncrustify only on exec files,
+  not `make format`: other lanes are mid-edit)
 
 ## Findings
 | # | file:line | AGC (label, page) | finding | action |

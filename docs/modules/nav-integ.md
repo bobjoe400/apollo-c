@@ -123,8 +123,9 @@ Design notes:
   count). A job whose JOBSLEEP is refused (not inside a job) is not queued.
 * LM OKTOGRAB does INHINT without RELINT; MIDTOAV returns in basic with
   INHINT set: here interrupts are re-enabled before returning.
-* atop(): after ORIGCHNG the AGC reaches ANDOUT/ATOPCSM with X2 = ORIGEX (a
-  return address) as the SVDWN shift; C passes PBODY.
+* (review) atop(): after an A-PCHK origin change the AGC reaches ATOPCSM
+  with X2 = ORIGEX (27205); SVDWN then stores RN = VN = 0.  Modelled
+  (AGC_INTEG_X2_ORIGEX), no longer a deviation; see review-nav-integ.md N2.
 * Jobs re-entered after JOBSLEEP: STATINT1/STATEUP keep TDEC1 in module
   statics (their VAC push list). For MIDTOAV1/2 (LM INTSTALL comes after
   the time checks) and AVETOMID a BUSY return means the caller re-runs the

@@ -2,7 +2,7 @@
  * FILE NAME: internal.h
  *
  * PURPOSE:
- *   Private interface shared by the src/nav/conic/*.c files: constants,
+ *   Private interface shared by the src/nav/conic C files: constants,
  *   the conic context and the interpretive-MPAC helpers. agc_conic_ctx_t
  *   is the C image of the erasables and push-down cells that the conic
  *   subroutines share. In the AGC several of them alias one another

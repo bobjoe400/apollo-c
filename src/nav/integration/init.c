@@ -826,7 +826,7 @@ static agc_integ_next_t aloaded(agc_integ_ctx_t *ctx)
 
 /* INTEGRV2 (p. 1320): load A-memory from the permanent state vector of the
  * vehicle chosen by VINTFLAG, then ALOADED (or A-PCHK after USEPIOS).   */
-static agc_integ_next_t integrv2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static agc_integ_next_t load_permanent_state(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     bool surface = false;
 
@@ -886,7 +886,7 @@ static agc_integ_next_t reload(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     ctx->tdec1 = ctx->tdec;
 
-    return (integrv2(ip, ctx));
+    return (load_permanent_state(ip, ctx));
 }
 
 /*
@@ -921,8 +921,8 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
             case INTEG_NEXT_RECTOUT:
                 next = rectout(ip, ctx);
                 break;
-            case INTEG_NEXT_CKMID2:
-                next = agc_integ_ckmid2(ip, ctx);
+            case INTEG_NEXT_MIDTOAV_CHECK:
+                next = agc_integ_midtoav_check(ip, ctx);
                 break;
             case INTEG_NEXT_WMATRIX:
                 next = wmatrix(ip, ctx);
@@ -956,7 +956,7 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 /* ---- entrances (p. 1318-1320) ----------------------------------------- */
 
 /* INTEGRV1 (p. 1320): SET RPQFLAG NEWIFLG, then INTEGRV2 and on.        */
-agc_status_t agc_integ_integrv1(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
@@ -967,7 +967,7 @@ agc_status_t agc_integ_integrv1(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_flag_put(AGC_FLAG_NEWIFLG, true);
     ctx->out.valid = false;
 
-    return (agc_integ_run(ip, ctx, integrv2(ip, ctx)));
+    return (agc_integ_run(ip, ctx, load_permanent_state(ip, ctx)));
 }
 
 /* CSMPREC LEMPREC (IFLAGP) / CSMCONIC LEMCONIC (IFLAGC), p. 1318-1319.   */
@@ -998,7 +998,7 @@ static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     agc_flag_put(AGC_FLAG_DIM0FLAG, false);
     agc_flag_put(AGC_FLAG_INTYPFLG, conic);
 
-    return (agc_integ_integrv1(ip, ctx));
+    return (agc_integ_integrate_permanent(ip, ctx));
 }
 
 agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -1116,5 +1116,5 @@ agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     ctx->tdec1 = tdec1;
 
-    return (agc_integ_integrv1(ip, ctx));
+    return (agc_integ_integrate_permanent(ip, ctx));
 }

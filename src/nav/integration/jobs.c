@@ -29,7 +29,7 @@ static const agc_dp_t K_3CSECS  = 3;
 static const agc_dp_t K_5_6SECS = 560;
 
 /* STATINT1 keeps TDEC1 in its VAC push list across the INTSTALL sleeps. */
-static agc_dp_t statint1_tdec1;
+static agc_dp_t state_integration_tdec1;
 static agc_dp_t stateup_tdec1;
 
 static agc_dp_t timedelt(void)
@@ -80,7 +80,7 @@ static agc_status_t endint(void)
 }
 
 /* STATEUP second INTSTALL (+1 on resumption).                            */
-static agc_status_t stateup_grab_lm(void)
+static agc_status_t stateup_lm_state(void)
 {
     agc_interp_t ip;
 
@@ -168,11 +168,11 @@ static agc_status_t stateup(agc_interp_t *ip, agc_dp_t tdec1)
 
     stateup_tdec1 = agc_erase_tetcsm(); /* DLOAD TETCSM   */
 
-    return (stateup_grab_lm());
+    return (stateup_lm_state());
 }
 
 /* STATINT1 from INTSTALL +1: SET NODOFLAG, SETIFLGS, STATEUP.            */
-static agc_status_t statint1_grab(void)
+static agc_status_t state_integration_grab(void)
 {
     agc_interp_t ip;
 
@@ -192,7 +192,7 @@ static agc_status_t statint1_grab(void)
     agc_flag_put(AGC_FLAG_NODOFLAG, true);
     agc_integ_setiflgs(); /* always OK       */
 
-    return (stateup(&ip, statint1_tdec1));
+    return (stateup(&ip, state_integration_tdec1));
 }
 
 /* STATINT1 job (p. 1313): no integration after V96 (QUITFLAG: NOINT);
@@ -212,14 +212,14 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
         return (AGC_STATUS_OK); /* ENDOFJOB  */
     }
 
-    statint1_tdec1 = agc_integ_loadtime();
+    state_integration_tdec1 = agc_integ_loadtime();
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         agc_integ_csm_resume_idle_integration(); /* always OK       */
     }
 
-    return (statint1_grab());
+    return (state_integration_grab());
 }
 
 agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc)
@@ -229,12 +229,12 @@ agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(statint1_tdec1 >= 0))
+    if (!AGC_ASSERT(state_integration_tdec1 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (statint1_grab());
+    return (state_integration_grab());
 }
 
 agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc)
@@ -249,7 +249,7 @@ agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (stateup_grab_lm());
+    return (stateup_lm_state());
 }
 
 /* ---- AVETOMID (p. 1327-1328) ------------------------------------------ */
@@ -450,7 +450,7 @@ static void notime(agc_integ_ctx_t *ctx, bool *slipped)
 /* ENTMID1 (p. 1330): precision-integrate this vehicle (no W, MIDAVFLG)
  * to TDEC1; RN1 VN1 PIPTIME1 = RATT VATT TAT; MPAC = TAT - TIME2,1.
  * DEVIATION: the AGC returns with INHINT still set; here RELINT.        */
-static agc_status_t entmid1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                             agc_dp_t tdec1, agc_integ_midtoav_out_t *out)
 {
     agc_flag_put(AGC_FLAG_DIM0FLAG, false);
@@ -526,7 +526,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     ctx->notime = slipped;
 
-    return (entmid1(ip, ctx, t1, out));
+    return (midtoav_integrate(ip, ctx, t1, out));
 }
 
 agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -565,7 +565,7 @@ agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
     ctx->notime = false;
 
-    return (entmid1(ip, ctx, t1, out));
+    return (midtoav_integrate(ip, ctx, t1, out));
 }
 
 /* TIMEINC (p. 1331): TDEC = now + T-TO-ADD (CM) / TIMEDELT (LM).         */
@@ -596,7 +596,7 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * (within 3 cs) stop if (CM) the state is at least 5.6 s ahead of now,
  * otherwise push TDEC on by TIMEDELT.
  */
-agc_integ_next_t agc_integ_ckmid2(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {

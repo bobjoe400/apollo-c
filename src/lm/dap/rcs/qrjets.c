@@ -32,9 +32,20 @@ static const agc_sp_t uvdiff[2] = {0, 16};
 static const uint16_t alljets[QJ_NALL] = {00110, 00022, 00204, 00041, 00125,
                                           00252, 00146, 00231, 00377};
 
-/* SELCTSUB / FAILOOP (pp.1457-1458): POLYTEMP = ALLJETS(ROTINDEX) &
+/**********************************************************************
+ * SELCTSUB / FAILOOP (pp.1457-1458): POLYTEMP = ALLJETS(ROTINDEX) &
  * TYPEPOLY(NUMBERT); on a failed jet retry NUMBERT = 3, 2, 1, 0. False if
- * even NUMBERT = 0 has a failed jet.                                    */
+ * even NUMBERT = 0 has a failed jet.
+ *
+ * FUNCTION NAME: policy_ok
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: bool -- true when no jet of POLYTEMP is failed
+ **********************************************************************/
 static bool policy_ok(lm_dap_t *d)
 {
     d->polytemp = (agc_sp_t) (alljets[d->rotindex] & alljets[4 + d->numbert]);
@@ -52,6 +63,16 @@ static bool policy_ok(lm_dap_t *d)
     return (((uint16_t) d->polytemp & d->ch5mask) == 0u);
 }
 
+/**********************************************************************
+ * SELCTSUB / FAILOOP (pp.1457-1458): the U,V or X-translation
+ * policy for ROTINDEX, NUMBERT with failed jets avoided.
+ *
+ * FUNCTION NAME: lm_dap_selctsub
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- false when every policy has a failed jet
+ **********************************************************************/
 bool lm_dap_selctsub(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -80,7 +101,17 @@ bool lm_dap_selctsub(void)
     return (false);
 }
 
-/* CLOSEOUT / ENDJASK (p.1458): the jask is over (DAPZRUPT negative).     */
+/**********************************************************************
+ * CLOSEOUT / ENDJASK (p.1458): the jask is over (DAPZRUPT negative).
+ *
+ * FUNCTION NAME: lm_dap_closeout
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_closeout(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -100,9 +131,19 @@ agc_status_t lm_dap_closeout(void)
     return (AGC_STATUS_OK);
 }
 
-/* XTRANS (p.1455): no rotation (or control inhibited): TJU = TJV = 0;
+/**********************************************************************
+ * XTRANS (p.1455): no rotation (or control inhibited): TJU = TJV = 0;
  * write the translation jets unless a short firing is still timing out
- * (SKIPx = 0); then CLOSEOUT.                                            */
+ * (SKIPx = 0); then CLOSEOUT.
+ *
+ * FUNCTION NAME: lm_dap_xtrans
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_xtrans(void)
 {
     lm_dap_t    *d  = lm_dap_state();
@@ -140,10 +181,24 @@ agc_status_t lm_dap_xtrans(void)
     return ((st != AGC_STATUS_OK) ? st : sc);
 }
 
-/* ROT-TOUV (p.1457): (q, r) -> non-orthogonal (u, v) in which RCS jets
+/**********************************************************************
+ * ROT-TOUV (p.1457): (q, r) -> non-orthogonal (u, v) in which RCS jets
  * produce no cross-coupling. The AGC leaves U in A = -COEFFQ q + COEFFR r
  * and V in L = COEFFQ q + COEFFR r (COEFFQ < 0, so U ~ (Q+R)/sqrt2 and
- * V ~ (R-Q)/sqrt2), each limited to POSMAX/NEGMAX.                      */
+ * V ~ (R-Q)/sqrt2), each limited to POSMAX/NEGMAX.
+ *
+ * FUNCTION NAME: lm_dap_rot_touv
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   q         agc_sp_t    I    Q component
+ *   r         agc_sp_t    I    R component
+ *   u         agc_sp_t *  O    U component, same scale
+ *   v         agc_sp_t *  O    V component, same scale
+ *
+ * RETURNS: none
+ **********************************************************************/
 void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
 {
     const lm_dap_t *d = lm_dap_state();
@@ -165,8 +220,21 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
     }
 }
 
-/* NOROTAT (p.1454): no rotation on this axis; write its queued
- * translation jets.                                                      */
+/**********************************************************************
+ * NOROTAT (p.1454): no rotation on this axis; write its queued
+ * translation jets.
+ *
+ * FUNCTION NAME: norotat
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  --------------------
+ *   axis      int   I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t norotat(int axis)
 {
     agc_inhint();
@@ -187,7 +255,21 @@ static agc_status_t norotat(int axis)
     return (st);
 }
 
-/* SELCTSUB failure exit (p.1458): TJx = 0, ALARM 02004, NOROTAT.        */
+/**********************************************************************
+ * SELCTSUB failure exit (p.1458): TJx = 0, ALARM 02004, NOROTAT.
+ *
+ * FUNCTION NAME: rotation_failed
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 {
     d->tj[axis + 1] = 0;
@@ -203,7 +285,19 @@ static agc_status_t rotation_failed(lm_dap_t *d, int axis)
     return (sn);
 }
 
-/* FEEDBACK (p.1455): jets fired, for the rate estimator (1 or 2).       */
+/**********************************************************************
+ * FEEDBACK (p.1455): jets fired, for the rate estimator (1 or 2).
+ *
+ * FUNCTION NAME: feedback
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void feedback(lm_dap_t *d, int axis)
 {
     d->nojets[axis + 1] = (d->numbert - 3 > 0) ? 2 : 1;
@@ -219,10 +313,24 @@ static void feedback(lm_dap_t *d, int axis)
     }
 }
 
-/* DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
+/**********************************************************************
+ * DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
  * JTLST and the next pass of this axis is skipped. Under 14 ms becomes a
  * one-jet 14 ms minimum impulse, on the side translation prefers (or
- * chosen by the low bit of LOSCALAR).                                    */
+ * chosen by the low bit of LOSCALAR).
+ *
+ * FUNCTION NAME: doskip
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t doskip(lm_dap_t *d, int axis)
 {
     if (QJ_TJMIN - d->abstj > 0)
@@ -265,9 +373,24 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
     return (sw);
 }
 
-/* AFTERTJ / DOROTAT (pp.1453-1454): select and fire the rotation jets for
+/**********************************************************************
+ * AFTERTJ / DOROTAT (pp.1453-1454): select and fire the rotation jets for
  * TJU or TJV. Returns true in *end if XTRANS ended the pass (SNUFFBIT
- * set in a DPS burn: control inhibited).                                 */
+ * set in a DPS burn: control inhibited).
+ *
+ * FUNCTION NAME: aftertj
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *   end       bool *      O    true when XTRANS has already ended the pass
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 {
     *end = false;
@@ -314,8 +437,21 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
     return (st);
 }
 
-/* Skip logic (TJLAW, BACKHAND): SKIPx = 0 means a short firing of the
- * last pass is still being timed; skip this axis once.                  */
+/**********************************************************************
+ * Skip logic (TJLAW, BACKHAND): SKIPx = 0 means a short firing of the
+ * last pass is still being timed; skip this axis once.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: skip_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *
+ * RETURNS: bool -- true when this axis is skipped this pass
+ **********************************************************************/
 static bool skip_axis(lm_dap_t *d, int axis)
 {
     if (!AGC_ASSERT(d->skip[axis] == 0 || d->skip[axis] == QJ_SKIPOFF))
@@ -338,8 +474,23 @@ static bool skip_axis(lm_dap_t *d, int axis)
     return (false);
 }
 
-/* TJLAW +3 (pp.1452-1453): attitude control of one U,V axis: TJETLAW,
- * or SPSRCS when docked (then GTS is tried next pass if allowed).       */
+/**********************************************************************
+ * TJLAW +3 (pp.1452-1453): attitude control of one U,V axis: TJETLAW,
+ * or SPSRCS when docked (then GTS is tried next pass if allowed).
+ *
+ * FUNCTION NAME: body_tjlaw
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *   end       bool *      O    true when XTRANS has already ended the pass
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
 {
     if (skip_axis(d, axis))
@@ -376,9 +527,24 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
     return (aftertj(d, axis, end));
 }
 
-/* BACKHAND (pp.1449): direct rate. TJx = -(1/ANET) URATEDIF, at 32 s,
+/**********************************************************************
+ * BACKHAND (pp.1449): direct rate. TJx = -(1/ANET) URATEDIF, at 32 s,
  * times 3 (scaled at 10.67 s, close to T6's 10.24); on overflow the
- * single product (right sign, more than 150 ms).                        */
+ * single product (right sign, more than 150 ms).
+ *
+ * FUNCTION NAME: body_backhand
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *   end       bool *      O    true when XTRANS has already ended the pass
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 {
     d->numbert = 4;
@@ -405,7 +571,22 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
     return (aftertj(d, axis, end));
 }
 
-/* MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.   */
+/**********************************************************************
+ * MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.
+ *
+ * FUNCTION NAME: body_minrtn
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+ *   end       bool *      O    true when XTRANS has already ended the pass
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
 {
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
@@ -426,8 +607,22 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
     return (aftertj(d, axis, end));
 }
 
-/* LOOPER (p.1454): run the RETJADR body for V (AXISCTR 1) then U, then
- * CLOSEOUT -- unless XTRANS already closed the pass.                     */
+/**********************************************************************
+ * LOOPER (p.1454): run the RETJADR body for V (AXISCTR 1) then U, then
+ * CLOSEOUT -- unless XTRANS already closed the pass.
+ *
+ * FUNCTION NAME: lm_dap_uvloop
+ *
+ * ARGUMENTS:
+ *   Argument    Type             I/O  Description (scale)
+ *   ----------  ---------------  ---  --------------------
+ *   body        lm_dap_uvbody_t  I    RETJADR body: TJLAW, BACKHAND or MINRTN
+ *   first_axis  agc_sp_t         I    AXISCTR of the first body pass (1 = V)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 {
     lm_dap_t *d = lm_dap_state();

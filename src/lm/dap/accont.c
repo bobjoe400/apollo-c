@@ -67,9 +67,22 @@ typedef struct acc_work
     bool     negzero[2];     /* AOSU, AOSV are -0 in the AGC (value 0 here) */
 } acc_work_t;
 
-/* The sign of a zero MP major word (yaAGC MP): +0 when the memory operand
+/**********************************************************************
+ * The sign of a zero MP major word (yaAGC MP): +0 when the memory operand
  * k is 0, else the product sign (a = +0 counts as positive). a is AOSQ or
- * AOSR, taken as +0 when zero (1/ACCSET and fresh start store +0).        */
+ * AOSR, taken as +0 when zero (1/ACCSET and fresh start store +0).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: mp_negzero
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   a         agc_sp_t  I    AOSQ or AOSR major word, scaled pi/2
+ *   k         agc_sp_t  I    COEFFQ or COEFFR, scaled 1
+ *
+ * RETURNS: bool -- true when the MP major word is -0
+ **********************************************************************/
 static bool mp_negzero(agc_sp_t a, agc_sp_t k)
 {
     int32_t p = (int32_t) a * k;
@@ -87,11 +100,23 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
     return ((k != 0) && ((a == 0) ? (k < 0) : ((p < 0) && (p > -16384))));
 }
 
-/* GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
+/**********************************************************************
+ * GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
  * AGC leaves as -0. A ones'-complement sum of zero is -0 unless both terms
  * are +0: V = COEFFQ AOSQ + COEFFR AOSR, U = -COEFFQ AOSQ + COEFFR AOSR.
  * With AOSQ = AOSR = +0 (COEFFQ < 0) this makes AOSV = -0, which BOTHAXES
- * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).           */
+ * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).
+ *
+ * FUNCTION NAME: aos_negzero
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         acc_work_t *      I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
 {
     agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);
@@ -115,11 +140,22 @@ static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
     }
 }
 
-/* INVERT (p.1504): 1/x, x at pi/2 -> 2^7/pi (BIT9, 0 DV x). x = AMIN
+/**********************************************************************
+ * INVERT (p.1504): 1/x, x at pi/2 -> 2^7/pi (BIT9, 0 DV x). x = AMIN
  * (BIT9, from NETNEG or a failed jet pair in FIXMIN) gives POSMAX. x is
  * the unlimited sum in A: when it has overflowed (9/8 |AOS| near pi/2),
  * TS HOLD stores the overflow-corrected word and skips CA BIT9, so the
- * AGC divides +-1 (the TS overflow indicator), not BIT9, by that word.  */
+ * AGC divides +-1 (the TS overflow indicator), not BIT9, by that word.
+ *
+ * FUNCTION NAME: invert
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   x         int32_t  I    unlimited sum in A, scaled pi/2 rad/s^2
+ *
+ * RETURNS: agc_sp_t -- 1/x, scaled 2^7/pi
+ **********************************************************************/
 static agc_sp_t invert(int32_t x)
 {
     lm_dp_pair_t one = {AA_BIT9, 0};
@@ -150,9 +186,21 @@ static agc_sp_t invert(int32_t x)
     return (r);
 }
 
-/* DO1/NET+ / DOACCFUN (p.1504): with ANET in w->anet and the ratio term
+/**********************************************************************
+ * DO1/NET+ / DOACCFUN (p.1504): with ANET in w->anet and the ratio term
  * ANET/ACOAST (at 2^6) in a: FUNTEM = 1 + ratio, 1/ANET, and the return
- * value ACCFUN = -1/ANET / FUNTEM at 2^7/pi.                             */
+ * value ACCFUN = -1/ANET / FUNTEM at 2^7/pi.
+ *
+ * FUNCTION NAME: net_accel_function
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   w         acc_work_t *  I/O  working cells of this computation
+ *   a         agc_sp_t      I    ratio ANET/ACOAST, scaled 2^6
+ *
+ * RETURNS: agc_sp_t -- ACCFUN, scaled 2^7/pi
+ **********************************************************************/
 static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
 {
     agc_sp_t funtem = lm_dap_wrap((int32_t) a + AA_BIT9); /* XCH ANET      */
@@ -173,7 +221,19 @@ static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
     return (lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, w->inv), funtem));
 }
 
-/* 1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.          */
+/**********************************************************************
+ * 1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.
+ *
+ * FUNCTION NAME: net_min
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   w         acc_work_t *  I/O  working cells of this computation
+ *
+ * RETURNS: agc_sp_t -- ACCFUN for the minimum-jet case, scaled
+ *          2^7/pi
+ **********************************************************************/
 static agc_sp_t net_min(acc_work_t *w)
 {
     agc_sp_t a = lm_dap_mphi(w->anet, w->t[T_ACOSTT + 1 + w->ns]);
@@ -186,7 +246,18 @@ static agc_sp_t net_min(acc_work_t *w)
     return (net_accel_function(w, a));
 }
 
-/* DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.         */
+/**********************************************************************
+ * DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
+ *
+ * FUNCTION NAME: p_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void p_axis(lm_dap_t *d)
 {
     agc_sp_t funtem = lm_dap_sat((int32_t) d->jacc[0] + AA_BIT9);
@@ -214,8 +285,20 @@ static void p_axis(lm_dap_t *d)
     }
 }
 
-/* NOTMUCH (p.1500): |AOS| <= AMIN: ACOAST = AMIN both ways; powered
- * flight deadbands SOMEAOS / NOAOS.                                      */
+/**********************************************************************
+ * NOTMUCH (p.1500): |AOS| <= AMIN: ACOAST = AMIN both ways; powered
+ * flight deadbands SOMEAOS / NOAOS.
+ *
+ * FUNCTION NAME: db_smallaos
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         acc_work_t *      I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
 {
     w->t[T_ACOSTT]     = LM_POSMAX;
@@ -248,9 +331,21 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
     }
 }
 
-/* BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,
+/**********************************************************************
+ * BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,
  * deadbands, 1/ACOAST, then the maximum- and minimum-jet functions for
- * the sense the offset aids (POS(NEG)).                                  */
+ * the sense the offset aids (POS(NEG)).
+ *
+ * FUNCTION NAME: axis_with_aos
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         acc_work_t *      I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 {
     agc_sp_t aos = (w->uv == 0) ? d->aosu : d->aosv;
@@ -362,8 +457,20 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     w->t[T_ATEM2 + w->ns] = w->inv;
 }
 
-/* FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
- * pair; AXISDIST from the deadbands and FLAT.                            */
+/**********************************************************************
+ * FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
+ * pair; AXISDIST from the deadbands and FLAT.
+ *
+ * FUNCTION NAME: axis_fail_dist
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   w         acc_work_t *      I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
 {
     if ((uvmask[2 + w->uv] & d->ch5mask) != 0u)
@@ -394,9 +501,21 @@ static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
     }
 }
 
-/* STORV (pp.1502-1503) and the U-axis store: ACCSWx and the ten words
+/**********************************************************************
+ * STORV (pp.1502-1503) and the U-axis store: ACCSWx and the ten words
  * (GENTRAN) to 1/ANET1 or 1/ANET1 +16D; the U deadbands are kept in
- * UDB1.. while V is computed.                                            */
+ * UDB1.. while V is computed.
+ *
+ * FUNCTION NAME: store_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   d         lm_dap_t *    I/O  DAP erasables (lm_dap_state())
+ *   w         acc_work_t *  I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void store_axis(lm_dap_t *d, acc_work_t *w)
 {
     agc_inhint();
@@ -429,8 +548,20 @@ static void store_axis(lm_dap_t *d, acc_work_t *w)
     }
 }
 
-/* STORV end, DRFDB (pp.1503-1504): FLAT, ZONE3LIM, P deadbands, and the
- * U,V FIREDB, COASTDB, AXISDIST (drift deadbands when FLAT > 0).        */
+/**********************************************************************
+ * STORV end, DRFDB (pp.1503-1504): FLAT, ZONE3LIM, P deadbands, and the
+ * U,V FIREDB, COASTDB, AXISDIST (drift deadbands when FLAT > 0).
+ *
+ * FUNCTION NAME: store_deadbands
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  --------------------
+ *   d         lm_dap_t *          I/O  DAP erasables (lm_dap_state())
+ *   w         const acc_work_t *  I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 {
     d->block[AA_BLK_FLAT] = w->t[T_FLAT];
@@ -472,8 +603,18 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
     }
 }
 
-/* 1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
- * the P, U and V axes.                                                   */
+/**********************************************************************
+ * 1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
+ * the P, U and V axes.
+ *
+ * FUNCTION NAME: lm_dap_switch_curves
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_switch_curves(void)
 {
     lm_dap_t  *d       = lm_dap_state();

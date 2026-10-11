@@ -565,10 +565,10 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM,
-                                        agc_flag_test(
-                                            AGC_FLAG_MOONFLAG), agc_erase_rn(),
-                                        &g->avg);
+    agc_status_t st = /* CALCGRAV at RN (moon: RTX2 = 2, LXC,1 SLOAD RTX2) */
+        agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM,
+                          agc_rendz_erasable()->body.rtx2 != 0, agc_erase_rn(),
+                          &g->avg);
 
     if (st != AGC_STATUS_OK)
     {
@@ -747,7 +747,8 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     st =
-        agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM, agc_flag_test(AGC_FLAG_MOONFLAG),
+        agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM,
+                         agc_rendz_erasable()->body.rtx2 != 0, /* RTX2 */
                          &refsmmat, agc_erase_delv(), &sv, &g->avg);
 
     if (st != AGC_STATUS_OK)

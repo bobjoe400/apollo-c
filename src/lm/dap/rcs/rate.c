@@ -23,8 +23,18 @@
 #define RT_CALLCODE ((agc_sp_t) 26)   /* 00032: .1 at 2^6                    */
 #define RT_200MS    ((agc_sp_t) 3277) /* 200MS = DEC .2 (06315)              */
 
-/* RATELOOP + ROTORQUE (pp.1470-1471): JETRATEQ, JETRATER from the U,V
- * torques; BACKP then forms JETRATE for P. Rates at pi/4 rad/s.          */
+/**********************************************************************
+ * RATELOOP + ROTORQUE (pp.1470-1471): JETRATEQ, JETRATER from the U,V
+ * torques; BACKP then forms JETRATE for P. Rates at pi/4 rad/s.
+ *
+ * FUNCTION NAME: lm_dap_rateloop
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_rateloop(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -99,9 +109,20 @@ agc_status_t lm_dap_rateloop(void)
     return (AGC_STATUS_OK);
 }
 
-/* SUBDIVDE +3 (p.1422): measured angle increment (DP at pi, also left in
+/**********************************************************************
+ * SUBDIVDE +3 (p.1422): measured angle increment (DP at pi, also left in
  * DAPTEMP5,6) divided by 1/40 to a rate at pi/4; POSMAX/NEGMAX (45 deg/s)
- * if the divide would overflow.                                           */
+ * if the divide would overflow.
+ *
+ * FUNCTION NAME: measured_increment
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   om        lm_dp_pair_t  I    CDU difference as a DP pair, scaled pi
+ *
+ * RETURNS: agc_sp_t -- increment major word, scaled pi
+ **********************************************************************/
 static agc_sp_t measured_increment(lm_dp_pair_t om)
 {
     if (om.hi != 0 && (int32_t) lm_dap_ccs_dim(om.hi) - RT_OCT630 > 0)
@@ -119,9 +140,25 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
     return (q);
 }
 
-/* One axis of the rate derivation (pp.1423-1425): TRAPED += measured -
+/**********************************************************************
+ * One axis of the rate derivation (pp.1423-1425): TRAPED += measured -
  * predicted rate (limited), DxERROR += angle increment - commanded rate
- * x 0.1 s. The DP error is given as its two words.                       */
+ * x 0.1 s. The DP error is given as its two words.
+ *
+ * FUNCTION NAME: derive_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   inc       lm_dp_pair_t  I    measured angle increment, DP scaled pi
+ *   omega     agc_sp_t      I    OMEGAx, rate estimate scaled pi/4 rad/s
+ *   traped    agc_sp_t *    I/O  TRAPEDx, accumulated difference scaled pi
+ *   err_hi    agc_sp_t *    I/O  DxERROR major word, scaled pi
+ *   err_lo    agc_sp_t *    I/O  DxERROR minor word
+ *   last      agc_sp_t      I    xLAST, commanded manual rate scaled 45 deg/s
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
                         agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
 {
@@ -146,9 +183,26 @@ static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
     }
 }
 
-/* Trap correction for one axis (pp.1425-1427): when |TRAPED| exceeds the
+/**********************************************************************
+ * Trap correction for one axis (pp.1425-1427): when |TRAPED| exceeds the
  * trap size, OMEGA += TRAPED/NTRAPS and NTRAPS restarts at OMEGAN. Returns
- * the correction (DAPTEMP1/2) and the old count, or false if no trap.     */
+ * the correction (DAPTEMP1/2) and the old count, or false if no trap.
+ *
+ * FUNCTION NAME: trap_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   traped    agc_sp_t *  I/O  TRAPEDx, scaled pi
+ *   ntraps    agc_sp_t *  I/O  NxTRAPS, count of passes since the last trap
+ *   omega     agc_sp_t *  I/O  OMEGAx, scaled pi/4 rad/s
+ *   omegan    agc_sp_t    I    LM/DKOMEGAN rate gain, scaled 1
+ *   trap      agc_sp_t    I    LM/DKTRAP threshold, scaled pi
+ *   corr      agc_sp_t *  O    rate correction, scaled pi/4 rad/s
+ *   oldn      agc_sp_t *  O    NxTRAPS before the reset
+ *
+ * RETURNS: bool -- true when a trap correction was made
+ **********************************************************************/
 static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega,
                       agc_sp_t omegan, agc_sp_t trap, agc_sp_t *corr,
                       agc_sp_t *oldn)
@@ -181,7 +235,22 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega,
     return (big);
 }
 
-/* Offset update from a trap correction (p.1426): AOS += 5 corr / (N+KAOS).*/
+/**********************************************************************
+ * Offset update from a trap correction (p.1426): AOS += 5 corr / (N+KAOS).
+ *
+ * FUNCTION NAME: aos_update
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   aos       agc_sp_t  I    AOSx major word, scaled pi/2 rad/s^2
+ *   corr      agc_sp_t  I    rate correction from trap_axis, scaled pi/4
+ *                            rad/s
+ *   oldn      agc_sp_t  I    passes since the last trap
+ *   kaosn     agc_sp_t  I    LM/DKKAOSN offset gain
+ *
+ * RETURNS: agc_sp_t -- new AOS major word, scaled pi/2 rad/s^2
+ **********************************************************************/
 static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn,
                            agc_sp_t kaosn)
 {
@@ -202,7 +271,17 @@ static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn,
     return (lm_dap_wrap((int32_t) aos + q)); /* ADS AOSQ          */
 }
 
-/* BACKP (pp.1423-1427): the whole rate derivation.                        */
+/**********************************************************************
+ * BACKP (pp.1423-1427): the whole rate derivation.
+ *
+ * FUNCTION NAME: lm_dap_backp
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_backp(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -298,9 +377,19 @@ agc_status_t lm_dap_backp(void)
     return (AGC_STATUS_OK);
 }
 
-/* Offset estimator (p.1427). Drifting flight: zero the offsets (major
+/**********************************************************************
+ * Offset estimator (p.1427). Drifting flight: zero the offsets (major
  * words only, as the AGC). Powered: AOS += .1 ACCDOT (gimbal jerk) each
- * pass; AOSTERM = .2 AOS (the 100 ms rate change at pi/4).               */
+ * pass; AOSTERM = .2 AOS (the 100 ms rate change at pi/4).
+ *
+ * FUNCTION NAME: lm_dap_offset_est
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_offset_est(void)
 {
     lm_dap_t *d = lm_dap_state();

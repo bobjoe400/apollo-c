@@ -6,17 +6,21 @@ tests/oracle/landing.c. AGC: Luminary099 pp. 785-856, 898-925.
 
 ## Progress
 
-- (resumed 2026-10-10: no earlier note on disk; restarted at THROTTLE)
-- DONE THROTTLE pp. 793-797 line by line (throttle.c rewritten: word pairs, ones'-complement clock differences, MASSMULT overflow L, prologs); oracle throttle 0 KNOWN
-- DONE ROOTPSRS/TDISPSET F9: ttf_8_hi tracking (previous session, 4f35a43) + word-level DMPSUB/POWRSERS on the stored ROOTPS words, DXCRIT from the guess words, value stop test restored; oracle landing 172 checks, 0 failures, 0 KNOWN
-- DONE R10,R11 / R10,R11A / P70 / P71 / ABRTJASK / GOABORT / P70INIT / BOTHPOLY / UPTHROT / P71RET / OLDTIME / LEGAL? / TGOCOMP / THROTUP vs pp. 829-836: confirmed (see findings)
-- DONE LANDING_TEST_FAKE_THRUST: gone from code; stale text in guid-landing.md fixed
-- DONE R10/R11 naming: conforms to NAMING.md rows R10/R11 (task = abort_monitor, R10,R11A = abort_monitor_resume, LANDISP keeps its label); headers reworded
-- DONE digit-suffixed names: 7 job/task ids + 16 functions renamed (docs/RENAMES.md section review-guid-landing); registry.tsv rows, jobs.h, dispatch.c, dps_burn.c callers updated by word-boundary replace; gen_registry --check clean
-- TODO LANDING_TEST_FAKE_THRUST
-- TODO R10/R11 abort-monitor naming
-- style debt: DONE state.c, throttle.c, aborts.c (0 findings); TODO displays.c, findcduw.c, guidance.c, lunar_landing.c, ascent.c, landing.h, tests
-- tools for the style pass (scratch, review-guid-landing/): prolog.py (template prologs from the existing header comment + a per-file description dict), annot.py (declaration comments), braces.py, longfix.py, fileprolog.py, rep.py; private build full.sh
+(resumed 2026-10-10: no earlier note on disk; the previous session's ROOTPSRS/TDISPSET work was in commit 4f35a43)
+
+- DONE THROTTLE pp. 793-797 line by line: throttle.c rewritten (word pairs agc_lm_words_t, ones'-complement clock differences, MASSMULT overflow L = 02410, prologs); oracle throttle KNOWN F9 x12 flipped to hard checks
+- DONE ROOTPSRS/TDISPSET F9: ttf_8_hi tracking + word-level DMPSUB/POWRSERS (guidance.c ldg_dmpsub, ldg_powrsers), DXCRIT from guess words, value stop test; TDISPSET TREDES idiom verified; oracle landing 172 checks, 0 failures, 0 KNOWN
+- DONE state.c: agc_lm_words / agc_lm_words_value / agc_lm_das / agc_lm_das_ovf added (declared in include/agc/lm/landing.h); prologs; 0 style findings
+- DONE aborts.c vs pp. 829-836 (R10,R11, R10,R11A, P70/P71, ABRTJASK, GOABORT, P70INIT, BOTHPOLY, UPTHROT, P71RET, OLDTIME, LEGAL?, TGOCOMP, THROTUP): confirmed; PIPCTR assertion; ternaries removed; 0 style findings
+- DONE LANDING_TEST_FAKE_THRUST: gone from code; guid-landing.md Tests/Open questions/Requested core additions brought up to date
+- DONE R10/R11 naming conforms to NAMING.md (abort_monitor / abort_monitor_resume / LANDISP); headers reworded
+- DONE digit-suffixed names: 7 job/task ids + 16 functions renamed (docs/RENAMES.md "review-guid-landing"); registry.tsv, include/agc/exec/jobs.h, src/exec/dispatch.c, src/lm/burns/dps_burn.c updated by word-boundary replace; gen_registry --check clean
+- DONE tests/lm/landing.c (TTHROT as a valid TIME1 word; word-pair fields), tests/oracle/landing.c (word-pair inputs/compares, F9 KNOWNs now hard + high-word checks)
+- PARTIAL style debt: 0 findings in state.c, throttle.c, aborts.c. TODO displays.c (96; was reading it vs pp. 898-907 -- no edits made yet, file unchanged), findcduw.c (174), guidance.c (~205), lunar_landing.c (~235), ascent.c (~201), include/agc/lm/landing.h (~55), tests (76)
+- TODO rule-5 density warnings (aborts 1.0, displays 1.1, findcduw 1.9, lunar_landing 1.7, state 1.4, throttle 1.6): split combined asserts onto separate lines, add real pre/postconditions while doing the style pass
+- TODO fidelity pass of lunar_landing.c (R13, P66 RODCOMP, REDESIG), ascent.c, findcduw.c, displays.c beyond the oracle coverage
+- Build state: every touched file compiles (private full build: scratch review-guid-landing/full.sh; `make` in the shared tree is currently broken by other lanes' mid-edit files, e.g. src/csm/prelaunch_*.c); oracle_landing 172/0/0, test_landing 17/0
+- Scratch tools (review-guid-landing/): prolog.py, annot.py, braces.py, longfix.py, fileprolog.py, rep.py, full.sh
 
 ## Findings
 

@@ -46,6 +46,20 @@ static int g_checks;
 static int g_failures;
 static int g_assert_reports;
 
+/**********************************************************************
+ * AGC: none -- assertion hook: print and count.
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   file      const char *  I    source file of the failed assertion
+ *   line      int           I    source line
+ *   expr      const char *  I    text of the failed expression
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
@@ -56,6 +70,20 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 #define CHECK(c) check((c), __LINE__, #c)
 
+/**********************************************************************
+ * AGC: none -- record one check.
+ *
+ * FUNCTION NAME: check
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   ok        bool          I    checked condition
+ *   line      int           I    source line
+ *   text      const char *  I    text of the condition
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -69,7 +97,19 @@ static void check(bool ok, int line, const char *text)
 
 #define KG(x) ((agc_sp_t) ((x) / 4)) /* kg -> B16 SP (2^16 kg)   */
 
-/* Fresh start, LM alone, descent stage, given mass; then 1/ACCS.        */
+/**********************************************************************
+ * Fresh start, LM alone, descent stage, given mass; then 1/ACCS.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: setup_descent
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  --------------------
+ *   kg        int32_t  I    LM mass, kg
+ *
+ * RETURNS: agc_status_t -- status of 1/ACCS
+ **********************************************************************/
 static agc_status_t setup_descent(int32_t kg)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
@@ -83,6 +123,15 @@ static agc_status_t setup_descent(int32_t kg)
     return (agc_lm_dap_jet_accel_update());
 }
 
+/**********************************************************************
+ * AGC: none -- test 1 (1/ACCS, AOSTASK_AND_AOSJOB.agc).
+ *
+ * FUNCTION NAME: test_accs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_accs(void)
 {
     agc_status_t    st = setup_descent(15000);
@@ -107,6 +156,21 @@ static void test_accs(void)
     CHECK(agc_guid_state()->lm.mass == (agc_dp_t) 3825 * 16384);
 }
 
+/**********************************************************************
+ * AGC: none -- TJETLAW inputs for one axis.
+ *
+ * FUNCTION NAME: set_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   axis      agc_sp_t    I    AXISCTR: -1 P, 0 U, 1 V
+ *   e         agc_sp_t    I    attitude error E, scaled pi
+ *   edot      agc_sp_t    I    error rate EDOT, scaled pi/4 rad/s
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot)
 {
     d->axisctr      = axis;
@@ -116,6 +180,15 @@ static void set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot)
     d->tj[axis + 1] = 0;
 }
 
+/**********************************************************************
+ * AGC: none -- tests 2 and 3 (TJET_LAW.agc).
+ *
+ * FUNCTION NAME: test_tjetlaw
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_tjetlaw(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
@@ -141,6 +214,15 @@ static void test_tjetlaw(void)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- test 4 (BACKP / RATELOOP).
+ *
+ * FUNCTION NAME: test_rate_estimator
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_rate_estimator(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
@@ -182,6 +264,15 @@ static void test_rate_estimator(void)
     CHECK(d->omegaq == 0 && d->omegar == 0);
 }
 
+/**********************************************************************
+ * AGC: none -- test 5 (RCS_FAILURE_MONITOR.agc).
+ *
+ * FUNCTION NAME: test_rcsmon
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_rcsmon(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
@@ -200,6 +291,15 @@ static void test_rcsmon(void)
     CHECK(d->ch5mask == 0u && d->ch6mask == 0u && d->pvalvest == 0u);
 }
 
+/**********************************************************************
+ * AGC: none -- test 6 (SPS_BACK-UP_RCS_CONTROL.agc).
+ *
+ * FUNCTION NAME: test_spsrcs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_spsrcs(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
@@ -222,6 +322,15 @@ static void test_spsrcs(void)
     CHECK(d->tj[1] == 0); /* inhibited by counter     */
 }
 
+/**********************************************************************
+ * AGC: none -- test 7 (ROT-TOUV).
+ *
+ * FUNCTION NAME: test_rot_touv
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_rot_touv(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -236,6 +345,15 @@ static void test_rot_touv(void)
     CHECK(u == -v);
 }
 
+/**********************************************************************
+ * AGC: none -- test 8 (1/ACCS on zero erasable, sim B2).
+ *
+ * FUNCTION NAME: test_zero_erasable
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void test_zero_erasable(void)
 {
     int reports = g_assert_reports;
@@ -256,6 +374,15 @@ static void test_zero_erasable(void)
     CHECK(q.hi == 16383 && q.lo == -85);
 }
 
+/**********************************************************************
+ * AGC: none -- run the tests.
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passed, else 1
+ **********************************************************************/
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_LM);

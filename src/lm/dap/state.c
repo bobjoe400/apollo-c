@@ -28,12 +28,32 @@
 
 static lm_dap_t g_dap;
 
+/**********************************************************************
+ * AGC: none -- the LM DAP erasables (ERASABLE_ASSIGNMENTS.agc
+ * pp.105-136), one static instance.
+ *
+ * FUNCTION NAME: lm_dap_state
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: lm_dap_t * -- the DAP erasables (never NULL)
+ **********************************************************************/
 lm_dap_t *lm_dap_state(void)
 {
     return (&g_dap);
 }
 
-/* STARTSB1 DAP part (p.220-221): done on every fresh start and restart.  */
+/**********************************************************************
+ * STARTSB1 DAP part (p.220-221): done on every fresh start and restart.
+ *
+ * FUNCTION NAME: agc_lm_dap_restart
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_restart(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -50,7 +70,17 @@ agc_status_t agc_lm_dap_restart(void)
     return (ts);
 }
 
-/* DOFSTRT1 DAP part (pp.211-213), then STARTSB1.                          */
+/**********************************************************************
+ * DOFSTRT1 DAP part (pp.211-213), then STARTSB1.
+ *
+ * FUNCTION NAME: agc_lm_dap_fresh_start
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_fresh_start(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -79,21 +109,60 @@ agc_status_t agc_lm_dap_fresh_start(void)
 }
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_cduxd
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 uint16_t agc_erase_cduxd(void)
 {
     return (lm_dap_state()->cduxd);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_cduyd
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 uint16_t agc_erase_cduyd(void)
 {
     return (lm_dap_state()->cduyd);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_cduzd
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 uint16_t agc_erase_cduzd(void)
 {
     return (lm_dap_state()->cduzd);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_cduxd
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         uint16_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_cduxd(uint16_t v)
 {
     if (AGC_ASSERT(v <= 077777u))
@@ -102,6 +171,18 @@ void agc_erase_set_cduxd(uint16_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_cduyd
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         uint16_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_cduyd(uint16_t v)
 {
     if (AGC_ASSERT(v <= 077777u))
@@ -110,6 +191,18 @@ void agc_erase_set_cduyd(uint16_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_cduzd
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         uint16_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_cduzd(uint16_t v)
 {
     if (AGC_ASSERT(v <= 077777u))
@@ -118,21 +211,60 @@ void agc_erase_set_cduzd(uint16_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUX (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delcdux
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delcdux(void)
 {
     return (lm_dap_state()->delcdux);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUY (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delcduy
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delcduy(void)
 {
     return (lm_dap_state()->delcduy);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUZ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delcduz
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delcduz(void)
 {
     return (lm_dap_state()->delcduz);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUX (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delcdux
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delcdux(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -141,6 +273,18 @@ void agc_erase_set_delcdux(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUY (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delcduy
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delcduy(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -149,6 +293,18 @@ void agc_erase_set_delcduy(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELCDUZ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delcduz
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delcduz(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -157,21 +313,60 @@ void agc_erase_set_delcduz(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegapd
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegapd(void)
 {
     return (lm_dap_state()->omegapd);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegaqd
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegaqd(void)
 {
     return (lm_dap_state()->omegaqd);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegard
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegard(void)
 {
     return (lm_dap_state()->omegard);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_omegapd
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_omegapd(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -180,6 +375,18 @@ void agc_erase_set_omegapd(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_omegaqd
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_omegaqd(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -188,6 +395,18 @@ void agc_erase_set_omegaqd(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_omegard
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_omegard(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -196,21 +415,60 @@ void agc_erase_set_omegard(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELPEROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delperor
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delperor(void)
 {
     return (lm_dap_state()->delperor);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELQEROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delqeror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delqeror(void)
 {
     return (lm_dap_state()->delqeror);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELREROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_delreror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_delreror(void)
 {
     return (lm_dap_state()->delreror);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELPEROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delperor
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delperor(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -219,6 +477,18 @@ void agc_erase_set_delperor(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELQEROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delqeror
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delqeror(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -227,6 +497,18 @@ void agc_erase_set_delqeror(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DELREROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_delreror
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_delreror(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= LM_NEGMAX))
@@ -235,23 +517,59 @@ void agc_erase_set_delreror(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAP (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegap
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegap(void)
 {
     return (lm_dap_state()->omegap);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAQ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegaq
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegaq(void)
 {
     return (lm_dap_state()->omegaq);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable OMEGAR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_omegar
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_omegar(void)
 {
     return (lm_dap_state()->omegar);
 }
 
-/* AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in
- * sign after DAS, as in the AGC); the accessor returns their value.      */
+/**********************************************************************
+ * AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in
+ * sign after DAS, as in the AGC); the accessor returns their value.
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: agc_erase_aosq
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_dp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_dp_t agc_erase_aosq(void)
 {
     const lm_dap_t *d = lm_dap_state();
@@ -260,6 +578,15 @@ agc_dp_t agc_erase_aosq(void)
     return ((agc_dp_t) lm_dap_dpval(p));
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable AOSR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_aosr
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_dp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_dp_t agc_erase_aosr(void)
 {
     const lm_dap_t *d = lm_dap_state();
@@ -268,6 +595,18 @@ agc_dp_t agc_erase_aosr(void)
     return ((agc_dp_t) lm_dap_dpval(p));
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable AOSQ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_aosq
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_dp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_aosq(agc_dp_t v)
 {
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
@@ -279,6 +618,18 @@ void agc_erase_set_aosq(agc_dp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable AOSR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_aosr
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_dp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_aosr(agc_dp_t v)
 {
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
@@ -290,56 +641,158 @@ void agc_erase_set_aosr(agc_dp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable ALPHAQ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_alphaq
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_alphaq(void)
 {
     return (lm_dap_state()->alphaq);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable ALPHAR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_alphar
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_alphar(void)
 {
     return (lm_dap_state()->alphar);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable PERROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_perror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_perror(void)
 {
     return (lm_dap_state()->perror);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable QERROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_qerror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_qerror(void)
 {
     return (lm_dap_state()->qerror);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable RERROR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_rerror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_rerror(void)
 {
     return (lm_dap_state()->rerror);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_1jacc
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_1jacc(void)
 {
     return (lm_dap_state()->jacc[0]);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_1jaccq
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_1jaccq(void)
 {
     return (lm_dap_state()->jacc[1]);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_1jaccr
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_1jaccr(void)
 {
     return (lm_dap_state()->jacc[2]);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable KQ (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_kq
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_kq(void)
 {
     return (lm_dap_state()->kq);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DB (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_db
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_db(void)
 {
     return (lm_dap_state()->db);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable DB (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_db
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_db(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= 0))
@@ -348,11 +801,32 @@ void agc_erase_set_db(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable STIKSENS (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_stiksens
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_stiksens(void)
 {
     return (lm_dap_state()->stiksens);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable STIKSENS (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_stiksens
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_stiksens(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= 0))
@@ -361,11 +835,32 @@ void agc_erase_set_stiksens(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable NEG_RATEDB (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_neg_ratedb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_neg_ratedb(void)
 {
     return (lm_dap_state()->neg_ratedb);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable NEG_RATEDB (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_neg_ratedb
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_neg_ratedb(agc_sp_t v)
 {
     if (AGC_ASSERT(v <= 0))
@@ -374,11 +869,32 @@ void agc_erase_set_neg_ratedb(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable HIASCENT (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_hiascent
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 agc_sp_t agc_erase_hiascent(void)
 {
     return (lm_dap_state()->hiascent);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable HIASCENT (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_set_hiascent
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   v         agc_sp_t  I    new value, at the scale of the erasable
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_erase_set_hiascent(agc_sp_t v)
 {
     if (AGC_ASSERT(v >= 0))
@@ -387,16 +903,43 @@ void agc_erase_set_hiascent(agc_sp_t v)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CH5MASK (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_ch5mask
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 uint16_t agc_erase_ch5mask(void)
 {
     return (lm_dap_state()->ch5mask);
 }
 
+/**********************************************************************
+ * AGC: none -- accessor of the DAP erasable CH6MASK (ERASABLE_ASSIGNMENTS.agc).
+ *
+ * FUNCTION NAME: agc_erase_ch6mask
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
+ **********************************************************************/
 uint16_t agc_erase_ch6mask(void)
 {
     return (lm_dap_state()->ch6mask);
 }
 
+/**********************************************************************
+ * AGC: none -- DAP running (T5ADR = PAXIS), for the sim.
+ *
+ * FUNCTION NAME: agc_lm_dap_running
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when T5ADR is PAXIS
+ **********************************************************************/
 bool agc_lm_dap_running(void)
 {
     const lm_dap_t *d = lm_dap_state();

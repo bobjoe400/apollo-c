@@ -39,7 +39,20 @@
 #define GT_TWO      ((agc_sp_t) 2)
 #define GT_SKIPOFF  ((agc_sp_t) 4)
 
-/* DP x SP as the GTS codes it (MP high, DXCH, MP low, ADS with carry).   */
+/**********************************************************************
+ * DP x SP as the GTS codes it (MP high, DXCH, MP low, ADS with carry).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: dp_x_sp
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    DP multiplicand
+ *   k         agc_sp_t      I    SP multiplier
+ *
+ * RETURNS: lm_dp_pair_t -- product, DP
+ **********************************************************************/
 static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
 {
     lm_dp_pair_t hi = lm_dap_mp(x.hi, k);
@@ -54,6 +67,18 @@ static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
     return (r);
 }
 
+/**********************************************************************
+ * DCS (p.1474): two-word complement.
+ *
+ * FUNCTION NAME: dp_neg
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    DP pair to complement (DCS)
+ *
+ * RETURNS: lm_dp_pair_t -- -x
+ **********************************************************************/
 static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
 {
     lm_dp_pair_t r = {(agc_sp_t) -x.hi, (agc_sp_t) -x.lo};
@@ -66,7 +91,19 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
     return (r);
 }
 
-/* Sign of a DP pair, high word first (CCS high, then CCS low).          */
+/**********************************************************************
+ * Sign of a DP pair, high word first (CCS high, then CCS low).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: dp_sign
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  --------------------
+ *   x         lm_dp_pair_t  I    DP pair
+ *
+ * RETURNS: agc_sp_t -- -1, 0 or +1
+ **********************************************************************/
 static agc_sp_t dp_sign(lm_dp_pair_t x)
 {
     agc_sp_t w = (x.hi != 0) ? x.hi : x.lo;
@@ -79,9 +116,19 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
     return ((agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0)));
 }
 
-/* ACDT+C12 (pp.1476-1477): Q(R)ACCDOT = -NEGU x ACCDOT(magnitude); the
+/**********************************************************************
+ * ACDT+C12 (pp.1476-1477): Q(R)ACCDOT = -NEGU x ACCDOT(magnitude); the
  * drive bits of channel 12 from NEGUQ, NEGUR; clear the CALLGMBL request.
- * Called with interrupts inhibited.                                     */
+ * Called with interrupts inhibited.
+ *
+ * FUNCTION NAME: lm_dap_gimbal_drive_update
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_gimbal_drive_update(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -108,7 +155,19 @@ agc_status_t lm_dap_gimbal_drive_update(void)
     return (AGC_STATUS_OK);
 }
 
-/* ROOTCYCL (p.1484): one Newton iteration x' = x/2 + (ARG/2)/x.          */
+/**********************************************************************
+ * ROOTCYCL (p.1484): one Newton iteration x' = x/2 + (ARG/2)/x.
+ *
+ * FUNCTION NAME: rootcycl
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------
+ *   x         agc_sp_t  I    current root estimate X, scaled 1, > 0
+ *   halfarg   agc_sp_t  I    ARG/2 (HALFARG), scaled 1
+ *
+ * RETURNS: agc_sp_t -- next estimate (X + ARG/X)/2, scaled 1
+ **********************************************************************/
 static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
 {
     if (!AGC_ASSERT(x > 0))
@@ -122,8 +181,23 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
     return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2        */
 }
 
-/* GTSQRT (pp.1481-1482): 14-bit square root of the DP *fn; the root must
- * be shifted right by SHFTFLAG + ININDEX/2. Zero or negative -> 0.      */
+/**********************************************************************
+ * GTSQRT (pp.1481-1482): 14-bit square root of the DP *fn; the root must
+ * be shifted right by SHFTFLAG + ININDEX/2. Zero or negative -> 0.
+ *
+ * FUNCTION NAME: lm_dap_gtsqrt
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------
+ *   fn        lm_dp_pair_t *  I/O  FUNCTION, DP argument; words swapped by
+ *                                  ZEROHIGH
+ *   shftflag  agc_sp_t *      O    SHFTFLAG: 7 when the major word was zero
+ *   inindex   agc_sp_t *      O    ININDEX: twice the scaling shift
+ *
+ * RETURNS: agc_sp_t -- square root before the reported shift,
+ *          scaled 1
+ **********************************************************************/
 agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
     if (!AGC_ASSERT(fn != NULL && shftflag != NULL) ||
@@ -196,8 +270,22 @@ typedef struct gts_w
     agc_sp_t     del;     /* DEL: +1, 0, -1                           */
 } gts_w_t;
 
-/* GOQTRIMG .. GTSQAXIS (p.1473): AOS rescaled to pi/4 (limited), rate,
- * K of the axis (0 = Q, 1 = R).                                          */
+/**********************************************************************
+ * GOQTRIMG .. GTSQAXIS (p.1473): AOS rescaled to pi/4 (limited), rate,
+ * K of the axis (0 = Q, 1 = R).
+ *
+ * FUNCTION NAME: gts_inputs
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   i         int               I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER /
+ *                                    2)
+ *   w         gts_w_t *         I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
 {
     agc_sp_t     aos = (i == 0) ? d->aosq : d->aosr; /* at pi/2        */
@@ -218,8 +306,22 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
     }
 }
 
-/* ALGORTHM (pp.1473-1474): K2THETA = K ERROR rescaled to 4 pi^2, and
- * A2CNTRAL = ALPHA^2/(2K) at 16 pi (POSMAX,POSMAX if K <= ALPHA^2/2).   */
+/**********************************************************************
+ * ALGORTHM (pp.1473-1474): K2THETA = K ERROR rescaled to 4 pi^2, and
+ * A2CNTRAL = ALPHA^2/(2K) at 16 pi (POSMAX,POSMAX if K <= ALPHA^2/2).
+ *
+ * FUNCTION NAME: gts_first_terms
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   i         int               I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER /
+ *                                    2)
+ *   w         gts_w_t *         I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
 {
     agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF, RDIFF   */
@@ -253,9 +355,20 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     }
 }
 
-/* HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
+/**********************************************************************
+ * HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
  * ALPHA^2/(2K), and the ALPHA (DEL OMEGA + ALPHA^2/(3K)) term of
- * NEGUSUM.                                                              */
+ * NEGUSUM.
+ *
+ * FUNCTION NAME: gts_middle_terms
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  --------------------
+ *   w         gts_w_t *  I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_middle_terms(gts_w_t *w)
 {
     w->k2 = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
@@ -290,8 +403,19 @@ static void gts_middle_terms(gts_w_t *w)
     }
 }
 
-/* GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
- * using GTSQRT of K K2CNTRAL and the shift it reports.                  */
+/**********************************************************************
+ * GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
+ * using GTSQRT of K K2CNTRAL and the shift it reports.
+ *
+ * FUNCTION NAME: gts_root_term
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  --------------------
+ *   w         gts_w_t *  I/O  working cells of this computation
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void gts_root_term(gts_w_t *w)
 {
     w->fn = dp_x_sp(w->k2, w->k); /* at pi^2/16     */
@@ -327,9 +451,24 @@ static void gts_root_term(gts_w_t *w)
     w->k2theta = lm_dap_das(w->k2theta, w->k2); /* ADDITIN        */
 }
 
-/* NEGUSUM .. LOUPE (pp.1483-1484): new drive NEGU = SGN(NEGUSUM); a
+/**********************************************************************
+ * NEGUSUM .. LOUPE (pp.1483-1484): new drive NEGU = SGN(NEGUSUM); a
  * reversal first stops the drive (zero-drive pause); any change asks
- * PAXIS to run ACDT+C12 (CALLGMBL).                                     */
+ * PAXIS to run ACDT+C12 (CALLGMBL).
+ *
+ * FUNCTION NAME: gts_drive
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   i         int         I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER / 2)
+ *   newneg    agc_sp_t    I    new NEGU = SGN(NEGUSUM): -1, 0, +1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
     agc_sp_t old = (i == 0) ? d->neguq : d->negur;
@@ -375,9 +514,19 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
     return (AGC_STATUS_OK);
 }
 
-/* GTS (pp.1472-1484): trim gimbal control of Q and R this pass. The next
+/**********************************************************************
+ * GTS (pp.1472-1484): trim gimbal control of Q and R this pass. The next
  * pass is RCS (COTROLER = -1) and not a skip; the drive timers are set
- * to 200 ms against runaway. Ends the jask (CLOSEOUT).                  */
+ * to 200 ms against runaway. Ends the jask (CLOSEOUT).
+ *
+ * FUNCTION NAME: lm_dap_gts
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_gts(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -421,10 +570,22 @@ agc_status_t lm_dap_gts(void)
     return ((st != AGC_STATUS_OK) ? st : sc);
 }
 
-/* TIMEGMBL, one axis (pp.1478-1480): drive time ABS(.4 AOS / ACCDOT) in
+/**********************************************************************
+ * TIMEGMBL, one axis (pp.1478-1480): drive time ABS(.4 AOS / ACCDOT) in
  * 0.1 s, drive direction NEGU = SGN(AOS). Zero ALPHA, ACCDOT or time:
  * drive off now. Over 2 s (or overflow): drive 2.5 s and withdraw GTS
- * permission (ALLOWGTS = 0) until 1/ACCS approves it again.             */
+ * permission (ALLOWGTS = 0) until 1/ACCS approves it again.
+ *
+ * FUNCTION NAME: timegmbl_axis
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   i         int         I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER / 2)
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void timegmbl_axis(lm_dap_t *d, int i)
 {
     agc_sp_t accdot    = (i == 0) ? d->accdotq : d->accdotr; /* at pi/2^7    */
@@ -483,9 +644,19 @@ static void timegmbl_axis(lm_dap_t *d, int i)
     }
 }
 
-/* TIMEGMBL (Craig Work, pp.1478-1480): null the offset acceleration with
+/**********************************************************************
+ * TIMEGMBL (Craig Work, pp.1478-1480): null the offset acceleration with
  * a timed trim gimbal drive on each axis, then ACDT+C12. Called with
- * interrupts inhibited.                                                 */
+ * interrupts inhibited.
+ *
+ * FUNCTION NAME: agc_lm_dap_timegmbl
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_timegmbl(void)
 {
     lm_dap_t *d = lm_dap_state();

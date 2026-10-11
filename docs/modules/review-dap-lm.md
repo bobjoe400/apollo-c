@@ -2,26 +2,31 @@
 
 ## Progress
 
-* DONE (earlier run, commit 4f35a43): accs_aos_* oracle cases (13), AOSV -0
-  modelled in 1/ACCONT (F10/F11 now bit-exact), INVERT overflow path,
-  DV |dividend| = |divisor| case.
-* DONE: docked 1/ACCS traced in the rope (R1); comment fixed; three docked
-  oracle cases added (accs_docked_thrust/_aps/_fix), 1478 checks pass.
-* DONE: BIGAOS 2 DB confirmed in the rope (R2).
-* DONE: sim B2 (zero erasable): improper DV modelled at register level
-  (port of yaAGC SimulateDV), TS/XCH stores wrap instead of saturate in
-  1/ACCS and 1/ACCONT, data-dependent asserts replaced by word-range
-  checks; unit test 8 (126 checks).
-* DONE fidelity: accs.c, accont.c, dapif.c, dapidler.c, needles.c,
-  t6rupt.c, rcsmon.c, spsrcs.c, paxis.c, pmanual.c, qraxis.c, qrmanual.c,
-  qrjets.c, gts.c (+ 10 GTS/TIMEGMBL oracle cases, bit-exact: 1592 checks).
-* DONE: tjetlaw.c (20-case oracle sweep found R6), rate.c (2 docked
-  Kalman cases), state.c (fresh start / restart constants and order).
-  oracle_dap_lm 1780 checks, 0 failures, 0 KNOWN, tolerance 0 everywhere.
-* Next: style (1222 check_style findings in lane files), naming, wrappers.
-* Build/test now in a HEAD worktree (SCRATCH/review-dap-lm/wt, sync.sh):
-  the shared tree has other lanes' WIP. oracle_landing guid_brak_b TTF/8
-  fails at HEAD without this lane's changes (not dap-lm).
+* DONE fidelity (all lane files): accs.c, accont.c, arith.c, dapif.c,
+  gts.c, state.c, rcs/{dapidler,needles,t6rupt,rcsmon,spsrcs,paxis,
+  pmanual,qraxis,qrmanual,qrjets,tjetlaw,rate}.c. Findings R1-R10 below.
+* DONE open questions: docked 1/ACCS COEFCTR (R1), BIGAOS 2 DB (R2);
+  F9 at PITCHDAP is dap-csm (R10); sim B2 fixed (R3, R4).
+* DONE oracle: new cases accs_docked_thrust/_aps/_fix, gts_a..f, tg_a..d,
+  tjs_* (20), kal_docked/_docked_pw; oracle_dap_lm 1780 checks, 0 fail,
+  0 KNOWN, tolerance 0 everywhere (tjet_u_large 1 -> 0 after R6).
+  test_lm_dap 125 checks (test 8 added).
+* DONE naming: static digit names renamed (zone1..5 -> zone_beyond_switch,
+  zone_fire_to_axis, zone_coast_jets_on, zone_between_curves,
+  zone_axis_time; ruflaw12/_entry/3 -> rough_law_jet_time/_large_error/
+  _large_rate; subdivde3 -> measured_increment; needle11 ->
+  needles_first_pass; do1net_plus -> net_accel_function;
+  lm_dap_acdt_c12 -> lm_dap_gimbal_drive_update).
+* DONE wrappers: lm_dap_alarm removed (R5); public agc_lm_dap_rot_touv
+  removed from include/agc/lm/dap.h (test uses lm_dap_rot_touv).
+* All touched files compile; make test of HEAD + this lane's files passes
+  except oracle_landing guid_brak_b (fails at HEAD without this lane).
+* TODO style: 1222 check_style findings in lane files (function prologs
+  ~500, decl/scale comments ~455, ternary 113, long-block 39, one-decl 34,
+  define 33, file prologs 22, qualifier/sizeof/main-first in tests).
+  Prolog converter written (SCRATCH/review-dap-lm/style/prologs.py), NOT
+  yet run on any file. No file is mid-edit.
+* TODO: make format, make check, MODULE_STATUS row, Lessons section.
 
 ## Scratch build
 

@@ -60,7 +60,7 @@
 #define TA_3SECONDS ((agc_dp_t) 300)       /* 3SECONDS 2DEC 300         */
 #define TA_COS15DEG ((agc_dp_t) 129644930) /* COS15DEG 2DEC 0.96593 B-1 */
 #define TA_06SEC    600U                   /* 06SEC DEC 600             */
-#define TA_250DEC   250U
+#define TA_250DEC   250U /* R65WAIT delay, 2.5 s */
 #define TA_PRIO26   ((agc_prio_t) 026) /* R61C+L2 job priority */
 
 /**********************************************************************
@@ -237,7 +237,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
         st = agc_imu_ballangs(&ip, gimbal, fdai);
 
-        return ((st != AGC_STATUS_OK) ? st : ta_next()); /* R61C+L06 after BALLANGS */
+        return ((st != AGC_STATUS_OK) ? st : ta_next()); /* R61C+L06 */
     }
 
     /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60

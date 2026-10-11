@@ -13,8 +13,18 @@
 #define DB_POWER  ((agc_sp_t) 0554)  /* POWERDB .02222: 1.0 deg at 45    */
 #define PRIO27    ((agc_prio_t) 027) /* PRIO27 (27000 >> 9)              */
 
-/* CALLACCS (p.1407): set up a NOVAC job for 1/ACCS so that the TJETLAW
- * switch curves are repositioned for the new deadband / masks.           */
+/**********************************************************************
+ * CALLACCS (p.1407): set up a NOVAC job for 1/ACCS so that the TJETLAW
+ * switch curves are repositioned for the new deadband / masks.
+ *
+ * FUNCTION NAME: lm_dap_callaccs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_callaccs(void)
 {
     agc_status_t st = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_UPDATE);
@@ -32,7 +42,21 @@ agc_status_t lm_dap_callaccs(void)
     return (st);
 }
 
-/* DXCH T5ADR: choose the program of the next T5RUPT (DAPIDLER or PAXIS). */
+/**********************************************************************
+ * DXCH T5ADR: choose the program of the next T5RUPT (DAPIDLER or PAXIS).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: lm_dap_set_t5adr
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------
+ *   a         lm_dap_t5adr_t  I    next T5RUPT program: DAPIDLER or PAXIS
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {
     if (!AGC_ASSERT(a == LM_T5_DAPIDLER || a == LM_T5_PAXIS))
@@ -52,7 +76,17 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
     return (AGC_STATUS_OK);
 }
 
-/* SETMAXDB (p.1407): deadband 5.0 degrees, then CALLACCS.                 */
+/**********************************************************************
+ * SETMAXDB (p.1407): deadband 5.0 degrees, then CALLACCS.
+ *
+ * FUNCTION NAME: agc_lm_dap_setmaxdb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_setmaxdb(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -67,7 +101,17 @@ agc_status_t agc_lm_dap_setmaxdb(void)
     return (lm_dap_callaccs());
 }
 
-/* SETMINDB (p.1407): deadband 0.3 degree, then CALLACCS.                  */
+/**********************************************************************
+ * SETMINDB (p.1407): deadband 0.3 degree, then CALLACCS.
+ *
+ * FUNCTION NAME: agc_lm_dap_setmindb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_setmindb(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -82,8 +126,18 @@ agc_status_t agc_lm_dap_setmindb(void)
     return (lm_dap_callaccs());
 }
 
-/* RESTORDB (p.1407): the crew-selected deadband (DBSELECT of DAPBOOLS:
- * 1 = 5 degrees, 0 = 0.3 degree).                                        */
+/**********************************************************************
+ * RESTORDB (p.1407): the crew-selected deadband (DBSELECT of DAPBOOLS:
+ * 1 = 5 degrees, 0 = 0.3 degree).
+ *
+ * FUNCTION NAME: agc_lm_dap_restordb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_restordb(void)
 {
     bool wide = agc_flag_test(AGC_FLAG_DBSELFLG);
@@ -96,8 +150,18 @@ agc_status_t agc_lm_dap_restordb(void)
     return (wide ? agc_lm_dap_setmaxdb() : agc_lm_dap_setmindb());
 }
 
-/* PFLITEDB (p.1407): zero the attitude errors and commanded rates
- * (ZATTEROR), deadband 1.0 degree, then CALLACCS.                        */
+/**********************************************************************
+ * PFLITEDB (p.1407): zero the attitude errors and commanded rates
+ * (ZATTEROR), deadband 1.0 degree, then CALLACCS.
+ *
+ * FUNCTION NAME: agc_lm_dap_pflitedb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_pflitedb(void)
 {
     agc_lm_dap_zatteror();
@@ -113,7 +177,15 @@ agc_status_t agc_lm_dap_pflitedb(void)
     return (lm_dap_callaccs());
 }
 
-/* ZATTEROR (p.1408): desired CDUs = present CDUs, then STOPRATE.          */
+/**********************************************************************
+ * ZATTEROR (p.1408): desired CDUs = present CDUs, then STOPRATE.
+ *
+ * FUNCTION NAME: agc_lm_dap_zatteror
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_lm_dap_zatteror(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -135,8 +207,16 @@ void agc_lm_dap_zatteror(void)
     agc_lm_dap_stoprate();
 }
 
-/* STOPRATE (p.1408): zero the commanded rates, the KALCMANU increments
- * and the command lags.                                                   */
+/**********************************************************************
+ * STOPRATE (p.1408): zero the commanded rates, the KALCMANU increments
+ * and the command lags.
+ *
+ * FUNCTION NAME: agc_lm_dap_stoprate
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
 void agc_lm_dap_stoprate(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -162,9 +242,19 @@ void agc_lm_dap_stoprate(void)
     }
 }
 
-/* ALLCOAST (pp.1408-1409): coasting-flight DAP initialisation, called by
+/**********************************************************************
+ * ALLCOAST (pp.1408-1409): coasting-flight DAP initialisation, called by
  * fresh start and the engine-off routines. STOPRATE, zero the offset
- * estimates (AOS, ALPHA, AOSTERM), set DRIFTBIT, restore the deadband.  */
+ * estimates (AOS, ALPHA, AOSTERM), set DRIFTBIT, restore the deadband.
+ *
+ * FUNCTION NAME: agc_lm_dap_allcoast
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_allcoast(void)
 {
     agc_lm_dap_stoprate();
@@ -183,8 +273,18 @@ agc_status_t agc_lm_dap_allcoast(void)
     return (agc_lm_dap_restordb()); /* TC RESTORDB +1                 */
 }
 
-/* Needles initialisation (NEEDLER calling sequence, p.1417): set bit 3 of
- * RCSFLAGS to start the turn-on sequence of the FDAI error needles.     */
+/**********************************************************************
+ * Needles initialisation (NEEDLER calling sequence, p.1417): set bit 3 of
+ * RCSFLAGS to start the turn-on sequence of the FDAI error needles.
+ *
+ * FUNCTION NAME: agc_lm_dap_needles_init
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_needles_init(void)
 {
     lm_dap_t *d = lm_dap_state();

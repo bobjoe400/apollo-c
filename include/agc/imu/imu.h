@@ -310,9 +310,9 @@ agc_status_t agc_job_crew_defined_maneuver_terminate(
 /* src/csm/prelaunch_align.c)                                              */
 /* ======================================================================= */
 
-/* FINETIME: consistent read of HISCALAR/LOSCALAR; returns with interrupts
- * inhibited, as the AGC does.                                            */
-agc_status_t agc_csm_finetime(uint16_t *hiscalar, uint16_t *loscalar);
+/* Pad erasable load: LATITUDE, AZIMUTH (of ZNB), LAUNCHAZ, rev 2^0.     */
+agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth,
+                                       agc_dp_t launchaz);
 /* POSN17C: XSM, YSM, ZSM for the compass position (Z down, X downrange)
  * from azimuth (revolutions from north, clockwise); rows half-unit.      */
 agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
@@ -320,27 +320,51 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
 /* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
  * ERCOMP1 = 0.  latitude in revolutions.                                 */
 agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
-/* EARTHR: add the earth rate since TMARK, resolved by xsm, to ERCOMP1
- * and torque the gyros with it (PULSEIMU on the ERCOMP buffer).          */
-agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
 /* P11 at liftoff: ERCOMP += (XSM THETAN) VSL1, then EARTHR +3 at
  * TEMPTIME = TLIFTOFF (cs 2^28).                                          */
 agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip,
                                                  agc_dp_t      tliftoff);
-agc_vec_t agc_csm_prelaunch_ervector(void); /* ERVECTOR       */
-/* Not translated (stubs returning AGC_STATUS_UNIMPLEMENTED).             */
-agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx);  /* IMUTEST    */
-agc_status_t agc_csm_prelaunch_estims(agc_job_ctx_t *ctx);   /* ESTIMS     */
-agc_status_t agc_csm_prelaunch_alwaysg(agc_job_ctx_t *ctx);  /* ALWAYSG    */
-agc_status_t agc_csm_prelaunch_restaier(agc_job_ctx_t *ctx); /* RESTAIER   */
-agc_status_t agc_csm_prelaunch_chkcomed(agc_job_ctx_t *ctx); /* CHKCOMED   */
-agc_status_t agc_csm_prelaunch_tar_eref(agc_job_ctx_t *ctx); /* TAR/EREF   */
-agc_status_t agc_csm_prelaunch_gcompver(agc_job_ctx_t *ctx); /* GCOMPVER   */
-agc_status_t agc_csm_prelaunch_optdata(agc_job_ctx_t *ctx);  /* OPTDATA    */
-agc_status_t agc_csm_prelaunch_latazchk(agc_job_ctx_t *ctx); /* LATAZCHK   */
-agc_status_t agc_csm_prelaunch_azmthcg1(agc_job_ctx_t *ctx); /* AZMTHCG1   */
-agc_status_t agc_csm_prelaunch_targdrve(agc_job_ctx_t *ctx); /* TARGDRVE   */
-agc_status_t agc_task_prelaunch_alloop1(void);               /* ALLOOP1    */
-agc_status_t agc_task_prelaunch_specsts(void);               /* SPECSTS    */
+agc_vec_t agc_csm_prelaunch_ervector(void); /* ERVECTOR               */
+agc_vec_t agc_csm_prelaunch_thetan(void);   /* THETAN1, rev 2^0       */
+
+/* P01 prelaunch initialization and the IMU positioning (GEOIMUTT).     */
+agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx); /* GTSCPSS */
+agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx);     /* IMUBACK */
+agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx);
+agc_status_t agc_job_prelaunch_imu_fine_aligned(agc_job_ctx_t *ctx);
+agc_status_t agc_task_gyrocompassing_wake(void); /* GOESTIMS            */
+/* P07 IMU performance test entry (IMUTEST, GUESS, LATAZCHK).          */
+agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx); /* IMUTEST  */
+agc_status_t agc_job_imu_test_coarse_aligned(agc_job_ctx_t *ctx);
+agc_status_t agc_job_imu_test_site_display(agc_job_ctx_t *ctx); /* LATAZCHK */
+agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx);
+agc_status_t agc_job_imu_test_site_loaded(agc_job_ctx_t *ctx);
+/* P02 gyrocompassing (prelaunch_gyrocompass.c).                       */
+agc_status_t agc_job_gyrocompassing_start(agc_job_ctx_t *ctx);   /* ESTIMS   */
+agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx); /* RSTGTS1  */
+agc_status_t agc_job_gyrocompassing_wait(agc_job_ctx_t *ctx);    /* WTLISTNT */
+agc_status_t agc_job_gyrocompassing_filter(agc_job_ctx_t *ctx);  /* ALFLT    */
+agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx); /* ALFLT1 */
+agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx);  /* RESTAIER */
+agc_status_t agc_job_gyrocompassing_torqued(agc_job_ctx_t *ctx);
+agc_status_t agc_job_gyrocompassing_erection_check(agc_job_ctx_t *ctx); /* RESTEST1 */
+agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx);  /* RESTEST3 */
+agc_status_t agc_job_gyrocompassing_azimuth_slew(agc_job_ctx_t *ctx);   /* RESCHNG  */
+agc_status_t agc_job_gyrocompassing_azimuth_slewed(agc_job_ctx_t *ctx);
+agc_status_t agc_task_gyrocompassing_sample(void);         /* ALLOOP  */
+agc_status_t agc_task_gyrocompassing_sample_restart(void); /* ALLOOP1 */
+agc_status_t agc_task_gyrocompassing_filter_start(void);   /* SPECSTS */
+agc_status_t agc_job_gyrocompass_azimuth_change(agc_job_ctx_t *ctx); /* V78 */
+agc_status_t agc_job_gyrocompass_azimuth_flash(agc_job_ctx_t *ctx);
+agc_status_t agc_job_gyrocompass_azimuth_loaded(agc_job_ctx_t *ctx);
+/* P03 optical verification of the gyrocompass (prelaunch_verify.c).  */
+agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx); /* GCOMPVER */
+agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_target_flash(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx);
+agc_status_t agc_job_optical_verification_end(agc_job_ctx_t *ctx); /* GCOMP5 */
 
 #endif /* AGC_IMU_H */

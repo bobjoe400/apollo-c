@@ -26,7 +26,18 @@
 /* UTIME -1, UTIME, UTIME +1 (p.1509): inhibition passes for P, U, V.     */
 static const agc_sp_t utime[3] = {4, 012, 012};
 
-/* SPSSTART (pp.1509-1510): the jet command for this pass.                */
+/**********************************************************************
+ * SPSSTART (pp.1509-1510): the jet command for this pass.
+ *
+ * FUNCTION NAME: spsstart
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *
+ * RETURNS: agc_sp_t -- TJ command: +HALF, -HALF or 0
+ **********************************************************************/
 static agc_sp_t spsstart(const lm_dap_t *d)
 {
     agc_sp_t outer = lm_dap_mphi(d->edot, SR_RATELIM1);
@@ -67,9 +78,22 @@ static agc_sp_t spsstart(const lm_dap_t *d)
     return (((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0);
 }
 
-/* POSTHRST +3 .. ZAPTJ (pp.1508-1509): compare the new command with the old
+/**********************************************************************
+ * POSTHRST +3 .. ZAPTJ (pp.1508-1509): compare the new command with the old
  * sense; a stop or reversal sets the inhibition counter and zeroes TJ,
- * and from jets-off a running counter inhibits firing.                   */
+ * and from jets-off a running counter inhibits firing.
+ *
+ * FUNCTION NAME: postcheck
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------
+ *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+ *   i         int         I    axis index AXISCTR + 1: 0 P, 1 U, 2 V
+ *   oldsense  agc_sp_t    I    OLDSENSE: sense of the firing before this pass
+ *
+ * RETURNS: none
+ **********************************************************************/
 static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 {
     agc_sp_t tj = d->tj[i];
@@ -105,7 +129,17 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
     }
 }
 
-/* SPSRCS (p.1509): jet sense test, rate deadband test, SPSSTART.        */
+/**********************************************************************
+ * SPSRCS (p.1509): jet sense test, rate deadband test, SPSSTART.
+ *
+ * FUNCTION NAME: lm_dap_spsrcs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_spsrcs(void)
 {
     lm_dap_t *d = lm_dap_state();

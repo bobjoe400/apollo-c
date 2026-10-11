@@ -1,14 +1,34 @@
 # registry.tsv -- job/task registry (tools/gen_registry.py input).
 # kind	id	csm_handler	lm_handler	group	comment
-job	AGC_JOB_ALFLT1	agc_csm_prelaunch_estims	-	csm	5.21
-job	AGC_JOB_COMPVER	agc_csm_prelaunch_gcompver	-	csm	V65 GCOMPVER (4.15)
-job	AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE	agc_csm_prelaunch_azmthcg1	-	csm	AZMTHCG1 (V78)
-job	AGC_JOB_RESCHNG	agc_csm_prelaunch_restaier	-	csm	5.33
-job	AGC_JOB_RESTAIER	agc_csm_prelaunch_restaier	-	csm	5.27
-job	AGC_JOB_RESTEST1	agc_csm_prelaunch_restaier	-	csm	5.15
-job	AGC_JOB_RESTEST3	agc_csm_prelaunch_restaier	-	csm	5.25
-job	AGC_JOB_RSTGTS1	agc_csm_prelaunch_estims	-	csm	5.7  prelaunch
-job	AGC_JOB_WTLISTNT	agc_csm_prelaunch_chkcomed	-	csm	5.13
+job	AGC_JOB_ALFLT1	agc_job_gyrocompassing_filter_restart	-	csm	5.21
+job	AGC_JOB_COMPVER	agc_job_optical_verification	-	csm	V65 GCOMPVER (4.15)
+job	AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE	agc_job_gyrocompass_azimuth_change	-	csm	AZMTHCG1 (V78)
+job	AGC_JOB_RESCHNG	agc_job_gyrocompassing_azimuth_slew	-	csm	5.33
+job	AGC_JOB_RESTAIER	agc_job_gyrocompassing_torque	-	csm	5.27
+job	AGC_JOB_RESTEST1	agc_job_gyrocompassing_erection_check	-	csm	5.15
+job	AGC_JOB_RESTEST3	agc_job_gyrocompassing_azimuth_check	-	csm	5.25
+job	AGC_JOB_RSTGTS1	agc_job_gyrocompassing_restart	-	csm	5.7  prelaunch
+job	AGC_JOB_WTLISTNT	agc_job_gyrocompassing_wait	-	csm	5.13
+job	AGC_JOB_PRELAUNCH_IMU_ZEROED	agc_job_prelaunch_imu_zeroed	-	csm	IMUBACK after IMUZERO
+job	AGC_JOB_PRELAUNCH_IMU_COARSE_ALIGNED	agc_job_prelaunch_imu_coarse_aligned	-	csm	IMUBACK after IMUCOARS
+job	AGC_JOB_PRELAUNCH_IMU_FINE_ALIGNED	agc_job_prelaunch_imu_fine_aligned	-	csm	IMUBACK after IMUFINE
+job	AGC_JOB_IMU_TEST_COARSE_ALIGNED	agc_job_imu_test_coarse_aligned	-	csm	IMUTEST after COAALIGN
+job	AGC_JOB_IMU_TEST_SITE_DISPLAY	agc_job_imu_test_site_display	-	csm	LATAZCHK
+job	AGC_JOB_IMU_TEST_SITE_FLASH	agc_job_imu_test_site_flash	-	csm	LATAZCHK V06N41
+job	AGC_JOB_IMU_TEST_SITE_LOADED	agc_job_imu_test_site_loaded	-	csm	LATAZCHK V33 / GUESS
+job	AGC_JOB_GYROCOMPASSING_START	agc_job_gyrocompassing_start	-	csm	ESTIMS (ESTICADR)
+job	AGC_JOB_GYROCOMPASSING_FILTER	agc_job_gyrocompassing_filter	-	csm	ALFLT (SPECSTS FINDVAC)
+job	AGC_JOB_GYROCOMPASSING_TORQUED	agc_job_gyrocompassing_torqued	-	csm	RESTAIER after EARTHR*
+job	AGC_JOB_GYROCOMPASSING_AZIMUTH_SLEWED	agc_job_gyrocompassing_azimuth_slewed	-	csm	SPITGYRO after IMUSTALL
+job	AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH	agc_job_gyrocompass_azimuth_flash	-	csm	AZMTHCG1 V06N29
+job	AGC_JOB_GYROCOMPASS_AZIMUTH_LOADED	agc_job_gyrocompass_azimuth_loaded	-	csm	AZMTHCG1 V33
+job	AGC_JOB_OPTICAL_VERIFICATION_TARGET_SHOW	agc_job_optical_verification_target_show	-	csm	OPTDATA V05N30
+job	AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH	agc_job_optical_verification_target_flash	-	csm	OPTDATA V06N41
+job	AGC_JOB_OPTICAL_VERIFICATION_TARGET_LOADED	agc_job_optical_verification_target_loaded	-	csm	OPTDATA V33
+job	AGC_JOB_OPTICAL_VERIFICATION_MARKED	agc_job_optical_verification_marked	-	csm	RETARG after OPTSTALL
+job	AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY	agc_job_optical_verification_torque_display	-	csm	GCOMP4 V06N93
+job	AGC_JOB_OPTICAL_VERIFICATION_TORQUE_ACCEPTED	agc_job_optical_verification_torque_accepted	-	csm	GCOMP4 V33
+job	AGC_JOB_OPTICAL_VERIFICATION_END	agc_job_optical_verification_end	-	csm	GCOMP5
 job	AGC_JOB_CSM_FINE_ALIGN	agc_job_csm_fine_align	-	csm/alignment	
 job	AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED	agc_job_csm_fine_align_data_checked	-	csm/alignment	
 job	AGC_JOB_CSM_FINE_ALIGN_MARKED	agc_job_csm_fine_align_marked	-	csm/alignment	
@@ -709,8 +729,10 @@ job	AGC_JOB_TPM_AFTER_FINAL	agc_job_tpm_after_final	agc_job_tpm_after_final	prog
 job	AGC_JOB_TPM_COMPUTE	agc_job_tpm_compute	agc_job_tpm_compute	programs/targeting	P35/P75B
 job	AGC_JOB_TPM_TARGETING	agc_job_tpm_targeting	agc_job_tpm_targeting	programs/targeting	P35 entry
 job	AGC_JOB_TPM_TARGETING_OTHER_VEHICLE	agc_job_tpm_targeting_other_vehicle	agc_job_tpm_targeting_other_vehicle	programs/targeting	
-task	AGC_TASK_ALLOOP1	agc_task_prelaunch_alloop1	-	csm	5.11
-task	AGC_TASK_SPECSTS	agc_task_prelaunch_specsts	-	csm	5.23
+task	AGC_TASK_ALLOOP1	agc_task_gyrocompassing_sample_restart	-	csm	5.11
+task	AGC_TASK_SPECSTS	agc_task_gyrocompassing_filter_start	-	csm	5.23
+task	AGC_TASK_GYROCOMPASSING_SAMPLE	agc_task_gyrocompassing_sample	-	csm	ALLOOP (SETGWLST)
+task	AGC_TASK_GYROCOMPASSING_WAKE	agc_task_gyrocompassing_wake	-	csm	GOESTIMS (LONGCALL)
 task	AGC_TASK_ATERTASK	agc_task_atertask	-	csm/burns	4.51
 task	AGC_TASK_CHEKAVEG	agc_task_chekaveg	-	csm/burns	5.37
 task	AGC_TASK_CLOKTASK	agc_task_cloktask_csm	agc_task_cloktask_lm	csm/burns	6.3 (CSM also 6.2)
@@ -877,6 +899,6 @@ job	AGC_JOB_LUNAR_SURFACE_ALIGN	-	agc_job_lunar_surface_align	lm/alignment	P57 (
 job	AGC_JOB_STANDBY	agc_job_standby	agc_job_standby	imu	P06 (V37)
 job	AGC_JOB_STANDBY_REQUEST	agc_job_standby_request	agc_job_standby_request	imu	P06 GOPERF1 V50N25 R1=00062
 job	AGC_JOB_STANDBY_RECOVERY	agc_job_standby_recovery	agc_job_standby_recovery	imu	POSTAND (group 4 restart, PRIO20)
-job	AGC_JOB_PRELAUNCH_INITIALIZATION	agc_csm_prelaunch_imutest	-	csm	P01 GTSCPSS1 (V37)
+job	AGC_JOB_PRELAUNCH_INITIALIZATION	agc_job_prelaunch_initialization	-	csm	P01 GTSCPSS1 (V37)
 job	AGC_JOB_CHANGE_PROGRAM_JETS_OFF	agc_job_change_program_jets_off	-	exec	R00TOP00 after DELAYJOB 5: jets off, P00
 job	AGC_JOB_CHANGE_PROGRAM_RETURN	-	agc_job_change_program_return	exec	V37RET (LM OUTROUTE after AVGEND)

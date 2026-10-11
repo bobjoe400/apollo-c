@@ -20,7 +20,17 @@
 #define STARTDAP_SKIP  ((agc_sp_t) 4) /* FOUR: SKIPU/SKIPV not skipping    */
 #define STARTDAP_TRAPS ((agc_sp_t) 2) /* TWO: NPTRAPS, NQTRAPS, NRTRAPS    */
 
-/* SETTIME5 (p.1412): next T5RUPT in 100 ms (TIME5 = 37766).               */
+/**********************************************************************
+ * SETTIME5 (p.1412): next T5RUPT in 100 ms (TIME5 = 37766).
+ *
+ * FUNCTION NAME: settime5
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 static agc_status_t settime5(void)
 {
     agc_rupt_set_time(5, LM_MS100);
@@ -33,8 +43,18 @@ static agc_status_t settime5(void)
     return (AGC_STATUS_OK);
 }
 
-/* SHUTDOWN (p.1413): T5ADR = DAPIDLER, kill jet requests, jets off, trim
- * gimbal off, and come back in 100 ms.                                    */
+/**********************************************************************
+ * SHUTDOWN (p.1413): T5ADR = DAPIDLER, kill jet requests, jets off, trim
+ * gimbal off, and come back in 100 ms.
+ *
+ * FUNCTION NAME: lm_dap_shutdown
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_shutdown(void)
 {
     lm_dap_t    *d  = lm_dap_state();
@@ -51,8 +71,18 @@ agc_status_t lm_dap_shutdown(void)
     return ((st != AGC_STATUS_OK) ? st : t5);
 }
 
-/* MOREIDLE (p.1413): keep computing the attitude errors for the displays,
- * then SHUTDOWN.                                                          */
+/**********************************************************************
+ * MOREIDLE (p.1413): keep computing the attitude errors for the displays,
+ * then SHUTDOWN.
+ *
+ * FUNCTION NAME: lm_dap_moreidle
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_moreidle(void)
 {
     agc_status_t sq = lm_dap_qerrcalc();
@@ -71,10 +101,23 @@ agc_status_t lm_dap_moreidle(void)
     return (lm_dap_shutdown());
 }
 
-/* CHEKBITS / CHEKMORE (p.1410). *on = true ("RETURN") when the DAP is to
+/**********************************************************************
+ * CHEKBITS / CHEKMORE (p.1410). *on = true ("RETURN") when the DAP is to
  * stay on; otherwise the idle path (MOREIDLE or SHUTDOWN) has been run and
  * the interrupt ends. On the way the attitude-error display is serviced
- * (JUMPDSP -> ALTDSPLY -> RETNMORE -> CHEKMORE).                         */
+ * (JUMPDSP -> ALTDSPLY -> RETNMORE -> CHEKMORE).
+ *
+ * FUNCTION NAME: lm_dap_chekbits
+ *
+ * ARGUMENTS:
+ *   Argument  Type    I/O  Description (scale)
+ *   --------  ------  ---  --------------------
+ *   on        bool *  O    true when the DAP is to stay on
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_chekbits(bool *on)
 {
     lm_dap_t *d = lm_dap_state();
@@ -122,9 +165,19 @@ agc_status_t lm_dap_chekbits(bool *on)
     return (AGC_STATUS_OK);
 }
 
-/* STARTDAP (pp.1411-1413): zero the attitude errors, rates, offset
+/**********************************************************************
+ * STARTDAP (pp.1411-1413): zero the attitude errors, rates, offset
  * estimates, trim-gimbal and minimum-impulse state; old CDUs, skip and
- * T6 list initialisation; then T5ADR = PAXIS.                            */
+ * T6 list initialisation; then T5ADR = PAXIS.
+ *
+ * FUNCTION NAME: lm_dap_startdap
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t lm_dap_startdap(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -203,7 +256,17 @@ agc_status_t lm_dap_startdap(void)
     return (settime5());
 }
 
-/* DAPIDLER (p.1411): T5RUPT entry while the DAP is idling.               */
+/**********************************************************************
+ * DAPIDLER (p.1411): T5RUPT entry while the DAP is idling.
+ *
+ * FUNCTION NAME: agc_task_dapidler
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_task_dapidler(void)
 {
     lm_dap_t *d = lm_dap_state();
@@ -240,7 +303,18 @@ agc_status_t agc_task_dapidler(void)
     return (lm_dap_startdap());
 }
 
-/* T5RUPT through T5ADR (INTERRUPT_LEAD_INS: DXCH ARUPT, DTCB T5ADR).     */
+/**********************************************************************
+ * T5RUPT through T5ADR (INTERRUPT_LEAD_INS: DXCH ARUPT, DTCB T5ADR).
+ * AGC: none (helper)
+ *
+ * FUNCTION NAME: agc_lm_dap_t5rupt
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion, else the status of the routine it
+ *          ends in
+ **********************************************************************/
 agc_status_t agc_lm_dap_t5rupt(void)
 {
     const lm_dap_t *d = lm_dap_state();
