@@ -65,7 +65,7 @@ $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -MMD -MP -c -o $@ $<
 
-$(BUILD)/tests/%: tests/%.c $(BUILD)/libagc_debug.a
+$(BUILD)/tests/%: tests/%.c $(BUILD)/libagc_debug.a $(wildcard tests/oracle/*.h)
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG -o $@ $< $(BUILD)/libagc_debug.a -lm
 
