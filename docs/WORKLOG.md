@@ -356,3 +356,6 @@
             dap-csm, prog-rendz, prog-align, sys-misc), each with its oracle
             findings and open questions routed. sim lane running in parallel
             (src/sim only). Document wave after review.
+2026-10-10  Usage-limit cutoff killed all 16 review agents + sim. Checkpoint
+            committed. Lane-specific review items now in
+            docs/agents/review_items.md. Relaunching all 17 with resume.
