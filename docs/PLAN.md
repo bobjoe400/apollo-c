@@ -141,9 +141,9 @@ lane count to avoid limits. The run continues until the definition of done.
 | 1-2  | <lane>.md (19 lanes)     | DONE                                |
 | 2a   | style.md, style2.md      | DONE (Uncrustify is the formatter)  |
 | 2b   | status-handling.md       | DONE (0 hard violations)            |
-| 3    | integrate.md             | RUNNING                             |
-| 3a   | collapse.md              | queued after integrate (inline single-use helpers via call graph) |
-| 3b   | sim.md                   | queued after collapse               |
-| 4    | oracle-cases.md          | queued after collapse               |
-| 5    | review.md (one per lane) | queued after sim + oracle-cases     |
+| 3    | integrate.md             | DONE                                |
+| 3a   | collapse.md              | DONE (3 passes)                     |
+| 3b   | sim.md                   | RUNNING (Virtual AGC peripherals)   |
+| 4    | oracle-cases.md          | DONE (15 findings -> review)        |
+| 5    | review.md (one per lane) | RUNNING (16 agents)                 |
 | 6    | document.md              | queued last                         |

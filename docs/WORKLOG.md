@@ -350,3 +350,9 @@
             DIFFALT 62 m; F14 RTE INVC115 convergence; F15 OPDEGOUT -0
             treated as CCSHOLE). Oracle tool defects: channel 7 writes,
             symbol parsing. Launching review wave: 16 per-lane agents.
+2026-10-10  REVIEW WAVE launched: 16 per-lane review agents (core-numeric,
+            exec-sched, state-flags, nav-conic, nav-integ, nav-aux, io-dsky,
+            imu, guid-powered, guid-landing, guid-entry(+p37), dap-lm,
+            dap-csm, prog-rendz, prog-align, sys-misc), each with its oracle
+            findings and open questions routed. sim lane running in parallel
+            (src/sim only). Document wave after review.
