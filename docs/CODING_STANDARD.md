@@ -192,3 +192,5 @@ Normal flow reaches one return at the end of the function. Early returns are
 for error paths (a failed precondition or a propagated status). A return
 with nothing after it on its path is dead and is removed; a normal-flow
 early return that only skips a short tail becomes if/else.
+* Never start a comment with `/*@` in flight code: Frama-C reads it as an
+  ACSL annotation. Only tools/prove/ may use ACSL.
