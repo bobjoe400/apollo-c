@@ -4,11 +4,19 @@ Runs after `integrate`, before sim/oracle-cases/review. Goal: remove
 single-use helper functions that exist only as line-count padding, so a
 reader follows one function instead of hopping through four.
 
-1. **Call graph.** Build tools/callgraph.py: definitions from `ctags -R
-   --c-kinds=f --fields=+n -x src`, call sites by scanning each function
-   body for `identifier(` against the definition set (ignore names inside
-   comments and strings; count a call once per site). Also mark functions
-   referenced from src/exec/dispatch.c (job/task entries) and from tests.
+1. **Call graph from tools, not from reading.** Add a Makefile target
+   `callgraph` that compiles every src/ TU with
+   `-fcallgraph-info=su,da` (GCC 12 writes one <name>.ci VCG file per TU
+   next to the object, in build/) and have tools/callgraph.py parse the
+   .ci files: nodes = functions (with static/extern from the node
+   attributes), edges = call sites with counts. Cross-check with
+   `cflow -b --omit-arguments -i s src/**/*.c` for extern calls across
+   TUs. Use libclang (python3 `clang.cindex`, package python3-clang-14)
+   for exact function source extents, call-site offsets, and the AST of
+   every `if (!AGC_ASSERT(cond))` guard condition (so duplicate guards are
+   compared structurally, not textually). Mark functions referenced from
+   src/exec/dispatch.c (job/task entries), from tests/, and from public
+   headers.
    Output docs/overview/callgraph.tsv: callee | callers | sites | lines |
    static? | agc_label? (true if the function's header comment names an
    AGC label or page). Also emit a Graphviz .dot (handy for the document
@@ -17,7 +25,19 @@ reader follows one function instead of hopping through four.
    not referenced by tests, not declared in a public header, and whose
    header comment does NOT carry its own AGC label (helpers named after
    an AGC label stay: the label is the cross-reference). Sort by lines.
-3. **Collapse** each candidate into its caller when the caller stays
+3. **Collapse mechanically where the shape allows.** tools/inline_one.py
+   takes (helper, caller) and, using the libclang extents, splices the
+   helper body in place of the call when: the call is a full statement,
+   each argument is the same identifier as the matching parameter (or a
+   constant), the helper has a single trailing return, and no local name
+   collides. It de-duplicates guards per step below, re-indents, deletes
+   the helper definition and prototype, writes the file, compiles it, and
+   reverts on failure. The agent handles only the candidates the script
+   refuses (renamed parameters, early returns, value results used in an
+   expression), and reviews the script's diffs for readability.
+   Produce the candidate list (docs/overview/collapse_candidates.tsv) and
+   STOP for the lead's review before applying, as the naming lane did.
+   **Collapse** each candidate into its caller when the caller stays
    <= 60 code lines after inlining (brace-only lines don't count) and the
    result reads better; otherwise leave it and note why.
    **Guard de-duplication (user direction):** before counting, remove from

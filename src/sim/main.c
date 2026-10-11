@@ -91,13 +91,7 @@ int main(int argc, char *argv[])
     agc_vehicle_t v  = sim_vehicle(argc, argv);
     long          cs = sim_duration(argc, argv);
 
-    agc_state_init(v);
-    agc_status_t st = agc_exec_init();
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_waitlist_init();
-    }
+    agc_status_t st = agc_power_on(v); /* state, lane erasables, exec */
 
     if (st == AGC_STATUS_OK)
     {

@@ -100,14 +100,6 @@ agc_status_t agc_conic_rvcon(agc_interp_t *ip, const agc_state_vector_t *sv,
                              agc_dp_t tdec, agc_state_vector_t *out,
                              agc_kepler_out_t *kout);
 
-/* CSMCONIC / LEMCONIC: conic extrapolation of the CSM / LM state vector to
- * TDEC1 (cs, 2^28). The INTSTALL lock, A-memory and STATEFLG handling are
- * the integration package's (nav-integ); this is the arithmetic only.     */
-agc_status_t agc_conic_csmconic(agc_interp_t *ip, agc_dp_t tdec1,
-                                agc_state_vector_t *out);
-agc_status_t agc_conic_lemconic(agc_interp_t *ip, agc_dp_t tdec1,
-                                agc_state_vector_t *out);
-
 /* ---- LAMBERT, p. 1266-1268 ------------------------------------------- */
 typedef struct agc_lambert_in
 {

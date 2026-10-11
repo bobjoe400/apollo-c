@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/jobs.h"
@@ -223,6 +224,7 @@ agc_status_t agc_ccshole(void);  /* CCSHOLE: POODOO 1103 */
 /* Fresh start and restart (FRESH_START_AND_RESTART.agc).                  */
 agc_status_t agc_fresh_start_slap1(void);        /* SLAP1 (V36)          */
 agc_status_t agc_fresh_dofstart(void);           /* DOFSTART             */
+agc_status_t agc_power_on(agc_vehicle_t v); /* host: state, lanes, exec */
 agc_status_t agc_restart_goprog(void);           /* GOPROG (GOJAM)       */
 uint16_t     agc_restart_redoctr(void);          /* REDOCTR              */
 agc_status_t agc_change_program(uint8_t new_mm); /* V37 (MMCHANG)      */

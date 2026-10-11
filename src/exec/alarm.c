@@ -403,8 +403,6 @@ static agc_status_t poodoo_csm(void)
     return (AGC_STATUS_POODOO);
 }
 
-/* POODOO / POODOO1 / ABORT2 (C p.1495 / L p.1383): record the alarm and
- * abandon the current program; the restart ends in P00 (GOTOPOOH).    */
 /* The interpreter alarms of the job or task that just returned: ALARM
  * 01301 (ARCSIN/ARCCOS out of range) or ABORT 01302 (SQRT of a negative,
  * POODOO). DEVIATION: the AGC raises them at the instruction; core cannot
@@ -432,6 +430,8 @@ void exec_service_interp_alarm(void)
     }
 }
 
+/* POODOO / POODOO1 / ABORT2 (C p.1495 / L p.1383): record the alarm and
+ * abandon the current program; the restart ends in P00 (GOTOPOOH).    */
 agc_status_t agc_poodoo(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))

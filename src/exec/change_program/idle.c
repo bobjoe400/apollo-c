@@ -21,12 +21,16 @@
 #include "agc/core/flags_csm.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
+#include "agc/csm/entry.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define VP_VERB_CHANGE_PROGRAM 37U
 #define VP_GO_IDLE_NOUN        99U
@@ -275,4 +279,46 @@ agc_status_t exec_up_goprog_optics(void)
     }
 
     return (agc_t4_optics_reset(false));
+}
+
+/* ---- host power-on --------------------------------------------------- */
+
+/* Power-on for the host (no AGC counterpart: the erasable memory of a
+ * real AGC keeps its contents through a fresh start). Core state and
+ * channels for vehicle `v`, the erasable blocks the program lanes own
+ * (alignment, rendezvous, landing / ascent, entry), then the executive
+ * and the waitlist. The caller follows with agc_fresh_dofstart().      */
+agc_status_t agc_power_on(agc_vehicle_t v)
+{
+    if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_state_init(v);
+    agc_align_ram_reset();
+    agc_rendz_reset(agc_rendz_erasable());
+
+    if (v == AGC_VEHICLE_LM)
+    {
+        agc_lm_landing_reset();
+    }
+    else
+    {
+        agc_entry_lexicon_reset();
+    }
+
+    agc_status_t st = agc_exec_init();
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_waitlist_init();
+    }
+
+    if (!AGC_ASSERT(agc_state_vehicle() == v))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
 }

@@ -168,7 +168,14 @@ agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 
     r = sqrt_words(agc_w3_from_tp(a), &abort);
 
-    return (abort ? 0 : agc_w_join(r));
+    if (abort)
+    { /* ABORT 01302 (a < -2^-14): raised by exec when the job returns */
+        interp_flag_alarm(01302u);
+
+        return (0);
+    }
+
+    return (agc_w_join(r));
 }
 
 /* ---- SIN / COS ----------------------------------------------------------- */
