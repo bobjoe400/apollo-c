@@ -238,7 +238,7 @@ spelling, to be moved to include/agc when the owner publishes them:
 ## Requested jobs-tasks
 
 Provisional ids in src/programs/navigation/pending.h (prototypes in
-include/agc/programs/rendezvous.h before /*@JOBS-END@*/): jobs
+include/agc/programs/rendezvous.h before the "end of job entry points" comment): jobs
 0x1100-0x1217 (plus 0x036B W_MATRIX_MONITOR, 0x036C/0x036D V57/V54 with
 the values of src/io/verbs/pending.h); tasks 0x1101-0x111C plus RRTURNON
 0x312 and DORREPOS 0x313 (the values of sysmisc_ext.h). The lead maps them
