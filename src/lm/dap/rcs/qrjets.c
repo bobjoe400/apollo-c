@@ -241,11 +241,6 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(u != NULL && v != NULL))
-    {
-        return;
-    }
-
     agc_sp_t cq = lm_dap_mphi(q, d->coeffq); /* COEFFQ Q, scale of q */
     agc_sp_t cr = lm_dap_mphi(r, d->coeffr); /* COEFFR R, scale of r */
 
@@ -440,11 +435,6 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
  **********************************************************************/
 static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 {
-    if (!AGC_ASSERT(end != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *end = false;
 
     if (agc_flag_test(AGC_FLAG_SNUFFER) && !agc_flag_test(AGC_FLAG_APSFLAG) && !agc_flag_test(AGC_FLAG_DRIFTDFL))
@@ -515,11 +505,6 @@ static bool skip_axis(lm_dap_t *d, int axis)
         d->skip[axis] = QJ_SKIPOFF;
 
         return (true);
-    }
-
-    if (!AGC_ASSERT(axis == 0 || axis == 1))
-    {
-        return (false);
     }
 
     return (false);
@@ -654,11 +639,6 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
         return (AGC_STATUS_BAD_ARG); /* U or V only */
     }
 
-    if (!AGC_ASSERT(end != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
         agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
@@ -697,11 +677,6 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) || !AGC_ASSERT(body <= LM_UV_MINRTN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     d->retjadr = body;
 

@@ -115,11 +115,6 @@ static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
     int      k; /* component slot */
     agc_w2_t w; /* component words before the shift */
 
-    if (!AGC_ASSERT(s != 0))
-    {
-        return (0); /* no valid result */
-    }
-
     *s = agc_w_split(*s).lo * AGC_W_ONE;
 
     for (k = 0; k < AGC_VEC_N; k++)
@@ -160,16 +155,6 @@ static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
     r.c[1] = m3; /* MPAC +3          */
     r.c[2] = m5; /* MPAC +5          */
 
-    if (!AGC_ASSERT((m0 >= AGC_DP_MIN) && (m0 <= AGC_DP_MAX)))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m3 <= AGC_DP_MAX) && (m5 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -192,11 +177,6 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
     bool     sneg         = false;                    /* VBUF+5 = -0: scalar negative */
     int      k            = 0;                        /* DVNORMCT: divisor doublings */
     int      bad;                                     /* slot that overflowed in V/SC2, or -1 */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (v);
-    }
 
     if (agc_w_split(s).hi == 0)
     {
@@ -270,11 +250,6 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
     agc_ovf_t o = 0; /* overflow of the x^2 + y^2 accumulation */
     agc_w3_t  acc;   /* BUF: x^2 + y^2 (TP) */
     int32_t   a;     /* A at the DVOVF: major word or the overflow */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])), agc_w_dsqsub(agc_w_split(v.c[1])), &o);
     a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */

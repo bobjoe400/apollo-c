@@ -83,16 +83,6 @@ static agc_sp_t tempbeta; /* TEMPBETA BETA/180, B0 */
  **********************************************************************/
 static uint16_t cdu_pattern(agc_sp_t a)
 {
-    if (!AGC_ASSERT(a >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(a <= 16383))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((uint16_t) ((uint16_t) a & 077777u));
 }
 
@@ -319,11 +309,6 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(pip >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     if (wrap)
     {
         sum = (int32_t) entry_angle_wrap(eul) - (int32_t) pip + (int32_t) now;
@@ -353,11 +338,6 @@ static void entry_cm_atup(const agc_dp_t angles[4])
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
     agc_phase_var_t    v  = { AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U };
-
-    if (!AGC_ASSERT(angles != NULL))
-    {
-        return;
-    }
 
     agc_inhint();                                          /* until the body angles are updated     */
     atup_gamdot(es, (agc_sp_t) (-agc_dp_high(angles[3]))); /* CS 10D */
@@ -394,11 +374,6 @@ static void entry_cm_atup(const agc_dp_t angles[4])
 agc_status_t entry_servnout(agc_job_ctx_t *ctx)
 {
     int nj; /* NEWJOB: priority waiting */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_inhint();
     nj = agc_exec_newjob(); /* CCS NEWJOB                   */
@@ -437,11 +412,6 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     agc_entry_state_t *es   = agc_entry_state(); /* entry erasables */
     agc_status_t       st   = AGC_STATUS_OK;     /* status of the POSEXIT step */
     bool               disp = true;              /* OVERNOUT display wanted */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     switch (es->posexit)
     {
@@ -538,11 +508,6 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
     agc_dp_t     angles[4] = {0, 0, 0, 0};
     agc_status_t st; /* step status */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     st = agc_entry_cm_pose_triad();
 
     if (st == AGC_STATUS_OK)
@@ -582,11 +547,6 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_entry_state() != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -614,11 +574,6 @@ agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
 {
     bool         disp = false; /* OVERNOUT display wanted */
     agc_status_t st;           /* REFAZE10 status */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     st = agc_entry_reestablish_sequencer(&disp);
 

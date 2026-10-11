@@ -85,11 +85,6 @@ static bool chan_valid(int chan)
  **********************************************************************/
 static bool chan_inverted(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0))
-    {
-        return (false);
-    }
-
     return ((chan >= AGC_CHAN_FIRST_INVERTED) && (chan <= AGC_CHAN_LAST_INVERTED));
 }
 
@@ -108,16 +103,6 @@ static bool chan_inverted(int chan)
  **********************************************************************/
 static bool chan_writable(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
-    {
-        return (false);
-    }
-
     switch (chan)
     {
         case AGC_CHAN_L:
@@ -153,16 +138,6 @@ static bool chan_writable(int chan)
  **********************************************************************/
 static bool chan_input(int chan)
 {
-    if (!AGC_ASSERT(chan >= 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
-    {
-        return (false);
-    }
-
     switch (chan)
     {
         case AGC_CHAN_HISCALAR:
@@ -297,11 +272,6 @@ void agc_chan_write(int chan, uint16_t value)
  **********************************************************************/
 void agc_chan_or(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
     {
         return;
@@ -340,11 +310,6 @@ void agc_chan_or(int chan, uint16_t mask)
  **********************************************************************/
 void agc_chan_and(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return;
-    }
-
     /* WAND operates on 15-bit words. A caller writing ~BIT on a 15-bit
      * value sets bit 16 in a uint16_t; the AGC never sees that bit, so
      * neither do we. */
@@ -392,11 +357,6 @@ agc_status_t agc_chan_set_input(int chan, uint16_t value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!chan_input(chan))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -425,16 +385,6 @@ agc_status_t agc_chan_set_input(int chan, uint16_t value)
  **********************************************************************/
 agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!chan_input(chan))
     {
         return (AGC_STATUS_BAD_ARG);

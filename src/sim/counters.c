@@ -90,11 +90,6 @@ static uint16_t cdu_step(uint16_t v, uint16_t type)
     bool     dn = (type == INC_MINC || type == INC_MCDU);
     uint32_t n  = up ? (uint32_t) v + 1u : (dn ? (uint32_t) v + SIM_WORD_MASK : (uint32_t) v);
 
-    if (!AGC_ASSERT((n & SIM_WORD_MASK) <= SIM_WORD_MASK))
-    {
-        return (0);
-    }
-
     return ((uint16_t) (n & SIM_WORD_MASK));
 }
 
@@ -123,11 +118,6 @@ static uint16_t shift_in(uint16_t v, uint16_t type)
 
 static agc_status_t cdu_increment(uint16_t addr, uint16_t type)
 {
-    if (!AGC_ASSERT(addr >= CTR_CDUX && addr <= CTR_OPTX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (addr)
     {
         case CTR_CDUX:
@@ -157,11 +147,6 @@ static agc_status_t cdu_increment(uint16_t addr, uint16_t type)
 
 static agc_status_t sp_increment(uint16_t addr, uint16_t type)
 {
-    if (!AGC_ASSERT(addr >= CTR_PIPAX && addr <= CTR_RHC_R))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (addr)
     {
         case CTR_PIPAX:

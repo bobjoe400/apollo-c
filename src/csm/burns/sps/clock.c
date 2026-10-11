@@ -116,11 +116,6 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
 /* CLOCKJOB (p.705): fresh CDU trig for the displays, then CKNVWRD1.       */
 agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t    *g      = agc_guid_state();
     const uint16_t cdu[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
 
@@ -133,11 +128,6 @@ agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx)
 /* DYNDISP (p.705): update N85 for the dynamic V06N85 of P41.               */
 agc_status_t agc_job_dyndisp(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -168,11 +158,6 @@ static agc_status_t engine_enable_finish(agc_job_id_t next)
 
 agc_status_t agc_job_engine_enable_bypass(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -183,11 +168,6 @@ agc_status_t agc_job_engine_enable_bypass(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_engine_enable_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -201,11 +181,6 @@ agc_status_t agc_job_engine_enable_terminate(agc_job_ctx_t *ctx)
  * clears it.                                                              */
 agc_status_t agc_job_engine_enable_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
 
     if (!agc_flag_test(AGC_FLAG_ASTNFLAG))
@@ -239,11 +214,6 @@ agc_status_t agc_job_engine_enable_proceed(agc_job_ctx_t *ctx)
 /* V97T (p.707): engine failed, terminate: 6 off, 4.67 V97TTASK now.       */
 agc_status_t agc_job_engine_fail_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change2((uint16_t) 000006, (uint16_t) 040674, NULL);
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
@@ -316,11 +286,6 @@ agc_status_t agc_task_engine_fail_rcs_dap(void)
 /* V97P (p.707): proceed: 4.73 V97PTASK now.                               */
 agc_status_t agc_job_engine_fail_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(4, (uint16_t) 040734);
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
@@ -369,11 +334,6 @@ agc_status_t agc_task_engine_fail_reenable(void)
 /* V97E (p.708): re-ignite: 4.53 V97ETASK in 10 ms.                         */
 agc_status_t agc_job_engine_fail_reignite(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(4, (uint16_t) 040534);
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
@@ -627,11 +587,6 @@ agc_status_t agc_task_gimbal_test_step(void)
  * exit through GOPIN.                                                     */
 agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_chan_and(012, (uint16_t) ~(uint16_t) AGC_CH012_SIVBTAKEOVER);
     unsigned cfg = ((unsigned) agc_erase_dapdatr1() >> 12) & 3U; /* MP BIT3     */
 

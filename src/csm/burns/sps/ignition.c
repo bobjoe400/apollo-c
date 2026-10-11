@@ -269,22 +269,12 @@ static agc_status_t flash_post41(agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8
 {
     agc_dsky_cont_t cont = {AGC_JOB_POST41, pro, enter};
 
-    if (!AGC_ASSERT(pro != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
 /* POSTBURN (p.695): V16N40 final values; PROCEED -> P40RCS (trim with RCS).*/
 agc_status_t agc_job_postburn_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -296,11 +286,6 @@ agc_status_t agc_job_postburn_csm(agc_job_ctx_t *ctx)
 /* P40RCS (p.695): AVEGEXIT = CALCN85, wait 2 s for it, then P40MINDB.     */
 agc_status_t agc_job_sps_burn_rcs_trim(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_VG_BODY; /* ACADN85                */
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
@@ -314,11 +299,6 @@ agc_status_t agc_job_sps_burn_rcs_trim(agc_job_ctx_t *ctx)
 /* P40MINDB (p.695): narrow deadband, then TIGNOW.                         */
 agc_status_t agc_job_sps_burn_min_deadband(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_csm_dap_setmindb();
     agc_relint();
@@ -329,11 +309,6 @@ agc_status_t agc_job_sps_burn_min_deadband(agc_job_ctx_t *ctx)
 /* TIGNOW (p.695): 4 type C (PRIO20, here), V16N85 for an RCS trim.         */
 agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_TIGNOW, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 005024, &v);
@@ -349,11 +324,6 @@ agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx)
 /* POST41 (p.696): AVEGEXIT = SERVEXIT, then P00.                           */
 agc_status_t agc_job_post41(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT; /* SERVCADR               */
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
@@ -368,11 +338,6 @@ agc_status_t agc_job_post41(agc_job_ctx_t *ctx)
  * as AVEGEXIT, 6.3 and 4.23, then P40S/RS.                                */
 agc_status_t agc_csm_rcs_burn_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->csm.nvword1 = agc_csm_vn(6, 85); /* V06N85B                */
@@ -389,11 +354,6 @@ agc_status_t agc_csm_rcs_burn_display(agc_job_ctx_t *ctx)
 /* P47CSM (p.698): IMU status, MIDTOAV2 (time to PREREAD < 1 s), TIGON.    */
 agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t sw = agc_imu_status_check();
 
     if (sw != AGC_STATUS_OK)
@@ -448,11 +408,6 @@ agc_status_t agc_task_tigon(void)
  * the priority below CALCN83, 4 type C (PRIO15), V16N83 (ENTER: clear).    */
 agc_status_t agc_job_thrust_monitor_reset_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_burn_t *b = &agc_guid_state()->burn;
 
     b->delvimu = agc_vec_zero();
@@ -464,11 +419,6 @@ agc_status_t agc_job_thrust_monitor_reset_csm(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_thrust_monitor_display_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_THRUST_MONITOR_DISPLAY, AGC_TASK_NONE, (int16_t) AGC_PRIO15, false, 0U};
 
     agc_phase_change_var((uint16_t) 005024, &v);

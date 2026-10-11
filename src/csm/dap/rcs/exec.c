@@ -53,11 +53,6 @@ agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* CA FLAGWRD6; BZMF ENDOFJOB; MASK BIT14; BZF ENDOFJOB               */
     if (agc_flag_test(AGC_FLAG_DAPBIT1) || !agc_flag_test(AGC_FLAG_DAPBIT2))
     {

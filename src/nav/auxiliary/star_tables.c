@@ -246,11 +246,6 @@ static const agc_vec_t STAR_TABLE[AGC_STAR_COUNT] = { /* scale 2^1 */
  **********************************************************************/
 agc_status_t agc_star_vector(int star, agc_vec_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((star >= 1) && (star <= AGC_STAR_COUNT)))
     {
         return (AGC_STATUS_BAD_ARG);

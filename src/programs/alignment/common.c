@@ -125,11 +125,6 @@ uint16_t agc_align_ones_to_twos(agc_dp_t revs)
  */
 agc_status_t agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
 {
-    if (!AGC_ASSERT(cdu_xyz != NULL) || !AGC_ASSERT(t != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t yzx[3];
 
     yzx[AGC_TRIG_X] = cdu_xyz[0];
@@ -146,11 +141,6 @@ agc_status_t agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
  */
 agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_mat_t *nb)
 {
-    if (!AGC_ASSERT((ip != NULL) && (t != NULL)) || !AGC_ASSERT(nb != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_vec_t s = agc_vec_make(t->sincdu[AGC_TRIG_X], t->sincdu[AGC_TRIG_Y], t->sincdu[AGC_TRIG_Z]);
     const agc_vec_t c = agc_vec_make(t->coscdu[AGC_TRIG_X], t->coscdu[AGC_TRIG_Y], t->coscdu[AGC_TRIG_Z]);
 
@@ -160,11 +150,6 @@ agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_ma
 /* The present CDUX, CDUY, CDUZ (RDCDUS reads them under INHINT). */
 void align_read_cdus(uint16_t cdu[3])
 {
-    if (!AGC_ASSERT(cdu != NULL))
-    {
-        return;
-    }
-
     agc_inhint();
     cdu[0] = agc_erase_cdux();
     cdu[1] = agc_erase_cduy();
@@ -180,11 +165,6 @@ void align_read_cdus(uint16_t cdu[3])
 /* CALL CDUTRIG; CALL CALCSMSC on the present CDUs. */
 agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 {
-    if (!AGC_ASSERT((ip != NULL) && (t != NULL)) || !AGC_ASSERT(nb != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_cdutrig(t);
     agc_status_t st = AGC_STATUS_OK;
 
@@ -196,11 +176,6 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 /* CSMPREC / LEMPREC / CSMCONIC / LEMCONIC (INTEGRATION_INITIALIZATION). */
 agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (out != NULL)) || !AGC_ASSERT(((int) kind >= 0) && (kind <= ALIGN_LEMCONIC)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
     agc_status_t     st  = AGC_STATUS_BAD_ARG;
 
@@ -233,11 +208,6 @@ agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind, agc_dp_t tde
 /* GOFLASH / GOFLASHR / GOMARK.. / GOPERF1 / GOPERF4R with the returns. */
 agc_status_t align_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont;
 
     cont.terminate = term;
@@ -250,11 +220,6 @@ agc_status_t align_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_
 /* GODSP / GODSPR / GODSPRET / CLEANDSP / KLEENEX (no astronaut return). */
 agc_status_t align_show(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, vn, NULL));
 }
 
@@ -299,11 +264,6 @@ agc_status_t align_goto(agc_job_id_t next)
 /* IMUSTALL / OPTSTALL: TC CURTAINS on the bad return. */
 agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
 {
-    if (!AGC_ASSERT(done != NULL) || !AGC_ASSERT(((int) dev >= 0) && (dev < AGC_IMU_DEV_COUNT)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_imu_stall_result_t r  = AGC_IMU_STALL_BAD;
     agc_status_t           st = agc_imu_stall_dev(dev, wake_as, &r);
 
@@ -330,11 +290,6 @@ agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
 /* The outcome seen by the job woken from a stall. */
 agc_status_t align_stall_outcome(agc_imu_device_t dev)
 {
-    if (!AGC_ASSERT(((int) dev >= 0) && (dev < AGC_IMU_DEV_COUNT)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_imu_stall_result_t r = agc_imu_stall_outcome(dev);
 
     if (!AGC_ASSERT(r != AGC_IMU_STALL_SLEEPING))
@@ -449,11 +404,6 @@ agc_dp_t align_dsptem1(void)
 
 agc_status_t align_set_dsptem1(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_dsky_set_dsptem(0, align_sp_to_word(agc_dp_high(v)));
 
     if (st == AGC_STATUS_OK)
@@ -483,11 +433,6 @@ agc_status_t align_set1_pdt(void)
 /* TC PHASCHNG; OCT code (type A, group 4). */
 agc_status_t align_phase4(uint16_t code)
 {
-    if (!AGC_ASSERT((code & 07u) == 4u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(4, code);
 
     return (AGC_STATUS_OK);
@@ -536,11 +481,6 @@ static agc_status_t coarse_fine(void)
 /* COARSE (Luminary p. 951): IMUCOARS to THETAD and its IMUSTALL. */
 agc_status_t align_coarse(agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->coarse_ret = ret;
     uint16_t thetad[3];
 
@@ -571,11 +511,6 @@ agc_status_t align_coarse(agc_job_id_t ret)
 /* COARSE: woken after the IMUCOARS stall. */
 agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS   */
@@ -587,11 +522,6 @@ agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx)
 /* COARSE: woken after the IMUFINE stall; continue as the caller asked. */
 agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS   */
@@ -606,11 +536,6 @@ agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx)
  */
 void align_clear_ovf(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
     const bool was_set = agc_interp_test_ovf(ip);
 
     (void) was_set; /* the overflow is discarded    */

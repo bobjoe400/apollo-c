@@ -106,19 +106,9 @@ static bool vec_ok(agc_vec_t v)
  **********************************************************************/
 static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     if (agc_interp_test_ovf(ip))
     {
         v = agc_rtb_signmpac(v);
-    }
-
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
     }
 
     return (v);
@@ -141,11 +131,6 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
  **********************************************************************/
 static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, agc_dp_t add, int n)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(n >= 0 && n <= 3))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_tp_t m = agc_dp_mul_tp(a, b); /* DMP: TP MPAC, scales add */
 
     m = agc_tp_add(ip, m, agc_tp_from_dp(add)); /* DAD: MPAC+2 kept  */
@@ -169,11 +154,6 @@ static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, agc_dp_t a
  **********************************************************************/
 agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_t *m)
 {
-    if (!AGC_ASSERT(ip != NULL && cdu != NULL && m != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t s[3]; /* SIN / 2 of PHI, THETA, PSI, 2^0 */
     agc_dp_t c[3]; /* COS / 2 of PHI, THETA, PSI, 2^0 */
 
@@ -246,11 +226,6 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
  **********************************************************************/
 static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     if (costerm >= 0)
     {
         return (ang); /* OKTHETA / OKPHI    */
@@ -258,11 +233,6 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
 
     agc_dp_t n = agc_dp_neg(ang);                                                            /* DCOMP, rev 2^0 */
     agc_dp_t r = (n >= 0) ? agc_dp_sub(ip, n, AGC_DP_HALF) : agc_dp_add(ip, n, AGC_DP_HALF); /* BPL SUHALFA, rev 2^0 */
-
-    if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (r);
 }
@@ -284,11 +254,6 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
  **********************************************************************/
 agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *angles, agc_dp_t *cos_mga)
 {
-    if (!AGC_ASSERT(ip != NULL && m != NULL && angles != NULL && cos_mga != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vec_ok(m->row[1]) && vec_ok(m->row[2])))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -353,11 +318,6 @@ static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk, ag
 
     out[0] = bovb_signmpac(ip, dmp_dad_shl(ip, uk, sin2, pd6, 2));
     out[1] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_sub(ip, pd6, pd8), 2));
-
-    if (!AGC_ASSERT(out[0] >= AGC_DP_MIN && out[1] >= AGC_DP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -378,11 +338,6 @@ static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk, ag
  **********************************************************************/
 agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a, agc_mat_t *del)
 {
-    if (!AGC_ASSERT(ip != NULL && del != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vec_ok(u) && a >= AGC_DP_MIN && a <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -509,11 +464,6 @@ static agc_dp_t sload_cdu(uint16_t p)
  **********************************************************************/
 agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const uint16_t cphi[3], agc_kalc_setup_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && bcdu != NULL && cphi != NULL && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     out->kcase = AGC_KALC_NORMAL;
     out->cof   = agc_vec_zero();
 

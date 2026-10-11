@@ -90,16 +90,6 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
 {
     agc_mat_t m = agc_mat_identity_half(); /* partition, scale of W */
 
-    if (!AGC_ASSERT(w != NULL))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT((b >= 0) && (b < AGC_INCORP_BLKS) && (a >= 0) && (a < 3)))
-    {
-        return (m);
-    }
-
     for (int r = 0; r < 3; r++)
     {
         m.row[r] = w->blk[b][(3 * a) + r];
@@ -126,11 +116,6 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
  **********************************************************************/
 static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *inc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
-    {
-        return;
-    }
-
     for (int a = 0; a < 3; a++)
     { /* TIX,2 Z123      */
         agc_vec_t z = agc_vec_zero(); /* ZI[a], scale of W B */
@@ -174,11 +159,6 @@ static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *in
  **********************************************************************/
 static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0)))
     {
         return (0);
@@ -215,16 +195,6 @@ static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
  **********************************************************************/
 static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_navaux_tp_ok(tripa)))
-    {
-        return;
-    }
-
     agc_interp_clear_ovf(ip);          /* TLOAD BOV: clear  */
     agc_tp_t tempvar = inc->variance;  /* scale of VARIANCE 4^k */
     int      k       = 0;              /* X2 = 0            */
@@ -277,18 +247,6 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
  **********************************************************************/
 static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc, agc_tp_t tripa, int *x1)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (x1 != NULL)))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(inc->deltaq) && (tripa > 0)))
-    {
-        *x1 = 0;
-
-        return (0);
-    }
-
     int      m  = 0;                                    /* NORM X1 count */
     agc_dp_t a  = agc_tp_to_dp(agc_tp_norm(tripa, &m)); /* A 2^m, DLOAD  */
     int      q  = 0;                                    /* NORM S1 count */
@@ -317,11 +275,6 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc, agc_
  **********************************************************************/
 static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT((x1_dq <= NAVAUX_MAX_SHIFT) && (x1_dq >= -NAVAUX_MAX_SHIFT)))
     {
         return (0);
@@ -370,11 +323,6 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
  **********************************************************************/
 static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *inc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
-    {
-        return;
-    }
-
     for (int b = 0; b < AGC_INCORP_BLKS; b++)
     { /* TIX,2 INCOR2    */
         agc_vec_t om = agc_vec_zero(); /* OMEGA[b], scale of W Z */
@@ -420,11 +368,6 @@ static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t
  **********************************************************************/
 static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa, int x1)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT((x1 <= NAVAUX_MAX_SHIFT) && (x1 >= -NAVAUX_MAX_SHIFT)))
     {
         return;
@@ -463,11 +406,6 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
                                         const agc_incorp_w_t *w,
                                         agc_incorp_t         *inc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0) && agc_navaux_dp_ok(inc->deltaq)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -514,11 +452,6 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
  **********************************************************************/
 agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_w_t *w)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (w != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((inc->normgam <= NAVAUX_MAX_SHIFT) && (inc->normgam >= -NAVAUX_MAX_SHIFT)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -605,11 +538,6 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_
  **********************************************************************/
 agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv)
 {
-    if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (sv != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(sv->tdeltav) && agc_navaux_vec_ok(sv->tnuv)))
     {
         return (AGC_STATUS_BAD_ARG);

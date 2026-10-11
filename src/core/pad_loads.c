@@ -120,80 +120,40 @@ void agc_erase_set_aotel(int index, uint16_t v)
 
 agc_sp_t agc_erase_cduchkwd(void)
 {
-    if (!AGC_ASSERT(sp_ok(g_cduchkwd)))
-    {
-        return (0);
-    }
-
     return (g_cduchkwd);
 }
 
 void agc_erase_set_cduchkwd(agc_sp_t v)
 {
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_cduchkwd = v;
 }
 
 agc_dp_t agc_erase_rted1(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_rted1)))
-    {
-        return (0);
-    }
-
     return (g_rted1);
 }
 
 void agc_erase_set_rted1(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_rted1 = v;
 }
 
 agc_sp_t agc_erase_return_to_earth_range(void)
 {
-    if (!AGC_ASSERT(sp_ok(g_p37range)))
-    {
-        return (0);
-    }
-
     return (g_p37range);
 }
 
 void agc_erase_set_return_to_earth_range(agc_sp_t v)
 {
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_p37range = v;
 }
 
 agc_dp_t agc_erase_tland(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_tland)))
-    {
-        return (0);
-    }
-
     return (g_tland);
 }
 
 void agc_erase_set_tland(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_tland = v;
 }

@@ -61,22 +61,12 @@ static agc_status_t star_sighting(agc_job_ctx_t *ctx, agc_sp_t starind)
 /* 2STARS: STARIND = 0 (first star). */
 agc_status_t agc_lm_lunar_surface_two_stars(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (star_sighting(ctx, 0));
 }
 
 /* 1STAR: STARIND = 1 (second star, or the only one of option 3). */
 agc_status_t agc_lm_lunar_surface_one_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (star_sighting(ctx, 1));
 }
 
@@ -86,11 +76,6 @@ agc_status_t agc_lm_lunar_surface_one_star(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
         return (agc_job_lunar_surface_star_mark(ctx));
@@ -157,11 +142,6 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
  */
 agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram   = agc_align_ram();
     const agc_sp_t   star6 = (agc_sp_t) ((ram->starcode & STAR_BITS) * REVCNT);
 
@@ -218,11 +198,6 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
 /* 79DISP: flash V06N79 (CURSOR, SPIRAL, POSCODE); V32 back to R59. */
 agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((agc_align_ram()->poscode >= 1) && (agc_align_ram()->poscode <= POSITIONS)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -234,11 +209,6 @@ agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
 /* R59E: AOTCODE detent bits 7-9 = POSCODE; R59OUT. */
 agc_status_t agc_job_lunar_surface_star_positioned(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     const agc_sp_t   pos = (agc_sp_t) ((ram->poscode & POS_MASK) << POS_SHIFT);
 
@@ -250,11 +220,6 @@ agc_status_t agc_job_lunar_surface_star_positioned(agc_job_ctx_t *ctx)
 /* R59OUT: AOTMARK, AOTSTALL (CURTAINS on a bad end), then R59RET. */
 agc_status_t agc_job_lunar_surface_star_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_aotmark();
 
     if (st != AGC_STATUS_OK)
@@ -280,11 +245,6 @@ agc_status_t agc_job_lunar_surface_star_mark(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS */
@@ -312,11 +272,6 @@ agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx)
 /* ASTAR after PLANET: VEC1 = the first catalogue LOS; 1STAR. */
 agc_status_t agc_job_lunar_surface_first_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->vec1 = agc_align_ram()->planet_los;
 
     return (agc_lm_lunar_surface_one_star(ctx));
@@ -325,11 +280,6 @@ agc_status_t agc_job_lunar_surface_first_star(agc_job_ctx_t *ctx)
 /* R59RET after PLANET: VEC2 = the second catalogue LOS; SURFLINE. */
 agc_status_t agc_job_lunar_surface_second_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->vec2 = agc_align_ram()->planet_los;
 
     return (agc_lm_lunar_surface_surfline(ctx));

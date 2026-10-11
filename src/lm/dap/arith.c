@@ -135,11 +135,6 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
         return ((lm_dp_pair_t){0}); /* no valid result */
     }
 
-    if (!AGC_ASSERT(b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* no valid result */
-    }
-
     return (lm_dap_dpmake((int32_t) a * (int32_t) b));
 }
 
@@ -295,11 +290,6 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
         return ((lm_dp_pair_t){0}); /* A, L must be words */
     }
 
-    if (!AGC_ASSERT(d >= -ARITH_MAXMAG && d <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* divisor must be a word */
-    }
-
     uint16_t a       = arith_reg16(n.hi); /* A register */
     uint16_t l       = arith_reg16(n.lo); /* L register */
     uint16_t div     = arith_reg16(d);    /* divisor register */
@@ -395,11 +385,6 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
  **********************************************************************/
 lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
-    if (!AGC_ASSERT(d >= -ARITH_MAXMAG && d <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* divisor must be a word */
-    }
-
     lm_dp_pair_t r   = {0, 0};
     int32_t      num = lm_dap_dpval(n);                         /* dividend, scaled 2^-14 of the major word */
     lm_dp_pair_t nn  = lm_dap_dpmake(num);                      /* sign-agreeing form  */
@@ -747,11 +732,6 @@ uint16_t lm_dap_ones_to_twos(int32_t v)
  **********************************************************************/
 agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t r = 0; /* CCS of +-0, +-1 gives 0 (unscaled count) */
 
     if (v > 0)
@@ -786,11 +766,6 @@ agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
  **********************************************************************/
 agc_sp_t lm_dap_dim(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t r = 0; /* DIM of 0 stays 0 (unscaled count) */
 
     if (v > 0)

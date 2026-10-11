@@ -123,11 +123,6 @@ agc_status_t agc_csm_comptgo(void)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -180,11 +175,6 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -192,11 +182,6 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
 
     /* A flashing display whose terminate goes to P00 (GOTOPOOH).             */
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_MARKS_TFI_MGA_DONE, AGC_JOB_MARKS_TFI_MGA_DISPLAY};
-
-    if (!AGC_ASSERT(AGC_JOB_MARKS_TFI_MGA_DONE != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 45), &cont); /* status of GOFLASHR */
 
@@ -227,11 +212,6 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_marks_tfi_mga_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -465,11 +445,6 @@ static agc_dp_t delrspl_theta(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t *
  **********************************************************************/
 agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_cs)
 {
-    if (!AGC_ASSERT(ip != NULL && tff != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz     = agc_rendz_erasable(); /* RONE, TSTART82       */
     agc_dp_t     theta1 = 0;                    /* THETA(1), rev 2^0                         */
     agc_dp_t     tent   = 0;                    /* T ENTRY (PDL 6), cs 2^28                  */

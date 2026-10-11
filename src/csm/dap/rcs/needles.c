@@ -224,16 +224,6 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
 {
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, RCSFLAGS            */
 
-    if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) && (ak2 >= AGC_SP_MIN)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((ak <= AGC_SP_MAX) && (ak1 <= AGC_SP_MAX) && (ak2 <= AGC_SP_MAX)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (init)
     {
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);

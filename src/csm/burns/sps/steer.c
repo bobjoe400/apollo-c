@@ -41,11 +41,6 @@ static void phase_b(agc_job_id_t job)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return;
-    }
-
     agc_phase_change_var(PH_5_3_B, &v);
 }
 
@@ -156,11 +151,6 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
  * type B restart (5.3 and S40.8B), then the rest.                         */
 agc_status_t agc_csm_cross_product_steering(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->burn.vg     = agc_vec_add(ip, agc_vec_sub(ip, g->burn.bdt, g->avg.delvref), agc_erase_vgtig()); /* BVSU VAD VGPREV        */
@@ -234,11 +224,6 @@ static agc_status_t setup_9(agc_interp_t *ip)
  * when NBRCYCLS < 0.                                                      */
 agc_status_t agc_csm_updatevg(agc_interp_t *ip, bool *vtogain_started)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(vtogain_started != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     *vtogain_started = false;
@@ -304,11 +289,6 @@ static agc_status_t steering_tail(agc_job_ctx_t *ctx)
 /* STEERING (p.704): the AVGEXIT of P40.                                    */
 agc_status_t agc_job_steering_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->csm.updcaller = CALLER_STEERING;
     agc_interp_t ip;
 
@@ -327,11 +307,6 @@ agc_status_t agc_job_steering_csm(agc_job_ctx_t *ctx)
 /* STEERING after its restart point: IMPULSW reset (ENGINOFF is set up).   */
 agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_IMPULSW);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW)))
@@ -345,11 +320,6 @@ agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx)
 /* P40CNV85 (p.697): VGBODY = S41.1(VGPREV), VG in control axes for N85.   */
 void agc_csm_convert_vg_body(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
     agc_burn_t *b = &agc_guid_state()->burn;
 
     if (!AGC_ASSERT(b != NULL))
@@ -365,11 +335,6 @@ void agc_csm_convert_vg_body(agc_interp_t *ip)
 /* CALCN85 (p.697): AVEGEXIT of P41 / post-burn: UPDATEVG, N85, SERVEXIT.  */
 agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->csm.updcaller = CALLER_CALC_VG_BODY;
     agc_interp_t ip;
 
@@ -390,11 +355,6 @@ agc_status_t agc_job_calc_vg_body_csm(agc_job_ctx_t *ctx)
 /* Restart entries inside the cycle: S40.8B, UPDATEVG_B, SURELY9_B.        */
 agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -451,11 +411,6 @@ agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx)
  * DELVCTL = DV47TEMP after a 5.3 type B restart point.                    */
 agc_status_t agc_job_calc_delta_v_body_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -470,11 +425,6 @@ agc_status_t agc_job_calc_delta_v_body_csm(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_calc_delta_v_restart(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     agc_inhint();
@@ -488,11 +438,6 @@ agc_status_t agc_job_calc_delta_v_restart(agc_job_ctx_t *ctx)
  * NUMIT 0, EPSILON4 45 (NORMSW) or 10 degrees; 1 type C at ENDLAMB.       */
 agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -518,11 +463,6 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
  * GOBL/2 (PIPTIME - NOMTIG) EARTHMU / RN^2. Then 1 type C at COPY40.9.    */
 agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g  = agc_guid_state();
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_interp_t ip;
@@ -559,11 +499,6 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
  * FIRSTFLG reset, NBRCYCLS = -1 (next UPDATEVG sets up S40.9), group 1 off. */
 agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->burn.tnitprev = g->burn.tnit;
@@ -584,11 +519,6 @@ agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
 /* REDO40.9 (p.725): restart of S40.9: give up this pass, keep VGPREV.     */
 agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->burn.delvsum                = agc_vec_zero();
@@ -610,11 +540,6 @@ agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
  * +X translation: channel 31 bit 7 reads 0 (inverted input).              */
 agc_status_t agc_job_timeburn_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t             *g   = agc_guid_state();
     const agc_csm_dapcom_t *com = agc_csm_dap_com();
 

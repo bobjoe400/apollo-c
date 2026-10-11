@@ -113,11 +113,6 @@ static agc_navaux_padload_t padload; /* AZO AXO -AYO 504LM, see type */
  **********************************************************************/
 agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
 {
-    if (!AGC_ASSERT(pad != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_tp_ok(pad->tephem) && agc_navaux_vec_ok(pad->lm504)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -145,11 +140,6 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
  **********************************************************************/
 agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(padload.lm504)))
     {
         return (AGC_STATUS_BAD_ARG); /* store corrupted */
@@ -193,16 +183,6 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
  **********************************************************************/
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_dp_t *x)
 {
-    if (!AGC_ASSERT((ip != NULL) && (x != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((xdot_shift >= 0) && (xdot_shift <= 5)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* DLOAD SR 6D 14D / TAD TIMSUBO: T+T0, cs scale 2^42 (TIMSUBM).       */
     agc_tp_t tsum = agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14); /* 2^42 cs */
 
@@ -252,11 +232,6 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_
  **********************************************************************/
 agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (m != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t     az = 0;                                                                                    /* 504AZ revs 2^0                  */
     agc_status_t st = agc_planet_newangle(ip, pad->tephem, t_cs, pad->azo, WEARTH, XDOT_SHIFT_WEARTH, &az); /* NEWANGLE status */
 
@@ -292,16 +267,6 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pa
  **********************************************************************/
 agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
 {
-    if (!AGC_ASSERT((pad != NULL) && (l != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(pad->axo) && agc_navaux_dp_ok(pad->neg_ayo)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *l = agc_vec_make(agc_dp_neg(pad->axo), pad->neg_ayo, 0); /* 504LPL  */
 
     return (AGC_STATUS_OK);
@@ -332,16 +297,6 @@ typedef struct moon_angles
  **********************************************************************/
 static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(a) && agc_navaux_dp_ok(b)))
-    {
-        return (0);
-    }
-
     return (agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1)));
 }
 
@@ -365,16 +320,6 @@ static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 static agc_vec_t combine(agc_interp_t *ip, agc_vec_t u, agc_dp_t su, agc_vec_t v, agc_dp_t sv, bool subtract)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero());
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(su) && agc_navaux_dp_ok(sv)))
-    {
-        return (agc_vec_zero());
-    }
-
     agc_vec_t a = agc_vec_scale(ip, u, su); /* scale 2^2           */
     agc_vec_t b = agc_vec_scale(ip, v, sv); /* scale 2^2           */
     agc_vec_t c = agc_vec_add(ip, a, b);    /* VAD, scale 2^2      */
@@ -412,11 +357,6 @@ static agc_vec_t combine(agc_interp_t *ip, agc_vec_t u, agc_dp_t su, agc_vec_t v
  **********************************************************************/
 agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (m != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     moon_angles_t ang;                 /* COB SOB 504F NODI, see type */
     agc_tp_t      tsubo = pad->tephem; /* TEPHEM, scale 2^42 cs   */
 
@@ -486,16 +426,6 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
  **********************************************************************/
 static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_dp_t t_cs, bool want_lp, agc_mat_t *m, agc_vec_t *l)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((m != NULL) && (l != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_OK; /* returned to the caller */
 
     if (moon)
@@ -547,11 +477,6 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
  **********************************************************************/
 agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (rp != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(r)))
     {
         return (AGC_STATUS_BAD_ARG);

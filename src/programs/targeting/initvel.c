@@ -118,11 +118,6 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4, iv_work_t *
     w->un     = rz_unit(ip, agc_vec_cross(ip, uri, w->vinit));
     w->cozy4  = agc_dp_add(ip, agc_vec_dot(ip, rz_unit(ip, w->rtarg1), uri), w->cozy4);
     w->normsw = false;
-
-    if (!AGC_ASSERT(w->cozy4 >= AGC_DP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -233,11 +228,6 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz, const iv_wor
  **********************************************************************/
 static agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in, agc_lambert_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (rz_is_csm())
     {
         in->iterctr = AGC_CONIC_LAMBERT_ITERCTR;
@@ -513,10 +503,5 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit
  **********************************************************************/
 agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, agc_dp_t e4, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (iv_run(ip, rz, numit, e4, false, resume));
 }

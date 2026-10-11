@@ -195,11 +195,6 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((s->monsave1 & PIN_BIT15) != 0u)
     {
         return (AGC_STATUS_OK); /* terminate came since last MONREQ */
@@ -409,11 +404,6 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(ls >= PIN_LS_PROCEED && ls <= PIN_LS_DATAIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     s->loadstat     = ls;
     pin_kilmonon();                          /* turn on kill monitor bit      */
     agc_status_t st = agc_dsky_releasedsp(); /* status so far */
@@ -616,11 +606,6 @@ agc_status_t agc_task_tstlts2(void)
 agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }

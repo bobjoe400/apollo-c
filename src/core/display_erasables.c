@@ -79,11 +79,6 @@ agc_sp_t agc_erase_option1(int index)
         return (0);
     }
 
-    if (!AGC_ASSERT(sp_ok(g_option[index - 0])))
-    {
-        return (0);
-    }
-
     return (g_option[index - 0]);
 }
 
@@ -94,51 +89,26 @@ void agc_erase_set_option1(int index, agc_sp_t v)
         return;
     }
 
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_option[index - 0] = v;
 }
 
 agc_dp_t agc_erase_samptime(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_samptime)))
-    {
-        return (0);
-    }
-
     return (g_samptime);
 }
 
 void agc_erase_set_samptime(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_samptime = v;
 }
 
 uint16_t agc_erase_sfail(void)
 {
-    if (!AGC_ASSERT(g_sfail <= EW15_MAX))
-    {
-        return (0);
-    }
-
     return (g_sfail);
 }
 
 void agc_erase_set_sfail(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= EW15_MAX))
-    {
-        return;
-    }
-
     g_sfail = v;
 }
 
@@ -159,11 +129,6 @@ uint16_t agc_erase_markdown(int index)
 
 void agc_erase_set_markdown(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 6))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(v <= EW15_MAX))
     {
         return;
@@ -189,11 +154,6 @@ uint16_t agc_erase_mark2dwn(int index)
 
 void agc_erase_set_mark2dwn(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 6))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(v <= EW15_MAX))
     {
         return;
@@ -204,80 +164,40 @@ void agc_erase_set_mark2dwn(int index, uint16_t v)
 
 agc_sp_t agc_erase_trkmkcnt(void)
 {
-    if (!AGC_ASSERT(sp_ok(g_trkmkcnt)))
-    {
-        return (0);
-    }
-
     return (g_trkmkcnt);
 }
 
 void agc_erase_set_trkmkcnt(agc_sp_t v)
 {
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_trkmkcnt = v;
 }
 
 agc_dp_t agc_erase_t3tot4(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_t3tot4)))
-    {
-        return (0);
-    }
-
     return (g_t3tot4);
 }
 
 void agc_erase_set_t3tot4(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_t3tot4 = v;
 }
 
 agc_dp_t agc_erase_rr_az(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_rr_az)))
-    {
-        return (0);
-    }
-
     return (g_rr_az);
 }
 
 void agc_erase_set_rr_az(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_rr_az = v;
 }
 
 agc_dp_t agc_erase_rr_elev(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_rr_elev)))
-    {
-        return (0);
-    }
-
     return (g_rr_elev);
 }
 
 void agc_erase_set_rr_elev(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_rr_elev = v;
 }

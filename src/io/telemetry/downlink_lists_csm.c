@@ -350,11 +350,6 @@ static const agc_dn_list_t sublists[CM_SUB_COUNT] = {
 /* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */
 agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_CSM_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -368,11 +363,6 @@ agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
 /* DNPTR target: sublist SUB.                                              */
 agc_status_t agc_dnlist_csm_sublist(int sub, agc_dn_list_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(sub >= 0 && sub < CM_SUB_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);

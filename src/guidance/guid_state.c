@@ -85,11 +85,6 @@ agc_guid_t *agc_guid_state(void)
  **********************************************************************/
 agc_status_t agc_guid_init(agc_vehicle_t veh)
 {
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t zero = {0}; /* all cells +0 */
 
     g_guid = zero;

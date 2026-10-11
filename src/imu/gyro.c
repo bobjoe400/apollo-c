@@ -200,11 +200,6 @@ agc_status_t agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3])
         out[i] = gbuf[buf][i];
     }
 
-    if (!AGC_ASSERT(out[0] >= AGC_DP_MIN && out[0] <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -224,11 +219,6 @@ void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
 
     for (int i = 0; i < 3; i++)
     {
-        if (!AGC_ASSERT(in[i] >= AGC_DP_MIN && in[i] <= AGC_DP_MAX))
-        {
-            return;
-        }
-
         gbuf[buf][i] = in[i];
     }
 }
@@ -281,11 +271,6 @@ uint16_t agc_imu_gyrocmd(void)
  **********************************************************************/
 void agc_imu_hw_set_gyrocmd(uint16_t pulses)
 {
-    if (!AGC_ASSERT(pulses <= GYROCMD_MAX))
-    {
-        return;
-    }
-
     gyrocmd = pulses;
 
     if (!AGC_ASSERT(gyrocmd == pulses))
@@ -381,11 +366,6 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
  **********************************************************************/
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3])
 {
-    if (!AGC_ASSERT(gyro != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, gyro);
 
     if (!AGC_ASSERT(gbuf[AGC_IMU_GBUF_OGC][2] == gyro[2]))
@@ -475,18 +455,8 @@ static agc_status_t augment_schedule(void)
  **********************************************************************/
 static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool     neg   = (cmd < 0);                             /* MAJ- / MIN- path             */
     agc_dp_t total = neg ? cmd - GYROFRAC : cmd + GYROFRAC; /* DAS +-GYROFRAC, rev 2^0; toward larger magnitude */
-
-    if (!AGC_ASSERT(total >= AGC_DP_MIN && total <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     chan14((uint16_t) (neg ? (select | AGC_CH014_GYRONEG) : select), true); /* AD BIT9 */
     uint32_t mag    = (uint32_t) (neg ? -total : total);                    /* |cmd|, 2^-28 rev */

@@ -95,11 +95,6 @@ static agc_status_t sighting_mark_done(void)
  */
 agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS */
@@ -128,11 +123,6 @@ agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx)
 /* R53C1: CAF ZERO, CLEANDSP; the job continues at R53C. */
 agc_status_t agc_job_sighting_mark_code_clean(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -144,11 +134,6 @@ agc_status_t agc_job_sighting_mark_code_clean(agc_job_ctx_t *ctx)
 /* R53C: flash V01N71; V34 terminates, V33 R53Z, ENTER re-flashes. */
 agc_status_t agc_job_sighting_mark_code_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -163,11 +148,6 @@ agc_status_t agc_job_sighting_mark_code_display(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     if (!agc_align_chkscode(ram->starcode))
@@ -202,11 +182,6 @@ agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->sighting_mark_return = ret; /* R53EXIT  */
 
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_ALTERNATE_LOS_RESERVE, AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
@@ -215,22 +190,12 @@ agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx, agc_j
 /* R56 ENTER on V06N94: new angles, flash again. */
 agc_status_t agc_job_alternate_los_angles_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_ALTERNATE_LOS_RESERVE, AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
 }
 
 /* R56A +2: CLEANDSP, continuing at R56A1. */
 static agc_status_t alternate_los_clean(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -242,11 +207,6 @@ static agc_status_t alternate_los_clean(const agc_job_ctx_t *ctx)
 /* R56A (V33 on V06N94): SXTMARK +2 (marks system and a VAC area only). */
 agc_status_t agc_job_alternate_los_reserve(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_sxtmark_reserve();
 
     if (st != AGC_STATUS_OK)
@@ -261,11 +221,6 @@ agc_status_t agc_job_alternate_los_reserve(agc_job_ctx_t *ctx)
  * again, ENTER is the mark.                                              */
 agc_status_t agc_job_alternate_los_mark_request(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->sighting_mark_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -282,11 +237,6 @@ agc_status_t agc_job_alternate_los_mark_request(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->sac = agc_erase_mrkbuf(1, MRKBUF_CDUS);
@@ -311,11 +261,6 @@ agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
 /* R56A +2 (V32 on V50N25: another mark, like a reject). */
 agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (alternate_los_clean(ctx));
 }
 
@@ -326,11 +271,6 @@ agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (m != NULL)) || !AGC_ASSERT(los_sm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t    v;
     agc_status_t st = agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
 
@@ -355,11 +295,6 @@ agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_
 /* The mark as the 7 downlink words (MKT2T1 .. MKCDUX). */
 static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
 {
-    if (!AGC_ASSERT(m != NULL))
-    {
-        return;
-    }
-
     w[0] = align_sp_to_word(agc_dp_high(m->t));
     w[1] = align_sp_to_word(agc_dp_low(m->t));
     w[2] = m->cduy;
@@ -381,11 +316,6 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
  */
 agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(los_sm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t           *ram = agc_align_ram();
     const agc_align_sxt_mark_t m   = ram->sxt[0];
 

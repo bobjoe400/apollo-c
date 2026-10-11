@@ -98,11 +98,6 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
  */
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(starm_nb != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t ta     = agc_csm_sxtlogic(trunnion_cdu);        /* PD0 */
     const agc_dp_t sin_ta = agc_dp_shl(ip, agc_dp_sin(ip, ta), 1); /* PD2 */
     const agc_dp_t sa     = agc_align_cdulogic(shaft_cdu);         /* PD4 */
@@ -143,16 +138,6 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t sha
  */
 static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    if (!AGC_ASSERT(nb1 != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t pda = agc_vec_cross(ip, nb1->row[2], star);
 
     align_clear_ovf(ip); /* BOV +1  */
@@ -229,11 +214,6 @@ static agc_status_t store_cult(bool cult)
  */
 agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    if (!AGC_ASSERT((ip != NULL) && (t != NULL)) || !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t s = star_sm;
 
     agc_guid_smnb(t, &s); /* *SMNB*  */
@@ -260,11 +240,6 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdut
  */
 agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    if (!AGC_ASSERT((ip != NULL) && (nb != NULL)) || !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_mat_t eref = agc_mat_transpose(nb); /* EREF WRT NB2     */
     const agc_mat_t m    = nb2nb1();
     agc_mat_t       t1;
@@ -347,11 +322,6 @@ agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e)
  */
 agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(e != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     align_clear_ovf(ip); /* BOVB     */
     agc_dp_t wt = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
 

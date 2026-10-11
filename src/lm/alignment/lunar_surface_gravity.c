@@ -97,11 +97,6 @@ static agc_status_t next_sample(void)
  */
 agc_status_t agc_job_lunar_gravity_coarsed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->gctr = GRAVITY_SAMPLES;
     agc_imu_set_pipa_interval(PIPA_INTERVAL);
     agc_status_t st       = agc_imu_gcompzer();
@@ -149,11 +144,6 @@ agc_status_t agc_task_lunar_gravity_sample(void)
  */
 agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram  = agc_align_ram();
     agc_vec_t        delv = agc_erase_delv();
     agc_status_t     st   = agc_imu_one_over_pipa(&delv); /* 1/PIPA   */
@@ -197,11 +187,6 @@ agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_thetad(0, THETA_42DEG);
     agc_erase_set_thetad(1, THETA_MINUS_42);
     agc_erase_set_thetad(2, THETA_35DEG);
@@ -218,11 +203,6 @@ agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lunar_gravity_rotate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -266,11 +246,6 @@ agc_status_t agc_job_lunar_gravity_rotate(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -292,11 +267,6 @@ agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
 /* The V06N04 flash (gravity error angle). */
 agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -308,11 +278,6 @@ agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
 /* V32 on V06N04: UPFLAG FREEFLAG (measure again), then PROGRAV. */
 agc_status_t agc_job_lunar_gravity_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_FREEFLAG);
 
     return (agc_job_lunar_gravity_accepted(ctx));
@@ -321,11 +286,6 @@ agc_status_t agc_job_lunar_gravity_recycle(agc_job_ctx_t *ctx)
 /* PROGRAV: PHASCHNG; GSAV = STARSAV1; FREEFLAG -> GVDETER, else ATTCHK. */
 agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
@@ -349,11 +309,6 @@ agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->lunar_gravity_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -382,11 +337,6 @@ agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx)
  * gyros are busy.                                                        */
 agc_status_t agc_job_lunar_surface_trim_pulse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS */
@@ -419,11 +369,6 @@ agc_status_t agc_job_lunar_surface_trim_pulse(agc_job_ctx_t *ctx)
 /* IMUPULSE again once the gyros are free. */
 agc_status_t agc_job_lunar_surface_trim_retry(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_LUNAR_SURFACE_TRIM_RETRY);
 
     if (st == AGC_STATUS_BUSY)
@@ -451,11 +396,6 @@ agc_status_t agc_job_lunar_surface_trim_retry(agc_job_ctx_t *ctx)
 /* After the torquing: QMINEXIT. */
 agc_status_t agc_job_lunar_surface_trimmed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK);
@@ -524,11 +464,6 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
  */
 agc_status_t agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->xsm = ram->xdc; /* MATMOVE  */
@@ -560,11 +495,6 @@ agc_status_t agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx)
 /* COATRIM: flash V06N22; ENTER shows it again. */
 agc_status_t agc_job_lunar_surface_coarse_trim_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_INITALGN)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -576,11 +506,6 @@ agc_status_t agc_job_lunar_surface_coarse_trim_display(agc_job_ctx_t *ctx)
 /* CORSIT (after PHASCHNG when displayed): COARSE. */
 agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
@@ -594,11 +519,6 @@ agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx)
 /* CORSIT after COARSE: NCOARSE; GYROTRIM; GOTO SURFDISP. */
 agc_status_t agc_job_lunar_surface_coarse_trimmed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = align_ncoarse();
 
     if (st != AGC_STATUS_OK)

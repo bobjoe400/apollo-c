@@ -100,16 +100,6 @@ static const agc_dp_t TFF_POLY[TFF_POLY_N] = { /* A0..A5, scale 2^0 */
  **********************************************************************/
 agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(x)))
-    {
-        return (0);
-    }
-
     agc_dp_t  acc = TFF_POLY[TFF_POLY_N - 1]; /* Horner sum, scale 2^0 */
     agc_ovf_t ovf = 0;                        /* DAS overflow, ignored */
 
@@ -144,11 +134,6 @@ agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x)
  **********************************************************************/
 agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(tff->rone) && agc_navaux_vec_ok(tff->vone)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -225,11 +210,6 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
  **********************************************************************/
 agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((tff->nr >= 0) && (tff->nr <= AGC_DP_BITS) && (tff->na >= 0) && (tff->na <= AGC_DP_BITS)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -290,11 +270,6 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
  **********************************************************************/
 static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_rtmu, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* DMP TFF/RTMU: the caller takes the top two words (truncation).     */
     agc_dp_t t = agc_dp_mul_trunc(tff_rtmu, tff->rtmu); /* TFF, 2^28 cs */
 
@@ -330,11 +305,6 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff
  **********************************************************************/
 static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_dp_t q2, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int na = tff->na; /* NA, normalization count */
 
     tff->tffdelq = agc_dp_sub(ip, q2, tff->tffq1); /* Q2-Q1    */
@@ -419,16 +389,6 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_d
  **********************************************************************/
 static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num, agc_dp_t den, agc_dp_t q2, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(num) && agc_navaux_dp_ok(den)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     tff->tffx       = num;
     agc_dp_t absden = agc_dp_abs(den); /* |DEN|, scale of den */
 
@@ -542,11 +502,6 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num, agc_dp
  **********************************************************************/
 static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, bool tper, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_dp_ok(rterm) && (tff->nr >= 0) && (tff->nr <= AGC_DP_BITS)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -652,11 +607,6 @@ agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, a
  **********************************************************************/
 agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(rper >= 0))
     {
         return (AGC_STATUS_BAD_ARG);

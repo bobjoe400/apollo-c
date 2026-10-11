@@ -169,11 +169,6 @@ agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv)
  **********************************************************************/
 static agc_w3_t ddv_overflow(agc_w3_t m, bool negative, int *ovf)
 {
-    if (!AGC_ASSERT(ovf != 0))
-    {
-        return (m);
-    }
-
     *ovf = 1;                                       /* CAF ONE; TS OVFIND */
     m.m0 = negative ? -AGC_W_POSMAX : AGC_W_POSMAX; /* CAF POSMAX; TS MPAC */
     m.m1 = m.m0;                                    /* FINALDV +3     */
@@ -242,11 +237,6 @@ static agc_w2_t ddv_unit_major(agc_w2_t b)
  **********************************************************************/
 static bool ddv_bufzero(agc_w3_t *m, agc_w2_t *b, bool *neg, int *ovf)
 {
-    if (!AGC_ASSERT((m != 0) && (b != 0) && (neg != 0)))
-    {
-        return (true);
-    }
-
     m->m2 = 0;                 /* TS MPAC +2       */
     *m    = agc_w_tpagree(*m); /* TC TPAGREE       */
 
@@ -416,11 +406,6 @@ agc_w3_t agc_w_ddv(agc_w3_t m, agc_w2_t b, int *ovf, bool *dvsign_neg)
     bool     neg = false; /* DVSIGN: -1 (false) / -0 (true) / +1 (false) */
     agc_w2_t a;           /* |dividend| words */
     agc_w2_t q;           /* |quotient| words */
-
-    if (!AGC_ASSERT((ovf != 0) && (dvsign_neg != 0)))
-    {
-        return (m);
-    }
 
     *ovf = 0;
     b    = ddv_unit_major(b); /* CCS BUF          */
@@ -668,11 +653,6 @@ agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
     agc_w3_t zero = {0, 0, 0};
     int      k; /* whole-word left shifts done */
 
-    if (!AGC_ASSERT(shift != 0) || !AGC_ASSERT(abort != 0))
-    {
-        return (zero);
-    }
-
     *shift = 0;
     *abort = false;
 
@@ -725,11 +705,6 @@ agc_w3_t agc_w_tpagree(agc_w3_t m)
     agc_tp_t v = agc_w3_value(m); /* value of the three words, 2^-42 per unit */
 
     if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
     {
         return (m);
     }

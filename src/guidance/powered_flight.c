@@ -113,16 +113,6 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
  **********************************************************************/
 static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
 {
-    if (!AGC_ASSERT(a >= AGC_DP_MIN && a <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(b >= AGC_DP_MIN && b <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_tp_to_dp(agc_dp_mul_tp(a, b)));
 }
 
@@ -227,11 +217,6 @@ agc_dp_t agc_guid_cdulogic(uint16_t cdu)
  **********************************************************************/
 void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(cdu_yzx != NULL))
-    {
-        return;
-    }
-
     agc_interp_t ip; /* for SINE and COSINE */
 
     agc_interp_init(&ip);
@@ -260,11 +245,6 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  **********************************************************************/
 void agc_guid_cdutrig(agc_cdutrig_t *t)
 {
-    if (!AGC_ASSERT(t != NULL))
-    {
-        return;
-    }
-
     uint16_t cdu[3]; /* CDUY, CDUZ, CDUX counts */
 
     cdu[AGC_TRIG_X] = agc_erase_cdux(); /* CA CDUX  TS CDUSPOT +4       */
@@ -332,16 +312,6 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  **********************************************************************/
 void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(dir == AGC_AXISROT_NBSM || dir == AGC_AXISROT_SMNB))
-    {
-        return;
-    }
-
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};
     const bool       nbsm      = (dir == AGC_AXISROT_NBSM); /* A = +3 */
@@ -431,11 +401,6 @@ void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
  **********************************************************************/
 void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return;
-    }
-
     agc_guid_axisrot(t, AGC_AXISROT_NBSM, v);
 
     return; /* C*MM*N3: CA THREE */
@@ -456,11 +421,6 @@ void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
  **********************************************************************/
 void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return;
-    }
-
     agc_guid_cdutrig(t);
     agc_guid_smnb(t, v);
 
@@ -485,11 +445,6 @@ void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
  **********************************************************************/
 agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_cdutrig(t);
     agc_guid_nbsm(t, v);
 
@@ -513,11 +468,6 @@ agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
  **********************************************************************/
 void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return;
-    }
-
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_smnb(t, v);
 
@@ -544,11 +494,6 @@ void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v
  **********************************************************************/
 agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_nbsm(t, v);
 
@@ -580,11 +525,6 @@ agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_
  **********************************************************************/
 agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(t != NULL) || !AGC_ASSERT(dcdu != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y]; /* sin IGA / 2, scale 2^1 */
     const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z]; /* sin MGA / 2, scale 2^1 */
@@ -626,11 +566,6 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec
  **********************************************************************/
 void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(xnb != NULL))
-    {
-        return;
-    }
-
     /* Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).          */
     const agc_dp_t sx = t->sincdu[AGC_TRIG_X]; /* sin OGA / 2, scale 2^1 */
     const agc_dp_t cx = t->coscdu[AGC_TRIG_X]; /* cos OGA / 2, scale 2^1 */

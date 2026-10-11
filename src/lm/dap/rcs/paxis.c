@@ -473,11 +473,6 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(policy != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *policy       = true;
     uint16_t bits = (uint16_t) (~agc_chan_read(031) & PX_TRANSBITS); /* THC translation bits (inverted channel 31) */
 

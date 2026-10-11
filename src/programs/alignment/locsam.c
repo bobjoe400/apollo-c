@@ -56,11 +56,6 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(radius > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_dp_t a = agc_dp_shr(agc_dp_div(ip, radius, rmag), 1);
 
     a = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
@@ -76,11 +71,6 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
  */
 agc_status_t agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv, agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (sv != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         /* LOCSAM earth/moon centred branches for the CSM (Comanche p. 749-750). */
@@ -154,11 +144,6 @@ agc_status_t agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *s
  */
 agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs, agc_job_id_t resume_job, agc_align_locsam_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t moon;
     agc_vec_t sun;
 
@@ -251,11 +236,6 @@ typedef struct picapar_search
  * pair with the smaller dot product (larger separation). */
 static void picapar_strategy(picapar_search_t *s, int i6, int j6)
 {
-    if (!AGC_ASSERT(s != NULL))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT((i6 > j6) && (j6 >= 6)))
     {
         return;
@@ -285,11 +265,6 @@ static void picapar_strategy(picapar_search_t *s, int i6, int j6)
 /* PIC1-PIC4 for the CSM (Comanche pp. 753-754). */
 static void picapar_search_csm(picapar_search_t *s)
 {
-    if (!AGC_ASSERT(s != NULL))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(s->ip != NULL))
     {
         return;
@@ -351,11 +326,6 @@ static void picapar_search_csm(picapar_search_t *s)
  */
 agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, const agc_mat_t *refsmmat, const uint16_t cdu[3], agc_sp_t *besti, agc_sp_t *bestj, bool *found)
 {
-    if (!AGC_ASSERT((ip != NULL) && (ls != NULL) && (refsmmat != NULL)) || !AGC_ASSERT((cdu != NULL) && (besti != NULL) && (bestj != NULL) && (found != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_cdutrig_t trig;
     agc_mat_t     nb;
     agc_status_t  st = agc_align_cdutrig(cdu, &trig); /* CDUTRIG  */
@@ -528,11 +498,6 @@ agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6, agc_sp_t 
  */
 agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2], const agc_vec_t obs[2], agc_dp_t *diff)
 {
-    if (!AGC_ASSERT((ip != NULL) && (obs != NULL)) || !AGC_ASSERT((cat != NULL) && (diff != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     /* DOT* SL1 ACOS: the SL1 acts on the TP dot product.               */
@@ -551,11 +516,6 @@ agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2], 
  */
 agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2], const agc_vec_t b[2], agc_mat_t *xdc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (a != NULL)) || !AGC_ASSERT((b != NULL) && (xdc != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t   *ram = agc_align_ram();
     const agc_status_t st  = agc_imu_axisgen(ip, a, b, xdc); /* AXISGEN */
 
@@ -573,15 +533,5 @@ agc_status_t agc_align_fine_solve(agc_interp_t *ip, const agc_vec_t a[2], const 
  */
 bool agc_align_chkscode(agc_sp_t starcode)
 {
-    if (!AGC_ASSERT(starcode >= AGC_SP_MIN))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(starcode <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
     return ((starcode >= 0) && (starcode <= AGC_ALIGN_STAR_CODE_MAX));
 }

@@ -130,11 +130,6 @@ agc_sp_t agc_erase_r61cntr(void)
  **********************************************************************/
 void agc_erase_set_r61cntr(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= -1 && v <= 3))
-    {
-        return;
-    }
-
     ta.r61cntr = v;
 }
 
@@ -438,11 +433,6 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
  **********************************************************************/
 agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     ta.genret = ret_job;
 
     if (ta.r61cntr > 0)
@@ -477,11 +467,6 @@ agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_i
  **********************************************************************/
 agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -526,11 +511,6 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
     agc_phase_change(1, 00111);
     ta.r61cntr = 0;
@@ -561,11 +541,6 @@ agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
 
     if (st == AGC_STATUS_OK)
@@ -603,11 +578,6 @@ agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION));
 }
 
@@ -628,11 +598,6 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_PRFTRKAT, rz_option(2) == 1U);
 
     return (agc_job_rendezvous_final_attitude_csm_compute(ctx));
@@ -656,11 +621,6 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -693,11 +653,6 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_maneuver(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
 
     return (agc_imu_attitude_maneuver(ctx, AGC_JOB_RENDZ_ENDEXT));

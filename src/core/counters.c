@@ -76,31 +76,11 @@ void agc_erase_reset_counters(void)
 /* ---- P-, Q-, R-RHCCTR (LM, 042-044) ------------------------------------ */
 static agc_sp_t rhc_get(int axis)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < CTR_RHC_N))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(sp_ok(g_rhcctr[axis])))
-    {
-        return (0);
-    }
-
     return (g_rhcctr[axis]);
 }
 
 static void rhc_set(int axis, agc_sp_t v)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < CTR_RHC_N))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_rhcctr[axis] = v;
 }
 
@@ -137,11 +117,6 @@ void agc_erase_set_r_rhcctr(agc_sp_t v)
 /* ---- RNRAD (046) -------------------------------------------------------- */
 uint16_t agc_erase_rnrad(void)
 {
-    if (!AGC_ASSERT(g_rnrad <= CTR_WORD15_MAX))
-    {
-        return (0);
-    }
-
     return (g_rnrad);
 }
 
@@ -158,27 +133,12 @@ void agc_erase_set_rnrad(uint16_t v)
 /* ---- CDUTCMD = TVCYAW (053), CDUSCMD = TVCPITCH (054) ------------------- */
 agc_sp_t agc_erase_cdutcmd(int which)
 {
-    if (!AGC_ASSERT(which >= 0 && which < CTR_CDUCMD_N))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(sp_ok(g_cducmd[which])))
-    {
-        return (0);
-    }
-
     return (g_cducmd[which]);
 }
 
 void agc_erase_set_cdutcmd(int which, agc_sp_t v)
 {
     if (!AGC_ASSERT(which >= 0 && which < CTR_CDUCMD_N))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(sp_ok(v)))
     {
         return;
     }
@@ -209,31 +169,16 @@ void agc_erase_set_tvcpitch(agc_sp_t v)
 /* ---- THRUST (055) and ALTM (060), LM ------------------------------------ */
 agc_sp_t agc_erase_thrust(void)
 {
-    if (!AGC_ASSERT(sp_ok(g_thrust)))
-    {
-        return (0);
-    }
-
     return (g_thrust);
 }
 
 void agc_erase_set_thrust(agc_sp_t pulses)
 {
-    if (!AGC_ASSERT(sp_ok(pulses)))
-    {
-        return;
-    }
-
     g_thrust = pulses;
 }
 
 uint16_t agc_erase_altm(void)
 {
-    if (!AGC_ASSERT(g_altm <= CTR_WORD15_MAX))
-    {
-        return (0);
-    }
-
     return (g_altm);
 }
 
@@ -276,31 +221,11 @@ void agc_pipasr_noscale(void)
 
 agc_sp_t agc_erase_tem(int axis)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(sp_ok(g_tem[axis])))
-    {
-        return (0);
-    }
-
     return (g_tem[axis]);
 }
 
 void agc_erase_set_tem(int axis, agc_sp_t v)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(sp_ok(v)))
-    {
-        return;
-    }
-
     g_tem[axis] = v;
 }
 
@@ -308,11 +233,6 @@ void agc_erase_set_tem(int axis, agc_sp_t v)
  * the sim stores it and raises UPRUPT.                                    */
 uint16_t agc_erase_inlink(void)
 {
-    if (!AGC_ASSERT(g_inlink <= CTR_WORD15_MAX))
-    {
-        return (0);
-    }
-
     return (g_inlink);
 }
 

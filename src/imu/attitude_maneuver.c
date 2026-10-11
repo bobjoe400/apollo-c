@@ -103,11 +103,6 @@ static bool vec_ok(agc_vec_t v)
         ok = ok && v.c[i] >= AGC_DP_MIN && v.c[i] <= AGC_DP_MAX;
     }
 
-    if (!AGC_ASSERT(AGC_VEC_N == 3))
-    {
-        return (false);
-    }
-
     return (ok);
 }
 
@@ -289,11 +284,6 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t c
  **********************************************************************/
 static agc_dp_t dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(n >= 1 && n <= 2))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), n)));
 }
 
@@ -315,11 +305,6 @@ static agc_dp_t dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
  **********************************************************************/
 static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t vf, const uint16_t cdu0[3], uint16_t gimbal[3])
 {
-    if (!AGC_ASSERT(ip != NULL && mis != NULL && cdu0 != NULL) || !AGC_ASSERT(gimbal != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_vec_dot(ip, vf, scaxis) >= 0)
     {
         for (int i = 0; i < 3; i++)
@@ -444,11 +429,6 @@ agc_status_t agc_imu_vecpoint_from_cdus(agc_interp_t  *ip,
                                         agc_vec_t      scaxis_in,
                                         uint16_t       gimbal[3])
 {
-    if (!AGC_ASSERT(ip != NULL && cdu0 != NULL && gimbal != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_imu_set_pointvsm(pointvsm_in);
 
     if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
@@ -479,11 +459,6 @@ agc_status_t agc_imu_vecpoint_from_cdus(agc_interp_t  *ip,
  **********************************************************************/
 agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3], uint16_t out[3])
 {
-    if (!AGC_ASSERT(ip != NULL && gimbal != NULL && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const uint16_t yzx[3] = {gimbal[1], gimbal[2], gimbal[0]}; /* CDUSPOT */
     agc_cdutrig_t  t;                                          /* sin/cos of the CDUs */
 
@@ -786,11 +761,6 @@ agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t re
  **********************************************************************/
 agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = final_angles(); /* status of the call */
 
     if (st != AGC_STATUS_OK)
@@ -819,11 +789,6 @@ agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(!agc_kalc_active()))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -843,11 +808,6 @@ agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t maneuver_return(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_3AXISFLG);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_3AXISFLG)))
@@ -877,11 +837,6 @@ static agc_status_t maneuver_return(const agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -903,11 +858,6 @@ agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_erase_modreg() == 0)
     {
         return (maneuver_return(ctx));
@@ -935,11 +885,6 @@ agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM); /* vehicle is the LM */
 
     if (lm)
@@ -994,11 +939,6 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dsky_cont_t cont = {AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE,
                                   AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE,
                                   AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY};
@@ -1022,11 +962,6 @@ agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_3AXISFLG);
 
     return (agc_imu_attitude_maneuver(ctx, AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE));
@@ -1042,11 +977,6 @@ agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

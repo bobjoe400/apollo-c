@@ -596,11 +596,6 @@ static tps_label_t tps_rngetest(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int       x2     = tps_work.xrs[1];               /* X2: 0 or 2 */
     agc_vec_t v      = rz_vshift(ip, rz->vpass4, x2); /* VSR* 0,2, m/cs 2^7 */
     agc_dp_t  sqrtmu = TPS_SQRT_MUE;                  /* 00D, B-18 / B-15 */
@@ -649,11 +644,6 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
     agc_dp_t twopi = rz_norm(TPS_2PISC, &x1);                            /* 2PI, B-6 normalized */
 
     rz->centang = rz_sl_star(ip, agc_dp_div(ip, n, twopi), -3, x1);
-
-    if (!AGC_ASSERT(rz->centang >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* agc_rendz_transang */
@@ -829,11 +819,6 @@ static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb, 
  **********************************************************************/
 agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (tps_compute_display(ctx, tps_display.verb, tps_display.noun, tps_display.proceed));
 }
 
@@ -855,11 +840,6 @@ agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_response(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint8_t      verb = 0U;                              /* verb keyed in */
     uint8_t      noun = 0U;                              /* noun keyed in */
     agc_status_t st   = agc_dsky_response(&verb, &noun); /* keyed in */
@@ -894,11 +874,6 @@ agc_status_t agc_job_tpi_search_response(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_avflag(true);
 
     return (agc_job_tpi_search_input(ctx));
@@ -921,11 +896,6 @@ agc_status_t agc_job_tpi_search(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_other_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_avflag(false);
 
     return (agc_job_tpi_search_input(ctx));
@@ -948,11 +918,6 @@ agc_status_t agc_job_tpi_search_other_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_input(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_tracking_flags_on();
 
     return (rz_vnpooh(ctx, 6U, 37U, AGC_JOB_TPI_SEARCH_START));
@@ -976,11 +941,6 @@ agc_status_t agc_job_tpi_search_input(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1033,11 +993,6 @@ agc_status_t agc_job_tpi_search_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1092,11 +1047,6 @@ agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_search_results(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 55U, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_TPI_SEARCH_INPUT); /* V06N55 */
 
     if (st != AGC_STATUS_OK)

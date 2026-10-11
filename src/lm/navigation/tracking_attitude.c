@@ -83,11 +83,6 @@
  **********************************************************************/
 agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61, agc_job_id_t ret_job)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lmnav_state()->genret = ret_job;
     rz_flag_put(AGC_FLAG_USE_TRACKING_ATTITUDE, r61); /* R61FLAG  */
 
@@ -186,11 +181,6 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
  **********************************************************************/
 agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
         return (lmnav_wait(TA_250DEC)); /* R65WAIT  */
@@ -291,11 +281,6 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = agc_lm_dap_restordb(); /* RESTORDB status */
 

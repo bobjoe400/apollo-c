@@ -87,11 +87,6 @@ static agc_job_id_t nc_pointex;  /* POINTEX: WAITONE return    */
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (rz_is_csm())
     {
         return (agc_job_rendezvous_navigation_csm(ctx)); /* CM PROG20 */
@@ -118,11 +113,6 @@ agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (rz_is_csm())
     {
         return (agc_job_orbital_navigation_csm(ctx)); /* CM PROG22 */
@@ -219,11 +209,6 @@ agc_status_t rz_setintg(agc_job_id_t resume)
  **********************************************************************/
 agc_status_t rz_waitone(agc_job_id_t pointex)
 {
-    if (!AGC_ASSERT(pointex != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     nc_pointex = pointex;
 
     return (agc_svc_delayjob(NC_4SECS, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
@@ -248,11 +233,6 @@ agc_status_t rz_waitone(agc_job_id_t pointex)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
         return (AGC_STATUS_OK); /* ENDPLAC  */
@@ -299,11 +279,6 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
 
     if (st != AGC_STATUS_OK)
@@ -342,11 +317,6 @@ agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -413,11 +383,6 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_exec_prio_change(NC_PRIO14); /* PRIOCHNG */
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG) || !agc_flag_test(AGC_FLAG_REFSMFLG))
@@ -447,11 +412,6 @@ agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm_optics(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_TARG1FLG, true);
 
     return (agc_csm_auto_optics_positioning(ctx, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS_DONE));
@@ -474,11 +434,6 @@ agc_status_t agc_job_rendezvous_navigation_csm_optics(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm_optics_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_sxtmark_mkreleas(); /* MKRELEAS */
 
     if (st != AGC_STATUS_OK)
@@ -534,11 +489,6 @@ static void nc_mrkbuf_copy(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_MARKRUPT_OPTION_ONE, true); /* R21MARK  */
 
     return (agc_job_backup_sighting_mark(ctx));
@@ -562,11 +512,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_backup_sighting_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_mrkbuf(1, 0, NC_MRKBUF_EMPTY);
     agc_erase_set_mrkbuf(2, 0, NC_MRKBUF_EMPTY);
 
@@ -595,11 +540,6 @@ agc_status_t agc_job_backup_sighting_mark(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_request(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOMARK2, 51U, 0U, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_END, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REQUEST));
 }
 
@@ -620,11 +560,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_request(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_backup_sighting_mark_request(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOMARK2, 53U, 0U, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_END, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE, AGC_JOB_BACKUP_SIGHTING_MARK_TAKEN));
 }
 
@@ -646,11 +581,6 @@ agc_status_t agc_job_backup_sighting_mark_request(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_backup_sighting_mark_taken(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     nc_mrkbuf_copy();
     uint32_t t = (uint32_t) agc_rtb_loadtime(); /* mark time, cs */
@@ -682,11 +612,6 @@ agc_status_t agc_job_backup_sighting_mark_taken(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_erase_mrkbuf(1, 0) != NC_MRKBUF_EMPTY)
     {
         agc_inhint();
@@ -714,11 +639,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* KLEENEX */
 
     st = agc_dsky_display(ctx, AGC_DSKY_KLEENEX, 0U, NULL);

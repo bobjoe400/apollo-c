@@ -85,11 +85,6 @@ static void pin_decend(int inrel)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z))
-    {
-        return;
-    }
-
     int     k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
     int64_t n = s->xyz_dec[k];       /* decimal integer keyed so far */
 
@@ -908,11 +903,6 @@ agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->reqret     = PIN_REQ_PASS0; /* set REQRET for ENTER pass 0 */
@@ -1211,11 +1201,6 @@ static uint8_t pin_key_of_char(char c)
 agc_status_t agc_dsky_keys(const char *seq)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(seq != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }

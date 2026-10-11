@@ -208,11 +208,6 @@ agc_tp_t rte_tp_bdsu(agc_interp_t *ip, agc_dp_t x, agc_tp_t m)
  **********************************************************************/
 static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     if (!AGC_ASSERT((n > -64) && (n < 64)))
     {
         return (agc_vec_zero()); /* no valid result */
@@ -249,11 +244,6 @@ static agc_vec_t rte_vshift(agc_interp_t *ip, agc_vec_t v, int n)
 agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma, const rte_v2t_t *pl, agc_dp_t *xt1lim)
 {
     int n2 = 0; /* NORM shift count (X2) */
-
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((pl != NULL) && (xt1lim != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_dp_t den = agc_dp_sub(ip, ma, agc_dp_shr(rs->rcon, 1)); /* MA - RCON/2, B30 x 2^n2 */
 
@@ -364,11 +354,6 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *
     int      n2   = 0; /* NORM shift count (X2) */
     agc_dp_t root = 0; /* SQRT(PCON), m^.5 B14 */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_tp_t t = agc_tp_shift(ip, agc_dp_sq_tp(rs->x_t1), -7); /* DSQ SR 7: B17 */
 
     t            = agc_tp_add(ip, pl->theta1, -t);             /* DCOMP TAD 02D */
@@ -436,11 +421,6 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *
  **********************************************************************/
 static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = rte_dv_calc(ip, rs, pl); /* DVCALC status */
 
     if (st != AGC_STATUS_OK)
@@ -496,11 +476,6 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t
     int n1 = 0; /* NORM shift count (X1) */
     int n2 = 0; /* NORM shift count (X2) */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t dverr = agc_dp_sub(ip, rs->rtedvd, rs->dv); /* DVERR, m/cs B7 */
 
     if (agc_dp_sub(ip, agc_dp_abs(dverr), EPC10RTE) < 0)
@@ -554,11 +529,6 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t
  **********************************************************************/
 static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_tp_t t     = agc_tp_shift(ip, agc_dp_mul_tp(pl->dx_t1, K_1_1_B1), 1); /* 1.1 DX(T1), B5 */
     agc_dp_t beta9 = agc_dp_add(ip, agc_tp_to_dp(t), rs->x_t1);               /* BETA9 B5      */
 
@@ -603,11 +573,6 @@ static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t 
  **********************************************************************/
 static agc_status_t rte_min_dv_search(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = gamdv_start(ip, rs, pl); /* GAMDV10       */
 
     if (st != AGC_STATUS_OK)
@@ -676,11 +641,6 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *p
     int ns = 0; /* NORM shift count of R(T1) (S1) */
     int nm = 0; /* NORM shift count of RTMURTE */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rs->f2rte       = false;                      /* CLEAR F2RTE   */
     agc_dp_t rcon_n = agc_dp_norm(rs->rcon, &n1); /* RCON, B29 x 2^n1 */
     agc_dp_t r1_n   = agc_dp_norm(rs->r_t1, &ns); /* R(T1), B29 x 2^ns */
@@ -742,11 +702,6 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *p
  **********************************************************************/
 static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl, bool *start_high)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((pl != NULL) && (start_high != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t a = agc_dp_sub(ip, agc_dp_shl(ip, TWO_B1, pl->x1), pl->lambda); /* SR* 0,1 DSU 00D: 2 - LAMBDA, B1 */
     agc_tp_t t = agc_dp_mul_tp(a, pl->beta5);                                /* DMP 28D: BETA6, TP B17 */
 
@@ -812,11 +767,6 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, r
  **********************************************************************/
 static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *pl)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t beta7 = agc_dp_abs(agc_dp_sub(ip, rs->x_t1, pl->x_t1pp)); /* BETA7 = |X(T1) - X(T1)|, B5 */
 
     if (agc_dp_sub(ip, beta7, agc_dp_shl(ip, pl->dx_t1max, 1)) < 0)
@@ -860,11 +810,6 @@ static agc_status_t v2t_limit_change(agc_interp_t *ip, rte_erasable_t *rs, const
  **********************************************************************/
 static agc_status_t v2t_desired_dv(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(pl != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_OK; /* iterator status */
 
     if (agc_dp_sub(ip, rs->rtedvd, rs->dv) < 0)
@@ -939,11 +884,6 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
 {
     rte_v2t_t pl         = {0};
     bool      start_high = false; /* start at X(T1)MAX */
-
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if ((rs->rcon < 0) || (agc_dp_sub(ip, rs->rcon, rs->r_t1) >= 0))
     {

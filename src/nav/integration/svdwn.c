@@ -38,11 +38,6 @@ static agc_vec_t v_other;
  */
 agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW))
     {
         return (AGC_STATUS_OK); /* BOF AVEMIDSW; RVQ */
@@ -75,31 +70,11 @@ agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_ve
 /* R-OTHER (downlink): other vehicle position, m B29. */
 agc_vec_t agc_integ_r_other(void)
 {
-    if (!AGC_ASSERT(r_other.c[0] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(r_other.c[0] <= AGC_DP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (r_other);
 }
 
 /* V-OTHER (downlink): other vehicle velocity, m/cs B7. */
 agc_vec_t agc_integ_v_other(void)
 {
-    if (!AGC_ASSERT(v_other.c[0] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v_other.c[0] <= AGC_DP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (v_other);
 }

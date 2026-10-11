@@ -57,11 +57,6 @@ static agc_sp_t option2(void)
  */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_OK;
 
     if (is_csm())
@@ -95,11 +90,6 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF4R, OPT_CODE_1, AGC_JOB_GOTOPOOH, AGC_JOB_IMU_REALIGN_OPTION, AGC_JOB_IMU_REALIGN_OPTION_DISPLAY);
 
     if (st == AGC_STATUS_OK)
@@ -118,11 +108,6 @@ agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const int opt = (int) (option2() & OPTION_MASK3);
 
     if (!AGC_ASSERT((opt >= 0) && (opt <= OPTION_MASK3)))
@@ -160,11 +145,6 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 /* P52T: DSPTEM1 = -0 (0 here: both tests treat +-0 alike), then VN_ALIGN_TIME. */
 agc_status_t agc_job_realign_time(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = align_set_dsptem1(0);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -178,11 +158,6 @@ agc_status_t agc_job_realign_time(agc_job_ctx_t *ctx)
 /* P52T +3: flash VN_ALIGN_TIME (time of alignment); ENTER re-flashes. */
 agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(option2() >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -198,11 +173,6 @@ agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t t       = align_dsptem1();
     const bool     nominal = (option2() & OPTION2_NOM) != 0;
 
@@ -238,11 +208,6 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     const agc_dp_t   t   = is_csm() ? align_dsptem1() : ram->talign;
     agc_interp_t     ip;
@@ -288,11 +253,6 @@ static agc_status_t realign_gimbal_angles(void)
 /* P52D: S52.2, flash VN_GIMBAL_ANGLES; V33 COARSTYP, ENTER (vehicle moved) P52D. */
 agc_status_t agc_job_realign_gimbal_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = realign_gimbal_angles();
 
     if (st != AGC_STATUS_OK)
@@ -306,11 +266,6 @@ agc_status_t agc_job_realign_gimbal_display(agc_job_ctx_t *ctx)
 /* COARSTYP: V50N25 R1 00013; V33 normal coarse (CAL53A), V32 gyro torque. */
 agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(option2() >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -327,11 +282,6 @@ agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = realign_gimbal_angles();
 
     if (st != AGC_STATUS_OK)
@@ -362,11 +312,6 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
 /* After COARSE in CAL53A: drift compensation restarted, then FINEONLY. */
 agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -383,11 +328,6 @@ agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     agc_erase_set_refsmmat(ram->xsm); /* MATMOVE   */
@@ -411,11 +351,6 @@ agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -448,11 +383,6 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
 /* GYCRS: IMUPULSE (R55CDR = OGC) and IMUSTALL; resumed if gyros busy. */
 agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_GYCRS_PULSE);
 
     if (st == AGC_STATUS_BUSY)
@@ -480,11 +410,6 @@ agc_status_t agc_job_gycrs_pulse(agc_job_ctx_t *ctx)
 /* GYCRS: woken from the IMUSTALL. */
 agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS  */
@@ -500,11 +425,6 @@ agc_status_t agc_job_gycrs_pulsed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     align_phase_job(ALIGN_PH_04024, AGC_JOB_GYCRS_TORQUED, ctx->prio);

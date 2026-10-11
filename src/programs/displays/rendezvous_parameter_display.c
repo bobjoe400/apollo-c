@@ -597,11 +597,6 @@ static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* FINDVAC */
 
     st = agc_exec_findvac(RPD_PRIO3, AGC_JOB_RENDEZVOUS_PARAMS_START);
@@ -673,11 +668,6 @@ agc_status_t agc_task_rendezvous_parameter_display(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_erase_extvbact() & RPD_EXTVBACT_BIT12) == 0U)
     {
         return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
@@ -727,11 +717,6 @@ agc_status_t agc_task_rendezvous_params_wait(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint8_t noun = 54U; /* N54 (R31) */
 
     if (rz_is_csm() && !rz_vflag_test(RZ_VF_RENDZ_DISPLAY))
@@ -759,11 +744,6 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -794,11 +774,6 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

@@ -249,11 +249,6 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
     int k;     /* steps done */
     int o = 0; /* overflow of one step, +-1 or 0 */
 
-    if (!AGC_ASSERT(ovfind != 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     if (!AGC_ASSERT(n >= 0))
     {
         return ((agc_w3_t){0}); /* no valid result */
@@ -295,11 +290,6 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 {
     int k;     /* steps done */
     int o = 0; /* overflow of one step (never: |m0| < 1/2) */
-
-    if (!AGC_ASSERT(count != 0))
-    {
-        return (m);
-    }
 
     *count = 0;
 

@@ -398,11 +398,6 @@ static int dap_dz(agc_sp_t x, agc_sp_t lim)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(lim > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((int32_t) x >= thr)
     {
         return (1);
@@ -427,11 +422,6 @@ static int dap_rate_deadzone(agc_sp_t rate)
 {
     _Static_assert(AGC_ENTRY_YDOTLIM > 0, "AGC constant");
 
-    if (!AGC_ASSERT(rate >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     return (dap_dz(rate, AGC_ENTRY_YDOTLIM));
 }
 
@@ -455,11 +445,6 @@ static int dap_biasedz(agc_sp_t rate, agc_sp_t err)
 {
     int32_t e = (int32_t) err; /* biased error, SP units */
     int     etag;              /* error tag */
-
-    if (!AGC_ASSERT(rate >= -16384 && err >= -16384))
-    {
-        return (0); /* no valid result */
-    }
 
     if (rate > 0)
     {
@@ -574,11 +559,6 @@ uint16_t agc_entry_dap_roll_jet_bits(int jndx)
  **********************************************************************/
 agc_sp_t agc_erase_aog(void)
 {
-    if (!AGC_ASSERT(aog >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     return (aog);
 }
 
@@ -594,11 +574,6 @@ agc_sp_t agc_erase_aog(void)
  **********************************************************************/
 agc_sp_t agc_erase_aig(void)
 {
-    if (!AGC_ASSERT(aig >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     return (aig);
 }
 
@@ -614,11 +589,6 @@ agc_sp_t agc_erase_aig(void)
  **********************************************************************/
 agc_sp_t agc_erase_amg(void)
 {
-    if (!AGC_ASSERT(amg >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     return (amg);
 }
 
@@ -704,16 +674,6 @@ static agc_sp_t dap_rateavg(agc_sp_t old, agc_sp_t now)
 {
     agc_sp_t d = entry_sp_sat((int32_t) now - (int32_t) old); /* now - old, B0 */
 
-    if (!AGC_ASSERT(old >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(now >= -16384))
-    {
-        return (0); /* no valid result */
-    }
-
     return (entry_sp_sat((int32_t) entry_sp_mp(d, AGC_SP_HALF) + (int32_t) now));
 }
 
@@ -754,11 +714,6 @@ static void dap_bodyrate_p(void)
     prel = entry_sp_sat((int32_t) prel + entry_sp_mp(msr, AGC_ENTRY_SINTRIM));
     qrel = entry_sp_sat((int32_t) qrel + entry_sp_mp((agc_sp_t) (-agc_sp_cos(es->roll_180)), es->gamdot));
     rrel = entry_sp_sat((int32_t) rrel + entry_sp_mp((agc_sp_t) (-msr), AGC_ENTRY_COSTRIM));
-
-    if (!AGC_ASSERT(prel >= -16384))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -782,11 +737,6 @@ static agc_status_t dap_bodyrate(void)
     agc_dp_t  j;                      /* DP sum, B0 */
     agc_sp_t  jet;                    /* increment, B0 */
     agc_ovf_t ovf  = 0;               /* DAS overflow */
-
-    if (!AGC_ASSERT(amg >= -16384 && aog >= -16384))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     j      = agc_sp_mul((agc_sp_t) (-m_delamg), sino);
     j      = agc_dp_add_raw(j, agc_sp_mul((agc_sp_t) (-m_delaig), entry_sp_mp(coso, cosm)), &ovf);
@@ -928,11 +878,6 @@ static uint16_t dap_exdap_yaw_pitch_jets(agc_entry_state_t *es, agc_sp_t yaw_err
     agc_sp_t rate; /* yaw rate, B0 */
     uint16_t bits; /* jet bits */
 
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     raxerr = yaw_err;
     ak2    = yaw_err;
     rate   = (es->cmdapmod == AGC_ENTRY_DAPMOD_PLUS0) ? betadot : rrel; /* mode +0 */
@@ -966,11 +911,6 @@ static uint16_t dap_exdap_beta_roll_hold(agc_entry_state_t *es)
     agc_sp_t err;  /* error /180, B0 */
     agc_sp_t rate; /* rate, B0 */
     int      tag;  /* jet tag */
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (0); /* no valid result */
-    }
 
     es->cmdapmod = AGC_ENTRY_DAPMOD_PLUS1;
     jetag        = -1; /* roll jets now from here      */
@@ -1014,11 +954,6 @@ static uint16_t dap_exdap_beta_roll_hold(agc_entry_state_t *es)
  **********************************************************************/
 static uint16_t dap_exdap(agc_entry_state_t *es)
 {
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     es->cmdapmod = AGC_ENTRY_DAPMOD_PLUS0;
 
     if (dap_dz(es->calfa, AGC_ENTRY_C45LIM) == 0)
@@ -1188,11 +1123,6 @@ static void pp_getoff(agc_sp_t lcx, agc_sp_t mvt, agc_sp_t vdt, agc_entry_roll_c
 {
     int32_t num; /* TOFF numerator, B0 */
 
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return;
-    }
-
     o->ton2 = entry_sp_sat(2 * (int32_t) entry_sp_mp(entry_sp_sat(2 * (int32_t) vdt), AGC_ENTRY_180_8ATT));
 
     if (o->ton2 < 0)
@@ -1250,11 +1180,6 @@ static void pp_maxvtest(agc_sp_t lcx, agc_sp_t mvt, agc_sp_t vsq, agc_entry_roll
 {
     agc_sp_t xd;          /* XD - XS, B0 */
     bool     qpos = true; /* Q tag from TC GETON1   */
-
-    if (!AGC_ASSERT(o != NULL && vdt != NULL))
-    {
-        return;
-    }
 
     o->jndx1 = -o->jndx;
     xd       = entry_sp_sat((int32_t) vsq + lcx - AGC_ENTRY_XS_360); /* XD-XS */
@@ -1398,11 +1323,6 @@ agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, 
 {
     agc_sp_t vdt = 0; /* drift velocity, B0 */
 
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(lcx_360 >= -16384 && mvt_180 >= -16384))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1438,11 +1358,6 @@ agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, 
 static agc_status_t dap_jetlist(int start)
 {
     int k; /* slot */
-
-    if (!AGC_ASSERT(start >= 0 && start < DAP_JETLIST))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     nujet = 0;
 
@@ -1588,11 +1503,6 @@ agc_status_t agc_task_jetcall(void)
  **********************************************************************/
 static void rcs_dzcall(agc_entry_state_t *es)
 {
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return;
-    }
-
     if (es->cmdapmod == AGC_ENTRY_DAPMOD_MINUS0)
     {
         es->rollhold = es->rolltm;
@@ -1800,11 +1710,6 @@ agc_status_t agc_task_attrates(void)
 
     agc_chan_write(AGC_CHAN_PYJETS, bits); /* EXDAPIN */
 
-    if (!AGC_ASSERT(jetag >= -1 && jetag <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (jetag > 0)
     {
         return (dap_cm_rcs(es));
@@ -1882,11 +1787,6 @@ agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_DAPBIT1);
     agc_flag_clear(AGC_FLAG_DAPBIT2);
     agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* T5IDLER1   */
@@ -1963,11 +1863,6 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
     };
     agc_phase_var_t            v     = {AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_REQUEST, AGC_TASK_NONE, (int16_t) AGC_ENTRY_PRIO13, false, 0U};
     unsigned int               i; /* loop index */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_inhint();
     agc_erase_set_cm_gymdt(dapic_first_dt());

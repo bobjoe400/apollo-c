@@ -154,11 +154,6 @@ static agc_sp_t fc_wrap15(int32_t d)
  **********************************************************************/
 static int32_t fc_ones_word(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t w = (v < 0) ? 0x7FFF + (int32_t) v : (int32_t) v; /* 1's bits */
 
     if (!AGC_ASSERT(w >= 0 && w <= 0x7FFF))
@@ -205,11 +200,6 @@ static agc_sp_t fc_mp_dbl(agc_sp_t a, agc_sp_t b)
  **********************************************************************/
 uint16_t agc_lm_onesto2s(agc_sp_t a)
 {
-    if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t w = (uint16_t) ((int32_t) a & 0x7FFF); /* 15-bit two's complement word */
 
     if (!AGC_ASSERT(w <= 0x7FFFu))
@@ -234,11 +224,6 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
 agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
 {
     if (!AGC_ASSERT(limit > 0))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
     {
         return (0);
     }
@@ -426,11 +411,6 @@ static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
  **********************************************************************/
 static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t cdu[3])
 {
-    if (!AGC_ASSERT(ip != NULL && nb != NULL && cdu != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* DSQ leaves a TP; BDSU DP1/4TH complements only MPAC, MPAC+1, so
      * MPAC+2 keeps the square's low word with its own sign, and SQRT
      * reads all three words: 1/4 - top(s^2) + low(s^2), at 2^2.      */
@@ -516,11 +496,6 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
  **********************************************************************/
 static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (false);
-    }
-
     agc_dp_t d   = agc_dp_sq(ip, agc_vec_dot(ip, unz, unx));    /* (UNZ . UNX)^2, 2^2 */
     agc_dp_t lim = agc_dp_pack(FC_DOTSWFMX_HI, FC_DOTSWFMX_LO); /* DOTSWFMX: cos^2(15 deg)/16, 2^2 */
 
@@ -553,11 +528,6 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
  **********************************************************************/
 static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
     agc_vec_t uny1 = agc_vec_unit(ip, agc_vec_cross(ip, unz, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */
     agc_vec_t munz = agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);          /* -UNZ, half unit 2^1 */
     agc_vec_t a    = agc_vec_scale(ip, munz, fc_unfv_2.c[2]);                   /* UNFVZ/2 (-UNZ), 2^1 */
@@ -568,11 +538,6 @@ static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
     m.row[0] = agc_vec_unit(ip, agc_vec_add(ip, t, unx), NULL, NULL);
     m.row[1] = agc_vec_shl(ip, agc_vec_cross(ip, m.row[0], munz), 1);
     m.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, agc_vec_neg(m.row[1]), m.row[0]), 1);
-
-    if (!AGC_ASSERT(m.row[0].c[0] <= AGC_DP_MAX))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
 
     return (m);
 }
@@ -901,11 +866,6 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 {
     const agc_mat_t *xnb = &agc_guid_state()->lm.xnbpip; /* XNBPIP..ZNBPIP rows, 2^1 */
 
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     if (fc_flagoodw != 0 && fc_unwctest(ip, unz, unx))
     {
         return (unz); /* window command   */
@@ -920,11 +880,6 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 
     /* Z and -X cannot both be parallel to UNFC/2. */
     agc_vec_t mx = agc_vec_neg(xnb->row[0]); /* -X body, half unit 2^1 */
-
-    if (!AGC_ASSERT(mx.c[0] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     return (mx);
 }
@@ -942,11 +897,6 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
  **********************************************************************/
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_clear_ovf(ip);                                      /* BOV: clear       */
     agc_cdutrig_t *trig = &agc_guid_state()->trig;                 /* debris: SIN/COSCDU */
     agc_vec_t      unx;                                            /* unit thrust command, half unit 2^1 */
@@ -1037,17 +987,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
  **********************************************************************/
 agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t unfc = agc_lm_ldg()->unfc_2; /* VLOAD UNFC/2, 2^1 */
-
-    if (!AGC_ASSERT(unfc.c[0] >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_lm_findcduw(ip, unfc));
 }

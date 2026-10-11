@@ -98,11 +98,6 @@ static bool surface_marks(void) /* MARKTYPE         */
  */
 agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp)
 {
-    if (!AGC_ASSERT((ip != NULL) && (oa != NULL)) || !AGC_ASSERT((uxp != NULL) && (uyp != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t elr = agc_align_cdulogic(el);
     const agc_dp_t azr = agc_align_cdulogic(az);
     const agc_dp_t ce  = agc_dp_cos(ip, elr);
@@ -126,11 +121,6 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t 
  */
 agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((xpnb != NULL) && (ypnb != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t r = agc_dp_shr(agc_dp_pack(align_word_to_sp(rot), 0), 1); /* SR1 */
     const agc_dp_t s = agc_dp_sin(ip, r);
     const agc_dp_t c = agc_dp_cos(ip, r);
@@ -318,11 +308,6 @@ agc_status_t agc_task_aot_mark_release(void)
 /* KILLAOT (V34 on a mark display): EXTVBACT = 0, GOTOPOOH. */
 agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_extvbact(0);
 
     if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
@@ -337,11 +322,6 @@ agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx)
  * detent); V33 DODAT, ENTER shows it again.                              */
 agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     set_markstat((uint16_t) (agc_erase_markstat() | MS_NOT_WANTED));
 
     return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_STAR_CODE, AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_DETENT, AGC_JOB_AOT_MARK_STAR_DISPLAY));
@@ -350,11 +330,6 @@ agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
 /* PASTIT: GOMARK4 with a mark verb; V33 MARKCHEX, ENTER GETDAT. */
 static agc_status_t request_marks(const agc_job_ctx_t *ctx, uint16_t vn)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((vn == VN_MARK_XY) || (vn == VN_MARK_Y) || (vn == VN_MARK_X)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -410,11 +385,6 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az, uint16_t e
  */
 agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     const agc_sp_t   d   = (agc_sp_t) ((ram->starcode >> DETENT_SHIFT) & DETENT_MASK);
 
@@ -462,11 +432,6 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
 /* CODE7: GOMARKF V06N87 (AZ, EL of the COAS). */
 agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->xymark == DETENT_COAS))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -478,11 +443,6 @@ agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx)
 /* CODE7 V33: AZ, EL as loaded; COASCODE: no apparent rotation. */
 agc_status_t agc_job_aot_mark_coas_loaded(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_align_ram_t *ram = agc_align_ram();
 
     return (optic_axis(ctx, ram->az, ram->el, 0));
@@ -528,11 +488,6 @@ static agc_status_t average_marks(agc_interp_t *ip)
  */
 agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     set_markstat((uint16_t) (agc_erase_markstat() | MS_NOT_WANTED));
@@ -580,11 +535,6 @@ agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 /* CHANGEVB: surface -> V06N79; flight -> V54/V53/V52 N71 by MKDEX. */
 agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (surface_marks())
     {
         return (agc_job_aot_mark_surface_display(ctx));
@@ -605,11 +555,6 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
 /* DSPV6N79: GOMARKF V06N79 (CURSOR, SPIRAL, POSCODE). */
 agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(surface_marks()))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -656,11 +601,6 @@ static agc_status_t surface_again(agc_job_ctx_t *ctx)
 /* DSPV6N79 V33 (SURFEND): bit 14 (end of marking), then SURFAGAN. */
 agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     set_markstat((uint16_t) (agc_erase_markstat() | MS_PAIR));
 
     return (surface_again(ctx));
@@ -669,11 +609,6 @@ agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx)
 /* DSPV6N79 V32 -> SURFAGAN (another mark); a data ENTER shows it again. */
 agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_resp_recycle())
     {
         return (surface_again(ctx));

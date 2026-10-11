@@ -49,11 +49,6 @@ void agc_erase_reset_ecadr(void)
 /* Read the erasable word at ECADR (raw 15-bit word).                     */
 agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 {
-    if (!AGC_ASSERT(word != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ecadr < EC_WORDS))
     {
         return (AGC_STATUS_BAD_ARG);

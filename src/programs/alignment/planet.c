@@ -65,11 +65,6 @@ static agc_status_t planet_compute(void)
  * V34) shows it again.                                                    */
 static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ? AGC_JOB_GOTOPOOH : AGC_JOB_PLANET_FLASH;
 
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_PLANET_VECTOR, term, AGC_JOB_PLANET_LOADED, AGC_JOB_PLANET_FLASH));
@@ -81,11 +76,6 @@ static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
  */
 agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->tsight     = t;
@@ -107,22 +97,12 @@ agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret
 /* PLANET: V06N88 shown again. */
 agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (planet_flash(ctx));
 }
 
 /* PLANET: V33 on V06N88 (vector loaded in STARSAV3 / STARAD). */
 agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -134,11 +114,6 @@ agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
 /* PLANET: resumed after waiting for the integration (LOCSAM). */
 agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

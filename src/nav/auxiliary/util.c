@@ -109,11 +109,6 @@ bool agc_navaux_tp_ok(agc_tp_t a)
  **********************************************************************/
 agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
 {
-    if (!AGC_ASSERT((ip != NULL) && agc_navaux_dp_ok(a)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT((n <= NAVAUX_MAX_SHIFT) && (n >= -NAVAUX_MAX_SHIFT)))
     {
         return (0);
@@ -128,11 +123,6 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
     else if (n < 0)
     {
         r = agc_dp_shr(a, -n);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(r))) /* post: in range         */
-    {
-        return (0);
     }
 
     if (!AGC_ASSERT((n >= 0) || (agc_dp_abs(r) <= agc_dp_abs(a))))
@@ -160,11 +150,6 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
  **********************************************************************/
 agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero());
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(v)))
     {
         return (agc_vec_zero());
@@ -215,11 +200,6 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
  **********************************************************************/
 agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
 {
-    if (!AGC_ASSERT(agc_navaux_tp_ok(v)))
-    {
-        return (0);
-    }
-
     int64_t mag = v; /* |v|, raw TP units       */
     int64_t low = 0; /* low words, raw DP units */
 

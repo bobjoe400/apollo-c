@@ -137,11 +137,6 @@ agc_tp_words_t agc_mpac_dad(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
     agc_w2_t top;                      /* MPAC, MPAC+1 after the add */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
-
     top = agc_w_dad(agc_w3_top(w), agc_w2_from_words(x), &ip->ovfind);
 
     if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
@@ -166,11 +161,6 @@ agc_tp_words_t agc_mpac_dsu(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
 {
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
     agc_w2_t top;                      /* MPAC, MPAC+1 after the add */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
 
     top = agc_w_dad(agc_w3_top(w), agc_w_dcs(agc_w2_from_words(x)), &ip->ovfind);
 
@@ -197,11 +187,6 @@ agc_tp_words_t agc_mpac_bdsu(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 {
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
     agc_w2_t top;                      /* MPAC, MPAC+1 after the add */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
 
     top = agc_w_dad(agc_w2_from_words(x), agc_w_dcs(agc_w3_top(w)), &ip->ovfind);
 
@@ -232,11 +217,6 @@ agc_tp_words_t agc_mpac_tad(agc_interp_t *ip, agc_tp_words_t m, agc_tp_words_t x
     agc_w2_t add = {t.m1, t.m2};
     agc_w2_t top;                        /* MPAC, MPAC+1 after OVERFLOW */
     int      o   = 0;                    /* DAS / TS overflow */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
 
     lo2  = agc_w_das(lo2, add, &o);       /* DCA 1; DAS MPAC +1 */
     w.m1 = lo2.hi;
@@ -274,11 +254,6 @@ agc_tp_words_t agc_mpac_tad(agc_interp_t *ip, agc_tp_words_t m, agc_tp_words_t x
 agc_dp_words_t agc_dp_words_das(agc_dp_words_t x, agc_dp_words_t y, int *ovf)
 {
     agc_w2_t r; /* sum words */
-
-    if (!AGC_ASSERT(ovf != 0))
-    {
-        return (x);
-    }
 
     r = agc_w_das(agc_w2_from_words(x), agc_w2_from_words(y), ovf);
 
@@ -334,11 +309,6 @@ agc_tp_words_t agc_mpac_dmpr(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 {
     agc_w3_t p = agc_w3_from_words(agc_mpac_dmp(m, x)); /* DMPSUB product */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
-
     p = agc_w_roundsub(p, &ip->ovfind);
 
     if (!AGC_ASSERT(p.m2 == 0))
@@ -392,11 +362,6 @@ agc_tp_words_t agc_mpac_ddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
     int      o = 0; /* OVFIND of DDV */
     agc_w3_t q;     /* MPAC after the divide */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
-
     q = agc_w_ddv(agc_w3_from_words(m), agc_w2_from_words(x), &o, &ip->dvsign_neg);
 
     if (o != 0)
@@ -428,11 +393,6 @@ agc_tp_words_t agc_mpac_bddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
     agc_tp_words_t dividend = {x.hi, x.lo, m.lo}; /* MPAC after DXCH */
     agc_dp_words_t divisor  = {m.hi, m.mid};      /* BUF            */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
-
     if (!AGC_ASSERT((x.hi >= AGC_SP_MIN) && (x.hi <= AGC_SP_MAX)))
     {
         return (m);
@@ -456,11 +416,6 @@ agc_tp_words_t agc_mpac_bddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 agc_tp_words_t agc_mpac_round(agc_interp_t *ip, agc_tp_words_t m)
 {
     agc_w3_t w; /* rounded MPAC words */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
 
     w = agc_w_roundsub(agc_w3_from_words(m), &ip->ovfind);
 
@@ -517,11 +472,6 @@ agc_tp_words_t agc_mpac_shift_round(agc_interp_t *ip, agc_tp_words_t m, int n)
 {
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (m);
-    }
-
     if (!AGC_ASSERT((n >= -SHIFT_COUNT_MAX) && (n <= SHIFT_COUNT_MAX)))
     {
         return (m);
@@ -552,11 +502,6 @@ agc_tp_words_t agc_mpac_norm(agc_tp_words_t m, int *nshift)
 {
     int      count = 0;                                        /* left shifts done */
     agc_w3_t w     = agc_w_tslc(agc_w3_from_words(m), &count); /* normalised words */
-
-    if (!AGC_ASSERT(nshift != 0))
-    {
-        return (m);
-    }
 
     *nshift = count;
 
@@ -670,11 +615,6 @@ agc_tp_words_t agc_mpac_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     agc_w3_t m; /* DOTSUB words */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
     ip->dvsign_neg = false; /* PREDOT: DOTINC = 2 */
     m              = agc_w_dotsub(u, v, &ip->ovfind);
 
@@ -698,11 +638,6 @@ agc_tp_words_t agc_mpac_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 agc_tp_words_t agc_mpac_vsq(agc_interp_t *ip, agc_vec_t v)
 {
     agc_w3_t m; /* VSQSUB words */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
 
     m = agc_w_vsqsub(v, &ip->ovfind);
 

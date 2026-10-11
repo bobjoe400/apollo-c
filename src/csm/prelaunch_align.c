@@ -132,11 +132,6 @@ agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(azimuth >= AGC_DP_MIN && launchaz >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pl.latitude = latitude;
     pl.azimuth  = azimuth;
     pl.launchaz = launchaz;
@@ -171,11 +166,6 @@ agc_vec_t agc_csm_prelaunch_ervector(void)
  **********************************************************************/
 agc_vec_t agc_csm_prelaunch_thetan(void)
 {
-    if (!AGC_ASSERT(pl.filt.thetan1.c[0] >= AGC_DP_MIN) || !AGC_ASSERT(pl.filt.thetan1.c[2] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result                   */
-    }
-
     return (pl.filt.thetan1);
 }
 
@@ -229,16 +219,6 @@ agc_dp_t prelaunch_tmark(void)
  **********************************************************************/
 agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth, agc_mat_t *xsm)
 {
-    if (!AGC_ASSERT(ip != NULL && xsm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(azimuth >= AGC_DP_MIN && azimuth <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t s = agc_dp_sin(ip, azimuth); /* sin AZ / 2, 2^0           */
     agc_dp_t c = agc_dp_cos(ip, azimuth); /* cos AZ / 2, 2^0           */
 
@@ -259,11 +239,6 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth, agc_m
  **********************************************************************/
 agc_status_t prelaunch_posn17c(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_csm_prelaunch_posn17c(ip, pl.newazmth, &agc_align_ram()->xsm); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -288,11 +263,6 @@ agc_status_t prelaunch_posn17c(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(latitude >= -AGC_DP_QUARTER && latitude <= AGC_DP_QUARTER))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -326,11 +296,6 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
  **********************************************************************/
 static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t dt = agc_dp_sub(ip, temptime, tmark); /* cs 2^28        */
 
     if (dt < 0)
@@ -377,11 +342,6 @@ static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t 
  **********************************************************************/
 agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip, agc_dp_t tliftoff)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(tliftoff >= 0 && tliftoff <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -423,11 +383,6 @@ agc_status_t prelaunch_imustall(agc_job_id_t wake_as, bool *done)
 {
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* STALL return */
 
-    if (!AGC_ASSERT(done != NULL) || !AGC_ASSERT(wake_as != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *done           = false;
     agc_status_t st = agc_imu_stall(wake_as, &res); /* status of the call */
 
@@ -456,11 +411,6 @@ agc_status_t prelaunch_imustall(agc_job_id_t wake_as, bool *done)
  **********************************************************************/
 agc_status_t prelaunch_stall_outcome(bool *good)
 {
-    if (!AGC_ASSERT(good != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *good = (agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_GOOD);
 
     if (!*good)
@@ -491,16 +441,6 @@ agc_status_t prelaunch_stall_outcome(bool *good)
  **********************************************************************/
 agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t busy_wake, agc_job_id_t stall_wake, bool *done)
 {
-    if (!AGC_ASSERT(ip != NULL && done != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(busy_wake != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *done           = false;
     agc_status_t st = earthr_at(ip, agc_rtb_loadtime(), busy_wake); /* EARTHR */
 
@@ -578,11 +518,6 @@ agc_status_t prelaunch_somerr2(void)
  **********************************************************************/
 agc_status_t prelaunch_nbpospl(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t *xnb = &agc_align_ram()->xnb;      /* XNB..ZNB, B1 */
     agc_dp_t   s   = agc_dp_sin(ip, pl.azimuth); /* sin AZ / 2, 2^0   */
     agc_dp_t   c   = agc_dp_cos(ip, pl.azimuth); /* cos AZ / 2, 2^0   */
@@ -611,11 +546,6 @@ agc_status_t prelaunch_nbpospl(agc_interp_t *ip)
 static agc_status_t geoimutt(agc_job_ctx_t *ctx)
 {
     bool done = false; /* IMUSTALL found the zero already over */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = agc_imu_zero(); /* IMUZERO                       */
 
@@ -700,11 +630,6 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
     uint16_t     thetad[3];  /* THETAD: CALCGA gimbal angles, CDU    */
     bool         ok = false; /* stall outcome / IMUSTALL done        */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
     if (!ok)
@@ -769,11 +694,6 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t pipachk(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(pl.ndxctr > 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -794,11 +714,6 @@ static agc_status_t pipachk(const agc_job_ctx_t *ctx)
 agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx)
 {
     bool ok = false; /* stall outcome / IMUSTALL done             */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
@@ -841,11 +756,6 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx)
 agc_status_t agc_job_prelaunch_imu_fine_aligned(agc_job_ctx_t *ctx)
 {
     bool ok = false; /* stall outcome                             */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
@@ -945,11 +855,6 @@ agc_status_t agc_job_imu_test_coarse_aligned(agc_job_ctx_t *ctx)
 {
     bool ok = false; /* stall outcome                             */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
     if (!ok)
@@ -983,11 +888,6 @@ agc_status_t agc_job_imu_test_site_display(agc_job_ctx_t *ctx)
                                   AGC_JOB_IMU_TEST_SITE_FLASH,
                                   AGC_JOB_IMU_TEST_SITE_FLASH};
     agc_interp_t          ip; /* interpreter state                    */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_interp_init(&ip);
     agc_dp_t lat = agc_dp_shl(&ip, pl.latitude, 2); /* SL2, rev 2^-2 */
@@ -1024,11 +924,6 @@ agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx)
                                   AGC_JOB_IMU_TEST_SITE_LOADED,
                                   AGC_JOB_IMU_TEST_SITE_FLASH}; /* TC -5 */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(pl.geocomp1 == 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1050,11 +945,6 @@ agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx)
 agc_status_t agc_job_imu_test_site_loaded(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state                            */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_interp_init(&ip);
     pl.azimuth   = agc_rtb_cdulogic(agc_dsky_dsptem(0)); /* SLOAD, RTB */

@@ -47,11 +47,6 @@ agc_dp_t agc_sband_gammasb(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(gammasb <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (gammasb);
 }
 
@@ -64,11 +59,6 @@ agc_dp_t agc_sband_gammasb(void)
  */
 agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pitch, agc_dp_t *yaw)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) || !AGC_ASSERT(yaw != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_mat_t hiunit = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
 
     *yaw                = 0;                                  /* HI6ZEROS     */
@@ -100,16 +90,6 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pit
 /* The CSM-to-earth vector in SM: -RATT (earth sphere) or -(REM + RATT). */
 static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o, agc_vec_t *r_sm)
 {
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(r_sm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t r = agc_vec_neg(o->ratt); /* EISOI: -RCM  */
 
     if (o->x2 != 0)
@@ -150,11 +130,6 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o, 
  */
 agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -212,11 +187,6 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */
 agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_imu_status_check(); /* R02BOTH      */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))
@@ -230,11 +200,6 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 /* TC B5OFF (terminate / proceed of the N51 display), both vehicles. */
 agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_svc_b5off();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

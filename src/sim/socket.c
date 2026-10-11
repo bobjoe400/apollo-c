@@ -64,11 +64,6 @@ void sim_packet_form(uint16_t chan, uint16_t value, uint8_t pkt[SIM_PACKET_BYTES
 
 bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan, uint16_t *value, bool *ubit)
 {
-    if (!AGC_ASSERT(chan != NULL && value != NULL) || !AGC_ASSERT(ubit != NULL))
-    {
-        return (false);
-    }
-
     if ((pkt[0] & 0xC0u) != 0u || (pkt[1] & 0xC0u) != 0x40u || (pkt[2] & 0xC0u) != 0x80u || (pkt[3] & 0xC0u) != 0xC0u)
     {
         return (false);
@@ -387,11 +382,6 @@ bool sim_socket_wait(int timeout_ms)
     struct pollfd p[2 * SOCK_SLOTS];
     nfds_t        n = 0;
 
-    if (!AGC_ASSERT(timeout_ms >= 0))
-    {
-        return (false);
-    }
-
     for (int i = 0; i < SOCK_SLOTS && g_open; i++)
     {
         int fd = (g_client[i].fd >= 0) ? g_client[i].fd : g_listen[i];
@@ -438,10 +428,5 @@ void sim_socket_ack(uint32_t done)
 
 bool sim_socket_lost_lockstep(void)
 {
-    if (!AGC_ASSERT(g_step_client < SOCK_SLOTS))
-    {
-        return (true);
-    }
-
     return (g_step_lost);
 }

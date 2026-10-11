@@ -142,11 +142,6 @@ static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
                             AGC_JOB_GO_IDLE_FIX_REFLASH,
                             AGC_JOB_GO_IDLE_FIX_REFLASH};
 
-    if (!AGC_ASSERT(ctx != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -160,11 +155,6 @@ static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
  * selects a program.                                                  */
 agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -199,11 +189,6 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH))
     {
         return (AGC_STATUS_BAD_ARG);

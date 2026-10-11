@@ -162,11 +162,6 @@ static bool t4_seq_ok(void)
  **********************************************************************/
 static void chan_clear(int chan, uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= WORD15))
-    {
-        return;
-    }
-
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
 
     if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))
@@ -207,11 +202,6 @@ static void set_lampword(uint16_t w)
 static void call_wait(uint16_t dt, agc_task_id_t task)
 {
     agc_status_t st = AGC_STATUS_OK; /* WAITLIST result */
-
-    if (!AGC_ASSERT(dt > 0u) || !AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return;
-    }
 
     st = agc_waitlist_call(dt, task);
 
@@ -492,11 +482,6 @@ static agc_status_t t4_jump(int phase)
  **********************************************************************/
 agc_status_t agc_t4rupt(uint16_t *next_cs)
 {
-    if (!AGC_ASSERT(next_cs != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (t4_quick_left > 0)
     {
         *next_cs = t4_quikdsp();

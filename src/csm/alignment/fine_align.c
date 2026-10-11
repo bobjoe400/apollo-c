@@ -52,11 +52,6 @@ agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx)
 /* R51.3 (also re-entered from R51.4 for the second star). */
 agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     agc_flag_clear(AGC_FLAG_TARG2FLG);
@@ -74,11 +69,6 @@ agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
 /* STARCODE = BESTI +STARIND x 1/6, then R51DSP. */
 agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram   = agc_align_ram();
     const agc_sp_t   star6 = (ram->starind == 0) ? ram->besti : ram->bestj;
 
@@ -99,11 +89,6 @@ agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_star_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = align_flash(ctx, AGC_DSKY_GOFLASHR, VN_STAR_CODE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_FINE_ALIGN_STAR_ACCEPTED, AGC_JOB_CSM_FINE_ALIGN_STAR_DISPLAY);
 
     if (st == AGC_STATUS_OK)
@@ -120,11 +105,6 @@ agc_status_t agc_job_csm_fine_align_star_display(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_align_chkscode(agc_align_ram()->starcode))
     {
         agc_dsky_falton();
@@ -142,11 +122,6 @@ agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_star_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     if (ram->starind != 0)
@@ -169,11 +144,6 @@ agc_status_t agc_job_csm_fine_align_star_located(agc_job_ctx_t *ctx)
 /* R51A: STARSAV2 = SXTSM (observed LOS, SM); MKRELEAS; PLANET at TSIGHT. */
 agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -200,11 +170,6 @@ agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -235,11 +200,6 @@ agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_data_checked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
         return (agc_job_csm_fine_align_recheck(ctx));
@@ -264,11 +224,6 @@ agc_status_t agc_job_csm_fine_align_data_checked(agc_job_ctx_t *ctx)
 /* After R55: CLEAR PFRATFLG, R51K. */
 agc_status_t agc_job_csm_fine_align_torqued(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_PFRATFLG);
 
     return (agc_job_csm_fine_align_recheck(ctx));
@@ -280,11 +235,6 @@ agc_status_t agc_job_csm_fine_align_torqued(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_recheck(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);

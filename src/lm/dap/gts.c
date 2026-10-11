@@ -259,11 +259,6 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  **********************************************************************/
 agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
-    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) || !AGC_ASSERT(inindex != NULL))
-    {
-        return (0);
-    }
-
     *shftflag = 0;
 
     if (fn->hi < 0 || (fn->hi == 0 && fn->lo <= 0))

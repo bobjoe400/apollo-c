@@ -97,25 +97,10 @@ void rupt_reset_timers(void)
 {
     time4 = RUPT_TIME4_SB;
     time5 = RUPT_TIME5_SB;
-
-    if (!AGC_ASSERT(time4 <= RUPT_TIME_MASK))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(time5 <= RUPT_TIME_MASK))
-    {
-        return;
-    }
 }
 
 uint16_t agc_rupt_time(int n)
 {
-    if (!AGC_ASSERT(n >= 4 && n <= 6))
-    {
-        return (0);
-    }
-
     uint16_t v = (n == 4) ? time4 : ((n == 5) ? time5 : time6);
 
     if (!AGC_ASSERT(v <= RUPT_TIME_MASK))
@@ -170,11 +155,6 @@ void agc_rupt_set_t5_task(agc_task_id_t task)
 
 agc_task_id_t agc_rupt_t5_task(void)
 {
-    if (!AGC_ASSERT(t5loc != AGC_TASK_NONE))
-    {
-        return (AGC_TASK_NONE);
-    }
-
     if (!AGC_ASSERT(inhint_depth >= 0))
     {
         return (AGC_TASK_NONE);
@@ -283,23 +263,9 @@ agc_status_t agc_rupt_t5(void)
     agc_status_t st       = AGC_STATUS_OK;
     bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
 
-    if (!AGC_ASSERT(time5 <= RUPT_TIME_MASK))
-    {
-        agc_relint();
-
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!spurious)
     { /* CSM: BZMF NOQBRSM              */
         st = agc_dispatch_task(t5loc);
-    }
-
-    if (!AGC_ASSERT(t5loc != AGC_TASK_NONE))
-    {
-        agc_relint();
-
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (rupt_exit(st));
@@ -332,11 +298,6 @@ agc_status_t agc_rupt_t3(void)
 /* Lead-ins whose handlers belong to other lanes (dispatch.c).         */
 static agc_status_t foreign_rupt(agc_rupt_id_t id)
 {
-    if (!AGC_ASSERT(id >= AGC_RUPT_T6 && id <= AGC_RUPT_HAND))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = agc_dispatch_rupt(id);
 
@@ -448,11 +409,6 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
         default:
             st = AGC_STATUS_BAD_ARG;
             break;
-    }
-
-    if (!AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);

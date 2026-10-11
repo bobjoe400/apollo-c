@@ -77,11 +77,6 @@
  **********************************************************************/
 agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = rz_set_option(2, 1U); /* OPTION2 = 1 */
 
     if (st != AGC_STATUS_OK)
@@ -110,11 +105,6 @@ agc_status_t agc_job_ground_track_determination(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = AGC_JOB_GOTOPOOH;
@@ -141,11 +131,6 @@ agc_status_t agc_job_ground_track_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 34U, AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_COMPUTE, AGC_JOB_GROUND_TRACK_TIME));
 }
 
@@ -324,11 +309,6 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_
  **********************************************************************/
 agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -391,11 +371,6 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

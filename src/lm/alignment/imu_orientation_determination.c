@@ -84,11 +84,6 @@ agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
 /* P51 +2: V50N25 R1 00015; V33 P51B, ENTER coarse align. */
 agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -100,11 +95,6 @@ agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
 /* ENTER: PHASCHNG, THETAD = 0, GODSPRET V06N22. */
 agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = orientation_phase(); /* PHASCHNG */
 
     if (st != AGC_STATUS_OK)
@@ -118,11 +108,6 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
 /* GODSPRET V41, then CALL COARSE. */
 agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_erase_thetad(0) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -134,11 +119,6 @@ agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 /* COARSE (IMUCOARS, IMUFINE and their stalls), returning to P51 +2. */
 agc_status_t agc_job_lm_orientation_coarse_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_erase_thetad(1) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -150,11 +130,6 @@ agc_status_t agc_job_lm_orientation_coarse_start(agc_job_ctx_t *ctx)
 /* After COARSE: PHASCHNG, P51 +2. */
 agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = orientation_phase();
 
     if (st != AGC_STATUS_OK)
@@ -168,11 +143,6 @@ agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx)
 /* P51B: PHASCHNG 00014; NCOARSE; STARIND = 0; P51C. */
 agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = align_phase4(PH_ORIENTATION_RESTART);
 
     if (st == AGC_STATUS_OK)
@@ -193,11 +163,6 @@ agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx)
 /* P51C: PHASCHNG; AOTMARK (R53); AOTSTALL. */
 agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = orientation_phase();
 
     if (st == AGC_STATUS_OK)
@@ -229,11 +194,6 @@ agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS */
@@ -260,11 +220,6 @@ agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
 /* P51D after PLANET: PLANVEC; STARIND = 1; P51C +1. */
 agc_status_t agc_job_lm_orientation_first_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->planvec = ram->planet_los;
@@ -276,11 +231,6 @@ agc_status_t agc_job_lm_orientation_first_star(agc_job_ctx_t *ctx)
 /* P51E after PLANET: 12D, 6D, STARAD, STARAD +6; CHKSDATA. */
 agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->vac12     = ram->planet_los;
@@ -302,11 +252,6 @@ agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_orientation_data_checked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
         return (agc_job_lm_orientation_acquire_display(ctx));

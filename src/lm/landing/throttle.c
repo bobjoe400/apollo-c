@@ -84,11 +84,6 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(c >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     /* x + ~x is -0 in ones' complement, so a zero sum is all ones. */
     return ((sum > 0) ? sum : THR_A_ONES + sum); /* ones' complement */
 }
@@ -358,11 +353,6 @@ agc_status_t agc_lm_throttle(void)
 static agc_status_t thr_whatout(agc_sp_t pulses)
 {
     agc_lm_thr_t *t = agc_lm_thr(); /* throttle erasables             */
-
-    if (!AGC_ASSERT(pulses >= -AGC_LM_FEXTRA) || !AGC_ASSERT(pulses <= AGC_LM_FEXTRA))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     t->pifpset      = pulses;
     t->fcold        = 0;

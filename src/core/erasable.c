@@ -128,11 +128,6 @@ static bool vec_ok(const agc_vec_t *v)
 {
     bool ok = true; /* all components checked so far are legal */
 
-    if (!AGC_ASSERT(v != NULL))
-    {
-        return (false);
-    }
-
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         ok = ok && (v->c[i] >= AGC_DP_MIN) && (v->c[i] <= AGC_DP_MAX);
@@ -157,11 +152,6 @@ static bool mat_ok(const agc_mat_t *m)
 {
     bool ok = true; /* all rows checked so far are legal */
 
-    if (!AGC_ASSERT(m != NULL))
-    {
-        return (false);
-    }
-
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         ok = ok && vec_ok(&m->row[i]);
@@ -181,11 +171,6 @@ static bool mat_ok(const agc_mat_t *m)
  **********************************************************************/
 agc_sp_t agc_erase_modreg(void)
 {
-    if (!AGC_ASSERT((g_modreg >= AGC_SP_MIN) && (g_modreg <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -231,11 +216,6 @@ void agc_erase_set_modreg(agc_sp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_piptime(void)
 {
-    if (!AGC_ASSERT((g_piptime >= AGC_DP_MIN) && (g_piptime <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -257,11 +237,6 @@ agc_dp_t agc_erase_piptime(void)
  **********************************************************************/
 void agc_erase_set_piptime(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -280,11 +255,6 @@ void agc_erase_set_piptime(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_tig(void)
 {
-    if (!AGC_ASSERT((g_tig >= AGC_DP_MIN) && (g_tig <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -306,11 +276,6 @@ agc_dp_t agc_erase_tig(void)
  **********************************************************************/
 void agc_erase_set_tig(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -330,11 +295,6 @@ void agc_erase_set_tig(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_ttogo(void)
 {
-    if (!AGC_ASSERT((g_ttogo >= AGC_DP_MIN) && (g_ttogo <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -356,11 +316,6 @@ agc_dp_t agc_erase_ttogo(void)
  **********************************************************************/
 void agc_erase_set_ttogo(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -379,11 +334,6 @@ void agc_erase_set_ttogo(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_tgo(void)
 {
-    if (!AGC_ASSERT((g_tgo >= AGC_DP_MIN) && (g_tgo <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -405,11 +355,6 @@ agc_dp_t agc_erase_tgo(void)
  **********************************************************************/
 void agc_erase_set_tgo(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -428,11 +373,6 @@ void agc_erase_set_tgo(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_ttpi(void)
 {
-    if (!AGC_ASSERT((g_ttpi >= AGC_DP_MIN) && (g_ttpi <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -454,11 +394,6 @@ agc_dp_t agc_erase_ttpi(void)
  **********************************************************************/
 void agc_erase_set_ttpi(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -478,11 +413,6 @@ void agc_erase_set_ttpi(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_tevent(void)
 {
-    if (!AGC_ASSERT((g_tevent >= AGC_DP_MIN) && (g_tevent <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -504,11 +434,6 @@ agc_dp_t agc_erase_tevent(void)
  **********************************************************************/
 void agc_erase_set_tevent(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -528,11 +453,6 @@ void agc_erase_set_tevent(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_tetcsm(void)
 {
-    if (!AGC_ASSERT((g_tetcsm >= AGC_DP_MIN) && (g_tetcsm <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -554,11 +474,6 @@ agc_dp_t agc_erase_tetcsm(void)
  **********************************************************************/
 void agc_erase_set_tetcsm(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -578,11 +493,6 @@ void agc_erase_set_tetcsm(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_tetlem(void)
 {
-    if (!AGC_ASSERT((g_tetlem >= AGC_DP_MIN) && (g_tetlem <= AGC_DP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -604,11 +514,6 @@ agc_dp_t agc_erase_tetlem(void)
  **********************************************************************/
 void agc_erase_set_tetlem(agc_dp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -1151,11 +1056,6 @@ void agc_erase_set_refsmmat(agc_mat_t v)
  **********************************************************************/
 agc_tp_t agc_erase_tephem(void)
 {
-    if (!AGC_ASSERT((g_tephem >= AGC_TP_MIN) && (g_tephem <= AGC_TP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1177,11 +1077,6 @@ agc_tp_t agc_erase_tephem(void)
  **********************************************************************/
 void agc_erase_set_tephem(agc_tp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return;
@@ -1201,11 +1096,6 @@ void agc_erase_set_tephem(agc_tp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_csmmass(void)
 {
-    if (!AGC_ASSERT((g_csmmass >= AGC_SP_MIN) && (g_csmmass <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1251,11 +1141,6 @@ void agc_erase_set_csmmass(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_lemmass(void)
 {
-    if (!AGC_ASSERT((g_lemmass >= AGC_SP_MIN) && (g_lemmass <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1301,11 +1186,6 @@ void agc_erase_set_lemmass(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_pipax(void)
 {
-    if (!AGC_ASSERT((g_pipax >= AGC_SP_MIN) && (g_pipax <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1351,11 +1231,6 @@ void agc_erase_set_pipax(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_pipay(void)
 {
-    if (!AGC_ASSERT((g_pipay >= AGC_SP_MIN) && (g_pipay <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1401,11 +1276,6 @@ void agc_erase_set_pipay(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_pipaz(void)
 {
-    if (!AGC_ASSERT((g_pipaz >= AGC_SP_MIN) && (g_pipaz <= AGC_SP_MAX)))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1451,11 +1321,6 @@ void agc_erase_set_pipaz(agc_sp_t v)
  **********************************************************************/
 uint16_t agc_erase_cdux(void)
 {
-    if (!AGC_ASSERT(g_cdux <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1501,11 +1366,6 @@ void agc_erase_set_cdux(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_cduy(void)
 {
-    if (!AGC_ASSERT(g_cduy <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1551,11 +1411,6 @@ void agc_erase_set_cduy(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_cduz(void)
 {
-    if (!AGC_ASSERT(g_cduz <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1601,11 +1456,6 @@ void agc_erase_set_cduz(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_cdut(void)
 {
-    if (!AGC_ASSERT(g_cdut <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1651,11 +1501,6 @@ void agc_erase_set_cdut(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_cdus(void)
 {
-    if (!AGC_ASSERT(g_cdus <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1700,11 +1545,6 @@ void agc_erase_set_cdus(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_markstat(void)
 {
-    if (!AGC_ASSERT(g_markstat <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1749,11 +1589,6 @@ void agc_erase_set_markstat(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_imodes30(void)
 {
-    if (!AGC_ASSERT(g_imodes30 <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1798,11 +1633,6 @@ void agc_erase_set_imodes30(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_imodes33(void)
 {
-    if (!AGC_ASSERT(g_imodes33 <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1847,11 +1677,6 @@ void agc_erase_set_imodes33(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_dapdatr1(void)
 {
-    if (!AGC_ASSERT(g_dapdatr1 <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);
@@ -1896,11 +1721,6 @@ void agc_erase_set_dapdatr1(uint16_t v)
  **********************************************************************/
 uint16_t agc_erase_dapdatr2(void)
 {
-    if (!AGC_ASSERT(g_dapdatr2 <= AGC_WORD15_MAX))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(sane()))
     {
         return (0);

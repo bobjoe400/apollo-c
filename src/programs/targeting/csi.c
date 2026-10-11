@@ -143,11 +143,6 @@ static void csi_set_cycle(bool first_cycle)
  **********************************************************************/
 agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* PUSH PUSH; DOT VXSC UP1 UP1; VSL2 BVSU; UNIT PDVL; ABVAL VXSC; VSL1 */
     agc_vec_t proj; /* V's scale x 2^2 */
 
@@ -506,11 +501,6 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz, const agc_rendz
         s = agc_dp_shl(ip, s, 3); /* SL3        */
     }
 
-    if (!AGC_ASSERT(s >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz->rdotv   = agc_vec_dot(ip, rz->ract1, rz->vact4); /* CSI/B3     */
     int      x2 = 0;                                     /* NORM index, -(left shifts) */
     agc_dp_t d12;                                        /* 12D, scale by SL* */
@@ -524,16 +514,6 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz, const agc_rendz
     /* SIGN on a vector: complement v when s is negative. */
     agc_vec_t v_vsign = rz->vact4; /* VACT4, m/cs 2^7 */
     agc_dp_t  s_vsign = rz->rdotv; /* RDOTV, 2^36 */
-
-    if (!AGC_ASSERT(s_vsign >= AGC_DP_MIN && s_vsign <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(v_vsign.c[0] >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_vec_t v = agc_vec_neg(v_vsign); /* SIGN VCOMP, m/cs 2^7 */
 
@@ -587,11 +567,6 @@ static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop, csi_wo
     t        = agc_dp_add(ip, agc_dp_sub(ip, t, pop), rz->tcsi);
     rz->tcdh = t;
     w->x2    = 5;
-
-    if (!AGC_ASSERT(rz->tcdh >= AGC_DP_MIN))
-    {
-        return (false);
-    }
 
     return (agc_dp_sub(ip, agc_erase_ttpi(), rz->tcdh) >= 0);
 }
@@ -1328,11 +1303,6 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(m != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     m->row[1] = agc_vec_neg(rz->up1);                /* 6D         */
     m->row[2] = agc_vec_neg(rz_unit(ip, rz->ract1)); /* 12D        */
     m->row[0] = agc_vec_shl(ip, agc_vec_cross(ip, m->row[2], rz->up1), 1);

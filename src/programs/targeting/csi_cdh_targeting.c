@@ -191,11 +191,6 @@ static agc_status_t csi_start(agc_job_ctx_t *ctx, bool this_active)
  **********************************************************************/
 agc_status_t agc_job_csi_targeting(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (csi_start(ctx, true));
 }
 
@@ -215,11 +210,6 @@ agc_status_t agc_job_csi_targeting(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_csi_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (csi_start(ctx, false));
 }
 
@@ -240,11 +230,6 @@ agc_status_t agc_job_csi_targeting_other_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     rz_tracking_flags_on();
@@ -357,11 +342,6 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_csi_after_nn_elev(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_rendz_erasable()->nn >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -441,11 +421,6 @@ static agc_status_t csi_almxit(agc_job_ctx_t *ctx, agc_sp_t code)
  **********************************************************************/
 agc_status_t agc_job_csi_alarm_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, AGC_JOB_CSI_ALARM_DISPLAY, AGC_JOB_CSI_INPUT));
 }
 
@@ -654,11 +629,6 @@ static agc_status_t cdh_start(agc_job_ctx_t *ctx, bool this_active)
  **********************************************************************/
 agc_status_t agc_job_cdh_targeting(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (cdh_start(ctx, true));
 }
 
@@ -678,11 +648,6 @@ agc_status_t agc_job_cdh_targeting(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cdh_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (cdh_start(ctx, false));
 }
 
@@ -703,11 +668,6 @@ agc_status_t agc_job_cdh_targeting_other_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cdh_input(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_tracking_flags_on();
 
     return (rz_vnpooh(ctx, 6U, 13U, AGC_JOB_CDH_AFTER_TCDH));

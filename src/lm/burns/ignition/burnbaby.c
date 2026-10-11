@@ -91,11 +91,6 @@ void agc_lm_onullage(void)
  * to PGNCS auto), which returns to B*RNB*B*.                              */
 agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_BURNBABY, AGC_TASK_NONE, (int16_t) ctx->prio, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
@@ -119,11 +114,6 @@ agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
  * P41SPOT (P63SPOT = P41SPOT: in P63 CLOKTASK is already going).          */
 agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->lm.gobltime = agc_erase_tig();
     agc_inhint();
     agc_lm_enginof3();
@@ -194,11 +184,6 @@ static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self, ag
  * now and ABVEL = |VN1|.                                                   */
 agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -749,21 +734,11 @@ agc_status_t agc_task_zoom(void)
 /* P41BLANK (p.735): blank the DSKY (CLOKJOB is not running in P41).       */
 agc_status_t agc_job_rcs_burn_blank_dsky(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0U, NULL));
 }
 
 /* TIG-30A (p.736): restore the V16N85 display (REGODSP ends the job).    */
 agc_status_t agc_job_restore_burn_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_REGODSP, agc_dsky_vn(16, 85), NULL));
 }

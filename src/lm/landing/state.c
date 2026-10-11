@@ -159,11 +159,6 @@ void agc_lm_phaschng(uint16_t octal_code)
         return;
     }
 
-    if (!AGC_ASSERT(octal_code <= 077777u))
-    {
-        return;
-    }
-
     agc_phase_change(group, octal_code);
 }
 
@@ -179,11 +174,6 @@ void agc_lm_fastchng(void)
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only */
     {
         return;
-    }
-
-    if (!AGC_ASSERT((LM_FASTCHNG_CODE & 7u) == 3u))
-    {
-        return; /* not a group 3 code */
     }
 
     agc_phase_change(3, LM_FASTCHNG_CODE);
@@ -366,11 +356,6 @@ agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
     int32_t hi = (int32_t) x.hi + (int32_t) y.hi; /* major sum, 2^S    */
     int     a  = 0;                               /* net overflow      */
 
-    if (!AGC_ASSERT(ovf != NULL))
-    {
-        return (x);
-    }
-
     if (lo > AGC_SP_MAX)
     {
         lo -= LM_WORD;
@@ -444,15 +429,5 @@ agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
  **********************************************************************/
 bool agc_lm_chan_bit_present(int chan, uint16_t bit)
 {
-    if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30 && chan <= AGC_CHAN_CHAN33))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(bit != 0u))
-    {
-        return (false);
-    }
-
     return ((agc_chan_read(chan) & bit) == 0u);
 }

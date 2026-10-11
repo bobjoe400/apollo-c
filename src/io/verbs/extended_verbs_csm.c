@@ -124,11 +124,6 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
 /* TRMATTCK: after liftoff ENDEXT, before liftoff GOPIN.                   */
 agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (after_liftoff() ? agc_dsky_endmark() : agc_extverb_gopin());
 }
 
@@ -136,11 +131,6 @@ agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
  * the error counters), ATTCK1 in 20 ms, then TRMATTCK.                   */
 agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_dap_needler(0, 0, 0, true);
 
     if (st != AGC_STATUS_OK)
@@ -198,11 +188,6 @@ static agc_status_t attck1(void)
  * only the CSM/LM switch-over to low bandwidth (else ALM/END).            */
 static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!tvc_on())
     {
         return (agc_job_dapfig(ctx)); /* POSTJUMP DAPFIG         */
@@ -228,11 +213,6 @@ static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 /* GOXDSPF of a V04/V06 display with proceed -> next, enter -> again.     */
 static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t next, agc_job_id_t again)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, next, again};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun), &cont));
@@ -307,11 +287,6 @@ agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
         {
             return (st);
         }
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (agc_job_dap_data_load_noun48_csm(ctx));
@@ -635,11 +610,6 @@ agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
  * OPTDRIVE takes it from here), ENDEXT.                                   */
 agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_optind(1);
 
     if (!AGC_ASSERT(agc_erase_optind() == 1))
@@ -675,22 +645,12 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
             break;
     }
 
-    if (!AGC_ASSERT(verb >= 40 && verb < 50))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_alm_end());
 }
 
 /* Verbs 51-68.                                                             */
 static agc_status_t fan_50s_60s(agc_job_ctx_t *ctx, int verb)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (verb)
     {
         case 51:

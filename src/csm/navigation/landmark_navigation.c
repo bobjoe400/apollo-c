@@ -262,11 +262,6 @@ static agc_mat_t ln_outer(agc_interp_t *ip, agc_vec_t a, agc_vec_t b)
         m.row[k] = agc_vec_scale(ip, b, a.c[k]);
     }
 
-    if (!AGC_ASSERT(m.row[0].c[0] >= AGC_DP_MIN))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
     return (m);
 }
 
@@ -675,11 +670,6 @@ agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     ln.i   = 1;
     ln.loc = 0;
 
@@ -1147,11 +1137,6 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* INTSTALL */
 
     st = agc_integ_install(0, AGC_JOB_ORBITAL_NAVIGATION_MARK);
@@ -1203,11 +1188,6 @@ agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_delta_accept(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1232,11 +1212,6 @@ agc_status_t agc_job_orbital_navigation_delta_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_marks_exit(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_continue(ln.ret));
 }
 
@@ -1253,11 +1228,6 @@ agc_status_t agc_job_orbital_navigation_marks_exit(agc_job_ctx_t *ctx)
  **********************************************************************/
 void rz_landmark_set_offset(agc_sp_t cxoff)
 {
-    if (!AGC_ASSERT(cxoff >= 0))
-    {
-        return;
-    }
-
     ln.cxoff = cxoff;
 }
 
@@ -1281,11 +1251,6 @@ void rz_landmark_set_offset(agc_sp_t cxoff)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1380,11 +1345,6 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1426,11 +1386,6 @@ agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1456,11 +1411,6 @@ agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_site_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

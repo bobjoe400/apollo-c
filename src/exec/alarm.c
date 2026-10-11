@@ -150,11 +150,6 @@ static void proglarm(void)
  **********************************************************************/
 static void store_alarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return;
-    }
-
     almcadr = exec_running_job_loc(); /* TS ALMCADR        */
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
@@ -262,11 +257,6 @@ void agc_curtains(void)
  **********************************************************************/
 void agc_prioalarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return;
-    }
-
     agc_inhint();
     store_alarm(code);
     agc_relint();
@@ -393,11 +383,6 @@ agc_status_t agc_exec_service_restart(void)
  **********************************************************************/
 agc_status_t agc_bailout(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     exec_vac5stor();
     store_alarm(code);
@@ -530,11 +515,6 @@ void exec_service_interp_alarm(void)
  **********************************************************************/
 agc_status_t agc_poodoo(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     exec_vac5stor();
     store_alarm(code);

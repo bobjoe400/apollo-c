@@ -563,11 +563,6 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
     int      o = 0;                   /* overflow DAS leaves in A */
     agc_w2_t r = agc_w_das(m, x, &o); /* MPAC after DAS */
 
-    if (!AGC_ASSERT(ovfind != 0))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
     if (o != 0)
     {
         r = agc_w_overflow(r, o, ovfind);
@@ -762,11 +757,6 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     agc_w2_t top;     /* MPAC, MPAC+1 of the sum */
     int      o   = 0; /* minor-pair carry, then TS overflow */
 
-    if (!AGC_ASSERT(ovfind != 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     lo2  = agc_w_das(lo2, add, &o);
     t.m1 = lo2.hi;
     t.m2 = lo2.lo;
@@ -803,11 +793,6 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
     agc_w3_t buf; /* BUF: x then x + y partial products */
     agc_w3_t t;   /* MPAC: the next partial product */
 
-    if (!AGC_ASSERT(ovfind != 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
     t   = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
     buf = agc_w_dot_acc(buf, t, ovfind);
@@ -835,11 +820,6 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
 {
     agc_w3_t buf; /* BUF: x then x + y squares */
     agc_w3_t t;   /* MPAC: the next square */
-
-    if (!AGC_ASSERT(ovfind != 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     buf = agc_w_dsqsub(agc_w_split(v.c[0]));
     t   = agc_w_dsqsub(agc_w_split(v.c[1]));
@@ -903,11 +883,6 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
     agc_w2_t top;   /* MPAC, MPAC+1 (Horner accumulator) */
     int      o = 0; /* DAS overflow, ignored as in the AGC */
     int      k;     /* coefficient index, degree-1 .. 0 */
-
-    if (!AGC_ASSERT(coef != 0) || !AGC_ASSERT((degree >= 1) && (degree <= 15)))
-    {
-        return (m);
-    }
 
     top = agc_w_split(coef[degree]);
 

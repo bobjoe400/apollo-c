@@ -130,11 +130,6 @@ uint16_t agc_svc_downflag(agc_flag_id_t f)
  **********************************************************************/
 static int ent2_word(uint16_t arg, uint16_t *bits)
 {
-    if (!AGC_ASSERT(bits != NULL))
-    {
-        return (-1);
-    }
-
     *bits    = (uint16_t) (arg & OCT77770);
     int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? LM_ENT2_FLAGWORD : (int) (arg & OCT7); /* LM: FLAGWRD4 */
 
@@ -217,11 +212,6 @@ agc_status_t agc_svc_downent2(uint16_t arg)
  **********************************************************************/
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(wake_as != AGC_JOB_NONE) || !AGC_ASSERT(delay_cs > 0u && delay_cs <= AGC_WAITLIST_MAX_DELAY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     int slot = -1; /* free DELAYLOC (DELLOOP) */
 
@@ -307,11 +297,6 @@ static int32_t delay_lateness(int i, uint32_t now)
  **********************************************************************/
 agc_status_t agc_svc_delay_wake(int slot)
 {
-    if (!AGC_ASSERT(slot >= -1 && slot < DELAYNUM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint32_t now = agc_time_now_cs(); /* TIME2,TIME1, cs */
 
     for (int i = 0; i < DELAYNUM && slot < 0; i++)
@@ -387,11 +372,6 @@ agc_status_t agc_svc_startsub_reset(void)
  **********************************************************************/
 agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 {
-    if (!AGC_ASSERT(from != NULL && to != NULL) || !AGC_ASSERT(n >= 1 && n <= 0400))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint(); /* no RELINT (MOD 2)      */
 
     for (int i = n - 1; i >= 0; i--)

@@ -326,11 +326,6 @@ static int16_t dp_low_word(agc_dp_t v)
  * so the value read here is the low part of the C DP.                  */
 agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 {
-    if (!AGC_ASSERT(out != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_OK;
 
     switch (src)
@@ -375,11 +370,6 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
  * LONGCALL restart, cs.                                                */
 agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
 {
-    if (!AGC_ASSERT(out != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_OK;
 
     switch (src)

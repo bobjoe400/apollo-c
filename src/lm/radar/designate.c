@@ -221,11 +221,6 @@ static agc_status_t rr_lundesch(agc_rr_designate_result_t *res)
  **********************************************************************/
 agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *res)
 {
-    if (!AGC_ASSERT(ip != NULL && res != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rr_state_t *s = rr_state(); /* radar erasables */
 
     rz_flag_put(AGC_FLAG_RRNBSW, false);
@@ -701,11 +696,6 @@ static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const a
  **********************************************************************/
 agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rr_state_t  *s = rr_state(); /* radar erasables */
     agc_interp_t ip;             /* interpreter state */
 
@@ -785,11 +775,6 @@ agc_status_t agc_rendz_goto_terminate_tracking(void)
  **********************************************************************/
 agc_status_t agc_rr_designate_gimbal(bool *started)
 {
-    if (!AGC_ASSERT(started != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

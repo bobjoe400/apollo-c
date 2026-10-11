@@ -162,11 +162,6 @@ agc_dp_t rr_timehold(void)
  **********************************************************************/
 uint16_t agc_erase_dnrrange(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index < 7))
-    {
-        return (0U);
-    }
-
     return (rd.dnradar[index]);
 }
 

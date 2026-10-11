@@ -120,16 +120,6 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
 {
     int32_t p = (int32_t) a * k; /* product a k, scaled 2^-14 (sign of the MP major word) */
 
-    if (!AGC_ASSERT(a >= LM_NEGMAX && a <= LM_POSMAX))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(k >= LM_NEGMAX && k <= LM_POSMAX))
-    {
-        return (false);
-    }
-
     return ((k != 0) && ((a == 0) ? (k < 0) : ((p < 0) && (p > -16384)))); /* A = +0: sign of k */
 }
 

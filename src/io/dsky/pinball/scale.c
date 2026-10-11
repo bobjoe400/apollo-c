@@ -213,11 +213,6 @@ agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
     int kind = -1;                         /* id kind: 0 SP raw, 1 SP, 2 DP */
     int idx  = pin_own_id(data_id, &kind); /* word index or -1 */
 
-    if (!AGC_ASSERT(value != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (idx < 0)
     {
         return (AGC_STATUS_NOT_FOUND);
@@ -1043,11 +1038,6 @@ static agc_status_t pin_hmsout(agc_dp_t t)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool         neg     = t < 0;         /* sign */
     int64_t      mag     = pin_mag(t);    /* magnitude, unscaled */
     int64_t      part[3] = {mag / PIN_CS_HOUR, (mag / PIN_CS_MIN) % 60, mag % PIN_CS_MIN};
@@ -1082,11 +1072,6 @@ static agc_status_t pin_hmsout(agc_dp_t t)
  **********************************************************************/
 static agc_status_t pin_msout(int k, agc_dp_t t)
 {
-    if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(t >= AGC_DP_MIN && t <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool    neg = t < 0;      /* sign */
     int64_t mag = pin_mag(t); /* magnitude, unscaled */
 

@@ -437,11 +437,6 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, kepler_
  *********************************************************************/
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_kepler_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -579,11 +574,6 @@ static agc_dp_words_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in
  *********************************************************************/
 agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL && xkepnew != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(in->body == AGC_CONIC_EARTH || in->body == AGC_CONIC_MOON))
     {
         return (AGC_STATUS_BAD_ARG);

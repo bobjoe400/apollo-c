@@ -58,11 +58,6 @@ static agc_align_sxt_mark_t mk;
 /* The mark as the 7 raw words of MKT2T1 .. MKCDUX. */
 static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
 {
-    if (!AGC_ASSERT(m != NULL))
-    {
-        return;
-    }
-
     w[0] = align_sp_to_word(agc_dp_high(m->t));
     w[1] = align_sp_to_word(agc_dp_low(m->t));
     w[2] = m->cduy;
@@ -137,11 +132,6 @@ static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
 
 agc_status_t agc_sxtmark(agc_sp_t nmarks)
 {
-    if (!AGC_ASSERT((nmarks >= 0) && (nmarks <= MS_WANTED_MAX)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (sxtmark_common(nmarks, true));
 }
 
@@ -466,11 +456,6 @@ agc_status_t agc_sxtmark_mkreject(void)
 /* MKVB51 (p. 227): KLEENEX (clear extended verbs), then the V51 flash. */
 agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_erase_markstat() != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -482,11 +467,6 @@ agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx)
 /* GOMARK4 with VB51 or V50N25: V34 TERMSXT, V33 ENTANSWR, ENTER MKVB5X. */
 static agc_status_t mark_flash(const agc_job_ctx_t *ctx, uint16_t vn)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((vn == VN_PLEASE_MARK) || (vn == VN_MARKS_DONE)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -498,22 +478,12 @@ static agc_status_t mark_flash(const agc_job_ctx_t *ctx, uint16_t vn)
 /* MKVB51 +2: please mark (V51). */
 agc_status_t agc_job_mark_request_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (mark_flash(ctx, VN_PLEASE_MARK));
 }
 
 /* MKVB50: R1 = 00016, V50N25 (all marks in), without KLEENEX. */
 agc_status_t agc_job_mark_complete_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_dsky_set_dsptem(0, CHK_MARKS_DONE);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -527,11 +497,6 @@ agc_status_t agc_job_mark_complete_display(agc_job_ctx_t *ctx)
 /* MKVB5X (ENTER): V51 again if marks are still wanted, else V50N25. */
 agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_erase_markstat() & MS_WANTED_MASK) != 0u)
     {
         return (agc_job_mark_request_display(ctx));
@@ -546,11 +511,6 @@ agc_status_t agc_job_mark_redisplay(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_clearmrk();
 
     if (!agc_phase_checkmm(3))
@@ -570,11 +530,6 @@ agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_entanswr(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_markstat((uint16_t) (agc_erase_markstat() & MS_VAC_MASK));
 
     if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
@@ -631,11 +586,6 @@ agc_sp_t agc_sxtmark_marks_made(void)
 /* One stored mark (slot 0 = the first). */
 agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT((mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *out = agc_align_ram()->sxt[mark];
 
     return (AGC_STATUS_OK);

@@ -288,11 +288,6 @@ agc_sp_t pin_sp_from_ones(uint16_t w)
  **********************************************************************/
 uint16_t pin_ones_from_sp(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN) || !AGC_ASSERT(v <= AGC_SP_MAX))
-    {
-        return (0);
-    }
-
     uint16_t w = (v < 0) ? pin_ones_neg((uint16_t) (-v)) : (uint16_t) v; /* CS of |v| for a negative value */
 
     /* bit 15 of the word is the sign of v; +0 stays +0                  */
@@ -1012,11 +1007,6 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
  **********************************************************************/
 uint16_t agc_dsky_dsptem(int index)
 {
-    if (!AGC_ASSERT(index >= 0) || !AGC_ASSERT(index < 7))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(g_pin.dsptem[index] <= PIN_WORD))
     {
         return (0); /* buffer holds 15-bit words only */
@@ -1069,11 +1059,6 @@ agc_status_t agc_dsky_set_dsptem(int index, uint16_t word)
  **********************************************************************/
 void agc_erase_set_dsptem1(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 2))
-    {
-        return;
-    }
-
     agc_status_t st; /* status so far */
 
     st = agc_dsky_set_dsptem(index, pin_ones_from_sp(v));
@@ -1098,11 +1083,6 @@ void agc_erase_set_dsptem1(int index, agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_optionx(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 2))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(g_pin.dsptem[4 + index] <= PIN_WORD))
     {
         return (0); /* buffer holds 15-bit words only */
@@ -1124,11 +1104,6 @@ agc_sp_t agc_erase_optionx(int index)
  **********************************************************************/
 void agc_erase_set_optionx(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 2))
-    {
-        return;
-    }
-
     agc_status_t st; /* status so far */
 
     st = agc_dsky_set_dsptem(4 + index, pin_ones_from_sp(v));
@@ -1157,11 +1132,6 @@ agc_dp_t agc_erase_dsptemx(void)
 
     agc_dp_t v = agc_dp_pack(pin_sp_from_ones(g_pin.dsptem[4]), pin_sp_from_ones(g_pin.dsptem[5])); /* scale; of noun */
 
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        return (0);
-    }
-
     return (v);
 }
 
@@ -1178,11 +1148,6 @@ agc_dp_t agc_erase_dsptemx(void)
  **********************************************************************/
 void agc_erase_set_dsptemx(agc_dp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        return;
-    }
-
     g_pin.dsptem[4] = pin_ones_from_sp(agc_dp_high(v));
     g_pin.dsptem[5] = pin_ones_from_sp(agc_dp_low(v));
 
@@ -1234,11 +1199,6 @@ uint16_t agc_dsky_xyzreg(int index)
  **********************************************************************/
 agc_status_t agc_dsky_response(uint8_t *verb, uint8_t *noun)
 {
-    if (!AGC_ASSERT(verb != NULL) || !AGC_ASSERT(noun != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *verb = g_pin.resp_verb;
     *noun = g_pin.resp_noun;
 

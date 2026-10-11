@@ -66,11 +66,6 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
  * count of the scalar (1/1600 s per LOSCALAR count, scale as channel 3/4). */
 agc_status_t agc_systems_test_finetime(agc_dp_t *t)
 {
-    if (!AGC_ASSERT(t != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     uint16_t lo = POSMAX;
 
@@ -112,11 +107,6 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
 
     s = agc_dp_add(ip, s, ONEDPP);
 
-    if (!AGC_ASSERT(s >= AGC_DP_MIN && s <= AGC_DP_MAX))
-    {
-        return (a);
-    }
-
     return (s);
 }
 
@@ -125,11 +115,6 @@ agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
  * lane, prelaunch alignment); the LM tests are the stub above.            */
 agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_phase_newmode((agc_sp_t) SYSTEMS_TEST_MODE);
 
     if (st != AGC_STATUS_OK)

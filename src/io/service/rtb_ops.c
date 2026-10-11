@@ -210,11 +210,6 @@ agc_dp_t agc_rtb_cdulogic(uint16_t cdu_pattern)
  **********************************************************************/
 int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
 {
-    if (!AGC_ASSERT(mpac != NULL))
-    {
-        return (0);
-    }
-
     for (int i = 0; i < 3; i++)
     {
         if (!AGC_ASSERT(mpac->w[i] >= AGC_SP_MIN && mpac->w[i] <= AGC_SP_MAX))
@@ -269,16 +264,6 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 {
     agc_mpac_tp_t m; /* word-level MPAC image */
 
-    if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     m.w[0] = hi;
     m.w[1] = lo;
     m.w[2] = 0;
@@ -309,11 +294,6 @@ static uint16_t one_to_two(agc_dp_t angle_rev)
     int64_t doubled = 2 * (int64_t) angle_rev;      /* DDOUBL            */
     int64_t hi      = doubled / (int64_t) SP_RANGE; /* truncates to 0    */
 
-    if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN && angle_rev <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(hi > -2 * (int64_t) SP_RANGE && hi < 2 * (int64_t) SP_RANGE))
     {
         return (0); /* no valid result */
@@ -340,11 +320,6 @@ uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(angle_rev >= AGC_DP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     return (p);
 }
 
@@ -361,11 +336,6 @@ uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
  **********************************************************************/
 agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         out[i] = one_to_two(angles_rev.c[i]);
@@ -530,10 +500,6 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        if (!AGC_ASSERT(gyro_cmds.c[i] >= AGC_DP_MIN && gyro_cmds.c[i] <= AGC_DP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
     }
 
     agc_status_t st = agc_imu_pulse(gyro_cmds.c); /* OGC buffer */
@@ -599,11 +565,6 @@ agc_dp_t agc_rtb_signmpac(agc_dp_t mpac)
 {
     agc_dp_t r = (mpac < 0) ? -AGC_DP_MAX : AGC_DP_MAX; /* +-DPOSMAX, 2^0 */
 
-    if (!AGC_ASSERT(mpac >= AGC_DP_MIN && mpac <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(r == AGC_DP_MAX || r == -AGC_DP_MAX))
     {
         return (0); /* no valid result */
@@ -641,16 +602,6 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *
 {
     agc_vec_t w = v; /* vector given to UNIT, scale of v */
     int       n = 0; /* shift count (37D) */
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(shift != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     bool all_small = true; /* all high words zero */
 
@@ -692,16 +643,6 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *
  **********************************************************************/
 agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
 {
-    if (!AGC_ASSERT(v.c[0] >= AGC_DP_MIN && v.c[0] <= AGC_DP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v.c[1] >= AGC_DP_MIN && v.c[2] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -725,16 +666,6 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(e3j22r2m >= AGC_SP_MIN && e3j22r2m <= AGC_SP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     static const agc_dp_t five_eighths = 0x0A000000;               /* 5/8: 2DEC 5 B-3 */
     agc_dp_t              x2           = agc_dp_sq(ip, urpv.c[0]); /* B2              */
     agc_dp_t              y2           = agc_dp_sq(ip, urpv.c[1]); /* B2              */

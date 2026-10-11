@@ -214,11 +214,6 @@ static agc_status_t timerad_circular(agc_conic_ctx_t *ctx, agc_conic_time_out_t 
  *********************************************************************/
 agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(out != NULL && in->sgnrdot != 0))
     {
         return (AGC_STATUS_BAD_ARG);

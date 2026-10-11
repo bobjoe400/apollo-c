@@ -544,11 +544,6 @@ void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac
  *********************************************************************/
 agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_conic_ctx_t ctx;                                  /* conic erasables */
     agc_status_t    st = agc_conic_ctx_init_(&ctx, body); /* MUTABLE,1 */
 

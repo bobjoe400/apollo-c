@@ -124,11 +124,6 @@ static agc_sp_t mass_hi(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(m <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) (m / 16384)); /* major word of MASS          */
 }
 
@@ -395,11 +390,6 @@ static agc_status_t lresc(lm_dap_t *d)
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
     agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1); /* ACCDOTQ, scaled pi/2^7 rad/s^3 */
 
-    if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(abdelv >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -424,11 +414,6 @@ static agc_status_t lresc(lm_dap_t *d)
  **********************************************************************/
 static agc_sp_t docked_fit(int base)
 {
-    if (!AGC_ASSERT(base == 0 || base == 6))
-    {
-        return (0);
-    }
-
     agc_sp_t        x  = agc_erase_csmmass();                                                /* X = CSMMASS, scaled 2^16 kg */
     agc_sp_t        y  = agc_erase_lemmass();                                                /* Y = LEMMASS, scaled 2^16 kg */
     const agc_sp_t *c  = &coeff[base];                                                       /* this fit's six coefficients (C F A B D E) */
@@ -627,11 +612,6 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
  **********************************************************************/
 agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id == AGC_JOB_JET_ACCEL_UPDATE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -658,11 +638,6 @@ agc_status_t agc_job_jet_accel_update(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->aosq   = 0;

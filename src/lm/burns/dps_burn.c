@@ -158,11 +158,6 @@ static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
 {
     agc_alarm(AGC_ALARM_01706); /* PROGRAM vs. CONFIG.    */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_job_stage_alarm_display(ctx));
 }
 
@@ -171,11 +166,6 @@ static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
  * 4 low passes; DPS constants, NOTHROTL reset; then P40IN and BURNBABY.  */
 agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t     *g = agc_guid_state();
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_DPS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
@@ -207,11 +197,6 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
  * DV monitor 308 pulses, AVFLAG set.                                      */
 agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t     *g = agc_guid_state();
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
@@ -242,11 +227,6 @@ agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
  * attitude errors zeroed, 0.3 deg deadband, R60.                          */
 agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->lm.which     = (agc_sp_t) AGC_LM_WHICH_RCS_BURN;
@@ -271,11 +251,6 @@ agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx)
  * GODSPRET; the job continues at agc_job_rcs_burn_vg_displayed.        */
 agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -290,11 +265,6 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
  * (REDO6.7) and 4 type C, B*RNB*B*.                                      */
 agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->lm.dispdex   = (agc_sp_t) AGC_PRIO5; /* FOR SAFETY ONLY        */
@@ -316,11 +286,6 @@ agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
  * DSKY is blanked (DISPDEX = -BLANKDEX = -2) -- wait a second.            */
 agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_guid_state()->lm.dispdex + 2 == 0)
     {
         return (agc_svc_delayjob(ONE_SEC, AGC_JOB_REDO6_7)); /* BLNKWAIT      */
@@ -335,11 +300,6 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
  * higher job waiting after the change runs first (CHANG1).               */
 agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_exec_prio_change(AGC_PRIO5);
 
     if (agc_exec_newjob() > 0)
@@ -354,11 +314,6 @@ agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx)
  * (DISPDEX <= 0: SERVICER updates N85 from then on).                       */
 agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     if (g->lm.dispdex <= 0)
@@ -378,11 +333,6 @@ agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx)
  * flash V16N40: PROCEED -> TIGNOW, V34 -> TERM40; 4.1.                    */
 agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->lm.dispdex        = 1;                    /* CA Z TS DISPDEX        */
@@ -404,11 +354,6 @@ agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
  * (RCS trim); terminate or proceed -> TERM40; 4.1.                        */
 agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_lm_dap_zatteror();
     agc_status_t sw = agc_lm_dap_setmindb();
@@ -438,11 +383,6 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
  * CLOKTASK off, deadband restored, P00.                                   */
 agc_status_t agc_job_term40(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     g->avg.avgexit  = AGC_JOB_SERVEXIT;
@@ -466,11 +406,6 @@ agc_status_t agc_job_term40(agc_job_ctx_t *ctx)
 /* CALCN85 (p.757): AVEGEXIT after the burn: UPDATEVG, N85, SERVEXIT.       */
 agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -490,11 +425,6 @@ agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx)
 /* P47LM (p.757-758): IMU status, MIDTOAV2, STARTP47 at the PREREAD time.  */
 agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t sw = agc_imu_status_check();
 
     if (sw != AGC_STATUS_OK)
@@ -551,11 +481,6 @@ agc_status_t agc_task_start_thrust_monitor(void)
  * it (N83), 5.3 type B, DELVCTL = DELVSIN, SERVEXIT.                      */
 agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g  = agc_guid_state();
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_interp_t ip;
@@ -574,11 +499,6 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
 /* P47BODY / P47BOD (p.758-759): clear N83, flash V16N83 (ENTER clears).   */
 agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_burn_t *b = &agc_guid_state()->burn;
 
     b->delvimu = agc_vec_zero();
@@ -589,11 +509,6 @@ agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_RESET};
     agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 83), &cont);
 
@@ -758,11 +673,6 @@ agc_status_t agc_task_coastset(void)
  * VG; with STEERSW, TGO and FINDCDUW.                                     */
 agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     if (!agc_flag_test(AGC_FLAG_XDELVFLG))
@@ -828,11 +738,6 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
  * RINIT/VINIT/TIGSAVE for it and DELLT4 = TPASS4 - PIPTIME.               */
 agc_status_t agc_lm_updatevg(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g  = agc_guid_state();
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_status_t sw = agc_lm_cross_product_steering(ip); /* X-PRODUCT STEERING     */
@@ -890,11 +795,6 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
  * off, ENGOFTSK at TIG (4.11 and 5.3); otherwise SERVEXIT.                 */
 agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -935,11 +835,6 @@ agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
  * and EPSILON4 10 or 45 degrees (NORMSW), group 2 off.                    */
 agc_status_t agc_job_vtogain_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -1038,11 +933,6 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
  * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.   */
 agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_guid_t *g = agc_guid_state();
     agc_dp_t          m = g->burn.weight_g;
 

@@ -162,11 +162,6 @@ static agc_status_t leadin_varadar(agc_sp_t dex)
  **********************************************************************/
 agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* read lead-in status */
 
     st = leadin_varadar(agc_erase_rtstdex());
@@ -207,11 +202,6 @@ agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
         agc_erase_set_rfailcnt((agc_sp_t) (agc_erase_rfailcnt() + 1));

@@ -407,11 +407,6 @@ static agc_status_t tvcx_run(tvcx_step_t from)
  **********************************************************************/
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
 {
-    if (!AGC_ASSERT((tvcexphs >= 1) && (tvcexphs <= 6)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = tvcx_run((tvcx_step_t) tvcexphs); /* to TVCEXFIN  */
 
     if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0))

@@ -118,11 +118,6 @@ static const agc_dp_t TWOSEC_22 = (agc_dp_t) (200 * 64); /* cs 2^22 */
  **********************************************************************/
 agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 {
-    if (!AGC_ASSERT(a != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
 
     if (set_piptime1)
@@ -162,11 +157,6 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
  **********************************************************************/
 agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(a != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(a->pipage >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -268,11 +258,6 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *
  **********************************************************************/
 agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, agc_vec_t r, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(a != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -340,11 +325,6 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, a
  **********************************************************************/
 agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon, const agc_mat_t *refsmmat, agc_vec_t delv, const agc_state_vector_t *sv, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) || !AGC_ASSERT(sv != NULL && a != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t dt22; /* guidance period, cs 2^22 */
 
     if (veh == AGC_VEHICLE_CSM)
@@ -401,16 +381,6 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon, co
  **********************************************************************/
 void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
 {
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(kind == AGC_COPY_RVT || kind == AGC_COPY_RVTG || kind == AGC_COPY_ALL))
-    {
-        return;
-    }
-
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     agc_inhint();
@@ -451,11 +421,6 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
  **********************************************************************/
 void agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o)
 {
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(o->rtx2 == 0 || o->rtx2 == 2))
     {
         return;

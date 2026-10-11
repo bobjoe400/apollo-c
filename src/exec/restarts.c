@@ -135,11 +135,6 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
 /* CONTBL2 (C p.1417): restart one table entry.                        */
 static agc_status_t restart_entry(int group, const rst_entry_t *e)
 {
-    if (!AGC_ASSERT(e != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = AGC_STATUS_NOT_FOUND;
     uint32_t     dt = 0;
 
@@ -217,11 +212,6 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
 /* ITSAVAR (C p.1414): type C -- job, task or LONGCALL from PHSNAMEn.   */
 static agc_status_t restart_type_c(int group, uint16_t tempphs, const phase_var_store_t *s)
 {
-    if (!AGC_ASSERT(s != 0) || !AGC_ASSERT((tempphs & RS_TYPEB) == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int cjw = (int) (tempphs & 07U) - 2; /* AD MINUS2 / CCS   */
 
     if (cjw > 0)

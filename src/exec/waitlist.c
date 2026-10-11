@@ -161,11 +161,6 @@ agc_status_t agc_waitlist_init(void)
  **********************************************************************/
 static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(n >= 0 && n < AGC_WAITLIST_MAX_TASKS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* DEVIATION: the AGC shifts first and checks the ejected LST2 word
      * afterwards; checking first is equivalent because the BAILOUT that
      * follows re-initialises both lists in STARTSB2.                   */
@@ -318,11 +313,6 @@ agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
  **********************************************************************/
 agc_status_t agc_waitlist_vardelay(uint16_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
         return (AGC_STATUS_BAD_ARG); /* must be in a task    */
@@ -345,16 +335,6 @@ agc_status_t agc_waitlist_vardelay(uint16_t delay_cs, agc_task_id_t task)
  **********************************************************************/
 agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_waitlist_vardelay(delay_cs, task));
 }
 
@@ -481,11 +461,6 @@ static agc_status_t svct3(void)
  **********************************************************************/
 void agc_waitlist_kill(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE && task != AGC_TASK_ENDTASK))
-    {
-        return;
-    }
-
     agc_inhint();
     bool done = false; /* first match replaced */
 
@@ -792,11 +767,6 @@ uint16_t agc_waitlist_time3(void)
  **********************************************************************/
 agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_out)
 {
-    if (!AGC_ASSERT(i >= 0 && i < AGC_WAITLIST_MAX_TASKS) || !AGC_ASSERT(lst1_out != 0 && lst2_out != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (i == 0)
     {
         *lst1_out = (int16_t) ((int32_t) time3 - WL_TIME3_OVF + 1);

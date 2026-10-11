@@ -63,11 +63,6 @@
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_tracking_flags_on();
 
     return (rz_vnpooh(ctx, 6U, 33U, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE));
@@ -134,11 +129,6 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -209,11 +199,6 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_vnpooh(ctx, 6U, 42U, AGC_JOB_MARKS_TFI_MGA_MONITOR));
 }
 
@@ -234,11 +219,6 @@ agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_marks_tfi_mga_monitor(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

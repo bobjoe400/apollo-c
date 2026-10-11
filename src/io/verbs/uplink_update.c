@@ -171,22 +171,12 @@ static int32_t ones_value(uint16_t w)
 /* DP value (cs, 2^28) of UPBUFF +k, +k+1.                                 */
 static int32_t upbuff_dp(int k)
 {
-    if (!AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP))
-    {
-        return (0); /* no valid result */
-    }
-
     return (ones_value(up[UP_UPBUFF + k]) * 040000 + ones_value(up[UP_UPBUFF + k + 1]));
 }
 
 /* Store a DP value into UPBUFF +k, +k+1 (both words take its sign).      */
 static void set_upbuff_dp(int k, int32_t v)
 {
-    if (!AGC_ASSERT(k >= 0 && k + 1 < UP_MAX_COMP))
-    {
-        return;
-    }
-
     int32_t  m  = (v < 0) ? -v : v;
     uint16_t hi = (uint16_t) ((m >> 14) & 037777);
     uint16_t lo = (uint16_t) (m & 037777);
@@ -200,11 +190,6 @@ static void set_upbuff_dp(int k, int32_t v)
 /* GOXDSPF V21N01 (load target) or V21N02 (UPTEMP).                        */
 static agc_status_t up_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_UPLINK_UPDATE_TERMINATE,
                             AGC_JOB_UPLINK_UPDATE_PROCEED,
                             AGC_JOB_UPLINK_UPDATE_LOAD};
@@ -345,11 +330,6 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
  * V21N02 the update is verified: UPSTORE.                                 */
 agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (stage != UP_VERIFY)
     {
         return (up_display(ctx));
@@ -435,11 +415,6 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
  * ENDEXT.  Also the V34 return and the group 6 restart point.             */
 agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 : (agc_sp_t) up[UP_UPOLDMOD];
     agc_status_t st = agc_phase_newmode(mm); /* NEWMODEX +3         */
 

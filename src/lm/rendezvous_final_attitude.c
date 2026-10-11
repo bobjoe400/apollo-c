@@ -31,11 +31,6 @@ static agc_vec_t rone;
  */
 agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) || !AGC_ASSERT(pointvsm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_vec_t los   = agc_vec_sub(ip, rcsm, rlem); /* RONE - RATT, B27 m */
     int             shift = 0;                           /* NORMUNIT pre-shift: 13 or 0 */
 
@@ -77,11 +72,6 @@ agc_status_t agc_job_rendezvous_final_attitude(agc_job_ctx_t *ctx)
 /* V04N12: V34 ENDEXT, V33 V89RECL, data in (OPTIONX +1) flashes again. */
 agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_erase_optionx(0) == OPTION_CODE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -189,11 +179,6 @@ static agc_status_t final_attitude_csm(const agc_job_ctx_t *ctx)
 /* V89RECL: TSTART82 = now + 1 minute; the two states. */
 agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -210,11 +195,6 @@ agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
 /* CSMCONIC resumed after its wait. */
 agc_status_t agc_job_rendezvous_final_attitude_csm_state(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(tstart82 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -226,11 +206,6 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_state(agc_job_ctx_t *ctx)
 /* LEMCONIC resumed after its wait. */
 agc_status_t agc_job_rendezvous_final_attitude_lm_state(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(tstart82 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -242,11 +217,6 @@ agc_status_t agc_job_rendezvous_final_attitude_lm_state(agc_job_ctx_t *ctx)
 /* V06N18 PROCEED: CLEAR 3AXISFLG; R60LEM; then ENDEXT. */
 agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_3AXISFLG);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_3AXISFLG)))
@@ -260,11 +230,6 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
 /* ENDEXT: the extended verb is over. */
 agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);

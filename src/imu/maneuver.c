@@ -157,11 +157,6 @@ static bool is_lm(void)
  **********************************************************************/
 static agc_sp_t cdu_signed(uint16_t p)
 {
-    if (!AGC_ASSERT(p <= CDU_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     int v = (p & 040000u) ? (int) p - 0100000 : (int) p; /* sign bit */
 
     if (!AGC_ASSERT(v >= -16384 && v <= 16383))
@@ -414,11 +409,6 @@ agc_imu_stall_result_t agc_kalc_outcome(void)
  **********************************************************************/
 static void csm_stopyz(agc_csm_rcs_t *rcs)
 {
-    if (!AGC_ASSERT(rcs != NULL))
-    {
-        return;
-    }
-
     for (int i = 1; i < 3; i++)
     {
         rcs->delcdu[i] = 0;
@@ -510,11 +500,6 @@ agc_status_t agc_kalc_zeroerror(void)
  **********************************************************************/
 static void loadcdud(int first_axis)
 {
-    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1))
-    {
-        return;
-    }
-
     for (int i = first_axis; i < 3; i++)
     {
         set_cdud(i, cphi(i));
@@ -731,13 +716,6 @@ static uint16_t timechk(void)
 static agc_status_t contmanu(void)
 {
     agc_inhint();
-
-    if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
-    {
-        agc_relint();
-
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     int diff = nextime - (int) agc_erase_time1(); /* NEXTIME - TIME1, cs */
     int dt   = diff;                              /* CCS A, AD ONE / AD NEGMAX, COM: cs to NEXTIME */
@@ -986,12 +964,6 @@ static void manustat(void)
         return;
     }
 
-    if (!AGC_ASSERT(nextime >= 0 && nextime < TIME1_MOD))
-    {
-        agc_relint();
-
-        return;
-    }
 } /* manustat */
 
 /**********************************************************************
@@ -1007,11 +979,6 @@ static void manustat(void)
  **********************************************************************/
 static agc_status_t steering_update(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     mis             = agc_mat_mul(ip, &mis, &del);              /* MXM3             */
     agc_vec_t    ang;                                           /* PHI, THETA, PSI, rev 2^0 */
     agc_dp_t     cmga;                                          /* COS(MGA), 2^0 */
@@ -1181,11 +1148,6 @@ static agc_status_t kalcmanu_start(void)
  **********************************************************************/
 agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1210,11 +1172,6 @@ agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(ctx != NULL && wake_as != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (attcadr != AGC_JOB_NONE)
     {
         return (agc_poodoo(ALARM_TWO_USERS)); /* two users        */
@@ -1268,11 +1225,6 @@ agc_status_t agc_task_updtcall(void)
  **********************************************************************/
 agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool stopped; /* astronaut took over */
 
     if (is_lm())

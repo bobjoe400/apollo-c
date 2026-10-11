@@ -178,11 +178,6 @@ static modecadr_word_t mc_get(int dev)
  **********************************************************************/
 bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
-    {
-        return (false);
-    }
-
     agc_sp_t v = agc_erase_modecadr((int) dev); /* MODECADR, B0 */
 
     if (!AGC_ASSERT(v >= MC_WORD_BAD))
@@ -203,11 +198,6 @@ bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
  **********************************************************************/
 static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
 {
-    if (!AGC_ASSERT((int) job >= 0 && (int) job <= AGC_SP_MAX))
-    {
-        return;
-    }
-
     agc_sp_t v = 0; /* MODECADR word: +0 not in use (ENDMODE/MG2), B0 */
 
     if (s == MC_DONE_GOOD)
@@ -251,11 +241,6 @@ static agc_sp_t               cducmd[3];                  /* CDUXCMD..: pulses, 
  **********************************************************************/
 static uint16_t notmask(uint16_t m)
 {
-    if (!AGC_ASSERT(m <= CDU_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t r = (uint16_t) (~(unsigned int) m & CDU_MASK); /* CS  */
 
     if (!AGC_ASSERT((r & m) == 0u))
@@ -274,11 +259,6 @@ static uint16_t notmask(uint16_t m)
  **********************************************************************/
 static void imodes30_or(uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= CDU_MASK))
-    {
-        return;
-    }
-
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() | bits));
 
     if (!AGC_ASSERT((agc_erase_imodes30() & bits) == bits))
@@ -295,11 +275,6 @@ static void imodes30_or(uint16_t bits)
  **********************************************************************/
 static void imodes30_clear(uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= CDU_MASK))
-    {
-        return;
-    }
-
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & notmask(bits)));
 
     if (!AGC_ASSERT((agc_erase_imodes30() & bits) == 0u))
@@ -317,11 +292,6 @@ static void imodes30_clear(uint16_t bits)
  **********************************************************************/
 static void imodes33_set(uint16_t bits, bool on)
 {
-    if (!AGC_ASSERT(bits <= CDU_MASK))
-    {
-        return;
-    }
-
     uint16_t v = agc_erase_imodes33(); /* IMODES33 bits */
 
     v = on ? (uint16_t) (v | bits) : (uint16_t) (v & notmask(bits)); /* ADS / MASK */
@@ -363,11 +333,6 @@ static void iss_lamps_write(uint16_t v)
  **********************************************************************/
 static void chan_clear(int chan, uint16_t bits)
 {
-    if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN13 || chan == AGC_CHAN_CHAN14))
-    {
-        return;
-    }
-
     agc_chan_and(chan, notmask(bits));
 
     if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))
@@ -410,11 +375,6 @@ static void setissw(void)
  **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
@@ -510,11 +470,6 @@ bool imu_caged(void)
     uint16_t m = agc_erase_imodes30(); /* IMODES30 bits */
 
     if (!AGC_ASSERT(m <= CDU_MASK))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(IM30_CAGE == 040u)) /* BIT6 of IMODES30 */
     {
         return (false);
     }
@@ -924,11 +879,6 @@ agc_status_t agc_task_imu_zero_done(void)
  **********************************************************************/
 agc_status_t agc_imu_coarse(const uint16_t thetad[3])
 {
-    if (!AGC_ASSERT(thetad != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < 3; i++)
     {
         if (!AGC_ASSERT(thetad[i] <= CDU_MASK))
@@ -1170,11 +1120,6 @@ agc_status_t agc_task_ca_ece(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(AGC_CH012_ENBIMUERR == 040u)) /* BIT6 */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK); /* TASKOVER         */
 }
 
@@ -1337,11 +1282,6 @@ agc_status_t agc_task_imufined(void)
  **********************************************************************/
 static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
 {
-    if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH || clear_bits == IM30_PIPFAILINH))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     imodes30_clear(clear_bits);
 
     if (!AGC_ASSERT(!imu_caged()))
@@ -1545,11 +1485,6 @@ void agc_imu_pipfree(void)
  **********************************************************************/
 static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     modecadr_word_t        w   = mc_get((int) dev);                             /* MODECADR +dev */
     agc_imu_stall_result_t res = good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* RUPTREG3 */
 
@@ -1726,11 +1661,6 @@ static agc_status_t modabort(agc_imu_device_t dev)
  **********************************************************************/
 agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT && result != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     modecadr_word_t w = mc_get((int) dev); /* INDEX A, CCS MODECADR */
 
@@ -1779,11 +1709,6 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_i
  **********************************************************************/
 agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
-    if (!AGC_ASSERT(result != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, wake_as, result); /* status of the call */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
@@ -1805,11 +1730,6 @@ agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
  **********************************************************************/
 agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
-    {
-        return (AGC_IMU_STALL_BAD);
-    }
-
     if (!AGC_ASSERT(outcome[dev] <= AGC_IMU_STALL_SLEEPING))
     {
         return (AGC_IMU_STALL_BAD);
@@ -2014,11 +1934,6 @@ agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
     const agc_dsky_cont_t again = {AGC_JOB_STANDBY_REQUEST, /* V34   */
                                    AGC_JOB_STANDBY_REQUEST, /* V33   */
                                    AGC_JOB_STANDBY_REQUEST}; /* ENTER */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_NODOFLAG)))
     {

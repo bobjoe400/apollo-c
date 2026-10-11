@@ -60,11 +60,6 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
 /* STCLOK2 (p.743): DISPDEX = dispdex, STCLOK3, return to ret_job.         */
 agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex, agc_job_id_t ret_job)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(dispdex <= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->lm.dispdex = dispdex;
     agc_status_t st              = ign_start_clock(ret_job);
 
@@ -145,11 +140,6 @@ static agc_status_t engine_enable_display(const agc_job_ctx_t *ctx)
  * selects: 35 V97, 25 V06N61, 17 countdown V06Nxx, 13 V99, 2 blank.     */
 agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_ttogo((agc_dp_t) agc_time_now_cs() - agc_erase_tig());
     agc_inhint();
     agc_sp_t dispdex = agc_guid_state()->lm.dispdex;
@@ -224,11 +214,6 @@ void agc_lm_nullclok(void)
 /* STOPCLOK (p.746): V34 on any clock display: NULLCLOK, then P00.        */
 agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_nullclok();
     agc_relint(); /* GOTOPOOH RELINTS       */
 
@@ -239,11 +224,6 @@ agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx)
  * keep the clock running, ASTNRET (P63) at PRIO13.                       */
 agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED, AGC_TASK_NONE, (int16_t) ctx->prio, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
@@ -257,11 +237,6 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
  * IGNITE1: the countdown display comes back.                              */
 agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_ASTNFLAG);
 
     if (agc_flag_test(AGC_FLAG_IGNFLAG))
@@ -363,11 +338,6 @@ static agc_status_t go_cutoff(void)
  * GOCUTOFF (P12, aborts) or V99RECYC (P63: ask again).                    */
 agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (ign_table()->enter)
     {
         case IGN_ENTER_GOPOST:
@@ -386,11 +356,6 @@ agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx)
  * clock started if it is not running (STCLOK1), V97 display, group 4 off. */
 agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     agc_flag_set(AGC_FLAG_IDLEFLAG);
@@ -424,11 +389,6 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
  * countdown (P40, P42); DV monitor and guidance displays reconnected.    */
 agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
     lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t) IGN_DISPDEX_KILL : (agc_sp_t) -IGN_CNTDNDEX;
@@ -451,11 +411,6 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
  * the 3.3 restart, not P40ZOOM or P63ZOOM (Luminary 099 as flown).       */
 agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(3, (uint16_t) 000003);
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_ZOOM);
@@ -488,11 +443,6 @@ agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
  * with vehicle configuration): V34 P00, V32 again, PROCEED to entry (14). */
 agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_STAGE_ALARM_PROCEED, AGC_JOB_STAGE_ALARM_DISPLAY};
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
@@ -507,11 +457,6 @@ agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
  * (P42STAGE); P40 shows the alarm again.                                  */
 agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t next = ign_table()->alarm_proceed;
 
     if (!AGC_ASSERT(next != AGC_JOB_NONE))
@@ -554,11 +499,6 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t re
 /* P40AUTO (p.748): save the return (TEMPR60), then P40A/P.                */
 agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->lm.auto_control_recycle = ret_job;
 
     return (auto_control_check(ctx, ret_job));
@@ -567,10 +507,5 @@ agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx, agc_job_id_t re
 /* P40A/P recycle (PROCEED on V50N25): check again, same return.           */
 agc_status_t agc_job_auto_control_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (auto_control_check(ctx, agc_guid_state()->lm.auto_control_recycle));
 }

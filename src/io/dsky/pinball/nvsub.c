@@ -324,11 +324,6 @@ agc_status_t agc_dsky_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(t != AGC_JOB_NONE && p != AGC_JOB_NONE && e != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = pin_check_lists(); /* status so far */
 
     if (st != AGC_STATUS_OK)
@@ -492,11 +487,6 @@ static agc_status_t pin_blankdsp(int code)
     }
 
     pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(code >= -4 && code <= -1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
@@ -768,11 +758,6 @@ agc_status_t agc_dsky_nvsub_blank(int code)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(code >= -4 && code <= -1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (pin_dsp_blocked())
     {
         return (AGC_STATUS_BUSY);
@@ -904,11 +889,6 @@ static agc_status_t pin_jam(pin_loadstat_t ls)
     s->reqret_neg = false;
     pin_block_dspcount(PIN_VD1);
 
-    if (!AGC_ASSERT(ls == PIN_LS_TERMINATE || ls == PIN_LS_PROCEED))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_vbproc_common(ls));
 }
 
@@ -967,11 +947,6 @@ agc_status_t agc_dsky_jamproc(void)
 agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }

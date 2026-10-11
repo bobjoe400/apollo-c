@@ -408,11 +408,6 @@ static agc_status_t spectest(void)
  **********************************************************************/
 static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
 {
-    if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) || !AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int n     = agc_exec_core_sets(); /* core sets to scan */
     int found = -1;                   /* first free core set, -1 none */
 
@@ -821,11 +816,6 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
  **********************************************************************/
 agc_status_t agc_exec_vac_claim(int *vac_index)
 {
-    if (!AGC_ASSERT(vac_index != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *vac_index = -1;
 
     for (int v = 0; v < AGC_EXEC_MAX_VACS && *vac_index < 0; v++)
@@ -884,11 +874,6 @@ agc_status_t agc_exec_vac_release(int vac_index)
  **********************************************************************/
 void agc_exec_prio_change(agc_prio_t new_prio)
 {
-    if (!AGC_ASSERT(new_prio >= 1 && new_prio <= EXEC_PRIO_MAX))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return;
@@ -1090,11 +1075,6 @@ agc_job_id_t exec_running_job_loc(void)
  **********************************************************************/
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id == AGC_JOB_ENDOFJOB))
     {
         return (AGC_STATUS_BAD_ARG);

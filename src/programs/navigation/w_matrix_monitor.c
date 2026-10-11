@@ -91,11 +91,6 @@ static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b, int row
         s = agc_dp_add(ip, agc_vec_sq(ip, w->blk[b][m]), s); /* VSQ, DAD */
     }
 
-    if (!AGC_ASSERT(b >= 0 && b < AGC_INCORP_BLKS))
-    {
-        return (0); /* no valid result */
-    }
-
     return (s);
 }
 
@@ -178,11 +173,6 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
     agc_interp_t ip;                        /* interpreter state */
 
@@ -225,11 +215,6 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_W_MATRIX_MONITOR_PROCEED, AGC_JOB_W_MATRIX_MONITOR_DISPLAY)); /* GOXDSPF */
 }
 
@@ -328,11 +313,6 @@ static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz, agc_rendz_nav_pa
  **********************************************************************/
 agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t         *rz = agc_rendz_erasable(); /* rendezvous erasables */
     agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad();  /* pad loads */
     agc_interp_t         ip;                        /* interpreter state */

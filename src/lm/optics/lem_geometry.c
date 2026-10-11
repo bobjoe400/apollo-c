@@ -28,11 +28,6 @@
  */
 agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y)
 {
-    if (!AGC_ASSERT((ip != NULL) && (modea != NULL)) || !AGC_ASSERT((modeb != NULL) && (along_y != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t t1 = agc_dp_asin(ip, agc_dp_neg(los_nb.c[1])); /* PD0 */
     agc_vec_t      p  = los_nb;
 
@@ -76,11 +71,6 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, 
  */
 agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(los_nb != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t t     = agc_align_cdulogic(trunnion_cdu);
     const agc_dp_t y     = agc_dp_neg(agc_dp_sin(ip, t)); /* 34D      */
     const agc_dp_t cos_t = agc_dp_cos(ip, t);             /* PD0      */

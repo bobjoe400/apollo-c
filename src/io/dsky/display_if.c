@@ -262,11 +262,6 @@ static void f4_down(uint16_t bits)
  **********************************************************************/
 static bool dif_cont_valid(const agc_dsky_cont_t *c)
 {
-    if (!AGC_ASSERT(c != NULL))
-    {
-        return (false);
-    }
-
     return (c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE && c->enter != AGC_JOB_NONE);
 }
 
@@ -329,11 +324,6 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
 
     agc_relint(); /* RELINTQ   */
 
-    if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -354,11 +344,6 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
  **********************************************************************/
 static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC) || !AGC_ASSERT(rq != NULL))
-    {
-        return;
-    }
-
     agc_inhint();
     g_cls[c].flags = (uint16_t) (rq->flags & ~DIF_EBANKBITS); /* DSPFLG   */
 
@@ -426,10 +411,6 @@ static agc_status_t dif_xchsleep(int c)
     }
 
     /* WAKECADR: where a sleeping mark or normal display job wakes. */
-    if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_job_id_t wake; /* wake point */
 
@@ -471,11 +452,6 @@ static agc_status_t dif_gosleeps(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(c == DIF_MARKC || c == DIF_NORMC))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     f4_up((uint16_t) (k_genmask[c] & DIF_WAITMASK));
 
     return (dif_xchsleep(c));
@@ -502,11 +478,6 @@ agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dif_xchsleep(DIF_MARKC));
 }
 
@@ -527,11 +498,6 @@ agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
 agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -661,11 +627,6 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq, agc_prio_t userpr
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(face == 0 || face == 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* status so far */
 
     st = dif_witchone((face == 0) ? AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN); /* mark / normal */
@@ -724,11 +685,6 @@ static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
     if (rq->cadr.terminate == g_cls[c].cadr.terminate && pin_st()->dsplock)
     {
         *end = true; /* already active         */
-    }
-
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
-    {
-        return;
     }
 }
 
@@ -1034,11 +990,6 @@ static agc_status_t dif_rest(int c)
 
     static const agc_job_id_t nvcadr[3] = {AGC_JOB_REDOPRIO, AGC_JOB_MARKPLAY, AGC_JOB_PLAYJUM1};
 
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (pin_cadrstor_full())
     {
         return (AGC_STATUS_OK); /* ENDOFJOB               */
@@ -1192,11 +1143,6 @@ static uint16_t dif_first_vn(int c)
  **********************************************************************/
 static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     dif_job_t j    = {c, g_cls[c].flags, userprio, 0};    /* COPYPACS */
     uint16_t  opts = (uint16_t) (j.tempor2 & DIF_BLANKS); /* blank bits for NVMONOPT */
 
@@ -1343,11 +1289,6 @@ static agc_status_t dif_normret(int outhere)
         agc_relint();
     }
 
-    if (!AGC_ASSERT(outhere >= -1 && outhere <= 2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
         return (st);
@@ -1401,11 +1342,6 @@ static agc_status_t dif_endout(int outhere)
         }
     }
 
-    if (!AGC_ASSERT(outhere >= 0 && outhere <= 2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dif_normret(outhere));
 }
 
@@ -1430,11 +1366,6 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dif_endout(0));
 }
 
@@ -1455,11 +1386,6 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
 agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1727,11 +1653,6 @@ agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dif_nvdsp(DIF_NORMC, g_cls[DIF_NORMC].userprio));
 }
 
@@ -1756,11 +1677,6 @@ agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dif_markplay());
 }
 
@@ -1781,11 +1697,6 @@ agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
 agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1910,11 +1821,6 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
  **********************************************************************/
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(kind >= AGC_DSKY_GODSP && kind < AGC_DSKY_DISP_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const dif_kind_t *k  = &k_kinds[kind]; /* component 0..2 (R1..R3) */
     dif_req_t         rq = {true,
                             vn_or_value,
@@ -2051,11 +1957,6 @@ agc_status_t agc_dsky_initdsp(void)
 void agc_dsky_set_nvword1(uint16_t word)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(word <= PIN_WORD))
     {
         return;
     }

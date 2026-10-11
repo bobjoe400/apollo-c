@@ -77,11 +77,6 @@ static const exec_cp_mode_t cp_modes_csm[] = {
 
 const exec_cp_mode_t *exec_cp_modes_csm(int *n)
 {
-    if (!AGC_ASSERT(n != NULL))
-    {
-        return (cp_modes_csm);
-    }
-
     *n = (int) (sizeof (cp_modes_csm) / sizeof (cp_modes_csm[0]));
 
     return (cp_modes_csm);
@@ -120,11 +115,6 @@ agc_status_t exec_cp_engine_off_to_idle(void)
  * ISITP00 with MMNUMBER = 0.                                            */
 agc_status_t agc_job_change_program_jets_off(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);

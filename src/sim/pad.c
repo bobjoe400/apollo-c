@@ -48,11 +48,6 @@ static bool pad_refsmmat(const char *args)
 {
     double m[PAD_MAT_N];
 
-    if (!AGC_ASSERT(args != NULL))
-    {
-        return (false);
-    }
-
     if (sscanf(args, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != PAD_MAT_N)
     {
         return (false);
@@ -104,11 +99,6 @@ static bool pad_state_vector(const char *args)
     char   veh[8];
     double x[7] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-    if (!AGC_ASSERT(args != NULL))
-    {
-        return (false);
-    }
-
     int  n  = sscanf(args, "%7s %lf %lf %lf %lf %lf %lf %lf", veh, &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &x[6]);
     bool lm = strcmp(veh, "lm") == 0;
 
@@ -143,11 +133,6 @@ static bool pad_line(char *buf)
     char *hash = strchr(buf, '#');
     char  key[32];
     int   used = 0;
-
-    if (!AGC_ASSERT(buf != NULL))
-    {
-        return (false);
-    }
 
     if (hash != NULL)
     {
@@ -186,11 +171,6 @@ agc_status_t sim_pad_load(const char *path)
 {
     char buf[PAD_LINE];
     bool ok = true;
-
-    if (!AGC_ASSERT(path != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     FILE *f = fopen(path, "r");
 

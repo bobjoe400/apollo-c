@@ -44,71 +44,36 @@ void agc_erase_reset_restart_delays(void)
 
 agc_dp_t agc_erase_p40tmp(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_p40tmp)))
-    {
-        return (0);
-    }
-
     return (g_p40tmp);
 }
 
 void agc_erase_set_p40tmp(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_p40tmp = v;
 }
 
 agc_dp_t agc_erase_savet_30(void)
 {
-    if (!AGC_ASSERT(dp_ok(g_savet_30)))
-    {
-        return (0);
-    }
-
     return (g_savet_30);
 }
 
 void agc_erase_set_savet_30(agc_dp_t v)
 {
-    if (!AGC_ASSERT(dp_ok(v)))
-    {
-        return;
-    }
-
     g_savet_30 = v;
 }
 
 agc_sp_t agc_erase_zoomtime(void)
 {
-    if (!AGC_ASSERT(dt_ok(g_zoomtime)))
-    {
-        return (0);
-    }
-
     return (g_zoomtime);
 }
 
 void agc_erase_set_zoomtime(agc_sp_t v)
 {
-    if (!AGC_ASSERT(dt_ok(v)))
-    {
-        return;
-    }
-
     g_zoomtime = v;
 }
 
 agc_sp_t agc_erase_s61dt(void)
 {
-    if (!AGC_ASSERT(dt_ok(g_s61dt)))
-    {
-        return (0);
-    }
-
     return (g_s61dt);
 }
 
@@ -124,11 +89,6 @@ void agc_erase_set_s61dt(agc_sp_t v)
 
 agc_sp_t agc_erase_cm_gymdt(void)
 {
-    if (!AGC_ASSERT(dt_ok(g_cm_gymdt)))
-    {
-        return (0);
-    }
-
     return (g_cm_gymdt);
 }
 

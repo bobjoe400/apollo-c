@@ -197,11 +197,6 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
     agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* T5PHASE                 */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                */
 
-    if (!AGC_ASSERT((time5_word > 0u) && (time5_word <= 037777u)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->t5phase      = AGC_CSM_T5P_INIT;                                /* TS T5PHASE (+)          */
     c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1); /* CS; MASK BIT3; ADS      */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_RCSATT, time5_word);     /* DCA RCSADDR; DXCH T5LOC */

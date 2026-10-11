@@ -58,11 +58,6 @@ agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx)
 /* R51.1 (restart 4.21 enters here): PHASCHNG 04024, then R51C. */
 agc_status_t agc_job_lm_fine_align_perform(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = fine_align_phase();
 
     if (st != AGC_STATUS_OK)
@@ -76,11 +71,6 @@ agc_status_t agc_job_lm_fine_align_perform(agc_job_ctx_t *ctx)
 /* R51C: V50N25 R1 00015; V33 star selection, ENTER the crew's stars. */
 agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -135,11 +125,6 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
 /* R51C V33: TSIGHT = now + TSIGHT1 (6 min to marking); LOCSAM. */
 agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -156,11 +141,6 @@ agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx)
 /* LOCSAM resumed after its integration wait. */
 agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -172,11 +152,6 @@ agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx)
 /* R51E: STARIND = 0, then R51.3. */
 agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->starind = 0;
 
     return (agc_job_lm_fine_align_next_star(ctx));
@@ -185,11 +160,6 @@ agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx)
 /* R51.3: PHASCHNG 04024; CALL R52 (point the AOT), returning to the mark. */
 agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = fine_align_phase();
 
     if (st != AGC_STATUS_OK)
@@ -208,11 +178,6 @@ agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
 /* After R52: AOTMARK, then AOTSTALL (CURTAINS on a bad end). */
 agc_status_t agc_job_lm_fine_align_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_aotmark();
 
     if (st != AGC_STATUS_OK)
@@ -239,11 +204,6 @@ agc_status_t agc_job_lm_fine_align_mark(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (align_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_STATUS_OK)
     {
         return (AGC_STATUS_OK); /* CURTAINS */
@@ -272,11 +232,6 @@ agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx)
 /* R51.4 after PLANET: PLANVEC = LOS (ref); STARIND = 1; R51.3. */
 agc_status_t agc_job_lm_fine_align_first_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->planvec = ram->planet_los;
@@ -291,11 +246,6 @@ agc_status_t agc_job_lm_fine_align_first_located(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_fine_align_second_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -313,11 +263,6 @@ agc_status_t agc_job_lm_fine_align_second_located(agc_job_ctx_t *ctx)
 /* After R54: rejected -> R51K; else AXISGEN and R55, CLEAR PFRATFLG. */
 agc_status_t agc_job_lm_fine_align_data_checked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_FREEFLAG))
     {
         return (agc_job_lm_fine_align_recheck(ctx));
@@ -342,11 +287,6 @@ agc_status_t agc_job_lm_fine_align_data_checked(agc_job_ctx_t *ctx)
 /* After R55: CLEAR PFRATFLG, R51K. */
 agc_status_t agc_job_lm_fine_align_torqued(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_PFRATFLG);
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_PFRATFLG)))
@@ -363,11 +303,6 @@ agc_status_t agc_job_lm_fine_align_torqued(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_job_id_t ret = agc_align_ram()->qmaj;
 
     if (!AGC_ASSERT(ret != AGC_JOB_NONE))

@@ -103,11 +103,6 @@ static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954, -497816,
  **********************************************************************/
 agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_navaux_padload_t nav;                               /* pad loads of the auxiliary nav lane */
     agc_status_t         st = agc_navaux_get_padload(&nav); /* step status */
 
@@ -143,11 +138,6 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
  **********************************************************************/
 void agc_lm_comminit(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     a->rco      = agc_dp_add(ip, AS_HINJECT, agc_lm_ldg()->land_mag);
@@ -175,11 +165,6 @@ void agc_lm_comminit(agc_interp_t *ip)
  **********************************************************************/
 void agc_lm_powered_ascent_init(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     a->dv[3] = AS_1DVA;
@@ -213,11 +198,6 @@ void agc_lm_powered_ascent_init(agc_interp_t *ip)
  **********************************************************************/
 agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     /* DOT SL2: the shift takes in MPAC+2 of the DOT's TP product.     */
@@ -472,11 +452,6 @@ static agc_status_t as_ascterm_display(const agc_job_ctx_t *ctx)
 
     const agc_dsky_cont_t cont = {AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 63), &cont));
 }
 
@@ -492,11 +467,6 @@ static agc_status_t as_ascterm_display(const agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL)) /* job context */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {
         return (AGC_STATUS_OK);
@@ -524,17 +494,7 @@ static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t as_keepvr_radial_thrust(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL)) /* job context */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg()->unfc_2 = agc_guid_state()->avg.unitr;
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (as_ascterm(ctx, ip));
 }
@@ -552,16 +512,6 @@ static agc_status_t as_keepvr_radial_thrust(const agc_job_ctx_t *ctx, agc_interp
  **********************************************************************/
 static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL)) /* interpreter state */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL)) /* job context */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_asc_t *a = agc_lm_asc();     /* ascent erasables */
     agc_guid_t   *g = agc_guid_state(); /* guidance state */
 
@@ -605,11 +555,6 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_FLVR);
 
     if (!agc_flag_test(AGC_FLAG_ROTFLAG))
@@ -640,11 +585,6 @@ static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR))) /* in the vertical rise */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL)) /* job context */
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -725,11 +665,6 @@ static void as_engoff(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     /* ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
@@ -805,11 +740,6 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
@@ -898,16 +828,6 @@ static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t nou
 {
     const agc_dsky_cont_t cont = {AGC_JOB_TERMASC, proceed, enter};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(verb == 16))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(verb, noun), &cont));
 }
 
@@ -922,11 +842,6 @@ static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t nou
  **********************************************************************/
 agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_FLRCS);
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLRCS))) /* RCS trim mode */
@@ -948,11 +863,6 @@ agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLRCS)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -973,11 +883,6 @@ agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx)
 agc_status_t agc_lm_job_cutoff_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLRCS))) /* after CUTOFF */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1014,11 +919,6 @@ agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_CUTOFF_TRIM_DISPLAY, AGC_TASK_NONE, 0, false, 0U };
 
     agc_phase_change_var(04024, &v);
@@ -1038,11 +938,6 @@ agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_TERMASC, AGC_TASK_NONE, 0, false, 0U };
 
     agc_phase_change_var(04024, &v);
@@ -1083,11 +978,6 @@ static void as_restart_here(agc_job_id_t job)
     const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0, false, 0U};
 
     agc_phase_change_var(04024, &v);
-
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -1110,16 +1000,6 @@ static agc_status_t as_flash_or_terminate(const agc_job_ctx_t *ctx,
 {
     const agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(noun == 33 || noun == 76))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, noun), &cont));
 }
 
@@ -1134,11 +1014,6 @@ static agc_status_t as_flash_or_terminate(const agc_job_ctx_t *ctx,
  **********************************************************************/
 agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     as_restart_here(AGC_JOB_POWERED_ASCENT);
 
     if (agc_imu_status_check() != AGC_STATUS_OK)
@@ -1173,11 +1048,6 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_MUNFLAG)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1198,11 +1068,6 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     as_restart_here(AGC_JOB_POWERED_ASCENT_PROCEED);
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
@@ -1233,11 +1098,6 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
@@ -1281,11 +1141,6 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLPI)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1306,11 +1161,6 @@ agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
@@ -1343,11 +1193,6 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     /* ATY^2 by DSQ is a TP; DAD adds ATP^2 to its top words and SQRT
@@ -1394,11 +1239,6 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t
  **********************************************************************/
 agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_FLPI);
     agc_inhint();
     agc_status_t st = agc_lm_dap_pflitedb(); /* step status */

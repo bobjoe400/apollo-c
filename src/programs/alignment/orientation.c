@@ -30,11 +30,6 @@
  */
 agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, const uint16_t cdu[3], agc_mat_t *xsm, agc_mat_t *xnb, uint16_t thetad[3])
 {
-    if (!AGC_ASSERT((ip != NULL) && (smd != NULL) && (refsmmat != NULL)) || !AGC_ASSERT((cdu != NULL) && (xsm != NULL) && (xnb != NULL) && (thetad != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_cdutrig_t trig;
     agc_status_t  st = agc_align_cdutrig(cdu, &trig); /* CDUTRIG        */
 
@@ -67,11 +62,6 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, con
  */
 agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         smd->row[2] = agc_vec_unit(ip, agc_vec_neg(r), NULL, NULL);
@@ -95,11 +85,6 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, a
  */
 agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, agc_job_id_t resume_job, agc_mat_t *smd)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_integ_out_t    o;
     const bool         csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_status_t st  = align_integ(ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC, talign, resume_job, &o);
@@ -120,11 +105,6 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, ag
  */
 agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_vec_t h = agc_vec_cross(ip, rcsm, vcsm);
 
     smd->row[0] = xsmd;
@@ -166,11 +146,6 @@ static int32_t ones_value(uint16_t w)
  */
 bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
 {
-    if (!AGC_ASSERT(thetad != NULL) || !AGC_ASSERT(cdu != NULL))
-    {
-        return (true);
-    }
-
     bool coarse = false;
 
     for (int i = 0; i < AGC_VEC_N; i++)
@@ -198,11 +173,6 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
  */
 agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (smd != NULL)) || !AGC_ASSERT((refsmmat != NULL) && (xdc != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         xdc->row[i] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, smd->row[i]), NULL, NULL);

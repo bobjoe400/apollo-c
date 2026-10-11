@@ -98,21 +98,11 @@ bool agc_extverb_busy(void)
 
 int agc_extverb_verb(void)
 {
-    if (!AGC_ASSERT(xv_verb == 0 || (xv_verb >= 40 && xv_verb <= 99)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (xv_verb);
 }
 
 int agc_extverb_noun(void)
 {
-    if (!AGC_ASSERT(xv_noun >= 0 && xv_noun <= 99))
-    {
-        return (0); /* no valid result */
-    }
-
     return (xv_noun);
 }
 
@@ -144,11 +134,6 @@ agc_status_t agc_extverb_alm_end(void)
  * system busy (EXTVBACT bits 3, 5) and blank all but MODE and VERB.       */
 agc_status_t agc_extverb_testxact(bool *ok)
 {
-    if (!AGC_ASSERT(ok != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *ok = false;
 
     if (extvbact != 0u || (agc_flagword_get(4) & OC24100) != 0u)
@@ -253,11 +238,6 @@ agc_status_t agc_extverb_downflag(agc_flag_id_t f)
 /* CAF PRIOn, TC NOVAC/FINDVAC, 2CADR job, then ENDOFJOB (return).        */
 agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac)
 {
-    if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio > 0u && prio <= 037u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = vac ? agc_exec_findvac(prio, job) : agc_exec_novac(prio, job);
 
@@ -269,11 +249,6 @@ agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac)
 /* GOXDSPF (= GOMARKF): flash VERB/NOUN; V34 ends the verb (TERMEXTV).    */
 agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t on_proceed, agc_job_id_t on_enter)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb <= 99u && noun <= 99u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, on_proceed, on_enter};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun), &cont));
@@ -282,11 +257,6 @@ agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
 /* EXDSPRET: show our own verb again (VN vv00) and continue at next.      */
 agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb, agc_job_id_t next)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 40u && verb <= 99u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {next, next, next};
 
     return (agc_dsky_display(ctx, AGC_DSKY_EXDSPRET, agc_dsky_vn(verb, 0), &cont));
@@ -428,11 +398,6 @@ static agc_status_t xact_and_schedule(bool pooh, agc_prio_t prio, agc_job_id_t j
         return (st);
     }
 
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_schedule(prio, job, true)); /* FINDVAC         */
 }
 
@@ -483,11 +448,6 @@ static agc_status_t verb_erasable_dump(void)
  * bugger word).  V34 ends, V33 sums the next bank, ENTER shows it again.  */
 static agc_status_t banksum_display(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_SHOW_BANKSUM_END, AGC_JOB_SHOW_BANKSUM_NEXT, AGC_JOB_SHOW_BANKSUM_DISPLAY};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(5, 1), &cont));
@@ -530,11 +490,6 @@ static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
 static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
 {
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     switch (verb)
     {
@@ -610,11 +565,6 @@ agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx)
 /* ENDEXT (TERMEXTV, ENDEXTVB) as a job: release the display systems.     */
 agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_dsky_endmark();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -628,22 +578,12 @@ agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
 /* GOPIN as a job (after an IMUSTALL in V40).                              */
 agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_gopin());
 }
 
 /* ICORK2 (V41): show V41 again, then coarse align.                       */
 agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_redisplay(ctx, 41, AGC_JOB_KEYBOARD_COARSE_DRIVE));
 }
 
@@ -670,11 +610,6 @@ agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx)
 /* IMUFINEK after the load: show V42 again.                                */
 agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_redisplay(ctx, 42, AGC_JOB_KEYBOARD_FINE_MODE));
 }
 
@@ -770,11 +705,6 @@ agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
 /* NOKILL (ENTER on the V05N01): show the same bank again.                 */
 agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (banksum_display(ctx));
 }
 
@@ -795,11 +725,6 @@ agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
 /* V34: SKEEP1 = SELFADRS (self-check restarts from SELFCHK), ENDEXT.     */
 agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_selfcheck_showsum_end();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -876,70 +801,35 @@ agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_attitude_error_load_lm(ctx) : agc_job_attitude_error_load_csm(ctx));
 }
 
 agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_tracking_terminate_lm(ctx) : agc_job_tracking_terminate_csm(ctx));
 }
 
 agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun46_lm(ctx) : agc_job_dap_data_load_noun46_csm(ctx));
 }
 
 agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_config_lm(ctx) : agc_job_dap_data_load_config_csm(ctx));
 }
 
 agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun47_lm(ctx) : agc_job_dap_data_load_noun47_csm(ctx));
 }
 
 agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_mass_lm(ctx) : agc_job_dap_data_load_mass_csm(ctx));
 }
 
 agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_dap_data_load_noun48_lm(ctx) : agc_job_dap_data_load_noun48_csm(ctx));
 }

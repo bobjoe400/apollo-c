@@ -88,11 +88,6 @@ agc_status_t csm_tvc_tstinit(void)
  **********************************************************************/
 agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = csm_tvc_tstinit(); /* TCR TSTINIT                 */
 
     agc_inhint();

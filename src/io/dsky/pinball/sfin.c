@@ -94,11 +94,6 @@ static int64_t pin_abs64(int64_t a)
  **********************************************************************/
 static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
 {
-    if (!AGC_ASSERT(f >= AGC_DP_MIN && f <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(c >= 0 && c < PIN_DP_LIM))
     {
         return (0); /* no valid result */
@@ -240,11 +235,6 @@ static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
  **********************************************************************/
 static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(shift == 0 || shift == 3 || shift == 7) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int64_t tp = pin_dmp_tp(f, sfin) << shift; /* TPLEFTN    */
     int64_t dp;                                /* DP part, 2^-28 units */
 
@@ -320,11 +310,6 @@ static agc_status_t pin_deginsf(agc_dp_t f, bool cdu360, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int64_t d = pin_dmp_tp(f, PIN_DEGCON1) >> AGC_SP_BITS; /* MPAC, MPAC+1 */
 
     if ((d & 037777) != 0)
@@ -372,11 +357,6 @@ static agc_status_t pin_deginsf(agc_dp_t f, bool cdu360, agc_dp_t *out)
 static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -571,11 +551,6 @@ static bool pin_whole(agc_dp_t f, int64_t *n)
     int64_t w; /* angle word, two's complement */
 
     w = (pin_abs64(f) * PIN_WHOLECON + (PIN_DP_LIM >> 1)) >> AGC_DP_BITS;
-
-    if (!AGC_ASSERT(n != NULL))
-    {
-        return (false);
-    }
 
     *n = (f < 0) ? -w : w; /* sign */
 

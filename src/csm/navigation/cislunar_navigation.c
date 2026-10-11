@@ -196,11 +196,6 @@ agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret)
  **********************************************************************/
 agc_status_t agc_job_optics_calibration(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_CALIBRATION_MARKING, true);                                                                                               /* V59FLAG  */
     agc_status_t st = rz_flash(ctx, AGC_DSKY_GOMARKFR, 59U, 0U, AGC_JOB_GOTOPOOH, AGC_JOB_OPTICS_CALIBRATION_END, AGC_JOB_OPTICS_CALIBRATION_END); /* V59 */
 
@@ -230,11 +225,6 @@ agc_status_t agc_job_optics_calibration(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optics_calibration_mark_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = rz_flash(ctx, AGC_DSKY_GOMARKFR, 6U, 87U, AGC_JOB_GOTOPOOH, AGC_JOB_OPTICS_CALIBRATION_BIAS, AGC_JOB_OPTICS_CALIBRATION); /* V06N87 */
 
     if (st != AGC_STATUS_OK)
@@ -263,11 +253,6 @@ agc_status_t agc_job_optics_calibration_mark_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int d; /* MSU, CDU */
 
     d = ((int) agc_erase_mrkbuf(1, 5) - (int) CN_19_77DEG) & 077777;
@@ -305,11 +290,6 @@ agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_CALIBRATION_MARKING, false);
     agc_status_t st; /* ENDMARK */
 
@@ -340,11 +320,6 @@ agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optics_calibration_end_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_endmark());
 }
 
@@ -827,11 +802,6 @@ static agc_status_t cn_measure(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_RNDVZFLG, false);
     agc_phase_change(4, 00004);           /* 2PHSCHNG: leave group 4 */
     agc_phase_change(2, 00012);           /* enter group 2           */
@@ -872,11 +842,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_sight(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t next = AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARKED; /* next */
 
     return (agc_csm_sighting_mark(ctx, next));
@@ -899,11 +864,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_sight(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_ident(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 70U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT_CHECK, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT));
 }
 
@@ -948,11 +908,6 @@ static agc_status_t cn_ident_error(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t lm = rz_word_of(agc_erase_landmark()); /* landmark code */
 
     if ((lm == 0U) == (agc_erase_horizon() == 0U))
@@ -1030,11 +985,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(agc_job_ctx_t *ct
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_star(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_align_ram()->starcode == 0)
     { /* LDPLANET */
         return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 88U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
@@ -1060,11 +1010,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_star(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_planet(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1093,11 +1038,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_planet(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_checklist(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_SAVECFLG))
     {
         return (agc_job_cislunar_midcourse_navigation_incorporate(ctx)); /* P23.85 */
@@ -1129,11 +1069,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_checklist(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_calibrate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t next = AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS; /* next */
 
     return (rz_optics_calibration(ctx, next));
@@ -1157,11 +1092,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_calibrate(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_point(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     cn.marktime = agc_rtb_loadtime();
 
     return (agc_job_cislunar_midcourse_navigation_point_axes(ctx));
@@ -1186,11 +1116,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -1240,11 +1165,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022);
 
     if (agc_flag_test(AGC_FLAG_TRUNNION_BIAS_KNOWN))
@@ -1272,11 +1192,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(agc_job_ctx_t *ctx
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_optics(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_ALTERNATE_LOS_ALLOWED, true); /* V94FLAG  */
     rz_flag_put(AGC_FLAG_TRUNNION_BIAS_KNOWN, true);   /* R57FLAG  */
 
@@ -1300,11 +1215,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_optics(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_ALTERNATE_LOS_ALLOWED, false);
     rz_flag_put(AGC_FLAG_TRUNNION_BIAS_KNOWN, false);
 
@@ -1329,11 +1239,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(agc_job_ctx_t *ct
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_sxt_mark_t m;                            /* the mark */
     agc_status_t         st = agc_sxtmark_mark(0, &m); /* the mark */
 
@@ -1372,11 +1277,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_mark_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 71U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY));
 }
 
@@ -1397,11 +1297,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_mark_display(agc_job_ctx_t *c
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_save(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_SAVECFLG, true);
 
     return (agc_job_cislunar_midcourse_navigation_ident_check(ctx));
@@ -1426,11 +1321,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_save(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
     agc_interp_t ip; /* interpreter state */
 
@@ -1481,11 +1371,6 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_flag_put(AGC_FLAG_VEHUPFLG, true);
     agc_interp_t ip; /* interpreter state */
 

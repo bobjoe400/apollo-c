@@ -92,11 +92,6 @@ static agc_sp_t  ld_trak[2];  /* TRAKLATV, TRAKFWDV stop, -1/0/+1, 2^14    */
  **********************************************************************/
 static void ld_imodes33_bits(uint16_t set, uint16_t clear)
 {
-    if (!AGC_ASSERT((set & clear) == 0u)) /* a bit is set or cleared  */
-    {
-        return;
-    }
-
     uint16_t w = (uint16_t) ((agc_erase_imodes33() | set) & ~(unsigned int) clear); /* new IMODES33 */
 
     agc_erase_set_imodes33(w);
@@ -147,16 +142,6 @@ static agc_sp_t ld_wrap(int32_t x)
  **********************************************************************/
 static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
 {
-    if (!AGC_ASSERT(n >= 0 && n <= 2))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(a >= AGC_SP_MIN && b >= AGC_SP_MIN)) /* words, not -2^14 */
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t p = (int32_t) a * (int32_t) b * (1 << n); /* MP product times 2^n, 2^-28 units */
 
     return (ld_wrap(p / 16384));
@@ -385,11 +370,6 @@ static agc_status_t ld_altout(void)
  **********************************************************************/
 static agc_status_t ld_continue(void)
 {
-    if (!AGC_ASSERT(ld_altpath >= LD_NONE && ld_altpath <= LD_ALTOUT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (ld_altpath == LD_ALTROUT)
     {
         return (ld_altrout());
@@ -436,11 +416,6 @@ static agc_status_t ld_speedrun(void)
     agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ld_dt >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -574,11 +549,6 @@ agc_status_t agc_lm_task_intlze(void)
 static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak, agc_sp_t *trak_new)
 {
     const int32_t mx = LD_MAXVBITS; /* MAXVBITS meter stop, bits */
-
-    if (!AGC_ASSERT(trak_new != NULL))
-    {
-        return (0); /* no valid result */
-    }
 
     if (!AGC_ASSERT(trak >= -1 && trak <= 1)) /* TRAK is -1, 0 or +1 */
     {

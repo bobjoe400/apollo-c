@@ -101,21 +101,6 @@ static bool vec_in_range(agc_vec_t v)
  **********************************************************************/
 agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(sinth >= AGC_DP_MIN && sinth <= AGC_DP_MAX))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(costh >= AGC_DP_MIN && costh <= AGC_DP_MAX))
-    {
-        return (0);
-    }
-
     agc_dp_t theta; /* angle, rev 2^0 */
 
     if (agc_dp_sub(ip, agc_dp_abs(sinth), QTSN45) >= 0)
@@ -153,11 +138,6 @@ agc_dp_t agc_imu_arctrig(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
  **********************************************************************/
 void agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc, agc_dp_t gyro[3])
 {
-    if (!AGC_ASSERT(ip != NULL && dc != NULL && gyro != NULL))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(vec_in_range(dc->row[0]) && vec_in_range(dc->row[2])))
     {
         return;
@@ -230,11 +210,6 @@ static void gimbal_lock_alarm(void)
  **********************************************************************/
 agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb, const agc_mat_t *sm, uint16_t thetad[3])
 {
-    if (!AGC_ASSERT(ip != NULL && nb != NULL && sm != NULL && thetad != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vec_in_range(nb->row[0]) && vec_in_range(sm->row[1])))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -341,11 +316,6 @@ static void axisgen_triad(agc_interp_t *ip, agc_vec_t s1, agc_vec_t s2, agc_vec_
  **********************************************************************/
 agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2], const agc_vec_t b[2], agc_mat_t *a_wrt_b)
 {
-    if (!AGC_ASSERT(ip != NULL && a != NULL && b != NULL && a_wrt_b != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vec_in_range(a[0]) && vec_in_range(b[0])))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -388,11 +358,6 @@ agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2], const agc_v
  **********************************************************************/
 agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, agc_vec_t sincdu, agc_vec_t coscdu, agc_mat_t *nb)
 {
-    if (!AGC_ASSERT(ip != NULL && nb != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vec_in_range(sincdu) && vec_in_range(coscdu)))
     {
         return (AGC_STATUS_BAD_ARG);

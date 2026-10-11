@@ -599,7 +599,7 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
 agc_status_t agc_rendz_llasrd(void);
 agc_status_t agc_rendz_llasrda(void);
 
-/*@JOBS@*/
+/* ---- job entry points (generated list follows) ---- */
 /* imu_realign.c */
 agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx);
 agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx);
@@ -1058,7 +1058,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_save(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx);
 
-/*@JOBS-END@*/
+/* ---- end of job entry points ---- */
 
 /* Noun data for the rendezvous erasables (delegated from agc_noun_read). */
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value);

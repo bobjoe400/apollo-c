@@ -50,26 +50,11 @@ const uint16_t *agc_ags_buffer(void)
 
 agc_dp_t agc_ags_agsk(void)
 {
-    if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agsk <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agsk);
 }
 
 agc_status_t agc_ags_set_agsk(agc_dp_t t)
 {
-    if (!AGC_ASSERT((t >= AGC_DP_MIN) && (t <= AGC_DP_MAX)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agsk = t;
 
     return (AGC_STATUS_OK);
@@ -113,11 +98,6 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
  */
 agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1, const agc_mat_t *refsmmat, uint16_t out[6])
 {
-    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_vec_t v = agc_vec_shl(ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, vatt1), VSCALE), 2);
     const agc_vec_t r = agc_vec_shl(ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, ratt1), RSCALE), 8);
     uint16_t        rw[3];
@@ -138,11 +118,6 @@ agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1
 /* AGSBUFF +12D: (TAT - AGSK) / TSCALE, seconds B18. */
 agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t k, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *out = agc_dp_div(ip, agc_dp_sub(ip, tat, k), TSCALE);
 
     return (AGC_STATUS_OK);
@@ -181,17 +156,7 @@ agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_ags_initialization_new_zero(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agsk = align_resp_recycle() ? agc_erase_samptime() : agc_erase_dsptemx();
-
-    if (!AGC_ASSERT(agsk >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (show_agsk(ctx));
 }
@@ -199,11 +164,6 @@ agc_status_t agc_job_ags_initialization_new_zero(agc_job_ctx_t *ctx)
 /* AGSVCALC: SET NODOFLAG (no V37), XDSPFLAG; EXDSPRET V06N16. */
 agc_status_t agc_job_ags_initialization_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_NODOFLAG);
     agc_flag_set(AGC_FLAG_XDSPFLAG);
 
@@ -215,11 +175,6 @@ static agc_dp_t ags_tat;
 
 agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -254,11 +209,6 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -313,11 +263,6 @@ static agc_status_t ags_end(const agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_erase_imucadr() != 0)
     {
         return (agc_svc_delayjob(DT_RETRY, AGC_JOB_AGS_INITIALIZATION_ZERO_IMU));
@@ -345,11 +290,6 @@ agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 /* After the 20 s: the old downlist (AGSWORD); IMUSE set -> AGSEND. */
 agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_telem_select_list((int) agc_erase_agsword());
 
     if (agc_flag_test(AGC_FLAG_IMUSE))
@@ -363,11 +303,6 @@ agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx)
 /* IMUSTALL woken (good or bad end): AGSEND. */
 agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_SLEEPING))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -381,11 +316,6 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
  * before AGSVCALC sets it.                                               */
 agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);

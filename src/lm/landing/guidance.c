@@ -175,11 +175,6 @@ static agc_sp_t ldg_raw_high(agc_dp_t v, agc_sp_t hi)
         return (agc_dp_high(v)); /* not a split of v: canonical    */
     }
 
-    if (!AGC_ASSERT(hi >= AGC_SP_MIN))
-    {
-        return (agc_dp_high(v));
-    }
-
     return (hi);
 }
 
@@ -197,11 +192,6 @@ static agc_sp_t ldg_raw_high(agc_dp_t v, agc_sp_t hi)
  **********************************************************************/
 static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
 {
-    if (!AGC_ASSERT(a_hi != NULL))
-    {
-        return ((agc_dp_t) (a + b));
-    }
-
     agc_sp_t       hi = ldg_raw_high(a, *a_hi); /* stored major word, 2^S */
     agc_lm_words_t w  = {hi, (agc_sp_t) (a - (int32_t) hi * 16384)};
 
@@ -254,11 +244,6 @@ static agc_lm_words_t ldg_dmpsub(agc_lm_words_t m, agc_lm_words_t x)
  **********************************************************************/
 static agc_dp_t ldg_powrsers(agc_lm_words_t x, const agc_dp_t *coef, int degree)
 {
-    if (!AGC_ASSERT(coef != NULL) || !AGC_ASSERT(degree >= 1 && degree <= AGC_LM_ROOT_MAX_DEGREE))
-    {
-        return (0);
-    }
-
     agc_lm_words_t m = agc_lm_words(coef[degree]); /* A(N) to MPAC   */
 
     for (int i = degree - 1; i >= 0; i--)
@@ -335,11 +320,6 @@ void agc_lm_tdispset(void)
  **********************************************************************/
 agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l  = agc_lm_ldg();                                                  /* landing erasables */
     agc_dp_t      dt = agc_dp_shl_round(ip, agc_dp_sub(ip, l->tpip, l->tpipold), 11); /* TPIP - TPIPOLD, rescaled to 2^17 cs */
     agc_vec_t     w  = agc_vec_cross(ip, agc_vec_scale(ip, l->land, dt), l->wm);      /* LAND dt x WM, 2^24 m */
@@ -375,11 +355,6 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t refsmmat = agc_erase_refsmmat();                              /* REFSMMAT, half unit */
     agc_vec_t vatt1    = agc_integ_shared_ctx()->out.vatt1;                 /* 2^5 m/cs   */
     agc_vec_t v        = agc_vec_shr(agc_mat_vec(ip, &refsmmat, vatt1), 1); /* V at TPIP in SM, 2^7 m/cs */
@@ -408,11 +383,6 @@ agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t        *l = agc_lm_ldg();          /* landing erasables */
     const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
@@ -463,11 +433,6 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes)
 {
-    if (!AGC_ASSERT(coef != NULL && root != NULL && passes != NULL) || !AGC_ASSERT(root_hi != NULL) || !AGC_ASSERT(degree >= 2 && degree <= AGC_LM_ROOT_MAX_DEGREE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
@@ -530,11 +495,6 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
  **********************************************************************/
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t          *l = agc_lm_ldg();                     /* landing erasables */
     const agc_lm_target_t *t = &agc_lm_pad()->target[ldg_tgt()]; /* landing target set */
 
@@ -617,11 +577,6 @@ static void ldg_quadcoef(agc_sp_t c[4])
  **********************************************************************/
 agc_status_t agc_lm_quadguid(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t          *l = agc_lm_ldg();                     /* landing erasables */
     const agc_lm_target_t *t = &agc_lm_pad()->target[ldg_tgt()]; /* landing target set */
     agc_sp_t               c[4];                                 /* lag coefficients, scale 2^0 */
@@ -659,11 +614,6 @@ agc_status_t agc_lm_quadguid(agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l = agc_lm_ldg();                                             /* landing erasables */
     agc_vec_t     a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1);         /* VXM CG, VSL1: ACG in SM, 2^-4 m/cs^2 */
     agc_vec_t     g = agc_vec_div(ip, agc_guid_state()->avg.gdt_2, LDG_GSCALE); /* GDT/2 / GSCALE, 2^-4 m/cs^2 */
@@ -703,11 +653,6 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
         l->unfc_2.c[2] = agc_dp_sub(ip, l->unfc_2.c[2], s); /* BDSU    */
     }
 
-    if (!AGC_ASSERT(l->unfc_2.c[2] >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_fastchng();
     l->wchphold = l->wchphase;              /* for phase switching logic  */
     l->flpass0  = agc_lm_ad(l->flpass0, 1); /* INCR FLPASS0               */
@@ -734,11 +679,6 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
  **********************************************************************/
 agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t          *l  = agc_lm_ldg();                     /* landing erasables */
     const agc_lm_target_t *t  = &agc_lm_pad()->target[ldg_tgt()]; /* landing target set */
     agc_sp_t               t8 = agc_lm_ttf8_high();               /* CA TTF/8, cs (scale 2^14 cs) */
@@ -921,11 +861,6 @@ static void ldg_ratestop(void)
  **********************************************************************/
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_STEERSW))
     {
         ldg_ratestop(); /* no outputs       */
@@ -973,11 +908,6 @@ static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, 
                                   AGC_JOB_APPROACH_PHASE_PROCEED,
                                   AGC_JOB_APPROACH_PHASE_DISPLAY};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(noun == 60 || noun == 63 || noun == 64))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -999,11 +929,6 @@ static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, 
  **********************************************************************/
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_lm_ldg()->tredes == 0)
     {
         agc_flag_clear(AGC_FLAG_REDFLAG); /* RED-OVER         */
@@ -1037,11 +962,6 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     l->elincr1 = 0;
@@ -1065,11 +985,6 @@ agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (kill_group3)
     {
         agc_phase_kill(3); /* DXCH -PHASE3     */
@@ -1110,11 +1025,6 @@ agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
  **********************************************************************/
 agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_phaschng(00035);
 
     return (ldg_display(ctx, AGC_DSKY_REGODSPR, 63));
@@ -1134,11 +1044,6 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1238,11 +1143,6 @@ agc_status_t agc_lm_start_velocity_nulling(void)
  **********************************************************************/
 static agc_status_t ldg_front(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     l->tpipold      = l->tpip;
@@ -1301,11 +1201,6 @@ static agc_status_t ldg_front(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l  = agc_lm_ldg();      /* landing erasables */
     agc_status_t  st = agc_lm_ttf8cl(ip); /* step status */
 
@@ -1427,11 +1322,6 @@ agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry)
 agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }

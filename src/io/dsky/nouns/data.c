@@ -212,11 +212,6 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write, agc_dp_t *val
  **********************************************************************/
 static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* SP scale */
     agc_sp_t       r = 0;                               /* SP word read, SP scale */
 
@@ -317,11 +312,6 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value
 static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
 {
     uint16_t w = 0; /* word to store, unscaled */
-
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     switch (data_id)
     {
@@ -473,11 +463,6 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
  **********************************************************************/
 static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
 {
-    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (id)
     {
         case AGC_DATA_SAMPTIME:

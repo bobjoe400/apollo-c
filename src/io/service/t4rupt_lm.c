@@ -293,11 +293,6 @@ static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
 
     agc_sp_t hi = 0; /* high word, scaled at 1 */
 
-    if (!AGC_ASSERT(p >= AGC_DP_MIN && p <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     hi = agc_dp_high(p);
 
     /* |a b| <= |a| for |b| <= 1 */
@@ -352,11 +347,6 @@ agc_status_t agc_t4_gimbal_matrix(void)
  **********************************************************************/
 static void ch_clear(int chan, uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= WORD15))
-    {
-        return;
-    }
-
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
 
     if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))

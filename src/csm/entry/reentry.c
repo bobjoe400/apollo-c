@@ -165,16 +165,6 @@ agc_interp_t *entry_ip(void)
  **********************************************************************/
 agc_dp_t entry_signmpac(agc_dp_t x)
 {
-    if (!AGC_ASSERT(x >= AGC_DP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(x <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((x >= 0) ? AGC_ENTRY_DPOSMAX : (agc_dp_t) (-AGC_ENTRY_DPOSMAX)); /* +0 or positive */
 }
 
@@ -243,11 +233,6 @@ agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
 agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n)
 {
     if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(n >= 0 && n <= 14))
     {
         return (0); /* no valid result */
     }
@@ -881,11 +866,6 @@ static entry_step_t step_inrolout(entry_pass_t *p)
 {
     bool was_set = agc_flag_test(AGC_FLAG_INRLSW); /* INRLSW before this pass */
 
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (ST_ERROR);
-    }
-
     agc_flag_set(AGC_FLAG_INRLSW);
 
     return (was_set ? ST_KATEST : ST_LIMITLD); /* INRLSW */
@@ -908,11 +888,6 @@ static entry_step_t step_inrolout(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t step_katest(entry_pass_t *p)
 {
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (ST_ERROR);
-    }
-
     if (!AGC_ASSERT(p->es->kat >= 0))
     {
         return (ST_ERROR);
@@ -1150,11 +1125,6 @@ static agc_dp_t hunt_negama(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_t ga
 {
     agc_dp_t num; /* GAMMAL VL/3, B0 */
     agc_dp_t den; /* LEWD/3 - ..., B0 */
-
-    if (!AGC_ASSERT(gammal < 0))
-    {
-        return (0); /* no valid result */
-    }
 
     if (!AGC_ASSERT(es->dhook != 0 && es->vl != 0))
     {
@@ -2523,11 +2493,6 @@ static entry_step_t step_havdnrng(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t step_gonegladd(entry_pass_t *p)
 {
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (ST_ERROR);
-    }
-
     p->mpac = -1;
 
     if (!AGC_ASSERT(p->mpac < 0))
@@ -2901,11 +2866,6 @@ static entry_step_t step_steeroff(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t step_final_phase_latlong(entry_pass_t *p)
 {
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (ST_ERROR);
-    }
-
     p->status = agc_entry_final_phase_latlong();
 
     if (!AGC_ASSERT(p->es != NULL))
@@ -2941,11 +2901,6 @@ static entry_step_t step_final_phase_latlong(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
 {
-    if (!AGC_ASSERT(p != NULL && s >= ST_INITROLL && s < ST_HUNTEST))
-    {
-        return (ST_ERROR);
-    }
-
     if (!AGC_ASSERT(p->ip != NULL && p->es != NULL))
     {
         return (ST_ERROR);
@@ -3237,16 +3192,6 @@ static entry_step_t entry_sequencer(entry_pass_t *p, entry_step_t s)
 {
     int n; /* step count (bound) */
 
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (ST_ERROR);
-    }
-
-    if (!AGC_ASSERT(s >= ST_INITROLL && s <= ST_ERROR))
-    {
-        return (ST_ERROR);
-    }
-
     for (n = 0; n < AGC_ENTRY_SEQ_MAX_STEPS; n++)
     {
         if (s == ST_ENDEXIT || s == ST_SERVNOUT || s == ST_ERROR)
@@ -3343,11 +3288,6 @@ agc_status_t agc_entry_reestablish_sequencer(bool *display)
     entry_step_t    last; /* terminal step */
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
 
-    if (!AGC_ASSERT(display != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *display       = false;
     agc_phase_change_var(010035, &v); /* SERVICER 5.3        */
     pass.ip        = entry_ip();
@@ -3391,11 +3331,6 @@ agc_status_t agc_entry_scalepop(bool *display)
 {
     agc_status_t st; /* TARGETNG status */
 
-    if (!AGC_ASSERT(display != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *display = false;
     st       = agc_entry_targeting();
 
@@ -3431,11 +3366,6 @@ agc_status_t agc_entry_huntest_predict(agc_entry_hunt_result_t *result, agc_dp_t
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
 
-    if (!AGC_ASSERT(result != NULL) || !AGC_ASSERT(gammal != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(es->v > 0 && es->vsquare > 0 && es->lewd > 0 && es->lad > 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -3465,11 +3395,6 @@ agc_status_t agc_entry_huntest_predict(agc_entry_hunt_result_t *result, agc_dp_t
 agc_status_t agc_entry_range_predict(agc_dp_t gammal, agc_dp_t *diff)
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
-
-    if (!AGC_ASSERT(diff != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(es->a0 > 0 && es->gammal1 != 0 && es->vbars > 0))
     {

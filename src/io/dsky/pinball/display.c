@@ -144,11 +144,6 @@ agc_status_t pin_minus_on(void)
  **********************************************************************/
 static agc_status_t pin_dspsign(agc_dp_t *v, bool negzero)
 {
-    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(*v >= AGC_DP_MIN && *v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (*v < 0 || (*v == 0 && negzero))
     {
         *v = -*v;
@@ -257,11 +252,6 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
  **********************************************************************/
 agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = pin_dspsign(&v, negzero); /* status so far */
 
     if (st != AGC_STATUS_OK)
@@ -286,11 +276,6 @@ agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = pin_dspsign(&v, negzero); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 5) : st); /* if OK */
@@ -310,11 +295,6 @@ agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = pin_dspsign(&v, negzero); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 2) : st); /* if OK */
@@ -333,11 +313,6 @@ agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dsp2dec(agc_dp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = pin_11dspin(3, false); /* -R2 off              */
 
     if (st == AGC_STATUS_OK)

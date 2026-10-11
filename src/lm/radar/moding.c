@@ -217,11 +217,6 @@ uint16_t rr_word(int v)
  **********************************************************************/
 bool rr_magsub(int a, int k)
 {
-    if (!AGC_ASSERT(k < 0))
-    {
-        return (false);
-    }
-
     int m = (a < 0) ? -a : a; /* |a| */
 
     return ((m + k) <= 0);
@@ -283,11 +278,6 @@ static int rr_mp(int a, int b)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(b >= AGC_SP_MIN && b <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b)));
 }
 
@@ -306,11 +296,6 @@ static int rr_mp(int a, int b)
 void rr_chan_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & RR_WORD_MASK));
-
-    if (!AGC_ASSERT(bits <= RR_WORD_MASK))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -370,11 +355,6 @@ void rr_radmodes_clear(uint16_t bits)
  **********************************************************************/
 bool rr_radmodes_test(uint16_t bits)
 {
-    if (!AGC_ASSERT(bits != 0U && bits <= RR_WORD_MASK))
-    {
-        return (false);
-    }
-
     return ((agc_erase_radmodes() & bits) != 0U);
 }
 

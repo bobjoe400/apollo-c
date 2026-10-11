@@ -197,11 +197,6 @@ static agc_status_t state_integration_grab(void)
  * else TDEC1 = now, CM CLEAR V96ONFLG, INTSTALL.                         */
 agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
 {
-    if (!AGC_ASSERT(jc != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_QUITFLAG))
     {
         agc_phase_change(2, 00002); /* NOINT     */
@@ -222,11 +217,6 @@ agc_status_t agc_job_statint1(agc_job_ctx_t *jc)
 
 agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc)
 {
-    if (!AGC_ASSERT(jc != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(state_integration_tdec1 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -237,11 +227,6 @@ agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc)
 
 agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc)
 {
-    if (!AGC_ASSERT(jc != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(stateup_tdec1 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -428,11 +413,6 @@ agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_
  * = TIMEDELT.  ctx is only touched by callers that hold INTSTALL.        */
 static void notime(agc_integ_ctx_t *ctx, bool *slipped)
 {
-    if (!AGC_ASSERT(slipped != NULL))
-    {
-        return;
-    }
-
     agc_flag_put(AGC_FLAG_MID1FLAG, false);
     *slipped = true; /* INCR IRETURN1 */
     agc_alarm(AGC_INTEG_ALARM_NOTIME);

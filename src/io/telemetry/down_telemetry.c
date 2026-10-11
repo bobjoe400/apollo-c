@@ -159,11 +159,6 @@ static uint16_t counter_word(int k)
 /* Items that are plain DP times or vectors from agc_state.h.             */
 static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
 {
-    if (!AGC_ASSERT(w != NULL && k >= 0))
-    {
-        return (false);
-    }
-
     bool      vec = true;
     agc_vec_t v   = {{0, 0, 0}};
     agc_dp_t  t   = 0;
@@ -227,11 +222,6 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
 /* Small multi-erasable items: the AGC sends consecutive registers.        */
 static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
 {
-    if (!AGC_ASSERT(w != NULL && k >= 0))
-    {
-        return (false);
-    }
-
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
 
     switch ((int) item)
@@ -295,11 +285,6 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
 /* LM DAP downlink words (agc_lm_dap.h).                                   */
 static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
 {
-    if (!AGC_ASSERT(w != NULL && k >= 0))
-    {
-        return (false);
-    }
-
     if (agc_state_vehicle() != AGC_VEHICLE_LM)
     {
         return (false);
@@ -406,11 +391,6 @@ static void wozero(void)
 /* SENDID: word order zero, then the ID word and LOWIDCOD.                 */
 static agc_status_t sendid(uint16_t id)
 {
-    if (!AGC_ASSERT(id <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     wozero();
 
     return (dntmexit(id, (uint16_t) AGC_DN_LOWIDCOD));
@@ -420,11 +400,6 @@ static agc_status_t sendid(uint16_t id)
 
 static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return (sub ? agc_dnlist_lm_sublist(ref, out) : agc_dnlist_lm_control(ref, out));
@@ -671,11 +646,6 @@ static agc_status_t dndump(void)
         return (dnphase1()); /* resume the downlist      */
     }
 
-    if (!AGC_ASSERT((dumploc & PRIO34) <= PRIO34))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (dndump_id());
 }
 
@@ -799,11 +769,6 @@ agc_status_t agc_telem_set_dumpcnt(uint16_t v)
 
 uint16_t agc_telem_dumpcnt(void)
 {
-    if (!AGC_ASSERT(dumpcnt <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (dumpcnt);
 }
 

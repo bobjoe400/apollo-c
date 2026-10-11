@@ -163,11 +163,6 @@ static agc_status_t td_read_rdot(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
@@ -229,11 +224,6 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!td_good())
     {
         return (agc_job_rendezvous_navigation_designate(ctx)); /* EREXIT1  */
@@ -316,11 +306,6 @@ static agc_status_t td_convert(agc_interp_t *ip, lmnav_state_t *n)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!td_good())
     { /* CHEXERR  */
         if (agc_flag_test(AGC_FLAG_RNGSCFLG))
@@ -396,11 +381,6 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_prio_alarm(ctx, TD_ALARM_LOS,
                           AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
                           AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA,
@@ -425,11 +405,6 @@ agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022);
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT, AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE));
@@ -454,11 +429,6 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -501,11 +471,6 @@ agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_wait(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (lmnav_wait(TD_1500DEC));
 }
 
@@ -528,11 +493,6 @@ agc_status_t agc_job_rendezvous_tracking_data_wait(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_update(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_NOUPFLAG) || !agc_flag_test(AGC_FLAG_UPDATFLG))
     {
         return (agc_job_rendezvous_tracking_data_next(ctx));
@@ -558,11 +518,6 @@ agc_status_t agc_job_rendezvous_tracking_data_update(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* R22LEM46 */
         return (agc_svc_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
@@ -591,11 +546,6 @@ agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022);
     agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
@@ -654,11 +604,6 @@ agc_status_t lmnav_residuals_display(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE));
 }
 
@@ -679,11 +624,6 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lmnav_state()->n49flag = -1;
 
     return (AGC_STATUS_OK); /* ENDOFJOB */
@@ -706,11 +646,6 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(agc_job_ctx_t *c
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lmnav_state()->n49flag = 1;
 
     return (AGC_STATUS_OK); /* ENDOFJOB */
@@ -735,11 +670,6 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(agc_job_ctx_t *c
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_sp_t f = lmnav_state()->n49flag; /* N49FLAG, unscaled */
 
     if (f == 0)
@@ -782,11 +712,6 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 00152);
     agc_status_t st = agc_radar_rrrdot(); /* RRRDOT */
 
@@ -816,11 +741,6 @@ agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_restart_read(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!td_good())
     {
         return (agc_job_rendezvous_navigation_designate(ctx));

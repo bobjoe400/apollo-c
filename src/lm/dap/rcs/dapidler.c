@@ -174,11 +174,6 @@ agc_status_t lm_dap_chekbits(bool *on)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(on != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *on           = false;
     uint16_t ch31 = agc_chan_read(031); /* channel 31: DAP mode and guidance control bits */
 

@@ -219,11 +219,6 @@ static agc_vec_t rs_vg(agc_interp_t *ip, agc_vec_t vr)
  * continues at VGAIN* with DELVEET3 (agc_lm_s40_8).                      */
 agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t   *rz = agc_rendz_erasable();
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
     rs_work_t      w  = {0};

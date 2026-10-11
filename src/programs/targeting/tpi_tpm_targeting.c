@@ -127,11 +127,6 @@ static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc
  **********************************************************************/
 agc_status_t agc_job_tpi_targeting(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_avflag(true);
 
     return (agc_job_tpi_input(ctx));
@@ -153,11 +148,6 @@ agc_status_t agc_job_tpi_targeting(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_avflag(false);
 
     return (agc_job_tpi_input(ctx));
@@ -179,11 +169,6 @@ agc_status_t agc_job_tpi_targeting_other_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_input(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_tracking_flags_on();
 
     return (rz_vnpooh(ctx, 6U, 37U, AGC_JOB_TPI_AFTER_TTPI));
@@ -206,11 +191,6 @@ agc_status_t agc_job_tpi_input(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_after_ttpi(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     if (!rz_is_csm())
@@ -278,11 +258,6 @@ agc_status_t agc_job_tpi_after_elev(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_cycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     rz_vflag_set(RZ_VF_ITSWICH, true);
@@ -426,11 +401,6 @@ agc_status_t agc_job_tpi_time_search(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_alarm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_alarm_flash(ctx, (agc_alarm_code_t) AGC_ALARM_00611, AGC_JOB_TPI_INPUT, AGC_JOB_TPI_ALARM));
 }
 
@@ -556,11 +526,6 @@ static agc_status_t tpm_start(agc_job_ctx_t *ctx, bool this_active)
  **********************************************************************/
 agc_status_t agc_job_tpm_targeting(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (tpm_start(ctx, true));
 }
 
@@ -581,11 +546,6 @@ agc_status_t agc_job_tpm_targeting(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpm_targeting_other_vehicle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (tpm_start(ctx, false));
 }
 

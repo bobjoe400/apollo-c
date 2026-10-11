@@ -101,11 +101,6 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
 {
     const prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(tar != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < TARGETS; i++) /* TIX,2 TAR1: two passes        */
     {
         agc_sp_t el_sp  = align_word_to_sp(r->tazel[(2 * i) + 1]); /* EL word, 90 deg = 2^14 */
@@ -143,11 +138,6 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
 static agc_status_t optdata_load(agc_sp_t run)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-
-    if (!AGC_ASSERT((run == 0) || (run == RUN_TARGET2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     r->run              = run;                                                      /* LXCH RUN                                         */
     const uint16_t w[3] = {r->tazel[run], r->tazel[run + 1], (run == 0) ? 1u : 2u}; /* BIT1 / TWO       */
@@ -214,11 +204,6 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS     */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -252,11 +237,6 @@ agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx)
                                   AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH,
                                   AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -281,11 +261,6 @@ agc_status_t agc_job_optical_verification_target_flash(agc_job_ctx_t *ctx)
         AGC_JOB_OPTICAL_VERIFICATION_TARGET_LOADED, /* TC +3     */
         AGC_JOB_OPTICAL_VERIFICATION_TARGET_SHOW
     }; /* TC -8D    */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT((prelaunch_ram()->run == 0) || (prelaunch_ram()->run == RUN_TARGET2)))
     {
@@ -345,11 +320,6 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     agc_interp_t     ip;                     /* interpreter state           */
     agc_vec_t        tar[TARGETS];           /* PD06, PD12: B1 (half-unit)  */
     bool             cult = false;           /* CULTFLAG (not tested here)  */
-
-    if (!AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)) || !AGC_ASSERT((starcode == 1) || (starcode == 2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     ar->starcode          = starcode;                 /* TS STARCODE                 */
     prelaunch_ram()->targ = targ;                     /* QXCH QPLAC, TS TARG1/2      */
@@ -482,11 +452,6 @@ static agc_status_t target2_marked(agc_job_ctx_t *ctx)
     agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
     agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_init(&ip);
     agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
 
@@ -584,11 +549,6 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
         AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY
     }; /* TCF GCOMP4 */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -611,11 +571,6 @@ agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
     const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
     agc_interp_t           ip;                   /* interpreter state (VAD)         */
     agc_dp_t               buf[3];               /* ERCOMP1, rev 2^0                */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
 
@@ -648,11 +603,6 @@ agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optical_verification_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS     */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

@@ -49,11 +49,6 @@ static int             show_bank; /* SKEEP4 bank during SHOW-BANKSUM    */
 
 agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
 {
-    if (!AGC_ASSERT(nbanks >= 0 && nbanks <= AGC_ROPE_BANKS) || !AGC_ASSERT(image != NULL || nbanks == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rope       = image;
     rope_banks = nbanks;
 
@@ -63,16 +58,6 @@ agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
 /* Word rel of bank b, +0 outside the image.                                */
 static uint16_t rope_word(int bank, int rel)
 {
-    if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(rel >= 0 && rel < AGC_ROPE_BANK_WORDS))
-    {
-        return (0); /* no valid result */
-    }
-
     if (rope == NULL || bank >= rope_banks)
     {
         return (0);
@@ -270,11 +255,6 @@ agc_status_t agc_selfcheck_idle_pass(void)
 
 agc_status_t agc_selfcheck_set_smode(uint16_t word)
 {
-    if (!AGC_ASSERT(word <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     smode = word;
 
     return (AGC_STATUS_OK);
@@ -282,11 +262,6 @@ agc_status_t agc_selfcheck_set_smode(uint16_t word)
 
 uint16_t agc_selfcheck_smode(void)
 {
-    if (!AGC_ASSERT(smode <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (smode);
 }
 
@@ -310,11 +285,6 @@ agc_status_t agc_selfcheck_fresh_start(bool slap1)
 
 uint16_t agc_selfcheck_error_count(void)
 {
-    if (!AGC_ASSERT(ercount <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (ercount);
 }
 
@@ -382,10 +352,5 @@ agc_status_t agc_selfcheck_showsum_end(void)
 
 uint16_t agc_selfcheck_skeep(int i)
 {
-    if (!AGC_ASSERT(i >= 1 && i <= 7))
-    {
-        return (0);
-    }
-
     return (skeep[i]);
 }

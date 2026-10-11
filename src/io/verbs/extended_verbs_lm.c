@@ -96,11 +96,6 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
 /* V43 after the load: show V43 again (EXDSPRET).                          */
 agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_extverb_redisplay(ctx, 43, AGC_JOB_ATTITUDE_ERROR_ENABLE));
 }
 
@@ -151,11 +146,6 @@ agc_status_t agc_extverb_lm_attck2(void)
 /* GOXDSPFR display: proceed -> next, enter -> again, then BLANKET.       */
 static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t term, agc_job_id_t next, agc_job_id_t again, uint16_t blank)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {term, next, again};
     agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(verb, noun), &cont);
 
@@ -274,11 +264,6 @@ agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx)
 /* ENDR03: RESTORDB, ENDEXT.                                                */
 agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = agc_lm_dap_restordb();
 
@@ -342,11 +327,6 @@ agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx)
 /* DPDAT3: TRIMGIMB by WAITLIST (it uses FIXDELAY / VARDELAY), ENDOFJOB.   */
 agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = agc_waitlist_call(TRIM_DELAY_CS, AGC_TASK_TRIMGIMB);
 
@@ -358,11 +338,6 @@ agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx)
 /* TRIMDONE: "trim is finished; please terminate R03" (V50N48).           */
 agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
                             AGC_JOB_EXTENDED_VERB_END,
                             AGC_JOB_EXTENDED_VERB_END};
@@ -528,11 +503,6 @@ static agc_status_t verb_quit_integration(void)
 /* Verbs 40-69.                                                             */
 static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (verb)
     {
         case 40:

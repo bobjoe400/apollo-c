@@ -601,11 +601,6 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma, agc_
  **********************************************************************/
 static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t tig, rte_display_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t uv2 = agc_vec_unit(ip, rs->v_t2v, &out->vpred, NULL); /* UNIT(V(T2)/), B1 */
 
     out->t3tot4   = agc_dp_sub(ip, rs->t2, tig);                                     /* T21           */

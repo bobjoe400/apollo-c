@@ -95,11 +95,6 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 /* P52C V33: TSIGHT = now + TSIGHT1 (4 min), CALL LOCSAM. */
 agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -116,11 +111,6 @@ agc_status_t agc_job_csm_realign_pick_stars(agc_job_ctx_t *ctx)
 /* LOCSAM resumed after its integration wait. */
 agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->tsight >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -133,11 +123,6 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 static void landmark_data_from_latlong(const agc_latlong_t *ll)
 {
     agc_align_ram_t *ram = agc_align_ram();
-
-    if (!AGC_ASSERT(ll != NULL))
-    {
-        return;
-    }
 
     ram->landalt  = ll->alt;                /* LANDALT  */
     ram->landlong = agc_dp_shr(ll->lon, 1); /* SR1      */
@@ -201,11 +186,6 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 /* LSDISP: flash V06N89 (LAT, LONG/2, ALT); ENTER shows it again. */
 agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -251,11 +231,6 @@ static agc_status_t landing_site_axes(void)
  */
 agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -289,11 +264,6 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
 /* CSMPREC resumed after its integration wait. */
 agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

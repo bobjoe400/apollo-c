@@ -282,11 +282,6 @@ static void print_summary(const sim_opts_t *o)
 {
     sim_stats_t s;
 
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return;
-    }
-
     sim_clock_stats(&s);
 
     /* printf results are irrelevant: the run is over (rule 7 note).    */
@@ -296,11 +291,6 @@ static void print_summary(const sim_opts_t *o)
 
 static agc_status_t start(const sim_opts_t *o)
 {
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec   */
 
     if (st == AGC_STATUS_OK && o->pad != NULL)

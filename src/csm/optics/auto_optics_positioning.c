@@ -64,16 +64,6 @@ static bool cmc_mode(void)
  */
 agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (los);
-    }
-
-    if (!AGC_ASSERT((angle >= AGC_DP_MIN) && (angle <= AGC_DP_MAX)))
-    {
-        return (los);
-    }
-
     const agc_dp_t  s  = agc_dp_sin(ip, angle); /* 1/2 SIN */
     const agc_vec_t t1 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, axis, los), s), 2);
     const agc_dp_t  d  = agc_vec_dot(ip, axis, los);
@@ -92,11 +82,6 @@ agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t
  */
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(los != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t     *ram = agc_align_ram();
     agc_navaux_padload_t pad;
     agc_status_t         st  = agc_navaux_get_padload(&pad);
@@ -210,11 +195,6 @@ static int trunnion_class(uint16_t pac)
  */
 agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_job_id_t resume_job, int *result)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(result != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     if (!resumed)
@@ -260,11 +240,6 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
 /* R52F: wait 1/2 s (or 1.8 s from R52SYNC), then R52 continues. */
 static agc_status_t auto_optics_wait(uint16_t dt)
 {
-    if (!AGC_ASSERT((dt == DT_HALF_SEC) || (dt == DT_SYNC)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_svc_delayjob(dt, AGC_JOB_AUTO_OPTICS_POSITIONING_DELAYED);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -401,11 +376,6 @@ static agc_status_t auto_optics_start(const agc_job_ctx_t *ctx, agc_job_id_t ret
 /* R52 (Comanche p. 764): STQ SAVQR52, CLEAR ADVTRK. */
 agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_ADVTRK);
 
     return (auto_optics_start(ctx, ret));
@@ -414,11 +384,6 @@ agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_i
 /* ADVORB (Comanche p. 768): R52 with ADVTRK, LUNAFLAG and ERADFLAG set. */
 agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_ADVTRK);
     agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_flag_set(AGC_FLAG_ERADFLAG);
@@ -429,11 +394,6 @@ agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx, agc_jo
 /* R52 woken from SR52.1's integration wait. */
 agc_status_t agc_job_auto_optics_positioning_resume(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -445,11 +405,6 @@ agc_status_t agc_job_auto_optics_positioning_resume(agc_job_ctx_t *ctx)
 /* R52F (PROCEED / ENTER on the 404 alarm): wait 1/2 s. */
 agc_status_t agc_job_auto_optics_positioning_wait(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -464,11 +419,6 @@ agc_status_t agc_job_auto_optics_positioning_wait(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_auto_optics_positioning_delayed(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_TARG1FLG))
     {
         return (agc_rendz_tracking_attitude_csm(ctx, AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED));
@@ -488,11 +438,6 @@ agc_status_t agc_job_auto_optics_positioning_delayed(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_auto_optics_positioning_tracked(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
         return (align_goto(agc_align_ram()->auto_optics_return));
@@ -509,11 +454,6 @@ agc_status_t agc_job_auto_optics_positioning_tracked(agc_job_ctx_t *ctx)
 /* R53JOB (FINDVAC PRIO24): CALL R53, then ENDPLAC (ENDOFJOB). */
 agc_status_t agc_job_auto_optics_sighting(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_csm_sighting_mark(ctx, AGC_JOB_ENDOFJOB));
 }
 
@@ -523,11 +463,6 @@ agc_status_t agc_job_auto_optics_sighting(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_clearmrk();
     agc_status_t st = agc_sxtmark_mkreleas();
 

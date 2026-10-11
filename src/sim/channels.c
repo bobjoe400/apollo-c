@@ -137,11 +137,6 @@ void sim_channels_sync(void)
 
 void sim_channels_force(uint16_t chan)
 {
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
-    {
-        return;
-    }
-
     uint16_t v = agc_chan_read((int) chan);
 
     g_sent[chan] = v;

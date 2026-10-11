@@ -70,11 +70,6 @@ static bool script_read(void)
 
 agc_status_t sim_script_open(const char *path)
 {
-    if (!AGC_ASSERT(path != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     g_line = 0;
     g_file = fopen(path, "r");
 

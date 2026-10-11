@@ -78,22 +78,12 @@ static void gnurvst(bool velocity)
     {
         lm->r1s = lm->gnur;
     }
-
-    if (!AGC_ASSERT(lm->gnur.c[0] >= AGC_DP_MIN))
-    {
-        return;
-    }
 }
 
 /* CONTSERV (p.875): clear the "measurement made" discretes RNGEDATA and
  * VELDATA (BITS4-7, OCT 110), set the LR lamps, go to COPYCYC1.           */
 agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -112,11 +102,6 @@ agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
  * (PRIO3 = bits 10, 11 of FLGWRD11) and start HIGATJOB (POS1 -> POS2).    */
 agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -144,11 +129,6 @@ agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
  * override inhibited below 30 000 ft.                                     */
 agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_LRBYPASS))
     {
         return (agc_lm_serv_copycyc1(ctx)); /* BYPASS LR LOGIC        */
@@ -271,11 +251,6 @@ static agc_status_t no_powered_designate_now(agc_job_ctx_t *ctx)
  * 11, 14 -> try again in 2 s).                                            */
 agc_status_t agc_lm_serv_copycyc1(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_COPYCYC1);
     uint16_t radmodes = agc_flagword_get(12); /* FLGWRD12 = RADMODES    */
 
@@ -330,11 +305,6 @@ static agc_status_t hfail(agc_job_ctx_t *ctx)
 /* RUPDATED (p.886): R1S = GNUR, then VMEASCHK.                            */
 agc_status_t agc_lm_serv_rupdated(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -348,11 +318,6 @@ agc_status_t agc_lm_serv_rupdated(agc_job_ctx_t *ctx)
 /* UPDATCHK / POSUPDAT / NOREASON (p.884-886).                              */
 agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -499,11 +464,6 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm, agc_
 /* VMEASCHK / VELUPDAT / VUPDAT (p.886-889).                                */
 agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -594,11 +554,6 @@ agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx)
 /* VUPDATED (p.889): V1S = GNUV, then VALTCHK.                             */
 agc_status_t agc_lm_serv_vupdated(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -613,11 +568,6 @@ agc_status_t agc_lm_serv_vupdated(agc_job_ctx_t *ctx)
  * 2000 ft/s (READVEL), then CONTSERV.                                     */
 agc_status_t agc_lm_serv_valtchk(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -696,11 +646,6 @@ agc_status_t agc_task_rdgims(void)
  * sleep in RADSTALL for about 500 ms.                                     */
 agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -732,11 +677,6 @@ agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx)
  * the downlink copies LRVTIMDL, LRXCDUDL, LRZCDUDL are not kept.           */
 agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
@@ -768,11 +708,6 @@ agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
 /* LRHJOB (p.893): one altitude sample, sleep about 95 ms.                 */
 agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -794,11 +729,6 @@ agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx)
  * by a range-scale change is ignored (RNGSCFLG reset).                    */
 agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g = agc_guid_state();
 
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
@@ -846,11 +776,6 @@ agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
 static agc_status_t setpos(int pos)
 {
     agc_guid_t *g = agc_guid_state();
-
-    if (!AGC_ASSERT(pos == 0 || pos == 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     const uint16_t cdu[3] = { (uint16_t) ((uint16_t) g->lm.lrbeta[pos] & 077777U), 0U, (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U) };
     agc_vec_t      y      = agc_vec_make(0, AGC_DP_HALF, 0);
@@ -906,11 +831,6 @@ agc_status_t agc_lm_setpos2(void)
 /* HIGATJOB (p.895): reposition the antenna to POS2 and sleep until done.  */
 agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -959,22 +879,12 @@ static agc_status_t posalarm(agc_job_ctx_t *ctx)
     agc_prioalarm(AGC_ALARM_00523);
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_POSALARM_PRO, AGC_JOB_ENDOFJOB};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_PRIODSP, agc_dsky_vn(5, 9), &cont));
 }
 
 /* HIGATJOB after RADSTALL (p.895).                                        */
 agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -991,11 +901,6 @@ agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx)
 /* POSALARM +3 (p.895): PROCEED -- in POS2 yet?                             */
 agc_status_t agc_job_posalarm_pro(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

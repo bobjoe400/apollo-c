@@ -129,16 +129,6 @@ static agc_status_t rte_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, ui
 {
     const agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter};
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((verb < 100U) && (noun < 100U)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((proceed != AGC_JOB_NONE) && (enter != AGC_JOB_NONE)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
@@ -165,11 +155,6 @@ static agc_status_t rte_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, ui
 static agc_status_t rte_flash_blank(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, uint16_t blank, agc_job_id_t proceed, agc_job_id_t enter)
 {
     agc_status_t st = rte_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun, proceed, enter); /* GOFLASHR status */
-
-    if (!AGC_ASSERT((blank == RTE_BLANK_R1) || (blank == RTE_BLANK_R3)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (st != AGC_STATUS_OK)
     {
@@ -227,11 +212,6 @@ static agc_status_t rte_alarm(const agc_job_ctx_t *ctx, const rte_erasable_t *rs
  **********************************************************************/
 static agc_status_t rte_failed(const agc_job_ctx_t *ctx, const rte_erasable_t *rs, agc_status_t st)
 {
-    if (!AGC_ASSERT(st != AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(rs != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -258,11 +238,6 @@ static agc_status_t rte_failed(const agc_job_ctx_t *ctx, const rte_erasable_t *r
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(rte_state()->alarm_code != 0U))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -322,11 +297,6 @@ agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -353,11 +323,6 @@ agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -393,11 +358,6 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx, agc_interp_t *ip
     rte_display_t d = {0};
 
     if (!AGC_ASSERT((ctx != NULL) && (ip != NULL)) || !AGC_ASSERT(rs != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(vnstore != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -501,11 +461,6 @@ agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -557,11 +512,6 @@ agc_status_t agc_job_return_to_earth_entry_conditions_display(agc_job_ctx_t *ctx
 agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx)
 {
     const rte_erasable_t *rs = rte_state(); /* P37 erasables (VNSTORE) */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(rs->vnstore != AGC_JOB_NONE))
     {
@@ -671,11 +621,6 @@ agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -704,11 +649,6 @@ agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -798,11 +738,6 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -959,11 +894,6 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rte_erasable_t *rs = rte_state(); /* P37 erasables */
     agc_dp_t       *p  = NULL;        /* the erasable addressed */
 

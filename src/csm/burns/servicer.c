@@ -69,11 +69,6 @@ static void serv_phase(uint16_t code, agc_job_id_t job)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return;
-    }
-
     agc_phase_change_var(code, &v);
 }
 
@@ -546,11 +541,6 @@ agc_status_t agc_task_onmnitor(void)
  **********************************************************************/
 agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -626,11 +616,6 @@ static bool pipas_saturated(agc_vec_t delv)
  **********************************************************************/
 agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -677,11 +662,6 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
@@ -714,11 +694,6 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -765,11 +740,6 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -798,11 +768,6 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit;
 
     if (!AGC_ASSERT(exit_job != AGC_JOB_NONE))
@@ -830,11 +795,6 @@ agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -865,11 +825,6 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -917,11 +872,6 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_servexit(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_guid_state()->avg.avgexit != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

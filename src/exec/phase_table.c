@@ -404,11 +404,6 @@ typedef struct ph_second
  **********************************************************************/
 static void below1_4(const ph_code_t *c, const ph_second_t *two)
 {
-    if (!AGC_ASSERT(c != 0) || !AGC_ASSERT(two != 0))
-    {
-        return;
-    }
-
     if (two->present && AGC_ASSERT(group_ok(two->group)))
     {
         phase_set_fixed(two->group, two->phase); /* DXCH -PHASE(G2)   */
@@ -858,11 +853,6 @@ agc_status_t agc_phase_newmode(agc_sp_t mode)
  **********************************************************************/
 bool agc_phase_checkmm(agc_sp_t mode)
 {
-    if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
-    {
-        return (false);
-    }
-
     agc_sp_t mm = agc_erase_modreg(); /* C(MODREG), B0 integer */
 
     if (!AGC_ASSERT(mm >= EXEC_MODREG_NEG0))

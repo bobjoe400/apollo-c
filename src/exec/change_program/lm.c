@@ -65,11 +65,6 @@ static const exec_cp_mode_t cp_modes_lm[] = {
 
 const exec_cp_mode_t *exec_cp_modes_lm(int *n)
 {
-    if (!AGC_ASSERT(n != NULL))
-    {
-        return (cp_modes_lm);
-    }
-
     *n = (int) (sizeof (cp_modes_lm) / sizeof (cp_modes_lm[0]));
 
     return (cp_modes_lm);
@@ -78,11 +73,6 @@ const exec_cp_mode_t *exec_cp_modes_lm(int *n)
 /* SETUP70 / SETUP71 (L p.233): DTCB to P70 / P71 in the V37 job.        */
 agc_status_t exec_cp_setup_abort(const agc_job_ctx_t *ctx, bool aps)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -111,11 +101,6 @@ void exec_cp_stop_servicer_lm(void)
  * P20 or P22 runs, 2.11 for P25, else group 2 off; then CANV37.         */
 agc_status_t agc_job_change_program_return(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -221,11 +206,6 @@ agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo)
     agc_sp_t modreg = agc_erase_modreg();
     bool     p20    = agc_flag_test(AGC_FLAG_RNDVZFLG);
     bool     p25    = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
-
-    if (!AGC_ASSERT(statquo != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     *statquo = false;
 

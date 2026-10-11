@@ -252,11 +252,6 @@ agc_status_t agc_radar_powered_flight_designate(void)
  **********************************************************************/
 agc_status_t agc_job_powered_flight_remode(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_REMODE); /* REMODE */
 
     if (st != AGC_STATUS_OK)
@@ -409,11 +404,6 @@ static agc_dp_t pfd_mp_chain(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 {
     agc_dp_t ab = agc_sp_mul(a, b); /* 2^2 */
 
-    if (!AGC_ASSERT(ab >= AGC_DP_MIN && ab <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_sp_mul(agc_dp_high(ab), c));
 }
 
@@ -493,16 +483,6 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
     shaft         = agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
     agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) + agc_sp_mul(t->cos_t, u[1]) + pfd_mp_chain(t->sin_t, t->cos_s, u[2]); /* 2^2 */
 
-    if (!AGC_ASSERT(shaft >= AGC_DP_MIN && shaft <= AGC_DP_MAX))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(trun >= AGC_DP_MIN && trun <= AGC_DP_MAX))
-    {
-        return;
-    }
-
     agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
     agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
 }
@@ -560,11 +540,6 @@ static agc_status_t pfd_lock_check(void)
  **********************************************************************/
 agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rr_state_t  *s = rr_state(); /* radar erasables */
     agc_interp_t ip;             /* interpreter state */
 
@@ -731,11 +706,6 @@ static bool pfd_read_good(void)
  **********************************************************************/
 agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) || rr_radmodes_test(RR_AUTOMBIT))
     {
         return (pfd_read_end());
@@ -769,11 +739,6 @@ agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!pfd_read_good())
     {
         return (pfd_read_end());
@@ -816,11 +781,6 @@ agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_powered_flight_read_done(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!pfd_read_good())
     { /* R29RRR?  */
         if (!agc_flag_test(AGC_FLAG_RNGSCFLG))

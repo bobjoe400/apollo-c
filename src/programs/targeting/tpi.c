@@ -112,11 +112,6 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 
     ura = agc_vec_unit(ip, rz->ract3, &ra, NULL);
 
-    if (!AGC_ASSERT(urp.c[0] >= AGC_DP_MIN && ura.c[0] >= AGC_DP_MIN))
-    {
-        return (false);
-    }
-
     bool fail = false; /* no solution (NORMEX) */
 
     /* FIGTIME angle part (pp.470-471): the central angle the active vehicle
@@ -147,11 +142,6 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     agc_dp_t a2;                                                                                         /* rev 2^0 */
 
     a2 = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip, c28)), d30);
-
-    if (!AGC_ASSERT(a1 >= AGC_DP_MIN && a2 >= AGC_DP_MIN))
-    {
-        return (false);
-    }
 
     agc_dp_t ang = agc_dp_add(ip, a2, a1); /* angle to gain, rev 2^0 */
 
@@ -730,11 +720,6 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc
  **********************************************************************/
 agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
     m.row[0] = rz->ulos; /* 0D       */

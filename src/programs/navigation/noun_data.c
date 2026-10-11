@@ -325,11 +325,6 @@ static bool nd_raw(uint16_t id, uint16_t *w)
  **********************************************************************/
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t  *p  = nd_dp(data_id);      /* DP field, or NULL */
     int        k  = 0;                   /* vector component */
     agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */
@@ -373,11 +368,6 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
  **********************************************************************/
 agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
 {
-    if (!AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t  *p  = nd_dp(data_id);      /* DP field, or NULL */
     int        k  = 0;                   /* vector component */
     agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */

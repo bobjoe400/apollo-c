@@ -88,11 +88,6 @@ agc_status_t sim_clock_init(void)
 
 void sim_irq_request(sim_irq_t irq)
 {
-    if (!AGC_ASSERT(irq >= SIM_IRQ_T6 && irq < SIM_IRQ_COUNT))
-    {
-        return;
-    }
-
     g_irq[irq] = true;
 
     if (!AGC_ASSERT(g_irq[irq]))
@@ -118,11 +113,6 @@ uint32_t sim_clock_cs(void)
 
 void sim_clock_stats(sim_stats_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return;
-    }
-
     *out = g_stats;
 
     if (!AGC_ASSERT(out->cs == g_cs))
@@ -134,11 +124,6 @@ void sim_clock_stats(sim_stats_t *out)
 /* PINC of TIME4 (n = 4) or TIME5 (n = 5); overflow requests the rupt.   */
 static void time_pinc(int n, sim_irq_t irq)
 {
-    if (!AGC_ASSERT(n == 4 || n == 5))
-    {
-        return;
-    }
-
     uint16_t v = (uint16_t) (agc_rupt_time(n) + 1u);
 
     if (v >= SIM_OVF)

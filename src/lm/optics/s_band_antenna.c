@@ -35,11 +35,6 @@ agc_dp_t agc_sband_pitchang(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(pitchang <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (pitchang);
 }
 
@@ -61,11 +56,6 @@ agc_dp_t agc_sband_yawang(void)
 /* ABVAL SIGN ASIN: ASIN(SGN(s) |v|). */
 static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     const agc_dp_t m = agc_vec_abval(ip, v);
 
     if (!AGC_ASSERT(m >= 0))
@@ -82,11 +72,6 @@ static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
  */
 agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pitch, agc_dp_t *yaw)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) || !AGC_ASSERT(yaw != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_mat_t u = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
 
     *pitch            = 0; /* HI6ZEROS     */
@@ -130,16 +115,6 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pit
 /* UE = -UNIT(RATT) (earth sphere) or -UNIT(REMDIST VMOON SL1 + RATT). */
 static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o, agc_vec_t *ue)
 {
-    if (!AGC_ASSERT(o != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ue != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t r = o->ratt; /* CONV4        */
 
     if (o->x2 != 0)
@@ -164,11 +139,6 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o, agc_v
 /* SBANDEX: display VN_ANTENNA_ANGLES at PRIO5 while EXTVBACT bit 5 is on. */
 static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
     {
         return (agc_dsky_endmark());
@@ -197,11 +167,6 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
 /* SBANDANT +2 (p. 486-488): LEMCONIC to now, UE, CDUTRIG, SM, *SMNB*. */
 agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -244,11 +209,6 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */
 agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_imu_status_check();
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))

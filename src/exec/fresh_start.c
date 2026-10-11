@@ -83,11 +83,6 @@ static bool is_lm(void)
 /* Replace the bits of flagword `w` outside `keep` by `init`.          */
 static void flagword_init(int w, uint16_t keep, uint16_t init)
 {
-    if (!AGC_ASSERT(w >= 0 && w < AGC_FLAGWORDS))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT((keep & init) == 0U))
     {
         return;
@@ -100,11 +95,6 @@ static void flagword_init(int w, uint16_t keep, uint16_t init)
 
 static void set_lampword(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= 077777u))
-    {
-        return;
-    }
-
     agc_erase_set_dsptab(FS_LAMPWORD, v);
 }
 
@@ -767,11 +757,6 @@ agc_status_t agc_fresh_start_slap1(void)
     dofstart(true, true);
     agc_relint();
 
-    if (!AGC_ASSERT(ercount == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -797,16 +782,6 @@ agc_status_t agc_fresh_dofstart(void)
 
 uint16_t agc_restart_redoctr(void)
 {
-    if (!AGC_ASSERT(restreg <= 037))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(ercount < UINT16_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (redoctr);
 }
 
@@ -854,11 +829,6 @@ agc_status_t agc_exec_gotopooh(void)
 
 agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id == AGC_JOB_GOTOPOOH))
     {
         return (AGC_STATUS_BAD_ARG);

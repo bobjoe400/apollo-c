@@ -171,11 +171,6 @@ agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r, ag
  **********************************************************************/
 static void prec_restart_inner(rte_erasable_t *rs)
 {
-    if (!AGC_ASSERT(rs != NULL))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(rs->nn1a <= RTE_PREC_OUTER))
     {
         return;
@@ -238,16 +233,6 @@ agc_status_t rte_precision_start(rte_erasable_t *rs)
 static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
 {
     int n1 = 0; /* NORM shift count (X1) */
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(rs != NULL))
-    {
-        return (0); /* no valid result */
-    }
 
     if (rs->nn1a == 0)
     { /* PREC162       */
@@ -429,11 +414,6 @@ static void prec_new_rcon(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rerr)
     int n1 = 0; /* NORM shift count of RD^2 */
     int n2 = 0; /* NORM shift count of the divisor */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(rs->nn1a > 0))
     {
         return;
@@ -557,11 +537,6 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
 static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 {
     agc_conic_param_out_t po; /* PARAM of R(T2)/, V(T2)/ */
-
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = agc_conic_param(ip, rs->r_t2v, rs->v_t2v, AGC_CONIC_EARTH, &po); /* status of PARAM, then PREC130 */
 

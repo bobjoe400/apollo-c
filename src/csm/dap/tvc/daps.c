@@ -486,11 +486,6 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();  /* TVC DAP erasables          */
     bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
 
-    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     tvcd_integrate(ax);
     tvcd_errorlim(); /* xERORLIM                                        */
 
@@ -530,11 +525,6 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 {
     agc_csm_tvc_t *t    = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_task_id_t  next = AGC_TASK_PITCHDAP; /* T5LOC: the other axis   */
-
-    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (ax == TVCD_PITCH)
     {

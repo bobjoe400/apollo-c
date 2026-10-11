@@ -108,11 +108,6 @@ static agc_sp_t time1(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(TIME1_MASK == 037777u)) /* TIME1: 14 bits, cs */
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) (t & TIME1_MASK));
 }
 
@@ -180,11 +175,6 @@ static agc_status_t setgwlst(void)
  **********************************************************************/
 static agc_status_t chkcomed(agc_job_ctx_t *ctx, bool *liftoff)
 {
-    if (!AGC_ASSERT(ctx != NULL && liftoff != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *liftoff = false;
     agc_inhint();
 
@@ -230,11 +220,6 @@ static agc_status_t chkcomed(agc_job_ctx_t *ctx, bool *liftoff)
  **********************************************************************/
 static agc_status_t sleepie_next(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(5, 00135); /* restart at WTLISTNT              */
 
     if (!AGC_ASSERT(prelaunch_ram()->onesecxt1 > 0))
@@ -261,11 +246,6 @@ static agc_status_t sleepie_next(agc_job_ctx_t *ctx)
 agc_status_t agc_job_gyrocompassing_wait(agc_job_ctx_t *ctx)
 {
     bool liftoff = false; /* CHKCOMED went to P11                 */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = chkcomed(ctx, &liftoff); /* status of the call */
 
@@ -295,11 +275,6 @@ agc_status_t agc_job_gyrocompassing_wait(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t torquing_cycle_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     prelaunch_ram()->lengthot = CYCLE_PASSES; /* CAF NINE           */
 
     if (!AGC_ASSERT(prelaunch_ram()->lengthot == 9))
@@ -321,11 +296,6 @@ static agc_status_t torquing_cycle_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t prelaunch_estims(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change2(00075, 00004, NULL); /* 2PHSCHNG 5.7, 4 off      */
 
     if (!AGC_ASSERT(prelaunch_ram()->geocomp1 >= 0))
@@ -370,11 +340,6 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
     prelaunch_ram_t *r    = prelaunch_ram(); /* AINLA overlay */
     const agc_dp_t   z[3] = {0, 0, 0};       /* SCHZEROS, rev 2^0           */
     agc_interp_t     ip;                     /* interpreter state           */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_inhint();
     r->gtswtlt1     = time1();        /* CA TIME1, TS GTSWTLT1                  */
@@ -553,11 +518,6 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
 {
     prelaunch_filter_t *f = &prelaunch_ram()->filt; /* compass filter words */
 
-    if (!AGC_ASSERT(ip != NULL && term != NULL))
-    {
-        return;
-    }
-
     for (int k = 0; k < 2; k++)
     {
         const agc_dp_t dp = prelaunch_ram()->dpipa[k];          /* PIPA B14     */
@@ -594,11 +554,6 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
     prelaunch_filter_t *f  = &prelaunch_ram()->filt; /* compass filter words */
     agc_vec_t          *th = &f->thetan1;            /* THETAN1, rev 2^0        */
 
-    if (!AGC_ASSERT(ip != NULL && term != NULL))
-    {
-        return;
-    }
-
     if (prelaunch_ram()->erectim1 != 0)
     { /* ERECTION ONLY                                                */
         th->c[1] = agc_dp_sub(ip, th->c[1], term[1]); /* DSU, STODL   */
@@ -630,11 +585,6 @@ static void normlop(agc_interp_t *ip)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return;
-    }
-
     agc_vec_t v = agc_vec_shl(ip, agc_vec_mat(ip, agc_erase_delv(), &agc_align_ram()->xsm), 1); /* level PIPA increments, B14 */
 
     r->dpipa[0] = agc_dp_neg(v.c[1]); /* DLOAD DCOMP MPAC +3       */
@@ -658,11 +608,6 @@ static void normlop(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t alcgkk(const agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(prelaunch_ram()->geocomp1 == 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -738,11 +683,6 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
     agc_dp_t         term[2];                   /* ALWAYSG push list, B14      */
     agc_interp_t     ip;                        /* interpreter state           */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->filt = r->restarpt; /* LOADSTDT                              */
 
     if (r->geocomp1 > 0)
@@ -792,11 +732,6 @@ agc_status_t agc_job_gyrocompassing_filter(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->restarpt = r->filt; /* STOREDTA                               */
     agc_phase_change(5, 00215);
 
@@ -823,11 +758,6 @@ agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx)
     bool             done = false;           /* torquing already over         */
     agc_dp_t         buf[3];                 /* ERCOMP1, rev 2^0              */
     agc_interp_t     ip;                     /* interpreter state             */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_phase_change(5, 00275);
     agc_interp_init(&ip);
@@ -868,11 +798,6 @@ agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx)
 agc_status_t agc_job_gyrocompassing_torqued(agc_job_ctx_t *ctx)
 {
     bool ok = false; /* torquing ended good                       */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
@@ -1013,11 +938,6 @@ agc_status_t agc_job_gyrocompassing_azimuth_slew(agc_job_ctx_t *ctx)
     prelaunch_ram_t *r    = prelaunch_ram(); /* AINLA overlay */
     bool             done = false;           /* torquing already over         */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->oldazmth     = r->newazmth;                                             /* DCA NEWAZMTH, DXCH OLDAZMTH         */
     r->lengthot     = SLEW_PASSES;                                             /* CA BIT7                             */
     agc_phase_change(5, 00075);
@@ -1055,11 +975,6 @@ agc_status_t agc_job_gyrocompassing_azimuth_slew(agc_job_ctx_t *ctx)
 agc_status_t agc_job_gyrocompassing_azimuth_slewed(agc_job_ctx_t *ctx)
 {
     bool ok = false; /* torquing ended good                       */
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = prelaunch_stall_outcome(&ok); /* status of the call */
 
@@ -1121,11 +1036,6 @@ agc_status_t agc_job_gyrocompass_azimuth_flash(agc_job_ctx_t *ctx)
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_LOADED,
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH};
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1147,19 +1057,9 @@ agc_status_t agc_job_gyrocompass_azimuth_loaded(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->launchaz = agc_rtb_cdulogic(agc_dsky_dsptem(0)); /* STORE LAUNCHAZ */
     r->premtrxc = 0;
     agc_phase_change(4, 00004);
-
-    if (!AGC_ASSERT(r->launchaz >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_dsky_pinbrnch()); /* POSTJUMP PINBRNCH               */
 }

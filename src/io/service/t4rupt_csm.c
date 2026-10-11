@@ -171,11 +171,6 @@ agc_sp_t agc_erase_optind(void)
         return (-1); /* no coarse optics */
     }
 
-    if (!AGC_ASSERT(optind >= AGC_OPTIND_NEG0 && optind <= 1))
-    {
-        return (-1); /* no coarse optics */
-    }
-
     return (optind);
 }
 
@@ -210,11 +205,6 @@ agc_sp_t agc_erase_swsample(void)
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (0); /* manual: no computer control */
-    }
-
-    if (!AGC_ASSERT(swsample >= -1 && swsample <= 1))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) swsample);
@@ -266,11 +256,6 @@ agc_status_t agc_t4_optics_reset(bool fresh)
  **********************************************************************/
 static void ch_clear(int chan, uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= WORD15))
-    {
-        return;
-    }
-
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
 
     if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))

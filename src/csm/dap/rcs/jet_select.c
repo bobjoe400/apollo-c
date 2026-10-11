@@ -548,11 +548,6 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in, agc_csm_jet_out_t *o
 {
     js_work_t w; /* the interrupt temporaries                          */
 
-    if (!AGC_ASSERT((in != NULL) && (out != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT((in->racfail >= -1) && (in->racfail <= 1) && (in->rbdfail >= -1) && (in->rbdfail <= 1)))
     {
         return (AGC_STATUS_BAD_ARG);

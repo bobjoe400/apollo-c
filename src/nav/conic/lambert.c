@@ -635,16 +635,6 @@ static agc_vec_t lambert_initv(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
  *********************************************************************/
 static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_lambert_in_t *in, lambert_state_t *ls)
 {
-    if (!AGC_ASSERT(ip != NULL && ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(in != NULL && ls != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(in->geomsgn != 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -803,16 +793,6 @@ static void lambert_solnsw(agc_lambert_out_t *out, bool set)
  *********************************************************************/
 agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in, agc_lambert_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_conic_ctx_t ctx;                                   /* conic erasables */
     lambert_state_t ls;                                    /* LAMBERT erasables */
     agc_status_t    st = lambert_entry(ip, &ctx, in, &ls); /* entry checks */

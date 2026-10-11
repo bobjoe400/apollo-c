@@ -51,11 +51,6 @@ static const agc_dp_t MUDTMUN = -(agc_dp_t) 95757383;
  * without setting TBASE5.                                                  */
 static void gnufaze5(uint16_t phase, bool tbase)
 {
-    if (!AGC_ASSERT(phase <= 7U))
-    {
-        return;
-    }
-
     agc_phase_newphase(GRP5, phase, tbase);
 }
 
@@ -64,11 +59,6 @@ static void gnufaze5(uint16_t phase, bool tbase)
 void agc_lm_serv_quikfaz5(agc_job_id_t resume)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB, resume, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
-
-    if (!AGC_ASSERT(resume != AGC_JOB_NONE))
-    {
-        return;
-    }
 
     agc_phase_change_var(PH_5_3_BJOB, &v);
 }
@@ -319,11 +309,6 @@ void agc_lm_tmptospt(void)
 /* SERVICER (p.860): restart point GETABVAL, compensation, then GETABVAL.  */
 agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -352,11 +337,6 @@ agc_vec_t agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r)
 {
     agc_avg_g_t *a = &agc_guid_state()->avg;
 
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (agc_vec_zero());
-    }
-
     a->unitr   = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* STODL UNIT/R/ 34D */
     agc_dp_t x = agc_dp_shl(ip, a->rmagsq, 6);              /* SL 6D         */
 
@@ -378,11 +358,6 @@ agc_vec_t agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r)
  *   V1S = GDT1/2 + V(CSM) + G(CSM)                          (m/cs 2^7)   */
 agc_status_t agc_lm_rvboth(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t *g  = agc_guid_state();
     agc_vec_t   gv = agc_vec_add(ip, g->lm.g_csm, g->lm.v_csm); /* VAD V(CSM)    */
     agc_dp_t    dt = agc_dp_div(ip, g->avg.pguide, SHIFT11);    /* DDV SHIFT11   */
@@ -420,11 +395,6 @@ static void rvboth_store(agc_guid_t *g)
  * rotation, m/cs 2^5) and HCALC = |R1S| - /LAND/ (m 2^24).                */
 agc_status_t agc_lm_munrvg(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_t   *g   = agc_guid_state();
     agc_lm_ldg_t *ldg = agc_lm_ldg();
     agc_vec_t     dv8 = agc_vec_scale(ip, agc_erase_delv(), KPIP2_LM); /* 2^8 m/cs   */
@@ -623,11 +593,6 @@ static agc_status_t dvmon(agc_job_ctx_t *ctx)
  * STEERSW cleared before DVMON; IDLEFLAG and AUXFLAG bypass DVMON.        */
 agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -662,11 +627,6 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
 /* DCA AVGEXIT / DXCH Z (p.863).                                            */
 agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit;
 
     if (!AGC_ASSERT(exit_job != AGC_JOB_NONE))
@@ -680,11 +640,6 @@ agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx)
 /* The restart points named by QUIKFAZ5 (one dispatcher, by job id).        */
 agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -766,11 +721,6 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
  * PIPFREE, test connector off, group 5 off and 2.2 on for AVETOMID.      */
 agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -791,11 +741,6 @@ agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
  * reset, AVETOMID, V37FLAG reset, then to OUTROUTE (AVERTRN).            */
 agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -857,11 +802,6 @@ agc_status_t agc_lm_servidle(void)
 /* SERVIDLE as a job (V37 to P00 while SERVICER runs).                      */
 agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -876,11 +816,6 @@ agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
  * Then NORMLIZ2 copies 20 words (not MASS).                               */
 agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

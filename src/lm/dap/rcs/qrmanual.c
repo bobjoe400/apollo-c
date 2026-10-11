@@ -146,11 +146,6 @@ agc_status_t lm_dap_qrminimp(void)
  **********************************************************************/
 static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 {
-    if (!AGC_ASSERT(c >= LM_NEGMAX && c <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT); /* 4(|D| - 1) + LINRAT; MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap); unscaled */
     agc_sp_t lin = lm_dap_mp(k, c).lo;                                      /* CA L: (4|D| + LINRAT) D low word, unscaled */
     agc_sp_t r   = lm_dap_mphi(lin, stiksens);                              /* commanded rate, scaled 45 deg/s */
@@ -180,11 +175,6 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
 static bool beyond(agc_sp_t x, agc_sp_t negdb)
 {
     if (!AGC_ASSERT(negdb <= 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(x >= LM_NEGMAX && x <= LM_POSMAX))
     {
         return (false);
     }

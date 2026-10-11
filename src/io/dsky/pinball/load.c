@@ -69,11 +69,6 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
     pin_state_t         *s       = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z) || !AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_set_dspcount(rnd1[inrel - PIN_INREL_X]);
     s->reqret       = step;
     s->reqret_neg   = true;
@@ -338,11 +333,6 @@ static agc_status_t pin_alldc_oc(int ncomp)
  **********************************************************************/
 static agc_status_t pin_putn(int first, int ncomp)
 {
-    if (!AGC_ASSERT(first >= 0 && first < 3) || !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* status so far */
 
     st            = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
@@ -486,11 +476,6 @@ agc_status_t pin_load_verb(uint8_t verb)
 static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 {
     if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(verb == PIN_VBSP2LD || verb == PIN_VBSP3LD))
     {
         return (AGC_STATUS_BAD_ARG);
     }

@@ -207,11 +207,6 @@ static agc_vec_t mu_sign(agc_vec_t b, bool comp_if_csm)
 {
     bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
 
-    if (!AGC_ASSERT(b.c[0] >= AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     if (csm == comp_if_csm)
     {
         return (agc_vec_neg(b)); /* VCOMP */
@@ -977,11 +972,6 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(2, 04022); /* GRP2PC   */
     agc_interp_t ip;            /* interpreter state */
 
@@ -1035,11 +1025,6 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     mu.x2 = 2; /* earth */
 
     if (agc_flag_test(AGC_FLAG_LMOONFLG))

@@ -82,11 +82,6 @@ static tdv_work_t tdv_work; /* state between the jobs */
  **********************************************************************/
 agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new)
 {
-    if (!AGC_ASSERT(ip != NULL && v_new != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t m; /* LV -> reference rows, unit 2^1 */
 
     m.row[2] = agc_vec_neg(rz_unit(ip, ratt));                     /* 24D */
@@ -151,11 +146,6 @@ static void tdv_moonflag(tdv_work_t *w)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_TRACKFLG);
 
     if (!rz_is_csm())
@@ -185,11 +175,6 @@ agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 84U, AGC_JOB_TARGET_DELTA_V_END, AGC_JOB_TARGET_DELTA_V_TIG, AGC_JOB_TARGET_DELTA_V_DISPLAY));
 }
 
@@ -210,11 +195,6 @@ agc_status_t agc_job_target_delta_v_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 33U, AGC_JOB_TARGET_DELTA_V_END, AGC_JOB_TARGET_DELTA_V_UPDATE, AGC_JOB_TARGET_DELTA_V_TIG));
 }
 
@@ -236,11 +216,6 @@ agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -282,11 +257,6 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -336,11 +306,6 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* INTSTALL */
 
     st = agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
@@ -400,11 +365,6 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_trkmkcnt(0); /* MARKCTR       */
 
     if (rz_is_csm())

@@ -89,11 +89,6 @@ agc_status_t lm_dap_callaccs(void)
  **********************************************************************/
 agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {
-    if (!AGC_ASSERT(a == LM_T5_DAPIDLER || a == LM_T5_PAXIS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lm_dap_state()->t5adr = a;
     agc_rupt_set_t5_task((a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER); /* PAXIS or DAPIDLER */
 

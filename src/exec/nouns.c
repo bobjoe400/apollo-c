@@ -215,11 +215,6 @@ static agc_dp_t *noun_dp(uint16_t id, bool lm)
         p = noun_dp_alignment(id);
     }
 
-    if (!AGC_ASSERT(id < AGC_DATA_COUNT))
-    {
-        return (NULL);
-    }
-
     return (p);
 }
 
@@ -275,11 +270,6 @@ static uint16_t *noun_word(uint16_t id)
  * TREDES, LOOKANGL.                                                       */
 static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
 {
-    if (!AGC_ASSERT(id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (id == AGC_DATA_VHFCNT)
     {
         agc_erase_set_vhfcnt(agc_dp_high(v));
@@ -354,11 +344,6 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
     agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
     agc_dp_t *sin_y = &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
 
-    if (!AGC_ASSERT(value != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (id)
     {
         case AGC_DATA_STARCODE:
@@ -386,11 +371,6 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
  * does not hold. NOT_FOUND: no owner; BAD_ARG: bad arguments.           */
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(data_id > AGC_DATA_NONE && data_id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);

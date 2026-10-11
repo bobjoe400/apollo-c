@@ -92,16 +92,6 @@ static agc_latlong_t g_latlong; /* LAT, LONG, ALT store */
  **********************************************************************/
 static agc_tp_t sum_of_squares(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(a) && agc_navaux_dp_ok(b)))
-    {
-        return (0);
-    }
-
     agc_tp_t a2 = agc_tp_from_dp(agc_dp_sq(ip, a)); /* pushed DP, 2^2s */
 
     return (agc_tp_add(ip, agc_dp_sq_tp(b), a2));
@@ -155,11 +145,6 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
         return (ERAD);
     }
 
-    if (!AGC_ASSERT(agc_navaux_dp_ok(half_sin_lat)))
-    {
-        return (ERAD);
-    }
-
     /* DSQ leaves the TP square in MPAC; SL1 shifts all three words and
      * BDSU then uses the top two (truncation after the shift).            */
     agc_dp_t sin2 = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2, 2^0 */
@@ -191,11 +176,6 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
  **********************************************************************/
 agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (eradm != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(pad->rls)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -239,16 +219,6 @@ agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad
  **********************************************************************/
 agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(sinth) && agc_navaux_dp_ok(costh)))
-    {
-        return (0);
-    }
-
     agc_interp_clear_ovf(ip);                       /* BOV CLROVFLW   */
     agc_tp_t r2 = sum_of_squares(ip, sinth, costh); /* r^2, scale 2^2 */
 
@@ -304,11 +274,6 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
  **********************************************************************/
 agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_vec_t r, agc_dp_t t_cs, agc_latlong_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (out != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(r)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -373,11 +338,6 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_dp_ok(in->lat) && agc_navaux_dp_ok(in->alt)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t     gamrp = agc_latlong_setgamma(opt.lunar); /* GAMRP 2^1 */
     agc_dp_t     clat  = agc_dp_cos(ip, in->lat);         /* scale 2^1 */
     agc_dp_t     slat  = agc_dp_sin(ip, in->lat);         /* scale 2^1 */
@@ -432,16 +392,6 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
  **********************************************************************/
 agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
 {
-    if (!AGC_ASSERT(ll != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(ll->lat) && agc_navaux_dp_ok(ll->lon) && agc_navaux_dp_ok(ll->alt)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     g_latlong.lat = ll->lat;
     g_latlong.lon = ll->lon;
     g_latlong.alt = ll->alt;
@@ -464,16 +414,6 @@ agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
  **********************************************************************/
 agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll)
 {
-    if (!AGC_ASSERT(ll != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(g_latlong.lat)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *ll = g_latlong;
 
     return (AGC_STATUS_OK);

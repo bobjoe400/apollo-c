@@ -29,11 +29,6 @@ static agc_latlong_opt_t latlong_options(void)
  */
 agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->qmaj              = ret; /* STQ QMAJ */
@@ -66,11 +61,6 @@ agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t, agc_job
  * ENTER looks again (or loads a new site).                               */
 agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -85,11 +75,6 @@ agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_landing_site_accepted(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -161,11 +146,6 @@ agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_realign_site_orientation(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 

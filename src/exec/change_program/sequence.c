@@ -46,11 +46,6 @@ static int     mindex;   /* MINDEX: its index in the mode tables       */
 
 uint8_t exec_cp_mmnumber(void)
 {
-    if (!AGC_ASSERT(mmnumber <= 99U))
-    {
-        return (0);
-    }
-
     return (mmnumber);
 }
 
@@ -359,16 +354,6 @@ static agc_status_t cp_nouveau(void)
  * from SERVICER's AVGEND (CSM), or as LM V37RET via OUTROUTE.          */
 agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(mmnumber <= 99U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_CONTINUE, AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
 
     agc_phase_change_var(CP_GROUP4_JOB, &v); /* R00AD; PHASCHNG OCT 14 */
@@ -405,11 +390,6 @@ agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx)
 {
     int                   n = 0;
     const exec_cp_mode_t *t = cp_modes(&n);
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(mindex >= 0 && mindex < n))
     {

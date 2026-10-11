@@ -54,11 +54,6 @@ agc_flag_id_t imu_vflag_lm(imu_vflag_t f)
         0                  /* TARG1FLG: CSM only                        */
     };
 
-    if (!AGC_ASSERT((int) f >= 0 && f < IMU_VF_COUNT))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(ids[IMU_VF_AUTR1FLG] != 0U))
     {
         return (0);

@@ -145,11 +145,6 @@ agc_vehicle_t agc_state_vehicle(void)
  **********************************************************************/
 uint32_t agc_time_now_cs(void)
 {
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return (0);
@@ -199,22 +194,12 @@ void agc_time_set_cs(uint32_t t_cs)
  **********************************************************************/
 void agc_time_advance_cs(uint16_t dt_cs)
 {
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return;
     }
 
     g_time_cs = (g_time_cs + dt_cs) & (AGC_TIME_MODULUS_CS - 1u);
-
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        return; /* wrap arithmetic broke the 28-bit range */
-    }
 }
 
 /**********************************************************************
@@ -227,11 +212,6 @@ void agc_time_advance_cs(uint16_t dt_cs)
  **********************************************************************/
 agc_sp_t agc_erase_time1(void)
 {
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return (0);
@@ -250,11 +230,6 @@ agc_sp_t agc_erase_time1(void)
  **********************************************************************/
 agc_sp_t agc_erase_time2(void)
 {
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(vehicle_ok()))
     {
         return (0);
@@ -712,11 +687,6 @@ agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
     agc_flag_id_t moon_flag = (agc_flag_id_t) AGC_FLAG_MOONFLAG; /* THIS */
 
     if (!AGC_ASSERT(in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((which == AGC_SV_THIS) || (which == AGC_SV_OTHER)))
     {
         return (AGC_STATUS_BAD_ARG);
     }

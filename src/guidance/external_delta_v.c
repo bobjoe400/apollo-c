@@ -308,11 +308,6 @@ agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t v
  **********************************************************************/
 agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz  = agc_rendz_erasable();                     /* RINIT VINIT */
     bool         av  = agc_flag_test(AGC_FLAG_AVFLAG);           /* AVFLAG      */
     bool         cmc = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* COMPUTER flag    */
@@ -345,11 +340,6 @@ agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
  **********************************************************************/
 agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(tdec1 >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -400,11 +390,6 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
  **********************************************************************/
 agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable();                /* targeting erasables */
     agc_status_t st = agc_guid_again(ip, agc_erase_tig()); /* TDEC1 = TIG */
 
@@ -468,11 +453,6 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(enter != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
@@ -530,11 +510,6 @@ static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self, a
  **********************************************************************/
 agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -558,11 +533,6 @@ agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -586,11 +556,6 @@ agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -632,11 +597,6 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -668,11 +628,6 @@ agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -698,11 +653,6 @@ agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -727,11 +677,6 @@ agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -769,11 +714,6 @@ agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

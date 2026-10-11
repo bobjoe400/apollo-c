@@ -885,8 +885,8 @@ def classify_guard(cl, f, g, eva):
     return ' && '.join(texts), ev_v, cls, why
 
 
-def cmd_classify(out_path):
-    with open(INDEX, 'rb') as fh:
+def cmd_classify(out_path, index=INDEX):
+    with open(index, 'rb') as fh:
         data = pickle.load(fh)
     cl = Classifier(data)
     eva = load_eva()
@@ -914,7 +914,8 @@ def main(argv):
     if argv[1] == 'index':
         cmd_index()
     elif argv[1] == 'classify':
-        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'docs', 'overview', 'guards.tsv'))
+        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'docs', 'overview', 'guards.tsv'),
+                     argv[3] if len(argv) > 3 else INDEX)
     return 0
 
 

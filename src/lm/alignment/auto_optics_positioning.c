@@ -33,11 +33,6 @@
  */
 agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->auto_optics_return = ret; /* SAVQR52  */
@@ -56,11 +51,6 @@ agc_status_t agc_lm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id
 /* R52A: flash V01N70; V33 R52B, ENTER (new star code) R52A. */
 agc_status_t agc_job_lm_auto_optics_star_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -95,11 +85,6 @@ static agc_status_t orient_to_star(const agc_job_ctx_t *ctx, uint16_t az, uint16
  */
 agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_3AXISFLG);
 
     /* Detent code (bits 7-9 of STARCODE / AOTCODE). */
@@ -121,11 +106,6 @@ agc_status_t agc_job_lm_auto_optics_orient(agc_job_ctx_t *ctx)
 /* GETAZEL: flash V06N87 (AZ, EL of the sighting device). */
 agc_status_t agc_job_lm_auto_optics_az_el_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -137,11 +117,6 @@ agc_status_t agc_job_lm_auto_optics_az_el_display(agc_job_ctx_t *ctx)
 /* GETAZEL V33: DCA AZ (AZ, EL in SP 2's complement), AZEL. */
 agc_status_t agc_job_lm_auto_optics_az_el_loaded(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_align_ram_t *ram = agc_align_ram();
 
     return (orient_to_star(ctx, ram->az, ram->el));
@@ -150,11 +125,6 @@ agc_status_t agc_job_lm_auto_optics_az_el_loaded(agc_job_ctx_t *ctx)
 /* After PLANET: POINTVSM; the attitude maneuver R60LEM. */
 agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
 
@@ -179,11 +149,6 @@ agc_status_t agc_job_lm_auto_optics_star_located(agc_job_ctx_t *ctx)
  * otherwise GOTO SAVQR52.                                                */
 agc_status_t agc_job_lm_auto_optics_maneuvered(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_align_ram()->starcode & DETENT_BITS) == 0)
     {
         return (agc_job_lm_auto_optics_star_display(ctx));

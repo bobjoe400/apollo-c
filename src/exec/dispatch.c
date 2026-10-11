@@ -76,16 +76,6 @@
  **********************************************************************/
 static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch ((int) ctx->id)
     {
         /* src/csm */
@@ -1160,11 +1150,6 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -2243,11 +2228,6 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch ((int) task)
     {
         /* src/csm */
@@ -2499,11 +2479,6 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
 static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2760,11 +2735,6 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
  **********************************************************************/
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
