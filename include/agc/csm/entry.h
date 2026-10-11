@@ -345,7 +345,7 @@ agc_sp_t agc_erase_aog(void); /* AOG outer gimbal /180, 2s comp  */
 agc_sp_t agc_erase_aig(void); /* AIG inner gimbal                */
 agc_sp_t agc_erase_amg(void); /* AMG middle gimbal               */
 
-/* ---- P37 return to earth (p37.c) ---------------------------------------- */
+/* ---- P37 return to earth (burns/return_to_earth/) ---------------------------------------- */
 agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx); /* P37 */
 
 /* Noun data RTEDVD, RTEGAM2D (N56) of P37; NOT_FOUND for other ids.     */

@@ -96,6 +96,8 @@ def main(argv):
             for f in sorted(files):
                 if f.endswith(('.c', '.h')):
                     low = f.lower()
+                    if re.match(r'^(v|p|r|n)[0-9]{2}([_a-z0-9]*)?\.(c|h)$', low):
+                        HARD.append(f'{os.path.join(dp, f)}: naming: file name carries a program/verb/routine number (docs/NAMING.md)')
                     if any(k in low for k in ('glue', 'shim', '_ext.', 'pending', 'adapter', 'wrapper')) or low == 'ext.h':
                         WARN.append(f'{os.path.join(dp, f)}: scaffolding file (glue/shim/ext/pending); must be gone after integration')
                     check_file(os.path.join(dp, f))

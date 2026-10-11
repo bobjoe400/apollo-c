@@ -291,7 +291,7 @@ agc_job_id_t agc_guid_nav_resume(void);
 void         agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o);
 agc_status_t agc_guid_init(agc_vehicle_t veh); /* fresh start: zero + pad loads */
 
-/* ---- shared targeting (p30.c) ----------------------------------------- */
+/* ---- shared targeting (external_delta_v.c) ----------------------------------------- */
 agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t veh); /* S30.1 */
 agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip);                    /* S31.1 (CM) */
 
@@ -301,7 +301,7 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
 
 agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv); /* MIDGIM (CM) */
 
-/* ---- shared steering math (p40.c) ------------------------------------- */
+/* ---- shared steering math (burn_steering.c) ------------------------------------- */
 agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip, agc_vehicle_t veh); /* S40.1 */
 agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1);                       /* AGAIN (CM) */
 agc_status_t agc_guid_calcut(agc_interp_t *ip);                                      /* CALCUT (CM) */
