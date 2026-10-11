@@ -140,11 +140,6 @@ agc_dp_t agc_latlong_setgamma(bool lunar)
  **********************************************************************/
 agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (ERAD);
-    }
-
     /* DSQ leaves the TP square in MPAC; SL1 shifts all three words and
      * BDSU then uses the top two (truncation after the shift).            */
     agc_dp_t sin2 = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2, 2^0 */
@@ -333,11 +328,6 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pa
  **********************************************************************/
 agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, const agc_latlong_t *in, agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (in != NULL) && (r != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t     gamrp = agc_latlong_setgamma(opt.lunar); /* GAMRP 2^1 */
     agc_dp_t     clat  = agc_dp_cos(ip, in->lat);         /* scale 2^1 */
     agc_dp_t     slat  = agc_dp_sin(ip, in->lat);         /* scale 2^1 */

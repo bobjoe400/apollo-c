@@ -273,11 +273,6 @@ void agc_guid_cdutrig(agc_cdutrig_t *t)
  **********************************************************************/
 void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(cdu_yzx != NULL))
-    {
-        return;
-    }
-
     agc_inhint();
 
     for (int k = 2; k >= 0; k--)
@@ -319,11 +314,6 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *
     for (int dexdex = 3; dexdex >= 1; dexdex--)
     { /* ROTLOOP, DIM DEXDEX */
         int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
-
-        if (!AGC_ASSERT(k >= 0 && k <= 2))
-        {
-            return;
-        }
 
         /* One elementary rotation of AX*SR*T (CM pp.1370-1371, LM pp.1263-1264)
          * about the gimbal axis whose half-sine/half-cosine sit at index d1,
@@ -376,11 +366,6 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *
  **********************************************************************/
 void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
 {
-    if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return;
-    }
-
     agc_guid_axisrot(t, AGC_AXISROT_SMNB, v);
 
     return; /* C*MM*N1: CS THREE */

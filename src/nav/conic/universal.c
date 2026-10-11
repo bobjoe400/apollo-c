@@ -262,7 +262,7 @@ void agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *r2ve
 {
     *r2vec = newstate_position(ip, ctx); /* VSL4 PUSH, ABVAL     */
 
-    agc_tp_words_t m = agc_mpac_sqrt(ip, agc_mpac_vsq(ip, *r2vec)); /* PUSH ABVAL */
+    agc_tp_words_t m = agc_mpac_sqrt(agc_mpac_vsq(ip, *r2vec)); /* PUSH ABVAL */
 
     agc_conic_lamenter_(ip, ctx, m, v2vec);
 }
@@ -286,7 +286,7 @@ void agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *rcv,
 {
     *rcv                        = newstate_position(ip, ctx);                                    /* STORE RCV            */
     int                  n2     = 0;                                                             /* ABVAL, NORM X2 count */
-    agc_tp_words_t       m      = agc_mpac_norm(agc_mpac_sqrt(ip, agc_mpac_vsq(ip, *rcv)), &n2); /* ABVAL NORM X2: |RCV| 2^(29-n2) */
+    agc_tp_words_t       m      = agc_mpac_norm(agc_mpac_sqrt(agc_mpac_vsq(ip, *rcv)), &n2); /* ABVAL NORM X2: |RCV| 2^(29-n2) */
     const agc_dp_words_t rcnorm = agc_mpac_store(m);                                             /* STODL RCNORM, 2^(29-n2) */
 
     *vcv = lamenter_velocity(ip, ctx, rcnorm, n2, true);

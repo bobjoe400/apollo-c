@@ -292,7 +292,7 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);
 
 /* P64CEED */
-agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_approach_phase_proceed(void);
 void         agc_lm_tdispset(void);  /* TDISPSET     */
 agc_sp_t     agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
@@ -304,7 +304,7 @@ agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx);
 
 /* IGNALOOP (INTSTALL retry) */
 agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx); /* IGNALGRT     */
+agc_status_t agc_lm_job_ignalgrt(void); /* IGNALGRT     */
 agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx);  /* ASTNRET      */
 
 /* P63SPOT2 */
@@ -315,7 +315,7 @@ agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx);
 
 /* P63SPOT4 */
 agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry); /* R13 */
+agc_status_t agc_lm_guildenstern(int *entry); /* R13 */
 agc_status_t agc_lm_redesig(agc_interp_t *ip);                          /* REDESIG      */
 
 /* P66VERTA */
@@ -332,26 +332,26 @@ agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx);
 
 /* V06N43 flash */
 agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx); /* after V06N43 PROCEED */
+agc_status_t agc_lm_job_landing_confirmation_proceed(void); /* after V06N43 PROCEED */
 
 /* ---- P70-P71 (aborts.c) ------------------------------------------------ */
 agc_status_t agc_lm_task_abort_monitor(void);          /* R10,R11      */
 agc_status_t agc_lm_abort_monitor_resume(void);        /* R10,R11A     */
-agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx); /* P70          */
-agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx); /* P71          */
+agc_status_t agc_lm_job_dps_abort(void); /* P70          */
+agc_status_t agc_lm_job_aps_abort(void); /* P71          */
 
 /* P70A restart */
-agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_dps_abort_commanded(void);
 
 /* P71A restart */
-agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_aps_abort_commanded(void);
 agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx); /* GOABORT      */
 
 /* UPTHROT1 -3 */
 agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx);
 
 /* UPTHROT1 */
-agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_abort_to_ascent_guidance(void);
 
 /* OLDTIME restart */
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);
@@ -386,7 +386,7 @@ agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx); /* CUTOFF -5    */
 agc_status_t agc_lm_job_cutoff_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx);
+agc_status_t agc_lm_job_termasc(void);
 
 /* ---- LANDING_ANALOG_DISPLAYS (displays.c) ----------------------- */
 agc_status_t agc_lm_landisp(void);

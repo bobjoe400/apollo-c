@@ -216,7 +216,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff); /* TFFRP/RA */
 /* Returned time: cs scale 2^28; NEARONE (AGC_TFF_NEARONE) = no free fall. */
 agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, agc_dp_t *t_cs); /* CALCTFF  */
 agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper, agc_dp_t *t_cs); /* CALCTPER */
-agc_dp_t     agc_tff_poly(agc_interp_t *ip, agc_dp_t x);                                        /* T(X)     */
+agc_dp_t     agc_tff_poly(agc_dp_t x);                                        /* T(X)     */
 
 #define AGC_TFF_NEARONE \
     ((agc_dp_t) 268435455) /* NEARONE 2DEC .999999999, oct 37777 37777 */

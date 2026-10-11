@@ -132,11 +132,6 @@ typedef struct modecadr_word
  **********************************************************************/
 static modecadr_word_t mc_get(int dev)
 {
-    if (!AGC_ASSERT(dev >= 0 && dev < AGC_MODECADR_N))
-    {
-        return ((modecadr_word_t){0}); /* no valid result */
-    }
-
     agc_sp_t        v = agc_erase_modecadr(dev); /* MODECADR +dev, B0 */
     modecadr_word_t w = {MC_FREE, AGC_JOB_NONE};
 
@@ -155,10 +150,6 @@ static modecadr_word_t mc_get(int dev)
     }
     else
     {
-        if (!AGC_ASSERT(v == 0))
-        {
-            return ((modecadr_word_t){0}); /* no valid result */
-        }
     }
 
     return (w);
@@ -243,11 +234,6 @@ static uint16_t notmask(uint16_t m)
 {
     uint16_t r = (uint16_t) (~(unsigned int) m & CDU_MASK); /* CS  */
 
-    if (!AGC_ASSERT((r & m) == 0u))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -311,11 +297,6 @@ static void imodes33_set(uint16_t bits, bool on)
  **********************************************************************/
 static void iss_lamps_write(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= CDU_MASK))
-    {
-        return;
-    }
-
     agc_erase_set_dsptab(11, v);
 
     if (!AGC_ASSERT(agc_erase_dsptab(11) == v))
@@ -353,11 +334,6 @@ static void setissw(void)
      * returns normally in both cases.                                  */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_erase_imodes30() <= CDU_MASK))
     {
         return;
     }
@@ -469,11 +445,6 @@ bool imu_caged(void)
 {
     uint16_t m = agc_erase_imodes30(); /* IMODES30 bits */
 
-    if (!AGC_ASSERT(m <= CDU_MASK))
-    {
-        return (false);
-    }
-
     return ((m & IM30_CAGE) != 0u);
 }
 
@@ -494,11 +465,6 @@ void imu_modeexit(void)
     }
 
     if (!AGC_ASSERT(!agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_erase_modecadr(AGC_IMU_DEV_IMU) >= MC_WORD_BAD))
     {
         return;
     }
@@ -587,16 +553,6 @@ agc_status_t agc_imu_mode_init(void)
         cducmd[i]  = 0;
     }
 
-    if (!AGC_ASSERT(mc_get(0).state == MC_FREE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(outcome[AGC_IMU_DEV_COUNT - 1] == AGC_IMU_STALL_SLEEPING))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -609,11 +565,6 @@ void agc_imu_zeroicdu(void)
     agc_erase_set_cdux(0);
     agc_erase_set_cduy(0);
     agc_erase_set_cduz(0);
-
-    if (!AGC_ASSERT(agc_erase_cdux() == 0u && agc_erase_cduy() == 0u))
-    {
-        return;
-    }
 
     if (!AGC_ASSERT(agc_erase_cduz() == 0u))
     {
@@ -628,11 +579,6 @@ void agc_imu_zeroicdu(void)
 void agc_imu_noattoff(void)
 {
     uint16_t v = agc_erase_dsptab(11); /* DSPTAB +11D lamps */
-
-    if (!AGC_ASSERT(v <= CDU_MASK))
-    {
-        return;
-    }
 
     v = (uint16_t) ((v & notmask(ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED)) | ISS_LAMPS_CHANGED);
     iss_lamps_write(v);
@@ -657,16 +603,6 @@ agc_status_t agc_imu_clear_cmds(void)
 
     agc_imu_hw_set_gyrocmd(0);
 
-    if (!AGC_ASSERT(cducmd[0] == 0 && cducmd[2] == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_imu_gyrocmd() == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -680,16 +616,6 @@ agc_status_t agc_imu_clear_cmds(void)
  **********************************************************************/
 agc_sp_t agc_imu_cducmd(int axis)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(cducmd[axis] >= AGC_SP_MIN))
-    {
-        return (0);
-    }
-
     return (cducmd[axis]);
 }
 
@@ -704,11 +630,6 @@ agc_sp_t agc_imu_cducmd(int axis)
  **********************************************************************/
 agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(pulses >= -COMMAX_ && pulses <= COMMAX_))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1169,16 +1090,6 @@ void agc_imu_rndrefdr(void)
     agc_flag_clear(AGC_FLAG_TRACKFLG);
     agc_flag_clear(AGC_FLAG_DRIFTFLG);
     agc_flag_clear(AGC_FLAG_REFSMFLG);
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_REFSMFLG)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_TRACKFLG) && !agc_flag_test(AGC_FLAG_DRIFTFLG)))
-    {
-        return;
-    }
 }
 
 /* ======================================================================= */
@@ -1256,11 +1167,6 @@ agc_status_t agc_task_imufined(void)
     if (cagetest())
     {
         return (AGC_STATUS_OK);
-    }
-
-    if (!AGC_ASSERT(!imu_caged()))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u))
@@ -1381,11 +1287,6 @@ agc_status_t agc_imu_pipuse(void)
 
     agc_imu_pipa_fail_enable();
 
-    if (!AGC_ASSERT(agc_erase_pipay() == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -1404,13 +1305,6 @@ void agc_imu_pipa_fail_enable(void)
 
     agc_inhint();
     imodes30_clear(IM30_PIPNOTUSED);
-
-    if (!AGC_ASSERT(!imu_caged()))
-    {
-        agc_relint();
-
-        return;
-    }
 
     setissw(); /* PIPFREE2         */
     imu_modeexit();
@@ -1524,11 +1418,6 @@ static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
  **********************************************************************/
 agc_status_t agc_imu_goodend(agc_imu_device_t dev)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = goodend_common(dev, true); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
@@ -1600,11 +1489,6 @@ agc_status_t agc_imu_endimu(void)
 
     agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_IMU); /* status of the call */
 
-    if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* no job woken */
 }
 
@@ -1623,11 +1507,6 @@ static agc_status_t modabort(agc_imu_device_t dev)
 {
     _Static_assert(ALARM_TWO_USERS == 01210, "AGC constant");
     const agc_vehicle_t v = agc_state_vehicle(); /* CM POODOO, LM BAILOUT */
-
-    if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(mc_get((int) dev).state == MC_STALLED)) /* 2nd user */
     {
@@ -1673,12 +1552,6 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_i
 
     if (w.state == MC_FREE)
     { /* MODESLP          */
-        if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
-        {
-            agc_relint();
-
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         mc_set((int) dev, MC_STALLED, wake_as);
         outcome[dev] = AGC_IMU_STALL_SLEEPING;
@@ -1730,11 +1603,6 @@ agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
  **********************************************************************/
 agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
 {
-    if (!AGC_ASSERT(outcome[dev] <= AGC_IMU_STALL_SLEEPING))
-    {
-        return (AGC_IMU_STALL_BAD);
-    }
-
     return (outcome[dev]);
 }
 

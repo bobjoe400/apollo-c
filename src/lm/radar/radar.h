@@ -199,7 +199,7 @@ bool         lmnav_range_ok(void); /* LPS20.2        */
 
 /* R61LEM (r61 = true) / R65LEM: preferred tracking attitude; the job
  * continues as ret_job when done.                                       */
-agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61, agc_job_id_t ret_job);
+agc_status_t lmnav_tracking_attitude(bool r61, agc_job_id_t ret_job);
 
 /* P20LEMWT (+1 with the delay): wait, then R22 or the designate again.  */
 agc_status_t lmnav_wait(uint16_t delay_cs);

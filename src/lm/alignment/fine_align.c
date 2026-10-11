@@ -176,7 +176,7 @@ agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
 }
 
 /* After R52: AOTMARK, then AOTSTALL (CURTAINS on a bad end). */
-agc_status_t agc_job_lm_fine_align_mark(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lm_fine_align_mark(void)
 {
     agc_status_t st = agc_aotmark();
 

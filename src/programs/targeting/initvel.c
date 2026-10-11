@@ -150,11 +150,6 @@ static void iv_rotate(agc_interp_t *ip, iv_work_t *w)
     {
         w->rtarg1 = w->r2vec; /* first pass   */
     }
-
-    if (!AGC_ASSERT(rc >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************

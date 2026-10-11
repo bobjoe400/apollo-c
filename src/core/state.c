@@ -94,11 +94,6 @@ static bool vehicle_ok(void)
  **********************************************************************/
 void agc_state_init(agc_vehicle_t v)
 {
-    if (!AGC_ASSERT((v == AGC_VEHICLE_CSM) || (v == AGC_VEHICLE_LM)))
-    {
-        return;
-    }
-
     g_vehicle = v;
     g_time_cs = 0;
 
@@ -126,11 +121,6 @@ void agc_state_init(agc_vehicle_t v)
  **********************************************************************/
 agc_vehicle_t agc_state_vehicle(void)
 {
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (AGC_VEHICLE_CSM);
-    }
-
     return (g_vehicle);
 }
 
@@ -145,11 +135,6 @@ agc_vehicle_t agc_state_vehicle(void)
  **********************************************************************/
 uint32_t agc_time_now_cs(void)
 {
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (0);
-    }
-
     return (g_time_cs);
 }
 
@@ -172,11 +157,6 @@ void agc_time_set_cs(uint32_t t_cs)
         return;
     }
 
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return;
-    }
-
     g_time_cs = t_cs;
 }
 
@@ -194,11 +174,6 @@ void agc_time_set_cs(uint32_t t_cs)
  **********************************************************************/
 void agc_time_advance_cs(uint16_t dt_cs)
 {
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return;
-    }
-
     g_time_cs = (g_time_cs + dt_cs) & (AGC_TIME_MODULUS_CS - 1u);
 }
 
@@ -212,11 +187,6 @@ void agc_time_advance_cs(uint16_t dt_cs)
  **********************************************************************/
 agc_sp_t agc_erase_time1(void)
 {
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (0);
-    }
-
     return ((agc_sp_t) (g_time_cs & AGC_TIME_FIELD));
 }
 
@@ -230,11 +200,6 @@ agc_sp_t agc_erase_time1(void)
  **********************************************************************/
 agc_sp_t agc_erase_time2(void)
 {
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (0);
-    }
-
     return ((agc_sp_t) ((g_time_cs >> AGC_TIME1_BITS) & AGC_TIME_FIELD));
 }
 
@@ -249,11 +214,6 @@ agc_sp_t agc_erase_time2(void)
 static int words_for_vehicle(void)
 {
     int words = AGC_FLAGWORDS_CSM; /* CSM unless the LM is selected */
-
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (words);
-    }
 
     if (g_vehicle == AGC_VEHICLE_LM)
     {
@@ -282,16 +242,6 @@ bool agc_flag_valid(agc_flag_id_t f)
     const int word = (int) (f >> 4);             /* flagword index n */
     const int bit  = (int) (f & FLAG_BIT_FIELD); /* AGC bit 1..15    */
 
-    if (!AGC_ASSERT(f <= FLAG_ID_MAX))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(words_for_vehicle() <= AGC_FLAGWORDS))
-    {
-        return (false); /* storage smaller than the vehicle's words */
-    }
-
     return ((word < words_for_vehicle()) && (bit >= 1) && (bit <= FLAG_BIT_MAX));
 }
 
@@ -314,11 +264,6 @@ int agc_flag_word(agc_flag_id_t f)
         return (-1);
     }
 
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (-1);
-    }
-
     return ((int) (f >> 4));
 }
 
@@ -337,11 +282,6 @@ int agc_flag_word(agc_flag_id_t f)
 int agc_flag_bit(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (-1);
-    }
-
-    if (!AGC_ASSERT(vehicle_ok()))
     {
         return (-1);
     }
@@ -369,11 +309,6 @@ uint16_t agc_flag_mask(agc_flag_id_t f)
         return (0);
     }
 
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (0);
-    }
-
     return ((uint16_t) (1u << ((f & FLAG_BIT_FIELD) - 1u)));
 }
 
@@ -393,11 +328,6 @@ uint16_t agc_flag_mask(agc_flag_id_t f)
 bool agc_flag_test(agc_flag_id_t f)
 {
     if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(g_flagword[f >> 4] <= AGC_WORD15_MASK))
     {
         return (false);
     }
@@ -537,11 +467,6 @@ uint16_t agc_flagword_get(int word)
         return (0);
     }
 
-    if (!AGC_ASSERT(g_flagword[word] <= AGC_WORD15_MASK))
-    {
-        return (0);
-    }
-
     return (g_flagword[word]);
 }
 
@@ -587,11 +512,6 @@ static agc_flag_id_t other_moon_flag(void)
 {
     agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_LMOONFLG; /* CSM case */
 
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (f);
-    }
-
     if (g_vehicle == AGC_VEHICLE_LM)
     {
         f = (agc_flag_id_t) AGC_FLAG_CMOONFLG;
@@ -625,21 +545,6 @@ static agc_flag_id_t other_moon_flag(void)
  **********************************************************************/
 agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((which == AGC_SV_THIS) || (which == AGC_SV_OTHER)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (which == AGC_SV_THIS)
     {
         out->r    = agc_erase_rn();
@@ -685,16 +590,6 @@ agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
 agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
 {
     agc_flag_id_t moon_flag = (agc_flag_id_t) AGC_FLAG_MOONFLAG; /* THIS */
-
-    if (!AGC_ASSERT(in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(vehicle_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (which == AGC_SV_THIS)
     {

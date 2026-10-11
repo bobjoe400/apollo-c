@@ -169,11 +169,6 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state for NBPOSPL            */
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change(4, PHASE_VERIFY);                        /* PHASCHNG OCT 00154          */
     agc_status_t st = agc_phase_newmode(PRELAUNCH_MM_VERIFY); /* MM 03 */
 
@@ -237,11 +232,6 @@ agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx)
                                   AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH,
                                   AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH};
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, VN_TARGET_NUMBER, &next));
 }
 
@@ -293,11 +283,6 @@ static agc_status_t retarg(void)
     if ((st != AGC_STATUS_OK) || (res == AGC_IMU_STALL_SLEEPING))
     {
         return (st);
-    }
-
-    if (!AGC_ASSERT((res == AGC_IMU_STALL_GOOD) || (res == AGC_IMU_STALL_BAD)))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (agc_exec_job_yield(AGC_JOB_OPTICAL_VERIFICATION_MARKED));
@@ -358,11 +343,6 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
 agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((r->run == 0) || (r->run == RUN_TARGET2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     r->tazel[r->run]     = agc_dsky_dsptem(0); /* DXCH DSPTEM1        */
     r->tazel[r->run + 1] = agc_dsky_dsptem(1); /* INDEX RUN, DXCH     */
@@ -495,21 +475,16 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 {
     const agc_sp_t targ = prelaunch_ram()->targ; /* QPLAC (TARG1/2), B0 */
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_imu_stall_outcome(AGC_IMU_DEV_OPTICS) != AGC_IMU_STALL_GOOD)
     {
         agc_alarm(PRELAUNCH_ALARM_OPTICS); /* GTSOPTCS: ALARM 01602   */
 
-        return (agc_job_optical_verification_end(ctx));
+        return (agc_job_optical_verification_end());
     }
 
     if (agc_flag_test(AGC_FLAG_TRM03FLG))
     {
-        return (agc_job_optical_verification_end(ctx)); /* TC GCOMP5 */
+        return (agc_job_optical_verification_end()); /* TC GCOMP5 */
     }
 
     if (agc_sxtmark_marks_made() <= 0) /* INDEX MARKSTAT, CA QPRET    */
@@ -549,11 +524,6 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
         AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY
     }; /* TCF GCOMP4 */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, VN_GYRO_ANGLES, &cont));
 }
 
@@ -561,12 +531,11 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
  * GCOMP4 +5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.451) -- ERCOMP1 = OGC
  * VAD ERCOMP1 (P02 torques it in), then GCOMP5
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the P03 job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t of GCOMP5
  **********************************************************************/
-agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optical_verification_torque_accepted(void)
 {
     const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
     agc_interp_t           ip;                   /* interpreter state (VAD)         */
@@ -589,19 +558,18 @@ agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
 
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
 
-    return (agc_job_optical_verification_end(ctx)); /* GCOMP5          */
+    return (agc_job_optical_verification_end()); /* GCOMP5          */
 }
 
 /**********************************************************************
  * GCOMP5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.451) -- end of P03:
  * MKRELEAS, TRM03FLG down, MM 02, group 4 off, ENDOFJOB
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the P03 job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- OK (ENDOFJOB)
  **********************************************************************/
-agc_status_t agc_job_optical_verification_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optical_verification_end(void)
 {
     agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS     */
 

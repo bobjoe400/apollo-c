@@ -453,16 +453,13 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
  *
  * FUNCTION NAME: agc_job_rendezvous_tracking_data_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm(void)
 {
     agc_exec_prio_change(TD_PRIO26); /* PRIOCHNG */
 
@@ -518,13 +515,12 @@ static agc_status_t td_wait_for_vhf(void)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_mark(void)
 {
     if (agc_erase_mrkbuf2(0) < 0)
     {
@@ -544,7 +540,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_SOURCFLG, false); /* optics   */
     agc_phase_change(2, 04022);
 
-    return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
+    return (agc_job_rendezvous_tracking_data_csm_incorporate()); /* REND4 */
 }
 
 /**********************************************************************
@@ -558,13 +554,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -573,7 +568,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 
     if (!agc_flag_test(AGC_FLAG_VHFRFLAG) || d < 0)
     {
-        return (agc_job_rendezvous_tracking_data_csm_mark(ctx)); /* REND1A */
+        return (agc_job_rendezvous_tracking_data_csm_mark()); /* REND1A */
     }
 
     agc_inhint();
@@ -607,13 +602,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_range(void)
 {
     agc_status_t st; /* lamp status */
 
@@ -663,7 +657,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_SOURCFLG, true);
     td.vhftime  = rz_marktime();
 
-    return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
+    return (agc_job_rendezvous_tracking_data_csm_incorporate()); /* REND4 */
 } /* agc_job_rendezvous_tracking_data_csm_range */
 
 /**********************************************************************
@@ -786,7 +780,6 @@ static agc_status_t td_integrate(agc_interp_t *ip)
  * ARGUMENTS:
  *   Argument    Type             I/O  Description (scale)
  *   ----------  ---------------  ---  -----------------------------
- *   ctx         agc_job_ctx_t *  I    job context (checked, not used)
  *   ip          agc_interp_t *   I/O  interpreter state (OVFIND)
  *   at_incorp2  bool             I    true: start at REND12 (after a noun
  *                                     49 PROCEED)
@@ -794,7 +787,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
  * RETURNS: agc_status_t -- the status of the next look (WAITONE), the
  *          display, or the step that failed
  **********************************************************************/
-static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at_incorp2)
+static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
 {
     for (int i = 0; i < TD_PASSES; i++)
     {
@@ -830,7 +823,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at_inco
 
             if (big)
             {
-                return (agc_job_rendezvous_tracking_data_csm_display(ctx));
+                return (agc_job_rendezvous_tracking_data_csm_display());
             }
         }
 
@@ -889,13 +882,12 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at_inco
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -921,7 +913,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(agc_job_ctx_t *ctx
     rz_flag_put(AGC_FLAG_RENDWFLG, true); /* REND6    */
     td.rclp = agc_vec_sub(&ip, td.lempos, td.csmpos);
 
-    return (td_passes(ctx, &ip, false));
+    return (td_passes(&ip, false));
 }
 
 /**********************************************************************
@@ -931,16 +923,13 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(agc_job_ctx_t *ctx
  *
  * FUNCTION NAME: agc_job_rendezvous_tracking_data_csm_display
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_display(void)
 {
     td.n49disp[2] = 1; /* optics */
 
@@ -988,16 +977,13 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_tracking_data_csm_residuals_proceed
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
 {
     td.tempor1 = -1;
 
@@ -1010,16 +996,13 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(agc_job_ctx_
  *
  * FUNCTION NAME: agc_job_rendezvous_tracking_data_csm_residuals_recycle
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(void)
 {
     td.tempor1 = 1;
 
@@ -1037,13 +1020,12 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(agc_job_ctx_
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(void)
 {
     if (td.tempor1 == 0)
     {
@@ -1060,7 +1042,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(agc_job_ctx_t *
 
         agc_interp_init(&ip);
 
-        return (td_passes(ctx, &ip, true));
+        return (td_passes(&ip, true));
     }
 
     if (agc_flag_test(AGC_FLAG_SOURCFLG))

@@ -60,11 +60,6 @@ static double clamp_round(double v, double max)
 {
     double r;
 
-    if (!AGC_ASSERT(max > 0.0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(v == v))
     { /* NaN              */
         return (0.0);
@@ -300,11 +295,6 @@ agc_dp_t agc_tp_round_dp(agc_tp_t v)
     agc_ovf_t ovf = 0;                                       /* ROUNDSUB carry out of MPAC */
     agc_w3_t  m   = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
 
-    if (!AGC_ASSERT(m.m2 == 0)) /* ROUNDSUB zeroes  */
-    {
-        return (0); /* no valid result */
-    }
-
     if (ovf != 0)
     {
         return ((ovf > 0) ? AGC_DP_MAX : AGC_DP_MIN); /* saturate */
@@ -394,16 +384,6 @@ agc_tp_words_t agc_tp_to_words(agc_tp_t v)
  **********************************************************************/
 agc_tp_t agc_tp_from_words(agc_tp_words_t m)
 {
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((m.mid >= AGC_SP_MIN) && (m.lo >= AGC_SP_MIN)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w3_value(agc_w3_from_words(m)));
 }
 
@@ -732,11 +712,6 @@ agc_dp_t agc_dp_round(agc_dp_t a)
     o    = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
     p.hi += o;
 
-    if (!AGC_ASSERT((p.hi >= -AGC_W_ONE) && (p.hi <= AGC_W_ONE)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (p.hi > AGC_W_POSMAX)
     {
         p.hi = AGC_W_POSMAX;
@@ -808,11 +783,6 @@ int agc_dp_norm_count(agc_dp_t a)
     agc_dp_t n;         /* a left-justified, scaled 2^-count of a   */
 
     n = agc_dp_norm(a, &count);
-
-    if (!AGC_ASSERT((n < 0) == (a < 0)))
-    {
-        return (0); /* sign lost: no shift */
-    }
 
     return (count);
 }

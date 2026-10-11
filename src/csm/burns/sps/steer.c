@@ -455,13 +455,13 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
 
     agc_phase_change_var((uint16_t) 005021, &v);
 
-    return (agc_job_endlamb(ctx));
+    return (agc_job_endlamb());
 }
 
 /* ENDLAMB / FIRSTTME (p.724): after the first pass BDT = (VIPRIME -
  * VRPREV) 2 s / (TNIT - TNITPREV) - GDT/2 (VSL1); about the earth VGTEMP +=
  * GOBL/2 (PIPTIME - NOMTIG) EARTHMU / RN^2. Then 1 type C at COPY40.9.    */
-agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
+agc_status_t agc_job_endlamb(void)
 {
     agc_guid_t  *g  = agc_guid_state();
     agc_rendz_t *rz = agc_rendz_erasable();
@@ -492,12 +492,12 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
 
     agc_phase_change_var((uint16_t) 004021, &v);
 
-    return (agc_job_copy40_9(ctx));
+    return (agc_job_copy40_9());
 }
 
 /* COPY40.9 / ENDS40.9 (p.724-725): TNITPREV = TNIT, VRPREV = VIPRIME,
  * FIRSTFLG reset, NBRCYCLS = -1 (next UPDATEVG sets up S40.9), group 1 off. */
-agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
+agc_status_t agc_job_copy40_9(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -517,7 +517,7 @@ agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx)
 }
 
 /* REDO40.9 (p.725): restart of S40.9: give up this pass, keep VGPREV.     */
-agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
+agc_status_t agc_job_redo40_9(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -538,7 +538,7 @@ agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx)
 
 /* S40.13 job (p.726-728): TIMEBURN with the present mass, then group 3 off.
  * +X translation: channel 31 bit 7 reads 0 (inverted input).              */
-agc_status_t agc_job_timeburn_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_timeburn_csm(void)
 {
     agc_guid_t             *g   = agc_guid_state();
     const agc_csm_dapcom_t *com = agc_csm_dap_com();

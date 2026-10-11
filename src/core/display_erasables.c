@@ -12,16 +12,6 @@
 
 #define EW15_MAX 077777u /* a raw 15-bit AGC word */
 
-static bool dp_ok(agc_dp_t v)
-{
-    return ((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
-}
-
-static bool sp_ok(agc_sp_t v)
-{
-    return ((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
-}
-
 /* OPTION1 +0..+2 = OPTION1, OPTION2, OPTION3 (noun 06), octal words.     */
 static agc_sp_t g_option[3];
 
@@ -65,30 +55,15 @@ void agc_erase_reset_display(void)
     g_t3tot4   = 0;
     g_rr_az    = 0;
     g_rr_elev  = 0;
-
-    if (!AGC_ASSERT(g_samptime == 0 && g_trkmkcnt == 0))
-    {
-        return;
-    }
 }
 
 agc_sp_t agc_erase_option1(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 2))
-    {
-        return (0);
-    }
-
     return (g_option[index - 0]);
 }
 
 void agc_erase_set_option1(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 2))
-    {
-        return;
-    }
-
     g_option[index - 0] = v;
 }
 

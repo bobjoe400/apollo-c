@@ -140,11 +140,6 @@ static agc_status_t entry_flash(agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_
  **********************************************************************/
 static agc_status_t entry_mode(agc_entry_state_t *es, agc_sp_t mm, uint8_t verb, uint8_t noun)
 {
-    if (!AGC_ASSERT(es != NULL) || !AGC_ASSERT(mm >= 61 && mm <= 67))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     es->entry_verb = verb;
     es->entry_noun = noun;
 
@@ -236,7 +231,7 @@ agc_status_t agc_job_entry_preparation_target_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect(ctx) : st); /* P61.3 */
+    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect() : st); /* P61.3 */
 }
 
 /**********************************************************************
@@ -244,17 +239,13 @@ agc_status_t agc_job_entry_preparation_target_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_entry_display_protect
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_entry_display_protect(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_display_protect(void)
 {
     if (!AGC_ASSERT(agc_entry_state() != NULL))
     {
@@ -547,7 +538,7 @@ agc_status_t agc_job_cm_sm_separation_request(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect(ctx) : st); /* P61.3 */
+    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect() : st); /* P61.3 */
 }
 
 /**********************************************************************
@@ -737,11 +728,6 @@ agc_status_t agc_job_entry_initialization(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t entry_post_0_05g(agc_entry_state_t *es)
 {
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG__05GSW)))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -779,11 +765,6 @@ agc_status_t entry_upcontrol(agc_entry_state_t *es)
     agc_phase_change2(000554, 010035, &v);
     es->gotoaddr = AGC_ENTRY_GOTO_UPCONTRL;
 
-    if (!AGC_ASSERT(es->gotoaddr == AGC_ENTRY_GOTO_UPCONTRL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -814,7 +795,7 @@ agc_status_t agc_job_entry_upcontrol_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect(ctx) : st); /* P61.3 */
+    return ((st == AGC_STATUS_OK) ? agc_job_entry_display_protect() : st); /* P61.3 */
 }
 
 /**********************************************************************
@@ -822,17 +803,13 @@ agc_status_t agc_job_entry_upcontrol_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_entry_upcontrol_proceed
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_entry_upcontrol_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_upcontrol_proceed(void)
 {
     agc_flag_set(AGC_FLAG_ENTRYDSP);
 
@@ -859,11 +836,6 @@ agc_status_t agc_job_entry_upcontrol_proceed(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t entry_disable_restart_group(void)
 {
-    if (!AGC_ASSERT(agc_entry_state() != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     _Static_assert(AGC_RESTART_GROUPS >= 4, "AGC constant");
     agc_phase_change(4, 000004);
 
@@ -923,11 +895,6 @@ agc_status_t entry_final_phase(agc_entry_state_t *es)
 {
     agc_status_t st = entry_mode(es, 67, 6, 66); /* NEWMODEX status */
 
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_ENTRYDSP);
 
     if (!AGC_ASSERT(es->entry_noun == 66)) /* ENTRYVN for OVERNOUT */
@@ -969,17 +936,13 @@ agc_status_t agc_job_entry_final_phase_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_entry_final_phase_end
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_entry_final_phase_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_final_phase_end(void)
 {
     agc_inhint();
     agc_flag_clear(AGC_FLAG_CM_DSTBY);
@@ -1015,11 +978,6 @@ agc_status_t agc_entry_final_phase_latlong(void)
     agc_latlong_t           ll;                      /* LAT LONG ALT of RN */
     agc_status_t            st;                      /* status */
 
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_flag_clear(AGC_FLAG_LUNAFLAG);
     st = agc_navaux_get_padload(&pad);
@@ -1034,11 +992,6 @@ agc_status_t agc_entry_final_phase_latlong(void)
         es->lat = ll.lat;
         es->lng = ll.lon;
         es->alt = ll.alt;
-    }
-
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || agc_dp_abs(es->lat) <= AGC_DP_QUARTER))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -1085,17 +1038,13 @@ static agc_status_t imu_check_return(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_entry_imu_check_extrapolated
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_entry_imu_check_extrapolated(agc_job_ctx_t *ctx)
+agc_status_t agc_job_entry_imu_check_extrapolated(void)
 {
     agc_integ_midtoav_out_t out;                          /* MIDTOAV2 outputs */
     agc_avg_g_t            *avg = &agc_guid_state()->avg; /* average-G data (RN1, VN1) */
@@ -1165,7 +1114,7 @@ agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_entry_imu_check_extrapolated(ctx));
+    return (agc_job_entry_imu_check_extrapolated());
 }
 
 /**********************************************************************
@@ -1319,11 +1268,6 @@ agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t, agc_dp_t *cdel
 {
     agc_dp_t m; /* MPAC, B1 */
 
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     m       = agc_dp_add(ip, agc_dp_shr(t->tffx, 1), AGC_DP_HALF);
     m       = agc_dp_mul_trunc(agc_dp_mul_trunc(m, t->nrmag), t->nrterm);
     m       = agc_dp_div(ip, t->tfftem, m);
@@ -1465,11 +1409,6 @@ agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm, agc_
     s         = agc_dp_sqrt(ip, agc_dp_sub(ip, agc_dp_div(ip, d, prod), t->tffvsq));
     *vgam     = agc_dp_div(ip, s, t->rtmu);
     d         = agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp), agc_dp_mul_trunc(s, t->nrterm));
-
-    if (!AGC_ASSERT(s >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_acos(ip, agc_dp_shr(d, 1)));
 }
@@ -1673,11 +1612,6 @@ agc_status_t agc_entry_desired_gimbal_angles(void)
     agc_status_t       st;                                                  /* CALCGA status */
     int                i;                                                   /* loop index */
 
-    if (!AGC_ASSERT(ip != NULL && es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     nb.row[1] = agc_vec_add(ip, agc_vec_scale(ip, es->uya, agc_dp_cos(ip, es->rollc)), agc_vec_scale(ip, es->uza, agc_dp_sin(ip, es->rollc)));
     nb.row[1] = agc_vec_shl(ip, nb.row[1], 1); /* YNB */
     nb.row[0] = agc_vec_shl(ip, agc_vec_cross(ip, nb.row[1], es->uxa), 1);
@@ -1692,11 +1626,6 @@ agc_status_t agc_entry_desired_gimbal_angles(void)
         int32_t w = (int32_t) (cdu[i] & 077777u); /* CDU pattern */
 
         es->cphi[i] = (agc_sp_t) ((w >= 16384) ? w - 32768 : w); /* /180 */
-    }
-
-    if (!AGC_ASSERT(es->cphi[0] >= -16384))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);

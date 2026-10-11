@@ -69,25 +69,10 @@ void agc_relint(void)
     {
         inhint_depth--;
     }
-
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return;
-    }
 }
 
 bool agc_interrupts_inhibited(void)
 {
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(inhint_depth <= RUPT_MAX_DEPTH))
-    {
-        return (false);
-    }
-
     return (inhint_depth > 0);
 }
 
@@ -102,11 +87,6 @@ void rupt_reset_timers(void)
 uint16_t agc_rupt_time(int n)
 {
     uint16_t v = (n == 4) ? time4 : ((n == 5) ? time5 : time6);
-
-    if (!AGC_ASSERT(v <= RUPT_TIME_MASK))
-    {
-        return (0);
-    }
 
     return (v);
 }
@@ -140,37 +120,17 @@ void agc_rupt_set_time(int n, uint16_t v)
 /* DXCH T5LOC (CSM) / T5ADR (LM): the program the next T5RUPT runs.    */
 void agc_rupt_set_t5_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return;
-    }
-
     t5loc = task;
-
-    if (!AGC_ASSERT(t5loc == task))
-    {
-        return;
-    }
 }
 
 agc_task_id_t agc_rupt_t5_task(void)
 {
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return (AGC_TASK_NONE);
-    }
-
     return (t5loc);
 }
 
 /* T6LOC (CSM only; the LM T6RUPT always goes to DOT6RUPT).            */
 void agc_rupt_set_t6_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return;
-    }
-
     t6loc = task;
 }
 

@@ -124,7 +124,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_keple
 
     if (!agc_conic_mbmn_(m))
     { /* BPL 1REV       */
-        m = agc_mpac_sqrt(ip, m);
+        m = agc_mpac_sqrt(m);
         m = agc_mpac_bddv(ip, m, AGC_CONIC_2PISC); /* BDDV 2PISC     */
         agc_interp_clear_ovf(ip);                  /* BOV STOREMAX   */
     }
@@ -134,7 +134,7 @@ static void kepler_setup(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_keple
 
         if (!agc_interp_test_ovf(ip))
         { /* BOV STOREMAX   */
-            m = agc_mpac_sqrt(ip, m);
+            m = agc_mpac_sqrt(m);
         }
     }
 
@@ -437,11 +437,6 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, kepler_
  *********************************************************************/
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_kepler_out_t *out)
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_conic_ctx_t ctx;                                      /* conic erasables */
     agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* VLOAD* MUTABLE,1 */
 
@@ -574,16 +569,11 @@ static agc_dp_words_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in
  *********************************************************************/
 agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew)
 {
-    if (!AGC_ASSERT(in->body == AGC_CONIC_EARTH || in->body == AGC_CONIC_MOON))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_words_t cell[KEPPREP_CELLS]; /* push-down cells, 2^N per kepprep_cell */
     agc_dp_t       r = 0;               /* 36D |R| from UNIT, 2^29 / 2^27 m */
 
     cell[KEPPREP_MU]     = agc_conic_mu_(in->body);                                             /* DLOAD* MUEARTH,2 */
-    cell[KEPPREP_ROOTMU] = agc_mpac_store(agc_mpac_sqrt(ip, agc_mpac_dload(cell[KEPPREP_MU]))); /* SQRT */
+    cell[KEPPREP_ROOTMU] = agc_mpac_store(agc_mpac_sqrt(agc_mpac_dload(cell[KEPPREP_MU]))); /* SQRT */
     agc_vec_t ur         = agc_vec_unit(ip, in->rrect, &r, NULL);                               /* UNIT RCV, 2^1 */
     int       n1         = 0;                                                                   /* NORM X1 count of |R| */
     int       n2         = 0;                                                                   /* NORM S1 count of TAU.-TC */

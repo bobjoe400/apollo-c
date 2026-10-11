@@ -107,11 +107,6 @@ agc_status_t agc_entry_cm_pose_triad(void)
     agc_vec_t          uy;                            /* UNIT(UNITR x UXA), B1 */
     agc_dp_t           vmag = 0;                      /* |VREL|, 2VS B1 */
 
-    if (!AGC_ASSERT(es != NULL) || !AGC_ASSERT(avg != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     w         = agc_vec_scale(ip, agc_vec_cross(ip, avg->unitw, avg->unitr), AGC_ENTRY_KWE);
     es->mvrel = agc_vec_add(ip, w, agc_vec_scale(ip, agc_erase_vn(), AGC_ENTRY_MKVSCALE));
     es->uxa   = agc_vec_unit(ip, es->mvrel, &vmag, NULL); /* LXA,1 36D  */
@@ -126,11 +121,6 @@ agc_status_t agc_entry_cm_pose_triad(void)
 
     es->uya = es->olduya; /* CM/POSE2  */
     es->uza = agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
-
-    if (!AGC_ASSERT(vmag >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -161,11 +151,6 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     agc_dp_t           s;                      /* sine term, B2 */
     agc_dp_t           c;                      /* cosine term, B2 */
 
-    if (!AGC_ASSERT(angles != NULL) || !AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
      * from the PIP-time gimbal angles and REFSMMAT. */
     agc_mat_t refsmmat = agc_erase_refsmmat();                        /* REFSMMAT, half-unit rows */
@@ -184,11 +169,6 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     agc_dp_t co = agc_dp_cos(ip, aog); /* COS AOG /2, B1 */
 
     agc_vec_t uby; /* YB/4 platform, B2 */
-
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(agc_dp_abs(co) <= AGC_DP_HALF))
     {

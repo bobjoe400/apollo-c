@@ -101,7 +101,7 @@ agc_status_t agc_job_planet_flash(agc_job_ctx_t *ctx)
 }
 
 /* PLANET: V33 on V06N88 (vector loaded in STARSAV3 / STARAD). */
-agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
+agc_status_t agc_job_planet_loaded(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {
@@ -112,7 +112,7 @@ agc_status_t agc_job_planet_loaded(agc_job_ctx_t *ctx)
 }
 
 /* PLANET: resumed after waiting for the integration (LOCSAM). */
-agc_status_t agc_job_planet_resume(agc_job_ctx_t *ctx)
+agc_status_t agc_job_planet_resume(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->planet_ret != AGC_JOB_NONE))
     {

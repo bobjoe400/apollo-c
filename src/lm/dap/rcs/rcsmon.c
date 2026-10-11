@@ -82,21 +82,6 @@ agc_status_t agc_lm_dap_rcsmon(void)
         }
     }
 
-    if (!AGC_ASSERT(change != 0u && change <= RM_LOW8))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(l >= 0 && l < RM_NBITS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t bit = (uint16_t) (0200u >> l); /* the changed switch bit */
 
     if ((d->pvalvest & bit) != 0u)
@@ -110,11 +95,6 @@ agc_status_t agc_lm_dap_rcsmon(void)
         d->ch5mask  = (uint16_t) (d->ch5mask | fail5[l]);
         d->ch6mask  = (uint16_t) (d->ch6mask | fail6[l]);
         d->pvalvest = (uint16_t) (d->pvalvest | bit);
-    }
-
-    if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (lm_dap_accfix()); /* 1/ACCFIX           */

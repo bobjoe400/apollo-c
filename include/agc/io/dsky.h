@@ -274,24 +274,24 @@ agc_status_t agc_dsky_initdsp(void);          /* INITDSP (.1 restarts)     */
 
 /* ---- executive entry points owned by pinball (dispatch.c calls these) */
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx);   /* CHARIN              */
-agc_status_t agc_job_prockey(agc_job_ctx_t *ctx);  /* PROCKEY             */
-agc_status_t agc_job_mondo(agc_job_ctx_t *ctx);    /* MONDO               */
+agc_status_t agc_job_prockey(void);  /* PROCKEY             */
+agc_status_t agc_job_mondo(void);    /* MONDO               */
 agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx);  /* DSPMMJB             */
-agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx);  /* TSTLTS3             */
+agc_status_t agc_job_tstlts3(void);  /* TSTLTS3             */
 agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx); /* MAKEPLAY (R kinds)  */
-agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx); /* PLAYJUM1            */
-agc_status_t agc_job_markplay(agc_job_ctx_t *ctx); /* MARKPLAY            */
-agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx); /* REDOPRIO            */
-agc_status_t agc_job_termate(agc_job_ctx_t *ctx);  /* TERMATE  (ENDIDLE+1) */
-agc_status_t agc_job_proceed(agc_job_ctx_t *ctx);  /* PROCEED  (ENDIDLE+2) */
+agc_status_t agc_job_playjum1(void); /* PLAYJUM1            */
+agc_status_t agc_job_markplay(void); /* MARKPLAY            */
+agc_status_t agc_job_redoprio(void); /* REDOPRIO            */
+agc_status_t agc_job_termate(void);  /* TERMATE  (ENDIDLE+1) */
+agc_status_t agc_job_proceed(void);  /* PROCEED  (ENDIDLE+2) */
 agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx); /* IDLERET1+2 (ENDIDLE+3) */
-agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx);  /* JAMTERM via FINDVAC */
+agc_status_t agc_job_jamterm(void);  /* JAMTERM via FINDVAC */
 
 /* XCHSLEEP, FACEREG 0 (mark) */
-agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_xchsleepm(void);
 
 /* XCHSLEEP, FACEREG 1 (normal) */
-agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx);
+agc_status_t agc_job_xchsleepn(void);
 agc_status_t agc_task_monreq(void);  /* MONREQ  (waitlist)  */
 agc_status_t agc_task_tstlts2(void); /* TSTLTS2 (waitlist)  */
 

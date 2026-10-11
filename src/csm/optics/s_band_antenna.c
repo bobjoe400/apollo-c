@@ -27,26 +27,11 @@ static agc_dp_t gammasb; /* GAMMASB (= RHOSB +2) N51 yaw, revs           */
 
 agc_dp_t agc_sband_rhosb(void)
 {
-    if (!AGC_ASSERT(rhosb >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(rhosb <= AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rhosb);
 }
 
 agc_dp_t agc_sband_gammasb(void)
 {
-    if (!AGC_ASSERT(gammasb >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (gammasb);
 }
 
@@ -198,7 +183,7 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 }
 
 /* TC B5OFF (terminate / proceed of the N51 display), both vehicles. */
-agc_status_t agc_job_sband_b5off(agc_job_ctx_t *ctx)
+agc_status_t agc_job_sband_b5off(void)
 {
     const agc_status_t st = agc_svc_b5off();
 

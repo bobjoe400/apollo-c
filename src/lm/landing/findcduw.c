@@ -135,11 +135,6 @@ static agc_sp_t fc_wrap15(int32_t d)
         w -= 0x8000;
     }
 
-    if (!AGC_ASSERT(w >= -16384 && w <= 16383))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) w);
 }
 
@@ -202,11 +197,6 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
 {
     uint16_t w = (uint16_t) ((int32_t) a & 0x7FFF); /* 15-bit two's complement word */
 
-    if (!AGC_ASSERT(w <= 0x7FFFu))
-    {
-        return (0); /* no valid result */
-    }
-
     return (w);
 }
 
@@ -223,11 +213,6 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
  **********************************************************************/
 agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
 {
-    if (!AGC_ASSERT(limit > 0))
-    {
-        return (0);
-    }
-
     if (x >= limit)
     {
         return (limit);
@@ -252,11 +237,6 @@ agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
  **********************************************************************/
 agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 {
-    if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t sr = (agc_sp_t) (x / 2);        /* TS SR: x/2, scale 2^1 */
     agc_sp_t x2 = agc_lm_mp_hi(x, x);        /* MP A, TS TEM1: x^2, scale 2^0 */
     agc_sp_t p  = agc_lm_mp_hi(x2, FC_DPL9); /* Horner sum, scale 2^0 */
@@ -265,11 +245,6 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
     p          = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL5), x2);
     p          = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL3), x2);
     agc_sp_t r = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL1), sr); /* arcsin(x), half-revolutions 2^0 */
-
-    if (!AGC_ASSERT(r >= -8192 && r <= 8192))
-    {
-        return (0); /* no valid result */
-    }
 
     return (r);
 }
@@ -297,11 +272,6 @@ agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x2)
         d = AGC_SP_MIN;
     }
 
-    if (!AGC_ASSERT(d >= AGC_SP_MIN && d <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_lm_sparcsin((agc_sp_t) d));
 }
 
@@ -318,11 +288,6 @@ agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x2)
  **********************************************************************/
 agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 {
-    if (!AGC_ASSERT(s >= AGC_SP_MIN && c >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     if (s == 0)
     { /* SINZERO           */
         return ((c >= 0) ? 0 : FC_NEGMAX_2S); /* SINZERO: 0 or pi */
@@ -350,11 +315,6 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
     agc_sp_t a = agc_lm_sparcsin_doubled(sn);   /* arcsin(sn), 2's scale pi */
     agc_sp_t r = fc_wrap15((int32_t) a - base); /* MSU TEM3: angle, 2's, scale pi */
 
-    if (!AGC_ASSERT(r >= -16384 && r <= 16383))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 } /* agc_lm_arctrgsp */
 
@@ -375,22 +335,12 @@ static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
     agc_sp_t hi   = agc_dp_high(op);          /* high word of op, 2^1 */
     int32_t  diff = (int32_t) tem5 - abs(hi); /* TEM5 - |high word|, 2^0 */
 
-    if (!AGC_ASSERT(tem5 >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (diff <= 0)
     {
         return ((agc_sp_t) diff); /* TSL&TCQ           */
     }
 
     agc_sp_t q = agc_lm_dv(op, tem5); /* op / cos(MGA), 2^1 */
-
-    if (!AGC_ASSERT(q >= AGC_SP_MIN && q <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (q);
 }
@@ -441,11 +391,6 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
 
     cdu[0] = agc_lm_arctrgsp((agc_sp_t) -sx, cx); /* CDUX             */
 
-    if (!AGC_ASSERT(cdu[0] >= -16384 && cdu[1] >= -16384 && cdu[2] >= -16384))
-    {
-        return (AGC_STATUS_BAD_ARG); /* not reached: 2's complement words */
-    }
-
     return (AGC_STATUS_OK);
 } /* fc_nb2cdusp */
 
@@ -464,21 +409,11 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
  **********************************************************************/
 static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
 {
-    if (!AGC_ASSERT(fc_ndxcduw == 0 || fc_ndxcduw == 1))
-    {
-        return (orig);
-    }
-
     agc_sp_t err  = agc_lm_ad(meas, (agc_sp_t) -orig);          /* error, 2^1    */
     agc_sp_t incr = agc_lm_mp_hi(err, fc_gainfltr[fc_ndxcduw]); /* 2^1 */
 
     incr           = agc_lm_limitsub(incr, FC_DUNFVLIM);
     agc_sp_t total = agc_lm_limitsub(agc_lm_ad(incr, orig), FC_UNFVLIM); /* new offset, 2^1 */
-
-    if (!AGC_ASSERT(total >= -FC_UNFVLIM && total <= FC_UNFVLIM))
-    {
-        return (orig);
-    }
 
     return (total);
 }
@@ -505,11 +440,6 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
     }
 
     fc_flagoodw = 0; /* SSP FLAGOODW 0   */
-
-    if (!AGC_ASSERT(fc_flagoodw == 0))
-    {
-        return (false);
-    }
 
     return (false);
 }
@@ -556,11 +486,6 @@ void agc_lm_initcduw(void)
     {
         return;
     }
-
-    if (!AGC_ASSERT(agc_lm_ldg()->unwc_2.c[1] == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -592,16 +517,6 @@ static void fc_fetch_basic(uint16_t yzx[3])
     }
 
     agc_relint();
-
-    if (!AGC_ASSERT(fc_ndxcduw == 0 || fc_ndxcduw == 1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(yzx[0] <= 0x7FFFu && yzx[2] <= 0x7FFFu))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -643,10 +558,6 @@ static agc_status_t fc_noattcnt(bool alarm)
 static void fc_gimbal_changes(agc_sp_t cdu[3])
 {
     /* Value of a two's complement word when the AGC reads it as ones'. */
-    if (!AGC_ASSERT(cdu[2] >= -16384))
-    {
-        return;
-    }
 
     agc_sp_t cduz_1s = cdu[2]; /* CDUZ read as ones' complement, scale pi */
 
@@ -658,10 +569,6 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
     agc_sp_t lim = agc_lm_limitsub(cduz_1s, FC_CDUZDLIM); /* 1's, scale pi */
 
     /* Value of a ones' complement word when the AGC reads it as two's. */
-    if (!AGC_ASSERT(lim >= AGC_SP_MIN))
-    {
-        return;
-    }
 
     agc_sp_t limited = lim; /* back to two's complement, scale pi */
 
@@ -695,12 +602,6 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
         l            = fc_delgmb[i];
     }
 
-    if (!AGC_ASSERT(fc_delgmb[0] >= AGC_SP_MIN))
-    {
-        agc_relint();
-
-        return;
-    }
 } /* fc_gimbal_changes */
 
 /**********************************************************************

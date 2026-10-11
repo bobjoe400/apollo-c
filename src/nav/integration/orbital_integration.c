@@ -124,11 +124,6 @@ agc_status_t agc_integ_set_lunar_coeffs(agc_sp_t j22, agc_sp_t c31)
 /* MUEARTH - X2: the mu of earth (0), moon (2) or sun (4).               */
 agc_dp_t agc_integ_mu(int x2)
 {
-    if (!AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == 4)))
-    {
-        return (MU_TAB[0]);
-    }
-
     return (MU_TAB[x2 / 2]);
 }
 
@@ -195,11 +190,6 @@ static agc_tp_t tp_norm(agc_interp_t *ip, agc_tp_t v, int *n)
 /* SETMOON / CLRMOON (p. 1315): MOONFLAG and PBODY together.             */
 agc_status_t agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_put(AGC_FLAG_MOONFLAG, moon);
     ctx->pbody = moon ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH;
 
@@ -253,11 +243,6 @@ void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
  */
 agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_kepler_in_t in;
 
     in.rrect          = ctx->sv.rcv;
@@ -325,11 +310,6 @@ static agc_status_t advance_conic_half_step(agc_interp_t *ip, agc_integ_ctx_t *c
  * integration is hopeless: POODOO 00430.                                 */
 static agc_integ_next_t gobaque(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     if (agc_vec_abval(ip, ctx->sv.deltav) == 0)
     {
         return (INTEG_NEXT_ABORT); /* POODOO INT-ABRT, raised by the driver */
@@ -415,11 +395,6 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
 {
     gam_work_t g;
 
-    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N) && ((x1 % 2) == 0)) || !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == 4)))
-    {
-        return (true);
-    }
-
     /* GAMCOMP first half (p. 1338-1339): normalised B^2, BETAV -> unit,
      * BETAM = |BETAV|, rho = ALPHAM / BETAM.                                */
     int      n2 = 0;
@@ -436,16 +411,6 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
     g.rho_q    = agc_dp_shr_round(agc_dp_div(ip, am, bm), 1); /* BDDV SR1R  */
     g.xs       = ASCALE_S1[x1 / 2] - n2 + n3;                 /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
     g.rho      = agc_integ_dshift(ip, g.rho_q, 1 + g.xs);     /* SR* 0 -1,2  */
-
-    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N)))
-    {
-        return (true);
-    }
-
-    if (!AGC_ASSERT(ctx->betam >= 0))
-    {
-        return (true);
-    }
 
     agc_dp_t       pd6 = agc_dp_shr_round(g.rho, 1); /* 6D   */
     const agc_dp_t dot = agc_dp_shl_round(ip, agc_vec_dot(ip, ctx->alphav, ctx->betav), 1);
@@ -649,11 +614,6 @@ static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, cons
 {
     const int b = ctx->pbody / 2;
 
-    if (!AGC_ASSERT((b == 0) || (b == 1)))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     if (!AGC_ASSERT(ctx->alpham > 0))
     {
         return (agc_vec_zero()); /* no valid result */
@@ -680,11 +640,6 @@ static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, cons
 static agc_vec_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
 {
     const agc_vec_t u = w->urpv;
-
-    if (!AGC_ASSERT(w->r4n >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     agc_dp_t t = agc_dp_sub(ip, agc_dp_sq(ip, u.c[1]), agc_dp_sq(ip, u.c[0]));
 
@@ -804,11 +759,6 @@ static acc_result_t accomp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
 
-    if (!AGC_ASSERT((ctx->stage >= 0) && (ctx->stage <= 2)) || !AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
-    {
-        return (ACC_FAIL);
-    }
-
     ctx->fv    = agc_vec_zero();
     ctx->betav = agc_vec_add(ip, agc_vec_shr(ctx->alphav, 7 + p), ctx->sv.rcv);
 
@@ -861,16 +811,6 @@ static agc_vec_t body_gravity_gradient(agc_interp_t *ip, const agc_integ_ctx_t *
 
     g = agc_vec_scale(ip, g, k);
 
-    if (!AGC_ASSERT(rmag >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(ctx->betam > 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (agc_integ_vshift(ip, g, (3 * n) + m - 8)); /* 0 -8D,2 */
 }
 
@@ -879,16 +819,6 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
     const int k = ctx->stage;
-
-    if (!AGC_ASSERT((k >= 0) && (k <= 2)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
-    {
-        return;
-    }
 
     ctx->betam = agc_integ_mu(p); /* MUEARTH,2   */
     ctx->fv    = body_gravity_gradient(ip, ctx, ctx->vectab[2 * k]);
@@ -916,11 +846,6 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* DIFEQ0 (p. 1345): ALPHAV = YV, DIFEQCNT = 0, H = 0.                    */
 static void nystrom_start(agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return;
-    }
-
     ctx->alphav = ctx->yv;
     ctx->stage  = 0;
     ctx->h      = 0;
@@ -958,11 +883,6 @@ static void nystrom_stage(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     a           = agc_vec_scale(ip, agc_vec_add(ip, a, ctx->zv), ctx->h);
     ctx->alphav = agc_vec_add(ip, a, ctx->yv);
-
-    if (!AGC_ASSERT(ctx->stage <= 2))
-    {
-        return;
-    }
 }
 
 /* DIFEQ+2 (p. 1348): end of the step, YV and ZV updated.                */
@@ -1067,11 +987,6 @@ static agc_integ_next_t wmatend(void)
  */
 agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     agc_flag_put(AGC_FLAG_JSWITCH, true); /* AMOVED   */
     const int first = agc_flag_test(AGC_FLAG_D6OR9FLG) ? 8 : 5;
 
@@ -1084,11 +999,6 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
         /* One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2. */
         if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH)))
-        {
-            return (INTEG_NEXT_FAIL);
-        }
-
-        if (!AGC_ASSERT((ctx->colreg >= 0) && (ctx->colreg < AGC_INTEG_W_COLUMNS)))
         {
             return (INTEG_NEXT_FAIL);
         }
@@ -1128,11 +1038,6 @@ static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
 
-    if (!AGC_ASSERT(ctx->rc >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t d    = agc_vec_abval(ip, ctx->sv.deltav);
     bool           rect = agc_interp_test_ovf(ip); /* BOV      */
 
@@ -1159,11 +1064,6 @@ static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     if (rect)
     {
         return (agc_integ_rectify(ip, ctx)); /* CALLRECT */
-    }
-
-    if (!AGC_ASSERT(!rect))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK);
@@ -1224,11 +1124,6 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
 
     *sw = (agc_dp_sub(ip, d, K_RSPHERE) < 0); /* INLUNCHK */
 
-    if (!AGC_ASSERT(d >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -1240,11 +1135,6 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
  */
 agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     bool         sw = false;
     agc_status_t st = AGC_STATUS_OK;
 
@@ -1287,11 +1177,6 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  */
 agc_status_t agc_integ_chkswtch(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t *test)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(test != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const bool moon = agc_flag_test(AGC_FLAG_MOONFLAG);
 
     if (agc_flag_test(AGC_FLAG_RPQFLAG))

@@ -336,11 +336,6 @@ agc_status_t csm_tvc_pcopy(bool restart)
         t->tvcphase = (agc_sp_t) (t->tvcphase + 1); /* INCR TVCPHASE (1) */
     }
 
-    if (!AGC_ASSERT(t->tvcphase == 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < NODES; i++)
     {
         t->ptmp[i] = t->tmp[i]; /* DCA TMPn; DXCH PTMPn          */

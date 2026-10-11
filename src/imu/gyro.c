@@ -106,16 +106,6 @@ static bool buf_ok(agc_imu_gyro_buf_t b)
 
     _Static_assert(AGC_IMU_GBUF_COUNT == 3, "AGC constant");
 
-    if (!AGC_ASSERT(ok || !lgyro.busy || lgyro.buf != b))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(!lgyro.busy || ((int) lgyro.buf >= 0 && lgyro.buf < AGC_IMU_GBUF_COUNT)))
-    {
-        return (false);
-    }
-
     return (ok);
 }
 
@@ -128,11 +118,6 @@ static bool buf_ok(agc_imu_gyro_buf_t b)
  **********************************************************************/
 static void chan14(uint16_t bits, bool on)
 {
-    if (!AGC_ASSERT(bits <= GYROCMD_MAX))
-    {
-        return;
-    }
-
     if (on)
     {
         agc_chan_or(AGC_CHAN_CHAN14, bits);
@@ -159,11 +144,6 @@ static void chan14(uint16_t bits, bool on)
  **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
@@ -230,11 +210,6 @@ void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
  **********************************************************************/
 bool agc_imu_gyros_busy(void)
 {
-    if (!AGC_ASSERT(lgyro.phase >= 0 && lgyro.phase <= PHASE_DONE))
-    {
-        return (false);
-    }
-
     if (!AGC_ASSERT(lgyro.busy || lgyro.phase == 0))
     {
         return (false);
@@ -250,16 +225,6 @@ bool agc_imu_gyros_busy(void)
  **********************************************************************/
 uint16_t agc_imu_gyrocmd(void)
 {
-    if (!AGC_ASSERT(gyrocmd <= GYROCMD_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(aug_left >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (gyrocmd);
 }
 
@@ -272,11 +237,6 @@ uint16_t agc_imu_gyrocmd(void)
 void agc_imu_hw_set_gyrocmd(uint16_t pulses)
 {
     gyrocmd = pulses;
-
-    if (!AGC_ASSERT(gyrocmd == pulses))
-    {
-        return;
-    }
 }
 
 /* ---- IMUPULSE ------------------------------------------------------------ */
@@ -314,10 +274,6 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
 
     if (lgyro.busy)
     { /* GYROBUSY / REGSLEEP */
-        if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
-        {
-            return (AGC_STATUS_BUSY);
-        }
 
         gyro_waiter = wake_as;
         agc_exec_job_sleep(wake_as);
@@ -388,17 +344,7 @@ agc_status_t agc_imu_pulse(const agc_dp_t gyro[3])
  **********************************************************************/
 static agc_status_t lastseg(void)
 {
-    if (!AGC_ASSERT(gyrocmd <= GYROCMD_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t dt = (uint16_t) ((gyrocmd >> 5) + 3u); /* MP BIT10, AD THREE */
-
-    if (!AGC_ASSERT(dt >= 3u && dt <= 03777u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = waitlist(dt, AGC_TASK_STRTGYRO); /* status of the call */
 
@@ -415,17 +361,7 @@ static agc_status_t lastseg(void)
  **********************************************************************/
 static agc_status_t augment_schedule(void)
 {
-    if (!AGC_ASSERT(gyrocmd >= AUG_PULSES && gyrocmd <= GYROCMD_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t dt = (uint16_t) ((gyrocmd >> 5) - 3u); /* AD NEG3          */
-
-    if (!AGC_ASSERT(dt >= 253u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st = waitlist(dt, AGC_TASK_GYRO_AUGMENT); /* status of the call */
 
@@ -496,11 +432,6 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
  **********************************************************************/
 static bool gselect(int axis, uint16_t select, agc_status_t *st)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3 && st != NULL))
-    {
-        return (false);
-    }
-
     if (!AGC_ASSERT(lgyro.busy && buf_ok(lgyro.buf)))
     {
         return (false);
@@ -539,11 +470,6 @@ static agc_status_t gyro_next(void)
     {
         int p = lgyro.phase; /* LGYRO MP BIT4: phase      */
 
-        if (!AGC_ASSERT(p >= 0 && p <= PHASE_DONE))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         if (p == PHASE_DONE)
         {
             lgyro.busy  = false; /* TS LGYRO = 0     */
@@ -557,11 +483,6 @@ static agc_status_t gyro_next(void)
             }
 
             return (agc_task_imufined()); /* NORESET          */
-        }
-
-        if (!AGC_ASSERT(lgyro.busy))
-        {
-            return (AGC_STATUS_BAD_ARG);
         }
 
         lgyro.phase     = p + 1;         /* AD BIT13 ADS LGYRO */

@@ -95,6 +95,7 @@ typedef struct agc_interp
     agc_sp_t  s2;                      /* S2 step register, unscaled                  */
     bool      sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
     bool      dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
+    agc_dp_t  mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
 } agc_interp_t;
 
 void agc_interp_init(agc_interp_t *ip);
@@ -133,6 +134,7 @@ agc_dp_t  agc_vec_abval(agc_interp_t *ip, agc_vec_t v);              /* ABVAL*/
 /* UNIT: returns unit vector; *abval = |v| (scaled as v), *vsq = |v|^2 as
  * left at 34D/36D by the AGC. Either out pointer may be NULL.            */
 agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq);
+agc_dp_t  agc_vec_unit_abval(agc_interp_t *ip, agc_vec_t v); /* UNIT, LV only */
 agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v); /* VPROJ*/
 agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n);        /* VSL  */
 agc_vec_t agc_vec_shr(agc_vec_t v, int n);                          /* VSR  */
@@ -156,7 +158,7 @@ agc_tp_t agc_dp_sq_tp(agc_dp_t a);
  * SQRT of a < -2^-14 (caller does agc_poodoo(01302)), AGC_STATUS_ALARM for
  * ASIN/ACOS out of range (caller does agc_alarm(01301)); *out is the value
  * the AGC leaves in MPAC (0 for the SQRT abort).                           */
-agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
+agc_status_t agc_dp_sqrt_chk(agc_dp_t a, agc_dp_t *out);
 
 /* The alarm the plain agc_dp_sqrt / asin / acos latched since the last
  * call (01302 SQRT of a negative: ABORT; 01301 ARCSIN/ARCCOS out of

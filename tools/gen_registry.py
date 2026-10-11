@@ -153,20 +153,29 @@ def prolog(kind, title, returns):
     return out
 
 
+VOID_JOBS = set()
+
+
 def call(handler, kind):
     if handler.startswith('expr:'):
         return handler[5:]
-    return '%s(%s)' % (handler, 'ctx' if kind == 'job' else '')
+    takes_ctx = kind == 'job' and handler not in VOID_JOBS
+    return '%s(%s)' % (handler, 'ctx' if takes_ctx else '')
 
 
 def guard(kind):
-    """The two preconditions of every generated function."""
+    """The preconditions of the public entry: the id is a real one (and a
+    task runs with interrupts inhibited).  The per-vehicle switches are
+    called only from here and do not repeat them; ctx is the executive's
+    own core-set address and is never NULL."""
     k = kind_info(kind)
-    first = 'ctx != NULL' if kind == 'job' else 'agc_interrupts_inhibited()'
-    return ['    if (!AGC_ASSERT(%s))' % first, '    {',
-            '        return (AGC_STATUS_BAD_ARG);', '    }', '',
-            '    if (!AGC_ASSERT(%s > %s && %s < %s))' % (k['var'], k['none'], k['var'], k['count']),
+    out = []
+    if kind == 'task':
+        out += ['    if (!AGC_ASSERT(agc_interrupts_inhibited()))', '    {',
+                '        return (AGC_STATUS_BAD_ARG);', '    }', '']
+    out += ['    if (!AGC_ASSERT(%s > %s && %s < %s))' % (k['var'], k['none'], k['var'], k['count']),
             '    {', '        return (AGC_STATUS_BAD_ARG);', '    }', '']
+    return out
 
 
 def emit_vehicle(rows, kind, veh, vlabel):
@@ -178,9 +187,8 @@ def emit_vehicle(rows, kind, veh, vlabel):
     title = '%s %s' % (vlabel, k['what'])
     out = prolog(kind, title, ['the status the %s returns;' % kind,
                                'NOT_FOUND when the %s rope has no %s' % (vlabel, kind),
-                               'for this id; BAD_ARG on a failed precondition'])
+                               'for this id'])
     out += ['static agc_status_t %s(%s)' % (name, k['param']), '{']
-    out += guard(kind)
     out.append('    switch ((int) %s)' % k['var'])
     out.append('    {')
     group = None
@@ -222,6 +230,8 @@ def headers_for(rows):
                 text = open(path).read()
                 for m in re.finditer(r'\b(agc_\w+)\s*\(', text):
                     decl.setdefault(m.group(1), os.path.relpath(path, os.path.join(ROOT, 'include')))
+                for m in re.finditer(r'\b(agc_\w+)\s*\(\s*void\s*\)', text):
+                    VOID_JOBS.add(m.group(1))
     need = set()
     missing = []
     for r in rows:

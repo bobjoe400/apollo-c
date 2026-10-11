@@ -112,7 +112,7 @@ agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx)
 /* B*RNB*B* (p.733): GOBLTIME = TIG (oblateness, P70/P71), engine off
  * (ENGINOF3); (5): P40SPOT starts the countdown clock (STCLOK2), then
  * P41SPOT (P63SPOT = P41SPOT: in P63 CLOKTASK is already going).          */
-agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
+agc_status_t agc_lm_burnbaby_countdown(void)
 {
     agc_guid_state()->lm.gobltime = agc_erase_tig();
     agc_inhint();
@@ -133,14 +133,14 @@ agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
     return (agc_exec_job_yield(AGC_JOB_PREBURN_STATE_VECTOR)); /* P41SPOT         */
 }
 
-agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
+agc_status_t agc_job_burnbaby_countdown(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_lm_burnbaby_countdown(ctx));
+    return (agc_lm_burnbaby_countdown());
 }
 
 /* P41SPOT, CSM part (p.736): with MUNFLAG the CSM state at TDEC1 in SM

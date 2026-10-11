@@ -51,11 +51,6 @@
  **********************************************************************/
 static agc_sp_t sp_arg90(int a)
 {
-    if (!AGC_ASSERT((a == 1) || (a == -1)))
-    {
-        return (0); /* no valid result */
-    }
-
     _Static_assert(AGC_K_POSMAX == AGC_W_POSMAX, "AGC constant");
 
     /* LIMITS-1 = POSMAX, LIMITS+1 = BIT15 (NEGMAX)                      */
@@ -80,11 +75,6 @@ static agc_sp_t sp_polley(int32_t x)
     agc_w2_t two;   /* DDOUBL of p, scaled at 1                 */
     int      o = 0; /* DDOUBL overflow, +-1 or 0                */
 
-    if (!AGC_ASSERT(agc_w_ok(x)))
-    {
-        return (0); /* no valid result */
-    }
-
     sq = agc_w_mp(x, x).hi; /* MP TEMK; TS SQ   */
 
     if (!AGC_ASSERT(sq >= 0))
@@ -100,11 +90,6 @@ static agc_sp_t sp_polley(int32_t x)
     if (o != 0)
     { /* TS TEMK skips    */
         return (sp_arg90(o));
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(two.hi)))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) two.hi);
@@ -125,11 +110,6 @@ static agc_sp_t sp_sine(int32_t a16)
     int     o = 0;                 /* overflow of the last TS, +-1 or 0 */
     int32_t t = agc_w_ts(a16, &o); /* TEMK, scaled at pi                */
     int32_t x;                     /* TEMK after SPT, scaled at pi/2    */
-
-    if (!AGC_ASSERT(agc_w_ok(t)))
-    {
-        return (0); /* no valid result */
-    }
 
     if (o != 0)
     { /* arg beyond +-pi  */
@@ -174,16 +154,6 @@ static agc_sp_t sp_sine(int32_t a16)
  **********************************************************************/
 agc_sp_t agc_sp_sin(agc_sp_t a)
 {
-    if (!AGC_ASSERT(a >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(a <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (sp_sine((int32_t) a));
 }
 
@@ -198,15 +168,5 @@ agc_sp_t agc_sp_sin(agc_sp_t a)
  **********************************************************************/
 agc_sp_t agc_sp_cos(agc_sp_t a)
 {
-    if (!AGC_ASSERT(a >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(a <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (sp_sine((int32_t) a + AGC_K_HALF));
 }

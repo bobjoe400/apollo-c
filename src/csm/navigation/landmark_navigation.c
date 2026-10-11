@@ -1201,16 +1201,13 @@ agc_status_t agc_job_orbital_navigation_delta_accept(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbital_navigation_marks_exit
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbital_navigation_marks_exit(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbital_navigation_marks_exit(void)
 {
     return (rz_continue(ln.ret));
 }
@@ -1334,16 +1331,13 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbital_navigation_site_accept
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbital_navigation_site_accept(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -1366,7 +1360,7 @@ agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_orbital_navigation_site_done(ctx));
+    return (agc_job_orbital_navigation_site_done());
 }
 
 /**********************************************************************
@@ -1375,16 +1369,13 @@ agc_status_t agc_job_orbital_navigation_site_accept(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbital_navigation_site_done
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbital_navigation_site_done(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -1400,16 +1391,13 @@ agc_status_t agc_job_orbital_navigation_site_done(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbital_navigation_site_terminate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbital_navigation_site_terminate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbital_navigation_site_terminate(void)
 {
     agc_interp_t ip; /* interpreter state */
 

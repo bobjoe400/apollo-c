@@ -89,11 +89,6 @@ static const int16_t k_rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
  **********************************************************************/
 static int pin_own_id(uint16_t id, int *kind)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(kind != NULL))
-    {
-        return (-1); /* no valid result */
-    }
-
     switch (id)
     {
         case AGC_DATA_DSPTEM1:
@@ -257,11 +252,6 @@ agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
  **********************************************************************/
 agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int kind = -1;                         /* id kind: 0 SP raw, 1 SP, 2 DP */
     int idx  = pin_own_id(data_id, &kind); /* word index or -1 */
 
@@ -312,11 +302,6 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value)
  **********************************************************************/
 static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (false);
-    }
-
     int kind = -1; /* id kind: 0 SP raw, 1 SP, 2 DP */
 
     if (pin_own_id(id, &kind) >= 0)
@@ -348,11 +333,6 @@ static bool pin_id_is_raw(uint16_t id, bool scale_raw)
 agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 {
     const pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(info != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_status_t st; /* status so far */
 
@@ -424,16 +404,6 @@ uint8_t pin_comp_routine(int k)
  **********************************************************************/
 bool pin_sf_is_dp(uint8_t rout)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(rout < (uint8_t) PIN_SF_COUNT))
-    {
-        return (false);
-    }
-
     switch (rout)
     {
         case PIN_SF_DP1:
@@ -465,11 +435,6 @@ bool pin_sf_is_dp(uint8_t rout)
  **********************************************************************/
 agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(info != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     if (info->is_raw)
     {
         return ((agc_dp_t) (w & PIN_WORD));
@@ -496,17 +461,7 @@ agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
  **********************************************************************/
 static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(info != NULL))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t w = info->is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) : pin_ones_from_sp(agc_dp_high(v)); /* raw word, or the high SP word */
-
-    if (!AGC_ASSERT(w <= PIN_WORD))
-    {
-        return (0); /* not a 15-bit word */
-    }
 
     return (w);
 }
@@ -526,11 +481,6 @@ static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
  **********************************************************************/
 static int pin_chan_of(int k)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(k >= 0 && k < 3))
-    {
-        return (-1); /* no valid result */
-    }
-
     int ch; /* channel number */
 
     ch = (int) ((pin_st()->nouncadr + (uint16_t) k) & PIN_LOW9);
@@ -556,11 +506,6 @@ static int pin_chan_of(int k)
  **********************************************************************/
 agc_status_t pin_comp_read(int k, agc_dp_t *v)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const pin_state_t *s  = pin_st();                 /* pinball erasables */
     agc_scale_info_t   info;                          /* scale of the component */
     agc_status_t       st = pin_comp_scale(k, &info); /* status so far */
@@ -677,11 +622,6 @@ agc_status_t pin_comp_write(int k, agc_dp_t v)
  **********************************************************************/
 agc_status_t pin_comp_octal(int k, uint16_t *word)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_scale_info_t info;                          /* scale of the component */
     agc_dp_t         v  = 0;                        /* datum, scale of the comp */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
@@ -730,11 +670,6 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
  **********************************************************************/
 static int64_t pin_mag(int64_t a)
 {
-    if (!AGC_ASSERT(a > INT64_MIN))
-    {
-        return (INT64_MAX); /* |a| not representable */
-    }
-
     return ((a < 0) ? -a : a); /* magnitude */
 }
 
@@ -806,11 +741,6 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
 
     agc_dp_t f = (agc_dp_t) (((int64_t) w * mult) >> PIN_TP_DP_SHIFT) + (agc_dp_t) aug; /* SHORTMP, DAS: F at 2^-28 */
 
-    if (!AGC_ASSERT(f >= 0 && f <= AGC_DP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_dspdecwd(f, false));
 }
 
@@ -834,11 +764,6 @@ static agc_status_t pin_degout(uint16_t w, bool optics)
  **********************************************************************/
 static agc_status_t pin_opdegout(uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int32_t sum; /* word + 20BIAS (ones' AD) */
 
     if (!pin_ones_negative(w))
@@ -1003,11 +928,6 @@ static agc_status_t pin_dpout(uint8_t rout, agc_dp_t v, agc_dp_t sfout)
  **********************************************************************/
 static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(n >= 0 && n < scale))
     {
         return (0); /* no valid result */
@@ -1033,11 +953,6 @@ static agc_dp_t pin_frac_of_digits(int64_t n, int64_t scale)
  **********************************************************************/
 static agc_status_t pin_hmsout(agc_dp_t t)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool         neg     = t < 0;         /* sign */
     int64_t      mag     = pin_mag(t);    /* magnitude, unscaled */
     int64_t      part[3] = {mag / PIN_CS_HOUR, (mag / PIN_CS_MIN) % 60, mag % PIN_CS_MIN};
@@ -1112,18 +1027,8 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
  **********************************************************************/
 static agc_status_t pin_lrposout(agc_dp_t sfout)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t c33 = agc_chan_read((int) AGC_CHAN_CHAN33);     /* channel 33 image */
     uint16_t pos = (uint16_t) (~(uint16_t) (c33 >> 5) & 3u); /* MP BIT10, COM */
-
-    if (!AGC_ASSERT(pos <= 3u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (pin_artout((agc_sp_t) pos, false, sfout));
 }
@@ -1142,16 +1047,6 @@ static agc_status_t pin_lrposout(agc_dp_t sfout)
  **********************************************************************/
 uint16_t pin_360_cdu(uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(w <= PIN_WORD))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((w & PIN_POSMAX) == 0u)
     {
         return (w);
@@ -1223,11 +1118,6 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
  **********************************************************************/
 static agc_status_t pin_sfout_dspdcend(const agc_scale_info_t *info, agc_dp_t v)
 {
-    if (!AGC_ASSERT(info != NULL) || !AGC_ASSERT(info->routine < (uint8_t) PIN_SF_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;                                                  /* true on the LM */
     uint16_t w  = info->is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) : pin_ones_from_sp(agc_dp_high(v)); /* raw / SP; 15-bit word */
     agc_sp_t sp = pin_sp_from_ones(w);                                                                    /* SP, scale of the comp */
@@ -1277,11 +1167,6 @@ static agc_status_t pin_sfout_dspdcend(const agc_scale_info_t *info, agc_dp_t v)
  **********************************************************************/
 static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
 {
-    if (!AGC_ASSERT(exited != NULL) || !AGC_ASSERT(k >= 0 && k < 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_scale_info_t info;                          /* scale of the component */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
@@ -1321,11 +1206,6 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
  **********************************************************************/
 agc_status_t pin_decdsp(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const pin_state_t *s = pin_st();            /* pinball erasables */
     int                n = (int) s->noun.ncomp; /* number of components */
 
@@ -1370,11 +1250,6 @@ agc_status_t pin_decdsp(void)
  **********************************************************************/
 agc_status_t pin_dspdpdec(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (s->nounreg >= PIN_MIXCON)

@@ -549,16 +549,13 @@ agc_status_t agc_job_orbital_navigation_marked(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbital_navigation_process
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbital_navigation_process(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbital_navigation_process(void)
 {
     return (rz_landmark_marks_start(agc_sxtmark_marks_made(), AGC_JOB_ORBITAL_NAVIGATION_OVER));
 }

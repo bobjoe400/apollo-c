@@ -87,7 +87,7 @@ static bool timerad_anomaly(agc_interp_t *ip, const agc_conic_ctx_t *ctx, const 
         return (true);
     }
 
-    m     = agc_conic_msign_sp_(agc_mpac_sqrt(ip, m), in->sgnrdot); /* SQRT SIGN */
+    m     = agc_conic_msign_sp_(agc_mpac_sqrt(m), in->sgnrdot); /* SQRT SIGN */
     *sinf = agc_mpac_store(m);
 
     return (false);
@@ -151,7 +151,7 @@ static agc_vec_t timerad_eccvec(agc_interp_t *ip, const agc_conic_ctx_t *ctx, ag
 {
     agc_tp_words_t m = agc_mpac_dsu(ip, agc_mpac_dload(AGC_CONIC_D1_32), ctx->r1a); /* MPAC, 2^6 */
 
-    m                 = agc_mpac_sqrt(ip, agc_mpac_dmp(m, ctx->p));        /* DMP P SQRT */
+    m                 = agc_mpac_sqrt(agc_mpac_dmp(m, ctx->p));        /* DMP P SQRT */
     m                 = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx->coga), 4); /* DMP COGA SL4 */
     const agc_vec_t a = agc_conic_vxsc_(ip, m, ctx->u2);                   /* VXSC U2 PDDL: 0D, 2^7 */
 

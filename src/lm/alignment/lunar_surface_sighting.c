@@ -78,7 +78,7 @@ agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx)
 {
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
-        return (agc_job_lunar_surface_star_mark(ctx));
+        return (agc_job_lunar_surface_star_mark());
     }
 
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_SURFACE_STAR_CHOSEN, AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
@@ -156,7 +156,7 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
 
     if ((star6 == 0) || ((DEC227 - star6) <= 0))
     {
-        return (agc_job_lunar_surface_star_mark(ctx)); /* R59OUT   */
+        return (agc_job_lunar_surface_star_mark()); /* R59OUT   */
     }
 
     agc_interp_t ip;
@@ -207,18 +207,18 @@ agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
 }
 
 /* R59E: AOTCODE detent bits 7-9 = POSCODE; R59OUT. */
-agc_status_t agc_job_lunar_surface_star_positioned(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_star_positioned(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     const agc_sp_t   pos = (agc_sp_t) ((ram->poscode & POS_MASK) << POS_SHIFT);
 
     ram->starcode = (agc_sp_t) ((ram->starcode & STAR_BITS) + pos);
 
-    return (agc_job_lunar_surface_star_mark(ctx));
+    return (agc_job_lunar_surface_star_mark());
 }
 
 /* R59OUT: AOTMARK, AOTSTALL (CURTAINS on a bad end), then R59RET. */
-agc_status_t agc_job_lunar_surface_star_mark(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_star_mark(void)
 {
     agc_status_t st = agc_aotmark();
 

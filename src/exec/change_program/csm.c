@@ -113,7 +113,7 @@ agc_status_t exec_cp_engine_off_to_idle(void)
 
 /* R00TOP00 after DELAYJOB: WRITE 5, WRITE 6 = 0 (all jets off), then
  * ISITP00 with MMNUMBER = 0.                                            */
-agc_status_t agc_job_change_program_jets_off(agc_job_ctx_t *ctx)
+agc_status_t agc_job_change_program_jets_off(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {

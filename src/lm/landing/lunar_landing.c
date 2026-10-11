@@ -325,7 +325,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
             {
                 ll_ddumgood(&ip, ic->tdec1);
 
-                return (agc_lm_job_ignalgrt(ctx));
+                return (agc_lm_job_ignalgrt());
             }
         }
 
@@ -469,15 +469,14 @@ agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx)
  * display (STCLOK2), returning in a new job at ASTNRET.
  *
  * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_ignalgrt(void)
 {
     ll_restart_here(AGC_JOB_IGNALGRT);
-    agc_status_t st = agc_lm_stclok2(ctx, (agc_sp_t) -LL_ASTNDEX, AGC_JOB_ASTNRET); /* step status */
+    agc_status_t st = agc_lm_stclok2((agc_sp_t) -LL_ASTNDEX, AGC_JOB_ASTNRET); /* step status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
     {
@@ -716,14 +715,13 @@ static void ll_start_manual_landing(void)
  * the automatic landing) or VERTGUID.
  *
  * ARGUMENTS:
- *   ctx    const agc_job_ctx_t *  I    executive job context
  *   entry  int *                  O    GUILDRET (continue the automatic
  *                                      landing) or VERTGUID
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry)
+agc_status_t agc_lm_guildenstern(int *entry)
 {
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
@@ -881,11 +879,6 @@ static agc_status_t ll_vhorcomp(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_
 
     agc_lm_ldg()->vhoriz = agc_vec_abval(ip, agc_vec_sub(ip, v, vv));
 
-    if (!AGC_ASSERT(agc_lm_ldg()->vhoriz >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_lm_dispexit(ctx, false)); /* avoid the PHASCHNG        */
 }
 
@@ -997,16 +990,6 @@ static agc_vec_t ll_rod_pipas(void)
 
     agc_relint();
 
-    if (!AGC_ASSERT(clicks >= -AGC_SP_MAX))
-    {
-        return (agc_vec_zero()); /* not reached: RODCOUNT is a word */
-    }
-
-    if (!AGC_ASSERT(l_pipas->thistpip >= 0)) /* TIME2,TIME1 snapshot */
-    {
-        return (pip);
-    }
-
     return (pip);
 } /* ll_rod_pipas */
 
@@ -1057,11 +1040,6 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
     agc_vec_t    ur   = agc_vec_unit(&ip, agc_guid_state()->lm.r, NULL, NULL); /* UNIT(R), half unit 2^1 */
     agc_dp_t     meas = ll_rod_afc(&ip, ur);                                   /* measured acceleration, 2^-4 m/cs^2 */
     agc_status_t st   = agc_lm_throttle_measured(meas);                        /* THROTTLE +3   */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (ll_vhorcomp(ctx, &ip, v));
 } /* ll_rodcomp */
@@ -1122,11 +1100,6 @@ agc_status_t agc_lm_task_rodtask(void)
  **********************************************************************/
 agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_lm_ldg()->wchvert == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (ll_rodcomp(ctx));
 }
 
@@ -1452,13 +1425,12 @@ agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx)
  * After PROCEED (p. 792): GSAV and (using REFMF) YNBSAV, ZNBSAV and
  * ATTFLAG for P57; then "astronaut: please select P57".
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_landing_confirmation_proceed(void)
 {
     agc_interp_t ip; /* interpreter state (OVFIND) */
 

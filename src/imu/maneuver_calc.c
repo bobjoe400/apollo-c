@@ -393,11 +393,6 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
         mx = (cof.c[0] - cof.c[2] < 0) ? 2 : 0; /* METHOD3 / METHOD1 */
     }
 
-    if (!AGC_ASSERT(mx >= 0 && mx < 3))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     if (skew.c[mx] < 0)
     { /* UnPOS    */
         cof = agc_vec_neg(cof);
@@ -500,11 +495,6 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const ui
     cam      = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
     out->cam = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
     out->am  = agc_dp_acos(ip, out->cam);           /* revolutions        */
-
-    if (!AGC_ASSERT(out->am >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM); /* LM rope */
 

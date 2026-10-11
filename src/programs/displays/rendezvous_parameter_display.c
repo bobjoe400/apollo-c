@@ -586,16 +586,13 @@ static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
  *
  * FUNCTION NAME: agc_job_rendezvous_parameter_display
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_parameter_display(void)
 {
     agc_status_t st; /* FINDVAC */
 
@@ -733,16 +730,13 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_params_start
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_params_start(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -763,16 +757,13 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_params_update
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_params_update(void)
 {
     agc_interp_t ip; /* interpreter state */
 

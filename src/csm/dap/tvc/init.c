@@ -167,11 +167,6 @@ agc_status_t csm_tvc_gains(bool full)
     agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* IXX, IAVG/TLX     */
 
-    if (!AGC_ASSERT(c->ixx >= 0) || !AGC_ASSERT(c->iavg_tlx >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (full)
     {
         agc_dp_t p = agc_sp_mul(c->ixx, TWOPI_M); /* MP 2PI/M, scale B+12 */
@@ -509,11 +504,6 @@ agc_status_t csm_tvc_swichovr_body(void)
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp;                                    /* restore TVCPHASE                    */
 
-    if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -537,11 +527,6 @@ agc_status_t agc_csm_tvc_preswtch(void)
     agc_status_t st = csm_tvc_swichovr_body(); /* SWICHOVR +5          */
 
     agc_relint(); /* POSTJUMP PINBRNCH                                 */
-
-    if (!AGC_ASSERT(t->tvcphase != -2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

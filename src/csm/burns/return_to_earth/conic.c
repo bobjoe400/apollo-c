@@ -146,11 +146,6 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t
 {
     agc_vec_t n; /* orbit normal N/, B1 */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rs->r_t1v = ratt;
     rs->p_t1  = (agc_sp_t) x2; /* SXA,2 P(T1)   */
     rs->v_t1v = vatt;
@@ -314,11 +309,6 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t
     int      n1 = 0; /* NORM shift count (X1) */
     agc_dp_t dx;     /* DX(T2) correction, B0 */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t  xerr  = agc_dp_sub(ip, xd, rs->x_t2);                             /* X(T2)ERR 00D, B0 */
     agc_vec_t ur2   = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                  /* ALPHAV, B1 */
     agc_dp_t  rcon1 = agc_dp_add(ip, agc_latlong_geterad(ip, ur2.c[2]), E3RTE); /* RCON: Fischer radius + 400 kft, m B29 */
@@ -387,11 +377,6 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t
  **********************************************************************/
 agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rted1)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(rs != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* RTE317 .. RTE350 (pp. 892-893): MAMAX2 from R(T1), NN1A = -9, RCON = K2,
      * and the first X(T2): COT(90 deg - GAMMA) of the input angle, else K3RTE
      * (R(T1) < K1RTE) or K4RTE.                                          */
@@ -649,11 +634,6 @@ static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs, ag
  **********************************************************************/
 agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t tig, agc_sp_t range_override, rte_display_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = display_entry(ip, rs, tig, out); /* RTEDISP status */
 
     if (st != AGC_STATUS_OK)

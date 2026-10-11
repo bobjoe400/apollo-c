@@ -140,11 +140,6 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
  **********************************************************************/
 agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
 {
-    if (!AGC_ASSERT(agc_navaux_vec_ok(padload.lm504)))
-    {
-        return (AGC_STATUS_BAD_ARG); /* store corrupted */
-    }
-
     *out        = padload;
     out->tephem = agc_erase_tephem(); /* P11 / V70 may have moved it */
     out->rls    = agc_erase_rls();
@@ -519,11 +514,6 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pa
  **********************************************************************/
 agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (r != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_navaux_vec_ok(rp)))
     {
         return (AGC_STATUS_BAD_ARG);

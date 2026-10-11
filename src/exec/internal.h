@@ -146,7 +146,7 @@ agc_status_t exec_cp_engine_off_to_idle(void);
 agc_status_t exec_cp_after_engine_off(void); /* R00TOP00 tail: ISITP00 */
 
 /* LM: SETUP70 / SETUP71 (P70 / P71 in the V37 job).                   */
-agc_status_t exec_cp_setup_abort(const agc_job_ctx_t *ctx, bool aps);
+agc_status_t exec_cp_setup_abort(bool aps);
 
 /* ISSERVON: SERVICER asked to stop (AVEGFLAG down; LM OUTROUTE).      */
 void exec_cp_stop_servicer_csm(void);

@@ -89,7 +89,7 @@ agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx)
 {
     if (rz_is_csm())
     {
-        return (agc_job_rendezvous_navigation_csm(ctx)); /* CM PROG20 */
+        return (agc_job_rendezvous_navigation_csm()); /* CM PROG20 */
     }
 
     return (agc_job_rendezvous_navigation_lm(ctx)); /* LM PROG20 */
@@ -222,16 +222,13 @@ agc_status_t rz_waitone(agc_job_id_t pointex)
  *
  * FUNCTION NAME: agc_job_rendezvous_navigation_csm_check
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_navigation_csm_check(void)
 {
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
@@ -277,7 +274,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_navigation_csm(void)
 {
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
 
@@ -295,7 +292,7 @@ agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_RNDVZFLG, true);
     rz_phase_job(04U, 05022U, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE, 026);
 
-    return (agc_job_rendezvous_navigation_csm_integrate(ctx));
+    return (agc_job_rendezvous_navigation_csm_integrate());
 }
 
 /**********************************************************************
@@ -309,13 +306,12 @@ agc_status_t agc_job_rendezvous_navigation_csm(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_navigation_csm_integrate(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -362,7 +358,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
     agc_phase_change(2, 00072);
     agc_phase_change(1, 00111);
 
-    return (agc_job_rendezvous_navigation_csm_track(ctx));
+    return (agc_job_rendezvous_navigation_csm_track());
 } /* agc_job_rendezvous_navigation_csm_integrate */
 
 /**********************************************************************
@@ -375,13 +371,12 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_navigation_csm_track(void)
 {
     agc_exec_prio_change(NC_PRIO14); /* PRIOCHNG */
 
@@ -392,7 +387,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_track(agc_job_ctx_t *ctx)
 
     agc_erase_set_r61cntr(0);
 
-    return (agc_rendz_tracking_attitude_csm(ctx, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS));
+    return (agc_rendz_tracking_attitude_csm(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS));
 }
 
 /**********************************************************************
@@ -423,16 +418,13 @@ agc_status_t agc_job_rendezvous_navigation_csm_optics(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_navigation_csm_optics_done
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm_optics_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_navigation_csm_optics_done(void)
 {
     agc_status_t st = agc_sxtmark_mkreleas(); /* MKRELEAS */
 

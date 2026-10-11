@@ -425,13 +425,12 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
  *   --------  ---------------------  ---  -------------------------
- *   ctx       const agc_job_ctx_t *  I    job context of the calling job
  *   ret_job   agc_job_id_t           I    job the routine returns to
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
+agc_status_t agc_rendz_tracking_attitude_csm(agc_job_id_t ret_job)
 {
     ta.genret = ret_job;
 
@@ -500,16 +499,13 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_tracking_attitude_csm_maneuvered
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
+agc_status_t agc_job_tracking_attitude_csm_maneuvered(void)
 {
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
     agc_phase_change(1, 00111);

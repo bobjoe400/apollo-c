@@ -80,11 +80,6 @@
  **********************************************************************/
 agc_status_t pin_monitor(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!AGC_ASSERT(s->verbreg >= 11u && s->verbreg <= 17u))
@@ -182,16 +177,12 @@ agc_status_t agc_task_monreq(void)
  * (V11-V17 -> V01-V07), set ENTRET to PASTEVB and run the noun test; the
  * ECADR (MCTBS) comes from MONSAVE1 through MPAC+2.
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, POODOO;
  *          else the status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
+agc_status_t agc_job_mondo(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
@@ -294,11 +285,6 @@ agc_status_t pin_dspfmem(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_UNIMPLEMENTED);
 }
 
@@ -397,11 +383,6 @@ agc_status_t pin_vbrqwait(void)
  **********************************************************************/
 agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->loadstat     = ls;
@@ -428,11 +409,6 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
  **********************************************************************/
 agc_status_t pin_reqmm(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->reqret       = PIN_REQ_MM;
@@ -509,11 +485,6 @@ agc_status_t pin_mmchang_resume(void)
  **********************************************************************/
 agc_status_t pin_vbtstlts(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s   = pin_st();                               /* pinball erasables */
     bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* CSM */
 
@@ -594,16 +565,12 @@ agc_status_t agc_task_tstlts2(void)
  * off, then TSTLTS4 (RELDSP, and PINBRNCH if ENDIDLE is awaiting operator
  * response).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
+agc_status_t agc_job_tstlts3(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {

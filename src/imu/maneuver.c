@@ -1218,12 +1218,11 @@ agc_status_t agc_task_updtcall(void)
  * Stop if the astronaut has interrupted (CM: HOLDFLAG >= 0; LM: not in
  * auto stabilization), else NEWANGL.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    the NEWDELHI job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- status of NOGO -2 or NEWANGL
  **********************************************************************/
-agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
+agc_status_t agc_job_newdelhi(void)
 {
     bool stopped; /* astronaut took over */
 

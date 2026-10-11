@@ -262,7 +262,7 @@ agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx)
 }
 
 /* ENDR03: RESTORDB, ENDEXT.                                                */
-agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_dap_data_load_end(void)
 {
     agc_inhint();
     agc_status_t st = agc_lm_dap_restordb();
@@ -325,7 +325,7 @@ agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx)
 }
 
 /* DPDAT3: TRIMGIMB by WAITLIST (it uses FIXDELAY / VARDELAY), ENDOFJOB.   */
-agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx)
+agc_status_t agc_job_dap_data_load_trim(void)
 {
     agc_inhint();
     agc_status_t st = agc_waitlist_call(TRIM_DELAY_CS, AGC_TASK_TRIMGIMB);
@@ -512,7 +512,7 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
         case 43:
             return (verb_attitude_error(ctx));
         case 44:
-            return (agc_extverb_rr_designate_end(ctx));
+            return (agc_extverb_rr_designate_end());
         case 60:
             return (agc_extverb_lr_position_two(ctx));
         case 63:
@@ -558,7 +558,7 @@ static agc_status_t fan_70s_90s(agc_job_ctx_t *ctx, int verb)
         case 78:
             return (agc_extverb_lr_spurious_test(ctx));
         case 79:
-            return (agc_extverb_lr_spurious_test_end(ctx));
+            return (agc_extverb_lr_spurious_test_end());
         case 85:
             return (agc_extverb_rr_los_display(ctx));
         case 80:

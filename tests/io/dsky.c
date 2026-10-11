@@ -429,9 +429,8 @@ static void test_monitor(void)
     agc_inhint();
     CHECK(agc_task_monreq() == AGC_STATUS_OK);
     agc_relint();
-    agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 030, false, -1, 0};
 
-    CHECK(agc_job_mondo(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_job_mondo() == AGC_STATUS_OK);
     agc_dsky_state_t s = state(); /* DSKY readout */
 
     CHECK(s.verb[0] == 1 && s.verb[1] == 6 && s.verbreg == 16u);
@@ -546,9 +545,8 @@ static void test_lights(void)
 
     CHECK(reg_is(&s, 0, 88888, 1) && reg_is(&s, 1, 88888, 1) && reg_is(&s, 2, 88888, 1));
     CHECK(s.prog[0] == 8 && s.verb[1] == 8 && s.flash && s.opr_err && s.key_rel);
-    agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 030, false, -1, 0};
 
-    CHECK(agc_job_tstlts3(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_job_tstlts3() == AGC_STATUS_OK);
     s = state();
     CHECK(!s.flash && !s.opr_err && !s.key_rel);
 }

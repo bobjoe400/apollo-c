@@ -364,11 +364,6 @@ static agc_status_t roll_jetroll(uint16_t time6)
     agc_csm_tvc_t *t  = agc_csm_dap_tvc(); /* TVC DAP erasables         */
     agc_status_t   st = AGC_STATUS_OK;     /* jet selection status      */
 
-    if (!AGC_ASSERT(time6 <= CSM_DAP_NEG0) || !AGC_ASSERT((t->i_sign >= -1) && (t->i_sign <= 1)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rupt_set_t6_task(AGC_TASK_ROLL_JETS_OFF); /* T6LOC = NOROLL1    */
     agc_rupt_set_time(CSM_DAP_TIME6, time6);
 
@@ -409,11 +404,6 @@ static agc_status_t roll_noroll(void)
 
     t->rollfire = 0; /* CS ZERO: -0                                    */
     t->temreg   = 0; /* -0, 625 us/bit                                 */
-
-    if (!AGC_ASSERT(t->i_sign != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (roll_jetroll(CSM_DAP_NEG0));
 }

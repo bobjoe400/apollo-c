@@ -127,11 +127,6 @@ uint16_t agc_erase_radmodes(void)
 
     v = agc_flagword_get(RADMODES_WORD);
 
-    if (!AGC_ASSERT(v <= WORD15))
-    {
-        return ((uint16_t) (v & WORD15));
-    }
-
     return (v);
 }
 
@@ -262,17 +257,7 @@ static agc_sp_t cdu_sp(uint16_t cdu)
 {
     int v = 0; /* signed reading, LSB 2^-14 pi */
 
-    if (!AGC_ASSERT(cdu <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* 1s */
-
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((agc_sp_t) v);
 }

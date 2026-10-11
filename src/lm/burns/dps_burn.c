@@ -263,7 +263,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 
 /* P41 after GODSPRET (p.756): DISPDEX positive, DYNMDISP at PRIO5, 6.7
  * (REDO6.7) and 4 type C, B*RNB*B*.                                      */
-agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rcs_burn_vg_displayed(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -279,7 +279,7 @@ agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
 
     agc_phase_change2((uint16_t) 000076, (uint16_t) 004024, &v);
 
-    return (agc_lm_burnbaby_countdown(ctx));
+    return (agc_lm_burnbaby_countdown());
 }
 
 /* REDO6.7 / BLNKWAIT (p.756): on a restart do not put up N85 while the
@@ -298,7 +298,7 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
 
 /* REDO6.7 after GODSPRET (p.757): PRIOCHNG to PRIO5, then DYNMDISP. A
  * higher job waiting after the change runs first (CHANG1).               */
-agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_redo6_7_vg_displayed(void)
 {
     agc_exec_prio_change(AGC_PRIO5);
 
@@ -307,12 +307,12 @@ agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx)
         return (agc_exec_job_yield(AGC_JOB_DYNDISP));
     }
 
-    return (agc_job_dynmdisp(ctx));
+    return (agc_job_dynmdisp());
 }
 
 /* DYNMDISP (p.756-757): every second VGBODY = S41.1(VGPREV) until TIG-35
  * (DISPDEX <= 0: SERVICER updates N85 from then on).                       */
-agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx)
+agc_status_t agc_job_dynmdisp(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -381,7 +381,7 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
 
 /* TERM40 (p.754-755): AVEGEXIT = SERVEXIT, rendezvous mark counter 0,
  * CLOKTASK off, deadband restored, P00.                                   */
-agc_status_t agc_job_term40(agc_job_ctx_t *ctx)
+agc_status_t agc_job_term40(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -931,7 +931,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
  * IMPULSW (set: attitude hold, engine off TGO after ignition), NOTHROTL
  * (set: no throttling) and TGO (cs, 2^28: the high word of the 2^14
  * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.   */
-agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_timeburn_lm(void)
 {
     const agc_guid_t *g = agc_guid_state();
     agc_dp_t          m = g->burn.weight_g;

@@ -263,7 +263,7 @@ static void test_radar_verbs(void)
     agc_state_init(AGC_VEHICLE_LM);
     agc_erase_set_radmodes(01000u); /* designate, not continuous */
     agc_flag_set(AGC_FLAG_NORRMON);
-    CHECK(agc_extverb_rr_designate_end(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_extverb_rr_designate_end() == AGC_STATUS_OK);
     CHECK(agc_erase_radmodes() == 01000u);
     CHECK(agc_flag_test(AGC_FLAG_NORRMON));
 

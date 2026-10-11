@@ -225,11 +225,11 @@ agc_status_t agc_extverb_lr_position_two(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_lr_position_two_check(ctx));
+    return (agc_job_lr_position_two_check());
 }
 
 /* LRPOS2K after RADSTALL: bad return -> LRP2ALM (alarm 523), then GOPIN. */
-agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lr_position_two_check(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_BAD)
     {
@@ -353,7 +353,7 @@ agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx)
 }
 
 /* RRDESK2 (p.269): RRDESNB, then RADSTALL for the designate to finish.   */
-agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rr_designate_drive(void)
 {
     bool         started = false;
     agc_status_t st      = agc_rr_designate_gimbal(&started);
@@ -368,12 +368,12 @@ agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_rr_designate_result(ctx));
+    return (agc_job_rr_designate_result());
 }
 
 /* RRDESK2 after RADSTALL: bad end (no lock-on or out of limits) -> alarm
  * 503 DESIGNATE FAIL; ENDOFJOB either way.                               */
-agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rr_designate_result(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_BAD)
     {
@@ -389,7 +389,7 @@ agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx)
  * clear the designate bits, CLRADMOD, wait 1 s, R25 back on, GOPIN.
  * DEVIATION: the AGC holds INHINT into DELAYJOB; here interrupts are
  * released before agc_svc_delayjob, which inhibits them itself.          */
-agc_status_t agc_extverb_rr_designate_end(agc_job_ctx_t *ctx)
+agc_status_t agc_extverb_rr_designate_end(void)
 {
     if ((agc_erase_radmodes() & RADMODES_CDES) == 0u)
     {
@@ -514,7 +514,7 @@ agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx)
 }
 
 /* V16N56 responses: B5OFF (the RRLOSDSP job then ends itself).            */
-agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rr_los_display_stop(void)
 {
     return (agc_svc_b5off());
 }
@@ -724,7 +724,7 @@ agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx)
 }
 
 /* R04Y (p.278): stop sampling and wait 2 s for the last RADARUPT.        */
-agc_status_t agc_job_radar_test_switch(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_test_switch(void)
 {
     rsampdt = 0;
 
@@ -743,7 +743,7 @@ agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx)
 }
 
 /* R04END (p.279): stop sampling, wait 1.28 s for a pending RUPT.         */
-agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_test_end(void)
 {
     rsampdt = 0;
 
@@ -769,7 +769,7 @@ agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx)
 }
 
 /* R77END (V79, p.279): stop sampling, wait 320 ms for a pending RUPT.    */
-agc_status_t agc_extverb_lr_spurious_test_end(agc_job_ctx_t *ctx)
+agc_status_t agc_extverb_lr_spurious_test_end(void)
 {
     rsampdt = 0;
 

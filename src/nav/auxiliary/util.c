@@ -109,11 +109,6 @@ bool agc_navaux_tp_ok(agc_tp_t a)
  **********************************************************************/
 agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
 {
-    if (!AGC_ASSERT((n <= NAVAUX_MAX_SHIFT) && (n >= -NAVAUX_MAX_SHIFT)))
-    {
-        return (0);
-    }
-
     agc_dp_t r = a; /* shifted value, scale 2^(s-n) */
 
     if (n > 0)
@@ -123,11 +118,6 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
     else if (n < 0)
     {
         r = agc_dp_shr(a, -n);
-    }
-
-    if (!AGC_ASSERT((n >= 0) || (agc_dp_abs(r) <= agc_dp_abs(a))))
-    {
-        return (0); /* post: SR never grows the magnitude */
     }
 
     return (r);
@@ -210,19 +200,9 @@ agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
 
     low = mag % NAVAUX_DP_ONE;
 
-    if (!AGC_ASSERT((low >= 0) && (low < NAVAUX_DP_ONE)))
-    {
-        return (0); /* post: a proper DP fraction */
-    }
-
     if (v < 0)
     {
         low = -low;
-    }
-
-    if (!AGC_ASSERT((low == 0) || ((low < 0) == (v < 0))))
-    {
-        return (0); /* post: the low words carry the sign of v */
     }
 
     return ((agc_dp_t) low);

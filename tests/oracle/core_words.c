@@ -229,15 +229,15 @@ static bool run_unary(agc_interp_t *ip, const char *op, agc_tp_words_t *m)
     }
     else if (strcmp(op, "SIN") == 0)
     {
-        *m = agc_mpac_sin(ip, *m);
+        *m = agc_mpac_sin(*m);
     }
     else if (strcmp(op, "COS") == 0)
     {
-        *m = agc_mpac_cos(ip, *m);
+        *m = agc_mpac_cos(*m);
     }
     else if (strcmp(op, "SQRT") == 0)
     {
-        *m = agc_mpac_sqrt(ip, *m);
+        *m = agc_mpac_sqrt(*m);
     }
     else if (strcmp(op, "ASIN") == 0)
     {
@@ -336,7 +336,7 @@ static bool run_conic(agc_interp_t *ip, const char *op, const char *tag, agc_tp_
     { /* PUSH DSQ; TLOAD PDDL MPAC R1A; SR4 TAD; SQRT ROUND; DAD */
         wsq = agc_mpac_dsq(agc_mpac_dload(in_dp(tag, "VAC1+10")));
         *m  = agc_mpac_shift(ip, agc_mpac_dload(r1a), -4);
-        *m  = agc_mpac_round(ip, agc_mpac_sqrt(ip, agc_mpac_tad(ip, *m, wsq)));
+        *m  = agc_mpac_round(ip, agc_mpac_sqrt(agc_mpac_tad(ip, *m, wsq)));
         *m  = agc_mpac_dad(ip, *m, in_dp(tag, "VAC1+10"));
     }
     else if (strcmp(op, "POLYCOEF") == 0)
@@ -348,7 +348,7 @@ static bool run_conic(agc_interp_t *ip, const char *op, const char *tag, agc_tp_
     else
     { /* DLOAD P; DMP SL4 R1A; BDSU SQRT D1/64 */
         *m = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(in_dp(tag, "VAC1+26")), r1a), 4);
-        *m = agc_mpac_sqrt(ip, agc_mpac_bdsu(ip, *m, in_dp(tag, "VAC1+28")));
+        *m = agc_mpac_sqrt(agc_mpac_bdsu(ip, *m, in_dp(tag, "VAC1+28")));
     }
 
     return (true);
@@ -374,8 +374,8 @@ static bool run_lane(agc_interp_t *ip, const char *op, const char *tag, agc_tp_w
 
     if (strcmp(op, "DELCOMP") == 0)
     {
-        (void) agc_mpac_sin(ip, *m);                                /* SIN PDDL: PD0 = SIN(A) */
-        *m  = agc_mpac_cos(ip, agc_mpac_dload(agc_mpac_store(*m))); /* MPAC = A; COS          */
+        (void) agc_mpac_sin(*m);                                /* SIN PDDL: PD0 = SIN(A) */
+        *m  = agc_mpac_cos(agc_mpac_dload(agc_mpac_store(*m))); /* MPAC = A; COS          */
         pd2 = agc_mpac_store(*m);                                   /* PUSH: PD2 = COS(A)     */
         *m  = agc_mpac_shift(ip, *m, -2);                           /* SR2                    */
         v1  = agc_mpac_store(*m);                                   /* PDDL: PD2 = COS/4 ...  */

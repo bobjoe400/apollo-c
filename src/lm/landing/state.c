@@ -130,16 +130,6 @@ void agc_lm_landing_reset(void)
     (void) memset(&lm_thr, 0, sizeof (lm_thr));
     (void) memset(&lm_asc, 0, sizeof (lm_asc));
     lm_ldg.wchphase = AGC_LM_PHASE_IGNALG;
-
-    if (!AGC_ASSERT(lm_ldg.ttf_8 == 0 && lm_thr.tthrot == 0)) /* cleared */
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(lm_asc.tbup == 0 && lm_pad.leadtime == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -153,11 +143,6 @@ void agc_lm_landing_reset(void)
 void agc_lm_phaschng(uint16_t octal_code)
 {
     int group = (int) (octal_code & 7u); /* restart group 1..6         */
-
-    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
-    {
-        return;
-    }
 
     agc_phase_change(group, octal_code);
 }
@@ -189,16 +174,6 @@ agc_sp_t agc_lm_time1(void)
 {
     uint32_t t  = agc_time_now_cs();        /* TIME2,TIME1, cs */
     agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu); /* TIME1, cs, unscaled */
-
-    if (!AGC_ASSERT(t1 >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(t1 <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (t1);
 }

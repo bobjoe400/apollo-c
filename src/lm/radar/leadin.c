@@ -151,16 +151,13 @@ static agc_status_t leadin_varadar(agc_sp_t dex)
  *
  * FUNCTION NAME: agc_job_radar_sample
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_sample(void)
 {
     agc_status_t st; /* read lead-in status */
 
@@ -191,16 +188,13 @@ agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_radar_sample_done
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_sample_done(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {

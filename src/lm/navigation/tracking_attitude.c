@@ -72,7 +72,6 @@
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
  *   --------  ---------------------  ---  -------------------------
- *   ctx       const agc_job_ctx_t *  I    job context of the calling job
  *   r61       bool                   I    true for R61LEM (once), false for
  *                                         R65LEM (repeats)
  *   ret_job   agc_job_id_t           I    GENRET: job that continues the
@@ -81,7 +80,7 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61, agc_job_id_t ret_job)
+agc_status_t lmnav_tracking_attitude(bool r61, agc_job_id_t ret_job)
 {
     lmnav_state()->genret = ret_job;
     rz_flag_put(AGC_FLAG_USE_TRACKING_ATTITUDE, r61); /* R61FLAG  */
@@ -270,16 +269,13 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_tracking_attitude_maneuvered
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
+agc_status_t agc_job_tracking_attitude_maneuvered(void)
 {
     agc_inhint();
     agc_status_t st = agc_lm_dap_restordb(); /* RESTORDB status */

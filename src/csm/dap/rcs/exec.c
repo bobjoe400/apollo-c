@@ -43,13 +43,12 @@
  * AMBGUPDT (RCS-CSM_DAP_EXECUTIVE_PROGRAMS.agc pp. 1037-1038) -- the
  * gimbal-to-body matrix from CDUZ and CDUX - 7.25 deg.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  IO  the job's context (unused state)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB); AGC_STATUS_BAD_ARG
  *          without a context
  **********************************************************************/
-agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
+agc_status_t agc_job_ambgupdt(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 

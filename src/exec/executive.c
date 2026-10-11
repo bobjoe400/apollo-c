@@ -130,16 +130,6 @@ int agc_exec_core_sets(void)
         n = AGC_EXEC_CORE_SETS_LM;
     }
 
-    if (!AGC_ASSERT(n <= AGC_EXEC_MAX_JOBS))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(n > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (n);
 }
 
@@ -157,11 +147,6 @@ int agc_exec_core_sets(void)
  **********************************************************************/
 static int32_t prio_word(int i)
 {
-    if (!AGC_ASSERT(i >= 0 && i < AGC_EXEC_MAX_JOBS))
-    {
-        return (0);
-    }
-
     const core_set_t *c = &core[i];                                                        /* core set i */
     int32_t           w = ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1); /* the priority word, before the sign */
 
@@ -241,16 +226,6 @@ void exec_clear_tables(void)
     locctr     = -1;
     yielded    = false;
     generation = (uint16_t) (generation + 1U);
-
-    if (!AGC_ASSERT(core[0].state == AGC_CORE_FREE))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(!vac_used[0]))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -318,16 +293,6 @@ agc_status_t agc_exec_init(void)
     exec_clear_tables();
     activity_light(false);
 
-    if (!AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_exec_core_sets() <= AGC_EXEC_MAX_JOBS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -348,11 +313,6 @@ static void setloc_compare(int i)
 
     int idx = (newjob > 0) ? newjob : 0; /* INDEX NEWJOB: +-0 index core set 0 */
 
-    if (!AGC_ASSERT(idx < AGC_EXEC_MAX_JOBS))
-    {
-        return;
-    }
-
     if (prio_word(i) - prio_word(idx) > 0)
     {
         newjob = i;
@@ -371,11 +331,6 @@ static void setloc_compare(int i)
  **********************************************************************/
 static agc_status_t spectest(void)
 {
-    if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         newjob = 0; /* +0 SHOWS ACTIVE JOB ALREADY SET */
@@ -454,11 +409,6 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
  **********************************************************************/
 agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job)
 {
-    if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) || !AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_status_t st = novac2(prio, job, -1); /* NOVAC2 outcome */
 
@@ -481,11 +431,6 @@ agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job)
  **********************************************************************/
 agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
 {
-    if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) || !AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     int vac = -1; /* first free VAC area, -1 none */
 
@@ -579,11 +524,6 @@ static void chanjob(int k)
  **********************************************************************/
 static int ejscan(int32_t floor)
 {
-    if (!AGC_ASSERT(floor >= 0))
-    {
-        return (-1);
-    }
-
     int     n    = agc_exec_core_sets(); /* core sets to scan */
     int     best = -1;                   /* best core set so far, -1 none */
     int32_t high = floor;                /* -BUF +1: priority word to beat */
@@ -597,11 +537,6 @@ static int ejscan(int32_t floor)
             high = w;
             best = i;
         }
-    }
-
-    if (!AGC_ASSERT(best < n))
-    {
-        return (-1);
     }
 
     return (best);
@@ -741,11 +676,6 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
 
     agc_relint();
 
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 } /* agc_exec_job_wake */
 
@@ -781,11 +711,6 @@ void agc_exec_job_wake_if_asleep(agc_job_id_t job)
  **********************************************************************/
 agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
 {
-    if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_exec_job_wake(loc); /* JOBWAKE outcome */
 
     if (st != AGC_STATUS_OK)
@@ -827,11 +752,6 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
         }
     }
 
-    if (!AGC_ASSERT(*vac_index < AGC_EXEC_MAX_VACS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((*vac_index < 0) ? AGC_STATUS_FULL : AGC_STATUS_OK); /* FULL when no VAC area was free */
 }
 
@@ -846,11 +766,6 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
  **********************************************************************/
 agc_status_t agc_exec_vac_release(int vac_index)
 {
-    if (!AGC_ASSERT(vac_index >= 0 && vac_index < AGC_EXEC_MAX_VACS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vac_used[vac_index]))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -885,11 +800,6 @@ void agc_exec_prio_change(agc_prio_t new_prio)
 
     newjob = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
-
-    if (!AGC_ASSERT(newjob >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -903,11 +813,6 @@ void agc_exec_prio_change(agc_prio_t new_prio)
  **********************************************************************/
 agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
 {
-    if (!AGC_ASSERT(resume_as != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -1050,11 +955,6 @@ bool exec_in_job(void)
  **********************************************************************/
 agc_job_id_t exec_running_job_loc(void)
 {
-    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
-    {
-        return (AGC_JOB_NONE);
-    }
-
     if (!AGC_ASSERT(core[0].state != AGC_CORE_FREE || core[0].loc == AGC_JOB_NONE))
     {
         return (AGC_JOB_NONE);
@@ -1092,16 +992,6 @@ agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
  **********************************************************************/
 bool agc_exec_idle(void)
 {
-    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
-    {
-        return (false);
-    }
-
     return (newjob == EXEC_NEWJOB_IDLE);
 }
 
@@ -1115,16 +1005,6 @@ bool agc_exec_idle(void)
  **********************************************************************/
 int agc_exec_newjob(void)
 {
-    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
-    {
-        return (0); /* no valid result */
-    }
-
     return (newjob);
 }
 
@@ -1139,11 +1019,6 @@ int agc_exec_newjob(void)
  **********************************************************************/
 agc_status_t agc_exec_core_info(int core_set, agc_exec_core_info_t *out)
 {
-    if (!AGC_ASSERT(out != 0) || !AGC_ASSERT(core_set >= 0 && core_set < AGC_EXEC_MAX_JOBS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     out->state     = core[core_set].state;
     out->prio      = core[core_set].prio;
     out->vac_index = core[core_set].vac;

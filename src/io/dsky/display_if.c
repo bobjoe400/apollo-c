@@ -203,11 +203,6 @@ static uint16_t f4(void)
  **********************************************************************/
 static void f4_up(uint16_t bits)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(bits <= PIN_WORD))
-    {
-        return;
-    }
-
     agc_inhint();
 
     /* cannot fail for word 4 */
@@ -232,19 +227,9 @@ static void f4_up(uint16_t bits)
  **********************************************************************/
 static void f4_down(uint16_t bits)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(bits <= PIN_WORD))
-    {
-        return;
-    }
-
     agc_inhint();
     agc_flagword_set(DIF_F4, (uint16_t) (f4() & ~bits));
     agc_relint();
-
-    if (!AGC_ASSERT((f4() & bits) == 0u))
-    {
-        return; /* flag bits still set */
-    }
 }
 
 /**********************************************************************
@@ -277,11 +262,6 @@ static bool dif_cont_valid(const agc_dsky_cont_t *c)
  **********************************************************************/
 static agc_status_t dif_priobort(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_poodoo(PIN_ALARM_PRIOBORT));
 }
 
@@ -303,11 +283,6 @@ static agc_status_t dif_priobort(void)
  **********************************************************************/
 static agc_status_t dif_witchone(agc_job_id_t new_loc)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
     pin_sleeper_t sl; /* the emptied sleeper slot */
 
@@ -462,16 +437,12 @@ static agc_status_t dif_gosleeps(int c)
  *
  * Job entry: XCHSLEEP for the mark class (FACEREG 0).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_xchsleepm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -486,16 +457,12 @@ agc_status_t agc_job_xchsleepm(agc_job_ctx_t *ctx)
  *
  * Job entry: XCHSLEEP for the normal class (FACEREG 1).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_xchsleepn(agc_job_ctx_t *ctx)
+agc_status_t agc_job_xchsleepn(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -667,11 +634,6 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq, agc_prio_t userpr
  **********************************************************************/
 static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
     *linus = false;
     *end   = false;
 
@@ -811,11 +773,6 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(rq != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool linus = false; /* LINUS: replaces the display */
     bool end   = false; /* new display just ends */
 
@@ -863,11 +820,6 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(rq != NULL) || !AGC_ASSERT(userprio >= 1u && userprio <= 037u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_exec_prio_change(PIN_PRIO33); /* raising: never pre-empted */
 
     if ((rq->flags & DIF_MARK) != 0u)
@@ -898,11 +850,6 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_cleanend(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st; /* status so far */
 
     st = agc_exec_findvac(PIN_PRIO32, AGC_JOB_JAMTERM);
@@ -935,16 +882,6 @@ static agc_status_t dif_cleanend(void)
  **********************************************************************/
 static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (flash)
     {
         pin_flashon();
@@ -1018,11 +955,6 @@ static agc_status_t dif_rest(int c)
  **********************************************************************/
 static agc_status_t dif_goanidle(const dif_job_t *j)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((j->tempor2 & DIF_FLASH) != 0u)
     {
         return (dif_flashsub(j->c, j->userprio, true));
@@ -1036,11 +968,6 @@ static agc_status_t dif_goanidle(const dif_job_t *j)
     if ((g_cls[j->c].nvword & PIN_LOW7) == 0u)
     { /* ISITN00: is this a paste */
         return (dif_flashsub(j->c, j->userprio, true));
-    }
-
-    if (!AGC_ASSERT(j->c >= DIF_PRIOC))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK); /* not flash, not GOPERF: exit      */
@@ -1062,11 +989,6 @@ static agc_status_t dif_goanidle(const dif_job_t *j)
  **********************************************************************/
 static uint16_t dif_second_vn(const dif_job_t *j)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((j->tempor2 & DIF_MARK) != 0u)
     {
         return ((uint16_t) (g_cls[DIF_MARKC].nvword & PIN_MID7)); /* MARKPERF */
@@ -1105,11 +1027,6 @@ static uint16_t dif_second_vn(const dif_job_t *j)
  **********************************************************************/
 static uint16_t dif_first_vn(int c)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t nv = g_cls[c].nvword; /* class VN word */
 
     if (!pin_ones_negative(nv))
@@ -1174,11 +1091,6 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         j.tempor2 = g_cls[c].flags;                          /* COPYTOGO: MPACS destroyed by NVSUB */
         f4_down(DIF_MRKNVFLG | DIF_NRMNVFLG | DIF_PRONVFLG); /* unset sleeping bits */
         st        = agc_dsky_blanksub(j.tempor2);            /* BLANKCHK                      */
-
-        if (!AGC_ASSERT(st != AGC_STATUS_BUSY))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         if ((j.tempor2 & DIF_PERFORM) == 0u || (j.tempor2 & DIF_SECOND) != 0u)
         {
@@ -1264,11 +1176,6 @@ static agc_status_t dif_endret(int outhere)
  **********************************************************************/
 static agc_status_t dif_normret(int outhere)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t     f  = f4();          /* C(FLAGWRD4) */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
@@ -1350,16 +1257,12 @@ static agc_status_t dif_endout(int outhere)
  *
  * TERMATE: astronaut terminate (V34) returns to call CADR +1.
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_termate(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -1374,16 +1277,12 @@ agc_status_t agc_job_termate(agc_job_ctx_t *ctx)
  *
  * PROCEED: astronaut proceed (V33) returns to call CADR +2.
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_proceed(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -1454,11 +1353,6 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t dif_normbnch(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     f4_up(DIF_PINBRFLG);
 
     if ((f4() & DIF_PRIODFLG) != 0u)
@@ -1482,11 +1376,6 @@ static agc_status_t dif_normbnch(void)
  **********************************************************************/
 agc_status_t pin_pinbrnch(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t m = (uint16_t) (f4() & DIF_PINMASK); /* FLAGWRD4 bits under test */
 
     if ((m & DIF_MRKIDFLG) != 0u)
@@ -1521,11 +1410,6 @@ agc_status_t pin_pinbrnch(void)
  **********************************************************************/
 agc_status_t agc_dsky_pinbrnch(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_interrupts_inhibited())
     {
         agc_relint(); /* RELINT (for GOPIN users; a no-op when enabled) */
@@ -1548,18 +1432,8 @@ agc_status_t agc_dsky_pinbrnch(void)
  **********************************************************************/
 void agc_dsky_clearmrk(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
     agc_erase_set_extvbact(0);
     f4_down(DIF_XDSPFLAG);
-
-    if (!AGC_ASSERT((f4() & DIF_XDSPFLAG) == 0u))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -1576,11 +1450,6 @@ void agc_dsky_clearmrk(void)
  **********************************************************************/
 agc_status_t agc_dsky_endmark(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_clearmrk();
 
     /* CLEARMRK: no extended verb active and the mark display released    */
@@ -1637,16 +1506,12 @@ agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx)
  *
  * PLAYJUM1: (re)display the normal class (wake point of a normal display).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
+agc_status_t agc_job_playjum1(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -1661,16 +1526,12 @@ agc_status_t agc_job_playjum1(agc_job_ctx_t *ctx)
  *
  * Job entry: wake point of a mark display (calls MARKPLAY).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
+agc_status_t agc_job_markplay(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -1685,16 +1546,12 @@ agc_status_t agc_job_markplay(agc_job_ctx_t *ctx)
  *
  * Job entry: wake point of a priority display (REDOPRIO).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_redoprio(agc_job_ctx_t *ctx)
+agc_status_t agc_job_redoprio(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
@@ -1772,11 +1629,6 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
         {
             slot = i;
         }
-    }
-
-    if (!AGC_ASSERT(slot >= 0) || !AGC_ASSERT(prio >= 1u && prio <= 037u))
-    {
-        return (AGC_STATUS_FULL);
     }
 
     agc_inhint();

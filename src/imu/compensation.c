@@ -117,11 +117,6 @@ typedef struct word_pair
  **********************************************************************/
 static agc_dp_t pair_value(word_pair_t w)
 {
-    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.hi <= AGC_SP_MAX) || !AGC_ASSERT(w.lo >= AGC_SP_MIN && w.lo <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_pack(w.hi, w.lo));
 }
 
@@ -226,11 +221,6 @@ static agc_sp_t sp_neg(agc_sp_t a)
 {
     agc_sp_t r = (agc_sp_t) (-a); /* -a (CS), B0 */
 
-    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -309,11 +299,6 @@ agc_status_t agc_imu_comp_get(agc_imu_comp_params_t *p)
  **********************************************************************/
 agc_sp_t agc_imu_gcompsw(void)
 {
-    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(gcompsw <= AGC_SP_MAX - 1)) /* MASK, -1: never POSMAX */
     {
         return (0); /* no valid result */
@@ -455,11 +440,6 @@ static void gcomp_write(const word_pair_t g[3])
  **********************************************************************/
 static bool gcomp_bypassed(void)
 {
-    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN && gcompsw <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
     bool bypass = (gcompsw < 0); /* CCS GCOMPSW negative */
 
     if (!AGC_ASSERT(bypass || gcompsw >= 0))
@@ -506,11 +486,6 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
         /* 1/PIPA1 body for one axis (ICP p.326):
          *   DELV = DELV + DELV*SFE - BIAS*DELTAT, all in PIPA pulses x 2^14.    */
         agc_dp_t delv_axis = delv->c[axis]; /* DELVX+axis, PIPA pulses x 2^14 */
-
-        if (!AGC_ASSERT(axis >= 0 && axis < 3))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         agc_sp_t pulses = agc_dp_high(delv_axis);                 /* whole PIPA pulses, B0 */
         agc_dp_t p      = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
@@ -573,11 +548,6 @@ static word_pair_t gcompsub(word_pair_t g, word_pair_t mpac, agc_sp_t coef)
     g = das(g, agc_sp_mul(vbuf.hi, shift)); /* HI(ADIA)(PIPA)         */
     g = das_low_of_mp(g, vbuf.lo, shift);   /* (ADIA)(PIPAI)          */
 
-    if (!AGC_ASSERT(g.hi >= AGC_SP_MIN && g.hi <= AGC_SP_MAX))
-    {
-        return (g); /* no valid result */
-    }
-
     return (g);
 }
 
@@ -595,11 +565,6 @@ static void torque_needed_check(word_pair_t g)
     int hi  = g.hi;                /* CCS GCOMP: the major word as it stands     */
     int mag = (hi < 0) ? -hi : hi; /* |GCOMP major|, pulses */
 
-    if (!AGC_ASSERT(mag <= AGC_SP_MAX))
-    {
-        return;
-    }
-
     if (mag == 0)
     {
         return; /* CCS +0: commands less than 1 pulse */
@@ -610,11 +575,6 @@ static void torque_needed_check(word_pair_t g)
     if (masked > 0)
     {
         gcompsw = (agc_sp_t) (masked - 1); /* TS GCOMPSW: positive        */
-    }
-
-    if (!AGC_ASSERT(gcompsw >= AGC_SP_MIN))
-    {
-        return;
     }
 }
 
@@ -635,11 +595,6 @@ static word_pair_t driftsub(word_pair_t g, agc_sp_t nbd)
     g = das(g, agc_sp_mul(agc_dp_high(p), BIT4)); /* shift right 11        */
     g = das_low_of_mp(g, agc_dp_low(p), BIT4);
     torque_needed_check(g);
-
-    if (!AGC_ASSERT(g.lo >= AGC_SP_MIN && g.lo <= AGC_SP_MAX))
-    {
-        return (g); /* no valid result */
-    }
 
     return (g);
 }
@@ -679,11 +634,6 @@ static word_pair_t irig_axis(word_pair_t g, int axis, const word_pair_t dv[3])
     {
         g = gcompsub(g, ny, comp.adsra[2]); /* -(ADSRAZ)(PIPAY)  */
         g = gcompsub(g, nz, comp.adia[2]);  /* -(ADIAZ)(PIPAZ)   */
-    }
-
-    if (!AGC_ASSERT(g.hi >= AGC_SP_MIN && g.hi <= AGC_SP_MAX))
-    {
-        return (g); /* no valid result */
     }
 
     return (g);
@@ -797,16 +747,6 @@ agc_status_t agc_imu_gcompzer(void)
     gcompsw = 0;
     gcomp_write(zero);
 
-    if (!AGC_ASSERT(gcompsw == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(gcomp_words[2].hi == 0 && gcomp_words[2].lo == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -842,14 +782,12 @@ static agc_status_t one_gyro_pulse(void)
         return (st); /* bad return: ENDOFJOB; or sleeping   */
     }
 
-    agc_job_ctx_t self = {AGC_JOB_GYRO_COMMAND_PULSED, PRIO21, false, -1, 0};
-
     if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_GOOD))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_gyro_command_pulsed(&self));
+    return (agc_job_gyro_command_pulsed());
 }
 
 /**********************************************************************
@@ -859,12 +797,11 @@ static agc_status_t one_gyro_pulse(void)
  * GCOMP (gyro pulses x 2^14) shifted right 7 into the IMUPULSE scale
  * (revolutions, 2^21 pulses per revolution).
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    the 1/GYRO job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- status of the torquing
  **********************************************************************/
-agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_command_pulse(void)
 {
     word_pair_t g[3]; /* GCOMP words, gyro pulses x 2^14           */
 
@@ -881,11 +818,6 @@ agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx)
         word_pair_t       r  = {0, agc_dp_high(agc_sp_mul(gw.lo, BIT8))};
 
         r = das(r, agc_sp_mul(gw.hi, BIT8)); /* XCH GCOMP, MP BIT8, DAS */
-
-        if (!AGC_ASSERT(r.hi >= AGC_SP_MIN && r.hi <= AGC_SP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         g[axis] = r;
     }
@@ -921,12 +853,11 @@ agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
  * The fraction left in the minor word goes back to gyro pulses x 2^14
  * (shift left 7).  Bad return: ENDOFJOB.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    the woken job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- OK
  **********************************************************************/
-agc_status_t agc_job_gyro_command_pulsed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_command_pulsed(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_GOOD)
     {
@@ -948,11 +879,6 @@ agc_status_t agc_job_gyro_command_pulsed(agc_job_ctx_t *ctx)
 
     gcomp_write(g);
 
-    if (!AGC_ASSERT(g[0].lo >= AGC_SP_MIN && g[0].lo <= AGC_SP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -972,21 +898,11 @@ agc_status_t agc_job_gyro_command_pulsed(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_sp_t elapsed_cs(int now, int prev)
 {
-    if (!AGC_ASSERT(now >= -TIME1_MODULUS && now < TIME1_MODULUS))
-    {
-        return (0); /* no valid result */
-    }
-
     int dt = (now - prev) % TIME1_MODULUS; /* elapsed TIME1, cs */
 
     if (dt < 0)
     {
         dt += TIME1_MODULUS;
-    }
-
-    if (!AGC_ASSERT(dt >= 0 && dt < TIME1_MODULUS))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) (dt & AGC_SP_MAX));
@@ -1008,16 +924,6 @@ static agc_sp_t elapsed_cs(int now, int prev)
  **********************************************************************/
 static bool cm_no_time_elapsed(int now, int prev)
 {
-    if (!AGC_ASSERT(now >= 0 && now < TIME1_MODULUS))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(prev >= AGC_SP_MIN && prev <= AGC_SP_MAX))
-    {
-        return (false);
-    }
-
     return ((agc_state_vehicle() == AGC_VEHICLE_CSM) && (now == prev));
 }
 
@@ -1038,11 +944,6 @@ static word_pair_t fbiassub(word_pair_t g, agc_sp_t nbd, agc_dp_t deltat)
     g = das_low_of_mp(g, nbd, agc_dp_low(deltat));
     torque_needed_check(g);                           /* TCF DRFTSUB2            */
 
-    if (!AGC_ASSERT(g.lo >= AGC_SP_MIN && g.lo <= AGC_SP_MAX))
-    {
-        return (g); /* no valid result */
-    }
-
     return (g);
 }
 
@@ -1055,17 +956,11 @@ static word_pair_t fbiassub(word_pair_t g, agc_sp_t nbd, agc_dp_t deltat)
  * ARGUMENTS:
  *   dt       agc_sp_t         I    elapsed time, cs B0
  *   surface  bool             I    LM on the lunar surface
- *   ctx      agc_job_ctx_t *  I    the NBDONLY / LASTBIAS job
  *
  * RETURNS: agc_status_t -- OK (ENDOFJOB) or the 1/GYRO status
  **********************************************************************/
-static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface, agc_job_ctx_t *ctx)
+static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface)
 {
-    if (!AGC_ASSERT(dt >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dp_t    deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
     word_pair_t g[3];                           /* GCOMP words, gyro pulses x 2^14           */
 
@@ -1095,12 +990,7 @@ static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface, agc_job_ctx
 
     if (gcompsw > 0)
     {
-        return (agc_job_gyro_command_pulse(ctx)); /* TCF 1/GYRO              */
-    }
-
-    if (!AGC_ASSERT(gcompsw == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        return (agc_job_gyro_command_pulse()); /* TCF 1/GYRO              */
     }
 
     return (AGC_STATUS_OK); /* ENDOFJOB                */
@@ -1156,7 +1046,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* NBD2: difference -0, ENDOFJOB */
     }
 
-    return (bias_drift_compensate(elapsed_cs(now, prev), surface, ctx));
+    return (bias_drift_compensate(elapsed_cs(now, prev), surface));
 }
 
 /**********************************************************************
@@ -1166,11 +1056,10 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
  * CM BANKCALL PIPUSE (PIPAs zeroed), LM PIPUSE1; 1/PIPADT reset to 2 s.
  *
  * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    the LASTBIAS job
  *
  * RETURNS: agc_status_t -- OK or the 1/GYRO status
  **********************************************************************/
-agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lastbias(void)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
@@ -1199,15 +1088,10 @@ agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx)
     /* PIPTIME +1 (LM) / PIPTIME1 +1 (CM): low word of the PIPA time.     */
     int now = agc_dp_low(agc_erase_piptime()); /* PIPTIME +1, cs */
 
-    if (!AGC_ASSERT(now >= AGC_SP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (cm_no_time_elapsed(now, prev))
     {
         return (AGC_STATUS_OK); /* TCF NBD2: difference -0, ENDOFJOB */
     }
 
-    return (bias_drift_compensate(elapsed_cs(now, prev), surface, ctx));
+    return (bias_drift_compensate(elapsed_cs(now, prev), surface));
 } /* agc_job_lastbias */

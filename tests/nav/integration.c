@@ -602,7 +602,6 @@ static void set_perm(agc_vehicle_t veh, dvec_t r, dvec_t v, agc_dp_t t)
 /* ---- 9. STATEINT: STATINT1 job, P00 4-time-step logic ---------------- */
 static void test_stateint(void)
 {
-    agc_job_ctx_t  jc = {0};
     agc_integ_sv_t c;
     agc_integ_sv_t l;
 
@@ -613,7 +612,7 @@ static void test_stateint(void)
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
     set_perm(AGC_VEHICLE_LM, r0, v0, 0);
     agc_time_set_cs(300000u);
-    CHECK(agc_job_statint1(&jc) == AGC_STATUS_OK);
+    CHECK(agc_job_statint1() == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
     (void) printf("STATEINT: TETCSM = %d cs, TETLEM = %d cs (now 300000)\n", (int) c.tet, (int) l.tet);
@@ -623,7 +622,7 @@ static void test_stateint(void)
     CHECK(!agc_flag_test(AGC_FLAG_STATEFLG));
     CHECK(!agc_flag_test(AGC_FLAG_NODOFLAG));
     agc_flag_set(AGC_FLAG_QUITFLAG);              /* V96: NOINT        */
-    CHECK(agc_job_statint1(&jc) == AGC_STATUS_OK);
+    CHECK(agc_job_statint1() == AGC_STATUS_OK);
     CHECK(!agc_flag_test(AGC_FLAG_QUITFLAG));
 }
 

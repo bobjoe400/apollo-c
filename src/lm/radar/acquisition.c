@@ -147,16 +147,13 @@ static bool acq_good(void)
  *
  * FUNCTION NAME: agc_job_rendezvous_sighting_mark
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_sighting_mark(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_sighting_mark(void)
 {
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_TRACK);
     uint16_t t = 0U; /* trunnion CDU word */
@@ -166,7 +163,7 @@ agc_status_t agc_job_rendezvous_sighting_mark(agc_job_ctx_t *ctx)
     { /* R21LEM5  */
         if (rr_mode2())
         {
-            return (agc_job_rendezvous_sighting_mark_designate_los(ctx));
+            return (agc_job_rendezvous_sighting_mark_designate_los());
         }
 
         t = ACQ_W_M180;
@@ -216,7 +213,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_centered(agc_job_ctx_t *ctx)
         return (agc_job_rendezvous_sighting_mark_alarm(ctx));
     }
 
-    return (agc_job_rendezvous_sighting_mark_designate_los(ctx));
+    return (agc_job_rendezvous_sighting_mark_designate_los());
 }
 
 /**********************************************************************
@@ -226,21 +223,18 @@ agc_status_t agc_job_rendezvous_sighting_mark_centered(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_sighting_mark_designate_los
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_sighting_mark_designate_los(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_sighting_mark_designate_los(void)
 {
     rz_flag_put(AGC_FLAG_LOSCMFLG, true);
     rr_state()->descount = ACQ_MAXTRIES;
 
-    return (agc_job_rendezvous_sighting_mark_new_los(ctx));
+    return (agc_job_rendezvous_sighting_mark_new_los());
 }
 
 /**********************************************************************
@@ -252,16 +246,13 @@ agc_status_t agc_job_rendezvous_sighting_mark_designate_los(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_sighting_mark_new_los
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_sighting_mark_new_los(void)
 {
     rr_state()->loscount = 3;
     agc_interp_t ip; /* interpreter state */
@@ -414,16 +405,13 @@ agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_sighting_mark_wait
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_sighting_mark_wait(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_sighting_mark_wait(void)
 {
     return (lmnav_wait(250U));
 }
@@ -484,7 +472,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
 
         if (!agc_flag_test(AGC_FLAG_FSPASFLG))
         {
-            return (agc_job_rendezvous_sighting_mark_ahead(ctx)); /* R21LEMB */
+            return (agc_job_rendezvous_sighting_mark_ahead()); /* R21LEMB */
         }
 
         rz_flag_put(AGC_FLAG_FSPASFLG, false); /* R21LEM7+1 */
@@ -516,16 +504,13 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendezvous_sighting_mark_ahead
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_sighting_mark_ahead(void)
 {
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
 
@@ -743,16 +728,13 @@ agc_status_t agc_job_manual_acquisition_limit_alarm(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_manual_acquisition_terminate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_manual_acquisition_terminate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_manual_acquisition_terminate(void)
 {
     rz_flag_put(AGC_FLAG_NORRMON, false);
 
@@ -768,15 +750,14 @@ agc_status_t agc_job_manual_acquisition_terminate(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_manual_acquisition_maneuver(agc_job_ctx_t *ctx)
+agc_status_t agc_job_manual_acquisition_maneuver(void)
 {
-    return (lmnav_tracking_attitude(ctx, true, AGC_JOB_MANUAL_ACQUISITION_DISPLAY));
+    return (lmnav_tracking_attitude(true, AGC_JOB_MANUAL_ACQUISITION_DISPLAY));
 }
 
 /* ---- R24LEM search routine (pp.515-516) -------------------------------- */
@@ -845,7 +826,7 @@ agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx)
 
     lmnav_state()->nsrchpnt = 0; /* LRS24.1  */
 
-    return (agc_job_radar_search_point(ctx));
+    return (agc_job_radar_search_point());
 }
 
 /**********************************************************************
@@ -880,16 +861,13 @@ agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_radar_search_maneuver
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_search_maneuver(void)
 {
     agc_phase_change(2, 04022);
     agc_inhint();
@@ -922,7 +900,7 @@ agc_status_t agc_job_radar_search_maneuver_done(agc_job_ctx_t *ctx)
         return (agc_job_radar_search_resume(ctx));
     }
 
-    return (lmnav_tracking_attitude(ctx, true, AGC_JOB_RADAR_SEARCH_RESUME));
+    return (lmnav_tracking_attitude(true, AGC_JOB_RADAR_SEARCH_RESUME));
 }
 
 /**********************************************************************
@@ -967,16 +945,13 @@ agc_status_t agc_job_radar_search_resume(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_radar_search_point
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_search_point(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
 
@@ -997,7 +972,7 @@ agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_radar_search_los(ctx));
+    return (agc_job_radar_search_los());
 }
 
 /**********************************************************************
@@ -1104,16 +1079,13 @@ static agc_vec_t acq_search_point(agc_interp_t *ip, lmnav_state_t *n)
  *
  * FUNCTION NAME: agc_job_radar_search_los
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_search_los(void)
 {
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
     rr_state_t    *s = rr_state();    /* radar erasables */
@@ -1201,13 +1173,12 @@ agc_status_t agc_task_radar_search_next_point(void)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_radar_search_data_check(agc_job_ctx_t *ctx)
+agc_status_t agc_job_radar_search_data_check(void)
 {
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
 
@@ -1233,5 +1204,5 @@ agc_status_t agc_job_radar_search_data_check(agc_job_ctx_t *ctx)
         n->nsrchpnt = 0; /* after the sixth: the LOS again */
     }
 
-    return (agc_job_radar_search_point(ctx));
+    return (agc_job_radar_search_point());
 }

@@ -165,11 +165,6 @@ int rr_ones(uint16_t w)
         r = -(int) (RR_WORD_MASK - v); /* negative word */
     }
 
-    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -332,11 +327,6 @@ void rr_radmodes_set(uint16_t bits)
  **********************************************************************/
 void rr_radmodes_clear(uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= RR_WORD_MASK))
-    {
-        return;
-    }
-
     agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() & ~bits & RR_WORD_MASK));
 }
 
@@ -412,11 +402,6 @@ void rr_mode_invert(void)
  **********************************************************************/
 bool agc_rr_limchk(uint16_t t, uint16_t s)
 {
-    if (!AGC_ASSERT(t <= RR_WORD_MASK && s <= RR_WORD_MASK))
-    {
-        return (false);
-    }
-
     int tv = rr_ones(t); /* trunnion, CDU units */
     int sv = rr_ones(s); /* shaft, CDU units */
 
@@ -448,11 +433,6 @@ bool agc_rr_limchk(uint16_t t, uint16_t s)
  **********************************************************************/
 void agc_rendz_flip(uint16_t lamp_bit)
 {
-    if (!AGC_ASSERT(lamp_bit != 0U && lamp_bit <= RR_WORD_MASK))
-    {
-        return;
-    }
-
     uint16_t w = agc_erase_dsptab(RR_DSPTAB_11); /* DSPTAB +11D */
 
     w = (uint16_t) (((w ^ lamp_bit) & 037777u) | 040000u); /* POSMAX, BIT15 */
@@ -523,11 +503,6 @@ agc_status_t agc_rr_settrkf(void)
     }
 
     rr_trkf();
-
-    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

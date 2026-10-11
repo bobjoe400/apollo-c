@@ -59,11 +59,6 @@ agc_status_t pin_noun_load(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(s->nounreg <= 99))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_noun_lookup(s->nounreg, &s->noun); /* status so far */
 
     if (st == AGC_STATUS_NOT_FOUND || s->noun.ncomp == 0u)
@@ -135,17 +130,7 @@ agc_status_t pin_charalrm(void)
  **********************************************************************/
 agc_status_t pin_dspalarm(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (s->entret == PIN_ENT_NVSUBEND)
     {
@@ -175,11 +160,6 @@ agc_status_t pin_dspalarm(void)
  **********************************************************************/
 agc_status_t pin_predspal(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_block_dspcount(PIN_VD1);
 
     if (!AGC_ASSERT(pin_st()->dspcount_neg))
@@ -236,17 +216,7 @@ agc_status_t pin_almcycle(void)
  **********************************************************************/
 agc_status_t pin_entexit(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (s->entret == PIN_ENT_PASTEVB)
     {
@@ -303,11 +273,6 @@ bool pin_dectest(void)
         return (false);
     }
 
-    if (!AGC_ASSERT(s->noun.ncomp <= 3u))
-    {
-        return (false);
-    }
-
     return (!s->noun.dec_only);
 }
 
@@ -356,17 +321,7 @@ bool pin_nountest(void)
  **********************************************************************/
 static agc_status_t pin_dsp_octal(uint8_t verb)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
-
-    if (!AGC_ASSERT(verb >= 1u && verb <= 5u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     int first = 0; /* comp shown in R1 */
 
@@ -455,21 +410,11 @@ agc_status_t pin_usead(uint16_t ecadr)
  **********************************************************************/
 static agc_status_t pin_intmctbs(bool from_mpac2)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (from_mpac2)
     {
         s->nouncadr = (uint16_t) (s->mpac2 & PIN_WORD); /* SETNCADR    */
-    }
-
-    if (!AGC_ASSERT(s->nouncadr <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     if (s->verbreg != 5u)
@@ -499,19 +444,9 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
  **********************************************************************/
 static agc_status_t pin_reqadd(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
-
-    if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_CHAN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (s->entret != PIN_ENT_ENDOFJOB)
     {
@@ -574,11 +509,6 @@ agc_status_t pin_reqadd_resume(void)
  **********************************************************************/
 agc_status_t pin_testnn(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s  = pin_st();        /* pinball erasables */
     agc_status_t st = pin_noun_load(); /* status so far */
 
@@ -601,11 +531,6 @@ agc_status_t pin_testnn(void)
         case PIN_NNTYPE_SPARE:
         default:
 
-            if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_SPARE))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
             return (pin_dspalarm()); /* not in use if +0       */
     }
 }
@@ -624,20 +549,10 @@ agc_status_t pin_testnn(void)
  **********************************************************************/
 agc_status_t pin_entpas0(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->decbrnch = 0;
     pin_block_dspcount(PIN_VD1);
-
-    if (!AGC_ASSERT(s->verbreg <= 99))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     s->verbsave = s->verbreg; /* save verb for possible recycle */
 
@@ -666,16 +581,6 @@ agc_status_t pin_entpas0(void)
  **********************************************************************/
 static agc_status_t pin_vbfandir(uint8_t verb)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(verb < PIN_LST2CON))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     switch (verb)
     {
         case 1:
@@ -703,10 +608,6 @@ static agc_status_t pin_vbfandir(uint8_t verb)
     if (verb >= 21u)
     {
         /* VERBTAB VB21-VB39 part of the fan. */
-        if (!AGC_ASSERT(pin_invariants()))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         switch (verb)
         {
@@ -755,17 +656,7 @@ static agc_status_t pin_vbfandir(uint8_t verb)
  **********************************************************************/
 agc_status_t pin_verbfan(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(s->verbreg <= 99))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (s->verbreg >= PIN_LST2CON)
     {

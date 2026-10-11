@@ -306,7 +306,7 @@ agc_status_t agc_task_aot_mark_release(void)
 }
 
 /* KILLAOT (V34 on a mark display): EXTVBACT = 0, GOTOPOOH. */
-agc_status_t agc_job_aot_mark_kill(agc_job_ctx_t *ctx)
+agc_status_t agc_job_aot_mark_kill(void)
 {
     agc_erase_set_extvbact(0);
 

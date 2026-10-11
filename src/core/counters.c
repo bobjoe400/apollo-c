@@ -39,11 +39,6 @@ static agc_sp_t g_thrust;               /* THRUST, pulses                 */
 static uint16_t g_altm;                 /* ALTM, raw 15-bit word          */
 static agc_sp_t g_tem[3];               /* TEMX, TEMY, TEMZ, PIPA pulses  */
 
-static bool sp_ok(agc_sp_t v)
-{
-    return ((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
-}
-
 /* Zero every counter cell (fresh start; called by agc_erase_reset).      */
 void agc_erase_reset_counters(void)
 {
@@ -66,11 +61,6 @@ void agc_erase_reset_counters(void)
     g_inlink = 0;
     g_thrust = 0;
     g_altm   = 0;
-
-    if (!AGC_ASSERT(g_rnrad == 0 && g_altm == 0))
-    {
-        return;
-    }
 }
 
 /* ---- P-, Q-, R-RHCCTR (LM, 042-044) ------------------------------------ */
@@ -138,11 +128,6 @@ agc_sp_t agc_erase_cdutcmd(int which)
 
 void agc_erase_set_cdutcmd(int which, agc_sp_t v)
 {
-    if (!AGC_ASSERT(which >= 0 && which < CTR_CDUCMD_N))
-    {
-        return;
-    }
-
     g_cducmd[which] = v;
 }
 

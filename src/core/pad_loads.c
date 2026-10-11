@@ -12,16 +12,6 @@
 
 #define EW15_MAX 077777u /* a raw 15-bit AGC word */
 
-static bool dp_ok(agc_dp_t v)
-{
-    return ((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
-}
-
-static bool sp_ok(agc_sp_t v)
-{
-    return ((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX));
-}
-
 /* AOTAZ -1+n, AOTEL -1+n (LM, B(6)PL): AOT detent n = 1..6 azimuth and
  * elevation, CDU words (2^15 = 1 revolution).                             */
 static uint16_t g_aotaz[6];
@@ -51,11 +41,6 @@ void agc_erase_reset_pad_loads(void)
     g_rted1    = 0;
     g_p37range = 0;
     g_tland    = 0;
-
-    if (!AGC_ASSERT(g_rted1 == 0 && g_tland == 0))
-    {
-        return;
-    }
 }
 
 uint16_t agc_erase_aotaz(int index)

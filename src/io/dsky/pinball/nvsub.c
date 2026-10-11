@@ -63,11 +63,6 @@
  **********************************************************************/
 bool pin_dsp_blocked(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (false);
-    }
-
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
     return ((s->monsave1 & PIN_BIT14) != 0u || s->dsplock);
@@ -84,11 +79,6 @@ bool pin_dsp_blocked(void)
  **********************************************************************/
 bool pin_cadrstor_full(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (false);
-    }
-
     return (pin_st()->cadrstor.used);
 }
 
@@ -103,11 +93,6 @@ bool pin_cadrstor_full(void)
  **********************************************************************/
 bool pin_dsplist_full(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (false);
-    }
-
     return (pin_st()->dsplist.used);
 }
 
@@ -125,22 +110,12 @@ bool pin_dsplist_full(void)
  **********************************************************************/
 pin_sleeper_t pin_take_sleeper(bool dsplist)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return ((pin_sleeper_t){0}); /* no valid result */
-    }
-
     pin_state_t   *s     = pin_st();                             /* pinball erasables */
     pin_sleeper_t *slot  = dsplist ? &s->dsplist : &s->cadrstor; /* the list */
     pin_sleeper_t  taken = *slot;                                /* its contents before */
     pin_sleeper_t  empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
 
     *slot = empty; /* XCH with 0      */
-
-    if (!AGC_ASSERT(!slot->used))
-    {
-        return ((pin_sleeper_t){0}); /* no valid result */
-    }
 
     return (taken);
 }
@@ -155,18 +130,9 @@ pin_sleeper_t pin_take_sleeper(bool dsplist)
  **********************************************************************/
 void pin_kilmonon(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
     pin_st()->monsave1 = (uint16_t) PIN_BIT15;
 
     /* external monitor bit off: only DSPLOCK can still block the display */
-    if (!AGC_ASSERT(pin_dsp_blocked() == pin_st()->dsplock))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -178,11 +144,6 @@ void pin_kilmonon(void)
  **********************************************************************/
 static void pin_reldsp2(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
     pin_st()->dsplock = false;
 
@@ -204,11 +165,6 @@ static void pin_reldsp2(void)
  **********************************************************************/
 agc_status_t agc_dsky_releasedsp(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s  = pin_st();      /* pinball erasables */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
@@ -226,11 +182,6 @@ agc_status_t agc_dsky_releasedsp(void)
     agc_relint();
     pin_reldsp2();
 
-    if (!AGC_ASSERT(!s->dsplist.used))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -246,11 +197,6 @@ agc_status_t agc_dsky_releasedsp(void)
  **********************************************************************/
 agc_status_t pin_reldsp1(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!s->dsplist.used)
@@ -260,11 +206,6 @@ agc_status_t pin_reldsp1(void)
     else
     {
         s->dsplock = false;
-    }
-
-    if (!AGC_ASSERT(!s->dsplock))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK);
@@ -285,11 +226,6 @@ agc_status_t pin_reldsp1(void)
  **********************************************************************/
 static agc_status_t pin_check_lists(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (pin_cadrstor_full() || pin_dsplist_full())
     {
         return (agc_poodoo(PIN_ALARM_DSPABORT)); /* DSPABORT        */
@@ -317,11 +253,6 @@ static agc_status_t pin_check_lists(void)
  **********************************************************************/
 agc_status_t agc_dsky_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     agc_status_t st = pin_check_lists(); /* status so far */
@@ -406,11 +337,6 @@ agc_status_t agc_dsky_nvsubusy(agc_job_id_t wake_as)
  **********************************************************************/
 agc_status_t pin_recaltst(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     if (!s->cadrstor.used)
@@ -481,11 +407,6 @@ agc_status_t pin_recaltst(void)
  **********************************************************************/
 static agc_status_t pin_blankdsp(int code)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     agc_status_t st = AGC_STATUS_OK; /* status so far */
@@ -539,11 +460,6 @@ static agc_status_t pin_blankdsp(int code)
  **********************************************************************/
 static agc_status_t pin_nvsub1(uint16_t nvtemp)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s    = pin_st();                             /* pinball erasables */
     uint8_t      noun = (uint8_t) (nvtemp & PIN_LOW7);        /* noun of NVTEMP */
     uint8_t      verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7); /* verb */
@@ -611,11 +527,6 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
  **********************************************************************/
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options)
 {
-    if (!AGC_ASSERT(nvtemp <= PIN_POSMAX) || !AGC_ASSERT(options <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (pin_dsp_blocked())
     {
         return (AGC_STATUS_BUSY); /* DSP syst blocked: ret to 1+ calling loc */
@@ -642,16 +553,6 @@ agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options)
  **********************************************************************/
 uint16_t agc_dsky_vn(uint8_t verb, uint8_t noun)
 {
-    if (!AGC_ASSERT(verb <= 99u))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(noun <= 99u))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((uint16_t) (((uint16_t) (verb & PIN_LOW7) << 7) | (noun & PIN_LOW7)));
 }
 
@@ -753,11 +654,6 @@ agc_status_t agc_dsky_nvmonopt(uint8_t verb, uint8_t noun, uint16_t options)
  **********************************************************************/
 agc_status_t agc_dsky_nvsub_blank(int code)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (pin_dsp_blocked())
     {
         return (AGC_STATUS_BUSY);
@@ -821,11 +717,6 @@ agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
  **********************************************************************/
 agc_status_t agc_dsky_blanksub(uint16_t code)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(code <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
     pin_state_t         *s       = pin_st();               /* pinball erasables */
     uint16_t             nvtemp  = (uint16_t) (code & 7u); /* MASK SEVEN      */
@@ -850,11 +741,6 @@ agc_status_t agc_dsky_blanksub(uint16_t code)
 
     s->dspcount     = save; /* restore DSPCOUNT to state it had */
     s->dspcount_neg = save_neg;
-
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -935,16 +821,12 @@ agc_status_t agc_dsky_jamproc(void)
  *
  * Job entry of JAMTERM: terminate the display in ENDIDLE.
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, POODOO;
  *          else the status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_jamterm(void)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {

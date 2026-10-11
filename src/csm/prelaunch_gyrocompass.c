@@ -601,12 +601,11 @@ static void normlop(agc_interp_t *ip)
  * performance test drift filter.  Stub: it ends in the erasable-memory
  * program LAT(SPL) (see prelaunch_align.c).
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the filter job
+ * ARGUMENTS: none
  *
  * RETURNS: AGC_STATUS_UNIMPLEMENTED
  **********************************************************************/
-static agc_status_t alcgkk(const agc_job_ctx_t *ctx)
+static agc_status_t alcgkk(void)
 {
     if (!AGC_ASSERT(prelaunch_ram()->geocomp1 == 0))
     {
@@ -710,7 +709,7 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
 
     if (r->geocomp1 <= 0)
     {
-        return (alcgkk(ctx)); /* BMN ALWAYSG not taken            */
+        return (alcgkk()); /* BMN ALWAYSG not taken            */
     }
 
     alwaysg(&ip, term);
@@ -1048,12 +1047,11 @@ agc_status_t agc_job_gyrocompass_azimuth_flash(agc_job_ctx_t *ctx)
  * AZMTHCG1 +11 (p.454) -- LAUNCHAZ = CDULOGIC(DSPTEM1), PREMTRXC = 0
  * (RESTEST3 slews at the next torquing), group 4 off, PINBRNCH
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the V78 job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t of PINBRNCH
  **********************************************************************/
-agc_status_t agc_job_gyrocompass_azimuth_loaded(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyrocompass_azimuth_loaded(void)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 

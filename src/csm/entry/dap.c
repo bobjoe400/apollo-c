@@ -131,11 +131,6 @@ agc_sp_t entry_angle_wrap(int32_t sum)
 {
     int32_t s = sum; /* working sum, SP units */
 
-    if (!AGC_ASSERT(s > -3 * 16384 && s < 3 * 16384))
-    {
-        return (0); /* no valid result */
-    }
-
     if (s >= 16384)
     {
         s -= 32768;
@@ -143,11 +138,6 @@ agc_sp_t entry_angle_wrap(int32_t sum)
     else if (s < -16384)
     {
         s += 32768;
-    }
-
-    if (!AGC_ASSERT(s >= -16384 && s <= 16383))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) s);
@@ -172,11 +162,6 @@ agc_sp_t entry_sp_store_ovf(int32_t sum)
 {
     int32_t s = sum; /* working sum, SP units */
 
-    if (!AGC_ASSERT(s > -2 * 16384 && s < 2 * 16384))
-    {
-        return (0); /* no valid result */
-    }
-
     if (s >= 16384)
     {
         s -= 16384;
@@ -184,11 +169,6 @@ agc_sp_t entry_sp_store_ovf(int32_t sum)
     else if (s <= -16384)
     {
         s += 16384;
-    }
-
-    if (!AGC_ASSERT(s > -16384 && s < 16384))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) s);
@@ -209,11 +189,6 @@ agc_sp_t entry_sp_store_ovf(int32_t sum)
  **********************************************************************/
 agc_sp_t entry_sp_sat(int32_t sum)
 {
-    if (!AGC_ASSERT(sum > -65536 && sum < 65536))
-    {
-        return (0); /* no valid result */
-    }
-
     if (sum > (int32_t) AGC_SP_MAX)
     {
         return (AGC_SP_MAX);
@@ -222,11 +197,6 @@ agc_sp_t entry_sp_sat(int32_t sum)
     if (sum < (int32_t) AGC_SP_MIN)
     {
         return (AGC_SP_MIN);
-    }
-
-    if (!AGC_ASSERT(sum >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) sum);
@@ -250,11 +220,6 @@ agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b)
 {
     agc_sp_t x = (a < AGC_SP_MIN) ? AGC_SP_MIN : a; /* a limited to -1.0, B0 */
     agc_sp_t y = (b < AGC_SP_MIN) ? AGC_SP_MIN : b; /* b limited, B0 */
-
-    if (!AGC_ASSERT(x >= AGC_SP_MIN && y >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
 
     if (!AGC_ASSERT(x <= AGC_SP_MAX && y <= AGC_SP_MAX))
     {
@@ -282,11 +247,6 @@ static int32_t dap_low_carry(agc_dp_t pr)
     int32_t lo    = (int32_t) agc_dp_low(pr); /* L after MP, 2^-28 */
     int32_t carry = 0;                        /* +1, 0 or -1 into A */
 
-    if (!AGC_ASSERT(lo > -16384 && lo < 16384))
-    {
-        return (0); /* no valid result */
-    }
-
     if (lo >= 8192)
     {
         carry = 1;
@@ -294,11 +254,6 @@ static int32_t dap_low_carry(agc_dp_t pr)
     else if (lo <= -8192)
     {
         carry = -1;
-    }
-
-    if (!AGC_ASSERT(carry >= -1 && carry <= 1))
-    {
-        return (0); /* no valid result */
     }
 
     return (carry);
@@ -321,11 +276,6 @@ static int32_t dap_low_carry(agc_dp_t pr)
 static int32_t dap_signed(int32_t s, int32_t v)
 {
     int32_t r = 0; /* v with the sign of s, SP units */
-
-    if (!AGC_ASSERT(v > -65536 && v < 65536))
-    {
-        return (0); /* no valid result */
-    }
 
     if (s > 0)
     {
@@ -533,16 +483,6 @@ uint16_t agc_entry_dap_yaw_jet_bits(int jndx)
 uint16_t agc_entry_dap_roll_jet_bits(int jndx)
 {
     static const uint16_t prjcode[3] = {00005, 00000, 00012};
-
-    if (!AGC_ASSERT(jndx >= -1 && jndx <= 1))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(prjcode[1] == 0))
-    {
-        return (0);
-    }
 
     return (prjcode[jndx + 1]);
 }
@@ -1153,10 +1093,6 @@ static void pp_getoff(agc_sp_t lcx, agc_sp_t mvt, agc_sp_t vdt, agc_entry_roll_c
     o->ton1 = entry_sp_mp(AGC_ENTRY_4JETT, o->ton1); /* cs        */
     o->ton2 = entry_sp_mp(AGC_ENTRY_4JETT, o->ton2);
 
-    if (!AGC_ASSERT(o->ton2 >= 0))
-    {
-        return;
-    }
 } /* pp_getoff */
 
 /**********************************************************************
@@ -1215,10 +1151,6 @@ static void pp_maxvtest(agc_sp_t lcx, agc_sp_t mvt, agc_sp_t vsq, agc_entry_roll
     o->jndx = o->jndx1; /* MAXVTIM2        */
     o->ton1 = (agc_sp_t) (-o->ton1);
 
-    if (!AGC_ASSERT(o->ton1 >= 0))
-    {
-        return;
-    }
 } /* pp_maxvtest */
 
 /**********************************************************************
@@ -1284,21 +1216,12 @@ static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2, agc_entry_roll_cmd_t
 
     o->in_deadzone = dz;
 
-    if (!AGC_ASSERT(o->jndx == 1 || o->jndx == -1))
-    {
-        return;
-    }
-
     if (!dz)
     {
         pp_maxvtest(lcx, mvt, vsq, o, vdt);
         pp_getoff(lcx, mvt, *vdt, o);
     }
 
-    if (!AGC_ASSERT(o->ton1 >= 0 && o->ton2 >= 0)) /* cs, never negative */
-    {
-        return;
-    }
 } /* dap_phase_plane */
 
 /**********************************************************************
@@ -1322,11 +1245,6 @@ static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2, agc_entry_roll_cmd_t
 agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out)
 {
     agc_sp_t vdt = 0; /* drift velocity, B0 */
-
-    if (!AGC_ASSERT(lcx_360 >= -16384 && mvt_180 >= -16384))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     out->ton1        = 0;
     out->toff        = 0;

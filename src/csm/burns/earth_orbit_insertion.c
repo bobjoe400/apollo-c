@@ -906,17 +906,13 @@ static bool aterjob_needs_reset(void)
  *
  * FUNCTION NAME: agc_job_aterjob
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
+agc_status_t agc_job_aterjob(void)
 {
     agc_dp_t desired[3]; /* desired gimbal angles, revs B0 */
     uint16_t cdu[3];     /* CDUX..CDUZ patterns */
@@ -980,17 +976,13 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_atreset_after_delay
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
+agc_status_t agc_job_atreset_after_delay(void)
 {
     if (satsw > 0)
     {
@@ -1029,16 +1021,13 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_csm_satstkon
  *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------------
- *   ctx       const agc_job_ctx_t *  I    job context of the running job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
+agc_status_t agc_csm_satstkon(void)
 {
     agc_inhint();
     agc_rupt_set_t5_task(AGC_TASK_REDOSAT);

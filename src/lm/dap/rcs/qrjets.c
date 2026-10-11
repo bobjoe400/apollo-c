@@ -156,16 +156,6 @@ agc_status_t lm_dap_closeout(void)
 
     d->dapzrupt = LM_NEGMAX;
 
-    if (!AGC_ASSERT(d->dapzrupt < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -246,11 +236,6 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
 
     *u = lm_dap_sat((int32_t) cr - cq);
     *v = lm_dap_sat((int32_t) cq + cr);
-
-    if (!AGC_ASSERT(*u >= LM_NEGMAX && *v >= LM_NEGMAX))
-    {
-        return;
-    }
 }
 
 /**********************************************************************

@@ -180,11 +180,6 @@ static void gimbal_lock_alarm(void)
     agc_alarm(ALARM_GIMBAL_LOCK);       /* ALARM 00401  */
     agc_status_t st = AGC_STATUS_ALARM; /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
-    {
-        return;
-    }
-
     agc_flag_set(AGC_FLAG_GLOKFAIL); /* UPFLAG       */
 }
 
@@ -289,11 +284,6 @@ static void axisgen_triad(agc_interp_t *ip, agc_vec_t s1, agc_vec_t s2, agc_vec_
     t[0] = s1;
     t[1] = agc_vec_unit(ip, agc_vec_cross(ip, s1, s2), NULL, NULL);
     t[2] = agc_vec_shl(ip, agc_vec_cross(ip, t[0], t[1]), 1);
-
-    if (!AGC_ASSERT(vec_in_range(t[2])))
-    {
-        return;
-    }
 }
 
 /**********************************************************************

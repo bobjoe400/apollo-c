@@ -71,18 +71,14 @@ const exec_cp_mode_t *exec_cp_modes_lm(int *n)
 }
 
 /* SETUP70 / SETUP71 (L p.233): DTCB to P70 / P71 in the V37 job.        */
-agc_status_t exec_cp_setup_abort(const agc_job_ctx_t *ctx, bool aps)
+agc_status_t exec_cp_setup_abort(bool aps)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_job_ctx_t c = *ctx;
-
-    c.id = aps ? AGC_JOB_APS_ABORT : AGC_JOB_DPS_ABORT;
-
-    return (aps ? agc_lm_job_aps_abort(&c) : agc_lm_job_dps_abort(&c));
+    return (aps ? agc_lm_job_aps_abort() : agc_lm_job_dps_abort());
 }
 
 /* ISSERVON (L p.228): DOWNFLAG AVEGFLAG, OUTROUTE = V37RET, ENDOFJOB.   */
@@ -99,7 +95,7 @@ void exec_cp_stop_servicer_lm(void)
 
 /* V37RET (L p.228): group 2 for the program that keeps running: 2.7 when
  * P20 or P22 runs, 2.11 for P25, else group 2 off; then CANV37.         */
-agc_status_t agc_job_change_program_return(agc_job_ctx_t *ctx)
+agc_status_t agc_job_change_program_return(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
@@ -119,7 +115,7 @@ agc_status_t agc_job_change_program_return(agc_job_ctx_t *ctx)
         agc_phase_kill(2); /* 2.0SPT                     */
     }
 
-    return (agc_job_change_program_continue(ctx));
+    return (agc_job_change_program_continue());
 }
 
 /* R00 after INTSTALL (L p.229): 3AXISFLG down, FLGWRD11 = LRBYBIT (R12),

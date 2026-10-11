@@ -95,7 +95,7 @@ static agc_status_t next_sample(void)
  * After LUNG's coarse and fine align: GCTR = -20; 1/PIPADT = PRIO31;
  * GCOMPZER; PHASCHNG; PIPSRINE (the first read is thrown away); GREED.
  */
-agc_status_t agc_job_lunar_gravity_coarsed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_gravity_coarsed(void)
 {
     agc_align_ram()->gctr = GRAVITY_SAMPLES;
     agc_imu_set_pipa_interval(PIPA_INTERVAL);
@@ -142,7 +142,7 @@ agc_status_t agc_task_lunar_gravity_sample(void)
  * sample (GREED); after the last, STAR = UNIT(GACC) (SM), GOUT = STAR in
  * nav-base axes (CDUTRIG, *SMNB*); PHASCHNG; GOTO QMIN.
  */
-agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_gravity_accumulate(void)
 {
     agc_align_ram_t *ram  = agc_align_ram();
     agc_vec_t        delv = agc_erase_delv();
@@ -185,7 +185,7 @@ agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
  * GVDETER (p. 963): THETAD = (42, -42, 35) degrees; CLEAR REFSMFLG;
  * LUNG, continuing at GRAVEL.
  */
-agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_lunar_surface_gravity(void)
 {
     agc_erase_set_thetad(0, THETA_42DEG);
     agc_erase_set_thetad(1, THETA_MINUS_42);
@@ -201,7 +201,7 @@ agc_status_t agc_lm_lunar_surface_gravity(agc_job_ctx_t *ctx)
  * XNB = NBSM(UNITX, UNITY, UNITZ) with LUNG's sines and cosines;
  * CALCGA -> THETAD.  STARAD +12D = GOUT/2; LUNG again.
  */
-agc_status_t agc_job_lunar_gravity_rotate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_gravity_rotate(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
@@ -297,7 +297,7 @@ agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx)
 
     if (agc_flag_test(AGC_FLAG_FREEFLAG))
     {
-        return (agc_lm_lunar_surface_gravity(ctx));
+        return (agc_lm_lunar_surface_gravity());
     }
 
     return (agc_job_lunar_surface_attitude_check(ctx));
@@ -307,7 +307,7 @@ agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx)
  * JUSTTRIM (p. 966): IMUFINE and IMUSTALL, IMUPULSE on OGC and IMUSTALL,
  * then GOTO QMIN.
  */
-agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_lunar_surface_just_trim(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->lunar_gravity_return != AGC_JOB_NONE))
     {
@@ -335,7 +335,7 @@ agc_status_t agc_lm_lunar_surface_just_trim(agc_job_ctx_t *ctx)
 
 /* JUSTTRIM after IMUFINE: IMUPULSE (GYRCDR = OGC); re-entered when the
  * gyros are busy.                                                        */
-agc_status_t agc_job_lunar_surface_trim_pulse(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_trim_pulse(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
@@ -367,7 +367,7 @@ agc_status_t agc_job_lunar_surface_trim_pulse(agc_job_ctx_t *ctx)
 }
 
 /* IMUPULSE again once the gyros are free. */
-agc_status_t agc_job_lunar_surface_trim_retry(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_trim_retry(void)
 {
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_LUNAR_SURFACE_TRIM_RETRY);
 
@@ -394,7 +394,7 @@ agc_status_t agc_job_lunar_surface_trim_retry(agc_job_ctx_t *ctx)
 }
 
 /* After the torquing: QMINEXIT. */
-agc_status_t agc_job_lunar_surface_trimmed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_trimmed(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
@@ -410,7 +410,7 @@ agc_status_t agc_job_lunar_surface_trimmed(agc_job_ctx_t *ctx)
  * XNB, YNB (CDUTRIG, CALCSMSC) to 6D, 12D; AXISGEN -> XDC; CALCGTA ->
  * OGC; JUSTTRIM.
  */
-static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
+static agc_status_t gyro_trim(agc_job_id_t ret)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
@@ -454,7 +454,7 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
         return (st);
     }
 
-    return (agc_lm_lunar_surface_just_trim(ctx));
+    return (agc_lm_lunar_surface_just_trim());
 }
 
 /*
@@ -486,7 +486,7 @@ agc_status_t agc_lm_lunar_surface_coarse_trim(agc_job_ctx_t *ctx)
 
     if (!agc_flag_test(AGC_FLAG_INITALGN))
     {
-        return (agc_job_lunar_surface_coarse_trim_go(ctx));
+        return (agc_job_lunar_surface_coarse_trim_go());
     }
 
     return (agc_job_lunar_surface_coarse_trim_display(ctx));
@@ -504,7 +504,7 @@ agc_status_t agc_job_lunar_surface_coarse_trim_display(agc_job_ctx_t *ctx)
 }
 
 /* CORSIT (after PHASCHNG when displayed): COARSE. */
-agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_coarse_trim_go(void)
 {
     const agc_status_t st = surface_align_phase();
 
@@ -517,7 +517,7 @@ agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx)
 }
 
 /* CORSIT after COARSE: NCOARSE; GYROTRIM; GOTO SURFDISP. */
-agc_status_t agc_job_lunar_surface_coarse_trimmed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
 {
     const agc_status_t st = align_ncoarse();
 
@@ -526,5 +526,5 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (gyro_trim(ctx, AGC_JOB_LUNAR_SURFACE_ALIGNED));
+    return (gyro_trim(AGC_JOB_LUNAR_SURFACE_ALIGNED));
 }

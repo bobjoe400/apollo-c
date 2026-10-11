@@ -685,16 +685,13 @@ static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const a
  *
  * FUNCTION NAME: agc_job_rr_designate_command
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rr_designate_command(void)
 {
     rr_state_t  *s = rr_state(); /* radar erasables */
     agc_interp_t ip;             /* interpreter state */

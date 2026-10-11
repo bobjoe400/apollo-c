@@ -365,7 +365,7 @@ static agc_status_t auto_optics_start(const agc_job_ctx_t *ctx, agc_job_id_t ret
 
     if (agc_flag_test(AGC_FLAG_TARG1FLG))
     { /* R52H     */
-        return (agc_rendz_tracking_attitude_csm(ctx, AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED));
+        return (agc_rendz_tracking_attitude_csm(AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED));
     }
 
     agc_flag_clear(AGC_FLAG_TERMIFLG);
@@ -403,7 +403,7 @@ agc_status_t agc_job_auto_optics_positioning_resume(agc_job_ctx_t *ctx)
 }
 
 /* R52F (PROCEED / ENTER on the 404 alarm): wait 1/2 s. */
-agc_status_t agc_job_auto_optics_positioning_wait(agc_job_ctx_t *ctx)
+agc_status_t agc_job_auto_optics_positioning_wait(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->auto_optics_return != AGC_JOB_NONE))
     {
@@ -421,7 +421,7 @@ agc_status_t agc_job_auto_optics_positioning_delayed(agc_job_ctx_t *ctx)
 {
     if (agc_flag_test(AGC_FLAG_TARG1FLG))
     {
-        return (agc_rendz_tracking_attitude_csm(ctx, AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED));
+        return (agc_rendz_tracking_attitude_csm(AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED));
     }
 
     if (!agc_flag_test(AGC_FLAG_TERMIFLG))

@@ -135,11 +135,6 @@ static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *in
     { /* BON DMENFLG     */
         inc->zi[2] = agc_vec_zero();
     }
-
-    if (!AGC_ASSERT(agc_navaux_vec_ok(inc->zi[0])))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -341,11 +336,6 @@ static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t
     if (!inc->dim9)
     { /* BON DMENFLG     */
         inc->omega[2] = agc_vec_zero();
-    }
-
-    if (!AGC_ASSERT(agc_navaux_vec_ok(inc->omega[0])))
-    {
-        return;
     }
 }
 

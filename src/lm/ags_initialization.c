@@ -81,11 +81,6 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
             w[i] = AGS_MINUS_ZERO;
         }
     }
-
-    if (!AGC_ASSERT(w[0] <= 077777u))
-    {
-        return;
-    }
 }
 
 /*
@@ -173,7 +168,7 @@ agc_status_t agc_job_ags_initialization_compute(agc_job_ctx_t *ctx)
 /* LEMPREC to now; SCALEVEC -> AGSBUFF; TAT kept for the CSM. */
 static agc_dp_t ags_tat;
 
-agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
+agc_status_t agc_job_ags_initialization_lm_state(void)
 {
     agc_interp_t ip;
 
@@ -200,14 +195,14 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 
     ags_tat = o.tat;
 
-    return (agc_job_ags_initialization_csm_state(ctx));
+    return (agc_job_ags_initialization_csm_state());
 }
 
 /*
  * CSMPREC to TAT; SCALEVEC -> AGSBUFF +6; AGSBUFF +12D = time since AGSK;
  * the AGS downlist (LAGSLIST) for 20 s.
  */
-agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
+agc_status_t agc_job_ags_initialization_csm_state(void)
 {
     agc_interp_t ip;
 
@@ -314,7 +309,7 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
 /* ENDEXT (= ENDMARK): the extended verb is over.  NODOFLAG is left as it
  * is: AGSEND has already cleared it, and V34 on the first V06N16 comes
  * before AGSVCALC sets it.                                               */
-agc_status_t agc_job_ags_initialization_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_ags_initialization_end(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {

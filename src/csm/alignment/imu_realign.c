@@ -229,7 +229,7 @@ static agc_status_t landing_site_axes(void)
  * LSDISP V33: LLASRDA (LAT = LANDLAT, LONG = 2 LANDLONG, ALT = LANDALT);
  * LALOTORV at TSIGHT; XSMD = UNIT(ALPHAV); then the other two axes.
  */
-agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
+agc_status_t agc_job_csm_landing_site_accepted(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;
@@ -262,7 +262,7 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
 }
 
 /* CSMPREC resumed after its integration wait. */
-agc_status_t agc_job_csm_landing_site_axes(agc_job_ctx_t *ctx)
+agc_status_t agc_job_csm_landing_site_axes(void)
 {
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {

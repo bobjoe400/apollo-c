@@ -333,16 +333,13 @@ agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendz_kilclock
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_kilclock(void)
 {
     rz_dispdex_zero();
     agc_status_t st = agc_exec_gotopooh(); /* GOTOPOOH */
@@ -362,16 +359,13 @@ agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendz_clupdate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_clupdate(void)
 {
     rz_dispdex_zero();
     agc_phase_change(4, RZ_PHASE_04024);
@@ -387,26 +381,23 @@ agc_status_t agc_job_rendz_clupdate(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendz_ttogo_proceed
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_ttogo_proceed(void)
 {
     if (agc_flag_test(AGC_FLAG_FINALFLG))
     {
-        return (agc_job_rendz_kilclock(ctx));
+        return (agc_job_rendz_kilclock());
     }
 
     agc_phase_change(4, RZ_PHASE_04024);
     agc_flag_set(AGC_FLAG_FINALFLG); /* UPFLAG     */
 
-    return (agc_job_rendz_clupdate(ctx));
+    return (agc_job_rendz_clupdate());
 }
 
 /**********************************************************************

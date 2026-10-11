@@ -176,11 +176,6 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rv
  *********************************************************************/
 agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_conic_time_out_clear_(out);
     agc_conic_ctx_t ctx;                                      /* conic erasables */
     agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* MUTABLE,1 */

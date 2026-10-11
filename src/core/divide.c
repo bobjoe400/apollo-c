@@ -60,11 +60,6 @@
  **********************************************************************/
 static int32_t finaldv(int32_t a, int32_t c)
 {
-    if (!AGC_ASSERT(c > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT((a > -c) && (a < c)))
     {
         return (0); /* no valid result */
@@ -290,11 +285,6 @@ static agc_w2_t ddv_agree(agc_w2_t p)
     {
         p.hi -= 1;
         p.lo += AGC_W_ONE;
-    }
-
-    if (!AGC_ASSERT(p.hi >= 0))
-    {
-        return (p);
     }
 
     return (p);
@@ -598,11 +588,6 @@ static agc_w3_t sqrt_positive(agc_w3_t m, int *shift)
     int      o = 0; /* TP shift overflow (never: |m0| < 1/4) */
     agc_w2_t r;     /* the root (MPAC, MPAC+1) */
 
-    if (!AGC_ASSERT((m.m0 > 0) && (shift != 0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     if (m.m0 >= AGC_W_QUARTER)
     { /* >= .25: halve, ARGHI (>= .5) or ARGLO */
         r = sqrt_half(agc_w3_top(m));
@@ -680,11 +665,6 @@ agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
     if (m.m0 == 0)
     {
         return (zero); /* SQRT(0) = 0      */
-    }
-
-    if (!AGC_ASSERT((*shift == 0) || (*shift == 7) || (*shift == 14)))
-    {
-        return (zero);
     }
 
     return (sqrt_positive(m, shift));

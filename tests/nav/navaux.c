@@ -461,11 +461,11 @@ static void test_tff_poly(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    CHECK_NEAR(agc_dp_to_double(agc_tff_poly(&ip, 0), 0), 1.0 / 3.0, 1e-8);
+    CHECK_NEAR(agc_dp_to_double(agc_tff_poly(0), 0), 1.0 / 3.0, 1e-8);
     double x      = 0.5;                                                                                                               /* X */
     double series = (1.0 / 3.0) - (x / 5.0) + (x * x / 7.0) - (x * x * x / 9.0) + (x * x * x * x / 11.0) - (x * x * x * x * x / 13.0); /* truncated series */
 
-    CHECK_NEAR(agc_dp_to_double(agc_tff_poly(&ip, agc_dp_from_double(x, 0)), 0), series, 5e-3);
+    CHECK_NEAR(agc_dp_to_double(agc_tff_poly(agc_dp_from_double(x, 0)), 0), series, 5e-3);
 }
 
 /**********************************************************************

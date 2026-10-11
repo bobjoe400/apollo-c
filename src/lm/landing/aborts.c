@@ -302,13 +302,12 @@ static agc_status_t ab_abortalm(void)
 /**********************************************************************
  * P70 / P71 (p. 830) selected by V37.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_dps_abort(void)
 {
     if (!ab_legal(70))
     {
@@ -332,13 +331,12 @@ agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx)
  * P71 (P70-P71.agc p. 830) selected by V37: LEGAL? then ABRTJASK for
  * the APS abort (ABORTALM when not legal)
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort(void)
 {
     if (!ab_legal(71))
     {
@@ -362,13 +360,12 @@ agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx)
  * P70A (P70-P71.agc p. 830): restart point 4.27, ABRTJASK again for
  * the DPS abort
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_dps_abort_commanded(void)
 {
     agc_inhint();
     agc_status_t st = ab_abrtjask(false); /* step status */
@@ -387,13 +384,12 @@ agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx)
  * P71A (P70-P71.agc p. 830): restart point 4.31, ABRTJASK again for
  * the APS abort
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_aps_abort_commanded(void)
 {
     agc_inhint();
     agc_status_t st = ab_abrtjask(true); /* step status */
@@ -547,13 +543,12 @@ agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx)
  * THROTUP / UPTHROT1 / GRP4OFF (pp. 834-835): SERVICER now calls the
  * ascent guidance; group 4 is no longer used.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_abort_to_ascent_guidance(void)
 {
     agc_lm_throtup();
     agc_guid_state()->avg.avgexit = AGC_JOB_ATMAG;

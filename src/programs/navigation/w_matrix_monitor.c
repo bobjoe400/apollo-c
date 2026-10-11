@@ -302,16 +302,13 @@ static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz, agc_rendz_nav_pa
  *
  * FUNCTION NAME: agc_job_w_matrix_monitor_proceed
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_w_matrix_monitor_proceed(void)
 {
     agc_rendz_t         *rz = agc_rendz_erasable(); /* rendezvous erasables */
     agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad();  /* pad loads */

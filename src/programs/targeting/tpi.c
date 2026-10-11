@@ -103,14 +103,8 @@
  **********************************************************************/
 static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 {
-    agc_dp_t  rp = 0; /* |RP|, m 2^29 */
-    agc_dp_t  ra = 0; /* |RA|, m 2^29 */
-    agc_vec_t urp;    /* 12D UNIT RP, 2^1 */
-
-    urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL);
-    agc_vec_t ura; /* 14D UNIT RA, 2^1 */
-
-    ura = agc_vec_unit(ip, rz->ract3, &ra, NULL);
+    agc_dp_t rp = agc_vec_unit_abval(ip, rz->rpass3); /* |RP| (36D after UNIT RP; 12D not read), m 2^29 */
+    agc_dp_t ra = agc_vec_unit_abval(ip, rz->ract3);  /* |RA| (36D after UNIT RA; 14D not read), m 2^29 */
 
     bool fail = false; /* no solution (NORMEX) */
 
@@ -523,11 +517,6 @@ agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz, a
  **********************************************************************/
 agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t    r;  /* position, m 2^29 */
     agc_vec_t    v;  /* velocity, m/cs 2^7 */
     agc_status_t st; /* to TPASS4 */
@@ -585,11 +574,6 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz, 
  **********************************************************************/
 agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rtarg, agc_vec_t vpass4, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz->rtarg     = rtarg;                  /* S3435.25     */
     rz->vpass4    = vpass4;
     agc_vec_t urp = rz_unit(ip, rz->rtarg); /* 0D UNIT RP, 2^1 */

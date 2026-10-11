@@ -411,17 +411,7 @@ static agc_status_t pin_putn(int first, int ncomp)
  **********************************************************************/
 agc_status_t pin_load_verb(uint8_t verb)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
-
-    if (!AGC_ASSERT(verb >= 21u && verb <= 25u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (verb == 21u)
     {

@@ -100,20 +100,10 @@ agc_vec_t agc_vec_add(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     int              k;                    /* component index */
     int              i;                    /* step in AGC order */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (u);
-    }
-
     for (i = 0; i < AGC_VEC_N; i++)
     {
         k      = order[i];
         r.c[k] = agc_w_join(agc_w_dad(agc_w_split(u.c[k]), agc_w_split(v.c[k]), &ip->ovfind));
-    }
-
-    if (!AGC_ASSERT(i == AGC_VEC_N))
-    {
-        return (u);
     }
 
     return (r);
@@ -132,11 +122,6 @@ agc_vec_t agc_vec_add(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_vec_sub(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (u);
-    }
-
     return (agc_vec_add(ip, u, agc_vec_neg(v)));
 }
 
@@ -156,11 +141,6 @@ agc_vec_t agc_vec_neg(agc_vec_t v)
     for (k = 0; k < AGC_VEC_N; k++)
     {
         r.c[k] = -v.c[k];
-    }
-
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (agc_vec_zero()); /* no valid result */
     }
 
     return (r);
@@ -186,21 +166,11 @@ agc_vec_t agc_vec_scale(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
     agc_w3_t  m;     /* DMPSUB TP product */
     int       k;     /* component index */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (v);
-    }
-
     for (k = 0; k < AGC_VEC_N; k++)
     {
         m      = agc_w_dmpsub(agc_w_split(v.c[k]), agc_w_split(s));
         m      = agc_w_roundsub(m, &ip->ovfind); /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
-    }
-
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (v);
     }
 
     return (r);
@@ -221,18 +191,8 @@ agc_tp_t agc_vec_dot_tp(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     agc_w3_t m; /* DOTSUB TP result */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0);
-    }
-
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
     m              = agc_w_dotsub(u, v, &ip->ovfind);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (0);
-    }
 
     return (agc_w3_value(m));
 }
@@ -252,18 +212,8 @@ agc_dp_t agc_vec_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     agc_w3_t m; /* DOTSUB TP result */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0);
-    }
-
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
     m              = agc_w_dotsub(u, v, &ip->ovfind);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (0);
-    }
 
     return (agc_w_join(agc_w3_top(m)));
 }
@@ -283,11 +233,6 @@ agc_dp_t agc_vec_sq(agc_interp_t *ip, agc_vec_t v)
 
     m = agc_w_vsqsub(v, &ip->ovfind);
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (0);
-    }
-
     return (agc_w_join(agc_w3_top(m)));
 }
 
@@ -305,11 +250,6 @@ agc_tp_t agc_vec_sq_tp(agc_interp_t *ip, agc_vec_t v)
     agc_w3_t m; /* VSQSUB TP result */
 
     m = agc_w_vsqsub(v, &ip->ovfind);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (0);
-    }
 
     return (agc_w3_value(m));
 }
@@ -372,22 +312,12 @@ agc_vec_t agc_vec_cross(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     agc_w2_t  y; /* y: X1M3 - X3M1 */
     agc_w2_t  x; /* x: X3M2 - X2M3 */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (agc_vec_zero());
-    }
-
     z = mul_top(-u.c[1], v.c[0]);                            /* -X1M2 in MPAC+5  */
     z = agc_w_dad(z, mul_top(u.c[0], v.c[1]), &ip->ovfind);  /* + X2M1    */
     y = mul_top(u.c[2], v.c[0]);                             /* X1M3 (VBUF +2)   */
     y = agc_w_dad(y, mul_top(-u.c[0], v.c[2]), &ip->ovfind); /* - X3M1    */
     x = mul_top(u.c[1], v.c[2]);                             /* X3M2             */
     x = agc_w_dad(x, mul_top(-u.c[2], v.c[1]), &ip->ovfind); /* - X2M3    */
-
-    if (!AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(y.hi) && agc_w_ok(z.hi)))
-    {
-        return (agc_vec_zero());
-    }
 
     r.c[0] = agc_w_join(x);
     r.c[1] = agc_w_join(y);
@@ -418,21 +348,11 @@ agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
     d              = agc_w3_top(agc_w_dotsub(u, v, &ip->ovfind));
 
-    if (!AGC_ASSERT(agc_w_ok(d.hi) && agc_w_ok(d.lo)))
-    {
-        return (v); /* no valid dot product */
-    }
-
     for (k = 0; k < AGC_VEC_N; k++)
     {
         m      = agc_w_dmpsub(d, agc_w_split(v.c[k])); /* DVXSC            */
         m      = agc_w_roundsub(m, &ip->ovfind);       /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
-    }
-
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (v);
     }
 
     return (r);
@@ -458,11 +378,6 @@ agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
     agc_vec_t r = v;        /* result, scale -n */
     int       k;            /* component index */
     int       j;            /* steps done */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (v);
-    }
 
     if (n < 0)
     {
@@ -520,11 +435,6 @@ agc_vec_t agc_vec_shr(agc_vec_t v, int n)
         r.c[k] = agc_w_join(agc_w_vright(agc_w_split(v.c[k]), n));
     }
 
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (v);
-    }
-
     return (r);
 }
 
@@ -550,16 +460,6 @@ agc_mat_t agc_mat_identity_half(void)
         }
     }
 
-    if (!AGC_ASSERT(m.row[0].c[0] == AGC_DP_HALF))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(m.row[2].c[1] == 0))
-    {
-        return ((agc_mat_t){0}); /* no valid result */
-    }
-
     return (m);
 }
 
@@ -579,19 +479,9 @@ agc_vec_t agc_mat_vec(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t v)
     agc_vec_t r; /* M v, scales add */
     int       i; /* row index */
 
-    if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(m != 0))
-    {
-        return (agc_vec_zero());
-    }
-
     for (i = 0; i < AGC_VEC_N; i++)
     {
         r.c[i] = agc_vec_dot(ip, v, m->row[i]);
-    }
-
-    if (!AGC_ASSERT(i == AGC_VEC_N))
-    {
-        return (agc_vec_zero());
     }
 
     return (r);
@@ -652,11 +542,6 @@ agc_vec_t agc_vec_mat(agc_interp_t *ip, agc_vec_t v, const agc_mat_t *m)
         r.c[j] = agc_vec_dot(ip, v, t.row[j]);
     }
 
-    if (!AGC_ASSERT(j == AGC_VEC_N))
-    {
-        return (agc_vec_zero());
-    }
-
     return (r);
 }
 
@@ -683,11 +568,6 @@ agc_mat_t agc_mat_mul(agc_interp_t *ip, const agc_mat_t *a, const agc_mat_t *b)
     for (j = 0; j < AGC_VEC_N; j++)
     {
         cols.row[j] = agc_mat_vec(ip, a, bt.row[j]);
-    }
-
-    if (!AGC_ASSERT(j == AGC_VEC_N))
-    {
-        return (agc_mat_identity_half());
     }
 
     return (agc_mat_transpose(&cols));

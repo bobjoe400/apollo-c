@@ -71,11 +71,6 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun, agc_noun_t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ? &agc_noun_table_csm[noun] : &agc_noun_table_lm[noun]; /* vehicle; the vehicle's table row */
 
     if (!AGC_ASSERT(row->noun == noun) || !AGC_ASSERT(row->ncomp <= AGC_NOUN_MAX_COMP))
@@ -283,11 +278,6 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value
 
     if (!write)
     {
-        if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         *value = agc_dp_from_sp(r);
     }
 
@@ -357,11 +347,6 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
         default:
             return (AGC_STATUS_BAD_ARG);
     } /* end switch (data_id) */
-
-    if (!AGC_ASSERT(w <= 077777u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     *value = (agc_dp_t) w;
 
@@ -593,11 +578,6 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write, agc_dp_t *val
         case AGC_DATA_OPTION3:
             /* OPTION1-3 (noun 06, raw octal words; OPTION1 +k). */
         {
-            if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id >= AGC_DATA_OPTION1 && data_id <= AGC_DATA_OPTION3))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
             int k = (int) data_id - (int) AGC_DATA_OPTION1; /* component */
 
             if (write)
@@ -638,11 +618,6 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write, agc_dp_t *val
  **********************************************************************/
 agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (noun_data_access(data_id, false, value));
 }
 

@@ -30,26 +30,11 @@ static agc_dp_t yawang;   /* YAWANG   (= BETASB)  N51 R2, revs            */
 
 agc_dp_t agc_sband_pitchang(void)
 {
-    if (!AGC_ASSERT(pitchang >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (pitchang);
 }
 
 agc_dp_t agc_sband_yawang(void)
 {
-    if (!AGC_ASSERT(yawang >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(yawang <= AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (yawang);
 }
 
@@ -57,11 +42,6 @@ agc_dp_t agc_sband_yawang(void)
 static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     const agc_dp_t m = agc_vec_abval(ip, v);
-
-    if (!AGC_ASSERT(m >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_asin(ip, agc_dp_sign(m, s)));
 }

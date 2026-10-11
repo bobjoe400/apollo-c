@@ -108,11 +108,6 @@ static agc_lm_words_t thr_massmult(agc_dp_t accel)
         return (agc_lm_words(0));
     }
 
-    if (!AGC_ASSERT(accel >= 0))
-    {
-        return (agc_lm_words(0));
-    }
-
     /* First DMP leaves a TP in MPAC; the second DMP uses only MPAC,+1. */
     agc_dp_t ma  = agc_tp_to_dp(agc_dp_mul_tp(accel, mass)); /* 2^12 */
     agc_tp_t f   = agc_dp_mul_tp(ma, THR_SCALEFAC);          /* TP, 2^28 pulses   */
@@ -231,16 +226,6 @@ static void thr_fweight(agc_lm_thr_t *t)
     agc_sp_t buf1 = (agc_sp_t) (q * THR_FRATE_BIT6);                           /* pulses, unscaled */
     int32_t  dtp  = thr_csad(agc_lm_time1(), buf, AGC_LM_THROTLAG) & THR_LOW8; /* PPROCESS + TL, cs ("small and positive")  */
 
-    if (!AGC_ASSERT(buf1 > 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(dtp >= 0 && dtp <= THR_LOW8))
-    {
-        return;
-    }
-
     agc_sp_t ratio = agc_lm_dv((agc_dp_t) dtp * 16384, q); /* scale 2^0 */
     agc_sp_t pif   = t->pif.hi;                            /* MP PIF, pulses, unscaled */
     agc_dp_t first = agc_sp_mul(ratio, pif);               /* 2^14 pulses            */
@@ -331,11 +316,6 @@ agc_status_t agc_lm_throttle(void)
     }
 
     agc_dp_t accel = agc_sp_mul(abdelv, THR_AF_CNST); /* 2^-4 m/cs^2  */
-
-    if (!AGC_ASSERT(accel >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_lm_throttle_measured(accel));
 }

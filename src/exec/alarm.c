@@ -117,11 +117,6 @@ void exec_vac5stor(void)
     }
 
     vac5.newjob = agc_exec_newjob();
-
-    if (!AGC_ASSERT(vac5.newjob >= -1))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -133,11 +128,6 @@ void exec_vac5stor(void)
 static void proglarm(void)
 {
     uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS); /* DSPTAB +11D, the C/S lamp word */
-
-    if (!AGC_ASSERT(w <= 077777u))
-    {
-        return;
-    }
 
     agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
 }
@@ -191,11 +181,6 @@ static void store_alarm(agc_alarm_code_t code)
  **********************************************************************/
 void agc_alarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return;
-    }
-
     agc_inhint();
     store_alarm(code);
     agc_relint();
@@ -214,16 +199,6 @@ void agc_alarm(agc_alarm_code_t code)
  **********************************************************************/
 void agc_exec_varalarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(code <= AL_POSMAX))
-    {
-        return;
-    }
-
     agc_alarm(code);
 }
 
@@ -274,17 +249,7 @@ void agc_prioalarm(agc_alarm_code_t code)
  **********************************************************************/
 void exec_request_enema(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return;
-    }
-
     enema_wanted = true;
-
-    if (!AGC_ASSERT(enema_wanted))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -390,11 +355,6 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
     agc_relint();
 
     if (!AGC_ASSERT(enema_wanted))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -545,11 +505,6 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
 
         exec_request_enema(); /* TC WHIMPER        */
 
-        if (!AGC_ASSERT(agc_phase_get(4) == 0U))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         return (AGC_STATUS_POODOO);
     }
 
@@ -593,11 +548,6 @@ agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_ccshole(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     _Static_assert(AGC_ALARM_01103 <= AL_POSMAX, "AGC constant");
 
     return (agc_poodoo(AGC_ALARM_01103));

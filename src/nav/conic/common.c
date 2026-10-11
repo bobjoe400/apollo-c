@@ -76,11 +76,6 @@ static const agc_dp_words_t mutable_tab[8] = {
  *********************************************************************/
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
 {
-    if (!AGC_ASSERT(body == AGC_CONIC_EARTH || body == AGC_CONIC_MOON))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int             base = (body == AGC_CONIC_EARTH) ? 1 : 5; /* MUTABLE+2; or +10 words */
     agc_conic_ctx_t z    = {0};                               /* cleared context */
 

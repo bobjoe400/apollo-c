@@ -97,7 +97,7 @@ agc_status_t agc_job_csm_orientation_coarse_verb(agc_job_ctx_t *ctx)
 }
 
 /* IMUCOARS to THETAD (all zero) and IMUSTALL (CURTAINS on a bad end). */
-agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx)
+agc_status_t agc_job_csm_orientation_coarse_start(void)
 {
     uint16_t thetad[3];
 
@@ -126,7 +126,7 @@ agc_status_t agc_job_csm_orientation_coarse_start(agc_job_ctx_t *ctx)
 }
 
 /* After the coarse align: IMUFIN20 and IMUSTALL. */
-agc_status_t agc_job_csm_orientation_coarse_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_csm_orientation_coarse_done(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {

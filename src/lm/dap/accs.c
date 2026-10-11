@@ -201,11 +201,6 @@ static bool lem_mass(lm_dap_t *d, bool docked)
  **********************************************************************/
 static agc_sp_t fit_row(int k, agc_sp_t *rem)
 {
-    if (!AGC_ASSERT(k >= 0 && k < 7) || !AGC_ASSERT(rem != NULL))
-    {
-        return (0);
-    }
-
     lm_dp_pair_t a   = {inercona_hi[k], inercona_lo[k]};
     agc_sp_t     div = (agc_sp_t) (agc_erase_lemmass() + inerconc[k]); /* LEMMASS + C, scaled 2^16 kg */
     lm_dp_pair_t q   = lm_dap_dvqr(a, div);                            /* (A,L) / (LEMMASS + C): quotient and remainder, scale per row */
@@ -251,16 +246,6 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
         d->coeffq = lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
         d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
     }
-
-    if (!AGC_ASSERT(d->coeffq <= 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->coeffr >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -283,11 +268,6 @@ static void jaccuv(lm_dap_t *d)
 
     d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
     d->jacc[4] = d->jacc[3];
-
-    if (!AGC_ASSERT(d->jacc[3] >= LM_NEGMAX && d->jacc[3] <= LM_POSMAX))
-    {
-        return;
-    }
 
     if (!AGC_ASSERT(d->jacc[4] == d->jacc[3]))
     {
@@ -353,11 +333,6 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     }
 
     if (!AGC_ASSERT(d->kq >= 0 || d->accdotq < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -478,11 +453,6 @@ static agc_status_t docked(lm_dap_t *d)
     d->coeffq  = (agc_sp_t) -AC_07071;
     d->coeffr  = AC_07071;
 
-    if (!AGC_ASSERT(d->jacc[1] >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg); /* MASS x CG DELDOT, scale per the DOCKED fit (MPAC) */
 
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
@@ -541,11 +511,6 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
      * tables; the AGC's values are then meaningless anyway (a later
      * 1/ACCS with real masses replaces them). The C stores the row.     */
     d->l_pvt_cg = fit_row(0, &rem);
-
-    if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX && d->l_pvt_cg <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (lresc(d));
 } /* lm_alone */

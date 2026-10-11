@@ -110,15 +110,6 @@ agc_status_t lm_dap_rateloop(void)
 
         d->downtork[slot] = lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
 
-        if (!AGC_ASSERT(slot >= 0 && slot < 6))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        if (!AGC_ASSERT(t32 >= 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
     } /* end DAPTEMP6 = 2, 1, 0 */
 
     int32_t usum = (int32_t) d->torque[1] + d->torque[2]; /* U + V torque, scaled 1 jet-s */
@@ -126,11 +117,6 @@ agc_status_t lm_dap_rateloop(void)
 
     d->jetrate[2] = lm_dap_mphi(lm_dap_wrap(usum), d->jacc[2]); /* JETRATER */
     d->jetrate[1] = lm_dap_mphi(lm_dap_wrap(udif), d->jacc[1]); /* JETRATEQ */
-
-    if (!AGC_ASSERT(d->jetrate[1] >= LM_NEGMAX && d->jetrate[2] >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* lm_dap_rateloop */
@@ -157,11 +143,6 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
     }
 
     agc_sp_t q = lm_dap_dv(om, RT_1_40); /* DIVIDER: rate = increment x 40, scaled pi/4 rad/s */
-
-    if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (q);
 }
@@ -196,16 +177,6 @@ static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped, agc_
     e       = lm_dap_das(e, lm_dap_mp((agc_sp_t) -last, RT_1_40)); /* manual mode */
     *err_hi = e.hi;
     *err_lo = e.lo;
-
-    if (!AGC_ASSERT(*traped >= LM_NEGMAX && *traped <= LM_POSMAX))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(e.hi >= LM_NEGMAX && e.hi <= LM_POSMAX))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -285,11 +256,6 @@ static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn, agc_sp_t 
 
     agc_sp_t q = lm_dap_dv(lm_dap_mp(corr, RT_FIVE), div); /* 5 x correction / count: AOS change, scaled pi/2 rad/s^2 */
 
-    if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
-    {
-        return (aos);
-    }
-
     return (lm_dap_wrap((int32_t) aos + q)); /* ADS AOSQ          */
 }
 
@@ -335,16 +301,6 @@ agc_status_t lm_dap_backp(void)
     inc         = lm_dap_das(lm_dap_mp(agc_erase_m31(), ydif), lm_dap_mp(agc_erase_m32(), zdif));
     derive_axis(inc, d->omegar, &d->trapedr, &d->rerror, &d->dzerror_lo, d->rlast);
 
-    if (!AGC_ASSERT(d->oldxforp <= 077777u && d->oldzforq <= 077777u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->jetrate[0] >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool     docked = agc_flag_test(AGC_FLAG_CSMDKFLG);                                            /* CSMDKFLG: docked gains */
     agc_sp_t omegan = docked ? d->dkomegan : d->lmomegan;                                          /* DAPTREG4: OMEGAN gain, unscaled count */
     agc_sp_t kaosn  = docked ? d->dkkaosn : d->lmkaosn;                                            /* DAPTREG5: KAOSN gain, unscaled count */
@@ -373,16 +329,6 @@ agc_status_t lm_dap_backp(void)
     }
 
     d->omegar = lm_dap_sat((int32_t) d->omegar + d->jetrate[2] + d->aosrterm);
-
-    if (!AGC_ASSERT(d->omegap >= LM_NEGMAX && d->omegaq >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->omegar >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* lm_dap_backp */
@@ -430,11 +376,6 @@ agc_status_t lm_dap_offset_est(void)
     d->aosr_lo  = r.lo;
     d->alphar   = r.hi;
     d->aosrterm = lm_dap_mphi(r.hi, RT_200MS);
-
-    if (!AGC_ASSERT(d->aosqterm >= LM_NEGMAX && d->aosrterm >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(d->alphaq == d->aosq))
     {

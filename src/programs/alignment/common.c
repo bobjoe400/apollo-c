@@ -42,16 +42,6 @@ void agc_align_ram_reset(void)
     align_ram.sighting_mark_return = AGC_JOB_NONE;
     align_ram.planet_ret           = AGC_JOB_NONE;
     align_ram.coarse_ret           = AGC_JOB_NONE;
-
-    if (!AGC_ASSERT(align_ram.mkvac_index == -1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(align_ram.starind == 0))
-    {
-        return;
-    }
 }
 
 /*
@@ -68,11 +58,6 @@ agc_dp_t agc_align_cdulogic(uint16_t cdu)
     }
 
     const agc_dp_t r = agc_guid_cdulogic((uint16_t) (cdu & CDU_WORD_MASK));
-
-    if (!AGC_ASSERT((r >= -AGC_DP_HALF) && (r < AGC_DP_HALF)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (r);
 }
@@ -109,11 +94,6 @@ uint16_t agc_align_ones_to_twos(agc_dp_t revs)
     if (hv < 0)
     {
         hv += CDU_MODULUS;
-    }
-
-    if (!AGC_ASSERT((hv >= 0) && (hv <= (int32_t) CDU_WORD_MASK)))
-    {
-        return (0); /* no valid result */
     }
 
     return ((uint16_t) hv);
@@ -329,17 +309,7 @@ agc_dp_t align_loadtime(void)
 {
     const uint32_t t = agc_time_now_cs();
 
-    if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
-    {
-        return (0); /* no valid result */
-    }
-
     const agc_dp_t d = (agc_dp_t) (t & (AGC_TIME_MODULUS_CS - 1u));
-
-    if (!AGC_ASSERT(d >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (d);
 }
@@ -349,19 +319,9 @@ agc_sp_t align_word_to_sp(uint16_t w)
 {
     const uint16_t m = (uint16_t) (w & CDU_WORD_MASK);
 
-    if (!AGC_ASSERT(w <= CDU_WORD_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((m & WORD_SIGN) != 0u)
     {
         return ((agc_sp_t) ((int32_t) m - WORD_ONES_NEG));
-    }
-
-    if (!AGC_ASSERT(m < WORD_SIGN))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) m);
@@ -370,19 +330,9 @@ agc_sp_t align_word_to_sp(uint16_t w)
 /* A signed SP as the raw 15-bit 1's complement word. */
 uint16_t align_sp_to_word(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (v < 0)
     {
         return ((uint16_t) ((int32_t) v + WORD_ONES_NEG));
-    }
-
-    if (!AGC_ASSERT(v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
     }
 
     return ((uint16_t) v);
@@ -509,7 +459,7 @@ agc_status_t align_coarse(agc_job_id_t ret)
 }
 
 /* COARSE: woken after the IMUCOARS stall. */
-agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_align_coarse_done(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
@@ -520,7 +470,7 @@ agc_status_t agc_job_align_coarse_done(agc_job_ctx_t *ctx)
 }
 
 /* COARSE: woken after the IMUFINE stall; continue as the caller asked. */
-agc_status_t agc_job_align_fine_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_align_fine_done(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {

@@ -46,11 +46,6 @@ agc_flag_id_t imu_vflag(imu_vflag_t f)
 {
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM); /* LM rope */
 
-    if (!AGC_ASSERT(lm || agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (0);
-    }
-
     return (lm ? imu_vflag_lm(f) : imu_vflag_csm(f)); /* by vehicle */
 }
 

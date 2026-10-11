@@ -275,11 +275,6 @@ static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
     {
         return;
     }
-
-    if (!AGC_ASSERT(a->tbup >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -930,13 +925,12 @@ agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
  * TERMASC (p. 854): restore the astronaut's deadband, disallow aborts,
  * and go to P00.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_termasc(void)
 {
     const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_TERMASC, AGC_TASK_NONE, 0, false, 0U };
 
@@ -1251,11 +1245,6 @@ agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx)
     }
 
     agc_relint();
-
-    if (!AGC_ASSERT(agc_guid_state()->lm.which == AGC_LM_WHICH_POWERED_ASCENT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_lm_burnbaby(ctx));
 }

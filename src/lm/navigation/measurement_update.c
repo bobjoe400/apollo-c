@@ -868,19 +868,18 @@ static mu_step_t mu_next(mu_step_t step)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status that stopped the
  *          sequence
  **********************************************************************/
-static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t mu_run(agc_interp_t *ip)
 {
     for (int i = 0; i < MU_STEPS; i++)
     {
         if (mu.step == MU_END)
         {
-            return (agc_job_rendezvous_tracking_data_done(ctx)); /* RENDEND */
+            return (agc_job_rendezvous_tracking_data_done()); /* RENDEND */
         }
 
         agc_status_t st  = mu_compute(ip, mu.step); /* B, DELTAQ */
@@ -950,7 +949,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
     agc_phase_change(2, 04022);
     mu.step = mu_next(mu.step);
 
-    return (mu_run(ctx, &ip));
+    return (mu_run(&ip));
 }
 
 /**********************************************************************
@@ -964,13 +963,12 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_incorporate(void)
 {
     agc_phase_change(2, 04022); /* GRP2PC   */
     agc_interp_t ip;            /* interpreter state */
@@ -1000,12 +998,12 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        return (agc_job_rendezvous_tracking_data_measure(ctx));
+        return (agc_job_rendezvous_tracking_data_measure());
     }
 
     lmnav_state()->r65cntr = 0;
 
-    return (lmnav_tracking_attitude(ctx, false, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE));
+    return (lmnav_tracking_attitude(false, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE));
 } /* agc_job_rendezvous_tracking_data_incorporate */
 
 /**********************************************************************
@@ -1017,13 +1015,12 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_measure(void)
 {
     mu.x2 = 2; /* earth */
 
@@ -1038,5 +1035,5 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
 
-    return (mu_run(ctx, &ip));
+    return (mu_run(&ip));
 }

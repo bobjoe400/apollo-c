@@ -40,3 +40,7 @@ its lane's AGC source files side by side with the C and checks:
   lane and adds nothing, remove it (update include/ and callers).
 * Keep `make`, `make test`, `make check` green; `make format` on edits.
 * Your note: docs/modules/review-<lane>.md; status row "review-<lane>".
+* After your review (any control-flow change): run `make prove-classify`
+  for your lane so EVA verdicts recorded as `eva-valid-deferred` are
+  re-evaluated against the reviewed code, and delete only what is proven
+  on the reviewed tree.

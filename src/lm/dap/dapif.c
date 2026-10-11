@@ -64,11 +64,6 @@ agc_status_t lm_dap_callaccs(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(lm_dap_state()->db >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -91,11 +86,6 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {
     lm_dap_state()->t5adr = a;
     agc_rupt_set_t5_task((a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER); /* PAXIS or DAPIDLER */
-
-    if (!AGC_ASSERT(lm_dap_state()->t5adr == a))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -213,11 +203,6 @@ agc_status_t agc_lm_dap_pflitedb(void)
 
     d->db = DB_POWER;
 
-    if (!AGC_ASSERT(d->db == DB_POWER))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (lm_dap_callaccs());
 }
 
@@ -237,16 +222,6 @@ void agc_lm_dap_zatteror(void)
     d->cduxd = agc_erase_cdux();
     d->cduyd = agc_erase_cduy();
     d->cduzd = agc_erase_cduz();
-
-    if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->cduzd <= 077777u))
-    {
-        return;
-    }
 
     agc_lm_dap_stoprate();
 }
@@ -274,16 +249,6 @@ void agc_lm_dap_stoprate(void)
     d->delperor = 0;
     d->delqeror = 0;
     d->delreror = 0;
-
-    if (!AGC_ASSERT(d->omegapd == 0 && d->delcdux == 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->delperor == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************

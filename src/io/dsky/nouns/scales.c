@@ -737,11 +737,6 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
  **********************************************************************/
 static int32_t sf_word_value(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= 077777u))
-    {
-        return (0);
-    }
-
     if (w >= 040000u)
     {
         return (-(int32_t) (077777u - w));
@@ -831,11 +826,6 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale, agc_sc
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const scale_def_t *def     = &scale_defs[scale];                       /* scale definition row */
     const bool         csm     = (veh == AGC_VEHICLE_CSM);                 /* which columns */
     const int          routine = csm ? def->csm_routine : def->lm_routine; /* SF routine of veh */
@@ -880,10 +870,5 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale, agc_sc
  **********************************************************************/
 agc_status_t agc_scale_info(agc_scale_t scale, agc_scale_info_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(scale < AGC_SCALE_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_scale_info_vehicle(agc_state_vehicle(), scale, out));
 }

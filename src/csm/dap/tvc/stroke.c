@@ -80,13 +80,12 @@ agc_status_t csm_tvc_tstinit(void)
  * TSTINIT, then (INHINT) start the test on the next DAP pass if CSM/LM
  * (DAPDATR1 bit 14): STROKER = ESTROKER; ENDOFJOB.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  IO  the job's context (unused state)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG without a
  *          context
  **********************************************************************/
-agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx)
+agc_status_t agc_job_strktsti(void)
 {
     agc_status_t st = csm_tvc_tstinit(); /* TCR TSTINIT                 */
 

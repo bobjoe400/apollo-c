@@ -179,7 +179,7 @@ agc_status_t agc_job_engine_enable_terminate(agc_job_ctx_t *ctx)
 /* V99P (p.706-707): engine enable. If TIG-0 has come (IGNFLAG) ignite in
  * 10 ms; in any case clear the V99 (V06N40). A second V99P (restart) only
  * clears it.                                                              */
-agc_status_t agc_job_engine_enable_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_engine_enable_proceed(void)
 {
     agc_inhint();
 
@@ -585,14 +585,14 @@ agc_status_t agc_task_gimbal_test_step(void)
  * configuration in DAPDATR1 bits 14-13: CM alone -> no DAP (T5 idle, jets
  * off, KALCMANU killed), CSM or CSM/LM -> RCS DAP, Saturn -> SATSTKON;
  * exit through GOPIN.                                                     */
-agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx)
+agc_status_t agc_job_dapfig(void)
 {
     agc_chan_and(012, (uint16_t) ~(uint16_t) AGC_CH012_SIVBTAKEOVER);
     unsigned cfg = ((unsigned) agc_erase_dapdatr1() >> 12) & 3U; /* MP BIT3     */
 
     if (cfg == 3U)
     {
-        return (agc_csm_satstkon(ctx));
+        return (agc_csm_satstkon());
     }
 
     agc_inhint();

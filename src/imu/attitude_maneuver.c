@@ -162,16 +162,6 @@ void agc_imu_set_pointvsm(agc_vec_t v)
  **********************************************************************/
 uint16_t agc_erase_fdai(int axis)
 {
-    if (!AGC_ASSERT(axis >= 0 && axis < 3))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(fdai[axis] <= CDU_MASK))
-    {
-        return (0);
-    }
-
     return (fdai[axis]);
 }
 
@@ -201,11 +191,6 @@ static agc_status_t findgimb(agc_interp_t *ip, const agc_mat_t *m, uint16_t gimb
     if (st == AGC_STATUS_OK)
     {
         st = agc_rtb_v1sto2s(ang, gimbal); /* 2:S COMPLEMENT     */
-    }
-
-    if (!AGC_ASSERT(cmga >= AGC_DP_MIN || st != AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -386,11 +371,6 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3], uint
  **********************************************************************/
 agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in, agc_vec_t scaxis_in, uint16_t gimbal[3])
 {
-    if (!AGC_ASSERT(ip != NULL && gimbal != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_imu_set_pointvsm(pointvsm_in);
 
     if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
@@ -402,11 +382,6 @@ agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in, agc_vec_t
     const uint16_t cdu0[3] = {agc_erase_cdux(), agc_erase_cduy(), agc_erase_cduz()};
 
     agc_relint();
-
-    if (!AGC_ASSERT(cdu0[0] <= CDU_MASK && cdu0[1] <= CDU_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (vecpoint_from(ip, cdu0, gimbal));
 }
@@ -501,16 +476,6 @@ agc_sp_t agc_imu_isitauto(void)
 {
     uint16_t v = agc_chan_read(AGC_CHAN_CHAN31) & 020000u; /* channel bit */
 
-    if (!AGC_ASSERT(v == 0u || v == 020000u))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v <= (uint16_t) AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) v);
 }
 
@@ -524,11 +489,6 @@ agc_sp_t agc_imu_isitauto(void)
 agc_sp_t agc_imu_gn_auto(void)
 {
     uint16_t v = agc_chan_read(AGC_CHAN_CHAN30) & 01000u; /* channel bit */
-
-    if (!AGC_ASSERT(v == 0u || v == 01000u))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((v != 0u) ? (agc_sp_t) (v - 1u) : agc_imu_isitauto()); /* CCS A */
 }

@@ -226,9 +226,9 @@ void agc_integ_thisvint(void);
 
 /* ---- STATEINT (periodic P00 integration), jobs and tasks ------------- */
 agc_status_t agc_task_stateint(void);                   /* STATEINT task */
-agc_status_t agc_job_statint1(agc_job_ctx_t *jc);       /* STATINT1 job  */
-agc_status_t agc_job_statint1_stall(agc_job_ctx_t *jc); /* INTSTALL +1   */
-agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc);  /* 2nd INTSTALL  */
+agc_status_t agc_job_statint1(void);       /* STATINT1 job  */
+agc_status_t agc_job_statint1_stall(void); /* INTSTALL +1   */
+agc_status_t agc_job_stateup_stall(void);  /* 2nd INTSTALL  */
 
 /* ---- LM only: SETITCTR (ORBITAL_INTEGRATION LM p. 1245) -------------- */
 /* ITERCTR = 20, or 5 when AVEGFLAG is set, then LAMBERT.                 */

@@ -90,11 +90,6 @@ static int ldg_tgt(void)
 {
     agc_sp_t ph = agc_lm_ldg()->wchphase; /* WCHPHASE, -1..2, unscaled */
 
-    if (!AGC_ASSERT(ph >= AGC_LM_PHASE_IGNALG && ph <= AGC_LM_PHASE_VERTICAL))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((ph == AGC_LM_PHASE_APPRQUAD) ? 1 : 0); /* approach set */
 }
 
@@ -142,11 +137,6 @@ static agc_sp_t ldg_wrap(int32_t x)
     if (!AGC_ASSERT(r <= LDG_POSMAX && r >= -LDG_POSMAX))
     {
         r %= 16384; /* overflow-corrected */
-    }
-
-    if (!AGC_ASSERT(r >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) r);
@@ -222,11 +212,6 @@ static agc_lm_words_t ldg_dmpsub(agc_lm_words_t m, agc_lm_words_t x)
     mid                = agc_lm_das_ovf(mid, agc_lm_words(agc_sp_mul(m.lo, x.hi)), &ovf);
     agc_lm_words_t top = {(agc_sp_t) ovf, mid.hi};                              /* XCH MPAC       */
 
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
-    {
-        return (top);
-    }
-
     return (agc_lm_das(top, agc_lm_words(agc_sp_mul(m.hi, x.hi))));
 }
 
@@ -264,11 +249,6 @@ agc_sp_t agc_lm_ttf8_high(void)
 {
     const agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
-    if (!AGC_ASSERT(l != NULL))
-    {
-        return (0);
-    }
-
     agc_sp_t hi = ldg_raw_high(l->ttf_8, l->ttf_8_hi); /* stored high word of TTF/8, scale 2^14 cs */
 
     if (!AGC_ASSERT(hi <= 0 || l->ttf_8 > 0))
@@ -295,11 +275,6 @@ void agc_lm_tdispset(void)
     int32_t  y = (x < 0) ? x : 0;                                      /* AD NEGMAX    */
 
     l->tredes = ldg_posonly(y + LDG_DEC99);
-
-    if (!AGC_ASSERT(l->tredes >= 0 && l->tredes <= LDG_DEC99))
-    {
-        return;
-    }
 
     if (!AGC_ASSERT(l->ttfdisp <= 0 || t8 > 0))
     {
@@ -402,11 +377,6 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
     agc_sp_t  a  = agc_lm_sparcsin_doubled(s2);                 /* SPARCSIN -1: look angle, half-revolutions 2^0 */
 
     l->lookangl = agc_lm_mp_hi(agc_lm_ad(a, LDG_HALFDEG), LDG_180DEGS);
-
-    if (!AGC_ASSERT(l->lookangl >= -LDG_180DEGS && l->lookangl <= LDG_180DEGS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -657,11 +627,6 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
     l->wchphold = l->wchphase;              /* for phase switching logic  */
     l->flpass0  = agc_lm_ad(l->flpass0, 1); /* INCR FLPASS0               */
 
-    if (!AGC_ASSERT(l->afc >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 } /* agc_lm_afccalc */
 
@@ -701,11 +666,6 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
     w            = agc_rtb_normunit(ip, agc_vec_cross(ip, w, l->land), &sh, NULL, NULL);
     l->cg.row[1] = w;
     l->cg.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, l->cg.row[0], w), 1);
-
-    if (!AGC_ASSERT(sh >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* agc_lm_cgcalc */
@@ -908,11 +868,6 @@ static agc_status_t ldg_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, 
                                   AGC_JOB_APPROACH_PHASE_PROCEED,
                                   AGC_JOB_APPROACH_PHASE_DISPLAY};
 
-    if (!AGC_ASSERT(noun == 60 || noun == 63 || noun == 64))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(6, noun), &cont));
 }
 
@@ -954,13 +909,12 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
 /**********************************************************************
  * P64CEED (p. 815): PROCEED on V06N64 enables the redesignation logic.
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_job_approach_phase_proceed(void)
 {
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
@@ -996,11 +950,6 @@ agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3)
     }
 
     agc_sp_t ph = agc_lm_ldg()->wchphold; /* WCHPHOLD, unscaled */
-
-    if (!AGC_ASSERT(ph >= AGC_LM_PHASE_BRAKQUAD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (ph == AGC_LM_PHASE_APPRQUAD)
     {
@@ -1331,7 +1280,7 @@ agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
 
     agc_phase_change_var(05023, &v);
     int          entry = AGC_LM_ENTRY_GUILDRET;            /* entry chosen by R13 */
-    agc_status_t st    = agc_lm_guildenstern(ctx, &entry); /* step status */
+    agc_status_t st    = agc_lm_guildenstern(&entry); /* step status */
 
     if (st != AGC_STATUS_OK)
     {

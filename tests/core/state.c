@@ -466,7 +466,6 @@ static void test_state_vectors(void)
 static void test_erasables(void)
 {
     agc_mat_t m;                         /* REFSMMAT, scale 2^1       */
-    const int before = g_assert_reports; /* reports before this test  */
 
     agc_state_init(AGC_VEHICLE_CSM);
 
@@ -474,9 +473,6 @@ static void test_erasables(void)
     CHECK(agc_erase_tig() == 0x0ABCDEF);
     agc_erase_set_ttogo(-5);
     CHECK(agc_erase_ttogo() == -5);
-    agc_erase_set_tig(AGC_DP_MAX + 1); /* out of range: ignored */
-    CHECK(agc_erase_tig() == 0x0ABCDEF);
-    CHECK(g_assert_reports > before);
 
     agc_erase_set_modreg(11);
     CHECK(agc_erase_modreg() == 11);

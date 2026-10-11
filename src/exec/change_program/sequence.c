@@ -102,23 +102,6 @@ static agc_status_t cp_refuse(bool alarm_1520)
     return ((st != AGC_STATUS_OK) ? st : result);
 }
 
-/* The context of the job that keyed V37 (the pinball job, core set 0). */
-static agc_job_ctx_t cp_running_ctx(void)
-{
-    agc_exec_core_info_t ci;
-    agc_job_ctx_t        c  = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false, -1, 0};
-    agc_status_t         st = agc_exec_core_info(0, &ci);
-
-    if (AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        c.prio      = ci.prio;
-        c.vac_index = ci.vac_index;
-        c.has_vac   = ci.vac_index >= 0;
-    }
-
-    return (c);
-}
-
 /* ISITP00 / CHECKTAB / ISSERVON (C pp.197-199 / L pp.227-228).          */
 static agc_status_t cp_select(void)
 {
@@ -139,9 +122,7 @@ static agc_status_t cp_select(void)
 
     if (!agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
-        agc_job_ctx_t c = cp_running_ctx(); /* CANV37 in this job */
-
-        return (agc_job_change_program_continue(&c));
+        return (agc_job_change_program_continue());
     }
 
     agc_inhint(); /* AVEGFLAG down: SERVICER returns to CANV37 */
@@ -182,9 +163,7 @@ agc_status_t agc_change_program(uint8_t new_mm)
 
     if (lm && (mmnumber == CP_DPS_ABORT || mmnumber == CP_APS_ABORT))
     {
-        agc_job_ctx_t c = cp_running_ctx();
-
-        return (exec_cp_setup_abort(&c, mmnumber == CP_APS_ABORT));
+        return (exec_cp_setup_abort(mmnumber == CP_APS_ABORT));
     }
 
     if (!lm)
@@ -352,7 +331,7 @@ static agc_status_t cp_nouveau(void)
 /* CANV37 / R00 (C p.199 / L p.229): wait for the integration, clean up
  * outbits and flags, then POOH (P00) or NOUVEAU. Entered in the V37 job,
  * from SERVICER's AVGEND (CSM), or as LM V37RET via OUTROUTE.          */
-agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
+agc_status_t agc_job_change_program_continue(void)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_CONTINUE, AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
 
@@ -386,7 +365,7 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
  * (SPVAC), MODREG = the new major mode (NEWMODEA), RELDSP, ENDOFJOB.
  * (MMTEMP and BASETEMP are PHSPRDT3 and TBASE4 in the AGC; that debris
  * is not reproduced.)                                                   */
-agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx)
+agc_status_t agc_job_change_program_start(void)
 {
     int                   n = 0;
     const exec_cp_mode_t *t = cp_modes(&n);

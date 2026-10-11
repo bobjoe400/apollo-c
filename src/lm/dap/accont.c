@@ -201,11 +201,6 @@ static agc_sp_t invert(int32_t x)
 
     agc_sp_t r = lm_dap_dv(one, hold); /* 1/x, scaled 2^7/pi */
 
-    if (!AGC_ASSERT(r >= LM_NEGMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -231,16 +226,6 @@ static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
     w->inv  = invert(w->anet);
     w->anet = funtem;
 
-    if (!AGC_ASSERT(funtem >= LM_NEGMAX && funtem <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(w->inv >= LM_NEGMAX && w->inv <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, w->inv), funtem));
 }
 
@@ -260,11 +245,6 @@ static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
 static agc_sp_t net_min(acc_work_t *w)
 {
     agc_sp_t a = lm_dap_mphi(w->anet, w->t[T_ACOSTT + 1 + w->ns]); /* ANET/ACOAST, scaled 2^6 */
-
-    if (!AGC_ASSERT(w->ns == 0 || w->ns == -1))
-    {
-        return (0); /* no valid result */
-    }
 
     return (net_accel_function(w, a));
 }
@@ -298,11 +278,6 @@ static void p_axis(lm_dap_t *d)
     agc_relint();
 
     if (!AGC_ASSERT(funtem > 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->block[4] == LM_POSMAX))
     {
         return;
     }
@@ -343,11 +318,6 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
         w->t[T_DBB4] = d->db;
     }
 
-    if (!AGC_ASSERT(w->absaos <= AA_BIT9))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(w->t[T_DBB3] >= 0 && w->t[T_DBB4] >= 0))
     {
         return;
@@ -372,16 +342,6 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
 static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 {
     agc_sp_t aos = (w->uv == 0) ? d->aosu : d->aosv; /* AOSU or AOSV, scaled pi/2 rad/s^2 */
-
-    if (!AGC_ASSERT(w->uv == 0 || w->uv == 1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(aos >= LM_NEGMAX && aos <= LM_POSMAX))
-    {
-        return;
-    }
 
     w->s           = ((aos < 0) || w->negzero[w->uv]) ? 1 : 0; /* SIGNAOS: 1 for AOS < 0 or -0 */
     w->ns          = -w->s;
@@ -421,16 +381,6 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 
             w->t[T_DBB1 + w->s]  = db1;       /* DBONE          */
             w->t[T_DBB3 + w->ns] = w->dbval2; /* -.75 DB        */
-
-            if (!AGC_ASSERT(w->absaos > AA_BIT9))
-            {
-                return;
-            }
-
-            if (!AGC_ASSERT(w->t[T_FLAT] == 0))
-            {
-                return;
-            }
         }
 
         int32_t nine8 = (int32_t) lm_dap_mphi(w->absaos, AA_BIT12) + w->absaos; /* 9/8 |AOS| in A, scaled pi/2 rad/s^2 */
@@ -507,16 +457,6 @@ static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
 
     w->t[T_AXD]     = lm_dap_wrap((int32_t) w->t[T_DBB1] - w->t[T_DBB3] + w->t[T_FLAT]);
     w->t[T_AXD + 1] = lm_dap_wrap((int32_t) w->t[T_DBB2] - w->t[T_DBB4] + w->t[T_FLAT]);
-
-    if (!AGC_ASSERT(w->uv == 0 || w->uv == 1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(w->t[T_FLAT] >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -553,16 +493,6 @@ static void store_axis(lm_dap_t *d, acc_work_t *w)
         { /* DXCH to UDB1.. */
             w->t[T_UDB + i] = w->t[T_DBB1 + i];
         }
-    }
-
-    if (!AGC_ASSERT(base + T_XFER <= LM_BLOCK_N))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(w->accsw >= -1 && w->accsw <= 1))
-    {
-        return;
     }
 }
 
@@ -619,15 +549,6 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
         }
     }
 
-    if (!AGC_ASSERT(d->block[AA_BLK_FLAT] >= 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->block[AA_BLK_Z3] >= 0))
-    {
-        return;
-    }
 } /* store_deadbands */
 
 /**********************************************************************
@@ -703,11 +624,6 @@ static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
     w->t[T_Z1 + w->s]    = acc; /* STMIN-         */
     w->t[T_ATEM1 + w->s] = w->inv;
 
-    if (!AGC_ASSERT(w->accsw >= -1 && w->accsw <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 } /* axis_against_aos */
 
@@ -777,11 +693,6 @@ agc_status_t lm_dap_switch_curves(void)
     store_deadbands(d, &w);
 
     if (!AGC_ASSERT(d->db >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1))
     {
         return (AGC_STATUS_BAD_ARG);
     }

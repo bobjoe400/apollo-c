@@ -105,11 +105,6 @@ agc_dp_words_t agc_mpac_store(agc_tp_words_t m)
  **********************************************************************/
 static agc_tp_words_t with_top(agc_w3_t m, agc_w2_t top)
 {
-    if (!AGC_ASSERT(agc_w_ok(top.hi) && agc_w_ok(top.lo)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
     m.m0 = top.hi;
     m.m1 = top.lo;
 
@@ -139,11 +134,6 @@ agc_tp_words_t agc_mpac_dad(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
 
     top = agc_w_dad(agc_w3_top(w), agc_w2_from_words(x), &ip->ovfind);
 
-    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
-    {
-        return (m);
-    }
-
     return (with_top(w, top));
 }
 
@@ -163,11 +153,6 @@ agc_tp_words_t agc_mpac_dsu(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
     agc_w2_t top;                      /* MPAC, MPAC+1 after the add */
 
     top = agc_w_dad(agc_w3_top(w), agc_w_dcs(agc_w2_from_words(x)), &ip->ovfind);
-
-    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
-    {
-        return (m);
-    }
 
     return (with_top(w, top));
 }
@@ -189,11 +174,6 @@ agc_tp_words_t agc_mpac_bdsu(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
     agc_w2_t top;                      /* MPAC, MPAC+1 after the add */
 
     top = agc_w_dad(agc_w2_from_words(x), agc_w_dcs(agc_w3_top(w)), &ip->ovfind);
-
-    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
-    {
-        return (m);
-    }
 
     return (with_top(w, top));
 }
@@ -230,11 +210,6 @@ agc_tp_words_t agc_mpac_tad(agc_interp_t *ip, agc_tp_words_t m, agc_tp_words_t x
         w.m1 = top.lo;
     }
 
-    if (!AGC_ASSERT(agc_w_ok(w.m0)))
-    {
-        return (m);
-    }
-
     return (agc_w3_to_words(w));
 }
 
@@ -257,11 +232,6 @@ agc_dp_words_t agc_dp_words_das(agc_dp_words_t x, agc_dp_words_t y, int *ovf)
 
     r = agc_w_das(agc_w2_from_words(x), agc_w2_from_words(y), ovf);
 
-    if (!AGC_ASSERT((*ovf >= -1) && (*ovf <= 1)))
-    {
-        return (x);
-    }
-
     return (agc_w2_to_words(r));
 }
 
@@ -280,16 +250,6 @@ agc_dp_words_t agc_dp_words_das(agc_dp_words_t x, agc_dp_words_t y, int *ovf)
 agc_tp_words_t agc_mpac_dmp(agc_tp_words_t m, agc_dp_words_t x)
 {
     agc_w3_t p = agc_w_dmpsub(agc_w3_top(agc_w3_from_words(m)), agc_w2_from_words(x)); /* DMPSUB */
-
-    if (!AGC_ASSERT(agc_w_ok(p.m0)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(p.m2)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
 
     return (agc_w3_to_words(p));
 }
@@ -311,11 +271,6 @@ agc_tp_words_t agc_mpac_dmpr(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 
     p = agc_w_roundsub(p, &ip->ovfind);
 
-    if (!AGC_ASSERT(p.m2 == 0))
-    {
-        return (m);
-    }
-
     return (agc_w3_to_words(p));
 }
 
@@ -330,16 +285,6 @@ agc_tp_words_t agc_mpac_dmpr(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 agc_tp_words_t agc_mpac_dsq(agc_tp_words_t m)
 {
     agc_w3_t p = agc_w_dsqsub(agc_w3_top(agc_w3_from_words(m))); /* DSQSUB */
-
-    if (!AGC_ASSERT(agc_w_ok(p.m0)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(p.m2)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
 
     return (agc_w3_to_words(p));
 }
@@ -418,11 +363,6 @@ agc_tp_words_t agc_mpac_round(agc_interp_t *ip, agc_tp_words_t m)
     agc_w3_t w; /* rounded MPAC words */
 
     w = agc_w_roundsub(agc_w3_from_words(m), &ip->ovfind);
-
-    if (!AGC_ASSERT(w.m2 == 0))
-    {
-        return (m);
-    }
 
     return (agc_w3_to_words(w));
 }
@@ -563,11 +503,6 @@ agc_tp_words_t agc_mpac_abs(agc_tp_words_t m)
         return (m);
     }
 
-    if (!AGC_ASSERT((sign >= -1) && (sign <= 1)))
-    {
-        return (m);
-    }
-
     return ((sign < 0) ? agc_mpac_dcomp(m) : m); /* TCF COMP on negative */
 }
 
@@ -618,11 +553,6 @@ agc_tp_words_t agc_mpac_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     ip->dvsign_neg = false; /* PREDOT: DOTINC = 2 */
     m              = agc_w_dotsub(u, v, &ip->ovfind);
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
     return (agc_w3_to_words(m));
 }
 
@@ -640,11 +570,6 @@ agc_tp_words_t agc_mpac_vsq(agc_interp_t *ip, agc_vec_t v)
     agc_w3_t m; /* VSQSUB words */
 
     m = agc_w_vsqsub(v, &ip->ovfind);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
 
     return (agc_w3_to_words(m));
 }

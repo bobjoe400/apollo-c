@@ -386,7 +386,7 @@ static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in, 
     }
     else if (strcmp(op, "SQRT") == 0)
     {
-        res->got2 = (agc_dp_sqrt_chk(ip, a, &t) == AGC_STATUS_POODOO);
+        res->got2 = (agc_dp_sqrt_chk(a, &t) == AGC_STATUS_POODOO);
         res->exp2 = c->poodoo;
         res->got  = (c->poodoo != 0) ? 0 : t;               /* aborted */
         res->exp  = (c->poodoo != 0) ? 0 : dpv(w[0], w[1]); /* aborted */

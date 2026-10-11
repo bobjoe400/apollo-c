@@ -68,7 +68,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 
     agc_interp_clear_ovf(ip);                                     /* BOV GETECC     */
     m = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx.r1a), 4);          /* DMP R1A SL4: 2^6 */
-    m = agc_mpac_sqrt(ip, agc_mpac_bdsu(ip, m, AGC_CONIC_D1_64)); /* BDSU D1/64 SQRT */
+    m = agc_mpac_sqrt(agc_mpac_bdsu(ip, m, AGC_CONIC_D1_64)); /* BDSU D1/64 SQRT */
 
     const agc_dp_words_t ecc     = agc_mpac_store(m);                                   /* STORE ECC, 2^3 */
     const agc_dp_words_t one_p_e = agc_mpac_store(agc_mpac_dad(ip, m, AGC_CONIC_D1_8)); /* DAD PDDL: 1 + ECC, 2^3 */

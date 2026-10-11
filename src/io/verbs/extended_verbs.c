@@ -59,11 +59,6 @@ static int      xv_noun;       /* NOUNREG at GOEXTVB                 */
 
 uint16_t agc_erase_extvbact(void)
 {
-    if (!AGC_ASSERT(extvbact <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (extvbact);
 }
 
@@ -78,21 +73,11 @@ void agc_erase_set_extvbact(uint16_t v)
 /* TS EXTVBACT by another program (P61 locks out the extended verbs).     */
 void agc_svc_set_extvbact(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= WORD15))
-    {
-        return;
-    }
-
     extvbact = v;
 }
 
 bool agc_extverb_busy(void)
 {
-    if (!AGC_ASSERT(extvbact <= WORD15))
-    {
-        return (false);
-    }
-
     return (extvbact != 0u);
 }
 
@@ -292,11 +277,6 @@ static agc_status_t stall_then(agc_job_ctx_t *ctx, agc_job_id_t wake)
  * released.  Starts the extended-verb job (see DEVIATION above).         */
 agc_status_t agc_extverb(int verb, int noun)
 {
-    if (!AGC_ASSERT(verb >= 40 && verb <= 99) || !AGC_ASSERT(noun >= 0 && noun <= 99))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     xv_verb = verb;
     xv_noun = noun;
 
@@ -563,7 +543,7 @@ agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx)
 /* ---- continuation jobs ------------------------------------------------- */
 
 /* ENDEXT (TERMEXTV, ENDEXTVB) as a job: release the display systems.     */
-agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_extended_verb_end(void)
 {
     agc_status_t st = agc_dsky_endmark();
 
@@ -576,7 +556,7 @@ agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx)
 }
 
 /* GOPIN as a job (after an IMUSTALL in V40).                              */
-agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx)
+agc_status_t agc_job_extended_verb_gopin(void)
 {
     return (agc_extverb_gopin());
 }
@@ -723,7 +703,7 @@ agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
 }
 
 /* V34: SKEEP1 = SELFADRS (self-check restarts from SELFCHK), ENDEXT.     */
-agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_show_banksum_end(void)
 {
     agc_status_t st = agc_selfcheck_showsum_end();
 
@@ -801,7 +781,7 @@ agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx)
 
 agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx)
 {
-    return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_attitude_error_load_lm(ctx) : agc_job_attitude_error_load_csm(ctx));
+    return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? agc_job_attitude_error_load_lm(ctx) : agc_job_attitude_error_load_csm());
 }
 
 agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx)

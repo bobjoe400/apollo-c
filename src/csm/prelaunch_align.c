@@ -678,7 +678,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_prelaunch_imu_coarse_aligned(ctx));
+    return (agc_job_prelaunch_imu_coarse_aligned());
 } /* agc_job_prelaunch_imu_zeroed */
 
 /**********************************************************************
@@ -687,12 +687,11 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
  * lock).  Stub: the test's display and drift loop are not translated
  * (see the file prolog).
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the positioning job
+ * ARGUMENTS: none
  *
  * RETURNS: AGC_STATUS_UNIMPLEMENTED
  **********************************************************************/
-static agc_status_t pipachk(const agc_job_ctx_t *ctx)
+static agc_status_t pipachk(void)
 {
     if (!AGC_ASSERT(pl.ndxctr > 0))
     {
@@ -706,12 +705,11 @@ static agc_status_t pipachk(const agc_job_ctx_t *ctx)
  * IMUBACK after IMUCOARS (IMU_CALIBRATION_AND_ALIGNMENT.agc p.424) --
  * PIPA test if in gimbal lock, else IMUFINE and IMUSTLLG
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the woken job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t of the stall, of SOMERR2 or of the next step
  **********************************************************************/
-agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx)
+agc_status_t agc_job_prelaunch_imu_coarse_aligned(void)
 {
     bool ok = false; /* stall outcome / IMUSTALL done             */
 
@@ -724,7 +722,7 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx)
 
     if (pl.ndxctr > 0)
     {
-        return (pipachk(ctx)); /* CCS NDXCTR: TC PIPACHK              */
+        return (pipachk()); /* CCS NDXCTR: TC PIPACHK              */
     }
 
     st = agc_imu_fine(); /* IMUFINE                                    */
@@ -741,19 +739,18 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_prelaunch_imu_fine_aligned(ctx));
+    return (agc_job_prelaunch_imu_fine_aligned());
 }
 
 /**********************************************************************
  * IMUBACK after IMUFINE (IMU_CALIBRATION_AND_ALIGNMENT.agc p.424) --
  * LONGCALL GOESTIMS after PERFDLAY, JOBSLEEP until it wakes ESTIMS
  *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the woken job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t of LONGCALL, or SOMERR2's
  **********************************************************************/
-agc_status_t agc_job_prelaunch_imu_fine_aligned(agc_job_ctx_t *ctx)
+agc_status_t agc_job_prelaunch_imu_fine_aligned(void)
 {
     bool ok = false; /* stall outcome                             */
 

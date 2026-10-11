@@ -69,11 +69,6 @@ agc_w2_t agc_w_split(agc_dp_t v)
     p.hi = v / AGC_W_ONE; /* C division truncates toward zero */
     p.lo = v % AGC_W_ONE; /* so lo carries the sign of v      */
 
-    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
     return (p);
 }
 
@@ -122,11 +117,6 @@ agc_w3_t agc_w3_from_tp(agc_tp_t v)
     m.m0 = (int32_t) (v / ((agc_tp_t) AGC_W_ONE * AGC_W_ONE));
     m.m1 = (int32_t) ((v / AGC_W_ONE) % AGC_W_ONE);
     m.m2 = (int32_t) (v % AGC_W_ONE);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     return (m);
 }
@@ -246,11 +236,6 @@ agc_dp_words_t agc_w2_to_words(agc_w2_t p)
 {
     agc_dp_words_t w = {0, 0};
 
-    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
-    {
-        return (w);
-    }
-
     w.hi = (agc_sp_t) p.hi;
     w.lo = (agc_sp_t) p.lo;
 
@@ -326,11 +311,6 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
     r.lo = (a * b) % AGC_W_ONE;
 
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
-    {
-        return (r);
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(r.lo)))
     {
         return (r);
     }
@@ -431,16 +411,6 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
     r.hi = agc_w_ts(x.hi + y.hi + carry, ovf);
 
-    if (!AGC_ASSERT(agc_w_ok(r.lo) && ((carry >= -1) && (carry <= 1))))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(r.hi)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -525,11 +495,6 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
     int32_t buf;   /* BUF: +-POSMAX, sign of the overflow */
     int     o = 0; /* overflow of each ADS, +-1 or 0 */
 
-    if (!AGC_ASSERT((a == 1) || (a == -1)) || !AGC_ASSERT(ovfind != 0))
-    {
-        return (m);
-    }
-
     buf  = (a > 0) ? AGC_W_POSMAX : -AGC_W_POSMAX; /* CS LIMITS      */ /* sign of a */
     m.lo = agc_w_ts(m.lo + buf + a, &o);           /* AUG A, ADS     */
     m.hi = agc_w_ts(m.hi + buf + o, &o);           /* AD BUF, ADS    */
@@ -537,11 +502,6 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
     if (o != 0)
     {
         *ovfind = (agc_ovf_t) o; /* SETOVF2        */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.hi)))
-    {
-        return (m);
     }
 
     return (m);
@@ -566,11 +526,6 @@ agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
     if (o != 0)
     {
         r = agc_w_overflow(r, o, ovfind);
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(r.hi)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
     }
 
     return (r);
@@ -721,11 +676,6 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     agc_w2_t add = {t.m1, t.m2};
     int      o   = 0; /* minor-pair carry, then TS overflow */
 
-    if (!AGC_ASSERT(agc_w_ok(t.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     lo2    = agc_w_das(lo2, add, &o);
     buf.m1 = lo2.hi;
     buf.m2 = lo2.lo;
@@ -769,11 +719,6 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
         t.m1 = top.lo;
     }
 
-    if (!AGC_ASSERT(agc_w_ok(t.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     return (t);
 }
 
@@ -799,11 +744,6 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
     t   = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
     t   = end_dot(buf, t, ovfind);
 
-    if (!AGC_ASSERT(agc_w_ok(t.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     return (t);
 }
 
@@ -826,11 +766,6 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
     buf = agc_w_dot_acc(buf, t, ovfind);
     t   = agc_w_dsqsub(agc_w_split(v.c[2]));
     t   = end_dot(buf, t, ovfind);
-
-    if (!AGC_ASSERT(agc_w_ok(t.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     return (t);
 }
@@ -892,16 +827,6 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
         top  = agc_w_das(agc_w3_top(m), agc_w_split(coef[k]), &o);
         m.m0 = top.hi;
         m.m1 = top.lo;
-    }
-
-    if (!AGC_ASSERT(k == -1))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m2)))
-    {
-        return (m);
     }
 
     return (m);

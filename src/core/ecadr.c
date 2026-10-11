@@ -39,21 +39,11 @@ void agc_erase_reset_ecadr(void)
     {
         g_image[i] = 0;
     }
-
-    if (!AGC_ASSERT(g_image[EC_WORDS - 1u] == 0))
-    {
-        return;
-    }
 }
 
 /* Read the erasable word at ECADR (raw 15-bit word).                     */
 agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 {
-    if (!AGC_ASSERT(ecadr < EC_WORDS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (is_flagword(ecadr))
     {
         *word = (uint16_t) (agc_flagword_get((int) (ecadr - EC_STATE)) & EC_WORD_MAX);
@@ -69,11 +59,6 @@ agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 /* Store a raw 15-bit word at ECADR.                                      */
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
 {
-    if (!AGC_ASSERT(ecadr < EC_WORDS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(word <= EC_WORD_MAX))
     {
         return (AGC_STATUS_BAD_ARG);

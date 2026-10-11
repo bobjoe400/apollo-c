@@ -324,7 +324,7 @@ static agc_status_t by_lm_attitude(agc_job_ctx_t *ctx)
 
     if ((option2() & OPTION_GRAVITY) != 0)
     {
-        return (agc_lm_lunar_surface_gravity(ctx));
+        return (agc_lm_lunar_surface_gravity());
     }
 
     return (agc_job_lunar_surface_attitude_check(ctx));
@@ -593,7 +593,7 @@ agc_status_t agc_job_lunar_surface_torque_test(agc_job_ctx_t *ctx)
 
     ram->lunar_gravity_return = AGC_JOB_LUNAR_SURFACE_ALIGNED; /* SSP QMIN */
 
-    return (agc_lm_lunar_surface_just_trim(ctx));
+    return (agc_lm_lunar_surface_just_trim());
 }
 
 /*
@@ -684,7 +684,7 @@ agc_status_t agc_job_lunar_surface_post_enter(agc_job_ctx_t *ctx)
  * After N89DISP: RN = RLS (m B29, the LM position); PIPTIME = the time;
  * RLS = R-TO-RP(ALPHAV VSL2) (moon fixed, m B27); P00.
  */
-agc_status_t agc_job_lunar_surface_site_updated(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lunar_surface_site_updated(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;

@@ -437,12 +437,11 @@ static void test_vecpoint(void)
  **********************************************************************/
 static void test_lastbias_pipuse(void)
 {
-    agc_job_ctx_t ctx = {AGC_JOB_LASTBIAS, AGC_PRIO5, false, -1, 0};
 
     agc_erase_set_pipax(5);
     agc_erase_set_pipaz(-3);
     agc_imu_set_gcompsw(0);
-    (void) agc_job_lastbias(&ctx);
+    (void) agc_job_lastbias();
     CHECK(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0);
 }
 
@@ -476,7 +475,6 @@ static void test_pipfree_alarm(void)
 static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
 {
     const agc_align_ram_t *ar   = agc_align_ram(); /* alignment erasables */
-    agc_job_ctx_t          crew = {AGC_JOB_ENTANSWR, AGC_PRIO5, false, -1, 0};
 
     agc_erase_set_cduy(imu[1]);
     agc_erase_set_cduz(imu[2]);
@@ -488,7 +486,7 @@ static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
     CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, false) == AGC_STATUS_OK);
     (void) agc_sxtmark_mark2();
     CHECK(agc_sxtmark_marks_made() == 1);
-    CHECK(agc_job_entanswr(&crew) == AGC_STATUS_OK); /* V33 on V50N25 */
+    CHECK(agc_job_entanswr() == AGC_STATUS_OK); /* V33 on V50N25 */
     CHECK(agc_task_endmarks() == AGC_STATUS_OK);     /* GOODEND        */
     CHECK(agc_job_optical_verification_marked(ctx) == AGC_STATUS_OK);
 }
@@ -537,7 +535,7 @@ static void test_optical_verification(void)
         CHECK(near(rev(ar->ogc[k]), 0.0, 5e-5));
     }
 
-    CHECK(agc_job_optical_verification_torque_accepted(&ctx) == AGC_STATUS_OK);
+    CHECK(agc_job_optical_verification_torque_accepted() == AGC_STATUS_OK);
     CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc) == AGC_STATUS_OK);
     CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
     CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */

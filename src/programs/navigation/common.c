@@ -99,11 +99,6 @@ agc_dp_t rz_mutable_mu(bool moon)
 {
     agc_dp_t mu = moon ? mutable_mum : mutable_mue; /* 2^30 / 2^36 */
 
-    if (!AGC_ASSERT(mu > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (mu);
 }
 
@@ -155,11 +150,6 @@ agc_sp_t agc_erase_vhfcnt(void)
  **********************************************************************/
 void agc_erase_set_vhfcnt(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
     rendz_erasable.vhfcnt = v;
 }
 
@@ -270,11 +260,6 @@ static agc_dp_t rstack[RZ_RSTACK_WORDS]; /* RSTACK, radar scale */
  **********************************************************************/
 agc_sp_t agc_erase_tang(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS))
-    {
-        return (0);
-    }
-
     return (tang[index]);
 }
 
@@ -292,11 +277,6 @@ agc_sp_t agc_erase_tang(int index)
  **********************************************************************/
 void agc_erase_set_tang(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS) || !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
     tang[index] = v;
 }
 
@@ -361,11 +341,6 @@ static uint16_t trk_angles[2][3]; /* [0] CPHIX, [1] PRAXIS               */
  **********************************************************************/
 agc_sp_t agc_erase_landmark(void)
 {
-    if (!AGC_ASSERT(landmark <= 077777u))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) rz_word_value(landmark));
 }
 
@@ -382,11 +357,6 @@ agc_sp_t agc_erase_landmark(void)
  **********************************************************************/
 void agc_erase_set_landmark(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
     landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
 }
 
@@ -479,11 +449,6 @@ uint16_t *rz_tracking_angles(bool preferred)
  **********************************************************************/
 void agc_rendz_reset(agc_rendz_t *rz)
 {
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return;
-    }
-
     static const agc_rendz_t zero; /* all zero */
 
     *rz = zero;
@@ -512,11 +477,6 @@ void agc_rendz_reset(agc_rendz_t *rz)
 bool rz_is_csm(void)
 {
     agc_vehicle_t v = agc_state_vehicle(); /* this rope */
-
-    if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
-    {
-        return (false);
-    }
 
     return (v == AGC_VEHICLE_CSM);
 }
@@ -575,11 +535,6 @@ bool rz_vflag_test(rz_vflag_t f)
  **********************************************************************/
 void rz_flag_put(agc_flag_id_t f, bool on)
 {
-    if (!AGC_ASSERT(f != 0U))
-    {
-        return;
-    }
-
     if (on)
     {
         agc_flag_set(f);
@@ -680,11 +635,6 @@ agc_dp_t rz_abval(agc_interp_t *ip, agc_vec_t v)
 {
     agc_dp_t a = agc_vec_abval(ip, v); /* |V|, V's scale */
 
-    if (!AGC_ASSERT(a >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (a);
 }
 
@@ -772,11 +722,6 @@ agc_dp_t rz_norm(agc_dp_t a, int *xreg)
  **********************************************************************/
 agc_dp_t rz_shift(agc_interp_t *ip, agc_dp_t a, int k)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(k >= -60 && k <= 60))
-    {
-        return (a);
-    }
-
     if (k > 0)
     {
         return (agc_dp_shl(ip, a, k));
@@ -808,11 +753,6 @@ agc_dp_t rz_shift(agc_interp_t *ip, agc_dp_t a, int k)
  **********************************************************************/
 agc_dp_t rz_sl_star(agc_interp_t *ip, agc_dp_t a, int addr, int xreg)
 {
-    if (!AGC_ASSERT(xreg >= -60 && xreg <= 60))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rz_shift(ip, a, addr - xreg));
 }
 
@@ -834,11 +774,6 @@ agc_dp_t rz_sl_star(agc_interp_t *ip, agc_dp_t a, int addr, int xreg)
  **********************************************************************/
 agc_dp_t rz_sr_star(agc_interp_t *ip, agc_dp_t a, int addr, int xreg)
 {
-    if (!AGC_ASSERT(xreg >= -60 && xreg <= 60))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rz_shift(ip, a, xreg - addr));
 }
 
@@ -860,11 +795,6 @@ agc_dp_t rz_sr_star(agc_interp_t *ip, agc_dp_t a, int addr, int xreg)
  **********************************************************************/
 agc_vec_t rz_vshift(agc_interp_t *ip, agc_vec_t v, int k)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(k >= -60 && k <= 60))
-    {
-        return (v);
-    }
-
     if (k > 0)
     {
         return (agc_vec_shl(ip, v, k));
@@ -896,16 +826,6 @@ agc_vec_t rz_vshift(agc_interp_t *ip, agc_vec_t v, int k)
  **********************************************************************/
 agc_vec_t agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL))
-    {
-        return (v);
-    }
-
-    if (!AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2))
-    {
-        return (v);
-    }
-
     return (rz_vshift(ip, v, rz->body.rtx2));
 }
 
@@ -955,16 +875,6 @@ agc_vec_t rz_vec_from_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v)
  **********************************************************************/
 agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a)
 {
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return (a);
-    }
-
-    if (!AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2))
-    {
-        return (a);
-    }
-
     return (agc_dp_shr(a, rz->body.rtx2));
 }
 
@@ -989,11 +899,6 @@ agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a)
  **********************************************************************/
 agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
 {
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz->body.moon = cmoonflg;
 
     if (cmoonflg)
@@ -1092,18 +997,8 @@ void rz_tracking_flags_on(void)
  **********************************************************************/
 void rz_store_active(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
 {
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return;
-    }
-
     rz->ract3 = r; /* ACTIVE: STOVL RACT3        */
     rz->vact3 = v; /*         STORE VACT3        */
-
-    if (!AGC_ASSERT(rz->body.rtx2 >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -1228,11 +1123,6 @@ agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1, agc_j
  **********************************************************************/
 agc_status_t rz_intint(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_dp_t t1, agc_dp_t t2, bool conic, agc_job_id_t resume, agc_vec_t *ratt, agc_vec_t *vatt)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(ratt != NULL && vatt != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rz_integrvs_in_t in; /* INTEGRVS inputs */
 
     in.conic           = conic;
@@ -1276,11 +1166,6 @@ agc_status_t rz_intint(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc
  **********************************************************************/
 agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_dp_t snth, agc_dp_t csth, bool rvsw, agc_conic_time_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_timetheta_in_t in; /* TIMETHET inputs */
 
     in.rvec = agc_rendz_vec_to_body(ip, rz, r);
@@ -1318,11 +1203,6 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r
  **********************************************************************/
 agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t vvec = agc_rendz_vec_to_body(ip, rz, v); /* body scale */
     agc_vec_t rvec = agc_rendz_vec_to_body(ip, rz, r); /* body scale */
 
@@ -1582,11 +1462,6 @@ int rz_word_value(uint16_t w)
     uint16_t v = (uint16_t) (w & 077777u);                               /* 15 bits */
     int      r = ((v & 040000u) != 0u) ? -(int) (077777u - v) : (int) v; /* signed */
 
-    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -1728,11 +1603,6 @@ void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um, agc_vec_t *usta
  **********************************************************************/
 uint16_t rz_word_of(int v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0U);
-    }
-
     return ((v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v)); /* 1s compl. */
 }
 

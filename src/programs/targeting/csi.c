@@ -259,11 +259,6 @@ static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
 
     rz->delvcsi = agc_dp_sub(ip, vr, vh); /* BDSU       */
     rz->deldv   = CSI_INITST;
-
-    if (!AGC_ASSERT(rz->deldv > 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -372,11 +367,6 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
     st = rz_timethet_rv(ip, rz, rz->ract1, v, snth, csth, true, &o);
 
     *t = o.t;
-
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || o.t >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -728,11 +718,6 @@ static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u, 
 
     c          = agc_dp_shl(ip, agc_vec_dot(ip, urp3, uv), 1);
     agc_dp_t g = agc_dp_sign(agc_dp_acos(ip, c), temp); /* rev 2^0 */
-
-    if (!AGC_ASSERT(g >= -AGC_DP_HALF && g <= AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_shr(g, 1)); /* SR1 */
 }
@@ -1090,11 +1075,6 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  **********************************************************************/
 agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(alarm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     csi_work_t w = {0, 0, 0, resume, AGC_STATUS_OK};
 
     csi_set_cycle(true);
@@ -1190,11 +1170,6 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz, agc_conic_tim
 
     st = rz_timethet_rv(ip, rz, rz->rpass2, rz->vpass2, snth, csth, false, o);
 
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || o->r1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -1217,11 +1192,6 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz, agc_conic_tim
  **********************************************************************/
 agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_conic_time_out_t o;                            /* TIMETHET result */
     agc_status_t         st = cdh_passive(ip, rz, &o); /* passive at CDH */
 

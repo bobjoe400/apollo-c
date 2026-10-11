@@ -508,3 +508,8 @@
             tools/prove/progress.log + summary.txt per run; agent proceeds
             with dataflow-classified work meanwhile and folds in EVA
             verdicts at the end.
+2026-10-11  User: why trust EVA before all lanes are reviewed? Adjustment:
+            structural deletions everywhere; EVA-only deletions only in
+            reviewed lanes; `eva-valid-deferred` class for the 5 unreviewed
+            lanes, re-applied via `make prove-classify` after each review.
+            Review template updated.

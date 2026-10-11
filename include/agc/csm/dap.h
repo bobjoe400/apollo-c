@@ -310,7 +310,7 @@ agc_status_t agc_task_tvcexec(void);
 agc_status_t agc_task_rolldap(void);
 agc_status_t agc_task_hackwlst(void);
 agc_status_t agc_task_exrstrt(void);
-agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx);
-agc_status_t agc_job_strktsti(agc_job_ctx_t *ctx);
+agc_status_t agc_job_ambgupdt(void);
+agc_status_t agc_job_strktsti(void);
 
 #endif /* AGC_CSM_DAP_H */

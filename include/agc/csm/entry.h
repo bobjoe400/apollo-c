@@ -261,7 +261,7 @@ agc_status_t agc_job_entry_preparation_target_display(agc_job_ctx_t *ctx);     /
 agc_status_t agc_job_entry_preparation_compute(agc_job_ctx_t *ctx);            /* P61.4 */
 agc_status_t agc_job_entry_preparation_prediction_display(agc_job_ctx_t *ctx); /* P61.1 V06N60        */
 agc_status_t agc_job_entry_preparation_ems_display(agc_job_ctx_t *ctx);        /* P61.2 V06N63        */
-agc_status_t agc_job_entry_display_protect(agc_job_ctx_t *ctx);                /* P61.3 */
+agc_status_t agc_job_entry_display_protect(void);                /* P61.3 */
 
 /* P62 -3 (from P61) */
 agc_status_t agc_job_cm_sm_separation_newmode(agc_job_ctx_t *ctx);
@@ -283,16 +283,16 @@ agc_status_t agc_job_entry_initialization(agc_job_ctx_t *ctx); /* P63 */
 agc_status_t agc_job_entry_upcontrol_display(agc_job_ctx_t *ctx);
 
 /* P65.1 PROCEED */
-agc_status_t agc_job_entry_upcontrol_proceed(agc_job_ctx_t *ctx);
+agc_status_t agc_job_entry_upcontrol_proceed(void);
 
 /* P67.1 V16N67 */
 agc_status_t agc_job_entry_final_phase_display(agc_job_ctx_t *ctx);
 
 /* P67.1 PROCEED */
-agc_status_t agc_job_entry_final_phase_end(agc_job_ctx_t *ctx);
+agc_status_t agc_job_entry_final_phase_end(void);
 agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx);              /* S61.1 (return job set by caller) */
 agc_status_t agc_job_entry_imu_axis_test(agc_job_ctx_t *ctx);          /* S61.1A  4.45 */
-agc_status_t agc_job_entry_imu_check_extrapolated(agc_job_ctx_t *ctx); /* S61.1 MIDTOAV2 retry*/
+agc_status_t agc_job_entry_imu_check_extrapolated(void); /* S61.1 MIDTOAV2 retry*/
 
 /* RETRN1 after delay */
 agc_status_t agc_job_entry_imu_check_return(agc_job_ctx_t *ctx);
@@ -378,11 +378,11 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx); 
 agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx); /* REP11A 3.13         */
 agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx);                                /* MATRXJOB 3.7        */
 agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx);                                  /* VHHDOT (AVGEXIT)    */
-agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx);                                 /* ATERJOB             */
+agc_status_t agc_job_aterjob(void);                                 /* ATERJOB             */
 agc_status_t agc_task_atertask(void);                                             /* ATERTASK 4.51       */
 agc_status_t agc_task_redosat(void);                                              /* REDOSAT (T5)        */
 agc_status_t agc_task_satstick(void);                                             /* SATSTICK (T5)       */
-agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx);                          /* SATSTKON (V46)  */
+agc_status_t agc_csm_satstkon(void);                          /* SATSTKON (V46)  */
 
 /* S11.1: VMAGI = |VN| (m/cs B7), HDOT = UNIT(RN).VN (B7), ALTI = |RN| -
  * RPAD (earth) or - |RLS| (moon, AMOONFLG) (m B29), stored for N62;
@@ -393,7 +393,7 @@ agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
                                                        agc_dp_t *alti);
 agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx); /* P11 TEPHEM restart */
 agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx);   /* P11 after PREREAD1 */
-agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx);                   /* ATRESET +5 */
+agc_status_t agc_job_atreset_after_delay(void);                   /* ATRESET +5 */
 
 /* P11 pad loads (ERASABLE_ASSIGNMENTS: P11 storage, SATURN BOOST storage). */
 #define AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX 6 /* A0..A6 */

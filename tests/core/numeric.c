@@ -311,8 +311,8 @@ static void test_sqrt_trig(void)
     eq("SIN -2047", agc_dp_sin(&ip, oct2(074000, 0)), oct2(064541, 063230));
     eq("COS 1/8", agc_dp_cos(&ip, 04000 * 16384), oct2(013240, 023631));
     eq("COS 0", agc_dp_cos(&ip, 0), AGC_DP_HALF);
-    eq("SQRT abort", agc_dp_sqrt_chk(&ip, -2 * 16384, &r), AGC_STATUS_POODOO);
-    eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(&ip, -5, &r) * 100 + r, 0);
+    eq("SQRT abort", agc_dp_sqrt_chk(-2 * 16384, &r), AGC_STATUS_POODOO);
+    eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(-5, &r) * 100 + r, 0);
     eq("ACOS 0", agc_dp_acos(&ip, 0), AGC_DP_QUARTER);
     eq("ASIN 0", agc_dp_asin(&ip, 0), 0);
     eq("ACOS alarm", agc_dp_acos_chk(&ip, AGC_DP_HALF + 2 * 16384, &r), AGC_STATUS_ALARM);
@@ -462,7 +462,7 @@ static void test_mpac_words(void)
     eq("R1A hi", r1a.hi, 257);
     eq("R1A lo", r1a.lo, -16383);
     m   = agc_mpac_tad(&ip, agc_mpac_shift(&ip, agc_mpac_dload(r1a), -4), agc_mpac_dsq(agc_mpac_dload(w)));
-    m   = agc_mpac_dad(&ip, agc_mpac_round(&ip, agc_mpac_sqrt(&ip, m)), w);
+    m   = agc_mpac_dad(&ip, agc_mpac_round(&ip, agc_mpac_sqrt(m)), w);
     eq("WLOOP W", agc_dp_from_words(agc_mpac_store(m)), 8724671);
     eq("WLOOP ovf", ip.ovfind, 0);
 

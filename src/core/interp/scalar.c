@@ -51,12 +51,8 @@ void agc_interp_init(agc_interp_t *ip)
 {
     int k; /* switch index */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return;
-    }
-
     ip->ovfind = 0;
+    ip->mpac   = 0;
     ip->x1     = 0;
     ip->x2     = 0;
     ip->s1     = 0;
@@ -68,11 +64,6 @@ void agc_interp_init(agc_interp_t *ip)
     for (k = 0; k < AGC_INTERP_SWITCHES; k++)
     {
         ip->sw[k] = false;
-    }
-
-    if (!AGC_ASSERT(ip->ovfind == 0))
-    {
-        return;
     }
 }
 
@@ -89,16 +80,6 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
 {
     bool set; /* OVFIND was set */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
-    {
-        return (false);
-    }
-
     set        = (ip->ovfind != 0);
     ip->ovfind = 0;
 
@@ -114,16 +95,6 @@ bool agc_interp_test_ovf(agc_interp_t *ip)
  **********************************************************************/
 void agc_interp_clear_ovf(agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT((ip->ovfind >= -1) && (ip->ovfind <= 1)))
-    {
-        return;
-    }
-
     ip->ovfind = 0;
 }
 
@@ -142,11 +113,6 @@ void agc_interp_clear_ovf(agc_interp_t *ip)
  **********************************************************************/
 agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (a);
-    }
-
     return (agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(b), &ip->ovfind)));
 }
 
@@ -161,14 +127,7 @@ agc_dp_t agc_dp_add(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    agc_dp_t sum; /* DAD result, discarded (scale of a)      */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return;
-    }
-
-    sum = agc_dp_add(ip, a, b);
+    ip->mpac = agc_dp_add(ip, a, b); /* DAD: MPAC (not read), OVFIND */
 }
 
 /**********************************************************************
@@ -184,11 +143,6 @@ void agc_dp_add_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (a);
-    }
-
     return (agc_w_join(agc_w_dad(agc_w_split(a), agc_w_split(-b), &ip->ovfind)));
 }
 
@@ -213,11 +167,6 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
     agc_w2_t top;                     /* MPAC, MPAC+1 after OVERFLOW */
     int      o   = 0;                 /* DAS / TS overflow, +-1 or 0 */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (a);
-    }
-
     lo2  = agc_w_das(lo2, add, &o);       /* DCA 1; DAS +1    */
     m.m1 = lo2.hi;
     m.m2 = lo2.lo;
@@ -228,11 +177,6 @@ agc_tp_t agc_tp_add(agc_interp_t *ip, agc_tp_t a, agc_tp_t b)
         top  = agc_w_overflow(agc_w3_top(m), o, &ip->ovfind); /* SETOVF   */
         m.m0 = top.hi;
         m.m1 = top.lo;
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (a);
     }
 
     return (agc_w3_value(m));
@@ -255,18 +199,8 @@ agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
     agc_w3_t m; /* DMPSUB product, then rounded */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0);
-    }
-
     m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b));
     m = agc_w_roundsub(m, &ip->ovfind);
-
-    if (!AGC_ASSERT(m.m2 == 0))
-    {
-        return (0);
-    }
 
     return (agc_w_join(agc_w3_top(m)));
 }
@@ -285,16 +219,6 @@ agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
 {
     agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m1)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w3_top(m)));
 }
 
@@ -310,11 +234,6 @@ agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a)))));
 }
 
@@ -369,11 +288,6 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
     acc    = agc_w_das(acc, agc_w_mp(m.m0, k), &o); /* DAS MPAC         */
     m.m0   = acc.hi;
     m.m1   = acc.lo;
-
-    if (!AGC_ASSERT(o == 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_w3_value(m));
 }
@@ -449,11 +363,6 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
     int      o = 0; /* OVFIND of DDV: 1 on overflow */
     agc_dp_t q;     /* quotient, scaled 2^0 */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (AGC_DP_MAX);
-    }
-
     q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &ip->dvsign_neg)));
 
     if (!AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN)))
@@ -480,9 +389,7 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    agc_dp_t q; /* DDV quotient, discarded (scaled 2^0)       */
-
-    q = agc_dp_div(ip, a, b);
+    ip->mpac = agc_dp_div(ip, a, b); /* DDV: MPAC (not read), OVFIND, DVSIGN */
 }
 
 /* ---- shifts and rounding (p.1137, 1152-1161) ----------------------------- */
@@ -501,11 +408,6 @@ void agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n)
 {
     agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (a);
-    }
 
     if (n < 0)
     {
@@ -585,11 +487,6 @@ agc_tp_t agc_tp_shift(agc_interp_t *ip, agc_tp_t v, int n)
         m = agc_w_genscr(m, -n, false);
     }
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return (v);
-    }
-
     return (agc_w3_value(m));
 }
 
@@ -629,11 +526,6 @@ agc_dp_t agc_tp_round(agc_interp_t *ip, agc_tp_t a)
     agc_w3_t m = agc_w3_from_tp(a); /* TP MPAC of a */
 
     m = agc_w_roundsub(m, &ip->ovfind);
-
-    if (!AGC_ASSERT(m.m2 == 0))
-    {
-        return (agc_tp_round_dp(a));
-    }
 
     return (agc_w_join(agc_w3_top(m)));
 }

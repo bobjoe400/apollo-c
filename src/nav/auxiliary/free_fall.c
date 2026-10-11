@@ -91,14 +91,13 @@ static const agc_dp_t TFF_POLY[TFF_POLY_N] = { /* A0..A5, scale 2^0 */
  * ARGUMENTS:
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  ------------------------------------
- *   ip        agc_interp_t *  I    interpreter state (not changed)
  *   x         agc_dp_t        I    X, scale 2^0
  *
  * RETURNS: agc_dp_t -- T(X), scale 2^0.  DMPSUB truncates each product
  *          and DAS adds without an overflow check ("user's
  *          responsibility").
  **********************************************************************/
-agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x)
+agc_dp_t agc_tff_poly(agc_dp_t x)
 {
     agc_dp_t  acc = TFF_POLY[TFF_POLY_N - 1]; /* Horner sum, scale 2^0 */
     agc_ovf_t ovf = 0;                        /* DAS overflow, ignored */
@@ -333,7 +332,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_d
     tff->tffx = x;
 
     /* RTB DMP T(X) X, SR3 DSU DP2(-3), DMP (1/ALFA Z), PUSH.               */
-    agc_tp_t xt   = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, x), x), -3);        /* X T(X), scale 2^3 */
+    agc_tp_t xt   = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(x), x), -3);        /* X T(X), scale 2^3 */
     agc_dp_t term = agc_dp_mul_trunc(agc_dp_sub(ip, agc_tp_to_dp(xt), DP2_M3), inv_az); /* (X T(X) - 1)/(ALFA Z), 2^(14+NA) */
 
     /* DLOAD DMP D/N RMAG1, SL2, DAD TFFQ1: sign of SDELF.                 */
@@ -442,7 +441,7 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num, agc_dp
     tff->tffx = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(zsq, tff->tffalfa), tff->nr));
 
     /* RTB DMP T(X) Z^2, SR2, BDSU RTERM, DAD RMAG1, DMP Z, SR3.            */
-    agc_tp_t tz = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, tff->tffx), zsq), -2); /* Z^2 T(X), E 2^28 */
+    agc_tp_t tz = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(tff->tffx), zsq), -2); /* Z^2 T(X), E 2^28 */
     agc_dp_t s  = agc_dp_sub(ip, tff->rterm, agc_tp_to_dp(tz));                          /* RTERM + RN - Z^2 T(X), E 2^29 m */
 
     s               = agc_dp_add(ip, s, tff->rmag1);
@@ -576,11 +575,6 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, b
  **********************************************************************/
 agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, agc_dp_t *t_cs)
 {
-    if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(rterm >= 0))
     {
         return (AGC_STATUS_BAD_ARG);

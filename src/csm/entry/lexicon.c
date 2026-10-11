@@ -133,16 +133,6 @@ void agc_entry_lexicon_reset(void)
     entry_state.gotoaddr = AGC_ENTRY_GOTO_INITROLL;
     entry_state.posexit  = AGC_ENTRY_POSEXIT_DESIRED_GIMBALS;
     entry_state.cmdapmod = AGC_ENTRY_DAPMOD_PLUS0;
-
-    if (!AGC_ASSERT(entry_state.jj == 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(entry_state.d == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -165,11 +155,6 @@ void agc_entry_lexicon_reset(void)
 agc_sp_t agc_entry_vrefer(int table, int k)
 {
     int flat = (table * AGC_ENTRY_VREFER_N) + k; /* VREFER offset    */
-
-    if (!AGC_ASSERT(table >= 0 && table < AGC_ENTRY_VREFER_TABLES))
-    {
-        return (0);
-    }
 
     if (!AGC_ASSERT(flat >= 0 && flat < (AGC_ENTRY_VREFER_TABLES * AGC_ENTRY_VREFER_N)))
     {

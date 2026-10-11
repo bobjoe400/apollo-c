@@ -283,7 +283,7 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_l
 
     m                         = agc_mpac_shift(ip, agc_mpac_dload(ls->r1_r2), -1);
     m                         = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, omc_n), n - 3); /* SL* 0 -3,1 */
-    const agc_dp_words_t root = agc_mpac_store(agc_mpac_sqrt(ip, m));                  /* 2D 2^5 */
+    const agc_dp_words_t root = agc_mpac_store(agc_mpac_sqrt(m));                  /* 2D 2^5 */
 
     m           = agc_mpac_shift(ip, agc_mpac_dload(ctx->snth), -6);
     m           = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, ls->one_m_csth), root);
@@ -601,7 +601,7 @@ static agc_vec_t lambert_initv(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
     m = agc_mpac_shift(ip, agc_mpac_dload(ctx->p), -1); /* P SR1, 2^5 */
 
     m                         = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, r1n), n - 4); /* SL* 0 -4,1 */
-    m                         = agc_mpac_dmp(agc_mpac_sqrt(ip, m), ctx->root_mu);
+    m                         = agc_mpac_dmp(agc_mpac_sqrt(m), ctx->root_mu);
     m                         = agc_mpac_shift(ip, m, 1);
     const agc_dp_words_t vtan = agc_mpac_store(m);                                   /* 0D VTAN 2^7    */
 

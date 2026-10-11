@@ -208,13 +208,12 @@ agc_status_t agc_job_target_delta_v_tig(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
  *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
+agc_status_t agc_job_target_delta_v_update(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -236,7 +235,7 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_target_delta_v_integrate(ctx));
+    return (agc_job_target_delta_v_integrate());
 }
 
 /**********************************************************************
@@ -246,16 +245,13 @@ agc_status_t agc_job_target_delta_v_update(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_target_delta_v_integrate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_target_delta_v_integrate(void)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -284,7 +280,7 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
 
     tdv_work.x2 = o.x2; /* RATT1 VATT1 TAT stay in the integration output, as in the AGC erasables */
 
-    return (agc_job_target_delta_v_store(ctx));
+    return (agc_job_target_delta_v_store());
 }
 
 /**********************************************************************
@@ -295,16 +291,13 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_target_delta_v_store
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
+agc_status_t agc_job_target_delta_v_store(void)
 {
     agc_status_t st; /* INTSTALL */
 
@@ -345,7 +338,7 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_target_delta_v_end(ctx));
+    return (agc_job_target_delta_v_end());
 } /* agc_job_target_delta_v_store */
 
 /**********************************************************************
@@ -354,16 +347,13 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_target_delta_v_end
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_target_delta_v_end(void)
 {
     agc_erase_set_trkmkcnt(0); /* MARKCTR       */
 

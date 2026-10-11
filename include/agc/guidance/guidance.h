@@ -357,7 +357,7 @@ agc_status_t agc_task_quikread(void);                       /* QUIKREAD    */
 agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx);      /* NORMLIZE    */
 agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx);      /* SERVICER    */
 agc_status_t agc_job_servexit(agc_job_ctx_t *ctx);          /* SERVEXIT (both) */
-agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx);           /* dispatch on AVGEXIT */
+agc_status_t agc_csm_avgexit(void);           /* dispatch on AVGEXIT */
 agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx);  /* DVTOTUP restart */
 agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx); /* AVERAGEG restart */
 agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx);     /* GENTRAN restart  */
@@ -374,7 +374,7 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx); /* NORMLIZE    */
 agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx); /* SERVICER    */
 agc_status_t agc_job_servidle(agc_job_ctx_t *ctx);    /* SERVIDLE    */
 agc_status_t agc_lm_servidle(void);                   /* SERVIDLE (STRTIDLE)  */
-agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx);      /* dispatch on AVGEXIT */
+agc_status_t agc_lm_avgexit(void);      /* dispatch on AVGEXIT */
 agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx);   /* AVGEND      */
 agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx); /* AVGEND 2.2 restart */
 
@@ -390,9 +390,9 @@ agc_status_t agc_lm_setpos1(void);                          /* SETPOS1     */
 agc_status_t agc_lm_setpos2(void);                          /* SETPOS2     */
 agc_status_t agc_task_rdgims(void);                         /* RDGIMS      */
 agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx);            /* LRVJOB      */
-agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx);       /* after RADSTALL */
+agc_status_t agc_job_lrvjob_done(void);       /* after RADSTALL */
 agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx);            /* LRHJOB      */
-agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx);       /* after RADSTALL */
+agc_status_t agc_job_lrhjob_done(void);       /* after RADSTALL */
 agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx);          /* HIGATJOB    */
 agc_status_t agc_job_higatjob_done(agc_job_ctx_t *ctx);     /* after RADSTALL */
 agc_status_t agc_job_posalarm_pro(agc_job_ctx_t *ctx);      /* POSALARM +3 */
@@ -430,22 +430,22 @@ agc_status_t agc_job_thrust_monitor_reset_csm(agc_job_ctx_t *ctx);      /* P47BO
 agc_status_t agc_job_thrust_monitor_display_csm(agc_job_ctx_t *ctx);    /* P47BOD      */
 agc_status_t agc_job_steering_csm(agc_job_ctx_t *ctx);                  /* STEERING    */
 agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx);                   /* S40.9       */
-agc_status_t agc_job_redo40_9(agc_job_ctx_t *ctx);                      /* REDO40.9    */
-agc_status_t agc_job_timeburn_csm(agc_job_ctx_t *ctx);                  /* S40.13      */
+agc_status_t agc_job_redo40_9(void);                      /* REDO40.9    */
+agc_status_t agc_job_timeburn_csm(void);                  /* S40.13      */
 agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx);                      /* CLOCKJOB    */
 agc_status_t agc_job_dyndisp(agc_job_ctx_t *ctx);                       /* DYNDISP     */
 agc_status_t agc_job_engine_enable_bypass(agc_job_ctx_t *ctx);          /* V99E        */
 agc_status_t agc_job_engine_enable_terminate(agc_job_ctx_t *ctx);       /* V99T        */
-agc_status_t agc_job_engine_enable_proceed(agc_job_ctx_t *ctx);         /* V99P        */
+agc_status_t agc_job_engine_enable_proceed(void);         /* V99P        */
 agc_status_t agc_job_engine_fail_terminate(agc_job_ctx_t *ctx);         /* V97T        */
 agc_status_t agc_job_engine_fail_proceed(agc_job_ctx_t *ctx);           /* V97P        */
 agc_status_t agc_job_engine_fail_reignite(agc_job_ctx_t *ctx);          /* V97E        */
-agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx);                        /* DAPFIG      */
+agc_status_t agc_job_dapfig(void);                        /* DAPFIG      */
 agc_status_t agc_job_preburn_start_clock(agc_job_ctx_t *ctx);           /* after TRIM DELAYJOB */
 agc_status_t agc_job_cross_product_restart(agc_job_ctx_t *ctx);         /* S40.8B / UPDATEVG_B / SURELY9_B */
 agc_status_t agc_job_steering_restart(agc_job_ctx_t *ctx);              /* STEERING restart */
-agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx);                       /* ENDLAMB     */
-agc_status_t agc_job_copy40_9(agc_job_ctx_t *ctx);                      /* COPY40.9    */
+agc_status_t agc_job_endlamb(void);                       /* ENDLAMB     */
+agc_status_t agc_job_copy40_9(void);                      /* COPY40.9    */
 agc_status_t agc_job_calc_delta_v_restart(agc_job_ctx_t *ctx);          /* CALCN83 restart */
 agc_status_t agc_task_engine_fail_shutdown_restart(void);               /* V97TTASK after 5.1 C */
 agc_status_t agc_task_quickign(void);                                   /* QUICKIGN    */
@@ -491,18 +491,18 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx);         /* P47LM    
 agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx);   /* P41 after R60LEM */
 agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx);               /* POSTBURN    */
 agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx);                 /* TIGNOW      */
-agc_status_t agc_job_term40(agc_job_ctx_t *ctx);                    /* TERM40      */
-agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx);                  /* DYNMDISP    */
+agc_status_t agc_job_term40(void);                    /* TERM40      */
+agc_status_t agc_job_dynmdisp(void);                  /* DYNMDISP    */
 agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx);                   /* REDO6.7 / BLNKWAIT */
-agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx);     /* P41 after GODSPRET */
-agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx);      /* REDO6.7 after GODSPRET */
+agc_status_t agc_job_rcs_burn_vg_displayed(void);     /* P41 after GODSPRET */
+agc_status_t agc_job_redo6_7_vg_displayed(void);      /* REDO6.7 after GODSPRET */
 agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx);           /* CALCN85     */
 agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx);      /* CALCN83     */
 agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx);   /* P47BODY     */
 agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx); /* P47BOD      */
 agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx);               /* STEERING    */
 agc_status_t agc_job_vtogain_lm(agc_job_ctx_t *ctx);                /* S40.9       */
-agc_status_t agc_job_timeburn_lm(agc_job_ctx_t *ctx);               /* S40.13      */
+agc_status_t agc_job_timeburn_lm(void);               /* S40.13      */
 agc_status_t agc_task_start_thrust_monitor(void);                   /* STARTP47    */
 agc_status_t agc_task_implburn_lm(void);                            /* IMPLBURN    */
 agc_status_t agc_task_implburn2(void);                              /* IMPLBURN +0.5 s */
@@ -534,29 +534,29 @@ typedef enum agc_lm_which
 } agc_lm_which_t;
 
 agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx);                                        /* BURNBABY    */
-agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx);                              /* B*RNB*B*: GOBLTIME, engine off, clock */
+agc_status_t agc_lm_burnbaby_countdown(void);                              /* B*RNB*B*: GOBLTIME, engine off, clock */
 agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx, agc_job_id_t ret_job);        /* P40AUTO */
-agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex, agc_job_id_t ret_job); /* STCLOK2     */
+agc_status_t agc_lm_stclok2(agc_sp_t dispdex, agc_job_id_t ret_job); /* STCLOK2     */
 agc_status_t agc_lm_stclok1(void);                                                             /* STCLOK1     */
 void         agc_lm_nullclok(void);                                                            /* NULLCLOK    */
 void         agc_lm_noullage(void);                                                            /* NOULLAGE    */
 void         agc_lm_onullage(void);                                                            /* ONULLAGE    */
 agc_status_t agc_job_burnbaby(agc_job_ctx_t *ctx);                                             /* BURNBABY as a job */
-agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx);                                   /* B*RNB*B* as a job (after P40AUTO) */
+agc_status_t agc_job_burnbaby_countdown(void);                                   /* B*RNB*B* as a job (after P40AUTO) */
 agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx);                              /* P41SPOT: state to TIG-30, TIG-35 call */
 agc_status_t agc_job_auto_control_recycle(agc_job_ctx_t *ctx);                                 /* P40A/P recycle */
 agc_status_t agc_job_rcs_burn_blank_dsky(agc_job_ctx_t *ctx);                                  /* P41BLANK    */
 agc_status_t agc_job_restore_burn_display(agc_job_ctx_t *ctx);                                 /* TIG-30A: V16N85 again (P41) */
 agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx);                                              /* CLOKJOB     */
-agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx);                                  /* V97 PROCEED (COMFAIL1) */
-agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx);                         /* V97 ENTER (COMFAIL2) */
+agc_status_t agc_job_clokjob_engine_fail(void);                                  /* V97 PROCEED (COMFAIL1) */
+agc_status_t agc_job_clokjob_engine_fail_shutdown(void);                         /* V97 ENTER (COMFAIL2) */
 agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx);                          /* V06N61 proceed */
-agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx);                                /* V99 *PROCEED */
+agc_status_t agc_job_clokjob_engine_enable(void);                                /* V99 *PROCEED */
 agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx);                         /* V99 *ENTER */
-agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx);                                             /* STOPCLOK    */
-agc_status_t agc_job_comfail(agc_job_ctx_t *ctx);                                              /* COMFAIL     */
+agc_status_t agc_job_stopclok(void);                                             /* STOPCLOK    */
+agc_status_t agc_job_comfail(void);                                              /* COMFAIL     */
 agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx);                                  /* REP40ALM    */
-agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx);                                  /* REP40ALM PROCEED */
+agc_status_t agc_job_stage_alarm_proceed(void);                                  /* REP40ALM PROCEED */
 agc_status_t agc_task_tig_35(void);                                                            /* TIG-35      */
 agc_status_t agc_task_restore_burn_display(void);                                              /* TIG-30.1    */
 agc_status_t agc_task_tig_30(void);                                                            /* TIG-30      */

@@ -242,16 +242,13 @@ agc_status_t agc_job_optics_calibration_mark_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_optics_calibration_bias
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optics_calibration_bias(void)
 {
     int d; /* MSU, CDU */
 
@@ -269,7 +266,7 @@ agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx)
 
     cn.trunbias = (agc_sp_t) d;
 
-    return (agc_job_optics_calibration_end(ctx));
+    return (agc_job_optics_calibration_end());
 }
 
 /**********************************************************************
@@ -279,16 +276,13 @@ agc_status_t agc_job_optics_calibration_bias(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_optics_calibration_end
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optics_calibration_end(void)
 {
     rz_flag_put(AGC_FLAG_CALIBRATION_MARKING, false);
     agc_status_t st; /* ENDMARK */
@@ -309,16 +303,13 @@ agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_optics_calibration_end_mark
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_optics_calibration_end_mark(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optics_calibration_end_mark(void)
 {
     return (agc_dsky_endmark());
 }
@@ -1360,16 +1351,13 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
  *
  * FUNCTION NAME: agc_job_cislunar_midcourse_navigation_update
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_update(void)
 {
     rz_flag_put(AGC_FLAG_VEHUPFLG, true);
     agc_interp_t ip; /* interpreter state */

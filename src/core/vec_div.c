@@ -128,11 +128,6 @@ static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
         }
     }
 
-    if (!AGC_ASSERT(k == AGC_VEC_N))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((*s == 0) ? 0 : -1); /* zero divisor     */ /* slot 0 for DVOVF */
 }
 
@@ -254,11 +249,6 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])), agc_w_dsqsub(agc_w_split(v.c[1])), &o);
     a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */
 
-    if (!AGC_ASSERT(agc_w_ok(a)))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     ip->ovfind = 1;
 
     /* DVOVF before any UNITDV: the sign is the DVSIGN left by the previous
@@ -318,11 +308,11 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
  *                             untouched on |v|^2 overflow); may be NULL
  *   vsq    agc_dp_t *      O  LVSQUARE: |v|^2 at 2^2n (untouched on
  *                             overflow); may be NULL
- *
- * RETURNS: agc_vec_t -- the half-unit vector, scaled 2^1; the DVOVF
- *          arrangement for |v|^2 >= 1 or v = 0
+ *   u      agc_vec_t *     O  the half-unit vector, scaled 2^1; the DVOVF
+ *                             arrangement for |v|^2 >= 1 or v = 0; NULL
+ *                             when only LV is read (the AGC's 36D)
  **********************************************************************/
-agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq)
+static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq, agc_vec_t *u)
 {
     agc_ovf_t o     = 0;         /* OVFIND of VSQSUB (saved OVFIND restored) */
     agc_w3_t  sq;                /* |v|^2 (TP MPAC) */
@@ -330,86 +320,110 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t 
     agc_w3_t  lv    = {0, 0, 0}; /* LV words, unnormalised root */
     int       shift = 0;         /* MPTEMP: SQRTSUB right-shift count */
     int       kdiv;              /* pre-divide shift, -1..13 */
-    int       k;                 /* component index */
-    bool      abort = false;     /* SQRTABRT (cannot happen: |v|^2 >= 0) */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (v);
-    }
+    bool      abort = false;     /* SQRTABRT: cannot happen, |v|^2 >= 0 */
+    agc_vec_t r;                 /* MPAC after UNIT */
 
     sq = agc_w_vsqsub(v, &o); /* OVFIND saved     */
 
     if (o != 0)
     {
-        return (unit_overflow(ip, v)); /* LV not written   */
-    }
-
-    if (vsq != 0)
-    {
-        *vsq = agc_w_join(agc_w3_top(sq)); /* LVSQUARE         */
-    }
-
-    root = agc_w3_top(agc_w_sqrtsub(sq, &shift, &abort));
-
-    if (!AGC_ASSERT(!abort))
-    {
-        return (v);
-    }
-
-    if (root.hi == 0)
-    { /* input to SQRT 0  */
-        if (abval != 0)
-        {
-            *abval = 0; /* LV = 0           */
-        }
-
-        return (unit_overflow(ip, v));
-    }
-
-    if (shift > 14)
-    { /* SMALL            */
-        kdiv  = shift - 15;
-        lv.m1 = agc_w_mp((int32_t) 1 << (28 - shift), root.hi).hi;
-
-        for (k = 0; k < AGC_VEC_N; k++)
-        {
-            if (!AGC_ASSERT(agc_w_split(v.c[k]).hi == 0))
-            {
-                return (v);
-            }
-
-            v.c[k] *= AGC_W_ONE; /* VBUF left 14     */
-        }
-    }
-    else if (shift == 14)
-    {
-        kdiv  = 13; /* CS THIRTEEN      */
-        lv.m1 = root.hi;
-    }
-    else if (shift > 0)
-    { /* LARGE3           */
-        kdiv  = shift - 1;
-        lv.m0 = root.hi;
-        lv.m1 = root.lo;
-        lv    = agc_w_mpacshr(lv, shift, false);
+        r = unit_overflow(ip, v); /* LV not written   */
     }
     else
-    { /* LARGE: CS SRDDV  */
-        kdiv  = -1;
-        lv.m0 = root.hi;
-        lv.m1 = root.lo;
-    }
-
-    if (abval != 0)
     {
-        *abval = agc_w_join(agc_w3_top(lv)); /* LV               */
+        if (vsq != 0)
+        {
+            *vsq = agc_w_join(agc_w3_top(sq)); /* LVSQUARE         */
+        }
+
+        root = agc_w3_top(agc_w_sqrtsub(sq, &shift, &abort));
+
+        if (root.hi == 0)
+        { /* input to SQRT 0  */
+            if (abval != 0)
+            {
+                *abval = 0; /* LV = 0           */
+            }
+
+            r = unit_overflow(ip, v);
+        }
+        else
+        {
+            if (shift > 14)
+            { /* SMALL: |v| < 2^-14, so every major word is 0 */
+                kdiv  = shift - 15;
+                lv.m1 = agc_w_mp((int32_t) 1 << (28 - shift), root.hi).hi;
+
+                for (int k = 0; k < AGC_VEC_N; k++)
+                {
+                    v.c[k] *= AGC_W_ONE; /* VBUF left 14     */
+                }
+            }
+            else if (shift == 14)
+            {
+                kdiv  = 13; /* CS THIRTEEN      */
+                lv.m1 = root.hi;
+            }
+            else if (shift > 0)
+            { /* LARGE3           */
+                kdiv  = shift - 1;
+                lv.m0 = root.hi;
+                lv.m1 = root.lo;
+                lv    = agc_w_mpacshr(lv, shift, false);
+            }
+            else
+            { /* LARGE: CS SRDDV  */
+                kdiv  = -1;
+                lv.m0 = root.hi;
+                lv.m1 = root.lo;
+            }
+
+            if (abval != 0)
+            {
+                *abval = agc_w_join(agc_w3_top(lv)); /* LV               */
+            }
+
+            for (int k = 0; k < AGC_VEC_N; k++)
+            {
+                r.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root), &ip->dvsign_neg);
+            }
+        }
     }
 
-    for (k = 0; k < AGC_VEC_N; k++)
+    if (u != 0)
     {
-        v.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root), &ip->dvsign_neg);
+        *u = r;
     }
+}
 
-    return (v);
-} /* agc_dp_t *vsq) */
+/**********************************************************************
+ * UNIT (INTERPRETER.agc pp.1175-1179) -- half-unit vector v / (2|v|);
+ * see unit_core for LV and LVSQUARE.
+ *
+ * RETURNS: agc_vec_t -- the half-unit vector, scaled 2^1; the DVOVF
+ *          arrangement for |v|^2 >= 1 or v = 0
+ **********************************************************************/
+agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq)
+{
+    agc_vec_t u; /* half-unit vector, 2^1 */
+
+    unit_core(ip, v, abval, vsq, &u);
+
+    return (u);
+}
+
+/**********************************************************************
+ * UNIT (INTERPRETER.agc pp.1175-1179) whose vector is never read: only
+ * LV (36D), OVFIND and DVSIGN matter (FIGTIME's UNIT RP / UNIT RA).
+ *
+ * RETURNS: agc_dp_t -- LV, |v| scaled as v (0 for a zero vector or on
+ *          |v|^2 overflow)
+ **********************************************************************/
+agc_dp_t agc_vec_unit_abval(agc_interp_t *ip, agc_vec_t v)
+{
+    agc_dp_t lv = 0; /* LV, scale of v */
+
+    unit_core(ip, v, &lv, 0, 0);
+
+    return (lv);
+}

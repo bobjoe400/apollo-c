@@ -116,7 +116,7 @@ agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx)
 }
 
 /* CHKSDA (PROCEED): GOTO QMIN with FREEFLAG still set. */
-agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_chksdata_proceed(void)
 {
     const agc_job_id_t ret = agc_align_ram()->qmin;
 
@@ -129,7 +129,7 @@ agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx)
 }
 
 /* ENTER / V32 after VN_STAR_ANGLE_DIFF: CLEAR FREEFLAG, GOTO QMIN. */
-agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx)
+agc_status_t agc_job_chksdata_enter(void)
 {
     agc_flag_clear(AGC_FLAG_FREEFLAG);
 
@@ -169,7 +169,7 @@ agc_status_t agc_job_gyro_torquing_display(agc_job_ctx_t *ctx)
  * R55.2: PHASCHNG, IMUPULSE on the OGC buffer (R55CDR ECADR OGC) and
  * IMUSTALL; a bad end is CURTAINS.  Re-entered when the gyros were busy.
  */
-agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_torquing_pulse(void)
 {
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
 
@@ -199,7 +199,7 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 }
 
 /* After the IMUSTALL of R55.2: the restart phase, then R55RET. */
-agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_torquing_pulsed(void)
 {
     if (align_stall_outcome(AGC_IMU_DEV_IMU) != AGC_STATUS_OK)
     {
@@ -210,7 +210,7 @@ agc_status_t agc_job_gyro_torquing_pulsed(agc_job_ctx_t *ctx)
 }
 
 /* R55RET (ENTER on VN_GYRO_TORQUE_ANGLES: no torquing): GOTO QMIN. */
-agc_status_t agc_job_gyro_torquing_return(agc_job_ctx_t *ctx)
+agc_status_t agc_job_gyro_torquing_return(void)
 {
     const agc_job_id_t ret = agc_align_ram()->qmin;
 

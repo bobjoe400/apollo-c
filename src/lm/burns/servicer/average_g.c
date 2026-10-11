@@ -498,7 +498,7 @@ static agc_status_t getabval(agc_job_ctx_t *ctx)
 
 /* SERVOUT (p.863): 1/ACCS (DAP acceleration estimates), then to AVGEXIT
  * whether there is thrust or not; STEERSW tells the routine which.        */
-static agc_status_t servout(agc_job_ctx_t *ctx)
+static agc_status_t servout(void)
 {
     if (agc_interrupts_inhibited())
     {
@@ -514,13 +514,13 @@ static agc_status_t servout(agc_job_ctx_t *ctx)
 
     agc_lm_serv_quikfaz5(AGC_JOB_SERV_EXIT);
 
-    return (agc_lm_avgexit(ctx));
+    return (agc_lm_avgexit());
 }
 
 /* LOTHRUST .. DECCNTR (p.862): low thrust. After DVCNTR passes the COMFAIL
  * job (one at a time) handles the engine failure; meanwhile no steering:
  * STOPRATE zeroes the desired rates.                                      */
-static agc_status_t lothrust(agc_job_ctx_t *ctx)
+static agc_status_t lothrust(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
@@ -534,7 +534,7 @@ static agc_status_t lothrust(agc_job_ctx_t *ctx)
         agc_lm_dap_stoprate();                                    /* NO STEERING (INHINT)   */
         agc_flag_set(AGC_FLAG_USEQRFLG);                          /* USEJETS                */
 
-        return (servout(ctx));
+        return (servout());
     }
 
     if (agc_phase_get(4) == 0U)
@@ -553,19 +553,19 @@ static agc_status_t lothrust(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (servout(ctx));
+    return (servout());
 }
 
 /* DVMON (p.861-862): thrust detected when ABDELV > DVTHRUSH: STEERSW set,
  * two low-thrust passes allowed again; the trim gimbal is used unless the
  * APS is in use or the gimbal has failed (channel 32 bit 9).              */
-static agc_status_t dvmon(agc_job_ctx_t *ctx)
+static agc_status_t dvmon(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
     if (lm->abdelv - lm->dvthrush <= 0)
     {
-        return (lothrust(ctx));
+        return (lothrust());
     }
 
     agc_flag_set(AGC_FLAG_STEERSW);
@@ -586,7 +586,7 @@ static agc_status_t dvmon(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (servout(ctx));
+    return (servout());
 }
 
 /* COPYCYCL (p.861): copy cycle (returns under INHINT), PIPATMP cleared,
@@ -610,7 +610,7 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
         agc_flag_clear(AGC_FLAG_AUXFLAG); /* NODVMON1               */
         agc_flag_set(AGC_FLAG_USEQRFLG);
 
-        return (servout(ctx));
+        return (servout());
     }
 
     if (!agc_flag_test(AGC_FLAG_AUXFLAG))
@@ -618,14 +618,14 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
         agc_flag_set(AGC_FLAG_AUXFLAG); /* NODVMON2               */
         agc_flag_set(AGC_FLAG_USEQRFLG);
 
-        return (servout(ctx));
+        return (servout());
     }
 
-    return (dvmon(ctx));
+    return (dvmon());
 }
 
 /* DCA AVGEXIT / DXCH Z (p.863).                                            */
-agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx)
+agc_status_t agc_lm_avgexit(void)
 {
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit;
 
@@ -671,7 +671,7 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
 
     if (id == AGC_JOB_SERV_EXIT)
     {
-        return (agc_lm_avgexit(ctx));
+        return (agc_lm_avgexit());
     }
 
     if (id == AGC_JOB_SERV_COPYCYC1)
@@ -701,7 +701,7 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
 
     if (id == AGC_JOB_SERV_LOTHRUST)
     {
-        return (lothrust(ctx));
+        return (lothrust());
     }
 
     if (id == AGC_JOB_SERV_DECCNTR)
@@ -711,7 +711,7 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
         agc_lm_dap_stoprate();
         agc_flag_set(AGC_FLAG_USEQRFLG);
 
-        return (servout(ctx));
+        return (servout());
     }
 
     return (getabval(ctx)); /* SERVICER / GETABVAL    */

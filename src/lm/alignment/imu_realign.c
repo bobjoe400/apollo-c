@@ -73,7 +73,7 @@ agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx)
  * LSDISP V33: LONG = 2 LANDLONG, ALT = LANDALT, LAT = LANDLAT; LALOTORV at
  * GDT/2 +4 -> ALPHAV (RLS, m B29); GOTO QMAJ.
  */
-agc_status_t agc_job_lm_landing_site_accepted(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lm_landing_site_accepted(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
     agc_interp_t     ip;

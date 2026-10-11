@@ -106,18 +106,9 @@ static const uint16_t k_dsmsk[4] = {037, 01740, 02000, 03740};
  **********************************************************************/
 uint16_t agc_dsky_relay_code(int digit)
 {
-    if (!AGC_ASSERT(digit >= 0) || !AGC_ASSERT(digit <= 9))
-    {
-        return (AGC_DSKY_RELAY_BLANK);
-    }
-
     uint16_t code = k_relay_code[digit]; /* RELTAB low 5 bits */
 
     /* a lit digit is never the blank code and fits the LOW5 field       */
-    if (!AGC_ASSERT(code != AGC_DSKY_RELAY_BLANK && code <= PIN_LOW5))
-    {
-        return (AGC_DSKY_RELAY_BLANK);
-    }
 
     return (code);
 }
@@ -173,11 +164,6 @@ int agc_dsky_relay_digit(uint16_t code)
  **********************************************************************/
 bool pin_ones_negative(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= PIN_WORD))
-    {
-        return (false); /* not a 15-bit word */
-    }
-
     return ((w & PIN_BIT15) != 0u);
 }
 
@@ -195,11 +181,6 @@ bool pin_ones_negative(uint16_t w)
  **********************************************************************/
 uint16_t pin_ones_mag(uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t v   = (uint16_t) (w & PIN_WORD);                                 /* 15-bit word */
     uint16_t mag = pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v; /* |word| */
 
@@ -226,11 +207,6 @@ uint16_t pin_ones_mag(uint16_t w)
  **********************************************************************/
 uint16_t pin_ones_neg(uint16_t word)
 {
-    if (!AGC_ASSERT(word <= PIN_WORD))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t w = (uint16_t) ((~word) & PIN_WORD); /* CS: ones' complement */
 
     /* CS flips the sign bit (bit 15); +0 becomes -0 and back            */
@@ -256,11 +232,6 @@ uint16_t pin_ones_neg(uint16_t word)
  **********************************************************************/
 agc_sp_t pin_sp_from_ones(uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t v = (uint16_t) (w & PIN_WORD); /* 15-bit word */
 
     agc_sp_t r = pin_ones_negative(v) ? (agc_sp_t) (-(int) pin_ones_mag(v)) : (agc_sp_t) v; /* signed value, unscaled */
@@ -399,18 +370,8 @@ void pin_lodsampt(void)
  **********************************************************************/
 void pin_set_dspcount(int16_t n)
 {
-    if (!AGC_ASSERT(n >= 0) || !AGC_ASSERT((n & 037) <= PIN_MD1))
-    {
-        return;
-    }
-
     g_pin.dspcount     = n;
     g_pin.dspcount_neg = false;
-
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -425,18 +386,8 @@ void pin_set_dspcount(int16_t n)
  **********************************************************************/
 void pin_block_dspcount(int16_t n)
 {
-    if (!AGC_ASSERT(n >= 0) || !AGC_ASSERT(n <= PIN_MD1))
-    {
-        return;
-    }
-
     g_pin.dspcount     = n;
     g_pin.dspcount_neg = true;
-
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -454,11 +405,6 @@ void pin_block_dspcount(int16_t n)
 int pin_inrel_of(int16_t dspcount)
 {
     int idx = dspcount & 037; /* INRELTAB index */
-
-    if (!AGC_ASSERT(idx < 20))
-    {
-        return (-1);
-    }
 
     int inrel = k_inreltab[idx]; /* INREL of DSPCOUNT */
 
@@ -479,11 +425,6 @@ int pin_inrel_of(int16_t dspcount)
  **********************************************************************/
 int pin_getinrel(void)
 {
-    if (!AGC_ASSERT(g_pin.dspcount >= 0))
-    {
-        return (-1); /* DSPCOUNT is kept as a magnitude */
-    }
-
     return (pin_inrel_of(g_pin.dspcount));
 }
 
@@ -506,11 +447,6 @@ int pin_getinrel(void)
  **********************************************************************/
 agc_status_t pin_dsptab_store(int rel, uint16_t mag)
 {
-    if (!AGC_ASSERT(rel >= 0) || !AGC_ASSERT(rel < PIN_DSPTAB_PANEL) || !AGC_ASSERT(mag <= PIN_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     uint16_t old = agc_erase_dsptab(rel); /* previous DSPTAB word */
 
@@ -550,16 +486,7 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
  **********************************************************************/
 static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
 {
-    if (!AGC_ASSERT(rel >= 0 && rel < PIN_DSPTAB_PANEL) || !AGC_ASSERT(sel >= 0 && sel < 4))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* the new code fits the selected relay field                        */
-    if (!AGC_ASSERT((code & (uint16_t) ~k_dsmsk[sel]) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     uint16_t cur = agc_erase_dsptab(rel); /* current DSPTAB word */
 
@@ -600,11 +527,6 @@ static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
  **********************************************************************/
 agc_status_t pin_dspin(int16_t count, uint16_t code)
 {
-    if (!AGC_ASSERT(count >= 0) || !AGC_ASSERT(code <= PIN_LOW5))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int rel = (count & 037) >> 1; /* SR                         */
 
     if ((count & 1) == 0)
@@ -631,11 +553,6 @@ agc_status_t pin_dspin(int16_t count, uint16_t code)
  **********************************************************************/
 agc_status_t pin_11dspin(int rel, bool on)
 {
-    if (!AGC_ASSERT(rel >= 0) || !AGC_ASSERT(rel < PIN_DSPTAB_PANEL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u)); /* sign bit on / off */
 }
 
@@ -651,11 +568,6 @@ agc_status_t pin_2blank(void)
 {
     int rel = (g_pin.dspcount & 037) >> 1; /* DSPTAB index of the pair */
 
-    if (!AGC_ASSERT(rel < PIN_DSPTAB_PANEL) || !AGC_ASSERT(g_pin.dspcount >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_dsptab_store(rel, (uint16_t) PIN_BIT12)); /* CS BLANKCON    */
 }
 
@@ -670,11 +582,6 @@ agc_status_t pin_2blank(void)
  **********************************************************************/
 agc_status_t pin_5blank(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_5blank_rel(pin_getinrel()));
 }
 
@@ -809,11 +716,6 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
  **********************************************************************/
 agc_status_t agc_dsky_dspout(uint16_t *relay_word)
 {
-    if (!AGC_ASSERT(relay_word != NULL) || !AGC_ASSERT(g_pin.nout >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *relay_word = 0;
 
     if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_DSKYFLAG))
@@ -842,11 +744,6 @@ agc_status_t agc_dsky_dspout(uint16_t *relay_word)
  **********************************************************************/
 agc_status_t agc_dsky_dspoutsb(uint16_t *relay_word)
 {
-    if (!AGC_ASSERT(relay_word != NULL) || !AGC_ASSERT(g_pin.nout >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *relay_word = 0;
 
     if (g_pin.nout == 0)
@@ -1007,11 +904,6 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
  **********************************************************************/
 uint16_t agc_dsky_dsptem(int index)
 {
-    if (!AGC_ASSERT(g_pin.dsptem[index] <= PIN_WORD))
-    {
-        return (0); /* buffer holds 15-bit words only */
-    }
-
     return (g_pin.dsptem[index]);
 }
 
@@ -1030,11 +922,6 @@ uint16_t agc_dsky_dsptem(int index)
  **********************************************************************/
 agc_status_t agc_dsky_set_dsptem(int index, uint16_t word)
 {
-    if (!AGC_ASSERT(index >= 0 && index < 7) || !AGC_ASSERT(word <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     g_pin.dsptem[index] = word;
 
     return (AGC_STATUS_OK);
@@ -1240,11 +1127,6 @@ agc_status_t agc_dsky_init(void)
     g_pin.loadstat = PIN_LS_WAITING;
     pin_block_dspcount(PIN_VD1);       /* CS VD1; TS DSPCOUNT    */
     agc_flagword_set(4, 0);            /* kill interface displays */
-
-    if (!AGC_ASSERT(g_pin.nout == PIN_DSPTAB_PANEL) || !AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

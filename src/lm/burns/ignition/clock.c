@@ -58,7 +58,7 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
 }
 
 /* STCLOK2 (p.743): DISPDEX = dispdex, STCLOK3, return to ret_job.         */
-agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex, agc_job_id_t ret_job)
+agc_status_t agc_lm_stclok2(agc_sp_t dispdex, agc_job_id_t ret_job)
 {
     agc_guid_state()->lm.dispdex = dispdex;
     agc_status_t st              = ign_start_clock(ret_job);
@@ -212,7 +212,7 @@ void agc_lm_nullclok(void)
 }
 
 /* STOPCLOK (p.746): V34 on any clock display: NULLCLOK, then P00.        */
-agc_status_t agc_job_stopclok(agc_job_ctx_t *ctx)
+agc_status_t agc_job_stopclok(void)
 {
     agc_lm_nullclok();
     agc_relint(); /* GOTOPOOH RELINTS       */
@@ -235,7 +235,7 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
 /* *PROCEED / IGNITE (p.746-747): ASTNFLAG set; if TIG-0 has come
  * (IGNFLAG) IGNITION in 10 ms with 4.23 (immediate restart at IGNITION);
  * IGNITE1: the countdown display comes back.                              */
-agc_status_t agc_job_clokjob_engine_enable(agc_job_ctx_t *ctx)
+agc_status_t agc_job_clokjob_engine_enable(void)
 {
     agc_flag_set(AGC_FLAG_ASTNFLAG);
 
@@ -354,7 +354,7 @@ agc_status_t agc_job_clokjob_engine_enable_bypass(agc_job_ctx_t *ctx)
 /* COMFAIL (p.742), (15): no thrust after ignition (DVMON): DV monitor off
  * (IDLEFLAG), guidance displays suppressed (FLUNDISP), DVCNTR = 4, the
  * clock started if it is not running (STCLOK1), V97 display, group 4 off. */
-agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
+agc_status_t agc_job_comfail(void)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -387,7 +387,7 @@ agc_status_t agc_job_comfail(agc_job_ctx_t *ctx)
 /* COMFAIL1 (p.742): V97 PROCEED (keep going without thrust): entry (2) --
  * COMFAIL3 kills the clock (P12, P63, aborts), COMFAIL4 brings back the
  * countdown (P40, P42); DV monitor and guidance displays reconnected.    */
-agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
+agc_status_t agc_job_clokjob_engine_fail(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
@@ -409,7 +409,7 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
  * ullage on, TIG-5 in 10 ms (a new V99).
  * KILLTASK names ZOOM (= P40ZOOMA), so it removes only a ZOOM scheduled by
  * the 3.3 restart, not P40ZOOM or P63ZOOM (Luminary 099 as flown).       */
-agc_status_t agc_job_clokjob_engine_fail_shutdown(agc_job_ctx_t *ctx)
+agc_status_t agc_job_clokjob_engine_fail_shutdown(void)
 {
     agc_phase_change(3, (uint16_t) 000003);
     agc_inhint();
@@ -455,7 +455,7 @@ agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
 
 /* REP40ALM PROCEED (p.748): entry (14): P42 may go on with the LM unstaged
  * (P42STAGE); P40 shows the alarm again.                                  */
-agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_stage_alarm_proceed(void)
 {
     agc_job_id_t next = ign_table()->alarm_proceed;
 
@@ -487,11 +487,6 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t re
     }
 
     const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE, ret_job};
-
-    if (!AGC_ASSERT(ret_job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, 00203U, &c)); /* TURNITON */
 }

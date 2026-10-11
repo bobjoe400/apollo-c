@@ -39,11 +39,6 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
      * plain UNIT would lose ~15 mrad at 1 km. */
     *pointvsm = agc_rtb_normunit(ip, agc_mat_vec(ip, refsmmat, los), &shift, NULL, NULL);
 
-    if (!AGC_ASSERT((shift == 0) || (shift == 13)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -228,7 +223,7 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
 }
 
 /* ENDEXT: the extended verb is over. */
-agc_status_t agc_job_rendezvous_final_attitude_end(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_final_attitude_end(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {

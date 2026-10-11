@@ -107,11 +107,6 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
 {
     int i = LM_BLK_U + label + (int) idx; /* BLOCKTOP index */
 
-    if (!AGC_ASSERT(i >= 0 && i < LM_BLOCK_N))
-    {
-        return (0);
-    }
-
     if (!AGC_ASSERT(d->block[i] >= LM_NEGMAX))
     {
         return (0);
@@ -134,11 +129,6 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
  **********************************************************************/
 static agc_sp_t chkmintj(int32_t a)
 {
-    if (!AGC_ASSERT(a >= -3 * LM_POSMAX && a <= 3 * LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (a - TJ_TJMIN <= 0)
     {
         return (0); /* COASTTJ        */
@@ -172,16 +162,6 @@ static bool zone_axis_time(const lm_dap_t *d, tjl_t *w)
 {
     w->rotsense = (agc_sp_t) -w->rotsense;
     w->ttoaxis  = lm_dap_mphi(d->edot, blk(d, LM_BK_1ANET1, w->adr2));
-
-    if (!AGC_ASSERT(w->rotsense != 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(w->ttoaxis >= LM_NEGMAX))
-    {
-        return (false);
-    }
 
     return ((int32_t) w->ttoaxis + TJ_MTJMAX > 0);
 }
@@ -246,11 +226,6 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
         return (TJ_FULLTIME);
     }
 
-    if (!AGC_ASSERT(w->hh.hi >= LM_NEGMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((int32_t) w->hh.hi - 2 <= 0)
     { /* FORMULA3       */
         agc_sp_t q3 = lm_dap_dv(w->hh, TJ_025AT2); /* HH / .25 s: FORMULA3 quotient, scaled 4 s */
@@ -259,11 +234,6 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
     }
 
     agc_sp_t q = lm_dap_dv(w->hh, TJ_1AT2); /* HH / .1 s: quotient, scaled 4 s */
-
-    if (!AGC_ASSERT(q >= LM_NEGMAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (lm_dap_wrap((int32_t) q + w->ttoaxis + TJ_0375AT4));
 }
@@ -286,11 +256,6 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
  **********************************************************************/
 static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 {
-    if (!AGC_ASSERT(w->rotsense != 0))
-    { /* CCSHOLE        */
-        return (0);
-    }
-
     if (w->rotsense < 0)
     {
         w->adr2 = (agc_sp_t) (w->adr2 - 2);
@@ -318,11 +283,6 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 
     w->hh       = lm_dap_das(w->hh, k);
     agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4)); /* (HH + .00375) / (TTOAXIS + .1): FORMULA2, scaled 2 s */
-
-    if (!AGC_ASSERT(q2 >= LM_NEGMAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (lm_dap_mphi(q2, TJ_BIT14));
 }
@@ -437,11 +397,6 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     int32_t g = (int32_t) lm_dap_mphi(blk(d, LM_BK_1ACOAST, w->adr1), w->edotsq) + d->e + blk(d, LM_BK_COASTDB, w->adr1); /* ZONE4,5        */
 
-    if (!AGC_ASSERT(g >= -3 * LM_POSMAX && g <= 3 * LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (g > 0)
     {
         return (zone_coast_jets_on(d, w)); /* ZONE4          */
@@ -476,16 +431,6 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
 
     d->numbert = 4;         /* 2 jets U,V     */
     d->firefct = LM_NEGMAX; /* 4 jets P       */
-
-    if (!AGC_ASSERT(w->rotsense != 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->numbert == 4))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -579,11 +524,6 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
         w->adr2 = (agc_sp_t) (w->adr2 - 1);
     }
 
-    if (!AGC_ASSERT(d->edot <= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rough_law_jet_time(d, w, (agc_sp_t) -d->edot));
 }
 
@@ -616,11 +556,6 @@ static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
     d->edot   = t;                                                                /* XCH EDOT       */
     int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w->adr1)) + t; /* 1/ANET1 EDOT^2 + E - FIREDB: above the curve, scaled 4 pi rad */
 
-    if (!AGC_ASSERT(s >= -2 * LM_POSMAX && s <= 2 * LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME); /* below the switch curve: coast */
 }
 
@@ -651,16 +586,6 @@ static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
     if (axis >= 0 && lm_dap_mp(d->tj[axis + 1], d->block[axis]).lo > 0)
     {
         d->numbert = 4;
-    }
-
-    if (!AGC_ASSERT(axis >= -1 && axis <= 1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
-    {
-        return;
     }
 }
 
@@ -716,11 +641,6 @@ agc_status_t lm_dap_tjetlaw(void)
             d->edot = pd.lo; /* at pi/32       */
             a       = finelaw(d, &w);
         }
-    }
-
-    if (!AGC_ASSERT(w.rotsense == TJ_SENSOR || w.rotsense == -TJ_SENSOR))
-    {
-        return (AGC_STATUS_BAD_ARG); /* ROTSENSE is +-SENSOR */
     }
 
     returntj(d, &w, a);

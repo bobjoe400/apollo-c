@@ -149,7 +149,7 @@ agc_status_t agc_job_sps_burn_after_maneuver(agc_job_ctx_t *ctx)
 
 /* TRIMONLY / TST,TRIM (p.694): S40.6 in 10 ms (MRKRTMP -1 trim only, +1
  * drive test and trim; CNTR = +0 normal entry), wait 5 or 18 s.          */
-static agc_status_t trim_common(agc_job_ctx_t *ctx, agc_sp_t mrkrtmp)
+static agc_status_t trim_common(agc_sp_t mrkrtmp)
 {
     agc_guid_t *g = agc_guid_state();
 
@@ -172,7 +172,7 @@ agc_status_t agc_job_gimbal_trim_only(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (trim_common(ctx, -1)); /* CS BIT1                */
+    return (trim_common(-1)); /* CS BIT1                */
 }
 
 agc_status_t agc_job_gimbal_test_and_trim(agc_job_ctx_t *ctx)
@@ -182,7 +182,7 @@ agc_status_t agc_job_gimbal_test_and_trim(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (trim_common(ctx, 1)); /* CAF BIT1               */
+    return (trim_common(1)); /* CAF BIT1               */
 }
 
 /* After the DELAYJOB (p.694): 6.2 (PRE40.6 -0 cs, CLOKTASK 1 s) and 4.23

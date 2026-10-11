@@ -103,11 +103,6 @@ static agc_status_t pin_sign_on(bool plus)
  **********************************************************************/
 agc_status_t pin_plus_on(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_sign_on(true));
 }
 
@@ -122,11 +117,6 @@ agc_status_t pin_plus_on(void)
  **********************************************************************/
 agc_status_t pin_minus_on(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_sign_on(false));
 }
 
@@ -166,11 +156,6 @@ static agc_status_t pin_dspsign(agc_dp_t *v, bool negzero)
  **********************************************************************/
 static agc_dp_t pin_dsprnd(agc_dp_t v)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(v >= 0))
     {
         return (0); /* no valid result */
@@ -342,11 +327,6 @@ agc_status_t pin_dsp2dec(agc_dp_t v)
  **********************************************************************/
 agc_status_t pin_dspdecvn(int n)
 {
-    if (!AGC_ASSERT(n >= 0) || !AGC_ASSERT(n <= (int) AGC_SP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int32_t lword; /* L after MP by VNDSPCON */
 
     lword      = (int32_t) (((int32_t) n * PIN_VNDSPCON) & (int32_t) PIN_POSMAX);
@@ -369,11 +349,6 @@ agc_status_t pin_dspdecvn(int n)
  **********************************************************************/
 agc_status_t pin_dspoctwo(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= PIN_WORD) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     s->dspcount     = (int16_t) ((uint16_t) s->dspcount | PIN_BIT14);
@@ -452,11 +427,6 @@ agc_status_t pin_dsp2bit(uint16_t w)
  **********************************************************************/
 agc_status_t pin_updatvb(uint8_t verb)
 {
-    if (!AGC_ASSERT(verb <= 99) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_st()->verbreg = verb;
     pin_set_dspcount(PIN_VD1);
 
@@ -477,11 +447,6 @@ agc_status_t pin_updatvb(uint8_t verb)
  **********************************************************************/
 agc_status_t pin_updatnn(uint8_t noun)
 {
-    if (!AGC_ASSERT(noun <= 99) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pin_st()->nounreg = noun;
     agc_status_t st   = pin_noun_load(); /* status so far */
 

@@ -197,11 +197,6 @@ uint16_t agc_chan_read(int chan)
         return (0);
     }
 
-    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
-    {
-        return (0);
-    }
-
     return (g_chan[chan]);
 }
 
@@ -213,11 +208,6 @@ uint16_t agc_chan_read(int chan)
  **********************************************************************/
 static void reset_flipflops(void)
 {
-    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN33] <= AGC_CHAN_MASK))
-    {
-        return;
-    }
-
     g_chan[AGC_CHAN_CHAN33] = (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
 }
 
@@ -234,16 +224,6 @@ static void reset_flipflops(void)
  **********************************************************************/
 void agc_chan_write(int chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(value <= AGC_CHAN_MASK))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(chan_writable(chan)))
     {
         return;
@@ -272,11 +252,6 @@ void agc_chan_write(int chan, uint16_t value)
  **********************************************************************/
 void agc_chan_or(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
-    {
-        return;
-    }
-
     if (!AGC_ASSERT(chan_writable(chan)))
     {
         return;
@@ -352,11 +327,6 @@ void agc_chan_and(int chan, uint16_t mask)
  **********************************************************************/
 agc_status_t agc_chan_set_input(int chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!chan_input(chan))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -398,11 +368,6 @@ agc_status_t agc_chan_set_signal(int chan, uint16_t mask, bool present)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
-    }
-
-    if (!AGC_ASSERT(g_chan[chan] <= AGC_CHAN_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK);

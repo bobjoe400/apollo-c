@@ -749,7 +749,7 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
     agc_guid_copycycle(AGC_VEHICLE_CSM, AGC_COPY_RVTG);
     serv_phase(PH_5_3_B, AGC_JOB_SERV_EXIT);
 
-    return (agc_csm_avgexit(ctx));
+    return (agc_csm_avgexit());
 }
 
 /**********************************************************************
@@ -758,15 +758,12 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_csm_avgexit
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
+agc_status_t agc_csm_avgexit(void)
 {
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit;
 
@@ -853,7 +850,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
         agc_phase_change2(000111, 000132, NULL); /* 1.11SPOT, 2.13SPOT     */
     }
 
-    return (agc_job_change_program_continue(ctx)); /* POSTJUMP CANV37        */
+    return (agc_job_change_program_continue()); /* POSTJUMP CANV37        */
 }
 
 /**********************************************************************

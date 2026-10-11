@@ -608,16 +608,13 @@ static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
  *
  * FUNCTION NAME: agc_job_orbit_display_update
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbit_display_update(void)
 {
     agc_interp_t ip;                       /* interpreter state */
     agc_rendz_t *rz  = opd_begin(&ip);     /* rendezvous erasables */
@@ -653,7 +650,7 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 
     if (rz_is_csm() && agc_erase_modreg() == 0)
     { /* CANDEL        */
-        return (agc_job_orbit_display_splash(ctx));
+        return (agc_job_orbit_display_splash());
     }
 
     return (opd_start_ticking(&ip, rz));
@@ -666,16 +663,13 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbit_display_average_g
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbit_display_average_g(void)
 {
     agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
@@ -706,10 +700,10 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
 
     if (rz_is_csm() && agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
     {
-        return (agc_job_orbit_display_splash(ctx));
+        return (agc_job_orbit_display_splash());
     }
 
-    return (agc_job_orbit_display_repeat(ctx));
+    return (agc_job_orbit_display_repeat());
 }
 
 /**********************************************************************
@@ -718,16 +712,13 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbit_display_repeat
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbit_display_repeat(void)
 {
     if (opd_terminated())
     {
@@ -744,16 +735,13 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_orbit_display_splash
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
+agc_status_t agc_job_orbit_display_splash(void)
 {
     agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
@@ -783,7 +771,7 @@ agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
         return (opd_start_ticking(&ip, rz)); /* SPLRET1       */
     }
 
-    return (agc_job_orbit_display_repeat(ctx));
+    return (agc_job_orbit_display_repeat());
 }
 
 /**********************************************************************
@@ -859,16 +847,13 @@ agc_status_t agc_task_ticktest(void)
  *
  * FUNCTION NAME: agc_job_rendz_display_terminate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendz_display_terminate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_display_terminate(void)
 {
     return (agc_svc_b5off());
 }
@@ -879,16 +864,13 @@ agc_status_t agc_job_rendz_display_terminate(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_rendz_endext
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendz_endext(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendz_endext(void)
 {
     return (agc_dsky_endmark());
 }

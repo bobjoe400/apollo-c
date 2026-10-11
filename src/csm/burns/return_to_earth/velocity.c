@@ -277,11 +277,6 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
 
     *xt1lim = agc_tp_sqrt(ip, beta10); /* XT1LIM3, B5  */
 
-    if (!AGC_ASSERT(*xt1lim >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 } /* rte_xt1lim */
 
@@ -369,7 +364,7 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *
 
     rs->pcon = agc_tp_to_dp(pcon_tp); /* STORE PCON    */
 
-    if (agc_dp_sqrt_chk(ip, rs->pcon, &root) != AGC_STATUS_OK)
+    if (agc_dp_sqrt_chk(rs->pcon, &root) != AGC_STATUS_OK)
     {
         rs->alarm_code = RTE_POODOO_SQRT;
 
@@ -389,11 +384,6 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *
     h          = rte_vshift(ip, h, 4 - n1); /* VSR* 0-4,1    */
     rs->v2_t1v = agc_vec_add(ip, v, h);     /* V2(T1)/ B7    */
     rs->dv     = agc_vec_abval(ip, agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v));
-
-    if (!AGC_ASSERT(rs->dv >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* rte_dv_calc */

@@ -65,11 +65,6 @@ static agc_sp_t spsstart(const lm_dap_t *d)
 {
     agc_sp_t outer = lm_dap_mphi(d->edot, SR_RATELIM1); /* EDOT x CALLCODE: nonzero beyond 1.73 deg/s; unscaled test word (sign only) */
 
-    if (!AGC_ASSERT(d->dkdb >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (outer > 0)
     {
         return ((agc_sp_t) -SR_HALF); /* NEGTHRST           */
@@ -120,11 +115,6 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 {
     agc_sp_t tj = d->tj[i]; /* TJ of the axis: +-HALF or 0, scaled 0.625 ms per count */
 
-    if (!AGC_ASSERT(i >= 0 && i <= 2))
-    {
-        return;
-    }
-
     if (oldsense != 0)
     {
         bool same = (oldsense > 0) ? (tj > 0) : (tj < 0); /* new command has the old sense */
@@ -144,11 +134,6 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
     {
         d->tj[i] = 0;
     }
-
-    if (!AGC_ASSERT(d->jetctr[i] >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -165,11 +150,6 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 agc_status_t lm_dap_spsrcs(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(d->axisctr >= -1 && d->axisctr <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     int      i           = d->axisctr + 1; /* axis index AXISCTR + 1 */
     agc_sp_t tj          = d->tj[i];       /* TJ of the axis, scaled 0.625 ms per count */
@@ -199,11 +179,6 @@ agc_status_t lm_dap_spsrcs(void)
     }
 
     postcheck(d, i, oldsense);
-
-    if (!AGC_ASSERT(d->tj[i] >= -SR_HALF && d->tj[i] <= SR_HALF))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 } /* lm_dap_spsrcs */

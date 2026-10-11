@@ -892,16 +892,12 @@ agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
 /**********************************************************************
  * PROCKEY (p. 367): the PRO key (sampled in T4RUPT).
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------
- *   ctx       agc_job_ctx_t *  I/O  job context from the dispatcher (id,
- *                                   priority, VAC; MPAC word in arg)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
+agc_status_t agc_job_prockey(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
@@ -929,11 +925,6 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_dsky_prockey_request(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_PROCKEY); /* status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
@@ -1217,9 +1208,7 @@ agc_status_t agc_dsky_keys(const char *seq)
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            agc_job_ctx_t ctx = {AGC_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
-
-            st = agc_job_prockey(&ctx);
+            st = agc_job_prockey();
             continue;
         }
 

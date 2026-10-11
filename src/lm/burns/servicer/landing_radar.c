@@ -670,12 +670,12 @@ agc_status_t agc_job_lrvjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_lrvjob_done(ctx));
+    return (agc_job_lrvjob_done());
 }
 
 /* LRVJOB after RADSTALL / ENDLRV / VBAD / VSTILBAD (p.892-893). DEVIATION:
  * the downlink copies LRVTIMDL, LRXCDUDL, LRZCDUDL are not kept.           */
-agc_status_t agc_job_lrvjob_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lrvjob_done(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
@@ -722,12 +722,12 @@ agc_status_t agc_job_lrhjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_job_lrhjob_done(ctx));
+    return (agc_job_lrhjob_done());
 }
 
 /* LRHJOB after RADSTALL / HBAD / HSTILBAD (p.893-894): a bad return caused
  * by a range-scale change is ignored (RNGSCFLG reset).                    */
-agc_status_t agc_job_lrhjob_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lrhjob_done(void)
 {
     agc_guid_t *g = agc_guid_state();
 

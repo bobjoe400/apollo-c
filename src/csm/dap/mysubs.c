@@ -456,11 +456,6 @@ uint16_t csm_dap_cdu(int axis)
  **********************************************************************/
 agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rupt_set_t5_task(task);
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
 

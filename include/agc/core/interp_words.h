@@ -67,7 +67,7 @@ agc_tp_words_t agc_mpac_bddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
 
 /* ---- square root: sqrt of the TP MPAC at the same binary point; MPAC+2
  * as the AGC leaves it; argument < -2^-14 latches ABORT 01302, result 0  */
-agc_tp_words_t agc_mpac_sqrt(agc_interp_t *ip, agc_tp_words_t m); /* SQRT */
+agc_tp_words_t agc_mpac_sqrt(agc_tp_words_t m); /* SQRT */
 
 /* ---- shifts and rounding ------------------------------------------------- */
 agc_tp_words_t agc_mpac_round(agc_interp_t *ip, agc_tp_words_t m);              /* ROUND          */
@@ -84,8 +84,8 @@ agc_tp_words_t agc_mpac_abs(agc_tp_words_t m);                    /* ABS: BRANCH
 agc_tp_words_t agc_mpac_sign(agc_tp_words_t m, agc_dp_words_t x); /* SIGN: DCOMP if x < 0     */
 
 /* ---- trigonometric (scalings as interp.h); TP MPAC out ------------------- */
-agc_tp_words_t agc_mpac_sin(agc_interp_t *ip, agc_tp_words_t m);  /* SIN                       */
-agc_tp_words_t agc_mpac_cos(agc_interp_t *ip, agc_tp_words_t m);  /* COS                       */
+agc_tp_words_t agc_mpac_sin(agc_tp_words_t m);  /* SIN                       */
+agc_tp_words_t agc_mpac_cos(agc_tp_words_t m);  /* COS                       */
 agc_tp_words_t agc_mpac_asin(agc_interp_t *ip, agc_tp_words_t m); /* ASIN: ALARM 01301 latched */
 agc_tp_words_t agc_mpac_acos(agc_interp_t *ip, agc_tp_words_t m); /* ACOS: ALARM 01301 latched */
 

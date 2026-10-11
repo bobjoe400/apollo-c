@@ -186,11 +186,11 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv);
 /* IRIGCOMP: gyro compensation from compensated DELV (pulses x 2^14).     */
 agc_status_t agc_imu_comp_irig(agc_vec_t delv);
 agc_status_t agc_imu_gcompzer(void);                          /* GCOMPZER       */
-agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx);  /* 1/GYRO         */
+agc_status_t agc_job_gyro_command_pulse(void);  /* 1/GYRO         */
 agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx);  /* 1/GYRO retry   */
-agc_status_t agc_job_gyro_command_pulsed(agc_job_ctx_t *ctx); /* GCOMP1         */
+agc_status_t agc_job_gyro_command_pulsed(void); /* GCOMP1         */
 agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);             /* NBDONLY        */
-agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx);            /* LASTBIAS       */
+agc_status_t agc_job_lastbias(void);            /* LASTBIAS       */
 
 /* ======================================================================= */
 /* Inflight alignment (INFLIGHT_ALIGNMENT_ROUTINES.agc, CALCSMSC)          */
@@ -268,7 +268,7 @@ agc_status_t           agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wa
 agc_imu_stall_result_t agc_kalc_outcome(void);
 
 agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx); /* KALCMAN3            */
-agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx);       /* NEWDELHI            */
+agc_status_t agc_job_newdelhi(void);       /* NEWDELHI            */
 agc_status_t agc_task_updtcall(void);                    /* UPDTCALL            */
 agc_status_t agc_task_manustop(void);                    /* MANUSTOP            */
 agc_status_t agc_task_endmanu(void);                     /* ENDMANU / GOODMANU  */
@@ -335,8 +335,8 @@ agc_vec_t    agc_csm_prelaunch_thetan(void);   /* THETAN1, rev 2^0       */
 /* P01 prelaunch initialization and the IMU positioning (GEOIMUTT).     */
 agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx); /* GTSCPSS */
 agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx);     /* IMUBACK */
-agc_status_t agc_job_prelaunch_imu_coarse_aligned(agc_job_ctx_t *ctx);
-agc_status_t agc_job_prelaunch_imu_fine_aligned(agc_job_ctx_t *ctx);
+agc_status_t agc_job_prelaunch_imu_coarse_aligned(void);
+agc_status_t agc_job_prelaunch_imu_fine_aligned(void);
 agc_status_t agc_task_gyrocompassing_wake(void);                   /* GOESTIMS            */
 
 /* P07 IMU performance test entry (IMUTEST, GUESS, LATAZCHK).          */
@@ -363,7 +363,7 @@ agc_status_t agc_task_gyrocompassing_sample_restart(void);              /* ALLOO
 agc_status_t agc_task_gyrocompassing_filter_start(void);                /* SPECSTS */
 agc_status_t agc_job_gyrocompass_azimuth_change(agc_job_ctx_t *ctx);    /* V78 */
 agc_status_t agc_job_gyrocompass_azimuth_flash(agc_job_ctx_t *ctx);
-agc_status_t agc_job_gyrocompass_azimuth_loaded(agc_job_ctx_t *ctx);
+agc_status_t agc_job_gyrocompass_azimuth_loaded(void);
 
 /* P03 optical verification of the gyrocompass (prelaunch_verify.c).  */
 agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx);     /* GCOMPVER */
@@ -372,7 +372,7 @@ agc_status_t agc_job_optical_verification_target_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx);
 agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx);
 agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx);
-agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx);
-agc_status_t agc_job_optical_verification_end(agc_job_ctx_t *ctx); /* GCOMP5 */
+agc_status_t agc_job_optical_verification_torque_accepted(void);
+agc_status_t agc_job_optical_verification_end(void); /* GCOMP5 */
 
 #endif /* AGC_IMU_H */

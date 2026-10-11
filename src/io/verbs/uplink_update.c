@@ -149,11 +149,6 @@ agc_status_t agc_uplink_update_fresh_start(void)
     upsvflag = 0;
     stage    = UP_COUNT;
 
-    if (!AGC_ASSERT(upsvflag == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -413,7 +408,7 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 
 /* UPOUT +1: restore the old mode and downlist, light off, kill group 6,
  * ENDEXT.  Also the V34 return and the group 6 restart point.             */
-agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_uplink_update_terminate(void)
 {
     agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 : (agc_sp_t) up[UP_UPOLDMOD];
     agc_status_t st = agc_phase_newmode(mm); /* NEWMODEX +3         */
@@ -432,7 +427,7 @@ agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
 
 /* UPOUT: release INTSTALL (INTWAKEU, which also finishes a state vector
  * update named by UPSVFLAG), then UPOUT +1.                               */
-static agc_status_t upout(agc_job_ctx_t *ctx)
+static agc_status_t upout(void)
 {
     agc_interp_t ip;
 
@@ -444,15 +439,15 @@ static agc_status_t upout(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_uplink_update_terminate(ctx));
+    return (agc_job_uplink_update_terminate());
 }
 
 /* UPERROUT: operator error, then UPOUT.                                    */
-static agc_status_t up_error_out(agc_job_ctx_t *ctx)
+static agc_status_t up_error_out(void)
 {
     agc_dsky_falton();
 
-    return (upout(ctx));
+    return (upout());
 }
 
 /* TIMEDIDR: add the incrementer in UPBUFF +8D (zeroed so a restart does
@@ -489,7 +484,7 @@ static bool timedidl(void)
 }
 
 /* V70 after the clock: TETCSM, TETLEM -= delta; TEPHEM += delta.         */
-static agc_status_t v70_tail(agc_job_ctx_t *ctx)
+static agc_status_t v70_tail(void)
 {
     int32_t  delta = upbuff_dp(0);
     agc_dp_t tc    = agc_erase_tetcsm();
@@ -506,7 +501,7 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
     set_upbuff_dp(0, 0);
     agc_phase_change(UP_GROUP, UP_PHASE_STORE);
 
-    return (upout(ctx));
+    return (upout());
 }
 
 /* Restart 6.5 (TIMEDIDR): finish the clock change, then the rest of the
@@ -527,27 +522,27 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
             agc_dsky_falton();
         }
 
-        return (agc_job_uplink_update_terminate(ctx));
+        return (agc_job_uplink_update_terminate());
     }
 
-    return (ok ? v70_tail(ctx) : up_error_out(ctx));
+    return (ok ? v70_tail() : up_error_out());
 }
 
 /* UPEND71: II-2 words from UPBUFF +2 into consecutive registers from the
  * ECADR in UPBUFF +1, which may not run into the next EBANK.              */
-static agc_status_t upend71(agc_job_ctx_t *ctx)
+static agc_status_t upend71(void)
 {
     uint16_t ecadr = up[UP_UPBUFF + 1];
     int      n     = (int) up[UP_COMPNUMB] - 2;
 
     if (!AGC_ASSERT(n >= 1 && n <= UP_MAX_COMP - 2))
     {
-        return (up_error_out(ctx));
+        return (up_error_out());
     }
 
     if ((((ecadr & LOW8) + (uint16_t) (n - 1)) & BIT9) != 0u)
     {
-        return (up_error_out(ctx)); /* next EBANK          */
+        return (up_error_out()); /* next EBANK          */
     }
 
     for (int i = n - 1; i >= 0; i--)
@@ -556,19 +551,19 @@ static agc_status_t upend71(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return (up_error_out(ctx));
+            return (up_error_out());
         }
     }
 
-    return (upout(ctx));
+    return (upout());
 }
 
 /* UPEND72: (II-1)/2 pairs ECADR, word from UPBUFF +1; II must be odd.     */
-static agc_status_t upend72(agc_job_ctx_t *ctx)
+static agc_status_t upend72(void)
 {
     if ((up[UP_COMPNUMB] & BIT1) == 0u)
     {
-        return (up_error_out(ctx));
+        return (up_error_out());
     }
 
     int pairs = ((int) up[UP_COMPNUMB] - 1) / 2;
@@ -584,11 +579,11 @@ static agc_status_t upend72(agc_job_ctx_t *ctx)
 
         if (st != AGC_STATUS_OK)
         {
-            return (up_error_out(ctx));
+            return (up_error_out());
         }
     }
 
-    return (upout(ctx));
+    return (upout());
 }
 
 /* UPJOB / UPWAKE / UPPART3: hold INTSTALL (a state vector may change),
@@ -619,8 +614,8 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
     { /* UPEND70             */
         set_upbuff_dp(8, -upbuff_dp(0));
 
-        return (timedidl() ? v70_tail(ctx) : up_error_out(ctx));
+        return (timedidl() ? v70_tail() : up_error_out());
     }
 
-    return ((up[UP_UPVERB] == 1u) ? upend71(ctx) : upend72(ctx));
+    return ((up[UP_UPVERB] == 1u) ? upend71() : upend72());
 }

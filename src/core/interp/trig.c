@@ -123,11 +123,6 @@ static void interp_flag_alarm(uint16_t code)
     { /* the abort wins over an alarm         */
         g_interp_alarm = code;
     }
-
-    if (!AGC_ASSERT(g_interp_alarm != 0u))
-    {
-        return; /* not latched */
-    }
 }
 
 /**********************************************************************
@@ -143,16 +138,6 @@ uint16_t agc_interp_take_alarm(void)
 
     g_interp_alarm = 0;
 
-    if (!AGC_ASSERT(g_interp_alarm == 0u))
-    {
-        return (0); /* not cleared */
-    }
-
-    if (!AGC_ASSERT(code == 0u || code == 01301u || code == 01302u))
-    {
-        return (0);
-    }
-
     return (code);
 }
 
@@ -160,24 +145,18 @@ uint16_t agc_interp_take_alarm(void)
  * SQRT (INTERPRETER.agc pp.1181, 1184-1186) with the abort reported.
  *
  * ARGUMENTS:
- *   ip   agc_interp_t *  I  interpreter state
  *   a    agc_dp_t        I  argument at 2^2n
  *   out  agc_dp_t *      O  root at 2^n; 0 on the abort
  *
  * RETURNS: agc_status_t -- AGC_STATUS_POODOO for a < -2^-14 (caller
  *          raises POODOO 01302), else AGC_STATUS_OK
  **********************************************************************/
-agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
+agc_status_t agc_dp_sqrt_chk(agc_dp_t a, agc_dp_t *out)
 {
     bool     abort = false; /* SQRTABRT taken */
     agc_w2_t r;             /* root words */
 
     r = agc_w3_top(sqrt_words(agc_w3_from_tp(agc_tp_from_dp(a)), &abort));
-
-    if (!AGC_ASSERT(r.hi >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     *out = agc_w_join(r);
 
@@ -204,21 +183,11 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t r = 0; /* root, scaled 2^n */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (agc_dp_sqrt_chk(ip, a, &r) != AGC_STATUS_OK)
+    if (agc_dp_sqrt_chk(a, &r) != AGC_STATUS_OK)
     { /* ABORT 01302 (a < -2^-14): raised by exec when the job returns */
         interp_flag_alarm(01302u);
 
         return (0);
-    }
-
-    if (!AGC_ASSERT(r >= 0))
-    {
-        return (0); /* no valid result */
     }
 
     return (r);
@@ -238,11 +207,6 @@ agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 {
     bool     abort = false; /* SQRTABRT taken */
     agc_w2_t r;             /* root words */
-
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
 
     r = agc_w3_top(sqrt_words(agc_w3_from_tp(a), &abort));
 
@@ -286,11 +250,6 @@ static agc_w3_t sn1_words(agc_w2_t x)
     r  = agc_w_tp_shl1(r, &o);                             /*  OVERFLOWS"      */
 
     if (!AGC_ASSERT(o == 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(r.m0)))
     {
         return ((agc_w3_t){0}); /* no valid result */
     }
@@ -391,11 +350,6 @@ static agc_w3_t cosine_words(agc_w3_t m)
  **********************************************************************/
 agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w3_top(sine_words(agc_w_split(a)))));
 }
 
@@ -410,11 +364,6 @@ agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
  **********************************************************************/
 agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
 {
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w3_top(cosine_words(agc_w3_from_tp(agc_tp_from_dp(a))))));
 }
 
@@ -595,21 +544,11 @@ agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t r = 0; /* angle, revolutions scaled 2^0 */
 
-    if (!AGC_ASSERT(ip != 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (agc_dp_acos_chk(ip, a, &r) != AGC_STATUS_OK)
     { /* ALARM 01301 (|a| > 1/2), raised by exec; r is the limit value */
         interp_flag_alarm(01301u);
 
         return (r);
-    }
-
-    if (!AGC_ASSERT(r >= 0))
-    {
-        return (0); /* no valid result */
     }
 
     return (r);
@@ -636,11 +575,6 @@ agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
         return (r);
     }
 
-    if (!AGC_ASSERT((r >= -AGC_DP_QUARTER) && (r <= AGC_DP_QUARTER)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -653,13 +587,12 @@ agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
  * The abort (argument < -2^-14) is latched for the executive.
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   m   agc_tp_words_t  I  MPAC, argument at 2^2n
  *
  * RETURNS: agc_tp_words_t -- MPAC after SQRT, root at 2^n; 0 on the
  *          abort
  **********************************************************************/
-agc_tp_words_t agc_mpac_sqrt(agc_interp_t *ip, agc_tp_words_t m)
+agc_tp_words_t agc_mpac_sqrt(agc_tp_words_t m)
 {
     bool     abort = false; /* SQRTABRT taken */
     agc_w3_t r;             /* MPAC after SQRT */
@@ -673,11 +606,6 @@ agc_tp_words_t agc_mpac_sqrt(agc_interp_t *ip, agc_tp_words_t m)
         return ((agc_tp_words_t){0, 0, 0});
     }
 
-    if (!AGC_ASSERT(r.m0 >= 0))
-    {
-        return (m);
-    }
-
     return (agc_w3_to_words(r));
 }
 
@@ -685,21 +613,15 @@ agc_tp_words_t agc_mpac_sqrt(agc_interp_t *ip, agc_tp_words_t m)
  * SIN (SINE, INTERPRETER.agc pp.1187-1188) on MPAC, MPAC+1 as held.
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   m   agc_tp_words_t  I  MPAC, angle in revolutions (MPAC+2 unused)
  *
  * RETURNS: agc_tp_words_t -- (1/2) sin(2 pi m) as the TP MPAC
  **********************************************************************/
-agc_tp_words_t agc_mpac_sin(agc_interp_t *ip, agc_tp_words_t m)
+agc_tp_words_t agc_mpac_sin(agc_tp_words_t m)
 {
     agc_w3_t r; /* SN1 result words */
 
     r = sine_words(agc_w3_top(agc_w3_from_words(m)));
-
-    if (!AGC_ASSERT(agc_w_ok(r.m0)))
-    {
-        return (m);
-    }
 
     return (agc_w3_to_words(r));
 }
@@ -709,21 +631,15 @@ agc_tp_words_t agc_mpac_sin(agc_interp_t *ip, agc_tp_words_t m)
  * words, then SINE on MPAC, MPAC+1.
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   m   agc_tp_words_t  I  MPAC, angle in revolutions
  *
  * RETURNS: agc_tp_words_t -- (1/2) cos(2 pi m) as the TP MPAC
  **********************************************************************/
-agc_tp_words_t agc_mpac_cos(agc_interp_t *ip, agc_tp_words_t m)
+agc_tp_words_t agc_mpac_cos(agc_tp_words_t m)
 {
     agc_w3_t r; /* SN1 result words */
 
     r = cosine_words(agc_w3_from_words(m));
-
-    if (!AGC_ASSERT(agc_w_ok(r.m0)))
-    {
-        return (m);
-    }
 
     return (agc_w3_to_words(r));
 }

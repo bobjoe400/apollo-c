@@ -122,14 +122,14 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
 }
 
 /* TRMATTCK: after liftoff ENDEXT, before liftoff GOPIN.                   */
-agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_attitude_error_terminate(void)
 {
     return (after_liftoff() ? agc_dsky_endmark() : agc_extverb_gopin());
 }
 
 /* V43 after the load: NEEDLE11 / NEEDLER2 (initialise the DACs, enable
  * the error counters), ATTCK1 in 20 ms, then TRMATTCK.                   */
-agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
+agc_status_t agc_job_attitude_error_load_csm(void)
 {
     agc_status_t st = agc_dap_needler(0, 0, 0, true);
 
@@ -145,7 +145,7 @@ agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx)
         return (st); /* WAITLIST did its alarm  */
     }
 
-    return (agc_job_attitude_error_terminate(ctx));
+    return (agc_job_attitude_error_terminate());
 }
 
 /* ATTCK1 (task): AK, AK1, AK2 = THETAD; NEEDLES sends them (limited to
@@ -186,11 +186,11 @@ static agc_status_t attck1(void)
 
 /* STABLISH (V46, p.245): RCS/entry/Saturn DAP by DAPFIG; with TVC on,
  * only the CSM/LM switch-over to low bandwidth (else ALM/END).            */
-static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
+static agc_status_t verb_establish_dap(void)
 {
     if (!tvc_on())
     {
-        return (agc_job_dapfig(ctx)); /* POSTJUMP DAPFIG         */
+        return (agc_job_dapfig()); /* POSTJUMP DAPFIG         */
     }
 
     if ((agc_erase_dapdatr1() & BIT14) == 0u)
@@ -608,7 +608,7 @@ agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
 
 /* OPTC1 after EXDSPRET: OPTIND = 1 (coarse optics working; T4RUPT's
  * OPTDRIVE takes it from here), ENDEXT.                                   */
-agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx)
+agc_status_t agc_job_optics_coarse_start(void)
 {
     agc_erase_set_optind(1);
 
@@ -636,7 +636,7 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
         case 45:
             return (agc_extverb_downflag((agc_flag_id_t) AGC_FLAG_SURFFLAG));
         case 46:
-            return (verb_establish_dap(ctx));
+            return (verb_establish_dap());
         case 47:
             return (agc_extverb_state_vector_copy(true));
         case 48:

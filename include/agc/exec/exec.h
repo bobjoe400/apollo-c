@@ -277,10 +277,10 @@ agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);                /* GOTOPOOH   
 agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx);             /* GOP00FIX          */
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);                /* GOPOODOO          */
 agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx);     /* GOP00FIX -3 */
-agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx); /* CANV37   */
-agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx);    /* V37XEQ   */
-agc_status_t agc_job_change_program_jets_off(agc_job_ctx_t *ctx); /* R00TOP00 +DELAYJOB (CSM) */
-agc_status_t agc_job_change_program_return(agc_job_ctx_t *ctx);   /* V37RET (LM) */
+agc_status_t agc_job_change_program_continue(void); /* CANV37   */
+agc_status_t agc_job_change_program_start(void);    /* V37XEQ   */
+agc_status_t agc_job_change_program_jets_off(void); /* R00TOP00 +DELAYJOB (CSM) */
+agc_status_t agc_job_change_program_return(void);   /* V37RET (LM) */
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);                /* ENDOFJOB as a job */
 agc_status_t agc_task_endtask(void);                              /* ENDTASK / SVCT3   */
 agc_status_t agc_task_svct3(void);                                /* SVCT3 (retry)     */

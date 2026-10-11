@@ -241,16 +241,13 @@ agc_status_t agc_radar_powered_flight_designate(void)
  *
  * FUNCTION NAME: agc_job_powered_flight_remode
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_powered_flight_remode(agc_job_ctx_t *ctx)
+agc_status_t agc_job_powered_flight_remode(void)
 {
     agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_REMODE); /* REMODE */
 
@@ -529,16 +526,13 @@ static agc_status_t pfd_lock_check(void)
  *
  * FUNCTION NAME: agc_job_powered_flight_designate
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
+agc_status_t agc_job_powered_flight_designate(void)
 {
     rr_state_t  *s = rr_state(); /* radar erasables */
     agc_interp_t ip;             /* interpreter state */
@@ -695,16 +689,13 @@ static bool pfd_read_good(void)
  *
  * FUNCTION NAME: agc_job_powered_flight_read
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
+agc_status_t agc_job_powered_flight_read(void)
 {
     if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) || rr_radmodes_test(RR_AUTOMBIT))
     {
@@ -728,16 +719,13 @@ agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_powered_flight_read_range
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
+agc_status_t agc_job_powered_flight_read_range(void)
 {
     if (!pfd_read_good())
     {
@@ -770,16 +758,13 @@ agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_powered_flight_read_done
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_powered_flight_read_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_powered_flight_read_done(void)
 {
     if (!pfd_read_good())
     { /* R29RRR?  */

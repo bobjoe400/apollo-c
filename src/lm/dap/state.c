@@ -69,11 +69,6 @@ static lm_dap_t g_dap; /* the DAP erasables (EBANK 6), one instance */
  **********************************************************************/
 lm_dap_t *lm_dap_state(void)
 {
-    if (!AGC_ASSERT(g_dap.t5adr == LM_T5_DAPIDLER || g_dap.t5adr == LM_T5_PAXIS))
-    {
-        return (&g_dap); /* reported; the callers' own checks follow */
-    }
-
     return (&g_dap);
 }
 
@@ -104,16 +99,6 @@ agc_status_t agc_lm_dap_restart(void)
     d->nextp        = 0;
     agc_flag_clear(AGC_FLAG_ACCOKFLG);                           /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);          /* T5ADR = DAPIDLER */
-
-    if (!AGC_ASSERT((d->rcsflags & LM_RCS_ACCSET) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG); /* DAPIDLER must call 1/ACCS */
-    }
-
-    if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER || ts != AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (ts);
 }
@@ -158,11 +143,6 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->dkomegan                 = FS_DKOMEGAN;
     d->dkdb                     = FS_DKDB;
 
-    if (!AGC_ASSERT(d->db > 0 && d->neg_ratedb < 0))
-    {
-        return (AGC_STATUS_BAD_ARG); /* pad-load defaults */
-    }
-
     agc_status_t st = agc_lm_dap_restart(); /* STARTSB1 */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ACCOKFLG)))
@@ -190,11 +170,6 @@ agc_status_t agc_lm_dap_fresh_start(void)
  **********************************************************************/
 static bool dap_valid(const lm_dap_t *d)
 {
-    if (!AGC_ASSERT(d == &g_dap))
-    {
-        return (false);
-    }
-
     return ((d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS) && d->retjadr <= LM_UV_MINRTN && d->axisctr >= -1 && d->axisctr <= 1);
 }
 
@@ -213,11 +188,6 @@ uint16_t agc_erase_cduxd(void)
     uint16_t        v = d->cduxd;       /* CDUXD, 2's complement scaled pi rad */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v <= 077777u))
     {
         return (0); /* no valid result */
     }
@@ -244,11 +214,6 @@ uint16_t agc_erase_cduyd(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v <= 077777u))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -267,11 +232,6 @@ uint16_t agc_erase_cduzd(void)
     uint16_t        v = d->cduzd;       /* CDUZD, 2's complement scaled pi rad */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v <= 077777u))
     {
         return (0); /* no valid result */
     }
@@ -460,11 +420,6 @@ agc_sp_t agc_erase_omegapd(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -487,11 +442,6 @@ agc_sp_t agc_erase_omegaqd(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -510,11 +460,6 @@ agc_sp_t agc_erase_omegard(void)
     agc_sp_t        v = d->omegard;     /* OMEGARD, scaled pi/4 rad/s */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -703,11 +648,6 @@ agc_sp_t agc_erase_omegap(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -730,11 +670,6 @@ agc_sp_t agc_erase_omegaq(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -753,11 +688,6 @@ agc_sp_t agc_erase_omegar(void)
     agc_sp_t        v = d->omegar;      /* OMEGAR, scaled pi/4 rad/s */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -900,11 +830,6 @@ agc_sp_t agc_erase_alphaq(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -923,11 +848,6 @@ agc_sp_t agc_erase_alphar(void)
     agc_sp_t        v = d->alphar;      /* ALPHAR, scaled pi/2 rad/s^2 */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
