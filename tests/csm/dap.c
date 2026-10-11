@@ -1,26 +1,53 @@
-/*
- * dap.c -- dap-csm unit tests (Comanche055 CSM RCS and TVC DAPs).
+/**********************************************************************
+ * FILE NAME: dap.c
  *
- *  1. Jet selection (JET_SELECTION_LOGIC, PYTABLE p. 1042): +pitch with
- *     all quads good fires the documented pair, channel 5 bits 1 and 3
- *     (PYTABLE OCT 5125 masked by PJETS = OCT 1005: two jets), for
- *     TAU/2 T6 counts; -pitch fires bits 2 and 4; quad A failed leaves
- *     one jet (bit 1) for the whole TAU; on-times over 0.1 s are cut to
- *     .1 s with DFT = DFTMAX; +X translation uses bits 1, 4, 5, 8.
- *  2. TVC pitch DAP step response (TVCDAPS, OPTVARK p. 971): a positive
- *     body-axis error integral gives a negative actuator command (the
- *     sign change in the forward loop), and a large error is limited to
- *     ACTSAT = 253 (6 deg).
- *  3. Stroke test (TVCSTROKETEST p. 982): set 1 is 10 bursts in 1/2
- *     amplitude with 4 reversals = 80 bursts returning the waveform to
- *     zero, then set 2 is loaded (REVS 5, N -6); after all four sets
- *     (80 + 72 + 100 + 112 bursts) STROKER is +0.
- *  4. Roll DAP (TVCROLLDAP pp. 989-997): a +10 deg OGA error at rest is
- *     region 6 and fires negative roll torque, jets 12 and 10 (chan 6
- *     OCT 12); inside the deadband at rest is a coast.
- *  5. MASSPROP / FIXCW (TVCMASSPROP) for the CSM alone: IXX = VARST0 +
- *     (CSMMASS + NEGBPW) VARST5 x 2.
- */
+ * PURPOSE:
+ *   dap-csm unit tests (Comanche055 CSM RCS and TVC DAPs):
+ *   1. Jet selection (JET_SELECTION_LOGIC, PYTABLE p. 1042): +pitch with
+ *      all quads good fires the documented pair, channel 5 bits 1 and 3
+ *      (PYTABLE OCT 5125 masked by PJETS = OCT 1005: two jets), for
+ *      TAU/2 T6 counts; -pitch fires bits 2 and 4; quad A failed leaves
+ *      one jet (bit 1) for the whole TAU; on-times over 0.1 s are cut to
+ *      .1 s with DFT = DFTMAX; +X translation uses bits 1, 4, 5, 8.
+ *   2. TVC pitch DAP step response (TVCDAPS, OPTVARK p. 971): a positive
+ *      body-axis error integral gives a negative actuator command (the
+ *      sign change in the forward loop), and a large error is limited to
+ *      ACTSAT = 253 (6 deg).
+ *   3. Stroke test (TVCSTROKETEST p. 982): set 1 is 10 bursts in 1/2
+ *      amplitude with 4 reversals = 80 bursts returning the waveform to
+ *      zero, then set 2 is loaded (REVS 5, N -6); after all four sets
+ *      (80 + 72 + 100 + 112 bursts) STROKER is +0.
+ *   4. Roll DAP (TVCROLLDAP pp. 989-997): a +10 deg OGA error at rest is
+ *      region 6 and fires negative roll torque, jets 12 and 10 (chan 6
+ *      OCT 12); inside the deadband at rest is a coast.
+ *   5. MASSPROP / FIXCW (TVCMASSPROP) for the CSM alone: IXX = VARST0 +
+ *      (CSMMASS + NEGBPW) VARST5 x 2.
+ *   6. T6START (JET_SELECTION_LOGIC pp. 1061-1062): one T6 interrupt
+ *      with all three intervals expired replaces the roll, pitch and yaw
+ *      words (a REPLACE does not end the T6RUPTOR scan), and a positive
+ *      interval becomes the next TIME6 wait.
+ *
+ * AGC SOURCE:
+ *   Comanche055 JET_SELECTION_LOGIC.agc, TVCDAPS.agc, TVCSTROKETEST.agc,
+ *   TVCROLLDAP.agc, TVCMASSPROP.agc (pages above)
+ *
+ * EXTERNAL VARIABLES:
+ *   none (the DAP blocks are reached through agc_csm_dap_rcs() /
+ *   _tvc() / _com())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_csm_jet_select    JETSLECT .. CALCDT6
+ *   agc_task_pitchdap     PITCHDAP
+ *   agc_task_hackwlst     HACKWLST
+ *   agc_task_rolldap      ROLLDAP
+ *   agc_csm_dap_massprop  MASSPROP
+ *   agc_task_t6start      T6START
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   exit status 1 when a check fails
+ **********************************************************************/
 #include <stdio.h>
 
 #include <stdint.h>
@@ -30,10 +57,51 @@
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 
-static int g_checks;
-static int g_failures;
-static int g_assert_reports;
+static int g_checks;         /* checks run                          */
+static int g_failures;       /* checks failed                       */
+static int g_assert_reports; /* library assertions reported         */
 
+static void             check(bool ok, int line, const char *text);
+static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw);
+static void             test_jet_select(void);
+static void             tvc_setup(agc_sp_t perrb_hi);
+static void             test_tvc_step(void);
+static int              stroke_bursts(int count, int pos);
+static void             test_stroke(void);
+static void             test_rolldap(void);
+static void             test_massprop(void);
+static void             test_t6start(void);
+
+/**********************************************************************
+ * AGC: none -- run every test; the exit status reports failures.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passes, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    test_jet_select();
+    test_tvc_step();
+    test_stroke();
+    test_rolldap();
+    test_massprop();
+    test_t6start();
+    (void) printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
+
+    return ((g_failures == 0) ? 0 : 1); /* ?: exit status */
+}
+
+/**********************************************************************
+ * AGC: none -- assertion hook of the library: count and continue.
+ *
+ * ARGUMENTS:
+ *   file  const char *  I  source file of the failed assertion
+ *   line  int           I  its line
+ *   expr  const char *  I  the asserted expression
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) file;
@@ -44,8 +112,16 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     return (false);
 }
 
-#define CHECK(c) check((c), __LINE__, #c)
+#define CHECK(c) check((c), __LINE__, #c) /* record one check      */
 
+/**********************************************************************
+ * AGC: none -- record one check and print a failure.
+ *
+ * ARGUMENTS:
+ *   ok    bool          I  the check passed
+ *   line  int           I  source line of the check
+ *   text  const char *  I  the checked expression
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -57,9 +133,20 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
+/**********************************************************************
+ * AGC: none -- jet selection inputs: THC in detent, all quads good, BD
+ * roll.
+ *
+ * ARGUMENTS:
+ *   roll   agc_sp_t  I  TAU, unscaled 1/1600 s
+ *   pitch  agc_sp_t  I  TAU1, unscaled 1/1600 s
+ *   yaw    agc_sp_t  I  TAU2, unscaled 1/1600 s
+ *
+ * RETURNS: agc_csm_jet_in_t -- the inputs
+ **********************************************************************/
 static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
 {
-    agc_csm_jet_in_t in;
+    agc_csm_jet_in_t in; /* jet selection inputs                     */
 
     in.chan31  = (uint16_t) 077777; /* THC in detent: bits read 1 (inactive) */
     in.lem_on  = false;
@@ -74,10 +161,15 @@ static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
     return (in);
 }
 
+/**********************************************************************
+ * JETSLECT .. CALCDT6 (JET_SELECTION_LOGIC.agc pp. 1039-1060) -- test 1.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_jet_select(void)
 {
-    agc_csm_jet_out_t out;
-    agc_csm_jet_in_t  in = jet_in(0, 100, 0);
+    agc_csm_jet_out_t out;                    /* jet selection outputs */
+    agc_csm_jet_in_t  in = jet_in(0, 100, 0); /* +pitch, 100 counts    */
 
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
     CHECK(out.pword1 == 01005u);                   /* 2 jets + count  */
@@ -114,11 +206,17 @@ static void test_jet_select(void)
     CHECK(out.attkalmn_xln == -2);             /* LM off          */
 }
 
-/* CSM/LM low-bandwidth pitch DAP (V46 switch-over coefficients).         */
+/**********************************************************************
+ * PRESWTCH (TVCINITIALIZE.agc p. 941) -- set up the CSM/LM low-bandwidth
+ * pitch DAP (V46 switch-over coefficients) with a body error integral.
+ *
+ * ARGUMENTS:
+ *   perrb_hi  agc_sp_t  I  upper word of PERRB, scale B-1 rev
+ **********************************************************************/
 static void tvc_setup(agc_sp_t perrb_hi)
 {
-    agc_csm_tvc_t    *t = agc_csm_dap_tvc();
-    agc_csm_dapcom_t *c = agc_csm_dap_com();
+    agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* pad loads               */
 
     agc_erase_set_dapdatr1((uint16_t) 020000);      /* 010: CSM/LM     */
     c->ektlx_i[2] = 8000;
@@ -147,9 +245,14 @@ static void tvc_setup(agc_sp_t perrb_hi)
     }
 }
 
+/**********************************************************************
+ * PITCHDAP (TVCDAPS.agc pp. 963-971) -- test 2.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_tvc_step(void)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     tvc_setup(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
@@ -173,10 +276,19 @@ static void test_tvc_step(void)
     CHECK(t->pcmd == -253); /* ACTSAT limit    */
 }
 
-/* One HACKWLST burst; the waveform position follows STROKER's sign.    */
+/**********************************************************************
+ * HACKWLST (TVCSTROKETEST.agc p. 982) -- run bursts; the waveform
+ * position follows STROKER's sign.
+ *
+ * ARGUMENTS:
+ *   count  int  I  bursts to run (stops early at STROKILL)
+ *   pos    int  I  waveform position, unscaled 85.41 arcsec/bit
+ *
+ * RETURNS: int -- the new position, unscaled 85.41 arcsec/bit
+ **********************************************************************/
 static int stroke_bursts(int count, int pos)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* STROKER                    */
 
     for (int i = 0; (i < count) && (t->stroker != 0); i++)
     {
@@ -188,16 +300,21 @@ static int stroke_bursts(int count, int pos)
     return (pos);
 }
 
+/**********************************************************************
+ * TSTINIT .. STROKILL (TVCSTROKETEST.agc pp. 982-983) -- test 3.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_stroke(void)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     t->caddy   = -10;                  /* TSTINIT: -FCADDY */
     t->n       = -10;
     t->revs    = 3;                    /* FREVS           */
     t->card    = -4;                   /* -FCARD          */
     t->stroker = 5;                    /* ESTROKER        */
-    int pos    = stroke_bursts(80, 0); /* set 1           */
+    int pos    = stroke_bursts(80, 0); /* set 1, unscaled 85.41 arcsec/bit */
 
     CHECK(pos == 0);
     CHECK(t->card == -3);
@@ -211,9 +328,14 @@ static void test_stroke(void)
     CHECK(t->stroker == 0);                   /* STROKILL        */
 }
 
+/**********************************************************************
+ * ROLLDAP (TVCROLLDAP.agc pp. 989-997) -- test 4.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_rolldap(void)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     t->oganow     = 0;
     t->ogapast    = 0;                               /* OGARATE 0       */
@@ -237,9 +359,14 @@ static void test_rolldap(void)
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 }
 
+/**********************************************************************
+ * MASSPROP, FIXCW (TVCMASSPROP.agc pp. 953-955) -- test 5.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_massprop(void)
 {
-    const agc_csm_dapcom_t *c = agc_csm_dap_com();
+    const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* outputs           */
 
     agc_erase_set_dapdatr1((uint16_t) 010000); /* 001: CSM alone  */
     agc_erase_set_csmmass(5000);               /* kg, B+16        */
@@ -247,21 +374,52 @@ static void test_massprop(void)
     agc_csm_dap_massprop();
 
     /* TEMP333 = 2 (5000 - 3851) = 2298 > 0: slopes VARST3, 4; VARST5.   */
-    agc_sp_t d   = 2298;
-    agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14));
+    agc_sp_t d   = 2298;                                     /* TEMP333, scale B+15 kg   */
+    agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14)); /* IXX, scale B+20 kg m^2   */
 
     CHECK(c->ixx == ixx);
     CHECK(c->weight_g == 5000);
 }
 
-int main(void)
+/**********************************************************************
+ * T6START, T6RUPTOR, REPLACE* (JET_SELECTION_LOGIC.agc pp. 1061-1062)
+ * -- test 6.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_t6start(void)
 {
-    test_jet_select();
-    test_tvc_step();
-    test_stroke();
-    test_rolldap();
-    test_massprop();
-    (void) printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
+    agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* jet words, BLASTs        */
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                 */
 
-    return ((g_failures == 0) ? 0 : 1);
+    c->rcsflags = 1u;    /* BIT1: channels already initialised        */
+    agc_chan_write(AGC_CHAN_ROLLJETS, 0u);
+    agc_chan_write(AGC_CHAN_PYJETS, 0u);
+    r->rword2   = 0120u; /* roll second word                            */
+    r->pword2   = 01005u;
+    r->yword2   = 0u;
+
+    for (int k = 0; k < 3; k++)
+    {
+        r->blast[k].time = 0;
+    }
+
+    r->blast[0].axis = AGC_CSM_JET_ROLL;
+    r->blast[1].axis = AGC_CSM_JET_PITCH;
+    r->blast[2].axis = AGC_CSM_JET_YAW;
+    agc_rupt_set_time(6, 0u);                         /* TIME6 +0: the T6RUPT happened          */
+    CHECK(agc_task_t6start() == AGC_STATUS_OK);
+    CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0120u); /* REPLACER        */
+    CHECK(agc_chan_read(AGC_CHAN_PYJETS) == 01005u);  /* REPLACEP, -Y    */
+    CHECK(r->blast[0].time == -1);
+    CHECK(r->blast[1].time == -1);
+    CHECK(r->blast[2].time == -1);                    /* the scan reached BLAST2           */
+
+    r->blast[1].time = 40;          /* pitch interval still to run               */
+    r->blast[2].time = 0;
+    agc_rupt_set_time(6, 0u);
+    CHECK(agc_task_t6start() == AGC_STATUS_OK);
+    CHECK(agc_rupt_time(6) == 40u); /* ZBLAST1; ENABT6                 */
+    CHECK(r->blast[1].time == 0);
+    CHECK(r->blast[2].time == 0);   /* untouched until the next T6RUPT    */
 }

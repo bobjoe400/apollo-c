@@ -105,16 +105,16 @@ void agc_csm_dap_setmaxdb(void)
  **********************************************************************/
 agc_status_t agc_csm_dap_decode_dap_data(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();     /* RCS DAP erasables    */
+    agc_csm_rcs_t *r  = agc_csm_dap_rcs();    /* RCS DAP erasables    */
     uint16_t       d1 = agc_erase_dapdatr1(); /* N46 R1               */
     uint16_t       d2 = agc_erase_dapdatr2(); /* N46 R2               */
 
-    r->ratindx = (agc_sp_t) (2u * (d1 & 3u)); /* MASK THREE; AD A; TS RATEINDX */
+    r->ratindx = (agc_sp_t) (2u * (d1 & 3u));                                     /* MASK THREE; AD A; TS RATEINDX */
     agc_inhint();
-    agc_flag_put(AGC_FLAG_ATTCHFLG, (d1 & CONFIGBITS) == CSM_DAP_BIT14); /* MASK PRIO30; AD -BIT14; BZF TOGETHER */
+    agc_flag_put(AGC_FLAG_ATTCHFLG, (d1 & CONFIGBITS) == CSM_DAP_BIT14);          /* MASK PRIO30; AD -BIT14; BZF TOGETHER */
     agc_relint();
-    r->adb    = (agc_sp_t) ((((d1 & CSM_DAP_BIT4) != 0u) ? DEC409 : 0) + MINDB); /* ?: wide or narrow DB */
-    r->xtrans = ((d1 & CSM_DAP_BIT7) != 0u) ? 1 : 0;                           /* ?: quad BD          */
+    r->adb     = (agc_sp_t) ((((d1 & CSM_DAP_BIT4) != 0u) ? DEC409 : 0) + MINDB); /* ?: wide or narrow DB */
+    r->xtrans  = ((d1 & CSM_DAP_BIT7) != 0u) ? 1 : 0;                             /* ?: quad BD          */
 
     if ((d1 & CSM_DAP_BIT10) != 0u)
     {
@@ -202,7 +202,7 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    r->t5phase      = AGC_CSM_T5P_INIT;                                 /* TS T5PHASE (+)          */
+    r->t5phase      = AGC_CSM_T5P_INIT;                                /* TS T5PHASE (+)          */
     c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1); /* CS; MASK BIT3; ADS      */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_RCSATT, time5_word);     /* DCA RCSADDR; DXCH T5LOC */
 

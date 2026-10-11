@@ -81,14 +81,18 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - DONE check_rules: 0 hard; density >= 2 in daps.c, rolldap.c, stroke.c; the earlier RCS/TVC files still warn (1.1-1.7)
 
 ## Deviations
-- daps.c (whole file): DP filter quantities are agc_dp_t (sign-agreed). Where the AGC reads or overwrites only the upper word of a DP pair (ERRORLIM, ACTLIM, PCMD/YCMD, AK1/AK2), C can differ by one unit of the low word carried into the upper word.
+- (resolved by review-dap-csm, 2026-10-11) The TVC filter DP erasables and the RCS DRHO, ADOT, MERRORX, EDOT, KMPAC are agc_dp_words_t (the words as stored; DAS without sign agreement through csm_dap_words_das / agc_dp_words_das): oracle finding F9 resolved, PITCHDAP/RATEFILT/JETS bit-exact.
 - daps.c ACTLIM: the rounding (DOUBLE of the low word overflowing into TS L) is used only for the limit test, as in the AGC; the unrounded upper word is the output.
-- rolldap.c ROLLSET: the AGC doubles twice in A (one overflow bit) and the TS limits on overflow. C computes the exact product x4 and limits it with its true sign.
+- (resolved by review-dap-csm) rolldap.c ROLLSET: the 16-bit accumulator wrap of the second DDOUBL and the opposite-sign overflow limit are modelled (oracle roll_wrap, roll_wrap_neg).
+- rolldap.c RATENUM: a DV by TEMREG = 0 is taken as the overflow (MINLIMAP) with the numerator's sign; the AGC's TEMREG is then usually -0 and the sign follows -0.
+- jet_select.c/attitude.c: SIGNCK1..5 test a word pair with CCS on the upper then the lower word; a pair whose lower word is -0 counts as + here.
+- massprop.c DXTEST: the AGC's DXCH VARST0 +8D leaves junk (A, L) in VARST8, VARST9; nothing reads them, the C keeps the computed values.
+- needles.c: CDUXCMD is written through the imu lane's agc_imu_hw_set_cducmd, which refuses counts beyond +-192; a full needle swing (up to +-768) is then not written (request to imu).
 - rolldap.c: register I (a CA or CS instruction word built for INDEX I; 0 X) is held as +1 / -1 / 0 (0 = MOREROLL).
 - stroke.c: after STROKILL the pending HACKWLST still runs once. The AGC's CARD/REVS bookkeeping on that pass (INCR CARD from -0) is not reproduced bit for bit; STROKER stays +0 and nothing else is affected.
 - restarts.c CMDSOUT: the AGC writes -0 + PCMD to avoid a +0 command word. -0 is not represented.
 - mysubs.c DV: overflow (|dividend| >= |divisor|) is limited to +-POSMAX. The AGC result is undefined.
-- mysubs.c DPADD: the ones' complement +-0 handling in the "upper = 0" branches has the same value but is not modelled bit for bit.
+- mysubs.c DPADD: the ones' complement +-0 handling in the "upper = 0" branches has the same value but is not modelled bit for bit; a sum of exactly +-180 deg gives POSMAX, POSMAX as in the AGC (review-dap-csm).
 - DAS/DDOUBL (mysubs.c) wrap on overflow like the AGC's overflow-corrected DAS. A large filter memory can therefore wrap DAP1 instead of saturating (see Lessons).
 
 ## Stubs

@@ -138,7 +138,7 @@ static void tvcd_errorlim(void)
     if (csm_dap_mp_hi(t->errbtmp.hi, RECIP_ERRLIM) != 0)
     {
         /* CCS ERRBTMP: CAF ERRLIM (+) or CS ERRLIM (-)                    */
-        t->errbtmp.hi = (t->errbtmp.hi > 0) ? ERRLIM : (agc_sp_t) -ERRLIM;
+        t->errbtmp.hi = (t->errbtmp.hi > 0) ? ERRLIM : (agc_sp_t) -ERRLIM; /* ?: sign of the error */
     }
 }
 
@@ -153,7 +153,7 @@ static void tvcd_errorlim(void)
 static void tvcd_actlim(void)
 {
     agc_csm_tvc_t *t   = agc_csm_dap_tvc(); /* TVC DAP erasables        */
-    agc_sp_t       rnd = 0;                 /* TS L overflow, 1 ascrev  */
+    agc_sp_t       rnd = 0;                 /* TS L overflow, scale 1 ascrev */
 
     if (t->cmdtmp.lo >= ROUND_HALF)
     {
@@ -168,12 +168,12 @@ static void tvcd_actlim(void)
         /* CAF ZERO */
     }
 
-    agc_sp_t a = csm_dap_ads(rnd, t->cmdtmp.hi); /* rounded, 1 ascrev  */
+    agc_sp_t a = csm_dap_ads(rnd, t->cmdtmp.hi); /* rounded, scale 1 ascrev */
 
     if (csm_dap_mp_hi(a, RECIP_ACTSAT) != 0)
     {
         /* CCS CMDTMP: CAF ACTSAT (+) or CS ACTSAT (-)                     */
-        t->cmdtmp.hi = (t->cmdtmp.hi > 0) ? ACTSAT : (agc_sp_t) -ACTSAT;
+        t->cmdtmp.hi = (t->cmdtmp.hi > 0) ? ACTSAT : (agc_sp_t) -ACTSAT; /* ?: sign of the command */
     }
 }
 
@@ -198,7 +198,7 @@ static agc_dp_words_t tvcd_cascade_out(agc_dp_words_t in, agc_sp_t n, int k)
     /* CAE in +1; MP N; TS DAPn +1 (DAPn zeroed by FWDFLTR); CA in; MP N;
      * DAS DAPn: the one-and-a-half precision product                     */
     out.lo              = csm_dap_mp_hi(in.lo, n);
-    agc_sp_t       ovf  = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS */
+    agc_sp_t       ovf  = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS: overflow, unscaled */
     agc_dp_words_t node = t->tmp[k];                                                 /* TMP(2k-1), B-1 rev          */
 
     /* DXCH TMP(2k-1): A,L = overflow, +0 go to TMP; DAS DAPn             */
@@ -429,7 +429,9 @@ static void tvcd_integrate(tvcd_axis_t ax)
     /* pitch: CS COSCDUZ; MP COSCDUX; DDOUBL; MP MCDUYDOT; DDOUBL;
      *        CS MCDUZDOT; MP SINCDUX; DDOUBL; DAS OMEGAYB
      * yaw:   CAE COSCDUZ; MP SINCDUX; ...;   MP COSCDUX ... OMEGAZB      */
-    agc_sp_t k = csm_dap_words_ddoubl(csm_dap_words_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
+    agc_sp_t c1 = p ? (agc_sp_t) -cosz : cosz;                       /* ?: CS / CAE COSCDUZ, scale 2^1 */
+    agc_sp_t c2 = p ? cosx : sinx;                                   /* ?: COSCDUX / SINCDUX, scale 2^1 */
+    agc_sp_t k  = csm_dap_words_ddoubl(csm_dap_words_mp(c1, c2)).hi; /* MP; DDOUBL, scale 2^1 */
 
     t->omegab[a] = csm_dap_words_ddoubl(csm_dap_words_mp(k, t->mcduydot));                                              /* revs/s  */
     csm_dap_words_das(&t->omegab[a], csm_dap_words_ddoubl(csm_dap_words_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
@@ -452,11 +454,11 @@ static void tvcd_output(tvcd_axis_t ax)
     bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
 
     /* DCA xDELOFF; DAS CMDTMP: now scaled B+0 ascrev                     */
-    csm_dap_words_das(&t->cmdtmp, p ? t->pdeloff : t->ydeloff);
+    csm_dap_words_das(&t->cmdtmp, p ? t->pdeloff : t->ydeloff); /* ?: pitch or yaw */
     tvcd_actlim();
 
     /* CS xCMD; AD CMDTMP: the increment, 85.41 arcsec/bit                */
-    agc_sp_t inc = csm_dap_ads((agc_sp_t) -(p ? t->pcmd : t->ycmd), t->cmdtmp.hi);
+    agc_sp_t inc = csm_dap_ads((agc_sp_t) -(p ? t->pcmd : t->ycmd), t->cmdtmp.hi); /* ?: increment, unscaled 85.41 arcsec/bit */
 
     if (p)
     {
@@ -539,7 +541,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
         next = AGC_TASK_YAWDAP; /* CAF YAWT5; TS T5LOC                  */
     }
 
-    agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt);
+    agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt); /* T5 status */
 
     if ((st == AGC_STATUS_OK) && (t->stroker != 0))
     { /* (STRKFLG)                                */
@@ -626,7 +628,7 @@ agc_status_t agc_task_dapinit(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w);
+    agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w); /* T5 status */
 
     t->pcduypst = agc_erase_cduy();
     t->pcduzpst = agc_erase_cduz();

@@ -126,8 +126,8 @@ agc_status_t csm_rcs_ratefilt(void)
 {
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables       */
     int            g  = (int) r->attkalmn + GAIN_BIAS; /* INDEX ATTKALMN  */
-    agc_status_t   st = AGC_STATUS_OK;
-    agc_dp_words_t deltemp[AGC_CSM_AXES];              /* DELTEMPX..Z, 180 deg     */
+    agc_status_t   st = AGC_STATUS_OK;                 /* gain table status */
+    agc_dp_words_t deltemp[AGC_CSM_AXES];              /* DELTEMPX..Z, scale 180 deg */
 
     if (!AGC_ASSERT((g >= 0) && (g < GAIN_N)))
     {
@@ -152,7 +152,7 @@ agc_status_t csm_rcs_ratefilt(void)
         csm_dap_words_das(&r->merror[i], deltemp[i]); /* DAS MERRORX              */
 
         /* CA DRHO; DOUBLE; DOUBLE (N.B.); MP GAIN2; DAS ADOT             */
-        agc_sp_t d = csm_dap_ads(r->drho[i].hi, r->drho[i].hi); /* 2 DRHO, 180 deg */
+        agc_sp_t d = csm_dap_ads(r->drho[i].hi, r->drho[i].hi); /* 2 DRHO, scale 90 deg */
 
         d = csm_dap_ads(d, d);
         csm_dap_words_das(&r->adot[i], csm_dap_words_mp(d, gain2[g]));
@@ -176,7 +176,7 @@ agc_status_t csm_rcs_ratefilt(void)
 static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
-    agc_sp_t       dx[AGC_CSM_AXES];      /* CDU - RHO, 180 deg (T5TEMP for Y, Z)  */
+    agc_sp_t       dx[AGC_CSM_AXES];      /* CDU - RHO, scale 180 deg (T5TEMP for Y, Z) */
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
@@ -214,8 +214,8 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
 agc_status_t csm_rcs_kmatrix(void)
 {
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables          */
-    agc_sp_t       a  = (agc_sp_t) (r->attsec & LOW4); /* CA ATTSEC; MASK LOW4 */
-    agc_status_t   st = AGC_STATUS_OK;
+    agc_sp_t       a  = (agc_sp_t) (r->attsec & LOW4); /* CA ATTSEC; MASK LOW4, unscaled */
+    agc_status_t   st = AGC_STATUS_OK;                 /* NOVAC, DCDUINCR status */
 
     if (a > 0)
     {
@@ -273,7 +273,7 @@ static agc_status_t rcs_dcduincr(void)
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
-        agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]); /* DCA CDUXD; DXCH KMPAC; DCA DELCDUX; TC DPADD, 180 deg */
+        agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]); /* DCA CDUXD; DXCH KMPAC; DCA DELCDUX; TC DPADD, scale 180 deg */
 
         r->thetad[i] = csm_dap_sp_word(agc_dp_high(kmpac)); /* TS THETADX */
         r->cdud[i]   = kmpac;                               /* DXCH CDUXD */
@@ -305,7 +305,7 @@ static agc_status_t rcs_dacndls(void)
         return (csm_dap_needler()); /* TC NEEDLER; KRESUME1        */
     }
 
-    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) AGC_CSM_RCSF_FDAIALT); /* FDAIDSP2 */
+    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned int) AGC_CSM_RCSF_FDAIALT); /* FDAIDSP2 */
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     {
@@ -342,7 +342,7 @@ static agc_status_t rcs_fdaitotl(void)
         ref[i] = use_desired_angles ? agc_erase_thetad(i) : c->cphix[i]; /* ?: CPHI (WRTN22) or CPHIX (WRTN17) */
     }
 
-    agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy()); /* T5TEMP = CTHETA - CDUY, 180 deg */
+    agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy()); /* T5TEMP = CTHETA - CDUY, scale 180 deg */
 
     c->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux()); /* MSU CDUX; TS AK */
     c->ak[0] = csm_dap_ads(c->ak[0], csm_dap_mp_hi(t, r->amgb1));

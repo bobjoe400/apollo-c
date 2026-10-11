@@ -20,7 +20,7 @@ findings for the review wave.
 | landing | DONE (13 cases, 154 checks pass, 12 KNOWN = finding F9) | landing.spec (gen/gen_landing.py), tests/oracle/landing.c |
 | entry | DONE (13 cases, 521 checks pass) | entry.spec (gen/gen_entry.py), tests/oracle/entry.c |
 | dap-lm | DONE (19 cases, 473 checks pass) | dap_lm.spec (gen/gen_dap_lm.py), tests/oracle/dap_lm.c |
-| dap-csm | DONE (16 cases, 246 checks pass, 8 KNOWN = finding F9) | dap_csm.spec (gen/gen_dap_csm.py), tests/oracle/dap_csm.c |
+| dap-csm | DONE (40 cases, 533 checks, 0 KNOWN; F9 resolved by review-dap-csm) | dap_csm.spec (gen/gen_dap_csm.py), tests/oracle/dap_csm.c |
 | targeting | DONE (8 cases, 116 checks pass) | targeting.spec (gen/gen_targeting.py), tests/oracle/targeting.c |
 | return_to_earth | DONE (4 cases, 144 checks pass, 58 KNOWN = finding F14) | return_to_earth.spec (gen/gen_rte.py), tests/oracle/return_to_earth.c |
 | dsky | DONE (92 runs, 1544 checks pass, 7 KNOWN = finding F15) | dsky.spec, dsky_lm.spec (gen/gen_dsky.py), tests/oracle/dsky.c |
@@ -211,8 +211,12 @@ three DAP blocks before each case (the AGC starts from zeroed erasable).
 | case | entry, inputs -> outputs | tolerance (observed) |
 |---|---|---|
 | jets_pitch/_all/_long/_fail_a/_fail_cd/_short | JETSLECT 17,2552 -> stop ENDJETS (agc_csm_jet_select): TAU TAU1 TAU2 RACFAIL RBDFAIL ACORBD XTRANS DAPDATR1, channel 31 077777 -> RWORD1/2 PWORD1/2 YWORD1/2 BLAST..BLAST2 (time + branch index) DFT TAU | bit-exact |
-| pitch_quiet/_rate/_lm/_big | PITCHDAP 20,2530 -> stop RESUME: CDUY CDUZ PCDU*PST PERRB OMEGAYC SIN/COSCDUX COSCDUZ PTMP1-6 N10..D32 VARK PDELOFF PCMD DELPBAR TVCPITCH DAPDATR1 -> MCDU*DOT OMEGAYB PERRB PTMP1-6 PCMD DELPBAR TVCPITCH AK1 TVCPHASE | 4 (4: SMALLMP one-and-a-half precision); PCMD TVCPITCH AK1 DELPBAR KNOWN F9 |
-| roll_coast/_start/_neg/_firing/_wait/_ratelim | ROLLDAP 16,3272 -> stop TASKOVER: OGANOW OGAPAST ROLLFIRE ROLLWORD TEMREG 1/CONACC OGA TIME6 -> OGARATE TEMREG ROLLFIRE ROLLWORD DELOGA DELOGART SGNRT IOGARATE TIME6 | bit-exact |
+| pitch_quiet/_rate/_lm/_big | PITCHDAP 20,2530 -> stop RESUME: CDUY CDUZ PCDU*PST PERRB OMEGAYC SIN/COSCDUX COSCDUZ PTMP1-6 N10..D32 VARK PDELOFF PCMD DELPBAR TVCPITCH DAPDATR1 -> MCDU*DOT OMEGAYB PERRB PTMP1-6 PCMD DELPBAR TVCPITCH AK1 TVCPHASE | bit-exact, DP outputs word by word (F9 resolved) |
+| roll_coast/_start/_neg/_firing/_wait/_ratelim/_wrap/_wrap_neg | ROLLDAP 16,3272 -> stop TASKOVER: OGANOW OGAPAST ROLLFIRE ROLLWORD TEMREG 1/CONACC OGA TIME6 -> OGARATE TEMREG ROLLFIRE ROLLWORD DELOGA DELOGART SGNRT IOGARATE TIME6; _wrap: ROLLSET product >= 1/2 wraps the 16-bit A | bit-exact |
+| rate_quiet/_moving/_kalman/_disagree/_big | RATEFILT 21,2210 -> stop KMATRIX: DRHO ADOT MERRORX (word pairs, signs may disagree) CDUX..Z RHO..RHO2 AMGB1..8 KMJ DFT ATTKALMN, RCSFLAGS 0 -> DRHO ADOT MERRORX (word by word) RHO | bit-exact |
+| needles_small/_edge/_limit/_track | NEEDLES 21,2476 (Q = ENDOFJOB): AK EDRIVEX -> EDRIVEX (CDUXCMD not compared: yaAGC drains the drive counters once channel 14 is set) | bit-exact |
+| pp_hold/_coast/_auto/_disagree/_disagree2/_forced/_sat/_lines | JETS 21,3441 -> stop T6PROG: ADB SLOPE HOLDFLAG ADOT WBODY (word pairs) ERRORX J/M RCSFLAGS TAU (preset 77) -> TAU TAU1 TAU2 RCSFLAGS | bit-exact |
+| mass_csm_heavy/_csm_light/_docked/_docked_light/_ascent | MASSPROP 05,3366 (Q = ENDOFJOB): DAPDATR1 LEMMASS CSMMASS -> VARST0..7 IXX IAVG IAVG/TLX WEIGHT/G | bit-exact |
 
 ## targeting (targeting.spec, tests/oracle/targeting.c)
 
@@ -317,7 +321,7 @@ oracle_cmp_known calls for that id turn back into oracle_cmp.
 | F6 | src/imu/compensation.c (IRIGCOMP) | IRIGCOMP / GCOMP | GCOMP kept as a sign-disagreeing pair (49, -14827) -> GCOMPSW 45 vs 47 (same sign) | fixed (review-imu): GCOMP/DELV kept as word pairs; exact |
 | F7 | src/guidance/servicer_common.c:47-49 | CALCGRAV (J2REQSQ) | J20_CM = 4357942 and J2_CM = 435794 are 1/4 of the assembled Comanche words (2DEC* ... B1*: 17431770, 1743177) -> CM GOBL1/2 4x too small, GDT1/2, VN1 up to 208 LSB | bug; 27 KNOWN in guidance.c |
 | F8 | src/guidance/burn_steering.c:329-330 | S40.2,3 (PDVL UNIT RTIG / VXV VCOMP) | crosses UT with raw RTIG instead of UNIT(RTIG) before UNIT: YSCREF/ZSCREF up to 66 LSB | bug (small) |
-| F9 | src/lm/landing/throttle.c:~168, src/lm/landing/guidance.c:121, src/csm/dap/tvc/daps.c:~124 | THROTTLE (PIF -> PSEUDO55), TDISPSET, PITCHDAP (CMDTMP) | a sign-disagreeing DAS result whose high word the AGC then uses alone: THRUST/PSEUDO55 1 pulse, FWEIGHT up to 23388 LSB, TTFDISP 8, CMDTMP (77765,00356) -> PCMD TVCPITCH AK1 1, DELPBAR 163 | ones'-complement class; 12 + 8 KNOWN |
+| F9 | src/lm/landing/throttle.c:~168, src/lm/landing/guidance.c:121, src/csm/dap/tvc/daps.c:~124 | THROTTLE (PIF -> PSEUDO55), TDISPSET, PITCHDAP (CMDTMP) | a sign-disagreeing DAS result whose high word the AGC then uses alone: THRUST/PSEUDO55 1 pulse, FWEIGHT up to 23388 LSB, TTFDISP 8, CMDTMP (77765,00356) -> PCMD TVCPITCH AK1 1, DELPBAR 163 | ones'-complement class; landing fixed (review-guid-landing); dap-csm fixed (review-dap-csm: TVC and RCS DP erasables as agc_dp_words_t, 0 KNOWN) |
 | F10/F11 | src/lm/dap 1/ACCONT | CCS AOSV | AOSV = -0 swaps the V-axis block pairs | accepted -0 deviation (dap-lm section) |
 | F13 | src/programs/targeting/csi.c (CDH, ~770-871: rz_timethet_rv) | CDHMVR / TIMETHET RNEW | DIFFALT 31 LSB (62 m) for a circular passive orbit (AGC exactly 100 km), velocities <= 748 LSB | unexplained, small |
 | F14 | src/csm/burns/return_to_earth/conic.c:147 | INVC115 (UR1 VXV UV1) | N kept sign-disagreeing (00232 76635) -> UH/ <= 77 LSB -> the conic search converges elsewhere: T2 up to 17 s, LNG(SPL) up to 51410 LSB (0.07 deg), VPRED 7464, X(T2) 38927 (rte_leo) | 58 KNOWN in return_to_earth.c |

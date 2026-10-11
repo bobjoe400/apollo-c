@@ -174,13 +174,13 @@ agc_status_t csm_tvc_gains(bool full)
 
     if (full)
     {
-        agc_dp_t p = agc_sp_mul(c->ixx, TWOPI_M); /* MP 2PI/M, B+12  */
+        agc_dp_t p = agc_sp_mul(c->ixx, TWOPI_M); /* MP 2PI/M, scale B+12 */
 
         p             = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(p)));
         t->one_conacc = agc_dp_high(p); /* TS 1/CONACC, B+9 s^2/rev  */
     }
 
-    agc_dp_t v = agc_sp_mul(t->ktlx_i, c->iavg_tlx); /* MP, B+5 ascrev */
+    agc_dp_t v = agc_sp_mul(t->ktlx_i, c->iavg_tlx); /* MP, scale B+5 ascrev */
 
     v       = csm_dap_ddoubl(csm_dap_ddoubl(v));
     t->vark = agc_dp_high(v); /* TS VARK, B+3 ascrev                   */
@@ -232,8 +232,8 @@ agc_status_t csm_tvc_mrclean(void)
     t->pdeloff      = zero;
     t->ydeloff      = zero;
     t->ttmp1        = 0;
-    t->cntr         = 0; /* CNTR, the loop counter, ends at +0           */
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX);
+    t->cntr         = 0;                                                  /* CNTR, the loop counter, ends at +0           */
+    agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX); /* T5 status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -241,7 +241,7 @@ agc_status_t csm_tvc_mrclean(void)
     }
 
     return (st); /* ENDMRC: RESUME                                     */
-}
+} /* csm_tvc_mrclean */
 
 /**********************************************************************
  * TVCDAPON (TVCINITIALIZE.agc p. 937) -- T5 entry from DOTVCON (P40):
@@ -292,14 +292,14 @@ static agc_status_t tvc_init_filter_timing(int lem)
 
     /* CS CNTR; INDEX A; CAF BIT2: TVCDT/2, scale B+14 cs: BIT2 (20 ms,
      * CSM 40 ms filter) or BIT3 (40 ms, CSM/LM 80 ms filter)            */
-    agc_sp_t half_dt = (agc_sp_t) ((lem != 0) ? 4 : 2); /* ?: LM on/off */
+    agc_sp_t half_dt = (agc_sp_t) ((lem != 0) ? 4 : 2); /* ?: LM on/off, unscaled cs */
 
     t->t5tvcdt = (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX; AD BIT1 */
     agc_flag_clear(AGC_FLAG_SWTOVER);                   /* reset SWTOVER          */
 
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: LXCH A exchanges the
      * product words (14 places left); scaled pi/8                       */
-    agc_sp_t ek = c->ekprime[lem]; /* EKPRIME, (100 pi)/16   */
+    agc_sp_t ek = c->ekprime[lem]; /* EKPRIME, scale (100 pi)/16 */
 
     t->kprimedt          = agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
     t->repfrac           = c->erepfrac[lem]; /* REPFRAC, 2^2             */
@@ -360,7 +360,7 @@ static void tvc_attinit(void)
 
     for (int k = 1; k >= 0; k--)
     { /* TTMP1 = 1, then 0   */
-        agc_sp_t q = csm_dap_mp_hi(*w[k], RECIP_ATTLIM); /* 0: < 1.5 deg */
+        agc_sp_t q = csm_dap_mp_hi(*w[k], RECIP_ATTLIM); /* 0: < 1.5 deg, unscaled */
 
         if (q > 0)
         {
@@ -401,7 +401,7 @@ agc_status_t agc_task_tvc_initialize(void)
     /* TENMDOT = EMDOT (kg/cs, B+3) x 1000: 10-s mass loss, kg B+16       */
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
-    int lem    = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
+    int lem    = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0; /* ?: LM on (DAPDATR1 bit 14) */
 
     /* CNTR: ?: LM on (BIT1) or off (0)                                   */
 
@@ -455,7 +455,7 @@ agc_status_t csm_tvc_init_complete(void)
         agc_erase_set_csmmass(t->masstmp); /* COPYCYCLE, 2^16 kg        */
     }
 
-    agc_status_t st = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC);
+    agc_status_t st = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC); /* WAITLIST status */
 
     if (st == AGC_STATUS_OK)
     { /* DAPINIT after T5TVCDT: time for restart computations */

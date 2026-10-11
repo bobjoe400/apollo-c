@@ -110,10 +110,10 @@ static const agc_sp_t slopeval[VARST_N] = {
  **********************************************************************/
 void agc_csm_dap_massprop(void)
 {
-    agc_csm_tvc_t *t   = agc_csm_dap_tvc();                                         /* VARST            */
-    uint16_t       d1  = agc_erase_dapdatr1();                                      /* DAPDATR1         */
-    bool           lem = (d1 & CSM_DAP_BIT13) == 0u;                                /* LEM attached     */
-    agc_sp_t       lm2 = csm_dap_ads(agc_erase_lemmass(), agc_erase_lemmass());     /* DOUBLE, scale B+15 kg */
+    agc_csm_tvc_t *t   = agc_csm_dap_tvc();                                     /* VARST            */
+    uint16_t       d1  = agc_erase_dapdatr1();                                  /* DAPDATR1         */
+    bool           lem = (d1 & CSM_DAP_BIT13) == 0u;                            /* LEM attached     */
+    agc_sp_t       lm2 = csm_dap_ads(agc_erase_lemmass(), agc_erase_lemmass()); /* DOUBLE, scale B+15 kg */
 
     for (int phi = VARST_N - 1; phi >= 0; phi--)
     { /* ten passes, PHI333 */
@@ -136,7 +136,7 @@ void agc_csm_dap_massprop(void)
         csm_dap_words_das(&k, (agc_dp_words_t){t->varst[8], t->varst[9]}); /* DXCH VARST0 +8D; DAS VARST0 +1 */
         t->varst[1] = k.hi;
         t->varst[2] = k.lo;
-        t->varst[7] = csm_dap_ads(t->varst[7], DXITFIX); /* CA DXITFIX; ADS VARST0 +7 */
+        t->varst[7] = csm_dap_ads(t->varst[7], DXITFIX);                   /* CA DXITFIX; ADS VARST0 +7 */
     }
 
     agc_csm_dap_fixcw();
@@ -158,8 +158,8 @@ void agc_csm_dap_fixcw(void)
     agc_sp_t             m = agc_erase_csmmass(); /* CSMMASS, scale B+16 kg */
     agc_sp_t             out[3];                  /* IXX, IAVG (scale B+20 kg m^2), IAVG/TLX (scale B+2 s^2) */
 
-    agc_sp_t d       = csm_dap_ads(m, NEGBPW);  /* CAE CSMMASS; AD NEGBPW, scale B+16 kg */
-    agc_sp_t temp333 = csm_dap_ads(d, d);       /* DOUBLE; TS TEMP333, scale B+15 kg */
+    agc_sp_t d       = csm_dap_ads(m, NEGBPW); /* CAE CSMMASS; AD NEGBPW, scale B+16 kg */
+    agc_sp_t temp333 = csm_dap_ads(d, d);      /* DOUBLE; TS TEMP333, scale B+15 kg */
     int      phi     = (temp333 > 0) ? -2 : 2; /* ?: BZMF PEGGY; CAF NEG2: slope locations */
 
     for (int psi = 2; psi >= 0; psi--)

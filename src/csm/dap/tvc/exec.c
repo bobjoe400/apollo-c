@@ -353,10 +353,10 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
         case TVCX_FIN:
         default:
             break;
-    }
+    } /* switch (s) */
 
     return (next);
-}
+} /* tvcx_step */
 
 /**********************************************************************
  * EXECCOPY +1 .. TVCEXFIN (TVCEXECUTIVE.agc pp. 947-949) -- run the
@@ -447,13 +447,13 @@ agc_status_t agc_task_tvcexec(void)
         return (tvcx_run(TVCX_FIN)); /* CS FLAGWRD6; MASK; BZMF TVCEXFIN */
     }
 
-    agc_status_t st   = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC);
-    agc_status_t s2   = tvcx_rollprep();    /* ROLLPREP               */
-    agc_status_t s3   = csm_dap_needler();  /* NEEDLEUP               */
-    agc_status_t s4   = AGC_STATUS_OK;      /* S40.15 in GAINCHNG     */
-    tvcx_step_t  from = tvcx_vargains(&s4); /* VARGAINS               */
-    agc_status_t s5   = tvcx_run(from);     /* .. TVCEXFIN            */
-    agc_status_t r    = st;                 /* first failure          */
+    agc_status_t st   = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC); /* WAITLIST status */
+    agc_status_t s2   = tvcx_rollprep();                                  /* ROLLPREP               */
+    agc_status_t s3   = csm_dap_needler();                                /* NEEDLEUP               */
+    agc_status_t s4   = AGC_STATUS_OK;                                    /* S40.15 in GAINCHNG     */
+    tvcx_step_t  from = tvcx_vargains(&s4);                               /* VARGAINS               */
+    agc_status_t s5   = tvcx_run(from);                                   /* .. TVCEXFIN            */
+    agc_status_t r    = st;                                               /* first failure          */
 
     if (r == AGC_STATUS_OK)
     {

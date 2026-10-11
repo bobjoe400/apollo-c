@@ -121,7 +121,7 @@ int main(void)
     massprop("mass_ascent");
 
     return (oracle_finish("oracle_dap_csm"));
-}
+} /* main */
 
 /**********************************************************************
  * AGC: none -- assertion hook of the library: print and continue.
@@ -277,7 +277,7 @@ static void jets(const char *t)
     {
         cmp_sp(t, "ATTKALMN", o.attkalmn_xln, "ATTKALMN");
     }
-}
+} /* jets */
 
 /**********************************************************************
  * PITCHDAP 20,2530 -> RESUME (TVCDAPS.agc pp. 963-966): one pitch DAP
@@ -344,7 +344,7 @@ static void pitch(const char *t)
     cmp_sp(t, "TVCPHASE", v->tvcphase, "TVCPHASE");
     cmp_raw(t, "PCDUYPST", v->pcduypst, "PCDUYPST");
     cmp_raw(t, "PCDUZPST", v->pcduzpst, "PCDUZPST");
-}
+} /* pitch */
 
 /**********************************************************************
  * ROLLDAP 16,3272 -> TASKOVER (TVCROLLDAP.agc pp. 989-997): one roll

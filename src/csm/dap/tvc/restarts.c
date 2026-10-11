@@ -146,7 +146,7 @@ agc_status_t agc_task_redotvc(void)
     }
 
     return (st);
-}
+} /* agc_task_redotvc */
 
 /**********************************************************************
  * ENABL2 (TVCRESTARTS.agc p. 958) -- optics error counter enable
@@ -259,7 +259,7 @@ agc_status_t agc_task_cmdsout(void)
  **********************************************************************/
 agc_status_t agc_task_exrstrt(void)
 {
-    agc_sp_t phs = agc_csm_dap_tvc()->tvcexphs; /* TVCEXPHS, 1 .. 6     */
+    agc_sp_t phs = agc_csm_dap_tvc()->tvcexphs; /* TVCEXPHS, 1 .. 6, unscaled */
 
     if (!AGC_ASSERT((phs >= 1) && (phs <= 6)))
     {

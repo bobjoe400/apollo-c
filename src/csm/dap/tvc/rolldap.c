@@ -101,7 +101,7 @@
  **********************************************************************/
 static agc_sp_t sgn_mul(int i, agc_sp_t v)
 {
-    agc_sp_t r = v; /* CA: v unchanged                                  */
+    agc_sp_t r = v; /* CA: v unchanged, scale of v                      */
 
     if (i < 0)
     {
@@ -130,12 +130,12 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     /* MP 1/CONACC; DOUBLE; MP -SLOPE: TEMREG = 2(-SLOPE)RATE/CONACC      */
-    agc_sp_t a   = csm_dap_mp_hi(delogart, t->one_conacc); /* B+5 rev^-1 s */
-    agc_sp_t den = csm_dap_mp_hi(csm_dap_ads(a, a), NEG_SLOPE);
-    agc_sp_t num = csm_dap_mp_hi(den, delogart);           /* 2(-S)(RATE^2)/CONACC */
+    agc_sp_t a   = csm_dap_mp_hi(delogart, t->one_conacc);      /* scale B+5 rev^-1 s */
+    agc_sp_t den = csm_dap_mp_hi(csm_dap_ads(a, a), NEG_SLOPE); /* TEMREG, scale B+6 rev^-1 s */
+    agc_sp_t num = csm_dap_mp_hi(den, delogart);                /* 2(-S)(RATE^2)/CONACC, scale B+2 rev */
 
     den        = csm_dap_ads(den, sgn_mul(i, (agc_sp_t) -BIT11_SP)); /* RATEDEN */
-    agc_sp_t e = csm_dap_ads(sgn_mul(i, deloga), (agc_sp_t) -DB);    /* rev */
+    agc_sp_t e = csm_dap_ads(sgn_mul(i, deloga), (agc_sp_t) -DB);    /* scale B+0 rev */
 
     num         = csm_dap_ads(num, csm_dap_mp_hi(e, NEG_SLOPE)); /* ADS  */
     t->temreg   = den;
@@ -167,7 +167,7 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
     }
 
     return (csm_dap_dv(agc_dp_pack(num, 0), den)); /* DVOK, B-4 rev/s   */
-}
+} /* roll_desired_rate */
 
 /**********************************************************************
  * ROLLSET (TVCROLLDAP.agc p. 994) -- the jet firing time from the
@@ -190,7 +190,7 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
 
     agc_sp_t d = csm_dap_ad_sat(desired, (agc_sp_t) -t->ogarate); /* B-4 */
     agc_sp_t a = csm_dap_mp_hi(d, T6SCALE);                       /* MP T6SCALE              */
-    agc_dp_t p = agc_sp_mul(a, t->one_conacc);                    /* MP 1/CONACC: A,L     */
+    agc_dp_t p = agc_sp_mul(a, t->one_conacc);                    /* MP 1/CONACC: A,L, scale B+5 s */
 
     /* The low word's carries keep the doubled pair sign-agreed, so the
      * accumulator after DDOUBL; DDOUBL is the upper part of 4 p.         */
@@ -237,9 +237,9 @@ static bool roll_coast_region(int i)
     const agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables    */
 
     /* (-SLOPE) OGA x 8 (B-3 rev/s) + OGARATE x BIT14 (B-4 -> B-3)        */
-    agc_dp_t s     = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(agc_sp_mul(t->ogaerr, NEG_SLOPE))));
-    agc_sp_t x     = csm_dap_ads(agc_dp_high(s), csm_dap_mp_hi(t->ogarate, BIT14_SP));
-    bool     coast = (csm_dap_ads(sgn_mul(i, x), (agc_sp_t) -INTERCEP) <= 0); /* REG2 */
+    agc_dp_t s     = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(agc_sp_mul(t->ogaerr, NEG_SLOPE)))); /* scale B-3 rev/s */
+    agc_sp_t x     = csm_dap_ads(agc_dp_high(s), csm_dap_mp_hi(t->ogarate, BIT14_SP));                 /* scale B-3 rev/s */
+    bool     coast = (csm_dap_ads(sgn_mul(i, x), (agc_sp_t) -INTERCEP) <= 0);                          /* REG2 */
 
     coast = coast || (csm_dap_ads(t->iogarate, MINLIM) <= 0);                   /* REG4 */
     coast = coast || (csm_dap_ads(sgn_mul(i, t->ogaerr), (agc_sp_t) -DB) <= 0); /* 5 */
@@ -265,7 +265,7 @@ static bool roll_regions(agc_sp_t *desired)
     r = t->ogarate;
 
     /* TEMREG = DB - (1/2 CONACC) OGARATE^2, the 1/2 in the scaling       */
-    agc_sp_t q = csm_dap_mp_hi(csm_dap_mp_hi((agc_sp_t) -r, t->one_conacc), r);
+    agc_sp_t q = csm_dap_mp_hi(csm_dap_mp_hi((agc_sp_t) -r, t->one_conacc), r); /* scale B+0 rev */
 
     t->temreg = csm_dap_ads(q, DB);
     t->sgnrt  = (agc_sp_t) ((r > 0) ? 1 : -1); /* ?: sgn(0) negative     */
@@ -304,7 +304,7 @@ static bool roll_regions(agc_sp_t *desired)
     *desired    = roll_desired_rate(t->deloga, t->delogart, i);
 
     return (true);
-}
+} /* roll_regions */
 
 /**********************************************************************
  * +TORQUE / -TORQUE (TVCROLLDAP.agc pp. 996-997) -- fire the jet pair
@@ -433,14 +433,14 @@ static agc_status_t roll_noroll(void)
 static agc_status_t roll_fire(agc_sp_t tf)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    agc_sp_t       f = tf;                /* TEMREG, 625 us/bit         */
+    agc_sp_t       f = tf;                /* TEMREG, unscaled 625 us/bit */
 
     if (!AGC_ASSERT(tf != 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t s = csm_dap_mp_hi(f, t->rollfire); /* MP ROLLFIRE; CCS A    */
+    agc_sp_t s = csm_dap_mp_hi(f, t->rollfire); /* MP ROLLFIRE; CCS A, unscaled */
 
     if (s < 0)
     {
@@ -470,7 +470,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
 
     if (t->i_sign == 0)
     { /* FIREPLUG: no extension of a firing       */
-        agc_sp_t left = csm_dap_word_sp(agc_rupt_time(CSM_DAP_TIME6));
+        agc_sp_t left = csm_dap_word_sp(agc_rupt_time(CSM_DAP_TIME6)); /* TIME6 left, unscaled 1/1600 s */
 
         if (left - t->temreg <= 0)
         {
@@ -479,7 +479,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
     }
 
     return (roll_jetroll((uint16_t) t->temreg));
-}
+} /* roll_fire */
 
 /**********************************************************************
  * ROLLDAP, DURATION, WAIT1/2 .. ROLLSET (TVCROLLDAP.agc pp. 989-994) --
@@ -518,7 +518,7 @@ agc_status_t agc_task_rolldap(void)
     }
 
     t->temreg   = desired;                 /* ROLLSET: TS TEMREG        */
-    agc_sp_t tf = roll_fire_time(desired); /* 625 us/bit              */
+    agc_sp_t tf = roll_fire_time(desired); /* unscaled 625 us/bit     */
 
     t->temreg = tf;
 

@@ -896,3 +896,22 @@ src/programs/rendz_flags_lm.c.
 | aug3, strtgyr2 (gyro.c) | augment_schedule, gyro_next | AUG3 DT to 8192AUG; STRTGYR2 next gyro by phase |
 | gimlock1, endmanu1, newangl1, kalcman3, nogom2 | gimbal_lock_alarm, maneuver_return, steering_update, kalcmanu_start, nogo_zero_error | GIMLOCK1 alarm 401; ENDMANU1 return to user; NEWANGL +1; KALCMAN3; NOGOM2 ZEROEROR + NOGO |
 | annnnnn (prelaunch_gyrocompass.c) | torquing_cycle_start | ANNNNNN: LENGTHOT = 9, SLEEPIE +1 |
+
+## review-dap-csm (2026-10-10/11, applied)
+
+| old | new | AGC comment used |
+|---|---|---|
+| agc_task_noroll1 / AGC_TASK_NOROLL1 | agc_task_roll_jets_off / AGC_TASK_ROLL_JETS_OFF | NOROLL1 (T6 task): roll jets off |
+| agc_task_tvcinit1 / AGC_TASK_TVCINIT1 | agc_task_tvc_initialize / AGC_TASK_TVC_INITIALIZE | TVCINIT1: T5 entry of TVCINITIALIZE |
+| agc_task_enabl2 / AGC_TASK_ENABL2 | agc_task_optics_counter_enable / AGC_TASK_OPTICS_COUNTER_ENABLE | ENABL2 "OPTICS ERROR CNTR ENABLE" |
+| csm_tvc_init4 | csm_tvc_init_complete | TVCINIT4 .. ENDTVCIN |
+| tvc_init2, tvc_init3 | tvc_init_filter_timing, tvc_init_trims | TVCINIT2 filter period / T5TVCDT; TVCINIT3 trims to the trim registers |
+| tvcr_enabl1 | tvcr_tvc_enable | ENABL1 "TVC ENABLE" |
+| csm_rcs_phase1, csm_rcs_t5phase2 | csm_rcs_rate_filter_phase, csm_rcs_attitude_control_phase | T5PHASE -0 (rate filter) and +0 (attitude control) |
+| AGC_CSM_T5P_PHASE1, AGC_CSM_T5P_PHASE2 | AGC_CSM_T5P_RATE_FILTER, AGC_CSM_T5P_ATTITUDE_CONTROL | T5PHASE coding (p. 1003) |
+| csm_rcs_t6progm | csm_rcs_t6prog_manual | T6PROGM "FOR MANUAL ROTATIONS" |
+| TVCX_* step names with digits (1SHOTCHK ...) | TVCX_ONE_SHOT_CHECK, TVCX_ONE_SHOT_OK, TVCX_CORRECTION_COPY ... | TVCEXECUTIVE labels |
+| agc_csm_dp_pair_t | agc_dp_words_t (core) | word-level API adoption (review-core-numeric) |
+| csm_dap_pair_neg/_mp/_das/_ddoubl/_smallmp | csm_dap_words_neg/_mp/_das (+ _das_carry)/_ddoubl/_smallmp | DCS, MP, DAS K, DDOUBL, SMALLMP on stored words |
+| csm_dap_pair, csm_dap_pair_value | agc_dp_to_words, agc_dp_from_words (core) | duplicate converters removed |
+| csm_rcs_stickchk | agc_csm_dap_stickchk (public; the forwarding wrapper removed) | STICKCHK |

@@ -1,6 +1,6 @@
 # review-dap-csm -- review of the dap-csm lane
 
-Lane files: src/csm/dap/{mysubs,state}.c, src/csm/dap/{internal,pending}.h,
+Lane files: src/csm/dap/{mysubs,state}.c, src/csm/dap/internal.h,
 src/csm/dap/rcs/*.c, src/csm/dap/tvc/*.c, include/agc/csm/dap.h,
 tests/csm/dap.c, tests/oracle/dap_csm.c.
 AGC (Comanche055): MYSUBS, RCS-CSM_DIGITAL_AUTOPILOT, AUTOMATIC_MANEUVERS,
@@ -11,7 +11,7 @@ P40-P47 S41.2/S40.14/RCSDAPON.
 (Earlier run left no note; restarted 2026-10-10 from scratch.)
 
 ## Progress
-Build/test: shared `make` is broken by nav-conic work in progress; scratch review-dap-csm/t3.sh builds the tree at 4b46b01 with this lane's files overlaid and runs the lane tests. test_csm_dap 790/0, oracle_dap_csm 468 checks 0 fail 0 known.
+STATUS: DONE (2026-10-11). `make`, `make test` green (test_csm_dap 800/0, oracle_dap_csm 533 checks / 40 cases, 0 failures, 0 KNOWN); `make format-check` clean; check_rules: 0 hard violations in the lane (rule-5 density warnings only, see Lessons); check_style: 0 findings in all 21 lane files. While the shared tree was broken by another lane, scratch review-dap-csm/t3.sh built the tree at 4b46b01 with this lane's files overlaid.
 
 DONE
 * F9 PITCHDAP: TVC filter DP quantities are agc_csm_dp_pair_t (include/agc/csm/dap.h; AGC word pairs, DAS without sign agreement; helpers csm_dap_pair_* in mysubs.c / internal.h). daps.c, exec.c (CG.CORR), init.c rewritten (full prologs, style-clean). Oracle pitch cases bit-exact word by word; the 8 KNOWN F9 entries are hard checks now.
@@ -30,13 +30,42 @@ DONE
 * Style: mysubs.c (full prologs; unused csm_dap_das/csm_dap_smallmp on values removed), internal.h, state.c, include/agc/csm/dap.h (prolog, one declaration per line, scales on every member), rcs/exec.c, needles.c, t5rupt.c, manual.c (re-verified against the listing; agc_csm_dap_stickchk forwarding wrapper removed, csm_rcs_stickchk renamed to it) at 0 check_style findings.
 * massprop.c and dapdata.c re-verified and rewritten (prologs; DXTEST DAS through csm_dap_words_das; dead status asserts removed). New oracle cases mass_* (MASSPROP -> TC Q, 5 cases: CSM alone above/below the breakpoint, docked, docked light, descent stage off) pass word-exact; oracle 533 checks.
 * stroke.c re-verified (TSTINIT, HACK/HACKWLST, REVUP, STROKILL; CHKSTRK in restarts.c) and rewritten; stroke_burst has no failure path (void).
+* BUG T6START: t6_replace returned AGC_STATUS_BAD_ARG for REPLACER and REPLACEP (only the yaw case set OK), and the T6RUPTOR scan stopped on a non-OK status, so after a roll or pitch replacement the later BLAST entries were not processed in that T6 interrupt (a yaw or pitch firing ran until the next T6/T5 pass). t6_replace is void now (enum switch, no failure path); new unit test 6 (all three words replaced in one T6 interrupt; a positive interval becomes TIME6). jet_select.c rewritten with prologs; all tables and constants checked in the rope (PYTABLE, RTABLE, YZTABLE, XLNNDX, XLN1NDX, NJET, DFTMAX, masks, timers).
+* tests/csm/dap.c: prologs, main first, test 6; 800 checks.
 * tests/oracle/dap_csm.c rewritten (style-clean, word-exact pair compares).
 * Fidelity verified vs source (no change needed beyond the above): TVCEXECUTIVE, TVCINITIALIZE, TVCRESTARTS, TVCROLLDAP, TVCDAPS; RCS: RCSATT/SETT5/ZEROT5/ZEROJET/KALUPDT/T5PHASE2 (t5rupt.c), manual rotation/STICKCHK/FREEFUNC (manual.c), AUTOMATIC_MANEUVERS (attitude.c). Constants checked in the rope (review-dap-csm/rope.py, fixed for the bank 2/3 file order).
 
-TODO (in this order)
-* restarts.c: logic verified; style rewrite pending (Write failed because the file changed by the rename sed; re-read and rewrite). Currently compiles.
-* Review + style: jet_select.c (verify njet and table constants in rope), tests/csm/dap.c; residual findings in daps/exec/init/restarts/rolldap/attitude/filter (add ATTINIT / pair-DAS / QUARTER tests).
-* Rule-5 density >= 2.0 in every file; check_style findings to zero for the lane.
-* docs: RENAMES.md section, dap-csm.md (deviations: ROLLSET removed, F9 resolved, pairs), oracle-cases.md dap-csm rows, MODULE_STATUS row review-dap-csm, findings table + Lessons here.
-* Request to imu lane (note): agc_imu_hw_set_cducmd asserts |pulses| <= 192 (coarse-align COMMAX), but NEEDLES' ADS CDUXCMD legitimately writes up to +-768 (also LM needles); the write is refused. Widen to the SP range.
-* make, make test, make check.
+
+## Findings
+
+| # | where | finding | resolution |
+|---|---|---|---|
+| D1 | rcs/filter.c, rcs/needles.c | QUARTER written as 8192 (HALF); BIT13 = 4096: DRHOLOOP's -(.1)ADOT doubled, NEEDLES EDRIVE = -AK/2 | fixed; oracle rate_*, needles_* |
+| D2 | tvc/daps.c, exec.c, init.c | F9: TVC DP erasables carried as sign-agreed values; the AGC uses upper words alone | agc_dp_words_t; 8 KNOWN -> hard checks |
+| D3 | rcs/filter.c, manual.c, attitude.c | same class in the RCS DAP: DRHO, ADOT, MERRORX, EDOT, KMPAC; JTIME takes TAU from KMPAC+1 | agc_dp_words_t; oracle pp_* (JETS) |
+| D4 | tvc/init.c | ATTINIT read errbinit[] that nobody wrote (DOTVCON stores -ERRORY,-ERRORZ in ERRBTMP) | reads ERRBTMP |
+| D5 | tvc/daps.c | tvcd_dap returned an uninitialised status on the pitch pass | fixed |
+| D6 | tvc/init.c | MCLEANJR leaves CNTRTMP = 1 | modelled |
+| D7 | tvc/rolldap.c | ROLLSET: 16-bit A wrap of the second DDOUBL and the opposite-sign limit | modelled; oracle roll_wrap* |
+| D8 | tvc/rolldap.c | RATENUM DV by TEMREG = 0 returned 0 behind an assertion | MINLIMAP modelled (deviation: -0 sign) |
+| D9 | mysubs.c | DPADD of exactly +-180 deg gave -2^28 (out of range) | POSMAX, POSMAX as the AGC |
+| D10 | rcs/jet_select.c | T6START: REPLACER/REPLACEP returned BAD_ARG, ending the T6RUPTOR scan after a roll or pitch replacement | t6_replace void; unit test 6 |
+| D11 | tvc/daps.c | 1/2/3DAPCAS: DXCH TMPn stores the first DAS's overflow; C hard-coded 0 | csm_dap_words_das_carry |
+| D12 | lane | 32 `(void) AGC_ASSERT`, 31 `(void) csm_dap_words_das`, 106 guaranteed guards with silent/sentinel returns | rule 7: casts removed, guards deleted, real paths kept as status |
+| D13 | rcs/manual.c | agc_csm_dap_stickchk forwarded to csm_rcs_stickchk | wrapper removed |
+
+DMP/DMPR audit: the lane has no interpretive code (all multiplies are basic MP, SMALLMP, DV); 0 sites. Shift rounding: no SR/SRR/VSR. Overflow stores: AD/ADS/DAS are overflow-corrected wraps; the only limits are the AGC's own (ERRORLIM, ACTLIM, the "TS; INDEX A; CS LIMITS" idiom in ROLLSET/DESIRED).
+
+Constants and tables checked in the rope: GAIN1/GAIN2, MANTABLE, FREETAU, PYTABLE, RTABLE, YZTABLE, XLNNDX, XLN1NDX, NJET, DFTMAX, jet masks and timer words, NOLEMVAL/INTVALUE/SLOPEVAL, NEGBPW, DXITFIX, TVC filter and roll constants.
+
+New oracle cases (tools/oracle/cases/gen/gen_dap_csm.py): rate_* (5), needles_* (4), pp_* (8), mass_* (5), roll_wrap* (2).
+
+## Requests
+* imu: agc_imu_hw_set_cducmd asserts |pulses| <= 192 (coarse-align COMMAX), but NEEDLES' ADS CDUXCMD legitimately writes up to +-768 (CSM and LM needles); such a write is refused (the oracle run prints the assertion). Widen it to the SP range.
+
+## Lessons
+* A constant named after a fraction (QUARTER) must be checked against the equate in the rope, not against intuition about 2^14 = 1: BIT13 is 1/4, BIT14 is 1/2.
+* A status-returning helper that is "OK" only in its last switch case silently truncates a caller's loop that stops on non-OK; functions with no failure path should not return a status at all.
+* Word-level erasables need oracle cases with sign-disagreeing input words; value-based code passes every sign-agreeing case.
+* yaAGC drains CDUXCMD through its coarse-align burst model once channel 14 is set, so counter outputs cannot be compared at a fixed stop label.
+* Deleting guaranteed guards drops rule-5 density far below 2.0 in arithmetic-heavy files; the density target and the no-silent-failure rule pull in opposite directions, and the latter wins.

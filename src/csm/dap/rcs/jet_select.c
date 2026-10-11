@@ -230,17 +230,17 @@ static void js_translation(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet
  **********************************************************************/
 static void js_pitch_yaw(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *out)
 {
-    w->pindex = rot_index(in->tau[1]);       /* CCS TAU1                 */
+    w->pindex = rot_index(in->tau[1]);         /* CCS TAU1                 */
     int a     = fail_base(in->racfail, 9, 12); /* AFAILP / CFAILP        */
 
     a           = ((a == 0) ? xlnndx[w->xndx1] : a) + w->pindex; /* ?: TABPCOM row */
     out->pword1 = (uint16_t) (pytable[a] & PJETS);
-    w->npjets   = (int) (out->pword1 >> 8);      /* MP BIT7: bits 10,9    */
-    w->yindex   = rot_index(in->tau[2]);         /* CCS TAU2              */
-    a           = fail_base(in->rbdfail, 9, 12); /* BFAILY / DFAILY       */
+    w->npjets   = (int) (out->pword1 >> 8);                      /* MP BIT7: bits 10,9    */
+    w->yindex   = rot_index(in->tau[2]);                         /* CCS TAU2              */
+    a           = fail_base(in->rbdfail, 9, 12);                 /* BFAILY / DFAILY       */
     a           = ((a == 0) ? xlnndx[w->xndx2] : a) + w->yindex; /* ?: TABYCOM row */
     out->yword1 = (uint16_t) (pytable[a] & YJETS);
-    w->nyjets   = (int) (out->yword1 >> 10); /* MP BIT5: bits 12,11       */
+    w->nyjets   = (int) (out->yword1 >> 10);                     /* MP BIT5: bits 12,11       */
 }
 
 /**********************************************************************
@@ -257,7 +257,7 @@ static void js_bdz(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *
 {
     if (w->zndx > 0)
     {
-        int          a = fail_base(in->rbdfail, 3, 6) + xln1ndx[w->zndx];   /* YZTABLE index    */
+        int          a = fail_base(in->rbdfail, 3, 6) + xln1ndx[w->zndx];     /* YZTABLE index    */
         unsigned int t = (unsigned int) (yztable[a] & BDZJETS) + out->rword1; /* AD RWORD1        */
 
         w->nrjets = (int) (t >> 8) - 4; /* net roll jets                 */
@@ -287,7 +287,7 @@ static void js_acy(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *
 {
     if (w->yndx != 0)
     {
-        int          a = fail_base(in->racfail, 3, 6) + xln1ndx[w->yndx];   /* YZTABLE index    */
+        int          a = fail_base(in->racfail, 3, 6) + xln1ndx[w->yndx];     /* YZTABLE index    */
         unsigned int t = (unsigned int) (yztable[a] & ACYJETS) + out->rword1; /* AD RWORD1        */
 
         w->nrjets = (int) (t >> 11) - 4; /* MP BIT4                     */
@@ -359,7 +359,7 @@ static void js_ontime(agc_sp_t *tau, int n, agc_sp_t *blast, agc_sp_t *dft)
     { /* longer than .1 s */
         *dft   = dftmax[k];
         *tau   = csm_dap_ads(*tau, (agc_sp_t) -*dft); /* update TAU     */
-        *blast = TENTH; /* only translations continue on switch-over  */
+        *blast = TENTH;                               /* only translations continue on switch-over  */
 
         return;
     }
@@ -443,12 +443,12 @@ static void js_rword2(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_
  **********************************************************************/
 static void js_times(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *out)
 {
-    unsigned int mask[2]  = {PJETS, YJETS};                 /* ASMBLWP / ASMBLWY masks */
-    int          xn[2]    = {w->xndx1, w->xndx2};           /* X-translation indices   */
-    agc_sp_t     fail[2]  = {in->racfail, in->rbdfail};     /* RACFAIL, RBDFAIL (unscaled) */
-    uint16_t    *w1[2]    = {&out->pword1, &out->yword1};   /* first words             */
-    uint16_t    *w2[2]    = {&out->pword2, &out->yword2};   /* second words            */
-    int          njets[2] = {w->npjets, w->nyjets};         /* jets used               */
+    unsigned int mask[2]  = {PJETS, YJETS};               /* ASMBLWP / ASMBLWY masks */
+    int          xn[2]    = {w->xndx1, w->xndx2};         /* X-translation indices   */
+    agc_sp_t     fail[2]  = {in->racfail, in->rbdfail};   /* RACFAIL, RBDFAIL (unscaled) */
+    uint16_t    *w1[2]    = {&out->pword1, &out->yword1}; /* first words             */
+    uint16_t    *w2[2]    = {&out->pword2, &out->yword2}; /* second words            */
+    int          njets[2] = {w->npjets, w->nyjets};       /* jets used               */
 
     if (out->tau[0] == 0)
     { /* RBYPASS */
@@ -586,8 +586,8 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in, agc_csm_jet_out_t *o
  **********************************************************************/
 agc_status_t agc_task_jetslect(void)
 {
-    agc_csm_rcs_t    *r = agc_csm_dap_rcs();                 /* RCS DAP erasables       */
-    agc_csm_dapcom_t *c = agc_csm_dap_com();                 /* RCSFLAGS                */
+    agc_csm_rcs_t    *r = agc_csm_dap_rcs();               /* RCS DAP erasables       */
+    agc_csm_dapcom_t *c = agc_csm_dap_com();               /* RCSFLAGS                */
     int               t = (int) T5_60MS + (int) r->t5time; /* CAF DELTATT3; AD T5TIME, 10 ms */
     agc_csm_jet_in_t  in;                                  /* jet selection inputs    */
     agc_csm_jet_out_t out;                                 /* jet selection outputs   */
@@ -639,7 +639,7 @@ agc_status_t agc_task_jetslect(void)
         r->blast[i] = out.blast[i];
     }
 
-    agc_rupt_set_t5_task(AGC_TASK_RCSATT);                                          /* DCA RCS2CADR; DXCH T5LOC */
+    agc_rupt_set_t5_task(AGC_TASK_RCSATT);                                        /* DCA RCS2CADR; DXCH T5LOC */
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned int) AGC_CSM_RCSF_T6INIT); /* ENDJETS: CS BIT1; MASK   */
     r->t5phase  = AGC_CSM_T5P_RATE_FILTER;                                        /* CS ZERO; TS T5PHASE      */
 
@@ -662,7 +662,7 @@ static void t6_replace(agc_csm_jet_axis_t axis)
     switch (axis)
     {
         case AGC_CSM_JET_ROLL:
-            agc_chan_write(AGC_CHAN_ROLLJETS, r->rword2); /* CA RWORD2; WRITE CHAN6 */
+            agc_chan_write(AGC_CHAN_ROLLJETS, r->rword2);                            /* CA RWORD2; WRITE CHAN6 */
             break;
         case AGC_CSM_JET_PITCH:
             agc_chan_write(AGC_CHAN_PYJETS, (uint16_t) ((ch5 & YJETS) + r->pword2)); /* RAND CHAN5; AD PWORD2 */
@@ -690,9 +690,9 @@ static void t6_replace(agc_csm_jet_axis_t axis)
  **********************************************************************/
 agc_status_t agc_task_t6start(void)
 {
-    agc_csm_rcs_t    *r  = agc_csm_dap_rcs();              /* jet words, BLASTs */
-    agc_csm_dapcom_t *c  = agc_csm_dap_com();              /* RCSFLAGS          */
-    uint16_t          t6 = agc_rupt_time(CSM_DAP_TIME6);   /* CCS TIME6         */
+    agc_csm_rcs_t    *r  = agc_csm_dap_rcs();            /* jet words, BLASTs */
+    agc_csm_dapcom_t *c  = agc_csm_dap_com();            /* RCSFLAGS          */
+    uint16_t          t6 = agc_rupt_time(CSM_DAP_TIME6); /* CCS TIME6         */
 
     if ((t6 != 0u) && (t6 != CSM_DAP_NEG0))
     {
@@ -702,7 +702,7 @@ agc_status_t agc_task_t6start(void)
     if ((c->rcsflags & AGC_CSM_RCSF_T6INIT) == 0u)
     { /* CS RCSFLAGS; MASK BIT1; BZF T6RUPTOR: initialise the channels */
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_T6INIT);
-        agc_chan_write(AGC_CHAN_ROLLJETS, r->rword1);                       /* WRITE CHAN6 */
+        agc_chan_write(AGC_CHAN_ROLLJETS, r->rword1);                        /* WRITE CHAN6 */
         agc_chan_write(AGC_CHAN_PYJETS, (uint16_t) (r->pword1 + r->yword1)); /* WRITE CHAN5 */
     }
 
@@ -713,7 +713,7 @@ agc_status_t agc_task_t6start(void)
         if (b > 0)
         { /* ZBLASTk: CAF ZERO; XCH BLASTk; ENABT6 */
             r->blast[k].time = 0;
-            agc_rupt_set_time(CSM_DAP_TIME6, (uint16_t) b);                /* TS TIME6               */
+            agc_rupt_set_time(CSM_DAP_TIME6, (uint16_t) b);               /* TS TIME6               */
             agc_chan_or(AGC_CHAN_CHAN13, (uint16_t) AGC_CH013_ENBT6RUPT); /* CAF NEGMAX; WOR CHAN13 */
 
             return (AGC_STATUS_OK); /* RESUME                           */

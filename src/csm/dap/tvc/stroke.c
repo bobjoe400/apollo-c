@@ -130,9 +130,9 @@ static void stroke_next_set(void)
 
     int k = (int) t->card + 3; /* CARD -3, -2, -1 -> 0, 1, 2           */
 
-    t->revs  = fcard_revs[k];                  /* INDEX CARD; CAF FCARD +4 */
-    t->n     = (agc_sp_t) -fcard_bursts[k];    /* INDEX CARD; CS FCARD +7  */
-    t->caddy = t->n;                           /* TS N; TS CADDY           */
+    t->revs  = fcard_revs[k];               /* INDEX CARD; CAF FCARD +4 */
+    t->n     = (agc_sp_t) -fcard_bursts[k]; /* INDEX CARD; CS FCARD +7  */
+    t->caddy = t->n;                        /* TS N; TS CADDY           */
 }
 
 /**********************************************************************
@@ -149,8 +149,8 @@ static void stroke_burst(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), t->stroker)); /* CA STROKER; ADS TVCPITCH */
-    agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);         /* CAF BIT11; WOR CHAN14    */
-    t->caddy = (agc_sp_t) (t->caddy + 1);                                 /* INCR CADDY               */
+    agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS);          /* CAF BIT11; WOR CHAN14    */
+    t->caddy = (agc_sp_t) (t->caddy + 1);                                  /* INCR CADDY               */
 
     if (t->caddy < 0)
     {
