@@ -189,3 +189,16 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
     guid-landing, prog-rendz, dap-lm: DMP/DMPR audit where missed, and
     word-level API adoption per review_items.md)
 Then: lead assert.h rename; document wave (1 agent).
+
+## Stretch (not yet in the definition of done; user to decide)
+
+10. Full-mission closed loop. The VirtualAGC GUI stack has no world model
+    (yaAGC cannot fly a mission from yaDSKY2 either). Two routes:
+    a. NASSP (Apollo add-on for the Orbiter simulator, Windows): it embeds
+       yaAGC's engine behind the same channel interface our socket layer
+       implements; replace that engine with libagc. Real orbital mechanics
+       and spacecraft systems; first closed-loop test of landing, ascent
+       and entry. Large external build.
+    b. Own simplified world model in src/sim (rigid-body attitude, point-
+       mass orbit, scripted radar/optics truth). Smaller, less faithful.
+    Decision deferred until item 7 (GUI run) is done.
