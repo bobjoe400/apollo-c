@@ -29,10 +29,12 @@
  *   exit status 1 when any check fails
  *
  * NOTES:
- *   Tolerance 1024 LSB of the DP word (observed max 768: the C MPAC
- *   model has no sign-mixed words, review-nav-conic.md). kep_leo_2p25
- *   gets 8192: a sign-mixed SR1R tie in ALPHA (1 LSB of the dividend,
- *   80 LSB of ALPHA) moves the period by 2 cs and TC by 4 cs.
+ *   Every output must match the AGC word for word (tolerance 0): the
+ *   conic MPAC is modelled on the stored words (agc_mpac_*), so the
+ *   sign-disagreeing pairs that DAS/DSU/BDSU leave (R1A, COGA, X, KEPC2,
+ *   DELX, ...) reach DMP, SR, SQRT and ROUND as in the AGC
+ *   (review-nav-conic R1). aps_circ is the circular orbit of
+ *   review-prog-rendz P6 (ECC 0 only on the stored R1A words).
  *   The rows kep_leo_q, kep_leo_mq, kep_leo_2p25, kepn_leo_badx and
  *   lam_leo_q take their values from nav_conic_dvfix.txt, the same spec
  *   run on the DV-patched probe (oracle finding F1: yaAGC's DV fast path
@@ -46,8 +48,6 @@
 #include "agc/core/state.h"
 #include "agc/nav/conic.h"
 
-#define TOL_DEFAULT ((agc_dp_t) 1024) /* DP LSB, all rows          */
-#define TOL_2P25    ((agc_dp_t) 8192) /* DP LSB, kep_leo_2p25 only */
 
 typedef struct oracle_row
 {
@@ -100,6 +100,12 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
       100000},
      0,
      0},
+    {'K',
+     "kep_leo_10min",
+     {0, 3339069, 0, 0, 0, 142187239, 77677243, 60000, 0, 0, 0, 0, 0, 0, 0, 0},
+     {3673636, 2566432, 1874560, 1024096, -103648256, 109286656, 59703552, 60000, 3673636, 60000},
+     0,
+     0},
     {'N',
      "kepn_leo_badx",
      {3339068, 0, 0, 0, 162021496, 0, 135779, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -127,6 +133,18 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
       0, 0, 0, 0, 0, 0, 0},
      {0, -2838912, -45632, -86752, 36706560, -160080640, -74596608, -236498,
       -17696804, -236498},
+     0,
+     0},
+    {'N',
+     "kepn_ell_dxch",
+     {3500000, 0, 0, 0, 261117046, 0, 5000000, 5000000, 0, 0, 0, 0, 0, 0, 0, 0},
+     {0, -95428768, 145383040, 0, -80181248, 112576000, 0, 5000000, 23949810, 5000000},
+     0,
+     0},
+    {'N',
+     "kepn_ell_dxch2",
+     {3500000, 0, 0, 0, 174078031, 0, 5000000, 20000000, 0, 0, 0, 0, 0, 0, 0, 0},
+     {0, 3422624, 805952, 0, -32976384, 170247424, 0, 19563, 1140981, 19562},
      0,
      0},
     {'C',
@@ -197,6 +215,36 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
       0},
      0,
      0},
+    {'C',
+     "lam_hien",
+     {3500000, 0, 0, -1000000, 4000000, 500000, 20000, 8192, 1, 0, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, -8694019, 268414828, -130793953, 0},
+     4,
+     0},
+    {'C',
+     "lam_hien_g",
+     {3500000, 0, 0, -1000000, 4000000, 500000, 20000, 8192, 0, 2516582, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, -8694063, 268432448, -130803820, 0},
+     4,
+     0},
+    {'C',
+     "lam_bigtime",
+     {3500000, 0, 0, -1000000, 4000000, 500000, 8000000, 8192, 0, 2516582, 0, 0, 0, 0, 0, 0},
+     {186175912, 104565838, 13070730, -44485120, -188030976, -23503872, 14820296, 7439273, 723760, 0},
+     0,
+     0},
+    {'C',
+     "lam_small_uplim",
+     {3500000, 0, 0, 3600000, 200000, 0, 2000, 8192, 1, 0, 0, 0, 0, 0, 0, 0},
+     {47123966, 93509830, 0, 43848192, 93489408, 0, 4227411, 117857765, -28558688, 0},
+     0,
+     0},
+    {'C',
+     "lam_small_loen",
+     {3500000, 0, 0, 3600000, 20000, 0, 60000, 8192, 1, 0, 0, 0, 0, 0, 0, 0},
+     {47323388, 1820270, 0, -29107712, 1607936, 0, 218087066, 2220, 8012931, 0},
+     0,
+     0},
     {'L',
      "lmlam_3d_ctr20",
      {3500000, 0, 0, -1000000, 4000000, 500000, 250000, 8192, 1, 0, 20, 0, 0, 0,
@@ -261,6 +309,103 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
      {0, 1756768, 0, 0, 0, 204442107, 176229826, 0, 0, 0},
      0,
      8},
+    {'T',
+     "tth_ell_355",
+     {3500000, 0, 0, 0, 174078031, 0, -11697846, 133706989, 0, 0, 0, 0, 0, 0, 0, 0},
+     {822710, 3488992, -305248, 0, 12539392, 173531136, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_ell_358",
+     {3500000, 0, 0, 0, 174078031, 0, -4684131, 134135966, 0, 0, 0, 0, 0, 0, 0, 0},
+     {827128, 3498272, -122176, 0, 5021184, 173991424, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_ell_359",
+     {3500000, 0, 0, 0, 174078031, 0, -2342422, 134197286, 0, 0, 0, 0, 0, 0, 0, 0},
+     {828601, 3499584, -61056, 0, 2511360, 174057472, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_ell_359p5",
+     {3500000, 0, 0, 0, 174078031, 0, -1171256, 134212617, 0, 0, 0, 0, 0, 0, 0, 0},
+     {829336, 3499904, -30560, 0, 1255424, 174073344, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_ell_359p9",
+     {3500000, 0, 0, 0, 174078031, 0, -234254, 134217524, 0, 0, 0, 0, 0, 0, 0, 0},
+     {829925, 3500000, -6112, 0, 250880, 174077952, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_ell_0p3",
+     {3500000, 0, 0, 0, 174078031, 0, 702759, 134215888, 0, 0, 0, 0, 0, 0, 0, 0},
+     {442, 3499968, 18336, 0, -753152, 174076416, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_ell_1",
+     {3500000, 0, 0, 0, 174078031, 0, 2342422, 134197286, 0, 0, 0, 0, 0, 0, 0, 0},
+     {1472, 3499552, 61088, 0, -2510848, 174055680, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_ell_3",
+     {3500000, 0, 0, 0, 174078031, 0, 7024413, 134033787, 0, 0, 0, 0, 0, 0, 0, 0},
+     {4416, 3496032, 183200, 0, -7529472, 173880832, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_leo_355",
+     {3339068, 0, 0, 0, 162021496, 0, -11697846, 133706989, 0, 0, 0, 0, 0, 0, 0, 0},
+     {535572, 3326368, -291040, 0, 14121472, 161405184, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_leo_358",
+     {3339068, 0, 0, 0, 162021496, 0, -4684131, 134135966, 0, 0, 0, 0, 0, 0, 0, 0},
+     {540098, 3337056, -116544, 0, 5654016, 161922816, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_leo_359",
+     {3339068, 0, 0, 0, 162021496, 0, -2342422, 134197286, 0, 0, 0, 0, 0, 0, 0, 0},
+     {541607, 3338560, -58240, 0, 2827776, 161996800, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_leo_359p5",
+     {3339068, 0, 0, 0, 162021496, 0, -1171256, 134212617, 0, 0, 0, 0, 0, 0, 0, 0},
+     {542361, 3338976, -29152, 0, 1414144, 162016000, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_leo_359p9",
+     {3339068, 0, 0, 0, 162021496, 0, -234254, 134217524, 0, 0, 0, 0, 0, 0, 0, 0},
+     {542964, 3339072, -5856, 0, 283648, 162021376, 0, 0, 0, 0},
+     0,
+     1},
+    {'T',
+     "tth_leo_0p3",
+     {3339068, 0, 0, 0, 162021496, 0, 702759, 134215888, 0, 0, 0, 0, 0, 0, 0, 0},
+     {452, 3339040, 17472, 0, -848384, 162019072, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_leo_1",
+     {3339068, 0, 0, 0, 162021496, 0, 2342422, 134197286, 0, 0, 0, 0, 0, 0, 0, 0},
+     {1509, 3338560, 58304, 0, -2827776, 161996800, 0, 0, 0, 0},
+     0,
+     0},
+    {'T',
+     "tth_leo_3",
+     {3339068, 0, 0, 0, 162021496, 0, 7024413, 134033787, 0, 0, 0, 0, 0, 0, 0, 0},
+     {4526, 3334496, 174752, 0, -8479744, 161799424, 0, 0, 0, 0},
+     0,
+     0},
+
     {'R',
      "trad_ell_a",
      {3500000, 0, 0, 0, 174078031, 0, 4430380, 8192, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -305,18 +450,24 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
      {4667964, 3800003, 3439290, 18496879, 3764388, 0, 0, 0, 0, 0},
      0,
      0},
+    {'A',
+     "aps_circ",
+     {0, 3339068, 0, 0, 0, 162021496, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+     {3339072, 3339064, 0, 16777212, 4194305, 0, 0, 0, 0, 0},
+     0,
+     0},
 };
 
 static int g_checks;   /* checks made    */
 static int g_failures; /* checks failed  */
 
-static void      cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want, agc_dp_t tol);
+static void      cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want);
 static void      cmp_flag(const char *tag, const char *name, bool got, bool want);
 static agc_vec_t vec3(const agc_dp_t *a);
 static int       run_kepler(const oracle_row_t *r, agc_dp_t got[10]);
 static void      run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw);
 static void      run_time(const oracle_row_t *r, agc_dp_t got[10], agc_conic_time_out_t *o);
-static void      check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, int *n);
+static void      check_time(const oracle_row_t *r, agc_dp_t got[10], int *n);
 static void      check_row(const oracle_row_t *r);
 
 /**********************************************************************
@@ -390,15 +541,14 @@ bool agc_assert_report(const char *file, int line, const char *expr)
  *   idx       int           I    output index in exp[]
  *   got       agc_dp_t      I    C value
  *   want      agc_dp_t      I    AGC value
- *   tol       agc_dp_t      I    allowed |got - want|, DP LSB
  **********************************************************************/
-static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want, agc_dp_t tol)
+static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want)
 {
     agc_dp_t d = got - want; /* C - AGC, DP LSB */
 
     g_checks++;
 
-    if ((d > tol) || (d < -tol))
+    if (d != 0)
     {
         g_failures++;
         (void) printf("FAIL %s[%d]: C %ld AGC %ld (diff %ld)\n", tag, idx, (long int) got, (long int) want, (long int) d);
@@ -589,11 +739,10 @@ static void run_time(const oracle_row_t *r, agc_dp_t got[10], agc_conic_time_out
  *   --------  --------------------  ---  ----------------------------
  *   r         const oracle_row_t *  I    the row
  *   got       agc_dp_t []           O    outputs (filled by run_time)
- *   tol       agc_dp_t              I    tolerance, DP LSB
  *   n         int *                 O    outputs to compare: 0 after an
  *                                        abort, 1 with RVSW, else 7
  **********************************************************************/
-static void check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, int *n)
+static void check_time(const oracle_row_t *r, agc_dp_t got[10], int *n)
 {
     agc_conic_time_out_t o;                                                       /* routine outputs    */
     const bool           rvsw  = (r->in[8] != 0);                                 /* time only        */
@@ -620,8 +769,8 @@ static void check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, in
 
     if (!abort && (r->kind == 'R'))
     {
-        cmp(r->tag, 7, got[7], r->exp[7], tol);
-        cmp(r->tag, 8, got[8], r->exp[8], tol);
+        cmp(r->tag, 7, got[7], r->exp[7]);
+        cmp(r->tag, 8, got[8], r->exp[8]);
     }
 }
 
@@ -637,15 +786,9 @@ static void check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, in
  **********************************************************************/
 static void check_row(const oracle_row_t *r)
 {
-    agc_dp_t got[10] = {0};         /* C outputs, exp[] scales  */
-    agc_dp_t tol     = TOL_DEFAULT; /* DP LSB           */
-    int      n       = 0;           /* outputs to compare       */
-    int      first   = 0;           /* first output to compare  */
-
-    if (strcmp(r->tag, "kep_leo_2p25") == 0)
-    {
-        tol = TOL_2P25;
-    }
+    agc_dp_t got[10] = {0}; /* C outputs, exp[] scales  */
+    int      n       = 0;   /* outputs to compare       */
+    int      first   = 0;   /* first output to compare  */
 
     if ((r->kind == 'K') || (r->kind == 'N'))
     {
@@ -662,7 +805,7 @@ static void check_row(const oracle_row_t *r)
     }
     else if ((r->kind == 'T') || (r->kind == 'R'))
     {
-        check_time(r, got, tol, &n);
+        check_time(r, got, &n);
     }
     else
     {
@@ -679,6 +822,6 @@ static void check_row(const oracle_row_t *r)
 
     for (int i = first; i < n; i++)
     {
-        cmp(r->tag, i, got[i], r->exp[i], tol);
+        cmp(r->tag, i, got[i], r->exp[i]);
     }
 }

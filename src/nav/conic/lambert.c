@@ -774,15 +774,15 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const 
         agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false); /* mirror only */
     }
 
-    ls->tdesired = in->tdesired;
-    ls->epsilonl = agc_mpac_store(agc_mpac_dmpr(ip, agc_mpac_dload(in->tdesired), AGC_CONIC_BEE19));
+    ls->tdesired = agc_dp_to_words(in->tdesired);
+    ls->epsilonl = agc_mpac_store(agc_mpac_dmpr(ip, agc_mpac_dload(ls->tdesired), AGC_CONIC_BEE19)); /* DLOAD TDESIRED DMPR BEE19 */
     ls->slopesw  = true; /* SET SLOPESW    */
 
     /* DEVIATION: TERRLAMB (an erasable) and DCOGA (push-down 12D) are not
      * set by LAMBERT before an early NEGP/SUFFCHEK can read them; the AGC
      * uses whatever they last held. Here DCOGA = 0 and TERRLAMB = TDESIRED,
      * so such an exit reports no solution.                               */
-    ls->terrlamb = in->tdesired;
+    ls->terrlamb = ls->tdesired;
     ctx->normsw  = in->normsw;
     ctx->un      = in->un;
     ctx->geomsgn = in->geomsgn;
@@ -865,13 +865,13 @@ static void lambert_output(const agc_conic_ctx_t *ctx, const lambert_state_t *ls
         return;
     }
 
-    out->snth       = ctx->snth;
-    out->csth       = ctx->csth;
-    out->one_m_csth = ls->one_m_csth;
-    out->coga       = ctx->coga;
-    out->p          = ctx->p;
-    out->r1a        = ctx->r1a;
-    out->r1         = ctx->r1;
+    out->snth       = agc_conic_value_(ctx->snth);
+    out->csth       = agc_conic_value_(ctx->csth);
+    out->one_m_csth = agc_conic_value_(ls->one_m_csth);
+    out->coga       = agc_conic_value_(ctx->coga);
+    out->p          = agc_conic_value_(ctx->p);
+    out->r1a        = agc_conic_value_(ctx->r1a);
+    out->r1         = agc_conic_value_(ctx->r1);
     out->ur1        = ctx->ur1;
     out->u2         = ctx->u2;
     out->un         = ctx->un;
@@ -988,7 +988,7 @@ agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in, agc
 
     if (in->vtargtag == 0)
     { /* TARGETV        */
-        st = agc_conic_lamenter_(ip, &ctx, ctx.magvec2, &out->vtarget);
+        st = agc_conic_lamenter_(ip, &ctx, agc_mpac_dload(ctx.magvec2), &out->vtarget); /* DLOAD MAGVEC2 CALL LAMENTER */
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {

@@ -135,19 +135,19 @@ static void deltime(const char *t, long tol)
 
     agc_interp_init(&ip);
     (void) agc_conic_ctx_init_(&c, AGC_CONIC_EARTH);
-    c.xsq         = oracle_in_dp(t, "VAC1", 0);
+    c.xsq         = agc_dp_to_words(oracle_in_dp(t, "VAC1", 0));
     c.xsq_n1      = -oracle_in(t, "VAC1+38", 0);
-    c.inv_root_mu = oracle_in_dp(t, "VAC1+18", 0);
-    c.x           = oracle_in_dp(t, "VAC1+20", 0);
-    c.r1          = oracle_in_dp(t, "VAC1+32", 0);
-    c.kepc1       = oracle_in_dp(t, "VAC1+34", 0);
-    c.kepc2       = oracle_in_dp(t, "VAC1+36", 0);
-    c.xi          = oracle_in_dp(t, "VAC1+24", 0);
+    c.inv_root_mu = agc_dp_to_words(oracle_in_dp(t, "VAC1+18", 0));
+    c.x           = agc_dp_to_words(oracle_in_dp(t, "VAC1+20", 0));
+    c.r1          = agc_dp_to_words(oracle_in_dp(t, "VAC1+32", 0));
+    c.kepc1       = agc_dp_to_words(oracle_in_dp(t, "VAC1+34", 0));
+    c.kepc2       = agc_dp_to_words(oracle_in_dp(t, "VAC1+36", 0));
+    c.xi          = agc_dp_to_words(oracle_in_dp(t, "VAC1+24", 0));
     (void) agc_conic_deltime_(&ip, &c);
     oracle_require_ok(t, "POODOO");
-    (void) oracle_cmp(t, "S(XI)", c.s_xi, oracle_out_dp(t, "VAC1+26"), tol);
-    (void) oracle_cmp(t, "XSQC(XI)", c.xsqc_xi, oracle_out_dp(t, "VAC1+28"), tol);
-    (void) oracle_cmp(t, "T", c.t, oracle_out_dp(t, "VAC1+30"), tol);
+    (void) oracle_cmp(t, "S(XI)", agc_conic_value_(c.s_xi), oracle_out_dp(t, "VAC1+26"), tol);
+    (void) oracle_cmp(t, "XSQC(XI)", agc_conic_value_(c.xsqc_xi), oracle_out_dp(t, "VAC1+28"), tol);
+    (void) oracle_cmp(t, "T", agc_conic_value_(c.t), oracle_out_dp(t, "VAC1+30"), tol);
 }
 
 int main(void)

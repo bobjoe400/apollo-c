@@ -373,7 +373,7 @@ static void test_conic_leo(void)
     const double dvel = dist(from_agc(ctx.out.vatt, 7), v1);
 
     (void) printf("conic LEO 10 min: |dr| = %.1f m, |dv| = %.3g m/cs\n", dr, dvel);
-    CHECK(dr < 50.0);
+    CHECK(dr < 60.0); /* AGC KEPLER itself: 53.4 m (oracle_conic kep_leo_10min, exact) */
     CHECK(dvel < 5e-4);
     CHECK(ctx.out.x1 == -2);
     CHECK(ctx.out.x2 == 0);
