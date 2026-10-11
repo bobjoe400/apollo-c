@@ -411,3 +411,8 @@
 2026-10-11  User paused review-nav-conic and review-dap-lm (checkpoint-and-
             stop requested; resume from their notes later). review-guid-
             landing continues alone.
+2026-10-11  review-nav-conic paused clean (no code changes): R1A/COGA/X/KEPC2
+            are sign-disagreeing word pairs; plan in note. Dependency: core
+            word-level API should exist first -> next session order:
+            review-core-numeric, then nav-conic, then dap-lm. guid-landing
+            still running.
