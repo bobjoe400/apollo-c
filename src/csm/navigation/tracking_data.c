@@ -285,7 +285,7 @@ static void td_variance(agc_interp_t *ip, agc_dp_t base)
     n = rz_norm(agc_vec_abval(ip, td.rclp), &x1);
     agc_tp_t v; /* TP, B-40 after the SR* */
 
-    v = agc_dp_mul_tp(agc_dp_sq(ip, n), base);
+    v = agc_dp_mul_tp(agc_dp_sq(n), base);
 
     x1              = 2 * x1 + 2 * td_shiftndx();      /* XAD,1    */
     v               = agc_tp_shift(ip, v, -(-2 - x1)); /* SR* 0-2,1 */

@@ -406,12 +406,12 @@ static void as_cmponent(agc_interp_t *ip)
     agc_dp_t ahmag = agc_vec_abval(ip, ah); /* |AH| (PDL 6), scale 2^9 */
 
     ahsq          = agc_vec_sq(ip, ah);                         /* 34D */
-    agc_dp_t atp2 = agc_dp_sub(ip, agc_dp_sq(ip, a->at), ahsq); /* AT^2 - AH^2 = ATP^2, scale 2^18 */
+    agc_dp_t atp2 = agc_dp_sub(ip, agc_dp_sq(a->at), ahsq); /* AT^2 - AH^2 = ATP^2, scale 2^18 */
     agc_dp_t atp  = 0;                                          /* ATP before SIGN, scale 2^-9 m/cs^2 */
 
     if (atp2 >= 0)
     {
-        atp = agc_dp_sqrt(ip, atp2);
+        atp = agc_dp_sqrt(atp2);
     }
     else
     { /* NO-ATP */
@@ -1191,7 +1191,7 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t
 
     /* ATY^2 by DSQ is a TP; DAD adds ATP^2 to its top words and SQRT
      * reads all three (MPAC+2 takes part).                            */
-    agc_tp_t s = agc_tp_add(ip, agc_dp_sq_tp(a->aty), agc_tp_from_dp(agc_dp_sq(ip, a->atp))); /* ATY^2 + ATP^2, scale 2^18 (m/cs^2)^2 */
+    agc_tp_t s = agc_tp_add(ip, agc_dp_sq_tp(a->aty), agc_tp_from_dp(agc_dp_sq(a->atp))); /* ATY^2 + ATP^2, scale 2^18 (m/cs^2)^2 */
 
     a->yaw = 0;
 
@@ -1206,7 +1206,7 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t
          * shift in MPAC+2 and SL1 takes the top one back. SQRT(4 s)
          * has the same normalised root and one shift fewer, so it is
          * the same two words (s < 1/8 keeps 4 s in range).          */
-        agc_dp_t root2 = agc_tp_sqrt(ip, agc_tp_shift(ip, s, 2)); /* SQRT(4 s) = 2 sqrt(s), scale 2^9 */
+        agc_dp_t root2 = agc_tp_sqrt(agc_tp_shift(ip, s, 2)); /* SQRT(4 s) = 2 sqrt(s), scale 2^9 */
         agc_dp_t h     = agc_dp_div(ip, a->aty, root2);           /* ATY/|AT horizontal|, scale 2^1 */
 
         a->yaw = agc_dp_asin(ip, h); /* revolutions   */

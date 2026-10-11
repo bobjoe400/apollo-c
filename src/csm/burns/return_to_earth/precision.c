@@ -262,7 +262,7 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
     /* PREC155: SL2 SQRT DMP BDSU NORM stay on the TP MPAC; the NORM
      * brings MPAC+2 into the pushed divisor (1 - PHI2 SQRT(BETA3) can be
      * a small difference).                                               */
-    agc_dp_t s   = agc_tp_sqrt(ip, agc_tp_shift(ip, beta3, 2));                  /* B1     */
+    agc_dp_t s   = agc_tp_sqrt(agc_tp_shift(ip, beta3, 2));                  /* B1     */
     agc_tp_t dtp = agc_dp_mul_tp(s, rs->phi2);                                   /* PHI2 SQRT(BETA3), B3 */
     agc_dp_t den = agc_tp_to_dp(agc_tp_norm(rte_tp_bdsu(ip, ONE_B3, dtp), &n1)); /* 1 - PHI2 SQRT(BETA3), B3 x 2^n1 */
 

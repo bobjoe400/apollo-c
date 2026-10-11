@@ -69,18 +69,6 @@ static uint32_t      g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits
 static uint16_t      g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
 
 /**********************************************************************
- * AGC: none (helper) -- true when g_vehicle names a vehicle
- *
- * FUNCTION NAME: vehicle_ok
- *
- * RETURNS: bool -- true for AGC_VEHICLE_CSM or AGC_VEHICLE_LM
- **********************************************************************/
-static bool vehicle_ok(void)
-{
-    return ((g_vehicle == AGC_VEHICLE_CSM) || (g_vehicle == AGC_VEHICLE_LM));
-}
-
-/**********************************************************************
  * AGC: none (power-up: select the rope and zero erasable memory; the
  *      fresh-start settings are FRESH_START_AND_RESTART, exec-sched)
  *

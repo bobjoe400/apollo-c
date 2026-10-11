@@ -133,7 +133,7 @@ static agc_dp_t rs_speed(agc_interp_t *ip, const rs_work_t *w, agc_dp_t len, agc
 
     p = agc_tp_shift(ip, p, 1 - (int) w->muscale - k); /* XSU,2 SL* 1,2  */
 
-    return (agc_tp_sqrt(ip, p));
+    return (agc_tp_sqrt(p));
 }
 
 /* UNIT(sign(GEOMSGN) (v x UN)) for 180MESS / NEGPROD.                      */
@@ -248,10 +248,10 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
     /* The minimum-energy transfer time less the time to go to the aimpoint
      * (p.778): tm - (TPASS4 - PIPTIME), cs 2^28. Its sign is that of B.       */
     const agc_rendz_t *rz_error = agc_rendz_erasable();
-    agc_dp_t           x        = agc_dp_sqrt(ip, agc_dp_div(ip, agc_dp_sub(ip, w.ss, w.c), w.ss));
+    agc_dp_t           x        = agc_dp_sqrt(agc_dp_div(ip, agc_dp_sub(ip, w.ss, w.c), w.ss));
     agc_dp_t           g        = agc_dp_asin(ip, agc_dp_shr(x, 1)); /* SR1 ASIN, rev  */
     agc_dp_t           g8       = agc_dp_mul_trunc(g, PI_B2);        /* gamma/8 (rad)  */
-    agc_dp_t           y        = agc_dp_sqrt(ip, agc_dp_div(ip, w.c, w.ss));
+    agc_dp_t           y        = agc_dp_sqrt(agc_dp_div(ip, w.c, w.ss));
 
     agc_interp_clear_ovf(ip);                                               /* BOV +1         */
     agc_dp_t t = agc_dp_sub(ip, g8, agc_dp_shr(agc_dp_mul_trunc(y, x), 3)); /* BDSU */
@@ -260,8 +260,8 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
     agc_dp_t q = agc_dp_sub(ip, agc_dp_shr(PI_B2, 2), t); /* SR2 DSU        */
 
     q            = agc_dp_mul_trunc(q, w.ss);                      /* DMP SS         */
-    agc_dp_t num = agc_dp_mul_trunc(agc_dp_sqrt(ip, agc_dp_shr(w.ss, 3)), q);
-    agc_dp_t den = agc_dp_sqrt(ip, agc_dp_shl(ip, w.muasteer, 3)); /* SL3 SQRT */
+    agc_dp_t num = agc_dp_mul_trunc(agc_dp_sqrt(agc_dp_shr(w.ss, 3)), q);
+    agc_dp_t den = agc_dp_sqrt(agc_dp_shl(ip, w.muasteer, 3)); /* SL3 SQRT */
 
     if (!AGC_ASSERT(den > 0))
     {

@@ -92,7 +92,7 @@ static agc_latlong_t g_latlong; /* LAT, LONG, ALT store */
  **********************************************************************/
 static agc_tp_t sum_of_squares(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 {
-    agc_tp_t a2 = agc_tp_from_dp(agc_dp_sq(ip, a)); /* pushed DP, 2^2s */
+    agc_tp_t a2 = agc_tp_from_dp(agc_dp_sq(a)); /* pushed DP, 2^2s */
 
     return (agc_tp_add(ip, agc_dp_sq_tp(b), a2));
 }
@@ -147,7 +147,7 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
     agc_dp_t den  = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));         /* scale 2^0 */
     agc_dp_t q    = agc_dp_div(ip, B2XSC, den);                                    /* BDDV, 2^51 m^2 */
 
-    return (agc_dp_shr_round(agc_dp_sqrt(ip, q), 4)); /* SQRT, SR4R     */
+    return (agc_dp_shr_round(agc_dp_sqrt(q), 4)); /* SQRT, SR4R     */
 }
 
 /**********************************************************************
@@ -222,7 +222,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
         return (0); /* ARCTANXX: 0/0  */
     }
 
-    agc_dp_t q = agc_dp_div(ip, sinth, agc_tp_sqrt(ip, r2)); /* sin, 2^0  */
+    agc_dp_t q = agc_dp_div(ip, sinth, agc_tp_sqrt(r2)); /* sin, 2^0  */
 
     if (agc_interp_test_ovf(ip))
     {
@@ -293,7 +293,7 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pa
         return (st);
     }
 
-    agc_dp_t costh = agc_tp_sqrt(ip, sum_of_squares(ip, alphav.c[0], alphav.c[1])); /* cos Lc, scale 2^1 */
+    agc_dp_t costh = agc_tp_sqrt(sum_of_squares(ip, alphav.c[0], alphav.c[1])); /* cos Lc, scale 2^1 */
 
     /* DMP SL1R: shift the TP product, then round once.                     */
     costh    = agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(costh, gamrp), 1));
@@ -329,11 +329,11 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pa
 agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, const agc_latlong_t *in, agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm)
 {
     agc_dp_t     gamrp = agc_latlong_setgamma(opt.lunar); /* GAMRP 2^1 */
-    agc_dp_t     clat  = agc_dp_cos(ip, in->lat);         /* scale 2^1 */
-    agc_dp_t     slat  = agc_dp_sin(ip, in->lat);         /* scale 2^1 */
+    agc_dp_t     clat  = agc_dp_cos(in->lat);         /* scale 2^1 */
+    agc_dp_t     slat  = agc_dp_sin(in->lat);         /* scale 2^1 */
     agc_dp_t     z     = agc_dp_mul(ip, slat, gamrp);     /* scale 2^2 */
-    agc_dp_t     y     = agc_dp_sin(ip, in->lon);         /* RP y, 2^2 after DMP */
-    agc_dp_t     x     = agc_dp_cos(ip, in->lon);         /* RP x, 2^2 after DMP */
+    agc_dp_t     y     = agc_dp_sin(in->lon);         /* RP y, 2^2 after DMP */
+    agc_dp_t     x     = agc_dp_cos(in->lon);         /* RP x, 2^2 after DMP */
     agc_vec_t    urp   = agc_vec_zero();                  /* unit RP 2^1 */
     agc_dp_t     eradm = 0;                               /* 2^29 m    */
     agc_status_t st    = AGC_STATUS_OK;                   /* returned  */

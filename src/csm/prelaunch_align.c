@@ -211,16 +211,15 @@ agc_dp_t prelaunch_tmark(void)
  * cos AZ)/2, ZSM = (-1/2, 0, 0).  SETUPGC has zeroed the other words.
  *
  * ARGUMENTS:
- *   ip       agc_interp_t *  I/O  interpreter state
  *   azimuth  agc_dp_t        I    NEWAZ1, rev 2^0 (clockwise from north)
  *   xsm      agc_mat_t *     O    rows XSM, YSM, ZSM, half-unit
  *
  * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL argument
  **********************************************************************/
-agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth, agc_mat_t *xsm)
+agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
 {
-    agc_dp_t s = agc_dp_sin(ip, azimuth); /* sin AZ / 2, 2^0           */
-    agc_dp_t c = agc_dp_cos(ip, azimuth); /* cos AZ / 2, 2^0           */
+    agc_dp_t s = agc_dp_sin(azimuth); /* sin AZ / 2, 2^0           */
+    agc_dp_t c = agc_dp_cos(azimuth); /* cos AZ / 2, 2^0           */
 
     xsm->row[0] = agc_vec_make(0, agc_dp_neg(c), s);
     xsm->row[1] = agc_vec_make(0, s, c);
@@ -233,13 +232,12 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth, agc_m
  * POSN17C (p.443) on NEWAZ1 into the alignment XSM
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state
  *
  * RETURNS: agc_status_t from agc_csm_prelaunch_posn17c
  **********************************************************************/
-agc_status_t prelaunch_posn17c(agc_interp_t *ip)
+agc_status_t prelaunch_posn17c(void)
 {
-    agc_status_t st = agc_csm_prelaunch_posn17c(ip, pl.newazmth, &agc_align_ram()->xsm); /* status of the call */
+    agc_status_t st = agc_csm_prelaunch_posn17c(pl.newazmth, &agc_align_ram()->xsm); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -268,7 +266,7 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t v = agc_vec_make(agc_dp_sin(ip, latitude), agc_dp_neg(agc_dp_cos(ip, latitude)), 0); /* earth rate, rev 2^0 */
+    agc_vec_t v = agc_vec_make(agc_dp_sin(latitude), agc_dp_neg(agc_dp_cos(latitude)), 0); /* earth rate, rev 2^0 */
 
     ervector               = agc_vec_scale(ip, v, OMEG_MS);
     tmark                  = agc_rtb_loadtime(); /* LOADTIME          */
@@ -512,15 +510,14 @@ agc_status_t prelaunch_somerr2(void)
  * sin AZ)/2 (ZEROING clears the 18 words first).
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state
  *
  * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL argument
  **********************************************************************/
-agc_status_t prelaunch_nbpospl(agc_interp_t *ip)
+agc_status_t prelaunch_nbpospl(void)
 {
     agc_mat_t *xnb = &agc_align_ram()->xnb;      /* XNB..ZNB, B1 */
-    agc_dp_t   s   = agc_dp_sin(ip, pl.azimuth); /* sin AZ / 2, 2^0   */
-    agc_dp_t   c   = agc_dp_cos(ip, pl.azimuth); /* cos AZ / 2, 2^0   */
+    agc_dp_t   s   = agc_dp_sin(pl.azimuth); /* sin AZ / 2, 2^0   */
+    agc_dp_t   c   = agc_dp_cos(pl.azimuth); /* cos AZ / 2, 2^0   */
 
     xnb->row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* CA HALF, TS XNB  */
     xnb->row[1] = agc_vec_make(0, s, c);
@@ -603,7 +600,7 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
     }
 
     agc_interp_init(&ip);
-    agc_status_t st = prelaunch_posn17c(&ip); /* status of the call */
+    agc_status_t st = prelaunch_posn17c(); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -639,7 +636,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
 
     pl.ndxctr = 0; /* IMUBACK                                          */
     agc_interp_init(&ip);
-    st        = prelaunch_nbpospl(&ip);
+    st        = prelaunch_nbpospl();
 
     if (agc_phase_checkmm(PRELAUNCH_MM_VERIFY))
     {
@@ -948,8 +945,8 @@ agc_status_t agc_job_imu_test_site_loaded(agc_job_ctx_t *ctx)
     agc_sp_t lat = align_word_to_sp(agc_dsky_dsptem(1)); /* rev 2^-2  */
 
     pl.latitude = agc_dp_shr(agc_dp_pack(lat, 0), 2); /* SLOAD SR2, rev 2^0 */
-    pl.wangi    = agc_dp_shl(&ip, agc_dp_neg(agc_dp_cos(&ip, pl.latitude)), 1);
-    pl.wango    = agc_dp_shl(&ip, agc_dp_sin(&ip, pl.latitude), 1);
+    pl.wangi    = agc_dp_shl(&ip, agc_dp_neg(agc_dp_cos(pl.latitude)), 1);
+    pl.wango    = agc_dp_shl(&ip, agc_dp_sin(pl.latitude), 1);
 
     if (!AGC_ASSERT(pl.latitude >= -AGC_DP_QUARTER && pl.latitude <= AGC_DP_QUARTER))
     {

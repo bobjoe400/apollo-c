@@ -320,7 +320,7 @@ agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_
 
 /* POSN17C: XSM, YSM, ZSM for the compass position (Z down, X downrange)
  * from azimuth (revolutions from north, clockwise); rows half-unit.      */
-agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth, agc_mat_t *xsm);
+agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm);
 
 /* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
  * ERCOMP1 = 0.  latitude in revolutions.                                 */

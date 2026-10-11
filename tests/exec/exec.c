@@ -114,7 +114,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
         agc_interp_t ip;
 
         agc_interp_init(&ip);
-        interp_result = (ctx->id == TJ_ACOS) ? agc_dp_acos(&ip, AGC_DP_MAX) : agc_dp_sqrt(&ip, -AGC_DP_HALF);
+        interp_result = (ctx->id == TJ_ACOS) ? agc_dp_acos(&ip, AGC_DP_MAX) : agc_dp_sqrt(-AGC_DP_HALF);
     }
     else if (ctx->id == AGC_JOB_ENDOFJOB)
     {

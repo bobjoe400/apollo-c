@@ -178,12 +178,12 @@ static agc_status_t calcthet(agc_interp_t *ip, agc_vehicle_t veh)
 
     agc_vec_t dvup   = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)), 2);  /* PDL 0 (DV.UP) UP, m/cs 2^7 */
     agc_vec_t dvp    = agc_vec_sub(ip, rz->delvsin, dvup);                                                 /* PDL 6, m/cs 2^7 */
-    agc_dp_t  sn     = agc_dp_sin(ip, th);                                                                 /* PDL 12, scale 2^1 */
+    agc_dp_t  sn     = agc_dp_sin(th);                                                                 /* PDL 12, scale 2^1 */
     agc_vec_t vg     = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn); /* VGTIG, m/cs 2^7 */
     agc_dp_t  dvpmag = 0;                                                                                  /* |DVP|, m/cs 2^7 */
     agc_vec_t udvp   = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                               /* PDL 6, scale 2^1 */
 
-    vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(ip, th)), vg);
+    vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(th)), vg);
     vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2), dvup);
 
     agc_erase_set_vgtig(vg);                  /* VG IGNITION */
@@ -235,8 +235,8 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
     agc_vec_t ug  = agc_vec_unit(ip, agc_erase_vgtig(), NULL, NULL);                                         /* UG PDL 0, 2^1 */
     agc_vec_t q   = agc_vec_sub(ip, bc, agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_vec_dot(ip, ug, bc)), 2)); /* Q, scale 2^-5 */
     agc_dp_t  fm  = agc_dp_div(ip, agc_dp_shr_round(g->burn.f, 4), g->burn.weight_g);                        /* F/m, scale 2^-5 */
-    agc_dp_t  rad = agc_dp_sub(ip, agc_dp_sq(ip, fm), agc_vec_sq(ip, q));                                    /* (F/m)^2 - Q^2, 2^-10 */
-    agc_vec_t t   = agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_dp_sqrt(ip, rad)), 1);                         /* UG sqrt(), 2^-5 */
+    agc_dp_t  rad = agc_dp_sub(ip, agc_dp_sq(fm), agc_vec_sq(ip, q));                                    /* (F/m)^2 - Q^2, 2^-10 */
+    agc_vec_t t   = agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_dp_sqrt(rad)), 1);                         /* UG sqrt(), 2^-5 */
 
     g->burn.ut = agc_vec_unit(ip, agc_vec_add(ip, t, q), NULL, NULL);
 
@@ -489,10 +489,10 @@ static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t y
 
     agc_dp_t yaw   = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(yactoff), TRIMSCAL), YBIAS); /* yaw bell angle, rev 2^0 */
     agc_dp_t pitch = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(pactoff), TRIMSCAL), PBIAS); /* pitch bell angle, rev 2^0 */
-    agc_dp_t cy    = agc_dp_cos(ip, yaw);                                                   /* COS(Y+Y0) PDL 2, scale 2^1  */
-    agc_dp_t sy    = agc_dp_sin(ip, yaw);                                                   /* SIN(Y+Y0) PDL 4, scale 2^1  */
-    agc_dp_t cp    = agc_dp_cos(ip, pitch);                                                 /* COS(P+P0) PDL 6, scale 2^1  */
-    agc_dp_t sp    = agc_dp_sin(ip, pitch);                                                 /* SIN(P+P0) PDL 8D, scale 2^1 */
+    agc_dp_t cy    = agc_dp_cos(yaw);                                                   /* COS(Y+Y0) PDL 2, scale 2^1  */
+    agc_dp_t sy    = agc_dp_sin(yaw);                                                   /* SIN(Y+Y0) PDL 4, scale 2^1  */
+    agc_dp_t cp    = agc_dp_cos(pitch);                                                 /* COS(P+P0) PDL 6, scale 2^1  */
+    agc_dp_t sp    = agc_dp_sin(pitch);                                                 /* SIN(P+P0) PDL 8D, scale 2^1 */
 
     if (!AGC_ASSERT(cp > 0))
     {

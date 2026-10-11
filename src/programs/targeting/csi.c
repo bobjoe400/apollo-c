@@ -249,7 +249,7 @@ static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
 
     vr = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), q);
 
-    vr = agc_dp_sqrt(ip, rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
+    vr = agc_dp_sqrt(rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
     agc_vec_t uh1;                                    /* UH1, 2^1 */
 
     uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
@@ -484,7 +484,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz, const agc_rendz
     s = agc_rendz_scalar_from_body(rz, agc_dp_mul_trunc(pa->p, pa->r1));
 
     s = agc_dp_shl(ip, agc_dp_shl(ip, s, 4), 1); /* SL4 SL1    */
-    s = agc_dp_mul_trunc(agc_dp_sqrt(ip, s), a); /* SQRT DMP   */
+    s = agc_dp_mul_trunc(agc_dp_sqrt(s), a); /* SQRT DMP   */
 
     if (agc_flag_test(AGC_FLAG_CMOONFLG))
     {
@@ -674,7 +674,7 @@ static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u, agc_dp_
         return (CSI_L_B1);
     }
 
-    agc_dp_t temp3 = agc_tp_sqrt(ip, temp2);                   /* K10RK2 B29 */
+    agc_dp_t temp3 = agc_tp_sqrt(temp2);                   /* K10RK2 B29 */
     agc_dp_t k2    = agc_dp_sub(ip, agc_dp_neg(temp3), temp1); /* 10D, m 2^29 */
     agc_dp_t k1    = agc_dp_sub(ip, temp3, temp1);             /* 12D, m 2^29 */
     agc_dp_t d;                                                /* m 2^29 */
@@ -1024,14 +1024,14 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     }
 
     /* U = sin(E) URA3 + cos(E) UH3 (B1): the desired line of sight at TPI. */
-    agc_dp_t  sine = agc_dp_sin(ip, rz->elev); /* 6D, 2^1 */
+    agc_dp_t  sine = agc_dp_sin(rz->elev); /* 6D, 2^1 */
     agc_vec_t ura3 = rz_unit(ip, rz->ract3);   /* 0D, 2^1 */
     agc_vec_t uh3;                             /* UH3, 2^1 */
 
     uh3 = rz_unit(ip, agc_vec_cross(ip, rz->up1, ura3));
     agc_vec_t c; /* 18D, 2^2 */
 
-    c = agc_vec_scale(ip, uh3, agc_dp_cos(ip, rz->elev));
+    c = agc_vec_scale(ip, uh3, agc_dp_cos(rz->elev));
     agc_vec_t u_unit; /* 2^2 */
 
     u_unit        = agc_vec_add(ip, agc_vec_scale(ip, ura3, sine), c);
@@ -1158,8 +1158,8 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz, agc_conic_tim
     agc_dp_t csth = agc_dp_shl(ip, c, 1); /* CSTH, 2^1 */
     agc_dp_t s2;                          /* 2^4 */
 
-    s2           = agc_dp_sub(ip, agc_dp_shr(CSI_DP1_4, 2), agc_dp_sq(ip, c));
-    agc_dp_t  sn = agc_dp_shl(ip, agc_dp_sqrt(ip, s2), 1); /* 0D, 2^1 */
+    s2           = agc_dp_sub(ip, agc_dp_shr(CSI_DP1_4, 2), agc_dp_sq(c));
+    agc_dp_t  sn = agc_dp_shl(ip, agc_dp_sqrt(s2), 1); /* 0D, 2^1 */
     agc_vec_t n;                                           /* 2^58 */
 
     n = agc_vec_cross(ip, agc_vec_neg(rz->ract2), rz->rpass2);
@@ -1223,7 +1223,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
 
     /* Vertical (B7) and horizontal (B7) velocity of the active vehicle. */
     agc_dp_t q = agc_dp_div(ip, agc_dp_shr(a_p, 2), a_a); /* 6D  B2     */
-    agc_dp_t p = agc_dp_mul(ip, agc_dp_sqrt(ip, q), q);   /* DMPR, 2^3 */
+    agc_dp_t p = agc_dp_mul(ip, agc_dp_sqrt(q), q);   /* DMPR, 2^3 */
 
     vav                = agc_dp_shl_round(ip, agc_dp_mul_trunc(p, vpv), 3); /* 8D B7     */
     int      x1_speeds = 0;                                                 /* NORM index of RA, -(shifts) */
@@ -1242,7 +1242,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
     mua        = rz_sl_star(ip, mua, -6, x2_speeds);
     agc_dp_t e = agc_dp_sub(ip, t2mu, mua); /* BDSU, B14 */
 
-    vah         = agc_dp_sqrt(ip, agc_dp_sub(ip, e, agc_dp_sq(ip, vav)));
+    vah         = agc_dp_sqrt(agc_dp_sub(ip, e, agc_dp_sq(vav)));
     agc_vec_t h = agc_vec_scale(ip, rz_unit(ip, agc_vec_cross(ip, rz->up1, rz->unvec)), vah); /* 2^8 */
     agc_vec_t v;                                                                              /* 2^8 */
 

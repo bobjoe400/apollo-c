@@ -223,7 +223,7 @@ static agc_status_t no_powered_designate_now(agc_job_ctx_t *ctx)
     g->avg.rn1    = agc_vec_shr(agc_vec_mat(&ip, g->lm.r1s, &refsmmat), 4); /* 2^29 */
     g->avg.vn1    = agc_vec_shl(&ip, agc_vec_mat(&ip, g->lm.v1s, &refsmmat), 1);
     agc_dp_t vh   = agc_dp_shl(&ip, agc_vec_abval(&ip, agc_vec_cross(&ip, g->avg.unitr, g->lm.v1s)), 1);
-    agc_dp_t comp = agc_dp_mul(&ip, agc_dp_div(&ip, agc_dp_sq(&ip, vh), r1mag), ARCONV1);
+    agc_dp_t comp = agc_dp_mul(&ip, agc_dp_div(&ip, agc_dp_sq(vh), r1mag), ARCONV1);
 
     agc_inhint(); /* COPYCYC2     */
 

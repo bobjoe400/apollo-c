@@ -64,11 +64,11 @@ static bool cmc_mode(void)
  */
 agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle)
 {
-    const agc_dp_t  s  = agc_dp_sin(ip, angle); /* 1/2 SIN */
+    const agc_dp_t  s  = agc_dp_sin(angle); /* 1/2 SIN */
     const agc_vec_t t1 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, axis, los), s), 2);
     const agc_dp_t  d  = agc_vec_dot(ip, axis, los);
     const agc_vec_t t2 = agc_vec_shl(ip, agc_vec_scale(ip, axis, d), 2);
-    const agc_dp_t  c  = agc_dp_cos(ip, angle); /* 1/2 COS */
+    const agc_dp_t  c  = agc_dp_cos(angle); /* 1/2 COS */
     const agc_vec_t t3 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_sub(ip, los, t2), c), 1);
 
     return (agc_vec_unit(ip, agc_vec_add(ip, agc_vec_add(ip, t3, t2), t1), NULL, NULL));

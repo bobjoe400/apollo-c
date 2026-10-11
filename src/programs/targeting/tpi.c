@@ -117,7 +117,7 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     m = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, rz->elev), d30);
 
     fail         = (m < 0);
-    agc_dp_t c28 = agc_dp_mul_trunc(agc_dp_cos(ip, agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra); /* 28D, 2^30 */
+    agc_dp_t c28 = agc_dp_mul_trunc(agc_dp_cos(agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra); /* 28D, 2^30 */
 
     c28 = agc_dp_neg(agc_dp_div(ip, c28, rp)); /* COS(180-A) = -COS A */
 
@@ -762,8 +762,8 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t             csth = agc_dp_cos(ip, rz->centang); /* CSTH, 2^1 */
-    agc_dp_t             snth = agc_dp_sin(ip, rz->centang); /* SNTH, 2^1 */
+    agc_dp_t             csth = agc_dp_cos(rz->centang); /* CSTH, 2^1 */
+    agc_dp_t             snth = agc_dp_sin(rz->centang); /* SNTH, 2^1 */
     agc_conic_time_out_t o;                                  /* TIMETHET result */
     agc_status_t         st;                                 /* TIMETHET */
 

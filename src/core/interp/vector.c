@@ -275,7 +275,7 @@ agc_dp_t agc_vec_abval(agc_interp_t *ip, agc_vec_t v)
         return (0);
     }
 
-    return (agc_tp_sqrt(ip, sq));
+    return (agc_tp_sqrt(sq));
 }
 
 /**********************************************************************

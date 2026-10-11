@@ -208,7 +208,7 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *
         s = agc_dp_shl(ip, agc_vec_dot(ip, unitz, a->unitr), 1); /* SL1 */
     }
 
-    agc_dp_t fact = agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* 0.05 - s^2, scale 2^0; DSQ BDSU DP1/20 */
+    agc_dp_t fact = agc_dp_sub(ip, DP1_20, agc_dp_sq(s)); /* 0.05 - s^2, scale 2^0; DSQ BDSU DP1/20 */
 
     a->resq_rsq  = agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq);                           /* CM B-59, LM B-58; DDV 34D -> 32D */
     agc_dp_t  m  = agc_dp_mul_trunc(agc_dp_mul_trunc(a->resq_rsq, cm ? J20_CM : J20_LM), fact); /* equatorial coefficient, scale of GOBL; 20J; DMP DMP */

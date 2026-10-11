@@ -111,7 +111,7 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4, iv_work_t *
     }
 
     w->itctr      = -1;
-    w->cozy4      = agc_dp_shr(agc_dp_cos(ip, e4), 1); /* COSINE SR1   */
+    w->cozy4      = agc_dp_shr(agc_dp_cos(e4), 1); /* COSINE SR1   */
     w->r2vec      = w->rtarg1;
     agc_vec_t uri = rz_unit(ip, w->rinit);             /* URI unit RINIT, 2^1 */
 

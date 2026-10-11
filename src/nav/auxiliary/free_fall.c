@@ -171,7 +171,7 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
         abs_alfa = -alfa;
     }
 
-    tff->tffrtalf = agc_dp_norm(agc_tp_sqrt(ip, abs_alfa), &tff->na);
+    tff->tffrtalf = agc_dp_norm(agc_tp_sqrt(abs_alfa), &tff->na);
     agc_tp_t a    = agc_dp_sq_tp(tff->tffrtalf); /* DSQ, 2^-(20+2NA) */
 
     if (alfa20 < 0)
@@ -226,7 +226,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
         e2 = -e2; /* ABS */
     }
 
-    agc_dp_t onepe = agc_dp_add(ip, agc_tp_sqrt(ip, e2), AGC_DP_QUARTER); /* 1+E, scale 2^2 */
+    agc_dp_t onepe = agc_dp_add(ip, agc_tp_sqrt(e2), AGC_DP_QUARTER); /* 1+E, scale 2^2 */
     agc_tp_t rp    = agc_tp_from_dp(agc_dp_div(ip, tff->tffnp, onepe));   /* P/(1+E), 2^(36-2NR) */
 
     rp          = agc_tp_shift(ip, rp, -tff->nr);                  /* SR* 0,1  */
@@ -353,7 +353,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_d
 
     /* DLOAD 1/ALFA, SQRT DMP PI/16, DAD term, SL* 0-1,2, DSU Q2-Q1,
      * DMP 1/ALFA SL* 0-3,2 SL* 0-4,2: TFF sqrt(MU) scale 2^45 (E).        */
-    agc_tp_t st = agc_dp_mul_tp(agc_dp_sqrt(ip, tff->tff1_alf), PI_16); /* running sum, TP, E 2^(15+NA) .. 2^45 */
+    agc_tp_t st = agc_dp_mul_tp(agc_dp_sqrt(tff->tff1_alf), PI_16); /* running sum, TP, E 2^(15+NA) .. 2^45 */
 
     st         = agc_tp_add(ip, st, agc_tp_from_dp(term));
     st         = agc_tp_shift(ip, st, na - 1);
@@ -423,7 +423,7 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num, agc_dp
     /* General conic (TFFXTEST continuation, p. 1383-1384), alfa Z Z < 1:
      * X = ALFA Z^2, TFF = (RTERM + RN - 2 Z^2 T(X)) Z / sqrt(MU).            */
     agc_dp_t z   = agc_dp_div(ip, num, den); /* Z, E 2^13 */
-    agc_dp_t zsq = agc_dp_sq(ip, z);         /* Z^2, 2^26, pushed */
+    agc_dp_t zsq = agc_dp_sq(z);         /* Z^2, 2^26, pushed */
 
     /* DMP TFFNP, SL 5, SIGN Z: P Z^2 for TFF/TRIG, TP shifted.            */
     agc_tp_t pz = agc_dp_mul_tp(zsq, tff->tffnp); /* P Z^2, E 2^64 */
@@ -537,7 +537,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, b
         return (AGC_STATUS_OK);
     }
 
-    agc_dp_t q2 = agc_dp_neg(agc_tp_sqrt(ip, q2sq)); /* Q2, E 2^16 */
+    agc_dp_t q2 = agc_dp_neg(agc_tp_sqrt(q2sq)); /* Q2, E 2^16 */
 
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG     */
     tff->tfftem = q2;

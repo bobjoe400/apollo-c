@@ -1272,9 +1272,9 @@ agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t, agc_dp_t *cdel
     m       = agc_dp_mul_trunc(agc_dp_mul_trunc(m, t->nrmag), t->nrterm);
     m       = agc_dp_div(ip, t->tfftem, m);
     *cdelf2 = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_abs(m));
-    m       = agc_dp_add(ip, agc_dp_neg(agc_dp_sq(ip, *cdelf2)), AGC_DP_QUARTER);
+    m       = agc_dp_add(ip, agc_dp_neg(agc_dp_sq(*cdelf2)), AGC_DP_QUARTER);
 
-    return (agc_dp_sign(agc_dp_sqrt(ip, m), t->tfftem));
+    return (agc_dp_sign(agc_dp_sqrt(m), t->tfftem));
 }
 
 /**********************************************************************
@@ -1406,9 +1406,9 @@ agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm, agc_
     prod      = agc_dp_mul_trunc(t->nrmag, t->nrterm);
     d         = agc_dp_sub(ip, t->nrmag, t->nrterm);
     d         = (sh >= 0) ? agc_dp_shl(ip, d, sh) : agc_dp_shr(d, -sh); /* SL* or SR */
-    s         = agc_dp_sqrt(ip, agc_dp_sub(ip, agc_dp_div(ip, d, prod), t->tffvsq));
+    s         = agc_dp_sqrt(agc_dp_sub(ip, agc_dp_div(ip, d, prod), t->tffvsq));
     *vgam     = agc_dp_div(ip, s, t->rtmu);
-    d         = agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp), agc_dp_mul_trunc(s, t->nrterm));
+    d         = agc_dp_div(ip, agc_dp_sqrt(t->tffnp), agc_dp_mul_trunc(s, t->nrterm));
 
     return (agc_dp_acos(ip, agc_dp_shr(d, 1)));
 }
@@ -1442,7 +1442,7 @@ agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    vb    = agc_dp_sq(ip, agc_dp_div(ip, agc_dp_sub(ip, vgam, AGC_ENTRY_KFT36_PER_S), AGC_ENTRY_KFT20_PER_S)); /* B-2 */
+    vb    = agc_dp_sq(agc_dp_div(ip, agc_dp_sub(ip, vgam, AGC_ENTRY_KFT36_PER_S), AGC_ENTRY_KFT20_PER_S)); /* B-2 */
     num   = agc_dp_add(ip, agc_dp_add(ip, agc_dp_mul_trunc(vb, AGC_ENTRY_KR1), gam), AGC_ENTRY_M6_05DEG);
     num   = agc_dp_mul_trunc(num, AGC_ENTRY_KR2);
     g     = agc_dp_add(ip, agc_dp_div(ip, vb, AGC_ENTRY_KR4), AGC_ENTRY_ONE_16TH);
@@ -1612,10 +1612,10 @@ agc_status_t agc_entry_desired_gimbal_angles(void)
     agc_status_t       st;                                                  /* CALCGA status */
     int                i;                                                   /* loop index */
 
-    nb.row[1] = agc_vec_add(ip, agc_vec_scale(ip, es->uya, agc_dp_cos(ip, es->rollc)), agc_vec_scale(ip, es->uza, agc_dp_sin(ip, es->rollc)));
+    nb.row[1] = agc_vec_add(ip, agc_vec_scale(ip, es->uya, agc_dp_cos(es->rollc)), agc_vec_scale(ip, es->uza, agc_dp_sin(es->rollc)));
     nb.row[1] = agc_vec_shl(ip, nb.row[1], 1); /* YNB */
     nb.row[0] = agc_vec_shl(ip, agc_vec_cross(ip, nb.row[1], es->uxa), 1);
-    nb.row[0] = agc_vec_add(ip, agc_vec_scale(ip, nb.row[0], agc_dp_sin(ip, alfa)), agc_vec_scale(ip, es->uxa, agc_dp_cos(ip, alfa)));
+    nb.row[0] = agc_vec_add(ip, agc_vec_scale(ip, nb.row[0], agc_dp_sin(alfa)), agc_vec_scale(ip, es->uxa, agc_dp_cos(alfa)));
     nb.row[0] = agc_vec_shl(ip, nb.row[0], 1); /* XNB */
     nb.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, nb.row[0], nb.row[1]), 1);
     agc_flag_clear(AGC_FLAG_CPHIFLAG);

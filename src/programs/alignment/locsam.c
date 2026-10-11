@@ -60,7 +60,7 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
 
     a = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
 
-    return (agc_dp_shr(agc_dp_cos(ip, a), 1));
+    return (agc_dp_shr(agc_dp_cos(a), 1));
 }
 
 /*

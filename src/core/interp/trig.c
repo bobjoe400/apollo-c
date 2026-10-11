@@ -173,13 +173,12 @@ agc_status_t agc_dp_sqrt_chk(agc_dp_t a, agc_dp_t *out)
  * the executive (agc_interp_take_alarm).
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   a   agc_dp_t        I  argument at 2^2n
  *
  * RETURNS: agc_dp_t -- sqrt(a) at 2^n; 0 for -2^-14 <= a <= 0 and on
  *          the abort
  **********************************************************************/
-agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
+agc_dp_t agc_dp_sqrt(agc_dp_t a)
 {
     agc_dp_t r = 0; /* root, scaled 2^n */
 
@@ -198,12 +197,11 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
  * p.1181): MPAC+2 takes part in the root.
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   a   agc_tp_t        I  TP argument at 2^2n
  *
  * RETURNS: agc_dp_t -- sqrt(a) at 2^n; 0 on the abort (latched)
  **********************************************************************/
-agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
+agc_dp_t agc_tp_sqrt(agc_tp_t a)
 {
     bool     abort = false; /* SQRTABRT taken */
     agc_w2_t r;             /* root words */
@@ -343,12 +341,11 @@ static agc_w3_t cosine_words(agc_w3_t m)
  * SIN (SINE, INTERPRETER.agc p.1187).
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   a   agc_dp_t        I  angle in revolutions, scaled 2^0
  *
  * RETURNS: agc_dp_t -- (1/2) sin(2 pi a), scaled at 2
  **********************************************************************/
-agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
+agc_dp_t agc_dp_sin(agc_dp_t a)
 {
     return (agc_w_join(agc_w3_top(sine_words(agc_w_split(a)))));
 }
@@ -357,12 +354,11 @@ agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
  * COS (COSINE / PRESINE, INTERPRETER.agc p.1187).
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state
  *   a   agc_dp_t        I  angle in revolutions, scaled 2^0
  *
  * RETURNS: agc_dp_t -- (1/2) cos(2 pi a), scaled at 2
  **********************************************************************/
-agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
+agc_dp_t agc_dp_cos(agc_dp_t a)
 {
     return (agc_w_join(agc_w3_top(cosine_words(agc_w3_from_tp(agc_tp_from_dp(a))))));
 }

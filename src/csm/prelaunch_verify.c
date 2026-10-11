@@ -106,13 +106,13 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
         agc_sp_t el_sp  = align_word_to_sp(r->tazel[(2 * i) + 1]); /* EL word, 90 deg = 2^14 */
         agc_dp_t el     = agc_dp_shr(agc_dp_pack(el_sp, 0), 2);    /* SR2: rev 2^0 */
         agc_dp_t az     = agc_rtb_cdulogic(r->tazel[2 * i]);       /* rev 2^0 */
-        agc_dp_t cos_el = agc_dp_cos(ip, el);                      /* PUSH: cos / 2, 2^0 */
+        agc_dp_t cos_el = agc_dp_cos(el);                      /* PUSH: cos / 2, 2^0 */
 
         /* DMP SL1 on the TP product (MPAC+2's top bit reaches the LSB). */
-        agc_dp_t s_az = align_dmp_shl(ip, agc_dp_sin(ip, az), cos_el, 1); /* sin AZ cos EL / 2, 2^0 */
-        agc_dp_t c_az = align_dmp_shl(ip, agc_dp_cos(ip, az), cos_el, 1); /* cos AZ cos EL / 2, 2^0 */
+        agc_dp_t s_az = align_dmp_shl(ip, agc_dp_sin(az), cos_el, 1); /* sin AZ cos EL / 2, 2^0 */
+        agc_dp_t c_az = align_dmp_shl(ip, agc_dp_cos(az), cos_el, 1); /* cos AZ cos EL / 2, 2^0 */
 
-        tar[i] = agc_vec_make(agc_dp_sin(ip, el), /* SIN(EL); DCOMP */
+        tar[i] = agc_vec_make(agc_dp_sin(el), /* SIN(EL); DCOMP */
                               agc_dp_neg(c_az),
                               s_az);
     }
@@ -178,7 +178,7 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
     }
 
     agc_interp_init(&ip);
-    st = prelaunch_nbpospl(&ip); /* SETNBPOS: TC NBPOSPL              */
+    st = prelaunch_nbpospl(); /* SETNBPOS: TC NBPOSPL              */
 
     if (st != AGC_STATUS_OK)
     {

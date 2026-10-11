@@ -103,8 +103,8 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pit
     }
 
     const agc_vec_t z  = agc_vec_shl(ip, agc_vec_cross(ip, ur, urp), 1);
-    const agc_vec_t a  = agc_vec_scale(ip, u.row[2], agc_dp_sin(ip, *pitch));
-    const agc_vec_t b  = agc_vec_scale(ip, u.row[0], agc_dp_cos(ip, *pitch));
+    const agc_vec_t a  = agc_vec_scale(ip, u.row[2], agc_dp_sin(*pitch));
+    const agc_vec_t b  = agc_vec_scale(ip, u.row[0], agc_dp_cos(*pitch));
     const agc_dp_t  yz = agc_vec_dot(ip, agc_vec_sub(ip, b, a), z); /* YAW.Z */
 
     *yaw = signed_asin(ip, z, yz);

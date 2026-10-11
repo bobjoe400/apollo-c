@@ -439,7 +439,7 @@ static void cn_tangents(agc_interp_t *ip, agc_vec_t rh, agc_dp_t ah, agc_dp_t bh
     agc_dp_t a;                                  /* A, B18 */
 
     a              = agc_dp_add(ip, agc_dp_mul_trunc(yb, yb), agc_dp_mul_trunc(xa, xa));
-    agc_dp_t sq    = agc_dp_sqrt(ip, agc_dp_sub(ip, a, CN_1_0B18));                              /* B9 */
+    agc_dp_t sq    = agc_dp_sqrt(agc_dp_sub(ip, a, CN_1_0B18));                              /* B9 */
     agc_dp_t xha   = cn_div_sr(ip, rh.c[0], a, 17);                                              /* B29      */
     agc_dp_t yha   = cn_div_sr(ip, rh.c[1], a, 17);                                              /* YH/A, B29 */
     agc_dp_t s28   = cn_div_sr(ip, sq, a, 8);                                                    /* 28D SQRT(A-1)/A, B1 */

@@ -109,10 +109,10 @@ void     agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DDV, 
 agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DSU   */
 agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DMPR  */
 agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DDV   */
-agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a);                       /* DSQ   */
-agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a);                     /* SQRT  */
-agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a);                      /* SIN   */
-agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a);                      /* COS   */
+agc_dp_t agc_dp_sq(agc_dp_t a);                       /* DSQ   */
+agc_dp_t agc_dp_sqrt(agc_dp_t a);                     /* SQRT  */
+agc_dp_t agc_dp_sin(agc_dp_t a);                      /* SIN   */
+agc_dp_t agc_dp_cos(agc_dp_t a);                      /* COS   */
 agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a);                     /* ASIN  */
 agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a);                     /* ACOS  */
 agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n);               /* SL n  */
@@ -170,7 +170,7 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
 
 /* SQRT of a TP MPAC (TLOAD/DMP/DSQ then SQRT): MPAC+2 takes part; the
  * MPAC+2 SQRT leaves (used by a following ROUND) is in agc_mpac_sqrt.    */
-agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a);
+agc_dp_t agc_tp_sqrt(agc_tp_t a);
 
 /* ROUND: TP MPAC rounded to DP (ROUNDSUB), OVFIND on carry out.            */
 agc_dp_t agc_tp_round(agc_interp_t *ip, agc_tp_t a);

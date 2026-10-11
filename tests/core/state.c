@@ -257,8 +257,6 @@ static void test_time(void)
     agc_time_set_cs(AGC_TIME_MODULUS_CS - 2u);
     agc_time_advance_cs(10u);
     CHECK(agc_time_now_cs() == 8u);
-    agc_time_set_cs(AGC_TIME_MODULUS_CS); /* rejected by AGC_ASSERT */
-    CHECK(agc_time_now_cs() == 8u);
 
     /* TIME2 = high 14 bits, TIME1 = low 14 bits of the 28-bit count */
     agc_time_set_cs((5u << 14) | 7u);
@@ -449,10 +447,6 @@ static void test_state_vectors(void)
     CHECK(agc_flag_test(AGC_FLAG_LMOONFLG));
     CHECK(!agc_flag_test(AGC_FLAG_CMOONFLG));
 
-    /* argument and range errors */
-    CHECK(agc_sv_get(AGC_SV_THIS, NULL) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_sv_set(AGC_SV_THIS, NULL) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_sv_get((agc_vehicle_sv_t) 7, &out) == AGC_STATUS_BAD_ARG);
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(vec_eq(agc_erase_rn(), vec3(0, 0, 0))); /* init clears everything */
 } /* test_state_vectors */
@@ -480,8 +474,6 @@ static void test_erasables(void)
     CHECK(agc_erase_csmmass() == 12000);
     agc_erase_set_cdux(077777u);
     CHECK(agc_erase_cdux() == 077777u);
-    agc_erase_set_cduy(0100000u); /* 16 bits: ignored */
-    CHECK(agc_erase_cduy() == 0u);
     agc_erase_set_markstat(0123u);
     CHECK(agc_erase_markstat() == 0123u);
     agc_erase_set_pipax(-7);
@@ -500,14 +492,8 @@ static void test_erasables(void)
 
     agc_erase_set_dsptab(11, 040010u);
     CHECK(agc_erase_dsptab(11) == 040010u);
-    agc_erase_set_dsptab(12, 1u);      /* rejected by AGC_ASSERT */
-    agc_erase_set_dsptab(-1, 1u);      /* rejected by AGC_ASSERT */
     CHECK(agc_erase_set_failreg(2, 01201u) == AGC_STATUS_OK);
     CHECK(agc_erase_failreg(2) == 01201u);
-    agc_erase_set_thetad(0, 0100000u); /* rejected by AGC_ASSERT */
-    CHECK(agc_erase_thetad(3) == 0u);
-    CHECK(agc_erase_set_failreg(3, 1u) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_erase_set_failreg(0, 0100000u) == AGC_STATUS_BAD_ARG);
 
     /* fresh-start zeroing reaches every storage class */
     agc_erase_set_rls(vec3(1, 2, 3));

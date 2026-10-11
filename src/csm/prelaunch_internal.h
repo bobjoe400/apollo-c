@@ -86,7 +86,7 @@ typedef struct prelaunch_ram
 prelaunch_ram_t *prelaunch_ram(void);
 
 /* NBPOSPL (p.423-424): XNB, YNB, ZNB from AZIMUTH, half-unit.          */
-agc_status_t prelaunch_nbpospl(agc_interp_t *ip);
+agc_status_t prelaunch_nbpospl(void);
 
 /* IMUSTLLG after a stall: *done when good; SOMERR2 when bad.           */
 agc_status_t prelaunch_imustall(agc_job_id_t wake_as, bool *done);
@@ -106,7 +106,7 @@ agc_status_t prelaunch_somerr2(void);
 agc_status_t prelaunch_endtest1(void);
 
 /* POSN17C on NEWAZ1 into the alignment XSM.                            */
-agc_status_t prelaunch_posn17c(agc_interp_t *ip);
+agc_status_t prelaunch_posn17c(void);
 
 /* ESTIMS (p.434) in the calling job.                                   */
 agc_status_t prelaunch_estims(agc_job_ctx_t *ctx);

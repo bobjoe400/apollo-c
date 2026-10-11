@@ -273,10 +273,12 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
     }
 
     if (lgyro.busy)
-    { /* GYROBUSY / REGSLEEP */
-
-        gyro_waiter = wake_as;
-        agc_exec_job_sleep(wake_as);
+    { /* GYROBUSY / REGSLEEP; a caller that cannot sleep (AGC_JOB_NONE) only learns BUSY */
+        if (wake_as != AGC_JOB_NONE)
+        {
+            gyro_waiter = wake_as;
+            agc_exec_job_sleep(wake_as);
+        }
 
         return (AGC_STATUS_BUSY);
     }

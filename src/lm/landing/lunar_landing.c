@@ -185,7 +185,7 @@ static agc_dp_t ll_ddum(agc_interp_t *ip)
 
     den          = agc_dp_sub(ip, l->vgu.c[2], den);
     agc_dp_t a   = agc_dp_shr_round(agc_dp_sub(ip, p->rignz, l->rgu.c[2]), 4);                       /* (RIGNZ - RGU2)/16, 2^28 m */
-    agc_dp_t b   = agc_dp_shl_round(ip, agc_dp_mul(ip, agc_dp_sq(ip, l->rgu.c[1]), p->kigny_b8), 4); /* 16 RGU1^2 KIGNY/B8, 2^28 m */
+    agc_dp_t b   = agc_dp_shl_round(ip, agc_dp_mul(ip, agc_dp_sq(l->rgu.c[1]), p->kigny_b8), 4); /* 16 RGU1^2 KIGNY/B8, 2^28 m */
     agc_dp_t c   = agc_dp_mul(ip, agc_dp_sub(ip, l->rgu.c[0], p->rignx), p->kignx_b4);               /* (RGU0 - RIGNX) KIGNX/B4, 2^28 m */
     agc_dp_t d   = agc_dp_mul(ip, agc_dp_sub(ip, agc_vec_abval(ip, l->vgu), p->vign), p->kignv_b4);  /* (|VGU| - VIGN) KIGNV/B4, 2^28 m */
     agc_dp_t num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_add(ip, d, c), b), a);                       /* numerator, 2^28 m */
@@ -1040,6 +1040,11 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
     agc_vec_t    ur   = agc_vec_unit(&ip, agc_guid_state()->lm.r, NULL, NULL); /* UNIT(R), half unit 2^1 */
     agc_dp_t     meas = ll_rod_afc(&ip, ur);                                   /* measured acceleration, 2^-4 m/cs^2 */
     agc_status_t st   = agc_lm_throttle_measured(meas);                        /* THROTTLE +3   */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st); /* DOIT's waitlist failure (BAILOUT raised there) */
+    }
 
     return (ll_vhorcomp(ctx, &ip, v));
 } /* ll_rodcomp */

@@ -663,8 +663,8 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
 agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
 {
     static const agc_dp_t five_eighths = 0x0A000000;               /* 5/8: 2DEC 5 B-3 */
-    agc_dp_t              x2           = agc_dp_sq(ip, urpv.c[0]); /* B2              */
-    agc_dp_t              y2           = agc_dp_sq(ip, urpv.c[1]); /* B2              */
+    agc_dp_t              x2           = agc_dp_sq(urpv.c[0]); /* B2              */
+    agc_dp_t              y2           = agc_dp_sq(urpv.c[1]); /* B2              */
     agc_dp_t              d            = agc_dp_sub(ip, y2, x2);   /* DSU, B2         */
 
     d           = agc_dp_mul(ip, d, five_eighths); /* DMP 5/8, B5     */

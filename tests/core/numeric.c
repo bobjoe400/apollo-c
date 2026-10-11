@@ -253,7 +253,7 @@ static void test_add_mul(void)
     eq("DMPR rounds up", agc_dp_mul(&ip, AGC_DP_HALF, 3), 2);
     eq("DMPR rounds away", agc_dp_mul(&ip, AGC_DP_HALF, -3), -2);
     eq("DMP truncates", agc_dp_mul_trunc(AGC_DP_HALF, -3), -1);
-    eq("DSQ", agc_dp_sq(&ip, AGC_DP_HALF), AGC_DP_QUARTER);
+    eq("DSQ", agc_dp_sq(AGC_DP_HALF), AGC_DP_QUARTER);
     eq("DMPNSUB", agc_dp_mul_int(1000, 7), 7000);
     eq("SHORTMP", (long long int) agc_tp_mul_sp((agc_tp_t) 1 << 41, AGC_SP_HALF), 1LL << 40);
     eq("ROUND", agc_tp_round(&ip, ((agc_tp_t) 7 << 14) + 8192), 8);
@@ -302,15 +302,15 @@ static void test_sqrt_trig(void)
     agc_interp_init(&ip);
 
     /* yaAGC (interp_sqrt_sin.txt).                                         */
-    eq("SQRT .5", agc_dp_sqrt(&ip, AGC_DP_HALF), oct2(026501, 007463));
-    eq("SQRT .25", agc_dp_sqrt(&ip, AGC_DP_QUARTER), AGC_DP_HALF);
-    eq("SQRT 2^-28", agc_dp_sqrt(&ip, 1), oct2(000001, 000000));
-    eq("SQRT max", agc_dp_sqrt(&ip, AGC_DP_MAX), AGC_DP_MAX);
-    eq("SIN 1/8", agc_dp_sin(&ip, 04000 * 16384), oct2(013240, 023631));
-    eq("SIN 1/4", agc_dp_sin(&ip, 010000 * 16384), AGC_DP_HALF);
-    eq("SIN -2047", agc_dp_sin(&ip, oct2(074000, 0)), oct2(064541, 063230));
-    eq("COS 1/8", agc_dp_cos(&ip, 04000 * 16384), oct2(013240, 023631));
-    eq("COS 0", agc_dp_cos(&ip, 0), AGC_DP_HALF);
+    eq("SQRT .5", agc_dp_sqrt(AGC_DP_HALF), oct2(026501, 007463));
+    eq("SQRT .25", agc_dp_sqrt(AGC_DP_QUARTER), AGC_DP_HALF);
+    eq("SQRT 2^-28", agc_dp_sqrt(1), oct2(000001, 000000));
+    eq("SQRT max", agc_dp_sqrt(AGC_DP_MAX), AGC_DP_MAX);
+    eq("SIN 1/8", agc_dp_sin(04000 * 16384), oct2(013240, 023631));
+    eq("SIN 1/4", agc_dp_sin(010000 * 16384), AGC_DP_HALF);
+    eq("SIN -2047", agc_dp_sin(oct2(074000, 0)), oct2(064541, 063230));
+    eq("COS 1/8", agc_dp_cos(04000 * 16384), oct2(013240, 023631));
+    eq("COS 0", agc_dp_cos(0), AGC_DP_HALF);
     eq("SQRT abort", agc_dp_sqrt_chk(-2 * 16384, &r), AGC_STATUS_POODOO);
     eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(-5, &r) * 100 + r, 0);
     eq("ACOS 0", agc_dp_acos(&ip, 0), AGC_DP_QUARTER);
@@ -326,8 +326,8 @@ static void test_sqrt_trig(void)
         agc_dp_t a  = agc_dp_from_double(x, 0); /* x as DP, revolutions scaled 2^0 */
         double   xa = agc_dp_to_double(a, 0);
 
-        near("SIN", agc_dp_to_double(agc_dp_sin(&ip, a), 0), 0.5 * sin(2 * PI * xa), 2.1e-8);
-        near("COS", agc_dp_to_double(agc_dp_cos(&ip, a), 0), 0.5 * cos(2 * PI * xa), 2.1e-8);
+        near("SIN", agc_dp_to_double(agc_dp_sin(a), 0), 0.5 * sin(2 * PI * xa), 2.1e-8);
+        near("COS", agc_dp_to_double(agc_dp_cos(a), 0), 0.5 * cos(2 * PI * xa), 2.1e-8);
 
         if (fabs(xa) <= 0.5)
         {
@@ -337,7 +337,7 @@ static void test_sqrt_trig(void)
 
         if (xa > 0)
         {
-            near("SQRT", agc_dp_to_double(agc_dp_sqrt(&ip, a), 0), sqrt(xa), 2.9e-8);
+            near("SQRT", agc_dp_to_double(agc_dp_sqrt(a), 0), sqrt(xa), 2.9e-8);
         }
     }
 

@@ -235,8 +235,8 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pa
         return (st);
     }
 
-    agc_dp_t c = agc_dp_cos(ip, az); /* cos AZ, scale 2^1               */
-    agc_dp_t s = agc_dp_sin(ip, az); /* sin AZ, scale 2^1               */
+    agc_dp_t c = agc_dp_cos(az); /* cos AZ, scale 2^1               */
+    agc_dp_t s = agc_dp_sin(az); /* sin AZ, scale 2^1               */
 
     m->row[0] = agc_vec_make(c, s, 0);
     m->row[1] = agc_vec_make(agc_dp_neg(s), c, 0);
@@ -373,11 +373,11 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ang.cob = agc_dp_cos(ip, b);
-    ang.sob = agc_dp_sin(ip, b);
+    ang.cob = agc_dp_cos(b);
+    ang.sob = agc_dp_sin(b);
 
-    agc_dp_t  cosn   = agc_dp_cos(ip, ang.nodi);                      /* COSNODI, 2^1 */
-    agc_dp_t  sinn   = agc_dp_sin(ip, ang.nodi);                      /* SINNODI, 2^1 */
+    agc_dp_t  cosn   = agc_dp_cos(ang.nodi);                      /* COSNODI, 2^1 */
+    agc_dp_t  sinn   = agc_dp_sin(ang.nodi);                      /* SINNODI, 2^1 */
     agc_dp_t  sncb   = mul_half(ip, sinn, ang.cob);                   /* sin N cos B, 2^1 */
     agc_dp_t  snsb   = mul_half(ip, sinn, ang.sob);                   /* sin N sin B, 2^1 */
     agc_dp_t  cncb   = mul_half(ip, cosn, ang.cob);                   /* cos N cos B, 2^1 */
@@ -388,8 +388,8 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
 
     m->row[2]        = combine(ip, cvectr, COSI, bvectr, SINI, false);
     agc_vec_t dvectr = combine(ip, bvectr, COSI, cvectr, SINI, true); /* 2^1 */
-    agc_dp_t  cosf   = agc_dp_cos(ip, ang.f);                         /* COS 504F, 2^1 */
-    agc_dp_t  sinf   = agc_dp_sin(ip, ang.f);                         /* SIN 504F, 2^1 */
+    agc_dp_t  cosf   = agc_dp_cos(ang.f);                         /* COS 504F, 2^1 */
+    agc_dp_t  sinf   = agc_dp_sin(ang.f);                         /* SIN 504F, 2^1 */
 
     m->row[1] = combine(ip, avectr, sinf, dvectr, cosf, true);
     m->row[0] = agc_vec_neg(combine(ip, avectr, cosf, dvectr, sinf, false));

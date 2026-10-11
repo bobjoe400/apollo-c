@@ -362,7 +362,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
 static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
 {
     agc_navaux_padload_t pad;                                         /* pad loads (earth radius) */
-    agc_dp_t             cl = agc_dp_cos(ip, insertion_pad.latitude); /* COS LAT /2, B1 */
+    agc_dp_t             cl = agc_dp_cos(insertion_pad.latitude); /* COS LAT /2, B1 */
     agc_vec_t            rp;                                          /* unit RP, B2 */
     agc_status_t         st = agc_navaux_get_padload(&pad);           /* status */
 
@@ -372,7 +372,7 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
     }
 
     /* LALOTORV +5 multiplies with DMPR (rounded); GAMMA = DPHALF (1 B-1). */
-    rp    = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(ip, insertion_pad.padlong), cl), agc_dp_mul(ip, agc_dp_sin(ip, insertion_pad.padlong), cl), agc_dp_mul(ip, INSERTION_HALFREV, agc_dp_sin(ip, insertion_pad.latitude)));
+    rp    = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(insertion_pad.padlong), cl), agc_dp_mul(ip, agc_dp_sin(insertion_pad.padlong), cl), agc_dp_mul(ip, INSERTION_HALFREV, agc_dp_sin(insertion_pad.latitude)));
     rp    = agc_vec_unit(ip, rp, NULL, NULL);
     st    = agc_planet_rp_to_r(ip, &pad, false, rp, 0, down);
     *down = agc_vec_neg(*down);
@@ -465,7 +465,7 @@ static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down, agc_mat_t 
     m->row[2] = agc_vec_unit(ip, down, NULL, NULL);
     east      = agc_vec_unit(ip, agc_vec_cross(ip, m->row[2], unitw), NULL, NULL);
     msouth    = agc_vec_unit(ip, agc_vec_cross(ip, east, m->row[2]), NULL, NULL);
-    m->row[0] = agc_vec_add(ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)), agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
+    m->row[0] = agc_vec_add(ip, agc_vec_scale(ip, msouth, agc_dp_cos(insertion_pad.launchaz)), agc_vec_scale(ip, east, agc_dp_sin(insertion_pad.launchaz)));
     m->row[0] = agc_vec_unit(ip, m->row[0], NULL, NULL);
     m->row[1] = agc_vec_neg(agc_vec_unit(ip, agc_vec_cross(ip, m->row[0], m->row[2]), NULL, NULL));
 
@@ -710,10 +710,10 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3]
         d[i] = agc_dp_from_sp(entry_angle_wrap(w)); /* DELSTOR (MSU)  */
     }
 
-    sx = agc_dp_sin(ip, agc_guid_cdulogic(cdu[0]));
-    cx = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
-    sz = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
-    cz = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
+    sx = agc_dp_sin(agc_guid_cdulogic(cdu[0]));
+    cx = agc_dp_cos(agc_guid_cdulogic(cdu[0]));
+    sz = agc_dp_sin(agc_guid_cdulogic(cdu[2]));
+    cz = agc_dp_cos(agc_guid_cdulogic(cdu[2]));
 
     /* NOPOLYM: .5(DPHI + DTHETA SIN(CDUZ)): DMP SL1, DAD, SR2 (truncating)
      * on the TP MPAC.                                                    */
@@ -788,9 +788,9 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
         roll = 0; /* rollout done: MBDYTCTL +2    */
     }
 
-    dc.row[0] = agc_vec_make(agc_dp_sin(ip, pitch), 0, agc_dp_neg(agc_dp_cos(ip, pitch)));
-    dc.row[1] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll), agc_dp_cos(ip, pitch)), 1)), agc_dp_neg(agc_dp_cos(ip, roll)), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll), agc_dp_sin(ip, pitch)), 1)));
-    dc.row[2] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll), agc_dp_cos(ip, pitch)), 1)), agc_dp_sin(ip, roll), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll), agc_dp_sin(ip, pitch)), 1)));
+    dc.row[0] = agc_vec_make(agc_dp_sin(pitch), 0, agc_dp_neg(agc_dp_cos(pitch)));
+    dc.row[1] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(roll), agc_dp_cos(pitch)), 1)), agc_dp_neg(agc_dp_cos(roll)), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(roll), agc_dp_sin(pitch)), 1)));
+    dc.row[2] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(roll), agc_dp_cos(pitch)), 1)), agc_dp_sin(roll), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(roll), agc_dp_sin(pitch)), 1)));
 
     for (t = 0; t < 3; t++)
     {

@@ -212,7 +212,7 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
      * goes to SQRT whole; SL* 0,2 shifts the root right k places into
      * MPAC+2 and TAD adds the TP TRIPA.                                    */
     agc_tp_t prod = agc_dp_mul_tp(agc_tp_round(ip, tripa), agc_tp_to_dp(tempvar)); /* TRIPA TEMPVAR, scale of A^2 4^k */
-    agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(ip, prod));                         /* scale A 2^k */
+    agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(prod));                         /* scale A 2^k */
     agc_tp_t den  = agc_tp_shift(ip, root, -k);                                    /* SL* 0,2: scale of A */
     int      n    = 0;                                                             /* NORM count        */
 

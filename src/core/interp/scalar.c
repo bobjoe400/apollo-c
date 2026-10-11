@@ -227,12 +227,11 @@ agc_dp_t agc_dp_mul_trunc(agc_dp_t a, agc_dp_t b)
  * MPAC, MPAC+1.
  *
  * ARGUMENTS:
- *   ip  agc_interp_t *  I  interpreter state (DSQ sets no OVFIND)
  *   a   agc_dp_t        I  MPAC
  *
  * RETURNS: agc_dp_t -- a^2 truncated, at twice the scale of a
  **********************************************************************/
-agc_dp_t agc_dp_sq(agc_interp_t *ip, agc_dp_t a)
+agc_dp_t agc_dp_sq(agc_dp_t a)
 {
     return (agc_w_join(agc_w3_top(agc_w_dsqsub(agc_w_split(a)))));
 }

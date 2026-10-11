@@ -100,11 +100,11 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t 
 {
     const agc_dp_t elr = agc_align_cdulogic(el);
     const agc_dp_t azr = agc_align_cdulogic(az);
-    const agc_dp_t ce  = agc_dp_cos(ip, elr);
-    const agc_dp_t ca  = agc_dp_cos(ip, azr);
-    const agc_dp_t sa  = agc_dp_sin(ip, azr);
+    const agc_dp_t ce  = agc_dp_cos(elr);
+    const agc_dp_t ca  = agc_dp_cos(azr);
+    const agc_dp_t sa  = agc_dp_sin(azr);
 
-    *oa  = agc_vec_make(agc_dp_sin(ip, elr),
+    *oa  = agc_vec_make(agc_dp_sin(elr),
                         agc_dp_shl(ip, agc_dp_mul(ip, ce, sa), 1),
                         agc_dp_shl(ip, agc_dp_mul(ip, ce, ca), 1));
     *uyp = agc_vec_make(0, ca, agc_dp_neg(sa));
@@ -122,8 +122,8 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t 
 agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb)
 {
     const agc_dp_t r = agc_dp_shr(agc_dp_pack(align_word_to_sp(rot), 0), 1); /* SR1 */
-    const agc_dp_t s = agc_dp_sin(ip, r);
-    const agc_dp_t c = agc_dp_cos(ip, r);
+    const agc_dp_t s = agc_dp_sin(r);
+    const agc_dp_t c = agc_dp_cos(r);
 
     *ypnb = agc_vec_sub(ip, agc_vec_scale(ip, uyp, c), agc_vec_scale(ip, uxp, s));
     *xpnb = agc_vec_add(ip, agc_vec_scale(ip, uxp, c), agc_vec_scale(ip, uyp, s));
@@ -164,8 +164,8 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
  * angle YROT: UNIT(cos YROT YPNB - sin YROT XPNB).                       */
 static agc_vec_t surface_upp_x_oa(agc_interp_t *ip, agc_dp_t yrot, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb)
 {
-    const agc_vec_t s   = agc_vec_scale(ip, xpnb, agc_dp_sin(ip, yrot));
-    const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(ip, yrot));
+    const agc_vec_t s   = agc_vec_scale(ip, xpnb, agc_dp_sin(yrot));
+    const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(yrot));
     const agc_vec_t upp = agc_vec_unit(ip, agc_vec_sub(ip, c, s), NULL, NULL);
 
     return (agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL));
@@ -192,8 +192,8 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
     {
         const agc_vec_t px  = surface_upp_x_oa(ip, yrot, oa, xpnb, ypnb);
         const agc_dp_t  sep = agc_dp_mul(ip, agc_dp_add(ip, agc_dp_sub(ip, srot, yrot), ABOUTONE), DP_ONE_TWELFTH);
-        const agc_vec_t a   = agc_vec_shl(ip, agc_vec_scale(ip, px, agc_dp_sin(ip, sep)), 1);
-        const agc_vec_t b   = agc_vec_shl(ip, agc_vec_scale(ip, oa, agc_dp_cos(ip, sep)), 1);
+        const agc_vec_t a   = agc_vec_shl(ip, agc_vec_scale(ip, px, agc_dp_sin(sep)), 1);
+        const agc_vec_t b   = agc_vec_shl(ip, agc_vec_scale(ip, oa, agc_dp_cos(sep)), 1);
 
         v = agc_vec_add(ip, b, a);
     }

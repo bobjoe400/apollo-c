@@ -177,8 +177,7 @@ void agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc, agc_dp_t gyro[3])
  **********************************************************************/
 static void gimbal_lock_alarm(void)
 {
-    agc_alarm(ALARM_GIMBAL_LOCK);       /* ALARM 00401  */
-    agc_status_t st = AGC_STATUS_ALARM; /* status of the call */
+    agc_alarm(ALARM_GIMBAL_LOCK); /* ALARM 00401  */
 
     agc_flag_set(AGC_FLAG_GLOKFAIL); /* UPFLAG       */
 }

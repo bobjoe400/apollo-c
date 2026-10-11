@@ -183,8 +183,14 @@ module state (the module boundary, where the entry check lives). A one-line
 function that is merely an expression over its parameters is inlined at
 every caller, whatever the caller count.
 * `frama-c -eva` (Frama-C value analysis) to prove or refute assertions
-  statically; `make prove` runs the project configuration. A guard EVA
-  proves VALID on every path is dead code and is deleted.
+  statically; `make prove` runs the project configuration (detached; see
+  tools/prove/progress.log and summary.txt) and `make prove-classify`
+  folds its verdicts into docs/overview/guards.tsv. A guard EVA proves
+  VALID on every path is dead code and is deleted. EVA's verdicts hold for
+  the code and entry points it analysed: rerun `make prove` after any
+  review or change that alters control flow, and in a lane not yet
+  reviewed record an EVA-only proof as `eva-valid-deferred` instead of
+  deleting the guard.
 
 ## Returns (guide 5.6, user direction 2026-10-11)
 

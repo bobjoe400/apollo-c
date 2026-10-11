@@ -99,13 +99,13 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
     const agc_dp_t ta     = agc_csm_sxtlogic(trunnion_cdu);        /* PD0 */
-    const agc_dp_t sin_ta = agc_dp_shl(ip, agc_dp_sin(ip, ta), 1); /* PD2 */
+    const agc_dp_t sin_ta = agc_dp_shl(ip, agc_dp_sin(ta), 1); /* PD2 */
     const agc_dp_t sa     = agc_align_cdulogic(shaft_cdu);         /* PD4 */
     agc_vec_t      starm;
 
-    starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(ip, sa), sin_ta); /* DMP */
-    starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(ip, sa), sin_ta);
-    starm.c[2] = agc_dp_cos(ip, ta);
+    starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(sa), sin_ta); /* DMP */
+    starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(sa), sin_ta);
+    starm.c[2] = agc_dp_cos(ta);
 
     /* NB1NB2 (optics base NB1 -> NB), the transpose of NB2NB1. */
     const agc_mat_t m_nb1nb2 = nb2nb1();
@@ -333,8 +333,8 @@ agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e)
         wt         = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
     }
 
-    const agc_vec_t a = agc_vec_scale(ip, e->rtnorm, agc_dp_sub(ip, agc_dp_cos(ip, wt), AGC_DP_HALF));
-    const agc_vec_t b = agc_vec_scale(ip, e->rteast, agc_dp_sin(ip, wt));
+    const agc_vec_t a = agc_vec_scale(ip, e->rtnorm, agc_dp_sub(ip, agc_dp_cos(wt), AGC_DP_HALF));
+    const agc_vec_t b = agc_vec_scale(ip, e->rteast, agc_dp_sin(wt));
     const agc_vec_t c = agc_vec_shl(ip, agc_vec_add(ip, b, a), 1); /* VSL1 */
 
     e->rt = agc_vec_unit(ip, agc_vec_add(ip, c, e->rtinit), NULL, NULL);

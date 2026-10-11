@@ -217,7 +217,7 @@ static void ln_landmark_on_surface(agc_interp_t *ip, agc_dp_t eradm)
     agc_vec_t u    = agc_vec_unit(ip, ln.csmpos, &rc, NULL); /* UNIT RC, 2^1 */
     agc_dp_t  c    = agc_vec_dot(ip, u, ln.um);              /* UM . URC, 2^2  */
     agc_dp_t  cosa = agc_dp_neg(agc_dp_shl(ip, c, 1));       /* COSA, 2^1      */
-    agc_dp_t  cos2 = agc_dp_sq(ip, cosa);                    /* COSA^2, 2^2 */
+    agc_dp_t  cos2 = agc_dp_sq(cosa);                    /* COSA^2, 2^2 */
     agc_dp_t  sin2 = agc_dp_sub(ip, AGC_DP_QUARTER, cos2);   /* SINA^2, 2^2 */
     agc_dp_t  r0   = eradm;                                  /* R0, m 2^29     */
 
@@ -227,9 +227,9 @@ static void ln_landmark_on_surface(agc_interp_t *ip, agc_dp_t eradm)
     }
 
     agc_dp_t q = agc_dp_div(ip, agc_dp_shr_round(r0, 1), rc); /* B-1 */
-    agc_dp_t s = agc_dp_sub(ip, agc_dp_sq(ip, q), sin2);      /* 2^2 */
+    agc_dp_t s = agc_dp_sub(ip, agc_dp_sq(q), sin2);      /* 2^2 */
 
-    s            = agc_dp_sqrt(ip, s);               /* 2^1 */
+    s            = agc_dp_sqrt(s);               /* 2^1 */
     ln.rho       = agc_dp_mul_trunc(agc_dp_sub(ip, cosa, s), rc);
     agc_vec_t rl = agc_vec_scale(ip, ln.um, ln.rho); /* RHO UM, body scale */
 
@@ -298,7 +298,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
     x2 = 2 * x2; /* XAD,2 X2 */
     agc_dp_t r2; /* 1/2 RHO^2 VARSCT, B-42 */
 
-    r2 = agc_dp_shr(agc_dp_mul_trunc(agc_dp_sq(ip, n), LN_SCTVAR), 1);
+    r2 = agc_dp_shr(agc_dp_mul_trunc(agc_dp_sq(n), LN_SCTVAR), 1);
     agc_mat_t e; /* E, B-38 */
 
     for (int r = 0; r < 3; r++)
@@ -314,7 +314,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
     agc_dp_t  q;                                 /* R0 SR3 / D, 2^0 */
 
     q                 = agc_dp_div(ip, agc_dp_shr(eradm, 3), ln.d);
-    agc_dp_t        s = agc_dp_mul_trunc(agc_dp_sq(ip, q), agc_rendz_nav_pad()->rpvar); /* RPVAR scale */
+    agc_dp_t        s = agc_dp_mul_trunc(agc_dp_sq(q), agc_rendz_nav_pad()->rpvar); /* RPVAR scale */
     agc_incorp_w_t *w = &agc_integ_shared_ctx()->w;                                     /* W matrix */
 
     for (int r = 0; r < 3; r++)
@@ -331,7 +331,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 
     if (e.row[2].c[2] >= 0)
     {
-        agc_dp_t w74 = agc_dp_sqrt(ip, e.row[2].c[2]); /* W74, B-19 */
+        agc_dp_t w74 = agc_dp_sqrt(e.row[2].c[2]); /* W74, B-19 */
 
         if (w74 != 0)
         {
@@ -356,12 +356,12 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 
     agc_dp_t r76; /* B-38 */
 
-    r76          = agc_dp_sub(ip, e.row[1].c[1], agc_dp_sq(ip, *ln_w(146)));
+    r76          = agc_dp_sub(ip, e.row[1].c[1], agc_dp_sq(*ln_w(146)));
     agc_dp_t w76 = 0; /* S22W76X, B-19 */
 
     if (r76 >= 0)
     {
-        w76 = agc_dp_sqrt(ip, r76);
+        w76 = agc_dp_sqrt(r76);
     }
 
     if (w76 != 0)
@@ -376,11 +376,11 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
         }
     }
 
-    agc_dp_t r78 = agc_dp_sub(ip, e.row[0].c[0], agc_dp_add(ip, agc_dp_sq(ip, *ln_w(144)), agc_dp_sq(ip, *ln_w(150)))); /* S22W78X, B-38 */
+    agc_dp_t r78 = agc_dp_sub(ip, e.row[0].c[0], agc_dp_add(ip, agc_dp_sq(*ln_w(144)), agc_dp_sq(*ln_w(150)))); /* S22W78X, B-38 */
 
     if (r78 >= 0)
     {
-        *ln_w(156) = agc_dp_sqrt(ip, r78);
+        *ln_w(156) = agc_dp_sqrt(r78);
     }
 
     for (int m = 6; m < LN_ROWS; m++)
@@ -588,7 +588,7 @@ static void ln_reduce_w_to_six(agc_interp_t *ip)
 
         if (wsq >= 0)
         {
-            workw = agc_dp_sqrt(ip, wsq);
+            workw = agc_dp_sqrt(wsq);
         }
 
         *ln_w(j + n) = workw;
@@ -833,7 +833,7 @@ static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
     agc_dp_t n  = rz_norm(agc_vec_abval(ip, ln.rclp), &x1); /* 2^(S+X1) */
     agc_tp_t v;                                             /* TP, B-40 after the SR* */
 
-    v = agc_dp_mul_tp(agc_dp_sq(ip, n), agc_dp_add(ip, LN_SCTVAR, LN_IMUVARR)); /* TP, B+18 */
+    v = agc_dp_mul_tp(agc_dp_sq(n), agc_dp_add(ip, LN_SCTVAR, LN_IMUVARR)); /* TP, B+18 */
 
     x1                = 2 * x1 + 2 * ln.eorm;
     ln.inc.variance   = agc_tp_shift(ip, v, x1);         /* SR* 0,1  */

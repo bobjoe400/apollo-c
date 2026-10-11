@@ -245,9 +245,9 @@ static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_
 {
     /* PUSH DMP OMEGAES / PUSH COS: the angle is used as its top words.  */
     agc_dp_t  ang = agc_dp_mul_trunc(t26, eph->omegaes);     /* revs 2^0    */
-    agc_dp_t  cw  = agc_dp_cos(ip, ang);                     /* scale 2^1  */
+    agc_dp_t  cw  = agc_dp_cos(ang);                     /* scale 2^1  */
     agc_vec_t c   = agc_vec_scale(ip, eph->reso, cw);        /* 2^39 m     */
-    agc_dp_t  s   = agc_dp_sin(ip, ang);                     /* scale 2^1  */
+    agc_dp_t  s   = agc_dp_sin(ang);                     /* scale 2^1  */
     agc_vec_t u   = agc_vec_unit(ip, eph->reso, NULL, NULL); /* scale 2^1  */
     agc_vec_t nrm = agc_vec_cross(ip, u, eph->veso);         /* 2^10 m/cs */
 
@@ -480,7 +480,7 @@ static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
     xt = agc_tp_shift(ip, xt, 8); /* SL 8, wraps */
     x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_TERM[k].arg);
 
-    return (agc_dp_mul_trunc(agc_dp_sin(ip, x), LM_TERM[k].mod));
+    return (agc_dp_mul_trunc(agc_dp_sin(x), LM_TERM[k].mod));
 }
 
 /**********************************************************************
@@ -588,8 +588,8 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs
     /* POSITF: moon then sun.                                              */
     agc_dp_t dl = agc_dp_sub(ip, lom, lon); /* DLOAD DSU, wraps, 2^0 rev */
 
-    *vmoon = ephem_lm_konmat(ip, agc_dp_cos(ip, lom), agc_dp_sin(ip, lom), agc_dp_sin(ip, dl));
-    *vsun  = ephem_lm_konmat(ip, agc_dp_cos(ip, los), agc_dp_sin(ip, los), 0);
+    *vmoon = ephem_lm_konmat(ip, agc_dp_cos(lom), agc_dp_sin(lom), agc_dp_sin(dl));
+    *vsun  = ephem_lm_konmat(ip, agc_dp_cos(los), agc_dp_sin(los), 0);
 
     return (AGC_STATUS_OK);
 }

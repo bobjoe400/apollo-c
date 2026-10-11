@@ -94,10 +94,19 @@ bits), split that part off to a Sonnet agent.
 5. Tests: `make test` green through the real library (no scratch stand-ins).
 6. Oracle: every numeric module has committed yaAGC cases passing within a
    documented tolerance; bit-exact where -0 quirks allow.
-7. Runs end to end: build/agc_sim (our clock/interrupt driver + yaAGC's
-   peripheral socket protocol, so Virtual AGC's yaDSKY2 and other
-   peripherals are the I/O) fresh-starts either vehicle and completes at
-   least one real program sequence per vehicle
+7. Runs end to end UNDER THE VIRTUAL AGC GUI (user's stated end goal,
+   2026-10-11): build/agc_sim is a drop-in replacement for yaAGC. The stock
+   VirtualAGC launcher (SRC/virtualagc, its Apollo 11 CM and LM
+   configurations) starts our binary in place of yaAGC with yaAGC's command
+   line (`--core=<rope>` selects the vehicle, `--port`, `--cfg`, `--resume`
+   accepted or ignored as documented) and connects the unmodified yaDSKY2,
+   yaTelemetry and other peripherals over the socket protocol. Acceptance:
+   from the real DSKY window, fresh start, V35 lamp test, V16N36 clock,
+   CSM P52 realign with simulated marks, CSM P40 burn, LM P63 braking start,
+   each producing the AGC's expected displays; headless scripted scenarios
+   (tools/sim_client.py) cover the same sequences for `make test`. Fresh-
+   starts either vehicle and completes at least one real program sequence
+   per vehicle
    (e.g. P52 realign with simulated marks; P40 with a simulated burn) with
    the AGC's expected displays.
 8. Reviewed: final fidelity/clarity review of every lane vs its AGC source,
@@ -173,7 +182,9 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 13. review-prog-align   (oracle test additions in progress)
 14. review-sys-misc     (t4rupt_csm.c rewrite in progress)
 15. review-guid-powered (ZOOM; style debt; prologs in progress)
-16. sim                 (pad.c; scenarios)
+16. sim  -- PROMOTED: runs alongside the remaining reviews as soon as the
+    alone pass finishes (it is the end-goal deliverable: VirtualAGC GUI on
+    our C backend)
 17. follow-up-done-lanes (nav-aux, io-dsky, state-flags, guid-entry, imu,
     guid-landing, prog-rendz, dap-lm: DMP/DMPR audit where missed, and
     word-level API adoption per review_items.md)

@@ -23,12 +23,40 @@ reported as information only.
 4. One-line functions classified (PLAIN / NAMED / ACCESSOR).
 
 ## Progress
-- DONE EVA harness: tools/prove/eva_assert.h (shim), tools/prove/eva_run.py; `make prove` runs it detached on a snapshot (build/prove/tree), 2 runs at a time, precision 1, 60 min per entry point (sim + 34 test mains); progress in tools/prove/progress.log, summary.txt, runs/<entry>.log; `make prove-classify` folds the verdicts in. A first exploratory run (precision 1, 2400 s, 7 at a time) is kept in build/prove_long and used until the full run finishes
-- PARTIAL libclang classifier tools/prove/guards.py (index: call sites with established facts, static-variable writes, predicates, enums, type maps; classify: param facts over call sites (fixpoint), module invariants, ranges, EVA VALID)
-- TODO classification
-- TODO deletion of guaranteed guards
-- TODO conversion of fallible guards
-- TODO one-liners
-- TODO make prove, docs
+- DONE EVA harness: tools/prove/eva_assert.h (shim), tools/prove/eva_run.py
+  (one analysis per entry point: sim + 34 test mains; snapshot tree;
+  progress in tools/prove/progress.log, summary.txt, runs/<entry>.log),
+  `make prove` (detached), `make prove-classify`. An exploratory run
+  (precision 1, 7 at a time, ~40 min; sim, exec_exec, io_dsky timed out)
+  is kept in build/prove_long. The full run was stopped by the lead:
+  EVA runs ONCE on the finished tree (re-sequenced).
+- DONE classifier tools/prove/guards.py (libclang index of src/ + tests/:
+  call sites with established facts, static-variable writes, one-line
+  predicates expanded, enum ranges, type maps; classify: parameter facts
+  over every call site (fixpoint), module invariants, C-type ranges,
+  word/enum type invariant, EVA VALID; DEFERRED lanes -> eva-valid-deferred;
+  tools/prove/manual.tsv for hand decisions). tools/prove/apply.py deletes
+  GUARANTEED rows (by line, or --match by function + condition).
+- DONE baseline classification (build/prove/index_baseline.pkl; scratch
+  guards_baseline_v1.tsv): of 2,285 void/value guards 1,309 GUARANTEED
+  (576 structural, 733 EVA-only), and 1,513 of 3,094 status guards.
+- DONE structural deletions: 1,756 guards (all kinds) in 207 files.
+  Fallout: 190 job/helper functions lost their only use of ctx/ip/jc/p
+  and dropped the parameter (job entries become f(void);
+  tools/gen_registry.py emits `f()` for them and no longer repeats the
+  public entry's checks in the per-vehicle switches); agc_dp_*_ovf_only
+  keep the discarded MPAC in agc_interp_t.mpac; UNIT split into unit_core
+  + agc_vec_unit_abval (FIGTIME read only LV). make, make test (34/34),
+  make scenarios green after this step.
+- DONE EVA-only deletions (exploratory run) in reviewed lanes: 823;
+  242 + 12 re-inserted in the DEFERRED lanes (lead), 3 of those kept
+  deleted by hand (postconditions of the loop/if just before,
+  tools/prove/manual.tsv).
+- IN PROGRESS build fallout of the EVA-only step; then FALLIBLE guards by
+  hand, file group by file group (rows below)
+- TODO conversion of fallible guards (status + out-parameters, callers)
+- TODO one-liners (step 6)
 - TODO step 7: refined collapse protection (label entered from >= 2 places) + inline
 - TODO step 8: trailing returns removed; short-tail early returns -> if/else
+- TODO make format, make/test/scenarios, then `make prove` once on the
+  finished tree and `make prove-classify`

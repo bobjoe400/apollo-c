@@ -744,6 +744,34 @@ agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
 }
 
 /**********************************************************************
+ * NORM (TSLC, INTERPRETER.agc p.1157) -- shared by agc_dp_norm and
+ * agc_dp_norm_count.
+ *
+ * ARGUMENTS:
+ *   a      agc_dp_t    I  value
+ *   shift  int *       O  left shifts done (0 for a = 0); may be NULL
+ *   out    agc_dp_t *  O  a left-justified (|major word| >= 1/2), or 0;
+ *                         NULL when only the count is read
+ **********************************************************************/
+static void dp_norm_core(agc_dp_t a, int *shift, agc_dp_t *out)
+{
+    int      count = 0;                                 /* left shifts done */
+    agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
+
+    m = agc_w_tslc(m, &count);
+
+    if (shift != 0)
+    {
+        *shift = count;
+    }
+
+    if (out != 0)
+    {
+        *out = agc_w_join(agc_w3_top(m));
+    }
+}
+
+/**********************************************************************
  * NORM (TSLC, INTERPRETER.agc p.1157) on a DP.
  *
  * ARGUMENTS:
@@ -755,17 +783,11 @@ agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
  **********************************************************************/
 agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
 {
-    int      count = 0;                                 /* left shifts done */
-    agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
+    agc_dp_t n = 0; /* a left-justified */
 
-    m = agc_w_tslc(m, &count);
+    dp_norm_core(a, shift, &n);
 
-    if (AGC_ASSERT(shift != 0))
-    {
-        *shift = count;
-    }
-
-    return (agc_w_join(agc_w3_top(m)));
+    return (n);
 }
 
 /**********************************************************************
@@ -779,10 +801,9 @@ agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
  **********************************************************************/
 int agc_dp_norm_count(agc_dp_t a)
 {
-    int      count = 0; /* left shifts done                         */
-    agc_dp_t n;         /* a left-justified, scaled 2^-count of a   */
+    int count = 0; /* left shifts done */
 
-    n = agc_dp_norm(a, &count);
+    dp_norm_core(a, &count, 0);
 
     return (count);
 }

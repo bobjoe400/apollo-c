@@ -491,7 +491,7 @@ static agc_dp_t norfinal(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_dp_t 
 
     agc_dp_t x = agc_dp_shr_round(agc_tp_round_dp(agc_dp_mul_tp(ctx->rc, rsq)), 1);
 
-    x = agc_dp_sqrt(ip, agc_dp_div(ip, x, agc_integ_mu(ctx->pbody)));
+    x = agc_dp_sqrt(agc_dp_div(ip, x, agc_integ_mu(ctx->pbody)));
     x = agc_dp_shr(agc_tp_to_dp(agc_dp_mul_tp(x, K_P3D)), 7); /* SR3 SR4, DLOAD MPAC */
     x = agc_dp_shl(ip, x, 15);                                /* SL 15D      */
 

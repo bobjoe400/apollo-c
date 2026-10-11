@@ -138,7 +138,7 @@ static agc_status_t so_prec_tt(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t r
 
     agc_conic_time_out_t o; /* conic result */
 
-    st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, agc_dp_sin(ip, rz->centang), agc_dp_cos(ip, rz->centang), true, &o);
+    st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, agc_dp_sin(rz->centang), agc_dp_cos(rz->centang), true, &o);
 
     if (st != AGC_STATUS_OK)
     {

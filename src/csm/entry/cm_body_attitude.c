@@ -157,16 +157,16 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     agc_dp_t  aig      = agc_guid_cdulogic(cdu_pattern(es->aig_pip)); /* AIG/PIP, revs B0 */
     agc_dp_t  amg      = agc_guid_cdulogic(cdu_pattern(es->amg_pip)); /* AMG/PIP, revs B0 */
     agc_dp_t  aog      = agc_guid_cdulogic(cdu_pattern(es->aog_pip)); /* AOG/PIP, revs B0 */
-    agc_dp_t  ci       = agc_dp_cos(ip, aig);                         /* COS AIG /2, B1 */
-    agc_dp_t  si       = agc_dp_sin(ip, aig);                         /* SIN AIG /2, B1 */
-    agc_dp_t  sm       = agc_dp_sin(ip, amg);                         /* SIN AMG /2, B1 */
-    agc_dp_t  cm       = agc_dp_cos(ip, amg);                         /* COS AMG /2, B1 */
+    agc_dp_t  ci       = agc_dp_cos(aig);                         /* COS AIG /2, B1 */
+    agc_dp_t  si       = agc_dp_sin(aig);                         /* SIN AIG /2, B1 */
+    agc_dp_t  sm       = agc_dp_sin(amg);                         /* SIN AMG /2, B1 */
+    agc_dp_t  cm       = agc_dp_cos(amg);                         /* COS AMG /2, B1 */
     agc_vec_t ubx;                                                    /* XB/2 platform, B1 */
 
     /* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
      * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI). */
-    agc_dp_t so = agc_dp_sin(ip, aog); /* SIN AOG /2, B1 */
-    agc_dp_t co = agc_dp_cos(ip, aog); /* COS AOG /2, B1 */
+    agc_dp_t so = agc_dp_sin(aog); /* SIN AOG /2, B1 */
+    agc_dp_t co = agc_dp_cos(aog); /* COS AOG /2, B1 */
 
     agc_vec_t uby; /* YB/4 platform, B2 */
 

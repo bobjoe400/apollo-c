@@ -605,8 +605,8 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
     /* DDV DSQ leaves a TP; the two DSUs change MPAC, MPAC+1 only and
      * SQRT reads all three words (MPAC+2 of the DSQ takes part).      */
     agc_tp_t amax = agc_dp_sq_tp(agc_dp_div(ip, LDG_HIGHESTF, mass)); /* (HIGHESTF/MASS)^2 as a TP, 2^-8 */
-    agc_dp_t a1sq = agc_dp_sq(ip, l->unfc_2.c[1]);                    /* A1^2, popped first, 2^-8 */
-    agc_dp_t a0sq = agc_dp_sq(ip, l->unfc_2.c[0]);                    /* A0^2, 2^-8 */
+    agc_dp_t a1sq = agc_dp_sq(l->unfc_2.c[1]);                    /* A1^2, popped first, 2^-8 */
+    agc_dp_t a0sq = agc_dp_sq(l->unfc_2.c[0]);                    /* A0^2, 2^-8 */
 
     amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a1sq)));
     amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a0sq)));
@@ -616,7 +616,7 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
         amax = 0; /* ZEROVECS     */
     }
 
-    agc_dp_t s = agc_dp_add(ip, agc_tp_sqrt(ip, amax), l->unfc_2.c[2]); /* AMAXHORIZ + UNFC z, 2^-4 m/cs^2 */
+    agc_dp_t s = agc_dp_add(ip, agc_tp_sqrt(amax), l->unfc_2.c[2]); /* AMAXHORIZ + UNFC z, 2^-4 m/cs^2 */
 
     if (s < 0)
     {

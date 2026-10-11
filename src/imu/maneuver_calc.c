@@ -166,8 +166,8 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
 
         agc_dp_t a = agc_rtb_cdulogic(cdu[i]); /* angle, rev 2^0 */
 
-        s[i] = agc_dp_sin(ip, a); /* sin/2               */
-        c[i] = agc_dp_cos(ip, a); /* cos/2               */
+        s[i] = agc_dp_sin(a); /* sin/2               */
+        c[i] = agc_dp_cos(a); /* cos/2               */
     }
 
     const agc_dp_t sph = s[0]; /* PD0 SIN(PHI) / 2, 2^0               */
@@ -260,7 +260,7 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *
     }
 
     agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);        /* C3, rev 2^0 */
-    agc_dp_t cpsi = agc_dp_shl(ip, agc_dp_cos(ip, psi), 1); /* S1 = COS(MGA), 2^0 */
+    agc_dp_t cpsi = agc_dp_shl(ip, agc_dp_cos(psi), 1); /* S1 = COS(MGA), 2^0 */
 
     cpsi           = bovb_signmpac(ip, cpsi);                              /* S1       */
     agc_dp_t q     = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi);     /* -C6 / S1, 2^0 */
@@ -343,8 +343,8 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a, agc_mat
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t sin2 = agc_dp_sin(ip, a);                                    /* PD0 $2, 2^0 */
-    agc_dp_t cos2 = agc_dp_cos(ip, a);                                    /* COS(A) / 2, 2^0 */
+    agc_dp_t sin2 = agc_dp_sin(a);                                    /* PD0 $2, 2^0 */
+    agc_dp_t cos2 = agc_dp_cos(a);                                    /* COS(A) / 2, 2^0 */
     agc_dp_t cos8 = agc_dp_shr(cos2, 2);                                  /* PD2 $8, 2^0 */
     agc_dp_t omc2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, cos2)); /* PD4 (1-cos A)/2, $2 2^0 */
 
@@ -533,7 +533,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const ui
     { /* Z, Y, X  */
         agc_dp_t r = agc_dp_div(ip, agc_dp_sub(ip, sym.row[i].c[i], pd0), pd2); /* quotient for SQRT, 2^0 */
 
-        cof_altcalc[i] = agc_dp_sqrt(ip, r); /* $ ROOT 2 */
+        cof_altcalc[i] = agc_dp_sqrt(r); /* $ ROOT 2 */
     }
 
     if (!AGC_ASSERT(pd2 >= 0))

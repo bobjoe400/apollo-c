@@ -465,7 +465,7 @@ static agc_status_t mu_radarang(agc_interp_t *ip)
     agc_dp_t     s  = agc_vec_dot(ip, agc_vec_neg(mu.ulc), mu.my); /* 2^2 */
 
     mu.sintheta = agc_dp_shl_round(ip, s, 1);
-    agc_dp_t c  = agc_dp_sqrt(ip, agc_dp_sub(ip, AGC_DP_QUARTER, agc_dp_sq(ip, mu.sintheta))); /* 2^1 */
+    agc_dp_t c  = agc_dp_sqrt(agc_dp_sub(ip, AGC_DP_QUARTER, agc_dp_sq(mu.sintheta))); /* 2^1 */
 
     c      = agc_dp_shl(ip, agc_dp_mul_trunc(c, mu.rlc), 1);
     mu.rxz = rz_norm(c, &mu.rxz_x1);
@@ -525,7 +525,7 @@ static agc_status_t mu_rate(agc_interp_t *ip)
     agc_dp_t r8; /* B-8 */
 
     r8            = mu_srr_star(ip, rdot, 2 - mu.x2);
-    agc_dp_t var  = agc_dp_mul(ip, agc_dp_sq(ip, r8), p->ratevar); /* B-4 */
+    agc_dp_t var  = agc_dp_mul(ip, agc_dp_sq(r8), p->ratevar); /* B-4 */
     agc_dp_t vmin = agc_dp_shr(agc_dp_from_sp(p->vvarmin), 16);    /* B-4 */
 
     if (agc_dp_sub(ip, vmin, var) >= 0)
@@ -556,7 +556,7 @@ static agc_status_t mu_rate(agc_interp_t *ip)
     mu.inc.bvector[1] = rz_vshift(ip, mu.inc.bvector[1], -x1);
     mu.inc.deltaq     = rz_shift(ip, dq, -x1);
     agc_dp_t rl       = rz_shift(ip, mu.rlc, -1 - x1);         /* SL* 0-1,1, B-24 */
-    agc_tp_t v        = agc_dp_mul_tp(agc_dp_sq(ip, rl), var); /* TP, B-44 */
+    agc_tp_t v        = agc_dp_mul_tp(agc_dp_sq(rl), var); /* TP, B-44 */
 
     mu.inc.variance = agc_tp_shift(ip, v, 4); /* SL4, TP  */
 
@@ -733,7 +733,7 @@ static agc_status_t mu_range(agc_interp_t *ip)
     mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2);                /* B-29/B-27 */
     int      x1   = 0;                                            /* NORM index, -(left shifts) */
     agc_dp_t n    = rz_norm(mu.rlc, &x1);                         /* 2^(S+X1) */
-    agc_tp_t v    = agc_dp_mul_tp(agc_dp_sq(ip, n), p->rangevar); /* TP, B12 */
+    agc_tp_t v    = agc_dp_mul_tp(agc_dp_sq(n), p->rangevar); /* TP, B12 */
 
     v               = mu_tp_sr(ip, v, -2 - x1); /* SR* 0-2,1 */
     v               = mu_tp_sr(ip, v, 0 - x1);

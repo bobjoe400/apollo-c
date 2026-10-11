@@ -275,7 +275,7 @@ agc_status_t rte_xt1lim(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t ma,
         return (AGC_STATUS_OK);
     }
 
-    *xt1lim = agc_tp_sqrt(ip, beta10); /* XT1LIM3, B5  */
+    *xt1lim = agc_tp_sqrt(beta10); /* XT1LIM3, B5  */
     if (!AGC_ASSERT(*xt1lim >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -376,7 +376,7 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs, const rte_v2t_t *
         return (agc_poodoo(RTE_POODOO_SQRT));
     }
 
-    root = agc_tp_sqrt(ip, pcon_tp); /* SQRT          */
+    root = agc_tp_sqrt(pcon_tp); /* SQRT          */
 
     agc_dp_t  k  = agc_tp_to_dp(agc_tp_norm(agc_dp_mul_tp(root, pl->theta3), &n1)); /* NORM: THETA3 SQRT(PCON), x 2^n1 */
     agc_dp_t  xn = agc_dp_norm(rs->x_t1, &n2);                                      /* NORM X2: X(T1), B5 x 2^n2 */
@@ -647,7 +647,7 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *p
 
     pl->lambda = agc_dp_div(ip, agc_dp_shr(r1_n, 1), rcon_n); /* SR1 DDV       */
     pl->x1     = ns - n1;                                     /* XSU,1 S1      */
-    rs->beta1  = agc_dp_add(ip, agc_dp_shr(agc_dp_sq(ip, rs->x_t2), 1), ONE_B1);
+    rs->beta1  = agc_dp_add(ip, agc_dp_shr(agc_dp_sq(rs->x_t2), 1), ONE_B1);
     pl->beta5  = agc_dp_mul_trunc(rs->beta1, pl->lambda);     /* STORE 28D     */
     agc_tp_t t = agc_dp_mul_tp(pl->beta5, pl->lambda);        /* BETA5 LAMBDA, TP B17 */
 
@@ -723,7 +723,7 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, r
         return (AGC_STATUS_OK);
     }
 
-    agc_dp_t lim = agc_tp_sqrt(ip, agc_tp_shift(ip, t, 7)); /* SL 7 SQRT B5  */
+    agc_dp_t lim = agc_tp_sqrt(agc_tp_shift(ip, t, 7)); /* SL 7 SQRT B5  */
 
     if (rs->phi2 >= 0)
     {

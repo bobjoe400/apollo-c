@@ -511,7 +511,7 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
     agc_timetheta_in_t in;                                                                /* TIMETHET inputs */
 
     in.csth = agc_dp_shl(ip, agc_vec_dot(ip, agc_vec_unit(ip, rsubc, NULL, NULL), ucsm), 1);
-    in.snth = agc_dp_sqrt(ip, agc_dp_sub(ip, NAV_ONEB_2, agc_dp_sq(ip, in.csth)));
+    in.snth = agc_dp_sqrt(agc_dp_sub(ip, NAV_ONEB_2, agc_dp_sq(in.csth)));
     in.rvec = rsubc;
     in.vvec = agc_vec_neg(vsubc);
     in.rvsw = false;

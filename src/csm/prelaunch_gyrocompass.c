@@ -910,7 +910,7 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
 
     buf[2] = d; /* ADERCOMP: STORE ERCOMP +4                         */
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
-    st     = prelaunch_posn17c(&ip);
+    st     = prelaunch_posn17c();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

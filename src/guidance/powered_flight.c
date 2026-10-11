@@ -225,8 +225,8 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     { /* TRIGLOOP (TR*GL*P): index 4, 2, 0 */
         t->cduraw[k]  = cdu_as_sp(cdu_yzx[k]);
         t->cduspot[k] = agc_guid_cdulogic(cdu_yzx[k]);  /* USPRCADR CDULOGIC */
-        t->coscdu[k]  = agc_dp_cos(&ip, t->cduspot[k]); /* COSINE, 2^1     */
-        t->sincdu[k]  = agc_dp_sin(&ip, t->cduspot[k]); /* SINE +1, 2^1    */
+        t->coscdu[k]  = agc_dp_cos(t->cduspot[k]); /* COSINE, 2^1     */
+        t->sincdu[k]  = agc_dp_sin(t->cduspot[k]); /* SINE +1, 2^1    */
     }
 }
 

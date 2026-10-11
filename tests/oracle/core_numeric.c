@@ -381,7 +381,7 @@ static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in, 
     {
         res->got  = agc_dp_sq_tp(a);
         res->exp  = mp;
-        res->got2 = agc_dp_sq(ip, a);
+        res->got2 = agc_dp_sq(a);
         res->exp2 = dpv(w[0], w[1]);
     }
     else if (strcmp(op, "SQRT") == 0)
@@ -400,11 +400,11 @@ static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in, 
     }
     else if (strcmp(op, "SIN") == 0)
     {
-        res->got = agc_dp_sin(ip, a);
+        res->got = agc_dp_sin(a);
     }
     else if (strcmp(op, "COS") == 0)
     {
-        res->got = agc_dp_cos(ip, a);
+        res->got = agc_dp_cos(a);
     }
     else if (strcmp(op, "SIGN") == 0)
     {
@@ -420,7 +420,7 @@ static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in, 
     }
     else if (strcmp(op, "TSQRT") == 0)
     {
-        res->got = agc_tp_sqrt(ip, in[0]);
+        res->got = agc_tp_sqrt(in[0]);
     }
     else if (strcmp(op, "TAD") == 0)
     {

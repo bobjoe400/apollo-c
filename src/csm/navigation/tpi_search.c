@@ -211,8 +211,8 @@ agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_j
  **********************************************************************/
 static agc_status_t tps_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t angle, agc_dp_t *t)
 {
-    agc_dp_t snth = agc_dp_sin(ip, angle); /* SNTH, 2^1 */
-    agc_dp_t csth = agc_dp_cos(ip, angle); /* CSTH, 2^1 */
+    agc_dp_t snth = agc_dp_sin(angle); /* SNTH, 2^1 */
+    agc_dp_t csth = agc_dp_cos(angle); /* CSTH, 2^1 */
 
     if (csth >= 0)
     {
@@ -252,7 +252,7 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
 
     x = agc_dp_abs(agc_vec_dot(ip, rz_unit(ip, rz->ract3), rz->e2));
 
-    x = agc_dp_add(ip, agc_dp_shl(ip, agc_dp_sqrt(ip, x), 1), TPS_DP002);
+    x = agc_dp_add(ip, agc_dp_shl(ip, agc_dp_sqrt(x), 1), TPS_DP002);
 
     if (!agc_flag_test(AGC_FLAG_KFLAG))
     {
@@ -635,7 +635,7 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
     a = rz_sl_star(ip, a, -5, x1); /* A  02D   */
     agc_dp_t a3;                   /* A^1.5, 2^43 / 2^40 */
 
-    a3 = agc_dp_mul_trunc(agc_dp_sqrt(ip, agc_dp_shr(a, 1)), a);
+    a3 = agc_dp_mul_trunc(agc_dp_sqrt(agc_dp_shr(a, 1)), a);
 
     a3         = rz_norm(a3, &x1);                          /* 00D      */
     agc_dp_t n = agc_dp_div(ip, agc_dp_shr(sqrtmu, 1), a3); /* n, scale by X1 */

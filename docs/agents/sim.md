@@ -75,3 +75,17 @@ protocol server + headless scripted scenarios via tools/sim_client.py
 first; GUI verification last. Close GUI windows when a check is done.
 The collapse lane is editing src/ (not src/sim) concurrently; do not edit
 flight code, record bugs in your note.
+
+## END GOAL (user, 2026-10-11): drop-in for yaAGC under the VirtualAGC GUI
+build/agc_sim must be launchable by the stock VirtualAGC launcher
+(SRC/virtualagc; see how it spawns yaAGC: command line, working directory,
+port, the --core rope path, --cfg, --resume/--debug flags) in place of
+yaAGC. Accept yaAGC's command line; map --core=<path> to the vehicle (a
+Comanche055 rope path -> CSM, Luminary099 -> LM); honour --port; ignore
+flags that have no meaning for us with a logged note. Speak the peripheral
+protocol exactly (packet format, channel mapping, the initial channel
+state yaDSKY2 expects on connect, the DSKY "standby"/RESTART lamp
+behaviour). Acceptance: the GUI sequences listed in docs/PLAN.md item 7,
+each also as a headless scenario. Document the one-line way to run it:
+`VirtualAGC` launcher with the AGC binary path pointed at build/agc_sim,
+or the equivalent manual command.

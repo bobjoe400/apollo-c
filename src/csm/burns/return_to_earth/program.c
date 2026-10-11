@@ -803,8 +803,8 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
             th = THETA210; /* UH.R(T2) < 0: 210 deg         */
         }
 
-        in.snth = agc_dp_sin(ip, th); /* P37V          */
-        in.csth = agc_dp_cos(ip, th);
+        in.snth = agc_dp_sin(th); /* P37V          */
+        in.csth = agc_dp_cos(th);
         agc_flag_clear(AGC_FLAG_RVSW);
         in.rvsw = false;
         in.rvec = rs->r_t1v;

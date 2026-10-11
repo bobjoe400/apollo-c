@@ -364,7 +364,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
     /* DSQ leaves a TP; BDSU DP1/4TH complements only MPAC, MPAC+1, so
      * MPAC+2 keeps the square's low word with its own sign, and SQRT
      * reads all three words: 1/4 - top(s^2) + low(s^2), at 2^2.      */
-    agc_dp_t sq   = agc_dp_sq(ip, nb->row[0].c[1]);                                                   /* top words of DSQ, 2^2 */
+    agc_dp_t sq   = agc_dp_sq(nb->row[0].c[1]);                                                   /* top words of DSQ, 2^2 */
     agc_tp_t sqtp = agc_dp_sq_tp(nb->row[0].c[1]);                                                    /* DSQ as a TP, 2^2 */
     agc_tp_t c2   = agc_tp_from_dp(agc_dp_sub(ip, AGC_DP_QUARTER, sq)) + (sqtp - agc_tp_from_dp(sq)); /* as SQRT sees it, 2^2 */
 
@@ -373,7 +373,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
         c2 = 0; /* ZEROVECS: sin slightly > 1/2       */
     }
 
-    agc_dp_t cos2 = agc_tp_sqrt(ip, c2); /* cos(CDUZ) in units of 2, 2^1 */
+    agc_dp_t cos2 = agc_tp_sqrt(c2); /* cos(CDUZ) in units of 2, 2^1 */
     agc_sp_t tem5 = AGC_SP_MAX;          /* DDOUBL overflow -> POSMAX, cos 2^0 */
 
     if (cos2 < AGC_DP_HALF)
@@ -431,7 +431,7 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
  **********************************************************************/
 static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 {
-    agc_dp_t d   = agc_dp_sq(ip, agc_vec_dot(ip, unz, unx));    /* (UNZ . UNX)^2, 2^2 */
+    agc_dp_t d   = agc_dp_sq(agc_vec_dot(ip, unz, unx));    /* (UNZ . UNX)^2, 2^2 */
     agc_dp_t lim = agc_dp_pack(FC_DOTSWFMX_HI, FC_DOTSWFMX_LO); /* DOTSWFMX: cos^2(15 deg)/16, 2^2 */
 
     if (agc_dp_sub(ip, d, lim) < 0)

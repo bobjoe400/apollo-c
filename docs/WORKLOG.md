@@ -516,3 +516,7 @@
 2026-10-11  User: collapse before proving. Re-sequenced status-handling-2:
             structural + collapse + returns first, then one EVA run on the
             finished tree. Lead killed the pre-edit-snapshot EVA runs.
+2026-10-11  User's end goal stated: run the Virtual AGC simulator GUI on our
+            C backend (agc_sim as a drop-in for yaAGC). PLAN item 7 and the
+            sim assignment rewritten around that; sim lane promoted to run
+            alongside the remaining reviews after the alone pass.

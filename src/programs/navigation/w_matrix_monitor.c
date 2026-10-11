@@ -130,11 +130,11 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (!csm)
     { /* LM WWBIAS, B-5 */
-        rz->rtheta = agc_dp_shr(agc_dp_sqrt(ip, wm_sum(ip, w, 2, rows)), 10);
+        rz->rtheta = agc_dp_shr(agc_dp_sqrt(wm_sum(ip, w, 2, rows)), 10);
     }
 
-    rz->rrate = agc_dp_sqrt(ip, vel);
-    rz->range = agc_dp_sqrt(ip, pos);
+    rz->rrate = agc_dp_sqrt(vel);
+    rz->range = agc_dp_sqrt(pos);
 
     if (agc_interp_test_ovf(ip))
     {

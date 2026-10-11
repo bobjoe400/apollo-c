@@ -408,7 +408,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rte
     {
         agc_dp_t a = agc_dp_sub(ip, ONE_B2, rs->rtegam2d); /* revs B2 */
 
-        rs->x_t2 = agc_dp_div(ip, agc_dp_cos(ip, a), agc_dp_sin(ip, a)); /* BDDV  */
+        rs->x_t2 = agc_dp_div(ip, agc_dp_cos(a), agc_dp_sin(a)); /* BDDV  */
     }
     else if (agc_dp_sub(ip, rs->r_t1, K1RTE) < 0)
     { /* RTE340        */
@@ -699,7 +699,7 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
     agc_vec_t uh3 = agc_vec_cross(ip, agc_vec_cross(ip, ur3, uv3), ur3); /* UH3, B1 */
 
     uh3              = agc_vec_unit(ip, uh3, NULL, NULL);
-    agc_vec_t alphav = agc_vec_add(ip, agc_vec_scale(ip, ur3, agc_dp_cos(ip, phie)), agc_vec_scale(ip, uh3, agc_dp_sin(ip, phie))); /* ALPHAV landing site, B1 */
+    agc_vec_t alphav = agc_vec_add(ip, agc_vec_scale(ip, ur3, agc_dp_cos(phie)), agc_vec_scale(ip, uh3, agc_dp_sin(phie))); /* ALPHAV landing site, B1 */
 
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_flag_clear(AGC_FLAG_LUNAFLAG);
