@@ -484,3 +484,5 @@
             libclang fallback; adds `make prove`. Rule-5 project average is
             1.51 after real-guard removal; target 2.0 reconsidered after the
             pass (no padding assertions).
+2026-10-11  frama-c-base installed (user). status-handling-2 launches alone
+            when review-dap-csm reports.

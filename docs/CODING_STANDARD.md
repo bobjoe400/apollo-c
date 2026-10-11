@@ -178,3 +178,6 @@ scale, a channel-bit test named after the bit) or an accessor to erasable or
 module state (the module boundary, where the entry check lives). A one-line
 function that is merely an expression over its parameters is inlined at
 every caller, whatever the caller count.
+* `frama-c -eva` (Frama-C value analysis) to prove or refute assertions
+  statically; `make prove` runs the project configuration. A guard EVA
+  proves VALID on every path is dead code and is deleted.
