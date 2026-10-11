@@ -38,3 +38,5 @@ COGA, X, KEPC2), imu (DELCOMP 1-cos A; replace word_pair_t), guid-landing
 (TBUP/TGO; replace agc_lm_words_t), guid-entry (A0/V1/LEWD words -> L/D),
 nav-aux (NODI COS, SR1 ASIN), prog-align (word_forms.c), dap-csm / dap-lm
 (their pair types). Lanes already reviewed get this in the follow-up pass.
+
+- imu follow-up (from review-dap-csm): agc_imu_hw_set_cducmd rejects counts beyond +/-192 but a full needle swing writes up to +/-768; widen to the full SP range.

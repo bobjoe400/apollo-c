@@ -486,3 +486,7 @@
             pass (no padding assertions).
 2026-10-11  frama-c-base installed (user). status-handling-2 launches alone
             when review-dap-csm reports.
+2026-10-11  review-dap-csm DONE: QUARTER 8192->4096 (rope BIT13), T6START
+            scan fix, word pairs in TVC/RCS, oracle 533/0 at tol 0, 63 void
+            casts + 106 guaranteed guards removed. Lane density 0.43.
+            Launching status-handling-2 ALONE.
