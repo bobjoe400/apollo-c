@@ -20,6 +20,7 @@
 #include "../../src/exec/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 
@@ -58,6 +59,8 @@ static void check(bool ok, int line, const char *text)
 #define TJ_WOKEN   ((agc_job_id_t) 0x0F11)
 #define TJ_HOG     ((agc_job_id_t) 0x0F12)
 #define TJ_PRIO    ((agc_job_id_t) 0x0F13)
+#define TJ_ACOS    ((agc_job_id_t) 0x0F14) /* ACOS out of range: 1301 */
+#define TJ_SQRT    ((agc_job_id_t) 0x0F15) /* SQRT of a negative: 1302 */
 #define TT_A       ((agc_task_id_t) 0x0F41)
 #define TT_B       ((agc_task_id_t) 0x0F42)
 #define TT_C       ((agc_task_id_t) 0x0F43)
@@ -71,6 +74,7 @@ static agc_task_id_t task_log[LOG_N];
 static int           task_n;
 static int           prio_nj1; /* NEWJOB after PRIOCHNG 25 */
 static int           prio_nj2; /* NEWJOB after PRIOCHNG 5  */
+static agc_dp_t      interp_result; /* TJ_ACOS / TJ_SQRT MPAC   */
 
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 {
@@ -104,6 +108,15 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
         {
             st = agc_exec_job_yield(TJ_A);
         }
+    }
+    else if (ctx->id == TJ_ACOS || ctx->id == TJ_SQRT)
+    {
+        agc_interp_t ip;
+
+        agc_interp_init(&ip);
+        interp_result = (ctx->id == TJ_ACOS) ?
+                        agc_dp_acos(&ip, AGC_DP_MAX) :
+                        agc_dp_sqrt(&ip, -AGC_DP_HALF);
     }
     else if (ctx->id == AGC_JOB_ENDOFJOB)
     {
@@ -595,10 +608,30 @@ static void test_inhint(void)
     CHECK(!agc_interrupts_inhibited());
 }
 
+/* ALARM 1301 / ABORT 1302 latched by ACOS / SQRT in a job are raised by
+ * the executive when the job returns.                                  */
+static void test_interp_alarms(void)
+{
+    reset(AGC_VEHICLE_CSM);
+    CHECK(agc_exec_novac(010, TJ_ACOS) == AGC_STATUS_OK);
+    CHECK(run_all() == 1);
+    CHECK(agc_erase_failreg(0) == 01301);
+    CHECK(!agc_exec_restart_pending()); /* ALARM: the job went on     */
+    CHECK(agc_interp_take_alarm() == 0);
+
+    reset(AGC_VEHICLE_CSM);
+    CHECK(agc_exec_novac(010, TJ_SQRT) == AGC_STATUS_OK);
+    (void) run_all();
+    CHECK(interp_result == 0);
+    CHECK(agc_erase_failreg(0) == 01302);
+    CHECK(agc_interp_take_alarm() == 0);
+}
+
 int main(void)
 {
     test_priority_order();
     test_vac_exhaustion_1201();
+    test_interp_alarms();
     test_core_exhaustion_1202();
     test_sleep_wake();
     test_prio_change();

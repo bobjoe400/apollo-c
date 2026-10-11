@@ -285,3 +285,8 @@
 2026-10-10  Usage-limit cutoff killed integrate mid-work (was implementing
             the core alarm latch / exec service point). Checkpoint committed;
             relaunching with resume semantics.
+2026-10-10  Collapse wave tooling: GCC -fcallgraph-info verified (per-TU VCG
+            with static flags and call-site positions), cflow 1.7 and
+            python3-clang-14 installed and verified. collapse.md rewritten:
+            computed candidates, libclang extents, scripted inlining,
+            guard de-duplication, review gate before applying.

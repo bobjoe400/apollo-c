@@ -79,6 +79,65 @@ sqrt/asin/acos).
   fixed (navaux a1 overflowed 2^5; integration JOBSLEEP is void now; dsky
   V21N01 at 12345 -> ECADR image covers 0-77777). nav GRP2PC assertion
   fixed (type C phase is 0402, not 2).
-- TODO 5b sim stub main, make check
-- TODO status-handling open items (N85 jobs, CLEANDSP, 1301/1302)
-- TODO 6 note, MODULE_STATUS
+- DONE 4e fresh-start / power-on: DOFSTART/STARTSB2 already reset every
+  erasable the AGC resets through exec_up_dofstart/exec_up_startsb2. The
+  lanes' "reset for tests" blocks (alignment RAM, rendezvous, LM landing/
+  ascent, entry lexicon) are cleared by the new host agc_power_on(v)
+  (idle.c, exec.h), not by DOFSTART: the AGC keeps erasable through a
+  fresh start. CALCSMSC exists once (imu); agc_align_calcsmsc is only the
+  CDUTRIG struct -> vectors call. AGC_JOB_GOPROG gone. Restart-table
+  delays (P40TMP, SAVET-30, ZOOMTIME, S61DT, CM/GYMDT) read the owners.
+- DONE 5b src/sim/main.c: agc_sim [csm|lm] [cs] -> agc_power_on,
+  DOFSTART, TIME1/TIME3 tick + executive (P00, no alarms, both vehicles).
+  `make`, `make test` (21 binaries, libagc_debug.a), `make check`
+  (0 hard, format-check clean, style report only) all exit 0; oracle
+  tests (conic 299, core_numeric) pass.
+- DONE status-handling items: N85 GODSPRET continuations are
+  AGC_JOB_RCS_BURN_VG_DISPLAYED / AGC_JOB_REDO6_7_VG_DISPLAYED in the
+  registry; CLEANDSP without continuation ends the job when woken
+  (documented deviation in display_if.c); ALARM 1301 / ABORT 1302: core
+  latches (agc_interp_take_alarm, now also TP SQRT), exec raises it when
+  the job/task returns (exec_service_interp_alarm). Test in tests/exec.
+- DONE removed agc_conic_csmconic/lemconic (unused second copy of the
+  integration's CONIC path; its SURFFLAG branch was a stub).
+- DONE 6 note, MODULE_STATUS.
+
+## Decisions
+* One registry: tools/registry.tsv is the source; tools/gen_registry.py
+  writes include/agc/exec/jobs.h and src/exec/dispatch.c. Add a job by
+  adding a row and re-running the generator, never by hand.
+* Layering exceptions in exec are exactly three files: dispatch.c,
+  nouns.c (agc_dispatch_noun) and change_program/idle.c (exec_up_* and
+  agc_power_on). Everything else in src/exec calls only core.
+* Interpreter alarms raised at job/task return, not at the instruction
+  (DEVIATION in alarm.c): core cannot call exec.
+* agc_power_on is a host function (no AGC counterpart); DOFSTART keeps
+  the AGC's semantics.
+
+## Deferred (lane stubs, not integration items)
+* DELRSPL (P11 V82 splash error, AUGEKUGL tables, CM pp.643-647): the
+  V82 job does INTWAKE itself when it returns UNIMPLEMENTED.
+* P06 standby/POSTAND (imu/mode.c), CSM prelaunch IMUTEST etc., LM
+  systems test, V27 fixed-memory display (rope not modelled).
+* Noun components with no C owner: N08 ALMCADR +1/+2, LM N70/N71 AOTCODE
+  +1/+2.
+* Timing deviations kept: PRIOCHNG cannot suspend a running C job.
+* Sim stub has no T4RUPT/T5RUPT/T6RUPT clock or DSKY; the sim lane owns it.
+
+## Lessons
+* Run `make format` before every `make check`: Uncrustify reflows lines
+  edited by scripts (spatch output especially).
+* `ar r` replaces archive members by base name; with several clock.o /
+  state.o the archive silently lost objects. Rebuild the archive from
+  scratch (rm then ar rcs).
+* A test-local stand-in that shadows a library symbol hides link-order
+  bugs; link tests against the real library and keep only documented
+  doubles (exec's dispatch_job/task).
+* AGC_ASSERT's debug form must have the same value as the release form
+  (`(report, false)`), or flow analysis (-Wmaybe-uninitialized) differs
+  between the library and the debug library.
+* Before adding a "missing" routine, grep for a second copy: several
+  lanes had translated the same AGC routine (CSMCONIC/LEMCONIC, SETMINDB,
+  CDUTCMD storage, RADMODES); keep the owner's and delete the rest.
+* Lane "reset" functions are power-on helpers, not DOFSTART: the AGC
+  never clears program erasable on a fresh start.

@@ -92,3 +92,7 @@ Language: C11, no extensions. Build flags (Makefile):
 * `ctags -R --c-kinds=+px -x` for symbol inventories.
 * `clangd` (with `bear -- make` or a generated compile_commands.json) for
   cross-reference checks once the tree compiles.
+* `gcc -fcallgraph-info=su,da` for the authoritative per-TU call graph
+  (nodes carry static/extern; edges carry call-site line:col); `cflow` for
+  cross-TU edges; `python3-clang` (libclang) for function extents and AST
+  comparisons. Never derive a call graph by reading or grepping.
