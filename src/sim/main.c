@@ -4,8 +4,9 @@
  * Usage: agc_sim [--vehicle csm|lm] [--port N] [--max-cs N] [--script F]
  *                [--headless | --lockstep | --fast] [csm|lm] [cs]
  *
- *   (default)   peripheral server: listens on ports N..N+9 (default 19697,
- *               as yaAGC) and runs in real time, 1 cs of AGC time per
+ *   (default)   peripheral server: listens on ports N..N+9 (default 19697
+ *               for the CSM, 19797 for the LM: the Virtual AGC port
+ *               conventions) and runs in real time, 1 cs of AGC time per
  *               10 ms; yaDSKY2, yaTelemetry, ... connect as to yaAGC.
  *   --fast      server without real-time pacing.
  *   --lockstep  server whose clock advances only when a client asks
@@ -32,7 +33,8 @@
 #include "agc/exec/exec.h"
 #include "internal.h"
 
-#define SIM_DEFAULT_PORT 19697
+#define SIM_PORT_CSM     19697 /* Virtual AGC: CM peripherals 19697-19706 */
+#define SIM_PORT_LM      19797 /* LM peripherals 19797-19806              */
 #define SIM_DEFAULT_CS   1000ul /* headless default run              */
 #define SIM_MAX_RUN_CS   0x0FFFFFFFul
 #define SIM_TICK_NS      10000000L /* 10 ms                           */
@@ -140,7 +142,7 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 
     o->vehicle = AGC_VEHICLE_CSM;
     o->mode    = SIM_MODE_REALTIME;
-    o->port    = SIM_DEFAULT_PORT;
+    o->port    = 0; /* by vehicle unless --port */
     o->max_cs  = 0;
     o->script  = NULL;
 
@@ -156,6 +158,11 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
         }
 
         i += used;
+    }
+
+    if (o->port == 0)
+    {
+        o->port = (o->vehicle == AGC_VEHICLE_LM) ? SIM_PORT_LM : SIM_PORT_CSM;
     }
 
     if (o->mode == SIM_MODE_HEADLESS && o->max_cs == 0u)

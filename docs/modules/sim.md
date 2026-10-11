@@ -25,3 +25,9 @@ the same protocol.
 
 ## Progress
 - DONE design (this note)
+- DONE src/sim/internal.h, clock.c (counters, priority interrupts, exec), channels.c (outputs, 0163, drives, inputs), counters.c (PINC..SHANC map), socket.c (server, packets, lockstep), script.c (--script), main.c (modes; power-on = GOJAM -> GOPROG)
+- DONE tools/sim_client.py (lockstep or --connect/--realtime; relay decoding as yaDSKY2; scenario language)
+- DONE cross-check: same client script against tools/oracle/bin/yaAGC + Comanche055 rope: P00, V06N36, V35 sequences match (relay order differs slightly during V35)
+- DONE yaDSKY2 (virtualagc, built against Debian wx 3.2 unpacked in the scratchpad) connected to agc_sim in real time, keys clicked on yaDSKY2 via XTest: P00, V06N36 clock, V35 lights, V16N36 monitor, both vehicles: docs/modules/sim/yadsky2_{csm,lm}.png
+- DONE Makefile: sim, sim-debug (debug lib, assertions reported), scenarios
+- DONE yaTelemetry (built the same way) on LM port 19800 decodes agc_sim's downlink: Coast and Align list (ID 77777, SYNC 77340): docs/modules/sim/yatelemetry_lm.png; default ports by vehicle (CSM 19697, LM 19797)

@@ -310,3 +310,7 @@
             scope; protection only for helpers whose header names an AGC
             label DISTINCT from the caller's (page-only inheritance does not
             protect). Phase 2 (apply) running.
+2026-10-10  User paused the sim lane (GUI peripherals interfering with their
+            desktop). Sim agent stopped mid-way through tools/sim_client.py.
+            collapse phase 2 and oracle-cases continue (command-line only).
+            Sim resumes headless-first on user go.

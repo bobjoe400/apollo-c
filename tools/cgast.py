@@ -30,11 +30,13 @@ PARSE_ARGS = ['-std=c11', '-Iinclude', '-fparse-all-comments',
 _INDEX = None
 
 
-def parse(path, extra=()):
+def parse(path, extra=(), text=None):
+    """Parse path (or `text` standing in for its contents)."""
     global _INDEX
     if _INDEX is None:
         _INDEX = ci.Index.create()
-    return _INDEX.parse(path, args=PARSE_ARGS + list(extra))
+    unsaved = [(path, text)] if text is not None else None
+    return _INDEX.parse(path, args=PARSE_ARGS + list(extra), unsaved_files=unsaved)
 
 
 def kids(n):

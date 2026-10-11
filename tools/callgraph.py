@@ -105,18 +105,99 @@ def parse_cflow(path):
 
 # ---- AGC labels -------------------------------------------------------------
 
+# yaYUL operations that define data, not code: a label on one of these is an
+# erasable, constant or address word, not a routine or paragraph
+DATA_OPS = {'EQUALS', '=', 'ERASE', 'OCT', 'OCTAL', '2OCT', 'DEC', 'DEC*', '2DEC', '2DEC*', 'VN',
+            'NV', 'MM', '2CADR', '2BCADR', '2FCADR', 'GENADR', 'ECADR', 'CADR', 'FCADR', 'ADRES',
+            'REMADR', 'BBCON', 'BBCON*', 'DNPTR', 'DNCHAN', '1DNADR', '2DNADR', '3DNADR', '4DNADR',
+            '5DNADR', '6DNADR', '=MINUS', '=ECADR', 'MEMORY', 'SETLOC', 'BANK', 'BLOCK',
+            'EBANK=', 'SBANK=', 'COUNT', 'COUNT*', 'CHECK=', '=PLUS', 'SUBRO', 'OCT*'}
+
+
 def agc_labels():
+    """(all labels, code labels) of both ropes; POS gets label -> [(file, line)]."""
     src = os.environ.get('AGC_SRC', DEFAULT_SRC)
-    labels = set()
+    labels, code = set(), set()
     for rope in ('Comanche055', 'Luminary099'):
         for p in glob.glob(os.path.join(src, rope, '*.agc')):
             with open(p, encoding='utf-8', errors='replace') as fh:
-                for ln in fh:
+                for n, ln in enumerate(fh, 1):
                     if ln and not ln[0].isspace() and ln[0] != '#':
-                        tok = ln.split()[0]
-                        if tok and not tok.startswith('$'):
-                            labels.add(tok)
-    return labels
+                        f = ln.split('#')[0].split()
+                        if not f or f[0].startswith('$'):
+                            continue
+                        labels.add(f[0])
+                        if len(f) == 1 or f[1] not in DATA_OPS:
+                            code.add(f[0])
+                            POS.setdefault(f[0], []).append((os.path.basename(p), n))
+    return labels, code
+
+
+POS = {}
+
+
+def _clean(t):
+    return t.rstrip('.:,')
+
+
+def _label_tokens(text, code):
+    """Code labels in text; "MAJ+/MAJ-/GMERGE" is split at '/' unless the
+    whole token is a label (GOMAXL/D)."""
+    out = []
+    for t in CAPS_RE.findall(text):
+        t = _clean(t)
+        if t in code:
+            out.append(t)
+        else:
+            out.extend(_clean(x) for x in t.split('/') if _clean(x) in code)
+    return [t for t in out if t not in LABEL_STOP]
+
+
+def head_labels(comment, code):
+    """Code labels the comment names as its own: the opening label, every
+    label of an all-capitals head ("CM V06N9933 / V6N99INP: ..."), and
+    explicit "label X" references."""
+    if not comment:
+        return set()
+    first = cgast.first_comment_line(comment).lstrip('-').strip()
+    head = re.split(r'[:(]|--| - ', first, maxsplit=1)[0]
+    if re.search(r'[a-z]', head):
+        m = CAPS_RE.match(first)
+        text = m.group(0) if m else ''
+    else:
+        text = head
+    text += ' ' + ' '.join(re.findall(r'\blabels?\s+([A-Z0-9+\-/.*]+)', comment))
+    return set(_label_tokens(text, code))
+
+
+def caller_cover(comment, code):
+    """What a caller's comment claims as its own: its head labels and the AGC
+    lines spanned by "A .. B" / "A to B" ranges in its first line.  Routines it merely names
+    in prose ("NCOARSE; GYROTRIM; GOTO SURFDISP") stay distinct."""
+    if not comment:
+        return set(), []
+    labels = head_labels(comment, code)
+    spans = []
+    for a, b in re.findall(r'([A-Z][A-Z0-9+\-./]*)\s*(?:\.\.|\bto\b|--)\s*([A-Z][A-Z0-9+\-./]*)',
+                          cgast.first_comment_line(comment)):
+        a, b = _clean(a), _clean(b)
+        for fa, la in POS.get(a, []):
+            for fb, lb in POS.get(b, []):
+                if fa == fb and la <= lb:
+                    spans.append((fa, la, lb))
+    return labels, spans
+
+
+def own_labels(helper_comment, caller_comment, code):
+    """Helper labels that are neither the caller's nor inside its range."""
+    mine = head_labels(helper_comment, code)
+    labels, spans = caller_cover(caller_comment, code)
+    out = set()
+    for t in mine - labels:
+        if any(f == fs and lo <= ln <= hi for f, ln in POS.get(t, []) for fs, lo, hi in spans):
+            continue
+        out.add(t)
+    return out
 
 
 def has_agc_label(comment, labels):
@@ -359,7 +440,7 @@ def main(argv):
     def in_dir(t, d):
         return defined.get(t, {}).get('file', '').startswith(d)
 
-    labels = agc_labels()
+    labels, code_labels = agc_labels()
     public, proto_comment = header_decls()
 
     # libclang: extents, lines, comments for every src definition
@@ -377,13 +458,15 @@ def main(argv):
             if not com and fn.spelling in proto_comment:
                 com = proto_comment[fn.spelling][1]
             info[title] = {'lines': cgast.body_code_lines(src_lines, fn), 'comment': com,
-                           'agc_label': has_agc_label(com, labels), 'first': fn.extent.start.line,
+                           'agc_label': has_agc_label(com, labels),
+                           'first': fn.extent.start.line,
                            'last': fn.extent.end.line}
 
     # candidates
     cand = {}
     kept_label = 0
     single = 0
+    protected = {}
     for t, n in defined.items():
         if not n['file'].startswith('src/') or n['file'].startswith('src/sim/') or n['name'] == 'main':
             continue
@@ -396,10 +479,17 @@ def main(argv):
         if n['name'] in public:
             continue
         single += 1
-        if info.get(t, {}).get('agc_label'):
+        # protected only by an AGC label of its own, distinct from the
+        # caller's (lead decision 2026-10-10): a page reference or the
+        # parent's label/page range does not protect a helper
+        own = own_labels(info.get(t, {}).get('comment', ''), info.get(c, {}).get('comment', ''),
+                         code_labels)
+        old = bool(info.get(t, {}).get('agc_label'))
+        if own:
             kept_label += 1
+            protected[t] = {'caller': c, 'sites': sites, 'labels': own}
             continue
-        cand[t] = {'caller': c, 'sites': sites}
+        cand[t] = {'caller': c, 'sites': sites, 'protection': 'page-only' if old else 'none'}
         tus_needed[n['file']].append(('helper', t))
         tus_needed[defined[c]['file']].append(('site', t))
 
@@ -510,11 +600,14 @@ def main(argv):
         fh.write('}\n')
 
     # collapse_candidates.tsv, smallest helper first
-    rows.sort(key=lambda t: (info[t]['lines'], defined[t]['file'], defined[t]['name']))
+    # the candidates of the first rule first, then the delta of the label
+    # rule: page-only (now candidates) and label-distinct (still protected)
+    rows.sort(key=lambda t: (cand[t]['protection'] != 'none', info[t]['lines'],
+                             defined[t]['file'], defined[t]['name']))
     with open(os.path.join(opt.out, 'collapse_candidates.tsv'), 'w', encoding='utf-8') as fh:
         fh.write('helper\tfile\tline\tcaller\tsite_line\tsites\thelper_lines\tcaller_lines\t'
                  'guards\tguards_dedup\tdedup_lines\tmerged_lines\tfits60\tshape\tmech\trefuse\t'
-                 'root\troot_merged\thelper_comment\n')
+                 'root\troot_merged\tprotection\thelper_comment\n')
         for t in rows:
             c = cand[t]
             r = root_of(t)
@@ -524,7 +617,17 @@ def main(argv):
                 str(c['guards']), str(c['removed']), str(c['removed_lines']), str(c['merged']),
                 'yes' if c['merged'] <= 60 else 'no', c['shape'],
                 'yes' if not c['reasons'] else 'no', ';'.join(c['reasons']) or '-',
-                disp(r), str(root_est[r]),
+                disp(r), str(root_est[r]), c['protection'],
+                cgast.first_comment_line(info[t]['comment']).replace('\t', ' ')[:100] or '-']) + '\n')
+        for t in sorted(protected, key=lambda x: (info[x]['lines'], defined[x]['file'])):
+            if not info[t]['agc_label']:
+                continue
+            p = protected[t]
+            fh.write('\t'.join([
+                defined[t]['name'], defined[t]['file'], str(defined[t]['line']), disp(p['caller']),
+                '-', str(p['sites']), str(info[t]['lines']), str(info.get(p['caller'], {}).get('lines', '')),
+                '-', '-', '-', '-', '-', '-', 'kept', 'label-distinct:' + ','.join(sorted(p['labels'])),
+                '-', '-', 'label-distinct',
                 cgast.first_comment_line(info[t]['comment']).replace('\t', ' ')[:100] or '-']) + '\n')
 
     # cflow cross-check of extern -> extern edges in src/
@@ -544,7 +647,8 @@ def main(argv):
 
     nsrc = sum(1 for n in defined.values() if n['file'].startswith('src/'))
     print(f'functions in src/: {nsrc}; edges: {len(edges)}; single-caller helpers: {single} '
-          f'(kept for AGC label: {kept_label}); candidates: {len(rows)}; '
+          f'(kept for a distinct AGC label: {kept_label}); candidates: {len(rows)} '
+          f'(page-only: {sum(1 for t in rows if cand[t]["protection"] == "page-only")}); '
           f'mechanical: {sum(1 for t in rows if not cand[t]["reasons"])}; '
           f'fits 60 after merge: {sum(1 for t in rows if cand[t]["merged"] <= 60)}')
     missing = [t for t in cand if t not in rows]

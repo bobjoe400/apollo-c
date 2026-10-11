@@ -2,45 +2,61 @@
 """inline_one.py -- splice one single-use helper into its only caller.
 
 Usage (from the repo root):
-    python3 -I tools/inline_one.py HELPER CALLER [--file src/x.c] [--dry-run]
+    python3 -I tools/inline_one.py HELPER CALLER [--file src/x.c]
+                                   [--caller-file src/y.c] [--dry-run]
+                                   [--max-lines 60]
 
-The file defaults to the helper's row in docs/overview/collapse_candidates.tsv.
-Helper and caller must be defined in the same file.  The script refuses
-(exit 2, reason on stdout) unless the shape is mechanical:
+--file (the helper's file) defaults to the helper's row in
+docs/overview/collapse_candidates.tsv; --caller-file defaults to the
+helper's file, else the caller's row in docs/overview/callgraph.tsv.
+Everything is decided on the libclang AST; the script refuses (exit 2,
+reason on stdout) whatever it cannot transform exactly.
 
-  * exactly one call site, and the call is a full statement (void helper),
-    or `return (helper(...));` with the caller's return type;
-  * every argument is the identifier the helper names its parameter, or a
-    constant (literal or enum constant; substituted into the body);
-  * no `return` is left in the helper except its trailing one after the
-    guard de-duplication below -- unless the call is in tail position
-    (`return (helper(...))`, or the last statement of a void caller), where
-    the helper's returns are the caller's returns;
-  * a call under a case label is replaced by a braced block;
-  * the helper does not assign its parameters, and none of its locals or
-    the file-scope names it uses collides with a name in the caller.
+Shapes
+  stmt    `helper(args);` (void helper): replaced by the body.
+  return  `return (helper(args));`: replaced by the body; the helper's
+          returns become the caller's (same return type).
+  value   `T x = helper(args);`, `x = helper(args);` or the call inside
+          the controlling expression of an if/switch, an expression
+          statement or a return: the body (without its trailing return)
+          goes in front of that statement and the call becomes the
+          returned expression.  Refused when the call is under && || ?:,
+          in a loop condition, or next to another call in the statement.
 
-Guard de-duplication: a helper guard `if (!AGC_ASSERT(c)) { return ...; }`
-is dropped when every conjunct of c (after replacing the helper's
-parameters by the caller's arguments) is already asserted by a caller guard
-that dominates the call and has not been invalidated since (assignment to a
-variable it reads, a write through a pointer or a call when it reads memory
-or calls).  Comparison is on the libclang AST, not on text.
+Arguments
+  * same identifier as the parameter, or the parameter not otherwise
+    needed: used as is;
+  * a constant (literal, enum constant) or another variable, with the
+    parameter never assigned in the helper: substituted for the parameter;
+  * anything else: `T param = <arg>;` at the top of the inlined block.
 
-The merged caller must stay <= --max-lines (60) code lines.
+Returns
+  * The helper's trailing return goes (stmt) or becomes the value (value
+    shapes).  In return/tail position all returns stay.
+  * A helper guard `if (!AGC_ASSERT(c)) { return ...; }` whose facts the
+    caller has already asserted at the call (structural comparison after
+    substituting the arguments, invalidated by writes/calls in between) is
+    dropped.  A guard that checks something new stays and returns what the
+    caller's own guards return (its first guard; else `return;`,
+    `return (AGC_STATUS_BAD_ARG);` or `return (false);` by return type).
+  * Any other early return is refused.
 
-Then: the helper's header comment becomes a paragraph comment at the call
-site (with the call's own trailing comment, if any), the body is
-re-indented to the call's depth, the helper definition and any prototype
-(same file or a private src/ header) are deleted, the files are written,
-the .c file is compiled with the Makefile flags, and every file is
-restored if the compile fails (exit 1).  --dry-run compiles the new text
-from stdin and prints the diff without writing.
+Names: helper locals go in unbraced when no caller name collides; in a
+braced block when the clash is only with names not visible at the call
+(and the statement is not a declaration); otherwise refused.
+
+The helper's header comment becomes a paragraph comment at the call site
+(with the call's own trailing comment), the helper definition and its
+prototypes (its file, a private src/ header) are deleted, the merged caller
+must stay <= --max-lines code lines (rule 4), the files are written, every
+changed .c is compiled with the Makefile flags, and all files are restored
+if one fails (exit 1).  Indentation is approximate: run uncrustify after.
 """
 import argparse
 import csv
 import difflib
 import os
+import re
 import subprocess
 import sys
 
@@ -53,220 +69,458 @@ K = cgast.K
 CFLAGS = ['-std=c11', '-Wall', '-Wextra', '-Wpedantic', '-Wconversion', '-Wsign-conversion',
           '-Wshadow', '-Wstrict-prototypes', '-Wmissing-prototypes', '-Wundef', '-Wcast-qual',
           '-Wswitch-enum', '-Werror', '-O2', '-Iinclude']
+SIMPLE = re.compile(r'^[A-Za-z_]\w*$|^[0-9][0-9A-Za-z_.]*$')
 
 
 class Refuse(Exception):
     pass
 
 
-def lookup_file(helper, caller):
-    path = os.path.join('docs', 'overview', 'collapse_candidates.tsv')
+# ---- lookups ------------------------------------------------------------------
+
+def _tsv(path):
     if not os.path.exists(path):
-        raise Refuse('no --file and no docs/overview/collapse_candidates.tsv')
+        return []
     with open(path, encoding='utf-8') as fh:
-        for row in csv.DictReader(fh, delimiter='\t'):
+        return list(csv.DictReader(fh, delimiter='\t'))
+
+
+def lookup_files(helper, caller, hfile, cfile):
+    if hfile is None:
+        for row in _tsv(os.path.join('docs', 'overview', 'collapse_candidates.tsv')):
             if row['helper'] == helper and row['caller'] == caller:
-                return row['file']
-    raise Refuse(f'{helper} -> {caller} is not in collapse_candidates.tsv; pass --file')
+                hfile = row['file']
+                break
+    if hfile is None:
+        raise Refuse(f'{helper} -> {caller} not in collapse_candidates.tsv; pass --file')
+    if cfile is None:
+        rows = [r for r in _tsv(os.path.join('docs', 'overview', 'callgraph.tsv'))
+                if r['callee'] == caller]
+        same = [r for r in rows if r['file'] == hfile]
+        if same or not rows:
+            cfile = hfile
+        elif len(rows) == 1:
+            cfile = rows[0]['file']
+        else:
+            raise Refuse(f'{caller} is defined in several files; pass --caller-file')
+    return hfile, cfile
 
 
-def comment_start(lines, first_line):
-    """1-based first line of the comment block attached above first_line."""
-    c = cgast.header_comment(lines, first_line)
-    return first_line - c.count('\n') if c else first_line
+# ---- text helpers (byte offsets, as libclang reports them) -------------------
+
+class Text:
+    def __init__(self, path):
+        self.path = path
+        with open(path, 'rb') as fh:
+            self.b = fh.read()
+
+    def line_start(self, off):
+        return self.b.rfind(b'\n', 0, off) + 1
+
+    def line_end(self, off):
+        """Offset just after the newline of the line holding off."""
+        e = self.b.find(b'\n', off)
+        return len(self.b) if e < 0 else e + 1
+
+    def semi_after(self, off):
+        j = self.b.find(b';', off)
+        if j < 0:
+            raise Refuse('layout: missing ;')
+        return j + 1
+
+    def rest_of_line(self, off):
+        return self.b[off:self.line_end(off)].decode().strip()
+
+    def indent_at(self, off):
+        ls = self.line_start(off)
+        ln = self.b[ls:self.line_end(off)].decode()
+        return len(ln) - len(ln.lstrip(' '))
+
+    def render(self, lo, hi, edits):
+        """Bytes [lo, hi) with the edits (start, end, bytes) inside applied."""
+        out, pos = [], lo
+        for a, b, rep in sorted(e for e in edits if lo <= e[0] and e[1] <= hi):
+            if a < pos:
+                raise Refuse('layout: overlapping edits')
+            out.append(self.b[pos:a])
+            out.append(rep)
+            pos = b
+        out.append(self.b[pos:hi])
+        return b''.join(out)
 
 
-def stmt_end(lines, cur):
-    """(last line, column after ';') of the statement whose expression is cur."""
-    ln, col = cur.extent.end.line, cur.extent.end.column - 1
-    for i in range(ln - 1, min(ln + 3, len(lines))):
-        start = col if i == ln - 1 else 0
-        j = lines[i].find(';', start)
-        if j >= 0:
-            return i + 1, j + 1
-    raise Refuse('layout: statement end not found')
+def full_lines(t, a, b):
+    """Expand [a, b) to whole lines, plus one following blank line."""
+    a = t.line_start(a)
+    b = t.line_end(b - 1 if b > a else b)
+    nxt = t.line_end(b) if b < len(t.b) else b
+    if b < len(t.b) and not t.b[b:nxt].strip():
+        b = nxt
+    return a, b
 
 
-def indent_of(s):
-    return len(s) - len(s.lstrip(' '))
+def stmt_span(t, s):
+    """[start, end) of a statement including its ';' and trailing comment."""
+    a = s.extent.start.offset
+    b = s.extent.end.offset
+    if s.kind not in (K.IF_STMT, K.COMPOUND_STMT, K.SWITCH_STMT, K.FOR_STMT, K.WHILE_STMT):
+        b = t.semi_after(b)
+    return a, b
 
 
-def reindent(block, delta):
+def strip_parens(s):
+    s = s.strip()
+    while s.startswith('(') and s.endswith(')'):
+        depth = 0
+        for i, ch in enumerate(s):
+            depth += ch == '('
+            depth -= ch == ')'
+            if depth == 0 and i < len(s) - 1:
+                return s
+        s = s[1:-1].strip()
+    return s
+
+
+def reindent(text, delta):
     out = []
-    for ln in block:
+    for ln in text.splitlines(True):
         if not ln.strip():
             out.append('\n')
         elif delta >= 0:
             out.append(' ' * delta + ln)
         else:
-            cut = min(-delta, indent_of(ln))
+            cut = min(-delta, len(ln) - len(ln.lstrip(' ')))
             out.append(ln[cut:])
-    return out
+    return ''.join(out)
 
 
-def build(path, helper, caller, max_lines=60):
-    with open(path, encoding='utf-8') as fh:
-        lines = fh.readlines()
-    tu = cgast.parse(path)
-    fns = {fn.spelling: fn for fn in cgast.functions(tu, path)}
-    if helper not in fns:
-        raise Refuse(f'cross-file or missing: {helper} not defined in {path}')
-    if caller not in fns:
-        raise Refuse(f'cross-file or missing: {caller} not defined in {path}')
-    hfn, cfn = fns[helper], fns[caller]
-    others = [n for n, f in fns.items() if n != caller and callgraph.find_calls(f, helper)]
+# ---- analysis -------------------------------------------------------------------
+
+def visible_names(cfn, stmt):
+    """Caller names in scope at stmt: parameters and earlier declarations of
+    the enclosing blocks (and for-loop variables)."""
+    names = {p.spelling for p in cgast.params(cfn)}
+    chain = cgast.path_to(cgast.body(cfn), stmt)
+    for parent, child in zip(chain, chain[1:]):
+        if parent.kind in (K.COMPOUND_STMT, K.FOR_STMT):
+            for s in cgast.kids(parent):
+                if s == child:
+                    break
+                for d in s.walk_preorder() if s.kind in (K.DECL_STMT,) else []:
+                    if d.kind == K.VAR_DECL:
+                        names.add(d.spelling)
+    return names
+
+
+def all_names(cfn):
+    names = {p.spelling for p in cgast.params(cfn)}
+    for d in cgast.body(cfn).walk_preorder():
+        if d.kind == K.VAR_DECL:
+            names.add(d.spelling)
+    return names
+
+
+def recovery(ct, cfn):
+    """What the caller's own guards return."""
+    for s in cgast.kids(cgast.body(cfn)):
+        if cgast.is_guard(s) is not None:
+            r = [c for c in s.walk_preorder() if c.kind == K.RETURN_STMT][0]
+            a, b = r.extent.start.offset, ct.semi_after(r.extent.end.offset)
+            return ct.b[a:b].decode()
+    rt = cfn.result_type.spelling
+    if rt == 'void':
+        return 'return;'
+    if rt == 'agc_status_t':
+        return 'return (AGC_STATUS_BAD_ARG);'
+    if rt == 'bool':
+        return 'return (false);'
+    raise Refuse(f'guard-recovery: no caller guard to copy for return type {rt}')
+
+
+def value_statement(cfn, call):
+    """(statement, parent-needs-parens) for a call whose value is used."""
+    chain = cgast.path_to(cgast.body(cfn), call)
+    i = len(chain) - 1
+    j = i - 1
+    while j >= 0 and chain[j].kind in cgast.SKIP:
+        j -= 1
+    up = chain[j]
+    parens = not (up.kind in (K.VAR_DECL, K.RETURN_STMT, K.CALL_EXPR, K.PAREN_EXPR)
+                  or (up.kind == K.BINARY_OPERATOR and cgast.op_of(up) == '='))
+    k = i
+    while k > 0 and chain[k - 1].kind not in callgraph.STMT_PARENTS:
+        k -= 1
+        n = chain[k]
+        if n.kind == K.CONDITIONAL_OPERATOR or (
+                n.kind == K.BINARY_OPERATOR and cgast.op_of(n) in ('&&', '||', ',')):
+            raise Refuse('value-conditional: the call is under && || ?: or ,')
+    stmt = chain[k]
+    region = stmt
+    if stmt.kind in (K.IF_STMT, K.SWITCH_STMT):
+        region = cgast.kids(stmt)[0]
+        if call not in list(region.walk_preorder()):
+            raise Refuse('value-branch: the call is inside a branch, not the condition')
+    elif stmt.kind in (K.FOR_STMT, K.WHILE_STMT, K.DO_STMT):
+        raise Refuse('value-loop: the call is in a loop statement')
+    inside = {c.hash for c in call.walk_preorder()}
+    above = {c.hash for c in chain}
+    for c in region.walk_preorder():
+        if c.kind == K.CALL_EXPR and c.hash not in inside and c.hash not in above \
+                and c.spelling != 'AGC_ASSERT':
+            raise Refuse(f'value-order: another call ({c.spelling}) in the same statement')
+    braces = chain[k - 1].kind != K.COMPOUND_STMT
+    return stmt, parens, braces
+
+
+def build(hfile, cfile, helper, caller, max_lines=60):
+    cgast._SRC_CACHE.clear()
+    ht, ct = Text(hfile), (Text(cfile) if cfile != hfile else None)
+    ct = ct or ht
+    htu = cgast.parse(hfile)
+    ctu = htu if cfile == hfile else cgast.parse(cfile)
+    hfns = {fn.spelling: fn for fn in cgast.functions(htu, hfile)}
+    cfns = {fn.spelling: fn for fn in cgast.functions(ctu, cfile)}
+    if helper not in hfns:
+        raise Refuse(f'missing: {helper} not defined in {hfile}')
+    if caller not in cfns:
+        raise Refuse(f'missing: {caller} not defined in {cfile}')
+    hfn, cfn = hfns[helper], cfns[caller]
+    others = [n for n, f in cfns.items() if n != caller and callgraph.find_calls(f, helper)]
     if others:
         raise Refuse('more callers: ' + ','.join(others))
     calls = callgraph.find_calls(cfn, helper)
     if len(calls) != 1:
         raise Refuse(f'multi-site: {len(calls)} calls in {caller}')
     call = calls[0]
-
-    h = callgraph.helper_summary(hfn, lines)
-    s = callgraph.site_info(cfn, call, lines)
+    with open(hfile, encoding='utf-8') as fh:
+        hlines = fh.readlines()
+    with open(cfile, encoding='utf-8') as fh:
+        clines = fh.readlines()
+    h = callgraph.helper_summary(hfn, hlines)
+    s = callgraph.site_info(cfn, call, clines)
     m = callgraph.merge(h, s, 1)
-    if m['reasons']:
-        raise Refuse(';'.join(m['reasons']))
-    if m['merged'] > max_lines:
-        raise Refuse(f'too-long: {caller} would have {m["merged"]} code lines (> {max_lines})')
-    stmt = s['stmt']
+    shape = s['shape']
+    if shape == 'stmt' and h['ret'] != 'void':
+        raise Refuse('result-unused: non-void helper called as a statement')
+    if shape == 'return' and h['ret'] != s['ret']:
+        raise Refuse('return-type')
+    value = shape in ('init', 'assign', 'expr')
+    tail = shape == 'return' or (shape == 'stmt' and s['tail'] and s['ret'] == 'void')
 
-    # ---- the inlined block ----------------------------------------------
-    b = cgast.body(hfn)
-    b0, b1 = b.extent.start.line, b.extent.end.line
-    if lines[b0 - 1].strip() != '{' or lines[b1 - 1].strip() != '}':
-        raise Refuse('layout: helper body braces not on their own lines')
-    drop = set()
-    for idx in m['removed_idx']:
-        st = h['stmts'][idx]
-        drop.update(range(st['first'], st['last'] + 1))
-        nxt = st['last'] + 1
-        if nxt < b1 and not lines[nxt - 1].strip():
-            drop.add(nxt)
-    last = h['stmts'][-1] if h['stmts'] else None
-    if s['shape'] == 'stmt' and last is not None and last['void_return']:
-        drop.update(range(last['first'], last['last'] + 1))
-    # constant arguments: substitute the constant's text for the parameter
-    subst = {}
-    pnames = h['params']
-    for i, (kind, _) in enumerate(s['argkind']):
-        if kind == 'const':
-            a = cgast.kids(call)[1 + i]
-            subst[pnames[i]] = cgast.spelled(cgast.strip(a))
-    edits = {}
+    hstmts = cgast.kids(cgast.body(hfn))
+    last = hstmts[-1] if hstmts else None
+    trailing = last is not None and last.kind == K.RETURN_STMT
+    if value and not trailing:
+        raise Refuse('value: no trailing return')
+
+    # ---- returns: dropped guards, kept guards, early returns ---------------
+    removed = set(m['removed_idx'])
+    hedits = []
+    for idx in sorted(removed):
+        a, b = stmt_span(ht, hstmts[idx])
+        hedits.append(full_lines(ht, a, b) + (b'',))
+    rec = None
+    for idx, st in enumerate(hstmts):
+        if idx in removed or (trailing and st == last):
+            continue
+        rets = [c for c in st.walk_preorder() if c.kind == K.RETURN_STMT]
+        if not rets or tail:
+            continue
+        if cgast.is_guard(st) is None:
+            raise Refuse('early-return: a return outside a guard')
+        if rec is None:
+            rec = recovery(ct, cfn)
+        r = rets[0]
+        a, b = r.extent.start.offset, ht.semi_after(r.extent.end.offset)
+        rest = ht.b[b:ht.line_end(b)].decode()
+        if rest.strip().startswith('/*') and rest.strip().endswith('*/'):
+            b = ht.line_end(b) - 1  # the old return's comment goes with it
+        hedits.append((a, b, rec.encode()))
+    rvalue = None
+    if trailing and not tail:
+        if value:
+            ex = cgast.kids(last)
+            if not ex:
+                raise Refuse('value: bare return')
+            rvalue = (ex[0].extent.start.offset, ex[0].extent.end.offset)
+        a, b = stmt_span(ht, last)
+        hedits.append(full_lines(ht, a, b) + (b'',))
+
+    # ---- arguments ------------------------------------------------------------
+    hctx = cgast.Ctx(hfn)
+    params = cgast.params(hfn)
+    args = cgast.kids(call)[1:]
+    writes = cgast.summarize(cgast.body(hfn), hctx)['writes']
+    hlocals = set(h['locals'])
+    decls, subst = [], {}
+    for i, (p, a) in enumerate(zip(params, args)):
+        kind, name = callgraph.classify_arg(a)
+        written = ('param', i) in writes
+        atext = ct.b[a.extent.start.offset:a.extent.end.offset].decode()
+        if kind == 'ident' and name == p.spelling:
+            if written:
+                raise Refuse(f'param-written: {p.spelling} is assigned in the helper')
+            continue
+        if not written and (kind == 'const' or (kind == 'ident' and name not in hlocals)):
+            subst[i] = cgast.spelled(cgast.strip(a)) if kind == 'const' else name
+            continue
+        ptext = ht.b[p.extent.start.offset:p.extent.end.offset].decode()
+        if '[' in ptext:
+            ty = p.type.spelling
+            ptext = (ty if ty.endswith('*') else ty + ' ') + p.spelling
+        decls.append(f'{ptext} = {atext};\n')
+        hlocals.add(p.spelling)
     if subst:
-        ctx = cgast.Ctx(hfn)
-
         def walk(n):
-            if n.kind == K.DECL_REF_EXPR and n.referenced is not None \
-                    and cgast.ref_key(n.referenced) in ctx.pmap and n.spelling in subst:
-                ln, col = n.extent.start.line, n.extent.start.column
-                if n.extent.end.line != ln:
-                    raise Refuse('layout: parameter use spans lines')
-                edits.setdefault(ln, []).append((col - 1, n.extent.end.column - 1,
-                                                 subst[n.spelling]))
+            if n.kind == K.DECL_REF_EXPR and n.referenced is not None:
+                i = hctx.pmap.get(cgast.ref_key(n.referenced))
+                if i in subst:
+                    hedits.append((n.extent.start.offset, n.extent.end.offset, subst[i].encode()))
             for c in cgast.kids(n):
                 walk(c)
+        walk(cgast.body(hfn))
 
-        walk(b)
-    block = []
-    for ln in range(b0 + 1, b1):
-        if ln in drop:
-            continue
-        text = lines[ln - 1]
-        for c0, c1, rep in sorted(edits.get(ln, []), reverse=True):
-            text = text[:c0] + rep + text[c1:]
-        block.append(text)
-    while block and not block[0].strip():
-        block.pop(0)
-    while block and not block[-1].strip():
-        block.pop()
+    # ---- names ------------------------------------------------------------------
+    if value:
+        stmt, parens, braces = value_statement(cfn, call)
+    else:
+        stmt, parens, braces = s['stmt'], False, s['braces']
+    vis = visible_names(cfn, stmt)
+    clash_any = hlocals & all_names(cfn)
+    clash_vis = hlocals & vis
+    if h['globals'] & (vis - {p.spelling for p in cgast.params(cfn)}):
+        raise Refuse('collision: a caller local hides a file-scope name the helper uses')
+    if clash_vis:
+        raise Refuse('collision:' + ','.join(sorted(clash_vis)))
+    if clash_any:
+        if value and stmt.kind == K.DECL_STMT:
+            raise Refuse('collision:' + ','.join(sorted(clash_any))
+                         + ' (the declaration needs the value outside a block)')
+        braces = True
 
-    # ---- prototypes: same file or a private header under src/ ----------------
-    proto_edits, proto_comments = [], []
-    for c in tu.cursor.walk_preorder():
-        if c.kind != K.FUNCTION_DECL or c.spelling != helper or c.is_definition():
-            continue
-        f = c.location.file
-        if f is None:
-            continue
-        fp = os.path.relpath(os.path.realpath(f.name), ROOT)
-        if fp.startswith('include/'):
-            raise Refuse('declared in a public header')
-        if not fp.startswith('src/'):
-            continue
-        with open(fp, encoding='utf-8') as fh:
-            flines = fh.readlines()
-        p0 = comment_start(flines, c.extent.start.line)
-        p1, _ = stmt_end(flines, c)
-        if p1 < len(flines) and not flines[p1].strip() and (p0 == 1 or not flines[p0 - 2].strip()):
-            p1 += 1
-        proto_edits.append((fp, (p0, p1, [])))
-        proto_comments.append(cgast.header_comment(flines, c.extent.start.line))
+    if value and braces and stmt.kind == K.DECL_STMT:
+        raise Refuse('layout: a declaration under a case label would lose its scope')
 
-    # ---- the call site ----------------------------------------------------
-    s0 = stmt.extent.start.line
-    if lines[s0 - 1][:stmt.extent.start.column - 1].strip():
-        raise Refuse('layout: call statement does not start its line')
-    s1, endcol = stmt_end(lines, stmt)
-    trail = lines[s1 - 1][endcol:].strip()
+    # ---- the inlined text ------------------------------------------------------------
+    b = cgast.body(hfn)
+    lo, hi = b.extent.start.offset + 1, b.extent.end.offset - 1
+    body = ht.render(lo, hi, hedits).decode().strip('\n') + '\n'
+    body = '\n'.join(ln for ln in body.split('\n')).strip('\n')
+    lines = body.split('\n')
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    body = '\n'.join(lines) + '\n' if lines else ''
+    if decls:
+        body = ''.join(' ' * 4 + d for d in decls) + '\n' + body
+    sa, sb = stmt_span(ct, stmt)
+    if ct.b[ct.line_start(sa):sa].strip():
+        raise Refuse('layout: the statement does not start its line')
+    ind = ct.indent_at(sa)
+    comment = ''
+    trail = ct.rest_of_line(sb)
     if trail and not (trail.startswith('/*') and trail.endswith('*/')):
-        raise Refuse('layout: code after the call statement')
-    ind = indent_of(lines[s0 - 1])
-    new = []
-    if trail:
-        new.append(' ' * ind + trail + '\n')
-    hc = cgast.header_comment(lines, hfn.extent.start.line)
+        raise Refuse('layout: code after the statement')
+    hc = cgast.header_comment(hlines, hfn.extent.start.line)
+    proto_edits, proto_comments = prototypes(htu, ctu, helper)
     if not hc:
         hc = next((c for c in proto_comments if c), '')
+    if not hc:
+        # a comment on the definition line: `static int f(int n) /* ... */`
+        dl = hlines[hfn.extent.start.line - 1]
+        mm = re.search(r'\)\s*(/\*.*\*/)\s*$', dl)
+        if mm:
+            hc = mm.group(1) + '\n'
     if hc:
-        new.extend(reindent(hc.splitlines(True), ind - indent_of(hc.splitlines()[0])))
-    if s['braces']:
-        # under a case label (or an unbraced branch): give the locals a block
-        new.append(' ' * ind + '{\n')
-        new.extend(reindent(block, ind))
-        new.append(' ' * ind + '}\n')
-    else:
-        new.extend(reindent(block, ind - 4))
+        comment += reindent(hc, ind - (len(hc) - len(hc.lstrip(' '))))
+    inner = ind + 4 if braces else ind
+    block = reindent(body, inner - 4)
 
-    # ---- delete the helper definition (with its comment and one blank) ------
-    d0 = comment_start(lines, hfn.extent.start.line)
-    d1 = hfn.extent.end.line
-    if d1 < len(lines) and not lines[d1].strip():
-        d1 += 1
-    if d0 <= s0 <= d1:
-        raise Refuse('layout: call inside the helper span')
-    file_edits = {path: [(s0, s1, new), (d0, d1, [])]}
+    cedits = []
+    if value:
+        r = ht.render(rvalue[0], rvalue[1], hedits).decode()
+        r = strip_parens(r)
+        if parens and not SIMPLE.match(r):
+            r = '(' + r + ')'
+        stmt_text = ct.render(stmt.extent.start.offset, sb,
+                              [(call.extent.start.offset, call.extent.end.offset, r.encode())]).decode()
+        if trail:
+            stmt_text += ' ' + trail
+        stmt_text = ' ' * inner + stmt_text + '\n'
+        new = comment + (' ' * ind + '{\n' if braces else '') + block + stmt_text \
+            + (' ' * ind + '}\n' if braces else '')
+    else:
+        if trail:
+            comment = ' ' * ind + trail + '\n' + comment
+        new = comment + (' ' * ind + '{\n' + block + ' ' * ind + '}\n' if braces else block)
+    a = ct.line_start(sa)
+    e = ct.line_end(sb)
+    cedits.append((a, e, new.encode()))
+
+    # ---- delete the helper (comment, definition, one blank line) and prototypes ----
+    d0 = hfn.extent.start.offset
+    hc_def = cgast.header_comment(hlines, hfn.extent.start.line)
+    if hc_def:
+        d0 = ht.line_start(d0)
+        for _ in range(hc_def.count('\n')):
+            d0 = ht.line_start(d0 - 1)
+    hdel = full_lines(ht, ht.line_start(d0), hfn.extent.end.offset)
+    file_edits = {}
+    file_edits.setdefault(cfile, []).extend(cedits)
+    file_edits.setdefault(hfile, []).append(hdel + (b'',))
     for fp, ed in proto_edits:
         file_edits.setdefault(fp, []).append(ed)
 
-    return file_edits
-
-
-def apply_edits(file_edits):
+    texts = {fp: (Text(fp) if fp not in (hfile, cfile) else (ht if fp == hfile else ct))
+             for fp in file_edits}
     out = {}
     for fp, eds in file_edits.items():
-        with open(fp, encoding='utf-8') as fh:
-            lines = fh.readlines()
-        eds = sorted({(a, b): rep for a, b, rep in eds}.items(), reverse=True)
-        for ((a, b), _), ((c0, c1), _) in zip(eds, eds[1:]):
-            if c1 >= a:
-                raise Refuse(f'layout: overlapping edits in {fp} at lines {c0}-{c1} and {a}-{b}')
-        new = list(lines)
-        for (a, b), rep in eds:
-            new[a - 1:b] = rep
-        out[fp] = (lines, new)
-    return out
+        t = texts[fp]
+        out[fp] = (t.b.decode(), t.render(0, len(t.b), eds).decode())
+
+    # ---- rule 4 on the merged caller ---------------------------------------------
+    ntu = cgast.parse(cfile, text=out[cfile][1])
+    nf = {fn.spelling: fn for fn in cgast.functions(ntu, cfile)}
+    nl = out[cfile][1].splitlines(True)
+    if caller not in nf:
+        raise Refuse('internal: caller lost after the edit')
+    n = cgast.body_code_lines(nl, nf[caller])
+    if n > max_lines:
+        raise Refuse(f'too-long: {caller} would have {n} code lines (> {max_lines})')
+    return out, n
 
 
-def compile_text(path, text):
-    cmd = ['gcc'] + CFLAGS + ['-iquote', os.path.dirname(path), '-x', 'c', '-c', '-o', os.devnull, '-']
-    r = subprocess.run(cmd, input=text, capture_output=True, text=True)
-    return r.returncode == 0, r.stderr
+def prototypes(htu, ctu, helper):
+    edits, comments = [], []
+    seen = set()
+    for tu in (htu, ctu):
+        for c in tu.cursor.walk_preorder():
+            if c.kind != K.FUNCTION_DECL or c.spelling != helper or c.is_definition():
+                continue
+            f = c.location.file
+            if f is None:
+                continue
+            fp = os.path.relpath(os.path.realpath(f.name), ROOT)
+            if fp.startswith('include/'):
+                raise Refuse('declared in a public header')
+            if not fp.startswith('src/') or (fp, c.extent.start.offset) in seen:
+                continue
+            seen.add((fp, c.extent.start.offset))
+            t = Text(fp)
+            with open(fp, encoding='utf-8') as fh:
+                fl = fh.readlines()
+            com = cgast.header_comment(fl, c.extent.start.line)
+            a = t.line_start(c.extent.start.offset)
+            for _ in range(com.count('\n')):
+                a = t.line_start(a - 1)
+            b = t.semi_after(c.extent.end.offset)
+            edits.append((fp, full_lines(t, a, b) + (b'',)))
+            comments.append(com)
+    return edits, comments
 
 
 def compile_file(path):
-    r = subprocess.run(['gcc'] + CFLAGS + ['-c', '-o', os.devnull, path], capture_output=True, text=True)
+    r = subprocess.run(['gcc'] + CFLAGS + ['-c', '-o', os.devnull, path],
+                       capture_output=True, text=True)
     return r.returncode == 0, r.stderr
 
 
@@ -275,34 +529,40 @@ def main(argv):
     ap.add_argument('helper')
     ap.add_argument('caller')
     ap.add_argument('--file')
+    ap.add_argument('--caller-file')
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--quiet', action='store_true', help='no diff')
     ap.add_argument('--max-lines', type=int, default=60,
                     help='refuse when the merged caller would exceed this (rule 4)')
     opt = ap.parse_args(argv[1:])
     os.chdir(ROOT)
     try:
-        path = opt.file or lookup_file(opt.helper, opt.caller)
-        changes = apply_edits(build(path, opt.helper, opt.caller, opt.max_lines))
+        hfile, cfile = lookup_files(opt.helper, opt.caller, opt.file, opt.caller_file)
+        changes, n = build(hfile, cfile, opt.helper, opt.caller, opt.max_lines)
     except Refuse as e:
         print(f'REFUSED {opt.helper} -> {opt.caller}: {e}')
         return 2
-    for fp, (old, new) in changes.items():
-        sys.stdout.writelines(difflib.unified_diff(old, new, 'a/' + fp, 'b/' + fp))
+    if not opt.quiet:
+        for fp, (old, new) in changes.items():
+            sys.stdout.writelines(difflib.unified_diff(old.splitlines(True), new.splitlines(True),
+                                                       'a/' + fp, 'b/' + fp))
     if opt.dry_run:
-        ok, err = compile_text(path, ''.join(changes[path][1]))
-        print('DRY-RUN compile', 'OK' if ok else 'FAILED\n' + err)
-        return 0 if ok else 1
+        print(f'DRY-RUN {opt.helper} -> {opt.caller}: {n} code lines')
+        return 0
     for fp, (_, new) in changes.items():
         with open(fp, 'w', encoding='utf-8') as fh:
-            fh.writelines(new)
-    ok, err = compile_file(path)
-    if not ok:
-        for fp, (old, _) in changes.items():
-            with open(fp, 'w', encoding='utf-8') as fh:
-                fh.writelines(old)
-        print(f'REVERTED {opt.helper} -> {opt.caller}: compile failed\n{err}')
-        return 1
-    print(f'INLINED {opt.helper} -> {opt.caller} in {path}')
+            fh.write(new)
+    for fp in changes:
+        if fp.endswith('.c'):
+            ok, err = compile_file(fp)
+            if not ok:
+                for fp2, (old, _) in changes.items():
+                    with open(fp2, 'w', encoding='utf-8') as fh:
+                        fh.write(old)
+                print(f'REVERTED {opt.helper} -> {opt.caller}: compile failed in {fp}\n{err}')
+                return 1
+    print(f'INLINED {opt.helper} -> {opt.caller} in {cfile} ({n} code lines) '
+          f'files: {" ".join(sorted(changes))}')
     return 0
 
 

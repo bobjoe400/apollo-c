@@ -5,12 +5,15 @@ class Spec:
         self.l += ['rope ' + rope, 'entry INTPRET', 'maxcycles %d' % maxcycles]
     def comment(self, *c):
         self.l += ['# ' + x for x in c]
-    def run(self, tag, q, fbank, stop, sets, gets, ebank=None):
+    def run(self, tag, q, fbank, stop, sets, gets, ebank=None, entry='INTPRET'):
         """sets: list of (name, 'w,w,...'); gets: list of 'NAME[:dp|:tp]'.
         Every run gets FIXLOC = PUSHLOC = VAC1 (the job's work area)."""
         self.l += ['clearstops'] + ['stop ' + s for s in stop.split()]
         self.l += ['cleargets'] + ['get ' + g for g in gets]
-        self.l += ['q ' + q, 'fbank %o' % fbank]
+        self.l += ['entry ' + entry]
+        if q is not None:
+            self.l += ['q ' + q]
+        self.l += ['fbank %o' % fbank]
         if ebank is not None:
             self.l += ['ebank %o' % ebank]
         self.l += ['set FIXLOC=@VAC1', 'set PUSHLOC=@VAC1']

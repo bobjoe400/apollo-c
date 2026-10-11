@@ -6,25 +6,17 @@ Label addresses below are from `whatis` on the assembled ropes."""
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from agcw import sp, dp, vec, tp
-from snip import assemble
-from specgen import Spec, gets_dp, gets_vec
+from specgen import Spec, gets_dp, gets_vec, probe
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 ABTCONIC = '25751'          # CM 12,3751: EXIT / TC POODOO (low-bank return trap)
-SNIP = 'VAC2USE'            # snippet lives at 0454.. (unswitched erasable)
-VOUT = 0o540                # 6-word result area inside VAC3 (0531..0603)
-VIN1 = 0o570                # DP inputs for snippets (VAC3)
-VIN2 = 0o572
-END_CM, END_LM = 0o5217, 0o5155   # ENDOFJOB (fixed-fixed)
-
-def endtc(end):
-    return ['\t\tEXIT', '\t\tTC\t%o' % end]
+TRAP_HI = '65105'           # CM V2TERROR 32,3105: EXIT / TC POODOO (high banks)
 
 # ---- shared inputs ------------------------------------------------------
 T1 = dp(360000, 28)                       # 1 h after AGC clock zero, cs 2^28
 TEPHEM = tp(1.5552e8, 42)                 # 18 days after 1 July, cs 2^42
 PAD = [('TEPHEM', TEPHEM), ('AZO', dp(0.27343, 0)), ('AXO', dp(1.2e-5, 0)),
-       ('-AYO', dp(-3.1e-5, 0)), ('504LM', vec([0.0123, -0.0045, 0.0211], 0)),
+       ('-AYO', dp(-3.1e-5, 0)), ('E4,1411', vec([0.0123, -0.0045, 0.0211], 0)),
        ('RLS', vec([1.62e6, 0.3e6, 0.52e6], 27))]
 
 def main():
@@ -33,12 +25,14 @@ def main():
         'LAT-LONG / LALOTORV (bank 13, low): entry INTPRET, Q = label, QPRET =',
         'VAC1+42 = 25751 (ABTCONIC: EXIT, TC POODOO), stop POODOO.  MPAC = time',
         '(cs 2^28), ALPHAV = R (2^29 m); pad TEPHEM (TP cs 2^42) AZO (rev) AXO',
-        '-AYO (rad) 504LM (rad) RLS (2^27 m); ERADFLAG = FLAGWRD1 010000,',
+        '-AYO (rad) 504LM (rad; set as E4,1411: agc_probe reads a name that',
+        'starts with a digit as an octal address) RLS (2^27 m); ERADFLAG =',
+        'FLAGWRD1 010000,',
         'LUNAFLAG = FLAGWRD3 04000.  Out LAT LONG (rev) ALT ERADM (2^29 m).',
-        'Routines in high banks (RP-TO-R 26, TFF 27, LSPOS 26) are CALLed from',
-        'an interpretive snippet in VAC2USE.. (assembled by yaYUL, words in the',
-        'set line) that ends EXIT / TC ENDOFJOB; fbank = the callee bank sets',
-        'INTBIT15.  Results stored at 0540 (OUT) or left in the push list.'])
+        'Routines in high banks (FBANK >= 20) need a return address in a high',
+        'bank (the interpreter keeps INTBIT15): 65105 = V2TERROR (32,3105).',
+        'A CALL from an erasable snippet cannot return (CALL makes QPRET from',
+        'BANKSET + LOC, a fixed address), so each routine is entered directly.'])
     ll_gets = ['LAT:dp', 'LONG:dp', 'ALT:dp', 'ERADM:dp']
     cases = [
         ('latlong_earth_fixed', [4.0e6, 3.2e6, 4.27e6], 0, 0),
@@ -64,34 +58,31 @@ def main():
               gets_vec('ALPHAV') + ['ERADM:dp'])
 
     # ---- RP-TO-R / R-TO-RP ---------------------------------------------
-    s.comment('RP-TO-R (26,3344) / R-TO-RP (26,3371): push list 0-5D vector,',
-              '6-7D time, MPAC = 0 earth / nonzero moon; result MPAC stored at OUT.')
+    s.comment('RP-TO-R (26,3344) / R-TO-RP (26,3371), high bank: Q = label,',
+              'QPRET = 65105 (V2TERROR 32,3105: EXIT, TC POODOO), stop POODOO.',
+              'Push list 0-5D vector, 6-7D time, MPAC = 0 earth / nonzero moon;',
+              'result vector in MPAC (MPAC,+1 / +3,+4 / +5,+6).')
+    mpac_vec = ['MPAC:dp', 'MPAC+3:dp', 'MPAC+5:dp']
     for lab, sreg in (('RP-TO-R', 0o3344), ('R-TO-RP', 0o3371)):
-        words = assemble(['\t\tCALL', '\t\t\t' + lab, '\t\tSTORE\tOUT'] + endtc(END_CM),
-                         fixed={lab: (0o26, sreg)}, eras={'OUT': VOUT})
         key = lab.replace('-', '').lower()
         for body, v, scale, moon in (('earth', [4.0e6, 3.2e6, 4.27e6], 29, False),
                                      ('moon', [0.9e6, -1.2e6, 0.95e6], 27, True)):
-            s.run('%s_%s' % (key, body), SNIP, 0o26, 'ENDOFJOB',
-                  [(SNIP, ','.join(words)), ('VAC1', vec(v, scale)),
+            s.run('%s_%s' % (key, body), '26,%o' % sreg, 0o26, 'POODOO',
+                  [('VAC1+42', TRAP_HI), ('VAC1', vec(v, scale)),
                    ('VAC1+6', T1), ('MPAC', '00001' if moon else '00000')] + PAD,
-                  gets_vec('0540'))
+                  mpac_vec)
 
     # ---- TFF -------------------------------------------------------------
-    s.comment('TFFCONIC (27,2757) then TFFRP/RA (27,3026), or TFFCONIC then',
-              'CALCTFF (27,3067) with RTERM; MPAC = 1/sqrt(mu) (E 2^17, M 2^14)',
-              'from 0570, RTERM from 0572; RONE VONE (E 2^29/2^7, M 2^27/2^5).',
-              'Push list out: 10D TFFDELQ 12D RMAG1 14D RPER/TFFQ1 16D RAPO/NRTERM',
-              '18D RTERM 20D TFFVSQ 22D TFF1/ALF 24D TFFRTALF 26D TFFALFA 28D TFFNP',
-              '30D TFF/RTMU 32D NRMAG 34D TFFX 36D TFFTEM; X1 = 38D (-NR),',
-              'X2 = 39D (-NA); VONE\'; CALCTFF time at OUT (cs 2^28).')
-    fx = {'TFFCONIC': (0o27, 0o2757), 'TFFRP/RA': (0o27, 0o3026),
-          'CALCTFF': (0o27, 0o3067)}
-    w_rpra = assemble(['\t\tDLOAD\tCALL', '\t\t\tMU', '\t\t\tTFFCONIC', '\t\tCALL',
-                       '\t\t\tTFFRP/RA'] + endtc(END_CM), fixed=fx, eras={'MU': VIN1})
-    w_tff = assemble(['\t\tDLOAD\tCALL', '\t\t\tMU', '\t\t\tTFFCONIC', '\t\tDLOAD\tCALL',
-                      '\t\t\tRT', '\t\t\tCALCTFF', '\t\tSTORE\tOUT'] + endtc(END_CM),
-                     fixed=fx, eras={'MU': VIN1, 'RT': VIN2, 'OUT': VOUT})
+    s.comment('TFFCONIC (27,2757): Q = label, MPAC = 1/sqrt(mu) (E 2^17, M 2^14),',
+              'RONE VONE (E 2^29/2^7, M 2^27/2^5), QPRET = 65105, stop POODOO.',
+              'Push list out: 12D RMAG1 20D TFFVSQ 22D TFF1/ALF 24D TFFRTALF',
+              '26D TFFALFA 28D TFFNP 30D TFF/RTMU 32D NRMAG; X1 = 38D (-NR),',
+              'X2 = 39D (-NA); VONE\'.  TFFRP/RA (27,3026) and CALCTFF (27,3067)',
+              'are run on the push list the AGC left after TFFCONIC (copied by the',
+              'generator from a first probe run: VAC1..VAC1+41 words below) with',
+              'MPAC = RTERM for CALCTFF.  Out RPER 14D RAPO 16D; CALCTFF MPAC',
+              '(cs 2^28), 10D TFFDELQ 14D TFFQ1 16D NRTERM 18D RTERM 34D TFFX',
+              '36D TFFTEM.')
     mue, mum = 3.986032e10, 4.902778e8
     pd_gets = gets_dp('VAC1+10', 14) + ['VAC1+38', 'VAC1+39'] + gets_vec("VONE'")
     tffc = [
@@ -104,18 +95,29 @@ def main():
     for tag, r, v, moon, rterm in tffc:
         rs, vs = (27, 5) if moon else (29, 7)
         mu = dp(1 / math.sqrt(mum if moon else mue), -14 if moon else -17)
-        base = [('RONE', vec(r, rs)), ('VONE', vec(v, vs)), ('0570', mu),
-                ('0572', dp(rterm, rs))]
-        s.run(tag + '_rpra', SNIP, 0o27, 'ENDOFJOB',
-              [(SNIP, ','.join(w_rpra))] + base, pd_gets)
-        s.run(tag + '_calc', SNIP, 0o27, 'ENDOFJOB',
-              [(SNIP, ','.join(w_tff))] + base, pd_gets + ['0540:dp'])
+        base = [('RONE', vec(r, rs)), ('VONE', vec(v, vs))]
+        s.run(tag + '_conic', '27,2757', 0o27, 'POODOO',
+              [('VAC1+42', TRAP_HI), ('MPAC', mu + ',00000')] + base, pd_gets)
+        # stage 2 inputs: the push list and VONE' after TFFCONIC
+        tmp = Spec('Comanche055', [])
+        tmp.run('x', '27,2757', 0o27, 'POODOO',
+                [('VAC1+42', TRAP_HI), ('MPAC', mu + ',00000')] + base,
+                ['VAC1+%d' % k for k in range(1, 42)] + ['VAC1', "VONE'"] +
+                ["VONE'+%d" % k for k in range(1, 6)])
+        d = probe(tmp.l)['x']
+        pdl = ','.join(d['VAC1' if k == 0 else 'VAC1+%d' % k] for k in range(42))
+        vp = ','.join(d["VONE'" if k == 0 else "VONE'+%d" % k] for k in range(6))
+        st2 = [('VAC1', pdl), ('VAC1+42', TRAP_HI), ("VONE'", vp)] + base
+        s.run(tag + '_rpra', '27,3026', 0o27, 'POODOO', st2, pd_gets)
+        s.run(tag + '_calc', '27,3067', 0o27, 'POODOO',
+              st2 + [('MPAC', dp(rterm, rs) + ',00000')], pd_gets + ['MPAC:dp'])
 
     # ---- LSPOS / LUNVEL (CM) ---------------------------------------------
-    s.comment('LSPOS (26,2110) / LUNVEL: MPAC = time (0570, cs 2^28); TEPHEM,',
-              'TIMEMO (TP cs 2^42), VECOEM a9..a0 (m/cs^n 2^(31-26n)), RESO (2^38 m),',
-              'VESO (2^9 m/cs), OMEGAES (2^-26 rev/cs).  Out moon (2^29 m) or',
-              'moon velocity (2^7 m/cs) at OUT, sun (2^38 m) in push list 2D.')
+    s.comment('LSPOS (26,2110) / LUNVEL (26,2120): Q = label, MPAC = time (cs',
+              '2^28), QPRET = 65105, stop POODOO; TEPHEM, TIMEMO (TP cs 2^42),',
+              'VECOEM a9..a0 (m/cs^n 2^(31-26n)), RESO (2^38 m), VESO (2^9 m/cs),',
+              'OMEGAES (2^-26 rev/cs).  Out MPAC moon (2^29 m) or moon velocity',
+              '(2^7 m/cs); LSPOS sun (2^38 m) in push list 2D.')
     coef = [[0.0] * 3 for _ in range(10)]
     coef[9] = [3.62e8, 1.05e8, -0.41e8]      # a0  m          2^31
     coef[8] = [-3.1, 9.6, 3.9]               # a1  m/cs       2^5
@@ -126,20 +128,14 @@ def main():
            ('VECOEM', vecoem), ('RESO', vec([1.38e11, 5.6e10, 2.4e10], 38)),
            ('VESO', vec([-1180.0, 2560.0, 1110.0], 9)),
            ('OMEGAES', dp(1.0 / 3.15576e9, -26))]
-    w_ls = assemble(['\t\tDLOAD\tCALL', '\t\t\tTT', '\t\t\tLSPOS', '\t\tSTORE\tOUT']
-                    + endtc(END_CM), fixed={'LSPOS': (0o26, 0o2110)},
-                    eras={'TT': VIN1, 'OUT': VOUT})
-    w_lv = assemble(['\t\tDLOAD\tCALL', '\t\t\tTT', '\t\t\tLUNVEL', '\t\tSTORE\tOUT']
-                    + endtc(END_CM), fixed={'LUNVEL': (0o26, LUNVEL_SREG)},
-                    eras={'TT': VIN1, 'OUT': VOUT})
     for tag, t in (('lspos_cm_t0', 360000), ('lspos_cm_t1', 3.0e7 + 1.2e6),
                    ('lspos_cm_t2', 5.5e7)):
-        s.run(tag, SNIP, 0o26, 'ENDOFJOB',
-              [(SNIP, ','.join(w_ls)), ('0570', dp(t, 28))] + eph,
-              gets_vec('0540') + gets_vec('VAC1+2'))
-    s.run('lunvel_cm', SNIP, 0o26, 'ENDOFJOB',
-          [(SNIP, ','.join(w_lv)), ('0570', dp(3.0e7 + 1.2e6, 28))] + eph,
-          gets_vec('0540'))
+        s.run(tag, '26,2110', 0o26, 'POODOO',
+              [('VAC1+42', TRAP_HI), ('MPAC', dp(t, 28) + ',00000')] + eph,
+              mpac_vec + gets_vec('VAC1+2'))
+    s.run('lunvel_cm', '26,2120', 0o26, 'POODOO',
+          [('VAC1+42', TRAP_HI), ('MPAC', dp(3.0e7 + 1.2e6, 28) + ',00000')] + eph,
+          mpac_vec)
 
     # ---- INCORP2 ---------------------------------------------------------
     s.comment('INCORP2 (36,3466): entry INTPRET, Q = INCORP2, stop INTWAKE (its',
@@ -177,23 +173,15 @@ def main():
     # ---- Luminary099 -----------------------------------------------------
     m = Spec('Luminary099', [
         'nav-aux oracle cases (Luminary099).  Generated by gen/gen_nav_aux.py.',
-        'LSPOS (15,3664): snippet DLOAD CALL time LSPOS, EXIT, TC ENDOFJOB;',
-        'MPAC time (cs 2^28) from 0570, TEPHEM (TP cs 2^42).  Out VMOON VSUN',
-        '(unit vectors, 2^1).  RP-TO-R (26,3716) moon as in nav_aux.spec.'])
-    w = assemble(['\t\tDLOAD\tCALL', '\t\t\tTT', '\t\t\tLSPOS'] + endtc(END_LM),
-                 fixed={'LSPOS': (0o15, 0o3664)}, eras={'TT': VIN1})
+        'LSPOS (15,3664): entry INTPRET, Q = LSPOS, MPAC = time (cs 2^28),',
+        'TEPHEM (TP cs 2^42); QPRET = VAC1+42 = 25742 (ABTCONIC 12,3742: EXIT,',
+        'TC POODOO), stop POODOO.  Out VMOON VSUN (unit vectors, 2^1).'])
     for tag, t in (('lspos_lm_t0', 360000), ('lspos_lm_t1', 1.85e7),
                    ('lspos_lm_t2', 4.0e7)):
-        m.run(tag, SNIP, 0o15, 'ENDOFJOB',
-              [(SNIP, ','.join(w)), ('0570', dp(t, 28)), ('TEPHEM', TEPHEM)],
-              gets_vec('VMOON') + gets_vec('VSUN'))
-    w = assemble(['\t\tCALL', '\t\t\tRP-TO-R', '\t\tSTORE\tOUT'] + endtc(END_LM),
-                 fixed={'RP-TO-R': (0o26, 0o3716)}, eras={'OUT': VOUT})
-    m.run('rptor_lm_moon', SNIP, 0o26, 'ENDOFJOB',
-          [(SNIP, ','.join(w)), ('VAC1', vec([0.9e6, -1.2e6, 0.95e6], 27)),
-           ('VAC1+6', T1), ('MPAC', '00001')] + PAD, gets_vec('0540'))
+        m.run(tag, '15,3664', 0o15, 'POODOO',
+              [('VAC1+42', '25742'), ('MPAC', dp(t, 28) + ',00000'),
+               ('TEPHEM', TEPHEM)], gets_vec('VMOON') + gets_vec('VSUN'))
     m.write(os.path.join(OUT, 'nav_aux_lm.spec'))
 
-LUNVEL_SREG = 0o2120
 if __name__ == '__main__':
     main()
