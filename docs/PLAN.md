@@ -192,13 +192,18 @@ Then: lead assert.h rename; document wave (1 agent).
 
 ## Stretch (not yet in the definition of done; user to decide)
 
-10. Full-mission closed loop. The VirtualAGC GUI stack has no world model
-    (yaAGC cannot fly a mission from yaDSKY2 either). Two routes:
-    a. NASSP (Apollo add-on for the Orbiter simulator, Windows): it embeds
-       yaAGC's engine behind the same channel interface our socket layer
-       implements; replace that engine with libagc. Real orbital mechanics
-       and spacecraft systems; first closed-loop test of landing, ascent
-       and entry. Large external build.
-    b. Own simplified world model in src/sim (rigid-body attitude, point-
-       mass orbit, scripted radar/optics truth). Smaller, less faithful.
-    Decision deferred until item 7 (GUI run) is done.
+10. Full-mission closed loop via NASSP (Apollo add-on for the Orbiter
+    simulator): it embeds yaAGC's engine behind the same channel interface
+    our socket layer implements; replace that engine with libagc. This is
+    the ONLY closed-loop route (user, 2026-10-11): we do not build a world
+    model of our own. Timing: after item 7.
+
+## Principle: build only the AGC software (user, 2026-10-11)
+
+This project rewrites the AGC flight software in C. Everything around it is
+an existing, proven tool we plug into: yaYUL/yaAGC (assembly and the
+numeric oracle), the VirtualAGC GUI and peripherals (yaDSKY2, yaTelemetry,
+yaACA, LM_Simulator, piPeripheral) for interactive runs, NASSP for flight.
+No lane writes a simulator, device model, DSKY, or physics of its own; the
+sim harness is limited to the clock/interrupt driver and the yaAGC
+peripheral protocol, i.e. what makes agc_sim a drop-in for yaAGC.

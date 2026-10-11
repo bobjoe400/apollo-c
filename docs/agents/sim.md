@@ -89,3 +89,10 @@ behaviour). Acceptance: the GUI sequences listed in docs/PLAN.md item 7,
 each also as a headless scenario. Document the one-line way to run it:
 `VirtualAGC` launcher with the AGC binary path pointed at build/agc_sim,
 or the equivalent manual command.
+
+## No device models (user, 2026-10-11)
+Do not model hardware behaviour in src/sim beyond holding channel/counter
+state and raising interrupts as yaAGC does. Scripted scenarios may feed
+counter increments the way a peripheral would over the protocol, but any
+behavioural model (attitude, trajectory, radar truth) is out of scope;
+that comes from Virtual AGC's peripherals or NASSP.

@@ -520,3 +520,7 @@
             C backend (agc_sim as a drop-in for yaAGC). PLAN item 7 and the
             sim assignment rewritten around that; sim lane promoted to run
             alongside the remaining reviews after the alone pass.
+2026-10-11  User principle: build only the AGC software; everything else is
+            an existing proven tool (yaAGC, VirtualAGC GUI/peripherals,
+            NASSP). Own world model dropped; NASSP is the only closed-loop
+            route (after item 7). Sim lane: no device models.
