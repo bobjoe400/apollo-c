@@ -110,11 +110,6 @@ void agc_time_advance_cs(uint16_t dt_cs)
 
     /* TIME2 overflow wraps the whole 28-bit count to zero. */
     g_time_cs = (g_time_cs + dt_cs) & (AGC_TIME_MODULUS_CS - 1u);
-
-    if (!AGC_ASSERT(g_time_cs < AGC_TIME_MODULUS_CS))
-    {
-        g_time_cs = 0;
-    }
 }
 
 agc_sp_t agc_erase_time1(void)

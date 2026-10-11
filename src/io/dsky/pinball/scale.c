@@ -840,11 +840,6 @@ static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
             /* SFOUTABR fan, part 2: the routines that end in DSPDCEND (DSPDECWD). */
             uint8_t rout = info.routine;
 
-            if (!AGC_ASSERT(pin_invariants()))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
             bool     lm = agc_state_vehicle() == AGC_VEHICLE_LM;
             uint16_t w  = info.is_raw ? (uint16_t) ((uint32_t) v & PIN_WORD) :
                           pin_ones_from_sp(agc_dp_high(v));

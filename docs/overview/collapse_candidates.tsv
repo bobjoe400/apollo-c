@@ -25,7 +25,7 @@ mul_top	src/core/interp/vector.c	251	agc_vec_cross	280	6	5	18	2	0	0	23	yes	assig
 rte_vshift	src/csm/burns/return_to_earth/velocity.c	80	rte_dv_calc	224	2	5	30	2	1	2	33	yes	assign	no	multi-site;value-assign;renamed-args;early-return	rte_dv_calc	33	none	VSL* / VSR* with a computed count: n > 0 left (wraps, OVFIND), n < 0
 js_swap	src/csm/dap/rcs/jet_select.c	388	js_sort	411	3	5	13	1	0	0	17	yes	stmt	no	multi-site;early-return	js_sort	17	none	-
 cdu_pattern	src/csm/entry/cm_body_attitude.c	36	agc_entry_cm_trio	116	3	5	55	2	0	0	60	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_entry_cm_trio	60	none	SP angle of a gimbal saved at PIP time as the 15-bit CDU pattern.
-exec_in_job	src/exec/executive.c	828	agc_exec_gotopooh	849	1	5	17	2	0	0	22	yes	expr	no	cross-file;value-expr;early-return	agc_exec_gotopooh	22	none	---- executive (executive.c), second pass ----------------------------
+exec_in_job	src/exec/executive.c	828	agc_exec_gotopooh	846	1	5	17	2	0	0	22	yes	expr	no	cross-file;value-expr;early-return	agc_exec_gotopooh	22	none	---- executive (executive.c), second pass ----------------------------
 exec_restart_generation	src/exec/executive.c	206	agc_waitlist_t3rupt	469	2	5	32	2	0	0	37	yes	init	no	cross-file;multi-site;value-init;early-return	agc_waitlist_t3rupt	37	none	Bumped by every STARTSB2 (fresh start or software restart). A caller
 phase_longbase	src/exec/phase_table.c	486	start_long	89	1	5	9	2	0	0	14	yes	expr	no	cross-file;value-expr;early-return	start_long	14	none	-
 phase_tbase	src/exec/phase_table.c	471	findtime	44	1	5	10	2	0	0	15	yes	expr	no	cross-file;value-expr;early-return	findtime	15	none	-
@@ -37,12 +37,12 @@ agc_integ_csm_resume_idle_integration	src/nav/integration/flags_csm.c	12	agc_job
 agc_integ_csm_set_amoonflg	src/nav/integration/flags_csm.c	42	entmid1	473	1	5	21	2	0	0	25	yes	stmt	no	cross-file;renamed-args;early-return	entmid1	25	none	-
 rz_sp_to_word	src/programs/displays/display.c	574	rz_set_dsptem_dp	611	2	5	7	1	0	0	12	yes	expr	no	multi-site;value-expr;renamed-args;early-return	rz_set_dsptem_dp	12	none	A signed SP value as a raw 15-bit ones' complement word.
 rz_word_to_sp	src/programs/displays/display.c	558	rz_dsptem_dp	597	2	5	5	1	0	0	10	yes	init	no	multi-site;value-init;renamed-args;early-return	rz_dsptem_dp	10	none	A raw 15-bit ones' complement word as a signed SP value.
-set_moon	src/core/state.c	411	agc_sv_set	446	2	6	20	2	0	0	25	yes	return-tail	no	multi-site;renamed-args	agc_sv_set	25	none	-
+set_moon	src/core/state.c	406	agc_sv_set	441	2	6	20	2	0	0	25	yes	return-tail	no	multi-site;renamed-args	agc_sv_set	25	none	-
 cdu_sp	src/csm/entry/dap.c	142	agc_task_readgymb	486	6	6	31	1	0	0	37	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_task_readgymb	37	none	SP angle from a raw 15-bit CDU counter (2s complement /180).
 exec_running_job_loc	src/exec/executive.c	843	store_alarm	109	1	6	17	2	0	0	23	yes	assign	no	cross-file;value-assign;early-return	store_alarm	23	none	-
 cdu_signed	src/imu/maneuver.c	109	set_cdud	169	1	6	19	2	1	2	23	yes	expr	no	value-expr;early-return	set_cdud	23	none	Two's-complement CDU pattern as a signed count at 180 deg (CSM DAP).
 imu_vflag_test	src/imu/vflags.c	27	agc_imu_calcga	193	1	6	31	2	0	0	37	yes	expr	no	cross-file;value-expr;early-return;collision:id	agc_imu_calcga	37	none	-
-pin_next_request	src/io/dsky/pinball/load.c	370	pin_load_resume	409	3	6	29	2	0	0	34	yes	return-tail	no	multi-site	pin_enter_once	47	none	Show the next load verb and request the next register.
+pin_next_request	src/io/dsky/pinball/load.c	365	pin_load_resume	404	3	6	29	2	0	0	34	yes	return-tail	no	multi-site	pin_enter_once	47	none	Show the next load verb and request the next register.
 pin_id_is_raw	src/io/dsky/pinball/scale.c	218	pin_comp_scale	250	1	6	7	1	0	0	13	yes	assign	no	value-assign;renamed-args;early-return	pin_comp_scale	13	none	Whether the value of a data id is passed raw. agc_nouns.h: an id used
 pin_digit_at	src/io/dsky/pinball/state.c	437	agc_dsky_get_state	469	4	6	24	1	0	0	30	yes	assign	no	multi-site;value-assign;renamed-args;early-return	agc_dsky_get_state	31	none	Character at DSPCOUNT position pos (0..025) decoded from DSPTAB.
 ad16	src/io/service/self_check.c	97	adsum	118	2	6	10	1	0	0	16	yes	init	no	multi-site;value-init;renamed-args;early-return	adsum	19	none	AD in the 16-bit accumulator (end-around carry).
@@ -95,14 +95,14 @@ rz_vflag_csm	src/programs/navigation/flags_csm.c	13	rz_vflag	157	2	22	3	2	0	0	24
 rz_vflag_lm	src/programs/navigation/flags_lm.c	13	rz_vflag	160	1	22	3	2	1	2	23	yes	expr	no	cross-file;value-expr;early-return	rz_vflag	44	none	rz_vflag_lm -- LM flag id for a vehicle-dependent rendezvous flag.
 fan_40s	src/io/verbs/extended_verbs_csm.c	673	agc_extverb_csm	823	1	24	7	1	0	0	30	yes	return-tail	yes	-	agc_extverb_csm	99	none	Verbs 40-47.
 pfd_first_pass	src/lm/radar/powered_flight_designate.c	268	agc_job_powered_flight_designate	375	1	24	17	0	0	0	41	yes	init	no	value-init;renamed-args;early-return;collision:st,u	agc_job_powered_flight_designate	41	none	First pass: RR CDUs, QUICTRIG of the IMU CDUs, and the self-track
-pin_key_of_char	src/io/dsky/pinball/keys.c	840	agc_dsky_keys	909	1	25	16	1	0	0	41	yes	init	no	value-init;renamed-args;early-return	agc_dsky_keys	41	none	Key code for one character of a key string; 0 for none.
+pin_key_of_char	src/io/dsky/pinball/keys.c	840	agc_dsky_keys	904	1	25	14	1	0	0	39	yes	init	no	value-init;renamed-args;early-return	agc_dsky_keys	39	none	Key code for one character of a key string; 0 for none.
 acq_search_point	src/lm/radar/acquisition.c	764	agc_job_radar_search_los	827	1	25	36	0	0	0	61	no	assign	no	value-assign;renamed-args;early-return	agc_job_radar_search_los	81	none	The pattern point N in SM axes: N = 0 the LOS (DESGLOS); N = 1 the
 noun_access_core2	src/io/dsky/nouns/data.c	355	noun_data_access	501	1	26	58	1	1	2	81	no	return-tail	no	renamed-args	noun_data_access	234	none	Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
 noun_access_time	src/io/dsky/nouns/data.c	68	noun_data_access	451	1	27	58	1	0	0	84	no	return-tail	yes	-	noun_data_access	234	none	DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI.
 item_word_lm_dap	src/io/telemetry/down_telemetry.c	306	item_word	399	1	27	23	1	0	0	50	yes	expr	no	value-expr;renamed-args;early-return	item_word	170	none	LM DAP downlink words (agc_lm_dap.h).
 nd_raw	src/programs/navigation/noun_data.c	177	agc_rendz_noun_read	254	1	27	12	0	0	0	39	yes	expr	no	value-expr;renamed-args;early-return	agc_rendz_noun_read	60	none	Raw words: LANDMARK, HORIZON, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.
 noun_dp_alignment	src/exec/nouns.c	167	noun_dp	214	1	28	8	0	0	0	36	yes	assign	no	value-assign;early-return	agc_dispatch_noun	239	none	Alignment (P51-P57, R52-R56) DP erasables and vector components.
-pin_load_resume	src/io/dsky/pinball/load.c	388	pin_enter_once	355	1	29	14	2	0	0	42	yes	return-tail	no	cross-file;renamed-args	pin_enter_once	47	none	TC REQRET from ACCEPTWD: continue the load verb after its data word.
+pin_load_resume	src/io/dsky/pinball/load.c	383	pin_enter_once	355	1	29	14	2	0	0	42	yes	return-tail	no	cross-file;renamed-args	pin_enter_once	47	none	TC REQRET from ACCEPTWD: continue the load verb after its data word.
 csi_trial	src/programs/targeting/csi.c	654	agc_rendz_csi_a	744	1	29	34	0	0	0	63	no	expr	no	value-expr;renamed-args;early-return;collision:l	agc_rendz_csi_a	129	none	One trial at the current DELVCSI: CSI/B23 .. K2. and the gamma logic.
 noun_dp_landing	src/exec/nouns.c	128	noun_dp	209	1	31	8	0	0	0	39	yes	expr	no	value-expr;early-return	agc_dispatch_noun	239	none	LM landing (P63-P68) and ascent (P12, P70-P71) DP erasables.
 noun_dp_guidance	src/exec/nouns.c	40	noun_dp	205	1	32	8	0	0	0	40	yes	init	no	value-init;early-return	agc_dispatch_noun	239	none	Guidance (SERVICER, P30-P47) DP erasables.
@@ -125,17 +125,17 @@ exec_cp_nouveau_flags_lm	src/exec/change_program/lm.c	195	cp_nouveau	310	1	4	27	
 exec_cp_pooh_flags_lm	src/exec/change_program/lm.c	185	cp_pooh	259	1	4	21	0	0	0	25	yes	assign	no	cross-file;value-assign	cp_pooh	29	page-only	POOH (L p.229): CLRADMOD, the rendezvous flags, then SEUDOP00. AGSWORD
 exec_cp_stop_servicer_lm	src/exec/change_program/lm.c	99	cp_select	153	1	4	16	1	0	0	19	yes	stmt	no	cross-file;early-return	cp_select	21	page-only	ISSERVON (L p.228): DOWNFLAG AVEGFLAG, OUTROUTE = V37RET, ENDOFJOB.
 exec_cp_after_engine_off	src/exec/change_program/v37.c	206	agc_job_change_program_jets_off	137	1	4	7	1	0	0	10	yes	return-tail	no	cross-file	agc_job_change_program_jets_off	10	page-only	R00TOP00 continuation (C p.198 after DELAYJOB 5): MMNUMBER = 0.
-net_min	src/lm/dap/accont.c	113	lm_dap_switch_curves	471	3	4	58	1	0	0	62	no	init	no	multi-site;value-init;renamed-args;early-return;collision:a	agc_lm_dap_jet_accel_update	113	page-only	1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.
+net_min	src/lm/dap/accont.c	113	lm_dap_switch_curves	471	3	4	56	1	0	0	60	yes	init	no	multi-site;value-init;renamed-args;early-return;collision:a	agc_lm_dap_jet_accel_update	111	page-only	1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.
 rz_mutable_mu	src/programs/navigation/common.c	32	iv_finish	220	1	4	18	1	0	0	22	yes	init	no	cross-file;value-init;renamed-args;early-return;collision:mu	iv_finish	22	page-only	MUTABLE entry for the primary body: MUE 2^36 (earth) or MUM 2^30 (moon),
 exec_cp_nouveau_flags_csm	src/exec/change_program/csm.c	198	cp_nouveau	314	1	5	27	1	0	0	31	yes	stmt	no	cross-file;early-return	cp_nouveau	35	page-only	NOUVEAU (C p.202): IMUSE off unless P20 runs (RNDVZFLG), SEUDOP00.
 exec_cp_pooh_flags_csm	src/exec/change_program/csm.c	185	cp_pooh	263	1	5	21	1	0	0	25	yes	stmt	no	cross-file;early-return	cp_pooh	29	page-only	POOH (C p.200): IMUSE and RNDVZFLG off (BIT7-8 of FLAGWRD0), SEUDOP00.
 exec_up_servidle	src/exec/change_program/idle.c	60	gopoodoo	349	1	5	18	2	0	0	23	yes	init	no	cross-file;value-init;early-return	gopoodoo	23	page-only	STRTIDLE (L p.1383): SERVIDLE puts SERVICER into its ground state and
 t4_zopfini	src/io/service/t4rupt_csm.c	201	t4_zoptdes	300	1	5	25	1	0	0	30	yes	init	no	value-init;early-return	t4_zoptdes	30	page-only	ZOPFINI (p.161): 1 = ENDZOPT task working (the AGC RESUMEs at once),
-lm_dap_accfix	src/lm/dap/accs.c	472	agc_lm_dap_rcsmon	90	1	5	30	1	0	0	34	yes	return-tail	no	cross-file	agc_lm_dap_rcsmon	34	page-only	RCSMONIT / CALLACCS helper: set up 1/ACCJOB (1/ACCFIX, p.192).
+lm_dap_accfix	src/lm/dap/accs.c	472	agc_lm_dap_rcsmon	85	1	5	28	1	0	0	32	yes	return-tail	no	cross-file	agc_lm_dap_rcsmon	32	page-only	RCSMONIT / CALLACCS helper: set up 1/ACCJOB (1/ACCFIX, p.192).
 agc_conic_mu_	src/nav/conic/common.c	61	agc_conic_kepprep	461	1	5	54	2	1	2	57	yes	assign	no	cross-file;value-assign;renamed-args;early-return	agc_conic_kepprep	57	page-only	MUEARTH,2 / MUM (ORBITAL_INTEGRATION.agc p. 1354) as used by KEPPREP via
 rte_entry_side	src/csm/burns/return_to_earth/conic.c	380	agc_job_return_to_earth_precision	398	1	6	9	1	0	0	15	yes	init	no	cross-file;value-init;renamed-args;early-return	agc_job_return_to_earth_precision	15	page-only	RTE505 .. RTE515 (p. 895): RCON > PCON BETA1 -> entry near apogee
 csm_tvc_exec_restart	src/csm/dap/tvc/exec.c	313	agc_task_exrstrt	189	1	6	4	2	1	2	7	yes	return-tail	no	cross-file;renamed-args	agc_task_exrstrt	7	page-only	EXRSTRT targets (TVCRESTARTS p. 960): INDEX TVCEXPHS into TVCEXADR.
-exec_clear_modecadr	src/exec/erasable.c	68	startsb2	175	1	6	18	2	0	0	23	yes	stmt	no	cross-file;early-return	startsb2	49	page-only	STARTSB2: TS IMUCADR / TS OPTCADR / TS RADCADR (+0).
+exec_clear_modecadr	src/exec/erasable.c	68	startsb2	170	1	6	18	2	0	0	23	yes	stmt	no	cross-file;early-return	startsb2	49	page-only	STARTSB2: TS IMUCADR / TS OPTCADR / TS RADCADR (+0).
 lm_dap_ones_to_twos	src/lm/dap/arith.c	288	agc_task_paxis	463	3	6	47	2	0	0	53	yes	assign	no	cross-file;multi-site;value-assign;renamed-args;early-return	agc_task_paxis	87	page-only	1STOTWOS (p.1422): a ones'-complement value back to a 15-bit two's-
 rr_msu	src/lm/radar/moding.c	131	rr_axis_pass	627	1	6	12	1	0	0	18	yes	init	no	value-init;renamed-args;early-return	rr_axis_pass	23	page-only	MSU (p.534): two's complement difference of the words a - k, as a
 rz_lambert	src/programs/targeting/initvel.c	131	iv_lambert	161	1	6	15	1	0	0	21	yes	init	no	value-init;renamed-args;early-return	iv_lambert	21	page-only	LAMBERT (CONIC_SUBROUTINES p.1266); the LM calls it through SETITCTR
@@ -147,7 +147,7 @@ stick_rate	src/lm/dap/rcs/qrmanual.c	85	rhcactiv	174	2	8	15	2	0	0	23	yes	init	no
 derive_axis	src/lm/dap/rcs/rate.c	125	lm_dap_backp	231	3	8	57	2	0	0	63	no	stmt	no	multi-site;renamed-args;early-return	lm_dap_backp	78	page-only	One axis of the rate derivation (pp.1423-1425): TRAPED += measured -
 trap_axis	src/lm/dap/rcs/rate.c	152	lm_dap_backp	261	3	8	57	2	0	0	65	no	init	no	multi-site;value-init;renamed-args;early-return	lm_dap_backp	78	page-only	Trap correction for one axis (pp.1425-1427): when |TRAPED| exceeds the
 rz_resolve_kind	src/programs/navigation/common.c	942	rz_integ	978	1	8	26	1	1	2	32	yes	expr	no	value-expr;early-return	rz_integ	32	page-only	THISPREC / OTHPREC: CSMPREC or LEMPREC by vehicle.
-exec_up_startsb2	src/exec/change_program/idle.c	207	startsb2	167	1	9	18	1	0	0	27	yes	init	no	cross-file;value-init;early-return	startsb2	49	page-only	STARTSB2's resets of the erasables other modules own (C pp.190-192 /
+exec_up_startsb2	src/exec/change_program/idle.c	207	startsb2	162	1	9	18	1	0	0	27	yes	init	no	cross-file;value-init;early-return	startsb2	49	page-only	STARTSB2's resets of the erasables other modules own (C pp.190-192 /
 exec_cp_cleanup_lm	src/exec/change_program/lm.c	142	agc_job_change_program_continue	375	1	9	15	1	0	0	24	yes	assign	no	cross-file;value-assign;early-return	agc_job_change_program_continue	37	page-only	R00 after INTSTALL (L p.229): 3AXISFLG down, FLGWRD11 = LRBYBIT (R12),
 t4_cdrve	src/io/service/t4rupt.c	172	t4_display_pass	211	1	9	10	1	0	0	19	yes	expr	no	value-expr;early-return	t4_display_pass	19	page-only	CDRVE: true when the lamp word was pending (negative) and has been sent.
 lm_dap_time6_value	src/lm/dap/rcs/t6rupt.c	29	lm_dap_jtlst	126	1	9	27	2	0	0	36	yes	init	no	value-init;early-return	lm_dap_jtlst	36	page-only	TIME6 as a ones'-complement value (-0, the "rupt due" state, is 0).
@@ -177,16 +177,16 @@ db_smallaos	src/lm/dap/accont.c	155	axis_with_aos	214	1	16	59	2	0	0	74	no	stmt	n
 rcs_delrho	src/csm/dap/rcs/filter.c	113	csm_rcs_ratefilt	89	1	17	24	2	0	0	41	yes	init	no	value-init;early-return;param-written;collision:i,r	csm_rcs_ratefilt	41	page-only	Measured body rates (p. 1005): DELRHO = AMGB (CDU - RHO), kept double
 csm_rcs_phase1	src/csm/dap/rcs/t5rupt.c	134	rcs_sett5	124	1	17	18	1	0	0	35	yes	assign	no	value-assign;early-return;collision:r,st	rcs_sett5	35	page-only	SETT5 -0 branch and IMU STATUS CHECK (pp. 1003-1004): phase 1.
 atup_gamdot	src/csm/entry/cm_body_attitude.c	186	entry_cm_atup	264	1	17	15	2	0	0	31	yes	stmt	no	renamed-args;early-return	entry_cm_atup	42	page-only	CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT =
-lm_alone	src/lm/dap/accs.c	360	agc_lm_dap_jet_accel_update	409	1	17	15	2	0	0	32	yes	expr	no	value-expr;early-return	agc_lm_dap_jet_accel_update	113	page-only	F(MASS) .. COMMEQS for the LM alone (pp.1487-1489): the jet
+lm_alone	src/lm/dap/accs.c	360	agc_lm_dap_jet_accel_update	409	1	17	15	2	0	0	32	yes	expr	no	value-expr;early-return	agc_lm_dap_jet_accel_update	111	page-only	F(MASS) .. COMMEQS for the LM alone (pp.1487-1489): the jet
 ldg_quadcoef	src/lm/landing/guidance.c	338	agc_lm_quadguid	381	1	17	16	1	0	0	32	yes	stmt	no	early-return;param-written	agc_lm_quadguid	38	page-only	QUADGUID coefficients (pp. 808-809). BUF = -(lag-diminished TTF)/TTF,
 moon_axes	src/nav/integration/orbital_integration.c	665	oblate	856	1	17	34	2	0	0	51	yes	expr	no	value-expr;renamed-args;early-return;collision:m	oblate	51	page-only	OBLATE moon branch (p. 1341): URPV = R-TO-RP(ALPHAV), UZ = unit of
-startsb2_outbits	src/exec/fresh_start.c	117	startsb2	153	1	18	18	2	0	0	35	yes	stmt	no	early-return	startsb2	49	page-only	STARTSB2, channel and flag part (C p.190 / L p.220).
+startsb2_outbits	src/exec/fresh_start.c	112	startsb2	148	1	18	18	2	0	0	35	yes	stmt	no	early-return	startsb2	49	page-only	STARTSB2, channel and flag part (C p.190 / L p.220).
 external_delta_v_vectors_csm	src/guidance/external_delta_v.c	95	agc_guid_external_delta_v_vectors	173	1	18	8	0	0	0	26	yes	expr	no	value-expr;early-return	agc_guid_external_delta_v_vectors	40	page-only	S30.1 Comanche (p.639-640): state at TIG by THISPREC, the local-vertical
 rpd_csm_statextp	src/programs/displays/rendezvous_parameter_display.c	238	agc_job_rendezvous_params_start	511	1	18	6	0	0	0	24	yes	expr	no	value-expr;renamed-args;early-return	agc_job_rendezvous_params_start	46	page-only	---- CM: STATEXTP (p.508), the first pass ------------------------------
 ln_box12	src/csm/navigation/landmark_navigation.c	543	ln_incorporate	618	1	19	22	0	0	0	41	yes	expr	no	value-expr;renamed-args;early-return	ln_incorporate	41	page-only	S22BOX12: (for the CSM, 9x9) VARIANCE = (SCTVAR + IMUVARR) |RCLP|^2
 timeburn_csm	src/guidance/burn_steering.c	573	agc_guid_timeburn_csm	637	1	19	16	1	0	0	35	yes	init	no	value-init;renamed-args;early-return	agc_guid_timeburn_csm	35	page-only	The short-burn time of S40.13 (Comanche p.727): v is |VGTIG| (less the
 lr_deltav	src/lm/burns/servicer/landing_radar.c	486	agc_lm_serv_vmeaschk	545	1	19	46	1	0	0	65	no	init	no	value-init;renamed-args;early-return;collision:s	agc_lm_serv_vmeaschk	65	page-only	VELUPDAT (p.886-887): the measured velocity along the beam (VMEAS SL 12
-lem_mass	src/lm/dap/accs.c	87	agc_lm_dap_jet_accel_update	406	1	19	15	1	0	0	34	yes	init	no	value-init;renamed-args;early-return	agc_lm_dap_jet_accel_update	113	page-only	1/ACCS entry .. MASSFIX (pp.1486-1487): LEMMASS from MASS, kept inside
+lem_mass	src/lm/dap/accs.c	87	agc_lm_dap_jet_accel_update	406	1	19	15	1	0	0	34	yes	init	no	value-init;renamed-args;early-return	agc_lm_dap_jet_accel_update	111	page-only	1/ACCS entry .. MASSFIX (pp.1486-1487): LEMMASS from MASS, kept inside
 fc_fetch_basic	src/lm/landing/findcduw.c	455	fc_inputs	662	1	19	15	2	0	0	33	yes	stmt	no	early-return;param-written	agc_lm_findcduw	128	page-only	Housekeeping and FETCH BASIC DATA (pp. 910-911): index, flags, and the
 mu_integrate	src/lm/navigation/measurement_update.c	161	agc_job_rendezvous_tracking_data_incorporate	628	1	19	21	0	0	0	40	yes	assign	no	value-assign;renamed-args;early-return;collision:st	agc_job_rendezvous_tracking_data_incorporate	62	page-only	---- the two integrations (LSR22.3 pp.575-576, LSR22.4 p.583) ---------
 cofmaxgo	src/imu/maneuver_calc.c	261	agc_kalc_compute	423	1	20	52	2	0	0	72	no	assign	no	value-assign;renamed-args;early-return;param-written;collision:r	agc_kalc_compute	72	page-only	COFMAXGO / METHOD1-3 (p.401-403): fix the signs of the ALTCALC axis
@@ -219,7 +219,7 @@ ems_altitude_range	src/csm/entry/programs.c	1035	agc_entry_ems_data	1095	1	27	33
 ln_unknown_landmark	src/csm/navigation/landmark_navigation.c	252	ln_dmpinteg	742	1	27	32	0	0	0	59	yes	assign	no	value-assign;early-return;collision:pad,rl,st	ln_dmpinteg	102	page-only	DMPINTEG, unknown landmark (pp.600-603): RL from formula 2.4.10 (X789);
 nav_orbit_states	src/lm/navigation/navigation.c	272	nav_orbit_change	332	1	27	42	0	0	0	69	no	init	no	value-init;renamed-args;early-return;collision:ctx,st	nav_orbit_change	69	page-only	ORBCHG3 first part: LM (no W) and CSM (W when valid) to the launch
 entry_upcontrol_step	src/csm/entry/reentry.c	2106	entry_sequencer	2259	1	28	17	1	0	0	45	yes	assign	no	value-assign;early-return	agc_entry_refaze10	142	page-only	Dispatch within the UP CONTROL section (pp. 864-868), roll during the
-ll_landjunk	src/lm/landing/lunar_landing.c	1125	agc_lm_job_landing_confirmation	1189	1	28	9	2	0	0	37	yes	init	no	value-init;renamed-args;early-return;collision:st	agc_lm_job_landing_confirmation	37	page-only	LANDJUNK (p. 791): zero attitude error, 5 degree deadband, surface
+ll_landjunk	src/lm/landing/lunar_landing.c	1120	agc_lm_job_landing_confirmation	1184	1	28	9	2	0	0	37	yes	init	no	value-init;renamed-args;early-return;collision:st	agc_lm_job_landing_confirmation	37	page-only	LANDJUNK (p. 791): zero attitude error, 5 degree deadband, surface
 lambert_entry	src/nav/conic/lambert.c	552	agc_conic_lambert	702	1	28	40	3	0	0	68	no	init	no	value-init;renamed-args;early-return;collision:st	agc_conic_lambert	160	page-only	LAMBERT entry (p. 1296): ITERCTR, SOLNSW, MUTABLE, EPSILONL, SLOPESW.
 readaccs_entry	src/csm/burns/servicer.c	145	redo5_5	244	1	29	7	2	0	0	36	yes	init	no	value-init;early-return;collision:st	redo5_5	36	page-only	Entry-DAP part of REDO5.5 (p.824-825): during entry (CM/DSTBY set) the
 senseget	src/lm/dap/rcs/qraxis.c	74	lm_dap_rcs	137	1	29	14	1	0	0	43	yes	init	no	value-init;early-return;collision:st	lm_dap_rcs	79	page-only	SENSEGET (pp.1442-1444): X translation from the THC (bits 7,8 of
@@ -228,12 +228,12 @@ lm_sphere	src/nav/integration/orbital_integration.c	1284	agc_integ_timestep	1379
 timegmbl_axis	src/lm/dap/gts.c	428	agc_lm_dap_timegmbl	494	2	30	9	2	0	0	38	yes	stmt	no	multi-site;early-return	agc_lm_dap_timegmbl	38	page-only	TIMEGMBL, one axis (pp.1478-1480): drive time ABS(.4 AOS / ACCDOT) in
 third_body	src/nav/integration/orbital_integration.c	584	accomp	931	1	30	20	0	0	0	50	yes	init	no	value-init;early-return;collision:p,r	accomp	50	page-only	ACCOMP third-body part (p. 1337-1338, MIDFLAG set): LSPOS, RPQV, RPSV,
 conic_correct	src/csm/burns/return_to_earth/conic.c	233	rte_conic_search	360	1	31	40	1	0	0	71	no	assign	no	value-assign;early-return	rte_conic_search	71	page-only	RTE373 .. RTE390 (pp. 893-895): one correction of RCON and X(T2).
-ll_rod_afc	src/lm/landing/lunar_landing.c	766	ll_rodcomp	891	1	31	53	2	0	0	84	no	init	no	value-init;renamed-args;early-return;collision:g,l,meas,st	ll_rodcomp	84	page-only	RODCOMP acceleration command (pp. 818-819):
+ll_rod_afc	src/lm/landing/lunar_landing.c	766	ll_rodcomp	891	1	31	51	2	0	0	82	no	init	no	value-init;renamed-args;early-return;collision:g,l,meas,st	ll_rodcomp	82	page-only	RODCOMP acceleration command (pp. 818-819):
 entry_final_phase_step	src/csm/entry/reentry.c	2169	entry_sequencer	2267	1	32	17	1	0	0	49	yes	assign	no	value-assign;early-return	agc_entry_refaze10	142	page-only	Dispatch within the FINAL PHASE section (pp. 870-875) with the
 kepler_pass	src/nav/conic/kepler.c	301	agc_conic_kepler	395	1	32	41	3	0	0	73	no	assign	no	value-assign;renamed-args;early-return;collision:st	agc_conic_kepler	134	page-only	One pass of KEPLOOP (pp. 1279-1280) up to BRNCHCTR.
 kepler_newdelx	src/nav/conic/kepler.c	205	kepler_pass	344	1	33	32	2	2	4	61	no	assign	no	value-assign;early-return;collision:m,n1	agc_conic_kepler	134	page-only	Secant step of KEPLOOP (p. 1279): trial DELX = DELX DELT / (T - TC),
 kepler_setup	src/nav/conic/kepler.c	46	agc_conic_kepler	387	1	33	41	2	0	0	73	no	stmt	no	renamed-args;early-return	agc_conic_kepler	134	page-only	KEPLERN to STOREMAX (p. 1277-1278): URRECT, R1, KEPC1 = R.V/ROOTMU
-lm_dap_pstate	src/lm/dap/rcs/pmanual.c	64	agc_task_paxis	512	1	34	47	2	0	0	81	no	assign	no	cross-file;value-assign;early-return;collision:d	agc_task_paxis	87	page-only	STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
+lm_dap_pstate	src/lm/dap/rcs/pmanual.c	64	agc_task_paxis	511	1	34	47	2	0	0	81	no	assign	no	cross-file;value-assign;early-return;collision:d	agc_task_paxis	87	page-only	STATE LOGIC (pp.1430-1431): attitude hold uses minimum impulse (PULSES)
 csi_apsis	src/programs/targeting/csi.c	287	csi_trial	665	1	34	29	3	0	0	63	no	assign	no	value-assign;renamed-args;early-return	agc_rendz_csi_a	129	page-only	Non-circular post-CSI orbit (p.668-669): RDOTV test (7 fps), then the
 lambert_pass	src/nav/conic/lambert.c	421	agc_conic_lambert	725	1	35	40	4	0	0	75	no	assign	no	value-assign;renamed-args;early-return;collision:st	agc_conic_lambert	160	page-only	One pass of LAMBLOOP (pp. 1297-1298).
 lm_dap_qrminimp	src/lm/dap/rcs/qrmanual.c	25	lm_dap_rcs	156	1	37	14	1	0	0	50	yes	return-tail	no	cross-file;collision:d	lm_dap_rcs	79	page-only	Minimum impulse (pp.1444-1446): one 14 ms U,V pulse pair per RHC
@@ -242,16 +242,16 @@ lambert_geometry	src/nav/conic/lambert.c	173	agc_conic_lambert	712	1	43	40	3	0	0
 ln_e_matrix	src/csm/navigation/landmark_navigation.c	152	ln_unknown_landmark	296	1	44	27	0	0	0	70	no	return-tail	no	renamed-args;collision:m,w	ln_dmpinteg	102	page-only	The small E matrix (pp.601-602): 1/2 RHO^2 VARSCT (U U T) (RHO NORM,
 tpi_figtime	src/programs/targeting/tpi.c	37	tpi_search_pass	184	1	48	57	2	0	0	105	no	expr	no	value-expr;renamed-args;early-return;collision:ura	tpi_search_loop	115	page-only	FIGTIME .. OKMAX (pp.470-471): time step dt = angle 2pi / (WA - WP),
 tvcd_dap	src/csm/dap/tvc/daps.c	348	tvcd_entry	459	1	52	13	3	1	2	63	no	init	no	value-init;early-return;collision:s2,st,t	tvcd_entry	63	page-only	The common body of PITCHDAP / YAWDAP after the T5 set-up and stroke
-lm_dap_switch_curves	src/lm/dap/accont.c	414	agc_lm_dap_jet_accel_update	413	1	58	15	2	0	0	73	no	init	no	cross-file;value-init;early-return;collision:d	agc_lm_dap_jet_accel_update	113	page-only	1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
+lm_dap_switch_curves	src/lm/dap/accont.c	414	agc_lm_dap_jet_accel_update	413	1	56	15	1	0	0	71	no	init	no	cross-file;value-init;early-return;collision:d	agc_lm_dap_jet_accel_update	111	page-only	1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
 td_bvectors	src/csm/navigation/tracking_data.c	153	td_optics_mark	-	1	1	19	-	-	-	-	-	-	kept	label-distinct:BVECTORS	-	-	label-distinct	---- BVECTORS (p.576): rz_bvectors on the R22 state.
 pin_legaltst	src/io/dsky/pinball/keys.c	312	pin_charin2	-	2	1	59	-	-	-	-	-	-	kept	label-distinct:LEGALTST	-	-	label-distinct	LEGALTST: INREL 0, 1 (verb, noun) cannot be cleared.
 on_code_error	src/csm/navigation/orbital_navigation.c	166	agc_job_orbital_navigation_code_check	-	3	2	20	-	-	-	-	-	-	kept	label-distinct:S22DSPP	-	-	label-distinct	S22DSPP: operator error light and the code display again.
 verb_quit_integration	src/io/verbs/extended_verbs_lm.c	552	fan_70s_90s	-	1	2	32	-	-	-	-	-	-	kept	label-distinct:VERB96	-	-	label-distinct	VERB96: QUITFLAG, V37 to P00.
-exec_up_goprog_optics	src/exec/change_program/idle.c	274	goprog_csm_tail	-	1	3	27	-	-	-	-	-	-	kept	label-distinct:GOPROG	-	-	label-distinct	GOPROG's (hardware restart) optics reset (C p.188): OPTMODES =
+exec_up_goprog_optics	src/exec/change_program/idle.c	274	goprog_csm_tail	-	1	3	28	-	-	-	-	-	-	kept	label-distinct:GOPROG	-	-	label-distinct	GOPROG's (hardware restart) optics reset (C p.188): OPTMODES =
 verb_total_error	src/io/verbs/extended_verbs_csm.c	456	fan_50s_60s	-	2	3	32	-	-	-	-	-	-	kept	label-distinct:V62,V63	-	-	label-distinct	V62 / V63: NEEDLFLG set (total attitude error), N22ORN17 set (wrt N22)
 verb_quit_integration	src/io/verbs/extended_verbs_csm.c	579	fan_70s_90s	-	1	3	41	-	-	-	-	-	-	kept	label-distinct:VERB96	-	-	label-distinct	VERB96: QUITFLAG, V96ONFLG, then V37 to P00.
 verb_vector_to_update	src/io/verbs/extended_verbs_lm.c	493	fan_70s_90s	-	2	3	32	-	-	-	-	-	-	kept	label-distinct:CSMVEC,LEMVEC	-	-	label-distinct	LEMVEC / CSMVEC (V80/V81): VEHUPFLG, and allow updates (NOUPFLAG off).
-ll_resetrpt	src/lm/landing/lunar_landing.c	1022	agc_lm_task_redesmon	-	3	3	28	-	-	-	-	-	-	kept	label-distinct:RESETRPT	-	-	label-distinct	RESETRPT (p. 821): re-enable RUPT10 and end the monitor.
+ll_resetrpt	src/lm/landing/lunar_landing.c	1017	agc_lm_task_redesmon	-	3	3	28	-	-	-	-	-	-	kept	label-distinct:RESETRPT	-	-	label-distinct	RESETRPT (p. 821): re-enable RUPT10 and end the monitor.
 rr_trkf	src/lm/radar/moding.c	290	agc_rr_settrkf	-	1	3	6	-	-	-	-	-	-	kept	label-distinct:RRTRKF	-	-	label-distinct	RRTRKF: the tracker fail lamp is on when the RR CDU failed in auto mode
 mul_half	src/nav/auxiliary/planetary.c	209	agc_planet_moonmx	-	4	3	36	-	-	-	-	-	-	kept	label-distinct:DMP	-	-	label-distinct	DMP SL1R: product of two half-scaled quantities, back to scale 2^1.
 step_final_phase_latlong	src/csm/entry/reentry.c	2028	entry_final_phase_step	-	1	4	32	-	-	-	-	-	-	kept	label-distinct:P67.2	-	-	label-distinct	P67.2 (P61-P67.agc p. 802): present LAT, LONG, ALT (pad radius, earth),
@@ -302,19 +302,19 @@ rz_landmark_marks_start	src/csm/navigation/landmark_navigation.c	410	agc_job_orb
 on_abde	src/csm/navigation/orbital_navigation.c	204	agc_job_orbital_navigation_code_check	-	2	6	20	-	-	-	-	-	-	kept	label-distinct:S22ABDE	-	-	label-distinct	S22ABDE: unknown landmark: done; known: DE = 00 coordinates from noun
 trunnion_class	src/csm/optics/auto_optics_positioning.c	195	agc_csm_target_optics_angles	-	1	6	25	-	-	-	-	-	-	kept	label-distinct:TRUN38	-	-	label-distinct	TRUN38: the PAC limits.  50 degrees or more -> SR52E2, else SR52E3.
 to_mrkbuf1	src/csm/optics/sxtmark.c	339	agc_sxtmark_markcont	-	2	6	21	-	-	-	-	-	-	kept	label-distinct:GENTRAN	-	-	label-distinct	GENTRAN of the mark into MRKBUF1 (and MRKBUF1 into MRKBUF2 first).
-exec_up_setcoars	src/exec/change_program/idle.c	77	goprog_csm_tail	-	1	6	27	-	-	-	-	-	-	kept	label-distinct:SETCOARS	-	-	label-distinct	SETCOARS (IMU_MODE_SWITCHING_ROUTINES): coarse-align enable after a
+exec_up_setcoars	src/exec/change_program/idle.c	77	goprog_csm_tail	-	1	6	28	-	-	-	-	-	-	kept	label-distinct:SETCOARS	-	-	label-distinct	SETCOARS (IMU_MODE_SWITCHING_ROUTINES): coarse-align enable after a
 rupt_reset_timers	src/exec/interrupts.c	96	startsb1	-	1	6	8	-	-	-	-	-	-	kept	label-distinct:STARTSUB	-	-	label-distinct	STARTSUB / STARTSB1 (FRESH_START C p.190 / L p.220): TIME4 = 37775,
 sload_cdu	src/imu/maneuver_calc.c	304	agc_kalc_compute	-	1	6	52	-	-	-	-	-	-	kept	label-distinct:SLOAD	-	-	label-distinct	SLOAD of a CDU word: the AGC reads it as a ones'-complement SP.
 dif_cleanend	src/io/dsky/display_if.c	602	dif_nvdsp	-	1	6	31	-	-	-	-	-	-	kept	label-distinct:CLEANEND	-	-	label-distinct	CLEANEND: a display with VN +0 (CLEANDSP, KLEENEX) ends any ENDIDLE
-pin_dspfmem	src/io/dsky/pinball/monitor.c	198	pin_vbfandir	-	1	6	56	-	-	-	-	-	-	kept	label-distinct:DSPFMEM	-	-	label-distinct	DSPFMEM: fixed memory display (V27 N02 with the FCADR and superbank bits
-pin_arout1	src/io/dsky/pinball/scale.c	610	pin_dspdcput	-	1	6	58	-	-	-	-	-	-	kept	label-distinct:AROUT1SF	-	-	label-distinct	AROUT1SF: point between hi and lo parts of the SF constant; the result
+pin_dspfmem	src/io/dsky/pinball/monitor.c	198	pin_vbfandir	-	1	6	54	-	-	-	-	-	-	kept	label-distinct:DSPFMEM	-	-	label-distinct	DSPFMEM: fixed memory display (V27 N02 with the FCADR and superbank bits
+pin_arout1	src/io/dsky/pinball/scale.c	610	pin_dspdcput	-	1	6	56	-	-	-	-	-	-	kept	label-distinct:AROUT1SF	-	-	label-distinct	AROUT1SF: point between hi and lo parts of the SF constant; the result
 pin_artin1sf	src/io/dsky/pinball/sfin.c	100	pin_sfin_const	-	1	6	16	-	-	-	-	-	-	kept	label-distinct:ARTIN1SF	-	-	label-distinct	ARTIN1SF: scales MPAC, +1 by the SF constant and rounds MPAC+1 into MPAC.
 pin_nountest	src/io/dsky/pinball/verbs.c	218	pin_load_verb	-	1	6	22	-	-	-	-	-	-	kept	label-distinct:NOUNTEST	-	-	label-distinct	NOUNTEST: the noun can be loaded (no-load bit, bit 5 of the comp code).
-pin_predspal	src/io/dsky/pinball/verbs.c	116	pin_dspdcput	-	2	6	58	-	-	-	-	-	-	kept	label-distinct:PREDSPAL	-	-	label-distinct	PREDSPAL: alarm if decimal display with an octal-only noun.
+pin_predspal	src/io/dsky/pinball/verbs.c	116	pin_dspdcput	-	2	6	56	-	-	-	-	-	-	kept	label-distinct:PREDSPAL	-	-	label-distinct	PREDSPAL: alarm if decimal display with an octal-only noun.
 t4_setzoend	src/io/service/t4rupt_csm.c	282	t4_zoptdes	-	1	6	25	-	-	-	-	-	-	kept	label-distinct:SETZOEND	-	-	label-distinct	SETZOEND (p.163): send ZERO OCDU for 200 ms (task ENDZOPT).
 verb_orbit_parameters	src/io/verbs/extended_verbs.c	454	fan_shared	-	1	6	51	-	-	-	-	-	-	kept	label-distinct:V82PERF	-	-	label-distinct	V82PERF: R30 runs on in this job at priority 7 (V82CALL must not be a
 angle_0_360	src/io/verbs/extended_verbs_lm_radar.c	510	agc_job_rr_los_display	-	2	6	20	-	-	-	-	-	-	kept	label-distinct:ARCTRIG	-	-	label-distinct	ARCTRIG, then BPL / DAD DPPOSMAX: an angle 0..1 rev (error 2^-28 rev).
-as_exitvr	src/lm/ascent.c	465	as_checkalt	-	2	6	17	-	-	-	-	-	-	kept	label-distinct:EXITVR	-	-	label-distinct	EXITVR (p. 851): end of the vertical rise; with ROTFLAG clear the
+as_exitvr	src/lm/ascent.c	466	as_checkalt	-	2	6	17	-	-	-	-	-	-	kept	label-distinct:EXITVR	-	-	label-distinct	EXITVR (p. 851): end of the vertical rise; with ROTFLAG clear the
 rs_normal	src/lm/burns/dps_burn_rasteer.c	145	rs_vr	-	2	6	24	-	-	-	-	-	-	kept	label-distinct:UNIT	-	-	label-distinct	UNIT(sign(GEOMSGN) (v x UN)) for 180MESS / NEGPROD.
 fit_row	src/lm/dap/accs.c	126	lm_alone	-	2	6	17	-	-	-	-	-	-	kept	label-distinct:STCTR1	-	-	label-distinct	STCTR1 (p.1488): one row of the inertia fit; the DV remainder is left
 policy_ok	src/lm/dap/rcs/qrjets.c	38	lm_dap_selctsub	-	2	6	12	-	-	-	-	-	-	kept	label-distinct:FAILOOP,SELCTSUB	-	-	label-distinct	SELCTSUB / FAILOOP (pp.1457-1458): POLYTEMP = ALLJETS(ROTINDEX) &
@@ -341,7 +341,7 @@ exec_cp_setup_abort	src/exec/change_program/lm.c	79	agc_change_program	-	1	7	16	
 axisgen_triad	src/imu/alignment.c	222	agc_imu_axisgen	-	2	7	17	-	-	-	-	-	-	kept	label-distinct:AXISGEN1	-	-	label-distinct	AXISGEN1 (p.1361) for one frame: U = S1, V = UNIT(S1 x S2),
 nogom2	src/imu/maneuver.c	434	agc_job_newdelhi	-	1	7	15	-	-	-	-	-	-	kept	label-distinct:NOGO,NOGOM2	-	-	label-distinct	NOGO -2 / NOGOM2: the maneuver was interrupted: zero the attitude error
 coarse_command	src/imu/mode.c	631	agc_task_coars	-	1	7	10	-	-	-	-	-	-	kept	label-distinct:COARS1	-	-	label-distinct	COARS1 body: THETAD - THETAA, shifted right 2 and rounded (pulses).
-pin_lrposout	src/io/dsky/pinball/scale.c	738	pin_dspdcput	-	1	7	58	-	-	-	-	-	-	kept	label-distinct:LRPOSOUT	-	-	label-distinct	LRPOSOUT (LM): landing radar position, channel 33 bits 7-6 to bits
+pin_lrposout	src/io/dsky/pinball/scale.c	738	pin_dspdcput	-	1	7	56	-	-	-	-	-	-	kept	label-distinct:LRPOSOUT	-	-	label-distinct	LRPOSOUT (LM): landing radar position, channel 33 bits 7-6 to bits
 pin_arthinsf	src/io/dsky/pinball/sfin.c	80	pin_sfin_const	-	1	7	16	-	-	-	-	-	-	kept	label-distinct:ARTHINSF	-	-	label-distinct	ARTHINSF: assumes point between hi and lo parts of SFCON; shifts the
 pin_whole	src/io/dsky/pinball/sfin.c	348	pin_hmsin	-	3	7	26	-	-	-	-	-	-	kept	label-distinct:RND/TST	-	-	label-distinct	RND/TST: whole number from the fraction N/10^5 (DMP by WHOLECON, round
 verb_zero_imu	src/io/verbs/extended_verbs.c	345	fan_shared	-	1	7	51	-	-	-	-	-	-	kept	label-distinct:VBZERO	-	-	label-distinct	VBZERO (V40, C p.238 / L p.265), IMU part: zero the ICDUs, then GOPIN.
@@ -437,7 +437,7 @@ ta_feed_dap	src/csm/navigation/tracking_attitude.c	219	ta_crs61	-	1	10	22	-	-	-	
 difchk	src/csm/optics/sxtmark.c	277	agc_task_markdif	-	3	10	13	-	-	-	-	-	-	kept	label-distinct:DIFCHK	-	-	label-distinct	DIFCHK: |mark CDU - present CDU| <= 3 counts (MSU, modular).
 gcompsub	src/imu/compensation.c	340	irig_axis	-	6	10	17	-	-	-	-	-	-	kept	label-distinct:GCOMPSUB	-	-	label-distinct	GCOMPSUB (ICP p.331): GCOMP[axis] += coef * mpac, where mpac is PIPA
 pin_89test	src/io/dsky/pinball/keys.c	178	pin_charin2	-	1	10	59	-	-	-	-	-	-	kept	label-distinct:TEST	-	-	label-distinct	89TEST (p. 316): 8 or 9 is accepted only in decimal.
-pin_alldc_oc	src/io/dsky/pinball/load.c	228	pin_putn	-	1	10	30	-	-	-	-	-	-	kept	label-distinct:ALLDC/OC	-	-	label-distinct	ALLDC/OC: tests that the data words loaded are either all decimal or
+pin_alldc_oc	src/io/dsky/pinball/load.c	223	pin_putn	-	1	10	30	-	-	-	-	-	-	kept	label-distinct:ALLDC/OC	-	-	label-distinct	ALLDC/OC: tests that the data words loaded are either all decimal or
 pin_reqadd	src/io/dsky/pinball/verbs.c	344	pin_testnn	-	1	10	21	-	-	-	-	-	-	kept	label-distinct:REQADD	-	-	label-distinct	REQADD: machine address (or channel) to be specified. External (keyed)
 adsum	src/io/service/self_check.c	116	agc_selfcheck_banksum	-	1	10	24	-	-	-	-	-	-	kept	label-distinct:ADSUM	-	-	label-distinct	ADSUM: SKEEP1 = SKEEP1 + word; on overflow TS stores the overflow-
 t4_display_pass	src/io/service/t4rupt.c	209	agc_t4rupt	-	1	10	9	-	-	-	-	-	-	kept	label-distinct:CDRVE,DSPOUT,NODSPOUT	-	-	label-distinct	CDRVE / DSPOUT / NODSPOUT (pp.134-137): returns the TIME4 delay.
@@ -445,7 +445,7 @@ t4_cscdes	src/io/service/t4rupt_csm.c	386	agc_t4_optics_monitor	-	1	10	17	-	-	-	
 verb_establish_dap	src/io/verbs/extended_verbs_csm.c	200	fan_40s	-	1	10	24	-	-	-	-	-	-	kept	label-distinct:STABLISH	-	-	label-distinct	STABLISH (V46, p.245): RCS/entry/Saturn DAP by DAPFIG; with TVC on,
 verb_landmark_offset	src/io/verbs/extended_verbs_csm.c	415	fan_50s_60s	-	1	10	32	-	-	-	-	-	-	kept	label-distinct:V52	-	-	label-distinct	V52 (p.257): in P22, LANDMARK bits 12-10 = 5 - the mark number in
 verb_dap_data_load	src/io/verbs/extended_verbs_lm.c	180	fan_40s_60s	-	1	10	40	-	-	-	-	-	-	kept	label-distinct:DAPDISP	-	-	label-distinct	DAPDISP (V48): TESTXACT, priority 7, DAPDATA1: DAPDATR1 from DAPBOOLS
-as_maineng	src/lm/ascent.c	217	agc_lm_ascent	-	1	10	50	-	-	-	-	-	-	kept	label-distinct:MAINENG	-	-	label-distinct	MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
+as_maineng	src/lm/ascent.c	218	agc_lm_ascent	-	1	10	50	-	-	-	-	-	-	kept	label-distinct:MAINENG	-	-	label-distinct	MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
 vfail	src/lm/burns/servicer/landing_radar.c	458	agc_lm_serv_vmeaschk	-	1	10	46	-	-	-	-	-	-	kept	label-distinct:NOLITE,VFAIL	-	-	label-distinct	VFAIL / NOLITE (p.890-891): a bad velocity reading.
 lresc	src/lm/dap/accs.c	261	lm_alone	-	1	10	17	-	-	-	-	-	-	kept	label-distinct:LRESC	-	-	label-distinct	LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
 ruflaw3	src/lm/dap/rcs/tjetlaw.c	408	lm_dap_tjetlaw	-	1	10	25	-	-	-	-	-	-	kept	label-distinct:RUFLAW3	-	-	label-distinct	RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
@@ -473,7 +473,7 @@ td_vhf_mark	src/csm/navigation/tracking_data.c	232	td_passes	-	1	11	35	-	-	-	-	-
 tstrxut	src/guidance/burn_steering.c	286	agc_guid_preferred_thrust_attitude_csm	-	1	11	51	-	-	-	-	-	-	kept	label-distinct:BADVCTOR,TSTRXUT	-	-	label-distinct	TSTRXUT / BADVCTOR (Comanche p.716): if UT x R was null (36D = 0) use
 dif_rest	src/io/dsky/display_if.c	658	dif_nvdsp	-	1	11	31	-	-	-	-	-	-	kept	label-distinct:REST	-	-	label-distinct	REST: the display system is busy. If someone is in ENDIDLE the display
 pin_decend	src/io/dsky/pinball/keys.c	39	pin_endnmtst	-	1	11	13	-	-	-	-	-	-	kept	label-distinct:DECEND	-	-	label-distinct	DECEND (p. 317): for R1-R3 convert the 5-digit integer N to N/10^5 by DMP
-pin_vbrqwait	src/io/dsky/pinball/monitor.c	252	pin_vbfandir	-	1	11	56	-	-	-	-	-	-	kept	label-distinct:VBRQWAIT	-	-	label-distinct	VBRQWAIT: request waitlist, DSPTEM1 = time delay (cs), +1 the task.
+pin_vbrqwait	src/io/dsky/pinball/monitor.c	252	pin_vbfandir	-	1	11	54	-	-	-	-	-	-	kept	label-distinct:VBRQWAIT	-	-	label-distinct	VBRQWAIT: request waitlist, DSPTEM1 = time delay (cs), +1 the task.
 pin_reqadd_resume	src/io/dsky/pinball/verbs.c	372	pin_load_resume	-	1	11	29	-	-	-	-	-	-	kept	label-distinct:REQADD	-	-	label-distinct	REQADD continued after the operator's ENTER: alarm and recycle if
 t4_setglock	src/io/service/t4rupt.c	869	agc_t4_glockmon	-	1	11	18	-	-	-	-	-	-	kept	label-distinct:GLAMPTST,GLINVERT,SETGLOCK	-	-	label-distinct	SETGLOCK / GLINVERT / GLAMPTST (p.148): make the gimbal lock lamp
 stikload	src/io/verbs/extended_verbs_lm.c	223	agc_job_dap_data_load_config_lm	-	1	11	24	-	-	-	-	-	-	kept	label-distinct:STIKLOAD	-	-	label-distinct	STIKLOAD: stick sensitivity and rate deadband (divided by 10 / halved
@@ -498,13 +498,13 @@ step_l355	src/csm/entry/reentry.c	1950	entry_final_phase_step	-	1	12	32	-	-	-	-	
 cn_rect	src/csm/navigation/cislunar_navigation.c	198	cn_pointaxs	-	1	12	42	-	-	-	-	-	-	kept	label-distinct:RECT.1	-	-	label-distinct	---- RECT.1 (p.630): the CSM state from the permanent conic + deviation
 auto_optics_drive	src/csm/optics/auto_optics_positioning.c	294	auto_optics_target	-	1	12	25	-	-	-	-	-	-	kept	label-distinct:R52E,R52JA	-	-	label-distinct	R52JA / R52E: show V06N92 (GODSPR) unless the target is the LM or R53 is
 markok	src/csm/optics/sxtmark.c	81	sxtmark_common	-	1	12	14	-	-	-	-	-	-	kept	label-distinct:MARKOK,MKVACFND	-	-	label-distinct	MARKOK / MKVACFND: claim a VAC area for the marks (BAILOUT 01207).
-phase_tables_ok	src/exec/fresh_start.c	465	goprog3	-	1	12	22	-	-	-	-	-	-	kept	label-distinct:PCLOOP,PTBAD	-	-	label-distinct	PCLOOP .. PTBAD (C p.188 / L p.218): every group's -PHASEn must be
+phase_tables_ok	src/exec/fresh_start.c	460	goprog3	-	1	12	22	-	-	-	-	-	-	kept	label-distinct:PCLOOP,PTBAD	-	-	label-distinct	PCLOOP .. PTBAD (C p.188 / L p.218): every group's -PHASEn must be
 pickaxis	src/imu/attitude_maneuver.c	194	vecpoint_from	-	1	12	15	-	-	-	-	-	-	kept	label-distinct:PICKAXIS,PICKX,ROT180	-	-	label-distinct	PICKAXIS / ROT180 / PICKX: VF x VI is (nearly) zero.  Parallel: keep
 gselect	src/imu/gyro.c	363	strtgyr2	-	1	12	22	-	-	-	-	-	-	kept	label-distinct:GSELECT	-	-	label-distinct	GSELECT (p.1433) for one gyro: true if a pulse train was started.
 coarse_slice	src/imu/mode.c	674	agc_task_coars2	-	1	12	18	-	-	-	-	-	-	kept	label-distinct:COMPOS	-	-	label-distinct	COMPOS / COMNEG / COMZERO for one CDU: the pulses to send this cycle
 dif_goanidle	src/io/dsky/display_if.c	686	dif_nvdsp	-	1	12	31	-	-	-	-	-	-	kept	label-distinct:GOANIDLE	-	-	label-distinct	GOANIDLE: flash -> FLASHSUB; GODSPRET -> back to the user's CADR; a
 pin_tstab	src/io/dsky/pinball/keys.c	442	pin_error_key	-	1	12	25	-	-	-	-	-	-	kept	label-distinct:TSTAB	-	-	label-distinct	TSTAB: set BIT12 in every DSPTAB magnitude, keeping its sign (and so
-pin_dpout	src/io/dsky/pinball/scale.c	627	pin_dspdcput	-	1	12	58	-	-	-	-	-	-	kept	label-distinct:DPOUT	-	-	label-distinct	DPOUT and DP1OUTSF / DP2OUTSF (also DP4) / DP3OUTSF: DMP of the fresh DP
+pin_dpout	src/io/dsky/pinball/scale.c	627	pin_dspdcput	-	1	12	56	-	-	-	-	-	-	kept	label-distinct:DPOUT	-	-	label-distinct	DPOUT and DP1OUTSF / DP2OUTSF (also DP4) / DP3OUTSF: DMP of the fresh DP
 t4_iturnon	src/io/service/t4rupt.c	531	t4_ifailjmp	-	1	12	19	-	-	-	-	-	-	kept	label-distinct:ITURNON	-	-	label-distinct	ITURNON (p.150): channel 30 bit 14 (ISS turn-on request) changed.
 t4_imuop	src/io/service/t4rupt.c	620	t4_ifailjmp	-	1	12	19	-	-	-	-	-	-	kept	label-distinct:IMUOP	-	-	label-distinct	IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.
 dnphase2	src/io/telemetry/down_telemetry.c	630	agc_telem_downrupt	-	1	12	21	-	-	-	-	-	-	kept	label-distinct:DNPHASE2	-	-	label-distinct	DNPHASE2: the next word of the downlist.
@@ -540,7 +540,7 @@ contmanu	src/imu/maneuver.c	554	incrdcdu_tmanuchk	-	1	13	37	-	-	-	-	-	-	kept	lab
 pin_endnmtst	src/io/dsky/pinball/keys.c	64	pin_num	-	1	13	36	-	-	-	-	-	-	kept	label-distinct:ENDALL,ENDNMTST,ENDNUM,MORNUM	-	-	label-distinct	ENDNMTST / ENDNUM / ENDALL / MORNUM (pp. 317-318).
 pin_vbreldsp	src/io/dsky/pinball/keys.c	405	pin_charin2	-	1	13	59	-	-	-	-	-	-	kept	label-distinct:VBRELDSP	-	-	label-distinct	VBRELDSP. Key release: an external monitor suspended by the operator
 pin_mmchang_resume	src/io/dsky/pinball/monitor.c	336	pin_load_resume	-	1	13	29	-	-	-	-	-	-	kept	label-distinct:MMCHANG	-	-	label-distinct	MMCHANG +1: demand that 2 numerical characters were punched in
-pin_reqmm	src/io/dsky/pinball/monitor.c	308	pin_vbfandir	-	1	13	56	-	-	-	-	-	-	kept	label-distinct:REQMM	-	-	label-distinct	REQMM: request two decimal characters for the major mode in the noun
+pin_reqmm	src/io/dsky/pinball/monitor.c	308	pin_vbfandir	-	1	13	54	-	-	-	-	-	-	kept	label-distinct:REQMM	-	-	label-distinct	REQMM: request two decimal characters for the major mode in the noun
 pin_deginsf	src/io/dsky/pinball/sfin.c	166	pin_putdecsf	-	2	13	40	-	-	-	-	-	-	kept	label-distinct:DEGINSF	-	-	label-distinct	DEGINSF: SF routine for decimal degrees (xxx.xx). Multiply by 5.555 B-3,
 pin_optdegin	src/io/dsky/pinball/sfin.c	208	pin_putdecsf	-	1	13	40	-	-	-	-	-	-	kept	label-distinct:OPTDEGIN	-	-	label-distinct	OPTDEGIN (CM): optics scaling routine, range 90 degrees. Reject a
 t4_proceede	src/io/service/t4rupt.c	272	agc_t4rupt	-	1	13	9	-	-	-	-	-	-	kept	label-distinct:PROCEEDE	-	-	label-distinct	PROCEEDE (p.136): the PRO key, channel 32 bit 14 compared with IMODES33
@@ -573,11 +573,11 @@ on_site_from_rls	src/csm/navigation/orbital_navigation.c	175	on_abde	-	1	14	6	-	
 tps_enden	src/csm/navigation/tpi_search.c	426	agc_rendz_tpi_search_sector	-	1	14	25	-	-	-	-	-	-	kept	label-distinct:ENDEN,NEXUS	-	-	label-distinct	ENDEN .. NEXUS (pp.557-558): RELDELV signed by VTPRIME . RPASS4;
 exec_cp_engine_off_to_idle	src/exec/change_program/csm.c	93	agc_change_program	-	1	14	16	-	-	-	-	-	-	kept	label-distinct:R00TOP00	-	-	label-distinct	R00TOP00 (C p.197-198): with the SPS engine on or the TVC DAP running,
 exec_up_dofstart	src/exec/change_program/idle.c	236	dofstart	-	1	14	10	-	-	-	-	-	-	kept	label-distinct:DOFSTART	-	-	label-distinct	DOFSTART's resets of the erasables other modules own (C p.183-184 /
-goprog_lm_tail	src/exec/fresh_start.c	600	agc_restart_goprog	-	1	14	29	-	-	-	-	-	-	kept	label-distinct:GOPROG3,SETINFL	-	-	label-distinct	SETINFL .. GOPROG3 (L p.217): the LM hardware-restart part.
+goprog_lm_tail	src/exec/fresh_start.c	596	agc_restart_goprog	-	1	14	29	-	-	-	-	-	-	kept	label-distinct:GOPROG3,SETINFL	-	-	label-distinct	SETINFL .. GOPROG3 (L p.217): the LM hardware-restart part.
 initial_vg_lambert_csm	src/guidance/burn_steering.c	173	agc_guid_initial_velocity_to_gain	-	1	14	15	-	-	-	-	-	-	kept	label-distinct:S40.1B	-	-	label-distinct	S40.1B Comanche (p.710-711): VIPRIME at TIG - 2 s (kept in UT), then
 pin_sign_key	src/io/dsky/pinball/keys.c	273	pin_charin2	-	2	14	59	-	-	-	-	-	-	kept	label-distinct:BOTHSGN,FIXCLPAS,NEGSGN,POSGN	-	-	label-distinct	POSGN / NEGSGN / BOTHSGN / FIXCLPAS.
 pin_enter_once	src/io/dsky/pinball/keys.c	320	pin_enter	-	1	14	9	-	-	-	-	-	-	kept	label-distinct:ACCEPTWD,ENTPASHI	-	-	label-distinct	ENTER, ENTPASHI, ACCEPTWD: one pass.
-pin_hmsout	src/io/dsky/pinball/scale.c	673	pin_dspdcput	-	1	14	58	-	-	-	-	-	-	kept	label-distinct:HMSOUT	-	-	label-distinct	HMSOUT: hours in R1, minutes (mod 60) in R2, seconds with centiseconds
+pin_hmsout	src/io/dsky/pinball/scale.c	673	pin_dspdcput	-	1	14	56	-	-	-	-	-	-	kept	label-distinct:HMSOUT	-	-	label-distinct	HMSOUT: hours in R1, minutes (mod 60) in R2, seconds with centiseconds
 t4_endtnon	src/io/service/t4rupt.c	959	agc_t4_task	-	1	14	13	-	-	-	-	-	-	kept	label-distinct:ENDTNON	-	-	label-distinct	ENDTNON (p.142): end of the 90 s ISS turn-on delay.
 t4_issup	src/io/service/t4rupt.c	989	agc_t4_task	-	1	14	13	-	-	-	-	-	-	kept	label-distinct:ISSUP	-	-	label-distinct	ISSUP (p.143): caging and fail inhibits removed, DAP enabled; LM also
 t4_getopcmd	src/io/service/t4rupt_csm.c	510	t4_opt_commands	-	2	14	17	-	-	-	-	-	-	kept	label-distinct:GETOPCMD	-	-	label-distinct	GETOPCMD (p.167): command = round(diff / 4) of the desired minus the
@@ -589,7 +589,7 @@ braking_phase_ignition	src/lm/burns/ignition/burnbaby.c	513	ignition_by_program	
 dps_ignition	src/lm/burns/ignition/burnbaby.c	564	ignition_by_program	-	1	14	17	-	-	-	-	-	-	kept	label-distinct:P40IGN	-	-	label-distinct	P40IGN (p.739-740): unless NOTHROTL, throttle-up (P40ZOOM) ZOOMTIME
 go_postburn	src/lm/burns/ignition/clock.c	306	agc_job_clokjob_engine_enable_bypass	-	1	14	11	-	-	-	-	-	-	kept	label-distinct:GOPOST	-	-	label-distinct	GOPOST (p.746-747): POSTBURN at PRIO12 (below CLOKJOB), DAP set up for
 dvmon	src/lm/burns/servicer/average_g.c	602	agc_lm_serv_copycycl	-	1	14	18	-	-	-	-	-	-	kept	label-distinct:DVMON	-	-	label-distinct	DVMON (p.861-862): thrust detected when ABDELV > DVTHRUSH: STEERSW set,
-store_axis	src/lm/dap/accont.c	337	lm_dap_switch_curves	-	1	14	58	-	-	-	-	-	-	kept	label-distinct:STORV	-	-	label-distinct	STORV (pp.1502-1503) and the U-axis store: ACCSWx and the ten words
+store_axis	src/lm/dap/accont.c	337	lm_dap_switch_curves	-	1	14	56	-	-	-	-	-	-	kept	label-distinct:STORV	-	-	label-distinct	STORV (pp.1502-1503) and the U-axis store: ACCSWx and the ten words
 lm_dap_chekstik	src/lm/dap/rcs/qrmanual.c	206	lm_dap_rcs	-	1	14	14	-	-	-	-	-	-	kept	label-distinct:CHEKSTIK,DAMPING	-	-	label-distinct	CHEKSTIK / DAMPING (p.1446): rate command. Not in GTS while in
 ld_altrout	src/lm/landing/displays.c	179	ld_continue	-	1	14	7	-	-	-	-	-	-	kept	label-distinct:ALTROUT,ARCOMP	-	-	label-distinct	ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
 ld_disindat	src/lm/landing/displays.c	328	agc_lm_landisp	-	1	14	12	-	-	-	-	-	-	kept	label-distinct:DISINDAT	-	-	label-distinct	DISINDAT (p. 900): does the astronaut wish the analog displays (mode
@@ -612,7 +612,7 @@ t4_rrcduchk	src/io/service/t4rupt_lm.c	204	agc_t4_rr_monitor	-	1	15	19	-	-	-	-	-
 verb_attitude_error	src/io/verbs/extended_verbs_csm.c	93	fan_40s	-	1	15	24	-	-	-	-	-	-	kept	label-distinct:IMUATTCK	-	-	label-distinct	IMUATTCK (V43, p.243): P00 only, not while coarse align or zero ICDU;
 verb_marking	src/io/verbs/extended_verbs_csm.c	337	fan_50s_60s	-	2	15	32	-	-	-	-	-	-	kept	label-distinct:GOTOR21,GOTOR23	-	-	label-distinct	GOTOR21 / GOTOR23 (V57 / V54, p.250): R23FLG, then R21 or R23 if P20
 verb_terminate_tracking	src/io/verbs/extended_verbs_lm.c	409	fan_40s_60s	-	1	15	40	-	-	-	-	-	-	kept	label-distinct:TRMTRACK	-	-	label-distinct	TRMTRACK (V56, p.278): REND or P25 flag on -> knock down REND, P25 and
-p_axis	src/lm/dap/accont.c	126	lm_dap_switch_curves	-	1	15	58	-	-	-	-	-	-	kept	label-distinct:DOPAXIS	-	-	label-distinct	DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
+p_axis	src/lm/dap/accont.c	126	lm_dap_switch_curves	-	1	15	56	-	-	-	-	-	-	kept	label-distinct:DOPAXIS	-	-	label-distinct	DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
 lm_dap_altdsply	src/lm/dap/rcs/needles.c	23	lm_dap_chekbits	-	1	15	20	-	-	-	-	-	-	kept	label-distinct:ALTDSPLY	-	-	label-distinct	ALTDSPLY (pp.1414-1415): invert DSPLYALT; display (NEEDLER) or compute
 trygts	src/lm/dap/rcs/qraxis.c	165	lm_dap_qraxis	-	1	15	13	-	-	-	-	-	-	kept	label-distinct:CHKINGTS,TRYGTS	-	-	label-distinct	TRYGTS / CHKINGTS (pp.1449-1450): use the trim gimbal unless jets are
 rhcactiv	src/lm/dap/rcs/qrmanual.c	172	lm_dap_chekstik	-	2	15	14	-	-	-	-	-	-	kept	label-distinct:ENTERQR,RHCACTIV	-	-	label-distinct	RHCACTIV / ENTERQR (pp.1446-1447): commanded Q,R rates from SAVEHAND,
@@ -634,10 +634,10 @@ ln_known_landmark	src/csm/navigation/landmark_navigation.c	659	ln_dmpinteg	-	1	1
 exec_cp_rendezvous_csm	src/exec/change_program/csm.c	216	cp_nouveau	-	1	16	27	-	-	-	-	-	-	kept	label-distinct:REV37	-	-	label-distinct	RENDV00 .. REV37 (C p.201): P20 requested while P20 runs: STATQUO (keep
 store_var	src/exec/phase_table.c	241	phaschng_common	-	1	16	8	-	-	-	-	-	-	kept	label-distinct:CON2,GETNEWNM,GETPRIO,OLDPRIO	-	-	label-distinct	GETPRIO / OLDPRIO / GETNEWNM / CON2 (C pp.1410-1412 / L pp.1299-1301):
 dif_makemark	src/io/dsky/display_if.c	499	dif_makeplay	-	1	16	9	-	-	-	-	-	-	kept	label-distinct:CHKPRIO,MAKEMARK,MARSLEEP	-	-	label-distinct	MAKEMARK / CHKPRIO / MARSLEEP.
-pin_vbrqexec	src/io/dsky/pinball/monitor.c	221	pin_vbfandir	-	1	16	56	-	-	-	-	-	-	kept	label-distinct:VBRQEXEC	-	-	label-distinct	VBRQEXEC: request executive, from noun 26 in DSPTEM1: +0 priority word
+pin_vbrqexec	src/io/dsky/pinball/monitor.c	221	pin_vbfandir	-	1	16	54	-	-	-	-	-	-	kept	label-distinct:VBRQEXEC	-	-	label-distinct	VBRQEXEC: request executive, from noun 26 in DSPTEM1: +0 priority word
 t4_manudes	src/io/service/t4rupt_csm.c	350	agc_t4_optics_monitor	-	1	16	17	-	-	-	-	-	-	kept	label-distinct:MANTOMAN,MANUDES	-	-	label-distinct	MANUDES / MANTOMAN (p.162): previous setting manual.
 do_entry	src/io/telemetry/down_telemetry.c	578	dnphase2	-	2	16	12	-	-	-	-	-	-	kept	label-distinct:DODNCHAN,SETWO	-	-	label-distinct	SETWO .. DODNCHAN: act on one list entry.  from_control: the TIME2 test
-axis_fail_dist	src/lm/dap/accont.c	304	lm_dap_switch_curves	-	1	16	58	-	-	-	-	-	-	kept	label-distinct:DBFUN,FAIL-	-	-	label-distinct	FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
+axis_fail_dist	src/lm/dap/accont.c	304	lm_dap_switch_curves	-	1	16	56	-	-	-	-	-	-	kept	label-distinct:DBFUN,FAIL-	-	-	label-distinct	FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
 docked_fit	src/lm/dap/accs.c	285	docked	-	2	16	22	-	-	-	-	-	-	kept	label-distinct:SPSLOOP1	-	-	label-distinct	SPSLOOP1/2 (pp.1494-1495): the docked quadratic fit in X = CSMMASS,
 gts_root_term	src/lm/dap/gts.c	295	lm_dap_gts	-	1	16	25	-	-	-	-	-	-	kept	label-distinct:ADDITIN,GETROOT	-	-	label-distinct	GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
 spsstart	src/lm/dap/rcs/spsrcs.c	30	lm_dap_spsrcs	-	1	16	18	-	-	-	-	-	-	kept	label-distinct:SPSSTART	-	-	label-distinct	SPSSTART (pp.1509-1510): the jet command for this pass.
@@ -658,11 +658,11 @@ wcalc	src/imu/maneuver.c	805	kalcman3	-	1	17	39	-	-	-	-	-	-	kept	label-distinct:
 dif_makeprio	src/io/dsky/display_if.c	463	dif_makeplay	-	1	17	9	-	-	-	-	-	-	kept	label-distinct:MAKEPRIO	-	-	label-distinct	MAKEPRIO: a priority display interrupting another priority display
 dif_start_makeplay	src/io/dsky/display_if.c	1241	agc_dsky_display	-	1	17	36	-	-	-	-	-	-	kept	label-distinct:BOTHJOBS,GODSPRS1	-	-	label-distinct	GODSPRS1 / BOTHJOBS: start MAKEPLAY at the user's priority (a VAC job
 pin_nvcom	src/io/dsky/pinball/keys.c	208	pin_charin2	-	2	17	59	-	-	-	-	-	-	kept	label-distinct:NVCOM	-	-	label-distinct	NVCOM: blank the verb or noun lights and get ready for 2 decimal chars.
-pin_msout	src/io/dsky/pinball/scale.c	705	pin_dspdcput	-	1	17	58	-	-	-	-	-	-	kept	label-distinct:M/SOUT	-	-	label-distinct	M/SOUT: minutes in D1D2, blank D3, seconds in D4D5, limited to 59B59.
-pin_decdsp	src/io/dsky/pinball/scale.c	887	pin_vbfandir	-	1	17	56	-	-	-	-	-	-	kept	label-distinct:DECDSP	-	-	label-distinct	DECDSP (V06): pick up all components first (DSPDCGET), then display
+pin_msout	src/io/dsky/pinball/scale.c	705	pin_dspdcput	-	1	17	56	-	-	-	-	-	-	kept	label-distinct:M/SOUT	-	-	label-distinct	M/SOUT: minutes in D1D2, blank D3, seconds in D4D5, limited to 59B59.
+pin_decdsp	src/io/dsky/pinball/scale.c	882	pin_vbfandir	-	1	17	54	-	-	-	-	-	-	kept	label-distinct:DECDSP	-	-	label-distinct	DECDSP (V06): pick up all components first (DSPDCGET), then display
 t4_opt_commands	src/io/service/t4rupt_csm.c	544	agc_t4_optics_drive	-	1	17	19	-	-	-	-	-	-	kept	label-distinct:OPT2	-	-	label-distinct	OPT2 / TRUNCMD / shaft stop avoidance (pp.167-168): fill COMMANDO.
-as_checkalt	src/lm/ascent.c	485	agc_lm_ascent	-	1	17	50	-	-	-	-	-	-	kept	label-distinct:CHECKALT,CHECKYAW,KEEPVR	-	-	label-distinct	CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
-as_engoff	src/lm/ascent.c	519	agc_lm_ascent	-	1	17	50	-	-	-	-	-	-	kept	label-distinct:ENGOFF	-	-	label-distinct	ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
+as_checkalt	src/lm/ascent.c	486	agc_lm_ascent	-	1	17	50	-	-	-	-	-	-	kept	label-distinct:CHECKALT,CHECKYAW,KEEPVR	-	-	label-distinct	CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
+as_engoff	src/lm/ascent.c	520	agc_lm_ascent	-	1	17	50	-	-	-	-	-	-	kept	label-distinct:ENGOFF	-	-	label-distinct	ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
 ignition_by_program	src/lm/burns/ignition/burnbaby.c	596	agc_task_ignition_lm	-	1	17	14	-	-	-	-	-	-	kept	label-distinct:INDEX	-	-	label-distinct	INDEX WHICH / TCF 13 (p.739): the program-specific part of IGNITION.
 go_cutoff	src/lm/burns/ignition/clock.c	339	agc_job_clokjob_engine_enable_bypass	-	1	17	11	-	-	-	-	-	-	kept	label-distinct:GOCUTOFF	-	-	label-distinct	GOCUTOFF (p.747): CUTOFF at PRIO17, guidance displays allowed, coasting
 lm_dap_needler	src/lm/dap/rcs/needles.c	168	lm_dap_altdsply	-	1	17	15	-	-	-	-	-	-	kept	label-distinct:NEEDLER	-	-	label-distinct	NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.
@@ -684,7 +684,7 @@ rcs_sett5	src/csm/dap/rcs/t5rupt.c	107	agc_task_rcsatt	-	2	18	21	-	-	-	-	-	-	kep
 csm_rcs_t5phase2	src/csm/dap/rcs/t5rupt.c	349	rcs_sett5	-	1	18	18	-	-	-	-	-	-	kept	label-distinct:T5PHASE2	-	-	label-distinct	T5PHASE2 (p. 1016) and KALUPDT (pp. 1021-1022).
 vgamcalc	src/csm/entry/programs.c	973	agc_entry_ems_data	-	3	18	33	-	-	-	-	-	-	kept	label-distinct:PREVGAM,VGAMCALC	-	-	label-distinct	PREVGAM / VGAMCALC (pp. 813-814): vis-viva speed VGAM (m/cs B7) and
 dif_makenorm	src/io/dsky/display_if.c	536	dif_makeplay	-	1	18	9	-	-	-	-	-	-	kept	label-distinct:IFLEGAL,OKTOPLAY	-	-	label-distinct	IFLEGAL / OKTOPLAY: a normal display. A new one while the previous
-pin_opdegout	src/io/dsky/pinball/scale.c	545	pin_dspdcput	-	1	18	58	-	-	-	-	-	-	kept	label-distinct:OPDEGOUT	-	-	label-distinct	OPDEGOUT (CM): optics range is 90 deg. Add the 19.775 deg bias, the
+pin_opdegout	src/io/dsky/pinball/scale.c	545	pin_dspdcput	-	1	18	56	-	-	-	-	-	-	kept	label-distinct:OPDEGOUT	-	-	label-distinct	OPDEGOUT (CM): optics range is 90 deg. Add the 19.775 deg bias, the
 t4_quikdsp	src/io/service/t4rupt.c	235	agc_t4rupt	-	1	18	9	-	-	-	-	-	-	kept	label-distinct:NODSPY,QUIKDSP,QUIKOFF,SYNCT4	-	-	label-distinct	QUIKDSP / QUIKOFF / NODSPY / SYNCT4 (pp.137-138).
 t4_proctnon	src/io/service/t4rupt.c	728	agc_t4_tnontest	-	1	18	9	-	-	-	-	-	-	kept	label-distinct:PROCTNON	-	-	label-distinct	PROCTNON (p.142): act on the turn-on request one sample after it came.
 timeburn_long	src/lm/burns/dps_burn.c	1032	agc_job_timeburn_lm	-	1	18	28	-	-	-	-	-	-	kept	label-distinct:S40.13D	-	-	label-distinct	S40.13D (p.774-775), the burn is long enough to steer: APS TGO = m v /
@@ -731,7 +731,7 @@ predict_find_jj	src/csm/entry/reentry.c	1585	step_predict3	-	1	20	37	-	-	-	-	-	-
 step_glimiter	src/csm/entry/reentry.c	1814	entry_final_phase_step	-	1	20	32	-	-	-	-	-	-	kept	label-distinct:GLIMITER	-	-	label-distinct	GLIMITER (p. 872): above GMAX/2 limit the downlift so that
 torque	src/imu/gyro.c	324	gselect	-	1	20	12	-	-	-	-	-	-	kept	label-distinct:GMERGE,LONGGYRO,MAJ+,MAJ-	-	-	label-distinct	MAJ+/MAJ-/GMERGE/LONGGYRO (pp.1434-1437): send one gyro command.  The
 pin_reqret_backup	src/io/dsky/pinball/load.c	52	pin_charin2	-	1	20	59	-	-	-	-	-	-	kept	label-distinct:CLPASHI	-	-	label-distinct	CLPASHI's "+3 to - number, backs data requests": the request for the
-pin_dsp_octal	src/io/dsky/pinball/verbs.c	240	pin_vbfandir	-	1	20	56	-	-	-	-	-	-	kept	label-distinct:DSPA	-	-	label-distinct	DSPA, DSPB, DSPC, DSPAB, DSPABC with DSPCOM1/2/3. V01-V03 show one
+pin_dsp_octal	src/io/dsky/pinball/verbs.c	240	pin_vbfandir	-	1	20	54	-	-	-	-	-	-	kept	label-distinct:DSPA	-	-	label-distinct	DSPA, DSPB, DSPC, DSPAB, DSPABC with DSPCOM1/2/3. V01-V03 show one
 gts_first_terms	src/lm/dap/gts.c	223	lm_dap_gts	-	1	20	25	-	-	-	-	-	-	kept	label-distinct:ALGORTHM	-	-	label-distinct	ALGORTHM (pp.1473-1474): K2THETA = K ERROR rescaled to 4 pi^2, and
 gts_drive	src/lm/dap/gts.c	333	lm_dap_gts	-	1	20	25	-	-	-	-	-	-	kept	label-distinct:LOUPE,NEGUSUM	-	-	label-distinct	NEGUSUM .. LOUPE (pp.1483-1484): new drive NEGU = SGN(NEGUSUM); a
 t6job	src/lm/dap/rcs/t6rupt.c	172	agc_lm_dap_t6jobchk	-	1	20	8	-	-	-	-	-	-	kept	label-distinct:T6JOB	-	-	label-distinct	T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
@@ -741,8 +741,8 @@ cp_pooh	src/exec/change_program/v37.c	244	agc_job_change_program_continue	-	1	21
 rst_read_dp	src/exec/restart_tables.c	374	restart_entry	-	1	21	22	-	-	-	-	-	-	kept	label-distinct:ITSLGCL1	-	-	label-distinct	ITSLGCL1 (C p.1417): EXTEND / NDX A / DCA 0 -- the DP delta time of a
 wait2	src/exec/waitlist.c	144	agc_waitlist_call	-	1	21	10	-	-	-	-	-	-	kept	label-distinct:WAIT2,WTLST2,WTLST5	-	-	label-distinct	WAIT2 / WTLST5 / WTLST2 (C pp.1226-1230 / L pp.1122-1127): task
 pin_blankdsp	src/io/dsky/pinball/nvsub.c	329	agc_dsky_nvsub_blank	-	1	21	10	-	-	-	-	-	-	kept	label-distinct:BLANKDSP	-	-	label-distinct	BLANKDSP: NVTEMP -4 blanks everything, -3 all but the mode lights, -2
-pin_dspdpdec	src/io/dsky/pinball/scale.c	927	pin_vbfandir	-	1	21	56	-	-	-	-	-	-	kept	label-distinct:DSPDPDEC	-	-	label-distinct	DSPDPDEC (V07): a DP word of a normal noun as 10 decimal chars in R1,
-store_deadbands	src/lm/dap/accont.c	371	lm_dap_switch_curves	-	1	21	58	-	-	-	-	-	-	kept	label-distinct:STORV	-	-	label-distinct	STORV end, DRFDB (pp.1503-1504): FLAT, ZONE3LIM, P deadbands, and the
+pin_dspdpdec	src/io/dsky/pinball/scale.c	922	pin_vbfandir	-	1	21	54	-	-	-	-	-	-	kept	label-distinct:DSPDPDEC	-	-	label-distinct	DSPDPDEC (V07): a DP word of a normal noun as 10 decimal chars in R1,
+store_deadbands	src/lm/dap/accont.c	371	lm_dap_switch_curves	-	1	21	56	-	-	-	-	-	-	kept	label-distinct:STORV	-	-	label-distinct	STORV end, DRFDB (pp.1503-1504): FLAT, ZONE3LIM, P deadbands, and the
 justout	src/lm/dap/rcs/pmanual.c	140	lm_dap_detentck	-	1	21	22	-	-	-	-	-	-	kept	label-distinct:JUSTOUT	-	-	label-distinct	JUSTOUT -1 / JUSTOUT (pp.1433-1434): first manual pass. Rate command on
 getx_inv_wloop	src/nav/conic/geom.c	295	agc_conic_getx_	-	1	21	18	-	-	-	-	-	-	kept	label-distinct:WLOOP	-	-	label-distinct	1/WLOOP (p. 1294): G = G + sqrt(G^2 + R1A/W^2) three times from
 lambert_p_r1a	src/nav/conic/lambert.c	294	lambert_pass	-	1	21	35	-	-	-	-	-	-	kept	label-distinct:LAMBLOOP	-	-	label-distinct	LAMBLOOP from the top to the GETX call (p. 1297-1298):
@@ -763,8 +763,8 @@ ta_crs61	src/csm/navigation/tracking_attitude.c	244	agc_job_tracking_attitude_cs
 restart_entry	src/exec/restarts.c	138	restart_table	-	2	22	15	-	-	-	-	-	-	kept	label-distinct:CONTBL2	-	-	label-distinct	CONTBL2 (C p.1417): restart one table entry.
 strtgyr2	src/imu/gyro.c	393	agc_task_strtgyro	-	1	22	9	-	-	-	-	-	-	kept	label-distinct:STRTGYR2	-	-	label-distinct	STRTGYR2 (p.1432): next gyro by phase; at the end free the gyros, wake
 manustat_lm	src/imu/maneuver.c	669	manustat	-	1	22	26	-	-	-	-	-	-	kept	label-distinct:RATEBIAS	-	-	label-distinct	RATEBIAS (LM p.367): OMEGAxD = BRATE, DELxEROR = -|w| w / 16 / 1JACCx.
-pin_load_verb	src/io/dsky/pinball/load.c	319	pin_vbfandir	-	1	22	56	-	-	-	-	-	-	kept	label-distinct:ALOAD	-	-	label-distinct	ALOAD (V21), BLOAD (V22), CLOAD (V23), ABLOAD (V24), ABCLOAD (V25):
-pin_monitor	src/io/dsky/pinball/monitor.c	40	pin_vbfandir	-	1	22	56	-	-	-	-	-	-	kept	label-distinct:MONITOR	-	-	label-distinct	MONITOR: verbs 11-17. MONSAVE gets the monitor verb and noun, MONSAVE1
+pin_load_verb	src/io/dsky/pinball/load.c	314	pin_vbfandir	-	1	22	54	-	-	-	-	-	-	kept	label-distinct:ALOAD	-	-	label-distinct	ALOAD (V21), BLOAD (V22), CLOAD (V23), ABLOAD (V24), ABCLOAD (V25):
+pin_monitor	src/io/dsky/pinball/monitor.c	40	pin_vbfandir	-	1	22	54	-	-	-	-	-	-	kept	label-distinct:MONITOR	-	-	label-distinct	MONITOR: verbs 11-17. MONSAVE gets the monitor verb and noun, MONSAVE1
 t4_imucage	src/io/service/t4rupt.c	572	t4_ifailjmp	-	1	22	19	-	-	-	-	-	-	kept	label-distinct:IMUCAGE	-	-	label-distinct	IMUCAGE (p.152): channel 30 bit 11 changed.  Returns true when the
 verb_optics_coarse	src/io/verbs/extended_verbs_csm.c	591	fan_40s	-	1	22	24	-	-	-	-	-	-	kept	label-distinct:OPTCOARK	-	-	label-distinct	OPTCOARK (V41 N91, p.242): "temporary routine to run the optics CDUs
 docked	src/lm/dap/accs.c	318	agc_lm_dap_jet_accel_update	-	1	22	15	-	-	-	-	-	-	kept	label-distinct:DOCKED	-	-	label-distinct	DOCKED (pp.1494-1496): CSM-docked jet accelerations. Inertia at
@@ -796,25 +796,25 @@ lambert_bounds	src/nav/conic/lambert.c	245	agc_conic_lambert	-	1	25	40	-	-	-	-	-
 v2t_precision_bounds	src/csm/burns/return_to_earth/velocity.c	470	rte_post_impulse_velocity	-	1	26	20	-	-	-	-	-	-	kept	label-distinct:V2T110,V2T135	-	-	label-distinct	V2T110 .. V2T135 (pp. 920-921): during a precision iteration constrain
 csm_rcs_manual	src/csm/dap/rcs/manual.c	52	csm_rcs_t5phase2	-	1	26	18	-	-	-	-	-	-	kept	label-distinct:NOCHANGE	-	-	label-distinct	MANUAL ROTATION COMMANDS .. NOCHANGE (pp. 1017-1018).
 tps_trial	src/csm/navigation/tpi_search.c	200	agc_rendz_tpi_search_sector	-	1	26	25	-	-	-	-	-	-	kept	label-distinct:CONCAUL,JUNCT3,PERIAPO	-	-	label-distinct	CONCAUL .. JUNCT3 .. PERIAPO (pp.554-556): passive to TTPI + TF (conic),
-fresh_enema	src/exec/fresh_start.c	699	agc_exec_service_restart	-	1	26	12	-	-	-	-	-	-	kept	label-distinct:ENEMA,GOPROG2	-	-	label-distinct	ENEMA / GOPROG2 (C p.188 / L p.217): software restart.
 manustat	src/imu/maneuver.c	711	newangl1	-	1	26	15	-	-	-	-	-	-	kept	label-distinct:MANUSTAT	-	-	label-distinct	MANUSTAT: TM = TM + TIME - 1 s, vehicle part, NEXTIME = TIME1 + 1 s.
-pin_hmsin	src/io/dsky/pinball/sfin.c	371	pin_putcom	-	1	26	43	-	-	-	-	-	-	kept	label-distinct:HMSIN	-	-	label-distinct	HMSIN: XREG = hours, YREG = minutes, ZREG = seconds (xxx.xx), all three
+pin_hmsin	src/io/dsky/pinball/sfin.c	371	pin_putcom	-	1	26	41	-	-	-	-	-	-	kept	label-distinct:HMSIN	-	-	label-distinct	HMSIN: XREG = hours, YREG = minutes, ZREG = seconds (xxx.xx), all three
 gyro_trim	src/lm/alignment/lunar_surface_gravity.c	483	agc_job_lunar_surface_coarse_trimmed	-	1	26	6	-	-	-	-	-	-	kept	label-distinct:GYROTRIM	-	-	label-distinct	GYROTRIM (p. 966): STQ QMIN; with CDUSPOT = THETAD the nav-base X and Y
-as_cmponent	src/lm/ascent.c	336	agc_lm_ascent	-	1	26	50	-	-	-	-	-	-	kept	label-distinct:AIMER,CMPONENT	-	-	label-distinct	CMPONENT .. AIMER (pp. 848-849): thrust acceleration components one
+as_cmponent	src/lm/ascent.c	337	agc_lm_ascent	-	1	26	50	-	-	-	-	-	-	kept	label-distinct:AIMER,CMPONENT	-	-	label-distinct	CMPONENT .. AIMER (pp. 848-849): thrust acceleration components one
 lm_dap_pretimck	src/lm/dap/rcs/paxis.c	388	agc_task_paxis	-	1	26	47	-	-	-	-	-	-	kept	label-distinct:CHKRTIMR,PRETIMCK	-	-	label-distinct	PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
 getx_polycoef	src/nav/conic/geom.c	341	agc_conic_getx_	-	1	26	18	-	-	-	-	-	-	kept	label-distinct:POLYCOEF	-	-	label-distinct	POLYCOEF and TRUE360X (pp. 1292-1295): from MPAC = 1/W the series
 state_step	src/nav/integration/orbital_integration.c	1091	agc_integ_timestep	-	1	26	19	-	-	-	-	-	-	kept	label-distinct:ENDSTATE	-	-	label-distinct	INTGRATE .. ENDSTATE (p. 1345-1349) for the state vector: three ACCOMP
 v2t_desired_dv	src/csm/burns/return_to_earth/velocity.c	556	rte_post_impulse_velocity	-	1	27	20	-	-	-	-	-	-	kept	label-distinct:V2T150,V2T300	-	-	label-distinct	V2T150 .. V2T300 (pp. 921-923) after the first iterator pass, when a DV
 js_times	src/csm/dap/rcs/jet_select.c	340	agc_csm_jet_select	-	1	27	16	-	-	-	-	-	-	kept	label-distinct:ROLLTIME	-	-	label-distinct	ROLLTIME, PITCHTIM, YAWTIME with ASMBLW* / *BYPASS (pp. 1050-1058).
 cp_nouveau	src/exec/change_program/v37.c	293	agc_job_change_program_continue	-	1	27	15	-	-	-	-	-	-	kept	label-distinct:NOUVEAU,RENDV00,SEUDOP00	-	-	label-distinct	NOUVEAU / SEUDOP00 / RENDV00 (C pp.200-202 / L pp.229-231): the new
-goprog_csm_tail	src/exec/fresh_start.c	547	agc_restart_goprog	-	1	27	29	-	-	-	-	-	-	kept	label-distinct:ELRSKIP,NOCOARSE	-	-	label-distinct	ELRSKIP .. NOCOARSE (C pp.187-188): the CSM hardware-restart part.
-pin_vbtstlts	src/io/dsky/pinball/monitor.c	371	pin_vbfandir	-	1	27	56	-	-	-	-	-	-	kept	label-distinct:VBTSTLTS	-	-	label-distinct	VBTSTLTS: all 8's and the + signs, every lamp on, test alarm outbit on;
+fresh_enema	src/exec/fresh_start.c	695	agc_exec_service_restart	-	1	27	12	-	-	-	-	-	-	kept	label-distinct:ENEMA,GOPROG2	-	-	label-distinct	ENEMA / GOPROG2 (C p.188 / L p.217): software restart.
+pin_vbtstlts	src/io/dsky/pinball/monitor.c	371	pin_vbfandir	-	1	27	54	-	-	-	-	-	-	kept	label-distinct:VBTSTLTS	-	-	label-distinct	VBTSTLTS: all 8's and the + signs, every lamp on, test alarm outbit on;
 pin_nvsub1	src/io/dsky/pinball/nvsub.c	375	pin_nvmonopt	-	1	27	7	-	-	-	-	-	-	kept	label-distinct:NVSUB1	-	-	label-distinct	NVSUB1 / NVSUB2 for a positive VN: noun +0 just pastes the verb, verb +0
 getx_xcommon	src/nav/conic/geom.c	392	agc_conic_getx_	-	1	27	18	-	-	-	-	-	-	kept	label-distinct:XCOMMON	-	-	label-distinct	XCOMMON (pp. 1293-1294): XI, X, 0D = XSQ normalized (N1), KEPC1, KEPC2,
 kepler_period	src/nav/conic/kepler.c	102	agc_conic_kepler	-	1	27	41	-	-	-	-	-	-	kept	label-distinct:STOREMAX	-	-	label-distinct	STOREMAX to MODDONE (p. 1278): PERIOD = XMAX / (ROOTMU ALPHA) (2^28)
 kepler_bounds	src/nav/conic/kepler.c	155	agc_conic_kepler	-	1	27	41	-	-	-	-	-	-	kept	label-distinct:BADX,DXCOMP,MODDONE,STORBNDS,STOREMIN,XDIFF	-	-	label-distinct	MODDONE, BADX, STORBNDS, STOREMIN, DXCOMP, XDIFF (pp. 1278-1279):
 csi_cdh_tpi	src/programs/targeting/csi.c	381	csi_trial	-	1	27	29	-	-	-	-	-	-	kept	label-distinct:CSINEXT1	-	-	label-distinct	CSINEXT1 .. CSINEXT2 head (p.669-670): states at CDH (conic), CDHMVR,
 target_los	src/csm/optics/auto_optics_positioning.c	145	agc_csm_target_optics_angles	-	1	28	25	-	-	-	-	-	-	kept	label-distinct:LEM52,LMK52,LMKLMCOM	-	-	label-distinct	LEM52 / LMK52 / LMKLMCOM: the target (LM or landmark) position at
+goprog_csm_tail	src/exec/fresh_start.c	542	agc_restart_goprog	-	1	28	29	-	-	-	-	-	-	kept	label-distinct:ELRSKIP,NOCOARSE	-	-	label-distinct	ELRSKIP .. NOCOARSE (C pp.187-188): the CSM hardware-restart part.
 calcthet	src/guidance/burn_steering.c	83	agc_guid_initial_velocity_to_gain	-	1	28	15	-	-	-	-	-	-	kept	label-distinct:CALCTHET	-	-	label-distinct	CALCTHET (CM p.709-710, LM p.765-766): the impulsive DELVSIN is spread
 pegi	src/lm/dap/rcs/pmanual.c	207	raterror	-	2	28	22	-	-	-	-	-	-	kept	label-distinct:PEGI	-	-	label-distinct	PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
 rd_scaled	src/lm/radar/read.c	375	agc_rendz_radar_read	-	2	28	40	-	-	-	-	-	-	kept	label-distinct:SCALECHK	-	-	label-distinct	SCALECHK / RADIN / SCALADJ / DGCHECK2 for RR range, RR range rate and
@@ -826,7 +826,7 @@ ta_rates	src/csm/navigation/tracking_attitude.c	172	ta_crs61	-	1	29	22	-	-	-	-	-
 pfd_los	src/lm/radar/powered_flight_designate.c	73	agc_radar_powered_flight_designate	-	1	29	21	-	-	-	-	-	-	kept	label-distinct:R29.LOS,SETUP29D	-	-	label-distinct	R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
 dap_bodyrate	src/csm/entry/dap.c	416	agc_task_readgymb	-	1	30	31	-	-	-	-	-	-	kept	label-distinct:BODYRATE	-	-	label-distinct	BODYRATE end (p. 1072): with CMDAPARM set, ATTRATES via T5RUPT soon.
 cn_horiz	src/csm/navigation/cislunar_navigation.c	278	cn_pointaxs	-	1	30	42	-	-	-	-	-	-	kept	label-distinct:HORIZ	-	-	label-distinct	HORIZ: the horizon point (near or far, NORFHOR) of the measured body in
-pin_putn	src/io/dsky/pinball/load.c	254	pin_load_resume	-	5	30	29	-	-	-	-	-	-	kept	label-distinct:PUTXYZ	-	-	label-distinct	PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store.
+pin_putn	src/io/dsky/pinball/load.c	249	pin_load_resume	-	5	30	29	-	-	-	-	-	-	kept	label-distinct:PUTXYZ	-	-	label-distinct	PUTXYZ (ncomp 3) / PUTXY (ncomp 2) / single-component store.
 star_in_position	src/lm/alignment/lunar_surface_sighting.c	111	agc_job_lunar_surface_star_chosen	-	1	30	35	-	-	-	-	-	-	kept	label-distinct:INCAZ	-	-	label-distinct	INCAZ .. R59D for one AOT position: OANB of (AOTAZ, 45 deg); the star
 no_powered_designate_now	src/lm/burns/servicer/landing_radar.c	222	agc_lm_serv_copycyc1	-	1	30	18	-	-	-	-	-	-	kept	label-distinct:COPYCYC2,NOR29NOW	-	-	label-distinct	NOR29NOW .. COPYCYC2 (p.876-877): HCALC, ALTBITS and UHZP for R10, the
 fc_transfer	src/lm/landing/findcduw.c	595	agc_lm_findcduw	-	1	30	43	-	-	-	-	-	-	kept	label-distinct:CDUWXFR	-	-	label-distinct	CDUWXFR (p. 918): angle interface and lag angles
@@ -841,18 +841,18 @@ oblate	src/nav/integration/orbital_integration.c	835	accomp	-	1	34	20	-	-	-	-	-	
 rcs_zerot5	src/csm/dap/rcs/t5rupt.c	256	csm_rcs_freshdap	-	1	35	11	-	-	-	-	-	-	kept	label-distinct:RCSSWIT,ZEROT5	-	-	label-distinct	ZEROT5 .. RCSSWIT (pp. 1014-1015).
 step_predict3	src/csm/entry/reentry.c	1664	entry_final_phase_step	-	1	37	32	-	-	-	-	-	-	kept	label-distinct:PREDICT3	-	-	label-distinct	PREDICT3 (pp. 870-871): stop steering below VQUIT, else range error
 incrdcdu_tmanuchk	src/imu/maneuver.c	586	newangl1	-	1	37	15	-	-	-	-	-	-	kept	label-distinct:INCRDCDU	-	-	label-distinct	INCRDCDU loop, RELINT, TMANUCHK (p.414-415 / p.365-366).
-pin_putdecsf	src/io/dsky/pinball/sfin.c	268	pin_putcom	-	1	40	43	-	-	-	-	-	-	kept	label-distinct:PUTDECSF	-	-	label-distinct	PUTDECSF: the value to store for component k from the decimal fraction
+pin_putdecsf	src/io/dsky/pinball/sfin.c	268	pin_putcom	-	1	40	41	-	-	-	-	-	-	kept	label-distinct:PUTDECSF	-	-	label-distinct	PUTDECSF: the value to store for component k from the decimal fraction
 cn_measure	src/csm/navigation/cislunar_navigation.c	438	agc_job_cislunar_midcourse_navigation_incorporate	-	1	41	20	-	-	-	-	-	-	kept	label-distinct:R23.53,R23.55	-	-	label-distinct	---- R23.55 .. R23.53 (pp.625-626) --------------------------------------
+pin_putcom	src/io/dsky/pinball/load.c	124	pin_putn	-	1	41	30	-	-	-	-	-	-	kept	label-distinct:PUTCOM	-	-	label-distinct	PUTCOM: store component k from XREG.. (octal) or XREG,XREGLP.. (decimal
 nav_orbit_change	src/lm/navigation/navigation.c	329	agc_job_rendezvous_navigation_orbit_change	-	1	42	8	-	-	-	-	-	-	kept	label-distinct:ORBCHG3	-	-	label-distinct	ORBCHG3 (pp.493-495): the CSM orbit plane is rotated to contain the LM
-pin_putcom	src/io/dsky/pinball/load.c	124	pin_putn	-	1	43	30	-	-	-	-	-	-	kept	label-distinct:PUTCOM	-	-	label-distinct	PUTCOM: store component k from XREG.. (octal) or XREG,XREGLP.. (decimal
 getabval	src/lm/burns/servicer/average_g.c	462	agc_job_serv_resume_lm	-	1	43	37	-	-	-	-	-	-	kept	label-distinct:AVERAGEG,GETABVAL	-	-	label-distinct	GETABVAL .. AVERAGEG (p.860-861): ABDELV, mass, DVTOTAL, CDUSPOT and the
 tff_z	src/nav/auxiliary/free_fall.c	230	tff_calc	-	2	45	30	-	-	-	-	-	-	kept	label-distinct:SAVEDEN,TFFXTEST	-	-	label-distinct	SAVEDEN .. TFFXTEST (p. 1383): indeterminacy test, choice of equation.
 desired_attitude	src/csm/burns/earth_orbit_insertion.c	572	agc_job_aterjob	-	1	54	38	-	-	-	-	-	-	kept	label-distinct:ATTDISP,ATTDISP1,ATTDISPR	-	-	label-distinct	ATTDISP / ATTDISP1 / ATTDISPR (pp. 542-544): desired gimbal angles from
-as_t2test	src/lm/ascent.c	241	agc_lm_ascent	-	1	54	50	-	-	-	-	-	-	kept	label-distinct:CONST,T2TEST	-	-	label-distinct	T2TEST .. CONST (pp. 846-848): with more than 2 s to go, the steering
+pin_vbfandir	src/io/dsky/pinball/verbs.c	474	pin_verbfan	-	1	54	11	-	-	-	-	-	-	kept	label-distinct:VBFANDIR	-	-	label-distinct	VBFANDIR: INDEX VERBREG, CAF VERBTAB.
+as_t2test	src/lm/ascent.c	242	agc_lm_ascent	-	1	54	50	-	-	-	-	-	-	kept	label-distinct:CONST,T2TEST	-	-	label-distinct	T2TEST .. CONST (pp. 846-848): with more than 2 s to go, the steering
 dap_cm_rcs	src/csm/entry/dap.c	1048	agc_task_attrates	-	1	55	49	-	-	-	-	-	-	kept	label-distinct:CM/RCS,COMPAT	-	-	label-distinct	CM/RCS .. COMPAT (pp. 1081-1083): roll error X and rate for the phase
-pin_vbfandir	src/io/dsky/pinball/verbs.c	474	pin_verbfan	-	1	56	11	-	-	-	-	-	-	kept	label-distinct:VBFANDIR	-	-	label-distinct	VBFANDIR: INDEX VERBREG, CAF VERBTAB.
+pin_dspdcput	src/io/dsky/pinball/scale.c	780	pin_decdsp	-	1	56	17	-	-	-	-	-	-	kept	label-distinct:DSPDCPUT	-	-	label-distinct	DSPDCPUT for component k: R(k+1), then the SF routine. *exited is set
 agc_lm_serv_updatchk	src/lm/burns/servicer/landing_radar.c	351	agc_lm_serv_munretrn	-	2	57	38	-	-	-	-	-	-	kept	label-distinct:NOREASON,POSUPDAT,UPDATCHK	-	-	label-distinct	UPDATCHK / POSUPDAT / NOREASON (p.884-886).
-pin_dspdcput	src/io/dsky/pinball/scale.c	780	pin_decdsp	-	1	58	17	-	-	-	-	-	-	kept	label-distinct:DSPDCPUT	-	-	label-distinct	DSPDCPUT for component k: R(k+1), then the SF routine. *exited is set
 lm_dap_startdap	src/lm/dap/rcs/dapidler.c	127	agc_task_dapidler	-	1	58	17	-	-	-	-	-	-	kept	label-distinct:STARTDAP	-	-	label-distinct	STARTDAP (pp.1411-1413), second half: old CDUs, skip and T6 list
 pin_charin2	src/io/dsky/pinball/keys.c	521	pin_charin	-	1	59	11	-	-	-	-	-	-	kept	label-distinct:CHARIN2	-	-	label-distinct	CHARIN2 fan on the 5-bit input code.
-axis_with_aos	src/lm/dap/accont.c	190	lm_dap_switch_curves	-	1	59	58	-	-	-	-	-	-	kept	label-distinct:ACCTHERE,BOTHAXES	-	-	label-distinct	BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,
+axis_with_aos	src/lm/dap/accont.c	190	lm_dap_switch_curves	-	1	59	56	-	-	-	-	-	-	kept	label-distinct:ACCTHERE,BOTHAXES	-	-	label-distinct	BOTHAXES .. ACCTHERE (pp.1498-1501): sign and size of the offset,

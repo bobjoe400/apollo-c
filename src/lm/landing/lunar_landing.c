@@ -321,16 +321,16 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_lm_ldg_t        *l = agc_lm_ldg();
     const agc_lm_pad_t  *p = agc_lm_pad();
     agc_navaux_padload_t nav;
-    agc_status_t         st = agc_navaux_get_padload(&nav);
+    agc_status_t         st_pad = agc_navaux_get_padload(&nav);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(st_pad == AGC_STATUS_OK))
     {
-        return (st);
+        return (st_pad);
     }
 
-    agc_vec_t r = agc_vec_zero();
-
-    st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r);
+    agc_vec_t    r  = agc_vec_zero();
+    agc_status_t st = agc_planet_rp_to_r(&ip, &nav, true,
+                                         agc_erase_rls(), p->tland, &r);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -896,11 +896,6 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(dt >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (ll_vhorcomp(ctx, &ip, v));
 }
 
@@ -1141,11 +1136,11 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     agc_flag_set(AGC_FLAG_APSFLAG);
     agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_navaux_padload_t nav;
-    agc_status_t         st = agc_navaux_get_padload(&nav);
+    agc_status_t         st_pad = agc_navaux_get_padload(&nav);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(st_pad == AGC_STATUS_OK))
     {
-        return (st);
+        return (st_pad);
     }
 
     agc_vec_t         rn  = agc_erase_rn(); /* ALPHAV       */
@@ -1153,7 +1148,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     agc_latlong_opt_t opt = {true, agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_latlong_t     ll;
 
-    st = agc_latlong_from_r(ip, &nav, opt, rn, t, &ll);
+    agc_status_t st = agc_latlong_from_r(ip, &nav, opt, rn, t, &ll);
 
     if (st == AGC_STATUS_OK)
     {

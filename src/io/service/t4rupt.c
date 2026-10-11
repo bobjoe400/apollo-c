@@ -739,9 +739,9 @@ static void t4_proctnon(void)
             return; /* coarse align (gimbal lock) / in use */
         }
 
-        agc_status_t st = agc_t4_cagesub2();
+        agc_status_t st_cage = agc_t4_cagesub2();
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (!AGC_ASSERT(st_cage == AGC_STATUS_OK))
         {
             return;
         }

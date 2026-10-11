@@ -34,6 +34,7 @@ the same protocol.
 - DONE check_rules hard violations: internal.h comment "..." (rule 8 regex), main.c opt_value double pointer -> returns the value (0 hard)
 - DONE tools/sim_client.py `xexpect BUG ...` / `xuntil BUG ...` (known flight-code bug: XFAIL does not fail the run, XPASS reported; --strict fails on XPASS)
 - DONE sim/scenarios/fresh_start_{csm,lm}.txt (scenario a); both also run against yaAGC (XPASS on B1 there)
+- DONE sim/scenarios/lights_test_{csm,lm}.txt (b), clock_{csm,lm}.txt (c; client `clockref`, `CLOCK now`); all pass, also against yaAGC
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
 Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.

@@ -544,11 +544,6 @@ agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
     m.m2 = lo2.lo;
     m.m0 = agc_w_ts(carry + m.m0 + m.m0, ovf);
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     return (m);
 }
 

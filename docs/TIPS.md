@@ -121,3 +121,8 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   the same guard twice. After any automated rewrite, run a structural
   duplicate-guard check (now in check_rules as a hard violation) and a
   forwarding-wrapper check, not just the compiler.
+* **No forwarding wrappers.** A function that is only AGC_ASSERT guards plus
+  one call passing its own parameters on (`chan_write` -> `agc_chan_write`)
+  is deleted and its callers call the callee; a guard the callee does not
+  already assert moves into the callee once.  `python3 -I tools/unwrap.py
+  --list` finds them by body shape (docs/modules/collapse.md).

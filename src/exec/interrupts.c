@@ -233,13 +233,6 @@ agc_status_t agc_rupt_go(void)
 
     agc_status_t st = agc_restart_goprog();
 
-    if (!AGC_ASSERT(inhint_depth == 1))
-    {
-        agc_relint();
-
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rupt_exit(st));
 }
 

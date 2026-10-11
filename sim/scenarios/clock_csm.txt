@@ -11,16 +11,16 @@
 #   second, so the display trails the clock by up to 1 s.
 # * V25N36 with three ENTERs: HMSIN (p.352) converts hours, minutes,
 #   seconds and stores TIME2/TIME1; the clock keeps counting from there.
-# Validated against yaAGC + Comanche055 (tools/oracle/bin/yaAGC).
+# Validated against yaAGC + Comanche055 (tools/oracle/bin/yaAGC); in that
+# real-time run the absolute CLOCK checks are off by the start-up latency.
 vehicle csm
 run 300                         # power-on
 keys R V37E00E                  # RSET, P00
 until PROG 00 within 300
 keys V06N36E
-until R3 +_ within 100          # wait for the sign to arrive
-run 50
+until NOUN 36 within 100
+run 50                          # R1-R3 follow, one relay word per pass
 expect VERB 06
-expect NOUN 36
 expect CLOCK ~5                 # TIME at the ENTER
 keys V16N36E
 run 500
@@ -28,8 +28,8 @@ expect CLOCK now ~110           # monitor: updated every second
 run 1000
 expect CLOCK now ~110
 keys V25N36E                    # load the clock: 1 h 2 min 30.00 s
-until FLASH on within 100
-expect VERB 21                  # R1 load request
+until VERB 21 within 100        # flashing: R1 load request
+expect FLASH on
 keys +00001E
 until VERB 22 within 100
 keys +00002E

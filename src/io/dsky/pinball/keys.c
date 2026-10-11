@@ -895,11 +895,6 @@ agc_status_t agc_dsky_keys(const char *seq)
         if (seq[i] == 'P')
         {
             /* PRO for the sim: PROCKEY run at once. */
-            if (!AGC_ASSERT(pin_invariants()))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
             agc_job_ctx_t ctx = {AGC_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
 
             st = agc_job_prockey(&ctx);

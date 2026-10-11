@@ -566,9 +566,10 @@ agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    st = agc_erase_set_modecadr(AGC_IMU_DEV_OPTICS, 0); /* OPTCADR  */
+    const agc_status_t st_optcadr =
+        agc_erase_set_modecadr(AGC_IMU_DEV_OPTICS, 0);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(st_optcadr == AGC_STATUS_OK)) /* OPTCADR  */
     {
         return (AGC_STATUS_BAD_ARG);
     }

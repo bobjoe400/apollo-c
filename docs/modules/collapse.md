@@ -85,12 +85,87 @@ mechanical, all of them fan_* or too long).
 9. ddv_normalised -> agc_w_ddv and genddv_words -> agc_w_genddv: DDV reads as one routine as on p.1167.
 10. got_count / got_index -> agc_job_uplink_update_load: the V71 load stages read in one place.
 
+## Forwarding wrappers (user rule, phase 3)
+Rule, independent of caller count: a function in src/ (not src/sim/) whose
+body is only `if (!AGC_ASSERT(c)) { return ...; }` guards plus exactly one
+statement calling another function with its own parameters (any order,
+renamed or cast; optionally returning the call's value) is a forwarding
+wrapper: it is deleted and every caller calls the callee.  A wrapper guard
+the callee already asserts is dropped; one it does not assert moves into
+the callee once (core/exec public functions may be edited for that).
+Tool: tools/unwrap.py (`--list` classifies by body shape on the libclang
+AST; `WRAPPER --file F [--move N] [--drop N]` applies, compiles every
+changed TU and includer, reverts on failure).  Guard comparison is
+structural after value normalisation (WORD15 == 077777u == AGC_CHAN_MASK,
+NULL == 0, `((agc_dp_t) -0x0FFFFFFF)` by value) and after expanding a
+callee guard that calls a one-line predicate of its own file
+(chan_valid, w15_ok).
+
+Found 113.  Removed 26: chan_write / chan_or / chan_and (fresh_start.c),
+chan_or (imu/mode.c, t4rupt.c), ch_or (t4rupt_csm.c), rr_chan_or (radar),
+raise_alarm, im30_set, im33_set, markstat, phase_word, sp_ts,
+agc_csm_servxt, agc_integ_flag, rz_state, rz_clear_ovf, csi_f, csi_set,
+agc_conic_mload_ / mstore_ / mtad_ / mshift_, and the three conic exports
+agc_conic_cogaovfl_ / time_out_fill_ / time_out_clear_ (the file-private
+callee now carries the exported name instead of a wrapper).
+Guards moved into the callee: `ctx->id != AGC_JOB_NONE` into
+agc_job_servexit; `n > -128 && n < 128` (shift count) into agc_tp_shift.
+Guards dropped because the callee asserts the fact in another form:
+chan_write's `0 <= chan < 040` and `PYJETS <= chan <= CHAN14` (agc_chan_*
+assert chan_valid and chan_writable, i.e. a real output channel; the
+narrower range was the fresh-start caller's own), imu/mode.c's
+`chan == 12 || chan == 14` (same), sp_ts's `ovf != 0` (agc_w_ts asserts it
+before the store), agc_conic_mtad_'s TP range (agc_tp_add asserts
+agc_w_ok on the major word), agc_conic_mshift_'s `ip != NULL` (in
+agc_tp_shift's combined guard), csi_f/csi_set's CSI-flag range
+(rz_vflag_* assert the flag range; every call passes a CSI constant),
+time_out_clear's `sizeof (*out) > 0` (cannot fail, does not count).
+Kept 87: 81 declared in include/agc (public API other lanes link against;
+59 of them are dispatch-registry job/task entry points); csm_dap_ddoubl and
+lm_dap_ddoubl (forward one parameter twice: das(x, x) -- not a pure
+forward, and DDOUBL names the AGC instruction); agc_csm_vn (converts the
+callee's uint16_t to agc_sp_t); exec_up_servidle (exec -> LM up-call:
+exec may not include the LM layer, ARCHITECTURE.md); startsub (its
+post-check "executive idle" holds for the fresh-start path but not for
+ENEMA, STARTSB1's other caller, so it cannot move into STARTSB1);
+set_markstat (its guard "MARKSTAT holds a VAC address" is the marking
+routine's own invariant; agc_erase_set_markstat(0) is a legal call
+elsewhere, so it cannot move into the setter).  No two-level chain was
+removable (agc_waitlist_fixdelay -> vardelay -> call are public).
+Verification: make OK, make test OK (all tests and oracles pass; the only
+output difference is one expected-assert line number in
+nav/integration/init.c), check_rules 0 hard, uncrustify clean outside
+src/sim, make callgraph regenerated.
+
+## Repeated guards (user rule, phase 3)
+Within a function a guard whose AGC_ASSERT condition repeats an earlier one
+(whitespace-normalised text, the tools/check_rules.py rule 5 hard check) is
+removed, the first kept.  Found 20 outside src/sim:
+* 2 truly redundant (nothing between changed the fact): set_lampword,
+  ll_rodcomp -- removed.
+* 9 were the same text on a *different* value: `st == AGC_STATUS_OK` /
+  `st != AGC_STATUS_BAD_ARG` re-checking `st` after a new call (and once in
+  an exclusive branch).  Removing them would leave a call's status
+  unchecked (rule 7), so each call's status got its own name instead
+  (st_optcadr, st_ca_ece, st_tvc, st_cage, st_pole, st_cduw, st_pad x2,
+  st_p in PAXIS's PSKIP branch); the facts are now distinct texts.
+* 9 post-checks of a modified value or of a module invariant, removed per
+  the rule (first kept): agc_w_tp_shl1's agc_w_ok(m.m0) (agc_w_ts keeps
+  the word in range), agc_time_advance_cs's masked TIME2 (cannot fail),
+  agc_rupt_go's inhint depth after GOPROG, pin_invariants() at the end of
+  agc_dsky_keys / pin_putcom / pin_dspdcput / pin_vbfandir,
+  lm_dap_switch_curves' ACCSW range, agc_lm_dap_rcsmon's PVALVEST range.
+check_rules: 0 hard.  Open question for review: ll_landjunk overwrites the
+status of agc_latlong_from_r / agc_navaux_set_latlong with the
+agc_planet_r_to_rp status without checking it (pre-existing).
+
 ## Progress
 * DONE make callgraph, callgraph.tsv/.dot, collapse_candidates.tsv
 * DONE inline_one.py tested on a scratch copy: 13 mechanical inlines, make
   lib/lib-debug/test OK, make format + rebuild OK, check_rules 0 new hard;
   revert path and header-prototype deletion tested on synthetic files
 * DONE phase 2 applied (see Result)
+* DONE phase 3 forwarding wrappers and repeated guards
 
 ## Lessons
 * GCC -fcallgraph-info at -O2 attributes inlined callees' calls to the
@@ -114,3 +189,8 @@ mechanical, all of them fan_* or too long).
   (they are found by resolving the #include paths, several are ../../).
 * A re-split dispatcher must not claim its steps' labels in its first
   comment line, or the protection rule treats the steps as its fragments.
+* libclang gives a literal that comes from a macro either no tokens or the
+  whole span from the #define to the use; read the identifier at the
+  expansion location and resolve it with `gcc -dM -E` to compare by value.
+* A wrapper's guard placed after its call is a post-condition: it cannot be
+  moved to the top of the callee.

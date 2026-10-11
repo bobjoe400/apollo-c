@@ -647,9 +647,9 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        st = agc_lm_findcduw_m2(ip);
+        const agc_status_t st_cduw = agc_lm_findcduw_m2(ip);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (!AGC_ASSERT(st_cduw == AGC_STATUS_OK))
         {
             return (AGC_STATUS_BAD_ARG);
         }

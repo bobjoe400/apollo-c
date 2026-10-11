@@ -518,10 +518,5 @@ agc_status_t lm_dap_switch_curves(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }

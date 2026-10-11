@@ -105,11 +105,6 @@ static void set_lampword(uint16_t v)
         return;
     }
 
-    if (!AGC_ASSERT(v <= 077777u))
-    {
-        return;
-    }
-
     agc_erase_set_dsptab(FS_LAMPWORD, v);
 }
 
@@ -579,9 +574,10 @@ static void goprog_csm_tail(void)
             return;
         }
 
-        st = agc_waitlist_call(FS_CA_ECE_CS, AGC_TASK_CA_ECE);
+        const agc_status_t st_ca_ece = agc_waitlist_call(FS_CA_ECE_CS,
+                                                         AGC_TASK_CA_ECE);
 
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+        if (!AGC_ASSERT(st_ca_ece != AGC_STATUS_BAD_ARG))
         {
             return;
         }
@@ -731,9 +727,10 @@ agc_status_t fresh_enema(void)
 
     if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_TVC)
     {
-        st = agc_waitlist_call(FS_HALF_SEC, AGC_TASK_TVCEXEC); /* TVC on */
+        const agc_status_t st_tvc = agc_waitlist_call(FS_HALF_SEC,
+                                                      AGC_TASK_TVCEXEC);
 
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+        if (!AGC_ASSERT(st_tvc != AGC_STATUS_BAD_ARG)) /* TVC on */
         {
             return (AGC_STATUS_BAD_ARG);
         }

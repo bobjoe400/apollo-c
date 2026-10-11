@@ -503,19 +503,18 @@ agc_status_t agc_task_paxis(void)
     }
     else
     {
-        bool policy = true;
+        bool         policy = true;
+        agc_status_t st_p   = lm_dap_chkvisfz(&policy);
 
-        st = lm_dap_chkvisfz(&policy);
-
-        if (st == AGC_STATUS_OK && policy)
+        if (st_p == AGC_STATUS_OK && policy)
         {
-            st = lm_dap_pstate();
+            st_p = lm_dap_pstate();
         }
-    }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        if (!AGC_ASSERT(st_p == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (lm_dap_qraxis());

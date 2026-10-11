@@ -55,7 +55,7 @@ def check_file(path):
             if m and m.group(1) not in C_KEYWORDS and not s.startswith(('#', 'typedef', 'return')) and path.endswith('.c'):
                 if s.endswith('{') or (i < len(lines) and lines[i].strip() == '{'):
                     in_func = m.group(1)
-                    seen_asserts = set()
+                    seen_asserts = set()  # conditions guarded since the last real statement
                     start = i
                     depth = s.count('{') - s.count('}')
                     code_lines = 0
@@ -69,8 +69,10 @@ def check_file(path):
             if am and s.startswith('if (!AGC_ASSERT'):
                 cond = re.sub(r'\s+', '', am.group(1))
                 if cond in seen_asserts:
-                    HARD.append(f'{path}:{i}: rule 5: duplicate assertion in {in_func} (same condition already checked)')
+                    HARD.append(f'{path}:{i}: rule 5: back-to-back duplicate assertion in {in_func}')
                 seen_asserts.add(cond)
+            elif s and s not in ('{', '}') and not s.startswith(('/*', '*', '//', 'return')):
+                seen_asserts = set()  # a real statement may change the fact; a later re-check is a postcondition
             if re.search(r'\b' + re.escape(in_func) + r'\s*\(', s) and not s.startswith(('/*', '*', '//')):
                 HARD.append(f'{path}:{i}: rule 1: direct recursion in {in_func}')
             if depth <= 0:

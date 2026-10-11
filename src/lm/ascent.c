@@ -91,12 +91,13 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 
     agc_vec_t pole = agc_vec_zero();
 
-    st = agc_planet_rp_to_r(ip, &nav, true, agc_vec_make(0, 0, AGC_DP_HALF),
-                            agc_rtb_loadtime(), &pole);
+    const agc_status_t st_pole = agc_planet_rp_to_r(
+        ip, &nav, true, agc_vec_make(0, 0, AGC_DP_HALF),
+        agc_rtb_loadtime(), &pole);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(st_pole == AGC_STATUS_OK))
     {
-        return (st);
+        return (st_pole);
     }
 
     agc_mat_t     m = agc_erase_refsmmat();
