@@ -153,7 +153,7 @@ static void cmp_sp(const char *t, const char *what, long got, const char *n, lon
  **********************************************************************/
 static void accs(const char *t, long tol)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     fresh();
     agc_guid_state()->lm.mass   = oracle_in_dp(t, "MASS", 0);
@@ -219,7 +219,7 @@ static void accs(const char *t, long tol)
  **********************************************************************/
 static void tjetlaw(const char *t, long tol)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     fresh();
 
@@ -305,7 +305,7 @@ static void gpm(const char *t)
  **********************************************************************/
 static void kalman(const char *t, const char *gp, long tol)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     fresh();
     gimbal_matrix(gp); /* the M11..M32 the generator copied from gp */
@@ -470,7 +470,7 @@ static void gts_outputs(const char *t, const lm_dap_t *d)
  **********************************************************************/
 static void gts(const char *t)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     fresh();
     gts_inputs(t, d);
@@ -504,7 +504,7 @@ static void gts(const char *t)
  **********************************************************************/
 static void timegmbl(const char *t)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     fresh();
     gts_inputs(t, d);

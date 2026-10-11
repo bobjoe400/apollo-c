@@ -44,7 +44,13 @@
 * DONE accont.c check_rules: no (void) casts remain in the lane (rule 7
   clear); the one hard violation, rule 4 lm_dap_switch_curves 61 lines,
   fixed by moving the NEG(POS)/FIXMIN/STMIN- block to axis_against_aos.
-* TODO: style debt; make check; MODULE_STATUS row; Lessons.
+* PARTIAL style debt (714 -> 595 at last count): DONE template file
+  prologs (all 22 files), closing-brace comments (all), accont.c clean.
+  Tools: SCRATCH/review-dap-lm/style/fix.py (dump / apply edits / blocks),
+  prolog.py + prolog.json (already applied; do not rerun). Per file:
+  `fix.py dump F`, write N<TAB>comment edits, `fix.py apply F E`, then
+  `sh tools/format.sh F`. Remaining files: all except accont.c.
+* TODO: make check; MODULE_STATUS row; Lessons.
 
 ## Scratch build
 

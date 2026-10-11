@@ -53,6 +53,26 @@ typedef int64_t agc_tp_t;
 /* Overflow indication: 0 none, +1 positive, -1 negative.                  */
 typedef int8_t agc_ovf_t;
 
+/* A DP quantity as the AGC stores it: two ones'-complement words whose
+ * signs may disagree after a DAS, DCS or BDSU (hi = +3, lo = -100 is
+ * 3 2^-14 - 100 2^-28 of the scale). agc_dp_t keeps only the value
+ * hi 2^14 + lo; code whose low bits depend on the split (a following MP,
+ * DV, SR, SQRT, or a basic-language read of the high word) keeps the
+ * words (include/agc/core/interp_words.h).                               */
+typedef struct agc_dp_words
+{
+    agc_sp_t hi; /* major word, the quantity's scale                */
+    agc_sp_t lo; /* minor word, 2^-14 of the major word's scale     */
+} agc_dp_words_t;
+
+/* The TP MPAC (or a TP erasable) as three words, signs free to disagree. */
+typedef struct agc_tp_words
+{
+    agc_sp_t hi;  /* MPAC, the quantity's scale                     */
+    agc_sp_t mid; /* MPAC+1, 2^-14 of hi's scale                    */
+    agc_sp_t lo;  /* MPAC+2, 2^-28 of hi's scale                    */
+} agc_tp_words_t;
+
 /* ---- conversions (tests, sim harness, DSKY only) ------------------------ */
 agc_sp_t agc_sp_from_double(double x, int scale_pow2);
 agc_dp_t agc_dp_from_double(double x, int scale_pow2);
@@ -68,6 +88,12 @@ agc_dp_t agc_dp_from_sp(agc_sp_t v);            /* SP in high word         */
 agc_tp_t agc_tp_from_dp(agc_dp_t v);
 agc_dp_t agc_tp_to_dp(agc_tp_t v);              /* truncate (drop MPAC+2)  */
 agc_dp_t agc_tp_round_dp(agc_tp_t v);           /* round (DMPR semantics)  */
+
+/* ---- word form <-> value ------------------------------------------------- */
+agc_dp_words_t agc_dp_to_words(agc_dp_t v);        /* sign-agreeing words   */
+agc_dp_t       agc_dp_from_words(agc_dp_words_t w); /* hi 2^14 + lo          */
+agc_tp_words_t agc_tp_to_words(agc_tp_t v);        /* sign-agreeing words   */
+agc_tp_t       agc_tp_from_words(agc_tp_words_t m); /* hi 2^28 + mid 2^14 + lo */
 
 /* ---- raw arithmetic: saturating, overflow reported through *ovf ---------- */
 agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf);

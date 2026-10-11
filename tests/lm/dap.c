@@ -173,7 +173,7 @@ static agc_status_t setup_descent(int32_t kg)
 static void test_accs(void)
 {
     agc_status_t    st = setup_descent(15000);
-    const lm_dap_t *d  = lm_dap_state();
+    const lm_dap_t *d  = lm_dap_state(); /* DAP erasables */
 
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_erase_lemmass() == KG(15000));
@@ -230,7 +230,7 @@ static void set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot)
 static void test_tjetlaw(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     for (agc_sp_t axis = -1; axis <= 1; axis++)
     {
@@ -264,7 +264,7 @@ static void test_tjetlaw(void)
 static void test_rate_estimator(void)
 {
     CHECK(setup_descent(15000) == AGC_STATUS_OK);
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->nptraps = 2; /* STARTDAP                 */
     d->nqtraps = 2;
@@ -314,7 +314,7 @@ static void test_rate_estimator(void)
 static void test_rcsmon(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_chan_set_input(032, 077777u); /* all valves open (inverted) */
     CHECK(agc_lm_dap_rcsmon() == AGC_STATUS_OK);
@@ -341,7 +341,7 @@ static void test_rcsmon(void)
 static void test_spsrcs(void)
 {
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
@@ -371,7 +371,7 @@ static void test_spsrcs(void)
  **********************************************************************/
 static void test_rot_touv(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->coeffq  = -11585;
     d->coeffr  = 11585;

@@ -142,6 +142,9 @@ Language: C11, no extensions. Build flags (Makefile):
   and the first real argument) or one on the first line of a function
   definition/prototype -- joins every other wrap back onto one line, and
   never introduces wraps itself.
+* Brace initializers follow the same rule as call arguments: entirely on
+  one line, or one element per line aligned under the first element (tables
+  with one row per line). Never a partial wrap inside the braces.
 * A statement that is unreadable on one line because of nesting is split
   with named temporaries (review item), not wrapped.
   docs/overview/long_statements.tsv lists the candidates (wider than 120
