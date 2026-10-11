@@ -304,3 +304,9 @@
             yaDSKY2/yaTelemetry connect to our C as if to yaAGC; scenarios
             via tools/sim_client.py; our part is the clock/interrupt driver.
             virtualagc clone has yaDSKY2, yaTelemetry, yaACA, piPeripheral.
+2026-10-10  collapse phase 1 reviewed: 4,140 functions, 25,201 edges; 1,004
+            single-caller helpers, 176 candidates under the loose label rule.
+            Lead decisions: keep fan_* splits; multi-site helpers out of
+            scope; protection only for helpers whose header names an AGC
+            label DISTINCT from the caller's (page-only inheritance does not
+            protect). Phase 2 (apply) running.
