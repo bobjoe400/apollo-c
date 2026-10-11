@@ -446,3 +446,8 @@
 2026-10-11  User: 2 concurrent lanes max from now on. review-nav-integ asked
             to checkpoint and stop; dispatch (Sonnet, quick) and review-core-
             numeric continue.
+2026-10-11  dispatch DONE: 4 flat switches, 89 chunk functions gone,
+            dispatch.c 5200 -> 2800 lines. 50 hard rule-7 violations remain,
+            reintroduced by cut-off review runs in dap-csm (tvc), prog-align
+            (word_forms.c), csm/optics/geometry.c, dap-lm (accont.c): each
+            lane's resumed review clears them. Launching review-dap-lm.
