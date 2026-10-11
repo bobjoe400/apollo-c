@@ -147,3 +147,7 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   names and `AGC_ASSERT`; the next lane-local helper (`csm_dap_words_das`)
   reintroduced 31 casts. Match `(void) identifier(` and allowlist the few
   stdlib calls instead.
+* **Recovery is not chosen by return type.** A failed precondition either
+  cannot happen (then delete the guard) or can (then the function returns a
+  status and the caller acts). "void functions just return, value
+  functions return 0" produced 2,400 silent failures in one sweep.

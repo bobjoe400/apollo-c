@@ -51,7 +51,19 @@ Language: C11, no extensions. Build flags (Makefile):
      the status to its own caller. Read the AGC source for the failure
      path; it is usually explicit (TC ABORT / OCT 1203).
    `(void)` on a standard-library call (fprintf in the sim) is still
-   allowed with a comment. Every function validates its inputs (pointer
+   allowed with a comment.
+   * **No silent failures (user direction, 2026-10-11).** A precondition
+     is one of two things. Either it is guaranteed by construction (a
+     static helper only ever called with `&local`, an enum straight out of
+     a `switch`, an index from a bounded loop), and then there is no guard
+     at all: deleting it is the fix, and the function may be `void` or
+     return a value. Or it can fail, and then the function returns
+     `agc_status_t`, delivers its value through an out-parameter, and every
+     caller checks the status. A `void` function whose assertion fails and
+     silently `return`s, or a value function that returns a sentinel such
+     as `0` on a failed assertion, hides the failure from everyone and is a
+     hard violation (tools/check_rules.py). Making a function `void` is
+     never the way to remove a cast. Every function validates its inputs (pointer
    non-null, enum in range, scaled values in range) with `AGC_ASSERT`.
 8. **Limited preprocessor.** Headers: include guards. Macros: only object-like
    constants and `AGC_ASSERT`. No token pasting, no variadics, no recursive

@@ -63,6 +63,8 @@ def check_file(path):
             if m and m.group(1) not in C_KEYWORDS and not s.startswith(('#', 'typedef', 'return')) and path.endswith('.c'):
                 if s.endswith('{') or (i < len(lines) and lines[i].strip() == '{'):
                     in_func = m.group(1)
+                    func_is_void = bool(re.match(r'^(static\s+)?(inline\s+)?void\b', s))
+                    func_is_status = 'agc_status_t' in s.split(in_func)[0]
                     seen_asserts = set()  # conditions guarded since the last real statement
                     start = i
                     depth = s.count('{') - s.count('}')
@@ -73,6 +75,14 @@ def check_file(path):
             depth += s.count('{') - s.count('}')
             if s and s not in ('{', '}') and not s.startswith(('/*', '*', '//')):
                 code_lines += 1  # brace-only lines carry no statement (Allman style)
+            if s.startswith('if (!AGC_ASSERT') and not func_is_status:
+                nxt = ' '.join(l.strip() for l in lines[i:i + 3])
+                rm = re.search(r'return\s*(\(?[^;]*\)?)\s*;', nxt)
+                if rm:
+                    if func_is_void:
+                        HARD.append(f'{path}:{i}: rule 7: silent failure: void {in_func}() returns on a failed assertion; delete a guaranteed guard or return agc_status_t')
+                    else:
+                        HARD.append(f'{path}:{i}: rule 7: sentinel failure: {in_func}() returns {rm.group(1) or "a value"} on a failed assertion; delete a guaranteed guard or return agc_status_t with an out-parameter')
             am = re.search(r'AGC_ASSERT\((.*)\)\s*\)?\s*$', s)
             if am and s.startswith('if (!AGC_ASSERT'):
                 cond = re.sub(r'\s+', '', am.group(1))

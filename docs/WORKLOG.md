@@ -465,3 +465,10 @@
             call outside a stdlib allowlist (and those need a comment).
             58 hard now: dap-csm (running) + prog-align word_forms.c +
             csm/optics/geometry.c (queued lanes).
+2026-10-11  User: making functions void to dodge the cast left silent
+            failures (`if (!AGC_ASSERT) return;` in 499 void functions, 805
+            guards) and sentinel returns (945 value functions, 1,605 guards).
+            Rule 7 "No silent failures" added; checker flags both (now ~2,460
+            hard). Lane status-handling-2 queued to run alone after the two
+            current lanes: delete guaranteed guards, convert fallible ones to
+            agc_status_t + out-param with callers checking.

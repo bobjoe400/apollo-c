@@ -42,8 +42,10 @@ def main():
         '  ADOTLOOP): DRHO ADOT MERRORX (word pairs, signs may disagree)',
         '  CDUX..Z RHO..RHO2 AMGB1..AMGB8 KMJ DFT ATTKALMN -> DRHO ADOT',
         '  MERRORX DELTEMPX RHO.',
-        'NEEDLES 21,2476 -> TC Q (DACLOOP): AK EDRIVEX CDUXCMD -> EDRIVEX',
-        '  CDUXCMD.'])
+        'NEEDLES 21,2476 -> TC Q (DACLOOP): AK EDRIVEX -> EDRIVEX.',
+        'JETS 21,3441 -> stop T6PROG (phase-plane logic, JTIME): ADB SLOPE',
+        '  HOLDFLAG ADOT (word pairs) WBODY ERRORX J/M RCSFLAGS TAU -> TAU',
+        '  TAU1 TAU2 RCSFLAGS.'])
     jg = (['RWORD1', 'RWORD2', 'PWORD1', 'PWORD2', 'YWORD1', 'YWORD2',
            'BLAST:dp', 'BLAST1:dp', 'BLAST2:dp', 'DFT', 'DFT1', 'DFT2',
            'TAU', 'TAU1', 'TAU2', 'ATTKALMN'])
@@ -141,17 +143,48 @@ def main():
               fg, ebank=6, entry='RATEFILT')
     # NEEDLES: EDRIVE = -AK/4 limited to +-384 (CS QUARTER; MP AK), the
     # increment added to CDUXCMD.
-    ng = ['EDRIVEX', 'EDRIVEX+1', 'EDRIVEX+2', 'CDUXCMD', 'CDUXCMD+1',
-          'CDUXCMD+2']
-    for tag, ak, ed, cmd in (
-            ('needles_small', [100, -100, 7], [0, 0, 0], [0, 0, 0]),
-            ('needles_edge', [1532, -1532, 1536], [10, -10, 0], [5, -5, 0]),
-            ('needles_limit', [-1536, 16000, -16383], [-384, 384, 0],
-             [-100, 100, 0]),
-            ('needles_track', [-40, 4000, -3], [3, -200, 1], [12, -300, 1])):
+    # CDUXCMD is not read back: yaAGC drains the drive counters (coarse
+    # align burst model) once the channel 14 bits are set, at a time that
+    # depends on the run, so its value at TC Q is not the ADS result.
+    ng = ['EDRIVEX', 'EDRIVEX+1', 'EDRIVEX+2']
+    for tag, ak, ed in (
+            ('needles_small', [100, -100, 7], [0, 0, 0]),
+            ('needles_edge', [1532, -1532, 1536], [10, -10, 0]),
+            ('needles_limit', [-1536, 16000, -16383], [-384, 384, 0]),
+            ('needles_track', [-40, 4000, -3], [3, -200, 1])):
         s.run(tag, 'ENDOFJOB', 0o21, 'ENDOFJOB',
-              [('AK', pairs(ak)), ('EDRIVEX', pairs(ed)),
-               ('CDUXCMD', pairs(cmd))], ng, ebank=6, entry='NEEDLES')
+              [('AK', pairs(ak)), ('EDRIVEX', pairs(ed))], ng, ebank=6,
+              entry='NEEDLES')
+
+    # JETS: ADOT/WBODY raw word pairs at 450 deg/s (0.5 deg/s = 18 in the
+    # upper word), ERRORX at 180 deg (1 deg = 91), J/M about 700. TAU is
+    # preset to 77 so an axis that coasts (DOJET +2) shows it unchanged.
+    jgs = ['TAU', 'TAU1', 'TAU2', 'RCSFLAGS']
+    for tag, hold, adb, slope, adot, wbody, err, jm, flags in (
+            ('pp_hold', 0, 455, 3932, [72, 100, -4, -3000, 22, 500],
+             [0] * 6, [0, 546, -546], [701, 701, 701], 0o16000),
+            ('pp_coast', 0, 455, 3932, [1, 200, -1, -200, 0, 30],
+             [0] * 6, [100, -200, 300], [701, 900, 500], 0o00000),
+            ('pp_auto', -1, 46, 3932, [40, 0, -10, 5000, 18, 2000],
+             [36, 0, -36, 0, 0, 0], [-1000, 2000, 60], [701, 701, 701], 0),
+            ('pp_disagree', 0, 46, 3932, [1, -16000, -1, 16000, 2, -9000],
+             [0] * 6, [600, -600, 900], [300, 2000, 16000], 0),
+            ('pp_disagree2', -1, 46, 3932, [-1, 16300, 1, -16300, 0, 0],
+             [1, -16380, -1, 16380, 0, 0], [-46, 46, 0], [16000, 16000,
+             16000], 0),
+            ('pp_forced', 0, 455, 3932, [0, 100, 0, -100, 0, 0], [0] * 6,
+             [10, -10, 0], [701, 701, 701], 0o01760 | 0o16000),
+            ('pp_sat', -1, 46, 3932, [3000, 0, -3000, 0, 500, 0],
+             [-200, 0, 200, 0, 0, 0], [8000, -8000, 4000],
+             [16000, 16000, 16000], 0),
+            ('pp_lines', 0, 46, 3932, [20, 3000, -14, -9000, 10, 15117],
+             [0] * 6, [-40, 40, -60], [3000, 3000, 3000], 0o16000)):
+        s.run(tag, None, 0o21, 'T6PROG',
+              [('ADB', _w(adb)), ('SLOPE', _w(slope)), ('HOLDFLAG', _w(hold)),
+               ('ADOT', pairs(adot)), ('WBODY', pairs(wbody)),
+               ('ERRORX', pairs(err)), ('J/M', pairs(jm)),
+               ('RCSFLAGS', '%05o' % flags), ('TAU', pairs([77, 77, 77]))],
+              jgs, ebank=6, entry='JETS')
     s.write(os.path.join(OUT, 'dap_csm.spec'))
 
 if __name__ == '__main__':

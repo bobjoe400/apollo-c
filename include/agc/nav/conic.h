@@ -140,16 +140,17 @@ typedef struct agc_lambert_out
  * zero. Debris is filled in every case.                                  */
 agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in, agc_lambert_out_t *out);
 
-/* ---- ITERATOR, pp. 1285-1286 (used by LAMBERT) ------------------------ */
+/* ---- ITERATOR, pp. 1285-1286 (used by LAMBERT); the variables are the
+ * words as stored (signs may disagree after a DAS), see interp_words.h  */
 typedef struct agc_iterator
 {
-    agc_dp_t indep;    /* INDEP independent variable (COGA, 2^5)      */
-    agc_dp_t dep;      /* DEP dependent variable (T, 2^28 cs)         */
-    agc_dp_t deprev;   /* DEPREV previous DEP (TPREV, 2^28 cs)        */
-    agc_dp_t deldep;   /* DELDEP error in DEP (TERRLAMB, 2^28 cs)     */
-    agc_dp_t delindep; /* DELINDEP in/out step (DCOGA, 2^5)           */
-    agc_dp_t max;      /* MAX upper bound (COGAMAX, 2^5)              */
-    agc_dp_t min;      /* MIN lower bound (COGAMIN, 2^5)              */
+    agc_dp_words_t indep;    /* INDEP independent variable (COGA, 2^5)      */
+    agc_dp_words_t dep;      /* DEP dependent variable (T, 2^28 cs)         */
+    agc_dp_words_t deprev;   /* DEPREV previous DEP (TPREV, 2^28 cs)        */
+    agc_dp_words_t deldep;   /* DELDEP error in DEP (TERRLAMB, 2^28 cs)     */
+    agc_dp_words_t delindep; /* DELINDEP in/out step (DCOGA, 2^5)           */
+    agc_dp_words_t max;      /* MAX upper bound (COGAMAX, 2^5)              */
+    agc_dp_words_t min;      /* MIN lower bound (COGAMIN, 2^5)              */
     agc_sp_t tweekit;  /* TWEEKIT (40D) first-step fraction of MAX-MIN, SP 2^0; DMP reads 40D,41D as DP and 41D is S2 = 1 (set by GETX) */
     bool     slopesw;  /* SLOPESW set: first pass (cleared here)      */
     bool     ordersw;  /* ORDERSW set: 2nd order (never in Apollo 11) */

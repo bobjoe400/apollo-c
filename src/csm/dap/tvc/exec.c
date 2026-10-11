@@ -308,10 +308,10 @@ static agc_dp_words_t tvcx_cgcorr(agc_dp_words_t deloff, agc_dp_words_t delbar, 
     agc_dp_words_t ttmp1 = csm_dap_words_ddoubl(csm_dap_words_ddoubl(csm_dap_words_neg(deloff))); /* B+2 ascrev  */
 
     /* DCA DELxBAR; DDOUBL; DDOUBL; DAS TTMP1                             */
-    (void) csm_dap_words_das(&ttmp1, csm_dap_words_ddoubl(csm_dap_words_ddoubl(delbar)));
+    csm_dap_words_das(&ttmp1, csm_dap_words_ddoubl(csm_dap_words_ddoubl(delbar)));
 
     /* DCA TTMP1; MP TEMPDAP (upper word only); DAS xACTTMP               */
-    (void) csm_dap_words_das(&act, csm_dap_words_mp(ttmp1.hi, frac));
+    csm_dap_words_das(&act, csm_dap_words_mp(ttmp1.hi, frac));
 
     /* a word out of range: leave the trim estimate uncorrected         */
     if (!AGC_ASSERT(act.hi >= AGC_SP_MIN))

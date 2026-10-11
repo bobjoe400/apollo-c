@@ -46,7 +46,6 @@
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "oracle_txt.h"
 
 static void              cmp_raw(const char *t, const char *what, unsigned int got, const char *n);
@@ -59,6 +58,7 @@ static void              pitch(const char *t);
 static void              roll(const char *t);
 static void              rate(const char *t);
 static void              needles(const char *t);
+static void              phase_plane(const char *t);
 
 /**********************************************************************
  * AGC: none -- run every case; the exit status reports failures.
@@ -105,6 +105,14 @@ int main(void)
     needles("needles_edge");
     needles("needles_limit");
     needles("needles_track");
+    phase_plane("pp_hold");
+    phase_plane("pp_coast");
+    phase_plane("pp_auto");
+    phase_plane("pp_disagree");
+    phase_plane("pp_disagree2");
+    phase_plane("pp_forced");
+    phase_plane("pp_sat");
+    phase_plane("pp_lines");
 
     return (oracle_finish("oracle_dap_csm"));
 }
@@ -418,8 +426,8 @@ static void rate(const char *t)
 
 /**********************************************************************
  * NEEDLES 21,2476 -> TC Q (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012):
- * EDRIVE = -AK/4 limited to +-384 and the increment added to CDUXCMD;
- * reached here through NEEDLER with RCSFLAGS bits 3, 2 clear and the
+ * EDRIVE = -AK/4 limited to +-384 (CDUXCMD is not compared: yaAGC
+ * drains the drive counters once channel 14 is set); reached here through NEEDLER with RCSFLAGS bits 3, 2 clear and the
  * IMU error counter enabled (NEEDLES3).
  *
  * ARGUMENTS:
@@ -436,7 +444,6 @@ static void needles(const char *t)
     {
         c->ak[k]     = (agc_sp_t) oracle_in(t, "AK", k);
         c->edrive[k] = (agc_sp_t) oracle_in(t, "EDRIVEX", k);
-        (void) agc_imu_hw_set_cducmd(k, (agc_sp_t) oracle_in(t, "CDUXCMD", k));
     }
 
     c->rcsflags = 0;
@@ -449,7 +456,41 @@ static void needles(const char *t)
 
         (void) snprintf(n, sizeof (n), (k == 0) ? "EDRIVEX" : "EDRIVEX+%d", k); /* ?: */
         cmp_sp(t, n, c->edrive[k], n);
-        (void) snprintf(n, sizeof (n), (k == 0) ? "CDUXCMD" : "CDUXCMD+%d", k); /* ?: */
-        cmp_sp(t, n, agc_imu_cducmd(k), n);
     }
+}
+
+/**********************************************************************
+ * JETS 21,3441 -> T6PROG (AUTOMATIC_MANEUVERS.agc pp. 1030-1035): the
+ * phase-plane switching logic and JTIME for the three axes; TAU is
+ * preset to 77 so an axis that coasts shows it unchanged.
+ *
+ * ARGUMENTS:
+ *   t  const char *  I  case tag
+ **********************************************************************/
+static void phase_plane(const char *t)
+{
+    agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* RCS DAP erasables       */
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                */
+
+    fresh();
+    r->adb      = (agc_sp_t) oracle_in(t, "ADB", 0);
+    r->slope    = (agc_sp_t) oracle_in(t, "SLOPE", 0);
+    r->holdflag = (agc_sp_t) oracle_in(t, "HOLDFLAG", 0);
+    c->rcsflags = oracle_in_raw(t, "RCSFLAGS", 0);
+
+    for (int k = 0; k < AGC_CSM_AXES; k++)
+    {
+        r->adot[k]  = pair_in(t, "ADOT", 2 * k);
+        r->wbody[k] = agc_dp_from_words(pair_in(t, "WBODY", 2 * k));
+        r->error[k] = (agc_sp_t) oracle_in(t, "ERRORX", k);
+        r->jm[k]    = (agc_sp_t) oracle_in(t, "J/M", k);
+        r->tau[k]   = (agc_sp_t) oracle_in(t, "TAU", k);
+    }
+
+    (void) csm_rcs_jets();
+    oracle_require_ok(t, "T6PROG");
+    cmp_sp(t, "TAU", r->tau[0], "TAU");
+    cmp_sp(t, "TAU1", r->tau[1], "TAU1");
+    cmp_sp(t, "TAU2", r->tau[2], "TAU2");
+    cmp_raw(t, "RCSFLAGS", c->rcsflags, "RCSFLAGS");
 }

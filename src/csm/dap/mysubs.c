@@ -334,8 +334,9 @@ agc_dp_words_t csm_dap_words_mp(agc_sp_t a, agc_sp_t b)
 /* DAS K: K,K+1 += A,L on the stored words (agc_dp_words_das: the low
  * words add first and carry into the high sum; each word keeps its
  * overflow-corrected value, the signs are not made to agree). Returns
- * the overflow of the high sum (+1, -1 or 0), which the AGC leaves in A. */
-agc_sp_t csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al)
+ * the overflow of the high sum (+1, -1 or 0) that the AGC leaves in A,
+ * for the sites that keep it (a following DXCH stores A,L = ovf, +0).   */
+agc_sp_t csm_dap_words_das_carry(agc_dp_words_t *k, agc_dp_words_t al)
 {
     int ovf = 0; /* overflow indicator left in A                          */
 
@@ -349,12 +350,26 @@ agc_sp_t csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al)
     return ((agc_sp_t) ovf);
 }
 
+/* DAS K where the AGC overwrites A before reading it: the overflow
+ * indicator is discarded (stored words as csm_dap_words_das_carry).      */
+void csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al)
+{
+    int ovf = 0; /* overflow indicator, not used by the AGC here          */
+
+    if (!AGC_ASSERT(k != NULL))
+    {
+        return;
+    }
+
+    *k = agc_dp_words_das(*k, al, &ovf);
+}
+
 /* DDOUBL: A,L added to itself (DAS A), overflow-corrected.              */
 agc_dp_words_t csm_dap_words_ddoubl(agc_dp_words_t p)
 {
     agc_dp_words_t d = p; /* doubled pair                           */
 
-    (void) csm_dap_words_das(&d, p);
+    csm_dap_words_das(&d, p);
 
     return (d);
 }
@@ -369,7 +384,7 @@ agc_dp_words_t csm_dap_words_smallmp(agc_dp_words_t in, agc_sp_t n)
     if (AGC_ASSERT((in.lo >= AGC_SP_MIN) && (n >= AGC_SP_MIN)))
     {
         r.lo = csm_dap_mp_hi(in.lo, n);
-        (void) csm_dap_words_das(&r, csm_dap_words_mp(in.hi, n));
+        csm_dap_words_das(&r, csm_dap_words_mp(in.hi, n));
     }
 
     return (r);

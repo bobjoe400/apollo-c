@@ -344,7 +344,7 @@ agc_status_t csm_rcs_jets(void)
 
         if (r->holdflag != 0)
         { /* CA HOLDFLAG; BZF INHOLD; DCS WBODY; DAS EDOT */
-            (void) csm_dap_words_das(&p.edot, csm_dap_words_neg(agc_dp_to_words(r->wbody[i])));
+            csm_dap_words_das(&p.edot, csm_dap_words_neg(agc_dp_to_words(r->wbody[i])));
         }
 
         p.aerr   = r->error[i];         /* INHOLD: AERR = BIAS + AK   */
@@ -395,7 +395,7 @@ static pp_region_t rcs_region(const pp_point_t *p)
     /* J8: DCS WLH; DXCH WTEMP; DCA EDOTVEL; DAS WTEMP; CCS WTEMP          */
     agc_dp_words_t wtemp = csm_dap_words_neg(wlh); /* EDOTVEL - (WL+H), 450 deg/s */
 
-    (void) csm_dap_words_das(&wtemp, p->edotvel);
+    csm_dap_words_das(&wtemp, p->edotvel);
 
     if (words_nonneg(wtemp))
     {
@@ -411,7 +411,7 @@ static pp_region_t rcs_region(const pp_point_t *p)
     }
 
     wtemp = csm_dap_words_neg(wlmh); /* DCS WLMH; DXCH WTEMP; DAS EDOTVEL  */
-    (void) csm_dap_words_das(&wtemp, p->edotvel);
+    csm_dap_words_das(&wtemp, p->edotvel);
 
     if (words_nonneg(wtemp))
     { /* CCS WTEMP; SIGNCK3 */
@@ -463,22 +463,22 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
         case PP_J20:
             /* CS AERR; AD ADBVEL; MP SLOPE2; DXCH KMPAC; DCS EDOT; DAS   */
             *kmpac      = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, p->adbvel), SLOPE2);
-            (void) csm_dap_words_das(kmpac, medot);
+            csm_dap_words_das(kmpac, medot);
             break;
         case PP_J24:
             /* CS AERR; SU ADBVEL; MP SLOPE2; DXCH KMPAC; DCS EDOT; DAS   */
             *kmpac      = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, (agc_sp_t) -p->adbvel), SLOPE2);
-            (void) csm_dap_words_das(kmpac, medot);
+            csm_dap_words_das(kmpac, medot);
             break;
         case PP_J21:
             /* EDOT + : JP (DCS EDOT; DCS WL; DAS), - : JN (DCA WL; DAS)  */
             *kmpac      = medot;
-            (void) csm_dap_words_das(kmpac, epos ? csm_dap_words_neg(wl) : wl); /* ?: JP / JN */
+            csm_dap_words_das(kmpac, epos ? csm_dap_words_neg(wl) : wl); /* ?: JP / JN */
             break;
         case PP_J22:
             /* EDOT + : JN, - : JP                                        */
             *kmpac      = medot;
-            (void) csm_dap_words_das(kmpac, epos ? wl : csm_dap_words_neg(wl)); /* ?: JN / JP */
+            csm_dap_words_das(kmpac, epos ? wl : csm_dap_words_neg(wl)); /* ?: JN / JP */
             break;
         default:
             fire        = false; /* unreachable: all regions listed        */

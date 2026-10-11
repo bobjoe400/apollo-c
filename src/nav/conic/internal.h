@@ -155,7 +155,7 @@ agc_vec_t      agc_conic_vxsc_(agc_interp_t *ip, agc_tp_words_t m, agc_vec_t v);
 /* ---- universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */
 agc_status_t agc_conic_deltime_(agc_interp_t *ip, agc_conic_ctx_t *ctx);
 agc_status_t agc_conic_newstate_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *r2vec, agc_vec_t *v2vec);
-agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_dp_words_t r2mag, agc_vec_t *v2vec);
+agc_status_t agc_conic_lamenter_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t r2mag, agc_vec_t *v2vec);
 agc_status_t agc_conic_kepconvg_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t *rcv, agc_vec_t *vcv);
 
 /* ---- geom.c: GEOM, PARAM, GETX ------------------------------------ */

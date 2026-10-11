@@ -136,7 +136,7 @@ static agc_status_t rcs_setwbody(void)
             { /* MERUPDAT    */
                 agc_sp_t neg = (agc_sp_t) -mantable[q];
 
-                (void) csm_dap_words_das(&r->merror[i], csm_dap_words_mp(neg, BIT7)); /* DAS MERRORX */
+                csm_dap_words_das(&r->merror[i], csm_dap_words_mp(neg, BIT7)); /* DAS MERRORX */
             }
         }
 

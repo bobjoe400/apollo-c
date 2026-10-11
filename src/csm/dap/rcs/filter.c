@@ -138,27 +138,27 @@ agc_status_t csm_rcs_ratefilt(void)
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     { /* DRHOLOOP */
         /* CS DRHO; MP GAIN1; DAS DRHO: (1 - GAIN1) DRHO                  */
-        (void) csm_dap_words_das(&r->drho[i], csm_dap_words_mp((agc_sp_t) -r->drho[i].hi, gain1[g]));
+        csm_dap_words_das(&r->drho[i], csm_dap_words_mp((agc_sp_t) -r->drho[i].hi, gain1[g]));
 
         /* DCS ADOT; DXCH KMPAC; CA QUARTER; TC SMALLMP; DXCH KMPAC; DAS  */
-        (void) csm_dap_words_das(&r->drho[i], csm_dap_words_smallmp(csm_dap_words_neg(r->adot[i]), QUARTER));
+        csm_dap_words_das(&r->drho[i], csm_dap_words_smallmp(csm_dap_words_neg(r->adot[i]), QUARTER));
     }
 
     rcs_delrho(deltemp);
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     { /* ADOTLOOP */
-        (void) csm_dap_words_das(&r->drho[i], deltemp[i]);   /* DCA DELTEMPX; DAS DRHO   */
-        (void) csm_dap_words_das(&r->merror[i], deltemp[i]); /* DAS MERRORX              */
+        csm_dap_words_das(&r->drho[i], deltemp[i]);   /* DCA DELTEMPX; DAS DRHO   */
+        csm_dap_words_das(&r->merror[i], deltemp[i]); /* DAS MERRORX              */
 
         /* CA DRHO; DOUBLE; DOUBLE (N.B.); MP GAIN2; DAS ADOT             */
         agc_sp_t d = csm_dap_ads(r->drho[i].hi, r->drho[i].hi); /* 2 DRHO, 180 deg */
 
         d = csm_dap_ads(d, d);
-        (void) csm_dap_words_das(&r->adot[i], csm_dap_words_mp(d, gain2[g]));
+        csm_dap_words_das(&r->adot[i], csm_dap_words_mp(d, gain2[g]));
 
         /* CA KMJ; MP DFT; DAS ADOT: torque to inertia times firing time  */
-        (void) csm_dap_words_das(&r->adot[i], csm_dap_words_mp(r->kmj[i], r->dft[i]));
+        csm_dap_words_das(&r->adot[i], csm_dap_words_mp(r->kmj[i], r->dft[i]));
     }
 
     return (st);
@@ -194,14 +194,14 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
     /* ZL; DXCH DELTEMPX; T5TEMP = CDUY - RHO1; MP AMGB1; DAS DELTEMPX    */
     deltemp[0].hi = dx[0];
     deltemp[0].lo = 0;
-    (void) csm_dap_words_das(&deltemp[0], csm_dap_words_mp(dx[1], r->amgb1));
+    csm_dap_words_das(&deltemp[0], csm_dap_words_mp(dx[1], r->amgb1));
 
     deltemp[1] = csm_dap_words_mp(r->amgb4, dx[1]); /* CA AMGB4; MP T5TEMP; DXCH */
     deltemp[2] = csm_dap_words_mp(r->amgb7, dx[1]); /* CA AMGB7; MP T5TEMP; DXCH */
 
     /* T5TEMP = CDUZ - RHO2; MP AMGB5; DAS DELTEMPY; AMGB8; DAS DELTEMPZ   */
-    (void) csm_dap_words_das(&deltemp[1], csm_dap_words_mp(dx[2], r->amgb5));
-    (void) csm_dap_words_das(&deltemp[2], csm_dap_words_mp(r->amgb8, dx[2]));
+    csm_dap_words_das(&deltemp[1], csm_dap_words_mp(dx[2], r->amgb5));
+    csm_dap_words_das(&deltemp[2], csm_dap_words_mp(r->amgb8, dx[2]));
 
     if (!AGC_ASSERT(deltemp[2].lo >= AGC_SP_MIN))
     {

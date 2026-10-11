@@ -63,7 +63,8 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al);  /* DPADD (mod 360 deg) */
 /* ---- DP erasables as their stored words (agc_dp_words_t; mysubs.c) ---- */
 agc_dp_words_t csm_dap_words_neg(agc_dp_words_t p);    /* DCS          */
 agc_dp_words_t csm_dap_words_mp(agc_sp_t a, agc_sp_t b);  /* MP -> A,L  */
-agc_sp_t          csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al);
+agc_sp_t       csm_dap_words_das_carry(agc_dp_words_t *k, agc_dp_words_t al); /* DAS, A kept */
+void           csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al);       /* DAS, A discarded */
 agc_dp_words_t csm_dap_words_ddoubl(agc_dp_words_t p); /* DDOUBL    */
 agc_dp_words_t csm_dap_words_smallmp(agc_dp_words_t in, agc_sp_t n);
 uint16_t          csm_dap_cdu(int axis);                    /* CDUX, CDUY, CDUZ raw    */
