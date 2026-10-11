@@ -82,7 +82,7 @@
 #define PX_GIMR      006000u            /* RGIMBITS: chan 12 bits 11,12       */
 #define PX_TRANSBITS 007400u            /* 07400OCT: chan 31 bits 9-12        */
 #define PX_BADINDEX  ((agc_sp_t) 07776) /* INDXYZ: no translation policy    */
-#define PX_NTAB      14
+#define PX_NTAB      14                 /* JETSALL (7) + TYPEP (7) words */
 #define PX_TYPEP     7                  /* TYPEP = JETSALL +7                 */
 
 /* JETSALL (indexed by ROTINDEX) followed by TYPEP (indexed by NUMBERT),
@@ -154,8 +154,8 @@ static bool selectp(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_jetsoff(void)
 {
-    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
-    agc_status_t st = lm_dap_write_next(0);
+    lm_dap_t    *d  = lm_dap_state();       /* DAP erasables */
+    agc_status_t st = lm_dap_write_next(0); /* WRITEP -1: P jets off */
 
     d->tj[0] = 0;
 
@@ -229,8 +229,8 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
         return (lm_dap_jetsoff());
     }
 
-    d->abstj    = (agc_sp_t) ((d->tj[0] > 0) ? d->tj[0] : -d->tj[0]);
-    d->rotindex = (d->tj[0] > 0) ? 1 : 0; /* +P : -P        */
+    d->abstj    = (agc_sp_t) ((d->tj[0] > 0) ? d->tj[0] : -d->tj[0]); /* ABSTJ = |TJP| */
+    d->rotindex = (d->tj[0] > 0) ? 1 : 0;                             /* +P : -P        */
 
     if (!selectp(d))
     {
@@ -239,8 +239,8 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
         return (lm_dap_jetsoff());
     }
 
-    d->nojets[0]    = (d->numbert == 6) ? 4 : 2;
-    agc_status_t st = lm_dap_write(0, (uint16_t) d->polytemp);
+    d->nojets[0]    = (d->numbert == 6) ? 4 : 2;               /* four jets for the max-jet policy */
+    agc_status_t st = lm_dap_write(0, (uint16_t) d->polytemp); /* WRITEP: jets on now */
 
     if (PX_150MST6 - d->abstj <= 0)
     {
@@ -250,15 +250,15 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     if (PX_MINT6 - d->abstj > 0)
     { /* MINTIMES       */
         d->abstj = PX_MINT6;
-        d->tj[0] = (agc_sp_t) ((d->rotindex != 0) ? PX_MINT6 : -PX_MINT6);
+        d->tj[0] = (agc_sp_t) ((d->rotindex != 0) ? PX_MINT6 : -PX_MINT6); /* MINTIMES with the sign of TJP */
     }
 
     d->t6furtha[0]  = d->abstj;
-    d->t6furtha[1]  = 0; /* P-axis index   */
-    agc_status_t sj = lm_dap_jtlst();
+    d->t6furtha[1]  = 0;              /* P-axis index   */
+    agc_status_t sj = lm_dap_jtlst(); /* JTLST: schedule the turn-off */
 
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_PSKIP); /* skip next P   */
-    agc_status_t sa = altsyst();
+    agc_status_t sa = altsyst();                                /* ALTSYST: gimbal timers, needles */
 
     if (!AGC_ASSERT(sj == AGC_STATUS_OK && sa == AGC_STATUS_OK))
     {
@@ -286,7 +286,7 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
  **********************************************************************/
 agc_status_t lm_dap_pjetslec_pair(void)
 {
-    agc_sp_t n = agc_flag_test(AGC_FLAG_AORBSFLG) ? 5 : 4;
+    agc_sp_t n = agc_flag_test(AGC_FLAG_AORBSFLG) ? 5 : 4; /* NUMBERT 5 or 4: the jet pair AORBSYST selects (unscaled code) */
 
     if (!AGC_ASSERT(n == 4 || n == 5))
     {
@@ -314,9 +314,9 @@ agc_status_t lm_dap_pjetslec_pair(void)
  **********************************************************************/
 agc_status_t lm_dap_calcperr(void)
 {
-    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-    agc_sp_t  e = lm_dap_mphi(lm_dap_msu(agc_erase_cduy(), d->cduyd), agc_erase_m11());
-    int32_t   x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;
+    lm_dap_t *d = lm_dap_state();                                                       /* DAP erasables */
+    agc_sp_t  e = lm_dap_mphi(lm_dap_msu(agc_erase_cduy(), d->cduyd), agc_erase_m11()); /* CDUY-CDUYD times M11, scaled pi rad */
+    int32_t   x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;       /* CDUX-CDUXD + DELPEROR, scaled pi rad */
 
     d->e      = lm_dap_wrap((int32_t) e + x); /* ADS E: may wrap */
     d->perror = d->e;                         /* eight-ball     */
@@ -354,7 +354,7 @@ agc_status_t lm_dap_purgency_law(void)
 
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
-        agc_status_t ss = lm_dap_spsrcs();
+        agc_status_t ss = lm_dap_spsrcs(); /* SPSRCS law for P */
 
         if (!AGC_ASSERT(ss == AGC_STATUS_OK))
         {
@@ -363,17 +363,17 @@ agc_status_t lm_dap_purgency_law(void)
 
         if (d->tj[0] == 0)
         { /* DKALT          */
-            agc_status_t sa = altsyst();
-            agc_status_t so = lm_dap_jetsoff();
+            agc_status_t sa = altsyst();        /* ALTSYST */
+            agc_status_t so = lm_dap_jetsoff(); /* JETSOFF */
 
-            return ((sa != AGC_STATUS_OK) ? sa : so);
+            return ((sa != AGC_STATUS_OK) ? sa : so); /* first failure wins */
         }
 
         return (lm_dap_pjetslec_pair());
     }
 
-    d->sensetyp     = 0; /* HEADTJET       */
-    agc_status_t st = lm_dap_tjetlaw();
+    d->sensetyp     = 0;                /* HEADTJET       */
+    agc_status_t st = lm_dap_tjetlaw(); /* TJETLAW for P */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -411,8 +411,8 @@ agc_status_t lm_dap_purgency_law(void)
  **********************************************************************/
 agc_status_t lm_dap_purgency(void)
 {
-    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
-    agc_status_t st = lm_dap_calcperr();
+    lm_dap_t    *d  = lm_dap_state();    /* DAP erasables */
+    agc_status_t st = lm_dap_calcperr(); /* CALCPERR */
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->omegapd); /* EDOTP     */
 
@@ -483,7 +483,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
     }
 
     *policy       = true;
-    uint16_t bits = (uint16_t) (~agc_chan_read(031) & PX_TRANSBITS);
+    uint16_t bits = (uint16_t) (~agc_chan_read(031) & PX_TRANSBITS); /* THC translation bits (inverted channel 31) */
 
     if (bits == 0u)
     {
@@ -614,8 +614,8 @@ agc_status_t lm_dap_pretimck(void)
  **********************************************************************/
 agc_status_t agc_task_paxis(void)
 {
-    lm_dap_t *d  = lm_dap_state(); /* DAP erasables */
-    uint16_t  t5 = agc_rupt_time(5);
+    lm_dap_t *d  = lm_dap_state();   /* DAP erasables */
+    uint16_t  t5 = agc_rupt_time(5); /* TIME5 */
 
     agc_rupt_set_time(5, (uint16_t) ((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
 
@@ -624,8 +624,8 @@ agc_status_t agc_task_paxis(void)
         return (agc_bailout(AGC_ALARM_02000));
     }
 
-    bool         on = false;
-    agc_status_t sc = lm_dap_chekbits(&on);
+    bool         on = false;                /* CHEKBITS: DAP may run */
+    agc_status_t sc = lm_dap_chekbits(&on); /* CHEKBITS status */
 
     if (sc != AGC_STATUS_OK || !on)
     {
@@ -654,18 +654,18 @@ agc_status_t agc_task_paxis(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* the jask's status; a failure stops the chain */
 
     if ((d->rcsflags & LM_RCS_CALLGMBL) != 0u)
     { /* PAXFILT       */
         st = lm_dap_gimbal_drive_update();
     }
 
-    d->dapzrupt = 1; /* SUPERJOB: jask running   */
-    st          = (st == AGC_STATUS_OK) ? lm_dap_rateloop() : st;
-    st          = (st == AGC_STATUS_OK) ? lm_dap_backp() : st;
-    st          = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st;
-    st          = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;
+    d->dapzrupt = 1;                                                /* SUPERJOB: jask running   */
+    st          = (st == AGC_STATUS_OK) ? lm_dap_rateloop() : st;   /* RATELOOP unless an earlier step failed */
+    st          = (st == AGC_STATUS_OK) ? lm_dap_backp() : st;      /* BACKP unless an earlier step failed */
+    st          = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st; /* offset estimator unless an earlier step failed */
+    st          = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;   /* PRETIMCK unless an earlier step failed */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -678,8 +678,8 @@ agc_status_t agc_task_paxis(void)
     }
     else
     {
-        bool         policy = true;
-        agc_status_t st_p   = lm_dap_chkvisfz(&policy);
+        bool         policy = true;                     /* CHKVISFZ: Y,Z translation leaves P to the state logic */
+        agc_status_t st_p   = lm_dap_chkvisfz(&policy); /* CHKVISFZ status */
 
         if (st_p == AGC_STATUS_OK && policy)
         {

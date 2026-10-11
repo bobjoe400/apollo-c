@@ -130,7 +130,7 @@ agc_status_t lm_dap_zeroenbl(void)
  **********************************************************************/
 agc_status_t lm_dap_pstate(void)
 {
-    bool atthold = (agc_chan_read(031) & PM_CH31_ATTHOLD) == 0u;
+    bool atthold = (agc_chan_read(031) & PM_CH31_ATTHOLD) == 0u; /* attitude hold mode selected */
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_PULSEFLG)))
     {
@@ -161,7 +161,7 @@ agc_status_t lm_dap_pstate(void)
 
         d->perror     = 0;
         d->cduxd      = agc_erase_cdux();
-        uint16_t ch31 = agc_chan_read(031);
+        uint16_t ch31 = agc_chan_read(031); /* channel 31 mode bits */
 
         if (!AGC_ASSERT(d->oldpmin >= 0))
         {
@@ -223,9 +223,9 @@ static agc_status_t justout(lm_dap_t *d)
     agc_flag_set(AGC_FLAG_OURRCFLG);
     d->dxerror      = 0;
     d->dxerror_lo   = 0;
-    d->qerror       = 0; /* DYERROR                        */
+    d->qerror       = 0;                 /* DYERROR                        */
     d->dyerror_lo   = 0;
-    d->rerror       = 0; /* DZERROR                        */
+    d->rerror       = 0;                 /* DZERROR                        */
     d->dzerror_lo   = 0;
     d->plast        = 0;
     d->qlast        = 0;
@@ -234,7 +234,7 @@ static agc_status_t justout(lm_dap_t *d)
     agc_erase_set_r_rhcctr(0);
     d->rcsflags     = (uint16_t) (d->rcsflags & PM_PQRBIT);
     d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
-    agc_status_t sz = lm_dap_zeroenbl();
+    agc_status_t sz = lm_dap_zeroenbl(); /* ZEROENBL status */
 
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
     {
@@ -316,8 +316,8 @@ static agc_status_t pegi(lm_dap_t *d)
     d->dxerror        = 0;
     d->dxerror_lo     = 0;
     d->perror         = 0;
-    agc_sp_t absedotp = lm_dap_ccs_dim(d->edot); /* ABSEDOTP       */
-    bool     outside  = ((int32_t) absedotp + d->neg_ratedb > 0) && (d->tcp > 0);
+    agc_sp_t absedotp = lm_dap_ccs_dim(d->edot);                                  /* ABSEDOTP = |EDOTP| - 1, scaled pi/4 rad/s */
+    bool     outside  = ((int32_t) absedotp + d->neg_ratedb > 0) && (d->tcp > 0); /* rate error beyond the target deadband in direct rate */
 
     if (outside)
     {
@@ -341,9 +341,9 @@ static agc_status_t pegi(lm_dap_t *d)
     /* PEGI tail (pp.1435-1436): direct-rate jet time. TJP = 25/32 x 2 x
      * (-EDOTP x 1/ANETP), OVERSUB-limited; 4 jets if the rate error exceeds
      * the 2-jet limit, otherwise 2 jets for twice the time.                 */
-    lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]);
-    int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
-    agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
+    lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]); /* -EDOTP x 1/ANETP: jet time, DP */
+    int32_t      twice = 2 * lm_dap_dpval(p);                                 /* DAS A          */
+    agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD);                       /* OVERSUB: jet time, scaled 0.625 ms x 25/32 per count */
 
     d->tj[0] = lm_dap_mphi(a, PM_25_32); /* T6 counts      */
 
@@ -388,20 +388,20 @@ static agc_status_t pegi(lm_dap_t *d)
 static agc_status_t raterror(lm_dap_t *d)
 {
     d->cduxd     = agc_erase_cdux();
-    agc_sp_t cnt = agc_erase_p_rhcctr();
+    agc_sp_t cnt = agc_erase_p_rhcctr(); /* P RHC counter, unscaled counts */
 
     if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP); /* MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap) */
-    agc_sp_t lin    = lm_dap_mp(k, cnt).lo;                                       /* CA L           */
-    agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);
-    agc_sp_t change = lm_dap_wrap((int32_t) cmd - d->plast);                      /* DAPTEMP1    */
+    agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP); /* 4(|D| - 1) + LINRATP: linear-quadratic term; MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap); unscaled */
+    agc_sp_t lin    = lm_dap_mp(k, cnt).lo;                                       /* CA L: (4|D| + LINRAT) D low word, unscaled */
+    agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);                              /* commanded P rate, scaled 45 deg/s */
+    agc_sp_t change = lm_dap_wrap((int32_t) cmd - d->plast);                      /* DAPTEMP1: change of the command, scaled 45 deg/s */
 
     d->plast        = cmd;
-    agc_status_t sz = lm_dap_zeroenbl();
+    agc_status_t sz = lm_dap_zeroenbl(); /* ZEROENBL status */
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->plast); /* EDOTP       */
 
@@ -445,11 +445,11 @@ agc_status_t lm_dap_detentck(void)
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->ch31temp = agc_chan_read(031);
-    bool ourrc  = agc_flag_test(AGC_FLAG_OURRCFLG);
+    bool ourrc  = agc_flag_test(AGC_FLAG_OURRCFLG); /* OURRCBIT: rate command was on last pass */
 
     if ((d->ch31temp & PM_CH31_DETENT) == 0u)
     { /* RHCMOVED       */
-        return (ourrc ? raterror(d) : justout(d));
+        return (ourrc ? raterror(d) : justout(d)); /* RHC moved: rate error, or just out of detent */
     }
 
     if (!ourrc)

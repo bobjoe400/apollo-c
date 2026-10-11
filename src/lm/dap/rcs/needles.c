@@ -118,10 +118,10 @@ agc_status_t lm_dap_altdsply(void)
  **********************************************************************/
 agc_status_t lm_dap_dsplytot(void)
 {
-    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
-    agc_sp_t  ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
-    agc_sp_t  zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
-    agc_sp_t  xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
+    lm_dap_t *d    = lm_dap_state();                                    /* DAP erasables */
+    agc_sp_t  ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY, scaled pi rad */
+    agc_sp_t  zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ, scaled pi rad */
+    agc_sp_t  xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX, scaled pi rad */
 
     d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
     d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
@@ -157,7 +157,7 @@ agc_status_t lm_dap_dsplytot(void)
  **********************************************************************/
 static agc_status_t needles_first_pass(lm_dap_t *d)
 {
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
 
     for (int i = 0; i < 3; i++)
     {
@@ -165,7 +165,7 @@ static agc_status_t needles_first_pass(lm_dap_t *d)
         d->edrive[i]   = 0;
         agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
 
-        st = (s != AGC_STATUS_OK) ? s : st;
+        st = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
     }
 
     d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
@@ -210,7 +210,7 @@ static agc_status_t needles(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
 
     for (int i = 2; i >= 0; i--)
     { /* DINDX = 2, 1, 0       */
@@ -225,10 +225,10 @@ static agc_status_t needles(lm_dap_t *d)
             l = -NDL_DACMAX;
         }
 
-        int32_t      cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i];
-        agc_status_t s   = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
+        int32_t      cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i]; /* CDUxCMD + new drive - old drive, scaled 1800 deg */
+        agc_status_t s   = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd));               /* ADS CDUXCMD */
 
-        st           = (s != AGC_STATUS_OK) ? s : st;
+        st           = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
         d->edrive[i] = (agc_sp_t) l;
     }
 
@@ -260,8 +260,8 @@ agc_status_t lm_dap_needler(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
-    uint16_t  pass = (uint16_t) (d->rcsflags & NDL_PASSBITS);
+    lm_dap_t *d    = lm_dap_state();                          /* DAP erasables */
+    uint16_t  pass = (uint16_t) (d->rcsflags & NDL_PASSBITS); /* ALTDSPLY pass bits of RCSFLAGS */
 
     if (pass != 0u)
     {

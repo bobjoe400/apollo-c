@@ -79,11 +79,11 @@
  **********************************************************************/
 agc_status_t lm_dap_qerrcalc(void)
 {
-    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
-    agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd); /* DAPTEMP1 */
-    agc_sp_t  zdif = lm_dap_msu(agc_erase_cduz(), d->cduzd); /* DAPTEMP2 */
-    int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
-    int32_t   r    = (int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror;
+    lm_dap_t *d    = lm_dap_state();                                                                                  /* DAP erasables */
+    agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd);                                                          /* DAPTEMP1: CDUY-CDUYD, scaled pi rad */
+    agc_sp_t  zdif = lm_dap_msu(agc_erase_cduz(), d->cduzd);                                                          /* DAPTEMP2: CDUZ-CDUZD, scaled pi rad */
+    int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror; /* Q error sum before the XCH, scaled pi rad */
+    int32_t   r    = (int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror; /* R error sum before the XCH, scaled pi rad */
 
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
@@ -150,15 +150,15 @@ agc_status_t lm_dap_stillrcs(void)
  **********************************************************************/
 static agc_status_t senseget(lm_dap_t *d)
 {
-    uint16_t ch31  = agc_chan_read(031);
-    bool     plus  = ((ch31 & QR_CH31_PLUSX) == 0u) || (((ch31 & QR_CH31_MINUSX) != 0u) && agc_flag_test(AGC_FLAG_ULLAGFLG));
-    bool     minus = !plus && ((ch31 & QR_CH31_MINUSX) == 0u);
+    uint16_t ch31  = agc_chan_read(031);                                                                                      /* THC and mode bits */
+    bool     plus  = ((ch31 & QR_CH31_PLUSX) == 0u) || (((ch31 & QR_CH31_MINUSX) != 0u) && agc_flag_test(AGC_FLAG_ULLAGFLG)); /* +X: THC +X, or -X overridden by ullage */
+    bool     minus = !plus && ((ch31 & QR_CH31_MINUSX) == 0u);                                                                /* -X translation */
 
     if (!plus && !minus)
     {
         d->nextu     = 0;
         d->nextv     = 0;
-        bool burning = !agc_flag_test(AGC_FLAG_DRIFTDFL);
+        bool burning = !agc_flag_test(AGC_FLAG_DRIFTDFL); /* not drifting: engine burning */
 
         d->sensetyp = (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
 
@@ -174,10 +174,10 @@ static agc_status_t senseget(lm_dap_t *d)
     }
     else
     {
-        d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2;
+        d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* AORBTYPE: B (3) or A (2) pair */
     }
 
-    bool found = lm_dap_selctsub();
+    bool found = lm_dap_selctsub(); /* SELCTSUB found a policy */
 
     if (!AGC_ASSERT(found)) /* FAILOOP returns 0 before running out */
     {
@@ -215,7 +215,7 @@ agc_status_t lm_dap_rcs(void)
 
     d->cotroler     = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
-    agc_status_t st = senseget(d);
+    agc_status_t st = senseget(d); /* SENSEGET status */
 
     if (!AGC_ASSERT(d->sensetyp >= 0 && d->sensetyp <= 2))
     {
@@ -271,7 +271,7 @@ static agc_status_t trygts(lm_dap_t *d)
     if (d->ingts != 0)
     { /* CHKINGTS       */
         agc_inhint();
-        agc_status_t st = agc_lm_dap_timegmbl();
+        agc_status_t st = agc_lm_dap_timegmbl(); /* TIMEGMBL status */
 
         agc_relint();
         d->ingts = 0;
@@ -309,11 +309,11 @@ agc_status_t lm_dap_qraxis(void)
 
     d->edotr       = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
     d->edotq       = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);
-    bool automatic = (agc_chan_read(031) & QR_CH31_AUTO) != 0u;
+    bool automatic = (agc_chan_read(031) & QR_CH31_AUTO) != 0u;    /* AUTO mode (channel 31) */
 
     if (automatic || !agc_flag_test(AGC_FLAG_OURRCFLG))
     {
-        agc_status_t sq = lm_dap_qerrcalc();
+        agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC status */
 
         if (!AGC_ASSERT(sq == AGC_STATUS_OK))
         {
@@ -331,5 +331,5 @@ agc_status_t lm_dap_qraxis(void)
         return (lm_dap_gts());
     }
 
-    return ((d->cotroler == 0) ? trygts(d) : lm_dap_rcs());
+    return ((d->cotroler == 0) ? trygts(d) : lm_dap_rcs()); /* COTROLER = 0: try GTS */
 }

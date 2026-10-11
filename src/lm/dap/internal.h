@@ -99,95 +99,146 @@ typedef enum lm_dap_t5adr
 typedef struct lm_dap
 {
     /* permanent DAP storage (p.105) */
-    uint16_t       rcsflags;               /* RCSFLAGS, bits above                    */
-    lm_dap_t5adr_t t5adr;                  /* T5ADR                                   */
-    uint16_t ch5mask, ch6mask;             /* failed-jet masks, channel 5/6 format     */
-    uint16_t       pvalvest;               /* PVALVEST, channel 32 format              */
-    agc_sp_t delperor, delqeror, delreror; /* KALCMANU command lags, at pi  */
-    agc_sp_t       db;                     /* DB deadband, at 45 deg                   */
+    uint16_t       rcsflags; /* RCSFLAGS, bits above */
+    lm_dap_t5adr_t t5adr;    /* T5ADR */
+    uint16_t       ch5mask;  /* CH5MASK: failed U,V jets, channel 5 format */
+    uint16_t       ch6mask;  /* CH6MASK: failed P jets, channel 6 format */
+    uint16_t       pvalvest; /* PVALVEST, channel 32 format */
+    agc_sp_t       delperor; /* DELPEROR: KALCMANU command lag, scaled pi rad */
+    agc_sp_t       delqeror; /* DELQEROR, scaled pi rad */
+    agc_sp_t       delreror; /* DELREROR, scaled pi rad */
+    agc_sp_t       db;       /* DB deadband, scaled pi/4 rad (45 deg) */
 
     /* pad loads (p.129) */
-    agc_sp_t hiascent;                  /* HIASCENT, B16 kg                         */
-    agc_sp_t dktrap, dkomegan, dkkaosn; /* docked estimator gains         */
-    agc_sp_t lmtrap, lmomegan, lmkaosn; /* LM-alone estimator gains       */
-    agc_sp_t dkdb;                      /* DKDB: deadband = pi/DKDB rad             */
-    agc_sp_t ignaosq, ignaosr;          /* IGNAOSQ/R pad loads, at pi/2             */
+    agc_sp_t hiascent; /* HIASCENT, B16 kg */
+    agc_sp_t dktrap;   /* DKTRAP: docked trap size, scaled 4.5 deg (77001 = .14 deg) */
+    agc_sp_t dkomegan; /* DKOMEGAN: docked omega gain, unscaled count (10) */
+    agc_sp_t dkkaosn;  /* DKKAOSN: docked AOS gain, unscaled count (60) */
+    agc_sp_t lmtrap;   /* LMTRAP: LM-alone trap size, scaled 4.5 deg */
+    agc_sp_t lmomegan; /* LMOMEGAN: LM-alone omega gain, unscaled count */
+    agc_sp_t lmkaosn;  /* LMKAOSN: LM-alone AOS gain, unscaled count */
+    agc_sp_t dkdb;     /* DKDB: deadband = pi/DKDB rad, unscaled divisor */
+    agc_sp_t ignaosq;  /* IGNAOSQ pad load, scaled pi/2 rad/s^2 */
+    agc_sp_t ignaosr;  /* IGNAOSR pad load, scaled pi/2 rad/s^2 */
 
     /* angle measurements */
-    agc_sp_t omegap, omegaq, omegar;       /* body rates, at pi/4 rad/s        */
-    agc_sp_t alphaq, alphar;               /* downlink copies of AOSQ/R, at pi/2       */
-    agc_sp_t omegau, omegav;               /* U,V rates (also URATEDIF/VRATEDIF)       */
-    agc_sp_t trapedp, trapedq, trapedr;    /* rate residual sums, at pi/4    */
-    agc_sp_t nptraps, nqtraps, nrtraps;    /* sample counts                  */
-    agc_sp_t edotq, edotr;                 /* Q,R rate errors (QRATEDIF/RRATEDIF) pi/4  */
-    uint16_t oldxforp, oldyforp, oldzforq; /* last CDUs, 2's comp at pi    */
+    agc_sp_t omegap;   /* OMEGAP body rate, scaled pi/4 rad/s */
+    agc_sp_t omegaq;   /* OMEGAQ, scaled pi/4 rad/s */
+    agc_sp_t omegar;   /* OMEGAR, scaled pi/4 rad/s */
+    agc_sp_t alphaq;   /* ALPHAQ: downlink copy of AOSQ, scaled pi/2 rad/s^2 */
+    agc_sp_t alphar;   /* ALPHAR: downlink copy of AOSR, scaled pi/2 rad/s^2 */
+    agc_sp_t omegau;   /* OMEGAU (also URATEDIF), scaled pi/4 rad/s */
+    agc_sp_t omegav;   /* OMEGAV (also VRATEDIF), scaled pi/4 rad/s */
+    agc_sp_t trapedp;  /* TRAPEDP: P rate residual sum, scaled pi/4 rad/s */
+    agc_sp_t trapedq;  /* TRAPEDQ, scaled pi/4 rad/s */
+    agc_sp_t trapedr;  /* TRAPEDR, scaled pi/4 rad/s */
+    agc_sp_t nptraps;  /* NPTRAPS: P sample count, unscaled */
+    agc_sp_t nqtraps;  /* NQTRAPS, unscaled count */
+    agc_sp_t nrtraps;  /* NRTRAPS, unscaled count */
+    agc_sp_t edotq;    /* EDOTQ = QRATEDIF: Q rate error, scaled pi/4 rad/s */
+    agc_sp_t edotr;    /* EDOTR = RRATEDIF, scaled pi/4 rad/s */
+    uint16_t oldxforp; /* OLDXFORP: last CDUX, 2's complement scaled pi rad */
+    uint16_t oldyforp; /* OLDYFORP: last CDUY, 2's complement scaled pi rad */
+    uint16_t oldzforq; /* OLDZFORQ: last CDUZ, 2's complement scaled pi rad */
 
     /* rate command / minimum impulse */
-    uint16_t ch31temp;            /* CH31TEMP channel 31 image                */
-    agc_sp_t stiksens;            /* STIKSENS                                 */
-    agc_sp_t tcp, tcqr;           /* direct-rate timers, 0.1 s               */
-    agc_sp_t dxerror, dxerror_lo; /* DXERROR DP at pi                     */
-    agc_sp_t qerror, dyerror_lo;  /* QERROR = DYERROR (high), DP at pi    */
-    agc_sp_t rerror, dzerror_lo;  /* RERROR = DZERROR (high), DP at pi    */
-    agc_sp_t plast, qlast, rlast; /* commanded rates, at 45 deg/s         */
-    agc_sp_t oldpmin, oldqrmin;   /* minimum-impulse gates                    */
-    agc_sp_t savehand[2];         /* SAVEHAND: Q,R RHC counts                 */
-    agc_sp_t perror;              /* PERROR at pi                             */
+    uint16_t ch31temp;    /* CH31TEMP channel 31 image */
+    agc_sp_t stiksens;    /* STIKSENS: quadratic RHC sensitivity, scaled 1 */
+    agc_sp_t tcp;         /* TCP: P direct-rate timer, unscaled DAP passes (0.1 s) */
+    agc_sp_t tcqr;        /* TCQR: Q,R direct-rate timer, unscaled DAP passes */
+    agc_sp_t dxerror;     /* DXERROR major word, DP scaled pi rad */
+    agc_sp_t dxerror_lo;  /* DXERROR minor word, scaled 2^-14 of the major */
+    agc_sp_t qerror;      /* QERROR = DYERROR major word, scaled pi rad */
+    agc_sp_t dyerror_lo;  /* DYERROR minor word, scaled 2^-14 of the major */
+    agc_sp_t rerror;      /* RERROR = DZERROR major word, scaled pi rad */
+    agc_sp_t dzerror_lo;  /* DZERROR minor word, scaled 2^-14 of the major */
+    agc_sp_t plast;       /* PLAST: commanded P rate, scaled 45 deg/s */
+    agc_sp_t qlast;       /* QLAST, scaled 45 deg/s */
+    agc_sp_t rlast;       /* RLAST, scaled 45 deg/s */
+    agc_sp_t oldpmin;     /* OLDPMIN: P minimum-impulse gate, unscaled */
+    agc_sp_t oldqrmin;    /* OLDQRMIN: Q,R minimum-impulse gate, unscaled */
+    agc_sp_t savehand[2]; /* SAVEHAND: Q,R RHC counts, unscaled */
+    agc_sp_t perror;      /* PERROR, scaled pi rad */
 
     /* jet timing list (T6) */
-    agc_sp_t        nxt6adr;      /* NXT6ADR axis index 0/4/13                */
-    agc_sp_t        t6next[2];    /* T6NEXT: delta counts, axis index         */
-    agc_sp_t        t6furtha[2];  /* T6FURTHA                                 */
-    uint16_t nextp, nextu, nextv; /* jets after the T6RUPT (chan 6/5 codes) */
-    agc_sp_t        neg_2jetlim;  /* -2JETLIM, at 45 deg/s                    */
-    agc_sp_t        neg_ratedb;   /* -RATEDB = TARGETDB, at 45 deg/s          */
-    lm_dap_uvbody_t retjadr;      /* RETJADR                                  */
-    agc_sp_t        sensetyp;     /* SENSETYP 0, 1 (-X), 2 (+X)               */
+    agc_sp_t        nxt6adr;     /* NXT6ADR axis index 0/4/13, unscaled */
+    agc_sp_t        t6next[2];   /* T6NEXT: delta, scaled 0.625 ms per count; axis index */
+    agc_sp_t        t6furtha[2]; /* T6FURTHA: delta, scaled 0.625 ms per count; axis index */
+    uint16_t        nextp;       /* NEXTP: P jets after the T6RUPT (channel 6 code) */
+    uint16_t        nextu;       /* NEXTU: U jets (channel 5 code) */
+    uint16_t        nextv;       /* NEXTV: V jets (channel 5 code) */
+    agc_sp_t        neg_2jetlim; /* -2JETLIM, scaled 45 deg/s */
+    agc_sp_t        neg_ratedb;  /* -RATEDB = TARGETDB, scaled 45 deg/s */
+    lm_dap_uvbody_t retjadr;     /* RETJADR */
+    agc_sp_t        sensetyp;    /* SENSETYP 0, 1 (-X), 2 (+X), unscaled */
 
     /* trim gimbal */
-    agc_sp_t neguq, allowgts, negur;             /* NEGUQ, ALLOWGTS (=NEGUQ+1), NEGUR  */
-    agc_sp_t kq, axisctr, krdap;                 /* KQ at pi/2^8, AXISCTR (=SAVESR), KRDAP   */
-    agc_sp_t accdotq, qaccdot, accdotr, raccdot; /* jerks at pi/2^7        */
-    agc_sp_t cotroler;                           /* COTROLER >0 GTS, 0 try, <0 RCS           */
-    agc_sp_t qgimtimr, ingts, rgimtimr;          /* timers 0.1 s, INGTS              */
+    agc_sp_t neguq;    /* NEGUQ: Q drive sign -1, 0, +1 (unscaled) */
+    agc_sp_t allowgts; /* ALLOWGTS (= NEGUQ +1): GTS permitted, unscaled */
+    agc_sp_t negur;    /* NEGUR: R drive sign, unscaled */
+    agc_sp_t kq;       /* KQ: Q jerk term, scaled pi/2^8 rad/s^3 */
+    agc_sp_t axisctr;  /* AXISCTR (= SAVESR): -1 P, 0 U, 1 V (unscaled) */
+    agc_sp_t krdap;    /* KRDAP: .3 ACCDOTR, scaled pi/2^8 rad/s^3 */
+    agc_sp_t accdotq;  /* ACCDOTQ: Q gimbal jerk magnitude, scaled pi/2^7 rad/s^3 */
+    agc_sp_t qaccdot;  /* QACCDOT: signed, scaled pi/2^7 rad/s^3 */
+    agc_sp_t accdotr;  /* ACCDOTR, scaled pi/2^7 rad/s^3 */
+    agc_sp_t raccdot;  /* RACCDOT: signed, scaled pi/2^7 rad/s^3 */
+    agc_sp_t cotroler; /* COTROLER > 0 GTS, 0 try GTS, < 0 RCS (unscaled) */
+    agc_sp_t qgimtimr; /* QGIMTIMR: Q drive timer, scaled 0.1 s per count */
+    agc_sp_t ingts;    /* INGTS: current GTS control indicator, unscaled */
+    agc_sp_t rgimtimr; /* RGIMTIMR: R drive timer, scaled 0.1 s per count */
 
     /* torque reconstruction */
-    agc_sp_t downtork[6];                  /* +-P +-U +-V jet torque, 32 jet-s (wraps) */
-    agc_sp_t nojets[3];                    /* NO.PJETS, NO.UJETS, NO.VJETS             */
-    agc_sp_t tj[3];                        /* TJP, TJU, TJV: T6 counts (0.625 ms)      */
-    agc_sp_t l_pvt_cg;                     /* L,PVT-CG at 8 ft                         */
-    agc_sp_t jacc[5];                      /* 1JACC,Q,R at pi/4; 1JACCU,V at pi/2      */
-    agc_sp_t skip[2];                      /* SKIPU, SKIPV (0 = skip next pass)        */
-    agc_sp_t aosq, aosq_lo, aosr, aosr_lo; /* AOSQ/AOSR DP at pi/2         */
-    agc_sp_t aosu, aosv;                   /* AOSU, AOSV at pi/2                       */
-    agc_sp_t aosqterm, aosrterm;           /* (.1-.05K)AOS, at pi/4                    */
-    agc_sp_t block[LM_BLOCK_N];            /* BLOCKTOP: TJETLAW parameters (1/ACCONT)  */
-    agc_sp_t coeffq, coeffr;               /* ROT-TOUV coefficients                    */
+    agc_sp_t downtork[6];       /* +-P +-U +-V jet torque, scaled 32 jet-s (wraps) */
+    agc_sp_t nojets[3];         /* NO.PJETS, NO.UJETS, NO.VJETS, unscaled counts */
+    agc_sp_t tj[3];             /* TJP, TJU, TJV: scaled 0.625 ms per count (T6) */
+    agc_sp_t l_pvt_cg;          /* L,PVT-CG, scaled 8 ft */
+    agc_sp_t jacc[5];           /* 1JACC,Q,R scaled pi/4 rad/s^2; 1JACCU,V scaled pi/2 */
+    agc_sp_t skip[2];           /* SKIPU, SKIPV (0 = skip next pass), unscaled */
+    agc_sp_t aosq;              /* AOSQ major word, DP scaled pi/2 rad/s^2 */
+    agc_sp_t aosq_lo;           /* AOSQ minor word, scaled 2^-14 of the major */
+    agc_sp_t aosr;              /* AOSR major word, DP scaled pi/2 rad/s^2 */
+    agc_sp_t aosr_lo;           /* AOSR minor word, scaled 2^-14 of the major */
+    agc_sp_t aosu;              /* AOSU, scaled pi/2 rad/s^2 */
+    agc_sp_t aosv;              /* AOSV, scaled pi/2 rad/s^2 */
+    agc_sp_t aosqterm;          /* AOSQTERM (.1-.05K)AOSQ, scaled pi/4 rad/s */
+    agc_sp_t aosrterm;          /* AOSRTERM, scaled pi/4 rad/s */
+    agc_sp_t block[LM_BLOCK_N]; /* BLOCKTOP: TJETLAW parameters, scales per LM_BK_* */
+    agc_sp_t coeffq;            /* COEFFQ: ROT-TOUV coefficient, scaled 1 */
+    agc_sp_t coeffr;            /* COEFFR, scaled 1 */
 
     /* KALCMANU interface */
-    uint16_t cduxd, cduyd, cduzd;       /* desired CDUs, 2's comp at pi           */
-    agc_sp_t delcdux, delcduy, delcduz; /* -desired 100 ms increments      */
-    agc_sp_t omegapd, omegaqd, omegard; /* desired rates at pi/4           */
+    uint16_t cduxd;   /* CDUXD desired CDU, 2's complement scaled pi rad */
+    uint16_t cduyd;   /* CDUYD, 2's complement scaled pi rad */
+    uint16_t cduzd;   /* CDUZD, 2's complement scaled pi rad */
+    agc_sp_t delcdux; /* DELCDUX: -desired 100 ms increment, scaled pi rad */
+    agc_sp_t delcduy; /* DELCDUY, scaled pi rad */
+    agc_sp_t delcduz; /* DELCDUZ, scaled pi rad */
+    agc_sp_t omegapd; /* OMEGAPD desired rate, scaled pi/4 rad/s */
+    agc_sp_t omegaqd; /* OMEGAQD, scaled pi/4 rad/s */
+    agc_sp_t omegard; /* OMEGARD, scaled pi/4 rad/s */
 
     /* jask and docked jet inhibition */
-    agc_sp_t dapzrupt;  /* DAPZRUPT > 0: jask in progress           */
-    agc_sp_t jetctr[3]; /* PJETCTR, UJETCTR, VJETCTR                */
+    agc_sp_t dapzrupt;  /* DAPZRUPT > 0: jask in progress (unscaled) */
+    agc_sp_t jetctr[3]; /* PJETCTR, UJETCTR, VJETCTR, unscaled DAP passes */
 
     /* needles */
-    agc_sp_t ak[3];     /* AK, AK1, AK2 at 180 deg                  */
-    agc_sp_t edrive[3]; /* EDRIVEX..Z at 1800 deg                   */
+    agc_sp_t ak[3];     /* AK, AK1, AK2, scaled 180 deg */
+    agc_sp_t edrive[3]; /* EDRIVEX..Z, scaled 1800 deg */
 
     /* per-pass temporaries shared between routines */
-    agc_sp_t e, edot;        /* E (pi, or pi/4 inside TJETLAW), EDOT pi/4 */
-    agc_sp_t uerror, verror; /* U,V attitude errors at pi                */
-    agc_sp_t numbert;        /* NUMBERT (DAPTEMP5)                       */
-    agc_sp_t firefct;        /* FIREFCT (DAPTEMP3) at pi/4               */
-    agc_sp_t rotindex;       /* ROTINDEX (DAPTEMP6)                      */
-    agc_sp_t polytemp;       /* POLYTEMP (DAPTEMP3)                      */
-    agc_sp_t abstj;          /* ABSTJ (DAPTEMP1)                         */
-    agc_sp_t jetrate[3];     /* JETRATE, JETRATEQ, JETRATER at pi/4      */
-    agc_sp_t torque[3];      /* DAPTEMP1..3: signed jet-s at 1           */
-    uint16_t dapcdu[3];      /* DAPTREG4..6: CDUX..Z read by PAXIS       */
+    agc_sp_t e;          /* E: scaled pi rad, or pi/4 rad inside TJETLAW */
+    agc_sp_t edot;       /* EDOT, scaled pi/4 rad/s */
+    agc_sp_t uerror;     /* U attitude error, scaled pi rad */
+    agc_sp_t verror;     /* V attitude error, scaled pi rad */
+    agc_sp_t numbert;    /* NUMBERT (DAPTEMP5), unscaled jet-count code */
+    agc_sp_t firefct;    /* FIREFCT (DAPTEMP3), scaled pi/4 rad */
+    agc_sp_t rotindex;   /* ROTINDEX (DAPTEMP6), unscaled index */
+    agc_sp_t polytemp;   /* POLYTEMP (DAPTEMP3), unscaled jet policy */
+    agc_sp_t abstj;      /* ABSTJ (DAPTEMP1), scaled 0.625 ms per count */
+    agc_sp_t jetrate[3]; /* JETRATE, JETRATEQ, JETRATER, scaled pi/4 rad/s */
+    agc_sp_t torque[3];  /* DAPTEMP1..3: signed jet-s, scaled 1 */
+    uint16_t dapcdu[3];  /* DAPTREG4..6: CDUX..Z read by PAXIS */
 } lm_dap_t;
 
 lm_dap_t *lm_dap_state(void);
@@ -195,8 +246,8 @@ lm_dap_t *lm_dap_state(void);
 /* ---- word-level arithmetic (arith.c) ----------------------------------- */
 typedef struct lm_dp_pair
 {
-    agc_sp_t hi; /* A / major word                           */
-    agc_sp_t lo; /* L / minor word                           */
+    agc_sp_t hi; /* A / major word, scale of the pair */
+    agc_sp_t lo; /* L / minor word, scaled 2^-14 of the pair */
 } lm_dp_pair_t;
 
 lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b);          /* MP: A,L = a*b     */

@@ -144,7 +144,7 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
  **********************************************************************/
 static agc_sp_t dp_sign(lm_dp_pair_t x)
 {
-    agc_sp_t w = (x.hi != 0) ? x.hi : x.lo; /* sign word: major, or minor when major is 0; +unscaled (only its sign is used) */
+    agc_sp_t w = (x.hi != 0) ? x.hi : x.lo; /* sign word: major, or minor when major is 0; unscaled (only its sign is used) */
 
     if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
     {
@@ -285,7 +285,7 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
     }
 
     agc_sp_t half = lm_dap_mphi(a, (agc_sp_t) 8192);                /* SCALDONE: HALFARG = ARG/2, scaled 1 (fraction) */
-    agc_sp_t x    = ((half & 4096) != 0) ? LM_POSMAX : GT_ROOTHALF; /* first guess: 1 or sqrt(1/2); +scaled 1 (fraction) */
+    agc_sp_t x    = ((half & 4096) != 0) ? LM_POSMAX : GT_ROOTHALF; /* first guess: 1 or sqrt(1/2); scaled 1 (fraction) */
 
     for (int k = 0; k < 3; k++)
     {
@@ -603,7 +603,7 @@ agc_status_t lm_dap_gts(void)
 
         agc_status_t s = gts_drive(d, i, newneg); /* status of this axis */
 
-        st = (s != AGC_STATUS_OK) ? s : st; /* first failure wins */
+        st = (s != AGC_STATUS_OK) ? s : st; /* a failing axis status replaces st */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

@@ -48,14 +48,14 @@
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 
-#define CH31_MODE_OFF  030000u        /* BIT13-14: mode select switch OFF  */
-#define IMODES33_NOIMU 000040u        /* BIT6: IMU not usable              */
-#define CH30_NOPGNCS   001000u        /* BIT10 of 30 (inverted): not PGNCS */
-#define MANFLAG        03021u         /* RCSFLAGS bits cleared by STARTDAP */
-#define BGIM23         07400u         /* trim gimbal drive bits 9-12, ch 12*/
-#define PRIO27         ((agc_prio_t) 027)
-#define STARTDAP_SKIP  ((agc_sp_t) 4) /* FOUR: SKIPU/SKIPV not skipping    */
-#define STARTDAP_TRAPS ((agc_sp_t) 2) /* TWO: NPTRAPS, NQTRAPS, NRTRAPS    */
+#define CH31_MODE_OFF  030000u            /* BIT13-14: mode select switch OFF  */
+#define IMODES33_NOIMU 000040u            /* BIT6: IMU not usable              */
+#define CH30_NOPGNCS   001000u            /* BIT10 of 30 (inverted): not PGNCS */
+#define MANFLAG        03021u             /* RCSFLAGS bits cleared by STARTDAP */
+#define BGIM23         07400u             /* trim gimbal drive bits 9-12, ch 12*/
+#define PRIO27         ((agc_prio_t) 027) /* 1/ACCJOB (1/ACCS reset) priority 27 */
+#define STARTDAP_SKIP  ((agc_sp_t) 4)     /* FOUR: SKIPU/SKIPV not skipping    */
+#define STARTDAP_TRAPS ((agc_sp_t) 2)     /* TWO: NPTRAPS, NQTRAPS, NRTRAPS    */
 
 /**********************************************************************
  * SETTIME5 (p.1412): next T5RUPT in 100 ms (TIME5 = 37766).
@@ -94,18 +94,18 @@ static agc_status_t settime5(void)
  **********************************************************************/
 agc_status_t lm_dap_shutdown(void)
 {
-    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
-    agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER);
+    lm_dap_t    *d  = lm_dap_state();                   /* DAP erasables */
+    agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER); /* T5ADR = DAPIDLER */
 
     d->nextp        = 0;
     d->nextu        = 0;
     d->nextv        = 0;
-    agc_chan_write(005, 0); /* command jets off        */
+    agc_chan_write(005, 0);       /* command jets off        */
     agc_chan_write(006, 0);
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
-    agc_status_t t5 = settime5();
+    agc_status_t t5 = settime5(); /* next T5RUPT in 100 ms */
 
-    return ((st != AGC_STATUS_OK) ? st : t5);
+    return ((st != AGC_STATUS_OK) ? st : t5); /* first failure wins */
 }
 
 /**********************************************************************
@@ -122,8 +122,8 @@ agc_status_t lm_dap_shutdown(void)
  **********************************************************************/
 agc_status_t lm_dap_moreidle(void)
 {
-    agc_status_t sq = lm_dap_qerrcalc();
-    agc_status_t sp = lm_dap_calcperr();
+    agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC, RERRCALC */
+    agc_status_t sp = lm_dap_calcperr(); /* CALCPERR */
 
     if (!AGC_ASSERT(sq == AGC_STATUS_OK))
     {
@@ -165,7 +165,7 @@ agc_status_t lm_dap_chekbits(bool *on)
     }
 
     *on           = false;
-    uint16_t ch31 = agc_chan_read(031);
+    uint16_t ch31 = agc_chan_read(031); /* channel 31: DAP mode and guidance control bits */
 
     if (((uint16_t) ~ch31 & CH31_MODE_OFF) == 0u)
     { /* mode switch OFF     */
@@ -278,11 +278,11 @@ agc_status_t lm_dap_startdap(void)
     d->nextp        = 0;
     d->nextu        = 0;
     d->nextv        = 0;
-    d->dapzrupt     = LM_DAPZ_NEG; /* jask not in progress               */
+    d->dapzrupt     = LM_DAPZ_NEG;                   /* jask not in progress               */
     d->nptraps      = STARTDAP_TRAPS;
     d->nqtraps      = STARTDAP_TRAPS;
     d->nrtraps      = STARTDAP_TRAPS;
-    agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS);
+    agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS); /* T5ADR = PAXIS */
 
     if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
     {
@@ -315,7 +315,7 @@ agc_status_t agc_task_dapidler(void)
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u)
     { /* 1/ACCSET since restart? */
         d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);
-        agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET);
+        agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET); /* NOVAC 1/ACCS reset job */
 
         if (sj != AGC_STATUS_OK)
         {
@@ -323,7 +323,7 @@ agc_status_t agc_task_dapidler(void)
         }
     }
 
-    bool         on = false;
+    bool         on = false;                /* CHEKBITS: DAP may run */
     agc_status_t sc = lm_dap_chekbits(&on); /* CHECKUP                 */
 
     if (sc != AGC_STATUS_OK || !on)
@@ -360,5 +360,5 @@ agc_status_t agc_lm_dap_t5rupt(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((d->t5adr == LM_T5_PAXIS) ? agc_task_paxis() : agc_task_dapidler());
+    return ((d->t5adr == LM_T5_PAXIS) ? agc_task_paxis() : agc_task_dapidler()); /* T5ADR dispatch */
 }
