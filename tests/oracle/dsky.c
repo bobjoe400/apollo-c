@@ -66,6 +66,77 @@ static const dsky_noun_t k_lm[] = {
 
 #define DSKY_MCTBS_NAME "E7,1700"
 
+/* Documented deviation (docs/modules/io-pinball.md "Deviations": SP -0
+ * is not representable and displays as +0): the register's sign relay
+ * bit (bit 11 of its two sign words) is not compared.                    */
+typedef struct dsky_negzero
+{
+    const char *tag;
+    int         reg; /* 1..3 */
+} dsky_negzero_t;
+
+static const dsky_negzero_t k_negzero[] = {
+    {"cm_n01_1", 1}, /* N01 fraction 77777: AGC -00000, C +00000 */
+    {"cm_n02_1", 1}, /* N02 whole    77777: AGC -00000, C +00000 */
+};
+
+/* Findings (docs/modules/oracle-cases.md "Findings"). */
+typedef struct dsky_known
+{
+    const char *tag;
+    const char *id;
+} dsky_known_t;
+
+static const dsky_known_t k_known[] = {
+    {"cm_n91_3", "F15"}, /* OPDEGOUT CDUT = -20BIAS: C CCSHOLE */
+};
+
+static const char *known_id(const char *t)
+{
+    for (size_t i = 0; i < sizeof k_known / sizeof k_known[0]; i++)
+    {
+        if (strcmp(k_known[i].tag, t) == 0)
+        {
+            return (k_known[i].id);
+        }
+    }
+
+    return (NULL);
+}
+
+/* Sign-relay bit mask for DSPTAB word k under a -0 deviation of t. */
+static uint16_t sign_mask(const char *t, int k)
+{
+    static const int k_sign_word[3][2] = {{5, 6}, {3, 4}, {0, 1}};
+
+    for (size_t i = 0; i < sizeof k_negzero / sizeof k_negzero[0]; i++)
+    {
+        const int r = k_negzero[i].reg - 1;
+
+        if (strcmp(k_negzero[i].tag, t) == 0 &&
+            (k == k_sign_word[r][0] || k == k_sign_word[r][1]))
+        {
+            return ((uint16_t) 075777u);
+        }
+    }
+
+    return ((uint16_t) 077777u);
+}
+
+static void check(const char *t, const char *what, long got, long want)
+{
+    const char *id = known_id(t);
+
+    if (id != NULL)
+    {
+        oracle_cmp_known(t, what, got, want, 0, id);
+    }
+    else
+    {
+        (void) oracle_cmp(t, what, got, want, 0);
+    }
+}
+
 static const dsky_noun_t *find_noun(bool lm, int noun)
 {
     const dsky_noun_t *t = lm ? k_lm : k_cm;
@@ -157,16 +228,16 @@ static void compare(const char *t)
 
     for (int k = 0; k < PIN_DSPTAB_PANEL; k++)
     {
+        const uint16_t m = sign_mask(t, k);
+
         (void) snprintf(name, sizeof name, "DSPTAB+%d", k);
-        (void) oracle_cmp(t, name, (long) agc_erase_dsptab(k),
-                          (long) oracle_out_raw(t, name), 0);
+        check(t, name, (long) (agc_erase_dsptab(k) & m),
+              (long) (oracle_out_raw(t, name) & m));
     }
 
-    (void) oracle_cmp(t, "NOUT", pin_st()->nout, oracle_out_sp(t, "NOUT"), 0);
-    (void) oracle_cmp(t, "VERBREG", pin_st()->verbreg,
-                      oracle_out_sp(t, "VERBREG"), 0);
-    (void) oracle_cmp(t, "NOUNREG", pin_st()->nounreg,
-                      oracle_out_sp(t, "NOUNREG"), 0);
+    check(t, "NOUT", pin_st()->nout, oracle_out_sp(t, "NOUT"));
+    check(t, "VERBREG", pin_st()->verbreg, oracle_out_sp(t, "VERBREG"));
+    check(t, "NOUNREG", pin_st()->nounreg, oracle_out_sp(t, "NOUNREG"));
 }
 
 static void one(const char *t, bool lm)
@@ -232,7 +303,7 @@ static void one(const char *t, bool lm)
         st = agc_dsky_nvsub((uint8_t) verb, (uint8_t) noun);
     }
 
-    (void) oracle_cmp(t, "nvsub status", st, AGC_STATUS_OK, 0);
+    check(t, "nvsub status", st, AGC_STATUS_OK);
     compare(t);
 }
 

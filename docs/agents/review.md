@@ -25,3 +25,18 @@ its lane's AGC source files side by side with the C and checks:
    Rule-5 density >= 2.0 per file with real pre/postconditions.
 5. Fix what you find; run `make`, `make test`, `make check` clean. Report
    <= 15 lines; findings table in the note; Lessons section.
+
+## Scope and inputs (added at launch, 2026-10-10)
+* Edit only your lane's files (docs/MODULE_STATUS.md "Files produced" and
+  docs/modules/restructure.md move tables tell you where they are now) and
+  your lane's tests. Shared/public headers: edit only the declarations your
+  lane owns; anything else goes in your note as a request.
+* Oracle findings for your lane: docs/modules/oracle-cases.md "Findings"
+  table (F1-F15) and tests/oracle/<module>.c KNOWN entries. Fix the cause,
+  flip the KNOWN entry to a hard check, rerun.
+* Sim findings: docs/modules/sim.md "Bugs found" (sim lane may still be
+  running; re-read it before you finish).
+* The collapse lane kept 81 public forwarding wrappers; if one is in your
+  lane and adds nothing, remove it (update include/ and callers).
+* Keep `make`, `make test`, `make check` green; `make format` on edits.
+* Your note: docs/modules/review-<lane>.md; status row "review-<lane>".
