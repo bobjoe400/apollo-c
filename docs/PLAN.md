@@ -150,7 +150,7 @@ lane count to avoid limits. The run continues until the definition of done.
 
 ## Concurrency (user direction, 2026-10-11)
 
-Run at most 3 agents at a time. Wide parallel waves kept hitting usage
+Run at most 2 agents at a time (reduced from 3 on 2026-10-11). Wide parallel waves kept hitting usage
 limits mid-work and the resume overhead was slowing progress. Queue order
 for the remaining review lanes (fidelity-bearing first, style-debt last):
 

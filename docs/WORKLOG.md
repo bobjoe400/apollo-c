@@ -443,3 +443,6 @@
             statements >120 cols for the review wave to split with
             temporaries. Launching dispatch (4 flat switches) + review-core-
             numeric.
+2026-10-11  User: 2 concurrent lanes max from now on. review-nav-integ asked
+            to checkpoint and stop; dispatch (Sonnet, quick) and review-core-
+            numeric continue.

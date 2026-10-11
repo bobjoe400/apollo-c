@@ -19,13 +19,14 @@ Outputs (both carry a GENERATED banner; edit the table, not the files):
 
 * include/agc/exec/jobs.h -- `agc_job_id_t` and `agc_task_id_t`, one
   enumerator per row, grouped by owning folder in layer order.
-* src/exec/dispatch.c -- agc_dispatch_job() and agc_dispatch_task(): one
-  switch tree per vehicle from id to function (rule 9: no function
-  pointers; each rope has its own labels), split into switches of at most
-  CHUNK cases and selectors of at most FANOUT half-open enum ranges
-  (rule 4: <= 60 lines), each with a boxed prolog (docs/STYLE.md).  An
-  id with no function on the vehicle being flown returns
-  AGC_STATUS_NOT_FOUND.
+* src/exec/dispatch.c -- agc_dispatch_job() and agc_dispatch_task(), which
+  pick the vehicle, and four flat switches (agc_dispatch_job_csm,
+  agc_dispatch_task_csm, agc_dispatch_job_lm, agc_dispatch_task_lm), one
+  `case AGC_JOB_X: return (agc_job_x(ctx));` per registry row in table
+  order (rule 9: no function pointers; each rope has its own labels), each
+  with a boxed prolog (docs/STYLE.md).  The file carries the rule 4
+  exemption marker.  An id with no function on the vehicle being flown
+  returns AGC_STATUS_NOT_FOUND.
 
 --check exits 1 when a handler is defined nowhere in src/ or declared in
 no public header under include/agc/ (the dispatch file would not build).
@@ -38,11 +39,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLE = os.path.join(ROOT, 'tools', 'registry.tsv')
 JOBS_H = os.path.join(ROOT, 'include', 'agc', 'exec', 'jobs.h')
 DISPATCH_C = os.path.join(ROOT, 'src', 'exec', 'dispatch.c')
-CHUNK = 24
-BUDGET = 44  # case lines per function; the rest of the body is <= 14
 LAYERS = ['exec', 'io', 'imu', 'nav', 'guidance', 'programs', 'csm', 'lm']
 VEHICLES = (('csm', 'CSM', 'Comanche055'), ('lm', 'LM', 'Luminary099'))
-FANOUT = 8  # range tests per selector function (5 lines each, rule 4)
 
 
 def load():
@@ -161,121 +159,42 @@ def call(handler, kind):
     return '%s(%s)' % (handler, 'ctx' if kind == 'job' else '')
 
 
-def case_cost(r, kind, veh):
-    """Code lines one case takes after Uncrustify (80 columns)."""
-    text = '            return (%s);' % call(r[veh], kind)
-    return 1 + (len(text) + 75) // 76
-
-
-def top_of(r):
-    top = r['group'].split('/')[0]
-    return top if top in LAYERS else 'other'
-
-
-def chunks(sel, kind, veh):
-    """Split one vehicle's rows into per-layer runs that fit BUDGET lines."""
-    out = []
-    for top in LAYERS + ['other']:
-        mine = [r for r in sel if top_of(r) == top]
-        run, used, n = [], 0, 0
-        for r in mine:
-            cost = case_cost(r, kind, veh)
-            if run and (used + cost > BUDGET or len(run) >= CHUNK):
-                out.append((top, n, run))
-                run, used, n = [], 0, n + 1
-            run.append(r)
-            used += cost
-        if run:
-            out.append((top, n, run))
-    return out
-
-
-def guard(kind, bound):
+def guard(kind):
     """The two preconditions of every generated function."""
     k = kind_info(kind)
     first = 'ctx != NULL' if kind == 'job' else 'agc_interrupts_inhibited()'
     return ['    if (!AGC_ASSERT(%s))' % first, '    {',
             '        return (AGC_STATUS_BAD_ARG);', '    }', '',
-            '    if (!AGC_ASSERT(%s > %s && %s < %s))' % (k['var'], k['none'], k['var'], bound),
+            '    if (!AGC_ASSERT(%s > %s && %s < %s))' % (k['var'], k['none'], k['var'], k['count']),
             '    {', '        return (AGC_STATUS_BAD_ARG);', '    }', '']
 
 
-def emit_chunk(name, sel, kind, vlabel, veh, bound):
-    """One switch over a run of ids. Ids of the other vehicle that fall in
-    the run's range reach `default` and return NOT_FOUND."""
+def emit_vehicle(rows, kind, veh, vlabel):
+    """One flat switch over every id the vehicle has a function for, in
+    registry order, with a one-line comment where the owning folder
+    changes. Ids of the other vehicle reach `default`: NOT_FOUND."""
     k = kind_info(kind)
-    title = '%s %s %s .. %s' % (vlabel, k['what'], sel[0]['id'], sel[-1]['id'])
+    name = 'agc_dispatch_%s_%s' % (kind, veh)
+    title = '%s %s' % (vlabel, k['what'])
     out = prolog(kind, title, ['the status the %s returns;' % kind,
                                'NOT_FOUND when the %s rope has no %s' % (vlabel, kind),
                                'for this id; BAD_ARG on a failed precondition'])
     out += ['static agc_status_t %s(%s)' % (name, k['param']), '{']
-    out += guard(kind, bound)
+    out += guard(kind)
     out.append('    switch ((int) %s)' % k['var'])
     out.append('    {')
-    for r in sel:
+    group = None
+    for r in rows:
+        if r['kind'] != kind or not r[veh]:
+            continue
+        if r['group'] != group:
+            group = r['group']
+            out.append('        /* src/%s */' % group)
         out.append('        case %s:' % r['id'])
         out.append('            return (%s);' % call(r[veh], kind))
     out += ['        default:', '            break;', '    } /* switch (%s) */' % k['var'], '',
             '    return (AGC_STATUS_NOT_FOUND);', '} /* %s */' % name, '']
-    return out
-
-
-def selector(name, kind, title, parts, bound):
-    """Route by enum range: parts = [(function, first id)], half-open
-    ranges [first_i, first_i+1); the last part takes the rest."""
-    k = kind_info(kind)
-    out = prolog(kind, title, ['the status of the %s it routes to;' % kind,
-                               'BAD_ARG on a failed precondition'])
-    out += ['static agc_status_t %s(%s)' % (name, k['param']), '{']
-    out += guard(kind, bound)
-    for i, (fn, _first) in enumerate(parts):
-        if i + 1 < len(parts):
-            out += ['    if (%s < %s)' % (k['var'], parts[i + 1][1]), '    {',
-                    '        return (%s(%s));' % (fn, k['arg']), '    }', '']
-        else:
-            out.append('    return (%s(%s));' % (fn, k['arg']))
-    return out + ['} /* %s */' % name, '']
-
-
-def tree(prefix, kind, title, parts, bound, out):
-    """Selectors of at most FANOUT parts, nested as needed (rule 4)."""
-    level = 0
-    while len(parts) > 1:
-        grouped = []
-        for g in range(0, len(parts), FANOUT):
-            sub = parts[g:g + FANOUT]
-            if len(sub) == 1:
-                grouped.append(sub[0])
-                continue
-            nxt = parts[g + FANOUT][1] if g + FANOUT < len(parts) else bound
-            name = '%s_%d_%d' % (prefix, level, g // FANOUT)
-            if len(parts) <= FANOUT:
-                name = prefix
-            out += selector(name, kind, title + ' (%s ..)' % sub[0][1], sub, nxt)
-            grouped.append((name, sub[0][1]))
-        parts = grouped
-        level += 1
-    return parts[0][0]
-
-
-def emit_vehicle(rows, kind, veh, vlabel):
-    """All chunk and selector functions of one vehicle and kind; returns
-    the name of the function that takes every id of that vehicle."""
-    k = kind_info(kind)
-    sel = [r for r in ordered(rows, kind) if r[veh]]
-    parts = chunks(sel, kind, veh)
-    flat = []
-    for top, n, run in parts:
-        flat.append(('%s_%s_%s_%d' % (kind, veh, top, n), run))
-    out = []
-    names = []
-    for i, (name, run) in enumerate(flat):
-        bound = flat[i + 1][1][0]['id'] if i + 1 < len(flat) else k['count']
-        out += emit_chunk(name, run, kind, vlabel, veh, bound)
-        names.append((name, run[0]['id']))
-    root = tree('%s_%s' % (kind, veh), kind, '%s %s' % (vlabel, k['what']), names,
-                k['count'], out)
-    return root, out
+    return name, out
 
 
 def top_level(kind, roots):
@@ -286,7 +205,7 @@ def top_level(kind, roots):
                   'NOT_FOUND for an id the vehicle has no %s for;' % kind,
                   'BAD_ARG on a failed precondition'])
     out += ['agc_status_t %s(%s)' % (name, k['param']), '{']
-    out += guard(kind, k['count'])
+    out += guard(kind)
     out += ['    if (agc_state_vehicle() == AGC_VEHICLE_LM)', '    {',
             '        return (%s(%s));' % (roots['lm'], k['arg']), '    }', '',
             '    return (%s(%s));' % (roots['csm'], k['arg']), '} /* %s */' % name, '']
@@ -330,14 +249,17 @@ def write_dispatch(rows):
             roots[veh] = root
             body += code
         tops += top_level(kind, roots)
-    out = ['/' + '*' * 70,
+    out = ['/* GENERATED-DISPATCH: rule 4 exempt */',
+           '/' + '*' * 70,
            ' * FILE NAME: dispatch.c',
            ' *',
            ' * PURPOSE:',
            ' *   The switch from agc_job_id_t to the job functions and the one from',
            ' *   agc_task_id_t to the task functions: the C form of the AGC\'s',
            ' *   2CADR words (rule 9: no function pointers). One switch tree per',
-           ' *   vehicle, as each rope has its own set of labels.',
+           ' *   vehicle and kind, as each rope has its own set of labels: four',
+           ' *   flat switches (CSM jobs, CSM tasks, LM jobs, LM tasks) and the two',
+           ' *   public entry points that pick the vehicle.',
            ' *',
            ' *   GENERATED by tools/gen_registry.py from tools/registry.tsv. Do not',
            ' *   edit: change the table, run `python3 -I tools/gen_registry.py`,',
@@ -364,8 +286,10 @@ def write_dispatch(rows):
            ' *   task\'s own status.',
            ' *',
            ' * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:',
-           ' *   Each switch holds at most %d ids and each selector at most %d' % (CHUNK, FANOUT),
-           ' *   ranges (rule 4: <= 60 lines). Ranges are half-open by enum value.',
+           ' *   Rule 4 is waived for the four switches (docs/CODING_STANDARD.md,',
+           ' *   rule 4 exemption): the unit a reviewer verifies is the table and',
+           ' *   the generator. Cases are in tools/registry.tsv order, with a',
+           ' *   comment where the owning folder changes.',
            ' *',
            ' * NOTES:',
            ' *   LAYERING: this is the one place where src/exec/ calls every other',
