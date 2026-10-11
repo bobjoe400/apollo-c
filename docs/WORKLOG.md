@@ -362,3 +362,9 @@
 2026-10-10  review-guid-powered survived the cutoff; the relaunched duplicate
             was stopped (it had F7/F8/F9-TDISPSET/DELRSPL done already).
             Rule: ListAgents before relaunch.
+2026-10-10  review-state-flags DONE. BUG: DELVSLV and DELVLVC are the same
+            six erasable words in both ropes; C kept two copies so S30.1 and
+            downlink used a zero delta-V -> unified. All 148 CSM / 174 LM
+            flags verified against rope symbol tables. POST-WAVE TASK (lead):
+            rename include/agc/core/assert.h -> agc_assert.h (237 includes;
+            commands in review-state-flags.md) once no agent is editing.
