@@ -1,0 +1,177 @@
+helper	file	line	caller	site_line	sites	helper_lines	caller_lines	guards	guards_dedup	dedup_lines	merged_lines	fits60	shape	mech	refuse	root	root_merged	helper_comment
+pin_dsplist_full	src/io/dsky/pinball/nvsub.c	44	pin_check_lists	169	1	1	5	0	0	0	6	yes	expr	no	value-expr	pin_check_lists	6	bool         pin_cadrstor_full(void);            /* CCS CADRSTOR
+pin_sign_lit	src/io/dsky/pinball/state.c	451	agc_dsky_get_state	482	2	1	24	0	0	0	25	yes	expr	no	multi-site;value-expr;renamed-args	agc_dsky_get_state	31	-
+rz_set_csm_residuals	src/csm/navigation/tracking_data.c	753	cn_measure	488	2	2	41	0	0	0	41	yes	stmt	no	cross-file;multi-site;renamed-args	cn_measure	41	-
+dif_cont_valid	src/io/dsky/display_if.c	164	agc_dsky_display	1311	1	2	36	0	0	0	38	yes	expr	no	value-expr;renamed-args	agc_dsky_display	38	-
+verb_w_matrix_reset	src/io/verbs/extended_verbs_csm.c	596	fan_70s_90s	805	1	2	36	0	0	0	37	yes	return-tail	yes	-	agc_extverb_csm	99	V93 (WMATRXNG): reset RENDWFLG and ORBWFLAG.
+opd_display_height	src/programs/displays/orbit_parameter_display.c	92	agc_orbit_params_compute	128	2	2	28	0	0	0	30	yes	assign	no	multi-site;value-assign;renamed-args	agc_orbit_params_compute	30	SR2R if moon centred (2^27 -> 2^29 for display), then MAXCHK.
+ddv_overflow	src/core/divide.c	120	agc_w_ddv	182	3	3	35	1	1	2	35	yes	return-tail	no	multi-site;renamed-args	agc_w_ddv	46	-
+shift_bit	src/core/shift.c	17	agc_w_mpacshr	30	1	3	25	1	0	0	28	yes	init	no	value-init;early-return	agc_w_mpacshr	28	-
+cn_div_sr	src/csm/navigation/cislunar_navigation.c	239	cn_tangents	253	7	3	18	0	0	0	21	yes	init	no	multi-site;value-init;renamed-args	cn_horiz	50	SR* k,1 after DIVIDE.
+rz_landmark_set_offset	src/csm/navigation/landmark_navigation.c	836	agc_job_orbital_navigation_code_check	234	1	3	20	1	0	0	22	yes	stmt	no	cross-file;renamed-args;early-return	agc_job_orbital_navigation_code_check	22	-
+exec_cp_modes_csm	src/exec/change_program/csm.c	78	cp_modes	55	1	3	2	1	0	0	5	yes	expr	no	cross-file;value-expr;early-return	cp_modes	6	uint8_t               exec_cp_mmnumber(void); /* MMNUMBER
+exec_cp_modes_lm	src/exec/change_program/lm.c	66	cp_modes	54	1	3	2	1	0	0	5	yes	expr	no	cross-file;value-expr;early-return	cp_modes	6	-
+phase_var_get	src/exec/phase_table.c	469	agc_restart_group	271	1	3	16	1	0	0	19	yes	init	no	cross-file;value-init;renamed-args;early-return	agc_restart_group	19	uint16_t     phase_word(int group);         /* PHASEn (with type bits)
+del_diag	src/imu/maneuver_calc.c	191	agc_kalc_delcomp	240	3	3	23	0	0	0	26	yes	assign	no	multi-site;value-assign;renamed-args	agc_kalc_delcomp	32	One diagonal element of DEL: u u (1 - cos A) + cos A, scale 1.
+noun_access_chan33	src/io/dsky/nouns/data.c	69	noun_data_access	469	1	3	48	1	0	0	50	yes	return-tail	yes	-	noun_data_access	232	Channel 33 (LM noun 66 component 2, scale TT): input only, no load. The
+sf_pair_value	src/io/dsky/nouns/scales.c	571	agc_scale_sfconst	597	4	3	10	1	0	0	13	yes	assign	no	multi-site;value-assign;renamed-args;early-return	agc_scale_sfconst	18	A DP pair as the agc_dp_t fraction value (high * 2^14 + low).
+bank_base	src/io/service/self_check.c	139	agc_selfcheck_banksum	174	1	3	18	1	0	0	21	yes	expr	no	value-expr;early-return	agc_selfcheck_banksum	28	First address of bank b as the self-check forms it.
+to16	src/io/service/self_check.c	86	adsum	118	4	3	10	1	0	0	13	yes	expr	no	multi-site;value-expr;renamed-args;early-return	adsum	19	16-bit ones'-complement A register image of a 15-bit word.
+w15	src/io/service/t4rupt.c	113	chan_clear	135	1	3	3	1	0	0	6	yes	expr	no	value-expr;renamed-args;early-return	chan_clear	6	-
+ones_value	src/io/verbs/extended_verbs.c	751	agc_job_clock_align_update	776	2	3	18	1	0	0	21	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_job_clock_align_update	21	Signed value of a 15-bit ones'-complement word.
+fc_ones_of_twos	src/lm/landing/findcduw.c	112	fc_gimbal_changes	557	1	3	20	1	0	0	23	yes	expr	no	value-expr;renamed-args;early-return	fc_gimbal_changes	26	Value of a two's complement word when the AGC reads it as ones'.
+fc_twos_of_ones	src/lm/landing/findcduw.c	123	fc_gimbal_changes	558	1	3	20	1	0	0	23	yes	init	no	value-init;renamed-args;early-return	fc_gimbal_changes	26	Value of a ones' complement word when the AGC reads it as two's.
+oop_kind	src/programs/displays/out_of_plane_display.c	156	agc_job_out_of_plane_compute	189	2	3	27	0	0	0	30	yes	expr	no	multi-site;value-expr	agc_job_out_of_plane_compute	30	Passive (first) or active (second) vehicle integration: CM option 1
+flash	src/csm/burns/external_delta_v.c	29	agc_job_marks_tfi_mga_display	130	1	4	11	1	0	0	15	yes	init	no	value-init;early-return	agc_job_marks_tfi_mga_display	15	A flashing display whose terminate goes to P00 (GOTOPOOH).
+gain_index	src/csm/dap/rcs/filter.c	67	csm_rcs_ratefilt	83	1	4	22	0	0	0	26	yes	init	no	value-init;renamed-args;collision:g	csm_rcs_ratefilt	26	-
+ln_9dw_next	src/csm/navigation/landmark_navigation.c	329	ln_9dw_to_6dw	349	4	4	35	1	0	0	39	yes	expr	no	multi-site;value-expr;renamed-args;early-return;collision:n	ln_9dw_to_6dw	39	The next lower column word offset of the 6x6 part: 58 56 54 4 2 0
+tps_srr_star	src/csm/navigation/tpi_search.c	370	agc_rendz_transang	400	1	4	23	1	0	0	27	yes	assign	no	value-assign;renamed-args;early-return	agc_rendz_transang	27	SRR* by a signed count (negative: shift left).
+dp_low_word	src/exec/restart_tables.c	311	rst_read_sp	337	3	4	25	1	0	0	29	yes	assign	no	multi-site;value-assign;renamed-args;early-return	rst_read_sp	29	Low word of a DP held in agc_dp_t (sign + 28 bits, value/2^28): the
+pin_pro_now	src/io/dsky/pinball/keys.c	880	agc_dsky_keys	911	1	4	13	1	0	0	17	yes	assign	no	value-assign;early-return	agc_dsky_keys	42	PRO for the sim: PROCKEY run at once.
+mp_hi	src/io/service/t4rupt_lm.c	125	agc_t4_gimbal_matrix	146	2	4	11	1	0	0	15	yes	assign	no	multi-site;value-assign;renamed-args;early-return	agc_t4_gimbal_matrix	21	EXTEND / MP: upper word of the SP x SP product.
+lambert_solnsw	src/nav/conic/lambert.c	672	agc_conic_lambert	715	2	4	40	1	1	2	41	yes	stmt	no	multi-site	agc_conic_lambert	54	Set SOLNSW (in *out and in the flagword).
+sqrt_arghi	src/core/divide.c	290	sqrt_positive	333	2	5	22	2	0	0	26	yes	return-tail	no	multi-site;renamed-args	sqrt_positive	38	-
+sqrt_arglo	src/core/divide.c	305	sqrt_positive	338	2	5	22	2	0	0	26	yes	return-tail	no	multi-site;renamed-args	sqrt_positive	38	-
+mul_top	src/core/interp/vector.c	251	agc_vec_cross	280	6	5	18	2	0	0	23	yes	assign	no	multi-site;value-assign;renamed-args;early-return	agc_vec_cross	23	Top two words of DMPSUB(mpac, x).
+sp_ts	src/core/sp_trig.c	15	sp_sine	86	3	5	19	2	0	0	24	yes	init	no	multi-site;value-init;renamed-args;early-return	sp_sine	24	Wrap a 16-bit accumulator value like TS: corrected value, *ovf = +-1.
+rte_vshift	src/csm/burns/return_to_earth/velocity.c	80	rte_dv_calc	224	2	5	30	2	1	2	33	yes	assign	no	multi-site;value-assign;renamed-args;early-return	rte_dv_calc	33	VSL* / VSR* with a computed count: n > 0 left (wraps, OVFIND), n < 0
+js_swap	src/csm/dap/rcs/jet_select.c	388	js_sort	411	3	5	13	1	0	0	17	yes	stmt	no	multi-site;early-return	js_sort	17	-
+cdu_pattern	src/csm/entry/cm_body_attitude.c	36	trio_body_axes	128	3	5	22	2	0	0	27	yes	expr	no	multi-site;value-expr;renamed-args;early-return	trio_body_axes	27	SP angle of a gimbal saved at PIP time as the 15-bit CDU pattern.
+exec_in_job	src/exec/executive.c	833	agc_exec_gotopooh	903	1	5	17	2	0	0	22	yes	expr	no	cross-file;value-expr;early-return	agc_exec_gotopooh	22	---- executive (executive.c), second pass ----------------------------
+exec_restart_generation	src/exec/executive.c	206	agc_waitlist_t3rupt	469	2	5	32	2	0	0	37	yes	init	no	cross-file;multi-site;value-init;early-return	agc_waitlist_t3rupt	37	Bumped by every STARTSB2 (fresh start or software restart). A caller
+phase_longbase	src/exec/phase_table.c	496	start_long	89	1	5	9	2	0	0	14	yes	expr	no	cross-file;value-expr;early-return	start_long	14	uint16_t     phase_tbase(int group); /* TIME1 at TBASEn set
+phase_tbase	src/exec/phase_table.c	481	findtime	44	1	5	10	2	0	0	15	yes	expr	no	cross-file;value-expr;early-return	findtime	15	-
+sf_word_value	src/io/dsky/nouns/scales.c	555	sf_pair_value	578	2	5	3	1	0	0	8	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_scale_sfconst	18	Ones' complement 15-bit AGC word -> signed value (-0 maps to 0).
+verb_vhf_off	src/io/verbs/extended_verbs_csm.c	538	fan_70s_90s	801	1	5	36	1	0	0	40	yes	return-tail	yes	-	agc_extverb_csm	99	V88: VHFRFLAG clear, tracker fail light off.
+detent_code	src/lm/alignment/auto_optics_positioning.c	31	agc_job_lm_auto_optics_orient	126	1	5	7	1	0	0	12	yes	init	no	value-init;early-return;collision:d	agc_job_lm_auto_optics_orient	12	Detent code (bits 7-9 of STARCODE / AOTCODE).
+dp_shift	src/lm/burns/dps_burn_rasteer.c	61	rs_geometry	90	2	5	24	1	0	0	29	yes	assign	no	multi-site;value-assign;renamed-args;early-return	rs_geometry	29	SL* n: left for n > 0 (overflow to OVFIND), truncating right for n < 0.
+rr_mp	src/lm/radar/moding.c	149	rr_axis_pass	638	1	5	12	2	0	0	17	yes	init	no	value-init;renamed-args;early-return	rr_axis_pass	17	EXTEND MP: upper word of the SP product.
+agc_conic_vsign_sp_	src/nav/conic/common.c	485	agc_conic_geom_	82	1	5	26	2	0	0	31	yes	assign	no	cross-file;value-assign;renamed-args;early-return	agc_conic_geom_	31	SIGN with vector MPAC: complement the vector if the SP tag is negative.
+agc_conic_time_out_clear_	src/nav/conic/timetheta.c	218	agc_conic_timerad	165	1	5	37	2	1	2	39	yes	stmt	no	cross-file;early-return	agc_conic_timerad	39	Output reset for TIMERAD (timeradius.c).
+agc_conic_time_out_fill_	src/nav/conic/timetheta.c	201	timerad_circular	142	1	5	6	2	2	4	6	yes	stmt	no	cross-file	timerad_circular	6	Debris fill for TIMERAD (timeradius.c).
+agc_integ_csm_amoonflg	src/nav/integration/flags_csm.c	27	setcoast_csm	344	1	5	13	2	0	0	18	yes	init	no	cross-file;value-init;early-return	setcoast_csm	18	-
+agc_integ_csm_resume_idle_integration	src/nav/integration/flags_csm.c	12	agc_job_statint1	229	1	5	10	2	0	0	14	yes	stmt	no	cross-file;early-return	agc_job_statint1	14	---- flags_csm.c (CM-only flags) ------------------------------
+agc_integ_csm_set_amoonflg	src/nav/integration/flags_csm.c	42	entmid1	483	1	5	21	2	0	0	25	yes	stmt	no	cross-file;renamed-args;early-return	entmid1	25	-
+rz_sp_to_word	src/programs/displays/display.c	574	rz_set_dsptem_dp	611	2	5	7	1	0	0	12	yes	expr	no	multi-site;value-expr;renamed-args;early-return	rz_set_dsptem_dp	12	A signed SP value as a raw 15-bit ones' complement word.
+rz_word_to_sp	src/programs/displays/display.c	558	rz_dsptem_dp	597	2	5	5	1	0	0	10	yes	init	no	multi-site;value-init;renamed-args;early-return	rz_dsptem_dp	10	A raw 15-bit ones' complement word as a signed SP value.
+rz_vsign	src/programs/navigation/common.c	247	csi_apsis	359	1	5	20	2	0	0	25	yes	expr	no	cross-file;value-expr;renamed-args;early-return	csi_apsis	25	SIGN on a vector: complement v when s is negative.
+set_moon	src/core/state.c	411	agc_sv_set	446	2	6	20	2	0	0	25	yes	return-tail	no	multi-site;renamed-args	agc_sv_set	25	-
+caller_tail	src/csm/burns/sps/steer.c	419	agc_job_cross_product_restart	479	1	6	20	1	0	0	25	yes	return-tail	no	renamed-args	agc_job_cross_product_restart	25	The caller's tail after a restart inside UPDATEVG / S40.8.
+cdu_sp	src/csm/entry/dap.c	142	agc_task_readgymb	493	6	6	31	1	0	0	37	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_task_readgymb	37	SP angle from a raw 15-bit CDU counter (2s complement /180).
+exec_running_job_loc	src/exec/executive.c	848	store_alarm	109	1	6	17	2	0	0	23	yes	assign	no	cross-file;value-assign;early-return	store_alarm	23	bool         exec_in_job(void);          /* a job body is executing
+cdu_signed	src/imu/maneuver.c	109	csm_set_cdud	142	1	6	7	2	0	0	13	yes	expr	no	value-expr;early-return	csm_set_cdud	13	Two's-complement CDU pattern as a signed count at 180 deg (CSM DAP).
+imu_vflag_clear	src/imu/vflags.c	61	agc_imu_calcga	195	1	6	26	2	0	0	31	yes	stmt	no	cross-file;early-return	agc_imu_calcga	37	-
+imu_vflag_test	src/imu/vflags.c	27	agc_imu_calcga	193	1	6	26	2	0	0	32	yes	expr	no	cross-file;value-expr;early-return	agc_imu_calcga	37	-
+pin_next_request	src/io/dsky/pinball/load.c	381	pin_load_resume	420	3	6	29	2	0	0	34	yes	return-tail	no	multi-site	pin_enter_once	47	Show the next load verb and request the next register.
+pin_id_is_raw	src/io/dsky/pinball/scale.c	218	pin_comp_scale	250	1	6	7	1	0	0	13	yes	assign	no	value-assign;renamed-args;early-return	pin_comp_scale	13	Whether the value of a data id is passed raw. agc_nouns.h: an id used
+pin_digit_at	src/io/dsky/pinball/state.c	437	agc_dsky_get_state	469	4	6	24	1	0	0	30	yes	assign	no	multi-site;value-assign;renamed-args;early-return	agc_dsky_get_state	31	Character at DSPCOUNT position pos (0..025) decoded from DSPTAB.
+ad16	src/io/service/self_check.c	97	adsum	118	2	6	10	1	0	0	16	yes	init	no	multi-site;value-init;renamed-args;early-return	adsum	19	AD in the 16-bit accumulator (end-around carry).
+cdu_ones_magnitude	src/io/service/t4rupt.c	914	agc_t4_glockmon	965	1	6	13	2	0	0	19	yes	init	no	value-init;renamed-args;early-return	agc_t4_glockmon	19	Magnitude of a CDU counter word as CCS sees it (ones' complement).
+cdu_sp	src/io/service/t4rupt_lm.c	107	agc_t4_gimbal_matrix	140	2	6	11	2	0	0	17	yes	init	no	multi-site;value-init;renamed-args;early-return	agc_t4_gimbal_matrix	21	A CDU counter word as CAE reads it: ones' complement SP, scaled at pi
+cdu_signed	src/io/verbs/extended_verbs_csm.c	92	attck1	188	1	6	7	2	0	0	13	yes	assign	no	value-assign;renamed-args;early-return	attck1	13	Signed value of a two's-complement CDU word (half-revolutions, 2^14).
+got_count	src/io/verbs/uplink_update.c	388	agc_job_uplink_update_load	438	1	6	17	0	0	0	22	yes	return-tail	yes	-	agc_job_uplink_update_load	27	Data on the V21N01 (count): 3 <= II <= 20D, else ask again.
+got_index	src/io/verbs/uplink_update.c	404	agc_job_uplink_update_load	443	1	6	17	0	0	0	22	yes	return-tail	yes	-	agc_job_uplink_update_load	27	Data on the V21N02: a legal component index -> reload that component.
+fc_word1	src/lm/landing/findcduw.c	134	fc_limit_attitude	624	2	6	19	2	0	0	25	yes	expr	no	multi-site;value-expr;renamed-args;early-return	fc_limit_attitude	25	15-bit word of a ones' complement value (what MSU sees as two's).
+ldg_sat	src/lm/landing/guidance.c	96	ldg_quadcoef	356	4	6	17	1	0	0	23	yes	assign	no	multi-site;value-assign;renamed-args;early-return	ldg_quadcoef	23	A word sum kept in the 16-bit A register, saturated when stored.
+rz_norm_xreg	src/programs/navigation/common.c	282	mu_rate	369	2	6	28	1	0	0	34	yes	init	no	cross-file;multi-site;value-init;renamed-args;early-return	mu_run	94	NORM when only the index register is wanted: -(left shifts), 0 for 0.
+gtd_first_pass	src/programs/navigation/ground_track_determination.c	101	agc_job_ground_track_compute	220	1	6	20	0	0	0	26	yes	assign	no	value-assign;renamed-args	agc_job_ground_track_compute	26	First pass (P21FLAG clear): INTEGRV of the chosen vehicle's permanent
+wm_sum	src/programs/navigation/w_matrix_monitor.c	35	wm_compute	68	3	6	21	1	0	0	27	yes	init	no	multi-site;value-init;early-return	wm_compute	27	Sum of |row|^2 over rows 0..rows-1 of a W column block.
+csi_los_unit	src/programs/targeting/csi.c	445	csi_trial	714	1	6	24	0	0	0	30	yes	init	no	value-init;collision:u	agc_rendz_csi_a	64	U = sin(E) URA3 + cos(E) UH3 (B1): the desired line of sight at TPI.
+csm_dap_sp_word	src/csm/dap/mysubs.c	39	rcs_dcduincr	214	1	7	10	2	0	0	17	yes	assign	no	cross-file;value-assign;renamed-args;early-return	rcs_dcduincr	17	Value -> ones' complement 15-bit word (0 -> +0).
+das_words	src/csm/dap/tvc/massprop.c	70	agc_csm_dap_massprop	120	1	7	20	2	0	0	26	yes	stmt	no	renamed-args;early-return	agc_csm_dap_massprop	26	DAS VARST0 +1 with A,L = VARST8, VARST9 (DXTEST): two separate SP
+in_auto	src/imu/attitude_maneuver.c	492	agc_job_redomanc	550	1	7	9	1	0	0	16	yes	expr	no	value-expr;early-return	agc_job_redomanc	16	Auto-mode test before the maneuver: CM "mode auto and control GNC"
+msu	src/imu/maneuver.c	205	incrdcdu_axis	542	2	7	22	2	0	0	29	yes	init	no	multi-site;value-init;renamed-args;early-return;collision:d	incrdcdu_axis	29	-
+del_pair	src/imu/maneuver_calc.c	202	agc_kalc_delcomp	245	3	7	23	1	0	0	29	yes	stmt	no	multi-site;renamed-args;early-return;param-written	agc_kalc_delcomp	32	A pair of off-diagonal elements: (ui uj (1-cos A) +- uk sin A), scale 1.
+noun_access_option	src/io/dsky/nouns/data.c	368	noun_data_access	499	1	7	48	1	0	0	54	yes	return-tail	no	renamed-args	noun_data_access	232	OPTION1-3 (noun 06, raw octal words; OPTION1 +k).
+rope_word	src/io/service/self_check.c	65	agc_selfcheck_banksum	166	1	7	18	2	0	0	25	yes	assign	no	value-assign;early-return	agc_selfcheck_banksum	28	Word rel of bank b, +0 outside the image.
+t4_cage_engine_off	src/io/service/t4rupt.c	615	t4_imucage	644	1	7	16	0	0	0	22	yes	stmt	no	early-return	t4_imucage	22	Engine off on an IMU cage: CM WAND DSALMOUT bit 13; LM clears ENGONFLG
+ld_continue	src/lm/landing/displays.c	267	agc_lm_task_speedrun2	495	2	7	23	1	0	0	29	yes	return-tail	no	multi-site	agc_lm_task_speedrun2	29	Continue at LADQSAVE: ALTROUT +1 or ALTOUT +1.
+rr_dodes_los	src/lm/radar/designate.c	354	agc_job_rr_designate_command	501	1	7	26	0	0	0	33	yes	init	no	value-init;renamed-args;early-return	agc_job_rr_designate_command	57	The LOS in NB axes: RRTARGET as is (RRNBSW), or UNIT(RRTARGET MLOSV +
+sqrt_half	src/core/divide.c	233	sqrt_positive	333	2	8	22	2	0	0	30	yes	expr	no	multi-site;value-expr;renamed-args;early-return	sqrt_positive	38	Shift a positive DP word pair right one (DXCH; LXCH SR; MP HALF; ...).
+entry_sequencer	src/csm/entry/reentry.c	2213	agc_entry_refaze10	2288	1	8	23	1	0	0	31	yes	assign	no	value-assign;renamed-args;early-return;param-written	agc_entry_refaze10	137	Run the chain of sections from `s` to a terminal step (bounded).
+noun_dp	src/exec/nouns.c	203	agc_dispatch_noun	414	1	8	15	1	1	2	21	yes	expr	no	value-expr;renamed-args	agc_dispatch_noun	217	The DP erasable behind an id, by owner and vehicle (NULL: none).
+lm_set_cdud	src/imu/maneuver.c	145	set_cdud	180	1	8	8	1	0	0	15	yes	stmt	no	early-return	set_cdud	15	-
+ld_ddoubl2	src/lm/landing/displays.c	117	ld_speedrun	301	2	8	19	2	0	0	27	yes	init	no	multi-site;value-init;renamed-args;early-return;collision:d	ld_speedrun	27	DCA x, DDOUBL, DDOUBL: the high word of 4x (DP doubling carries the
+agc_navaux_cs_from_tp	src/nav/auxiliary/util.c	119	ephem_lstime	104	1	8	10	3	0	0	18	yes	expr	no	cross-file;value-expr;renamed-args;early-return;collision:t	ephem_lstime	18	Inverse of agc_navaux_tp_from_cs (SL 14 of a TP time into DP).
+agc_navaux_tp_shl2	src/nav/auxiliary/util.c	194	incorp_gamma	175	1	8	23	2	0	0	31	yes	init	no	cross-file;value-init;renamed-args;early-return	incorp_gamma	31	SL2 of a TP; on overflow *ovf is set and v is returned unchanged (the
+agc_integ_dshift	src/nav/integration/orbital_integration.c	144	gamcomp_rho	461	1	8	17	1	0	0	25	yes	assign	no	value-assign;renamed-args;early-return	gamcomp_rho	25	-
+ones_value	src/programs/alignment/orientation.c	152	agc_align_coarse_needed	192	2	8	10	2	0	0	18	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_align_coarse_needed	18	A CDU word read as the 1's complement SP the interpreter DLOAD sees.
+dap_tag_or	src/csm/entry/dap.c	198	dap_biasedz	252	1	9	12	2	0	0	20	yes	return-tail	no	renamed-args	dap_biasedz	20	EXTEND / ROR LCHAN of two ones' complement tags (+1, -1, 0): opposite
+delay_lateness	src/io/service/service.c	182	agc_svc_delay_wake	226	2	9	18	2	0	0	27	yes	expr	no	multi-site;value-expr;renamed-args;early-return	agc_svc_delay_wake	27	Lateness of a DELAYLOC's due time, as a signed count (2^28 wrap).
+other_word	src/io/telemetry/down_telemetry.c	125	item_word	400	1	9	12	1	0	0	20	yes	return-tail	yes	-	item_word	167	The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).
+cdu_msu	src/lm/optics/aotmark.c	440	agc_job_aot_mark_detent	497	1	9	13	1	0	0	22	yes	expr	no	value-expr;renamed-args;early-return;collision:d	agc_job_aot_mark_detent	22	MSU: the 1's complement difference of two CDU words.
+cjw_kind	src/exec/phase_table.c	208	store_var	250	1	10	16	1	0	0	26	yes	expr	no	value-expr;renamed-args;early-return;collision:k	store_var	26	The restart kind a type C phase names by its CJW bits, as RESTARTS
+init_avg	src/guidance/guid_state.c	34	agc_guid_init	71	1	10	17	3	0	0	26	yes	stmt	no	renamed-args;early-return	agc_guid_init	26	Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
+dcm_quadrant	src/imu/maneuver_calc.c	134	agc_kalc_dcmtocdu	179	2	10	13	2	1	2	21	yes	init	no	multi-site;value-init;renamed-args;early-return	agc_kalc_dcmtocdu	21	Quadrant correction of DCMTOCDU: when the cosine term is negative the
+dif_first_vn	src/io/dsky/display_if.c	757	dif_nvdsp	793	1	10	31	1	0	0	41	yes	init	no	value-init;early-return	dif_nvdsp	51	First VN of NVDSP for class c; 0 for CLEANEND. A negative MARKNV is
+dif_second_vn	src/io/dsky/display_if.c	728	dif_nvdsp	834	1	10	31	1	0	0	41	yes	assign	no	value-assign;renamed-args;early-return;collision:vn	dif_nvdsp	51	1STOR2ND: the VN of the second part of a please perform: the mark's
+highest_change	src/lm/dap/rcs/rcsmon.c	32	agc_lm_dap_rcsmon	70	1	10	22	2	0	0	32	yes	init	no	value-init;early-return	agc_lm_dap_rcsmon	32	The DOUBLE / OVSK loop: index (0 = bit 8 .. 7 = bit 1) of the highest
+tff_add_period	src/nav/auxiliary/free_fall.c	231	tff_general	282	1	10	20	2	1	2	28	yes	assign	no	value-assign;early-return	tff_general	28	Orbital-period correction for a negative TFF on an ellipse:
+wcolumn_step	src/nav/integration/orbital_integration.c	1174	agc_integ_wcolumns	1224	1	10	18	2	0	0	27	yes	stmt	no	early-return	agc_integ_wcolumns	27	One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2.
+ddv_normalised	src/core/divide.c	134	agc_w_ddv	220	1	11	35	3	0	0	46	yes	assign	no	value-assign;renamed-args;early-return;param-written	agc_w_ddv	46	Normalise the divisor (BUFNORM/DVNORM) and the dividend by the same count
+atup_angle	src/csm/entry/cm_body_attitude.c	237	entry_cm_atup	279	3	11	15	2	0	0	26	yes	assign	no	multi-site;value-assign;renamed-args;early-return	entry_cm_atup	26	One Euler angle: (EUL/180) = -2 MPAC, + (NOW - PIP) increment since
+mark_words	src/csm/optics/sighting_mark.c	375	agc_csm_sxtsm_marks	414	1	11	13	2	0	0	23	yes	stmt	no	renamed-args;early-return;param-written	agc_csm_sxtsm_marks	23	The mark as the 7 downlink words (MKT2T1 .. MKCDUX).
+after_job	src/exec/executive.c	739	agc_exec_run_one	823	1	11	29	2	0	0	39	yes	stmt	no	early-return	agc_exec_run_one	39	What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.
+pin_2intout	src/io/dsky/pinball/scale.c	656	pin_dspdcput	885	1	11	18	1	0	0	28	yes	return-tail	no	collision:st	pin_dspdcput	28	2INTOUT: blank the register, + sign, the high word as 2 decimal chars in
+kepler_output	src/nav/conic/kepler.c	359	agc_conic_kepler	423	1	11	35	2	1	2	43	yes	stmt	no	renamed-args;early-return	agc_conic_kepler	43	Copy the KEPLER results and debris to *out.
+cdh_speeds	src/programs/targeting/csi.c	813	agc_rendz_cdhmvr	866	1	11	26	0	0	0	36	yes	stmt	no	renamed-args;collision:x1,x2	agc_rendz_cdhmvr	36	Vertical (B7) and horizontal (B7) velocity of the active vehicle.
+fleshpot_rows02	src/guidance/powered_flight.c	377	agc_guid_fleshpot	408	1	12	11	0	0	0	22	yes	stmt	no	renamed-args	agc_guid_fleshpot	22	Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).
+apsides_debris	src/nav/conic/apsides.c	14	agc_conic_apsides	97	1	12	36	2	1	2	45	yes	stmt	no	renamed-args;early-return	agc_conic_apsides	45	Copy the PARAM debris to *out.
+rpd_axis	src/programs/displays/rendezvous_parameter_display.c	89	rpd_compdisp	123	1	12	14	0	0	0	26	yes	init	no	value-init;renamed-args;early-return;collision:st	rpd_compdisp	26	The vehicle axis in stable-member axes (CDUTRIG, *NBSM*): CM +X (R31)
+small_maneuver	src/imu/maneuver.c	876	kalcman3	937	1	13	27	1	0	0	39	yes	return-tail	yes	-	kalcman3	39	Small maneuver (< .25 deg): go directly into attitude hold about the
+sublist_words	src/io/telemetry/down_telemetry.c	871	agc_dnlist_word_count	925	1	13	13	1	0	0	26	yes	expr	no	value-expr;renamed-args;early-return;collision:i,n,st	agc_dnlist_word_count	26	DP words one DNPTR sends at its place in the list: a snapshot sublist
+mu_rate_vectors	src/lm/navigation/measurement_update.c	319	mu_rate	349	1	13	28	0	0	0	41	yes	init	no	value-init;renamed-args;collision:st	mu_run	94	Range rate: B1 = ULC RLC (B-24/B-22), B0 = (ULC x VLC) x ULC (B-5),
+imu_vflag_csm	src/imu/vflags_csm.c	10	imu_vflag	24	1	14	6	2	1	2	18	yes	expr	no	cross-file;value-expr;early-return	imu_vflag	30	imu_vflag_csm -- CSM flag id, or 0 when the flag is LM-only.
+imu_vflag_lm	src/imu/vflags_lm.c	10	imu_vflag	24	1	14	6	2	1	2	18	yes	expr	no	cross-file;value-expr;early-return	imu_vflag	30	imu_vflag_lm -- LM flag id, or 0 when the flag is CSM-only.
+pin_comp_octal	src/io/dsky/pinball/scale.c	446	pin_dsp_octal	269	1	14	20	1	0	0	34	yes	assign	no	cross-file;value-assign;renamed-args;early-return;collision:st	pin_dsp_octal	34	The word V01-V05 show for component k. TSTFORDP / MIXNOUN: for a DP
+mu_compute	src/lm/navigation/measurement_update.c	514	mu_run	559	1	14	17	0	0	0	31	yes	init	no	value-init;renamed-args;early-return	mu_run	94	One measurement: its B vectors, DELTAQ, VARIANCE.
+nav_uppsv	src/lm/navigation/navigation.c	164	agc_job_rendezvous_navigation_update_states	636	1	14	9	0	0	0	23	yes	init	no	value-init;renamed-args;early-return;collision:st	agc_job_rendezvous_navigation_update_states	23	-
+noun_by_function	src/exec/nouns.c	364	agc_dispatch_noun	435	1	15	15	0	0	0	29	yes	return-tail	no	renamed-args	agc_dispatch_noun	217	Ids resolved through functions: the P11 readout, LAT/LONG/ALT, P37,
+noun_sp	src/exec/nouns.c	226	agc_dispatch_noun	415	1	15	15	0	0	0	30	yes	init	no	value-init;renamed-args;early-return	agc_dispatch_noun	217	SP erasables (value in the high word).
+rr_axis_advance	src/lm/radar/moding.c	698	rr_axis_run	749	1	15	13	0	0	0	28	yes	assign	no	value-assign;renamed-args;early-return	rr_axis_run	28	A client's single-axis drive is done: next target, or the client's
+stroke_next_set	src/csm/dap/tvc/stroke.c	82	stroke_burst	147	1	16	23	1	0	0	38	yes	stmt	no	early-return;collision:t	stroke_burst	38	End of a stroke set (CCS REVS negative): the next set, or STROKILL.
+noun_word	src/exec/nouns.c	248	agc_dispatch_noun	416	1	16	15	0	0	0	31	yes	init	no	value-init;renamed-args;early-return	agc_dispatch_noun	217	Raw 15-bit words (CDU angles, octal codes) held as uint16_t.
+moonmx_angles	src/nav/auxiliary/planetary.c	208	agc_planet_moonmx	288	1	16	21	2	0	0	37	yes	init	no	value-init;renamed-args;early-return;collision:st	agc_planet_moonmx	37	-
+lambert_output	src/nav/conic/lambert.c	644	agc_conic_lambert	714	2	16	40	2	1	2	53	yes	stmt	no	multi-site;renamed-args;early-return	agc_conic_lambert	54	Copy the LAMBERT debris to *out.
+cn_tangents	src/csm/navigation/cislunar_navigation.c	250	cn_horiz	308	1	18	30	0	0	0	47	yes	stmt	no	param-written	cn_horiz	50	The two tangent points of the horizon ellipse (semi-axes AH, BH) seen
+mu_range	src/lm/navigation/measurement_update.c	289	mu_compute	522	1	18	14	0	0	0	31	yes	return-tail	yes	-	mu_run	94	Range: B0 = ULC (complemented if the LM is corrected), DELTAQ = RM -
+ll_ign_guidance	src/lm/landing/lunar_landing.c	233	ll_ignaloop	282	1	19	27	0	0	0	46	yes	init	no	value-init;renamed-args;early-return;collision:n,st	ll_ignaloop	46	One IGNALOOP iteration up to DDUMCALC: state from the integration
+ll_ignalg_start	src/lm/landing/lunar_landing.c	103	agc_lm_job_braking_phase	356	1	19	20	2	0	0	38	yes	return-tail	yes	-	agc_lm_job_braking_phase	38	-
+earth_vector_sm	src/csm/optics/s_band_antenna.c	106	agc_job_sbandant_cm_recycle	212	1	20	22	2	0	0	42	yes	assign	no	value-assign;renamed-args;early-return;collision:r,st	agc_job_sbandant_cm_recycle	42	The CSM-to-earth vector in SM: -RATT (earth sphere) or -(REM + RATT).
+noun_derived	src/exec/nouns.c	272	noun_by_function	395	1	20	15	0	0	0	35	yes	expr	no	value-expr;early-return	agc_dispatch_noun	217	Read-only values computed by functions of their owners.
+pin_accumulate	src/io/dsky/pinball/keys.c	97	pin_num	173	1	20	12	1	0	0	31	yes	return-tail	no	renamed-args;collision:s	pin_num	31	Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
+tpi_search_pass	src/programs/targeting/tpi.c	211	tpi_search_loop	301	1	20	10	0	0	0	30	yes	init	no	value-init;renamed-args;early-return	tpi_search_loop	30	One pass ELCALC .. ADTIME. *done: the search has exited (OK = the AGC
+nd_other	src/programs/navigation/noun_data.c	131	agc_rendz_noun_read	258	1	21	12	0	0	0	33	yes	expr	no	value-expr;renamed-args;early-return	agc_rendz_noun_read	60	Read-only values held by the radar, mark and display modules.
+pin_clear_key	src/io/dsky/pinball/keys.c	318	pin_charin2	616	1	22	38	2	0	0	59	yes	return-tail	no	collision:s	pin_charin2	59	CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
+counter_word	src/io/telemetry/down_telemetry.c	150	item_word_block	289	3	22	51	1	1	2	71	no	assign	no	multi-site;value-assign;early-return	item_word	167	CDU and PIPA counter block, registers 032-042 in order: CDUX CDUY CDUZ
+rz_vflag_csm	src/programs/navigation/flags_csm.c	13	rz_vflag	162	2	22	3	2	0	0	24	yes	return-tail	no	cross-file;multi-site	rz_vflag	44	rz_vflag_csm -- CSM flag id for a vehicle-dependent rendezvous flag.
+rz_vflag_lm	src/programs/navigation/flags_lm.c	13	rz_vflag	165	1	22	3	2	1	2	23	yes	expr	no	cross-file;value-expr;early-return	rz_vflag	44	rz_vflag_lm -- LM flag id for a vehicle-dependent rendezvous flag.
+fan_40s	src/io/verbs/extended_verbs_csm.c	698	agc_extverb_csm	832	1	24	7	1	0	0	30	yes	return-tail	yes	-	agc_extverb_csm	99	Verbs 40-47.
+rr_dodes_commands	src/lm/radar/designate.c	379	agc_job_rr_designate_command	505	1	24	26	0	0	0	50	yes	assign	no	value-assign;renamed-args	agc_job_rr_designate_command	57	Shaft and trunnion commands for the LOS (32D), and the cosine of the
+pfd_first_pass	src/lm/radar/powered_flight_designate.c	273	agc_job_powered_flight_designate	380	1	24	17	0	0	0	41	yes	init	no	value-init;renamed-args;early-return;collision:st,u	agc_job_powered_flight_designate	41	First pass: RR CDUs, QUICTRIG of the IMU CDUs, and the self-track
+csi_trial	src/programs/targeting/csi.c	678	agc_rendz_csi_a	762	1	24	34	0	0	0	58	yes	expr	no	value-expr;renamed-args;early-return;collision:l	agc_rendz_csi_a	64	One trial at the current DELVCSI: CSI/B23 .. K2. and the gamma logic.
+pin_key_of_char	src/io/dsky/pinball/keys.c	841	agc_dsky_keys	915	1	25	13	1	0	0	38	yes	init	no	value-init;renamed-args;early-return	agc_dsky_keys	42	Key code for one character of a key string; 0 for none.
+acq_search_point	src/lm/radar/acquisition.c	764	agc_job_radar_search_los	845	1	25	27	0	0	0	52	yes	assign	no	value-assign;renamed-args;early-return	agc_job_radar_search_los	52	The pattern point N in SM axes: N = 0 the LOS (DESGLOS); N = 1 the
+noun_access_core2	src/io/dsky/nouns/data.c	390	noun_data_access	505	1	26	48	1	1	2	71	no	return-tail	no	renamed-args	noun_data_access	232	Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
+noun_access_time	src/io/dsky/nouns/data.c	82	noun_data_access	474	1	27	48	1	0	0	74	no	return-tail	yes	-	noun_data_access	232	DP times in centiseconds, scale 2^28: TIME2, TIG, TTOGO, TTPI.
+item_word_lm_dap	src/io/telemetry/down_telemetry.c	343	item_word	409	1	27	12	1	0	0	39	yes	expr	no	value-expr;renamed-args;early-return	item_word	167	LM DAP downlink words (agc_lm_dap.h).
+nd_raw	src/programs/navigation/noun_data.c	177	agc_rendz_noun_read	254	1	27	12	0	0	0	39	yes	expr	no	value-expr;renamed-args;early-return	agc_rendz_noun_read	60	Raw words: LANDMARK, HORIZON, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.
+noun_dp_alignment	src/exec/nouns.c	167	noun_dp	214	1	28	8	0	0	0	36	yes	assign	no	value-assign;early-return	agc_dispatch_noun	217	Alignment (P51-P57, R52-R56) DP erasables and vector components.
+mu_rate	src/lm/navigation/measurement_update.c	346	mu_compute	524	1	28	14	0	0	0	41	yes	return-tail	yes	-	mu_run	94	-
+pin_load_resume	src/io/dsky/pinball/load.c	399	pin_enter_once	407	1	29	14	2	0	0	42	yes	return-tail	no	cross-file;renamed-args	pin_enter_once	47	TC REQRET from ACCEPTWD: continue the load verb after its data word.
+noun_dp_landing	src/exec/nouns.c	128	noun_dp	209	1	31	8	0	0	0	39	yes	expr	no	value-expr;early-return	agc_dispatch_noun	217	LM landing (P63-P68) and ascent (P12, P70-P71) DP erasables.
+noun_dp_guidance	src/exec/nouns.c	40	noun_dp	205	1	32	8	0	0	0	40	yes	init	no	value-init;early-return	agc_dispatch_noun	217	Guidance (SERVICER, P30-P47) DP erasables.
+fan_50s_60s	src/io/verbs/extended_verbs_csm.c	733	agc_extverb_csm	837	1	32	7	1	1	2	36	yes	return-tail	yes	-	agc_extverb_csm	99	Verbs 51-68.
+fan_70s_90s	src/io/verbs/extended_verbs_lm.c	611	agc_extverb_lm	666	1	32	5	1	0	0	36	yes	return-tail	yes	-	agc_extverb_lm	73	Verbs 75-98.
+fan_70s_90s	src/io/verbs/extended_verbs_csm.c	776	agc_extverb_csm	840	1	36	7	1	0	0	42	yes	return-tail	yes	-	agc_extverb_csm	99	Verbs 75-98.
+noun_dp_entry	src/exec/nouns.c	80	noun_dp	209	1	40	8	0	0	0	48	yes	expr	no	value-expr;early-return	agc_dispatch_noun	217	CSM entry (P61-P67) DP erasables.
+fan_40s_60s	src/io/verbs/extended_verbs_lm.c	560	agc_extverb_lm	663	1	40	5	1	1	2	42	yes	return-tail	yes	-	agc_extverb_lm	73	Verbs 40-69.
+noun_access_sp	src/io/dsky/nouns/data.c	148	noun_data_access	480	1	41	48	1	1	2	86	no	return-tail	yes	-	noun_data_access	232	SP words (ones' complement, SP in the high word): PIPAs, masses.
+tvcx_step	src/csm/dap/tvc/exec.c	237	tvcx_run	302	1	42	8	1	0	0	50	yes	assign	no	value-assign;early-return;collision:t	tvcx_run	50	One step of the TVCEXEC .. TVCEXFIN sequence after VARGAINS.
+noun_raw_write	src/io/dsky/nouns/data.c	304	noun_data_access	494	1	43	48	1	0	0	91	no	expr	no	value-expr;renamed-args;early-return	noun_data_access	232	Raw 15-bit words, write side.
+entry_step_a	src/csm/entry/reentry.c	2068	entry_sequencer	2229	1	46	8	0	0	0	54	yes	expr	no	value-expr;early-return	agc_entry_refaze10	137	One labelled section; returns the next. Split in two switches to keep
+noun_raw_read	src/io/dsky/nouns/data.c	239	noun_data_access	495	1	48	48	2	1	2	94	no	expr	no	value-expr;early-return	noun_data_access	232	Raw 15-bit words, read side: CDUs, DAP words, alarm codes, THETAD.
+item_word_state	src/io/telemetry/down_telemetry.c	183	item_word	408	1	49	12	1	0	0	61	no	expr	no	value-expr;renamed-args;early-return	item_word	167	Items that are plain DP times or vectors from agc_state.h.
+item_word_block	src/io/telemetry/down_telemetry.c	264	item_word	408	1	51	12	1	0	0	63	no	expr	no	value-expr;renamed-args;early-return	item_word	167	Small multi-erasable items: the AGC sends consecutive registers.
+fan_shared	src/io/verbs/extended_verbs.c	544	agc_job_extended_verb	614	1	51	8	1	1	2	57	yes	init	no	value-init;renamed-args;early-return	agc_job_extended_verb	57	The shared verbs; NOT_FOUND for the vehicle fans.
+entry_step_b	src/csm/entry/reentry.c	2121	entry_sequencer	2229	1	60	8	1	0	0	68	no	expr	no	value-expr;early-return	agc_entry_refaze10	137	-

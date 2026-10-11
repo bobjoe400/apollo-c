@@ -24,7 +24,7 @@ UNCRUSTIFY_CFG := uncrustify.cfg
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim test check check-rules format format-check style style-report lint callgraph clean
+.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -44,6 +44,18 @@ $(BUILD)/libagc_debug.a: $(DBG_OBJS)
 sim: $(BUILD)/agc_sim
 $(BUILD)/agc_sim: $(SIM_OBJS) $(BUILD)/libagc.a
 	$(CC) $(CFLAGS) -o $@ $^
+
+# The harness against the debug library: failed AGC_ASSERTs are reported.
+sim-debug: $(BUILD)/agc_sim_debug
+$(BUILD)/agc_sim_debug: $(SIM_OBJS) $(BUILD)/libagc_debug.a
+	$(CC) $(CFLAGS) -o $@ $^
+
+# End-to-end scenarios (docs/modules/sim.md): tools/sim_client.py drives
+# build/agc_sim in lockstep over the yaAGC peripheral protocol.
+SCENARIOS := $(sort $(wildcard sim/scenarios/*.txt))
+scenarios: $(BUILD)/agc_sim
+	@for s in $(SCENARIOS); do echo "== $$s"; \
+	  python3 -I tools/sim_client.py --sim $(BUILD)/agc_sim --scenario $$s || exit 1; done
 
 $(BUILD)/debug/%.o: %.c
 	@mkdir -p $(dir $@)
