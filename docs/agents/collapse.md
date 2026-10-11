@@ -63,3 +63,13 @@ reader follows one function instead of hopping through four.
 Scope boundary (parallel run): do not touch src/sim/ or tests/; the sim and
 oracle-cases lanes own those. Public signatures in include/agc/ must not
 change (other lanes link against them).
+
+## Refined protection rule (user, 2026-10-11; example js_acy / js_bdz)
+A single-caller helper is protected by its AGC label ONLY if that label is
+entered from more than one place in the rope: a subroutine called with TC,
+or a jump target with >= 2 references (grep the .agc files for `TC`, `TCF`,
+`BZF`, `BZMF`, `CCS`/`INDEX`-table uses, `ADRES`/`CADR`/`2CADR`). A label
+with 0 references (fall-through paragraph) or 1 protects nothing: inline
+the helper and keep the label as a comment at that spot. ACYCHECK and
+BDZCHECK (0 refs) -> inline; NOACY (3 refs, a shared tail) may stay a
+helper if it is called from >= 2 C sites.

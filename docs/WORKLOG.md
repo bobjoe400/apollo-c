@@ -494,3 +494,8 @@
             rewritten as where-assertions-belong; density is now report-only
             (no hard/warn thresholds); brief and review template updated.
             status-handling-2 told not to add assertions to chase 2.0.
+2026-10-11  User: js_acy is a single-caller function kept only because of
+            its AGC labels. Rope check: ACYCHECK/BDZCHECK 0 references,
+            TAUCHCK 1, NOACY 3. Refined rule: a label protects a helper only
+            if entered from >= 2 places in the rope. Added as step 7 of
+            status-handling-2.

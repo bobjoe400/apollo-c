@@ -15,6 +15,6 @@ bool agc_assert_report(const char *file, int line, const char *expr);
     assigns \nothing;
     ensures \result == (c != 0);
  */
-bool agc_eva_check(int c);
+int agc_eva_check(int c);
 
 #define AGC_ASSERT(e) agc_eva_check((e) ? 1 : 0)

@@ -66,3 +66,12 @@ Method (tooling first, hand work last):
      boundary; rule 6 data hiding; it is where the entry check lives).
    Record the classification in docs/overview/one_liners.tsv and the counts
    in your note. Add the classification rule to docs/CODING_STANDARD.md.
+
+7. Collapse re-run under the refined label rule (docs/agents/collapse.md,
+   "Refined protection rule"): extend tools/callgraph.py with an AGC
+   reference count per label (from the .agc sources via the header
+   comments' labels; `tools/agc_label.py --grep` or a direct grep), mark
+   label-protected single-caller helpers whose label has < 2 references as
+   candidates, and inline them with tools/inline_one.py (hand cases as
+   before). Start with src/csm/dap/rcs/jet_select.c js_acy / js_bdz.
+   Report the count.
