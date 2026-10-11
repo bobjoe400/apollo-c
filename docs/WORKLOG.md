@@ -478,3 +478,9 @@
             warning; no assertions that cannot fail. prog-rendz follow-up:
             tighten targeting tolerances. Waiting for dap-csm, then
             status-handling-2 alone.
+2026-10-11  User: decide guard redundancy by dataflow (value checked at entry
+            and unchanged along the path needs no re-check). status-handling-2
+            now classifies with Frama-C EVA (frama-c-base, needs install),
+            libclang fallback; adds `make prove`. Rule-5 project average is
+            1.51 after real-guard removal; target 2.0 reconsidered after the
+            pass (no padding assertions).

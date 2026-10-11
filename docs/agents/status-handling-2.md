@@ -6,10 +6,24 @@ assert-returns (tools/check_rules.py reports each as "silent failure" /
 "sentinel failure"). Rule: docs/CODING_STANDARD.md rule 7, "No silent
 failures". Target: 0 of both, with no (void) casts reintroduced.
 
+Principle (user direction): a condition is checked once, where the value
+ENTERS the program (erasable read, channel read, pad load, sim input,
+public API boundary). Any later use reached without an intervening write
+inherits the fact; a re-check there is dead code and is deleted.
+
 Method (tooling first, hand work last):
-1. Classify every flagged guard with libclang (reuse tools/cgast.py and the
-   call graph from `make callgraph`): a guard is GUARANTEED when every call
-   site of the function satisfies it structurally -- pointer arguments are
+1a. If `frama-c` is installed (package frama-c-base): build a Frama-C EVA
+   run over libagc (`frama-c -eva` with the project's -I, each test/sim
+   entry point as -main in turn, AGC_ASSERT mapped to an ACSL assert via a
+   small shim header so EVA sees `//@ assert cond;`). EVA reports each
+   assertion as VALID (proven true on all paths -> GUARANTEED, delete),
+   UNKNOWN or INVALID (-> FALLIBLE, convert to agc_status_t). Record the
+   command and the per-assertion verdict in docs/overview/guards.tsv.
+   Precision knobs: -eva-precision, -eva-slevel on the interpreter core.
+1b. Fallback, or for guards EVA leaves UNKNOWN because of imprecision:
+   classify with libclang (reuse tools/cgast.py and the call graph from
+   `make callgraph`): a guard is GUARANTEED when every call site of the
+   function satisfies it structurally -- pointer arguments are
    `&local`/`&field`/the address of a static object (non-NULL), enum
    arguments come from a `switch` case or a constant, index arguments come
    from a loop bounded by the array size or a constant below it, scaled
@@ -30,6 +44,11 @@ Method (tooling first, hand work last):
    value function (sentinel), and any helper whose return value every
    caller ignores (that return is a sentinel in disguise; make it void only
    if the guard is GUARANTEED).
-5. `make`, `make test`, `make check` (0 hard), `make format`. Report counts
+5. Add `make prove` that reruns the EVA classification so the boundary-
+   check discipline is mechanically re-checkable later. Then `make`,
+   `make test`, `make check` (0 hard except possibly the project assertion
+   density: report the final density and list where REAL postconditions
+   could still be added; the lead decides whether to relax the 2.0 target),
+   `make format`. Report counts
    (guaranteed-deleted / fallible-converted / callers updated) in
    docs/modules/status-handling-2.md with Lessons.
