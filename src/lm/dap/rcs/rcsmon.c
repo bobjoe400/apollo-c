@@ -82,5 +82,10 @@ agc_status_t agc_lm_dap_rcsmon(void)
         d->pvalvest = (uint16_t) (d->pvalvest | bit);
     }
 
+    if (!AGC_ASSERT(d->pvalvest <= RM_LOW8))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (lm_dap_accfix()); /* 1/ACCFIX           */
 }

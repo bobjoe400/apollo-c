@@ -22,6 +22,10 @@ agc_sim without --lockstep) and steps by wall-clock time instead.
 
 Scenario language (one command per line, `#` comments; times in cs):
   vehicle csm|lm              must match --vehicle (or sets it)
+  pad ITEM ...                erasable pad load before power-on: the pad
+                              lines are passed to agc_sim --pad (src/sim/
+                              pad.c: refsmmat, flagword); not available
+                              with --connect
   run N                       advance N centiseconds
   keys V06N36E                key presses: digits, V N E C(LR) R(SET) K(EY REL)
                               + -; spaces ignored; words PRO, KEYREL allowed
@@ -53,6 +57,7 @@ import select
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 CH_RELAY, CH_LAMPS11, CH_DSKY163 = 0o10, 0o11, 0o163
@@ -379,6 +384,8 @@ class Scenario:
             if w[1].lower() != self.vehicle:
                 raise SystemExit('scenario is for %s, run with --vehicle %s'
                                  % (w[1], w[1]))
+        elif op == 'pad':
+            pass                        # applied at start-up (main)
         elif op == 'run':
             self.run(int(w[1]))
         elif op == 'keys':
@@ -443,6 +450,16 @@ def scenario_vehicle(path):
     return None
 
 
+def scenario_pads(path):
+    out = []
+    with open(path) as fh:
+        for raw in fh:
+            w = raw.split('#', 1)[0].split()
+            if w and w[0].lower() == 'pad':
+                out.append(' '.join(w[1:]))
+    return out
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--scenario')
@@ -459,13 +476,22 @@ def main(argv):
     a = ap.parse_args(argv[1:])
     vehicle = a.vehicle or (scenario_vehicle(a.scenario) if a.scenario else None) or 'csm'
     proc = None
+    pads = scenario_pads(a.scenario) if a.scenario else []
+    padfile = None
     if a.connect:
+        if pads:
+            print('sim_client: pad lines ignored with --connect')
         host, port = a.connect.rsplit(':', 1)
         link = Link(host, int(port), lockstep=not a.realtime, trace=a.trace)
     else:
         port = free_port()
-        proc = subprocess.Popen([a.sim, '--lockstep', '--vehicle', vehicle,
-                                 '--port', str(port)], stdout=subprocess.PIPE)
+        cmd = [a.sim, '--lockstep', '--vehicle', vehicle, '--port', str(port)]
+        if pads:
+            fd, padfile = tempfile.mkstemp(prefix='agc_sim_pad_', suffix='.txt')
+            with os.fdopen(fd, 'w') as fh:
+                fh.write('\n'.join(pads) + '\n')
+            cmd += ['--pad', padfile]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         link = Link('127.0.0.1', port, lockstep=True, trace=a.trace)
     sc = Scenario(link, vehicle, a.max_cs, a.verbose)
     sc.strict = a.strict
@@ -483,6 +509,8 @@ def main(argv):
         if proc:
             out, _ = proc.communicate(timeout=30)
             sys.stdout.write(out.decode())
+        if padfile:
+            os.unlink(padfile)
     print('sim_client: %s %s: %d checks, %d failed, %d xfail, %d xpass, '
           '%.2f s of AGC time' % (
               os.path.basename(a.scenario or 'interactive'), vehicle,

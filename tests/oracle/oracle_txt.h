@@ -31,6 +31,7 @@ static int  oracle_checks;
 static int  oracle_failures;
 static int  oracle_missing;
 static int  oracle_known;
+static bool oracle_in_negzero; /* last oracle_in() word was 77777 (-0) */
 
 static inline bool oracle_read(const char *name, char *buf, size_t cap)
 {
@@ -366,6 +367,8 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     }
     else if (!neg)
     {
+        oracle_in_negzero = (v == 077777);
+
         return (oracle_word(v));
     }
     else
@@ -381,7 +384,13 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
 static inline uint16_t oracle_in_raw(const char *tag, const char *name,
                                      int idx)
 {
+    oracle_in_negzero = false;
     const int w = oracle_in(tag, name, idx);
+
+    if (w == 0 && oracle_in_negzero)
+    {
+        return (077777); /* -0 */
+    }
 
     return ((uint16_t) ((w < 0) ? w + 077777 : w));
 }

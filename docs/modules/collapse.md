@@ -149,15 +149,19 @@ removed, the first kept.  Found 20 outside src/sim:
   unchecked (rule 7), so each call's status got its own name instead
   (st_optcadr, st_ca_ece, st_tvc, st_cage, st_pole, st_cduw, st_pad x2,
   st_p in PAXIS's PSKIP branch); the facts are now distinct texts.
-* 9 post-checks of a modified value or of a module invariant, removed per
-  the rule (first kept): agc_w_tp_shl1's agc_w_ok(m.m0) (agc_w_ts keeps
-  the word in range), agc_time_advance_cs's masked TIME2 (cannot fail),
-  agc_rupt_go's inhint depth after GOPROG, pin_invariants() at the end of
-  agc_dsky_keys / pin_putcom / pin_dspdcput / pin_vbfandir,
-  lm_dap_switch_curves' ACCSW range, agc_lm_dap_rcsmon's PVALVEST range.
-check_rules: 0 hard.  Open question for review: ll_landjunk overwrites the
-status of agc_latlong_from_r / agc_navaux_set_latlong with the
-agc_planet_r_to_rp status without checking it (pre-existing).
+* 9 post-checks of a modified value or of a module invariant.  The lead
+  narrowed the rule afterwards (check_rules flags only back-to-back
+  repeats; a re-check after intervening statements is a postcondition), so
+  the real ones were restored: agc_rupt_go's inhint depth after GOPROG,
+  pin_invariants() at the end of agc_dsky_keys / pin_putcom / pin_dspdcput
+  / pin_vbfandir, lm_dap_switch_curves' ACCSW range, agc_lm_dap_rcsmon's
+  PVALVEST range.  Left out because they cannot fail: agc_w_tp_shl1's
+  agc_w_ok(m.m0) (agc_w_ts keeps the word in range) and
+  agc_time_advance_cs's TIME2 check after the mask.
+check_rules: 0 hard.  ll_landjunk used to overwrite the status of
+agc_latlong_from_r / agc_navaux_set_latlong unchecked; LANDJUNK (Luminary
+p. 791) calls LAT-LONG and falls straight into R-TO-RP, with no failure
+exit, so the status is now checked and propagated like R-TO-RP's.
 
 ## Progress
 * DONE make callgraph, callgraph.tsv/.dot, collapse_candidates.tsv

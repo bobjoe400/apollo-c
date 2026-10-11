@@ -510,6 +510,11 @@ static agc_status_t pin_vbfandir(uint8_t verb)
     if (verb >= 21u)
     {
         /* VERBTAB VB21-VB39 part of the fan. */
+        if (!AGC_ASSERT(pin_invariants()))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
         switch (verb)
         {
             case 21:

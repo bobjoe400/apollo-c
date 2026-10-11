@@ -21,6 +21,8 @@
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"
+#include "agc/lm/landing.h"
+#include "agc/programs/rendezvous.h"
 #include "oracle_txt.h"
 
 bool agc_assert_report(const char *file, int line, const char *expr)
@@ -110,6 +112,24 @@ static agc_status_t write_comp(const char *t, uint16_t id,
     if (id == (uint16_t) AGC_DATA_TTOGO)
     {
         agc_erase_set_ttogo(v);
+
+        return (AGC_STATUS_OK);
+    }
+
+    /* two-integer words the noun layer only reads (VHFCNT, TRKMKCNT and
+     * FUNNYDSP = TREDES, LOOKANGL)                                       */
+    if (id == (uint16_t) AGC_DATA_VHFCNT)
+    {
+        agc_erase_set_vhfcnt(agc_dp_high(v));
+        agc_erase_set_trkmkcnt(agc_dp_low(v));
+
+        return (AGC_STATUS_OK);
+    }
+
+    if (id == (uint16_t) AGC_DATA_FUNNYDSP)
+    {
+        agc_lm_ldg()->tredes   = agc_dp_high(v);
+        agc_lm_ldg()->lookangl = agc_dp_low(v);
 
         return (AGC_STATUS_OK);
     }

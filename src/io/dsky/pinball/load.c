@@ -144,6 +144,11 @@ static agc_status_t pin_putcom(int k, bool *finished)
         /* PUTCOM, octal: alarm and recycle if decimal only; for a DP scale (DPTEST)
          * +0 into the major part and the octal word into the minor part; CHANLOAD
          * for noun 10.                                                           */
+        if (!AGC_ASSERT(pin_invariants()))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
         pin_state_t *s_octal = pin_st();
 
         if (!pin_dectest())

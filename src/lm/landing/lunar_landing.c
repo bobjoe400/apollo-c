@@ -1155,6 +1155,13 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
         st = agc_navaux_set_latlong(&ll); /* N43 data     */
     }
 
+    /* LAT-LONG has no failure exit in the AGC; it falls straight into
+     * R-TO-RP, so a failure here is propagated like R-TO-RP's.         */
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (st);
+    }
+
     agc_vec_t rls = agc_vec_zero();
 
     st = agc_planet_r_to_rp(ip, &nav, true, agc_vec_shl(ip, rn, 2), t, &rls);

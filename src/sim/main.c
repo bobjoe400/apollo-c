@@ -2,7 +2,7 @@
  * main.c -- build/agc_sim: the translated flight software on the host.
  *
  * Usage: agc_sim [--vehicle csm|lm] [--port N] [--max-cs N] [--script F]
- *                [--headless | --lockstep | --fast] [csm|lm] [cs]
+ *                [--pad F] [--headless | --lockstep | --fast] [csm|lm] [cs]
  *
  *   (default)   peripheral server: listens on ports N..N+9 (default 19697
  *               for the CSM, 19797 for the LM: the Virtual AGC port
@@ -15,6 +15,7 @@
  *   --headless  no sockets: run --max-cs centiseconds (default 1000) and
  *               print a summary (the integration-wave driver).
  *   --script F  timed input packets (script.c), in any mode.
+ *   --pad F     erasables set before GOJAM (pad.c): REFSMMAT, flagwords.
  * The bare words csm / lm and a bare number are --vehicle and --max-cs.
  *
  * Power-on: agc_power_on (host: vehicle, state, lane erasables, exec),
@@ -56,6 +57,7 @@ typedef struct sim_opts
     int           port;
     unsigned long max_cs; /* 0: unbounded (server modes)          */
     const char   *script;
+    const char   *pad;    /* --pad: erasable pad load            */
 } sim_opts_t;
 
 /* The value of option `name` given as `--name=V` or `--name V` (then
@@ -115,6 +117,10 @@ static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *use
     {
         o->script = v;
     }
+    else if ((v = opt_value(arg, "--pad", next, used)) != NULL)
+    {
+        o->pad = v;
+    }
     else if (arg[0] >= '0' && arg[0] <= '9')
     {
         o->max_cs = strtoul(arg, NULL, 10);
@@ -144,6 +150,7 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
     o->port    = 0; /* by vehicle unless --port */
     o->max_cs  = 0;
     o->script  = NULL;
+    o->pad     = NULL;
 
     for (int i = 1; i < argc; i++)
     {
@@ -313,6 +320,11 @@ static agc_status_t start(const sim_opts_t *o)
 
     agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec   */
 
+    if (st == AGC_STATUS_OK && o->pad != NULL)
+    {
+        st = sim_pad_load(o->pad); /* before GOJAM, like a core image */
+    }
+
     st = (st == AGC_STATUS_OK) ? sim_clock_init() : st;
     st = (st == AGC_STATUS_OK) ? agc_rupt_go() : st; /* GOJAM -> GOPROG */
     sim_channels_init();
@@ -342,7 +354,8 @@ int main(int argc, char *argv[])
     if (!parse_args(argc, argv, &o))
     {
         (void) fprintf(stderr, "usage: agc_sim [--vehicle csm|lm] [--port N] "
-                       "[--max-cs N] [--script F] [--headless|--lockstep|--fast]\n");
+                       "[--max-cs N] [--script F] [--pad F] "
+                       "[--headless|--lockstep|--fast]\n");
 
         return (2); /* fprintf result irrelevant: exiting */
     }

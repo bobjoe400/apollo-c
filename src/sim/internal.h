@@ -96,6 +96,9 @@ void         sim_irq_request(sim_irq_t irq);
 uint32_t     sim_clock_cs(void);
 void         sim_clock_stats(sim_stats_t *out);
 
+/* ---- erasable pad load at power-on (pad.c) ---------------------------- */
+agc_status_t sim_pad_load(const char *path);
+
 /* ---- timed input script (script.c) ------------------------------------ */
 agc_status_t sim_script_open(const char *path);
 void         sim_script_tick(uint32_t cs); /* apply the events due     */
