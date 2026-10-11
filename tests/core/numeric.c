@@ -37,6 +37,7 @@
 
 #include "agc/core/constants.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/word.h"
 
 #define PI 3.14159265358979323846 /* pi, for libm references */
@@ -54,6 +55,7 @@ static void     test_divide(void);
 static void     test_sqrt_trig(void);
 static void     test_vectors(void);
 static void     test_stale_dvsign(void);
+static void     test_mpac_words(void);
 static void     test_constants(void);
 
 /**********************************************************************
@@ -70,6 +72,7 @@ int main(void)
     test_sqrt_trig();
     test_vectors();
     test_stale_dvsign();
+    test_mpac_words();
     test_constants();
 
     if (failures != 0)
@@ -436,6 +439,38 @@ static void test_stale_dvsign(void)
     r = agc_vec_div(&ip, agc_vec_make(5, 0, 0), 0);
     eq("V/SC by 0 after DOT", r.c[0], AGC_DP_MAX);
     eq("V/SC by 0 ovf", agc_interp_test_ovf(&ip), 1);
+}
+
+/**********************************************************************
+ * CONIC_SUBROUTINES.agc PARAM / WLOOP (p.1292) on the word API
+ * (interp_words.h): R1A = D1/32 - MPAC by BDSU is (00401, 40000), and one
+ * WLOOP pass on those words gives the AGC's W (yaAGC: 329590 ->
+ * 8724671, review-prog-rendz P1); on sign-agreeing words the word API
+ * equals the value API.
+ **********************************************************************/
+static void test_mpac_words(void)
+{
+    agc_interp_t   ip;                              /* interpreter state */
+    agc_dp_words_t d1_32 = {512, 0};                /* D1/32, 2^-5 */
+    agc_dp_words_t x     = {255, 16383};            /* MPAC before BDSU, scale 2^0 */
+    agc_dp_words_t w     = agc_dp_to_words(329590); /* W, 2^-28 units */
+    agc_dp_words_t r1a;                             /* R1A as stored */
+    agc_tp_words_t m;                               /* MPAC */
+
+    agc_interp_init(&ip);
+    r1a = agc_mpac_store(agc_mpac_bdsu(&ip, agc_mpac_dload(x), d1_32));
+    eq("R1A hi", r1a.hi, 257);
+    eq("R1A lo", r1a.lo, -16383);
+    m   = agc_mpac_tad(&ip, agc_mpac_shift(&ip, agc_mpac_dload(r1a), -4), agc_mpac_dsq(agc_mpac_dload(w)));
+    m   = agc_mpac_dad(&ip, agc_mpac_round(&ip, agc_mpac_sqrt(&ip, m)), w);
+    eq("WLOOP W", agc_dp_from_words(agc_mpac_store(m)), 8724671);
+    eq("WLOOP ovf", ip.ovfind, 0);
+
+    /* Sign-agreeing words: DDV and DMP agree with interp.h. */
+    m = agc_mpac_ddv(&ip, agc_mpac_dload(agc_dp_to_words(-12345678)), agc_dp_to_words(98765432));
+    eq("DDV words = value", agc_dp_from_words(agc_mpac_store(m)), agc_dp_div(&ip, -12345678, 98765432));
+    m = agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(-12345678)), agc_dp_to_words(98765432));
+    eq("DMP words = value", agc_tp_from_words(m), agc_dp_mul_tp(-12345678, 98765432));
 }
 
 /**********************************************************************

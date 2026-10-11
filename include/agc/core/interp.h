@@ -26,6 +26,9 @@
  * The arithmetic reproduces the AGC word by word (DMPSUB, ROUNDSUB, DDV,
  * SQRTSUB, POLY, ...), so results match the flight computer to the bit for
  * operands whose AGC word pairs agree in sign (every agc_dp_t does).
+ * Where the AGC's words disagree in sign (a DAS/DSU/BDSU result re-read by
+ * DMP, DDV, SR, SQRT, SIN, ...) or an instruction uses the MPAC+2 the last
+ * one left (SQRT ROUND, SR1 ASIN, DOT SL1), use interp_words.h.
  * Full semantics: docs/modules/core-numeric.md. Verified scalings
  * (INTERPRETER.agc pp.1131-1191):
  *
@@ -163,7 +166,8 @@ uint16_t     agc_interp_take_alarm(void);
 agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
 agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
 
-/* SQRT of a TP MPAC (TLOAD/DMP/DSQ then SQRT): MPAC+2 takes part.          */
+/* SQRT of a TP MPAC (TLOAD/DMP/DSQ then SQRT): MPAC+2 takes part; the
+ * MPAC+2 SQRT leaves (used by a following ROUND) is in agc_mpac_sqrt.    */
 agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a);
 
 /* ROUND: TP MPAC rounded to DP (ROUNDSUB), OVFIND on carry out.            */

@@ -282,7 +282,7 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
 /**********************************************************************
  * TSLC / NORM (INTERPRETER.agc p.1157) -- shift left until the major
  * word is >= .5 in magnitude; zero gives no shift. TPAGREE comes first
- * in the AGC: inputs here already agree in sign, so it changes nothing.
+ * (words of disagreeing signs are made to agree, value unchanged).
  *
  * ARGUMENTS:
  *   m      agc_w3_t  I  TP MPAC
@@ -307,6 +307,8 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
     { /* BRANCH: zero     */
         return (m);
     }
+
+    m = agc_w_tpagree(m); /* TC TPAGREE       */
 
     for (k = 0; k < SHIFT_MAX_LEFT; k++)
     {

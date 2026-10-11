@@ -155,7 +155,7 @@ int main(void)
     printf("oracle_core_numeric: %d cases, %d mismatches\n", n, bad);
 
     return (((bad != 0) || (n == 0)) ? 1 : 0); /* fail when none ran */
-}
+} /* main */
 
 /**********************************************************************
  * AGC: none (test helper) -- one "NAME value" line of a case: STATUS,
@@ -325,7 +325,7 @@ static int run_prefix(agc_interp_t *ip, const ocase_t *c, char *last, size_t n)
     (void) snprintf(last, n, "%s", p);
 
     return (used);
-}
+} /* run_prefix */
 
 /**********************************************************************
  * AGC: none (test helper) -- the scalar arithmetic ops: DMP, DMPR, DDV,
@@ -345,10 +345,10 @@ static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in, 
 {
     const long long int *w   = c->w;                       /* outputs   */
     const long long int  mp  = dpv(dpv(w[0], w[1]), w[2]); /* TP MPAC   */
-    const agc_dp_t       a   = (agc_dp_t) in[0];           /* 1st DP    */
-    const agc_dp_t       b   = (agc_dp_t) in[1];           /* 2nd DP    */
-    agc_dp_t             t   = 0;                          /* out arg   */
-    agc_dp_t             coef[MAX_IN];                     /* POLY A(i) */
+    const agc_dp_t       a   = (agc_dp_t) in[0];           /* 1st DP operand, 2^-28 units */
+    const agc_dp_t       b   = (agc_dp_t) in[1];           /* 2nd DP operand, 2^-28 units */
+    agc_dp_t             t   = 0;                          /* out arg, 2^-28 units */
+    agc_dp_t             coef[MAX_IN];                     /* POLY A(i), 2^-28 units */
     agc_status_t         s;                                /* _chk      */
     int                  k;                                /* index     */
     int                  hit = 1;                          /* handled   */
@@ -473,7 +473,7 @@ static int shift_op(agc_interp_t *ip, const char *op, const long long int *in, c
 {
     const long long int *w   = c->w;                       /* outputs   */
     const long long int  mp  = dpv(dpv(w[0], w[1]), w[2]); /* TP MPAC   */
-    const agc_dp_t       a   = (agc_dp_t) in[0];           /* DP input  */
+    const agc_dp_t       a   = (agc_dp_t) in[0];           /* DP input, 2^-28 units */
     const int            n   = (int) in[1];                /* count     */
     int                  sh  = 0;                          /* NORM out  */
     int                  hit = 1;                          /* handled   */
@@ -524,7 +524,7 @@ static int shift_op(agc_interp_t *ip, const char *op, const long long int *in, c
     }
 
     return (hit);
-}
+} /* shift_op */
 
 /**********************************************************************
  * AGC: none (test helper) -- the ops that leave a vector in MPAC: UNIT
@@ -543,8 +543,8 @@ static int shift_op(agc_interp_t *ip, const char *op, const long long int *in, c
 static int vector_op(agc_interp_t *ip, const char *op, const long long int *in, const ocase_t *c, result_t *res)
 {
     const agc_vec_t u    = vec_at(in);       /* first vector, 2^-28 units */
-    const agc_vec_t v    = vec_at(in + 3);   /* second vector (if any)    */
-    const agc_dp_t  s    = (agc_dp_t) in[3]; /* scalar / shift count    */
+    const agc_vec_t v    = vec_at(in + 3);   /* second vector (if any), 2^-28 units */
+    const agc_dp_t  s    = (agc_dp_t) in[3]; /* scalar (2^-28 units) / shift count */
     agc_mat_t       m;                       /* MXV / VXM matrix          */
     agc_dp_t        lv   = 0;                /* UNIT LV, scale of u       */
     agc_dp_t        lvsq = 0;                /* UNIT LVSQUARE, 2x scale   */
@@ -684,4 +684,4 @@ static int run_case(const ocase_t *c)
     }
 
     return ((res.ovf_checked == 0) || (ip.ovfind == w[7]));
-}
+} /* run_case */

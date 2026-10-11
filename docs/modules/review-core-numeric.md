@@ -66,7 +66,7 @@ TBUP/TGO DSU, SR 11D, DDV (guid-landing), entry HUNTEST1 DMP DDV DDV DDV
 | style findings, tests/oracle/core_numeric.c | TODO: ~94 findings; file compiles and passes as is. Plan: rewrite as main-first with scalar_op/shift_op/vector_op/read_line helpers (draft content was written in session, not saved) |
 | rule-5 density | DONE: check_rules 0 hard, 0 warnings on lane files |
 | Findings table, Lessons, MODULE_STATUS row | TODO |
-| word-level MPAC API | IN PROGRESS: design above; next oracle spec, then implementation |
+| word-level MPAC API | DONE (code): include/agc/core/interp_words.h + src/core/interp/words.c (+ trig.c SQRT/SIN/COS/ASIN/ACOS on words); word.h agc_dp_words_t/agc_tp_words_t + conversions; private model: word-level DDV/BDDV (agc_w_ddv on words, ddv_unit_major/bufzero/agree/quotient/normalise), GENDDV on words, SQRTSUB returns MPAC+2, TPAGREE in NORM, BRANCH; oracle core_words.spec (460 runs, gen_core_words.py) + tests/oracle/core_words.c: 2021 checks, 0 failures; core_numeric 361/0 unchanged. TODO: full make/test/check, lane migration notes |
 | make / make test / make check | lane build via SCRATCH/review-core-numeric/build.sh green; full make blocked by other lanes (imu/mode.c) |
 
 Files mid-edit: none. Every touched file compiles (build.sh green).

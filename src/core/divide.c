@@ -76,227 +76,395 @@ static int32_t finaldv(int32_t a, int32_t c)
 /**********************************************************************
  * GENDDV / MAXDV (INTERPRETER.agc pp.1166-1170) -- positive normalised
  * DP divide with MAXTEST's choice: GENDDV computes (A + sB)/(C + sD) =
- * Q + s(R - QD)/C, s = 2^-14, correcting Q by one either way; MAXDV
- * (equal major words, MAXDVSW = +0) gives 37777 + s(C + B - D)/C.
+ * Q + s(R - QD)/C, s = 2^-14, correcting Q by one either way ("SIGN
+ * AGREEMENT IS UNNECESSARY": B and D keep whatever sign DDV left them);
+ * MAXDV (equal major words, MAXDVSW = +0) gives 37777 + s(C + B - D)/C.
  *
  * ARGUMENTS:
- *   dividend  agc_dp_t  I  (A, B), >= 0, A <= C, 2^-28 per unit
- *   divisor   agc_dp_t  I  (C, D), C >= HALF (UNIT may pass 17777)
- *   maxdv     bool      I  MAXDVSW is +0: take MAXDV when A = C
+ *   ab     agc_w2_t  I  dividend words (A, B), A >= 0, A <= C
+ *   cd     agc_w2_t  I  divisor words (C, D), C >= HALF (UNIT may pass
+ *                       17777)
+ *   maxdv  bool      I  MAXDVSW is +0: take MAXDV when A = C
  *
- * RETURNS: agc_dp_t -- the quotient, scaled 2^0 (< 1)
+ * RETURNS: agc_w2_t -- the quotient words (MPAC, MPAC+1), scaled 2^0
  **********************************************************************/
-agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
+agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv)
 {
-    agc_w2_t ab = agc_w_split(dividend); /* (A, B) */
-    agc_w2_t cd = agc_w_split(divisor);  /* (C, D) */
-    int32_t  acc;                        /* MAXDV minor dividend C + B - D */
+    agc_w2_t qr;  /* DV BUF: {Q, R}                    */
+    agc_w2_t r = {0, 0};
+    int32_t  acc; /* dividend of the minor part        */
 
-    /* The divisor is normally >= .5; UNIT's SQRTSUB root can be one LSB
-     * below .5 (BUF 17777), which the AGC divides by all the same.        */
-
-    if (!AGC_ASSERT(dividend >= 0) || !AGC_ASSERT(cd.hi > AGC_W_QUARTER))
+    if (!AGC_ASSERT((ab.hi >= 0) && (cd.hi > AGC_W_QUARTER)))
     {
-        return (AGC_DP_MAX);
+        return (r);
     }
 
     if (!AGC_ASSERT(ab.hi <= cd.hi)) /* A <= C (MAXDV)  */
     {
-        return (AGC_DP_MAX);
+        return (r);
     }
 
-    if (!maxdv || (ab.hi != cd.hi))
-    { /* MAXDV: BZF +2   */
-        /* GENDDV (p.1167-1168): (A + sB)/(C + sD) = Q + s(R - QD)/C, s = 2^-14.
-         * Dividend (A,B) positive with A < C; divisor (C,D) positive, C >= HALF.  */
-        agc_w2_t qr        = agc_w_dv(ab.hi, ab.lo, cd.hi);  /* DV BUF          */
-        int32_t  q         = qr.hi;                          /* Q, major quotient word */
-        int32_t  acc_words = qr.lo + agc_w_mp(-q, cd.lo).hi; /* CS; MP; AD      */
+    if (maxdv && (ab.hi == cd.hi))
+    { /* MAXDV: (C + sB)/(C + sD) = 37777 + s(C + B - D)/C, B < D */
+        r.hi = AGC_W_POSMAX;
+        r.lo = finaldv(ab.lo - cd.lo + cd.hi, cd.hi); /* CS; AD; AD BUF  */
 
-        if (!AGC_ASSERT(ab.hi < cd.hi))
+        return (r);
+    }
+
+    qr   = agc_w_dv(ab.hi, ab.lo, cd.hi);     /* DV BUF          */
+    r.hi = qr.hi;                             /* Q, major word   */
+    acc  = qr.lo + agc_w_mp(-r.hi, cd.lo).hi; /* CS; MP; AD      */
+
+    if (acc >= AGC_W_ONE)
+    { /* OVSK: + overflow */
+        acc  -= cd.hi; /* SU BUF          */
+        r.hi += 1;     /* INCR MPAC       */
+    }
+    else if (acc <= 0)
+    { /* BZMF -UP        */
+        if (acc == 0)
         {
-            return (0); /* no valid result */
+            return (r); /* FINALDV +3: minor word 0 */
         }
 
-        if (acc_words >= AGC_W_ONE)
-        { /* OVSK: + overflow */
-            acc_words -= cd.hi; /* SU BUF          */
-            q         += 1;     /* INCR MPAC       */
-        }
-        else if (acc_words <= 0)
-        { /* BZMF -UP        */
-            if (acc_words == 0)
-            {
-                return ((agc_dp_t) (q * AGC_W_ONE)); /* FINALDV +3      */
-            }
+        r.hi -= 1;                          /* DIM MPAC        */
+        r.lo = finaldv(acc + cd.hi, cd.hi); /* ENDMAXDV AD BUF */
 
-            q         -= 1;     /* DIM MPAC        */
-            acc_words += cd.hi; /* ENDMAXDV AD BUF */
+        return (r);
+    }
+    else
+    {
+        /* fall into +DOWN */
+    }
 
-            return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc_words, cd.hi)));
-        }
-        else
-        {
-            /* fall into +DOWN */
-        }
+    if (acc - cd.hi >= 0)
+    { /* +DOWN: SU BUF   */
+        acc  -= cd.hi;
+        r.hi += 1; /* +3: INCR MPAC   */
+    }
 
-        if (acc_words - cd.hi >= 0)
-        { /* +DOWN: SU BUF   */
-            acc_words -= cd.hi;
-            q         += 1; /* +3: INCR MPAC   */
-        }
+    if (!AGC_ASSERT(agc_w_ok(r.hi)))
+    {
+        return (r);
+    }
 
-        if (!AGC_ASSERT(agc_w_ok(q)))
-        {
-            return (0); /* no valid result */
-        }
+    r.lo = finaldv(acc, cd.hi);
 
-        return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc_words, cd.hi)));
-    } /* if (!maxdv || (ab.hi != cd.hi)) */
-
-    /* MAXDV: (C + sB)/(C + sD) = 37777 + s(C + B - D)/C, B < D.             */
-    acc = ab.lo - cd.lo + cd.hi; /* CS; AD; AD BUF  */
-
-    return ((agc_dp_t) (AGC_W_POSMAX * AGC_W_ONE + finaldv(acc, cd.hi)));
+    return (r);
 } /* agc_w_genddv */
 
 /* ---- DDV / BDDV ---------------------------------------------------------- */
 
 /**********************************************************************
- * DVOVF (INTERPRETER.agc p.1162) -- DP MPAC := +-DPPOSMAX (FINALDV +3
- * applies DVSIGN), OVFIND := 1.
+ * DVOVF (INTERPRETER.agc p.1162) -- MPAC, MPAC+1 := +-POSMAX (FINALDV
+ * +3 applies DVSIGN), OVFIND := 1; MPAC+2 is left alone.
  *
  * ARGUMENTS:
- *   negative  bool   I  DVSIGN is -0 (negative quotient)
- *   ovf       int *  O  OVFIND, set to 1
+ *   m         agc_w3_t  I  MPAC (only MPAC+2 survives)
+ *   negative  bool      I  DVSIGN is -0 (negative quotient)
+ *   ovf       int *     O  OVFIND, set to 1
  *
- * RETURNS: agc_dp_t -- +DPPOSMAX, or -DPPOSMAX when negative
+ * RETURNS: agc_w3_t -- (+-POSMAX, +-POSMAX, MPAC+2)
  **********************************************************************/
-static agc_dp_t ddv_overflow(bool negative, int *ovf)
+static agc_w3_t ddv_overflow(agc_w3_t m, bool negative, int *ovf)
 {
     if (!AGC_ASSERT(ovf != 0))
     {
-        return (AGC_DP_MAX);
+        return (m);
     }
 
-    *ovf = 1; /* CAF ONE; TS OVFIND */
+    *ovf = 1;                                       /* CAF ONE; TS OVFIND */
+    m.m0 = negative ? -AGC_W_POSMAX : AGC_W_POSMAX; /* CAF POSMAX; TS MPAC */
+    m.m1 = m.m0;                                    /* FINALDV +3     */
 
-    return (negative ? AGC_DP_MIN : AGC_DP_MAX); /* DVOVF: DPPOSMAX */
+    if (!AGC_ASSERT(agc_w_ok(m.m2)))
+    {
+        return (m);
+    }
+
+    return (m);
 }
 
 /**********************************************************************
- * DDV / BDDV (INTERPRETER.agc pp.1162-1165) -- a / b with both scaled
- * alike, quotient scaled 2^0: BUFZERO (shift 14 when the divisor's major
- * word is 0), sign forcing (BUF-, MPAC-), the overflow test, divisor
- * normalisation (BUFNORM) and GENDDV/MAXDV.
+ * BUFPOS +6 / BUFNEG (INTERPRETER.agc p.1165) -- a divisor whose major
+ * word is +-1 with a minor word of the other sign is made to agree,
+ * which leaves its major word 0 (BUFZERO follows). Every other divisor
+ * keeps its words, disagreeing or not.
  *
  * ARGUMENTS:
- *   a           agc_dp_t  I  dividend (MPAC)
- *   b           agc_dp_t  I  divisor (BUF), same scale as a
- *   ovf         int *     O  OVFIND: 1 on overflow, else 0
- *   dvsign_neg  bool *    O  DVSIGN left at -0 (quotient negative, also
- *                            for a zero dividend over a negative divisor)
+ *   b  agc_w2_t  I  BUF words (divisor)
  *
- * RETURNS: agc_dp_t -- a / b; +-DPPOSMAX on overflow (|a| >= |b|, b = 0)
+ * RETURNS: agc_w2_t -- BUF after the forcing
  **********************************************************************/
-agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf, bool *dvsign_neg)
+static agc_w2_t ddv_unit_major(agc_w2_t b)
 {
-    agc_w2_t w     = agc_w_split(a); /* MPAC words of the dividend   */
-    agc_w2_t d     = agc_w_split(b); /* BUF words of the divisor     */
-    bool     neg   = false;          /* quotient negative (DVSIGN)   */
-    bool     maxdv = false;          /* MAXDVSW: equal major words   */
-    agc_dp_t q;                      /* |quotient|, scaled 2^0       */
-    int      k;                      /* BUFNORM doublings done       */
+    if (!AGC_ASSERT(agc_w_ok(b.hi) && agc_w_ok(b.lo)))
+    {
+        return (b);
+    }
+
+    if ((b.hi == 1) && (b.lo < 0))
+    { /* CA HALF; DOUBLE; ADS BUF +1; TS BUF */
+        b.hi = 0;
+        b.lo += AGC_W_ONE;
+    }
+    else if ((b.hi == -1) && (b.lo > 0))
+    { /* CS HALF; TCF BUFPOS +6           */
+        b.hi = 0;
+        b.lo -= AGC_W_ONE;
+    }
+    else
+    {
+        /* signs agree or |major| > 1: words kept */
+    }
+
+    if (!AGC_ASSERT(agc_w_ok(b.lo)))
+    {
+        return (b);
+    }
+
+    return (b);
+}
+
+/**********************************************************************
+ * BUFZERO (INTERPRETER.agc p.1162): the divisor's major word is 0, so
+ * MPAC+2 := 0, TPAGREE, overflow unless the dividend's major word is 0,
+ * then both shift left 14 and a zero divisor overflows.
+ *
+ * ARGUMENTS:
+ *   m     agc_w3_t *  IO MPAC (dividend), shifted on return
+ *   b     agc_w2_t *  IO BUF (divisor), shifted on return
+ *   neg   bool *      IO DVSIGN on the overflow exits
+ *   ovf   int *       O  OVFIND
+ *
+ * RETURNS: bool -- true when DVOVF was taken (*m holds the result)
+ **********************************************************************/
+static bool ddv_bufzero(agc_w3_t *m, agc_w2_t *b, bool *neg, int *ovf)
+{
+    if (!AGC_ASSERT((m != 0) && (b != 0) && (neg != 0)))
+    {
+        return (true);
+    }
+
+    m->m2 = 0;                 /* TS MPAC +2       */
+    *m    = agc_w_tpagree(*m); /* TC TPAGREE       */
+
+    if (m->m0 != 0)
+    { /* OVF+ / OVF+ -1: INCR DVSIGN when negative; SGNDVOVF on -BUF+1 */
+        *neg = (m->m0 < 0) != (b->lo < 0);
+        *m   = ddv_overflow(*m, *neg, ovf);
+
+        return (true);
+    }
+
+    m->m0 = m->m1; /* XCH BUF +1 .. XCH MPAC: shift left 14 */
+    m->m1 = 0;
+    b->hi = b->lo;
+    b->lo = 0;
+
+    if (b->hi == 0)
+    { /* zero divisor: CS MPAC; SGNDVOVF    */
+        *neg = (m->m0 < 0);
+        *m   = ddv_overflow(*m, *neg, ovf);
+
+        return (true);
+    }
+
+    if (!AGC_ASSERT(agc_w_ok(m->m0)))
+    {
+        return (true);
+    }
+
+    return (false);
+}
+
+/**********************************************************************
+ * Sign agreement of a positive pair (MPAC+ p.1164): CAF HALF; DOUBLE;
+ * AD MPAC +1; TS MPAC +1; CAF ZERO; AD POSMAX; ADS MPAC -- a negative
+ * minor word borrows one from the major word.
+ *
+ * ARGUMENTS:
+ *   p  agc_w2_t  I  pair with p.hi > 0, or p.hi = 0 and p.lo >= 0
+ *
+ * RETURNS: agc_w2_t -- the same value with both words >= 0
+ **********************************************************************/
+static agc_w2_t ddv_agree(agc_w2_t p)
+{
+    if (!AGC_ASSERT((p.hi > 0) || (p.lo >= 0)))
+    {
+        return (p);
+    }
+
+    if (p.lo < 0)
+    {
+        p.hi -= 1;
+        p.lo += AGC_W_ONE;
+    }
+
+    if (!AGC_ASSERT(p.hi >= 0))
+    {
+        return (p);
+    }
+
+    return (p);
+}
+
+/**********************************************************************
+ * DVNORM, BUFNORM, the DDOUBL prologue and MAXTEST (INTERPRETER.agc
+ * pp.1165-1166): double divisor and dividend word by word (DAS) until
+ * the divisor's major word is >= HALF, then GENDDV or MAXDV.
+ *
+ * ARGUMENTS:
+ *   a      agc_w2_t  I  dividend words (MPAC, MPAC+1), positive
+ *   b      agc_w2_t  I  divisor words (BUF), major word > a's
+ *                       (or equal with maxdv)
+ *   maxdv  bool      I  MAXDVSW = +0 (majors were equal)
+ *
+ * RETURNS: agc_w2_t -- |quotient| words
+ **********************************************************************/
+static agc_w2_t ddv_normalise(agc_w2_t a, agc_w2_t b, bool maxdv)
+{
+    int k;     /* BUFNORM passes (DVNORMCT) */
+    int o = 0; /* DAS overflow (none: |dividend| < |divisor|) */
+
+    if (!AGC_ASSERT((b.hi > 0) && (a.hi >= 0)))
+    {
+        return ((agc_w2_t){0});
+    }
+
+    for (k = 0; (k < DV_NORM_MAX) && (b.hi < AGC_W_HALF); k++)
+    {
+        b = agc_w_das(b, b, &o); /* DCA BUF; DAS BUF */
+        a = agc_w_das(a, a, &o); /* DDOUBL           */
+    }
+
+    if (!AGC_ASSERT((b.hi >= AGC_W_HALF) && (o == 0)))
+    {
+        return ((agc_w2_t){0});
+    }
+
+    return (agc_w_genddv(a, b, maxdv)); /* MAXTEST          */
+}
+
+/**********************************************************************
+ * MPAC+ (INTERPRETER.agc p.1164) -- with both operands positive: if the
+ * divisor's major word exceeds the dividend's by two or more, divide at
+ * once (words unagreed); otherwise force sign agreement in both and
+ * overflow unless the dividend is smaller (MAXDVSW = +0 for equal
+ * major words).
+ *
+ * ARGUMENTS:
+ *   a    agc_w2_t  I  dividend words, positive
+ *   b    agc_w2_t  I  divisor words, positive
+ *   ovf  int *     O  set to 1 for DVOVF (|a| >= |b|)
+ *
+ * RETURNS: agc_w2_t -- |quotient| words ({0, 0} on overflow)
+ **********************************************************************/
+static agc_w2_t ddv_quotient(agc_w2_t a, agc_w2_t b, int *ovf)
+{
+    agc_w2_t zero  = {0, 0};
+    bool     maxdv = false; /* MAXDVSW = +0 */
+
+    if (!AGC_ASSERT((ovf != 0) && (b.hi > 0)))
+    {
+        return (zero);
+    }
+
+    if (b.hi - a.hi - 1 <= 0)
+    { /* CS MPAC; AD NEGONE; AD BUF; CCS A */
+        a = ddv_agree(a);
+        b = ddv_agree(b);
+
+        if ((b.hi < a.hi) || ((b.hi == a.hi) && (b.lo <= a.lo)))
+        { /* DVOVF            */
+            *ovf = 1;
+
+            return (zero);
+        }
+
+        maxdv = (b.hi == a.hi); /* TS MAXDVSW       */
+    }
+
+    if (!AGC_ASSERT(a.hi <= b.hi))
+    {
+        return (zero);
+    }
+
+    return (ddv_normalise(a, b, maxdv));
+}
+
+/**********************************************************************
+ * DDV / BDDV (INTERPRETER.agc pp.1162-1169) on the words: dividend in
+ * MPAC, MPAC+1, divisor in BUF, BUF+1. BUFZERO, the divisor and dividend
+ * sign forcing (BUF-, MPAC-), the overflow test (sign agreement only
+ * when the major words are within one), normalisation, GENDDV/MAXDV and
+ * FINALDV's sign. MPAC+2 is 0 after a divide, untouched by an overflow
+ * or a zero dividend (except BUFZERO, which zeroes it first).
+ *
+ * ARGUMENTS:
+ *   m           agc_w3_t  I  MPAC (dividend; MPAC+2 only carried)
+ *   b           agc_w2_t  I  BUF (divisor), same scale
+ *   ovf         int *     O  OVFIND: 1 on overflow, else 0
+ *   dvsign_neg  bool *    O  DVSIGN left at -0 (quotient negative)
+ *
+ * RETURNS: agc_w3_t -- MPAC after the divide, quotient scaled 2^0;
+ *          (+-POSMAX, +-POSMAX) on overflow
+ **********************************************************************/
+agc_w3_t agc_w_ddv(agc_w3_t m, agc_w2_t b, int *ovf, bool *dvsign_neg)
+{
+    bool     neg = false; /* DVSIGN: -1 (false) / -0 (true) / +1 (false) */
+    agc_w2_t a;           /* |dividend| words */
+    agc_w2_t q;           /* |quotient| words */
 
     if (!AGC_ASSERT((ovf != 0) && (dvsign_neg != 0)))
     {
-        return (AGC_DP_MAX);
+        return (m);
     }
 
     *ovf = 0;
+    b    = ddv_unit_major(b); /* CCS BUF          */
 
-    if (d.hi == 0)
-    { /* BUFZERO          */
-        if (w.hi != 0)
-        { /* OVF+ / SGNDVOVF  */
-            *dvsign_neg = (w.hi < 0) != (d.lo < 0);
+    if ((b.hi == 0) && ddv_bufzero(&m, &b, &neg, ovf))
+    {
+        *dvsign_neg = neg;
 
-            return (ddv_overflow(*dvsign_neg, ovf));
-        }
-
-        a *= AGC_W_ONE; /* shift both 14    */
-        b *= AGC_W_ONE;
-
-        if (b == 0)
-        { /* zero divisor     */
-            *dvsign_neg = a < 0;
-
-            return (ddv_overflow(a < 0, ovf));
-        }
+        return (m);
     }
 
-    if (b < 0)
+    if (b.hi < 0)
     { /* BUF-             */
-        b   = -b;
+        b   = agc_w_dcs(b);
         neg = !neg;
     }
 
-    *dvsign_neg = neg; /* -1, or -0 after BUF- */
+    *dvsign_neg = neg;
+    a           = agc_w3_top(m);
 
-    if (a == 0)
-    { /* exit on zero     */
-        return (0);
+    if ((a.hi == 0) && (a.lo == 0))
+    {
+        return (m); /* zero dividend: TCF DANZIG */
     }
 
-    if (a < 0)
+    if ((a.hi < 0) || ((a.hi == 0) && (a.lo < 0)))
     { /* MPAC-            */
-        a           = -a;
+        a           = agc_w_dcs(a);
         neg         = !neg;
-        *dvsign_neg = neg; /* INCR DVSIGN */
+        *dvsign_neg = neg;
     }
 
-    w = agc_w_split(a);
-    d = agc_w_split(b);
+    q = ddv_quotient(a, b, ovf);
 
-    if ((d.hi - w.hi < 0) || ((d.hi == w.hi) && (d.lo - w.lo <= 0)))
+    if (*ovf != 0)
     {
-        return (ddv_overflow(neg, ovf)); /* MPAC+: DVOVF     */
+        return (ddv_overflow(m, neg, ovf));
     }
 
-    /* Equal majors leave -0 in A; CCS turns it into +0 for TS MAXDVSW.    */
-    maxdv = (d.hi == w.hi);
+    m.m0 = neg ? -q.hi : q.hi; /* FINALDV +3: DCS on DVSIGN = -0 */
+    m.m1 = neg ? -q.lo : q.lo; /* DCS on -0 too */
+    m.m2 = 0;                  /* TS MPAC +2       */
 
-    /* Normalise the divisor (BUFNORM/DVNORM) and the dividend by the same
-     * count (the DDOUBL prologue indexed by DVNORMCT), then GENDDV/MAXDV. */
-    if (!AGC_ASSERT((a > 0) && (b > 0)))
-    {
-        return (AGC_DP_MAX);
-    }
-
-    for (k = 0; (k < DV_NORM_MAX) && (agc_w_split(b).hi < AGC_W_HALF); k++)
-    {
-        b *= 2; /* DCA BUF; DAS BUF */
-        a *= 2; /* DDOUBL           */
-    }
-
-    if (!AGC_ASSERT(agc_w_split(b).hi >= AGC_W_HALF))
-    {
-        return (AGC_DP_MAX);
-    }
-
-    if (!AGC_ASSERT(a <= b)) /* no DDOUBL overflow */
-    {
-        return (AGC_DP_MAX);
-    }
-
-    q = agc_w_genddv(a, b, maxdv);
-
-    if (!AGC_ASSERT((q >= 0) && (q <= AGC_DP_MAX)))
-    {
-        return (AGC_DP_MAX);
-    }
-
-    return (neg ? -q : q); /* DVSIGN: FINALDV +3 */
+    return (m);
 } /* agc_w_ddv */
 
 /* ---- SQRTSUB ------------------------------------------------------------- */
@@ -429,60 +597,56 @@ static agc_w2_t sqrt_arglo(agc_w2_t m)
 /**********************************************************************
  * SMPAC+ / SRTEST / SQRTNORM / NORMTEST (INTERPRETER.agc pp.1185-1186)
  * -- select ARGHI or ARGLO, normalising by two places at a time (one
- * right-shift count per pass).
+ * right-shift count per pass). The root goes to MPAC, MPAC+1; MPAC+2
+ * keeps what the normalisation left in it (the SMPAC+/SRTEST halving
+ * does not touch it).
  *
  * ARGUMENTS:
  *   m      agc_w3_t  I  TP MPAC, major word > 0
  *   shift  int *     IO MPTEMP: right shifts owed to the root
  *
- * RETURNS: agc_w2_t -- the normalised root
+ * RETURNS: agc_w3_t -- the normalised root and MPAC+2
  **********************************************************************/
-static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
+static agc_w3_t sqrt_positive(agc_w3_t m, int *shift)
 {
-    int pass;  /* NORMTEST passes (two places each) */
-    int o = 0; /* TP shift overflow (never: |m0| < 1/4) */
+    int      pass;  /* NORMTEST passes (two places each) */
+    int      o = 0; /* TP shift overflow (never: |m0| < 1/4) */
+    agc_w2_t r;     /* the root (MPAC, MPAC+1) */
 
     if (!AGC_ASSERT((m.m0 > 0) && (shift != 0)))
     {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
-    if (m.m0 >= AGC_W_HALF)
-    { /* >= .5            */
-        return (sqrt_arghi(sqrt_half(agc_w3_top(m))));
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
     if (m.m0 >= AGC_W_QUARTER)
-    { /* .25 .. .5        */
-        return (sqrt_arglo(sqrt_half(agc_w3_top(m))));
+    { /* >= .25: halve, ARGHI (>= .5) or ARGLO */
+        r = sqrt_half(agc_w3_top(m));
+        r = (m.m0 >= AGC_W_HALF) ? sqrt_arghi(r) : sqrt_arglo(r); /* SMPAC+ ARGHI, SRTEST ARGLO */
     }
-
-    *shift += 1; /* SQRTNORM         */
-    m      = agc_w_tp_shl1(m, &o);
-
-    for (pass = 0; pass < SQ_NORM_MAX; pass++)
-    { /* NORMTEST (CYL)   */
-        if (m.m0 >= AGC_W_QUARTER)
-        {
-            return (sqrt_arghi(agc_w3_top(m)));
-        }
-
-        if (m.m0 >= AGC_W_QUARTER / 2)
-        {
-            return (sqrt_arglo(agc_w3_top(m)));
-        }
-
-        m      = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
-        *shift += 1;
+    else
+    {
+        *shift += 1; /* SQRTNORM         */
         m      = agc_w_tp_shl1(m, &o);
+
+        for (pass = 0; (pass < SQ_NORM_MAX) && (m.m0 < AGC_W_QUARTER / 2); pass++)
+        { /* NORMTEST (CYL)   */
+            m      = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
+            *shift += 1;
+            m      = agc_w_tp_shl1(m, &o);
+        }
+
+        r = (m.m0 >= AGC_W_QUARTER) ? sqrt_arghi(agc_w3_top(m)) : sqrt_arglo(agc_w3_top(m)); /* NORMTEST: CYL */
     }
 
     if (!AGC_ASSERT(o == 0))
     {
-        return ((agc_w2_t){0}); /* no valid result */
+        return ((agc_w3_t){0}); /* no valid result */
     }
 
-    return (agc_w3_top(m));
+    m.m0 = r.hi;
+    m.m1 = r.lo;
+
+    return (m);
 } /* sqrt_positive */
 
 /**********************************************************************
@@ -495,12 +659,13 @@ static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
  *   abort  bool *    O  true for SQRTABRT (POODOO 01302): argument
  *                       below -2^-14 (SQRTNEG)
  *
- * RETURNS: agc_w2_t -- the root, major word ~.5; 0 for a zero or small
- *          negative argument (ZEROANS)
+ * RETURNS: agc_w3_t -- the root in m0, m1 (major word ~.5; 0 for a zero
+ *          or small negative argument, ZEROANS) and the MPAC+2 SQRTSUB
+ *          leaves in m2
  **********************************************************************/
-agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
+agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
 {
-    agc_w2_t zero = {0, 0};
+    agc_w3_t zero = {0, 0, 0};
     int      k; /* whole-word left shifts done */
 
     if (!AGC_ASSERT(shift != 0) || !AGC_ASSERT(abort != 0))
@@ -513,7 +678,8 @@ agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
 
     if (m.m0 < 0)
     { /* SQRTNEG          */
-        *abort = (m.m0 < -1) || (m.m1 < 0); /* POODOO 01302     */
+        *abort  = (m.m0 < -1) || (m.m1 < 0); /* POODOO 01302     */
+        zero.m2 = m.m2;                      /* FIXROOT: MPAC, MPAC+1 only */
 
         return (zero); /* ZEROANS          */
     }
@@ -543,3 +709,30 @@ agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
 
     return (sqrt_positive(m, shift));
 } /* agc_w_sqrtsub */
+
+/**********************************************************************
+ * TPAGREE (INTERPRETER.agc p.1141) -- force sign agreement among the
+ * three MPAC words (BRANCH picks the sign; +-1.0 is added and carried
+ * through MPAC+2, MPAC+1, MPAC). The value is unchanged.
+ *
+ * ARGUMENTS:
+ *   m  agc_w3_t  I  TP MPAC, words of any signs
+ *
+ * RETURNS: agc_w3_t -- the same value in sign-agreeing words
+ **********************************************************************/
+agc_w3_t agc_w_tpagree(agc_w3_t m)
+{
+    agc_tp_t v = agc_w3_value(m); /* value of the three words, 2^-42 per unit */
+
+    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
+    {
+        return (m);
+    }
+
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return (m);
+    }
+
+    return (agc_w3_from_tp(v));
+}

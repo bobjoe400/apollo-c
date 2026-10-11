@@ -484,7 +484,7 @@ agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
         return (AGC_DP_MAX);
     }
 
-    q = agc_w_ddv(a, b, &o, &ip->dvsign_neg);
+    q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &ip->dvsign_neg)));
 
     if (!AGC_ASSERT((o == 0) || (q == AGC_DP_MAX) || (q == AGC_DP_MIN)))
     {

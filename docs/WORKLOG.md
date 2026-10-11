@@ -451,3 +451,7 @@
             reintroduced by cut-off review runs in dap-csm (tvc), prog-align
             (word_forms.c), csm/optics/geometry.c, dap-lm (accont.c): each
             lane's resumed review clears them. Launching review-dap-lm.
+2026-10-11  review-dap-lm DONE: 30 sat->wrap stores (R11), oracle 1780/0 at
+            tolerance 0, style 714->0, 18 unused accessors removed. Routed:
+            R12 exec restart must call agc_lm_dap_restart(); sim must count
+            TIME6. Launching format3 (brace initializers).

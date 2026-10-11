@@ -183,6 +183,124 @@ agc_w2_t agc_w3_top(agc_w3_t m)
     return (p);
 }
 
+/**********************************************************************
+ * BRANCH (INTERPRETER.agc p.1130) -- CCS MPAC, MPAC+1, MPAC+2 in turn:
+ * the sign of the first non-zero word.
+ *
+ * ARGUMENTS:
+ *   m  agc_w3_t  I  TP MPAC
+ *
+ * RETURNS: int -- +1, 0 (all three zero) or -1
+ **********************************************************************/
+int agc_w_branch(agc_w3_t m)
+{
+    int32_t w = m.m0; /* first non-zero word, or 0 */
+
+    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(agc_w_ok(m.m2)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (w == 0)
+    {
+        w = (m.m1 != 0) ? m.m1 : m.m2; /* CCS MPAC +1, then MPAC +2 */
+    }
+
+    return ((w > 0) - (w < 0));
+}
+
+/**********************************************************************
+ * AGC: none (representation) -- a public DP word pair as model words.
+ *
+ * ARGUMENTS:
+ *   w  agc_dp_words_t  I  the two words as stored
+ *
+ * RETURNS: agc_w2_t -- {hi, lo}, unchanged
+ **********************************************************************/
+agc_w2_t agc_w2_from_words(agc_dp_words_t w)
+{
+    agc_w2_t p = {w.hi, w.lo};
+
+    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
+    {
+        return ((agc_w2_t){0}); /* no valid result */
+    }
+
+    return (p);
+}
+
+/**********************************************************************
+ * AGC: none (representation) -- model words as a public DP word pair.
+ *
+ * ARGUMENTS:
+ *   p  agc_w2_t  I  MPAC, MPAC+1
+ *
+ * RETURNS: agc_dp_words_t -- the same two words
+ **********************************************************************/
+agc_dp_words_t agc_w2_to_words(agc_w2_t p)
+{
+    agc_dp_words_t w = {0, 0};
+
+    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
+    {
+        return (w);
+    }
+
+    w.hi = (agc_sp_t) p.hi;
+    w.lo = (agc_sp_t) p.lo;
+
+    return (w);
+}
+
+/**********************************************************************
+ * AGC: none (representation) -- a public TP word triple as model words.
+ *
+ * ARGUMENTS:
+ *   m  agc_tp_words_t  I  MPAC, MPAC+1, MPAC+2
+ *
+ * RETURNS: agc_w3_t -- {m0, m1, m2}, unchanged
+ **********************************************************************/
+agc_w3_t agc_w3_from_words(agc_tp_words_t m)
+{
+    agc_w3_t r = {m.hi, m.mid, m.lo};
+
+    if (!AGC_ASSERT(agc_w_ok(r.m0) && agc_w_ok(r.m1) && agc_w_ok(r.m2)))
+    {
+        return ((agc_w3_t){0}); /* no valid result */
+    }
+
+    return (r);
+}
+
+/**********************************************************************
+ * AGC: none (representation) -- model words as a public TP triple.
+ *
+ * ARGUMENTS:
+ *   m  agc_w3_t  I  MPAC, MPAC+1, MPAC+2
+ *
+ * RETURNS: agc_tp_words_t -- the same three words
+ **********************************************************************/
+agc_tp_words_t agc_w3_to_words(agc_w3_t m)
+{
+    agc_tp_words_t r = {0, 0, 0};
+
+    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
+    {
+        return (r);
+    }
+
+    r.hi  = (agc_sp_t) m.m0;
+    r.mid = (agc_sp_t) m.m1;
+    r.lo  = (agc_sp_t) m.m2;
+
+    return (r);
+}
+
 /* ---- single instructions ------------------------------------------------ */
 
 /**********************************************************************

@@ -90,9 +90,9 @@ agc_dp_t agc_tp_to_dp(agc_tp_t v);              /* truncate (drop MPAC+2)  */
 agc_dp_t agc_tp_round_dp(agc_tp_t v);           /* round (DMPR semantics)  */
 
 /* ---- word form <-> value ------------------------------------------------- */
-agc_dp_words_t agc_dp_to_words(agc_dp_t v);        /* sign-agreeing words   */
+agc_dp_words_t agc_dp_to_words(agc_dp_t v);         /* sign-agreeing words   */
 agc_dp_t       agc_dp_from_words(agc_dp_words_t w); /* hi 2^14 + lo          */
-agc_tp_words_t agc_tp_to_words(agc_tp_t v);        /* sign-agreeing words   */
+agc_tp_words_t agc_tp_to_words(agc_tp_t v);         /* sign-agreeing words   */
 agc_tp_t       agc_tp_from_words(agc_tp_words_t m); /* hi 2^28 + mid 2^14 + lo */
 
 /* ---- raw arithmetic: saturating, overflow reported through *ovf ---------- */

@@ -403,6 +403,110 @@ agc_dp_t agc_tp_round_dp(agc_tp_t v)
     return (agc_w_join(agc_w3_top(m)));
 }
 
+/* ---- word form <-> value ------------------------------------------------- */
+
+/**********************************************************************
+ * AGC: none (word structure) -- the words a DCA of a stored DP gives:
+ * both carry the sign of the value.
+ *
+ * ARGUMENTS:
+ *   v  agc_dp_t  I  DP value, 2^-28 per unit
+ *
+ * RETURNS: agc_dp_words_t -- {hi, lo}, signs agreeing
+ **********************************************************************/
+agc_dp_words_t agc_dp_to_words(agc_dp_t v)
+{
+    agc_dp_words_t w; /* the sign-agreeing words */
+
+    if (!AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
+    {
+        return (agc_w2_to_words((agc_w2_t){0, 0}));
+    }
+
+    w = agc_w2_to_words(agc_w_split(v));
+
+    if (!AGC_ASSERT(agc_dp_from_words(w) == v)) /* same value */
+    {
+        return (agc_w2_to_words((agc_w2_t){0, 0}));
+    }
+
+    return (w);
+}
+
+/**********************************************************************
+ * AGC: none (word structure) -- the value of a stored word pair.
+ *
+ * ARGUMENTS:
+ *   w  agc_dp_words_t  I  major and minor word, signs free
+ *
+ * RETURNS: agc_dp_t -- hi 2^14 + lo, 2^-28 per unit
+ **********************************************************************/
+agc_dp_t agc_dp_from_words(agc_dp_words_t w)
+{
+    if (!AGC_ASSERT((w.hi >= AGC_SP_MIN) && (w.hi <= AGC_SP_MAX)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT((w.lo >= AGC_SP_MIN) && (w.lo <= AGC_SP_MAX)))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (agc_w_join(agc_w2_from_words(w)));
+}
+
+/**********************************************************************
+ * AGC: none (word structure) -- the three words of a TP whose signs
+ * agree (TLOAD of a stored TP, or a TP value made by the value API).
+ *
+ * ARGUMENTS:
+ *   v  agc_tp_t  I  TP value, 2^-42 per unit
+ *
+ * RETURNS: agc_tp_words_t -- {hi, mid, lo}, signs agreeing
+ **********************************************************************/
+agc_tp_words_t agc_tp_to_words(agc_tp_t v)
+{
+    agc_tp_words_t m; /* the sign-agreeing words */
+
+    if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
+    {
+        return (agc_w3_to_words((agc_w3_t){0, 0, 0}));
+    }
+
+    m = agc_w3_to_words(agc_w3_from_tp(v));
+
+    if (!AGC_ASSERT(agc_tp_from_words(m) == v)) /* same value */
+    {
+        return (agc_w3_to_words((agc_w3_t){0, 0, 0}));
+    }
+
+    return (m);
+}
+
+/**********************************************************************
+ * AGC: none (word structure) -- the value of three TP words.
+ *
+ * ARGUMENTS:
+ *   m  agc_tp_words_t  I  MPAC, MPAC+1, MPAC+2, signs free
+ *
+ * RETURNS: agc_tp_t -- (hi 2^14 + mid) 2^14 + lo, 2^-42 per unit
+ **********************************************************************/
+agc_tp_t agc_tp_from_words(agc_tp_words_t m)
+{
+    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT((m.mid >= AGC_SP_MIN) && (m.lo >= AGC_SP_MIN)))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (agc_w3_value(agc_w3_from_words(m)));
+}
+
 /* ---- raw arithmetic ------------------------------------------------------ */
 
 /**********************************************************************
@@ -650,7 +754,7 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
         return (0); /* no valid result */
     }
 
-    q = agc_w_ddv(a, b, &o, &dvsign);
+    q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &dvsign)));
 
     if (AGC_ASSERT(ovf != 0))
     {

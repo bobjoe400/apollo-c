@@ -91,7 +91,7 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k, bool sne
         return (false);
     }
 
-    q  = agc_w_genddv(a * ((agc_dp_t) 1 << k), s_norm, d.hi == w.hi);
+    q  = agc_w_join(agc_w_genddv(agc_w_split(a * ((agc_dp_t) 1 << k)), agc_w_split(s_norm), d.hi == w.hi));
     *c = neg ? -q : q; /* FINALDV +3: DVSIGN */
 
     return (true);
@@ -325,9 +325,9 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
         return (0); /* exit on zero     */
     }
 
-    *dvsign = (c < 0);                                             /* UMPAC- / UMPAC+  */
-    a       = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv)); /* SRDDV / left kdiv */
-    q       = agc_w_genddv(a, root, false);                        /* MAXDVSW = -1     */
+    *dvsign = (c < 0);                                                            /* UMPAC- / UMPAC+  */
+    a       = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));                /* SRDDV / left kdiv */
+    q       = agc_w_join(agc_w_genddv(agc_w_split(a), agc_w_split(root), false)); /* MAXDVSW = -1 */
 
     return ((c < 0) ? -q : q); /* UMPAC-: complement */
 }
@@ -375,7 +375,7 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t 
         *vsq = agc_w_join(agc_w3_top(sq)); /* LVSQUARE         */
     }
 
-    root = agc_w_sqrtsub(sq, &shift, &abort);
+    root = agc_w3_top(agc_w_sqrtsub(sq, &shift, &abort));
 
     if (!AGC_ASSERT(!abort))
     {

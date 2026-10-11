@@ -54,12 +54,19 @@ typedef struct agc_w3
 } agc_w3_t;
 
 /* ---- representation ----------------------------------------------------- */
-bool     agc_w_ok(int32_t w);     /* |w| < 2^14             */
-agc_w2_t agc_w_split(agc_dp_t v); /* sign-agreeing words    */
-agc_dp_t agc_w_join(agc_w2_t p);  /* value of a word pair   */
+bool     agc_w_ok(int32_t w);      /* |w| < 2^14             */
+agc_w2_t agc_w_split(agc_dp_t v);  /* sign-agreeing words    */
+agc_dp_t agc_w_join(agc_w2_t p);   /* value of a word pair   */
 agc_w3_t agc_w3_from_tp(agc_tp_t v);
 agc_tp_t agc_w3_value(agc_w3_t m);
-agc_w2_t agc_w3_top(agc_w3_t m);  /* MPAC, MPAC+1           */
+agc_w2_t agc_w3_top(agc_w3_t m);   /* MPAC, MPAC+1           */
+int      agc_w_branch(agc_w3_t m); /* BRANCH: sign of the first non-zero word */
+
+/* ---- public word form (word.h) <-> model words --------------------------- */
+agc_w2_t       agc_w2_from_words(agc_dp_words_t w);
+agc_dp_words_t agc_w2_to_words(agc_w2_t p);
+agc_w3_t       agc_w3_from_words(agc_tp_words_t m);
+agc_tp_words_t agc_w3_to_words(agc_w3_t m);
 
 /* ---- single instructions ------------------------------------------------ */
 agc_w2_t agc_w_mp(int32_t a, int32_t b);              /* MP            */
@@ -81,18 +88,23 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind);               /* VSQSUB  
 agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf);                        /* TSSL step */
 agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree);   /* POLY  */
 
-/* SQRTSUB: normalised root (>= .5) of the TP MPAC; *shift = MPTEMP (right
- * shift that un-normalises it); *abort = true where the AGC does POODOO
- * 01302 (argument < -2^-14). */
-agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort);
+/* SQRTSUB: normalised root (>= .5) of the TP MPAC in m0, m1, with m2 the
+ * MPAC+2 SQRTSUB leaves (the argument's, shifted by the normalisation);
+ * *shift = MPTEMP (right shift that un-normalises it); *abort = true
+ * where the AGC does POODOO 01302 (argument < -2^-14).                 */
+agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort);
 
-/* DDV/BDDV core: a / b, overflow -> +-DPPOSMAX and *ovf = +1;
- * *dvsign_neg = DVSIGN left at -0 (quotient sign negative, also for a
- * zero dividend over a negative divisor).                              */
-agc_dp_t agc_w_ddv(agc_dp_t a, agc_dp_t b, int *ovf, bool *dvsign_neg);
+/* DDV/BDDV on the words: MPAC / BUF, overflow -> (+-POSMAX, +-POSMAX)
+ * and *ovf = +1; *dvsign_neg = DVSIGN left at -0 (quotient sign
+ * negative, also for a zero dividend over a negative divisor).        */
+agc_w3_t agc_w_ddv(agc_w3_t m, agc_w2_t b, int *ovf, bool *dvsign_neg);
 
-/* GENDDV/MAXDV: positive normalised operands (divisor hi >= HALF).      */
-agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv);
+/* GENDDV/MAXDV: positive normalised operands (divisor hi >= HALF); the
+ * minor words may disagree in sign with the major words.             */
+agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv);
+
+/* TPAGREE (p.1141): the TP MPAC with its three words made to agree. */
+agc_w3_t agc_w_tpagree(agc_w3_t m);
 
 /* ---- shifts (GENSHIFT family, pp.1152-1161) ----------------------------- */
 /* MPACSHR / MPACSRND: TP right shift by n in 1..14 (round = MPACSRND).     */
