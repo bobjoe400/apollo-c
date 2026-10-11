@@ -337,3 +337,8 @@
             and agent restoring them. Finding: ll_landjunk overwrote the
             lat/long status unchecked. 3,964 functions after collapse (from
             4,140).
+2026-10-10  collapse lane COMPLETE: 7 postconditions restored; ll_landjunk
+            asserts the LAT-LONG status (LANDJUNK p.791 has no failure exit).
+            Oracle finding to carry into review: tests/oracle/dsky fails
+            64/1544 checks on pre-collapse source too -> genuine DSKY
+            conversion mismatch vs yaAGC (io-pinball review).
