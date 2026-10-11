@@ -314,3 +314,8 @@
             desktop). Sim agent stopped mid-way through tools/sim_client.py.
             collapse phase 2 and oracle-cases continue (command-line only).
             Sim resumes headless-first on user go.
+2026-10-10  collapse DONE: 153 helpers merged (150 by tools/inline_one.py),
+            176 kept with reasons; entry_step_a/b re-split into five
+            per-section dispatchers of REENTRY_CONTROL. make/test unchanged;
+            2 hard violations remain in src/sim (paused lane). Behaviour
+            change only on assertion-failure paths (caller's failure value).
