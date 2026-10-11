@@ -875,3 +875,24 @@ src/programs/rendz_flags_lm.c.
 | as_keepvr1, as_ascterm1, as_flash00 (ascent.c) | as_keepvr_radial_thrust, as_ascterm_display, as_flash_or_terminate | KEEPVR1 UNFC/2 = UNIT/R/; ASCTERM1 N63 display |
 | ll_redes1 (lunar_landing.c), ld_ddoubl2 (displays.c), fc_word1, fc_day2max (findcduw.c) | ll_redesignated_site, ld_quadruple_high, fc_ones_word, fc_day_half_max | REDES1 new LANDTEMP; DDOUBL twice; DAY/2MAX |
 | agc_lm_massmult, agc_lm_throttle_whatout | static thr_massmult, thr_whatout | only used inside THROTTLE_CONTROL_ROUTINES |
+
+## review-imu (2026-10-11, applied)
+
+| old | new | AGC comment used |
+|---|---|---|
+| agc_task_imuzero2 / AGC_TASK_IMUZERO2 | agc_task_imu_zero_release / AGC_TASK_IMU_ZERO_RELEASE | IMUZERO2 "REMOVE ZERO DISCRETE", wait 10 s |
+| agc_task_imuzero3 / AGC_TASK_IMUZERO3 | agc_task_imu_zero_done / AGC_TASK_IMU_ZERO_DONE | IMUZERO3: remove fail inhibits, ENDIMU |
+| agc_task_coars / AGC_TASK_COARS | agc_task_coarse_align_commands / AGC_TASK_COARSE_ALIGN_COMMANDS | COARS: error counters on, COMMAND = THETAD - THETAA |
+| agc_task_coars2 / AGC_TASK_COARS2 | agc_task_coarse_align_pulses / AGC_TASK_COARSE_ALIGN_PULSES | COARS2: up to 192 pulses per CDU every 600 ms |
+| agc_task_chkcors / AGC_TASK_CHKCORS | agc_task_coarse_align_check / AGC_TASK_COARSE_ALIGN_CHECK | CHKCORS "GIMBALS ARE WITHIN 2 DEGREES OF THETAD" |
+| agc_task_8192aug / AGC_TASK_8192AUG | agc_task_gyro_augment / AGC_TASK_GYRO_AUGMENT | 8192AUG "ADD 8192 PULSES TO GYROCMD" |
+| agc_job_gcomp1 / AGC_JOB_GCOMP1 | agc_job_gyro_command_pulsed / AGC_JOB_GYRO_COMMAND_PULSED | GCOMP1: good IMUSTALL return of 1/GYRO (stem gyro_command_pulse) |
+| agc_job_kalcman3 / AGC_JOB_KALCMAN3 | agc_job_kalcmanu_start / AGC_JOB_KALCMANU_START | KALCMAN3: set up and start KALCMANU |
+| agc_imu_vecpnt1 | agc_imu_vecpoint_from_cdus | VECPNT1 (LM): VECPOINT from given CDUs (caller src/lm/navigation/tracking_attitude.c) |
+| agc_imu_pipuse1 | agc_imu_pipa_fail_enable | PIPUSE1 "IF PIPA FAILS FROM NOW ON (UNTIL PIPFREE), LIGHT ISS WARNING" |
+| agc_imu_fin20 | (removed; agc_imu_fine) | IMUFIN20 = IMUFINE (caller src/csm/alignment/imu_orientation_determination.c) |
+| DSP11_NOATT, DSP11_GLOCK, DSP11_CHANGED, dsp11_write | ISS_LAMP_NO_ATT, ISS_LAMP_GIMBAL_LOCK, ISS_LAMPS_CHANGED, iss_lamps_write | DSPTAB +11D ISS lamp word |
+| pfailok2, nbd3, drftsub2 (compensation/mode) | fail_inhibit_remove, bias_drift_compensate, torque_needed_check | PFAILOK2 clear inhibit + SETISSW; NBD3 bias drift over DELTAT; DRFTSUB2 "COMMANDS GREATER THAN 2 PULSES" |
+| aug3, strtgyr2 (gyro.c) | augment_schedule, gyro_next | AUG3 DT to 8192AUG; STRTGYR2 next gyro by phase |
+| gimlock1, endmanu1, newangl1, kalcman3, nogom2 | gimbal_lock_alarm, maneuver_return, steering_update, kalcmanu_start, nogo_zero_error | GIMLOCK1 alarm 401; ENDMANU1 return to user; NEWANGL +1; KALCMAN3; NOGOM2 ZEROEROR + NOGO |
+| annnnnn (prelaunch_gyrocompass.c) | torquing_cycle_start | ANNNNNN: LENGTHOT = 9, SLEEPIE +1 |
