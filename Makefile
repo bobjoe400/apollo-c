@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph clean
+.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -125,6 +125,24 @@ $(CG_DIR)/src/%.ci: src/%.c
 $(CG_DIR)/tests/%.ci: tests/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -DAGC_HOST_DEBUG -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
+
+# Boundary-check discipline (docs/modules/status-handling-2.md): Frama-C EVA
+# proves or refutes every AGC_ASSERT, one analysis per entry point (the sim
+# harness and each test main, with the whole library), two at a time, 60 min
+# each; it runs detached.  Watch tools/prove/progress.log (one line per run)
+# and tools/prove/summary.txt (done/total, verdicts, ETA).  When it has
+# finished, `make prove-classify` merges the verdicts with the libclang
+# call-site classification into docs/overview/guards.tsv: a guard left in
+# src/ must be FALLIBLE (classified GUARANTEED means it is dead code).
+prove:
+	@mkdir -p $(BUILD)/prove
+	nohup setsid python3 -I tools/prove/eva_run.py > $(BUILD)/prove/run.txt 2>&1 < /dev/null &
+	@echo "EVA started in the background: tail -f tools/prove/progress.log"
+
+prove-classify:
+	python3 -I tools/prove/eva_run.py --merge-only
+	python3 -I tools/prove/guards.py index
+	python3 -I tools/prove/guards.py classify
 
 clean:
 	rm -rf $(BUILD)

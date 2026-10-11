@@ -23,7 +23,7 @@ reported as information only.
 4. One-line functions classified (PLAIN / NAMED / ACCESSOR).
 
 ## Progress
-- DONE EVA harness: tools/prove/eva_assert.h (shim), tools/prove/eva_run.py. First run per test main at precision 1 / 2400 s: 37 mains, sim/exec/io_dsky timed out (~40 min); lead capped EVA at 120 s per main, precision 0, no sim (`make prove` default). Verdicts: build/prove/eva_verdicts.tsv
+- DONE EVA harness: tools/prove/eva_assert.h (shim), tools/prove/eva_run.py; `make prove` runs it detached on a snapshot (build/prove/tree), 2 runs at a time, precision 1, 60 min per entry point (sim + 34 test mains); progress in tools/prove/progress.log, summary.txt, runs/<entry>.log; `make prove-classify` folds the verdicts in. A first exploratory run (precision 1, 2400 s, 7 at a time) is kept in build/prove_long and used until the full run finishes
 - PARTIAL libclang classifier tools/prove/guards.py (index: call sites with established facts, static-variable writes, predicates, enums, type maps; classify: param facts over call sites (fixpoint), module invariants, ranges, EVA VALID)
 - TODO classification
 - TODO deletion of guaranteed guards

@@ -24,6 +24,7 @@ Everything else is FALLIBLE (or UNCALLED when the function has no caller).
 The why column names the evidence.
 """
 import collections
+import glob
 import os
 import pickle
 import re
@@ -392,6 +393,14 @@ def lit_val(t):
 
 
 ENUMS = {}
+ENUM_TYPES = {}
+NEG = {'<': '>=', '<=': '>', '>': '<=', '>=': '<', '==': '!=', '!=': '=='}
+
+
+def negate(t):
+    if isinstance(t, tuple) and t and t[0] == 'bin' and t[1] in NEG:
+        return ('bin', NEG[t[1]], t[2], t[3])
+    return ('un', '!', t)
 
 
 def ev(t):
@@ -430,28 +439,54 @@ def ev(t):
     return None
 
 
-def rng(t, types):
-    """Interval of an expression (types: canon -> C type of call args)."""
+WORD_RANGE = {
+    'agc_sp_t': (-0x3FFF, 0x3FFF), 'agc_dp_t': (-0x0FFFFFFF, 0x0FFFFFFF),
+    'agc_tp_t': (-0x3FFFFFFFFFF, 0x3FFFFFFFFFF), 'agc_ovf_t': (-1, 1),
+}
+C_RANGE = dict(TYPE_RANGE)
+C_RANGE.update({'uint16_t': (0, 65535), 'int16_t': (-32768, 32767), 'uint8_t': (0, 255),
+                'int8_t': (-128, 127), 'uint32_t': (0, 2 ** 32 - 1), 'int32_t': (-2 ** 31, 2 ** 31 - 1),
+                'bool': (0, 1), 'size_t': (0, 2 ** 64 - 1), 'unsigned long': (0, 2 ** 64 - 1)})
+ATOMS = ('param', 'ref', 'mem', 'idx', 'call')
+USED_INV = [False]
+
+
+def type_range(t, types, inv):
+    ty = types.get(t)
+    if ty is None:
+        return None
+    ty = ty.replace('const ', '').strip()
+    if inv and t[0] in ATOMS + ('un',):
+        if ty in WORD_RANGE:
+            USED_INV[0] = True
+            return WORD_RANGE[ty]
+        if ty in ENUM_TYPES:
+            USED_INV[0] = True
+            return ENUM_TYPES[ty]
+    return C_RANGE.get(ty)
+
+
+def rng(t, types, inv=False):
+    """Interval of an expression; types: canon -> declared C type.  With inv,
+    an atom of a word type (agc_sp_t ...) or an enum type takes the type's
+    documented range (the type invariant)."""
     v = ev(t)
     if v is not None:
         return (v, v)
     if not isinstance(t, tuple) or not t:
         return None
-    base = None
-    ty = types.get(t)
-    if ty is not None:
-        ty = ty.replace('const ', '')
-        base = TYPE_RANGE.get(ty)
+    base = type_range(t, types, inv) if t[0] != 'cast' else None
     r = None
     if t[0] == 'cast':
-        inner = rng(t[2], types)
-        tr = TYPE_RANGE.get(t[1].replace('const ', ''))
-        if inner and tr and tr[0] <= inner[0] and inner[1] <= tr[1]:
+        inner = rng(t[2], types, inv)
+        ty = t[1].replace('const ', '')
+        tr = C_RANGE.get(ty) or (ENUM_TYPES.get(ty) if inv else None)
+        if inner and (tr is None or (tr[0] <= inner[0] and inner[1] <= tr[1])):
             r = inner
         else:
             r = tr
     elif t[0] == 'bin':
-        a, b = rng(t[2], types), rng(t[3], types)
+        a, b = rng(t[2], types, inv), rng(t[3], types, inv)
         if t[1] == '&':
             for x in (a, b):
                 if x and x[0] >= 0:
@@ -461,14 +496,25 @@ def rng(t, types):
                 r = (a[0] + b[0], a[1] + b[1])
             elif t[1] == '-':
                 r = (a[0] - b[1], a[1] - b[0])
+            elif t[1] == '*':
+                c = [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]]
+                r = (min(c), max(c))
             elif t[1] == '>>' and b[0] == b[1] and 0 <= b[0] < 64:
                 r = (a[0] >> b[0], a[1] >> b[0])
             elif t[1] == '%' and b[0] == b[1] and b[0] > 0:
                 r = (0, b[0] - 1) if a[0] >= 0 else (-(b[0] - 1), b[0] - 1)
-            elif t[1] in ('<', '<=', '>', '>=', '==', '!=', '&&', '||'):
-                r = (0, 1)
+            elif t[1] == '|' and a[0] >= 0 and b[0] >= 0:
+                r = (0, (1 << max(a[1], b[1]).bit_length()) - 1)
+        if t[1] in ('<', '<=', '>', '>=', '==', '!=', '&&', '||'):
+            r = (0, 1)
     elif t[0] == 'un' and t[1] == '!':
         r = (0, 1)
+    elif t[0] == 'un' and t[1] == '-':
+        a = rng(t[2], types, inv)
+        r = (-a[1], -a[0]) if a else None
+    elif t[0] == '?:' and len(t) == 4:
+        a, b = rng(t[2], types, inv), rng(t[3], types, inv)
+        r = (min(a[0], b[0]), max(a[1], b[1])) if a and b else None
     if r is None:
         return base
     if base is not None:
@@ -476,10 +522,10 @@ def rng(t, types):
     return r
 
 
-def range_holds(g, types):
-    if g[0] != 'bin' or g[1] not in ('<', '<=', '>', '>=', '==', '!='):
+def range_holds(g, types, inv=False):
+    if not isinstance(g, tuple) or g[0] != 'bin' or g[1] not in ('<', '<=', '>', '>=', '==', '!='):
         return False
-    a, b = rng(g[2], types), rng(g[3], types)
+    a, b = rng(g[2], types, inv), rng(g[3], types, inv)
     if not a or not b:
         return False
     op = g[1]
@@ -567,6 +613,8 @@ class Classifier:
     def __init__(self, data):
         funcs = data['funcs']
         self.globals = data['globals']
+        ENUMS.update(data.get('enum_consts', {}))
+        ENUM_TYPES.update(data.get('enum_types', {}))
         self.funcs = {f['usr']: f for f in funcs}
         self.callers = collections.defaultdict(list)
         self.nonnull_ret = set()
@@ -658,6 +706,8 @@ class Classifier:
             return 'addr'
         if range_holds(g, types):
             return 'range'
+        if g[0] == 'un' and g[1] == '!' and range_holds(negate(g[2]), types):
+            return 'range'
         # a range fact implied by a stronger established one: x < 3 from x <= 1
         if g[0] == 'bin' and g[1] in ('<', '<=', '>', '>=') and ev(g[3]) is not None:
             for e in est:
@@ -671,13 +721,17 @@ class Classifier:
                         return 'est'
         if only_params(g) and has(g, ('param',)) and depth < 40:
             r = self.holds(fn, g, depth + 1)
-            return ('caller:' + r) if r else None
+            if r:
+                return 'caller:' + r
+        if range_holds(g, types, inv=True):
+            return 'type'
         return None
 
     def site(self, caller, site, fact, depth):
         g = cgast.subst(fact, site['args'])
         ginfo = {a: i for a, i in zip(site['args'], site['info'])}
-        types = {a: t for a, t in zip(site['args'], site.get('types', []))}
+        types = dict(site.get('tmap', {}))
+        types.update({a: t for a, t in zip(site['args'], site.get('types', []))})
         est = self.norm(site['est'], caller['file'])
         g = self.expand(g, caller['file'])
         return self.fact_at(caller, est, g, ginfo, types, depth)
@@ -744,7 +798,7 @@ class Classifier:
                     return None
                 est = self.norm(w['est'], wf['file'])
                 t = self.expand(t, wf['file'])
-                if not self.fact_at(wf, est, t, {}, {}, 0):
+                if not self.fact_at(wf, est, t, {}, w.get('tmap', {}), 0):
                     return None
         return 'invariant'
 
@@ -759,15 +813,30 @@ class Classifier:
                                for x in t[1:]])
 
 
+EVA_RANK = {'INVALID': 3, 'UNKNOWN': 2, 'VALID': 1, 'DEAD': 0}
+
+
 def load_eva():
-    path = os.path.join(OUT, 'eva_verdicts.tsv')
+    """Merged EVA verdicts of build/prove (make prove) and any earlier run
+    kept in build/prove_*/ on the same tree: the worst verdict wins, and a
+    site reached by any run is not DEAD."""
     v = {}
-    if os.path.exists(path):
+    paths = [os.path.join(OUT, 'eva_verdicts.tsv')]
+    paths += sorted(glob.glob(os.path.join(ROOT, 'build', 'prove_*', 'eva_verdicts.tsv')))
+    for path in paths:
+        if not os.path.exists(path):
+            continue
         with open(path) as fh:
             next(fh)
             for ln in fh:
                 f, line, verdict, mains = ln.rstrip('\n').split('\t')
-                v[(f, int(line))] = (verdict, mains)
+                key = (f, int(line))
+                old = v.get(key)
+                if old is None or EVA_RANK[verdict] > EVA_RANK[old[0]]:
+                    ms = mains if old is None or old[1] == '-' else old[1] + ',' + mains
+                    v[key] = (verdict, ms)
+                elif mains != '-':
+                    v[key] = (old[0], old[1] + ',' + mains if old[1] != '-' else mains)
     return v
 
 
@@ -786,7 +855,13 @@ def classify_guard(cl, f, g, eva):
             texts.append(text)
     for fact in cl.norm([x for x, _ in g['facts']], f['file']):
         r = None
-        if only_params(fact) and has(fact, ('param',)):
+        if range_holds(fact, g.get('tmap', {})):
+            r = 'range'
+            whys.append('range of the C type')
+        elif range_holds(fact, g.get('tmap', {}), inv=True):
+            r = 'type'
+            whys.append('word/enum type invariant')
+        elif only_params(fact) and has(fact, ('param',)):
             r = cl.holds(f, fact)
             if r:
                 whys.append(f'param fact at every call site ({r})')
