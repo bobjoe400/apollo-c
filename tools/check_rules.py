@@ -14,6 +14,7 @@ import re
 import sys
 
 MAX_FUNC_LINES = 60
+STDLIB_VOID_OK = {'fprintf', 'printf', 'snprintf', 'fflush', 'fclose', 'memset', 'memcpy', 'memmove', 'nanosleep', 'setvbuf', 'fputs', 'puts'}
 FUNC_RE = re.compile(r'^[A-Za-z_][\w\s\*]*\s\**([A-Za-z_]\w*)\s*\([^;]*\)\s*\{?\s*$')
 # a statement such as `if (x)` inside a function whose multi-line signature
 # FUNC_RE did not recognise is not a function definition
@@ -46,8 +47,10 @@ def check_file(path):
             HARD.append(f'{path}:{i}: rule 8: token pasting / variadic macro')
         if s.startswith(('#if', '#ifdef', '#ifndef')):
             ifs += 1
-        if re.search(r'\(\s*void\s*\)\s*(agc_|AGC_ASSERT)', s) and not s.startswith(('/*', '*', '//')) and '/src/' in '/' + path:
-            HARD.append(f'{path}:{i}: rule 7: (void)-cast of an agc_ call or AGC_ASSERT; check it, handle it as the AGC does, or make the callee void')
+        vm = re.search(r'\(\s*void\s*\)\s*([A-Za-z_][A-Za-z_0-9]*)\s*\(', s)
+        if vm and not s.startswith(('/*', '*', '//')) and '/src/' in '/' + path:
+            if vm.group(1) not in STDLIB_VOID_OK or '/*' not in s:
+                HARD.append(f'{path}:{i}: rule 7: (void)-cast of {vm.group(1)}(); check the result, handle it as the AGC does, or make the callee void (stdlib calls need a justifying comment)')
         if re.search(r'\(\s*\*\s*\w+\s*\)\s*\(', s) and not s.startswith(('/*', '*', '//')):
             HARD.append(f'{path}:{i}: rule 9: function pointer')
         if re.search(r'\*\*\s*[A-Za-z_]', s) and not s.startswith(('/*', '*', '//')):
