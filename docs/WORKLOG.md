@@ -375,3 +375,8 @@
 2026-10-11  Cutoff killed all 16 remaining agents again. User: cap at 2-3
             concurrent lanes. Policy recorded in PLAN.md with a queue order.
             Relaunching 3: review-io-dsky, review-guid-entry, review-nav-aux.
+2026-10-11  review-nav-aux DONE (143 + 484 checks; 0 style findings). Tree
+            build broken by review-imu's half-added gyrocompassing ids in
+            src/csm/prelaunch_align.c -> review-imu moved to the front of
+            the queue. Requests to core-numeric: TP-input ASIN/ACOS,
+            word-level MPAC (residual 1-4 LSB diffs).
