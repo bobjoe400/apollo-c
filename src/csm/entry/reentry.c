@@ -202,9 +202,7 @@ agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
     agc_dp_t p;         /* POLY result, B5 */
 
     /* POLY coefficients a0..a3 (CSM_GEOMETRY p. 291)                     */
-    static const agc_dp_t log_coef[4] = {
-        0, AGC_ENTRY_LOG_C1, AGC_ENTRY_LOG_C2, AGC_ENTRY_LOG_C3
-    };
+    static const agc_dp_t log_coef[4] = { 0, AGC_ENTRY_LOG_C1, AGC_ENTRY_LOG_C2, AGC_ENTRY_LOG_C3 };
 
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(x > 0))
     {
@@ -685,11 +683,7 @@ agc_status_t agc_entry_startent(void)
      * 011774 (ENTRYDSP GONEPAST RELVELSW EGSW NOSWITCH HIND INRLSW LATSW
      * .05GSW), then set ENTRYSW = 011010 (ENTRYDSP, GONEPAST, LATSW).
      * INHINT'ed in the AGC.                                              */
-    static const agc_flag_id_t clr[] = {
-        AGC_FLAG_ENTRYDSP, AGC_FLAG_GONEPAST, AGC_FLAG_RELVELSW,
-        AGC_FLAG_EGSW, AGC_FLAG_NOSWITCH, AGC_FLAG_HIND,
-        AGC_FLAG_INRLSW, AGC_FLAG_LATSW, AGC_FLAG__05GSW
-    };
+    static const agc_flag_id_t clr[] = { AGC_FLAG_ENTRYDSP, AGC_FLAG_GONEPAST, AGC_FLAG_RELVELSW, AGC_FLAG_EGSW, AGC_FLAG_NOSWITCH, AGC_FLAG_HIND, AGC_FLAG_INRLSW, AGC_FLAG_LATSW, AGC_FLAG__05GSW };
     unsigned int               i; /* loop index */
 
     agc_inhint();
@@ -2864,9 +2858,7 @@ static entry_step_t step_lateral_min_ld(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t step_steeroff(entry_pass_t *p)
 {
-    agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
 
     if (!AGC_ASSERT(p->es != NULL))
     {
@@ -3209,10 +3201,7 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
  **********************************************************************/
 static entry_step_t entry_first_step(agc_entry_goto_t g)
 {
-    static const entry_step_t map[AGC_ENTRY_GOTO_COUNT] = {
-        ST_INITROLL, ST_HUNTEST, ST_UPCONTRL, ST_KEPLER_TEST,
-        ST_PREFINAL, ST_FINAL_PREDICT, ST_ENDEXIT, ST_FINAL_PHASE_LATLONG
-    };
+    static const entry_step_t map[AGC_ENTRY_GOTO_COUNT] = { ST_INITROLL, ST_HUNTEST, ST_UPCONTRL, ST_KEPLER_TEST, ST_PREFINAL, ST_FINAL_PREDICT, ST_ENDEXIT, ST_FINAL_PHASE_LATLONG };
 
     if (!AGC_ASSERT(g >= AGC_ENTRY_GOTO_INITROLL && g < AGC_ENTRY_GOTO_COUNT))
     {
@@ -3352,9 +3341,7 @@ agc_status_t agc_entry_reestablish_sequencer(bool *display)
 {
     entry_pass_t    pass; /* state of this pass */
     entry_step_t    last; /* terminal step */
-    agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
 
     if (!AGC_ASSERT(display != NULL))
     {

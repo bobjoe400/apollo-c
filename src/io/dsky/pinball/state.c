@@ -82,12 +82,10 @@ bool pin_invariants(void)
 
 /* RELTAB (T4RUPT_PROGRAM p. 133), low 5 bits: relay code of digit 0-9.
  * Bits 12-15 of RELTAB give the relay word number = index + 1.           */
-static const uint16_t k_relay_code[10] = {025, 003, 031, 033, 017,
-                                          036, 034, 023, 035, 037};
+static const uint16_t k_relay_code[10] = {025, 003, 031, 033, 017, 036, 034, 023, 035, 037};
 
 /* INRELTAB (p. 318): DSPCOUNT (decimal 0..19) -> INREL. 15 is CCSHOLE.   */
-static const int8_t k_inreltab[20] = {4, 4, 4, 4, 4, 3, 3, 3, 3, 3,
-                                      2, 2, 2, 2, 2, -1, 1, 1, 0, 0};
+static const int8_t k_inreltab[20] = {4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, -1, 1, 1, 0, 0};
 
 /* DSMSK (p. 363): right char, left char, sign (bit 11), left char + sign. */
 static const uint16_t k_dsmsk[4] = {037, 01740, 02000, 03740};

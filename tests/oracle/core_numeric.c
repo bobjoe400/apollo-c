@@ -63,10 +63,7 @@ typedef struct
     agc_vec_t     r;           /* vector result, 2^-28 units            */
 } result_t;
 
-static const char *const names[N_OUTPUTS] = {
-    "MPAC", "MPAC+1", "MPAC+2", "MPAC+3", "MPAC+4", "MPAC+5", "MPAC+6",
-    "OVFIND", "VAC1+30", "VAC1+34", "VAC1+35", "VAC1+36", "VAC1+37", "FAILREG"
-};
+static const char *const names[N_OUTPUTS] = { "MPAC", "MPAC+1", "MPAC+2", "MPAC+3", "MPAC+4", "MPAC+5", "MPAC+6", "OVFIND", "VAC1+30", "VAC1+34", "VAC1+35", "VAC1+36", "VAC1+37", "FAILREG" };
 
 static long long int word_value(const char *oct);
 static void          parse_tag(ocase_t *c, const char *tag);

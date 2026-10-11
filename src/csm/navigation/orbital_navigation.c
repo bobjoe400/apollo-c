@@ -292,8 +292,7 @@ static agc_status_t on_site_from_rls(void)
         st = agc_planet_rp_to_r(&ip, &pad, true, pad.rls, t, &r);
     }
 
-    agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG),
-                             agc_flag_test(AGC_FLAG_ERADFLAG)};
+    agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_latlong_t     ll; /* LAT LONG ALT */
 
     if (st == AGC_STATUS_OK)

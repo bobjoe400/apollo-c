@@ -93,8 +93,7 @@ static void ll_restart_here(agc_job_id_t job)
         return;
     }
 
-    const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0,
-                               false, 0U};
+    const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0, false, 0U};
 
     agc_phase_change_var(04024, &v);
 
@@ -1058,8 +1057,7 @@ static agc_vec_t ll_rod_pipas(void)
 
     l_pipas->rodcount      = 0;
     l_pipas->vdgvert       = (agc_dp_t) (l_pipas->vdgvert + agc_sp_mul(clicks, l_pipas->rodscal1));
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
-                              agc_erase_pipaz()};
+    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
     agc_sp_t       rupt[3]; /* RUPTREG1..3: old OLDPIPA, counts 2^14 */
 
     for (int i = 0; i < 3; i++)

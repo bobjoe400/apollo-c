@@ -313,9 +313,7 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 
     /* UPPART2: protect group 6 (a restart restores the old mode and exits),
      * select the P27 downlist, MM 27, then ask for II or the first word.     */
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE,
-                         AGC_TASK_NONE, 030,
-                         false, 0};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE, AGC_TASK_NONE, 030, false, 0};
 
     agc_phase_change_var(UP_PHASE_EXIT, &v);
     agc_status_t st_uppart2 = AGC_STATUS_OK;
@@ -359,9 +357,7 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 
     agc_inhint(); /* UPSTORE             */
     agc_flag_invert((agc_flag_id_t) AGC_FLAG_VERIFLAG);
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_EXECUTE,
-                         AGC_TASK_NONE, 030,
-                         false, 0};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_EXECUTE, AGC_TASK_NONE, 030, false, 0};
 
     agc_phase_change_var(UP_PHASE_STORE, &v);
     agc_relint();

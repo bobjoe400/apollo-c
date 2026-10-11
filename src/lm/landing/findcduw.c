@@ -711,8 +711,7 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
     }
 
     cdu[2]                 = limited;
-    const uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(),
-                              agc_erase_cduzd()};
+    const uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(), agc_erase_cduzd()};
 
     agc_inhint();   /* RELINT after TCQCDUW         */
     agc_sp_t l = 0; /* last -DELGMB, 1's, scale pi */
@@ -783,10 +782,8 @@ static void fc_rates(const agc_cdutrig_t *trig)
  **********************************************************************/
 static void fc_transfer(void)
 {
-    const agc_sp_t omega[3] = {agc_erase_omegapd(), agc_erase_omegaqd(),
-                               agc_erase_omegard()};
-    const agc_sp_t jacc[3]  = {agc_erase_1jacc(), agc_erase_1jaccq(),
-                               agc_erase_1jaccr()};
+    const agc_sp_t omega[3] = {agc_erase_omegapd(), agc_erase_omegaqd(), agc_erase_omegard()};
+    const agc_sp_t jacc[3]  = {agc_erase_1jacc(), agc_erase_1jaccq(), agc_erase_1jaccr()};
     agc_sp_t       lag[3]; /* DELPEROR..DELREROR, 1's, scale pi */
 
     for (int i = 2; i >= 0; i--)

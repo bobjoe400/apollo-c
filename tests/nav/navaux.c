@@ -299,12 +299,10 @@ static void test_latlong_round_trip(void)
     agc_navaux_padload_t pad = zero_pad(); /* AZO set below */
 
     pad.azo                 = agc_dp_from_double(0.1, 0);
-    agc_latlong_opt_t opt   = {false, true};               /* earth, Fischer ellipsoid */
-    agc_latlong_t     in    = {agc_dp_from_double(28.608 / 360.0, 0),
-                               agc_dp_from_double(-80.604 / 360.0, 0),
-                        agc_dp_from_double(150.0, 29), 0}; /* pad */
-    agc_vec_t         r;                                   /* R, scale 2^29 m     */
-    agc_dp_t          eradm = 0;                           /* ERADM, scale 2^29 m */
+    agc_latlong_opt_t opt   = {false, true};                                                                                                     /* earth, Fischer ellipsoid */
+    agc_latlong_t     in    = {agc_dp_from_double(28.608 / 360.0, 0), agc_dp_from_double(-80.604 / 360.0, 0), agc_dp_from_double(150.0, 29), 0}; /* pad */
+    agc_vec_t         r;                                                                                                                         /* R, scale 2^29 m     */
+    agc_dp_t          eradm = 0;                                                                                                                 /* ERADM, scale 2^29 m */
 
     CHECK(agc_latlong_to_r(&ip, &pad, opt, &in, 360000, &r, &eradm) == AGC_STATUS_OK);
     agc_latlong_t out; /* LAT-LONG of R */

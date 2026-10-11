@@ -149,9 +149,8 @@ static agc_status_t optdata_load(agc_sp_t run)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    r->run              = run;                    /* LXCH RUN                                         */
-    const uint16_t w[3] = {r->tazel[run], r->tazel[run + 1],
-                           (run == 0) ? 1u : 2u}; /* BIT1 / TWO       */
+    r->run              = run;                                                      /* LXCH RUN                                         */
+    const uint16_t w[3] = {r->tazel[run], r->tazel[run + 1], (run == 0) ? 1u : 2u}; /* BIT1 / TWO       */
 
     for (int i = 0; i < 3; i++)
     {

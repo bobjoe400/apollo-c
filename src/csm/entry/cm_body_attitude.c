@@ -352,9 +352,7 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
 static void entry_cm_atup(const agc_dp_t angles[4])
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
-    agc_phase_var_t    v  = {
-            AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U
-        };
+    agc_phase_var_t    v  = { AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U };
 
     if (!AGC_ASSERT(angles != NULL))
     {

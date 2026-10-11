@@ -1032,8 +1032,7 @@ static agc_status_t dif_rest(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    static const agc_job_id_t nvcadr[3] = {AGC_JOB_REDOPRIO, AGC_JOB_MARKPLAY,
-                                           AGC_JOB_PLAYJUM1};
+    static const agc_job_id_t nvcadr[3] = {AGC_JOB_REDOPRIO, AGC_JOB_MARKPLAY, AGC_JOB_PLAYJUM1};
 
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
@@ -2027,8 +2026,7 @@ agc_status_t agc_dsky_initdsp(void)
     }
 
     agc_exec_prio_change(g_restreg);
-    dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags,
-                    g_cls[DIF_NORMC].cadr};
+    dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags, g_cls[DIF_NORMC].cadr};
 
     rq.flags = (uint16_t) (rq.flags & ~DIF_SECOND);
 

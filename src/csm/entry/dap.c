@@ -1961,10 +1961,7 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
         AGC_FLAG_GYMDIFSW, AGC_FLAG_CM_DSTBY, AGC_FLAG__05GSW, AGC_FLAG_LATSW,
         AGC_FLAG_GAMDIFSW, AGC_FLAG_CMDAPARM, AGC_FLAG_ENTRYDSP
     };
-    agc_phase_var_t            v     =
-                   {AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_REQUEST,
-                    AGC_TASK_NONE, (int16_t) AGC_ENTRY_PRIO13,
-                    false, 0U};
+    agc_phase_var_t            v     = {AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_REQUEST, AGC_TASK_NONE, (int16_t) AGC_ENTRY_PRIO13, false, 0U};
     unsigned int               i; /* loop index */
 
     if (!AGC_ASSERT(ctx != NULL))

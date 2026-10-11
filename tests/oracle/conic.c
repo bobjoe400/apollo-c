@@ -485,9 +485,7 @@ static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
     }
 
     (void) agc_conic_kepler(&ip, &in, &o);
-    agc_dp_t v[10] = {in.xkepnew, o.rcv.c[0], o.rcv.c[1], o.rcv.c[2],
-                      o.vcv.c[0], o.vcv.c[1], o.vcv.c[2], o.tc,
-                      o.xprev, o.tau}; /* outputs in exp[] order */
+    agc_dp_t v[10] = {in.xkepnew, o.rcv.c[0], o.rcv.c[1], o.rcv.c[2], o.vcv.c[0], o.vcv.c[1], o.vcv.c[2], o.tc, o.xprev, o.tau}; /* outputs in exp[] order */
 
     memcpy(got, v, sizeof (v));
 
@@ -520,15 +518,13 @@ static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
     in.geomsgn     = (agc_sp_t) r->in[7];
     in.guessw      = (r->in[8] != 0);
     in.coga        = r->in[9];
-    in.normsw      = csm && (r->in[10] != 0);                                           /* C: in[10] NORMSW */
-    in.un          = csm ? vec3(&r->in[11]) : agc_vec_zero();                           /* C: in[11..13] UN */
+    in.normsw      = csm && (r->in[10] != 0);                                                                                        /* C: in[10] NORMSW */
+    in.un          = csm ? vec3(&r->in[11]) : agc_vec_zero();                                                                        /* C: in[11..13] UN */
     in.vtargtag    = 0;
-    in.iterctr     = csm ? (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR : (agc_sp_t) r->in[10]; /* L: in[10] */
+    in.iterctr     = csm ? (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR : (agc_sp_t) r->in[10];                                              /* L: in[10] */
     in.body        = AGC_CONIC_EARTH;
     (void) agc_conic_lambert(&ip, &in, &o);
-    agc_dp_t v[10] = {o.vvec.c[0], o.vvec.c[1], o.vvec.c[2],
-                      o.vtarget.c[0], o.vtarget.c[1], o.vtarget.c[2],
-                      o.coga, o.p, o.r1a, 0};                                           /* outputs in exp[] order */
+    agc_dp_t v[10] = {o.vvec.c[0], o.vvec.c[1], o.vvec.c[2], o.vtarget.c[0], o.vtarget.c[1], o.vtarget.c[2], o.coga, o.p, o.r1a, 0}; /* outputs in exp[] order */
 
     memcpy(got, v, sizeof (v));
     *solnsw = o.solnsw;
@@ -577,10 +573,7 @@ static void run_time(const oracle_row_t *r, agc_dp_t got[10], agc_conic_time_out
         (void) agc_conic_timerad(&ip, &in, o);
     }
 
-    agc_dp_t v[10] = {
-        o->t, o->rnew.c[0], o->rnew.c[1], o->rnew.c[2], o->vnew.c[0],
-        o->vnew.c[1], o->vnew.c[2], o->csth, o->snth, 0
-    }; /* outputs in exp[] order */
+    agc_dp_t v[10] = { o->t, o->rnew.c[0], o->rnew.c[1], o->rnew.c[2], o->vnew.c[0], o->vnew.c[1], o->vnew.c[2], o->csth, o->snth, 0 }; /* outputs in exp[] order */
 
     memcpy(got, v, sizeof (v));
 }
@@ -678,8 +671,7 @@ static void check_row(const oracle_row_t *r)
 
         agc_interp_init(&ip);
         (void) agc_conic_apsides(&ip, vec3(&r->in[1]), vec3(&r->in[4]), (r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH, &o); /* moon row */
-        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p,
-                         o.r1a};                                                                                                 /* outputs in exp[] order */
+        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p, o.r1a};                                                                    /* outputs in exp[] order */
 
         memcpy(got, v, sizeof (v));
         n = 5;

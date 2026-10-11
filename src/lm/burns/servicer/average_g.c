@@ -63,8 +63,7 @@ static void gnufaze5(uint16_t phase, bool tbase)
  * group-5 type B phase is re-entered with the continuation job named.     */
 void agc_lm_serv_quikfaz5(agc_job_id_t resume)
 {
-    agc_phase_var_t v = {AGC_RESTART_JOB, resume, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO20, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, resume, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     if (!AGC_ASSERT(resume != AGC_JOB_NONE))
     {
@@ -781,9 +780,7 @@ agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_DRIFTFLG);
     agc_imu_pipfree();
     agc_chan_and(011, (uint16_t) ~(uint16_t) AGC_CH011_TESTCONN);
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change2(000005, 005022, &v); /* GROUP 5 OFF, 2 ON      */
 

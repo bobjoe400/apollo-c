@@ -85,8 +85,7 @@
 #define AS_PRIO17   017                    /* PRIO17: CUTOFF job priority                   */
 
 /* LOGSUB polynomial (p. 856), -LOG via ln(1 - u)/32. */
-static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954,
-                                       -497816, -7693572, 10350833, -11257160};
+static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954, -497816, -7693572, 10350833, -11257160};
 
 /* ======================================================================
  * Initialisation (P12.agc pp. 840-842)
@@ -471,8 +470,7 @@ static agc_status_t as_ascterm_display(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* ASCTERM3     */
     }
 
-    const agc_dsky_cont_t cont = {AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB,
-                                  AGC_JOB_ENDOFJOB};
+    const agc_dsky_cont_t cont = {AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB, AGC_JOB_ENDOFJOB};
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -702,9 +700,7 @@ static void as_engoff(agc_interp_t *ip)
         return;
     }
 
-    const agc_phase_var_t v =
-    {AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ASCENT_ENGINE_OFF,
-     a->engoffdt, false, 0U};
+    const agc_phase_var_t v = {AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ASCENT_ENGINE_OFF, a->engoffdt, false, 0U};
 
     agc_phase_change_var(047014, &v);
     agc_relint();
@@ -877,8 +873,7 @@ agc_status_t agc_lm_task_ascent_engine_off(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE,
-                               AS_PRIO17, false, 0U};
+    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE, AS_PRIO17, false, 0U};
 
     agc_phase_change_var(07024, &v);
 
@@ -1024,10 +1019,7 @@ agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_CUTOFF_TRIM_DISPLAY, AGC_TASK_NONE, 0, false,
-        0U
-    };
+    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_CUTOFF_TRIM_DISPLAY, AGC_TASK_NONE, 0, false, 0U };
 
     agc_phase_change_var(04024, &v);
 
@@ -1051,9 +1043,7 @@ agc_status_t agc_lm_job_termasc(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_TERMASC, AGC_TASK_NONE, 0, false, 0U
-    };
+    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_TERMASC, AGC_TASK_NONE, 0, false, 0U };
 
     agc_phase_change_var(04024, &v);
     agc_inhint();
@@ -1090,8 +1080,7 @@ static void as_restart_here(agc_job_id_t job)
         return;
     }
 
-    const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0,
-                               false, 0U};
+    const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0, false, 0U};
 
     agc_phase_change_var(04024, &v);
 

@@ -106,7 +106,7 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
 ## Open questions (lane notes) -- answers
 * io-pinball "DSPOUT lives here": yes; src/io/service/t4rupt.c calls
   agc_dsky_dspout() (DSPOUT and the T4RUPT DSPOUTSB path), no copy.
-* io-pinball "V37 UNIMPLEMENTED": closed; src/exec/change_program/v37.c
+* io-pinball "V37 UNIMPLEMENTED": closed; src/exec/change_program/sequence.c
   implements agc_change_program, which MMCHANG calls.
 * io-pinball "unwired data ids": reads are complete except N08 ALMCADR
   +0..+2 (the AGC alarm return address; no owner in C, NOT_FOUND by

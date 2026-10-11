@@ -852,10 +852,7 @@ static agc_status_t setpos(int pos)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const uint16_t cdu[3] = {
-        (uint16_t) ((uint16_t) g->lm.lrbeta[pos] & 077777U), 0U,
-        (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U)
-    };
+    const uint16_t cdu[3] = { (uint16_t) ((uint16_t) g->lm.lrbeta[pos] & 077777U), 0U, (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U) };
     agc_vec_t      y      = agc_vec_make(0, AGC_DP_HALF, 0);
 
     agc_guid_trg_smnb(&g->trig, cdu, &y);
@@ -960,8 +957,7 @@ static agc_status_t posgood(void)
 static agc_status_t posalarm(agc_job_ctx_t *ctx)
 {
     agc_prioalarm(AGC_ALARM_00523);
-    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_POSALARM_PRO,
-                            AGC_JOB_ENDOFJOB};
+    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_POSALARM_PRO, AGC_JOB_ENDOFJOB};
 
     if (!AGC_ASSERT(ctx != NULL))
     {

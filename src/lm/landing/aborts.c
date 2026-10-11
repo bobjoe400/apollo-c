@@ -537,11 +537,7 @@ static agc_status_t ab_upthrot(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_FLVR);
     agc_flag_set(AGC_FLAG_ROTFLAG);
     agc_lm_throtup();
-    const agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_ABORT_AUTO_CONTROL_CHECK,
-        AGC_TASK_NONE, 0,
-        false, 0U
-    };
+    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_ABORT_AUTO_CONTROL_CHECK, AGC_TASK_NONE, 0, false, 0U };
 
     agc_phase_change_var(04024, &v);
 
@@ -713,9 +709,7 @@ static agc_status_t ab_aps_abort_return(agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         a->tgo1                 = agc_dp_shl(ip, a->tgo, 1); /* OLDTIME      */
         agc_lm_powered_ascent_init(ip);
-        const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME,
-                                   AGC_TASK_NONE, 0,
-                                   false, 0U};
+        const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME, AGC_TASK_NONE, 0, false, 0U};
 
         agc_phase_change_var(04024, &v);
 

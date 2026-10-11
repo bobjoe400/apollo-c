@@ -177,8 +177,7 @@ static dvec_t tesseral(const ref_model_t *m, dvec_t r, double rr)
     const double r4   = rr * rr * rr * rr;
     const double g    = m->e22 / r4;
     const double q    = 5.0 * ((x * x) - (y * y));
-    double       a[3] = {g *((2.0 * x) - (q * x)), g *((-2.0 * y) - (q * y)),
-                         g *(-q * z)};
+    double       a[3] = {g *((2.0 * x) - (q * x)), g *((-2.0 * y) - (q * y)), g *(-q * z)};
     const double h    = m->e31 / (r4 * rr);
     const double w    = 5.0 * x * (1.0 - (7.0 * z * z));
 

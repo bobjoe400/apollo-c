@@ -253,10 +253,8 @@ static void thr_fweight(agc_lm_thr_t *t)
     /* DOUBLE (high word only), DXCH FWEIGHT                          */
     t->fweight.hi         = (agc_sp_t) (2 * agc_dp_high(first));
     t->fweight.lo         = agc_dp_low(first);
-    agc_sp_t       abspif = (agc_sp_t) ((pif < 0) ? -pif : pif); /* unscaled */
-    agc_lm_words_t second = {
-        agc_lm_dv(agc_sp_mul(abspif, pif), buf1), 0
-    };                                                           /* DV BUF +1, ZL */
+    agc_sp_t       abspif = (agc_sp_t) ((pif < 0) ? -pif : pif);             /* unscaled */
+    agc_lm_words_t second = { agc_lm_dv(agc_sp_mul(abspif, pif), buf1), 0 }; /* DV BUF +1, ZL */
 
     t->fweight = agc_lm_das(t->fweight, second); /* DAS FWEIGHT        */
 }
@@ -307,8 +305,7 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     /* DOPIF: PIF = FCODD - FP by DAS, "never equals +0".               */
     agc_lm_fastchng();
     t->fcold                = t->fcodd.hi;
-    agc_lm_words_t minus_fp = {(agc_sp_t) -t->fp.hi,
-                               (agc_sp_t) -t->fp.lo}; /* DCS FP        */
+    agc_lm_words_t minus_fp = {(agc_sp_t) -t->fp.hi, (agc_sp_t) -t->fp.lo}; /* DCS FP        */
 
     t->pif          = agc_lm_das(t->fcodd, minus_fp);
     agc_status_t st = thr_doit(t); /* DOIT status        */

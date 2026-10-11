@@ -487,8 +487,7 @@ agc_status_t agc_task_gyrocompassing_sample_restart(void)
         r->altim = (agc_sp_t) (r->altim + 1); /* CS A, TS ALTIM       */
     }
 
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
-                              agc_erase_pipaz()}; /* PIPA pulses B0  */
+    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()}; /* PIPA pulses B0  */
 
     agc_erase_set_pipax(0); /* CAF ZERO, XCH PIPAX                  */
     agc_erase_set_pipay(0);

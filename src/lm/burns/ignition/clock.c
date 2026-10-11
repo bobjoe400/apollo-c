@@ -44,8 +44,7 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
         return (sw);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, restart_job, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO13, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, restart_job, AGC_TASK_NONE, (int16_t) AGC_PRIO13, false, 0U};
 
     agc_phase_change2((uint16_t) 040036, (uint16_t) 005024, &v);
     agc_relint();
@@ -164,9 +163,7 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
              * DEVIATION: the AGC shows NVWORD +2 (the last V06 noun); the table's
              * countdown noun is the same noun in every case that reaches COMFAIL.     */
         {
-            const agc_dsky_cont_t c97 =
-            {AGC_JOB_STOPCLOK, AGC_JOB_CLOKJOB_ENGINE_FAIL,
-             AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN};
+            const agc_dsky_cont_t c97 = {AGC_JOB_STOPCLOK, AGC_JOB_CLOKJOB_ENGINE_FAIL, AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN};
 
             agc_dsky_set_nvword1((uint16_t) 077777U); /* CS ZERO                */
 
@@ -247,9 +244,7 @@ agc_status_t agc_job_clokjob_event_timer_proceed(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED,
-                         AGC_TASK_NONE, (int16_t) ctx->prio,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED, AGC_TASK_NONE, (int16_t) ctx->prio, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
     agc_guid_state()->lm.dispdex = 0;
@@ -351,8 +346,7 @@ static agc_status_t go_cutoff(void)
     }
 
     agc_lm_nullclok();
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO17, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE, (int16_t) AGC_PRIO17, false, 0U};
 
     agc_phase_change_var((uint16_t) 007024, &v);
     agc_relint();
@@ -499,8 +493,7 @@ agc_status_t agc_job_stage_alarm_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_STAGE_ALARM_PROCEED,
-                               AGC_JOB_STAGE_ALARM_DISPLAY};
+    const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_STAGE_ALARM_PROCEED, AGC_JOB_STAGE_ALARM_DISPLAY};
 
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
@@ -548,8 +541,7 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t re
         return (agc_exec_job_yield(ret_job)); /* GOBACK                 */
     }
 
-    const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE,
-                               ret_job};
+    const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE, ret_job};
 
     if (!AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {

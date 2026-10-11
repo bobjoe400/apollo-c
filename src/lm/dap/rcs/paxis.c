@@ -95,11 +95,7 @@ static const uint16_t jettab[PX_NTAB] = {
 };
 
 /* INDXYZ (pp.1440-1441): ROTINDEX for channel 31 bits 9-12 (>> 8).        */
-static const agc_sp_t indxyz[16] = {
-    -218, 4, 2, PX_BADINDEX, 5, 9,
-    10, PX_BADINDEX, 3, 8, 7, PX_BADINDEX,
-    PX_BADINDEX, PX_BADINDEX, PX_BADINDEX, PX_BADINDEX
-};
+static const agc_sp_t indxyz[16] = { -218, 4, 2, PX_BADINDEX, 5, 9, 10, PX_BADINDEX, 3, 8, 7, PX_BADINDEX, PX_BADINDEX, PX_BADINDEX, PX_BADINDEX, PX_BADINDEX };
 
 /**********************************************************************
  * SELECTP (p.1440): POLYTEMP = TYPEP(NUMBERT) & JETSALL(ROTINDEX); on a

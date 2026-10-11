@@ -82,8 +82,7 @@
  * 1..3 P,Q,R descent, 4..6 P,Q,R ascent. 1JACC(k) = A / (LEMMASS + C) + B.
  * A is 2DEC (major, minor word); B, C are DEC.                            */
 static const agc_sp_t inercona_hi[7] = {672, 97, 24, 17, 107, 58, 93};
-static const agc_sp_t inercona_lo[7] = {9547, 3854, 8881, 2038,
-                                        3657, 10307, 4937};
+static const agc_sp_t inercona_lo[7] = {9547, 3854, 8881, 2038, 3657, 10307, 4937};
 
 /* .0410511917 .0059347674 .0014979264 .0010451889 .0065443852 .0035784354 .0056946631 */
 static const agc_sp_t inerconb[7] = {2540, 49, 308, 350, 1, 2668, 153};

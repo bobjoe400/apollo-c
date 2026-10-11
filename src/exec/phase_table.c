@@ -583,8 +583,7 @@ agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
-                         (int16_t) prio, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, (int16_t) prio, false, 0U};
 
     agc_phase_change_var((uint16_t) (07020U | (uint16_t) group), &v);
 

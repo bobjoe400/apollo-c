@@ -44,10 +44,8 @@
 
 /* 5FAILTAB, 6FAILTAB (p.192): channel 5 / 6 jet bits for channel 32 bits
  * 8, 7, ..., 1 (index L - 1 in the AGC).                                 */
-static const uint16_t fail5[RM_NBITS] = {000040u, 000020u, 000100u, 000200u,
-                                         000010u, 000001u, 000004u, 000002u};
-static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u,
-                                         000001u, 000002u, 000040u, 000100u};
+static const uint16_t fail5[RM_NBITS] = {000040u, 000020u, 000100u, 000200u, 000010u, 000001u, 000004u, 000002u};
+static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u, 000001u, 000002u, 000040u, 000100u};
 
 /**********************************************************************
  * RCSMON (pp.191-192). Called from T4RUPT (RCSMONIT), exits by RESUME.

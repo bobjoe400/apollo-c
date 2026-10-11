@@ -295,9 +295,7 @@ static void test_calcga_gimbal_lock(void)
  **********************************************************************/
 static void test_pipa_zero_comp(void)
 {
-    agc_imu_comp_params_t p = {
-        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}
-    };
+    agc_imu_comp_params_t p = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
 
     CHECK(agc_imu_comp_load(&p) == AGC_STATUS_OK);
     CHECK(agc_imu_gcompzer() == AGC_STATUS_OK);

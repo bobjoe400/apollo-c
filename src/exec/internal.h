@@ -126,7 +126,7 @@ agc_status_t exec_up_goprog_optics(void);  /* CSM GOPROG: OPTMODES       */
 
 void exec_initsub_csm(void); /* INITSUB / RAKE (CSM)           */
 
-/* ---- V37 (change_program/v37.c, csm.c, lm.c) -------------------------
+/* ---- V37 (change_program/sequence.c, csm.c, lm.c) -------------------------
  * One selectable major mode: FCADRMM1 (job), PREMM1 (priority; the EBANK
  * field has no meaning in C) and DNLADMM1 (downlist code).            */
 typedef struct exec_cp_mode

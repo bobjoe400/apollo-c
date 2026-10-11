@@ -39,8 +39,7 @@ static const agc_dp_t EP4_10L = 7456540;
 /* PHASCHNG type B for group 5 (5.3 REREADAC + this job at PRIO20).        */
 static void phase_b(agc_job_id_t job)
 {
-    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO20, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     if (!AGC_ASSERT(job != AGC_JOB_NONE))
     {
@@ -120,9 +119,7 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
     int lmon = ((agc_erase_dapdatr1() & 020000U) != 0U) ? 1 : 0; /* BIT14   */
 
     tvc->repfrac     = agc_csm_dap_com()->erepfrac[lmon];
-    agc_tgo_in_t in  = {g->burn.vg, agc_vec_sub(ip, g->burn.bdt, g->avg.delvref),
-                        TWOVEXHUST,
-                        agc_dp_shr(agc_dp_from_sp(g->csm.etdecay), 14)};
+    agc_tgo_in_t in  = {g->burn.vg, agc_vec_sub(ip, g->burn.bdt, g->avg.delvref), TWOVEXHUST, agc_dp_shr(agc_dp_from_sp(g->csm.etdecay), 14)};
     agc_dp_t     tgo = 0;
     agc_status_t st  = agc_guid_steering_tgo_csm(ip, &in, &tgo);
 
@@ -141,8 +138,7 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
         return (short_burn_cutoff(tvc));
     }
 
-    agc_xprod_in_t xin      = {g->burn.vg, g->avg.delvref, g->burn.bdt,
-                               g->burn.csteer, tvc->kprimedt};
+    agc_xprod_in_t xin      = {g->burn.vg, g->avg.delvref, g->burn.bdt, g->burn.csteer, tvc->kprimedt};
     agc_mat_t      refsmmat = agc_erase_refsmmat();
     agc_vec_t      om;
 
@@ -221,9 +217,7 @@ static agc_status_t setup_9(agc_interp_t *ip)
         return (st);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_SURELY9_RESTART,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_SURELY9_RESTART, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change2((uint16_t) 000051, PH_5_3_B, &v);
 
@@ -294,9 +288,7 @@ static agc_status_t steering_tail(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STEERING_RESTART,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STEERING_RESTART, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change2((uint16_t) 040153, PH_5_3_B, &v);
     agc_relint();
@@ -514,8 +506,7 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_ENDLAMB, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO10, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_ENDLAMB, AGC_TASK_NONE, (int16_t) AGC_PRIO10, false, 0U};
 
     agc_phase_change_var((uint16_t) 005021, &v);
 
@@ -557,9 +548,7 @@ agc_status_t agc_job_endlamb(agc_job_ctx_t *ctx)
         rz->delveet3 = agc_vec_add(&ip, agc_vec_scale(&ip, g->avg.gobl_2, s), rz->delveet3);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_COPY40_9,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO10,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_COPY40_9, AGC_TASK_NONE, (int16_t) AGC_PRIO10, false, 0U};
 
     agc_phase_change_var((uint16_t) 004021, &v);
 

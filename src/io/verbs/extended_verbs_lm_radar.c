@@ -295,8 +295,7 @@ agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
-                            AGC_JOB_RR_DESIGNATE_LOAD, AGC_JOB_RR_LOCKON_QUERY};
+    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, AGC_JOB_RR_DESIGNATE_LOAD, AGC_JOB_RR_LOCKON_QUERY};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(24, 73), &cont));
 }
@@ -324,8 +323,7 @@ agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, AGC_JOB_RR_LOCKON_ANSWER,
-                            AGC_JOB_RR_LOCKON_DISPLAY};
+    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, AGC_JOB_RR_LOCKON_ANSWER, AGC_JOB_RR_LOCKON_DISPLAY};
     agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
 
     if (st != AGC_STATUS_OK)
@@ -716,8 +714,7 @@ agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SELECT,
-                            AGC_JOB_RADAR_TEST_OPTION_DISPLAY};
+    agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SELECT, AGC_JOB_RADAR_TEST_OPTION_DISPLAY};
     agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
 
     if (st != AGC_STATUS_OK)
@@ -806,8 +803,7 @@ agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx)
     }
 
     bool            lr   = ((uint16_t) rtstdex & SIX) != 0u;
-    agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SWITCH,
-                            AGC_JOB_RADAR_TEST_FIRST_DISPLAY};
+    agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SWITCH, AGC_JOB_RADAR_TEST_FIRST_DISPLAY};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(16, lr ? 67 : 78), &cont));
 }

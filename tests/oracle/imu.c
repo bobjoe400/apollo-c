@@ -318,8 +318,7 @@ static void cdus_in(const char *t, const char *name, uint16_t c[3])
  **********************************************************************/
 static agc_dp_t arate(int rateindx)
 {
-    static const double deg[4] = {0.0022222222, 0.0088888889, 0.0222222222,
-                                  0.0888888889};
+    static const double deg[4] = {0.0022222222, 0.0088888889, 0.0222222222, 0.0888888889};
 
     return (agc_dp_from_double(deg[(rateindx / 2) & 3], 0));
 }

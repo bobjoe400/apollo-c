@@ -151,8 +151,7 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
     }
 
     agc_inhint();
-    uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(),
-                        agc_erase_cduzd()};
+    uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(), agc_erase_cduzd()};
 
     agc_relint();
 

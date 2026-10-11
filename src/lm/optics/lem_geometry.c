@@ -56,10 +56,8 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, 
     const align_words_t s1w  = align_arctrig_words(ip, sinth, costh, s1);
     const align_words_t t2w  = align_words_add(half, align_words_neg(t1w)); /* PD4 BDSU */
     const align_words_t s2w  = align_words_add(s1w, half);                  /* DAD     */
-    uint16_t            a[2] = {align_words_to_cdu(t1w),
-                                align_words_to_cdu(s1w)};
-    uint16_t            b[2] = {align_words_to_cdu(t2w),
-                                align_words_to_cdu(s2w)};
+    uint16_t            a[2] = {align_words_to_cdu(t1w), align_words_to_cdu(s1w)};
+    uint16_t            b[2] = {align_words_to_cdu(t2w), align_words_to_cdu(s2w)};
 
     for (int k = 0; k < 2; k++)
     {

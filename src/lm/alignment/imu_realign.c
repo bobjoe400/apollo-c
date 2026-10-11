@@ -16,8 +16,7 @@
 
 static agc_latlong_opt_t latlong_options(void)
 {
-    const agc_latlong_opt_t opt = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
-                                   .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
+    const agc_latlong_opt_t opt = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG), .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
 
     return (opt);
 }

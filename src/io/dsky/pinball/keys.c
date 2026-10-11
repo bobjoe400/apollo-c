@@ -1164,8 +1164,7 @@ static uint8_t pin_key_of_char(char c)
         return (0); /* no valid result */
     }
 
-    static const uint8_t digit[10] = {020, 001, 002, 003, 004,
-                                      005, 006, 007, 010, 011};
+    static const uint8_t digit[10] = {020, 001, 002, 003, 004, 005, 006, 007, 010, 011};
 
     if (c >= '0' && c <= '9')
     {

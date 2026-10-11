@@ -1992,8 +1992,7 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_RNDVZFLG);
     agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_STANDBYENB); /* WOR BIT11 */
 
-    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STANDBY_RECOVERY,
-                               AGC_TASK_NONE, STANDBY_PRIO, false, 0U};
+    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_STANDBY_RECOVERY, AGC_TASK_NONE, STANDBY_PRIO, false, 0U};
 
     agc_phase_change_var(STANDBY_PHASE, &v); /* 2CADR POSTAND        */
 

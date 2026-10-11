@@ -421,8 +421,7 @@ static agc_status_t ld_speedrun(void)
     int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */
 
     ld_dt                  = (agc_sp_t) (d & 0x3FFF); /* AD HALF, HALF  */
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
-                              agc_erase_pipaz()};
+    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
 
     for (int i = 0; i < 3; i++)
     {

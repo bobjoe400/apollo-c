@@ -172,11 +172,10 @@ static double vnorm(const double v[3])
  **********************************************************************/
 static double fpa_at_radius(const double r1[3], const double v[3], double r)
 {
-    double h[3] = {r1[1] * v[2] - r1[2] * v[1], r1[2] * v[0] - r1[0] * v[2],
-                   r1[0] * v[1] - r1[1] * v[0]};                                    /* r1 x v, m^2/cs   */
-    double en   = 0.5 * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) - MU / vnorm(r1); /* specific energy, m^2/cs^2 */
-    double vr   = sqrt(2.0 * (en + MU / r));                                        /* speed at r, m/cs        */
-    double c    = vnorm(h) / (r * vr);                                              /* cos(gamma)              */
+    double h[3] = {r1[1] * v[2] - r1[2] * v[1], r1[2] * v[0] - r1[0] * v[2], r1[0] * v[1] - r1[1] * v[0]}; /* r1 x v, m^2/cs   */
+    double en   = 0.5 * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) - MU / vnorm(r1);                        /* specific energy, m^2/cs^2 */
+    double vr   = sqrt(2.0 * (en + MU / r));                                                               /* speed at r, m/cs        */
+    double c    = vnorm(h) / (r * vr);                                                                     /* cos(gamma)              */
 
     if (c > 1.0)
     {

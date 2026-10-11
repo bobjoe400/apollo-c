@@ -373,9 +373,7 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, c
     const bool       csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_vec_t  xs  = agc_vec_scale(ip, nb.row[0], csm ? SIN33 : HALFDP);
     const agc_vec_t  zs  = agc_vec_scale(ip, nb.row[2], csm ? COS33 : HALFDP);
-    picapar_search_t s   = {
-          .ip = ip, .ls = ls, .vflag = true, .besti = 0, .bestj = 0
-      };
+    picapar_search_t s   = {.ip = ip, .ls = ls, .vflag = true, .besti = 0, .bestj = 0 };
 
     s.sax                = agc_vec_unit(ip, agc_vec_mat(ip, agc_vec_add(ip, zs, xs), refsmmat), NULL, NULL);
     agc_align_ram()->sax = s.sax;

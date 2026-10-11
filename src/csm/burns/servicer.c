@@ -67,8 +67,7 @@ static const agc_dp_t KPIP1_CM = (agc_dp_t) 20100447;
  **********************************************************************/
 static void serv_phase(uint16_t code, agc_job_id_t job)
 {
-    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO20, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     if (!AGC_ASSERT(job != AGC_JOB_NONE))
     {
@@ -487,8 +486,7 @@ agc_status_t agc_task_rereadac_csm(void)
 agc_status_t agc_task_quikread(void)
 {
     agc_guid_t    *g       = agc_guid_state();
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
-                              agc_erase_pipaz()};
+    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
 
     for (int i = 2; i >= 0; i--)
     { /* RUPTREG1 = 2, 1, 0     */
@@ -845,9 +843,7 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
     agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime()));
     agc_flag_set(AGC_FLAG_DRIFTFLG);
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change2(000005, 005022, &v); /* 5 OFF, 2.2 AVETOMID    */
 

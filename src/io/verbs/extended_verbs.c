@@ -488,8 +488,7 @@ static agc_status_t banksum_display(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dsky_cont_t cont = {AGC_JOB_SHOW_BANKSUM_END, AGC_JOB_SHOW_BANKSUM_NEXT,
-                            AGC_JOB_SHOW_BANKSUM_DISPLAY};
+    agc_dsky_cont_t cont = {AGC_JOB_SHOW_BANKSUM_END, AGC_JOB_SHOW_BANKSUM_NEXT, AGC_JOB_SHOW_BANKSUM_DISPLAY};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(5, 1), &cont));
 }

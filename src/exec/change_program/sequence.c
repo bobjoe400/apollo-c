@@ -1,5 +1,5 @@
 /*
- * v37.c -- V37 (MMCHANG): change of major mode, CANV37, POOH, NOUVEAU and
+ * sequence.c -- V37 (MMCHANG): change of major mode, CANV37, POOH, NOUVEAU and
  *          V37XEQ, the parts the two programs share.
  *
  * Source: FRESH_START_AND_RESTART.agc, Comanche055 pp. 197-209 (V37 ..
@@ -111,8 +111,7 @@ static agc_status_t cp_refuse(bool alarm_1520)
 static agc_job_ctx_t cp_running_ctx(void)
 {
     agc_exec_core_info_t ci;
-    agc_job_ctx_t        c  = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false,
-                               -1, 0};
+    agc_job_ctx_t        c  = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false, -1, 0};
     agc_status_t         st = agc_exec_core_info(0, &ci);
 
     if (AGC_ASSERT(st == AGC_STATUS_OK))
@@ -221,9 +220,9 @@ agc_status_t exec_cp_after_engine_off(void)
 
 /* GOGOPROG: the software restart; for a new program, with group 4 set to
  * restart V37XEQ at PRIO30 (see the file header).                      */
-static agc_status_t cp_gogoprog(bool v37xeq)
+static agc_status_t cp_gogoprog(bool execute_immediately)
 {
-    if (v37xeq)
+    if (execute_immediately)
     {
         int n = 0;
 
@@ -232,9 +231,7 @@ static agc_status_t cp_gogoprog(bool v37xeq)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_START,
-                             AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false,
-                             0U};
+        agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_START, AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
 
         agc_phase_change_var(CP_GROUP4_JOB, &v); /* TEMPFLSH = V37QCAD */
     }
@@ -372,8 +369,7 @@ agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_CONTINUE,
-                         AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_CONTINUE, AGC_TASK_NONE, (int16_t) EXEC_PRIO30, false, 0U};
 
     agc_phase_change_var(CP_GROUP4_JOB, &v); /* R00AD; PHASCHNG OCT 14 */
     agc_status_t st = agc_integ_install(0, AGC_JOB_CHANGE_PROGRAM_CONTINUE);

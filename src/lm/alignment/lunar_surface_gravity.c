@@ -476,8 +476,7 @@ static agc_status_t gyro_trim(agc_job_ctx_t *ctx, agc_job_id_t ret)
 
     ram->lunar_gravity_return = ret;
     const agc_mat_t unit      = agc_mat_identity_half();
-    const uint16_t  yzx[3]    = {agc_erase_thetad(1), agc_erase_thetad(2),
-                                 agc_erase_thetad(0)};
+    const uint16_t  yzx[3]    = {agc_erase_thetad(1), agc_erase_thetad(2), agc_erase_thetad(0)};
     agc_cdutrig_t   t;
     agc_vec_t       x         = unit.row[0];
     agc_vec_t       y         = unit.row[1];

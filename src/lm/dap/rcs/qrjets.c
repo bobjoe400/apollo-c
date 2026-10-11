@@ -69,8 +69,7 @@ static const agc_sp_t uvdiff[2] = {0, 16};
 
 /* ALLJETS (-U -V +U +V) followed by TYPEPOLY (-X +X A B ALL), contiguous
  * as in the AGC so that X translation indexes ALLJETS with 4 and 5.     */
-static const uint16_t alljets[QJ_NALL] = {00110, 00022, 00204, 00041, 00125,
-                                          00252, 00146, 00231, 00377};
+static const uint16_t alljets[QJ_NALL] = {00110, 00022, 00204, 00041, 00125, 00252, 00146, 00231, 00377};
 
 /**********************************************************************
  * SELCTSUB / FAILOOP (pp.1457-1458): POLYTEMP = ALLJETS(ROTINDEX) &

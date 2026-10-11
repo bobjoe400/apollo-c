@@ -665,9 +665,7 @@ agc_status_t agc_job_cm_sm_separation_target_display(agc_job_ctx_t *ctx)
 agc_status_t agc_job_cm_sm_separation_end_hold(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
-    agc_phase_var_t    v  = {AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_END_HOLD,
-                             AGC_TASK_NONE, 0,
-                             false, 0U};
+    agc_phase_var_t    v  = {AGC_RESTART_JOB, AGC_JOB_CM_SM_SEPARATION_END_HOLD, AGC_TASK_NONE, 0, false, 0U};
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(es != NULL))
     {
@@ -815,9 +813,7 @@ agc_status_t entry_post_0_05g(agc_entry_state_t *es)
  **********************************************************************/
 agc_status_t entry_upcontrol(agc_entry_state_t *es)
 {
-    agc_phase_var_t v  = {
-         AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U
-     };
+    agc_phase_var_t v  = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
     agc_status_t    st = agc_phase_newmode(65); /* NEWMODEX / NOVAC status */
 
     if (!AGC_ASSERT(es != NULL))

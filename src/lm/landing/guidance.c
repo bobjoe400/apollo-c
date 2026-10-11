@@ -1437,9 +1437,7 @@ agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
     }
 
     agc_lm_phaschng(00035);
-    const agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE, 021, false, 0U
-    };
+    const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE, 021, false, 0U };
 
     agc_phase_change_var(05023, &v);
     int          entry = AGC_LM_ENTRY_GUILDRET;            /* entry chosen by R13 */

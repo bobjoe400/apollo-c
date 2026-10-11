@@ -177,9 +177,7 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
     }
 
     agc_guid_t     *g = agc_guid_state();
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_DPS_BURN,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_DPS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
     g->lm.which = (agc_sp_t) AGC_LM_WHICH_DPS_BURN; /* P40ADRES               */
@@ -215,9 +213,7 @@ agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
     }
 
     agc_guid_t     *g = agc_guid_state();
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_BURN,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
     g->lm.which = (agc_sp_t) AGC_LM_WHICH_APS_BURN;
@@ -285,8 +281,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
-    const agc_dsky_cont_t cont = {AGC_JOB_RCS_BURN_VG_DISPLAYED, AGC_JOB_NONE,
-                                  AGC_JOB_NONE};
+    const agc_dsky_cont_t cont = {AGC_JOB_RCS_BURN_VG_DISPLAYED, AGC_JOB_NONE, AGC_JOB_NONE};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), &cont)); /* CADR GODSPRET */
 }
@@ -310,9 +305,7 @@ agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_MANEUVER,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_RCS_BURN_AFTER_MANEUVER, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change2((uint16_t) 000076, (uint16_t) 004024, &v);
 
@@ -333,8 +326,7 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
         return (agc_svc_delayjob(ONE_SEC, AGC_JOB_REDO6_7)); /* BLNKWAIT      */
     }
 
-    const agc_dsky_cont_t cont = {AGC_JOB_REDO6_7_VG_DISPLAYED, AGC_JOB_NONE,
-                                  AGC_JOB_NONE};
+    const agc_dsky_cont_t cont = {AGC_JOB_REDO6_7_VG_DISPLAYED, AGC_JOB_NONE, AGC_JOB_NONE};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), &cont)); /* CADR GODSPRET */
 }
@@ -536,9 +528,7 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
  * REDO4.2 (PREREAD unless SERVICER runs).                                 */
 agc_status_t agc_task_start_thrust_monitor(void)
 {
-    agc_phase_var_t v = {
-        AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_TIGON, 0, true, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_TIGON, 0, true, 0U };
 
     agc_phase_change_var((uint16_t) 005014, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
@@ -573,9 +563,7 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     rz->delvsin       = agc_vec_add(&ip, g->burn.delvctl, g->avg.delvref);
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, rz->delvsin, &g->burn.delvimu);
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CALC_DELTA_V_BODY,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO20,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CALC_DELTA_V_BODY, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var(PH_5_3_B, &v);
     g->burn.delvctl = rz->delvsin;
@@ -606,8 +594,7 @@ agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH,
-                            AGC_JOB_THRUST_MONITOR_RESET};
+    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_RESET};
     agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 83), &cont);
 
     if (st != AGC_STATUS_OK)
@@ -810,9 +797,7 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
      * reset. A VG more than 90 degrees from the thrust gives alarm 1407 and
      * goes straight to FINDCDUW.                                               */
     agc_guid_t  *g_commands  = agc_guid_state();
-    agc_tgo_in_t in          = {g_commands->burn.vg, agc_vec_neg(
-                                    g_commands->avg.delvref), g_commands->lm.vex,
-                                g_commands->lm.tdecay};
+    agc_tgo_in_t in          = {g_commands->burn.vg, agc_vec_neg(g_commands->avg.delvref), g_commands->lm.vex, g_commands->lm.tdecay};
     agc_dp_t     tgo         = 0;
     agc_status_t st_commands = agc_guid_steering_tgo_lm(ip, &in, &tgo);
 

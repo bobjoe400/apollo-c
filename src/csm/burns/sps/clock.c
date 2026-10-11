@@ -122,8 +122,7 @@ agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx)
     }
 
     agc_guid_t    *g      = agc_guid_state();
-    const uint16_t cdu[3] = {agc_erase_cduy(), agc_erase_cduz(),
-                             agc_erase_cdux()};
+    const uint16_t cdu[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
 
     agc_guid_quictrig(&g->trig, cdu);
     agc_inhint();
@@ -152,8 +151,7 @@ agc_status_t agc_job_dyndisp(agc_job_ctx_t *ctx)
  * (V16N85 post-burn) or POST41 (P00).                                     */
 static agc_status_t engine_enable_finish(agc_job_id_t next)
 {
-    agc_phase_var_t v = {AGC_RESTART_JOB, next, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO27, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, next, AGC_TASK_NONE, (int16_t) AGC_PRIO27, false, 0U};
 
     agc_phase_change2((uint16_t) 000006, (uint16_t) 005024, &v);
     agc_inhint();
@@ -439,9 +437,7 @@ agc_status_t agc_task_engine_fail_reignite_trim(void)
     }
 
     agc_relint();
-    agc_phase_var_t v = {
-        AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_QUICKIGN, 0, true, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_QUICKIGN, 0, true, 0U };
 
     agc_phase_change2((uint16_t) 000026, (uint16_t) 005014, &v);
 

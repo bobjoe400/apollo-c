@@ -138,11 +138,7 @@ static const struct
 {
     agc_entry_goto_t g;    /* C phase                 */
     int              word; /* AGC GOTOADDR word       */
-} GOTOS[] = {
-    {AGC_ENTRY_GOTO_INITROLL, 052260}, {AGC_ENTRY_GOTO_HUNTEST, 052373},
-    {AGC_ENTRY_GOTO_UPCONTRL, 053035}, {AGC_ENTRY_GOTO_KEPLER, 053317},
-    {AGC_ENTRY_GOTO_PREFINAL, 053333}, {AGC_ENTRY_GOTO_FINAL_PREDICT, 053343},
-};
+} GOTOS[] = { {AGC_ENTRY_GOTO_INITROLL, 052260}, {AGC_ENTRY_GOTO_HUNTEST, 052373}, {AGC_ENTRY_GOTO_UPCONTRL, 053035}, {AGC_ENTRY_GOTO_KEPLER, 053317}, {AGC_ENTRY_GOTO_PREFINAL, 053333}, {AGC_ENTRY_GOTO_FINAL_PREDICT, 053343}, };
 
 /**********************************************************************
  * AGC: none -- the GOTOADDR word (interpretive address) of a C phase.
@@ -245,8 +241,7 @@ static void compare(const char *t, long int tol)
 
     if (final)
     {
-        static const char *const fx[6] = {"FX", "FX+1", "FX+2", "FX+3",
-                                          "FX+4", "FX+5"};
+        static const char *const fx[6] = {"FX", "FX+1", "FX+2", "FX+3", "FX+4", "FX+5"};
 
         for (int k = 0; k < 6; k++)
         {

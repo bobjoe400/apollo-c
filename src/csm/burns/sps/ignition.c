@@ -61,9 +61,7 @@ agc_status_t agc_task_ignition_csm(void)
     { /* IMPULCHK               */
         agc_flag_clear(AGC_FLAG_STRULLSW); /* IMPLBURN               */
         agc_erase_set_tig(agc_erase_tgo() + (agc_dp_t) agc_time_now_cs());
-        agc_phase_var_t v = {
-            AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IMPLCONT, 0, true, 0U
-        };
+        agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IMPLCONT, 0, true, 0U };
 
         agc_phase_change2((uint16_t) 040153, (uint16_t) 007014, &v);
         agc_status_t st = agc_waitlist_call((uint16_t) agc_dp_low(agc_erase_tgo()), AGC_TASK_ENGINOFF);
@@ -336,8 +334,7 @@ agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_TIGNOW, AGC_TASK_NONE,
-                         (int16_t) AGC_PRIO20, false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_TIGNOW, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 005024, &v);
 
@@ -472,13 +469,10 @@ agc_status_t agc_job_thrust_monitor_display_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_THRUST_MONITOR_DISPLAY,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO15,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_THRUST_MONITOR_DISPLAY, AGC_TASK_NONE, (int16_t) AGC_PRIO15, false, 0U};
 
     agc_phase_change_var((uint16_t) 005024, &v);
-    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH,
-                            AGC_JOB_THRUST_MONITOR_RESET};
+    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_RESET};
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {

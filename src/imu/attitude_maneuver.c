@@ -414,8 +414,7 @@ agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in, agc_vec_t
     }
 
     agc_inhint();
-    const uint16_t cdu0[3] = {agc_erase_cdux(), agc_erase_cduy(),
-                              agc_erase_cduz()};
+    const uint16_t cdu0[3] = {agc_erase_cdux(), agc_erase_cduy(), agc_erase_cduz()};
 
     agc_relint();
 
@@ -611,8 +610,7 @@ static void lm_ballangs(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    const uint16_t g[3] = {agc_erase_thetad(0), agc_erase_thetad(1),
-                           agc_erase_thetad(2)};
+    const uint16_t g[3] = {agc_erase_thetad(0), agc_erase_thetad(1), agc_erase_thetad(2)};
     uint16_t       out[3];                               /* FDAIX..Z */
     agc_status_t   st   = agc_imu_ballangs(&ip, g, out); /* status of the call */
 

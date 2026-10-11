@@ -96,9 +96,7 @@ agc_status_t agc_lm_burnbaby(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_BURNBABY,
-                         AGC_TASK_NONE, (int16_t) ctx->prio,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_BURNBABY, AGC_TASK_NONE, (int16_t) ctx->prio, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
     agc_guid_state()->avg.dvtotal = 0; /* EXTIRPATE JUNK         */
@@ -576,9 +574,7 @@ static agc_status_t dps_ignition(void)
         return (st);
     }
 
-    agc_phase_var_t v = {
-        AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH, 0, true, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH, 0, true, 0U };
 
     agc_phase_change2((uint16_t) 040033, (uint16_t) 005014, &v);
 

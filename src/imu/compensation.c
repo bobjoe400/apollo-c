@@ -824,8 +824,7 @@ static agc_status_t comp_irig_words(const word_pair_t delv[3])
  **********************************************************************/
 agc_status_t agc_imu_comp_irig(agc_vec_t delv)
 {
-    const word_pair_t dw[3] = {pair_of(delv.c[0]), pair_of(delv.c[1]),
-                               pair_of(delv.c[2])}; /* PIPA pulses x 2^14 */
+    const word_pair_t dw[3] = {pair_of(delv.c[0]), pair_of(delv.c[1]), pair_of(delv.c[2])}; /* PIPA pulses x 2^14 */
 
     if (!AGC_ASSERT(dw[0].hi >= AGC_SP_MIN && dw[2].hi <= AGC_SP_MAX))
     {
@@ -1150,9 +1149,8 @@ static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface, agc_job_ctx
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_vec_t   dv      = agc_erase_delv();   /* PIPA pulses x 2^14 */
-    const word_pair_t delv[3] = {pair_of(dv.c[0]), pair_of(dv.c[1]),
-                                 pair_of(dv.c[2])}; /* DELVX..Z words */
+    const agc_vec_t   dv      = agc_erase_delv();                                       /* PIPA pulses x 2^14 */
+    const word_pair_t delv[3] = {pair_of(dv.c[0]), pair_of(dv.c[1]), pair_of(dv.c[2])}; /* DELVX..Z words */
 
     gcompsw = 0; /* indicate commands 2 pulses or less */
 

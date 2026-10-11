@@ -492,13 +492,11 @@ static void test_ags_scalevec(void)
  */
 static void test_final_attitude_los(void)
 {
-    static const double range_m[] = {300.0, 1000.0, 3000.0, 10000.0,
-                                     50000.0};
+    static const double range_m[] = {300.0, 1000.0, 3000.0, 10000.0, 50000.0};
     const double        c30       = cos(PI_D / 6.0);
     const double        s30       = sin(PI_D / 6.0);
     const double        dir[3]    = {3.0 / 13.0, 4.0 / 13.0, 12.0 / 13.0};
-    const double        rot[3][3] = {{c30, s30, 0.0}, {-s30, c30, 0.0},
-                                     {0.0, 0.0, 1.0}};
+    const double        rot[3][3] = {{c30, s30, 0.0}, {-s30, c30, 0.0}, {0.0, 0.0, 1.0}};
     agc_mat_t           refsmmat;
 
     for (int i = 0; i < 3; i++)

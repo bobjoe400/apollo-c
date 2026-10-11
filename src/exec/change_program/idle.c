@@ -11,7 +11,7 @@
  * Everything else in src/exec/ reaches higher layers only through the
  * exec_up_* functions here, which unit tests replace.
  *
- * V37 itself (MMCHANG .. V37XEQ) is in v37.c, csm.c and lm.c beside this
+ * V37 itself (MMCHANG .. V37XEQ) is in sequence.c, csm.c and lm.c beside this
  * file.
  */
 #include "../internal.h"
@@ -101,9 +101,7 @@ void exec_initsub_csm(void)
         return;
     }
 
-    static const uint16_t flagtabl[VP_RAKE_WORDS] = {
-        0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0
-    };
+    static const uint16_t flagtabl[VP_RAKE_WORDS] = { 0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0 };
     agc_status_t          st                      = exec_up_stoprate();
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))

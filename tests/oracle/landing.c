@@ -412,21 +412,7 @@ static void ascent(const char *t)
         const char *name; /* erasable name in the case */
         agc_dp_t    got;  /* C value, scale 2^S of the word pair */
         long int    tol;  /* tolerance, LSB */
-    } dps[] = {
-        {"TBUP", a->tbup, 0}, {"AT", a->at, 4},
-        {"MASS1", g->lm.mass1, 0}, {"E7,1634", a->dv[1], 0},
-        {"E7,1636", a->dv[2], 0}, {"E7,1640", a->dv[3], 0},
-        {"/R/MAG", a->r_mag, 0}, {"ZDOT", a->zdot, 0},
-        {"YDOT", a->ydot, 0}, {"Y", a->y, 0},
-        {"GEFF", a->geff, 0}, {"DZDOT", a->dzdot, 0},
-        {"DYDOT", a->dydot, 0}, {"DRDOT", a->drdot, 0},
-        {"TGO", a->tgo, 0}, {"TTOGO", agc_erase_ttogo(), 1},
-        {"PRATE", a->prate, 32}, {"YRATE", a->yrate, 32},
-        {"PCONS", a->pcons, 4}, {"YCONS", a->ycons, 4},
-        {"ATR", a->atr, 8}, {"ATY", a->aty, 8},
-        {"ATP", a->atp, 8}, {"YAW", a->yaw, 8},
-        {"PITCH", a->pitch, 8}
-    };
+    } dps[] = { {"TBUP", a->tbup, 0}, {"AT", a->at, 4}, {"MASS1", g->lm.mass1, 0}, {"E7,1634", a->dv[1], 0}, {"E7,1636", a->dv[2], 0}, {"E7,1640", a->dv[3], 0}, {"/R/MAG", a->r_mag, 0}, {"ZDOT", a->zdot, 0}, {"YDOT", a->ydot, 0}, {"Y", a->y, 0}, {"GEFF", a->geff, 0}, {"DZDOT", a->dzdot, 0}, {"DYDOT", a->dydot, 0}, {"DRDOT", a->drdot, 0}, {"TGO", a->tgo, 0}, {"TTOGO", agc_erase_ttogo(), 1}, {"PRATE", a->prate, 32}, {"YRATE", a->yrate, 32}, {"PCONS", a->pcons, 4}, {"YCONS", a->ycons, 4}, {"ATR", a->atr, 8}, {"ATY", a->aty, 8}, {"ATP", a->atp, 8}, {"YAW", a->yaw, 8}, {"PITCH", a->pitch, 8} };
 
     for (size_t k = 0; k < sizeof (dps) / sizeof (dps[0]); k++)
     {

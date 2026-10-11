@@ -95,8 +95,7 @@ static void rrangles(const char *t, bool along_y_expected, long tol)
 
 static void scalevec(const char *t)
 {
-    static const char *const names[6] = {"MPAC", "MPAC+1", "MPAC+3",
-                                         "MPAC+4", "MPAC+5", "MPAC+6"};
+    static const char *const names[6] = {"MPAC", "MPAC+1", "MPAC+3", "MPAC+4", "MPAC+5", "MPAC+6"};
     agc_interp_t    ip;
     uint16_t        out[6]            = {0, 0, 0, 0, 0, 0};
     const agc_mat_t ref               = mat_in(t, "REFSMMAT");

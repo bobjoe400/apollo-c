@@ -965,9 +965,7 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex, uint16_t 
     /* REMODE: T 0 (180), S -45, T -130 (-50), T -180 (0), S -90 (0);
      * the targets of the present mode 1 (mode 2) and their axes.        */
     static const int      remode_axis[5] = {0, 1, 0, 0, 1};
-    static const uint16_t remode_m1[5]   = {
-          0U, RR_W_M45, RR_W_M130, RR_W_180, RR_W_M90
-      };
+    static const uint16_t remode_m1[5]   = { 0U, RR_W_M45, RR_W_M130, RR_W_180, RR_W_M90 };
     static const uint16_t remode_m2[5]   = {RR_W_180, RR_W_M45, RR_W_M50, 0U, 0U};
 
     /* DORREPOS: T to 0 (180), S to 0 (-90) in mode 1 (mode 2).           */

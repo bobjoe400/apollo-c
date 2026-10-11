@@ -1050,8 +1050,7 @@ static agc_status_t pin_hmsout(agc_dp_t t)
 
     bool         neg     = t < 0;         /* sign */
     int64_t      mag     = pin_mag(t);    /* magnitude, unscaled */
-    int64_t      part[3] = {mag / PIN_CS_HOUR, (mag / PIN_CS_MIN) % 60,
-                            mag % PIN_CS_MIN};
+    int64_t      part[3] = {mag / PIN_CS_HOUR, (mag / PIN_CS_MIN) % 60, mag % PIN_CS_MIN};
     agc_status_t st      = AGC_STATUS_OK; /* status so far */
 
     for (int r = 2; r >= 0 && st == AGC_STATUS_OK; r--)

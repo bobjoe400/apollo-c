@@ -167,8 +167,7 @@ agc_status_t agc_job_sps_burn_after_maneuver(agc_job_ctx_t *ctx)
     g->burn.vgdisp       = agc_vec_abval(&ip, agc_erase_vgtig());
     g->avg.dvtotal       = 0;
     g->avg.avgexit       = AGC_JOB_STEERING; /* STEERADS               */
-    agc_dsky_cont_t cont = {AGC_JOB_POST41, AGC_JOB_GIMBAL_TEST_AND_TRIM,
-                            AGC_JOB_GIMBAL_TRIM_ONLY};
+    agc_dsky_cont_t cont = {AGC_JOB_POST41, AGC_JOB_GIMBAL_TEST_AND_TRIM, AGC_JOB_GIMBAL_TRIM_ONLY};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, GIMBAL_TEST_CHECKLIST, &cont)); /* P40GMB  */
 }
