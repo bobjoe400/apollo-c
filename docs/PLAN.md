@@ -165,7 +165,7 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 6. review-dap-lm       (PAUSED mid-audit: ~16 sat->wrap stores, style; resume from note)
 7. review-dap-csm      (ROLLSET; digit-suffixed names)
 8. review-nav-conic    (PAUSED: R1A word-pair plan in note; needs core word API first -> run review-core-numeric BEFORE resuming)
-9. review-nav-integ    (spec generator in progress)
+9. review-nav-integ    (PAUSED: fidelity done, 439 oracle checks; DMP audit + style left)
 10. review-core-numeric (UNIT B27; stale DVSIGN; test prologs in progress)
 11. review-exec-sched   (prologs in progress)
 12. review-imu          (gyrocompass file in progress)
