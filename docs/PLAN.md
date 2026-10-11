@@ -163,9 +163,9 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 3. review-nav-aux      (INCORP1 fixes in progress)
 4. review-prog-rendz   (F13 CDH 62 m)
 5. review-guid-landing (F9 THROTTLE)
-6. review-dap-lm       (PAUSED mid-audit: ~16 sat->wrap stores, style; resume from note)
-7. review-dap-csm      (ROLLSET; digit-suffixed names)
-8. review-nav-conic    (PAUSED: R1A word-pair plan in note; needs core word API first -> run review-core-numeric BEFORE resuming)
+6. review-dap-lm       DONE
+7. review-dap-csm      DONE
+8. review-nav-conic    DONE (exact at tolerance 0)
 9. review-nav-integ    (PAUSED: fidelity done, 439 oracle checks; DMP audit + style left)
 10. review-core-numeric DONE (word-level API landed)
 11. review-exec-sched   (prologs in progress)
