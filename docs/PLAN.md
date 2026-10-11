@@ -170,4 +170,6 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 14. review-sys-misc     (t4rupt_csm.c rewrite in progress)
 15. review-guid-powered (ZOOM; style debt; prologs in progress)
 16. sim                 (pad.c; scenarios)
+17. dmp-audit-done-lanes (nav-aux, io-dsky, state-flags: the DMP/DMPR +
+    shift-rounding audit from review_items.md, since they finished before it)
 Then: lead assert.h rename; document wave (1 agent).
