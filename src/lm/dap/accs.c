@@ -391,7 +391,7 @@ static agc_sp_t docked_fit(int base)
     agc_sp_t        m  = lm_dap_wrap((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
     agc_sp_t        lx = lm_dap_wrap((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
 
-    m           = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));     /* ADS     */
+    m           = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));      /* ADS     */
     agc_sp_t ly = lm_dap_wrap((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
 
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));

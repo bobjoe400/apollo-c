@@ -41,8 +41,10 @@
   gts ROOTCYCL, tjetlaw FIREFCT TS and ZONE5 TS L, where the TS overflow
   skip is not modelled). yaAGC MP and DV both take the overflow-corrected
   A. make test green, oracle_dap_lm 1780/0 at tolerance 0.
-* TODO: accont.c rule-7 (void) casts; style debt; make format/check;
-  MODULE_STATUS row; Lessons.
+* DONE accont.c check_rules: no (void) casts remain in the lane (rule 7
+  clear); the one hard violation, rule 4 lm_dap_switch_curves 61 lines,
+  fixed by moving the NEG(POS)/FIXMIN/STMIN- block to axis_against_aos.
+* TODO: style debt; make check; MODULE_STATUS row; Lessons.
 
 ## Scratch build
 

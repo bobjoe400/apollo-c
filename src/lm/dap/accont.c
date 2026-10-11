@@ -424,7 +424,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         agc_sp_t anet_pi = lm_dap_wrap((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
 
         w->anet = lm_dap_wrap((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
-        w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);  /* at 2^7/pi      */
+        w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);   /* at 2^7/pi      */
 
         if (!AGC_ASSERT(w->anet > 0))
         {
@@ -599,6 +599,87 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 }
 
 /**********************************************************************
+ * NEG(POS) cases, 1/ANET-, NETNEG, FIXMIN, STMIN- (pp.1501-1502,
+ * 1504-1505): the U or V axis values for the sense the offset
+ * opposes. If one jet cannot beat the offset (ANET < AMIN) the two-jet
+ * values are used and ACCSW demands max jets, unless that pair has
+ * failed, when AMIN is assumed.
+ *
+ * FUNCTION NAME: axis_against_aos
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I    DAP erasables (lm_dap_state())
+ *   w         acc_work_t *      I/O  working cells of this computation
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+ *          failed assertion
+ **********************************************************************/
+static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
+{
+    agc_sp_t jaccu = d->jacc[3];
+
+    /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
+     * (NETNEG); then 1/NETMIN.                                                */
+    agc_sp_t a = lm_dap_wrap(2 * (int32_t) jaccu - w->absaos);
+
+    w->accsw = 0;
+    w->anet  = a;
+
+    if ((int32_t) a - AA_BIT9 <= 0)
+    {
+        w->anet = AA_BIT9; /* NETNEG         */
+    }
+
+    if (!AGC_ASSERT(w->anet >= AA_BIT9))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_sp_t acc   = net_min(w);
+    agc_sp_t lsave = acc; /* TS L           */
+
+    if (!AGC_ASSERT(w->s == -w->ns))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    w->t[T_Z1 + 2 + w->s]    = acc;
+    w->t[T_ATEM1 + 2 + w->s] = w->inv;
+    w->anet                  = lm_dap_wrap((int32_t) jaccu - w->absaos);
+
+    if ((int32_t) w->anet - AA_BIT9 > 0)
+    {
+        acc = net_min(w);
+    }
+    else
+    { /* FIXMIN         */
+        w->accsw = (agc_sp_t) ((w->s != 0) ? 1 : -1);
+
+        if ((uvmask[w->accsw + 1 + w->uv] & d->ch5mask) != 0u)
+        {
+            w->anet = AA_BIT9; /* failed: AMIN   */
+            acc     = net_min(w);
+        }
+        else
+        {
+            acc = lsave; /* max-jet values */
+        }
+    }
+
+    w->t[T_Z1 + w->s]    = acc; /* STMIN-         */
+    w->t[T_ATEM1 + w->s] = w->inv;
+
+    if (!AGC_ASSERT(w->accsw >= -1 && w->accsw <= 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (AGC_STATUS_OK);
+}
+
+/**********************************************************************
  * 1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
  * the P, U and V axes.
  *
@@ -618,7 +699,7 @@ agc_status_t lm_dap_switch_curves(void)
 
     w.dbval3    = lm_dap_wrap(2 * (int32_t) quarter);     /* .50 DB         */
     w.dbval2    = lm_dap_wrap((int32_t) quarter - d->db); /* -.75 DB        */
-    agc_inhint();                                        /* GETAOSUV       */
+    agc_inhint();                                         /* GETAOSUV       */
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
     aos_negzero(d, &w);
@@ -650,66 +731,11 @@ agc_status_t lm_dap_switch_curves(void)
         w.uv = uv;
         axis_with_aos(d, &w);
 
-        /* NEG(POS) cases, FIXMIN, STMIN- (pp.1501-1502, 1505): the sense the
-         * offset opposes. If one jet cannot beat the offset (ANET < AMIN) the
-         * two-jet values are used and ACCSW demands max jets, unless that pair
-         * has failed, when AMIN is assumed.                                      */
-        agc_sp_t jaccu = d->jacc[3];
+        agc_status_t st = axis_against_aos(d, &w);
 
-        /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
-         * (NETNEG); then 1/NETMIN.                                                */
-        agc_sp_t a = lm_dap_wrap(2 * (int32_t) jaccu - w.absaos);
-
-        w.accsw = 0;
-        w.anet  = a;
-
-        if ((int32_t) a - AA_BIT9 <= 0)
+        if (st != AGC_STATUS_OK)
         {
-            w.anet = AA_BIT9; /* NETNEG         */
-        }
-
-        if (!AGC_ASSERT(w.anet >= AA_BIT9))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        agc_sp_t acc   = net_min(&w);
-        agc_sp_t lsave = acc; /* TS L           */
-
-        if (!AGC_ASSERT(w.s == -w.ns))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        w.t[T_Z1 + 2 + w.s]    = acc;
-        w.t[T_ATEM1 + 2 + w.s] = w.inv;
-        w.anet                 = lm_dap_wrap((int32_t) jaccu - w.absaos);
-
-        if ((int32_t) w.anet - AA_BIT9 > 0)
-        {
-            acc = net_min(&w);
-        }
-        else
-        { /* FIXMIN         */
-            w.accsw = (agc_sp_t) ((w.s != 0) ? 1 : -1);
-
-            if ((uvmask[w.accsw + 1 + w.uv] & d->ch5mask) != 0u)
-            {
-                w.anet = AA_BIT9; /* failed: AMIN   */
-                acc    = net_min(&w);
-            }
-            else
-            {
-                acc = lsave; /* max-jet values */
-            }
-        }
-
-        w.t[T_Z1 + w.s]    = acc; /* STMIN-         */
-        w.t[T_ATEM1 + w.s] = w.inv;
-
-        if (!AGC_ASSERT(w.accsw >= -1 && w.accsw <= 1))
-        {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
 
         axis_fail_dist(d, &w);
