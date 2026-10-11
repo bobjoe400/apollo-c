@@ -21,12 +21,6 @@
   removed from include/agc/lm/dap.h (test uses lm_dap_rot_touv).
 * All touched files compile; make test of HEAD + this lane's files passes
   except oracle_landing guid_brak_b (fails at HEAD without this lane).
-* TODO style: 1222 check_style findings in lane files (function prologs
-  ~500, decl/scale comments ~455, ternary 113, long-block 39, one-decl 34,
-  define 33, file prologs 22, qualifier/sizeof/main-first in tests).
-  Prolog converter written (SCRATCH/review-dap-lm/style/prologs.py), NOT
-  yet run on any file. No file is mid-edit.
-* TODO: make format, make check, MODULE_STATUS row, Lessons section.
 * DONE DMP/DMPR audit: lane AGC files (AOSTASK_AND_AOSJOB, DAPIDLER,
   DAP_INTERFACE_SUBROUTINES, KALMAN_FILTER, P-AXIS, Q_R-AXIS, TJET_LAW,
   TRIM_GIMBAL, RCS_FAILURE_MONITOR, SPS_BACK-UP_RCS, T6-RUPT) contain no
@@ -51,10 +45,22 @@
   ()). Also removed: a tautological assertion in rate.c RATELOOP, unused
   TJ_BIT12. Tools in SCRATCH/review-dap-lm/style (fix.py dump/apply/
   blocks, prolog.py, mainfirst.py).
-* TODO rule-5 density >= 2.0 (check_rules warnings): accs 1.79, arith
-  1.50, dapif 1.40, gts 1.62, state 0.35, dapidler 1.57, qraxis 1.67,
-  qrjets 1.60, qrmanual 1.00, t6rupt 1.40, tjetlaw 1.71; tests too.
-* TODO: make check; MODULE_STATUS row; Lessons.
+* DONE rule-5 density >= 2.0 in every lane file (check_rules 0 hard,
+  0 warnings on src/lm/dap and the two tests): real pre/postconditions
+  (word ranges at the arith.c instruction models, +0 only from +0 + +0
+  in the adder, axis/index ranges, LM-rope-only entries, RESTORDB leaves
+  5 or 0.3 deg, TIME6/TIME5 read back, NXT6ADR is an axis index, jet
+  codes 8 bits, ROTSENSE = +-SENSOR, EDOT reflected >= 0 in the rough
+  laws, PULSEFLG on/off at QRMINIMP/CHEKSTIK). state.c: 18 unused
+  accessors removed (and from include/agc/lm/dap.h): agc_erase_{ch5mask,
+  ch6mask,db,set_db,delcdux/y/z,delperor/q/r,hiascent,set_hiascent,kq,
+  neg_ratedb,perror,qerror,rerror}, agc_lm_dap_running; the rest check
+  dap_valid() (T5ADR, RETJADR, AXISCTR in range) and the value range.
+* DONE make check: no finding in lane files (other lanes' rule-7
+  failures remain). All 34 test programs pass on a scratch build (src/core
+  is mid-edit by review-core-numeric; its failing files fall back to
+  HEAD in SCRATCH/review-dap-lm/build.sh).
+* DONE MODULE_STATUS row, Lessons. Lane review complete.
 
 ## Scratch build
 
@@ -77,5 +83,32 @@ t.sh runs one test against it.
 | R9 | qrjets.c BACKHAND | p.1449 | DAS A / AD Q in a 16-bit A can wrap past the overflow test for |1/ANET x rate| > 10922 (~30 deg/s); C uses exact arithmetic | recorded only (unreachable rates) |
 | R10 | review item F9 at PITCHDAP | -- | PITCHDAP is the CSM TVC DAP (src/csm/dap/tvc/daps.c), not an LM routine | belongs to dap-csm; nothing in this lane |
 | R11 | 30 sites (accont, accs, rate, t6rupt, tjetlaw) | TS/XCH/DXCH/ADS stores, AD before MP/DV | lm_dap_sat (POSMAX limit) used where the AGC stores or multiplies the overflow-corrected word | -> lm_dap_wrap; unreachable TS-skip sites keep sat with a comment; all in-range, oracle unchanged |
+
+| R12 | src/exec/fresh_start.c startsb1 (exec lane) | STARTSB1 p.220 | On an LM software restart (ENEMA) exec sets the T5 task to DAPIDLER itself and never calls agc_lm_dap_restart(): RCSFLAGS bit 13 and ACCSOKAY stay set, T6NEXT/NXT6ADR/NEXTP are not reset, and lm_dap_t.t5adr stays PAXIS, so the next DAPIDLER -> STARTDAP trips AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER) and 1/ACCS is not rerun | REQUEST to exec: in startsb1(), LM branch, replace the WAND/agc_rupt_set_t5_task lines with a checked call `agc_status_t sd = agc_lm_dap_restart();` (it does the WAND, T5ADR, RCSFLAGS, T6NEXT, NXT6ADR, NEXTP, ACCSOKAY) |
+| R13 | state.c, dapif.c, rate.c, paxis.c | -- | Tautological assertions (`x = c; ASSERT(x == c)`, `st = OK; ASSERT(st == OK)`) found while raising density | rate.c RATELOOP one removed; others left where they also guard a later call; new assertions are pre/postconditions across calls |
+
+## Requests
+
+* exec (R12): call agc_lm_dap_restart() from fresh_start.c startsb1()
+  for the LM.
+* sim: agc_lm_dap_time6_count / agc_lm_dap_t6_pending (TIME6 DINC
+  harness) are not called anywhere; the sim does not count TIME6, so
+  no T6RUPT ends a jet firing in scenarios.
+
+## Lessons
+
+* Overflow stores: TS/XCH/DXCH/ADS store the overflow-corrected word,
+  and yaAGC's MP and DV also take the overflow-corrected A, so "AD then
+  MP" is a wrap, not a saturate. Saturate only where the code says so
+  (OVERSUB, LIMITS, explicit CA POSMAX). Where TS overflows into a skip
+  that changes control flow, show the case is unreachable and say so.
+* Style debt at this size is a writing task: a dump/apply loop (line
+  number + comment text, then the formatter) keeps it to judgement on
+  each declaration instead of hand editing; check scales against
+  ERASABLE_ASSIGNMENTS rather than guessing.
+* `st = (s != OK) ? s : st` keeps the LAST failure, not the first;
+  comment such accumulators precisely.
+* Removing unused public accessors is cheaper than padding them with
+  assertions; grep src, tests and sim first.
 
 Oracle cases added by this review: accs_aos_* (13, earlier run), accs_docked_thrust/_aps/_fix, gts_a..f, tg_a..d, tjs_* (20), kal_docked, kal_docked_pw.
