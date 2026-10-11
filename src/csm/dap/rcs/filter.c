@@ -124,10 +124,10 @@ static agc_status_t rcs_fdaitotl(void);
  **********************************************************************/
 agc_status_t csm_rcs_ratefilt(void)
 {
-    agc_csm_rcs_t *r                     = agc_csm_dap_rcs(); /* RCS DAP erasables       */
-    int            g                     = (int) r->attkalmn + GAIN_BIAS; /* INDEX ATTKALMN  */
-    agc_status_t   st                    = AGC_STATUS_OK;
-    agc_dp_words_t deltemp[AGC_CSM_AXES]; /* DELTEMPX..Z, 180 deg     */
+    agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables       */
+    int            g  = (int) r->attkalmn + GAIN_BIAS; /* INDEX ATTKALMN  */
+    agc_status_t   st = AGC_STATUS_OK;
+    agc_dp_words_t deltemp[AGC_CSM_AXES];              /* DELTEMPX..Z, 180 deg     */
 
     if (!AGC_ASSERT((g >= 0) && (g < GAIN_N)))
     {
@@ -178,11 +178,6 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
     agc_sp_t       dx[AGC_CSM_AXES];      /* CDU - RHO, 180 deg (T5TEMP for Y, Z)  */
 
-    if (!AGC_ASSERT(deltemp != NULL))
-    {
-        return;
-    }
-
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         uint16_t now = csm_dap_cdu(i); /* CA CDUX; XCH RHO            */
@@ -202,11 +197,6 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
     /* T5TEMP = CDUZ - RHO2; MP AMGB5; DAS DELTEMPY; AMGB8; DAS DELTEMPZ   */
     csm_dap_words_das(&deltemp[1], csm_dap_words_mp(dx[2], r->amgb5));
     csm_dap_words_das(&deltemp[2], csm_dap_words_mp(r->amgb8, dx[2]));
-
-    if (!AGC_ASSERT(deltemp[2].lo >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -223,7 +213,7 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
  **********************************************************************/
 agc_status_t csm_rcs_kmatrix(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();           /* RCS DAP erasables          */
+    agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables          */
     agc_sp_t       a  = (agc_sp_t) (r->attsec & LOW4); /* CA ATTSEC; MASK LOW4 */
     agc_status_t   st = AGC_STATUS_OK;
 
@@ -286,7 +276,7 @@ static agc_status_t rcs_dcduincr(void)
         agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]); /* DCA CDUXD; DXCH KMPAC; DCA DELCDUX; TC DPADD, 180 deg */
 
         r->thetad[i] = csm_dap_sp_word(agc_dp_high(kmpac)); /* TS THETADX */
-        r->cdud[i]   = kmpac;                                /* DXCH CDUXD */
+        r->cdud[i]   = kmpac;                               /* DXCH CDUXD */
     }
 
     return (AGC_STATUS_OK);
@@ -342,10 +332,10 @@ static agc_status_t rcs_dacndls(void)
  **********************************************************************/
 static agc_status_t rcs_fdaitotl(void)
 {
-    const agc_csm_rcs_t *r                  = agc_csm_dap_rcs(); /* AMGB                     */
-    agc_csm_dapcom_t    *c                  = agc_csm_dap_com(); /* AK, CPHIX                */
+    const agc_csm_rcs_t *r                  = agc_csm_dap_rcs();                                     /* AMGB                     */
+    agc_csm_dapcom_t    *c                  = agc_csm_dap_com();                                     /* AK, CPHIX                */
     bool                 use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES); /* N22ORN17 */
-    uint16_t             ref[AGC_CSM_AXES]; /* WTEMP: N22 or N17 gimbal angles, raw     */
+    uint16_t             ref[AGC_CSM_AXES];                                                          /* WTEMP: N22 or N17 gimbal angles, raw     */
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {

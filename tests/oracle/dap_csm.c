@@ -48,17 +48,18 @@
 #include "agc/guidance/guidance.h"
 #include "oracle_txt.h"
 
-static void              cmp_raw(const char *t, const char *what, unsigned int got, const char *n);
-static void              cmp_sp(const char *t, const char *what, long int got, const char *n);
-static void              cmp_pair(const char *t, const char *n, agc_dp_words_t got);
+static void           cmp_raw(const char *t, const char *what, unsigned int got, const char *n);
+static void           cmp_sp(const char *t, const char *what, long int got, const char *n);
+static void           cmp_pair(const char *t, const char *n, agc_dp_words_t got);
 static agc_dp_words_t pair_in(const char *t, const char *n, int idx);
-static void              fresh(void);
-static void              jets(const char *t);
-static void              pitch(const char *t);
-static void              roll(const char *t);
-static void              rate(const char *t);
-static void              needles(const char *t);
-static void              phase_plane(const char *t);
+static void           fresh(void);
+static void           jets(const char *t);
+static void           pitch(const char *t);
+static void           roll(const char *t);
+static void           rate(const char *t);
+static void           needles(const char *t);
+static void           phase_plane(const char *t);
+static void           massprop(const char *t);
 
 /**********************************************************************
  * AGC: none -- run every case; the exit status reports failures.
@@ -113,6 +114,11 @@ int main(void)
     phase_plane("pp_forced");
     phase_plane("pp_sat");
     phase_plane("pp_lines");
+    massprop("mass_csm_heavy");
+    massprop("mass_csm_light");
+    massprop("mass_docked");
+    massprop("mass_docked_light");
+    massprop("mass_ascent");
 
     return (oracle_finish("oracle_dap_csm"));
 }
@@ -413,13 +419,13 @@ static void rate(const char *t)
     {
         char n[24]; /* NAME or NAME+2k                                   */
 
-        (void) snprintf(n, sizeof (n), (k == 0) ? "DRHO" : "DRHO+%d", 2 * k); /* ?: */
+        (void) snprintf(n, sizeof (n), (k == 0) ? "DRHO" : "DRHO+%d", 2 * k);       /* ?: */
         cmp_pair(t, n, r->drho[k]);
-        (void) snprintf(n, sizeof (n), (k == 0) ? "ADOT" : "ADOT+%d", 2 * k); /* ?: */
+        (void) snprintf(n, sizeof (n), (k == 0) ? "ADOT" : "ADOT+%d", 2 * k);       /* ?: */
         cmp_pair(t, n, r->adot[k]);
         (void) snprintf(n, sizeof (n), (k == 0) ? "MERRORX" : "MERRORX+%d", 2 * k); /* ?: */
         cmp_pair(t, n, r->merror[k]);
-        (void) snprintf(n, sizeof (n), (k == 0) ? "RHO" : "RHO+%d", k); /* ?: */
+        (void) snprintf(n, sizeof (n), (k == 0) ? "RHO" : "RHO+%d", k);             /* ?: */
         cmp_raw(t, n, r->rho[k], n);
     }
 }
@@ -493,4 +499,37 @@ static void phase_plane(const char *t)
     cmp_sp(t, "TAU1", r->tau[1], "TAU1");
     cmp_sp(t, "TAU2", r->tau[2], "TAU2");
     cmp_raw(t, "RCSFLAGS", c->rcsflags, "RCSFLAGS");
+}
+
+/**********************************************************************
+ * MASSPROP 05,3366 -> TC Q (TVCMASSPROP.agc pp. 953-955): breakpoints
+ * VARST0..7 and the outputs IXX, IAVG, IAVG/TLX, WEIGHT/G.
+ *
+ * ARGUMENTS:
+ *   t  const char *  I  case tag
+ **********************************************************************/
+static void massprop(const char *t)
+{
+    const agc_csm_tvc_t    *v = agc_csm_dap_tvc(); /* VARST           */
+    const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* outputs         */
+
+    fresh();
+    agc_erase_set_dapdatr1(oracle_in_raw(t, "DAPDATR1", 0));
+    agc_erase_set_lemmass((agc_sp_t) oracle_in(t, "LEMMASS", 0));
+    agc_erase_set_csmmass((agc_sp_t) oracle_in(t, "CSMMASS", 0));
+    agc_csm_dap_massprop();
+    oracle_require_ok(t, "ENDOFJOB");
+
+    for (int k = 0; k < 8; k++)
+    {
+        char n[16]; /* VARST0 or VARST0+k                               */
+
+        (void) snprintf(n, sizeof (n), (k == 0) ? "VARST0" : "VARST0+%d", k); /* ?: */
+        cmp_sp(t, n, v->varst[k], n);
+    }
+
+    cmp_sp(t, "IXX", c->ixx, "IXX");
+    cmp_sp(t, "IAVG", c->iavg, "IAVG");
+    cmp_sp(t, "IAVG/TLX", c->iavg_tlx, "IAVG/TLX");
+    cmp_sp(t, "WEIGHT/G", c->weight_g, "WEIGHT/G");
 }

@@ -99,19 +99,9 @@ static agc_sp_t tvcd_rlimtest(agc_sp_t d)
 {
     agc_sp_t r = d; /* MCDUxDOT, 2^-15 rev per TVCDT/2                   */
 
-    if (!AGC_ASSERT(d >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     if (csm_dap_mp_hi(d, RECIP_RTLIM) != 0)
     {
         r = 0; /* CAF ZERO; TS TTMP1    */
-    }
-
-    if (!AGC_ASSERT((r == 0) || (r == d)))
-    {
-        return (0); /* no valid result */
     }
 
     return (r);
@@ -133,16 +123,6 @@ static void tvcd_pcdudots(void)
     t->pcduypst = y;
     t->mcduzdot = tvcd_rlimtest(csm_dap_msu(t->pcduzpst, z));
     t->pcduzpst = z;
-
-    if (!AGC_ASSERT(t->pcduypst == y))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->pcduzpst == z))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -159,16 +139,6 @@ static void tvcd_errorlim(void)
     {
         /* CCS ERRBTMP: CAF ERRLIM (+) or CS ERRLIM (-)                    */
         t->errbtmp.hi = (t->errbtmp.hi > 0) ? ERRLIM : (agc_sp_t) -ERRLIM;
-    }
-
-    if (!AGC_ASSERT(t->errbtmp.hi <= ERRLIM))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->errbtmp.hi >= -ERRLIM))
-    {
-        return;
     }
 }
 
@@ -205,16 +175,6 @@ static void tvcd_actlim(void)
         /* CCS CMDTMP: CAF ACTSAT (+) or CS ACTSAT (-)                     */
         t->cmdtmp.hi = (t->cmdtmp.hi > 0) ? ACTSAT : (agc_sp_t) -ACTSAT;
     }
-
-    if (!AGC_ASSERT(t->cmdtmp.hi <= ACTSAT))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -232,31 +192,19 @@ static void tvcd_actlim(void)
  **********************************************************************/
 static agc_dp_words_t tvcd_cascade_out(agc_dp_words_t in, agc_sp_t n, int k)
 {
-    agc_csm_tvc_t    *t   = agc_csm_dap_tvc(); /* TVC DAP erasables     */
+    agc_csm_tvc_t *t   = agc_csm_dap_tvc(); /* TVC DAP erasables     */
     agc_dp_words_t out = {0, 0};            /* DAPn, B-1 rev         */
-
-    if (!AGC_ASSERT((k == 0) || (k == 2) || (k == 4)))
-    {
-        return (out);
-    }
 
     /* CAE in +1; MP N; TS DAPn +1 (DAPn zeroed by FWDFLTR); CA in; MP N;
      * DAS DAPn: the one-and-a-half precision product                     */
-    out.lo                = csm_dap_mp_hi(in.lo, n);
-    agc_sp_t       ovf    = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS */
-    agc_dp_words_t node   = t->tmp[k]; /* TMP(2k-1), B-1 rev          */
+    out.lo              = csm_dap_mp_hi(in.lo, n);
+    agc_sp_t       ovf  = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS */
+    agc_dp_words_t node = t->tmp[k];                                                 /* TMP(2k-1), B-1 rev          */
 
     /* DXCH TMP(2k-1): A,L = overflow, +0 go to TMP; DAS DAPn             */
     t->tmp[k].hi = ovf;
     t->tmp[k].lo = 0;
     csm_dap_words_das(&out, node);
-
-    /* a word out of range: the cascade contributes nothing             */
-    if (!AGC_ASSERT((out.hi >= AGC_SP_MIN) && (out.lo >= AGC_SP_MIN)))
-    {
-        out.hi = 0;
-        out.lo = 0;
-    }
 
     return (out);
 }
@@ -291,16 +239,6 @@ static void tvcd_fwdfltr(void)
     agc_dp_words_t c = csm_dap_words_smallmp(csm_dap_words_neg(t->dap3), t->vark); /* B+3 ascrev */
 
     t->cmdtmp = csm_dap_words_ddoubl(csm_dap_words_ddoubl(c)); /* B+1     */
-
-    if (!AGC_ASSERT(t->vark >= 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->delbrtmp.hi == 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -318,13 +256,8 @@ static void tvcd_fwdfltr(void)
  **********************************************************************/
 static void tvcd_cascade_pre(agc_dp_words_t in, agc_dp_words_t out, int j, int k)
 {
-    agc_csm_tvc_t    *t    = agc_csm_dap_tvc();     /* TVC DAP erasables    */
+    agc_csm_tvc_t *t    = agc_csm_dap_tvc();      /* TVC DAP erasables    */
     agc_dp_words_t nout = csm_dap_words_neg(out); /* CS DAPn, B-1 rev */
-
-    if (!AGC_ASSERT(((j == 1) || (j == 6) || (j == 11)) && (k >= 0) && (k <= 4)))
-    {
-        return;
-    }
 
     /* TTMP1 = N_1/2 in, TTMP2 = -D_1/2 out; DAS TTMP1                    */
     agc_dp_words_t sum = csm_dap_words_smallmp(in, t->n10[j]); /* B-1  */
@@ -340,11 +273,6 @@ static void tvcd_cascade_pre(agc_dp_words_t in, agc_dp_words_t out, int j, int k
     /* TMP(k+1) = -D_2 out (TS TMP(k+1) +1 after TS of zero); DAS N_2 in  */
     t->tmp[k + 1] = csm_dap_words_smallmp(nout, t->n10[j + 3]);
     csm_dap_words_das(&t->tmp[k + 1], csm_dap_words_smallmp(in, t->n10[j + 1]));
-
-    if (!AGC_ASSERT(t->tmp[k].hi >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -364,16 +292,6 @@ static void tvcd_precomp(void)
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT13) == 0u)
     {
         tvcd_cascade_pre(t->dap2, t->dap3, 11, 4); /* 3CASFLTR         */
-    }
-
-    if (!AGC_ASSERT(t->n10[0] != 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->vark >= 0))
-    {
-        return;
     }
 }
 
@@ -396,11 +314,6 @@ static void tvcd_delbar(agc_dp_words_t delbar)
     t->delbrtmp.lo = csm_dap_mp_hi(delbar.lo, E_AT);
     csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(delbar.hi, E_AT));
     csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(t->cmdtmp.hi, ONE_M_EAT));
-
-    if (!AGC_ASSERT(t->delbrtmp.hi >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -509,11 +422,6 @@ static void tvcd_integrate(tvcd_axis_t ax)
     agc_sp_t             cosx = agc_dp_high(g->coscdu[AGC_TRIG_X]); /* 2^1 */
     agc_sp_t             sinx = agc_dp_high(g->sincdu[AGC_TRIG_X]); /* 2^1 */
 
-    if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
-    {
-        return;
-    }
-
     /* DCA xERRB; DXCH ERRBTMP; DCA OMEGAxC; DAS ERRBTMP (B-1 rev)        */
     t->errbtmp = p ? t->perrb : t->yerrb; /* pitch or yaw integrator   */
     csm_dap_words_das(&t->errbtmp, agc_dp_to_words(t->omegac[a]));
@@ -523,16 +431,11 @@ static void tvcd_integrate(tvcd_axis_t ax)
      * yaw:   CAE COSCDUZ; MP SINCDUX; ...;   MP COSCDUX ... OMEGAZB      */
     agc_sp_t k = csm_dap_words_ddoubl(csm_dap_words_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
 
-    t->omegab[a] = csm_dap_words_ddoubl(csm_dap_words_mp(k, t->mcduydot));                                                    /* revs/s  */
+    t->omegab[a] = csm_dap_words_ddoubl(csm_dap_words_mp(k, t->mcduydot));                                              /* revs/s  */
     csm_dap_words_das(&t->omegab[a], csm_dap_words_ddoubl(csm_dap_words_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
 
     /* DCS OMEGAxB; DAS ERRBTMP                                           */
     csm_dap_words_das(&t->errbtmp, csm_dap_words_neg(t->omegab[a]));
-
-    if (!AGC_ASSERT(t->errbtmp.hi >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -564,16 +467,6 @@ static void tvcd_output(tvcd_axis_t ax)
     {
         agc_erase_set_tvcyaw(csm_dap_ads(agc_erase_tvcyaw(), inc));
         agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUT); /* 12 */
-    }
-
-    if (!AGC_ASSERT(t->cmdtmp.hi <= ACTSAT))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->cmdtmp.hi >= -ACTSAT))
-    {
-        return;
     }
 }
 

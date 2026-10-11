@@ -1,17 +1,53 @@
-/*
- * manual.c -- phase 2 of the RCS-CSM autopilot: manual rotation
- * commands from the rotational hand controller (RHC).
- * RCS-CSM_DIGITAL_AUTOPILOT.agc (Comanche055 pp. 1017-1021): MANUAL
- * ROTATION COMMANDS, NOCHANGE, SETWBODY, ZEROER, NORATE, MERUPDAT,
- * SPNDXCHK, FREEFUNC, STICKCHK, and the tables MANTABLE and FREETAU.
+/**********************************************************************
+ * FILE NAME: manual.c
  *
- * Channel 31 bits 1-6 (RHC rotation, 0 = commanded) change -> forced
- * firing bits (RCSFLAGS bits 10-5) and rate damping flags (bits 13-11).
- * With the RHC out of detent the DAP flies the commanded rate (RATEINDX:
- * 0.05, 0.2, 0.5 or 2.0 deg/s) and accumulates the attitude error MERROR
- * = MERROR + measured change - commanded change (the measured change is
- * added in the rate filter).
- */
+ * PURPOSE:
+ *   Phase 2 of the RCS-CSM autopilot: manual rotation commands from the
+ *   rotational hand controller (RHC). A change of channel 31 bits 1-6
+ *   (RHC rotation, 0 = commanded) sets the forced firing bits (RCSFLAGS
+ *   bits 10-5) and the rate damping flags (bits 13-11). With the RHC out
+ *   of detent the DAP flies the commanded rate (RATEINDX: 0.05, 0.2, 0.5
+ *   or 2.0 deg/s) and accumulates the attitude error MERROR = MERROR +
+ *   measured change - commanded change (the measured change is added in
+ *   the rate filter). Labels: MANUAL ROTATION COMMANDS, NOCHANGE,
+ *   SETWBODY, ZEROER, NORATE, MERUPDAT, SPNDXCHK, FREEFUNC, STICKCHK;
+ *   tables MANTABLE, FREETAU.
+ *
+ * AGC SOURCE:
+ *   Comanche055 RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1016-1021
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type            I/O  Scale        Description
+ *   ------------  --------------  ---  -----------  ------------------
+ *   CH31TEMP      uint16_t        I/O  bits         last channel 31
+ *   RCSFLAGS      uint16_t        I/O  bits         forced, damping bits
+ *   HOLDFLAG      agc_sp_t        O    -            + while commanded
+ *   RMANNDX..     agc_sp_t        I/O  index        STICKCHK results
+ *   RATEINDX      agc_sp_t        I    index        0, 2, 4, 6
+ *   WBODY..       agc_dp_t        O    450 deg/s    commanded rate
+ *   MERRORX..     agc_dp_words_t  I/O  180 deg      manual att. error
+ *   ERRORX..      agc_sp_t        O    180 deg      upper word of MERROR
+ *   TAU..TAU2     agc_sp_t        O    1/1600 s     free-mode commands
+ *   ATTKALMN      agc_sp_t        O    index        -1 at high rate
+ *   STIKFLAG      flag            O    -            astronaut control
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   csm_rcs_ahfnorot      AHFNOROT (attitude.c)
+ *   csm_rcs_jets          JETS (attitude.c)
+ *   csm_rcs_t6prog_manual T6PROGM (attitude.c)
+ *   csm_rcs_reinit        REINIT (t5rupt.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none in the AGC. AGC_STATUS_BAD_ARG for command bits outside MANROT
+ *   or a MANTABLE index outside the table.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in T5PHASE2 after the forced-firing bits have been cleared.
+ *   After the RHC returns to detent the program branches to AHFNOROT and
+ *   avoids STICKCHK, so the MANNDX keep their last out-of-detent values.
+ **********************************************************************/
 #include "../internal.h"
 
 #define MANROT     ((uint16_t) 000077) /* MANROT OCT 77                    */
@@ -19,7 +55,7 @@
 #define DAMPBITS   ((uint16_t) 016000) /* OCT16000 rate damping mask       */
 #define BIT9       ((agc_sp_t) 0400)   /* MP BIT9: MANTABLE x 2^-6 = WBODY */
 #define BIT7       ((agc_sp_t) 0100)   /* MP BIT7: x 2^-8 = change in .1 s */
-#define MANTAB_N   9
+#define MANTAB_N   9                   /* MANTABLE words, with =+14MS      */
 
 /* MANTABLE (p. 1019), indexed by MANNDX + RATEINDX - 1, rate scaled
  * (450 deg/s) x 2^6. The ninth word is the constant that follows in
@@ -37,60 +73,70 @@ static const agc_sp_t mantable[MANTAB_N] = {
     23     /* 00027 =+14MS (following word)  */
 };
 
-/* FREETAU (p. 1020): free-mode acceleration commands, 1/1600 s.          */
+/* FREETAU (p. 1020): free-mode acceleration commands, 1/1600 s (DEC 480
+ * is 0.30 s; the AGC comment reads 0.10).                                */
 static const agc_sp_t freetau[4] = {
-    0,    /* 0 sec       */
-    480,  /* +0.30 sec (00740); the AGC comment reads +0.10 */
-    -480, /* -0.30 sec (77037) */
-    0     /* (+3) 0 sec  */
+    0,    /* 0 sec        */
+    480,  /* +0.30 sec    */
+    -480, /* -0.30 sec    */
+    0     /* (+3) 0 sec   */
 };
 
 static agc_status_t rcs_setwbody(void);
 static agc_status_t rcs_freefunc(void);
 
-/* MANUAL ROTATION COMMANDS .. NOCHANGE (pp. 1017-1018).                 */
+/**********************************************************************
+ * MANUAL ROTATION COMMANDS .. NOCHANGE (RCS-CSM_DIGITAL_AUTOPILOT.agc
+ * pp. 1016-1018) -- on a change of the RHC bits (CH31TEMP XOR channel
+ * 31) save channel 31, set the forced firing bits of the changed axes
+ * (bits 6-1 into bits 10-5: 10,9 roll, 8,7 yaw, 6,5 pitch) and the rate
+ * damping flags. With no rotation commanded go to AHFNOROT; otherwise
+ * HOLDFLAG +, STICKCHK, STIKFLAG, then free mode (FREEFUNC), filter
+ * not initialised (REINIT), or the commanded rates (SETWBODY), with
+ * ATTKALMN -1 at RATEINDX 6.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the branch taken
+ **********************************************************************/
 agc_status_t csm_rcs_manual(void)
 {
-    agc_csm_rcs_t    *r = agc_csm_dap_rcs();
-    agc_csm_dapcom_t *c = agc_csm_dap_com();
+    agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* RCS DAP erasables       */
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                */
 
-    c->rcsflags   = (uint16_t) (c->rcsflags & ~(unsigned) FORCEDBITS);
-    uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);
-    uint16_t chg  = (uint16_t) ((r->ch31temp ^ ch31) & MANROT); /* RXOR LCHAN */
+    c->rcsflags   = (uint16_t) (c->rcsflags & ~(unsigned int) FORCEDBITS); /* CS OCT01760; MASK */
+    uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);                        /* READ CHAN31; TS L */
+    uint16_t chg  = (uint16_t) ((r->ch31temp ^ ch31) & MANROT);            /* RXOR LCHAN; MASK  */
 
     if (chg != 0u)
     {
-        r->ch31temp = ch31; /* save channel 31 in CH31TEMP       */
+        r->ch31temp = ch31; /* LXCH A; TS CH31TEMP                      */
 
-        /* MP BIT5: bits 6-1 into bits 10-5: 10,9 roll, 8,7 yaw, 6,5 pitch */
-        c->rcsflags = (uint16_t) (c->rcsflags + (unsigned) (chg << 4));
-        c->rcsflags = (uint16_t) (c->rcsflags | DAMPBITS); /* rate damping */
+        /* CA L; MP BIT5; CA L; ADS RCSFLAGS: bits 6-1 into bits 10-5     */
+        c->rcsflags = (uint16_t) (c->rcsflags + (unsigned int) (chg << 4));
+        c->rcsflags = (uint16_t) (c->rcsflags | DAMPBITS); /* CS; MASK OCT16000; ADS */
     }
 
-    uint16_t cmd = (uint16_t) (~(unsigned) r->ch31temp & MANROT); /* NOCHANGE */
+    uint16_t cmd = (uint16_t) (~(unsigned int) r->ch31temp & MANROT); /* NOCHANGE: CS CH31TEMP; MASK */
 
     if (cmd == 0u)
     {
-        return (csm_rcs_ahfnorot()); /* no manual commands                */
+        return (csm_rcs_ahfnorot()); /* BZMF AHFNOROT: no manual commands */
     }
 
-    r->holdflag     = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
-    agc_status_t st = csm_rcs_stickchk(cmd);
-
-    if (st == AGC_STATUS_OK)
-    {
-        agc_flag_set(AGC_FLAG_STIKFLAG); /* inform P20: astronaut control */
-        st = AGC_STATUS_OK;
-    }
+    r->holdflag     = (agc_sp_t) cmd;            /* TS HOLDFLAG: +          */
+    agc_status_t st = agc_csm_dap_stickchk(cmd); /* TC STICKCHK             */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
+    agc_flag_set(AGC_FLAG_STIKFLAG); /* inform P20: astronaut control   */
+
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return (rcs_freefunc());
+        return (rcs_freefunc()); /* CAF BIT14; RAND CHAN31; BZMF        */
     }
 
     if (csm_rcs_rate_init_pending())
@@ -100,43 +146,53 @@ agc_status_t csm_rcs_manual(void)
 
     if (r->ratindx - 5 > 0)
     {
-        r->attkalmn = -1; /* manual maneuver at high rate      */
+        r->attkalmn = -1; /* CS FIVE; AD RATEINDX: high-rate maneuver    */
     }
 
     return (rcs_setwbody());
-}
+} /* csm_rcs_manual */
 
-/* SETWBODY .. SPNDXCHK (pp. 1018-1019), auto-hold manual rotation.       */
+/**********************************************************************
+ * SETWBODY, ZEROER, NORATE, MERUPDAT, SPNDXCHK
+ * (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1018-1019) -- auto-hold manual
+ * rotation, axes Z, Y, X: WBODY = MANTABLE x 2^-6 (0 with no rotation);
+ * once rate damping is completed MERRORX -= MANTABLE x 2^-8 (the
+ * commanded change in .1 s), else MERRORX = 0 for a commanded axis or
+ * while damping; ERRORX = upper word of MERRORX; then JETS.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the JETS status; AGC_STATUS_BAD_ARG for a
+ *          MANTABLE index outside the table
+ **********************************************************************/
 static agc_status_t rcs_setwbody(void)
 {
-    agc_csm_rcs_t          *r      = agc_csm_dap_rcs();
-    const agc_csm_dapcom_t *c      = agc_csm_dap_com();
+    agc_csm_rcs_t          *r      = agc_csm_dap_rcs();              /* RCS DAP erasables      */
+    const agc_csm_dapcom_t *c      = agc_csm_dap_com();              /* RCSFLAGS               */
     bool                    damped = (c->rcsflags & DAMPBITS) == 0u; /* rate damping completed */
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
     {
-        int m = (int) r->manndx[i]; /* 0 none, 1 +, 2 - rotation         */
+        int m = (int) r->manndx[i]; /* 0 none, 1 +, 2 - rotation, 3 both */
 
         if (m == 0)
         {
-            r->wbody[i] = 0; /* NORATE                            */
+            r->wbody[i] = 0; /* NORATE: ZL; DXCH WBODY                  */
         }
         else
         {
-            int q = m + (int) r->ratindx - 1; /* MANTABLE -1 + Q         */
+            int q = m + (int) r->ratindx - 1; /* INDEX Q; MANTABLE -1  */
 
             if (!AGC_ASSERT((q >= 0) && (q < MANTAB_N)))
             {
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            r->wbody[i] = agc_sp_mul(mantable[q], BIT9); /* WBODY       */
+            r->wbody[i] = agc_sp_mul(mantable[q], BIT9); /* MP BIT9; DXCH WBODY, scale 450 deg/s */
 
             if (damped)
-            { /* MERUPDAT    */
-                agc_sp_t neg = (agc_sp_t) -mantable[q];
-
-                csm_dap_words_das(&r->merror[i], csm_dap_words_mp(neg, BIT7)); /* DAS MERRORX */
+            { /* MERUPDAT: CS MANTABLE -1; MP BIT7; DAS MERRORX */
+                csm_dap_words_das(&r->merror[i], csm_dap_words_mp((agc_sp_t) -mantable[q], BIT7));
             }
         }
 
@@ -148,79 +204,57 @@ static agc_status_t rcs_setwbody(void)
         r->error[i] = r->merror[i].hi; /* SPNDXCHK: high order word of MERRORX */
     }
 
-    if (!AGC_ASSERT(r->ratindx >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (csm_rcs_jets());
-}
+} /* rcs_setwbody */
 
-/* FREEFUNC (pp. 1019-1020): acceleration commands in free mode.          */
+/**********************************************************************
+ * FREEFUNC (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1019-1020) --
+ * acceleration commands in free mode: TAU = FREETAU by the STICKCHK
+ * indices; T6PROGM.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the T6PROGM status
+ **********************************************************************/
 static agc_status_t rcs_freefunc(void)
 {
-    agc_csm_rcs_t *r = agc_csm_dap_rcs();
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* MANNDX, TAU                */
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
-        int m = (int) r->manndx[i];
-
-        if (!AGC_ASSERT((m >= 0) && (m <= 3)))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        r->tau[i] = freetau[m]; /* TAU, TAU1, TAU2                   */
-    }
-
-    if (!AGC_ASSERT(r->tau[0] >= -480))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        r->tau[i] = freetau[r->manndx[i] & 3]; /* INDEX RMANNDX; CA FREETAU; TS TAU */
     }
 
     return (csm_rcs_t6prog_manual());
 }
 
-/* STICKCHK (p. 1021): RMANNDX, PMANNDX, YMANNDX = 0, 1, 2 (or 3) for no,
- * +, or - rotation (both) from the six command bits. After the RHC is
- * returned to detent the indices keep their last out-of-detent values.  */
-agc_status_t csm_rcs_stickchk(uint16_t bits)
+/**********************************************************************
+ * STICKCHK (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1021; also SATSTICK in
+ * guid-entry) -- RMANNDX,
+ * PMANNDX, YMANNDX = 0, 1, 2 (or 3) for no, +, or - rotation (both)
+ * from the six command bits (1,2 pitch, 3,4 yaw, 5,6 roll): MASK THREE,
+ * MP QUARTER (shift right 2), MASK THREE, MP QUARTER.
+ *
+ * ARGUMENTS:
+ *   bits  uint16_t  I  RHC command bits 1-6, active 1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG for bits
+ *          outside MANROT
+ **********************************************************************/
+agc_status_t agc_csm_dap_stickchk(uint16_t bits)
 {
-    agc_csm_rcs_t *r = agc_csm_dap_rcs();
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* MANNDX                     */
 
     if (!AGC_ASSERT(bits <= MANROT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    r->manndx[1] = (agc_sp_t) (bits & 3u); /* PMANNDX: bits 1,2   */
-    unsigned t   = (unsigned) bits >> 2;   /* MP QUARTER          */
+    r->manndx[1]   = (agc_sp_t) (bits & 3u);   /* TS T5TEMP; MASK THREE; TS PMANNDX */
+    unsigned int t = (unsigned int) bits >> 2; /* CA T5TEMP; MP QUARTER          */
 
-    r->manndx[2] = (agc_sp_t) (t & 3u); /* YMANNDX: bits 3,4   */
-    r->manndx[0] = (agc_sp_t) (t >> 2); /* RMANNDX: bits 5,6   */
-
-    if (!AGC_ASSERT(r->manndx[0] <= 3))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    r->manndx[2] = (agc_sp_t) (t & 3u); /* MASK THREE; TS YMANNDX            */
+    r->manndx[0] = (agc_sp_t) (t >> 2); /* MP QUARTER; TS RMANNDX            */
 
     return (AGC_STATUS_OK);
-}
-
-/* STICKCHK (p. 1021) for other lanes (SATSTICK): see csm_rcs_stickchk. */
-agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits)
-{
-    if (!AGC_ASSERT(ch31_bits <= 077u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = csm_rcs_stickchk(ch31_bits);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
 }

@@ -23,6 +23,8 @@
 # JETS 21,3441 -> stop T6PROG (phase-plane logic, JTIME): ADB SLOPE
 #   HOLDFLAG ADOT (word pairs) WBODY ERRORX J/M RCSFLAGS TAU -> TAU
 #   TAU1 TAU2 RCSFLAGS.
+# MASSPROP 05,3366 -> TC Q (MASSPROP, FIXCW): DAPDATR1 LEMMASS CSMMASS
+#   -> VARST0..7 IXX IAVG IAVG/TLX WEIGHT/G (masses B+16 kg).
 rope Comanche055
 entry INTPRET
 maxcycles 5000000
@@ -966,3 +968,128 @@ set J/M=05670,05670,05670
 set RCSFLAGS=16000
 set TAU=00115,00115,00115
 run pp_lines
+clearstops
+stop ENDOFJOB
+cleargets
+get VARST0
+get VARST0+1
+get VARST0+2
+get VARST0+3
+get VARST0+4
+get VARST0+5
+get VARST0+6
+get VARST0+7
+get IXX
+get IAVG
+get IAVG/TLX
+get WEIGHT/G
+entry MASSPROP
+q ENDOFJOB
+fbank 5
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set DAPDATR1=10000
+set LEMMASS=00000
+set CSMMASS=16514
+run mass_csm_heavy
+clearstops
+stop ENDOFJOB
+cleargets
+get VARST0
+get VARST0+1
+get VARST0+2
+get VARST0+3
+get VARST0+4
+get VARST0+5
+get VARST0+6
+get VARST0+7
+get IXX
+get IAVG
+get IAVG/TLX
+get WEIGHT/G
+entry MASSPROP
+q ENDOFJOB
+fbank 5
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set DAPDATR1=10000
+set LEMMASS=00000
+set CSMMASS=04704
+run mass_csm_light
+clearstops
+stop ENDOFJOB
+cleargets
+get VARST0
+get VARST0+1
+get VARST0+2
+get VARST0+3
+get VARST0+4
+get VARST0+5
+get VARST0+6
+get VARST0+7
+get IXX
+get IAVG
+get IAVG/TLX
+get WEIGHT/G
+entry MASSPROP
+q ENDOFJOB
+fbank 5
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set DAPDATR1=20000
+set LEMMASS=07246
+set CSMMASS=16514
+run mass_docked
+clearstops
+stop ENDOFJOB
+cleargets
+get VARST0
+get VARST0+1
+get VARST0+2
+get VARST0+3
+get VARST0+4
+get VARST0+5
+get VARST0+6
+get VARST0+7
+get IXX
+get IAVG
+get IAVG/TLX
+get WEIGHT/G
+entry MASSPROP
+q ENDOFJOB
+fbank 5
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set DAPDATR1=20000
+set LEMMASS=02260
+set CSMMASS=05670
+run mass_docked_light
+clearstops
+stop ENDOFJOB
+cleargets
+get VARST0
+get VARST0+1
+get VARST0+2
+get VARST0+3
+get VARST0+4
+get VARST0+5
+get VARST0+6
+get VARST0+7
+get IXX
+get IAVG
+get IAVG/TLX
+get WEIGHT/G
+entry MASSPROP
+q ENDOFJOB
+fbank 5
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set DAPDATR1=60000
+set LEMMASS=02114
+set CSMMASS=13560
+run mass_ascent

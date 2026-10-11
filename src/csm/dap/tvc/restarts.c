@@ -161,17 +161,17 @@ agc_status_t agc_task_optics_counter_enable(void)
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBOCDUERR);
     agc_status_t st = csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS); /* T5   */
 
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

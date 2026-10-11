@@ -45,7 +45,9 @@ def main():
         'NEEDLES 21,2476 -> TC Q (DACLOOP): AK EDRIVEX -> EDRIVEX.',
         'JETS 21,3441 -> stop T6PROG (phase-plane logic, JTIME): ADB SLOPE',
         '  HOLDFLAG ADOT (word pairs) WBODY ERRORX J/M RCSFLAGS TAU -> TAU',
-        '  TAU1 TAU2 RCSFLAGS.'])
+        '  TAU1 TAU2 RCSFLAGS.',
+        'MASSPROP 05,3366 -> TC Q (MASSPROP, FIXCW): DAPDATR1 LEMMASS CSMMASS',
+        '  -> VARST0..7 IXX IAVG IAVG/TLX WEIGHT/G (masses B+16 kg).'])
     jg = (['RWORD1', 'RWORD2', 'PWORD1', 'PWORD2', 'YWORD1', 'YWORD2',
            'BLAST:dp', 'BLAST1:dp', 'BLAST2:dp', 'DFT', 'DFT1', 'DFT2',
            'TAU', 'TAU1', 'TAU2', 'ATTKALMN'])
@@ -185,6 +187,20 @@ def main():
                ('ERRORX', pairs(err)), ('J/M', pairs(jm)),
                ('RCSFLAGS', '%05o' % flags), ('TAU', pairs([77, 77, 77]))],
               jgs, ebank=6, entry='JETS')
+
+    # MASSPROP: DAPDATR1 bit 13 CSM alone, bit 14 docked, bit 15 descent
+    # stage off; CSMMASS above and below the 15402 kg breakpoint.
+    mg = ['VARST0+%d' % k if k else 'VARST0' for k in range(8)] + \
+        ['IXX', 'IAVG', 'IAVG/TLX', 'WEIGHT/G']
+    for tag, d1, lem, csm in (
+            ('mass_csm_heavy', 0o10000, 0, 7500),
+            ('mass_csm_light', 0o10000, 0, 2500),
+            ('mass_docked', 0o20000, 3750, 7500),
+            ('mass_docked_light', 0o20000, 1200, 3000),
+            ('mass_ascent', 0o60000, 1100, 6000)):
+        s.run(tag, 'ENDOFJOB', 0o5, 'ENDOFJOB',
+              [('DAPDATR1', '%05o' % d1), ('LEMMASS', _w(lem)),
+               ('CSMMASS', _w(csm))], mg, ebank=6, entry='MASSPROP')
     s.write(os.path.join(OUT, 'dap_csm.spec'))
 
 if __name__ == '__main__':

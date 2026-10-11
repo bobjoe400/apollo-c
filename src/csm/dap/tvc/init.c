@@ -133,11 +133,6 @@ static void tvc_loadcoef(tvc_coef_set_t set)
     agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* HBN10 pad load    */
 
-    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) || (set == TVC_COEF_LB)))
-    {
-        return;
-    }
-
     for (int i = 0; i < AGC_CSM_N10_WORDS; i++)
     {
         if (set == TVC_COEF_HB)
@@ -152,11 +147,6 @@ static void tvc_loadcoef(tvc_coef_set_t set)
         {
             t->n10[i] = csmn10[i];
         }
-    }
-
-    if (!AGC_ASSERT(t->n10[0] != 0))
-    {
-        return;
     }
 }
 
@@ -211,7 +201,7 @@ agc_status_t csm_tvc_gains(bool full)
  **********************************************************************/
 agc_status_t csm_tvc_mrclean(void)
 {
-    agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
+    agc_csm_tvc_t       *t    = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZERO % 2 == 1, "AGC constant");
@@ -344,16 +334,6 @@ static void tvc_init_trims(void)
     t->ydeloff.hi = c->yactoff;
     t->ycmd       = c->yactoff;
     t->delybar.hi = c->yactoff;
-
-    if (!AGC_ASSERT(t->pcmd == c->pactoff))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(t->ycmd == c->yactoff))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -398,11 +378,6 @@ static void tvc_attinit(void)
 
     t->perrb.hi = t->errbtmp.hi; /* CA ERRBTMP; TS PERRB                 */
     t->yerrb.hi = t->errbtmp.lo; /* CA ERRBTMP +1; TS YERRB              */
-
-    if (!AGC_ASSERT((t->perrb.hi >= -ATTLIM) && (t->perrb.hi <= ATTLIM)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -512,7 +487,7 @@ agc_status_t csm_tvc_swichovr_body(void)
 {
     agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_csm_dapcom_t *c    = agc_csm_dap_com(); /* EKTLX/I +2     */
-    const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
+    const agc_dp_words_t    zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZEROJR + 1 == 2 * NODES * 2, "AGC constant");
 

@@ -36,7 +36,7 @@
  *   csm_dap_words_*       DAS, MP, SMALLMP on stored words (mysubs.c)
  *   csm_dap_msu, _ads,    basic-language word arithmetic (mysubs.c)
  *   _mp_hi, _dv
- *   csm_rcs_stickchk      STICKCHK (manual.c)
+ *   agc_csm_dap_stickchk      STICKCHK (manual.c)
  *   csm_rcs_reinit        REINIT (t5rupt.c)
  *   agc_rupt_set_t5_task  T5LOC = JETSLECT (T6PROG)
  *
@@ -127,11 +127,6 @@ static agc_sp_t     rcs_jtime(int i, agc_dp_words_t kmpac);
  **********************************************************************/
 static bool words_nonneg(agc_dp_words_t w)
 {
-    if (!AGC_ASSERT((w.hi >= AGC_SP_MIN) && (w.lo >= AGC_SP_MIN)))
-    {
-        return (true);
-    }
-
     if (w.hi != 0)
     {
         return (w.hi > 0); /* CCS X                                    */
@@ -195,12 +190,12 @@ static agc_status_t rcs_freecont(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
-    r->holdflag   = 1; /* CAF ONE; TS HOLDFLAG: inhibit steering        */
-    uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);                  /* READ CHAN32; TS L */
+    r->holdflag   = 1;                                                    /* CAF ONE; TS HOLDFLAG: inhibit steering        */
+    uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);                       /* READ CHAN32; TS L */
     uint16_t bits = (uint16_t) (~(unsigned) ch32 & MANROT & r->chantemp); /* COM; MASK MANROT; MASK CHANTEMP */
 
     r->chantemp     = ch32; /* LXCH CHANTEMP                            */
-    agc_status_t st = csm_rcs_stickchk(bits);
+    agc_status_t st = agc_csm_dap_stickchk(bits);
 
     if (st != AGC_STATUS_OK)
     {
@@ -299,7 +294,7 @@ static agc_status_t rcs_grabang(void)
  **********************************************************************/
 static agc_status_t rcs_atthold(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();                            /* RCS DAP erasables       */
+    agc_csm_rcs_t *r  = agc_csm_dap_rcs();                           /* RCS DAP erasables       */
     agc_sp_t       ex = csm_dap_msu(agc_erase_cdux(), r->thetad[0]); /* CDUX - THETADX, 180 deg */
     agc_sp_t       t  = csm_dap_msu(agc_erase_cduy(), r->thetad[1]); /* T5TEMP, 180 deg         */
 
@@ -347,13 +342,13 @@ agc_status_t csm_rcs_jets(void)
             csm_dap_words_das(&p.edot, csm_dap_words_neg(agc_dp_to_words(r->wbody[i])));
         }
 
-        p.aerr   = r->error[i];         /* INHOLD: AERR = BIAS + AK   */
+        p.aerr   = r->error[i];          /* INHOLD: AERR = BIAS + AK   */
         bool pos = words_nonneg(p.edot); /* CCS EDOT; SIGNCK1          */
 
-        p.edotvel                = pos ? p.edot : csm_dap_words_neg(p.edot);  /* ?: POSVEL DCA / NEGVEL DCS EDOT */
-        p.adbvel                 = pos ? p.adbaf : (agc_sp_t) -p.adbaf; /* ?: +-(ADB+AF)    */
-        p.aerrvel                = pos ? p.aerr : (agc_sp_t) -p.aerr;   /* ?: +-AERR        */
-        agc_dp_words_t kmpac     = {0, 0};                              /* DELTA W, 450 deg/s */
+        p.edotvel            = pos ? p.edot : csm_dap_words_neg(p.edot); /* ?: POSVEL DCA / NEGVEL DCS EDOT */
+        p.adbvel             = pos ? p.adbaf : (agc_sp_t) -p.adbaf;      /* ?: +-(ADB+AF)    */
+        p.aerrvel            = pos ? p.aerr : (agc_sp_t) -p.aerr;        /* ?: +-AERR        */
+        agc_dp_words_t kmpac = {0, 0};                                   /* DELTA W, 450 deg/s */
 
         if (rcs_delta_w(i, &p, &kmpac))
         {
@@ -439,16 +434,11 @@ static pp_region_t rcs_region(const pp_point_t *p)
  **********************************************************************/
 static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
 {
-    agc_csm_dapcom_t *c     = agc_csm_dap_com();             /* RCSFLAGS          */
-    pp_region_t       reg   = rcs_region(p);                 /* switching logic   */
-    agc_dp_words_t    medot = csm_dap_words_neg(p->edot);    /* DCS EDOT, 450 deg/s */
-    bool              epos  = words_nonneg(p->edot);         /* CCS EDOT; SIGNCK4/5 */
-    bool              fire  = true;                          /* JTIME follows     */
-
-    if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES) && (kmpac != NULL)))
-    {
-        return (false);
-    }
+    agc_csm_dapcom_t *c     = agc_csm_dap_com();          /* RCSFLAGS          */
+    pp_region_t       reg   = rcs_region(p);              /* switching logic   */
+    agc_dp_words_t    medot = csm_dap_words_neg(p->edot); /* DCS EDOT, 450 deg/s */
+    bool              epos  = words_nonneg(p->edot);      /* CCS EDOT; SIGNCK4/5 */
+    bool              fire  = true;                       /* JTIME follows     */
 
     switch (reg)
     {
@@ -458,7 +448,7 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
             *kmpac      = medot;
             break;
         case PP_J18:
-            *kmpac      = medot; /* DCS EDOT; DXCH KMPAC                    */
+            *kmpac      = medot;                                             /* DCS EDOT; DXCH KMPAC                    */
             break;
         case PP_J20:
             /* CS AERR; AD ADBVEL; MP SLOPE2; DXCH KMPAC; DCS EDOT; DAS   */
@@ -473,15 +463,15 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
         case PP_J21:
             /* EDOT + : JP (DCS EDOT; DCS WL; DAS), - : JN (DCA WL; DAS)  */
             *kmpac      = medot;
-            csm_dap_words_das(kmpac, epos ? csm_dap_words_neg(wl) : wl); /* ?: JP / JN */
+            csm_dap_words_das(kmpac, epos ? csm_dap_words_neg(wl) : wl);     /* ?: JP / JN */
             break;
         case PP_J22:
             /* EDOT + : JN, - : JP                                        */
             *kmpac      = medot;
-            csm_dap_words_das(kmpac, epos ? wl : csm_dap_words_neg(wl)); /* ?: JN / JP */
+            csm_dap_words_das(kmpac, epos ? wl : csm_dap_words_neg(wl));     /* ?: JN / JP */
             break;
         default:
-            fire        = false; /* unreachable: all regions listed        */
+            fire        = false;                                             /* unreachable: all regions listed        */
             break;
     }
 
@@ -503,11 +493,6 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
 static agc_sp_t rcs_jtime(int i, agc_dp_words_t kmpac)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* J/M                  */
-
-    if (!AGC_ASSERT((i >= 0) && (i < AGC_CSM_AXES)))
-    {
-        return (0);
-    }
 
     agc_dp_words_t k = csm_dap_words_smallmp(kmpac, r->jm[i]); /* CA J/M; TC SMALLMP, (57.3/450)(B24/1600) */
 

@@ -103,16 +103,6 @@ static agc_sp_t sgn_mul(int i, agc_sp_t v)
 {
     agc_sp_t r = v; /* CA: v unchanged                                  */
 
-    if (!AGC_ASSERT((i == 1) || (i == -1)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     if (i < 0)
     {
         r = (agc_sp_t) -v; /* CS                                       */
@@ -139,11 +129,6 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    if (!AGC_ASSERT((i == 1) || (i == -1)))
-    {
-        return (0);
-    }
-
     /* MP 1/CONACC; DOUBLE; MP -SLOPE: TEMREG = 2(-SLOPE)RATE/CONACC      */
     agc_sp_t a   = csm_dap_mp_hi(delogart, t->one_conacc); /* B+5 rev^-1 s */
     agc_sp_t den = csm_dap_mp_hi(csm_dap_ads(a, a), NEG_SLOPE);
@@ -157,9 +142,14 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
     t->delogart = num;
     num         = csm_dap_ads(csm_dap_mp_hi(LMCRATE, BIT11_SP), num);
 
-    if (!AGC_ASSERT(den != 0))
+    if (den == 0)
     {
-        return (0);
+        /* DV by a zero TEMREG: every quotient bit is set, so the first DV
+         * overflows (MINLIMAP). DEVIATION: the AGC's TEMREG is then
+         * usually -0 (ADS of opposites) and the overflow sign follows
+         * the signs of L and TEMREG; -0 is not represented, so the sign
+         * is that of the numerator.                                      */
+        return ((num >= 0) ? AGC_SP_MAX : AGC_SP_MIN); /* ?: MINLIMAP     */
     }
 
     /* XCH L; CA ZERO; DV TEMREG: (0, NUM) / DEN is 0 unless NUM / DEN
@@ -198,11 +188,6 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
 {
     const agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables    */
 
-    if (!AGC_ASSERT(t->one_conacc >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t d = csm_dap_ad_sat(desired, (agc_sp_t) -t->ogarate); /* B-4 */
     agc_sp_t a = csm_dap_mp_hi(d, T6SCALE);                       /* MP T6SCALE              */
     agc_dp_t p = agc_sp_mul(a, t->one_conacc);                    /* MP 1/CONACC: A,L     */
@@ -210,11 +195,6 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
     /* The low word's carries keep the doubled pair sign-agreed, so the
      * accumulator after DDOUBL; DDOUBL is the upper part of 4 p.         */
     int32_t acc = (int32_t) ((4 * (int64_t) p) / 16384); /* A, 2^-14     */
-
-    if (!AGC_ASSERT((acc > -2 * A16_MOD) && (acc < 2 * A16_MOD)))
-    {
-        return (0); /* no valid result */
-    }
 
     if (acc > A16_MAX)
     {
@@ -256,11 +236,6 @@ static bool roll_coast_region(int i)
 {
     const agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables    */
 
-    if (!AGC_ASSERT((i == 1) || (i == -1)))
-    {
-        return (true);
-    }
-
     /* (-SLOPE) OGA x 8 (B-3 rev/s) + OGARATE x BIT14 (B-4 -> B-3)        */
     agc_dp_t s     = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(agc_sp_mul(t->ogaerr, NEG_SLOPE))));
     agc_sp_t x     = csm_dap_ads(agc_dp_high(s), csm_dap_mp_hi(t->ogarate, BIT14_SP));
@@ -286,11 +261,6 @@ static bool roll_regions(agc_sp_t *desired)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
     agc_sp_t       r = 0;                 /* OGARATE, B-4 rev/s         */
-
-    if (!AGC_ASSERT(desired != NULL))
-    {
-        return (false);
-    }
 
     r = t->ogarate;
 

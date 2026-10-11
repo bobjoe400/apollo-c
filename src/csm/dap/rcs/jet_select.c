@@ -1,25 +1,58 @@
-/*
- * jet_select.c -- RCS-CSM jet selection logic and T6 jet timing.
- * JET_SELECTION_LOGIC.agc (Comanche055 pp. 1039-1062): JETSLECT, NOXLNCMD,
- * PWORD, TABPCOM, YWORD, TABYCOM, RWORD, ACROLL, RXLNS, TABRCOM, BDZCHECK,
- * TAUCHECK, NOBDZ, BDROLL, RZXLNS, TABRZCMD, ACYCHECK, TAUCHCK, NOACY,
- * PITCHTIM, YAWTIME, ROLLTIME, RBLAST, ASMBLWP, PBYPASS, ASMBLWR, ACBD2Y,
- * AC2Y, ACBD2Z, BDF2Z, RBYPASS, ASMBLWY, YBYPASS, T6SETUP, DXCHT12,
- * DXCHT23, CALCDT6, ENDJETS; T6START, T6RUPTOR, REPLACE*, ZBLAST*, ENABT6.
+/**********************************************************************
+ * FILE NAME: jet_select.c
  *
- * Quads: A and C carry the pitch jets (channel 5 bits 1-4) and B and D the
- * yaw jets (bits 5-8); roll jets are on channel 6 (AC roll bits 1-4, BD
- * roll bits 5-8). X-translation uses pitch or yaw jets, Y-translation the
- * AC roll jets, Z-translation the BD roll jets. The rotation commands TAU
- * (one-jet on-times, 1/1600 s) are divided by the number of jets used,
- * limited to 0.1 s (one T5 cycle) and to at least 14 ms; DFT returns the
- * expected one-jet firing time to the rate filter. The second words
- * (xWORD2) continue the translations after the rotations end; BLAST holds
- * the sorted T6 intervals with the branch index in its low word.
+ * PURPOSE:
+ *   RCS-CSM jet selection logic (phase 3 of the T5 program) and the T6
+ *   jet timing. Quads A and C carry the pitch jets (channel 5 bits 1-4)
+ *   and B and D the yaw jets (bits 5-8); roll jets are on channel 6 (AC
+ *   roll bits 1-4, BD roll bits 5-8). X-translation uses pitch or yaw
+ *   jets, Y-translation the AC roll jets, Z-translation the BD roll jets.
+ *   The rotation commands TAU (one-jet on-times, 1/1600 s) are divided by
+ *   the number of jets used, limited to 0.1 s (one T5 cycle) and to at
+ *   least 14 ms; DFT returns the expected one-jet firing time to the rate
+ *   filter. The second words (xWORD2) continue the translations after the
+ *   rotations end; BLAST holds the sorted T6 intervals with the branch
+ *   index in its low word. Labels: JETSLECT, NOXLNCMD, PWORD, TABPCOM,
+ *   YWORD, TABYCOM, RWORD, ACROLL, RXLNS, TABRCOM, BDZCHECK, TAUCHECK,
+ *   NOBDZ, BDROLL, RZXLNS, TABRZCMD, ACYCHECK, TAUCHCK, NOACY, PITCHTIM,
+ *   YAWTIME, ROLLTIME, RBLAST, ASMBLWP, PBYPASS, ASMBLWR, ACBD2Y, AC2Y,
+ *   ACBD2Z, BDF2Z, RBYPASS, ASMBLWY, YBYPASS, T6SETUP, DXCHT12, DXCHT23,
+ *   CALCDT6, ENDJETS; T6START, T6RUPTOR, T6L1, T6L2, REPLACE*, ZBLAST*,
+ *   ENABT6.
  *
- * agc_csm_jet_select() is the pure table logic (JETSLECT after the timer
- * set-up through CALCDT6); agc_task_jetslect() is the T5 program around it.
- */
+ * AGC SOURCE:
+ *   Comanche055 JET_SELECTION_LOGIC.agc pp. 1039-1062
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   TAU..TAU2     agc_sp_t  I/O  1/1600 s       rotation commands
+ *   RACFAIL, RBDFAIL, ACORBD, XTRANS  agc_sp_t  I  unscaled  S41.2
+ *   xWORD1/2      uint16_t  O    bits           channel 5/6 images
+ *   BLAST..       struct    I/O  1/1600 s       T6 intervals, index
+ *   DFT..DFT2     agc_sp_t  O    1/1600 s       expected firing times
+ *   ATTKALMN      agc_sp_t  O    index          translation gains
+ *   T5TIME        agc_sp_t  I    10 ms          delay compensation
+ *   CHAN31        uint16_t  I    bits           THC bits 7-12
+ *   CHAN5, CHAN6  uint16_t  I/O  bits           jet channels
+ *   CHAN13        uint16_t  O    bit 15         T6RUPT enable
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   csm_dap_ads, _mp_hi,  AD/ADS, MP (mysubs.c)
+ *   _mp_lo
+ *   agc_rupt_set_time     TIME5, TIME6
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none in the AGC. AGC_STATUS_BAD_ARG for missing jet selection
+ *   arguments or a failure word outside -1 .. +1.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   agc_csm_jet_select() is the pure table logic (JETSLECT after the
+ *   timer set-up through CALCDT6); agc_task_jetslect() is the T5 program
+ *   around it; agc_task_t6start() the T6 interrupt.
+ **********************************************************************/
 #include "../internal.h"
 
 #define XLNMASK ((uint16_t) 007700) /* XLNMASK OCT 7700: THC bits 7-12     */
@@ -81,31 +114,16 @@ typedef struct js_work
 
 static int rot_index(agc_sp_t tau) /* CCS TAU: 0, +1, +2                  */
 {
-    if (!AGC_ASSERT(tau >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((tau > 0) ? 1 : ((tau < 0) ? 2 : 0));
 }
 
 static int fail_base(agc_sp_t fail, int pos, int neg) /* CCS xxFAIL       */
 {
-    if (!AGC_ASSERT(pos >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((fail > 0) ? pos : ((fail < 0) ? neg : 0));
 }
 
 static int nj(int n) /* NJET/DFTMAX table index             */
 {
-    if (!AGC_ASSERT((n >= -NJ_BIAS) && (n <= NJ_BIAS)))
-    {
-        n = (n < 0) ? -NJ_BIAS : NJ_BIAS;
-    }
-
     return (n + NJ_BIAS);
 }
 
@@ -137,11 +155,6 @@ static void js_translation(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet
             /* both quads translate in X */
         }
     }
-
-    if (!AGC_ASSERT(w->zndx <= 3))
-    {
-        return;
-    }
 }
 
 /* PWORD, TABPCOM, YWORD, TABYCOM (pp. 1040-1042).                        */
@@ -158,11 +171,6 @@ static void js_pitch_yaw(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_o
     a           = ((a == 0) ? xlnndx[w->xndx2] : a) + w->yindex;
     out->yword1 = (uint16_t) (pytable[a] & YJETS);
     w->nyjets   = (int) (out->yword1 >> 10);     /* MP BIT5: bits 12,11   */
-
-    if (!AGC_ASSERT(w->npjets <= 3))
-    {
-        return;
-    }
 }
 
 /* BDZCHECK .. NOBDZ (pp. 1043-1044), with AC roll: BD Z-translation is
@@ -185,11 +193,6 @@ static void js_bdz(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *
     }
 
     w->nrjets = (int) (out->rword1 >> 8) - 2; /* NOBDZ                 */
-
-    if (!AGC_ASSERT(w->nrjets >= -4))
-    {
-        return;
-    }
 }
 
 /* ACYCHECK .. NOACY (pp. 1045-1046), with BD roll and AC Y-translation. */
@@ -211,11 +214,6 @@ static void js_acy(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t *
     }
 
     w->nrjets = (int) (out->rword1 >> 11) - 2; /* NOACY                 */
-
-    if (!AGC_ASSERT(w->nrjets >= -4))
-    {
-        return;
-    }
 }
 
 /* RWORD, ACROLL/BDROLL, TABRCOM/TABRZCMD (pp. 1043-1045).                */
@@ -238,11 +236,6 @@ static void js_roll(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t 
         a           = ((a == 0) ? xlnndx[w->zndx] : a) + w->rindex; /* RZXLNS       */
         out->rword1 = (uint16_t) (rtable[a] & BDRJETS);
         js_acy(in, w, out);
-    }
-
-    if (!AGC_ASSERT(w->rindex <= 2))
-    {
-        return;
     }
 }
 
@@ -270,11 +263,6 @@ static void js_ontime(agc_sp_t *tau, int n, agc_sp_t *blast, agc_sp_t *dft)
 
     *dft = csm_dap_mp_lo(*blast, (agc_sp_t) n); /* LXCH DFT              */
     *tau = csm_dap_mp_hi(*blast, (agc_sp_t) n); /* zero TAU              */
-
-    if (!AGC_ASSERT(*tau == 0))
-    {
-        return;
-    }
 }
 
 /* ASMBLWR .. BDF2Z (pp. 1056-1057): second roll word RWORD2 with the Y
@@ -323,11 +311,6 @@ static void js_rword2(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_
             out->dft[0] = csm_dap_ads(out->dft[0], csm_dap_mp_lo(rest, (agc_sp_t) w->nrjets));
         }
     }
-
-    if (!AGC_ASSERT(out->rword2 <= CSM_DAP_NEG0))
-    {
-        return;
-    }
 }
 
 /* ROLLTIME, PITCHTIM, YAWTIME with ASMBLW* / *BYPASS (pp. 1050-1058).     */
@@ -371,20 +354,10 @@ static void js_times(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t
 
         *w2[k] = (uint16_t) (pytable[a] & mask[k]);
     }
-
-    if (!AGC_ASSERT(out->blast[0].time >= 0))
-    {
-        return;
-    }
 }
 
 static void js_swap(agc_csm_blast_t *b, int i, int j) /* DXCH x3     */
 {
-    if (!AGC_ASSERT((i >= 0) && (j < AGC_CSM_AXES)))
-    {
-        return;
-    }
-
     agc_csm_blast_t t = b[i];
 
     b[i] = b[j];
@@ -416,11 +389,6 @@ static void js_sort(agc_csm_blast_t *b)
 
     b[2].time = (agc_sp_t) (b[2].time - b[1].time);
     b[1].time = (agc_sp_t) (b[1].time - b[0].time); /* end of sorting       */
-
-    if (!AGC_ASSERT(b[1].time >= 0))
-    {
-        return;
-    }
 }
 
 /* The jet selection logic proper (JETSLECT after the timers .. CALCDT6). */

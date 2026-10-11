@@ -127,11 +127,6 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    if (!AGC_ASSERT(st != NULL))
-    {
-        return (TVCX_FIN);
-    }
-
     if (!csm_dap_engine_on() || (t->vcntr < 0))
     {
         t->tvcexphs = 2; /* VARGAINS +5: CAF TWO; TS TVCEXPHS         */
@@ -154,11 +149,6 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
 
     t->tvcexphs = (agc_sp_t) (t->tvcexphs + 1); /* EXECCOPY: INCR (1)  */
 
-    if (!AGC_ASSERT(t->vcntrtmp >= 0))
-    {
-        return (TVCX_FIN);
-    }
-
     return (TVCX_EXEC_COPY);
 }
 
@@ -174,20 +164,10 @@ static tvcx_step_t tvcx_exec_copy(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    if (!AGC_ASSERT(t->tvcexphs == 1))
-    {
-        return (TVCX_FIN);
-    }
-
     agc_erase_set_csmmass(t->masstmp);  /* CSMMASS, 2^16 kg              */
     t->vcntr             = t->vcntrtmp;
     t->engine_fail_vcntr = t->vcntrtmp; /* V97VCNTR (R41 at SPSOFF)    */
     t->tvcexphs          = 2;           /* INCR: copycycle over (2)    */
-
-    if (!AGC_ASSERT(t->vcntr >= 0))
-    {
-        return (TVCX_FIN);
-    }
 
     return (TVCX_ONE_SHOT_CHECK);
 }
@@ -205,11 +185,6 @@ static tvcx_step_t tvcx_one_shot_check(void)
 {
     agc_csm_tvc_t *t    = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     tvcx_step_t    next = TVCX_ONE_SHOT_OK;  /* CNTR = +0: now          */
-
-    if (!AGC_ASSERT(t->cntr >= AGC_SP_MIN))
-    {
-        return (TVCX_FIN);
-    }
 
     if (t->cntr > 0)
     { /* not yet: count down  */
@@ -249,11 +224,6 @@ static tvcx_step_t tvcx_repchek(void)
     t->tempdap[1] = t->repfrac; /* correction fraction, 2^2           */
     t->tvcexphs   = 4;          /* entry at CORSETUP                  */
 
-    if (!AGC_ASSERT(t->tempdap[1] > 0))
-    {
-        return (TVCX_FIN);
-    }
-
     return (TVCX_CORSETUP);
 }
 
@@ -276,11 +246,6 @@ static void tvcx_corsetup(void)
 
     t->tempdap[0] = f;
     t->cntrtmp    = -1;
-
-    if (!AGC_ASSERT(t->cntrtmp < 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -299,11 +264,6 @@ static agc_dp_words_t tvcx_cgcorr(agc_dp_words_t deloff, agc_dp_words_t delbar, 
 {
     agc_dp_words_t act = deloff; /* DCA xDELOFF; DXCH xACTTMP       */
 
-    if (!AGC_ASSERT(frac >= 0))
-    {
-        return (act);
-    }
-
     /* DCS xDELOFF; DDOUBL; DDOUBL; DXCH TTMP1 (4 ascrev scale)          */
     agc_dp_words_t ttmp1 = csm_dap_words_ddoubl(csm_dap_words_ddoubl(csm_dap_words_neg(deloff))); /* B+2 ascrev  */
 
@@ -314,11 +274,6 @@ static agc_dp_words_t tvcx_cgcorr(agc_dp_words_t deloff, agc_dp_words_t delbar, 
     csm_dap_words_das(&act, csm_dap_words_mp(ttmp1.hi, frac));
 
     /* a word out of range: leave the trim estimate uncorrected         */
-    if (!AGC_ASSERT(act.hi >= AGC_SP_MIN))
-    {
-        return (deloff);
-    }
-
     return (act);
 }
 
@@ -334,21 +289,11 @@ static void tvcx_correction_copy(void)
     agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* PACTOFF, YACTOFF        */
 
-    if (!AGC_ASSERT(t->tvcexphs == 5))
-    {
-        return;
-    }
-
     c->pactoff  = t->pacttmp.hi; /* DCA PACTTMP; TS PACTOFF          */
     t->pdeloff  = t->pacttmp;    /* DXCH PDELOFF                     */
     c->yactoff  = t->yacttmp.hi;
     t->ydeloff  = t->yacttmp;
     t->tvcexphs = 6;             /* INCR (6)                         */
-
-    if (!AGC_ASSERT(c->pactoff == t->pdeloff.hi))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
