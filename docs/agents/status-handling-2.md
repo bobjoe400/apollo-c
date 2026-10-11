@@ -75,3 +75,13 @@ Method (tooling first, hand work last):
    candidates, and inline them with tools/inline_one.py (hand cases as
    before). Start with src/csm/dap/rcs/jet_select.c js_acy / js_bdz.
    Report the count.
+
+8. Dead and normal-flow early returns (user, 2026-10-11; example the
+   `return;` in js_acy's TAUCHCK branch, which after inlining has nothing
+   after it). With libclang: (a) delete any `return;` / `return (x);` that
+   is the last reachable statement of the function on its path (nothing
+   follows it at any enclosing level); (b) where a normal-flow early return
+   (not an error/status return) only skips a short tail, restructure as
+   if/else so the function has one return at the end (guide 5.6); keep
+   early returns for error paths (rule 1 allows them). Run this AFTER the
+   inlining steps. Report counts.

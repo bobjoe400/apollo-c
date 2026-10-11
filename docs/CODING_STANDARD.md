@@ -185,3 +185,10 @@ every caller, whatever the caller count.
 * `frama-c -eva` (Frama-C value analysis) to prove or refute assertions
   statically; `make prove` runs the project configuration. A guard EVA
   proves VALID on every path is dead code and is deleted.
+
+## Returns (guide 5.6, user direction 2026-10-11)
+
+Normal flow reaches one return at the end of the function. Early returns are
+for error paths (a failed precondition or a propagated status). A return
+with nothing after it on its path is dead and is removed; a normal-flow
+early return that only skips a short tail becomes if/else.
