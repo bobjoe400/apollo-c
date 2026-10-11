@@ -321,15 +321,20 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t c2 =
-        agc_dp_sub(ip, AGC_DP_QUARTER, agc_dp_sq(ip, nb->row[0].c[1]));
+    /* DSQ leaves a TP; BDSU DP1/4TH complements only MPAC, MPAC+1, so
+     * MPAC+2 keeps the square's low word with its own sign, and SQRT
+     * reads all three words: 1/4 - top(s^2) + low(s^2), at 2^2.      */
+    agc_dp_t sq   = agc_dp_sq(ip, nb->row[0].c[1]); /* top words of DSQ */
+    agc_tp_t sqtp = agc_dp_sq_tp(nb->row[0].c[1]);
+    agc_tp_t c2   = agc_tp_from_dp(agc_dp_sub(ip, AGC_DP_QUARTER, sq)) +
+                    (sqtp - agc_tp_from_dp(sq));
 
-    if (c2 < 0)
+    if (agc_tp_to_dp(c2) < 0)
     {
         c2 = 0; /* ZEROVECS: sin slightly > 1/2       */
     }
 
-    agc_dp_t cos2 = agc_dp_sqrt(ip, c2); /* cos(CDUZ) in units of 2       */
+    agc_dp_t cos2 = agc_tp_sqrt(ip, c2); /* cos(CDUZ) in units of 2       */
     agc_sp_t tem5 = AGC_SP_MAX;          /* DDOUBL overflow -> POSMAX     */
 
     if (cos2 < AGC_DP_HALF)

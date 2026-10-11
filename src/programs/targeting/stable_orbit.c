@@ -463,10 +463,10 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
 
     rz_flag_put(AGC_FLAG_OPTNSW, true); /* OPTN1          */
     rz_flag_put(AGC_FLAG_UPDATFLG, false);
-    agc_dp_t     t  = 0; /* transfer time, cs 2^28 */
-    agc_status_t st = /* PREC/TT */
-                      so_prec_tt(&ip, rz, AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN,
-                                 &t);
+    agc_dp_t     t = 0;  /* transfer time, cs 2^28 */
+    agc_status_t st; /* PREC/TT */
+
+    st = so_prec_tt(&ip, rz, AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN, &t);
 
     if (st != AGC_STATUS_OK)
     {
@@ -540,9 +540,9 @@ agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
 
     if (!rz_is_csm())
     {
-        agc_status_t st = /* TINT */
-                          rz_set_dsptem_dp(RZ_DSPTEM1,
-                                           agc_rendz_erasable()->tpass4);
+        agc_status_t st; /* TINT */
+
+        st = rz_set_dsptem_dp(RZ_DSPTEM1, agc_rendz_erasable()->tpass4);
 
         if (st != AGC_STATUS_OK)
         {
@@ -691,9 +691,9 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t    *rz = agc_rendz_erasable(); /* rendezvous erasables */
     agc_integ_out_t o; /* integration result */
-    agc_status_t    st = /* INTRPVP */
-                         so_intrpvp(&ip, rz->targtime,
-                                    AGC_JOB_STABLE_ORBIT_TARGET, &o);
+    agc_status_t    st; /* INTRPVP */
+
+    st = so_intrpvp(&ip, rz->targtime, AGC_JOB_STABLE_ORBIT_TARGET, &o);
 
     if (st != AGC_STATUS_OK)
     {

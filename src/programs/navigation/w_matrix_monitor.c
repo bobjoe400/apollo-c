@@ -292,8 +292,9 @@ static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
 static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz,
                        agc_rendz_nav_pad_t *p)
 {
-    agc_sp_t pos = /* SL5, pad scale */
-                   agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
+    agc_sp_t pos; /* SL5, pad scale */
+
+    pos = agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
     agc_sp_t vel = agc_dp_high(rz->rrate); /* pad scale */
     agc_sp_t bias; /* SL10, pad scale */
 

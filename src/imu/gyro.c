@@ -111,6 +111,12 @@ static bool buf_ok(agc_imu_gyro_buf_t b)
         return (false);
     }
 
+    if (!AGC_ASSERT(!lgyro.busy || ((int) lgyro.buf >= 0 &&
+                                    lgyro.buf < AGC_IMU_GBUF_COUNT)))
+    {
+        return (false);
+    }
+
     return (ok);
 }
 
@@ -383,6 +389,11 @@ agc_status_t agc_imu_pulse(const agc_dp_t gyro[3])
     }
 
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, gyro);
+
+    if (!AGC_ASSERT(gbuf[AGC_IMU_GBUF_OGC][2] == gyro[2]))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_NONE));
 }

@@ -284,10 +284,10 @@ job	AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY	agc_job_crew_defined_maneuver_display	
 job	AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE	agc_job_crew_defined_maneuver_gomove	agc_job_crew_defined_maneuver_gomove	imu	R62 PROCEED (GOMOVE)
 job	AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE	agc_job_crew_defined_maneuver_terminate	agc_job_crew_defined_maneuver_terminate	imu	R62 V34 / end -> ENDEXT
 job	AGC_JOB_ENDMANUV	agc_job_endmanuv	agc_job_endmanuv	imu	R60 after GOMANUR
-job	AGC_JOB_GCOMP1	agc_job_gcomp1	agc_job_gcomp1	imu	GCOMP1 (after IMUSTALL)
+job	AGC_JOB_GYRO_COMMAND_PULSED	agc_job_gyro_command_pulsed	agc_job_gyro_command_pulsed	imu	GCOMP1 (after IMUSTALL)
 job	AGC_JOB_GYRO_COMMAND_PULSE	agc_job_gyro_command_pulse	agc_job_gyro_command_pulse	imu	
 job	AGC_JOB_GYRO_COMMAND_RETRY	agc_job_gyro_command_retry	agc_job_gyro_command_retry	imu	1/GYRO after GYROBUSY
-job	AGC_JOB_KALCMAN3	agc_job_kalcman3	agc_job_kalcman3	imu	KALCMAN3
+job	AGC_JOB_KALCMANU_START	agc_job_kalcmanu_start	agc_job_kalcmanu_start	imu	KALCMAN3
 job	AGC_JOB_LASTBIAS	agc_job_lastbias	agc_job_lastbias	imu	
 job	AGC_JOB_NBDONLY	agc_job_nbdonly	agc_job_nbdonly	imu	IMU bias drift comp (imu)
 job	AGC_JOB_NEWDELHI	agc_job_newdelhi	agc_job_newdelhi	imu	NEWDELHI

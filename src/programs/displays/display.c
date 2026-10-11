@@ -304,9 +304,9 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         if (agc_flag_test(AGC_FLAG_REFSMFLG) && rz_active_vehicle_program())
         {
             agc_mat_t    refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-            agc_status_t st       = /* GET+MGA */
-                                    agc_rendz_get_mga(ip, rz->delvsin,
-                                                      &refsmmat, &rz->plus_mga);
+            agc_status_t st; /* GET+MGA */
+
+            st = agc_rendz_get_mga(ip, rz->delvsin, &refsmmat, &rz->plus_mga);
 
             if (!AGC_ASSERT(st == AGC_STATUS_OK))
             {

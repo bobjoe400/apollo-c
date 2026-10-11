@@ -420,14 +420,14 @@ static agc_status_t job_csm_imu_0(agc_job_ctx_t *ctx)
             return (agc_job_crew_defined_maneuver_terminate(ctx));
         case AGC_JOB_ENDMANUV:
             return (agc_job_endmanuv(ctx));
-        case AGC_JOB_GCOMP1:
-            return (agc_job_gcomp1(ctx));
         case AGC_JOB_GYRO_COMMAND_PULSE:
             return (agc_job_gyro_command_pulse(ctx));
+        case AGC_JOB_GYRO_COMMAND_PULSED:
+            return (agc_job_gyro_command_pulsed(ctx));
         case AGC_JOB_GYRO_COMMAND_RETRY:
             return (agc_job_gyro_command_retry(ctx));
-        case AGC_JOB_KALCMAN3:
-            return (agc_job_kalcman3(ctx));
+        case AGC_JOB_KALCMANU_START:
+            return (agc_job_kalcmanu_start(ctx));
         case AGC_JOB_LASTBIAS:
             return (agc_job_lastbias(ctx));
         case AGC_JOB_NBDONLY:
@@ -2613,14 +2613,14 @@ static agc_status_t job_lm_imu_0(agc_job_ctx_t *ctx)
             return (agc_job_crew_defined_maneuver_terminate(ctx));
         case AGC_JOB_ENDMANUV:
             return (agc_job_endmanuv(ctx));
-        case AGC_JOB_GCOMP1:
-            return (agc_job_gcomp1(ctx));
         case AGC_JOB_GYRO_COMMAND_PULSE:
             return (agc_job_gyro_command_pulse(ctx));
+        case AGC_JOB_GYRO_COMMAND_PULSED:
+            return (agc_job_gyro_command_pulsed(ctx));
         case AGC_JOB_GYRO_COMMAND_RETRY:
             return (agc_job_gyro_command_retry(ctx));
-        case AGC_JOB_KALCMAN3:
-            return (agc_job_kalcman3(ctx));
+        case AGC_JOB_KALCMANU_START:
+            return (agc_job_kalcmanu_start(ctx));
         case AGC_JOB_LASTBIAS:
             return (agc_job_lastbias(ctx));
         case AGC_JOB_NBDONLY:

@@ -258,9 +258,9 @@ static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
     vr = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), q);
 
     vr = agc_dp_sqrt(ip, rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
-    agc_vec_t uh1 = /* UH1, 2^1 */
-                    rz_unit(ip,
-                            agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
+    agc_vec_t uh1; /* UH1, 2^1 */
+
+    uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
     agc_dp_t vh; /* m/cs 2^7 */
 
     vh = agc_dp_shl(ip, agc_vec_dot(ip, uh1, rz->vact1), 1);
@@ -376,9 +376,9 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
                                  agc_dp_t snth, agc_dp_t csth, agc_dp_t *t)
 {
     agc_conic_time_out_t o; /* TIMETHET result */
-    agc_status_t         st = /* TIMETHET */
-                              rz_timethet_rv(ip, rz, rz->ract1, v, snth, csth,
-                                             true, &o);
+    agc_status_t         st; /* TIMETHET */
+
+    st = rz_timethet_rv(ip, rz, rz->ract1, v, snth, csth, true, &o);
 
     *t = o.t;
 
@@ -414,9 +414,9 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
 static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
                                        agc_rendz_periapo_t *pa, bool *ellipse)
 {
-    agc_vec_t uh1 = /* UH1, 2^1 */
-                    rz_unit(ip,
-                            agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
+    agc_vec_t uh1; /* UH1, 2^1 */
+
+    uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
 
     rz->delveet1 = agc_vec_shl(ip, agc_vec_scale(ip, uh1, rz->delvcsi), 1);
     rz->vact4    = agc_vec_add(ip, rz->delveet1, rz->vact1);
@@ -501,9 +501,9 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t a; /* 2D, B-31 */
 
     a = agc_dp_div(ip, agc_dp_shr(rz->body.rtsr1mu, 1), r1n);
-    agc_dp_t s = /* P R1, earth scale */
-                 agc_rendz_scalar_from_body(rz,
-                                            agc_dp_mul_trunc(pa->p, pa->r1));
+    agc_dp_t s; /* P R1, earth scale */
+
+    s = agc_rendz_scalar_from_body(rz, agc_dp_mul_trunc(pa->p, pa->r1));
 
     s = agc_dp_shl(ip, agc_dp_shl(ip, s, 4), 1); /* SL4 SL1    */
     s = agc_dp_mul_trunc(agc_dp_sqrt(ip, s), a); /* SQRT DMP   */
@@ -1233,9 +1233,9 @@ static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t snth; /* SNTH, 2^1 */
 
     snth = agc_dp_sign(sn, agc_vec_dot(ip, n, rz->up1));
-    agc_status_t st = /* TIMETHET */
-                      rz_timethet_rv(ip, rz, rz->rpass2, rz->vpass2, snth, csth,
-                                     false, o);
+    agc_status_t st; /* TIMETHET */
+
+    st = rz_timethet_rv(ip, rz, rz->rpass2, rz->vpass2, snth, csth, false, o);
 
     if (!AGC_ASSERT(st != AGC_STATUS_OK || o->r1 >= 0))
     {

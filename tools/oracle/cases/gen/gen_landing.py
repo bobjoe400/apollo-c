@@ -113,6 +113,62 @@ def main():
                ('CDUX', ','.join(_w(x) for x in cdu)),
                ('XNBPIP', vec(unit([0.4, 0.0, -0.3]))), ('ZNBPIP', vec(unit([0.3, 0.1, 0.4])))],
               fg)
+    # ---- ATMAG -> ASCENT -> P12RET (ascent guidance, review-guid-landing) ----
+    s.comment('ATMAG 34,3642 entered at its first interpretive word 34,3645',
+              '  (1/DV0 = MASS1, 1/DV1..3 = E7,1634/1636/1640; after TC PHASCHNG / TC INTPRET): Q = 34,3645, stop PHASCHNG',
+              '  (the TC PHASCHNG after P12RET\'s EXIT; FLPI set).  Runs ATMAG,',
+              '  ASCENT, YCOMP, MAINENG, T2TEST, RATES (TGO > T3), CONST,',
+              '  CMPONENT, AIMER, P12RET.  Inputs ABDVCONV 1/DV0..3 VE TBUP TTO',
+              '  R V UNIT/R/ GDT1/2 QAXIS ZAXIS1 RCO YCO TGO ZDOTD YDOTD RDOTD',
+              '  HDOTDISP (= RDOT) XNBPIP..ZNBPIP UNFC/2-free; flags FLPI only.')
+    ag = (['TBUP:dp', 'AT:dp'] + ['MASS1:dp', 'E7,1634:dp', 'E7,1636:dp', 'E7,1640:dp'] +
+          ['/R/MAG:dp', 'ZDOT:dp', 'YDOT:dp', 'Y:dp', 'GEFF:dp'] + gets_vec('LAXIS') +
+          ['DZDOT:dp', 'DYDOT:dp', 'DRDOT:dp'] + gets_vec('VGVECT') + gets_vec('VGBODY') +
+          ['TGO:dp', 'TTOGO:dp', 'PRATE:dp', 'YRATE:dp', 'PCONS:dp', 'YCONS:dp',
+           'ATR:dp', 'ATY:dp', 'ATP:dp'] + gets_vec('UNFC/2') +
+          ['YAW:dp', 'PITCH:dp', 'FLAGWRD9'])
+    for tag, r, v, tgo, rdot, yco, abdv in (
+            ('ascent_a', [1.7375e6, 2.0e4, -3.0e4], [0.05, 0.003, 0.30], 35000.0, 0.08, 0.0, 0.065),
+            ('ascent_b', [1.7410e6, -1.5e4, 9.0e4], [0.18, -0.02, 9.50], 22000.0, 0.21, 9000.0, 0.090)):
+        ur = unit(r)
+        xnb = rows_half(mat([0.02, -0.4, 0.03]))
+        s.run(tag, '34,3645', 0o34, 'PHASCHNG',
+              [('ABDVCONV', dp(abdv, 5)), ('MASS1', dp(15.9, 7)), ('E7,1634', dp(15.8, 7)),
+               ('E7,1636', dp(15.7, 7)), ('E7,1640', dp(15.6, 7)),
+               ('VE', dp(30.3, 7)), ('TBUP', dp(91902.0, 17)), ('TTO', dp(10.0, 17)),
+               ('R', vec(r, 24)), ('V', vec(v, 7)), ('UNIT/R/', vec(ur)),
+               ('GDT1/2', vec([-0.0162 * x * 2 for x in ur], 7)),
+               ('QAXIS', vec(unit([0.02, -1.0, 0.05]))), ('ZAXIS1', vec(unit([0.0, 0.05, 1.0]))),
+               ('RCO', dp(1.7378e6 + 18288.0, 24)), ('YCO', dp(yco, 24)), ('TGO', dp(tgo, 17)),
+               ('ZDOTD', dp(16.7924, 7)), ('YDOTD', dp(0.0, 7)), ('RDOTD', dp(0.059436, 7)),
+               ('HDOTDISP', dp(rdot, 7)), ('XNBPIP', mwords(xnb)), ('FLAGWRD9', '02000')],
+              ag)
+    # ---- RODCOMP (P66), review-guid-landing ----
+    s.comment('RODCOMP 32,3275 (basic, EBANK 7) to the BANKCALL of THROTTLE +3:',
+              '  stop 31,2221.  ROD clicks, PIPA snapshot, V propagated to THISTPIP,',
+              '  HDOTDISP (DOT SL1 on the TP), HCALC1, /AFC/ (FWEIGHT DMP BIT1H with',
+              '  sign-disagreeing FWEIGHT words), LASTTPIP; A,L = measured accel.')
+    rg = (['VDGVERT:dp', 'THISTPIP:dp', 'LASTTPIP:dp', 'HDOTDISP:dp', 'HCALC1:dp',
+           '/AFC/:dp', 'A', 'L', 'DELVROD', 'DELVROD+2', 'DELVROD+4'] + gets_vec('VAC1+24'))
+    for tag, r, v, fw, hd in (
+            ('rodcomp_a', [1.73745e6, 120.0, -300.0], [-0.012, 0.004, 0.010], [3, -1200], 0.004),
+            ('rodcomp_b', [1.73690e6, -40.0, 900.0], [0.020, -0.006, -0.015], [-2, 900], -0.010)):
+        ur = unit(r)
+        s.run(tag, None, 0o32, '31,2221',
+              [('RODCOUNT', _w(2)), ('RODSCAL1', _w(16)), ('VDGVERT', dp(hd + 0.008, 7)),
+               ('PIPAX', _w(13) + ',' + _w(-2) + ',' + _w(63)),
+               ('OLDPIPAX', _w(10) + ',' + _w(-2) + ',' + _w(60)),
+               ('PIPATMPX', _w(200) + ',' + _w(-10) + ',' + _w(900)),
+               ('TEMX', '00000,00000,00000'), ('DELVROD', '00000,00000,00000,00000,00000,00000'),
+               ('TIME2', '00000,%05o' % 5000), ('PIPTIME', '00000,%05o' % 4900),
+               ('LASTTPIP', '00000,%05o' % 4900), ('GDT/2', vec([-0.0162 * x * 2 for x in ur], 7)),
+               ('VBIAS', vec([0.0001, 0.0, -0.00005], 7)), ('V', vec(v, 7)), ('R', vec(r, 24)),
+               ('/LAND/', dp(1.7360e6, 24)), ('HDOTDISP', dp(hd, 7)),
+               ('TAUROD', dp(150.0, 9)), ('LAG/TAU', dp(0.2)), ('MAXFORCE', dp(4.67, 12)),
+               ('MINFORCE', dp(0.0467, 12)), ('MASS', dp(7000.0, 16)),
+               ('FWEIGHT', _w(fw[0]) + ',' + _w(fw[1])), ('/AFC/', dp(1.5e-4, -4)),
+               ('CDUX', '00000,01000,00400')],
+              rg, ebank=7, entry='32,3275')
     s.write(os.path.join(OUT, 'landing.spec'))
 
 if __name__ == '__main__':

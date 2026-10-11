@@ -538,17 +538,21 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t amax = agc_dp_sq(ip, agc_dp_div(ip, LDG_HIGHESTF, mass));
+    /* DDV DSQ leaves a TP; the two DSUs change MPAC, MPAC+1 only and
+     * SQRT reads all three words (MPAC+2 of the DSQ takes part).      */
+    agc_tp_t amax = agc_dp_sq_tp(agc_dp_div(ip, LDG_HIGHESTF, mass));
+    agc_dp_t a1sq = agc_dp_sq(ip, l->unfc_2.c[1]); /* popped first   */
+    agc_dp_t a0sq = agc_dp_sq(ip, l->unfc_2.c[0]);
 
-    amax = agc_dp_sub(ip, agc_dp_sub(ip, amax, agc_dp_sq(ip, l->unfc_2.c[1])),
-                      agc_dp_sq(ip, l->unfc_2.c[0]));
+    amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a1sq)));
+    amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a0sq)));
 
-    if (amax < 0)
+    if (agc_tp_to_dp(amax) < 0)
     {
         amax = 0; /* ZEROVECS     */
     }
 
-    agc_dp_t s = agc_dp_add(ip, agc_dp_sqrt(ip, amax), l->unfc_2.c[2]);
+    agc_dp_t s = agc_dp_add(ip, agc_tp_sqrt(ip, amax), l->unfc_2.c[2]);
 
     if (s < 0)
     {

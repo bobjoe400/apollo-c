@@ -1,19 +1,38 @@
-/*
- * rendezvous.c -- prog-rendz unit tests (rendezvous programs).
+/**********************************************************************
+ * FILE NAME: rendezvous.c
  *
- *   1. R30 SR30.1 (agc_orbit_params_compute): a 300 km perigee earth
- *      orbit with e = 0.0404 has the analytic apogee and perigee radii
- *      and heights within a few hundred LSBs; MAXCHK limits a large
- *      height to 9999.9 NM.
- *   2. CSI targeting (agc_rendz_csi_a) on coplanar circular orbits, the
- *      active vehicle 15 NM below the passive one: with a small lead of
- *      the passive vehicle CSI must slow the catch-up (DELVCSI > 0), with
- *      a large lead speed it up (DELVCSI < 0). States are set as
- *      P32/P72B leaves them (ADVANCE, passive INTINT to TTPI).
- *   3. SELECTMU and PERIAPO1 on the circular orbit: equal apsides.
+ * PURPOSE:
+ *   prog-rendz unit tests (rendezvous programs), CSM build; inputs at
+ *   the AGC scales (r m 2^29, v m/cs 2^7):
+ *     1. R30 SR30.1 (agc_orbit_params_compute): a 300 km perigee earth
+ *        orbit with e = 0.0404 has the analytic apogee and perigee radii
+ *        and heights within a few hundred LSBs; MAXCHK limits a large
+ *        height to 9999.9 NM.
+ *     2. CSI targeting (agc_rendz_csi_a) on coplanar circular orbits,
+ *        the active vehicle 15 NM below the passive one: with a small
+ *        lead of the passive vehicle CSI must slow the catch-up
+ *        (DELVCSI > 0), with a large lead speed it up (DELVCSI < 0).
+ *        States are set as P32/P72B leaves them (ADVANCE, passive INTINT
+ *        to TTPI).
+ *     3. SELECTMU and PERIAPO1 on the circular orbit: equal apsides.
  *
- * CSM build; inputs at the AGC scales (r m 2^29, v m/cs 2^7).
- */
+ * AGC SOURCE:
+ *   Comanche055 R30.agc (SR30.1, MAXCHK), P32-P33_P72-P73.agc (CSI/A),
+ *   P34-35_P74-75.agc (SELECTMU, PERIAPO1)
+ *
+ * EXTERNAL VARIABLES:
+ *   TIG, TTPI (agc_erase_*): set for the CSI case
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                           Description
+ *   -----------------------------  -------------------------------------
+ *   agc_orbit_params_compute       SR30.1
+ *   agc_rendz_csi_a                CSI/A
+ *   agc_rendz_periapo_body_scale   PERIAPO1
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when a check fails.
+ **********************************************************************/
 #include <stdio.h>
 
 #include <math.h>
@@ -28,9 +47,66 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/rendezvous.h"
 
-static int g_checks;
-static int g_failures;
+#define CHECK(c) check((c), __LINE__, #c) /* count and report a check */
 
+static int g_checks;   /* checks run   */
+static int g_failures; /* checks failed */
+
+static const double MU   = 3.986032e10; /* MUE, m^3/cs^2 (MUTABLE)    */
+static const double RPAD = 6373338.0;   /* RPAD, m                    */
+static const double R0   = 6678137.0;   /* 300 km circular orbit, m   */
+
+/* Prototypes: main() comes first (STYLE 4.6). */
+static void         check(bool ok, int line, const char *text);
+static agc_vec_t    pos(double x, double y, double z);
+static agc_vec_t    vel(double x, double y, double z);
+static agc_dp_t     dp_absdiff(agc_dp_t a, agc_dp_t b);
+static void         test_orbit_parameters_eccentric(void);
+static agc_status_t csi_case(double th, agc_dp_t *delvcsi);
+static void         test_csi_coplanar_circular(void);
+static void         test_periapo_circular(void);
+
+/**********************************************************************
+ * AGC: none (test driver) -- the three tests, CSM build
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when all checks pass, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    agc_state_init(AGC_VEHICLE_CSM);
+    test_orbit_parameters_eccentric();
+    test_periapo_circular();
+    test_csi_coplanar_circular();
+    (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,
+                  g_failures);
+
+    if (g_failures != 0)
+    {
+        return (1);
+    }
+
+    return (0);
+}
+
+/**********************************************************************
+ * The AGC_ASSERT hook of the test: print and fail the assertion.
+ * AGC: none (test support)
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  ----------------------------------------
+ *   file      const char *  I    source file of the assertion
+ *   line      int           I    its line
+ *   expr      const char *  I    the expression text
+ *
+ * RETURNS: bool -- false (the assertion fails)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d %s\n", file, line, expr);
@@ -38,8 +114,19 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     return (false);
 }
 
-#define CHECK(c) check((c), __LINE__, #c)
-
+/**********************************************************************
+ * Count a check; print the failing ones.
+ * AGC: none (test support)
+ *
+ * FUNCTION NAME: check
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  ----------------------------------------
+ *   ok        bool          I    the check passed
+ *   line      int           I    its source line
+ *   text      const char *  I    the checked expression
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -51,87 +138,154 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
-static const double MU   = 3.986032e10; /* MUE, m^3/cs^2 (MUTABLE)    */
-static const double RPAD = 6373338.0;   /* RPAD, m                    */
-static const double R0   = 6678137.0;   /* 300 km circular orbit, m   */
-
+/**********************************************************************
+ * A position vector in meters at the AGC scale.
+ * AGC: none (test support)
+ *
+ * FUNCTION NAME: pos
+ *
+ * ARGUMENTS:
+ *   Argument  Type    I/O  Description (scale)
+ *   --------  ------  ---  ----------------------------------------------
+ *   x         double  I    x, m
+ *   y         double  I    y, m
+ *   z         double  I    z, m
+ *
+ * RETURNS: agc_vec_t -- the vector, m 2^29
+ **********************************************************************/
 static agc_vec_t pos(double x, double y, double z)
 {
     return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
                          agc_dp_from_double(z, 29)));
 }
 
+/**********************************************************************
+ * A velocity vector in m/cs at the AGC scale.
+ * AGC: none (test support)
+ *
+ * FUNCTION NAME: vel
+ *
+ * ARGUMENTS:
+ *   Argument  Type    I/O  Description (scale)
+ *   --------  ------  ---  ----------------------------------------------
+ *   x         double  I    x, m/cs
+ *   y         double  I    y, m/cs
+ *   z         double  I    z, m/cs
+ *
+ * RETURNS: agc_vec_t -- the vector, m/cs 2^7
+ **********************************************************************/
 static agc_vec_t vel(double x, double y, double z)
 {
     return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
                          agc_dp_from_double(z, 7)));
 }
 
+/**********************************************************************
+ * |a - b| of two DP words.
+ * AGC: none (test support)
+ *
+ * FUNCTION NAME: dp_absdiff
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------------
+ *   a         agc_dp_t  I    first value
+ *   b         agc_dp_t  I    second value, same scale
+ *
+ * RETURNS: agc_dp_t -- |a - b|, LSB
+ **********************************************************************/
 static agc_dp_t dp_absdiff(agc_dp_t a, agc_dp_t b)
 {
-    return ((a > b) ? a - b : b - a);
+    if (a > b)
+    {
+        return (a - b);
+    }
+
+    return (b - a);
 }
 
-/* 1. SR30.1 on an eccentric orbit, state at perigee.
- * Not a circular orbit: there APSIDES takes SQRT(1/64 - P R1A 2^4) of
- * a difference of one or two LSB, and the AGC DMP sees R1A as the word
+/**********************************************************************
+ * 1. SR30.1 on an eccentric orbit, state at perigee.
+ * Not a circular orbit: there APSIDES takes SQRT(1/64 - P R1A 2^4) of a
+ * difference of one or two LSB, and the AGC DMP sees R1A as the word
  * pair PARAM left (00401, 40000) where C holds the value (Findings P1
  * in docs/modules/review-prog-rendz.md). For R = 3339068, V = 23241
  * 00170 the AGC gives ECC 0 and RAPO - RPER = 8 LSB, C ECC 23164 and
  * 4614 LSB: a word-form effect magnified by the SQRT, not a defect of
- * SR30.1.                                                               */
+ * SR30.1.
+ * AGC: SR30.1, MAXCHK (R30.agc pp.522-523)
+ *
+ * FUNCTION NAME: test_orbit_parameters_eccentric
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_orbit_parameters_eccentric(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_orbit_params_in_t in;
+    agc_orbit_params_in_t in; /* SR30.1 inputs */
 
     in.rone = pos(R0, 0.0, 0.0);
     CHECK(agc_orbit_params_select_body(false, agc_dp_from_double(RPAD, 29),
                                        &in) == AGC_STATUS_OK);
-    const double k2 = 1.0404;                  /* (v / v circular)^2 */
-    const double ra = R0 * k2 / (2.0 - k2);    /* apogee radius, m   */
+    const double k2 = 1.0404;               /* (v / v circular)^2 */
+    const double ra = R0 * k2 / (2.0 - k2); /* apogee radius, m   */
 
     in.vone = vel(0.0, sqrt(k2 * MU / R0), 0.0);
-    agc_orbit_params_out_t out;
-    agc_status_t           st = agc_orbit_params_compute(&ip, &in, &out);
+    agc_orbit_params_out_t out; /* SR30.1 results */
+    agc_status_t           st;  /* SR30.1 status  */
+
+    st = agc_orbit_params_compute(&ip, &in, &out);
 
     CHECK(st == AGC_STATUS_OK);
     CHECK(dp_absdiff(out.rapo, agc_dp_from_double(ra, 29)) < 400);
     CHECK(dp_absdiff(out.rper, agc_dp_from_double(R0, 29)) < 400);
     CHECK(dp_absdiff(out.hapox, agc_dp_from_double(ra - RPAD, 29)) < 400);
-    agc_dp_t h = agc_dp_from_double(R0 - RPAD, 29);
+    agc_dp_t h = agc_dp_from_double(R0 - RPAD, 29); /* perigee height, 2^29 */
 
     CHECK(dp_absdiff(out.hperx, h) < 400);
     CHECK(out.neg_tper <= 0);
     /* MAXCHK: 20000 NM is shown as 9999.9 NM. */
-    agc_dp_t big = agc_dp_from_double(20000.0 * 1852.0, 29);
-    agc_dp_t lim = agc_orbit_params_maxchk(&ip, big);
+    agc_dp_t big = agc_dp_from_double(20000.0 * 1852.0, 29); /* m 2^29 */
+    agc_dp_t lim = agc_orbit_params_maxchk(&ip, big);         /* m 2^29 */
+    agc_dp_t max = agc_dp_from_double(9999.9 * 1852.0, 29);   /* m 2^29 */
 
-    CHECK(lim == agc_dp_from_double(9999.9 * 1852.0, 29) ||
-          dp_absdiff(lim, agc_dp_from_double(9999.9 * 1852.0, 29)) < 2);
+    CHECK(dp_absdiff(lim, max) < 2);
     CHECK(agc_orbit_params_maxchk(&ip, h) == h);
 }
 
-/* 2. CSI on coplanar circular orbits, the passive vehicle 15 NM higher
- * and leading by `lead` radians at TCSI, TPI two hours later at 26.6 deg
- * elevation. Returns DELVCSI (m/cs 2^7) and the status.                 */
+/**********************************************************************
+ * 2. CSI on coplanar circular orbits, the passive vehicle 15 NM higher
+ * and leading by `th` radians at TCSI, TPI two hours later at 26.6 deg
+ * elevation.
+ * AGC: CSI/A (P32-P33_P72-P73.agc pp.663-674)
+ *
+ * FUNCTION NAME: csi_case
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------------
+ *   th        double      I    lead of the passive vehicle, radians
+ *   delvcsi   agc_dp_t *  O    DELVCSI, m/cs 2^7
+ *
+ * RETURNS: agc_status_t -- the CSI/A status
+ **********************************************************************/
 static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = agc_rendz_erasable();
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     agc_rendz_reset(rz);
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
-    double ra = R0;
-    double rp = R0 + 15.0 * 1852.0;
+    double ra = R0;                  /* active radius, m  */
+    double rp = R0 + 15.0 * 1852.0; /* passive radius, m */
 
     rz->ract1 = pos(ra, 0.0, 0.0);
     rz->vact1 = vel(0.0, sqrt(MU / ra), 0.0);
-    double vp      = sqrt(MU / rp);
+    double vp      = sqrt(MU / rp);          /* passive speed, m/cs */
     double ttpi_cs = 2.0 * 3600.0 * 100.0;   /* TPI two hours on   */
     double th3     = th + vp / rp * ttpi_cs; /* passive at TTPI     */
 
@@ -149,24 +303,32 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
     rz->elev   = agc_dp_from_double(26.6 / 360.0, 0);
     agc_erase_set_tig(0);
     agc_erase_set_ttpi(agc_dp_from_double(ttpi_cs, 28));
-    agc_sp_t     alarm = 0;
-    agc_status_t st    = agc_rendz_csi_a(&ip, rz, &alarm, AGC_JOB_CSI_COMPUTE);
+    agc_sp_t     alarm = 0;                 /* ALMXIT code, unscaled */
+    agc_status_t st;                        /* CSI/A                 */
 
+    st = agc_rendz_csi_a(&ip, rz, &alarm, AGC_JOB_CSI_COMPUTE);
     (void) printf("CSI status %d alarm %o DELVCSI %.3f fps\n", (int) st,
-                  (unsigned) alarm,
+                  (unsigned int) alarm,
                   (double) rz->delvcsi / 2147483648.0 * 128.0 * 100.0 / 0.3048);
     *delvcsi = rz->delvcsi;
 
     return (st);
-}
+} /* csi_case */
 
-/* Small lead: without a burn the active vehicle would pass the passive
+/**********************************************************************
+ * Small lead: without a burn the active vehicle would pass the passive
  * one before TPI, so CSI raises its orbit (DELVCSI > 0). Large lead: it
- * must catch up faster, so CSI lowers it (DELVCSI < 0).               */
+ * must catch up faster, so CSI lowers it (DELVCSI < 0).
+ * AGC: CSI/A (P32-P33_P72-P73.agc pp.663-674)
+ *
+ * FUNCTION NAME: test_csi_coplanar_circular
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_csi_coplanar_circular(void)
 {
-    agc_dp_t     dv = 0;
-    agc_status_t st = csi_case(0.02, &dv);
+    agc_dp_t     dv = 0;                    /* DELVCSI, m/cs 2^7 */
+    agc_status_t st = csi_case(0.02, &dv);  /* small lead        */
 
     CHECK(st == AGC_STATUS_OK);
     CHECK(dv > 0);
@@ -175,37 +337,29 @@ static void test_csi_coplanar_circular(void)
     CHECK(dv < 0);
 }
 
-/* 3. PERIAPO1 of the circular orbit. */
+/**********************************************************************
+ * 3. PERIAPO1 of the circular orbit. The bound is loose: the circular
+ * case is ill-conditioned (see test 1); C gives apsides 9 km apart where
+ * the AGC gives 16 m (the R1A word form, review-prog-rendz P1).
+ * AGC: SELECTMU, PERIAPO1 (P34-35_P74-75.agc pp.494-496)
+ *
+ * FUNCTION NAME: test_periapo_circular
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_periapo_circular(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = agc_rendz_erasable();
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
-    agc_rendz_periapo_t pa;
-    agc_status_t        st =
-        agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0),
-                                     vel(0.0, sqrt(
-                                             MU / R0), 0.0),
-                                     &pa);
+    agc_rendz_periapo_t pa;                                  /* PERIAPO1 */
+    agc_vec_t           v = vel(0.0, sqrt(MU / R0), 0.0);    /* m/cs 2^7 */
+    agc_status_t        st;                                  /* PERIAPO1 */
 
+    st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0), v, &pa);
     CHECK(st == AGC_STATUS_OK);
-    /* Measured: APSIDES (nav-conic) gives ECC 6.9E-4 for this circular
-     * orbit, apsides 9 km apart; the bound is 8192 LSB = 16 km. Reported
-     * to nav-conic in docs/modules/prog-rendz.md (open questions).     */
-    CHECK(dp_absdiff(pa.rapo, pa.rperi) < 8192);
-}
-
-int main(void)
-{
-    agc_state_init(AGC_VEHICLE_CSM);
-    test_orbit_parameters_eccentric();
-    test_periapo_circular();
-    test_csi_coplanar_circular();
-    (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,
-                  g_failures);
-
-    return ((g_failures == 0) ? 0 : 1);
+    CHECK(dp_absdiff(pa.rapo, pa.rperi) < 8192); /* 16 km */
 }

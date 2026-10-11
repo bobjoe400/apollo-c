@@ -103,10 +103,10 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
     ua = agc_vec_cross(ip, agc_vec_cross(ip, ura, va), ura);
 
     ua = rz_unit(ip, rz_unit(ip, agc_vec_shl(ip, ua, 2))); /* 00D       */
-    agc_vec_t proj = /* m 2^29 */
-                     agc_vec_shl(ip,
-                                 agc_vec_scale(ip, ura,
-                                               agc_vec_dot(ip, ura, los)), 2);
+    agc_vec_t proj; /* m 2^29 */
+
+    proj =
+        agc_vec_shl(ip, agc_vec_scale(ip, ura, agc_vec_dot(ip, ura, los)), 2);
     agc_vec_t ul; /* 2^1 */
 
     ul = rz_unit(ip, rz_unit(ip, agc_vec_sub(ip, los, proj)));
@@ -326,10 +326,9 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
     }
 
     agc_integ_out_t o; /* integration result */
-    agc_status_t    st = /* passive */
-                         rz_integ(&ip, oop_kind(
-                                      true), t, AGC_JOB_OUT_OF_PLANE_COMPUTE,
-                                  &o);
+    agc_status_t    st; /* passive */
+
+    st = rz_integ(&ip, oop_kind(true), t, AGC_JOB_OUT_OF_PLANE_COMPUTE, &o);
 
     if (st != AGC_STATUS_OK)
     {

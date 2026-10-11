@@ -1616,11 +1616,9 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
 
     /* HALFREV 2DEC 1 B-1 */
     static const agc_dp_t halfrev = AGC_DP_HALF; /* HALFREV, rev 2^0 */
-    agc_dp_t              s       = /* sin, 2^1 */
-                                    agc_dp_shl(ip,
-                                               agc_vec_dot(ip, rz_unit(ip, dv),
-                                                           refsmmat->row[1]),
-                                               1);
+    agc_dp_t              s; /* sin, 2^1 */
+
+    s = agc_dp_shl(ip, agc_vec_dot(ip, rz_unit(ip, dv), refsmmat->row[1]), 1);
     agc_dp_t a = agc_dp_asin(ip, s); /* MGA, rev 2^0 */
 
     if (a < 0)
@@ -1845,9 +1843,9 @@ void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
         agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
     agc_phase_change(2, 04022); /* GRP2PC   */
     *ustar = inc->bvector[0];
-    agc_dp_t a = /* rev 2^0 */
-                 agc_dp_acos(ip,
-                             agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
+    agc_dp_t a; /* rev 2^0 */
+
+    a = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
     int      x1 = 0; /* NORM index, -(left shifts) */
     agc_dp_t n  = rz_norm(agc_dp_sub(ip, a, AGC_DP_QUARTER), &x1); /* 2^(X1) */
     agc_tp_t t; /* TP, scale set by SRR* */

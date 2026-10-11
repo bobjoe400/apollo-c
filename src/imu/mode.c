@@ -208,7 +208,7 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
         return;
     }
 
-    agc_sp_t v = 0; /* MODECADR word: +0 free (ENDMODE/MG2), B0      */
+    agc_sp_t v = 0; /* MODECADR word: +0 not in use (ENDMODE/MG2), B0 */
 
     if (s == MC_DONE_GOOD)
     {
@@ -347,6 +347,11 @@ static void iss_lamps_write(uint16_t v)
     }
 
     agc_erase_set_dsptab(11, v);
+
+    if (!AGC_ASSERT(agc_erase_dsptab(11) == v))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -365,6 +370,11 @@ static void chan_clear(int chan, uint16_t bits)
     }
 
     agc_chan_and(chan, notmask(bits));
+
+    if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -505,6 +515,11 @@ bool imu_caged(void)
         return (false);
     }
 
+    if (!AGC_ASSERT(IM30_CAGE == 040u)) /* BIT6 of IMODES30 */
+    {
+        return (false);
+    }
+
     return ((m & IM30_CAGE) != 0u);
 }
 
@@ -522,6 +537,11 @@ void imu_modeexit(void)
     if (agc_interrupts_inhibited())
     {
         agc_relint(); /* MODEEXIT: RELINT */
+    }
+
+    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    {
+        return;
     }
 
     if (!AGC_ASSERT(agc_erase_modecadr(AGC_IMU_DEV_IMU) >= MC_WORD_BAD))
@@ -559,6 +579,11 @@ agc_status_t imu_cagetstj(void)
 
     imu_modeexit();
 
+    if (!AGC_ASSERT(agc_imu_modecadr_bzf(AGC_IMU_DEV_IMU)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_BUSY);
 }
 
@@ -580,6 +605,11 @@ static bool cagetest(void)
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return (false);
+    }
+
+    if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED))
+    {
+        return (true);
     }
 
     return (true);
@@ -605,6 +635,11 @@ agc_status_t agc_imu_mode_init(void)
     }
 
     if (!AGC_ASSERT(mc_get(0).state == MC_FREE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(outcome[AGC_IMU_DEV_COUNT - 1] == AGC_IMU_STALL_SLEEPING))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -650,6 +685,11 @@ void agc_imu_noattoff(void)
         (uint16_t) ((v & notmask(ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED)) |
                     ISS_LAMPS_CHANGED);
     iss_lamps_write(v);
+
+    if (!AGC_ASSERT((agc_erase_dsptab(11) & ISS_LAMP_NO_ATT) == 0u))
+    {
+        return;
+    }
 }
 
 /**********************************************************************
@@ -666,7 +706,12 @@ agc_status_t agc_imu_clear_cmds(void)
 
     agc_imu_hw_set_gyrocmd(0);
 
-    if (!AGC_ASSERT(cducmd[0] == 0))
+    if (!AGC_ASSERT(cducmd[0] == 0 && cducmd[2] == 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_imu_gyrocmd() == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -816,6 +861,12 @@ agc_status_t agc_task_imu_zero_release(void)
 
     agc_imu_zeroicdu();
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ZEROICDU);
+
+    if (!AGC_ASSERT(agc_erase_cdux() == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st = agc_waitlist_vardelay(DT_ZERO_SETTLE,
                                             AGC_TASK_IMU_ZERO_DONE);                 /* status of the call */
 
@@ -851,6 +902,12 @@ agc_status_t agc_task_imu_zero_done(void)
     setissw();
 
     if (!AGC_ASSERT(!imu_caged()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
+                    0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -929,6 +986,11 @@ static agc_sp_t coarse_command(int axis)
     int mag  = (diff < 0) ? -diff : diff; /* |THETAD - CDU|, CDU    */
     int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0); /* MP BIT13, round */
 
+    if (!AGC_ASSERT(mag >= 0 && mag <= 040000))
+    {
+        return (0); /* no valid result */
+    }
+
     cmd = (diff < 0) ? -cmd : cmd; /* sign of the difference */
 
     if (!AGC_ASSERT(cmd >= -4096 && cmd <= 4096))
@@ -957,6 +1019,12 @@ agc_status_t agc_task_coarse_align_commands(void)
     for (int cduind = 2; cduind >= 0; cduind--)
     { /* CDUIND 2, 1, 0  */
         command[cduind] = coarse_command(cduind);
+    }
+
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) !=
+                    0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_vardelay(DT_PULSES_START,
@@ -1034,6 +1102,11 @@ agc_status_t agc_task_coarse_align_pulses(void)
         cducmd[cduind] = slice;         /* TS CDUXCMD       */
     }
 
+    if (!AGC_ASSERT(itemp1 >= 0 && itemp1 <= 3))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st; /* status of the call */
 
     if (itemp1 > 0)
@@ -1108,6 +1181,11 @@ agc_status_t agc_task_ca_ece(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
+    if (!AGC_ASSERT(AGC_CH012_ENBIMUERR == 040u)) /* BIT6 */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK); /* TASKOVER         */
 }
 
@@ -1159,6 +1237,17 @@ void agc_imu_rndrefdr(void)
     agc_flag_clear(AGC_FLAG_TRACKFLG);
     agc_flag_clear(AGC_FLAG_DRIFTFLG);
     agc_flag_clear(AGC_FLAG_REFSMFLG);
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_REFSMFLG)))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_TRACKFLG) &&
+                    !agc_flag_test(AGC_FLAG_DRIFTFLG)))
+    {
+        return;
+    }
 }
 
 /* ======================================================================= */
@@ -1243,6 +1332,12 @@ agc_status_t agc_task_imufined(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
+                    0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (agc_imu_endimu());
 }
 
@@ -1302,6 +1397,11 @@ agc_status_t agc_task_ifailok(void)
 
     imodes30_or(IM30_IMUOK); /* reset IMUFAIL    */
 
+    if (!AGC_ASSERT((agc_erase_imodes30() & IM30_IMUOK) != 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (fail_inhibit_remove(IM30_IMUFAILINH));
 }
 
@@ -1325,6 +1425,11 @@ agc_status_t agc_task_pfailok(void)
 
     imodes30_or(IM30_PIPOK); /* reset fail bits  */
     imodes33_set(IM33_PIPOK, true);
+
+    if (!AGC_ASSERT((agc_erase_imodes30() & IM30_PIPOK) != 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (fail_inhibit_remove(IM30_PIPFAILINH));
 }
@@ -1351,6 +1456,11 @@ agc_status_t agc_imu_pipuse(void)
     }
 
     agc_imu_pipa_fail_enable();
+
+    if (!AGC_ASSERT(agc_erase_pipay() == 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -1380,6 +1490,11 @@ void agc_imu_pipa_fail_enable(void)
 
     setissw(); /* PIPFREE2         */
     imu_modeexit();
+
+    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    {
+        return;
+    }
 
     return;
 }
@@ -1415,6 +1530,11 @@ void agc_imu_pipfree(void)
     agc_alarm(ALARM_PIP_FAIL);
     setissw(); /* PIPFREE2         */
     imu_modeexit();
+
+    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    {
+        return;
+    }
 
     return;
 }
@@ -1577,13 +1697,27 @@ agc_status_t agc_imu_endimu(void)
  *
  * CM POODOO 01210, LM BAILOUT1 01210.
  *
+ * ARGUMENTS:
+ *   dev  agc_imu_device_t  I    device whose MODECADR holds a stalled job
+ *
  * RETURNS: agc_status_t -- POODOO or BAILOUT status
  **********************************************************************/
-static agc_status_t modabort(void)
+static agc_status_t modabort(agc_imu_device_t dev)
 {
     _Static_assert(ALARM_TWO_USERS == 01210, "AGC constant");
+    const agc_vehicle_t v = agc_state_vehicle(); /* CM POODOO, LM BAILOUT */
 
-    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(mc_get((int) dev).state == MC_STALLED)) /* 2nd user */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (v == AGC_VEHICLE_LM)
     {
         return (agc_bailout(ALARM_TWO_USERS)); /* BAILOUT1 01210   */
     }
@@ -1624,7 +1758,7 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
     {
         agc_relint();
 
-        return (modabort());
+        return (modabort(dev));
     }
 
     if (w.state == MC_FREE)

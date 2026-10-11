@@ -178,9 +178,9 @@ static agc_status_t pfd_los(void)
 
     agc_inhint();
     rz_flag_put(AGC_FLAG_OLDESFLG, true);
-    agc_status_t st = /* BEGDES29 */
-                      agc_waitlist_call(
-        pfd_offset(), AGC_TASK_POWERED_FLIGHT_DESIGNATE);
+    agc_status_t st; /* BEGDES29 */
+
+    st = agc_waitlist_call(pfd_offset(), AGC_TASK_POWERED_FLIGHT_DESIGNATE);
 
     agc_relint();
 
@@ -308,9 +308,9 @@ agc_status_t agc_task_powered_flight_preposition(void)
  **********************************************************************/
 agc_status_t agc_task_powered_flight_designate(void)
 {
-    agc_status_t st = /* R29DODES */
-                      agc_exec_novac(PFD_PRIO21,
-                                     AGC_JOB_POWERED_FLIGHT_DESIGNATE);
+    agc_status_t st; /* R29DODES */
+
+    st = agc_exec_novac(PFD_PRIO21, AGC_JOB_POWERED_FLIGHT_DESIGNATE);
 
     if (st != AGC_STATUS_OK)
     {
@@ -497,9 +497,9 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
  **********************************************************************/
 static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
 {
-    agc_dp_t shaft = /* 2^2 */
-                     agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul(
-        (agc_sp_t) -t->sin_s, u[2]);
+    agc_dp_t shaft; /* 2^2 */
+
+    shaft = agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
     agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) +
                     agc_sp_mul(t->cos_t, u[1]) +
                     pfd_mp_chain(t->sin_t, t->cos_s, u[2]); /* 2^2 */

@@ -87,16 +87,13 @@ static agc_dp_t *nd_dp(uint16_t id)
         case AGC_DATA_POSTTPI:
             return (&rz->posttpi);
         case AGC_DATA_RANGE:
-            return (&rz->range); /* also WWPOS     */
-        case AGC_DATA_WWPOS:
+        case AGC_DATA_WWPOS: /* WWPOS EQUALS RANGE   */
             return (&rz->range);
         case AGC_DATA_RRATE:
-            return (&rz->rrate); /* also WWVEL     */
-        case AGC_DATA_WWVEL:
+        case AGC_DATA_WWVEL: /* WWVEL EQUALS RRATE   */
             return (&rz->rrate);
         case AGC_DATA_RTHETA:
-            return (&rz->rtheta); /* also WWBIAS    */
-        case AGC_DATA_WWBIAS:
+        case AGC_DATA_WWBIAS: /* WWBIAS EQUALS RTHETA */
             return (&rz->rtheta);
         case AGC_DATA_T1TOT2:
             return (&rz->t1tot2);

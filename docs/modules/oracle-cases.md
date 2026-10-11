@@ -98,8 +98,8 @@ matrices with half-unit rows built from three angles.
 
 | case | entry, inputs -> outputs | tolerance (observed max) |
 |---|---|---|
-| calcgta_small/_large/_back | CALCGTA 23,3205; XDC YDC ZDC -> OGC IGC MGC | 1 (1) |
-| calcga_a/_b/_c | CALCGA 23,3311; XNB.., XSM.. -> THETAD (CDU patterns) | 1 CDU LSB (1); FAILREG, GLOKFAIL exact |
+| calcgta_small/_large/_back | CALCGTA 23,3205; XDC YDC ZDC -> OGC IGC MGC | 0 (review-imu DMP audit) |
+| calcga_a/_b/_c | CALCGA 23,3311; XNB.., XSM.. -> THETAD (CDU patterns) | 1 CDU LSB (1: 1TO2SUB takes the high word of DDOUBL of an ARCTRIG result whose words may disagree in sign); FAILREG, GLOKFAIL exact |
 | calcga_lock | middle gimbal > 60 deg: ALARM 00401, GLOKFAIL | as above |
 | axisgen_a/_b | AXISGEN 23,3401; STARAD, STARAD+6, VAC1+6, VAC1+12 -> XDC YDC ZDC | bit-exact |
 | pipa_small/_burn/_bypass/_carry | 1/PIPA 06,3262 (basic) -> stop SWRETURN; DELVX..Z, PIPA bias/scale, NBD, ADIA, ADSRA, 1/PIPADT, GCOMP, GCOMPSW -> DELV, GCOMP, GCOMPSW | DELV 0, GCOMP 0, GCOMPSW 0 (F6 fixed by review-imu: word pairs) |

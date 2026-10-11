@@ -165,9 +165,9 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
         if (!rz_vflag_test(RZ_VF_RENDZ_DISPLAY))
         { /* R34       */
-            agc_status_t st = /* SXTNB */
-                              agc_csm_sxtnb(ip, agc_erase_cdut(),
-                                            agc_erase_cdus(), &a);
+            agc_status_t st; /* SXTNB */
+
+            st = agc_csm_sxtnb(ip, agc_erase_cdut(), agc_erase_cdus(), &a);
 
             if (st != AGC_STATUS_OK)
             {
@@ -390,9 +390,9 @@ static agc_status_t rpd_csm_statextp(agc_interp_t *ip, agc_rendz_t *rz)
 
     rz->basetime = t;
     agc_integ_out_t o; /* integration result */
-    agc_status_t    st = /* LM */
-                         rz_integ(ip, RZ_LEMPREC, t,
-                                  AGC_JOB_RENDEZVOUS_PARAMS_START, &o);
+    agc_status_t    st; /* LM */
+
+    st = rz_integ(ip, RZ_LEMPREC, t, AGC_JOB_RENDEZVOUS_PARAMS_START, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -614,9 +614,9 @@ agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* FINDVAC */
-                      agc_exec_findvac(RPD_PRIO3,
-                                       AGC_JOB_RENDEZVOUS_PARAMS_START);
+    agc_status_t st; /* FINDVAC */
+
+    st = agc_exec_findvac(RPD_PRIO3, AGC_JOB_RENDEZVOUS_PARAMS_START);
 
     if (st != AGC_STATUS_OK)
     {
@@ -656,9 +656,9 @@ agc_status_t agc_task_rendezvous_parameter_display(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* FINDVAC */
-                      agc_exec_findvac(RPD_PRIO3,
-                                       AGC_JOB_RENDEZVOUS_PARAMS_START);
+    agc_status_t st; /* FINDVAC */
+
+    st = agc_exec_findvac(RPD_PRIO3, AGC_JOB_RENDEZVOUS_PARAMS_START);
 
     if (st != AGC_STATUS_OK)
     {

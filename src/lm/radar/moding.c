@@ -749,9 +749,9 @@ static agc_status_t rr_zero_begin(rr_zero_return_t ret)
 {
     rr_zero_ret = ret;
     agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
-    agc_status_t st = /* 20 ms */
-                      agc_waitlist_fixdelay(RR_DT_20MS,
-                                            AGC_TASK_RR_ZERO_COUNTERS);
+    agc_status_t st; /* 20 ms */
+
+    st = agc_waitlist_fixdelay(RR_DT_20MS, AGC_TASK_RR_ZERO_COUNTERS);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
@@ -1279,9 +1279,9 @@ agc_status_t agc_task_rr_one_axis(void)
 agc_status_t agc_task_dorrepos(void)
 {
     rr_setrrecr();
-    agc_status_t st = /* 20 ms */
-                      agc_waitlist_fixdelay(RR_DT_20MS,
-                                            AGC_TASK_RR_REPOSITION_DRIVE);
+    agc_status_t st; /* 20 ms */
+
+    st = agc_waitlist_fixdelay(RR_DT_20MS, AGC_TASK_RR_REPOSITION_DRIVE);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {

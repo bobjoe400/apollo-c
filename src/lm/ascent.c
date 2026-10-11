@@ -174,8 +174,10 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
     }
 
     agc_lm_asc_t *a = agc_lm_asc();
-    agc_dp_t      d = agc_dp_shl(
-        ip, agc_vec_dot(ip, agc_guid_state()->avg.unitr, a->qaxis), 2);
+    /* DOT SL2: the shift takes in MPAC+2 of the DOT's TP product.     */
+    agc_dp_t d = agc_tp_to_dp(agc_tp_shift(
+                                  ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr,
+                                                     a->qaxis), 2));
 
     a->y = agc_dp_mul_trunc(d, a->rco);
 
@@ -214,7 +216,13 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
  * Ascent guidance equations (ASCENT_GUIDANCE pp. 845-849)
  * ====================================================================== */
 
-/* MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO. */
+/* MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
+ * DEVIATION: the AGC's DSU TTO (and ATMAG's DSU 6SEC(18) for TBUP)
+ * can leave the two words sign-disagreeing; SR 11D shifts each word
+ * on its own and every later DDV by TGO or TBUP divides those words.
+ * An agc_dp_t holds the value only, so TTOGO may differ by 1 cs and
+ * AT, PRATE..YCONS, ATR..ATP, YAW, PITCH by a few LSB (oracle
+ * ascent_a/b; the rope run on canonical words matches the C).     */
 static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
 {
     agc_lm_asc_t *a = agc_lm_asc();
@@ -278,10 +286,10 @@ static void as_t2test(agc_interp_t *ip)
         agc_dp_t mdr = agc_dp_mul_trunc(a_rates->tgo, g->lm.hdotdisp);
 
         mdr = agc_dp_sub(ip, agc_dp_add(ip, mdr, a_rates->r_mag), a_rates->rco); /* -DR */
-        agc_dp_t b =
-            agc_dp_shl(ip,
-                       agc_dp_add(ip, agc_dp_mul_trunc(a_rates->drdot,
-                                                       d21), mdr), 2);
+        /* DMP, DAD, SL2: DAD leaves the DMP's MPAC+2, which SL2 takes in. */
+        agc_dp_t b = agc_tp_to_dp(agc_tp_shift(
+                                      ip, agc_tp_add(ip, agc_dp_mul_tp(a_rates->drdot, d21),
+                                                     agc_tp_from_dp(mdr)), 2));
 
         a_rates->prate = agc_dp_div(ip, agc_dp_div(ip, b, e), a_rates->tgo);
 
@@ -294,8 +302,8 @@ static void as_t2test(agc_interp_t *ip)
                                        a_rates->tbup),
                             AS_PRLIMIT) < 0)
         {
-            a_rates->prate =
-                agc_dp_shl(ip, agc_dp_mul_trunc(AS_PRLIMIT, a_rates->tbup), 4);
+            a_rates->prate = agc_tp_to_dp(agc_tp_shift(
+                                              ip, agc_dp_mul_tp(AS_PRLIMIT, a_rates->tbup), 4));
         }
 
         agc_dp_t mdy =
@@ -303,10 +311,9 @@ static void as_t2test(agc_interp_t *ip)
                        a_rates->y);
 
         mdy = agc_dp_sub(ip, mdy, a_rates->yco); /* -DY */
-        agc_dp_t d =
-            agc_dp_shl(ip,
-                       agc_dp_add(ip, agc_dp_mul_trunc(a_rates->dydot,
-                                                       d21), mdy), 2);
+        agc_dp_t d = agc_tp_to_dp(agc_tp_shift(
+                                      ip, agc_tp_add(ip, agc_dp_mul_tp(a_rates->dydot, d21),
+                                                     agc_tp_from_dp(mdy)), 2));
 
         a_rates->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a_rates->tgo);
 
@@ -565,12 +572,13 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     const agc_vec_t ur       = g->avg.unitr;
 
     a_vgvect->r_mag = agc_vec_abval(ip, g->lm.r);
-    a_vgvect->zdot  = agc_dp_shl(ip, agc_vec_dot(ip, a_vgvect->zaxis1,
-                                                 g->lm.v), 1);
+    /* DOT SL1 (twice below): the shift takes in MPAC+2 of the TP.    */
+    a_vgvect->zdot = agc_tp_to_dp(agc_tp_shift(
+                                      ip, agc_vec_dot_tp(ip, a_vgvect->zaxis1, g->lm.v), 1));
     a_vgvect->laxis =
         agc_vec_shl(ip, agc_vec_cross(ip, a_vgvect->zaxis1, ur), 1);
-    a_vgvect->ydot = agc_dp_shl(ip, agc_vec_dot(ip, a_vgvect->laxis,
-                                                g->lm.v), 1);
+    a_vgvect->ydot = agc_tp_to_dp(agc_tp_shift(
+                                      ip, agc_vec_dot_tp(ip, a_vgvect->laxis, g->lm.v), 1));
     a_vgvect->y = agc_lm_ycomp(ip);     /* YCOMP: Y */
     agc_dp_t gr =
         agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur);
@@ -669,8 +677,9 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
             &ip, agc_dp_add(&ip, agc_dp_add(&ip, g->mass1, a->dv[1]), a->dv[2]),
             a->dv[3]);
 
-        s = agc_dp_shl(
-            &ip, agc_dp_mul_trunc(agc_dp_mul_trunc(s, a->ve), AS_2SEC9), 3);
+        /* DMP DMP SL3: the second product's MPAC+2 enters the shift.    */
+        s = agc_tp_to_dp(agc_tp_shift(
+                             &ip, agc_dp_mul_tp(agc_dp_mul_trunc(s, a->ve), AS_2SEC9), 3));
         a->tbup = agc_dp_sub(&ip, agc_dp_add(&ip, agc_dp_shr(a->tbup, 1), s),
                              AS_6SEC18);
         a->at = agc_dp_div(&ip, agc_dp_shr(a->ve, 1), a->tbup);
@@ -1025,8 +1034,8 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
     const agc_vec_t ur = g->avg.unitr;
 
     g->lm.v        = agc_vec_add(&ip, agc_vec_scale(&ip, ur, AS_49FPS), a->v1s);
-    g->lm.hdotdisp =
-        agc_dp_shl(&ip, agc_vec_dot(&ip, g->lm.v, ur), 1); /* RDOT */
+    g->lm.hdotdisp = agc_tp_to_dp(agc_tp_shift( /* RDOT: DOT SL1 on the TP */
+                                      &ip, agc_vec_dot_tp(&ip, g->lm.v, ur), 1));
     a->zaxis1 = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
     agc_flag_set(AGC_FLAG_FLVR);
 
@@ -1044,22 +1053,33 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
     }
 
     agc_lm_asc_t *a = agc_lm_asc();
-    agc_dp_t      s = agc_dp_add(ip, agc_dp_sq(ip, a->atp), agc_dp_sq(ip,
-                                                                      a->aty));
+    /* ATY^2 by DSQ is a TP; DAD adds ATP^2 to its top words and SQRT
+     * reads all three (MPAC+2 takes part), at 2^18 (m/cs^2)^2.        */
+    agc_tp_t s = agc_tp_add(ip, agc_dp_sq_tp(a->aty),
+                            agc_tp_from_dp(agc_dp_sq(ip, a->atp)));
 
     a->yaw = 0;
 
-    if (s != 0)
+    if (!AGC_ASSERT(s >= 0 && s < AGC_TP_MAX / 8))
     {
-        agc_dp_t h =
-            agc_dp_div(ip, a->aty, agc_dp_shl(ip, agc_dp_sqrt(ip, s), 1));
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (agc_tp_to_dp(s) != 0) /* BZE YAWDUN tests MPAC, MPAC+1 only */
+    {
+        /* SQRT SL1: SQRT leaves the bits of its unnormalising right
+         * shift in MPAC+2 and SL1 takes the top one back. SQRT(4 s)
+         * has the same normalised root and one shift fewer, so it is
+         * the same two words (s < 1/8 keeps 4 s in range).          */
+        agc_dp_t root2 = agc_tp_sqrt(ip, agc_tp_shift(ip, s, 2));
+        agc_dp_t h     = agc_dp_div(ip, a->aty, root2);
 
         a->yaw = agc_dp_asin(ip, h); /* revolutions   */
     }
 
     agc_vec_t u = agc_vec_unit(ip, agc_lm_ldg()->unfc_2, NULL, NULL);
-    agc_dp_t  c =
-        agc_dp_shl(ip, agc_vec_dot(ip, u, agc_guid_state()->avg.unitr), 1);
+    agc_dp_t  c = agc_tp_to_dp(agc_tp_shift( /* DOT SL1 on the TP     */
+                                   ip, agc_vec_dot_tp(ip, u, agc_guid_state()->avg.unitr), 1));
 
     a->pitch = agc_dp_neg(agc_dp_acos(ip, c));
     as_restart_here(AGC_JOB_POWERED_ASCENT_BURN);

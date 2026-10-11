@@ -66,8 +66,8 @@
 #define AGC_RENDZ_TPI_MAXITER     15 /* TITER: OCT 40000 shifted 14 times     */
 #define AGC_RENDZ_INITVEL_MAXITER 15 /* bound on INITVEL offset iterations    */
 #define AGC_RENDZ_TPISRCH_MAXITER 64 /* bound on TPI SEARCH sector loop       */
-#define AGC_RENDZ_600SEC_CS       60000 /* 600SEC/TMIN 2DEC 60000 (10 min, cs)   */
-#define AGC_RENDZ_60MIN_CS        360000 /* 60MIN 2DEC 360000 (1 hour, cs)        */
+#define AGC_RENDZ_600SEC_CS       60000 /* 600SEC/TMIN: 10 min, cs */
+#define AGC_RENDZ_60MIN_CS        360000 /* 60MIN: 1 hour, cs */
 
 /* CSI alarm codes, ALARM/TB OCT 00600..00606 (P32-P33 p.663)                */
 #define AGC_ALARM_CSI_00600 00600 /* no solution, first pass of elevation    */
@@ -77,7 +77,7 @@
 #define AGC_ALARM_CSI_00604 00604 /* CDH to TPI less than 10 minutes         */
 #define AGC_ALARM_CSI_00605 00605 /* too many iterations (LOOPCT = 16)       */
 #define AGC_ALARM_CSI_00606 00606 /* DV exceeds maximum (1000 fps)           */
-#define AGC_ALARM_00611     00611 /* no TPI time for given elevation (S33/34.1) */
+#define AGC_ALARM_00611     00611 /* S33/34.1: no TPI time */
 #define AGC_ALARM_00124     00124 /* P17: no safe pericenter in this sector  */
 #define AGC_ALARM_01211     01211 /* P23/R57: marking system busy (BAILOUT)  */
 

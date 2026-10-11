@@ -14,6 +14,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
@@ -227,8 +228,162 @@ static void findcduw(const char *t, long tol)
         char n[16];
 
         (void) snprintf(n, sizeof n, (k == 0) ? "CPHI" : "CPHI+%d", k);
-        (void) oracle_cmp(t, n, (long) (int16_t) (agc_erase_thetad(k) << 1) / 2,
-                          oracle_out_sp(t, n), tol);
+        /* CPHI are two's-complement CDU words: compare the raw 15 bits
+         * (read as ones' complement, a negative angle is one LSB off). */
+        (void) oracle_cmp(t, n, (long) (agc_erase_thetad(k) & 077777u),
+                          (long) oracle_out_raw(t, n), tol);
+    }
+}
+
+/* ATMAG -> ASCENT -> P12RET: TBUP/AT from the 1/DV filter, the ascent
+ * frame (YCOMP), MAINENG, RATES/CONST, CMPONENT, AIMER, YAW and PITCH.
+ * The DOT SL / DMP SL sites shift the TP MPAC (review-guid-landing).   */
+static void ascent(const char *t)
+{
+    agc_guid_t   *g   = agc_guid_state();
+    agc_lm_asc_t *a   = agc_lm_asc();
+    agc_job_ctx_t ctx = {AGC_JOB_ATMAG, 020, false, -1, 0};
+
+    agc_state_init(AGC_VEHICLE_LM);
+    (void) agc_exec_init();
+    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_lm_landing_reset();
+    g->lm.abdvconv = oracle_in_dp(t, "ABDVCONV", 0);
+    g->lm.mass1    = oracle_in_dp(t, "MASS1", 0);
+    a->dv[1]       = oracle_in_dp(t, "E7,1634", 0);
+    a->dv[2]       = oracle_in_dp(t, "E7,1636", 0);
+    a->dv[3]       = oracle_in_dp(t, "E7,1640", 0);
+    a->ve          = oracle_in_dp(t, "VE", 0);
+    a->tbup        = oracle_in_dp(t, "TBUP", 0);
+    a->tto         = oracle_in_dp(t, "TTO", 0);
+    g->lm.r        = oracle_in_vec(t, "R");
+    g->lm.v        = oracle_in_vec(t, "V");
+    g->avg.unitr   = oracle_in_vec(t, "UNIT/R/");
+    g->avg.gdt1_2  = oracle_in_vec(t, "GDT1/2");
+    a->qaxis       = oracle_in_vec(t, "QAXIS");
+    a->zaxis1      = oracle_in_vec(t, "ZAXIS1");
+    a->rco         = oracle_in_dp(t, "RCO", 0);
+    a->yco         = oracle_in_dp(t, "YCO", 0);
+    a->tgo         = oracle_in_dp(t, "TGO", 0);
+    a->zdotd       = oracle_in_dp(t, "ZDOTD", 0);
+    a->ydotd       = oracle_in_dp(t, "YDOTD", 0);
+    a->rdotd       = oracle_in_dp(t, "RDOTD", 0);
+    g->lm.hdotdisp = oracle_in_dp(t, "HDOTDISP", 0);
+    g->lm.xnbpip   = mat_in(t, "XNBPIP");
+    g->lm.which    = AGC_LM_WHICH_POWERED_ASCENT;
+    agc_flag_set(AGC_FLAG_FLPI);
+    (void) agc_lm_job_atmag(&ctx);
+    oracle_require_ok(t, "PHASCHNG");
+
+    /* ATMAG's DSU 6SEC(18) and MAINENG's DSU TTO leave TBUP and TGO
+     * sign-disagreeing (F9 class); AT (DDV by TBUP), TTOGO (SR 11D of
+     * TGO) and every later DDV by TBUP or TGO see those words, which an
+     * agc_dp_t cannot hold (ascent.c DEVIATION). Run from T2TEST with
+     * the same values in canonical words, the rope gives exactly the C
+     * PRATE..ATY; the tolerances cover the representation only.       */
+    const struct
+    {
+        const char *name;
+        agc_dp_t    got;
+        long        tol;
+    } dps[] = {
+        {"TBUP", a->tbup, 0},       {"AT", a->at, 4},
+        {"MASS1", g->lm.mass1, 0},  {"E7,1634", a->dv[1], 0},
+        {"E7,1636", a->dv[2], 0},   {"E7,1640", a->dv[3], 0},
+        {"/R/MAG", a->r_mag, 0},    {"ZDOT", a->zdot, 0},
+        {"YDOT", a->ydot, 0},       {"Y", a->y, 0},
+        {"GEFF", a->geff, 0},       {"DZDOT", a->dzdot, 0},
+        {"DYDOT", a->dydot, 0},     {"DRDOT", a->drdot, 0},
+        {"TGO", a->tgo, 0},         {"TTOGO", agc_erase_ttogo(), 1},
+        {"PRATE", a->prate, 32},    {"YRATE", a->yrate, 32},
+        {"PCONS", a->pcons, 4},     {"YCONS", a->ycons, 4},
+        {"ATR", a->atr, 8},         {"ATY", a->aty, 8},
+        {"ATP", a->atp, 8},         {"YAW", a->yaw, 8},
+        {"PITCH", a->pitch, 8}};
+
+    for (size_t k = 0; k < sizeof dps / sizeof dps[0]; k++)
+    {
+        (void) oracle_cmp(t, dps[k].name, dps[k].got,
+                          oracle_out_dp(t, dps[k].name), dps[k].tol);
+    }
+
+    oracle_cmp_vec(t, "LAXIS", a->laxis, oracle_out_vec(t, "LAXIS"), 0);
+    oracle_cmp_vec(t, "VGVECT", a->vgvect, oracle_out_vec(t, "VGVECT"), 0);
+    oracle_cmp_vec(t, "VGBODY", a->vgbody, oracle_out_vec(t, "VGBODY"), 0);
+    oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2,
+                   oracle_out_vec(t, "UNFC/2"), 8);
+    (void) oracle_cmp(t, "FLPC", agc_flag_test(AGC_FLAG_FLPC) ? 1 : 0,
+                      (oracle_out_sp(t, "FLAGWRD9") & 04000) ? 1 : 0, 0);
+}
+
+/* RODCOMP (P66) up to THROTTLE +3: ROD clicks, PIPA snapshot, HDOTDISP
+ * (DOT SL1 on the TP), HCALC1, /AFC/ (FWEIGHT DMP BIT1H reads the high
+ * word of a sign-disagreeing pair), LASTTPIP.                          */
+static void rodcomp(const char *t)
+{
+    agc_guid_t   *g   = agc_guid_state();
+    agc_lm_ldg_t *l   = agc_lm_ldg();
+    agc_lm_pad_t *p   = agc_lm_pad();
+    agc_job_ctx_t ctx = {AGC_JOB_RODCOMP, 022, false, -1, 0};
+
+    agc_state_init(AGC_VEHICLE_LM);
+    (void) agc_exec_init();
+    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_lm_landing_reset();
+    l->rodcount = (agc_sp_t) oracle_in(t, "RODCOUNT", 0);
+    l->rodscal1 = (agc_sp_t) oracle_in(t, "RODSCAL1", 0);
+    l->vdgvert  = oracle_in_dp(t, "VDGVERT", 0);
+    agc_erase_set_pipax((agc_sp_t) oracle_in(t, "PIPAX", 0));
+    agc_erase_set_pipay((agc_sp_t) oracle_in(t, "PIPAX", 1));
+    agc_erase_set_pipaz((agc_sp_t) oracle_in(t, "PIPAX", 2));
+
+    for (int k = 0; k < 3; k++)
+    {
+        l->oldpipa[k]       = (agc_sp_t) oracle_in(t, "OLDPIPAX", k);
+        g->avg.pipatmp[k]   = (agc_sp_t) oracle_in(t, "PIPATMPX", k);
+        agc_erase_set_tem(k, (agc_sp_t) oracle_in(t, "TEMX", k));
+    }
+
+    agc_time_set_cs((uint32_t) oracle_in(t, "TIME2", 1));
+    agc_erase_set_piptime(oracle_in_dp(t, "PIPTIME", 0));
+    l->lasttpip      = oracle_in_dp(t, "LASTTPIP", 0);
+    g->avg.gdt_2     = oracle_in_vec(t, "GDT/2");
+    l->vbias         = oracle_in_vec(t, "VBIAS");
+    g->lm.v          = oracle_in_vec(t, "V");
+    g->lm.r          = oracle_in_vec(t, "R");
+    l->land_mag      = oracle_in_dp(t, "/LAND/", 0);
+    g->lm.hdotdisp   = oracle_in_dp(t, "HDOTDISP", 0);
+    p->taurod        = oracle_in_dp(t, "TAUROD", 0);
+    p->lag_tau       = oracle_in_dp(t, "LAG/TAU", 0);
+    p->maxforce      = oracle_in_dp(t, "MAXFORCE", 0);
+    p->minforce      = oracle_in_dp(t, "MINFORCE", 0);
+    g->lm.mass       = oracle_in_dp(t, "MASS", 0);
+    agc_lm_thr()->fweight.hi = (agc_sp_t) oracle_in(t, "FWEIGHT", 0);
+    agc_lm_thr()->fweight.lo = (agc_sp_t) oracle_in(t, "FWEIGHT", 1);
+    l->afc           = oracle_in_dp(t, "/AFC/", 0);
+    agc_erase_set_cdux(oracle_in_raw(t, "CDUX", 0));
+    agc_erase_set_cduy(oracle_in_raw(t, "CDUX", 1));
+    agc_erase_set_cduz(oracle_in_raw(t, "CDUX", 2));
+    (void) agc_lm_job_rodcomp(&ctx);
+    oracle_require_ok(t, "31,2221");
+    (void) oracle_cmp(t, "VDGVERT", l->vdgvert, oracle_out_dp(t, "VDGVERT"), 0);
+    (void) oracle_cmp(t, "THISTPIP", l->thistpip, oracle_out_dp(t, "THISTPIP"),
+                      0);
+    (void) oracle_cmp(t, "LASTTPIP", l->lasttpip, oracle_out_dp(t, "LASTTPIP"),
+                      0);
+    (void) oracle_cmp(t, "HDOTDISP", g->lm.hdotdisp,
+                      oracle_out_dp(t, "HDOTDISP"), 0);
+    (void) oracle_cmp(t, "HCALC1", l->hcalc1, oracle_out_dp(t, "HCALC1"), 0);
+    (void) oracle_cmp(t, "/AFC/", l->afc, oracle_out_dp(t, "/AFC/"), 0);
+
+    for (int k = 0; k < 3; k++)
+    {
+        char n[16];
+
+        (void) snprintf(n, sizeof n, (k == 0) ? "DELVROD" : "DELVROD+%d",
+                        2 * k);
+        (void) oracle_cmp(t, n, agc_dp_high(l->delvrod.c[k]),
+                          oracle_out_sp(t, n), 0);
     }
 }
 
@@ -252,8 +407,12 @@ int main(void)
     throttle("throt_hold");
     throttle("throt_down");
     throttle("throt_p66");
-    findcduw("findcduw_a", 1);
-    findcduw("findcduw_b", 1);
+    findcduw("findcduw_a", 0);
+    findcduw("findcduw_b", 0);
+    ascent("ascent_a");
+    ascent("ascent_b");
+    rodcomp("rodcomp_a");
+    rodcomp("rodcomp_b");
 
     return (oracle_finish("oracle_landing"));
 }

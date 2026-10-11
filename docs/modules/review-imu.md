@@ -54,10 +54,30 @@ ANGLFIND / ATTITUDE_MANEUVER_ROUTINE, R60_62, IMU_CALIBRATION_AND_ALIGNMENT.
   removed agc_imu_fin20 (IMUFIN20 = IMUFINE alias; caller in csm/alignment uses agc_imu_fine).
 * NOTE: src/lm/radar/read.c (other lane) is mid-edit and breaks `make`; lane tests are built with
   SCRATCH/review-imu/tbuild.sh (re-archives the last good objects) until it compiles again.
-* TODO fidelity pass per file (gyro, compensation, alignment, attitude_maneuver, maneuver,
-  maneuver_calc, vflags*) (note: CALCGA CPHIFLAG branch stores nothing -- check AGC)
+* DONE DMP/DMPR + shift audit (review_items "ALL remaining lanes"): every DMP in ANGLFIND,
+  INFLIGHT_ALIGNMENT, GIMBAL_LOCK_AVOIDANCE, R60_62 (LM BALLANGS), P51-P53 CALCSMSC and P03 TAR/EREF
+  now truncating (agc_dp_mul_trunc, or the TP product where the AGC shifts it: DMP SLn, DOT SL1
+  before ARCCOS/STORE).  36 sites changed DMPR->DMP (CDUTODCM 14, DELCOMP 4, CALCGTA 2,
+  CALCSMSC 8, BALLANGS 7, KALCMANU TM 1) + 2 DOT SL1 TP shifts (CALCGA, VECPOINT); 6 DMPR sites
+  confirmed (ALWAYSG/COMPGS).  SR/VSR: all SR truncate, ALTCALC VSR1 rounds -- as the AGC.
+  CALCGTA now bit-exact (tol 1 -> 0).  Not fixable with the public API (no TP COS): DCMTOCDU and
+  GUESS "COS SL1" lose MPAC+2's top bit.
+* DONE gyro.c fidelity (IMUPULSE..8192AUG all match, incl. N=1 -0 CCS); compensation.c: CM LASTBIAS
+  calls PIPUSE (zeroes PIPAs) where LM calls PIPUSE1 (was PIPUSE1 for both); CM NBD2 ends the job
+  on equal TIME1 readings (-0) instead of running NBD3 with dt 0 (test_lastbias_pipuse).
+* DONE fidelity attitude_maneuver.c (R60CSM/REDOMANN/TOBALL/TOBALLC/CHKLINUS/RELINUS/R61TEST/
+  ENDMANU1, VECPOINT/COMPMATX/PICKAXIS/ROT180/FINDGIMB, LM BALLANGS) and alignment.c (CALCGTA,
+  ARCTRIG, CALCGA, AXISGEN, CALCSMSC): match.  Renamed VECPNT1 -> agc_imu_vecpoint_from_cdus
+  (caller in src/lm/navigation/tracking_attitude.c), ENDMANU1, GIMLOCK1.
+* DONE fidelity maneuver.c (GOMANUR, KALCMAN3 branches, WCALC/LOCSKIRT, NEWDELHI, NEWANGL,
+  INCRDCDU, TIMECHK, MANUSTAT, CONTMANU, UPDTCALL, MANUSTOP, ENDMANU, STOPRATE/STOPYZ, ZEROERROR,
+  LOADCDUD).  Fixed: TM kept as the AGC words MANUSTAT's two DAS leave (the minor word can be
+  negative under a positive major word; TIMECHK branches on the major word first) -- with a
+  normalised TM the last-second MANUSTOP delay could be 1 cs instead of up to 100.
+  Renamed KALCMAN3 (job id AGC_JOB_KALCMANU_START), NEWANGL+1, NOGOM2.
+* TODO fidelity pass: maneuver (KALCMANU steering), vflags*; CALCGA CPHIFLAG checked: BONCLR CPHIFLAG S2 returns without STCALL THETAD, as the C
 * TODO naming (digit-suffixed labels)
-* DONE style mode.c, internal.h, prelaunch_*.c/h: 0 check_style findings (prologs via
+* DONE style mode.c, gyro.c, compensation.c, alignment.c, attitude_maneuver.c, maneuver.c, internal.h, prelaunch_*.c/h: 0 check_style findings (prologs via
   SCRATCH/review-imu/prolog.py + spec_*.py; decl comments via declfix.py).
 * TODO style debt (984 findings at start in lane files; remaining: gyro, compensation, alignment,
   attitude_maneuver, maneuver, maneuver_calc, vflags*, imu.h)

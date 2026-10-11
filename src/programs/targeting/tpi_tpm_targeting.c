@@ -403,9 +403,9 @@ agc_status_t agc_job_tpi_time_search(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
-    agc_status_t st = /* S33/34.1 */
-                      agc_rendz_tpi_time_search_cont(&ip, rz,
-                                                     AGC_JOB_TPI_TIME_SEARCH);
+    agc_status_t st; /* S33/34.1 */
+
+    st = agc_rendz_tpi_time_search_cont(&ip, rz, AGC_JOB_TPI_TIME_SEARCH);
 
     return (tpi_after_search(ctx, st));
 }

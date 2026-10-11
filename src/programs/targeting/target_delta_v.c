@@ -94,8 +94,9 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt,
     m.row[2] = agc_vec_neg(rz_unit(ip, ratt));                     /* 24D */
     m.row[1] = rz_unit(ip, agc_vec_cross(ip, m.row[2], vatt));     /* 18D */
     m.row[0] = rz_unit(ip, agc_vec_cross(ip, m.row[1], m.row[2])); /* 12D */
-    agc_vec_t dv = /* delta V, m/cs 2^7 */
-                   agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
+    agc_vec_t dv; /* delta V, m/cs 2^7 */
+
+    dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
 
     *v_new = agc_vec_add(ip, dv, vatt);
 
@@ -311,9 +312,9 @@ agc_status_t agc_job_target_delta_v_integrate(agc_job_ctx_t *ctx)
     in.tdec1 =
         rz_is_csm() ? agc_erase_tetcsm() : agc_erase_tetlem(); /* TETTHIS */
     agc_integ_out_t o; /* integration result */
-    agc_status_t    st = /* status */
-                         rz_integrvs(&ip, &in, AGC_JOB_TARGET_DELTA_V_INTEGRATE,
-                                     &o);
+    agc_status_t    st; /* status */
+
+    st = rz_integrvs(&ip, &in, AGC_JOB_TARGET_DELTA_V_INTEGRATE, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -350,8 +351,9 @@ agc_status_t agc_job_target_delta_v_store(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* INTSTALL */
-                      agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
+    agc_status_t st; /* INTSTALL */
+
+    st = agc_integ_install(0, AGC_JOB_TARGET_DELTA_V_STORE);
 
     if (st != AGC_STATUS_OK)
     {

@@ -245,11 +245,11 @@ static agc_status_t opd_compute(agc_interp_t *ip,
         out->neg_tper = agc_dp_neg(tper); /* DCOMP         */
     }
 
-    agc_dp_t     t   = 0; /* TFF, cs 2^28 */
-    agc_status_t st2 = /* CALCTFF */
-                       agc_tff_calctff(ip, &tff,
-                                       agc_dp_add(ip, in->hpermin,
-                                                  in->rpadtem), &t);
+    agc_dp_t     t = 0;   /* TFF, cs 2^28 */
+    agc_status_t st2; /* CALCTFF */
+
+    st2 =
+        agc_tff_calctff(ip, &tff, agc_dp_add(ip, in->hpermin, in->rpadtem), &t);
 
     out->tff = agc_dp_neg(t); /* DCOMP, TFF    */
     *tff_out = tff;
@@ -447,9 +447,9 @@ agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx)
 
     if (rz_vflag_test(RZ_VF_AVEGFLAG))
     { /* V82GON        */
-        agc_status_t st = /* FINDVAC */
-                          agc_exec_findvac(OPD_PRIO7,
-                                           AGC_JOB_ORBIT_DISPLAY_AVERAGE_G);
+        agc_status_t st; /* FINDVAC */
+
+        st = agc_exec_findvac(OPD_PRIO7, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G);
 
         if (st != AGC_STATUS_OK)
         {

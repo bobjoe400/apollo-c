@@ -148,9 +148,9 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     agc_dp_t a1 =
         agc_dp_add(ip, agc_dp_sub(ip, agc_dp_sign(ang_angle, s), RZ_DPHALF),
                    rz->elev); /* rev 2^0 */
-    agc_dp_t a2 = /* rev 2^0 */
-                  agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip,
-                                                                    c28)), d30);
+    agc_dp_t a2; /* rev 2^0 */
+
+    a2 = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip, c28)), d30);
 
     if (!AGC_ASSERT(a1 >= AGC_DP_MIN && a2 >= AGC_DP_MIN))
     {
@@ -252,10 +252,9 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
     h = agc_vec_cross(ip, rz->unrm, rz->ract3);
     agc_vec_t ura  = rz_unit(ip, rz->ract3); /* UNIT RA, 2^1 */
     agc_vec_t proj = agc_vec_proj(ip, rz->ulos, ura); /* VPROJ, 2^3 */
-    agc_vec_t up   = /* 2^1 */
-                     rz_unit(ip,
-                             agc_vec_sub(ip, rz->ulos,
-                                         agc_vec_shl(ip, proj, 2)));
+    agc_vec_t up; /* 2^1 */
+
+    up = rz_unit(ip, agc_vec_sub(ip, rz->ulos, agc_vec_shl(ip, proj, 2)));
     agc_dp_t hup = agc_vec_dot(ip, h, up); /* 0D, 2^31 */
     agc_dp_t c   = agc_dp_sign(agc_vec_dot(ip, up, rz->ulos), hup); /* 2^2 */
     agc_dp_t ea  = agc_dp_acos(ip, agc_dp_shl(ip, c, 1)); /* EA, rev 2^0 */
@@ -762,9 +761,9 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
     agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
     m.row[0] = rz->ulos; /* 0D       */
-    agc_vec_t b = /* 12D B, 2^1 */
-                  rz_unit(ip,
-                          agc_vec_neg(agc_vec_cross(ip, rz->ulos, rz->unrm)));
+    agc_vec_t b; /* 12D B, 2^1 */
+
+    b = rz_unit(ip, agc_vec_neg(agc_vec_cross(ip, rz->ulos, rz->unrm)));
 
     m.row[1]  = agc_vec_shl(ip, agc_vec_cross(ip, b, rz->ulos), 1); /* 6D   */
     m.row[2]  = b; /* 12D      */
@@ -822,9 +821,9 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t             csth = agc_dp_cos(ip, rz->centang); /* CSTH, 2^1 */
     agc_dp_t             snth = agc_dp_sin(ip, rz->centang); /* SNTH, 2^1 */
     agc_conic_time_out_t o; /* TIMETHET result */
-    agc_status_t         st = /* TIMETHET */
-                              rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3,
-                                             snth, csth, true, &o);
+    agc_status_t         st; /* TIMETHET */
+
+    st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, snth, csth, true, &o);
 
     if (st != AGC_STATUS_OK)
     {

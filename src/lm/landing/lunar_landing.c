@@ -43,7 +43,6 @@
 #define LL_4SEC28        ((agc_dp_t) 400) /* 2DEC 400 B-28                   */
 #define LL_GSCALE        ((agc_dp_t) 13107200) /* 2DEC 100 B-11                   */
 #define LL_SHFTFACT      ((agc_dp_t) 2048) /* 2DEC 1 B-17                     */
-#define LL_BIT1H         ((agc_dp_t) 16384) /* DMP BIT1H: DP (OCT 1, 0)        */
 #define LL_SCALEFAC      ((agc_dp_t) 3268444) /* +7.97959872 E+2 B-16            */
 #define LL_DEPRCRIT      ((agc_dp_t) -2684355) /* 2DEC -.02 B-1                   */
 #define LL_ALL4BITS      00063 /* ALL4BITS: channel 31 bits 1, 2, 5, 6    */
@@ -176,7 +175,9 @@ static void ll_ddumgood(agc_interp_t *ip, agc_dp_t tdec1)
     agc_erase_set_tig(agc_dp_sub(ip, tdec1, zt));
     agc_vec_t n = agc_vec_unit(ip, agc_vec_cross(ip, g->v, g->r), NULL, NULL);
 
-    l->outofpln      = agc_dp_shl(ip, agc_vec_dot(ip, n, l->land), 1);
+    /* DOT SL1: the shift takes in MPAC+2 of the DOT's TP product.     */
+    l->outofpln =
+        agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, n, l->land), 1));
     l->pointvsm_save = l->unfc_2;
 
     if (!AGC_ASSERT(zt >= 0))
@@ -792,8 +793,10 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
     l->lasttpip = l->thistpip;
     agc_dp_t meas =
         agc_dp_div(ip, agc_vec_abval(ip, dv), agc_dp_div(ip, dt2, LL_SHFTFACT));
-    agc_dp_t fw = agc_dp_mul_trunc(agc_lm_words_value(agc_lm_thr()->fweight),
-                                   LL_BIT1H);
+    /* DLOAD FWEIGHT, DMP BIT1H: (hi, lo) x 2^-14 leaves (0, hi, lo) in
+     * MPAC; the DP read is (0, hi) even when THROTTLE's DAS left the
+     * pair sign-disagreeing (lo never borrows from hi).                */
+    agc_dp_t fw = agc_dp_pack(0, agc_lm_thr()->fweight.hi);
 
     fw = agc_dp_div(ip, agc_dp_div(ip, fw, g->lm.mass), LL_SCALEFAC);
     agc_dp_t e =
@@ -879,7 +882,9 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
     agc_dp_t  rmag     = 0;
     agc_vec_t ur_state = agc_vec_unit(&ip, g->lm.r, &rmag, NULL);
 
-    g->lm.hdotdisp = agc_dp_shl(&ip, agc_vec_dot(&ip, ur_state, v), 1);
+    /* DOT SL1 shifts the TP product (MPAC+2 bit enters the low word). */
+    g->lm.hdotdisp =
+        agc_tp_to_dp(agc_tp_shift(&ip, agc_vec_dot_tp(&ip, ur_state, v), 1));
     agc_dp_t h = agc_dp_mul_trunc(agc_dp_shl(&ip, dt, 11), g->lm.hdotdisp);
 
     l->hcalc1 = agc_dp_sub(&ip, agc_dp_add(&ip, h, rmag), l->land_mag);

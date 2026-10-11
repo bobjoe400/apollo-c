@@ -1,20 +1,57 @@
-/*
- * tracking_attitude.c -- R61CSM PREFERRED TRACKING ATTITUDE ROUTINE
- * and CRS61.1 / CRS61.2, CSM only (P20-P25.agc, Comanche055 pp.574-575,
- * 590-597).
+/**********************************************************************
+ * FILE NAME: tracking_attitude.c
  *
- * "To compute the preferred tracking attitude of the CSM to enable optics
- * tracking of the LM and to perform the maneuver to the preferred or
- * X-axis tracking attitude." CRS61.1 points the track axis (55 degrees
- * from +Z toward +X: preferred; or +X for COAS tracking) at the LM with
- * VECPOINT; more than 10 degrees from the present CDUs it asks R60 for a
- * maneuver, otherwise (in auto, nobody on the stick) it feeds the DAP
- * directly: desired CDUs, their 0.1 s increments and the LOS rate in
- * control axes (CRS61.2).
+ * PURPOSE:
+ *   R61CSM PREFERRED TRACKING ATTITUDE ROUTINE and CRS61.1 / CRS61.2,
+ *   CSM only, and V89 (R63 rendezvous final attitude). "To compute the
+ *   preferred tracking attitude of the CSM to enable optics tracking of
+ *   the LM and to perform the maneuver to the preferred or X-axis
+ *   tracking attitude." CRS61.1 points the track axis (55 degrees from
+ *   +Z toward +X: preferred; or +X for COAS tracking) at the LM with
+ *   VECPOINT; more than 10 degrees from the present CDUs it asks R60 for
+ *   a maneuver, otherwise (in auto, nobody on the stick) it feeds the
+ *   DAP directly: desired CDUs, their 0.1 s increments and the LOS rate
+ *   in control axes (CRS61.2).
  *
- * Scales: LOS unit half unit, |LOS| m 2^29, |DV| m/cs 2^7, CDU words
- * two's complement half revolutions, DELCDU 180 deg, WBODY 450 deg/s.
- */
+ * AGC SOURCE:
+ *   Comanche055 P20-P25.agc pp. 574-575 (R61CSM, R61C1, R61END,
+ *   DECRM61), pp. 590-597 (CRS61.1, R63, STEP2CK, CDULOOP, STKTEST,
+ *   AUTOCK, CRS61.2, CRS61.2A), pp. 616-618 (V89CALL, V89RECL, SETPAF,
+ *   RSTPAF); CSM only
+ *
+ * EXTERNAL VARIABLES:
+ *   Name        Type       I/O  Scale      Description
+ *   ----------  ---------  ---  ---------  ---------------------------
+ *   CDUX CDUY CDUZ  words  I    CDU        present IMU angles
+ *   REFSMMAT    agc_mat_t  I    2^1        reference to SM
+ *   THETAD      words      O    CDU        desired gimbal angles
+ *   CPHIX PRAXIS  words    O    CDU        nouns 96, 95
+ *   SCAXIS      agc_vec_t  O    2^1        the track axis (R60)
+ *   CDUD WBODY DELCDU HOLDFLAG (CSM DAP)  O  CDU, 450 deg/s, 180 deg
+ *   CHAN31 DSALMOUT  channels I/O -        auto mode, UPLINK ACTY lamp
+ *   PRFTRKAT STIKFLAG 3AXISFLG PDSPFLAG  flags  I/O
+ *   R61CNTR GENRET SAVEPOS SAVEVEL SAVEDCDU (file static)  I/O
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                       Description
+ *   -------------------------  -----------------------------------------
+ *   rz_integ                   CSMCONIC / LEMCONIC to the time
+ *   agc_imu_vecpoint           VECPOINT
+ *   agc_guid_smcdures          SMCDURES
+ *   agc_guid_smnb              *SMNB*
+ *   agc_imu_attitude_maneuver  R60CSM
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. Integration and maneuver statuses are passed back (an
+ *   INTSTALL sleep resumes the job from its start).
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Jobs of P20 (CSM) and the V89 extended verb.
+ *
+ * NOTES:
+ *   Scales: LOS unit half unit, |LOS| m 2^29, |DV| m/cs 2^7, CDU words
+ *   two's complement half revolutions, DELCDU 180 deg, WBODY 450 deg/s.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "../../programs/navigation/internal.h"
@@ -53,11 +90,11 @@ typedef struct ta_csm
     agc_vec_t    vlem;        /* DCDU (temp): LM velocity, m/cs 2^7       */
     agc_dp_t     abslos;      /* P21TIME (temp): |LOS|, m 2^29            */
     uint16_t     savedcdu[3]; /* SAVEDCDU: desired CDUs (THETAD)          */
-    agc_sp_t     r61cntr;     /* R61CNTR: + passes to skip, - KALCMANU    */
+    agc_sp_t     r61cntr; /* R61CNTR: + passes to skip, - KALCMANU, unscaled */
     agc_job_id_t genret;      /* GENRET                                   */
 } ta_csm_t;
 
-static ta_csm_t ta;
+static ta_csm_t ta; /* CRS61.1 erasables */
 
 typedef enum ta_result
 {
@@ -65,11 +102,32 @@ typedef enum ta_result
     TA_MANEUVER = 1  /* MPAC = 1: CPHI.. set for KALCMANU             */
 } ta_result_t;
 
+/**********************************************************************
+ * R61CNTR: R61 passes to skip (positive) or KALCMANU running (-1).
+ * AGC: R61CNTR (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_r61cntr
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- R61CNTR, a count
+ **********************************************************************/
 agc_sp_t agc_erase_r61cntr(void)
 {
     return (ta.r61cntr);
 }
 
+/**********************************************************************
+ * Store R61CNTR (-1 .. 3).
+ * AGC: R61CNTR (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_set_r61cntr
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   v         agc_sp_t  I    the count
+ **********************************************************************/
 void agc_erase_set_r61cntr(agc_sp_t v)
 {
     if (!AGC_ASSERT(v >= -1 && v <= 3))
@@ -80,14 +138,29 @@ void agc_erase_set_r61cntr(agc_sp_t v)
     ta.r61cntr = v;
 }
 
-/* R63 (the CRS61.1 subroutine): CSM and LM to TIME (conic); LOS unit in
+/**********************************************************************
+ * R63 (the CRS61.1 subroutine): CSM and LM to TIME (conic); LOS unit in
  * SAVEPOS, its length, POINTVSM (SM); VECPOINT for +X (CPHIX) and for the
- * 55 degree axis (PRAXIS); THETAD = PRAXIS or (PRFTRKAT off) CPHIX.    */
+ * 55 degree axis (PRAXIS); THETAD = PRAXIS or (PRFTRKAT off) CPHIX.
+ * AGC: R63, CRS61.1 (P20-P25.agc pp.590-592)
+ *
+ * FUNCTION NAME: ta_desired
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+ *   t         agc_dp_t        I    the time of the attitude, cs 2^28
+ *   resume    agc_job_id_t    I    job that continues the caller
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration or VECPOINT
+ *          status
+ **********************************************************************/
 static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
                                agc_job_id_t resume)
 {
-    agc_integ_out_t o;
-    agc_status_t    st = rz_integ(ip, RZ_CSMCONIC, t, resume, &o);
+    agc_integ_out_t o; /* integration result */
+    agc_status_t    st = rz_integ(ip, RZ_CSMCONIC, t, resume, &o); /* CSM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -106,11 +179,12 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
     ta.vlem    = o.vatt;
     ta.savepos =
         agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, ta.savepos), &ta.abslos, NULL);
-    agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_vec_t pointvsm =
-        agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
-    agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);
-    agc_vec_t prf   = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z);
+    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
+    agc_vec_t pointvsm; /* SM, 2^1 */
+
+    pointvsm = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
+    agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0); /* +X, 2^1 */
+    agc_vec_t prf   = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z); /* PRFUNIT, 2^1 */
 
     st = agc_imu_vecpoint(ip, pointvsm, unitx, rz_tracking_angles(false));
 
@@ -119,40 +193,59 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
         st = agc_imu_vecpoint(ip, pointvsm, prf, rz_tracking_angles(true));
     }
 
-    bool prftrk = agc_flag_test(AGC_FLAG_PRFTRKAT);
+    bool prftrk = agc_flag_test(AGC_FLAG_PRFTRKAT); /* PRFTRKAT */
+
+    agc_vec_t       axis = unitx; /* SCAXIS: +X, 2^1 */
+    const uint16_t *cdus = rz_tracking_angles(false); /* CPHIX      */
+
+    if (prftrk)
+    {
+        axis = prf;                      /* the 55 degree axis */
+        cdus = rz_tracking_angles(true); /* PRAXIS             */
+    }
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_set_scaxis(prftrk ? prf : unitx); /* CRSTOR1  */
+        st = agc_imu_set_scaxis(axis); /* CRSTOR1  */
     }
 
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        ta.savedcdu[i] =
-            prftrk ? rz_tracking_angles(true)[i] : rz_tracking_angles(false)[i];
+        ta.savedcdu[i] = cdus[i];
         agc_erase_set_thetad(i, ta.savedcdu[i]); /* CRSTOR   */
-        st = AGC_STATUS_OK;
     }
 
     return (st);
-}
+} /* ta_desired */
 
-/* STEP2CK: any CDU more than 10 degrees from its desired value. (The AGC
- * forms ACDU - DCDU with MSU and checks the SP part as a DP.)        */
+/**********************************************************************
+ * STEP2CK: any CDU more than 10 degrees from its desired value. (The AGC
+ * forms ACDU - DCDU with MSU and checks the SP part as a DP.)
+ * AGC: STEP2CK, CDULOOP (P20-P25.agc p.593)
+ *
+ * FUNCTION NAME: ta_gross
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when a CDU is 10 degrees or more from its desired
+ *          value
+ **********************************************************************/
 static bool ta_gross(void)
 {
     uint16_t cdu[3] = {agc_erase_cdux(), agc_erase_cduy(), agc_erase_cduz()};
 
     for (int i = 2; i >= 0; i--)
     { /* CDULOOP  */
-        int d = ((int) cdu[i] - (int) ta.savedcdu[i]) & 077777;
+        int d; /* MSU, CDU units */
+
+        d = ((int) cdu[i] - (int) ta.savedcdu[i]) & 077777;
 
         if ((d & 040000) != 0)
         {
             d -= 0100000;
         }
 
-        int m = (d < 0) ? -d : d;
+        int m = (d < 0) ? -d : d; /* |error| */
 
         if (m - TA_DEGREE10 >= 0)
         {
@@ -160,64 +253,92 @@ static bool ta_gross(void)
         }
     }
 
-    _Static_assert(TA_DEGREE10 > 0, "AGC constant");
-
     return (false);
 }
 
-/* CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
+/**********************************************************************
+ * CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
  * (100/2PI), normalized (X1); in SM axes, 0.1 s of it to CDU increments
- * (SMCDURES); in NB then control axes (MBDYTCTL) x .8 for WBODY.       */
+ * (SMCDURES); in NB then control axes (MBDYTCTL) x .8 for WBODY.
+ * AGC: CRS61.2 (P20-P25.agc pp.594-596)
+ *
+ * FUNCTION NAME: ta_rates
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+ *   delcdu    agc_vec_t *     O    DELCDU: 0.1 s CDU increments, 180 deg
+ *   wbody     agc_vec_t *     O    WBODY: LOS rate in control axes, 450
+ *                                  deg/s
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SMCDURES status
+ **********************************************************************/
 static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu,
                              agc_vec_t *wbody)
 {
-    agc_dp_t  absdv = 0;
-    agc_vec_t u     = agc_vec_neg(
+    agc_dp_t  absdv = 0; /* |DV|, m/cs 2^7 */
+    agc_vec_t u     = agc_vec_neg( /* -UNIT DV, 2^1 */
         agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL));
-    agc_vec_t cross =
-        agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
-    int      x1  = 0;
-    int      s1  = 0;
-    agc_dp_t den = rz_norm(ta.abslos, &x1);
-    agc_dp_t num = rz_norm(absdv, &s1);
+    agc_vec_t cross; /* 2^6 */
+
+    cross = agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
+    int      x1  = 0; /* NORM index, -(left shifts) */
+    int      s1  = 0; /* NORM index of |DV| */
+    agc_dp_t den = rz_norm(ta.abslos, &x1); /* 2^(29+X1) */
+    agc_dp_t num = rz_norm(absdv, &s1); /* 2^(7+S1) */
 
     x1 -= s1; /* XSU,1 S1 */
-    agc_dp_t  quot     = agc_dp_div(ip, agc_dp_shr(num, 1), den);
-    agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_vec_t om       = agc_vec_shl(
+    agc_dp_t quot; /* |DV|/|LOS|, scale by X1 */
+
+    quot = agc_dp_div(ip, agc_dp_shr(num, 1), den);
+    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
+    agc_vec_t om       = agc_vec_shl( /* OMEGA, SM, scale by X1 */
         ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1);
-    agc_cdutrig_t trig;
+    agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
 
     agc_guid_cdutrig(&trig);
-    agc_status_t st   = AGC_STATUS_OK;
-    agc_vec_t    dcdu = agc_vec_zero();
+    agc_vec_t    dcdu = agc_vec_zero(); /* SMCDURES result, CDU scale */
+    agc_status_t st   = agc_guid_smcdures(ip, &trig, /* SMCDURES */
+                                          agc_vec_scale(ip, om, TA_TENTH),
+                                          &dcdu);
 
-    st = agc_guid_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH),
-                           &dcdu);
     *delcdu = rz_vshift(ip, dcdu, -17 - x1); /* VSL* 0-17D,1 */
 
     if (st == AGC_STATUS_OK)
     {
         agc_guid_smnb(&trig, &om); /* *SMNB*   */
-        st = AGC_STATUS_OK;
     }
 
-    agc_mat_t m;
+    agc_mat_t m; /* matrix rows, unit 2^1 */
 
     m.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* MBDYTCTL */
     m.row[1] = agc_vec_make(0, TA_COS725, agc_dp_neg(TA_SIN725));
     m.row[2] = agc_vec_make(0, TA_SIN725, TA_COS725);
-    agc_vec_t w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
+    agc_vec_t w; /* control axes, scale by X1 */
+
+    w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
 
     *wbody = rz_vshift(ip, w, -14 - x1); /* VSL* 0-14D,1 */
 
     return (st);
-}
+} /* ta_rates */
 
-/* CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.                 */
+/**********************************************************************
+ * CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
+ * AGC: CRS61.2A (P20-P25.agc p.596)
+ *
+ * FUNCTION NAME: ta_feed_dap
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   delcdu    agc_vec_t  I    DELCDU, 180 deg
+ *   wbody     agc_vec_t  I    WBODY, 450 deg/s
+ **********************************************************************/
 static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
 {
-    agc_csm_rcs_t *r = agc_csm_dap_rcs();
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
 
     agc_inhint();
 
@@ -237,9 +358,24 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
     }
 }
 
-/* CRS61.1 (pp.592-596): desired CDUs now; a gross maneuver (MANUEXIT,
+/**********************************************************************
+ * CRS61.1 (pp.592-596): desired CDUs now; a gross maneuver (MANUEXIT,
  * CPHI.. = SAVEDCDU) unless someone is on the stick (then the UPLINK
- * ACTY lamp); in auto with the stick free, CRS61.2 and the DAP inputs. */
+ * ACTY lamp); in auto with the stick free, CRS61.2 and the DAP inputs.
+ * AGC: CRS61.1, STKTEST, AUTOCK (P20-P25.agc pp.592-596)
+ *
+ * FUNCTION NAME: ta_point_at_target
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+ *   resume    agc_job_id_t    I    job that continues the caller
+ *   res       ta_result_t *   O    TA_FED_DAP or TA_MANEUVER
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration or CRS61.2
+ *          status
+ **********************************************************************/
 static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
                                        ta_result_t *res)
 {
@@ -253,7 +389,7 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
 
     agc_chan_and(AGC_CHAN_DSALMOUT,
                  (uint16_t) (077777u & ~TA_UPACTY));      /* UPACTOFF */
-    bool stick = agc_flag_test(AGC_FLAG_STIKFLAG);
+    bool stick = agc_flag_test(AGC_FLAG_STIKFLAG); /* on the stick */
 
     if (ta_gross())
     { /* STKTEST  */
@@ -269,15 +405,15 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
         return (AGC_STATUS_OK); /* ASET     */
     }
 
-    uint16_t c31 = agc_chan_read(AGC_CHAN_CHAN31);
+    uint16_t c31 = agc_chan_read(AGC_CHAN_CHAN31); /* channel 31 */
 
     if (((c31 ^ TA_CH31_AUTO) & TA_FURST3) != 0U || stick)
     {                         /* AUTOCK   */
         return (AGC_STATUS_OK); /* ASET     */
     }
 
-    agc_vec_t delcdu;
-    agc_vec_t wbody;
+    agc_vec_t delcdu; /* DELCDU, scale 180 deg */
+    agc_vec_t wbody;  /* WBODY, scale 450 deg/s */
 
     st = ta_rates(ip, &delcdu, &wbody); /* CRS61.2  */
 
@@ -287,12 +423,26 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
     }
 
     return (st);
-}
+} /* ta_point_at_target */
 
-/* R61CSM (pp.574-575): R61CNTR > 0: skip this pass (count down); < 0:
+/**********************************************************************
+ * R61CSM (pp.574-575): R61CNTR > 0: skip this pass (count down); < 0:
  * KALCMANU running; 0: CRS61.1, and on a gross error the R60 maneuver
  * (3-axis flag off, priority displays) with R61CNTR = -1. The caller
- * continues as ret_job.                                                 */
+ * continues as ret_job.
+ * AGC: R61CSM, DECRM61 (P20-P25.agc p.574)
+ *
+ * FUNCTION NAME: agc_rendz_tracking_attitude_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the calling job
+ *   ret_job   agc_job_id_t           I    job the routine returns to
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+ *          argument, else the status of the call that failed
+ **********************************************************************/
 agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx,
                                              agc_job_id_t         ret_job)
 {
@@ -318,7 +468,21 @@ agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx,
     return (rz_continue(AGC_JOB_TRACKING_ATTITUDE_CSM));
 }
 
-/* R61CSM after the counter test (also the INTSTALL resume point).       */
+/**********************************************************************
+ * R61CSM after the counter test (also the INTSTALL resume point).
+ * AGC: R61CSM, R61C1, R61END (P20-P25.agc pp.574-575)
+ *
+ * FUNCTION NAME: agc_job_tracking_attitude_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -326,12 +490,12 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    ta_result_t  res = TA_FED_DAP;
+    ta_result_t  res = TA_FED_DAP; /* CRS61.1 result */
     agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM,
-                                          &res);
+                                          &res); /* CRS61.1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -349,11 +513,26 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
     ta.r61cntr = -1;
     rz_flag_put(AGC_FLAG_PDSPFLAG, true);
 
-    return (agc_imu_attitude_maneuver(ctx,
-                                      AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED));
+    agc_job_id_t next = AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED; /* R61C1 */
+
+    return (agc_imu_attitude_maneuver(ctx, next));
 }
 
-/* After R60CSM: priority displays off, PHASCHNG 00111, R61CNTR = 0.     */
+/**********************************************************************
+ * After R60CSM: priority displays off, PHASCHNG 00111, R61CNTR = 0.
+ * AGC: R61C1 after R60CSM (P20-P25.agc p.575)
+ *
+ * FUNCTION NAME: agc_job_tracking_attitude_csm_maneuvered
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -368,13 +547,27 @@ agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
     return (rz_continue(ta.genret));
 }
 
-/* ---- V89CALL (R63, CSM, pp.616-618) -------------------------------------
+#define TA_DP1MIN ((agc_dp_t) 6000) /* DP1MIN 2DEC 6000: 1 min, cs */
+
+/**********************************************************************
+ * V89CALL (R63, CSM, pp.616-618)
  * "Calculates and displays final gimbal angles to point CSM +X axis or
  * preferred axis (UNIT(Z)COS55 DEG + UNIT(X)SIN55 DEG) at LM." V04N06
  * chooses the axis (R2 = 1 preferred, 2 +X); V06N18 shows the angles
- * one minute ahead; PROCEED maneuvers (R60CSM). DP1MIN 2DEC 6000.     */
-#define TA_DP1MIN ((agc_dp_t) 6000)
-
+ * one minute ahead; PROCEED maneuvers (R60CSM).
+ * AGC: V89CALL (P20-P25.agc p.616)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_final_attitude_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -402,7 +595,21 @@ agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx)
     return (agc_job_rendezvous_final_attitude_csm_option(ctx));
 }
 
-/* V04N06 flashing: TERMINATE ends the verb, PROCEED takes the axis.     */
+/**********************************************************************
+ * V04N06 flashing: TERMINATE ends the verb, PROCEED takes the axis.
+ * AGC: V89CALL V04N06 (P20-P25.agc p.616)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_final_attitude_csm_option
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -415,7 +622,21 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
                      AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION));
 }
 
-/* SETPAF / RSTPAF: the preferred attitude flag from R2; V89RECL.        */
+/**********************************************************************
+ * SETPAF / RSTPAF: the preferred attitude flag from R2; V89RECL.
+ * AGC: SETPAF, RSTPAF (P20-P25.agc p.617)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_final_attitude_csm_chosen
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -428,8 +649,22 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_chosen(agc_job_ctx_t *ctx)
     return (agc_job_rendezvous_final_attitude_csm_compute(ctx));
 }
 
-/* V89RECL: R63COMP one minute from now; V06N18 (desired gimbal angles):
- * PROCEED maneuvers, RECYCLE computes again.                            */
+/**********************************************************************
+ * V89RECL: R63COMP one minute from now; V06N18 (desired gimbal angles):
+ * PROCEED maneuvers, RECYCLE computes again.
+ * AGC: V89RECL (P20-P25.agc p.617)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_final_attitude_csm_compute
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -437,10 +672,10 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = ta_desired(&ip,
+    agc_status_t st = ta_desired(&ip, /* R63COMP */
                                  agc_dp_add(&ip, agc_rtb_loadtime(), TA_DP1MIN),
                                  AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE);
 
@@ -454,7 +689,21 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
                      AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE));
 }
 
-/* PROCEED on V06N18: 3-axis flag off, R60CSM, then ENDEXT.              */
+/**********************************************************************
+ * PROCEED on V06N18: 3-axis flag off, R60CSM, then ENDEXT.
+ * AGC: V89RECL PROCEED (P20-P25.agc p.617)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_final_attitude_csm_maneuver
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_rendezvous_final_attitude_csm_maneuver(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))

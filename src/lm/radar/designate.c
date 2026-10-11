@@ -596,9 +596,9 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
 
     if (loscm || agc_flag_test(AGC_FLAG_SRCHOPTN))
     {
-        agc_vec_t r = /* m 2^29 */
-                      agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget,
-                                                    s->mlosv), 1);
+        agc_vec_t r; /* m 2^29 */
+
+        r = agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget, s->mlosv), 1);
         agc_vec_t dv; /* .5 s, 2^29 */
 
         dv = agc_vec_shr(agc_vec_scale(ip, s->losvel, RR_MCTOMS), 1);

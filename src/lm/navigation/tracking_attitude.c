@@ -29,7 +29,7 @@
  *   Name                       Description
  *   -------------------------  -----------------------------------------
  *   lmnav_los                  LPS20.1: LOS and vehicle attitude
- *   agc_imu_vecpnt1            VECPNT1: final gimbal angles
+ *   agc_imu_vecpoint_from_cdus VECPNT1: final gimbal angles
  *   agc_imu_ballangs           BALLANGS: FDAI angles (not in auto)
  *   agc_imu_attitude_maneuver  R60LEM attitude maneuver
  *   agc_lm_dap_setmindb/restordb  DAP deadband (SETMINDB, RESTORDB)
@@ -139,8 +139,9 @@ static agc_status_t ta_next(void)
  **********************************************************************/
 static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
 {
-    agc_vec_t z = /* HIUNITZ, unit 2^1 */
-                  agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
+    agc_vec_t z; /* HIUNITZ, unit 2^1 */
+
+    z = agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
     agc_status_t st       = agc_imu_set_scaxis(z); /* status */
     agc_vec_t    pointvsm = rr_state()->rrtarget; /* RRTARGET, unit 2^1 */
 
@@ -158,7 +159,7 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_vecpnt1(ip, cdud, pointvsm, z, gimbal);
+        st = agc_imu_vecpoint_from_cdus(ip, cdud, pointvsm, z, gimbal);
     }
 
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)

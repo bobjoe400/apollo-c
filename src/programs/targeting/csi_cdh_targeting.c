@@ -282,9 +282,9 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
 static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
                                      agc_rendz_t *rz)
 {
-    agc_status_t st = /* PRECSET */
-                      rz_precset(ip, rz,
-                                 agc_erase_tetlem(), AGC_JOB_CSI_AFTER_TCSI);
+    agc_status_t st; /* PRECSET */
+
+    st = rz_precset(ip, rz, agc_erase_tetlem(), AGC_JOB_CSI_AFTER_TCSI);
 
     if (st != AGC_STATUS_OK)
     {
@@ -903,9 +903,9 @@ agc_status_t agc_job_cdh_time_search(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state */
     agc_rendz_t *rz = csi_begin(&ip); /* rendezvous erasables */
-    agc_status_t st = /* S33/34.1 */
-                      agc_rendz_tpi_time_search_cont(&ip, rz,
-                                                     AGC_JOB_CDH_TIME_SEARCH);
+    agc_status_t st; /* S33/34.1 */
+
+    st = agc_rendz_tpi_time_search_cont(&ip, rz, AGC_JOB_CDH_TIME_SEARCH);
 
     return (cdh_after_search(ctx, &ip, rz, st));
 }

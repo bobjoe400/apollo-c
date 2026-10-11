@@ -108,6 +108,11 @@ static agc_sp_t time1(void)
         return (0); /* no valid result */
     }
 
+    if (!AGC_ASSERT(TIME1_MASK == 037777u)) /* TIME1: 14 bits, cs */
+    {
+        return (0); /* no valid result */
+    }
+
     return ((agc_sp_t) (t & TIME1_MASK));
 }
 
@@ -142,6 +147,13 @@ static agc_status_t setgwlst(void)
     if (dt <= 0)
     {
         dt = SAMPLE_SOON; /* RIGHTGTS                                */
+    }
+
+    if (!AGC_ASSERT(dt > 0 && dt <= 2 * (int32_t) r->onesecxt1))
+    {
+        agc_relint();
+
+        return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = agc_waitlist_call((uint16_t) dt,
@@ -195,6 +207,12 @@ static agc_status_t chkcomed(agc_job_ctx_t *ctx, bool *liftoff)
     }
 
     *liftoff = true; /* PRELTERM                                     */
+
+    if (!AGC_ASSERT(!agc_phase_checkmm(PRELAUNCH_MM_IMU_TEST)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_exec_prio_change(PRELAUNCH_PRIO_FILTER); /* PRIOCHNG PRIO22   */
 
     return (agc_job_earth_orbit_insertion_monitor(ctx)); /* POSTJUMP P11 */
@@ -220,6 +238,11 @@ static agc_status_t sleepie_next(agc_job_ctx_t *ctx)
     }
 
     agc_phase_change(5, 00135); /* restart at WTLISTNT              */
+
+    if (!AGC_ASSERT(prelaunch_ram()->onesecxt1 > 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (!AGC_ASSERT(prelaunch_ram()->lengthot >= 0))
     {
@@ -272,7 +295,7 @@ agc_status_t agc_job_gyrocompassing_wait(agc_job_ctx_t *ctx)
  *
  * RETURNS: agc_status_t of WTLISTNT
  **********************************************************************/
-static agc_status_t annnnnn(agc_job_ctx_t *ctx)
+static agc_status_t torquing_cycle_start(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -280,6 +303,11 @@ static agc_status_t annnnnn(agc_job_ctx_t *ctx)
     }
 
     prelaunch_ram()->lengthot = CYCLE_PASSES; /* CAF NINE           */
+
+    if (!AGC_ASSERT(prelaunch_ram()->lengthot == 9))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (sleepie_next(ctx));
 }
@@ -401,7 +429,7 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (annnnnn(ctx));
+    return (torquing_cycle_start(ctx));
 } /* agc_job_gyrocompassing_restart */
 
 /**********************************************************************
@@ -476,6 +504,11 @@ agc_status_t agc_task_gyrocompassing_sample_restart(void)
 
     agc_erase_set_delv(d);
     agc_phase_newphase(5, FILTER_PHASE, false); /* NEWPHASE 5.23      */
+
+    if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (!AGC_ASSERT(r->altims >= 0))
     {
@@ -866,6 +899,11 @@ agc_status_t agc_job_gyrocompassing_torqued(agc_job_ctx_t *ctx)
     prelaunch_ram()->geosave1 = prelaunch_ram()->erectim1; /* CAE, TS */
     agc_phase_change(5, 00155);
 
+    if (!AGC_ASSERT(prelaunch_ram()->geosave1 >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (agc_job_gyrocompassing_erection_check(ctx));
 }
 
@@ -892,7 +930,7 @@ static agc_status_t nochorld(agc_job_ctx_t *ctx)
         r->erectim1 = (agc_sp_t) (r->geosave1 - 1); /* CCS, TS ERECTIM1 */
     }
 
-    return (annnnnn(ctx));
+    return (torquing_cycle_start(ctx));
 }
 
 /**********************************************************************

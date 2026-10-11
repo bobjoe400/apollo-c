@@ -308,7 +308,7 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         return (st);
     }
 
-    rz->ground_track_alt = agc_dp_mul(ip, ll.alt, GTD_K01); /* DMP K.01 */
+    rz->ground_track_alt = agc_dp_mul_trunc(ll.alt, GTD_K01); /* DMP K.01 */
 
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH,
                      AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE));

@@ -1,12 +1,47 @@
-/*
- * vflags_csm.c -- Comanche055 ids of the imu lane's vehicle-specific
- * flags (see internal.h imu_vflag_t).  Includes only agc_flags_csm.h.
- */
+/**********************************************************************
+ * FILE NAME: vflags_csm.c
+ *
+ * PURPOSE:
+ *   Comanche055 ids of the imu lane's vehicle-specific flags; includes
+ *   only agc/core/flags_csm.h.
+ *
+ * AGC SOURCE:
+ *   Comanche055 ERASABLE_ASSIGNMENTS.agc flag words
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_flag_test/set     flagword access (agc/core/flags_common.h)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   A flag absent from the vehicle reads false and cannot be set.
+ *
+ * NOTES:
+ *   Flags whose flagword position differs between Comanche and
+ *   Luminary, or that exist in one vehicle only (internal.h).
+ *
+ * ALGORITHM:
+ *   Table lookup.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/flags_csm.h"
 #include "internal.h"
 
-/* imu_vflag_csm -- CSM flag id, or 0 when the flag is LM-only.           */
+/**********************************************************************
+ * AGC: none (Comanche055 flag table) -- CSM id of a vehicle-dependent
+ * flag
+ *
+ * ARGUMENTS:
+ *   f  imu_vflag_t  I    vehicle-dependent flag
+ *
+ * RETURNS: agc_flag_id_t -- CSM flag id, or 0 when the flag is LM-only
+ **********************************************************************/
 agc_flag_id_t imu_vflag_csm(imu_vflag_t f)
 {
     static const agc_flag_id_t ids[IMU_VF_COUNT] = {

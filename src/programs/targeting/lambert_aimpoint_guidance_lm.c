@@ -151,9 +151,9 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_dp_t        tig = agc_erase_tig(); /* TIG, cs 2^28 */
     agc_integ_out_t o; /* LEMPREC result at TIG */
-    agc_status_t    st = /* integration status */
-                         rz_integ(&ip, RZ_LEMPREC, tig,
-                                  AGC_JOB_LAMBERT_AIMPOINT_COMPUTE, &o);
+    agc_status_t    st; /* integration status */
+
+    st = rz_integ(&ip, RZ_LEMPREC, tig, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE, &o);
 
     if (st != AGC_STATUS_OK)
     {

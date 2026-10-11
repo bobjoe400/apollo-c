@@ -144,10 +144,12 @@ static void iv_rotate(agc_interp_t *ip, iv_work_t *w)
 {
     w->normsw = true;
     agc_dp_t  rc = rz_abval(ip, w->r2vec); /* |RC|, body scale (m 2^29/27) */
-    agc_vec_t p  = /* RC . UN UN, body scale */
-                   agc_vec_shl(ip, agc_vec_proj(ip, w->r2vec, w->un), 2);
-    agc_vec_t u = /* in-plane unit, 2^1 */
-                  rz_unit(ip, agc_vec_sub(ip, w->r2vec, p));
+    agc_vec_t p; /* RC . UN UN, body scale */
+
+    p = agc_vec_shl(ip, agc_vec_proj(ip, w->r2vec, w->un), 2);
+    agc_vec_t u; /* in-plane unit, 2^1 */
+
+    u = rz_unit(ip, agc_vec_sub(ip, w->r2vec, p));
 
     w->r2vec = agc_vec_shl(ip, agc_vec_scale(ip, u, rc), 1);
 
@@ -201,8 +203,9 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz,
     x1 += 10;
     agc_vec_t v =
         (x1 != 0) ? agc_vec_neg(negn) : negn; /* X1 = 0: long way, 2^2 */
-    agc_dp_t d = /* sign test, 2^5 */
-                 agc_vec_dot(ip, agc_vec_cross(ip, v, ur1), ur2);
+    agc_dp_t d; /* sign test, 2^5 */
+
+    d = agc_vec_dot(ip, agc_vec_cross(ip, v, ur1), ur2);
     agc_dp_t g = (d >= 0) ? muearth : agc_dp_neg(muearth); /* GEOMSGN, 2^36 */
 
     if (!AGC_ASSERT(x1 >= -8 && x1 <= 8))
@@ -328,8 +331,9 @@ static agc_status_t iv_integrate(agc_interp_t *ip, const agc_rendz_t *rz,
     in.tdec1 = agc_dp_add(ip, rz->intime, rz->dellt4);
     in.conic = false; /* CLEAR INTYPFLG     */
     agc_integ_out_t o; /* integration result */
-    agc_status_t    st = /* integration status */
-                         rz_integrvs(ip, &in, resume, &o);
+    agc_status_t    st; /* integration status */
+
+    st = rz_integrvs(ip, &in, resume, &o);
 
     if (st == AGC_STATUS_OK)
     {
@@ -372,8 +376,9 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
     if (!rz_is_csm())
     { /* LM INITVELX */
         agc_dp_t mu = rz_mutable_mu(rz->body.rtx2 != 0); /* MU, body scale */
-        agc_dp_t a  = /* MU R1A / 2 (scale MU's x R1A's) */
-                      agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
+        agc_dp_t a; /* MU R1A / 2 (scale MU's x R1A's) */
+
+        a = agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
 
         rz->mu_a     = agc_dp_div(ip, a, w->lout.r1); /* MU/A        */
         rz->muasteer = agc_dp_shr(rz->mu_a, 6);       /* SR 6        */

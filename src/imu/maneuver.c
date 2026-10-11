@@ -1,25 +1,53 @@
-/*
- * maneuver.c -- KALCMANU: automatic attitude maneuvers for the RCS DAP.
+/**********************************************************************
+ * FILE NAME: maneuver.c
  *
- * Sources (CM = Comanche055, LM = Luminary099):
+ * PURPOSE:
+ *   KALCMANU: automatic attitude maneuvers for the RCS DAP (GOMANUR,
+ *   KALCMAN3, WCALC, NEWDELHI .. MANUSTOP, ENDMANU).
+ *
+ * AGC SOURCE:
  *   GOMANUR            IMU_MODE_SWITCHING_ROUTINES.agc CM p.1442 / LM p.1331
  *   KALCMAN3, NOGO     ANGLFIND.agc CM pp.399-411 / ATTITUDE_MANEUVER_ROUTINE
  *                      .agc LM pp.351-363 (mathematics in maneuver_calc.c)
  *   WCALC (LOCSKIRT)   GIMBAL_LOCK_AVOIDANCE.agc CM p.412 / LM p.364
  *   NEWDELHI .. ENDMANU KALCMANU_STEERING.agc CM pp.414-419 / LM pp.365-369
  *
- * A maneuver: GOMANUR saves the user's return (ATTCADR) and priority and
- * runs KALCMAN3 in the user's job.  KALCMAN3 finds the rotation axis COF
- * and angle AM taking the present attitude to CPHI, CTHETA, CPSI, and DEL,
- * the rotation the attitude makes in one second at the selected rate.
- * Every second (UPDTCALL -> NEWDELHI) the desired attitude matrix MIS is
- * advanced by DEL and the DAP is given new desired CDU angles and the
- * per-0.1 s increments; in the last second MANUSTOP sets the final angles
- * and ENDMANU / GOODMANU restarts the user's job at its priority.
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type       I/O  Scale          Description
+ *   ------------  ---------  ---  -------------  ----------------------
+ *   CPHI..CPSI    uint16_t   I    CDU            agc_erase_thetad()
+ *   CDUXD.., DAP  various    O    see DAP        agc_csm_dap_rcs(), LM
+ *                                                agc_erase_set_*()
+ *   TIME2,TIME1   agc_dp_t   I    cs B28         agc_time_now_cs()
  *
- * CM vs LM differences, all kept (agc_state_vehicle()):
- *   * small maneuvers: CM sets HOLDFLAG -1 and LOADCDUD; LM loads CDUXD..
- *     from CPHI.. (TOOBADI).  LM also refuses |CPSI| >= 70 deg (TOOBADF).
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_kalc_compute      KALCMAN3 mathematics (maneuver_calc.c)
+ *   agc_kalc_dcmtocdu     DCMTOCDU, agc_kalc_delcomp DELCOMP
+ *   agc_exec_findvac      FINDVAC / SPVAC, agc_waitlist_call
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   POODOO 01210 (GOMANUR while KALCMANU is busy); LM ALARM 00401
+ *   (TOOBADF, final attitude in gimbal lock).
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Both vehicles.  One maneuver at a time (ATTCADR).
+ *
+ * NOTES:
+ *   A maneuver: GOMANUR saves the user's return (ATTCADR) and priority
+ *   and runs KALCMAN3 in the user's job.  KALCMAN3 finds the rotation
+ *   axis COF and angle AM taking the present attitude to CPHI, CTHETA,
+ *   CPSI, and DEL, the rotation the attitude makes in one second at the
+ *   selected rate.  Every second (UPDTCALL -> NEWDELHI) the desired
+ *   attitude matrix MIS is advanced by DEL and the DAP is given new
+ *   desired CDU angles and the per-0.1 s increments; in the last second
+ *   MANUSTOP sets the final angles and ENDMANU / GOODMANU restarts the
+ *   user's job at its priority.
+ *   CM vs LM differences, all kept (agc_state_vehicle()):
+ *   * small maneuvers: CM sets HOLDFLAG -1 and LOADCDUD; LM loads
+ *     CDUXD.. from CPHI.. (TOOBADI).  LM also refuses |CPSI| >= 70 deg
+ *     (TOOBADF).
  *   * rates: CM ARATE .05/.2/.5/2 deg/s, LM .2/.5/2/10 deg/s; CM rotates
  *     BRATE into control axes (QUADROT, -7.25 deg about X) and forms
  *     BIASTEMP; LM sets CALCMAN3 (NOGIMLOC).
@@ -29,7 +57,13 @@
  *   * NEWDELHI: CM aborts when HOLDFLAG >= 0 (astronaut took over), LM
  *     when ISITAUTO says the DAP is not in auto.
  *   * TIMECHK return layout (same timing result).
- */
+ *   TM is kept as the two words MANUSTAT's DAS leaves (review-imu): the
+ *   minor word can be negative under a positive major word, and TIMECHK
+ *   branches on the major word first.
+ *
+ * ALGORITHM:
+ *   As the AGC listing; see each function prolog.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -46,14 +80,14 @@
 #include "internal.h"
 
 #define PRIO26          ((agc_prio_t) 026) /* NEWDELHI                   */
-#define ALARM_GLOCK     ((agc_alarm_code_t) 00401)
-#define ALARM_TWO_USERS ((agc_alarm_code_t) 01210)
+#define ALARM_GLOCK     ((agc_alarm_code_t) 00401) /* TOOBADF (LM) */
+#define ALARM_TWO_USERS ((agc_alarm_code_t) 01210) /* GOMANUR busy */
 #define ONESEC_CS       100         /* 1SEC / ONESEK +1           */
 #define TIME1_MOD       040000      /* TIME1 is 14 bits           */
 #define TIME_MOD        0x10000000L /* TIME2,TIME1 wrap at 2^28   */
 #define DT_TENTH        1638        /* QUADROT / DT/TAU: DEC .1   */
-#define CDU_MASK        077777u
-#define RATE_COUNT      4
+#define CDU_MASK        077777u     /* 15-bit CDU word            */
+#define RATE_COUNT      4           /* ARATE entries (RATEINDX/2) */
 
 /* ARATE (GLA p.412 / p.364): maneuver rates at 22.5 deg/s, by RATEINDX/2. */
 static const agc_dp_t arate_cm[RATE_COUNT] = {
@@ -83,19 +117,26 @@ static uint16_t     bcdu[3];     /* BCDU: initial / previous desired CDUs   */
 static uint16_t     ncdu[3];     /* NCDU: new desired CDU angles            */
 static agc_mat_t    mis;         /* MIS: S/C -> SM now, scale 2             */
 static agc_mat_t    del;         /* DEL (CM) / KEL (LM): 1-s rotation, 1    */
-static agc_vec_t    cof;         /* COF: maneuver axis, half-unit           */
-static agc_dp_t     am;          /* AM: maneuver angle, revolutions         */
-static agc_vec_t    brate;       /* BRATE: maneuver rates, 450 / 45 deg/s   */
-static agc_vec_t    biastemp;    /* BIASTEMP (CM): attitude error biases    */
+static agc_vec_t    cof;         /* COF: maneuver axis, B1                  */
+static agc_dp_t     am;          /* AM: maneuver angle, rev 2^0             */
+static agc_vec_t    brate;       /* BRATE: rates, 450 deg/s 2^0 (LM 45)     */
+static agc_vec_t    biastemp;    /* BIASTEMP (CM): error biases, 2^0        */
 static agc_dp_t     tm;          /* TM: maneuver time / end time, cs 2^28   */
+static int          tm_hi;       /* TM after MANUSTAT, major word, cs 2^14  */
+static int          tm_lo;       /* TM after MANUSTAT, minor word, cs B0    */
 static int          nextime;     /* NEXTIME: TIME1 of the next update, cs   */
-static agc_sp_t     rateindx_lm; /* RATEINDX (LM): 0, 2, 4, 6               */
+static agc_sp_t     rateindx_lm; /* RATEINDX (LM): 0, 2, 4, 6, B0           */
 static agc_job_id_t attcadr;     /* ATTCADR: user's continuation, 0 = free  */
 static agc_prio_t   attprio;     /* ATTPRIO: user's priority                */
 
+/**********************************************************************
+ * AGC: none (vehicle test) -- the LM rope
+ *
+ * RETURNS: bool -- true for Luminary
+ **********************************************************************/
 static bool is_lm(void)
 {
-    agc_vehicle_t v = agc_state_vehicle();
+    agc_vehicle_t v = agc_state_vehicle(); /* vehicle */
 
     if (!AGC_ASSERT(v == AGC_VEHICLE_LM || v == AGC_VEHICLE_CSM))
     {
@@ -105,7 +146,14 @@ static bool is_lm(void)
     return (v == AGC_VEHICLE_LM);
 }
 
-/* Two's-complement CDU pattern as a signed count at 180 deg (CSM DAP).  */
+/**********************************************************************
+ * AGC: none (CDU pattern) -- signed count at 180 deg (CSM DAP CDUXD)
+ *
+ * ARGUMENTS:
+ *   p  uint16_t  I    CDU pattern
+ *
+ * RETURNS: agc_sp_t -- signed count, B0
+ **********************************************************************/
 static agc_sp_t cdu_signed(uint16_t p)
 {
     if (!AGC_ASSERT(p <= CDU_MASK))
@@ -113,7 +161,7 @@ static agc_sp_t cdu_signed(uint16_t p)
         return (0); /* no valid result */
     }
 
-    int v = (p & 040000u) ? (int) p - 0100000 : (int) p;
+    int v = (p & 040000u) ? (int) p - 0100000 : (int) p; /* sign bit */
 
     if (!AGC_ASSERT(v >= -16384 && v <= 16383))
     {
@@ -123,6 +171,15 @@ static agc_sp_t cdu_signed(uint16_t p)
     return ((agc_sp_t) v);
 }
 
+/**********************************************************************
+ * AGC: none (TS CDUXD) -- one desired CDU angle in the DAP
+ *
+ * LM: CDUXD.. words; CM: the high word of the DP desired angle.
+ *
+ * ARGUMENTS:
+ *   axis  int       I    0 X, 1 Y, 2 Z
+ *   p     uint16_t  I    desired CDU pattern
+ **********************************************************************/
 static void set_cdud(int axis, uint16_t p)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
@@ -158,7 +215,7 @@ static void set_cdud(int axis, uint16_t p)
     else
     {
         /* "TS CDUXD" (CM): the high word of the DP desired angle.               */
-        agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+        agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
         if (!AGC_ASSERT(rcs != NULL))
         {
@@ -168,16 +225,24 @@ static void set_cdud(int axis, uint16_t p)
         rcs->cdud[axis] =
             (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
     }
-}
+} /* set_cdud */
 
-static uint16_t cphi(int axis) /* CPHI, CTHETA, CPSI       */
+/**********************************************************************
+ * AGC: none (accessor) -- CPHI, CTHETA, CPSI
+ *
+ * ARGUMENTS:
+ *   axis  int  I    0 X, 1 Y, 2 Z
+ *
+ * RETURNS: uint16_t -- final CDU pattern
+ **********************************************************************/
+static uint16_t cphi(int axis)
 {
     if (!AGC_ASSERT(axis >= 0 && axis < 3))
     {
         return (0); /* no valid result */
     }
 
-    uint16_t v = agc_erase_thetad(axis);
+    uint16_t v = agc_erase_thetad(axis); /* vehicle */
 
     if (!AGC_ASSERT(v <= CDU_MASK))
     {
@@ -187,16 +252,25 @@ static uint16_t cphi(int axis) /* CPHI, CTHETA, CPSI       */
     return (v);
 }
 
-static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
+/**********************************************************************
+ * AGC: none (EXTEND, MSU) -- a - b of two CDU patterns
+ *
+ * ARGUMENTS:
+ *   a  uint16_t  I    minuend, CDU
+ *   b  uint16_t  I    subtrahend, CDU
+ *
+ * RETURNS: int -- a - b, CDU counts
+ **********************************************************************/
+static int msu(uint16_t a, uint16_t b)
 {
     if (!AGC_ASSERT(a <= CDU_MASK && b <= CDU_MASK))
     {
         return (0); /* no valid result */
     }
 
-    int d = (int) ((unsigned) (a - b) & CDU_MASK);
+    int d = (int) ((unsigned int) (a - b) & CDU_MASK); /* CDU difference, B0 */
 
-    d = (d >= 040000) ? d - 0100000 : d;
+    d = (d >= 040000) ? d - 0100000 : d; /* 15-bit sign */
 
     if (!AGC_ASSERT(d >= -040000 && d < 040000))
     {
@@ -206,6 +280,15 @@ static int msu(uint16_t a, uint16_t b) /* MSU: a - b, 1:S counts    */
     return (d);
 }
 
+/**********************************************************************
+ * AGC: none (TC WAITLIST) -- schedule a KALCMANU task
+ *
+ * ARGUMENTS:
+ *   dt    uint16_t       I    delay, cs
+ *   task  agc_task_id_t  I    task to start
+ *
+ * RETURNS: agc_status_t -- OK, FULL or BAD_ARG
+ **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
     if (!AGC_ASSERT(dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY))
@@ -213,7 +296,7 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_waitlist_call(dt, task);
+    agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -225,6 +308,14 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 
 /* ---- RATEINDX ------------------------------------------------------------ */
 
+/**********************************************************************
+ * AGC: none (accessor) -- RATEINDX (CM: kept with the DAP, S41.2)
+ *
+ * ARGUMENTS:
+ *   idx  agc_sp_t  I    RATEINDX 0, 2, 4, 6
+ *
+ * RETURNS: agc_status_t -- OK or BAD_ARG
+ **********************************************************************/
 agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
 {
     if (!AGC_ASSERT(idx >= 0 && idx <= 6 && (idx & 1) == 0))
@@ -239,7 +330,7 @@ agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
         return (AGC_STATUS_OK);
     }
 
-    agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+    agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
     if (!AGC_ASSERT(rcs != NULL))
     {
@@ -251,15 +342,20 @@ agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * AGC: none (accessor) -- RATEINDX
+ *
+ * RETURNS: agc_sp_t -- RATEINDX 0, 2, 4, 6
+ **********************************************************************/
 agc_sp_t agc_kalc_rateindx(void)
 {
-    agc_sp_t idx = rateindx_lm;
+    agc_sp_t idx = rateindx_lm; /* RATEINDX, B0 */
 
     if (!is_lm())
     {
-        const agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+        const agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
-        idx = (rcs != NULL) ? rcs->ratindx : 0;
+        idx = (rcs != NULL) ? rcs->ratindx : 0; /* CM: DAP word */
     }
 
     if (!AGC_ASSERT(idx >= 0 && idx <= 6))
@@ -270,6 +366,11 @@ agc_sp_t agc_kalc_rateindx(void)
     return (idx);
 }
 
+/**********************************************************************
+ * GOMANUR (IMU_MODE_SWITCHING_ROUTINES.agc p.1442) -- ATTCADR nonzero
+ *
+ * RETURNS: bool -- true while a maneuver is in progress
+ **********************************************************************/
 bool agc_kalc_active(void)
 {
     if (!AGC_ASSERT(attprio <= 037))
@@ -280,6 +381,14 @@ bool agc_kalc_active(void)
     return (attcadr != AGC_JOB_NONE);
 }
 
+/**********************************************************************
+ * AGC: none (ATTSTALL view) -- KALCMANU has no failure return
+ *
+ * ENDMANU / GOODMANU always resume the user (the AGC's "all returns
+ * are now made via GOODEND").
+ *
+ * RETURNS: agc_imu_stall_result_t -- SLEEPING while active, else GOOD
+ **********************************************************************/
 agc_imu_stall_result_t agc_kalc_outcome(void)
 {
     if (!AGC_ASSERT(attprio <= 037))
@@ -289,14 +398,21 @@ agc_imu_stall_result_t agc_kalc_outcome(void)
 
     /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
      * the user (the AGC's "all returns are now made via GOODEND").       */
-    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD);
+    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : /* ATTCADR */
+            AGC_IMU_STALL_GOOD);
 }
 
 /* ======================================================================= */
 /* DAP interface (KALCMANU_STEERING CM pp.418-419; LM p.369, DAP)          */
 /* ======================================================================= */
 
-/* STOPYZ (CM): zero pitch and yaw increments, rates and biases.          */
+/**********************************************************************
+ * STOPYZ (KALCMANU_STEERING.agc p.418 CM) -- zero pitch and yaw
+ * increments, rates, biases
+ *
+ * ARGUMENTS:
+ *   rcs  agc_csm_rcs_t *  I/O  CSM RCS DAP erasables
+ **********************************************************************/
 static void csm_stopyz(agc_csm_rcs_t *rcs)
 {
     if (!AGC_ASSERT(rcs != NULL))
@@ -317,8 +433,13 @@ static void csm_stopyz(agc_csm_rcs_t *rcs)
     }
 }
 
-/* STOPRATE: CM zeroes roll then falls into STOPYZ and resets the high-
- * rate flag (RCSFLAGS bit 15); LM calls the DAP's STOPRATE.             */
+/**********************************************************************
+ * STOPRATE (KALCMANU_STEERING.agc p.418 CM; LM DAP) -- stop the
+ * maneuver rates
+ *
+ * CM zeroes roll then falls into STOPYZ and resets the high-rate flag
+ * (RCSFLAGS bit 15); LM calls the DAP's STOPRATE.
+ **********************************************************************/
 void agc_kalc_stoprate(void)
 {
     if (is_lm())
@@ -328,8 +449,8 @@ void agc_kalc_stoprate(void)
         return;
     }
 
-    agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
-    agc_csm_dapcom_t *com = agc_csm_dap_com();
+    agc_csm_rcs_t    *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
+    agc_csm_dapcom_t *com = agc_csm_dap_com(); /* CSM DAP common erasables */
 
     if (!AGC_ASSERT(rcs != NULL && com != NULL))
     {
@@ -346,11 +467,17 @@ void agc_kalc_stoprate(void)
     }
 
     com->rcsflags = (uint16_t) (com->rcsflags &
-                                (~(unsigned) AGC_CSM_RCSF_HIRATE & 077777u));
+                                (~(unsigned int) AGC_CSM_RCSF_HIRATE &
+                                 077777u));
     csm_stopyz(rcs);
 }
 
-/* ZEROERROR (CM p.419): CDUXD.. = CDUX..; LM: ZATTEROR in the DAP.      */
+/**********************************************************************
+ * ZEROERROR (KALCMANU_STEERING.agc p.419 CM; LM ZATTEROR) -- CDUXD.. =
+ * CDUX..
+ *
+ * RETURNS: agc_status_t -- OK
+ **********************************************************************/
 agc_status_t agc_kalc_zeroerror(void)
 {
     if (is_lm())
@@ -377,7 +504,13 @@ agc_status_t agc_kalc_zeroerror(void)
     return (AGC_STATUS_OK);
 }
 
-/* LOADCDUD / LOADYZ (CM p.419): desired angles = CPHI, CTHETA, CPSI.    */
+/**********************************************************************
+ * LOADCDUD / LOADYZ (KALCMANU_STEERING.agc p.419 CM) -- desired angles
+ * = CPHI..
+ *
+ * ARGUMENTS:
+ *   first_axis  int  I    0 LOADCDUD (X, Y, Z), 1 LOADYZ (Y, Z)
+ **********************************************************************/
 static void loadcdud(int first_axis)
 {
     if (!AGC_ASSERT(first_axis == 0 || first_axis == 1))
@@ -400,8 +533,12 @@ static void loadcdud(int first_axis)
 /* Termination: NOGO, MANUSTOP, ENDMANU / GOODMANU                         */
 /* ======================================================================= */
 
-/* NOGO (ANGLFIND p.411 / AMR p.363): stop any rate and end via ENDMANU
- * (CM) or GOODMANU (LM) in 20 ms.  Returns from the job (ENDOFJOB).      */
+/**********************************************************************
+ * NOGO (ANGLFIND.agc p.411 CM; LM p.363) -- stop any rate, ENDMANU in
+ * 20 ms
+ *
+ * RETURNS: agc_status_t -- waitlist status (ENDOFJOB)
+ **********************************************************************/
 static agc_status_t nogo(void)
 {
     if (is_lm())
@@ -422,19 +559,23 @@ static agc_status_t nogo(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = waitlist(2u, AGC_TASK_ENDMANU);
+    agc_status_t st = waitlist(2u, AGC_TASK_ENDMANU); /* status of the call */
 
     agc_relint();
 
     return (st); /* ENDOFJOB        */
 }
 
-/* NOGO -2 / NOGOM2: the maneuver was interrupted: zero the attitude error
- * (ZEROEROR CM / ZATTEROR LM) and NOGO.                                  */
-static agc_status_t nogom2(void)
+/**********************************************************************
+ * NOGO -2 / NOGOM2 (ANGLFIND.agc p.411) -- interrupted: zero the error,
+ * NOGO
+ *
+ * RETURNS: agc_status_t -- status of NOGO
+ **********************************************************************/
+static agc_status_t nogo_zero_error(void)
 {
     agc_inhint();
-    agc_status_t st = agc_kalc_zeroerror();
+    agc_status_t st = agc_kalc_zeroerror(); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
     {
@@ -448,12 +589,17 @@ static agc_status_t nogom2(void)
     return (nogo());
 }
 
-/* MANUSTOP (task): set the final angles and stop the rates.              */
+/**********************************************************************
+ * MANUSTOP / ENDROLL (KALCMANU_STEERING.agc p.417 CM; LM p.368) --
+ * task: final angles, rates off
+ *
+ * RETURNS: agc_status_t -- status of ENDMANU
+ **********************************************************************/
 agc_status_t agc_task_manustop(void)
 {
     if (!is_lm())
     {
-        agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+        agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
         if (!AGC_ASSERT(rcs != NULL))
         {
@@ -483,11 +629,17 @@ agc_status_t agc_task_manustop(void)
     return (agc_task_endmanu()); /* GOODMANU        */
 }
 
-/* ENDMANU (CM) / GOODMANU (LM) (task): restore the user's priority, free
- * KALCMANU (ATTCADR = 0) and restart the user's job (SPVAC).             */
+/**********************************************************************
+ * ENDMANU (KALCMANU_STEERING.agc p.418 CM) / GOODMANU (LM) -- task:
+ * resume the user
+ *
+ * Restore the user's priority, free KALCMANU (ATTCADR = 0), SPVAC.
+ *
+ * RETURNS: agc_status_t -- status of SPVAC
+ **********************************************************************/
 agc_status_t agc_task_endmanu(void)
 {
-    agc_job_id_t job  = attcadr;
+    agc_job_id_t job  = attcadr; /* ATTCADR */
     agc_prio_t   prio = attprio; /* NEWPRIO         */
 
     attcadr = AGC_JOB_NONE;
@@ -511,21 +663,42 @@ agc_status_t agc_task_endmanu(void)
 /* Steering updates (KALCMANU_STEERING CM pp.414-417, LM pp.365-368)       */
 /* ======================================================================= */
 
-/* TIMECHK + MANUSTAL (p.415 / p.366): time left = TM - TIME2,TIME1 word
- * by word, as the DAS leaves it.  More than a second left: 0 (go on to
- * CONTMANU).  Otherwise the MANUSTOP delay in cs: the remainder of the
- * last second (MANUOFF), or 1 (2NDRETRN).                                */
+/**********************************************************************
+ * TIMECHK / MANUOFF / 2NDRETRN (KALCMANU_STEERING.agc p.415 CM; LM
+ * p.366) -- time left
+ *
+ * TM - TIME2,TIME1 word by word as the DAS leaves it.  More than a
+ * second left: 0 (CONTMANU).  Otherwise the MANUSTOP delay: the rest of
+ * the last second (MANUOFF) or 1 cs (2NDRETRN).
+ *
+ * RETURNS: uint16_t -- 0, or the MANUSTOP delay in cs
+ **********************************************************************/
 static uint16_t timechk(void)
 {
-    long now = (long) agc_time_now_cs();
+    long int now = (long int) agc_time_now_cs(); /* TIME2,TIME1, cs */
 
     if (!AGC_ASSERT(now >= 0 && now < TIME_MOD))
     {
         return (0); /* no valid result */
     }
 
-    long hi = ((long) tm >> 14) - (now >> 14);
-    long lo = ((long) tm & 037777L) - (now & 037777L);
+    /* DCS TIME2, DCA TM, DAS TTEMP: word by word from the TM words
+     * MANUSTAT left (their signs may disagree), low-word carry included. */
+    long int lo    = (long int) tm_lo - (now & 037777L); /* TTEMP +1, cs        */
+    long int carry = 0;                              /* DAS low-word carry  */
+
+    if (lo < -037777L)
+    {
+        lo   += 040000L;
+        carry = -1;
+    }
+    else if (lo > 037777L)
+    {
+        lo   -= 040000L;
+        carry = 1;
+    }
+
+    long int hi = (long int) tm_hi - (now >> 14) + carry; /* TTEMP, cs 2^14     */
 
     if (!AGC_ASSERT(lo > -040000L && lo < 040000L))
     {
@@ -544,13 +717,20 @@ static uint16_t timechk(void)
 
     /* lo = +0: MANUOFF with A = 0.  lo < 0: CCS leaves |lo| - 1, COM
      * makes it -(|lo| - 1); then AD 1SEC and BZMF 2NDRETRN.             */
-    long a = ONESEC_CS + ((lo == 0) ? 0 : lo + 1);
+    long int a = ONESEC_CS + ((lo == 0) ? 0 : lo + 1); /* MANUOFF, cs */
 
-    return ((a <= 0) ? 1u : (uint16_t) a);
-}
+    return ((a <= 0) ? 1u : (uint16_t) a); /* BZMF 2NDRETRN */
+} /* timechk */
 
-/* CONTMANU / MANUCALL (p.416 / p.367): UPDTCALL at NEXTIME, then the next
- * update a second later.                                                 */
+/**********************************************************************
+ * CONTMANU / MANUCALL (KALCMANU_STEERING.agc p.416 CM; LM p.367) --
+ * UPDTCALL at NEXTIME
+ *
+ * DEVIATION: NEXTIME == TIME1 would give the AGC a zero WAITLIST delay;
+ * 1 cs is used instead.
+ *
+ * RETURNS: agc_status_t -- waitlist status (ENDOFJOB)
+ **********************************************************************/
 static agc_status_t contmanu(void)
 {
     agc_inhint();
@@ -562,8 +742,21 @@ static agc_status_t contmanu(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int diff = nextime - (int) agc_erase_time1();
-    int dt   = (diff > 0) ? diff : (diff == 0) ? 1 : TIME1_MOD + diff;
+    int diff = nextime - (int) agc_erase_time1(); /* NEXTIME - TIME1, cs */
+    int dt   = diff; /* CCS A, AD ONE / AD NEGMAX, COM: cs to NEXTIME */
+
+    if (diff == 0)
+    {
+        dt = 1; /* see DEVIATION below */
+    }
+    else if (diff < 0)
+    {
+        dt = TIME1_MOD + diff; /* TIME1 overflow */
+    }
+    else
+    {
+        dt = diff;
+    }
 
     /* DEVIATION: NEXTIME == TIME1 gives the AGC a zero WAITLIST delay;
      * one centisecond is used instead.                                   */
@@ -574,15 +767,24 @@ static agc_status_t contmanu(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = waitlist((uint16_t) dt, AGC_TASK_UPDTCALL);
+    agc_status_t st = waitlist((uint16_t) dt, AGC_TASK_UPDTCALL); /* status of the call */
 
     agc_relint();
     nextime = (nextime + ONESEC_CS) & (TIME1_MOD - 1); /* ADS NEXTIME    */
 
     return (st);                                         /* ENDOFJOB       */
-}
+} /* contmanu */
 
-/* INCRDCDU loop, RELINT, TMANUCHK (p.414-415 / p.365-366).               */
+/**********************************************************************
+ * INCRDCDU / TMANUCHK / MANUSTAL (KALCMANU_STEERING.agc pp.414-415 CM;
+ * LM pp.365-366)
+ *
+ * DAP increments per 0.1 s (CM DELCDUX DP = (NCDU - BCDU) .1, LM DELDCDU
+ * SP = (BCDU - NCDU) .1), CDUXD = old BCDU, BCDU = NCDU; then the time
+ * check: CONTMANU or MANUSTOP.
+ *
+ * RETURNS: agc_status_t -- status of CONTMANU or of the MANUSTOP call
+ **********************************************************************/
 static agc_status_t incrdcdu_tmanuchk(void)
 {
     for (int i = 2; i >= 0; i--)
@@ -594,14 +796,14 @@ static agc_status_t incrdcdu_tmanuchk(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        uint16_t old = bcdu[i];
+        uint16_t old = bcdu[i]; /* previous desired CDU (BCDU) */
 
         if (is_lm())
         {
-            int d = msu(bcdu[i], ncdu[i]);
+            int d = msu(bcdu[i], ncdu[i]); /* CDU difference, B0 */
 
-            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
-            agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH));
+            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
+            agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH)); /* DELDCDU, CDU B0 */
 
             /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
             if (i == 0)
@@ -619,10 +821,10 @@ static agc_status_t incrdcdu_tmanuchk(void)
         }
         else
         {
-            int d = msu(ncdu[i], bcdu[i]);
+            int d = msu(ncdu[i], bcdu[i]); /* CDU difference, B0 */
 
-            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;
-            agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
+            agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
             if (AGC_ASSERT(rcs != NULL))
             {
@@ -633,7 +835,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
 
         bcdu[i] = ncdu[i];
         set_cdud(i, old);
-    }
+    } /* end for */
 
     if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
     {
@@ -650,7 +852,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
         agc_relint();
     }
 
-    uint16_t dt = timechk();
+    uint16_t dt = timechk(); /* delay, cs */
 
     if (dt == 0u)
     {
@@ -658,14 +860,17 @@ static agc_status_t incrdcdu_tmanuchk(void)
     }
 
     agc_inhint(); /* MANUSTAL         */
-    agc_status_t st = waitlist(dt, AGC_TASK_MANUSTOP);
+    agc_status_t st = waitlist(dt, AGC_TASK_MANUSTOP); /* status of the call */
 
     agc_relint();
 
     return (st); /* ENDOFJOB         */
-}
+} /* incrdcdu_tmanuchk */
 
-/* RATEBIAS (LM p.367): OMEGAxD = BRATE, DELxEROR = -|w| w / 16 / 1JACCx. */
+/**********************************************************************
+ * RATEBIAS (KALCMANU_STEERING.agc p.367 LM) -- OMEGAxD = BRATE,
+ * DELxEROR = -|w| w / 16 / 1JACC
+ **********************************************************************/
 static void manustat_lm(void)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -675,16 +880,28 @@ static void manustat_lm(void)
 
     for (int i = 2; i >= 0; i--)
     {
-        agc_sp_t w    = agc_dp_high(brate.c[i]);
-        agc_sp_t jacc = (i == 0) ? agc_erase_1jacc() :
-                        (i == 1) ? agc_erase_1jaccq() :
-                        agc_erase_1jaccr();
-        agc_sp_t a   = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|             */
-        agc_sp_t q   = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16   */
-        agc_dp_t p   = agc_sp_mul(q, w);                        /* MP BRATE (A, L)  */
-        agc_dp_t lag = 0;
+        agc_sp_t w    = agc_dp_high(brate.c[i]); /* BRATE high word, B0 */
+        agc_sp_t jacc = agc_erase_1jaccr(); /* 1/JACC for this axis, B0 */
 
-        if (AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc)))
+        if (i == 0)
+        {
+            jacc = agc_erase_1jacc();
+        }
+        else if (i == 1)
+        {
+            jacc = agc_erase_1jaccq();
+        }
+        else
+        {
+            jacc = agc_erase_1jaccr();
+        }
+
+        agc_sp_t a   = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|, B0          */
+        agc_sp_t q   = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16, B0 */
+        agc_dp_t p   = agc_sp_mul(q, w);                        /* MP BRATE: W|W|/16, B14 */
+        agc_dp_t lag = 0; /* DELxEROR, B0 */
+
+        if (AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc))) /* DV no overflow */
         {
             lag = p / jacc; /* DV 1JACC         */
         }
@@ -704,15 +921,29 @@ static void manustat_lm(void)
             agc_erase_set_omegard(w);
             agc_erase_set_delreror((agc_sp_t) lag);
         }
-    }
-}
+    } /* end for */
+} /* manustat_lm */
 
-/* MANUSTAT: TM = TM + TIME - 1 s, vehicle part, NEXTIME = TIME1 + 1 s.   */
+/**********************************************************************
+ * MANUSTAT (KALCMANU_STEERING.agc p.416 CM; LM p.367) -- start the
+ * maneuver
+ *
+ * TM = TM + TIME2,TIME1 then (-0, -1SEC) by DAS (the words are kept for
+ * TIMECHK), the vehicle part, NEXTIME = TIME1 + 1 s.
+ **********************************************************************/
 static void manustat(void)
 {
-    long t = ((long) tm + (long) agc_time_now_cs() - ONESEC_CS) % TIME_MOD;
+    /* DCA TIME2, DAS TM; CS 1SEC, TS L, CS ZERO, DAS TM: the second DAS
+     * adds -1SEC to the minor word only, so TM's words can disagree in
+     * sign (e.g. 5, -30); TIMECHK reads them as they are.                */
+    long int now   = (long int) agc_time_now_cs() % TIME_MOD; /* TIME2,TIME1, cs */
+    long int lo    = ((long int) tm & 037777L) + (now & 037777L); /* cs B0      */
+    long int carry = (lo > 037777L) ? 1 : 0; /* low-word overflow           */
 
-    tm = (agc_dp_t) ((t < 0) ? t + TIME_MOD : t);
+    lo   -= carry * 040000L;
+    tm_hi = (int) ((((long int) tm >> 14) + (now >> 14) + carry) & 037777L);
+    tm_lo = (int) (lo - ONESEC_CS);
+    tm    = (agc_dp_t) (((long int) tm_hi << 14) + tm_lo); /* the value      */
     agc_inhint();
 
     if (is_lm())
@@ -723,8 +954,8 @@ static void manustat(void)
     {
         /* MANUSTAT (CM p.416): completion time, enable auto maneuvers in the DAP
          * (HOLDFLAG -1), rates, biases and the high-rate flag.                   */
-        agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();
-        agc_csm_dapcom_t *com = agc_csm_dap_com();
+        agc_csm_rcs_t    *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
+        agc_csm_dapcom_t *com = agc_csm_dap_com(); /* CSM DAP common erasables */
 
         if (!AGC_ASSERT(rcs != NULL && com != NULL))
         {
@@ -752,7 +983,7 @@ static void manustat(void)
 
     nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1);
 
-    if (!AGC_ASSERT(tm >= 0))
+    if (!AGC_ASSERT(tm_hi >= 0 && tm_lo >= -ONESEC_CS))
     {
         agc_relint();
 
@@ -765,11 +996,20 @@ static void manustat(void)
 
         return;
     }
-}
+} /* manustat */
 
-/* NEWANGL +1 (p.414 / p.365): MIS = MIS DEL; NCDU from MIS; on the first
- * pass (CALCMAN2 set) MANUSTAT; then the DAP increments and time check.  */
-static agc_status_t newangl1(agc_interp_t *ip)
+/**********************************************************************
+ * NEWANGL +1 (KALCMANU_STEERING.agc p.414 CM; LM p.365) -- MIS = MIS
+ * DEL, NCDU, increments
+ *
+ * On the first pass (CALCMAN2 set) MANUSTAT.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I/O  interpreter state
+ *
+ * RETURNS: agc_status_t -- status of INCRDCDU / TMANUCHK
+ **********************************************************************/
+static agc_status_t steering_update(agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
@@ -777,9 +1017,9 @@ static agc_status_t newangl1(agc_interp_t *ip)
     }
 
     mis = agc_mat_mul(ip, &mis, &del); /* MXM3             */
-    agc_vec_t    ang;
-    agc_dp_t     cmga;
-    agc_status_t st = agc_kalc_dcmtocdu(ip, &mis, &ang, &cmga);
+    agc_vec_t    ang; /* PHI, THETA, PSI, rev 2^0 */
+    agc_dp_t     cmga; /* COS(MGA), 2^0 */
+    agc_status_t st = agc_kalc_dcmtocdu(ip, &mis, &ang, &cmga); /* status of the call */
 
     if (st == AGC_STATUS_OK)
     {
@@ -800,36 +1040,47 @@ static agc_status_t newangl1(agc_interp_t *ip)
     return (incrdcdu_tmanuchk());
 }
 
-/* WCALC (LOCSKIRT; GLA p.412 / NOGIMLOC p.364): DEL for one second at the
- * selected rate, BRATE, maneuver time TM, (CM) BIASTEMP; start.          */
+/**********************************************************************
+ * WCALC = LOCSKIRT (GIMBAL_LOCK_AVOIDANCE.agc p.412 CM; LM NOGIMLOC
+ * p.364)
+ *
+ * DEL for one second at the selected rate (ARATE SR4), BRATE, TM = AM
+ * DMP ANGLTIME DDV ARATE SR 5, (CM) BIASTEMP; SETGO CALCMAN2 NEWANGL +1.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I/O  interpreter state
+ *
+ * RETURNS: agc_status_t -- status of NEWANGL
+ **********************************************************************/
 static agc_status_t wcalc(agc_interp_t *ip)
 {
-    int idx = agc_kalc_rateindx() / 2;
+    int idx = agc_kalc_rateindx() / 2; /* ARATE index */
 
     if (!AGC_ASSERT(idx >= 0 && idx < RATE_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool     lm = is_lm();
-    agc_dp_t ar = lm ? arate_lm[idx] : arate_cm[idx];
+    bool     lm = is_lm(); /* vehicle is the LM */
+    agc_dp_t ar = lm ? arate_lm[idx] : arate_cm[idx]; /* ARATE,1: rev 2^0 */
 
     if (lm)
     {
         imu_vflag_set(IMU_VF_CALCMAN3); /* NOGIMLOC         */
     }
 
-    agc_status_t st = agc_kalc_delcomp(ip, cof, agc_dp_shr(ar, 4), &del);
+    agc_status_t st = agc_kalc_delcomp(ip, cof, agc_dp_shr(ar, 4), &del); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return (st);
     }
 
-    agc_vec_t b = agc_vec_scale(ip, cof, ar);
+    agc_vec_t b = agc_vec_scale(ip, cof, ar); /* BRATE in S/C axes, 2^0 */
 
     brate = lm ? b : agc_mat_vec(ip, &quadrot, b); /* MXV QUADROT (CM) */
-    tm    = agc_dp_shr(agc_dp_div(ip, agc_dp_mul(ip, am, ANGLTIME), ar), 5);
+    tm    = agc_dp_shr( /* AM DMP ANGLTIME (truncating), DDV* ARATE, SR 5 */
+        agc_dp_div(ip, agc_dp_mul_trunc(am, ANGLTIME), ar), 5);
 
     if (!lm)
     {
@@ -838,18 +1089,26 @@ static agc_status_t wcalc(agc_interp_t *ip)
 
     agc_flag_set(AGC_FLAG_CALCMAN2); /* SETGO CALCMAN2   */
 
-    return (newangl1(ip));
+    return (steering_update(ip));
 }
 
 /* ======================================================================= */
 /* Entry points                                                            */
 /* ======================================================================= */
 
-/* KALCMAN3 (ANGLFIND p.399 / AMR p.351): set up and start the maneuver
- * to CPHI, CTHETA, CPSI from the present CDU angles (READCDUK).          */
-static agc_status_t kalcman3(void)
+/**********************************************************************
+ * KALCMAN3 (ANGLFIND.agc p.399 CM; ATTITUDE_MANEUVER_ROUTINE.agc p.351
+ * LM)
+ *
+ * Set up and start the maneuver to CPHI, CTHETA, CPSI from the present
+ * CDUs (READCDUK).  Small (< .25 deg): attitude hold on the commanded
+ * angles; LM |CPSI| >= 70 deg: ALARM 00401 (TOOBADF).
+ *
+ * RETURNS: agc_status_t -- status of NOGO or WCALC
+ **********************************************************************/
+static agc_status_t kalcmanu_start(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     agc_inhint(); /* READCDUK         */
@@ -858,8 +1117,8 @@ static agc_status_t kalcman3(void)
     bcdu[2] = agc_erase_cduz();
     agc_relint();
     const uint16_t   fin[3] = {cphi(0), cphi(1), cphi(2)};
-    agc_kalc_setup_t k;
-    agc_status_t     st = agc_kalc_compute(&ip, bcdu, fin, &k);
+    agc_kalc_setup_t k; /* KALCMAN3 results */
+    agc_status_t     st = agc_kalc_compute(&ip, bcdu, fin, &k); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -883,7 +1142,7 @@ static agc_status_t kalcman3(void)
         {
             if (!is_lm())
             {
-                agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+                agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
                 if (!AGC_ASSERT(rcs != NULL))
                 {
@@ -912,12 +1171,20 @@ static agc_status_t kalcman3(void)
             return (wcalc(&ip)); /* LOCSKIRT         */
         default:
             break;
-    }
+    } /* end switch */
 
     return (AGC_STATUS_BAD_ARG); /* unreachable: cannot happen */
-}
+} /* kalcmanu_start */
 
-agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * KALCMAN3 (ANGLFIND.agc p.399) -- as a job
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I    the job
+ *
+ * RETURNS: agc_status_t -- status of KALCMAN3
+ **********************************************************************/
+agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -929,13 +1196,23 @@ agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (kalcman3());
+    return (kalcmanu_start());
 }
 
-/* GOMANUR (IMU_MODE_SWITCHING_ROUTINES p.1442 / p.1331): KALCMANU must be
- * free (else POODOO 01210).  Save the user's continuation and priority,
- * then run KALCMAN3 in the user's job.  The caller ends its job when this
- * returns; wake_as is started at its priority when the maneuver ends.    */
+/**********************************************************************
+ * GOMANUR (IMU_MODE_SWITCHING_ROUTINES.agc p.1442 CM; p.1331 LM)
+ *
+ * KALCMANU must be free (else POODOO 01210).  Save the user's
+ * continuation and priority, then KALCMAN3 in the user's job.  wake_as is
+ * started at the user's priority when the maneuver ends.
+ *
+ * ARGUMENTS:
+ *   ctx      const agc_job_ctx_t *  I    the user's job
+ *   wake_as  agc_job_id_t           I    the user's continuation
+ *                                        (ATTCADR)
+ *
+ * RETURNS: agc_status_t -- status of KALCMAN3, or POODOO
+ **********************************************************************/
 agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 {
     if (!AGC_ASSERT(ctx != NULL && wake_as != AGC_JOB_NONE))
@@ -956,10 +1233,15 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (kalcman3()); /* POSTJUMP KALCMAN3 */
+    return (kalcmanu_start()); /* POSTJUMP KALCMAN3 */
 }
 
-/* UPDTCALL (task, p.417 / p.368): FINDVAC NEWDELHI at PRIO26.           */
+/**********************************************************************
+ * UPDTCALL (KALCMANU_STEERING.agc p.417 CM; LM p.368) -- task: FINDVAC
+ * NEWDELHI at PRIO26
+ *
+ * RETURNS: agc_status_t -- status of FINDVAC
+ **********************************************************************/
 agc_status_t agc_task_updtcall(void)
 {
     if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
@@ -967,7 +1249,7 @@ agc_status_t agc_task_updtcall(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI);
+    agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -977,8 +1259,18 @@ agc_status_t agc_task_updtcall(void)
     return (st);
 }
 
-/* NEWDELHI (job, p.414 / p.365): stop if the astronaut has interrupted
- * (CM: HOLDFLAG >= 0; LM: not in auto stabilization), else NEWANGL.     */
+/**********************************************************************
+ * NEWDELHI (KALCMANU_STEERING.agc p.414 CM; LM p.365) -- job: next
+ * steering update
+ *
+ * Stop if the astronaut has interrupted (CM: HOLDFLAG >= 0; LM: not in
+ * auto stabilization), else NEWANGL.
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I    the NEWDELHI job
+ *
+ * RETURNS: agc_status_t -- status of NOGO -2 or NEWANGL
+ **********************************************************************/
 agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -986,22 +1278,22 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool interrupted;
+    bool stopped; /* astronaut took over */
 
     if (is_lm())
     {
-        interrupted = (agc_imu_isitauto() > 0); /* CCS A: TCF NOGO-2 */
+        stopped = (agc_imu_isitauto() > 0); /* CCS A: TCF NOGO-2 */
     }
     else
     {
-        const agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
+        const agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
 
-        interrupted = (rcs == NULL) || (rcs->holdflag >= 0); /* BZMF NOGO-2 */
+        stopped = (rcs == NULL) || (rcs->holdflag >= 0); /* BZMF NOGO-2 */
     }
 
-    if (interrupted)
+    if (stopped)
     {
-        return (nogom2());
+        return (nogo_zero_error());
     }
 
     if (!AGC_ASSERT(attcadr != AGC_JOB_NONE))
@@ -1009,9 +1301,9 @@ agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
 
-    return (newangl1(&ip)); /* NEWANGL          */
+    return (steering_update(&ip)); /* NEWANGL          */
 }

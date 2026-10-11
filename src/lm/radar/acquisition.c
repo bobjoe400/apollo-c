@@ -288,8 +288,9 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     bool     too_far = false; /* range > 400 NM */
-    agc_dp_t t       =        /* now + .5 s, cs 2^28 */
-                       agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_HALFSEC);
+    agc_dp_t t; /* now + .5 s, cs 2^28 */
+
+    t = agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_HALFSEC);
     agc_status_t st; /* LPS20.1 */
 
     st = lmnav_los(&ip, t, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS, &too_far);
@@ -434,9 +435,9 @@ agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
     cont.proceed   = AGC_JOB_RENDEZVOUS_SIGHTING_MARK_WAIT;
     cont.enter     = AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY; /* TC -5    */
-    agc_status_t st = /* V50N72 */
-                      agc_dsky_display(ctx, AGC_DSKY_GOPERF2R,
-                                       agc_dsky_vn(6U, 72U), &cont);
+    agc_status_t st; /* V50N72 */
+
+    st = agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6U, 72U), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -938,9 +939,9 @@ agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx)
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
     cont.proceed   = AGC_JOB_RADAR_SEARCH_ACCEPT;
     cont.enter     = AGC_JOB_RADAR_SEARCH_MANEUVER;
-    agc_status_t st = /* V16N80 */
-                      agc_dsky_display(ctx, AGC_DSKY_PRIODSPR,
-                                       agc_dsky_vn(16U, 80U), &cont);
+    agc_status_t st; /* V16N80 */
+
+    st = agc_dsky_display(ctx, AGC_DSKY_PRIODSPR, agc_dsky_vn(16U, 80U), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -1116,9 +1117,9 @@ agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx)
     }
 
     agc_inhint();
-    agc_status_t st = /* CALLDGCH */
-                      agc_waitlist_call(ACQ_6SECONDS,
-                                        AGC_TASK_RADAR_SEARCH_NEXT_POINT);
+    agc_status_t st; /* CALLDGCH */
+
+    st = agc_waitlist_call(ACQ_6SECONDS, AGC_TASK_RADAR_SEARCH_NEXT_POINT);
 
     agc_relint();
 

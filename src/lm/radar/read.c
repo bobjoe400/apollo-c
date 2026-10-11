@@ -583,9 +583,10 @@ static agc_dp_t rd_count(int bias)
  **********************************************************************/
 static void rd_lr_scale(void)
 {
-    bool low = /* SCALBAD */
-               (agc_dp_high(rd.sample) <= 0) &&
-               (agc_dp_low(rd.sample) < RD_HISCALIM);
+    bool low; /* SCALBAD */
+
+    low = (agc_dp_high(rd.sample) <= 0) &&
+          (agc_dp_low(rd.sample) < RD_HISCALIM);
 
     rz_flag_put(AGC_FLAG_SCALBAD, low);
     agc_interp_t ip; /* interpreter state */
@@ -821,9 +822,9 @@ agc_status_t agc_radar_lrpos2(void)
 agc_status_t agc_task_lr_position_scan(void)
 {
     rd.samplim = RD_POS_TRIES;
-    agc_status_t st = /* FIXDELAY */
-                      agc_waitlist_fixdelay(RD_1SEC,
-                                            AGC_TASK_LR_POSITION_CHECK);
+    agc_status_t st; /* FIXDELAY */
+
+    st = agc_waitlist_fixdelay(RD_1SEC, AGC_TASK_LR_POSITION_CHECK);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {

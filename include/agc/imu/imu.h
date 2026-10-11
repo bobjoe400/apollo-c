@@ -1,13 +1,26 @@
-/*
- * agc_imu.h -- IMU interfaces (imu lane).
+/**********************************************************************
+ * FILE NAME: imu.h
  *
- * Sources (CM = Comanche055, LM = Luminary099):
+ * PURPOSE:
+ *   IMU interfaces (imu lane): mode switching, gyro torquing, IMU
+ *   compensation, inflight alignment, KALCMANU, R60/R62/VECPOINT and the
+ *   CM prelaunch alignment (P01, P02, P03, V78, IMU performance test).
+ *
+ * AGC SOURCE:
  *   IMU_MODE_SWITCHING_ROUTINES.agc   CM pp.1420-1448, LM pp.1309-1337
  *   IMU_COMPENSATION_PACKAGE.agc      CM pp.297-306,   LM pp.326-337
  *   INFLIGHT_ALIGNMENT_ROUTINES.agc   CM pp.1355-1363, LM pp.1250-1258
  *   GIMBAL_LOCK_AVOIDANCE.agc, KALCMANU_STEERING.agc,
  *   ANGLFIND.agc (CM) / ATTITUDE_MANEUVER_ROUTINE.agc (LM), R60_62.agc
  *   IMU_CALIBRATION_AND_ALIGNMENT.agc (CM prelaunch, src/csm/)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   Name          Type      Scale          Description
+ *   ------------  --------  -------------  -------------------------
+ *   none (erasables are reached through the accessors declared here)
  *
  * Conventions used throughout this header:
  *   * CDU angles (CDUX/Y/Z, THETAD = CPHI/CTHETA/CPSI, NCDU, BCDU) are the
@@ -18,7 +31,7 @@
  *   * "Half-unit" vectors are unit vectors scaled 2 (each component /2).
  *   * Gyro torquing commands are DP revolutions, scale 2^0; one gyro pulse
  *     is 2^-21 revolution (0.618 arc-second), i.e. 128 LSB of agc_dp_t.
- */
+ **********************************************************************/
 #ifndef AGC_IMU_H
 #define AGC_IMU_H
 
@@ -174,8 +187,8 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv);
 agc_status_t agc_imu_gcompzer(void); /* GCOMPZER       */
 agc_status_t agc_job_gyro_command_pulse(agc_job_ctx_t *ctx); /* 1/GYRO         */
 agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx); /* 1/GYRO retry   */
-agc_status_t agc_job_gcomp1(agc_job_ctx_t *ctx);             /* GCOMP1         */
-agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);            /* NBDONLY        */
+agc_status_t agc_job_gyro_command_pulsed(agc_job_ctx_t *ctx); /* GCOMP1         */
+agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);             /* NBDONLY        */
 agc_status_t agc_job_lastbias(agc_job_ctx_t *ctx); /* LASTBIAS       */
 
 /* ======================================================================= */
@@ -231,14 +244,14 @@ typedef enum agc_kalc_case
 
 typedef struct agc_kalc_setup
 {
-    agc_kalc_case_t kcase;
+    agc_kalc_case_t kcase;   /* which KALCMAN3 path                   */
     agc_mat_t       mis;     /* initial S/C -> SM, scale 2              */
     agc_mat_t       mfs;     /* final S/C -> SM, scale 2                */
     agc_mat_t       mfi;     /* final -> initial S/C, scale 4           */
     agc_vec_t       cofskew; /* skew part of MFI, scale 4               */
-    agc_dp_t        cam;     /* cos(AM)/2                               */
-    agc_dp_t        am;      /* maneuver angle, revolutions             */
-    agc_vec_t       cof;     /* maneuver axis, half-unit                */
+    agc_dp_t        cam;     /* CAM = cos(AM)/2, 2^0                    */
+    agc_dp_t        am;      /* AM, rev 2^0                             */
+    agc_vec_t       cof;     /* COF, B1                                 */
 } agc_kalc_setup_t;
 
 /* KALCMAN3 .. CHECKMAX/ALTCALC/COFMAXGO: pure computation from the initial
@@ -256,7 +269,7 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx,
                              agc_job_id_t         wake_as);
 agc_imu_stall_result_t agc_kalc_outcome(void);
 
-agc_status_t agc_job_kalcman3(agc_job_ctx_t *ctx); /* KALCMAN3            */
+agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx); /* KALCMAN3            */
 agc_status_t agc_job_newdelhi(agc_job_ctx_t *ctx); /* NEWDELHI            */
 agc_status_t agc_task_updtcall(void);      /* UPDTCALL            */
 agc_status_t agc_task_manustop(void);      /* MANUSTOP            */
@@ -273,9 +286,10 @@ agc_status_t agc_kalc_zeroerror(void);     /* ZEROERROR (CM)      */
 agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm,
                               agc_vec_t scaxis, uint16_t gimbal[3]);
 /* VECPNT1 (LM): as VECPOINT but from the given initial CDU patterns.      */
-agc_status_t agc_imu_vecpnt1(agc_interp_t *ip, const uint16_t cdu0[3],
-                             agc_vec_t pointvsm, agc_vec_t scaxis,
-                             uint16_t gimbal[3]);
+agc_status_t agc_imu_vecpoint_from_cdus(agc_interp_t *ip,
+                                        const uint16_t cdu0[3],
+                                        agc_vec_t pointvsm, agc_vec_t scaxis,
+                                        uint16_t gimbal[3]);
 /* BALLANGS (LM): FDAI ball angles for CPHI.. -> fdai[] patterns.          */
 agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
                               uint16_t fdai[3]);

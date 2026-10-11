@@ -85,8 +85,9 @@ agc_status_t agc_task_radsamp(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* RADSAMP recall status */
-                      agc_waitlist_call((uint16_t) delay, AGC_TASK_RADSAMP);
+    agc_status_t st; /* RADSAMP recall status */
+
+    st = agc_waitlist_call((uint16_t) delay, AGC_TASK_RADSAMP);
 
     if (st != AGC_STATUS_OK)
     {
@@ -166,8 +167,9 @@ agc_status_t agc_job_radar_sample(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* read lead-in status */
-                      leadin_varadar(agc_erase_rtstdex());
+    agc_status_t st; /* read lead-in status */
+
+    st = leadin_varadar(agc_erase_rtstdex());
 
     if (st != AGC_STATUS_OK)
     {
