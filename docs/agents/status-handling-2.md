@@ -52,3 +52,17 @@ Method (tooling first, hand work last):
    `make format`. Report counts
    (guaranteed-deleted / fallible-converted / callers updated) in
    docs/modules/status-handling-2.md with Lessons.
+
+6. One-line functions (user direction, 2026-10-11). Using libclang (body
+   is a single return/expression statement) and the call graph, classify
+   every one-line function:
+   - PLAIN: the body is an expression over its own parameters/constants
+     with no state access and no AGC-named semantics -> inline at every
+     caller and delete, whatever the caller count.
+   - NAMED: the name carries an AGC meaning the expression does not show
+     (overflow-corrected store, a scale conversion with its scale, a
+     channel-bit test named after the AGC bit) -> keep.
+   - ACCESSOR: reads/writes erasable or module state -> keep (module
+     boundary; rule 6 data hiding; it is where the entry check lives).
+   Record the classification in docs/overview/one_liners.tsv and the counts
+   in your note. Add the classification rule to docs/CODING_STANDARD.md.

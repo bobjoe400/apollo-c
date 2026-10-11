@@ -169,3 +169,12 @@ Language: C11, no extensions. Build flags (Makefile):
   with named temporaries (review item), not wrapped.
   docs/overview/long_statements.tsv lists the candidates (wider than 120
   columns or kept on more than three lines).
+
+## One-line functions (user direction, 2026-10-11)
+
+A one-line function stays only if its name says something the line does not:
+an AGC-named operation (overflow-corrected store, a scale conversion with its
+scale, a channel-bit test named after the bit) or an accessor to erasable or
+module state (the module boundary, where the entry check lives). A one-line
+function that is merely an expression over its parameters is inlined at
+every caller, whatever the caller count.
