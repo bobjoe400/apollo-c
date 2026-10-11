@@ -458,3 +458,5 @@
 2026-10-11  review-core-numeric DONE: word-level MPAC API; 2021 oracle checks
             0 failures; reproduces WLOOP/ECC=0. Guide section 1 updated;
             adoption items routed. Resuming review-nav-conic.
+2026-10-11  format3 DONE (brace initializers). Core files formatted by lead
+            after the core review finished. Launching review-dap-csm (#7).
