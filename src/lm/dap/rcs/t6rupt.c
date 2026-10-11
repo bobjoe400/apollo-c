@@ -206,7 +206,7 @@ agc_status_t lm_dap_jtlst(void)
 
     if (mid > 0)
     {
-        d->t6furtha[0] = lm_dap_sat(mid);
+        d->t6furtha[0] = lm_dap_wrap(mid);
         d->t6furtha[1] = d->t6next[1];
         d->t6next[0]   = (agc_sp_t) (t - time6);
         d->t6next[1]   = idx;

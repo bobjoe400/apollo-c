@@ -348,7 +348,7 @@ static agc_status_t raterror(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
+    agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP); /* MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap) */
     agc_sp_t lin    = lm_dap_mp(k, cnt).lo;                  /* CA L           */
     agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);
     agc_sp_t change = lm_dap_wrap((int32_t) cmd - d->plast); /* DAPTEMP1    */

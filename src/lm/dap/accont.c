@@ -260,7 +260,7 @@ static agc_sp_t net_min(acc_work_t *w)
  **********************************************************************/
 static void p_axis(lm_dap_t *d)
 {
-    agc_sp_t funtem = lm_dap_sat((int32_t) d->jacc[0] + AA_BIT9);
+    agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9);
     agc_sp_t inv    = invert(d->jacc[0]);
 
     agc_inhint();      /* consistent     */
@@ -312,7 +312,7 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
     if ((int32_t) w->absaos - AA_BIT8 > 0)
     { /* SOMEAOS        */
         w->t[T_DBB3 + w->ns] = w->dbval3; /* DB/2           */
-        w->t[T_DBB4 + w->s]  = lm_dap_sat(2 * (int32_t) w->dbval3);
+        w->t[T_DBB4 + w->s]  = lm_dap_wrap(2 * (int32_t) w->dbval3);
     }
     else
     { /* NOAOS          */
@@ -381,7 +381,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 
             /* ADS leaves the sum in A, so DB4(3) gets 2 DB, not the 1 DB
              * of the listing's comment (rope: accs_aos_big COASTDB).    */
-            w->t[T_DBB2 + w->ns] = lm_dap_sat((int32_t) w->t[T_DBB2 + w->ns] + db);
+            w->t[T_DBB2 + w->ns] = lm_dap_wrap((int32_t) w->t[T_DBB2 + w->ns] + db);
             w->t[T_DBB4 + w->s]  = w->t[T_DBB2 + w->ns];
             agc_sp_t db1;
 
@@ -393,7 +393,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
             {
                 int32_t f = 2 * ((int32_t) -4 * w->absaos + AA_BIT14); /* 1 - 8|AOS| */
 
-                db1 = lm_dap_mphi(lm_dap_sat(f), db);
+                db1 = lm_dap_mphi(lm_dap_wrap(f), db);
             }
 
             w->t[T_DBB1 + w->s]  = db1;       /* DBONE          */
@@ -421,9 +421,9 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     if (w->absaos > AA_BIT9 && lm_dap_ovf(top))
     {
         /* SKIPDB1 overflow branch (p.1500): ANET rescaled to pi.                 */
-        agc_sp_t anet_pi = lm_dap_sat((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
+        agc_sp_t anet_pi = lm_dap_wrap((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
 
-        w->anet = lm_dap_sat((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
+        w->anet = lm_dap_wrap((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
         w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);  /* at 2^7/pi      */
 
         if (!AGC_ASSERT(w->anet > 0))
@@ -440,7 +440,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     }
     else
     { /* SKIPDB2        */
-        w->anet = lm_dap_sat((int32_t) w->absaos + 2 * (int32_t) jaccu);
+        w->anet = lm_dap_wrap((int32_t) w->absaos + 2 * (int32_t) jaccu);
         acc     = net_accel_function(w, w->anet);
     }
 
@@ -482,8 +482,8 @@ static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
         w->t[T_Z1 + 2]    = w->t[T_Z1];
     }
 
-    w->t[T_AXD]     = lm_dap_sat((int32_t) w->t[T_DBB1] - w->t[T_DBB3] + w->t[T_FLAT]);
-    w->t[T_AXD + 1] = lm_dap_sat((int32_t) w->t[T_DBB2] - w->t[T_DBB4] + w->t[T_FLAT]);
+    w->t[T_AXD]     = lm_dap_wrap((int32_t) w->t[T_DBB1] - w->t[T_DBB3] + w->t[T_FLAT]);
+    w->t[T_AXD + 1] = lm_dap_wrap((int32_t) w->t[T_DBB2] - w->t[T_DBB4] + w->t[T_FLAT]);
 
     if (!AGC_ASSERT(w->uv == 0 || w->uv == 1))
     {
@@ -561,7 +561,7 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 {
     d->block[AA_BLK_FLAT] = w->t[T_FLAT];
     d->block[AA_BLK_Z3]   = w->t[T_Z3];
-    agc_sp_t coast        = lm_dap_sat((int32_t) d->db + w->t[T_FLAT]);
+    agc_sp_t coast        = lm_dap_wrap((int32_t) d->db + w->t[T_FLAT]);
 
     d->block[10] = d->db; /* PDB1, PDB2     */
     d->block[11] = d->db;
@@ -616,8 +616,8 @@ agc_status_t lm_dap_switch_curves(void)
     acc_work_t w       = {{0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {false, false}};
     agc_sp_t   quarter = lm_dap_mphi(d->db, AA_BIT13); /* .25 DB         */
 
-    w.dbval3    = lm_dap_sat(2 * (int32_t) quarter);     /* .50 DB         */
-    w.dbval2    = lm_dap_sat((int32_t) quarter - d->db); /* -.75 DB        */
+    w.dbval3    = lm_dap_wrap(2 * (int32_t) quarter);     /* .50 DB         */
+    w.dbval2    = lm_dap_wrap((int32_t) quarter - d->db); /* -.75 DB        */
     agc_inhint();                                        /* GETAOSUV       */
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
@@ -658,7 +658,7 @@ agc_status_t lm_dap_switch_curves(void)
 
         /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
          * (NETNEG); then 1/NETMIN.                                                */
-        agc_sp_t a = lm_dap_sat(2 * (int32_t) jaccu - w.absaos);
+        agc_sp_t a = lm_dap_wrap(2 * (int32_t) jaccu - w.absaos);
 
         w.accsw = 0;
         w.anet  = a;
@@ -683,7 +683,7 @@ agc_status_t lm_dap_switch_curves(void)
 
         w.t[T_Z1 + 2 + w.s]    = acc;
         w.t[T_ATEM1 + 2 + w.s] = w.inv;
-        w.anet                 = lm_dap_sat((int32_t) jaccu - w.absaos);
+        w.anet                 = lm_dap_wrap((int32_t) jaccu - w.absaos);
 
         if ((int32_t) w.anet - AA_BIT9 > 0)
         {

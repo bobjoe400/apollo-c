@@ -111,7 +111,7 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
         return (0); /* no valid result */
     }
 
-    agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT);
+    agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT); /* MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap) */
     agc_sp_t lin = lm_dap_mp(k, c).lo; /* CA L           */
     agc_sp_t r   = lm_dap_mphi(lin, stiksens);
 

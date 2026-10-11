@@ -194,7 +194,7 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
  **********************************************************************/
 static void commeqs(lm_dap_t *d, agc_sp_t rem)
 {
-    lm_dp_pair_t diff = {lm_dap_sat((int32_t) d->jacc[1] - d->jacc[2]), rem};
+    lm_dp_pair_t diff = {lm_dap_wrap((int32_t) d->jacc[1] - d->jacc[2]), rem};
 
     if (diff.hi > 0)
     {
@@ -388,11 +388,11 @@ static agc_sp_t docked_fit(int base)
     agc_sp_t        x  = agc_erase_csmmass();
     agc_sp_t        y  = agc_erase_lemmass();
     const agc_sp_t *c  = &coeff[base];
-    agc_sp_t        m  = lm_dap_sat((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
-    agc_sp_t        lx = lm_dap_sat((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
+    agc_sp_t        m  = lm_dap_wrap((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
+    agc_sp_t        lx = lm_dap_wrap((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
 
     m           = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));     /* ADS     */
-    agc_sp_t ly = lm_dap_sat((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
+    agc_sp_t ly = lm_dap_wrap((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
 
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));
 

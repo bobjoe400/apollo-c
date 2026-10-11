@@ -104,7 +104,7 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
  **********************************************************************/
 static agc_sp_t chkmintj(int32_t a)
 {
-    if (!AGC_ASSERT(a >= -4 * LM_POSMAX && a <= 4 * LM_POSMAX))
+    if (!AGC_ASSERT(a >= -3 * LM_POSMAX && a <= 3 * LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -114,7 +114,7 @@ static agc_sp_t chkmintj(int32_t a)
         return (0); /* COASTTJ        */
     }
 
-    agc_sp_t r = lm_dap_sat(a);
+    agc_sp_t r = lm_dap_wrap(a);
 
     if (!AGC_ASSERT(r > 0))
     {
@@ -205,11 +205,11 @@ static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
  **********************************************************************/
 static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 {
-    agc_sp_t     x = lm_dap_sat((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1));
+    agc_sp_t     x = lm_dap_wrap((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1));
     lm_dp_pair_t p = lm_dap_mp(x, blk(d, LM_BK_ACCFCTZ1, w->adr2));
 
     w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(p));
-    agc_sp_t t = lm_dap_sat((int32_t) w->ttoaxis + TJ_MTJMAX);
+    agc_sp_t t = lm_dap_wrap((int32_t) w->ttoaxis + TJ_MTJMAX);
 
     if ((int32_t) lm_dap_mphi(t, t) - w->hh.hi <= 0)
     {
@@ -235,7 +235,7 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return (lm_dap_sat((int32_t) q + w->ttoaxis + TJ_0375AT4));
+    return (lm_dap_wrap((int32_t) q + w->ttoaxis + TJ_0375AT4));
 }
 
 /**********************************************************************
@@ -272,7 +272,7 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 
     if (t1 <= 0)
     { /* FORMULA1       */
-        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_sat((int32_t) w->ttoaxis + TJ_025AT4));
+        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_025AT4));
 
         return (chkmintj(lm_dap_mphi(q1, TJ_BIT14)));
     }
@@ -287,7 +287,7 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
     lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
 
     w->hh       = lm_dap_das(w->hh, k);
-    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_sat((int32_t) w->ttoaxis + TJ_1AT4));
+    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4));
 
     if (!AGC_ASSERT(q2 >= LM_NEGMAX))
     {
@@ -383,7 +383,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
     d->numbert = n; /* TJCALC         */
     int32_t f  = (int32_t) lm_dap_mphi((agc_sp_t) -w->edotsq, blk(d, LM_BK_1ANET1, w->adr2)) + blk(d, LM_BK_FIREDB, w->adr1) - d->e;
 
-    d->firefct = lm_dap_sat(f); /* -E-.5EDOT^2/ACC-DB */
+    d->firefct = lm_dap_sat(f); /* -E-.5EDOT^2/ACC-DB; TS FIREFCT overflow (and its skip) unreachable: the rough law takes large E, EDOT, so sat = wrap here */
 
     if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
@@ -412,7 +412,14 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return ((g <= 0) ? zone_between_curves(d, w, lm_dap_sat(g)) : zone_coast_jets_on(d, w));
+    if (g > 0)
+    {
+        return (zone_coast_jets_on(d, w)); /* ZONE4          */
+    }
+
+    /* ZONE5: TS L of an overflowed A would store the wrapped word and skip;
+     * unreachable (rough law takes large E, EDOT), so sat = wrap here.     */
+    return (zone_between_curves(d, w, lm_dap_sat(g)));
 }
 
 /**********************************************************************
@@ -549,7 +556,7 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
 static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
 {
     rufsetup(d, w, true);
-    agc_sp_t dist = lm_dap_sat((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1));
+    agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1));
     agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11); /* at 4 pi        */
     agc_sp_t sq   = lm_dap_mphi(d->edot, d->edot);
 

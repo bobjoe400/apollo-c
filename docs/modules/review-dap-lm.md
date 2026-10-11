@@ -32,27 +32,17 @@
   TRIM_GIMBAL, RCS_FAILURE_MONITOR, SPS_BACK-UP_RCS, T6-RUPT) contain no
   interpretive code: 0 DMP/DMPR/VXSC/DDV/VSR/SRR sites; C uses no
   agc_dp_mul*. Count changed: 0.
-* PARTIAL overflow-store audit (lm_dap_sat vs lm_dap_wrap, 49 sat sites;
-  grep -rn "lm_dap_sat(" src/lm/dap). No file edited yet. yaAGC MP uses
-  the overflow-corrected A (= wrap), TS/ADS/XCH store wrapped.
-  - Correct as sat (OVERSUB/OVERSUB2/LIMITS/explicit POSMAX): rate.c
-    167,218,349,357,365; qraxis.c 270-271; qrjets.c 214-215 (ROT-TOUV);
-    needles.c 88-92 (OVERSUB2; confirm); pmanual.c 300 (OVERSUB after
-    DAS A); accont.c m-path POSMAX (~line 465).
-  - To change sat -> lm_dap_wrap (AGC stores via TS/ADS or feeds MP;
-    all unreachable in range, so tests unaffected): accont.c 263
-    (TS FUNTEM), 315, 384 (ADS DBB2), 397 (DOUBLE then MP DB), 426, 428,
-    445, 489, 491 (TS AXDSTEM), 569 (TS PDB3), 624, 625, 663, 688
-    (TS ANET); rate.c 297-298 (AD then MP -BIT14); t6rupt.c 212
-    (DXCH T6FURTHA; 220 LASTCHG cannot overflow, either is fine).
-  - Keep sat + comment as unreachable: pmanual.c 353, qrmanual.c 114
-    (4|D|+LINRAT, RHC counts <= 42; wrap's |v|<=3 POSMAX assert would
-    trip for test inputs near POSMAX); gts.c 181 ROOTCYCL (guess >= root
-    so (x+arg/x)/2 <= x).
-  - Still to check: rate.c 101-102 (ROTORQUE: AD then MP 1JACCR/Q ->
-    likely wrap), accs.c 195, 395-401, tjetlaw.c 117,209,213,239,278,
-    294,398,430,574.
-  Then rerun make test (oracle_dap_lm tolerance 0) and record finding R11.
+* DONE overflow-store audit (R11): 30 lm_dap_sat sites -> lm_dap_wrap
+  (accont.c 14, accs.c 4 COMMEQS/docked fit, rate.c 4 ROTORQUE/BACKP AD
+  before MP, t6rupt.c 1 DXCH T6FURTHA, tjetlaw.c 7 MP/DV/DXCH operands).
+  19 sat sites kept: OVERSUB/LIMITS/explicit POSMAX (rate.c, qraxis.c,
+  qrjets.c, needles.c, pmanual.c 299, accont.c POSMAX path) and 5
+  unreachable ones commented "sat = wrap" (pmanual/qrmanual RHC sums,
+  gts ROOTCYCL, tjetlaw FIREFCT TS and ZONE5 TS L, where the TS overflow
+  skip is not modelled). yaAGC MP and DV both take the overflow-corrected
+  A. make test green, oracle_dap_lm 1780/0 at tolerance 0.
+* TODO: accont.c rule-7 (void) casts; style debt; make format/check;
+  MODULE_STATUS row; Lessons.
 
 ## Scratch build
 
@@ -74,5 +64,6 @@ t.sh runs one test against it.
 | R8 | qraxis.c QERRCALC | p.1451 | TS E leaves E = (CDUY-CDUYD) M31 as a side effect; not modelled. E is always rewritten (TJLAW, CALCPERR, pseudo-auto) before any read | recorded only |
 | R9 | qrjets.c BACKHAND | p.1449 | DAS A / AD Q in a 16-bit A can wrap past the overflow test for |1/ANET x rate| > 10922 (~30 deg/s); C uses exact arithmetic | recorded only (unreachable rates) |
 | R10 | review item F9 at PITCHDAP | -- | PITCHDAP is the CSM TVC DAP (src/csm/dap/tvc/daps.c), not an LM routine | belongs to dap-csm; nothing in this lane |
+| R11 | 30 sites (accont, accs, rate, t6rupt, tjetlaw) | TS/XCH/DXCH/ADS stores, AD before MP/DV | lm_dap_sat (POSMAX limit) used where the AGC stores or multiplies the overflow-corrected word | -> lm_dap_wrap; unreachable TS-skip sites keep sat with a comment; all in-range, oracle unchanged |
 
 Oracle cases added by this review: accs_aos_* (13, earlier run), accs_docked_thrust/_aps/_fix, gts_a..f, tg_a..d, tjs_* (20), kal_docked, kal_docked_pw.

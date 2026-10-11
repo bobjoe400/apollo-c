@@ -96,8 +96,8 @@ agc_status_t lm_dap_rateloop(void)
     int32_t usum = (int32_t) d->torque[1] + d->torque[2];
     int32_t udif = (int32_t) d->torque[1] - d->torque[2];
 
-    d->jetrate[2] = lm_dap_mphi(lm_dap_sat(usum), d->jacc[2]); /* JETRATER */
-    d->jetrate[1] = lm_dap_mphi(lm_dap_sat(udif), d->jacc[1]); /* JETRATEQ */
+    d->jetrate[2] = lm_dap_mphi(lm_dap_wrap(usum), d->jacc[2]); /* JETRATER */
+    d->jetrate[1] = lm_dap_mphi(lm_dap_wrap(udif), d->jacc[1]); /* JETRATEQ */
 
     if (!AGC_ASSERT(d->jetrate[1] >= LM_NEGMAX && d->jetrate[2] >= LM_NEGMAX))
     {
@@ -287,8 +287,8 @@ agc_status_t lm_dap_backp(void)
 
     d->oldxforp = d->dapcdu[0];
     d->trapedp  = lm_dap_wrap((int32_t) d->trapedp + lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
-    agc_sp_t jq = lm_dap_sat((int32_t) d->jetrate[1] + d->aosqterm);
-    agc_sp_t jr = lm_dap_sat((int32_t) d->jetrate[2] + d->aosrterm);
+    agc_sp_t jq = lm_dap_wrap((int32_t) d->jetrate[1] + d->aosqterm);
+    agc_sp_t jr = lm_dap_wrap((int32_t) d->jetrate[2] + d->aosrterm);
 
     d->trapedq    = lm_dap_wrap((int32_t) d->trapedq + lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
     d->trapedr    = lm_dap_wrap((int32_t) d->trapedr + lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));

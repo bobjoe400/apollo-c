@@ -174,7 +174,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
     lm_dp_pair_t n = {halfarg, 0};
     agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2      */
 
-    return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2        */
+    return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2; guess >= root, so the sum cannot overflow (sat = wrap) */
 }
 
 /**********************************************************************
