@@ -298,3 +298,9 @@
             IMU test, LM systems test, V27, N08/N70/N71 orphan components.
             Launching collapse (phase 1, review gate), sim, oracle-cases in
             parallel with disjoint write scopes.
+2026-10-10  Sim scope (user): minimal harness, and reuse Virtual AGC's
+            peripherals instead of writing a DSKY/device model. build/agc_sim
+            speaks yaAGC's peripheral socket protocol (port 19697) so
+            yaDSKY2/yaTelemetry connect to our C as if to yaAGC; scenarios
+            via tools/sim_client.py; our part is the clock/interrupt driver.
+            virtualagc clone has yaDSKY2, yaTelemetry, yaACA, piPeripheral.

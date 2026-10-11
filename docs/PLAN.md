@@ -94,8 +94,10 @@ bits), split that part off to a Sonnet agent.
 5. Tests: `make test` green through the real library (no scratch stand-ins).
 6. Oracle: every numeric module has committed yaAGC cases passing within a
    documented tolerance; bit-exact where -0 quirks allow.
-7. Runs end to end: sim fresh-starts either vehicle, drives clock/interrupts
-   and DSKY, and completes at least one real program sequence per vehicle
+7. Runs end to end: build/agc_sim (our clock/interrupt driver + yaAGC's
+   peripheral socket protocol, so Virtual AGC's yaDSKY2 and other
+   peripherals are the I/O) fresh-starts either vehicle and completes at
+   least one real program sequence per vehicle
    (e.g. P52 realign with simulated marks; P40 with a simulated burn) with
    the AGC's expected displays.
 8. Reviewed: final fidelity/clarity review of every lane vs its AGC source,
