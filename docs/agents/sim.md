@@ -69,8 +69,9 @@ yaAGC from the peripherals' point of view:
    or from a `--script` of timed counter increments; no physics.
 Keep the minimal `main.c` that integrate wrote working for `--headless`.
 
-## PAUSED (user, 2026-10-10)
-No GUI work (yaDSKY2, yaTelemetry windows) until the user says so; the
-user is using the desktop. When resumed: do protocol + headless scripted
-scenarios via tools/sim_client.py first; GUI verification last and only on
-explicit go-ahead.
+## RESUMED (user, 2026-10-10)
+GUI verification with yaDSKY2/yaTelemetry is allowed again. Order of work:
+protocol server + headless scripted scenarios via tools/sim_client.py
+first; GUI verification last. Close GUI windows when a check is done.
+The collapse lane is editing src/ (not src/sim) concurrently; do not edit
+flight code, record bugs in your note.

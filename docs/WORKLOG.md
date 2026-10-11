@@ -324,3 +324,5 @@
             whose body is only guards + one forwarding call, regardless of
             caller count; move any genuinely new assertion into the callee
             once. Running.
+2026-10-10  User resumed the sim lane. Relaunched with resume semantics;
+            headless scenarios first, GUI verification last.
