@@ -123,8 +123,8 @@ static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1,
     rz->body.rtx2 = (agc_sp_t) ic->out.x2;
     rz->body.moon = (ic->out.x2 != 0);
 
-    return (ic->out.valid ? AGC_STATUS_OK          /* RECTOUT reached */
-                          : AGC_STATUS_NOT_FOUND); /* no state        */
+    return (ic->out.valid ? AGC_STATUS_OK : /* RECTOUT reached */
+            AGC_STATUS_NOT_FOUND);                 /* no state        */
 }
 
 /**********************************************************************
@@ -155,7 +155,7 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
     agc_burn_t         *b = &agc_guid_state()->burn; /* HAPO, HPER      */
     agc_rendz_periapo_t pa;                           /* PERIAPO1 output */
     agc_status_t        st = /* status of PERIAPO1 */
-        agc_rendz_periapo_body_scale(ip, rz, r, v, &pa);
+                             agc_rendz_periapo_body_scale(ip, rz, r, v, &pa);
 
     if (st != AGC_STATUS_OK)
     {
@@ -300,9 +300,9 @@ agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((veh == AGC_VEHICLE_CSM)
-            ? external_delta_v_vectors_csm(ip, rz) /* Comanche S30.1  */
-            : external_delta_v_vectors_lm(ip, rz)); /* Luminary S30.1 */
+    return ((veh == AGC_VEHICLE_CSM) ?
+            external_delta_v_vectors_csm(ip, rz) : /* Comanche S30.1  */
+            external_delta_v_vectors_lm(ip, rz));   /* Luminary S30.1 */
 }
 
 /**********************************************************************
@@ -389,7 +389,7 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
     rz->vtig  = p->vatt;
     rz->vinit = p->vatt;
     agc_dp_t e4 = /* EPSILON4, rev 2^0 */
-        agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* NORMSW: 45 */
+                  agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* NORMSW: 45 */
 
     if (!AGC_ASSERT(e4 > 0))
     {
@@ -628,7 +628,8 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
     agc_status_t st = /* status of S30.1 */
-        agc_guid_external_delta_v_vectors(&ip, agc_state_vehicle());
+                      agc_guid_external_delta_v_vectors(&ip,
+                                                        agc_state_vehicle());
 
     if (st != AGC_STATUS_OK)
     {

@@ -128,7 +128,8 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
 
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        ta.savedcdu[i] = prftrk ? rz_tracking_angles(true)[i] : rz_tracking_angles(false)[i];
+        ta.savedcdu[i] =
+            prftrk ? rz_tracking_angles(true)[i] : rz_tracking_angles(false)[i];
         agc_erase_set_thetad(i, ta.savedcdu[i]); /* CRSTOR   */
         st = AGC_STATUS_OK;
     }
@@ -240,7 +241,7 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
  * CPHI.. = SAVEDCDU) unless someone is on the stick (then the UPLINK
  * ACTY lamp); in auto with the stick free, CRS61.2 and the DAP inputs. */
 static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
-                             ta_result_t *res)
+                                       ta_result_t *res)
 {
     *res = TA_FED_DAP;
     agc_status_t st = ta_desired(ip, agc_rtb_loadtime(), resume); /* STORT    */
@@ -329,7 +330,8 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     ta_result_t  res = TA_FED_DAP;
-    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res);
+    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM,
+                                          &res);
 
     if (st != AGC_STATUS_OK)
     {

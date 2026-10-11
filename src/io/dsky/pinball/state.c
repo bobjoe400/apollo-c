@@ -222,26 +222,27 @@ uint16_t pin_ones_mag(uint16_t w)
 /**********************************************************************
  * AGC: none (helper: CS)
  *
- * CS of a magnitude: the negative ones' complement word.
+ * CS of a 15-bit word: the negative word of a magnitude, or (as
+ * MARKPLAY's NVWORD reset does) the positive word of a negative one.
  *
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
  *   --------  --------  ---  -------------------
- *   mag       uint16_t  I    magnitude 0..037777
+ *   word      uint16_t  I    15-bit ones' complement word
  *
- * RETURNS: uint16_t -- the ones' complement of mag
+ * RETURNS: uint16_t -- the ones' complement of word
  **********************************************************************/
-uint16_t pin_ones_neg(uint16_t mag)
+uint16_t pin_ones_neg(uint16_t word)
 {
-    if (!AGC_ASSERT(mag <= PIN_POSMAX))
+    if (!AGC_ASSERT(word <= PIN_WORD))
     {
         return (0); /* no valid result */
     }
 
-    uint16_t w = (uint16_t) ((~mag) & PIN_WORD); /* CS: ones' complement */
+    uint16_t w = (uint16_t) ((~word) & PIN_WORD); /* CS: ones' complement */
 
-    /* CS of a magnitude always has bit 15 set (-0 for a zero magnitude) */
-    if (!AGC_ASSERT(pin_ones_negative(w)))
+    /* CS flips the sign bit (bit 15); +0 becomes -0 and back            */
+    if (!AGC_ASSERT(pin_ones_negative(w) != pin_ones_negative(word)))
     {
         return (0);
     }

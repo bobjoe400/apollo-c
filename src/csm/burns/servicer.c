@@ -566,9 +566,10 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_status_t st = /* CALCGRAV at RN (moon: RTX2 = 2, LXC,1 SLOAD RTX2) */
-        agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM,
-                          agc_rendz_erasable()->body.rtx2 != 0, agc_erase_rn(),
-                          &g->avg);
+                      agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM,
+                                        agc_rendz_erasable()->body.rtx2 != 0,
+                                        agc_erase_rn(),
+                                        &g->avg);
 
     if (st != AGC_STATUS_OK)
     {

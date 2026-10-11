@@ -769,9 +769,10 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
  * SETRAD gives XXXALT = RPAD (2^29) about the earth, |RLS| (2^27) about
  * the moon; APSIDES gives the apsides. Altitudes = radii - XXXALT, all at
  * body scale (callers apply SHIFTR1).                                    */
-agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz,
-                                agc_vec_t r, agc_vec_t v,
-                                agc_rendz_periapo_t *out)
+agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip,
+                                          const agc_rendz_t *rz,
+                                          agc_vec_t r, agc_vec_t v,
+                                          agc_rendz_periapo_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
     {

@@ -381,7 +381,8 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
     agc_status_t              st  = agc_rr_designate_nb(&ip, rr_word(
                                                             agc_erase_tang(0)),
                                                         rr_word(
-                                                            agc_erase_tang(1)), &res);
+                                                            agc_erase_tang(
+                                                                1)), &res);
 
     if (st != AGC_STATUS_OK || res != AGC_RR_DESIGNATE_STARTED)
     {

@@ -172,7 +172,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
 /* SR30.1 on the rendezvous erasables (RONE VONE TFF/RTMU HPERMIN RPADTEM
  * V82EMFLG -> HAPOX HPERX TFF -TPER).                                  */
 static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz,
-                               const agc_orbit_params_in_t *in)
+                                     const agc_orbit_params_in_t *in)
 {
     agc_orbit_params_out_t o;
     agc_status_t           st = opd_compute(ip, in, &o, &opd_tff_debris);

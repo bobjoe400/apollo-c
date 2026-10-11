@@ -184,8 +184,8 @@ static agc_status_t chkcomed(agc_job_ctx_t *ctx, bool *liftoff)
         return (AGC_STATUS_OK); /* GOBKCALB                       */
     }
 
-    bool lift = ((agc_chan_read(AGC_CHAN_CHAN30) & AGC_CH030_LIFTOFF) == 0u)
-                || agc_flag_test(AGC_FLAG_GRRBKFLG); /* RXOR, GRRBKBIT */
+    bool lift = ((agc_chan_read(AGC_CHAN_CHAN30) & AGC_CH030_LIFTOFF) == 0u) ||
+                agc_flag_test(AGC_FLAG_GRRBKFLG);    /* RXOR, GRRBKBIT */
 
     agc_relint();
 
@@ -367,12 +367,12 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
         r->dpipa[k]         = 0;
     }
 
-    r->altim    = 0;
-    r->altims   = 0;
+    r->altim  = 0;
+    r->altims = 0;
     agc_imu_set_gcompsw(0); /* STOVL GCOMPSW -1                      */
-    r->alx1s  = INTVAL_ALX1S; /* INTVAL +2: initial drift gains        */
-    r->cmpx1  = INTVAL_CMPX1;
-    r->alk    = SOUPLY;
+    r->alx1s             = INTVAL_ALX1S; /* INTVAL +2: initial drift gains        */
+    r->cmpx1             = INTVAL_CMPX1;
+    r->alk               = SOUPLY;
     r->filt.thetax1.c[0] = SOUPLY_ERECT;
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, z); /* STORE GCOMP        */
     agc_erase_set_delv(agc_vec_zero());          /* STORE DELVX        */
@@ -535,7 +535,8 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
         const agc_dp_t dp = prelaunch_ram()->dpipa[k]; /* PIPA B14     */
         agc_dp_t       x  = agc_dp_sub(ip, dp, f->fildelv1[k]); /* DSU* */
 
-        x = agc_dp_add(ip, agc_dp_mul(ip, x, GEOCONS1), f->fildelv1[k]);
+        x = agc_dp_add(ip, agc_dp_mul(ip, x,
+                                      GEOCONS1), f->fildelv1[k]);
         f->fildelv1[k] = x;                                /* STORE    */
         f->intvec1[k]  = agc_dp_add(ip, x, f->intvec1[k]); /* DAD*     */
         x              = agc_dp_mul(ip, f->intvec1[k], GEOCONS2);
@@ -543,7 +544,10 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
         term[k]        = agc_dp_mul(ip, x, GEOCONS5); /* DMPR, PUSH     */
     }
 
-    (void) AGC_ASSERT(prelaunch_ram()->erectim1 >= 0);
+    if (!AGC_ASSERT(prelaunch_ram()->erectim1 >= 0))
+    {
+        prelaunch_ram()->erectim1 = 0; /* recovery: erection over     */
+    }
 }
 
 /**********************************************************************
@@ -583,7 +587,11 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
                             agc_dp_mul(ip, f->fildelv1[1], GEOCONS3));
 
     th->c[1] = agc_dp_sub(ip, t, agc_dp_mul(ip, f->intvec1[1], GEOCONS4));
-    (void) AGC_ASSERT(prelaunch_ram()->erectim1 == 0);
+
+    if (!AGC_ASSERT(prelaunch_ram()->erectim1 == 0))
+    {
+        prelaunch_ram()->erectim1 = 0; /* recovery: erection over     */
+    }
 }
 
 /**********************************************************************
@@ -607,7 +615,11 @@ static void normlop(agc_interp_t *ip)
 
     r->dpipa[0] = agc_dp_neg(v.c[1]); /* DLOAD DCOMP MPAC +3       */
     r->dpipa[1] = v.c[2];             /* MPAC +5                   */
-    (void) AGC_ASSERT(r->geocomp1 >= 0);
+
+    if (!AGC_ASSERT(r->geocomp1 == 0 || r->geocomp1 == 1))
+    {
+        r->geocomp1 = 1; /* recovery: compass                          */
+    }
 }
 
 /**********************************************************************
@@ -674,7 +686,7 @@ static agc_status_t endgtsal(agc_job_ctx_t *ctx)
         return (sleepie_next(ctx)); /* CCS LGYRO: .5 s from now     */
     }
 
-    st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
+    st              = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
     r->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
     r->alk          = prelaunch_tmark(); /* DLOAD TMARK, STORE ALK    */
 
@@ -796,7 +808,8 @@ agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx)
     agc_phase_change(5, 00275);
     agc_interp_init(&ip);
     agc_vec_t e = agc_vec_add(&ip, agc_vec_shl(&ip, agc_mat_vec(&ip,
-                                                                &agc_align_ram()->xsm,
+                                                                &agc_align_ram()
+                                                                ->xsm,
                                                                 r->filt.thetan1),
                                                1),
                               r->filt.thetax1);

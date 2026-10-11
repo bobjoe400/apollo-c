@@ -509,14 +509,17 @@ agc_status_t agc_task_readgymb(void)
 
     /* XCH AOG / MSU AOG: modular (2s complement) difference, so a gimbal
      * passing 180 deg gives the small step, not an overflow.            */
-    m_delaog = entry_angle_wrap((int32_t) aog - (int32_t) cdu_sp(agc_erase_cdux()));
+    m_delaog =
+        entry_angle_wrap((int32_t) aog - (int32_t) cdu_sp(agc_erase_cdux()));
     aog      = cdu_sp(agc_erase_cdux());
-    m_delaig = entry_angle_wrap((int32_t) aig - (int32_t) cdu_sp(agc_erase_cduy()));
+    m_delaig =
+        entry_angle_wrap((int32_t) aig - (int32_t) cdu_sp(agc_erase_cduy()));
     aig      = cdu_sp(agc_erase_cduy());
-    m_delamg = entry_angle_wrap((int32_t) amg - (int32_t) cdu_sp(agc_erase_cduz()));
-    amg      = cdu_sp(agc_erase_cduz());
-    sel      = (agc_flag_test(AGC_FLAG_CM_DSTBY) ? 0u : 2u) |
-               (agc_flag_test(AGC_FLAG_GYMDIFSW) ? 0u : 1u);
+    m_delamg =
+        entry_angle_wrap((int32_t) amg - (int32_t) cdu_sp(agc_erase_cduz()));
+    amg = cdu_sp(agc_erase_cduz());
+    sel = (agc_flag_test(AGC_FLAG_CM_DSTBY) ? 0u : 2u) |
+          (agc_flag_test(AGC_FLAG_GYMDIFSW) ? 0u : 1u);
 
     if (!AGC_ASSERT(sel <= 3u))
     {

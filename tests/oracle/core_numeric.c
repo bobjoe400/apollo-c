@@ -75,16 +75,16 @@ static long long int dpv(long long int hi, long long int lo);
 static agc_vec_t     vec_at(const long long int *in);
 static int           run_prefix(agc_interp_t *ip, const ocase_t *c, char *last,
                                 size_t n);
-static int           scalar_op(agc_interp_t *ip, const char *op,
-                               const long long int *in, const ocase_t *c,
-                               result_t *res);
-static int           shift_op(agc_interp_t *ip, const char *op,
-                              const long long int *in, const ocase_t *c,
-                              result_t *res);
-static int           vector_op(agc_interp_t *ip, const char *op,
-                               const long long int *in, const ocase_t *c,
-                               result_t *res);
-static int           run_case(const ocase_t *c);
+static int scalar_op(agc_interp_t *ip, const char *op,
+                     const long long int *in, const ocase_t *c,
+                     result_t *res);
+static int shift_op(agc_interp_t *ip, const char *op,
+                    const long long int *in, const ocase_t *c,
+                    result_t *res);
+static int vector_op(agc_interp_t *ip, const char *op,
+                     const long long int *in, const ocase_t *c,
+                     result_t *res);
+static int run_case(const ocase_t *c);
 
 /**********************************************************************
  * AGC: none (test driver) -- read the case file and run every case.
@@ -300,7 +300,8 @@ static int run_prefix(agc_interp_t *ip, const ocase_t *c, char *last,
 
         if ((len == 3) && (strncmp(p, "DDV", len) == 0))
         {
-            q     = agc_dp_div(ip, (agc_dp_t) in[used], (agc_dp_t) in[used + 1]);
+            q =
+                agc_dp_div(ip, (agc_dp_t) in[used], (agc_dp_t) in[used + 1]);
             used += 2;
         }
         else if ((len == 3) && (strncmp(p, "DOT", len) == 0))
@@ -352,11 +353,11 @@ static int run_prefix(agc_interp_t *ip, const ocase_t *c, char *last,
 static int scalar_op(agc_interp_t *ip, const char *op, const long long int *in,
                      const ocase_t *c, result_t *res)
 {
-    const long long int *w   = c->w;                       /* outputs   */
-    const long long int  mp  = dpv(dpv(w[0], w[1]), w[2]); /* TP MPAC   */
-    const agc_dp_t       a   = (agc_dp_t) in[0];           /* 1st DP    */
-    const agc_dp_t       b   = (agc_dp_t) in[1];           /* 2nd DP    */
-    agc_dp_t             t   = 0;                          /* out arg   */
+    const long long int *w  = c->w;                        /* outputs   */
+    const long long int  mp = dpv(dpv(w[0], w[1]), w[2]);  /* TP MPAC   */
+    const agc_dp_t       a  = (agc_dp_t) in[0];            /* 1st DP    */
+    const agc_dp_t       b  = (agc_dp_t) in[1];            /* 2nd DP    */
+    agc_dp_t             t  = 0;                           /* out arg   */
     agc_dp_t             coef[MAX_IN];                     /* POLY A(i) */
     agc_status_t         s;                                /* _chk      */
     int                  k;                                /* index     */
@@ -554,9 +555,9 @@ static int shift_op(agc_interp_t *ip, const char *op, const long long int *in,
 static int vector_op(agc_interp_t *ip, const char *op, const long long int *in,
                      const ocase_t *c, result_t *res)
 {
-    const agc_vec_t u    = vec_at(in);     /* first vector, 2^-28 units */
-    const agc_vec_t v    = vec_at(in + 3); /* second vector (if any)    */
-    const agc_dp_t  s    = (agc_dp_t) in[3]; /* scalar / shift count    */
+    const agc_vec_t u = vec_at(in);     /* first vector, 2^-28 units */
+    const agc_vec_t v = vec_at(in + 3); /* second vector (if any)    */
+    const agc_dp_t  s = (agc_dp_t) in[3];  /* scalar / shift count    */
     agc_mat_t       m;                     /* MXV / VXM matrix          */
     agc_dp_t        lv   = 0;              /* UNIT LV, scale of u       */
     agc_dp_t        lvsq = 0;              /* UNIT LVSQUARE, 2x scale   */
@@ -665,9 +666,9 @@ static int run_case(const ocase_t *c)
     {
         res.got = agc_vec_dot(&ip, vec_at(in), vec_at(in + 3));
     }
-    else if ((scalar_op(&ip, op, in, c, &res) == 0)
-             && (shift_op(&ip, op, in, c, &res) == 0)
-             && (vector_op(&ip, op, in, c, &res) == 0))
+    else if ((scalar_op(&ip, op, in, c, &res) == 0) &&
+             (shift_op(&ip, op, in, c, &res) == 0) &&
+             (vector_op(&ip, op, in, c, &res) == 0))
     {
         printf("unknown op %s\n", op);
 
@@ -683,8 +684,8 @@ static int run_case(const ocase_t *c)
         res.exp = 0; /* no scalar output */
     }
 
-    if ((strcmp(op, "SQRT") == 0) || (strcmp(op, "SIGN") == 0)
-        || (strcmp(op, "ABS") == 0) || (strcmp(op, "DCOMP") == 0))
+    if ((strcmp(op, "SQRT") == 0) || (strcmp(op, "SIGN") == 0) ||
+        (strcmp(op, "ABS") == 0) || (strcmp(op, "DCOMP") == 0))
     {
         res.ovf_checked = 0;
     }
@@ -694,9 +695,9 @@ static int run_case(const ocase_t *c)
         return (0);
     }
 
-    if ((res.isvec != 0)
-        && ((res.r.c[0] != mdp) || (res.r.c[1] != dpv(w[3], w[4]))
-            || (res.r.c[2] != dpv(w[5], w[6]))))
+    if ((res.isvec != 0) &&
+        ((res.r.c[0] != mdp) || (res.r.c[1] != dpv(w[3], w[4])) ||
+         (res.r.c[2] != dpv(w[5], w[6]))))
     {
         return (0);
     }

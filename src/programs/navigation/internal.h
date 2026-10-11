@@ -154,7 +154,7 @@ void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
                  agc_vec_t *ustar, agc_incorp_t *inc);
 /* A 15-bit word (CDU counter, MRKBUF) as the AGC reads it with CA: a
  * ones' complement SP number.                                           */
-int       rz_word_value(uint16_t w);
+int rz_word_value(uint16_t w);
 /* CPHIX (preferred false) or PRAXIS (true): three CDU words, R63 CSM.   */
 uint16_t *rz_tracking_angles(bool preferred);
 uint16_t  rz_word_of(int v);        /* the word of v     */

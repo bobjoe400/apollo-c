@@ -21,28 +21,16 @@ ANGLFIND / ATTITUDE_MANEUVER_ROUTINE, R60_62, IMU_CALIBRATION_AND_ALIGNMENT.
     declaration from imu.h.  Does NOT compile yet: needs the declarations/ids below.
   - NEW src/csm/prelaunch_gyrocompass.c written (ESTIMS..RESCHNG, ALLOOP tasks, ALFLT,
     ALWAYSG/COMPGS, CHKCOMED/PRELTERM, V78 AZMTHCG1).  Does NOT compile yet (same reason).
-  - TODO src/csm/prelaunch_verify.c (P03: GCOMPVER/SETNBPOS, prelaunch_verify_start =
-    MKRELEAS+OPTDATA, target_show (GODSPRET V05N30), target_flash (V06N41), target_loaded,
-    CONTIN33, TAR/EREF, TARGDRVE/RETARG (SXTANG, SXTMARK 1, OPTSTALL), target_marked,
-    NEXTBNKS/LITTLSUB (agc_sxtmark_mark(0)+agc_csm_sxtsm), AXISGEN, CALCGTA -> align ogc,
-    GCOMP4 V06N93 torque_display, torque_accepted (ERCOMP1 += OGC), GCOMP5 end, GTSOPTCS 1602).
-  - TODO imu.h: replace the old stub prototypes (agc_csm_prelaunch_estims/alwaysg/restaier/
-    chkcomed/tar_eref/gcompver/optdata/latazchk/azmthcg1/targdrve, agc_task_prelaunch_*,
-    agc_csm_finetime, agc_csm_prelaunch_earthr) with: agc_csm_prelaunch_set_pad,
-    agc_csm_prelaunch_thetan, agc_job_prelaunch_initialization/_imu_zeroed/_imu_coarse_aligned/
-    _imu_fine_aligned, agc_task_gyrocompassing_wake, agc_job_imu_test_coarse_aligned/
-    _site_display/_site_flash/_site_loaded, agc_job_gyrocompassing_start/_restart/_wait/_filter/
-    _filter_restart/_torque/_torqued/_erection_check/_azimuth_check/_azimuth_slew/_azimuth_slewed,
-    agc_task_gyrocompassing_sample/_sample_restart/_filter_start, agc_job_gyrocompass_azimuth_change/
-    _flash/_loaded, P03 jobs.
-  - TODO tools/registry.tsv: point AGC_JOB_RSTGTS1->gyrocompassing_restart, WTLISTNT->_wait,
-    ALFLT1->_filter_restart, RESTAIER->_torque, RESTEST1->_erection_check, RESTEST3->_azimuth_check,
-    RESCHNG->_azimuth_slew, COMPVER->optical_verification, GYROCOMPASS_AZIMUTH_CHANGE->
-    gyrocompass_azimuth_change, PRELAUNCH_INITIALIZATION->prelaunch_initialization,
-    TASK_ALLOOP1->sample_restart, TASK_SPECSTS->filter_start; add new ids (PRELAUNCH_IMU_ZEROED,
-    _COARSE_ALIGNED, _FINE_ALIGNED, IMU_TEST_*, GYROCOMPASSING_START/_FILTER/_TORQUED/
-    _AZIMUTH_SLEWED, GYROCOMPASS_AZIMUTH_FLASH/_LOADED, TASK_GYROCOMPASSING_SAMPLE/_WAKE,
-    P03 ids); run gen_registry.py; compile; test.
+  - DONE src/csm/prelaunch_verify.c (P03: GCOMPVER/SETNBPOS, OPTDATA V05N30/V06N41, TAR/EREF,
+    CONTIN33/TARGDRVE/RETARG(1), NEXTBNKS/NEXBNKSS/LITTLSUB(=agc_csm_sxtsm on mark 0), AXISGEN,
+    CALCGTA, GCOMP4 V06N93, ERCOMP1 += OGC, GCOMP5, GTSOPTCS 1602).  make, make test green for
+    the lane (test_imu, oracle_imu); test_rendezvous orbit-params failure is NOT this lane.
+  - DONE imu.h prototypes (P01/P02/P03/V78 jobs+tasks, set_pad, thetan) and registry rows;
+    gen_registry.py run; `make lib` GREEN (2026-10-11).  Remaining link gap: P03 functions
+    (agc_job_optical_verification*, prelaunch_verify_start) -> prelaunch_verify.c.
+* DONE rule 7: (void) AGC_ASSERT in prelaunch_align.c / prelaunch_gyrocompass.c made checked
+  asserts with recovery; check_rules on lane files: 0 hard violations (density warns remain:
+  attitude_maneuver 1.62, compensation 1.73, gyro 1.88, mode 1.57).
 * TODO oracle findings F5 / F6
 * TODO fidelity pass per file (note: CALCGA CPHIFLAG branch stores nothing -- check AGC)
 * TODO naming (digit-suffixed labels)

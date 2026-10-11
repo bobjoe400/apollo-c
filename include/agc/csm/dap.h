@@ -56,9 +56,9 @@
 typedef enum agc_csm_t5phase
 {
     AGC_CSM_T5P_RATE_FILTER = 0, /* -0 */
-    AGC_CSM_T5P_ATTITUDE_CONTROL,     /* +0 */
-    AGC_CSM_T5P_RESTART,    /* -  */
-    AGC_CSM_T5P_INIT        /* +  */
+    AGC_CSM_T5P_ATTITUDE_CONTROL, /* +0 */
+    AGC_CSM_T5P_RESTART,          /* -  */
+    AGC_CSM_T5P_INIT              /* +  */
 } agc_csm_t5phase_t;
 
 /* Branch index stored in the low word of BLAST/BLAST1/BLAST2 (p. 1059). */
@@ -152,61 +152,61 @@ typedef struct agc_csm_dp_pair
 /* ---- TVC DAP erasables ------------------------------------------------ */
 typedef struct agc_csm_tvc
 {
-    agc_dp_t omegac[AGC_CSM_AXES]; /* OMEGAXC.. steering rate cmd (S40.8)  */
+    agc_dp_t          omegac[AGC_CSM_AXES]; /* OMEGAXC.. steering rate cmd (S40.8)  */
     agc_csm_dp_pair_t omegab[AGC_CSM_AXES]; /* OMEGAXB.. body rate (Y,Z),
                                                1/2 TVCDT revs              */
-    agc_csm_dp_pair_t ptmp[6];    /* PTMP1-6 pitch filter nodes, scale 1    */
-    agc_csm_dp_pair_t ytmp[6];    /* YTMP1-6 yaw filter nodes, scale 1      */
-    agc_sp_t rollfire;         /* ROLLFIRE: +-POSMAX on, 0 off         */
-    uint16_t rollword;         /* ROLLWORD alternation bits 1,2        */
-    agc_sp_t temreg;           /* TEMREG roll firing time (1/1600 s)   */
-    agc_sp_t stroker;          /* STROKER stroke burst, 0 = no test    */
-    agc_csm_dp_pair_t perrb;   /* PERRB pitch error integrator, B-1 rev */
-    agc_csm_dp_pair_t yerrb;   /* YERRB yaw error integrator, B-1 rev   */
+    agc_csm_dp_pair_t ptmp[6];  /* PTMP1-6 pitch filter nodes, scale 1    */
+    agc_csm_dp_pair_t ytmp[6];  /* YTMP1-6 yaw filter nodes, scale 1      */
+    agc_sp_t          rollfire; /* ROLLFIRE: +-POSMAX on, 0 off         */
+    uint16_t          rollword; /* ROLLWORD alternation bits 1,2        */
+    agc_sp_t          temreg;   /* TEMREG roll firing time (1/1600 s)   */
+    agc_sp_t          stroker;  /* STROKER stroke burst, 0 = no test    */
+    agc_csm_dp_pair_t perrb;    /* PERRB pitch error integrator, B-1 rev */
+    agc_csm_dp_pair_t yerrb;    /* YERRB yaw error integrator, B-1 rev   */
     agc_csm_dp_pair_t delpbar; /* DELPBAR pitch offset tracker, 1 ascrev */
     agc_csm_dp_pair_t delybar; /* DELYBAR yaw offset tracker, 1 ascrev  */
     agc_csm_dp_pair_t pdeloff; /* PDELOFF pitch trim estimate, 1 ascrev */
     agc_csm_dp_pair_t ydeloff; /* YDELOFF yaw trim estimate, 1 ascrev   */
-    agc_dp_t ttmp1, ttmp2;     /* TTMP1/TTMP2 (PHASETMP / RTRNLOC)     */
-    agc_csm_dp_pair_t dap1;    /* DAP1 first cascade output, B-1 rev    */
-    agc_csm_dp_pair_t dap2;    /* DAP2 second cascade output, B-1 rev   */
-    agc_csm_dp_pair_t dap3;    /* DAP3 third cascade output, B-1 rev    */
-    agc_sp_t pcmd, ycmd;       /* PCMD/YCMD last actuator commands     */
-    agc_sp_t t5tvcdt;          /* T5TVCDT TIME5 word for TVCDT/2       */
-    agc_dp_t kprimedt;         /* KPRIMEDT steering gain, pi/8         */
-    agc_sp_t ktlx_i;           /* KTLX/I, 1/(8 ascrev)                 */
-    agc_sp_t tenmdot;          /* TENMDOT 10-s mass loss, kg 2^16      */
-    agc_sp_t one_conacc;       /* 1/CONACC, s^2/rev, scale 2^9         */
-    agc_sp_t vark;             /* VARK, (2^3 ascrev)                   */
-    agc_sp_t repfrac;          /* REPFRAC, 2^2                         */
-    agc_sp_t vcntr, engine_fail_vcntr; /* VCNTR, V97VCNTR gain update counters;
-                                          any negative value stands for the
-                                          AGC's -0 (V97/R40 LOTHRUST)         */
-    agc_sp_t tvcphase;           /* TVCPHASE -2..3                       */
-    uint16_t pcduypst, pcduzpst; /* PCDUYPST/PCDUZPST past CDUs (raw)    */
-    agc_sp_t mcduydot, mcduzdot; /* MCDUYDOT/MCDUZDOT minus CDU rates    */
-    agc_sp_t tvcexphs;           /* TVCEXPHS 0..6                        */
-    agc_sp_t masstmp, vcntrtmp;  /* MASSTMP, VCNTRTMP                    */
-    agc_sp_t strktime, caddy, n, revs, card; /* stroke test                 */
-    bool     bunker_task;     /* BUNKER = TC TASKOVER (vs. DAP return)*/
-    uint16_t oganow, ogapast; /* OGANOW/OGAPAST outer gimbal (raw)    */
-    agc_sp_t ogaerr;          /* OGA/OGAERR fly-from error, rev 2^0   */
-    agc_sp_t ogarate;         /* OGARATE rev/s, scale 2^-4            */
-    agc_sp_t delogart, sgnrt, deloga, iogarate; /* roll logic temporaries   */
-    int      i_sign;           /* I: +1 (CA), -1 (CS), 0 (MOREROLL)    */
+    agc_dp_t          ttmp1, ttmp2; /* TTMP1/TTMP2 (PHASETMP / RTRNLOC)     */
+    agc_csm_dp_pair_t dap1;         /* DAP1 first cascade output, B-1 rev    */
+    agc_csm_dp_pair_t dap2;         /* DAP2 second cascade output, B-1 rev   */
+    agc_csm_dp_pair_t dap3;         /* DAP3 third cascade output, B-1 rev    */
+    agc_sp_t          pcmd, ycmd;   /* PCMD/YCMD last actuator commands     */
+    agc_sp_t          t5tvcdt;      /* T5TVCDT TIME5 word for TVCDT/2       */
+    agc_dp_t          kprimedt;     /* KPRIMEDT steering gain, pi/8         */
+    agc_sp_t          ktlx_i;       /* KTLX/I, 1/(8 ascrev)                 */
+    agc_sp_t          tenmdot;      /* TENMDOT 10-s mass loss, kg 2^16      */
+    agc_sp_t          one_conacc;   /* 1/CONACC, s^2/rev, scale 2^9         */
+    agc_sp_t          vark;         /* VARK, (2^3 ascrev)                   */
+    agc_sp_t          repfrac;      /* REPFRAC, 2^2                         */
+    agc_sp_t          vcntr, engine_fail_vcntr; /* VCNTR, V97VCNTR gain update counters;
+                                                   any negative value stands for the
+                                                   AGC's -0 (V97/R40 LOTHRUST)         */
+    agc_sp_t          tvcphase;  /* TVCPHASE -2..3                       */
+    uint16_t          pcduypst, pcduzpst; /* PCDUYPST/PCDUZPST past CDUs (raw)    */
+    agc_sp_t          mcduydot, mcduzdot; /* MCDUYDOT/MCDUZDOT minus CDU rates    */
+    agc_sp_t          tvcexphs;          /* TVCEXPHS 0..6                        */
+    agc_sp_t          masstmp, vcntrtmp; /* MASSTMP, VCNTRTMP                    */
+    agc_sp_t          strktime, caddy, n, revs, card; /* stroke test                 */
+    bool              bunker_task; /* BUNKER = TC TASKOVER (vs. DAP return)*/
+    uint16_t          oganow, ogapast; /* OGANOW/OGAPAST outer gimbal (raw)    */
+    agc_sp_t          ogaerr;  /* OGA/OGAERR fly-from error, rev 2^0   */
+    agc_sp_t          ogarate; /* OGARATE rev/s, scale 2^-4            */
+    agc_sp_t          delogart, sgnrt, deloga, iogarate; /* roll logic temporaries   */
+    int               i_sign;  /* I: +1 (CA), -1 (CS), 0 (MOREROLL)    */
     agc_csm_dp_pair_t pacttmp; /* PACTTMP pitch trim (CG.CORR), 1 ascrev */
     agc_csm_dp_pair_t yacttmp; /* YACTTMP yaw trim (CG.CORR), 1 ascrev  */
-    agc_sp_t cntr, cntrtmp;    /* CNTR/CNTRTMP one-shot counter        */
+    agc_sp_t          cntr, cntrtmp; /* CNTR/CNTRTMP one-shot counter        */
     agc_csm_dp_pair_t delbrtmp; /* DELBRTMP offset tracker, 1 ascrev   */
     agc_csm_dp_pair_t errbtmp;  /* ERRBTMP body error, B-1 rev; before
                                    ATTINIT the two words hold -ERRORY,
                                    -ERRORZ (180 deg) from P40 DOTVCON   */
     agc_csm_dp_pair_t cmdtmp;   /* CMDTMP actuator command, 1 ascrev    */
     agc_csm_dp_pair_t tmp[6];   /* TMP1..TMP6 working filter nodes      */
-    agc_sp_t n10[AGC_CSM_N10_WORDS]; /* N10..D32 active filter coefficients  */
-    agc_sp_t tempdap[2];             /* TEMPDAP, TEMPDAP+1 correction fraction*/
-    agc_sp_t phasetmp;               /* PHASETMP (V46 switch-over)           */
-    agc_sp_t varst[AGC_CSM_VARST_WORDS]; /* VARST0..9 MASSPROP breakpoints  */
+    agc_sp_t          n10[AGC_CSM_N10_WORDS]; /* N10..D32 active filter coefficients  */
+    agc_sp_t          tempdap[2];    /* TEMPDAP, TEMPDAP+1 correction fraction*/
+    agc_sp_t          phasetmp;      /* PHASETMP (V46 switch-over)           */
+    agc_sp_t          varst[AGC_CSM_VARST_WORDS]; /* VARST0..9 MASSPROP breakpoints  */
 } agc_csm_tvc_t;
 
 /* ---- jet selection as a pure function (JETSLECT .. T6SETUP) ---------- */

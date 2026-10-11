@@ -279,16 +279,36 @@ typedef enum agc_job_id
     AGC_JOB_TPM_TARGETING,   /* P35 entry */
     AGC_JOB_TPM_TARGETING_OTHER_VEHICLE,
     /* ---- src/csm */
-    AGC_JOB_ALFLT1,                     /* CSM: 5.21 */
-    AGC_JOB_COMPVER,                    /* CSM: V65 GCOMPVER (4.15) */
-    AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE, /* CSM: AZMTHCG1 (V78) */
-    AGC_JOB_PRELAUNCH_INITIALIZATION,   /* CSM: P01 GTSCPSS1 (V37) */
-    AGC_JOB_RESCHNG,                    /* CSM: 5.33 */
-    AGC_JOB_RESTAIER,                   /* CSM: 5.27 */
-    AGC_JOB_RESTEST1,                   /* CSM: 5.15 */
-    AGC_JOB_RESTEST3,                   /* CSM: 5.25 */
-    AGC_JOB_RSTGTS1,                    /* CSM: 5.7  prelaunch */
-    AGC_JOB_WTLISTNT,                   /* CSM: 5.13 */
+    AGC_JOB_ALFLT1,                               /* CSM: 5.21 */
+    AGC_JOB_COMPVER,                              /* CSM: V65 GCOMPVER (4.15) */
+    AGC_JOB_GYROCOMPASSING_AZIMUTH_SLEWED,        /* CSM: SPITGYRO after IMUSTALL */
+    AGC_JOB_GYROCOMPASSING_FILTER,                /* CSM: ALFLT (SPECSTS FINDVAC) */
+    AGC_JOB_GYROCOMPASSING_START,                 /* CSM: ESTIMS (ESTICADR) */
+    AGC_JOB_GYROCOMPASSING_TORQUED,               /* CSM: RESTAIER after EARTHR* */
+    AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE,           /* CSM: AZMTHCG1 (V78) */
+    AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH,            /* CSM: AZMTHCG1 V06N29 */
+    AGC_JOB_GYROCOMPASS_AZIMUTH_LOADED,           /* CSM: AZMTHCG1 V33 */
+    AGC_JOB_IMU_TEST_COARSE_ALIGNED,              /* CSM: IMUTEST after COAALIGN */
+    AGC_JOB_IMU_TEST_SITE_DISPLAY,                /* CSM: LATAZCHK */
+    AGC_JOB_IMU_TEST_SITE_FLASH,                  /* CSM: LATAZCHK V06N41 */
+    AGC_JOB_IMU_TEST_SITE_LOADED,                 /* CSM: LATAZCHK V33 / GUESS */
+    AGC_JOB_OPTICAL_VERIFICATION_END,             /* CSM: GCOMP5 */
+    AGC_JOB_OPTICAL_VERIFICATION_MARKED,          /* CSM: RETARG after OPTSTALL */
+    AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH,    /* CSM: OPTDATA V06N41 */
+    AGC_JOB_OPTICAL_VERIFICATION_TARGET_LOADED,   /* CSM: OPTDATA V33 */
+    AGC_JOB_OPTICAL_VERIFICATION_TARGET_SHOW,     /* CSM: OPTDATA V05N30 */
+    AGC_JOB_OPTICAL_VERIFICATION_TORQUE_ACCEPTED, /* CSM: GCOMP4 V33 */
+    AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY,  /* CSM: GCOMP4 V06N93 */
+    AGC_JOB_PRELAUNCH_IMU_COARSE_ALIGNED,         /* CSM: IMUBACK after IMUCOARS */
+    AGC_JOB_PRELAUNCH_IMU_FINE_ALIGNED,           /* CSM: IMUBACK after IMUFINE */
+    AGC_JOB_PRELAUNCH_IMU_ZEROED,                 /* CSM: IMUBACK after IMUZERO */
+    AGC_JOB_PRELAUNCH_INITIALIZATION,             /* CSM: P01 GTSCPSS1 (V37) */
+    AGC_JOB_RESCHNG,                              /* CSM: 5.33 */
+    AGC_JOB_RESTAIER,                             /* CSM: 5.27 */
+    AGC_JOB_RESTEST1,                             /* CSM: 5.15 */
+    AGC_JOB_RESTEST3,                             /* CSM: 5.25 */
+    AGC_JOB_RSTGTS1,                              /* CSM: 5.7  prelaunch */
+    AGC_JOB_WTLISTNT,                             /* CSM: 5.13 */
 
     /* ---- src/csm/alignment */
     AGC_JOB_CSM_FINE_ALIGN,                  /* CSM */
@@ -845,8 +865,10 @@ typedef enum agc_task_id
     AGC_TASK_TICKTEST,  /* R30 V82 1 s tick */
 
     /* ---- src/csm */
-    AGC_TASK_ALLOOP1,  /* CSM: 5.11 */
-    AGC_TASK_SPECSTS,  /* CSM: 5.23 */
+    AGC_TASK_ALLOOP1,               /* CSM: 5.11 */
+    AGC_TASK_GYROCOMPASSING_SAMPLE, /* CSM: ALLOOP (SETGWLST) */
+    AGC_TASK_GYROCOMPASSING_WAKE,   /* CSM: GOESTIMS (LONGCALL) */
+    AGC_TASK_SPECSTS,               /* CSM: 5.23 */
 
     /* ---- src/csm/burns */
     AGC_TASK_ATERTASK,                     /* CSM: 4.51 */

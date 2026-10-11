@@ -924,9 +924,9 @@ agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx)
     else
     {
         agc_status_t st = /* CALCGRAV (moon: RTX2 = 2, SLOAD RTX2) */
-            agc_guid_calcgrav(&ip, AGC_VEHICLE_LM,
-                              agc_rendz_erasable()->body.rtx2 != 0, g->avg.rn1,
-                              &g->avg);
+                          agc_guid_calcgrav(&ip, AGC_VEHICLE_LM,
+                                            agc_rendz_erasable()->body.rtx2 != 0, g->avg.rn1,
+                                            &g->avg);
 
         if (st != AGC_STATUS_OK)
         {

@@ -94,6 +94,7 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
 
     /* The divisor is normally >= .5; UNIT's SQRTSUB root can be one LSB
      * below .5 (BUF 17777), which the AGC divides by all the same.        */
+
     if (!AGC_ASSERT(dividend >= 0) || !AGC_ASSERT(cd.hi > AGC_W_QUARTER))
     {
         return (AGC_DP_MAX);

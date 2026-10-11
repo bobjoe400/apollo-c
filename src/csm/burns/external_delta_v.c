@@ -144,7 +144,8 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
         agc_interp_init(&ip);
         agc_mat_t    refsmmat = agc_erase_refsmmat(); /* half-unit rows */
         agc_status_t st       = /* status of GET+MGA */
-            agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat, &rz->plus_mga);
+                                agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat,
+                                                  &rz->plus_mga);
 
         if (st != AGC_STATUS_OK)
         {
@@ -204,7 +205,8 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
     }
 
     agc_status_t st = /* status of GOFLASHR */
-        agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 45), &cont);
+                      agc_dsky_display(ctx, AGC_DSKY_GOFLASHR,
+                                       agc_dsky_vn(16, 45), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -375,17 +377,22 @@ static int augekugl_rows(agc_interp_t *ip, agc_dp_t v, int *k2)
 static agc_dp_t augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t gamma,
                          agc_dp_t *phi)
 {
-    int               r2 = 0;                                   /* K2 row */
-    const delrspl_k_t *a = &AUG_K[augekugl_rows(ip, v, &r2)]; /* K1 row */
-    const delrspl_k_t *b = &AUG_K[r2];                        /* K2 row */
+    int                r2 = 0;                                  /* K2 row */
+    const delrspl_k_t *a  = &AUG_K[augekugl_rows(ip, v, &r2)]; /* K1 row */
+    const delrspl_k_t *b  = &AUG_K[r2];                       /* K2 row */
     agc_dp_t           k1 = /* K1 (PDL 4), scale per p.646 */
-        agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, a->vbase), a->slope),
-                   a->bias);
+                            agc_dp_add(ip,
+                                       agc_dp_mul_trunc(agc_dp_sub(ip, v,
+                                                                   a->vbase),
+                                                        a->slope),
+                                       a->bias);
     agc_dp_t k2 = /* K2 (PDL 6), rev 2^0 like GAMMA */
-        agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, b->vbase), b->slope),
-                   b->bias);
+                  agc_dp_add(ip,
+                             agc_dp_mul_trunc(agc_dp_sub(ip, v, b->vbase),
+                                              b->slope),
+                             b->bias);
     agc_dp_t p = /* PHI, rev 2^0 */
-        agc_dp_div(ip, k1, agc_dp_sub(ip, gamma, k2)); /* DSU, BDDV */
+                 agc_dp_div(ip, k1, agc_dp_sub(ip, gamma, k2)); /* DSU, BDDV */
 
     if (agc_interp_test_ovf(ip) || p < 0 ||
         agc_dp_sub(ip, p, AUG_MAXPHIC) >= 0)
@@ -434,9 +441,9 @@ static agc_dp_t delrspl_theta(agc_interp_t *ip, const agc_tff_t *tff,
     agc_dp_t  cdelf2 = 0;    /* CDELF/2, .5 cos(theta), scale 2^1    */
     agc_dp_t  phi    = 0;    /* entry range PHI, rev 2^0             */
     agc_dp_t  gamma  =       /* GAMMA at 300 kft (PDL 2), rev 2^0    */
-        agc_entry_vgamcalc(ip, &t, t.rterm, &vgam);
+                       agc_entry_vgamcalc(ip, &t, t.rterm, &vgam);
     agc_dp_t sdelf2 = /* .5 sin(theta), scale 2^1 */
-        agc_entry_tff_trig(ip, &t, &cdelf2);
+                      agc_entry_tff_trig(ip, &t, &cdelf2);
 
     if (!AGC_ASSERT(sdelf2 >= -AGC_DP_HALF && sdelf2 <= AGC_DP_HALF))
     {
@@ -505,9 +512,9 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff,
         }
     }
 
-    agc_latlong_t ll = {agc_entry_state()->lat_spl,
-                        agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
-    agc_dp_t t = rz->tstart_orbit; /* TIME: TSTART82, cs 2^28 */
+    agc_latlong_t        ll = {agc_entry_state()->lat_spl,
+                               agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
+    agc_dp_t             t = rz->tstart_orbit; /* TIME: TSTART82, cs 2^28 */
     agc_navaux_padload_t pad;                      /* pad loads (LALOTORV) */
     agc_vec_t            r  = agc_vec_zero();      /* target, m 2^29       */
     agc_status_t         st = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
@@ -537,7 +544,7 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff,
     }
 
     agc_dp_t c = /* cos(angle)/4, scale 2^2 */
-        agc_vec_dot(ip, agc_vec_unit(ip, rz->rone, NULL, NULL),
+                 agc_vec_dot(ip, agc_vec_unit(ip, rz->rone, NULL, NULL),
                              agc_vec_unit(ip, r, NULL, NULL));
 
     agc_guid_state()->csm.rsp_rrec =

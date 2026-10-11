@@ -48,6 +48,14 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
   state.h). 200/3401/1627 pass.
 - DONE fidelity inventory, findings table, open questions, V27, noun write
   gaps, requests, Lessons; MODULE_STATUS row; io-pinball.md deviation.
+- DONE sim B1 (QUIKDSP tested DSKYFLAG): new agc_dsky_dspoutsb (CCS NOUT /
+  DSPOUTSB, no flag test) in dsky.h/state.c; agc_dsky_dspout = DSKYFLAG
+  test + it; t4rupt.c t4_quikdsp calls it (DEVIATION comment removed);
+  fresh_start_{csm,lm} xexpect B1 -> expect; sim.md B1 marked fixed;
+  unit test test_quikdsp_without_dskyflag (dsky 220/0).
+- DONE all 7 sim scenarios pass on a debug sim (no dsky assertion
+  reports). The p52 run caught my too-strict pin_ones_neg precondition
+  (MARKPLAY's NVWORD reset CSes a negative word): fixed, see Findings 17.
 - No file mid-edit. Lane complete.
 
 ## Method
@@ -92,6 +100,8 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
 | 14 | tests/io/dsky.c | own prototype of agc_erase_read_ecadr (now in state.h) | removed |
 | 15 | noun data layer | loadable noun components with no write path | listed below; request to owners |
 | 16 | V27 DSPFMEM | stub | justified below |
+| 17 | state.c pin_ones_neg | new precondition `mag <= POSMAX` was wrong: dif_first_vn / MARKPLAY CS a negative NVWORD back to positive; P52 then hit DSPALARM 01501 | precondition is any 15-bit word; postcondition: CS flips bit 15 |
+| 18 | T4RUPT QUIKDSP (sim B1) | called agc_dsky_dspout, which tests DSKYFLAG; AGC QUIKDSP is CCS NOUT / TC DSPOUTSB | agc_dsky_dspoutsb; scenarios flipped to expect |
 
 ## Open questions (lane notes) -- answers
 * io-pinball "DSPOUT lives here": yes; src/io/service/t4rupt.c calls
@@ -144,6 +154,12 @@ iteration count, which the crew may load) -- see Requests.
   rewrite (AGC_JOB_PRELAUNCH_*, GYROCOMPASSING_*, IMU_TEST_* ids and the
   imu.h prototypes in review-imu.md items 29-44). The one dsky-related
   error there (agc_dsky_endext) is fixed.
+* prog-align / burns lanes: `agc_chan_and(chan, (uint16_t) ~BIT)` passes a
+  16-bit mask, so AGC_ASSERT(mask <= AGC_CHAN_MASK) fails and the WAND is
+  skipped (bit never cleared): src/csm/optics/sxtmark.c:218 (seen in the
+  P52 scenario), src/csm/burns/servicer.c:905,
+  src/csm/burns/sps/clock.c:522,655, src/csm/burns/earth_orbit_insertion.c
+  :808. Mask with 077777u as the LM files do.
 * rendezvous / src/exec/nouns.c owner: write paths for N55 NN (LM) and NN1
   (CSM) so V25N55 works; optionally a plain store for the other ids above.
 
@@ -160,3 +176,7 @@ iteration count, which the crew may load) -- see Requests.
   a lane mid-rewrite (prelaunch_align.c) brought a removed call back.
 * The oracle was what found every display bug in this lane (-0 cases);
   the unit tests passed on all of them.
+* Run the sim scenarios on a debug build (AGC_HOST_DEBUG) after adding
+  preconditions: a helper's name ("ones_neg of a magnitude") is not its
+  contract; a P52 scenario was the only test reaching the caller that
+  used it as a general CS.

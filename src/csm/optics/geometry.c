@@ -173,7 +173,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
     align_clear_ovf(ip); /* BOV +1  */
     const agc_dp_t cos_ta = align_dot_shl(ip, star, nb1->row[2], 1); /* B0 */
-    const agc_dp_t ta = agc_dp_acos(ip, cos_ta); /* revs */
+    const agc_dp_t ta     = agc_dp_acos(ip, cos_ta); /* revs */
 
     if (ta < 0)
     {
@@ -199,7 +199,8 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
 
     *pac = align_words_to_cdu(align_words_add(
                                   ta4w,
-                                  align_words_neg(align_words_of(TWENTY_DEG_MINUS))));
+                                  align_words_neg(align_words_of(
+                                                      TWENTY_DEG_MINUS))));
     (void) AGC_ASSERT(ta4 >= 0);
     *cult = false; /* CLRGO CULTFLAG            */
 

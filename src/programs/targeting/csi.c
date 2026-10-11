@@ -244,7 +244,7 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
  * half period (TIMETHET through 359.99 deg), POSTCSI; *ellipse is true
  * when the post-CSI orbit is not to be treated as circular.              */
 static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
-                            agc_rendz_periapo_t *pa, bool *ellipse)
+                                       agc_rendz_periapo_t *pa, bool *ellipse)
 {
     agc_vec_t uh1 =
         rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
@@ -305,7 +305,8 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
     /* (P/MU)^.5 / R1 part of the apsis-angle computation (p.668), B-31 (moon
      * SL3 more).                                                             */
     agc_dp_t a = agc_dp_div(ip, agc_dp_shr(rz->body.rtsr1mu, 1), r1n); /* 2D */
-    agc_dp_t s = agc_rendz_scalar_from_body(rz, agc_dp_mul_trunc(pa->p, pa->r1));
+    agc_dp_t s =
+        agc_rendz_scalar_from_body(rz, agc_dp_mul_trunc(pa->p, pa->r1));
 
     s = agc_dp_shl(ip, agc_dp_shl(ip, s, 4), 1); /* SL4 SL1    */
     s = agc_dp_mul_trunc(agc_dp_sqrt(ip, s), a); /* SQRT DMP   */
@@ -359,7 +360,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
 /* NTP/2 (p.669): TCDH = NN HAFPA1 - pop + TCSI; TTPI - TCDH < 0 ->
  * SCNDSOL with X2 = 5 (returns false).                                  */
 static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
-                     csi_work_t *w)
+                         csi_work_t *w)
 {
     agc_dp_t nn = agc_dp_from_sp(rz->nn); /* DLOAD NN   */
     agc_dp_t t  = agc_dp_shl(ip, agc_dp_mul_trunc(nn, rz->hafpa1), 14);
@@ -741,7 +742,10 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
                 l = csi_count_pass(rz, &w);
                 break;
             case CSI_L_B2:
-                l = csi_limit_delta_v(ip, rz, &w) ? csi_trial(ip, rz, &w) : CSI_L_SCNDSOL;
+                l =
+                    csi_limit_delta_v(ip, rz, &w) ? csi_trial(ip, rz,
+                                                              &w) :
+                    CSI_L_SCNDSOL;
                 break;
             case CSI_L_SCNDSOL:
                 l = csi_scndsol(rz, &w);

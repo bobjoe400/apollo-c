@@ -75,14 +75,14 @@ typedef struct prelaunch_ram
                                    * AZ2, EL2; raw 15-bit words          */
 } prelaunch_ram_t;
 
-#define PRELAUNCH_ALARM_DRIFT   ((agc_alarm_code_t) 01600) /* overflow  */
-#define PRELAUNCH_ALARM_TORQUE  ((agc_alarm_code_t) 01601) /* bad IMU   */
-#define PRELAUNCH_ALARM_OPTICS  ((agc_alarm_code_t) 01602) /* bad optics */
-#define PRELAUNCH_MM_INIT       ((agc_sp_t) 1) /* P01 initialization     */
-#define PRELAUNCH_MM_COMPASS    ((agc_sp_t) 2) /* P02 gyrocompassing     */
-#define PRELAUNCH_MM_VERIFY     ((agc_sp_t) 3) /* P03 optical verify     */
-#define PRELAUNCH_MM_IMU_TEST   ((agc_sp_t) 7) /* P07 systems test       */
-#define PRELAUNCH_PRIO_FILTER   ((agc_prio_t) 022) /* PRIO22 (ALFLT)     */
+#define PRELAUNCH_ALARM_DRIFT  ((agc_alarm_code_t) 01600) /* overflow  */
+#define PRELAUNCH_ALARM_TORQUE ((agc_alarm_code_t) 01601) /* bad IMU   */
+#define PRELAUNCH_ALARM_OPTICS ((agc_alarm_code_t) 01602) /* bad optics */
+#define PRELAUNCH_MM_INIT      ((agc_sp_t) 1)             /* P01 initialization     */
+#define PRELAUNCH_MM_COMPASS   ((agc_sp_t) 2)             /* P02 gyrocompassing     */
+#define PRELAUNCH_MM_VERIFY    ((agc_sp_t) 3)             /* P03 optical verify     */
+#define PRELAUNCH_MM_IMU_TEST  ((agc_sp_t) 7)             /* P07 systems test       */
+#define PRELAUNCH_PRIO_FILTER  ((agc_prio_t) 022)         /* PRIO22 (ALFLT)     */
 
 prelaunch_ram_t *prelaunch_ram(void);
 

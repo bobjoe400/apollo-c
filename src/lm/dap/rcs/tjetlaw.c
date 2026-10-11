@@ -339,7 +339,10 @@ static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
             return (0);
         }
 
-        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w));
+        return (zone_axis_time(d,
+                               w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(
+                    d,
+                    w));
     }
 
     if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
@@ -352,7 +355,9 @@ static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w));
+    return (zone_axis_time(d,
+                           w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d,
+                                                                            w));
 }
 
 /**********************************************************************
@@ -421,7 +426,10 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return ((g <= 0) ? zone_between_curves(d, w, lm_dap_sat(g)) : zone_coast_jets_on(d, w));
+    return ((g <= 0) ? zone_between_curves(d, w,
+                                           lm_dap_sat(g)) : zone_coast_jets_on(
+                d,
+                w));
 }
 
 /**********************************************************************
@@ -476,7 +484,8 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
  *
  * RETURNS: agc_sp_t -- jet time, scaled 4 s
  **********************************************************************/
-static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
+static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w,
+                                   agc_sp_t a)
 {
     lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2));
     int32_t      x = (int32_t) p.hi + TJ_M1_8;
@@ -511,7 +520,8 @@ static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a
  *
  * RETURNS: agc_sp_t -- jet time, scaled 4 s
  **********************************************************************/
-static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error)
+static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w,
+                                      bool negative_error)
 {
     if (!negative_error)
     { /* RUFLAW2        */

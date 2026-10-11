@@ -331,9 +331,9 @@ agc_status_t agc_entry_targeting(void)
     es->vsquare = vsq;                                     /* VSQ/4, 34D    */
     es->leq     = agc_dp_sub(ip, vsq, AGC_ENTRY_FOURTH);   /* LEQ/4       */
     es->v       = abval;                                   /* V/2VS, 36D    */
-    es->rdot = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->vel, unitr_velocity),
-                            1); /* DOT SL1        */
-    dmag     = entry_tp_shl(
+    es->rdot    = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->vel, unitr_velocity),
+                               1); /* DOT SL1        */
+    dmag = entry_tp_shl(
         ip,
         agc_dp_mul_tp(agc_vec_abval(ip, agc_erase_delv()), AGC_ENTRY_KASCALE),
         1); /* ABVAL DMP SL1  */
@@ -799,19 +799,19 @@ static void hunt_huntest1(agc_interp_t *ip, agc_entry_state_t *es)
     }
 
     m = agc_dp_div(ip, agc_dp_mul_trunc(es->a0,
-                                  AGC_ENTRY_TWO_C1_HS), es->v1);
+                                        AGC_ENTRY_TWO_C1_HS), es->v1);
     m         = agc_dp_div(ip, agc_dp_div(ip, m, es->v1), es->lewd);
     es->alp   = m; /* 2 C1 HS A0/LEWD V1 V1 */
     es->fact1 =
         agc_dp_div(ip, es->v1, agc_dp_sub(ip, AGC_ENTRY_NEARONE, es->alp));
     m = agc_dp_mul_trunc(agc_dp_sub(ip, es->alp,
-                                  AGC_ENTRY_NEARONE), es->alp);
-    es->fact2   = agc_dp_div(ip, m, es->a0); /* ALP(ALP-1)/A0, x 805  */
+                                    AGC_ENTRY_NEARONE), es->alp);
+    es->fact2 = agc_dp_div(ip, m, es->a0); /* ALP(ALP-1)/A0, x 805  */
     /* DMP Q7, DAD ALP, SQRT: the DAD leaves MPAC+2 of the DMP product,
      * and SQRT reads all three words.                                    */
     m = agc_tp_sqrt(ip, agc_tp_add(ip, agc_dp_mul_tp(es->fact2, es->q7),
                                    agc_tp_from_dp(es->alp)));
-    m = agc_dp_sub(ip, AGC_ENTRY_NEARONE, m);
+    m           = agc_dp_sub(ip, AGC_ENTRY_NEARONE, m);
     es->vl      = agc_dp_mul_trunc(m, es->fact1); /* FACT1(1-SQRT(..))     */
     m           = agc_dp_mul_trunc(agc_dp_sub(ip, es->v1, es->vl), es->lewd);
     es->gammal1 = agc_dp_div(ip, m, es->vl); /* LEWD (V1-VL)/VL       */
@@ -837,12 +837,12 @@ static agc_dp_t hunt_negama(agc_interp_t *ip, agc_entry_state_t *es,
     }
 
     num = agc_dp_mul_trunc(agc_dp_mul_trunc(gammal,
-                                    es->vl), AGC_ENTRY_ONE_THIRD);
+                                            es->vl), AGC_ENTRY_ONE_THIRD);
     den = agc_dp_add(ip, es->ahookdv, AGC_ENTRY_ONE_24TH);
     den = agc_dp_mul_trunc(agc_dp_mul_trunc(den, es->dvl), AGC_ENTRY_CH1);
     den = agc_dp_div(ip, agc_dp_div(ip, den, es->dhook), es->vl);
     den = agc_dp_sub(ip, agc_dp_mul_trunc(es->lewd,
-                                    AGC_ENTRY_ONE_THIRD), den);
+                                          AGC_ENTRY_ONE_THIRD), den);
     es->vl    = agc_dp_add(ip, agc_dp_div(ip, num, den), es->vl);
     es->q7    = entry_dhookyq7(ip, es, es->vl);
     es->vbars = agc_dp_sq(ip, es->vl);
@@ -871,8 +871,8 @@ static agc_dp_t hunt_getdhook(agc_interp_t *ip, agc_entry_state_t *es)
     m           = agc_dp_div(ip, agc_dp_shr(es->dhook, 6), es->q7);
     es->ahookdv = agc_dp_sub(ip, m, AGC_ENTRY_CHOOK);
     m           = agc_dp_mul_trunc(agc_dp_add(ip, es->ahookdv,
-                                            AGC_ENTRY_ONE_16TH),
-                             AGC_ENTRY_CH1);
+                                              AGC_ENTRY_ONE_16TH),
+                                   AGC_ENTRY_CH1);
     m = agc_dp_mul_trunc(agc_dp_mul_trunc(m, es->dvl), es->dvl);
     m = agc_dp_div(ip, agc_dp_div(ip, m, es->dhook), es->vbars);
     g = agc_dp_sub(ip, es->gammal1, m);
@@ -946,22 +946,26 @@ static agc_dp_t entry_ranger_core(agc_interp_t *ip, agc_entry_state_t *es,
 
     es->cosg_2 =
         agc_dp_sub(ip, AGC_ENTRY_HALVE, agc_dp_shr(agc_dp_sq(ip, gammal), 2));
-    m  = agc_dp_mul_trunc(agc_dp_sub(ip, es->vbars, AGC_ENTRY_HALVE), es->vbars);
+    m = agc_dp_mul_trunc(agc_dp_sub(ip, es->vbars, AGC_ENTRY_HALVE), es->vbars);
     /* DMP DMP SL2 DAD SQRT: the shift, add and root see the TP MPAC.     */
     e4 = agc_tp_sqrt(
         ip, agc_tp_add(ip,
                        agc_tp_shift(ip,
-                                    agc_dp_mul_tp(agc_dp_mul_trunc(m, es->cosg_2),
+                                    agc_dp_mul_tp(agc_dp_mul_trunc(m,
+                                                                   es->cosg_2),
                                                   es->cosg_2), 2),
                        agc_tp_from_dp(AGC_ENTRY_ONE_16TH)));
-    m         = agc_dp_mul_trunc(agc_dp_mul_trunc(es->vbars, es->cosg_2), gammal);
+    m =
+        agc_dp_mul_trunc(agc_dp_mul_trunc(es->vbars, es->cosg_2), gammal);
     es->askep = agc_dp_shl(ip, agc_dp_asin(ip, agc_dp_div(ip, m, e4)), 1);
     es->asp1  = agc_dp_add(ip, agc_dp_mul_trunc(es->vl, AGC_ENTRY_Q3), es->q2);
     m         = agc_dp_div(ip, agc_dp_mul_trunc(agc_dp_sq(ip, es->v1), es->q7),
                            es->vbars);
-    m          = entry_log(ip, agc_dp_div(ip, m, es->a0)); /* -LOG/32      */
-    es->aspup  = agc_dp_div(ip, agc_dp_mul_trunc(m, AGC_ENTRY_C12), es->gammal1);
-    m          = agc_dp_mul_trunc(agc_dp_mul_trunc(AGC_ENTRY_KC3, es->rdot), es->v);
+    m         = entry_log(ip, agc_dp_div(ip, m, es->a0));  /* -LOG/32      */
+    es->aspup =
+        agc_dp_div(ip, agc_dp_mul_trunc(m, AGC_ENTRY_C12), es->gammal1);
+    m = agc_dp_mul_trunc(agc_dp_mul_trunc(AGC_ENTRY_KC3,
+                                          es->rdot), es->v);
     es->aspdwn = agc_dp_div(ip, agc_dp_div(ip, m, es->a0), es->lad);
     es->asp3   =
         agc_dp_mul_trunc(agc_dp_sub(ip, AGC_ENTRY_Q6, gammal), AGC_ENTRY_Q5);
@@ -1265,7 +1269,7 @@ static entry_step_t step_cont3(entry_pass_t *p)
 
     m = agc_dp_div(ip, agc_dp_mul_trunc(dv, es->ahookdv), es->dvl);
     m = agc_dp_mul_trunc(agc_dp_add(ip, m,
-                                  AGC_ENTRY_ONE_16TH), AGC_ENTRY_CH1);
+                                    AGC_ENTRY_ONE_16TH), AGC_ENTRY_CH1);
     m           = agc_dp_mul_trunc(agc_dp_mul_trunc(m, dv), dv);
     m           = agc_dp_div(ip, agc_dp_div(ip, m, es->dhook), es->vref);
     es->rdotref = agc_dp_sub(ip, es->rdotref, m); /* - RDHOOK          */
@@ -1470,11 +1474,12 @@ static entry_step_t step_constd1(entry_pass_t *p)
         return (ST_ERROR);
     }
 
-    m       = agc_dp_sub(ip, p->es->d, p->mpac); /* BDSU D           */
+    m = agc_dp_sub(ip, p->es->d, p->mpac); /* BDSU D           */
     /* DMP K1D, DAD (push), SL 8D: the shift moves MPAC+2 bits up.        */
     p->mpac = agc_tp_to_dp(agc_tp_shift(
-        ip, agc_tp_add(ip, agc_dp_mul_tp(m, AGC_ENTRY_K1D),
-                       agc_tp_from_dp(p->pd_ld)), 8));
+                               ip,
+                               agc_tp_add(ip, agc_dp_mul_tp(m, AGC_ENTRY_K1D),
+                                          agc_tp_from_dp(p->pd_ld)), 8));
 
     return (ST_NEGTESTS);
 }
@@ -1499,7 +1504,7 @@ static entry_step_t step_downcntl(entry_pass_t *p)
     m        = agc_dp_mul_trunc(agc_dp_add(ip, m, es->rdot), AGC_ENTRY_K2D);
     p->pd_ld = agc_dp_add(ip, m, agc_dp_shr(es->lad, 8));
     q        = agc_dp_mul_trunc(agc_dp_sq(ip, agc_dp_sub(ip, es->v1,
-                                                       es->v)), es->lad);
+                                                         es->v)), es->lad);
     q       = agc_dp_div(ip, q, AGC_ENTRY_TWO_C1_HS);
     m       = agc_dp_div(ip, agc_dp_sq(ip, es->v1), es->vsquare);
     m       = agc_dp_div(ip, es->a0, m); /* BDDV A0           */

@@ -597,16 +597,17 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
      * two (truncation), SL1 shifts all three, and DAD leaves MPAC+2 alone. */
     agc_dp_t pd0 = agc_dp_mul_trunc(dthetasm.c[0], cy); /* PDL 0, rev 2^1 */
     agc_dp_t a   = /* DCDU(X) numerator, rev 2^1 */
-        agc_dp_sub(ip, pd0, agc_dp_mul_trunc(dthetasm.c[2], sy));
+                   agc_dp_sub(ip, pd0, agc_dp_mul_trunc(dthetasm.c[2], sy));
 
     a          = agc_dp_div(ip, a, cz);
     dcdu->c[0] = a; /* STORE DCDU     */
-    a = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, sz), 1)); /* DMP SL1 */
+    a          = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, sz), 1)); /* DMP SL1 */
     dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a); /* BDSU DTHETASM+2 */
     /* DLOAD DTHETASM ; DMP PDDL SINCDUY DTHETASM+4 ; DMP DAD COSCDUY ; SL1 */
     pd0 = agc_dp_mul_trunc(dthetasm.c[0], sy);
     agc_tp_t z = /* DCDU(Z) / 2, rev 2^1 (TP) */
-        agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy), agc_tp_from_dp(pd0));
+                 agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy), agc_tp_from_dp(
+                                pd0));
 
     dcdu->c[2] = agc_tp_to_dp(agc_tp_shift(ip, z, 1)); /* STORE DCDU +4  */
 

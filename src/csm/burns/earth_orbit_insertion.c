@@ -55,6 +55,7 @@ static agc_dp_t insertion_vmagi, insertion_hdot,
                 insertion_alti; /* N62 display data     */
 static agc_sp_t satsw;          /* SATSW boost takeover status        */
 static agc_sp_t biasak[3]; /* BIASAK stored AK bias              */
+static agc_sp_t insertion_ak[3]; /* AK AK1 AK2 last needle commands  */
 static agc_sp_t spolyarg;  /* SPOLYARG TIME1 - RPSTART, cs       */
 
 agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
@@ -496,7 +497,9 @@ agc_status_t agc_task_atertask(void)
 {
     agc_status_t st = agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB);
 
-    agc_status_t sw = agc_dap_needler(0, 0, 0, true); /* RCSFLAGS BIT3 */
+    agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+                                      insertion_ak[2],
+                                      true); /* RCSFLAGS BIT3 */
 
     if (sw != AGC_STATUS_OK)
     {
@@ -545,24 +548,40 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
         d[i] = agc_dp_from_sp(entry_angle_wrap(w)); /* DELSTOR (MSU)  */
     }
 
-    sx        = agc_dp_sin(ip, agc_guid_cdulogic(cdu[0]));
-    cx        = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
-    sz        = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
-    cz        = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
+    sx = agc_dp_sin(ip, agc_guid_cdulogic(cdu[0]));
+    cx = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
+    sz = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
+    cz = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
     /* DMP SL1, DAD, SR2 (truncating) on the TP MPAC; the PUSHes and the
      * stores keep two words.                                             */
     ak_out[0] = agc_dp_high(agc_tp_to_dp(agc_tp_shift(
-        ip, agc_tp_add(ip, agc_tp_shift(ip, agc_dp_mul_tp(sz, d[0]), 1),
-                       agc_tp_from_dp(d[2])), -2)));
+                                             ip,
+                                             agc_tp_add(ip,
+                                                        agc_tp_shift(ip,
+                                                                     agc_dp_mul_tp(
+                                                                         sz,
+                                                                         d[0]),
+                                                                     1),
+                                                        agc_tp_from_dp(d[2])),
+                                             -2)));
     p         = agc_dp_mul_trunc(cz, d[0]); /* DMP PUSH          */
     ak_out[1] = agc_dp_high(entry_tp_shl(
-        ip, agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]),
-                       agc_tp_from_dp(entry_tp_shl(
-                           ip, agc_dp_mul_tp(p, cx), 1))), 1));
+                                ip, agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]),
+                                               agc_tp_from_dp(entry_tp_shl(
+                                                                  ip,
+                                                                  agc_dp_mul_tp(
+                                                                      p, cx),
+                                                                  1))), 1));
     ak_out[2] = agc_dp_high(entry_tp_shl(
-        ip, agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]),
-                       agc_tp_from_dp(agc_dp_neg(entry_tp_shl(
-                           ip, agc_dp_mul_tp(p, sx), 1)))), 1));
+                                ip, agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]),
+                                               agc_tp_from_dp(agc_dp_neg(
+                                                                  entry_tp_shl(
+                                                                      ip,
+                                                                      agc_dp_mul_tp(
+                                                                          p,
+                                                                          sx),
+                                                                      1)))),
+                                1));
 
     if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
     {
@@ -577,6 +596,7 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
 {
     int32_t   t = (int32_t) agc_erase_time1() - insertion_pad.rpstart;
     agc_dp_t  pitch;
+    agc_dp_t  x1; /* A1 + A2 T + ..., 32 revs (POWRSERS) */
     agc_dp_t  roll;
     agc_mat_t dc;
 
@@ -590,11 +610,16 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     }
 
     spolyarg = (agc_sp_t) t;
-    pitch    = agc_dp_shl(ip,
-                          agc_dp_poly(agc_dp_from_sp(spolyarg),
-                                      insertion_pad.poly,
-                                      insertion_pad.polynum),
-                          5); /* revs  */
+    /* POWRSERS leaves the last DMPSUB's MPAC+2 (the DAS of A0 adds to
+     * MPAC, MPAC+1 only); SL 5 shifts it up. Horner to A1, then x, A0.   */
+    x1 = (insertion_pad.polynum > 1) ?
+         agc_dp_poly(agc_dp_from_sp(spolyarg), &insertion_pad.poly[1],
+                     insertion_pad.polynum - 1) :
+         insertion_pad.poly[1];
+    pitch = entry_tp_shl(
+        ip, agc_tp_add(ip, agc_dp_mul_tp(x1, agc_dp_from_sp(spolyarg)),
+                       agc_tp_from_dp(insertion_pad.poly[0])),
+        5); /* SL 5: 32 revs -> revs */
     roll = entry_tp_shl(
         ip, agc_dp_mul_tp(agc_dp_from_sp(spolyarg), insertion_pad.satrlrt),
         14); /* SLOAD DMP SL 14D: the TP low word moves up      */
@@ -633,13 +658,95 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     agc_imu_calcgta(ip, &dc, desired); /* OGC IGC MGC */
 }
 
+/* TLOAD BIASAK, TAD AK (p. 545): the three SP words added as one TP
+ * number (DAS on the minor pair, carries into the next word up).       */
+static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
+                          agc_sp_t out[3])
+{
+    int32_t sum   = (int32_t) m[2] + (int32_t) x[2]; /* word 2, 2^-28  */
+    int32_t carry = (sum >= 16384) - (sum <= -16384);
+
+    if (!AGC_ASSERT(m != NULL && x != NULL) || !AGC_ASSERT(out != NULL))
+    {
+        return;
+    }
+
+    out[2] = (agc_sp_t) (sum - carry * 16384);
+    sum    = (int32_t) m[1] + (int32_t) x[1] + carry; /* word 1, 2^-14  */
+    carry  = (sum >= 16384) - (sum <= -16384);
+    out[1] = (agc_sp_t) (sum - carry * 16384);
+    out[0] = entry_sp_store_ovf((int32_t) m[0] + (int32_t) x[0] +
+                                carry); /* TS: OVFIND only  */
+}
+
+/* RESCALES with the TS AKn after it (p. 545): AK x SATSCALE x 4 (MP,
+ * DDOUBL, DDOUBL). A result past +-1 is stored modulo 1 and the TS skips
+ * the next CA AKn+1, so the next word is rescaled from A = +-1.
+ * DEVIATION: a skip after TS AK2 would execute the CADR NEEDLER word;
+ * that third overflow is stored modulo 1 without the skip.            */
+static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
+{
+    int32_t a = ak[0]; /* A for the next RESCALES    */
+    int     i;
+
+    if (!AGC_ASSERT(ak != NULL))
+    {
+        return;
+    }
+
+    for (i = 0; i < 3; i++)
+    {
+        int32_t h = (int32_t) (((int64_t) 4 * a * satscale) / 16384);
+
+        if (h > 32767)
+        { /* DDOUBL past the 16-bit A: end-around */
+            h -= 65535;
+        }
+        else if (h < -32767)
+        {
+            h += 65535;
+        }
+
+        ak[i] = entry_sp_store_ovf(h);
+
+        if (h >= 16384 || h <= -16384)
+        {
+            a = (h > 0) ? 1 : -1; /* TS overflow: A = +-1, skip CA */
+        }
+        else
+        {
+            a = (i < 2) ? (int32_t) ak[i + 1] : 0;
+        }
+    }
+
+    if (!AGC_ASSERT(a >= -16384 && a <= 16384))
+    {
+        return;
+    }
+}
+
+/* ATERJOB, STRSAT, ATRESET (pp. 541, 546): which way this cycle goes.
+ * Returns true when the needles are re-initialised (ATRESET).           */
+static bool aterjob_needs_reset(void)
+{
+    bool switch_on = (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u;
+
+    if (!AGC_ASSERT(satsw >= -1 && satsw <= 1))
+    {
+        return (false); /* no valid result */
+    }
+
+    /* STRSAT: SATSW <= 0 -> ATTDISP, else ATRESET. Switch off: CCS
+     * SATSW: > 0 -> ATTDISP, +0 or < 0 -> ATRESET.                       */
+    return (switch_on ? (satsw > 0) : (satsw <= 0));
+}
+
 /* ATERJOB (pp. 542-546): one display cycle, then DELAYJOB .25 s.         */
 agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
 {
     agc_dp_t desired[3];
     uint16_t cdu[3];
     agc_sp_t ak[3];
-    int      i;
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -651,18 +758,11 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* Saturn stick: end   */
     }
 
-    if ((agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u)
-    { /* STRSAT */
-        if (satsw > 0)
-        {
-            return (agc_job_atreset_after_delay(ctx) == AGC_STATUS_OK ?
-                    AGC_STATUS_OK :
-                    AGC_STATUS_BAD_ARG);
-        }
-    }
-    else if (satsw <= 0)
-    {
-        agc_status_t sw = agc_dap_needler(0, 0, 0, true); /* ATRESET             */
+    if (aterjob_needs_reset())
+    {   /* ATRESET: NEEDLER init, 60 ms        */
+        agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+                                          insertion_ak[2],
+                                          true);
 
         if (sw != AGC_STATUS_OK)
         {
@@ -679,24 +779,23 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
     agc_earth_orbit_insertion_monitor_attitude_errors(desired, cdu, ak);
 
     if (satsw <= 0)
-    {
-        for (i = 0; i < 3; i++)
+    {   /* +0: AKLOAD, then STEERSAT        */
+        if (satsw == 0)
         {
-            if (satsw == 0)
-            {
-                biasak[i] = (agc_sp_t) (-ak[i]); /* AKLOAD              */
-            }
-
-            ak[i] =
-                entry_sp_sat(4 * (int32_t) entry_sp_mp(
-                                 entry_sp_sat((int32_t) ak[i] + biasak[i]),
-                                 insertion_pad.satscale));     /* RESCALES */
+            biasak[0] = (agc_sp_t) (-ak[0]);
+            biasak[1] = (agc_sp_t) (-ak[1]);
+            biasak[2] = (agc_sp_t) (-ak[2]);
+            satsw     = -1; /* steer               */
         }
 
-        satsw = -1; /* steer               */
+        insertion_tad(biasak, ak, ak);
+        insertion_rescales(ak, insertion_pad.satscale);
     }
 
-    agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false); /* SATOUT   */
+    insertion_ak[0] = ak[0];
+    insertion_ak[1] = ak[1];
+    insertion_ak[2] = ak[2];
+    agc_status_t st = agc_dap_needler(ak[0], ak[1], ak[2], false); /* SATOUT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -732,7 +831,9 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_dap_needler(0, 0, 0, false); /* SATOUT   */
+    /* SATOUT: NEEDLER with the AK words as they stand.                  */
+    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+                                      insertion_ak[2], false);
 
     if (st != AGC_STATUS_OK)
     {
@@ -774,7 +875,9 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
 /* REDOSAT (p. 549): NEEDLER init, S-IVB takeover on, SATSTICK in 100 ms. */
 agc_status_t agc_task_redosat(void)
 {
-    agc_status_t st = agc_dap_needler(0, 0, 0, true);
+    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+                                      insertion_ak[2],
+                                      true);
 
     if (st != AGC_STATUS_OK)
     {
@@ -829,8 +932,10 @@ agc_status_t agc_task_satstick(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dap_needler(insertion_pad.satrate[r->manndx[0]], /* AK  roll  */
-                            insertion_pad.satrate[r->manndx[1]], /* AK1 pitch */
-                            insertion_pad.satrate[r->manndx[2]], /* AK2 yaw   */
+    insertion_ak[0] = insertion_pad.satrate[r->manndx[0]]; /* AK  roll  */
+    insertion_ak[1] = insertion_pad.satrate[r->manndx[1]]; /* AK1 pitch */
+    insertion_ak[2] = insertion_pad.satrate[r->manndx[2]]; /* AK2 yaw   */
+
+    return (agc_dap_needler(insertion_ak[0], insertion_ak[1], insertion_ak[2],
                             false));
 }

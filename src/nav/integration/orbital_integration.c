@@ -314,7 +314,8 @@ agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* FBR3 (p. 1336): advance the conic by DT/2.  TIX,1 skips the ROUND on
  * the mid-step entry (DIFEQCNT -12), so DT/2 SR 9 is truncated there and
  * rounded at the end of the step (DIFEQCNT -24).  DT/2 2^19 -> 2^28 cs. */
-static agc_status_t advance_conic_half_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static agc_status_t advance_conic_half_step(agc_interp_t    *ip,
+                                            agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT((ctx->stage == 1) || (ctx->stage == 2)))
     {
@@ -786,7 +787,7 @@ static agc_vec_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
 /* QUALITY3 (p. 1342-1343): the C31 term, added to the J22 term, scaled
  * by 1/R^4, rotated to reference axes (RP-TO-R) and added to FV.        */
 static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                             const obl_work_t *w, agc_vec_t j22)
+                                   const obl_work_t *w, agc_vec_t j22)
 {
     const agc_vec_t u  = w->urpv;
     const agc_dp_t  c2 = agc_dp_sq(ip, w->cphi);    /* DSQ  */
@@ -941,7 +942,8 @@ static acc_result_t accomp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
 /* DOW..1 (p. 1352): gravity-gradient derivative of a W column,
  * BETAM [3 (A.UR) UR - A] / |R|^3 for R = VECTAB entry, A = ALPHAV.      */
-static agc_vec_t body_gravity_gradient(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_vec_t r)
+static agc_vec_t body_gravity_gradient(agc_interp_t *ip,
+                                       const agc_integ_ctx_t *ctx, agc_vec_t r)
 {
     const agc_vec_t a16  = agc_vec_shr(ctx->alphav, 4); /* 0D */
     agc_dp_t        rmag = 0;

@@ -200,8 +200,8 @@ static void test_angle_wrap(void)
     CHECK(w < 0);
     CHECK(w == (agc_sp_t) ((int32_t) a170 + (int32_t) a20 - 32768));
     CHECK(entry_angle_wrap(-(int32_t) a170 - (int32_t) a20) == -w);
-    CHECK(entry_angle_wrap(1000) == 1000);       /* in range: unchanged  */
-    CHECK(entry_sp_store_ovf(16384 + 100) == 100);   /* OVFL OK store    */
+    CHECK(entry_angle_wrap(1000) == 1000);         /* in range: unchanged  */
+    CHECK(entry_sp_store_ovf(16384 + 100) == 100); /* OVFL OK store    */
     CHECK(entry_sp_store_ovf(-16384 - 100) == -100);
 }
 

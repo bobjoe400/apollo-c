@@ -477,10 +477,11 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
         agc_dp_t trun = agc_vec_dot(&ip, u, los);
 
         agc_erase_set_tang(0, (agc_sp_t) agc_dp_high(
-            agc_sp_mul((agc_sp_t) -agc_dp_high(trun), RR_RDESGAIN)));
+                               agc_sp_mul((agc_sp_t) -agc_dp_high(trun),
+                                          RR_RDESGAIN)));
         agc_sp_t sh = agc_dp_high(shaft);
 
-        sh         = rr_mode2() ? (agc_sp_t) -sh : sh; /* relay reverses in mode 2 */
+        sh = rr_mode2() ? (agc_sp_t) -sh : sh; /* relay reverses in mode 2 */
         agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN)));
         agc_vec_t urr = agc_vec_make(
             agc_dp_shl(&ip, agc_dp_mul_trunc(sn_s, cs_t), 1), agc_dp_neg(sn_t),
@@ -557,7 +558,8 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
     agc_status_t              st  = agc_rr_designate_nb(&ip, rr_word(
                                                             agc_erase_tang(0)),
                                                         rr_word(
-                                                            agc_erase_tang(1)), &res);
+                                                            agc_erase_tang(
+                                                                1)), &res);
 
     *started = (res == AGC_RR_DESIGNATE_STARTED);
 

@@ -252,7 +252,9 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
 {
     rz_flag_put(AGC_FLAG_DMENFLG, false);
     td.inc.dim9 = false;
-    *st         = agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &td.inc);
+    *st         = agc_incorp_state_deviation(ip,
+                                             &agc_integ_shared_ctx()->w,
+                                             &td.inc);
     agc_phase_change(2, 04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_INCORFLG))

@@ -276,9 +276,10 @@ typedef struct agc_rendz_periapo
 } agc_rendz_periapo_t;
 
 /* PERIAPO1: r, v at earth scale (shifted to body scale first).             */
-agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz,
-                                agc_vec_t r, agc_vec_t v,
-                                agc_rendz_periapo_t *out);
+agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip,
+                                          const agc_rendz_t *rz,
+                                          agc_vec_t r, agc_vec_t v,
+                                          agc_rendz_periapo_t *out);
 /* PERIAPO: r, v already at body scale (RVEC, VVEC).                        */
 agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
                                agc_vec_t r, agc_vec_t v,

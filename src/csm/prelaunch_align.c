@@ -73,9 +73,9 @@
 #include "agc/programs/alignment.h"
 #include "prelaunch_internal.h"
 
-#define OMEG_MS ((agc_dp_t) 65334634) /* OMEG/MS 2DEC .24339048 (07623 26552) */
-#define TIME_WRAP     ((agc_dp_t) 0x10000000L) /* DPPOSMAX + ONEDPP: 2^28 cs */
-#define ALARM_NO_P01  ((agc_alarm_code_t) 01521) /* P01 after P11       */
+#define OMEG_MS        ((agc_dp_t) 65334634) /* OMEG/MS 2DEC .24339048 (07623 26552) */
+#define TIME_WRAP      ((agc_dp_t) 0x10000000L) /* DPPOSMAX + ONEDPP: 2^28 cs */
+#define ALARM_NO_P01   ((agc_alarm_code_t) 01521) /* P01 after P11       */
 #define COMPASS_PIPADT ((agc_sp_t) 06200) /* 1/PIPAGT: 50 cs, cs B8     */
 #define TEST_PIPADT    ((agc_sp_t) 014400) /* OC14400: 100 cs, cs B8    */
 #define COMPASS_PASSES ((agc_sp_t) 0200)  /* BIT8: 128 erection cycles  */
@@ -87,8 +87,8 @@
 #define VN_SITE        ((uint16_t) ((6 << 7) | 41)) /* VNG0641: V06N41 */
 #define TEMPTIME_SHIFT 9                  /* ERTHR: SL 9D               */
 
-static agc_vec_t ervector; /* ERVECTOR: earth rate, rev/cs x 2^-19 B0  */
-static agc_dp_t  tmark;    /* TMARK: time of the last EARTHR, cs 2^28  */
+static agc_vec_t       ervector; /* ERVECTOR: earth rate, rev/cs x 2^-19 B0  */
+static agc_dp_t        tmark; /* TMARK: time of the last EARTHR, cs 2^28  */
 static prelaunch_ram_t pl; /* AINLA overlay and pad words (see header) */
 
 /**********************************************************************
@@ -98,8 +98,15 @@ static prelaunch_ram_t pl; /* AINLA overlay and pad words (see header) */
  **********************************************************************/
 prelaunch_ram_t *prelaunch_ram(void)
 {
-    (void) AGC_ASSERT(pl.lengthot >= AGC_SP_MIN);
-    (void) AGC_ASSERT(pl.premtrxc >= AGC_SP_MIN);
+    if (!AGC_ASSERT(pl.lengthot >= 0 && pl.lengthot <= AGC_SP_MAX))
+    {
+        pl.lengthot = 0; /* recovery: no passes left                  */
+    }
+
+    if (!AGC_ASSERT(pl.premtrxc >= 0 && pl.premtrxc <= AGC_SP_MAX))
+    {
+        pl.premtrxc = 1; /* recovery: no azimuth slew pending         */
+    }
 
     return (&pl);
 }
@@ -166,8 +173,11 @@ agc_vec_t agc_csm_prelaunch_ervector(void)
  **********************************************************************/
 agc_vec_t agc_csm_prelaunch_thetan(void)
 {
-    (void) AGC_ASSERT(pl.filt.thetan1.c[0] >= AGC_DP_MIN);
-    (void) AGC_ASSERT(pl.filt.thetan1.c[2] >= AGC_DP_MIN);
+    if (!AGC_ASSERT(pl.filt.thetan1.c[0] >= AGC_DP_MIN) ||
+        !AGC_ASSERT(pl.filt.thetan1.c[2] >= AGC_DP_MIN))
+    {
+        return (agc_vec_zero()); /* no valid result                   */
+    }
 
     return (pl.filt.thetan1);
 }
@@ -199,8 +209,10 @@ agc_status_t prelaunch_set_tmark(agc_dp_t t)
  **********************************************************************/
 agc_dp_t prelaunch_tmark(void)
 {
-    (void) AGC_ASSERT(tmark >= 0);
-    (void) AGC_ASSERT(tmark < TIME_WRAP);
+    if (!AGC_ASSERT(tmark >= 0) || !AGC_ASSERT(tmark < TIME_WRAP))
+    {
+        return (0); /* no valid result                               */
+    }
 
     return (tmark);
 }
@@ -338,8 +350,9 @@ static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t inc = agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, TEMPTIME_SHIFT));
-    agc_dp_t  buf[3];              /* ERCOMP1, rev 2^0              */
+    agc_vec_t inc =
+        agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, TEMPTIME_SHIFT));
+    agc_dp_t     buf[3];           /* ERCOMP1, rev 2^0              */
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -393,10 +406,11 @@ agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip,
     }
 
     const agc_mat_t *xsm = &agc_align_ram()->xsm;
-    agc_vec_t er = agc_vec_add(ip, agc_vec_shl(ip, agc_mat_vec(ip, xsm,
-                                                               pl.filt.thetan1),
-                                               1),
-                               agc_vec_make(buf[0], buf[1], buf[2]));
+    agc_vec_t        er  = agc_vec_add(ip, agc_vec_shl(ip, agc_mat_vec(ip, xsm,
+                                                                       pl.filt.
+                                                                       thetan1),
+                                                       1),
+                                       agc_vec_make(buf[0], buf[1], buf[2]));
 
     for (int i = 0; i < 3; i++)
     {
@@ -668,6 +682,7 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
     pl.perfdlay  = COMPASS_DELAY;
     pl.newazmth  = pl.launchaz; /* DCA LUNCHAZ1, DXCH NEWAZ1         */
     pl.oldazmth  = pl.launchaz; /* DCA LUNCHAZ1, DXCH OLDAZMTH       */
+
     for (int r = 0; r < 3; r++)
     {
         agc_align_ram()->xsm.row[r] = agc_vec_zero(); /* SETUPGC: ZEROING */
@@ -699,7 +714,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;          /* interpreter state                    */
     uint16_t     thetad[3];   /* THETAD: CALCGA gimbal angles, CDU    */
-    bool         ok   = false; /* stall outcome / IMUSTALL done        */
+    bool         ok = false;  /* stall outcome / IMUSTALL done        */
 
     if (!AGC_ASSERT(ctx != NULL))
     {

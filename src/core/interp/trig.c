@@ -300,11 +300,11 @@ static agc_w2_t sn1_words(agc_w2_t x)
         return ((agc_w2_t){0}); /* argument beyond +-pi/2 */
     }
 
-    sq = agc_w_dsqsub(x);                                      /* TC DSQSUB */
-    p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE);     /* POLY      */
-    r  = agc_w_dmpsub(agc_w3_top(p), x);                 /* DMPSUB by BUF2 */
-    r = agc_w_tp_shl1(r, &o); /* "NEITHER SHIFT   */
-    r = agc_w_tp_shl1(r, &o); /*  OVERFLOWS"      */
+    sq = agc_w_dsqsub(x);                                  /* TC DSQSUB */
+    p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE); /* POLY      */
+    r  = agc_w_dmpsub(agc_w3_top(p), x);                   /* DMPSUB by BUF2 */
+    r  = agc_w_tp_shl1(r, &o); /* "NEITHER SHIFT   */
+    r  = agc_w_tp_shl1(r, &o); /*  OVERFLOWS"      */
 
     if (!AGC_ASSERT(o == 0))
     {

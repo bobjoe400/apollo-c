@@ -52,12 +52,13 @@ static void cmp_raw(const char *t, const char *what, unsigned int got,
                     const char *n);
 static void cmp_sp(const char *t, const char *what, long int got,
                    const char *n);
-static void cmp_pair(const char *t, const char *n, agc_csm_dp_pair_t got);
+static void cmp_pair(const char *t, const char *n,
+                     agc_csm_dp_pair_t got);
 static agc_csm_dp_pair_t pair_in(const char *t, const char *n, int idx);
-static void fresh(void);
-static void jets(const char *t);
-static void pitch(const char *t);
-static void roll(const char *t);
+static void              fresh(void);
+static void              jets(const char *t);
+static void              pitch(const char *t);
+static void              roll(const char *t);
 
 /**********************************************************************
  * AGC: none -- run every case; the exit status reports failures.

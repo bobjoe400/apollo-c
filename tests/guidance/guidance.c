@@ -25,10 +25,10 @@
 #include <stdint.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
-#include "agc/core/flags_common.h"
 #include "agc/csm/entry.h"
 #include "agc/guidance/guidance.h"
 #include "agc/nav/auxiliary.h"
@@ -180,9 +180,9 @@ static void test_cross_product_steering(void)
 static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
                          double hi)
 {
-    agc_interp_t ip;
-    agc_tff_t    tff = {0};
-    agc_dp_t     t   = 0;
+    agc_interp_t         ip;
+    agc_tff_t            tff = {0};
+    agc_dp_t             t   = 0;
     agc_latlong_t        ll;
     agc_navaux_padload_t pad;
     agc_latlong_opt_t    opt = {false, false};
@@ -193,9 +193,9 @@ static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
     agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     agc_rendz_erasable()->rone         = r;
     agc_rendz_erasable()->tstart_orbit = 0;
-    tff.rone = r;
-    tff.vone = v;
-    tff.rtmu = (agc_dp_t) 176229826; /* 1/RTMUE, 2^17 (R30)             */
+    tff.rone                           = r;
+    tff.vone                           = v;
+    tff.rtmu                           = (agc_dp_t) 176229826; /* 1/RTMUE, 2^17 (R30)             */
     CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
     CHECK(agc_tff_calctff(&ip, &tff,
                           agc_dp_from_double(6373338.0 + 91440.0, 29),

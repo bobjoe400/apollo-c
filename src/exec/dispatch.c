@@ -998,7 +998,7 @@ static agc_status_t job_csm_programs_5(agc_job_ctx_t *ctx)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_ALFLT1 .. AGC_JOB_CSM_LANDING_SITE_DISPLAY
+ *      CSM jobs AGC_JOB_ALFLT1 .. AGC_JOB_PRELAUNCH_IMU_FINE_ALIGNED
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1016,7 +1016,7 @@ static agc_status_t job_csm_csm_0(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY))
+                    ctx->id < AGC_JOB_PRELAUNCH_IMU_ZEROED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1024,25 +1024,99 @@ static agc_status_t job_csm_csm_0(agc_job_ctx_t *ctx)
     switch ((int) ctx->id)
     {
         case AGC_JOB_ALFLT1:
-            return (agc_csm_prelaunch_estims(ctx));
+            return (agc_job_gyrocompassing_filter_restart(ctx));
         case AGC_JOB_COMPVER:
-            return (agc_csm_prelaunch_gcompver(ctx));
+            return (agc_job_optical_verification(ctx));
+        case AGC_JOB_GYROCOMPASSING_AZIMUTH_SLEWED:
+            return (agc_job_gyrocompassing_azimuth_slewed(ctx));
+        case AGC_JOB_GYROCOMPASSING_FILTER:
+            return (agc_job_gyrocompassing_filter(ctx));
+        case AGC_JOB_GYROCOMPASSING_START:
+            return (agc_job_gyrocompassing_start(ctx));
+        case AGC_JOB_GYROCOMPASSING_TORQUED:
+            return (agc_job_gyrocompassing_torqued(ctx));
         case AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE:
-            return (agc_csm_prelaunch_azmthcg1(ctx));
+            return (agc_job_gyrocompass_azimuth_change(ctx));
+        case AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH:
+            return (agc_job_gyrocompass_azimuth_flash(ctx));
+        case AGC_JOB_GYROCOMPASS_AZIMUTH_LOADED:
+            return (agc_job_gyrocompass_azimuth_loaded(ctx));
+        case AGC_JOB_IMU_TEST_COARSE_ALIGNED:
+            return (agc_job_imu_test_coarse_aligned(ctx));
+        case AGC_JOB_IMU_TEST_SITE_DISPLAY:
+            return (agc_job_imu_test_site_display(ctx));
+        case AGC_JOB_IMU_TEST_SITE_FLASH:
+            return (agc_job_imu_test_site_flash(ctx));
+        case AGC_JOB_IMU_TEST_SITE_LOADED:
+            return (agc_job_imu_test_site_loaded(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_END:
+            return (agc_job_optical_verification_end(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_MARKED:
+            return (agc_job_optical_verification_marked(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_TARGET_FLASH:
+            return (agc_job_optical_verification_target_flash(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_TARGET_LOADED:
+            return (agc_job_optical_verification_target_loaded(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_TARGET_SHOW:
+            return (agc_job_optical_verification_target_show(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_TORQUE_ACCEPTED:
+            return (agc_job_optical_verification_torque_accepted(ctx));
+        case AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY:
+            return (agc_job_optical_verification_torque_display(ctx));
+        case AGC_JOB_PRELAUNCH_IMU_COARSE_ALIGNED:
+            return (agc_job_prelaunch_imu_coarse_aligned(ctx));
+        case AGC_JOB_PRELAUNCH_IMU_FINE_ALIGNED:
+            return (agc_job_prelaunch_imu_fine_aligned(ctx));
+        default:
+            break;
+    } /* switch (ctx->id) */
+
+    return (AGC_STATUS_NOT_FOUND);
+} /* job_csm_csm_0 */
+
+/**********************************************************************
+ * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
+ *      CSM jobs AGC_JOB_PRELAUNCH_IMU_ZEROED .. AGC_JOB_CSM_ORIENTATION_COARSE
+ *
+ * ARGUMENTS:
+ *   ctx -- the job to run (core set 0); ctx->id
+ *           selects the case
+ *
+ * RETURNS: agc_status_t -- the status the job returns;
+ *          NOT_FOUND when the CSM rope has no job
+ *          for this id; BAD_ARG on a failed precondition
+ **********************************************************************/
+static agc_status_t job_csm_csm_1(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
+                    ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    switch ((int) ctx->id)
+    {
+        case AGC_JOB_PRELAUNCH_IMU_ZEROED:
+            return (agc_job_prelaunch_imu_zeroed(ctx));
         case AGC_JOB_PRELAUNCH_INITIALIZATION:
-            return (agc_csm_prelaunch_imutest(ctx));
+            return (agc_job_prelaunch_initialization(ctx));
         case AGC_JOB_RESCHNG:
-            return (agc_csm_prelaunch_restaier(ctx));
+            return (agc_job_gyrocompassing_azimuth_slew(ctx));
         case AGC_JOB_RESTAIER:
-            return (agc_csm_prelaunch_restaier(ctx));
+            return (agc_job_gyrocompassing_torque(ctx));
         case AGC_JOB_RESTEST1:
-            return (agc_csm_prelaunch_restaier(ctx));
+            return (agc_job_gyrocompassing_erection_check(ctx));
         case AGC_JOB_RESTEST3:
-            return (agc_csm_prelaunch_restaier(ctx));
+            return (agc_job_gyrocompassing_azimuth_check(ctx));
         case AGC_JOB_RSTGTS1:
-            return (agc_csm_prelaunch_estims(ctx));
+            return (agc_job_gyrocompassing_restart(ctx));
         case AGC_JOB_WTLISTNT:
-            return (agc_csm_prelaunch_chkcomed(ctx));
+            return (agc_job_gyrocompassing_wait(ctx));
         case AGC_JOB_CSM_FINE_ALIGN:
             return (agc_job_csm_fine_align(ctx));
         case AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED:
@@ -1067,16 +1141,20 @@ static agc_status_t job_csm_csm_0(agc_job_ctx_t *ctx)
             return (agc_job_csm_landing_site_axes(ctx));
         case AGC_JOB_CSM_LANDING_SITE_DISPLAY:
             return (agc_job_csm_landing_site_display(ctx));
+        case AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY:
+            return (agc_job_csm_orientation_acquire_display(ctx));
+        case AGC_JOB_CSM_ORIENTATION_COARSE:
+            return (agc_job_csm_orientation_coarse(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_0 */
+} /* job_csm_csm_1 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY .. AGC_JOB_CALC_DELTA_V_RESTART
+ *      CSM jobs AGC_JOB_CSM_ORIENTATION_COARSE_DONE .. AGC_JOB_CLOCKJOB
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1086,24 +1164,20 @@ static agc_status_t job_csm_csm_0(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_1(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_2(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_CALC_VG_BODY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_COPY40_9))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY:
-            return (agc_job_csm_orientation_acquire_display(ctx));
-        case AGC_JOB_CSM_ORIENTATION_COARSE:
-            return (agc_job_csm_orientation_coarse(ctx));
         case AGC_JOB_CSM_ORIENTATION_COARSE_DONE:
             return (agc_job_csm_orientation_coarse_done(ctx));
         case AGC_JOB_CSM_ORIENTATION_COARSE_START:
@@ -1144,16 +1218,20 @@ static agc_status_t job_csm_csm_1(agc_job_ctx_t *ctx)
             return (agc_job_calc_delta_v_body_csm(ctx));
         case AGC_JOB_CALC_DELTA_V_RESTART:
             return (agc_job_calc_delta_v_restart(ctx));
+        case AGC_JOB_CALC_VG_BODY:
+            return (agc_job_calc_vg_body_csm(ctx));
+        case AGC_JOB_CLOCKJOB:
+            return (agc_job_clockjob(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_1 */
+} /* job_csm_csm_2 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_CALC_VG_BODY .. AGC_JOB_MARKS_TFI_MGA_DISPLAY
+ *      CSM jobs AGC_JOB_COPY40_9 .. AGC_JOB_MATRXJOB
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1163,25 +1241,20 @@ static agc_status_t job_csm_csm_1(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_2(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_3(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_MARKS_TFI_MGA_DONE))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_NORMLIZE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_CALC_VG_BODY:
-            return (agc_job_calc_vg_body_csm(ctx));
-        case AGC_JOB_CLOCKJOB:
-            return (agc_job_clockjob(ctx));
         case AGC_JOB_COPY40_9:
             return (agc_job_copy40_9(ctx));
         case AGC_JOB_CROSS_PRODUCT_RESTART:
@@ -1222,16 +1295,20 @@ static agc_status_t job_csm_csm_2(agc_job_ctx_t *ctx)
             return (agc_job_gimbal_trim_only(ctx));
         case AGC_JOB_MARKS_TFI_MGA_DISPLAY:
             return (agc_job_marks_tfi_mga_display(ctx));
+        case AGC_JOB_MARKS_TFI_MGA_DONE:
+            return (agc_job_marks_tfi_mga_done(ctx));
+        case AGC_JOB_MATRXJOB:
+            return (agc_job_matrxjob(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_2 */
+} /* job_csm_csm_3 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_MARKS_TFI_MGA_DONE .. AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION
+ *      CSM jobs AGC_JOB_NORMLIZE .. AGC_JOB_RETURN_TO_EARTH_TARGET_STORE
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1241,7 +1318,7 @@ static agc_status_t job_csm_csm_2(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_3(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_4(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1249,17 +1326,13 @@ static agc_status_t job_csm_csm_3(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RETURN_TO_EARTH_TARGETING))
+                    ctx->id < AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_MARKS_TFI_MGA_DONE:
-            return (agc_job_marks_tfi_mga_done(ctx));
-        case AGC_JOB_MATRXJOB:
-            return (agc_job_matrxjob(ctx));
         case AGC_JOB_NORMLIZE:
             return (agc_job_normlize_csm(ctx));
         case AGC_JOB_POST41:
@@ -1300,16 +1373,20 @@ static agc_status_t job_csm_csm_3(agc_job_ctx_t *ctx)
             return (agc_job_return_to_earth_precision_resume(ctx));
         case AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION:
             return (agc_job_return_to_earth_propulsion_option(ctx));
+        case AGC_JOB_RETURN_TO_EARTH_TARGETING:
+            return (agc_job_return_to_earth_targeting(ctx));
+        case AGC_JOB_RETURN_TO_EARTH_TARGET_STORE:
+            return (agc_job_return_to_earth_target_store(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_3 */
+} /* job_csm_csm_4 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_RETURN_TO_EARTH_TARGETING .. AGC_JOB_TIMEBURN
+ *      CSM jobs AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY .. AGC_JOB_VHHDOT
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1319,25 +1396,20 @@ static agc_status_t job_csm_csm_3(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_4(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_5(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(
-            ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_UPDATEVG_RESTART))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_VTOGAIN))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_RETURN_TO_EARTH_TARGETING:
-            return (agc_job_return_to_earth_targeting(ctx));
-        case AGC_JOB_RETURN_TO_EARTH_TARGET_STORE:
-            return (agc_job_return_to_earth_target_store(ctx));
         case AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY:
             return (agc_job_return_to_earth_tig_display(ctx));
         case AGC_JOB_RETURN_TO_EARTH_TRANSIT_DISPLAY:
@@ -1378,16 +1450,20 @@ static agc_status_t job_csm_csm_4(agc_job_ctx_t *ctx)
             return (agc_job_tignow_csm(ctx));
         case AGC_JOB_TIMEBURN:
             return (agc_job_timeburn_csm(ctx));
+        case AGC_JOB_UPDATEVG_RESTART:
+            return (agc_job_cross_product_restart(ctx));
+        case AGC_JOB_VHHDOT:
+            return (agc_job_vhhdot(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_4 */
+} /* job_csm_csm_5 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_UPDATEVG_RESTART .. AGC_JOB_ENTRY_PREPARATION
+ *      CSM jobs AGC_JOB_VTOGAIN .. AGC_JOB_ENTRY_PREPARATION_EMS_DISPLAY
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1397,7 +1473,7 @@ static agc_status_t job_csm_csm_4(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_5(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1405,17 +1481,13 @@ static agc_status_t job_csm_csm_5(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ENTRY_PREPARATION_COMPUTE))
+                    ctx->id < AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_UPDATEVG_RESTART:
-            return (agc_job_cross_product_restart(ctx));
-        case AGC_JOB_VHHDOT:
-            return (agc_job_vhhdot(ctx));
         case AGC_JOB_VTOGAIN:
             return (agc_job_vtogain_csm(ctx));
         case AGC_JOB_AMBGUPDT:
@@ -1456,16 +1528,20 @@ static agc_status_t job_csm_csm_5(agc_job_ctx_t *ctx)
             return (agc_job_entry_initialization(ctx));
         case AGC_JOB_ENTRY_PREPARATION:
             return (agc_job_entry_preparation(ctx));
+        case AGC_JOB_ENTRY_PREPARATION_COMPUTE:
+            return (agc_job_entry_preparation_compute(ctx));
+        case AGC_JOB_ENTRY_PREPARATION_EMS_DISPLAY:
+            return (agc_job_entry_preparation_ems_display(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_5 */
+} /* job_csm_csm_6 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_ENTRY_PREPARATION_COMPUTE .. AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY
+ *      CSM jobs AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY .. AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1475,7 +1551,7 @@ static agc_status_t job_csm_csm_5(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1483,17 +1559,13 @@ static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS))
+                    ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_ENTRY_PREPARATION_COMPUTE:
-            return (agc_job_entry_preparation_compute(ctx));
-        case AGC_JOB_ENTRY_PREPARATION_EMS_DISPLAY:
-            return (agc_job_entry_preparation_ems_display(ctx));
         case AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY:
             return (agc_job_entry_preparation_prediction_display(ctx));
         case AGC_JOB_ENTRY_PREPARATION_TARGET_DISPLAY:
@@ -1532,16 +1604,20 @@ static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
             return (agc_job_cislunar_midcourse_navigation_marked(ctx));
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY:
             return (agc_job_cislunar_midcourse_navigation_mark_display(ctx));
+        case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS:
+            return (agc_job_cislunar_midcourse_navigation_optics(ctx));
+        case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE:
+            return (agc_job_cislunar_midcourse_navigation_optics_done(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_6 */
+} /* job_csm_csm_7 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS .. AGC_JOB_ORBITAL_NAVIGATION_MARK
+ *      CSM jobs AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET .. AGC_JOB_ORBITAL_NAVIGATION_MARKS
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1551,7 +1627,7 @@ static agc_status_t job_csm_csm_6(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1559,17 +1635,13 @@ static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKED))
+                    ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS:
-            return (agc_job_cislunar_midcourse_navigation_optics(ctx));
-        case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE:
-            return (agc_job_cislunar_midcourse_navigation_optics_done(ctx));
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET:
             return (agc_job_cislunar_midcourse_navigation_planet(ctx));
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT:
@@ -1610,16 +1682,20 @@ static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
             return (agc_job_orbital_navigation_landmark(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION_MARK:
             return (agc_job_orbital_navigation_mark(ctx));
+        case AGC_JOB_ORBITAL_NAVIGATION_MARKED:
+            return (agc_job_orbital_navigation_marked(ctx));
+        case AGC_JOB_ORBITAL_NAVIGATION_MARKS:
+            return (agc_job_orbital_navigation_marks(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_7 */
+} /* job_csm_csm_8 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_ORBITAL_NAVIGATION_MARKED .. AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS_DONE
+ *      CSM jobs AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT .. AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1629,7 +1705,7 @@ static agc_status_t job_csm_csm_7(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1637,17 +1713,13 @@ static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK))
+                    ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_ORBITAL_NAVIGATION_MARKED:
-            return (agc_job_orbital_navigation_marked(ctx));
-        case AGC_JOB_ORBITAL_NAVIGATION_MARKS:
-            return (agc_job_orbital_navigation_marks(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT:
             return (agc_job_orbital_navigation_marks_exit(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION_OPTICS:
@@ -1688,16 +1760,20 @@ static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
             return (agc_job_rendezvous_navigation_csm_optics(ctx));
         case AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS_DONE:
             return (agc_job_rendezvous_navigation_csm_optics_done(ctx));
+        case AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK:
+            return (agc_job_rendezvous_navigation_csm_track(ctx));
+        case AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM:
+            return (agc_job_rendezvous_sighting_mark_csm(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_8 */
+} /* job_csm_csm_9 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK .. AGC_JOB_TPI_SEARCH_INPUT
+ *      CSM jobs AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE .. AGC_JOB_TPI_SEARCH_RESPONSE
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1707,7 +1783,7 @@ static agc_status_t job_csm_csm_8(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_10(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1715,17 +1791,13 @@ static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_TPI_SEARCH_OTHER_VEHICLE))
+                    ctx->id < AGC_JOB_TPI_SEARCH_RESULTS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK:
-            return (agc_job_rendezvous_navigation_csm_track(ctx));
-        case AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM:
-            return (agc_job_rendezvous_sighting_mark_csm(ctx));
         case AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE:
             return (agc_job_rendezvous_sighting_mark_done(ctx));
         case AGC_JOB_RENDEZVOUS_SIGHTING_MARK_END:
@@ -1762,16 +1834,20 @@ static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
             return (agc_job_tpi_search_display(ctx));
         case AGC_JOB_TPI_SEARCH_INPUT:
             return (agc_job_tpi_search_input(ctx));
+        case AGC_JOB_TPI_SEARCH_OTHER_VEHICLE:
+            return (agc_job_tpi_search_other_vehicle(ctx));
+        case AGC_JOB_TPI_SEARCH_RESPONSE:
+            return (agc_job_tpi_search_response(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_9 */
+} /* job_csm_csm_10 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_TPI_SEARCH_OTHER_VEHICLE .. AGC_JOB_MARK_REQUEST_FLASH
+ *      CSM jobs AGC_JOB_TPI_SEARCH_RESULTS .. AGC_JOB_SBANDANT_CM_RECYCLE
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1781,24 +1857,20 @@ static agc_status_t job_csm_csm_9(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_10(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_11(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_SBANDANT_CM))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_SBAND_B5OFF))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_TPI_SEARCH_OTHER_VEHICLE:
-            return (agc_job_tpi_search_other_vehicle(ctx));
-        case AGC_JOB_TPI_SEARCH_RESPONSE:
-            return (agc_job_tpi_search_response(ctx));
         case AGC_JOB_TPI_SEARCH_RESULTS:
             return (agc_job_tpi_search_results(ctx));
         case AGC_JOB_TPI_SEARCH_START:
@@ -1839,16 +1911,20 @@ static agc_status_t job_csm_csm_10(agc_job_ctx_t *ctx)
             return (agc_job_mark_request_display(ctx));
         case AGC_JOB_MARK_REQUEST_FLASH:
             return (agc_job_mark_request_flash(ctx));
+        case AGC_JOB_SBANDANT_CM:
+            return (agc_job_sbandant_cm(ctx));
+        case AGC_JOB_SBANDANT_CM_RECYCLE:
+            return (agc_job_sbandant_cm_recycle(ctx));
         default:
             break;
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_10 */
+} /* job_csm_csm_11 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs AGC_JOB_SBANDANT_CM .. AGC_JOB_TERMSXT
+ *      CSM jobs AGC_JOB_SBAND_B5OFF .. AGC_JOB_TERMSXT
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -1858,7 +1934,7 @@ static agc_status_t job_csm_csm_10(agc_job_ctx_t *ctx)
  *          NOT_FOUND when the CSM rope has no job
  *          for this id; BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t job_csm_csm_11(agc_job_ctx_t *ctx)
+static agc_status_t job_csm_csm_12(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1873,10 +1949,6 @@ static agc_status_t job_csm_csm_11(agc_job_ctx_t *ctx)
 
     switch ((int) ctx->id)
     {
-        case AGC_JOB_SBANDANT_CM:
-            return (agc_job_sbandant_cm(ctx));
-        case AGC_JOB_SBANDANT_CM_RECYCLE:
-            return (agc_job_sbandant_cm_recycle(ctx));
         case AGC_JOB_SBAND_B5OFF:
             return (agc_job_sband_b5off(ctx));
         case AGC_JOB_SIGHTING_MARK_CODE_CLEAN:
@@ -1894,7 +1966,7 @@ static agc_status_t job_csm_csm_11(agc_job_ctx_t *ctx)
     } /* switch (ctx->id) */
 
     return (AGC_STATUS_NOT_FOUND);
-} /* job_csm_csm_11 */
+} /* job_csm_csm_12 */
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
@@ -2011,7 +2083,8 @@ static agc_status_t job_csm_0_1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_CALC_VG_BODY))
+    if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
+                    ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -2046,7 +2119,7 @@ static agc_status_t job_csm_0_1(agc_job_ctx_t *ctx)
         return (job_csm_programs_5(ctx));
     }
 
-    if (ctx->id < AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY)
+    if (ctx->id < AGC_JOB_PRELAUNCH_IMU_ZEROED)
     {
         return (job_csm_csm_0(ctx));
     }
@@ -2056,7 +2129,7 @@ static agc_status_t job_csm_0_1(agc_job_ctx_t *ctx)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs (AGC_JOB_CALC_VG_BODY ..)
+ *      CSM jobs (AGC_JOB_CSM_ORIENTATION_COARSE_DONE ..)
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -2073,42 +2146,42 @@ static agc_status_t job_csm_0_2(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id > AGC_JOB_NONE &&
-                    ctx->id < AGC_JOB_TPI_SEARCH_OTHER_VEHICLE))
+                    ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (ctx->id < AGC_JOB_MARKS_TFI_MGA_DONE)
+    if (ctx->id < AGC_JOB_COPY40_9)
     {
         return (job_csm_csm_2(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RETURN_TO_EARTH_TARGETING)
+    if (ctx->id < AGC_JOB_NORMLIZE)
     {
         return (job_csm_csm_3(ctx));
     }
 
-    if (ctx->id < AGC_JOB_UPDATEVG_RESTART)
+    if (ctx->id < AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY)
     {
         return (job_csm_csm_4(ctx));
     }
 
-    if (ctx->id < AGC_JOB_ENTRY_PREPARATION_COMPUTE)
+    if (ctx->id < AGC_JOB_VTOGAIN)
     {
         return (job_csm_csm_5(ctx));
     }
 
-    if (ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS)
+    if (ctx->id < AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY)
     {
         return (job_csm_csm_6(ctx));
     }
 
-    if (ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKED)
+    if (ctx->id < AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET)
     {
         return (job_csm_csm_7(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK)
+    if (ctx->id < AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT)
     {
         return (job_csm_csm_8(ctx));
     }
@@ -2118,7 +2191,7 @@ static agc_status_t job_csm_0_2(agc_job_ctx_t *ctx)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (EXECUTIVE.agc NUDIRECT / CHANJOB) --
- *      CSM jobs (AGC_JOB_TPI_SEARCH_OTHER_VEHICLE ..)
+ *      CSM jobs (AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE ..)
  *
  * ARGUMENTS:
  *   ctx -- the job to run (core set 0); ctx->id
@@ -2139,14 +2212,19 @@ static agc_status_t job_csm_0_3(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (ctx->id < AGC_JOB_SBANDANT_CM)
+    if (ctx->id < AGC_JOB_TPI_SEARCH_RESULTS)
     {
         return (job_csm_csm_10(ctx));
     }
 
-    if (ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE)
+    if (ctx->id < AGC_JOB_SBAND_B5OFF)
     {
         return (job_csm_csm_11(ctx));
+    }
+
+    if (ctx->id < AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE)
+    {
+        return (job_csm_csm_12(ctx));
     }
 
     return (job_csm_lm_0(ctx));
@@ -2180,12 +2258,12 @@ static agc_status_t job_csm(agc_job_ctx_t *ctx)
         return (job_csm_0_0(ctx));
     }
 
-    if (ctx->id < AGC_JOB_CALC_VG_BODY)
+    if (ctx->id < AGC_JOB_CSM_ORIENTATION_COARSE_DONE)
     {
         return (job_csm_0_1(ctx));
     }
 
-    if (ctx->id < AGC_JOB_TPI_SEARCH_OTHER_VEHICLE)
+    if (ctx->id < AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE)
     {
         return (job_csm_0_2(ctx));
     }
@@ -4592,7 +4670,7 @@ static agc_status_t task_csm_programs_0(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      CSM tasks AGC_TASK_ALLOOP1 .. AGC_TASK_GIMBAL_TEST_TRIM
+ *      CSM tasks AGC_TASK_ALLOOP1 .. AGC_TASK_GIMBAL_TEST_RSTRTST
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -4609,8 +4687,7 @@ static agc_status_t task_csm_csm_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE &&
-                    task < AGC_TASK_GIMBAL_TRIM_RESTART))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_GIMBAL_TEST_STEP))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4618,9 +4695,13 @@ static agc_status_t task_csm_csm_0(agc_task_id_t task)
     switch ((int) task)
     {
         case AGC_TASK_ALLOOP1:
-            return (agc_task_prelaunch_alloop1());
+            return (agc_task_gyrocompassing_sample_restart());
+        case AGC_TASK_GYROCOMPASSING_SAMPLE:
+            return (agc_task_gyrocompassing_sample());
+        case AGC_TASK_GYROCOMPASSING_WAKE:
+            return (agc_task_gyrocompassing_wake());
         case AGC_TASK_SPECSTS:
-            return (agc_task_prelaunch_specsts());
+            return (agc_task_gyrocompassing_filter_start());
         case AGC_TASK_ATERTASK:
             return (agc_task_atertask());
         case AGC_TASK_CHEKAVEG:
@@ -4657,10 +4738,6 @@ static agc_status_t task_csm_csm_0(agc_task_id_t task)
             return (agc_task_gimbal_test_relays());
         case AGC_TASK_GIMBAL_TEST_RSTRTST:
             return (agc_task_gimbal_test_rstrtst());
-        case AGC_TASK_GIMBAL_TEST_STEP:
-            return (agc_task_gimbal_test_step());
-        case AGC_TASK_GIMBAL_TEST_TRIM:
-            return (agc_task_gimbal_test_trim());
         default:
             break;
     } /* switch (task) */
@@ -4670,7 +4747,7 @@ static agc_status_t task_csm_csm_0(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      CSM tasks AGC_TASK_GIMBAL_TRIM_RESTART .. AGC_TASK_DAPINIT
+ *      CSM tasks AGC_TASK_GIMBAL_TEST_STEP .. AGC_TASK_TTG_0
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -4687,13 +4764,17 @@ static agc_status_t task_csm_csm_1(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_EXRSTRT))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_CMDSOUT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) task)
     {
+        case AGC_TASK_GIMBAL_TEST_STEP:
+            return (agc_task_gimbal_test_step());
+        case AGC_TASK_GIMBAL_TEST_TRIM:
+            return (agc_task_gimbal_test_trim());
         case AGC_TASK_GIMBAL_TRIM_RESTART:
             return (agc_task_gimbal_trim_restart());
         case AGC_TASK_IGNITION:
@@ -4734,10 +4815,6 @@ static agc_status_t task_csm_csm_1(agc_task_id_t task)
             return (agc_task_tig_5_csm());
         case AGC_TASK_TTG_0:
             return (agc_task_ttg_0());
-        case AGC_TASK_CMDSOUT:
-            return (agc_task_cmdsout());
-        case AGC_TASK_DAPINIT:
-            return (agc_task_dapinit());
         default:
             break;
     } /* switch (task) */
@@ -4747,7 +4824,7 @@ static agc_status_t task_csm_csm_1(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      CSM tasks AGC_TASK_EXRSTRT .. AGC_TASK_WAKE_CM_SM_SEPARATION
+ *      CSM tasks AGC_TASK_CMDSOUT .. AGC_TASK_READGYMB
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -4764,13 +4841,17 @@ static agc_status_t task_csm_csm_2(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_ENDMARKS))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_SETJTAG))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     switch ((int) task)
     {
+        case AGC_TASK_CMDSOUT:
+            return (agc_task_cmdsout());
+        case AGC_TASK_DAPINIT:
+            return (agc_task_dapinit());
         case AGC_TASK_EXRSTRT:
             return (agc_task_exrstrt());
         case AGC_TASK_HACKWLST:
@@ -4811,10 +4892,6 @@ static agc_status_t task_csm_csm_2(agc_task_id_t task)
             return (agc_task_jetcall());
         case AGC_TASK_READGYMB:
             return (agc_task_readgymb());
-        case AGC_TASK_SETJTAG:
-            return (agc_task_setjtag());
-        case AGC_TASK_WAKE_CM_SM_SEPARATION:
-            return (agc_task_wake_cm_sm_separation());
         default:
             break;
     } /* switch (task) */
@@ -4824,7 +4901,7 @@ static agc_status_t task_csm_csm_2(agc_task_id_t task)
 
 /**********************************************************************
  * AGC: DTCB to the 2CADR (WAITLIST.agc T3RUPT2) --
- *      CSM tasks AGC_TASK_ENDMARKS .. AGC_TASK_MARKDIF
+ *      CSM tasks AGC_TASK_SETJTAG .. AGC_TASK_MARKDIF
  *
  * ARGUMENTS:
  *   task -- the task to run (LST2 +0), called with
@@ -4848,6 +4925,10 @@ static agc_status_t task_csm_csm_3(agc_task_id_t task)
 
     switch ((int) task)
     {
+        case AGC_TASK_SETJTAG:
+            return (agc_task_setjtag());
+        case AGC_TASK_WAKE_CM_SM_SEPARATION:
+            return (agc_task_wake_cm_sm_separation());
         case AGC_TASK_ENDMARKS:
             return (agc_task_endmarks());
         case AGC_TASK_MARKDIF:
@@ -4877,7 +4958,7 @@ static agc_status_t task_csm_0_0(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_ENDMARKS))
+    if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_SETJTAG))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -4907,12 +4988,12 @@ static agc_status_t task_csm_0_0(agc_task_id_t task)
         return (task_csm_programs_0(task));
     }
 
-    if (task < AGC_TASK_GIMBAL_TRIM_RESTART)
+    if (task < AGC_TASK_GIMBAL_TEST_STEP)
     {
         return (task_csm_csm_0(task));
     }
 
-    if (task < AGC_TASK_EXRSTRT)
+    if (task < AGC_TASK_CMDSOUT)
     {
         return (task_csm_csm_1(task));
     }
@@ -4943,7 +5024,7 @@ static agc_status_t task_csm(agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (task < AGC_TASK_ENDMARKS)
+    if (task < AGC_TASK_SETJTAG)
     {
         return (task_csm_0_0(task));
     }

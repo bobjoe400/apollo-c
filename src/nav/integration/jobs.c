@@ -451,7 +451,8 @@ static void notime(agc_integ_ctx_t *ctx, bool *slipped)
  * to TDEC1; RN1 VN1 PIPTIME1 = RATT VATT TAT; MPAC = TAT - TIME2,1.
  * DEVIATION: the AGC returns with INHINT still set; here RELINT.        */
 static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                            agc_dp_t tdec1, agc_integ_midtoav_out_t *out)
+                                      agc_dp_t tdec1,
+                                      agc_integ_midtoav_out_t *out)
 {
     agc_flag_put(AGC_FLAG_DIM0FLAG, false);
     agc_integ_thisvint(); /* always OK     */

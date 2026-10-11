@@ -32,8 +32,8 @@
 #define TSCALE ((agc_dp_t) 26214400) /* TSCALE 2DEC 100 B-10          */
 /* AGSRND1 (2OCT 0000060000) + AGSRND2 (2OCT 0000037777): half a high-word
  * LSB, added in two steps; here as one DP addend.                        */
-#define AGS_ROUND    ((agc_dp_t) 8192)
-#define AGSBUFF_TIME 12 /* AGSBUFF +12D: the DP time     */
+#define AGS_ROUND      ((agc_dp_t) 8192)
+#define AGSBUFF_TIME   12 /* AGSBUFF +12D: the DP time     */
 #define AGS_MINUS_ZERO ((uint16_t) 077777) /* -0 high word (AEA: -1)  */
 
 static uint16_t agsbuff[AGC_ALIGN_AGSBUFF_WORDS];

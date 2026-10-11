@@ -347,10 +347,10 @@ void agc_chan_and(int chan, uint16_t mask)
         return;
     }
 
-    if (!AGC_ASSERT(mask <= AGC_CHAN_MASK))
-    {
-        return;
-    }
+    /* WAND operates on 15-bit words. A caller writing ~BIT on a 15-bit
+     * value sets bit 16 in a uint16_t; the AGC never sees that bit, so
+     * neither do we. */
+    mask = (uint16_t) (mask & AGC_CHAN_MASK);
 
     if (!AGC_ASSERT(chan_writable(chan)))
     {

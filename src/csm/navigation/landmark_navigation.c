@@ -554,7 +554,9 @@ static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
     rz_bvectors(ip, ln.rclp, ln.um, &ln.ustar, &ln.inc); /* S2BVTRS  */
     ln.inc.bvector[2] = agc_vec_neg(ln.inc.bvector[0]);  /* B2 = -B0 */
     ln.inc.dim9       = true;
-    *st               = agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &ln.inc);
+    *st               = agc_incorp_state_deviation(ip,
+                                                   &agc_integ_shared_ctx()->w,
+                                                   &ln.inc);
     agc_phase_change(2, 04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_22DSPFLG))

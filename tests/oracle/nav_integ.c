@@ -295,11 +295,11 @@ static void run_wmatrix(const char *t, long tol_w)
     agc_interp_init(&ip);
     (void) agc_integ_ctx_init(&ctx);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
-    sv        = ctx.sv;
-    sv.rrect  = oracle_in_vec(t, "RRECTCSM");
-    sv.vrect  = oracle_in_vec(t, "RRECTCSM+6");
-    sv.rcv    = oracle_in_vec(t, "RRECTCSM+26");
-    sv.vcv    = oracle_in_vec(t, "RRECTCSM+32");
+    sv       = ctx.sv;
+    sv.rrect = oracle_in_vec(t, "RRECTCSM");
+    sv.vrect = oracle_in_vec(t, "RRECTCSM+6");
+    sv.rcv   = oracle_in_vec(t, "RRECTCSM+26");
+    sv.vcv   = oracle_in_vec(t, "RRECTCSM+32");
     (void) agc_integ_perm_set(AGC_VEHICLE_CSM, &sv);
     ctx.w.blk[0][0] = oracle_in_vec(t, "W");
     ctx.w.blk[1][3] = oracle_in_vec(t, "W+72");

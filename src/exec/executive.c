@@ -164,7 +164,8 @@ static int32_t prio_word(int i)
 
     const core_set_t *c = &core[i]; /* core set i */
     int32_t           w = /* the priority word, before the sign */
-        ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1);
+                          ((int32_t) c->prio <<
+                 EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1);
 
     if (!AGC_ASSERT(c->vac >= -1 && c->vac < AGC_EXEC_MAX_VACS))
     {
@@ -199,8 +200,9 @@ static void activity_light(bool on)
      * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2. The
      * WAND mask is the 15-bit complement of bit 2 (077775).             */
     _Static_assert(AGC_CH011_COMPACT == 000002, "AGC constant");
-    _Static_assert((AGC_CHAN_MASK & ~(unsigned int) AGC_CH011_COMPACT) == 077775u,
-                   "CS TWO");
+    _Static_assert(
+        (AGC_CHAN_MASK & ~(unsigned int) AGC_CH011_COMPACT) == 077775u,
+        "CS TWO");
 
     if (on)
     {

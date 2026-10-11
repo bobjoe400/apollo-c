@@ -46,8 +46,8 @@
  * 24192 cs) over the whole TDEC range, 2^28 cs, is 11096 steps = 44384
  * passes with W.                                                         */
 #define AGC_INTEG_MAX_PASSES 60000
-#define AGC_INTEG_W_COLUMNS 9 /* W columns (6 for 6x6, 9 for 9x9)      */
-#define AGC_INTEG_VECTAB    6 /* VECTAB: 3 stages x (R, R - RPQ)       */
+#define AGC_INTEG_W_COLUMNS  9 /* W columns (6 for 6x6, 9 for 9x9)      */
+#define AGC_INTEG_VECTAB     6 /* VECTAB: 3 stages x (R, R - RPQ)       */
 
 /* Octal codes (kept as in the listing). */
 #define AGC_INTEG_ALARM_INT_ABRT \

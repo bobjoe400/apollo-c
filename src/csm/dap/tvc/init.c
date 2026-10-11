@@ -300,7 +300,7 @@ static agc_status_t tvc_init_filter_timing(int lem)
     agc_sp_t half_dt = (agc_sp_t) ((lem != 0) ? 4 : 2); /* ?: LM on/off */
 
     t->t5tvcdt = (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX;
-                                                          AD BIT1       */
+                                                           AD BIT1       */
     agc_flag_clear(AGC_FLAG_SWTOVER);          /* reset SWTOVER          */
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: LXCH A exchanges the
      * product words (14 places left); scaled pi/8                       */
@@ -413,6 +413,7 @@ agc_status_t agc_task_tvc_initialize(void)
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
     int lem = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
+
     /* CNTR: ?: LM on (BIT1) or off (0)                                   */
 
     tvc_loadcoef((lem != 0) ? TVC_COEF_HB : TVC_COEF_CSM); /* ?: LM   */
@@ -513,9 +514,9 @@ agc_status_t csm_tvc_swichovr_body(void)
 
     t->kprimedt =
         agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering, pi/8 */
-    t->repfrac  = FREPFRAC;   /* TMC loop, 2^2                        */
-    t->pdeloff  = t->delpbar; /* update the trim estimates            */
-    t->ydeloff  = t->delybar;
+    t->repfrac = FREPFRAC;   /* TMC loop, 2^2                        */
+    t->pdeloff = t->delpbar; /* update the trim estimates            */
+    t->ydeloff = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp; /* restore TVCPHASE                    */
 

@@ -51,6 +51,7 @@ static bool             reg_is(const agc_dsky_state_t *s, int r, long int n,
 static bool reg_blank(const agc_dsky_state_t *s, int r);
 static void test_display_clock_time(agc_vehicle_t veh);
 static void test_relay_words(void);
+static void test_quikdsp_without_dskyflag(void);
 static void test_load_component_one(void);
 static void test_load_three_components(void);
 static void test_clear(void);
@@ -75,6 +76,7 @@ int main(void)
     test_display_clock_time(AGC_VEHICLE_CSM);
     test_display_clock_time(AGC_VEHICLE_LM);
     test_relay_words();
+    test_quikdsp_without_dskyflag();
     test_load_component_one();
     test_load_three_components();
     test_clear();
@@ -290,6 +292,33 @@ static void test_relay_words(void)
     CHECK(saw_decimal_display && noun_clock_time);
     CHECK(sent >= 2 && agc_dsky_nout() == 0);
     CHECK(agc_dsky_dspout(&w) == AGC_STATUS_NOT_FOUND);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- QUIKDSP (T4RUPT_PROGRAM C p. 137) sends pending
+ *      DSPTAB words without DSKYFLAG; DSPOUT (p. 135) does not (sim B1)
+ *
+ * FUNCTION NAME: test_quikdsp_without_dskyflag
+ **********************************************************************/
+static void test_quikdsp_without_dskyflag(void)
+{
+    uint16_t w = 0; /* channel 10 word */
+
+    fresh(AGC_VEHICLE_CSM);
+    agc_flag_clear((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
+    CHECK(agc_dsky_nout() == 11); /* DSPOFF blanks pending */
+    CHECK(agc_dsky_dspout(&w) == AGC_STATUS_NOT_FOUND && w == 0u);
+    CHECK(agc_dsky_dspoutsb(&w) == AGC_STATUS_OK && w != 0u);
+    CHECK(agc_dsky_nout() == 10);
+    CHECK(agc_chan_read((int) AGC_CHAN_OUT0) == w);
+
+    for (int i = 0; i < 20 && agc_dsky_dspoutsb(&w) == AGC_STATUS_OK; i++)
+    {
+        CHECK(w != 0u);
+    }
+
+    CHECK(agc_dsky_nout() == 0);
+    CHECK(agc_dsky_dspoutsb(&w) == AGC_STATUS_NOT_FOUND && w == 0u);
 }
 
 /**********************************************************************

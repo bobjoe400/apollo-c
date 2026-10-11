@@ -992,7 +992,8 @@ agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm,
         agc_dp_sqrt(ip, agc_dp_sub(ip, agc_dp_div(ip, d, prod), t->tffvsq));
     *vgam = agc_dp_div(ip, s, t->rtmu);
     d     =
-        agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp), agc_dp_mul_trunc(s, t->nrterm));
+        agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp),
+                   agc_dp_mul_trunc(s, t->nrterm));
 
     if (!AGC_ASSERT(s >= 0))
     {
@@ -1020,7 +1021,8 @@ agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
     vb = agc_dp_sq(ip,
                    agc_dp_div(ip, agc_dp_sub(ip, vgam, AGC_ENTRY_KFT36_PER_S),
                               AGC_ENTRY_KFT20_PER_S));  /* B-2 */
-    num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_mul_trunc(vb, AGC_ENTRY_KR1), gam),
+    num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_mul_trunc(vb,
+                                                         AGC_ENTRY_KR1), gam),
                      AGC_ENTRY_M6_05DEG);
     num = agc_dp_mul_trunc(num, AGC_ENTRY_KR2);
     g   =

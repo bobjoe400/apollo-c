@@ -382,7 +382,8 @@ agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx)
     agc_vec_t hbsm = agc_vec_mat(&ip, g->lm.hbeamnb, &g->lm.xnbpip); /* 2^2   */
     agc_vec_t vrel =
         agc_vec_add(&ip, agc_vec_shl(&ip, g->lm.v1s, 2), g->lm.delvs);
-    agc_dp_t dop = agc_dp_mul_trunc(agc_vec_dot(&ip, vrel, hbsm), g->lm.radskal);
+    agc_dp_t dop =
+        agc_dp_mul_trunc(agc_vec_dot(&ip, vrel, hbsm), g->lm.radskal);
 
     if (!agc_flag_test(AGC_FLAG_ALTSCALE))
     { /* LOW SCALE: RESCALE     */
@@ -492,7 +493,8 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm,
     agc_guid_quictrig(&g->trig, lrcdu); /* CDUSPOT = LRY LRZ LRX  */
     *vbsm = g->lm.vbeamnb[s];
     agc_guid_nbsm(&g->trig, vbsm); /* *NBSM*                 */
-    agc_dp_t  vm    = agc_dp_mul_trunc(agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);
+    agc_dp_t vm =
+        agc_dp_mul_trunc(agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);
     agc_vec_t delvu =
         agc_vec_scale(ip,
                       agc_vec_make(agc_dp_pack(g->lm.piptem[0], 0),

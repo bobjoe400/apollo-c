@@ -43,8 +43,8 @@
 
 static int failures; /* failed checks so far */
 
-static void     check(int cond, const char *what, long long int got,
-                      long long int exp);
+static void check(int cond, const char *what, long long int got,
+                  long long int exp);
 static void     eq(const char *what, long long int got, long long int exp);
 static void     near(const char *what, double got, double exp, double tol);
 static agc_dp_t oct2(int hi, int lo);
@@ -94,7 +94,8 @@ int main(void)
  *   got   long long int  I  value computed
  *   exp   long long int  I  value expected
  **********************************************************************/
-static void check(int cond, const char *what, long long int got, long long int exp)
+static void check(int cond, const char *what, long long int got,
+                  long long int exp)
 {
     if (cond == 0)
     {
@@ -218,7 +219,8 @@ static void test_shifts(void)
     eq("VSL wraps", agc_vec_shl(&ip, agc_vec_make(0, AGC_DP_HALF, 1), 1).c[1],
        0);
     eq("VSL ovf", ip.ovfind, 1);
-    eq("TP shift right", (long long int) agc_tp_shift(&ip, (agc_tp_t) 1 << 40, -20),
+    eq("TP shift right",
+       (long long int) agc_tp_shift(&ip, (agc_tp_t) 1 << 40, -20),
        1LL << 20);
     eq("TP norm", (long long int) agc_tp_norm(1, &sh), 1LL << 41);
     eq("TP norm count", sh, 41);
@@ -258,7 +260,8 @@ static void test_add_mul(void)
     eq("DMP truncates", agc_dp_mul_trunc(AGC_DP_HALF, -3), -1);
     eq("DSQ", agc_dp_sq(&ip, AGC_DP_HALF), AGC_DP_QUARTER);
     eq("DMPNSUB", agc_dp_mul_int(1000, 7), 7000);
-    eq("SHORTMP", (long long int) agc_tp_mul_sp((agc_tp_t) 1 << 41, AGC_SP_HALF),
+    eq("SHORTMP", (long long int) agc_tp_mul_sp((agc_tp_t) 1 << 41,
+                                                AGC_SP_HALF),
        1LL << 40);
     eq("ROUND", agc_tp_round(&ip, ((agc_tp_t) 7 << 14) + 8192), 8);
 }
@@ -321,7 +324,8 @@ static void test_sqrt_trig(void)
     eq("COS 1/8", agc_dp_cos(&ip, 04000 * 16384), oct2(013240, 023631));
     eq("COS 0", agc_dp_cos(&ip, 0), AGC_DP_HALF);
     eq("SQRT abort", agc_dp_sqrt_chk(&ip, -2 * 16384, &r), AGC_STATUS_POODOO);
-    eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(&ip, -5, &r) * 100 + r, 0);
+    eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(&ip, -5,
+                                                        &r) * 100 + r, 0);
     eq("ACOS 0", agc_dp_acos(&ip, 0), AGC_DP_QUARTER);
     eq("ASIN 0", agc_dp_asin(&ip, 0), 0);
     eq("ACOS alarm", agc_dp_acos_chk(&ip, AGC_DP_HALF + 2 * 16384, &r),
@@ -379,11 +383,14 @@ static void test_vectors(void)
     agc_dp_t     lv   = 0; /* LV, scaled 2^0 */
     agc_dp_t     lvsq = 0; /* LVSQUARE, scaled 2^0 */
     agc_vec_t    u    = /* test vector, scaled 2^0 */
-        agc_vec_make(agc_dp_from_double(0.3, 0), agc_dp_from_double(-0.2, 0),
-                     agc_dp_from_double(0.1, 0));
+                        agc_vec_make(agc_dp_from_double(0.3,
+                                                        0),
+                                     agc_dp_from_double(-0.2, 0),
+                                     agc_dp_from_double(0.1, 0));
     agc_vec_t v = /* second vector, scaled 2^0 */
-        agc_vec_make(agc_dp_from_double(0.05, 0), agc_dp_from_double(0.4, 0),
-                     agc_dp_from_double(-0.25, 0));
+                  agc_vec_make(agc_dp_from_double(0.05, 0),
+                               agc_dp_from_double(0.4, 0),
+                               agc_dp_from_double(-0.25, 0));
     agc_vec_t r; /* result vector, scaled 2^0 */
     agc_mat_t m = agc_mat_identity_half(); /* I/2, then a row replaced */
     agc_mat_t mm; /* M M, scaled 2^0 */

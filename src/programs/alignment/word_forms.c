@@ -70,8 +70,8 @@ align_words_t align_words_of(agc_dp_t v)
     align_words_t w; /* the pair, same scale as v */
 
     (void) AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
-    w.hi          = agc_dp_high(v);
-    w.lo          = agc_dp_low(v);
+    w.hi = agc_dp_high(v);
+    w.lo = agc_dp_low(v);
     (void) AGC_ASSERT((w.lo >= -WORD_MAX) && (w.lo <= WORD_MAX));
 
     return (w);
@@ -154,8 +154,8 @@ align_words_t align_words_neg(align_words_t a)
 
     (void) AGC_ASSERT((a.hi >= -WORD_MAX) && (a.hi <= WORD_MAX));
     (void) AGC_ASSERT((a.lo >= -WORD_MAX) && (a.lo <= WORD_MAX));
-    r.hi          = (agc_sp_t) -a.hi;
-    r.lo          = (agc_sp_t) -a.lo;
+    r.hi = (agc_sp_t) -a.hi;
+    r.lo = (agc_sp_t) -a.lo;
 
     return (r);
 }

@@ -187,8 +187,8 @@ static uint16_t arith_reg16(int32_t v)
  **********************************************************************/
 static agc_sp_t arith_val16(uint16_t w)
 {
-    agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u)
-                                       : (agc_sp_t) (w & 037777u);
+    agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u) :
+                 (agc_sp_t) (w & 037777u);
 
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
     {

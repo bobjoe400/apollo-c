@@ -492,7 +492,8 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
     rz->delvtpf = rz_abval(ip, agc_vec_sub(ip, rz->vpass4, rz->vtprime));
     agc_rendz_periapo_t pa;
 
-    st          = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
+    st = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime,
+                                      &pa);
     rz->posttpi = agc_rendz_scalar_from_body(rz, pa.hperi);
     agc_erase_set_tig(ttpi);
 

@@ -524,5 +524,6 @@ agc_status_t agc_job_rendezvous_params_update(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable();
 
-    return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_update_states(&ip, rz));
+    return (rz_is_csm() ? rpd_csm_havebase(&ip, rz) : rpd_lm_update_states(&ip,
+                                                                           rz));
 }

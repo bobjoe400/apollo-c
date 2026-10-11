@@ -619,7 +619,8 @@ agc_status_t agc_task_getcadr(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(pending_longcadr != AGC_TASK_NONE && pending_longcadr != AGC_TASK_GETCADR))
+    if (!AGC_ASSERT(pending_longcadr != AGC_TASK_NONE &&
+                    pending_longcadr != AGC_TASK_GETCADR))
     {
         return (AGC_STATUS_BAD_ARG);
     }

@@ -173,9 +173,11 @@ static void test_periapo_circular(void)
 
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
     agc_rendz_periapo_t pa;
-    agc_status_t        st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0),
-                                                vel(0.0, sqrt(
-                                                        MU / R0), 0.0), &pa);
+    agc_status_t        st =
+        agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0),
+                                     vel(0.0, sqrt(
+                                             MU / R0), 0.0),
+                                     &pa);
 
     CHECK(st == AGC_STATUS_OK);
     /* Measured: APSIDES (nav-conic) gives ECC 6.9E-4 for this circular

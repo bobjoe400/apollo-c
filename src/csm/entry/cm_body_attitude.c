@@ -167,12 +167,12 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
     s         = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
     angles[0] = agc_imu_arctrig(ip, s, c);
-    s = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->uby, es->uxa), 1); /* DOT SL1 */
+    s         = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->uby, es->uxa), 1); /* DOT SL1 */
     angles[1] = agc_dp_asin(ip, s);
     s         = agc_vec_dot(ip, ul, es->ubx); /* -SIN(ALFA)/4 */
     c         = agc_vec_dot(ip, ul, es->ubz); /* COS(ALFA)/4  */
     angles[2] = agc_imu_arctrig(ip, s, c);
-    c = entry_tp_shl(
+    c         = entry_tp_shl(
         ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, es->uza), 1);
     angles[3] = agc_dp_acos(ip, c);
 

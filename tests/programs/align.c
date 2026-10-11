@@ -464,14 +464,14 @@ static void test_ags_scalevec(void)
     CHECK(ags_read(out[5]) == -656);  /* VZ            */
     /* A negative sum smaller than one LSB: the two-step AGSRND add leaves
      * -0 (77777), read -1 (-0.6 + 0.5 rounds down); -0.4 + 0.5 reads 0. */
-    const double ft_lsb = 1.0e6 / 6407.9; /* R: metres per 512 ft (x2) */
-    const double v_lsb  = 1.0 / 656.17;   /* V: m/cs per 0.5 ft/s (x2) */
-    const agc_vec_t rs  = agc_vec_make(agc_dp_from_double(-0.6 * ft_lsb, 27),
-                                       agc_dp_from_double(-0.4 * ft_lsb, 27),
-                                       0);
-    const agc_vec_t vs  = agc_vec_make(agc_dp_from_double(-0.6 * v_lsb, 5),
-                                       agc_dp_from_double(-0.4 * v_lsb, 5),
-                                       0);
+    const double    ft_lsb = 1.0e6 / 6407.9; /* R: metres per 512 ft (x2) */
+    const double    v_lsb  = 1.0 / 656.17; /* V: m/cs per 0.5 ft/s (x2) */
+    const agc_vec_t rs     = agc_vec_make(agc_dp_from_double(-0.6 * ft_lsb, 27),
+                                          agc_dp_from_double(-0.4 * ft_lsb, 27),
+                                          0);
+    const agc_vec_t vs = agc_vec_make(agc_dp_from_double(-0.6 * v_lsb, 5),
+                                      agc_dp_from_double(-0.4 * v_lsb, 5),
+                                      0);
 
     CHECK(agc_ags_scalevec(&ip, rs, vs, &ident, out) == AGC_STATUS_OK);
     CHECK((out[0] == 077777u) && (out[1] == 077777u)); /* -0: AEA -1     */

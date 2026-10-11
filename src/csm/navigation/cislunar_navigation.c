@@ -474,7 +474,8 @@ static agc_status_t cn_measure(agc_interp_t *ip)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &cn.inc);
+        st =
+            agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &cn.inc);
     }
 
     agc_phase_change(2, 04022);
@@ -580,7 +581,8 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
         return (cn_ident_error(ctx)); /* P23.151  */
     }
 
-    uint16_t c = (uint16_t) (((lm != 0U) ? lm : agc_erase_horizon()) & CN_BITS7_9);
+    uint16_t c =
+        (uint16_t) (((lm != 0U) ? lm : agc_erase_horizon()) & CN_BITS7_9);
 
     if (c != 0100U && c != 0200U)
     {

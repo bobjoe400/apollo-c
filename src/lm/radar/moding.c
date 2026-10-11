@@ -680,7 +680,9 @@ static bool rr_axis_advance(agc_status_t *st)
              * designate (STDESIG) or to the caller waiting in RADSTALL.     */
             rr_mode_invert(); /* RMODINV  */
             rr_radmodes_clear(RR_REMODBIT);
-            *st = rr_radmodes_test(RR_DESIGBIT) ? rr_stdesig() : agc_task_rr_goodend();
+            *st =
+                rr_radmodes_test(RR_DESIGBIT) ? rr_stdesig() :
+                agc_task_rr_goodend();
 
             return (false);
         case RR_AXIS_PREPOSITION_POWERED: /* PREPOS29: repositioning off */

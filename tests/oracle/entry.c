@@ -78,9 +78,11 @@ static void cmp_flag(const char *t, const char *n, agc_flag_id_t f,
 }
 
 /* Tolerances (see docs/modules/oracle-cases.md, entry): tol for the
- * general words; D and ROLLC are larger where dvcheck.sh shows the pass
- * hits yaAGC's DV bug (D: GETETA's DDVs; ROLLC: ARCCOS near 1/2), and
- * EARROT2/L/D/VL have a residual of a few hundred LSB.                    */
+ * general words; D is larger where dvcheck.sh shows the pass hits yaAGC's
+ * DV bug (GETETA's DDVs: 156 LSB in KEP2). The rest were wide while the C
+ * rounded every DMP (review-guid-entry F-E1): ROLLC (was 2159) and
+ * THETAH/RT (one cs of DTEAROT) now agree within a few LSB; L/D keeps
+ * 256 in entry_pass_next and VL 38 (one LSB before SL 8D, carried).       */
 static void compare(const char *t, long tol)
 {
     const agc_entry_state_t *e = agc_entry_state();
@@ -117,11 +119,11 @@ static void compare(const char *t, long tol)
     }
 
     (void) oracle_cmp(t, "RDOT", e->rdot, oracle_out_dp(t, "RDOT"), tol);
-    (void) oracle_cmp(t, "THETAH", e->thetah, oracle_out_dp(t, "THETAH"), 128);
+    (void) oracle_cmp(t, "THETAH", e->thetah, oracle_out_dp(t, "THETAH"), 8);
     (void) oracle_cmp(t, "LATANG", e->latang, oracle_out_dp(t, "LATANG"), tol);
-    (void) oracle_cmp(t, "ROLLC", e->rollc, oracle_out_dp(t, "ROLLC"), 4096);
-    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 512);
-    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 512);
+    (void) oracle_cmp(t, "ROLLC", e->rollc, oracle_out_dp(t, "ROLLC"), 16);
+    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 320);
+    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 320);
     (void) oracle_cmp(t, "K2ROLL", e->k2roll, oracle_out_dp(t, "K2ROLL"), 0);
     (void) oracle_cmp(t, "GOTOADDR", goto_word(e->gotoaddr),
                       (long) oracle_out_raw(t, "GOTOADDR"), 0);
@@ -139,7 +141,7 @@ static void compare(const char *t, long tol)
     (void) oracle_cmp(t, "LAD", e->lad, oracle_out_dp(t, "LAD"), 0);
     (void) oracle_cmp(t, "LOD", e->lod, oracle_out_dp(t, "LOD"), 0);
     oracle_cmp_vec(t, "UNI", e->uni, oracle_out_vec(t, "UNI"), tol);
-    oracle_cmp_vec(t, "RT", e->rt, oracle_out_vec(t, "RT"), 128);
+    oracle_cmp_vec(t, "RT", e->rt, oracle_out_vec(t, "RT"), 8);
     oracle_cmp_vec(t, "RTINIT", e->rtinit, oracle_out_vec(t, "RTINIT"), tol);
     cmp_flag(t, ".05GSW", AGC_FLAG__05GSW, "CM/FLAGS", 04);
     cmp_flag(t, "INRLSW", AGC_FLAG_INRLSW, "CM/FLAGS", 020);

@@ -237,7 +237,7 @@ bool     pin_ones_negative(uint16_t w);
 uint16_t pin_ones_mag(uint16_t w);
 agc_sp_t pin_sp_from_ones(uint16_t w);
 uint16_t pin_ones_from_sp(agc_sp_t v);
-uint16_t pin_ones_neg(uint16_t mag);
+uint16_t pin_ones_neg(uint16_t word);
 
 /* ---- lamps (state.c) ------------------------------------------- */
 void pin_flashon(void);  /* FLASHON  */

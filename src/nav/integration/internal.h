@@ -15,16 +15,16 @@
 typedef enum agc_integ_next
 {
     INTEG_NEXT_TESTLOOP = 0, /* TESTLOOP                                */
-    INTEG_NEXT_TIMESTEP,     /* TIMESTEP                                */
-    INTEG_NEXT_APCHK,        /* A-PCHK  (then RECTOUT, INTEXIT)          */
-    INTEG_NEXT_RECTOUT,      /* RECTOUT (then INTEXIT)                   */
-    INTEG_NEXT_INTEXIT,      /* INTEXIT without output                   */
-    INTEG_NEXT_MIDTOAV_CHECK,       /* CKMID2  (MIDAVFLG set at ENDSTATE)       */
-    INTEG_NEXT_WMATRIX,      /* ENDSTATE with DIM0FLAG: ATOP, AMOVED     */
-    INTEG_NEXT_RELOAD,       /* RELOADSV -> INTEGRV2 -> ALOADED          */
-    INTEG_NEXT_RVCON,        /* RVCON (conic: ALOADED with INTYPFLG)      */
-    INTEG_NEXT_ABORT,        /* INT-ABRT (POODOO 00430 already issued)   */
-    INTEG_NEXT_FAIL          /* a called routine failed (bad argument)   */
+    INTEG_NEXT_TIMESTEP,      /* TIMESTEP                                */
+    INTEG_NEXT_APCHK,         /* A-PCHK  (then RECTOUT, INTEXIT)          */
+    INTEG_NEXT_RECTOUT,       /* RECTOUT (then INTEXIT)                   */
+    INTEG_NEXT_INTEXIT,       /* INTEXIT without output                   */
+    INTEG_NEXT_MIDTOAV_CHECK, /* CKMID2  (MIDAVFLG set at ENDSTATE)       */
+    INTEG_NEXT_WMATRIX,       /* ENDSTATE with DIM0FLAG: ATOP, AMOVED     */
+    INTEG_NEXT_RELOAD,        /* RELOADSV -> INTEGRV2 -> ALOADED          */
+    INTEG_NEXT_RVCON,         /* RVCON (conic: ALOADED with INTYPFLG)      */
+    INTEG_NEXT_ABORT,         /* INT-ABRT (POODOO 00430 already issued)   */
+    INTEG_NEXT_FAIL           /* a called routine failed (bad argument)   */
 } agc_integ_next_t;
 
 /* Values used across files. */
@@ -40,11 +40,13 @@ typedef enum agc_integ_next
 /* ---- init.c --------------------------------------------- */
 agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                            agc_integ_next_t first); /* the driver */
-agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx);
-agc_dp_t     agc_integ_loadtime(void); /* LOADTIME  */
-bool         agc_integ_valid_ctx(const agc_integ_ctx_t *ctx);
+agc_status_t agc_integ_integrate_permanent(agc_interp_t    *ip,
+                                           agc_integ_ctx_t *ctx);
+agc_dp_t agc_integ_loadtime(void);     /* LOADTIME  */
+bool     agc_integ_valid_ctx(const agc_integ_ctx_t *ctx);
 /* ---- jobs.c --------------------------------------------- */
-agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx);
+agc_integ_next_t agc_integ_midtoav_check(agc_interp_t    *ip,
+                                         agc_integ_ctx_t *ctx);
 
 /* ---- orbital_integration.c ------------------------------------------ */
 agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx);

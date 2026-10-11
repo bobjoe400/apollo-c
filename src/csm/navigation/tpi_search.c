@@ -186,7 +186,8 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
     rz_flag_put(AGC_FLAG_ITSWICH, false);
     rz->delvee     = RZ_DPPOSMAX;
     rz->hp         = TPS_MANYFEET;
-    tps_work.thetl = agc_flag_test(AGC_FLAG_KFLAG) ? TPS_SEC1THET : TPS_SEC2THET;
+    tps_work.thetl =
+        agc_flag_test(AGC_FLAG_KFLAG) ? TPS_SEC1THET : TPS_SEC2THET;
 
     return (AGC_STATUS_OK);
 }
@@ -251,7 +252,8 @@ static tps_label_t tps_step(agc_interp_t *ip, agc_rendz_t *rz, bool set,
 {
     if (set)
     {
-        tps_work.deltee = agc_flag_test(AGC_FLAG_KFLAG) ? agc_dp_neg(step) : step; /* JUNCT1 */
+        tps_work.deltee =
+            agc_flag_test(AGC_FLAG_KFLAG) ? agc_dp_neg(step) : step;               /* JUNCT1 */
     }
 
     rz->tf = agc_dp_add(ip, tps_work.deltee, rz->tf); /* JUNCT2   */
@@ -505,7 +507,7 @@ static tps_display_t tps_display = {6U, 72U, AGC_JOB_TPI_SEARCH_COMPUTE};
 /* VNCOMP17: flash; TERMINATE is illegal ("TC -3": the same display),
  * PROCEED -> proceed, V32 -> P17.1, other data loads -> the display. */
 static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb,
-                                 uint8_t noun, agc_job_id_t proceed)
+                                        uint8_t noun, agc_job_id_t proceed)
 {
     if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
     {
@@ -530,7 +532,7 @@ agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx)
     }
 
     return (tps_compute_display(ctx, tps_display.verb, tps_display.noun,
-                         tps_display.proceed));
+                                tps_display.proceed));
 }
 
 /* ENTER on VNCOMP17: CS MPAC, AD BIT6, BZF P17.1 -- V32 recycles to

@@ -61,11 +61,11 @@
  **********************************************************************/
 #include "../internal.h"
 
-#define HALF_SEC_CS ((uint16_t) 50)  /* .5SEC DEC 50: TVCEXEC period, cs     */
-#define ROLL_DELAY  ((uint16_t) 3)   /* THREE: ROLLDAP task delay, cs        */
-#define NINETEEN    ((agc_sp_t) 19)  /* VD1: 20 passes = 10 s, unscaled     */
-#define FCORFRAC    ((agc_sp_t) 4096) /* OCT 10000: one-shot fraction .25   */
-#define NEG_BIT14   ((agc_sp_t) -8192) /* -BIT14: B-1 -> B+0 rev, sign change */
+#define HALF_SEC_CS    ((uint16_t) 50) /* .5SEC DEC 50: TVCEXEC period, cs     */
+#define ROLL_DELAY     ((uint16_t) 3)  /* THREE: ROLLDAP task delay, cs        */
+#define NINETEEN       ((agc_sp_t) 19) /* VD1: 20 passes = 10 s, unscaled     */
+#define FCORFRAC       ((agc_sp_t) 4096) /* OCT 10000: one-shot fraction .25   */
+#define NEG_BIT14      ((agc_sp_t) -8192) /* -BIT14: B-1 -> B+0 rev, sign change */
 #define TVCX_MAX_STEPS 10              /* longest path: 1 .. 6 plus branches */
 
 /* Restart points of the TVC executive, in the order of TVCEXADR +1 ..
@@ -362,6 +362,7 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
             next = tvcx_repchek();
             break;
         case TVCX_ONE_SHOT_OK: /* no one-shot during engine shutdown   */
+
             if (csm_dap_engine_on())
             {
                 t->tvcexphs = 3; /* INCR TVCEXPHS (3)                   */

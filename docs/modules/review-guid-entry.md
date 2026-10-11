@@ -66,6 +66,8 @@ red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
   ROLLC 2159 -> 1 (PREDICT3; was blamed on yaAGC DV); L/D 373 -> <=9
   except entry_pass_next 256 (VL -38 carried); RDOT +-1 (DOT TP low word,
   core class). Remaining D 84/156 (initroll/kep2) unchanged.
+* DONE tests/oracle/entry.c tolerances tightened: THETAH 128->8, RT
+  128->8, ROLLC 4096->16, L/D(1) 512->320 (521/0).
 * DONE S61.1 / S61.1A-C / RETRN1-3, P61..P67 / P61.1-.4 / P62.1-.3 /
   P63.1 / P65.1 / P66END / KILLGRP4 / P67.1-.3 / WAKEP62 read vs C:
   display returns (GOFLASH/GOFLASHR/GOPERF1R L+2..L+5), PHASCHNG words,
@@ -73,9 +75,33 @@ red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
   all match. S61.2 / FISHCALC / VGAMCALC / TFF/TRIG / DISPTARG / VRCALC /
   GMAXCALC / S62.3 order of operations match (GMAX lo word = VPRED hi in
   the AGC overlay; C keeps a separate DP - display/downlink use SP only).
-* TODO programs.c (rest) and earth_orbit_insertion.c (P11) read.
+* DONE programs.c S62.3 read (YNB/XNB/ZNB order, CPHIFLAG clear, CALCGA).
+* DONE earth_orbit_insertion.c (P11) read vs P11.agc; fixed:
+  (a) ATERJOB: switch on (STRSAT) with SATSW > 0 skipped the ATRESET
+      NEEDLER init and 60 ms DELAYJOB (went straight to ATRESET +5);
+  (b) STEERSAT TAD BIASAK+AK is a TP add (carries between words), and
+      RESCALES (MP, DDOUBL x2) + TS AKn: overflow stores modulo 1 and the
+      TS skips CA AKn+1 (next word rescaled from +-1); was per-word
+      saturation of 4 x (high word) (low-word carries lost);
+  (c) NOPOLYM SR2 is a truncating TP shift (was rounded);
+  (d) roll = SPOLYARG x SATRLRT SL 14D on the TP (14 bits were lost);
+      RLTST tests the high word of MPAC x SATRLRT +1 (>0 = rollout), was
+      sign(roll) x sign(SATRLRT);
+  (e) ATTDISPR / ATTDISP2 / S11.1 HDOT DMP|DOT SL1 on the TP; POWRSERS
+      TP result before SL 5 (pitch);
+  (f) REP11 restart with TIME2 not yet zeroed: TLIFTOFF = clock read at
+      the DXCH TIME2 (was LIFTTEMP);
+  (g) GETDOWN's LALOTORV +5 copy uses DMPR (kept rounded) and GAMMA x
+      SIN(LAT) by DMPR (was a truncating SR1);
+  (h) NEEDLER calls pass the current AK words (were zeros); SATSTICK AK
+      kept for SATOUT.
+  P11 pad POLYNUM is taken as the degree (the AGC POLYNUM is N-1 for
+  POWRSERS); whoever loads it from erasable must add 1 (Request).
   NOTE another agent has uncommitted edits in programs.c / entry.h
   (agc_entry_tff_trig, agc_entry_vgamcalc exports) - edit around them.
+* STYLE (scratch tool style/apply.py + per-file .spec: boxed prologs,
+  decl/scale comments, ternary and long-block comments): DONE lexicon.c,
+  return_to_earth/precision.c (0 findings, rule-5 ok). TODO the rest.
 * TODO naming / style debt (1599 check_style findings in lane files) /
   rule-5 density / make check; findings table, Requests, Lessons below.
 

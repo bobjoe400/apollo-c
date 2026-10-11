@@ -826,7 +826,8 @@ static agc_integ_next_t aloaded(agc_integ_ctx_t *ctx)
 
 /* INTEGRV2 (p. 1320): load A-memory from the permanent state vector of the
  * vehicle chosen by VINTFLAG, then ALOADED (or A-PCHK after USEPIOS).   */
-static agc_integ_next_t load_permanent_state(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static agc_integ_next_t load_permanent_state(agc_interp_t    *ip,
+                                             agc_integ_ctx_t *ctx)
 {
     bool surface = false;
 
@@ -956,7 +957,8 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 /* ---- entrances (p. 1318-1320) ----------------------------------------- */
 
 /* INTEGRV1 (p. 1320): SET RPQFLAG NEWIFLG, then INTEGRV2 and on.        */
-agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+agc_status_t agc_integ_integrate_permanent(agc_interp_t    *ip,
+                                           agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {

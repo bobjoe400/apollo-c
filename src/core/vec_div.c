@@ -166,8 +166,8 @@ static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
         return (agc_vec_zero()); /* no valid result */
     }
 
-    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m3 <= AGC_DP_MAX)
-                    && (m5 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
+    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m3 <= AGC_DP_MAX) &&
+                    (m5 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
     {
         return (agc_vec_zero()); /* no valid result */
     }

@@ -573,8 +573,8 @@ agc_status_t agc_align_chksdata_angle(agc_interp_t *ip, const agc_vec_t cat[2],
     agc_align_ram_t *ram = agc_align_ram();
 
     /* DOT* SL1 ACOS: the SL1 acts on the TP dot product.               */
-    ram->theta18 = agc_dp_acos(ip, align_dot_shl(ip, cat[0], cat[1], 1));
-    ram->theta   = agc_dp_acos(ip, align_dot_shl(ip, obs[0], obs[1], 1));
+    ram->theta18  = agc_dp_acos(ip, align_dot_shl(ip, cat[0], cat[1], 1));
+    ram->theta    = agc_dp_acos(ip, align_dot_shl(ip, obs[0], obs[1], 1));
     *diff         = agc_dp_abs(agc_dp_sub(ip, ram->theta, ram->theta18));
     ram->normtem1 = *diff; /* RTB SGNAGREE: no-op in this model */
 

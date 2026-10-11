@@ -201,7 +201,8 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
         eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
         d->coeffr =
             lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
-        d->coeffq = lm_dap_mphi(lm_dap_wrap((int32_t) eps - LM_POSMAX), d->coeffr);
+        d->coeffq = lm_dap_mphi(lm_dap_wrap(
+                                    (int32_t) eps - LM_POSMAX), d->coeffr);
     }
     else
     { /* BIGIQ    */
@@ -211,7 +212,8 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
             ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps;
         d->coeffq =
             lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
-        d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
+        d->coeffr = lm_dap_mphi(lm_dap_wrap(
+                                    (int32_t) -neps + LM_NEGMAX), d->coeffq);
     }
 
     if (!AGC_ASSERT(d->coeffq <= 0))
