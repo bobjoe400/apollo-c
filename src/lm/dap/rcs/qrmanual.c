@@ -85,8 +85,8 @@ agc_status_t lm_dap_qrminimp(void)
         return (lm_dap_xtrans());
     }
 
-    agc_sp_t u;
-    agc_sp_t v;
+    agc_sp_t u; /* +-U minimum-impulse jet time, scaled 0.625 ms per count */
+    agc_sp_t v; /* +-V minimum-impulse jet time, scaled 0.625 ms per count */
 
     if ((t31 & 0x0001u) == 0u)
     { /* +QMIN          */
@@ -146,9 +146,9 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
         return (0); /* no valid result */
     }
 
-    agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT); /* MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap) */
-    agc_sp_t lin = lm_dap_mp(k, c).lo;                                      /* CA L           */
-    agc_sp_t r   = lm_dap_mphi(lin, stiksens);
+    agc_sp_t k   = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(c) + QM_LINRAT); /* 4(|D| - 1) + LINRAT; MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap); unscaled */
+    agc_sp_t lin = lm_dap_mp(k, c).lo;                                      /* CA L: (4|D| + LINRAT) D low word, unscaled */
+    agc_sp_t r   = lm_dap_mphi(lin, stiksens);                              /* commanded rate, scaled 45 deg/s */
 
     if (!AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX))
     {
@@ -214,8 +214,8 @@ static agc_status_t enteruv(lm_dap_t *d)
     d->rerror     = 0;                                /* DZERROR        */
     d->dzerror_lo = 0;
     bool uout     = beyond(d->omegau, d->neg_ratedb); /* TARGETDB       */
-    bool vout     = beyond(d->omegav, d->neg_ratedb);
-    bool direct;
+    bool vout     = beyond(d->omegav, d->neg_ratedb); /* V rate error beyond TARGETDB */
+    bool direct;                                      /* direct-rate law for Q,R this pass */
 
     if (uout)
     {
@@ -267,12 +267,12 @@ static agc_status_t enteruv(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t rhcactiv(lm_dap_t *d)
 {
-    agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens);
-    agc_sp_t dq = lm_dap_wrap((int32_t) q - d->qlast); /* DAPTEMP3       */
+    agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens); /* commanded Q rate, scaled 45 deg/s */
+    agc_sp_t dq = lm_dap_wrap((int32_t) q - d->qlast);     /* DAPTEMP3: change of the Q command, scaled 45 deg/s */
 
     d->qlast    = q;
-    agc_sp_t r  = stick_rate(d->savehand[1], d->stiksens);
-    agc_sp_t dr = lm_dap_wrap((int32_t) r - d->rlast); /* DAPTEMP4       */
+    agc_sp_t r  = stick_rate(d->savehand[1], d->stiksens); /* commanded R rate, scaled 45 deg/s */
+    agc_sp_t dr = lm_dap_wrap((int32_t) r - d->rlast);     /* DAPTEMP4: change of the R command, scaled 45 deg/s */
 
     d->rlast = r;
 

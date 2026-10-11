@@ -63,7 +63,7 @@ static const agc_sp_t utime[3] = {4, 012, 012};
  **********************************************************************/
 static agc_sp_t spsstart(const lm_dap_t *d)
 {
-    agc_sp_t outer = lm_dap_mphi(d->edot, SR_RATELIM1);
+    agc_sp_t outer = lm_dap_mphi(d->edot, SR_RATELIM1); /* EDOT x CALLCODE: nonzero beyond 1.73 deg/s; unscaled test word (sign only) */
 
     if (!AGC_ASSERT(d->dkdb >= 0))
     {
@@ -80,7 +80,7 @@ static agc_sp_t spsstart(const lm_dap_t *d)
         return (SR_HALF); /* POSTHRST           */
     }
 
-    agc_sp_t ez = lm_dap_mphi(lm_dap_wrap((int32_t) d->edot + d->e), d->dkdb);
+    agc_sp_t ez = lm_dap_mphi(lm_dap_wrap((int32_t) d->edot + d->e), d->dkdb); /* (EDOT + E) DKDB: zero inside the deadband; unscaled test word (sign only) */
 
     if (ez == 0)
     {
@@ -89,7 +89,7 @@ static agc_sp_t spsstart(const lm_dap_t *d)
 
     if (ez > 0)
     {
-        return (((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF);
+        return (((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF); /* returning faster than 1.125 deg/s: coast */
     }
 
     if (!AGC_ASSERT(ez < 0))
@@ -97,7 +97,7 @@ static agc_sp_t spsstart(const lm_dap_t *d)
         return (0); /* no valid result */
     }
 
-    return (((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0);
+    return (((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0); /* returning faster than 1.125 deg/s: coast */
 }
 
 /**********************************************************************
@@ -118,7 +118,7 @@ static agc_sp_t spsstart(const lm_dap_t *d)
  **********************************************************************/
 static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 {
-    agc_sp_t tj = d->tj[i];
+    agc_sp_t tj = d->tj[i]; /* TJ of the axis: +-HALF or 0, scaled 0.625 ms per count */
 
     if (!AGC_ASSERT(i >= 0 && i <= 2))
     {
@@ -127,7 +127,7 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
 
     if (oldsense != 0)
     {
-        bool same = (oldsense > 0) ? (tj > 0) : (tj < 0);
+        bool same = (oldsense > 0) ? (tj > 0) : (tj < 0); /* new command has the old sense */
 
         if (!same)
         {
@@ -171,15 +171,24 @@ agc_status_t lm_dap_spsrcs(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int      i           = d->axisctr + 1;
-    agc_sp_t tj          = d->tj[i];
-    agc_sp_t oldsense    = (agc_sp_t) ((tj > 0) ? 1 : ((tj < 0) ? -1 : 0));
-    bool     restart_law = true;
+    int      i           = d->axisctr + 1; /* axis index AXISCTR + 1 */
+    agc_sp_t tj          = d->tj[i];       /* TJ of the axis, scaled 0.625 ms per count */
+    agc_sp_t oldsense    = 0;              /* OLDSENSE: sense of TJ, unscaled sign */
+    bool     restart_law = true;           /* run SPSSTART this pass */
+
+    if (tj > 0)
+    {
+        oldsense = 1;
+    }
+    else if (tj < 0)
+    {
+        oldsense = -1;
+    }
 
     if (oldsense != 0)
     { /* PLUSFIRE / NEGFIRE */
-        agc_sp_t target = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 0 : SR_RATEDB1;
-        agc_sp_t rate   = (agc_sp_t) ((oldsense > 0) ? -d->edot : d->edot);
+        agc_sp_t target = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 0 : SR_RATEDB1; /* 0 in drift, else 0.1 deg/s, scaled pi/4 rad/s */
+        agc_sp_t rate   = (agc_sp_t) ((oldsense > 0) ? -d->edot : d->edot);  /* rate in the firing's sense, scaled pi/4 rad/s */
 
         restart_law = ((int32_t) target + rate <= 0); /* target passed      */
     }
@@ -197,4 +206,4 @@ agc_status_t lm_dap_spsrcs(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_spsrcs */

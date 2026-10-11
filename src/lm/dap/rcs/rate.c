@@ -52,9 +52,9 @@
 #define RT_ELEVEN   ((agc_sp_t) 11)   /* ELEVEN: 10.24 "plus"                */
 #define RT_BIT10    ((agc_sp_t) 512)  /* rescale torque to 32 jet-s          */
 #define RT_1_40     ((agc_sp_t) 410)  /* 1/40 = DEC .025 (00632)             */
-#define RT_BIT14    ((agc_sp_t) 8192)
+#define RT_BIT14    ((agc_sp_t) 8192) /* .5: MP BIT14 halves */
 #define RT_OCT630   408               /* -OCT630 = 77147                     */
-#define RT_FIVE     ((agc_sp_t) 5)
+#define RT_FIVE     ((agc_sp_t) 5)    /* FIVE: AOS gain numerator, unscaled integer */
 #define RT_CALLCODE ((agc_sp_t) 26)   /* 00032: .1 at 2^6                    */
 #define RT_200MS    ((agc_sp_t) 3277) /* 200MS = DEC .2 (06315)              */
 
@@ -79,16 +79,16 @@ agc_status_t lm_dap_rateloop(void)
         /* RATELOOP (p.1470): the torque each axis' jets applied during the last
          * 100 ms, signed, at 1 jet-second (DAPTEMP1..3), and the downlink torque
          * sums. Long firings are reduced by 100 ms; short ones are zeroed.       */
-        agc_sp_t tj     = d->tj[i];
-        agc_sp_t torque = 0;
+        agc_sp_t tj     = d->tj[i]; /* TJP/TJU/TJV, scaled 0.625 ms per count */
+        agc_sp_t torque = 0;        /* jet-seconds this pass, scaled 1 jet-s */
 
         if (tj != 0)
         {
             if ((int32_t) lm_dap_ccs_dim(tj) - RT_100MST6 > 0)
             { /* > 100 ms */
-                tj       = (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6);
+                tj       = (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6); /* firing time left after this 100 ms */
                 d->tj[i] = tj;
-                torque   = (tj > 0) ? RT_100MS : (agc_sp_t) -RT_100MS;
+                torque   = (tj > 0) ? RT_100MS : (agc_sp_t) -RT_100MS;                /* 100 ms with the firing's sign */
             }
             else
             { /* SMALLTJU */
@@ -99,8 +99,8 @@ agc_status_t lm_dap_rateloop(void)
 
         torque        = lm_dap_mp(torque, d->nojets[i]).lo; /* LOOPRATE: x NO.xJETS */
         d->torque[i]  = torque;
-        agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10);      /* 32 jet-s, ~2 jet-ms/bit */
-        int      slot = 2 * i;
+        agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10);      /* torque rescaled to 32 jet-s (~2 jet-ms per bit) */
+        int      slot = 2 * i;                              /* DOWNTORK pair of the axis (index) */
 
         if (t32 <= 0)
         { /* NEGTORK               */
@@ -119,17 +119,10 @@ agc_status_t lm_dap_rateloop(void)
         {
             return (AGC_STATUS_BAD_ARG);
         }
-
-        agc_status_t st = AGC_STATUS_OK;
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            return (st);
-        }
     } /* end DAPTEMP6 = 2, 1, 0 */
 
-    int32_t usum = (int32_t) d->torque[1] + d->torque[2];
-    int32_t udif = (int32_t) d->torque[1] - d->torque[2];
+    int32_t usum = (int32_t) d->torque[1] + d->torque[2]; /* U + V torque, scaled 1 jet-s */
+    int32_t udif = (int32_t) d->torque[1] - d->torque[2]; /* U - V torque, scaled 1 jet-s */
 
     d->jetrate[2] = lm_dap_mphi(lm_dap_wrap(usum), d->jacc[2]); /* JETRATER */
     d->jetrate[1] = lm_dap_mphi(lm_dap_wrap(udif), d->jacc[1]); /* JETRATEQ */
@@ -160,10 +153,10 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
 {
     if (om.hi != 0 && (int32_t) lm_dap_ccs_dim(om.hi) - RT_OCT630 > 0)
     {
-        return ((om.hi > 0) ? LM_POSMAX : LM_NEGMAX);
+        return ((om.hi > 0) ? LM_POSMAX : LM_NEGMAX); /* 45 deg/s with the sign of the difference */
     }
 
-    agc_sp_t q = lm_dap_dv(om, RT_1_40); /* DIVIDER        */
+    agc_sp_t q = lm_dap_dv(om, RT_1_40); /* DIVIDER: rate = increment x 40, scaled pi/4 rad/s */
 
     if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
     {
@@ -194,7 +187,7 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
  **********************************************************************/
 static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped, agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
 {
-    agc_sp_t rate = measured_increment(inc);
+    agc_sp_t rate = measured_increment(inc); /* CDU-measured rate, scaled pi/4 rad/s */
 
     *traped        = lm_dap_sat((int32_t) *traped + rate - omega);
     lm_dp_pair_t e = {*err_hi, *err_lo};
@@ -237,7 +230,7 @@ static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped, agc_
  **********************************************************************/
 static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_sp_t omegan, agc_sp_t trap, agc_sp_t *corr, agc_sp_t *oldn)
 {
-    bool big = (*traped != 0) && ((int32_t) lm_dap_ccs_dim(*traped) + trap > 0);
+    bool big = (*traped != 0) && ((int32_t) lm_dap_ccs_dim(*traped) + trap > 0); /* |TRAPED| beyond the trap size */
 
     if (big)
     {
@@ -283,14 +276,14 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_s
  **********************************************************************/
 static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn, agc_sp_t kaosn)
 {
-    agc_sp_t div = lm_dap_wrap((int32_t) oldn + kaosn);
+    agc_sp_t div = lm_dap_wrap((int32_t) oldn + kaosn); /* old NxTRAPS + KAOSN, unscaled count */
 
     if (!AGC_ASSERT(div > 0))
     {
         return (aos);
     }
 
-    agc_sp_t q = lm_dap_dv(lm_dap_mp(corr, RT_FIVE), div);
+    agc_sp_t q = lm_dap_dv(lm_dap_mp(corr, RT_FIVE), div); /* 5 x correction / count: AOS change, scaled pi/2 rad/s^2 */
 
     if (!AGC_ASSERT(q >= LM_NEGMAX && q <= LM_POSMAX))
     {
@@ -318,23 +311,23 @@ agc_status_t lm_dap_backp(void)
     /* BACKP (pp.1423-1425), first part: JETRATE, the jet terms of TRAPED and
      * the CDU-measured increments for P, Q, R.                               */
     d->jetrate[0] = lm_dap_mphi(d->torque[0], d->jacc[0]); /* JETRATE */
-    agc_sp_t xdif = lm_dap_msu(d->dapcdu[0], d->oldxforp); /* at pi   */
+    agc_sp_t xdif = lm_dap_msu(d->dapcdu[0], d->oldxforp); /* CDUX - OLDXFORP, scaled pi rad */
 
     d->oldxforp = d->dapcdu[0];
     d->trapedp  = lm_dap_wrap((int32_t) d->trapedp + lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
-    agc_sp_t jq = lm_dap_wrap((int32_t) d->jetrate[1] + d->aosqterm);
-    agc_sp_t jr = lm_dap_wrap((int32_t) d->jetrate[2] + d->aosrterm);
+    agc_sp_t jq = lm_dap_wrap((int32_t) d->jetrate[1] + d->aosqterm); /* JETRATEQ + AOSQTERM, scaled pi/4 rad/s */
+    agc_sp_t jr = lm_dap_wrap((int32_t) d->jetrate[2] + d->aosrterm); /* JETRATER + AOSRTERM, scaled pi/4 rad/s */
 
     d->trapedq    = lm_dap_wrap((int32_t) d->trapedq + lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
     d->trapedr    = lm_dap_wrap((int32_t) d->trapedr + lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
-    agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp);
+    agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp); /* CDUY - OLDYFORP, scaled pi rad */
 
     d->oldyforp      = d->dapcdu[1];
-    lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11());
+    lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11()); /* M11 dCDUY (+ dCDUX below): P increment, DP scaled pi rad */
 
-    inc.hi        = lm_dap_wrap((int32_t) inc.hi + xdif); /* M13 = 1 */
+    inc.hi        = lm_dap_wrap((int32_t) inc.hi + xdif);  /* M13 = 1 */
     derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo, d->plast);
-    agc_sp_t zdif = lm_dap_msu(d->dapcdu[2], d->oldzforq);
+    agc_sp_t zdif = lm_dap_msu(d->dapcdu[2], d->oldzforq); /* CDUZ - OLDZFORQ, scaled pi rad */
 
     d->oldzforq = d->dapcdu[2];
     inc         = lm_dap_das(lm_dap_mp(agc_erase_m21(), ydif), lm_dap_mp(agc_erase_m22(), zdif));
@@ -352,13 +345,13 @@ agc_status_t lm_dap_backp(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool     docked = agc_flag_test(AGC_FLAG_CSMDKFLG);
-    agc_sp_t omegan = docked ? d->dkomegan : d->lmomegan; /* DAPTREG4     */
-    agc_sp_t kaosn  = docked ? d->dkkaosn : d->lmkaosn;   /* DAPTREG5     */
-    agc_sp_t trap   = docked ? d->dktrap : d->lmtrap;     /* DAPTREG6     */
-    agc_sp_t corr   = 0;
-    agc_sp_t oldn   = 0;
-    bool     ptrap  = trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan, trap, &corr, &oldn);
+    bool     docked = agc_flag_test(AGC_FLAG_CSMDKFLG);                                            /* CSMDKFLG: docked gains */
+    agc_sp_t omegan = docked ? d->dkomegan : d->lmomegan;                                          /* DAPTREG4: OMEGAN gain, unscaled count */
+    agc_sp_t kaosn  = docked ? d->dkkaosn : d->lmkaosn;                                            /* DAPTREG5: KAOSN gain, unscaled count */
+    agc_sp_t trap   = docked ? d->dktrap : d->lmtrap;                                              /* DAPTREG6: trap size, scaled 4.5 deg */
+    agc_sp_t corr   = 0;                                                                           /* TRAPED/NTRAPS correction, scaled pi/4 rad/s */
+    agc_sp_t oldn   = 0;                                                                           /* NxTRAPS before the reset, unscaled count */
+    bool     ptrap  = trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan, trap, &corr, &oldn); /* P trap corrected this pass */
 
     if (!AGC_ASSERT(!ptrap || d->trapedp == 0)) /* no P offset   */
     {

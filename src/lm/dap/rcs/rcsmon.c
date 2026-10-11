@@ -40,7 +40,7 @@
 
 #define RM_LOW8  0377u   /* LOW8: jet-fail bits of channel 32        */
 #define RM_WORD  077777u /* 15-bit word (CS ZERO / RXOR = invert)    */
-#define RM_NBITS 8
+#define RM_NBITS 8       /* bits 1-8 of channel 32 */
 
 /* 5FAILTAB, 6FAILTAB (p.192): channel 5 / 6 jet bits for channel 32 bits
  * 8, 7, ..., 1 (index L - 1 in the AGC).                                 */
@@ -62,9 +62,9 @@ static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u,
  **********************************************************************/
 agc_status_t agc_lm_dap_rcsmon(void)
 {
-    lm_dap_t *d      = lm_dap_state(); /* DAP erasables */
-    uint16_t  cur    = (uint16_t) ((RM_WORD ^ agc_chan_read(032)) & RM_LOW8);
-    uint16_t  change = (uint16_t) ((cur ^ d->pvalvest) & RM_LOW8);
+    lm_dap_t *d      = lm_dap_state();                                        /* DAP erasables */
+    uint16_t  cur    = (uint16_t) ((RM_WORD ^ agc_chan_read(032)) & RM_LOW8); /* valve switch states (channel 32 inverted), low 8 bits */
+    uint16_t  change = (uint16_t) ((cur ^ d->pvalvest) & RM_LOW8);            /* switches changed since PVALVEST */
 
     if (change == 0u)
     {
@@ -73,7 +73,7 @@ agc_status_t agc_lm_dap_rcsmon(void)
 
     /* The DOUBLE / OVSK loop: index (0 = bit 8 .. 7 = bit 1) of the highest
      * set bit of a nonzero 8-bit change word.                                */
-    int l = 0;
+    int l = 0; /* index of the highest changed bit (0 = bit 8) */
 
     for (int i = 0; i < RM_NBITS; i++)
     {
@@ -99,7 +99,7 @@ agc_status_t agc_lm_dap_rcsmon(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t bit = (uint16_t) (0200u >> l);
+    uint16_t bit = (uint16_t) (0200u >> l); /* the changed switch bit */
 
     if ((d->pvalvest & bit) != 0u)
     { /* VOPENED            */

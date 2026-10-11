@@ -53,9 +53,9 @@
 #define T6_ENABLE 040000u /* BIT15 of channel 13: TIME6 counting      */
 #define T6_PRIO37 15872   /* PRIO37 = 37000: overflow test for > 511 */
 #define T6_UBITS  000314u /* 00314OCT: U-axis jets in channel 5      */
-#define T6_IDX_P  0
-#define T6_IDX_U  4
-#define T6_IDX_V  13
+#define T6_IDX_P  0       /* P axis: channel 6 */
+#define T6_IDX_U  4       /* U axis: channel 5 (WRITEP +4) */
+#define T6_IDX_V  13      /* V axis: channel 5 (WRITEP +13) */
 
 /**********************************************************************
  * TIME6 as a ones'-complement value (-0, the "rupt due" state, is 0).
@@ -69,7 +69,7 @@
  **********************************************************************/
 agc_sp_t lm_dap_time6_value(void)
 {
-    uint16_t raw = agc_rupt_time(6);
+    uint16_t raw = agc_rupt_time(6); /* TIME6 register (15-bit ones' complement) */
 
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {
@@ -81,7 +81,7 @@ agc_sp_t lm_dap_time6_value(void)
         return ((agc_sp_t) raw);
     }
 
-    agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO);
+    agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO); /* negative TIME6 value, scaled 0.625 ms per count */
 
     if (!AGC_ASSERT(v <= 0))
     {
@@ -147,7 +147,7 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
         return (AGC_STATUS_OK);
     }
 
-    uint16_t keep;
+    uint16_t keep; /* the other axis' channel 5 bits */
 
     if (index == T6_IDX_U)
     {
@@ -191,7 +191,16 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t jets = (index == T6_IDX_P) ? d->nextp : ((index == T6_IDX_U) ? d->nextu : d->nextv);
+    uint16_t jets = d->nextv; /* NEXTV for the V index */
+
+    if (index == T6_IDX_P)
+    {
+        jets = d->nextp;
+    }
+    else if (index == T6_IDX_U)
+    {
+        jets = d->nextu;
+    }
 
     return (lm_dap_write(index, jets));
 }
@@ -210,10 +219,10 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
  **********************************************************************/
 agc_status_t lm_dap_jtlst(void)
 {
-    lm_dap_t *d     = lm_dap_state(); /* DAP erasables */
-    agc_sp_t  t     = d->t6furtha[0];
-    agc_sp_t  idx   = d->t6furtha[1];
-    agc_sp_t  time6 = lm_dap_time6_value();
+    lm_dap_t *d     = lm_dap_state();       /* DAP erasables */
+    agc_sp_t  t     = d->t6furtha[0];       /* new firing time, scaled 0.625 ms per count */
+    agc_sp_t  idx   = d->t6furtha[1];       /* its axis index (unscaled) */
+    agc_sp_t  time6 = lm_dap_time6_value(); /* TIME6 now, scaled 0.625 ms per count */
 
     if (!AGC_ASSERT(t > 0 && t <= LM_POSMAX))
     {
@@ -227,7 +236,7 @@ agc_status_t lm_dap_jtlst(void)
         d->t6next[0]    = (agc_sp_t) (time6 - t);
         d->t6next[1]    = d->nxt6adr;
         d->nxt6adr      = idx;
-        agc_status_t st = set_time6(t);
+        agc_status_t st = set_time6(t); /* TIME6 = new time */
 
         agc_chan_or(013, T6_ENABLE); /* TURNON         */
 
@@ -275,15 +284,15 @@ agc_status_t lm_dap_jtlst(void)
 static agc_status_t t6job(lm_dap_t *d)
 {
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
-    agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT    */
-    agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR   */
+    agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT: delta to the next entry, scaled 0.625 ms per count */
+    agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR: axis index whose firing ends now (unscaled) */
 
     d->nxt6adr     = d->t6next[1];
     d->t6next[0]   = d->t6furtha[0]; /* DXCH T6FURTHA  */
     d->t6next[1]   = d->t6furtha[1];
     d->t6furtha[0] = LM_POSMAX;
     d->t6furtha[1] = 0;
-    agc_status_t st;
+    agc_status_t st;                 /* status of the TIME6 restart */
 
     if ((int32_t) head + T6_PRIO37 > LM_POSMAX)
     { /* list empty     */
@@ -323,7 +332,7 @@ static agc_status_t t6job(lm_dap_t *d)
  **********************************************************************/
 agc_status_t agc_lm_dap_t6jobchk(void)
 {
-    uint16_t raw = agc_rupt_time(6);
+    uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if (raw > 0u && raw <= LM_T6_POSMAX)
     {
@@ -356,7 +365,7 @@ agc_status_t agc_lm_dap_t6jobchk(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_t6rupt(void)
 {
-    agc_status_t st = agc_lm_dap_t6jobchk();
+    agc_status_t st = agc_lm_dap_t6jobchk(); /* T6JOBCHK status */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
@@ -387,14 +396,14 @@ agc_status_t agc_lm_dap_t6rupt(void)
  **********************************************************************/
 void agc_lm_dap_time6_count(uint16_t counts)
 {
-    uint16_t raw = agc_rupt_time(6);
+    uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)
     {
         return; /* idle, or rupt already due */
     }
 
-    uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts);
+    uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* counted past +0: -0, a T6RUPT is due */
 
     agc_rupt_set_time(6, next);
 
@@ -416,7 +425,7 @@ void agc_lm_dap_time6_count(uint16_t counts)
  **********************************************************************/
 bool agc_lm_dap_t6_pending(void)
 {
-    uint16_t raw = agc_rupt_time(6);
+    uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
     {

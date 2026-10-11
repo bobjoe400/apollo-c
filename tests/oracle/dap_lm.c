@@ -71,6 +71,117 @@
 #include "agc/lm/dap.h"
 #include "oracle_txt.h"
 
+/* TJETLAW sweep over the switch-curve blocks of the 1/ACCS cases.        */
+static const char *const tjs[] = {
+    "tjs_u_big1",
+    "tjs_u_big2",
+    "tjs_v_big1",
+    "tjs_v_big2",
+    "tjs_u_bign",
+    "tjs_v_bign",
+    "tjs_u_drift1",
+    "tjs_u_drift2",
+    "tjs_v_drift3",
+    "tjs_p_drift",
+    "tjs_u_wide1",
+    "tjs_v_wide2",
+    "tjs_u_fail",
+    "tjs_v_fail",
+    "tjs_u_netneg",
+    "tjs_v_netneg",
+    "tjs_u_vbig",
+    "tjs_p_zero_e",
+    "tjs_u_hugerate",
+    "tjs_v_hugeerr",
+};
+
+static void fresh(void);
+static void cmp_sp(const char *t, const char *what, long int got, const char *n, long int tol);
+static void accs(const char *t, long int tol);
+static void tjetlaw(const char *t, long int tol);
+static void gimbal_matrix(const char *t);
+static void gpm(const char *t);
+static void kalman(const char *t, const char *gp, long int tol);
+static void gts_inputs(const char *t, lm_dap_t *d);
+static void gts_outputs(const char *t, const lm_dap_t *d);
+static void gts(const char *t);
+static void timegmbl(const char *t);
+
+/**********************************************************************
+ * AGC: none -- run the tests.
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passed, else 1
+ **********************************************************************/
+int main(void)
+{
+    if (!oracle_load("dap_lm"))
+    {
+        (void) printf("oracle_dap_lm: SKIP (case files not found)\n");
+
+        return (0);
+    }
+
+    accs("accs_dps", 0);
+    accs("accs_aps", 0);
+    accs("accs_docked", 0);
+    accs("accs_docked_thrust", 0);
+    accs("accs_docked_aps", 0);
+    accs("accs_docked_fix", 0);
+    accs("accs_dps_wide", 0);
+    accs("accs_aos_small", 0);
+    accs("accs_aos_some", 0);
+    accs("accs_aos_big", 0);
+    accs("accs_aos_bigneg", 0);
+    accs("accs_aos_netneg", 0);
+    accs("accs_aos_vbig", 0);
+    accs("accs_aos_ovf", 0);
+    accs("accs_aos_fail1", 0);
+    accs("accs_aos_fail2", 0);
+    accs("accs_aos_drift", 0);
+    accs("accs_aos_aps", 0);
+    accs("accs_aos_wide", 0);
+    tjetlaw("tjet_p_small", 0);
+    tjetlaw("tjet_p_neg", 0);
+    tjetlaw("tjet_u_mid", 0);
+    tjetlaw("tjet_v_rate", 0);
+    tjetlaw("tjet_u_large", 0);
+    tjetlaw("tjet_v_coast", 0);
+    tjetlaw("tjet_p_aps", 0);
+    tjetlaw("tjet_u_aps", 0);
+
+    for (size_t k = 0; k < sizeof (tjs) / sizeof (tjs[0]); k++)
+    {
+        tjetlaw(tjs[k], 0); /* review-dap-lm sweep */
+    }
+
+    gpm("gpm_a");
+    gpm("gpm_b");
+    gpm("gpm_c");
+    kalman("kal_coast", "gpm_a", 0);
+    kalman("kal_jets", "gpm_a", 0);
+    kalman("kal_powered", "gpm_b", 0);
+    kalman("kal_bigtrap", "gpm_c", 0);
+    kalman("kal_docked", "gpm_a", 0);
+    kalman("kal_docked_pw", "gpm_b", 0);
+
+    gts("gts_a");
+    gts("gts_b");
+    gts("gts_c");
+    gts("gts_d");
+    gts("gts_e");
+    gts("gts_f");
+    timegmbl("tg_a");
+    timegmbl("tg_b");
+    timegmbl("tg_c");
+    timegmbl("tg_d");
+
+    return (oracle_finish("oracle_dap_lm"));
+} /* main */
+
 /**********************************************************************
  * AGC: none -- assertion hook: print and count.
  *
@@ -92,8 +203,8 @@ bool agc_assert_report(const char *file, int line, const char *expr)
     return (false);
 }
 
-#define DAPBOOLS_WORD 13
-#define FLGWRD10      10
+#define DAPBOOLS_WORD 13 /* DAPBOOLS = flagword 13 */
+#define FLGWRD10      10 /* flagword 10 */
 
 /**********************************************************************
  * AGC: none -- C state as the AGC runs start (zeroed erasable).
@@ -133,7 +244,7 @@ static void fresh(void)
  *
  * RETURNS: none
  **********************************************************************/
-static void cmp_sp(const char *t, const char *what, long got, const char *n, long tol)
+static void cmp_sp(const char *t, const char *what, long int got, const char *n, long int tol)
 {
     (void) oracle_cmp(t, what, got, oracle_out_sp(t, n), tol);
 }
@@ -151,7 +262,7 @@ static void cmp_sp(const char *t, const char *what, long got, const char *n, lon
  *
  * RETURNS: none
  **********************************************************************/
-static void accs(const char *t, long tol)
+static void accs(const char *t, long int tol)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -174,9 +285,9 @@ static void accs(const char *t, long tol)
 
     for (int k = 0; k < 5; k++)
     {
-        char n[16];
+        char n[16]; /* erasable name E6,1530+k */
 
-        (void) snprintf(n, sizeof n, "E6,%04o", 01530 + k);
+        (void) snprintf(n, sizeof (n), "E6,%04o", 01530 + k);
         cmp_sp(t, n, d->jacc[k], n, tol);
     }
 
@@ -197,9 +308,9 @@ static void accs(const char *t, long tol)
      * sign (SIGNAOS = 1), so the V-axis pairs are compared as stored.    */
     for (int k = 0; k < LM_BLOCK_N; k++)
     {
-        char n[16];
+        char n[16]; /* erasable name E6,1547+k */
 
-        (void) snprintf(n, sizeof n, "E6,%04o", 01547 + k);
+        (void) snprintf(n, sizeof (n), "E6,%04o", 01547 + k);
         cmp_sp(t, n, d->block[k], n, tol);
     }
 } /* accs */
@@ -217,7 +328,7 @@ static void accs(const char *t, long tol)
  *
  * RETURNS: none
  **********************************************************************/
-static void tjetlaw(const char *t, long tol)
+static void tjetlaw(const char *t, long int tol)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -303,7 +414,7 @@ static void gpm(const char *t)
  *
  * RETURNS: none
  **********************************************************************/
-static void kalman(const char *t, const char *gp, long tol)
+static void kalman(const char *t, const char *gp, long int tol)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -373,30 +484,30 @@ static void kalman(const char *t, const char *gp, long tol)
     cmp_sp(t, "NPTRAPS", d->nptraps, "NPTRAPS", 0);
     cmp_sp(t, "NQTRAPS", d->nqtraps, "NQTRAPS", 0);
     cmp_sp(t, "NRTRAPS", d->nrtraps, "NRTRAPS", 0);
-    (void) oracle_cmp(t, "AOSQ", (long) d->aosq * 16384 + d->aosq_lo, oracle_out_dp(t, "AOSQ"), tol);
-    (void) oracle_cmp(t, "AOSR", (long) d->aosr * 16384 + d->aosr_lo, oracle_out_dp(t, "AOSR"), tol);
+    (void) oracle_cmp(t, "AOSQ", (long int) d->aosq * 16384 + d->aosq_lo, oracle_out_dp(t, "AOSQ"), tol);
+    (void) oracle_cmp(t, "AOSR", (long int) d->aosr * 16384 + d->aosr_lo, oracle_out_dp(t, "AOSR"), tol);
     cmp_sp(t, "ALPHAQ", d->alphaq, "ALPHAQ", tol);
     cmp_sp(t, "ALPHAR", d->alphar, "ALPHAR", tol);
     cmp_sp(t, "AOSQTERM", d->aosqterm, "AOSQTERM", tol);
     cmp_sp(t, "AOSRTERM", d->aosrterm, "AOSRTERM", tol);
-    (void) oracle_cmp(t, "DXERROR", (long) d->dxerror * 16384 + d->dxerror_lo, oracle_out_dp(t, "DXERROR"), tol);
-    (void) oracle_cmp(t, "DYERROR", (long) d->qerror * 16384 + d->dyerror_lo, oracle_out_dp(t, "DYERROR"), tol);
-    (void) oracle_cmp(t, "DZERROR", (long) d->rerror * 16384 + d->dzerror_lo, oracle_out_dp(t, "DZERROR"), tol);
+    (void) oracle_cmp(t, "DXERROR", (long int) d->dxerror * 16384 + d->dxerror_lo, oracle_out_dp(t, "DXERROR"), tol);
+    (void) oracle_cmp(t, "DYERROR", (long int) d->qerror * 16384 + d->dyerror_lo, oracle_out_dp(t, "DYERROR"), tol);
+    (void) oracle_cmp(t, "DZERROR", (long int) d->rerror * 16384 + d->dzerror_lo, oracle_out_dp(t, "DZERROR"), tol);
     cmp_sp(t, "JETRATE", d->jetrate[0], "JETRATE", tol);
     cmp_sp(t, "JETRATEQ", d->jetrate[1], "JETRATEQ", tol);
     cmp_sp(t, "JETRATER", d->jetrate[2], "JETRATER", tol);
     cmp_sp(t, "TJP", d->tj[0], "TJP", 0);
     cmp_sp(t, "TJU", d->tj[1], "TJU", 0);
     cmp_sp(t, "TJV", d->tj[2], "TJV", 0);
-    (void) oracle_cmp(t, "OLDXFORP", d->oldxforp, (long) oracle_out_raw(t, "OLDXFORP"), 0);
-    (void) oracle_cmp(t, "OLDYFORP", d->oldyforp, (long) oracle_out_raw(t, "OLDYFORP"), 0);
-    (void) oracle_cmp(t, "OLDZFORQ", d->oldzforq, (long) oracle_out_raw(t, "OLDZFORQ"), 0);
+    (void) oracle_cmp(t, "OLDXFORP", d->oldxforp, (long int) oracle_out_raw(t, "OLDXFORP"), 0);
+    (void) oracle_cmp(t, "OLDYFORP", d->oldyforp, (long int) oracle_out_raw(t, "OLDYFORP"), 0);
+    (void) oracle_cmp(t, "OLDZFORQ", d->oldzforq, (long int) oracle_out_raw(t, "OLDZFORQ"), 0);
 
     for (int k = 0; k < 6; k++)
     {
-        char n[16];
+        char n[16]; /* DOWNTORK name */
 
-        (void) snprintf(n, sizeof n, (k == 0) ? "DOWNTORK" : "DOWNTORK+%d", k);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "DOWNTORK" : "DOWNTORK+%d", k); /* DOWNTORK, DOWNTORK+1 .. */
         cmp_sp(t, n, d->downtork[k], n, 0);
     }
 } /* kalman */
@@ -449,7 +560,7 @@ static void gts_outputs(const char *t, const lm_dap_t *d)
     cmp_sp(t, "NEGUR", d->negur, "NEGUQ+2", 0);
     cmp_sp(t, "QACCDOT", d->qaccdot, "QACCDOT", 0);
     cmp_sp(t, "RACCDOT", d->raccdot, "RACCDOT", 0);
-    (void) oracle_cmp(t, "RCSFLAGS", d->rcsflags, (long) oracle_out_raw(t, "RCSFLAGS"), 0);
+    (void) oracle_cmp(t, "RCSFLAGS", d->rcsflags, (long int) oracle_out_raw(t, "RCSFLAGS"), 0);
     cmp_sp(t, "QGIMTIMR", d->qgimtimr, "QGIMTIMR", 0);
     cmp_sp(t, "RGIMTIMR", d->rgimtimr, "QGIMTIMR+2", 0);
     cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);
@@ -514,102 +625,3 @@ static void timegmbl(const char *t)
     oracle_require_ok(t, "ENDOFJOB");
     gts_outputs(t, d);
 }
-
-/* TJETLAW sweep over the switch-curve blocks of the 1/ACCS cases.        */
-static const char *const tjs[] = {
-    "tjs_u_big1",
-    "tjs_u_big2",
-    "tjs_v_big1",
-    "tjs_v_big2",
-    "tjs_u_bign",
-    "tjs_v_bign",
-    "tjs_u_drift1",
-    "tjs_u_drift2",
-    "tjs_v_drift3",
-    "tjs_p_drift",
-    "tjs_u_wide1",
-    "tjs_v_wide2",
-    "tjs_u_fail",
-    "tjs_v_fail",
-    "tjs_u_netneg",
-    "tjs_v_netneg",
-    "tjs_u_vbig",
-    "tjs_p_zero_e",
-    "tjs_u_hugerate",
-    "tjs_v_hugeerr",
-};
-
-/**********************************************************************
- * AGC: none -- run the tests.
- *
- * FUNCTION NAME: main
- *
- * ARGUMENTS: none
- *
- * RETURNS: int -- 0 when every check passed, else 1
- **********************************************************************/
-int main(void)
-{
-    if (!oracle_load("dap_lm"))
-    {
-        (void) printf("oracle_dap_lm: SKIP (case files not found)\n");
-
-        return (0);
-    }
-
-    accs("accs_dps", 0);
-    accs("accs_aps", 0);
-    accs("accs_docked", 0);
-    accs("accs_docked_thrust", 0);
-    accs("accs_docked_aps", 0);
-    accs("accs_docked_fix", 0);
-    accs("accs_dps_wide", 0);
-    accs("accs_aos_small", 0);
-    accs("accs_aos_some", 0);
-    accs("accs_aos_big", 0);
-    accs("accs_aos_bigneg", 0);
-    accs("accs_aos_netneg", 0);
-    accs("accs_aos_vbig", 0);
-    accs("accs_aos_ovf", 0);
-    accs("accs_aos_fail1", 0);
-    accs("accs_aos_fail2", 0);
-    accs("accs_aos_drift", 0);
-    accs("accs_aos_aps", 0);
-    accs("accs_aos_wide", 0);
-    tjetlaw("tjet_p_small", 0);
-    tjetlaw("tjet_p_neg", 0);
-    tjetlaw("tjet_u_mid", 0);
-    tjetlaw("tjet_v_rate", 0);
-    tjetlaw("tjet_u_large", 0);
-    tjetlaw("tjet_v_coast", 0);
-    tjetlaw("tjet_p_aps", 0);
-    tjetlaw("tjet_u_aps", 0);
-
-    for (size_t k = 0; k < sizeof tjs / sizeof tjs[0]; k++)
-    {
-        tjetlaw(tjs[k], 0); /* review-dap-lm sweep */
-    }
-
-    gpm("gpm_a");
-    gpm("gpm_b");
-    gpm("gpm_c");
-    kalman("kal_coast", "gpm_a", 0);
-    kalman("kal_jets", "gpm_a", 0);
-    kalman("kal_powered", "gpm_b", 0);
-    kalman("kal_bigtrap", "gpm_c", 0);
-    kalman("kal_docked", "gpm_a", 0);
-    kalman("kal_docked_pw", "gpm_b", 0);
-
-    gts("gts_a");
-    gts("gts_b");
-    gts("gts_c");
-    gts("gts_d");
-    gts("gts_e");
-    gts("gts_f");
-    timegmbl("tg_a");
-    timegmbl("tg_b");
-    timegmbl("tg_c");
-    timegmbl("tg_d");
-
-    return (oracle_finish("oracle_dap_lm"));
-} /* main */

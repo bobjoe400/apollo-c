@@ -49,30 +49,29 @@
 #include "../internal.h"
 #include "agc/core/assert.h"
 
-#define TJ_SENSOR   6400    /* SENSOR 14400: 4 s / 10.24 s               */
-#define TJ_M3DEG    (-1092) /* -3DEG  DEC -.06667 at 45 deg              */
-#define TJ_M0112A8  (-23)   /* -.0112A8 DEC -.00141: -.01125 s^2 at 8    */
-#define TJ_1AT4     410     /* .1AT4  DEC .025: 0.1 s at 4               */
-#define TJ_1AT2     819     /* .1AT2  DEC .05: 0.1 s at 2                */
-#define TJ_0375AT4  154     /* .0375AT4 DEC .00938                       */
-#define TJ_025AT2   205     /* -(-.025AT2) DEC .0125: .025 s at 2        */
-#define TJ_025AT4   102     /* -(-.025AT4) DEC .00625                    */
-#define TJ_M05AT2   (-410)  /* -.05AT2 DEC -.025                         */
-#define TJ_M15AT2   (-1229) /* -.15AT2 DEC -.075                         */
-#define TJ_00375HI  7       /* .00375A8 2DEC .00375 B-3, major word      */
-#define TJ_00375LO  11141   /*                          minor word       */
-#define TJ_MTJMAX   (-614)  /* -TJMAX DEC -.0375: 150 ms at 4 s          */
-#define TJ_TJMIN    82      /* TJMIN DEC .005: 20 ms at 4 s              */
-#define TJ_RUFRATE  2366    /* RUFRATE DEC .1444: 6.5 deg/s at pi/4      */
-#define TJ_FULLTIME 1024    /* BIT11: 250 ms at 4 s                      */
-#define TJ_MINIMP   32      /* BIT6: one-jet minimum impulse (zone 3)    */
-#define TJ_M1_8     (-2048) /* -1/8                                      */
-#define TJ_BIT12    2048
-#define TJ_BIT13    ((agc_sp_t) 4096)
-#define TJ_BIT14    ((agc_sp_t) 8192)
-#define TJ_BIT11    ((agc_sp_t) 1024)
-#define TJ_FLAT     6       /* FLAT = BLOCKTOP +6                        */
-#define TJ_ZONE3LIM 7       /* ZONE3LIM = BLOCKTOP +7                    */
+#define TJ_SENSOR   6400              /* SENSOR 14400: 4 s / 10.24 s               */
+#define TJ_M3DEG    (-1092)           /* -3DEG  DEC -.06667 at 45 deg              */
+#define TJ_M0112A8  (-23)             /* -.0112A8 DEC -.00141: -.01125 s^2 at 8    */
+#define TJ_1AT4     410               /* .1AT4  DEC .025: 0.1 s at 4               */
+#define TJ_1AT2     819               /* .1AT2  DEC .05: 0.1 s at 2                */
+#define TJ_0375AT4  154               /* .0375AT4 DEC .00938                       */
+#define TJ_025AT2   205               /* -(-.025AT2) DEC .0125: .025 s at 2        */
+#define TJ_025AT4   102               /* -(-.025AT4) DEC .00625                    */
+#define TJ_M05AT2   (-410)            /* -.05AT2 DEC -.025                         */
+#define TJ_M15AT2   (-1229)           /* -.15AT2 DEC -.075                         */
+#define TJ_00375HI  7                 /* .00375A8 2DEC .00375 B-3, major word      */
+#define TJ_00375LO  11141             /*                          minor word       */
+#define TJ_MTJMAX   (-614)            /* -TJMAX DEC -.0375: 150 ms at 4 s          */
+#define TJ_TJMIN    82                /* TJMIN DEC .005: 20 ms at 4 s              */
+#define TJ_RUFRATE  2366              /* RUFRATE DEC .1444: 6.5 deg/s at pi/4      */
+#define TJ_FULLTIME 1024              /* BIT11: 250 ms at 4 s                      */
+#define TJ_MINIMP   32                /* BIT6: one-jet minimum impulse (zone 3)    */
+#define TJ_M1_8     (-2048)           /* -1/8                                      */
+#define TJ_BIT13    ((agc_sp_t) 4096) /* .25: SCALEE pi -> pi/4; EDOT^2 to pi^2/2^8 */
+#define TJ_BIT14    ((agc_sp_t) 8192) /* .5: MP BIT14 rescales TJET 2 s -> 4 s */
+#define TJ_BIT11    ((agc_sp_t) 1024) /* 1/16: RUFLAW3 distance from pi/4 to 4 pi */
+#define TJ_FLAT     6                 /* FLAT = BLOCKTOP +6                        */
+#define TJ_ZONE3LIM 7                 /* ZONE3LIM = BLOCKTOP +7                    */
 
 /* AXISDIFF (p.1469): BLOCKTOP offset of the axis block relative to U.    */
 static const agc_sp_t axisdiff[3] = {-16, 0, 16};
@@ -80,11 +79,11 @@ static const agc_sp_t axisdiff[3] = {-16, 0, 16};
 /* TJETLAW working registers (DAPTEMP1-6, DAPTREG1-4).                    */
 typedef struct tjl
 {
-    agc_sp_t     adr1;     /* ADRSDIF1: axis + sign-of-EDOT indexer     */
-    agc_sp_t     adr2;     /* ADRSDIF2: ADRSDIF1 + max-jet / sense       */
-    agc_sp_t     rotsense; /* ROTSENSE +-SENSOR                          */
+    agc_sp_t     adr1;     /* ADRSDIF1: axis + sign-of-EDOT indexer (unscaled index) */
+    agc_sp_t     adr2;     /* ADRSDIF2: ADRSDIF1 + max-jet / sense (unscaled index) */
+    agc_sp_t     rotsense; /* ROTSENSE +-SENSOR: 4 s -> T6 scale and sign, scaled 10.24/4 */
     agc_sp_t     edotsq;   /* EDOTSQ at pi^2/2^8                         */
-    agc_sp_t     ttoaxis;  /* TTOAXIS at 4 s                             */
+    agc_sp_t     ttoaxis;  /* TTOAXIS, scaled 4 s */
     lm_dp_pair_t hh;       /* HH, DP at 8 s^2                            */
 } tjl_t;
 
@@ -106,7 +105,7 @@ typedef struct tjl
  **********************************************************************/
 static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
 {
-    int i = LM_BLK_U + label + (int) idx;
+    int i = LM_BLK_U + label + (int) idx; /* BLOCKTOP index */
 
     if (!AGC_ASSERT(i >= 0 && i < LM_BLOCK_N))
     {
@@ -145,7 +144,7 @@ static agc_sp_t chkmintj(int32_t a)
         return (0); /* COASTTJ        */
     }
 
-    agc_sp_t r = lm_dap_wrap(a);
+    agc_sp_t r = lm_dap_wrap(a); /* CHKMINTJ result, scaled 4 s */
 
     if (!AGC_ASSERT(r > 0))
     {
@@ -236,11 +235,11 @@ static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
  **********************************************************************/
 static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 {
-    agc_sp_t     x = lm_dap_wrap((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1));
-    lm_dp_pair_t p = lm_dap_mp(x, blk(d, LM_BK_ACCFCTZ1, w->adr2));
+    agc_sp_t     x = lm_dap_wrap((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1)); /* FIREFCT - AXISDIST (CAE FIREFCT, SU AXISDIST), scaled pi/4 rad */
+    lm_dp_pair_t p = lm_dap_mp(x, blk(d, LM_BK_ACCFCTZ1, w->adr2));                       /* (..) x ACCFCTZ1: H before DDOUBL, DP */
 
     w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(p));
-    agc_sp_t t = lm_dap_wrap((int32_t) w->ttoaxis + TJ_MTJMAX);
+    agc_sp_t t = lm_dap_wrap((int32_t) w->ttoaxis + TJ_MTJMAX); /* TTOAXIS - TJMAX, scaled 4 s */
 
     if ((int32_t) lm_dap_mphi(t, t) - w->hh.hi <= 0)
     {
@@ -254,12 +253,12 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 
     if ((int32_t) w->hh.hi - 2 <= 0)
     { /* FORMULA3       */
-        agc_sp_t q3 = lm_dap_dv(w->hh, TJ_025AT2);
+        agc_sp_t q3 = lm_dap_dv(w->hh, TJ_025AT2); /* HH / .25 s: FORMULA3 quotient, scaled 4 s */
 
         return (chkmintj((int32_t) q3 + w->ttoaxis));
     }
 
-    agc_sp_t q = lm_dap_dv(w->hh, TJ_1AT2);
+    agc_sp_t q = lm_dap_dv(w->hh, TJ_1AT2); /* HH / .1 s: quotient, scaled 4 s */
 
     if (!AGC_ASSERT(q >= LM_NEGMAX))
     {
@@ -299,16 +298,16 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 
     w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(lm_dap_mp(f, blk(d, LM_BK_ACCFCTZ5, w->adr2))));
     w->ttoaxis = lm_dap_mphi(blk(d, LM_BK_1ANET2, w->adr2), d->edot);
-    int32_t t1 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M05AT2) + w->hh.hi - 2;
+    int32_t t1 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M05AT2) + w->hh.hi - 2; /* H - .05 TTOAXIS - .00125, scaled 8 s^2 */
 
     if (t1 <= 0)
     { /* FORMULA1       */
-        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_025AT4));
+        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_025AT4)); /* HH / (TTOAXIS - .025): FORMULA1, scaled 2 s */
 
         return (chkmintj(lm_dap_mphi(q1, TJ_BIT14)));
     }
 
-    int32_t t2 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M15AT2) + w->hh.hi + TJ_M0112A8;
+    int32_t t2 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M15AT2) + w->hh.hi + TJ_M0112A8; /* H - .15 TTOAXIS - .01125, scaled 8 s^2 */
 
     if (t2 > 0)
     {
@@ -318,7 +317,7 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
     lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
 
     w->hh       = lm_dap_das(w->hh, k);
-    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4));
+    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4)); /* (HH + .00375) / (TTOAXIS + .1): FORMULA2, scaled 2 s */
 
     if (!AGC_ASSERT(q2 >= LM_NEGMAX))
     {
@@ -345,7 +344,7 @@ static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
  **********************************************************************/
 static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
 {
-    agc_sp_t tj = d->tj[d->axisctr + 1];
+    agc_sp_t tj = d->tj[d->axisctr + 1]; /* TJ of the axis now, scaled 0.625 ms per count */
 
     if (lm_dap_mphi((agc_sp_t) -tj, w->rotsense) <= 0)
     {
@@ -359,14 +358,14 @@ static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
 
     if (d->block[TJ_FLAT] > 0)
     { /* DRIFT/ON       */
-        int32_t s = -2 * (int32_t) blk(d, LM_BK_FIREDB, w->adr1) + d->firefct;
+        int32_t s = -2 * (int32_t) blk(d, LM_BK_FIREDB, w->adr1) + d->firefct; /* FIREFCT - 2 FIREDB: target strip reachable, scaled pi/4 rad */
 
         if (s > 0)
         {
             return (0);
         }
 
-        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w));
+        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w)); /* ZONE2,3 time, or FULLTIME */
     }
 
     if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
@@ -379,7 +378,7 @@ static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w));
+    return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w)); /* ZONE1 time, or FULLTIME */
 }
 
 /**********************************************************************
@@ -399,7 +398,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 {
     w->edotsq    = lm_dap_mphi(lm_dap_mphi(d->edot, d->edot), TJ_BIT13);
     int32_t  err = (d->e != 0) ? (int32_t) lm_dap_ccs_dim(d->e) + TJ_M3DEG : 0; /* ERRTEST */
-    agc_sp_t n;
+    agc_sp_t n;                                                                 /* NUMBERT for TJCALC, unscaled code */
 
     if (err - blk(d, LM_BK_FIREDB, w->adr1) > 0 || d->sensetyp <= 0)
     {
@@ -411,8 +410,8 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
         n = (agc_sp_t) (d->sensetyp - 1); /* SENSTEST       */
     }
 
-    d->numbert = n; /* TJCALC         */
-    int32_t f  = (int32_t) lm_dap_mphi((agc_sp_t) -w->edotsq, blk(d, LM_BK_1ANET1, w->adr2)) + blk(d, LM_BK_FIREDB, w->adr1) - d->e;
+    d->numbert = n;                                                                                                                  /* TJCALC         */
+    int32_t f  = (int32_t) lm_dap_mphi((agc_sp_t) -w->edotsq, blk(d, LM_BK_1ANET1, w->adr2)) + blk(d, LM_BK_FIREDB, w->adr1) - d->e; /* -.5 EDOT^2/ACC + FIREDB - E in A, scaled pi/4 rad */
 
     d->firefct = lm_dap_sat(f); /* -E-.5EDOT^2/ACC-DB; TS FIREFCT overflow (and its skip) unreachable: the rough law takes large E, EDOT, so sat = wrap here */
 
@@ -507,8 +506,8 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
  **********************************************************************/
 static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
-    lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2));
-    int32_t      x = (int32_t) p.hi + TJ_M1_8;
+    lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)); /* desired change x 1/ANET (2 jets): TJET, DP scaled 32 s */
+    int32_t      x = (int32_t) p.hi + TJ_M1_8;                        /* TJET - 4 s, scaled 32 s */
 
     if (x >= 0)
     {
@@ -545,9 +544,9 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
     if (!negative_error)
     { /* RUFLAW2        */
         rufsetup(d, w, true);
-        int32_t v = (int32_t) TJ_RUFRATE + d->edot;
+        int32_t v = (int32_t) TJ_RUFRATE + d->edot; /* RUFRATE + EDOT in A, scaled pi/4 rad/s */
 
-        return (lm_dap_ovf(v) ? (agc_sp_t) TJ_FULLTIME : rough_law_jet_time(d, w, (agc_sp_t) v));
+        return (lm_dap_ovf(v) ? (agc_sp_t) TJ_FULLTIME : rough_law_jet_time(d, w, (agc_sp_t) v)); /* TS A overflow skip: FULLTIME */
     }
 
     d->edot = lm_dap_wrap((int32_t) d->edot - TJ_RUFRATE); /* RUFLAW1: ADS   */
@@ -560,7 +559,15 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
     }
 
     rufsetup(d, w, false); /* SMALRATE       */
-    w->adr2 = (agc_sp_t) (w->adr2 + ((w->rotsense > 0) ? 1 : ((w->rotsense < 0) ? -1 : 0)));
+
+    if (w->rotsense > 0)
+    { /* CCS ROTSENSE: +1 to the 1/ANET of the proper sense */
+        w->adr2 = (agc_sp_t) (w->adr2 + 1);
+    }
+    else if (w->rotsense < 0)
+    {
+        w->adr2 = (agc_sp_t) (w->adr2 - 1);
+    }
 
     if (!AGC_ASSERT(d->edot <= 0))
     {
@@ -587,19 +594,19 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
 static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
 {
     rufsetup(d, w, true);
-    agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1));
-    agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11); /* at 4 pi        */
-    agc_sp_t sq   = lm_dap_mphi(d->edot, d->edot);
+    agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1)); /* E - FIREDB, scaled pi/4 rad */
+    agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11);                                 /* distance from the switch curve, scaled 4 pi rad */
+    agc_sp_t sq   = lm_dap_mphi(d->edot, d->edot);                               /* EDOT^2, scaled pi^2/16 rad^2/s^2 */
 
-    d->edot   = t; /* XCH EDOT       */
-    int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w->adr1)) + t;
+    d->edot   = t;                                                                /* XCH EDOT       */
+    int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w->adr1)) + t; /* 1/ANET1 EDOT^2 + E - FIREDB: above the curve, scaled 4 pi rad */
 
     if (!AGC_ASSERT(s >= -2 * LM_POSMAX && s <= 2 * LM_POSMAX))
     {
         return (0); /* no valid result */
     }
 
-    return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME);
+    return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME); /* below the switch curve: coast */
 }
 
 /**********************************************************************
@@ -619,7 +626,7 @@ static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
  **********************************************************************/
 static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
-    int axis = d->axisctr;
+    int axis = d->axisctr; /* AXISCTR: -1 P, 0 U, 1 V */
 
     d->tj[axis + 1] = lm_dap_mphi(a, w->rotsense);
 
@@ -673,7 +680,7 @@ agc_status_t lm_dap_tjetlaw(void)
     }
 
     w.adr2          = w.adr1;
-    agc_sp_t     a;
+    agc_sp_t     a;                                   /* jet time from the chosen law, scaled 4 s */
     lm_dp_pair_t pe = lm_dap_mp(d->e, (agc_sp_t) 16); /* MP BIT5        */
 
     if (pe.hi != 0)

@@ -80,9 +80,44 @@
 #include "agc/guidance/guidance.h"
 #include "agc/lm/dap.h"
 
-static int g_checks;
-static int g_failures;
-static int g_assert_reports;
+static int g_checks;         /* checks run */
+static int g_failures;       /* checks failed */
+static int g_assert_reports; /* AGC_ASSERT failures reported */
+
+static void         check(bool ok, int line, const char *text);
+static agc_status_t setup_descent(int32_t kg);
+static void         test_accs(void);
+static void         set_axis(lm_dap_t *d, agc_sp_t axis, agc_sp_t e, agc_sp_t edot);
+static void         test_tjetlaw(void);
+static void         test_rate_estimator(void);
+static void         test_rcsmon(void);
+static void         test_spsrcs(void);
+static void         test_rot_touv(void);
+static void         test_zero_erasable(void);
+
+/**********************************************************************
+ * AGC: none -- run the tests.
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passed, else 1
+ **********************************************************************/
+int main(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    test_accs();
+    test_tjetlaw();
+    test_rate_estimator();
+    test_rcsmon();
+    test_spsrcs();
+    test_rot_touv();
+    test_zero_erasable();
+    (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
+
+    return ((g_failures == 0) ? 0 : 1); /* exit status */
+}
 
 /**********************************************************************
  * AGC: none -- assertion hook: print and count.
@@ -172,8 +207,8 @@ static agc_status_t setup_descent(int32_t kg)
  **********************************************************************/
 static void test_accs(void)
 {
-    agc_status_t    st = setup_descent(15000);
-    const lm_dap_t *d  = lm_dap_state(); /* DAP erasables */
+    agc_status_t    st = setup_descent(15000); /* 1/ACCS status */
+    const lm_dap_t *d  = lm_dap_state();       /* DAP erasables */
 
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_erase_lemmass() == KG(15000));
@@ -239,7 +274,7 @@ static void test_tjetlaw(void)
         CHECK(d->tj[axis + 1] == 0);
     }
 
-    agc_sp_t ten_deg = (agc_sp_t) (16384 * 10 / 180); /* at pi            */
+    agc_sp_t ten_deg = (agc_sp_t) (16384 * 10 / 180); /* 10 deg, scaled pi rad */
 
     for (agc_sp_t axis = 0; axis <= 1; axis++)
     {
@@ -282,14 +317,14 @@ static void test_rate_estimator(void)
     d->oldxforp      = 0;
     d->oldyforp      = 0;
     d->oldzforq      = 0;
-    int converged_at = -1;
+    int converged_at = -1; /* pass at which OMEGAP settled (-1: never) */
 
     for (int pass = 1; pass <= 30; pass++)
     {
         d->dapcdu[0] = (uint16_t) ((d->dapcdu[0] + 10u) & 077777u);
         CHECK(lm_dap_rateloop() == AGC_STATUS_OK);
         CHECK(lm_dap_backp() == AGC_STATUS_OK);
-        int32_t err  = (int32_t) d->omegap - 400;
+        int32_t err  = (int32_t) d->omegap - 400; /* OMEGAP error from the true rate, scaled pi/4 rad/s */
 
         if (converged_at < 0 && err >= -8 && err <= 8)
         {
@@ -375,8 +410,8 @@ static void test_rot_touv(void)
 
     d->coeffq  = -11585;
     d->coeffr  = 11585;
-    agc_sp_t u = 0;
-    agc_sp_t v = 0;
+    agc_sp_t u = 0; /* U result, scale of the input */
+    agc_sp_t v = 0; /* V result, scale of the input */
 
     lm_dap_rot_touv(1000, 0, &u, &v);
     CHECK(u > 0 && v < 0);
@@ -394,7 +429,7 @@ static void test_rot_touv(void)
  **********************************************************************/
 static void test_zero_erasable(void)
 {
-    int reports = g_assert_reports;
+    int reports = g_assert_reports; /* assertion reports before the run */
 
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
@@ -405,33 +440,9 @@ static void test_zero_erasable(void)
     agc_guid_state()->lm.abdelv = 0;
     CHECK(agc_lm_dap_jet_accel_update() == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
-    CHECK(agc_erase_lemmass() == 438); /* DEC 1750 B-16    */
+    CHECK(agc_erase_lemmass() == 438);                                       /* DEC 1750 B-16    */
     CHECK(g_assert_reports == reports);
-    lm_dp_pair_t q              = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85);
+    lm_dp_pair_t q              = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
 
     CHECK(q.hi == 16383 && q.lo == -85);
-}
-
-/**********************************************************************
- * AGC: none -- run the tests.
- *
- * FUNCTION NAME: main
- *
- * ARGUMENTS: none
- *
- * RETURNS: int -- 0 when every check passed, else 1
- **********************************************************************/
-int main(void)
-{
-    agc_state_init(AGC_VEHICLE_LM);
-    test_accs();
-    test_tjetlaw();
-    test_rate_estimator();
-    test_rcsmon();
-    test_spsrcs();
-    test_rot_touv();
-    test_zero_erasable();
-    (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
-
-    return ((g_failures == 0) ? 0 : 1);
 }
