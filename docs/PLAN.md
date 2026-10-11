@@ -156,6 +156,7 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 
 0. format2 (comment relocation + fixed continuation indent) -- BEFORE any
    further lane work (user, 2026-10-11)
+0b. dispatch (4 flat generated switches, rule-4 exempt) -- right after format2
 1. review-io-dsky      DONE
 2. review-guid-entry   (F14 fix in progress)
 3. review-nav-aux      (INCORP1 fixes in progress)

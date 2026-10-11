@@ -22,7 +22,14 @@ Language: C11, no extensions. Build flags (Makefile):
    owning module's `.c` file, mirroring the AGC's fixed erasable banks.
 4. **Short functions.** <= 60 lines of code per function (blank lines and
    comments excluded). `tools/check_rules.py` enforces this. Split AGC
-   routines at their natural labels.
+   routines at their natural labels, never by count.
+   **One exemption:** the generated dispatch tables in src/exec/dispatch.c
+   (one `switch` per vehicle per kind: CSM jobs, CSM tasks, LM jobs, LM
+   tasks). They are the C form of the AGC's 2CADR tables; the unit a
+   reviewer verifies is tools/registry.tsv plus tools/gen_registry.py, not
+   the switch. A file claims the exemption only with the marker
+   `/* GENERATED-DISPATCH: rule 4 exempt */` in its first 5 lines, and
+   check_rules.py accepts the marker only for src/exec/dispatch.c.
 5. **Assertions.** Average >= 2 assertions per function. Use `AGC_ASSERT(cond)`
    from `include/agc/core/assert.h`: it is side-effect free, evaluates to a
    `bool`, and callers recover by returning `AGC_STATUS_*` error codes. Never

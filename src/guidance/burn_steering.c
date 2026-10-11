@@ -68,26 +68,33 @@
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
 static const agc_dp_t THETACON = 333772; /* 1/pi, scale 2^-8 */
+
 /* TWODT 2DEC 200.0 B-28: 2 s.                                             */
 static const agc_dp_t TWODT = 200; /* 2 s, cs 2^28 */
+
 /* 200CS 2DEC 200 B-12.                                                    */
 static const agc_dp_t CS200_B12 = 13107200; /* 200 cs, scale 2^12 */
+
 /* EPS1 (10 deg) and EPS2 (35 deg) at 1 revolution (LM S40.1B).            */
 static const agc_dp_t EPS1 = 7456540; /* 10 deg, rev 2^0 */
 static const agc_dp_t EPS2 = 26097892; /* 35 deg, rev 2^0 */
+
 /* TRIMSCAL 2DEC 1.07975111 B-1: 85.41"/bit trims to rev; YBIAS, PBIAS:
  * yaw +0.95 deg and pitch -2.15 deg mechanical bias, thrust on.          */
 static const agc_dp_t TRIMSCAL = 144921741; /* scale 2^1 */
 static const agc_dp_t YBIAS    = 708371; /* +0.95 deg, rev 2^0 */
 static const agc_dp_t PBIAS    = -1603156; /* -2.15 deg, rev 2^0 */
+
 /* TENBNK14 2DEC 10. B-4; QUADROT: S/C to control axes, X rotation -7.25
  * degrees, elements times 0.1 (GIMBAL_LOCK_AVOIDANCE p.412-413).          */
 static const agc_dp_t TENBNK14 = 167772160; /* 10, scale 2^4 */
 static const agc_dp_t Q_P1     = 26843546; /* .1, scale 2^0              */
 static const agc_dp_t Q_COS    = 26628797; /* (.1) COS 7.25, scale 2^0   */
 static const agc_dp_t Q_SIN    = 3387655;  /* (.1) SIN 7.25, scale 2^0   */
+
 /* -FOURDT 2DEC -800 B-18: -4 (200 cs), -4 for scaling.                    */
 static const agc_dp_t MFOURDT = -819200; /* -800 cs, scale 2^18 */
+
 /* S40.13 (CM): S40.135 2DEC 69.6005183 B-23 (7.96 s of 2-jet ullage),
  * 1SEC2D 100 B-14, 3.5SEC 350 B-13, 5SECOND 500 B-14.                     */
 static const agc_dp_t TWO_JET_IMPULSE = 2227; /* M.newton cs, scale 2^23 */

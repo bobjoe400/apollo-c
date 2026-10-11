@@ -25,6 +25,10 @@ WARN = []
 def check_file(path):
     with open(path, encoding='utf-8', errors='replace') as fh:
         lines = fh.readlines()
+    rule4_exempt = any('GENERATED-DISPATCH: rule 4 exempt' in l for l in lines[:5])
+    if rule4_exempt and not path.endswith('src/exec/dispatch.c'):
+        HARD.append(f'{path}:1: rule 4 exemption marker is only allowed in src/exec/dispatch.c')
+        rule4_exempt = False
     n_funcs = 0
     n_asserts = 0
     ifs = 0
@@ -76,7 +80,7 @@ def check_file(path):
             if re.search(r'\b' + re.escape(in_func) + r'\s*\(', s) and not s.startswith(('/*', '*', '//')):
                 HARD.append(f'{path}:{i}: rule 1: direct recursion in {in_func}')
             if depth <= 0:
-                if code_lines > MAX_FUNC_LINES:
+                if code_lines > MAX_FUNC_LINES and not rule4_exempt:
                     HARD.append(f'{path}:{start}: rule 4: {in_func} has {code_lines} code lines (> {MAX_FUNC_LINES})')
                 in_func = None
     if ifs > 1 + (1 if path.endswith('agc_assert.h') else 0):
