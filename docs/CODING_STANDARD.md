@@ -111,8 +111,15 @@ Language: C11, no extensions. Build flags (Makefile):
   meaning notes for a statement go on their own line ABOVE the statement
   (block style, same indentation) or trailing after the `;` when the whole
   statement fits on one line. `tools/fix_comments.py` enforces this.
-* Continuation lines indent by a fixed 8 spaces; they are never aligned to
-  an opening parenthesis (no staircases from nested calls).
-* A statement that needs more than two continuation lines because of
-  nested calls should be split with named temporaries (review item, not a
-  formatter job).
+* **No column limit. One statement per line.** The NASA guide sets no line
+  length; the 80-column limit is withdrawn. Nested-call chains stay on one
+  line; the formatter joins wrapped call arguments back onto the statement
+  line. (Reference: the user's hand-formatted agc_guid_calcut.)
+* Within a paragraph (consecutive non-blank lines) declarations line up as
+  columns: type, name, `=`, expression; trailing comments align to one
+  column just past the longest statement in the paragraph.
+* A single call with many long arguments MAY be wrapped by hand with each
+  argument under the first (reviewer's judgment, e.g. the CALCGRAV call);
+  the formatter never introduces wraps itself.
+* A statement that is unreadable on one line because of nesting is split
+  with named temporaries (review item), not wrapped.

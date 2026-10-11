@@ -19,9 +19,8 @@
 #include "../internal.h"
 
 #define VARST_N AGC_CSM_VARST_WORDS
-#define NEGBPW \
-    ((agc_sp_t) -3851)              /* 70364 DEC -15402.17 B-16: breakpoint
-                                         weight 33956 lb (SPS 10000 lb)   */
+/* 70364 DEC -15402.17 B-16: breakpoint weight 33956 lb (SPS 10000 lb) */
+#define NEGBPW   ((agc_sp_t) -3851)
 #define DXITFIX  ((agc_sp_t) -1263) /* 75420 DEC -1.88275 E-5 B+12      */
 #define W_ONE_SP 16384              /* 1.0 in SP units                   */
 

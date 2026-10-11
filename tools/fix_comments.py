@@ -48,7 +48,8 @@ import clang.cindex as ci
 
 WIDTH = 80
 CONT = 8
-CLANG_ARGS = ['-x', 'c', '-std=c11', '-Iinclude']
+# Lexing only: headers are not needed (and not read).
+CLANG_ARGS = ['-x', 'c', '-std=c11', '-nostdinc']
 
 BREAK_OPS = {
     '&&': 0, '||': 0, '?': 4, ':': 4,
@@ -96,7 +97,9 @@ class Source:
         self.toks = lex(path, text, self)
         self.sig = [t for t in self.toks if t.kind != 'c' and not t.pp]
         self.comments = [t for t in self.toks if t.kind == 'c' and not t.pp]
-        self.segs, self.brace_kind, self.level_at = segment(self)
+        self.segs, self.brace_kind, self.level_at, self.inner_at = \
+            segment(self)
+        self.sig_index = {id(t): k for k, t in enumerate(self.sig)}
 
     def line_of(self, off):
         lo, hi = 0, len(self.line_starts) - 1
@@ -128,11 +131,9 @@ def lex(path, text, src):
              ci.TokenKind.LITERAL: 'l'}
     out = []
     for t in tu.get_tokens(extent=tu.cursor.extent):
-        if t.location.file is None or \
-                os.path.abspath(t.location.file.name) != os.path.abspath(path):
-            continue
-        s = t.extent.start.offset
-        e = t.extent.end.offset
+        ext = t.extent
+        s = ext.start.offset
+        e = ext.end.offset
         out.append(Tok(kinds[t.kind], text[s:e], s, e, 0))
     out.sort(key=lambda x: x.start)
     for t in out:
@@ -160,9 +161,10 @@ def lex(path, text, src):
 def segment(src):
     """Split the significant tokens into segments; classify each `{`."""
     segs = []
-    stack = []          # 'func' | 'block' | 'record' | 'init'
+    stack = []          # 'func' | 'block' | 'record' | 'enum' | 'init'
     brace_kind = {}     # index of `{` in src.sig -> kind
     level_at = []       # brace depth before each sig token
+    inner_at = []       # (innermost brace kind, paren depth) at each token
     cur = []
     paren = 0
     sig = src.sig
@@ -176,6 +178,7 @@ def segment(src):
 
     for i, t in enumerate(sig):
         level_at.append(len(stack))
+        inner_at.append((stack[-1] if stack else None, paren))
         s = t.text
         in_init = bool(stack) and stack[-1] == 'init'
         if s in ('(', '['):
@@ -209,8 +212,10 @@ def segment(src):
                         h in ('struct', 'union', 'enum') for h in
                         head[:head.index('(')]):
                 kind = 'func'
-            elif any(h in ('struct', 'union', 'enum') for h in head):
+            elif any(h in ('struct', 'union') for h in head):
                 kind = 'record'
+            elif 'enum' in head:
+                kind = 'enum'
             else:
                 kind = 'block'
             close('header')
@@ -232,8 +237,10 @@ def segment(src):
                 close('stmt')
             elif s == ':' and sig[cur[0]].text in ('case', 'default'):
                 close('label')
+            elif s == ',' and stack and stack[-1] == 'enum':
+                close('item')       # one enumerator
     close('tail')
-    return segs, brace_kind, level_at
+    return segs, brace_kind, level_at, inner_at
 
 
 # ---------------------------------------------------------------------------
@@ -322,9 +329,17 @@ def removal(src, c):
 # Phase 1: comments inside statements
 # ---------------------------------------------------------------------------
 
-def movable(seg):
-    return 'func' in seg.ctx and 'record' not in seg.ctx and \
-        seg.kind != 'label'
+def movable(src, seg, how):
+    """Comments inside statements of function bodies move; so does the
+    trailing comment of a multi-line file-scope declaration (a prototype),
+    but not of a table with a brace initialiser.  Struct/union/enum bodies,
+    labels and initialiser tables are never touched."""
+    if seg.kind == 'label' or 'record' in seg.ctx or 'enum' in seg.ctx:
+        return False
+    if 'func' in seg.ctx:
+        return True
+    return how == 'trail' and not seg.ctx and seg.kind == 'stmt' and \
+        not any(src.sig[k].text == '{' for k in seg.toks)
 
 
 def seg_of_comments(src):
@@ -354,7 +369,9 @@ def seg_of_comments(src):
     return res
 
 
-def move_inside(src, stats):
+def move_inside(src, stats, trailing):
+    """trailing=False: comments inside statements; True: comments that
+    trail a statement spanning several lines (run after the re-break)."""
     where = seg_of_comments(src)
     groups = {}
     order = []
@@ -363,7 +380,7 @@ def move_inside(src, stats):
         if not w:
             continue
         g, how = w
-        if not movable(g):
+        if (how == 'trail') != trailing or not movable(src, g, how):
             continue
         first = src.sig[g.toks[0]]
         last = src.sig[g.toks[-1]]
@@ -416,6 +433,9 @@ def break_penalty(sig, toks, k, depth):
     """Penalty for a line break after toks[k], or None (not allowed)."""
     t = sig[toks[k]]
     s = t.text
+    if t.kind == 'l' and s.endswith('"') and k + 1 < len(toks) and \
+            sig[toks[k + 1]].text.startswith('"'):
+        return 30 * depth * depth       # between concatenated strings
     if t.kind not in ('p',):
         return None
     if s == ',':
@@ -485,7 +505,7 @@ def reflow_seg(src, g):
     last = sig[toks[-1]]
     if g.kind == 'label' or first.text == 'for':
         return None
-    if g.kind == 'tail' and 'record' in g.ctx:
+    if g.kind == 'tail' and ('record' in g.ctx or 'enum' in g.ctx):
         return None
     if any(ln in src.pp_lines for ln in range(first.line, last.line + 1)):
         return None
@@ -598,34 +618,61 @@ def line_info(src):
     return last_sig, first_tok
 
 
+def ends_group(src, prev, last_sig):
+    """True when line `prev` ends a statement, declaration, table row or
+    preprocessor line, so a comment below it starts a new paragraph."""
+    if prev in src.pp_lines:
+        return not src.line_text(prev).rstrip().endswith('\\')
+    lt = last_sig.get(prev)
+    if lt is None:
+        # The last line of a trailing comment that spans lines: judge the
+        # code line it trails.
+        for c in src.comments:
+            if c.start <= src.line_starts[prev] < c.end:
+                if c.line != prev and c.line in last_sig:
+                    return ends_group(src, c.line, last_sig)
+                return False
+        return False
+    k = src.sig_index.get(id(lt))
+    if k is None:
+        return False
+    if lt.text == ';':
+        return src.inner_at[k][1] == 0       # not inside `for (;;)`
+    if lt.text == '}':
+        if src.brace_kind.get(_open_of(src, k)) == 'init':
+            nxt = src.sig[k + 1].text if k + 1 < len(src.sig) else ''
+            return nxt not in (')', ';')
+        return True
+    if lt.text == ',':
+        kind, paren = src.inner_at[k]
+        return paren == 0 and kind == 'init'
+    return False
+
+
+def _open_of(src, k):
+    d = 0
+    for j in range(k, -1, -1):
+        t = src.sig[j].text
+        if t == '}':
+            d += 1
+        elif t == '{':
+            d -= 1
+            if d == 0:
+                return j
+    return None
+
+
 def blank_before_comments(src, stats):
     last_sig, first_tok = line_info(src)
     ins = []
     for c in src.comments:
-        ft = first_tok.get(c.line)
-        if ft is not c or c.line == 0:
+        if first_tok.get(c.line) is not c or c.line == 0:
             continue
         prev = c.line - 1
         if not src.line_text(prev).strip():
             continue
-        lt = last_sig.get(prev)
-        if lt is None:
-            continue           # previous line is a comment line
-        if prev in src.pp_lines:
-            if src.line_text(prev).rstrip().endswith('\\'):
-                continue
-        elif lt.text not in (';', '}'):
+        if not ends_group(src, prev, last_sig):
             continue
-        else:
-            # The `;`/`}` must end the line's code (not a `for (;;)` etc.).
-            if lt.line != prev:
-                continue
-            if lt.text == '}':
-                j = src.sig.index(lt) if lt in src.sig else -1
-                # `}` of an initializer inside a statement: skip.
-                if j >= 0 and j + 1 < len(src.sig) and \
-                        src.sig[j + 1].text in (',', ';', ')'):
-                    continue
         ins.append((src.line_starts[c.line], src.line_starts[c.line], '\n'))
     stats['blanks'] += len(ins)
     return apply_edits(src.text, ins), len(ins)
@@ -634,7 +681,7 @@ def blank_before_comments(src, stats):
 def trailing_groups(src):
     """Trailing single-line comments grouped by paragraph and brace level.
     Each item is (comment, code_end_col, line, level)."""
-    sig_index = {id(t): k for k, t in enumerate(src.sig)}
+    sig_index = src.sig_index
     items = []
     prev = None
     for c in src.toks:
@@ -643,13 +690,15 @@ def trailing_groups(src):
         if c.kind != 'c' or '\n' in c.text or p is None or \
                 p.line != c.line or p.kind == 'c':
             continue
-        if p.text == '{' or src.line_text(c.line).rstrip().endswith('\\'):
+        if src.line_text(c.line).rstrip().endswith('\\'):
             continue
         k = sig_index.get(id(p))
         if k is not None and k + 1 < len(src.sig) and \
                 src.sig[k + 1].line == c.line:
             continue            # comment inside the line's code
-        if p.pp or k is None:
+        if p.text == '{':
+            lvl = ('{', c.line)      # after `{`: never aligned with others
+        elif p.pp or k is None:
             lvl = -1
         else:
             lvl = src.level_at[k] - (1 if p.text == '}' else 0)
@@ -670,59 +719,110 @@ def trailing_groups(src):
     return groups
 
 
+def overflow_move(src, c):
+    """Edits moving trailing comment c off its code line, or None.
+
+    The comment goes on its own line above the code when the line holds
+    whole items -- it starts after `;`, `,`, `{`, `}` or a label at
+    parenthesis depth 0 and ends in `;`, `,` or `}` (a one-line statement,
+    declaration, struct member, enumerator or table row), or is exactly one
+    statement header (`if (...)`, `else`) -- or is a one-line preprocessor
+    directive.  After a block's `{` it goes on the line below, one level
+    in."""
+    toks = [t for t in src.sig if t.line == c.line]
+    ls = src.line_starts[c.line]
+    words = comment_words(c.text)
+    if c.pp:
+        line = src.line_text(c.line)
+        if c.line - 1 in src.pp_lines and \
+                src.line_text(c.line - 1).rstrip().endswith('\\'):
+            return None
+        if line.rstrip().endswith('\\') or not line.startswith('#'):
+            return None
+        return [(ls, ls, '\n'.join(comment_block(0, words)) + '\n'),
+                removal(src, c)]
+    if not toks:
+        return None
+    first, last = toks[0], toks[-1]
+    if last.end > c.start or src.text[ls:first.start].strip():
+        return None
+    kl = src.sig_index[id(last)]
+    if last.text == '{' and src.brace_kind.get(kl) != 'init':
+        le = src.text.find('\n', c.end)
+        le = len(src.text) if le < 0 else le + 1
+        block = comment_block(indent_of(src, c.line) + 4, words)
+        return [removal(src, c), (le, le, '\n'.join(block) + '\n')]
+    k = src.sig_index[id(first)]
+    whole = (k == 0 or src.sig[k - 1].text in (';', ',', '{', '}', ':')) \
+        and src.inner_at[k][1] == 0 and last.text in (';', ',', '}') \
+        and src.inner_at[kl][1] == 0
+    if not whole:
+        whole = any(src.sig[g.toks[0]] is first and src.sig[g.toks[-1]] is
+                    last for g in src.segs if g.kind != 'label')
+    if not whole:
+        return None
+    return [(ls, ls, '\n'.join(comment_block(indent_of(src, c.line),
+                                             words)) + '\n'),
+            removal(src, c)]
+
+
+def multiline_trailing(src):
+    """Trailing comments that span lines (they always move)."""
+    out = []
+    prev = None
+    for t in src.toks:
+        if t.kind == 'c' and '\n' in t.text and prev is not None and \
+                prev.kind != 'c' and prev.line == t.line:
+            out.append(t)
+        prev = t
+    return out
+
+
 def align_and_overflow(src, stats):
-    """Align trailing comments per group.  Returns (text, moved)."""
-    groups = trailing_groups(src)
-    where = None
-    moves = []
-    for grp in groups:
-        # One comment per group per round: the one that ends furthest
-        # right once aligned (it is then re-aligned without it).
-        colm = max(ce for _, ce, _, _ in grp) + 1
-        worst = None
-        for c, ce, ln, _ in grp:
-            rest = len(src.line_text(ln)) - src.col(c.start)
-            if colm + rest > WIDTH:
-                key = (ce + rest, -ln)
-                if worst is None or key > worst[0]:
-                    worst = (key, c)
-        if worst is not None:
-            moves.append(worst[1])
-    if moves:
-        if where is None:
-            where = seg_of_comments(src)
-        edits = []
-        done = 0
-        for c in moves:
-            w = where.get(id(c))
-            if c.pp or w is None:
-                continue
-            g, _ = w
-            first = src.sig[g.toks[0]]
-            last = src.sig[g.toks[-1]]
-            if first.line != last.line or first.line != c.line:
-                continue
-            ls = src.line_starts[first.line]
-            if src.text[ls:first.start].strip():
-                continue
-            ind = indent_of(src, first.line)
-            words = comment_words(c.text)
-            edits.append((ls, ls, '\n'.join(comment_block(ind, words))
-                          + '\n'))
-            edits.append(removal(src, c))
-            done += 1
-        if done:
-            stats['overflow'] += done
-            return apply_edits(src.text, edits), done
+    """Align trailing comments per group, or move the comments that would
+    pass column 80 (one per group per round).  Returns (text, moved)."""
     edits = []
+    for c in multiline_trailing(src):
+        mv = overflow_move(src, c)
+        if mv is not None:
+            edits.extend(mv)
+    if edits:
+        stats['overflow'] += len(edits) // 2
+        return apply_edits(src.text, edits), len(edits) // 2
+    groups = trailing_groups(src)
+    final = []
     for grp in groups:
+        grp = list(grp)
+        while grp:
+            colm = max(ce for _, ce, _, _ in grp) + 1
+            worst = None
+            for it in grp:
+                c, ce, ln, _ = it
+                rest = len(src.line_text(ln)) - src.col(c.start)
+                if colm + rest > WIDTH:
+                    key = (ce + rest, -ln)
+                    if worst is None or key > worst[0]:
+                        worst = (key, it)
+            if worst is None:
+                break
+            mv = overflow_move(src, worst[1][0])
+            if mv is not None:
+                edits.extend(mv)
+                break
+            grp.remove(worst[1])     # cannot move: left out of the column
+            final.append([worst[1]])
+        final.append(grp)
+    if edits:
+        stats['overflow'] += len(edits) // 2
+        return apply_edits(src.text, edits), len(edits) // 2
+    for grp in final:
+        if not grp:
+            continue
         colm = max(ce for _, ce, _, _ in grp) + 1
         for c, ce, ln, _ in grp:
             ls = src.line_starts[ln]
-            want = ls + colm
-            code_end = ls + ce
-            if c.start != want:
-                edits.append((code_end, c.start, ' ' * (colm - ce)))
+            if c.start != ls + colm:
+                edits.append((ls + ce, c.start, ' ' * (colm - ce)))
     return apply_edits(src.text, edits), 0
 
 
@@ -730,9 +830,11 @@ def align_and_overflow(src, stats):
 
 def process(path, text, stats):
     src = Source(path, text)
-    text, _ = move_inside(src, stats)
+    text, _ = move_inside(src, stats, False)
     src = Source(path, text)
     text, _ = reflow(src, stats)
+    src = Source(path, text)
+    text, _ = move_inside(src, stats, True)
     for _ in range(200):
         src = Source(path, text)
         text, _ = blank_before_comments(src, stats)

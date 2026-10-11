@@ -163,34 +163,29 @@ static agc_status_t vg_to_lvc(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg)
  **********************************************************************/
 static agc_status_t calcthet(agc_interp_t *ip, agc_vehicle_t veh)
 {
-    agc_rendz_t *rz = agc_rendz_erasable(); /* targeting */
-    agc_burn_t  *b  = &agc_guid_state()->burn; /* UT, F, WEIGHT/G */
+    agc_rendz_t *rz = agc_rendz_erasable();     /* targeting */
+    agc_burn_t  *b  = &agc_guid_state()->burn;  /* UT, F, WEIGHT/G */
 
-    rz->vinit = rz->vtig;
-    agc_dp_t h = 0; /* |V x R| (36D), m^2/cs 2^36 */
+    rz->vinit   = rz->vtig;
+    agc_dp_t h  = 0;                                                                /* |V x R| (36D), m^2/cs 2^36 */
+    b->ut   = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), &h, NULL);    /* UP */
+    
+    rz->rinit       = rz->rtig;
+    agc_dp_t rsq    = agc_vec_sq(ip, rz->rtig);                                         /* VSQ PDDL 36D, m^2 2^58 */
+    agc_dp_t th     = agc_dp_div(ip, agc_dp_mul(ip, h, THETACON), rsq);                 /* theta/2, rev 2^0 */
+    th              = agc_dp_mul_trunc(agc_dp_mul_trunc(th, rz->delvsab), b->weight_g);
+    th              = agc_dp_div(ip, th, b->f);                                         /* 14D         */
 
-    b->ut = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), &h,
-                         NULL);        /* UP */
-    rz->rinit = rz->rtig;
-    agc_dp_t rsq = agc_vec_sq(ip, rz->rtig); /* VSQ PDDL 36D, m^2 2^58 */
-    agc_dp_t th  =
-        /* theta/2, rev 2^0 */ agc_dp_div(ip, agc_dp_mul(ip, h, THETACON), rsq);
-
-    th = agc_dp_mul_trunc(agc_dp_mul_trunc(th, rz->delvsab), b->weight_g);
-    th = agc_dp_div(ip, th, b->f); /* 14D         */
-    agc_vec_t dvup = /* (DV.UP) UP, m/cs 2^7 */ agc_vec_shl(
-        ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)),
-        2);                                             /* PDL 0       */
-    agc_vec_t dvp = agc_vec_sub(ip, rz->delvsin, dvup); /* PDL 6, m/cs 2^7 */
-    agc_dp_t  sn  = agc_dp_sin(ip, th); /* PDL 12, scale 2^1 */
-    agc_vec_t vg  = /* VGTIG, m/cs 2^7 */ agc_vec_scale(
-        ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn);
-    agc_dp_t  dvpmag = 0; /* |DVP|, m/cs 2^7 */
-    agc_vec_t udvp   = agc_vec_unit(ip, dvp, &dvpmag, NULL); /* PDL 6, scale 2^1 */
+    agc_vec_t dvup      = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)),2);  /* PDL 0 (DV.UP) UP, m/cs 2^7 */
+    agc_vec_t dvp       = agc_vec_sub(ip, rz->delvsin, dvup);                                                 /* PDL 6, m/cs 2^7 */
+    agc_dp_t  sn        = agc_dp_sin(ip, th);                                                                 /* PDL 12, scale 2^1 */
+    agc_vec_t vg        = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn); /* VGTIG, m/cs 2^7 */ 
+    agc_dp_t  dvpmag    = 0;                                                                               /* |DVP|, m/cs 2^7 */
+    agc_vec_t udvp      = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                            /* PDL 6, scale 2^1 */
 
     vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(ip, th)), vg);
-    vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2),
-                     dvup);
+    vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2), dvup);
+
     agc_erase_set_vgtig(vg);                  /* VG IGNITION */
     b->ut = agc_vec_unit(ip, vg, NULL, NULL); /* THRUST DIR. */
 
@@ -227,10 +222,10 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_t  *g  = agc_guid_state(); /* avg, burn */
-    agc_rendz_t *rz = agc_rendz_erasable(); /* RTIG VIPRIME */
-    agc_status_t st = /* CALCGRAV at RTIG: GDT1/2 */
-                      agc_guid_calcgrav(ip, AGC_VEHICLE_CSM, rz->body.rtx2 != 0,
+    agc_guid_t  *g  = agc_guid_state();                         /* avg, burn */
+    agc_rendz_t *rz = agc_rendz_erasable();                     /* RTIG VIPRIME */
+    agc_status_t st = agc_guid_calcgrav(ip, AGC_VEHICLE_CSM,    /* CALCGRAV at RTIG: GDT1/2 */
+                                        rz->body.rtx2 != 0, 
                                         rz->rtig,
                                         &g->avg);
 
@@ -239,29 +234,14 @@ agc_status_t agc_guid_calcut(agc_interp_t *ip)
         return (st);
     }
 
-    agc_vec_t gv = /* g, m/cs^2 2^-5 */
-                   agc_vec_div(ip, agc_vec_shl(ip, g->avg.gdt1_2, 1),
-                               CS200_B12);
-    agc_vec_t dvr = /* dV/dt, m/cs^2 2^-5 */
-                    agc_vec_div(ip, agc_vec_sub(ip, rz->viprime,
-                                                g->burn.ut), CS200_B12);
-    agc_vec_t bc = /* B.C, scale 2^-15 */ agc_vec_shl(
-        ip, agc_vec_scale(ip, agc_vec_sub(ip, dvr, gv), g->burn.csteer),
-        2);                                                         /* 12D */
-    agc_vec_t ug = agc_vec_unit(ip, agc_erase_vgtig(), NULL, NULL); /* UG PDL 0, 2^1 */
-    agc_vec_t q  = /* Q, scale 2^-5 */ agc_vec_sub(
-        ip, bc,
-        agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_vec_dot(ip, ug, bc)), 2));
-    agc_dp_t fm = /* F/m, scale 2^-5 */
-                  agc_dp_div(ip, agc_dp_shr_round(g->burn.f,
-                                                  4), g->burn.weight_g);
-    agc_dp_t rad = /* (F/m)^2 - Q^2, 2^-10 */ agc_dp_sub(ip, agc_dp_sq(ip,
-                                                                       fm), agc_vec_sq(
-                                                             ip,
-                                                             q));
-    agc_vec_t t =   /* UG sqrt(), 2^-5 */
-                  agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_dp_sqrt(ip,
-                                                                    rad)), 1);
+    agc_vec_t gv    = agc_vec_div(ip, agc_vec_shl(ip, g->avg.gdt1_2, 1), CS200_B12);                            /* g, m/cs^2 2^-5 */                   
+    agc_vec_t dvr   = agc_vec_div(ip, agc_vec_sub(ip, rz->viprime, g->burn.ut), CS200_B12);                     /* dV/dt, m/cs^2 2^-5 */                                        
+    agc_vec_t bc    = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_sub(ip, dvr, gv), g->burn.csteer), 2);          /* 12D B.C, scale 2^-15 */                                                       
+    agc_vec_t ug    = agc_vec_unit(ip, agc_erase_vgtig(), NULL, NULL);                                          /* UG PDL 0, 2^1 */
+    agc_vec_t q     = agc_vec_sub(ip, bc, agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_vec_dot(ip, ug, bc)), 2));  /* Q, scale 2^-5 */ 
+    agc_dp_t fm     = agc_dp_div(ip, agc_dp_shr_round(g->burn.f, 4), g->burn.weight_g);                         /* F/m, scale 2^-5 */
+    agc_dp_t rad    = agc_dp_sub(ip, agc_dp_sq(ip, fm), agc_vec_sq(ip, q));                                     /* (F/m)^2 - Q^2, 2^-10 */ 
+    agc_vec_t t     = agc_vec_shl(ip, agc_vec_scale(ip, ug, agc_dp_sqrt(ip, rad)), 1);                          /* UG sqrt(), 2^-5 */
 
     g->burn.ut = agc_vec_unit(ip, agc_vec_add(ip, t, q), NULL, NULL);
 
