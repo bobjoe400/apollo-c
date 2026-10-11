@@ -154,7 +154,7 @@ static bool selectp(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_jetsoff(void)
 {
-    lm_dap_t    *d  = lm_dap_state();
+    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
     agc_status_t st = lm_dap_write_next(0);
 
     d->tj[0] = 0;
@@ -220,7 +220,7 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->numbert = numbert;
 
@@ -314,7 +314,7 @@ agc_status_t lm_dap_pjetslec_pair(void)
  **********************************************************************/
 agc_status_t lm_dap_calcperr(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t  e = lm_dap_mphi(lm_dap_msu(agc_erase_cduy(), d->cduyd), agc_erase_m11());
     int32_t   x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;
 
@@ -348,7 +348,7 @@ agc_status_t lm_dap_calcperr(void)
  **********************************************************************/
 agc_status_t lm_dap_purgency_law(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->axisctr = -1;
 
@@ -411,7 +411,7 @@ agc_status_t lm_dap_purgency_law(void)
  **********************************************************************/
 agc_status_t lm_dap_purgency(void)
 {
-    lm_dap_t    *d  = lm_dap_state();
+    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
     agc_status_t st = lm_dap_calcperr();
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->omegapd); /* EDOTP     */
@@ -475,7 +475,7 @@ static void alteryz(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_chkvisfz(bool *policy)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(policy != NULL))
     {
@@ -562,7 +562,7 @@ agc_status_t lm_dap_pretimck(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (d->qgimtimr > 0)
     {
@@ -614,7 +614,7 @@ agc_status_t lm_dap_pretimck(void)
  **********************************************************************/
 agc_status_t agc_task_paxis(void)
 {
-    lm_dap_t *d  = lm_dap_state();
+    lm_dap_t *d  = lm_dap_state(); /* DAP erasables */
     uint16_t  t5 = agc_rupt_time(5);
 
     agc_rupt_set_time(5, (uint16_t) ((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */

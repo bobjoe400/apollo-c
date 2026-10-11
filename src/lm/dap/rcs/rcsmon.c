@@ -62,7 +62,7 @@ static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u,
  **********************************************************************/
 agc_status_t agc_lm_dap_rcsmon(void)
 {
-    lm_dap_t *d      = lm_dap_state();
+    lm_dap_t *d      = lm_dap_state(); /* DAP erasables */
     uint16_t  cur    = (uint16_t) ((RM_WORD ^ agc_chan_read(032)) & RM_LOW8);
     uint16_t  change = (uint16_t) ((cur ^ d->pvalvest) & RM_LOW8);
 

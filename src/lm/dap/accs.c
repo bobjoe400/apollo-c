@@ -73,10 +73,10 @@
 #define AC_035356   ((agc_sp_t) 5793)  /* DEC 0.35356: .70711 at 2         */
 #define AC_07071    ((agc_sp_t) 11585) /* DEC .70711                       */
 #define AC_EPSMAX   ((agc_sp_t) 6925)  /* -(-EPSMAX) DEC .42265            */
-#define AC_BIT14    ((agc_sp_t) 8192)
+#define AC_BIT14    ((agc_sp_t) 8192)  /* .5: MP BIT14 halves (pi/4 -> pi/2 scale) */
 #define AC_1JACCCON ((agc_sp_t) 0167)  /* pi/4 x 2^16 rad/s^2 kg           */
 #define AC_TORQ_LO  ((agc_sp_t) 8428)  /* TORQCONS 2DEC .51443 B-14: 500 lb-ft */
-#define AC_PRIO27   ((agc_prio_t) 027)
+#define AC_PRIO27   ((agc_prio_t) 027) /* 1/ACCJOB priority 27 */
 
 /* Inertia fit tables (pp.1493-1494), row k = 0 L,PVT-CG descent,
  * 1..3 P,Q,R descent, 4..6 P,Q,R ascent. 1JACC(k) = A / (LEMMASS + C) + B.
@@ -118,7 +118,7 @@ static const uint16_t gimblbts[4] = {001400u, 001000u, 006000u, 004000u};
  **********************************************************************/
 static agc_sp_t mass_hi(void)
 {
-    agc_dp_t m = agc_guid_state()->lm.mass;
+    agc_dp_t m = agc_guid_state()->lm.mass; /* MASS (DP), scaled 2^16 kg */
 
     if (!AGC_ASSERT(m >= 0))
     {
@@ -150,13 +150,13 @@ static agc_sp_t mass_hi(void)
  **********************************************************************/
 static bool lem_mass(lm_dap_t *d, bool docked)
 {
-    agc_sp_t csm    = docked ? agc_erase_csmmass() : 0;
-    agc_sp_t lem    = (agc_sp_t) (mass_hi() - csm);
-    bool     ascent = agc_flag_test(AGC_FLAG_APSFLAG);
-    agc_sp_t hi     = ascent ? d->hiascent : AC_HIDESCNT;
-    agc_sp_t lo     = ascent ? AC_LOASCENT : (agc_sp_t) (AC_LODESCNT + d->hiascent);
+    agc_sp_t csm    = docked ? agc_erase_csmmass() : 0;                              /* CSMMASS when docked, scaled 2^16 kg */
+    agc_sp_t lem    = (agc_sp_t) (mass_hi() - csm);                                  /* LEMMASS candidate, scaled 2^16 kg */
+    bool     ascent = agc_flag_test(AGC_FLAG_APSFLAG);                               /* APSFLAG: ascent stage */
+    agc_sp_t hi     = ascent ? d->hiascent : AC_HIDESCNT;                            /* upper LEMMASS limit, scaled 2^16 kg */
+    agc_sp_t lo     = ascent ? AC_LOASCENT : (agc_sp_t) (AC_LODESCNT + d->hiascent); /* lower LEMMASS limit, scaled 2^16 kg */
 
-    d->neg_2jetlim = ascent ? LM_NEGMAX : (agc_sp_t) -AC_BIT10;
+    d->neg_2jetlim = ascent ? LM_NEGMAX : (agc_sp_t) -AC_BIT10; /* ascent: no 4-jet limit; descent: 1.4 deg/s */
 
     if ((int32_t) hi - lem <= 0)
     {
@@ -208,8 +208,8 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
     }
 
     lm_dp_pair_t a   = {inercona_hi[k], inercona_lo[k]};
-    agc_sp_t     div = (agc_sp_t) (agc_erase_lemmass() + inerconc[k]);
-    lm_dp_pair_t q   = lm_dap_dvqr(a, div);
+    agc_sp_t     div = (agc_sp_t) (agc_erase_lemmass() + inerconc[k]); /* LEMMASS + C, scaled 2^16 kg */
+    lm_dp_pair_t q   = lm_dap_dvqr(a, div);                            /* (A,L) / (LEMMASS + C): quotient and remainder, scale per row */
 
     *rem = q.lo;
 
@@ -238,7 +238,7 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
 
     if (diff.hi > 0)
     {
-        agc_sp_t eps = lm_dap_dv(diff, d->jacc[1]);
+        agc_sp_t eps = lm_dap_dv(diff, d->jacc[1]); /* EPSILON = 1 - IQ/IR, unscaled fraction */
 
         eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
         d->coeffr = lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
@@ -246,9 +246,9 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
     }
     else
     { /* BIGIQ    */
-        agc_sp_t neps = lm_dap_dv(diff, d->jacc[2]);
+        agc_sp_t neps = lm_dap_dv(diff, d->jacc[2]); /* -EPSILON = IR/IQ - 1, unscaled fraction */
 
-        neps      = ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps;
+        neps      = ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps; /* limited to -.42265 */
         d->coeffq = lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
         d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
     }
@@ -279,8 +279,8 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
  **********************************************************************/
 static void jaccuv(lm_dap_t *d)
 {
-    agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);
-    agc_sp_t a = lm_dap_wrap((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u);
+    agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);                /* -COEFFQ 1JACCQ, scaled pi/4 rad/s^2 */
+    agc_sp_t a = lm_dap_wrap((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u); /* 1JACCU before halving, scaled pi/4 rad/s^2 */
 
     d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
     d->jacc[4] = d->jacc[3];
@@ -319,16 +319,16 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     d->accdotq   = accdotq;
     d->kq        = lm_dap_mphi(d->accdotq, AC_DGBF);
     d->krdap     = lm_dap_mphi(d->accdotr, AC_DGBF);
-    uint16_t c12 = agc_chan_read(012);
+    uint16_t c12 = agc_chan_read(012); /* channel 12: trim gimbal drive bits */
 
     for (int i = 1; i >= 0; i--)
     { /* R, then Q      */
-        agc_sp_t acc = (i == 0) ? d->accdotq : d->accdotr;
-        agc_sp_t j   = 0; /* ZACCDOT        */
+        agc_sp_t acc = (i == 0) ? d->accdotq : d->accdotr; /* ACCDOTQ or ACCDOTR, scaled pi/2^7 rad/s^3 */
+        agc_sp_t j   = 0;                                  /* ZACCDOT: gimbal not driving, scaled pi/2^7 rad/s^3 */
 
         if ((c12 & gimblbts[2 * i]) != 0u)
         {
-            j = ((c12 & gimblbts[2 * i + 1]) != 0u) ? (agc_sp_t) -acc : acc;
+            j = ((c12 & gimblbts[2 * i + 1]) != 0u) ? (agc_sp_t) -acc : acc; /* sign of the drive direction */
         }
 
         if (i == 0)
@@ -341,7 +341,7 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
         }
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* status of CHKINGTS */
 
     if (agc_flag_test(AGC_FLAG_USEQRFLG) || d->t5adr != LM_T5_PAXIS)
     {
@@ -384,12 +384,12 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
  **********************************************************************/
 static agc_status_t lresc(lm_dap_t *d)
 {
-    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;
-    agc_sp_t f      = lm_dap_dvovsub(lm_dap_mp(abdelv, mass_hi()), AC_GFACTM);
-    agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);
+    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;                             /* ABDELV, scaled 2^13 cm/s^2 */
+    agc_sp_t f      = lm_dap_dvovsub(lm_dap_mp(abdelv, mass_hi()), AC_GFACTM); /* thrust T = ABDELV MASS / GFACTM, scaled 2^14 lb */
+    agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);                             /* torque T x L,PVT-CG, scaled 2^17 lb-ft */
 
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
-    agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1);
+    agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1); /* ACCDOTQ, scaled pi/2^7 rad/s^3 */
 
     if (!AGC_ASSERT(d->l_pvt_cg >= LM_NEGMAX))
     {
@@ -425,14 +425,14 @@ static agc_sp_t docked_fit(int base)
         return (0);
     }
 
-    agc_sp_t        x  = agc_erase_csmmass();
-    agc_sp_t        y  = agc_erase_lemmass();
-    const agc_sp_t *c  = &coeff[base];
-    agc_sp_t        m  = lm_dap_wrap((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
-    agc_sp_t        lx = lm_dap_wrap((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
+    agc_sp_t        x  = agc_erase_csmmass();                                                /* X = CSMMASS, scaled 2^16 kg */
+    agc_sp_t        y  = agc_erase_lemmass();                                                /* Y = LEMMASS, scaled 2^16 kg */
+    const agc_sp_t *c  = &coeff[base];                                                       /* this fit's six coefficients (C F A B D E) */
+    agc_sp_t        m  = lm_dap_wrap((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]); /* MPAC = C X Y + F, scale per fit (inertia 2^38 kg cm^2 or CG) */
+    agc_sp_t        lx = lm_dap_wrap((int32_t) lm_dap_mphi(c[3], x) + c[5]);                 /* A X + D, scale per fit */
 
     m           = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));      /* ADS     */
-    agc_sp_t ly = lm_dap_wrap((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
+    agc_sp_t ly = lm_dap_wrap((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E, scale per fit */
 
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));
 
@@ -467,8 +467,8 @@ static agc_status_t docked(lm_dap_t *d)
      * complement 1 + -1), so CCS COEFCTR takes its fourth branch over
      * the TORQCONS words to CA MPAC (saves the inertia in MPAC +1); the
      * CG pass leaves COEFCTR = 6 and exits. Traced in the rope.          */
-    agc_sp_t     inertia = docked_fit(0);
-    agc_sp_t     cg      = docked_fit(6);
+    agc_sp_t     inertia = docked_fit(0); /* docked inertia, scaled 2^38 kg cm^2 */
+    agc_sp_t     cg      = docked_fit(6); /* CG x DELDOT, scaled 4 pi rad cm/s */
     lm_dp_pair_t con     = {AC_1JACCCON, 0};
 
     d->jacc[0]              = lm_dap_dvovsub(con, mass_hi());
@@ -494,7 +494,7 @@ static agc_status_t docked(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t mc = lm_dap_mphi(mass_hi(), cg);
+    agc_sp_t mc = lm_dap_mphi(mass_hi(), cg); /* MASS x CG DELDOT, scale per the DOCKED fit (MPAC) */
 
     d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
 
@@ -519,8 +519,8 @@ static agc_status_t docked(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t lm_alone(lm_dap_t *d, bool descent)
 {
-    agc_sp_t rem  = 0;
-    int      base = descent ? 1 : 4;
+    agc_sp_t rem  = 0;               /* remainder L of the last fit row, scaled 2^-14 of the row */
+    int      base = descent ? 1 : 4; /* first COEFF row: 1 descent, 4 ascent (index) */
 
     if (!AGC_ASSERT(agc_erase_lemmass() > 0))
     {
@@ -574,20 +574,20 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
  **********************************************************************/
 agc_status_t agc_lm_dap_jet_accel_update(void)
 {
-    lm_dap_t *d    = lm_dap_state();
+    lm_dap_t *d    = lm_dap_state();                   /* DAP erasables */
     bool      dock = agc_flag_test(AGC_FLAG_CSMDKFLG); /* DOCKTEMP       */
 
     agc_inhint();
-    bool descent = lem_mass(d, dock);
+    bool descent = lem_mass(d, dock); /* APSFLAG clear */
 
     agc_relint();
-    agc_status_t st = dock ? docked(d) : lm_alone(d, descent);
+    agc_status_t st = dock ? docked(d) : lm_alone(d, descent); /* DOCKED or LM-alone fits */
 
     if (!dock)
     {
         agc_status_t sc = lm_dap_switch_curves(); /* 1/ACCONT       */
 
-        st = (st != AGC_STATUS_OK) ? st : sc;
+        st = (st != AGC_STATUS_OK) ? st : sc; /* first failure wins */
     }
 
     agc_inhint();                    /* 1/ACCRET       */
@@ -654,7 +654,7 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->aosq   = 0;
     d->aosr   = 0;
@@ -682,7 +682,7 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t lm_dap_accfix(void)
 {
-    agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE);
+    agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE); /* NOVAC 1/ACCS */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {

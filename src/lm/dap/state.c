@@ -55,7 +55,7 @@
 #define FS_DKDB       ((agc_sp_t) 128)    /* BIT8: docked DB 1.4 deg       */
 #define DAPBOOLS_WORD 13                  /* DAPBOOLS = FLGWRD13           */
 
-static lm_dap_t g_dap;
+static lm_dap_t g_dap; /* the DAP erasables (EBANK 6), one instance */
 
 /**********************************************************************
  * AGC: none -- the LM DAP erasables (ERASABLE_ASSIGNMENTS.agc
@@ -85,7 +85,7 @@ lm_dap_t *lm_dap_state(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_restart(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
     d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
@@ -93,7 +93,7 @@ agc_status_t agc_lm_dap_restart(void)
     d->nxt6adr      = 0;
     d->nextp        = 0;
     agc_flag_clear(AGC_FLAG_ACCOKFLG);                           /* ACCSOKAY = 0    */
-    agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);
+    agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);          /* T5ADR = DAPIDLER */
 
     return (ts);
 }
@@ -111,7 +111,7 @@ agc_status_t agc_lm_dap_restart(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_fresh_start(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->rcsflags                 = FS_RCSFLAGS;
     agc_guid_state()->lm.abdelv = 0; /* ABDELV: DAP initialisation     */
@@ -600,7 +600,7 @@ agc_sp_t agc_erase_omegar(void)
  **********************************************************************/
 agc_dp_t agc_erase_aosq(void)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     lm_dp_pair_t    p = {d->aosq, d->aosq_lo};
 
     return ((agc_dp_t) lm_dap_dpval(p));
@@ -617,7 +617,7 @@ agc_dp_t agc_erase_aosq(void)
  **********************************************************************/
 agc_dp_t agc_erase_aosr(void)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     lm_dp_pair_t    p = {d->aosr, d->aosr_lo};
 
     return ((agc_dp_t) lm_dap_dpval(p));
@@ -639,7 +639,7 @@ void agc_erase_set_aosq(agc_dp_t v)
 {
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v);
+        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
 
         lm_dap_state()->aosq    = p.hi;
         lm_dap_state()->aosq_lo = p.lo;
@@ -662,7 +662,7 @@ void agc_erase_set_aosr(agc_dp_t v)
 {
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v);
+        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
 
         lm_dap_state()->aosr    = p.hi;
         lm_dap_state()->aosr_lo = p.lo;
@@ -970,7 +970,7 @@ uint16_t agc_erase_ch6mask(void)
  **********************************************************************/
 bool agc_lm_dap_running(void)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
     {

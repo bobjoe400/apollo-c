@@ -94,7 +94,7 @@ static agc_status_t settime5(void)
  **********************************************************************/
 agc_status_t lm_dap_shutdown(void)
 {
-    lm_dap_t    *d  = lm_dap_state();
+    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
     agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER);
 
     d->nextp        = 0;
@@ -157,7 +157,7 @@ agc_status_t lm_dap_moreidle(void)
  **********************************************************************/
 agc_status_t lm_dap_chekbits(bool *on)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(on != NULL))
     {
@@ -216,7 +216,7 @@ agc_status_t lm_dap_chekbits(bool *on)
  **********************************************************************/
 agc_status_t lm_dap_startdap(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_lm_dap_zatteror();
 
@@ -305,7 +305,7 @@ agc_status_t lm_dap_startdap(void)
  **********************************************************************/
 agc_status_t agc_task_dapidler(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER))
     {
@@ -353,7 +353,7 @@ agc_status_t agc_task_dapidler(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_t5rupt(void)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS))
     {

@@ -69,7 +69,7 @@
  **********************************************************************/
 agc_status_t lm_dap_qrminimp(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_inhint();
     agc_lm_dap_zatteror();
@@ -312,7 +312,7 @@ static agc_status_t rhcactiv(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_chekstik(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->ingts    = 0;
     d->cotroler = -1;

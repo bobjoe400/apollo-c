@@ -98,7 +98,7 @@ agc_status_t lm_dap_zeroenbl(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->savehand[0] = agc_erase_q_rhcctr();
     d->savehand[1] = agc_erase_r_rhcctr();
@@ -157,7 +157,7 @@ agc_status_t lm_dap_pstate(void)
         /* Minimum impulse mode, P axis (p.1431): one 14 ms pulse per deflection of
          * the THC X-axis (+X/-X bits 3,4 of channel 31). OLDPMIN holds the gate
          * until the controller is released.                                       */
-        lm_dap_t *d = lm_dap_state();
+        lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
         d->perror     = 0;
         d->cduxd      = agc_erase_cdux();
@@ -442,7 +442,7 @@ static agc_status_t raterror(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_detentck(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->ch31temp = agc_chan_read(031);
     bool ourrc  = agc_flag_test(AGC_FLAG_OURRCFLG);

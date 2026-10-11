@@ -60,17 +60,22 @@
 #define GT_BGIM     007400u            /* BGIM: channel 12 bits 9-12              */
 #define GT_GIMQ     001400u            /* GMBLBITA: bits 9,10 (Q drive)           */
 #define GT_GIMR     006000u            /* GMBLBITB: bits 11,12 (R drive)          */
-#define GT_BIT9     0000400u
-#define GT_BIT10    0001000u
-#define GT_BIT11    0002000u
-#define GT_BIT12    0004000u
+#define GT_BIT9     0000400u           /* -Q drive (NEGUQ < 0) */
+#define GT_BIT10    0001000u           /* +Q drive (NEGUQ > 0) */
+#define GT_BIT11    0002000u           /* -R drive (NEGUR < 0) */
+#define GT_BIT12    0004000u           /* +R drive (NEGUR > 0) */
 #define GT_NEG1_3   ((agc_sp_t) -5461) /* NEG1/3 DEC -.33333               */
 #define GT_ROOTHALF ((agc_sp_t) 11585) /* ROOTHALF 26501: sqrt(1/2)        */
 #define GT_POINT6   ((agc_sp_t) 9830)  /* OCT23146: decimal .6             */
 #define GT_10_1024  ((agc_sp_t) 160)   /* OCT00240: decimal 10/1024        */
 #define GT_OCT31    ((agc_sp_t) 25)    /* OCT31: 2.5 s at 0.1 s           */
-#define GT_TWO      ((agc_sp_t) 2)
-#define GT_SKIPOFF  ((agc_sp_t) 4)
+#define GT_TWO      ((agc_sp_t) 2)     /* TWO: INGTS, gimbal timers (0.1 s counts) */
+#define GT_SKIPOFF  ((agc_sp_t) 4)     /* SKIPU/V: skip 4 TJETLAW passes */
+
+/* ACDT+C12: channel 12 drive bits for NEGU = -1, 0, +1 (Q: bits 9/10,
+ * R: bits 11/12).                                                         */
+static const uint16_t q_drive[3] = {GT_BIT9, 0u, GT_BIT10};
+static const uint16_t r_drive[3] = {GT_BIT11, 0u, GT_BIT12};
 
 /**********************************************************************
  * DP x SP as the GTS codes it (MP high, DXCH, MP low, ADS with carry).
@@ -88,9 +93,9 @@
  **********************************************************************/
 static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
 {
-    lm_dp_pair_t hi = lm_dap_mp(x.hi, k);
+    lm_dp_pair_t hi = lm_dap_mp(x.hi, k); /* x.hi k, same scale as x k */
     lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
-    lm_dp_pair_t r  = lm_dap_das(hi, lo);
+    lm_dp_pair_t r  = lm_dap_das(hi, lo); /* x k with the minor product carried */
 
     if (!AGC_ASSERT(r.hi >= LM_NEGMAX && r.hi <= LM_POSMAX))
     {
@@ -139,14 +144,25 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
  **********************************************************************/
 static agc_sp_t dp_sign(lm_dp_pair_t x)
 {
-    agc_sp_t w = (x.hi != 0) ? x.hi : x.lo;
+    agc_sp_t w = (x.hi != 0) ? x.hi : x.lo; /* sign word: major, or minor when major is 0; +unscaled (only its sign is used) */
 
     if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
     {
         return (0); /* no valid result */
     }
 
-    return ((agc_sp_t) ((w > 0) ? 1 : ((w < 0) ? -1 : 0)));
+    agc_sp_t sgn = 0; /* +-0: no sign (unscaled) */
+
+    if (w > 0)
+    {
+        sgn = 1;
+    }
+    else if (w < 0)
+    {
+        sgn = -1;
+    }
+
+    return (sgn);
 }
 
 /**********************************************************************
@@ -164,7 +180,7 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
  **********************************************************************/
 agc_status_t lm_dap_gimbal_drive_update(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) || !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
     {
@@ -173,10 +189,9 @@ agc_status_t lm_dap_gimbal_drive_update(void)
 
     d->qaccdot    = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
     d->raccdot    = lm_dap_mp((agc_sp_t) -d->negur, d->accdotr).lo;
-    uint16_t bits = (d->neguq > 0) ? GT_BIT10 : ((d->neguq < 0) ? GT_BIT9 : 0u);
+    uint16_t bits = (uint16_t) (q_drive[d->neguq + 1] + r_drive[d->negur + 1]); /* channel 12 drive bits */
 
-    bits         = (uint16_t) (bits + ((d->negur > 0) ? GT_BIT12 : ((d->negur < 0) ? GT_BIT11 : 0u)));
-    uint16_t c12 = (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u);
+    uint16_t c12 = (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u); /* channel 12 with the gimbal drive bits cleared */
 
     agc_chan_write(012, (uint16_t) (c12 + bits));
     d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
@@ -205,7 +220,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
     }
 
     lm_dp_pair_t n = {halfarg, 0};
-    agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2      */
+    agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2, scaled 1 (fraction) */
 
     return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2; guess >= root, so the sum cannot overflow (sat = wrap) */
 }
@@ -249,11 +264,11 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
     }
 
     *inindex   = 12;     /* TWELVE         */
-    agc_sp_t a = fn->hi; /* SCALSTRT       */
+    agc_sp_t a = fn->hi; /* SCALSTRT: the word to root, scaled 1 (fraction) */
 
     for (int i = 0; i < 6; i++)
     { /* SCALLOOP       */
-        agc_sp_t ref = (agc_sp_t) (1 << (14 - *inindex));
+        agc_sp_t ref = (agc_sp_t) (1 << (14 - *inindex)); /* reference 2^-ININDEX, scaled 1 (fraction) */
 
         if ((int32_t) ref - fn->hi > 0)
         { /* arg < reference */
@@ -269,8 +284,8 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
         }
     }
 
-    agc_sp_t half = lm_dap_mphi(a, (agc_sp_t) 8192); /* SCALDONE       */
-    agc_sp_t x    = ((half & 4096) != 0) ? LM_POSMAX : GT_ROOTHALF;
+    agc_sp_t half = lm_dap_mphi(a, (agc_sp_t) 8192);                /* SCALDONE: HALFARG = ARG/2, scaled 1 (fraction) */
+    agc_sp_t x    = ((half & 4096) != 0) ? LM_POSMAX : GT_ROOTHALF; /* first guess: 1 or sqrt(1/2); +scaled 1 (fraction) */
 
     for (int k = 0; k < 3; k++)
     {
@@ -293,9 +308,9 @@ typedef struct gts_w
     lm_dp_pair_t a2;      /* A2CNTRAL, DP at 16 pi                    */
     lm_dp_pair_t fn;      /* FUNCTION, DP                             */
     agc_sp_t     k;       /* KCENTRAL at pi/2^8                       */
-    agc_sp_t     omega;   /* WCENTRAL at pi/4                         */
-    agc_sp_t     alpha;   /* ACENTRAL at pi/4                         */
-    agc_sp_t     del;     /* DEL: +1, 0, -1                           */
+    agc_sp_t     omega;   /* WCENTRAL = EDOT, scaled pi/4 rad/s */
+    agc_sp_t     alpha;   /* ACENTRAL = AOS x 2, scaled pi/4 rad/s^2 */
+    agc_sp_t     del;     /* DEL = SGN(K2CNTRAL): +1, 0, -1 (unscaled) */
 } gts_w_t;
 
 /**********************************************************************
@@ -316,12 +331,18 @@ typedef struct gts_w
  **********************************************************************/
 static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
 {
-    agc_sp_t     aos = (i == 0) ? d->aosq : d->aosr; /* at pi/2        */
+    agc_sp_t     aos = (i == 0) ? d->aosq : d->aosr; /* AOSQ or AOSR, scaled pi/2 rad/s^2 */
     lm_dp_pair_t p   = lm_dap_mp(aos, (agc_sp_t) 2); /* MP BIT2        */
 
-    w->alpha = (p.hi == 0) ? p.lo : ((p.hi > 0) ? LM_POSMAX : LM_NEGMAX);
-    w->omega = (i == 0) ? d->edotq : d->edotr;
-    w->k     = (i == 0) ? d->kq : d->krdap;
+    w->alpha = p.lo; /* AOS x 2 at pi/4 */
+
+    if (p.hi != 0)
+    { /* overflow: limit */
+        w->alpha = (p.hi > 0) ? LM_POSMAX : LM_NEGMAX; /* POSMAX or NEGMAX */
+    }
+
+    w->omega = (i == 0) ? d->edotq : d->edotr; /* EDOTQ or EDOTR */
+    w->k     = (i == 0) ? d->kq : d->krdap;    /* KQ or KRDAP */
 
     if (!AGC_ASSERT(w->k >= 0))
     {
@@ -352,14 +373,14 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
  **********************************************************************/
 static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
 {
-    agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF, RDIFF   */
+    agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF or RDIFF, scaled pi rad */
     lm_dp_pair_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
     lm_dp_pair_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
 
     w->k2theta.hi     = hi16.hi;
     w->k2theta.lo     = lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
-    agc_sp_t     half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192);
-    lm_dp_pair_t sq   = lm_dap_mp(half, w->alpha); /* -ALPHA^2/2     */
+    agc_sp_t     half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192); /* -ALPHA/2, scaled pi/4 rad/s^2 */
+    lm_dp_pair_t sq   = lm_dap_mp(half, w->alpha);                          /* -ALPHA^2/2     */
 
     if ((int32_t) sq.hi + w->k <= 0)
     { /* HUGEQUOT       */
@@ -369,9 +390,9 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
         return;
     }
 
-    lm_dp_pair_t num = dp_neg(sq); /* ALPHA^2/2      */
-    lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k);
-    lm_dp_pair_t rem = {q1.lo, 0}; /* LXCH 7         */
+    lm_dp_pair_t num = dp_neg(sq);             /* ALPHA^2/2      */
+    lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k); /* (ALPHA^2/2)/K: quotient and remainder, DP at 16 pi */
+    lm_dp_pair_t rem = {q1.lo, 0};             /* LXCH 7         */
 
     w->a2.hi = q1.hi;
     w->a2.lo = lm_dap_dv(rem, w->k);
@@ -398,8 +419,8 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
  **********************************************************************/
 static void gts_middle_terms(gts_w_t *w)
 {
-    w->k2          = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
-    lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) : lm_dap_das(w->k2, dp_neg(w->a2));
+    w->k2          = lm_dap_mp(w->omega, (agc_sp_t) 256);                                          /* OMEGA at 16 pi */
+    lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) : lm_dap_das(w->k2, dp_neg(w->a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
 
     w->del = dp_sign(f);
 
@@ -456,9 +477,9 @@ static void gts_root_term(gts_w_t *w)
         w->k2 = dp_neg(w->k2); /* NEGATE         */
     }
 
-    agc_sp_t shft    = 0;
-    agc_sp_t inindex = 0;
-    agc_sp_t root    = lm_dap_gtsqrt(&w->fn, &shft, &inindex);
+    agc_sp_t shft    = 0;                                      /* SHFTFLAG, unscaled shift count */
+    agc_sp_t inindex = 0;                                      /* ININDEX, twice the scaling shift (unscaled) */
+    agc_sp_t root    = lm_dap_gtsqrt(&w->fn, &shft, &inindex); /* sqrt(FUNCTION) before the shift, scaled 1 (fraction) */
 
     w->k2 = dp_x_sp(w->k2, root);                                      /* PRODUCT        */
     shft  = (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
@@ -496,7 +517,7 @@ static void gts_root_term(gts_w_t *w)
  **********************************************************************/
 static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
-    agc_sp_t old = (i == 0) ? d->neguq : d->negur;
+    agc_sp_t old = (i == 0) ? d->neguq : d->negur; /* previous NEGU of the axis, unscaled sign */
 
     if (i == 0)
     {
@@ -507,7 +528,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
         d->negur = newneg;
     }
 
-    agc_sp_t prod = (agc_sp_t) (old * newneg);
+    agc_sp_t prod = (agc_sp_t) (old * newneg); /* sign of NEGU old x new (unscaled) */
 
     if (prod > 0)
     {
@@ -525,7 +546,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
             d->raccdot = 0;
         }
 
-        agc_chan_and(012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
+        agc_chan_and(012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u)); /* drive bits of this axis */
     }
 
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
@@ -553,7 +574,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
  **********************************************************************/
 agc_status_t lm_dap_gts(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->cotroler = -1;
     d->skip[0]  = GT_SKIPOFF;
@@ -563,14 +584,14 @@ agc_status_t lm_dap_gts(void)
     d->rgimtimr = GT_TWO;
 
     /* DEVIATION: SAVESR (the editing shift register) is not modelled.   */
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* first failing status of the two axes */
 
     for (int i = 1; i >= 0; i--)
     { /* R, then Q      */
         gts_w_t w = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0};
 
         gts_inputs(d, i, &w);
-        agc_sp_t newneg = 0;
+        agc_sp_t newneg = 0; /* new NEGU, unscaled sign (+1 when K = 0: POSDRIVE) */
 
         if (w.k != 0)
         { /* else POSDRIVE +1 */
@@ -580,9 +601,9 @@ agc_status_t lm_dap_gts(void)
             newneg = dp_sign(w.k2theta);
         }
 
-        agc_status_t s = gts_drive(d, i, newneg);
+        agc_status_t s = gts_drive(d, i, newneg); /* status of this axis */
 
-        st = (s != AGC_STATUS_OK) ? s : st;
+        st = (s != AGC_STATUS_OK) ? s : st; /* first failure wins */
     }
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -590,9 +611,9 @@ agc_status_t lm_dap_gts(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t sc = lm_dap_closeout();
+    agc_status_t sc = lm_dap_closeout(); /* CLOSEOUT status */
 
-    return ((st != AGC_STATUS_OK) ? st : sc);
+    return ((st != AGC_STATUS_OK) ? st : sc); /* first failure wins */
 } /* lm_dap_gts */
 
 /**********************************************************************
@@ -613,18 +634,18 @@ agc_status_t lm_dap_gts(void)
  **********************************************************************/
 static void timegmbl_axis(lm_dap_t *d, int i)
 {
-    agc_sp_t accdot    = (i == 0) ? d->accdotq : d->accdotr; /* at pi/2^7    */
-    agc_sp_t negaos    = (agc_sp_t) -((i == 0) ? d->aosq : d->aosr);
-    agc_sp_t negu      = 0;
-    agc_sp_t timer     = 0;
-    bool     set_timer = false;
+    agc_sp_t accdot    = (i == 0) ? d->accdotq : d->accdotr;         /* at pi/2^7    */
+    agc_sp_t negaos    = (agc_sp_t) -((i == 0) ? d->aosq : d->aosr); /* -AOSQ or -AOSR, scaled pi/2 rad/s^2 */
+    agc_sp_t negu      = 0;                                          /* new NEGU, unscaled sign */
+    agc_sp_t timer     = 0;                                          /* drive time, scaled 0.1 s per count */
+    bool     set_timer = false;                                      /* timer word to be stored */
 
     if (accdot > 0 && negaos != 0)
     {
         int32_t v = (int32_t) lm_dap_mphi(negaos, GT_POINT6) + negaos; /* -.4 AOS at pi/8 */
 
         negu          = (agc_sp_t) ((v > 0) ? -1 : 1); /* SGN(AOS)       */
-        agc_sp_t absa = (agc_sp_t) ((v > 0) ? v : -v);
+        agc_sp_t absa = (agc_sp_t) ((v > 0) ? v : -v); /* |.4 AOS|, scaled pi/8 rad/s^2 */
 
         set_timer = true;
 
@@ -648,12 +669,12 @@ static void timegmbl_axis(lm_dap_t *d, int i)
     if (i == 0)
     {
         d->neguq    = negu;
-        d->qgimtimr = set_timer ? timer : d->qgimtimr;
+        d->qgimtimr = set_timer ? timer : d->qgimtimr; /* keep the timer when the drive stops now */
     }
     else
     {
         d->negur    = negu;
-        d->rgimtimr = set_timer ? timer : d->rgimtimr;
+        d->rgimtimr = set_timer ? timer : d->rgimtimr; /* keep the timer when the drive stops now */
     }
 
     if (!AGC_ASSERT(negu >= -1 && negu <= 1))
@@ -682,7 +703,7 @@ static void timegmbl_axis(lm_dap_t *d, int i)
  **********************************************************************/
 agc_status_t agc_lm_dap_timegmbl(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->allowgts = 1;
     timegmbl_axis(d, 1); /* R axis first   */

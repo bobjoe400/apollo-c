@@ -115,7 +115,7 @@ static bool policy_ok(lm_dap_t *d)
  **********************************************************************/
 bool lm_dap_selctsub(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) || !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
@@ -153,7 +153,7 @@ bool lm_dap_selctsub(void)
  **********************************************************************/
 agc_status_t lm_dap_closeout(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->dapzrupt = LM_NEGMAX;
 
@@ -185,7 +185,7 @@ agc_status_t lm_dap_closeout(void)
  **********************************************************************/
 agc_status_t lm_dap_xtrans(void)
 {
-    lm_dap_t    *d  = lm_dap_state();
+    lm_dap_t    *d  = lm_dap_state(); /* DAP erasables */
     agc_status_t st = AGC_STATUS_OK;
 
     d->tj[1] = 0;
@@ -240,7 +240,7 @@ agc_status_t lm_dap_xtrans(void)
  **********************************************************************/
 void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(u != NULL && v != NULL))
     {
@@ -660,7 +660,7 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
  **********************************************************************/
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) || !AGC_ASSERT(body <= LM_UV_MINRTN))
     {

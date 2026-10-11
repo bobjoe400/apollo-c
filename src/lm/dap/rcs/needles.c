@@ -73,7 +73,7 @@
  **********************************************************************/
 agc_status_t lm_dap_altdsply(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_DSPLYALT);
 
@@ -118,7 +118,7 @@ agc_status_t lm_dap_altdsply(void)
  **********************************************************************/
 agc_status_t lm_dap_dsplytot(void)
 {
-    lm_dap_t *d    = lm_dap_state();
+    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
     agc_sp_t  ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
     agc_sp_t  zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
     agc_sp_t  xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
@@ -260,7 +260,7 @@ agc_status_t lm_dap_needler(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dap_t *d    = lm_dap_state();
+    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
     uint16_t  pass = (uint16_t) (d->rcsflags & NDL_PASSBITS);
 
     if (pass != 0u)

@@ -164,7 +164,7 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
  **********************************************************************/
 agc_status_t lm_dap_spsrcs(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->axisctr >= -1 && d->axisctr <= 1))
     {

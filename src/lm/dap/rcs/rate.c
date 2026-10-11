@@ -72,7 +72,7 @@
  **********************************************************************/
 agc_status_t lm_dap_rateloop(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     for (int i = 2; i >= 0; i--)
     { /* DAPTEMP6 = 2, 1, 0     */
@@ -313,7 +313,7 @@ static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn, agc_sp_t 
  **********************************************************************/
 agc_status_t lm_dap_backp(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     /* BACKP (pp.1423-1425), first part: JETRATE, the jet terms of TRAPED and
      * the CDU-measured increments for P, Q, R.                               */
@@ -409,7 +409,7 @@ agc_status_t lm_dap_backp(void)
  **********************************************************************/
 agc_status_t lm_dap_offset_est(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (agc_flag_test(AGC_FLAG_DRIFTDFL))
     {

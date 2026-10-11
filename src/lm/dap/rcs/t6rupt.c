@@ -184,7 +184,7 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
  **********************************************************************/
 agc_status_t lm_dap_write_next(agc_sp_t index)
 {
-    const lm_dap_t *d = lm_dap_state();
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U || index == T6_IDX_V))
     {
@@ -210,7 +210,7 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
  **********************************************************************/
 agc_status_t lm_dap_jtlst(void)
 {
-    lm_dap_t *d     = lm_dap_state();
+    lm_dap_t *d     = lm_dap_state(); /* DAP erasables */
     agc_sp_t  t     = d->t6furtha[0];
     agc_sp_t  idx   = d->t6furtha[1];
     agc_sp_t  time6 = lm_dap_time6_value();

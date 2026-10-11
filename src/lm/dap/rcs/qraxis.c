@@ -79,7 +79,7 @@
  **********************************************************************/
 agc_status_t lm_dap_qerrcalc(void)
 {
-    lm_dap_t *d    = lm_dap_state();
+    lm_dap_t *d    = lm_dap_state(); /* DAP erasables */
     agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd); /* DAPTEMP1 */
     agc_sp_t  zdif = lm_dap_msu(agc_erase_cduz(), d->cduzd); /* DAPTEMP2 */
     int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
@@ -115,7 +115,7 @@ agc_status_t lm_dap_qerrcalc(void)
  **********************************************************************/
 agc_status_t lm_dap_stillrcs(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     lm_dap_rot_touv(d->qerror, d->rerror, &d->uerror, &d->verror);
 
@@ -211,7 +211,7 @@ static agc_status_t senseget(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_rcs(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->cotroler     = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
@@ -305,7 +305,7 @@ static agc_status_t trygts(lm_dap_t *d)
  **********************************************************************/
 agc_status_t lm_dap_qraxis(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->edotr       = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
     d->edotq       = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);

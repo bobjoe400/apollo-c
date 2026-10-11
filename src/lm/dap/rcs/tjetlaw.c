@@ -655,7 +655,7 @@ static void returntj(lm_dap_t *d, const tjl_t *w, agc_sp_t a)
  **********************************************************************/
 agc_status_t lm_dap_tjetlaw(void)
 {
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (!AGC_ASSERT(d->axisctr >= -1 && d->axisctr <= 1))
     {
