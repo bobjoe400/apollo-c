@@ -371,6 +371,11 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
  * does not hold. NOT_FOUND: no owner; BAD_ARG: bad arguments.           */
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
+    if (!AGC_ASSERT(data_id > AGC_DATA_NONE && data_id < AGC_DATA_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     bool      lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_dp_t *dp = (data_id == AGC_DATA_VMAGI && !lm && agc_erase_modreg() == 11) ? NULL : noun_dp(data_id, lm);
     agc_sp_t *sp = noun_sp(data_id);

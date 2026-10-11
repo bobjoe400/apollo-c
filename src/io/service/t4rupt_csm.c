@@ -131,6 +131,11 @@ uint16_t agc_erase_optmodes(void)
         return (0); /* no valid result */
     }
 
+    if (!AGC_ASSERT(optmodes <= WORD15))
+    {
+        return (0); /* no valid result */
+    }
+
     return (optmodes);
 }
 
@@ -143,6 +148,11 @@ uint16_t agc_erase_optmodes(void)
  **********************************************************************/
 void agc_erase_set_optmodes(uint16_t v)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= WORD15))
     {
         optmodes = v;
@@ -173,6 +183,11 @@ agc_sp_t agc_erase_optind(void)
  **********************************************************************/
 void agc_erase_set_optind(agc_sp_t v)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= AGC_OPTIND_NEG0 && v <= 1))
     {
         optind = v;
@@ -218,6 +233,16 @@ agc_status_t agc_t4_optics_reset(bool fresh)
         optmodes = (uint16_t) ((optmodes & OPTINITR) + BIT7);
     }
 
+    if (!AGC_ASSERT(optmodes <= WORD15))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(optics_ok()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK);
 }
 
@@ -252,7 +277,17 @@ static int cdu_ones(uint16_t cdu)
 {
     int v = 0; /* ones' complement value, 2^14 = pi */
 
+    if (!AGC_ASSERT(cdu <= WORD15))
+    {
+        return (0); /* no valid result */
+    }
+
     v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* negative */
+    if (!AGC_ASSERT(v >= -(int) POSMAX && v <= (int) POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
 
     return (v);
 }
@@ -269,7 +304,17 @@ static int iabs(int v)
 {
     int a = 0; /* |v| */
 
+    if (!AGC_ASSERT(v > -0100000 && v < 0100000))
+    {
+        return (0); /* no valid result */
+    }
+
     a = (v < 0) ? -v : v; /* magnitude */
+    if (!AGC_ASSERT(a >= 0))
+    {
+        return (0); /* no valid result */
+    }
+
 
     return (a);
 }
@@ -348,7 +393,17 @@ static void t4_initzopt(void)
  **********************************************************************/
 static agc_status_t t4_setdesmd(void)
 {
+    if (!AGC_ASSERT(optics_ok()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     desopmod = swsample;
+    if (!AGC_ASSERT(desopmod >= -1 && desopmod <= 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
 
     return (AGC_STATUS_OK);
 }
@@ -365,6 +420,11 @@ static agc_status_t t4_setdesmd(void)
  **********************************************************************/
 static agc_status_t t4_mantocsc(bool full)
 {
+    if (!AGC_ASSERT(optics_ok()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (full)
     {
         wtoption = 0;
@@ -507,6 +567,16 @@ static agc_status_t t4_zoptdes(void)
  **********************************************************************/
 static agc_status_t t4_manudes(void)
 {
+    if (!AGC_ASSERT(wtoption >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(desopmod == 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (swsample > 0)
     {
         return (t4_mantocsc(true));
@@ -543,6 +613,16 @@ static agc_status_t t4_manudes(void)
  **********************************************************************/
 static agc_status_t t4_cscdes(void)
 {
+    if (!AGC_ASSERT(desopmod > 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(optics_ok()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (swsample > 0)
     {
         return (t4_setdesmd());
@@ -572,6 +652,11 @@ static void t4_ocduftst(void)
     uint16_t w       = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D      */
     bool     lamp_on = (w & BIT8) != 0u;           /* lamp lit now     */
     bool     want_on = false;                      /* desired state    */
+    if (!AGC_ASSERT(w <= WORD15))
+    {
+        return;
+    }
+
 
     if ((agc_chan_read((int) AGC_CHAN_CHAN30) & BIT7) != 0u)
     {
@@ -898,6 +983,11 @@ agc_status_t agc_t4_optics_drive(void)
     else if (zone == 0)
     {
         zone = cdus;
+    }
+
+    if (!AGC_ASSERT(iabs(zone) <= (int) POSMAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
     }
 
     if ((optind < 0) || (swsample <= 0))

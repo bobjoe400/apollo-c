@@ -85,7 +85,17 @@ static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
 /* A signed SP value as the 15-bit ones'-complement word the AGC sends.    */
 static uint16_t sp_word(agc_sp_t v)
 {
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return (0); /* no valid result */
+    }
+
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
+    if (!AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15))
+    {
+        return (0); /* no valid result */
+    }
+
 
     return ((uint16_t) w);
 }
@@ -93,6 +103,11 @@ static uint16_t sp_word(agc_sp_t v)
 /* Word k (0 = high, 1 = low) of a DP value.                               */
 static uint16_t dp_word(agc_dp_t v, int k)
 {
+    if (!AGC_ASSERT(k == 0 || k == 1))
+    {
+        return (0); /* no valid result */
+    }
+
     return (sp_word((k == 0) ? agc_dp_high(v) : agc_dp_low(v)));
 }
 
@@ -111,6 +126,11 @@ static uint16_t vec_word(agc_vec_t v, int k)
  * CDUT CDUS PIPAX PIPAY PIPAZ.                                            */
 static uint16_t counter_word(int k)
 {
+    if (!AGC_ASSERT(k >= 0))
+    {
+        return (0); /* no valid result */
+    }
+
     switch (k)
     {
         case 0:
@@ -418,6 +438,11 @@ static agc_dn_entry_t cursor_take(tm_cursor_t *c)
 /* FETCH2WD: send the next two SP words of the nDNADR in progress.         */
 static agc_status_t fetch2wd(void)
 {
+    if (!AGC_ASSERT(dn_left > 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     uint16_t a = item_word(dn_item, dn_offset);
     uint16_t l = item_word(dn_item, dn_offset + 1);
 
@@ -431,6 +456,11 @@ static agc_status_t fetch2wd(void)
  * into DNTMBUFF and send the last one now.                                */
 static agc_status_t snapshot(const agc_dn_list_t *sub)
 {
+    if (!AGC_ASSERT(sub != NULL && sub->count >= 1) || !AGC_ASSERT(2 * (sub->count - 1) <= DNTMBUFF_WORDS))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     for (int i = 0; i + 1 < sub->count; i++)
     {
         agc_dn_entry_t e = sub->entry[i];
@@ -473,6 +503,11 @@ static agc_status_t dodnptr(int ref)
     sublist.active   = true;
     agc_dn_entry_t e = cursor_take(&sublist);
 
+    if (!AGC_ASSERT(e.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (e.op == AGC_DN_OP_CHAN)
     {
         return (dntmexit(agc_chan_read((int) e.ref), agc_chan_read((int) e.ref + 1)));
@@ -489,6 +524,11 @@ static agc_status_t dodnptr(int ref)
  * (word order code to zero) is made only for control-list entries.        */
 static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
 {
+    if (!AGC_ASSERT(e.op >= 1 && e.op <= AGC_DN_OP_PTR))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (from_control && e.op == 1 && e.ref == (uint16_t) AGC_DN_TIME2)
     {
         wozero(); /* SETWO                    */
@@ -564,6 +604,11 @@ static agc_status_t dnphase1(void)
     dn_left        = 0;
     dntmgoto       = TM_PHASE2;
 
+    if (!AGC_ASSERT(!sublist.active))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (newlist());
 }
 
@@ -611,6 +656,11 @@ static agc_status_t dndump(void)
 agc_status_t agc_telem_downrupt(void)
 {
     agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
+    if (!AGC_ASSERT(dn_left >= 0 && dn_left <= 6))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
 
     switch (dntmgoto)
     {
@@ -660,6 +710,11 @@ agc_status_t agc_telem_restart(void)
     dntmgoto = TM_PHASE1;
     dn_left  = 0;
 
+    if (!AGC_ASSERT(dntmgoto == TM_PHASE1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK);
 }
 
@@ -667,6 +722,11 @@ agc_status_t agc_telem_restart(void)
 void agc_telem_select_list(int code)
 {
     int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT : AGC_DNLIST_CSM_COUNT;
+    if (!AGC_ASSERT(code >= 0 && code < n))
+    {
+        return;
+    }
+
 
     dnlstcod = code;
 }
@@ -753,6 +813,11 @@ static int sublist_words(int ref)
     for (int i = 0; i < sub.count; i++)
     {
         uint8_t op = sub.entry[i].op;
+
+        if (!AGC_ASSERT(op != AGC_DN_OP_PTR))
+        {
+            return (0);
+        }
 
         n += (op == AGC_DN_OP_CHAN) ? 1 : (int) op;
     }

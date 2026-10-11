@@ -513,3 +513,6 @@
             reviewed lanes; `eva-valid-deferred` class for the 5 unreviewed
             lanes, re-applied via `make prove-classify` after each review.
             Review template updated.
+2026-10-11  User: collapse before proving. Re-sequenced status-handling-2:
+            structural + collapse + returns first, then one EVA run on the
+            finished tree. Lead killed the pre-edit-snapshot EVA runs.

@@ -149,6 +149,11 @@ agc_status_t agc_uplink_update_fresh_start(void)
     upsvflag = 0;
     stage    = UP_COUNT;
 
+    if (!AGC_ASSERT(upsvflag == 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK);
 }
 

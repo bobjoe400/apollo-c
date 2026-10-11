@@ -450,6 +450,11 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
 
     agc_vec_t s = agc_vec_add(ip, agc_vec_shr(agc_vec_unit(ip, rz->vtig, NULL, NULL), 3), agc_vec_unit(ip, rz->rtig, NULL, NULL)); /* UNIT(R) + UNIT(V)/8, scale 2^1 */
 
+    if (!AGC_ASSERT(mag == 0))
+    {
+        return (agc_vec_zero()); /* no valid result */
+    }
+
     return (agc_vec_neg(agc_vec_unit(ip, agc_vec_cross(ip, s, agc_guid_state()->burn.ut), NULL, NULL)));
 }
 
@@ -477,6 +482,11 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
  **********************************************************************/
 static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff, agc_burn_t *b)
 {
+    if (!AGC_ASSERT(ip != NULL && b != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_dp_t yaw   = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(yactoff), TRIMSCAL), YBIAS); /* yaw bell angle, rev 2^0 */
     agc_dp_t pitch = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(pactoff), TRIMSCAL), PBIAS); /* pitch bell angle, rev 2^0 */
     agc_dp_t cy    = agc_dp_cos(ip, yaw);                                                   /* COS(Y+Y0) PDL 2, scale 2^1  */

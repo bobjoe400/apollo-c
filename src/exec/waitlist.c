@@ -89,6 +89,16 @@ void waitlist_clear_lists(void)
     {
         lst2[k] = AGC_TASK_ENDTASK;
     }
+    if (!AGC_ASSERT(lst1[0] == WL_NEG1_2))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] == AGC_TASK_ENDTASK))
+    {
+        return;
+    }
+
 }
 
 /**********************************************************************
@@ -100,6 +110,16 @@ void waitlist_clear_lists(void)
 void waitlist_reset_time3(void)
 {
     time3 = (uint16_t) WL_POSMAX;
+    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(time3 > 0))
+    {
+        return;
+    }
+
 }
 
 /**********************************************************************
@@ -116,6 +136,11 @@ agc_status_t agc_waitlist_init(void)
     waitlist_clear_lists();
     pending_longtime = 0;
     pending_longcadr = AGC_TASK_NONE;
+    if (!AGC_ASSERT(lst2[0] == AGC_TASK_ENDTASK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
 
     return (AGC_STATUS_OK);
 }
@@ -182,6 +207,11 @@ static agc_status_t wtlst4(int n, int32_t delta, agc_task_id_t task)
  **********************************************************************/
 static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
 {
+    if (!AGC_ASSERT(dt >= 1 && dt <= AGC_WAITLIST_MAX_DELAY) || !AGC_ASSERT(time3 < WL_TIME3_OVF))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     /* DEVIATION: the "TIME3 overflow already happened" branch (C(TIME3)
      * < 200 octal) cannot arise: T3RUPT runs synchronously at overflow.  */
     int32_t a = (int32_t) dt - (WL_TIME3_OVF - (int32_t) time3) + 1; /* TD-T1+1 */
@@ -243,6 +273,11 @@ static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
  **********************************************************************/
 agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
 {
+    if (!AGC_ASSERT(task != AGC_TASK_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (delay_cs == 0)
     {
         return (agc_poodoo(AGC_ALARM_01204));
@@ -316,6 +351,11 @@ agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
  **********************************************************************/
 static agc_status_t longcycl(void)
 {
+    if (!AGC_ASSERT(pending_longcadr != AGC_TASK_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     int64_t rem = (int64_t) pending_longtime - WL_BIT14; /* DCS DPBIT14 / DAS    */
 
     if (rem > 0)
@@ -352,6 +392,11 @@ static agc_status_t longcycl(void)
  **********************************************************************/
 agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
 {
+    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(delay_cs < AGC_TIME_MODULUS_CS))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (delay_cs == 0 && agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return (agc_poodoo(AGC_ALARM_01204)); /* LONGPOOH            */

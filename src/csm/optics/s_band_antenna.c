@@ -27,11 +27,26 @@ static agc_dp_t gammasb; /* GAMMASB (= RHOSB +2) N51 yaw, revs           */
 
 agc_dp_t agc_sband_rhosb(void)
 {
+    if (!AGC_ASSERT(rhosb >= -AGC_DP_HALF))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(rhosb <= AGC_DP_HALF))
+    {
+        return (0); /* no valid result */
+    }
+
     return (rhosb);
 }
 
 agc_dp_t agc_sband_gammasb(void)
 {
+    if (!AGC_ASSERT(gammasb >= 0))
+    {
+        return (0); /* no valid result */
+    }
+
     return (gammasb);
 }
 

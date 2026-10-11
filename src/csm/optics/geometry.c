@@ -82,6 +82,11 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
     agc_ovf_t      ovf = 0;
     const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu), TEN_DEGS_MINUS, &ovf); /* ADS MPAC */
 
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return (0); /* no valid result */
+    }
+
     return (agc_dp_shr(a, 2)); /* x QUARTER */
 }
 

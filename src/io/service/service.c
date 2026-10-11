@@ -352,6 +352,11 @@ agc_status_t agc_svc_startsub_reset(void)
         delaydue[i] = 0;
     }
 
+    if (!AGC_ASSERT(delayloc[0] == AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (AGC_STATUS_OK);
 }
 
@@ -387,6 +392,11 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 agc_status_t agc_svc_b5off(void)
 {
     uint16_t x = agc_erase_extvbact(); /* EXTVBACT bits */
+    if (!AGC_ASSERT(x <= WORD15))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
 
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
 

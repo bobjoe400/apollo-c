@@ -17,11 +17,21 @@ static agc_sp_t modecadr[AGC_MODECADR_N]; /* IMUCADR OPTCADR RADCADR */
 
 agc_sp_t agc_erase_modecadr(int dev)
 {
+    if (!AGC_ASSERT(modecadr[dev] >= AGC_SP_MIN))
+    {
+        return (0);
+    }
+
     return (modecadr[dev]);
 }
 
 agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v)
 {
+    if (!AGC_ASSERT(dev >= 0 && dev < AGC_MODECADR_N))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     modecadr[dev] = v;
 
     return (AGC_STATUS_OK);
@@ -46,4 +56,9 @@ void exec_clear_modecadr(void)
     {
         modecadr[d] = 0;
     }
+    if (!AGC_ASSERT(modecadr[0] == 0))
+    {
+        return;
+    }
+
 }

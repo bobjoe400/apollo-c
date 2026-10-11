@@ -1,0 +1,7 @@
+# manual.tsv -- guards classified by hand (tools/prove/guards.py reads it).
+# file	function	condition	class	why
+# class: GUARANTEED (deleted: the fact holds by construction), FALLIBLE
+# (kept, the function returns agc_status_t), or the conversion done.
+src/io/service/rtb_ops.c	agc_rtb_v1sto2s	out[0] <= CDU_MASK && out[1] <= CDU_MASK && out[2] <= CDU_MASK	GUARANTEED	postcondition of the loop just before: one_to_two masks with CDU_MASK
+src/io/service/service.c	agc_svc_gentran	to[0] == from[0]	GUARANTEED	postcondition of the copy loop just before
+src/io/service/t4rupt_csm.c	t4_mantocsc	((optmodes & BIT9) == 0u) || (optind == 1)	GUARANTEED	postcondition of the if just before (BIT9 set -> optind = 1)

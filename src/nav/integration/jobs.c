@@ -36,6 +36,11 @@ static agc_dp_t stateup_tdec1;
 static agc_dp_t timedelt(void)
 {
     const agc_vehicle_t v = agc_state_vehicle();
+    if (!AGC_ASSERT((v == AGC_VEHICLE_CSM) || (v == AGC_VEHICLE_LM)))
+    {
+        return (0); /* no valid result */
+    }
+
 
     _Static_assert(INTEG_TIMEDELT_CSM < INTEG_TIMEDELT_LM, "AGC constant");
 
@@ -367,6 +372,11 @@ static agc_status_t others_lm(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id
 
 agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t resume_job)
 {
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_status_t st = agc_integ_install(0, resume_job); /* first INTSTALL */
 
     if (st != AGC_STATUS_OK)
@@ -453,6 +463,11 @@ static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx, ag
 
 agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out)
 {
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(out != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     const bool   csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     agc_status_t st  = csm ? agc_integ_install(0, resume_job) : AGC_STATUS_OK;
 
@@ -528,7 +543,17 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     const bool     csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
     const agc_dp_t add = csm ? ctx->t_to_add : timedelt();
 
+    if (!AGC_ASSERT(add >= 0))
+    {
+        return (INTEG_NEXT_FAIL);
+    }
+
     ctx->tdec = agc_dp_add(ip, agc_integ_loadtime(), add);
+    if (!AGC_ASSERT(ctx->tdec >= 0))
+    {
+        return (INTEG_NEXT_FAIL);
+    }
+
 
     return (INTEG_NEXT_TESTLOOP);
 }
@@ -542,6 +567,11 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  */
 agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
+    {
+        return (INTEG_NEXT_FAIL);
+    }
+
     if (agc_flag_test(AGC_FLAG_MID1FLAG))
     {
         const agc_dp_t lim = agc_dp_add(ip, agc_integ_loadtime(), timedelt());
@@ -587,6 +617,11 @@ agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * state (2 = moon sphere), release INTSTALL, PHASCHNG OCT 04026.         */
 agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag)
 {
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(upsvflag != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (agc_interrupts_inhibited())
     {
         agc_relint(); /* RELINT        */

@@ -72,12 +72,22 @@ static bool is_lm(void)
 {
     agc_vehicle_t v = agc_state_vehicle();
 
+    if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
+    {
+        return (false);
+    }
+
     return (agc_state_vehicle() == AGC_VEHICLE_LM);
 }
 
 /* Replace the bits of flagword `w` outside `keep` by `init`.          */
 static void flagword_init(int w, uint16_t keep, uint16_t init)
 {
+    if (!AGC_ASSERT((keep & init) == 0U))
+    {
+        return;
+    }
+
     uint16_t v = (uint16_t) ((agc_flagword_get(w) & keep) | init);
 
     agc_flagword_set(w, v);
@@ -153,6 +163,11 @@ static void startsb2(void)
     { /* leave bit 6 unchanged   */
         agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     }
+    if (!AGC_ASSERT(agc_flagword_get(4) == 0u))
+    {
+        return;
+    }
+
 }
 
 /* STARTSB1 (L p.220; the same code opens Comanche's STARTSUB C p.190):
@@ -202,6 +217,11 @@ static void dofstart_common(void)
     /* "The IMU was in coarse align in gimbal lock, so put it back"
      * (DOFSTART C p.184 / L p.212).                                       */
     uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
+    if (!AGC_ASSERT(lamps <= 077777u))
+    {
+        return;
+    }
+
 
     if ((~lamps & FS_BITS4_6) == 0U)
     {
@@ -299,6 +319,11 @@ static void dofstart_common(void)
     }
 
     /* ENDRSTRT: on to DUMMYJOB +2 (RELINT, NEWJOB untouched).          */
+    if (!AGC_ASSERT(restreg == FS_PRIO30))
+    {
+        return;
+    }
+
 }
 
 /* DOFSTART (C p.183): outputs off and fresh-start initialisation.     */

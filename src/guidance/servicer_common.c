@@ -258,6 +258,11 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *
  **********************************************************************/
 agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, agc_vec_t r, agc_avg_g_t *a)
 {
+    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     a->unitr      = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH */
     agc_vec_t dir = a->unitr;                                  /* gravity direction, scale 2^1; gravity direction, half unit */
 

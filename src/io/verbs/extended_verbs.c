@@ -59,6 +59,11 @@ static int      xv_noun;       /* NOUNREG at GOEXTVB                 */
 
 uint16_t agc_erase_extvbact(void)
 {
+    if (!AGC_ASSERT(extvbact <= WORD15))
+    {
+        return (0); /* no valid result */
+    }
+
     return (extvbact);
 }
 
@@ -73,11 +78,21 @@ void agc_erase_set_extvbact(uint16_t v)
 /* TS EXTVBACT by another program (P61 locks out the extended verbs).     */
 void agc_svc_set_extvbact(uint16_t v)
 {
+    if (!AGC_ASSERT(v <= WORD15))
+    {
+        return;
+    }
+
     extvbact = v;
 }
 
 bool agc_extverb_busy(void)
 {
+    if (!AGC_ASSERT(extvbact <= WORD15))
+    {
+        return (false);
+    }
+
     return (extvbact != 0u);
 }
 
@@ -277,6 +292,11 @@ static agc_status_t stall_then(agc_job_ctx_t *ctx, agc_job_id_t wake)
  * released.  Starts the extended-verb job (see DEVIATION above).         */
 agc_status_t agc_extverb(int verb, int noun)
 {
+    if (!AGC_ASSERT(verb >= 40 && verb <= 99) || !AGC_ASSERT(noun >= 0 && noun <= 99))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     xv_verb = verb;
     xv_noun = noun;
 

@@ -488,6 +488,11 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t re
 
     const agc_dsky_cont_t c = {AGC_JOB_GOTOPOOH, AGC_JOB_AUTO_CONTROL_RECYCLE, ret_job};
 
+    if (!AGC_ASSERT(ret_job != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, 00203U, &c)); /* TURNITON */
 }
 

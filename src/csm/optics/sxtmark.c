@@ -386,6 +386,11 @@ agc_status_t agc_sxtmark_mark2(void)
     ms = (uint16_t) ((ms - MS_WANTED_ONE) | MS_REJECT_OK);
     agc_erase_set_markstat(ms);
 
+    if (!AGC_ASSERT((ram->qpret >= 0) && (ram->qpret < AGC_ALIGN_SXT_MARKS)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     ram->sxt[ram->qpret] = mk; /* VACSTOR  */
     ram->qpret++;
 
@@ -526,6 +531,11 @@ agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
 agc_status_t agc_job_entanswr(void)
 {
     agc_erase_set_markstat((uint16_t) (agc_erase_markstat() & MS_VAC_MASK));
+    if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
 
     agc_inhint();
     agc_status_t st = agc_waitlist_call(ENDMARKS_DT, AGC_TASK_ENDMARKS);
@@ -545,6 +555,11 @@ agc_status_t agc_job_entanswr(void)
 /* ENDMARKS task: GOODEND for the optics (OPTSTALL). */
 agc_status_t agc_task_endmarks(void)
 {
+    if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     const agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_OPTICS);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -559,6 +574,11 @@ agc_status_t agc_task_endmarks(void)
 agc_sp_t agc_sxtmark_marks_made(void)
 {
     const agc_sp_t n = agc_align_ram()->qpret;
+
+    if (!AGC_ASSERT((n >= 0) && (n <= AGC_ALIGN_SXT_MARKS)))
+    {
+        return (0); /* no valid result */
+    }
 
     return (n);
 }

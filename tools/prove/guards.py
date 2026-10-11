@@ -26,8 +26,8 @@ The why column names the evidence.
 import collections
 import glob
 import os
-import pickle
 import re
+import pickle
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -813,6 +813,30 @@ class Classifier:
                                for x in t[1:]])
 
 
+# Lanes not yet reviewed (lead, 2026-10-11): EVA's verdicts are relative to
+# today's code and entry points, so a guard there that only EVA proves is
+# recorded as eva-valid-deferred and deleted after the lane's review (remove
+# the lane from this list, then `make prove` and `make prove-classify`).
+DEFERRED = ('src/exec/', 'src/programs/alignment/', 'src/csm/alignment/', 'src/csm/optics/',
+            'src/lm/alignment/', 'src/lm/optics/', 'src/io/service/', 'src/io/telemetry/',
+            'src/io/verbs/', 'src/lm/systems_test.c', 'src/guidance/', 'src/csm/burns/',
+            'src/lm/burns/', 'src/nav/integration/')
+MANUAL = os.path.join(ROOT, 'tools', 'prove', 'manual.tsv')
+
+
+def load_manual():
+    """Hand classification: file, function, condition -> (class, why)."""
+    out = {}
+    if os.path.exists(MANUAL):
+        with open(MANUAL) as fh:
+            for ln in fh:
+                if ln.startswith('#') or not ln.strip():
+                    continue
+                f, fn, cond, cls, why = ln.rstrip('\n').split('\t')[:5]
+                out[(f, fn, re.sub(r'\s+', '', cond))] = (cls, why)
+    return out
+
+
 EVA_RANK = {'INVALID': 3, 'UNKNOWN': 2, 'VALID': 1, 'DEAD': 0}
 
 
@@ -877,6 +901,8 @@ def classify_guard(cl, f, g, eva):
         ok = ok and bool(r)
     if ok:
         cls, why = 'GUARANTEED', 'structural: ' + '; '.join(whys)
+    elif ev_v == 'VALID' and f['file'].startswith(DEFERRED):
+        cls, why = 'eva-valid-deferred', f'EVA VALID ({mains}), lane not reviewed; ' + '; '.join(whys)
     elif ev_v == 'VALID':
         cls, why = 'GUARANTEED', f'EVA VALID ({mains}); ' + '; '.join(whys)
     else:
@@ -890,6 +916,7 @@ def cmd_classify(out_path, index=INDEX):
         data = pickle.load(fh)
     cl = Classifier(data)
     eva = load_eva()
+    manual = load_manual()
     rows = []
     for f in data['funcs']:
         if not f['file'].startswith('src/'):
@@ -897,6 +924,9 @@ def cmd_classify(out_path, index=INDEX):
         kind = 'void' if f['ret'] == 'void' else ('status' if f['ret'] == 'agc_status_t' else 'value')
         for g in f['guards']:
             cond, ev_v, cls, why = classify_guard(cl, f, g, eva)
+            m = manual.get((f['file'], f['name'], re.sub(r'\s+', '', cond)))
+            if m is not None and cls != 'GUARANTEED':
+                cls, why = m[0], 'by hand: ' + m[1] + ' (' + why + ')'
             rows.append((f['file'], g['line'], f['name'], kind, cond, ev_v, cls, why))
     with open(out_path, 'w') as fh:
         fh.write('file:line\tfunction\tkind\tcondition\teva\tclass\twhy\n')

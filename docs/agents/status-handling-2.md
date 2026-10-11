@@ -85,3 +85,10 @@ Method (tooling first, hand work last):
    if/else so the function has one return at the end (guide 5.6); keep
    early returns for error paths (rule 1 allows them). Run this AFTER the
    inlining steps. Report counts.
+
+## Order of work (user, 2026-10-11)
+Structural first (steps 1b, 2, 3, 4, 6, 7, 8), format, make/test green;
+THEN one `make prove` on the finished tree; apply VALID in reviewed lanes,
+record `eva-valid-deferred` in unreviewed lanes. Never prove a tree you are
+about to restructure: verdict positions go stale and guards slated for
+deletion get analysed for nothing.
