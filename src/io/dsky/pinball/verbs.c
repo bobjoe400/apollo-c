@@ -401,7 +401,7 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
     }
 
     return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* if OK */
-}
+} /* pin_dsp_octal */
 
 /* ---- noun test and machine address (pp. 324-325) --------------------- */
 

@@ -1109,8 +1109,8 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
     agc_dp_t fm  = pin_frac_of_digits(min, 100); /* mm, 2^-28 */
 
     pin_set_dspcount((int16_t) (k_rnd1[k] - 3));
-    agc_dp_t     ss = neg ? -fs : fs; /* seconds with the sign */
-    agc_dp_t     mm = neg ? -fm : fm; /* minutes with the sign */
+    agc_dp_t     ss = neg ? -fs : fs; /* signed ss, 2^-28 */
+    agc_dp_t     mm = neg ? -fm : fm; /* signed mm, 2^-28 */
     agc_status_t st = pin_dspdc2nr(ss, neg); /* sec in D4D5 */
 
     if (st == AGC_STATUS_OK)

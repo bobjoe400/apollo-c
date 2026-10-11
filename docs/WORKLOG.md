@@ -368,3 +368,7 @@
             flags verified against rope symbol tables. POST-WAVE TASK (lead):
             rename include/agc/core/assert.h -> agc_assert.h (237 includes;
             commands in review-state-flags.md) once no agent is editing.
+2026-10-10  Session limit approaching: tree committed; all 16 running agents
+            (15 reviews + sim) told to bring their Progress sections current
+            and leave touched files compiling before continuing. On cutoff:
+            commit, ListAgents, relaunch only the dead ones with resume.

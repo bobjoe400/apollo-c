@@ -94,8 +94,8 @@ agc_sp_t entry_angle_wrap(int32_t sum)
 }
 
 /* TS / ADS / XCH of an overflowed A: memory gets SG and bits 1-14, so a
- * sum past +-1.0 comes back by 1.0 (ones' complement: 16383 + 1 -> +0... the
- * one-LSB end-around difference is not modelled).                       */
+ * sum past +-1.0 comes back by 1.0 (the ones' complement end-around LSB
+ * is not modelled).                                                      */
 agc_sp_t entry_sp_store_ovf(int32_t sum)
 {
     int32_t s = sum;

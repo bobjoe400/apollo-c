@@ -51,7 +51,7 @@
 #define WORD15            077777u /* one AGC word, 15 bits */
 #define OCT7              000007u /* OCT7: flagword number (CSM) */
 #define OCT77770          077770u /* OCT77770: flag bits */
-#define OCT40200          040200u /* lamp word change bit + TRACKER (bit 8)    */
+#define OCT40200          040200u /* lamp word send bit + TRACKER (bit 8) */
 #define BIT5              000020u /* BIT5 */
 #define BIT7              000100u /* BIT7 */
 #define BIT8              000200u /* BIT8: TRACKER lamp */
@@ -136,7 +136,8 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
     }
 
     *bits = (uint16_t) (arg & OCT77770);
-    int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? LM_ENT2_FLAGWORD : /* LM: FLAGWRD4; CSM: bits 1-3 */
+    int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? /* LM: FLAGWRD4 */
+               LM_ENT2_FLAGWORD :
                (int) (arg & OCT7);
 
     if (!AGC_ASSERT(word >= 0 && word < AGC_FLAGWORDS))
@@ -211,10 +212,12 @@ agc_status_t agc_svc_downent2(uint16_t arg)
     return (AGC_STATUS_OK);
 }
 
-/* DELAYJOB (p.1488): put the calling job to sleep for delay_cs and wake
+/**********************************************************************
+ * DELAYJOB (p.1488): put the calling job to sleep for delay_cs and wake
  * it as wake_as (the AGC wakes it at the caller's return address).  The
  * job must return after an OK.  BAILOUT 1104 if all four DELAYLOCs are
- * in use.                                                                 */
+ * in use.
+ **********************************************************************/
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
 {
     if (!AGC_ASSERT(wake_as != AGC_JOB_NONE) ||

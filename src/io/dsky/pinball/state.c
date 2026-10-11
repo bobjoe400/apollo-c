@@ -850,7 +850,7 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
     out->nounreg    = g_pin.nounreg;
 
     return (AGC_STATUS_OK);
-}
+} /* agc_dsky_get_state */
 
 /* ---- pinball erasables for other modules ----------------------------- */
 
