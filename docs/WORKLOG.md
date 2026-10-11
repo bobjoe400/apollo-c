@@ -326,3 +326,7 @@
             once. Running.
 2026-10-10  User resumed the sim lane. Relaunched with resume semantics;
             headless scenarios first, GUI verification last.
+2026-10-10  User flagged duplicate identical guards in one function
+            (set_lampword). check_rules now flags duplicate assertions as
+            rule-5 hard violations (20 found); collapse pass 3 removes them
+            along with forwarding wrappers.

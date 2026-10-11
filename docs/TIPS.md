@@ -116,3 +116,8 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
 * **clang-format cannot insert blank lines.** For statement paragraphing
   (NASA guide 5.5) use Uncrustify (nl_before_if, nl_func_var_def_blk,
   nl_before_return, nl_after_brace_close) and let it be the only formatter.
+* **Mechanical passes compound into duplicates.** Converting `(void)`
+  assertions to guards and then inlining helpers produced functions with
+  the same guard twice. After any automated rewrite, run a structural
+  duplicate-guard check (now in check_rules as a hard violation) and a
+  forwarding-wrapper check, not just the compiler.
