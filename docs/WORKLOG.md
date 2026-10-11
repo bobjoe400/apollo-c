@@ -330,3 +330,10 @@
             (set_lampword). check_rules now flags duplicate assertions as
             rule-5 hard violations (20 found); collapse pass 3 removes them
             along with forwarding wrappers.
+2026-10-10  collapse pass 3 DONE: 113 forwarding wrappers found, 26 removed
+            (81 kept are public API / job entries; review wave may judge
+            per case). Lead's duplicate-guard rule was too broad and cost 4
+            real postconditions; checker narrowed to back-to-back repeats
+            and agent restoring them. Finding: ll_landjunk overwrote the
+            lat/long status unchecked. 3,964 functions after collapse (from
+            4,140).

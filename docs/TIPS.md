@@ -126,3 +126,6 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   is deleted and its callers call the callee; a guard the callee does not
   already assert moves into the callee once.  `python3 -I tools/unwrap.py
   --list` finds them by body shape (docs/modules/collapse.md).
+* **"Duplicate" assertions are only duplicates when adjacent.** A re-check
+  of the same condition after intervening statements is a postcondition.
+  A blunt dedup rule deleted four real checks before it was narrowed.
