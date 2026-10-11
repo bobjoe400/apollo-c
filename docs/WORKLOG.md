@@ -394,3 +394,9 @@
             fixes (ATERJOB, BIASAK TP add, RESCALES). Requests: exec rename
             AGC_JOB_REFAZE10; guid-powered export AUGEKUGL; POLYNUM+1 on
             P11 pad load. Launching review-guid-landing (#5).
+2026-10-11  review-prog-rendz DONE: 1 DMP site; F13 is NOT a multiply error:
+            R1A word-form effect in GETX WLOOP and GETECC (circular orbit:
+            AGC ECC 0, C 23164 -> apsides 9 km apart) -> nav-conic must carry
+            R1A as the AGC word pair; core-numeric: SQRT keeping MPAC+2;
+            exec: agc_phase_set_prdt. Launching review-nav-conic (#8 moved
+            up: it now owns P1/P6 and the -0 modelling).
