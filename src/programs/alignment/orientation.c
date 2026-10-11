@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "agc/core/assert.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define CDU_WORD_MASK 077777u
 #define CDU_SIGN_BIT  040000u

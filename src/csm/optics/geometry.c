@@ -15,7 +15,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 /* NB2NB1 / NB1NB2 elements, 2DEC ... B-1 (cos 32.523 deg, sin 32.523 deg). */
 #define NB_COS  ((agc_dp_t) 113169126) /* .8431756920 B-1                 */

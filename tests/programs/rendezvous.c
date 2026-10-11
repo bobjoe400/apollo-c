@@ -17,11 +17,14 @@
 
 #include <math.h>
 
-#include "../../src/programs/navigation/pending.h" /* provisional job ids */
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/nav/auxiliary.h"
 #include "agc/programs/rendezvous.h"
 
 static int g_checks;

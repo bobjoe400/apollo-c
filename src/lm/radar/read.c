@@ -22,7 +22,7 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "radar.h"
 
 #define RD_RRRANGE          011u
@@ -278,12 +278,7 @@ static agc_status_t rd_nomore(void)
     if (agc_flag_test(AGC_FLAG_LRBYPASS) &&
         !agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED))
     {
-        agc_status_t st = rz_alarm(RD_ALARM_NO_DATA);
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        agc_alarm(RD_ALARM_NO_DATA);
     }
 
     return (rd_badrad());
@@ -442,12 +437,7 @@ static agc_status_t rd_landing_radar(void)
     if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) &
          RR_LRPOSBIT) != 0U)
     { /* LRPOSCHK */
-        agc_status_t st = rz_alarm(RD_ALARM_LR_POS);
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        agc_alarm(RD_ALARM_LR_POS);
 
         return (rd_badrad());
     }
@@ -506,9 +496,9 @@ agc_status_t agc_rendz_radar_read(void)
 
     if (rd.samplim < 0)
     { /* TRYCOUNT */
-        agc_status_t st = rz_alarm(RD_ALARM_UNEXPECTED);
+        agc_alarm(RD_ALARM_UNEXPECTED);
 
-        return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st); /* RESUME  */
+        return (AGC_STATUS_OK); /* RESUME  */
     }
 
     if (rd.samplim == 0)

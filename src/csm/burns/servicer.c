@@ -20,8 +20,18 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/csm/dap.h"
+#include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "guid_pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 #define MAXDELV  6398 /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */
 #define JTAGTIME 120  /* JTAGTIME DEC 120 cs = 1 s + T CDU (0.1 s)  */
@@ -77,6 +87,17 @@ static agc_status_t preread1(agc_avg_g_t *a)
     }
 
     return (AGC_STATUS_OK);
+}
+
+/* PREREAD1 for P11 (IBNKCALL PREREAD1 at liftoff, P11 p.552).            */
+agc_status_t agc_guid_preread1_csm(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (preread1(&agc_guid_state()->avg));
 }
 
 /* PREREAD / REDO5.31 (p.822-823): task. The caller protects it. LASTBIAS
@@ -211,10 +232,10 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
     return (AGC_STATUS_OK); /* TEST CONNECTOR ON */
 }
 
-/* PIPSDONE / REDO5.5 (p.824): mark the reading done and continue.          */
-static agc_status_t pipsdone(agc_avg_g_t *a)
+/* REDO5.5 (p.824): mark the reading done and continue (restart 5.5 enters
+ * here, after PIPSDONE's phase change).                                    */
+static agc_status_t redo5_5(agc_avg_g_t *a)
 {
-    agc_phase_newphase(GRP5, 5, false); /* CAF FIVE DXCH -PHASE5  */
     a->pipage = 1;                             /* SHOW PIPS HAVE BEEN READ */
     a->pipctr = 2;                             /* PIPCTR FOR ONMNITOR    */
 
@@ -229,6 +250,47 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
     }
 
     return (chekaveg(a));
+}
+
+/* PIPSDONE (p.824): CAF FIVE, DXCH -PHASE5, then REDO5.5.                   */
+static agc_status_t pipsdone(agc_avg_g_t *a)
+{
+    agc_phase_newphase(GRP5, 5, false); /* CAF FIVE DXCH -PHASE5  */
+
+    return (redo5_5(a));
+}
+
+/* REDO5.5 as the restart task of phase 5.5 (RESTART_TABLES p.217: -2CADR
+ * REDO5.5, an immediate task).                                             */
+agc_status_t agc_task_redo5_5_csm(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (redo5_5(&agc_guid_state()->avg));
+}
+
+/* CHEKAVEG as the restart task of phase 5.37 (RESTART_TABLES p.218).     */
+agc_status_t agc_task_chekaveg(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (chekaveg(&agc_guid_state()->avg));
 }
 
 /* READACCS (p.824): waitlist task every 2 s.                               */
@@ -568,7 +630,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_status_t st =
-        agc_guid_avetomid(&ip, ctx->id); /* CONVERT STATE VECTOR   */
+        agc_integ_avetomid(&ip, agc_integ_shared_ctx(), ctx->id); /* CONVERT STATE VECTOR   */
 
     if (st != AGC_STATUS_OK)
     {
@@ -576,7 +638,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     }
 
     agc_erase_set_vhfcnt(0); /* ZERO MARK COUNTERS     */
-    agc_rendz_erasable()->trkmkcnt = 0;
+    agc_erase_set_trkmkcnt(0);
     agc_imu_pipfree();
     agc_erase_set_mrkbuf2(0, (agc_sp_t) -0400); /* CS BIT9: INVALIDATE    */
     agc_chan_and(011, (uint16_t) ~(uint16_t) AGC_CH011_TESTCONN);
@@ -588,7 +650,7 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
         agc_phase_change2(000111, 000132, NULL); /* 1.11SPOT, 2.13SPOT     */
     }
 
-    return (agc_exec_change_program_continue(ctx)); /* POSTJUMP CANV37        */
+    return (agc_job_change_program_continue(ctx)); /* POSTJUMP CANV37        */
 }
 
 /* SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection

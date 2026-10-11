@@ -16,9 +16,20 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
-#include "agc/io/service_internal.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "landing/pending.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 /* ---- constants (pp. 842, 836, 852, 855-856; CONTROLLED_CONSTANTS) ----- */
 #define AS_THRESH2  308

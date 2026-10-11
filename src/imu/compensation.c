@@ -43,7 +43,7 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "pending.h"
+#include "agc/io/service.h"
 
 /* Powers of two used as MP multipliers (BITn = 2^(n-1)).                 */
 #define BIT4  ((agc_sp_t) 00010)
@@ -772,7 +772,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
 
     if (surface)
     {
-        agc_pfs_pipasr_noscale(); /* PIPASR +3: no scaling    */
+        agc_pipasr_noscale(); /* PIPASR +3: no scaling    */
     }
 
     int now  = (int) (agc_time_now_cs() & (TIME1_MODULUS - 1));   /* TIME1   */

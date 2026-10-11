@@ -24,7 +24,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
 #define RPD_PRIO3          ((agc_prio_t) 03)
@@ -141,7 +141,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
 
     if ((x & RPD_EXTVBACT_BIT5) == 0U)
     {
-        return (rz_endext()); /* YES, DIE  */
+        return (agc_dsky_endext()); /* YES, DIE  */
     }
 
     agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
@@ -202,7 +202,7 @@ static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
     }
     else
     {
-        st = rpd_from_base(ip, rz, true, rz_loadtime(), conic, &o);
+        st = rpd_from_base(ip, rz, true, agc_rtb_loadtime(), conic, &o);
 
         if (st != AGC_STATUS_OK)
         {
@@ -238,7 +238,7 @@ static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
 static agc_status_t rpd_csm_statextp(agc_interp_t *ip, agc_rendz_t *rz)
 {
     bool     aveg = rz_vflag_test(RZ_VF_CHANGE_PROGRAM); /* V37FLAG       */
-    agc_dp_t t    = aveg ? rpd_getrvn(rz) : rz_loadtime();
+    agc_dp_t t    = aveg ? rpd_getrvn(rz) : agc_rtb_loadtime();
 
     rz->basetime = t;
     agc_integ_out_t o;
@@ -320,12 +320,12 @@ static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* R31SURF       */
-        st = rz_integ(ip, RZ_LEMPREC, rz_loadtime(),
+        st = rz_integ(ip, RZ_LEMPREC, agc_rtb_loadtime(),
                       AGC_JOB_RENDEZVOUS_PARAMS_UPDATE, &o);
     }
     else
     {
-        st = rpd_from_base(ip, rz, true, rz_loadtime(), true, &o);
+        st = rpd_from_base(ip, rz, true, agc_rtb_loadtime(), true, &o);
     }
 
     if (st != AGC_STATUS_OK)
@@ -350,7 +350,7 @@ static agc_status_t rpd_lm_rev83(agc_interp_t *ip, agc_rendz_t *rz)
  * landed (ONEBASE): only the CSM base vector, at now. Otherwise the LM
  * precision base vector at now, the CSM's at its TAT (DOCMBASE). Then
  * REV83.                                                               */
-static agc_status_t rpd_lm_v83call(agc_interp_t *ip, agc_rendz_t *rz)
+static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
 {
     bool aveg = rz_vflag_test(RZ_VF_AVEGFLAG);
 
@@ -361,7 +361,7 @@ static agc_status_t rpd_lm_v83call(agc_interp_t *ip, agc_rendz_t *rz)
 
     agc_integ_out_t o;
     agc_status_t    st;
-    agc_dp_t        t = rz_loadtime();
+    agc_dp_t        t = agc_rtb_loadtime();
 
     if (!aveg && !agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -413,7 +413,32 @@ agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx)
 
     if (rz_is_csm())
     {
-        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
+        return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
+    }
+
+    return (agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT));
+}
+
+/* R31CALL (LM p.703) is a waitlist task (V83PERF: WAITLIST 20 ms):
+ * FINDVAC PRIO3 V83CALL, then DSPDELAY (FIXDELAY 1 s) in the task.      */
+agc_status_t agc_task_rendezvous_parameter_display(void)
+{
+    if (!AGC_ASSERT(!rz_is_csm()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st =
+        agc_exec_findvac(RPD_PRIO3, AGC_JOB_RENDEZVOUS_PARAMS_START);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     return (agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_RENDEZVOUS_PARAMS_WAIT));
@@ -429,7 +454,7 @@ agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx)
 
     if ((agc_erase_extvbact() & RPD_EXTVBACT_BIT12) == 0U)
     {
-        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
+        return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_RENDEZVOUS_PARAMS_WAIT));
     }
 
     return (agc_job_rendezvous_params_monitor(ctx));
@@ -483,7 +508,7 @@ agc_status_t agc_job_rendezvous_params_start(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
 
-    return (rz_is_csm() ? rpd_csm_statextp(&ip, rz) : rpd_lm_v83call(&ip, rz));
+    return (rz_is_csm() ? rpd_csm_statextp(&ip, rz) : rpd_lm_compute(&ip, rz));
 }
 
 /* V83 / REV83: every later pass (CM HAVEBASE, LM REV83). */

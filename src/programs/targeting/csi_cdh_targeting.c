@@ -149,11 +149,11 @@ static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip,
     in.rdesired = RZ_DPPOSMAX; /* beyond the apocenter      */
     in.sgnrdot  = AGC_SP_HALF; /* not set by the AGC; unused at APSESW */
     in.rvsw     = true;
-    in.body     = rz_body(rz);
+    in.body     = agc_conic_body_of_x1(rz->body.rtx1);
     rz_flag_put(AGC_FLAG_RVSW, true);
     agc_conic_time_out_t o;
 
-    st = rz_timerad(ip, &in, &o);
+    st = agc_conic_timerad(ip, &in, &o);
 
     if (st != AGC_STATUS_OK)
     {

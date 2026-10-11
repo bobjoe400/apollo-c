@@ -18,32 +18,31 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/alignment_pending.h"
-#include "pending.h"
+#include "agc/programs/rendezvous.h"
 
-#define WORD15              077777u
-#define BIT4                000010u
-#define BIT5                000020u
-#define BIT14               020000u
-#define OCT30               000030u /* CHAN12 bits 4,5: coarse align, zero ICDU   */
-#define OCT50               000050u /* CHAN12 bits 4,6: coarse align, ECTR enable */
-#define OCT60000            060000u /* FLAGWRD6 DAPBITS 1 and 2                   */
-#define TVC_BITS            040000u /* DAPBITS = 10: TVC autopilot               */
-#define PRIO30BITS          030000u /* DAPDATR1 configuration bits 13,12         */
-#define PRIO7BITS           007000u
-#define PRIO5BITS           005000u
-#define NOUN_OCDU           91 /* N91 optics CDUs                            */
-#define ALARM_NO_REND_TRACK ((agc_alarm_code_t) 00406)
-#define ALARM_NO_P07        ((agc_alarm_code_t) 01521)
+#define WORD15                077777u
+#define BIT4                  000010u
+#define BIT5                  000020u
+#define BIT14                 020000u
+#define OCT30                 000030u /* CHAN12 bits 4,5: coarse align, zero ICDU   */
+#define OCT50                 000050u /* CHAN12 bits 4,6: coarse align, ECTR enable */
+#define OCT60000              060000u /* FLAGWRD6 DAPBITS 1 and 2                   */
+#define TVC_BITS              040000u /* DAPBITS = 10: TVC autopilot               */
+#define PRIO30BITS            030000u /* DAPDATR1 configuration bits 13,12         */
+#define PRIO7BITS             007000u
+#define PRIO5BITS             005000u
+#define NOUN_OCDU             91 /* N91 optics CDUs                            */
+#define ALARM_NO_REND_TRACK   ((agc_alarm_code_t) 00406)
+#define ALARM_NO_SYSTEMS_TEST ((agc_alarm_code_t) 01521)
 #define ALARM_OPTICS_SWITCH \
     ((agc_alarm_code_t) 00115) /* optics not at computer */
 #define ALARM_OPTICS_RESERVED \
@@ -231,8 +230,9 @@ static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 /* ---- V48 load autopilot data (R03, DAPDISP pp.246-247) ----------------- */
 
 /* GOXDSPF of a V04/V06 display with proceed -> next, enter -> again.     */
-static agc_status_t r03_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
-                                agc_job_id_t next, agc_job_id_t again)
+static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb,
+                                     uint8_t noun,
+                                     agc_job_id_t next, agc_job_id_t again)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -270,8 +270,8 @@ static agc_status_t verb_dap_data_load(agc_job_ctx_t *ctx)
 /* DONOUN46: V04N46 DAPDATR1, DAPDATR2.                                     */
 agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx)
 {
-    return (r03_display(ctx, 4, 46, AGC_JOB_DAP_DATA_LOAD_CONFIG,
-                        AGC_JOB_DAP_DATA_LOAD_NOUN46));
+    return (dap_data_display(ctx, 4, 46, AGC_JOB_DAP_DATA_LOAD_CONFIG,
+                             AGC_JOB_DAP_DATA_LOAD_NOUN46));
 }
 
 /* N46 proceed: MAXDBFLG from DAPDATR1 bit 4, S41.2, then V06N47.          */
@@ -293,8 +293,8 @@ agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx)
 /* DONOUN47: V06N47 CSM and LM weights.                                     */
 agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx)
 {
-    return (r03_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_MASS,
-                        AGC_JOB_DAP_DATA_LOAD_NOUN47));
+    return (dap_data_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_MASS,
+                             AGC_JOB_DAP_DATA_LOAD_NOUN47));
 }
 
 /* N47 proceed: MASSPROP and S40.14 only for configurations 1, 2, 6
@@ -329,8 +329,8 @@ agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
 /* DONOUN48: V06N48 pitch and yaw trim; proceed or terminate end R03.      */
 agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx)
 {
-    return (r03_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END,
-                        AGC_JOB_DAP_DATA_LOAD_NOUN48));
+    return (dap_data_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END,
+                             AGC_JOB_DAP_DATA_LOAD_NOUN48));
 }
 
 /* ---- marking and tracking ---------------------------------------------- */
@@ -360,7 +360,8 @@ static agc_status_t verb_marking(bool backup)
 
     return (agc_extverb_schedule(
                 PRIO16,
-                backup ? AGC_JOB_BACKUP_SIGHTING_MARK : AGC_JOB_SIGHTING_MARK,
+                backup ? AGC_JOB_BACKUP_SIGHTING_MARK :
+                AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM,
                 false));
 }
 
@@ -558,7 +559,7 @@ static agc_status_t verb_systems_test(void)
 
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_NO_PRELAUNCH_INITIALIZATION))
     {
-        return (agc_poodoo(ALARM_NO_P07));
+        return (agc_poodoo(ALARM_NO_SYSTEMS_TEST));
     }
 
     agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* EXDAPOFF */

@@ -20,7 +20,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define PH_SIGHTING       ((uint16_t) 05024) /* OCT 05024, OCT 13000: R52-R53  */
 #define VN_STAR_CODE      ALIGN_VN(1, 70)  /* V01N70 VN 0170                 */

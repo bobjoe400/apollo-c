@@ -23,12 +23,16 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/dsky.h"
+#include "agc/io/nouns.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/alignment_pending.h"
+#include "agc/programs/rendezvous.h"
 
 #define TD_SXTVAR ((agc_dp_t) 703687) /* SXTVAR 2DEC 0.04 E-6 B+16  */
 #define TD_IMUVAR ((agc_dp_t) 703687) /* IMUVAR 2DEC 0.04 E-6 B+16  */
@@ -210,7 +214,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
         td.inc.bvector[0] = agc_vec_neg(td.inc.bvector[0]);
     }
 
-    rz_phase(2, 04022); /* REND9A   */
+    agc_phase_change(2, 04022); /* REND9A   */
     const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad();
     agc_dp_t                   base = agc_flag_test(AGC_FLAG_BACKUP_MARKING) /* REND15   */
                                       ?
@@ -238,7 +242,7 @@ static void td_vhf_mark(agc_interp_t *ip)
 
     td.inc.deltaq = agc_dp_sub(ip, r, absr);
     rz_flag_put(AGC_FLAG_INCORFLG, true);
-    rz_phase(2, 04022); /* REND14A  */
+    agc_phase_change(2, 04022); /* REND14A  */
     td_variance(ip, agc_rendz_nav_pad()->rvar);
 }
 
@@ -249,7 +253,7 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
     rz_flag_put(AGC_FLAG_DMENFLG, false);
     td.inc.dim9 = false;
     *st         = agc_incorp1(ip, &agc_integ_shared_ctx()->w, &td.inc);
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_INCORFLG))
     {
@@ -289,8 +293,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
     }
 
     agc_erase_set_mrkbuf2(0, TD_NEG3);
-    td.vhftime = rz_loadtime();
-    rz_phase(2, 04022); /* REND1    */
+    td.vhftime = agc_rtb_loadtime();
+    agc_phase_change(2, 04022); /* REND1    */
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
@@ -299,14 +303,14 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(agc_job_ctx_t *ctx)
  * or the VHF (REND3).                                                    */
 static agc_status_t td_rend1(void)
 {
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
 
 static agc_status_t td_rend3(void)
 {
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF));
 }
@@ -336,7 +340,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(agc_job_ctx_t *ctx)
     agc_relint();
     rz_set_marktime(agc_dp_pack((agc_sp_t) td.mark[0], (agc_sp_t) td.mark[1]));
     rz_flag_put(AGC_FLAG_SOURCFLG, false); /* optics   */
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
 }
@@ -355,7 +359,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_dp_t d =
-        agc_dp_sub(&ip, agc_dp_sub(&ip, rz_loadtime(), TD_60SECDP), td.vhftime);
+        agc_dp_sub(&ip, agc_dp_sub(&ip, agc_rtb_loadtime(), TD_60SECDP),
+                   td.vhftime);
 
     if (!agc_flag_test(AGC_FLAG_VHFRFLAG) || d < 0)
     {
@@ -368,7 +373,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
 
     agc_chan_or(AGC_CHAN_CHAN13, TD_CH13_READ);
     agc_relint();
-    rz_set_marktime(rz_loadtime());
+    rz_set_marktime(agc_rtb_loadtime());
     rz_flag_put(AGC_FLAG_SKIPVHF, false);
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;
 
@@ -487,7 +492,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 
     rz_flag_put(AGC_FLAG_VINTFLAG, !csm); /* the other vehicle   */
     st = agc_integ_integrv(ip, agc_integ_shared_ctx(), rz_marktime());
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (st == AGC_STATUS_OK)
     {
@@ -582,7 +587,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
 
         st = td_pos(ip, csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM,
                     csm ? &td.csmpos : &td.lempos); /* REND18   */
-        rz_phase(2, 04022);                               /* REND13   */
+        agc_phase_change(2, 04022);                               /* REND13   */
         td.rclp = agc_vec_sub(ip, td.lempos, td.csmpos);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
 
@@ -642,21 +647,22 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx)
 
     td.n49disp[2] = agc_flag_test(AGC_FLAG_SOURCFLG) ? 2 : 1;
     td.tempor1    = 0;
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_status_t st =
-        agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49);
+        agc_exec_novac(TD_PRIO27,
+                       AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT));
+    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_WAIT));
 }
 
 /* RENDISP2: V06N49 (PRIODSP): TERMINATE exits P20 (V56), PROCEED
  * TEMPOR1 = -1, RECYCLE TEMPOR1 positive.                               */
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -665,11 +671,11 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx)
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
                      AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_PROCEED,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_RECYCLE));
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED,
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE));
 }
 
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(
     agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -682,7 +688,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(
     return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(
     agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -698,7 +704,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(
 /* RENDISP7: wait for the answer; PROCEED: REND12; RECYCLE (RENDISP3): a
  * VHF reading is dropped (REND1); an optics mark empties both buffers
  * (REND3).                                                               */
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(
+    agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -707,7 +714,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
 
     if (td.tempor1 == 0)
     {
-        return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT));
+        return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_WAIT));
     }
 
     if (td.tempor1 < 0)
@@ -733,7 +740,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx)
 }
 
 /* N49DISP +index (index 0 |dR|, 1 |dV|, 2 source code) for noun 49.     */
-agc_dp_t rz_csm_n49disp(int index)
+agc_dp_t rz_csm_residuals(int index)
 {
     if (!AGC_ASSERT(index >= 0 && index < 3))
     {
@@ -743,10 +750,43 @@ agc_dp_t rz_csm_n49disp(int index)
     return (td.n49disp[index]);
 }
 
-void rz_set_csm_n49disp(int index, agc_dp_t v)
+void rz_set_csm_residuals(int index, agc_dp_t v)
 {
     if (AGC_ASSERT(index >= 0 && index < 3))
     {
         td.n49disp[index] = v;
     }
+}
+
+/* Noun data of the CSM rendezvous navigation: the N49 mark residuals
+ * (R22 / P23). NOT_FOUND: not one of them.                              */
+agc_status_t agc_csm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
+{
+    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    switch (data_id)
+    {
+        case AGC_DATA_MARK_DELTA_R:
+            *v = rz_csm_residuals(0);
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_MARK_DELTA_V:
+            *v = rz_csm_residuals(1);
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_MARK_SOURCE_CODE:
+            *v = agc_dp_from_sp((agc_sp_t) rz_csm_residuals(2));
+
+            return (AGC_STATUS_OK);
+
+        default:
+            break;
+    }
+
+    return (AGC_STATUS_NOT_FOUND);
 }

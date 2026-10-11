@@ -29,7 +29,7 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "radar.h"
 
 #define PFD_GAIN        (-8786)             /* RR29GAIN DEC -.53624   */
@@ -190,7 +190,7 @@ agc_status_t agc_task_powered_flight_preposition(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rr_axis_start(RR_AXIS_PREPOSITION_R29, 0, 0, 040000U));
+    return (rr_axis_start(RR_AXIS_PREPOSITION_POWERED, 0, 0, 040000U));
 }
 
 /* BEGDES29: the designate job, again in .5 s.                           */

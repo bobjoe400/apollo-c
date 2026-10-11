@@ -14,9 +14,16 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/guidance/pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
 static const agc_dp_t THETACON = 333772;
@@ -199,21 +206,27 @@ static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
     agc_guid_t  *g  = agc_guid_state();
 
     rz->dellt4 = agc_dp_sub(ip, rz->tpass4, agc_erase_tig()); /* TDEC1 = TIG */
-    agc_guid_prec_t p;
-    agc_status_t    st = agc_guid_prec_update(ip, AGC_VEHICLE_LM,
-                                              agc_erase_tig(),
-                                              AGC_JOB_NONE, &p); /* LEMPREC */
+    agc_integ_ctx_t *ic = agc_integ_shared_ctx();
+    agc_status_t     st = agc_integ_lemprec(ip, ic, agc_erase_tig(),
+                                            agc_guid_nav_resume()); /* LEMPREC */
+
+    if (st == AGC_STATUS_OK && !ic->out.valid)
+    {
+        st = AGC_STATUS_NOT_FOUND; /* no RECTOUT */
+    }
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    rz->rtig      = rz->rinit = p.ratt;
-    g->avg.unitr  = agc_vec_unit(ip, p.ratt, NULL, NULL); /* UNIT/R/     */
-    rz->vtig      = rz->vinit = p.vatt;
-    rz->body.rtx1 = p.rtx1;
-    rz->body.rtx2 = p.rtx2;
+    const agc_integ_out_t *p = &ic->out;
+
+    rz->rtig      = rz->rinit = p->ratt;
+    g->avg.unitr  = agc_vec_unit(ip, p->ratt, NULL, NULL); /* UNIT/R/     */
+    rz->vtig      = rz->vinit = p->vatt;
+    rz->body.rtx1 = (agc_sp_t) p->x1;
+    rz->body.rtx2 = (agc_sp_t) p->x2;
     agc_dp_t e4 =
         agc_flag_test(AGC_FLAG_NORMSW) ? agc_dp_add(ip, EPS1, EPS2) : EPS1;
 

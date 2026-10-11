@@ -7,7 +7,19 @@
 #ifndef SERVICER_LM_INTERNAL_H
 #define SERVICER_LM_INTERNAL_H
 
-#include "../guid_pending.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
+#include "agc/nav/conic.h"
+#include "agc/programs/rendezvous.h"
 
 /* QUIKFAZ5 (p.890): make `resume` the group-5 restart point.             */
 void agc_lm_serv_quikfaz5(agc_job_id_t resume);

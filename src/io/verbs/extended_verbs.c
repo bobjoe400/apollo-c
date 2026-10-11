@@ -32,10 +32,9 @@
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"
-#include "pending.h"
 
 #define WORD15                    077777u
 #define BIT6                      000040u

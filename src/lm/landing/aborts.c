@@ -13,9 +13,20 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
-#include "agc/io/service_internal.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "pending.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define AB_OCT31   25     /* OCT31: R10,R11 period, cs                */
 #define AB_OCTAL27 027    /* 4.27 (P70A) / 4.31 (P71A) restart phase  */
@@ -68,7 +79,7 @@ agc_status_t agc_lm_task_abort_monitor(void)
 
     ab_pipctr1 = (agc_sp_t) (pipctr - 1);
     agc_status_t st =
-        agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR_RESTART);
+        agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

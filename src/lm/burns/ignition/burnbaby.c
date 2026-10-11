@@ -157,24 +157,29 @@ agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
 static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self,
                                          agc_dp_t *tdec1)
 {
-    agc_guid_lm_t  *lm = &agc_guid_state()->lm;
-    agc_guid_prec_t p;
-    agc_status_t    st =
-        agc_guid_prec_update(ip, AGC_VEHICLE_CSM, *tdec1, self, &p);
+    agc_guid_lm_t   *lm = &agc_guid_state()->lm;
+    agc_integ_ctx_t *ic = agc_integ_shared_ctx();
+    agc_status_t     st = agc_integ_csmprec(ip, ic, *tdec1, self);
+
+    if (st == AGC_STATUS_OK && !ic->out.valid)
+    {
+        st = AGC_STATUS_NOT_FOUND; /* no RECTOUT */
+    }
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    agc_mat_t refsmmat = agc_erase_refsmmat();
+    const agc_integ_out_t *p        = &ic->out;
+    agc_mat_t              refsmmat = agc_erase_refsmmat();
 
-    lm->v_csm = agc_vec_shr(agc_mat_vec(ip, &refsmmat, p.vatt1), 1);
-    lm->r_csm = agc_mat_vec(ip, &refsmmat, agc_vec_shl(ip, p.ratt1, 4));
+    lm->v_csm = agc_vec_shr(agc_mat_vec(ip, &refsmmat, p->vatt1), 1);
+    lm->r_csm = agc_mat_vec(ip, &refsmmat, agc_vec_shl(ip, p->ratt1, 4));
     lm->g_csm = agc_lm_mungrav(ip, lm->r_csm);
-    *tdec1    = p.tat; /* RELOAD TDEC1           */
+    *tdec1    = p->tat; /* RELOAD TDEC1           */
 
-    if (!AGC_ASSERT(p.rtx2 == 2))
+    if (!AGC_ASSERT(p->x2 == 2))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -207,12 +212,12 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
         st = csm_state_for_munrvg(&ip, ctx->id, &tdec1);
     }
 
-    agc_dp_t dt   = 0;
-    bool     late = false;
+    agc_integ_midtoav_out_t mo;
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_guid_midtoav1(&ip, tdec1, ctx->id, &dt, &late); /* GOMIDAV */
+        st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), tdec1, ctx->id,
+                                &mo); /* GOMIDAV */
     }
 
     if (st != AGC_STATUS_OK)
@@ -220,20 +225,22 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    if (late)
+    agc_guid_store_midtoav(&mo);
+
+    if (mo.slipped)
     { /* TIG WAS SLIPPED        */
         agc_erase_set_tig(agc_dp_add(&ip, g->avg.piptime1, D29_9SEC));
     }
 
-    g->lm.savet_30 = agc_dp_sub(&ip, dt, SEC5); /* DELTA-T UNTIL TIG-35   */
+    agc_erase_set_savet_30(agc_dp_sub(&ip, mo.dt, SEC5)); /* DELTA-T TO TIG-35 */
 
-    if (!AGC_ASSERT(g->lm.savet_30 >= 0))
+    if (!AGC_ASSERT(agc_erase_savet_30() >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t sw = agc_waitlist_longcall(
-        (uint32_t) ((g->lm.savet_30 > 0) ? g->lm.savet_30 : 1),
+        (uint32_t) ((agc_erase_savet_30() > 0) ? agc_erase_savet_30() : 1),
         AGC_TASK_TIG_35);
 
     if (sw != AGC_STATUS_OK)
@@ -307,7 +314,20 @@ static agc_status_t ullgnot(void)
     }
 
     agc_phase_newphase(4, 2, true); /* 4.2SPOT, TBASE4        */
-    agc_phase_kill(2);              /* REDO2.17               */
+
+    return (agc_task_redo2_17());
+}
+
+/* REDO2.17 (p.736-737, restart 2.17): clear group 2 so that LAMBERT can
+ * start if needed, then REDO4.2.                                          */
+agc_status_t agc_task_redo2_17(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_phase_kill(2); /* DCA NEG0 DXCH -PHASE2  */
 
     return (agc_task_redo4_2());
 }
@@ -350,7 +370,7 @@ agc_status_t agc_task_tig_30(void)
 
     if (t->ullage_cs > 0)
     {
-        lm->savet_30 = (agc_dp_t) t->ullage_cs; /* FOR RESTART            */
+        agc_erase_set_savet_30((agc_dp_t) t->ullage_cs); /* FOR RESTART */
         agc_status_t st = agc_waitlist_call((uint16_t) t->ullage_cs,
                                             AGC_TASK_ULLGTASK);
 
@@ -458,7 +478,7 @@ agc_status_t agc_task_tig_0_lm(void)
 
     if (agc_phase_checkmm(63))
     {
-        agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
+        agc_sp_t zoom = agc_erase_zoomtime();
 
         if (!AGC_ASSERT(zoom > 0))
         {
@@ -548,7 +568,7 @@ static agc_status_t dps_ignition(void)
         return (agc_task_ignition_finish());
     }
 
-    agc_sp_t zoom = agc_guid_state()->lm.zoomtime;
+    agc_sp_t zoom = agc_erase_zoomtime();
 
     if (!AGC_ASSERT(zoom > 0))
     {

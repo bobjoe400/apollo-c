@@ -76,7 +76,7 @@ agc_status_t pin_monitor(void)
 
     if (s->monsave == 0u && st == AGC_STATUS_OK)
     {
-        st = agc_waitlist_call(1, PIN_TASK_MONREQ); /* request MONREQ  */
+        st = agc_waitlist_call(1, AGC_TASK_MONREQ); /* request MONREQ  */
     }
 
     s->monsave  = m;
@@ -106,8 +106,8 @@ agc_status_t agc_task_monreq(void)
         return (AGC_STATUS_OK);
     }
 
-    agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, PIN_TASK_MONREQ);
-    agc_status_t st2 = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_MONDO);
+    agc_status_t st  = agc_waitlist_call(PIN_MONDEL_CS, AGC_TASK_MONREQ);
+    agc_status_t st2 = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_MONDO);
 
     if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
     {
@@ -412,7 +412,7 @@ agc_status_t pin_vbtstlts(void)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_waitlist_call(PIN_SHOLTS_CS, PIN_TASK_TSTLTS2);
+        st = agc_waitlist_call(PIN_SHOLTS_CS, AGC_TASK_TSTLTS2);
     }
 
     agc_relint();
@@ -428,7 +428,7 @@ agc_status_t agc_task_tstlts2(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_TSTLTS3);
+    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_TSTLTS3);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {

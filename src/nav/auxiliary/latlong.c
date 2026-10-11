@@ -247,3 +247,46 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
 
     return (AGC_STATUS_OK);
 }
+
+/* LAT, LONG, ALT (both ropes, noun 43; the CM's LANDLAT/LANDLONG/LANDALT
+ * EQUALS them): the erasables LAT-LONG writes and LALOTORV reads, kept
+ * here for the programs that hand them to the display (P21, P22, P23,
+ * LLASRD, P68). ERADM is not part of the store.                         */
+static agc_latlong_t g_latlong;
+
+agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
+{
+    if (!AGC_ASSERT(ll != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_navaux_dp_ok(ll->lat) && agc_navaux_dp_ok(ll->lon) &&
+                    agc_navaux_dp_ok(ll->alt)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    g_latlong.lat = ll->lat;
+    g_latlong.lon = ll->lon;
+    g_latlong.alt = ll->alt;
+
+    return (AGC_STATUS_OK);
+}
+
+agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll)
+{
+    if (!AGC_ASSERT(ll != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_navaux_dp_ok(g_latlong.lat)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    *ll = g_latlong;
+
+    return (AGC_STATUS_OK);
+}

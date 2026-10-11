@@ -10,8 +10,19 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "guid_pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
+#include "agc/nav/conic.h"
+#include "agc/programs/rendezvous.h"
 
 #define ONE_SEC   100
 #define HALF_SEC  50
@@ -260,7 +271,7 @@ agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx)
 }
 
 /* P41 after R60 (p.755-756): VGBODY = S41.1(VGTIG) for V16N85, then
- * GODSPRET; the job continues at agc_job_rcs_burn_n85_displayed.        */
+ * GODSPRET; the job continues at agc_job_rcs_burn_vg_displayed.        */
 agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -274,7 +285,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(),
                                &g->burn.vgbody);
-    const agc_dsky_cont_t cont = {AGC_JOB_RCS_BURN_N85_DISPLAYED, AGC_JOB_NONE,
+    const agc_dsky_cont_t cont = {AGC_JOB_RCS_BURN_VG_DISPLAYED, AGC_JOB_NONE,
                                   AGC_JOB_NONE};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85),
@@ -283,7 +294,7 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 
 /* P41 after GODSPRET (p.756): DISPDEX positive, DYNMDISP at PRIO5, 6.7
  * (REDO6.7) and 4 type C, B*RNB*B*.                                      */
-agc_status_t agc_job_rcs_burn_n85_displayed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -323,7 +334,7 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
         return (agc_svc_delayjob(ONE_SEC, AGC_JOB_REDO6_7)); /* BLNKWAIT      */
     }
 
-    const agc_dsky_cont_t cont = {AGC_JOB_REDO6_7_N85_DISPLAYED, AGC_JOB_NONE,
+    const agc_dsky_cont_t cont = {AGC_JOB_REDO6_7_VG_DISPLAYED, AGC_JOB_NONE,
                                   AGC_JOB_NONE};
 
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85),
@@ -332,7 +343,7 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
 
 /* REDO6.7 after GODSPRET (p.757): PRIOCHNG to PRIO5, then DYNMDISP. A
  * higher job waiting after the change runs first (CHANG1).               */
-agc_status_t agc_job_redo6_7_n85_displayed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -447,9 +458,9 @@ agc_status_t agc_job_term40(agc_job_ctx_t *ctx)
 
     agc_guid_t *g = agc_guid_state();
 
-    g->avg.avgexit                 = AGC_JOB_SERVEXIT;
-    agc_rendz_erasable()->trkmkcnt = 0; /* ZERO RENDZVS CNTERS    */
-    g->lm.dispdex                  = 1;
+    g->avg.avgexit = AGC_JOB_SERVEXIT;
+    agc_erase_set_trkmkcnt(0); /* ZERO RENDZVS CNTERS    */
+    g->lm.dispdex = 1;
     agc_inhint();
     agc_status_t st = agc_lm_dap_restordb();
 
@@ -505,16 +516,20 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
         return (sw);
     }
 
-    agc_dp_t     dt = 0;
-    agc_interp_t ip;
+    agc_integ_midtoav_out_t mo;
+    agc_interp_t            ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_guid_midtoav2(&ip, ctx->id, &dt);
+    agc_status_t st =
+        agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    agc_guid_store_midtoav(&mo);
+    agc_dp_t dt = mo.dt;
 
     if (!AGC_ASSERT(dt >= 0))
     {

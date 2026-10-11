@@ -23,8 +23,8 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "internal.h"
-#include "pending.h"
 
 /* QTSN45: 2DEC .1768 = sin(45 deg)/4.                                    */
 #define QTSN45 ((agc_dp_t) 47459389) /* .1768 x 2^28                */

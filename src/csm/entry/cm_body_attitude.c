@@ -19,12 +19,12 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_internal.h"
 #include "agc/csm/entry_lexicon.h"
-#include "agc/csm/entry_pending.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 
 /* Restart storage TEMPROLL, TEMPALFA, TEMPBETA (ENTRY RESTART PROTECTION
  * STORAGE): the updated angles /180, SP 2s complement.                    */

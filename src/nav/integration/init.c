@@ -16,7 +16,6 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/integration.h"
-#include "agc/programs/alignment.h"
 #include "internal.h"
 
 /* RME 2DEC 7178165 B-29 (oct 00333 01732), 800 km above the equatorial
@@ -127,7 +126,7 @@ void agc_integ_grp2pc(void)
 {
     agc_phase_change(2, 04022);
 
-    if (!AGC_ASSERT(agc_phase_get(2) == 2u))
+    if (!AGC_ASSERT(agc_phase_get(2) == 0402u)) /* type C, J: 0400 + CJW */
     {
         return;
     }
@@ -381,7 +380,7 @@ static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2,
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_align_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv,
+        st = agc_integ_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv,
                              ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv,
                              ctx->sv.tet);
     }
@@ -1018,6 +1017,34 @@ agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     }
 
     return (special_entry(ip, ctx, tdec1, resume_job, true, false));
+}
+
+/* THISPREC (EQUALS CSMPREC in Comanche, LEMPREC in Luminary) and OTHPREC
+ * (the other vehicle): the precision entrances named by vehicle.        */
+agc_status_t agc_integ_thisprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+                                agc_dp_t tdec1, agc_job_id_t resume_job)
+{
+    bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
+
+    if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (special_entry(ip, ctx, tdec1, resume_job, csm, false));
+}
+
+agc_status_t agc_integ_othprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+                               agc_dp_t tdec1, agc_job_id_t resume_job)
+{
+    bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
+
+    if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (special_entry(ip, ctx, tdec1, resume_job, !csm, false));
 }
 
 agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,

@@ -22,9 +22,20 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
-#include "agc/io/service_internal.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "pending.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 /* ---- constants (pp. 827-828; CONTROLLED_CONSTANTS) -------------------- */
 #define LDG_HIGHESTF \
@@ -502,7 +513,7 @@ static agc_sp_t ldg_extlogic(void)
 {
     agc_lm_ldg_t       *l    = agc_lm_ldg();
     const agc_lm_pad_t *p    = agc_lm_pad();
-    agc_sp_t            tend = agc_guid_state()->lm.zoomtime;
+    agc_sp_t            tend = agc_erase_zoomtime();
 
     if (l->wchphase == AGC_LM_PHASE_BRAKQUAD)
     {
@@ -544,7 +555,7 @@ static agc_status_t ldg_exgsub(agc_interp_t *ip)
     agc_vec_t     u  = agc_rtb_normunit(ip, l->unfc_2, &sh, NULL, NULL);
     /* VXSC ZOOMTIME takes the DP (ZOOMTIME, TENDBRAK).                  */
     agc_dp_t zt =
-        agc_dp_pack(agc_guid_state()->lm.zoomtime, agc_lm_pad()->tendbrak);
+        agc_dp_pack(agc_erase_zoomtime(), agc_lm_pad()->tendbrak);
 
     l->unfc_2 = agc_vec_scale(ip, agc_vec_scale(ip, u, zt), LDG_TRIMACCL);
 

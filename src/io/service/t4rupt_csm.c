@@ -29,10 +29,11 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/io/service_internal.h"
+#include "agc/exec/exec.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "sysmisc_ext.h"
 
 #define BIT1                 000001u
 #define BIT2                 000002u
@@ -69,7 +70,6 @@ static int      wtoption;            /* WTOPTION return option countdown   */
 static int      zoptcnt;             /* ZOPTCNT 32-sample counter          */
 static int      zone;                /* ZONE shaft monitor, CDUS (ones')   */
 static int      commando[2];         /* COMMANDO trunnion, shaft (pulses)  */
-static agc_sp_t optcmd[2];           /* CDUTCMD, CDUSCMD out-counters      */
 
 /* ---- accessors ---------------------------------------------------------- */
 uint16_t agc_erase_optmodes(void)
@@ -129,7 +129,7 @@ agc_sp_t agc_t4_optics_cmd(int which)
         return (0);
     }
 
-    return (optcmd[which]);
+    return (agc_erase_cdutcmd(which)); /* the core counter cells  */
 }
 
 /* Fresh start (DOFSTART C p.184: OPTIND = -1, OPTMODES = OPTINITF) or
@@ -634,7 +634,7 @@ static void t4_opt_send(void)
             sends++;
         }
 
-        optcmd[i] = (agc_sp_t) c; /* CDUTCMD / CDUSCMD        */
+        agc_erase_set_cdutcmd(i, (agc_sp_t) c); /* CDUTCMD / CDUSCMD */
     }
 
     optind = 0;

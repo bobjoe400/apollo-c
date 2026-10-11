@@ -64,7 +64,7 @@ typedef enum rr_axis_client
 {
     RR_AXIS_REPOSITION = 0,  /* DORREPOS                                  */
     RR_AXIS_REMODE,          /* REMODE                                    */
-    RR_AXIS_PREPOSITION_R29, /* PREPOS29                                  */
+    RR_AXIS_PREPOSITION_POWERED, /* PREPOS29                                  */
     RR_AXIS_CLIENT_COUNT
 } rr_axis_client_t;
 
@@ -185,7 +185,7 @@ agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
 /* P20LEMWT (+1 with the delay): wait, then R22 or the designate again.  */
 agc_status_t lmnav_wait(uint16_t delay_cs);
 /* R22LEM96: the noun 49 display job and the N49FLAG wait.             */
-agc_status_t lmnav_n49_display(void);
+agc_status_t lmnav_residuals_display(void);
 /* ASTOK after a noun 49 PROCEED (lm/navigation/measurement_update.c). */
 agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx);
 

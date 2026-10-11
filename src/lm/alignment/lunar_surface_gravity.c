@@ -16,24 +16,24 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/guidance/guidance.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
-#define PH_P57          ((uint16_t) 04024)  /* OCT 04024                     */
-#define THETA_42DEG     ((uint16_t) 07357)  /* 42DEG OCT 07357               */
-#define THETA_MINUS_42  ((uint16_t) 070420) /* COM of 42DEG                  */
-#define THETA_35DEG     ((uint16_t) 06211)  /* 35DEG OCT 06211               */
-#define GRAVITY_SAMPLES ((agc_sp_t) -20)    /* T/2SEC DEC -20                */
-#define PIPA_INTERVAL   ((agc_sp_t) 031000) /* CA PRIO31, TS 1/PIPADT        */
-#define SAMPLE_DT       ((uint16_t) 200)    /* 2SECS                         */
-#define VN_GRAVITY      ALIGN_VN(6, 4)      /* DISGRVER VN 0604              */
-#define VN_GIMBALS      ALIGN_VN(6, 22)     /* V06N22                        */
+#define PH_SURFACE_ALIGN ((uint16_t) 04024) /* OCT 04024                     */
+#define THETA_42DEG      ((uint16_t) 07357) /* 42DEG OCT 07357               */
+#define THETA_MINUS_42   ((uint16_t) 070420) /* COM of 42DEG                  */
+#define THETA_35DEG      ((uint16_t) 06211) /* 35DEG OCT 06211               */
+#define GRAVITY_SAMPLES  ((agc_sp_t) -20)   /* T/2SEC DEC -20                */
+#define PIPA_INTERVAL    ((agc_sp_t) 031000) /* CA PRIO31, TS 1/PIPADT        */
+#define SAMPLE_DT        ((uint16_t) 200)   /* 2SECS                         */
+#define VN_GRAVITY       ALIGN_VN(6, 4)     /* DISGRVER VN 0604              */
+#define VN_GIMBALS       ALIGN_VN(6, 22)    /* V06N22                        */
 
 /* The CDUTRIG of the last gravity sample (*NBSM* in GRAVEL uses it).   */
 static agc_cdutrig_t lung_trig;
 
-static agc_status_t p57_phase(void)
+static agc_status_t surface_align_phase(void)
 {
-    const agc_status_t st = align_phase4(PH_P57);
+    const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -53,7 +53,7 @@ static agc_status_t lung(agc_job_id_t ret)
 
     ram->lunar_gravity_return = ret; /* QMIN     */
     ram->gacc                 = agc_vec_zero();
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -109,7 +109,7 @@ agc_status_t agc_job_lunar_gravity_coarsed(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = p57_phase();
+        st = surface_align_phase();
     }
 
     if (st == AGC_STATUS_OK)
@@ -183,7 +183,7 @@ agc_status_t agc_job_lunar_gravity_accumulate(agc_job_ctx_t *ctx)
     st = AGC_STATUS_OK;
     agc_guid_smnb(&lung_trig, &g); /* *SMNB*   */
     ram->gout = g;
-    st        = p57_phase();
+    st        = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -334,7 +334,7 @@ agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -596,7 +596,7 @@ agc_status_t agc_job_lunar_surface_coarse_trim_go(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {

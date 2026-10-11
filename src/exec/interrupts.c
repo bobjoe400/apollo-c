@@ -18,7 +18,8 @@
  * overflows or the input arrives. It runs with interrupts inhibited, as
  * an AGC interrupt does, and on the way out (RESUME) services a software
  * restart that the handler requested. Handlers owned by other lanes are
- * reached through agc_dispatch_rupt() in dispatch.c.
+ * reached through agc_dispatch_rupt() at the end of this file (LAYERING:
+ * like dispatch.c, the one place exec calls the handlers' layers).
  *
  * INHINT / RELINT are counted, so that nested C calls (a task calling
  * WAITLIST, which itself inhibits) keep interrupts inhibited until the
@@ -28,6 +29,12 @@
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 #include "internal.h"
 
 #define RUPT_MAX_DEPTH 64      /* bound on INHINT nesting          */
@@ -395,4 +402,60 @@ agc_status_t agc_task_t5idloc(void)
     }
 
     return (AGC_STATUS_OK);
+}
+
+/* Interrupt handlers owned by other lanes (INTERRUPT_LEAD_INS).        */
+agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
+{
+    bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    agc_status_t st = AGC_STATUS_UNIMPLEMENTED;
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    switch (rupt)
+    {
+        case AGC_RUPT_T6: /* LM DOT6RUPT; CSM goes through T6LOC     */
+            st = lm ? agc_lm_dap_t6rupt() : AGC_STATUS_NOT_FOUND;
+            break;
+        case AGC_RUPT_T5: /* T5LOC / T5ADR                           */
+            st = agc_dispatch_task(agc_rupt_t5_task());
+            break;
+        case AGC_RUPT_T3:
+            st = agc_waitlist_t3rupt();
+            break;
+        case AGC_RUPT_KEY1:
+            st = agc_dsky_keyrupt1();
+            break;
+        case AGC_RUPT_KEY2: /* MARKRUPT: CSM sextant, LM AOT           */
+            st = lm ? agc_aotmark_markrupt() : agc_sxtmark_markrupt();
+            break;
+        case AGC_RUPT_HAND: /* LM PITFALL; CSM RESUME +3 (not used)    */
+            st = lm ? agc_lm_pitfall() : AGC_STATUS_OK;
+            break;
+        case AGC_RUPT_T4: /* T4RUPT (T4RUPT_PROGRAM), reloads TIME4    */
+            st = agc_t4rupt_rupt();
+            break;
+        case AGC_RUPT_UPRUPT: /* UPRUPT: the uplinked word in INLINK      */
+            st = agc_dsky_uprupt(agc_erase_inlink());
+            break;
+        case AGC_RUPT_DOWNRUPT: /* DODOWNTM: next downlink word pair      */
+            st = agc_telem_downrupt();
+            break;
+        case AGC_RUPT_RADAR: /* CSM VHFREAD (VHF range) / LM RADAREAD     */
+            st = lm ? agc_rendz_radar_read() : agc_rendz_vhf_read();
+            break;
+        default:
+            st = AGC_STATUS_BAD_ARG;
+            break;
+    }
+
+    if (!AGC_ASSERT(rupt >= AGC_RUPT_T6 && rupt <= AGC_RUPT_HAND))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
 }

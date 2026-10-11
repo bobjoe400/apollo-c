@@ -27,7 +27,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 
 /* Sublist ids (the AGC labels).                                           */
 enum

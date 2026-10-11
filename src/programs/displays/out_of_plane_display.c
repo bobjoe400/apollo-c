@@ -181,7 +181,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 
     if (t == 0)
     {
-        t = rz_loadtime(); /* ENTTIM2        */
+        t = agc_rtb_loadtime(); /* ENTTIM2        */
     }
 
     agc_integ_out_t o;

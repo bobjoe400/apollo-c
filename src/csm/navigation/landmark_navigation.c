@@ -21,10 +21,14 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/alignment_pending.h"
+#include "agc/programs/rendezvous.h"
 
 #define LN_SCTVAR     ((agc_dp_t) 70368744) /* SCTVAR 2DEC 1.0 E-6 B+18   */
 #define LN_IMUVARR    ((agc_dp_t) 2814750)  /* IMUVARR 2DEC 0.04 E-6 B+18 */
@@ -360,7 +364,7 @@ static void ln_9dw_to_6dw(agc_interp_t *ip)
         }
     }
 
-    rz_phase(2, 04022); /* 9DWFIG6  */
+    agc_phase_change(2, 04022); /* 9DWFIG6  */
     agc_incorp_w_t *w = &agc_integ_shared_ctx()->w;
 
     for (int m = 0; m < LN_ROWS; m++)
@@ -398,7 +402,7 @@ static void ln_9dw_to_6dw(agc_interp_t *ip)
         }
     }
 
-    rz_phase(2, 04022); /* 9DWEXITX */
+    agc_phase_change(2, 04022); /* 9DWEXITX */
 
     for (int m = 0; m < LN_ROWS; m++)
     {
@@ -556,7 +560,7 @@ static bool ln_box12(agc_interp_t *ip, agc_status_t *st)
     ln.inc.bvector[2] = agc_vec_neg(ln.inc.bvector[0]);  /* B2 = -B0 */
     ln.inc.dim9       = true;
     *st               = agc_incorp1(ip, &agc_integ_shared_ctx()->w, &ln.inc);
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_22DSPFLG))
     {
@@ -564,7 +568,7 @@ static bool ln_box12(agc_interp_t *ip, agc_status_t *st)
     }
 
     rz_flag_put(AGC_FLAG_22DSPFLG, false);
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     ln.n49disp[0] = rz_shift(ip, agc_vec_abval(ip, ln.inc.deltax[0]), ln.eorm);
     ln.n49disp[1] = rz_shift(ip, agc_vec_abval(ip, ln.inc.deltax[1]), ln.eorm);
 
@@ -591,7 +595,7 @@ static bool ln_box32(agc_interp_t *ip, agc_vec_t rl)
 static agc_status_t ln_next(void)
 {
     ln.tprim = ln_gettf(); /* S22SAVET */
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (ln.i >= ln.n)
     {
@@ -601,7 +605,7 @@ static agc_status_t ln_next(void)
     ln.i++;
     ln.loc  += LN_MARK_WORDS;
     ln.first = false;
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (rz_continue(AGC_JOB_ORBITAL_NAVIGATION_MARK));
 }
@@ -647,7 +651,7 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip,
             return (ln_next());
         }
 
-        rz_phase(2, 04022);
+        agc_phase_change(2, 04022);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
         ln.rclp = agc_vec_sub(ip, agc_erase_x789(), ln.csmpos);
     }
@@ -732,7 +736,7 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else
     {
-        rz_phase(2, 04022);
+        agc_phase_change(2, 04022);
         rz_flag_put(AGC_FLAG_ORBWFLAG, true);
         rz_flag_put(AGC_FLAG_DMENFLG, true);
         rz_flag_put(AGC_FLAG_22DSPFLG, true);
@@ -859,7 +863,7 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
 
     if (off != 0 && ln.n - off >= 0)
     {
-        rz_phase(2, 04022);
+        agc_phase_change(2, 04022);
         agc_integ_out_t o;
 
         st = rz_integ(&ip, RZ_CSMPREC, ln.toff, AGC_JOB_ORBITAL_NAVIGATION_SITE,
@@ -979,5 +983,5 @@ agc_status_t agc_job_orbital_navigation_site_terminate(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     ln_9dw_to_6dw(&ip);
 
-    return (rz_gotopooh());
+    return (agc_exec_gotopooh());
 }

@@ -23,9 +23,11 @@
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/io/service_internal.h"
-#include "sysmisc_ext.h"
+#include "agc/exec/exec.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 #define BIT2   000002u /* AUTOMBIT: RR not in auto (inverted)        */
 #define BIT7   000100u /* RCDUFBIT: RR CDU OK                        */
@@ -42,25 +44,31 @@
 #define ALARM_RR_CDU_FAIL \
     ((agc_alarm_code_t) 00515) /* RR CDU fail in P20/P22 */
 
-static uint16_t radmodes; /* RADMODES                           */
 static agc_sp_t m11, m21, m22, m31, m32, cosmg; /* scaled at 1           */
 
 /* ---- accessors ---------------------------------------------------------- */
+/* RADMODES EQUALS FLGWRD12 (FLAGWORD_ASSIGNMENTS p.85): one storage word,
+ * the flagword; these name it for the radar code.                        */
 uint16_t agc_erase_radmodes(void)
 {
-    if (!AGC_ASSERT(radmodes <= WORD15))
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (0); /* no valid result */
     }
 
-    return (radmodes);
+    return (agc_flagword_get(12));
 }
 
 void agc_erase_set_radmodes(uint16_t v)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= WORD15))
     {
-        radmodes = v;
+        agc_flagword_set(12, v);
     }
 }
 
@@ -171,7 +179,7 @@ static void t4_rrgimon(void)
         return; /* SERVICER + MUNFLAG   */
     }
 
-    if ((radmodes & OCT32002) != 0u)
+    if ((agc_erase_radmodes() & OCT32002) != 0u)
     {
         return; /* remode, zeroing ...  */
     }
@@ -181,7 +189,7 @@ static void t4_rrgimon(void)
         return; /* angles in limits     */
     }
 
-    radmodes = (uint16_t) (radmodes + BIT11); /* reposition           */
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() + BIT11)); /* reposition           */
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) OCT20002);
     agc_status_t st = agc_waitlist_call(DORREPOS_DELAY_CS, AGC_TASK_DORREPOS);
 
@@ -196,21 +204,22 @@ static void t4_rrgimon(void)
 static bool t4_rrcduchk(void)
 {
     uint16_t chg =
-        (uint16_t) ((radmodes ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & BIT7);
+        (uint16_t) ((agc_erase_radmodes() ^
+                     agc_chan_read((int) AGC_CHAN_CHAN30)) & BIT7);
 
     if (chg == 0u)
     {
         return (true); /* on to RRGIMON         */
     }
 
-    if ((radmodes & BIT2) != 0u)
+    if ((agc_erase_radmodes() & BIT2) != 0u)
     {
         return (false); /* not in auto mode      */
     }
 
-    radmodes = (uint16_t) (radmodes ^ BIT7);
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() ^ BIT7));
 
-    if ((radmodes & BIT7) == 0u &&
+    if ((agc_erase_radmodes() & BIT7) == 0u &&
         agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
     {
         agc_alarm(ALARM_RR_CDU_FAIL);
@@ -231,15 +240,18 @@ static bool t4_rrcduchk(void)
 agc_status_t agc_t4_rr_monitor(void)
 {
     uint16_t chg =
-        (uint16_t) ((radmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & BIT2);
+        (uint16_t) ((agc_erase_radmodes() ^
+                     agc_chan_read((int) AGC_CHAN_CHAN33)) & BIT2);
 
     if (chg != 0u)
     {
-        radmodes = (uint16_t) ((radmodes ^ chg) & OCT05776);
+        agc_erase_set_radmodes((uint16_t) ((agc_erase_radmodes() ^ chg) &
+                                           OCT05776));
 
-        if ((radmodes & BIT2) == 0u)
+        if ((agc_erase_radmodes() & BIT2) == 0u)
         { /* just on               */
-            radmodes = (uint16_t) (radmodes + OCT10001);
+            agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() +
+                                               OCT10001));
             agc_status_t st =
                 agc_waitlist_call(RRTURNON_DELAY_CS, AGC_TASK_RRTURNON);
 

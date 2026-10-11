@@ -389,7 +389,55 @@ Conventions used for every row:
 | `AGC_TASK_RENDEZVOUS_NAVIGATION_LEMC1` | `AGC_TASK_RENDEZVOUS_NAVIGATION_CYCLE` | src/exec/exec_pending.h src/exec/restart_tables.c | first-attempt name (pasted LEMC1) |
 | `AGC_JOB_DPS_ABORT_A` | `AGC_JOB_DPS_ABORT_COMMANDED` | src/exec/exec_pending.h src/exec/restart_tables.c | first-attempt name (opaque _A) |
 | `AGC_JOB_APS_ABORT_A` | `AGC_JOB_APS_ABORT_COMMANDED` | src/exec/exec_pending.h src/exec/restart_tables.c | first-attempt name (opaque _A) |
-| `AGC_TASK_LANDING_RADAR_MONITOR_RESTART` | `AGC_TASK_ABORT_MONITOR_RESTART` | src/exec/exec_pending.h src/exec/restart_tables.c src/lm/landing_aborts.c | first-attempt name (R10/R11 are not a radar monitor) |
+| `AGC_TASK_LANDING_RADAR_MONITOR_RESTART` | `AGC_TASK_CLOKTASK_RZ` | `AGC_TASK_CLOKTASK` | | same entry as the registry id |
+| `agc_align_svdwn` | `agc_integ_svdwn` | src/nav/integration/svdwn.c init.c | SVDWN1/SVDWN2: called by ATOPCSM/ATOPLEM; declared with nav-integ (layering: nav may not include programs) |
+| `agc_align_r_other` | `agc_integ_r_other` | src/nav/integration/svdwn.c | R-OTHER downlink copy (SVDWN) |
+| `agc_align_v_other` | `agc_integ_v_other` | src/nav/integration/svdwn.c | V-OTHER downlink copy (SVDWN) |
+| `exec_cp_r00top00` | `exec_cp_engine_off_to_idle` | | R00TOP00: "SET UP FOR P00" with the engine on or TVC |
+| `exec_cp_after_r00top00` | `exec_cp_after_engine_off` | | R00TOP00 after DELAYJOB |
+| `CP_R00_DELAY` | `CP_ENGINE_OFF_DELAY` | | R00TOP00 DELAYJOB 5 |
+| `CP_P22DNLST` | `CP_ORBNAV_DNLIST` | | P22DNLST = 4 (orbital navigation downlist) |
+| `AGC_JOB_RCS_BURN_N85_DISPLAYED` | `AGC_JOB_RCS_BURN_VG_DISPLAYED` | | P41 after V16N85 (VG in body axes) |
+| `agc_job_rcs_burn_n85_displayed` | `agc_job_rcs_burn_vg_displayed` | | P41 after V16N85 (VG in body axes) |
+| `AGC_JOB_REDO6_7_N85_DISPLAYED` | `AGC_JOB_REDO6_7_VG_DISPLAYED` | | REDO6.7 after V16N85 |
+| `agc_job_redo6_7_n85_displayed` | `agc_job_redo6_7_vg_displayed` | | REDO6.7 after V16N85 |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS` | | R22 V06N49: dR, dV of the mark (residuals) |
+| `agc_job_rendezvous_tracking_data_n49` | `agc_job_rendezvous_tracking_data_residuals` | | R22 V06N49 residuals display |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_PROCEED` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED` | | N49 PROCEED |
+| `agc_job_rendezvous_tracking_data_n49_proceed` | `agc_job_rendezvous_tracking_data_residuals_proceed` | | N49 PROCEED |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_RECYCLE` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE` | | N49 RECYCLE |
+| `agc_job_rendezvous_tracking_data_n49_recycle` | `agc_job_rendezvous_tracking_data_residuals_recycle` | | N49 RECYCLE |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT` | | N49 wait |
+| `agc_job_rendezvous_tracking_data_n49_wait` | `agc_job_rendezvous_tracking_data_residuals_wait` | | N49 wait |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS` | | CSM RENDISP2 V06N49 |
+| `agc_job_rendezvous_tracking_data_csm_n49` | `agc_job_rendezvous_tracking_data_csm_residuals` | | CSM RENDISP2 V06N49 |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_PROCEED` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED` | | CSM N49 PROCEED |
+| `agc_job_rendezvous_tracking_data_csm_n49_proceed` | `agc_job_rendezvous_tracking_data_csm_residuals_proceed` | | CSM N49 PROCEED |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_RECYCLE` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE` | | CSM N49 RECYCLE |
+| `agc_job_rendezvous_tracking_data_csm_n49_recycle` | `agc_job_rendezvous_tracking_data_csm_residuals_recycle` | | CSM N49 RECYCLE |
+| `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_N49_WAIT` | `AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_WAIT` | | CSM N49 wait |
+| `agc_job_rendezvous_tracking_data_csm_n49_wait` | `agc_job_rendezvous_tracking_data_csm_residuals_wait` | | CSM N49 wait |
+| `lmnav_n49_display` | `lmnav_residuals_display` | | R22LEM96 V06N49 |
+| `rz_csm_n49disp` | `rz_csm_residuals` | | N49DISP (mark residuals) |
+| `rz_set_csm_n49disp` | `rz_set_csm_residuals` | | N49DISP (mark residuals) |
+| `ALARM_NO_P07` | `ALARM_NO_SYSTEMS_TEST` | | alarm 1521: P07 not in the CMC |
+| `LM_P22_MODE` | `LM_SURFACE_NAV_MODE` | | DEC22: P22 lunar surface navigation |
+| `NAV_MODE_P20` | `NAV_MODE_RENDEZVOUS` | | MODREG 20 (P20) |
+| `NAV_MODE_P22` | `NAV_MODE_SURFACE` | | MODREG 22 (P22 LM) |
+| `p51_phase` | `orientation_phase` | | P51 PHASCHNG |
+| `p57_phase` | `surface_align_phase` | | P57 PHASCHNG |
+| `PH_P51` | `PH_ORIENTATION` | | P51 OCT 04024 |
+| `PH_P51B` | `PH_ORIENTATION_RESTART` | | P51B OCT 00014 |
+| `PH_P57` | `PH_SURFACE_ALIGN` | | P57 OCT 04024 |
+| `r03_display` | `dap_data_display` | | R03 DAP data load display |
+| `radar_test_is_r04` | `radar_test_is_self_test` | | R04: RR/LR self test (V63) vs R77 (V78) |
+| `rpd_lm_v83call` | `rpd_lm_compute` | | V83CALL: the LM R31 computation |
+| `RR_AXIS_PREPOSITION_R29` | `RR_AXIS_PREPOSITION_POWERED` | | PREPOS29: R29 powered-flight designate |
+| `RTE_OPTION1_P37` | `RTE_OPTION1_RETURN_TO_EARTH` | | CAF SEVEN TS OPTION1 (P37) |
+| `R31_DELAY_CS` | `RENDEZVOUS_DISPLAY_DELAY_CS` | | V83PERF: R31CALL in 20 ms |
+| `r57_ret` | `calibration_ret` | | EGRESS of R57 (optics calibration) |
+| `n89_from_latlong` | `landmark_data_from_latlong` | | N89 (landmark lat, long, alt) from LAT-LONG |
+| `AGC_TASK_ABORT_MONITOR_RESTART` | src/exec/exec_pending.h src/exec/restart_tables.c src/lm/landing_aborts.c | first-attempt name (R10/R11 are not a radar monitor) |
 
 ## imu -- imu: R02, R60/R62, 1/GYRO
 
@@ -697,6 +745,54 @@ Conventions used for every row:
 ## keep -- compliant names already in the tree (first-attempt or lane names reviewed and accepted)
 
 `AGC_CSM_NV_ENGINE_ENABLE_REQUEST`, `AGC_CSM_NV_ENGINE_FAIL_PROCEDURE`, `AGC_DATA_GROUND_TRACK_DETERMINATION_ALT`, `AGC_DATA_GROUND_TRACK_DETERMINATION_GAM`, `AGC_DATA_GROUND_TRACK_DETERMINATION_VEL`, `AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX`, `AGC_JOB_APS_ABORT`, `AGC_JOB_ATTITUDE_MANEUVER_ENTER`, `AGC_JOB_CDH_TARGETING`, `AGC_JOB_CDH_TARGETING_OTHER_VEHICLE`, `AGC_JOB_CM_SM_SEPARATION`, `AGC_JOB_CM_SM_SEPARATION_NEWMODE`, `AGC_JOB_COARSE_ALIGN`, `AGC_JOB_COARSE_ALIGN_COARSED`, `AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE`, `AGC_JOB_CSI_TARGETING`, `AGC_JOB_CSI_TARGETING_OTHER_VEHICLE`, `AGC_JOB_DPS_ABORT`, `AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR`, `AGC_JOB_ENTRY_INITIALIZATION`, `AGC_JOB_ENTRY_PREPARATION`, `AGC_JOB_FINE_ALIGN`, `AGC_JOB_GYRO_TORQUING_PULSE`, `AGC_JOB_GYRO_TORQUING_PULSED`, `AGC_JOB_GYRO_TORQUING_RETURN`, `AGC_JOB_IMU_REALIGN_OPTION`, `AGC_JOB_IMU_REALIGN_OPTION_DISPLAY`, `AGC_JOB_JET_ACCEL_RESET`, `AGC_JOB_JET_ACCEL_UPDATE`, `AGC_JOB_POWERED_ASCENT_BURN`, `AGC_JOB_POWERED_ASCENT_FLASH`, `AGC_JOB_REDO_RENDEZVOUS_TRACKING_DATA`, `AGC_JOB_RENDEZVOUS_TRACKING_DATA`, `AGC_JOB_RETURN_TO_EARTH`, `AGC_JOB_SYSTEMS_TEST_REDO`, `AGC_JOB_TPI_TARGETING`, `AGC_JOB_TPI_TARGETING_OTHER_VEHICLE`, `AGC_JOB_TPM_TARGETING`, `AGC_JOB_TPM_TARGETING_OTHER_VEHICLE`, `AGC_JOB_UPLINK_UPDATE_RESUME`, `AGC_JOB_UPLINK_UPDATE_TERM`, `AGC_K_ALARM_CODES_DISPLAY`, `AGC_K_NEW_GIMBAL_ANGLES_DISPLAY`, `AGC_LM_WHICH_APS_BURN`, `AGC_LM_WHICH_BRAKING_PHASE`, `AGC_LM_WHICH_POWERED_ASCENT`, `AGC_LM_WHICH_RCS_BURN`, `AGC_TASK_WAKE_CM_SM_SEPARATION`, `CALLER_CALC_VG_BODY`, `ENGINE_FAIL_DELAY`, `RZ_VF_CHANGE_PROGRAM`, `SPS_BURN_INTERNAL_H`, `THR_RATE_OF_DESCENT_LANDING`, `VN_ENTRY_PREDICTION_DISPLAY`, `VN_ENTRY_TARGET_DISPLAY`, `VP_APS_ABORT`, `VP_DPS_ABORT`, `VP_VERB_CHANGE_PROGRAM`, `ab_dps_abort_init`, `agc_align_gyro_torquing`, `agc_align_ones_to_twos`, `agc_align_sighting_data_display`, `agc_change_program`, `agc_csm_dap_decode_dap_data`, `agc_csm_dap_rcs_gains`, `agc_csm_is_rcs_burn`, `agc_earth_orbit_insertion_monitor_attitude_errors`, `agc_earth_orbit_insertion_monitor_padload`, `agc_earth_orbit_insertion_monitor_padload_t`, `agc_earth_orbit_insertion_monitor_set_padload`, `agc_imu_standby`, `agc_job_attitude_maneuver_enter`, `agc_job_calc_delta_v_body_csm`, `agc_job_calc_delta_v_body_lm`, `agc_job_calc_vg_body_csm`, `agc_job_calc_vg_body_lm`, `agc_job_cdh_targeting`, `agc_job_cdh_targeting_other_vehicle`, `agc_job_cm_sm_separation_newmode`, `agc_job_coarse_align`, `agc_job_coarse_align_coarsed`, `agc_job_coarse_align_fineonly`, `agc_job_crew_defined_maneuver_gomove`, `agc_job_csi_targeting`, `agc_job_csi_targeting_other_vehicle`, `agc_job_csm_imu_realign_landing_site`, `agc_job_earth_orbit_insertion_monitor`, `agc_job_external_delta_v_reftest`, `agc_job_go_idle_fix`, `agc_job_go_idle_fix_reflash`, `agc_job_gyro_torquing_display`, `agc_job_gyro_torquing_pulse`, `agc_job_gyro_torquing_pulsed`, `agc_job_gyro_torquing_return`, `agc_job_imu_realign`, `agc_job_imu_realign_option`, `agc_job_imu_realign_option_display`, `agc_job_jet_accel_reset`, `agc_job_jet_accel_update`, `agc_job_lm_fine_align`, `agc_job_lm_imu_realign_landing_site`, `agc_job_rcs_burn_csm`, `agc_job_rcs_burn_lm`, `agc_job_thrust_monitor_csm`, `agc_job_thrust_monitor_lm`, `agc_lm_dap_jet_accel_update`, `agc_lm_job_aps_abort`, `agc_lm_job_dps_abort`, `agc_lm_job_landing_confirmation`, `agc_lm_job_landing_confirmation_flash`, `agc_lm_job_powered_ascent_burn`, `agc_lm_job_powered_ascent_flash`, `agc_lm_powered_ascent_init`, `agc_lm_start_approach_phase`, `agc_phase_change_program_klean`, `agc_phase_idle_klean`, `agc_rendz_goto_terminate_tracking`, `agc_task_braking_phase_zoom`, `agc_task_dps_burn_zoom`, `agc_task_start_thrust_monitor`, `agc_task_wake_cm_sm_separation`, `change_program_refuse`, `csm_tvc_gains`, `entry_ballistic`, `entry_final_phase`, `entry_post_0_05g`, `entry_preparation_mm`, `entry_preparation_newrnvn`, `entry_preparation_tff`, `entry_upcontrol`, `is_cislunar_midcourse_navigation`, `landing_site_time`, `ll_start_manual_landing`, `ll_start_rate_of_descent_landing`, `lm_dap_ones_to_twos`, `lm_dap_switch_curves`, `noun_clock_time`, `orbit_parameter_display_hpermin`, `rcs_burn`, `test_display_clock_time`, `test_load_component_one`, `test_load_three_components`
+
+
+## integrate -- one job/task registry (2026-10-10)
+
+Provisional ids that named the same AGC entry as another lane's id, or a lane placeholder (PIN_JOB_*), merged into one registry name (tools/registry.tsv). Applied with tools/rename.cocci.
+
+| old | new | files | AGC source / comment |
+|---|---|---|---|
+| `AGC_JOB_ALTERNATE_LOS_ENTER` | `AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT` | | same entry as the registry id |
+| `AGC_JOB_AZMTHCG1` | `AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE` | | same entry as the registry id |
+| `AGC_JOB_BURN_DISPLAY_DONE` | `AGC_JOB_ENDOFJOB` | | same entry as the registry id |
+| `AGC_JOB_FINE_ALIGN` | `AGC_JOB_CSM_FINE_ALIGN` | | same entry as the registry id |
+| `AGC_JOB_FINE_ALIGN_PERFORM` | `AGC_JOB_LM_FINE_ALIGN_PERFORM` | | same entry as the registry id |
+| `AGC_JOB_GEOSTRT4` | `AGC_JOB_ENDOFJOB` | | same entry as the registry id |
+| `AGC_JOB_IGNALGP` | `AGC_JOB_IGNALG_PREC` | | same entry as the registry id |
+| `AGC_JOB_LAMBERT_AIMPOINT_TTOGO` | `AGC_JOB_MARKS_TFI_MGA_MONITOR` | | same entry as the registry id |
+| `agc_job_lambert_aimpoint_ttogo` | `agc_job_marks_tfi_mga_monitor` | | LM REVN1645: "SET FINALFLG, VN1645" -- shared by P30 and P31, one job |
+| `AGC_JOB_LANDJNK2` | `AGC_JOB_LANDING_CONFIRMATION_PROCEED` | | same entry as the registry id |
+| `AGC_JOB_LANDJNKF` | `AGC_JOB_LANDING_CONFIRMATION_FLASH` | | same entry as the registry id |
+| `AGC_JOB_LANDJUNK` | `AGC_JOB_LANDING_CONFIRMATION` | | same entry as the registry id |
+| `AGC_JOB_MARKDISP` | `AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY` | | same entry as the registry id |
+| `AGC_JOB_PREFERRED_TRACKING_ATTITUDE_LOOP` | `AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK` | | same entry as the registry id |
+| `AGC_JOB_PROG52` | `AGC_JOB_IMU_REALIGN` | | same entry as the registry id |
+| `AGC_JOB_REDO_RENDEZVOUS_TRACKING_DATA` | `AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK` | | same entry as the registry id |
+| `AGC_JOB_RENDEZVOUS_NAVIGATION_PICKUP` | `AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK` | | same entry as the registry id |
+| `AGC_JOB_SIGHTING_MARK` | `AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM` | | same entry as the registry id |
+| `AGC_TASK_ABORT_MONITOR_RESTART` | `AGC_TASK_ABORT_MONITOR` | | same entry as the registry id |
+| `AGC_TASK_RENDEZVOUS_NAVIGATION_CYCLE` | `AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK` | | same entry as the registry id |
+| `AGC_TASK_SPEEDRN2` | `AGC_TASK_SPEEDRUN2` | | same entry as the registry id |
+| `AGC_TASK_T5IDLOC_GUID` | `AGC_TASK_T5IDLOC` | | same entry as the registry id |
+| `PIN_JOB_CHARIN` | `AGC_JOB_CHARIN` | | same entry as the registry id |
+| `PIN_JOB_DSPMMJB` | `AGC_JOB_DSPMMJB` | | same entry as the registry id |
+| `PIN_JOB_ENDINST` | `AGC_JOB_ENDOFJOB` | | same entry as the registry id |
+| `PIN_JOB_IDLERET3` | `AGC_JOB_IDLERET3` | | same entry as the registry id |
+| `PIN_JOB_JAMTERM` | `AGC_JOB_JAMTERM` | | same entry as the registry id |
+| `PIN_JOB_MAKEPLAY` | `AGC_JOB_MAKEPLAY` | | same entry as the registry id |
+| `PIN_JOB_MARKPLAY` | `AGC_JOB_MARKPLAY` | | same entry as the registry id |
+| `PIN_JOB_MONDO` | `AGC_JOB_MONDO` | | same entry as the registry id |
+| `PIN_JOB_PLAYJUM1` | `AGC_JOB_PLAYJUM1` | | same entry as the registry id |
+| `PIN_JOB_PROCEED` | `AGC_JOB_PROCEED` | | same entry as the registry id |
+| `PIN_JOB_PROCKEY` | `AGC_JOB_PROCKEY` | | same entry as the registry id |
+| `PIN_JOB_REDOPRIO` | `AGC_JOB_REDOPRIO` | | same entry as the registry id |
+| `PIN_JOB_TERMATE` | `AGC_JOB_TERMATE` | | same entry as the registry id |
+| `PIN_JOB_TSTLTS3` | `AGC_JOB_TSTLTS3` | | same entry as the registry id |
+| `PIN_JOB_XCHSLEEPM` | `AGC_JOB_XCHSLEEPM` | | same entry as the registry id |
+| `PIN_JOB_XCHSLEEPN` | `AGC_JOB_XCHSLEEPN` | | same entry as the registry id |
+| `PIN_TASK_MONREQ` | `AGC_TASK_MONREQ` | | same entry as the registry id |
+| `PIN_TASK_TSTLTS2` | `AGC_TASK_TSTLTS2` | | same entry as the registry id |
 
 ## Duplicate definitions that become one name
 

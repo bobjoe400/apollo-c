@@ -15,9 +15,20 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
-#include "agc/io/service_internal.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "pending.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 /* ---- constants (pp. 789, 820-822) -------------------------------------- */
 #define LL_DPSTHRSH      36    /* DPSTHRSH: THRESH1 + THRESH3 for P63     */
@@ -136,7 +147,8 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
     agc_lm_ldg_t *l     = agc_lm_ldg();
     agc_dp_t      tdec1 = agc_dp_sub(ip, agc_lm_pad()->tland, LL_GUIDDURN);
     agc_status_t  st    =
-        agc_integ_lemprec(ip, agc_integ_shared_ctx(), tdec1, AGC_JOB_IGNALGP);
+        agc_integ_lemprec(ip, agc_integ_shared_ctx(), tdec1,
+                          AGC_JOB_IGNALG_PREC);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -196,7 +208,7 @@ static void ll_ddumgood(agc_interp_t *ip, agc_dp_t tdec1)
 {
     agc_lm_ldg_t        *l  = agc_lm_ldg();
     const agc_guid_lm_t *g  = &agc_guid_state()->lm;
-    agc_dp_t             zt = (agc_dp_t) g->zoomtime; /* SLOAD, SR 14 */
+    agc_dp_t             zt = (agc_dp_t) agc_erase_zoomtime(); /* SLOAD */
 
     agc_erase_set_tig(agc_dp_sub(ip, tdec1, zt));
     agc_vec_t n = agc_vec_unit(ip, agc_vec_cross(ip, g->v, g->r), NULL, NULL);
@@ -1187,7 +1199,7 @@ agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ll_restart_here(AGC_JOB_LANDJUNK);
+    ll_restart_here(AGC_JOB_LANDING_CONFIRMATION);
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -1215,7 +1227,8 @@ agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx)
     }
 
     return (ll_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 43),
-                       AGC_JOB_LANDJNK2, AGC_JOB_LANDJNKF));
+                       AGC_JOB_LANDING_CONFIRMATION_PROCEED,
+                       AGC_JOB_LANDING_CONFIRMATION_FLASH));
 }
 
 /* After PROCEED (p. 792): GSAV and (using REFMF) YNBSAV, ZNBSAV and

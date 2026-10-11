@@ -20,7 +20,9 @@
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/io/nouns.h"
+#include "agc/io/service.h"
 
 /* LODNNTAB (PINBALL_NOUN_TABLES.agc p. 270): row for one noun of one vehicle. */
 agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
@@ -362,7 +364,92 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
     }
 }
 
-/* The one data id -> erasable dispatch. Ids not listed are not yet exposed by core. */
+/* OPTION1-3 (noun 06, raw octal words; OPTION1 +k).                       */
+static agc_status_t noun_access_option(uint16_t id, bool write, agc_dp_t *v)
+{
+    if (!AGC_ASSERT(v != NULL) ||
+        !AGC_ASSERT(id >= AGC_DATA_OPTION1 && id <= AGC_DATA_OPTION3))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    int k = (int) id - (int) AGC_DATA_OPTION1;
+
+    if (write)
+    {
+        agc_erase_set_option1(k, (agc_sp_t) (*v & 037777));
+    }
+
+    *v = (agc_dp_t) ((uint16_t) agc_erase_option1(k) & 077777u);
+
+    return (AGC_STATUS_OK);
+}
+
+/* Core DP erasables kept outside erasable.c: SAMPTIME, T3TOT4 (cs 2^28),
+ * RR-AZ, RR-ELEV (revs); SMODE (self-check mode, raw word).               */
+static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
+{
+    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(id < AGC_DATA_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    switch (id)
+    {
+        case AGC_DATA_SAMPTIME:
+
+            if (write)
+            {
+                agc_erase_set_samptime(*v);
+            }
+
+            *v = agc_erase_samptime();
+            break;
+        case AGC_DATA_T3TOT4:
+
+            if (write)
+            {
+                agc_erase_set_t3tot4(*v);
+            }
+
+            *v = agc_erase_t3tot4();
+            break;
+        case AGC_DATA_RR_AZ:
+
+            if (write)
+            {
+                agc_erase_set_rr_az(*v);
+            }
+
+            *v = agc_erase_rr_az();
+            break;
+        case AGC_DATA_RR_ELEV:
+
+            if (write)
+            {
+                agc_erase_set_rr_elev(*v);
+            }
+
+            *v = agc_erase_rr_elev();
+            break;
+        case AGC_DATA_SMODE:
+
+            if (write)
+            {
+                return (agc_selfcheck_set_smode((uint16_t) (*v & 077777)));
+            }
+
+            *v = (agc_dp_t) agc_selfcheck_smode();
+            break;
+        default:
+            return (AGC_STATUS_NOT_FOUND);
+    }
+
+    return (AGC_STATUS_OK);
+}
+
+/* The one data id -> erasable dispatch: core erasables here, the rest
+ * through agc_dispatch_noun (src/exec/nouns.c).                          */
 static agc_status_t noun_data_access(uint16_t data_id, bool write,
                                      agc_dp_t *value)
 {
@@ -406,8 +493,18 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_THETAD_P2:
             return (write ? noun_raw_write(data_id, *value) :
                     noun_raw_read(data_id, value));
-        default: /* not yet exposed by core          */
-            return (AGC_STATUS_UNIMPLEMENTED);
+        case AGC_DATA_OPTION1:
+        case AGC_DATA_OPTION2:
+        case AGC_DATA_OPTION3:
+            return (noun_access_option(data_id, write, value));
+        case AGC_DATA_SAMPTIME:
+        case AGC_DATA_T3TOT4:
+        case AGC_DATA_RR_AZ:
+        case AGC_DATA_RR_ELEV:
+        case AGC_DATA_SMODE:
+            return (noun_access_core2(data_id, write, value));
+        default: /* held by a higher layer               */
+            return (agc_dispatch_noun(data_id, write, value));
     }
 }
 

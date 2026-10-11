@@ -34,6 +34,7 @@
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"
+#include "agc/io/service.h"
 
 #define PIN_STATUS_RECYCLE AGC_STATUS_ALARM /* ALMCYCLE: re-enter ENTER  */
 #define PIN_RECYCLE_MAX    3 /* ENTER passes per key (ALMCYCLE bound)  */
@@ -108,42 +109,6 @@
  * INTEGRATION: replace each with AGC_JOB_<LABEL>/AGC_TASK_<LABEL> once
  * agc_jobs.h carries them; until then they are placeholders past the end
  * of the lead's enum so that this module compiles.                     */
-#define PIN_JOB_CHARIN    AGC_JOB_CHARIN
-#define PIN_JOB_PROCKEY   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 1))
-#define PIN_JOB_MONDO     ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 2))
-#define PIN_JOB_DSPMMJB   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 3))
-#define PIN_JOB_TSTLTS3   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 4))
-#define PIN_JOB_MAKEPLAY  ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 5))
-#define PIN_JOB_PLAYJUM1  ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 6))
-#define PIN_JOB_MARKPLAY  ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 7))
-#define PIN_JOB_REDOPRIO  ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 8))
-#define PIN_JOB_TERMATE   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 9))
-#define PIN_JOB_PROCEED   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 10))
-#define PIN_JOB_IDLERET3  ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 11))
-#define PIN_JOB_JAMTERM   ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 12))
-#define PIN_JOB_ENDINST   AGC_JOB_ENDOFJOB /* ENDINST: TC ENDOFJOB    */
-#define PIN_JOB_XCHSLEEPM ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 14))
-#define PIN_JOB_XCHSLEEPN ((agc_job_id_t) (AGC_JOB_COUNT_PLACEHOLDER + 15))
-#define PIN_TASK_MONREQ   ((agc_task_id_t) (AGC_TASK_COUNT_PLACEHOLDER + 1))
-#define PIN_TASK_TSTLTS2  ((agc_task_id_t) (AGC_TASK_COUNT_PLACEHOLDER + 2))
-
-/* ---- hand-offs to other lanes and requested accessors -----------------
- * Each is listed under "Requested core additions" in
- * docs/modules/io-pinball.md with its owner. Declared here (not in a
- * core header) so the module compiles before the owners deliver.       */
-agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB, sys-misc */
-agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word); /* state */
-agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word); /* state */
-uint16_t     agc_erase_optmodes(void); /* CSM only, state  */
-void         agc_erase_set_optmodes(uint16_t v);
-uint16_t     agc_erase_radmodes(void); /* LM only, state   */
-void         agc_erase_set_radmodes(uint16_t v);
-void         agc_erase_set_samptime(uint32_t t_cs); /* SAMPTIME (N65)   */
-void         agc_erase_set_option1(agc_sp_t v);     /* OPTION1 (GOPERF4) */
-void         agc_erase_set_sfail(uint16_t v);       /* SFAIL (ERROR)    */
-/* exec-sched: JOBWAKE the job sleeping at loc, then INDEX LOCCTR / TS LOC
- * so that it resumes at new_loc (RECAL2, XCHNYLOC).                     */
-agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc);
 
 /* ---- AGC SF routine numbers (SFOUTABR / SFINTABR, p. 334 / 349) -------- */
 enum pin_sfrout

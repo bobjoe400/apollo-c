@@ -18,9 +18,9 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
+#include "agc/exec/exec.h"
 #include "agc/nav/integration.h"
 #include "internal.h"
-#include "pending.h"
 
 /* 600SECS 2DEC 60000 (oct 00003 25140): STATEINT period, cs.            */
 #define INTEG_600SECS ((uint32_t) 60000)
@@ -264,10 +264,6 @@ agc_status_t agc_job_stateup_stall(agc_job_ctx_t *jc)
 
 /* ---- AVETOMID (p. 1327-1328) ------------------------------------------ */
 
-/* TRKMKCNT (P20 tracking mark count) belongs to prog-rendz; requested as
- * agc_erase_set_trkmkcnt() (see the module note).  Kept here meanwhile. */
-static agc_sp_t trkmkcnt_pending;
-
 /* INTSTALL again later in the same call; in C no other job can run in
  * between, so BUSY here means the caller re-enters from the start.      */
 static agc_status_t regrab(agc_job_id_t resume_job)
@@ -330,8 +326,8 @@ static agc_status_t move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
     agc_integ_minirect(ctx, agc_integ_vshift(ip, agc_erase_vn(), x2));
     agc_status_t st = AGC_STATUS_OK;
 
-    st               = agc_integ_perm_set(agc_state_vehicle(), &ctx->sv);
-    trkmkcnt_pending = 0; /* SSP     */
+    st = agc_integ_perm_set(agc_state_vehicle(), &ctx->sv);
+    agc_erase_set_trkmkcnt(0); /* SSP TRKMKCNT 0 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

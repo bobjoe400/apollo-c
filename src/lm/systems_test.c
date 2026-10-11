@@ -34,7 +34,7 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 
 #define POSMAX            037777u
 #define WORD15            077777u

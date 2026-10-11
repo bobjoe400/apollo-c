@@ -19,7 +19,7 @@
 #include "agc/guidance/guidance.h"
 
 /* P31 (p.652): P20FLGON; V06N33 (TIG). */
-agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -62,7 +62,7 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
  * integration; INITVEL with no offsets and E4 = 0; DELVSIN, VGDISP,
  * CLEAR XDELVFLG, GET.LVC; HPER HAPO; V06N81. An INTSTALL sleep
  * resumes this job from its start.                                    */
-agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -130,12 +130,12 @@ agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_vnpooh(ctx, 6U, 42U, AGC_JOB_LAMBERT_AIMPOINT_TTOGO));
+    return (rz_vnpooh(ctx, 6U, 42U, AGC_JOB_MARKS_TFI_MGA_MONITOR));
 }
 
 /* REVN1645 (p.653): SET FINALFLG, VN1645 (TRKMKCNT, TTOGO, +MGA), and
  * again.                                                               */
-agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx)
+agc_status_t agc_job_marks_tfi_mga_monitor(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -148,5 +148,5 @@ agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_FINALFLG);
 
     return (rz_ttogo_display(ctx, &ip, rz_state(),
-                             AGC_JOB_LAMBERT_AIMPOINT_TTOGO));
+                             AGC_JOB_MARKS_TFI_MGA_MONITOR));
 }

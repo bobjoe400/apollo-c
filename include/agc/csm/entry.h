@@ -283,12 +283,30 @@ uint16_t agc_entry_dap_yaw_jet_bits(int jndx);  /* YJETCODE[jndx]           */
 agc_sp_t agc_erase_aog(void);      /* AOG outer gimbal /180, 2s comp  */
 agc_sp_t agc_erase_aig(void);      /* AIG inner gimbal                */
 agc_sp_t agc_erase_amg(void);      /* AMG middle gimbal               */
-agc_sp_t agc_erase_cm_gymdt(void); /* CM/GYMDT restart dt (6.11), cs  */
-void     agc_erase_set_cm_gymdt(agc_sp_t v);
-agc_sp_t agc_erase_s61dt(void); /* S61DT restart dt (4.43), cs     */
 
 /* ---- P37 return to earth (p37.c) ---------------------------------------- */
-agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx); /* P37 (stub)          */
+agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx); /* P37                 */
+/* Noun data RTEDVD, RTEGAM2D (N56) of P37; NOT_FOUND for other ids.     */
+agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write,
+                                      agc_dp_t *value);
+/* P37 continuation jobs (src/csm/burns/return_to_earth/program.c).     */
+agc_status_t agc_job_return_to_earth_tig_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_entry_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_transit_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_entry_conditions_display(
+    agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_delta_v_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx);
+agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx);
+
 /* XT1LIM (p. 930): X(T1) limit (B5) from MA (B30), RCON and R(T1) (B29),
  * BETA5 (B9).                                                             */
 agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon,
@@ -349,5 +367,48 @@ agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
  * (OGC IGC MGC, DP revs) and present CDUs -> AK AK1 AK2 (SP, error/180).  */
 void agc_earth_orbit_insertion_monitor_attitude_errors(
     const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak[3]);
+
+/* Priorities: PRIOnn octal (agc_prio_t = PRIOnn >> 9, see agc_exec.h).     */
+#define AGC_ENTRY_PRIO1  ((agc_prio_t) 001)
+#define AGC_ENTRY_PRIO13 ((agc_prio_t) 013)
+#define AGC_ENTRY_PRIO16 ((agc_prio_t) 016)
+#define AGC_ENTRY_PRIO20 ((agc_prio_t) 020)
+
+/* ---- telemetry (sys-misc) -------------------------------------------- */
+#define AGC_ENTRY_DNLSTCOD_ENTRY   1 /* DNLSTCOD 1: ENTRY/UPDATE list     */
+#define AGC_ENTRY_DNLSTCOD_POWERED 3 /* POWDNCOD = THREE                  */
+
+/* ======================================================================
+ * Helpers shared by the entry files (src/csm/entry); formerly entry_internal.h
+ * ==================================================================== */
+/* reentry.c */
+agc_interp_t *entry_ip(void);            /* shared interpreter state (OVFIND) */
+agc_dp_t      entry_signmpac(agc_dp_t x); /* SIGNMPAC: +-DPOSMAX               */
+agc_dp_t      entry_log(agc_interp_t *ip,
+                        agc_dp_t      x); /* LOG: -ln(x)/32               */
+void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es,
+                  bool first);         /* EARROT1/2 */
+agc_status_t entry_endexit(agc_job_ctx_t     *ctx,
+                           agc_entry_state_t *es); /* OVERNOUT */
+agc_status_t entry_starten1(agc_interp_t      *ip,
+                            agc_entry_state_t *es); /* STARTEN1 */
+
+/* cm_body_attitude.c: SERVNOUT (CHANG1 if a job waits, then SERVEXIT).  */
+agc_status_t entry_servnout(agc_job_ctx_t *ctx);
+
+/* programs.c: mode/display changes called from the steering via RTB.        */
+agc_status_t entry_post_0_05g(agc_entry_state_t *es);
+agc_status_t entry_upcontrol(agc_entry_state_t *es);
+agc_status_t entry_ballistic(agc_entry_state_t *es);
+agc_status_t entry_final_phase(agc_entry_state_t *es);
+agc_status_t entry_killgrp4(void);
+
+/* dap.c */
+/* ANGOVCOR / CORANGOV: an SP angle/180 sum (at most one overflow) wrapped
+ * back into [-1, 1) (i.e. modulo 360 deg).                               */
+agc_sp_t entry_angle_wrap(int32_t sum);
+agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b); /* MP: high word of a b      */
+agc_sp_t entry_sp_sat(int32_t sum);           /* AD whose result is kept
+                                                  (overflow not expected)  */
 
 #endif /* AGC_CSM_ENTRY_H */

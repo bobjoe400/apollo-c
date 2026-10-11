@@ -41,9 +41,9 @@
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "internal.h"
-#include "pending.h"
 
 #define PRIO26          ((agc_prio_t) 026) /* NEWDELHI                   */
 #define ALARM_GLOCK     ((agc_alarm_code_t) 00401)

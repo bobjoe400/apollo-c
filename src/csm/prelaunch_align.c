@@ -16,7 +16,6 @@
  */
 #include <stddef.h>
 
-#include "../imu/pending.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/interp.h"
@@ -25,6 +24,8 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 #define OMEG_MS        ((agc_dp_t) 65334634) /* 2DEC .24339048 (OMEG/MS)        */
 #define POSMAX_W       037777u /* POSMAX                         */
@@ -33,6 +34,10 @@
 
 static agc_vec_t ervector; /* ERVECTOR: earth rate in local axes       */
 static agc_dp_t  tmark;    /* TMARK: time of the last EARTHR, cs 2^28  */
+static agc_mat_t xsm_pl;   /* XSM YSM ZSM of the last POSN17C, 2^1      */
+/* THETAN: the gyrocompass drift estimate of the ESTIMS filter (stubbed
+ * with ESTIMS, so it stays zero until P02 is translated), 2^0 rad.      */
+static agc_vec_t thetan;
 
 agc_vec_t agc_csm_prelaunch_ervector(void)
 {
@@ -113,6 +118,7 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_interp_t *ip, agc_dp_t azimuth,
     xsm->row[0] = agc_vec_make(0, agc_dp_neg(c), s);
     xsm->row[1] = agc_vec_make(0, s, c);
     xsm->row[2] = agc_vec_make(-AGC_DP_HALF, 0, 0); /* CS HALF      */
+    xsm_pl      = *xsm;
 
     return (AGC_STATUS_OK);
 }
@@ -146,15 +152,15 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
 /* EARTHR (p.430): ERCOMP1 = ERCOMP1 + XSM (ERVECTOR (t - TMARK) 2^9),
  * TMARK = t, then PULSEIMU the ERCOMP1 buffer.  OVERFFIX adds 2^28 cs
  * when the time difference is negative (TIME2 wrapped).                  */
-agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
+static agc_status_t earthr_at(agc_interp_t *ip, const agc_mat_t *xsm,
+                              agc_dp_t temptime)
 {
     if (!AGC_ASSERT(ip != NULL && xsm != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t temptime = agc_rtb_loadtime();
-    agc_dp_t dt       = agc_dp_sub(ip, temptime, tmark);
+    agc_dp_t dt = agc_dp_sub(ip, temptime, tmark);
 
     if (dt < 0)
     {
@@ -187,6 +193,54 @@ agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
     tmark = temptime;
 
     return (agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_NONE)); /* PULSEIMU */
+}
+
+agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm)
+{
+    if (!AGC_ASSERT(ip != NULL && xsm != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (earthr_at(ip, xsm, agc_rtb_loadtime())); /* RTB LOADTIME */
+}
+
+/* The P11 tail at liftoff (P11 p.536-537): ERCOMP = (THETAN MXV XSM) VSL1
+ * + ERCOMP, then EARTHR +3 with TEMPTIME = TLIFTOFF (QPLACES = P11XIT;
+ * the caller continues at MATRXJOB).                                     */
+agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip,
+                                                 agc_dp_t      tliftoff)
+{
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(tliftoff >= 0 && tliftoff <= AGC_DP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dp_t     buf[3];
+    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_vec_t er = agc_vec_add(ip, agc_vec_shl(ip, agc_mat_vec(ip, &xsm_pl,
+                                                               thetan), 1),
+                               agc_vec_make(buf[0], buf[1], buf[2]));
+
+    for (int i = 0; i < 3; i++)
+    {
+        buf[i] = er.c[i]; /* STODL ERCOMP         */
+    }
+
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
+
+    return (earthr_at(ip, &xsm_pl, tliftoff)); /* EARTHR +3: STORE TEMPTIME */
 }
 
 /* ---- stubs -------------------------------------------------------------- */
@@ -273,4 +327,34 @@ agc_status_t agc_csm_prelaunch_azmthcg1(agc_job_ctx_t *ctx)
 agc_status_t agc_csm_prelaunch_targdrve(agc_job_ctx_t *ctx)
 {
     return (prelaunch_stub(ctx));
+}
+
+/* Shared body of the untranslated waitlist-task entry points.            */
+static agc_status_t prelaunch_task_stub(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (AGC_STATUS_UNIMPLEMENTED);
+}
+
+/* ALLOOP1 (p.437, restart 5.11): the gyrocompass/drift-test PIPA sample
+ * task of the ESTIMS loop (stub with ESTIMS).                            */
+agc_status_t agc_task_prelaunch_alloop1(void)
+{
+    return (prelaunch_task_stub());
+}
+
+/* SPECSTS (p.437, restart 5.23): FINDVAC PRIO22 ALFLT, the filter job of
+ * the ESTIMS loop (stub with ESTIMS).                                    */
+agc_status_t agc_task_prelaunch_specsts(void)
+{
+    return (prelaunch_task_stub());
 }

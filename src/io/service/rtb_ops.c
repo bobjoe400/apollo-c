@@ -29,10 +29,11 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
-#include "sysmisc_ext.h"
+#include "agc/io/service.h"
 
 #define SP_RANGE        040000     /* 2^14: weight of one SP word          */
 #define CDU_MODULUS     0100000    /* 2^15: two's-complement CDU modulus   */

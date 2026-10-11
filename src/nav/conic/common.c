@@ -547,3 +547,22 @@ agc_status_t agc_conic_abtconic_(void)
 
     return (AGC_STATUS_POODOO);
 }
+
+/* The conic body named by the integrator's X1 as the targeting programs
+ * keep it in RTX1 (SXA,1): -2 earth, -10 moon (the MUTABLE index).       */
+agc_conic_body_t agc_conic_body_of_x1(int x1)
+{
+    if (!AGC_ASSERT(x1 == -2 || x1 == -10))
+    {
+        return (AGC_CONIC_EARTH);
+    }
+
+    agc_conic_body_t b = (x1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH;
+
+    if (!AGC_ASSERT(b == AGC_CONIC_EARTH || b == AGC_CONIC_MOON))
+    {
+        return (AGC_CONIC_EARTH);
+    }
+
+    return (b);
+}

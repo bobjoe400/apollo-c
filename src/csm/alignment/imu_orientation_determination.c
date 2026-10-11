@@ -17,20 +17,20 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
-#define IMODES30_IMU_OFF ((uint16_t) 0400) /* BIT9: IMU not operating        */
-#define ALM_IMU_OFF      ((agc_alarm_code_t) 0210)
-#define CHK_ACQUIRE      ((uint16_t) 015)   /* PRFMSTAQ = OCT15               */
-#define PH_P51           ((uint16_t) 05024) /* OCT 05024, OCT 13000           */
-#define PH_P51B          ((uint16_t) 00014) /* OCT 00014                      */
-#define VN_GIMBALS       ALIGN_VN(6, 22)    /* V6N22  VN 0622                 */
-#define VN_COARSE_VERB   ALIGN_VN(41, 0)    /* V41K   VN 4100                 */
-#define MM_BACKUP_ORIENT ((agc_sp_t) 53)    /* CHECKMM 53                     */
+#define IMODES30_IMU_OFF       ((uint16_t) 0400) /* BIT9: IMU not operating        */
+#define ALM_IMU_OFF            ((agc_alarm_code_t) 0210)
+#define CHK_ACQUIRE            ((uint16_t) 015) /* PRFMSTAQ = OCT15               */
+#define PH_ORIENTATION         ((uint16_t) 05024) /* OCT 05024, OCT 13000           */
+#define PH_ORIENTATION_RESTART ((uint16_t) 00014) /* OCT 00014                      */
+#define VN_GIMBALS             ALIGN_VN(6, 22) /* V6N22  VN 0622                 */
+#define VN_COARSE_VERB         ALIGN_VN(41, 0) /* V41K   VN 4100                 */
+#define MM_BACKUP_ORIENT       ((agc_sp_t) 53) /* CHECKMM 53                     */
 
-static void p51_phase(agc_job_id_t restart_at)
+static void orientation_phase(agc_job_id_t restart_at)
 {
-    align_phase_job(PH_P51, restart_at, ALIGN_PRIO13);
+    align_phase_job(PH_ORIENTATION, restart_at, ALIGN_PRIO13);
 }
 
 /*
@@ -94,7 +94,7 @@ agc_status_t agc_job_csm_orientation_coarse(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    p51_phase(AGC_JOB_CSM_ORIENTATION_COARSE);
+    orientation_phase(AGC_JOB_CSM_ORIENTATION_COARSE);
 
     for (int i = 0; i < 3; i++)
     {
@@ -206,7 +206,7 @@ agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK);
     }
 
-    p51_phase(AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY);
+    orientation_phase(AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY);
 
     return (agc_job_csm_orientation_acquire_display(ctx));
 }
@@ -223,7 +223,7 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
     }
 
     agc_align_ram_t *ram = agc_align_ram();
-    agc_status_t     st  = align_phase4(PH_P51B);
+    agc_status_t     st  = align_phase4(PH_ORIENTATION_RESTART);
 
     ram->starind = 0;
     st           = align_set1_pdt();
@@ -247,7 +247,7 @@ agc_status_t agc_job_csm_orientation_mark_star(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
+    orientation_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
 
     if (agc_phase_checkmm(MM_BACKUP_ORIENT))
     {
@@ -266,7 +266,7 @@ static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
-    p51_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
+    orientation_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     const agc_status_t st = agc_sxtmark_mkreleas();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -281,7 +281,7 @@ static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
         return (align_goto(AGC_JOB_CSM_ORIENTATION_MARK_STAR));
     }
 
-    p51_phase(AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
+    orientation_phase(AGC_JOB_CSM_ORIENTATION_SECOND_STAR);
 
     return (align_planet(ctx, ram->tsight,
                          AGC_JOB_CSM_ORIENTATION_SECOND_STAR));

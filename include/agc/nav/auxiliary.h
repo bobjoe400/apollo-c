@@ -92,6 +92,11 @@ typedef struct agc_latlong
     agc_dp_t eradm; /* ERADM, planet radius used, scale 2^29 m              */
 } agc_latlong_t;
 
+/* LAT, LONG, ALT erasables (noun 43; CM LANDLAT/LANDLONG/LANDALT): set by
+ * the programs after LAT-LONG, read for LALOTORV. eradm is not stored.    */
+agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
+agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
+
 /* LAT-LONG: r scale 2^29 m (earth or moon centred).                       */
 agc_status_t agc_latlong_from_r(agc_interp_t *ip,
                                 const agc_navaux_padload_t *pad,

@@ -167,7 +167,7 @@ void pin_reldspon(void)
 /* LODSAMPT (p. 380): time is snatched in rupt for noun 65 (SAMPTIME). */
 void pin_lodsampt(void)
 {
-    agc_erase_set_samptime(agc_time_now_cs());
+    agc_erase_set_samptime((agc_dp_t) agc_time_now_cs());
 }
 
 /* ---- DSPCOUNT -------------------------------------------------------- */
@@ -517,6 +517,74 @@ agc_status_t agc_dsky_set_dsptem(int index, uint16_t word)
     g_pin.dsptem[index] = word;
 
     return (AGC_STATUS_OK);
+}
+
+/* ---- program views of the DSPTEM buffer (erasable names of other lanes):
+ * DSPTEM1 +i = index i (0..2); DSPTEMX = OPTIONX = DSPTEM2 +1 = index 4;
+ * OPTIONX +i = index 4 + i (0..2). SP values travel as ones' complement
+ * 15-bit words, DP DSPTEMX as the word pair (index 4, 5).                 */
+void agc_erase_set_dsptem1(int index, agc_sp_t v)
+{
+    if (!AGC_ASSERT(index >= 0 && index <= 2))
+    {
+        return;
+    }
+
+    agc_status_t st = agc_dsky_set_dsptem(index, pin_ones_from_sp(v));
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
+}
+
+agc_sp_t agc_erase_optionx(int index)
+{
+    if (!AGC_ASSERT(index >= 0 && index <= 2))
+    {
+        return (0);
+    }
+
+    return (pin_sp_from_ones(g_pin.dsptem[4 + index]));
+}
+
+void agc_erase_set_optionx(int index, agc_sp_t v)
+{
+    if (!AGC_ASSERT(index >= 0 && index <= 2))
+    {
+        return;
+    }
+
+    agc_status_t st = agc_dsky_set_dsptem(4 + index, pin_ones_from_sp(v));
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
+}
+
+agc_dp_t agc_erase_dsptemx(void)
+{
+    agc_dp_t v = agc_dp_pack(pin_sp_from_ones(g_pin.dsptem[4]),
+                             pin_sp_from_ones(g_pin.dsptem[5]));
+
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return (0);
+    }
+
+    return (v);
+}
+
+void agc_erase_set_dsptemx(agc_dp_t v)
+{
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return;
+    }
+
+    g_pin.dsptem[4] = pin_ones_from_sp(agc_dp_high(v));
+    g_pin.dsptem[5] = pin_ones_from_sp(agc_dp_low(v));
 }
 
 uint16_t agc_dsky_xyzreg(int index)

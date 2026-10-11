@@ -31,11 +31,9 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/nav/integration.h"
-#include "pending.h"
 
 #define WORD15         077777u
 #define LOW8           000377u

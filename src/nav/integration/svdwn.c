@@ -3,7 +3,7 @@
  * CSM_GEOMETRY.agc (Comanche055 p. 289-290) and LEM_GEOMETRY.agc
  * (Luminary099 p. 320-321).  Owner: prog-align; kept in src/nav/ because
  * the integration package (ATOPCSM / ATOPLEM) is its caller, so nav does
- * not depend on src/programs/.  Declared in include/agc/programs/alignment.h.
+ * not depend on src/programs/.  Declared in include/agc/nav/integration.h.
  *
  * The two programs exchange the names: SVDWN1 is the CSM state in both
  * (this vehicle in Comanche, the other one in Luminary), so "this vehicle"
@@ -15,7 +15,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
-#include "agc/programs/alignment.h"
+#include "agc/nav/integration.h"
 
 #define SVDWN_R_SHIFT 7 /* TDELTAV E 2^22 / M 2^18 -> RCV scale        */
 #define SVDWN_V_SHIFT 4 /* TNUV    E 2^3  / M 2^-1 -> VCV scale        */
@@ -35,7 +35,7 @@ static agc_vec_t v_other;
  * The other vehicle: R-OTHER, V-OTHER.  VSL* by a negative count is a
  * rounding right shift, as agc_vec_shr is.
  */
-agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
+agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
                              agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
                              agc_vec_t tnuv, agc_dp_t tet)
 {
@@ -70,7 +70,7 @@ agc_status_t agc_align_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
 }
 
 /* R-OTHER (downlink): other vehicle position, m B29. */
-agc_vec_t agc_align_r_other(void)
+agc_vec_t agc_integ_r_other(void)
 {
     if (!AGC_ASSERT(r_other.c[0] >= AGC_DP_MIN))
     {
@@ -86,7 +86,7 @@ agc_vec_t agc_align_r_other(void)
 }
 
 /* V-OTHER (downlink): other vehicle velocity, m/cs B7. */
-agc_vec_t agc_align_v_other(void)
+agc_vec_t agc_integ_v_other(void)
 {
     if (!AGC_ASSERT(v_other.c[0] >= AGC_DP_MIN))
     {

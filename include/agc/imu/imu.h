@@ -311,7 +311,11 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
 /* EARTHR: add the earth rate since TMARK, resolved by xsm, to ERCOMP1
  * and torque the gyros with it (PULSEIMU on the ERCOMP buffer).          */
 agc_status_t agc_csm_prelaunch_earthr(agc_interp_t *ip, const agc_mat_t *xsm);
-agc_vec_t    agc_csm_prelaunch_ervector(void); /* ERVECTOR       */
+/* P11 at liftoff: ERCOMP += (XSM THETAN) VSL1, then EARTHR +3 at
+ * TEMPTIME = TLIFTOFF (cs 2^28).                                          */
+agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip,
+                                                 agc_dp_t      tliftoff);
+agc_vec_t agc_csm_prelaunch_ervector(void); /* ERVECTOR       */
 /* Not translated (stubs returning AGC_STATUS_UNIMPLEMENTED).             */
 agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx);  /* IMUTEST    */
 agc_status_t agc_csm_prelaunch_estims(agc_job_ctx_t *ctx);   /* ESTIMS     */
@@ -324,5 +328,7 @@ agc_status_t agc_csm_prelaunch_optdata(agc_job_ctx_t *ctx);  /* OPTDATA    */
 agc_status_t agc_csm_prelaunch_latazchk(agc_job_ctx_t *ctx); /* LATAZCHK   */
 agc_status_t agc_csm_prelaunch_azmthcg1(agc_job_ctx_t *ctx); /* AZMTHCG1   */
 agc_status_t agc_csm_prelaunch_targdrve(agc_job_ctx_t *ctx); /* TARGDRVE   */
+agc_status_t agc_task_prelaunch_alloop1(void);               /* ALLOOP1    */
+agc_status_t agc_task_prelaunch_specsts(void);               /* SPECSTS    */
 
 #endif /* AGC_IMU_H */

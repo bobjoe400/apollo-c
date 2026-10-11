@@ -303,7 +303,63 @@ agc_sp_t     agc_erase_cosmg(void); /* COS(MG)                  */
  * program P27 (src/io/verbs/uplink_update.c)
  * ==================================================================== */
 agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB (pinball) */
-bool         agc_extverb_busy(void);          /* EXTVBACT != 0   */
+
+/* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
+/* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
+int          agc_extverb_verb(void);
+int          agc_extverb_noun(void);
+agc_status_t agc_extverb_testxact(bool *ok); /* TESTXACT: false = ALM/END done */
+agc_status_t agc_extverb_alm_end(void);      /* ALM/END: FALTON, PINBRNCH     */
+agc_status_t agc_extverb_gopin(void);        /* GOPIN: PINBRNCH               */
+bool         agc_extverb_chkpooh(void);      /* CHKPOOH: P00 (ALM/END if not) */
+bool         agc_extverb_ckmodcad(void); /* CKMODCAD: no IMU mode user     */
+agc_status_t agc_extverb_goloadlv(void); /* GOLOADLV: please-perform done */
+agc_status_t agc_extverb_upflag(agc_flag_id_t f); /* TC UPFLAG, TC GOPIN       */
+agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
+agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac);
+/* Request a flashing display for the running verb (GOXDSPF = GOMARKF).    */
+agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb,
+                               uint8_t noun, agc_job_id_t on_proceed,
+                               agc_job_id_t on_enter);
+/* EXDSPRET: show our verb again and continue at next.                     */
+agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb,
+                                   agc_job_id_t next);
+
+/* LM radar verb entries (extended_verbs_lm_radar.c)                       */
+agc_status_t agc_extverb_rr_zero(agc_job_ctx_t *ctx);              /* V40 N72 */
+agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx);         /* V41 N72 */
+agc_status_t agc_extverb_rr_designate_end(agc_job_ctx_t *ctx);     /* V44     */
+agc_status_t agc_extverb_lr_position_two(agc_job_ctx_t *ctx);      /* V60     */
+agc_status_t agc_extverb_radar_test(agc_job_ctx_t *ctx);           /* V63 R04 */
+agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx);     /* V78 R77 */
+agc_status_t agc_extverb_lr_spurious_test_end(agc_job_ctx_t *ctx); /* V79    */
+agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx);       /* V85     */
+
+agc_status_t agc_extverb_state_vector_copy(bool from_other); /* V66 / CSM V47 */
+agc_status_t agc_extverb_lm_attck2(void); /* LM V43 ATTCK2 (task body)  */
+
+/* vehicle halves of the jobs whose AGC code differs (wrappers in
+ * extended_verbs.c pick one by vehicle)                                   */
+agc_status_t agc_job_attitude_error_load_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_terminate_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx);
+
+/* vehicle verb fans (extended_verbs_csm.c / extended_verbs_lm.c)          */
+agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb);
+agc_status_t agc_extverb_lm(agc_job_ctx_t *ctx, int verb);
+
+bool agc_extverb_busy(void);          /* EXTVBACT != 0   */
 /* EXTVBACT: extended-verb / marking-system activity word (bit 2 marking
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
 uint16_t agc_erase_extvbact(void);

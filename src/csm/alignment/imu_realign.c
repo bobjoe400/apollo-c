@@ -12,7 +12,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define PH_STAR_SELECT  ((uint16_t) 04024) /* P52C PHASCHNG: group 4.2      */
 #define CHK_ACQUIRE     ((uint16_t) 015)   /* ALRM15 = OCT15: V50N25 00015  */
@@ -142,7 +142,7 @@ agc_status_t agc_job_csm_realign_stars_located(agc_job_ctx_t *ctx)
 }
 
 /* LLASRD (P20-P25.agc p. 611): N89 registers from LAT, LONG, ALT. */
-static void n89_from_latlong(const agc_latlong_t *ll)
+static void landmark_data_from_latlong(const agc_latlong_t *ll)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
@@ -207,7 +207,7 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    n89_from_latlong(&ll); /* LLASRD   */
+    landmark_data_from_latlong(&ll); /* LLASRD   */
 
     return (agc_job_csm_landing_site_display(ctx));
 }

@@ -25,10 +25,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "agc/core/flags_lm.h"
+#include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
-#include "pending.h"
+#include "agc/io/service.h"
 
 /* ---- RCSFLAGS bits (ERASABLE_ASSIGNMENTS p.105) ------------------------ */
 #define LM_RCS_ZEROOR1  0x0001u /* bit 1: ALTERYZ switch                  */

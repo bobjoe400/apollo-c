@@ -14,7 +14,7 @@
 #include <stdint.h>
 
 #include "agc/core/assert.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define VN_PLANET_VECTOR ALIGN_VN(6, 88)  /* VNPLANV VN 0688              */
 #define STAR_CODE_MASK   ((agc_sp_t) 077) /* CS HIGH9: bits 1-6           */

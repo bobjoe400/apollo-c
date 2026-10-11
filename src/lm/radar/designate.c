@@ -23,7 +23,7 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 #include "radar.h"
 
@@ -243,12 +243,7 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
     if (!ok)
     { /* NODESNB */
         *res = AGC_RR_DESIGNATE_END_JOB;
-        agc_status_t st = rz_alarm(RR_ALARM_BAD_ANGLES);
-
-        if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
-        {
-            return (st);
-        }
+        agc_alarm(RR_ALARM_BAD_ANGLES);
 
         agc_rendz_clradmod();
 

@@ -10,7 +10,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define VN_LANDING_SITE ALIGN_VN(6, 89) /* V06N89* VN 689                */
 

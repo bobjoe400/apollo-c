@@ -19,6 +19,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/state.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
 
@@ -69,6 +70,8 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
     }
 
     padload = *pad;
+    agc_erase_set_tephem(pad->tephem); /* one TEPHEM: core erasable */
+    agc_erase_set_rls(pad->rls);       /* one RLS: core erasable    */
 
     return (AGC_STATUS_OK);
 }
@@ -80,7 +83,9 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    *out = padload;
+    *out        = padload;
+    out->tephem = agc_erase_tephem(); /* P11 / V70 may have moved it */
+    out->rls    = agc_erase_rls();
 
     return (AGC_STATUS_OK);
 }

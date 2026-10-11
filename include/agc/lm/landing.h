@@ -80,7 +80,6 @@ typedef struct agc_lm_pad
     agc_dp_t        abtrdot;   /* ABTRDOT desired abort RDOT, 2^7 m/cs     */
     agc_dp_t        costhet1;  /* COSTHET1 cos(cone 1) for aborts          */
     agc_dp_t        costhet2;  /* COSTHET2 cos(cone 2) for aborts          */
-    agc_sp_t        zoomtime;  /* ZOOMTIME time of DPS throttle-up, cs     */
     agc_sp_t        tendbrak;  /* TENDBRAK phase switch criterion, 2^14 cs */
     agc_sp_t        tendappr;  /* TENDAPPR                                 */
     agc_sp_t        delttfap;  /* DELTTFAP TTF/8 increment at P63->P64     */
@@ -333,5 +332,17 @@ agc_status_t agc_lm_landisp(void);
 agc_status_t agc_lm_task_intlze(void);
 agc_status_t agc_lm_task_speedrun2(void);
 agc_status_t agc_lm_vmonitor(void);
+
+/* ---- alarm codes raised by the landing programs (octal) ---------------------------- */
+#define AGC_ALARM_00401 \
+    ((agc_alarm_code_t) 00401) /* FINDCDUW: gimbal lock     */
+#define AGC_ALARM_00402 \
+    ((agc_alarm_code_t) 00402) /* FINDCDUW: NORMUNIT ovf    */
+#define AGC_ALARM_01406 \
+    ((agc_alarm_code_t) 01406) /* TTF/8 no convergence      */
+#define AGC_ALARM_01410 \
+    ((agc_alarm_code_t) 01410) /* overflow in guidance      */
+#define AGC_ALARM_01412 \
+    ((agc_alarm_code_t) 01412) /* IGNALG NIGNLOOP exhausted */
 
 #endif /* AGC_LM_LANDING_H */

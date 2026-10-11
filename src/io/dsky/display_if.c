@@ -264,7 +264,7 @@ static agc_job_id_t dif_wakecadr(int c)
         return (AGC_JOB_NONE);
     }
 
-    return ((c == DIF_MARKC) ? PIN_JOB_MARKPLAY : PIN_JOB_PLAYJUM1);
+    return ((c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1);
 }
 
 /* XCHSLEEP: a newer display of the class replaces any older one asleep at
@@ -279,7 +279,7 @@ static agc_status_t dif_xchsleep(int c)
     agc_job_id_t wake = dif_wakecadr(c);
 
     agc_inhint();
-    agc_status_t st = agc_exec_job_wake_as(wake, PIN_JOB_ENDINST);
+    agc_status_t st = agc_exec_job_wake_as(wake, AGC_JOB_ENDOFJOB);
 
     agc_relint();
 
@@ -370,7 +370,7 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
         dif_copies(DIF_PRIOC, rq, userprio); /* COPYNORM               */
     }
 
-    agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
+    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB);
 
     return ((st ==
              AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st);
@@ -419,7 +419,7 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
     }
 
     agc_status_t st =
-        dif_witchone((face == 0) ? PIN_JOB_XCHSLEEPM : PIN_JOB_XCHSLEEPN);
+        dif_witchone((face == 0) ? AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN);
 
     f4_down((uint16_t) (k_genmask[face + 1] & DIF_IDLESLEP));
     f4_up((face == 0) ? DIF_MRUPTFLG : DIF_NRUPTFLG);
@@ -574,7 +574,7 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
         return (dif_gosleeps(DIF_NORMC));
     }
 
-    agc_status_t st = dif_witchone(PIN_JOB_ENDINST);
+    agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB);
 
     return ((st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
             st);                       /* PLAYJUM1 */
@@ -616,7 +616,7 @@ static agc_status_t dif_cleanend(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_findvac(PIN_PRIO32, PIN_JOB_JAMTERM);
+    agc_status_t st = agc_exec_findvac(PIN_PRIO32, AGC_JOB_JAMTERM);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -659,7 +659,7 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
     g_idle.copmpac  = c; /* COPMPAC                */
     g_idle.userprio = userprio;
 
-    return (pin_endidle(PIN_JOB_TERMATE, PIN_JOB_PROCEED, PIN_JOB_IDLERET3));
+    return (pin_endidle(AGC_JOB_TERMATE, AGC_JOB_PROCEED, AGC_JOB_IDLERET3));
 }
 
 /* REST: the display system is busy. If someone is in ENDIDLE the display
@@ -672,8 +672,8 @@ static agc_status_t dif_rest(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    static const agc_job_id_t nvcadr[3] = {PIN_JOB_REDOPRIO, PIN_JOB_MARKPLAY,
-                                           PIN_JOB_PLAYJUM1};
+    static const agc_job_id_t nvcadr[3] = {AGC_JOB_REDOPRIO, AGC_JOB_MARKPLAY,
+                                           AGC_JOB_PLAYJUM1};
 
     if (!AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
@@ -888,18 +888,18 @@ static agc_status_t dif_normret(int outhere)
     if ((f & DIF_BITS5_11) != 0u)
     { /* MARKWAKE       */
         f4_down(DIF_BITS5_11);
-        st = agc_exec_job_wake(PIN_JOB_MARKPLAY);
+        st = agc_exec_job_wake(AGC_JOB_MARKPLAY);
     }
     else if ((f & DIF_BITS4_10) != 0u)
     { /* NORMWAKE       */
         f4_down(DIF_BITS4_10);
-        st = agc_exec_job_wake(PIN_JOB_PLAYJUM1);
+        st = agc_exec_job_wake(AGC_JOB_PLAYJUM1);
     }
     else if ((g_cls[DIF_NORMC].flags & DIF_CADRMASK) == 0u &&
              g_cls[DIF_NORMC].nvword != 0u)
     {
         agc_inhint();
-        st = agc_exec_novac(PIN_PRIO15, PIN_JOB_PLAYJUM1);
+        st = agc_exec_novac(PIN_PRIO15, AGC_JOB_PLAYJUM1);
         agc_relint();
     }
 
@@ -1080,7 +1080,10 @@ agc_status_t agc_dsky_pinbrnch(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_relint(); /* RELINT         */
+    if (agc_interrupts_inhibited())
+    {
+        agc_relint(); /* RELINT (for GOPIN users; a no-op when enabled) */
+    }
 
     return (pin_pinbrnch());
 }
@@ -1264,8 +1267,8 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 
     agc_inhint();
     agc_status_t st = ((rq->flags & DIF_FLASH) != 0u) ?
-                      agc_exec_findvac(prio, PIN_JOB_MAKEPLAY) :
-                      agc_exec_novac(prio, PIN_JOB_MAKEPLAY);
+                      agc_exec_findvac(prio, AGC_JOB_MAKEPLAY) :
+                      agc_exec_novac(prio, AGC_JOB_MAKEPLAY);
 
     if (st == AGC_STATUS_OK)
     {
@@ -1315,6 +1318,15 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     if (k->src == 1u)
     {
         rq.vn = 0; /* CAF ZERO       */
+
+        if (cont == NULL)
+        { /* CLEANDSP / KLEENEX: if a priority or mark display makes the
+           * job sleep (GOSLEEPS), it ends when woken (the C caller has
+           * already gone on: DEVIATION, the AGC returns after the wait). */
+            rq.cadr.terminate = AGC_JOB_ENDOFJOB;
+            rq.cadr.proceed   = AGC_JOB_ENDOFJOB;
+            rq.cadr.enter     = AGC_JOB_ENDOFJOB;
+        }
     }
     else if (k->src == 2u)
     {
@@ -1330,8 +1342,9 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     }
     else if (k->src == 3u)
     {
-        agc_erase_set_option1(
-            pin_sp_from_ones((uint16_t) (vn_or_value & PIN_WORD))); /* PURRS4 */
+        agc_erase_set_option1(0,
+                              pin_sp_from_ones((uint16_t) (vn_or_value &
+                                                           PIN_WORD))); /* PURRS4 */
         rq.vn = agc_dsky_vn(4, 6); /* V04N06         */
     }
 

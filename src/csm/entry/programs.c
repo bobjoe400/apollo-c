@@ -24,13 +24,12 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_internal.h"
 #include "agc/csm/entry_lexicon.h"
-#include "agc/csm/entry_pending.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
@@ -43,27 +42,11 @@
 /* P61/P62 module erasables (EBANK6/7).                                   */
 static agc_job_id_t imu_check_return_job =
     AGC_JOB_NONE;                      /* 60GENRET return point  */
-static agc_sp_t  s61dt;                /* S61DT waitlist dt for 4.43, cs      */
 static agc_dp_t  entry_preparation_mm; /* MM: PIPTIME of RONE/VONE, cs B28    */
 static agc_vec_t urone;                /* URONE  UNIT(RONE)/2                 */
 static agc_vec_t urh;                  /* URH    rotated UR/2 (FISHCALC)      */
 static agc_tff_t
     entry_preparation_tff; /* TFF push list (RONE, VONE, ...)     */
-
-agc_sp_t agc_erase_s61dt(void)
-{
-    if (!AGC_ASSERT(s61dt >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(s61dt <= 16383))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (s61dt);
-}
 
 /* Request a display; "R" kinds return at once (the job goes on).        */
 static agc_status_t entry_flash(agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
@@ -759,14 +742,15 @@ agc_status_t agc_job_entry_imu_check_extrapolated(agc_job_ctx_t *ctx)
     avg->rn1      = out.rn1; /* RN1 VN1 PIPTIME1       */
     avg->vn1      = out.vn1;
     avg->piptime1 = out.piptime1;
-    s61dt         = agc_dp_low(out.dt); /* CA MPAC +1 TS S61DT    */
+    agc_sp_t dt61 = agc_dp_low(out.dt); /* CA MPAC +1 TS S61DT    */
 
-    if (!AGC_ASSERT(s61dt > 0))
+    if (!AGC_ASSERT(dt61 > 0))
     {
-        s61dt = 1;
+        dt61 = 1;
     }
 
-    st = agc_waitlist_call((uint16_t) s61dt, AGC_TASK_ENTRY_START_AVERAGE_G);
+    agc_erase_set_s61dt(dt61);
+    st = agc_waitlist_call((uint16_t) dt61, AGC_TASK_ENTRY_START_AVERAGE_G);
     agc_phase_change(4, 040434); /* 4.43 S61.1C            */
 
     return (st);                          /* ENDOFJOB               */

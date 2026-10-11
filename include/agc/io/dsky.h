@@ -124,6 +124,14 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out);
  * DSPTEMX = OPTIONX = DSPTEM2 +1, NORMTEM1 = DSPTEM1.                   */
 uint16_t     agc_dsky_dsptem(int index);
 agc_status_t agc_dsky_set_dsptem(int index, uint16_t word);
+/* The same buffer under the erasable names the programs use: DSPTEM1 +i
+ * (i 0..2), OPTIONX +i (i 0..2, = DSPTEM2 +1 +i), DSPTEMX (DP, cs 2^28
+ * for N16 or two whole numbers for LM N14). SP values as agc_sp_t.        */
+void     agc_erase_set_dsptem1(int index, agc_sp_t v);
+agc_sp_t agc_erase_optionx(int index);
+void     agc_erase_set_optionx(int index, agc_sp_t v);
+agc_dp_t agc_erase_dsptemx(void);
+void     agc_erase_set_dsptemx(agc_dp_t v);
 /* XREG YREG ZREG as the AGC keeps them for noun 07 (octal words).      */
 uint16_t agc_dsky_xyzreg(int index);
 /* Pinball resolves the noun data ids that name its own erasables

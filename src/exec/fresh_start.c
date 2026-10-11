@@ -32,7 +32,6 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 #include "internal.h"
 
 #define FS_BIT15            040000u
@@ -265,16 +264,23 @@ static void startsb2(void)
     waitlist_clear_lists(); /* LST1 = NEG1/2, LST2 = ENDTASK */
     exec_clear_tables();    /* PRIORITY = -0, VACnUSE, NEWJOB */
 
-    /* delegated: DSRUPTSW (sys-misc T4RUPT)                             */
     for (int i = 0; i < FS_DSPTAB_N; i++)
     { /* DSPOFF: blank R1-R3 etc. */
         agc_erase_set_dsptab(i, FS_DSP_BLANK);
     }
 
-    /* delegated (io-pinball): DELAYLOC, R1SAVE, INLINK, DSPCNT, CADRSTOR,
-     * REQRET, CLPASS, DSPLOCK, MONSAVE, MONSAVE1, VERBREG, NOUNREG,
-     * DSPLIST, NOUT, DSPCOUNT; (sys-misc) EXTVBACT, SELFRET; (imu)
-     * ATTCADR, LGYRO; LM (prog-rendz) SAMPLIM.                          */
+    /* io-pinball: DELAYLOC, R1SAVE, INLINK, DSPCNT, CADRSTOR, REQRET,
+     * CLPASS, DSPLOCK, MONSAVE, MONSAVE1, VERBREG, NOUNREG, DSPLIST, NOUT,
+     * DSPCOUNT; sys-misc DELAYLOC, DSRUPTSW, EXTVBACT (exec_up_startsb2).
+     * Not reset here (no C storage of their own): SELFRET, ATTCADR, LGYRO,
+     * SAMPLIM.                                                          */
+    agc_status_t su = exec_up_startsb2();
+
+    if (!AGC_ASSERT(su == AGC_STATUS_OK))
+    {
+        return;
+    }
+
     agc_erase_set_markstat(0);
     exec_clear_modecadr();                    /* IMUCADR OPTCADR RADCADR */
     agc_flagword_set(4, 0); /* kill interface displays */
@@ -442,17 +448,23 @@ static void dofstrt1_lm(void)
     }
 }
 
-static void dofstart(void)
+static void dofstart(bool slap1)
 {
     if (is_lm())
     {
         chan_write(AGC_CHAN_DSALMOUT, FS_BIT14); /* insure engine is off */
-        /* delegated (guid-landing): THRUST = -0                         */
         dofstrt1_lm();
     }
     else
     {
         dofstart_csm();
+    }
+
+    agc_status_t st = exec_up_dofstart(slap1); /* other modules' erasables */
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
     }
 
     if (!AGC_ASSERT(restreg == FS_PRIO30))
@@ -492,7 +504,7 @@ static bool lightset(void)
     }
 
     startsub();
-    dofstart();
+    dofstart(false);
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
     {
@@ -599,7 +611,13 @@ static void goprog_csm_tail(void)
     agc_status_t st = AGC_STATUS_OK;
 
     agc_flag_clear(AGC_FLAG_INTFLAG); /* RASFLAG INTFLBIT     */
-    /* delegated (imu/prog-align): OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
+    st = exec_up_goprog_optics(); /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return;
+    }
+
     agc_erase_set_imodes33(
         (uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     uint16_t old = agc_erase_dsptab(FS_LAMPWORD);
@@ -687,7 +705,7 @@ agc_status_t agc_restart_goprog(void)
         if ((ch33 & FS_BIT15) != 0U && (ch33 & FS_BIT14) == 0U)
         {
             startsub();
-            dofstart();
+            dofstart(false);
             agc_relint();
 
             return (AGC_STATUS_OK);
@@ -811,7 +829,7 @@ agc_status_t agc_fresh_start_slap1(void)
     }
 
     redoctr = 0;
-    dofstart();
+    dofstart(true);
     agc_relint();
 
     if (!AGC_ASSERT(ercount == 0U))
@@ -831,7 +849,7 @@ agc_status_t agc_fresh_dofstart(void)
     }
 
     agc_inhint();
-    dofstart();
+    dofstart(false);
     agc_relint();
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))

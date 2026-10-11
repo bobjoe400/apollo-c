@@ -272,5 +272,5 @@ agc_status_t agc_job_target_delta_v_end(agc_job_ctx_t *ctx)
         agc_erase_set_mrkbuf2(0, -1); /* NEGONE        */
     }
 
-    return (rz_gotopooh());
+    return (agc_exec_gotopooh());
 }

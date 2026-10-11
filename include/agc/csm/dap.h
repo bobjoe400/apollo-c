@@ -226,8 +226,8 @@ void         agc_csm_dap_massprop(void); /* MASSPROP                  */
 void         agc_csm_dap_fixcw(void);   /* FIXCW (MASSPROP +)        */
 void         agc_csm_dap_zerojet(void); /* ZEROJET                   */
 agc_status_t agc_csm_tvc_preswtch(void); /* PRESWTCH (V46 CSM/LM switch-over) */
-agc_status_t agc_csm_dap_setmaxdb(void); /* SETMAXDB (P40-P47 p.687)  */
-agc_status_t agc_csm_dap_setmindb(void); /* SETMINDB (P40-P47 p.687)  */
+void         agc_csm_dap_setmaxdb(void); /* SETMAXDB (P40-P47 p.687)  */
+void         agc_csm_dap_setmindb(void); /* SETMINDB (P40-P47 p.687)  */
 /* RCSDAPON +1 (R00TOP00 entry): TIME5 word supplied by the caller.       */
 agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word);
 /* NEEDLER with the errors given (stored in AK..AK2 first); init sets

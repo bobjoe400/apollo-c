@@ -15,19 +15,19 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
-#define IMODES30_IMU_OFF ((uint16_t) 0400) /* BIT9                           */
-#define ALM_IMU_OFF      ((agc_alarm_code_t) 0210)
-#define CHK_ACQUIRE      ((uint16_t) 015)   /* OCT15                          */
-#define PH_P51           ((uint16_t) 04024) /* OCT 04024                      */
-#define PH_P51B          ((uint16_t) 00014) /* OCT 00014                      */
-#define VN_GIMBALS       ALIGN_VN(6, 22)    /* V06N22                         */
-#define VN_COARSE_VERB   ALIGN_VN(41, 0)    /* V41K VN 4100                   */
+#define IMODES30_IMU_OFF       ((uint16_t) 0400) /* BIT9                           */
+#define ALM_IMU_OFF            ((agc_alarm_code_t) 0210)
+#define CHK_ACQUIRE            ((uint16_t) 015) /* OCT15                          */
+#define PH_ORIENTATION         ((uint16_t) 04024) /* OCT 04024                      */
+#define PH_ORIENTATION_RESTART ((uint16_t) 00014) /* OCT 00014                      */
+#define VN_GIMBALS             ALIGN_VN(6, 22) /* V06N22                         */
+#define VN_COARSE_VERB         ALIGN_VN(41, 0) /* V41K VN 4100                   */
 
-static agc_status_t p51_phase(void)
+static agc_status_t orientation_phase(void)
 {
-    const agc_status_t st = align_phase4(PH_P51);
+    const agc_status_t st = align_phase4(PH_ORIENTATION);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -114,7 +114,7 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = p51_phase();
+    agc_status_t st = orientation_phase();
 
     for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
     {
@@ -177,7 +177,7 @@ agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st = p51_phase();
+    const agc_status_t st = orientation_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -195,7 +195,7 @@ agc_status_t agc_job_lm_orientation_mark_setup(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = align_phase4(PH_P51B);
+    agc_status_t st = align_phase4(PH_ORIENTATION_RESTART);
 
     if (st == AGC_STATUS_OK)
     {
@@ -220,7 +220,7 @@ agc_status_t agc_job_lm_orientation_mark_star(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = p51_phase();
+    agc_status_t st = orientation_phase();
 
     if (st == AGC_STATUS_OK)
     {
@@ -262,7 +262,7 @@ agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
     }
 
     agc_align_ram_t   *ram = agc_align_ram();
-    const agc_status_t st  = p51_phase();
+    const agc_status_t st  = orientation_phase();
 
     if (st != AGC_STATUS_OK)
     {

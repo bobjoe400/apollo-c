@@ -27,22 +27,6 @@
 #include "agc/guidance/guidance.h"
 #include "agc/lm/landing.h"
 
-/* INTEGRATION: the THRUST counter has no accessor in include/agc yet
- * (include/agc/agc_landing_pending.h declares it for state-flags). Until it does,
- * this test supplies it and records the last command; set
- * LANDING_TEST_FAKE_THRUST to 0 once libagc defines it.                 */
-#define LANDING_TEST_FAKE_THRUST 1
-#if LANDING_TEST_FAKE_THRUST
-void agc_erase_set_thrust(agc_sp_t pulses);
-static agc_sp_t g_thrust;
-
-void agc_erase_set_thrust(agc_sp_t pulses)
-{
-    g_thrust = pulses;
-}
-
-#endif
-
 #define BITPERF 0.0797959872 /* throttle pulses per newton            */
 
 static int g_checks;
@@ -121,9 +105,7 @@ static void test_throttle_band(void)
     int expected = (int) lround(fc - fp);
 
     CHECK(abs((int) t->pseudo55 - expected) <= 1);
-#if LANDING_TEST_FAKE_THRUST
-    CHECK(g_thrust == t->pseudo55);
-#endif
+    CHECK(agc_erase_thrust() == t->pseudo55);
     CHECK(t->fcold == agc_dp_high(t->fcodd));
     (void) printf("throttle: FC %.1f FP %.1f -> %d pulses (expect %d)\n",
                   fc_got, fp_got, (int) t->pseudo55, expected);

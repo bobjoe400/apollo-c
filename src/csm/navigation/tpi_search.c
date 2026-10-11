@@ -660,12 +660,7 @@ agc_status_t agc_job_tpi_search_compute(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_ALARM)
     { /* ALARUMS      */
-        st = rz_alarm((agc_alarm_code_t) AGC_ALARM_00124);
-
-        if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
-        {
-            return (st);
-        }
+        agc_alarm((agc_alarm_code_t) AGC_ALARM_00124);
 
         return (tps_vncomp17(ctx, 5U, 9U, AGC_JOB_GOTOPOOH));
     }

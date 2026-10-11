@@ -72,6 +72,39 @@ static agc_w2_t sqrt_words(agc_w3_t m, bool *abort)
     return (agc_w3_top(agc_w_genscr(t, shift, false)));
 }
 
+/* The interpreter alarm the last SQRT / ASIN / ACOS raised (01302 ABORT,
+ * 01301 ALARM), held for the executive: core cannot call agc_alarm /
+ * agc_poodoo (layering), so exec raises it when the job or task that
+ * did the arithmetic returns (agc_interp_take_alarm).                     */
+static uint16_t g_interp_alarm;
+
+static void interp_flag_alarm(uint16_t code)
+{
+    if (!AGC_ASSERT(code == 01301u || code == 01302u))
+    {
+        return;
+    }
+
+    if (g_interp_alarm != 01302u)
+    { /* the abort wins over an alarm         */
+        g_interp_alarm = code;
+    }
+}
+
+uint16_t agc_interp_take_alarm(void)
+{
+    uint16_t code = g_interp_alarm;
+
+    g_interp_alarm = 0;
+
+    if (!AGC_ASSERT(code == 0u || code == 01301u || code == 01302u))
+    {
+        return (0);
+    }
+
+    return (code);
+}
+
 agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
     bool     abort = false;
@@ -104,9 +137,9 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
     }
 
     if (agc_dp_sqrt_chk(ip, a, &r) != AGC_STATUS_OK)
-    {
-        /* ABORT 01302 (a < -2^-14): core cannot raise it (layering); a
-         * caller that must abort uses agc_dp_sqrt_chk. Result 0.         */
+    { /* ABORT 01302 (a < -2^-14): raised by exec when the job returns */
+        interp_flag_alarm(01302u);
+
         return (0);
     }
 
@@ -389,9 +422,9 @@ agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
     }
 
     if (agc_dp_acos_chk(ip, a, &r) != AGC_STATUS_OK)
-    {
-        /* ALARM 01301 (|a| > 1/2): core cannot raise it (layering); a
-         * caller that alarms uses agc_dp_acos_chk. r is the limit value. */
+    { /* ALARM 01301 (|a| > 1/2), raised by exec; r is the limit value */
+        interp_flag_alarm(01301u);
+
         return (r);
     }
 
@@ -413,9 +446,9 @@ agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
     }
 
     if (agc_dp_asin_chk(ip, a, &r) != AGC_STATUS_OK)
-    {
-        /* ALARM 01301 (|a| > 1/2): core cannot raise it (layering); a
-         * caller that alarms uses agc_dp_asin_chk. r is the limit value. */
+    { /* ALARM 01301 (|a| > 1/2), raised by exec; r is the limit value */
+        interp_flag_alarm(01301u);
+
         return (r);
     }
 

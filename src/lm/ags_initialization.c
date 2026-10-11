@@ -14,7 +14,9 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/io/service.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define ALM_NO_REFSMMAT ((agc_alarm_code_t) 0220)
 #define VN_AGS_TIME     ALIGN_VN(6, 16)   /* V06N16 VN 0616                */

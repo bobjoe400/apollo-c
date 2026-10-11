@@ -1,0 +1,880 @@
+# registry.tsv -- job/task registry (tools/gen_registry.py input).
+# kind	id	csm_handler	lm_handler	group	comment
+job	AGC_JOB_ALFLT1	agc_csm_prelaunch_estims	-	csm	5.21
+job	AGC_JOB_COMPVER	agc_csm_prelaunch_gcompver	-	csm	V65 GCOMPVER (4.15)
+job	AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE	agc_csm_prelaunch_azmthcg1	-	csm	AZMTHCG1 (V78)
+job	AGC_JOB_RESCHNG	agc_csm_prelaunch_restaier	-	csm	5.33
+job	AGC_JOB_RESTAIER	agc_csm_prelaunch_restaier	-	csm	5.27
+job	AGC_JOB_RESTEST1	agc_csm_prelaunch_restaier	-	csm	5.15
+job	AGC_JOB_RESTEST3	agc_csm_prelaunch_restaier	-	csm	5.25
+job	AGC_JOB_RSTGTS1	agc_csm_prelaunch_estims	-	csm	5.7  prelaunch
+job	AGC_JOB_WTLISTNT	agc_csm_prelaunch_chkcomed	-	csm	5.13
+job	AGC_JOB_CSM_FINE_ALIGN	agc_job_csm_fine_align	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED	agc_job_csm_fine_align_data_checked	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_MARKED	agc_job_csm_fine_align_marked	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_STAR_ACCEPTED	agc_job_csm_fine_align_star_accepted	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_STAR_AT_MARK	agc_job_csm_fine_align_star_at_mark	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_STAR_CODE	agc_job_csm_fine_align_star_code	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_STAR_DISPLAY	agc_job_csm_fine_align_star_display	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED	agc_job_csm_fine_align_star_located	-	csm/alignment	
+job	AGC_JOB_CSM_FINE_ALIGN_TORQUED	agc_job_csm_fine_align_torqued	-	csm/alignment	
+job	AGC_JOB_CSM_LANDING_SITE_ACCEPTED	agc_job_csm_landing_site_accepted	-	csm/alignment	
+job	AGC_JOB_CSM_LANDING_SITE_AXES	agc_job_csm_landing_site_axes	-	csm/alignment	
+job	AGC_JOB_CSM_LANDING_SITE_DISPLAY	agc_job_csm_landing_site_display	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_ACQUIRE_DISPLAY	agc_job_csm_orientation_acquire_display	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_COARSE	agc_job_csm_orientation_coarse	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_COARSE_DONE	agc_job_csm_orientation_coarse_done	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_COARSE_START	agc_job_csm_orientation_coarse_start	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_COARSE_VERB	agc_job_csm_orientation_coarse_verb	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_DATA_CHECKED	agc_job_csm_orientation_data_checked	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_FINE_DONE	agc_job_csm_orientation_fine_done	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_FIRST_STAR	agc_job_csm_orientation_first_star	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_MARKED	agc_job_csm_orientation_marked	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_MARK_SETUP	agc_job_csm_orientation_mark_setup	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_MARK_STAR	agc_job_csm_orientation_mark_star	-	csm/alignment	
+job	AGC_JOB_CSM_ORIENTATION_SECOND_STAR	agc_job_csm_orientation_second_star	-	csm/alignment	
+job	AGC_JOB_CSM_REALIGN_PICK_STARS	agc_job_csm_realign_pick_stars	-	csm/alignment	
+job	AGC_JOB_CSM_REALIGN_STARS_LOCATED	agc_job_csm_realign_stars_located	-	csm/alignment	
+job	AGC_JOB_CSM_REALIGN_STAR_SELECTION	agc_job_csm_realign_star_selection	-	csm/alignment	
+job	AGC_JOB_ATERJOB	agc_job_aterjob	-	csm/burns	ATERJOB
+job	AGC_JOB_ATRESET_AFTER_DELAY	agc_job_atreset_after_delay	-	csm/burns	ATRESET after DELAYJOB 6
+job	AGC_JOB_AVETOMID	agc_job_avetomid_csm	agc_job_avetomid_lm	csm/burns	
+job	AGC_JOB_AVGEND	agc_job_avgend_csm	agc_job_avgend_lm	csm/burns	AVGEND
+job	AGC_JOB_CALC_DELTA_V_BODY	agc_job_calc_delta_v_body_csm	agc_job_calc_delta_v_body_lm	csm/burns	
+job	AGC_JOB_CALC_DELTA_V_RESTART	agc_job_calc_delta_v_restart	-	csm/burns	
+job	AGC_JOB_CALC_VG_BODY	agc_job_calc_vg_body_csm	agc_job_calc_vg_body_lm	csm/burns	CALCN85
+job	AGC_JOB_CLOCKJOB	agc_job_clockjob	agc_job_clokjob	csm/burns	
+job	AGC_JOB_COPY40_9	agc_job_copy40_9	-	csm/burns	
+job	AGC_JOB_CROSS_PRODUCT_RESTART	agc_job_cross_product_restart	-	csm/burns	
+job	AGC_JOB_DAPFIG	agc_job_dapfig	-	csm/burns	DAPFIG
+job	AGC_JOB_DYNDISP	agc_job_dyndisp	agc_job_dynmdisp	csm/burns	
+job	AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR	agc_job_earth_orbit_insertion_monitor	-	csm/burns	
+job	AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_EPHEMERIS	agc_job_earth_orbit_insertion_monitor_ephemeris	-	csm/burns	3.13
+job	AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_PREREAD	agc_job_earth_orbit_insertion_monitor_preread	-	csm/burns	P11 3.x: TEPHEM copy, on
+job	AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_RESTART	agc_job_earth_orbit_insertion_monitor_restart	-	csm/burns	3.11
+job	AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_SETUP	agc_job_earth_orbit_insertion_monitor_setup	-	csm/burns	P11 after PREREAD1
+job	AGC_JOB_ENDLAMB	agc_job_endlamb	-	csm/burns	
+job	AGC_JOB_ENGINE_ENABLE_BYPASS	agc_job_engine_enable_bypass	-	csm/burns	V99E
+job	AGC_JOB_ENGINE_ENABLE_PROCEED	agc_job_engine_enable_proceed	-	csm/burns	V99P
+job	AGC_JOB_ENGINE_ENABLE_TERMINATE	agc_job_engine_enable_terminate	-	csm/burns	V99T
+job	AGC_JOB_ENGINE_FAIL_PROCEED	agc_job_engine_fail_proceed	-	csm/burns	V97P
+job	AGC_JOB_ENGINE_FAIL_REIGNITE	agc_job_engine_fail_reignite	-	csm/burns	V97E
+job	AGC_JOB_ENGINE_FAIL_TERMINATE	agc_job_engine_fail_terminate	-	csm/burns	V97T
+job	AGC_JOB_EXTERNAL_DELTA_V_REFTEST	agc_job_external_delta_v_reftest	-	csm/burns	REFTEST
+job	AGC_JOB_GIMBAL_TEST_AND_TRIM	agc_job_gimbal_test_and_trim	-	csm/burns	TST,TRIM
+job	AGC_JOB_GIMBAL_TRIM_ONLY	agc_job_gimbal_trim_only	-	csm/burns	TRIMONLY
+job	AGC_JOB_MARKS_TFI_MGA_DISPLAY	agc_job_marks_tfi_mga_display	-	csm/burns	DISP45
+job	AGC_JOB_MARKS_TFI_MGA_DONE	agc_job_marks_tfi_mga_done	-	csm/burns	END45
+job	AGC_JOB_MATRXJOB	agc_job_matrxjob	-	csm/burns	3.7
+job	AGC_JOB_NORMLIZE	agc_job_normlize_csm	agc_job_normlize_lm	csm/burns	5.2  guid-powered
+job	AGC_JOB_POST41	agc_job_post41	-	csm/burns	
+job	AGC_JOB_POSTBURN	agc_job_postburn_csm	agc_job_postburn_lm	csm/burns	CSM 4.35, LM 4.13
+job	AGC_JOB_PREBURN_BLANK_DSKY	agc_job_preburn_blank_dsky	-	csm/burns	P40BLNKR
+job	AGC_JOB_PREBURN_START_CLOCK	agc_job_preburn_start_clock	-	csm/burns	
+job	AGC_JOB_PREBURN_STATE_VECTOR	agc_job_preburn_state_vector	agc_job_preburn_state_vector_lm	csm/burns	4.23 P40S/SV
+job	AGC_JOB_RCS_BURN	agc_job_rcs_burn_csm	agc_job_rcs_burn_lm	csm/burns	
+job	AGC_JOB_REDO40_9	agc_job_redo40_9	-	csm/burns	1.5  REDO40.9
+job	AGC_JOB_RETURN_TO_EARTH	agc_job_return_to_earth	-	csm/burns	P37 (V37)
+job	AGC_JOB_RETURN_TO_EARTH_ALARM_DISPLAY	agc_job_return_to_earth_alarm_display	-	csm/burns	P370ALRM V05N09
+job	AGC_JOB_RETURN_TO_EARTH_BIASED_TIG_DISPLAY	agc_job_return_to_earth_biased_tig_display	-	csm/burns	P37T V06N33
+job	AGC_JOB_RETURN_TO_EARTH_CONIC_SEARCH	agc_job_return_to_earth_conic_search	-	csm/burns	RTE299 .. P37E
+job	AGC_JOB_RETURN_TO_EARTH_DELTA_V_DISPLAY	agc_job_return_to_earth_delta_v_display	-	csm/burns	RTEVN V06N81
+job	AGC_JOB_RETURN_TO_EARTH_ENTRY_CONDITIONS_DISPLAY	agc_job_return_to_earth_entry_conditions_display	-	csm/burns	RTEVN V06N60
+job	AGC_JOB_RETURN_TO_EARTH_ENTRY_DISPLAY	agc_job_return_to_earth_entry_display	-	csm/burns	V06N60 GAMMAEI/DV input
+job	AGC_JOB_RETURN_TO_EARTH_IGNITION_TIME	agc_job_return_to_earth_ignition_time	-	csm/burns	P37Q/R/T biased TIG
+job	AGC_JOB_RETURN_TO_EARTH_OPTION_DISPLAY	agc_job_return_to_earth_option_display	-	csm/burns	P37N V04N06
+job	AGC_JOB_RETURN_TO_EARTH_PRECISION	agc_job_return_to_earth_precision	-	csm/burns	RTE505, PREC100
+job	AGC_JOB_RETURN_TO_EARTH_PRECISION_RESUME	agc_job_return_to_earth_precision_resume	-	csm/burns	PREC100 after INTSTALL
+job	AGC_JOB_RETURN_TO_EARTH_PROPULSION_OPTION	agc_job_return_to_earth_propulsion_option	-	csm/burns	P37N OPTION1/2
+job	AGC_JOB_RETURN_TO_EARTH_TARGETING	agc_job_return_to_earth_targeting	-	csm/burns	RTENCK1, P37U/V
+job	AGC_JOB_RETURN_TO_EARTH_TARGET_STORE	agc_job_return_to_earth_target_store	-	csm/burns	P37W, VN1645 return
+job	AGC_JOB_RETURN_TO_EARTH_TIG_DISPLAY	agc_job_return_to_earth_tig_display	-	csm/burns	V06N33 TIG input
+job	AGC_JOB_RETURN_TO_EARTH_TRANSIT_DISPLAY	agc_job_return_to_earth_transit_display	-	csm/burns	RTEVN V06N39
+job	AGC_JOB_SERVEXIT	agc_job_servexit	agc_job_servexit	csm/burns	SERVEXIT (AVGEXIT)
+job	AGC_JOB_SERVICER	agc_job_servicer_csm	agc_job_servicer_lm	csm/burns	5.4  guid-powered
+job	AGC_JOB_SERV_AVERAGEG	agc_job_serv_averageg_csm	-	csm/burns	
+job	AGC_JOB_SERV_COPY	agc_job_serv_copy_csm	agc_job_serv_resume_lm	csm/burns	
+job	AGC_JOB_SERV_DVTOTUP	agc_job_serv_dvtotup_csm	agc_job_serv_resume_lm	csm/burns	
+job	AGC_JOB_SERV_EXIT	agc_csm_avgexit	agc_job_serv_resume_lm	csm/burns	
+job	AGC_JOB_SPS_BURN_AFTER_MANEUVER	agc_job_sps_burn_after_maneuver	-	csm/burns	
+job	AGC_JOB_SPS_BURN_MIN_DEADBAND	agc_job_sps_burn_min_deadband	-	csm/burns	P40MINDB
+job	AGC_JOB_SPS_BURN_RCS_TRIM	agc_job_sps_burn_rcs_trim	-	csm/burns	P40RCS
+job	AGC_JOB_STEERING	agc_job_steering_csm	agc_job_steering_lm	csm/burns	STEERING
+job	AGC_JOB_STEERING_RESTART	agc_job_steering_restart	-	csm/burns	
+job	AGC_JOB_SURELY9_RESTART	agc_job_cross_product_restart	-	csm/burns	
+job	AGC_JOB_THRUST_MONITOR	agc_job_thrust_monitor_csm	agc_job_thrust_monitor_lm	csm/burns	
+job	AGC_JOB_THRUST_MONITOR_DISPLAY	agc_job_thrust_monitor_display_csm	agc_job_thrust_monitor_display_lm	csm/burns	P47BOD
+job	AGC_JOB_THRUST_MONITOR_RESET	agc_job_thrust_monitor_reset_csm	agc_job_thrust_monitor_reset_lm	csm/burns	4.2 second part
+job	AGC_JOB_TIGNOW	agc_job_tignow_csm	agc_job_tignow_lm	csm/burns	TIGNOW
+job	AGC_JOB_TIMEBURN	agc_job_timeburn_csm	agc_job_timeburn_lm	csm/burns	CSM 3.3, LM 3.5 guid-powered
+job	AGC_JOB_UPDATEVG_RESTART	agc_job_cross_product_restart	-	csm/burns	
+job	AGC_JOB_VHHDOT	agc_job_vhhdot	-	csm/burns	VHHDOT (AVGEXIT in P11)
+job	AGC_JOB_VTOGAIN	agc_job_vtogain_csm	agc_job_vtogain_lm	csm/burns	S40.9
+job	AGC_JOB_AMBGUPDT	agc_job_ambgupdt	-	csm/dap	job: AMGB matrix, PRIO34
+job	AGC_JOB_STRKTSTI	agc_job_strktsti	-	csm/dap	job: V68 stroke test init
+job	AGC_JOB_CM_DAPON_WAIT	agc_job_cm_dapon_wait	-	csm/entry	NOTYET after DELAYJOB
+job	AGC_JOB_CM_POSE	agc_job_cm_pose	-	csm/entry	CM/POSE (AVGEXIT in entry)
+job	AGC_JOB_CM_SM_SEPARATION	agc_job_cm_sm_separation	-	csm/entry	P62 (V37)
+job	AGC_JOB_CM_SM_SEPARATION_AFTER_CHECK	agc_job_cm_sm_separation_after_check	-	csm/entry	P62 after S61.1
+job	AGC_JOB_CM_SM_SEPARATION_END_HOLD	agc_job_cm_sm_separation_end_hold	-	csm/entry	P62.1 PROCEED
+job	AGC_JOB_CM_SM_SEPARATION_NEWMODE	agc_job_cm_sm_separation_newmode	-	csm/entry	P62 -3: NEWMODEX 62
+job	AGC_JOB_CM_SM_SEPARATION_PROCEED	agc_job_cm_sm_separation_proceed	-	csm/entry	P62.2 PROCEED: CM/DAPON
+job	AGC_JOB_CM_SM_SEPARATION_REQUEST	agc_job_cm_sm_separation_request	-	csm/entry	P62.2  GOPERF1R 41
+job	AGC_JOB_CM_SM_SEPARATION_TARGET_DISPLAY	agc_job_cm_sm_separation_target_display	-	csm/entry	P62.1  V06N61
+job	AGC_JOB_ENTRY_DISPLAY_PROTECT	agc_job_entry_display_protect	-	csm/entry	P61.3  PHASCHNG, ENDOFJOB
+job	AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY	agc_job_entry_final_phase_display	-	csm/entry	4.41 P67.1
+job	AGC_JOB_ENTRY_FINAL_PHASE_END	agc_job_entry_final_phase_end	-	csm/entry	P67.1 PROCEED
+job	AGC_JOB_ENTRY_IMU_AXIS_TEST	agc_job_entry_imu_axis_test	-	csm/entry	4.45 (S61.1A -1)
+job	AGC_JOB_ENTRY_IMU_CHECK_EXTRAPOLATED	agc_job_entry_imu_check_extrapolated	-	csm/entry	S61.1 after MIDTOAV2 BUSY
+job	AGC_JOB_ENTRY_IMU_CHECK_RETURN	agc_job_entry_imu_check_return	-	csm/entry	RETRN1 after DELAYJOB
+job	AGC_JOB_ENTRY_INITIALIZATION	agc_job_entry_initialization	-	csm/entry	P63 (NOVAC from WAKEP62)
+job	AGC_JOB_ENTRY_PREPARATION	agc_job_entry_preparation	-	csm/entry	P61 (V37)
+job	AGC_JOB_ENTRY_PREPARATION_COMPUTE	agc_job_entry_preparation_compute	-	csm/entry	P61.4
+job	AGC_JOB_ENTRY_PREPARATION_EMS_DISPLAY	agc_job_entry_preparation_ems_display	-	csm/entry	P61.2  V06N63
+job	AGC_JOB_ENTRY_PREPARATION_PREDICTION_DISPLAY	agc_job_entry_preparation_prediction_display	-	csm/entry	P61.1  V06N60
+job	AGC_JOB_ENTRY_PREPARATION_TARGET_DISPLAY	agc_job_entry_preparation_target_display	-	csm/entry	P61 V06N61 (S61.1 return)
+job	AGC_JOB_ENTRY_UPCONTROL_DISPLAY	agc_job_entry_upcontrol_display	-	csm/entry	4.55 P65.1
+job	AGC_JOB_ENTRY_UPCONTROL_PROCEED	agc_job_entry_upcontrol_proceed	-	csm/entry	P65.1 PROCEED
+job	AGC_JOB_PRE_HUNT	agc_job_pre_hunt	-	csm/entry	4.47 PRE-HUNT
+job	AGC_JOB_REDOPOSE	agc_job_redopose	-	csm/entry	REDOPOSE group 5 restart
+job	AGC_JOB_REFAZE10	agc_job_refaze10	-	csm/entry	REFAZE10 group 5 restart
+job	AGC_JOB_BACKUP_SIGHTING_MARK	agc_job_backup_sighting_mark	-	csm/navigation	R23CSM (V54)
+job	AGC_JOB_BACKUP_SIGHTING_MARK_REQUEST	agc_job_backup_sighting_mark_request	-	csm/navigation	R23CSM1 V53
+job	AGC_JOB_BACKUP_SIGHTING_MARK_TAKEN	agc_job_backup_sighting_mark_taken	-	csm/navigation	R23CSM1 ENTER
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION	agc_job_cislunar_midcourse_navigation	-	csm/navigation	P23
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_CALIBRATE	agc_job_cislunar_midcourse_navigation_calibrate	-	csm/navigation	P23.55/56
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_CHECKLIST	agc_job_cislunar_midcourse_navigation_checklist	-	csm/navigation	P23.31
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT	agc_job_cislunar_midcourse_navigation_ident	-	csm/navigation	P23.06
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT_CHECK	agc_job_cislunar_midcourse_navigation_ident_check	-	csm/navigation	P23.15
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_INCORPORATE	agc_job_cislunar_midcourse_navigation_incorporate	-	csm/navigation	P23.85
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED	agc_job_cislunar_midcourse_navigation_maneuvered	-	csm/navigation	after R60CSM
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARKED	agc_job_cislunar_midcourse_navigation_marked	-	csm/navigation	P23.60
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY	agc_job_cislunar_midcourse_navigation_mark_display	-	csm/navigation	V05N71
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS	agc_job_cislunar_midcourse_navigation_optics	-	csm/navigation	P23.57
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE	agc_job_cislunar_midcourse_navigation_optics_done	-	csm/navigation	after R52
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET	agc_job_cislunar_midcourse_navigation_planet	-	csm/navigation	LDPLANET
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT	agc_job_cislunar_midcourse_navigation_point	-	csm/navigation	V94ENTER
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT_AXES	agc_job_cislunar_midcourse_navigation_point_axes	-	csm/navigation	V94ENTER POINTAXS
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE	agc_job_cislunar_midcourse_navigation_save	-	csm/navigation	P23.65
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SIGHT	agc_job_cislunar_midcourse_navigation_sight	-	csm/navigation	P23.00 R53
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR	agc_job_cislunar_midcourse_navigation_star	-	csm/navigation	P23.30
+job	AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_UPDATE	agc_job_cislunar_midcourse_navigation_update	-	csm/navigation	R23.7
+job	AGC_JOB_OPTICS_CALIBRATION	agc_job_optics_calibration	-	csm/navigation	R57A
+job	AGC_JOB_OPTICS_CALIBRATION_BIAS	agc_job_optics_calibration_bias	-	csm/navigation	R57B
+job	AGC_JOB_OPTICS_CALIBRATION_END	agc_job_optics_calibration_end	-	csm/navigation	ENDR57
+job	AGC_JOB_OPTICS_CALIBRATION_END_MARK	agc_job_optics_calibration_end_mark	-	csm/navigation	ENDMARK PRIO14
+job	AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY	agc_job_optics_calibration_mark_display	-	csm/navigation	
+job	AGC_JOB_ORBITAL_NAVIGATION	agc_job_orbital_navigation	-	csm/navigation	P22 (by vehicle)
+job	AGC_JOB_ORBITAL_NAVIGATION_ADVANCED_OPTICS	agc_job_orbital_navigation_advanced_optics	-	csm/navigation	DE-GR-50
+job	AGC_JOB_ORBITAL_NAVIGATION_CODE	agc_job_orbital_navigation_code	-	csm/navigation	S22DSPPA
+job	AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK	agc_job_orbital_navigation_code_check	-	csm/navigation	S22DSPPA PROCEED
+job	AGC_JOB_ORBITAL_NAVIGATION_DELTA_ACCEPT	agc_job_orbital_navigation_delta_accept	-	csm/navigation	S22BOX42
+job	AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE	agc_job_orbital_navigation_landing_site	-	csm/navigation	P22SUBRB
+job	AGC_JOB_ORBITAL_NAVIGATION_LANDMARK	agc_job_orbital_navigation_landmark	-	csm/navigation	
+job	AGC_JOB_ORBITAL_NAVIGATION_MARK	agc_job_orbital_navigation_mark	-	csm/navigation	S22NXTIN
+job	AGC_JOB_ORBITAL_NAVIGATION_MARKED	agc_job_orbital_navigation_marked	-	csm/navigation	DOV5N71
+job	AGC_JOB_ORBITAL_NAVIGATION_MARKS	agc_job_orbital_navigation_marks	-	csm/navigation	S22.1
+job	AGC_JOB_ORBITAL_NAVIGATION_MARKS_EXIT	agc_job_orbital_navigation_marks_exit	-	csm/navigation	S22EXEX
+job	AGC_JOB_ORBITAL_NAVIGATION_OPTICS	agc_job_orbital_navigation_optics	-	csm/navigation	CALLR52
+job	AGC_JOB_ORBITAL_NAVIGATION_ORBIT_DISPLAY	agc_job_orbital_navigation_orbit_display	-	csm/navigation	V06N45
+job	AGC_JOB_ORBITAL_NAVIGATION_OVER	agc_job_orbital_navigation_over	-	csm/navigation	P22OVER
+job	AGC_JOB_ORBITAL_NAVIGATION_PROCESS	agc_job_orbital_navigation_process	-	csm/navigation	PROG22C
+job	AGC_JOB_ORBITAL_NAVIGATION_SITE	agc_job_orbital_navigation_site	-	csm/navigation	S22F244
+job	AGC_JOB_ORBITAL_NAVIGATION_SITE_ACCEPT	agc_job_orbital_navigation_site_accept	-	csm/navigation	RLS
+job	AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK	agc_job_orbital_navigation_site_check	-	csm/navigation	P22SUBRB PROCEED
+job	AGC_JOB_ORBITAL_NAVIGATION_SITE_DONE	agc_job_orbital_navigation_site_done	-	csm/navigation	S22.981X
+job	AGC_JOB_ORBITAL_NAVIGATION_SITE_TERMINATE	agc_job_orbital_navigation_site_terminate	-	csm/navigation	S22GTP
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM	agc_job_rendezvous_final_attitude_csm	-	csm/navigation	V89CALL (CSM)
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN	agc_job_rendezvous_final_attitude_csm_chosen	-	csm/navigation	SETPAF/RSTPAF
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE	agc_job_rendezvous_final_attitude_csm_compute	-	csm/navigation	V89RECL
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER	agc_job_rendezvous_final_attitude_csm_maneuver	-	csm/navigation	R60CSM
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION	agc_job_rendezvous_final_attitude_csm_option	-	csm/navigation	V04N06
+job	AGC_JOB_RENDEZVOUS_NAVIGATION	agc_job_rendezvous_navigation	-	csm/navigation	PROG20 = PROG22 (LM)
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK	agc_job_rendezvous_navigation_csm_check	-	csm/navigation	CONTCHK after 4 s
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE	agc_job_rendezvous_navigation_csm_integrate	-	csm/navigation	PROG20 integration
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS	agc_job_rendezvous_navigation_csm_optics	-	csm/navigation	P20R52JB
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS_DONE	agc_job_rendezvous_navigation_csm_optics_done	-	csm/navigation	after R52
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK	agc_job_rendezvous_navigation_csm_track	-	csm/navigation	PIKUP20
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM	agc_job_rendezvous_sighting_mark_csm	-	csm/navigation	
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DONE	agc_job_rendezvous_sighting_mark_done	-	csm/navigation	R21CSMA
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_END	agc_job_rendezvous_sighting_mark_end	-	csm/navigation	R21END
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REQUEST	agc_job_rendezvous_sighting_mark_request	-	csm/navigation	R21C1 V51
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA	agc_job_rendezvous_tracking_data_csm	agc_job_rendezvous_tracking_data	csm/navigation	R22LEM
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM	agc_job_rendezvous_tracking_data_csm	-	csm/navigation	R22 (CSM)
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_DISPLAY	agc_job_rendezvous_tracking_data_csm_display	-	csm/navigation	RENDISP
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE	agc_job_rendezvous_tracking_data_csm_incorporate	-	csm/navigation	REND4
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK	agc_job_rendezvous_tracking_data_csm_mark	-	csm/navigation	REND1A
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS	agc_job_rendezvous_tracking_data_csm_residuals	-	csm/navigation	RENDISP2
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED	agc_job_rendezvous_tracking_data_csm_residuals_proceed	-	csm/navigation	
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE	agc_job_rendezvous_tracking_data_csm_residuals_recycle	-	csm/navigation	
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_WAIT	agc_job_rendezvous_tracking_data_csm_residuals_wait	-	csm/navigation	RENDISP7
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE	agc_job_rendezvous_tracking_data_csm_range	-	csm/navigation	RANGERD after RADSTALL
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF	agc_job_rendezvous_tracking_data_csm_vhf	-	csm/navigation	REND3 after WAITONE
+job	AGC_JOB_TPI_SEARCH	agc_job_tpi_search	-	csm/navigation	P17
+job	AGC_JOB_TPI_SEARCH_COMPUTE	agc_job_tpi_search_compute	-	csm/navigation	S17.2, V06N58
+job	AGC_JOB_TPI_SEARCH_DISPLAY	agc_job_tpi_search_display	-	csm/navigation	VNCOMP17 again
+job	AGC_JOB_TPI_SEARCH_INPUT	agc_job_tpi_search_input	-	csm/navigation	P17.1 V06N37
+job	AGC_JOB_TPI_SEARCH_OTHER_VEHICLE	agc_job_tpi_search_other_vehicle	-	csm/navigation	P77
+job	AGC_JOB_TPI_SEARCH_RESPONSE	agc_job_tpi_search_response	-	csm/navigation	VNCOMP17 ENTER
+job	AGC_JOB_TPI_SEARCH_RESULTS	agc_job_tpi_search_results	-	csm/navigation	V06N55
+job	AGC_JOB_TPI_SEARCH_START	agc_job_tpi_search_start	-	csm/navigation	S17.1, V06N72
+job	AGC_JOB_TRACKING_ATTITUDE_CSM	agc_job_tracking_attitude_csm	-	csm/navigation	R61CSM CRS61.1
+job	AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED	agc_job_tracking_attitude_csm_maneuvered	-	csm/navigation	after R60CSM
+job	AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY	agc_job_alternate_los_angles_display	-	csm/optics	
+job	AGC_JOB_ALTERNATE_LOS_MARKED	agc_job_alternate_los_marked	-	csm/optics	
+job	AGC_JOB_ALTERNATE_LOS_MARK_REQUEST	agc_job_alternate_los_mark_request	-	csm/optics	
+job	AGC_JOB_ALTERNATE_LOS_REMARK	agc_job_alternate_los_remark	-	csm/optics	
+job	AGC_JOB_ALTERNATE_LOS_RESERVE	agc_job_alternate_los_reserve	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_POSITIONING_DELAYED	agc_job_auto_optics_positioning_delayed	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_POSITIONING_RESUME	agc_job_auto_optics_positioning_resume	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_POSITIONING_TERMINATE	agc_job_auto_optics_positioning_terminate	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_POSITIONING_TRACKED	agc_job_auto_optics_positioning_tracked	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_POSITIONING_WAIT	agc_job_auto_optics_positioning_wait	-	csm/optics	
+job	AGC_JOB_AUTO_OPTICS_SIGHTING	agc_job_auto_optics_sighting	-	csm/optics	
+job	AGC_JOB_ENTANSWR	agc_job_entanswr	-	csm/optics	
+job	AGC_JOB_MARK_COMPLETE_DISPLAY	agc_job_mark_complete_display	-	csm/optics	
+job	AGC_JOB_MARK_REDISPLAY	agc_job_mark_redisplay	-	csm/optics	
+job	AGC_JOB_MARK_REQUEST_DISPLAY	agc_job_mark_request_display	-	csm/optics	
+job	AGC_JOB_MARK_REQUEST_FLASH	agc_job_mark_request_flash	-	csm/optics	
+job	AGC_JOB_SBANDANT_CM	agc_job_sbandant_cm	-	csm/optics	
+job	AGC_JOB_SBANDANT_CM_RECYCLE	agc_job_sbandant_cm_recycle	-	csm/optics	
+job	AGC_JOB_SBAND_B5OFF	agc_job_sband_b5off	agc_job_sband_b5off	csm/optics	
+job	AGC_JOB_SIGHTING_MARK_CODE_CLEAN	agc_job_sighting_mark_code_clean	-	csm/optics	
+job	AGC_JOB_SIGHTING_MARK_CODE_DISPLAY	agc_job_sighting_mark_code_display	-	csm/optics	
+job	AGC_JOB_SIGHTING_MARK_CODE_ENTERED	agc_job_sighting_mark_code_entered	-	csm/optics	
+job	AGC_JOB_SIGHTING_MARK_MARKED	agc_job_sighting_mark_marked	-	csm/optics	
+job	AGC_JOB_TERMSXT	agc_job_termsxt	-	csm/optics	
+job	AGC_JOB_DUMMY	expr:AGC_STATUS_OK	expr:AGC_STATUS_OK	exec	
+job	AGC_JOB_ENDOFJOB	agc_job_endofjob	agc_job_endofjob	exec	
+job	AGC_JOB_GOPOODOO	agc_job_gopoodoo	agc_job_gopoodoo	exec	
+job	AGC_JOB_GOTOPOOH	agc_job_gotopooh	agc_job_gotopooh	exec	
+job	AGC_JOB_GO_IDLE_FIX	agc_job_go_idle_fix	agc_job_go_idle_fix	exec	
+job	AGC_JOB_GO_IDLE_FIX_REFLASH	agc_job_go_idle_fix_reflash	agc_job_go_idle_fix_reflash	exec	
+job	AGC_JOB_EXTERNAL_DELTA_V	agc_job_external_delta_v	agc_job_external_delta_v	guidance	P30
+job	AGC_JOB_EXTERNAL_DELTA_V_ACCEPT	agc_job_external_delta_v_accept	agc_job_external_delta_v_accept	guidance	
+job	AGC_JOB_EXTERNAL_DELTA_V_COMPUTE	agc_job_external_delta_v_compute	agc_job_external_delta_v_compute	guidance	
+job	AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV	agc_job_external_delta_v_display_dv	agc_job_external_delta_v_display_dv	guidance	
+job	AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS	agc_job_external_delta_v_display_parameters	agc_job_external_delta_v_display_parameters	guidance	PARAM30
+job	AGC_JOB_LAMBERT_AIMPOINT_COMPUTE	agc_job_lambert_aimpoint_compute_csm	agc_job_lambert_aimpoint_compute_lm	guidance	after V06N33
+job	AGC_JOB_LAMBERT_AIMPOINT_DISPLAY_DV	agc_job_lambert_aimpoint_display_dv	agc_job_lambert_aimpoint_display_dv	guidance	
+job	AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE	agc_job_lambert_aimpoint_guidance_csm	agc_job_lambert_aimpoint_guidance_lm	guidance	P31
+job	AGC_JOB_ATTITUDE_MANEUVER_ENTER	agc_job_attitude_maneuver_enter	agc_job_attitude_maneuver_enter	imu	
+job	AGC_JOB_ATTITUDE_MANEUVER_TERMINATE	agc_job_attitude_maneuver_terminate	agc_job_attitude_maneuver_terminate	imu	R60 V34 (R61TEST)
+job	AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY	agc_job_crew_defined_maneuver_display	agc_job_crew_defined_maneuver_display	imu	R62DISP (V49)
+job	AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE	agc_job_crew_defined_maneuver_gomove	agc_job_crew_defined_maneuver_gomove	imu	R62 PROCEED (GOMOVE)
+job	AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE	agc_job_crew_defined_maneuver_terminate	agc_job_crew_defined_maneuver_terminate	imu	R62 V34 / end -> ENDEXT
+job	AGC_JOB_ENDMANUV	agc_job_endmanuv	agc_job_endmanuv	imu	R60 after GOMANUR
+job	AGC_JOB_GCOMP1	agc_job_gcomp1	agc_job_gcomp1	imu	GCOMP1 (after IMUSTALL)
+job	AGC_JOB_GYRO_COMMAND_PULSE	agc_job_gyro_command_pulse	agc_job_gyro_command_pulse	imu	
+job	AGC_JOB_GYRO_COMMAND_RETRY	agc_job_gyro_command_retry	agc_job_gyro_command_retry	imu	1/GYRO after GYROBUSY
+job	AGC_JOB_KALCMAN3	agc_job_kalcman3	agc_job_kalcman3	imu	KALCMAN3
+job	AGC_JOB_LASTBIAS	agc_job_lastbias	agc_job_lastbias	imu	
+job	AGC_JOB_NBDONLY	agc_job_nbdonly	agc_job_nbdonly	imu	IMU bias drift comp (imu)
+job	AGC_JOB_NEWDELHI	agc_job_newdelhi	agc_job_newdelhi	imu	NEWDELHI
+job	AGC_JOB_REDOMANC	agc_job_redomanc	agc_job_redomanc	imu	R60 V50N18 PROCEED
+job	AGC_JOB_RELINUS	agc_job_relinus	agc_job_relinus	imu	CSM 1.7, LM 2.13
+job	AGC_JOB_CHARIN	agc_job_charin	agc_job_charin	io/dsky	
+job	AGC_JOB_DSPMMJB	agc_job_dspmmjb	agc_job_dspmmjb	io/dsky	DSPMMJOB = DSPMMJB (pinball)
+job	AGC_JOB_IDLERET3	agc_job_idleret3	agc_job_idleret3	io/dsky	
+job	AGC_JOB_INITDSP	expr:agc_dsky_initdsp()	expr:agc_dsky_initdsp()	io/dsky	X.1 display restart (pinball)
+job	AGC_JOB_JAMTERM	agc_job_jamterm	agc_job_jamterm	io/dsky	
+job	AGC_JOB_MAKEPLAY	agc_job_makeplay	agc_job_makeplay	io/dsky	
+job	AGC_JOB_MARKPLAY	agc_job_markplay	agc_job_markplay	io/dsky	
+job	AGC_JOB_MONDO	agc_job_mondo	agc_job_mondo	io/dsky	
+job	AGC_JOB_PLAYJUM1	agc_job_playjum1	agc_job_playjum1	io/dsky	
+job	AGC_JOB_PROCEED	agc_job_proceed	agc_job_proceed	io/dsky	
+job	AGC_JOB_PROCKEY	agc_job_prockey	agc_job_prockey	io/dsky	
+job	AGC_JOB_REDOPRIO	agc_job_redoprio	agc_job_redoprio	io/dsky	
+job	AGC_JOB_TERMATE	agc_job_termate	agc_job_termate	io/dsky	
+job	AGC_JOB_TSTLTS3	agc_job_tstlts3	agc_job_tstlts3	io/dsky	
+job	AGC_JOB_XCHSLEEPM	agc_job_xchsleepm	agc_job_xchsleepm	io/dsky	
+job	AGC_JOB_XCHSLEEPN	agc_job_xchsleepn	agc_job_xchsleepn	io/dsky	
+job	AGC_JOB_ATTITUDE_ERROR_ENABLE	agc_job_attitude_error_enable	agc_job_attitude_error_enable	io/verbs	V43 LM after EXDSPRET
+job	AGC_JOB_ATTITUDE_ERROR_LOAD	agc_job_attitude_error_load	agc_job_attitude_error_load	io/verbs	V43 after V25N22
+job	AGC_JOB_ATTITUDE_ERROR_TERMINATE	agc_job_attitude_error_terminate	agc_job_attitude_error_terminate	io/verbs	V43 CSM TRMATTCK
+job	AGC_JOB_CLOCK_ALIGN_UPDATE	agc_job_clock_align_update	agc_job_clock_align_update	io/verbs	V55 UPDATIME
+job	AGC_JOB_DAP_DATA_LOAD_CONFIG	agc_job_dap_data_load_config	agc_job_dap_data_load_config	io/verbs	
+job	AGC_JOB_DAP_DATA_LOAD_END	agc_job_dap_data_load_end	agc_job_dap_data_load_end	io/verbs	R03 LM ENDR03 (V34)
+job	AGC_JOB_DAP_DATA_LOAD_MASS	agc_job_dap_data_load_mass	agc_job_dap_data_load_mass	io/verbs	
+job	AGC_JOB_DAP_DATA_LOAD_NOUN46	agc_job_dap_data_load_noun46	agc_job_dap_data_load_noun46	io/verbs	R03 DONOUN46 / DAPDATA1
+job	AGC_JOB_DAP_DATA_LOAD_NOUN47	agc_job_dap_data_load_noun47	agc_job_dap_data_load_noun47	io/verbs	R03 DONOUN47 / DAPDATA2
+job	AGC_JOB_DAP_DATA_LOAD_NOUN48	agc_job_dap_data_load_noun48	agc_job_dap_data_load_noun48	io/verbs	R03 DONOUN48 / DAPDATA3
+job	AGC_JOB_DAP_DATA_LOAD_TRIM	agc_job_dap_data_load_trim	agc_job_dap_data_load_trim	io/verbs	R03 LM DPDAT3
+job	AGC_JOB_EXTENDED_VERB	agc_job_extended_verb	agc_job_extended_verb	io/verbs	GOEXTVB / LST2FAN
+job	AGC_JOB_EXTENDED_VERB_END	agc_job_extended_verb_end	agc_job_extended_verb_end	io/verbs	ENDEXT (TERMEXTV)
+job	AGC_JOB_EXTENDED_VERB_GOPIN	agc_job_extended_verb_gopin	agc_job_extended_verb_gopin	io/verbs	GOPIN (PINBRNCH)
+job	AGC_JOB_KEYBOARD_COARSE_ALIGN	agc_job_keyboard_coarse_align	agc_job_keyboard_coarse_align	io/verbs	V41 ICORK2
+job	AGC_JOB_KEYBOARD_COARSE_DRIVE	agc_job_keyboard_coarse_drive	agc_job_keyboard_coarse_drive	io/verbs	V41 IMUCOARS + IMUSTALL
+job	AGC_JOB_KEYBOARD_FINE_ALIGN	agc_job_keyboard_fine_align	agc_job_keyboard_fine_align	io/verbs	V42 after V25N93
+job	AGC_JOB_KEYBOARD_FINE_MODE	agc_job_keyboard_fine_mode	agc_job_keyboard_fine_mode	io/verbs	V42 IMUFINE + IMUSTALL
+job	AGC_JOB_KEYBOARD_GYRO_TORQUE	agc_job_keyboard_gyro_torque	agc_job_keyboard_gyro_torque	io/verbs	V42 FINEK2 (IMUPULSE)
+job	AGC_JOB_LR_POSITION_TWO_CHECK	agc_job_lr_position_two_check	agc_job_lr_position_two_check	io/verbs	V60 after RADSTALL
+job	AGC_JOB_LR_SPURIOUS_TEST_END_RESUME	agc_job_lr_spurious_test_end_resume	agc_job_lr_spurious_test_end_resume	io/verbs	R77END after 320 ms
+job	AGC_JOB_OPTICS_COARSE_DRIVE	agc_job_optics_coarse_drive	agc_job_optics_coarse_drive	io/verbs	CSM V41N91 OPTC1
+job	AGC_JOB_OPTICS_COARSE_START	agc_job_optics_coarse_start	agc_job_optics_coarse_start	io/verbs	CSM V41N91 after EXDSPRET
+job	AGC_JOB_RADAR_TEST_AUTO_CHECK	agc_job_radar_test_auto_check	agc_job_radar_test_auto_check	io/verbs	R04B
+job	AGC_JOB_RADAR_TEST_AUTO_REQUEST	agc_job_radar_test_auto_request	agc_job_radar_test_auto_request	io/verbs	R04B +5 V50N25
+job	AGC_JOB_RADAR_TEST_END	agc_job_radar_test_end	agc_job_radar_test_end	io/verbs	R04END
+job	AGC_JOB_RADAR_TEST_END_RESUME	agc_job_radar_test_end_resume	agc_job_radar_test_end_resume	io/verbs	R04END after 1.28 s
+job	AGC_JOB_RADAR_TEST_FIRST_DISPLAY	agc_job_radar_test_first_display	agc_job_radar_test_first_display	io/verbs	R04RR / R04LR
+job	AGC_JOB_RADAR_TEST_OPTION_DISPLAY	agc_job_radar_test_option_display	agc_job_radar_test_option_display	io/verbs	R04A +2 V04N12
+job	AGC_JOB_RADAR_TEST_SECOND_DISPLAY	agc_job_radar_test_second_display	agc_job_radar_test_second_display	io/verbs	V16N78 / V16N67
+job	AGC_JOB_RADAR_TEST_SELECT	agc_job_radar_test_select	agc_job_radar_test_select	io/verbs	R04 V33 on V04N12
+job	AGC_JOB_RADAR_TEST_SWITCH	agc_job_radar_test_switch	agc_job_radar_test_switch	io/verbs	R04Y
+job	AGC_JOB_RADAR_TEST_SWITCH_RESUME	agc_job_radar_test_switch_resume	agc_job_radar_test_switch_resume	io/verbs	R04Y after 2 s
+job	AGC_JOB_RR_DESIGNATE_DRIVE	agc_job_rr_designate_drive	agc_job_rr_designate_drive	io/verbs	RRDESK2
+job	AGC_JOB_RR_DESIGNATE_END_MONITOR	agc_job_rr_designate_end_monitor	agc_job_rr_designate_end_monitor	io/verbs	V44 after DELAYJOB
+job	AGC_JOB_RR_DESIGNATE_LOAD	agc_job_rr_designate_load	agc_job_rr_designate_load	io/verbs	V41N72 V24N73 (V33 again)
+job	AGC_JOB_RR_DESIGNATE_RESULT	agc_job_rr_designate_result	agc_job_rr_designate_result	io/verbs	RRDESK2 after RADSTALL
+job	AGC_JOB_RR_DESIGNATE_SCHEDULE	agc_job_rr_designate_schedule	agc_job_rr_designate_schedule	io/verbs	RRDESNBK after EXDSPRET
+job	AGC_JOB_RR_LOCKON_ANSWER	agc_job_rr_lockon_answer	agc_job_rr_lockon_answer	io/verbs	AURLOKON +5 (V33)
+job	AGC_JOB_RR_LOCKON_DISPLAY	agc_job_rr_lockon_display	agc_job_rr_lockon_display	io/verbs	AURLOKON -5 V04N12
+job	AGC_JOB_RR_LOCKON_QUERY	agc_job_rr_lockon_query	agc_job_rr_lockon_query	io/verbs	AURLOKON (ENTER on N73)
+job	AGC_JOB_RR_LOS_DISPLAY	agc_job_rr_los_display	agc_job_rr_los_display	io/verbs	RRLOSDSP (LM V85)
+job	AGC_JOB_RR_LOS_DISPLAY_NEXT	agc_job_rr_los_display_next	agc_job_rr_los_display_next	io/verbs	V85 RRLOSDSP after 1 s
+job	AGC_JOB_RR_LOS_DISPLAY_STOP	agc_job_rr_los_display_stop	agc_job_rr_los_display_stop	io/verbs	V85 responses: B5OFF
+job	AGC_JOB_SHOW_BANKSUM_DISPLAY	agc_job_show_banksum_display	agc_job_show_banksum_display	io/verbs	V91 NOKILL
+job	AGC_JOB_SHOW_BANKSUM_END	agc_job_show_banksum_end	agc_job_show_banksum_end	io/verbs	V91 terminate
+job	AGC_JOB_SHOW_BANKSUM_NEXT	agc_job_show_banksum_next	agc_job_show_banksum_next	io/verbs	V91 NXTBNK
+job	AGC_JOB_STATE_VECTOR_COPY	agc_job_state_vector_copy	agc_job_state_vector_copy	io/verbs	V66 ATTACHIT / V47 LMTOCM
+job	AGC_JOB_TIMEDIDR	agc_job_timedidr	agc_job_timedidr	io/verbs	6.5  P27 (sys-misc)
+job	AGC_JOB_TRACKING_TERMINATE	agc_job_tracking_terminate	agc_job_tracking_terminate	io/verbs	V56 CSM after INTSTALL
+job	AGC_JOB_TRIMDONE	agc_job_trimdone	agc_job_trimdone	io/verbs	
+job	AGC_JOB_UPLINK_UPDATE_EXECUTE	agc_job_uplink_update_execute	agc_job_uplink_update_execute	io/verbs	V33 after the V21N01 index
+job	AGC_JOB_UPLINK_UPDATE_LOAD	agc_job_uplink_update_load	agc_job_uplink_update_load	io/verbs	after a V21N01 load
+job	AGC_JOB_UPLINK_UPDATE_PROCEED	agc_job_uplink_update_proceed	agc_job_uplink_update_proceed	io/verbs	V33 on a V21N01/N02
+job	AGC_JOB_UPLINK_UPDATE_TERMINATE	agc_job_uplink_update_terminate	agc_job_uplink_update_terminate	io/verbs	V34: UPOUT +1
+job	AGC_JOB_AGS_INITIALIZATION	-	agc_job_ags_initialization	lm	AGSINIT (LM V47, R47)
+job	AGC_JOB_AGS_INITIALIZATION_COMPUTE	-	agc_job_ags_initialization_compute	lm	
+job	AGC_JOB_AGS_INITIALIZATION_CSM_STATE	-	agc_job_ags_initialization_csm_state	lm	
+job	AGC_JOB_AGS_INITIALIZATION_END	-	agc_job_ags_initialization_end	lm	
+job	AGC_JOB_AGS_INITIALIZATION_IMU_ZEROED	-	agc_job_ags_initialization_imu_zeroed	lm	
+job	AGC_JOB_AGS_INITIALIZATION_LM_STATE	-	agc_job_ags_initialization_lm_state	lm	
+job	AGC_JOB_AGS_INITIALIZATION_NEW_ZERO	-	agc_job_ags_initialization_new_zero	lm	
+job	AGC_JOB_AGS_INITIALIZATION_SENT	-	agc_job_ags_initialization_sent	lm	
+job	AGC_JOB_AGS_INITIALIZATION_ZERO_IMU	-	agc_job_ags_initialization_zero_imu	lm	
+job	AGC_JOB_ATMAG	-	agc_lm_job_atmag	lm	ATMAG (AVGEXIT)
+job	AGC_JOB_CUTOFF	-	agc_lm_job_cutoff	lm	CUTOFF (FINDVAC PRIO17)
+job	AGC_JOB_CUTOFF1	-	agc_lm_job_cutoff1	lm	CUTOFF1 (V16N63 PROCEED)
+job	AGC_JOB_CUTOFF2	-	agc_lm_job_cutoff2	lm	CUTOFF2
+job	AGC_JOB_CUTOFF5	-	agc_lm_job_cutoff5	lm	CUTOFF -5 (V16N63 again)
+job	AGC_JOB_NEWLOAD	-	agc_lm_job_newload	lm	NEWLOAD (V06N76 flash)
+job	AGC_JOB_NEWLOAD2	-	agc_lm_job_newload2	lm	NEWLOAD PROCEED
+job	AGC_JOB_POWERED_ASCENT	-	agc_lm_job_powered_ascent	lm	P12LM
+job	AGC_JOB_POWERED_ASCENT_AT_IGNITION	-	agc_lm_job_powered_ascent_at_ignition	lm	
+job	AGC_JOB_POWERED_ASCENT_BURN	-	agc_lm_job_powered_ascent_burn	lm	
+job	AGC_JOB_POWERED_ASCENT_FLASH	-	agc_lm_job_powered_ascent_flash	lm	P12 V06N33 re-flash
+job	AGC_JOB_POWERED_ASCENT_PROCEED	-	agc_lm_job_powered_ascent_proceed	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE	agc_job_rendezvous_final_attitude_csm	agc_job_rendezvous_final_attitude	lm	V89CALL (R63; CSM R63 by vehicle)
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE	-	agc_job_rendezvous_final_attitude_compute	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_STATE	-	agc_job_rendezvous_final_attitude_csm_state	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END	-	agc_job_rendezvous_final_attitude_end	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE	-	agc_job_rendezvous_final_attitude_lm_state	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER	-	agc_job_rendezvous_final_attitude_maneuver	lm	
+job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION	-	agc_job_rendezvous_final_attitude_option	lm	
+job	AGC_JOB_SYSTEMS_TEST	-	agc_job_systems_test	lm	REDO (V92, P07)
+job	AGC_JOB_TERMASC	-	agc_lm_job_termasc	lm	TERMASC
+job	AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY	-	agc_job_lm_auto_optics_az_el_display	lm/alignment	
+job	AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED	-	agc_job_lm_auto_optics_az_el_loaded	lm/alignment	
+job	AGC_JOB_LM_AUTO_OPTICS_MANEUVERED	-	agc_job_lm_auto_optics_maneuvered	lm/alignment	
+job	AGC_JOB_LM_AUTO_OPTICS_ORIENT	-	agc_job_lm_auto_optics_orient	lm/alignment	
+job	AGC_JOB_LM_AUTO_OPTICS_STAR_DISPLAY	-	agc_job_lm_auto_optics_star_display	lm/alignment	
+job	AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED	-	agc_job_lm_auto_optics_star_located	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_DATA_CHECKED	-	agc_job_lm_fine_align_data_checked	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_FIRST_LOCATED	-	agc_job_lm_fine_align_first_located	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_FIRST_STAR	-	agc_job_lm_fine_align_first_star	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_MARK	-	agc_job_lm_fine_align_mark	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_MARKED	-	agc_job_lm_fine_align_marked	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_PERFORM	-	agc_job_lm_fine_align_perform	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_PICK_STARS	-	agc_job_lm_fine_align_pick_stars	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED	-	agc_job_lm_fine_align_second_located	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED	-	agc_job_lm_fine_align_stars_located	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE	-	agc_job_lm_fine_align_star_acquire	lm/alignment	
+job	AGC_JOB_LM_FINE_ALIGN_TORQUED	-	agc_job_lm_fine_align_torqued	lm/alignment	
+job	AGC_JOB_LM_LANDING_SITE_ACCEPTED	-	agc_job_lm_landing_site_accepted	lm/alignment	
+job	AGC_JOB_LM_LANDING_SITE_DISPLAY	-	agc_job_lm_landing_site_display	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_COARSE	-	agc_job_lm_orientation_coarse	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_COARSE_DONE	-	agc_job_lm_orientation_coarse_done	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_COARSE_START	-	agc_job_lm_orientation_coarse_start	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_COARSE_VERB	-	agc_job_lm_orientation_coarse_verb	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_DATA_CHECKED	-	agc_job_lm_orientation_data_checked	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_FIRST_STAR	-	agc_job_lm_orientation_first_star	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_MARKED	-	agc_job_lm_orientation_marked	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_MARK_SETUP	-	agc_job_lm_orientation_mark_setup	lm/alignment	
+job	AGC_JOB_LM_ORIENTATION_SECOND_STAR	-	agc_job_lm_orientation_second_star	lm/alignment	
+job	AGC_JOB_LM_REALIGN_SITE_ORIENTATION	-	agc_job_lm_realign_site_orientation	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_ACCEPTED	-	agc_job_lunar_gravity_accepted	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_ACCUMULATE	-	agc_job_lunar_gravity_accumulate	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_COARSED	-	agc_job_lunar_gravity_coarsed	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_MEASURED	-	agc_job_lunar_gravity_measured	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_RECYCLE	-	agc_job_lunar_gravity_recycle	lm/alignment	
+job	AGC_JOB_LUNAR_GRAVITY_ROTATE	-	agc_job_lunar_gravity_rotate	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_ALIGNED	-	agc_job_lunar_surface_aligned	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_COARSE_TRIMMED	-	agc_job_lunar_surface_coarse_trimmed	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_COARSE_TRIM_DISPLAY	-	agc_job_lunar_surface_coarse_trim_display	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_COARSE_TRIM_GO	-	agc_job_lunar_surface_coarse_trim_go	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_DATA_CHECKED	-	agc_job_lunar_surface_data_checked	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_FIRST_STAR	-	agc_job_lunar_surface_first_star	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_OPTION	-	agc_job_lunar_surface_option	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_OPTIONS_CHOSEN	-	agc_job_lunar_surface_options_chosen	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_OPTIONS_DISPLAY	-	agc_job_lunar_surface_options_display	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_OPTION_DISPLAY	-	agc_job_lunar_surface_option_display	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_POST	-	agc_job_lunar_surface_post	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_POST_ENTER	-	agc_job_lunar_surface_post_enter	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_REALIGN	-	agc_job_lunar_surface_realign	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_SECOND_STAR	-	agc_job_lunar_surface_second_star	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_SITE_ORIENTATION	-	agc_job_lunar_surface_site_orientation	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_SITE_UPDATED	-	agc_job_lunar_surface_site_updated	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION	-	agc_job_lunar_surface_star_acquisition	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_STAR_CHOSEN	-	agc_job_lunar_surface_star_chosen	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_STAR_MARK	-	agc_job_lunar_surface_star_mark	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_STAR_MARKED	-	agc_job_lunar_surface_star_marked	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED	-	agc_job_lunar_surface_star_positioned	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TIME_DISPLAY	-	agc_job_lunar_surface_time_display	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TIME_ENTERED	-	agc_job_lunar_surface_time_entered	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TORQUE_TEST	-	agc_job_lunar_surface_torque_test	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TRIMMED	-	agc_job_lunar_surface_trimmed	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TRIM_PULSE	-	agc_job_lunar_surface_trim_pulse	lm/alignment	
+job	AGC_JOB_LUNAR_SURFACE_TRIM_RETRY	-	agc_job_lunar_surface_trim_retry	lm/alignment	
+job	AGC_JOB_APS_BURN	-	agc_job_aps_burn	lm/burns	P42LM
+job	AGC_JOB_APS_BURN_STAGE_CHECKED	-	agc_job_aps_burn	lm/burns	
+job	AGC_JOB_AUTO_CONTROL_RECYCLE	-	agc_job_auto_control_recycle	lm/burns	
+job	AGC_JOB_BURNBABY	-	agc_job_burnbaby	lm/burns	BURNBABY
+job	AGC_JOB_BURNBABY_COUNTDOWN	-	agc_job_burnbaby_countdown	lm/burns	
+job	AGC_JOB_CLOKJOB_ENGINE_ENABLE	-	agc_job_clokjob_engine_enable	lm/burns	
+job	AGC_JOB_CLOKJOB_ENGINE_ENABLE_BYPASS	-	agc_job_clokjob_engine_enable_bypass	lm/burns	
+job	AGC_JOB_CLOKJOB_ENGINE_FAIL	-	agc_job_clokjob_engine_fail	lm/burns	
+job	AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN	-	agc_job_clokjob_engine_fail_shutdown	lm/burns	
+job	AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED	-	agc_job_clokjob_event_timer_proceed	lm/burns	
+job	AGC_JOB_COMFAIL	-	agc_job_comfail	lm/burns	4.37
+job	AGC_JOB_DPS_BURN	-	agc_job_dps_burn	lm/burns	
+job	AGC_JOB_HIGATJOB	-	agc_job_higatjob	lm/burns	HIGATJOB
+job	AGC_JOB_HIGATJOB_DONE	-	agc_job_higatjob_done	lm/burns	
+job	AGC_JOB_LRHJOB	-	agc_job_lrhjob	lm/burns	LRHJOB
+job	AGC_JOB_LRHJOB_DONE	-	agc_job_lrhjob_done	lm/burns	
+job	AGC_JOB_LRVJOB	-	agc_job_lrvjob	lm/burns	LRVJOB
+job	AGC_JOB_LRVJOB_DONE	-	agc_job_lrvjob_done	lm/burns	
+job	AGC_JOB_POSALARM_PRO	-	agc_job_posalarm_pro	lm/burns	
+job	AGC_JOB_RCS_BURN_AFTER_MANEUVER	-	agc_job_rcs_burn_after_maneuver	lm/burns	
+job	AGC_JOB_RCS_BURN_BLANK_DSKY	-	agc_job_rcs_burn_blank_dsky	lm/burns	P41BLANK
+job	AGC_JOB_RCS_BURN_VG_DISPLAYED	-	agc_job_rcs_burn_vg_displayed	lm/burns	
+job	AGC_JOB_REDO6_7	-	agc_job_redo6_7	lm/burns	6.7
+job	AGC_JOB_REDO6_7_VG_DISPLAYED	-	agc_job_redo6_7_vg_displayed	lm/burns	
+job	AGC_JOB_RESTORE_BURN_DISPLAY	-	agc_job_restore_burn_display	lm/burns	TIG-30A
+job	AGC_JOB_SERVIDLE	-	agc_job_servidle	lm/burns	
+job	AGC_JOB_SERV_COPYCYC1	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_DECCNTR	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_LOTHRUST	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_MUNRVG	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_RUPDATED	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_RVBOTH2	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_VALTCHK	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_VMEASCHK	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_SERV_VUPDATED	-	agc_job_serv_resume_lm	lm/burns	
+job	AGC_JOB_STAGE_ALARM_DISPLAY	-	agc_job_stage_alarm_display	lm/burns	REP40ALM
+job	AGC_JOB_STAGE_ALARM_PROCEED	-	agc_job_stage_alarm_proceed	lm/burns	
+job	AGC_JOB_STOPCLOK	-	agc_job_stopclok	lm/burns	STOPCLOK
+job	AGC_JOB_TERM40	-	agc_job_term40	lm/burns	TERM40 (LM)
+job	AGC_JOB_JET_ACCEL_RESET	-	agc_job_jet_accel_reset	lm/dap	
+job	AGC_JOB_JET_ACCEL_UPDATE	-	agc_job_jet_accel_update	lm/dap	1/ACCJOB, PRIO27 NOVAC
+job	AGC_JOB_ABORT_AUTO_CONTROL_CHECK	-	agc_lm_job_abort_auto_control_check	lm/landing	
+job	AGC_JOB_APPROACH_PHASE_DISPLAY	-	agc_lm_job_approach_phase_display	lm/landing	
+job	AGC_JOB_APPROACH_PHASE_PROCEED	-	agc_lm_job_approach_phase_proceed	lm/landing	P64CEED (V06N64 PROCEED)
+job	AGC_JOB_APS_ABORT	-	agc_lm_job_aps_abort	lm/landing	
+job	AGC_JOB_APS_ABORT_COMMANDED	-	agc_lm_job_aps_abort_commanded	lm/landing	4.31
+job	AGC_JOB_APS_ABORT_OLDTIME	-	agc_lm_job_aps_abort_oldtime	lm/landing	P71 OLDTIME restart
+job	AGC_JOB_ASTNRET	-	agc_lm_job_astnret	lm/landing	ASTNRET (STCLOK2 return)
+job	AGC_JOB_BRAKING_PHASE	-	agc_lm_job_braking_phase	lm/landing	
+job	AGC_JOB_BRAKING_PHASE_ANTENNA_CHECK	-	agc_lm_job_braking_phase_antenna_check	lm/landing	P63SPOT3 (after R60)
+job	AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE	-	agc_lm_job_braking_phase_burn_attitude	lm/landing	P63SPOT2 (R51 ENTER)
+job	AGC_JOB_BRAKING_PHASE_DISPLAY	-	agc_lm_job_braking_phase_display	lm/landing	
+job	AGC_JOB_BRAKING_PHASE_RADAR_INIT	-	agc_lm_job_braking_phase_radar_init	lm/landing	P63SPOT4 (CODE 500 ENTER)
+job	AGC_JOB_DPS_ABORT	-	agc_lm_job_dps_abort	lm/landing	P70 (V37)
+job	AGC_JOB_DPS_ABORT_COMMANDED	-	agc_lm_job_dps_abort_commanded	lm/landing	4.27
+job	AGC_JOB_GOABORT	-	agc_lm_job_goabort	lm/landing	4.3
+job	AGC_JOB_IGNALGRT	-	agc_lm_job_ignalgrt	lm/landing	IGNALGRT (4.2 restart)
+job	AGC_JOB_IGNALG_PREC	-	agc_lm_job_ignalg_prec	lm/landing	
+job	AGC_JOB_IGNALOOP	-	agc_lm_job_ignaloop	lm/landing	IGNALOOP after INTSTALL
+job	AGC_JOB_LANDING_CONFIRMATION	-	agc_lm_job_landing_confirmation	lm/landing	
+job	AGC_JOB_LANDING_CONFIRMATION_FLASH	-	agc_lm_job_landing_confirmation_flash	lm/landing	
+job	AGC_JOB_LANDING_CONFIRMATION_PROCEED	-	agc_lm_job_landing_confirmation_proceed	lm/landing	
+job	AGC_JOB_LUNLAND	-	agc_lm_job_lunland	lm/landing	LUNLAND (AVGEXIT)
+job	AGC_JOB_RODCOMP	-	agc_lm_job_rodcomp	lm/landing	RODCOMP (FINDVAC PRIO22)
+job	AGC_JOB_UPTHROT1	-	agc_lm_job_upthrot1	lm/landing	THROTUP, UPTHROT1
+job	AGC_JOB_PREFERRED_TRACKING_ATTITUDE	-	agc_job_preferred_tracking_attitude	lm/navigation	PROG25
+job	AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK	-	agc_job_preferred_tracking_attitude_check	lm/navigation	
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_ACQUIRE	-	agc_job_rendezvous_navigation_acquire	lm/navigation	P20LEMB
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_ATTITUDE	-	agc_job_rendezvous_navigation_attitude	lm/navigation	P20LEMA
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_CDU_ZERO_WAIT	-	agc_job_rendezvous_navigation_cdu_zero_wait	lm/navigation	P20LEMB3
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE	-	agc_job_rendezvous_navigation_designate	lm/navigation	P20LEMC
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_LAUNCH_TIME	-	agc_job_rendezvous_navigation_launch_time	lm/navigation	V06N33*
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_MANUAL_REQUEST	-	agc_job_rendezvous_navigation_manual_request	lm/navigation	P20LEMB6 ENTER
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE	-	agc_job_rendezvous_navigation_orbit_change	lm/navigation	ORBCHG2/3
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHOSEN	-	agc_job_rendezvous_navigation_orbit_chosen	lm/navigation	ORBCHG1
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_OPTION	-	agc_job_rendezvous_navigation_orbit_option	lm/navigation	ORBCHGO GOPERF4
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM	-	agc_job_rendezvous_navigation_range_alarm	lm/navigation	526ALARM
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_CHECK	-	agc_job_rendezvous_navigation_range_check	lm/navigation	P20LEM1
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_START	-	agc_job_rendezvous_navigation_start	lm/navigation	PROG20A
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE	-	agc_job_rendezvous_navigation_terminate	lm/navigation	GOTOV56 as a job
+job	AGC_JOB_RENDEZVOUS_NAVIGATION_UPDATE_STATES	-	agc_job_rendezvous_navigation_update_states	lm/navigation	P20LEMC3
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT	-	agc_job_rendezvous_tracking_data_accept	lm/navigation	R22LEM2
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_DONE	-	agc_job_rendezvous_tracking_data_done	lm/navigation	R22LEM93/R22LEM44
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA	-	agc_job_rendezvous_tracking_data_dtheta	lm/navigation	R22LEM1 V06N05
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_INCORPORATE	-	agc_job_rendezvous_tracking_data_incorporate	lm/navigation	LSR22.3
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_LOS_ALARM	-	agc_job_rendezvous_tracking_data_los_alarm	lm/navigation	alarm 525
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK	-	agc_job_rendezvous_tracking_data_mark	lm/navigation	LRS22.1 after RRRANGE
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE	-	agc_job_rendezvous_tracking_data_measure	lm/navigation	LSR22.3 RANGEBQ.. after R65
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS	-	agc_job_rendezvous_tracking_data_residuals	lm/navigation	N49DSP
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED	-	agc_job_rendezvous_tracking_data_residuals_proceed	lm/navigation	N49 PROCEED
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE	-	agc_job_rendezvous_tracking_data_residuals_recycle	lm/navigation	N49 RECYCLE
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT	-	agc_job_rendezvous_tracking_data_residuals_wait	lm/navigation	N49FLAG poll
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT	-	agc_job_rendezvous_tracking_data_next	lm/navigation	R22LEM42
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE	-	agc_job_rendezvous_tracking_data_range	lm/navigation	LRS22.1 after RRRDOT
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART	-	agc_job_rendezvous_tracking_data_restart	lm/navigation	R22RSTRT
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART_READ	-	agc_job_rendezvous_tracking_data_restart_read	lm/navigation	R22RSTRT RADSTALL
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_UPDATE	-	agc_job_rendezvous_tracking_data_update	lm/navigation	R22LEM3
+job	AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT	-	agc_job_rendezvous_tracking_data_wait	lm/navigation	R22WAIT after R61
+job	AGC_JOB_TRACKING_ATTITUDE_COMPUTE	-	agc_job_tracking_attitude_compute	lm/navigation	R61C+L01
+job	AGC_JOB_TRACKING_ATTITUDE_MANEUVERED	-	agc_job_tracking_attitude_maneuvered	lm/navigation	after R60LEM
+job	AGC_JOB_AOT_MARK_CHECK	-	agc_job_aot_mark_check	lm/optics	
+job	AGC_JOB_AOT_MARK_COAS_DISPLAY	-	agc_job_aot_mark_coas_display	lm/optics	
+job	AGC_JOB_AOT_MARK_COAS_LOADED	-	agc_job_aot_mark_coas_loaded	lm/optics	
+job	AGC_JOB_AOT_MARK_DETENT	-	agc_job_aot_mark_detent	lm/optics	
+job	AGC_JOB_AOT_MARK_KILL	-	agc_job_aot_mark_kill	lm/optics	
+job	AGC_JOB_AOT_MARK_NEXT_ACTION	-	agc_job_aot_mark_next_action	lm/optics	
+job	AGC_JOB_AOT_MARK_STAR_DISPLAY	-	agc_job_aot_mark_star_display	lm/optics	
+job	AGC_JOB_AOT_MARK_SURFACE_ANSWER	-	agc_job_aot_mark_surface_answer	lm/optics	
+job	AGC_JOB_AOT_MARK_SURFACE_END	-	agc_job_aot_mark_surface_end	lm/optics	
+job	AGC_JOB_SBANDANT_LM	-	agc_job_sbandant_lm	lm/optics	
+job	AGC_JOB_SBANDANT_LM_RECYCLE	-	agc_job_sbandant_lm_recycle	lm/optics	
+job	AGC_JOB_MANUAL_ACQUISITION	-	agc_job_manual_acquisition	lm/radar	R23LEM
+job	AGC_JOB_MANUAL_ACQUISITION_CHECK	-	agc_job_manual_acquisition_check	lm/radar	R23LEM11
+job	AGC_JOB_MANUAL_ACQUISITION_DISPLAY	-	agc_job_manual_acquisition_display	lm/radar	R23LEM1
+job	AGC_JOB_MANUAL_ACQUISITION_LIMIT_ALARM	-	agc_job_manual_acquisition_limit_alarm	lm/radar	OUTOFLIM
+job	AGC_JOB_MANUAL_ACQUISITION_MANEUVER	-	agc_job_manual_acquisition_maneuver	lm/radar	R23LEM3
+job	AGC_JOB_MANUAL_ACQUISITION_TERMINATE	-	agc_job_manual_acquisition_terminate	lm/radar	R23LEM2
+job	AGC_JOB_POWERED_FLIGHT_DESIGNATE	-	agc_job_powered_flight_designate	lm/radar	R29DODES
+job	AGC_JOB_POWERED_FLIGHT_READ	-	agc_job_powered_flight_read	lm/radar	R29RDJOB
+job	AGC_JOB_POWERED_FLIGHT_READ_DONE	-	agc_job_powered_flight_read_done	lm/radar	
+job	AGC_JOB_POWERED_FLIGHT_READ_RANGE	-	agc_job_powered_flight_read_range	lm/radar	R29RDJOB after RRRDOT RADSTALL
+job	AGC_JOB_POWERED_FLIGHT_REMODE	-	agc_job_powered_flight_remode	lm/radar	R29REM0J
+job	AGC_JOB_RADAR_SAMPLE	-	agc_job_radar_sample	lm/radar	DORSAMP
+job	AGC_JOB_RADAR_SAMPLE_DONE	-	agc_job_radar_sample_done	lm/radar	DORSAMP after RADSTALL
+job	AGC_JOB_RADAR_SEARCH	-	agc_job_radar_search	lm/radar	R24LEM
+job	AGC_JOB_RADAR_SEARCH_ACCEPT	-	agc_job_radar_search_accept	lm/radar	R24END
+job	AGC_JOB_RADAR_SEARCH_DATA_CHECK	-	agc_job_radar_search_data_check	lm/radar	DATGDCHK
+job	AGC_JOB_RADAR_SEARCH_DISPLAY	-	agc_job_radar_search_display	lm/radar	R24LEM2
+job	AGC_JOB_RADAR_SEARCH_LOS	-	agc_job_radar_search_los	lm/radar	LRS24.11
+job	AGC_JOB_RADAR_SEARCH_MANEUVER	-	agc_job_radar_search_maneuver	lm/radar	R24LEM3
+job	AGC_JOB_RADAR_SEARCH_MANEUVER_DONE	-	agc_job_radar_search_maneuver_done	lm/radar	R24LEM4
+job	AGC_JOB_RADAR_SEARCH_POINT	-	agc_job_radar_search_point	lm/radar	LRS24.1 CHKSRCH
+job	AGC_JOB_RADAR_SEARCH_RESUME	-	agc_job_radar_search_resume	lm/radar	R24LEM4
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK	-	agc_job_rendezvous_sighting_mark	lm/radar	R21LEM
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_AHEAD	-	agc_job_rendezvous_sighting_mark_ahead	lm/radar	R21LEMB
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_ALARM	-	agc_job_rendezvous_sighting_mark_alarm	lm/radar	R21-503
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CENTERED	-	agc_job_rendezvous_sighting_mark_centered	lm/radar	R21LEM6 RADSTALL
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_COVERAGE_ALARM	-	agc_job_rendezvous_sighting_mark_coverage_alarm	lm/radar	R21LEM11
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DESIGNATE_LOS	-	agc_job_rendezvous_sighting_mark_designate_los	lm/radar	R21LEM10
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_LOCKON	-	agc_job_rendezvous_sighting_mark_lockon	lm/radar	R21LEM3 RADSTALL
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS	-	agc_job_rendezvous_sighting_mark_new_los	lm/radar	R21LEM2 (LM)
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION	-	agc_job_rendezvous_sighting_mark_reposition	lm/radar	R21LEM12
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY	-	agc_job_rendezvous_sighting_mark_verify	lm/radar	R21DISP
+job	AGC_JOB_RENDEZVOUS_SIGHTING_MARK_WAIT	-	agc_job_rendezvous_sighting_mark_wait	lm/radar	R21DISP PROCEED
+job	AGC_JOB_RR_DESIGNATE_COMMAND	-	agc_job_rr_designate_command	lm/radar	DODES
+job	AGC_JOB_STATEUP_STALL	agc_job_stateup_stall	agc_job_stateup_stall	nav/integration	
+job	AGC_JOB_STATINT1	agc_job_statint1	agc_job_statint1	nav/integration	2.5  nav-integ
+job	AGC_JOB_STATINT1_STALL	agc_job_statint1_stall	agc_job_statint1_stall	nav/integration	
+job	AGC_JOB_ALIGN_COARSE_DONE	agc_job_align_coarse_done	agc_job_align_coarse_done	programs/alignment	
+job	AGC_JOB_ALIGN_FINE_DONE	agc_job_align_fine_done	agc_job_align_fine_done	programs/alignment	
+job	AGC_JOB_CHKSDATA_ENTER	agc_job_chksdata_enter	agc_job_chksdata_enter	programs/alignment	
+job	AGC_JOB_CHKSDATA_FLASH	agc_job_chksdata_flash	agc_job_chksdata_flash	programs/alignment	
+job	AGC_JOB_CHKSDATA_PROCEED	agc_job_chksdata_proceed	agc_job_chksdata_proceed	programs/alignment	
+job	AGC_JOB_COARSE_ALIGN	agc_job_coarse_align	agc_job_coarse_align	programs/alignment	
+job	AGC_JOB_COARSE_ALIGN_COARSED	agc_job_coarse_align_coarsed	agc_job_coarse_align_coarsed	programs/alignment	
+job	AGC_JOB_COARSTYP	agc_job_coarstyp	agc_job_coarstyp	programs/alignment	
+job	AGC_JOB_GYCRS	agc_job_gycrs	agc_job_gycrs	programs/alignment	
+job	AGC_JOB_GYCRS_PULSE	agc_job_gycrs_pulse	agc_job_gycrs_pulse	programs/alignment	
+job	AGC_JOB_GYCRS_PULSED	agc_job_gycrs_pulsed	agc_job_gycrs_pulsed	programs/alignment	
+job	AGC_JOB_GYCRS_TORQUED	agc_job_gycrs_torqued	agc_job_gycrs_torqued	programs/alignment	
+job	AGC_JOB_GYRO_TORQUING_PULSE	agc_job_gyro_torquing_pulse	agc_job_gyro_torquing_pulse	programs/alignment	
+job	AGC_JOB_GYRO_TORQUING_PULSED	agc_job_gyro_torquing_pulsed	agc_job_gyro_torquing_pulsed	programs/alignment	
+job	AGC_JOB_GYRO_TORQUING_RETURN	agc_job_gyro_torquing_return	agc_job_gyro_torquing_return	programs/alignment	
+job	AGC_JOB_IMU_REALIGN	agc_job_imu_realign	agc_job_imu_realign	programs/alignment	
+job	AGC_JOB_IMU_REALIGN_OPTION	agc_job_imu_realign_option	agc_job_imu_realign_option	programs/alignment	
+job	AGC_JOB_IMU_REALIGN_OPTION_DISPLAY	agc_job_imu_realign_option_display	agc_job_imu_realign_option_display	programs/alignment	
+job	AGC_JOB_PLANET_FLASH	agc_job_planet_flash	agc_job_planet_flash	programs/alignment	
+job	AGC_JOB_PLANET_LOADED	agc_job_planet_loaded	agc_job_planet_loaded	programs/alignment	
+job	AGC_JOB_PLANET_RESUME	agc_job_planet_resume	agc_job_planet_resume	programs/alignment	
+job	AGC_JOB_REALIGN_GIMBAL_DISPLAY	agc_job_realign_gimbal_display	agc_job_realign_gimbal_display	programs/alignment	
+job	AGC_JOB_REALIGN_NOMINAL_ORIENTATION	agc_job_realign_nominal_orientation	agc_job_realign_nominal_orientation	programs/alignment	
+job	AGC_JOB_REALIGN_TIME_FLASH	agc_job_realign_time_flash	agc_job_realign_time_flash	programs/alignment	
+job	AGC_JOB_REALIGN_TIME_PROCEED	agc_job_realign_time_proceed	agc_job_realign_time_proceed	programs/alignment	
+job	AGC_JOB_ORBIT_DISPLAY_AVERAGE_G	agc_job_orbit_display_average_g	agc_job_orbit_display_average_g	programs/displays	V82GON1
+job	AGC_JOB_ORBIT_DISPLAY_MONITOR	agc_job_orbit_display_monitor	agc_job_orbit_display_monitor	programs/displays	V82REDSP
+job	AGC_JOB_ORBIT_DISPLAY_RECYCLE	agc_job_orbit_display_recycle	agc_job_orbit_display_recycle	programs/displays	V82GOFLP
+job	AGC_JOB_ORBIT_DISPLAY_REPEAT	agc_job_orbit_display_repeat	agc_job_orbit_display_repeat	programs/displays	V82GON3
+job	AGC_JOB_ORBIT_DISPLAY_SPLASH	agc_job_orbit_display_splash	agc_job_orbit_display_splash	programs/displays	CANDEL (CM)
+job	AGC_JOB_ORBIT_DISPLAY_STALL	agc_job_orbit_display_stall	agc_job_orbit_display_stall	programs/displays	V82STALL
+job	AGC_JOB_ORBIT_DISPLAY_UPDATE	agc_job_orbit_display_update	agc_job_orbit_display_update	programs/displays	V82GOFF1
+job	AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT	agc_job_orbit_display_vehicle_select	agc_job_orbit_display_vehicle_select	programs/displays	V82GOFF V04N12
+job	AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED	agc_job_orbit_display_vehicle_selected	agc_job_orbit_display_vehicle_selected	programs/displays	V04N12 PROCEED
+job	AGC_JOB_ORBIT_PARAMETER_DISPLAY	agc_job_orbit_parameter_display	agc_job_orbit_parameter_display	programs/displays	V82CALL
+job	AGC_JOB_OUT_OF_PLANE_COMPUTE	agc_job_out_of_plane_compute	agc_job_out_of_plane_compute	programs/displays	R36INT .. V06N90
+job	AGC_JOB_OUT_OF_PLANE_DISPLAY	agc_job_out_of_plane_display	agc_job_out_of_plane_display	programs/displays	R36
+job	AGC_JOB_OUT_OF_PLANE_START	agc_job_out_of_plane_start	agc_job_out_of_plane_start	programs/displays	R36A
+job	AGC_JOB_OUT_OF_PLANE_TIME	agc_job_out_of_plane_time	agc_job_out_of_plane_time	programs/displays	R36P3 V06N16
+job	AGC_JOB_OUT_OF_PLANE_VEHICLE	agc_job_out_of_plane_vehicle	agc_job_out_of_plane_vehicle	programs/displays	CM V04N12
+job	AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY	agc_job_rendezvous_parameter_display	agc_job_rendezvous_parameter_display	programs/displays	R31CALL (CSM V83/V85)
+job	AGC_JOB_RENDEZVOUS_PARAMS_MONITOR	agc_job_rendezvous_params_monitor	agc_job_rendezvous_params_monitor	programs/displays	DISPN5X
+job	AGC_JOB_RENDEZVOUS_PARAMS_START	agc_job_rendezvous_params_start	agc_job_rendezvous_params_start	programs/displays	V83CALL
+job	AGC_JOB_RENDEZVOUS_PARAMS_UPDATE	agc_job_rendezvous_params_update	agc_job_rendezvous_params_update	programs/displays	V83 / REV83
+job	AGC_JOB_RENDEZVOUS_PARAMS_WAIT	agc_job_rendezvous_params_wait	agc_job_rendezvous_params_wait	programs/displays	CM DSPDELAY
+job	AGC_JOB_RENDZ_CLUPDATE	agc_job_rendz_clupdate	agc_job_rendz_clupdate	programs/displays	VN1645 RECYCLE: CLUPDATE
+job	AGC_JOB_RENDZ_DISPLAY_TERMINATE	agc_job_rendz_display_terminate	agc_job_rendz_display_terminate	programs/displays	B5OFF
+job	AGC_JOB_RENDZ_ENDEXT	agc_job_rendz_endext	agc_job_rendz_endext	programs/displays	ENDEXT as a job
+job	AGC_JOB_RENDZ_FINAL_DV_CHECKED	agc_job_rendz_final_dv_checked	agc_job_rendz_final_dv_checked	programs/displays	S34/35.5 after V06N81 PROCEED
+job	AGC_JOB_RENDZ_KILCLOCK	agc_job_rendz_kilclock	agc_job_rendz_kilclock	programs/displays	VN1645 TERMINATE: KILCLOCK
+job	AGC_JOB_RENDZ_TTOGO_DISPLAY	agc_job_rendz_ttogo_display	agc_job_rendz_ttogo_display	programs/displays	VN1645 after DELAYJOB: V16N45
+job	AGC_JOB_RENDZ_TTOGO_PROCEED	agc_job_rendz_ttogo_proceed	agc_job_rendz_ttogo_proceed	programs/displays	VN1645 PROCEED: N45PROC
+job	AGC_JOB_RENDZ_VNPOOH	agc_job_rendz_vnpooh	agc_job_rendz_vnpooh	programs/displays	
+job	AGC_JOB_GROUND_TRACK_COMPUTE	agc_job_ground_track_compute	agc_job_ground_track_compute	programs/navigation	INTSTALL .. V06N43
+job	AGC_JOB_GROUND_TRACK_DETERMINATION	agc_job_ground_track_determination	agc_job_ground_track_determination	programs/navigation	PROG21
+job	AGC_JOB_GROUND_TRACK_RECYCLE	agc_job_ground_track_recycle	agc_job_ground_track_recycle	programs/navigation	V32 on V06N43
+job	AGC_JOB_GROUND_TRACK_TIME	agc_job_ground_track_time	agc_job_ground_track_time	programs/navigation	P21PROG1 V06N34
+job	AGC_JOB_GROUND_TRACK_VEHICLE	agc_job_ground_track_vehicle	agc_job_ground_track_vehicle	programs/navigation	
+job	AGC_JOB_W_MATRIX_MONITOR	agc_job_w_matrix_monitor	agc_job_w_matrix_monitor	programs/navigation	V67CALL
+job	AGC_JOB_W_MATRIX_MONITOR_DISPLAY	agc_job_w_matrix_monitor_display	agc_job_w_matrix_monitor_display	programs/navigation	V06N99DS
+job	AGC_JOB_W_MATRIX_MONITOR_PROCEED	agc_job_w_matrix_monitor_proceed	agc_job_w_matrix_monitor_proceed	programs/navigation	V6N99PRO
+job	AGC_JOB_CDH_AFTER_DV_LV	agc_job_cdh_after_dv_lv	agc_job_cdh_after_dv_lv	programs/targeting	after V06N81
+job	AGC_JOB_CDH_AFTER_RESULTS	agc_job_cdh_after_results	agc_job_cdh_after_results	programs/targeting	after V06N75
+job	AGC_JOB_CDH_AFTER_TCDH	agc_job_cdh_after_tcdh	agc_job_cdh_after_tcdh	programs/targeting	after V06N13 TCDH
+job	AGC_JOB_CDH_ALARM_PROCEED	agc_job_cdh_alarm_proceed	agc_job_cdh_alarm_proceed	programs/targeting	611 V05N09 PROCEED
+job	AGC_JOB_CDH_COMPUTE	agc_job_cdh_compute	agc_job_cdh_compute	programs/targeting	P33/P73B
+job	AGC_JOB_CDH_INPUT	agc_job_cdh_input	agc_job_cdh_input	programs/targeting	P33/P73A (611 recycle)
+job	AGC_JOB_CDH_TARGETING	agc_job_cdh_targeting	agc_job_cdh_targeting	programs/targeting	P33 entry
+job	AGC_JOB_CDH_TARGETING_OTHER_VEHICLE	agc_job_cdh_targeting_other_vehicle	agc_job_cdh_targeting_other_vehicle	programs/targeting	
+job	AGC_JOB_CDH_TIME_SEARCH	agc_job_cdh_time_search	agc_job_cdh_time_search	programs/targeting	
+job	AGC_JOB_CSI_AFTER_CDH_DV	agc_job_csi_after_cdh_dv	agc_job_csi_after_cdh_dv	programs/targeting	after V06N82: TTPIO, VN1645
+job	AGC_JOB_CSI_AFTER_DV_LV	agc_job_csi_after_dv_lv	agc_job_csi_after_dv_lv	programs/targeting	
+job	AGC_JOB_CSI_AFTER_NN_ELEV	agc_job_csi_after_nn_elev	agc_job_csi_after_nn_elev	programs/targeting	after V06N55 NN ELEV
+job	AGC_JOB_CSI_AFTER_RESULTS	agc_job_csi_after_results	agc_job_csi_after_results	programs/targeting	
+job	AGC_JOB_CSI_AFTER_TCSI	agc_job_csi_after_tcsi	agc_job_csi_after_tcsi	programs/targeting	after V06N11 TCSI
+job	AGC_JOB_CSI_AFTER_TTPI	agc_job_csi_after_ttpi	agc_job_csi_after_ttpi	programs/targeting	after V06N37 TTPI
+job	AGC_JOB_CSI_ALARM_DISPLAY	agc_job_csi_alarm_display	agc_job_csi_alarm_display	programs/targeting	
+job	AGC_JOB_CSI_COMPUTE	agc_job_csi_compute	agc_job_csi_compute	programs/targeting	P32/P72B
+job	AGC_JOB_CSI_INPUT	agc_job_csi_input	agc_job_csi_input	programs/targeting	P32/P72A (ALMXIT recycle)
+job	AGC_JOB_CSI_TARGETING	agc_job_csi_targeting	agc_job_csi_targeting	programs/targeting	P32 entry
+job	AGC_JOB_CSI_TARGETING_OTHER_VEHICLE	agc_job_csi_targeting_other_vehicle	agc_job_csi_targeting_other_vehicle	programs/targeting	P72 entry
+job	AGC_JOB_LAMBERT_AIMPOINT_APSIDES	agc_job_lambert_aimpoint_apsides	agc_job_lambert_aimpoint_apsides	programs/targeting	V06N42
+job	AGC_JOB_MARKS_TFI_MGA_MONITOR	agc_job_marks_tfi_mga_monitor	agc_job_marks_tfi_mga_monitor	programs/targeting	
+job	AGC_JOB_STABLE_ORBIT_CENTANG	agc_job_stable_orbit_centang	agc_job_stable_orbit_centang	programs/targeting	V06N55 GOFLASHR
+job	AGC_JOB_STABLE_ORBIT_DELTAR	agc_job_stable_orbit_deltar	agc_job_stable_orbit_deltar	programs/targeting	V06N57 GOFLASHR
+job	AGC_JOB_STABLE_ORBIT_DV_ACCEPTED	agc_job_stable_orbit_dv_accepted	agc_job_stable_orbit_dv_accepted	programs/targeting	after V06N81
+job	AGC_JOB_STABLE_ORBIT_DV_LV	agc_job_stable_orbit_dv_lv	agc_job_stable_orbit_dv_lv	programs/targeting	DSPLY81
+job	AGC_JOB_STABLE_ORBIT_INTERCEPT_TIME	agc_job_stable_orbit_intercept_time	agc_job_stable_orbit_intercept_time	programs/targeting	V06N34
+job	AGC_JOB_STABLE_ORBIT_MIDCOURSE	agc_job_stable_orbit_midcourse	agc_job_stable_orbit_midcourse	programs/targeting	P39
+job	AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE	agc_job_stable_orbit_midcourse_advance	agc_job_stable_orbit_midcourse_advance	programs/targeting	P39/P79B PRECSET
+job	AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE	agc_job_stable_orbit_midcourse_compute	agc_job_stable_orbit_midcourse_compute	programs/targeting	P39/P79B
+job	AGC_JOB_STABLE_ORBIT_MIDCOURSE_OTHER_VEHICLE	agc_job_stable_orbit_midcourse_other_vehicle	agc_job_stable_orbit_midcourse_other_vehicle	programs/targeting	P79
+job	AGC_JOB_STABLE_ORBIT_OPTION	agc_job_stable_orbit_option	agc_job_stable_orbit_option	programs/targeting	
+job	AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN	agc_job_stable_orbit_option_chosen	agc_job_stable_orbit_option_chosen	programs/targeting	SOI (OPTN1) / SOR
+job	AGC_JOB_STABLE_ORBIT_OPTION_DISPLAY	agc_job_stable_orbit_option_display	agc_job_stable_orbit_option_display	programs/targeting	V04N06 recycle
+job	AGC_JOB_STABLE_ORBIT_RECYCLE	agc_job_stable_orbit_recycle	agc_job_stable_orbit_recycle	programs/targeting	RECYCLE
+job	AGC_JOB_STABLE_ORBIT_RENDEZVOUS	agc_job_stable_orbit_rendezvous	agc_job_stable_orbit_rendezvous	programs/targeting	P38
+job	AGC_JOB_STABLE_ORBIT_RENDEZVOUS_OTHER_VEHICLE	agc_job_stable_orbit_rendezvous_other_vehicle	agc_job_stable_orbit_rendezvous_other_vehicle	programs/targeting	
+job	AGC_JOB_STABLE_ORBIT_START	agc_job_stable_orbit_start	agc_job_stable_orbit_start	programs/targeting	JUNCTN1
+job	AGC_JOB_STABLE_ORBIT_TARGET	agc_job_stable_orbit_target	agc_job_stable_orbit_target	programs/targeting	MAINRTNE
+job	AGC_JOB_STABLE_ORBIT_TIG	agc_job_stable_orbit_tig	agc_job_stable_orbit_tig	programs/targeting	after V06N33
+job	AGC_JOB_TARGET_DELTA_V	agc_job_target_delta_v	agc_job_target_delta_v	programs/targeting	P76
+job	AGC_JOB_TARGET_DELTA_V_DISPLAY	agc_job_target_delta_v_display	agc_job_target_delta_v_display	programs/targeting	V06N84
+job	AGC_JOB_TARGET_DELTA_V_END	agc_job_target_delta_v_end	agc_job_target_delta_v_end	programs/targeting	ENDP76
+job	AGC_JOB_TARGET_DELTA_V_INTEGRATE	agc_job_target_delta_v_integrate	agc_job_target_delta_v_integrate	programs/targeting	INTSTALL, INTEGRVS
+job	AGC_JOB_TARGET_DELTA_V_STORE	agc_job_target_delta_v_store	agc_job_target_delta_v_store	programs/targeting	INTSTALL, MINIRECT, ATOPOTH
+job	AGC_JOB_TARGET_DELTA_V_TIG	agc_job_target_delta_v_tig	agc_job_target_delta_v_tig	programs/targeting	V06N33
+job	AGC_JOB_TARGET_DELTA_V_UPDATE	agc_job_target_delta_v_update	agc_job_target_delta_v_update	programs/targeting	OTHPREC, COMPMAT
+job	AGC_JOB_TPI_AFTER_ELEV	agc_job_tpi_after_elev	agc_job_tpi_after_elev	programs/targeting	
+job	AGC_JOB_TPI_AFTER_FINAL	agc_job_tpi_after_final	agc_job_tpi_after_final	programs/targeting	after S34/35.5: VN1645
+job	AGC_JOB_TPI_AFTER_RESULTS	agc_job_tpi_after_results	agc_job_tpi_after_results	programs/targeting	after V06N58: S34/35.5
+job	AGC_JOB_TPI_AFTER_TTPI	agc_job_tpi_after_ttpi	agc_job_tpi_after_ttpi	programs/targeting	after V06N37
+job	AGC_JOB_TPI_ALARM	agc_job_tpi_alarm	agc_job_tpi_alarm	programs/targeting	
+job	AGC_JOB_TPI_COMPUTE	agc_job_tpi_compute	agc_job_tpi_compute	programs/targeting	P34/P74E
+job	AGC_JOB_TPI_CYCLE	agc_job_tpi_cycle	agc_job_tpi_cycle	programs/targeting	P34/P74C
+job	AGC_JOB_TPI_INPUT	agc_job_tpi_input	agc_job_tpi_input	programs/targeting	P34/P74A (611 PROCEED)
+job	AGC_JOB_TPI_INTLOOP	agc_job_tpi_intloop	agc_job_tpi_intloop	programs/targeting	INTLOOP
+job	AGC_JOB_TPI_TARGETING	agc_job_tpi_targeting	agc_job_tpi_targeting	programs/targeting	P34 entry
+job	AGC_JOB_TPI_TARGETING_OTHER_VEHICLE	agc_job_tpi_targeting_other_vehicle	agc_job_tpi_targeting_other_vehicle	programs/targeting	
+job	AGC_JOB_TPI_TIME_SEARCH	agc_job_tpi_time_search	agc_job_tpi_time_search	programs/targeting	
+job	AGC_JOB_TPM_ADVANCE	agc_job_tpm_advance	agc_job_tpm_advance	programs/targeting	
+job	AGC_JOB_TPM_AFTER_FINAL	agc_job_tpm_after_final	agc_job_tpm_after_final	programs/targeting	after S34/35.5: VN1645
+job	AGC_JOB_TPM_COMPUTE	agc_job_tpm_compute	agc_job_tpm_compute	programs/targeting	P35/P75B
+job	AGC_JOB_TPM_TARGETING	agc_job_tpm_targeting	agc_job_tpm_targeting	programs/targeting	P35 entry
+job	AGC_JOB_TPM_TARGETING_OTHER_VEHICLE	agc_job_tpm_targeting_other_vehicle	agc_job_tpm_targeting_other_vehicle	programs/targeting	
+task	AGC_TASK_ALLOOP1	agc_task_prelaunch_alloop1	-	csm	5.11
+task	AGC_TASK_SPECSTS	agc_task_prelaunch_specsts	-	csm	5.23
+task	AGC_TASK_ATERTASK	agc_task_atertask	-	csm/burns	4.51
+task	AGC_TASK_CHEKAVEG	agc_task_chekaveg	-	csm/burns	5.37
+task	AGC_TASK_CLOKTASK	agc_task_cloktask_csm	agc_task_cloktask_lm	csm/burns	6.3 (CSM also 6.2)
+task	AGC_TASK_DOSPSOFF	agc_task_dospsoff	-	csm/burns	4.63
+task	AGC_TASK_DOSTRULL	agc_task_dostrull	-	csm/burns	4.5
+task	AGC_TASK_DOTVCON	agc_task_dotvcon	-	csm/burns	4.3
+task	AGC_TASK_DOTVCRCS	agc_task_dotvcrcs	-	csm/burns	4.27
+task	AGC_TASK_ENGINE_ENABLE_FLASH	agc_task_engine_enable_flash	-	csm/burns	V99FLASH
+task	AGC_TASK_ENGINE_FAIL_RCS_DAP	agc_task_engine_fail_rcs_dap	-	csm/burns	4.71
+task	AGC_TASK_ENGINE_FAIL_REENABLE	agc_task_engine_fail_reenable	-	csm/burns	4.13
+task	AGC_TASK_ENGINE_FAIL_REIGNITE_PREP	agc_task_engine_fail_reignite_prep	-	csm/burns	4.53
+task	AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM	agc_task_engine_fail_reignite_trim	-	csm/burns	4.11 V97E40.6
+task	AGC_TASK_ENGINE_FAIL_RESUME	agc_task_engine_fail_resume	-	csm/burns	4.73
+task	AGC_TASK_ENGINE_FAIL_SHUTDOWN	agc_task_engine_fail_shutdown	-	csm/burns	4.67
+task	AGC_TASK_ENGINE_FAIL_SHUTDOWN_RESTART	agc_task_engine_fail_shutdown_restart	-	csm/burns	
+task	AGC_TASK_ENGINOFF	agc_task_enginoff_csm	agc_lm_enginoff	csm/burns	3.15
+task	AGC_TASK_GIMBAL_TEST_RELAYS	agc_task_gimbal_test_relays	-	csm/burns	
+task	AGC_TASK_GIMBAL_TEST_RSTRTST	agc_task_gimbal_test_rstrtst	-	csm/burns	RSTRTST
+task	AGC_TASK_GIMBAL_TEST_STEP	agc_task_gimbal_test_step	-	csm/burns	
+task	AGC_TASK_GIMBAL_TEST_TRIM	agc_task_gimbal_test_trim	-	csm/burns	S40.6
+task	AGC_TASK_GIMBAL_TRIM_RESTART	agc_task_gimbal_trim_restart	-	csm/burns	6.2 PRE40.6
+task	AGC_TASK_IGNITION	agc_task_ignition_csm	agc_task_ignition_lm	csm/burns	IGNITION
+task	AGC_TASK_IMPLCONT	agc_task_implcont	-	csm/burns	IMPLCONT
+task	AGC_TASK_ONMNITOR	agc_task_onmnitor	-	csm/burns	ONMNITOR
+task	AGC_TASK_PRECHECK	agc_task_precheck	-	csm/burns	4.2/4.4/4.6 first part
+task	AGC_TASK_PREREAD	agc_task_preread_csm	agc_task_preread_lm	csm/burns	5.41
+task	AGC_TASK_QUICKIGN	agc_task_quickign	-	csm/burns	
+task	AGC_TASK_QUIKREAD	agc_task_quikread	-	csm/burns	QUIKREAD
+task	AGC_TASK_READACCS	agc_task_readaccs_csm	agc_task_readaccs_lm	csm/burns	READACCS (guid-powered)
+task	AGC_TASK_REDO5_5	agc_task_redo5_5_csm	agc_task_redo5_5_lm	csm/burns	5.5
+task	AGC_TASK_REDOSAT	agc_task_redosat	-	csm/burns	T5LOC: Saturn (dap-csm)
+task	AGC_TASK_REREADAC	agc_task_rereadac_csm	agc_task_rereadac_lm	csm/burns	5.2/5.3/5.4 guid-powered
+task	AGC_TASK_SATSTICK	agc_task_satstick	-	csm/burns	SATSTICK (T5RUPT)
+task	AGC_TASK_SPSOFF97	agc_task_spsoff97	-	csm/burns	4.75
+task	AGC_TASK_TIGAVEG	agc_task_tigaveg	-	csm/burns	4.37
+task	AGC_TASK_TIGBLNK	agc_task_tigblnk	-	csm/burns	4.21 LONGCALL
+task	AGC_TASK_TIGON	agc_task_tigon	agc_task_start_thrust_monitor	csm/burns	4.57
+task	AGC_TASK_TIG_0	agc_task_tig_0_csm	agc_task_tig_0_lm	csm/burns	TIG-0
+task	AGC_TASK_TIG_5	agc_task_tig_5_csm	agc_task_tig_5_lm	csm/burns	TIG-5
+task	AGC_TASK_TTG_0	agc_task_ttg_0	-	csm/burns	4.4 TTG/0
+task	AGC_TASK_CMDSOUT	agc_task_cmdsout	-	csm/dap	T5: TVC restart, step 3
+task	AGC_TASK_DAPINIT	agc_task_dapinit	-	csm/dap	T5: TVC CDU rate init
+task	AGC_TASK_ENABL2	agc_task_enabl2	-	csm/dap	T5: TVC restart, step 2
+task	AGC_TASK_EXRSTRT	agc_task_exrstrt	-	csm/dap	waitlist: TVCEXEC restart
+task	AGC_TASK_HACKWLST	agc_task_hackwlst	-	csm/dap	waitlist: stroke test burst
+task	AGC_TASK_JETSLECT	agc_task_jetslect	-	csm/dap	T5: RCS jet selection
+task	AGC_TASK_NOROLL1	agc_task_noroll1	-	csm/dap	T6: TVC roll jets off
+task	AGC_TASK_PITCHDAP	agc_task_pitchdap	-	csm/dap	T5: TVC pitch DAP
+task	AGC_TASK_RCSATT	agc_task_rcsatt	-	csm/dap	T5: RCS DAP phases 1,2
+task	AGC_TASK_RCSUP	agc_task_rcsup	-	csm/dap	T5: RCSUP (P40 TVC -> RCS)
+task	AGC_TASK_REDORCS	agc_task_redorcs	-	csm/dap	T5LOC: RCS DAP (dap-csm)
+task	AGC_TASK_REDOTVC	agc_task_redotvc	-	csm/dap	T5LOC: TVC DAP (dap-csm)
+task	AGC_TASK_ROLLDAP	agc_task_rolldap	-	csm/dap	waitlist: TVC roll DAP
+task	AGC_TASK_T6START	agc_task_t6start	-	csm/dap	T6: RCS jet channel timing
+task	AGC_TASK_TVCDAPON	agc_task_tvcdapon	-	csm/dap	T5: TVC DAP start (DOTVCON)
+task	AGC_TASK_TVCEXEC	agc_task_tvcexec	-	csm/dap	ENEMA, TVC on (dap-csm)
+task	AGC_TASK_TVCINIT1	agc_task_tvcinit1	-	csm/dap	T5: TVC initialisation pt 2
+task	AGC_TASK_YAWDAP	agc_task_yawdap	-	csm/dap	T5: TVC yaw DAP
+task	AGC_TASK_ATTRATES	agc_task_attrates	-	csm/entry	ATTRATES (T5RUPT)
+task	AGC_TASK_ENTRY_START_AVERAGE_G	agc_task_entry_start_average_g	-	csm/entry	4.43 S61.1C
+task	AGC_TASK_JETCALL	agc_task_jetcall	-	csm/entry	JETCALL
+task	AGC_TASK_READGYMB	agc_task_readgymb	-	csm/entry	6.11
+task	AGC_TASK_SETJTAG	agc_task_setjtag	-	csm/entry	1.3
+task	AGC_TASK_WAKE_CM_SM_SEPARATION	agc_task_wake_cm_sm_separation	-	csm/entry	4.33
+task	AGC_TASK_ENDMARKS	agc_task_endmarks	-	csm/optics	
+task	AGC_TASK_MARKDIF	agc_task_markdif	-	csm/optics	
+task	AGC_TASK_ENDTASK	agc_task_endtask	agc_task_endtask	exec	
+task	AGC_TASK_GETCADR	agc_task_getcadr	agc_task_getcadr	exec	
+task	AGC_TASK_LONGCYCL	agc_task_longcycl	agc_task_longcycl	exec	
+task	AGC_TASK_SVCT3	agc_task_svct3	agc_task_svct3	exec	
+task	AGC_TASK_T5IDLOC	agc_task_t5idloc	-	exec	
+task	AGC_TASK_TASKOVER	agc_task_taskover	agc_task_taskover	exec	
+task	AGC_TASK_8192AUG	agc_task_8192aug	agc_task_8192aug	imu	
+task	AGC_TASK_CA_ECE	agc_task_ca_ece	agc_task_ca_ece	imu	imu: CA+ECE
+task	AGC_TASK_CHKCORS	agc_task_chkcors	agc_task_chkcors	imu	
+task	AGC_TASK_COARS	agc_task_coars	agc_task_coars	imu	
+task	AGC_TASK_COARS2	agc_task_coars2	agc_task_coars2	imu	
+task	AGC_TASK_ENDMANU	agc_task_endmanu	agc_task_endmanu	imu	ENDMANU / GOODMANU
+task	AGC_TASK_IFAILOK	agc_task_ifailok	agc_task_ifailok	imu	
+task	AGC_TASK_IMUFINED	agc_task_imufined	agc_task_imufined	imu	
+task	AGC_TASK_IMUZERO2	agc_task_imuzero2	agc_task_imuzero2	imu	
+task	AGC_TASK_IMUZERO3	agc_task_imuzero3	agc_task_imuzero3	imu	
+task	AGC_TASK_MANUSTOP	agc_task_manustop	agc_task_manustop	imu	
+task	AGC_TASK_PFAILOK	agc_task_pfailok	agc_task_pfailok	imu	imu: PFAILOK
+task	AGC_TASK_STRTGYRO	agc_task_strtgyro	agc_task_strtgyro	imu	
+task	AGC_TASK_UPDTCALL	agc_task_updtcall	agc_task_updtcall	imu	
+task	AGC_TASK_MONREQ	agc_task_monreq	agc_task_monreq	io/dsky	
+task	AGC_TASK_TSTLTS2	agc_task_tstlts2	agc_task_tstlts2	io/dsky	
+task	AGC_TASK_ENDTNON	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4RUPT ENDTNON (90 s)
+task	AGC_TASK_ENDZOPT	expr:agc_t4_task(task)	-	io/service	T4RUPT ENDZOPT (CM)
+task	AGC_TASK_ENDZOPT2	expr:agc_t4_task(task)	-	io/service	ENDZOPT after VARDELAY
+task	AGC_TASK_ISSUP	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4RUPT ISSUP (VARDELAY)
+task	AGC_TASK_UNZ2	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4RUPT UNZ2
+task	AGC_TASK_WAKER	expr:agc_svc_delay_wake(-1)	expr:agc_svc_delay_wake(-1)	io/service	DELAYJOB WAKER
+task	AGC_TASK_ATTITUDE_ERROR_OUTPUT	agc_task_attitude_error_output	agc_task_attitude_error_output	io/verbs	V43 ATTCK1 / ATTCK2
+task	AGC_TASK_ENGOFF1	-	agc_lm_task_engoff1	lm	ENGOFF1
+task	AGC_TASK_LUNAR_GRAVITY_SAMPLE	-	agc_task_lunar_gravity_sample	lm/alignment	
+task	AGC_TASK_BIBIBIAS	-	agc_task_bibibias	lm/burns	5.7
+task	AGC_TASK_BRAKING_PHASE_ZOOM	-	agc_task_braking_phase_zoom	lm/burns	P63ZOOM
+task	AGC_TASK_COASTSET	-	agc_task_coastset	lm/burns	COASTSET
+task	AGC_TASK_DPS_BURN_ZOOM	-	agc_task_dps_burn_zoom	lm/burns	P40ZOOM
+task	AGC_TASK_ENGOFTSK	-	agc_task_engoftsk	lm/burns	4.11
+task	AGC_TASK_IGNITION_FINISH	-	agc_task_ignition_finish	lm/burns	
+task	AGC_TASK_IGNITION_IF_ENABLED	-	agc_task_ignition_if_enabled	lm/burns	
+task	AGC_TASK_IMPLBURN2	-	agc_task_implburn2	lm/burns	
+task	AGC_TASK_PITCHOFF	-	agc_task_pitchoff	lm/burns	PITCHOFF
+task	AGC_TASK_RDGIMS	-	agc_task_rdgims	lm/burns	RDGIMS
+task	AGC_TASK_REDO2_17	-	agc_task_redo2_17	lm/burns	2.17
+task	AGC_TASK_REDO4_2	-	agc_task_redo4_2	lm/burns	4.2 second part
+task	AGC_TASK_RESTORE_BURN_DISPLAY	-	agc_task_restore_burn_display	lm/burns	TIG-30.1
+task	AGC_TASK_ROLLOFF	-	agc_task_rolloff	lm/burns	
+task	AGC_TASK_TIGTASK	-	agc_task_tigtask	lm/burns	TIGTASK
+task	AGC_TASK_TIG_30	-	agc_task_tig_30	lm/burns	4.15 TIG-30
+task	AGC_TASK_TIG_35	-	agc_task_tig_35	lm/burns	4.25 LONGCALL TIG-35
+task	AGC_TASK_TRIMGIMB	-	agc_task_trimgimb	lm/burns	TRIMGIMB
+task	AGC_TASK_TRIMGIMB2	-	agc_task_trimgimb2	lm/burns	
+task	AGC_TASK_ULLAGOFF	-	agc_task_ullagoff	lm/burns	4.5
+task	AGC_TASK_ULLGTASK	-	agc_task_ullgtask	lm/burns	1.3
+task	AGC_TASK_ZOOM	-	agc_task_zoom	lm/burns	3.3
+task	AGC_TASK_DAPIDLER	-	agc_task_dapidler	lm/dap	T5ADR = DAPIDLER
+task	AGC_TASK_PAXIS	-	agc_task_paxis	lm/dap	T5ADR = PAXIS
+task	AGC_TASK_ABORT_MONITOR	-	agc_lm_task_abort_monitor	lm/landing	
+task	AGC_TASK_INTLZE	-	agc_lm_task_intlze	lm/landing	INTLZE (R10)
+task	AGC_TASK_REDESMON	-	agc_lm_task_redesmon	lm/landing	
+task	AGC_TASK_RODTASK	-	agc_lm_task_rodtask	lm/landing	RODTASK
+task	AGC_TASK_SPEEDRUN2	-	agc_lm_task_speedrun2	lm/landing	
+task	AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT	-	agc_task_preferred_tracking_attitude_wait	lm/navigation	
+task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK	-	agc_task_rendezvous_navigation_track_check	lm/navigation	P20LEMC1
+task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_WAIT	-	agc_task_rendezvous_navigation_track_wait	lm/navigation	P20LEMD1
+task	AGC_TASK_TRACKING_ATTITUDE_WAIT	-	agc_task_tracking_attitude_wait	lm/navigation	R61C+L2
+task	AGC_TASK_AOT_MARK_RELEASE	-	agc_task_aot_mark_release	lm/optics	
+task	AGC_TASK_DORREPOS	-	agc_task_dorrepos	lm/radar	prog-rendz: DORREPOS
+task	AGC_TASK_LR_POSITION_CHECK	-	agc_task_lr_position_check	lm/radar	LRPOSNXT
+task	AGC_TASK_LR_POSITION_SCAN	-	agc_task_lr_position_scan	lm/radar	LRPOSCAN
+task	AGC_TASK_LR_POSITION_SETTLED	-	agc_task_lr_position_settled	lm/radar	LASTLRDT
+task	AGC_TASK_POWERED_FLIGHT_DESIGNATE	-	agc_task_powered_flight_designate	lm/radar	BEGDES29
+task	AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP	-	agc_task_powered_flight_designate_loop	lm/radar	R29DLOOP after VARDELAY
+task	AGC_TASK_POWERED_FLIGHT_PREPOSITION	-	agc_task_powered_flight_preposition	lm/radar	PREPOS29
+task	AGC_TASK_POWERED_FLIGHT_READ	-	agc_task_powered_flight_read	lm/radar	R29READ
+task	AGC_TASK_POWERED_FLIGHT_READ_LOOP	-	agc_task_powered_flight_read_loop	lm/radar	R29READ after 2 s
+task	AGC_TASK_RADAR_SEARCH_NEXT_POINT	-	agc_task_radar_search_next_point	lm/radar	CALLDGCH
+task	AGC_TASK_RADSAMP	-	agc_task_radsamp	lm/radar	LM radar sampling
+task	AGC_TASK_RENDEZVOUS_SIGHTING_MARK_REDESIGNATE	-	agc_task_rendezvous_sighting_mark_redesignate	lm/radar	
+task	AGC_TASK_RRTURNON	-	agc_task_rrturnon	lm/radar	prog-rendz: RRTURNON
+task	AGC_TASK_RR_DESIGNATE_BEGIN	-	agc_task_rr_designate_begin	lm/radar	BEGDES
+task	AGC_TASK_RR_DESIGNATE_LOOP	-	agc_task_rr_designate_loop	lm/radar	
+task	AGC_TASK_RR_GOODEND	-	agc_task_rr_goodend	lm/radar	RADNOOP: RGOODEND
+task	AGC_TASK_RR_ONE_AXIS	-	agc_task_rr_one_axis	lm/radar	NXTRR1AX
+task	AGC_TASK_RR_REMODE	-	agc_task_rr_remode	lm/radar	REMODE as a task
+task	AGC_TASK_RR_REPOSITION_DRIVE	-	agc_task_rr_reposition_drive	lm/radar	
+task	AGC_TASK_RR_TURNON_DONE	-	agc_task_rr_turnon_done	lm/radar	RRTURNON +1 s
+task	AGC_TASK_RR_ZERO	-	agc_task_rr_zero	lm/radar	RRZ2
+task	AGC_TASK_RR_ZERO_COUNTERS	-	agc_task_rr_zero_counters	lm/radar	RRZEROSB +20 ms
+task	AGC_TASK_RR_ZERO_SETTLED	-	agc_task_rr_zero_settled	lm/radar	RRZEROSB +10 s
+task	AGC_TASK_STATEINT	agc_task_stateint	agc_task_stateint	nav/integration	2.3 LONGCALL (nav-integ)
+task	AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY	-	agc_task_rendezvous_parameter_display	programs/displays	R31CALL (LM V83)
+task	AGC_TASK_RENDEZVOUS_PARAMS_WAIT	agc_task_rendezvous_params_wait	agc_task_rendezvous_params_wait	programs/displays	
+task	AGC_TASK_TICKTEST	agc_task_ticktest	agc_task_ticktest	programs/displays	R30 V82 1 s tick
+job	AGC_JOB_CHANGE_PROGRAM_CONTINUE	agc_job_change_program_continue	agc_job_change_program_continue	exec	CANV37 (V37 after SERVICER stops / INTSTALL)
+job	AGC_JOB_CHANGE_PROGRAM_START	agc_job_change_program_start	agc_job_change_program_start	exec	V37XEQ (restart point of the V37 software restart)
+job	AGC_JOB_SPS_BURN	agc_job_sps_burn	-	csm/burns	P40CSM (V37)
+job	AGC_JOB_IMU_ORIENTATION_DETERMINATION	agc_job_csm_imu_orientation_determination	agc_job_lm_imu_orientation_determination	csm/alignment	P51 / P53 (V37)
+job	AGC_JOB_LUNAR_SURFACE_ALIGN	-	agc_job_lunar_surface_align	lm/alignment	P57 (V37)
+job	AGC_JOB_STANDBY	agc_imu_standby	agc_imu_standby	imu	P06 (V37)
+job	AGC_JOB_PRELAUNCH_INITIALIZATION	agc_csm_prelaunch_imutest	-	csm	P01 GTSCPSS1 (V37)
+job	AGC_JOB_CHANGE_PROGRAM_JETS_OFF	agc_job_change_program_jets_off	-	exec	R00TOP00 after DELAYJOB 5: jets off, P00
+job	AGC_JOB_CHANGE_PROGRAM_RETURN	-	agc_job_change_program_return	exec	V37RET (LM OUTROUTE after AVGEND)

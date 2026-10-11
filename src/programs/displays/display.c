@@ -134,12 +134,7 @@ agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = rz_alarm(code);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_alarm(code);
 
     return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, proceed,
                      recycle));
@@ -187,8 +182,7 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     rz->qsaved = resume_as; /* TS QSAVED      */
 
-    return (rz_delayjob(RZ_1SEC_CS,
-                        AGC_JOB_RENDZ_TTOGO_DISPLAY)); /* DELAYJOB 1SEC  */
+    return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_RENDZ_TTOGO_DISPLAY)); /* DELAYJOB 1SEC  */
 }
 
 /* VN1645 after DELAYJOB: V16N45 (TRKMKCNT, TTOGO, +MGA) flashing. */
@@ -217,7 +211,7 @@ agc_status_t agc_job_rendz_kilclock(agc_job_ctx_t *ctx)
     }
 
     rz_dispdex_zero();
-    agc_status_t st = rz_gotopooh();
+    agc_status_t st = agc_exec_gotopooh();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO))
     {
@@ -429,4 +423,197 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
     }
 
     return (rz_ttogo_display(ctx, ip, rz_state(), resume_as));
+}
+
+/* GOFLASH / GOFLASHR / GOMARKF / GOXDSPF ... with the three astronaut
+ * returns (call CADR +1 terminate, +2 proceed, +3 enter). */
+agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
+                      uint8_t verb, uint8_t noun, agc_job_id_t term,
+                      agc_job_id_t proceed, agc_job_id_t enter)
+{
+    if (!AGC_ASSERT(verb < 100U && noun < 100U) ||
+        !AGC_ASSERT((int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_dsky_cont_t cont;
+
+    cont.terminate = term;
+    cont.proceed   = proceed;
+    cont.enter     = enter;
+
+    return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
+}
+
+/* PRIOLARM (DISPLAY_INTERFACE_ROUTINES): the alarm, then V05N09 as a
+ * priority display with the three astronaut returns.                   */
+agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
+                           agc_job_id_t term, agc_job_id_t proceed,
+                           agc_job_id_t enter)
+{
+    if (!AGC_ASSERT(code != 0U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_prioalarm(code);
+    agc_status_t st = AGC_STATUS_ALARM;
+
+    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
+    {
+        return (st);
+    }
+
+    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 5U, 9U, term, proceed, enter));
+}
+
+/* COMPTGO (CM P30-P37 p.636; LM P32-P35_P72-P75): start CLOKTASK (TTOGO
+ * clock display) and protect it: 2PHSCHNG OCT 40036 (6.3SPOT CLOKTASK),
+ * OCT 05024 + OCT 13000 (group 4 type C, PRIO13 job at the return). The
+ * CM also sets TIMRFLAG and clears NVWORD1, and waits 1 cs; the LM clears
+ * DISPDEX and waits 2 cs. DEVIATION: the CM routine of guid-powered
+ * (agc_csm_comptgo) hard-wires its own P30 return job, so the rendezvous
+ * programs use this copy with their own return job `cont`.             */
+agc_status_t rz_comptgo(agc_job_id_t cont)
+{
+    if (!AGC_ASSERT(cont != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    uint16_t delay = 2U;
+
+    if (rz_is_csm())
+    {
+        rz_vflag_set(RZ_VF_TIMRFLAG, true);
+        agc_guid_state()->csm.nvword1 = 0;
+        delay                         = 1U;
+    }
+    else
+    {
+        agc_guid_state()->lm.dispdex = 0;
+    }
+
+    agc_inhint();
+    agc_status_t    st = agc_waitlist_call(delay, AGC_TASK_CLOKTASK);
+    agc_phase_var_t v;
+
+    v.kind       = AGC_RESTART_JOB;
+    v.job        = cont;
+    v.task       = AGC_TASK_NONE;
+    v.prio_or_dt = 013; /* PRIO13          */
+    v.immediate  = false;
+    v.long_dt_cs = 0U;
+    agc_phase_change2(040036U, 05024U, &v);
+    agc_relint();
+
+    return (st);
+}
+
+/* DISPDEX = 0 (KILCLOCK, CLUPDATE). In the CM, DISPDEX EQUALS A
+ * (ERASABLE_ASSIGNMENTS p.~), so "TS DISPDEX" stores nothing.        */
+void rz_dispdex_zero(void)
+{
+    if (rz_is_csm())
+    {
+        return;
+    }
+
+    agc_guid_state()->lm.dispdex = 0;
+
+    if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == 0))
+    {
+        return;
+    }
+}
+
+/* OPTION1 = DSPTEMX = DSPTEM2 +1 (index 4), OPTION2 = +2 (index 5). */
+uint16_t rz_option(int which)
+{
+    if (!AGC_ASSERT(which == 1 || which == 2))
+    {
+        return (0U);
+    }
+
+    return (agc_dsky_dsptem(3 + which));
+}
+
+agc_status_t rz_set_option(int which, uint16_t v)
+{
+    if (!AGC_ASSERT(which == 1 || which == 2) || !AGC_ASSERT(v <= 077777U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_dsky_set_dsptem(3 + which, v));
+}
+
+/* A raw 15-bit ones' complement word as a signed SP value. */
+static agc_sp_t rz_word_to_sp(uint16_t w)
+{
+    if (!AGC_ASSERT(w <= 077777U))
+    {
+        return (0); /* no valid result */
+    }
+
+    if ((w & 040000U) != 0U)
+    {
+        return ((agc_sp_t) (-(agc_sp_t) ((uint16_t) ~w & 037777U)));
+    }
+
+    return ((agc_sp_t) w);
+}
+
+/* A signed SP value as a raw 15-bit ones' complement word. */
+static uint16_t rz_sp_to_word(agc_sp_t v)
+{
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (v < 0)
+    {
+        return ((uint16_t) (~(uint16_t) (-v) & 077777U));
+    }
+
+    return ((uint16_t) v);
+}
+
+/* A DP in the display temporaries: index 0 = DSPTEM1, 4 = DSPTEMX. */
+agc_dp_t rz_dsptem_dp(int index)
+{
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX))
+    {
+        return (0);
+    }
+
+    agc_sp_t hi = rz_word_to_sp(agc_dsky_dsptem(index));
+    agc_sp_t lo = rz_word_to_sp(agc_dsky_dsptem(index + 1));
+
+    return (agc_dp_pack(hi, lo));
+}
+
+agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
+{
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX) ||
+        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st = agc_dsky_set_dsptem(index, rz_sp_to_word(agc_dp_high(v)));
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
+    }
+
+    return (st);
 }

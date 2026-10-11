@@ -31,7 +31,6 @@
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 #include "internal.h"
 
 #define PH_WORD15 077777u /* 15-bit word; also -0                     */
@@ -159,6 +158,17 @@ static void set_tbase(int group)
     {
         return;
     }
+}
+
+/* CS TIME1 / TS TBASEn by itself (LM SERVICER R10,R11 set-up: TBASE2).  */
+void agc_phase_set_tbase(int group)
+{
+    if (!AGC_ASSERT(group_ok(group)))
+    {
+        return;
+    }
+
+    set_tbase(group);
 }
 
 /* PHSCHNG2 decoding (C p.1410 / L p.1299): TEMPG, TEMPP, TEMPSW.      */

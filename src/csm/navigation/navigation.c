@@ -129,7 +129,8 @@ agc_status_t rz_waitone(agc_job_id_t pointex)
 
     nc_pointex = pointex;
 
-    return (rz_delayjob(NC_4SECS, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
+    return (agc_svc_delayjob(NC_4SECS,
+                             AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
 }
 
 agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
@@ -146,7 +147,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
 
     if (agc_erase_r61cntr() < 0)
     {
-        return (rz_delayjob(NC_4SECS, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
+        return (agc_svc_delayjob(NC_4SECS,
+                                 AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
     }
 
     if (agc_flag_test(AGC_FLAG_UPDATFLG))
@@ -159,7 +161,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* ENDPLAC  */
     }
 
-    rz_phase(2, 00132); /* REDOR22  */
+    agc_phase_change(2, 00132); /* REDOR22  */
     agc_exec_prio_change(NC_PRIO26);
     agc_status_t st = AGC_STATUS_OK;
 
@@ -168,7 +170,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (rz_delayjob(NC_4SECS, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
+    return (agc_svc_delayjob(NC_4SECS,
+                             AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
 }
 
 /* ---- PROG20 (pp.562-564) ----------------------------------------------- */
@@ -214,7 +217,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    nc_marktime = rz_loadtime();
+    nc_marktime = agc_rtb_loadtime();
     bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG);
     agc_status_t st  = rz_setintg(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE);
 
@@ -226,7 +229,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_RENDWFLG));
     rz_flag_put(AGC_FLAG_VINTFLAG, csm); /* P20.1    */
     st = agc_integ_integrv(&ip, agc_integ_shared_ctx(), nc_marktime);
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -251,8 +254,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rz_phase(2, 00072);
-    rz_phase(1, 00111);
+    agc_phase_change(2, 00072);
+    agc_phase_change(1, 00111);
 
     return (agc_job_rendezvous_navigation_csm_track(ctx));
 }
@@ -419,7 +422,7 @@ agc_status_t agc_job_backup_sighting_mark_taken(agc_job_ctx_t *ctx)
 
     agc_inhint();
     nc_mrkbuf_copy();
-    uint32_t t = (uint32_t) rz_loadtime();
+    uint32_t t = (uint32_t) agc_rtb_loadtime();
 
     agc_erase_set_mrkbuf(1, 0, (uint16_t) ((t >> 14) & 037777u)); /* TIME2 */
     agc_erase_set_mrkbuf(1, 1, (uint16_t) (t & 037777u));         /* TIME1 */

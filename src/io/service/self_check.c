@@ -25,7 +25,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 
 #define WORD15           077777u
 #define NEG0             077777u /* -0                                    */

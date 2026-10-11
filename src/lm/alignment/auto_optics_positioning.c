@@ -15,7 +15,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define VN_STAR_CODE ALIGN_VN(1, 70)   /* V01N70 VN 0170                 */
 #define VN_AZ_EL     ALIGN_VN(6, 87)   /* V06N87 VN 687                  */

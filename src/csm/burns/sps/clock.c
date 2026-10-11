@@ -685,5 +685,5 @@ agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx)
 
     agc_relint();
 
-    return (agc_dsky_gopin(ctx)); /* ENDFIG                 */
+    return (agc_extverb_gopin()); /* ENDFIG                 */
 }

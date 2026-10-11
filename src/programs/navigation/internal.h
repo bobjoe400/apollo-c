@@ -16,10 +16,11 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/nav/auxiliary.h"
 #include "agc/nav/conic.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"
-#include "pending.h"
 
 /* ---- fixed constants shared by several files ---------------------------- */
 /* TWOPI 2DEC 6.283185307 B-4 (P34-35 p.485), radians scale 2^4; the CM
@@ -83,16 +84,7 @@ void rz_flag_put(agc_flag_id_t f, bool on);
 
 /* ---- glue to other lanes (glue.c) --------------------------------- */
 /* Conic body from RTX1 (-2 earth, -10 moon).                              */
-agc_conic_body_t rz_body(const agc_rendz_t *rz);
-agc_status_t     rz_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
-                             agc_conic_time_out_t *out);
-agc_status_t rz_timerad(agc_interp_t *ip, const agc_timerad_in_t *in,
-                        agc_conic_time_out_t *out);
 /* LAMBERT (CM) / SETITCTR + LAMBERT (LM).                                 */
-agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
-                        agc_lambert_out_t *out);
-agc_status_t rz_apsides(agc_interp_t *ip, agc_vec_t r, agc_vec_t v,
-                        agc_conic_body_t body, agc_apsides_out_t *out);
 
 typedef enum rz_integ_kind
 {
@@ -125,16 +117,10 @@ typedef struct rz_integrvs_in
 
 agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
                          agc_job_id_t resume, agc_integ_out_t *out);
-agc_vec_t rz_rls(void);
 /* GOFLASH-type display with the three astronaut returns.                  */
 agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
                       uint8_t verb, uint8_t noun, agc_job_id_t term,
                       agc_job_id_t proceed, agc_job_id_t enter);
-agc_status_t rz_gotopooh(void);
-agc_status_t rz_endext(void);
-agc_status_t rz_delayjob(uint16_t delay_cs, agc_job_id_t cont);
-agc_dp_t     rz_loadtime(void); /* LOADTIME: TIME2,TIME1 as DP cs 2^28 */
-agc_status_t rz_alarm(agc_alarm_code_t code);
 /* COMPTGO; the restart (group 4 type C) resumes as job cont.           */
 agc_status_t rz_comptgo(agc_job_id_t cont);
 /* DISPDEX = 0 (KILCLOCK / CLUPDATE).                                     */
@@ -151,7 +137,6 @@ agc_status_t rz_set_option(int which, uint16_t v);
 
 /* PHASCHNG type A (group, code), and type C restarting job `job` at
  * priority prio (code_a = 0: single PHASCHNG; else 2PHSCHNG code_a).    */
-void rz_phase(int group, uint16_t code);
 void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
                   int16_t prio);
 /* PRIOLARM: alarm and V05N09 priority display.                          */
@@ -249,8 +234,8 @@ agc_status_t rz_setintg(agc_job_id_t resume); /* SETINTG            */
  * update flag is on.                                                     */
 agc_status_t rz_waitone(agc_job_id_t pointex);
 /* N49DISP +index (CSM R22, noun 49).                                     */
-agc_dp_t rz_csm_n49disp(int index);
-void     rz_set_csm_n49disp(int index, agc_dp_t v); /* P23 R23.53 */
+agc_dp_t rz_csm_residuals(int index);
+void     rz_set_csm_residuals(int index, agc_dp_t v); /* P23 R23.53 */
 /* S22.1 (csm/navigation/landmark_navigation.c): nmarks marks of the
  * sighting, the caller continues as ret; CXOFF of the landmark code.                  */
 agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret);

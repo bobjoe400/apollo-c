@@ -130,6 +130,11 @@ agc_tp_t agc_dp_sq_tp(agc_dp_t a);
  * ASIN/ACOS out of range (caller does agc_alarm(01301)); *out is the value
  * the AGC leaves in MPAC (0 for the SQRT abort).                           */
 agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
+/* The alarm the plain agc_dp_sqrt / asin / acos latched since the last
+ * call (01302 SQRT of a negative: ABORT; 01301 ARCSIN/ARCCOS out of
+ * range: ALARM; 0 none), cleared by reading. The executive raises it
+ * when the job or task returns (core cannot call exec).                   */
+uint16_t     agc_interp_take_alarm(void);
 agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
 agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out);
 /* SQRT of a TP MPAC (TLOAD/DMP/DSQ then SQRT): MPAC+2 takes part.          */

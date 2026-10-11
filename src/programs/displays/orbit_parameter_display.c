@@ -19,7 +19,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 
 /* ---- constants (R30.agc p.517 and SR30.1 p.523) ------------------------- */
@@ -179,7 +179,7 @@ static agc_status_t opd_input(agc_interp_t *ip, agc_rendz_t *rz, bool moon,
 {
     in->rone = rz->rone;
     in->vone = rz->vone;
-    agc_dp_t pad = moon ? rz_abval(ip, rz_rls()) : RZ_RPAD_B29;
+    agc_dp_t pad = moon ? rz_abval(ip, agc_erase_rls()) : RZ_RPAD_B29;
 
     return (agc_orbit_params_select_body(moon, pad, in));
 }
@@ -312,7 +312,7 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
 
     if ((rz_state()->orbit_display_flags & OPD_TICK_MASK) == 0)
     {
-        return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL));
+        return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL));
     }
 
     return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
@@ -326,7 +326,7 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
  * otherwise TFF). ENDOFJOB.                                            */
 static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    rz->tstart_orbit = agc_dp_sub(ip, rz_loadtime(), rz->tstart_orbit);
+    rz->tstart_orbit = agc_dp_sub(ip, agc_rtb_loadtime(), rz->tstart_orbit);
 
     if (rz->neg_tper != 0)
     { /* TICKTPER      */
@@ -356,7 +356,7 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
     agc_rendz_t *rz  = opd_begin(&ip);
-    agc_dp_t     now = rz_loadtime();     /* RTB LOADTIME  */
+    agc_dp_t     now = agc_rtb_loadtime();     /* RTB LOADTIME  */
 
     rz->tstart_orbit = now;
     rz_integ_kind_t kind = (rz_option(2) == 1U) ? RZ_THISPREC : RZ_OTHPREC;
@@ -442,10 +442,10 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
 
     if (opd_terminated())
     {
-        return (rz_endext());
+        return (agc_dsky_endext());
     }
 
-    return (rz_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G));
+    return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G));
 }
 
 /* CANDEL / SPLRET (CM p.520): INTSTALL, DELRSPL with TFF (it does the
@@ -548,5 +548,5 @@ agc_status_t agc_job_rendz_endext(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_endext());
+    return (agc_dsky_endext());
 }

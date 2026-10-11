@@ -612,6 +612,34 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     return (AGC_STATUS_OK);
 }
 
+/* UN and GEOMSGN as LAMBERT left them in erasable (LM RASTEER, P40-P42
+ * Lambert steering, reads them after the last INITVEL / LAMBERT).        */
+static agc_vec_t g_un;      /* UN, 2^1                                */
+static agc_sp_t  g_geomsgn; /* GEOMSGN, +.5 short way / -.5 long way  */
+
+agc_vec_t agc_erase_un(void)
+{
+    for (int i = 0; i < AGC_VEC_N; i++)
+    {
+        if (!AGC_ASSERT(g_un.c[i] >= AGC_DP_MIN && g_un.c[i] <= AGC_DP_MAX))
+        {
+            return (agc_vec_zero());
+        }
+    }
+
+    return (g_un);
+}
+
+agc_sp_t agc_erase_geomsgn(void)
+{
+    if (!AGC_ASSERT(g_geomsgn >= AGC_SP_MIN && g_geomsgn <= AGC_SP_MAX))
+    {
+        return (0);
+    }
+
+    return (g_geomsgn);
+}
+
 /* Copy the LAMBERT debris to *out. */
 static void lambert_output(const agc_conic_ctx_t *ctx,
                            const lambert_state_t *ls, agc_lambert_out_t *out)
@@ -636,6 +664,8 @@ static void lambert_output(const agc_conic_ctx_t *ctx,
     out->ur1        = ctx->ur1;
     out->u2         = ctx->u2;
     out->un         = ctx->un;
+    g_un            = ctx->un;      /* STOVL UN (erasable)    */
+    g_geomsgn       = ctx->geomsgn; /* GEOMSGN (erasable)     */
 }
 
 /* Set SOLNSW (in *out and in the flagword). */

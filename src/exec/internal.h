@@ -101,6 +101,7 @@ agc_job_id_t exec_running_job_loc(void); /* LOC of core set 0 (LOCALARM) */
 
 /* ---- software restart request (alarm.c) ------------------------------ */
 void exec_request_enema(void); /* WHIMPER: ENEMA at next service */
+void exec_service_interp_alarm(void); /* ALARM 1301 / ABORT 1302 of SQRT etc */
 
 /* ---- MODECADR (erasable.c) -------------------------------------- */
 void exec_clear_modecadr(void); /* STARTSB2: IMU/OPT/RAD CADR = 0 */
@@ -116,12 +117,51 @@ void exec_vac5stor(void); /* CSM debug copy of tables  */
  * (no program; the PROG lights are blanked). See io-pinball DSPMMJB.  */
 #define EXEC_MODREG_NEG0 ((agc_sp_t) -1)
 
-/* ---- up-calls into higher layers (change_program_idle.c) -------------------------
+/* ---- up-calls into higher layers (change_program/idle.c) --------------
  * The AGC restart code calls routines that apollo-c places above exec
- * (DAP, IMU, SERVICER). These few calls are collected in change_program_idle.c, the
- * layering exception next to dispatch.c; unit tests replace them.     */
+ * (DAP, IMU, SERVICER). These few calls are collected in
+ * change_program/, the layering exception next to dispatch.c.         */
 agc_status_t exec_up_stoprate(void); /* CSM GOPROG3 / INITSUB: STOPRATE */
 agc_status_t exec_up_servidle(void); /* LM STRTIDLE: SERVIDLE          */
 agc_status_t exec_up_setcoars(void); /* CSM GOPROG: SETCOARS (NO ATT)  */
+agc_status_t exec_up_startsb2(void);  /* STARTSB2: other modules' resets */
+agc_status_t exec_up_dofstart(bool slap1); /* DOFSTART: other modules' resets */
+agc_status_t exec_up_goprog_optics(void);  /* CSM GOPROG: OPTMODES       */
+
+void exec_initsub_csm(void); /* INITSUB / RAKE (CSM)           */
+
+/* ---- V37 (change_program/v37.c, csm.c, lm.c) -------------------------
+ * One selectable major mode: FCADRMM1 (job), PREMM1 (priority; the EBANK
+ * field has no meaning in C) and DNLADMM1 (downlist code).            */
+typedef struct exec_cp_mode
+{
+    uint8_t      mm;     /* major mode number                         */
+    agc_prio_t   prio;   /* PREMM1 bits 15-11                         */
+    int          dnlist; /* DNLADMM1: DNLSTCOD for the new program    */
+    agc_job_id_t job;    /* FCADRMM1: the program's first job          */
+} exec_cp_mode_t;
+
+uint8_t               exec_cp_mmnumber(void); /* MMNUMBER                   */
+const exec_cp_mode_t *exec_cp_modes_csm(int *n);
+const exec_cp_mode_t *exec_cp_modes_lm(int *n);
+/* CSM: R00TOP00 (engine on or TVC DAP): BUSY while the job waits.      */
+agc_status_t exec_cp_engine_off_to_idle(void);
+agc_status_t exec_cp_after_engine_off(void); /* R00TOP00 tail: ISITP00 */
+/* LM: SETUP70 / SETUP71 (P70 / P71 in the V37 job).                   */
+agc_status_t exec_cp_setup_abort(const agc_job_ctx_t *ctx, bool aps);
+/* ISSERVON: SERVICER asked to stop (AVEGFLAG down; LM OUTROUTE).      */
+void exec_cp_stop_servicer_csm(void);
+void exec_cp_stop_servicer_lm(void);
+/* CANV37 after INTSTALL: outbits and flags of each vehicle.           */
+void         exec_cp_cleanup_csm(void);
+agc_status_t exec_cp_cleanup_lm(void);
+/* POOH / NOUVEAU flag work (FLAGWRD0, FLAGWRD1, CLRADMOD, ...).        */
+void         exec_cp_pooh_flags_csm(void);
+agc_status_t exec_cp_pooh_flags_lm(void);
+void         exec_cp_nouveau_flags_csm(void);
+agc_status_t exec_cp_nouveau_flags_lm(void);
+/* RENDV00: groups 1/2 for rendezvous; true = STATQUO (keep P20, GOMOD). */
+bool         exec_cp_rendezvous_csm(uint8_t mm);
+agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo);
 
 #endif /* AGC_EXEC_INTERNAL_H */

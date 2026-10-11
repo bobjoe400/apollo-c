@@ -34,7 +34,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/lm/dap.h"
 
 #define WORD15         077777u

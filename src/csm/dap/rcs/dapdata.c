@@ -24,9 +24,10 @@
 #define T5_06SEC   ((uint16_t) 037704) /* 0.6SECT5: 0.6 s lets TVCEXEC die  */
 #define CONFIGBITS ((uint16_t) 030000) /* PRIO30: DAPDATR1 bits 14,13       */
 
-/* SETMINDB (p. 687): minimum deadband, attitude hold about the present
- * CDUs. Should be called under interrupt inhibit.                        */
-agc_status_t agc_csm_dap_setmindb(void)
+/* SETMINDB (P40-P47 p.687): minimum deadband (ADB = MINDB, DAPDATR1 BIT4
+ * clear), attitude hold about the present CDUs (THETADX..Z). Called under
+ * interrupt inhibit (INITSUB, P40, S41.1).                               */
+void agc_csm_dap_setmindb(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
 
@@ -41,14 +42,13 @@ agc_status_t agc_csm_dap_setmindb(void)
 
     if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) == 0u))
     {
-        return (AGC_STATUS_BAD_ARG);
+        return;
     }
-
-    return (AGC_STATUS_OK);
 }
 
-/* SETMAXDB (p. 687): maximum deadband. Under interrupt inhibit.          */
-agc_status_t agc_csm_dap_setmaxdb(void)
+/* SETMAXDB (P40-P47 p.687): maximum deadband (ADB = MAXDB, DAPDATR1 BIT4
+ * set). Under interrupt inhibit.                                          */
+void agc_csm_dap_setmaxdb(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
 
@@ -57,15 +57,13 @@ agc_status_t agc_csm_dap_setmaxdb(void)
 
     if (!AGC_ASSERT(r->adb == MAXDB))
     {
-        return (AGC_STATUS_BAD_ARG);
+        return;
     }
 
     if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) != 0u))
     {
-        return (AGC_STATUS_BAD_ARG);
+        return;
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /* S41.2 (pp. 731-732), part 1: rates, docked flag, deadband, quad

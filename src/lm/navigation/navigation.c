@@ -28,22 +28,23 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/nouns.h"
+#include "agc/io/service.h"
 
-#define NAV_FHNM           ((agc_dp_t) 189644800) /* FHNM 2DEC 740800 B-20: 400 NM */
-#define NAV_ONEB_2         ((agc_dp_t) 67108864) /* ONEB-2 2DEC 1.0 B-2       */
-#define NAV_250DEC         250U                  /* 250DEC: 2.5 s             */
-#define NAV_1500DEC        1500U                 /* 1500DEC: 15 s             */
-#define NAV_60SCNDS        6000U                 /* 60SCNDS DEC 6000          */
-#define NAV_MODE_P20       20                    /* OCT24 = 20 decimal        */
-#define NAV_MODE_P22       22
-#define NAV_PRIO26         ((agc_prio_t) 026)
-#define NAV_PRIO14         ((agc_prio_t) 014)
-#define NAV_OPTION_CODE    012U  /* OCT00012: option 12 (N06) */
-#define NAV_CHECKLIST_AUTO 0201U /* OCT201: select RR auto    */
-#define NAV_ALARM_RANGE    ((agc_alarm_code_t) 00526) /* range > 400 NM      */
-#define NAV_ALARM_AUTO     ((agc_alarm_code_t) 00514) /* RR out of auto       */
-#define NAV_CH33_RR_AUTO   000002u /* chan 33 bit 2 (0 = auto)  */
+#define NAV_FHNM            ((agc_dp_t) 189644800) /* FHNM 2DEC 740800 B-20: 400 NM */
+#define NAV_ONEB_2          ((agc_dp_t) 67108864) /* ONEB-2 2DEC 1.0 B-2       */
+#define NAV_250DEC          250U                 /* 250DEC: 2.5 s             */
+#define NAV_1500DEC         1500U                /* 1500DEC: 15 s             */
+#define NAV_60SCNDS         6000U                /* 60SCNDS DEC 6000          */
+#define NAV_MODE_RENDEZVOUS 20                   /* OCT24 = 20 decimal        */
+#define NAV_MODE_SURFACE    22
+#define NAV_PRIO26          ((agc_prio_t) 026)
+#define NAV_PRIO14          ((agc_prio_t) 014)
+#define NAV_OPTION_CODE     012U /* OCT00012: option 12 (N06) */
+#define NAV_CHECKLIST_AUTO  0201U /* OCT201: select RR auto    */
+#define NAV_ALARM_RANGE     ((agc_alarm_code_t) 00526) /* range > 400 NM      */
+#define NAV_ALARM_AUTO      ((agc_alarm_code_t) 00514) /* RR out of auto       */
+#define NAV_CH33_RR_AUTO    000002u /* chan 33 bit 2 (0 = auto)  */
 
 static lmnav_state_t lmnav;
 
@@ -155,7 +156,7 @@ static agc_status_t nav_uppsv_one(agc_interp_t *ip, bool csm, bool with_w,
 
     rz_flag_put(AGC_FLAG_VINTFLAG, csm);
     st = agc_integ_integrv(ip, agc_integ_shared_ctx(), tdec1);
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
 
     return (st);
 }
@@ -286,7 +287,7 @@ static agc_status_t nav_orbit_states(agc_interp_t *ip, agc_vec_t *rsubl,
     rz_flag_put(AGC_FLAG_DIM0FLAG, false);
     rz_flag_put(AGC_FLAG_D6OR9FLG, false);
     st = agc_integ_integrv(ip, ctx, lmnav.lnchtm); /* INTEGRV  */
-    rz_phase(2, 04022);                            /* GRP2PC   */
+    agc_phase_change(2, 04022);                            /* GRP2PC   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -313,7 +314,7 @@ static agc_status_t nav_orbit_states(agc_interp_t *ip, agc_vec_t *rsubl,
     }
 
     st = agc_integ_integrv(ip, ctx, tat); /* NOWMATX  */
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     *vsubc = ctx->out.vatt1;
     *rsubc = ctx->out.ratt1;
 
@@ -352,7 +353,7 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
     rz_flag_put(AGC_FLAG_RVSW, false);
     agc_conic_time_out_t o;
 
-    st = rz_timethet(ip, &in, &o);
+    st = agc_conic_timethet(ip, &in, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -367,7 +368,7 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
     agc_vec_t ncsmvel =
         agc_vec_shl(ip, agc_vec_scale(ip, dir, agc_vec_abval(ip, newvel)), 1);
 
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
     st = agc_integ_install(0, AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE);
 
     if (st != AGC_STATUS_OK)
@@ -449,14 +450,15 @@ agc_status_t agc_job_rendezvous_navigation_range_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_erase_set_trkmkcnt(0); /* MARKCTR  */
     agc_interp_t ip;
 
     agc_interp_init(&ip);
     bool         too_far = false;
     agc_status_t st      =
-        lmnav_los(&ip, rz_loadtime(), AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_CHECK,
+        lmnav_los(&ip, agc_rtb_loadtime(),
+                  AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_CHECK,
                   &too_far);
 
     if (st != AGC_STATUS_OK)
@@ -507,7 +509,7 @@ agc_status_t agc_job_rendezvous_navigation_attitude(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -556,7 +558,7 @@ agc_status_t agc_job_rendezvous_navigation_acquire(agc_job_ctx_t *ctx)
 
     agc_sp_t mm = agc_erase_modreg(); /* P20LEMB5 */
 
-    if (mm == NAV_MODE_P20 || mm == NAV_MODE_P22)
+    if (mm == NAV_MODE_RENDEZVOUS || mm == NAV_MODE_SURFACE)
     { /* P20LEMB6 */
         agc_dsky_cont_t cont;
 
@@ -605,8 +607,8 @@ agc_status_t agc_job_rendezvous_navigation_cdu_zero_wait(agc_job_ctx_t *ctx)
 
     if (rr_radmodes_test(RR_RCDU0BIT))
     { /* P20LEMB4 */
-        return (rz_delayjob(NAV_250DEC,
-                            AGC_JOB_RENDEZVOUS_NAVIGATION_CDU_ZERO_WAIT));
+        return (agc_svc_delayjob(NAV_250DEC,
+                                 AGC_JOB_RENDEZVOUS_NAVIGATION_CDU_ZERO_WAIT));
     }
 
     if (agc_flag_test(AGC_FLAG_SRCHOPTN) || agc_flag_test(AGC_FLAG_ACMODFLG))
@@ -631,7 +633,7 @@ agc_status_t agc_job_rendezvous_navigation_update_states(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = nav_uppsv(&ip, rz_loadtime(),
+    agc_status_t st = nav_uppsv(&ip, agc_rtb_loadtime(),
                                 AGC_JOB_RENDEZVOUS_NAVIGATION_UPDATE_STATES);
 
     if (st != AGC_STATUS_OK)
@@ -651,7 +653,7 @@ agc_status_t agc_job_rendezvous_navigation_designate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -681,7 +683,7 @@ agc_status_t lmnav_wait(uint16_t delay_cs)
 
     if (st == AGC_STATUS_OK && agc_flag_test(AGC_FLAG_TRACKFLG))
     {
-        rz_phase(2, 040072); /* P20LMWT1 */
+        agc_phase_change(2, 040072); /* P20LMWT1 */
     }
 
     return (st); /* ENDOFJOB */
@@ -755,7 +757,7 @@ agc_status_t agc_job_preferred_tracking_attitude_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {
@@ -784,4 +786,49 @@ agc_status_t agc_task_preferred_tracking_attitude_wait(void)
 
     return (agc_exec_findvac(NAV_PRIO14,
                              AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK));
+}
+
+/* Noun data of the LM rendezvous navigation (R22 / P20 LM): DATAGOOD,
+ * OMEGAD, the N49 radar residuals, WHCHREAD. NOT_FOUND: not one of them. */
+agc_status_t agc_lm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
+{
+    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    const lmnav_state_t *n = lmnav_state();
+
+    switch (data_id)
+    {
+        case AGC_DATA_DATAGOOD:
+            *v = agc_dp_from_sp(n->datagood);
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_OMEGAD:
+            *v = n->omegad;
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_RADAR_DELTA_R:
+            *v = n->r22disp[0];
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_RADAR_DELTA_V:
+            *v = n->r22disp[1];
+
+            return (AGC_STATUS_OK);
+
+        case AGC_DATA_WHCHREAD:
+            *v = agc_dp_from_sp(n->whchread);
+
+            return (AGC_STATUS_OK);
+
+        default:
+            break;
+    }
+
+    return (AGC_STATUS_NOT_FOUND);
 }

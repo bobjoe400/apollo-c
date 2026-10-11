@@ -19,13 +19,15 @@
 
 #include <stdint.h>
 
-#include "../../src/io/verbs/pending.h" /* provisional job ids, verb entries */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
-#include "agc/io/service_internal.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 static int g_checks;
 static int g_failures;

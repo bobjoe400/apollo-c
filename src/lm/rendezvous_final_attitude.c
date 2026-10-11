@@ -12,7 +12,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define VN_AXIS_OPTION ALIGN_VN(4, 12)   /* VB04N12 VN 412                 */
 #define VN_BALL_ANGLES ALIGN_VN(6, 18)   /* VB06N18 VN 0618                */

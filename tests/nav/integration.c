@@ -329,8 +329,9 @@ static void test_lock(void)
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
     CHECK(agc_integ_area_busy(0));
     CHECK(agc_flag_test(AGC_FLAG_INTFLAG)); /* RASFLAG BIT14     */
-    /* busy, and not called from a job: JOBSLEEP refuses, nothing queued */
-    CHECK(agc_integ_install(0, (agc_job_id_t) 0x0F01) == AGC_STATUS_BAD_ARG);
+    /* busy: the caller is put to sleep (here not inside a job, so JOBSLEEP
+     * only reports its assertion) and must call again when woken.       */
+    CHECK(agc_integ_install(0, AGC_JOB_STATINT1) == AGC_STATUS_BUSY);
     CHECK(agc_integ_install(1, AGC_JOB_NONE) == AGC_STATUS_OK); /* ERASTAL1 */
     CHECK(agc_integ_area_busy(1));
     CHECK(agc_integ_eraswake(1) == AGC_STATUS_OK);

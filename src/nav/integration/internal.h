@@ -66,4 +66,7 @@ void agc_integ_csm_resume_idle_integration(void);
 bool agc_integ_csm_amoonflg(void);
 void agc_integ_csm_set_amoonflg(bool on);
 
+/* FINDVAC priority PRIO5 (octal 05000 >> 9).                              */
+#define AGC_INTEG_PRIO5 ((agc_prio_t) 5)
+
 #endif /* INTEG_INTERNAL_H */

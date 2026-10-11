@@ -37,7 +37,7 @@
  *   - the EBANK=, SBANK=, BBCON and 2CADR bookkeeping disappears.
  * No function pointers are needed for any of it (Power of Ten rule 9).
  */
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 
 /* C11 forbids an empty translation unit; this declaration costs nothing. */
 _Static_assert(AGC_ROPE_BANK_WORDS == 02000, "a fixed bank is 1024 words");

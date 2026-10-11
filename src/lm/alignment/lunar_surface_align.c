@@ -20,25 +20,25 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
-#define PH_P57         ((uint16_t) 04024) /* OCT 04024                      */
-#define PH_OPTION      ((uint16_t) 00014) /* OCT 00014                      */
-#define OPT_CODE_1     ((uint16_t) 1)     /* CAF BIT1 for GOPERF4R          */
-#define OPTION_MASK    ((agc_sp_t) 3)     /* MASK THREE                     */
-#define OPTION_GRAVITY ((agc_sp_t) 1)     /* BIT1: options 1 and 3          */
-#define OPTION_STARS   ((agc_sp_t) 2)     /* BIT2: options 2 and 3          */
-#define OPTION_SITE    ((agc_sp_t) 2)     /* option 2: compute the site     */
-#define OPTION1_CHECK  ((agc_sp_t) 010)   /* BIT4 in OPTION1: checklist     */
-#define OPTION3_REFSM  ((agc_sp_t) 0100)  /* BIT7: REFSMFLG set             */
-#define OPTION3_ATT    ((agc_sp_t) 010)   /* BIT4: ATTFLAG set              */
-#define CHK_POST       ((uint16_t) 014)   /* OCT14                          */
-#define ALM_OPTION     ((agc_alarm_code_t) 0701)
-#define VN_ALIGN_TIME  ALIGN_VN(6, 34)      /* V06N34*                        */
-#define VN_OPTIONS     ALIGN_VN(5, 6)       /* VB05N06                        */
-#define VN_ALARM       ALIGN_VN(5, 9)       /* VB05N09                        */
-#define VN_TORQUE      ALIGN_VN(6, 93)      /* DISPGYRO VN 0693               */
-#define FIVE_DEGREES   ((agc_dp_t) 3728270) /* 5DEGREES 2DEC .013888889 revs */
+#define PH_SURFACE_ALIGN ((uint16_t) 04024) /* OCT 04024                      */
+#define PH_OPTION        ((uint16_t) 00014) /* OCT 00014                      */
+#define OPT_CODE_1       ((uint16_t) 1)    /* CAF BIT1 for GOPERF4R          */
+#define OPTION_MASK      ((agc_sp_t) 3)    /* MASK THREE                     */
+#define OPTION_GRAVITY   ((agc_sp_t) 1)    /* BIT1: options 1 and 3          */
+#define OPTION_STARS     ((agc_sp_t) 2)    /* BIT2: options 2 and 3          */
+#define OPTION_SITE      ((agc_sp_t) 2)    /* option 2: compute the site     */
+#define OPTION1_CHECK    ((agc_sp_t) 010)  /* BIT4 in OPTION1: checklist     */
+#define OPTION3_REFSM    ((agc_sp_t) 0100) /* BIT7: REFSMFLG set             */
+#define OPTION3_ATT      ((agc_sp_t) 010)  /* BIT4: ATTFLAG set              */
+#define CHK_POST         ((uint16_t) 014)  /* OCT14                          */
+#define ALM_OPTION       ((agc_alarm_code_t) 0701)
+#define VN_ALIGN_TIME    ALIGN_VN(6, 34)    /* V06N34*                        */
+#define VN_OPTIONS       ALIGN_VN(5, 6)     /* VB05N06                        */
+#define VN_ALARM         ALIGN_VN(5, 9)     /* VB05N09                        */
+#define VN_TORQUE        ALIGN_VN(6, 93)    /* DISPGYRO VN 0693               */
+#define FIVE_DEGREES     ((agc_dp_t) 3728270) /* 5DEGREES 2DEC .013888889 revs */
 
 static agc_sp_t option2(void)
 {
@@ -52,9 +52,9 @@ static agc_sp_t option2(void)
     return (v);
 }
 
-static agc_status_t p57_phase(void)
+static agc_status_t surface_align_phase(void)
 {
-    const agc_status_t st = align_phase4(PH_P57);
+    const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -434,7 +434,7 @@ agc_status_t agc_job_lunar_surface_attitude_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -566,7 +566,7 @@ agc_status_t agc_job_lunar_surface_realign(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -720,7 +720,7 @@ agc_status_t agc_job_lunar_surface_aligned(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = p57_phase();
+    agc_status_t st = surface_align_phase();
 
     agc_erase_set_refsmmat(agc_align_ram()->xsmd); /* MATMOVE  */
     agc_flag_set(AGC_FLAG_REFSMFLG);
@@ -783,7 +783,7 @@ agc_status_t agc_job_lunar_surface_post_enter(agc_job_ctx_t *ctx)
         return (agc_exec_gotopooh());
     }
 
-    agc_status_t st = p57_phase();
+    agc_status_t st = surface_align_phase();
     agc_vec_t    g;
 
     if (st == AGC_STATUS_OK)

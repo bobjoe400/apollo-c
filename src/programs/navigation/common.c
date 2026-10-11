@@ -51,27 +51,6 @@ agc_rendz_t *rz_state(void)
     return (agc_rendz_erasable());
 }
 
-/* TRKMKCNT (B(1)PRM): rendezvous tracking mark count (P20, AVETOMID). */
-agc_sp_t agc_erase_trkmkcnt(void)
-{
-    if (!AGC_ASSERT(rendz_erasable.trkmkcnt >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (rendz_erasable.trkmkcnt);
-}
-
-void agc_erase_set_trkmkcnt(agc_sp_t v)
-{
-    if (!AGC_ASSERT(v >= 0 && v <= AGC_SP_MAX))
-    {
-        return;
-    }
-
-    rendz_erasable.trkmkcnt = v;
-}
-
 /* VHFCNT (CM): VHF range mark count. */
 agc_sp_t agc_erase_vhfcnt(void)
 {
@@ -678,10 +657,10 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
     in.snth = snth;
     in.csth = csth;
     in.rvsw = rvsw;
-    in.body = rz_body(rz);
+    in.body = agc_conic_body_of_x1(rz->body.rtx1);
     rz_flag_put(AGC_FLAG_RVSW, rvsw);
 
-    return (rz_timethet(ip, &in, out));
+    return (agc_conic_timethet(ip, &in, out));
 }
 
 /* ---- PERIAPO1 / PERIAPO / SETRAD (p.495-497) ----------------------------
@@ -714,13 +693,13 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_conic_body_t body = rz_body(rz);
+    agc_conic_body_t body = agc_conic_body_of_x1(rz->body.rtx1);
 
     /* SETRAD: RPAD (2^29) about the earth, |RLS| (2^27) about the moon */
     out->xxxalt =
-        (body == AGC_CONIC_MOON) ? rz_abval(ip, rz_rls()) : RZ_RPAD_B29;
+        (body == AGC_CONIC_MOON) ? rz_abval(ip, agc_erase_rls()) : RZ_RPAD_B29;
     agc_apsides_out_t aps;
-    agc_status_t      st = rz_apsides(ip, rvec, vvec, body, &aps);
+    agc_status_t      st = agc_conic_apsides(ip, rvec, vvec, body, &aps);
 
     if (st != AGC_STATUS_OK)
     {
@@ -898,7 +877,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
     agc_vehicle_t    veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
     agc_status_t     st  = agc_incorp2_wupdate(ip, inc, &ctx->w);
 
-    rz_phase(2, 04022); /* FAZC     */
+    agc_phase_change(2, 04022); /* FAZC     */
 
     if (st == AGC_STATUS_OK)
     {
@@ -931,7 +910,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
         st = agc_integ_rectify(ip, ctx); /* FAZAB2   */
     }
 
-    rz_phase(2, 04022); /* FAZAB3   */
+    agc_phase_change(2, 04022); /* FAZAB3   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -968,7 +947,7 @@ void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
 
     inc->bvector[0] =
         agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
     *ustar = inc->bvector[0];
     agc_dp_t a =
         agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
@@ -990,4 +969,139 @@ uint16_t rz_word_of(int v)
     }
 
     return ((v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v));
+}
+
+/* THISPREC / OTHPREC: CSMPREC or LEMPREC by vehicle. */
+static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
+{
+    bool csm = rz_is_csm();
+
+    if (!AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
+    {
+        return (csm ? RZ_CSMPREC : RZ_LEMPREC); /* THISPREC */
+    }
+
+    if (kind == RZ_THISPREC)
+    {
+        return (csm ? RZ_CSMPREC : RZ_LEMPREC);
+    }
+
+    if (kind == RZ_OTHPREC)
+    {
+        return (csm ? RZ_LEMPREC : RZ_CSMPREC);
+    }
+
+    return (kind);
+}
+
+/* CSMPREC LEMPREC CSMCONIC LEMCONIC THISPREC OTHPREC
+ * (INTEGRATION_INITIALIZATION p.1318): permanent state to TDEC1. */
+agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
+                      agc_job_id_t resume, agc_integ_out_t *out)
+{
+    if (!AGC_ASSERT(ip != NULL && out != NULL) ||
+        !AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
+    agc_status_t     st;
+
+    switch (rz_resolve_kind(kind))
+    {
+        case RZ_CSMPREC:
+            st = agc_integ_csmprec(ip, ctx, tdec1, resume);
+            break;
+        case RZ_LEMPREC:
+            st = agc_integ_lemprec(ip, ctx, tdec1, resume);
+            break;
+        case RZ_CSMCONIC:
+            st = agc_integ_csmconic(ip, ctx, tdec1, resume);
+            break;
+        case RZ_LEMCONIC:
+            st = agc_integ_lemconic(ip, ctx, tdec1, resume);
+            break;
+        case RZ_THISPREC:
+        case RZ_OTHPREC:
+        case RZ_INTEG_KIND_COUNT:
+        default:
+            st = AGC_STATUS_BAD_ARG;
+            break;
+    }
+
+    if (st == AGC_STATUS_OK)
+    {
+        *out = ctx->out;
+    }
+
+    return (st);
+}
+
+/* INTSTALL, then the INTEGRVS set-up common to INTINT, INITVEL, R31. */
+agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
+                         agc_job_id_t resume, agc_integ_out_t *out)
+{
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st = agc_integ_install(0, resume); /* INTSTALL */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
+
+    rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
+    rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
+    ctx->sv.rcv = in->rcv;
+    ctx->sv.vcv = in->vcv;
+    ctx->sv.tet = in->tet;
+    st          = agc_integ_integrvs(ip, ctx, in->tdec1);
+
+    if (st == AGC_STATUS_OK)
+    {
+        *out = ctx->out;
+    }
+
+    return (st);
+}
+
+/* PHASCHNG / 2PHSCHNG with a type C code whose restart point is job
+ * `job` at priority `prio` (the AGC's OCT 05022 / OCT 26000 pair: the
+ * restart runs the job by FINDVAC). code_a = 0: a single PHASCHNG.     */
+void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
+                  int16_t prio)
+{
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(job != AGC_JOB_NONE && prio > 0))
+    {
+        return;
+    }
+
+    agc_phase_var_t v;
+
+    v.kind       = AGC_RESTART_JOB;
+    v.job        = job;
+    v.task       = AGC_TASK_NONE;
+    v.prio_or_dt = prio;
+    v.immediate  = false;
+    v.long_dt_cs = 0U;
+
+    if (code_a == 0U)
+    {
+        agc_phase_change_var(code_c, &v);
+    }
+    else
+    {
+        agc_phase_change2(code_a, code_c, &v);
+    }
 }

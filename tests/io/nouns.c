@@ -10,6 +10,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
+#include "agc/guidance/guidance.h"
 #include "agc/io/nouns.h"
 
 static int g_checks;
@@ -235,9 +236,12 @@ static void test_data(void)
     CHECK(agc_noun_read(AGC_DATA_NONE, &v) == AGC_STATUS_BAD_ARG);
     CHECK(agc_noun_read(AGC_DATA_COUNT, &v) == AGC_STATUS_BAD_ARG);
     CHECK(agc_noun_read(AGC_DATA_TIME2, NULL) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_noun_read(AGC_DATA_HAPO, &v) ==
-          AGC_STATUS_UNIMPLEMENTED); /* not in core yet */
-    CHECK(agc_noun_write(AGC_DATA_HAPO, 0) == AGC_STATUS_UNIMPLEMENTED);
+    /* HAPO lives in the guidance block: through agc_dispatch_noun.     */
+    CHECK(agc_noun_write(AGC_DATA_HAPO, 123456789) == AGC_STATUS_OK);
+    CHECK(agc_noun_read(AGC_DATA_HAPO, &v) == AGC_STATUS_OK &&
+          v == 123456789 && agc_guid_state()->burn.hapo == 123456789);
+    /* ALMCADR (the AGC alarm return address) has no owner in C.        */
+    CHECK(agc_noun_read(AGC_DATA_ALMCADR, &v) == AGC_STATUS_NOT_FOUND);
 }
 
 int main(void)

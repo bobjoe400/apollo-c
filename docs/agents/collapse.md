@@ -19,7 +19,17 @@ reader follows one function instead of hopping through four.
    an AGC label stay: the label is the cross-reference). Sort by lines.
 3. **Collapse** each candidate into its caller when the caller stays
    <= 60 code lines after inlining (brace-only lines don't count) and the
-   result reads better; otherwise leave it and note why. Preserve the
+   result reads better; otherwise leave it and note why.
+   **Guard de-duplication (user direction):** before counting, remove from
+   the helper every `if (!AGC_ASSERT(cond)) { return ...; }` guard whose
+   condition the caller has already established on the same object at
+   that point (same parameter range, same non-NULL pointer, same enum
+   range, same state flag). One check per fact per function. The merged
+   function's length is measured AFTER that de-duplication, so identical
+   guards repeated across a family of helpers never block a collapse.
+   Guards that check something new stay and count. Where several
+   candidates share one identical guard preamble, the preamble appears
+   once at the top of the merged function. Preserve the
    helper's comments as a paragraph comment at the inlined site. Where a
    caller had been split 3-4 ways purely for length, prefer re-splitting
    it along the AGC's own labels/paragraphs rather than by arbitrary

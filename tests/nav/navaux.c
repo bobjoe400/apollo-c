@@ -373,7 +373,8 @@ static void test_ephemerides(void)
     }
 
     eph.vecoem[AGC_EPHEM_NCOEF - 1] = vec_m(3.8e8, 1.0e7, -2.0e7, 31); /* a0 */
-    eph.vecoem[AGC_EPHEM_NCOEF - 2] = vec_m(100.0, 0.0, 0.0, 5); /* a1 m/cs */
+    /* a1 = 10 m/cs (the moon moves ~1 km/s): a DP at 2^5 holds < 32.  */
+    eph.vecoem[AGC_EPHEM_NCOEF - 2] = vec_m(10.0, 0.0, 0.0, 5); /* a1 m/cs */
     eph.reso                        = vec_m(1.5e11, 0.0, 0.0, 38);
     eph.veso                        = vec_m(0.0, 300.0, 0.0, 9);
     eph.omegaes                     = 0;
@@ -387,7 +388,7 @@ static void test_ephemerides(void)
     agc_vec_t vm;
 
     CHECK(agc_ephem_csm_lunvel(&ip, &eph, 0, 0, &vm) == AGC_STATUS_OK);
-    CHECK_NEAR(vec_comp(vm, 0, 7), 100.0, 1e-3);
+    CHECK_NEAR(vec_comp(vm, 0, 7), 10.0, 1e-3);
 
     agc_vec_t vmoon;
     agc_vec_t vsun;

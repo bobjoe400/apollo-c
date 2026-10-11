@@ -309,7 +309,7 @@ agc_status_t agc_job_tpm_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
     agc_rendz_t *rz = tpi_begin(&ip);
 
-    rz->tstrt = rz_loadtime(); /* RTB LOADTIME        */
+    rz->tstrt = agc_rtb_loadtime(); /* RTB LOADTIME        */
     agc_dp_t tig = agc_dp_add(&ip, rz->tstrt, rz->kt);
 
     agc_erase_set_tig(tig);

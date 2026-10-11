@@ -13,28 +13,28 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
-#define PH_P57         ((uint16_t) 04024) /* OCT 04024                      */
-#define VN_STAR_CODE   ALIGN_VN(1, 70)    /* V01N70* VN 170                 */
-#define VN_CURSOR      ALIGN_VN(6, 79)    /* V06N79 VN 679                  */
-#define VN_ALARM       ALIGN_VN(5, 9)     /* VB05N09                        */
-#define ALM_NOT_IN_AOT ((agc_alarm_code_t) 0404)
-#define STAR_BITS      ((agc_sp_t) 077) /* CS HIGH9: star bits 1-6        */
-#define REVCNT         ((agc_sp_t) 6)   /* REVCNT: just 6                 */
-#define DEC227         ((agc_sp_t) 227) /* 228 and up: sun, earth, moon   */
-#define POSITIONS      6                /* AOT detents 1..6               */
-#define POS_SHIFT      6                /* MP BIT7: detent to bits 7-9    */
-#define POS_MASK       ((agc_sp_t) 07)
-#define ELEVATION_45   ((uint16_t) 010000) /* BIT13: 45 degrees              */
-#define DEG30          ((agc_dp_t) 22369621) /* DEG30 2DEC .083333333 revs    */
-#define DEG_HALF       ((agc_dp_t) 372825)   /* DEG.5 2DEC .00138888 revs     */
-#define THREE_QUARTERS ((agc_dp_t) 201326592) /* 3/4                          */
-#define ABOUTONE       ((agc_dp_t) 268435453) /* ABOUTONE 2DEC .99999999      */
+#define PH_SURFACE_ALIGN ((uint16_t) 04024) /* OCT 04024                      */
+#define VN_STAR_CODE     ALIGN_VN(1, 70)  /* V01N70* VN 170                 */
+#define VN_CURSOR        ALIGN_VN(6, 79)  /* V06N79 VN 679                  */
+#define VN_ALARM         ALIGN_VN(5, 9)   /* VB05N09                        */
+#define ALM_NOT_IN_AOT   ((agc_alarm_code_t) 0404)
+#define STAR_BITS        ((agc_sp_t) 077) /* CS HIGH9: star bits 1-6        */
+#define REVCNT           ((agc_sp_t) 6) /* REVCNT: just 6                 */
+#define DEC227           ((agc_sp_t) 227) /* 228 and up: sun, earth, moon   */
+#define POSITIONS        6              /* AOT detents 1..6               */
+#define POS_SHIFT        6              /* MP BIT7: detent to bits 7-9    */
+#define POS_MASK         ((agc_sp_t) 07)
+#define ELEVATION_45     ((uint16_t) 010000) /* BIT13: 45 degrees              */
+#define DEG30            ((agc_dp_t) 22369621) /* DEG30 2DEC .083333333 revs    */
+#define DEG_HALF         ((agc_dp_t) 372825) /* DEG.5 2DEC .00138888 revs     */
+#define THREE_QUARTERS   ((agc_dp_t) 201326592) /* 3/4                          */
+#define ABOUTONE         ((agc_dp_t) 268435453) /* ABOUTONE 2DEC .99999999      */
 
-static agc_status_t p57_phase(void)
+static agc_status_t surface_align_phase(void)
 {
-    const agc_status_t st = align_phase4(PH_P57);
+    const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -48,7 +48,7 @@ static agc_status_t p57_phase(void)
 static agc_status_t star_sighting(agc_job_ctx_t *ctx, agc_sp_t starind)
 {
     agc_align_ram()->starind = starind;
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -323,7 +323,7 @@ agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx)
                              AGC_JOB_LUNAR_SURFACE_FIRST_STAR));
     }
 
-    const agc_status_t st = p57_phase();
+    const agc_status_t st = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {

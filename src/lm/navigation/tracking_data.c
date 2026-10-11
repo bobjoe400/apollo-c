@@ -26,7 +26,7 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
 #define TD_RDOTCONV \
@@ -87,7 +87,7 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -116,7 +116,7 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
         return (agc_job_rendezvous_tracking_data_next(ctx)); /* R22LEM42 */
     }
 
-    rz_phase(2, 00152);                    /* restart reads range rate again */
+    agc_phase_change(2, 00152);                    /* restart reads range rate again */
     rz_flag_put(AGC_FLAG_RNGSCFLG, false); /* LRS22.1  */
     agc_inhint();
     uint16_t scale =
@@ -152,7 +152,7 @@ agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
     n->aig      = agc_erase_cduy();
     n->amg      = agc_erase_cduz();
     n->aog      = agc_erase_cdux();
-    n->cdutime  = rz_loadtime();
+    n->cdutime  = agc_rtb_loadtime();
     n->tang[0]  = agc_erase_cdut();
     n->tang[1]  = agc_erase_cdus();
     agc_relint();
@@ -277,7 +277,7 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U,
                      AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
@@ -295,7 +295,7 @@ agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -361,7 +361,7 @@ agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx)
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* R22LEM46 */
-        return (rz_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
+        return (agc_svc_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
     }
 
     lmnav_state()->r65cntr = 2;
@@ -379,12 +379,12 @@ agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        return (rz_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
+        return (agc_svc_delayjob(TD_2SECS, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
     }
 
     lmnav_state()->r65cntr = 5;
@@ -396,24 +396,24 @@ agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx)
 /* ---- noun 49 (R22LEM96 .. N49DSP) -------------------------------------- */
 /* R22LEM96: the state vector change is too large: V06N49 (R22DISP,
  * WHCHREAD) in its own job; this job polls N49FLAG.                     */
-agc_status_t lmnav_n49_display(void)
+agc_status_t lmnav_residuals_display(void)
 {
     lmnav_state()->n49flag = 0;
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_status_t st =
-        agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49);
+        agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT));
+    return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT));
 }
 
 /* N49DSP: excessive state vector update; TERMINATE ends R22 and P20,
  * PROCEED N49FLAG = -1, RECYCLE N49FLAG positive.                       */
-agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -422,11 +422,12 @@ agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx)
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
                      AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_PROCEED,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_RECYCLE));
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED,
+                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE));
 }
 
-agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(
+    agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -438,7 +439,8 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK); /* ENDOFJOB */
 }
 
-agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(
+    agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -453,7 +455,7 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx)
 /* The N49FLAG loop: still open: look again (the AGC loops in the
  * interpreter); PROCEED: incorporate (R22LEM7: GRP2PC, ASTOK); RECYCLE:
  * drop the mark (surface: wait 15 s; else R65 once, then R22).        */
-agc_status_t agc_job_rendezvous_tracking_data_n49_wait(agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -464,12 +466,12 @@ agc_status_t agc_job_rendezvous_tracking_data_n49_wait(agc_job_ctx_t *ctx)
 
     if (f == 0)
     {
-        return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_N49_WAIT));
+        return (rz_continue(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT));
     }
 
     if (f < 0)
     {
-        rz_phase(2, 04022);                     /* GRP2PC   */
+        agc_phase_change(2, 04022);                     /* GRP2PC   */
 
         return (lmnav_incorporate_accepted(ctx)); /* ASTOK    */
     }
@@ -494,7 +496,7 @@ agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 00152);
+    agc_phase_change(2, 00152);
     agc_status_t st = agc_radar_rrrdot();
 
     if (st != AGC_STATUS_OK)

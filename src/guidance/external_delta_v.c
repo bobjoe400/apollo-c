@@ -15,9 +15,16 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/guidance/pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 #define GRP4 4
 
@@ -25,18 +32,34 @@
 static const agc_dp_t EP4_45 = 33554432;
 static const agc_dp_t EP4_10 = 7456540;
 
-/* Store a precision-update result in the rendezvous erasables: X1, X2 of
- * the integrator into RTX1, RTX2 (SXA,1 / SXA,2).                         */
-static void store_rtx(agc_rendz_t *rz, const agc_guid_prec_t *p)
+/* THISPREC / LEMPREC to tdec1 for the targeting subroutines (no job of
+ * their own: an INTSTALL wait resumes agc_guid_nav_resume()); X1, X2 of
+ * the integrator into RTX1, RTX2 (SXA,1 / SXA,2). NOT_FOUND when the
+ * integration ended without RECTOUT. The result is in the shared
+ * integration context (agc_integ_shared_ctx()->out).                      */
+static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1,
+                            agc_rendz_t *rz)
 {
-    rz->body.rtx1 = p->rtx1;
-    rz->body.rtx2 = p->rtx2;
-    rz->body.moon = (p->rtx2 != 0);
+    agc_integ_ctx_t *ic = agc_integ_shared_ctx();
+    agc_status_t     st =
+        lm_only ? agc_integ_lemprec(ip, ic, tdec1, agc_guid_nav_resume()) :
+        agc_integ_thisprec(ip, ic, tdec1, agc_guid_nav_resume());
 
-    if (!AGC_ASSERT(p->rtx2 == 0 || p->rtx2 == 2))
+    if (st != AGC_STATUS_OK)
     {
-        return;
+        return (st);
     }
+
+    if (!AGC_ASSERT(ic->out.x2 == 0 || ic->out.x2 == 2))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    rz->body.rtx1 = (agc_sp_t) ic->out.x1;
+    rz->body.rtx2 = (agc_sp_t) ic->out.x2;
+    rz->body.moon = (ic->out.x2 != 0);
+
+    return (ic->out.valid ? AGC_STATUS_OK : AGC_STATUS_NOT_FOUND);
 }
 
 /* PERIAPO1 / SHIFTR1 / MAXCHK for HPER and HAPO (both S30.1, S31.1):
@@ -72,20 +95,17 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
 static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
                                                  agc_rendz_t  *rz)
 {
-    agc_guid_prec_t p;
-    agc_status_t    st =
-        agc_guid_prec_update(ip, AGC_VEHICLE_CSM, agc_erase_tig(), AGC_JOB_NONE,
-                             &p); /* THISPREC, TDEC1 = TIG */
+    agc_status_t           st = prec_to(ip, false, agc_erase_tig(), rz);
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;
 
     if (st != AGC_STATUS_OK)
     {
-        return (st);
+        return (st); /* THISPREC, TDEC1 = TIG */
     }
 
-    store_rtx(rz, &p);
-    rz->vtig  = p.vatt;
-    rz->rtig  = p.ratt;
-    rz->ract3 = p.ratt;
+    rz->vtig  = p->vatt;
+    rz->rtig  = p->ratt;
+    rz->ract3 = p->ratt;
     rz->unrm  =
         agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
     agc_mat_t m;
@@ -111,22 +131,19 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
 static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip,
                                                 agc_rendz_t  *rz)
 {
-    agc_guid_prec_t p;
-    agc_status_t    st = agc_guid_prec_update(ip, AGC_VEHICLE_LM,
-                                              agc_erase_tig(),
-                                              AGC_JOB_NONE, &p); /* LEMPREC */
+    agc_status_t           st = prec_to(ip, true, agc_erase_tig(), rz);
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;
 
     if (st != AGC_STATUS_OK)
     {
-        return (st);
+        return (st); /* LEMPREC */
     }
 
-    store_rtx(rz, &p);
-    rz->rtig = p.ratt;
+    rz->rtig = p->ratt;
     agc_mat_t m;
 
     m.row[2] = agc_vec_neg(agc_vec_unit(ip, rz->rtig, NULL, NULL)); /* ZRF/LV */
-    rz->vtig = p.vatt;
+    rz->vtig = p->vatt;
     m.row[1] =
         agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
     m.row[0]    = agc_vec_shl(ip, agc_vec_cross(ip, m.row[1], m.row[2]), 1);
@@ -186,21 +203,19 @@ agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
  * (NORMSW: 165-195 degree transfer) or 10 degrees.                        */
 static agc_status_t again_at(agc_interp_t *ip, agc_dp_t tdec1)
 {
-    agc_rendz_t    *rz = agc_rendz_erasable();
-    agc_guid_prec_t p;
-    agc_status_t    st = agc_guid_prec_update(ip, agc_state_vehicle(), tdec1,
-                                              AGC_JOB_NONE, &p); /* THISPREC */
+    agc_rendz_t           *rz = agc_rendz_erasable();
+    agc_status_t           st = prec_to(ip, false, tdec1, rz);
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;
 
     if (st != AGC_STATUS_OK)
     {
-        return (st);
+        return (st); /* THISPREC */
     }
 
-    store_rtx(rz, &p);
-    rz->rtig  = p.ratt;
-    rz->rinit = p.ratt;
-    rz->vtig  = p.vatt;
-    rz->vinit = p.vatt;
+    rz->rtig  = p->ratt;
+    rz->rinit = p->ratt;
+    rz->vtig  = p->vatt;
+    rz->vinit = p->vatt;
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10;
 
     if (!AGC_ASSERT(e4 > 0))
@@ -439,7 +454,7 @@ agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
 }
 
 /* P31 (CM p.637): as P30, but S31.1 before V06N81.                         */
-agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -457,7 +472,7 @@ agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx)
 
 /* P31 after V06N33 PROCEED (CM p.637): UPDATFLG and NORMSW reset, S31.1,
  * then CNTNUP30 (V06N81) and PARAM30.                                     */
-agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx)
+agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {

@@ -13,7 +13,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define CDU_WORD_MASK     077777u /* 15-bit CDU register                  */
 #define CDU_MODULUS       0100000 /* one revolution in CDU counts         */

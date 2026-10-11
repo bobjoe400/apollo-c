@@ -28,6 +28,7 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"
@@ -343,19 +344,13 @@ static agc_status_t gopoodoo(void)
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
         agc_relint();
-        /* STRTIDLE: SERVICER to its "ground" state, then GOTOPOOH.    */
+        /* STRTIDLE: SERVICER to its "ground" state; SERVIDLE ends in
+         * WHIMPER and the 4.33 restart (GOP00FIX) goes to P00.        */
         agc_status_t s1 = exec_up_servidle();
 
-        if (!AGC_ASSERT(s1 == AGC_STATUS_OK || s1 == AGC_STATUS_UNIMPLEMENTED))
+        if (!AGC_ASSERT(s1 == AGC_STATUS_OK))
         {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        agc_status_t s2 = agc_exec_gotopooh();
-
-        if (!AGC_ASSERT(s2 == AGC_STATUS_OK || s2 == AGC_STATUS_BAILOUT))
-        {
-            return (AGC_STATUS_BAD_ARG);
+            return (s1);
         }
 
         return (st);
@@ -410,6 +405,33 @@ static agc_status_t poodoo_csm(void)
 
 /* POODOO / POODOO1 / ABORT2 (C p.1495 / L p.1383): record the alarm and
  * abandon the current program; the restart ends in P00 (GOTOPOOH).    */
+/* The interpreter alarms of the job or task that just returned: ALARM
+ * 01301 (ARCSIN/ARCCOS out of range) or ABORT 01302 (SQRT of a negative,
+ * POODOO). DEVIATION: the AGC raises them at the instruction; core cannot
+ * call exec, so they are raised when the job or task returns.           */
+void exec_service_interp_alarm(void)
+{
+    uint16_t code = agc_interp_take_alarm();
+
+    if (code == 01301u)
+    {
+        agc_alarm((agc_alarm_code_t) 01301);
+    }
+    else if (code == 01302u)
+    {
+        agc_status_t st = agc_poodoo((agc_alarm_code_t) 01302);
+
+        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+        {
+            return;
+        }
+    }
+    else
+    {
+        /* none */
+    }
+}
+
 agc_status_t agc_poodoo(agc_alarm_code_t code)
 {
     if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))

@@ -38,6 +38,7 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/exec/jobs.h"
+#include "agc/nav/integration.h"
 
 /* ======================================================================
  * POWERED_FLIGHT_SUBROUTINES
@@ -145,18 +146,6 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind);
  * Targeting and steering (P30-P47)
  * ====================================================================== */
 
-/* Result of an Encke precision update (THISPREC/CSMPREC/LEMPREC).        */
-typedef struct agc_guid_prec
-{
-    agc_vec_t ratt;  /* RATT  ref m, scale 2^29                         */
-    agc_vec_t vatt;  /* VATT  ref m/cs, scale 2^7                       */
-    agc_vec_t ratt1; /* RATT1 body scale m 2^29 earth / 2^27 moon       */
-    agc_vec_t vatt1; /* VATT1 body scale m/cs 2^7 earth / 2^5 moon      */
-    agc_dp_t  tat;   /* TAT   cs, scale 2^28                            */
-    agc_sp_t  rtx1;  /* X1 left by the integrator: -2 earth, -10 moon   */
-    agc_sp_t  rtx2;  /* X2: 0 earth, 2 moon (VSR shift to body scale)   */
-} agc_guid_prec_t;
-
 /* P30-P47 erasables not shared with the rendezvous programs.               */
 typedef struct agc_burn
 {
@@ -205,8 +194,6 @@ typedef struct agc_guid_csm
     agc_sp_t nvword1;  /* NVWORD1  CLOCKJOB: +VN display, 0 none, -BIT9 V99
                         * flash, -1 V97 flash (the AGC's -0, see note)   */
     agc_sp_t mrkrtmp;  /* MRKRTMP  S40.6: + test and trim, - trim only    */
-    agc_dp_t
-        preread_delay; /* P40TMP   cs (LONGCALL delay / TIGON delay)      */
     agc_sp_t
              gimbal_test_step; /* S40.6 gimbal-drive-test step (TEMPR60 return point) */
     agc_sp_t updcaller; /* caller of UPDATEVG (QTEMP1): 1 STEERING, 2 CALCN85 */
@@ -273,7 +260,6 @@ typedef struct agc_guid_lm
     /* P40-P47 / BURNBABY */
     agc_sp_t  which;    /* WHICH    ignition table (agc_lm_which_t)        */
     agc_sp_t  dispdex;  /* DISPDEX  CLOKJOB display: >0 none, <0 -index    */
-    agc_dp_t  savet_30; /* SAVET-30 cs, scale 2^28 / ullage delta-t        */
     agc_dp_t  gobltime; /* GOBLTIME nominal TIG for oblateness, cs 2^28    */
     agc_dp_t  tigsave;  /* TIGSAVE  cs, scale 2^28                         */
     agc_dp_t  tigsavep; /* TIGSAVEP cs, scale 2^28                         */
@@ -281,7 +267,6 @@ typedef struct agc_guid_lm
     agc_dp_t  mdot;     /* MDOT     kg/cs, scale 2^3                       */
     agc_dp_t  tdecay;   /* TDECAY   cs, scale 2^28                         */
     agc_dp_t  vex;      /* VEX      exhaust velocity, m/cs 2^6             */
-    agc_sp_t  zoomtime; /* ZOOMTIME cs (PL)                                */
     agc_sp_t  ignaosq;  /* IGNAOSQ  (PL)                                   */
     agc_sp_t  ignaosr;  /* IGNAOSR  (PL)                                   */
     agc_sp_t  pittime;  /* PITTIME  cs                                     */
@@ -304,7 +289,15 @@ typedef struct agc_guid
     agc_guid_lm_t  lm;
 } agc_guid_t;
 
-agc_guid_t  *agc_guid_state(void); /* the one guidance block    */
+agc_guid_t *agc_guid_state(void); /* the one guidance block    */
+/* The job that resumes after an INTSTALL wait inside a targeting
+ * subroutine that has no job context (S30.1, S31.1, AGAIN, S40.1): set by
+ * the job that calls it (guid_state.c).                                   */
+void         agc_guid_nav_set_resume(agc_job_id_t job);
+agc_job_id_t agc_guid_nav_resume(void);
+/* Store the MIDTOAV1/2 output where the AGC leaves it: RN1 VN1 PIPTIME1
+ * in the average-G block, RTX1 RTX2 in the rendezvous body block.          */
+void         agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o);
 agc_status_t agc_guid_init(agc_vehicle_t veh); /* fresh start: zero + pad loads */
 
 /* ---- shared targeting (p30.c) ----------------------------------------- */
@@ -366,9 +359,12 @@ agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage,
                                    agc_sp_t fang);
 
 /* ---- average-G jobs and tasks: Comanche (src/csm/burns/servicer.c) ------ */
+agc_status_t agc_guid_preread1_csm(void); /* PREREAD1 (P11 liftoff)  */
 agc_status_t agc_task_preread_csm(void);               /* PREREAD     */
 agc_status_t agc_task_readaccs_csm(void);              /* READACCS    */
 agc_status_t agc_task_rereadac_csm(void);              /* REREADAC    */
+agc_status_t agc_task_redo5_5_csm(void);               /* REDO5.5     */
+agc_status_t agc_task_chekaveg(void);                  /* CHEKAVEG    */
 agc_status_t agc_task_onmnitor(void);                  /* ONMNITOR    */
 agc_status_t agc_task_quikread(void);                  /* QUIKREAD    */
 agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx); /* NORMLIZE    */
@@ -383,12 +379,14 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx);  /* AVGEND 2.2 restart */
 
 /* ---- average-G jobs and tasks: Luminary (src/lm/burns/servicer/) -------- */
 agc_status_t agc_task_preread_lm(void);               /* PREREAD     */
+agc_status_t agc_task_redo5_5_lm(void);               /* REDO5.5     */
 agc_status_t agc_task_bibibias(void);                 /* BIBIBIAS    */
 agc_status_t agc_task_readaccs_lm(void);              /* READACCS    */
 agc_status_t agc_task_rereadac_lm(void);              /* REREADAC    */
 agc_status_t agc_job_normlize_lm(agc_job_ctx_t *ctx); /* NORMLIZE    */
 agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx); /* SERVICER    */
 agc_status_t agc_job_servidle(agc_job_ctx_t *ctx);    /* SERVIDLE    */
+agc_status_t agc_lm_servidle(void); /* SERVIDLE (STRTIDLE)  */
 agc_status_t agc_lm_avgexit(agc_job_ctx_t *ctx);      /* dispatch on AVGEXIT */
 agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx);   /* AVGEND      */
 agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx); /* AVGEND 2.2 restart */
@@ -422,8 +420,8 @@ agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx); /* LM PARAM30 
 agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx);        /* REFTEST (CM) */
 agc_status_t agc_job_marks_tfi_mga_done(agc_job_ctx_t *ctx); /* END45 (CM)  */
 agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx); /* DISP45 (CM) */
-agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx); /* P31 (CM)    */
-agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx); /* after V06N33 PRO */
+agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx); /* P31 (CM)    */
+agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx); /* after V06N33 PRO */
 agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx); /* after V06N81 PRO */
 
 /* ---- CSM P40-P47 (src/csm/burns/sps/) ---------------------------------- */
@@ -470,8 +468,6 @@ agc_status_t agc_csm_comptgo(void);          /* COMPTGO     */
 agc_status_t agc_csm_cross_product_steering(agc_interp_t *ip); /* S40.8 (CM)  */
 agc_status_t agc_csm_updatevg(agc_interp_t *ip,
                               bool         *vtogain_started); /* UPDATEVG */
-void         agc_csm_setmindb(void);                          /* SETMINDB    */
-void         agc_csm_setmaxdb(void);                          /* SETMAXDB    */
 void         agc_csm_spsoff(void);                            /* SPSOFF/MASSBACK */
 void         agc_csm_tvczap(void);                            /* TVCZAP      */
 agc_status_t agc_task_ttg_0(void);                            /* TTG/0       */
@@ -514,8 +510,8 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx);   /* TIGNOW      */
 agc_status_t agc_job_term40(agc_job_ctx_t *ctx);      /* TERM40      */
 agc_status_t agc_job_dynmdisp(agc_job_ctx_t *ctx);    /* DYNMDISP    */
 agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx);     /* REDO6.7 / BLNKWAIT */
-agc_status_t agc_job_rcs_burn_n85_displayed(agc_job_ctx_t *ctx); /* P41 after GODSPRET */
-agc_status_t agc_job_redo6_7_n85_displayed(agc_job_ctx_t *ctx); /* REDO6.7 after GODSPRET */
+agc_status_t agc_job_rcs_burn_vg_displayed(agc_job_ctx_t *ctx); /* P41 after GODSPRET */
+agc_status_t agc_job_redo6_7_vg_displayed(agc_job_ctx_t *ctx); /* REDO6.7 after GODSPRET */
 agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx);      /* CALCN85     */
 agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx); /* CALCN83     */
 agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx); /* P47BODY     */
@@ -588,6 +584,7 @@ agc_status_t agc_task_tig_35(void);                           /* TIG-35      */
 agc_status_t agc_task_restore_burn_display(void); /* TIG-30.1    */
 agc_status_t agc_task_tig_30(void);               /* TIG-30      */
 agc_status_t agc_task_redo4_2(void);              /* REDO4.2     */
+agc_status_t agc_task_redo2_17(void);             /* REDO2.17    */
 agc_status_t agc_task_ullgtask(void);             /* ULLGTASK    */
 agc_status_t agc_task_tig_5_lm(void);             /* TIG-5       */
 agc_status_t agc_task_tig_0_lm(void);             /* TIG-0       */
@@ -600,5 +597,17 @@ agc_status_t agc_task_braking_phase_zoom(void); /* P63ZOOM     */
 agc_status_t agc_task_dps_burn_zoom(void);      /* P40ZOOM     */
 agc_status_t agc_task_zoom(void);               /* ZOOM = P40ZOOMA */
 agc_status_t agc_task_cloktask_lm(void);        /* CLOKTASK    */
+
+/* Alarm codes raised by the powered-flight programs (octal, as in the listings).             */
+#define AGC_ALARM_00205 \
+    ((agc_alarm_code_t) 00205) /* CM: PIPA saturated        */
+#define AGC_ALARM_00511 \
+    ((agc_alarm_code_t) 00511) /* LM: LR not in position    */
+#define AGC_ALARM_00523 \
+    ((agc_alarm_code_t) 00523) /* LM: LR repositioning failed */
+#define AGC_ALARM_01407 \
+    ((agc_alarm_code_t) 01407) /* VG increasing (thrust > 90 deg off) */
+#define AGC_ALARM_01706 \
+    ((agc_alarm_code_t) 01706) /* LM: P40/P42 vs. stage config */
 
 #endif /* AGC_GUID_H */

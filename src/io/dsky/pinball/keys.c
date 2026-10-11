@@ -695,7 +695,7 @@ agc_status_t agc_dsky_prockey_request(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_PROCKEY);
+    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_PROCKEY);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -724,7 +724,7 @@ static agc_status_t pin_keycom(uint16_t code)
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
     agc_status_t st = AGC_STATUS_OK;
 
-    st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_CHARIN);
+    st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_CHARIN);
 
     if (st == AGC_STATUS_OK)
     {
@@ -884,7 +884,7 @@ static agc_status_t pin_pro_now(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_job_ctx_t ctx = {PIN_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
+    agc_job_ctx_t ctx = {AGC_JOB_PROCKEY, PIN_CHRPRIO, false, -1, 0};
 
     return (agc_job_prockey(&ctx));
 }

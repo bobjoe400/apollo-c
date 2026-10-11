@@ -25,8 +25,10 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/guidance/guidance.h"
+#include "agc/io/service.h"
 #include "agc/lm/landing.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define MS_VAC         ((uint16_t) 0777)   /* LOW9                            */
 #define MS_X           ((uint16_t) 01000)  /* BIT10                           */

@@ -20,8 +20,14 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/guidance/pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 
 #define CDU_SIGN_BIT   ((uint16_t) 040000) /* bit 15 of the 15-bit CDU word  */
 #define CDU_MASK       ((uint16_t) 077777)

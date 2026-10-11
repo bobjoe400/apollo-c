@@ -32,9 +32,10 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
+#include "agc/programs/rendezvous.h"
 #include "internal.h"
-#include "pending.h"
 
 #define SINGIMLC ((agc_dp_t) 115047034)  /* 2DEC .4285836003 = sin(59)/2  */
 #define SINVEC1  ((agc_dp_t) 101907670)  /* 2DEC .3796356537 = sin(49.4)/2 */

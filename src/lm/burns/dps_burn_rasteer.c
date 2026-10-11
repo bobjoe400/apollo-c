@@ -24,9 +24,19 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/io/service_internal.h"
-#include "guid_pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
+#include "agc/lm/landing.h"
+#include "agc/nav/conic.h"
+#include "agc/programs/rendezvous.h"
 
 /* 2PI+3: 2DEC 3.141592653 B-2 (pi at 2^2).                                 */
 static const agc_dp_t PI_B2 = 210828714;

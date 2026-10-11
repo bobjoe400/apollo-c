@@ -154,7 +154,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     bool         too_far = false;
     agc_status_t st      =
-        lmnav_los(&ip, agc_dp_add(&ip, rz_loadtime(), TA_3SECONDS),
+        lmnav_los(&ip, agc_dp_add(&ip, agc_rtb_loadtime(), TA_3SECONDS),
                   AGC_JOB_TRACKING_ATTITUDE_COMPUTE, &too_far);
 
     if (st != AGC_STATUS_OK)
@@ -176,7 +176,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
@@ -214,7 +214,7 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
 
     return (ta_next());

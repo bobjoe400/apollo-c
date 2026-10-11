@@ -9,8 +9,14 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/guidance/pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 
 static agc_guid_t g_guid;
 
@@ -84,4 +90,29 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
     }
 
     return (AGC_STATUS_OK);
+}
+
+/* The job that resumes after an INTSTALL wait when a targeting subroutine
+ * (S30.1, S31.1, AGAIN, S40.1) has no job context of its own: set by the
+ * job that calls it.                                                     */
+static agc_job_id_t g_resume = AGC_JOB_NONE;
+
+void agc_guid_nav_set_resume(agc_job_id_t job)
+{
+    if (!AGC_ASSERT(job != AGC_JOB_NONE))
+    {
+        return;
+    }
+
+    g_resume = job;
+}
+
+agc_job_id_t agc_guid_nav_resume(void)
+{
+    if (!AGC_ASSERT(g_resume != AGC_JOB_NONE))
+    {
+        return (AGC_JOB_NONE);
+    }
+
+    return (g_resume);
 }

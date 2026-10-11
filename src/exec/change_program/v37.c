@@ -1,0 +1,423 @@
+/*
+ * v37.c -- V37 (MMCHANG): change of major mode, CANV37, POOH, NOUVEAU and
+ *          V37XEQ, the parts the two programs share.
+ *
+ * Source: FRESH_START_AND_RESTART.agc, Comanche055 pp. 197-209 (V37 ..
+ * V37XEQC, FCADRMM1, PREMM1, DNLADMM1), Luminary099 pp. 227-236.
+ * Vehicle-specific steps are in csm.c and lm.c beside this file.
+ *
+ * The AGC changes program by a software restart: NOUVEAU sets TEMPFLSH =
+ * V37QCAD (V37XEQ +3) and goes to GOPROG2; the restart of group 4 (phase
+ * 4.1 set by CANV37) restarts the last display, which is that address.
+ * DEVIATION: here group 4 gets a type C phase whose restart job is V37XEQ
+ * (AGC_JOB_CHANGE_PROGRAM_START) at the new program's priority, and ENEMA
+ * is requested: the software restart that follows starts V37XEQ, which
+ * starts the program (FCADRMM1) and sets MODREG (NEWMODEA). P00 sets
+ * MODREG and restarts with no group 4.
+ *
+ * LAYERING: as the rest of change_program/, exec calling up (pinball,
+ * integration, telemetry, the DAPs and SERVICER); see ARCHITECTURE.md.
+ */
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "../internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/nav/integration.h"
+
+#define CP_BIT6       000040u /* IMODES30 bit 6: IMU being initialised */
+#define CP_DPS_ABORT  70U
+#define CP_APS_ABORT  71U
+#define CP_PHASE_4_1  ((uint16_t) 000014) /* PHASCHNG OCT 14: 4.1       */
+#define CP_GROUP4_JOB ((uint16_t) 005024) /* type C, D, J, group 4      */
+
+static uint8_t mmnumber; /* MMNUMBER: the requested major mode       */
+static int     mindex;   /* MINDEX: its index in the mode tables       */
+
+uint8_t exec_cp_mmnumber(void)
+{
+    if (!AGC_ASSERT(mmnumber <= 99U))
+    {
+        return (0);
+    }
+
+    return (mmnumber);
+}
+
+static const exec_cp_mode_t *cp_modes(int *n)
+{
+    return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? exec_cp_modes_lm(n) :
+            exec_cp_modes_csm(n));
+}
+
+/* CHECKTAB / AGAINMM (C p.198 / L p.228): MINDEX of `mm`, -1 if none.  */
+static int cp_find(uint8_t mm)
+{
+    int                   n = 0;
+    const exec_cp_mode_t *t = cp_modes(&n);
+    int                   k = -1;
+
+    for (int i = 0; i < n && k < 0; i++)
+    {
+        k = (t[i].mm == mm) ? i : -1;
+    }
+
+    if (!AGC_ASSERT(n > 0 && mm <= 99U))
+    {
+        return (-1);
+    }
+
+    return (k);
+}
+
+/* CANTR00 / V37BAD (C p.198 / L p.228): alarm 1520, release the DSKY.
+ * V37NONO: FALTON (OPERATOR ERROR lamp), then V37BAD; NOT_FOUND.     */
+static agc_status_t cp_refuse(bool alarm_1520)
+{
+    agc_status_t result = AGC_STATUS_NOT_FOUND;
+
+    if (alarm_1520)
+    {
+        agc_alarm(AGC_ALARM_01520);
+        result = AGC_STATUS_ALARM;
+    }
+    else
+    {
+        agc_dsky_falton(); /* V37NONO: TC FALTON    */
+    }
+
+    agc_status_t st = agc_dsky_releasedsp(); /* TC RELDSP         */
+
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    st = agc_dsky_pinbrnch(); /* CADR PINBRNCH     */
+
+    return ((st != AGC_STATUS_OK) ? st : result);
+}
+
+/* The context of the job that keyed V37 (the pinball job, core set 0). */
+static agc_job_ctx_t cp_running_ctx(void)
+{
+    agc_exec_core_info_t ci;
+    agc_job_ctx_t        c = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false,
+                              -1, 0};
+    agc_status_t         st = agc_exec_core_info(0, &ci);
+
+    if (AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        c.prio      = ci.prio;
+        c.vac_index = ci.vac_index;
+        c.has_vac   = ci.vac_index >= 0;
+    }
+
+    return (c);
+}
+
+/* ISITP00 / CHECKTAB / ISSERVON (C pp.197-199 / L pp.227-228).          */
+static agc_status_t cp_select(void)
+{
+    if (mmnumber != 0U)
+    {
+        if (agc_flag_test(AGC_FLAG_NODOFLAG))
+        {
+            return (cp_refuse(true)); /* CANTR00           */
+        }
+
+        mindex = cp_find(mmnumber);
+
+        if (mindex < 0)
+        {
+            return (cp_refuse(false)); /* V37NONO           */
+        }
+    }
+
+    if (!agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
+    {
+        agc_job_ctx_t c = cp_running_ctx(); /* CANV37 in this job */
+
+        return (agc_job_change_program_continue(&c));
+    }
+
+    agc_inhint(); /* AVEGFLAG down: SERVICER returns to CANV37 */
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        exec_cp_stop_servicer_lm();
+    }
+    else
+    {
+        exec_cp_stop_servicer_csm();
+    }
+
+    agc_relint();
+
+    return (AGC_STATUS_OK); /* ENDOFJOB          */
+}
+
+/* V37 (C p.197 / L p.227): request to change to major mode new_mm, in
+ * the pinball job. Returns ALARM (1520, not permitted), NOT_FOUND (no
+ * such program), or the status of the change (OK when the job ends or
+ * is put to sleep until SERVICER or the integration lets it go on).  */
+agc_status_t agc_change_program(uint8_t new_mm)
+{
+    if (!AGC_ASSERT(new_mm <= 99U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    mmnumber = new_mm; /* TS MMNUMBER       */
+    mindex   = -1;
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+
+    if ((agc_erase_imodes30() & CP_BIT6) != 0U)
+    { /* IMU initialising  */
+        return (cp_refuse(true));
+    }
+
+    if (lm && (mmnumber == CP_DPS_ABORT || mmnumber == CP_APS_ABORT))
+    {
+        agc_job_ctx_t c = cp_running_ctx();
+
+        return (exec_cp_setup_abort(&c, mmnumber == CP_APS_ABORT));
+    }
+
+    if (!lm)
+    {
+        agc_status_t st = exec_cp_engine_off_to_idle(); /* engine on / TVC  */
+
+        if (st != AGC_STATUS_NOT_FOUND)
+        {
+            return (st); /* waits, then P00 (agc_job_change_program_jets_off) */
+        }
+    }
+
+    return (cp_select());
+}
+
+/* R00TOP00 continuation (C p.198 after DELAYJOB 5): MMNUMBER = 0. */
+agc_status_t exec_cp_after_engine_off(void)
+{
+    mmnumber = 0;
+
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (cp_select()); /* ISITP00: P00, check SERVICER */
+}
+
+/* GOGOPROG: the software restart; for a new program, with group 4 set to
+ * restart V37XEQ at the program's priority (see the file header).      */
+static agc_status_t cp_gogoprog(bool v37xeq)
+{
+    if (v37xeq)
+    {
+        int                   n = 0;
+        const exec_cp_mode_t *t = cp_modes(&n);
+
+        if (!AGC_ASSERT(mindex >= 0 && mindex < n))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CHANGE_PROGRAM_START,
+                             AGC_TASK_NONE, (int16_t) t[mindex].prio, false,
+                             0U};
+
+        agc_phase_change_var(CP_GROUP4_JOB, &v); /* TEMPFLSH = V37QCAD */
+    }
+
+    return (agc_exec_enema()); /* TC POSTJUMP CADR GOPROG2 */
+}
+
+/* POOH (C p.200 / L p.229): P00. RELDSP, NODOFLAG off, 2.5 restart for
+ * STATEINT1, the P00 downlist, groups killed, MODREG = 0, GOPROG2.     */
+static agc_status_t cp_pooh(void)
+{
+    agc_status_t st = agc_dsky_releasedsp();
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_inhint();
+    agc_flag_clear(AGC_FLAG_NODOFLAG);
+    agc_phase_newphase(2, 5, false); /* 2.5 STATINT1 at PRIO5 */
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        st = exec_cp_pooh_flags_lm();
+    }
+    else
+    {
+        exec_cp_pooh_flags_csm();
+    }
+
+    agc_telem_select_list(0); /* DNLADP00 = COSTALIN */
+    agc_relint();
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    st = agc_phase_change_program_klean(); /* V37KLEAN: 1, 3, 5, 6 */
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_phase_idle_klean(); /* P00KLEAN (group 4)  */
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_erase_set_modreg(0); /* GOMOD: CA MMNUMBER TS MODREG */
+
+    return (cp_gogoprog(false));
+}
+
+/* NOUVEAU / SEUDOP00 / RENDV00 (C pp.200-202 / L pp.229-231): the new
+ * program's downlist, flags, the rendezvous groups, then GOPROG2. */
+static agc_status_t cp_nouveau(void)
+{
+    int                   n  = 0;
+    const exec_cp_mode_t *t  = cp_modes(&n);
+    bool                  lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+
+    if (!AGC_ASSERT(mindex >= 0 && mindex < n))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st = AGC_STATUS_OK;
+
+    agc_inhint();
+
+    if (lm)
+    {
+        st = exec_cp_nouveau_flags_lm();
+    }
+    else
+    {
+        exec_cp_nouveau_flags_csm();
+    }
+
+    agc_telem_select_list(t[mindex].dnlist); /* SEUDOP00: TS DNLSTCOD */
+    agc_relint();
+    bool statquo = false;
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_phase_change_program_klean(); /* V37KLEAN           */
+    }
+
+    if (st == AGC_STATUS_OK && lm)
+    {
+        st = exec_cp_rendezvous_lm(mmnumber, &statquo);
+    }
+    else if (st == AGC_STATUS_OK)
+    {
+        statquo = exec_cp_rendezvous_csm(mmnumber);
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    if (statquo)
+    { /* STATQUO .. GOMOD: P20/P25 keeps running   */
+        agc_erase_set_modreg((agc_sp_t) mmnumber);
+
+        return (cp_gogoprog(false));
+    }
+
+    return (cp_gogoprog(true)); /* REV37 / P00FIZZ    */
+}
+
+/* CANV37 / R00 (C p.199 / L p.229): wait for the integration, clean up
+ * outbits and flags, then POOH (P00) or NOUVEAU. Entered in the V37 job,
+ * from SERVICER's AVGEND (CSM), or as LM V37RET via OUTROUTE.          */
+agc_status_t agc_job_change_program_continue(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(mmnumber <= 99U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_phase_change(4, CP_PHASE_4_1); /* PHASCHNG OCT 14     */
+    agc_status_t st = agc_integ_install(0, AGC_JOB_CHANGE_PROGRAM_CONTINUE);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st); /* asleep */
+    }
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        st = exec_cp_cleanup_lm();
+    }
+    else
+    {
+        exec_cp_cleanup_csm();
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return ((mmnumber == 0U) ? cp_pooh() : cp_nouveau());
+}
+
+/* V37XEQ / V37XEQC (C p.202 / L p.232): after the software restart,
+ * start the program's first job at its priority (SPVAC), MODREG = the
+ * new major mode (NEWMODEA), RELDSP, ENDOFJOB.                          */
+agc_status_t agc_job_change_program_start(agc_job_ctx_t *ctx)
+{
+    int                   n = 0;
+    const exec_cp_mode_t *t = cp_modes(&n);
+
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(mindex >= 0 && mindex < n))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st = agc_exec_findvac(t[mindex].prio, t[mindex].job);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st); /* BAILOUT 1201/1202 raised inside */
+    }
+
+    st = agc_phase_newmode((agc_sp_t) t[mindex].mm); /* NEWMODEA */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return (agc_dsky_releasedsp()); /* RELDSP, ENDOFJOB */
+}

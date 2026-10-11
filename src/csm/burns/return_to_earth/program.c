@@ -43,24 +43,25 @@
 #include "agc/core/word.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_pending.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
+#include "agc/io/nouns.h"
+#include "agc/io/service.h"
 #include "agc/nav/conic.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"
 #include "internal.h"
-#include "pending.h"
 
 #define RTE_PHASE_NOT_RESTARTABLE \
     ((uint16_t) 04)                        /* PHASCHNG OCT 4: group 4 off */
-#define RTE_ECSTEER     ((agc_sp_t) 04000) /* AXT,1 OCT 04000; SXA,1 ECSTEER */
-#define RTE_OPTION1_P37 ((agc_sp_t) 7)     /* CAF SEVEN TS OPTION1          */
-#define RTE_OPTION2_SPS ((agc_sp_t) 1)     /* OPTION2 1 = SPS, 2 = RCS      */
-#define RTE_OPTION2_RCS ((agc_sp_t) 2)
-#define RTE_BLANK_R1    ((uint16_t) 1) /* CAF ONE  TCR BLANKET          */
-#define RTE_BLANK_R3    ((uint16_t) 4) /* CAF FOUR TCR 37BLANK +1       */
+#define RTE_ECSTEER                 ((agc_sp_t) 04000) /* AXT,1 OCT 04000; SXA,1 ECSTEER */
+#define RTE_OPTION1_RETURN_TO_EARTH ((agc_sp_t) 7) /* CAF SEVEN TS OPTION1          */
+#define RTE_OPTION2_SPS             ((agc_sp_t) 1) /* OPTION2 1 = SPS, 2 = RCS      */
+#define RTE_OPTION2_RCS             ((agc_sp_t) 2)
+#define RTE_BLANK_R1                ((uint16_t) 1) /* CAF ONE  TCR BLANKET          */
+#define RTE_BLANK_R3                ((uint16_t) 4) /* CAF FOUR TCR 37BLANK +1       */
 
 /* Constants (P37_P70.agc pp. 931-932, words from the Comanche055 rope).   */
 static const agc_dp_t VCSPS =
@@ -452,7 +453,7 @@ agc_status_t agc_job_return_to_earth_propulsion_option(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_erase_set_option1(0, RTE_OPTION1_P37);
+    agc_erase_set_option1(0, RTE_OPTION1_RETURN_TO_EARTH);
     agc_erase_set_option1(1, RTE_OPTION2_SPS);
 
     return (agc_job_return_to_earth_option_display(ctx));
@@ -644,4 +645,42 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
 
     return (agc_rendz_ttogo_display_start(ctx, ip,
                                           AGC_JOB_RETURN_TO_EARTH_TARGET_STORE));
+}
+
+/* Noun 56 data (RTEDVD, RTEGAM2D: the P37 crew inputs), for the noun
+ * dispatcher. NOT_FOUND: not a P37 erasable.                             */
+agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write,
+                                      agc_dp_t *value)
+{
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    rte_erasable_t *rs = rte_state();
+    agc_dp_t       *p  = NULL;
+
+    if (data_id == AGC_DATA_RTEDVD)
+    {
+        p = &rs->rtedvd;
+    }
+    else if (data_id == AGC_DATA_RTEGAM2D)
+    {
+        p = &rs->rtegam2d;
+    }
+    else
+    {
+        return (AGC_STATUS_NOT_FOUND);
+    }
+
+    if (write)
+    {
+        *p = *value;
+    }
+    else
+    {
+        *value = *p;
+    }
+
+    return (AGC_STATUS_OK);
 }

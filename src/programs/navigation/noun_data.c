@@ -11,7 +11,6 @@
  */
 #include <stddef.h>
 
-#include "../../lm/radar/radar.h"
 #include "agc/core/assert.h"
 #include "agc/io/nouns.h"
 #include "internal.h"
@@ -131,42 +130,8 @@ static agc_vec_t *nd_vec(uint16_t id, int *k)
 /* Read-only values held by the radar, mark and display modules.          */
 static bool nd_other(uint16_t id, agc_dp_t *v)
 {
-    const lmnav_state_t *n = lmnav_state();
-
     switch (id)
     {
-        case AGC_DATA_DATAGOOD:
-            *v = agc_dp_from_sp(n->datagood);
-
-            return (true);
-        case AGC_DATA_OMEGAD:
-            *v = n->omegad;
-
-            return (true);
-        case AGC_DATA_RADAR_DELTA_R:
-            *v = n->r22disp[0];
-
-            return (true);
-        case AGC_DATA_RADAR_DELTA_V:
-            *v = n->r22disp[1];
-
-            return (true);
-        case AGC_DATA_WHCHREAD:
-            *v = agc_dp_from_sp(n->whchread);
-
-            return (true);
-        case AGC_DATA_MARK_DELTA_R:
-            *v = rz_csm_n49disp(0);
-
-            return (true);
-        case AGC_DATA_MARK_DELTA_V:
-            *v = rz_csm_n49disp(1);
-
-            return (true);
-        case AGC_DATA_MARK_SOURCE_CODE:
-            *v = agc_dp_from_sp((agc_sp_t) rz_csm_n49disp(2));
-
-            return (true);
         case AGC_DATA_RSTACK:
             *v = agc_erase_rstack(0);
 
@@ -191,6 +156,10 @@ static bool nd_other(uint16_t id, agc_dp_t *v)
             *v = agc_dp_from_sp(rz_state()->nn1);
 
             return (true);
+        case AGC_DATA_WWOPT: /* WWOPT EQUALS RTHETA (high word)       */
+            *v = agc_dp_from_sp(agc_dp_high(rz_state()->rtheta));
+
+            return (true);
         case AGC_DATA_TRKMKCNT:
             *v = agc_dp_from_sp(agc_erase_trkmkcnt());
 
@@ -210,7 +179,7 @@ static bool nd_raw(uint16_t id, uint16_t *w)
     switch (id)
     {
         case AGC_DATA_LANDMARK:
-            *w = rr_word(agc_erase_landmark());
+            *w = rz_word_of(agc_erase_landmark());
 
             return (true);
         case AGC_DATA_HORIZON:
@@ -226,11 +195,11 @@ static bool nd_raw(uint16_t id, uint16_t *w)
 
             return (true);
         case AGC_DATA_TANG:
-            *w = rr_word(agc_erase_tang(0));
+            *w = rz_word_of(agc_erase_tang(0));
 
             return (true);
         case AGC_DATA_TANG_P1:
-            *w = rr_word(agc_erase_tang(1));
+            *w = rz_word_of(agc_erase_tang(1));
 
             return (true);
         case AGC_DATA_PRAXIS:

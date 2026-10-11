@@ -17,7 +17,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define VN_STAR_ANGLE_DIFF \
     ALIGN_VN(6, 5) /* VB6N5  VN 605: star angle difference  */

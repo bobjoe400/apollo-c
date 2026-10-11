@@ -23,7 +23,6 @@
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 #include "internal.h"
 
 #define RST_J          AGC_RESTART_JOB
@@ -72,7 +71,7 @@ static const rst_entry_t csm_odd1[] = {
     {RST_T, 120, RST_D, RST_E0, RST_JN, AGC_TASK_SETJTAG}, /* 1.3 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_REDO40_9, RST_TN}, /* 1.5 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},  /* 1.7 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_PICKUP,
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK,
      RST_TN}, /* 1.11 */
 };
 static const rst_entry_t csm_odd2[] = {
@@ -80,8 +79,10 @@ static const rst_entry_t csm_odd2[] = {
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
      RST_TN},                                                         /* 2.7 */
-    {RST_J, 014, RST_D, RST_E0, AGC_JOB_ALTERNATE_LOS_ENTER, RST_TN}, /* 2.11 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_REDO_RENDEZVOUS_TRACKING_DATA,
+    {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
+     RST_TN},
+    /* 2.11 */
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,
      RST_TN}, /* 2.13 */
 };
 static const rst_entry_t csm_odd3[] = {
@@ -103,13 +104,14 @@ static const rst_entry_t csm_odd4[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN,
      AGC_TASK_ENGINE_FAIL_REENABLE},                                  /* 4.13 */
     {RST_J, 016, RST_D, RST_E0, AGC_JOB_COMPVER, RST_TN},             /* 4.15 */
-    {RST_J, 016, RST_D, RST_E0, AGC_JOB_AZMTHCG1, RST_TN},            /* 4.17 */
+    {RST_J, 016, RST_D, RST_E0, AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE, RST_TN},
+    /* 4.17 */
     {RST_L, 0, RST_G, RST_E_PREREAD_DELAY, RST_JN, AGC_TASK_TIGBLNK}, /* 4.21 */
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_PREBURN_STATE_VECTOR,
-     RST_TN},                                                /* 4.23 */
-    {RST_J, 024, RST_D, RST_E0, AGC_JOB_PROG52, RST_TN},     /* 4.25 */
-    {RST_T, 250, RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCRCS},  /* 4.27 */
-    {RST_J, 013, RST_D, RST_E0, AGC_JOB_FINE_ALIGN, RST_TN}, /* 4.31 */
+     RST_TN},                                                 /* 4.23 */
+    {RST_J, 024, RST_D, RST_E0, AGC_JOB_IMU_REALIGN, RST_TN}, /* 4.25 */
+    {RST_T, 250, RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCRCS},   /* 4.27 */
+    {RST_J, 013, RST_D, RST_E0, AGC_JOB_CSM_FINE_ALIGN, RST_TN}, /* 4.31 */
     {RST_T, 2100, RST_D, RST_E0, RST_JN,
      AGC_TASK_WAKE_CM_SM_SEPARATION},                      /* 4.33 */
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN}, /* 4.35 */
@@ -143,7 +145,7 @@ static const rst_entry_t csm_odd5[] = {
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ALLOOP1},    /* 5.11 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_WTLISTNT, RST_TN},  /* 5.13 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_RESTEST1, RST_TN},  /* 5.15 */
-    {RST_J, 020, RST_D, RST_E0, AGC_JOB_GEOSTRT4, RST_TN},  /* 5.17 */
+    {RST_J, 020, RST_D, RST_E0, AGC_JOB_ENDOFJOB, RST_TN},  /* 5.17 */
     {RST_J, 022, RST_D, RST_E0, AGC_JOB_ALFLT1, RST_TN},    /* 5.21 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_SPECSTS},    /* 5.23 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_RESTEST3, RST_TN},  /* 5.25 */
@@ -185,15 +187,15 @@ static const rst_entry_t lm_odd2[] = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
     {RST_T, 1500, RST_D, RST_E0, RST_JN,
-     AGC_TASK_RENDEZVOUS_NAVIGATION_CYCLE}, /* 2.7 */
-    {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_LOOP,
+     AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK}, /* 2.7 */
+    {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
      RST_TN},                                             /* 2.11 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN}, /* 2.13 */
     {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
      RST_TN},                                             /* 2.15 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17}, /* 2.17 */
     {RST_T, 25, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ABORT_MONITOR_RESTART}, /* 2.21 */
+     AGC_TASK_ABORT_MONITOR}, /* 2.21 */
 };
 static const rst_entry_t lm_odd3[] = {
     {RST_T, 0, RST_X, RST_E_ZOOMTIME, RST_JN, AGC_TASK_ZOOM}, /* 3.3 */
@@ -207,7 +209,8 @@ static const rst_entry_t lm_odd4[] = {
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},           /* 4.13 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30},            /* 4.15 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5},               /* 4.17 */
-    {RST_J, 013, RST_D, RST_E0, AGC_JOB_FINE_ALIGN_PERFORM, RST_TN}, /* 4.21 */
+    {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
+    /* 4.21 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION},            /* 4.23 */
     {RST_L, 0, RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35},      /* 4.25 */
     {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
@@ -318,8 +321,7 @@ static int16_t dp_low_word(agc_dp_t v)
 }
 
 /* ITSINDIR (C p.1415): NDX A / CA 1 -- the single word at GENADR.
- * Erasables of other lanes not yet published as core accessors return
- * UNIMPLEMENTED (requested in docs/modules/exec-sched.md).             */
+ * The delay erasables live in core (src/core/restart_delays.c).        */
 agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 {
     if (!AGC_ASSERT(out != 0))
@@ -337,12 +339,20 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
         case RST_E_600SECS: /* high word of 2DEC 60000              */
             *out = (int16_t) (RST_600SECS_CS / RST_SP_SCALE);
             break;
-        case RST_E_SAVET_30:      /* LM SAVET-30 (guid-powered)            */
-        case RST_E_ZOOMTIME:      /* LM ZOOMTIME (guid-powered)            */
-        case RST_E_PREREAD_DELAY: /* CSM P40TMP (guid-powered)             */
-        case RST_E_S61DT:         /* CSM S61DT (guid-entry)                */
-        case RST_E_CM_GYMDT:      /* CSM CM/GYMDT (guid-entry)             */
-            st = AGC_STATUS_UNIMPLEMENTED;
+        case RST_E_SAVET_30: /* LM SAVET-30 +1: low word, cs          */
+            *out = dp_low_word(agc_erase_savet_30());
+            break;
+        case RST_E_ZOOMTIME: /* LM ZOOMTIME (pad load), cs             */
+            *out = agc_erase_zoomtime();
+            break;
+        case RST_E_PREREAD_DELAY: /* CSM P40TMP +1: low word, cs        */
+            *out = dp_low_word(agc_erase_p40tmp());
+            break;
+        case RST_E_S61DT: /* CSM S61DT, cs                             */
+            *out = agc_erase_s61dt();
+            break;
+        case RST_E_CM_GYMDT: /* CSM CM/GYMDT, cs                       */
+            *out = agc_erase_cm_gymdt();
             break;
         case RST_E_NONE:
         default:
@@ -375,9 +385,11 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
         case RST_E_600SECS: /* 600SECS 2DEC 60000 (FRESH_START)      */
             *out = (uint32_t) RST_600SECS_CS;
             break;
-        case RST_E_SAVET_30:      /* LM SAVET-30 B(2) (guid-powered)       */
-        case RST_E_PREREAD_DELAY: /* CSM P40TMP B(2) (guid-powered)        */
-            st = AGC_STATUS_UNIMPLEMENTED;
+        case RST_E_SAVET_30: /* LM SAVET-30 B(2), cs                   */
+            *out = (uint32_t) agc_erase_savet_30();
+            break;
+        case RST_E_PREREAD_DELAY: /* CSM P40TMP B(2), cs                */
+            *out = (uint32_t) agc_erase_p40tmp();
             break;
         case RST_E_TGO_1:
         case RST_E_ZOOMTIME:

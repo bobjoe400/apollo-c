@@ -29,7 +29,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 
 #define MU_IMUVAR ((agc_dp_t) 1099512)   /* IMUVAR 2DEC E-6 B12: rad^2  */
@@ -117,7 +117,7 @@ static agc_status_t mu_intgrcal(agc_interp_t *ip)
     agc_status_t st =
         agc_integ_integrv(ip, agc_integ_shared_ctx(), lmnav_state()->mktime);
 
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
 
     return (st);
 }
@@ -514,7 +514,7 @@ static agc_status_t mu_incorp2(agc_interp_t *ip)
 static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
 {
     lmnav_state()->whchread = (agc_sp_t) step; /* WHCHREAD */
-    rz_phase(2, 04022);                        /* GRP2PC   */
+    agc_phase_change(2, 04022);                        /* GRP2PC   */
 
     switch (step)
     {
@@ -571,7 +571,7 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
         if (big)
         {
-            return (lmnav_n49_display()); /* R22LEM96 */
+            return (lmnav_residuals_display()); /* R22LEM96 */
         }
 
         st = mu_incorp2(ip); /* ASTOK    */
@@ -581,7 +581,7 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (st);
         }
 
-        rz_phase(2, 04022);
+        agc_phase_change(2, 04022);
         mu.step = mu_next(mu.step);
     }
 
@@ -607,7 +607,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     mu.step = mu_next(mu.step);
 
     return (mu_run(ctx, &ip));
@@ -623,7 +623,7 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022); /* GRP2PC   */
+    agc_phase_change(2, 04022); /* GRP2PC   */
     agc_interp_t ip;
 
     agc_interp_init(&ip);
@@ -670,7 +670,7 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(agc_job_ctx_t *ctx)
     }
 
     mu.x2 = agc_flag_test(AGC_FLAG_LMOONFLG) ? 0 : 2;
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     mu.step = MU_RANGE;
     agc_interp_t ip;
 

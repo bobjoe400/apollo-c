@@ -141,11 +141,12 @@ agc_status_t agc_task_bibibias(void)
  * clear of the R10/R11 interrupts and of the downrupts.                    */
 static void time5_sync(void)
 {
-    agc_sp_t d    = (agc_sp_t) (agc_erase_time5() - TIME5_SYNC);
+    agc_sp_t t5   = (agc_sp_t) (agc_rupt_time(5) & 037777u); /* CA TIME5  */
+    agc_sp_t d    = (agc_sp_t) (t5 - TIME5_SYNC);
     agc_sp_t step =
         (d > 0) ? -1 : ((d < 0) ? 1 : 0); /* CCS: CS ONE / CA ONE   */
 
-    agc_erase_set_time5((agc_sp_t) (agc_erase_time5() + step));
+    agc_rupt_set_time(5, (uint16_t) (t5 + step)); /* ADS TIME5              */
 
     if (!AGC_ASSERT(step >= -1 && step <= 1))
     {
@@ -170,10 +171,9 @@ static agc_status_t abort_monitor_setup(agc_avg_g_t *a)
     return (agc_waitlist_call(ABORT_MONITOR_FIRST_CS, AGC_TASK_ABORT_MONITOR));
 }
 
-/* PIPSDONE / REDO5.5 / MAKEACCS / AVEGOUT (p.858-859).                    */
-static agc_status_t pipsdone(agc_avg_g_t *a)
+/* REDO5.5 / MAKEACCS / AVEGOUT (p.858-859): restart 5.5 enters here.      */
+static agc_status_t redo5_5(agc_avg_g_t *a)
 {
-    gnufaze5(5, false);
     a->pipage = 1;
     agc_status_t st = agc_exec_findvac(AGC_PRIO20, AGC_JOB_SERVICER);
 
@@ -205,6 +205,30 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
     gnufaze5(4, true); /* MAKEACCS: GOREADAX     */
 
     return (agc_waitlist_vardelay(TWO_SECS, AGC_TASK_READACCS));
+}
+
+/* PIPSDONE (p.858): 5.5 (REDO5.5), then REDO5.5.                          */
+static agc_status_t pipsdone(agc_avg_g_t *a)
+{
+    gnufaze5(5, false);
+
+    return (redo5_5(a));
+}
+
+/* REDO5.5 as the restart task of phase 5.5 (RESTART_TABLES p.242).        */
+agc_status_t agc_task_redo5_5_lm(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (redo5_5(&agc_guid_state()->avg));
 }
 
 /* READACCS (p.858): waitlist task every 2 s.                               */
@@ -809,7 +833,7 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_guid_avetomid(&ip, ctx->id);
+    agc_status_t st = agc_integ_avetomid(&ip, agc_integ_shared_ctx(), ctx->id);
 
     if (st != AGC_STATUS_OK)
     {
@@ -830,15 +854,11 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
 /* SERVIDLE (p.865): disconnect SERVICER from all guidance, DV monitor off,
  * R12 terminated, groups 1, 3, 6 (and 2 unless MUNFLAG) off, 4.33 for
  * GOP00FIX, then a software restart (WHIMPER) while SERVICER continues in
- * a ground state.                                                         */
-agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
+ * a ground state. Also entered by POODOO (STRTIDLE, ALARM_AND_ABORT
+ * p.1383) when SERVICER is running.                                        */
+agc_status_t agc_lm_servidle(void)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -860,6 +880,22 @@ agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
     agc_phase_newphase(4, 033, false); /* 4.33SPOT FOR GOP00FIX  */
 
     return (agc_exec_enema());                  /* TCF WHIMPER            */
+}
+
+/* SERVIDLE as a job (V37 to P00 while SERVICER runs).                      */
+agc_status_t agc_job_servidle(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_lm_servidle());
 }
 
 /* NORMLIZE (p.867): the first average-G pass. With MUNFLAG the SM state

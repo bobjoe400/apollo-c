@@ -27,13 +27,14 @@
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "internal.h"
-#include "pending.h"
 
 #define ALARM_ZERO_IN_GLOCK ((agc_alarm_code_t) 00206) /* zero in coarse+lock */
 #define ALARM_IMU_NOT_OPER  ((agc_alarm_code_t) 00210) /* IMU not operating  */

@@ -118,7 +118,7 @@ agc_status_t agc_task_dotvcon(void)
     tvc->errbtmp =
         agc_dp_neg(agc_dp_pack(rcs->error[1], rcs->error[2])); /* DCS ERRORY */
     agc_phase_newphase(4, 5, true);          /* 4.5 = DOSTRULL         */
-    agc_erase_set_time5(AGC_SP_MAX);         /* START RIGHT AWAY       */
+    agc_rupt_set_time(5, (uint16_t) AGC_SP_MAX); /* START RIGHT AWAY   */
     agc_rupt_set_t5_task(AGC_TASK_TVCDAPON); /* KILLS RCS DAP          */
 
     if (!AGC_ASSERT(agc_csm_tvc_on()))
@@ -184,7 +184,7 @@ agc_status_t agc_task_dospsoff(void)
 agc_status_t agc_task_dotvcrcs(void)
 {
     agc_inhint();
-    agc_csm_setmaxdb();
+    agc_csm_dap_setmaxdb();
     agc_status_t st = agc_csm_dap_rcsdapon();
 
     if (st != AGC_STATUS_OK)
@@ -328,7 +328,7 @@ agc_status_t agc_job_sps_burn_min_deadband(agc_job_ctx_t *ctx)
     }
 
     agc_inhint();
-    agc_csm_setmindb();
+    agc_csm_dap_setmindb();
     agc_relint();
 
     return (agc_job_tignow_csm(ctx));
@@ -405,7 +405,6 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_t  *g  = agc_guid_state();
     agc_status_t sw = agc_imu_status_check();
 
     if (sw != AGC_STATUS_OK)
@@ -413,20 +412,23 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
         return (sw);
     }
 
-    agc_dp_t     dt = 0;
-    agc_interp_t ip;
+    agc_integ_midtoav_out_t mo;
+    agc_interp_t            ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_guid_midtoav2(&ip, ctx->id, &dt);
+    agc_status_t st =
+        agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    g->csm.preread_delay =
-        (agc_dp_t) agc_dp_low(dt); /* CA MPAC +1 TS P40TMP   */
-    st = agc_waitlist_call((uint16_t) g->csm.preread_delay, AGC_TASK_TIGON);
+    agc_guid_store_midtoav(&mo);
+    agc_dp_t dt = mo.dt;
+
+    agc_erase_set_p40tmp((agc_dp_t) agc_dp_low(dt)); /* CA MPAC +1 TS P40TMP */
+    st = agc_waitlist_call((uint16_t) agc_erase_p40tmp(), AGC_TASK_TIGON);
 
     if (st != AGC_STATUS_OK)
     {

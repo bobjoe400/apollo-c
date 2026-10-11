@@ -22,11 +22,15 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/programs/alignment_pending.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 #define TA_DEGREE10  910                    /* DEGREE10 DEC .05556       */
 #define TA_RVCS_RDS  ((agc_dp_t) 267017681) /* RVCS/RDS 2DEC 15.915494 B-4 */
@@ -241,7 +245,7 @@ static agc_status_t ta_crs61(agc_interp_t *ip, agc_job_id_t resume,
                              ta_result_t *res)
 {
     *res = TA_FED_DAP;
-    agc_status_t st = ta_desired(ip, rz_loadtime(), resume); /* STORT    */
+    agc_status_t st = ta_desired(ip, agc_rtb_loadtime(), resume); /* STORT    */
 
     if (st != AGC_STATUS_OK)
     {
@@ -358,7 +362,7 @@ agc_status_t agc_job_tracking_attitude_csm_maneuvered(agc_job_ctx_t *ctx)
     }
 
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
-    rz_phase(1, 00111);
+    agc_phase_change(1, 00111);
     ta.r61cntr = 0;
 
     return (rz_continue(ta.genret));
@@ -447,7 +451,8 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = ta_desired(&ip, agc_dp_add(&ip, rz_loadtime(), TA_DP1MIN),
+    agc_status_t st = ta_desired(&ip,
+                                 agc_dp_add(&ip, agc_rtb_loadtime(), TA_DP1MIN),
                                  AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE);
 
     if (st != AGC_STATUS_OK)

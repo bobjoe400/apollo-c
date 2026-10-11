@@ -1,0 +1,278 @@
+/*
+ * idle.c -- GOP00FIX (the P00 V37N99 request), INITSUB, and the few calls
+ *           the restart code makes into higher layers.
+ *
+ * Source: FRESH_START_AND_RESTART.agc, Comanche055 pp. 194-209,
+ * Luminary099 pp. 223-236.
+ *
+ * LAYERING: this is program-level code that the AGC keeps in the fresh
+ * start log section. It calls up into io (pinball), imu and the DAPs, so
+ * like dispatch.c it is a documented exception to "exec calls only core".
+ * Everything else in src/exec/ reaches higher layers only through the
+ * exec_up_* functions here, which unit tests replace.
+ *
+ * V37 itself (MMCHANG .. V37XEQ) is in v37.c, csm.c and lm.c beside this
+ * file.
+ */
+#include "../internal.h"
+#include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_common.h"
+#include "agc/core/flags_csm.h"
+#include "agc/core/state.h"
+#include "agc/csm/dap.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
+
+#define VP_VERB_CHANGE_PROGRAM 37U
+#define VP_GO_IDLE_NOUN        99U
+#define VP_RAKE_WORDS          12 /* FLAGTABL: FLAGWRD0 .. FLAGWRD11       */
+#define VP_LM_F13_CLR          000440u /* LM FLAGWRD13: XOVINFLG bit 9, ULLAGFLG bit 6 */
+
+/* ---- up-calls used by fresh_start.c and alarm.c ---------------------- */
+agc_status_t exec_up_stoprate(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(exec_cp_mmnumber() <= 99U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_kalc_stoprate();
+
+    return (AGC_STATUS_OK);
+}
+
+/* STRTIDLE (L p.1383): SERVIDLE puts SERVICER into its ground state and
+ * requests the software restart (WHIMPER) that goes on to GOP00FIX (4.33).*/
+agc_status_t exec_up_servidle(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(exec_cp_mmnumber() <= 99U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_lm_servidle());
+}
+
+/* SETCOARS (IMU_MODE_SWITCHING_ROUTINES): coarse-align enable after a
+ * restart with the NO ATT lamp on (CSM GOPROG).                         */
+agc_status_t exec_up_setcoars(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(exec_cp_mmnumber() <= 99U))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_imu_setcoars();
+
+    return (AGC_STATUS_OK);
+}
+
+/* INITSUB / RAKE (C p.203): STOPRATE, restore the deadband (FLAGWRD9
+ * MAXDBFLG: SETMAXDB, else SETMINDB), clear the FLAGTABL bits of
+ * FLAGWRD0..11, set IMPULSW. OPTIND = -1 is the optics owner's (T4RUPT). */
+void exec_initsub_csm(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return;
+    }
+
+    static const uint16_t flagtabl[VP_RAKE_WORDS] = {
+        0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0
+    };
+    agc_status_t          st = exec_up_stoprate();
+
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return;
+    }
+
+    if (agc_flag_test(AGC_FLAG_MAXDBFLG))
+    {
+        agc_csm_dap_setmaxdb(); /* SETMAXER          */
+    }
+    else
+    {
+        agc_csm_dap_setmindb();
+    }
+
+    for (int w = VP_RAKE_WORDS - 1; w >= 0; w--)
+    { /* RAKE         */
+        uint16_t v = (uint16_t) (agc_flagword_get(w) & ~flagtabl[w]);
+
+        agc_flagword_set(w, v);
+    }
+
+    agc_flag_set(AGC_FLAG_IMPULSW);
+}
+
+/* The V37 N99 flash of GOP00FIX: every response re-flashes it
+ * (TCF -3 / -4 / -5 back to CAF V37N99).                              */
+static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
+{
+    agc_dsky_cont_t cont = {AGC_JOB_GO_IDLE_FIX_REFLASH,
+                            AGC_JOB_GO_IDLE_FIX_REFLASH,
+                            AGC_JOB_GO_IDLE_FIX_REFLASH};
+
+    if (!AGC_ASSERT(ctx != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
+                             agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM,
+                                         (uint8_t) VP_GO_IDLE_NOUN),
+                             &cont));
+}
+
+/* GOP00FIX (C p.194 / L p.223): P00 has been requested by a restart
+ * with no active group or by POODOO: flash V37 N99 until the crew
+ * selects a program.                                                  */
+agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT((ctx->prio >= 1u) && (ctx->prio <= 037u)))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM)
+    {
+        exec_initsub_csm(); /* TC INITSUB        */
+    }
+    else
+    {
+        uint16_t f13 = (uint16_t) (agc_flagword_get(13) & ~VP_LM_F13_CLR);
+
+        agc_flagword_set(13, f13); /* XOVINFLG, ULLAGFLG */
+    }
+
+    agc_dsky_clearmrk(); /* TC CLEARMRK +2    */
+
+    return (flash_program_request(ctx));
+}
+
+agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
+{
+    if (!AGC_ASSERT(ctx != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (flash_program_request(ctx));
+}
+
+/* STARTSB2's resets of the erasables other modules own (C pp.190-192 /
+ * L pp.220-222): the DSKY / pinball state (DELAYLOC .. DSPCOUNT, NOUT,
+ * MONSAVE, VERBREG, NOUNREG, DSPLIST), DELAYJOB's DELAYLOC, T4RUPT's
+ * DSRUPTSW and EXTVBACT.                                                 */
+agc_status_t exec_up_startsb2(void)
+{
+    agc_status_t st = agc_dsky_init();
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_svc_startsub_reset(); /* DELAYLOC = 0      */
+    }
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_t4_startsub_reset(); /* DSRUPTSW = +0     */
+    }
+
+    agc_erase_set_extvbact(0); /* EXTVBACT = 0      */
+
+    if (!AGC_ASSERT(agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
+}
+
+/* DOFSTART's resets of the erasables other modules own (C p.183-184 /
+ * L p.211-212): self-check (SMODE; ERCOUNT on SLAP1), the uplink
+ * (UPSVFLAG), the downlist (DNLSTCOD, DNTMGOTO), T4RUPT DSRUPTSW (SLAP1),
+ * the mark counters; CSM optics (OPTIND = -1, OPTMODES = OPTINITF); LM
+ * DAP erasables, THRUST = -0.                                            */
+agc_status_t exec_up_dofstart(bool slap1)
+{
+    agc_status_t st = agc_selfcheck_fresh_start(slap1);
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_uplink_update_fresh_start();
+    }
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_telem_fresh_start(0); /* DNLSTCOD = COSTALIN */
+    }
+
+    if (st == AGC_STATUS_OK && slap1)
+    {
+        st = agc_t4_fresh_start_flush(); /* DSRUPTSW = -PRIO12 */
+    }
+
+    agc_erase_set_trkmkcnt(0);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        agc_erase_set_thrust(0); /* THRUST = -0       */
+
+        return (agc_lm_dap_fresh_start());
+    }
+
+    return (agc_t4_optics_reset(true));
+}
+
+/* GOPROG's (hardware restart) optics reset (C p.188): OPTMODES =
+ * (OPTMODES & OPTINITR) + BIT7.                                         */
+agc_status_t exec_up_goprog_optics(void)
+{
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (agc_t4_optics_reset(false));
+}

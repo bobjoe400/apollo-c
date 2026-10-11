@@ -19,8 +19,10 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define DT_HALF_SEC      ((uint16_t) 50)  /* .5SEC  DELAYJOB cs            */
 #define DT_SYNC          ((uint16_t) 180) /* 1.8SEC DEC 180 cs             */

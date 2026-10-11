@@ -6,12 +6,12 @@
  * groups from the tables of both vehicles, GOPROG / ENEMA / GOTOPOOH,
  * the KLEANs, POODOO.
  *
- * The test supplies its own agc_dispatch_job / agc_dispatch_task /
- * agc_dispatch_rupt and exec_up_* (the exec lane's only links to other
- * lanes), so it links against src/exec and src/core objects only:
- *   src/exec/{executive,waitlist,phase_table,restart_tables,restarts,
- *   alarm,fresh_start,interrupts,erasable}.c + src/core/state.c,
- *   agc_channels.c, agc_erasable.c.
+ * Links against the real library (build/libagc_debug.a). The test keeps
+ * its own agc_dispatch_job / agc_dispatch_task: test doubles of the
+ * dispatch boundary, so that the executive and waitlist can be driven by
+ * test jobs (TJ_* / TT_*). src/exec/dispatch.c defines nothing else, so
+ * the linker never pulls it in; every other exec, core and up-call
+ * function is the library's.
  */
 #include <stdio.h>
 
@@ -22,7 +22,6 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 
 static int g_checks;
 static int g_failures;
@@ -120,7 +119,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 
 agc_status_t agc_dispatch_task(agc_task_id_t task)
 {
-    switch (task)
+    switch ((int) task)
     {
         case AGC_TASK_ENDTASK:
             return (agc_task_endtask());
@@ -135,7 +134,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
         case AGC_TASK_T5IDLOC:
             return (agc_task_t5idloc());
         case AGC_TASK_NONE:
-        case AGC_TASK_COUNT_PLACEHOLDER:
+        case AGC_TASK_COUNT:
         default:
             break;
     }
@@ -144,36 +143,6 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
     {
         task_log[task_n++] = task;
     }
-
-    return (AGC_STATUS_OK);
-}
-
-agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
-{
-    (void) rupt;
-
-    return (AGC_STATUS_OK);
-}
-
-static int up_calls;
-
-agc_status_t exec_up_stoprate(void)
-{
-    up_calls++;
-
-    return (AGC_STATUS_OK);
-}
-
-agc_status_t exec_up_servidle(void)
-{
-    up_calls++;
-
-    return (AGC_STATUS_OK);
-}
-
-agc_status_t exec_up_setcoars(void)
-{
-    up_calls++;
 
     return (AGC_STATUS_OK);
 }
@@ -224,8 +193,7 @@ static void reset(agc_vehicle_t v)
     (void) agc_fresh_start_slap1();
     (void) agc_exec_init();
     wl_clean();
-    job_n    = 0;
-    up_calls = 0;
+    job_n = 0;
 }
 
 static int run_all(void)
@@ -545,8 +513,10 @@ static void test_lm_tables(void)
     agc_phase_newphase(2, 3, false); /* 2.3 LONGCALL */
     CHECK(agc_restart_group(2) == AGC_STATUS_OK); /* 600 s from LONGBASE */
     CHECK(task_queued(AGC_TASK_LONGCYCL));
-    agc_phase_newphase(3, 3, false); /* ZOOMTIME */
-    CHECK(agc_restart_group(3) == AGC_STATUS_UNIMPLEMENTED);
+    agc_erase_set_zoomtime(2600); /* ZOOMTIME pad load, 26 s */
+    agc_phase_newphase(3, 3, true); /* 3.3: ZOOM at TBASE3 + ZOOMTIME */
+    CHECK(agc_restart_group(3) == AGC_STATUS_OK);
+    CHECK(task_queued(AGC_TASK_ZOOM));
 }
 
 static void test_kleans(void)

@@ -23,9 +23,10 @@
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
+#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "internal.h"
-#include "pending.h"
 
 /* MINANG = 0.25 deg and MAXANG = 170 deg, in revolutions.  Luminary has
  * them as 2DEC.  Comanche writes single-word DEC constants, so DSU reads

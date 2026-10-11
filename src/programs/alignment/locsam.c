@@ -18,7 +18,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 /* ---- constants (2DEC value -> DP integer = value * 2^28 / 2^B) --------- */
 #define RSUBM              ((agc_dp_t) 869045) /* 1738090 B-29   moon radius m     */

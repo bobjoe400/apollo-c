@@ -145,7 +145,6 @@ typedef struct agc_rendz
     agc_dp_t delteeo;       /* DELTEEO: last time step, cs 2^28           */
     agc_dp_t secmax;        /* SECMAX: maximum time step, cs 2^28         */
     agc_sp_t titer;         /* TITER: S33/34.1 iteration bit              */
-    agc_sp_t trkmkcnt;      /* TRKMKCNT (= MARKCTR): tracking marks       */
     agc_sp_t vhfcnt;        /* VHFCNT (CM): VHF range marks               */
 
     /* R36 / R31 / R34 displays */
@@ -213,8 +212,6 @@ typedef struct agc_rendz
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
  * AVETOMID (nav-integ) and counted by P20.                               */
-agc_sp_t agc_erase_trkmkcnt(void);
-void     agc_erase_set_trkmkcnt(agc_sp_t v);
 /* VHFCNT, MRKBUF2 (CM, owned here; the guidance lane clears them).        */
 agc_sp_t agc_erase_vhfcnt(void);
 void     agc_erase_set_vhfcnt(agc_sp_t v);
@@ -680,6 +677,7 @@ agc_status_t agc_job_out_of_plane_time(agc_job_ctx_t *ctx);
 agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx);
 /* rendezvous_parameter_display.c (R31 verb 83, CM R34) */
 agc_status_t agc_job_rendezvous_parameter_display(agc_job_ctx_t *ctx);
+agc_status_t agc_task_rendezvous_parameter_display(void); /* R31CALL (LM) */
 agc_status_t agc_job_rendezvous_params_wait(agc_job_ctx_t *ctx);
 agc_status_t agc_task_rendezvous_params_wait(void);
 agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx);
@@ -695,10 +693,10 @@ agc_status_t agc_job_tpi_search_results(agc_job_ctx_t *ctx);
 agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_tpi_search_response(agc_job_ctx_t *ctx);
 /* lambert_aimpoint_guidance_lm.c (P31, LM) */
-agc_status_t agc_job_lambert_aimpoint_guidance(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lambert_aimpoint_compute(agc_job_ctx_t *ctx);
+agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx); /* P31 (LM) */
+agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lambert_aimpoint_apsides(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lambert_aimpoint_ttogo(agc_job_ctx_t *ctx);
+agc_status_t agc_job_marks_tfi_mga_monitor(agc_job_ctx_t *ctx);
 /* sighting_data_and_gyro_torquing.c */
 agc_status_t agc_job_chksdata_flash(agc_job_ctx_t *ctx);
 agc_status_t agc_job_chksdata_proceed(agc_job_ctx_t *ctx);
@@ -776,10 +774,13 @@ agc_status_t agc_job_rendezvous_tracking_data_wait(agc_job_ctx_t *ctx); /* R22WA
 agc_status_t agc_job_rendezvous_tracking_data_update(agc_job_ctx_t *ctx); /* R22LEM3 */
 agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx); /* R22LEM42 */
 agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx); /* R22LEM93 */
-agc_status_t agc_job_rendezvous_tracking_data_n49(agc_job_ctx_t *ctx); /* N49DSP */
-agc_status_t agc_job_rendezvous_tracking_data_n49_proceed(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_n49_recycle(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_n49_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx); /* N49DSP */
+agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(
+    agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(
+    agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(
+    agc_job_ctx_t *ctx);
 agc_status_t agc_job_rendezvous_tracking_data_restart(agc_job_ctx_t *ctx); /* R22RSTRT */
 agc_status_t agc_job_rendezvous_tracking_data_restart_read(agc_job_ctx_t *ctx);
 agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx); /* LSR22.3 */
@@ -826,12 +827,13 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx); /* 
 agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(
     agc_job_ctx_t *ctx); /* REND4 */
 agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx); /* RENDISP */
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_proceed(
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(
     agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_recycle(
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(
     agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_csm_n49_wait(agc_job_ctx_t *ctx);
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(
+    agc_job_ctx_t *ctx);
 agc_status_t agc_rendz_vhf_read(void); /* VHFREAD (rupt) */
 agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx); /* V89 (CM) */
 agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx);
@@ -895,6 +897,9 @@ agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx);
 
 /* Noun data for the rendezvous erasables (delegated from agc_noun_read). */
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value);
+/* The vehicle-specific rendezvous noun data (lm/navigation, csm/navigation). */
+agc_status_t agc_lm_rendz_noun_read(uint16_t data_id, agc_dp_t *value);
+agc_status_t agc_csm_rendz_noun_read(uint16_t data_id, agc_dp_t *value);
 agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value);
 
 #endif /* AGC_PROGRAMS_H */

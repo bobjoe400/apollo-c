@@ -36,12 +36,13 @@
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/lm/dap.h"
-#include "sysmisc_ext.h"
 
 #define BIT1   000001u
 #define BIT2   000002u
@@ -366,11 +367,17 @@ static agc_status_t t4_jump(int phase)
     }
 
     if (slot == 0)
-    {
-        return (agc_lm_dap_rcsmon()); /* RCSMONIT (dap-lm)       */
+    { /* TC RCSMONIT, then on into TCF RRAUTCHK: phases 0 and 4 of the
+       * 8 x 120 ms cycle, so the RCS failure monitor runs every 480 ms  */
+        agc_status_t st = agc_lm_dap_rcsmon();
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
     }
 
-    return ((slot == 1) ? agc_t4_rr_monitor() : agc_t4_gimbal_matrix());
+    return ((slot <= 1) ? agc_t4_rr_monitor() : agc_t4_gimbal_matrix());
 }
 
 /* T4RUPT / NORMT4 (p.133): one interrupt.  *next_cs = TIME4 delay.       */

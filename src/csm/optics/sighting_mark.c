@@ -18,7 +18,9 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/io/service.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define VN_STAR_CODE    ALIGN_VN(1, 71)  /* V01N71 VN 0171: star code      */
 #define VN_ALT_ANGLES   ALIGN_VN(6, 94)  /* V06N94B VN 00694: optics angles */

@@ -37,9 +37,9 @@
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "pending.h"
+#include "agc/programs/rendezvous.h"
 
 #define WORD15        077777u
 #define BIT2          000002u /* CHAN33: RR auto-mode discrete (inverted)   */
@@ -71,7 +71,7 @@
 #define PRIO20               ((agc_prio_t) 020)
 #define ALARM_DESIGNATE_FAIL ((agc_alarm_code_t) 00503)
 #define ALARM_LR_POSITION    ((agc_alarm_code_t) 00523)
-#define LM_P22_MODE          22 /* DEC22: P22 lunar surface navigation        */
+#define LM_SURFACE_NAV_MODE  22 /* DEC22: P22 lunar surface navigation        */
 
 /* R04 / R77 test storage (EBANK4).                                        */
 static agc_sp_t rsampdt;  /* sampling interval + 1 (cs); 0 stops it     */
@@ -150,7 +150,7 @@ static agc_status_t radar_in_use_check(bool *ok)
          !agc_flag_test((agc_flag_id_t) AGC_FLAG_LRBYPASS)) ||
         (agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG) &&
          agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG)) ||
-        (agc_erase_modreg() == (agc_sp_t) LM_P22_MODE);
+        (agc_erase_modreg() == (agc_sp_t) LM_SURFACE_NAV_MODE);
 
     *ok = !busy;
 
@@ -588,7 +588,7 @@ agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx)
 
 /* ---- V63 R04, V78/V79 R77 -------------------------------------------------- */
 
-static bool radar_test_is_r04(void)
+static bool radar_test_is_self_test(void)
 {
     return (agc_flag_test(
                 (agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED)); /* R04FLAG */
@@ -621,7 +621,7 @@ static agc_status_t radar_test_start(agc_job_ctx_t *ctx, bool rr, int max)
         return (st);
     }
 
-    if (!radar_test_is_r04())
+    if (!radar_test_is_self_test())
     {
         return (agc_extverb_gopin()); /* R77                    */
     }
@@ -665,7 +665,7 @@ static agc_status_t radar_test_setup(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!radar_test_is_r04())
+    if (!radar_test_is_self_test())
     {
         rsampdt  = RSAMP_250MS; /* R04K                   */
         rtstbase = LR_BASE;     /* R04L                   */
@@ -714,7 +714,7 @@ agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    if (radar_test_is_r04())
+    if (radar_test_is_self_test())
     {
         return (agc_extverb_alm_end());
     }

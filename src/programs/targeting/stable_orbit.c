@@ -536,7 +536,7 @@ agc_status_t agc_job_stable_orbit_midcourse_compute(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_rendz_t *rz = rz_state();
 
-    agc_erase_set_tig(agc_dp_add(&ip, rz_loadtime(), rz->kt));
+    agc_erase_set_tig(agc_dp_add(&ip, agc_rtb_loadtime(), rz->kt));
 
     return (agc_job_stable_orbit_midcourse_advance(ctx));
 }

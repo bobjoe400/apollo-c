@@ -126,6 +126,26 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz,
     return (agc_dp_high(g));
 }
 
+/* LAMBERT (CONIC_SUBROUTINES p.1266); the LM calls it through SETITCTR
+ * (ITERCTR 20, or 5 with AVEGFLAG), the CM directly (ITERCTR 20).       */
+static agc_status_t rz_lambert(agc_interp_t *ip, agc_lambert_in_t *in,
+                               agc_lambert_out_t *out)
+{
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (rz_is_csm())
+    {
+        in->iterctr = AGC_CONIC_LAMBERT_ITERCTR;
+
+        return (agc_conic_lambert(ip, in, out));
+    }
+
+    return (agc_integ_setitctr(ip, in, out));
+}
+
 /* LAMBERT (CM) / SETITCTR (LM), p.489. "Arrived at solution is good
  * enough according to slightly wider bounds": SOLNSW is not tested.    */
 static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz,
@@ -137,7 +157,7 @@ static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz,
     w->lin.normsw   = w->normsw;
     w->lin.un       = w->un;
     w->lin.vtargtag = numit;
-    w->lin.body     = rz_body(rz);
+    w->lin.body     = agc_conic_body_of_x1(rz->body.rtx1);
     agc_status_t st = rz_lambert(ip, &w->lin, &w->lout);
 
     if (st == AGC_STATUS_NO_CONVERGE)

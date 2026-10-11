@@ -612,6 +612,78 @@ void agc_exec_job_wake_if_asleep(agc_job_id_t job)
     }
 }
 
+/* JOBWAKE, then INDEX LOCCTR / TS LOC (pinball RECAL2 and XCHNYLOC): the
+ * job that slept at `loc` resumes at `new_loc`.                        */
+agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
+{
+    if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_status_t st = agc_exec_job_wake(loc);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    if (!AGC_ASSERT(locctr >= 0 && locctr < agc_exec_core_sets()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    core[locctr].loc = new_loc; /* INDEX LOCCTR / TS LOC */
+
+    return (AGC_STATUS_OK);
+}
+
+/* MKVAC (marking system, SXTMARK / AOTMARK): claim the first free VAC
+ * area without starting a job (the CCS VACnUSE loop of FINDVAC).       */
+agc_status_t agc_exec_vac_claim(int *vac_index)
+{
+    if (!AGC_ASSERT(vac_index != 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    *vac_index = -1;
+
+    for (int v = 0; v < AGC_EXEC_MAX_VACS && *vac_index < 0; v++)
+    {
+        if (!vac_used[v])
+        {
+            vac_used[v] = true; /* store +0 in VACnUSE */
+            *vac_index  = v;
+        }
+    }
+
+    if (!AGC_ASSERT(*vac_index < AGC_EXEC_MAX_VACS))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return ((*vac_index < 0) ? AGC_STATUS_FULL : AGC_STATUS_OK);
+}
+
+/* Give a claimed VAC area back (TS VACnUSE with its address).         */
+agc_status_t agc_exec_vac_release(int vac_index)
+{
+    if (!AGC_ASSERT(vac_index >= 0 && vac_index < AGC_EXEC_MAX_VACS))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    if (!AGC_ASSERT(vac_used[vac_index]))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    vac_used[vac_index] = false;
+
+    return (AGC_STATUS_OK);
+}
+
 /* PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
  * job a new priority, keeping its VAC bits. If a waiting job is now
  * strictly higher (BUF > 0), NEWJOB names it: agc_exec_newjob() > 0. The
@@ -733,6 +805,7 @@ agc_status_t agc_exec_run_one(void)
     agc_status_t st = agc_dispatch_job(&ctx);
 
     in_job = false;
+    exec_service_interp_alarm(); /* 1301 / 1302 of the job's SQRT etc */
 
     if (agc_exec_restart_pending())
     {

@@ -21,13 +21,12 @@
 #include "agc/core/word.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_internal.h"
 #include "agc/csm/entry_lexicon.h"
-#include "agc/csm/entry_pending.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 
 #define INSERTION_RPAD ((agc_dp_t) 3186669) /* RPAD 2DEC 6373338 B-29, m  */
@@ -774,7 +773,7 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_gopin(ctx));
+    return (agc_extverb_gopin());
 }
 
 /* REDOSAT (p. 549): NEEDLER init, S-IVB takeover on, SATSTICK in 100 ms. */

@@ -25,15 +25,18 @@
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_internal.h"
 #include "agc/csm/entry_lexicon.h"
-#include "agc/csm/entry_pending.h"
 #include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 
 /* ---- module erasables (EBANK6, "ANGLE REGISTERS FOR ENTRY DAPS") ------ */
 static agc_sp_t aog, aig, amg; /* AOG AIG AMG gimbal /180       */
@@ -45,7 +48,6 @@ static agc_sp_t jetag;                  /* JETAG: +1 roll due, 0, -1 mode+1 */
 static agc_sp_t paxerr1;                /* PAXERR1 integrated roll err/360 */
 static agc_sp_t ak, ak1, ak2;           /* AK (= PAXERR) AK1 AK2 needles */
 static agc_sp_t qaxerr, raxerr;         /* QAXERR RAXERR errors /180     */
-static agc_sp_t cm_gymdt;               /* CM/GYMDT restart dt, cs       */
 static agc_sp_t tused;                  /* TUSED: -TIME1 at SETJTAG      */
 static agc_sp_t errorz;                 /* ERRORZ initial roll error (TM)*/
 static agc_sp_t mvt_180e;               /* -VT/180E (edit)               */
@@ -316,24 +318,6 @@ agc_sp_t agc_erase_amg(void)
     return (amg);
 }
 
-agc_sp_t agc_erase_cm_gymdt(void)
-{
-    if (!AGC_ASSERT(cm_gymdt >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (cm_gymdt);
-}
-
-void agc_erase_set_cm_gymdt(agc_sp_t v)
-{
-    if (AGC_ASSERT(v >= 0))
-    {
-        cm_gymdt = v;
-    }
-}
-
 /* FLUSHJET (p. 1065): all jets off (channels 6 and 5).                   */
 void agc_entry_dap_flushjet(void)
 {
@@ -494,7 +478,8 @@ agc_status_t agc_task_readgymb(void)
 {
     unsigned sel;
 
-    cm_gymdt = entry_sp_sat((int32_t) cm_gymdt + 10); /* ADS CM/GYMDT */
+    agc_erase_set_cm_gymdt(
+        entry_sp_sat((int32_t) agc_erase_cm_gymdt() + 10)); /* ADS CM/GYMDT */
 
     if ((agc_erase_imodes33() & 040u) != 0u)
     { /* not fine align */
@@ -1385,8 +1370,9 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
     }
 
     agc_inhint();
-    cm_gymdt = dapic_first_dt();
-    agc_status_t st = agc_waitlist_call((uint16_t) cm_gymdt, AGC_TASK_READGYMB);
+    agc_erase_set_cm_gymdt(dapic_first_dt());
+    agc_status_t st =
+        agc_waitlist_call((uint16_t) agc_erase_cm_gymdt(), AGC_TASK_READGYMB);
 
     if (st != AGC_STATUS_OK)
     {

@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define LODPHALF AGC_DP_HALF /* LODPHALF .5 rev = 180 degrees            */
 

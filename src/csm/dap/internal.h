@@ -25,7 +25,6 @@
 #include "agc/core/word.h"
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
-#include "pending.h"
 
 /* ---- AGC fixed constants used by several files ------------------------- */
 #define CSM_DAP_BIT1  ((uint16_t) 000001)

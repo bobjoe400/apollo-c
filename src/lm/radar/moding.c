@@ -23,7 +23,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "radar.h"
 
 /* ---- constants (pp.523, 528, 532, 534, 536) ----------------------------
@@ -557,8 +557,7 @@ agc_status_t agc_rr_zero(void)
 
     if (st == AGC_STATUS_OK && rr_radmodes_test(RR_AUTOMBIT))
     {
-        st = rz_alarm(RR_ALARM_NOT_AUTO);
-        st = (st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st;
+        agc_alarm(RR_ALARM_NOT_AUTO);
     }
 
     agc_relint(); /* ROADBACK */
@@ -604,7 +603,7 @@ static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
                        (m2 ? 0U : RR_W_M90);               /* S -90 (0)  */
 
             return (true);
-        case RR_AXIS_PREPOSITION_R29: /* PREPOS29: T to -180 (NEGMAX)          */
+        case RR_AXIS_PREPOSITION_POWERED: /* PREPOS29: T to -180 (NEGMAX)          */
             *rdes = RR_W_180;
 
             return (step == 0);
@@ -715,7 +714,7 @@ static bool rr_axis_advance(agc_status_t *st)
             *st = rr_remode_done();
 
             return (false);
-        case RR_AXIS_PREPOSITION_R29: /* PREPOS29: repositioning off */
+        case RR_AXIS_PREPOSITION_POWERED: /* PREPOS29: repositioning off */
             rr_radmodes_clear(RR_REPOSBIT);
 
             return (false);

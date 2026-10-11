@@ -8,7 +8,18 @@
 #ifndef SPS_BURN_INTERNAL_H
 #define SPS_BURN_INTERNAL_H
 
-#include "../guid_pending.h"
+#include "agc/core/channels.h"
+#include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/csm/dap.h"
+#include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 /* NVWORD1 of the CLOCKJOB: the V99 flash (-BIT9) and the V97 flash, which
  * the AGC marks with -0 (DEVIATION: -0 is not representable; -1 is used). */

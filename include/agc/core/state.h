@@ -273,4 +273,132 @@ agc_status_t agc_erase_set_failreg(int index, uint16_t v);
 uint16_t agc_erase_thetad(int index);
 void     agc_erase_set_thetad(int index, uint16_t v);
 
+/* ---- hardware counter cells (src/core/counters.c) ------------------------
+ * P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP.   */
+agc_sp_t agc_erase_p_rhcctr(void);
+agc_sp_t agc_erase_q_rhcctr(void);
+agc_sp_t agc_erase_r_rhcctr(void);
+void     agc_erase_set_p_rhcctr(agc_sp_t v);
+void     agc_erase_set_q_rhcctr(agc_sp_t v);
+void     agc_erase_set_r_rhcctr(agc_sp_t v);
+
+/* RNRAD (046): the radar reading (RR, LR or VHF range), raw 15-bit word.   */
+uint16_t agc_erase_rnrad(void);
+void     agc_erase_set_rnrad(uint16_t v);
+
+/* INLINK (045): uplink word for UPRUPT, raw 15-bit word.                   */
+uint16_t agc_erase_inlink(void);
+void     agc_erase_set_inlink(uint16_t v);
+
+/* CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter
+ * drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the
+ * same cells are TVCYAW / TVCPITCH, 85.41 arc-sec per pulse.               */
+agc_sp_t agc_erase_cdutcmd(int which);
+void     agc_erase_set_cdutcmd(int which, agc_sp_t v);
+agc_sp_t agc_erase_tvcyaw(void); /* = CDUTCMD */
+void     agc_erase_set_tvcyaw(agc_sp_t v);
+agc_sp_t agc_erase_tvcpitch(void); /* = CDUSCMD */
+void     agc_erase_set_tvcpitch(agc_sp_t v);
+
+/* THRUST (LM 055): descent engine throttle command pulses, SP.             */
+agc_sp_t agc_erase_thrust(void);
+void     agc_erase_set_thrust(agc_sp_t pulses);
+
+/* ALTM (LM 060): altitude / altitude-rate meter drive, raw 15-bit word.    */
+uint16_t agc_erase_altm(void);
+void     agc_erase_set_altm(uint16_t word);
+
+/* PIPASR +3: read PIPAX..Z into TEMX..Z and the high words of DELV, zero
+ * the PIPAs (no PIPTIME1). TEMX..TEMZ (axis 0..2): those counts, SP.       */
+void     agc_pipasr_noscale(void);
+agc_sp_t agc_erase_tem(int axis);
+void     agc_erase_set_tem(int axis, agc_sp_t v);
+
+/* ---- display and downlink registers (src/core/display_erasables.c) ------
+ * OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. */
+agc_sp_t agc_erase_option1(int index);
+void     agc_erase_set_option1(int index, agc_sp_t v);
+
+/* SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28.                         */
+agc_dp_t agc_erase_samptime(void);
+void     agc_erase_set_samptime(agc_dp_t v);
+
+/* SFAIL (= SELFERAS): self-check failure address, raw word.                */
+uint16_t agc_erase_sfail(void);
+void     agc_erase_set_sfail(uint16_t v);
+
+/* MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time
+ * high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words.          */
+uint16_t agc_erase_markdown(int index);
+void     agc_erase_set_markdown(int index, uint16_t v);
+uint16_t agc_erase_mark2dwn(int index);
+void     agc_erase_set_mark2dwn(int index, uint16_t v);
+
+/* TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number.     */
+agc_sp_t agc_erase_trkmkcnt(void);
+void     agc_erase_set_trkmkcnt(agc_sp_t v);
+
+/* T3TOT4 (= RELDELV +2): transfer time for noun 39, cs 2^28.               */
+agc_dp_t agc_erase_t3tot4(void);
+void     agc_erase_set_t3tot4(agc_dp_t v);
+
+/* RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0.    */
+agc_dp_t agc_erase_rr_az(void);
+void     agc_erase_set_rr_az(agc_dp_t v);
+agc_dp_t agc_erase_rr_elev(void);
+void     agc_erase_set_rr_elev(agc_dp_t v);
+
+/* ---- pad loads (src/core/pad_loads.c) ------------------------------------
+ * AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation,
+ * CDU words (2^15 = 1 revolution).                                         */
+uint16_t agc_erase_aotaz(int detent);
+void     agc_erase_set_aotaz(int detent, uint16_t v);
+uint16_t agc_erase_aotel(int detent);
+void     agc_erase_set_aotel(int detent, uint16_t v);
+
+/* CDUCHKWD (CSM): CDU check delay, cs (0 = use the default).               */
+agc_sp_t agc_erase_cduchkwd(void);
+void     agc_erase_set_cduchkwd(agc_sp_t v);
+
+/* RTED1 (CSM): P37 VGAMMA polynomial coefficient D1, scale 2^-3.           */
+agc_dp_t agc_erase_rted1(void);
+void     agc_erase_set_rted1(agc_dp_t v);
+
+/* P37RANGE (CSM, = R61CNTR +1): P37 entry range override, revs (0 = use
+ * the computed range).                                                     */
+agc_sp_t agc_erase_return_to_earth_range(void);
+void     agc_erase_set_return_to_earth_range(agc_sp_t v);
+
+/* TLAND (LM, = W): nominal time of landing, cs 2^28.                       */
+agc_dp_t agc_erase_tland(void);
+void     agc_erase_set_tland(agc_dp_t v);
+
+/* ---- erasable by address (src/core/ecadr.c) ------------------------------
+ * Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074)
+ * map onto agc_flagword_*; other addresses use a raw image (no map to the
+ * typed erasables yet; fixed memory holds no rope).                        */
+agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);
+agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);
+
+/* ---- restart-table delay times (src/core/restart_delays.c) ---------------
+ * P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs),
+ * S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables.          */
+agc_dp_t agc_erase_p40tmp(void);
+void     agc_erase_set_p40tmp(agc_dp_t v);
+agc_dp_t agc_erase_savet_30(void);
+void     agc_erase_set_savet_30(agc_dp_t v);
+agc_sp_t agc_erase_zoomtime(void);
+void     agc_erase_set_zoomtime(agc_sp_t v);
+agc_sp_t agc_erase_s61dt(void);
+void     agc_erase_set_s61dt(agc_sp_t v);
+agc_sp_t agc_erase_cm_gymdt(void);
+void     agc_erase_set_cm_gymdt(agc_sp_t v);
+
+/* Fresh-start zeroing of the files above (called by agc_erase_reset).     */
+void agc_erase_reset_counters(void);
+void agc_erase_reset_display(void);
+void agc_erase_reset_pad_loads(void);
+void agc_erase_reset_ecadr(void);
+void agc_erase_reset_restart_delays(void);
+
 #endif /* AGC_STATE_H */

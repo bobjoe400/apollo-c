@@ -165,6 +165,11 @@ agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                agc_dp_t tdec1, agc_job_id_t resume_job);
 agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                agc_dp_t tdec1, agc_job_id_t resume_job);
+/* THISPREC / OTHPREC: CSMPREC or LEMPREC for this / the other vehicle.  */
+agc_status_t agc_integ_thisprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+                                agc_dp_t tdec1, agc_job_id_t resume_job);
+agc_status_t agc_integ_othprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
+                               agc_dp_t tdec1, agc_job_id_t resume_job);
 agc_status_t agc_integ_csmconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
                                 agc_dp_t tdec1, agc_job_id_t resume_job);
 agc_status_t agc_integ_lemconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
@@ -239,5 +244,14 @@ agc_status_t agc_integ_setitctr(agc_interp_t *ip, const agc_lambert_in_t *in,
  * agc_navaux.h.                                                         */
 agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
                             agc_vec_t *moon_pos, agc_vec_t *sun_pos);
+
+/* SVDWN1/SVDWN2 (CSM_GEOMETRY / LEM_GEOMETRY) (src/nav/integration/
+ * svdwn.c): the integration package calls it from ATOPCSM / ATOPLEM.  this_vehicle: RN, VN, PIPTIME (skipped while AVEMIDSW);
+ * otherwise R-OTHER, V-OTHER.  x2: 0 earth (B29/B7), 2 moon (B27/B5).    */
+agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
+                             agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
+                             agc_vec_t tnuv, agc_dp_t tet);
+agc_vec_t agc_integ_r_other(void); /* R-OTHER  m B29 (downlink)      */
+agc_vec_t agc_integ_v_other(void); /* V-OTHER  m/cs B7 (downlink)    */
 
 #endif /* AGC_INTEG_H */

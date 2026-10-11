@@ -274,9 +274,9 @@ static void test_misc(void)
     const agc_vec_t dr  = agc_vec_make(agc_dp_from_double(1000.0, 18), 0, 0);
     const agc_vec_t dv  = agc_vec_make(0, agc_dp_from_double(0.01, -1), 0);
 
-    CHECK(agc_align_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0) == AGC_STATUS_OK);
-    CHECK(near(agc_dp_to_double(agc_align_r_other().c[0], 29), 2.001e6, 2.0));
-    CHECK(near(agc_dp_to_double(agc_align_v_other().c[1], 7), 16.01, 1e-3));
+    CHECK(agc_integ_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0) == AGC_STATUS_OK);
+    CHECK(near(agc_dp_to_double(agc_integ_r_other().c[0], 29), 2.001e6, 2.0));
+    CHECK(near(agc_dp_to_double(agc_integ_v_other().c[1], 7), 16.01, 1e-3));
 }
 
 /* S52.3 axes for the CSM: Z down, Y opposite the orbital angular momentum. */

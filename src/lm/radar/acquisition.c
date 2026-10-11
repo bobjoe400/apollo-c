@@ -24,7 +24,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/programs/alignment.h"
 #include "radar.h"
@@ -164,7 +164,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     bool         too_far = false;
     agc_status_t st      =
-        lmnav_los(&ip, agc_dp_add(&ip, rz_loadtime(), ACQ_HALFSEC),
+        lmnav_los(&ip, agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_HALFSEC),
                   AGC_JOB_RENDEZVOUS_SIGHTING_MARK_NEW_LOS, &too_far);
 
     if (st != AGC_STATUS_OK)
@@ -198,7 +198,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
             rz_flag_put(AGC_FLAG_FSPASFLG, true);
             rz_flag_put(AGC_FLAG_LOSCMFLG, false);
             n->repostm =
-                agc_dp_add(&ip, rz_loadtime(), ACQ_TENSEC); /* R21LEM12 */
+                agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_TENSEC); /* R21LEM12 */
 
             return (rz_continue(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION));
         }
@@ -257,7 +257,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_dsky_cont_t cont;
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -389,7 +389,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_dp_t dt = agc_dp_sub(&ip, n->repostm, rz_loadtime()); /* DELTATM */
+    agc_dp_t dt = agc_dp_sub(&ip, n->repostm, agc_rtb_loadtime()); /* DELTATM */
 
     if (!AGC_ASSERT(dt > 0))
     {
@@ -558,7 +558,7 @@ agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022); /* R21SRCH  */
+    agc_phase_change(2, 04022); /* R21SRCH  */
     rz_flag_put(AGC_FLAG_SRCHOPTN, true);
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
     lmnav_state_t *n = lmnav_state(); /* R24LEM1  */
@@ -579,7 +579,7 @@ agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_dsky_cont_t cont;
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -631,7 +631,7 @@ agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);
     agc_status_t st = AGC_STATUS_OK;
@@ -645,7 +645,8 @@ agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx)
 
     agc_rendz_clradmod();
 
-    return (rz_delayjob(ACQ_DELAY_HALF, AGC_JOB_RADAR_SEARCH_MANEUVER_DONE));
+    return (agc_svc_delayjob(ACQ_DELAY_HALF,
+                             AGC_JOB_RADAR_SEARCH_MANEUVER_DONE));
 }
 
 agc_status_t agc_job_radar_search_maneuver_done(agc_job_ctx_t *ctx)
@@ -724,7 +725,8 @@ static agc_status_t acq_search_states(agc_interp_t *ip, lmnav_state_t *n)
 {
     agc_integ_out_t o;
     agc_status_t    st =
-        rz_integ(ip, RZ_LEMCONIC, agc_dp_add(ip, rz_loadtime(), ACQ_1_5SECS),
+        rz_integ(ip, RZ_LEMCONIC,
+                 agc_dp_add(ip, agc_rtb_loadtime(), ACQ_1_5SECS),
                  AGC_JOB_RADAR_SEARCH_LOS, &o);
 
     if (st != AGC_STATUS_OK)
@@ -860,12 +862,7 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
         return (acq_omega(&ip, n)); /* ENDOFJOB */
     }
 
-    st = rz_alarm(ACQ_ALARM_SEARCH); /* LIMALARM */
-
-    if (st != AGC_STATUS_OK && st != AGC_STATUS_ALARM)
-    {
-        return (st);
-    }
+    agc_alarm(ACQ_ALARM_SEARCH); /* LIMALARM */
 
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT);

@@ -68,7 +68,8 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_integ_out_t o;
 
-    st = rz_integ(&ip, RZ_CSMCONIC, rz_loadtime(), AGC_JOB_ORBITAL_NAVIGATION,
+    st = rz_integ(&ip, RZ_CSMCONIC, agc_rtb_loadtime(),
+                  AGC_JOB_ORBITAL_NAVIGATION,
                   &o);
 
     if (st != AGC_STATUS_OK)
@@ -178,7 +179,7 @@ static agc_status_t on_site_from_rls(void)
     agc_interp_init(&ip);
     agc_navaux_padload_t pad;
     agc_status_t         st = agc_navaux_get_padload(&pad);
-    agc_dp_t             t  = rz_loadtime();
+    agc_dp_t             t  = agc_rtb_loadtime();
     agc_vec_t            r  = agc_vec_zero();
 
     if (st == AGC_STATUS_OK)
@@ -382,7 +383,7 @@ agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     return (agc_job_orbital_navigation_landmark(ctx));
 }

@@ -17,7 +17,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/programs/alignment.h"
 
 #define PH_REALIGN ((uint16_t) 00254) /* PROG52 (CM): group 4 phase 25    */
 #define PH_OPTION_RETURN \

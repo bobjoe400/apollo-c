@@ -21,12 +21,15 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service_internal.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/alignment_pending.h"
+#include "agc/programs/rendezvous.h"
 
 #define CN_ONE_C   ((agc_dp_t) 187779866) /* ONE/C 2DEC* .333564049 E-6 B+21* */
 #define CN_AEARTH  ((agc_dp_t) 3189083)   /* AEARTH 2DEC 6378166 B-29     */
@@ -57,7 +60,7 @@ typedef struct cn_state
     agc_mat_t    ubar;     /* UBAR0 UBAR1 UBAR2: horizon frame          */
     agc_vec_t    rcll;     /* RCLL: CSM to landmark/horizon, m 2^29     */
     agc_incorp_t inc;
-    agc_job_id_t r57_ret; /* EGRESS of R57                             */
+    agc_job_id_t calibration_ret; /* EGRESS of R57                             */
 } cn_state_t;
 
 static cn_state_t cn;
@@ -83,7 +86,7 @@ agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    cn.r57_ret = ret;
+    cn.calibration_ret = ret;
     uint16_t x = agc_erase_extvbact();
 
     if ((x & 6U) != 0U)
@@ -176,7 +179,7 @@ agc_status_t agc_job_optics_calibration_end(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (rz_continue(cn.r57_ret));
+    return (rz_continue(cn.calibration_ret));
 }
 
 agc_status_t agc_job_optics_calibration_end_mark(agc_job_ctx_t *ctx)
@@ -404,7 +407,7 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
     rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_ORBWFLAG));
     rz_flag_put(AGC_FLAG_ORBWFLAG, true); /* R23.2    */
     st = agc_integ_integrv(ip, agc_integ_shared_ctx(), cn.marktime);
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (st == AGC_STATUS_OK)
     {
@@ -479,11 +482,13 @@ static agc_status_t cn_measure(agc_interp_t *ip)
         st = agc_incorp1(ip, &agc_integ_shared_ctx()->w, &cn.inc);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
     int k = agc_flag_test(AGC_FLAG_CMOONFLG) ? -2 : 0; /* SR2      */
 
-    rz_set_csm_n49disp(1, rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[1]), k));
-    rz_set_csm_n49disp(0, rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[0]), k));
+    rz_set_csm_residuals(1,
+                         rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[1]), k));
+    rz_set_csm_residuals(0,
+                         rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[0]), k));
 
     return (st);
 }
@@ -519,8 +524,8 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
     }
 
     rz_flag_put(AGC_FLAG_RNDVZFLG, false);
-    rz_phase(4, 00004); /* 2PHSCHNG: leave group 4 */
-    rz_phase(2, 00012); /* enter group 2           */
+    agc_phase_change(4, 00004); /* 2PHSCHNG: leave group 4 */
+    agc_phase_change(2, 00012); /* enter group 2           */
     agc_align_ram_t *a = agc_align_ram();
 
     a->markindx = 1;
@@ -724,7 +729,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    cn.marktime = rz_loadtime();
+    cn.marktime = agc_rtb_loadtime();
 
     return (agc_job_cislunar_midcourse_navigation_point_axes(ctx));
 }
@@ -768,7 +773,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(
     }
 
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
-    rz_phase(2, 00012);
+    agc_phase_change(2, 00012);
 
     return (agc_imu_attitude_maneuver(
                 ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED));
@@ -783,7 +788,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_phase(2, 04022);
+    agc_phase_change(2, 04022);
 
     if (agc_flag_test(AGC_FLAG_TRUNNION_BIAS_KNOWN))
     {
@@ -919,7 +924,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(
     }
 
     st = agc_dsky_blanket(4U); /* BIT3     */
-    rz_phase(2, 00012);
+    agc_phase_change(2, 00012);
 
     return (st);
 }
@@ -944,5 +949,5 @@ agc_status_t agc_job_cislunar_midcourse_navigation_update(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (rz_gotopooh());
+    return (agc_exec_gotopooh());
 }

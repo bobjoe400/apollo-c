@@ -19,8 +19,15 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/channels.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/guidance/pending.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/programs/rendezvous.h"
 
 /* ---- constants (SERVICER207 p.836 / SERVICER p.881, CONTROLLED_CONSTANTS) */
 /* -MUDT(E) 2DEC* -7.9720645 E+12 B-44*: -mu(earth) * 200 cs, m^3/cs.      */
@@ -60,8 +67,8 @@ static const agc_dp_t TWOSEC_22 = (agc_dp_t) (200 * 64);
  * DEVIATION: the AGC reads X and Y with one DXCH and Z with an XCH, using
  * TEMX..TEMZ and PIPAGE so that REREADAC can finish a reading interrupted
  * by a restart. In C the reading is done under INHINT and cannot be
- * interrupted, so TEMX..TEMZ are not kept; PIPAGE still marks the reading
- * as started (0) for agc_guid_rereadac_resume.                           */
+ * interrupted; PIPAGE still marks the reading as started (0) for
+ * agc_guid_rereadac_resume. The read itself is PIPASR +3 (core).         */
 agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 {
     if (!AGC_ASSERT(a != NULL))
@@ -77,16 +84,8 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
             (agc_dp_t) agc_time_now_cs(); /* DCA TIME2 DXCH PIPTIME1 */
     }
 
-    a->pipage = 0; /* reading in progress     */
-    agc_sp_t px = agc_erase_pipax();
-    agc_sp_t py = agc_erase_pipay();
-    agc_sp_t pz = agc_erase_pipaz();
-
-    agc_erase_set_pipax(0); /* PIPAS SET TO ZERO AS READ */
-    agc_erase_set_pipay(0);
-    agc_erase_set_pipaz(0);
-    agc_erase_set_delv(agc_vec_make(agc_dp_pack(px, 0), agc_dp_pack(py, 0),
-                                    agc_dp_pack(pz, 0)));
+    a->pipage = 0;         /* reading in progress     */
+    agc_pipasr_noscale(); /* PIPASR +3 (core)        */
     agc_relint();
 
     if (!AGC_ASSERT(a->piptime1 >= 0))
@@ -313,4 +312,30 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
     }
 
     agc_relint();
+}
+
+/* MIDTOAV1 / MIDTOAV2 leave RN1, VN1, PIPTIME1 (average-G block) and RTX1,
+ * RTX2 (SXA,1 / SXA,2) in erasable (INTEGRATION_INITIALIZATION p.1330-1333);
+ * nav-integ returns them in *o, the caller stores them here.             */
+void agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o)
+{
+    if (!AGC_ASSERT(o != NULL))
+    {
+        return;
+    }
+
+    if (!AGC_ASSERT(o->rtx2 == 0 || o->rtx2 == 2))
+    {
+        return;
+    }
+
+    agc_avg_g_t *a  = &agc_guid_state()->avg;
+    agc_rendz_t *rz = agc_rendz_erasable();
+
+    a->rn1        = o->rn1;
+    a->vn1        = o->vn1;
+    a->piptime1   = o->piptime1;
+    rz->body.rtx1 = (agc_sp_t) o->rtx1;
+    rz->body.rtx2 = (agc_sp_t) o->rtx2;
+    rz->body.moon = (o->rtx2 != 0);
 }

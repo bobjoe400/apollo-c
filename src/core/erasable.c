@@ -1498,6 +1498,12 @@ void agc_erase_set_thetad(int index, uint16_t v)
 
 void agc_erase_reset(void)
 {
+    agc_erase_reset_counters();
+    agc_erase_reset_display();
+    agc_erase_reset_pad_loads();
+    agc_erase_reset_ecadr();
+    agc_erase_reset_restart_delays();
+
     if (!AGC_ASSERT(sane()))
     {
         return;

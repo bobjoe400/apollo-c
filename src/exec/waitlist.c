@@ -23,7 +23,6 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/exec/pending.h"
 #include "internal.h"
 
 #define WL_TIME3_OVF   16384   /* TIME3 overflow, 2^14 cs = 163.84 s   */
@@ -351,6 +350,36 @@ static agc_status_t svct3(void)
 }
 
 /* The waitlist's own tasks (called from agc_dispatch_task).            */
+/* KILLTASK / KILLTSK2 (BURN_BABY_BURN p.750-751): scan LST2 for the task
+ * and put TASKOVER in its place (KILLDEAD), so the slot runs as a no-op
+ * at its time. Only the first match is killed; none is no action.      */
+void agc_waitlist_kill(agc_task_id_t task)
+{
+    if (!AGC_ASSERT(task != AGC_TASK_NONE && task != AGC_TASK_ENDTASK))
+    {
+        return;
+    }
+
+    agc_inhint();
+    bool done = false;
+
+    for (int k = 0; k < AGC_WAITLIST_MAX_TASKS && !done; k++)
+    {
+        if (lst2[k] == task)
+        {
+            lst2[k] = AGC_TASK_TASKOVER; /* CA TCTSKOVR / TS LST2  */
+            done    = true;
+        }
+    }
+
+    agc_relint();
+
+    if (!AGC_ASSERT(lst2[AGC_WAITLIST_MAX_TASKS - 1] != AGC_TASK_NONE))
+    {
+        return; /* the list always ends in ENDTASK */
+    }
+}
+
 agc_status_t agc_task_endtask(void)
 {
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -476,6 +505,8 @@ agc_status_t agc_waitlist_t3rupt(void)
         }
 
         agc_status_t st = agc_dispatch_task(task);
+
+        exec_service_interp_alarm(); /* 1301 / 1302 raised in the task */
 
         if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)
         {

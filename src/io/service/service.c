@@ -12,10 +12,10 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/io/service_internal.h"
-#include "sysmisc_ext.h"
+#include "agc/io/service.h"
 
 #define WORD15            077777u
 #define OCT7              000007u

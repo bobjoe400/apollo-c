@@ -57,48 +57,6 @@ bool agc_csm_is_rcs_burn(void)
     return ((mm & 1) != 0);
 }
 
-/* SETMINDB (p.696): narrow deadband (ADB = 46, DAPDATR1 BIT4 clear), and
- * THETADX..Z = present CDUs. Called under INHINT.                          */
-void agc_csm_setmindb(void)
-{
-    agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-
-    if (!AGC_ASSERT(rcs != NULL))
-    {
-        return;
-    }
-
-    rcs->thetad[0] = agc_erase_cdux();
-    rcs->thetad[1] = agc_erase_cduy();
-    rcs->thetad[2] = agc_erase_cduz();
-    rcs->adb       = 46; /* MINDB DEC 46           */
-    agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() & ~(uint16_t) 010));
-
-    if (!AGC_ASSERT(rcs->adb == 46))
-    {
-        return;
-    }
-}
-
-/* SETMAXDB (p.696): wide deadband (ADB = 455, DAPDATR1 BIT4 set).          */
-void agc_csm_setmaxdb(void)
-{
-    agc_csm_rcs_t *rcs = agc_csm_dap_rcs();
-
-    if (!AGC_ASSERT(rcs != NULL))
-    {
-        return;
-    }
-
-    rcs->adb = 455; /* MAXDB DEC 455          */
-    agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() | (uint16_t) 010));
-
-    if (!AGC_ASSERT(rcs->adb == 455))
-    {
-        return;
-    }
-}
-
 /* P40S/F .. P40PVA .. P40SXTY (p.693-694): NOMTIG, IMU status, thrust
  * direction and preferred attitude, narrow deadband, attitude maneuver.   */
 static agc_status_t burn_setup_with_thrust(agc_job_ctx_t *ctx, agc_dp_t f)
@@ -138,7 +96,7 @@ static agc_status_t burn_setup_with_thrust(agc_job_ctx_t *ctx, agc_dp_t f)
 
     agc_flag_set(AGC_FLAG_PFRATFLG);
     agc_inhint();
-    agc_csm_setmindb(); /* NARROW DEADBAND        */
+    agc_csm_dap_setmindb(); /* NARROW DEADBAND        */
     agc_relint();
 
     return (agc_imu_attitude_maneuver(
@@ -328,33 +286,36 @@ agc_status_t agc_job_preburn_state_vector(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_t  *g    = agc_guid_state();
-    agc_dp_t     dt   = 0;
-    bool         late = false;
-    agc_interp_t ip;
+    agc_guid_t             *g = agc_guid_state();
+    agc_integ_midtoav_out_t mo;
+    agc_interp_t            ip;
 
     agc_interp_init(&ip);
-    agc_status_t st =
-        agc_guid_midtoav1(&ip, agc_erase_tig() - SEC29_96, ctx->id, &dt, &late);
+    agc_status_t st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(),
+                                         agc_erase_tig() - SEC29_96, ctx->id,
+                                         &mo);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    if (late)
+    agc_guid_store_midtoav(&mo);
+    agc_dp_t dt = mo.dt;
+
+    if (mo.slipped)
     { /* P40SNEWM               */
         agc_erase_set_tig(g->avg.piptime1 + SEC29_96);
     }
 
-    g->csm.preread_delay = dt - SEC5; /* DELTA T TO PREREAD - 5 S */
+    agc_erase_set_p40tmp(dt - SEC5); /* DELTA T TO PREREAD - 5 S */
 
-    if (!AGC_ASSERT(g->csm.preread_delay >= 0))
+    if (!AGC_ASSERT(agc_erase_p40tmp() >= 0))
     {
-        g->csm.preread_delay = 1;
+        agc_erase_set_p40tmp(1);
     }
 
-    st = agc_waitlist_longcall((uint32_t) g->csm.preread_delay,
+    st = agc_waitlist_longcall((uint32_t) agc_erase_p40tmp(),
                                AGC_TASK_TIGBLNK);
 
     if (st != AGC_STATUS_OK)

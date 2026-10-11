@@ -663,7 +663,7 @@ agc_status_t agc_dsky_dspmm(void)
     }
 
     agc_inhint();
-    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, PIN_JOB_DSPMMJB);
+    agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_DSPMMJB);
 
     agc_relint();
 

@@ -17,8 +17,20 @@
  */
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
+#include "agc/core/interp.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "pending.h"
+#include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define LD_ARCONV   10498 /* OCT 24402: 656.1679798 B-10, rate to bits */
 #define LD_ARTOA    873   /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */
@@ -295,7 +307,7 @@ static agc_status_t ld_speedrun(void)
         ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
     }
 
-    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRN2); /* VARDELAY */
+    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN2); /* VARDELAY */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

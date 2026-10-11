@@ -21,7 +21,9 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/programs/alignment_internal.h"
+#include "agc/io/service.h"
+#include "agc/programs/alignment.h"
+#include "agc/programs/rendezvous.h"
 
 #define MS_VAC_MASK     ((uint16_t) 0777)   /* LOW9: VAC area               */
 #define MS_REJECT_OK    ((uint16_t) 01000)  /* BIT10                        */
@@ -385,8 +387,9 @@ agc_status_t agc_sxtmark_markcont(void)
         return (AGC_STATUS_OK);
     }
 
-    const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_MARKDISP);
-    uint16_t           w[MARK_WORDS];
+    const agc_status_t st = agc_exec_novac(ALIGN_PRIO5,
+                                           AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY);
+    uint16_t w[MARK_WORDS];
 
     mark_words(&mk, w);
 
