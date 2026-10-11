@@ -59,3 +59,7 @@ reader follows one function instead of hopping through four.
    unchanged. Report counts (candidates, collapsed, kept-with-reason) and
    the 10 biggest readability wins in docs/modules/collapse.md with a
    Lessons section. Add `make callgraph` to regenerate the tsv/dot.
+
+Scope boundary (parallel run): do not touch src/sim/ or tests/; the sim and
+oracle-cases lanes own those. Public signatures in include/agc/ must not
+change (other lanes link against them).

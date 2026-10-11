@@ -24,3 +24,7 @@ executive or interrupts, dump the pure-math subroutine the AGC calls
 instead and say so. `make test` runs them all. docs/modules/oracle-cases.md
 with per-case tolerance and any mismatch you could not explain (those go
 to the review wave as findings).
+
+Scope boundary (parallel run): write only tests/oracle/, tools/oracle/cases/,
+the Makefile test entries if needed, and docs. Do not edit src/; record
+mismatches as findings in your note (file:line, AGC label, values).

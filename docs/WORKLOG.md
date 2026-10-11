@@ -290,3 +290,11 @@
             python3-clang-14 installed and verified. collapse.md rewritten:
             computed candidates, libclang extents, scripted inlining,
             guard de-duplication, review gate before applying.
+2026-10-10  integrate DONE and lead-verified: make OK, make test (21 binaries,
+            real debug lib) OK, make check OK, oracle 299+287 pass, 0 hard,
+            format clean, 0 scaffolding files, 119,760 src lines. Registry:
+            869 ids (tools/registry.tsv -> gen_registry.py). Added
+            agc_power_on(). Deferred lane stubs: DELRSPL, P06, CSM prelaunch
+            IMU test, LM systems test, V27, N08/N70/N71 orphan components.
+            Launching collapse (phase 1, review gate), sim, oracle-cases in
+            parallel with disjoint write scopes.

@@ -36,3 +36,8 @@ runs the translated flight software end to end. Runs after `integrate`.
 5. `make sim` builds it; `make scenarios` runs all and is added to
    `make test`. Each scenario documents the AGC behaviour it checks with
    page references. docs/modules/sim.md with Progress and Lessons.
+
+Scope boundary (parallel run): write only src/sim/, sim/scenarios/, the
+Makefile sim/scenarios targets, and docs. If a flight-code bug blocks a
+scenario, record it under "Bugs found" in your note with file:line and the
+AGC reference and stop that scenario; the collapse lane is editing src/.
