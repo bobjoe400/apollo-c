@@ -27,6 +27,32 @@
   Prolog converter written (SCRATCH/review-dap-lm/style/prologs.py), NOT
   yet run on any file. No file is mid-edit.
 * TODO: make format, make check, MODULE_STATUS row, Lessons section.
+* DONE DMP/DMPR audit: lane AGC files (AOSTASK_AND_AOSJOB, DAPIDLER,
+  DAP_INTERFACE_SUBROUTINES, KALMAN_FILTER, P-AXIS, Q_R-AXIS, TJET_LAW,
+  TRIM_GIMBAL, RCS_FAILURE_MONITOR, SPS_BACK-UP_RCS, T6-RUPT) contain no
+  interpretive code: 0 DMP/DMPR/VXSC/DDV/VSR/SRR sites; C uses no
+  agc_dp_mul*. Count changed: 0.
+* PARTIAL overflow-store audit (lm_dap_sat vs lm_dap_wrap, 49 sat sites;
+  grep -rn "lm_dap_sat(" src/lm/dap). No file edited yet. yaAGC MP uses
+  the overflow-corrected A (= wrap), TS/ADS/XCH store wrapped.
+  - Correct as sat (OVERSUB/OVERSUB2/LIMITS/explicit POSMAX): rate.c
+    167,218,349,357,365; qraxis.c 270-271; qrjets.c 214-215 (ROT-TOUV);
+    needles.c 88-92 (OVERSUB2; confirm); pmanual.c 300 (OVERSUB after
+    DAS A); accont.c m-path POSMAX (~line 465).
+  - To change sat -> lm_dap_wrap (AGC stores via TS/ADS or feeds MP;
+    all unreachable in range, so tests unaffected): accont.c 263
+    (TS FUNTEM), 315, 384 (ADS DBB2), 397 (DOUBLE then MP DB), 426, 428,
+    445, 489, 491 (TS AXDSTEM), 569 (TS PDB3), 624, 625, 663, 688
+    (TS ANET); rate.c 297-298 (AD then MP -BIT14); t6rupt.c 212
+    (DXCH T6FURTHA; 220 LASTCHG cannot overflow, either is fine).
+  - Keep sat + comment as unreachable: pmanual.c 353, qrmanual.c 114
+    (4|D|+LINRAT, RHC counts <= 42; wrap's |v|<=3 POSMAX assert would
+    trip for test inputs near POSMAX); gts.c 181 ROOTCYCL (guess >= root
+    so (x+arg/x)/2 <= x).
+  - Still to check: rate.c 101-102 (ROTORQUE: AD then MP 1JACCR/Q ->
+    likely wrap), accs.c 195, 395-401, tjetlaw.c 117,209,213,239,278,
+    294,398,430,574.
+  Then rerun make test (oracle_dap_lm tolerance 0) and record finding R11.
 
 ## Scratch build
 
