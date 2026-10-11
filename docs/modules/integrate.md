@@ -106,6 +106,11 @@ sqrt/asin/acos).
 * One registry: tools/registry.tsv is the source; tools/gen_registry.py
   writes include/agc/exec/jobs.h and src/exec/dispatch.c. Add a job by
   adding a row and re-running the generator, never by hand.
+  dispatch.c is four flat switches (agc_dispatch_job_csm, _task_csm,
+  _job_lm, _task_lm), one `case AGC_JOB_X: return (agc_job_x(ctx));` per
+  row in table order with a comment per owning folder, plus the public
+  agc_dispatch_job/agc_dispatch_task; marker `/* GENERATED-DISPATCH: rule 4
+  exempt */` in its first lines (the 89 chunk/selector functions are gone).
 * Layering exceptions in exec are exactly three files: dispatch.c,
   nouns.c (agc_dispatch_noun) and change_program/idle.c (exec_up_* and
   agc_power_on). Everything else in src/exec calls only core.

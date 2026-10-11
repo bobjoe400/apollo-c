@@ -102,8 +102,10 @@ Dispatch: `src/exec/dispatch.c` holds the one `switch` from `agc_job_id_t`
 static and recursion-free (rules 1 and 9). It and `include/agc/exec/jobs.h`
 are generated from `tools/registry.tsv` (one row per id: CSM and LM
 handler, owning folder, AGC label); to add a job or task, add a row and run
-`python3 -I tools/gen_registry.py && make format`. The switch is split by
-enum range into functions of at most 24 ids (rule 4).
+`python3 -I tools/gen_registry.py && make format`. The file is four flat
+`switch`es (CSM jobs, CSM tasks, LM jobs, LM tasks), one `case` per
+registry row in table order, plus the two entry points that pick the
+vehicle; it carries the rule 4 exemption marker (CODING_STANDARD.md).
 
 Layering exceptions (documented, the only places a lower layer calls up):
 src/exec/dispatch.c (jobs and tasks), src/exec/interrupts.c
