@@ -24,7 +24,7 @@ UNCRUSTIFY_CFG := uncrustify.cfg
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim test check check-rules format format-check style style-report lint clean
+.PHONY: all lib lib-debug sim test check check-rules format format-check style style-report lint callgraph clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -93,6 +93,29 @@ style-report:
 
 lint:
 	@command -v cppcheck >/dev/null && cppcheck --std=c11 --enable=warning,style,performance,portability --error-exitcode=1 -Iinclude src || echo "cppcheck not installed"
+
+# Call graph from the compiler (docs/agents/collapse.md): every src/ and
+# tests/ TU compiled at -O0 -fno-inline with -fcallgraph-info=su,da (GCC
+# writes one VCG .ci file next to each object), cflow for the cross-TU
+# cross-check, libclang (inside the script) for extents and guard ASTs.
+# Writes docs/overview/callgraph.{tsv,dot} and collapse_candidates.tsv.
+CG_DIR   := $(BUILD)/callgraph
+CG_SRCS  := $(shell find src -name '*.c' | sort)
+CG_TESTS := $(shell find tests -name '*.c' | sort)
+CG_CIS   := $(patsubst %.c,$(CG_DIR)/%.ci,$(CG_SRCS) $(CG_TESTS))
+
+callgraph: $(CG_CIS)
+	cflow -b --omit-arguments --no-main -i s $(CG_SRCS) > $(CG_DIR)/cflow.txt 2>/dev/null
+	python3 -I tools/callgraph.py --ci-dir $(CG_DIR) --cflow $(CG_DIR)/cflow.txt \
+	    --out docs/overview
+
+$(CG_DIR)/src/%.ci: src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
+
+$(CG_DIR)/tests/%.ci: tests/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -DAGC_HOST_DEBUG -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
 
 clean:
 	rm -rf $(BUILD)

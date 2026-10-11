@@ -41,3 +41,30 @@ Scope boundary (parallel run): write only src/sim/, sim/scenarios/, the
 Makefile sim/scenarios targets, and docs. If a flight-code bug blocks a
 scenario, record it under "Bugs found" in your note with file:line and the
 AGC reference and stop that scenario; the collapse lane is editing src/.
+
+## REVISED SCOPE (user direction, 2026-10-10): reuse Virtual AGC peripherals
+
+Do not write a DSKY console or device models. Make src/sim a drop-in for
+yaAGC from the peripherals' point of view:
+1. Implement yaAGC's peripheral socket protocol (TCP server, default port
+   19697 and the per-peripheral conventions; packet format in
+   SRC/virtualagc/yaAGC/agc_utilities.c FormIoPacket/ParseIoPacket and the
+   Virtual AGC docs). Outbound: every write to an output channel
+   (010 relays, 011 lamps, 012-014, 005/006 jets, 034/035 downlink) is
+   broadcast as a packet; inbound packets set input channels (015/016
+   keys, 030-033 discretes, counters) and raise the matching interrupt
+   (KEYRUPT1/2, UPRUPT, etc.) through src/exec/interrupts.c.
+2. Verify with the real yaDSKY2 (SRC/virtualagc/yaDSKY2, build if needed)
+   connected to build/agc_sim: V35 lights test lights the lamps; V06N36
+   shows the clock; keys arrive as KEYRUPT. Also try yaTelemetry on the
+   downlink.
+3. Scripted scenarios: a small Python client (tools/sim_client.py) that
+   speaks the same protocol: sends key packets, collects channel 010/011
+   packets, decodes relay words into VERB/NOUN/PROG/R1-R3 and lamps, and
+   asserts expected displays. Scenarios a-e of the original list run
+   through it; scenario f (P63) only if the LM_Simulator or a scripted
+   radar/PIPA feed makes it meaningful -- otherwise document and skip.
+4. Internal clock/interrupt driver as originally specified (that part is
+   ours). Counters (CDU, PIPA, RHC) advance from the peripheral packets
+   or from a `--script` of timed counter increments; no physics.
+Keep the minimal `main.c` that integrate wrote working for `--headless`.
