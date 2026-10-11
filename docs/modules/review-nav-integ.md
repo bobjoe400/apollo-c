@@ -20,10 +20,10 @@ from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
 | baseline (unit 158 checks, oracle 247, 0 known) | DONE |
 | review items: oracle findings / TEPHEM / X2-after-ORIGCHNG / state machine vs sleep | DONE (N2-N5, Q1-Q4) |
 | constants vs assembled rope (both ropes) | DONE (N1) |
-| fidelity: orbital_integration.c | TODO |
-| fidelity: init.c | TODO |
-| fidelity: jobs.c | TODO |
-| fidelity: svdwn.c, setitctr_lm.c, flags_csm.c | TODO |
+| fidelity: orbital_integration.c | DONE (oracle: one/multi step earth+moon, third bodies, sphere entry, W, RECTIFY, long run; constants) |
+| fidelity: init.c | DONE (entries, TESTLOOP/NORFINAL/DT2COMP/POOHCHK, A-PCHK, RECTOUT, INTEXIT, RVCON, INTSTALL/INTWAKE, USEPIOS) |
+| fidelity: jobs.c | DONE (STATEINT/STATINT1/NOINT/STATEUP both ropes, AVETOMID CM+LM, MIDTOAV1/2, CKMID2/MID2/TIMEINC/NOTIME, INTWAKEU) -- no discrepancy |
+| fidelity: svdwn.c, setitctr_lm.c, flags_csm.c | DONE |
 | naming / clarity | TODO |
 | style debt (827 findings at start) | TODO |
 | rule-5 density (orbital_integration.c 1.91) | TODO |
@@ -37,6 +37,7 @@ from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
 | N3 | init.c dt2comp | DT/2COMP SL 8 overflow -> GETMAXDT SIGNMPAC -> USEMAXDT | not covered by any case (all runs < 2^20 cs) | confirmed: oracle case integ_earth_long (10986 s, 42 steps) reaches TDEC1 exactly |
 | N4 | src/nav/conic/kepler.c agc_conic_kepprep (nav-conic code, KEPPREP is ORBITAL_INTEGRATION p. 1334) | KEPPREP series | XKEPNEW 1 LSB low vs the DV-patched yaAGC for 2 of 4 calls of a LEO step (repro: SCRATCH/review-nav-integ/kep/kep.spec, entry INTPRET Q=KEPPREP fbank 11, inputs from a C trace).  KEPLER converges on it: XKEP 1-2 LSB, VCV 1 KEPLER LSB (512), and a rectification fixes it into RRECT/VRECT: 2.5 km / 3 m/s after 8.8 h LEO | not fixed here (nav-conic files under review); request to review-nav-conic |
 | N6 | tests | ACCOMP MIDFLAG path (LSPOS, secondary body + sun GAMCOMP), CHKSWTCH / DOSWITCH / ORIGCHNG with LUNVEL | no oracle case had MIDFLAG set | new cases third_earth_1step/_multi, third_moon_1step/_multi, third_sphere_entry (nav_aux ephemeris pad loads): agree to 1 LSB |
+| N7 | tests | W matrix: AMOVED/NEXTCOL/DOW../DIFEQ+2 JSWITCH/RELOADSV, INTEGRV from the permanent state | only a finite-difference unit test | new case wmatrix_6x6 (10 min, 6x6, MODREG 20): W, RRECTCSM, VRECTCSM, TETCSM bit-exact |
 | N5 | tests | F1 (yaAGC DV bug) | with the patched probe the multi-step nav-integ cases agree to <= 1280 LSB velocity (all of it N4), positions <= 32 | tolerances unchanged; documented |
 
 ## Lessons

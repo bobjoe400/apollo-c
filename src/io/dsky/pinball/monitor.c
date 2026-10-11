@@ -61,7 +61,7 @@
                                  * activity, temp, operator error     */
 #define PIN_13_11_1     016001u /* 13-11,1                            */
 #define PIN_PRIO16_BITS 016000u /* PRIO16                             */
-#define PIN_OCT55000    055000u
+#define PIN_OCT55000    055000u /* OCT55000: IMODES30 lamp bits */
 #define PIN_PRIO15_BITS 015000u /* PRIO15                             */
 #define PIN_RFAILS2     0330u   /* RFAILS2 (LM): radar CDU, data fail */
 #define PIN_RCDUFBIT    0100u   /* RCDUFBIT (LM) = BIT7               */
@@ -132,7 +132,7 @@ agc_status_t pin_monitor(void)
     agc_relint();
 
     return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* TC ENTRET   */
-}
+} /* pin_monitor */
 
 /**********************************************************************
  * AGC: MONREQ (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 356)
@@ -175,7 +175,7 @@ agc_status_t agc_task_monreq(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? st2 : st);
+    return ((st == AGC_STATUS_OK) ? st2 : st); /* if OK */
 }
 
 /**********************************************************************
@@ -222,7 +222,8 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
 
     if (st != AGC_STATUS_OK || !AGC_ASSERT(dverb >= 1 && dverb <= 7))
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
+                st : AGC_STATUS_BAD_ARG);
     }
 
     s->verbreg = (uint8_t) dverb;
@@ -230,7 +231,7 @@ agc_status_t agc_job_mondo(agc_job_ctx_t *ctx)
     s->mpac2   = (uint16_t) (s->monsave1 & ~(PIN_BIT15 | PIN_BIT14));
     st         = pin_testnn();
 
-    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK);
+    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK); /* abort only */
 }
 
 /**********************************************************************
@@ -249,9 +250,12 @@ agc_status_t pin_pastevb(void)
 {
     pin_state_t *s     = pin_st(); /* pinball erasables */
     uint16_t     paste = (uint16_t) (s->monsave2 & PIN_MID7); /* paste option */
-    uint16_t verb; /* verb to paste back */
+    uint16_t     verb  = (uint16_t) (s->monsave >> 7); /* monitor verb */
 
-    verb = (paste != 0u) ? (uint16_t) (paste >> 7) : (uint16_t) (s->monsave >> 7);
+    if (paste != 0u)
+    {
+        verb = (uint16_t) (paste >> 7); /* NVMONOPT please verb */
+    }
 
     if (!AGC_ASSERT(verb <= 99u))
     {
@@ -266,7 +270,7 @@ agc_status_t pin_pastevb(void)
     if (st == AGC_STATUS_OK)
     {
         st = agc_dsky_blanksub(s->monsave2); /* either return goes on (TC +1) */
-        st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st;
+        st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st; /* job sleeps */
     }
 
     if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
@@ -329,7 +333,7 @@ agc_status_t pin_vbrqexec(void)
     agc_prio_t   prio =
         (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
     agc_job_id_t job = (agc_job_id_t) s->dsptem[1]; /* job */
-    agc_status_t st = agc_dsky_releasedsp(); /* REQUESTC    */
+    agc_status_t st  = agc_dsky_releasedsp(); /* REQUESTC    */
 
     if (!AGC_ASSERT(prio >= 1u && prio <= 037u) ||
         !AGC_ASSERT(job != AGC_JOB_NONE))
@@ -366,8 +370,8 @@ agc_status_t pin_vbrqwait(void)
 {
     pin_state_t  *s     = pin_st(); /* pinball erasables */
     uint16_t      delay = s->dsptem[0]; /* DSPTEM1: delay, cs */
-    agc_task_id_t task = (agc_task_id_t) s->dsptem[1]; /* task */
-    agc_status_t st = agc_dsky_releasedsp(); /* status so far */
+    agc_task_id_t task  = (agc_task_id_t) s->dsptem[1]; /* task */
+    agc_status_t  st    = agc_dsky_releasedsp(); /* status so far */
 
     if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
     {
@@ -424,7 +428,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 
     pin_flashoff();
 
-    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st);
+    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st); /* if OK */
 }
 
 /* ---- V37 (p. 365) ----------------------------------------------------- */
@@ -463,7 +467,7 @@ agc_status_t pin_reqmm(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* if OK */
 }
 
 /**********************************************************************
@@ -501,7 +505,8 @@ agc_status_t pin_mmchang_resume(void)
 
     if (!AGC_ASSERT(mm <= 99u) || st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
+                st : AGC_STATUS_BAD_ARG);
     }
 
     return (agc_change_program(mm));
@@ -529,7 +534,7 @@ agc_status_t pin_vbtstlts(void)
     }
 
     pin_state_t *s   = pin_st(); /* pinball erasables */
-    bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* true on the CSM */
+    bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* CSM */
 
     if (csm && agc_erase_modreg() != 0)
     {                 /* CHKPOOH (CM only)   */
@@ -542,7 +547,8 @@ agc_status_t pin_vbtstlts(void)
     /* Set bit 1 of IMODES33 so IMUMON won't turn out any lamps.          */
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | PIN_BIT1));
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_TSTCON1);
-    agc_erase_set_dsptab(11, csm ? PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
+    agc_erase_set_dsptab(11, csm ? /* TSTCON2 */
+                         PIN_TSTCON2_CSM : PIN_TSTCON2_LM);
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     agc_chan_or((int) AGC_CHAN_CHAN13, PIN_CH13_TESTALM);
@@ -571,7 +577,7 @@ agc_status_t pin_vbtstlts(void)
     agc_relint();
 
     return (st);
-}
+} /* pin_vbtstlts */
 
 /**********************************************************************
  * AGC: TSTLTS2 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 386)
@@ -673,5 +679,5 @@ agc_status_t agc_job_tstlts3(agc_job_ctx_t *ctx)
     pin_flashoff();
     agc_status_t st4 = pin_tstlts4(); /* status of TSTLTS4 */
 
-    return ((st == AGC_STATUS_OK) ? st4 : st);
-}
+    return ((st == AGC_STATUS_OK) ? st4 : st); /* if OK */
+} /* agc_job_tstlts3 */

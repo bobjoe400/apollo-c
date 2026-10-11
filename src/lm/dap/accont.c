@@ -153,7 +153,7 @@ static agc_sp_t invert(int32_t x)
 /* DO1/NET+ / DOACCFUN (p.1504): with ANET in w->anet and the ratio term
  * ANET/ACOAST (at 2^6) in a: FUNTEM = 1 + ratio, 1/ANET, and the return
  * value ACCFUN = -1/ANET / FUNTEM at 2^7/pi.                             */
-static agc_sp_t do1net_plus(acc_work_t *w, agc_sp_t a)
+static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
 {
     agc_sp_t funtem = lm_dap_wrap((int32_t) a + AA_BIT9); /* XCH ANET      */
 
@@ -183,7 +183,7 @@ static agc_sp_t net_min(acc_work_t *w)
         return (0); /* no valid result */
     }
 
-    return (do1net_plus(w, a));
+    return (net_accel_function(w, a));
 }
 
 /* DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.         */
@@ -348,7 +348,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     else
     { /* SKIPDB2        */
         w->anet = lm_dap_sat((int32_t) w->absaos + 2 * (int32_t) jaccu);
-        acc     = do1net_plus(w, w->anet);
+        acc     = net_accel_function(w, w->anet);
     }
 
     w->t[T_Z5 + 2 + w->ns]    = acc; /* ACCTHERE       */
@@ -357,7 +357,7 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 
     w->anet =
         (agc_sp_t) ((lm_dap_ovf(m) ? LM_POSMAX : m) - AA_BIT9);
-    acc                   = do1net_plus(w, w->anet);
+    acc                   = net_accel_function(w, w->anet);
     w->t[T_Z5 + w->ns]    = acc;
     w->t[T_ATEM2 + w->ns] = w->inv;
 }

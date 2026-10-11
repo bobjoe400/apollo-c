@@ -1,18 +1,50 @@
-/*
- * tracking_attitude.c -- R61LEM PREFERRED TRACKING ATTITUDE ROUTINE and
- * R65LEM (the fine preferred tracking attitude), LM only (P20-P25.agc,
- * Luminary099 pp.517-520).
+/**********************************************************************
+ * FILE NAME: tracking_attitude.c
  *
- * "To compute the preferred tracking attitude of the LM to enable RR
- * tracking of the CSM and to perform the maneuver to the preferred
- * attitude." The +Z axis is pointed along the LOS 3 s ahead (VECPNT1 from
- * the desired CDUs). In auto, a LOS more than 15 degrees off +Z is an R60
- * maneuver; otherwise the desired CDUs are set directly. R65 repeats the
- * computation every 6 s, R65CNTR times. The caller continues at GENRET.
+ * PURPOSE:
+ *   R61LEM PREFERRED TRACKING ATTITUDE ROUTINE and R65LEM (the fine
+ *   preferred tracking attitude), LM only: "To compute the preferred
+ *   tracking attitude of the LM to enable RR tracking of the CSM and to
+ *   perform the maneuver to the preferred attitude." The +Z axis is
+ *   pointed along the LOS 3 s ahead (VECPNT1 from the desired CDUs). In
+ *   auto, a LOS more than 15 degrees off +Z is an R60 maneuver;
+ *   otherwise the desired CDUs are set directly. R65 repeats the
+ *   computation every 6 s, R65CNTR times. The caller continues at GENRET.
  *
- * Scales: LOS half unit; CDU words two's complement (one revolution =
- * 2^15).
- */
+ * AGC SOURCE:
+ *   Luminary099 P20-P25.agc pp. 517-520 (R61LEM, R65LEM, R61C+L01 ..
+ *   R61C+L4, R65WAIT); LM only.
+ *
+ * EXTERNAL VARIABLES:
+ *   Name        Type       I/O  Scale       Description
+ *   ----------  ---------  ---  ----------  ----------------------------
+ *   RRTARGET    agc_vec_t  I    half unit   LOS in stable member axes
+ *   CDUXD..ZD   CDU word   I/O  2^15/rev    desired CDUs (READCDUD)
+ *   THETAD      CDU word   O    2^15/rev    CPHI, CTHETA, CPSI
+ *   R65CNTR     int        I/O  -           R65 passes left
+ *   GENRET      job id     I/O  -           caller's continuation
+ *   R61FLAG PDSPFLAG 3AXISFLG flags  O  -   (USE_TRACKING_ATTITUDE ...)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                       Description
+ *   -------------------------  -----------------------------------------
+ *   lmnav_los                  LPS20.1: LOS and vehicle attitude
+ *   agc_imu_vecpnt1            VECPNT1: final gimbal angles
+ *   agc_imu_ballangs           BALLANGS: FDAI angles (not in auto)
+ *   agc_imu_attitude_maneuver  R60LEM attitude maneuver
+ *   agc_lm_dap_setmindb/restordb  DAP deadband (SETMINDB, RESTORDB)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none here; LPS20.1 beyond 400 NM goes to the 526 range alarm job.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Runs in the rendezvous navigation job; R61C+L2 is a waitlist task
+ *   that restarts the computation as a PRIO26 job.
+ *
+ * NOTES:
+ *   Scales: LOS half unit; CDU words two's complement (one revolution =
+ *   2^15).
+ **********************************************************************/
 #include <stddef.h>
 
 #include "../../programs/navigation/internal.h"
@@ -29,9 +61,26 @@
 #define TA_COS15DEG ((agc_dp_t) 129644930) /* COS15DEG 2DEC 0.96593 B-1 */
 #define TA_06SEC    600U                   /* 06SEC DEC 600             */
 #define TA_250DEC   250U
-#define TA_PRIO26   ((agc_prio_t) 026)
+#define TA_PRIO26   ((agc_prio_t) 026) /* R61C+L2 job priority */
 
-/* R61LEM / R65LEM entry: GENRET, R61FLAG, then R61C+L01.                */
+/**********************************************************************
+ * R61LEM / R65LEM entry: GENRET, R61FLAG, then R61C+L01.
+ * AGC: R61LEM (P20-P25.agc p.517)
+ *
+ * FUNCTION NAME: lmnav_tracking_attitude
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  -------------------------
+ *   ctx       const agc_job_ctx_t *  I    job context of the calling job
+ *   r61       bool                   I    true for R61LEM (once), false for
+ *                                         R65LEM (repeats)
+ *   ret_job   agc_job_id_t           I    GENRET: job that continues the
+ *                                         caller
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+ *          argument, else the status of the call that failed
+ **********************************************************************/
 agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
                                      agc_job_id_t ret_job)
 {
@@ -46,11 +95,21 @@ agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
     return (rz_continue(AGC_JOB_TRACKING_ATTITUDE_COMPUTE));
 }
 
-/* R61C+L06: R61 returns now; R65 waits 6 s and goes round again while
- * R65CNTR lasts.                                                        */
+/**********************************************************************
+ * R61C+L06: R61 returns now; R65 waits 6 s and goes round again while
+ * R65CNTR lasts.
+ * AGC: R61C+L06 (P20-P25.agc p.519)
+ *
+ * FUNCTION NAME: ta_next
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the caller's continuation status (rz_continue)
+ *          or the status of the 6 s waitlist call
+ **********************************************************************/
 static agc_status_t ta_next(void)
 {
-    lmnav_state_t *n = lmnav_state();
+    lmnav_state_t *n = lmnav_state(); /* LM navigation state */
 
     if (agc_flag_test(AGC_FLAG_USE_TRACKING_ATTITUDE) || n->r65cntr <= 0)
     {
@@ -62,12 +121,28 @@ static agc_status_t ta_next(void)
     return (agc_waitlist_call(TA_06SEC, AGC_TASK_TRACKING_ATTITUDE_WAIT));
 }
 
-/* VECPNT1 from the desired CDUs (READCDUD): CPHI, CTHETA, CPSI.         */
+/**********************************************************************
+ * VECPNT1 from the desired CDUs (READCDUD): CPHI, CTHETA, CPSI.
+ * AGC: VECPNT1 (R60_62.agc p.481)
+ *
+ * FUNCTION NAME: ta_angles
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  --------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+ *   gimbal    uint16_t        O    CPHI, CTHETA, CPSI, CDU words (2^15 per
+ *                                  revolution)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+ *          argument, else the status of the call that failed
+ **********************************************************************/
 static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
 {
-    agc_vec_t    z        = agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
-    agc_status_t st       = agc_imu_set_scaxis(z);
-    agc_vec_t    pointvsm = rr_state()->rrtarget;
+    agc_vec_t z = /* HIUNITZ, unit 2^1 */
+                  agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
+    agc_status_t st       = agc_imu_set_scaxis(z); /* status */
+    agc_vec_t    pointvsm = rr_state()->rrtarget; /* RRTARGET, unit 2^1 */
 
     if (st == AGC_STATUS_OK)
     {
@@ -95,8 +170,21 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
     return (st);
 }
 
-/* R61C+L01 .. R61LEM1 (p.518): LOS 3 s ahead (LPS20.1), final angles,
- * then the maneuver or the FDAI angles (not in auto: BALLANGS).        */
+/**********************************************************************
+ * R61C+L01 .. R61LEM1 (p.518): LOS 3 s ahead (LPS20.1), final angles,
+ * then the maneuver or the FDAI angles (not in auto: BALLANGS).
+ *
+ * FUNCTION NAME: agc_job_tracking_attitude_compute
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -109,13 +197,13 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return (lmnav_wait(TA_250DEC)); /* R65WAIT  */
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    bool         too_far = false;
+    bool         too_far = false; /* LOS over 400 NM */
     agc_status_t st      =
         lmnav_los(&ip, agc_dp_add(&ip, agc_rtb_loadtime(), TA_3SECONDS),
-                  AGC_JOB_TRACKING_ATTITUDE_COMPUTE, &too_far);
+                  AGC_JOB_TRACKING_ATTITUDE_COMPUTE, &too_far); /* status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -145,17 +233,17 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     if (agc_imu_gn_auto() != 0)
     { /* R61C+L04 */
-        uint16_t fdai[3];
+        uint16_t fdai[3]; /* FDAI angles (BALLANGS) */
 
         st = agc_imu_ballangs(&ip, gimbal, fdai);
 
-        return ((st != AGC_STATUS_OK) ? st : ta_next());
+        return ((st != AGC_STATUS_OK) ? st : ta_next()); /* R61C+L06 after BALLANGS */
     }
 
     /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
      * maneuver at minimum deadband; else the desired CDUs directly.        */
-    agc_cdutrig_t trig;
-    agc_vec_t     v = rr_state()->rrtarget;
+    agc_cdutrig_t trig; /* CDU sines and cosines */
+    agc_vec_t     v = rr_state()->rrtarget; /* LOS, then in NB axes, 2^1 */
 
     agc_guid_cdu_smnb(&trig, &v);
 
@@ -172,7 +260,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     agc_inhint(); /* R61C+L05 */
     agc_lm_dap_zatteror();
-    agc_status_t st_auto = AGC_STATUS_OK;
+    agc_status_t st_auto = AGC_STATUS_OK; /* SETMINDB status */
 
     st_auto = agc_lm_dap_setmindb(); /* reduce attitude error */
     agc_relint();
@@ -187,10 +275,24 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     return (agc_imu_attitude_maneuver(ctx,
                                       AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
-}
+} /* agc_job_tracking_attitude_compute */
 
-/* After R60LEM: deadband back to the astronaut's value, priority display
- * flag off, R61C+L06.                                                   */
+/**********************************************************************
+ * After R60LEM: deadband back to the astronaut's value, priority display
+ * flag off, R61C+L06.
+ * AGC: R60LEM (R60_62.agc p.473)
+ *
+ * FUNCTION NAME: agc_job_tracking_attitude_maneuvered
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
+ *          the executive, display or navigation call that failed
+ **********************************************************************/
 agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -199,7 +301,7 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
     }
 
     agc_inhint();
-    agc_status_t st = agc_lm_dap_restordb();
+    agc_status_t st = agc_lm_dap_restordb(); /* RESTORDB status */
 
     agc_relint();
 
@@ -214,7 +316,18 @@ agc_status_t agc_job_tracking_attitude_maneuvered(agc_job_ctx_t *ctx)
     return (ta_next());
 }
 
-/* R61C+L2 (task): R61C+L01 as a PRIO26 job.                             */
+/**********************************************************************
+ * R61C+L2 (task): R61C+L01 as a PRIO26 job.
+ * AGC: R61C+L2 (P20-P25.agc p.519)
+ *
+ * FUNCTION NAME: agc_task_tracking_attitude_wait
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
+ *          itself, else the status of the waitlist or executive call that
+ *          failed
+ **********************************************************************/
 agc_status_t agc_task_tracking_attitude_wait(void)
 {
     if (!AGC_ASSERT(lmnav_state()->genret != AGC_JOB_NONE))

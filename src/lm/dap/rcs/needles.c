@@ -87,7 +87,7 @@ agc_status_t lm_dap_dsplytot(void)
 
 /* NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
  * the error counters; next pass enables the counters.                    */
-static agc_status_t needle11(lm_dap_t *d)
+static agc_status_t needles_first_pass(lm_dap_t *d)
 {
     agc_status_t st = AGC_STATUS_OK;
 
@@ -181,7 +181,7 @@ agc_status_t lm_dap_needler(void)
         { /* first pass         */
             agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
 
-            return (needle11(d));
+            return (needles_first_pass(d));
         }
 
         agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */

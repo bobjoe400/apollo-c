@@ -219,3 +219,11 @@ in what they do (`_proceed`, `_terminate`, `_display`), never in T/P/E/B/1/1B.
 | V94      | CSM     | cislunar_midcourse_navigation_point | V94ENTER: CMC points the vehicle in P23 |
 | LSR22.3  | LM      | rendezvous_tracking_data_incorporate | LSR22.3/.4 measurement incorporation    |
 | S22.1    | CSM     | orbital_navigation_marks | S22.1 landmark mark processing                     |
+
+### Added by review-nav-aux (measurement incorporation)
+
+| AGC      | Vehicle | Identifier stem          | AGC description                                    |
+|----------|---------|--------------------------|----------------------------------------------------|
+| INCORP1  | both    | incorp_state_deviation   | "PERFORMS THE SIX ... OR NINE DIMENSIONAL STATE VECTOR DEVIATION" |
+| INCORP2 FAZA-FAZB5 | both | incorp_update_w   | W' = W - GAMMA OMEGA ZI (error transition matrix)  |
+| INCORP2 FAZC-FAZAB5 | both | incorp_update_state | "INCORPORATES THE COMPUTED STATE VECTOR DEVIATIONS INTO THE ESTIMATED STATE VECTOR" |

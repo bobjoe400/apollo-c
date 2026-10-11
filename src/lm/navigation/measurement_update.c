@@ -410,7 +410,7 @@ static bool mu_incorp1(agc_interp_t *ip, agc_status_t *st)
     const agc_rendz_nav_pad_t *p   = agc_rendz_nav_pad();
 
     mu.inc.dim9   = agc_flag_test(AGC_FLAG_DMENFLG);
-    *st           = agc_incorp1(ip, &ctx->w, &mu.inc);
+    *st           = agc_incorp_state_deviation(ip, &ctx->w, &mu.inc);
     n->r22disp[1] =
         mu_srr_star(ip, agc_vec_abval(ip, mu.inc.deltax[1]), 2 - mu.x2);
     n->r22disp[0] =

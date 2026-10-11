@@ -70,10 +70,6 @@ agc_status_t agc_lm_dap_allcoast(void); /* coasting-flight DAP init        */
 agc_status_t agc_lm_dap_timegmbl(void); /* TIMEGMBL trim-gimbal null drive */
 agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  */
 
-/* ROT-TOUV: (q, r) -> non-orthogonal (u, v) using COEFFQ/COEFFR.            */
-agc_status_t agc_lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u,
-                                 agc_sp_t *v);
-
 /* ---- erasables owned by the LM DAP and shared with other modules ------- */
 /* KALCMANU / FINDCDUW interface (ERASABLE_ASSIGNMENTS p. 134)              */
 uint16_t agc_erase_cduxd(void); /* desired CDU X, 2's comp at pi */

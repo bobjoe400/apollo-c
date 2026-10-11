@@ -91,7 +91,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      {AGC_DATA_OPTION1, AGC_DATA_OPTION2, AGC_DATA_OPTION3},
      false,
      false},
-    /* 07  ECADR of word to be modified / Ones for bits to be modified / 1 to set or 0 to reset selected bits
+    /* 07  ECADR of word to be modified / Ones for bits to be modified / 1 to
+     *     set or 0 to reset selected bits
      *     3 comp; NNADTAB ECADR XREG, NNTYPTAB 04000 */
     {7,
      3,
@@ -348,7 +349,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      false,
      false},
     /* 40  Time to ignition/cutoff / Vg / Delta V (accumulated)
-     *     3 comp, dec only, no load; NNADTAB 64000, NNTYPTAB 24500, RUTMXTAB 16351 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64000, NNTYPTAB 24500, RUTMXTAB 16351 */
     {40,
      3,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_VEL3, AGC_SCALE_VEL3},
@@ -380,7 +382,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 44  Apogee / Perigee / TFF
-     *     3 comp, dec only, no load; NNADTAB 64014, NNTYPTAB 00410, RUTMXTAB 22347 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64014, NNTYPTAB 00410, RUTMXTAB 22347 */
     {44,
      3,
      {AGC_SCALE_POS4, AGC_SCALE_POS4, AGC_SCALE_MIN_SEC},
@@ -388,7 +391,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      true},
     /* 45  Marks / TTI of next burn / MGA
-     *     3 comp, dec only, no load; NNADTAB 64017, NNTYPTAB 10000, RUTMXTAB 24443 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64017, NNTYPTAB 10000, RUTMXTAB 24443 */
     {45,
      3,
      {AGC_SCALE_WHOLE, AGC_SCALE_MIN_SEC, AGC_SCALE_DP_DEG360},
@@ -514,7 +518,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 61  Time to go in braking phase / Time to ignition / Cross range distance
-     *     3 comp, dec only, no load; NNADTAB 64077, NNTYPTAB 54000, RUTMXTAB 24451 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64077, NNTYPTAB 54000, RUTMXTAB 24451 */
     {61,
      3,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_MIN_SEC, AGC_SCALE_POS7},
@@ -522,7 +527,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      true},
     /* 62  Absolute value of velocity / Time to ignition / Delta V (accumulated)
-     *     3 comp, dec only, no load; NNADTAB 64102, NNTYPTAB 24012, RUTMXTAB 16447 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64102, NNTYPTAB 24012, RUTMXTAB 16447 */
     {62,
      3,
      {AGC_SCALE_VEL3, AGC_SCALE_MIN_SEC, AGC_SCALE_VEL3},
@@ -537,8 +543,10 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      {AGC_DATA_ABVEL, AGC_DATA_HDOTDISP, AGC_DATA_HCALC1},
      true,
      false},
-    /* 64  Time left for redesignation -- LPD angle / Altitude rate / Computed altitude
-     *     3 comp, dec only, no load; NNADTAB 64110, NNTYPTAB 60500, RUTMXTAB 10354 */
+    /* 64  Time left for redesignation -- LPD angle / Altitude rate / Computed
+     *     altitude
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64110, NNTYPTAB 60500, RUTMXTAB 10354 */
     {64,
      3,
      {AGC_SCALE_TWO_INT, AGC_SCALE_VEL3, AGC_SCALE_COMP_ALT},
@@ -554,7 +562,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 66  LR range / Position
-     *     2 comp, dec only, no load; NNADTAB 62116, NNTYPTAB 00016, RUTMXTAB 00304 */
+     *     2 comp, dec only, no load;
+     *     NNADTAB 62116, NNTYPTAB 00016, RUTMXTAB 00304 */
     {66,
      2,
      {AGC_SCALE_LR_ALT, AGC_SCALE_LR_POSITION, AGC_SCALE_NONE},
@@ -569,8 +578,10 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      {AGC_DATA_RSTACK, AGC_DATA_RSTACK_P2, AGC_DATA_RSTACK_P4},
      false,
      false},
-    /* 68  Slant range to landing sight / Time to go in braking phase / LR altitude -- computed altitude
-     *     3 comp, dec only, no load; NNADTAB 64124, NNTYPTAB 60026, RUTMXTAB 10452 */
+    /* 68  Slant range to landing sight / Time to go in braking phase / LR
+     *     altitude -- computed altitude
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64124, NNTYPTAB 60026, RUTMXTAB 10452 */
     {68,
      3,
      {AGC_SCALE_POS7, AGC_SCALE_MIN_SEC, AGC_SCALE_COMP_ALT},
@@ -617,22 +628,26 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      false,
      false},
     /* 74  Time to ignition / Yawafter vehicle rise / Pitch after vehicle rise
-     *     3 comp, dec only, no load; NNADTAB 64146, NNTYPTAB 10200, RUTMXTAB 24511 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64146, NNTYPTAB 10200, RUTMXTAB 24511 */
     {74,
      3,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_DP_DEG360, AGC_SCALE_DP_DEG360},
      {AGC_DATA_TTOGO, AGC_DATA_YAW, AGC_DATA_PITCH},
      true,
      true},
-    /* 75  Delta altitude CDH / Delta time (CDH-CSI or TPI-CDH) / Delta time (TPI-CDH or TPI-NOMTPI)
-     *     3 comp, dec only, no load; NNADTAB 64151, NNTYPTAB 00010, RUTMXTAB 22447 */
+    /* 75  Delta altitude CDH / Delta time (CDH-CSI or TPI-CDH) / Delta time
+     *     (TPI-CDH or TPI-NOMTPI)
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64151, NNTYPTAB 00010, RUTMXTAB 22447 */
     {75,
      3,
      {AGC_SCALE_POS4, AGC_SCALE_MIN_SEC, AGC_SCALE_MIN_SEC},
      {AGC_DATA_DIFFALT, AGC_DATA_T1TOT2, AGC_DATA_T2TOT3},
      true,
      true},
-    /* 76  Desired horizontal velocity / Desired radial velocity / Cross-range distance
+    /* 76  Desired horizontal velocity / Desired radial velocity / Cross-range
+     *     distance
      *     3 comp, dec only; NNADTAB 24154, NNTYPTAB 20512, RUTMXTAB 16347 */
     {76,
      3,
@@ -641,7 +656,8 @@ const agc_noun_t agc_noun_table_lm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 77  Time to engine cutoff / Velocity normal to CSM plane
-     *     2 comp, dec only, no load; NNADTAB 62157, NNTYPTAB 00500, RUTMXTAB 00351 */
+     *     2 comp, dec only, no load;
+     *     NNADTAB 62157, NNTYPTAB 00500, RUTMXTAB 00351 */
     {77,
      2,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_VEL3, AGC_SCALE_NONE},

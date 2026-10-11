@@ -50,13 +50,13 @@ jet times in TIME6 counts (0.625 ms, "scaled at 10.24 s") unless noted.
 | STILLRCS/ATTSTEER, TJLAW (1452) | Q/RERROR, OMEGAU/V | UERROR,VERROR, TJU/TJV | lm_dap_tjlaw_axis (qraxis.c) |
 | AFTERTJ, DOROTAT, DOSKIP, FEEDBACK, XTRANS (1453-1455) | TJU/V, NUMBERT, SNUFFER | CHAN5, SKIPU/V, NO.U/VJETS | lm_dap_aftertj / lm_dap_xtrans (qrjets.c) |
 | JTLST (1456-1457) | T6FURTHA (counts), index | TIME6, T6NEXT, NXT6ADR, CHAN13 b15 | lm_dap_jtlst (t6rupt.c) |
-| ROT-TOUV (1457) | Q,R comps, COEFFQ,COEFFR | U,V comps | agc_lm_dap_rot_touv (qrjets.c) |
+| ROT-TOUV (1457) | Q,R comps, COEFFQ,COEFFR | U,V comps | lm_dap_rot_touv (qrjets.c, internal) |
 | SELCTSUB, FAILOOP (1457-1458) | ROTINDEX, NUMBERT, CH5MASK | POLYTEMP | lm_dap_selctsub (qrjets.c) |
 | CLOSEOUT, ENDJASK (1458) | | DAPZRUPT=NEGMAX | lm_dap_closeout (qrjets.c) |
 | TJETLAW (1460-1469) all zones, RUFLAWs | E (pi), EDOT (pi/4), BLOCKTOP | TJETU (T6 counts, signed), NUMBERT, FIREFCT (pi/4) | lm_dap_tjetlaw (tjetlaw.c) |
 | GTS, ALGORTHM .. NEGUSUM (1472-1476,1481-1484) | AOSQ/R, EDOTQ/R, KQ, QDIFF | NEGUQ/R, CHAN12, RCSFLAGS b5 | lm_dap_gts (gts.c) |
 | GTSQRT, ROOTCYCL (1481-1484) | FUNCTION (DP) | sqrt (SP), SHFTFLAG | lm_dap_gtsqrt (gts.c) |
-| ACDT+C12 (1476) | NEGUQ/R, ACCDOTQ/R | QACCDOT,RACCDOT, CHAN12 | lm_dap_acdt_c12 (gts.c) |
+| ACDT+C12 (1476) | NEGUQ/R, ACCDOTQ/R | QACCDOT,RACCDOT, CHAN12 | lm_dap_gimbal_drive_update (gts.c) |
 | TIMEGMBL (1478-1480) | AOSQ/R (pi/2), ACCDOTQ/R (pi/2^7) | Q/RGIMTIMR (0.1 s), NEGUQ/R, ALLOWGTS | agc_lm_dap_timegmbl (gts.c) |
 | 1/ACCSET, 1/ACCJOB, 1/ACCS, F(MASS), COMMEQS, LRESC, SPSCONT (1486-1491) | MASS (B16 kg), ABDELV (B13 cm/s2), DB, AOSQ/R | 1JACC.. (pi/4), COEFFQ/R, ACCDOTQ/R, KQ | agc_lm_dap_jet_accel_update / agc_job_jet_accel_update / agc_job_jet_accel_reset; static lem_mass, fit_row, commeqs, jaccuv, lresc, spscont (accs.c) |
 | DVOVSUB (1492) | DP dividend, SP divisor | SP quotient, limited | lm_dap_dvovsub (arith.c) |

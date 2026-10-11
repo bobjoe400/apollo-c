@@ -29,6 +29,28 @@ LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
       takes that stale, un-complemented MPAC+2 into SQRTSUB. Shown with the
       core word model: m2 = 0 -> 29827835 (C), m2 = 8192 -> 29827834
       (AGC). Needs a TP-input ASIN/ACOS in core (request).
+* [x] free_fall.c rounding order (F3): every DMP that feeds SR*/SL*/
+      SQRT/BZE/BPL now keeps the TP (agc_dp_mul_tp + agc_tp_shift), DMP
+      results used by DP instructions are truncated (agc_dp_mul_trunc, was
+      DMPR-rounded), VSQ DCOMP / DOT SL3 / CALCTFF Q2^2 chain keep MPAC+2
+      into SQRT, ENDTFF returns the truncated top words. ALFA = truncated
+      top of the shifted TP + 2/RMAG (DAD touches only the top words).
+      Result: TFFALFA, RPER, RAPO, TFF, TFFQ1 bit-exact (were up to 9 LSB);
+      TFFX 144 -> 26, TFFTEM 9 -> 1. Residual TFFRTALF <= 3 LSB (-> TFF1/ALF
+      <= 11): SQRT of the sign-disagreeing TP that DAD leaves (top +, MPAC+2
+      -); a word-level SQRTSUB (core model) reproduces the AGC in 2/3 cases.
+* [x] LM LSPOS (F4): POSITB/POSITD SL on the TP then DAD/DSU on the top
+      words (was: TP rounded after the shift), POSITB DMP* truncated;
+      lspos_lm_t0/t1 bit-exact, t2 VSUN <= 2 LSB (sign-disagreeing LOS
+      words into SIN, MOONMX class).  CM RES: OMEGAES product truncated.
+* [x] measurement.c INCORP1: VSQ via agc_vec_sq_tp (removes the DOTSUB
+      deviation), INCOR1C DMP TEMPVAR -> TP SQRT, SL* 0,2 on the TP;
+      agc_tp_norm / agc_tp_shift replace the util.c raw TP helpers.
+* [x] util.c: removed tp_norm, tp_shl2, rev_tp_shl, rev_add, tp_from_cs
+      (core TP API now covers them).
+* [x] renames: agc_incorp1 -> agc_incorp_state_deviation,
+      agc_incorp2_wupdate -> agc_incorp_update_w, agc_incorp2_state ->
+      agc_incorp_update_state (callers updated; NAMING.md rows added).
 * [ ] pad-load accessor unification
 * [ ] fidelity pass per file
 * [ ] style debt to zero

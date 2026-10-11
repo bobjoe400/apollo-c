@@ -195,7 +195,8 @@ uint16_t pin_ones_mag(uint16_t w)
 
     uint16_t v = (uint16_t) (w & PIN_WORD); /* 15-bit word */
 
-    return (pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v);
+    return (pin_ones_negative(v) ? /* |word| */
+            (uint16_t) ((~v) & PIN_POSMAX) : v);
 }
 
 /**********************************************************************
@@ -557,7 +558,8 @@ agc_status_t pin_11dspin(int rel, bool on)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u));
+    return (pin_dspin1(rel, 2, on ? /* sign bit on / off */
+                       (uint16_t) PIN_BIT11 : 0u));
 }
 
 /**********************************************************************
@@ -764,8 +766,9 @@ static int8_t pin_digit_at(int pos)
         return (AGC_DSKY_BLANK);
     }
 
-    uint16_t mag = pin_ones_mag(agc_erase_dsptab(pos >> 1)); /* magnitude */
-    uint16_t code = ((pos & 1) != 0) ? (uint16_t) ((mag >> 5) & PIN_LOW5) :
+    uint16_t mag  = pin_ones_mag(agc_erase_dsptab(pos >> 1)); /* magnitude */
+    uint16_t code = ((pos & 1) != 0) ? /* left / right */
+                    (uint16_t) ((mag >> 5) & PIN_LOW5) :
                     (uint16_t) (mag & PIN_LOW5); /* relay code of the char */
 
     return ((int8_t) agc_dsky_relay_digit(code));
@@ -826,10 +829,16 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
             out->r[r][d] = pin_digit_at(base[r] - 1 - d);
         }
 
-        out->r_sign[r] =
-            pin_sign_lit(plus_rel[r]) ?
-            (int8_t) 1 :
-            (pin_sign_lit(minus_rel[r]) ? (int8_t) -1 : (int8_t) 0);
+        out->r_sign[r] = 0; /* no sign lit */
+
+        if (pin_sign_lit(plus_rel[r]))
+        {
+            out->r_sign[r] = 1;
+        }
+        else if (pin_sign_lit(minus_rel[r]))
+        {
+            out->r_sign[r] = -1;
+        }
     }
 
     out->lamps      = agc_chan_read((int) AGC_CHAN_DSALMOUT);
@@ -987,9 +996,8 @@ void agc_erase_set_optionx(int index, agc_sp_t v)
  **********************************************************************/
 agc_dp_t agc_erase_dsptemx(void)
 {
-    agc_dp_t v = agc_dp_pack(pin_sp_from_ones(g_pin.dsptem[4]),
-                             /* 15-bit word */
-                             pin_sp_from_ones(g_pin.dsptem[5]));
+    agc_dp_t v = agc_dp_pack(pin_sp_from_ones(g_pin.dsptem[4]), /* scale */
+                             pin_sp_from_ones(g_pin.dsptem[5])); /* of noun */
 
     if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {

@@ -84,10 +84,8 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 
     if (!agc_interp_test_ovf(ip))
     { /* BOV NOADJUST */
-        *yaw = agc_dp_acos(
-            ip, agc_dp_shl(ip, agc_vec_dot(ip, urp, hiunit.row[0]), 1));
-        const agc_dp_t uy =
-            agc_dp_shl(ip, agc_vec_dot(ip, urp, hiunit.row[1]), 1);
+        *yaw = agc_dp_acos(ip, align_dot_shl(ip, urp, hiunit.row[0], 1));
+        const agc_dp_t uy = align_dot_shl(ip, urp, hiunit.row[1], 1); /* B0 */
 
         if (uy < 0)
         {                                            /* BPL NOADJUST */
@@ -95,7 +93,7 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
         }
     }
 
-    const agc_dp_t uz = agc_dp_shl(ip, agc_vec_dot(ip, ur, hiunit.row[2]), 1);
+    const agc_dp_t uz = align_dot_shl(ip, ur, hiunit.row[2], 1); /* B0 */
 
     *pitch = agc_dp_sub(ip, agc_dp_acos(ip, uz), HIDP1_4); /* DSU HIDP1/4 */
 

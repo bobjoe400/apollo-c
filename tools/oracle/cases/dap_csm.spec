@@ -506,3 +506,49 @@ set E6,1640=16315
 set OGA=00062
 set TIME6=00031
 run roll_ratelim
+clearstops
+stop TASKOVER
+cleargets
+get OGARATE
+get TEMREG
+get ROLLFIRE
+get ROLLWORD
+get DELOGA
+get DELOGART
+get SGNRT
+get IOGARATE
+get TIME6
+entry ROLLDAP
+fbank 16
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set OGANOW=01750,00000
+set ROLLFIRE=00000,00000,00000
+set E6,1640=30000
+set OGA=00000
+set TIME6=00031
+run roll_wrap
+clearstops
+stop TASKOVER
+cleargets
+get OGARATE
+get TEMREG
+get ROLLFIRE
+get ROLLWORD
+get DELOGA
+get DELOGART
+get SGNRT
+get IOGARATE
+get TIME6
+entry ROLLDAP
+fbank 16
+ebank 6
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set OGANOW=00000,01750
+set ROLLFIRE=00000,00000,00000
+set E6,1640=30000
+set OGA=00000
+set TIME6=00031
+run roll_wrap_neg

@@ -18,5 +18,6 @@ review-nav-conic/t.sh).
 | -0 / mixed-sign gap on circular orbits (review item) | DONE: yaAGC DV defect (F1), rows re-based on patched emulator |
 | assembled TWEEKIT / GEOMSGN (review item) | DONE: rope-verified |
 | LEMCONIC SURFFLAG ownership (review item) | DONE: nav-integ owns; agc_conic_rvcon removed |
-| fidelity pass per routine | TODO |
-| style findings to zero, rule-5 density | TODO |
+| fidelity pass per routine | DONE (see Findings) |
+| style: apsides, timetheta, timeradius, universal, kepler, lambert, geom | DONE (0 findings) |
+| style: common.c, internal.h, conic.h, tests, oracle tolerance | TODO |

@@ -95,10 +95,13 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
  * X = X0 + XDOT (T + T0), revs scale 2^0, modulo one revolution.
  * T + T0 is formed in TP (cs 2^42) and multiplied in two parts, the low
  * 28 bits (TIMSUBM+1, cs 2^28) and the high word (TIMSUBM, SL 9 -> 2^33),
- * each product shifted to revolutions (SL* 5,1 and SL* 10D,1).
- * DEVIATION: the AGC lets these shifts and adds overflow (angle wraps mod
- * one revolution); modelled with agc_navaux_rev_*.  The DMP products are
- * carried in TP through the shift (MPAC+2) and rounded once.
+ * each product shifted to revolutions (SL* 5,1 and SL* 10D,1).  The DMP
+ * products stay TP through the shift (MPAC+2), DAD adds to the top two
+ * words (no rounding); SL and DAD overflow wraps mod one revolution, and
+ * the final BOV clears OVFIND.  Verified bit-exact against Comanche055
+ * (40 random cases, review-nav-aux).  The AGC can leave X as a
+ * sign-disagreeing word pair, which SIN/COS see (agc_dp_t cannot carry
+ * it; up to 1 LSB in MOONMX, docs/modules/review-nav-aux.md).
  */
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
                                  agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot,
@@ -115,7 +118,7 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
     }
 
     /* DLOAD SR 6D 14D / TAD TIMSUBO: T+T0, cs scale 2^42 (TIMSUBM).       */
-    agc_tp_t tsum = agc_tp_add(ip, agc_navaux_tp_from_cs(t_cs), timsubo);
+    agc_tp_t tsum = agc_tp_add(ip, agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14), timsubo);
 
     if (!AGC_ASSERT(tsum >= 0))
     {

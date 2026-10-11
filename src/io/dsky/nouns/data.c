@@ -77,7 +77,7 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ?
+    const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ? /* vehicle */
                             &agc_noun_table_csm[noun] :
                             /* the vehicle's table row */
                             &agc_noun_table_lm[noun];
@@ -90,7 +90,8 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
 
     *out = *row;
 
-    return ((row->ncomp == 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
+    return ((row->ncomp == 0) ? /* spare noun */
+            AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -198,8 +199,8 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
             return (AGC_STATUS_OK);
         default:
             return (AGC_STATUS_BAD_ARG);
-    }
-}
+    } /* end switch (data_id) */
+} /* noun_access_time */
 
 /**********************************************************************
  * AGC: none (data layer)
@@ -226,8 +227,8 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* word to store */
-    agc_sp_t r = 0; /* SP word read, ones' complement */
+    const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* SP scale */
+    agc_sp_t       r = 0; /* SP word read, SP scale */
 
     switch (data_id)
     {
@@ -293,7 +294,7 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
             break;
         default:
             return (AGC_STATUS_BAD_ARG);
-    }
+    } /* end switch (data_id) */
 
     if (!write)
     {
@@ -306,7 +307,7 @@ static agc_status_t noun_access_sp(uint16_t data_id, bool write,
     }
 
     return (AGC_STATUS_OK);
-}
+} /* noun_access_sp */
 
 /**********************************************************************
  * AGC: none (data layer)
@@ -375,7 +376,7 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
             break;
         default:
             return (AGC_STATUS_BAD_ARG);
-    }
+    } /* end switch (data_id) */
 
     if (!AGC_ASSERT(w <= 077777u))
     {
@@ -385,7 +386,7 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
     *value = (agc_dp_t) w;
 
     return (AGC_STATUS_OK);
-}
+} /* noun_raw_read */
 
 /**********************************************************************
  * AGC: none (data layer)
@@ -461,8 +462,8 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
             return (AGC_STATUS_OK);
         default:
             return (AGC_STATUS_BAD_ARG);
-    }
-}
+    } /* end switch (data_id) */
+} /* noun_raw_write */
 
 /**********************************************************************
  * AGC: none (data layer)
@@ -537,10 +538,10 @@ static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
             break;
         default:
             return (AGC_STATUS_NOT_FOUND);
-    }
+    } /* end switch (id) */
 
     return (AGC_STATUS_OK);
-}
+} /* noun_access_core2 */
 
 /**********************************************************************
  * AGC: none (data layer: NNADTAB / IDADDTAB ECADRs)
@@ -577,8 +578,9 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_INCREMENT_ADDR:
             return (AGC_STATUS_NOT_FOUND);
         case AGC_DATA_CHANNEL33:
-            /* Channel 33 (LM noun 66 component 2, scale TT): input only, no load. The
-             * 15-bit image is passed raw (the LR position routine tests bits 6 and 7). */
+            /* Channel 33 (LM noun 66 component 2, scale TT): input only, no
+             * load. The 15-bit image is passed raw (the LR position routine
+             * tests bits 6 and 7). */
         {
             if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(!write))
             {
@@ -614,12 +616,13 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_THETAD:
         case AGC_DATA_THETAD_P1:
         case AGC_DATA_THETAD_P2:
-            return (write ? noun_raw_write(data_id, *value) :
+            return (write ? /* store / fetch */
+                    noun_raw_write(data_id, *value) :
                     noun_raw_read(data_id, value));
         case AGC_DATA_OPTION1:
         case AGC_DATA_OPTION2:
         case AGC_DATA_OPTION3:
-            /* OPTION1-3 (noun 06, raw octal words; OPTION1 +k).                       */
+            /* OPTION1-3 (noun 06, raw octal words; OPTION1 +k). */
         {
             if (!AGC_ASSERT(value != NULL) ||
                 !AGC_ASSERT(data_id >= AGC_DATA_OPTION1 &&
@@ -647,8 +650,8 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
             return (noun_access_core2(data_id, write, value));
         default: /* held by a higher layer               */
             return (agc_dispatch_noun(data_id, write, value));
-    }
-}
+    } /* end switch (data_id) */
+} /* noun_data_access */
 
 /**********************************************************************
  * AGC: none (data layer)
@@ -692,7 +695,7 @@ agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
  **********************************************************************/
 agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value)
 {
-    agc_dp_t v = value; /* value, nouns.h convention */
+    agc_dp_t v = value; /* value, scale of the id */
 
     if (!AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
         !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))

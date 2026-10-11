@@ -282,6 +282,61 @@ static void run_third(const char *t, bool moon, long tol_r, long tol_v,
                       (oracle_out_sp(t, "FLAGWRD0") & 010000) != 0, 0);
 }
 
+/* W matrix: INTEGRV of the permanent CSM state with DIM0FLAG (6x6), the
+ * W columns integrated with DOW.. after every state step (RELOADSV).    */
+static void run_wmatrix(const char *t, long tol_w)
+{
+    agc_interp_t    ip;
+    agc_integ_ctx_t ctx;
+    agc_integ_sv_t  sv;
+    char            name[16];
+
+    fresh();
+    agc_interp_init(&ip);
+    (void) agc_integ_ctx_init(&ctx);
+    agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
+    sv        = ctx.sv;
+    sv.rrect  = oracle_in_vec(t, "RRECTCSM");
+    sv.vrect  = oracle_in_vec(t, "RRECTCSM+6");
+    sv.rcv    = oracle_in_vec(t, "RRECTCSM+26");
+    sv.vcv    = oracle_in_vec(t, "RRECTCSM+32");
+    (void) agc_integ_perm_set(AGC_VEHICLE_CSM, &sv);
+    ctx.w.blk[0][0] = oracle_in_vec(t, "W");
+    ctx.w.blk[1][3] = oracle_in_vec(t, "W+72");
+    (void) agc_integ_install(0, AGC_JOB_NONE);
+    agc_flag_put(AGC_FLAG_VINTFLAG, true);
+    agc_flag_put(AGC_FLAG_DIM0FLAG, true);
+    agc_flag_put(AGC_FLAG_PRECIFLG, true);
+    const agc_status_t st =
+        agc_integ_integrv(&ip, &ctx, oracle_in_dp(t, "VAC1+32", 0));
+
+    oracle_require_ok(t, "INTWAKE");
+    (void) oracle_cmp(t, "status", (long) st, (long) AGC_STATUS_OK, 0);
+
+    oracle_cmp_vec(t, "W", ctx.w.blk[0][0], oracle_out_vec(t, "W"), tol_w);
+
+    for (int m = 0; m < 6; m++)
+    {
+        if (m > 0)
+        {
+            (void) snprintf(name, sizeof (name), "W+%d", 6 * m);
+            oracle_cmp_vec(t, name, ctx.w.blk[0][m], oracle_out_vec(t, name),
+                           tol_w);
+        }
+
+        (void) snprintf(name, sizeof (name), "W+%d", 54 + (6 * m));
+        oracle_cmp_vec(t, name, ctx.w.blk[1][m], oracle_out_vec(t, name),
+                       tol_w);
+    }
+
+    (void) agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
+    oracle_cmp_vec(t, "RRECTCSM", sv.rrect, oracle_out_vec(t, "RRECTCSM"),
+                   2);
+    oracle_cmp_vec(t, "VRECTCSM", sv.vrect, oracle_out_vec(t, "VRECTCSM"),
+                   2);
+    (void) oracle_cmp(t, "TETCSM", sv.tet, oracle_out_dp(t, "TETCSM"), 0);
+}
+
 int main(void)
 {
     if (!oracle_load("nav_integ"))
@@ -311,6 +366,7 @@ int main(void)
     run_third("third_moon_1step", true, 2, 2, 8);
     run_third("third_moon_multi", true, 2, 2, 8);
     run_third("third_sphere_entry", false, 2, 2, 8);
+    run_wmatrix("wmatrix_6x6", 0);
 
     return (oracle_finish("oracle_nav_integ"));
 }

@@ -46,11 +46,7 @@ static agc_lm_asc_t lm_asc; /* ascent guidance erasables, EBANK 7      */
  **********************************************************************/
 agc_lm_pad_t *agc_lm_pad(void)
 {
-    agc_lm_pad_t *p = &lm_pad; /* pad-load block                    */
-
-    (void) AGC_ASSERT(p != NULL);
-
-    return (p);
+    return (&lm_pad);
 }
 
 /**********************************************************************
@@ -60,13 +56,7 @@ agc_lm_pad_t *agc_lm_pad(void)
  **********************************************************************/
 agc_lm_ldg_t *agc_lm_ldg(void)
 {
-    agc_lm_ldg_t *l = &lm_ldg; /* landing guidance block            */
-
-    (void) AGC_ASSERT(l != NULL);
-    (void) AGC_ASSERT(lm_ldg.wchphase >= AGC_LM_PHASE_IGNALG &&
-                      lm_ldg.wchphase <= AGC_LM_PHASE_VERTICAL);
-
-    return (l);
+    return (&lm_ldg);
 }
 
 /**********************************************************************
@@ -76,12 +66,7 @@ agc_lm_ldg_t *agc_lm_ldg(void)
  **********************************************************************/
 agc_lm_thr_t *agc_lm_thr(void)
 {
-    agc_lm_thr_t *t = &lm_thr; /* throttle block                     */
-
-    (void) AGC_ASSERT(t != NULL);
-    (void) AGC_ASSERT(lm_thr.tthrot >= 0); /* a TIME1 reading      */
-
-    return (t);
+    return (&lm_thr);
 }
 
 /**********************************************************************
@@ -91,11 +76,7 @@ agc_lm_thr_t *agc_lm_thr(void)
  **********************************************************************/
 agc_lm_asc_t *agc_lm_asc(void)
 {
-    agc_lm_asc_t *a = &lm_asc; /* ascent guidance block              */
-
-    (void) AGC_ASSERT(a != NULL);
-
-    return (a);
+    return (&lm_asc);
 }
 
 /**********************************************************************
@@ -109,7 +90,6 @@ void agc_lm_landing_reset(void)
     (void) memset(&lm_thr, 0, sizeof (lm_thr));
     (void) memset(&lm_asc, 0, sizeof (lm_asc));
     lm_ldg.wchphase = AGC_LM_PHASE_IGNALG;
-    (void) AGC_ASSERT(lm_thr.tthrot == 0);
 }
 
 /**********************************************************************
@@ -142,7 +122,11 @@ void agc_lm_phaschng(uint16_t octal_code)
  **********************************************************************/
 void agc_lm_fastchng(void)
 {
-    (void) AGC_ASSERT((LM_FASTCHNG_CODE & 7u) == 3u);
+    if (!AGC_ASSERT((LM_FASTCHNG_CODE & 7u) == 3u))
+    {
+        return; /* not a group 3 code */
+    }
+
     agc_phase_change(3, LM_FASTCHNG_CODE);
 }
 
@@ -155,9 +139,10 @@ void agc_lm_fastchng(void)
 agc_sp_t agc_lm_time1(void)
 {
     uint32_t t  = agc_time_now_cs();             /* TIME2,TIME1, cs */
-    agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu);      /* TIME1, cs       */
+    agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu); /* TIME1, cs, unscaled */
 
-    if (!AGC_ASSERT(t1 >= 0 && t1 <= AGC_SP_MAX))
+    if (!AGC_ASSERT(t1 >= 0) ||
+        !AGC_ASSERT(t1 <= AGC_SP_MAX))
     {
         return (0); /* no valid result */
     }
@@ -185,10 +170,10 @@ agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
         return ((dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN); /* by sign */
     }
 
-    int32_t q = dividend / (int32_t) divisor; /* quotient, 2^(S-D)   */
+    int32_t q = dividend / (int32_t) divisor;     /* quotient, 2^(S-D)   */
 
     if (!AGC_ASSERT(q <= AGC_SP_MAX && q >= AGC_SP_MIN))
-    {
+    { /* |dividend| >= |divisor|: the hardware result is meaningless */
         q = (q > 0) ? AGC_SP_MAX : AGC_SP_MIN; /* saturate by sign   */
     }
 
@@ -213,6 +198,11 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
     if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
     {
         return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(hi * hi <= (int32_t) a * a))
+    {
+        return (0); /* not reached: |b| < 1 cannot enlarge |a| */
     }
 
     return ((agc_sp_t) hi);
@@ -259,8 +249,10 @@ agc_lm_words_t agc_lm_words(agc_dp_t v)
         w.hi = 0;
         w.lo = 0;
     }
-
-    (void) AGC_ASSERT(w.hi == 0 || w.lo == 0 || (w.hi > 0) == (w.lo > 0));
+    else if (!AGC_ASSERT(agc_lm_words_value(w) == v))
+    {
+        w.lo = (agc_sp_t) (v - (int32_t) w.hi * LM_WORD); /* exact */
+    }
 
     return (w);
 }
@@ -331,8 +323,20 @@ agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
     *ovf = a;
     agc_lm_words_t r = {(agc_sp_t) hi, (agc_sp_t) lo}; /* result, 2^S */
 
+    if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
+    {
+        return (x); /* not reached: one carry corrects a word sum */
+    }
+
+    if (!AGC_ASSERT((int64_t) agc_lm_words_value(r) + (int64_t) a *
+                    LM_WORD * LM_WORD ==
+                    (int64_t) agc_lm_words_value(x) + agc_lm_words_value(y)))
+    {
+        return (x); /* not reached: DAS is exact up to the overflow */
+    }
+
     return (r);
-}
+} /* agc_lm_das_ovf */
 
 /**********************************************************************
  * AGC: none (DAS instruction) -- DAS where the caller guarantees that
@@ -349,7 +353,10 @@ agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
     int            ovf = 0;                          /* net overflow  */
     agc_lm_words_t r   = agc_lm_das_ovf(x, y, &ovf); /* sum, 2^S      */
 
-    (void) AGC_ASSERT(ovf == 0); /* else overflow-corrected words */
+    if (!AGC_ASSERT(ovf == 0))
+    {
+        return (r); /* overflow-corrected words, as TS stores them */
+    }
 
     return (r);
 }
@@ -366,7 +373,8 @@ agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
  **********************************************************************/
 bool agc_lm_chan_bit_present(int chan, uint16_t bit)
 {
-    if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30 && chan <= AGC_CHAN_CHAN33) ||
+    if (!AGC_ASSERT(chan >= AGC_CHAN_CHAN30) ||
+        !AGC_ASSERT(chan <= AGC_CHAN_CHAN33) ||
         !AGC_ASSERT(bit != 0u))
     {
         return (false);

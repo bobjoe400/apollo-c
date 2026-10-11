@@ -658,15 +658,13 @@ uint16_t align_sp_to_word(agc_sp_t v);
 /* ---- MPAC word forms (src/programs/alignment/word_forms.c) ----------- */
 
 /* An interpretive DP result as the AGC leaves it in MPAC, MPAC +1: the two
- * words may disagree in sign (AD/DAS results) and the major word may be
- * -0.  1STO2S reads the major word (after DDOUBL), so an angle with the
+ * words may disagree in sign (AD/DAS results).  1STO2S reads the major word (after DDOUBL), so an angle with the
  * same value converts one count differently in these forms:
  * (+, -) rounds up, (-, +) rounds down, agreeing words truncate.       */
 typedef struct
 {
-    agc_sp_t hi;          /* MPAC: major word, 2^-14 of the DP scale       */
-    agc_sp_t lo;          /* MPAC +1: minor word, 2^-28 of the DP scale    */
-    bool     hi_neg_zero; /* hi is -0 (77777)                              */
+    agc_sp_t hi; /* MPAC: major word, 2^-14 of the DP scale              */
+    agc_sp_t lo; /* MPAC +1: minor word, 2^-28 of the DP scale           */
 } align_words_t;
 
 /* The sign-agreeing words of a value (what DLOAD of a stored DP gives). */
@@ -685,8 +683,12 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative);
 align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth,
                                   agc_dp_t costh, agc_dp_t theta);
 /* 1STO2S / 1TO2SUB on the actual words: DDOUBL, major word to a 2's
- * complement CDU pattern (-0 -> 77777).                                  */
+ * complement CDU pattern.                                                */
 uint16_t align_words_to_cdu(align_words_t w);
+/* DOT / DMP followed by SLn: the shift acts on the TP MPAC (MPAC +2's top
+ * bits reach the stored DP); result truncated to DP.                    */
+agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n);
+agc_dp_t align_dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n);
 
 /* The present IMU CDUs X, Y, Z (raw words).                               */
 void align_read_cdus(uint16_t cdu[3]);

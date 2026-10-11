@@ -1,23 +1,52 @@
-/*
- * agc_interp_trig.c -- interpretive SQRT, SIN, COS, ASIN, ACOS
- * (INTERPRETER.agc, Comanche055 pp.1181, 1184-1191; Luminary099
- * pp.1076, 1079-1086).
+/**********************************************************************
+ * FILE NAME: trig.c
  *
- *   SIN  x  -> (1/2) sin(2 pi x)      x in revolutions, result scaled at 2
- *   COS  x  -> (1/2) cos(2 pi x)
- *   ASIN a  -> (1/2pi) arcsin(2a)     a = sin/2, result in revolutions
- *   ACOS a  -> (1/2pi) arccos(2a)
- *   SQRT a  -> sqrt(a), same binary point
+ * PURPOSE:
+ *   Interpretive SQRT, SIN, COS, ASIN and ACOS, and the latch through
+ *   which their ABORT 01302 / ALARM 01301 reach the executive.
  *
- * The argument reductions produce word pairs whose signs disagree (e.g.
- * hi = 1.0 - hi, lo = -lo); the polynomial and multiply steps see those
- * words exactly as the AGC does.
- */
+ * AGC SOURCE:
+ *   Comanche055 INTERPRETER.agc p.1181 (SQRT, SQRTSHFT), pp.1187-1188
+ *   (SINE, COSINE, PRESINE, SN1), pp.1189-1191 (ARCSIN, ARCCOS, ACOSST,
+ *   ACOSST2, ACOS3, SUBTR, ASINEX, ACOSSHR, ACOSOVF, ACOSZERO)
+ *   Luminary099 INTERPRETER.agc pp.1076, 1082-1086 (values identical;
+ *   SQRTABRT via POODOO1, ACOSABRT via ALARM1 with LOC)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name            Type      I/O  Scale     Description
+ *   --------------  --------  ---  --------  -------------------------
+ *   g_interp_alarm  uint16_t  IO   octal     alarm latched for exec
+ *                                            (file static)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name           Description
+ *   -------------  -----------------------------------------------
+ *   agc_w_sqrtsub  SQRTSUB (divide.c)
+ *   agc_w_poly     POLY (mpac.c)
+ *   agc_w_dmpsub   DMPSUB (mpac.c)
+ *   agc_w_genscr   GENSCR (shift.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   SQRT of a < -2^-14: ABORT 01302 (POODOO); ASIN/ACOS of |a| more than
+ *   one major LSB above 1/2: ALARM 01301, result 0 (ACOS) / .25 (ASIN),
+ *   negated per sign. The _chk functions return AGC_STATUS_POODOO /
+ *   AGC_STATUS_ALARM; the plain ones latch the code for the executive
+ *   (agc_interp_take_alarm), since core cannot call it.
+ *
+ * NOTES:
+ *   SIN x -> (1/2) sin(2 pi x), x in revolutions, result scaled at 2;
+ *   COS likewise; ASIN a -> (1/2pi) arcsin(2a), a = sin/2, result in
+ *   revolutions; ACOS likewise; SQRT a -> sqrt(a) at the same binary
+ *   point. The argument reductions produce word pairs whose signs
+ *   disagree (hi = 1.0 - hi, lo = -lo); the polynomial and multiply
+ *   steps see those words exactly as the AGC does. Coefficients were
+ *   checked against the assembled words of both ropes.
+ **********************************************************************/
 #include "../mpac.h"
 #include "agc/core/assert.h"
 
-#define SIN_DEGREE  4
-#define ACOS_DEGREE 7
+#define SIN_DEGREE  4 /* SN1 polynomial degree (5 coefficients) */
+#define ACOS_DEGREE 7 /* ACOS3 POLY degree (DEC 6 = N-1) */
 
 /* Hastings sine coefficients, SN1 (p.1188), 2DEC words as assembled.       */
 static const agc_dp_t sin_coef[SIN_DEGREE + 1] = {
@@ -42,13 +71,22 @@ static const agc_dp_t acos_coef[ACOS_DEGREE + 1] = {
 
 /* ---- SQRT ---------------------------------------------------------------- */
 
-/* SQRT (p.1181): SQRTSUB, then un-normalise by MPTEMP (SQRTSHFT for < 14,
- * GENSCR +4 without round for longer shifts).                              */
+/**********************************************************************
+ * SQRT (INTERPRETER.agc p.1181) -- SQRTSUB, then un-normalise by
+ * MPTEMP (SQRTSHFT below 14, GENSCR +4 without round for longer
+ * shifts).
+ *
+ * ARGUMENTS:
+ *   m      agc_w3_t  I  TP MPAC
+ *   abort  bool *    O  SQRTABRT (POODOO 01302) taken
+ *
+ * RETURNS: agc_w2_t -- sqrt(m) at the same binary point
+ **********************************************************************/
 static agc_w2_t sqrt_words(agc_w3_t m, bool *abort)
 {
-    int      shift = 0;
-    agc_w2_t r     = agc_w_sqrtsub(m, &shift, abort);
-    agc_w3_t t;
+    int      shift = 0; /* MPTEMP: right shifts owed */
+    agc_w2_t r     = agc_w_sqrtsub(m, &shift, abort); /* normalised root */
+    agc_w3_t t; /* root as a TP for GENSCR */
 
     if (!AGC_ASSERT(abort != 0))
     {
@@ -76,8 +114,15 @@ static agc_w2_t sqrt_words(agc_w3_t m, bool *abort)
  * 01301 ALARM), held for the executive: core cannot call agc_alarm /
  * agc_poodoo (layering), so exec raises it when the job or task that
  * did the arithmetic returns (agc_interp_take_alarm).                     */
-static uint16_t g_interp_alarm;
+static uint16_t g_interp_alarm; /* 01301 / 01302 / 0, octal */
 
+/**********************************************************************
+ * AGC: none (layering) -- latch ALARM 01301 / ABORT 01302 for the
+ * executive; the abort wins over an alarm.
+ *
+ * ARGUMENTS:
+ *   code  uint16_t  I  01301 or 01302
+ **********************************************************************/
 static void interp_flag_alarm(uint16_t code)
 {
     if (!AGC_ASSERT(code == 01301u || code == 01302u))
@@ -89,13 +134,30 @@ static void interp_flag_alarm(uint16_t code)
     { /* the abort wins over an alarm         */
         g_interp_alarm = code;
     }
+
+    if (!AGC_ASSERT(g_interp_alarm != 0u))
+    {
+        return; /* not latched */
+    }
 }
 
+/**********************************************************************
+ * AGC: none (layering) -- the alarm the plain SQRT / ASIN / ACOS
+ * latched since the last call, cleared by reading; exec raises it when
+ * the job or task returns.
+ *
+ * RETURNS: uint16_t -- 01302 (ABORT), 01301 (ALARM) or 0
+ **********************************************************************/
 uint16_t agc_interp_take_alarm(void)
 {
-    uint16_t code = g_interp_alarm;
+    uint16_t code = g_interp_alarm; /* latched code, 0 if none */
 
     g_interp_alarm = 0;
+
+    if (!AGC_ASSERT(g_interp_alarm == 0u))
+    {
+        return (0); /* not cleared */
+    }
 
     if (!AGC_ASSERT(code == 0u || code == 01301u || code == 01302u))
     {
@@ -105,10 +167,21 @@ uint16_t agc_interp_take_alarm(void)
     return (code);
 }
 
+/**********************************************************************
+ * SQRT (INTERPRETER.agc pp.1181, 1184-1186) with the abort reported.
+ *
+ * ARGUMENTS:
+ *   ip   agc_interp_t *  I  interpreter state
+ *   a    agc_dp_t        I  argument at 2^2n
+ *   out  agc_dp_t *      O  root at 2^n; 0 on the abort
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_POODOO for a < -2^-14 (caller
+ *          raises POODOO 01302), else AGC_STATUS_OK
+ **********************************************************************/
 agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
-    bool     abort = false;
-    agc_w2_t r;
+    bool     abort = false; /* SQRTABRT taken */
+    agc_w2_t r; /* root words */
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
@@ -124,12 +197,28 @@ agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 
     *out = agc_w_join(r);
 
-    return (abort ? AGC_STATUS_POODOO : AGC_STATUS_OK);
+    if (!AGC_ASSERT(!abort || (*out == 0)))
+    {
+        return (AGC_STATUS_BAD_ARG); /* SQRTABRT leaves no root     */
+    }
+
+    return (abort ? AGC_STATUS_POODOO : AGC_STATUS_OK); /* POODOO 01302 */
 }
 
+/**********************************************************************
+ * SQRT (INTERPRETER.agc pp.1181, 1184-1186) -- the abort is latched for
+ * the executive (agc_interp_take_alarm).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I  interpreter state
+ *   a   agc_dp_t        I  argument at 2^2n
+ *
+ * RETURNS: agc_dp_t -- sqrt(a) at 2^n; 0 for -2^-14 <= a <= 0 and on
+ *          the abort
+ **********************************************************************/
 agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
 {
-    agc_dp_t r = 0;
+    agc_dp_t r = 0; /* root, scaled 2^n */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -151,10 +240,20 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
     return (r);
 }
 
+/**********************************************************************
+ * SQRT of a TP MPAC (TLOAD / DMP / DSQ then SQRT, INTERPRETER.agc
+ * p.1181): MPAC+2 takes part in the root.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I  interpreter state
+ *   a   agc_tp_t        I  TP argument at 2^2n
+ *
+ * RETURNS: agc_dp_t -- sqrt(a) at 2^n; 0 on the abort (latched)
+ **********************************************************************/
 agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 {
-    bool     abort = false;
-    agc_w2_t r;
+    bool     abort = false; /* SQRTABRT taken */
+    agc_w2_t r; /* root words */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -180,15 +279,30 @@ agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 
 /* ---- SIN / COS ----------------------------------------------------------- */
 
-/* SN1 (p.1188): x (scaled at pi, |x| <= pi/2) times the Hastings
- * polynomial in x^2, shifted left 2: (1/2) sin(x).                         */
+/**********************************************************************
+ * SN1 (INTERPRETER.agc p.1188) -- x (scaled at pi, |x| <= pi/2) times
+ * the Hastings polynomial in x^2, shifted left 2: (1/2) sin(x).
+ *
+ * ARGUMENTS:
+ *   x  agc_w2_t  I  reduced argument (BUF2), signs may disagree
+ *
+ * RETURNS: agc_w2_t -- sin(x)/2 (scaled at 2) as MPAC, MPAC+1
+ **********************************************************************/
 static agc_w2_t sn1_words(agc_w2_t x)
 {
-    agc_w3_t sq = agc_w_dsqsub(x); /* TC DSQSUB        */
-    agc_w3_t p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE);
-    agc_w3_t r  = agc_w_dmpsub(agc_w3_top(p), x); /* DMPSUB by BUF2   */
-    int      o  = 0;
+    agc_w3_t sq;    /* x^2 (DSQSUB), scaled at pi^2             */
+    agc_w3_t p;     /* Hastings polynomial in x^2, scaled at 1  */
+    agc_w3_t r;     /* x P(x^2), then 4 x P = sin(x)/2          */
+    int      o = 0; /* shift overflow (none, "NEITHER SHIFT")   */
 
+    if (!AGC_ASSERT((x.hi >= -AGC_W_HALF) && (x.hi <= AGC_W_HALF)))
+    {
+        return ((agc_w2_t){0}); /* argument beyond +-pi/2 */
+    }
+
+    sq = agc_w_dsqsub(x);                                      /* TC DSQSUB */
+    p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE);     /* POLY      */
+    r  = agc_w_dmpsub(agc_w3_top(p), x);                 /* DMPSUB by BUF2 */
     r = agc_w_tp_shl1(r, &o); /* "NEITHER SHIFT   */
     r = agc_w_tp_shl1(r, &o); /*  OVERFLOWS"      */
 
@@ -205,15 +319,23 @@ static agc_w2_t sn1_words(agc_w2_t x)
     return (agc_w3_top(r));
 }
 
-/* SINE (p.1187): double the argument (now scaled at pi), reflect it into
- * [-pi/2, pi/2] with words exactly as the AGC leaves them, then SN1.       */
+/**********************************************************************
+ * SINE (INTERPRETER.agc p.1187) -- double the argument (now scaled at
+ * pi), reflect it into [-pi/2, pi/2] with the words exactly as the AGC
+ * leaves them, then SN1.
+ *
+ * ARGUMENTS:
+ *   m  agc_w2_t  I  argument in revolutions (MPAC, MPAC+1)
+ *
+ * RETURNS: agc_w2_t -- (1/2) sin(2 pi m)
+ **********************************************************************/
 static agc_w2_t sine_words(agc_w2_t m)
 {
-    int      carry = 0;
-    int      s     = 0;
+    int      carry = 0; /* minor-word carry of DDOUBL */
+    int      s     = 0; /* overflow of TS / DOUBLE, +-1 or 0 */
     int32_t  lo    = agc_w_ts(2 * m.lo, &carry); /* DDOUBL: L        */
     int32_t  a16   = 2 * m.hi + carry;           /* DDOUBL: A        */
-    agc_w2_t x;
+    agc_w2_t x; /* reduced argument, scaled at pi */
 
     if (!AGC_ASSERT(agc_w_ok(m.hi) && agc_w_ok(m.lo)))
     {
@@ -244,7 +366,15 @@ static agc_w2_t sine_words(agc_w2_t m)
     return (sn1_words(x));
 }
 
-/* SIN: (1/2) sin(2 pi a), a in revolutions.                                 */
+/**********************************************************************
+ * SIN (SINE, INTERPRETER.agc p.1187).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I  interpreter state
+ *   a   agc_dp_t        I  angle in revolutions, scaled 2^0
+ *
+ * RETURNS: agc_dp_t -- (1/2) sin(2 pi a), scaled at 2
+ **********************************************************************/
 agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
 {
     if (!AGC_ASSERT(ip != 0))
@@ -260,11 +390,19 @@ agc_dp_t agc_dp_sin(agc_interp_t *ip, agc_dp_t a)
     return (agc_w_join(sine_words(agc_w_split(a))));
 }
 
-/* COSINE (p.1187): cos(x) = sin(pi/2 - |x|); BRANCH, DCS if positive,
- * ADS QUARTER.                                                             */
+/**********************************************************************
+ * COS (COSINE / PRESINE, INTERPRETER.agc p.1187) -- cos(x) =
+ * sin(pi/2 - |x|): BRANCH, DCS if positive, ADS QUARTER, then SINE.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I  interpreter state
+ *   a   agc_dp_t        I  angle in revolutions, scaled 2^0
+ *
+ * RETURNS: agc_dp_t -- (1/2) cos(2 pi a), scaled at 2
+ **********************************************************************/
 agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
 {
-    agc_w2_t m = agc_w_split(a);
+    agc_w2_t m = agc_w_split(a); /* MPAC words of a */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -288,16 +426,25 @@ agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
 
 /* ---- ASIN / ACOS --------------------------------------------------------- */
 
-/* ACOSST .. ACOS3 (p.1189-1191) for a positive argument (words m):
- * arccos(2m)/2pi = sqrt(1/2 - m) P(m). Out-of-range sets *alarm.           */
+/**********************************************************************
+ * ACOSST .. ACOS3 (INTERPRETER.agc pp.1189-1191) for a positive
+ * argument: arccos(2m)/2pi = sqrt(1/2 - m) P(m). Out of range (ACOSOVF)
+ * gives 0, with ACOSABRT unless the major word is only HALF+1.
+ *
+ * ARGUMENTS:
+ *   m      agc_w2_t  I  |argument| words, sin/2 scaled at 2
+ *   alarm  bool *    O  ACOSABRT (ALARM 01301) taken
+ *
+ * RETURNS: agc_w2_t -- arccos(2m)/2pi in revolutions, [0, .25]
+ **********************************************************************/
 static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 {
     agc_w2_t zero = {0, 0};
-    agc_w2_t s;
-    agc_w2_t root;
-    agc_w3_t p;
-    int      shift = 0;
-    bool     abort = false;
+    agc_w2_t s; /* 1/2 - m, scaled at 2 */
+    agc_w2_t root; /* sqrt(1/2 - m), normalised then shifted */
+    agc_w3_t p; /* P(m) (POLY) */
+    int      shift = 0; /* MPTEMP: right shifts owed */
+    bool     abort = false; /* SQRTABRT (cannot happen: 1/2 - m >= 0) */
 
     if (!AGC_ASSERT((m.hi >= 0) && (m.lo >= 0)))
     {
@@ -337,13 +484,24 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
     p = agc_w_poly(m, acos_coef, ACOS_DEGREE); /* ACOS3: POLY      */
 
     return (agc_w3_top(agc_w_dmpsub(agc_w3_top(p), root)));
-}
+} /* acos_words */
 
-/* ARCCOS / ARCSIN entry, BRANCH, ESCAPE/ESCAPE2 epilogues (p.1189-1190).    */
+/**********************************************************************
+ * ARCCOS / ARCSIN entry, BRANCH, ESCAPE / ESCAPE2 epilogues
+ * (INTERPRETER.agc pp.1189-1190): ACOSZERO, SUBTR for a negative
+ * argument, ASINEX for ARCSIN.
+ *
+ * ARGUMENTS:
+ *   a      agc_dp_t  I  argument, sin/2 scaled at 2
+ *   asin   bool      I  ARCSIN (ASINEX epilogue)
+ *   alarm  bool *    O  ACOSABRT taken
+ *
+ * RETURNS: agc_w2_t -- the angle in revolutions (MPAC words)
+ **********************************************************************/
 static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
 {
-    agc_w2_t m = agc_w_split(a);
-    agc_w2_t r;
+    agc_w2_t m = agc_w_split(a); /* MPAC words of a */
+    agc_w2_t r; /* angle words, revolutions */
 
     if (!AGC_ASSERT(alarm != 0))
     {
@@ -357,7 +515,7 @@ static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
     }
     else
     {
-        r = acos_words((a < 0) ? agc_w_dcs(m) : m, alarm);
+        r = acos_words((a < 0) ? agc_w_dcs(m) : m, alarm); /* DCS for a negative argument */
 
         if (a < 0)
         { /* SUBTR            */
@@ -380,9 +538,21 @@ static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
     return (r);
 }
 
+/**********************************************************************
+ * ACOS (ARCCOS, INTERPRETER.agc pp.1189-1191) with the alarm reported.
+ * TS ESCAPE leaves a positive return address in DVSIGN (= DOTINC).
+ *
+ * ARGUMENTS:
+ *   ip   agc_interp_t *  IO DVSIGN made positive
+ *   a    agc_dp_t        I  argument, cos/2 scaled at 2 (|a| <= 1/2)
+ *   out  agc_dp_t *      O  the angle, revolutions in [0, .5]
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_ALARM when ACOSABRT was taken
+ *          (caller raises ALARM 01301), else AGC_STATUS_OK
+ **********************************************************************/
 agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
-    bool alarm = false;
+    bool alarm = false; /* ACOSABRT taken */
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
@@ -397,12 +567,24 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK);
+    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK); /* ALARM 01301 */
 }
 
+/**********************************************************************
+ * ASIN (ARCSIN, INTERPRETER.agc pp.1189-1191) with the alarm reported.
+ * TS ESCAPE leaves a positive return address in DVSIGN (= DOTINC).
+ *
+ * ARGUMENTS:
+ *   ip   agc_interp_t *  IO DVSIGN made positive
+ *   a    agc_dp_t        I  argument, sin/2 scaled at 2 (|a| <= 1/2)
+ *   out  agc_dp_t *      O  the angle, revolutions in [-.25, .25]
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_ALARM when ACOSABRT was taken
+ *          (caller raises ALARM 01301), else AGC_STATUS_OK
+ **********************************************************************/
 agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
-    bool alarm = false;
+    bool alarm = false; /* ACOSABRT taken */
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
@@ -417,13 +599,22 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK);
+    return (alarm ? AGC_STATUS_ALARM : AGC_STATUS_OK); /* ALARM 01301 */
 }
 
-/* ACOS: alarm 01301 (if any) is reported by agc_dp_acos_chk.                */
+/**********************************************************************
+ * ACOS (ARCCOS, INTERPRETER.agc pp.1189-1191) -- ALARM 01301 latched
+ * for the executive.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO DVSIGN made positive
+ *   a   agc_dp_t        I  argument, cos/2 scaled at 2
+ *
+ * RETURNS: agc_dp_t -- arccos(2a)/2pi in revolutions, [0, .5]
+ **********************************************************************/
 agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
 {
-    agc_dp_t r = 0;
+    agc_dp_t r = 0; /* angle, revolutions scaled 2^0 */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -445,9 +636,19 @@ agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a)
     return (r);
 }
 
+/**********************************************************************
+ * ASIN (ARCSIN, INTERPRETER.agc pp.1189-1191) -- ALARM 01301 latched
+ * for the executive.
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO DVSIGN made positive
+ *   a   agc_dp_t        I  argument, sin/2 scaled at 2
+ *
+ * RETURNS: agc_dp_t -- arcsin(2a)/2pi in revolutions, [-.25, .25]
+ **********************************************************************/
 agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
 {
-    agc_dp_t r = 0;
+    agc_dp_t r = 0; /* angle, revolutions scaled 2^0 */
 
     if (!AGC_ASSERT(ip != 0))
     {

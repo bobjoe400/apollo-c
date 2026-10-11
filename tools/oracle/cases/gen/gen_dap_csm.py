@@ -79,16 +79,21 @@ def main():
                ('T5TVCDT', '37770')], pg, ebank=6, entry='PITCHDAP')
     rg = ['OGARATE', 'TEMREG', 'ROLLFIRE', 'ROLLWORD', 'DELOGA', 'DELOGART',
           'SGNRT', 'IOGARATE', 'TIME6']
-    for tag, now, past, fire, temreg, oga, word in (
-            ('roll_coast', 1000, 990, 0, 0, 20, 0),
-            ('roll_start', 3000, 2900, 0, 0, 900, 1),
-            ('roll_neg', -3000, -2950, 0, 0, -1200, 2),
-            ('roll_firing', 2000, 2100, 16383, 30, 400, 1),
-            ('roll_wait', 500, 500, 0, 40, 100, 0),
-            ('roll_ratelim', 100, -400, 0, 0, 50, 3)):
+    # roll_wrap*: 1/CONACC .75 and a rate difference at the limit, so the
+    # product in ROLLSET is beyond 1/2 and the second DDOUBL wraps the
+    # 16-bit accumulator (the overflow limit then has the opposite sign).
+    for tag, now, past, fire, temreg, oga, word, conacc in (
+            ('roll_coast', 1000, 990, 0, 0, 20, 0, 0.45),
+            ('roll_start', 3000, 2900, 0, 0, 900, 1, 0.45),
+            ('roll_neg', -3000, -2950, 0, 0, -1200, 2, 0.45),
+            ('roll_firing', 2000, 2100, 16383, 30, 400, 1, 0.45),
+            ('roll_wait', 500, 500, 0, 40, 100, 0, 0.45),
+            ('roll_ratelim', 100, -400, 0, 0, 50, 3, 0.45),
+            ('roll_wrap', 1000, 0, 0, 0, 0, 0, 0.75),
+            ('roll_wrap_neg', 0, 1000, 0, 0, 0, 0, 0.75)):
         s.run(tag, None, 0o16, 'TASKOVER',
               [('OGANOW', w([now, past])), ('ROLLFIRE', w([fire, word, temreg])),
-               ('E6,1640', sp(0.45)), ('OGA', _w(oga)), ('TIME6', _w(25))],
+               ('E6,1640', sp(conacc)), ('OGA', _w(oga)), ('TIME6', _w(25))],
               rg, ebank=6, entry='ROLLDAP')
     s.write(os.path.join(OUT, 'dap_csm.spec'))
 

@@ -333,14 +333,14 @@ static void test_incorp(void)
     inc.bvector[2] = agc_vec_zero();
     inc.deltaq     = agc_dp_from_double(dq, 0);
     inc.variance   = (agc_tp_t) llround(var * 4398046511104.0);   /* TP 2^42 */
-    CHECK(agc_incorp1(&ip, &w, &inc) == AGC_STATUS_OK);
+    CHECK(agc_incorp_state_deviation(&ip, &w, &inc) == AGC_STATUS_OK);
     double a = (s * s * h * h) + var;
 
     /* DELTAX = OMEGA DELTAQ / A, delivered at half scale (see note).      */
     CHECK_NEAR(vec_comp(inc.deltax[0], 0, 0), 0.5 * s * s * h * dq / a, 2e-7);
     CHECK_NEAR(vec_comp(inc.deltax[0], 1, 0), 0.0, 1e-8);
     CHECK_NEAR(vec_comp(inc.deltax[1], 0, 0), 0.0, 1e-8);
-    CHECK(agc_incorp2_wupdate(&ip, &inc, &w) == AGC_STATUS_OK);
+    CHECK(agc_incorp_update_w(&ip, &inc, &w) == AGC_STATUS_OK);
     double gamma = 1.0 / (a + sqrt(a * var));
     double w00   = s - ((s * h) * (s * s * h) * gamma);
 
@@ -351,7 +351,7 @@ static void test_incorp(void)
     agc_incorp_sv_t sv = {0};
 
     sv.moon = false;
-    CHECK(agc_incorp2_state(&ip, &inc, &sv) == AGC_STATUS_OK);
+    CHECK(agc_incorp_update_state(&ip, &inc, &sv) == AGC_STATUS_OK);
     CHECK(!sv.rectify);
     CHECK(sv.tdeltav.c[0] == agc_dp_shl(&ip, inc.deltax[0].c[0], 7));
 }

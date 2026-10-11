@@ -6,9 +6,12 @@
  * tools/oracle/cases/gen/gen_align.py.
  * Routines: SXTNB, SXTANG (incl. ZNB=S1 and the CULTFLAG trunnion alarm),
  * LOG (CSM_GEOMETRY); RRNB, RRANGLES (incl. mode 2 swap and the along-Y
- * exit) (LEM_GEOMETRY); SCALEVEC (R47, incl. the -0 rounding case).
+ * exit) (LEM_GEOMETRY); SCALEVEC (R47, incl. the -0 rounding case);
+ * the R05 S-band pitch/yaw computations of both vehicles.
  *
- * Tolerances are in LSB of the AGC word (0 = bit exact).
+ * Tolerances are in LSB of the AGC word (0 = bit exact).  RRANGLES and
+ * SXTANG convert the words ASIN/ACOS/ARCTRIG leave (word_forms.c), which
+ * 12 random cases each confirm; KNOWN PA-W2: SXTNB (SIN's MPAC +2).
  */
 #include <stdio.h>
 
@@ -113,6 +116,45 @@ static void scalevec(const char *t)
     }
 }
 
+/* R05 (LM) angle part: UE = -UNIT(RATT), MXV identity VSL1, *SMNB* with
+ * zero CDUs (exact), then the C angles routine.                        */
+static void sband_lm(const char *t, long tol)
+{
+    agc_interp_t    ip;
+    agc_dp_t        pitch = 0;
+    agc_dp_t        yaw   = 0;
+    const agc_mat_t ref   = mat_in(t, "REFSMMAT");
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, "42,3746");
+    agc_vec_t ue = agc_vec_neg(agc_vec_unit(&ip, oracle_in_vec(t, "VAC1"),
+                                            NULL, NULL));
+
+    ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &ref, ue), 1);
+    (void) agc_sband_lm_angles(&ip, ue, &pitch, &yaw);
+    (void) oracle_cmp(t, "PITCHANG", (long) pitch,
+                      (long) oracle_out_dp(t, "PITCHANG"), tol);
+    (void) oracle_cmp(t, "YAWANG", (long) yaw,
+                      (long) oracle_out_dp(t, "YAWANG"), tol);
+}
+
+/* R05 (CSM) angle part from the AGC's own NB vector R (2D).            */
+static void sband_cm(const char *t, long tol)
+{
+    agc_interp_t ip;
+    agc_dp_t     pitch = 0;
+    agc_dp_t     yaw   = 0;
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, "42,3751");
+    (void) agc_sband_cm_angles(&ip, oracle_out_vec(t, "VAC1+2"), &pitch,
+                               &yaw);
+    (void) oracle_cmp(t, "RHOSB", (long) pitch,
+                      (long) oracle_out_dp(t, "RHOSB"), tol);
+    (void) oracle_cmp(t, "GAMMASB", (long) yaw,
+                      (long) oracle_out_dp(t, "GAMMASB"), tol);
+}
+
 static void sxtnb(const char *t, long tol)
 {
     agc_interp_t ip;
@@ -122,7 +164,12 @@ static void sxtnb(const char *t, long tol)
     oracle_require_ok(t, "POODOO");
     (void) agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0),
                          oracle_in_raw(t, "VAC4+3", 0), &los);
-    oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol);
+    /* SXTNB's SIN SL1 shifts SIN's MPAC +2 into the result; agc_dp_sin
+     * returns two words, so sin TA can be 1 LSB low and 32D 2 LSB off
+     * (docs/modules/review-prog-align.md W2): KNOWN at 0, hard at 2.    */
+    oracle_cmp_vec_known(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol,
+                         "PA-W2");
+    oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol + 2);
 }
 
 static void sxtang(const char *t, long tol)
@@ -177,9 +224,24 @@ int main(void)
     rrangles("rrangles_b", false, 0);
     rrangles("rrangles_mode2", false, 0);
     rrangles("rrangles_alongy", true, 0);
+    rrangles("rrangles_y0", false, 0);
+    rrangles("rrangles_x0", false, 0);
+
+    for (int k = 0; k < 12; k++)
+    {
+        char tag[32];
+
+        (void) snprintf(tag, sizeof tag, "rrangles_r%d", k);
+        rrangles(tag, false, 0);
+    }
+
     scalevec("scalevec_a");
     scalevec("scalevec_small");
     scalevec("scalevec_b");
+    sband_lm("sband_lm_a", 0);
+    sband_lm("sband_lm_b", 0);
+    sband_lm("sband_lm_c", 0);
+    sband_lm("sband_lm_d", 0);
 
     if (!oracle_load("align"))
     {
@@ -197,10 +259,23 @@ int main(void)
     sxtang("sxtang_wide", 0);
     sxtang("sxtang_behind", 0);
     sxtang("sxtang_axis", 0);
+
+    for (int k = 0; k < 12; k++)
+    {
+        char tag[32];
+
+        (void) snprintf(tag, sizeof tag, "sxtang_r%d", k);
+        sxtang(tag, 0);
+    }
+
     log_case("log_half", 0);
     log_case("log_03", 0);
     log_case("log_small", 0);
     log_case("log_near1", 0);
+    sband_cm("sband_cm_a", 0);
+    sband_cm("sband_cm_b", 0);
+    sband_cm("sband_cm_c", 0);
+    sband_cm("sband_cm_d", 0);
 
     return (oracle_finish("oracle_align"));
 }

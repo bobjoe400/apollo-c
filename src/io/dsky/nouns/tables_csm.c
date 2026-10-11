@@ -90,7 +90,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      {AGC_DATA_OPTION1, AGC_DATA_OPTION2, AGC_DATA_NONE},
      false,
      false},
-    /* 07  ECADR of word to be modified / Ones for bits to be modified / 1 to set or 0 to reset selected bits
+    /* 07  ECADR of word to be modified / Ones for bits to be modified / 1 to
+     *     set or 0 to reset selected bits
      *     3 comp; NNADTAB ECADR XREG, NNTYPTAB 04000 */
     {7,
      3,
@@ -352,7 +353,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 40  Time to ignition/cutoff / Vg / Delta V (accumulated)
-     *     3 comp, dec only, no load; NNADTAB 64000, NNTYPTAB 24500, RUTMXTAB 16351 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64000, NNTYPTAB 24500, RUTMXTAB 16351 */
     {40,
      3,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_VEL3, AGC_SCALE_VEL3},
@@ -384,7 +386,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 44  Apogee / Perigee / TFF
-     *     3 comp, dec only, no load; NNADTAB 64014, NNTYPTAB 00410, RUTMXTAB 22347 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64014, NNTYPTAB 00410, RUTMXTAB 22347 */
     {44,
      3,
      {AGC_SCALE_POS4, AGC_SCALE_POS4, AGC_SCALE_MIN_SEC},
@@ -392,7 +395,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      true,
      true},
     /* 45  Marks (VHF - optics) / TTI of next burn / MGA
-     *     3 comp, dec only, no load; NNADTAB 64017, NNTYPTAB 10000, RUTMXTAB 24454 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64017, NNTYPTAB 10000, RUTMXTAB 24454 */
     {45,
      3,
      {AGC_SCALE_TWO_INT, AGC_SCALE_MIN_SEC, AGC_SCALE_DP_DEG360},
@@ -432,7 +436,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      true,
      false},
     /* 50  Splash error / Perigee / TFF
-     *     3 comp, dec only, no load; NNADTAB 64036, NNTYPTAB 00417, RUTMXTAB 22347 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64036, NNTYPTAB 00417, RUTMXTAB 22347 */
     {50,
      3,
      {AGC_SCALE_POS6, AGC_SCALE_POS4, AGC_SCALE_MIN_SEC},
@@ -527,7 +532,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      {AGC_DATA_LAT_SPL, AGC_DATA_LNG_SPL, AGC_DATA_HEADSUP},
      true,
      false},
-    /* 62  Inertial vel mag (V1) / Alt rate change (HDOT) / Alt above pad radius (H)
+    /* 62  Inertial vel mag (V1) / Alt rate change (HDOT) / Alt above pad radius
+     *     (H)
      *     3 comp, dec only; NNADTAB 24102, NNTYPTAB 20451, RUTMXTAB 16512 */
     {62,
      3,
@@ -535,8 +541,10 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      {AGC_DATA_VMAGI, AGC_DATA_HDOT, AGC_DATA_ALTI},
      true,
      false},
-    /* 63  Range 297,431 to splash (RTGO) / Predicted inert vel (VIO) / Time to go to 297,431 (TTE)
-     *     3 comp, dec only, no load; NNADTAB 64105, NNTYPTAB 00457, RUTMXTAB 22507 */
+    /* 63  Range 297,431 to splash (RTGO) / Predicted inert vel (VIO) / Time to
+     *     go to 297,431 (TTE)
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64105, NNTYPTAB 00457, RUTMXTAB 22507 */
     {63,
      3,
      {AGC_SCALE_POS6, AGC_SCALE_VEL2, AGC_SCALE_MIN_SEC},
@@ -575,7 +583,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      {AGC_DATA_RANGE_TO_TARGET, AGC_DATA_LAT, AGC_DATA_LONG},
      true,
      false},
-    /* 68  Command bank angle (beta) / Inertial velocity (VI) / Alt rate change (RDOT)
+    /* 68  Command bank angle (beta) / Inertial velocity (VI) / Alt rate change
+     *     (RDOT)
      *     3 comp, dec only; NNADTAB 24124, NNTYPTAB 34444, RUTMXTAB 24512 */
     {68,
      3,
@@ -625,7 +634,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
       AGC_DATA_GROUND_TRACK_DETERMINATION_GAM},
      false,
      false},
-    /* 74  Command bank angle (beta) / Inertial velocity (VI) / Drag acceleration
+    /* 74  Command bank angle (beta) / Inertial velocity (VI) / Drag
+     *     acceleration
      *     3 comp; NNADTAB 04146, NNTYPTAB 40444, RUTMXTAB 12512 */
     {74,
      3,
@@ -633,8 +643,10 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      {AGC_DATA_ROLLC, AGC_DATA_VMAGI, AGC_DATA_D},
      false,
      false},
-    /* 75  Delta altitude CDH / Delta time (CDH-CSI or TPI-CDH) / Delta time (TPI-CDH or TPI-NOMTPI)
-     *     3 comp, dec only, no load; NNADTAB 64151, NNTYPTAB 00010, RUTMXTAB 22447 */
+    /* 75  Delta altitude CDH / Delta time (CDH-CSI or TPI-CDH) / Delta time
+     *     (TPI-CDH or TPI-NOMTPI)
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64151, NNTYPTAB 00010, RUTMXTAB 22447 */
     {75,
      3,
      {AGC_SCALE_POS4, AGC_SCALE_MIN_SEC, AGC_SCALE_MIN_SEC},
@@ -670,7 +682,8 @@ const agc_noun_t agc_noun_table_csm[AGC_NOUN_COUNT] = {
      false,
      false},
     /* 80  Time to ignition/cutoff / Vg / Delta V (accumulated)
-     *     3 comp, dec only, no load; NNADTAB 64170, NNTYPTAB 22440, RUTMXTAB 24511 */
+     *     3 comp, dec only, no load;
+     *     NNADTAB 64170, NNTYPTAB 22440, RUTMXTAB 24511 */
     {80,
      3,
      {AGC_SCALE_MIN_SEC, AGC_SCALE_VEL2, AGC_SCALE_VEL2},

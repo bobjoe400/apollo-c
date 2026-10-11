@@ -43,24 +43,23 @@
 #include "agc/lm/landing.h"
 
 /* SCALEFAC 2DEC* +7.97959872E+2 B-16* (CONTROLLED_CONSTANTS): pulses per
- * (kg m/cs^2) = 1E4 * BITPERF, scale 2^16.                                */
-#define THR_SCALEFAC ((agc_dp_t) 3268444)
-/* /AF/CNST DEC .13107 (p. 797): ABDELV (2^14 cm/s per 2 s) -> 2^-4
- * m/cs^2.                                                                 */
-#define THR_AF_CNST ((agc_sp_t) 2147)
-#define THR_TWOSECS 200 /* 2SECS: 2 x the P66 guidance period, cs     */
-#define THR_FOURSECS \
-    400                     /* 4SECS: 2 x the P63/P64 guidance period, cs  */
-#define THR_FRATE_BIT6 32   /* BIT6: FRATE, 32 pulses per centisecond      */
-#define THR_LOW8       0377 /* LOW8 mask                                   */
-#define THR_POSMAX     037777 /* POSMAX mask                               */
-#define THR_A_ONES     0xFFFF /* -0 in the 16-bit A register               */
-/* MODREG of the rate-of-descent landing program (P66): DEC66.             */
-#define THR_RATE_OF_DESCENT_LANDING 66
+ * (kg m/cs^2) = 1E4 * BITPERF. /AF/CNST DEC .13107 (p. 797): ABDELV
+ * (2^14 cm/s per 2 s) -> 2^-4 m/cs^2.                                    */
+#define THR_SCALEFAC ((agc_dp_t) 3268444) /* SCALEFAC, scale 2^16     */
+#define THR_AF_CNST  ((agc_sp_t) 2147)    /* /AF/CNST, scale 2^0      */
+/* 2SECS / 4SECS: twice the guidance period of P66 / of P63 and P64.     */
+#define THR_TWOSECS    200    /* 2SECS, cs                            */
+#define THR_FOURSECS   400    /* 4SECS, cs                            */
+#define THR_FRATE_BIT6 32     /* BIT6: FRATE, pulses per cs           */
+#define THR_LOW8       0377   /* LOW8 mask                            */
+#define THR_POSMAX     037777 /* POSMAX mask                          */
+#define THR_A_ONES     0xFFFF /* -0 in the 16-bit A register          */
+
+#define THR_RATE_OF_DESCENT_LANDING 66 /* DEC66: MODREG of P66 */
 /* L after TPAGREE is TPAGREE's return address, the CA MPAC at 31,2410 in
  * MASSMULT (assembled rope; verified with the oracle probe): it becomes
  * the low word of an overflowed MASSMULT result.                          */
-#define THR_MASSMULT_L 02410
+#define THR_MASSMULT_L 02410 /* address word left in L by TPAGREE    */
 
 /**********************************************************************
  * AGC: none (CS b / AD a / AD c idiom) -- the 16-bit ones'-complement A
@@ -84,7 +83,7 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
     }
 
     /* x + ~x is -0 in ones' complement, so a zero sum is all ones. */
-    return ((sum > 0) ? sum : THR_A_ONES + sum);
+    return ((sum > 0) ? sum : THR_A_ONES + sum); /* ones' complement */
 }
 
 /**********************************************************************
@@ -100,7 +99,8 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 static agc_lm_words_t thr_massmult(agc_dp_t accel)
 {
     agc_lm_words_t force = {AGC_SP_MAX, THR_MASSMULT_L}; /* overflow */
-    agc_dp_t       mass  = agc_guid_state()->lm.mass; /* MASS, 2^16 kg          */
+    agc_dp_t       mass  = /* MASS, 2^16 kg          */
+                           agc_guid_state()->lm.mass;
 
     if (!AGC_ASSERT(mass >= 0) || !AGC_ASSERT(accel >= 0))
     {
@@ -133,9 +133,9 @@ static agc_lm_words_t thr_massmult(agc_dp_t accel)
  **********************************************************************/
 static agc_sp_t thr_region(agc_lm_thr_t *t, const agc_lm_pad_t *pad)
 {
-    agc_sp_t lowcrit  = pad->lowcrit;  /* L*WCR*T, pulses               */
-    agc_sp_t highcrit = pad->highcrit; /* H*GHCR*T, pulses              */
-    agc_sp_t fc       = t->fcodd.hi;   /* CS ... AD FCODD, pulses       */
+    agc_sp_t lowcrit  = pad->lowcrit; /* L*WCR*T, pulses, unscaled */
+    agc_sp_t highcrit = pad->highcrit; /* H*GHCR*T, pulses, unscaled */
+    agc_sp_t fc       = t->fcodd.hi; /* AD FCODD, pulses, unscaled */
 
     if (!AGC_ASSERT(lowcrit >= 0 && highcrit >= 0) ||
         !AGC_ASSERT(lowcrit <= highcrit))
@@ -191,7 +191,7 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t cmd = agc_lm_ad(t->pif.hi, t->pifpset); /* CA PIF, pulses */
+    agc_sp_t cmd = agc_lm_ad(t->pif.hi, t->pifpset); /* pulses, unscaled */
 
     t->pseudo55 = cmd;
     agc_erase_set_thrust(cmd);
@@ -215,8 +215,8 @@ static agc_status_t thr_doit(agc_lm_thr_t *t)
  **********************************************************************/
 static void thr_fweight(agc_lm_thr_t *t)
 {
-    agc_sp_t buf = agc_dp_low(agc_erase_piptime()); /* PIPTIME +1, cs */
-    agc_sp_t q   = THR_FOURSECS;                     /* 2 PGUID, cs    */
+    agc_sp_t buf = agc_dp_low(agc_erase_piptime()); /* cs, unscaled */
+    agc_sp_t q   = THR_FOURSECS; /* 2 PGUID, cs, unscaled */
 
     if (agc_erase_modreg() == THR_RATE_OF_DESCENT_LANDING)
     { /* FWCOMP: P66, one-second guidance from THISTPIP               */
@@ -224,7 +224,7 @@ static void thr_fweight(agc_lm_thr_t *t)
         q   = THR_TWOSECS;
     }
 
-    agc_sp_t buf1 = (agc_sp_t) (q * THR_FRATE_BIT6); /* 2 PGUID FRATE  */
+    agc_sp_t buf1 = (agc_sp_t) (q * THR_FRATE_BIT6); /* pulses, unscaled */
     int32_t  dtp  = thr_csad(agc_lm_time1(), buf, AGC_LM_THROTLAG) &
                     THR_LOW8; /* PPROCESS + TL, cs ("small and positive")  */
 
@@ -233,14 +233,14 @@ static void thr_fweight(agc_lm_thr_t *t)
         return;
     }
 
-    agc_sp_t ratio = agc_lm_dv((agc_dp_t) dtp * 16384, q); /* ZL, DV Q */
-    agc_sp_t pif   = t->pif.hi;                     /* MP PIF, pulses  */
+    agc_sp_t ratio = agc_lm_dv((agc_dp_t) dtp * 16384, q); /* scale 2^0 */
+    agc_sp_t pif   = t->pif.hi; /* MP PIF, pulses, unscaled */
     agc_dp_t first = agc_sp_mul(ratio, pif); /* 2^14 pulses            */
 
     /* DOUBLE (high word only), DXCH FWEIGHT                          */
     t->fweight.hi = (agc_sp_t) (2 * agc_dp_high(first));
     t->fweight.lo = agc_dp_low(first);
-    agc_sp_t       abspif = (agc_sp_t) ((pif < 0) ? -pif : pif); /* CCS PIF  */
+    agc_sp_t       abspif = (agc_sp_t) ((pif < 0) ? -pif : pif); /* unscaled */
     agc_lm_words_t second = {
         agc_lm_dv(agc_sp_mul(abspif, pif), buf1), 0
     };                                                /* DV BUF +1, ZL */
@@ -277,7 +277,8 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
 
     /* Less than 3 s since the last throttling: augment FP by FWEIGHT.
      * (Assumes a FLATOUT within 80 s before the first THROTTLE call.)  */
-    int32_t since = thr_csad(agc_lm_time1(), t->tthrot, 0) & THR_POSMAX;
+    int32_t since = /* cs since the last throttling */
+                    thr_csad(agc_lm_time1(), t->tthrot, 0) & THR_POSMAX;
 
     if (AGC_LM_3SECS - since > 0)
     {
@@ -301,7 +302,7 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     }
 
     return (st);
-}
+} /* agc_lm_throttle_measured */
 
 /**********************************************************************
  * THROTTLE (THROTTLE_CONTROL_ROUTINES.agc p. 793) -- the throttle law

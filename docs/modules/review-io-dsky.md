@@ -22,3 +22,8 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
   blanksub/endidle/nvsubusy now ARE the implementations (pin_* removed);
   agc_dsky_endext removed, 12 callers call agc_dsky_endmark (ENDEXT EQUALS
   ENDMARK). Kept agc_job_markplay (job entry with dispatch signature).
+- DONE (session 2) style: function prologs (257, generated from the
+  existing comments + AGC label/page lookup, scratch tools in
+  SCRATCH/review-io-dsky/gen.py), file prologs (17), declaration
+  comments, >80-column lines (0 left). TODO: ternary, define, long-block,
+  scale comments; rule-5 density.

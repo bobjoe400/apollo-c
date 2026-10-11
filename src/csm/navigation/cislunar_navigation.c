@@ -474,7 +474,7 @@ static agc_status_t cn_measure(agc_interp_t *ip)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_incorp1(ip, &agc_integ_shared_ctx()->w, &cn.inc);
+        st = agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &cn.inc);
     }
 
     agc_phase_change(2, 04022);

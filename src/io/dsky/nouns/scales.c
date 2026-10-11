@@ -6,10 +6,10 @@
  *   SFOUTAB) and the scale-type lookup agc_scale_info().
  *
  * AGC SOURCE:
- *   Comanche055 PINBALL_NOUN_TABLES.agc pp. 271, 277-278 (GTSFIN, GTSFOUT,
+ *   Comanche055 PINBALL_NOUN_TABLES.agc pp. 271, 282-284 (GTSFIN, GTSFOUT,
  *     SFINTAB, SFOUTAB)
- *   Luminary099 PINBALL_NOUN_TABLES.agc pp. 304-305, 311-312 (differs from
- *     code 12 up: each vehicle has its own pair of tables)
+ *   Luminary099 PINBALL_NOUN_TABLES.agc pp. 305, 317-319 (differs from code
+ *     12 up: each vehicle has its own pair of tables)
  *
  * EXTERNAL VARIABLES:
  *   none (constant tables)
@@ -40,8 +40,8 @@
 #include "agc/core/assert.h"
 #include "agc/io/nouns.h"
 
-#define SF_COUNT_CSM 20
-#define SF_COUNT_LM  29
+#define SF_COUNT_CSM 20 /* SF constants in Comanche */
+#define SF_COUNT_LM  29 /* SF constants in Luminary */
 
 typedef struct sf_pair
 {
@@ -62,8 +62,9 @@ typedef struct scale_def
 /* SFINTAB, Comanche055 (CSM): one DP pair (high, low) per SF constant code. */
 static const sf_pair_t sfintab_csm[20] = {
     /*  0  WHOLE, DP TIME (SEC)
-     *     scale types: OCTAL, FRACTION, WHOLE, HMS, MIN_SEC, TIME_SEC_DP, TWO_INT, DP_FRACTION
-     *     as DP fraction: 0.0003725290298 */
+     *     scale types: OCTAL, FRACTION, WHOLE, HMS, MIN_SEC, TIME_SEC_DP,
+     *         TWO_INT, LR_POSITION
+     *     as DP fraction: 0.1638399996 */
     {06, 03240},
     /*  1  SPARE
      *     scale types: spare
@@ -145,9 +146,9 @@ static const sf_pair_t sfintab_csm[20] = {
 
 /* SFOUTAB, Comanche055 (CSM): one DP pair (high, low) per SF constant code. */
 static const sf_pair_t sfoutab_csm[20] = {
-    /*  0  WHOLE, DP TIME (SEC)
-     *     scale types: OCTAL, FRACTION, WHOLE, HMS, MIN_SEC, TIME_SEC_DP, TWO_INT, DP_FRACTION
-     *     as DP fraction: 0.1638399996 */
+    /* 0  WHOLE, DP TIME (SEC) scale types: OCTAL, FRACTION, WHOLE, HMS,
+     * MIN_SEC, TIME_SEC_DP, TWO_INT, DP_FRACTION as DP fraction: 0.1638399996
+     */
     {05174, 013261},
     /*  1  SPARE
      *     scale types: spare
@@ -229,9 +230,9 @@ static const sf_pair_t sfoutab_csm[20] = {
 
 /* SFINTAB, Luminary099 (LM): one DP pair (high, low) per SF constant code. */
 static const sf_pair_t sfintab_lm[29] = {
-    /*  0  WHOLE, DP TIME (SEC)
-     *     scale types: OCTAL, FRACTION, WHOLE, HMS, MIN_SEC, TIME_SEC_DP, TWO_INT, LR_POSITION
-     *     as DP fraction: 0.0003725290298 */
+    /* 0  WHOLE, DP TIME (SEC) scale types: OCTAL, FRACTION, WHOLE, HMS,
+     * MIN_SEC, TIME_SEC_DP, TWO_INT, LR_POSITION as DP fraction:
+     * 0.0003725290298 */
     {06, 03240},
     /*  1  SPARE
      *     scale types: spare
@@ -349,9 +350,9 @@ static const sf_pair_t sfintab_lm[29] = {
 
 /* SFOUTAB, Luminary099 (LM): one DP pair (high, low) per SF constant code. */
 static const sf_pair_t sfoutab_lm[29] = {
-    /*  0  WHOLE, DP TIME (SEC)
-     *     scale types: OCTAL, FRACTION, WHOLE, HMS, MIN_SEC, TIME_SEC_DP, TWO_INT, LR_POSITION
-     *     as DP fraction: 0.1638399996 */
+    /* 0  WHOLE, DP TIME (SEC) scale types: OCTAL, FRACTION, WHOLE, HMS,
+     * MIN_SEC, TIME_SEC_DP, TWO_INT, LR_POSITION as DP fraction: 0.1638399996
+     */
     {05174, 013261},
     /*  1  SPARE
      *     scale types: spare
@@ -474,7 +475,8 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
     [AGC_SCALE_FRACTION] = {1, 0, 1, 0, false, false},
     /* C   xxxxx. integer: SP, bit 1 = 1 unit (max 16383) */
     [AGC_SCALE_WHOLE] = {3, 0, 3, 0, false, false},
-    /* D   xxx.xx deg (CDU): SP, bit 1 = 360/2^15 deg (15-bit magnitude, 2s complement) */
+    /* D   xxx.xx deg (CDU): SP, bit 1 = 360/2^15 deg (15-bit magnitude, 2s
+     *     complement) */
     [AGC_SCALE_CDU_DEG] = {2, 2, 2, 2, false, true},
     /* E   xx.xxx deg (elevation, max 89.999): SP, bit 1 = 90/2^14 deg */
     [AGC_SCALE_ELEV_DEG] = {3, 11, 3, 11, false, false},
@@ -484,11 +486,15 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
     [AGC_SCALE_DP_DEG90] = {7, 3, 7, 3, true, false},
     /* H   xxx.xx deg (DP, 360): DP, bit 1 of low word = 360/2^28 deg */
     [AGC_SCALE_DP_DEG360] = {10, 4, 10, 4, true, false},
-    /* J   xx.xxx deg (optics Y; +19.775 deg bias on display, no negative load): SP, bit 1 = 90/2^15 deg */
+    /* J   xx.xxx deg (optics Y; +19.775 deg bias on display, no negative load):
+     *     SP, bit 1 = 90/2^15 deg */
     [AGC_SCALE_Y_OPTICS_DEG] = {6, 2, -1, -1, false, true},
-    /* K   hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only, all 3 loaded): DP centiseconds, bit 1 of low word = 10^-2 s (max 745h39m14.55s) */
+    /* K   hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only, all 3
+     *     loaded): DP centiseconds, bit 1 of low word = 10^-2 s
+     *     (max 745h39m14.55s) */
     [AGC_SCALE_HMS] = {8, 0, 8, 0, true, false},
-    /* L   xxBxx min/sec (display only, caps at 59B59): DP centiseconds, bit 1 of low word = 10^-2 s */
+    /* L   xxBxx min/sec (display only, caps at 59B59): DP centiseconds, bit 1
+     *     of low word = 10^-2 s */
     [AGC_SCALE_MIN_SEC] = {9, 0, 9, 0, true, false},
     /* N   xxx.xx sec (DP): DP centiseconds, bit 1 of low word = 10^-2 s */
     [AGC_SCALE_TIME_SEC_DP] = {4, 0, 4, 0, true, false},
@@ -502,7 +508,8 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
     [AGC_SCALE_POS5] = {4, 7, 4, 7, true, false},
     /* KK  xxxxx. lbs: SP, fractional part of 2^16 kg */
     [AGC_SCALE_WEIGHT2] = {11, 6, 11, 6, false, false},
-    /* PP  +xxByy two integers (display only): DP, high word = XX, low word = YY, each a positive integer < 100 */
+    /* PP  +xxByy two integers (display only): DP, high word = XX, low word =
+     *     YY, each a positive integer < 100 */
     [AGC_SCALE_TWO_INT] = {12, 0, 12, 0, true, false},
     /* XX  xxxxx. feet: DP, bit 1 of low word = 2^-9 m */
     [AGC_SCALE_POS9] = {7, 18, 7, 26, true, false},
@@ -514,41 +521,56 @@ static const scale_def_t scale_defs[AGC_SCALE_COUNT] = {
     [AGC_SCALE_INERTIA] = {3, 13, -1, -1, false, false},
     /* II  xxxxxBB. ft lbs: SP, fractional part of 2^20 N m */
     [AGC_SCALE_THRUST_MOMENT] = {3, 13, -1, -1, false, false},
-    /* UU  xxxxx. ft/sec (max 51532): DP, fractional part of 2VS ft/sec (VS = 25766.1973) */
+    /* UU  xxxxx. ft/sec (max 51532): DP, fractional part of 2VS ft/sec (VS =
+     *     25766.1973) */
     [AGC_SCALE_VEL_2VS] = {10, 14, -1, -1, true, false},
-    /* LL  xxxx.x nautical miles: DP, bit 1 of low word = (6373338)(2 PI) 2^-28 / 1852 nmi */
+    /* LL  xxxx.x nautical miles: DP, bit 1 of low word = (6373338)(2 PI) 2^-28
+     *     / 1852 nmi */
     [AGC_SCALE_POS6] = {7, 15, -1, -1, true, false},
     /* MM  xxx.xx g (max 24.99): DP, bit 1 of low word = 25 x 2^-28 g */
     [AGC_SCALE_DRAG_ACCEL] = {5, 16, -1, -1, true, false},
-    /* VV  xxxx.x nautical miles: DP, bit 1 of low word = 4 x 6373338 x 2^-28 / 1852 nmi */
+    /* VV  xxxx.x nautical miles: DP, bit 1 of low word = 4 x 6373338 x 2^-28 /
+     *     1852 nmi */
     [AGC_SCALE_POS8] = {7, 17, -1, -1, true, false},
     /* ZZ  .xxxxx DP fractional: DP, bit 1 of high word = 2^-14 unit */
     [AGC_SCALE_DP_FRACTION] = {13, 0, -1, -1, true, false},
-    /* TT  +0000x landing radar position 1/2 (display only; reads channel 33 bits 6,7): channel 33: bit 6 = not position 1, bit 7 = not position 2 */
+    /* TT  +0000x landing radar position 1/2 (display only; reads channel 33
+     *     bits 6,7): channel 33: bit 6 = not position 1, bit 7 = not position 2
+     */
     [AGC_SCALE_LR_POSITION] = {-1, -1, 6, 0, false, true},
     /* WW  xxx.xx deg (360 - CDU): SP, bit 1 = 360 - 360/2^15 deg */
     [AGC_SCALE_CDU360] = {-1, -1, 13, 2, false, true},
-    /* EE  xxx.xx deg (optical tracker azimuth): DP, low bit of low word = 360/2^15 deg */
+    /* EE  xxx.xx deg (optical tracker azimuth): DP, low bit of low word =
+     *     360/2^15 deg */
     [AGC_SCALE_TRACKER_AZ_DEG] = {-1, -1, 4, 5, true, false},
-    /* U   xxx.xx nautical miles (rendezvous radar range): DP, low bit of low word = 9.38 ft */
+    /* U   xxx.xx nautical miles (rendezvous radar range): DP, low bit of low
+     *     word = 9.38 ft */
     [AGC_SCALE_RR_RANGE] = {-1, -1, 4, 12, true, false},
-    /* V   xxxxx. ft/sec (rendezvous radar range rate): DP, low bit of low word = -0.6278 ft/sec */
+    /* V   xxxxx. ft/sec (rendezvous radar range rate): DP, low bit of low word
+     *     = -0.6278 ft/sec */
     [AGC_SCALE_RR_RATE] = {-1, -1, 4, 13, true, false},
-    /* W   xxxxx. feet (landing radar altitude): DP, low bit of low word = 1.079 ft */
+    /* W   xxxxx. feet (landing radar altitude): DP, low bit of low word = 1.079
+     *     ft */
     [AGC_SCALE_LR_ALT] = {-1, -1, 4, 14, true, false},
-    /* AA  xxxxx. feet (initial/final altitude): DP, low bit of low word = 2.345 ft */
+    /* AA  xxxxx. feet (initial/final altitude): DP, low bit of low word = 2.345
+     *     ft */
     [AGC_SCALE_INIT_FINAL_ALT] = {-1, -1, 4, 15, true, false},
     /* BB  xxxxx. ft/sec (altitude rate, max 8191): SP, low bit = 0.5 ft/sec */
     [AGC_SCALE_ALT_RATE] = {-1, -1, 3, 16, false, false},
-    /* CC  xxxxx. ft/sec (forward/lateral velocity, max 9126): SP, low bit = 0.5571 ft/sec */
+    /* CC  xxxxx. ft/sec (forward/lateral velocity, max 9126): SP, low bit =
+     *     0.5571 ft/sec */
     [AGC_SCALE_FWD_LAT_VEL] = {-1, -1, 3, 17, false, false},
-    /* DD  xxxxx. deg/sec (rotational hand controller rates, max 44): SP, fractional part of PI rad per 4 sec */
+    /* DD  xxxxx. deg/sec (rotational hand controller rates, max 44): SP,
+     *     fractional part of PI rad per 4 sec */
     [AGC_SCALE_RHC_RATE] = {-1, -1, 3, 18, false, false},
-    /* X   xxxxx. ft/sec (landing radar VELX): DP, low bit of low word = -0.6440 ft/sec */
+    /* X   xxxxx. ft/sec (landing radar VELX): DP, low bit of low word = -0.6440
+     *     ft/sec */
     [AGC_SCALE_LR_VELX] = {-1, -1, 4, 19, true, false},
-    /* Y   xxxxx. ft/sec (landing radar VELY): DP, low bit of low word = 1.212 ft/sec */
+    /* Y   xxxxx. ft/sec (landing radar VELY): DP, low bit of low word = 1.212
+     *     ft/sec */
     [AGC_SCALE_LR_VELY] = {-1, -1, 4, 20, true, false},
-    /* Z   xxxxx. ft/sec (landing radar VELZ): DP, low bit of low word = 0.8668 ft/sec */
+    /* Z   xxxxx. ft/sec (landing radar VELZ): DP, low bit of low word = 0.8668
+     *     ft/sec */
     [AGC_SCALE_LR_VELZ] = {-1, -1, 4, 21, true, false},
     /* QQ  xxxx.x nautical miles (max 9058.9): DP, bit 1 of low word = 2^-4 m */
     [AGC_SCALE_POS7] = {-1, -1, 10, 22, true, false},
@@ -690,12 +712,10 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
     }
 
     const scale_def_t *def     = &scale_defs[scale]; /* scale definition row */
-    const int          routine = /* SF routine of the vehicle */
-                                 (veh ==
-                                  AGC_VEHICLE_CSM) ? def->csm_routine : def->
-                                 lm_routine;
-    const int code = /* SF constant code of the vehicle */
-                     (veh == AGC_VEHICLE_CSM) ? def->csm_code : def->lm_code;
+    const bool         csm     = (veh == AGC_VEHICLE_CSM); /* which columns */
+    const int          routine =
+        csm ? def->csm_routine : def->lm_routine; /* SF routine of veh */
+    const int code = csm ? def->csm_code : def->lm_code; /* SF const code */
 
     if (routine < 0)
     {

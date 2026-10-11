@@ -1,15 +1,45 @@
-/*
- * flags_lm.c -- Luminary099 ids of the rendezvous flags whose
- * position differs between the vehicles, or which exist in one vehicle
- * only (id 0 = absent), see internal.h rz_vflag.
- * Source: Luminary099/FLAGWORD_ASSIGNMENTS.agc via agc_flags_lm.h.
- */
+/**********************************************************************
+ * FILE NAME: flags_lm.c
+ *
+ * PURPOSE:
+ *   Luminary099 flag ids of the rendezvous flags whose position differs
+ *   between the vehicles, or which exist in one vehicle only (id 0 =
+ *   absent); rz_vflag (internal.h) picks this table on the LM.
+ *
+ * AGC SOURCE:
+ *   Luminary099 FLAGWORD_ASSIGNMENTS.agc (flag word assignments), through
+ *   include/agc/core/flags_lm.h
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name          Description
+ *   ------------  ------------------------------------------------
+ *   agc_flag_bit  bit position of a flag id (consistency check)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "internal.h"
 
-/* rz_vflag_lm -- LM flag id for a vehicle-dependent rendezvous flag. */
+/**********************************************************************
+ * rz_vflag_lm -- LM flag id for a vehicle-dependent rendezvous flag.
+ * AGC: FLAGWORD_ASSIGNMENTS.agc (flag words; LM bit assignments)
+ *
+ * FUNCTION NAME: rz_vflag_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   f         rz_vflag_t  I    vehicle-dependent rendezvous flag (RZ_VF_*)
+ *
+ * RETURNS: agc_flag_id_t -- the LM flag id, 0 when the flag does not exist
+ *          in Luminary099
+ **********************************************************************/
 agc_flag_id_t rz_vflag_lm(rz_vflag_t f)
 {
     static const agc_flag_id_t ids[RZ_VF_COUNT] = {

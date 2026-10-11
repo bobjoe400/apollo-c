@@ -47,7 +47,7 @@
 #define PIN_DP_ONE   ((int64_t) 1 << AGC_DP_BITS) /* 2^28                  */
 #define PIN_DECROUND ((agc_dp_t) 02476)           /* 5 E-6, (0, 02476)      */
 #define PIN_VNDSPCON 0244                         /* .01 rounded up, 2^-14  */
-#define PIN_BINCON   10
+#define PIN_BINCON   10 /* BINCON DEC 10 */
 
 /* SGNTAB (p. 320): DSPTAB rel of the minus relay of R1, R2, R3; the plus
  * relay is the next word up.                                              */
@@ -73,10 +73,10 @@ static agc_status_t pin_sign_on(bool plus)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int minus_rel = k_sgntab[inrel - PIN_INREL_X]; /* - sign word */
-    int          off = plus ? minus_rel : minus_rel + 1; /* SGNOFF */
-    int          on  = plus ? minus_rel + 1 : minus_rel; /* SGNON */
-    agc_status_t st  = pin_11dspin(off, false);          /* status so far */
+    int          minus_rel = k_sgntab[inrel - PIN_INREL_X]; /* - sign word */
+    int          off       = plus ? minus_rel : minus_rel + 1; /* SGNOFF */
+    int          on        = plus ? minus_rel + 1 : minus_rel; /* SGNON */
+    agc_status_t st        = pin_11dspin(off, false);    /* status so far */
 
     if (st == AGC_STATUS_OK)
     {
@@ -208,8 +208,9 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
         f &= PIN_DP_ONE - 1;
         int16_t count = s->dspcount; /* DSPCOUNT of the next char */
 
-        s->dspcount = (count > 0) ? (int16_t) (count - 1) : count;
-        st          = pin_dspin(count, agc_dsky_relay_code(digit));
+        s->dspcount = (count > 0) ? /* next char */
+                      (int16_t) (count - 1) : count;
+        st = pin_dspin(count, agc_dsky_relay_code(digit));
     }
 
     pin_block_dspcount(PIN_VD1);
@@ -267,7 +268,7 @@ agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
 
     agc_status_t st = pin_dspsign(&v, negzero); /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 5) : st);
+    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 5) : st); /* if OK */
 }
 
 /**********************************************************************
@@ -291,7 +292,7 @@ agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
 
     agc_status_t st = pin_dspsign(&v, negzero); /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 2) : st);
+    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 2) : st); /* if OK */
 }
 
 /**********************************************************************
@@ -324,7 +325,7 @@ agc_status_t pin_dsp2dec(agc_dp_t v)
         st = pin_dspsign(&v, false);
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 10) : st);
+    return ((st == AGC_STATUS_OK) ? pin_dspdcwd1(v, 10) : st); /* if OK */
 }
 
 /**********************************************************************
@@ -349,7 +350,7 @@ agc_status_t pin_dspdecvn(int n)
     int32_t lword; /* L after MP by VNDSPCON */
 
     lword = (int32_t) (((int32_t) n * PIN_VNDSPCON) & (int32_t) PIN_POSMAX);
-    agc_dp_t f = (agc_dp_t) (lword << AGC_SP_BITS); /* MPAC = L, MPAC+1 = 0 */
+    agc_dp_t f = (agc_dp_t) (lword << AGC_SP_BITS); /* MPAC = L, 2^-28 */
 
     return (pin_dspdcwd1(f, 2));                      /* DSPDC2NR +3          */
 }
@@ -384,8 +385,9 @@ agc_status_t pin_dspoctwo(uint16_t w)
         int     digit = (int) ((w >> (3 * i)) & 7u); /* CYL x3, DSPMSK */
         int16_t count = s->dspcount; /* DSPCOUNT of the next char */
 
-        s->dspcount = ((count & 037) > 0) ? (int16_t) (count - 1) : count;
-        st          = pin_dspin(count, agc_dsky_relay_code(digit));
+        s->dspcount = ((count & 037) > 0) ? /* next char */
+                      (int16_t) (count - 1) : count;
+        st = pin_dspin(count, agc_dsky_relay_code(digit));
     }
 
     pin_block_dspcount(PIN_VD1); /* DSPLV        */
@@ -419,8 +421,9 @@ agc_status_t pin_dsp2bit(uint16_t w)
     {
         int16_t count = s->dspcount; /* DSPCOUNT of the next char */
 
-        s->dspcount = (count > 0) ? (int16_t) (count - 1) : count;
-        st          =
+        s->dspcount = (count > 0) ? /* next char */
+                      (int16_t) (count - 1) : count;
+        st =
             pin_dspin(count, agc_dsky_relay_code((int) ((w >> (3 * i)) & 7u)));
     }
 
@@ -508,8 +511,8 @@ agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx)
 
     pin_state_t *s        = pin_st(); /* pinball erasables */
     int16_t      save     = s->dspcount; /* DSPMMTEM             */
-    bool save_neg = s->dspcount_neg; /* DSPCOUNT blocked flag to restore */
-    agc_sp_t mm = agc_erase_modreg(); /* MODREG */
+    bool         save_neg = s->dspcount_neg; /* blocked flag */
+    agc_sp_t     mm       = agc_erase_modreg(); /* MODREG, unscaled */
 
     pin_set_dspcount(PIN_MD1);
     agc_status_t st = (mm >= 0) ? pin_dspdecvn(mm) : pin_2blank(); /* status */

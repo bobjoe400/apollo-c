@@ -280,7 +280,6 @@ agc_status_t agc_t4_optics_monitor(void); /* OPTMON                   */
 agc_status_t agc_t4_optics_drive(void);   /* OPTDRIVE                 */
 agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
 agc_status_t agc_t4_optics_reset(bool fresh); /* OPTIND/OPTMODES init     */
-agc_sp_t     agc_t4_optics_cmd(int which);    /* CDUTCMD(0)/CDUSCMD(1)    */
 uint16_t     agc_erase_optmodes(void);        /* OPTMODES (CM)            */
 void         agc_erase_set_optmodes(uint16_t v);
 agc_sp_t     agc_erase_optind(void); /* OPTIND (CM)              */

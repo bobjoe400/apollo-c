@@ -102,7 +102,7 @@ agc_status_t lm_dap_rateloop(void)
 /* SUBDIVDE +3 (p.1422): measured angle increment (DP at pi, also left in
  * DAPTEMP5,6) divided by 1/40 to a rate at pi/4; POSMAX/NEGMAX (45 deg/s)
  * if the divide would overflow.                                           */
-static agc_sp_t subdivde3(lm_dp_pair_t om)
+static agc_sp_t measured_increment(lm_dp_pair_t om)
 {
     if (om.hi != 0 && (int32_t) lm_dap_ccs_dim(om.hi) - RT_OCT630 > 0)
     {
@@ -125,7 +125,7 @@ static agc_sp_t subdivde3(lm_dp_pair_t om)
 static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
                         agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
 {
-    agc_sp_t rate = subdivde3(inc);
+    agc_sp_t rate = measured_increment(inc);
 
     *traped = lm_dap_sat((int32_t) *traped + rate - omega);
     lm_dp_pair_t e = {*err_hi, *err_lo};

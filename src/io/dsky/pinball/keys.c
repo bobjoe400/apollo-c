@@ -57,7 +57,7 @@
 #define PIN_ELRCODE  022u /* ELRCODE: error light reset key code */
 #define PIN_KEYS_MAX 64   /* longest key string agc_dsky_keys takes */
 /* DECON 2DEC 1 E-5 B14 = 2^14/10^5 = .16384 as a DP fraction (05174 13261). */
-#define PIN_DECON       ((int64_t) 43980465)
+#define PIN_DECON       ((int64_t) 43980465) /* 2^14/10^5 at 2^-28 */
 #define PIN_ERCON       0104u   /* ERCON: channel 11 bits 3, 7          */
 #define PIN_GLNOATT     0050u   /* GL+NOATT: gimbal lock, no att lamps  */
 #define PIN_RFAILS      0330u   /* RFAILS (LM): radar CDU and data fail */
@@ -97,7 +97,7 @@ static void pin_decend(int inrel)
         return;
     }
 
-    agc_dp_t frac  = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* DMP     */
+    agc_dp_t frac  = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* 2^-28 */
     bool     minus = (s->decbrnch & 3u) == 2u; /* minus sign keyed */
 
     s->xyz_frac[k]    = minus ? -frac : frac; /* DCS     */
@@ -205,9 +205,13 @@ static agc_status_t pin_num(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        uint8_t *reg; /* VERBREG or NOUNREG */
+        uint8_t *reg = &s_accumulate->nounreg; /* NOUNREG ...      */
 
-        reg = (inrel == PIN_INREL_VERB) ? &s_accumulate->verbreg : &s_accumulate->nounreg;
+        if (inrel == PIN_INREL_VERB)
+        {
+            reg = &s_accumulate->verbreg; /* ... or VERBREG */
+        }
+
         int v = (int) *reg * 10 + chr; /* new two-digit value */
 
         if (!AGC_ASSERT(v <= 99))
@@ -235,7 +239,7 @@ static agc_status_t pin_num(void)
     }
 
     return (pin_endnmtst(inrel));
-}
+} /* pin_num */
 
 /**********************************************************************
  * 89TEST (p. 316): 8 or 9 is accepted only in decimal.
@@ -399,8 +403,9 @@ static agc_status_t pin_sign_key(bool minus)
     /* Set dec comp bit to 1: bit 5 for R1, bit 4 for R2, bit 3 for R3;
      * low bits 1 (+) or 2 (-).                                          */
 
-    s->decbrnch =
-        (uint16_t) (s->decbrnch + (PIN_BIT7 >> inrel) + (minus ? 2u : 1u));
+    uint16_t sgn = minus ? 2u : 1u; /* DECBRNCH low bits: 2 -, 1 + */
+
+    s->decbrnch = (uint16_t) (s->decbrnch + (PIN_BIT7 >> inrel) + sgn);
 
     if (s->clpass >= 0)
     {
@@ -615,7 +620,8 @@ static agc_status_t pin_tstab(void)
         uint16_t w   = agc_erase_dsptab(i); /* DSPTAB word */
         uint16_t mag = (uint16_t) (pin_ones_mag(w) | PIN_BIT12); /* magnitude */
 
-        agc_erase_set_dsptab(i, pin_ones_negative(w) ? pin_ones_neg(mag) :
+        agc_erase_set_dsptab(i, pin_ones_negative(w) ? /* keep the sign */
+                             pin_ones_neg(mag) :
                              mag);
         st = AGC_STATUS_OK;
         agc_relint();
@@ -686,7 +692,7 @@ agc_status_t pin_error_key(void)
     agc_erase_set_sfail(0);
 
     return (st);
-}
+} /* pin_error_key */
 
 /* ---- CHARIN (p. 315) -------------------------------------------------- */
 
@@ -712,7 +718,7 @@ static agc_status_t pin_charin2(uint8_t code)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->chr = (code <= 7u) ? code : 0u;
+    s->chr = (code <= 7u) ? code : 0u; /* CHAR: digit keys only */
 
     switch (code)
     {
@@ -747,11 +753,11 @@ static agc_status_t pin_charin2(uint8_t code)
             return (pin_enter()); /* ENTER                  */
         case 036:
             /* CLEAR                  */
-            /* CLEAR. Pass 0 blanks the register being loaded; a higher pass backs
-             * the load up one register (CLPASHI: REQRET +3, verb - 1).              */
+            /* CLEAR. Pass 0 blanks the register being loaded; a higher pass
+             * backs the load up one register (CLPASHI: REQRET +3, verb - 1). */
         {
             pin_state_t *s_key = pin_st(); /* pinball erasables */
-            /* Do not change DSPCOUNT because may later fail LEGALTST.            */
+            /* Do not change DSPCOUNT because may later fail LEGALTST. */
             int inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
 
             if (!AGC_ASSERT(inrel >= 0))
@@ -761,7 +767,7 @@ static agc_status_t pin_charin2(uint8_t code)
 
             if (s_key->clpass > 0)
             {     /* CLPASHI      */
-                inrel = (inrel > 0) ? inrel - 1 : 0;
+                inrel = (inrel > 0) ? inrel - 1 : 0; /* previous register */
 
                 if (!pin_legaltst(inrel))
                 {
@@ -798,13 +804,13 @@ static agc_status_t pin_charin2(uint8_t code)
             }
 
             return (st);
-        }
+        } /* end case 036 (CLEAR) */
         case 037:
             return (pin_nvcom(false)); /* NOUN                   */
         default:
             return (pin_charalrm());
-    }
-}
+    } /* end switch (code) */
+} /* pin_charin2 */
 
 /**********************************************************************
  * AGC: CHARIN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 315)
@@ -1067,8 +1073,8 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 
     pin_lodsampt();
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT); /* UPACT on */
-    uint16_t low = (uint16_t) (inlink & PIN_LOW5); /* C, bits 1-5 */
-    uint16_t mid = (uint16_t) ((inlink >> 5) & PIN_LOW5); /* NOT-C, bits 6-10 */
+    uint16_t low  = (uint16_t) (inlink & PIN_LOW5); /* C, bits 1-5 */
+    uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5); /* NOT-C */
     uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5); /* C, bits 11-15 */
 
     if (mid != (uint16_t) (~low & PIN_LOW5) || high != low)
@@ -1085,7 +1091,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
         agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* CLUPLOCK */
         agc_status_t st = AGC_STATUS_OK; /* status so far */
 
-        return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st);
+        return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st); /* if OK */
     }
 
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_UPLOCKFL))
@@ -1124,7 +1130,7 @@ agc_status_t agc_dsky_key(uint8_t code)
     agc_flag_set((agc_flag_id_t) AGC_FLAG_DSKYFLAG);
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? pin_charin(code) : st);
+    return ((st == AGC_STATUS_OK) ? pin_charin(code) : st); /* if OK */
 }
 
 /**********************************************************************
@@ -1225,7 +1231,8 @@ agc_status_t agc_dsky_keys(const char *seq)
 
         uint8_t code = pin_key_of_char(seq[i]); /* 5-bit key code */
 
-        st = (code != 0u) ? agc_dsky_key(code) : AGC_STATUS_BAD_ARG;
+        st = (code != 0u) ? /* unknown char */
+             agc_dsky_key(code) : AGC_STATUS_BAD_ARG;
     }
 
     return (st);

@@ -90,7 +90,7 @@ static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_tp_t t = agc_tp_add(ip, agc_navaux_tp_from_cs(t_cs), tephem);
+    agc_tp_t t = agc_tp_add(ip, agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14), tephem);
 
     t = agc_tp_add(ip, eph->timemo, -t); /* DCOMP TAD      */
     t = -t;                              /* DCOMP          */
@@ -100,28 +100,7 @@ static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
         return (AGC_STATUS_OVERFLOW); /* outside the ephemeris fit span   */
     }
 
-    /* SL 16: 2^42 cs -> 2^26 cs; done as TP -> DP (2^28 cs), SL 2.       */
-    /* Inverse of agc_navaux_tp_from_cs (SL 14 of a TP time into DP). */
-    agc_tp_t t_tp = t;
-
-    if (!AGC_ASSERT(agc_navaux_tp_ok(t_tp)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((t_tp <= AGC_DP_MAX) && (t_tp >= AGC_DP_MIN)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_dp_t t_from_tp = (agc_dp_t) t_tp;
-
-    if (!AGC_ASSERT(agc_navaux_dp_ok(t_from_tp)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    *t26 = agc_dp_shl(ip, t_from_tp, 2);
+    *t26 = agc_tp_to_dp(agc_tp_shift(ip, t, 16)); /* SL 16: 2^26 cs */
 
     return (AGC_STATUS_OK);
 }
@@ -203,7 +182,8 @@ static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph,
         return (agc_vec_zero());
     }
 
-    agc_dp_t  ang = agc_dp_mul(ip, t26, eph->omegaes); /* revs 2^0       */
+    /* PUSH DMP OMEGAES / PUSH COS: the angle is used as its top words.  */
+    agc_dp_t  ang = agc_dp_mul_trunc(t26, eph->omegaes); /* revs 2^0    */
     agc_vec_t c   = agc_vec_scale(ip, eph->reso, agc_dp_cos(ip, ang)); /* 2^39 */
     agc_dp_t  s   = agc_dp_sin(ip, ang); /* sin/2          */
     agc_vec_t u   = agc_vec_unit(ip, eph->reso, NULL, NULL);
@@ -368,10 +348,9 @@ static const lm_term_t LM_TERM[LM_NTERM] = {
 };
 
 /* POSITB (LM p. 985-986): one periodic correction,
- * MOD sin(2 pi (T FREQ) + ARG): DMP*, SL 8 (wrap), DAD* (wrap), SIN, DMP*.
- * T in days scale 2^9; result revs scale 2^0.
- * DEVIATION: the product is kept as exact TP through SL 8 and the SL/DAD
- * overflow is modelled as wrap mod 1 rev (agc_navaux_rev_*), as NEWANGLE. */
+ * MOD sin(2 pi (T FREQ) + ARG): DMP*, SL 8 on the TP (wraps mod 1 rev),
+ * DAD* onto its top two words (wraps), SIN, DMP* (the caller's DAD uses
+ * the top two words: truncated).  T in days scale 2^9; result revs 2^0.  */
 static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
 {
     if (!AGC_ASSERT(ip != NULL))
@@ -384,17 +363,22 @@ static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
         return (0);
     }
 
-    agc_dp_t x =
-        agc_navaux_rev_tp_shl(agc_dp_mul_tp(timep, LM_TERM[k].freq), 8);
+    agc_tp_t xt = agc_tp_shift(ip, agc_dp_mul_tp(timep, LM_TERM[k].freq), 8);
+    agc_dp_t x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_TERM[k].arg);
 
-    x = agc_navaux_rev_add(x, LM_TERM[k].arg);
-
-    return (agc_dp_mul(ip, agc_dp_sin(ip, x), LM_TERM[k].mod));
+    return (agc_dp_mul_trunc(agc_dp_sin(ip, x), LM_TERM[k].mod));
 }
 
-/* POSITD (LM p. 986): ANGLE0 + RATE T (SL 5, wrap) - GTMP.               */
-static agc_dp_t ephem_lm_angle(agc_dp_t timep, int j, agc_dp_t gtmp)
+/* POSITD (LM p. 986): ANGLE0 + RATE T - GTMP, revs 2^0: DMP*, SL 5 on
+ * the TP, DAD* and DSU on its top two words (all wrap mod 1 rev).        */
+static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j,
+                               agc_dp_t gtmp)
 {
+    if (!AGC_ASSERT(ip != NULL))
+    {
+        return (0);
+    }
+
     if (!AGC_ASSERT((j >= 0) && (j < LM_NANGLE)))
     {
         return (0);
@@ -405,11 +389,10 @@ static agc_dp_t ephem_lm_angle(agc_dp_t timep, int j, agc_dp_t gtmp)
         return (0);
     }
 
-    agc_dp_t x = agc_navaux_rev_tp_shl(agc_dp_mul_tp(timep, LM_RATE[j]), 5);
+    agc_tp_t xt = agc_tp_shift(ip, agc_dp_mul_tp(timep, LM_RATE[j]), 5);
+    agc_dp_t x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_ANGLE0[j]); /* DAD* */
 
-    x = agc_navaux_rev_add(x, LM_ANGLE0[j]); /* DAD* RATESP+6  */
-
-    return (agc_navaux_rev_add(x, agc_dp_neg(gtmp)));   /* DSU GTMP       */
+    return (agc_dp_sub(ip, x, gtmp)); /* DSU GTMP       */
 }
 
 /* VDEF then MXV KONMAT, UNIT (LM p. 986): (x, y, z) half-sines/cosines
@@ -462,19 +445,19 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
     }
 
     agc_tp_t t =
-        agc_tp_add(ip, agc_navaux_tp_from_cs(t_cs), tephem);   /* SR TAD */
+        agc_tp_add(ip, agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14), tephem);   /* SR TAD */
     agc_dp_t timep = agc_dp_div(ip, agc_tp_to_dp(t), CSTODAY); /* DDV    */
     /* 1st pass (X2 = 0): LOM with the A and B terms (FREEFLAG loop).      */
     agc_dp_t g = ephem_lm_term(ip, timep, 0);           /* GTMP = 0 + A term */
 
     g = agc_dp_add(ip, ephem_lm_term(ip, timep, 1), g); /* DAD GTMP: + B    */
-    agc_dp_t lom = ephem_lm_angle(timep, 0, g);
+    agc_dp_t lom = ephem_lm_angle(ip, timep, 0, g);
     /* 2nd pass (X2 = -2): LOS with the C term.                            */
-    agc_dp_t los = ephem_lm_angle(timep, 1, ephem_lm_term(ip, timep, 2));
+    agc_dp_t los = ephem_lm_angle(ip, timep, 1, ephem_lm_term(ip, timep, 2));
     /* 3rd pass (X2 = -4, POSITE): LON, no periodic term.                 */
-    agc_dp_t lon = ephem_lm_angle(timep, 2, 0);
+    agc_dp_t lon = ephem_lm_angle(ip, timep, 2, 0);
     /* POSITF: moon then sun.                                              */
-    agc_dp_t dl = agc_navaux_rev_add(lom, agc_dp_neg(lon)); /* DSU    */
+    agc_dp_t dl = agc_dp_sub(ip, lom, lon); /* DLOAD DSU, wraps */
 
     *vmoon = ephem_lm_konmat(ip, agc_dp_cos(ip, lom), agc_dp_sin(ip, lom),
                              agc_dp_sin(ip, dl));

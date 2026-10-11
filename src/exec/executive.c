@@ -1,16 +1,43 @@
-/*
- * executive.c -- the AGC cooperative EXECUTIVE.
+/**********************************************************************
+ * FILE NAME: executive.c
  *
- * Source: EXECUTIVE.agc, Comanche055 pp. 1208-1220, Luminary099 pp. 1103-1116.
- * The two listings are the same program except:
- *   - core sets: Comanche NO.CORES = DEC 6 -> 7 core sets; Luminary
- *     NO.CORES = DEC 7 -> 8 core sets (EJSCAN also tests PRIORITY +84D);
- *   - overflow aborts: Comanche TC BAILOUT, Luminary TC BAILOUT1 (which also
- *     records the caller's address in ALMCADR). Same codes 1201 / 1202.
+ * PURPOSE:
+ *   The AGC cooperative EXECUTIVE: job creation (NOVAC, FINDVAC), job
+ *   change (CHANG1, CHANJOB, NUCHANG2), sleep and wake (JOBSLEEP,
+ *   JOBWAKE), priority change (PRIOCHNG), end of job (ENDOFJOB, EJSCAN)
+ *   and the idle loop (DUMMYJOB, ADVAN, NUDIRECT).
  *
- * ---------------------------------------------------------------------
- * How the AGC executive is modelled
- * ---------------------------------------------------------------------
+ * AGC SOURCE:
+ *   Comanche055 EXECUTIVE.agc pp. 1208-1220
+ *   Luminary099 EXECUTIVE.agc pp. 1103-1116 (differs: NO.CORES = DEC 7,
+ *   8 core sets, EJSCAN also tests PRIORITY +84D; overflow aborts go
+ *   through BAILOUT1, which records the caller in ALMCADR; same 1201,
+ *   1202)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DSALMOUT      channel   O    bits           channel 11 bit 2, COMP
+ *                                               ACTY lamp (agc_chan_or/and)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_dispatch_job      DTCB to the job's 2CADR (dispatch.c)
+ *   agc_bailout           BAILOUT 1201 / 1202 (alarm.c)
+ *   agc_ccshole           CCSHOLE, POODOO 1103 (alarm.c)
+ *   agc_exec_service_restart  ENEMA after a BAILOUT in a job (alarm.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   BAILOUT 1201 (no VAC area), 1202 (no core set); CCSHOLE (POODOO
+ *   1103) on an impossible NEWJOB; AGC_STATUS_BAD_ARG on a failed
+ *   precondition.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Single-threaded host; INHINT/RELINT are counted (interrupts.c). Both
+ *   vehicles (agc_state_vehicle()).
+ *
+ * NOTES (how the AGC executive is modelled):
  * The AGC keeps 7 (CSM) or 8 (LM) "core sets" of 12 words: MPAC (7), LOC,
  * BANKSET, PUSHLOC and PRIORITY. Core set 0 always belongs to the job that
  * is running. PRIORITY holds the priority in bits 10-14 and, in its low 9
@@ -52,7 +79,7 @@
  * saved by the executive: a C job keeps its working data in locals (lost
  * at a sleep/yield, so a job that continues later stores what it needs in
  * module erasables) -- the VAC area is only accounted for, not used.
- */
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
@@ -64,7 +91,7 @@
  * model replaces the address by its rank: NOVAC (FAKEPRET, an address in
  * the core-set area) is below every VAC area, and VAC1 < VAC2 < ... < VAC5
  * in erasable, which is all the comparisons in EJ1 / SETLOC depend on.   */
-#define EXEC_PRIO_SHIFT  9
+#define EXEC_PRIO_SHIFT  9 /* PRIORITY bits 10-14: priority << 9 */
 #define EXEC_PRIO_MAX    ((agc_prio_t) 037) /* PRIO37                  */
 #define EXEC_NOVAC_RANK  0                  /* FAKEPRET                */
 #define EXEC_NEWJOB_IDLE (-1)               /* NEWJOB = -0 (DUMMYJOB)  */
@@ -75,7 +102,7 @@ typedef struct core_set
     agc_prio_t       prio;  /* PRIORITY bits 10-14                     */
     int              vac;   /* -1 NOVAC, else VAC area 0..4            */
     agc_job_id_t     loc;   /* LOC (the job's 2CADR)                   */
-    agc_sp_t         arg;   /* MPAC as loaded by the creator           */
+    agc_sp_t         arg;   /* MPAC as loaded by the creator, B0 word  */
 } core_set_t;
 
 static core_set_t core[AGC_EXEC_MAX_JOBS];     /* PRIORITY, LOC, ... */
@@ -86,10 +113,17 @@ static bool       yielded;                     /* CHANG1 this pass   */
 static bool       in_job;                      /* job body running   */
 static uint16_t   generation;                  /* STARTSB2 count     */
 
-/* NO.CORES + 1 for the vehicle being modelled. */
+/**********************************************************************
+ * NO.CORES + 1 (EXECUTIVE.agc C p.1211 / L p.1106): the number of core
+ * sets of the vehicle being modelled (Comanche 7, Luminary 8).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- core sets of the vehicle; 0 on a failed precondition
+ **********************************************************************/
 int agc_exec_core_sets(void)
 {
-    int n = AGC_EXEC_CORE_SETS_CSM;
+    int n = AGC_EXEC_CORE_SETS_CSM; /* NO.CORES + 1, CSM unless LM */
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
@@ -109,8 +143,18 @@ int agc_exec_core_sets(void)
     return (n);
 }
 
-/* The signed priority word of core set i as CCS PRIORITY sees it:
- * positive for an active job, negative for a sleeping one, 0 (-0) free. */
+/**********************************************************************
+ * CCS PRIORITY (EXECUTIVE.agc C p.1218 / L p.1113): the signed priority
+ * word of core set i: positive for an active job, negative for a
+ * sleeping one, 0 (-0) for a free core set. The low 9 bits rank the
+ * VAC area (NOVAC FAKEPRET 0110 < VAC1 0401 < ... < VAC5 0661).
+ *
+ * ARGUMENTS:
+ *   i -- core set index, 0..AGC_EXEC_MAX_JOBS-1
+ *
+ * RETURNS: int32_t -- priority word (priority << 9) + VAC rank, signed by state;
+ *          0 on a failed precondition
+ **********************************************************************/
 static int32_t prio_word(int i)
 {
     if (!AGC_ASSERT(i >= 0 && i < AGC_EXEC_MAX_JOBS))
@@ -118,8 +162,8 @@ static int32_t prio_word(int i)
         return (0);
     }
 
-    const core_set_t *c = &core[i];
-    int32_t           w =
+    const core_set_t *c = &core[i]; /* core set i */
+    int32_t           w = /* the priority word, before the sign */
         ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1);
 
     if (!AGC_ASSERT(c->vac >= -1 && c->vac < AGC_EXEC_MAX_VACS))
@@ -143,13 +187,19 @@ static int32_t prio_word(int i)
     return (w);
 }
 
+/**********************************************************************
+ * AGC: none -- activity_light
+ *
+ * ARGUMENTS:
+ *   on -- true: lamp on (WOR), false: lamp off (WAND)
+ **********************************************************************/
 static void activity_light(bool on)
 {
     /* CAF TWO / WOR DSALMOUT (NUDIRECT, NUCHANG2) and CS TWO / WAND
      * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2. The
      * WAND mask is the 15-bit complement of bit 2 (077775).             */
     _Static_assert(AGC_CH011_COMPACT == 000002, "AGC constant");
-    _Static_assert((AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT) == 077775u,
+    _Static_assert((AGC_CHAN_MASK & ~(unsigned int) AGC_CH011_COMPACT) == 077775u,
                    "CS TWO");
 
     if (on)
@@ -160,7 +210,7 @@ static void activity_light(bool on)
     {
         agc_chan_and(
             AGC_CHAN_DSALMOUT,
-            (uint16_t) (AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT));
+            (uint16_t) (AGC_CHAN_MASK & ~(unsigned int) AGC_CH011_COMPACT));
     }
 
     if (!AGC_ASSERT(((agc_chan_read(AGC_CHAN_DSALMOUT) &
@@ -170,8 +220,12 @@ static void activity_light(bool on)
     }
 }
 
-/* STARTSB2 (FRESH_START_AND_RESTART, C p.191 / L p.221): make all core
- * sets and VAC areas available, NEWJOB = -0.                           */
+/**********************************************************************
+ * STARTSB2 (FRESH_START_AND_RESTART, C p.191 / L p.221): make all core
+ * sets and VAC areas available, NEWJOB = -0.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void exec_clear_tables(void)
 {
     for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
@@ -204,6 +258,15 @@ void exec_clear_tables(void)
     }
 }
 
+/**********************************************************************
+ * Count of STARTSB2 passes (FRESH_START_AND_RESTART.agc C p.191 /
+ * L p.221): a caller that sees it change knows the job and task tables
+ * were re-initialised under it.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint16_t -- the count (wraps at 2^16); 0 on a failed precondition
+ **********************************************************************/
 uint16_t exec_restart_generation(void)
 {
     if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
@@ -219,6 +282,14 @@ uint16_t exec_restart_generation(void)
     return (generation);
 }
 
+/**********************************************************************
+ * AGC: none -- Priority of the job in core set 0 (PRIORITY bits 10-14).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- priority number 1..037, or -1 when idle (NEWJOB = -0) or
+ *          core set 0 is not active
+ **********************************************************************/
 int exec_running_job_prio(void)
 {
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
@@ -239,6 +310,14 @@ int exec_running_job_prio(void)
     return ((int) core[0].prio);
 }
 
+/**********************************************************************
+ * Executive power-on: the STARTSB2 part of FRESH_START_AND_RESTART.agc
+ * (C p.191 / L p.221) for the core sets and VAC areas, activity light off.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
+ **********************************************************************/
 agc_status_t agc_exec_init(void)
 {
     exec_clear_tables();
@@ -257,9 +336,14 @@ agc_status_t agc_exec_init(void)
     return (AGC_STATUS_OK);
 }
 
-/* SETLOC (C p.1212 / L p.1107): compare the new priority word with that
+/**********************************************************************
+ * SETLOC (C p.1212 / L p.1107): compare the new priority word with that
  * of core set NEWJOB (index 0 when NEWJOB is +-0) and set NEWJOB to the
- * new core set if the new job is strictly higher (BZMF ENDFIND).       */
+ * new core set if the new job is strictly higher (BZMF ENDFIND).
+ *
+ * ARGUMENTS:
+ *   i -- core set index, 0..AGC_EXEC_MAX_JOBS-1
+ **********************************************************************/
 static void setloc_compare(int i)
 {
     if (!AGC_ASSERT(i >= 0 && i < agc_exec_core_sets()))
@@ -267,7 +351,7 @@ static void setloc_compare(int i)
         return;
     }
 
-    int idx = (newjob > 0) ? newjob : 0;
+    int idx = (newjob > 0) ? newjob : 0; /* INDEX NEWJOB: +-0 index core set 0 */
 
     if (!AGC_ASSERT(idx < AGC_EXEC_MAX_JOBS))
     {
@@ -280,9 +364,16 @@ static void setloc_compare(int i)
     }
 }
 
-/* SPECTEST (C p.1212 / L p.1107): the job went into core set 0. With
+/**********************************************************************
+ * SPECTEST (C p.1212 / L p.1107): the job went into core set 0. With
  * NEWJOB = -0 (idle) it becomes the running job (NEWJOB = +0); with a
- * change pending it is compared as in SETLOC. +0 is a CCS hole.        */
+ * change pending it is compared as in SETLOC. +0 is a CCS hole.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the CCSHOLE (POODOO 1103) status when NEWJOB
+ *          is +0 or negative-non-zero; BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t spectest(void)
 {
     if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
@@ -307,9 +398,19 @@ static agc_status_t spectest(void)
     return (AGC_STATUS_OK);
 }
 
-/* NOVAC2 / NOVAC3 / CORFOUND / NEXTCORE (C pp.1211-1212, L pp.1106-1107):
+/**********************************************************************
+ * NOVAC2 / NOVAC3 / CORFOUND / NEXTCORE (C pp.1211-1212, L pp.1106-1107):
  * find a free core set (PRIORITY = -0) scanning from core set 0 up, load
- * priority and LOC, and decide about NEWJOB. No core set: BAILOUT 1202.  */
+ * priority and LOC, and decide about NEWJOB. No core set: BAILOUT 1202.
+ *
+ * ARGUMENTS:
+ *   prio -- job priority number, 1..037 (PRIOnn >> 9)
+ *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
+ *   vac -- VAC area claimed (0..4), or -1 for NOVAC
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAILOUT (1202) when no core set
+ *          is free; BAD_ARG on a failed precondition
+ **********************************************************************/
 static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
 {
     if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) ||
@@ -318,8 +419,8 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int n     = agc_exec_core_sets();
-    int found = -1;
+    int n     = agc_exec_core_sets(); /* core sets to scan */
+    int found = -1; /* first free core set, -1 none */
 
     for (int i = 0; i < n && found < 0; i++)
     {
@@ -351,8 +452,17 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
     return (AGC_STATUS_OK);
 }
 
-/* NOVAC (C p.1208 / L p.1103): enter a basic job that needs no VAC area.
- * prio is the priority number (PRIOnn >> 9).                           */
+/**********************************************************************
+ * NOVAC (C p.1208 / L p.1103): enter a basic job that needs no VAC area.
+ * prio is the priority number (PRIOnn >> 9).
+ *
+ * ARGUMENTS:
+ *   prio -- job priority number, 1..037 (PRIOnn >> 9)
+ *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAILOUT (1202) when no core set
+ *          is free; BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job)
 {
     if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) ||
@@ -362,16 +472,25 @@ agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job)
     }
 
     agc_inhint();
-    agc_status_t st = novac2(prio, job, -1);
+    agc_status_t st = novac2(prio, job, -1); /* NOVAC2 outcome */
 
     agc_relint();
 
     return (st);
 }
 
-/* FINDVAC / FINDVAC2 / VACFOUND (C pp.1208,1211 / L pp.1103,1106): claim
+/**********************************************************************
+ * FINDVAC / FINDVAC2 / VACFOUND (C pp.1208,1211 / L pp.1103,1106): claim
  * the first free VAC area (VAC1USE..VAC5USE in order), then NOVAC2.
- * No VAC area: BAILOUT 1201.                                           */
+ * No VAC area: BAILOUT 1201.
+ *
+ * ARGUMENTS:
+ *   prio -- job priority number, 1..037 (PRIOnn >> 9)
+ *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAILOUT (1201 no VAC area, 1202
+ *          no core set); BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
 {
     if (!AGC_ASSERT(prio >= 1 && prio <= EXEC_PRIO_MAX) ||
@@ -381,7 +500,7 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
     }
 
     agc_inhint();
-    int vac = -1;
+    int vac = -1; /* first free VAC area, -1 none */
 
     for (int v = 0; v < AGC_EXEC_MAX_VACS && vac < 0; v++)
     {
@@ -391,7 +510,7 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
         }
     }
 
-    agc_status_t st;
+    agc_status_t st; /* FINDVAC outcome */
 
     if (vac < 0)
     {
@@ -408,8 +527,16 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
     return (st);
 }
 
-/* "LOCCTR is left set at this core set if the caller wants to load any
- * MPAC registers": store the word the new job finds in its MPAC (A/L). */
+/**********************************************************************
+ * NOVAC / FINDVAC caller convention (EXECUTIVE.agc C p.1212 / L p.1107):
+ * "LOCCTR is left set at this core set if the caller wants to load any
+ * MPAC registers": store the word the new job finds in its MPAC.
+ *
+ * ARGUMENTS:
+ *   arg -- the word the new job finds in its MPAC
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when LOCCTR names no active job
+ **********************************************************************/
 agc_status_t agc_exec_set_new_job_arg(agc_sp_t arg)
 {
     if (!AGC_ASSERT(locctr >= 0 && locctr < AGC_EXEC_MAX_JOBS))
@@ -427,8 +554,13 @@ agc_status_t agc_exec_set_new_job_arg(agc_sp_t arg)
     return (AGC_STATUS_OK);
 }
 
-/* CHANJOB (C p.1213 / L p.1108): swap core set 0 with core set NEWJOB and
- * set NEWJOB to +0. MPAC/OVFIND/PUSHLOC swapping is not modelled.      */
+/**********************************************************************
+ * CHANJOB (C p.1213 / L p.1108): swap core set 0 with core set NEWJOB and
+ * set NEWJOB to +0. MPAC/OVFIND/PUSHLOC swapping is not modelled.
+ *
+ * ARGUMENTS:
+ *   k -- core set to change to (NEWJOB), 1..core sets-1
+ **********************************************************************/
 static void chanjob(int k)
 {
     if (!AGC_ASSERT(k > 0 && k < agc_exec_core_sets()))
@@ -436,7 +568,7 @@ static void chanjob(int k)
         return;
     }
 
-    core_set_t tmp = core[0];
+    core_set_t tmp = core[0]; /* core set 0 during the swap */
 
     core[0] = core[k];
     core[k] = tmp;
@@ -448,9 +580,16 @@ static void chanjob(int k)
     }
 }
 
-/* EJSCAN / EJ1 / EJ2 (C pp.1218-1219 / L pp.1113-1115): find the core set
+/**********************************************************************
+ * EJSCAN / EJ1 / EJ2 (C pp.1218-1219 / L pp.1113-1115): find the core set
  * (1..n-1) with the highest active priority word strictly above `floor`
- * (BUF +1 holds -floor; -0 for ENDOFJOB / JOBSLEEP). Returns -1 if none.*/
+ * (BUF +1 holds -floor; -0 for ENDOFJOB / JOBSLEEP). Returns -1 if none.
+ *
+ * ARGUMENTS:
+ *   floor -- priority word to beat (-BUF +1); 0 for ENDOFJOB/JOBSLEEP
+ *
+ * RETURNS: int -- index of the best core set, or -1 when none is active
+ **********************************************************************/
 static int ejscan(int32_t floor)
 {
     if (!AGC_ASSERT(floor >= 0))
@@ -458,13 +597,13 @@ static int ejscan(int32_t floor)
         return (-1);
     }
 
-    int     n    = agc_exec_core_sets();
-    int     best = -1;
-    int32_t high = floor;
+    int     n    = agc_exec_core_sets(); /* core sets to scan */
+    int     best = -1; /* best core set so far, -1 none */
+    int32_t high = floor; /* -BUF +1: priority word to beat */
 
     for (int i = 1; i < n; i++)
     {
-        int32_t w = prio_word(i);
+        int32_t w = prio_word(i); /* priority word of core set i */
 
         if (w > 0 && w - high > 0)
         { /* EJ1: CCS of new-old  */
@@ -481,10 +620,16 @@ static int ejscan(int32_t floor)
     return (best);
 }
 
-/* After ENDOFJOB or JOBSLEEP: change to the best waiting job or idle.  */
+/**********************************************************************
+ * EJSCAN tail (EXECUTIVE.agc C p.1219 / L p.1115): after ENDOFJOB or
+ * JOBSLEEP change to the best waiting job (CHANJOB -2) or idle
+ * (DUMMYJOB: NEWJOB = -0, activity light off).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void ejscan_change(void)
 {
-    int best = ejscan(0);
+    int best = ejscan(0); /* best waiting core set, -1 none */
 
     if (!AGC_ASSERT(best != 0))
     {
@@ -507,8 +652,12 @@ static void ejscan_change(void)
     }
 }
 
-/* ENDOFJOB / ENDJOB1 (C pp.1210,1218 / L pp.1105,1113): release core set
- * 0 and, for a FINDVAC job, its VAC area; then EJSCAN.                 */
+/**********************************************************************
+ * ENDOFJOB / ENDJOB1 (C pp.1210,1218 / L pp.1105,1113): release core set
+ * 0 and, for a FINDVAC job, its VAC area; then EJSCAN.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void end_of_job(void)
 {
     if (!AGC_ASSERT(core[0].state != AGC_CORE_FREE))
@@ -527,9 +676,14 @@ static void end_of_job(void)
     ejscan_change();
 }
 
-/* JOBSLEEP (C p.1210 / L p.1105): the running job goes dormant; it will
+/**********************************************************************
+ * JOBSLEEP (C p.1210 / L p.1105): the running job goes dormant; it will
  * continue as `wake_as` when JOBWAKE names that id. The EJSCAN that the
- * AGC does at once (JOBSLP1) happens when the job body returns.        */
+ * AGC does at once (JOBSLP1) happens when the job body returns.
+ *
+ * ARGUMENTS:
+ *   wake_as -- job id the job continues as when woken (its new LOC)
+ **********************************************************************/
 void agc_exec_job_sleep(agc_job_id_t wake_as)
 {
     if (!AGC_ASSERT(wake_as != AGC_JOB_NONE))
@@ -546,9 +700,17 @@ void agc_exec_job_sleep(agc_job_id_t wake_as)
     core[0].state = AGC_CORE_SLEEPING; /* CS PRIORITY         */
 }
 
-/* JOBWAKE / JOBWAKE2-4 / WAKETEST (C pp.1210,1216 / L pp.1105,1111): find
+/**********************************************************************
+ * JOBWAKE / JOBWAKE2-4 / WAKETEST (C pp.1210,1216 / L pp.1105,1111): find
  * the sleeping job whose LOC is `job`, make it active again and treat it
- * like a new job for NEWJOB. Not found: LOCCTR = -1, NOT_FOUND.        */
+ * like a new job for NEWJOB. Not found: LOCCTR = -1, NOT_FOUND.
+ *
+ * ARGUMENTS:
+ *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no job sleeps at `job`; the
+ *          CCSHOLE status from SPECTEST; BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_job_wake(agc_job_id_t job)
 {
     if (!AGC_ASSERT(job != AGC_JOB_NONE))
@@ -557,8 +719,8 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     }
 
     agc_inhint();
-    int n     = agc_exec_core_sets();
-    int found = -1;
+    int n     = agc_exec_core_sets(); /* core sets to scan */
+    int found = -1; /* sleeping core set at `job`, -1 none */
 
     for (int i = 0; i < n && found < 0; i++)
     {
@@ -568,7 +730,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
         }
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* outcome of the wake */
 
     if (found < 0)
     {
@@ -598,14 +760,19 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     }
 
     return (st);
-}
+} /* agc_exec_job_wake */
 
-/* JOBWAKE2 (C p.1216 / L p.1111): "CS ONE / TS LOCCTR -- EXIT IF SLEEPING
+/**********************************************************************
+ * JOBWAKE2 (C p.1216 / L p.1111): "CS ONE / TS LOCCTR -- EXIT IF SLEEPING
  * JOB NOT FOUND". For callers to whom a job that already went is no
- * error; any other failure (CCSHOLE) is a programming error.            */
+ * error; any other failure (CCSHOLE) is a programming error.
+ *
+ * ARGUMENTS:
+ *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
+ **********************************************************************/
 void agc_exec_job_wake_if_asleep(agc_job_id_t job)
 {
-    const agc_status_t st = agc_exec_job_wake(job);
+    const agc_status_t st = agc_exec_job_wake(job); /* JOBWAKE outcome */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
     {
@@ -613,8 +780,18 @@ void agc_exec_job_wake_if_asleep(agc_job_id_t job)
     }
 }
 
-/* JOBWAKE, then INDEX LOCCTR / TS LOC (pinball RECAL2 and XCHNYLOC): the
- * job that slept at `loc` resumes at `new_loc`.                        */
+/**********************************************************************
+ * JOBWAKE, then INDEX LOCCTR / TS LOC (EXECUTIVE.agc C p.1216 /
+ * L p.1111, as used by pinball RECAL2 and XCHNYLOC): the job that slept
+ * at `loc` resumes at `new_loc`.
+ *
+ * ARGUMENTS:
+ *   loc -- LOC of the sleeping job to wake
+ *   new_loc -- job id it resumes as
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no job sleeps at `loc`;
+ *          BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
 {
     if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
@@ -622,7 +799,7 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_exec_job_wake(loc);
+    agc_status_t st = agc_exec_job_wake(loc); /* JOBWAKE outcome */
 
     if (st != AGC_STATUS_OK)
     {
@@ -639,8 +816,17 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
     return (AGC_STATUS_OK);
 }
 
-/* MKVAC (marking system, SXTMARK / AOTMARK): claim the first free VAC
- * area without starting a job (the CCS VACnUSE loop of FINDVAC).       */
+/**********************************************************************
+ * MKVAC (SXTMARK.agc / AOTMARK.agc, the CCS VACnUSE loop of FINDVAC2,
+ * EXECUTIVE.agc C p.1211 / L p.1106): claim the first free VAC area
+ * without starting a job.
+ *
+ * ARGUMENTS:
+ *   vac_index -- VAC area index, 0..4
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_FULL when every VAC area is in use
+ *          (*vac_index = -1); BAD_ARG on a failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_vac_claim(int *vac_index)
 {
     if (!AGC_ASSERT(vac_index != 0))
@@ -664,10 +850,18 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((*vac_index < 0) ? AGC_STATUS_FULL : AGC_STATUS_OK);
+    return ((*vac_index < 0) ? AGC_STATUS_FULL : AGC_STATUS_OK); /* FULL when no VAC area was free */
 }
 
-/* Give a claimed VAC area back (TS VACnUSE with its address).         */
+/**********************************************************************
+ * Give a claimed VAC area back: TS VACnUSE with its own address
+ * (ENDJOB1, EXECUTIVE.agc C p.1218 / L p.1113).
+ *
+ * ARGUMENTS:
+ *   vac_index -- VAC area index, 0..4
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG when the area was not claimed
+ **********************************************************************/
 agc_status_t agc_exec_vac_release(int vac_index)
 {
     if (!AGC_ASSERT(vac_index >= 0 && vac_index < AGC_EXEC_MAX_VACS))
@@ -685,12 +879,17 @@ agc_status_t agc_exec_vac_release(int vac_index)
     return (AGC_STATUS_OK);
 }
 
-/* PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
+/**********************************************************************
+ * PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
  * job a new priority, keeping its VAC bits. If a waiting job is now
  * strictly higher (BUF > 0), NEWJOB names it: agc_exec_newjob() > 0. The
  * AGC changes job inside PRIOCHNG; in C the caller that must give way
  * tests agc_exec_newjob() and does agc_exec_job_yield() and returns.
- * Bad arguments are programming errors (asserted), so this is void.    */
+ * Bad arguments are programming errors (asserted), so this is void.
+ *
+ * ARGUMENTS:
+ *   new_prio -- new priority number, 1..037
+ **********************************************************************/
 void agc_exec_prio_change(agc_prio_t new_prio)
 {
     if (!AGC_ASSERT(new_prio >= 1 && new_prio <= EXEC_PRIO_MAX))
@@ -705,7 +904,7 @@ void agc_exec_prio_change(agc_prio_t new_prio)
 
     agc_inhint();
     core[0].prio = new_prio;
-    int best = ejscan(prio_word(0));
+    int best = ejscan(prio_word(0)); /* best waiting core set, -1 none */
 
     newjob = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
@@ -716,8 +915,15 @@ void agc_exec_prio_change(agc_prio_t new_prio)
     }
 }
 
-/* CHANG1 / CHANG2 (C p.1208 / L p.1103): the running job offers the
- * processor; it continues as `resume_as` the next time it runs.        */
+/**********************************************************************
+ * CHANG1 / CHANG2 (C p.1208 / L p.1103): the running job offers the
+ * processor; it continues as `resume_as` the next time it runs.
+ *
+ * ARGUMENTS:
+ *   resume_as -- job id the job continues as when next run
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG when not called from a running job
+ **********************************************************************/
 agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
 {
     if (!AGC_ASSERT(resume_as != AGC_JOB_NONE))
@@ -736,9 +942,17 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
     return (AGC_STATUS_OK);
 }
 
-/* DUMMYJOB / ADVAN / NUCHANG2 / NUDIRECT (C p.1220 / L p.1116): run the
+/**********************************************************************
+ * DUMMYJOB / ADVAN / NUCHANG2 / NUDIRECT (C p.1220 / L p.1116): run the
  * highest-priority ready job once. Returns NOT_FOUND when idle (the AGC
- * would sit in DUMMYJOB / SELFCHK), otherwise the job's own status.    */
+ * would sit in DUMMYJOB / SELFCHK), otherwise the job's own status.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the job's own status; NOT_FOUND when idle (NEWJOB = -0);
+ *          the CCSHOLE status when core set 0 is not active; BAD_ARG on a
+ *          failed precondition
+ **********************************************************************/
 agc_status_t agc_exec_run_one(void)
 {
     if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE && newjob < AGC_EXEC_MAX_JOBS))
@@ -762,7 +976,7 @@ agc_status_t agc_exec_run_one(void)
     }
 
     activity_light(true); /* NUDIRECT            */
-    agc_job_ctx_t ctx;
+    agc_job_ctx_t ctx; /* the job's context for dispatch */
 
     ctx.id        = core[0].loc;
     ctx.prio      = core[0].prio;
@@ -770,10 +984,10 @@ agc_status_t agc_exec_run_one(void)
     ctx.vac_index = core[0].vac;
     ctx.arg       = core[0].arg;
     yielded       = false;
-    uint16_t gen = generation;
+    uint16_t gen = generation; /* STARTSB2 count before the job runs */
 
     in_job = true;
-    agc_status_t st = agc_dispatch_job(&ctx);
+    agc_status_t st = agc_dispatch_job(&ctx); /* the job's own status */
 
     in_job = false;
     exec_service_interp_alarm(); /* 1301 / 1302 of the job's SQRT etc */
@@ -782,7 +996,7 @@ agc_status_t agc_exec_run_one(void)
     {
         /* BAILOUT / POODOO / ABORT in the job: WHIMPER -> ENEMA. The
          * job's core set is wiped by STARTSB2, so no ENDOFJOB.        */
-        agc_status_t rs = agc_exec_service_restart();
+        agc_status_t rs = agc_exec_service_restart(); /* ENEMA outcome */
 
         if (!AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT))
         {
@@ -824,8 +1038,16 @@ agc_status_t agc_exec_run_one(void)
     }
 
     return (st);
-}
+} /* agc_exec_run_one */
 
+/**********************************************************************
+ * AGC: none -- True while a job body is executing (between dispatch and return in
+ * agc_exec_run_one).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true inside a job body
+ **********************************************************************/
 bool exec_in_job(void)
 {
     if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
@@ -841,6 +1063,14 @@ bool exec_in_job(void)
     return (in_job);
 }
 
+/**********************************************************************
+ * LOC of core set 0 (ALARM: TS ALMCADR / CA LOC TS LOCALARM,
+ * ALARM_AND_ABORT.agc C p.1493 / L p.1381).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_job_id_t -- the running job's id, or AGC_JOB_NONE when core set 0 is free
+ **********************************************************************/
 agc_job_id_t exec_running_job_loc(void)
 {
     if (!AGC_ASSERT(newjob < AGC_EXEC_MAX_JOBS))
@@ -854,11 +1084,19 @@ agc_job_id_t exec_running_job_loc(void)
         return (AGC_JOB_NONE);
     }
 
-    return ((core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc);
+    return ((core[0].state == AGC_CORE_FREE) ? AGC_JOB_NONE : core[0].loc); /* free core set 0 has no LOC */
 }
 
-/* A job whose 2CADR is ENDOFJOB (LM RESTART_TABLES 1.2SPOT, p.239): it
- * ends as soon as it is dispatched.                                    */
+/**********************************************************************
+ * A job whose 2CADR is ENDOFJOB (LM RESTART_TABLES 1.2SPOT, p.239): it
+ * ends as soon as it is dispatched.
+ *
+ * ARGUMENTS:
+ *   ctx -- job context (core set 0); ctx->id is the job being run
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (the job ends at once); BAD_ARG on a failed
+ *          precondition
+ **********************************************************************/
 agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != 0))
@@ -874,6 +1112,13 @@ agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * DUMMYJOB test (EXECUTIVE.agc C p.1220 / L p.1116): NEWJOB = -0.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when no job is active
+ **********************************************************************/
 bool agc_exec_idle(void)
 {
     if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
@@ -889,6 +1134,14 @@ bool agc_exec_idle(void)
     return (newjob == EXEC_NEWJOB_IDLE);
 }
 
+/**********************************************************************
+ * NEWJOB (EXECUTIVE.agc C p.1212 / L p.1107): +0 keep running core set
+ * 0, +k change to core set k, -0 (here -1) idle.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- NEWJOB; 0 on a failed precondition
+ **********************************************************************/
 int agc_exec_newjob(void)
 {
     if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE))
@@ -904,6 +1157,15 @@ int agc_exec_newjob(void)
     return (newjob);
 }
 
+/**********************************************************************
+ * AGC: none -- Inspection of one core set (PRIORITY, LOC) for VAC5STOR and tests.
+ *
+ * ARGUMENTS:
+ *   core_set -- core set index, 0..AGC_EXEC_MAX_JOBS-1
+ *   out -- receives the core set's state, priority, VAC area and LOC
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a bad core set index or NULL out
+ **********************************************************************/
 agc_status_t agc_exec_core_info(int core_set, agc_exec_core_info_t *out)
 {
     if (!AGC_ASSERT(out != 0) ||

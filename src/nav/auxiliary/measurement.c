@@ -24,8 +24,8 @@
  * DEVIATION (restart protection): INCORP2's PHASCHNG OCT 04022 / GRP2PC
  * calls, UPFLAG REINTFLG, INTSTALL, the MOVEP* / MOVEA* state-vector copies,
  * SVDWN1/2, RECTIFY and the POSTJUMP to INTWAKE belong to the caller
- * (nav-integ / P20 measurement job).  agc_incorp2_wupdate updates W in
- * place row by row in the AGC's order; agc_incorp2_state works on the
+ * (nav-integ / P20 measurement job).  agc_incorp_update_w updates W in
+ * place row by row in the AGC's order; agc_incorp_update_state works on the
  * integration temporaries supplied in agc_incorp_sv_t.
  */
 #include <stddef.h>
@@ -101,30 +101,6 @@ static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w,
     }
 }
 
-/* VSQ in TP: sum of the exact component squares.  DEVIATION: the AGC's
- * DOTSUB drops the lowest partial product of each DMP; this keeps it.   */
-static agc_tp_t incorp_vsq_tp(agc_interp_t *ip, agc_vec_t v)
-{
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_vec_ok(v)))
-    {
-        return (0);
-    }
-
-    agc_tp_t s = 0;
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        s = agc_tp_add(ip, s, agc_dp_mul_tp(v.c[i], v.c[i]));
-    }
-
-    return (s);
-}
-
 /* INCOR1A (p. 1253): TRIPA = Z1^2 + Z2^2 + Z3^2 + VARIANCE (TP).         */
 static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
 {
@@ -138,10 +114,11 @@ static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
         return (0);
     }
 
-    agc_tp_t a = incorp_vsq_tp(ip, inc->zi[0]);
+    /* VSQ RTB TPMODE keeps the full DOTSUB triple of each square.         */
+    agc_tp_t a = agc_vec_sq_tp(ip, inc->zi[0]);
 
-    a = agc_tp_add(ip, a, incorp_vsq_tp(ip, inc->zi[1]));
-    a = agc_tp_add(ip, a, incorp_vsq_tp(ip, inc->zi[2]));
+    a = agc_tp_add(ip, a, agc_vec_sq_tp(ip, inc->zi[1]));
+    a = agc_tp_add(ip, a, agc_vec_sq_tp(ip, inc->zi[2]));
 
     return (agc_tp_add(ip, a, inc->variance)); /* TAD VARIANCE */
 }
@@ -172,23 +149,27 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
 
     for (int i = 0; (i < INCORP_MAX_SL2) && !ovf; i++)
     {
-        agc_tp_t t = agc_navaux_tp_shl2(tempvar, &ovf); /* SL2 BOV     */
+        agc_tp_t t = agc_tp_shift(ip, tempvar, 2); /* SL2              */
+
+        ovf = agc_interp_test_ovf(ip); /* BOV INCOR1C      */
 
         if (!ovf)
         {
-            tempvar = t;
-            k++; /* INCR,2 1          */
+            tempvar = t; /* STORE TEMPVAR    */
+            k++;         /* INCR,2 1          */
         }
     }
 
-    agc_dp_t prod = agc_dp_mul(ip, agc_tp_round_dp(tripa),
-                               agc_tp_to_dp(tempvar)); /* ROUND DMP     */
-    agc_dp_t root =
-        agc_navaux_dp_shift(ip, agc_dp_sqrt(ip, prod), -k);     /* SL* 0,2 */
-    agc_tp_t den = agc_tp_add(ip, agc_tp_from_dp(root), tripa); /* TAD */
-    int      n   = 0;
+    /* TLOAD ROUND TRIPA, DMP TEMPVAR (its top two words): the TP product
+     * goes to SQRT whole; SL* 0,2 shifts the root right k places into
+     * MPAC+2 and TAD adds the TP TRIPA.                                    */
+    agc_tp_t prod =
+        agc_dp_mul_tp(agc_tp_round(ip, tripa), agc_tp_to_dp(tempvar));
+    agc_tp_t root = agc_tp_shift(ip, agc_tp_from_dp(agc_tp_sqrt(ip, prod)), -k);
+    agc_tp_t den  = agc_tp_add(ip, root, tripa); /* TAD TRIPA        */
+    int      n    = 0;
 
-    den          = agc_navaux_tp_norm(den, &n); /* NORM X2           */
+    den          = agc_tp_norm(den, &n); /* NORM X2           */
     inc->normgam = -n - 2;                      /* INCR,2 -2; SXA,2  */
     inc->gamma   =
         agc_dp_div(ip, INCORP_DP_QUARTER, agc_tp_to_dp(den)); /* BDDV */
@@ -213,7 +194,7 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc,
 
     int      m = 0;
     agc_dp_t a =
-        agc_tp_to_dp(agc_navaux_tp_norm(tripa, &m)); /* NORM X1; DLOAD MPAC */
+        agc_tp_to_dp(agc_tp_norm(tripa, &m)); /* NORM X1; DLOAD MPAC */
     int      q  = 0;
     agc_dp_t dq = agc_dp_norm(inc->deltaq, &q);  /* NORM S1  */
 
@@ -333,7 +314,7 @@ static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa,
  * In:  w, inc->dim9 (DMENFLG), inc->bvector, inc->deltaq, inc->variance.
  * Out: inc->zi (normalized), omega, deltax, gamma, normgam.
  */
-agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
+agc_status_t agc_incorp_state_deviation(agc_interp_t *ip, const agc_incorp_w_t *w,
                          agc_incorp_t *inc)
 {
     if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
@@ -373,7 +354,7 @@ agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
  * The AGC stages each row in HOLDW under restart protection; the C
  * update of a row is atomic so HOLDW is not needed.
  */
-agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
+agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
                                  agc_incorp_w_t *w)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (w != NULL)))
@@ -449,7 +430,7 @@ agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
  * conic RCV / VCV instead and sv->rectify asks the caller to CALL RECTIFY
  * with PBODY = 0 (earth) or 2 (moon).  X789 += DELTAX[2] if DMENFLG.
  */
-agc_status_t agc_incorp2_state(agc_interp_t *ip, const agc_incorp_t *inc,
+agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
                                agc_incorp_sv_t *sv)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (sv != NULL)))

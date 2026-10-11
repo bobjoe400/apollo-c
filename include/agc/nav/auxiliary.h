@@ -163,11 +163,11 @@ typedef struct agc_incorp_sv
     bool      rectify; /* out: caller must CALL RECTIFY (PBODY = moon)    */
 } agc_incorp_sv_t;
 
-agc_status_t agc_incorp1(agc_interp_t *ip, const agc_incorp_w_t *w,
+agc_status_t agc_incorp_state_deviation(agc_interp_t *ip, const agc_incorp_w_t *w,
                          agc_incorp_t *inc); /* INCORP1 */
-agc_status_t agc_incorp2_wupdate(agc_interp_t *ip, const agc_incorp_t *inc,
+agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
                                  agc_incorp_w_t *w); /* INCORP2 FAZA-B */
-agc_status_t agc_incorp2_state(agc_interp_t *ip, const agc_incorp_t *inc,
+agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
                                agc_incorp_sv_t *sv); /* INCORP2 FAZC-  */
 
 /* ======================================================================

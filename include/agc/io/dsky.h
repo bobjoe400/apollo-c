@@ -72,7 +72,7 @@ enum agc_dsky_key
  * which calls agc_dsky_prockey_request() (PROCKEY).                     */
 
 /* ---- 5-bit relay codes (PINBALL p. 314) ------------------------------ */
-#define AGC_DSKY_RELAY_BLANK 000
+#define AGC_DSKY_RELAY_BLANK 000 /* relay code of a blank char */
 /* digit d -> agc_dsky_relay_code(d): 0 25, 1 03, 2 31, 3 33, 4 17,
  *                                    5 36, 6 34, 7 23, 8 35, 9 37      */
 uint16_t agc_dsky_relay_code(int digit);
@@ -88,7 +88,7 @@ int      agc_dsky_relay_digit(uint16_t code); /* -1 for blank/bad  */
 
 /* ---- display state for the sim harness ------------------------------- */
 #define AGC_DSKY_BLANK   (-1) /* digit value of a blank position   */
-#define AGC_DSKY_RDIGITS 5
+#define AGC_DSKY_RDIGITS 5 /* digits per register */
 
 typedef struct agc_dsky_state
 {

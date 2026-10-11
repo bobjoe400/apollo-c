@@ -93,6 +93,30 @@ agc_sp_t entry_angle_wrap(int32_t sum)
     return ((agc_sp_t) s);
 }
 
+/* TS / ADS / XCH of an overflowed A: memory gets SG and bits 1-14, so a
+ * sum past +-1.0 comes back by 1.0 (ones' complement: 16383 + 1 -> +0... the
+ * one-LSB end-around difference is not modelled).                       */
+agc_sp_t entry_sp_store_ovf(int32_t sum)
+{
+    int32_t s = sum;
+
+    if (!AGC_ASSERT(s > -2 * 16384 && s < 2 * 16384))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (s >= 16384)
+    {
+        s -= 16384;
+    }
+    else if (s <= -16384)
+    {
+        s += 16384;
+    }
+
+    return ((agc_sp_t) s);
+}
+
 /* AD whose result the AGC keeps without an overflow test: saturate.     */
 agc_sp_t entry_sp_sat(int32_t sum)
 {
@@ -483,11 +507,13 @@ agc_status_t agc_task_readgymb(void)
         return (agc_waitlist_call(10, AGC_TASK_READGYMB)); /* DOBRATE1, JETEM 0 */
     }
 
-    m_delaog = entry_sp_sat((int32_t) aog - (int32_t) cdu_sp(agc_erase_cdux()));
+    /* XCH AOG / MSU AOG: modular (2s complement) difference, so a gimbal
+     * passing 180 deg gives the small step, not an overflow.            */
+    m_delaog = entry_angle_wrap((int32_t) aog - (int32_t) cdu_sp(agc_erase_cdux()));
     aog      = cdu_sp(agc_erase_cdux());
-    m_delaig = entry_sp_sat((int32_t) aig - (int32_t) cdu_sp(agc_erase_cduy()));
+    m_delaig = entry_angle_wrap((int32_t) aig - (int32_t) cdu_sp(agc_erase_cduy()));
     aig      = cdu_sp(agc_erase_cduy());
-    m_delamg = entry_sp_sat((int32_t) amg - (int32_t) cdu_sp(agc_erase_cduz()));
+    m_delamg = entry_angle_wrap((int32_t) amg - (int32_t) cdu_sp(agc_erase_cduz()));
     amg      = cdu_sp(agc_erase_cduz());
     sel      = (agc_flag_test(AGC_FLAG_CM_DSTBY) ? 0u : 2u) |
                (agc_flag_test(AGC_FLAG_GYMDIFSW) ? 0u : 1u);
@@ -577,7 +603,8 @@ static uint16_t dap_exdap2(agc_entry_state_t *es)
               ((es->salfa < 0) ? betadot : 0);
     tag = dap_biasedz(rate, err);
     agc_chan_write(AGC_CHAN_ROLLJETS, agc_entry_dap_roll_jet_bits(tag));
-    err = entry_sp_sat((int32_t) es->rollhold - (int32_t) es->roll_180);
+    err = entry_angle_wrap((int32_t) es->rollhold -
+                           (int32_t) es->roll_180); /* MSU ROLL/180  */
     err = (es->salfa > 0) ? err : ((es->salfa < 0) ? (agc_sp_t) (-err) : 0);
 
     if (!AGC_ASSERT(es->cmdapmod == AGC_ENTRY_DAPMOD_PLUS1))
@@ -648,7 +675,7 @@ static agc_status_t dap_fdai(bool integrate)
             entry_sp_mp((agc_sp_t) (-phidot), agc_entry_state()->calfa),
             AGC_SP_HALF);
 
-        paxerr1 = entry_angle_wrap((int32_t) paxerr1 + d); /* ovfl ok  */
+        paxerr1 = entry_sp_store_ovf((int32_t) paxerr1 + d); /* OVFL OK */
     }
 
     ak     = entry_sp_mp(AGC_SP_HALF, paxerr1); /* PAXERR        */
@@ -821,8 +848,10 @@ static void pp_maxvtest(agc_sp_t lcx, agc_sp_t mvt, agc_sp_t vsq,
 static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2,
                             agc_entry_roll_cmd_t *o, agc_sp_t *vdt)
 {
-    agc_sp_t sr  = (agc_sp_t) (mvt2 / 2); /* TS SR             */
-    agc_sp_t mvt = sr;                    /* XCH -VT/180       */
+    agc_sp_t mvt = (agc_sp_t) (mvt2 / 2); /* TS SR; XCH -VT/180 */
+    /* CA SR rewrites SR and so shifts it again (the editing registers
+     * edit on every write): SR = -VT/360 for the DZ2 test.             */
+    agc_sp_t sr  = (agc_sp_t) (mvt / 2);
     agc_sp_t lcx = lcx_in;
     agc_sp_t vsq = entry_sp_mp(entry_sp_mp(mvt2, mvt), AGC_ENTRY_180_8ATT);
     int32_t  l   = (int32_t) AGC_ENTRY_XS_360 - 2 * (int32_t) vsq; /* BUFLIM */

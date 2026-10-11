@@ -200,6 +200,9 @@ static void kalman(const char *t, const char *gp, long tol)
     d->lmtrap     = (agc_sp_t) oracle_in(t, "LMTRAP", 0);
     d->lmomegan   = (agc_sp_t) oracle_in(t, "LMTRAP", 1);
     d->lmkaosn    = (agc_sp_t) oracle_in(t, "LMTRAP", 2);
+    d->dktrap     = (agc_sp_t) oracle_in(t, "DKTRAP", 0);
+    d->dkomegan   = (agc_sp_t) oracle_in(t, "DKTRAP", 1);
+    d->dkkaosn    = (agc_sp_t) oracle_in(t, "DKTRAP", 2);
     d->qaccdot    = (agc_sp_t) oracle_in(t, "QACCDOT", 0);
     d->raccdot    = (agc_sp_t) oracle_in(t, "RACCDOT", 0);
 
@@ -323,6 +326,30 @@ static void timegmbl(const char *t)
     gts_outputs(t, d);
 }
 
+/* TJETLAW sweep over the switch-curve blocks of the 1/ACCS cases.        */
+static const char *const tjs[] = {
+    "tjs_u_big1",
+    "tjs_u_big2",
+    "tjs_v_big1",
+    "tjs_v_big2",
+    "tjs_u_bign",
+    "tjs_v_bign",
+    "tjs_u_drift1",
+    "tjs_u_drift2",
+    "tjs_v_drift3",
+    "tjs_p_drift",
+    "tjs_u_wide1",
+    "tjs_v_wide2",
+    "tjs_u_fail",
+    "tjs_v_fail",
+    "tjs_u_netneg",
+    "tjs_v_netneg",
+    "tjs_u_vbig",
+    "tjs_p_zero_e",
+    "tjs_u_hugerate",
+    "tjs_v_hugeerr",
+};
+
 int main(void)
 {
     if (!oracle_load("dap_lm"))
@@ -355,10 +382,15 @@ int main(void)
     tjetlaw("tjet_p_neg", 0);
     tjetlaw("tjet_u_mid", 0);
     tjetlaw("tjet_v_rate", 0);
-    tjetlaw("tjet_u_large", 1); /* RUFLAW: 1 LSB */
+    tjetlaw("tjet_u_large", 0);
     tjetlaw("tjet_v_coast", 0);
     tjetlaw("tjet_p_aps", 0);
     tjetlaw("tjet_u_aps", 0);
+
+    for (size_t k = 0; k < sizeof tjs / sizeof tjs[0]; k++)
+    {
+        tjetlaw(tjs[k], 0); /* review-dap-lm sweep */
+    }
     gpm("gpm_a");
     gpm("gpm_b");
     gpm("gpm_c");
@@ -366,6 +398,8 @@ int main(void)
     kalman("kal_jets", "gpm_a", 0);
     kalman("kal_powered", "gpm_b", 0);
     kalman("kal_bigtrap", "gpm_c", 0);
+    kalman("kal_docked", "gpm_a", 0);
+    kalman("kal_docked_pw", "gpm_b", 0);
 
     gts("gts_a");
     gts("gts_b");

@@ -121,13 +121,13 @@ static agc_tp_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *it)
         return (0); /* no valid result */
     }
 
-    const agc_dp_t tw = agc_dp_pack(
-        it->tweekit, (agc_sp_t) 1); /* (TWEEKIT, S2) DP, 2^0 */
-    const agc_dp_t lo =
-        agc_tp_to_dp(
-            agc_conic_mdmp_(agc_tp_from_dp(it->min), tw)); /* MIN TWEEKIT, scale of INDEP */
-    agc_tp_t m = agc_conic_mdmp_(
-        agc_tp_from_dp(it->max), tw); /* MAX TWEEKIT, scale of INDEP */
+    const agc_dp_t tw = agc_dp_pack(it->tweekit,
+                                    (agc_sp_t) 1); /* (TWEEKIT, S2), 2^0 */
+    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(it->min),
+                                 tw);     /* DMP: scale of INDEP */
+    const agc_dp_t lo = agc_tp_to_dp(m); /* 0D MIN TWEEKIT, scale of INDEP */
+
+    m = agc_conic_mdmp_(agc_tp_from_dp(it->max), tw); /* MAX TWEEKIT */
 
     m = agc_conic_mdsu_(ip, m, lo);
 
@@ -283,12 +283,12 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (false);
     }
 
-    int            n   = 0; /* MAGVEC2 NORM X1 */
-    const agc_dp_t r2n =
-        agc_tp_to_dp(
-            agc_conic_mnorm_(agc_tp_from_dp(ctx->magvec2), &n)); /* MAGVEC2 normalized, 2^(29-n) */
-    agc_tp_t m = agc_tp_shift(
-        ip, agc_tp_from_dp(ctx->r1), -1); /* R1 SR1, 2^30 */
+    int      n = 0;         /* MAGVEC2 NORM X1 */
+    agc_tp_t m = agc_conic_mnorm_(agc_tp_from_dp(ctx->magvec2),
+                                  &n);   /* NORM: 2^(29-n) */
+    const agc_dp_t r2n = agc_tp_to_dp(m); /* PDDL: R2, 2^(29-n) */
+
+    m = agc_tp_shift(ip, agc_tp_from_dp(ctx->r1), -1); /* R1 SR1, 2^30 */
 
     m = agc_tp_shift(ip, agc_conic_mddv_(ip, m, r2n),
                      n - 6);         /* SL* 0 -6,1 */
@@ -680,14 +680,15 @@ static bool lambert_suffchek(agc_interp_t *ip, const lambert_state_t *ls)
         return (false);
     }
 
-    const bool csm = (
-        agc_state_vehicle() == AGC_VEHICLE_CSM); /* Comanche tolerance */
-    const agc_dp_t err =
-        agc_tp_to_dp(
-            agc_conic_mabs_(agc_tp_from_dp(ls->terrlamb))); /* |TERRLAMB|, 2^28 cs */
-    agc_tp_t m = agc_conic_mdmp_(agc_tp_from_dp(ls->tdesired),
-                                 csm ? AGC_CONIC_D1_4 : /* CSM .25  */
-                                 AGC_CONIC_BEE17);      /* LM 2^-17 */ /* tolerance, 2^28 cs */
+    const bool csm = (agc_state_vehicle() ==
+                      AGC_VEHICLE_CSM); /* Comanche tolerance */
+    agc_tp_t m = agc_conic_mabs_(
+        agc_tp_from_dp(ls->terrlamb));  /* ABS TERRLAMB, 2^28 cs */
+    const agc_dp_t err = agc_tp_to_dp(m); /* PDDL: |TERRLAMB| 2^28 cs */
+
+    m = agc_conic_mdmp_(agc_tp_from_dp(ls->tdesired),
+                        csm ? AGC_CONIC_D1_4 : /* CSM .25  */
+                        AGC_CONIC_BEE17);      /* LM 2^-17 */
 
     m = agc_conic_mdsu_(ip, agc_conic_mdad_(ip, m, AGC_CONIC_ONEBIT), err);
 
@@ -725,11 +726,12 @@ static agc_vec_t lambert_initv(agc_interp_t *ip, const agc_conic_ctx_t *ctx)
         return (agc_vec_zero()); /* no valid result */
     }
 
-    int            n   = 0; /* NORM X1 count of R1 */
-    const agc_dp_t r1n =
-        agc_tp_to_dp(
-            agc_conic_mnorm_(agc_tp_from_dp(ctx->r1), &n)); /* R1 normalized, 2^(29-n) */
-    agc_tp_t m = agc_tp_shift(ip, agc_tp_from_dp(ctx->p), -1); /* P SR1, 2^5 */
+    int      n = 0;         /* NORM X1 count of R1 */
+    agc_tp_t m = agc_conic_mnorm_(agc_tp_from_dp(ctx->r1),
+                                  &n);   /* NORM: 2^(29-n) */
+    const agc_dp_t r1n = agc_tp_to_dp(m); /* PDDL: R1, 2^(29-n) */
+
+    m = agc_tp_shift(ip, agc_tp_from_dp(ctx->p), -1); /* P SR1, 2^5 */
 
     m = agc_tp_shift(ip, agc_conic_mddv_(ip, m, r1n),
                      n - 4);               /* SL* 0 -4,1 */
@@ -1015,10 +1017,10 @@ agc_status_t agc_conic_lambert(agc_interp_t *ip, const agc_lambert_in_t *in,
     } /* DEVIATION: bound */
 
     lambert_output(&ctx, &ls, out);
-    const bool ok = (
-        next == LAMB_INITV) || lambert_suffchek(ip, &ls); /* solution accepted (INITV) */
-    const bool csm = (
-        agc_state_vehicle() == AGC_VEHICLE_CSM); /* CSM: RTNLAMB on failure */
+    const bool ok = (next == LAMB_INITV) ||
+                    lambert_suffchek(ip, &ls); /* solution accepted */
+    const bool csm = (agc_state_vehicle() ==
+                      AGC_VEHICLE_CSM); /* CSM: RTNLAMB on failure */
 
     lambert_solnsw(out, !ok); /* SETGO SOLNSW / CLEAR */
 

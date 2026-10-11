@@ -416,5 +416,8 @@ agc_sp_t entry_angle_wrap(int32_t sum);
 agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b); /* MP: high word of a b      */
 agc_sp_t entry_sp_sat(int32_t sum);           /* AD whose result is kept
                                                   (overflow not expected)  */
+/* TS/ADS of an overflowed sum into erasable: the word keeps SG and bits
+ * 1-14, i.e. the sum modulo 1.0 (an angle/360 wraps by 360 deg).        */
+agc_sp_t entry_sp_store_ovf(int32_t sum);
 
 #endif /* AGC_CSM_ENTRY_H */

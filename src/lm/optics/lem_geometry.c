@@ -93,10 +93,8 @@ agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu,
     const agc_dp_t s     = agc_align_cdulogic(shaft_cdu); /* RRNB1    */
     /* DMP SL1 then STORE: the SL1 acts on the TP product, so MPAC+2's top
      * bit becomes the stored low word's LSB (no rounding).              */
-    const agc_dp_t z = agc_tp_to_dp(
-        agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_cos(ip, s), cos_t), 1));
-    const agc_dp_t x = agc_tp_to_dp(
-        agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_sin(ip, s), cos_t), 1));
+    const agc_dp_t z = align_dmp_shl(ip, agc_dp_cos(ip, s), cos_t, 1);
+    const agc_dp_t x = align_dmp_shl(ip, agc_dp_sin(ip, s), cos_t, 1);
 
     *los_nb = agc_vec_make(x, y, z);
 

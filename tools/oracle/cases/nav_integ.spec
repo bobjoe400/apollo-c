@@ -440,3 +440,69 @@ set VCV=77124,41457,03300,32160,00767,16034
 set TET=03560,11400
 set VAC1+32=03560,17270
 run third_sphere_entry
+# W matrix (review-nav-integ): INTEGRV of the permanent CSM state (P20-
+# like: MODREG 20, PRECIFLG, VINTFLAG, DIM0FLAG, 6x6) over 10 min from
+# the LEO state of integ_earth_1step.  Each step: state step, ATOPCSM,
+# W columns 5..0 (DOW.., DIFEQ, JSWITCH), RELOADSV.  W column 0 position
+# 100 m x (2^19 m), column 3 velocity .001 m/cs y (2^0 m/cs).
+clearstops
+cleargets
+stop INTWAKE
+get W:dp
+get W+2:dp
+get W+4:dp
+get W+6:dp
+get W+8:dp
+get W+10:dp
+get W+12:dp
+get W+14:dp
+get W+16:dp
+get W+18:dp
+get W+20:dp
+get W+22:dp
+get W+24:dp
+get W+26:dp
+get W+28:dp
+get W+30:dp
+get W+32:dp
+get W+34:dp
+get W+54:dp
+get W+56:dp
+get W+58:dp
+get W+60:dp
+get W+62:dp
+get W+64:dp
+get W+66:dp
+get W+68:dp
+get W+70:dp
+get W+72:dp
+get W+74:dp
+get W+76:dp
+get W+78:dp
+get W+80:dp
+get W+82:dp
+get W+84:dp
+get W+86:dp
+get W+88:dp
+get RRECTCSM:dp
+get RRECTCSM+2:dp
+get RRECTCSM+4:dp
+get VRECTCSM:dp
+get VRECTCSM+2:dp
+get VRECTCSM+4:dp
+get TETCSM:dp
+get FLAGWRD3
+q INTEGRV
+fbank 13
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set MODREG=00024
+set FLAGWRD3=00205
+set RRECTCSM=00172,10710,00141,32240,00202,15600
+set RRECTCSM+6=63672,47725,17014,34525,00067,27047
+set RRECTCSM+26=00172,10710,00141,32240,00202,15600
+set RRECTCSM+32=63672,47725,17014,34525,00067,27047
+set W=00003,04000,00000,00000,00000,00000
+set W+72=00000,00000,00020,14223,00000,00000
+set VAC1+32=00003,25140
+run wmatrix_6x6

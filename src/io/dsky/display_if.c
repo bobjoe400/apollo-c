@@ -76,40 +76,40 @@
 void agc_erase_set_extvbact(uint16_t v); /* EXTVBACT (sys-misc)  */
 
 /* ---- FLAGWRD4 bits (display flags) ------------------------------------ */
-#define DIF_F4       4
-#define DIF_MRKIDFLG 040000u
-#define DIF_PRIODFLG 020000u
-#define DIF_NRMIDFLG 010000u
-#define DIF_MWAITFLG 002000u
-#define DIF_NWAITFLG 001000u
-#define DIF_MRKNVFLG 000400u
-#define DIF_NRMNVFLG 000200u
-#define DIF_PRONVFLG 000100u
-#define DIF_PINBRFLG 000040u
-#define DIF_MRUPTFLG 000020u
-#define DIF_NRUPTFLG 000010u
-#define DIF_MKOVFLAG 000004u
-#define DIF_XDSPFLAG 000001u
+#define DIF_F4       4 /* FLAGWRD4 is flag word 4 */
+#define DIF_MRKIDFLG 040000u /* bit 15: mark display in ENDIDLE */
+#define DIF_PRIODFLG 020000u /* bit 14: priority display in ENDIDLE */
+#define DIF_NRMIDFLG 010000u /* bit 13: normal display in ENDIDLE */
+#define DIF_MWAITFLG 002000u /* bit 11: mark waits (higher priority) */
+#define DIF_NWAITFLG 001000u /* bit 10: normal waits (higher prio) */
+#define DIF_MRKNVFLG 000400u /* bit 9: astronaut using DSKY (mark) */
+#define DIF_NRMNVFLG 000200u /* bit 8: astronaut using DSKY (normal) */
+#define DIF_PRONVFLG 000100u /* bit 7: astronaut using DSKY (prio) */
+#define DIF_PINBRFLG 000040u /* bit 6: astronaut has interrupted */
+#define DIF_MRUPTFLG 000020u /* bit 5: mark display interrupted */
+#define DIF_NRUPTFLG 000010u /* bit 4: normal display interrupted */
+#define DIF_MKOVFLAG 000004u /* bit 3: mark display over normal */
+#define DIF_XDSPFLAG 000001u /* bit 1: mark display not to be interrupted */
 /* masks (the AGC's UPENT2/DOWNENT2 words without the flagword number 4)  */
-#define DIF_WAITMASK 003000u
-#define DIF_IDLEMASK 074000u
-#define DIF_ASTROMSK 000700u
-#define DIF_IDLESLEP 074700u
-#define DIF_PINIDMSK 074040u
-#define DIF_NVBUSMSK 000700u
-#define DIF_NBUSMASK 011210u
-#define DIF_PMMASK   066521u
-#define DIF_OCT34300 034300u
-#define DIF_OCT24100 024100u
-#define DIF_OCT40400 040400u
-#define DIF_OCT10200 010200u
-#define DIF_OCT20100 020100u
-#define DIF_ITISMASK 040040u
-#define DIF_PINMASK  070000u
-#define DIF_OCT60000 060000u
-#define DIF_PRIO30   030000u
-#define DIF_BITS5_11 002020u
-#define DIF_BITS4_10 001010u
+#define DIF_WAITMASK 003000u /* WAITMASK: bits 11, 10 */
+#define DIF_IDLEMASK 074000u /* IDLEMASK: bits 15-12 */
+#define DIF_ASTROMSK 000700u /* ASTROMSK: bits 9-7 */
+#define DIF_IDLESLEP 074700u /* IDLESLEP: ENDIDLE and NV-busy bits */
+#define DIF_PINIDMSK 074040u /* PINIDMSK: ENDIDLE and pinbranch bits */
+#define DIF_NVBUSMSK 000700u /* NVBUSMSK: bits 9-7 (NV busy) */
+#define DIF_NBUSMASK 011210u /* NBUSMASK: normal class bits */
+#define DIF_PMMASK   066521u /* PMMASK: priority / mark class bits */
+#define DIF_OCT34300 034300u /* OCT34300: bits 14-12, 8, 7 */
+#define DIF_OCT24100 024100u /* OCT24100: bits 14, 12, 7 */
+#define DIF_OCT40400 040400u /* OCT40400: bits 15, 9 */
+#define DIF_OCT10200 010200u /* OCT10200: bits 13, 8 */
+#define DIF_OCT20100 020100u /* OCT20100: bits 14, 7 */
+#define DIF_ITISMASK 040040u /* ITISMASK: ENDIDLE allowed bits */
+#define DIF_PINMASK  070000u /* PINMASK: bits 13, 14, 15 */
+#define DIF_OCT60000 060000u /* OCT60000: bits 15, 14 */
+#define DIF_PRIO30   030000u /* PRIO30 (bits 13, 12) */
+#define DIF_BITS5_11 002020u /* bits 5 and 11 (mark interrupted, waits) */
+#define DIF_BITS4_10 001010u /* bits 4 and 10 (normal interrupted, waits) */
 /* PLAYTEM4 / DSPFLG display flag bits                                     */
 #define DIF_MARK      040000u /* bit 15 mark request                    */
 #define DIF_LINUS     020000u /* bit 14 replace an active display       */
@@ -308,7 +308,7 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
     if (sl.used)
     {
         st = agc_exec_job_wake_as(sl.cont[0], new_loc); /* XCHNYLOC  */
-        st = (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+        st = (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st; /* none: OK */
     }
 
     agc_relint(); /* RELINTQ   */
@@ -417,9 +417,10 @@ static agc_status_t dif_xchsleep(int c)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_job_id_t wake; /* wake point of the class */
+    agc_job_id_t wake; /* wake point */
 
-    wake = (c == DIF_MARKC) ? AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1;
+    wake = (c == DIF_MARKC) ? /* wake point */
+           AGC_JOB_MARKPLAY : AGC_JOB_PLAYJUM1;
 
     agc_inhint();
     agc_status_t st = agc_exec_job_wake_as(wake, AGC_JOB_ENDOFJOB); /* status */
@@ -584,7 +585,8 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
     agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB); /* status so far */
 
     return ((st ==
-             AGC_STATUS_OK) ? dif_redoprio(g_cls[DIF_PRIOC].userprio) : st);
+             AGC_STATUS_OK) ? /* then REDOPRIO */
+            dif_redoprio(g_cls[DIF_PRIOC].userprio) : st);
 }
 
 /**********************************************************************
@@ -656,10 +658,11 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq,
 
     agc_status_t st; /* status so far */
 
-    st = dif_witchone((face == 0) ? AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN);
+    st = dif_witchone((face == 0) ? /* mark / normal */
+                      AGC_JOB_XCHSLEEPM : AGC_JOB_XCHSLEEPN);
 
     f4_down((uint16_t) (k_genmask[face + 1] & DIF_IDLESLEP));
-    f4_up((face == 0) ? DIF_MRUPTFLG : DIF_NRUPTFLG);
+    f4_up((face == 0) ? DIF_MRUPTFLG : DIF_NRUPTFLG); /* its interrupted bit */
 
     if (st != AGC_STATUS_OK)
     {
@@ -874,7 +877,7 @@ static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 
     agc_status_t st = dif_witchone(AGC_JOB_ENDOFJOB); /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) :
+    return ((st == AGC_STATUS_OK) ? dif_nvdsp(DIF_NORMC, userprio) : /* if OK */
             st);                       /* PLAYJUM1 */
 }
 
@@ -991,7 +994,7 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
      * modelled: R1SAVE is only ever zeroed (fresh start) in both programs. */
     if (pin_cadrstor_full())
     {
-        return (((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() :
+        return (((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() : /* ISITPRIO */
                 AGC_STATUS_OK);                               /* ISITPRIO */
     }
 
@@ -1041,7 +1044,7 @@ static agc_status_t dif_rest(int c)
     f4_up((uint16_t) (k_genmask[c] & DIF_ASTROMSK));
     agc_status_t st = agc_dsky_nvsubusy(nvcadr[c]); /* NVSUBUSY */
 
-    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
+    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st); /* job sleeps */
 }
 
 /**********************************************************************
@@ -1164,7 +1167,7 @@ static uint16_t dif_first_vn(int c)
         pin_ones_neg(nv); /* in case MARKPLAY awakened after sleeping */
     uint16_t dec; /* 1: mark display is decimal */
 
-    dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u;
+    dec = ((g_cls[c].flags & DIF_DECMARK) != 0u) ? 1u : 0u; /* V06 if decimal */
 
     return ((uint16_t) ((g_cls[c].nvword & PIN_LOW7) +
                         agc_dsky_vn((uint8_t) (5u + dec), 0)));
@@ -1204,7 +1207,8 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
     {
         agc_status_t st = dif_cleanend(); /* status so far */
 
-        return ((st == AGC_STATUS_OK) ? dif_flashsub(c, userprio, false) :
+        return ((st == AGC_STATUS_OK) ? /* if OK */
+                dif_flashsub(c, userprio, false) :
                 st);                       /* FLASHSUB +1 */
     }
 
@@ -1244,7 +1248,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
     }
 
     return (dif_goanidle(&j));
-}
+} /* dif_nvdsp */
 
 /* ---- ENDIDLE returns (pp. 1477-1481) ---------------------------------- */
 
@@ -1278,10 +1282,17 @@ static agc_status_t dif_endret(int outhere)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dsky_cont_t *k    = &g_cls[c].cadr; /* component 0..2 (R1..R3) */
-    agc_job_id_t           cont = (outhere == 0) ? /* user return for OUTHERE */
-                                  k->terminate :
-                                  ((outhere == 1) ? k->proceed : k->enter);
+    const agc_dsky_cont_t *k    = &g_cls[c].cadr; /* the user's returns */
+    agc_job_id_t           cont = k->enter;       /* OUTHERE 2: CADR +3 */
+
+    if (outhere == 0)
+    {
+        cont = k->terminate; /* CADR +1 */
+    }
+    else if (outhere == 1)
+    {
+        cont = k->proceed; /* CADR +2 */
+    }
 
     f4_down((uint16_t) (k_genmask[c] & DIF_PINIDMSK));
     agc_status_t st = agc_dsky_nvsub_blank(-3); /* status so far */
@@ -1576,7 +1587,7 @@ agc_status_t pin_pinbrnch(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
+    return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st); /* job sleeps */
 }
 
 /**********************************************************************
@@ -1974,7 +1985,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
     }
 
     return (dif_makeplay(&rq, ctx->prio)); /* GOFLASH2: SAVELOCS, MAKEPLAY */
-}
+} /* agc_dsky_display */
 
 /**********************************************************************
  * AGC: BLANKET, LINUS (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1465, 1484)

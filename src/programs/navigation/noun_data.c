@@ -1,24 +1,62 @@
-/*
- * noun_data.c -- the noun data of the rendezvous erasables, for
- * agc_noun_read / agc_noun_write (io-nouns, src/io/dsky/nouns/data.c):
- * agc_rendz_noun_read / agc_rendz_noun_write resolve the AGC_DATA_* ids of
- * the erasables this lane owns.
+/**********************************************************************
+ * FILE NAME: noun_data.c
  *
- * Value representation (as src/io/dsky/nouns/data.c): DP erasables as the
- * raw DP; SP erasables in the upper word (agc_dp_from_sp); raw words
- * (octal, CDU angles) as the 15-bit word. Ids not owned here return
- * AGC_STATUS_NOT_FOUND.
- */
+ * PURPOSE:
+ *   The noun data of the rendezvous erasables, for agc_noun_read /
+ *   agc_noun_write (io-nouns, src/io/dsky/nouns/data.c):
+ *   agc_rendz_noun_read / agc_rendz_noun_write resolve the AGC_DATA_*
+ *   ids of the erasables this lane owns.
+ *
+ * AGC SOURCE:
+ *   Comanche055 / Luminary099 PINBALL_NOUN_TABLES.agc (the noun address
+ *   tables that name these erasables) and ERASABLE_ASSIGNMENTS.agc.
+ *
+ * EXTERNAL VARIABLES:
+ *   Name       Type       I/O  Scale      Description
+ *   ---------  ---------  ---  ---------  ------------------------------
+ *   agc_rendz_t fields    I/O  per field  DP and vector erasables
+ *   RSTACK     agc_dp_t   I    radar      LM radar test samples
+ *   LANDMARK HORIZON TANG word I/O -       raw words (common.c)
+ *   PRAXIS CPHIX     word I    CDU        CM R63 attitudes (common.c)
+ *   MRKBUF1 +3/+5    word I    CDU        mark buffer words
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                       Description
+ *   -------------------------  -----------------------------------------
+ *   agc_rendz_erasable         the rendezvous erasables (common.c)
+ *   agc_erase_rstack/tang/...  storage accessors (common.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; ids not owned here return AGC_STATUS_NOT_FOUND.
+ *
+ * NOTES:
+ *   Value representation (as src/io/dsky/nouns/data.c): DP erasables as
+ *   the raw DP; SP erasables in the upper word (agc_dp_from_sp); raw
+ *   words (octal, CDU angles) as the 15-bit word.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
 #include "agc/io/nouns.h"
 #include "internal.h"
 
-/* The DP erasables of agc_rendz_t (and DSPTEM-free values).             */
+/**********************************************************************
+ * The DP erasables of agc_rendz_t (and DSPTEM-free values).
+ * AGC: PINBALL_NOUN_TABLES.agc (noun addresses of these erasables)
+ *
+ * FUNCTION NAME: nd_dp
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   id        uint16_t  I    AGC_DATA_* id
+ *
+ * RETURNS: agc_dp_t * -- the agc_rendz_t DP field the id names, NULL when
+ *          it is not one
+ **********************************************************************/
 static agc_dp_t *nd_dp(uint16_t id)
 {
-    agc_rendz_t *rz = agc_rendz_erasable();
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     switch (id)
     {
@@ -80,13 +118,28 @@ static agc_dp_t *nd_dp(uint16_t id)
             return (&rz->ground_track_vel);
         default:
             return (NULL);
-    }
-}
+    } /* switch (id) */
+} /* nd_dp */
 
-/* Vector erasables: (id of the first component) -> vector, component.  */
+/**********************************************************************
+ * Vector erasables: (id of the first component) -> vector, component.
+ * AGC: PINBALL_NOUN_TABLES.agc (noun addresses DELVLVC, DELVOV, DVLOS)
+ *
+ * FUNCTION NAME: nd_vec
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   id        uint16_t  I    AGC_DATA_* id of a vector component
+ *   k         int *     O    component index 0..2 (0 when the id is not a
+ *                            vector)
+ *
+ * RETURNS: agc_vec_t * -- the agc_rendz_t vector the id names, NULL when it
+ *          is not one
+ **********************************************************************/
 static agc_vec_t *nd_vec(uint16_t id, int *k)
 {
-    agc_rendz_t *rz = agc_rendz_erasable();
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     *k = 0;
 
@@ -127,7 +180,20 @@ static agc_vec_t *nd_vec(uint16_t id, int *k)
     }
 }
 
-/* Read-only values held by the radar, mark and display modules.          */
+/**********************************************************************
+ * Read-only values held by the radar, mark and display modules.
+ * AGC: RADAR_LEADIN_ROUTINES.agc p.490 (RSTACK, LM R04 nouns)
+ *
+ * FUNCTION NAME: nd_other
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   id        uint16_t    I    AGC_DATA_* id
+ *   v         agc_dp_t *  O    the value, DP as stored
+ *
+ * RETURNS: bool -- true when the id is one of these read-only values
+ **********************************************************************/
 static bool nd_other(uint16_t id, agc_dp_t *v)
 {
     switch (id)
@@ -171,9 +237,22 @@ static bool nd_other(uint16_t id, agc_dp_t *v)
         default:
             return (false);
     }
-}
+} /* nd_other */
 
-/* Raw words: LANDMARK, HORIZON, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.               */
+/**********************************************************************
+ * Raw words: LANDMARK, HORIZON, MRKBUF1 +3/+5, TANG, PRAXIS, CPHIX.
+ * AGC: PINBALL_NOUN_TABLES.agc (nouns 70, 71, 72, 95, 96, MRKBUF1)
+ *
+ * FUNCTION NAME: nd_raw
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   id        uint16_t    I    AGC_DATA_* id
+ *   w         uint16_t *  O    the 15-bit word
+ *
+ * RETURNS: bool -- true when the id is one of these raw words
+ **********************************************************************/
 static bool nd_raw(uint16_t id, uint16_t *w)
 {
     switch (id)
@@ -228,9 +307,25 @@ static bool nd_raw(uint16_t id, uint16_t *w)
             return (true);
         default:
             return (false);
-    }
-}
+    } /* switch (id) */
+} /* nd_raw */
 
+/**********************************************************************
+ * Noun read of a rendezvous erasable (agc_noun_read's lookup).
+ * AGC: PINBALL_NOUN_TABLES.agc (noun address tables)
+ *
+ * FUNCTION NAME: agc_rendz_noun_read
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   data_id   uint16_t    I    AGC_DATA_* id, < AGC_DATA_COUNT
+ *   value     agc_dp_t *  O    the value (DP raw, SP in the upper word,
+ *                              words raw)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND for an id
+ *          not owned here, AGC_STATUS_BAD_ARG for a bad argument
+ **********************************************************************/
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
 {
     if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
@@ -238,10 +333,10 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  *p  = nd_dp(data_id);
-    int        k  = 0;
-    agc_vec_t *vp = nd_vec(data_id, &k);
-    uint16_t   w  = 0U;
+    agc_dp_t  *p  = nd_dp(data_id); /* DP field, or NULL */
+    int        k  = 0; /* vector component */
+    agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */
+    uint16_t   w  = 0U; /* raw word */
 
     if (p != NULL)
     {
@@ -263,7 +358,22 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
     return (AGC_STATUS_OK);
 }
 
-/* Loadable values: the DP erasables and vectors, LANDMARK, TANG, WWOPT. */
+/**********************************************************************
+ * Loadable values: the DP erasables and vectors, LANDMARK, TANG, WWOPT.
+ * AGC: PINBALL_NOUN_TABLES.agc (loadable nouns)
+ *
+ * FUNCTION NAME: agc_rendz_noun_write
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   data_id   uint16_t  I    AGC_DATA_* id, < AGC_DATA_COUNT
+ *   value     agc_dp_t  I    the loaded value, same representation as the
+ *                            read
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND for an id
+ *          not loadable here, AGC_STATUS_BAD_ARG for a bad argument
+ **********************************************************************/
 agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
 {
     if (!AGC_ASSERT(data_id < AGC_DATA_COUNT))
@@ -271,9 +381,9 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  *p  = nd_dp(data_id);
-    int        k  = 0;
-    agc_vec_t *vp = nd_vec(data_id, &k);
+    agc_dp_t  *p  = nd_dp(data_id); /* DP field, or NULL */
+    int        k  = 0; /* vector component */
+    agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */
 
     if (p != NULL)
     {
@@ -299,7 +409,7 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     else if (data_id == AGC_DATA_TANG || data_id == AGC_DATA_TANG_P1)
     {
         agc_erase_set_tang(
-            (data_id == AGC_DATA_TANG) ? 0 : 1,
+            (data_id == AGC_DATA_TANG) ? 0 : 1, /* TANG or TANG +1 */
             (agc_sp_t) rz_word_value((uint16_t) (value & 077777)));
     }
     else
@@ -308,4 +418,4 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* agc_rendz_noun_write */

@@ -61,7 +61,7 @@
 
 #define AGC_NOUN_COUNT       100 /* nouns 00..99                          */
 #define AGC_NOUN_FIRST_MIXED 40  /* MIXCON: first mixed noun              */
-#define AGC_NOUN_MAX_COMP    3
+#define AGC_NOUN_MAX_COMP    3 /* R1..R3 */
 
 /*
  * SF routine code numbers (NNTYPTAB bits 10-6 for normal nouns, 5-bit fields
@@ -110,9 +110,11 @@ typedef enum agc_scale
     AGC_SCALE_DEG180,       /* F   CSM+LM xxx.xx deg (180) */
     AGC_SCALE_DP_DEG90,     /* G   CSM+LM xx.xxx deg (DP, 90) */
     AGC_SCALE_DP_DEG360,    /* H   CSM+LM xxx.xx deg (DP, 360) */
-    /* J   CSM    xx.xxx deg (optics Y; +19.775 deg bias on display, no negative load) */
+    /* J   CSM    xx.xxx deg (optics Y; +19.775 deg bias on display, no negative
+     *     load) */
     AGC_SCALE_Y_OPTICS_DEG,
-    /* K   CSM+LM hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only, all 3 loaded) */
+    /* K   CSM+LM hhhhh. hrs / mmmmm. min / ss.ss sec across R1,R2,R3 (dec only,
+     *     all 3 loaded) */
     AGC_SCALE_HMS, /* L   CSM+LM xxBxx min/sec (display only, caps at 59B59) */
     AGC_SCALE_MIN_SEC,
     AGC_SCALE_TIME_SEC_DP,   /* N   CSM+LM xxx.xx sec (DP) */
@@ -132,7 +134,8 @@ typedef enum agc_scale
     AGC_SCALE_DRAG_ACCEL,    /* MM  CSM    xxx.xx g (max 24.99) */
     AGC_SCALE_POS8,          /* VV  CSM    xxxx.x nautical miles */
     AGC_SCALE_DP_FRACTION,   /* ZZ  CSM    .xxxxx DP fractional */
-    /* TT  LM     +0000x landing radar position 1/2 (display only; reads channel 33 bits 6,7) */
+    /* TT  LM     +0000x landing radar position 1/2 (display only; reads channel
+     *     33 bits 6,7) */
     AGC_SCALE_LR_POSITION, /* EE  LM     xxx.xx deg (optical tracker azimuth) */
     AGC_SCALE_CDU360,      /* WW  LM     xxx.xx deg (360 - CDU) */
     AGC_SCALE_TRACKER_AZ_DEG,
@@ -385,7 +388,7 @@ typedef enum agc_noun_data
 } agc_noun_data_t;
 
 /* Ids below this are special (not fixed erasables).                       */
-#define AGC_DATA_FIRST_ERASABLE AGC_DATA_ABVEL
+#define AGC_DATA_FIRST_ERASABLE AGC_DATA_ABVEL /* first id naming an erasable */
 
 /* One noun (interface agreed with io-pinball). */
 typedef struct agc_noun
@@ -429,7 +432,7 @@ typedef struct agc_scale_info
     bool        is_dp;   /* erasable is a DP pair (else one SP word)   */
     bool        is_raw;  /* SP word passed raw, 15 bits (see top)      */
     agc_dp_t    sf_in;   /* SFINTAB entry for loads (2DEC, scale 2^28) */
-    agc_dp_t    sf_out;  /* SFOUTAB entry for displays                 */
+    agc_dp_t    sf_out;  /* SFOUTAB entry, scale per routine           */
 } agc_scale_info_t;
 
 /* NOT_FOUND if the scale type does not exist in that vehicle's program.   */

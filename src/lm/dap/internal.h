@@ -244,7 +244,7 @@ agc_sp_t     lm_dap_time6_value(void); /* TIME6 as a 1's value      */
 agc_status_t lm_dap_tjetlaw(void);  /* TJETLAW (tjetlaw.c)       */
 agc_status_t lm_dap_spsrcs(void);   /* SPSRCS (spsrcs.c)         */
 agc_status_t lm_dap_gts(void);      /* GTS .. CLOSEOUT (gts.c)   */
-agc_status_t lm_dap_acdt_c12(void); /* ACDT+C12 (gts.c)          */
+agc_status_t lm_dap_gimbal_drive_update(void); /* ACDT+C12 (gts.c)          */
 agc_sp_t     lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag,
                            agc_sp_t *inindex); /* GTSQRT (gts.c)          */
 

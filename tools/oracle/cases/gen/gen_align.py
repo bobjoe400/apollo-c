@@ -6,7 +6,7 @@ python3 -I gen_align.py && cd ../.. && make cases
 Every routine is interpretive and ends with RVQ (or GOTO to the saved
 QPRET): entry INTPRET, Q = label, QPRET (VAC1+42) = an EXIT / TC <stop>
 pair in the same half of fixed memory (low banks 0-17, high 20-37)."""
-import math, os, sys
+import math, os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from agcw import dp, vec, _w
 from specgen import Spec, gets_dp
@@ -64,16 +64,26 @@ def lm():
         '  LOS along Y: BOVB LUNDESCH (stop LUNDESCH).',
         'SCALEVEC 32,2132 (ebank 3): RATT1 (VAC1+14, m 2^27), VATT1 (VAC1+20,',
         '  m/cs 2^5), REFSMMAT (half unit) -> MPAC vector words (RX VX RY VY RZ',
-        '  VZ in MPAC, +1, +3, +4, +5, +6) and VATT1 (V, rounded, sign-agreed).'])
+        '  VZ in MPAC, +1, +3, +4, +5, +6) and VATT1 (V, rounded, sign-agreed).',
+        'R05 CONV4 42,3636 .. SBANDEX (stop 42,3746 = CA EXTVBACT), ebank 4:',
+        '  RATT (VAC1, earth sphere 2^29 m), REFSMMAT identity, CDUs 0 ->',
+        '  PITCHANG, YAWANG (revs).'])
     for tag, t, sh in (('rrnb_a', -25.0, 30.0), ('rrnb_b', 10.0, 200.0),
                        ('rrnb_c', -70.0, -135.0)):
         s.run(tag, 'RRNB', 0o23, 'DSPLY81',
               TRAP_HI_LM + [('TANGNB', cdu(t) + ',' + cdu(sh))],
               gets_dp('VAC1+32', 3), ebank=0o7)
-    for tag, los, mode2 in (('rrangles_a', [0.3, 0.4, 0.8], False),
-                            ('rrangles_b', [-0.6, -0.2, -0.3], False),
-                            ('rrangles_mode2', [0.5, -0.7, 0.1], True),
-                            ('rrangles_alongy', [0.0, 1.0, 0.0], False)):
+    rr = [('rrangles_a', [0.3, 0.4, 0.8], False),
+          ('rrangles_b', [-0.6, -0.2, -0.3], False),
+          ('rrangles_mode2', [0.5, -0.7, 0.1], True),
+          ('rrangles_alongy', [0.0, 1.0, 0.0], False),
+          ('rrangles_y0', [0.6, 0.0, -0.8], False),     # ASIN(0): -0 words
+          ('rrangles_x0', [0.0, 0.3, -0.9], True)]
+    rnd = random.Random(52)
+    for k in range(12):   # every ARCTRIG octant, both RR modes
+        rr.append(('rrangles_r%d' % k, [rnd.uniform(-1, 1) for _ in range(3)],
+                   k % 2 == 1))
+    for tag, los, mode2 in rr:
         s.run(tag, 'RRANGLES', 0o13, 'POODOO LUNDESCH',
               TRAP_LO + [('MPAC', mpac_vec(half_unit(los))), ('MODE', '77776'),
                       ('RADMODES', '04000' if mode2 else '00000')],
@@ -90,6 +100,15 @@ def lm():
                       ('REFSMMAT', mwords(m))],
               ['MPAC', 'MPAC+1', 'MPAC+3', 'MPAC+4', 'MPAC+5', 'MPAC+6',
                'VAC1+20', 'VAC1+22', 'VAC1+24'], ebank=0o3)
+    # ---- S-band (R05) angle part: CONV4 .. SBANDEX ----
+    ident = mwords([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    for tag, r in (('sband_lm_a', [-3.0e8, 1.0e8, -2.0e8]),
+                   ('sband_lm_b', [2.0e8, 2.5e8, 1.0e8]),
+                   ('sband_lm_c', [1.0e8, -3.0e8, 2.0e7]),
+                   ('sband_lm_d', [-1.5e8, -2.0e8, 3.0e8])):
+        s.run(tag, 'CONV4', 0o42, '42,3746',
+              [('VAC1', vec(r, 29)), ('REFSMMAT', ident)],
+              ['PITCHANG:dp', 'YAWANG:dp'], ebank=0o4)
     s.write(os.path.join(OUT, 'align_lm.spec'))
 
 def cm():
@@ -100,7 +119,10 @@ def cm():
         '  words, 2s complement) -> 32D (VAC1+32..37) half-unit NB LOS.',
         'SXTANG 23,2053 (ebank 5): STAR, XNB YNB ZNB (half unit, same frame)',
         '  -> SAC, PAC (2s complement CDU words), CULTFLAG (FLAGWRD3 bit 7).',
-        'LOG 23,2155: MPAC = x (DP, 0 < x < 1) -> MPAC = -ln(x)/32.'])
+        'LOG 23,2155: MPAC = x (DP, 0 < x < 1) -> MPAC = -ln(x)/32.',
+        'R05 EISOI 42,3677 .. EXIT (stop 42,3751 = CA EXTVBACT), ebank 4: RATT',
+        '  (VAC1, earth sphere 2^29 m), REFSMMAT, SINCDU/COSCDU (Y Z X, /2) ->',
+        '  R (2D = VAC1+2, NB 2^29 via *SMNB*), RHOSB pitch, GAMMASB yaw (revs).'])
     x1 = '%05o' % (0o77777 - VAC4)
     for tag, ta, sa in (('sxtnb_a', 20.0, 40.0), ('sxtnb_b', 45.0, -120.0),
                         ('sxtnb_c', 3.0, 170.0)):
@@ -108,11 +130,22 @@ def cm():
               TRAP_HI_CM + [('VAC1+38', x1), ('VAC4+3', cdu(sa)),
                       ('VAC4+5', cdu(4.0 * ta - 79.1015625))],
               gets_dp('VAC1+32', 3))
-    for tag, star, ang in (('sxtang_a', [0.3, 0.2, 0.9], [0.1, -0.2, 0.05]),
-                           ('sxtang_b', [-0.5, 0.6, 0.6], [0.6, 0.3, -1.2]),
-                           ('sxtang_wide', [0.9, -0.3, -0.2], [0.0, 0.0, 0.0]),
-                           ('sxtang_behind', [-0.5, 0.2, -0.8], [0.0, 0.0, 0.0]),
-                           ('sxtang_axis', None, [0.0, 0.0, 0.0])):
+    sx = [('sxtang_a', [0.3, 0.2, 0.9], [0.1, -0.2, 0.05]),
+          ('sxtang_b', [-0.5, 0.6, 0.6], [0.6, 0.3, -1.2]),
+          ('sxtang_wide', [0.9, -0.3, -0.2], [0.0, 0.0, 0.0]),
+          ('sxtang_behind', [-0.5, 0.2, -0.8], [0.0, 0.0, 0.0]),
+          ('sxtang_axis', None, [0.0, 0.0, 0.0])]
+    rnd = random.Random(53)
+    for k in range(12):   # stars within ~60 deg of the shaft axis
+        a = math.radians(32.523)
+        z1 = [math.sin(a), 0.0, math.cos(a)]
+        st = [z1[i] + rnd.uniform(-0.8, 0.8) for i in range(3)]   # NB
+        ang = [rnd.uniform(-3, 3) for _ in range(3)]
+        m = mat(ang)     # rows XNB.. in the star's frame: star = m^T st
+        sx.append(('sxtang_r%d' % k,
+                   [sum(m[i][j] * st[i] for i in range(3)) for j in range(3)],
+                   ang))
+    for tag, star, ang in sx:
         nb = mat(ang)
         if star is None:   # along ZNB1 = (sin 32.523, 0, cos 32.523) in NB
             a = math.radians(32.523)
@@ -125,6 +158,18 @@ def cm():
         s.run(tag, 'LOG', 0o23, 'POODOO',
               TRAP_HI_CM + [('MPAC', dp(x) + ',00000'), ('MODE', '00000')],
               ['MPAC:dp'])
+    # ---- S-band (R05) angle part: EISOI .. EXIT (stop at CA EXTVBACT) ----
+    for tag, r, c in (('sband_cm_a', [-3.0e8, 1.0e8, -2.0e8], [0.0, 0.0, 0.0]),
+                      ('sband_cm_b', [2.0e8, 2.5e8, 1.0e8], [30.0, -50.0, 120.0]),
+                      ('sband_cm_c', [1.0e8, -3.0e8, 2.0e7], [-100.0, 10.0, 200.0]),
+                      ('sband_cm_d', [-1.5e8, -2.0e8, 3.0e8], [5.0, 80.0, -20.0])):
+        yzx = [math.radians(c[1]), math.radians(c[2]), math.radians(c[0])]
+        s.run(tag, 'EISOI', 0o42, '42,3751',
+              TRAP_HI_CM + [('VAC1', vec(r, 29)),
+                            ('REFSMMAT', mwords(mat([0.3, -0.6, 1.0]))),
+                            ('SINCDU', vec([math.sin(a) for a in yzx], 1)),
+                            ('COSCDU', vec([math.cos(a) for a in yzx], 1))],
+              ['RHOSB:dp', 'GAMMASB:dp'] + gets_dp('VAC1+2', 3), ebank=0o4)
     s.write(os.path.join(OUT, 'align.spec'))
 
 if __name__ == '__main__':

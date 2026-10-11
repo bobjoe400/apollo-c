@@ -100,7 +100,7 @@ static agc_sp_t chkmintj(int32_t a)
 
 /* Z123COMP (p.1465): reverse ROTSENSE, time to axis at 4 s. True if it
  * exceeds 150 ms (go to FULLTIME).                                       */
-static bool z123comp(const lm_dap_t *d, tjl_t *w)
+static bool zone_axis_time(const lm_dap_t *d, tjl_t *w)
 {
     w->rotsense = (agc_sp_t) -w->rotsense;
     w->ttoaxis  = lm_dap_mphi(d->edot, blk(d, LM_BK_1ANET1, w->adr2));
@@ -119,7 +119,7 @@ static bool z123comp(const lm_dap_t *d, tjl_t *w)
 }
 
 /* ZONE2,3 (p.1466): fire to the axis, or a minimum impulse when close.   */
-static agc_sp_t zone23(const lm_dap_t *d, const tjl_t *w)
+static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
 {
     if (!AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0))
     {
@@ -141,7 +141,7 @@ static agc_sp_t zone23(const lm_dap_t *d, const tjl_t *w)
 
 /* ZONE1 (pp.1466-1467): beyond the switch curve. H = 4 (FIREFCT -
  * AXISDIST) ACCFCTZ1; TJET = H/.1 + TTOAXIS + .0375 or H/.025 + TTOAXIS. */
-static agc_sp_t zone1(const lm_dap_t *d, tjl_t *w)
+static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 {
     agc_sp_t x =
         lm_dap_sat((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1));
@@ -179,7 +179,7 @@ static agc_sp_t zone1(const lm_dap_t *d, tjl_t *w)
 
 /* ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
  * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME. */
-static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
+static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 {
     if (!AGC_ASSERT(w->rotsense != 0))
     { /* CCSHOLE        */
@@ -228,7 +228,7 @@ static agc_sp_t zone5(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
 /* ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
  * firing toward the target stay on if the target (axis strip when
  * drifting, parabola when powered) can still be reached.                 */
-static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
+static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
 {
     agc_sp_t tj = d->tj[d->axisctr + 1];
 
@@ -251,7 +251,7 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
             return (0);
         }
 
-        return (z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone23(d, w));
+        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w));
     }
 
     if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
@@ -264,7 +264,7 @@ static agc_sp_t zone4(const lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return (z123comp(d, w) ? (agc_sp_t) TJ_FULLTIME : zone1(d, w));
+    return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w));
 }
 
 /* FINELAW (pp.1462-1466): EDOTSQ, max-jet decision, FIREFCT and zones.   */
@@ -299,17 +299,17 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     if (d->firefct <= 0)
     { /* ZON1,2,3       */
-        if (z123comp(d, w))
+        if (zone_axis_time(d, w))
         {
             return (TJ_FULLTIME);
         }
 
         if ((int32_t) d->firefct + d->block[TJ_FLAT] <= 0)
         {
-            return (zone1(d, w));
+            return (zone_beyond_switch(d, w));
         }
 
-        return (zone23(d, w));
+        return (zone_fire_to_axis(d, w));
     }
 
     int32_t g =
@@ -321,7 +321,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
         return (0); /* no valid result */
     }
 
-    return ((g <= 0) ? zone5(d, w, lm_dap_sat(g)) : zone4(d, w));
+    return ((g <= 0) ? zone_between_curves(d, w, lm_dap_sat(g)) : zone_coast_jets_on(d, w));
 }
 
 /* RUFSETUP (p.1469): optionally reverse ROTSENSE; require max jets.      */
@@ -347,18 +347,19 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
 }
 
 /* RUFLAW12 (p.1468): TJET = rate change / 2-jet acceleration, at 32 s,
- * FULLTIME beyond 4 s, then rescaled to 4 s (x 8).                      */
-static agc_sp_t ruflaw12(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
+ * FULLTIME beyond 4 s, then rescaled to 4 s (x 8). The three DAS A
+ * double the whole A,L product, so carries from the minor word count.  */
+static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
-    int32_t x =
-        (int32_t) lm_dap_mphi(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)) + TJ_M1_8;
+    lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2));
+    int32_t      x = (int32_t) p.hi + TJ_M1_8;
 
     if (x >= 0)
     {
         return (TJ_FULLTIME);
     }
 
-    int32_t t = (x + TJ_BIT12) * 8; /* DAS A x 3      */
+    int32_t t = (8 * lm_dap_dpval(p)) / 16384; /* DAS A x 3      */
 
     if (!AGC_ASSERT(t >= 0 && t <= LM_POSMAX))
     {
@@ -370,7 +371,7 @@ static agc_sp_t ruflaw12(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 
 /* RUFLAW1 / SMALRATE / RUFLAW2 (p.1468): |E| >= pi/16. Fire to (or
  * against) a 6.5 deg/s target rate.                                       */
-static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
+static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error)
 {
     if (!negative_error)
     { /* RUFLAW2        */
@@ -378,7 +379,7 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
         int32_t v = (int32_t) TJ_RUFRATE + d->edot;
 
         return (lm_dap_ovf(v) ? (agc_sp_t) TJ_FULLTIME :
-                ruflaw12(d, w, (agc_sp_t) v));
+                rough_law_jet_time(d, w, (agc_sp_t) v));
     }
 
     d->edot = lm_dap_wrap((int32_t) d->edot - TJ_RUFRATE); /* RUFLAW1: ADS   */
@@ -387,7 +388,7 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
     {
         rufsetup(d, w, true);
 
-        return (ruflaw12(d, w, d->edot));
+        return (rough_law_jet_time(d, w, d->edot));
     }
 
     rufsetup(d, w, false); /* SMALRATE       */
@@ -400,12 +401,12 @@ static agc_sp_t ruflaw12_entry(lm_dap_t *d, tjl_t *w, bool negative_error)
         return (0); /* no valid result */
     }
 
-    return (ruflaw12(d, w, (agc_sp_t) -d->edot));
+    return (rough_law_jet_time(d, w, (agc_sp_t) -d->edot));
 }
 
 /* RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
  * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.    */
-static agc_sp_t ruflaw3(lm_dap_t *d, tjl_t *w)
+static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
 {
     rufsetup(d, w, true);
     agc_sp_t dist = lm_dap_sat((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1));
@@ -477,7 +478,7 @@ agc_status_t lm_dap_tjetlaw(void)
 
     if (pe.hi != 0)
     {
-        a = ruflaw12_entry(d, &w, pe.hi < 0); /* RUFLAW1 / 2    */
+        a = rough_law_large_error(d, &w, pe.hi < 0); /* RUFLAW1 / 2    */
     }
     else
     {
@@ -486,7 +487,7 @@ agc_status_t lm_dap_tjetlaw(void)
 
         if (pd.hi != 0)
         {
-            a = ruflaw3(d, &w);
+            a = rough_law_large_rate(d, &w);
         }
         else
         {

@@ -231,7 +231,7 @@ static void test_rot_touv(void)
     agc_sp_t u = 0;
     agc_sp_t v = 0;
 
-    CHECK(agc_lm_dap_rot_touv(1000, 0, &u, &v) == AGC_STATUS_OK);
+    lm_dap_rot_touv(1000, 0, &u, &v);
     CHECK(u > 0 && v < 0);
     CHECK(u == -v);
 }

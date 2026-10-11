@@ -3,7 +3,8 @@
  *
  * PURPOSE:
  *   Private state (pin_state_t) and helpers shared by the pinball
- *   translation units (src/io/dsky/pinball/*.c, src/io/dsky/display_if.c).
+ *   translation units (the .c files of src/io/dsky/pinball and
+ *   src/io/dsky/display_if.c).
  *
  * AGC SOURCE:
  *   PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 310-312 (the pinball
@@ -54,49 +55,49 @@
     ((int16_t) -16383) /* CAF BIT15 TS CLPASS (pass 0 only) */
 
 /* ---- DSPCOUNT numbers (PINBALL p. 313, octal) -------------------------- */
-#define PIN_MD1          025
-#define PIN_VD1          023
-#define PIN_VD2          022
-#define PIN_ND1          021
-#define PIN_ND2          020
-#define PIN_R1D1         016
-#define PIN_R2D1         011
-#define PIN_R3D1         004
+#define PIN_MD1          025 /* MD1: major mode, left */
+#define PIN_VD1          023 /* VD1: verb, left */
+#define PIN_VD2          022 /* VD2: verb, right */
+#define PIN_ND1          021 /* ND1: noun, left */
+#define PIN_ND2          020 /* ND2: noun, right */
+#define PIN_R1D1         016 /* R1D1: R1, left */
+#define PIN_R2D1         011 /* R2D1: R2, left */
+#define PIN_R3D1         004 /* R3D1: R3, left */
 #define PIN_DSPTAB_LEN   12 /* DSPTAB +0..+10 panel, +11 C relays (core) */
 #define PIN_DSPTAB_PANEL 11 /* TABLNTH + 1                            */
 
 /* ---- INREL values (GETINREL, p. 318) ----------------------------------- */
-#define PIN_INREL_VERB 0
-#define PIN_INREL_NOUN 1
-#define PIN_INREL_X    2
-#define PIN_INREL_Y    3
-#define PIN_INREL_Z    4
+#define PIN_INREL_VERB 0 /* INREL 0: verb */
+#define PIN_INREL_NOUN 1 /* INREL 1: noun */
+#define PIN_INREL_X    2 /* INREL 2: R1 (XREG) */
+#define PIN_INREL_Y    3 /* INREL 3: R2 (YREG) */
+#define PIN_INREL_Z    4 /* INREL 4: R3 (ZREG) */
 
 /* ---- AGC constants used across files ----------------------------------- */
-#define PIN_BIT1           000001u
-#define PIN_BIT3           000004u
-#define PIN_BIT4           000010u
-#define PIN_BIT5           000020u
-#define PIN_BIT6           000040u
-#define PIN_BIT7           000100u
-#define PIN_BIT10          001000u
-#define PIN_BIT11          002000u
-#define PIN_BIT12          004000u
-#define PIN_BIT13          010000u
-#define PIN_BIT14          020000u
-#define PIN_BIT15          040000u
-#define PIN_LOW5           000037u
-#define PIN_LOW7           000177u
-#define PIN_LOW9           000777u
-#define PIN_LOW11          003777u
+#define PIN_BIT1           000001u /* BIT1 */
+#define PIN_BIT3           000004u /* BIT3 */
+#define PIN_BIT4           000010u /* BIT4 */
+#define PIN_BIT5           000020u /* BIT5 */
+#define PIN_BIT6           000040u /* BIT6 */
+#define PIN_BIT7           000100u /* BIT7 */
+#define PIN_BIT10          001000u /* BIT10 */
+#define PIN_BIT11          002000u /* BIT11 */
+#define PIN_BIT12          004000u /* BIT12 */
+#define PIN_BIT13          010000u /* BIT13 */
+#define PIN_BIT14          020000u /* BIT14 */
+#define PIN_BIT15          040000u /* BIT15 */
+#define PIN_LOW5           000037u /* LOW5 */
+#define PIN_LOW7           000177u /* LOW7 */
+#define PIN_LOW9           000777u /* LOW9 */
+#define PIN_LOW11          003777u /* LOW11 */
 #define PIN_MID7           037600u /* MID7: bits 8-14 (a verb in a VN word) */
-#define PIN_POSMAX         037777u
+#define PIN_POSMAX         037777u /* POSMAX, largest SP magnitude */
 #define PIN_WORD           077777u /* 15-bit word mask                      */
 #define PIN_NEGZERO        077777u /* ones' complement -0                   */
 #define PIN_CHRPRIO        ((agc_prio_t) 030) /* CHRPRIO OCT 30000 (>> 9) */
-#define PIN_PRIO15         ((agc_prio_t) 015)
-#define PIN_PRIO32         ((agc_prio_t) 032)
-#define PIN_PRIO33         ((agc_prio_t) 033)
+#define PIN_PRIO15         ((agc_prio_t) 015) /* PRIO15 */
+#define PIN_PRIO32         ((agc_prio_t) 032) /* PRIO32 */
+#define PIN_PRIO33         ((agc_prio_t) 033) /* PRIO33 */
 #define PIN_MONDEL_CS      ((uint16_t) 0144) /* MONDEL OCT 144 = 100 cs = 1 s */
 #define PIN_SHOLTS_CS      ((uint16_t) 0764) /* SHOLTS OCT 764 = 500 cs = 5 s */
 #define PIN_ALARM_DSPALARM ((agc_alarm_code_t) 01501) /* bad NVSUB V/N       */
@@ -198,7 +199,7 @@ typedef struct pin_state
     uint8_t        chr;            /* CHAR: digit of the key being handled */
     uint16_t       xyz_oct[3];     /* XREG YREG ZREG (octal word)          */
     int32_t        xyz_dec[3];     /* decimal digits entered (integer N)   */
-    agc_dp_t       xyz_frac[3];    /* XREG,XREGLP.. after DECEND +-N/10^5  */
+    agc_dp_t       xyz_frac[3];    /* XREG,XREGLP: +-N/10^5, 2^-28     */
     bool           xyz_negzero[3]; /* -00000 typed (ones' complement -0)   */
     pin_reqret_t   reqret;         /* REQRET continuation                  */
     bool           reqret_neg;     /* REQRET negative: waiting for data    */
@@ -222,7 +223,7 @@ typedef struct pin_state
     uint16_t       mpac2;          /* MPAC +2: ECADR for internal MCTBS    */
 } pin_state_t;
 
-#define PIN_NNTYPE_NORMAL  0
+#define PIN_NNTYPE_NORMAL  0 /* NNADTEM +: normal noun */
 #define PIN_NNTYPE_MCTBS   1 /* NNADTEM -  : specify machine address */
 #define PIN_NNTYPE_CHAN    2 /* NNADTEM -1 : channel to be specified */
 #define PIN_NNTYPE_AUGMENT 3 /* NNADTEM -0 : increment machine addr  */

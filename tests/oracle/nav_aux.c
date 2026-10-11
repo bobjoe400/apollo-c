@@ -282,8 +282,8 @@ static void incorp2(const char *t, long tol_w, long tol_s)
     sv.tdeltav  = oracle_in_vec(t, "DELTACSM");
     sv.tnuv     = oracle_in_vec(t, "NUVCSM");
     sv.x789     = oracle_in_vec(t, "X789");
-    (void) agc_incorp2_wupdate(&ip, &inc, &w);
-    (void) agc_incorp2_state(&ip, &inc, &sv);
+    (void) agc_incorp_update_w(&ip, &inc, &w);
+    (void) agc_incorp_update_state(&ip, &inc, &sv);
     oracle_require_ok(t, "INTWAKE");
 
     for (int k = 0; k < 27; k++)

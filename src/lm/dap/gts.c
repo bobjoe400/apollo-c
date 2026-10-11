@@ -82,7 +82,7 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
 /* ACDT+C12 (pp.1476-1477): Q(R)ACCDOT = -NEGU x ACCDOT(magnitude); the
  * drive bits of channel 12 from NEGUQ, NEGUR; clear the CALLGMBL request.
  * Called with interrupts inhibited.                                     */
-agc_status_t lm_dap_acdt_c12(void)
+agc_status_t lm_dap_gimbal_drive_update(void)
 {
     lm_dap_t *d = lm_dap_state();
 
@@ -504,5 +504,5 @@ agc_status_t agc_lm_dap_timegmbl(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (lm_dap_acdt_c12());
+    return (lm_dap_gimbal_drive_update());
 }

@@ -14,7 +14,7 @@ RADMODES one word; sysmisc test free of scratch stand-ins.
 ## Progress
 * [x] t4rupt_lm.c: fidelity, prologs, density (DONE)
 * [x] t4rupt.c: fidelity, prologs, density (DONE)
-* [ ] t4rupt_csm.c
+* [x] t4rupt_csm.c: fidelity, prologs, density (DONE)
 * [ ] rtb_ops.c, service.c, self_check.c, interbank.c
 * [ ] down_telemetry.c, downlink lists
 * [ ] extended verbs (shared, csm, lm, lm_radar), uplink_update.c
@@ -33,5 +33,7 @@ RADMODES one word; sysmisc test free of scratch stand-ins.
 | S4 | t4rupt.c C33TEST | WAND CHAN33 was written as a no-op AND with 077777 | agc_chan_and(CHAN33, 33RDMSK) as in the AGC (the channel model resets the flip-flops on any write) |
 | S5 | t4rupt_lm.c | RRAUTCHK/RRCDUCHK/RRGIMON/MONREPOS/GPMATRIX checked line by line (OCT05776, OCT10001, OCT32002, OCT20002, RCDUFBIT, REPOSBIT, NORRMBIT verified in the rope) | confirmed; M11..COSMG accessors now assert the matrix invariants |
 | S6 | t4rupt.c | CDRVE, DSPOUT, HANG20, QUIKDSP/QUIKOFF/NODSPY/SYNCT4, PROCEEDE, IMUMON/NXTIFBIT, TLIM, ITURNON(2), IMUCAGE, IMUOP(2), PIPFAIL, DNTMFAST, UPTMFAST, SETISSW, CAGESUB(1,2), TNONTEST, PROCTNON, OPONLY, ISSZERO, ENDTNON(2), RETNON, UNZ2, ISSUP, C33TEST, GLOCKMON/SETGLOCK/GLINVERT, LAMPTEST: both ropes diffed, constants -70DEGS -15DEGS 4SECS 90SECS 30RDMSK checked | confirmed |
+| S7 | t4rupt_csm.c (C pp.160-169) | OPTMON/33OPTMON/SETSAMP/PROCESSW, ZOPTDES/ZTOMAN/ZOPALARM/ZTOCSC, ZOPFINI, CANZOPT, MANUDES/MANTOMAN/OPTZERO, MANTOCSC/COARSLOK, CSCDES/CSCTOZOP/CSCTOMAN, CANCOARS, SETZOEND, ENDZOPT/ZEROPCDU, INITZOPT, OCDUFTST/OPFAILON/OPFAILOF/SETOFF, OPTDRIVE/OZONE/CONTDRVE, OPT2/GETOPCMD/STORCMD/TRUNCMD, shaft stop avoidance, CMDSETUP/POS/NEGOPCMD/DELOPCMD/NEXTOPT/SENDOCMD, SETBIT; MAXPLS -165, MAXPLS1 -164, 13,14,15 = -4095, NEG1/2, 20DEGS 7199, OPTINITF/R checked in the rope | confirmed. SWSAMPLE is BIT5-1 = 17 octal for CSC in the AGC (only its sign is ever tested); C keeps +1, documented |
+| S8 | service.h agc_t4_optics_cmd | forwarding wrapper of agc_erase_cdutcmd, no callers | removed |
 
 ## Lessons

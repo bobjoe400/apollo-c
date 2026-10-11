@@ -313,6 +313,11 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
     r.hi = agc_w_ts(x.hi + y.hi + carry, ovf);
 
+    if (!AGC_ASSERT(agc_w_ok(r.lo) && ((carry >= -1) && (carry <= 1))))
+    {
+        return ((agc_w2_t){0}); /* no valid result */
+    }
+
     if (!AGC_ASSERT(agc_w_ok(r.hi)))
     {
         return ((agc_w2_t){0}); /* no valid result */

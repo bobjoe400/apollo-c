@@ -165,19 +165,6 @@ void lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v)
     }
 }
 
-agc_status_t agc_lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u,
-                                 agc_sp_t *v)
-{
-    if (!AGC_ASSERT(u != NULL) || !AGC_ASSERT(v != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    lm_dap_rot_touv(q, r, u, v);
-
-    return (AGC_STATUS_OK);
-}
-
 /* NOROTAT (p.1454): no rotation on this axis; write its queued
  * translation jets.                                                      */
 static agc_status_t norotat(int axis)

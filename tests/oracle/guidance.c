@@ -174,9 +174,9 @@ int main(void)
     calcrvg("calcrvg_burn", 0);
     calcrvg("calcrvg_tli", 0);
     calcrvg("calcrvg_moon", 0);
-    s40_1("s40_1_posigrade", 64);
-    s40_1("s40_1_plane", 64);
-    s40_1("s40_1_large", 64);
+    s40_1("s40_1_posigrade", 0);
+    s40_1("s40_1_plane", 0);
+    s40_1("s40_1_large", 0);
     s40_2("s40_2_sps", 16);
     s40_2("s40_2_sps_b", 16);
     s40_2("s40_2_rcs", 0);

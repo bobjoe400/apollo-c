@@ -480,7 +480,7 @@ agc_status_t agc_task_paxis(void)
 
     if ((d->rcsflags & LM_RCS_CALLGMBL) != 0u)
     { /* PAXFILT       */
-        st = lm_dap_acdt_c12();
+        st = lm_dap_gimbal_drive_update();
     }
 
     d->dapzrupt = 1; /* SUPERJOB: jask running   */

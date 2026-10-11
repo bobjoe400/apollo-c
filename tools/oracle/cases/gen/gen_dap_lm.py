@@ -89,7 +89,29 @@ def main():
             ('tjet_u_large', 'accs_dps', 1500, 50, 0, 1),
             ('tjet_v_coast', 'accs_dps', -5, 2, 1, 2),
             ('tjet_p_aps', 'accs_aps', 90, -60, -1, 0),
-            ('tjet_u_aps', 'accs_aps', -300, 120, 0, 0)):
+            ('tjet_u_aps', 'accs_aps', -300, 120, 0, 0),
+            # review-dap-lm sweep: asymmetric curves (AOS), drift (FLAT,
+            # ZONE3LIM), wide deadband, every SENSETYP, both error signs.
+            ('tjs_u_big1', 'accs_aos_big', 120, -30, 0, 0),
+            ('tjs_u_big2', 'accs_aos_big', -120, 30, 0, 0),
+            ('tjs_v_big1', 'accs_aos_big', 60, 200, 1, 1),
+            ('tjs_v_big2', 'accs_aos_big', -400, -90, 1, 2),
+            ('tjs_u_bign', 'accs_aos_bigneg', 90, 15, 0, 2),
+            ('tjs_v_bign', 'accs_aos_bigneg', -90, -15, 1, 1),
+            ('tjs_u_drift1', 'accs_aos_drift', 30, 2, 0, 0),
+            ('tjs_u_drift2', 'accs_aos_drift', 300, -5, 0, 0),
+            ('tjs_v_drift3', 'accs_aos_drift', -20, 1, 1, 0),
+            ('tjs_p_drift', 'accs_aos_drift', -350, 40, -1, 0),
+            ('tjs_u_wide1', 'accs_dps_wide', 1100, -200, 0, 0),
+            ('tjs_v_wide2', 'accs_dps_wide', -800, 600, 1, 1),
+            ('tjs_u_fail', 'accs_aos_fail1', 200, 50, 0, 2),
+            ('tjs_v_fail', 'accs_aos_fail2', -200, -50, 1, 1),
+            ('tjs_u_netneg', 'accs_aos_netneg', 150, -80, 0, 0),
+            ('tjs_v_netneg', 'accs_aos_netneg', -150, 80, 1, 0),
+            ('tjs_u_vbig', 'accs_aos_vbig', 500, 300, 0, 1),
+            ('tjs_p_zero_e', 'accs_dps', 0, 700, -1, 0),
+            ('tjs_u_hugerate', 'accs_dps', 10, -9000, 0, 0),
+            ('tjs_v_hugeerr', 'accs_dps', -12000, 0, 1, 2)):
         blk = ','.join(accs[src]['E6,%04o' % (BLOCK + k)] for k in range(48))
         s.run(tag, 'ENDOFJOB', 0o17, 'ENDOFJOB',
               [('E', _w(e)), ('EDOT', _w(edot)), ('AXISCTR', _w(axis)),
@@ -117,7 +139,12 @@ def main():
             ('kal_powered', 'gpm_b', [-300, 80, 0], [300.5, 12.0, -49.5], [300.0, 12.4, -50.0],
              [400, -500, 30], [9, 2, 11], [100, -80, 33], False, [12, -7]),
             ('kal_bigtrap', 'gpm_c', [180, 0, -170], [181.6, -3.0, 84.2], [181.0, -2.0, 85.0],
-             [-9000, 8000, -7000], [6, 7, 8], [-300, 250, -200], False, [-30, 22])):
+             [-9000, 8000, -7000], [6, 7, 8], [-300, 250, -200], False, [-30, 22]),
+            # review-dap-lm: docked gains (DKTRAP, DKOMEGAN, DKKAOSN pad values)
+            ('kal_docked', 'gpm_a', [120, -60, 30], [20.2, 4.9, 10.05], [20.0, 5.0, 10.0],
+             [-250, 260, 100], [2, 4, 6], [-20, 30, 15], 'dock', [0, 0]),
+            ('kal_docked_pw', 'gpm_b', [-80, 40, -20], [300.2, 12.1, -49.8], [300.0, 12.4, -50.0],
+             [500, -400, -300], [8, 3, 1], [60, -40, 20], 'dockpw', [5, -3])):
         m = gpm[gp]
         sets = [('TJP', w(tj)), ('NO.PJETS', w([2, 2, 2])), (JACC, w([350, 280, 300])),
                 ('DAPTREG4', ','.join(cdu(x) for x in cdus)),
@@ -126,7 +153,9 @@ def main():
                 ('AOSQTERM', w([15, -8])), ('AOSQ', w([300, 120, -200, -50])),
                 ('DXERROR', w([20, 100, -15, -30, 5, 9])), ('PLAST', w([10, -20, 30])),
                 ('M11', ','.join(m[n] for n in ('M11', 'M21', 'M31', 'M22', 'M32'))),
-                ('LMTRAP', w([-200, 10, 60])), ('DAPBOOLS', '00200' if drift else '00000'),
+                ('LMTRAP', w([-200, 10, 60])), ('DKTRAP', w([-254, 10, 60])),
+                ('DAPBOOLS', {True: '00200', False: '00000', 'dock': '10200',
+                              'dockpw': '10000'}[drift]),
                 ('QACCDOT', _w(acc[0])), ('RACCDOT', _w(acc[1]))]
         s.run(tag, None, 0o16, 'PRETIMCK', sets, k_out, ebank=6, entry='16,3641')
     # ---- GTS and TIMEGMBL (review-dap-lm) ----

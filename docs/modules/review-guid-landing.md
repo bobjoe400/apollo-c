@@ -15,7 +15,8 @@ tests/oracle/landing.c. AGC: Luminary099 pp. 785-856, 898-925.
 - DONE digit-suffixed names: 7 job/task ids + 16 functions renamed (docs/RENAMES.md section review-guid-landing); registry.tsv rows, jobs.h, dispatch.c, dps_burn.c callers updated by word-boundary replace; gen_registry --check clean
 - TODO LANDING_TEST_FAKE_THRUST
 - TODO R10/R11 abort-monitor naming
-- TODO style debt (check_style)
+- style debt: DONE state.c, throttle.c, aborts.c (0 findings); TODO displays.c, findcduw.c, guidance.c, lunar_landing.c, ascent.c, landing.h, tests
+- tools for the style pass (scratch, review-guid-landing/): prolog.py (template prologs from the existing header comment + a per-file description dict), annot.py (declaration comments), braces.py, longfix.py, fileprolog.py, rep.py; private build full.sh
 
 ## Findings
 

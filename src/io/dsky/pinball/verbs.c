@@ -97,7 +97,7 @@ agc_status_t pin_noun_load(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* pin_noun_load */
 
 /* ---- alarm exits (p. 364) --------------------------------------------- */
 
@@ -221,7 +221,7 @@ agc_status_t pin_almcycle(void)
     s->reqret_neg = false;
     agc_status_t st = pin_updatvb(s->verbsave); /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st);
+    return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st); /* if OK */
 }
 
 /**********************************************************************
@@ -299,7 +299,8 @@ bool pin_dectest(void)
 {
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
+    if (!AGC_ASSERT(s->noun.no_load ? /* no load => dec */
+                    s->noun.dec_only : true))
     {
         return (false);
     }
@@ -330,7 +331,8 @@ bool pin_nountest(void)
         return (false);
     }
 
-    if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true))
+    if (!AGC_ASSERT(s->noun.no_load ? /* no load => dec */
+                    s->noun.dec_only : true))
     {
         return (false);
     }
@@ -369,8 +371,13 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int first =
-        (verb == 2u) ? 1 : ((verb == 3u) ? 2 : 0); /* comp shown in R1 */
+    int first = 0; /* comp shown in R1 */
+
+    if (verb == 2u || verb == 3u)
+    {
+        first = (int) verb - 1; /* V02: comp 2, V03: comp 3 */
+    }
+
     int count = (verb <= 3u) ? 1 : (int) verb - 2; /* registers used  */
     int need  = first + count - 1;                 /* highest comp    */
 
@@ -393,7 +400,7 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
         st = pin_dspoctwo(buf[i]);
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_entexit() : st);
+    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* if OK */
 }
 
 /* ---- noun test and machine address (pp. 324-325) --------------------- */
@@ -738,7 +745,7 @@ static agc_status_t pin_vbfandir(uint8_t verb)
     }
 
     return (pin_dspalarm()); /* VB00 illegal, spares   */
-}
+} /* pin_vbfandir */
 
 /**********************************************************************
  * AGC: VERBFAN (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 325)
@@ -769,7 +776,7 @@ agc_status_t pin_verbfan(void)
     {
         agc_status_t st = agc_dsky_releasedsp(); /* release display syst   */
 
-        return ((st == AGC_STATUS_OK) ?
+        return ((st == AGC_STATUS_OK) ? /* if OK */
                 agc_extverb((int) s->verbreg, (int) s->nounreg) :
                 st);
     }

@@ -109,10 +109,13 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
     agc_tp_t vsq = -agc_vec_sq_tp(ip, tff->vone_p); /* -V^2/MU, TP  */
 
     tff->tffvsq = agc_tp_to_dp(vsq);                       /* STORE    */
-    vsq         = agc_tp_shift(ip, vsq, 6 - tff->nr);      /* SR* 0-6,1 */
-    agc_tp_t alfa = agc_tp_add(ip, vsq, agc_tp_from_dp(two_r)); /* DAD */
+    vsq = agc_tp_shift(ip, vsq, 6 - tff->nr); /* SR* 0-6,1 */
+    /* DAD adds 2/RMAG to the top two words only; MPAC+2 keeps the sign of
+     * -V^2, so the stored ALFA is the truncated top plus 2/RMAG (not the
+     * truncation of the TP sum).                                          */
+    tff->tffalfa = agc_dp_add(ip, agc_tp_to_dp(vsq), two_r); /* ALFA   */
+    agc_tp_t alfa = agc_tp_add(ip, vsq, agc_tp_from_dp(two_r));
 
-    tff->tffalfa = agc_tp_to_dp(alfa);                     /* ALFA     */
     alfa         = agc_tp_shift(ip, alfa, tff->nr - 6);    /* SL* 0-6,1 */
     agc_dp_t alfa20 = agc_tp_to_dp(alfa);                  /* PUSH     */
     agc_tp_t abs_alfa = (alfa < 0) ? -alfa : alfa;         /* ABS: TP  */

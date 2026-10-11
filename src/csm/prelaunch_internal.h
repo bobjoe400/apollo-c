@@ -91,9 +91,11 @@ agc_status_t prelaunch_nbpospl(agc_interp_t *ip);
 /* IMUSTLLG after a stall: *done when good; SOMERR2 when bad.           */
 agc_status_t prelaunch_imustall(agc_job_id_t wake_as, bool *done);
 agc_status_t prelaunch_stall_outcome(bool *good);
-/* EARTHR* (p.430): EARTHR then IMUSTLLG; wake_as also on GYROBUSY.     */
-agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t wake_as,
-                                   bool *done);
+/* EARTHR* (p.430): EARTHR then IMUSTLLG.  busy_wake: the job to run
+ * again when the gyros are busy (GYROBUSY); stall_wake: the job woken
+ * when the torquing ends.                                              */
+agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t busy_wake,
+                                   agc_job_id_t stall_wake, bool *done);
 agc_status_t prelaunch_set_tmark(agc_dp_t t);  /* TMARK, cs 2^28   */
 agc_dp_t     prelaunch_tmark(void);            /* TMARK, cs 2^28   */
 /* SOMERR2 (p.442): alarm 1601, group 5 off, ENDTEST1.                  */
@@ -104,5 +106,7 @@ agc_status_t prelaunch_endtest1(void);
 agc_status_t prelaunch_posn17c(agc_interp_t *ip);
 /* ESTIMS (p.434) in the calling job.                                   */
 agc_status_t prelaunch_estims(agc_job_ctx_t *ctx);
+/* SETNBPOS +1 (p.449): MKRELEAS, then OPTDATA in the calling job.      */
+agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx);
 
 #endif /* CSM_PRELAUNCH_INTERNAL_H */

@@ -51,7 +51,20 @@
 /* KPIP1 2DEC 0.074880 (1 PIPA pulse = 5.85 cm/s), scale to m/cs 2^7.      */
 static const agc_dp_t KPIP1_CM = (agc_dp_t) 20100447;
 
-/* PHASCHNG type B for group 5 with a job restart point at PRIO20.          */
+/**********************************************************************
+ * PHASCHNG type B for group 5 with a job restart point at PRIO20.
+ * AGC: none (TODO)
+ *
+ * FUNCTION NAME: serv_phase
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   code      uint16_t      I    PHASCHNG word for group 5 (octal, as in
+ *                                the listing)
+ *   job       agc_job_id_t  I    restart job for the phase (2CADR in the
+ *                                AGC)
+ **********************************************************************/
 static void serv_phase(uint16_t code, agc_job_id_t job)
 {
     agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE,
@@ -65,7 +78,21 @@ static void serv_phase(uint16_t code, agc_job_id_t job)
     agc_phase_change_var(code, &v);
 }
 
-/* PREREAD1 (p.823): last free-fall PIPA reading and package set-up.        */
+/**********************************************************************
+ * PREREAD1 (p.823): last free-fall PIPA reading and package set-up.
+ *
+ * FUNCTION NAME: preread1
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  ------------------------------------
+ *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
+ *                                 PIPAGE...)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed); otherwise the status of the routine it
+ *          continues in
+ **********************************************************************/
 static agc_status_t preread1(agc_avg_g_t *a)
 {
     agc_status_t st = agc_guid_pipasr(a, true); /* CLEAR + READ PIPS      */
@@ -89,7 +116,16 @@ static agc_status_t preread1(agc_avg_g_t *a)
     return (AGC_STATUS_OK);
 }
 
-/* PREREAD1 for P11 (IBNKCALL PREREAD1 at liftoff, P11 p.552).            */
+/**********************************************************************
+ * PREREAD1 for P11 (IBNKCALL PREREAD1 at liftoff, P11 p.552).
+ *
+ * FUNCTION NAME: agc_guid_preread1_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_guid_preread1_csm(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
@@ -100,9 +136,18 @@ agc_status_t agc_guid_preread1_csm(void)
     return (preread1(&agc_guid_state()->avg));
 }
 
-/* PREREAD / REDO5.31 (p.822-823): task. The caller protects it. LASTBIAS
+/**********************************************************************
+ * PREREAD / REDO5.31 (p.822-823): task. The caller protects it. LASTBIAS
  * (last free-fall gyro compensation) is an unprotected NOVAC job; REREADAC
- * sets 1/PIPADT to 2 s in case it is lost.                                */
+ * sets 1/PIPADT to 2 s in case it is lost.
+ *
+ * FUNCTION NAME: agc_task_preread_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_preread_csm(void)
 {
     agc_guid_t  *g  = agc_guid_state();
@@ -139,9 +184,23 @@ agc_status_t agc_task_preread_csm(void)
     return (AGC_STATUS_OK); /* CS TWO NEWPHASE 5 */
 }
 
-/* Entry-DAP part of REDO5.5 (p.824-825): during entry (CM/DSTBY set) the
+/**********************************************************************
+ * Entry-DAP part of REDO5.5 (p.824-825): during entry (CM/DSTBY set) the
  * CDU and DAP angles are frozen at PIPA time for the entry DAP, and while
- * the entry DAP is armed the PIPA readings are saved every 0.5 s for TM.  */
+ * the entry DAP is armed the PIPA readings are saved every 0.5 s for TM.
+ *
+ * FUNCTION NAME: readaccs_entry
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  ------------------------------------
+ *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
+ *                                 PIPAGE...)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed); otherwise the status of the routine it
+ *          continues in
+ **********************************************************************/
 static agc_status_t readaccs_entry(agc_avg_g_t *a)
 {
     agc_guid_t        *g = agc_guid_state();
@@ -198,10 +257,23 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
     agc_phase_newphase(GRP5, 037, false);
 
     return (AGC_STATUS_OK); /* 5.37 = CHEKAVEG        */
-}
+} /* readaccs_entry */
 
-/* CHEKAVEG / MAKESERV / AVEGOUT (p.825-826): recall READACCS while AVEGFLAG
- * is set, else make AVGEND the exit of this last pass; start SERVICER.    */
+/**********************************************************************
+ * CHEKAVEG / MAKESERV / AVEGOUT (p.825-826): recall READACCS while AVEGFLAG
+ * is set, else make AVGEND the exit of this last pass; start SERVICER.
+ *
+ * FUNCTION NAME: chekaveg
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  ------------------------------------
+ *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
+ *                                 PIPAGE...)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 static agc_status_t chekaveg(agc_avg_g_t *a)
 {
     if (!agc_flag_test(AGC_FLAG_AVEGFLAG))
@@ -232,8 +304,20 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
     return (AGC_STATUS_OK); /* TEST CONNECTOR ON */
 }
 
-/* REDO5.5 (p.824): mark the reading done and continue (restart 5.5 enters
- * here, after PIPSDONE's phase change).                                    */
+/**********************************************************************
+ * REDO5.5 (p.824): mark the reading done and continue (restart 5.5 enters
+ * here, after PIPSDONE's phase change).
+ *
+ * FUNCTION NAME: redo5_5
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  ------------------------------------
+ *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
+ *                                 PIPAGE...)
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 static agc_status_t redo5_5(agc_avg_g_t *a)
 {
     a->pipage = 1;                             /* SHOW PIPS HAVE BEEN READ */
@@ -252,7 +336,19 @@ static agc_status_t redo5_5(agc_avg_g_t *a)
     return (chekaveg(a));
 }
 
-/* PIPSDONE (p.824): CAF FIVE, DXCH -PHASE5, then REDO5.5.                   */
+/**********************************************************************
+ * PIPSDONE (p.824): CAF FIVE, DXCH -PHASE5, then REDO5.5.
+ *
+ * FUNCTION NAME: pipsdone
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description (scale)
+ *   --------  -------------  ---  ------------------------------------
+ *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
+ *                                 PIPAGE...)
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 static agc_status_t pipsdone(agc_avg_g_t *a)
 {
     agc_phase_newphase(GRP5, 5, false); /* CAF FIVE DXCH -PHASE5  */
@@ -260,8 +356,17 @@ static agc_status_t pipsdone(agc_avg_g_t *a)
     return (redo5_5(a));
 }
 
-/* REDO5.5 as the restart task of phase 5.5 (RESTART_TABLES p.217: -2CADR
- * REDO5.5, an immediate task).                                             */
+/**********************************************************************
+ * REDO5.5 as the restart task of phase 5.5 (RESTART_TABLES p.217: -2CADR
+ * REDO5.5, an immediate task).
+ *
+ * FUNCTION NAME: agc_task_redo5_5_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_redo5_5_csm(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
@@ -277,7 +382,16 @@ agc_status_t agc_task_redo5_5_csm(void)
     return (redo5_5(&agc_guid_state()->avg));
 }
 
-/* CHEKAVEG as the restart task of phase 5.37 (RESTART_TABLES p.218).     */
+/**********************************************************************
+ * CHEKAVEG as the restart task of phase 5.37 (RESTART_TABLES p.218).
+ *
+ * FUNCTION NAME: agc_task_chekaveg
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_chekaveg(void)
 {
     if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
@@ -293,7 +407,16 @@ agc_status_t agc_task_chekaveg(void)
     return (chekaveg(&agc_guid_state()->avg));
 }
 
-/* READACCS (p.824): waitlist task every 2 s.                               */
+/**********************************************************************
+ * READACCS (p.824): waitlist task every 2 s.
+ *
+ * FUNCTION NAME: agc_task_readaccs_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_readaccs_csm(void)
 {
     agc_guid_t  *g  = agc_guid_state();
@@ -312,9 +435,18 @@ agc_status_t agc_task_readaccs_csm(void)
     return (pipsdone(&g->avg));
 }
 
-/* REREADAC (p.833): restart task for group 5. Does nothing on the last
+/**********************************************************************
+ * REREADAC (p.833): restart task for group 5. Does nothing on the last
  * pass (PHASE5 = +0); otherwise re-establishes 1/PIPADT (LASTBIAS may have
- * been lost) and either redoes READACCS or finishes it at PIPSDONE.       */
+ * been lost) and either redoes READACCS or finishes it at PIPSDONE.
+ *
+ * FUNCTION NAME: agc_task_rereadac_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_rereadac_csm(void)
 {
     agc_guid_t *g = agc_guid_state();
@@ -340,9 +472,19 @@ agc_status_t agc_task_rereadac_csm(void)
     return (pipsdone(&g->avg));
 }
 
-/* QUIKREAD / CHKCTR (p.827): copy the PIPA counters (not zeroed) into
+/**********************************************************************
+ * QUIKREAD / CHKCTR (p.827): copy the PIPA counters (not zeroed) into
  * X,Y,ZPIPBUF and the previous values into X,Y,ZOLDBUF for the downlink;
- * repeat every 0.5 s while PIPCTR counts down (ONMNITOR).                 */
+ * repeat every 0.5 s while PIPCTR counts down (ONMNITOR).
+ *
+ * FUNCTION NAME: agc_task_quikread
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed); otherwise the status of the routine it
+ *          continues in
+ **********************************************************************/
 agc_status_t agc_task_quikread(void)
 {
     agc_guid_t    *g       = agc_guid_state();
@@ -370,7 +512,16 @@ agc_status_t agc_task_quikread(void)
     return (AGC_STATUS_OK); /* TASKOVER               */
 }
 
-/* ONMNITOR (p.827): the FIXDELAY return point of the 0.5 s loop.          */
+/**********************************************************************
+ * ONMNITOR (p.827): the FIXDELAY return point of the 0.5 s loop.
+ *
+ * FUNCTION NAME: agc_task_onmnitor
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_onmnitor(void)
 {
     if (!AGC_ASSERT(agc_guid_state()->avg.pipctr >= 0))
@@ -381,8 +532,21 @@ agc_status_t agc_task_onmnitor(void)
     return (agc_task_quikread());
 }
 
-/* NORMLIZE (p.831): copy RN1, VN1, PIPTIME1 into RN, VN, PIPTIME and
- * initialise UNITR, RMAG and GDT/2, GOBL/2 for the first AVERAGEG pass.   */
+/**********************************************************************
+ * NORMLIZE (p.831): copy RN1, VN1, PIPTIME1 into RN, VN, PIPTIME and
+ * initialise UNITR, RMAG and GDT/2, GOBL/2 for the first AVERAGEG pass.
+ *
+ * FUNCTION NAME: agc_job_normlize_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed); otherwise the status of the routine it
+ *          continues in
+ **********************************************************************/
 agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -417,8 +581,20 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK);           /* ENDOFJOB               */
 }
 
-/* PIPCHECK (p.828): PIPA saturation test before compensation. CCS gives
- * |DELV| - 1, so a reading of more than 6399 pulses in 2 s is bad.       */
+/**********************************************************************
+ * PIPCHECK (p.828): PIPA saturation test before compensation. CCS gives
+ * |DELV| - 1, so a reading of more than 6399 pulses in 2 s is bad.
+ *
+ * FUNCTION NAME: pipas_saturated
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ---------------------------------------
+ *   delv      agc_vec_t   I    PIPA counts read this cycle, pulses (high
+ *                              words)
+ *
+ * RETURNS: bool -- TODO
+ **********************************************************************/
 static bool pipas_saturated(agc_vec_t delv)
 {
     bool bad = false;
@@ -440,8 +616,20 @@ static bool pipas_saturated(agc_vec_t delv)
     return (bad);
 }
 
-/* SERVICER (p.828): the 2-second job. A saturated PIPA skips compensation
- * and the DVTOTAL update and goes straight to AVERAGEG.                   */
+/**********************************************************************
+ * SERVICER (p.828): the 2-second job. A saturated PIPA skips compensation
+ * and the DVTOTAL update and goes straight to AVERAGEG.
+ *
+ * FUNCTION NAME: agc_job_servicer_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -480,7 +668,19 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
     return (agc_job_serv_dvtotup_csm(ctx));
 }
 
-/* DVTOTUP (p.828): DVTOTAL += |DELV| * KPIP1 (m/cs 2^7), then AVERAGEG.    */
+/**********************************************************************
+ * DVTOTUP (p.828): DVTOTAL += |DELV| * KPIP1 (m/cs 2^7), then AVERAGEG.
+ *
+ * FUNCTION NAME: agc_job_serv_dvtotup_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -506,7 +706,19 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
     return (agc_job_serv_averageg_csm(ctx));
 }
 
-/* AVERAGEG (p.828-829): CALCRVG, then the restart-protected copy.          */
+/**********************************************************************
+ * AVERAGEG (p.828-829): CALCRVG, then the restart-protected copy.
+ *
+ * FUNCTION NAME: agc_job_serv_averageg_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -546,8 +758,20 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
     return (agc_job_serv_copy_csm(ctx));
 }
 
-/* AVERAGEG copy (p.829): GENTRAN of 26 words RN1..GOBL1/2 under INHINT,
- * then the AVGEXIT transfer.                                               */
+/**********************************************************************
+ * AVERAGEG copy (p.829): GENTRAN of 26 words RN1..GOBL1/2 under INHINT,
+ * then the AVGEXIT transfer.
+ *
+ * FUNCTION NAME: agc_job_serv_copy_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -567,8 +791,20 @@ agc_status_t agc_job_serv_copy_csm(agc_job_ctx_t *ctx)
     return (agc_csm_avgexit(ctx));
 }
 
-/* DCA AVGEXIT / DXCH Z (p.829): continue this job at the routine named in
- * AVGEXIT (the C executive resumes the same job as that id).              */
+/**********************************************************************
+ * DCA AVGEXIT / DXCH Z (p.829): continue this job at the routine named in
+ * AVGEXIT (the C executive resumes the same job as that id).
+ *
+ * FUNCTION NAME: agc_csm_avgexit
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -586,9 +822,21 @@ agc_status_t agc_csm_avgexit(agc_job_ctx_t *ctx)
     return (agc_exec_job_yield(exit_job));
 }
 
-/* AVGEND (p.829-830): the final pass. Free-fall gyro compensation, DRIFT
+/**********************************************************************
+ * AVGEND (p.829-830): the final pass. Free-fall gyro compensation, DRIFT
  * flag, state vector back to the integration scale (AVETOMID), mark
- * counters and mark buffer cleared, test connector off, then CANV37.      */
+ * counters and mark buffer cleared, test connector off, then CANV37.
+ *
+ * FUNCTION NAME: agc_job_avgend_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -613,7 +861,19 @@ agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
     return (agc_job_avetomid_csm(ctx));
 }
 
-/* AVGEND after the 2.2 restart point (p.829-830).                          */
+/**********************************************************************
+ * AVGEND after the 2.2 restart point (p.829-830).
+ *
+ * FUNCTION NAME: agc_job_avetomid_csm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -653,8 +913,20 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     return (agc_job_change_program_continue(ctx)); /* POSTJUMP CANV37        */
 }
 
-/* SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection
- * and end the job.                                                         */
+/**********************************************************************
+ * SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection
+ * and end the job.
+ *
+ * FUNCTION NAME: agc_job_servexit
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed)
+ **********************************************************************/
 agc_status_t agc_job_servexit(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))

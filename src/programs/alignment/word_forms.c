@@ -35,7 +35,8 @@
  *   ASINEX: ARCSIN(x) = QUARTER - ARCCOS(x) by DCS MPAC, AD QUARTER: the
  *   minor word is just negated, so for x > 0 the words are (+, -).  For
  *   x < 0 SUBTR first forms HALF - ARCCOS(-x) the same way, giving
- *   (-, +) after ASINEX.  Ones' complement AD of x and -x gives -0.
+ *   (-, +) after ASINEX.  -0 needs no tracking: 1TO2SUB's CCS turns it
+ *   into +0, and nothing else here tests it.
  **********************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
@@ -49,7 +50,6 @@
 #define QUARTER_HI 4096  /* QUARTER = .25: major word                    */
 #define HALF_HI    8192  /* HALF / HIDPHALF / LODPHALF = .5: major word  */
 #define CDU_MOD    32768 /* one revolution in CDU counts                 */
-#define CDU_MINUS_ZERO ((uint16_t) 077777) /* 1TO2SUB of -0: 2's comp -1 */
 /* QTSN45 2DEC .1768 (= sin 45 deg / 4), Luminary099 rope 05520 26075.   */
 #define QTSN45 ((agc_dp_t) 47459389)
 
@@ -63,8 +63,7 @@
  *   --------  --------  ---  ------------------------------------
  *   v         agc_dp_t  I    DP value, any scale
  *
- * RETURNS: align_words_t -- (hi, lo) with agreeing signs; a negative
- *          value below one major unit has hi = -0
+ * RETURNS: align_words_t -- (hi, lo) with agreeing signs
  **********************************************************************/
 align_words_t align_words_of(agc_dp_t v)
 {
@@ -73,36 +72,9 @@ align_words_t align_words_of(agc_dp_t v)
     (void) AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
     w.hi          = agc_dp_high(v);
     w.lo          = agc_dp_low(v);
-    w.hi_neg_zero = (v < 0) && (w.hi == 0);
     (void) AGC_ASSERT((w.lo >= -WORD_MAX) && (w.lo <= WORD_MAX));
 
     return (w);
-}
-
-/**********************************************************************
- * AGC: none (ones' complement AD) -- add two SP words, end-around
- *
- * FUNCTION NAME: word_add
- *
- * ARGUMENTS:
- *   Argument  Type       I/O  Description (scale)
- *   --------  ---------  ---  ------------------------------------
- *   a, b      int32_t    I    the words, |x| <= 16383 (+carry)
- *   a_nz      bool       I    a is -0
- *   b_nz      bool       I    b is -0
- *   sum       int32_t *  O    uncorrected sum (may exceed 14 bits)
- *
- * RETURNS: bool -- true when the sum is -0 (x + -x, or -0 + -0 / +0)
- **********************************************************************/
-static bool word_add(int32_t a, bool a_nz, int32_t b, bool b_nz,
-                     int32_t *sum)
-{
-    (void) AGC_ASSERT(sum != NULL);
-    (void) AGC_ASSERT((a >= -(2 * WORD_MAX)) && (a <= 2 * WORD_MAX));
-    *sum = a + b;
-
-    /* Zero is +0 only when both operands are +0. */
-    return ((*sum == 0) && ((a != 0) || a_nz || (b != 0) || b_nz));
 }
 
 /**********************************************************************
@@ -123,11 +95,9 @@ static bool word_add(int32_t a, bool a_nz, int32_t b, bool b_nz,
 align_words_t align_words_add(align_words_t a, align_words_t b)
 {
     align_words_t r;         /* result pair              */
-    int32_t       lo    = 0; /* minor sum, 2^-28 units   */
+    int32_t       lo    = (int32_t) a.lo + b.lo; /* minor sum, 2^-28 */
     int32_t       hi    = 0; /* major sum, 2^-14 units   */
     int32_t       carry = 0; /* minor overflow, -1/0/+1  */
-
-    (void) word_add(a.lo, false, b.lo, false, &lo);
 
     if (lo > WORD_MAX)
     {
@@ -144,8 +114,7 @@ align_words_t align_words_add(align_words_t a, align_words_t b)
         /* no minor overflow */
     }
 
-    r.hi_neg_zero = word_add(a.hi, a.hi_neg_zero, b.hi + carry, b.hi_neg_zero,
-                             &hi);
+    hi = (int32_t) a.hi + b.hi + carry;
 
     if (hi > WORD_MAX)
     {
@@ -177,7 +146,7 @@ align_words_t align_words_add(align_words_t a, align_words_t b)
  *   --------  -------------  ---  ------------------------------------
  *   a         align_words_t  I    pair to complement
  *
- * RETURNS: align_words_t -- (-hi, -lo); a +0 major word becomes -0
+ * RETURNS: align_words_t -- (-hi, -lo)
  **********************************************************************/
 align_words_t align_words_neg(align_words_t a)
 {
@@ -187,7 +156,6 @@ align_words_t align_words_neg(align_words_t a)
     (void) AGC_ASSERT((a.lo >= -WORD_MAX) && (a.lo <= WORD_MAX));
     r.hi          = (agc_sp_t) -a.hi;
     r.lo          = (agc_sp_t) -a.lo;
-    r.hi_neg_zero = (a.hi == 0) && !a.hi_neg_zero;
 
     return (r);
 }
@@ -209,7 +177,7 @@ align_words_t align_words_neg(align_words_t a)
  **********************************************************************/
 align_words_t align_asin_words(agc_dp_t v)
 {
-    const align_words_t quarter = {QUARTER_HI, 0, false}; /* QUARTER */
+    const align_words_t quarter = {QUARTER_HI, 0}; /* QUARTER */
     align_words_t       c;      /* ARCCOS(|x|) words, positive        */
 
     (void) AGC_ASSERT((v >= -(AGC_DP_HALF / 2)) && (v <= AGC_DP_HALF / 2));
@@ -223,7 +191,7 @@ align_words_t align_asin_words(agc_dp_t v)
 
     /* SUBTR: HALF - c, then ASINEX: QUARTER - (HALF - c). */
     c = align_words_of((AGC_DP_HALF / 2) + v);
-    const align_words_t half = {HALF_HI, 0, false};      /* HALF    */
+    const align_words_t half = {HALF_HI, 0};      /* HALF    */
     const align_words_t acos = align_words_add(align_words_neg(c), half);
 
     return (align_words_add(align_words_neg(acos), quarter));
@@ -253,7 +221,7 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
         return (align_words_of(v));
     }
 
-    const align_words_t half = {HALF_HI, 0, false}; /* HALF          */
+    const align_words_t half = {HALF_HI, 0}; /* HALF          */
     const align_words_t c    = align_words_of(AGC_DP_HALF - v);
 
     (void) AGC_ASSERT(c.hi >= 0);
@@ -301,7 +269,7 @@ align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth,
     /* TRIG2: theta = (.5 SIGN SINTH) - ASIN; DSU of the ASIN words. */
     const agc_dp_t      half  = (sinth < 0) ? -AGC_DP_HALF : AGC_DP_HALF;
     const align_words_t asinw = align_asin_words(half - theta);
-    align_words_t       h     = {HALF_HI, 0, false}; /* HIDPHALF  */
+    align_words_t       h     = {HALF_HI, 0}; /* HIDPHALF  */
 
     if (sinth < 0)
     {
@@ -323,7 +291,7 @@ align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth,
  *
  * RETURNS: uint16_t -- 2's complement CDU pattern (2^-15 rev): DDOUBL,
  *          the major word (with the minor word's carry); a negative
- *          major word converted by CCS/COM (same value), -0 -> 77777;
+ *          major word converted by CCS/COM (same value; -0 gives +0);
  *          a doubling overflow wraps by one revolution (LIMITS)
  **********************************************************************/
 uint16_t align_words_to_cdu(align_words_t w)
@@ -348,11 +316,6 @@ uint16_t align_words_to_cdu(align_words_t w)
 
     a += carry;
 
-    if ((a == 0) && w.hi_neg_zero && (carry == 0))
-    {
-        return (CDU_MINUS_ZERO); /* TS MPAC of -0 */
-    }
-
     if (a > WORD_MAX)
     {
         a -= CDU_MOD; /* LIMITS: one revolution */
@@ -369,4 +332,51 @@ uint16_t align_words_to_cdu(align_words_t w)
     (void) AGC_ASSERT((a >= -(CDU_MOD / 2)) && (a < CDU_MOD / 2));
 
     return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a));
+}
+
+/**********************************************************************
+ * DOT then SLn (INTERPRETER.agc TSSL, p. 1154) -- the shift acts on the
+ * triple-precision MPAC the dot product leaves, so MPAC +2 supplies the
+ * low bits of the stored DP
+ *
+ * FUNCTION NAME: align_dot_shl
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  ------------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter (OVFIND on overflow)
+ *   u, v      agc_vec_t       I    the vectors (scales add)
+ *   n         int             I    left shift, 1..4
+ *
+ * RETURNS: agc_dp_t -- (u . v) 2^n, truncated to DP (no rounding: SL)
+ **********************************************************************/
+agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
+{
+    (void) AGC_ASSERT(ip != NULL);
+    (void) AGC_ASSERT((n >= 1) && (n <= 4));
+
+    return (agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, u, v), n)));
+}
+
+/**********************************************************************
+ * DMP then SLn (TSSL on the DMPSUB product) -- as align_dot_shl for a
+ * scalar product
+ *
+ * FUNCTION NAME: align_dmp_shl
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  ------------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter (OVFIND on overflow)
+ *   a, b      agc_dp_t        I    the factors (scales add)
+ *   n         int             I    left shift, 1..4
+ *
+ * RETURNS: agc_dp_t -- a b 2^n, truncated to DP (no rounding: SL)
+ **********************************************************************/
+agc_dp_t align_dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
+{
+    (void) AGC_ASSERT(ip != NULL);
+    (void) AGC_ASSERT((n >= 1) && (n <= 4));
+
+    return (agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), n)));
 }

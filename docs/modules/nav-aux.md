@@ -34,9 +34,9 @@ the same 2^N). cs = centiseconds. revs = revolutions.
 | NEWANGLE p.1248 | agc_planet_newangle | X0 revs 2^0, XDOT rev/cs 2^-23/-28/-27, X1 = 0/5/4 | X revs 2^0 (mod 1 rev) |
 | EARTHMX p.1249 | agc_planet_earthmx | AZO revs, WEARTH | M (2^1) |
 | EARTHL p.1250 | agc_planet_earthl | AXO, -AYO (rad 2^0) | L = (-AX,-AY,0) rad 2^0 |
-| INCORP1 p.1252 (+NEWZCOMP p.1260) | agc_incorp1 | W (agc_incorp_w_t), BVECTOR[3], DELTAQ (DP), VARIANCE (TP), DMENFLG | ZI[3], OMEGA[3], DELTAX[3], GAMMA, NORMGAM |
-| INCORP2 FAZA..FAZB p.1256 | agc_incorp2_wupdate | W, ZI, OMEGA, GAMMA, NORMGAM | W updated in place |
-| INCORP2 FAZC..FAZAB5 p.1259 | agc_incorp2_state | DELTAX, X789, TDELTAV/TNUV/RCV/VCV, MOONTHIS | updated integration temps, rectify request, X789 |
+| INCORP1 p.1252 (+NEWZCOMP p.1260) | agc_incorp_state_deviation | W (agc_incorp_w_t), BVECTOR[3], DELTAQ (DP), VARIANCE (TP), DMENFLG | ZI[3], OMEGA[3], DELTAX[3], GAMMA, NORMGAM |
+| INCORP2 FAZA..FAZB p.1256 | agc_incorp_update_w | W, ZI, OMEGA, GAMMA, NORMGAM | W updated in place |
+| INCORP2 FAZC..FAZAB5 p.1259 | agc_incorp_update_state | DELTAX, X789, TDELTAV/TNUV/RCV/VCV, MOONTHIS | updated integration temps, rectify request, X789 |
 | TFFCONIC/TFFCONMU p.1376 | agc_tff_conic | RONE (2^29/2^27 m), VONE (2^7/2^5 m/cs), 1/RTMU (2^-17/2^-14) | agc_tff_t (RMAG1, NRMAG, NR, TFFNP, TFFVSQ, TFFALFA, TFFRTALF, NA, TFF1/ALF, VONE') |
 | TFFRP/RA p.1379 | agc_tff_rp_ra | agc_tff_t | RPER, RAPO (2^29/2^27 m; RAPO = NEARONE if invalid) |
 | CALCTFF / CALCTPER p.1382 | agc_tff_calctff / agc_tff_calctper | RTERM or RPER (2^29/2^27 m) | TFF cs 2^28 (NEARONE = no free fall) |
@@ -70,7 +70,7 @@ MXV(rows blk[b][3a..3a+2]) BVECTOR[b]; OMEGA[b] = sum_a VXM(ZI[a], same).
 | planetary.c (NEWANGLE EARTHMX EARTHL MOONMX R-TO-RP RP-TO-R, pad load) | DONE agc_planet_* src/nav/auxiliary/planetary.c |
 | latlong.c (LAT-LONG LALOTORV GETERAD ARCTAN SETGAMMA SETRE) | DONE agc_latlong_* src/nav/auxiliary/latlong.c |
 | free_fall.c (TFFCONIC TFFRP/RA CALCTFF CALCTPER T(X)) | DONE agc_tff_* src/nav/auxiliary/free_fall.c |
-| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp1 agc_incorp2_wupdate agc_incorp2_state src/nav/auxiliary/measurement.c |
+| measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp_state_deviation agc_incorp_update_w agc_incorp_update_state src/nav/auxiliary/measurement.c |
 | ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/auxiliary/ephemerides.c |
 | star_tables.c | DONE agc_star_vector src/nav/auxiliary/star_tables.c (37 stars, rope-verified) |
 | tests/nav/navaux.c | DONE (compiles; links once core-numeric lands) |
@@ -94,7 +94,7 @@ agc_interp.h (scratch only, not committed): 143 checks, 0 failures.
 * INCORP2 (measurement.c): restart protection and state-vector plumbing
   (PHASCHNG 04022, GRP2PC, UPFLAG REINTFLG, INTSTALL, MOVEP*/MOVEA*,
   SVDWN1/2, RECTIFY call, POSTJUMP INTWAKE) are the caller's job.  W rows
-  are updated in place (no HOLDW staging); agc_incorp2_state works on the
+  are updated in place (no HOLDW staging); agc_incorp_update_state works on the
   integration temporaries in agc_incorp_sv_t and sets sv->rectify.
 * TFFEL1 (free_fall.c): BOVB SIGNMPAC is the saturation agc_dp_shl already
   gives.  ENDTFF's BOV sees OVFIND accumulated since the last test, as in

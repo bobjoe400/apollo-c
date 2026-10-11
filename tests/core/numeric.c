@@ -1,16 +1,36 @@
-/*
- * numeric.c -- unit tests for the numeric core (agc_word.h,
- * agc_interp.h, agc_constants.h). Returns non-zero on failure.
+/**********************************************************************
+ * FILE NAME: numeric.c
  *
- * Bit-exact expectations come from yaAGC runs of the real Comanche055 /
- * Luminary099 ropes (tools/oracle/cases/interp_sqrt_sin.txt, spsin.txt and
- * core_numeric.txt). Accuracy against libm, measured over 2^21 arguments:
- *   SIN/COS  |err| <= 2.1e-8   (result scaled at 2; ~5.4 LSB of 2^-28)
- *   ASIN/ACOS|err| <= 1.1e-8   revolutions
- *   SQRT     |err| <= 2.9e-8   (x in (0,1))
- *   SPSIN/SPCOS |err| <= 2.6e-4 (~4.2 LSB of 2^-14)
- *   UNIT     |err| <= 2.5e-8 per component
- */
+ * PURPOSE:
+ *   Unit tests for the numeric core (word.h, interp.h, constants.h).
+ *   Returns non-zero on failure.
+ *
+ * AGC SOURCE:
+ *   INTERPRETER.agc pp.1131-1191, SINGLE_PRECISION_SUBROUTINES.agc
+ *   p.1207 (the routines under test). Bit-exact expectations come from
+ *   yaAGC runs of the ropes (tools/oracle/cases/interp_sqrt_sin.txt,
+ *   spsin.txt, core_numeric.txt).
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name     Description
+ *   -------  ----------------------------------------------------
+ *   agc_*    the numeric core under test
+ *   libm     sin, cos, asin, acos, sqrt, fabs (accuracy references)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; prints FAIL lines and exits 1 on any failed check.
+ *
+ * NOTES:
+ *   Accuracy against libm, measured over 2^21 arguments:
+ *     SIN/COS      |err| <= 2.1e-8 (result scaled at 2; ~5.4 LSB)
+ *     ASIN/ACOS    |err| <= 1.1e-8 revolutions
+ *     SQRT         |err| <= 2.9e-8 (x in (0,1))
+ *     SPSIN/SPCOS  |err| <= 2.6e-4 (~4.2 LSB of 2^-14)
+ *     UNIT         |err| <= 2.5e-8 per component
+ **********************************************************************/
 #include <stdio.h>
 
 #include <math.h>
@@ -19,24 +39,92 @@
 #include "agc/core/interp.h"
 #include "agc/core/word.h"
 
-#define PI 3.14159265358979323846
+#define PI 3.14159265358979323846 /* pi, for libm references */
 
-static int failures;
+static int failures; /* failed checks so far */
 
-static void check(int cond, const char *what, long long got, long long exp)
+static void     check(int cond, const char *what, long long int got,
+                      long long int exp);
+static void     eq(const char *what, long long int got, long long int exp);
+static void     near(const char *what, double got, double exp, double tol);
+static agc_dp_t oct2(int hi, int lo);
+static void     test_words(void);
+static void     test_shifts(void);
+static void     test_add_mul(void);
+static void     test_divide(void);
+static void     test_sqrt_trig(void);
+static void     test_vectors(void);
+static void     test_stale_dvsign(void);
+static void     test_constants(void);
+
+/**********************************************************************
+ * AGC: none (test driver) -- run every group.
+ *
+ * RETURNS: int -- 0 when every check passed, 1 otherwise
+ **********************************************************************/
+int main(void)
 {
-    if (!cond)
+    test_words();
+    test_shifts();
+    test_add_mul();
+    test_divide();
+    test_sqrt_trig();
+    test_vectors();
+    test_stale_dvsign();
+    test_constants();
+
+    if (failures != 0)
+    {
+        printf("test_core_numeric: %d failures\n", failures);
+
+        return (1);
+    }
+
+    printf("test_core_numeric: all passed\n");
+
+    return (0);
+}
+
+/**********************************************************************
+ * AGC: none (test helper) -- count and report a failed check.
+ *
+ * ARGUMENTS:
+ *   cond  int            I  non-zero when the check passed
+ *   what  const char *   I  check name
+ *   got   long long int  I  value computed
+ *   exp   long long int  I  value expected
+ **********************************************************************/
+static void check(int cond, const char *what, long long int got, long long int exp)
+{
+    if (cond == 0)
     {
         failures++;
         printf("FAIL %s: got %lld expected %lld\n", what, got, exp);
     }
 }
 
-static void eq(const char *what, long long got, long long exp)
+/**********************************************************************
+ * AGC: none (test helper) -- exact comparison.
+ *
+ * ARGUMENTS:
+ *   what  const char *   I  check name
+ *   got   long long int  I  value computed
+ *   exp   long long int  I  value expected
+ **********************************************************************/
+static void eq(const char *what, long long int got, long long int exp)
 {
     check(got == exp, what, got, exp);
 }
 
+/**********************************************************************
+ * AGC: none (test helper) -- comparison within a tolerance.
+ *
+ * ARGUMENTS:
+ *   what  const char *  I  check name
+ *   got   double        I  value computed
+ *   exp   double        I  value expected
+ *   tol   double        I  largest |got - exp| accepted
+ **********************************************************************/
 static void near(const char *what, double got, double exp, double tol)
 {
     if (fabs(got - exp) > tol)
@@ -47,18 +135,31 @@ static void near(const char *what, double got, double exp, double tol)
     }
 }
 
+/**********************************************************************
+ * AGC: none (test helper) -- two octal AGC words to a DP value.
+ *
+ * ARGUMENTS:
+ *   hi  int  I  major word, 15-bit ones' complement octal
+ *   lo  int  I  minor word, 15-bit ones' complement octal
+ *
+ * RETURNS: agc_dp_t -- the pair's value (signs may disagree)
+ **********************************************************************/
 static agc_dp_t oct2(int hi, int lo) /* AGC words -> DP value     */
 {
-    int h = (hi < 040000) ? hi : -(077777 - hi);
-    int l = (lo < 040000) ? lo : -(077777 - lo);
+    int h = (hi < 040000) ? hi : -(077777 - hi); /* major word; complement if negative */
+    int l = (lo < 040000) ? lo : -(077777 - lo); /* minor word; complement if negative */
 
     return (agc_dp_pack((agc_sp_t) h, (agc_sp_t) l));
 }
 
+/**********************************************************************
+ * AGC: none (word.h utilities) -- pack/unpack, conversions, raw
+ * saturating arithmetic, SIGN, ABS, rounding to SP.
+ **********************************************************************/
 static void test_words(void)
 {
-    agc_ovf_t ovf = 0;
-    agc_dp_t  v   = oct2(012345, 054321);
+    agc_ovf_t ovf = 0; /* overflow of the raw op */
+    agc_dp_t  v   = oct2(012345, 054321); /* a sign-disagreeing pair, 2^-28 per unit */
 
     eq("pack hi", agc_dp_high(oct2(012345, 012345)), 012345);
     eq("pack lo", agc_dp_low(oct2(012345, 012345)), 012345);
@@ -90,10 +191,14 @@ static void test_words(void)
     eq("round to SP neg", agc_dp_round(-(3 * 16384 + 8191)), -3 * 16384);
 }
 
+/**********************************************************************
+ * SR, SRR, SL, NORM, VSR, VSL, TP shifts (INTERPRETER.agc
+ * pp.1152-1161): truncation, rounding, wrap and OVFIND, BOV clearing.
+ **********************************************************************/
 static void test_shifts(void)
 {
-    agc_interp_t ip;
-    int          sh = 0;
+    agc_interp_t ip; /* interpreter state */
+    int          sh = 0; /* NORM shift count */
 
     agc_interp_init(&ip);
     eq("SR truncates", agc_dp_shr(-7, 1), -3);
@@ -113,15 +218,19 @@ static void test_shifts(void)
     eq("VSL wraps", agc_vec_shl(&ip, agc_vec_make(0, AGC_DP_HALF, 1), 1).c[1],
        0);
     eq("VSL ovf", ip.ovfind, 1);
-    eq("TP shift right", (long long) agc_tp_shift(&ip, (agc_tp_t) 1 << 40, -20),
+    eq("TP shift right", (long long int) agc_tp_shift(&ip, (agc_tp_t) 1 << 40, -20),
        1LL << 20);
-    eq("TP norm", (long long) agc_tp_norm(1, &sh), 1LL << 41);
+    eq("TP norm", (long long int) agc_tp_norm(1, &sh), 1LL << 41);
     eq("TP norm count", sh, 41);
 }
 
+/**********************************************************************
+ * DAD, DSU, TAD, DMP, DMPR, DSQ, DMPNSUB, SHORTMP, ROUND
+ * (INTERPRETER.agc pp.1131-1142, 1149, 1180): wrap and rounding.
+ **********************************************************************/
 static void test_add_mul(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     /* DAD wraps like the AGC: .75 + .5 = 1.25 -> .25, OVFIND = +1.        */
@@ -134,12 +243,12 @@ static void test_add_mul(void)
     eq("DSU ovf", ip.ovfind, -1);
     agc_interp_init(&ip);
     eq("DAD plain", agc_dp_add(&ip, 100, -300), -200);
-    eq("TAD", (long long) agc_tp_add(&ip, 5, -7), -2);
+    eq("TAD", (long long int) agc_tp_add(&ip, 5, -7), -2);
     eq("no ovf", ip.ovfind, 0);
     /* DMP of 1/2 by (1/2 + 2^-28) = 1/4 + 2^-29: DMPR rounds the exact
      * half away from zero (ROUNDSUB: DOUBLE of MPAC+2 overflows).         */
-    eq("DMP tp", (long long) agc_dp_mul_tp(AGC_DP_HALF, AGC_DP_HALF + 1),
-       ((long long) 1 << 40) + (1LL << 13));
+    eq("DMP tp", (long long int) agc_dp_mul_tp(AGC_DP_HALF, AGC_DP_HALF + 1),
+       ((long long int) 1 << 40) + (1LL << 13));
     eq("DMPR", agc_dp_mul(&ip, AGC_DP_HALF, AGC_DP_HALF + 1),
        AGC_DP_QUARTER + 1);
     eq("DMP trunc", agc_dp_mul_trunc(AGC_DP_HALF, AGC_DP_HALF + 1),
@@ -149,14 +258,18 @@ static void test_add_mul(void)
     eq("DMP truncates", agc_dp_mul_trunc(AGC_DP_HALF, -3), -1);
     eq("DSQ", agc_dp_sq(&ip, AGC_DP_HALF), AGC_DP_QUARTER);
     eq("DMPNSUB", agc_dp_mul_int(1000, 7), 7000);
-    eq("SHORTMP", (long long) agc_tp_mul_sp((agc_tp_t) 1 << 41, AGC_SP_HALF),
+    eq("SHORTMP", (long long int) agc_tp_mul_sp((agc_tp_t) 1 << 41, AGC_SP_HALF),
        1LL << 40);
     eq("ROUND", agc_tp_round(&ip, ((agc_tp_t) 7 << 14) + 8192), 8);
 }
 
+/**********************************************************************
+ * DDV / MAXDV (INTERPRETER.agc pp.1162-1170): signs, overflow, 0/x,
+ * x/0, accuracy.
+ **********************************************************************/
 static void test_divide(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     eq("DDV", agc_dp_div(&ip, AGC_DP_QUARTER, AGC_DP_HALF), AGC_DP_HALF);
@@ -186,11 +299,15 @@ static void test_divide(void)
     eq("no ovf after MAXDV", ip.ovfind, 0);
 }
 
+/**********************************************************************
+ * SQRT, SIN, COS, ASIN, ACOS (INTERPRETER.agc pp.1181-1191) and SPSIN /
+ * SPCOS (p.1207): yaAGC words, abort / alarm paths, libm accuracy.
+ **********************************************************************/
 static void test_sqrt_trig(void)
 {
-    agc_interp_t ip;
-    agc_dp_t     r = 0;
-    int          k;
+    agc_interp_t ip; /* interpreter state */
+    agc_dp_t     r = 0; /* root / angle, scaled 2^0 */
+    int          k; /* sample index */
 
     agc_interp_init(&ip);
     /* yaAGC (interp_sqrt_sin.txt).                                         */
@@ -204,7 +321,7 @@ static void test_sqrt_trig(void)
     eq("COS 1/8", agc_dp_cos(&ip, 04000 * 16384), oct2(013240, 023631));
     eq("COS 0", agc_dp_cos(&ip, 0), AGC_DP_HALF);
     eq("SQRT abort", agc_dp_sqrt_chk(&ip, -2 * 16384, &r), AGC_STATUS_POODOO);
-    eq("SQRT tiny neg", (long long) agc_dp_sqrt_chk(&ip, -5, &r) * 100 + r, 0);
+    eq("SQRT tiny neg", (long long int) agc_dp_sqrt_chk(&ip, -5, &r) * 100 + r, 0);
     eq("ACOS 0", agc_dp_acos(&ip, 0), AGC_DP_QUARTER);
     eq("ASIN 0", agc_dp_asin(&ip, 0), 0);
     eq("ACOS alarm", agc_dp_acos_chk(&ip, AGC_DP_HALF + 2 * 16384, &r),
@@ -216,7 +333,7 @@ static void test_sqrt_trig(void)
     for (k = -1000; k <= 1000; k++)
     {
         double   x  = k / 1000.0 * 0.999; /* revolutions             */
-        agc_dp_t a  = agc_dp_from_double(x, 0);
+        agc_dp_t a  = agc_dp_from_double(x, 0); /* x as DP, revolutions scaled 2^0 */
         double   xa = agc_dp_to_double(a, 0);
 
         near("SIN", agc_dp_to_double(agc_dp_sin(&ip, a), 0),
@@ -250,23 +367,27 @@ static void test_sqrt_trig(void)
     eq("SPSIN 1/2", agc_sp_sin(AGC_SP_HALF), AGC_SP_MAX); /* ARG90 path     */
     eq("SPCOS 0", agc_sp_cos(0), AGC_SP_MAX);
     eq("no ovf from trig", ip.ovfind, 0);
-}
+} /* test_sqrt_trig */
 
+/**********************************************************************
+ * DOT, VXV, VSQ, ABVAL, UNIT, MXV, VXM, MXM3, VXSC, V/SC, VPROJ, VAD,
+ * VSU (INTERPRETER.agc pp.1131-1183, ANGLFIND.agc p.404).
+ **********************************************************************/
 static void test_vectors(void)
 {
-    agc_interp_t ip;
-    agc_dp_t     lv   = 0;
-    agc_dp_t     lvsq = 0;
-    agc_vec_t    u    =
+    agc_interp_t ip; /* interpreter state */
+    agc_dp_t     lv   = 0; /* LV, scaled 2^0 */
+    agc_dp_t     lvsq = 0; /* LVSQUARE, scaled 2^0 */
+    agc_vec_t    u    = /* test vector, scaled 2^0 */
         agc_vec_make(agc_dp_from_double(0.3, 0), agc_dp_from_double(-0.2, 0),
                      agc_dp_from_double(0.1, 0));
-    agc_vec_t v =
+    agc_vec_t v = /* second vector, scaled 2^0 */
         agc_vec_make(agc_dp_from_double(0.05, 0), agc_dp_from_double(0.4, 0),
                      agc_dp_from_double(-0.25, 0));
-    agc_vec_t r;
-    agc_mat_t m = agc_mat_identity_half();
-    agc_mat_t mm;
-    int       k;
+    agc_vec_t r; /* result vector, scaled 2^0 */
+    agc_mat_t m = agc_mat_identity_half(); /* I/2, then a row replaced */
+    agc_mat_t mm; /* M M, scaled 2^0 */
+    int       k; /* component index */
 
     agc_interp_init(&ip);
     near("DOT", agc_dp_to_double(agc_vec_dot(&ip, u, v), 0),
@@ -319,8 +440,36 @@ static void test_vectors(void)
     eq("VAD", r.c[0] + r.c[1] + r.c[2], 0);
     r = agc_vec_sub(&ip, u, u);
     eq("VSU", r.c[2], 0);
+} /* test_vectors */
+
+/**********************************************************************
+ * DVOVF sign (INTERPRETER.agc pp.1162, 1171-1175): UNIT and V/SC exits
+ * that come before any divide take the sign DVSIGN (= DOTINC) kept from
+ * the previous DDV / DOT on the same interpreter state.
+ **********************************************************************/
+static void test_stale_dvsign(void)
+{
+    agc_interp_t ip;                /* one interpreter state, as a job */
+    agc_vec_t    r = agc_vec_zero(); /* UNIT / V/SC result, scaled 2^1 */
+
+    agc_interp_init(&ip);
+    /* A negative DDV quotient leaves DVSIGN = -0; UNIT of the zero vector
+     * then exits through DVOVF with that stale sign (oracle DDV+UNIT).   */
+    eq("DDV neg", agc_dp_div(&ip, -AGC_DP_QUARTER, AGC_DP_HALF), -AGC_DP_HALF);
+    r = agc_vec_unit(&ip, agc_vec_zero(), NULL, NULL);
+    eq("UNIT zero after neg DDV", r.c[0], AGC_DP_MIN);
+    eq("UNIT zero ovf", agc_interp_test_ovf(&ip), 1);
+    /* DOT (PREDOT: DOTINC = 2) makes DVSIGN positive again.               */
+    eq("DOT", agc_vec_dot(&ip, agc_vec_zero(), agc_vec_zero()), 0);
+    r = agc_vec_div(&ip, agc_vec_make(5, 0, 0), 0);
+    eq("V/SC by 0 after DOT", r.c[0], AGC_DP_MAX);
+    eq("V/SC by 0 ovf", agc_interp_test_ovf(&ip), 1);
 }
 
+/**********************************************************************
+ * FIXED_FIXED_CONSTANT_POOL.agc / INTERPRETIVE_CONSTANTS.agc
+ * pp.1200-1206 -- a sample of the constants.
+ **********************************************************************/
 static void test_constants(void)
 {
     eq("POSMAX", AGC_K_POSMAX, AGC_SP_MAX);
@@ -335,26 +484,4 @@ static void test_constants(void)
     eq("UNITY", agc_k_unity().c[1], AGC_DP_HALF);
     eq("UNITZ", agc_k_unitz().c[2] + agc_k_unitz().c[0], AGC_DP_HALF);
     eq("ZEROVEC", agc_k_zerovec().c[1], 0);
-}
-
-int main(void)
-{
-    test_words();
-    test_shifts();
-    test_add_mul();
-    test_divide();
-    test_sqrt_trig();
-    test_vectors();
-    test_constants();
-
-    if (failures != 0)
-    {
-        printf("test_core_numeric: %d failures\n", failures);
-
-        return (1);
-    }
-
-    printf("test_core_numeric: all passed\n");
-
-    return (0);
 }

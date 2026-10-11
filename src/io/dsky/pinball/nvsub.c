@@ -120,10 +120,10 @@ pin_sleeper_t pin_take_sleeper(bool dsplist)
         return ((pin_sleeper_t){0}); /* no valid result */
     }
 
-    pin_state_t   *s    = pin_st();  /* pinball erasables */
-    pin_sleeper_t *slot = dsplist ? &s->dsplist : &s->cadrstor; /* the list */
-    pin_sleeper_t taken = *slot; /* its contents before */
-    pin_sleeper_t empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
+    pin_state_t   *s     = pin_st(); /* pinball erasables */
+    pin_sleeper_t *slot  = dsplist ? &s->dsplist : &s->cadrstor; /* the list */
+    pin_sleeper_t  taken = *slot; /* its contents before */
+    pin_sleeper_t  empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
 
     *slot = empty; /* XCH with 0      */
 
@@ -196,7 +196,7 @@ agc_status_t agc_dsky_releasedsp(void)
         pin_sleeper_t sl = pin_take_sleeper(true); /* the DSPLIST sleeper */
 
         st = agc_exec_job_wake(sl.cont[0]);
-        st = (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st;
+        st = (st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st; /* none: OK */
     }
 
     agc_relint();
@@ -364,7 +364,7 @@ agc_status_t agc_dsky_nvsubusy(agc_job_id_t wake_as)
     agc_exec_job_sleep(wake_as); /* ENDNVBSY        */
     st = AGC_STATUS_OK;
 
-    return ((st == AGC_STATUS_OK) ? AGC_STATUS_BUSY : st);
+    return ((st == AGC_STATUS_OK) ? AGC_STATUS_BUSY : st); /* L+1: BUSY */
 }
 
 /**********************************************************************
@@ -402,14 +402,21 @@ agc_status_t pin_recaltst(void)
 
         agc_relint();
 
-        return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
+        return ((st == AGC_STATUS_NOT_FOUND) ? /* none: OK */
+                AGC_STATUS_OK : st);
     }
 
-    int which =
-        (s->loadstat == PIN_LS_PROCEED) ?
-        1     /* DOPROC     */
-        :
-        ((s->loadstat == PIN_LS_TERMINATE) ? 0 : 2);     /* DOTERM / data in */
+    int which = 2; /* data in: CADR +3 */
+
+    if (s->loadstat == PIN_LS_PROCEED)
+    {
+        which = 1; /* DOPROC */
+    }
+    else if (s->loadstat == PIN_LS_TERMINATE)
+    {
+        which = 0; /* DOTERM */
+    }
+
     agc_status_t st =
         agc_exec_job_wake_as(sl.cont[0], sl.cont[which]); /* RECAL2 */
 
@@ -424,8 +431,9 @@ agc_status_t pin_recaltst(void)
 
     agc_status_t st2 = agc_dsky_releasedsp(); /* RECAL3          */
 
-    return ((st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND) ? st2 : st);
-}
+    return ((st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND) ? /* step 2 */
+            st2 : st);
+} /* pin_recaltst */
 
 /* ---- NVSUB (pp. 370-372) ---------------------------------------------- */
 
@@ -487,7 +495,7 @@ static agc_status_t pin_blankdsp(int code)
     s->reqret_neg = false;
 
     return (st); /* NVSUBEND        */
-}
+} /* pin_blankdsp */
 
 /**********************************************************************
  * AGC: NVSUB1, NVSUB2 (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 371)
@@ -512,7 +520,7 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
 
     pin_state_t *s    = pin_st(); /* pinball erasables */
     uint8_t      noun = (uint8_t) (nvtemp & PIN_LOW7); /* noun of NVTEMP */
-    uint8_t verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7); /* verb of NVTEMP */
+    uint8_t      verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7); /* verb */
 
     s->entret = PIN_ENT_NVSUBEND; /* set return to NVSUBEND */
 
@@ -557,7 +565,7 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
     st = pin_entpas0();
 
     return ((st == PIN_STATUS_RECYCLE) ? pin_enter() : st); /* ALMCYCLE  */
-}
+} /* pin_nvsub1 */
 
 /**********************************************************************
  * AGC: NVMONOPT (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 370)
@@ -808,9 +816,9 @@ agc_status_t agc_dsky_blanksub(uint16_t code)
         return (AGC_STATUS_BUSY);
     }
 
-    int16_t save     = s->dspcount; /* BLNKSUB1        */
-    bool save_neg = s->dspcount_neg; /* DSPCOUNT blocked flag to restore */
-    agc_status_t st = AGC_STATUS_OK; /* status so far */
+    int16_t      save     = s->dspcount; /* BLNKSUB1        */
+    bool         save_neg = s->dspcount_neg; /* blocked flag */
+    agc_status_t st       = AGC_STATUS_OK; /* status so far */
 
     for (int r = 0; r < 3 && st == AGC_STATUS_OK; r++)
     {
@@ -926,7 +934,7 @@ agc_status_t agc_job_jamterm(agc_job_ctx_t *ctx)
 
     agc_status_t st = pin_jam(PIN_LS_TERMINATE); /* status so far */
 
-    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK);
+    return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK); /* abort only */
 }
 
 /**********************************************************************

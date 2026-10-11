@@ -964,7 +964,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx();
     bool             csm = agc_flag_test(AGC_FLAG_VEHUPFLG);
     agc_vehicle_t    veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
-    agc_status_t     st  = agc_incorp2_wupdate(ip, inc, &ctx->w);
+    agc_status_t     st  = agc_incorp_update_w(ip, inc, &ctx->w);
 
     agc_phase_change(2, 04022); /* FAZC     */
 
@@ -984,7 +984,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_incorp2_state(ip, inc, &sv);
+        st = agc_incorp_update_state(ip, inc, &sv);
     }
 
     ctx->sv.rcv    = sv.rcv;

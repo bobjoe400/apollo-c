@@ -161,7 +161,7 @@ agc_status_t agc_dsky_loadlv(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st);
+    return ((st == AGC_STATUS_OK) ? pin_recaltst() : st); /* if OK */
 }
 
 /* ---- PUTCOM (pp. 347-348) --------------------------------------------- */
@@ -196,16 +196,17 @@ static agc_status_t pin_putcom(int k, bool *finished)
 
     if (!AGC_ASSERT(finished != NULL) || st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
+                st : AGC_STATUS_BAD_ARG);
     }
 
     *finished = false;
 
     if (s->decbrnch == 0u)
     {
-        /* PUTCOM, octal: alarm and recycle if decimal only; for a DP scale (DPTEST)
-         * +0 into the major part and the octal word into the minor part; CHANLOAD
-         * for noun 10.                                                           */
+        /* PUTCOM, octal: alarm and recycle if decimal only; for a DP scale
+         * (DPTEST) +0 into the major part and the octal word into the minor
+         * part; CHANLOAD for noun 10. */
         if (!AGC_ASSERT(pin_invariants()))
         {
             return (AGC_STATUS_BAD_ARG);
@@ -221,7 +222,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
         }
 
         agc_status_t st_octal = AGC_STATUS_OK; /* status of the octal store */
-        uint16_t word = s_octal->xyz_oct[k]; /* octal word keyed / ECADR word */
+        uint16_t     word     = s_octal->xyz_oct[k]; /* octal word */
 
         if (s_octal->nntype == PIN_NNTYPE_CHAN)
         { /* CHANLOAD  */
@@ -232,10 +233,11 @@ static agc_status_t pin_putcom(int k, bool *finished)
                 st_octal = pin_comp_write(k, (agc_dp_t) word);
             }
 
-            return ((st_octal == AGC_STATUS_OK) ? agc_dsky_loadlv() : st_octal);
+            return ((st_octal == AGC_STATUS_OK) ? /* if OK */
+                    agc_dsky_loadlv() : st_octal);
         }
 
-        agc_dp_t v_octal; /* octal word as a value */
+        agc_dp_t v_octal; /* octal word, unscaled */
 
         if (info.is_raw)
         {
@@ -247,7 +249,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
         }
         else if (info.is_dp)
         {
-            agc_dp_t old = 0; /* major part */
+            agc_dp_t old = 0; /* major part, unscaled */
 
             st_octal = pin_comp_read(k, &old);
             v_octal  = agc_dp_pack(pin_sp_from_ones(word), agc_dp_low(old));
@@ -262,9 +264,9 @@ static agc_status_t pin_putcom(int k, bool *finished)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        return ((st_octal == AGC_STATUS_OK) ? pin_comp_write(k,
-                                                             v_octal) : st_octal);
-    }
+        return ((st_octal == AGC_STATUS_OK) ? /* store if octal ok */
+                pin_comp_write(k, v_octal) : st_octal);
+    } /* end if (s->decbrnch == 0u) */
 
     if (info.routine == (uint8_t) PIN_SF_HMS)
     {
@@ -273,7 +275,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
         return (pin_hmsin()); /* stores all three, LOADLV */
     }
 
-    agc_dp_t v = 0; /* value to store */
+    agc_dp_t v = 0; /* value, scale of the comp */
 
     st = pin_putdecsf(k, s->xyz_frac[k], s->xyz_negzero[k], &v, finished);
 
@@ -283,7 +285,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
     }
 
     return (pin_comp_write(k, v));
-}
+} /* pin_putcom */
 
 /**********************************************************************
  * AGC: ALLDC/OC (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 345)
@@ -348,7 +350,7 @@ static agc_status_t pin_putn(int first, int ncomp)
 
     agc_status_t st; /* status so far */
 
-    st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK;
+    st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
     bool finished = false; /* load ended inside PUTCOM */
 
     for (int k = first; k < first + ncomp && st == AGC_STATUS_OK && !finished;
@@ -366,7 +368,7 @@ static agc_status_t pin_putn(int first, int ncomp)
     if (ncomp == 3 && pin_st()->nounreg == 7u)
     {
         /* PUTXYZ noun 07 part: XREG = ECADR of the flag word, YREG = bits to be
-         * processed, ZREG zero to reset bits, non-zero to set bits.              */
+         * processed, ZREG zero to reset bits, non-zero to set bits. */
         if (!AGC_ASSERT(pin_invariants()))
         {
             return (AGC_STATUS_BAD_ARG);
@@ -374,8 +376,8 @@ static agc_status_t pin_putn(int first, int ncomp)
 
         const pin_state_t *s     = pin_st(); /* pinball erasables */
         uint16_t           ecadr = s->xyz_oct[0]; /* flag word ECADR (XREG) */
-        uint16_t bits = s->xyz_oct[1]; /* bit numbers to change (YREG) */
-        uint16_t word = 0; /* octal word keyed / ECADR word */
+        uint16_t           bits  = s->xyz_oct[1]; /* YREG bits */
+        uint16_t           word  = 0; /* octal word */
 
         if (!AGC_ASSERT(s->nounreg == 7u))
         {
@@ -387,10 +389,15 @@ static agc_status_t pin_putn(int first, int ncomp)
 
         if (st_bits == AGC_STATUS_OK)
         {
-            word = (s->xyz_oct[2] != 0u && s->xyz_oct[2] != PIN_NEGZERO) ?
-                   (uint16_t) (word | bits)     /* set bits   */
-                   :
-                   (uint16_t) (word & ~bits & PIN_WORD);     /* BITSOFF    */
+            if (s->xyz_oct[2] != 0u && s->xyz_oct[2] != PIN_NEGZERO)
+            {
+                word = (uint16_t) (word | bits); /* set bits */
+            }
+            else
+            {
+                word = (uint16_t) (word & ~bits & PIN_WORD); /* BITSOFF */
+            }
+
             st_bits = agc_erase_write_ecadr(ecadr, word);
         }
 
@@ -398,8 +405,8 @@ static agc_status_t pin_putn(int first, int ncomp)
         st = st_bits;
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st);
-}
+    return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st); /* if OK */
+} /* pin_putn */
 
 /* ---- the load verbs (pp. 343-346) ------------------------------------- */
 
@@ -448,7 +455,8 @@ agc_status_t pin_load_verb(uint8_t verb)
     {
         s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
 
-        return ((verb == 22u) ? pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) :
+        return ((verb == 22u) ? /* BLOAD / CLOAD */
+                pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) :
                 pin_reqdat(PIN_INREL_Z, PIN_REQ_C_Z));
     }
 
@@ -465,8 +473,9 @@ agc_status_t pin_load_verb(uint8_t verb)
     }
 
     return (pin_reqdat(PIN_INREL_X,
-                       (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X));
-}
+                       (verb == 24u) ? /* ABLOAD / ABCLOAD */
+                       PIN_REQ_AB_X : PIN_REQ_ABC_X));
+} /* pin_load_verb */
 
 /**********************************************************************
  * AGC: ABLOAD, ABCLOAD
@@ -498,7 +507,7 @@ static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
 
     agc_status_t st = pin_updatvb(verb); /* status so far */
 
-    return ((st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st);
+    return ((st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st); /* if OK */
 }
 
 /**********************************************************************

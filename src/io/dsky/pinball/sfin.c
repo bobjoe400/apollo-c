@@ -48,9 +48,9 @@
 #include "internal.h"
 
 /* DEGCON1 2DEC 5.555555555 B-3 (26161 30707): 1/.18 for CDU degrees. */
-#define PIN_DEGCON1 ((int64_t) 186413511)
+#define PIN_DEGCON1 ((int64_t) 186413511) /* 5.555555555 B-3 at 2^-28 */
 /* DEGCON2 2DEC 2.222222222 B-2 (21616 07071): 100/45 for optics (CM). */
-#define PIN_DEGCON2  ((int64_t) 149130809)
+#define PIN_DEGCON2  ((int64_t) 149130809) /* 2.222222222 B-2 at 2^-28 */
 #define PIN_NEG_2    3240 /* NEG.2 OCT -06250: the 19.775 deg bias */
 #define PIN_WHOLECON ((int64_t) 100000) /* (10EXP5/2EXP14)2EXP14          */
 #define PIN_CS_HOUR  ((int64_t) 360000) /* HRCON: 1 hour in centi-sec     */
@@ -58,8 +58,8 @@
 #define PIN_59MIN    59                 /* 59MIN                          */
 #define PIN_5999CS   5999               /* 59.99SEC: 5999 centi-sec       */
 #define PIN_DEC345   034u               /* DECBRNCH bits 3,4,5: R3,R2,R1  */
-#define PIN_DP_LIM   ((int64_t) 1 << AGC_DP_BITS)
-#define PIN_SP_LIM   ((int64_t) 1 << AGC_SP_BITS)
+#define PIN_DP_LIM   ((int64_t) 1 << AGC_DP_BITS) /* 2^28: DP magnitude limit */
+#define PIN_SP_LIM   ((int64_t) 1 << AGC_SP_BITS) /* 2^14: SP magnitude limit */
 
 /**********************************************************************
  * AGC: none (helper)
@@ -75,7 +75,7 @@
  **********************************************************************/
 static int64_t pin_abs64(int64_t a)
 {
-    return ((a < 0) ? -a : a);
+    return ((a < 0) ? -a : a); /* magnitude */
 }
 
 /**********************************************************************
@@ -133,14 +133,15 @@ static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
     int64_t mag = pin_abs64(dp); /* magnitude, unscaled */
     int64_t hi; /* MPAC after rounding MPAC+1 */
 
-    hi = (mag >> AGC_SP_BITS) + (((mag & 037777) >= 020000) ? 1 : 0);
+    hi = (mag >> AGC_SP_BITS) + (((mag & 037777) >= 020000) ? /* round */
+                                 1 : 0);
 
     if (hi >= PIN_SP_LIM)
     {
         return (pin_almcycle()); /* OF: alarm and recycle  */
     }
 
-    *out = agc_dp_from_sp((agc_sp_t) ((dp < 0) ? -hi : hi));
+    *out = agc_dp_from_sp((agc_sp_t) ((dp < 0) ? -hi : hi)); /* sign */
 
     return (AGC_STATUS_OK);
 }
@@ -180,7 +181,7 @@ static agc_status_t pin_arthinsf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
 
     int64_t dp = tp & (PIN_DP_LIM - 1); /* DP part, 2^-28 units */
 
-    return (pin_binround((f < 0) ? -dp : dp, out));
+    return (pin_binround((f < 0) ? -dp : dp, out)); /* sign */
 }
 
 /**********************************************************************
@@ -214,7 +215,7 @@ static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (pin_binround((f < 0) ? -dp : dp, out));
+    return (pin_binround((f < 0) ? -dp : dp, out)); /* sign */
 }
 
 /**********************************************************************
@@ -249,14 +250,14 @@ static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift,
     int64_t tp = pin_dmp_tp(f, sfin) << shift; /* TPLEFTN    */
     int64_t dp; /* DP part, 2^-28 units */
 
-    dp = (tp >> AGC_SP_BITS) + (((tp & 037777) >= 020000) ? 1 : 0);
+    dp = (tp >> AGC_SP_BITS) + (((tp & 037777) >= 020000) ? 1 : 0); /* round */
 
     if ((tp >> AGC_TP_BITS) != 0 || dp >= PIN_DP_LIM)
     {
         return (pin_almcycle()); /* TESTOFUF   */
     }
 
-    *out = (agc_dp_t) ((f < 0) ? -dp : dp);
+    *out = (agc_dp_t) ((f < 0) ? -dp : dp); /* sign */
 
     return (AGC_STATUS_OK);
 }
@@ -387,10 +388,10 @@ static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
         return (pin_almcycle()); /* reject - input         */
     }
 
-    agc_dp_t fb = f - (agc_dp_t) (PIN_NEG_2 * PIN_SP_LIM); /* ADS MPAC   */
-    int64_t d = pin_dmp_tp(fb, PIN_DEGCON2) >> AGC_SP_BITS; /* 2^-14 */
-    int64_t v = ((fb < 0) ? -d : d) + 04000; /* + BIT12    */
-    int64_t m = pin_abs64(v); /* magnitude */
+    agc_dp_t fb = f - (agc_dp_t) (PIN_NEG_2 * PIN_SP_LIM); /* ADS MPAC, 2^-28 */
+    int64_t  d  = pin_dmp_tp(fb, PIN_DEGCON2) >> AGC_SP_BITS; /* 2^-14 */
+    int64_t  v  = ((fb < 0) ? -d : d) + 04000; /* + BIT12    */
+    int64_t  m  = pin_abs64(v); /* magnitude */
 
     if ((m >> 13) >= PIN_SP_LIM)
     {
@@ -484,7 +485,8 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
 
     if (!AGC_ASSERT(out != NULL && exited != NULL) || st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
+                st : AGC_STATUS_BAD_ARG);
     }
 
     bool lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* true on the LM */
@@ -516,7 +518,8 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
             st = pin_deginsf(frac, false, out);
             break;
         case PIN_SF_DPFRAC: /* CM: DPFRACIN.  LM: DEGINSF (360-CDU) */
-            st = lm ? pin_deginsf(frac, true, out) : AGC_STATUS_OK;
+            st = lm ? /* LM 360-CDU */
+                 pin_deginsf(frac, true, out) : AGC_STATUS_OK;
 
             if (!lm)
             {
@@ -540,15 +543,17 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
                      info.routine == (uint8_t) PIN_SF_DPFRAC;
         uint16_t w; /* angle word, two's complement */
 
-        w = angle ? (uint16_t) *out : pin_ones_from_sp(agc_dp_high(*out));
+        w = angle ? /* raw angle word */
+            (uint16_t) *out : pin_ones_from_sp(agc_dp_high(*out));
 
-        *out = (lm || info.routine != (uint8_t) PIN_SF_DPFRAC) ?
-               pin_value_of_word(&info, w) :
-               *out;
+        if (lm || info.routine != (uint8_t) PIN_SF_DPFRAC)
+        { /* all but CM DPFRACIN: the value of the word */
+            *out = pin_value_of_word(&info, w);
+        }
     }
 
     return (st);
-}
+} /* pin_putdecsf */
 
 /* ---- HMSIN (pp. 353-354) ---------------------------------------------- */
 
@@ -582,7 +587,7 @@ static bool pin_whole(agc_dp_t f, int64_t *n)
         return (false);
     }
 
-    *n = (f < 0) ? -w : w;
+    *n = (f < 0) ? -w : w; /* sign */
 
     return (w < PIN_SP_LIM);
 }
@@ -643,5 +648,5 @@ agc_status_t pin_hmsin(void)
 
     agc_status_t st = pin_comp_write(0, (agc_dp_t) t); /* TPAGREE, DXCH */
 
-    return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st);
-}
+    return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st); /* if OK */
+} /* pin_hmsin */

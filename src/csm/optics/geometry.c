@@ -172,8 +172,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     /* 1STO2S of ARCTRIG's words (word_forms.c), not of the value. */
     *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
     align_clear_ovf(ip); /* BOV +1  */
-    const agc_dp_t cos_ta = agc_dp_shl(ip, agc_vec_dot(ip, star, nb1->row[2]),
-                                       1); /* DOT SL1, cos TA B1 */
+    const agc_dp_t cos_ta = align_dot_shl(ip, star, nb1->row[2], 1); /* B0 */
     const agc_dp_t ta = agc_dp_acos(ip, cos_ta); /* revs */
 
     if (ta < 0)

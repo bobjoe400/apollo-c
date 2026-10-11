@@ -57,3 +57,14 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
 - B3 src/io/service/t4rupt.c:127 chan_clear(): `AGC_ASSERT(v <= 0xFFFFFFu)`
   with v = ~(uint32_t)bits is always false (debug builds print it every
   IMU-monitor pass). Intended `bits <= WORD15`.
+- B4 src/exec/waitlist.c:152-163 wait2(): the DEVIATION "the TIME3
+  overflow already happened branch (C(TIME3) < 200 octal) cannot arise"
+  is wrong. It arises inside a RUPTAGN chain (agc_waitlist_t3rupt: two
+  tasks due in the same centisecond): while task 1 runs, TIME3 = T - T2
+  (0 here), not 1.0 - (T2 - T). WAIT2 (WAITLIST.agc C p.1225 / L p.1121)
+  then forms TD - T1 + 1 from `200 - C(TIME3)` > 0; the C code treats
+  task 2 as 163.84 s away, makes the new task task 1 and pushes task 2
+  back. Seen in P30: COMPTGO queues CLOKTASK (1 cs) and DISP45's V16N45
+  queues MONREQ (1 cs) in the same cs; CLOKTASK re-queues itself every
+  second ahead of MONREQ, so MONREQ never runs and V16N45 stays blank
+  (yaAGC: marks +00 00, TFI counting, MGA). Scenario e xexpects it.

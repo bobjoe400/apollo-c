@@ -1,17 +1,46 @@
-/*
- * geom.c -- the geometry and x-guess subroutines of lower rank:
- * GEOM, PARAM and GETX (WLOOP, POLYCOEF, XCOMMON, RESETX2, 360CHECK,
- * INVRSEQN, 1/WLOOP, TRUE360X, INFINITY, OVFLCLR)
- * (CONIC_SUBROUTINES.agc, Comanche 055 pp. 1289-1295, Luminary 099
- * pp. 1185-1191; identical code in both).
+/**********************************************************************
+ * FILE NAME: geom.c
  *
- * GETX finds the universal variable x of the conic through a given true-
- * anomaly difference (CSTH, SNTH) from the conic parameters P, R1A, COGA
- * by the continued-fraction form of GSOP 5.5: three half-angle steps
- * W(k+1) = W(k) + sqrt(W(k)^2 + R1A) (WLOOP), or for transfers near 360
- * degrees the inverse form (INVRSEQN, 1/WLOOP), then a 7-term power series
- * (POLYCOEF), then x, xi, KEPC1 and KEPC2 for DELTIME (XCOMMON).
- */
+ * PURPOSE:
+ *   The geometry and x-guess subroutines of lower rank: GEOM, PARAM and
+ *   GETX (WLOOP, POLYCOEF, XCOMMON, RESETX2, 360CHECK, INVRSEQN, 1/WLOOP,
+ *   TRUE360X, INFINITY, OVFLCLR), and the public PARAM entry.
+ *
+ * AGC SOURCE:
+ *   Comanche055 CONIC_SUBROUTINES.agc pp. 1289-1295 (PARAM, GEOM,
+ *   UNITNORM, COLINEAR, HAVENORM, GETX and its labels)
+ *   Luminary099 CONIC_SUBROUTINES.agc pp. 1185-1191 (identical)
+ *
+ * EXTERNAL VARIABLES:
+ *   Name      Type  I/O  Scale  Description
+ *   --------  ----  ---  -----  ------------------------------------
+ *   INFINFLG  flag  O    -      set by INFINITY, cleared by XCOMMON
+ *   COGAFLAG  flag  O    -      cleared by PARAM
+ *
+ * EXTERNAL REFERENCES:
+ *   Name               Description
+ *   -----------------  ---------------------------------------------
+ *   agc_vec_unit       UNIT (interp.h)
+ *   agc_conic_poly_    POLY with the POLYCOEF coefficients (common.c)
+ *   agc_conic_m*_      one interpretive op on the TP MPAC (common.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; GETX reports a conic that would have to close through infinity
+ *   by INFINFLG (callers then ABTCONIC or retreat). AGC_STATUS_BAD_ARG
+ *   for a NULL pointer, GEOMSGN = 0 or an unknown body.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   WLOOP and 1/WLOOP run exactly three passes (TIX,2 with X2 = 3,
+ *   S2 = 1).
+ *
+ * ALGORITHM:
+ *   GETX finds the universal variable x of the conic through a given
+ *   true-anomaly difference (CSTH, SNTH) from P, R1A, COGA by the
+ *   continued-fraction form of GSOP 5.5: three half-angle steps
+ *   W(k+1) = W(k) + sqrt(W(k)^2 + R1A) (WLOOP), or for transfers near 360
+ *   degrees the inverse form (INVRSEQN, 1/WLOOP), then a 7-term power
+ *   series (POLYCOEF), then x, xi, KEPC1 and KEPC2 for DELTIME (XCOMMON).
+ *********************************************************************/
 #include "agc/core/assert.h"
 #include "internal.h"
 
@@ -35,12 +64,26 @@ typedef enum getx_next
     GETX_TO_INFINITY   /* closure through infinity                    */
 } getx_next_t;
 
-/*
+/**********************************************************************
  * GEOM (CONIC_SUBROUTINES.agc p. 1291, labels GEOM, UNITNORM, COLINEAR,
- * HAVENORM). In: r1vec (0D), v2vec (MPAC), ctx->normsw, ctx->geomsgn,
- * ctx->un (if normsw). Out: U2, MAGVEC2 = |v2vec|, UR1, R1 = |r1vec|, UN,
- * *csth (0D) and *snth (MPAC), both 2^1.
- */
+ * HAVENORM) -- unit vectors, radii and the angle between two vectors
+ *
+ * FUNCTION NAME: agc_conic_geom_
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *  I/O  NORMSW, GEOMSGN, UN (if NORMSW) in;
+ *                                     U2, MAGVEC2, UR1, R1, UN out
+ *   r1vec     agc_vec_t          I    0D vector, 2^29 / 2^27 m
+ *   v2vec     agc_vec_t          I    MPAC vector (R2VEC or VVEC)
+ *   snth      agc_dp_t *         O    MPAC SNTH, 2^1
+ *   csth      agc_dp_t *         O    0D CSTH, 2^1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
+ *          NULL pointer or GEOMSGN = 0
+ *********************************************************************/
 agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                              agc_vec_t r1vec, agc_vec_t v2vec, agc_dp_t *snth,
                              agc_dp_t *csth)
@@ -60,16 +103,18 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t mag = 0;
+    agc_dp_t mag = 0; /* 36D |vector|, its scale */
 
-    ctx->u2      = agc_vec_unit(ip, v2vec, &mag, NULL); /* UNIT, STODL U2 / 36D */
-    ctx->magvec2 = mag;                                 /* STOVL MAGVEC2        */
-    ctx->ur1     = agc_vec_unit(ip, r1vec, &mag, NULL); /* UNIT, STORE UR1      */
-    agc_tp_t m = agc_vec_dot_tp(ip, ctx->ur1, ctx->u2);       /* DOT: TP MPAC */
+    ctx->u2      = agc_vec_unit(ip, v2vec, &mag, NULL); /* UNIT: U2, 36D */
+    ctx->magvec2 = mag;                                 /* STOVL MAGVEC2 */
+    ctx->ur1     = agc_vec_unit(ip, r1vec, &mag, NULL); /* UNIT: UR1     */
+    agc_tp_t m = agc_vec_dot_tp(ip, ctx->ur1, ctx->u2); /* DOT: TP, 2^2 */
 
     *csth   = agc_tp_to_dp(agc_tp_shift(ip, m, 1)); /* DOT SL1: 0D */
-    ctx->r1 = mag; /* STOVL R1 / UR1       */
-    agc_vec_t n = agc_vec_shl(ip, agc_vec_cross(ip, ctx->ur1, ctx->u2), 1);
+    ctx->r1 = mag;                                  /* STOVL R1     */
+    agc_vec_t n = agc_vec_cross(ip, ctx->ur1, ctx->u2); /* VXV, 2^2 */
+
+    n = agc_vec_shl(ip, n, 1); /* VSL1, 2^1 */
 
     if (ctx->normsw)
     { /* HAVENORM: ABVAL SIGN */
@@ -79,8 +124,8 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (AGC_STATUS_OK);
     }
 
-    /* SIGN with vector MPAC: complement the vector if the SP tag is negative. */
-    agc_sp_t s = ctx->geomsgn;
+    /* SIGN with a vector MPAC: complement it if the SP tag is negative. */
+    agc_sp_t s = ctx->geomsgn; /* GEOMSGN, SP 2^0 */
 
     if (!AGC_ASSERT(s != 0))
     {
@@ -93,8 +138,8 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
 
     n = (s < 0) ? agc_vec_neg(n) : n; /* SIGN GEOMSGN, UNIT   */
-    agc_dp_t  sn = 0;
-    agc_vec_t un = agc_vec_unit(ip, n, &sn, NULL);
+    agc_dp_t  sn = 0; /* |N| = SNTH magnitude, 2^1 */
+    agc_vec_t un = agc_vec_unit(ip, n, &sn, NULL); /* UNIT: UN, 2^1 */
 
     if (agc_interp_test_ovf(ip))
     { /* BOV COLINEAR: VSR1   */
@@ -106,15 +151,29 @@ agc_status_t agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         agc_conic_msign_sp_(agc_tp_from_dp(sn), ctx->geomsgn));
 
     return (AGC_STATUS_OK);
-}
+} /* agc_conic_geom_ */
 
-/*
- * PARAM (CONIC_SUBROUTINES.agc pp. 1289-1290, label PARAM)
- * In: rvec (0D) 2^29/2^27, vvec (MPAC) 2^7/2^5. Out: ctx->coga 2^5,
- * r1a 2^6, p 2^4, r1, ur1, u2, un, magvec2; *sngamma (36D) 2^1.
- * Clears NORMSW and COGAFLAG. OVFIND is left set if COGA overflowed
- * (callers test it with BOV and go to COGAOVFL).
- */
+/**********************************************************************
+ * PARAM (CONIC_SUBROUTINES.agc pp. 1289-1290, label PARAM) -- conic
+ * parameters of a state: COGA, R1A = R1 V^2/MU, P
+ *
+ * FUNCTION NAME: agc_conic_param_
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state; OVFIND left set
+ *                                     when COGA overflowed (callers BOV
+ *                                     to COGAOVFL)
+ *   ctx       agc_conic_ctx_t *  I/O  COGA 2^5, R1A 2^6, P 2^4, R1, UR1,
+ *                                     U2, UN, MAGVEC2 out; NORMSW and
+ *                                     COGAFLAG cleared
+ *   rvec      agc_vec_t          I    0D RVEC, 2^29 / 2^27 m
+ *   vvec      agc_vec_t          I    MPAC VVEC, 2^7 / 2^5 m/cs
+ *   sngamma   agc_dp_t *         O    36D sin(gamma), 2^1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the GEOM status
+ *********************************************************************/
 agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                               agc_vec_t rvec, agc_vec_t vvec, agc_dp_t *sngamma)
 {
@@ -130,11 +189,12 @@ agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
 
     ctx->normsw   = false; /* CLEAR NORMSW         */
     ctx->cogaflag = false; /* CLEAR COGAFLAG       */
-    agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, false);     /* mirror only */
-    ctx->geomsgn = AGC_CONIC_GEOMSGN_POS; /* gamma < 180 deg      */
-    agc_dp_t     sng = 0;
-    agc_dp_t     csg = 0;
-    agc_status_t st  = agc_conic_geom_(ip, ctx, rvec, vvec, &sng, &csg);
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, false); /* mirror only */
+    ctx->geomsgn = AGC_CONIC_GEOMSGN_POS; /* SSP GEOMSGN: < 180 deg */
+    agc_dp_t     sng = 0; /* MPAC SNGA, 2^1 */
+    agc_dp_t     csg = 0; /* 0D CSGA, 2^1   */
+    agc_status_t st  = agc_conic_geom_(ip, ctx, rvec, vvec, &sng,
+                                       &csg); /* CALL GEOM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -142,10 +202,10 @@ agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     }
 
     *sngamma = sng; /* STODL 36D            */
-    agc_tp_t m = agc_tp_shift(ip, agc_tp_from_dp(csg), -5);
+    agc_tp_t m = agc_tp_shift(ip, agc_tp_from_dp(csg), -5); /* CSGA SR 5, 2^6 */
 
     ctx->coga = agc_tp_to_dp(agc_conic_mddv_(ip, m, sng)); /* SR 5 DDV */
-    int n = 0; /* MAGVEC2 DSQ NORM X1  */
+    int n = 0; /* NORM X1 count */
 
     m = agc_conic_mnorm_(agc_conic_mdsq_(agc_tp_from_dp(ctx->magvec2)), &n);
     m = agc_conic_mdmpr_(ip, m, ctx->inv_mu); /* DMPR 1/MU, DMP R1    */
@@ -154,16 +214,29 @@ agc_status_t agc_conic_param_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     const agc_dp_t r1v2mu = agc_tp_to_dp(m); /* PUSH: R1 V^2/MU 2^6  */
 
     ctx->r1a = agc_tp_to_dp(agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_32));
-    m        = agc_conic_mdmp_(agc_tp_from_dp(r1v2mu), sng); /* DMP 36D, NORM X1 */
-    m        = agc_conic_mnorm_(m, &n);
+    m        = agc_conic_mdmp_(agc_tp_from_dp(r1v2mu), sng); /* DMP 36D */
+    m        = agc_conic_mnorm_(m, &n);                       /* NORM X1 */
     m        = agc_conic_mdmp_(m, sng); /* DMP 36D, SR* 0 -4,1  */
     ctx->p   = agc_tp_to_dp(agc_tp_shift(ip, m, 4 - n)); /* P 2^4  */
 
     return (AGC_STATUS_OK);
-}
+} /* agc_conic_param_ */
 
-/* INFINITY / OVFLCLR (p. 1295): no solution, closure through infinity.
- * SETPD 0, BOV OVFLCLR (clears OVFIND), SET INFINFLG, RVQ.               */
+/**********************************************************************
+ * INFINITY, OVFLCLR (CONIC_SUBROUTINES.agc p. 1295) -- no solution,
+ * closure through infinity: SETPD 0, BOV OVFLCLR, SET INFINFLG, RVQ
+ *
+ * FUNCTION NAME: getx_infinity
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  OVFIND cleared
+ *   ctx       agc_conic_ctx_t *  O    INFINFLG set
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (INFINFLG is the result), or
+ *          AGC_STATUS_BAD_ARG for a NULL pointer
+ *********************************************************************/
 static agc_status_t getx_infinity(agc_interp_t *ip, agc_conic_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
@@ -178,15 +251,31 @@ static agc_status_t getx_infinity(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     return (AGC_STATUS_OK);
 }
 
-/* GETX entry to WLOOP (p. 1292): W0 = (SNTH/(1-CSTH) - COGA) sqrt(P),
- * 2^5. Returns GETX_TO_360CHECK if either BOV is taken.                   */
+/**********************************************************************
+ * GETX entry to WLOOP (CONIC_SUBROUTINES.agc p. 1292) -- W0 =
+ * (SNTH/(1-CSTH) - COGA) sqrt(P)
+ *
+ * FUNCTION NAME: getx_first_w
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    P, CSTH, SNTH, COGA
+ *   mpac      agc_tp_t *               O    W0, 2^5 (or the overflowed
+ *                                           value for 360CHECK)
+ *
+ * RETURNS: getx_next_t -- GETX_TO_WLOOP, or GETX_TO_360CHECK if either
+ *          BOV is taken
+ *********************************************************************/
 static getx_next_t getx_first_w(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                 agc_tp_t *mpac)
 {
-    agc_tp_t       m     = agc_conic_msqrt_(ip, agc_tp_from_dp(ctx->p)); /* SQRT    */
-    const agc_dp_t sqrtp = agc_tp_to_dp(m);                 /* 0D 2^2  */
+    agc_tp_t m = agc_conic_msqrt_(ip, agc_tp_from_dp(ctx->p)); /* 2^2 */
 
-    m = agc_tp_shift(ip, agc_tp_from_dp(ctx->csth), -1);  /* SR1     */
+    const agc_dp_t sqrtp = agc_tp_to_dp(m); /* 0D SQRT P, 2^2 */
+
+    m = agc_tp_shift(ip, agc_tp_from_dp(ctx->csth), -1); /* SR1 */
     const agc_dp_t one_m_csth = agc_tp_to_dp(
         agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_4));                /* 2D 2^2  */
 
@@ -205,11 +294,26 @@ static getx_next_t getx_first_w(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     m     = agc_conic_mshiftr_(ip, m, 2); /* SL2R    */
     *mpac = m;
 
-    return (agc_interp_test_ovf(ip) ? GETX_TO_360CHECK : GETX_TO_WLOOP);
+    return (agc_interp_test_ovf(ip) ? /* BOV 360CHECK */
+            GETX_TO_360CHECK : GETX_TO_WLOOP);
 }
 
-/* WLOOP (p. 1292): three passes of W = W + sqrt(W^2 + R1A) (2^5), then
- * BDDV D1/128 to 1/W (2^2). BOV in the loop goes to RESETX2/360CHECK.    */
+/**********************************************************************
+ * WLOOP (CONIC_SUBROUTINES.agc p. 1292) -- three passes of
+ * W = W + sqrt(W^2 + R1A), then BDDV D1/128 to 1/W
+ *
+ * FUNCTION NAME: getx_wloop
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    R1A 2^6
+ *   mpac      agc_tp_t *               I/O  W 2^5 in; 1/W 2^2 out
+ *
+ * RETURNS: getx_next_t -- GETX_TO_POLYCOEF, GETX_TO_360CHECK (BOV in the
+ *          loop, RESETX2) or GETX_TO_INFINITY
+ *********************************************************************/
 static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                               agc_tp_t *mpac)
 {
@@ -223,12 +327,12 @@ static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (GETX_TO_INFINITY);
     }
 
-    agc_tp_t m = *mpac;
+    agc_tp_t m = *mpac; /* W, 2^5 */
 
     for (int pass = 0; pass < AGC_CONIC_GETX_PASSES; pass++)
     {                                              /* TIX,2 */
-        const agc_dp_t w   = agc_tp_to_dp(m); /* PUSH 0D */
-        const agc_tp_t wsq = agc_conic_mdsq_(m);   /* TLOAD MPAC */
+        const agc_dp_t w   = agc_tp_to_dp(m); /* PUSH 0D: W, 2^5 */
+        const agc_tp_t wsq = agc_conic_mdsq_(m); /* TLOAD MPAC: W^2, 2^10 */
 
         m = agc_tp_shift(ip, agc_tp_from_dp(ctx->r1a), -4); /* SR4  */
         m = agc_tp_add(ip, m, wsq);                           /* 2^10    */
@@ -252,11 +356,25 @@ static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     m     = agc_conic_mbddv_(ip, m, AGC_CONIC_D1_128); /* 1/W 2^2 */
     *mpac = m;
 
-    return (agc_interp_test_ovf(ip) ? GETX_TO_INFINITY : GETX_TO_POLYCOEF);
-}
+    return (agc_interp_test_ovf(ip) ? /* BOV INFINITY */
+            GETX_TO_INFINITY : GETX_TO_POLYCOEF);
+} /* getx_wloop */
 
-/* 360CHECK / INVRSEQN (p. 1294): near-360-degree form. 1/W at 2^-1 from
- * SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)), its square to 34D.            */
+/**********************************************************************
+ * 360CHECK / INVRSEQN (CONIC_SUBROUTINES.agc p. 1294) -- near-360-degree
+ * form: 1/W = SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)) and its square
+ *
+ * FUNCTION NAME: getx_invrseqn
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    P, SNTH, CSTH, COGA
+ *   inv_w_sq  agc_dp_t *               O    34D (1/W)^2, 2^-2
+ *
+ * RETURNS: agc_dp_t -- 0D 1/W, 2^-1
+ *********************************************************************/
 static agc_dp_t getx_invrseqn(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                               agc_dp_t *inv_w_sq)
 {
@@ -270,28 +388,45 @@ static agc_dp_t getx_invrseqn(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (0); /* no valid result */
     }
 
-    agc_tp_t       m     = agc_conic_msqrt_(ip, agc_tp_from_dp(ctx->p));
-    const agc_dp_t sqrtp = agc_tp_to_dp(m);                 /* 0D 2^2  */
+    agc_tp_t m = agc_conic_msqrt_(ip, agc_tp_from_dp(ctx->p)); /* 2^2 */
 
-    m = agc_conic_mdmp_(agc_tp_from_dp(ctx->snth), ctx->coga); /* DMP SL1 */
-    const agc_dp_t sn_coga = agc_tp_to_dp(agc_tp_shift(ip, m, 1));
+    const agc_dp_t sqrtp = agc_tp_to_dp(m); /* 0D SQRT P, 2^2 */
+
+    m = agc_conic_mdmp_(agc_tp_from_dp(ctx->snth), ctx->coga); /* DMP */
+    const agc_dp_t sn_coga = agc_tp_to_dp(
+        agc_tp_shift(ip, m, 1)); /* SL1: 2D SNTH COGA, 2^5 */
 
     m = agc_tp_shift(ip, agc_tp_from_dp(ctx->csth), -4); /* SR4     */
     m = agc_conic_mdad_(ip, m, AGC_CONIC_D1_32);                /* 1+CSTH  */
     m = agc_conic_mdsu_(ip, m, sn_coga);
     m = agc_conic_mdmp_(m, sqrtp); /* 2^7     */
-    int n = 0;
+    int n = 0; /* NORM X1 count */
 
-    m         = agc_conic_mnorm_(m, &n);
-    m         = agc_conic_mbddv_(ip, m, ctx->snth);            /* BDDV SNTH */
-    m         = agc_conic_mabs_(agc_conic_mshiftr_(ip, m, n - 5)); /* SLR* 0 -5,1 */
-    *inv_w_sq = agc_tp_to_dp(agc_conic_mdsq_(m));         /* 34D 2^-2 */
+    m         = agc_conic_mnorm_(m, &n);                   /* NORM X1   */
+    m         = agc_conic_mbddv_(ip, m, ctx->snth);        /* BDDV SNTH */
+    m         = agc_conic_mshiftr_(ip, m, n - 5);          /* SLR* 0 -5,1 */
+    m         = agc_conic_mabs_(m);                        /* ABS       */
+    *inv_w_sq = agc_tp_to_dp(agc_conic_mdsq_(m));          /* 34D 2^-2  */
 
     return (agc_tp_to_dp(m));                               /* 0D 2^-1 */
 }
 
-/* 1/WLOOP (p. 1294): G = G + sqrt(G^2 + R1A/W^2) three times from
- * G = 1 (D1/16 at 2^4); then MPAC = (1/W)/G at 2^2 for POLYCOEF.         */
+/**********************************************************************
+ * 1/WLOOP (CONIC_SUBROUTINES.agc p. 1294) -- G = G + sqrt(G^2 + R1A/W^2)
+ * three times from G = 1, then MPAC = (1/W)/G for POLYCOEF
+ *
+ * FUNCTION NAME: getx_inv_wloop
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    P, SNTH, CSTH, COGA, R1A
+ *   mpac      agc_tp_t *               O    (1/W)/G, 2^2
+ *
+ * RETURNS: getx_next_t -- GETX_TO_POLYCOEF, or GETX_TO_INFINITY when the
+ *          root argument goes negative
+ *********************************************************************/
 static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                                   agc_tp_t *mpac)
 {
@@ -305,14 +440,15 @@ static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (GETX_TO_INFINITY);
     }
 
-    agc_dp_t       inv_w_sq = 0;
-    const agc_dp_t inv_w    = getx_invrseqn(ip, ctx, &inv_w_sq);
-    agc_tp_t       m        = agc_tp_from_dp(AGC_CONIC_D1_16);
+    agc_dp_t       inv_w_sq = 0; /* 34D (1/W)^2, 2^-2 */
+    const agc_dp_t inv_w    = getx_invrseqn(ip, ctx,
+                                            &inv_w_sq); /* 0D 1/W, 2^-1 */
+    agc_tp_t m = agc_tp_from_dp(AGC_CONIC_D1_16); /* G = 1, 2^4 */
 
     for (int pass = 0; pass < AGC_CONIC_GETX_PASSES; pass++)
     {                                              /* TIX,2 */
-        const agc_dp_t g   = agc_tp_to_dp(m); /* PUSH 2D */
-        const agc_tp_t gsq = agc_conic_mdsq_(m);   /* TPMODE  */
+        const agc_dp_t g   = agc_tp_to_dp(m); /* PUSH 2D: G, 2^4 */
+        const agc_tp_t gsq = agc_conic_mdsq_(m); /* TPMODE: G^2, 2^8 */
 
         m = agc_conic_mdmp_(agc_tp_from_dp(ctx->r1a), inv_w_sq);
         m = agc_tp_shift(ip, m, -4); /* SR4     */
@@ -326,18 +462,32 @@ static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         m = agc_conic_mdad_(ip, agc_conic_msqrt_(ip, m), g); /* DAD 2D  */
     }
 
-    int n = 0;
+    int n = 0; /* NORM X1 count */
 
     m     = agc_conic_mnorm_(m, &n);          /* NORM X1 */
     m     = agc_conic_mbddv_(ip, m, inv_w);   /* BDDV 0D */
     *mpac = agc_conic_mshiftr_(ip, m, n - 7); /* SLR* 0 -7,1 */
 
     return (GETX_TO_POLYCOEF);
-}
+} /* getx_inv_wloop */
 
-/* POLYCOEF and TRUE360X (pp. 1292-1295): from MPAC = 1/W the series
- * value x' (0D, 2^6 equivalent), corrected to 2 pi/sqrt(R1A) - x' when
- * 360SW is set. Returns false for INFINITY.                              */
+/**********************************************************************
+ * POLYCOEF and TRUE360X (CONIC_SUBROUTINES.agc pp. 1292-1295) -- the
+ * series value x' from MPAC = 1/W, corrected to 2 pi/sqrt(R1A) - x' when
+ * 360SW is set
+ *
+ * FUNCTION NAME: getx_polycoef
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+ *   ctx       const agc_conic_ctx_t *  I    R1A, 360SW
+ *   m_in      agc_tp_t                 I    MPAC 1/W, 2^2 (or 16/W 2^6)
+ *   xprime    agc_tp_t *               O    0D x', 2^6 equivalent
+ *
+ * RETURNS: bool -- false for INFINITY (1/W or R1A negative)
+ *********************************************************************/
 static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
                           agc_tp_t m_in, agc_tp_t *xprime)
 {
@@ -356,9 +506,11 @@ static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
         return (false);
     }                                            /* BMN     */
 
-    const agc_dp_t pw = agc_tp_to_dp(m_in); /* PUSH 0D */
-    int            n  = 0;
-    agc_tp_t       m  = agc_conic_mnorm_(agc_conic_mdsq_(m_in), &n); /* DSQ NORM */
+    const agc_dp_t pw = agc_tp_to_dp(m_in); /* PUSH 0D: 1/W, 2^2 */
+    int            n  = 0; /* NORM X1 count */
+    agc_tp_t       m  = agc_conic_mdsq_(m_in); /* DSQ, 2^4 */
+
+    m = agc_conic_mnorm_(m, &n); /* NORM X1: (1/W)^2, 2^(4-n) */
 
     m = agc_conic_mdmp_(m, ctx->r1a);
     m = agc_conic_mshiftr_(ip, m, 10 - n); /* SRR* 0 -10D,1 */
@@ -368,8 +520,8 @@ static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
 
     if (ctx->sw360)
     { /* TRUE360X */
-        const agc_dp_t xp = agc_tp_to_dp(m);
-        agc_tp_t       r  = agc_tp_from_dp(ctx->r1a);
+        const agc_dp_t xp = agc_tp_to_dp(m); /* 0D x', 2^6 equivalent */
+        agc_tp_t       r  = agc_tp_from_dp(ctx->r1a); /* DLOAD R1A, 2^6 */
 
         if (agc_conic_mbmn_(r))
         {
@@ -385,10 +537,22 @@ static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx,
     *xprime = m;
 
     return (true);
-}
+} /* getx_polycoef */
 
-/* XCOMMON (pp. 1293-1294): XI, X, 0D = XSQ normalized (N1), KEPC1, KEPC2,
- * and CLEAR INFINFLG.                                                    */
+/**********************************************************************
+ * XCOMMON (CONIC_SUBROUTINES.agc pp. 1293-1294) -- XI, X, XSQ, KEPC1,
+ * KEPC2 from x', and CLEAR INFINFLG
+ *
+ * FUNCTION NAME: getx_xcommon
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *  I/O  XI 2^6, X 2^17 / 2^16, XSQ
+ *                                     2^(34-N1), KEPC1 2^17, KEPC2 2^6
+ *   xprime    agc_tp_t           I    0D x' from POLYCOEF
+ *********************************************************************/
 static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
                          agc_tp_t xprime)
 {
@@ -402,8 +566,10 @@ static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return;
     }
 
-    int      n = 0;
-    agc_tp_t m = agc_conic_mnorm_(agc_conic_mdsq_(xprime), &n); /* DSQ NORM */
+    int      n = 0; /* NORM X1 count */
+    agc_tp_t m = agc_conic_mdsq_(xprime); /* DSQ: x'^2, 2^12 */
+
+    m = agc_conic_mnorm_(m, &n); /* NORM X1 */
 
     m       = agc_conic_mdmp_(m, ctx->r1a);
     ctx->xi = agc_tp_to_dp(agc_conic_mshiftr_(ip, m, 12 - n)); /* XI 2^6 */
@@ -418,7 +584,8 @@ static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ctx->xsq_n1 = n;
     m           = agc_tp_shift(
         ip, agc_conic_mdmp_(agc_tp_from_dp(ctx->p), ctx->r1), 3);
-    m          = agc_conic_mdmp_(agc_conic_msqrt_(ip, m), ctx->coga); /* SQRT DMP COGA */
+    m          = agc_conic_msqrt_(ip, m);       /* SQRT       */
+    m          = agc_conic_mdmp_(m, ctx->coga); /* DMP COGA   */
     ctx->kepc1 =
         agc_tp_to_dp(agc_conic_mshiftr_(ip, m, 3)); /* SL3R 2^17 */
     m = agc_conic_mbdsu_(ip, agc_tp_from_dp(
@@ -426,14 +593,26 @@ static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx,
     ctx->infinflg = false; /* CLEAR INFINFLG */
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, false); /* mirror only */
     ctx->kepc2 = agc_tp_to_dp(m);    /* KEPC2 2^6 */
-}
+} /* getx_xcommon */
 
-/*
- * GETX (CONIC_SUBROUTINES.agc pp. 1292-1295, label GETX)
- * In: ctx->p (MPAC) 2^4, csth, snth 2^1, coga 2^5, r1a 2^6, r1.
- * Out: ctx->x, xi, xsq/xsq_n1, kepc1, kepc2, sw360, infinflg (INFINFLG
- * set and nothing else valid when closure through infinity is required).
- */
+/**********************************************************************
+ * GETX (CONIC_SUBROUTINES.agc pp. 1292-1295, label GETX) -- universal
+ * variable x of the conic through (CSTH, SNTH)
+ *
+ * FUNCTION NAME: agc_conic_getx_
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  ---------------------------------
+ *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+ *   ctx       agc_conic_ctx_t *  I/O  P (MPAC) 2^4, CSTH, SNTH 2^1, COGA
+ *                                     2^5, R1A 2^6, R1 in; X, XI, XSQ,
+ *                                     KEPC1, KEPC2, 360SW, INFINFLG out
+ *                                     (INFINFLG set: nothing else valid)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (check ctx->infinflg), or
+ *          AGC_STATUS_BAD_ARG for a NULL pointer
+ *********************************************************************/
 agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
@@ -447,8 +626,8 @@ agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     }
 
     ctx->sw360 = false; /* AXT,2 3; SSP S2 1; CLEAR 360SW */
-    agc_tp_t    m    = 0;
-    getx_next_t next = getx_first_w(ip, ctx, &m);
+    agc_tp_t    m    = 0; /* MPAC: W 2^5 or 1/W 2^2 */
+    getx_next_t next = getx_first_w(ip, ctx, &m); /* next GETX block */
 
     if (next == GETX_TO_WLOOP)
     {
@@ -461,7 +640,7 @@ agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
         next       = getx_inv_wloop(ip, ctx, &m);
     }
 
-    agc_tp_t xprime = 0;
+    agc_tp_t xprime = 0; /* 0D x', 2^6 equivalent */
 
     if (next != GETX_TO_POLYCOEF || !getx_polycoef(ip, ctx, m, &xprime))
     {
@@ -471,11 +650,28 @@ agc_status_t agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx)
     getx_xcommon(ip, ctx, xprime);
 
     return (AGC_STATUS_OK);
-}
+} /* agc_conic_getx_ */
 
-/*
- * PARAM, public entry (P37 and others call PARAM directly).
- */
+/**********************************************************************
+ * PARAM (CONIC_SUBROUTINES.agc pp. 1289-1290) -- public entry for
+ * callers outside the conic package (P37)
+ *
+ * FUNCTION NAME: agc_conic_param
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  ---------------------------
+ *   ip        agc_interp_t *           I/O  interpreter state; OVFIND
+ *                                           left set on COGA overflow
+ *   rvec      agc_vec_t                I    RVEC, 2^29 / 2^27 m
+ *   vvec      agc_vec_t                I    VVEC, 2^7 / 2^5 m/cs
+ *   body      agc_conic_body_t         I    central body
+ *   out       agc_conic_param_out_t *  O    P, R1A, COGA, SNGAMMA and the
+ *                                           GEOM debris
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
+ *          NULL pointer or an unknown body
+ *********************************************************************/
 agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
                              agc_conic_body_t body, agc_conic_param_out_t *out)
 {
@@ -484,8 +680,8 @@ agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_conic_ctx_t ctx;
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, body);
+    agc_conic_ctx_t ctx; /* conic erasables */
+    agc_status_t    st = agc_conic_ctx_init_(&ctx, body); /* MUTABLE,1 */
 
     if (st != AGC_STATUS_OK)
     {
