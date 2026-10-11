@@ -282,3 +282,6 @@
             sqrt/asin/acos cannot raise 1301/1302 (callers must). Lead set
             mod_paren_on_return=add; reformatted (238 files). make lib OK.
             Launching integrate.
+2026-10-10  Usage-limit cutoff killed integrate mid-work (was implementing
+            the core alarm latch / exec service point). Checkpoint committed;
+            relaunching with resume semantics.
